@@ -69,7 +69,8 @@ export function QueenRoomWorld({ room, root, vessels, ambient = false, mode = "a
         const r = rect(el);
         if (r.w > 4 && r.h > 4) seats[el.dataset.roomVessel!] = r;
       }
-      current.layout({ host: rect(element), seats });
+      const shelves = [...rootElement.querySelectorAll<HTMLElement>("[data-room-shelf]")].map(rect).filter((r) => r.w > 4 && r.h > 4);
+      current.layout({ host: rect(element), seats, ...(shelves.length ? { shelves } : {}) });
     };
     measure();
     const observer = new ResizeObserver(measure);

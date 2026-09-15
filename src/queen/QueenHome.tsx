@@ -35,6 +35,9 @@ import { QueenHouseRail } from "./QueenHouseRail.tsx";
 import { houseStep, type HouseMove, type HousePlace } from "./queenHouse.ts";
 import { useHouseAxis } from "./useHouseAxis.ts";
 import { saveKittyNestDesign } from "../core/kittyNestDesigns.ts";
+import { rackSettled, type QueenRackV1 } from "../core/queenRack.ts";
+import { projectHouseholdFund } from "../core/householdFund.ts";
+import { allocateHouseholdFundSurplus } from "../core/commands.ts";
 import { KITTY_GLAZES } from "../core/goalEnvelopes.ts";
 import { formatDateLabel } from "../core/calendar.ts";
 import type { KittyGlaze, KittyPaintV1, KittyStampKind } from "../core/types.ts";
@@ -172,17 +175,33 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   // The ledge, in the order the household put it in: one list of design keys on the Build plan bank's own row.
   const shelfOrder = useMemo(() => queenShelfOrder(household.kittyNestDesigns), [household.kittyNestDesigns]);
   const shelf = useMemo(() => queenShelf(nest, household, shelfOrder), [nest, household, shelfOrder]);
-  /** Moving a bank writes the shelf's whole order once. The last save wins, as it does everywhere else here. */
-  const keepShelfOrder = useCallback((order: string[]) => {
+  /** The loft's rack, settled to the banks the shelf has. Absent a stored rack, one shelf in the old order. */
+  const rack = useMemo(() => rackSettled(household.kittyNestDesigns?.find((row) => row.bankKey === QUEEN_SHELF_BANK_KEY && row.visibility === "household")?.rack, shelf.map((item) => item.designKey), shelfOrder), [household.kittyNestDesigns, shelf, shelfOrder]);
+  /** Moving a bank, a weight, a pin or a divider writes the whole rack once (and the old order from it). The last save wins, as it does everywhere else here. */
+  const keepRack = useCallback((next: QueenRackV1) => {
     void onCommand((current) => {
       const design = current.kittyNestDesigns?.find((row) => row.bankKey === QUEEN_SHELF_BANK_KEY && row.visibility === "household");
       return saveKittyNestDesign(current, {
         memberId, view: "household", bankKey: QUEEN_SHELF_BANK_KEY, expectedRevision: design?.revision ?? 0,
         name: design?.name ?? "Build", glaze: design?.glaze ?? "cream", category: design?.category ?? null,
-        ...(design?.studio ? { studio: design.studio } : {}), order,
+        ...(design?.studio ? { studio: design.studio } : {}), rack: next,
       });
     });
   }, [memberId, onCommand]);
+  /** The jug: the Fund's safe surplus, poured by its custodian through the month-end rollover, behind Confirm. */
+  const loftPour = useMemo(() => {
+    const fund = household.householdFund;
+    if (!fund) return undefined;
+    const projection = projectHouseholdFund(household, today);
+    return {
+      safeCents: Math.max(0, projection.safeRolloverCents),
+      custodian: fund.custodianMemberId === memberId,
+      custodianName: household.members.find((row) => row.id === fund.custodianMemberId)?.name ?? "The custodian",
+      onPour: (allocations: Array<{ goalId: string; amountCents: number }>, _pouredCents: number) => onCommand((current) => allocateHouseholdFundSurplus(current, {
+        memberId, date: today, note: "Poured over the loft's rack", allocations: allocations.map((row) => ({ goalId: row.goalId, amount: (row.amountCents / 100).toFixed(2) })),
+      })),
+    };
+  }, [household, memberId, today, onCommand]);
   const freshBud = trace && trace.region.startsWith("bud:") ? buds.findIndex((bud) => `bud:${bud.goalId}` === trace.region) : -1;
   const pose = POSTURE[still.posture];
 
@@ -831,7 +850,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       <QueenHouseRail place={scene} onGo={travel} />
 
       <QueenCellar ribbons={ribbons} open={scene === "cellar"} stairRef={cellarStair} onExit={exitRoom} onOpenBanks={() => onOpenBank({ bankId: "plan:protect" })} world={world} household={household} memberId={memberId} today={today} busy={busy} onCommand={onCommand} />
-      <QueenLoft shelf={shelf} open={scene === "loft"} busy={busy} stairRef={loftStair} onExit={exitRoom} onOpenGoal={(goalId) => onOpenBank({ goalId })} onOpenBanks={() => onOpenBank({ bankId: "plan:build" })} onReorder={keepShelfOrder} world={world} />
+      <QueenLoft shelf={shelf} rack={rack} open={scene === "loft"} busy={busy} stairRef={loftStair} onExit={exitRoom} onOpenGoal={(goalId) => onOpenBank({ goalId })} onOpenBanks={() => onOpenBank({ bankId: "plan:build" })} onRack={keepRack} pour={loftPour} world={world} />
     </div>
   );
 }

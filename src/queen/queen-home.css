@@ -353,6 +353,110 @@
 .queen-window::before { left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; }
 .queen-window::after { top: 50%; left: 0; right: 0; height: 2px; margin-top: -1px; }
 .queen-ledge-wrap { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 0; }
+/* ---- the rack (2026-09-15): shelves on the wall, top first; a post with a pin at the left, a brass weight at the right ---- */
+.queen-rack { display: flex; flex: 0 1 auto; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 4px; width: min(100%, 720px); min-height: 0; overflow: auto; padding: 4px 2px; scrollbar-width: thin; user-select: none; -webkit-user-select: none; }
+/* More shelves, smaller cats: the wall keeps its height, the banks give. Names stay until the wall is four deep; a held bank keeps its name. */
+.queen-room--loft[data-shelves="2"] .queen-goal svg { height: 60px; width: calc(40px * var(--goal-w, 1)); }
+.queen-room--loft[data-shelves="3"] .queen-goal svg { height: 50px; width: calc(34px * var(--goal-w, 1)); }
+.queen-room--loft[data-shelves="4"] .queen-goal svg, .queen-room--loft[data-shelves="5"] .queen-goal svg { height: 42px; width: calc(28px * var(--goal-w, 1)); }
+.queen-room--loft[data-shelves="4"] .queen-goal__name, .queen-room--loft[data-shelves="5"] .queen-goal__name { display: none; }
+.queen-room--loft[data-shelves="4"] .queen-goal[aria-pressed="true"] .queen-goal__name, .queen-room--loft[data-shelves="5"] .queen-goal[aria-pressed="true"] .queen-goal__name { display: block; }
+.queen-room--loft[data-shelves="2"] .queen-shelf__post, .queen-room--loft[data-shelves="3"] .queen-shelf__post { min-height: 60px; }
+.queen-room--loft[data-shelves="2"] .queen-shelf__pin, .queen-room--loft[data-shelves="3"] .queen-shelf__pin { bottom: calc(2px + var(--shelf-mark, 1) * 54px); }
+.queen-room--loft[data-shelves="2"] .queen-shelf .queen-goal::after { bottom: calc(24px + var(--shelf-mark, 1) * 46px); }
+.queen-room--loft[data-shelves="3"] .queen-shelf .queen-goal::after { bottom: calc(24px + var(--shelf-mark, 1) * 38px); }
+.queen-room--loft[data-shelves="4"] .queen-shelf__post, .queen-room--loft[data-shelves="5"] .queen-shelf__post { min-height: 46px; }
+.queen-room--loft[data-shelves="4"] .queen-shelf__pin, .queen-room--loft[data-shelves="5"] .queen-shelf__pin { bottom: calc(2px + var(--shelf-mark, 1) * 40px); }
+.queen-room--loft[data-shelves="4"] .queen-shelf .queen-goal::after, .queen-room--loft[data-shelves="5"] .queen-shelf .queen-goal::after { bottom: calc(8px + var(--shelf-mark, 1) * 32px); }
+.queen-room--loft[data-shelves="4"] .queen-shelf .queen-ledge, .queen-room--loft[data-shelves="5"] .queen-shelf .queen-ledge { min-height: 44px; }
+.queen-shelf { position: relative; display: grid; grid-template-columns: 22px minmax(0, 1fr) 78px; align-items: end; column-gap: 4px; }
+.queen-shelf .queen-ledge { position: relative; min-height: 54px; padding: 0 10px; gap: clamp(6px, 3cqw, 28px); }
+.queen-shelf.is-drop-shelf .queen-ledge { border-bottom-color: var(--queen-bud); }
+.queen-shelf__seat { display: inline-flex; align-items: flex-end; }
+.queen-shelf__bare { align-self: center; font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 14px 0; }
+.queen-home .queen-shelf__down { align-self: center; margin-left: 10px; min-height: 30px; padding: 2px 8px; border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); border-radius: 999px; background: transparent; color: var(--muted); font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+/* The post and its pin: the fill mark. The pin rides up the post from the shelf (0) to the height of a bank (1); the tide it sets shows on every bank of the shelf. */
+.queen-shelf__post { position: relative; align-self: stretch; width: 22px; min-height: 74px; }
+.queen-shelf__post::before { content: ""; position: absolute; left: 9px; top: 0; bottom: 0; width: 4px; border-radius: 2px; background: var(--queen-clay-shadow); opacity: .7; }
+.queen-home .queen-shelf__pin { position: absolute; left: 0; bottom: calc(2px + var(--shelf-mark, 1) * 68px); width: 22px; height: 22px; min-height: 22px; min-width: 22px; padding: 0; margin: 0; border: 0; background: transparent; cursor: ns-resize; touch-action: none; transform: translateY(50%); }
+.queen-shelf__pin-head { display: block; width: 14px; height: 14px; margin: 4px; border-radius: 50%; background: var(--queen-brass, var(--copper)); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--ink) 30%, transparent), 0 1px 2px color-mix(in srgb, var(--ink) 30%, transparent); }
+.queen-shelf__pin:disabled { cursor: default; opacity: .6; }
+.queen-shelf__pin:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 50%; }
+.queen-shelf .queen-goal { position: relative; }
+.queen-shelf .queen-goal::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: calc(24px + var(--shelf-mark, 1) * 56px); border-top: 1px dashed color-mix(in srgb, var(--queen-brass, var(--copper)) 80%, transparent); pointer-events: none; opacity: .8; }
+.queen-shelf[style*="--shelf-mark: 1"] .queen-goal::after { display: none; }
+/* The weight: brass on the shelf's end, further right for more. */
+.queen-shelf__end { position: relative; align-self: end; height: 26px; }
+.queen-home .queen-shelf__weight { position: absolute; left: calc((var(--shelf-share, 5) - 1) * 4px); bottom: 2px; width: 42px; height: 24px; min-height: 24px; min-width: 42px; padding: 0; border: 0; border-radius: 5px 5px 3px 3px; background: linear-gradient(to bottom, color-mix(in srgb, var(--queen-brass, var(--copper)) 80%, #fff), var(--queen-brass, var(--copper))); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--ink) 35%, transparent), 0 1px 2px color-mix(in srgb, var(--ink) 30%, transparent); cursor: ew-resize; touch-action: none; }
+.queen-shelf__weight-read { display: block; font: 600 8.5px/24px var(--mono); letter-spacing: 0; color: color-mix(in srgb, var(--ink) 80%, transparent); text-align: center; white-space: nowrap; }
+.queen-shelf__weight:disabled { cursor: default; opacity: .6; }
+.queen-shelf__weight:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* The divider between two banks on a shelf: a slim brass rule; slide it to change their split. */
+.queen-home .queen-divider { align-self: stretch; width: 14px; min-width: 14px; min-height: 0; margin: 0 -2px; padding: 0; border: 0; background: transparent; cursor: ew-resize; touch-action: none; position: relative; }
+.queen-divider::before { content: ""; position: absolute; left: 6px; top: 12px; bottom: 10px; width: 2px; border-radius: 1px; background: var(--queen-brass, var(--copper)); opacity: .75; }
+.queen-divider:disabled { cursor: default; opacity: .5; }
+.queen-divider:focus-visible { outline: 2px solid var(--ink); outline-offset: 0; border-radius: 4px; }
+/* The world themes give every button 44px (:root[data-theme] :is(button…)); the rack's small brass is a control by hand and by keyboard, sized to the wall — these outrank that rule on purpose. */
+.queen-home .queen-room--loft .queen-rack .queen-shelf .queen-shelf__weight { min-height: 24px; height: 24px; border-radius: 5px 5px 3px 3px; }
+.queen-home .queen-room--loft .queen-rack .queen-shelf .queen-shelf__pin { min-height: 22px; height: 22px; border-radius: 50%; }
+.queen-home .queen-room--loft .queen-rack .queen-shelf .queen-divider { min-height: 0; border-radius: 4px; }
+.queen-home .queen-room--loft .queen-ledge-wrap .queen-rack .queen-shelf .queen-shelf__down, .queen-home .queen-room--loft .queen-ledge-wrap .queen-rack .queen-rack__hang { min-height: 30px; height: 30px; border-radius: 999px; }
+.queen-home .queen-rack__hang { align-self: center; margin-top: 2px; min-height: 30px; padding: 2px 10px; border: 1px dashed color-mix(in srgb, var(--ink) 35%, transparent); border-radius: 999px; background: transparent; color: var(--muted); font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.queen-rack__hang:disabled { opacity: .5; cursor: default; }
+.queen-rack__hang:focus-visible, .queen-shelf__down:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* The jug: the safe surplus and its tilt. */
+.queen-jug { display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 4px 12px; padding: 3px 12px; border-radius: 12px; max-width: 100%; min-height: 34px; }
+.queen-jug__safe { white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* A short room on a phone (the loft under the chrome at 320×700 is about 370px): the rack has first claim on the wall, so the
+   line keeps only what it has to say — a held bank, a tilted jug, a notice — and its standing hint gives way. */
+@container queen (max-height: 400px) {
+  .queen-room--loft[data-voice="hint"] .queen-room__line:not(.queen-cellar-notice) { display: none; }
+  .queen-room--loft .queen-jug { min-height: 28px; padding-top: 1px; padding-bottom: 1px; }
+  .queen-room--loft .queen-ledge-wrap { gap: 4px; }
+}
+/* A narrow frame (320): the words above the slider, never clipped beside it; a slimmer post and weight; smaller cats, closer, and a
+   shelf that scrolls along itself once four or more stand on it rather than spilling past its ends. */
+@container queen (max-width: 419px) { .queen-jug { flex-wrap: wrap; row-gap: 0; } }
+@container queen (max-width: 359px) {
+  .queen-room--loft .queen-room__sub-hint { display: none; }
+  .queen-shelf { grid-template-columns: 18px minmax(0, 1fr) 66px; column-gap: 2px; }
+  .queen-shelf .queen-ledge { padding: 8px 6px 0; gap: 4px; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  .queen-shelf .queen-ledge::-webkit-scrollbar { display: none; }
+  .queen-shelf .queen-goal { min-width: 36px; }
+  .queen-room--loft .queen-goal svg, .queen-room--loft[data-shelves="2"] .queen-goal svg, .queen-room--loft[data-shelves="3"] .queen-goal svg { height: 54px; width: calc(32px * var(--goal-w, 1)); }
+  .queen-room--loft .queen-goal__name { display: none; }
+  .queen-room--loft .queen-goal[aria-pressed="true"] .queen-goal__name { display: block; }
+  .queen-shelf__post, .queen-room--loft[data-shelves="2"] .queen-shelf__post, .queen-room--loft[data-shelves="3"] .queen-shelf__post { width: 18px; min-height: 58px; }
+  .queen-shelf__post::before { left: 7px; }
+  .queen-home .queen-shelf__pin, .queen-room--loft[data-shelves="2"] .queen-shelf__pin, .queen-room--loft[data-shelves="3"] .queen-shelf__pin { bottom: calc(2px + var(--shelf-mark, 1) * 50px); }
+  .queen-shelf .queen-goal::after, .queen-room--loft[data-shelves="2"] .queen-shelf .queen-goal::after, .queen-room--loft[data-shelves="3"] .queen-shelf .queen-goal::after { bottom: calc(14px + var(--shelf-mark, 1) * 40px); }
+  .queen-home .queen-shelf__weight { left: calc((var(--shelf-share, 5) - 1) * 3px); width: 38px; min-width: 38px; }
+  .queen-shelf__weight-read { font-size: 8px; }
+  .queen-home .queen-divider { width: 10px; min-width: 10px; margin: 0; }
+  .queen-divider::before { left: 4px; }
+}
+.queen-jug__safe, .queen-jug__holder { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.queen-home .queen-room--loft .queen-ledge-wrap .queen-jug .queen-jug__tilt { width: min(200px, 40cqw); height: 22px; min-height: 22px; margin: 0; padding: 0; accent-color: var(--ink); }
+/* Under 3D the drawn shelves yield to the boards; the posts, pins, weights and dividers stay drawn, they are the controls. */
+.queen-room[data-world="3d"] .queen-shelf .queen-ledge { border-bottom-color: transparent; }
+/* A short room (the office at 1100×800 gives the loft 474px): the wall keeps every shelf by letting the cats give first, then the names. */
+@container queen (max-height: 560px) {
+  .queen-rack { gap: 2px; }
+  .queen-room--loft .queen-ledge-wrap { gap: 6px; }
+  .queen-room--loft .queen-room__line { min-height: 0; padding-top: 4px; padding-bottom: 4px; font-size: 13.5px; max-width: 56ch; }
+  .queen-room--loft[data-shelves="2"] .queen-goal svg, .queen-room--loft[data-shelves="3"] .queen-goal svg { height: 44px; width: calc(30px * var(--goal-w, 1)); }
+  .queen-room--loft[data-shelves="2"] .queen-goal__name, .queen-room--loft[data-shelves="3"] .queen-goal__name { display: none; }
+  .queen-room--loft[data-shelves="2"] .queen-goal[aria-pressed="true"] .queen-goal__name, .queen-room--loft[data-shelves="3"] .queen-goal[aria-pressed="true"] .queen-goal__name { display: block; }
+  .queen-room--loft[data-shelves="2"] .queen-shelf__post, .queen-room--loft[data-shelves="3"] .queen-shelf__post { min-height: 46px; }
+  .queen-room--loft[data-shelves="2"] .queen-shelf__pin, .queen-room--loft[data-shelves="3"] .queen-shelf__pin { bottom: calc(2px + var(--shelf-mark, 1) * 40px); }
+  .queen-room--loft[data-shelves="2"] .queen-shelf .queen-goal::after, .queen-room--loft[data-shelves="3"] .queen-shelf .queen-goal::after { bottom: calc(8px + var(--shelf-mark, 1) * 32px); }
+  .queen-room--loft[data-shelves="2"] .queen-shelf .queen-ledge, .queen-room--loft[data-shelves="3"] .queen-shelf .queen-ledge { min-height: 44px; }
+  .queen-home .queen-room--loft .queen-ledge-wrap .queen-rack .queen-shelf .queen-shelf__down, .queen-home .queen-room--loft .queen-ledge-wrap .queen-rack .queen-rack__hang { min-height: 26px; height: 26px; padding: 1px 8px; }
+  .queen-shelf .queen-ledge { min-height: 44px; }
+  .queen-shelf__post { min-height: 58px; }
+  .queen-home .queen-shelf__pin { bottom: calc(2px + var(--shelf-mark, 1) * 52px); }
+  .queen-shelf .queen-goal::after { bottom: calc(24px + var(--shelf-mark, 1) * 44px); }
+}
 .queen-ledge { display: flex; align-items: flex-end; justify-content: center; flex-wrap: nowrap; gap: clamp(10px, 4cqw, 40px); padding: 0 20px; max-width: 100%; border-bottom: 2px solid var(--queen-clay-shadow); }
 .queen-goal { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 44px; border: 0; background: transparent; padding: 0 0 6px; cursor: pointer; transition: transform .5s var(--queen-ease); }
 .queen-goal svg { display: block; width: calc(48px * var(--goal-w, 1)); height: 74px; overflow: visible; }

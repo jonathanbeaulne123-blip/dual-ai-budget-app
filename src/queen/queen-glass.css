@@ -61,7 +61,7 @@
 /* The pane: one recipe, every chip. */
 .queen-home .queen-room__head, .queen-home .queen-room__line, .queen-home .queen-room__picks, .queen-home .queen-scrub,
 .queen-home .queen-room__acts, .queen-home .queen-hand, .queen-home .queen-stair, .queen-home .queen-room > .queen-go,
-.queen-home .queen-house-rail, .queen-home .queen-bank__button, .queen-home .queen-panel, .queen-home .queen-jar-card {
+.queen-home .queen-house-rail, .queen-home .queen-bank__button, .queen-home .queen-panel, .queen-home .queen-jar-card, .queen-home .queen-jug {
   background: var(--queen-glass);
   -webkit-backdrop-filter: var(--queen-glass-blur); backdrop-filter: var(--queen-glass-blur);
   border: 1px solid var(--queen-glass-edge);

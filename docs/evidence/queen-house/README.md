@@ -1,5 +1,7 @@
 # The kitty banks in the rooms, and the house on one axis — evidence
 
+Regenerated 2026-09-15 with the loft's rack (`docs/worksessions/2026-09-15-loft-rack.md`): the loft's one ledge is now the first shelf of a rack with a post and pin at its left and a brass weight at its right, the jug beneath it; the loft's own hand-work (hanging, dragging, the pour) is proved in [`../queen-loft/`](../queen-loft/README.md). The haul from inside the loft still reaches her: only a bank, a pin, a weight or a divider holds the hand.
+
 Regenerated 2026-09-14 after the merge with the cellar bill rail and the glass pass (`docs/worksessions/2026-09-14-queen-house-merge.md`): the cellar floor now opens on the bill rail, the house rail is one slim pane of three marks with names on hover/focus at ≥720, and every chip is glass.
 
 Chromium (SwiftShader), fictional Development books, the `composition=queen`
