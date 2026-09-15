@@ -150,6 +150,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const [selected, setSelected] = useState<string | null>(null);
   const [tentOpen, setTentOpen] = useState(false);
   const [live, setLive] = useState(false);
+  // Bumped when the browser takes the WebGL context away, so the world is rebuilt (the tent alone only sleeps it).
+  const [worldEpoch, setWorldEpoch] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [naming, setNaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
@@ -317,7 +319,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
             reducedMotion: reduced,
             quality: createWith.current.quality,
             idleMs: createWith.current.proofWorld?.idleMs,
-            onLost: () => { created?.dispose(); world.current = null; if (!dead) setLive(false); },
+            onLost: () => { created?.dispose(); world.current = null; if (!dead) { setLive(false); setWorldEpoch((n) => n + 1); } },
             onAnchors: applyAnchors,
             onLevel: (lv) => { if (!dead) setLevel(lv); },
             onPick: (id) => selectRef.current(id),
@@ -337,7 +339,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     return () => { dead = true; observer?.disconnect(); if (created) createWith.current.proofWorld?.onWorld?.(null); created?.dispose(); world.current = null; };
     // The world is created once per mount/theme gate (the tent only puts it to sleep); scene changes arrive below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wanted, reduced, applyAnchors]);
+  }, [wanted, reduced, applyAnchors, worldEpoch]);
 
   const lastShown = useRef(shown);
   useEffect(() => {

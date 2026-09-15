@@ -335,6 +335,11 @@ describe("pathWorld capability guard", () => {
     expect(hasPathWorldData(assembleHousehold(state.shared, state.personal.get(PARTNER)!))).toBe(false);
     await expect(prepareCommand(state, oldNaming, scope, () => {})).rejects.toThrow(/CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve your island/);
 
+    // A money-only command from an old client goes through while the island holds no rows.
+    const plain = { ...(await commandFromCapture(capturedIntent(postEntry(h, { date: "2026-09-12", type: "expense", amount: 5, accountId: "ACC-CHEQUING", subcategoryId: "SUB-FOOD-GROCERIES", createdBy: PARTNER, note: "Fictional tea", confirmDuplicate: true }).household)!, scope, crypto.randomUUID())) };
+    delete (plain as { pathWorldVersion?: 1 }).pathWorldVersion;
+    await expect(prepareCommand(state, plain, scope, () => {})).resolves.toBeTruthy();
+
     const accepted = await prepareCommand(state, naming, scope, () => {});
     expect(hasPathWorldData({ pathWorld: accepted.shared.pathWorld })).toBe(true);
     const next: AuthorityState = { sequence: accepted.receipt.sequence, shared: accepted.shared, personal: new Map([...state.personal, [PARTNER, accepted.personal]]) };

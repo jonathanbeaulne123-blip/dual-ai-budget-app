@@ -90,7 +90,7 @@ export function createPathWorld(host: HTMLElement, options: {
   const idleMs = options.idleMs ?? IDLE_MS;
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true });
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  renderer.shadowMap.type = THREE.PCFShadowMap;
   renderer.domElement.setAttribute("aria-hidden", "true");
   renderer.domElement.className = "path-world__canvas";
   renderer.domElement.style.touchAction = "none";

@@ -496,7 +496,7 @@ export const PATH_WORLD_COMMAND_KINDS = ["proposePathRecipe", "proposePathName",
 
 /** True once the household holds any Our Path world row; older clients must not write over it. */
 export function hasPathWorldData(household: Pick<Household, "pathWorld">): boolean {
-  return shapePathWorld(household.pathWorld).length > 0;
+  return Boolean(household.pathWorld?.length) && shapePathWorld(household.pathWorld).length > 0;
 }
 
 /**
