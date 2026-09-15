@@ -193,6 +193,7 @@ export function householdForHerculesContext(
     rituals: [],
     moves: [],
     wins: [],
+    pathWorld: [],
     // `householdForView` already removes every partner-owned Personal account.
     // Keep the requesting member's own Personal accounts here so their visible
     // Personal transactions still compile against a complete journal.

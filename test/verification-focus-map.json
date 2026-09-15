@@ -487,6 +487,22 @@
         "test/queen-house.test.ts"
       ],
       "reason": "The kitty jars: one dressing per purpose read by the sculpture and the flat twin with the crown kept in front; the kiln as the fill (bisque above the line, fired glaze below, to the crown when full); the rail's per-device scale; a press opens the jar's card with its facts; nothing posts, no money is read"
+    },
+    {
+      "sources": [
+        "src/core/pathWorld.ts",
+        "src/core/pathSignals.ts",
+        "src/path/grow.ts",
+        "src/path/OurPathWorld.tsx",
+        "src/path/world/pathWorld3d.ts",
+        "src/path/our-path-world.css"
+      ],
+      "tests": [
+        "test/our-path-world.test.ts",
+        "test/our-path-world-ui.test.ts",
+        "test/vision-v2-chapters.test.ts"
+      ],
+      "reason": "Our Path world (D-262): the shared pathWorld collection changes only on both members' agreement, converges across phones, stays out of every financial hash and Hercules context, and replays exactly; month scores read only shared facts; the page keeps every place reachable without WebGL and keeps today's Our Path mounted behind the tent"
     }
   ]
 }
