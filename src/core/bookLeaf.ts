@@ -144,3 +144,21 @@ export function floorRulings(count: number): number[] {
   const gap = (PLATE_VIEW.right - PLATE_VIEW.left) / count;
   return Array.from({ length: count + 1 }, (_, index) => PLATE_VIEW.left + index * gap);
 }
+
+/**
+ * A register raised as a strip. The ink points are the running line as the
+ * journal already wrote it, windowed to the newest `limit` so a long register
+ * still folds legibly; then one flat pencil panel per row the journal does not
+ * count, lying level with the last ink point — an uncounted row moves nothing,
+ * so it carries no height of its own. The boundary is where the ink stops.
+ * With no ink there is nothing for pencil to lie level with, so nothing lies.
+ */
+export function registerStrip(ink: readonly number[], pencilCount: number, limit = 24): { points: number[]; actualCount: number } {
+  const room = Math.max(2, Math.floor(limit));
+  const pencilWanted = Math.max(0, Math.floor(pencilCount));
+  const inkKept = Math.max(2, room - Math.min(pencilWanted, Math.floor(room / 2)));
+  const shown = ink.slice(Math.max(0, ink.length - inkKept));
+  const last = shown[shown.length - 1];
+  const pencil = last === undefined ? [] : Array.from({ length: Math.min(pencilWanted, Math.max(0, room - shown.length)) }, () => last);
+  return { points: [...shown, ...pencil], actualCount: shown.length };
+}

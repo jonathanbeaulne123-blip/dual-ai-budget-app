@@ -2,8 +2,16 @@ import { useEffect, useId, useMemo, useState, type KeyboardEvent } from "react";
 import {
   BOOK_GATE_X,
   PLATE_VIEW,
+  accountRegister,
+  accountRowAmount,
+  accountRowEdge,
+  accountRowFigure,
+  accountRowVerdict,
+  accountRows,
   bookHeadState,
+  booksPresentationFloor,
   bookmarkStance,
+  compileHousehold,
   concertinaCornerX,
   concertinaPanels,
   concertinaView,
@@ -23,16 +31,20 @@ import {
   phoneRail,
   pocketCards,
   railFor,
+  registerStrip,
   ribbonHeights,
   trackMarkHeight,
   trackPeakCents,
   trackX,
   wellColumns,
   wellWater,
+  type AccountRow,
+  type CompiledBooks,
   type DeskPlateModel,
   type FundWidgetId,
   type Household,
   type PlateFigure,
+  type RegisterRow,
 } from "./core/index.ts";
 import { FUND_WIDGET_CARD } from "./FundDrawer.tsx";
 import "./fund-standing-book.css";
@@ -46,6 +58,14 @@ import "./fund-standing-book.css";
  * on the floor flap; the running head carries the Level plate's glance and
  * edge, the plinth its footing and verdict. Every number is a plate's own.
  * Nested buttons are illegal, so the room sits beside the tablist, never in it.
+ * The head (top edge) carries one sticky per shared account — a separate
+ * group, never a tab — and picking one is a deep link into the accounts
+ * chapter: `onSelect("accounts")` fires and the spread becomes that account's
+ * books view, the register laid as ledger lines (counted rows in ink on the
+ * left wall, uncounted rows in pencil on the right), with a control that
+ * raises the running line into a pop-up concertina on the floor. Every figure
+ * is `accountRows`', `accountRegister`'s or `creditCardView`'s; the books are
+ * compiled from the same presentation floor the Books page compiles.
  * Display only: nothing here posts, settles, or moves a cent.
  */
 
@@ -57,6 +77,24 @@ const RIBBON_MID = 40;
 const BAND_Y = 20;
 const BAND_HEIGHT = 10;
 const TRACK_BASELINE = 44;
+const REGISTER_ROOM = 28;
+
+/** One account's lines: the counted rows as the Books page prints them, and the uncounted rows beside them. */
+type AccountLines = { ink: RegisterRow[]; pencil: RegisterRow[] };
+
+/** Read the register twice as the journal offers it: the counted register (the Books page's own reading) and the rows it leaves out. No sum, no second running. */
+function accountLines(books: CompiledBooks | null, accountId: string): AccountLines {
+  if (!books) return { ink: [], pencil: [] };
+  return {
+    ink: accountRegister(books, accountId),
+    pencil: accountRegister(books, accountId, { recognizedOnly: false }).filter((row) => !row.recognized),
+  };
+}
+
+/** An account with no line in the journal shows an honest empty, never a zero figure. */
+function accountPosted(lines: AccountLines | undefined): boolean {
+  return Boolean(lines && (lines.ink.length > 0 || lines.pencil.length > 0));
+}
 
 function motionReduced(): boolean {
   return (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches)
@@ -276,6 +314,117 @@ export function BookFigureView({ figure }: { figure: PlateFigure }) {
   }
 }
 
+/** A ledger line's amount cell: the journal's own debit or credit, blank where the journal wrote none. */
+function amountCell(cents: number): string {
+  return cents ? formatCad(cents) : "";
+}
+
+/** The register laid as ledger lines. Ink rows carry the running figure the Books page prints; pencil rows are the journal's uncounted lines and carry none. */
+function LedgerLines({ rows, tone, name }: { rows: RegisterRow[]; tone: "ink" | "pencil"; name: string }) {
+  if (!rows.length) return null;
+  return (
+    <div className={`fund-book-lines is-${tone}`} tabIndex={0} role="region" aria-label={tone === "ink" ? `${name}, counted lines` : `${name}, lines not counted`}>
+      <table className="fund-book-ledger">
+        <thead>
+          <tr>
+            <th scope="col">Date</th>
+            <th scope="col">Memo</th>
+            <th scope="col" className="num">Debit</th>
+            <th scope="col" className="num">Credit</th>
+            <th scope="col" className="num">{tone === "ink" ? "Balance" : "Counted"}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={`${row.entryId}-${index}`} className={`fund-book-line is-${tone}`} data-ledger-row={tone}>
+              <td>{formatDateLabel(row.date)}</td>
+              <td className="fund-book-line-memo">{row.memo}</td>
+              <td className="num">{amountCell(row.debitCents)}</td>
+              <td className="num">{amountCell(row.creditCents)}</td>
+              <td className="num">{tone === "ink" ? formatCad(row.runningCents) : "excluded"}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/**
+ * The pop-up: the register's running line raised as a concertina on the
+ * floor, folded where the counted rows stop, with the ruled band beneath it
+ * for a card. A real button raises and lays it; Escape lays it while the
+ * control has focus and goes no further, so the ledge's own Escape is not
+ * spent. Under reduced motion it is already raised and nothing travels.
+ */
+function RegisterPopup({ row, lines, raised, onRaise }: { row: AccountRow; lines: AccountLines; raised: boolean; onRaise: (raised: boolean) => void }) {
+  const popupId = useId();
+  const strip = registerStrip(lines.ink.map((line) => line.runningCents), lines.pencil.length);
+  const figure = accountRowFigure(row);
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "Escape" || !raised) return;
+    event.preventDefault();
+    event.stopPropagation();
+    onRaise(false);
+  };
+  return (
+    <div className="fund-book-popup" data-fund-book-popup={raised ? "raised" : "flat"} onKeyDown={onKeyDown}>
+      <button
+        type="button"
+        className="fund-book-raise"
+        aria-expanded={raised}
+        aria-controls={popupId}
+        onClick={() => onRaise(!raised)}
+      >
+        {raised ? "Lay the lines flat" : "Raise the lines"}
+      </button>
+      <div id={popupId} className="fund-book-popup-stand" hidden={!raised}>
+        {strip.points.length >= 2
+          ? <Concertina figure={{ primitive: "spark", points: strip.points, actualCount: strip.actualCount, room: REGISTER_ROOM }} />
+          : <p className="fund-book-floor-note">One line is not a walk yet.</p>}
+        {figure.primitive === "gauge" ? <FloorBand figure={figure} /> : null}
+        <p className="fund-book-popup-line">
+          {lines.pencil.length
+            ? `${lines.ink.length} counted lines stand in ink; ${lines.pencil.length} not counted lie flat in pencil.`
+            : `${lines.ink.length} counted lines stand in ink. Nothing lies in pencil.`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** The head: one sticky per shared account, name and figure as the accounts plate says them. A separate control group — never a tab. */
+function Stickies({ rows, lines, focusedId, onPick }: { rows: AccountRow[]; lines: ReadonlyMap<string, AccountLines>; focusedId: string | null; onPick: (accountId: string) => void }) {
+  if (!rows.length) return null;
+  return (
+    <div className="fund-book-head-edge" role="group" aria-label="Accounts linked to the Fund">
+      {rows.map((row) => {
+        const edge = accountRowEdge(row);
+        const amount = accountPosted(lines.get(row.accountId)) ? accountRowAmount(row) : "No postings yet";
+        const pressed = focusedId === row.accountId;
+        return (
+          <button
+            type="button"
+            key={row.accountId}
+            className={`fund-book-sticky edge-${edge}${row.isFundCard ? " is-fund-card" : ""}`}
+            data-account-id={row.accountId}
+            data-sticky-state={edge}
+            data-fund-card={row.isFundCard ? "true" : undefined}
+            aria-pressed={pressed}
+            aria-label={`${row.accessibilityName}. ${amount}.${row.isFundCard ? " The Fund's card." : ""}${edge === "attention" ? " Needs a look." : ""}`}
+            onClick={() => onPick(row.accountId)}
+          >
+            <span className="fund-book-sticky-name">{row.name}</span>
+            {row.detailLabel ? <span className="fund-book-sticky-detail">{row.detailLabel}</span> : null}
+            <strong className="fund-book-sticky-figure">{amount}</strong>
+            {row.isFundCard ? <span className="fund-book-sticky-fund">The Fund's card</span> : null}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 /** The running head across a wall top: the Level's glance and its edge state. Which halves print depends on the wall. */
 function RunningHead({ level, month, showLevel, showState }: { level: DeskPlateModel | null; month: string; showLevel: boolean; showState: boolean }) {
   return (
@@ -307,6 +456,19 @@ export function FundStandingBook({ household, memberId, today, presentation, sel
   const level = models.find((plate) => plate.id === "fund-level") ?? null;
   const shown = byId.get(selected) ?? null;
   const phone = presentation === "phone";
+  // The stickies: the accounts plate's own rows, shared only, by name.
+  const rows = useMemo(() => activeMember ? accountRows(household, memberId, today) : [], [activeMember, household, memberId, today]);
+  // The books view reads the same floor the Books page compiles, so the lines agree with the household table.
+  const books = useMemo<CompiledBooks | null>(() => {
+    if (!activeMember || !rows.length) return null;
+    try { return compileHousehold(booksPresentationFloor(household, memberId, "household")); } catch { return null; }
+  }, [activeMember, rows.length, household, memberId]);
+  const linesById = useMemo(() => new Map(rows.map((row) => [row.accountId, accountLines(books, row.accountId)])), [rows, books]);
+  // Component state only: which sticky is picked. Never persisted — the sticky is a deep link, not a setting.
+  const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
+  const focusedRow = selected === "accounts" && focusedAccountId ? rows.find((row) => row.accountId === focusedAccountId) ?? null : null;
+  // Reduced motion: the pop-up is already raised and nothing travels. Otherwise the lines lie flat until raised.
+  const [raised, setRaised] = useState(() => motionReduced());
   // Reduced motion: the book is already open and nothing travels. Otherwise the
   // first paint is the shut book on the hearth and the next frame opens it.
   const [open, setOpen] = useState(() => motionReduced());
@@ -331,6 +493,13 @@ export function FundStandingBook({ household, memberId, today, presentation, sel
       : (index + (["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 1) + tabs.length) % tabs.length;
     event.preventDefault(); tabs[next]?.focus();
   };
+  const pickSticky = (accountId: string) => {
+    setFocusedAccountId((current) => current === accountId && selected === "accounts" ? null : accountId);
+    onSelect("accounts");
+    if (!open) setOpen(true);
+  };
+  const focusedLines = focusedRow ? linesById.get(focusedRow.accountId) ?? { ink: [], pencil: [] } : null;
+  const focusedPosted = accountPosted(focusedLines ?? undefined);
   const month = formatMonthLabel(monthKeyFromDateKey(today));
   const flush = foreEdgeIsFlush(slots.flatMap((id) => { const plate = byId.get(id); return plate ? [plate.edge] : []; }));
   const leftHidden = phone && face !== "left" ? true : undefined;
@@ -339,7 +508,10 @@ export function FundStandingBook({ household, memberId, today, presentation, sel
     data-fund-book-open={open ? "true" : "false"}
     data-fund-book-edge={flush ? "flush" : "proud"}
     data-fund-book-state={level?.edge ?? "quiet"}
-    data-fund-book-face={face}>
+    data-fund-book-face={face}
+    data-fund-book-spread={focusedRow ? "account" : "chapter"}
+    data-fund-book-account={focusedRow?.accountId}>
+    <Stickies rows={rows} lines={linesById} focusedId={focusedRow?.accountId ?? null} onPick={pickSticky} />
     <div className="fund-book-cover" aria-hidden="true">
       <span className="fund-book-plate"><b>The Fund</b><small>{month}</small></span>
       <span className="fund-book-dogear" />
@@ -350,35 +522,74 @@ export function FundStandingBook({ household, memberId, today, presentation, sel
       <div className="fund-book-leaf is-left" hidden={leftHidden}>
         <RunningHead level={level} month={month} showLevel showState={phone} />
         <span className="fund-book-today" aria-hidden="true">today · {formatDateLabel(today)}</span>
-        <div className="fund-book-wall is-ink">
-          <p className="fund-book-kicker">Left wall · what happened</p>
-          <h3 className="fund-book-chapter">{shown?.kicker ?? FUND_WIDGET_CARD[selected].name}</h3>
-          {shown ? <p className="fund-book-figure">{shown.glance}</p> : null}
-          <p className="fund-book-verdict">{shown?.verdict ?? FUND_WIDGET_CARD[selected].line}</p>
-        </div>
+        {focusedRow && focusedLines ? (
+          <div className="fund-book-wall is-ink is-account">
+            <p className="fund-book-kicker">Left wall · what the journal counts</p>
+            <h3 className="fund-book-chapter">{focusedRow.name}{focusedRow.detailLabel ? ` · ${focusedRow.detailLabel}` : ""}</h3>
+            <p className="fund-book-figure">{focusedPosted ? accountRowAmount(focusedRow) : "No postings yet"}</p>
+            <p className="fund-book-verdict">{focusedPosted ? accountRowVerdict(focusedRow) : `${focusedRow.name} has no line in the journal yet.`}</p>
+            {focusedLines.ink.length
+              ? <LedgerLines rows={focusedLines.ink} tone="ink" name={focusedRow.accessibilityName} />
+              : <p className="fund-book-pencil-note">No postings yet.</p>}
+          </div>
+        ) : (
+          <div className="fund-book-wall is-ink">
+            <p className="fund-book-kicker">Left wall · what happened</p>
+            <h3 className="fund-book-chapter">{shown?.kicker ?? FUND_WIDGET_CARD[selected].name}</h3>
+            {shown ? <p className="fund-book-figure">{shown.glance}</p> : null}
+            <p className="fund-book-verdict">{shown?.verdict ?? FUND_WIDGET_CARD[selected].line}</p>
+          </div>
+        )}
       </div>
       <div className="fund-book-leaf is-right" hidden={rightHidden}>
         <RunningHead level={level} month={month} showLevel={phone} showState />
         <span className="fund-book-today" aria-hidden="true">today · {formatDateLabel(today)}</span>
-        <div className="fund-book-wall is-pencil">
-          <p className="fund-book-kicker">Right wall · what is coming</p>
-          <p className="fund-book-pencil-note">{shown?.footing ?? "Nothing is pencilled here yet."}</p>
-          {shown?.empty ? <p className="fund-book-pencil-note">{shown.empty}</p> : null}
-          {onOpenCabinet && shown ? (
-            <button type="button" className="fund-book-handle" onClick={() => onOpenCabinet(shown)} aria-label={`Open the ${shown.cabinetName} cabinet`}>Cabinet</button>
-          ) : null}
-        </div>
+        {focusedRow && focusedLines ? (
+          <div className="fund-book-wall is-pencil is-account">
+            <p className="fund-book-kicker">Right wall · what the journal leaves out</p>
+            {focusedLines.pencil.length
+              ? <LedgerLines rows={focusedLines.pencil} tone="pencil" name={focusedRow.accessibilityName} />
+              : <p className="fund-book-pencil-note">{focusedPosted ? "Every line on this account is counted. Nothing lies in pencil." : "Nothing lies in pencil either."}</p>}
+            {onOpenCabinet && shown ? (
+              <button type="button" className="fund-book-handle" onClick={() => onOpenCabinet(shown)} aria-label={`Open the ${shown.cabinetName} cabinet`}>Cabinet</button>
+            ) : null}
+          </div>
+        ) : (
+          <div className="fund-book-wall is-pencil">
+            <p className="fund-book-kicker">Right wall · what is coming</p>
+            <p className="fund-book-pencil-note">{shown?.footing ?? "Nothing is pencilled here yet."}</p>
+            {shown?.empty ? <p className="fund-book-pencil-note">{shown.empty}</p> : null}
+            {onOpenCabinet && shown ? (
+              <button type="button" className="fund-book-handle" onClick={() => onOpenCabinet(shown)} aria-label={`Open the ${shown.cabinetName} cabinet`}>Cabinet</button>
+            ) : null}
+          </div>
+        )}
       </div>
       <div className="fund-book-floor">
-        <div className="fund-book-stand" data-plate-primitive={shown?.figure.primitive}>
-          {shown && !shown.empty
-            ? <BookFigureView figure={shown.figure} />
-            : <p className="fund-book-floor-note">{shown?.empty ?? "The floor is bare on this chapter."}</p>}
-        </div>
-        <div className="fund-book-plinth">
-          <span className="fund-book-plinth-footing">{level ? level.footing : "No Fund on the hearth yet."}</span>
-          <span className="fund-book-plinth-verdict">{level ? level.verdict : ""}</span>
-        </div>
+        {focusedRow && focusedLines ? (
+          <div className="fund-book-stand is-account" data-plate-primitive={focusedPosted ? "spark" : undefined}>
+            {focusedPosted
+              ? <RegisterPopup row={focusedRow} lines={focusedLines} raised={raised} onRaise={setRaised} />
+              : <p className="fund-book-floor-note">No postings yet. Nothing to raise.</p>}
+          </div>
+        ) : (
+          <div className="fund-book-stand" data-plate-primitive={shown?.figure.primitive}>
+            {shown && !shown.empty
+              ? <BookFigureView figure={shown.figure} />
+              : <p className="fund-book-floor-note">{shown?.empty ?? "The floor is bare on this chapter."}</p>}
+          </div>
+        )}
+        {focusedRow ? (
+          <div className="fund-book-plinth is-account">
+            <span className="fund-book-plinth-footing">{focusedRow.accessibilityName}{focusedRow.isFundCard ? " · the Fund's card" : ""}</span>
+            <span className="fund-book-plinth-verdict">{focusedPosted ? accountRowVerdict(focusedRow) : "No postings yet."}</span>
+          </div>
+        ) : (
+          <div className="fund-book-plinth">
+            <span className="fund-book-plinth-footing">{level ? level.footing : "No Fund on the hearth yet."}</span>
+            <span className="fund-book-plinth-verdict">{level ? level.verdict : ""}</span>
+          </div>
+        )}
       </div>
       </div>
     </div>

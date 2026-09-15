@@ -25,6 +25,10 @@
   --fund-book-shadow: color-mix(in srgb, var(--ink) 28%, transparent);
   --fund-book-shadow-soft: color-mix(in srgb, var(--ink) 12%, transparent);
   --fund-book-rulings: repeating-linear-gradient(180deg, transparent 0 21px, var(--fund-book-feint) 21px 22px);
+  --fund-book-sticky-bg: color-mix(in srgb, var(--gold) 26%, var(--paper));
+  --fund-book-sticky-fg: var(--ink);
+  --fund-book-sticky-edge: color-mix(in srgb, var(--gold) 60%, var(--ink));
+  --fund-book-sticky-on: var(--card);
   --fund-book-half: 26deg;
   --fund-book-tilt: 42deg;
   --fund-book-fit: .9;
@@ -90,6 +94,92 @@
   height: 14px;
   background: linear-gradient(225deg, var(--fund-book-stage) 50%, var(--fund-book-paper-deep) 50%);
 }
+
+/* ---- the head: one sticky per shared account on the top edge. A separate group, never a tab ---- */
+.fund-book-head-edge {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 6px;
+  min-width: 0;
+  padding: 4px 22px 0;
+  margin-bottom: -5px;
+}
+.fund-book .fund-book-sticky, :root[data-theme] .fund-book .fund-book-sticky {
+  position: relative;
+  min-height: 44px;
+  min-width: 0;
+  max-width: 160px;
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 5px 10px 9px;
+  border: 0;
+  border-radius: 3px 3px 0 0;
+  background: var(--fund-book-sticky-bg);
+  color: var(--fund-book-sticky-fg);
+  box-shadow: inset 0 3px 0 var(--fund-book-sticky-edge), 1px -2px 5px var(--fund-book-shadow-soft);
+  text-align: left;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  cursor: pointer;
+}
+.fund-book-sticky:nth-child(odd) { transform: rotate(-.8deg); }
+.fund-book-sticky:nth-child(even) { transform: rotate(.6deg); }
+.fund-book-sticky-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fund-book-sticky-detail { font-size: 8px; opacity: .8; }
+.fund-book-sticky-figure {
+  font-family: var(--theme-display, var(--display));
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.fund-book-sticky-fund { font-size: 8px; letter-spacing: .1em; color: var(--fund-book-rule); }
+/* state is the same test the accounts plate makes: a card past the mark, or a non-card below zero */
+.fund-book .fund-book-sticky[data-sticky-state="attention"], :root[data-theme] .fund-book .fund-book-sticky[data-sticky-state="attention"] {
+  box-shadow: inset 0 3px 0 var(--copper), 1px -2px 5px var(--fund-book-shadow-soft);
+}
+.fund-book-sticky[data-sticky-state="attention"]::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(225deg, var(--fund-book-stage) 50%, var(--fund-book-paper-deep) 50%);
+}
+/* the Fund's own card wears the gilt: the one sticky that belongs to the book */
+.fund-book .fund-book-sticky.is-fund-card, :root[data-theme] .fund-book .fund-book-sticky.is-fund-card {
+  background: linear-gradient(180deg, var(--fund-book-sticky-bg), color-mix(in srgb, var(--fund-book-sticky-bg) 80%, var(--fund-book-gilt)));
+  padding-left: 18px;
+}
+.fund-book-sticky.is-fund-card::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 12px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--fund-book-gilt);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fund-book-gilt) 60%, var(--ink));
+}
+.fund-book .fund-book-sticky[aria-pressed="true"], :root[data-theme] .fund-book .fund-book-sticky[aria-pressed="true"] {
+  background: var(--fund-book-sticky-on);
+  color: var(--fund-book-ink);
+  box-shadow: inset 0 3px 0 var(--fund-book-rule), inset 0 0 0 1px var(--fund-book-rule), 1px -2px 5px var(--fund-book-shadow-soft);
+  transform: translateY(-3px);
+}
+.fund-book-sticky:focus-visible { outline: 3px solid var(--fund-book-rule); outline-offset: 2px; }
 
 /* ---- the cover, shown when shut ---- */
 .fund-book-cover {
@@ -314,6 +404,59 @@
 .fund-book-caption.is-figure { fill: var(--fund-book-ink); }
 .fund-book-caption.is-down { fill: var(--copper); }
 
+/* the books view: the register laid as ledger lines on the wall. Ink lines carry the running figure; pencil lines carry none. */
+.fund-book-lines { margin-top: 10px; max-height: 176px; overflow: auto; border-top: 1px solid var(--line); background: var(--fund-book-paper); box-shadow: 0 0 0 1px var(--fund-book-feint); scrollbar-width: thin; }
+.fund-book-lines:focus-visible { outline: 3px solid var(--fund-book-rule); outline-offset: 2px; }
+.fund-book-ledger { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 10px; line-height: 1.3; font-variant-numeric: tabular-nums; }
+.fund-book-ledger th {
+  position: sticky;
+  top: 0;
+  padding: 4px 4px 3px;
+  background: var(--fund-book-paper);
+  text-align: left;
+  font-weight: 400;
+  font-size: 8.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--fund-book-pencil);
+  border-bottom: 1px solid var(--line);
+}
+.fund-book-ledger td { padding: 3px 4px; border-bottom: 1px solid var(--fund-book-feint); vertical-align: top; white-space: nowrap; }
+.fund-book-ledger .num { text-align: right; }
+.fund-book-ledger .fund-book-line-memo { white-space: normal; overflow-wrap: anywhere; min-width: 80px; }
+.fund-book-line.is-ink td { color: var(--fund-book-ink); }
+.fund-book-line.is-pencil td { color: var(--fund-book-pencil); font-family: var(--theme-display, var(--display)); font-style: italic; font-size: 11px; border-bottom-style: dashed; }
+.fund-book-wall.is-account .fund-book-figure { font-size: 20px; }
+/* an account spread carries taller walls and a taller stand, so the floor tilts less and the fold sits a touch smaller: nothing projects over the lines or past the room */
+.fund-book.is-desk[data-fund-book-spread="account"] { --fund-book-tilt: 22deg; --fund-book-fit: .86; }
+.fund-book.is-desk[data-fund-book-spread="account"] .fund-book-stand { margin-top: 14px; }
+.fund-book.is-desk[data-fund-book-spread="account"] .fund-book-floor { padding-bottom: 62px; }
+
+/* the pop-up: the running line raised off the floor by a real button, laid flat again by the same one */
+.fund-book-popup { display: grid; gap: 8px; justify-items: center; perspective: 700px; }
+.fund-book-raise {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  background: var(--fund-book-paper);
+  color: var(--fund-book-ink);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.fund-book-raise[aria-expanded="true"] { background: var(--fund-book-ink); color: var(--paper); border-color: var(--fund-book-ink); }
+.fund-book-raise:focus-visible { outline: 3px solid var(--fund-book-rule); outline-offset: 2px; }
+.fund-book-popup-stand { width: 100%; display: grid; gap: 4px; transform-origin: 50% 100%; }
+.fund-book-popup-stand[hidden] { display: none; }
+.fund-book-popup-line { margin: 0; font-family: var(--theme-display, var(--display)); font-style: italic; font-weight: 300; font-size: 11.5px; color: var(--fund-book-pencil); text-align: center; }
+@keyframes fund-book-raise {
+  from { transform: rotateX(-86deg); opacity: .35; }
+  to { transform: none; opacity: 1; }
+}
+
 /* the gate: fixed. the strip: moves. */
 .fund-book-gate-room { display: grid; gap: 6px; }
 .fund-book-gate-view { position: relative; overflow: hidden; border-radius: 3px; background: var(--fund-book-paper-shade); box-shadow: inset 0 0 0 1px var(--line); }
@@ -369,17 +512,19 @@
 /* ---- desk: the full room, the fore-edge a column at its right ---- */
 .fund-book.is-desk {
   grid-template-columns: minmax(0, 1fr) 150px;
-  grid-template-areas: "room edge" "clasp edge";
+  grid-template-areas: "head edge" "room edge" "clasp edge";
   align-items: start;
 }
+.fund-book.is-desk .fund-book-head-edge { grid-area: head; align-self: end; }
 .fund-book.is-desk .fund-book-room { grid-area: room; }
 .fund-book.is-desk .fund-book-edge { grid-area: edge; flex-direction: column; padding-top: 34px; }
 .fund-book.is-desk .fund-book-mark, :root[data-theme] .fund-book.is-desk .fund-book-mark { width: calc(120px + var(--fund-book-reach) * 14px); margin-left: -6px; }
 .fund-book.is-desk .fund-book-clasp { grid-area: clasp; }
-.fund-book.is-desk .fund-book-cover { right: 150px; }
+.fund-book.is-desk .fund-book-cover { grid-area: room; right: 0; }
 
 /* ---- phone: glance plus one tap. One wall and the floor, today a rule down the leading edge ---- */
-.fund-book.is-phone { grid-template-columns: minmax(0, 1fr); grid-template-areas: "edge" "room" "cross" "clasp"; }
+.fund-book.is-phone { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "edge" "room" "cross" "clasp"; }
+.fund-book.is-phone .fund-book-head-edge { grid-area: head; }
 .fund-book.is-phone .fund-book-edge { grid-area: edge; }
 .fund-book.is-phone .fund-book-room { grid-area: room; }
 .fund-book.is-phone .fund-book-cross { grid-area: cross; }
@@ -414,9 +559,31 @@
   .fund-book.is-desk .fund-book-head-month { display: none; }
 }
 
+/* narrow: the ledger tightens so the running figure stays on the page; the memo wraps, the numbers do not */
+@media (max-width: 719px) {
+  .fund-book-ledger { font-size: 8.5px; }
+  .fund-book-ledger th { font-size: 7.5px; letter-spacing: .06em; padding: 3px 2px; }
+  .fund-book-ledger td { padding: 3px 2px; }
+  .fund-book-ledger .fund-book-line-memo { min-width: 56px; }
+  .fund-book-line.is-pencil td { font-size: 10px; }
+  .fund-book-wall.is-account { padding-right: 10px; }
+}
+/* the narrowest phones: the date may break its year onto a second line so the running figure never leaves the page */
+@media (max-width: 479px) {
+  .fund-book-ledger { font-size: 8px; }
+  .fund-book-ledger td:first-child { white-space: normal; min-width: 40px; }
+  .fund-book-ledger .fund-book-line-memo { min-width: 44px; }
+  .fund-book.is-phone .fund-book-leaf .fund-book-wall.is-account { padding-left: 14px; padding-right: 14px; }
+}
+
+/* the phone's head is a strip: one row, scrolls sideways, every sticky still a 44px button */
+.fund-book.is-phone .fund-book-head-edge { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding: 6px 4px 2px; margin-bottom: 0; }
+.fund-book.is-phone .fund-book-sticky, :root[data-theme] .fund-book.is-phone .fund-book-sticky { max-width: 140px; }
+
 /* below 720 even a desk-marked book folds to one column, so nothing scrolls sideways */
 @media (max-width: 719px) {
-  .fund-book.is-desk { grid-template-columns: minmax(0, 1fr); grid-template-areas: "edge" "room" "clasp"; }
+  .fund-book.is-desk { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "edge" "room" "clasp"; }
+  .fund-book.is-desk .fund-book-head-edge { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding: 6px 4px 2px; margin-bottom: 0; }
   .fund-book.is-desk .fund-book-edge { flex-direction: row; flex-wrap: wrap; padding-top: 0; }
   .fund-book.is-desk .fund-book-mark, :root[data-theme] .fund-book.is-desk .fund-book-mark { width: auto; margin-left: 0; }
   .fund-book.is-desk .fund-book-room { perspective: none; }
@@ -424,7 +591,7 @@
   .fund-book.is-desk[data-fund-book-open="true"] .fund-book-leaf.is-left, .fund-book.is-desk[data-fund-book-open="true"] .fund-book-leaf.is-right,
   .fund-book.is-desk[data-fund-book-open="true"] .fund-book-floor, .fund-book.is-desk[data-fund-book-open="true"] .fund-book-stand, .fund-book.is-desk[data-fund-book-open="true"] .fund-book-plinth { transform: none; }
   .fund-book.is-desk .fund-book-leaf.is-right .fund-book-today { display: block; }
-  .fund-book.is-desk .fund-book-cover { right: 0; }
+  .fund-book.is-desk .fund-book-cover { grid-area: room; }
 }
 
 /* ---- three dressings: same anatomy, different paper, ink and joinery ---- */
@@ -440,6 +607,10 @@
   z-index: 1;
 }
 :root[data-theme="classic"] .fund-book .fund-book-mark { background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 6%, transparent) 0 1px, transparent 1px 3px), var(--fund-book-mark-bg); }
+/* Classic: gilt-edged cloth index tabs, laid straight */
+:root[data-theme="classic"] .fund-book .fund-book-sticky { transform: none; background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--ink) 5%, transparent) 0 1px, transparent 1px 3px), var(--fund-book-sticky-bg); }
+:root[data-theme="classic"] .fund-book .fund-book-sticky[aria-pressed="true"] { transform: translateY(-3px); }
+:root[data-theme="classic"] .fund-book-ledger th { border-bottom: 1px solid var(--fund-book-gilt); }
 
 /* Taylor's Scrapbook: cloud light, rings at the corner, washi and photo-corner bookmarks, glassine pockets. */
 :root[data-theme="taylor"] .fund-book {
@@ -454,7 +625,15 @@
   --fund-book-mark-on: color-mix(in srgb, var(--theme-accent, var(--copper)) 22%, var(--paper));
   --fund-book-pocket: color-mix(in srgb, white 55%, transparent);
   --fund-book-stage: linear-gradient(180deg, color-mix(in srgb, var(--paper-2) 82%, var(--theme-accent, var(--copper))), color-mix(in srgb, var(--paper-2) 84%, var(--theme-second, var(--paper-2))));
+  --fund-book-sticky-bg: color-mix(in srgb, var(--theme-accent, var(--copper)) 24%, white);
+  --fund-book-sticky-edge: color-mix(in srgb, var(--theme-accent, var(--copper)) 50%, white);
+  --fund-book-sticky-on: color-mix(in srgb, white 70%, var(--paper));
 }
+/* Taylor: washi tabs, torn at the top, a little askew */
+:root[data-theme="taylor"] .fund-book .fund-book-sticky { border-top: 2px dashed color-mix(in srgb, var(--theme-accent, var(--copper)) 45%, white); box-shadow: 1px 2px 4px var(--fund-book-shadow-soft); opacity: .96; }
+:root[data-theme="taylor"] .fund-book .fund-book-sticky[data-sticky-state="attention"] { border-top-color: var(--copper); border-top-style: solid; }
+:root[data-theme="taylor"] .fund-book-sticky[data-sticky-state="attention"]::after { display: none; }
+:root[data-theme="taylor"] .fund-book-raise { border-radius: 14px; }
 :root[data-theme="taylor"] .fund-book .fund-book-mark { box-shadow: 2px 3px 6px var(--fund-book-shadow-soft); }
 :root[data-theme="taylor"] .fund-book .fund-book-mark[aria-selected="true"] { color: var(--ink); }
 :root[data-theme="taylor"] .fund-book-leaf::before, :root[data-theme="taylor"] .fund-book-leaf::after {
@@ -498,7 +677,17 @@
   --fund-book-mark-on: color-mix(in srgb, var(--ink) 55%, var(--pine));
   --fund-book-pocket: color-mix(in srgb, var(--ink) 55%, var(--pine));
   --fund-book-stage: linear-gradient(180deg, color-mix(in srgb, var(--paper-2) 72%, var(--pine)) 0 60%, color-mix(in srgb, var(--paper-2) 70%, var(--ink)) 60% 100%);
+  --fund-book-sticky-bg: color-mix(in srgb, var(--paper-2) 80%, var(--pine));
+  --fund-book-sticky-fg: var(--fund-book-ink);
+  --fund-book-sticky-edge: var(--fund-book-pencil);
+  --fund-book-sticky-on: var(--paper);
 }
+/* Newfoundland: strips of masking tape written in pencil, the Fund's card tied with string */
+:root[data-theme="newfoundland"] .fund-book .fund-book-sticky { font-family: var(--theme-hand, var(--display)); font-style: italic; font-size: 12px; text-transform: none; letter-spacing: 0; border-radius: 1px; box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fund-book-pencil) 45%, transparent), 1px -2px 5px var(--fund-book-shadow-soft); }
+:root[data-theme="newfoundland"] .fund-book .fund-book-sticky-figure { font-family: var(--mono); font-style: normal; font-size: 12px; }
+:root[data-theme="newfoundland"] .fund-book .fund-book-sticky.is-fund-card { background: var(--fund-book-sticky-bg); box-shadow: inset 0 0 0 1px var(--fund-book-pencil), 1px -2px 5px var(--fund-book-shadow-soft); }
+:root[data-theme="newfoundland"] .fund-book-sticky.is-fund-card::before { background: var(--paper); box-shadow: inset 0 0 0 1px var(--fund-book-pencil); }
+:root[data-theme="newfoundland"] .fund-book-line.is-pencil td { font-family: var(--theme-hand, var(--display)); }
 :root[data-theme="newfoundland"] .fund-book .fund-book-mark { font-family: var(--theme-hand, var(--display)); font-style: italic; font-size: 13px; text-transform: none; letter-spacing: 0; box-shadow: 2px 3px 6px var(--fund-book-shadow-soft); }
 :root[data-theme="newfoundland"] .fund-book-mark::before {
   content: "";
@@ -544,6 +733,8 @@
   .fund-book-mark { transition: width .3s var(--fund-book-ease), transform .3s var(--fund-book-ease), background .2s; }
   .fund-book-strip { transition: transform .35s var(--fund-book-ease); }
   .fund-book-dogear { transition: opacity .3s; }
+  .fund-book-sticky { transition: transform .25s var(--fund-book-ease), background .2s, box-shadow .2s; }
+  .fund-book-popup[data-fund-book-popup="raised"] .fund-book-popup-stand { animation: fund-book-raise .6s var(--fund-book-ease) both; }
 }
 @media (prefers-reduced-motion: reduce) {
   .fund-book *, .fund-book *::before, .fund-book *::after { transition: none !important; animation: none !important; }
@@ -551,8 +742,9 @@
 :root[data-motion="reduced"] .fund-book *, :root[data-motion="reduced"] .fund-book *::before, :root[data-motion="reduced"] .fund-book *::after { transition: none !important; animation: none !important; }
 
 @media (forced-colors: active) {
-  .fund-book-mark, .fund-book-gate-mark, .fund-book-gate-step, .fund-book-cross-button, .fund-book-clasp, .fund-book-handle { border: 1px solid ButtonText; }
-  .fund-book-mark[aria-selected="true"] { outline: 2px solid Highlight; }
+  .fund-book-mark, .fund-book-gate-mark, .fund-book-gate-step, .fund-book-cross-button, .fund-book-clasp, .fund-book-handle, .fund-book-sticky, .fund-book-raise { border: 1px solid ButtonText; }
+  .fund-book-mark[aria-selected="true"], .fund-book-sticky[aria-pressed="true"] { outline: 2px solid Highlight; }
+  .fund-book-ledger td, .fund-book-ledger th { border-bottom: 1px solid CanvasText; }
   .fund-book-ink { stroke: CanvasText; }
   .fund-book-panel.is-a, .fund-book-panel.is-b { fill: Canvas; stroke: CanvasText; }
   .fund-book-water, .fund-book-band-fill, .fund-book-ribbon.is-up, .fund-book-ribbon.is-down { fill: CanvasText; forced-color-adjust: none; }

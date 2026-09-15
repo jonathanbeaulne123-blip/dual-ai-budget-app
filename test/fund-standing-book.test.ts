@@ -1,8 +1,12 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  ACCOUNT_CARD_MARK,
   BOOK_GATE_X,
   PLATE_VIEW,
+  accountRowEdge,
+  accountRowFigure,
+  accountRows,
   bookHeadState,
   bookmarkStance,
   concertinaCornerX,
@@ -15,6 +19,7 @@ import {
   gateIndex,
   gateShift,
   pocketCards,
+  registerStrip,
   ribbonHeights,
   seedDemoHousehold,
   sparkHeights,
@@ -22,6 +27,7 @@ import {
   trackX,
   wellColumns,
   wellWater,
+  type AccountRow,
   type PlateEdge,
 } from "../src/core/index.ts";
 
@@ -170,6 +176,61 @@ describe("the book's paper geometry", () => {
   });
 });
 
+describe("the register as a strip", () => {
+  it("keeps the ink running line as written, folds where it stops, and lays one flat pencil panel per uncounted row level with the last ink point", () => {
+    const strip = registerStrip([100, 250, -40, 900], 2);
+    expect(strip.points).toEqual([100, 250, -40, 900, 900, 900]);
+    expect(strip.actualCount).toBe(4);
+    const panels = concertinaPanels(strip.points, 28, strip.actualCount);
+    expect(panels.map((panel) => panel.standing)).toEqual([true, true, true, false, false]);
+    // A flat pencil panel carries no height of its own: both ends sit on the last ink point.
+    for (const panel of panels.filter((panel) => !panel.standing)) expect(panel.y0).toBe(panel.y1);
+    expect(concertinaCornerX(strip.points.length, strip.actualCount)).toBe(panels[2]!.x1);
+  });
+
+  it("windows a long register to its newest points, keeps room for pencil, and lays nothing when there is no ink", () => {
+    const long = Array.from({ length: 60 }, (_, index) => index * 10);
+    const plain = registerStrip(long, 0);
+    expect(plain.points).toHaveLength(24);
+    expect(plain.points.at(-1)).toBe(590);
+    expect(plain.actualCount).toBe(24);
+    const withPencil = registerStrip(long, 5);
+    expect(withPencil.actualCount).toBe(19);
+    expect(withPencil.points).toHaveLength(24);
+    expect(new Set(withPencil.points.slice(19))).toEqual(new Set([590]));
+    // Pencil never crowds out the ink past half the room.
+    const crowded = registerStrip(long, 40);
+    expect(crowded.actualCount).toBe(12);
+    expect(crowded.points).toHaveLength(24);
+    expect(registerStrip([], 3)).toEqual({ points: [], actualCount: 0 });
+    expect(registerStrip([500], 2).points).toEqual([500, 500, 500]);
+    expect(registerStrip([500], 2).actualCount).toBe(1);
+  });
+
+  it("gives a sticky the accounts plate's own edge and figure, never a second threshold", () => {
+    const base: AccountRow = {
+      accountId: "A", name: "A", accessibilityName: "A", detailLabel: null, kind: "chequing", scope: "shared",
+      balanceCents: 100, balanceLabel: "book balance", utilization: null, isFundCard: false, booksTarget: { tab: "ledger", accountId: "A" },
+    };
+    expect(accountRowEdge(base)).toBe("clear");
+    expect(accountRowEdge({ ...base, balanceCents: -1 })).toBe("attention");
+    const card: AccountRow = { ...base, kind: "credit", balanceLabel: "owed", utilization: 0.3 };
+    expect(accountRowEdge(card)).toBe("clear");
+    expect(accountRowEdge({ ...card, utilization: 0.31 })).toBe("attention");
+    // A card below zero is not the non-card rule's business.
+    expect(accountRowEdge({ ...card, balanceCents: -5, utilization: 0.1 })).toBe("clear");
+    expect(accountRowFigure(card)).toEqual({ primitive: "gauge", pct: 0.3, threshold: ACCOUNT_CARD_MARK, label: "A" });
+    expect(accountRowFigure(base)).toEqual({ primitive: "tally", count: 1 });
+    // The plate and the stickies read one rule: the seeded accounts plate's edge is the chosen row's edge.
+    const household = seedDemoHousehold({ today: TODAY, environment: "development" });
+    const accounts = fundPlates({ household, memberId: "MEM-001", today: TODAY }).find((plate) => plate.id === "accounts")!;
+    const rows = accountRows(household, "MEM-001", TODAY);
+    const chosen = rows.find((row) => accounts.glance.startsWith(`${row.name} ·`))!;
+    expect(accountRowEdge(chosen)).toBe(accounts.edge);
+    expect(accountRowFigure(chosen)).toEqual(accounts.figure);
+  });
+});
+
 describe("the book's fences", () => {
   it("keeps money, households and commands out of the geometry", () => {
     expect(leafSource).not.toMatch(/formatCad|Household|fundWalk|balanceCents|todayBalance/);
@@ -186,5 +247,18 @@ describe("the book's fences", () => {
     expect(bookSource).not.toMatch(/postEntry|postTransfer|confirmHouseholdFundContribution|onKitchen|sessionStorage|localStorage/);
     expect(bookSource).not.toMatch(/id === "now"|"attention" as|"change"/);
     expect(bookSource).not.toMatch(/\bcents\s*[-+*/]\s*\w|\w\s*[-+*/]\s*cents\b/i);
+  });
+
+  it("keeps the stickies a separate group on the head, a deep link into the accounts chapter, and no new id or persisted value", () => {
+    expect(bookSource).toContain('role="group" aria-label="Accounts linked to the Fund"');
+    expect(bookSource).toContain('onSelect("accounts")');
+    expect(bookSource).toContain("booksPresentationFloor(household, memberId, \"household\")");
+    expect(bookSource).toContain("accountRegister(books, accountId)");
+    expect(bookSource).toContain("{ recognizedOnly: false }");
+    expect(bookSource).not.toMatch(/reduce\(|accountBookBalance|creditCardView\(|householdWallet|trialBalance/);
+    // The sticky group never borrows the tablist's vocabulary.
+    const stickies = bookSource.slice(bookSource.indexOf("function Stickies"), bookSource.indexOf("/** The running head"));
+    expect(stickies).not.toMatch(/role="tab"|aria-selected|aria-controls|FundWidgetId|DeskPlateId/);
+    expect(stickies).toContain("aria-pressed={pressed}");
   });
 });
