@@ -15,7 +15,7 @@
       "scrollWidth": 320,
       "innerWidth": 320,
       "live": "true",
-      "visibleMarks": 8
+      "visibleMarks": 6
     },
     "classic-well-390.png": {
       "pageErrors": 0,
@@ -28,7 +28,7 @@
       "scrollWidth": 390,
       "innerWidth": 390,
       "live": "true",
-      "visibleMarks": 9
+      "visibleMarks": 8
     },
     "classic-well-720.png": {
       "pageErrors": 0,
@@ -41,7 +41,7 @@
       "scrollWidth": 720,
       "innerWidth": 720,
       "live": "true",
-      "visibleMarks": 17
+      "visibleMarks": 15
     },
     "classic-well-1100.png": {
       "pageErrors": 0,
@@ -80,7 +80,7 @@
       "scrollWidth": 320,
       "innerWidth": 320,
       "live": "true",
-      "visibleMarks": 8
+      "visibleMarks": 6
     },
     "taylor-well-390.png": {
       "pageErrors": 0,
@@ -93,7 +93,7 @@
       "scrollWidth": 390,
       "innerWidth": 390,
       "live": "true",
-      "visibleMarks": 9
+      "visibleMarks": 8
     },
     "taylor-well-720.png": {
       "pageErrors": 0,
@@ -106,7 +106,7 @@
       "scrollWidth": 720,
       "innerWidth": 720,
       "live": "true",
-      "visibleMarks": 17
+      "visibleMarks": 15
     },
     "taylor-well-1100.png": {
       "pageErrors": 0,
@@ -145,7 +145,7 @@
       "scrollWidth": 320,
       "innerWidth": 320,
       "live": "true",
-      "visibleMarks": 8
+      "visibleMarks": 6
     },
     "newfoundland-well-390.png": {
       "pageErrors": 0,
@@ -158,7 +158,7 @@
       "scrollWidth": 390,
       "innerWidth": 390,
       "live": "true",
-      "visibleMarks": 9
+      "visibleMarks": 8
     },
     "newfoundland-well-720.png": {
       "pageErrors": 0,
@@ -171,7 +171,7 @@
       "scrollWidth": 720,
       "innerWidth": 720,
       "live": "true",
-      "visibleMarks": 17
+      "visibleMarks": 15
     },
     "newfoundland-well-1100.png": {
       "pageErrors": 0,
@@ -241,7 +241,7 @@
       "scrollWidth": 720,
       "innerWidth": 720,
       "live": "true",
-      "visibleMarks": 17
+      "visibleMarks": 15
     },
     "newfoundland-nowebgl-390.png": {
       "pageErrors": 0,
