@@ -21,7 +21,7 @@
       ],
       "water": "93%",
       "tidemark": "0%",
-      "line": "Today. No jar on this day. Its shape and what it wears are what it is for, its colour where it is filed, its size how large the due is; pick one to read it.",
+      "line": "Today. No jar on this day. A kitty jar's shape and what it wears are what it is for, its colour where it is filed, its size how large the due is, its glaze how much is in it; pick one to read it.",
       "acts": []
     },
     {
@@ -45,7 +45,7 @@
       ],
       "water": "93%",
       "tidemark": "0%",
-      "line": "Today. No jar on this day. Its shape and what it wears are what it is for, its colour where it is filed, its size how large the due is; pick one to read it.",
+      "line": "Today. No jar on this day. A kitty jar's shape and what it wears are what it is for, its colour where it is filed, its size how large the due is, its glaze how much is in it; pick one to read it.",
       "acts": []
     },
     {
@@ -69,7 +69,7 @@
       ],
       "water": "93%",
       "tidemark": "0%",
-      "line": "Today. No jar on this day. Its shape and what it wears are what it is for, its colour where it is filed, its size how large the due is; pick one to read it.",
+      "line": "Today. No jar on this day. A kitty jar's shape and what it wears are what it is for, its colour where it is filed, its size how large the due is, its glaze how much is in it; pick one to read it.",
       "acts": []
     },
     {
@@ -93,7 +93,7 @@
       ],
       "water": "93%",
       "tidemark": "0%",
-      "line": "Today. No jar on this day. Its shape and what it wears are what it is for, its colour where it is filed, its size how large the due is; pick one to read it.",
+      "line": "Today. No jar on this day. A kitty jar's shape and what it wears are what it is for, its colour where it is filed, its size how large the due is, its glaze how much is in it; pick one to read it.",
       "acts": []
     },
     {
@@ -117,7 +117,7 @@
       ],
       "water": "93%",
       "tidemark": "0%",
-      "line": "Today. No jar on this day. Its shape and what it wears are what it is for, its colour where it is filed, its size how large the due is; pick one to read it.",
+      "line": "Today. No jar on this day. A kitty jar's shape and what it wears are what it is for, its colour where it is filed, its size how large the due is, its glaze how much is in it; pick one to read it.",
       "acts": []
     },
     {
@@ -133,6 +133,29 @@
       ]
     },
     {
+      "scene": "card",
+      "width": 320,
+      "height": 568,
+      "world": "3d",
+      "overflowY": 0,
+      "card": {
+        "title": "Fictional rent",
+        "kicker": "house bill, wearing a postman's cap and an envelope",
+        "facts": {
+          "Filed under": "Housing › Electric",
+          "Its day": "20 of the month · due today · every month",
+          "The jar holds": "$760.00 of $900.00",
+          "In the kiln": "glazed to 8 of 10 — the rest still bisque",
+          "Still to go": "$140.00",
+          "Paid from": "the Household Fund's water, landing in Visa",
+          "The water after": "$2800.00",
+          "The strike": "cracked — due and not full; you can still pay it from the water"
+        },
+        "inRoom": true,
+        "scrolls": true
+      }
+    },
+    {
       "scene": "due-lifted",
       "width": 320,
       "height": 568,
@@ -146,7 +169,7 @@
       "scene": "due-confirm",
       "width": 320,
       "height": 568,
-      "sheet": "Break the bank: Fictional hydroCancelPost $140.00 for Fictional hydro in the books, dated Sep 15, its day. Its jar is full; the bank breaks and stays on the rail as a shard.Hearth records the payment in your books. It does not move money at your bank.Break it"
+      "sheet": "Break the kitty jar: Fictional hydroCancelPost $140.00 for Fictional hydro in the books, dated Sep 15, its day. Its jar is full; the bank breaks and stays on the rail as a shard.Hearth records the payment in your books. It does not move money at your bank.Break it"
     },
     {
       "scene": "overdue-planned",
@@ -182,6 +205,29 @@
       ]
     },
     {
+      "scene": "card",
+      "width": 390,
+      "height": 844,
+      "world": "3d",
+      "overflowY": 0,
+      "card": {
+        "title": "Fictional rent",
+        "kicker": "house bill, wearing a postman's cap and an envelope",
+        "facts": {
+          "Filed under": "Housing › Electric",
+          "Its day": "20 of the month · due today · every month",
+          "The jar holds": "$760.00 of $900.00",
+          "In the kiln": "glazed to 8 of 10 — the rest still bisque",
+          "Still to go": "$140.00",
+          "Paid from": "the Household Fund's water, landing in Visa",
+          "The water after": "$2800.00",
+          "The strike": "cracked — due and not full; you can still pay it from the water"
+        },
+        "inRoom": true,
+        "scrolls": true
+      }
+    },
+    {
       "scene": "due-lifted",
       "width": 390,
       "height": 844,
@@ -195,7 +241,7 @@
       "scene": "due-confirm",
       "width": 390,
       "height": 844,
-      "sheet": "Break the bank: Fictional hydroCancelPost $140.00 for Fictional hydro in the books, dated Sep 15, its day. Its jar is full; the bank breaks and stays on the rail as a shard.Hearth records the payment in your books. It does not move money at your bank.Break it"
+      "sheet": "Break the kitty jar: Fictional hydroCancelPost $140.00 for Fictional hydro in the books, dated Sep 15, its day. Its jar is full; the bank breaks and stays on the rail as a shard.Hearth records the payment in your books. It does not move money at your bank.Break it"
     },
     {
       "scene": "due-broken",
@@ -250,6 +296,29 @@
       ]
     },
     {
+      "scene": "card",
+      "width": 1100,
+      "height": 800,
+      "world": "3d",
+      "overflowY": 0,
+      "card": {
+        "title": "Fictional rent",
+        "kicker": "house bill, wearing a postman's cap and an envelope",
+        "facts": {
+          "Filed under": "Housing › Electric",
+          "Its day": "20 of the month · due today · every month",
+          "The jar holds": "$760.00 of $900.00",
+          "In the kiln": "glazed to 8 of 10 — the rest still bisque",
+          "Still to go": "$140.00",
+          "Paid from": "the Household Fund's water, landing in Visa",
+          "The water after": "$2800.00",
+          "The strike": "cracked — due and not full; you can still pay it from the water"
+        },
+        "inRoom": true,
+        "scrolls": true
+      }
+    },
+    {
       "scene": "due-lifted",
       "width": 1100,
       "height": 800,
@@ -263,7 +332,7 @@
       "scene": "due-confirm",
       "width": 1100,
       "height": 800,
-      "sheet": "Break the bank: Fictional hydroCancelPost $140.00 for Fictional hydro in the books, dated Sep 15, its day. Its jar is full; the bank breaks and stays on the rail as a shard.Hearth records the payment in your books. It does not move money at your bank.Break it"
+      "sheet": "Break the kitty jar: Fictional hydroCancelPost $140.00 for Fictional hydro in the books, dated Sep 15, its day. Its jar is full; the bank breaks and stays on the rail as a shard.Hearth records the payment in your books. It does not move money at your bank.Break it"
     },
     {
       "scene": "overdue-planned",

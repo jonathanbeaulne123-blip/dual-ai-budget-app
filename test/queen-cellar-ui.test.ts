@@ -57,7 +57,7 @@ describe("The cellar's bill rail — the room opens on this month, one jar a day
       "Fictional winter tires — planned, not posted (Life › Fun), large, Sep 24, full",
     ]);
     expect($(".queen-cellar-day.is-today .queen-cellar-day__tick").textContent).toBe("12");
-    expect($(".queen-room__sub").textContent).toBe("4 bills on the rail");
+    expect($(".queen-room__sub").textContent).toBe("4 kitty jars on the rail");
     expect(line()).toMatch(/^Today\. No jar on this day\./);
     expect(acts()).toEqual([]);
     // No jar on the rail carries a figure; the numbers wait for the line beneath the gate.
@@ -81,13 +81,13 @@ describe("The cellar's bill rail — the room opens on this month, one jar a day
     await click(jar("Fictional hydro"));
     expect(line()).toMatch(/^The hammer is out\. Fictional hydro · house bill · Housing › Electric · 5 days overdue · \$140\.00 saved, ready/);
     const hammer = $<HTMLButtonElement>(".queen-hammer");
-    expect(hammer.textContent).toBe("Break the bank");
+    expect(hammer.textContent).toBe("Break the kitty jar");
     expect(hammer.className).not.toContain("queen-hammer--crack");
     await click(hammer);
     // Nothing is written until the person confirms.
     expect(onCommand).not.toHaveBeenCalled();
     const sheet = document.querySelector(".confirm-sheet") ?? document.querySelector("[role='dialog']");
-    expect(sheet?.textContent).toMatch(/Break the bank: Fictional hydro/);
+    expect(sheet?.textContent).toMatch(/Break the kitty jar: Fictional hydro/);
     expect(sheet?.textContent).toMatch(/Post \$140\.00 for Fictional hydro in the books, dated Sep 15, its day\./);
     expect(sheet?.textContent).toMatch(/does not move money at your bank/);
     const confirm = [...document.querySelectorAll<HTMLButtonElement>("button")].find((row) => row.textContent?.trim() === "Break it")!;
@@ -185,7 +185,7 @@ describe("The cellar's bill rail — the room opens on this month, one jar a day
     let h = planLifeFixture("household");
     h = { ...h, recurrences: [], potentialExpenses: [] };
     await render(h, "2026-09-12");
-    expect($(".queen-room__sub").textContent).toBe("No bills on the rail");
+    expect($(".queen-room__sub").textContent).toBe("No kitty jars on the rail");
     expect($$(".queen-jar--bill")).toHaveLength(0);
     expect($$(".queen-cellar-day")).toHaveLength(30);
   });
@@ -210,11 +210,61 @@ describe("The cellar's bill rail — the room opens on this month, one jar a day
     expect(glyph("Fictional rent").className).toContain("queen-billjar--size-5");
     expect(glyph("Fictional streaming").className).toContain("queen-billjar--size-1");
     expect(glyph("Fictional winter tires").className).toContain("queen-billjar--size-4");
-    // A planned expense is frosted glass (not an empty outline) and wears no finish coat; a paid one is hollow.
+    // A planned expense is frosted glass (not an empty outline) and wears no finish coat; a paid one is fired to the crown, with its crack.
     expect(cat("Fictional winter tires").dataset.frosted).toBe("true");
     expect(cat("Fictional winter tires").dataset.hollow).toBe("false");
     expect(cat("Fictional winter tires").querySelector(".queen-bank-flat__finish-coat")).toBeNull();
-    expect(cat("Fictional streaming").dataset.hollow).toBe("true");
-    expect(cat("Fictional streaming").querySelector(".queen-bank-flat__finish-coat")).toBeNull();
+    expect(cat("Fictional streaming").dataset.hollow).toBe("false");
+    expect(cat("Fictional streaming").dataset.fired).toBe("true");
+    // The kiln: the rent is glazed to its fill line and no further; the full hydro is fired to the crown; a paid jar keeps its shard.
+    expect(cat("Fictional rent").dataset.fired).toBe("false");
+    expect(cat("Fictional rent").querySelector(".queen-bank-flat__glaze")).not.toBeNull();
+    expect(cat("Fictional hydro").dataset.fired).toBe("true");
+    expect(glyph("Fictional streaming").className).toContain("is-shard");
+  });
+
+  it("a press on a kitty jar opens its card — what it holds, its kiln state, what pays it, the water after; Escape closes it and focus returns", async () => {
+    await render(seeded(), "2026-09-12");
+    expect($(".queen-jar-card")).toBeNull();
+    expect(jar("Fictional rent").getAttribute("aria-expanded")).toBe("false");
+    await click(jar("Fictional rent"));
+    const card = $(".queen-jar-card");
+    expect(card).not.toBeNull();
+    expect(jar("Fictional rent").getAttribute("aria-expanded")).toBe("true");
+    expect(card.getAttribute("aria-label")).toBe("Fictional rent — the kitty jar's card");
+    expect($(".queen-jar-card__kicker").textContent).toBe("house bill, wearing a postman's cap and an envelope");
+    const facts = Object.fromEntries($$(".queen-jar-card__facts > div").map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent]));
+    expect(facts["Filed under"]).toBe("Housing › Electric");
+    expect(facts["Its day"]).toBe("20 of the month · in 8 days · every month");
+    expect(facts["The jar holds"]).toBe("$760.00 of $900.00");
+    expect(facts["In the kiln"]).toBe("glazed to 8 of 10 — the rest still bisque");
+    expect(facts["Still to go"]).toBe("$140.00");
+    expect(facts["Paid from"]).toBe("the Household Fund's water, landing in Visa");
+    expect(facts["The water after"]).toMatch(/^\$[\d,.]+$/);
+    expect(facts["The strike"]).toBe("none yet — nothing before its day");
+    // The one line still stands inside the card, and the acts stand once, below it.
+    expect(line()).toMatch(/^Filling\. Fictional rent · house bill/);
+    expect($$(".queen-room__acts")).toHaveLength(1);
+    expect(acts()).toEqual(["Lift it out · what if not"]);
+    expect($$(".queen-jar-card__more .queen-go").map((row) => row.textContent)).toEqual(["Its months"]);
+    // Press it again: the card closes. Open, then Escape: closed, and the jar has focus again.
+    await click(jar("Fictional rent"));
+    expect($(".queen-jar-card")).toBeNull();
+    await click(jar("Fictional rent"));
+    await act(async () => { $(".queen-jar-card").dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); });
+    expect($(".queen-jar-card")).toBeNull();
+    await act(async () => { await new Promise((resolve) => requestAnimationFrame(() => resolve(null))); });
+    expect(document.activeElement).toBe(jar("Fictional rent"));
+    // A paid jar's card says so, and a planned one says where it posts from.
+    await click(jar("Fictional streaming"));
+    const paid = Object.fromEntries($$(".queen-jar-card__facts > div").map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent]));
+    expect(paid["The jar holds"]).toBe("$16.00 · paid");
+    expect(paid["In the kiln"]).toBe("fired to the crown");
+    expect(paid["The strike"]).toBe("a shard — paid elsewhere in the books");
+    await click(jar("Fictional winter tires"));
+    const planned = Object.fromEntries($$(".queen-jar-card__facts > div").map((row) => [row.querySelector("dt")!.textContent, row.querySelector("dd")!.textContent]));
+    expect(planned["In the kiln"]).toBe("frosted glass — a plan, not posted");
+    expect(planned["Paid from"]).toBe("nowhere yet — it has not posted");
+    expect($$(".queen-jar-card__more .queen-go").map((row) => row.textContent)).toEqual(["Open it in the banks"]);
   });
 });

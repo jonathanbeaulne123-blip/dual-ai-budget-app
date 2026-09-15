@@ -83,3 +83,22 @@ beside the slider, and the rail also takes a pinch, ctrl-scroll and the +/−
 keys. At 1100×800 the month's largest jar stands up behind the glass view
 pills — a pane standing in the room, by design. Each jar's hover title names
 its purpose and its dressing; the accessible names are unchanged.
+
+## Regenerated again 2026-09-15 — kitty jars, fired as they fill, with a card
+
+26 records now (`card-320x568`, `card-390x844`, `card-1100x800` added), 0 page
+errors, 0 serious/critical axe hits, no page scroll. The cellar's banks are
+**kitty jars** in every word ("11 kitty jars on the rail", "Break the kitty
+jar"). **The kiln** is the fill: a jar starts bare bisque and is glazed from
+the foot to its fill line — the studio's own fired look, deep and clearcoated —
+and fires to the crown (head, ears, paws) when full; a paid jar is fired to the
+crown and keeps its shard crack; a planned expense stays frosted glass. The
+`no-webgl-*` stills show the drawn twin doing the same (bisque above the line,
+the tint below, a sheen down the flank). **The card**: a press on a jar puts it
+in the gate and opens its card in the room — purpose and dressing, name, the
+one-line reading, then *Filed under · Its day · The jar holds · In the kiln ·
+Still to go · Paid from · The water after · The strike*, and *Its months* /
+*Open it in the banks*; the acts stand once beneath it; × or Escape closes it
+and focus returns to the jar. In the 320×568 stand-in frame the card stands
+over the rail between the picks and the acts; elsewhere it takes the line's
+place and scrolls inside itself when the frame is short.
