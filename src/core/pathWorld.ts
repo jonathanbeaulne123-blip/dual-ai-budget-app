@@ -491,12 +491,6 @@ export const setPathCategorySignal = captureCommand("setPathCategorySignal", fun
   return commitPathWorld(household, next, "Changed how a category shows on the island", at);
 });
 
-/**
- * Replay authority: every change in `incoming` must be one the acting member
- * could make. A member may only add their own agreement, propose under their
- * own name, fix a category as themselves, and promote a proposal when theirs
- * is the last agreement missing (or they are the household's only member).
- */
 /** Ledger step kinds that write the Our Path world, plus its undo/continuity kind (D-262). */
 export const PATH_WORLD_COMMAND_KINDS = ["proposePathRecipe", "proposePathName", "agreePathProposal", "declinePathProposal", "setPathCategorySignal", "updatePathWorld"];
 
@@ -505,6 +499,12 @@ export function hasPathWorldData(household: Pick<Household, "pathWorld">): boole
   return shapePathWorld(household.pathWorld).length > 0;
 }
 
+/**
+ * Replay authority: every change in `incoming` must be one the acting member
+ * could make. A member may only add their own agreement, propose under their
+ * own name, fix a category as themselves, and promote a proposal when theirs
+ * is the last agreement missing (or they are the household's only member).
+ */
 export function pathWorldChangeAuthorized(household: Pick<Household, "members" | "pathWorld">, incoming: PathWorldRow[], actorId: string): boolean {
   const local = new Map(shapePathWorld(household.pathWorld).map((row) => [row.id, row]));
   const active = activeMemberIds(household);
