@@ -855,7 +855,7 @@
    visibly has room to grow into. The tide (the shelf's pin) is read on the seat itself, so it fits every size. */
 .queen-home .queen-room--loft .queen-goal .queen-goal__vessel { position: relative; display: block; }
 .queen-home .queen-room--loft .queen-shelf .queen-goal .queen-goal__kitty {
-  --loft-h: max(16px, calc(var(--loft-full, 74px) * var(--bank-scale, 1) / 1.21));
+  --loft-h: max(16px, calc(var(--loft-full, 74px) * var(--bank-scale, 1) / 1.21 * var(--loft-zoom, 1)));
   height: var(--loft-h); width: calc(var(--loft-h) * 300 / 360); max-width: none;
 }
 .queen-home--wide .queen-room--loft[data-shelves="1"] .queen-goal .queen-goal__kitty { --loft-full: 92px; }
@@ -953,3 +953,15 @@
 .queen-home .queen-room--loft .queen-room__head .queen-held.queen-held--head .queen-held__done { min-height: 26px; height: 26px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
 .queen-home .queen-room--loft .queen-room__head .queen-held__done:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 @container queen (max-width: 419px) { .queen-held--head .queen-held__mark { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } }
+
+/* ---- the loft's size pane (2026-09-15): the same − / + as the cellar, in the title chip ---- */
+.queen-loft-zoom { display: inline-flex; align-items: center; gap: 0; margin: -4px 0 -4px 8px; line-height: 1; padding-left: 6px; border-left: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); vertical-align: middle; }
+.queen-home .queen-room--loft .queen-room__head .queen-loft-zoom .queen-loft-zoom__step { width: 26px; height: 26px; min-width: 26px; min-height: 26px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink); font: 600 17px/1 var(--mono); cursor: pointer; }
+.queen-home .queen-room--loft .queen-room__head .queen-loft-zoom .queen-loft-zoom__step:disabled { opacity: .35; cursor: default; }
+.queen-home .queen-room--loft .queen-room__head .queen-loft-zoom .queen-loft-zoom__step:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.queen-loft-zoom__read { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; min-width: 34px; text-align: center; color: var(--muted); }
+@media (pointer: coarse) { .queen-home .queen-room--loft .queen-room__head .queen-loft-zoom .queen-loft-zoom__step { width: 36px; height: 36px; min-width: 36px; min-height: 36px; } }
+@container queen (max-width: 419px) { .queen-loft-zoom__read { display: none; } }
+.queen-room--loft .queen-rack { touch-action: pan-x pan-y; }
+/* The title chip keeps one line: while the rack is held, its standing hint gives way to the Done. */
+.queen-room--loft .queen-room__head:has(.queen-held--head) .queen-room__sub-hint { display: none; }

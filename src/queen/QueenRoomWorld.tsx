@@ -66,11 +66,14 @@ export function QueenRoomWorld({ room, root, vessels, ambient = false, mode = "a
       if (!current) return;
       const seats: RoomLayout["seats"] = {};
       for (const el of rootElement.querySelectorAll<HTMLElement>("[data-room-vessel]")) {
-        const r = rect(el);
+        // A control may be larger than what it draws (a small jar keeps a pressable button): the drawn seat inside it, when marked, is what the sculpture fills.
+        const r = rect(el.querySelector("[data-room-seat]") ?? el);
         if (r.w > 4 && r.h > 4) seats[el.dataset.roomVessel!] = r;
       }
       const shelves = [...rootElement.querySelectorAll<HTMLElement>("[data-room-shelf]")].map(rect).filter((r) => r.w > 4 && r.h > 4);
-      current.layout({ host: rect(element), seats, ...(shelves.length ? { shelves } : {}) });
+      const stageEl = rootElement.querySelector<HTMLElement>("[data-room-stage]");
+      const stage = stageEl ? { ...rect(stageEl), floor: Number(stageEl.dataset.roomFloor ?? 0) } : null;
+      current.layout({ host: rect(element), seats, ...(shelves.length ? { shelves } : {}), ...(stage && stage.w > 4 && stage.h > 4 ? { stage } : {}) });
     };
     measure();
     const observer = new ResizeObserver(measure);

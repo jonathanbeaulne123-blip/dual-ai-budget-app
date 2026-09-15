@@ -159,3 +159,21 @@ describe("Clicking off a pop-up closes it", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 });
+
+describe("The loft zooms like the cellar", () => {
+  it("sizes the banks with the pane and the +/− keys, and remembers it on the device", async () => {
+    localStorage.removeItem("hearth.queen.loft.zoom");
+    await render(withLedge());
+    const room = $(".queen-room--loft")!;
+    expect(room.style.getPropertyValue("--loft-zoom")).toBe("1");
+    await click($$<HTMLButtonElement>(".queen-loft-zoom__step").find((row) => row.getAttribute("aria-label") === "Larger banks")!);
+    expect(room.style.getPropertyValue("--loft-zoom")).toBe("1.25");
+    expect($(".queen-loft-zoom__read")!.textContent).toBe("125%");
+    await act(async () => { $(".queen-rack")!.dispatchEvent(new KeyboardEvent("keydown", { key: "+", bubbles: true })); });
+    expect(room.style.getPropertyValue("--loft-zoom")).toBe("1.5");
+    await act(async () => { $(".queen-rack")!.dispatchEvent(new KeyboardEvent("keydown", { key: "-", bubbles: true })); });
+    expect(localStorage.getItem("hearth.queen.loft.zoom")).toBe("1.25");
+    await act(async () => { $(".queen-rack")!.dispatchEvent(new WheelEvent("wheel", { deltaY: -100, ctrlKey: true, bubbles: true, cancelable: true })); });
+    expect(Number(room.style.getPropertyValue("--loft-zoom"))).toBeGreaterThan(1.25);
+  });
+});

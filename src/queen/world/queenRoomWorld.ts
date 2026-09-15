@@ -63,7 +63,7 @@ export type RoomVessel = {
   studio?: { piece: KittyPieceV1; fired: boolean; step: number };
 };
 export type RoomRect = { x: number; y: number; w: number; h: number };
-export type RoomLayout = { host: RoomRect; seats: Record<string, RoomRect>; /** The loft's shelves (2026-09-15): one board per DOM shelf, top first. */ shelves?: RoomRect[] };
+export type RoomLayout = { host: RoomRect; seats: Record<string, RoomRect>; /** The cellar (2026-09-15): the rail and where its floor sits, so the room's furniture no longer follows the jars' sizes. */ stage?: RoomRect & { floor: number }; /** The loft's shelves (2026-09-15): one board per DOM shelf, top first. */ shelves?: RoomRect[] };
 export type RoomStats = { frames: number; lastFrameMs: number; maxFrameMs: number; vessels: number; ambient: boolean; geometries: number };
 
 const VISIBLE_HEIGHT = 10;
@@ -626,7 +626,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     /** Put every vessel where the DOM keeps its control, and the room where the host is. */
     layout(next: RoomLayout) {
       if (dead || !next.host.w || !next.host.h) return;
-      const key = JSON.stringify([next.host, next.seats]);
+      const key = JSON.stringify([next.host, next.seats, next.stage ?? null]);
       if (key === lastLayoutKey) return;
       lastLayoutKey = key;
       hostRect = next.host;
@@ -660,6 +660,11 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
         floor = y;
         // The room's furniture follows the tallest bank on the rack, whatever its size.
         tallest = Math.max(tallest, Math.min(1.6, rect.h * unitsPerPx));
+      }
+      // The cellar's rail is its own floor now that jars are sized by dollars: the furniture stands on the rail at a fixed scale.
+      if (next.stage) {
+        floor = toWorld(hostRect, 0, next.stage.y + next.stage.h - next.stage.floor)[1];
+        tallest = Math.max(0.35, Math.min(90, next.stage.h - next.stage.floor) * unitsPerPx);
       }
       // The room's floor is the shelf the vessels stand on, and it grows with them.
       interior.position.set(0, floor, 0);

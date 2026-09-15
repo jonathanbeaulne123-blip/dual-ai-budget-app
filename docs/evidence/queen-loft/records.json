@@ -6,15 +6,15 @@
       "height": 568,
       "world": "3d",
       "overflowY": 0,
-      "rackScroll": 56,
+      "rackScroll": 74,
       "shelves": [
         {
           "weight": "5 of 5",
           "pin": "to the crown",
           "banks": [
+            "Fictional wedding weekend",
             "Fictional porch renovation",
             "Fictional trip to the shore",
-            "Fictional wedding weekend",
             "Fictional date night"
           ]
         }
@@ -33,15 +33,15 @@
           "c": "queen-room__head",
           "x": 66,
           "y": 126,
-          "w": 197,
-          "h": 37
+          "w": 224,
+          "h": 55
         },
         {
           "c": "queen-rack",
           "x": 66,
-          "y": 165,
+          "y": 183,
           "w": 224,
-          "h": 45
+          "h": 27
         },
         {
           "c": "queen-jug",
@@ -85,9 +85,9 @@
           "weight": "5 of 5",
           "pin": "to the crown",
           "banks": [
+            "Fictional wedding weekend",
             "Fictional porch renovation",
             "Fictional trip to the shore",
-            "Fictional wedding weekend",
             "Fictional date night"
           ]
         }
@@ -106,20 +106,20 @@
           "c": "queen-room__head",
           "x": 66,
           "y": 132,
-          "w": 197,
-          "h": 37
+          "w": 224,
+          "h": 55
         },
         {
           "c": "queen-rack",
           "x": 66,
-          "y": 203,
+          "y": 212,
           "w": 224,
           "h": 101
         },
         {
           "c": "queen-jug",
           "x": 66,
-          "y": 313,
+          "y": 322,
           "w": 164,
           "h": 28
         },
@@ -133,7 +133,7 @@
         {
           "c": "queen-room__acts",
           "x": 84,
-          "y": 350,
+          "y": 359,
           "w": 187,
           "h": 50
         },
@@ -194,8 +194,8 @@
           "weight": "5 of 5",
           "pin": "to the crown",
           "banks": [
-            "Fictional trip to the shore",
             "Fictional porch renovation",
+            "Fictional trip to the shore",
             "Fictional wedding weekend",
             "Fictional date night"
           ]
@@ -216,33 +216,33 @@
           "x": 66,
           "y": 132,
           "w": 294,
-          "h": 55
+          "h": 73
         },
         {
           "c": "queen-rack",
           "x": 66,
-          "y": 224,
+          "y": 233,
           "w": 294,
           "h": 132
         },
         {
           "c": "queen-jug",
           "x": 66,
-          "y": 362,
+          "y": 371,
           "w": 234,
           "h": 45
         },
         {
           "c": "queen-room__line",
           "x": 66,
-          "y": 413,
+          "y": 422,
           "w": 294,
           "h": 73
         },
         {
           "c": "queen-room__acts",
           "x": 119,
-          "y": 492,
+          "y": 501,
           "w": 187,
           "h": 50
         },
@@ -269,13 +269,13 @@
           "weight": "5 of 11",
           "pin": "18 of 20",
           "banks": [
-            "Fictional trip to the shore",
             "Fictional porch renovation",
+            "Fictional trip to the shore",
             "Fictional date night"
           ],
           "dividers": [
-            "Fictional trip to the shore 2, Fictional porch renovation 1",
-            "Fictional porch renovation 1, Fictional date night 1"
+            "Fictional porch renovation 2, Fictional trip to the shore 1",
+            "Fictional trip to the shore 1, Fictional date night 1"
           ],
           "ledge": "the top shelf — 3 on it, share 5 of 11, fill mark 18 of 20"
         },
@@ -304,8 +304,8 @@
           "pin": "to the crown",
           "banks": [
             "Fictional trip to the shore",
-            "Fictional porch renovation",
             "Fictional wedding weekend",
+            "Fictional porch renovation",
             "Fictional date night"
           ]
         }
@@ -324,7 +324,7 @@
           "c": "queen-room__head",
           "x": 78,
           "y": 136,
-          "w": 360,
+          "w": 471,
           "h": 43
         },
         {
@@ -413,8 +413,8 @@
           "pin": "to the crown",
           "banks": [
             "Fictional wedding weekend",
-            "Fictional porch renovation",
             "Fictional trip to the shore",
+            "Fictional porch renovation",
             "Fictional date night"
           ]
         }
@@ -433,7 +433,7 @@
           "c": "queen-room__head",
           "x": 90,
           "y": 136,
-          "w": 360,
+          "w": 471,
           "h": 43
         },
         {
@@ -487,13 +487,13 @@
           "weight": "5 of 11",
           "pin": "18 of 20",
           "banks": [
-            "Fictional porch renovation",
             "Fictional trip to the shore",
+            "Fictional porch renovation",
             "Fictional date night"
           ],
           "dividers": [
-            "Fictional porch renovation 2, Fictional trip to the shore 1",
-            "Fictional trip to the shore 1, Fictional date night 1"
+            "Fictional trip to the shore 2, Fictional porch renovation 1",
+            "Fictional porch renovation 1, Fictional date night 1"
           ],
           "ledge": "the top shelf — 3 on it, share 5 of 11, fill mark 18 of 20"
         },
@@ -518,8 +518,8 @@
         "value": "5",
         "words": "50% of the safe surplus, $1400.00"
       },
-      "line": "The jug tilts. $1166.67 to the top shelf (Fictional trip to the shore $583.34, Fictional porch renovation $583.33); $233.33 to the bottom shelf (Fictional wedding weekend $233.33).",
-      "sheet": "Pour $1400.00 of the Fund's surplus over the rackCancel$1166.67 to the top shelf (Fictional trip to the shore $583.34, Fictional porch renovation $583.33); $233.33 to the bottom shelf (Fictional wedding weekend $233.33). This is the Fund's month-end Kitty rollover, split by the shelves as they stand.Hearth records the rollover in your books. Operating plus Kitty stays conserved; no bank transfer occurs.Pour it",
+      "line": "The jug tilts. $1166.67 to the top shelf (Fictional porch renovation $583.34, Fictional trip to the shore $583.33); $233.33 to the bottom shelf (Fictional wedding weekend $233.33).",
+      "sheet": "Pour $1400.00 of the Fund's surplus over the rackCancel$1166.67 to the top shelf (Fictional porch renovation $583.34, Fictional trip to the shore $583.33); $233.33 to the bottom shelf (Fictional wedding weekend $233.33). This is the Fund's month-end Kitty rollover, split by the shelves as they stand.Hearth records the rollover in your books. Operating plus Kitty stays conserved; no bank transfer occurs.Pour it",
       "poured": false
     },
     {
@@ -577,8 +577,8 @@
       "height": 844,
       "banks": [
         "Fictional trip to the shore",
-        "Fictional wedding weekend",
         "Fictional porch renovation",
+        "Fictional wedding weekend",
         "Fictional date night"
       ],
       "weight": "10 of 10",
@@ -634,8 +634,8 @@
       "canvases": 0,
       "shelves": [
         [
-          "Fictional porch renovation",
           "Fictional trip to the shore",
+          "Fictional porch renovation",
           "Fictional date night"
         ],
         [

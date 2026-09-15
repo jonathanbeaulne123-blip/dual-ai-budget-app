@@ -87,6 +87,25 @@ He answered the two clarifying questions with "both 1 and 2":
 - The 3D path was verified in SwiftShader only. Each loft bank now owns the studio's six paint canvases, which may cost memory on a phone with many banks.
 - Outside-click close now applies to every `useDialog` sheet over a veil. Add-entry and Hercules full-screen sheets are opaque, so they do not close this way, but a partially transparent sheet with a draft would close (its own close path keeps drafts as before).
 
+## Follow-up (same day, D-265)
+
+Jonathan said he did not see the water change as he scrolled through the days. He asked for the water and the jars to share one dollar scale ($1,000 of water equals a $1,000 jar, and a $500 jar is half as tall), and for the loft to zoom like the cellar.
+
+**Cause.** The water moved, but only as a share of the month's high point. A $60 bill moved it by about one pixel, and the old styling was faint.
+
+**Changes.**
+- `cellarScale` in `cellarZoom.ts` puts the water, the tidemark and the jars on one pixel-per-dollar scale, measured from the jars' floor.
+- Jars have a 14px floor.
+- The size pane runs to 800%. Day cells stop widening at 225%.
+- The 3D cellar's furniture now follows the rail (`data-room-stage`), and each sculpture fills its drawn seat (`data-room-seat`).
+- The loft gets pinch, ctrl-scroll, a −/+ pane and the +/− keys (`loftZoom.ts`).
+
+**Tests and proof.**
+- `queen-bank-dress` now covers the shared scale and the deep zoom steps.
+- `queen-loft-gun-ui` now covers loft zoom.
+- The browser proof adds a zoomed loft shot and a cellar-scale shot, and asserts that every jar stands on the water's floor.
+- Quick gate (medium): passed, 253 tests. Browser proofs re-run and passing: `queen-cellar-layout` (26 records), `queen-loft-layout` (18) and `queen-loft-gun-layout` (16).
+
 ## Next owner
 
 Codex: trust review of the gun's door to `allocateHouseholdFundSurplus` and of the `useDialog` change. Then Jonathan's bot opens the PR.

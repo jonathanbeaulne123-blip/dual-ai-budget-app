@@ -5,7 +5,7 @@ import { QueenBankFlat } from "../src/queen/QueenBankFlat.tsx";
 import { BANK_DRESS, BANK_DRESS_WORDS, bankDressPieces } from "../src/queen/world/queenBankDress.ts";
 import { BANK_SCULPT, bankGeometry, type BankForm } from "../src/queen/world/queenBankSculpture.ts";
 import { cellarPurposeWords } from "../src/queen/QueenCellarRail.tsx";
-import { CELLAR_ZOOM, CELLAR_ZOOM_KEY, cellarCellPx, clampCellarZoom, readCellarZoom, stepCellarZoom, storeCellarZoom } from "../src/queen/cellarZoom.ts";
+import { CELLAR_CELL_ZOOM_MAX, CELLAR_JAR_MIN_PX, CELLAR_ZOOM, CELLAR_ZOOM_KEY, cellarCellPx, cellarScale, clampCellarZoom, readCellarZoom, stepCellarZoom, storeCellarZoom } from "../src/queen/cellarZoom.ts";
 
 const FORMS = Object.keys(BANK_SCULPT) as BankForm[];
 
@@ -64,7 +64,7 @@ describe("the kitty banks' dressing — a purpose you can read from across the r
 describe("the size of the banks on the rail", () => {
   it("stands larger by default, clamps to its range, and steps by a quarter", () => {
     expect(CELLAR_ZOOM.default).toBeGreaterThan(1);
-    expect(clampCellarZoom(9)).toBe(CELLAR_ZOOM.max);
+    expect(clampCellarZoom(99)).toBe(CELLAR_ZOOM.max);
     expect(clampCellarZoom(0)).toBe(CELLAR_ZOOM.min);
     expect(clampCellarZoom(Number.NaN)).toBe(CELLAR_ZOOM.default);
     expect(stepCellarZoom(1.4, 1)).toBe(1.5);
@@ -72,6 +72,26 @@ describe("the size of the banks on the rail", () => {
     expect(stepCellarZoom(CELLAR_ZOOM.max, 1)).toBe(CELLAR_ZOOM.max);
     expect(cellarCellPx(1)).toBe(44);
     expect(cellarCellPx(1.5)).toBe(66);
+    // Past the widest cell, a press deepens the dollar scale by half, and the cell stays put.
+    expect(stepCellarZoom(CELLAR_CELL_ZOOM_MAX, 1)).toBe(3.4);
+    expect(stepCellarZoom(3.4, -1)).toBe(CELLAR_CELL_ZOOM_MAX);
+    expect(cellarCellPx(8)).toBe(cellarCellPx(CELLAR_CELL_ZOOM_MAX));
+  });
+
+  it("stands the water and the jars on one dollar scale", () => {
+    // $1,000 in the water, the crest $1,000, a 100px column: the water is 90px, and a $1,000 jar is 90px, a $500 jar 45px.
+    const scale = cellarScale({ columnPx: 100, crestCents: 100_000, balanceCents: 100_000, bufferCents: 20_000, zoom: CELLAR_ZOOM.default });
+    expect(scale.waterPx).toBe(90);
+    expect(scale.jarPx(100_000)).toBe(90);
+    expect(scale.jarPx(50_000)).toBe(45);
+    expect(scale.markPx).toBe(18);
+    expect(scale.jarPx(100)).toBe(CELLAR_JAR_MIN_PX);
+    expect(scale.deep).toBe(false);
+    // Doubling the size doubles both; water past the column is clipped and says so.
+    const deeper = cellarScale({ columnPx: 100, crestCents: 100_000, balanceCents: 100_000, bufferCents: 0, zoom: CELLAR_ZOOM.default * 2 });
+    expect(deeper.jarPx(50_000)).toBe(90);
+    expect(deeper.waterPx).toBe(100);
+    expect(deeper.deep).toBe(true);
   });
 
   it("is remembered on the device, and forgotten gracefully where storage refuses", () => {

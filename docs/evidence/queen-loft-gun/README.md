@@ -15,6 +15,8 @@ Sizes: Classic at 320×568, 390×844, 720×900 and 1100×800; Taylor and Newfoun
 | `loft-gun-*` | The weight was slid by hand, and *Rack not saved yet · Done* appeared (asserted; Done sent it). Then the money gun was picked up, $100 chosen, and four shots thrown at the first open bank. Bills are in the air, the round reads in the line, and **Send $400.00 / Take the shots back** stand in the acts. |
 | `loft-gun-landed-*` | The same moment once the bills have landed. |
 | `loft-gun-confirm-*` | The app's Confirm for the round, dismissed with Escape. Nothing was posted. |
+| `loft-zoom-*` | The loft at 150% from the −/+ pane in the title chip. The banks stand taller (asserted) and the page never scrolls. |
+| `cellar-scale-*` | The cellar at 364% on the rent's day (D-265). The water and the jars share one dollar scale, so the $900 rent jar stands in water deeper than the view. Every jar stands on the water's floor, within 2px (asserted). |
 | `cellar-water-*` | The cellar on the gate's day. The Fund's water is a tinted body with a moving surface, a bright waterline and its name (*The Fund's water*), with a different water per world. The jars stand in it and stay tappable. The tidemark rides over it. |
 
 Not shown: reduced motion (the waves and the flying bills are off; the bank's swell is instant), and forced colours

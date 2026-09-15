@@ -1,9 +1,9 @@
-import { useRef, type KeyboardEvent, type PointerEvent, type WheelEvent } from "react";
+import { useLayoutEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type WheelEvent } from "react";
 import type { CellarDay, CellarJar, CellarReading } from "../core/queenCellar.ts";
 import { QueenBankFlat } from "./QueenBankFlat.tsx";
 import type { BankForm } from "./world/queenBankSculpture.ts";
 import { BANK_DRESS_WORDS } from "./world/queenBankDress.ts";
-import { CELLAR_ZOOM, cellarCellPx, clampCellarZoom, stepCellarZoom } from "./cellarZoom.ts";
+import { CELLAR_CELL_ZOOM_MAX, CELLAR_ZOOM, cellarCellPx, cellarScale, clampCellarZoom, stepCellarZoom } from "./cellarZoom.ts";
 import "./queen-cellar.css";
 
 const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -31,7 +31,7 @@ export const cellarPurposeWords = (type: CellarJar["type"]): string => {
 
 export function CellarJarGlyph({ jar, held = false }: { jar: CellarJar; held?: boolean }) {
   return (
-    <span className={`queen-billjar queen-billjar--${jar.type} queen-billjar--size-${jar.size}${jar.paid ? " is-shard" : ""}${held ? " is-held" : ""}`} data-hue={jar.hue} data-finish={jar.finish} aria-hidden="true">
+    <span data-room-seat="" className={`queen-billjar queen-billjar--${jar.type} queen-billjar--size-${jar.size}${jar.paid ? " is-shard" : ""}${held ? " is-held" : ""}`} data-hue={jar.hue} data-finish={jar.finish} aria-hidden="true">
       <QueenBankFlat form={cellarBankForm(jar.type)} className="queen-bank-flat queen-billjar__cat" fill={jar.paid ? 1 : jar.fill} frosted={jar.type === "potential" && !jar.paid} tint={jar.hue === "clay" ? undefined : `var(--queen-hue-${jar.hue})`} finish={jar.finish} />
       {(jar.paid || jar.strike === "crack") && (
         <svg viewBox="0 0 100 100" className={`queen-billjar__crack${jar.paid ? " queen-billjar__crack--shard" : " queen-billjar__crack--due"}`}>
@@ -70,9 +70,25 @@ export function QueenCellarRail({ reading, cursor, onCursor, heldId, zoom = CELL
   const { days, jars } = reading;
   const at = Math.max(0, Math.min(days.length - 1, Math.round(cursor)));
   const day: CellarDay | null = days[at] ?? null;
-  const crest = Math.max(1, reading.crestCents);
-  const water = day ? Math.max(0, Math.min(1, day.balanceCents / crest)) : 0;
-  const mark = Math.max(0, Math.min(1, reading.bufferCents / crest));
+  // The water column: the rail's height above the day ticks. Measured, so the dollar scale follows the room.
+  const [frame, setFrame] = useState({ column: 90, floor: 36 });
+  useLayoutEffect(() => {
+    const el = viewport.current;
+    if (!el) return;
+    // The floor is where the jars stand (above the day ticks); the column is the height from there to the rail's top.
+    const measure = () => {
+      const r = el.getBoundingClientRect(), seat = el.querySelector(".queen-cellar-day__seats")?.getBoundingClientRect();
+      if (!seat || r.height < 20) return;
+      const floor = Math.round(r.bottom - seat.bottom), column = Math.round(seat.bottom - r.top - 8);
+      if (column > 20) setFrame((f) => (f.floor === floor && f.column === column ? f : { floor, column }));
+    };
+    measure();
+    if (typeof ResizeObserver === "undefined") return;
+    const sizes = new ResizeObserver(measure);
+    sizes.observe(el);
+    return () => sizes.disconnect();
+  }, []);
+  const scale = cellarScale({ columnPx: frame.column, crestCents: reading.crestCents, balanceCents: day && !day.dry ? day.balanceCents : 0, bufferCents: reading.bufferCents, zoom });
   const byDay = new Map<string, CellarJar[]>();
   for (const jar of jars) byDay.set(jar.date, [...(byDay.get(jar.date) ?? []), jar]);
 
@@ -123,17 +139,17 @@ export function QueenCellarRail({ reading, cursor, onCursor, heldId, zoom = CELL
 
   return (
     <div ref={viewport} className={`queen-gate-view queen-cellar-rail${day?.dry ? " is-dry" : day?.belowBuffer ? " is-under" : ""}`} tabIndex={0} role="group"
-      style={{ ["--cellar-zoom" as string]: zoom }} data-zoom={zoom}
+      style={{ ["--cellar-zoom" as string]: Math.min(zoom, CELLAR_CELL_ZOOM_MAX) }} data-zoom={zoom} data-room-stage="" data-room-floor={frame.floor}
       aria-label={`${cellarMonthLong(reading.monthKey)}, day by day. Drag the rail or use the arrow keys; the day in the gate is the one described below.${onZoom ? " Pinch, ctrl-scroll or press plus and minus to size the kitty jars." : ""}`}
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown}>
-      <div className="queen-water" aria-hidden="true" style={{ height: `${Math.round(water * 90)}%` }} data-level={Math.round(water * 100)}>
+      <div className={`queen-water${scale.deep ? " is-deep" : ""}`} aria-hidden="true" style={{ height: `${scale.waterPx}px`, bottom: `${frame.floor}px` }} data-level={Math.round((scale.waterPx / scale.column) * 100)}>
         {/* The water reads as water (2026-09-15, Jonathan: "the water in the cellar also needs to be more apparent"): a body, a moving surface, and its name. */}
         <span className="queen-water__body" />
         <span className="queen-water__wave queen-water__wave--back" />
         <span className="queen-water__wave" />
-        <span className="queen-water__name">{day?.dry ? "The Fund's water — dry" : day?.belowBuffer ? "The Fund's water — under the buffer" : "The Fund's water"}</span>
+        <span className="queen-water__name">{day?.dry ? "The Fund's water — dry" : day?.belowBuffer ? "The Fund's water — under the buffer" : scale.deep ? "The Fund's water — deeper than the view" : "The Fund's water"}</span>
       </div>
-      <div className="queen-tidemark" aria-hidden="true" style={{ bottom: `${Math.round(mark * 90)}%` }} />
+      <div className="queen-tidemark" aria-hidden="true" style={{ bottom: `${frame.floor + scale.markPx}px`, marginBottom: 0 }} />
       <div className="queen-gate" aria-hidden="true"><span className="queen-gate__tab" /></div>
       <div className="queen-ribbon-track queen-cellar-track" style={{ transform: `translateX(${-(cursor + 0.5) * cell}px)` }}>
         <div className="queen-cellar-days">
@@ -144,7 +160,7 @@ export function QueenCellarRail({ reading, cursor, onCursor, heldId, zoom = CELL
                 <div className="queen-cellar-day__seats">
                   {here.map((jar) => (
                     <button key={jar.id} type="button" className={`queen-jar queen-jar--bill queen-jar--${jar.strike}${heldId === jar.id ? " is-held" : ""}${index === at ? " is-in-gate" : ""}${openId === jar.id ? " is-open" : ""}`}
-                      data-room-vessel={jar.id} data-type={jar.type} aria-current={index === at ? "true" : undefined} aria-expanded={onPick ? openId === jar.id : undefined}
+                      data-room-vessel={jar.id} data-type={jar.type} style={{ ["--jar-px" as string]: `${scale.jarPx(jar.targetCents)}px` }} aria-current={index === at ? "true" : undefined} aria-expanded={onPick ? openId === jar.id : undefined}
                       title={cellarPurposeWords(jar.type)}
                       aria-label={`${jar.label} — ${jar.type === "house" ? "house bill" : jar.type === "subscription" ? "subscription" : jar.type === "potential" ? "planned, not posted" : jar.type === "appointment" ? "appointment" : "recurring payment"}${jar.groupName ? ` (${jar.groupName}${jar.lineName && jar.lineName !== jar.groupName ? ` › ${jar.lineName}` : ""})` : ""}, ${jar.size >= 5 ? "the month's largest" : jar.size === 4 ? "large" : jar.size === 3 ? "middling" : jar.size === 2 ? "small" : "the smallest"}, ${cellarDayLabel(jar.date)}${jar.paid ? ", paid" : jar.full ? ", full" : ", filling"}${jar.strike === "hammer" ? ". The hammer is out" : jar.strike === "crack" ? ". Cracked: due and not full" : ""}`}
                       onClick={() => { onCursor(index); onPick?.(jar); }}>
@@ -167,7 +183,7 @@ export function CellarZoomPane({ zoom, onZoom }: { zoom: number; onZoom: (next: 
   return (
     <span className="queen-cellar-zoom" role="group" aria-label="Size of the kitty jars">
       <button type="button" className="queen-cellar-zoom__step" aria-label="Smaller jars" disabled={zoom <= CELLAR_ZOOM.min} onClick={() => onZoom(stepCellarZoom(zoom, -1))}>−</button>
-      <span className="queen-cellar-zoom__read" aria-live="polite">{Math.round(zoom * 100)}%</span>
+      <span className="queen-cellar-zoom__read" aria-live="polite">{Math.round((zoom / CELLAR_ZOOM.default) * 100)}%</span>
       <button type="button" className="queen-cellar-zoom__step" aria-label="Larger jars" disabled={zoom >= CELLAR_ZOOM.max} onClick={() => onZoom(stepCellarZoom(zoom, 1))}>+</button>
     </span>
   );
