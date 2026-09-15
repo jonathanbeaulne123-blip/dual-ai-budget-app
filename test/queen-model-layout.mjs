@@ -22,7 +22,7 @@ const measure = (page) => page.evaluate(() => {
   const stats = window.__queenWorldStats ? window.__queenWorldStats() : null;
   return {
     overflowX: doc.scrollWidth - doc.clientWidth, overflowY: doc.scrollHeight - doc.clientHeight,
-    world: home?.dataset.world, model: home?.dataset.queenModel ?? null, statsModel: stats?.model ?? null, frames: stats?.frames ?? 0,
+    world: home?.dataset.world, model: home?.dataset.queenModel ?? null, statsModel: stats?.model ?? null, bankModels: stats?.bankModels ?? null, frames: stats?.frames ?? 0,
     still: document.getElementById(document.querySelector('.queen-figure').getAttribute('aria-describedby'))?.textContent ?? '',
     note: document.querySelector('.kitty-render-note, [role=alert]')?.textContent ?? null,
   };
@@ -54,6 +54,17 @@ try {
         const file = `model-${theme}-${state}-${width}x${height}.png`;
         await page.screenshot({ path: join(output, file) });
         records.push({ label, ...m, still: m.still.slice(0, 160), file });
+        // Expanded: Protect and Build stand as the Guardian and the Mastermind (D-267).
+        const her = page.locator('.queen-figure'); const box = await her.boundingBox();
+        await her.click({ position: { x: box.width / 2, y: box.height * 0.3 } });
+        await page.waitForFunction(() => { const b = window.__queenWorldStats?.().bankModels; return b && b.protect === 'model' && b.build === 'model'; }, null, { timeout: 90000 });
+        await page.waitForTimeout(900);
+        const e = await measure(page);
+        assert.ok(e.overflowX <= 1 && e.overflowY <= 0, `${label} expanded: page scrolls ${e.overflowX}/${e.overflowY}`);
+        const expandedFile = `banks-${theme}-${state}-${width}x${height}.png`;
+        await page.screenshot({ path: join(output, expandedFile) });
+        records.push({ label: `${label} expanded`, ...e, still: e.still.slice(0, 160), file: expandedFile });
+        await page.keyboard.press('Escape');
       }
     }
     await context.close();
@@ -68,6 +79,11 @@ try {
   await page.waitForTimeout(600);
   const m = await measure(page);
   assert.equal(m.statsModel, 'drawn');
+  const her = page.locator('.queen-figure'); const hb = await her.boundingBox();
+  await her.click({ position: { x: hb.width / 2, y: hb.height * 0.3 } });
+  await page.waitForFunction(() => { const b = window.__queenWorldStats?.().bankModels; return b && b.protect === 'studio' && b.build === 'studio'; }, null, { timeout: 90000 });
+  await page.waitForTimeout(600);
+  await page.screenshot({ path: join(output, 'banks-refused-studio-390x844.png') });
   assert.doesNotMatch(m.still, /Mandevilla Queen/);
   assert.equal(m.note, null);
   await page.screenshot({ path: join(output, 'model-refused-drawn-390x844.png') });

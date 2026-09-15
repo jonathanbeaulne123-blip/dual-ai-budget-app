@@ -1,6 +1,6 @@
 ## The Queen is Jonathan's Mandevilla Queen model (2026-09-15)
 
-Branch `claude/queen-mandevilla-model`, one commit on `origin/main@25deb6d` (#491). **Risk: Medium-Low.** Presentation only, behind `VITE_QUEENS_NEST`; one new static asset (3.2 MB, 2.4 MB gzipped) loaded by the Home 3D world.
+Merged as #492 (D-266). Follow-up branch `claude/queen-bank-models`, one commit on `origin/main@9f18b95` (#492) (D-267): Home's Protect bank stands as Jonathan's Mandevilla Guardian and Build as the Mandevilla Mastermind, with the same never-alter rule and a silent fallback to the studio cats. Not pushed, not merged, not deployed. **Risk: Medium-Low.** Presentation only, behind `VITE_QUEENS_NEST`; one new static asset (3.2 MB, 2.4 MB gzipped) loaded by the Home 3D world.
 
 What changed:
 - `src/queen/world/queenModel.ts` loads, measures and fingerprints the model; `queenSculpture.ts` gains `setModel` / `setAwaitingModel` and stands the readings around it; `queenWorld.ts` loads it and reports `model` in stats; `QueenHome` switches the still words (`queenModelStill`) and sets `data-queen-model`.

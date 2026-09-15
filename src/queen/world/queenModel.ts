@@ -16,6 +16,23 @@ import * as THREE from "three";
 export const QUEEN_MODEL_URL = "/models/queen/mandevilla-queen.v1.glb";
 export const QUEEN_MODEL_SHA256 = "4954397c6a8d152d2770a8f91426e0d867aec18454ac2ff73e967e8b6861d301";
 
+/**
+ * Her two sworn companions, Jonathan's models for Home's two kitty banks
+ * (D-267): the Mandevilla Guardian — a tiny kitten in oversized glazed-clay
+ * armour — is Protect; the Mandevilla Mastermind, Lord Laurel, is Build.
+ * Shipped byte for byte like her, never altered, and fitted to the bank's
+ * own control. How the couple customises them is still to be decided.
+ */
+export type HomeBankModelId = "protect" | "build";
+export const HOME_BANK_MODELS: Record<HomeBankModelId, { name: string; url: string; sha256: string }> = {
+  protect: { name: "Mandevilla Guardian", url: "/models/queen/mandevilla-guardian.v1.glb", sha256: "a1f4d3fa1e81d1069bb7e3f9a684cfabdef1c0ab1969ed899614bbf49ab9271f" },
+  build: { name: "Mandevilla Mastermind", url: "/models/queen/mandevilla-mastermind.v1.glb", sha256: "202b00793e1211c895291718ca6ab313b17c929330191c266fe344cda478a935" },
+};
+
+export async function loadHomeBankModel(id: HomeBankModelId, signal?: AbortSignal): Promise<THREE.Group> {
+  return parseQueenModel(await readQueenModel(signal, HOME_BANK_MODELS[id].url));
+}
+
 /** Fetches the model, preferring the gzip transfer copy where the browser can inflate it. */
 export async function readQueenModel(signal?: AbortSignal, url = QUEEN_MODEL_URL): Promise<ArrayBuffer> {
   const inflate = typeof DecompressionStream !== "undefined";
