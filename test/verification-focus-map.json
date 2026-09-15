@@ -426,6 +426,19 @@
         "test/kitty-nest.test.ts"
       ],
       "reason": "The cellar's bill rail: every bill of the month is a jar on its due day and the Fund walk is the water behind it; the strike rule is exactly Jonathan's (the hammer only by hand, only when due and full, and only where the cellar can post; a crack when due and not full, still payable and named as paying from the water; a shard when paid anywhere else in the app; nothing early); breaking the bank calls the existing postDueRecurrences command behind Final Confirm and moves no bank money; lifting a jar out is the walk's deferObligationIds hypothetical and writes nothing; the rail carries no figure; and conservation is untouched"
+    },
+    {
+      "sources": [
+        "src/core/habitat.ts",
+        "src/core/demoSuite.ts",
+        "scripts/serve-queen-world-page-proof.mjs"
+      ],
+      "tests": [
+        "test/habitat.test.ts",
+        "test/demo-suite.test.ts",
+        "test/app-startup-p1.test.ts"
+      ],
+      "reason": "The Hercules habitats: two Development-only synthetic households from the Demo Suite's own generator with a story laid over twelve months through the ordinary commands — doing well reads building with the water above the mark and every bill paid on its day; doing badly reads needs-us with the water under the mark and dry, two bills overdue, subscriptions crept in, a reversal and a lapsed ritual — both replaying exactly from a seed, balanced, health-clean, and passing the Demo Suite's books verification with the investor-only checks skipped rather than failed"
     }
   ]
 }

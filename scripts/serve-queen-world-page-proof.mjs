@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 const entry = `
 import { completedExistingBooksHousehold } from '/test/fixtures/existing-books-onboarding.ts';
-import { addGoal, addRecurrence, postEntry, openChapter, recordRitualHeld, offerMove, openChapterFor } from '/src/core/index.ts';
+import { addGoal, addRecurrence, postEntry, openChapter, recordRitualHeld, offerMove, openChapterFor, generateDemoSuite } from '/src/core/index.ts';
 import { saveHousehold } from '/src/storage.ts';
 import { saveSession } from '/src/session.ts';
 import { financialAuditHash } from '/src/core/commandIdentity.ts';
@@ -19,6 +19,13 @@ const q = new URLSearchParams(location.search);
 localStorage.setItem('hearth:appearance:v1:development:guest', JSON.stringify({appearance:{theme:q.get('theme')||'classic',atmosphere:false},pending:false}));
 let h = completedExistingBooksHousehold('2026-09-12T12:00:00.000Z');
 h.householdId = 'HOUSEHOLD-QUEEN-WORLD-PROOF'; h.name = 'Our fictional home'; h.linked = false;
+/* habitat=well|hard opens one of the two Hercules habitats instead — the same generator the Demo Suite panel runs, twelve fictional months and this one, on the device only. */
+const habitat = q.get('habitat');
+if (habitat === 'well' || habitat === 'hard') {
+  h = (await generateDemoSuite({ today: q.get('today') || new Date().toISOString().slice(0, 10), seed: Number(q.get('seed') || 41), profile: 'habitat-' + habitat, numberStyle: 'realistic', buildSha: 'proof' })).household;
+  h = { ...h, householdId: 'HOUSEHOLD-HABITAT-' + habitat.toUpperCase(), linked: false };
+}
+if (!habitat) {
 h = openChapter(h, {memberId:'MEM-001',foundationId:'make-rent-boring',at:'2026-09-01T12:00:00Z'}).household;
 const chapter = openChapterFor(h); const ritual = h.rituals.find(row => row.chapterId === chapter.id);
 if (ritual) h = recordRitualHeld(h, {memberId:'MEM-001',ritualId:ritual.id,onDate:'2026-09-04'}).household;
@@ -33,6 +40,7 @@ if (q.get('rooms') === '1') {
   h = addGoal(h,{name:'A fictional trip to the shore',target:'2400',shared:true,ownerMemberId:'MEM-001'}).household;
   h = addGoal(h,{name:'A fictional weekend away',target:'700',shared:true,ownerMemberId:'MEM-001'}).household;
   if (beat) h = addRecurrence(h,{cadence:'monthly',nextDate:'2026-09-26',type:'expense',amount:'60',accountId:beat.accountId,subcategoryId:beat.subcategoryId,note:'Fictional date night'}).household;
+}
 }
 /* The fictional books carry their accepted-books receipt so the PGlite gate settles; gate=blocked leaves it off to show the books banner above her. */
 if (q.get('gate') !== 'blocked') h.booksAcceptedHash = await financialAuditHash(h);

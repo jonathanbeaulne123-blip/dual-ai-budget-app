@@ -137,6 +137,7 @@ import {
   requestCalendarPane,
   seedDemoHousehold,
   generateDemoSuite,
+  HABITAT_WORDS,
   verifyDemoSuite,
   freshDemoSeed,
   DEMO_SUITE_COMMAND_KIND,
@@ -486,6 +487,7 @@ function HomeInstruments({ collapsed, children }: { collapsed: boolean; children
   return <details className="home-instruments"><summary>The office · instruments and boards</summary><div className="home-instruments__body">{children}</div></details>;
 }
 import { householdHomeV2Enabled, queensNestEnabled } from "./core/planFeature.ts";
+import type { DemoSuiteProfile } from "./core/demoSuite.ts";
 import type { QueenShell } from "./queen/QueenHome.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
@@ -587,7 +589,7 @@ function loadWelcomeGoogleIntent(): WelcomeGoogleIntent | null {
 }
 type Guard =
   | { kind: "environment"; next: Environment }
-  | { kind: "demo-suite"; seed: number }
+  | { kind: "demo-suite"; seed: number; profile?: DemoSuiteProfile }
   | { kind: "quick-sample"; input: QuickSampleInput; preview: ReturnType<typeof previewQuickSampleScenario> }
   | { kind: "erase-development" }
   | { kind: "clear-this-phone" }
@@ -3638,7 +3640,7 @@ export function App() {
     }
   }
 
-  async function createOrReplayDemoSuite(seed: number): Promise<void> {
+  async function createOrReplayDemoSuite(seed: number, profile: DemoSuiteProfile = "investor"): Promise<void> {
     if (environment !== "development") throw new Error("Demo Suite is Development-only.");
     const memberId = session?.memberId;
     const current = householdRef.current;
@@ -3662,7 +3664,7 @@ export function App() {
     const generated = await generateDemoSuite({
       today,
       seed,
-      profile: "investor",
+      profile,
       numberStyle: "realistic",
       buildSha: import.meta.env.VITE_GIT_SHA || "local-development",
     });
@@ -3670,7 +3672,7 @@ export function App() {
     let accepted: Household;
     if (current.syntheticFixture?.kind === "hearth-demo-suite") {
       candidate = preserveDemoShowcaseContinuity(current, candidate);
-      if(useLedgerSync)candidate=captureExplicit(current,{household:candidate,postedIds:[],warnings:[],undo:{id:crypto.randomUUID(),label:"Replace Demo Suite",snapshot:current,postedIds:[]}},"regenerateDemoSuite",[DEMO_SUITE_VERSION,{today,seed,profile:"investor",numberStyle:"realistic",buildSha:import.meta.env.VITE_GIT_SHA||"local-development"}]).household;
+      if(useLedgerSync)candidate=captureExplicit(current,{household:candidate,postedIds:[],warnings:[],undo:{id:crypto.randomUUID(),label:"Replace Demo Suite",snapshot:current,postedIds:[]}},"regenerateDemoSuite",[DEMO_SUITE_VERSION,{today,seed,profile,numberStyle:"realistic",buildSha:import.meta.env.VITE_GIT_SHA||"local-development"}]).household;
       const confirmationId = newConfirmationId();
       const outcome = await persist(candidate, {
         id: confirmationId,
@@ -7746,7 +7748,15 @@ export function App() {
                 />
                 <div className="button-row demo-suite-actions" style={{ marginTop: 8 }}>
                   <button className="primary" disabled={busy} onClick={() => setGuard({ kind: "demo-suite", seed: freshDemoSeed() })}>Investor preview</button>
-                  <button className="ghost" disabled={busy || !demoSeed} onClick={() => setGuard({ kind: "demo-suite", seed: Number(demoSeed) >>> 0 })}>Replay seed</button>
+                  <button className="ghost" disabled={busy || !demoSeed} onClick={() => setGuard({ kind: "demo-suite", seed: Number(demoSeed) >>> 0, profile: household.syntheticFixture?.kind === "hearth-demo-suite" ? household.syntheticFixture.profile : "investor" })}>Replay seed</button>
+                </div>
+                <p className="kicker" style={{ marginTop: 14 }}>Hercules habitats · two households to walk around in</p>
+                <Whisper mode="line">The same twelve fictional months, told two ways, so the two of you can open every room with past and present already in it.</Whisper>
+                <p className="muted" style={{ margin: "6px 0 0" }}><strong>{HABITAT_WORDS.well.title}:</strong> {HABITAT_WORDS.well.line}</p>
+                <p className="muted" style={{ margin: "4px 0 0" }}><strong>{HABITAT_WORDS.hard.title}:</strong> {HABITAT_WORDS.hard.line}</p>
+                <div className="button-row demo-suite-actions" style={{ marginTop: 8 }} data-testid="habitat-actions">
+                  <button className="primary" disabled={busy} onClick={() => setGuard({ kind: "demo-suite", seed: freshDemoSeed(), profile: "habitat-well" })}>Habitat · doing well</button>
+                  <button className="primary" disabled={busy} onClick={() => setGuard({ kind: "demo-suite", seed: freshDemoSeed(), profile: "habitat-hard" })}>Habitat · doing badly</button>
                   {household.syntheticFixture?.kind === "hearth-demo-suite" && (
                     <button className="ghost" disabled={busy} onClick={() => {
                       void (async () => {
@@ -7764,7 +7774,7 @@ export function App() {
                 </div>
                 {demoReport && (
                   <div className="muted" style={{ marginTop: 10 }} data-testid="demo-suite-report" role="status" aria-live="polite">
-                    <strong>{demoReport.verifiedRevision !== household.revision ? "Not verified after books changed" : demoReport.status === "ready" ? "Ready" : "Not ready"}</strong> · {demoReport.checks.filter((row) => row.status === "pass").length}/{demoReport.checks.length} gates · {demoReport.tools.filter((row) => row.status !== "unavailable").length}/{demoReport.tools.length} Hercules calculations
+                    <strong>{demoReport.verifiedRevision !== household.revision ? "Not verified after books changed" : demoReport.status === "ready" ? "Ready" : "Not ready"}</strong> · {demoReport.checks.filter((row) => row.status === "pass").length}/{demoReport.checks.filter((row) => row.status !== "skip").length} gates · {demoReport.tools.filter((row) => row.status !== "unavailable").length}/{demoReport.tools.length} Hercules calculations
                     <br />Attestation <code>{demoReport.attestationSha256.slice(0, 16)}…</code> · seed {demoReport.seed}
                     {demoReport.verifiedRevision !== household.revision && (
                       <ul className="demo-suite-failures">
@@ -8121,7 +8131,7 @@ export function App() {
       )}
       {environment === "development" && guard?.kind === "demo-suite" && (
         <ConfirmSheet
-          title={household.syntheticFixture?.kind === "hearth-demo-suite" ? "Replace this synthetic showcase?" : "Create a dedicated synthetic showcase?"}
+          title={guard.profile?.startsWith("habitat-") ? (household.syntheticFixture?.kind === "hearth-demo-suite" ? `Replace this showcase with the habitat ${guard.profile === "habitat-well" ? "doing well" : "doing badly"}?` : `Create the Hercules habitat ${guard.profile === "habitat-well" ? "doing well" : "doing badly"}?`) : household.syntheticFixture?.kind === "hearth-demo-suite" ? "Replace this synthetic showcase?" : "Create a dedicated synthetic showcase?"}
           body={`Seed ${guard.seed} creates twelve months of fictional CAD, shifts, schedules, Evidence envelopes, bills, appointments, claims, goals, Fund plans, reconciliations, and audit coverage. Your ordinary Development household is not replaced. On an existing synthetic showcase, only that showcase is regenerated. Schedule and Evidence rows do not post money.`}
           extra={googleStepUpExtra}
           confirmLabel="Generate & verify"
@@ -8129,11 +8139,12 @@ export function App() {
           onCancel={() => setGuard(null)}
           onConfirm={() => {
             const seed = guard.seed;
+            const profile = guard.profile ?? "investor";
             void (async () => {
               setBusy(true);
               try {
                 setGuard(null);
-                await createOrReplayDemoSuite(seed);
+                await createOrReplayDemoSuite(seed, profile);
               } catch (caught) {
                 setError(caught instanceof Error ? caught.message : String(caught));
               } finally {

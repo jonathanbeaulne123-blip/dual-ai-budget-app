@@ -1851,7 +1851,8 @@ export const addPotentialExpense = captureCommand("addPotentialExpense", functio
   const previous = cloneHousehold(household);
   const next = cloneHousehold(household);
   const at = nowIso();
-  const id = `PLAN-EX-${crypto.randomUUID()}`;
+  // Through the runtime-aware allocator, so a synthetic showcase that plans an expense replays exactly.
+  const id = nextId("PLAN-EX-", (next.potentialExpenses ?? []).map((row) => row.id));
   const plan: PotentialExpensePlan = {
     id,
     date,
