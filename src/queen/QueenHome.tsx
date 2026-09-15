@@ -19,7 +19,7 @@ import { QueenWorld, type QueenWorldMode } from "./QueenWorld.tsx";
 import { queenSceneryKind } from "./world/queenScenery.ts";
 import { QueenSceneryFlat } from "./QueenSceneryFlat.tsx";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
-import { guardQueenDesignSave, queenBankFired, queenBankGlaze, queenBankPiece, queenForm, queenGlazeAxis, queenLook, queenPortraits, queenPose, queenWheel, queenWorldStill, queenWornCharms, type QueenPaintablePart } from "./world/queenAuthoring.ts";
+import { guardQueenDesignSave, queenBankFired, queenBankGlaze, queenBankPiece, queenForm, queenGlazeAxis, queenLook, queenPortraits, queenModelStill, queenPose, queenWheel, queenWorldStill, queenWornCharms, type QueenPaintablePart } from "./world/queenAuthoring.ts";
 import { queenFormProfile, queenPortraitDue, queenPortraitOf, queenRingCount, type QueenFormHandles, type QueenPortraitV1, type QueenWheelV1 } from "../core/queenForm.ts";
 import { localHour, queenLight } from "../core/queenLight.ts";
 import { QueenWheel } from "./QueenWheel.tsx";
@@ -273,6 +273,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   }, [nest, banks.protect.share, banks.build.share, shelf]);
   const worldBanks = useMemo<WorldBankInput[]>(() => bankPieces.map(({ id, piece, fired, step }) => ({ id, piece, fired, step })), [bankPieces]);
   const [worldLive, setWorldLive] = useState(false);
+  const [worldModel, setWorldModel] = useState<"model" | "drawn">("drawn");
   const worldStats = useRef<(() => WorldStats) | null>(null);
   const worldPick = useRef<WorldPick | null>(null);
   const onWorldLive = useCallback((live: boolean, stats?: () => WorldStats, pick?: WorldPick) => {
@@ -578,12 +579,13 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const budWords = buds.length === 0 ? "No buds: nothing is growing yet." : `${buds.length} ${buds.length === 1 ? "bud" : "buds"}: ${buds.map((bud) => bud.name).join(", ")}.`;
   const feetWords = feet.count === 0 ? "Nothing dated is at her feet." : `${feet.count} dated ${feet.count === 1 ? "obligation" : "obligations"} at her feet; the nearest is ${feet.nearness[0] === "near" ? "within the week" : feet.nearness[0] === "soon" ? "within two weeks" : "later this month"}.`;
   const handsWords = hands.kind === "move" ? `At her hands, one Move: ${sentence(hands.move.text)}.` : "Her hands are empty. Nothing needs doing.";
-  const charmWords = charms.length === 0 ? "" : ` She wears ${charms.length} ${charms.length === 1 ? "charm" : "charms"}: ${charms.map((charm) => `${queenCharmLabel(charm.kind).toLowerCase()} on ${queenCharmSeatWords(charm)}`).join(", ")}.`;
+  const charmWords = charms.length === 0 ? "" : worldLive && worldModel === "model" ? ` ${charms.length} ${charms.length === 1 ? "charm is" : "charms are"} kept for her drawn figure; her sculpted figure wears none.` : ` She wears ${charms.length} ${charms.length === 1 ? "charm" : "charms"}: ${charms.map((charm) => `${queenCharmLabel(charm.kind).toLowerCase()} on ${queenCharmSeatWords(charm)}`).join(", ")}.`;
   const ringWords = form.rings === 0 ? " No growth rings yet: no Chapter has closed." : ` ${form.rings} growth ${form.rings === 1 ? "ring" : "rings"}: one for each closed Chapter, permanent.`;
   const formWords = wheel ? ` Thrown on the wheel: form pulled by ${household.members.find((row) => row.id === wheel.pull.by)?.name ?? "one of you"}, rim opened by ${household.members.find((row) => row.id === wheel.rim.by)?.name ?? "one of you"}.` : " Not yet thrown on the wheel.";
   const tipWords = tipped ? ` Tipped over: her underside shows the makers' marks ${marks.initials.join(" and ")} and the date she was last worked on, ${marks.date}.` : "";
   const lightWords = ` ${light.words}`;
-  const stillWords = `${worldLive ? queenWorldStill(still) : still.description} ${glazeWords} ${bodyWords} ${crownWords} ${seamWords} ${vineWords} ${budWords} ${feetWords} ${handsWords}${charmWords}${ringWords}${formWords}${tipWords}${lightWords}`;
+  const sculpted = worldLive && worldModel === "model";
+  const stillWords = `${sculpted ? queenModelStill(still) : worldLive ? queenWorldStill(still) : still.description} ${glazeWords} ${bodyWords} ${crownWords} ${seamWords} ${vineWords} ${budWords} ${feetWords} ${handsWords}${charmWords}${ringWords}${formWords}${tipWords}${lightWords}`;
   const bankWords = (id: QueenBankId) => banks[id].banks.map((bank) => `${NEST_CATEGORY_LABELS[bank.category!]} ${formatCad(bank.amountCents)}`).join(", ");
   const waiting = presence.filter((row) => row.waitingOn).length + (hands.kind === "move" ? 1 : 0);
 
@@ -621,7 +623,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       data-open={open ?? "none"}
       data-side={open ? PANEL_SIDE[open] : "right"}
       data-easy-read={easyRead ? "true" : "false"}
-      data-world={worldLive ? "3d" : "flat"}
+      data-world={worldLive ? "3d" : "flat"} data-queen-model={worldLive ? worldModel : undefined}
       data-charms={charms.length}
       data-charm-selected={selected ? "true" : "false"}
       data-rings={form.rings}
@@ -638,7 +640,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       <div className="queen-field" onClick={onFieldClick} inert={inRoom}>
         <QueenSceneryFlat kind={world3d} />
         <div className="queen-rings" aria-hidden="true" />
-        <QueenWorld root={root} queen={worldQueen} banks={worldBanks} expanded={expanded} breathing={scene === "home" && !expanded && !open} scenery={world3d} sceneryPaper={worldPaper} ambient={!atmospherePaused} mode={world} onLive={onWorldLive} />
+        <QueenWorld root={root} queen={worldQueen} banks={worldBanks} expanded={expanded} breathing={scene === "home" && !expanded && !open} scenery={world3d} sceneryPaper={worldPaper} ambient={!atmospherePaused} mode={world} onLive={onWorldLive} onModel={setWorldModel} />
 
         <button type="button" className="queen-door queen-door--together" aria-label={`Together — decisions waiting on both of you${waiting ? `: ${waiting} waiting` : ""}`}
           aria-expanded={open === "together"} aria-controls={panelId} onClick={(event) => openDoor("together", event.currentTarget)}>

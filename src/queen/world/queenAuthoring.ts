@@ -240,6 +240,19 @@ export function queenPose(still: Pick<QueenStill, "posture" | "eyes" | "gaze" | 
 }
 
 /** The 3D path's own legible still: what the body group, the eyes and the surface are doing, in words. */
+/**
+ * The same still when Jonathan's sculpted Queen stands in the world (D-266).
+ * Her face is sculpted serene and does not move, so the words say only what
+ * the 3D path actually shows: her posture, and the coins beside her that
+ * carry the evidence's freshness.
+ */
+export function queenModelStill(still: Pick<QueenStill, "state" | "posture" | "eyes" | "gaze" | "brow" | "mouth" | "glaze" | "description">): string {
+  const pose = queenPose(still);
+  const lean = pose.lean === 0 ? "upright" : `leaning ${Math.abs((pose.lean * 180) / Math.PI).toFixed(1)}° ${pose.lean < 0 ? "in" : "back"}`;
+  const coins = still.glaze === "glazed" ? "polished" : still.glaze === "offline" ? "dull, offline" : "dull";
+  return `${still.description} In the world: the Mandevilla Queen in her planter, ${lean} at ${Math.round(pose.scale * 100)}% scale, eyes closed as sculpted, the coins beside her ${coins}.`;
+}
+
 export function queenWorldStill(still: Pick<QueenStill, "state" | "posture" | "eyes" | "gaze" | "brow" | "mouth" | "glaze" | "description">): string {
   const pose = queenPose(still);
   const lean = pose.lean === 0 ? "upright" : `leaning ${Math.abs((pose.lean * 180) / Math.PI).toFixed(1)}° ${pose.lean < 0 ? "in" : "back"}`;

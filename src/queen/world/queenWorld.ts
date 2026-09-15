@@ -9,6 +9,7 @@ import type { QueenGlazeAxis, QueenPose } from "./queenAuthoring.ts";
 import type { QueenCharmPart, QueenCharmV1 } from "../../core/queenCharms.ts";
 import { queenLampShare, type QueenLight } from "../../core/queenLight.ts";
 import type { QueenForm } from "./queenCharmSurface.ts";
+import { loadQueenModel } from "./queenModel.ts";
 
 /**
  * The Home world: one renderer, one scene, one still camera. A diorama you
@@ -40,7 +41,7 @@ export type WorldQueenInput = {
   light: QueenLight;
 };
 export type WorldLayout = { host: WorldRect; queen: WorldRect; banks: Record<string, WorldRect> };
-export type WorldStats = { frames: number; lastFrameMs: number; maxFrameMs: number; sculptures: number; breathing: boolean; scenery: QueenSceneryKind | "none"; ambient: boolean; sceneryGeometries: number; charms: number; charmDrawCalls: number; charmGeometries: number; keyLight: number; keyHeight: number; keyColor: string; rings: number; tipped: boolean };
+export type WorldStats = { frames: number; lastFrameMs: number; maxFrameMs: number; sculptures: number; breathing: boolean; scenery: QueenSceneryKind | "none"; ambient: boolean; sceneryGeometries: number; charms: number; charmDrawCalls: number; charmGeometries: number; keyLight: number; keyHeight: number; keyColor: string; rings: number; tipped: boolean; model: "model" | "awaiting" | "drawn" };
 export type WorldPick = (clientX: number, clientY: number) => { part: QueenCharmPart; u: number; v: number } | null;
 
 const VISIBLE_HEIGHT = 10;
@@ -48,7 +49,7 @@ const FOV = 34;
 const BREATH_MS = 6000;
 const BREATH_PX = 14;
 
-export function createQueenWorld(host: HTMLElement, options: { reducedMotion: boolean; onLost?: () => void; brass?: string; wood?: string }) {
+export function createQueenWorld(host: HTMLElement, options: { reducedMotion: boolean; onLost?: () => void; brass?: string; wood?: string; /** Jonathan's Mandevilla Queen (D-266). Tests pass `null` to keep the drawn figure; a failed load keeps it too. */ loadModel?: ((signal: AbortSignal) => Promise<THREE.Object3D>) | null; onModel?: (state: "model" | "drawn") => void }) {
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 1.5));
   renderer.shadowMap.enabled = false;
@@ -99,6 +100,16 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
 
   const queen: QueenSculpture = createQueenSculpture({ reducedMotion: options.reducedMotion });
   scene.add(queen.group);
+  // Her model: nothing of her is drawn while it is on its way, so the old figure never flashes up first. If it cannot arrive, she is drawn as before.
+  const modelLoad = new AbortController();
+  const loadModel = options.loadModel === undefined ? loadQueenModel : options.loadModel;
+  if (loadModel) {
+    queen.setAwaitingModel(true);
+    loadModel(modelLoad.signal)
+      .then((model) => { if (dead) return; queen.setModel(model); lastLayoutKey = ""; invalidate(); options.onModel?.("model"); })
+      .catch(() => { if (dead) return; queen.setAwaitingModel(false); invalidate(); options.onModel?.("drawn"); });
+    cleanup.push(() => modelLoad.abort());
+  }
   /** The place she is in. One at a time, rebuilt only when the scene changes, disposed with the world. */
   let scenery: QueenScenery | null = null;
   let sceneryFloor = 0, sceneryScale = 1;
@@ -114,7 +125,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
   let pending = 0;
   let unitsPerPx = VISIBLE_HEIGHT / Math.max(1, host.clientHeight);
   let lastLayoutKey = "";
-  const stats: WorldStats = { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 1, breathing: false, scenery: "none", ambient: false, sceneryGeometries: 0, charms: 0, charmDrawCalls: 0, charmGeometries: 0, keyLight: 1.9, keyHeight: 7, keyColor: "#ffe9ca", rings: 0, tipped: false };
+  const stats: WorldStats = { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 1, breathing: false, scenery: "none", ambient: false, sceneryGeometries: 0, charms: 0, charmDrawCalls: 0, charmGeometries: 0, keyLight: 1.9, keyHeight: 7, keyColor: "#ffe9ca", rings: 0, tipped: false, model: "drawn" };
   const raycaster = new THREE.Raycaster();
   let marksKey = "null";
   let hostRect: WorldRect = { x: 0, y: 0, w: host.clientWidth, h: host.clientHeight };
@@ -179,7 +190,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     camera,
     renderer,
     queen,
-    stats: () => { const c = queen.charmCounts(); return { ...stats, sculptures: 1 + banks.size, charms: c.instances, charmDrawCalls: c.drawCalls, charmGeometries: c.geometries, keyLight: +key.intensity.toFixed(3), keyHeight: +key.position.y.toFixed(2), keyColor: `#${key.color.getHexString()}`, rings: queen.form.rings, tipped: queen.tipped }; },
+    stats: () => { const c = queen.charmCounts(); return { ...stats, sculptures: 1 + banks.size, charms: c.instances, charmDrawCalls: c.drawCalls, charmGeometries: c.geometries, keyLight: +key.intensity.toFixed(3), keyHeight: +key.position.y.toFixed(2), keyColor: `#${key.color.getHexString()}`, rings: queen.form.rings, tipped: queen.tipped, model: queen.modelState }; },
     /** A viewport point → where it lands on her paintable surface. Null off her. */
     pick(clientX: number, clientY: number) {
       if (dead || !hostRect.w || !hostRect.h) return null;

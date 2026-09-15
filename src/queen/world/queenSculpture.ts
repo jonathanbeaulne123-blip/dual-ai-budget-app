@@ -7,6 +7,7 @@ import type { QueenStone } from "../../core/queenPresentation.ts";
 import type { QueenCharmPart, QueenCharmV1 } from "../../core/queenCharms.ts";
 import { QUEEN_FORM_BASE, QUEEN_HEAD, QUEEN_SKIRT_PHI_START, queenSeamPathsFor, queenSkirtProfilePoints, type QueenForm } from "./queenCharmSurface.ts";
 import { createQueenCharmSet } from "./queenCharmSet.ts";
+import { queenModelAnchors, queenModelResources, type QueenModelAnchors } from "./queenModel.ts";
 
 /**
  * The Queen as a sculpture: a seated, matriarchal terracotta cat with a
@@ -35,6 +36,17 @@ import { createQueenCharmSet } from "./queenCharmSet.ts";
  * whatever is painted, the fired-earthenware grain of the real pot reads
  * through: mottled clay and its white splatter, composited over the paint so
  * it tints the couple's work rather than replacing it. No money is read here.
+ *
+ * Jonathan's model (D-266). When `setModel` hands her the Mandevilla Queen
+ * sculpt, that model *is* her, exactly as sculpted: the drawn body, face,
+ * hair and crown step aside, and nothing here ever touches the model's
+ * meshes, materials or transforms. The readings move around her instead —
+ * the crown light shines on her vine crown, the fill is a stack of brass
+ * coins beside her planter (glossy when the evidence is fresh, dull when it
+ * is not), the gold seams are kintsugi on the planter, the Chapter's new
+ * growth (young leaves, pink-tipped buds) is set on her vines, the stones
+ * stay at her feet, and the makers' marks stay under her saucer. Paint,
+ * charms and the thrown form are kept and saved but not drawn on her.
  */
 export type QueenSculptureOptions = {
   clay?: string;
@@ -430,6 +442,8 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
 
   // ---- charms: instanced on the body group, riding posture and fill, never on a reserved mesh ----
   const charms = createQueenCharmSet(body, { ink: options.ink });
+  /** The couple's charms, kept while her sculpted model stands in: they are laid on the drawn figure only. */
+  let charmRows: QueenCharmV1[] = [];
   const pickable = [skirt, head];
   const partOf: Record<string, QueenCharmPart> = { "queen-skirt": "body", "queen-head": "head" };
 
@@ -458,6 +472,142 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
     }
   };
 
+  // ---- Jonathan's model: when it is hers, the drawn figure steps aside and the readings stand around it ----
+  let model: THREE.Object3D | null = null;
+  let awaiting = false;
+  let fillLevel = 0, growthLeaves = 0, growthBuds = 0;
+  const holder = new THREE.Group();
+  holder.name = "queen-model";
+  body.add(holder);
+  /** The drawn figure: everything that is her look when there is no model. Readings are not in this list. */
+  const drawn: THREE.Object3D[] = [skirt, shoulders, hands, paws, tail, tailTip, head, muzzle, ears.earL, ears.earR, face, vine,
+    ...body.children.filter((child) => child.name === "queen-cheek"),
+    ...crown.children.filter((child) => child !== crownLight)];
+  const drawnCrown = crown.position.clone();
+  /** Brass coins stacked beside her planter: the fill, one coin a step. They take the glaze axis; the model never does. */
+  const coinMat = mat(new THREE.MeshStandardMaterial({ color: "#c49a4a", roughness: 0.2, metalness: 0.85, envMapIntensity: 1 }));
+  const coinRim = mat(new THREE.MeshStandardMaterial({ color: "#8f6d2f", roughness: 0.35, metalness: 0.8 }));
+  const coinGeo = geo(new THREE.CylinderGeometry(0.15, 0.15, 0.05, 28));
+  const coinEdge = geo(new THREE.TorusGeometry(0.15, 0.008, 6, 28));
+  const coins = new THREE.Group();
+  coins.name = "queen-coins";
+  coins.visible = false;
+  group.add(coins);
+  const coinStack = Array.from({ length: 10 }, (_, i) => {
+    const coin = new THREE.Group();
+    coin.name = "queen-coin";
+    const disc = new THREE.Mesh(coinGeo, coinMat);
+    const edge = new THREE.Mesh(coinEdge, coinRim);
+    edge.rotation.x = Math.PI / 2;
+    edge.position.y = 0.025;
+    coin.add(disc, edge);
+    // A hand-made stack: each coin a little off true, so it reads as coins and not a cylinder.
+    coin.position.set(Math.sin(i * 2.3) * 0.018, 0.025 + i * 0.052, Math.cos(i * 1.7) * 0.018);
+    coin.rotation.set(Math.sin(i * 1.3) * 0.04, i * 0.6, Math.cos(i * 0.9) * 0.04);
+    coin.visible = false;
+    coins.add(coin);
+    return coin;
+  });
+  let modelSeams: THREE.Mesh[] = [];
+  const modelSeamGroup = new THREE.Group();
+  modelSeamGroup.name = "queen-model-seams";
+  body.add(modelSeamGroup);
+  const growth = new THREE.Group();
+  growth.name = "queen-growth";
+  body.add(growth);
+  /** Young leaves: a spring green a shade lighter than hers, so the Chapter's new growth reads against her own foliage. */
+  let youngLeaf: THREE.MeshStandardMaterial | null = null;
+  let growthLeafClusters: THREE.Group[] = [];
+  let growthBudForms: THREE.Group[] = [];
+  const clearModelExtras = () => {
+    for (const seam of modelSeams) { geometries.delete(seam.geometry); seam.geometry.dispose(); }
+    modelSeams = [];
+    modelSeamGroup.clear();
+    for (const node of [...growthLeafClusters, ...growthBudForms]) node.traverse((child) => { if (child instanceof THREE.Mesh) { geometries.delete(child.geometry); child.geometry.dispose(); } });
+    growthLeafClusters = []; growthBudForms = [];
+    growth.clear();
+  };
+  const buildModelExtras = (anchors: QueenModelAnchors, scale: number) => {
+    clearModelExtras();
+    // Kintsugi on the planter: three mends running up from its foot like the cracks they repair — straight runs with sharp turns, hugging the thrown profile.
+    const { bottom, top, radiusAt } = anchors.pot;
+    for (const [index, angle] of [-0.5, 0.2, 0.62].entries()) {
+      const path = new THREE.CurvePath<THREE.Vector3>();
+      const from = bottom + (top - bottom) * 0.04, to = top - (top - bottom) * (0.22 + index * 0.12);
+      const steps = 5;
+      let last: THREE.Vector3 | null = null;
+      for (let k = 0; k <= steps; k += 1) {
+        const y = from + ((to - from) * k) / steps;
+        const a = angle + (k % 2 ? 1 : -1) * (0.035 + ((k * 7 + index * 3) % 4) * 0.012) * (k ? 1 : 0);
+        const r = radiusAt(y) + 0.0025;
+        const point = new THREE.Vector3(Math.sin(a) * r * scale, y * scale, Math.cos(a) * r * scale);
+        if (last) path.add(new THREE.LineCurve3(last, point));
+        last = point;
+      }
+      const seam = new THREE.Mesh(geo(new THREE.TubeGeometry(path as unknown as THREE.Curve<THREE.Vector3>, steps * 6, [0.014, 0.012, 0.012][index]!, 5, false)), goldSeam);
+      seam.name = "queen-seam";
+      seam.visible = index < seamCount;
+      modelSeamGroup.add(seam);
+      modelSeams.push(seam);
+    }
+    // The Chapter's new growth on her vines: young leaves on her white side and her crimson side in turn, buds among them.
+    const blade = youngLeaf ??= mat(new THREE.MeshStandardMaterial({ color: "#8cc063", roughness: 0.55 }));
+    const seats = [0, 1, 2, 3, 4].flatMap((i) => [anchors.hair.left[i], anchors.hair.right[i]]).filter((p): p is THREE.Vector3 => Boolean(p));
+    growthLeafClusters = [0, 1, 2, 3, 4].map((index) => {
+      const cluster = new THREE.Group();
+      cluster.name = "queen-leaf";
+      const seat = seats[index * 2 % Math.max(1, seats.length)];
+      if (seat) cluster.position.copy(seat).multiplyScalar(scale);
+      for (const side of [-1, 1]) {
+        const l = new THREE.Mesh(geo(new THREE.SphereGeometry(0.075, 12, 9)), blade);
+        l.name = "queen-leaf-blade";
+        l.scale.set(0.62, 0.2, 1);
+        l.position.set(side * 0.06, 0, 0.05);
+        l.rotation.set(0.95, side * 0.6, side * 0.45);
+        cluster.add(l);
+      }
+      cluster.visible = false;
+      growth.add(cluster);
+      return cluster;
+    });
+    growthBudForms = [0, 1, 2, 3].map((index) => {
+      const seat = seats[(index * 2 + 1) % Math.max(1, seats.length)];
+      const b = budForm(index % 2 ? petalRed : petalWhite);
+      b.name = "queen-bud";
+      if (seat) b.position.copy(seat).multiplyScalar(scale).add(new THREE.Vector3(0, 0, 0.04));
+      b.rotation.set(0.3, index * 1.4, (index % 2 ? 1 : -1) * 0.25);
+      b.scale.setScalar(1.15);
+      b.visible = false;
+      growth.add(b);
+      b.traverse((child) => { if (child instanceof THREE.Mesh) geometries.add(child.geometry); });
+      return b;
+    });
+    // Stand the coins clear of her saucer, to her right, below her hair.
+    coins.position.set((anchors.saucer.radius * scale) + 0.36, 0, 0.5);
+    underside.scale.setScalar(Math.max(0.2, (anchors.saucer.radius * scale) / 0.9));
+    crown.position.copy(anchors.crown).multiplyScalar(scale);
+  };
+  let modelResources: ReturnType<typeof queenModelResources> | null = null;
+  const applyMode = () => {
+    charms.setCharms(model || awaiting ? [] : charmRows);
+    for (const node of drawn) node.visible = !model && !awaiting;
+    for (const [index, seam] of seams.entries()) seam.visible = !model && !awaiting && index < seamCount;
+    holder.visible = Boolean(model);
+    coins.visible = Boolean(model);
+    growth.visible = Boolean(model);
+    modelSeamGroup.visible = Boolean(model);
+    if (!model) { crown.position.copy(drawnCrown); underside.scale.setScalar(1); }
+    for (const [index, coin] of coinStack.entries()) coin.visible = index < fillLevel;
+    for (const [index, l] of growthLeafClusters.entries()) l.visible = index < growthLeaves;
+    for (const [index, b] of growthBudForms.entries()) b.visible = index < growthBuds;
+  };
+  const applyCoinAxis = () => {
+    coinMat.roughness = 0.12 + axis.roughness * 0.7;
+    coinMat.metalness = axis === QUEEN_GLAZE_AXIS.glazed ? 0.9 : 0.55;
+    coinMat.envMapIntensity = axis === QUEEN_GLAZE_AXIS.glazed ? 1 : 0.35;
+    coinMat.needsUpdate = true;
+  };
+
   // ---- state ----
   let restScale = 1, lean = 0, breathOffset = 0, tipped = false;
   const applyBody = () => {
@@ -470,12 +620,54 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
   };
   present();
   applyAxis();
+  applyCoinAxis();
 
   return {
     group,
     /** Total height in world units at scale 1, for framing. */
     height: QUEEN_HEIGHT,
     get disposed() { return disposed; },
+    /** Hand her Jonathan's model (fitted to her height here), or null to draw her again. The model is never altered. */
+    setModel(next: THREE.Object3D | null) {
+      if (disposed || next === model) return;
+      if (model) {
+        holder.remove(model);
+        if (modelResources) {
+          for (const g of modelResources.geometries) { geometries.delete(g); g.dispose(); }
+          for (const m of modelResources.materials) { materials.delete(m); m.dispose(); }
+          for (const t of modelResources.textures) { textures.delete(t); t.dispose(); }
+        }
+        modelResources = null;
+        clearModelExtras();
+      }
+      model = next;
+      awaiting = false;
+      if (next) {
+        const anchors = queenModelAnchors(next);
+        const box = new THREE.Box3().setFromObject(next);
+        const scale = QUEEN_HEIGHT / anchors.height;
+        holder.scale.setScalar(scale);
+        // The planter is thrown on the model's own axis; only the base is lifted to her floor.
+        holder.position.set(0, -box.min.y * scale, 0);
+        holder.add(next);
+        modelResources = queenModelResources(next);
+        for (const g of modelResources.geometries) geometries.add(g);
+        for (const m of modelResources.materials) materials.add(m);
+        for (const t of modelResources.textures) textures.add(t);
+        buildModelExtras(anchors, scale);
+      }
+      applyMode();
+    },
+    /** While the model is on its way, draw nothing of her rather than the old figure for a moment. */
+    setAwaitingModel(next: boolean) {
+      if (disposed) return;
+      awaiting = next && !model;
+      applyMode();
+    },
+    get model() { return model; },
+    get modelState(): "model" | "awaiting" | "drawn" { return model ? "model" : awaiting ? "awaiting" : "drawn"; },
+    /** What stands around the model, for tests and evidence. */
+    aroundModel: { coins, coinStack, coinMaterial: coinMat, growth, crownLight, get seams() { return modelSeams; }, get leaves() { return growthLeafClusters; }, get buds() { return growthBudForms; } },
     /** Names of the reserved groups and meshes, for tests that assert the paint never reaches them. */
     reserved: { vine, crown, crownLight, face, eyesOpen, eyesClosed, hands, seams, feet, stones, belly, underside, shoulders },
     paintable: { body: skirt, head, earL: ears.earL, earR: ears.earR, tail, paws },
@@ -483,7 +675,7 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
     counts() { const c = charms.counts(); return { geometries: geometries.size + c.geometries, materials: materials.size + (c.geometries ? c.materials : 0), textures: textures.size }; },
     charmCounts() { return charms.counts(); },
     /** The charms on her, in the piece's own coordinates. Sanitized by the caller; drawn here. */
-    setCharms(next: QueenCharmV1[]) { charms.setCharms(next); },
+    setCharms(next: QueenCharmV1[]) { charmRows = next; charms.setCharms(model || awaiting ? [] : next); },
     /** Her form: the thrown handles and the ring count. The lathe is rebuilt only when it changes. */
     setForm(next: QueenForm) {
       if (next.rings === form.rings && next.handles.belly === form.handles.belly && next.handles.waist === form.handles.waist && next.handles.shoulder === form.handles.shoulder && next.handles.neck === form.handles.neck) return;
@@ -516,6 +708,8 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
     },
     /** Where a ray lands on her charm surface: the part and its uv, or null off her or on a reserved mesh. */
     pick(raycaster: THREE.Raycaster): { part: QueenCharmPart; u: number; v: number } | null {
+      // Charms are not drawn on the model; the flat pick seats them instead.
+      if (model || awaiting) return null;
       const hit = raycaster.intersectObjects(pickable, false)[0];
       if (!hit || !hit.uv) return null;
       const part = partOf[hit.object.name];
@@ -539,12 +733,15 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
       const width = 0.86 + (n / 10) * 0.14;
       belly.scale.set(width, 1, width);
       charms.setBellyWidth(width);
+      fillLevel = Math.round(n);
+      for (const [index, coin] of coinStack.entries()) coin.visible = index < fillLevel;
     },
     /** Evidence freshness owns the surface. There is no setFired: nobody fires her. */
     setGlaze(next: QueenGlazeAxis) {
       if (next === axis) return;
       axis = next;
       applyAxis();
+      applyCoinAxis();
       charms.setGlaze(next);
       present();
     },
@@ -555,7 +752,8 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
     },
     setSeams(count: number) {
       seamCount = count;
-      for (const [index, seam] of seams.entries()) seam.visible = index < seamCount;
+      for (const [index, seam] of seams.entries()) seam.visible = !model && !awaiting && index < seamCount;
+      for (const [index, seam] of modelSeams.entries()) seam.visible = index < seamCount;
     },
     setVine(chapter: boolean, growth: number, budCount: number) {
       // Acts lengthen her hair. Width barely moves — hair that narrows as well as shortens disappears behind her head.
@@ -564,6 +762,10 @@ export function createQueenSculpture(options: QueenSculptureOptions = {}) {
       const leafCount = chapter ? 1 + Math.max(0, Math.min(4, growth)) : 0;
       for (const [index, l] of leaves.entries()) l.visible = index < leafCount;
       for (const [index, b] of buds.entries()) b.visible = index < budCount;
+      growthLeaves = leafCount;
+      growthBuds = Math.max(0, Math.min(4, budCount));
+      for (const [index, l] of growthLeafClusters.entries()) l.visible = index < growthLeaves;
+      for (const [index, b] of growthBudForms.entries()) b.visible = index < growthBuds;
     },
     setFeet(nearness: QueenStone["size"][]) {
       for (const [index, s] of stones.entries()) {

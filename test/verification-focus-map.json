@@ -5,6 +5,8 @@
       "sources": [
         "src/queen/world/queenAuthoring.ts",
         "src/queen/world/queenSculpture.ts",
+        "src/queen/world/queenModel.ts",
+        "public/models/queen/mandevilla-queen.v1.glb",
         "src/queen/world/queenWorld.ts",
         "src/queen/QueenWorld.tsx",
         "src/queen/QueenFigure.tsx",
@@ -40,6 +42,7 @@
       ],
       "tests": [
         "test/queen-world.test.ts",
+        "test/queen-model.test.ts",
         "test/queen-charms.test.ts",
         "test/queens-nest-ui.test.ts",
         "test/queens-nest.test.ts",
