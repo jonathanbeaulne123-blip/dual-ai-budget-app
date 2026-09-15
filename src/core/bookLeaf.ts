@@ -7,11 +7,13 @@
  * so a component cannot bend them: height is the only channel that carries a
  * magnitude (fold order, depth and pocket thickness carry order and count,
  * never a number), and nothing projected stands — a panel right of the corner
- * lies flat in pencil. Nothing here reads a household, computes a balance, or
- * touches a cent.
+ * lies flat in pencil. The binder's two levels live here too: which sections
+ * carry page flags, what flags a plate's own figure offers, and which page is
+ * open. Nothing here reads a household, computes a balance, or touches a cent.
  */
 
-import type { PlateEdge } from "./deskPlates.ts";
+import type { PlateEdge, PlateFigure } from "./deskPlates.ts";
+import type { FundWidgetId } from "./types.ts";
 import { fillLevel, pairScale, PLATE_VIEW, sparkHeights, tallyIsCountable, trackX } from "./plates.ts";
 
 /** The floor's near edge and the gate sit at the page's middle. */
@@ -161,4 +163,84 @@ export function registerStrip(ink: readonly number[], pencilCount: number, limit
   const last = shown[shown.length - 1];
   const pencil = last === undefined ? [] : Array.from({ length: Math.min(pencilWanted, Math.max(0, room - shown.length)) }, () => last);
   return { points: [...shown, ...pencil], actualCount: shown.length };
+}
+
+/* ---- the binder: dividers on the fore-edge, page flags on the open section's top edge ---- */
+
+/** A page flag on a section's top edge: which item, what it says, and the state of the rule the item already carries — or none where it carries no rule. */
+export type PageFlag = {
+  id: string;
+  name: string;
+  detail?: string | null;
+  edge?: PlateEdge;
+  /** The spoken name, where the drawn label is not the whole story. */
+  label?: string;
+  /** A pin's caption, where one item belongs to the book itself. */
+  pin?: string;
+};
+
+/**
+ * Sections whose plate is a list carry one flag per item; every other section
+ * is one indivisible reading (the month, this week, the level) and draws no
+ * strip at all. The list is the rule: a section is paged by name, never by
+ * the shape of its figure, so a tally that happens to count something is not
+ * mistaken for pages.
+ */
+export const PAGED_SECTIONS: readonly FundWidgetId[] = ["accounts", "next-out", "waiting", "shape"];
+
+export function sectionIsPaged(id: FundWidgetId): boolean {
+  return PAGED_SECTIONS.includes(id);
+}
+
+/**
+ * The flags a plate's own figure offers, read straight off it: one per mark on
+ * a strip, one per card standing in a countable pocket. An uncountable tally
+ * stands no cards, so it offers no flags; every other primitive is one page.
+ */
+export function figureFlags(figure: PlateFigure): PageFlag[] {
+  switch (figure.primitive) {
+    case "track":
+      return figure.marks.map((mark, index) => ({ id: `mark-${index}`, name: mark.label, detail: `day ${mark.day}` }));
+    case "tally":
+      return pocketCards(figure.count).map((_, index) => ({ id: `card-${index + 1}`, name: `Card ${index + 1} of ${figure.count}` }));
+    default:
+      return [];
+  }
+}
+
+/** The theme's own sequence of flag colours has this many positions; a flag takes the one its place in the strip lands on. Position only, never meaning. */
+export const FLAG_HUES = 6;
+
+export function flagHue(index: number): number {
+  const safe = Number.isFinite(index) ? Math.floor(index) : 0;
+  return ((safe % FLAG_HUES) + FLAG_HUES) % FLAG_HUES + 1;
+}
+
+/**
+ * What the book remembers: the page left open in each section, by section.
+ * Component state, never persisted.
+ */
+export type OpenPages = Partial<Record<FundWidgetId, number>>;
+
+/**
+ * Which page of a section is open. A section never visited opens on its
+ * first page; a section visited before reopens on the page it was left on,
+ * as a reader's binder does — but always clamped onto the flags the section
+ * has now, so no flag past the end, and never a page of another section, is
+ * the selected one.
+ */
+export function openPage(remembered: OpenPages, section: FundWidgetId, count: number): number {
+  const left = remembered[section];
+  if (left === undefined) return 0;
+  return gateIndex(left, count);
+}
+
+/**
+ * The binder's dividers: every section this member may open, the rail's own
+ * slots first in rail order, then the rest in the library's order. The rail
+ * decides what leads, not what exists; nothing here writes to it.
+ */
+export function binderDividers(slots: readonly FundWidgetId[], permitted: readonly FundWidgetId[]): FundWidgetId[] {
+  const lead = slots.filter((id, index) => slots.indexOf(id) === index);
+  return [...lead, ...permitted.filter((id) => !lead.includes(id))];
 }
