@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { addGoal, offerMove, openChapter, postEntry, recordRitualHeld, type CommitResult, type Household } from "../src/core/index.ts";
 import { movesForChapter, openChapterFor, respondToMove } from "../src/core/chapters.ts";
-import { pathIslandName } from "../src/core/pathWorld.ts";
+import { agreePathProposal, pathIslandName, pendingPathProposals, proposePathName } from "../src/core/pathWorld.ts";
 import { OurPathWorld } from "../src/path/OurPathWorld.tsx";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
 import { kittyBankBackingStep } from "../src/core/kittyBanks.ts";
@@ -908,5 +908,108 @@ describe("Private footpaths and bridges on Our Path", () => {
     await click($("#switch"));
     expect(host.querySelectorAll(".path-world__flat .path-minimap__footpath")).toHaveLength(1);
     expect([...host.querySelectorAll(".path-world__flat .path-minimap__bridge")].map((g) => g.getAttribute("data-stage"))).toEqual(["2"]);
+  });
+});
+
+describe("Every place on the island is reachable from the DOM (a11y pass)", () => {
+  const TODAY = "2026-09-15";
+  type Scene = {
+    campfires: { id: string; month: number }[]; moves: { id: string }[]; goals: { id: string }[]; lamps: { id: string }[]; memories: { id: string }[];
+    weather: { id: string }[]; unknown: { id: string }[]; stones: { id: string }[]; footpaths: { id: string }[]; bridges: { id: string }[]; forks: { id: string }[];
+    charter: unknown; kiln: unknown; cottage: boolean; name: string | null; island: { cur: number };
+  };
+  const task = (patch: Partial<TaskInput["task"]>): TaskInput["task"] => ({
+    visibility: "household", title: "", notes: "", listId: null, parentId: null, doDate: null, dueDate: "2026-09-20", repeat: "none", cue: "none",
+    assigneeId: null, backupId: null, chapterId: null, planReference: null, moneyLink: null, expectedAmountCents: null, deleted: false, ...patch,
+  });
+  function everything(): Household {
+    let h = seeded();
+    // A Charter, an accepted Plan with decisions (forks), a bill and a payday (weather), stones, a footpath, bridges, a Memory, a "?" signpost.
+    h = foundHouseholdCharter(h, { memberId: "MEM-001", custodianMemberId: "MEM-001", purpose: "Fictional calm between paydays.", splitRule: "remainder", splitNote: "Fictional.", ceilingKind: "hours-per-week", ceilingValue: "24", cadence: "weekly", cadenceWeekday: 0, clauses: [], date: "2026-09-01" }).household;
+    const version = h.planVersions!.find((row) => row.scope === "household" && row.state === "proposed")!;
+    for (const actor of ["MEM-001", "MEM-002"]) h = acknowledgeHouseholdPlan(h, { memberId: actor, createdBy: actor, planVersionId: version.id, expectedDigest: version.digest }).household;
+    h = { ...h, members: h.members.map((row) => row.id === "MEM-001" ? { ...row, earningCadence: { cadence: "biweekly" as const, anchorDate: "2026-09-18", weekday: 5, monthDays: [], customDates: [], reminderTime: "09:00" } } : row) };
+    h = addRecurrence(h, { cadence: "monthly", nextDate: "2026-09-25", type: "expense", amount: "100", accountId: "ACC-VISA", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Fictional internet", fundingDefault: { fundId: h.householdFund!.id, fundedCents: "full", destinationAccountId: "ACC-VISA" } }).household;
+    h = saveTask(h, { memberId: "MEM-001", id: "TASK-A11Y-STONE", expectedRevision: 0, task: task({ title: "Fictional: book the ferry", assigneeId: "MEM-001" }) }).household;
+    h = saveTask(h, { memberId: "MEM-001", id: "TASK-A11Y-PATH", expectedRevision: 0, task: task({ title: "Fictional: a private walk", visibility: "personal" }) }).household;
+    h = savePlanBridgeDraft(h, { monthKey: "2026-09", kind: "responsibility", label: "Fictional: I'll take the car in", memberId: "MEM-001", createdBy: "MEM-001" }).household;
+    h = savePlanBridgeDraft(h, { monthKey: "2026-09", kind: "responsibility", label: "Fictional: I'll handle the vet", memberId: "MEM-002", createdBy: "MEM-002" }).household;
+    h = sharePlanBridgeDraft(h, { draftId: h.planBridgeDrafts!.find((row) => row.ownerMemberId === "MEM-002")!.id, memberId: "MEM-002", createdBy: "MEM-002" }).household;
+    const members = h.members.filter((m) => m.active).map((m) => m.id);
+    const win = (id: string, title: string, shownAt: string) => ({ version: 1, id, chapterId: null, level: "first", title, evidenceRefs: [], shownAt, fadedAt: null, keptByMemberIds: members, authoredNote: "Fictional.", hideAmounts: true, updatedAt: shownAt });
+    const at = "2026-09-01T12:00:00.000Z";
+    h = {
+      ...h,
+      wins: [win("W-A11Y", "Fictional shore day", "2026-08-10T12:00:00.000Z")] as never,
+      // A habit that graduated into Our Rhythm (a lamp), and a category Hearth can't guess (a "?" signpost).
+      rituals: h.rituals!.map((r, i) => (i === 0 ? { ...r, state: "graduated" } : r)) as never,
+      categories: [...h.categories, { id: "SUB-A11Y-ODD", parentId: "CAT-LIFE", recordType: "category", name: "Fictional zqx", transactionType: "expense", essential: false, active: true, sortOrder: 99, createdAt: at, updatedAt: at } as Household["categories"][number]],
+    };
+    h = postEntry(h, { type: "expense", date: "2026-09-02", amount: "40", accountId: "ACC-VISA", subcategoryId: "SUB-A11Y-ODD", note: "Fictional odd thing", createdBy: "MEM-001", visibility: "household", confirmDuplicate: true }).household;
+    return h;
+  }
+  const ids = (scene: Scene): string[] => [
+    // The world skips a campfire outside the grown months, so the page need not mark it.
+    ...scene.campfires.filter((f) => f.month >= 0 && f.month <= scene.island.cur).map((f) => f.id),
+    ...scene.moves.map((r) => r.id), ...scene.goals.map((r) => r.id), ...scene.lamps.map((r) => r.id), ...scene.memories.map((r) => r.id),
+    ...scene.weather.map((r) => r.id), ...scene.unknown.map((r) => r.id), ...scene.stones.map((r) => r.id), ...scene.footpaths.map((r) => r.id),
+    ...scene.bridges.map((r) => r.id), ...scene.forks.map((r) => r.id),
+    ...(scene.charter ? ["charter"] : []), ...(scene.kiln ? ["kiln"] : []), ...(scene.cottage ? ["cottage"] : []), ...(scene.name ? ["name"] : []),
+  ];
+
+  it("gives every pickable id the world is handed a mark button and an outline row", async () => {
+    created.mode = "fake";
+    const check = async (household: Household) => {
+      await act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: TODAY, busy: false, onCommand: async () => ({ ok: true }), theme: "newfoundland", onOpenPlay: () => {}, classicRoom: null })));
+      await settle();
+      const world = created.worlds.at(-1) as FakeWorld;
+      const scene = world.setScene.mock.calls.at(-1)![0] as Scene;
+      const all = ids(scene);
+      const outline = new Set([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button[data-place]")].map((b) => b.dataset.place!));
+      const marks = new Set([...host.querySelectorAll<HTMLButtonElement>(".path-world__marks button.path-mark[data-place]")].map((b) => b.dataset.place!));
+      expect(all.filter((id) => !outline.has(id))).toEqual([]);
+      expect(all.filter((id) => !marks.has(id))).toEqual([]);
+      // Every outline row is a place with a mark too, and every mark has a name.
+      expect([...outline].filter((id) => !marks.has(id))).toEqual([]);
+      for (const b of host.querySelectorAll<HTMLButtonElement>(".path-mark")) expect(b.getAttribute("aria-label")?.trim()).toBeTruthy();
+      return scene;
+    };
+    let h = everything();
+    let scene = await check(h);
+    for (const key of ["campfires", "moves", "goals", "lamps", "memories", "weather", "unknown", "stones", "footpaths", "bridges", "forks"] as const) {
+      expect(scene[key].length, key).toBeGreaterThan(0);
+    }
+    expect(scene.charter).toBeTruthy();
+    expect(scene.kiln).toBeTruthy();
+    expect(scene.cottage).toBe(true);
+
+    // The named island, the mist signpost, and a "?" signpost for a signal no recipe covers yet.
+    h = proposePathName(h, { memberId: "MEM-001", name: "Fictional Harbour" }).household;
+    const row = pendingPathProposals(h)[0]!;
+    h = agreePathProposal(h, { memberId: "MEM-002", rowId: row.id, revision: row.pendingRevision }).household;
+    h = setHouseholdFundMonthPlan(h, { memberId: "MEM-001", monthKey: "2026-09", target: "0", buffer: "99999" }).household;
+    scene = await check(h);
+    expect(scene.name).toBe("Fictional Harbour");
+    expect(scene.weather.some((w) => w.id === "mist")).toBe(true);
+  });
+
+  it("closes the card with Escape and returns focus to the place that opened it", async () => {
+    created.mode = "fake";
+    await act(async () => root.render(createElement(Harness, { initial: seeded(), today: TODAY })));
+    await settle();
+    const outline = host.querySelector<HTMLDetailsElement>(".path-world__outline")!;
+    outline.open = true;
+    const row = [...outline.querySelectorAll<HTMLButtonElement>("button")].find((b) => b.textContent?.startsWith("We are here"))!;
+    row.focus();
+    await click(row);
+    expect($(".path-world__card")).toBeTruthy();
+    $<HTMLButtonElement>(".path-world__close").focus();
+    await act(async () => { document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })); });
+    expect(host.querySelector(".path-world__card")).toBeNull();
+    expect(document.activeElement).toBe(row);
+    // The distance rail is a set of toggles, like the lantern.
+    const rail = [...host.querySelectorAll<HTMLButtonElement>(".path-world__rail button")].filter((b) => !b.getAttribute("aria-label"));
+    expect(rail.map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "false", "false", "false"]);
+    expect(rail.some((b) => b.hasAttribute("aria-current"))).toBe(false);
   });
 });

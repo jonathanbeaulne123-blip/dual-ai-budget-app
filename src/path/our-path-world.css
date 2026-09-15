@@ -22,7 +22,10 @@
 .path-mark { position: absolute; left: 0; top: 0; pointer-events: auto; display: grid; justify-items: center; gap: 2px; transform-origin: 0 0; border: 0; background: transparent; padding: 0; min-width: 44px; min-height: 44px; place-content: end center; color: var(--ink); will-change: transform; translate: -50% -100%; }
 .path-mark__label { font-family: var(--theme-hand, var(--display)); font-size: 15px; line-height: 1.1; background: var(--card); padding: 3px 9px 4px; border-radius: 6px; box-shadow: 0 3px 10px -5px rgb(0 0 0 / 0.45); white-space: nowrap; max-width: 44vw; overflow: hidden; text-overflow: ellipsis; }
 .path-mark__sub { font-size: 11px; font-weight: 600; color: var(--muted); background: color-mix(in srgb, var(--card) 88%, transparent); padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
-.path-mark:focus-visible .path-mark__label { outline: 3px solid var(--theme-accent, var(--copper)); outline-offset: 2px; }
+.path-mark:focus-visible { outline: none; }
+.path-mark:focus-visible .path-mark__label { outline: 3px solid var(--world-focus, var(--theme-accent, var(--copper))); outline-offset: 2px; }
+/* Every control on the island shows where the keyboard is. */
+.path-world :is(button, summary, input, select, .path-world__card):not(.path-mark):focus-visible { outline: 3px solid var(--world-focus, var(--theme-accent, var(--copper))); outline-offset: 2px; }
 .path-mark--now .path-mark__label { background: var(--ink); color: var(--paper); }
 .path-mark--goal .path-mark__label { font-family: var(--theme-display, var(--display)); font-weight: 600; }
 .path-mark--kiln .path-mark__label, .path-mark--charter .path-mark__label { font-family: var(--theme-display, var(--display)); font-style: italic; }
@@ -41,7 +44,7 @@
 .path-world__controls { position: absolute; z-index: 3; top: 12px; right: 12px; display: grid; gap: 8px; justify-items: end; }
 .path-world__lantern, .path-world__quality, .path-world__layers, .path-world__rail { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); flex-wrap: wrap; }
 .path-world__lantern button, .path-world__quality button, .path-world__layers button, .path-world__rail button { border: 0; background: transparent; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13px; min-height: 36px; display: inline-flex; gap: 6px; align-items: center; }
-.path-world__lantern button[aria-pressed="true"], .path-world__quality button[aria-pressed="true"], .path-world__rail button[aria-current="true"] { background: var(--ink); color: var(--paper); }
+.path-world__lantern button[aria-pressed="true"], .path-world__quality button[aria-pressed="true"], .path-world__rail button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 .path-world__layers button[aria-pressed="false"] { text-decoration: line-through; opacity: 0.7; }
 .path-world__lantern i { width: 8px; height: 11px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: currentColor; opacity: 0.6; }
 .path-world__quality { align-items: center; }
@@ -88,7 +91,7 @@
 .path-recipe { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--paper); display: grid; gap: 6px; }
 .path-recipe.is-off { opacity: 0.6; }
 .path-recipe__top { display: flex; justify-content: space-between; gap: 8px; }
-.path-recipe__fired { font-weight: 700; color: var(--theme-accent, var(--copper)); font-variant-numeric: tabular-nums; }
+.path-recipe__fired { font-weight: 700; color: color-mix(in srgb, var(--theme-accent, var(--copper)) 70%, var(--ink)); font-variant-numeric: tabular-nums; }
 .path-recipe__rule { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 .path-recipe__rule select { max-width: 190px; min-height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
 .path-recipe__rule input[type="range"] { width: 90px; accent-color: var(--theme-accent, var(--copper)); }

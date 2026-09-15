@@ -230,6 +230,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const [notice, setNotice] = useState("");
   const tentButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
+  const compassButton = useRef<HTMLButtonElement>(null);
   const tentMoved = useRef(false);
   useEffect(() => {
     if (!tentMoved.current) return;
@@ -470,6 +471,17 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const latestInput = useRef(worldInput);
   latestInput.current = worldInput;
   const selectRef = useRef<(id: string) => void>(() => {});
+  // The controls and the open card sit over the canvas: a mark under them could be seen but not pressed, so it waits.
+  const obstacles = useRef<{ x0: number; x1: number; y0: number; y1: number }[]>([]);
+  const measureObstacles = useCallback(() => {
+    const base = host.current?.getBoundingClientRect();
+    const stage = host.current?.parentElement;
+    if (!base || !stage) return;
+    obstacles.current = [...stage.querySelectorAll(".path-world__controls > *, .path-world__rail, .path-world__now > *, .path-world__card")].flatMap((el) => {
+      const r = el.getBoundingClientRect();
+      return r.width > 0 && r.height > 0 ? [{ x0: r.left - base.left, x1: r.right - base.left, y0: r.top - base.top, y1: r.bottom - base.top }] : [];
+    });
+  }, []);
 
   const applyAnchors = useCallback((anchors: PathAnchor[]) => {
     const { level: lv, lantern: ln, marks: list, selected: chosen } = view.current;
@@ -487,7 +499,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     }).sort((x, y) => (rank(x.mark) - rank(y.mark)) || (x.a.depth - y.a.depth));
     const reported = new Set(anchors.map((a) => a.id));
     for (const [id, el] of markRefs.current) if (!reported.has(id) && !el.hidden) el.hidden = true;
-    const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
+    const placed: { x0: number; x1: number; y0: number; y1: number }[] = [...obstacles.current];
     for (const { a, el, mark, show } of candidates) {
       let visible = show;
       if (visible) {
@@ -556,6 +568,12 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     world.current?.setScene(worldInput, months[shown]?.key, grew);
   }, [worldInput, live, shown, months]);
   useEffect(() => { world.current?.refresh(); }, [lantern, marks, level, live, selected]);
+  // Re-measure what covers the canvas after each render (the card, Next Move, the compact controls) and on resize.
+  useEffect(() => { measureObstacles(); world.current?.refresh(); });
+  useEffect(() => {
+    window.addEventListener("resize", measureObstacles);
+    return () => window.removeEventListener("resize", measureObstacles);
+  }, [measureObstacles]);
   useEffect(() => { world.current?.setAmbient(!(proofWorld?.paused ?? appearance.paused) && !playing); }, [appearance.paused, proofWorld?.paused, live, playing]);
   useEffect(() => { world.current?.setQuality(quality); }, [quality, live]);
   // The tent hides the island (display: none) but keeps the world: it sleeps, then wakes at the size it has once shown again.
@@ -579,8 +597,20 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     return () => window.clearInterval(timer);
   }, [playing, last, reduced]);
 
+  // Where focus goes back to when the card closes (the mark, outline row, or Next Move that opened it).
+  const opener = useRef<HTMLElement | null>(null);
+  const cardWantsFocus = useRef(false);
+  const cardRef = useRef<HTMLElement>(null);
   const select = useCallback((id: string) => {
     if (id === "tent") { openTent(true); return; }
+    const active = typeof document === "undefined" ? null : document.activeElement;
+    if (active instanceof HTMLElement && active !== document.body && !active.closest(".path-world__card")) {
+      opener.current = active;
+      // Opened from the keyboard: the card is the next thing to read, so focus goes to it (Escape comes back).
+      let keyboard = false;
+      try { keyboard = active.matches(":focus-visible"); } catch { /* older engines */ }
+      cardWantsFocus.current = keyboard;
+    }
     setSelected(id);
     world.current?.focus(id, id.startsWith("month:") ? 2 : 3);
   }, [openTent]);
@@ -846,6 +876,19 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     return null;
   }
   const detail = selected ? detailFor(selected) : null;
+  useEffect(() => {
+    if (!selected || !cardWantsFocus.current) return;
+    cardWantsFocus.current = false;
+    cardRef.current?.focus();
+  }, [selected]);
+  const closeCard = () => {
+    setSelected(null);
+    const back = opener.current;
+    opener.current = null;
+    const inCard = typeof document !== "undefined" && Boolean(document.activeElement?.closest(".path-world__card"));
+    if (back && back.isConnected && !back.hidden) back.focus();
+    else if (inCard) compassButton.current?.focus();
+  };
 
   // ------------------------------------------------------------ render
   const nowMonth = months[shown];
@@ -854,7 +897,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const recipeRows = shapePathWorld(household.pathWorld).filter((row): row is PathRecipeRow => row.kind === "recipe");
   return (
     <div className={`path-world path-world--${theme}`} data-level={level} data-lantern={lantern}>
-      <section className="path-world__island" hidden={tentOpen} aria-labelledby="path-world-title">
+      <section className="path-world__island" hidden={tentOpen} aria-labelledby="path-world-title" onKeyDown={(e) => { if (e.key === "Escape" && detail) { e.stopPropagation(); closeCard(); } }}>
         <header className="path-world__head">
           <p className="kicker">Our Path</p>
           <h2 id="path-world-title">{islandName ?? "Where we are going"}</h2>
@@ -886,6 +929,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
                 hidden
                 ref={(el) => { if (el) markRefs.current.set(mark.id, el); else markRefs.current.delete(mark.id); }}
                 className={`path-mark path-mark--${mark.kind}`}
+                data-place={mark.id}
                 aria-label={`${mark.label}${mark.sub ? `, ${mark.sub}` : ""}`}
                 onClick={() => select(mark.id)}
               >
@@ -896,6 +940,17 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
             ))}
           </div>
 
+          {/* The card follows the marks in the tab order; opened from the keyboard, it takes focus itself. */}
+          {detail && (
+            <aside ref={cardRef} tabIndex={-1} className="path-world__card" aria-live="polite" aria-labelledby="path-world-card-title">
+              <button type="button" className="path-world__close" aria-label="Close" onClick={closeCard}>×</button>
+              <p className="kicker">{detail.eyebrow}</p>
+              <h3 id="path-world-card-title">{detail.title}</h3>
+              <ul>{detail.lines.filter(([min]) => lantern >= min).map(([, text], i) => <li key={i}>{text}</li>)}</ul>
+              {lantern < 2 && detail.lines.some(([min]) => min > lantern) && <p className="muted">Turn the lantern up for more.</p>}
+              {detail.actions && <div className="path-world__actions">{detail.actions}</div>}
+            </aside>
+          )}
           <div className="path-world__controls">
             <div className="path-world__lantern" role="group" aria-label="How much detail to show">
               {LANTERNS.map((l) => <button key={l.value} type="button" aria-pressed={lantern === l.value} onClick={() => setLantern(l.value)}><i aria-hidden="true" />{l.label}</button>)}
@@ -920,27 +975,17 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
             </div>
           </div>
           <div className="path-world__rail" role="group" aria-label="Distance">
-            {LEVELS.map((l) => <button key={l.level} type="button" aria-current={level === l.level} onClick={() => world.current?.setLevel(l.level)} disabled={!live}>{l.label}</button>)}
+            {LEVELS.map((l) => <button key={l.level} type="button" aria-pressed={level === l.level} onClick={() => world.current?.setLevel(l.level)} disabled={!live}>{l.label}</button>)}
             <button type="button" aria-label="Move closer" onClick={() => world.current?.zoom(0.72)} disabled={!live}>+</button>
             <button type="button" aria-label="Move away" onClick={() => world.current?.zoom(1.38)} disabled={!live}>−</button>
           </div>
           <div className="path-world__now">
-            <button type="button" className="path-world__compass" onClick={() => { setFollowNow(true); setCur(last); setSelected(null); window.setTimeout(() => world.current?.focus("now", 2), 0); }}>Where we are</button>
-            {next && atNow && <button type="button" className="path-world__next" onClick={() => select(`move:${next.id}`)}><span>Next Move</span>{next.text}</button>}
+            <button ref={compassButton} type="button" className="path-world__compass" onClick={() => { setFollowNow(true); setCur(last); setSelected(null); window.setTimeout(() => world.current?.focus("now", 2), 0); }}>Where we are</button>
+            {next && atNow && <button type="button" className="path-world__next" onClick={() => select(`move:${next.id}`)}><span>Next Move</span>{" "}{next.text}</button>}
             {!live && <PathHercules pose={herculesPose} size={narrow ? 56 : 72} flat />}
             <button ref={tentButton} type="button" className="primary path-world__tent" onClick={() => openTent(true)}>Open the Plan Studio tent</button>
           </div>
 
-          {detail && (
-            <aside className="path-world__card" aria-live="polite" aria-labelledby="path-world-card-title">
-              <button type="button" className="path-world__close" aria-label="Close" onClick={() => setSelected(null)}>×</button>
-              <p className="kicker">{detail.eyebrow}</p>
-              <h3 id="path-world-card-title">{detail.title}</h3>
-              <ul>{detail.lines.filter(([min]) => lantern >= min).map(([, text], i) => <li key={i}>{text}</li>)}</ul>
-              {lantern < 2 && detail.lines.some(([min]) => min > lantern) && <p className="muted">Turn the lantern up for more.</p>}
-              {detail.actions && <div className="path-world__actions">{detail.actions}</div>}
-            </aside>
-          )}
         </div>
 
         <div className="path-world__grow">
@@ -1002,7 +1047,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           <details className="path-world__panel path-world__outline">
             <summary>Everything on the island</summary>
             <ul>
-              {marks.map((mark) => <li key={mark.id}><button type="button" onClick={() => select(mark.id)}>{mark.label}{mark.sub ? ` · ${mark.sub}` : ""}</button></li>)}
+              {marks.map((mark) => <li key={mark.id}><button type="button" data-place={mark.id} onClick={() => select(mark.id)}>{mark.label}{mark.sub ? ` · ${mark.sub}` : ""}</button></li>)}
             </ul>
           </details>
         </div>
