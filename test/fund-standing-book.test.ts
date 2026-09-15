@@ -37,6 +37,25 @@ const bookSource = readFileSync(new URL("../src/FundStandingBook.tsx", import.me
 const featureSource = readFileSync(new URL("../src/core/planFeature.ts", import.meta.url), "utf8");
 const ledgeSource = readFileSync(new URL("../src/FundLedge.tsx", import.meta.url), "utf8");
 const officeSource = readFileSync(new URL("../src/OfficeWide.tsx", import.meta.url), "utf8");
+const cssSource = readFileSync(new URL("../src/fund-standing-book.css", import.meta.url), "utf8");
+
+/** Every `fn(` call in the stylesheet with the text between its parentheses, brackets balanced. */
+function cssCalls(source: string, names: readonly string[]): { name: string; args: string; line: number }[] {
+  const calls: { name: string; args: string; line: number }[] = [];
+  const pattern = new RegExp(`(${names.join("|")})\\(`, "g");
+  for (const match of source.matchAll(pattern)) {
+    let depth = 1;
+    let index = match.index! + match[0].length;
+    const start = index;
+    while (depth && index < source.length) {
+      if (source[index] === "(") depth += 1;
+      else if (source[index] === ")") depth -= 1;
+      index += 1;
+    }
+    calls.push({ name: match[1]!, args: source.slice(start, index - 1), line: source.slice(0, match.index).split("\n").length });
+  }
+  return calls;
+}
 
 describe("the Standing Book flag", () => {
   it("is off unless asked for, and cannot outlive the Household Home it presents", () => {
@@ -228,6 +247,49 @@ describe("the register as a strip", () => {
     const chosen = rows.find((row) => accounts.glance.startsWith(`${row.name} ·`))!;
     expect(accountRowEdge(chosen)).toBe(accounts.edge);
     expect(accountRowFigure(chosen)).toEqual(accounts.figure);
+  });
+});
+
+describe("the stylesheet's fences", () => {
+  it("never stands a token a dressing may paint as an image where a colour belongs", () => {
+    // The tokens at risk are read from the stylesheet itself: any --fund-book-* that some rule sets to a gradient.
+    const imageTokens = [...new Set([...cssSource.matchAll(/(--fund-book-[a-z-]+):\s*[^;]*gradient\(/g)].map((match) => match[1]!))];
+    expect(imageTokens).toEqual(expect.arrayContaining(["--fund-book-stage", "--fund-book-cover", "--fund-book-mark-bg", "--fund-book-edge", "--fund-book-rulings"]));
+    const colourPositions = cssCalls(cssSource, ["linear-gradient", "radial-gradient", "repeating-linear-gradient", "repeating-radial-gradient", "conic-gradient", "color-mix", "rgb", "rgba", "hsl", "oklch"]);
+    expect(colourPositions.length).toBeGreaterThan(40);
+    const offences = colourPositions.flatMap((call) => imageTokens
+      .filter((token) => new RegExp(`var\\(${token}\\s*[,)]`).test(call.args))
+      .map((token) => `line ${call.line}: ${call.name}(… var(${token}) …)`));
+    expect(offences).toEqual([]);
+  });
+
+  it("fades the head strip by mask, cuts every dog-ear out of its paper, and mixes the Classic spine from a colour", () => {
+    // The fade needs no colour at all, so it paints under any dressing and degrades to an un-faded strip, never to nothing.
+    for (const more of ["start", "end", "both"]) {
+      const rule = cssSource.slice(cssSource.indexOf(`.fund-book-head-shelf[data-head-more="${more}"] .fund-book-head-edge {`));
+      expect(rule.slice(0, rule.indexOf("}"))).toMatch(/\n\s+mask-image: linear-gradient\(/);
+      expect(rule.slice(0, rule.indexOf("}"))).toContain("-webkit-mask-image: linear-gradient(");
+    }
+    expect(cssSource).not.toMatch(/\.fund-book-head-shelf::(before|after)/);
+    // A dog-ear is a real cut in the bookmark, the sticky and the cover, so the stage shows through it whatever it is painted with.
+    for (const selector of ["\n.fund-book-mark.is-dogeared {", '\n.fund-book-sticky[data-sticky-state="attention"] {', '\n.fund-book[data-fund-book-edge="proud"] .fund-book-cover {']) {
+      expect(cssSource.indexOf(selector), selector).toBeGreaterThan(0);
+      const rule = cssSource.slice(cssSource.indexOf(selector));
+      expect(rule.slice(0, rule.indexOf("}"))).toContain("clip-path: polygon(");
+    }
+    for (const flap of [".fund-book-mark.is-dogeared::after {", '.fund-book-sticky[data-sticky-state="attention"]::after {']) {
+      const rule = cssSource.slice(cssSource.indexOf(flap));
+      expect(rule.slice(0, rule.indexOf("}"))).toContain("background: var(--fund-book-paper-deep);");
+    }
+    expect(cssSource).toContain("--fund-book-cover-tone: color-mix(in srgb, var(--pine-2) 78%, var(--ink));");
+    expect(cssSource).toContain("var(--fund-book-spine), var(--fund-book-cover-tone) 45%, var(--fund-book-spine)");
+    // Every colour token the fade and the dog-ears lean on is defined once on the bare .fund-book as a colour, not an image.
+    const base = cssSource.slice(cssSource.indexOf(".fund-book {"), cssSource.indexOf("/* ---- the fore-edge"));
+    for (const token of ["--fund-book-paper-deep", "--fund-book-paper-shade", "--fund-book-paper", "--fund-book-cover-tone"]) {
+      const declaration = base.match(new RegExp(`${token}: ([^;]+);`));
+      expect(declaration, token).toBeTruthy();
+      expect(declaration![1]).not.toMatch(/gradient\(|url\(/);
+    }
   });
 });
 
