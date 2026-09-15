@@ -1,15 +1,19 @@
 import { addDays, monthKeyFromDateKey, shiftMonthKey, type DateKey } from "./calendar.ts";
 import {
+  acknowledgeHouseholdPlan,
   addAccount,
   addGoal,
   bindHouseholdFundBackingAccount,
   closeBooksMonth,
   configureHouseholdFund,
+  createPlanScenario,
   postEntry,
+  proposeHouseholdPlan,
   recordReconciliation,
   recordHouseholdFundReconciliation,
   refreshShiftEnvelopesFromEvidence,
   refreshSevenShiftsSchedule,
+  savePlanDraft,
   setHouseholdFundMonthPlan,
 } from "./commands.ts";
 import { sha256Hex } from "./commandIdentity.ts";
@@ -23,6 +27,7 @@ import {
 } from "./herculesTools.ts";
 import { booksEquation, compileHousehold, trialBalance } from "./journal.ts";
 import { auditOpinion, balanceSheet, bookBalanceAsOf, cashFlowStatement, closePackageText, incomeStatement } from "./statements.ts";
+import { currentPlanVersion, type PlanLine } from "./planSystem.ts";
 import { seedStressHousehold, torontoOffsetForDate, type StressNumberStyle } from "./stressSeed.ts";
 import { ensureHouseholdShape, personalReplicaForMember, splitForSync } from "./sync.ts";
 import type { SevenShiftsScheduledShift } from "./sevenShiftsCalendar.ts";
@@ -311,6 +316,64 @@ function privateScheduleCanary(today: DateKey, seed: number): SevenShiftsSchedul
   };
 }
 
+/**
+ * The month's Plan (Plan System V2), so every `plan_*` Hercules read has a
+ * visible Household version and a private alternative to calculate against.
+ * Jonathan (MEM-002) prepares privately, proposes to Shared, and acknowledges
+ * his own exact digest; the version stays `proposed` until Bianca acknowledges
+ * hers — no real clock is consulted, so replay is byte-for-byte. Sources are
+ * only what the twelve months already hold: the shared recurrences, the shared
+ * "Emergency buffer" goal, the Household Fund, and the Groceries line.
+ */
+export const DEMO_PLAN_DRAFT_ID = "PLAN-DRAFT-DEMO";
+
+function shapeDemoPlan(household: Household, today: DateKey, seed: number): Household {
+  const memberId = "MEM-002";
+  const month = monthKeyFromDateKey(today);
+  const monthEnd = addDays(`${shiftMonthKey(month, 1)}-01` as DateKey, -1);
+  const inMonth = (date: DateKey) => (date < `${month}-01` ? `${month}-01` as DateKey : date > monthEnd ? monthEnd : date);
+  const personalAccounts = new Set(household.accounts.filter((row) => row.scope === "personal").map((row) => row.id));
+  const bills = household.recurrences
+    .filter((row) => row.type === "expense" && !personalAccounts.has(row.accountId))
+    .sort((a, b) => a.nextDate.localeCompare(b.nextDate) || a.id.localeCompare(b.id));
+  const buffer = household.goals.find((row) => row.shared && row.name === "Emergency buffer") ?? household.goals.find((row) => row.shared);
+  const groceries = household.categories.find((row) => row.id === "SUB-FOOD-GROCERIES")
+    ?? household.categories.find((row) => row.active && row.recordType === "category" && row.transactionType === "expense");
+  const common = { cadence: "monthly" as const, createdBy: memberId, responsibility: { kind: "joint" as const, memberId }, assumptionIds: [], decision: { funding: "available" as const } };
+  const lines: PlanLine[] = [
+    ...bills.map((bill, index): PlanLine => ({
+      ...common, id: `demo-bill-${index + 1}`, lens: "protect", kind: "obligation", labelSnapshot: bill.note || `Synthetic bill ${index + 1}`,
+      amountCents: bill.amountCents, dueDate: inMonth(bill.nextDate), sourceReference: { type: "recurrence", id: bill.id },
+    })),
+    ...(buffer ? [{
+      ...common, id: "demo-buffer", lens: "build" as const, kind: "goal-contribution" as const, labelSnapshot: buffer.name,
+      amountCents: 20_000 + (seed % 5) * 2_500, dueDate: inMonth(addDays(today, 8)), sourceReference: { type: "goal" as const, id: buffer.id },
+      decision: { funding: "available" as const, targetCents: buffer.targetCents, ...(buffer.deadline ? { deadline: buffer.deadline } : {}), nextStep: "Move it on the payday after rent clears." },
+    }] : []),
+    ...(household.householdFund ? [{
+      ...common, id: "demo-fund", lens: "prepare" as const, kind: "household-fund" as const, labelSnapshot: household.householdFund.name || "Household Fund",
+      amountCents: household.fundMonthPlans?.find((row) => row.monthKey === month)?.targetCents ?? 300_000, dueDate: monthEnd,
+      sourceReference: { type: "fund" as const, id: household.householdFund.id },
+    }] : []),
+    ...(groceries ? [{
+      ...common, id: "demo-everyday", lens: "everyday" as const, kind: "everyday-pool" as const, labelSnapshot: "Groceries and ordinary pleasures",
+      amountCents: 60_000 + (seed % 7) * 2_500, dueDate: monthEnd, sourceReference: { type: "category" as const, id: groceries.id },
+    }] : []),
+  ];
+  household = savePlanDraft(household, {
+    id: DEMO_PLAN_DRAFT_ID, memberId, scope: "household", targetMonth: month, lines, assumptions: [],
+    note: "Synthetic private preparation", createdBy: memberId,
+  }).household;
+  household = createPlanScenario(household, {
+    memberId, draftId: DEMO_PLAN_DRAFT_ID, scope: "household", name: "Synthetic alternative: a slower buffer",
+    changedLines: lines.map((line) => line.id === "demo-buffer" ? { ...line, amountCents: Math.round(line.amountCents / 2) } : line), createdBy: memberId,
+  }).household;
+  household = proposeHouseholdPlan(household, { memberId, draftId: DEMO_PLAN_DRAFT_ID, reason: "Synthetic shared possibilities", createdBy: memberId }).household;
+  const version = currentPlanVersion(household, "household", month);
+  if (version) household = acknowledgeHouseholdPlan(household, { planVersionId: version.id, expectedDigest: version.digest, memberId, createdBy: memberId }).household;
+  return household;
+}
+
 function sealSyntheticShiftBibles(household: Household, seed: number): Household {
   const confirmedEnvelopes: NonNullable<Household["shiftEnvelopes"]> = [];
   const shifts = household.shifts.map((shift, index) => {
@@ -581,6 +644,8 @@ export async function generateDemoSuite(options: DemoSuiteOptions): Promise<{ ho
       note: "Synthetic weekly reconciliation",
     }).household;
 
+    household = shapeDemoPlan(household, options.today, seed);
+
     const priorMonth = shiftMonthKey(monthKeyFromDateKey(options.today), -1);
     const statementDate = addDays(`${monthKeyFromDateKey(options.today)}-01` as DateKey, -1);
     for (const account of household.accounts.filter((row) => row.active && row.kind !== "investment" && row.scope !== "personal")) {
@@ -806,13 +871,20 @@ export async function verifyDemoSuite(household: Household, manifest?: DemoSuite
   };
   const tools: DemoRunReport["tools"] = [];
   const rawTools: HerculesReadToolResult[] = [];
+  // Comparing an alternative is the one Plan read that needs the member's own private
+  // preparation selected, exactly as the Plan page selects it; every other Plan read
+  // calculates against the visible Household version for the month.
+  const demoScenario = (household.planScenarios ?? []).find((row) => row.draftId === DEMO_PLAN_DRAFT_ID && row.ownerMemberId === "MEM-002" && row.scope === "household");
+  const scenarioContext = demoScenario
+    ? { privatePlanPreparation: true, plan: { monthKey: month, scope: "household" as const, draftId: demoScenario.draftId, scenarioId: demoScenario.id } }
+    : {};
   for (const call of plan.calls) {
     const personalTool = DEMO_TOOL_COVERAGE[call.name] === "shifts-schedules-settlements-evidence";
     const run = executeHerculesReadToolPlan(
       household,
       { calls: [call] },
       manifest.today,
-      { memberId: "MEM-002", view: personalTool ? "personal" : "household", toolPageMode: "pro" },
+      { memberId: "MEM-002", view: personalTool ? "personal" : "household", toolPageMode: "pro", ...(call.name === "plan_scenario_compare" ? scenarioContext : {}) },
     );
     rawTools.push(...run.results);
     tools.push(...run.results.map((row) => ({ name: row.name, status: row.status })));

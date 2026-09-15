@@ -28,3 +28,6 @@ Thumbs.db
 /.artifacts/five-boards/
 /.artifacts/household-home/
 scripts/tmp/
+/.artifacts/queen-house/
+/.artifacts/queen-cellar/
+/.artifacts/habitat/
