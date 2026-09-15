@@ -2,7 +2,7 @@
 import { createElement, act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { FundStandingBook } from "../src/FundStandingBook.tsx";
+import { FundStandingBook, popupCaption } from "../src/FundStandingBook.tsx";
 import { FundBoard } from "../src/FundBoard.tsx";
 import { FundLedge } from "../src/FundLedge.tsx";
 import {
@@ -339,7 +339,7 @@ describe("The Standing Book", () => {
       for (const presentation of ["phone", "desk"] as const) {
         await render(root, { household, memberId: BIANCA, today: TODAY, presentation, selected: "level", onSelect: () => {} });
         const group = host.querySelector('.fund-book-head-edge[role="group"]');
-        expect(group?.getAttribute("aria-label")).toBe("Accounts linked to the Fund");
+        expect(group?.getAttribute("aria-label")).toBe(`Accounts linked to the Fund, ${rows.length}`);
         const all = stickies(host);
         expect(all).toHaveLength(rows.length);
         expect(all.map((sticky) => sticky.getAttribute("data-account-id"))).toEqual(rows.map((row) => row.accountId));
@@ -389,6 +389,8 @@ describe("The Standing Book", () => {
       expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
       await act(async () => host.querySelector<HTMLButtonElement>('[data-account-id="ACC-VISA"]')!.click());
       expect(seen).toEqual(["accounts"]);
+      // The spread is the book's own: it has already turned, before the host answers.
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("account");
       // The host answers by selecting the chapter, as it does for a bookmark.
       await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "accounts", onSelect: (id) => seen.push(id) });
       const book = host.querySelector(".fund-book")!;
@@ -421,13 +423,112 @@ describe("The Standing Book", () => {
       expect(seen).toEqual(["accounts", "accounts"]);
       expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
       expect(host.querySelector(".fund-book-chapter")?.textContent).toBe("The accounts");
-      // Another chapter's bookmark leaves the account behind until the accounts chapter returns.
+      // The host moving to another chapter lets the account go, and it does not linger: the accounts chapter comes back as its plate.
       await act(async () => host.querySelector<HTMLButtonElement>('[data-account-id="ACC-SAVINGS"]')!.click());
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-account")).toBe("ACC-SAVINGS");
       await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "waiting", onSelect: (id) => seen.push(id) });
       expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
+      expect(host.querySelectorAll('.fund-book-sticky[aria-pressed="true"]')).toHaveLength(0);
       await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "accounts", onSelect: (id) => seen.push(id) });
-      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-account")).toBe("ACC-SAVINGS");
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-account")).toBeNull();
+      // A bookmark pressed on the book itself lets the account go the same way.
+      await act(async () => host.querySelector<HTMLButtonElement>('[data-account-id="ACC-SAVINGS"]')!.click());
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("account");
+      await act(async () => host.querySelector<HTMLButtonElement>('[data-fund-widget="level"]')!.click());
+      expect(seen.at(-1)).toBe("level");
+      expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
       expect(JSON.stringify(household)).toBe(before);
+    } finally { await unmount(); }
+  });
+
+  it("turns the spread for a sticky whether or not the accounts chapter is on the rail, and syncs the host only when it can accept it", async () => {
+    const household = seeded();
+    const before = JSON.stringify(household);
+    // Bianca's phone rail and Jonathan's desk rail carry no accounts chapter; Bianca's desk rail does.
+    const cases = [
+      { memberId: BIANCA, presentation: "phone" as const, onRail: false },
+      { memberId: "MEM-002", presentation: "desk" as const, onRail: false },
+      { memberId: "MEM-002", presentation: "phone" as const, onRail: false },
+      { memberId: BIANCA, presentation: "desk" as const, onRail: true },
+    ];
+    for (const { memberId, presentation, onRail } of cases) {
+      const { host, root, unmount } = mount();
+      const seen: FundWidgetId[] = [];
+      try {
+        await render(root, { household, memberId, today: TODAY, presentation, selected: "level", onSelect: (id) => seen.push(id) });
+        expect([...host.querySelectorAll('[role="tab"]')].some((tab) => tab.getAttribute("data-fund-widget") === "accounts")).toBe(onRail);
+        const tabsBefore = tabContract(host);
+        const all = stickies(host);
+        expect(all.length).toBe(accountRows(household, memberId, TODAY).length);
+        for (const sticky of all) {
+          const accountId = sticky.getAttribute("data-account-id")!;
+          const lines = booksLines(household, accountId);
+          await act(async () => sticky.click());
+          // The spread turns and the press shows, with the host's tab state left exactly as the host has it.
+          expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("account");
+          expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-account")).toBe(accountId);
+          expect(sticky.getAttribute("aria-pressed")).toBe("true");
+          expect(host.querySelectorAll('.fund-book-sticky[aria-pressed="true"]')).toHaveLength(1);
+          expect(cells(host, "ink").map((row) => row[4])).toEqual(lines.ink.map((row) => formatCad(row.runningCents)));
+          if (!lines.ink.length) expect(host.querySelector(".fund-book-leaf.is-left .fund-book-pencil-note")?.textContent).toBe("No postings yet.");
+          expect(tabContract(host)).toEqual(tabsBefore);
+          await act(async () => sticky.click());
+          expect(sticky.getAttribute("aria-pressed")).toBe("false");
+          expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
+        }
+        // onSelect("accounts") fires once per press only where the rail can take it; never where it would be snapped back.
+        expect(seen).toEqual(onRail ? all.flatMap(() => ["accounts", "accounts"] as FundWidgetId[]) : []);
+        // On the phone a bookmark press lets the account go, so what is pressed is what is on the page.
+        await act(async () => all[0]!.click());
+        expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("account");
+        await act(async () => tabs(host)[1]!.click());
+        expect(host.querySelector(".fund-book")?.getAttribute("data-fund-book-spread")).toBe("chapter");
+        expect(host.querySelectorAll('.fund-book-sticky[aria-pressed="true"]')).toHaveLength(0);
+        expect(host.querySelector(".fund-book-head-shelf")?.getAttribute("data-head-more")).toBe("none");
+      } finally { await unmount(); }
+    }
+    expect(JSON.stringify(household)).toBe(before);
+  });
+
+  it("captions the pop-up with the paper actually folded on the page, never the whole register", async () => {
+    const household = seeded({ duplicate: true });
+    document.documentElement.dataset.motion = "reduced";
+    const { host, root, unmount } = mount();
+    try {
+      await render(root, { household, memberId: BIANCA, today: TODAY, presentation: "desk", selected: "accounts", onSelect: () => {} });
+      for (const accountId of ["ACC-VISA", "ACC-CASH", "ACC-SAVINGS", "ACC-CLAIMS"]) {
+        await act(async () => host.querySelector<HTMLButtonElement>(`[data-account-id="${accountId}"]`)!.click());
+        const lines = booksLines(household, accountId);
+        const strip = registerStrip(lines.ink.map((row) => row.runningCents), lines.pencil.length);
+        const standing = host.querySelectorAll(".fund-book-popup .fund-book-panel.is-standing").length;
+        const flat = host.querySelectorAll(".fund-book-popup .fund-book-pencil.is-projected").length;
+        const caption = host.querySelector(".fund-book-popup-line, .fund-book-popup .fund-book-floor-note")?.textContent ?? "";
+        expect(caption).toBe(popupCaption(strip, lines));
+        if (strip.actualCount >= 2) {
+          // The ink points on the page are the standing panels plus one; the caption names that number and no larger one.
+          expect(standing).toBe(strip.actualCount - 1);
+          expect(flat).toBe(strip.points.length - strip.actualCount);
+          expect(caption).toContain(strip.actualCount < lines.ink.length ? `the last ${strip.actualCount} of ${lines.ink.length} lines` : `all ${strip.actualCount} lines`);
+          if (strip.actualCount < lines.ink.length) expect(caption).not.toMatch(new RegExp(`${lines.ink.length} lines (the journal counts)? ?stand`));
+          if (flat) expect(caption).toContain(`Flat in pencil: the ${flat} line`);
+          else expect(caption).toContain("Nothing lies in pencil.");
+        } else {
+          expect(caption).toBe("One line is not a walk yet.");
+          expect(standing).toBe(0);
+        }
+        await act(async () => host.querySelector<HTMLButtonElement>(`[data-account-id="${accountId}"]`)!.click());
+      }
+      // The sentence by hand: a windowed register, a whole one, a windowed pencil, and a single line.
+      const row = (runningCents: number) => ({ entryId: "e", date: "2026-09-01", memo: "m", debitCents: 0, creditCents: 0, runningCents, recognized: true });
+      const sixty = Array.from({ length: 60 }, (_, index) => row(index));
+      expect(popupCaption(registerStrip(sixty.map((line) => line.runningCents), 1), { ink: sixty, pencil: [row(0)] }))
+        .toBe("Folded here in ink: the last 23 of 60 lines the journal counts. Flat in pencil: the 1 line it does not.");
+      expect(popupCaption(registerStrip([1, 2, 3], 0), { ink: [row(1), row(2), row(3)], pencil: [] }))
+        .toBe("Folded here in ink: all 3 lines the journal counts. Nothing lies in pencil.");
+      expect(popupCaption(registerStrip(sixty.map((line) => line.runningCents), 40), { ink: sixty, pencil: Array.from({ length: 40 }, () => row(0)) }))
+        .toBe("Folded here in ink: the last 12 of 60 lines the journal counts. Flat in pencil: 12 of the 40 lines it does not.");
+      expect(popupCaption(registerStrip([5], 0), { ink: [row(5)], pencil: [] })).toBe("One line is not a walk yet.");
     } finally { await unmount(); }
   });
 
@@ -454,7 +555,7 @@ describe("The Standing Book", () => {
       expect(host.querySelectorAll(".fund-book-popup .fund-book-pencil.is-projected")).toHaveLength(lines.pencil.length);
       expect(host.querySelector(".fund-book-popup .is-projected.is-standing")).toBeNull();
       expect(host.querySelectorAll(".fund-book-popup .fund-book-corner")).toHaveLength(1);
-      expect(host.querySelector(".fund-book-popup-line")?.textContent).toBe(`${lines.ink.length} counted lines stand in ink; 1 not counted lie flat in pencil.`);
+      expect(host.querySelector(".fund-book-popup-line")?.textContent).toBe(`Folded here in ink: the last ${strip.actualCount} of ${lines.ink.length} lines the journal counts. Flat in pencil: the 1 line it does not.`);
       // A card also gets the ruled band, at the plate's own mark.
       expect(host.querySelector(".fund-book-popup .fund-book-band")).not.toBeNull();
       expect(host.querySelector(".fund-book-popup .fund-book-band-fill.is-over")).not.toBeNull();

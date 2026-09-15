@@ -250,8 +250,11 @@ describe("the book's fences", () => {
   });
 
   it("keeps the stickies a separate group on the head, a deep link into the accounts chapter, and no new id or persisted value", () => {
-    expect(bookSource).toContain('role="group" aria-label="Accounts linked to the Fund"');
-    expect(bookSource).toContain('onSelect("accounts")');
+    expect(bookSource).toContain('role="group" aria-label={`Accounts linked to the Fund, ${rows.length}`}');
+    // The host is synced only when the accounts chapter is on the rail it gave us; the spread never waits for it.
+    expect(bookSource).toContain('const accountsOnRail = slots.includes("accounts");');
+    expect(bookSource).toContain('if (accountsOnRail) onSelect("accounts");');
+    expect(bookSource).toContain('const focusedRow = focusedAccountId ? rows.find(');
     expect(bookSource).toContain("booksPresentationFloor(household, memberId, \"household\")");
     expect(bookSource).toContain("accountRegister(books, accountId)");
     expect(bookSource).toContain("{ recognizedOnly: false }");

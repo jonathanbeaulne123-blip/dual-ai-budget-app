@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import {
   BOOK_GATE_X,
   PLATE_VIEW,
@@ -314,6 +314,30 @@ export function BookFigureView({ figure }: { figure: PlateFigure }) {
   }
 }
 
+function lineCount(count: number): string {
+  return `${count} ${count === 1 ? "line" : "lines"}`;
+}
+
+/**
+ * The caption says what is folded on the page, never the whole register: the
+ * strip windows to its newest points, so when fewer stand than the journal
+ * counts the sentence says so. Ink points on the page are `actualCount`;
+ * pencil panels on the page are the rest of the strip.
+ */
+export function popupCaption(strip: { points: number[]; actualCount: number }, lines: AccountLines): string {
+  const inkShown = strip.actualCount;
+  const pencilShown = Math.max(0, strip.points.length - strip.actualCount);
+  if (inkShown < 2) return "One line is not a walk yet.";
+  const ink = inkShown < lines.ink.length
+    ? `the last ${inkShown} of ${lineCount(lines.ink.length)} the journal counts`
+    : `all ${lineCount(inkShown)} the journal counts`;
+  if (!pencilShown) return `Folded here in ink: ${ink}. Nothing lies in pencil.`;
+  const pencil = pencilShown < lines.pencil.length
+    ? `${pencilShown} of the ${lineCount(lines.pencil.length)} it does not`
+    : `the ${lineCount(pencilShown)} it does not`;
+  return `Folded here in ink: ${ink}. Flat in pencil: ${pencil}.`;
+}
+
 /** A ledger line's amount cell: the journal's own debit or credit, blank where the journal wrote none. */
 function amountCell(cents: number): string {
   return cents ? formatCad(cents) : "";
@@ -383,11 +407,7 @@ function RegisterPopup({ row, lines, raised, onRaise }: { row: AccountRow; lines
           ? <Concertina figure={{ primitive: "spark", points: strip.points, actualCount: strip.actualCount, room: REGISTER_ROOM }} />
           : <p className="fund-book-floor-note">One line is not a walk yet.</p>}
         {figure.primitive === "gauge" ? <FloorBand figure={figure} /> : null}
-        <p className="fund-book-popup-line">
-          {lines.pencil.length
-            ? `${lines.ink.length} counted lines stand in ink; ${lines.pencil.length} not counted lie flat in pencil.`
-            : `${lines.ink.length} counted lines stand in ink. Nothing lies in pencil.`}
-        </p>
+        <p className="fund-book-popup-line">{popupCaption(strip, lines)}</p>
       </div>
     </div>
   );
@@ -395,9 +415,29 @@ function RegisterPopup({ row, lines, raised, onRaise }: { row: AccountRow; lines
 
 /** The head: one sticky per shared account, name and figure as the accounts plate says them. A separate control group — never a tab. */
 function Stickies({ rows, lines, focusedId, onPick }: { rows: AccountRow[]; lines: ReadonlyMap<string, AccountLines>; focusedId: string | null; onPick: (accountId: string) => void }) {
+  // Where the strip scrolls, the shelf fades the edge that has more behind it, so a reader can tell.
+  const strip = useRef<HTMLDivElement>(null);
+  const [more, setMore] = useState<"none" | "start" | "end" | "both">("none");
+  const measure = () => {
+    const node = strip.current;
+    if (!node) return;
+    const past = node.scrollWidth - node.clientWidth;
+    const start = node.scrollLeft > 2;
+    const end = past - node.scrollLeft > 2;
+    setMore(start && end ? "both" : start ? "start" : end ? "end" : "none");
+  };
+  useEffect(() => {
+    measure();
+    const node = strip.current;
+    if (!node || typeof ResizeObserver !== "function") return;
+    const observer = new ResizeObserver(measure);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [rows.length]);
   if (!rows.length) return null;
   return (
-    <div className="fund-book-head-edge" role="group" aria-label="Accounts linked to the Fund">
+    <div className="fund-book-head-shelf" data-head-more={more}>
+    <div className="fund-book-head-edge" role="group" aria-label={`Accounts linked to the Fund, ${rows.length}`} ref={strip} onScroll={measure}>
       {rows.map((row) => {
         const edge = accountRowEdge(row);
         const amount = accountPosted(lines.get(row.accountId)) ? accountRowAmount(row) : "No postings yet";
@@ -421,6 +461,7 @@ function Stickies({ rows, lines, focusedId, onPick }: { rows: AccountRow[]; line
           </button>
         );
       })}
+    </div>
     </div>
   );
 }
@@ -465,8 +506,14 @@ export function FundStandingBook({ household, memberId, today, presentation, sel
   }, [activeMember, rows.length, household, memberId]);
   const linesById = useMemo(() => new Map(rows.map((row) => [row.accountId, accountLines(books, row.accountId)])), [rows, books]);
   // Component state only: which sticky is picked. Never persisted — the sticky is a deep link, not a setting.
+  // The spread is the book's own: it shows the picked account whatever the host's tab says, because the
+  // accounts chapter may not be on this member's rail at all. A bookmark, or the host moving the
+  // selection, lets the account go, so what is pressed is always what is on the page.
   const [focusedAccountId, setFocusedAccountId] = useState<string | null>(null);
-  const focusedRow = selected === "accounts" && focusedAccountId ? rows.find((row) => row.accountId === focusedAccountId) ?? null : null;
+  const focusedRow = focusedAccountId ? rows.find((row) => row.accountId === focusedAccountId) ?? null : null;
+  useEffect(() => {
+    if (selected !== "accounts") setFocusedAccountId(null);
+  }, [selected]);
   // Reduced motion: the pop-up is already raised and nothing travels. Otherwise the lines lie flat until raised.
   const [raised, setRaised] = useState(() => motionReduced());
   // Reduced motion: the book is already open and nothing travels. Otherwise the
@@ -493,9 +540,12 @@ export function FundStandingBook({ household, memberId, today, presentation, sel
       : (index + (["ArrowLeft", "ArrowUp"].includes(event.key) ? -1 : 1) + tabs.length) % tabs.length;
     event.preventDefault(); tabs[next]?.focus();
   };
+  // Best-effort sync with the host's tab state: only when the accounts chapter is on the rail the host
+  // gave us can the host accept it; otherwise the fore-edge stays as it is and the spread still turns.
+  const accountsOnRail = slots.includes("accounts");
   const pickSticky = (accountId: string) => {
-    setFocusedAccountId((current) => current === accountId && selected === "accounts" ? null : accountId);
-    onSelect("accounts");
+    setFocusedAccountId((current) => current === accountId ? null : accountId);
+    if (accountsOnRail) onSelect("accounts");
     if (!open) setOpen(true);
   };
   const focusedLines = focusedRow ? linesById.get(focusedRow.accountId) ?? { ink: [], pencil: [] } : null;
@@ -609,7 +659,7 @@ export function FundStandingBook({ household, memberId, today, presentation, sel
           aria-current={selected === id ? "true" : undefined}
           aria-label={plate ? `${plate.kicker}. ${plate.glance}. ${plate.verdict}` : undefined}
           tabIndex={selected === id ? 0 : -1}
-          onKeyDown={navigate} onClick={() => { onSelect(id); if (!open) setOpen(true); }}>
+          onKeyDown={navigate} onClick={() => { setFocusedAccountId(null); onSelect(id); if (!open) setOpen(true); }}>
           <span className="fund-book-mark-name">{FUND_WIDGET_CARD[id].name}</span>
           {plate ? <strong className="fund-book-mark-glance">{plate.glance}</strong> : null}
         </button>;

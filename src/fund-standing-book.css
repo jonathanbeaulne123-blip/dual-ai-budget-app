@@ -96,6 +96,22 @@
 }
 
 /* ---- the head: one sticky per shared account on the top edge. A separate group, never a tab ---- */
+.fund-book-head-shelf { position: relative; min-width: 0; }
+/* where the strip scrolls, the edge with more behind it fades, so the cut sticky reads as a deliberate edge */
+.fund-book-head-shelf::before, .fund-book-head-shelf::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 2;
+}
+.fund-book-head-shelf::before { left: 0; background: linear-gradient(90deg, var(--fund-book-stage), transparent); }
+.fund-book-head-shelf::after { right: 0; background: linear-gradient(270deg, var(--fund-book-stage), transparent); }
+.fund-book-head-shelf[data-head-more="start"]::before, .fund-book-head-shelf[data-head-more="both"]::before { opacity: 1; }
+.fund-book-head-shelf[data-head-more="end"]::after, .fund-book-head-shelf[data-head-more="both"]::after { opacity: 1; }
 .fund-book-head-edge {
   position: relative;
   z-index: 1;
@@ -515,7 +531,7 @@
   grid-template-areas: "head edge" "room edge" "clasp edge";
   align-items: start;
 }
-.fund-book.is-desk .fund-book-head-edge { grid-area: head; align-self: end; }
+.fund-book.is-desk .fund-book-head-shelf { grid-area: head; align-self: end; }
 .fund-book.is-desk .fund-book-room { grid-area: room; }
 .fund-book.is-desk .fund-book-edge { grid-area: edge; flex-direction: column; padding-top: 34px; }
 .fund-book.is-desk .fund-book-mark, :root[data-theme] .fund-book.is-desk .fund-book-mark { width: calc(120px + var(--fund-book-reach) * 14px); margin-left: -6px; }
@@ -524,7 +540,7 @@
 
 /* ---- phone: glance plus one tap. One wall and the floor, today a rule down the leading edge ---- */
 .fund-book.is-phone { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "edge" "room" "cross" "clasp"; }
-.fund-book.is-phone .fund-book-head-edge { grid-area: head; }
+.fund-book.is-phone .fund-book-head-shelf { grid-area: head; }
 .fund-book.is-phone .fund-book-edge { grid-area: edge; }
 .fund-book.is-phone .fund-book-room { grid-area: room; }
 .fund-book.is-phone .fund-book-cross { grid-area: cross; }
@@ -577,13 +593,15 @@
 }
 
 /* the phone's head is a strip: one row, scrolls sideways, every sticky still a 44px button */
-.fund-book.is-phone .fund-book-head-edge { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding: 6px 4px 2px; margin-bottom: 0; }
+.fund-book.is-phone .fund-book-head-edge { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: 4px; scrollbar-width: thin; padding: 6px 4px 2px; margin-bottom: 0; }
+.fund-book.is-phone .fund-book-sticky { scroll-snap-align: start; }
 .fund-book.is-phone .fund-book-sticky, :root[data-theme] .fund-book.is-phone .fund-book-sticky { max-width: 140px; }
 
 /* below 720 even a desk-marked book folds to one column, so nothing scrolls sideways */
 @media (max-width: 719px) {
   .fund-book.is-desk { grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "edge" "room" "clasp"; }
-  .fund-book.is-desk .fund-book-head-edge { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: thin; padding: 6px 4px 2px; margin-bottom: 0; }
+  .fund-book.is-desk .fund-book-head-edge { flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; scroll-padding-inline: 4px; scrollbar-width: thin; padding: 6px 4px 2px; margin-bottom: 0; }
+  .fund-book.is-desk .fund-book-sticky { scroll-snap-align: start; }
   .fund-book.is-desk .fund-book-edge { flex-direction: row; flex-wrap: wrap; padding-top: 0; }
   .fund-book.is-desk .fund-book-mark, :root[data-theme] .fund-book.is-desk .fund-book-mark { width: auto; margin-left: 0; }
   .fund-book.is-desk .fund-book-room { perspective: none; }
@@ -734,6 +752,7 @@
   .fund-book-strip { transition: transform .35s var(--fund-book-ease); }
   .fund-book-dogear { transition: opacity .3s; }
   .fund-book-sticky { transition: transform .25s var(--fund-book-ease), background .2s, box-shadow .2s; }
+  .fund-book-head-shelf::before, .fund-book-head-shelf::after { transition: opacity .2s; }
   .fund-book-popup[data-fund-book-popup="raised"] .fund-book-popup-stand { animation: fund-book-raise .6s var(--fund-book-ease) both; }
 }
 @media (prefers-reduced-motion: reduce) {
