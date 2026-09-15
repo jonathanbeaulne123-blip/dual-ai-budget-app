@@ -1,0 +1,648 @@
+{
+  "records": [
+    {
+      "scene": "one",
+      "width": 320,
+      "height": 568,
+      "world": "3d",
+      "overflowY": 0,
+      "rackScroll": 57,
+      "shelves": [
+        {
+          "weight": "5 of 5",
+          "pin": "to the crown",
+          "banks": [
+            "Fictional porch renovation",
+            "Fictional trip to the shore",
+            "Fictional wedding weekend",
+            "Fictional date night"
+          ]
+        }
+      ],
+      "jug": "$2800.00 safe to pour",
+      "sub": "4 things on the shelf · the top shelf is fed first",
+      "parts": [
+        {
+          "c": "queen-stair--down",
+          "x": 113,
+          "y": 308,
+          "w": 130,
+          "h": 50
+        },
+        {
+          "c": "queen-room__head",
+          "x": 66,
+          "y": 126,
+          "w": 197,
+          "h": 37
+        },
+        {
+          "c": "queen-rack",
+          "x": 66,
+          "y": 165,
+          "w": 224,
+          "h": 51
+        },
+        {
+          "c": "queen-jug",
+          "x": 66,
+          "y": 222,
+          "w": 224,
+          "h": 28
+        },
+        {
+          "c": "queen-room__line",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "c": "queen-room__acts",
+          "x": 84,
+          "y": 256,
+          "w": 187,
+          "h": 50
+        },
+        {
+          "c": "room",
+          "x": 14,
+          "y": 122,
+          "w": 292,
+          "h": 242
+        }
+      ]
+    },
+    {
+      "scene": "one",
+      "width": 320,
+      "height": 700,
+      "world": "3d",
+      "overflowY": 0,
+      "rackScroll": 0,
+      "shelves": [
+        {
+          "weight": "5 of 5",
+          "pin": "to the crown",
+          "banks": [
+            "Fictional trip to the shore",
+            "Fictional porch renovation",
+            "Fictional wedding weekend",
+            "Fictional date night"
+          ]
+        }
+      ],
+      "jug": "$2800.00 safe to pour",
+      "sub": "4 things on the shelf · the top shelf is fed first",
+      "parts": [
+        {
+          "c": "queen-stair--down",
+          "x": 113,
+          "y": 434,
+          "w": 130,
+          "h": 50
+        },
+        {
+          "c": "queen-room__head",
+          "x": 66,
+          "y": 132,
+          "w": 197,
+          "h": 37
+        },
+        {
+          "c": "queen-rack",
+          "x": 66,
+          "y": 196,
+          "w": 224,
+          "h": 108
+        },
+        {
+          "c": "queen-jug",
+          "x": 66,
+          "y": 310,
+          "w": 224,
+          "h": 41
+        },
+        {
+          "c": "queen-room__line",
+          "x": 0,
+          "y": 0,
+          "w": 0,
+          "h": 0
+        },
+        {
+          "c": "queen-room__acts",
+          "x": 84,
+          "y": 357,
+          "w": 187,
+          "h": 50
+        },
+        {
+          "c": "room",
+          "x": 14,
+          "y": 122,
+          "w": 292,
+          "h": 374
+        }
+      ]
+    },
+    {
+      "scene": "two",
+      "width": 320,
+      "height": 700,
+      "world": "3d",
+      "overflowY": 0,
+      "rackScroll": 8,
+      "movedBy": "drag",
+      "slidBy": "drag",
+      "shelves": [
+        {
+          "weight": "5 of 11",
+          "pin": "18 of 20",
+          "banks": [
+            "Fictional trip to the shore",
+            "Fictional porch renovation",
+            "Fictional date night"
+          ],
+          "dividers": [
+            "Fictional trip to the shore 2, Fictional porch renovation 1",
+            "Fictional porch renovation 1, Fictional date night 1"
+          ],
+          "ledge": "the top shelf — 3 on it, share 5 of 11, fill mark 18 of 20"
+        },
+        {
+          "weight": "6 of 11",
+          "pin": "to the crown",
+          "banks": [
+            "Fictional wedding weekend"
+          ],
+          "dividers": [],
+          "ledge": "the bottom shelf — 1 on it, share 6 of 11, fill mark to the crown"
+        }
+      ],
+      "sub": "4 things on 2 shelves · the top shelf is fed first"
+    },
+    {
+      "scene": "one",
+      "width": 390,
+      "height": 844,
+      "world": "3d",
+      "overflowY": 0,
+      "rackScroll": 0,
+      "shelves": [
+        {
+          "weight": "5 of 5",
+          "pin": "to the crown",
+          "banks": [
+            "Fictional wedding weekend",
+            "Fictional porch renovation",
+            "Fictional trip to the shore",
+            "Fictional date night"
+          ]
+        }
+      ],
+      "jug": "$2800.00 safe to pour",
+      "sub": "4 things on the shelf · the top shelf is fed first",
+      "parts": [
+        {
+          "c": "queen-stair--down",
+          "x": 148,
+          "y": 578,
+          "w": 130,
+          "h": 50
+        },
+        {
+          "c": "queen-room__head",
+          "x": 66,
+          "y": 132,
+          "w": 294,
+          "h": 55
+        },
+        {
+          "c": "queen-rack",
+          "x": 66,
+          "y": 214,
+          "w": 294,
+          "h": 152
+        },
+        {
+          "c": "queen-jug",
+          "x": 66,
+          "y": 372,
+          "w": 294,
+          "h": 45
+        },
+        {
+          "c": "queen-room__line",
+          "x": 66,
+          "y": 423,
+          "w": 294,
+          "h": 73
+        },
+        {
+          "c": "queen-room__acts",
+          "x": 119,
+          "y": 502,
+          "w": 187,
+          "h": 50
+        },
+        {
+          "c": "room",
+          "x": 14,
+          "y": 122,
+          "w": 362,
+          "h": 518
+        }
+      ]
+    },
+    {
+      "scene": "two",
+      "width": 390,
+      "height": 844,
+      "world": "3d",
+      "overflowY": 0,
+      "rackScroll": 0,
+      "movedBy": "drag",
+      "slidBy": "drag",
+      "shelves": [
+        {
+          "weight": "5 of 11",
+          "pin": "18 of 20",
+          "banks": [
+            "Fictional porch renovation",
+            "Fictional trip to the shore",
+            "Fictional date night"
+          ],
+          "dividers": [
+            "Fictional porch renovation 2, Fictional trip to the shore 1",
+            "Fictional trip to the shore 1, Fictional date night 1"
+          ],
+          "ledge": "the top shelf — 3 on it, share 5 of 11, fill mark 18 of 20"
+        },
+        {
+          "weight": "6 of 11",
+          "pin": "to the crown",
+          "banks": [
+            "Fictional wedding weekend"
+          ],
+          "dividers": [],
+          "ledge": "the bottom shelf — 1 on it, share 6 of 11, fill mark to the crown"
+        }
+      ],
+      "sub": "4 things on 2 shelves · the top shelf is fed first"
+    },
+    {
+      "scene": "one",
+      "width": 720,
+      "height": 900,
+      "world": "3d",
+      "overflowY": 0,
+      "rackScroll": 0,
+      "shelves": [
+        {
+          "weight": "5 of 5",
+          "pin": "to the crown",
+          "banks": [
+            "Fictional trip to the shore",
+            "Fictional porch renovation",
+            "Fictional wedding weekend",
+            "Fictional date night"
+          ]
+        }
+      ],
+      "jug": "$2800.00 safe to pour",
+      "sub": "4 things on the shelf · the top shelf is fed first",
+      "parts": [
+        {
+          "c": "queen-stair--down",
+          "x": 311,
+          "y": 630,
+          "w": 130,
+          "h": 50
+        },
+        {
+          "c": "queen-room__head",
+          "x": 78,
+          "y": 136,
+          "w": 360,
+          "h": 43
+        },
+        {
+          "c": "queen-rack",
+          "x": 78,
+          "y": 207,
+          "w": 596,
+          "h": 189
+        },
+        {
+          "c": "queen-jug",
+          "x": 185,
+          "y": 409,
+          "w": 381,
+          "h": 34
+        },
+        {
+          "c": "queen-room__line",
+          "x": 211,
+          "y": 455,
+          "w": 330,
+          "h": 82
+        },
+        {
+          "c": "queen-room__acts",
+          "x": 276,
+          "y": 548,
+          "w": 200,
+          "h": 54
+        },
+        {
+          "c": "room",
+          "x": 18,
+          "y": 122,
+          "w": 684,
+          "h": 574
+        }
+      ]
+    },
+    {
+      "scene": "two",
+      "width": 720,
+      "height": 900,
+      "world": "3d",
+      "overflowY": 0,
+      "rackScroll": 0,
+      "movedBy": "drag",
+      "slidBy": "drag",
+      "shelves": [
+        {
+          "weight": "5 of 11",
+          "pin": "18 of 20",
+          "banks": [
+            "Fictional trip to the shore",
+            "Fictional porch renovation",
+            "Fictional date night"
+          ],
+          "dividers": [
+            "Fictional trip to the shore 2, Fictional porch renovation 1",
+            "Fictional porch renovation 1, Fictional date night 1"
+          ],
+          "ledge": "the top shelf — 3 on it, share 5 of 11, fill mark 18 of 20"
+        },
+        {
+          "weight": "6 of 11",
+          "pin": "to the crown",
+          "banks": [
+            "Fictional wedding weekend"
+          ],
+          "dividers": [],
+          "ledge": "the bottom shelf — 1 on it, share 6 of 11, fill mark to the crown"
+        }
+      ],
+      "sub": "4 things on 2 shelves · the top shelf is fed first"
+    },
+    {
+      "scene": "one",
+      "width": 1100,
+      "height": 800,
+      "world": "3d",
+      "overflowY": 0,
+      "rackScroll": 0,
+      "shelves": [
+        {
+          "weight": "5 of 5",
+          "pin": "to the crown",
+          "banks": [
+            "Fictional porch renovation",
+            "Fictional wedding weekend",
+            "Fictional trip to the shore",
+            "Fictional date night"
+          ]
+        }
+      ],
+      "jug": "$2800.00 safe to pour",
+      "sub": "4 things on the shelf · the top shelf is fed first",
+      "parts": [
+        {
+          "c": "queen-stair--down",
+          "x": 501,
+          "y": 530,
+          "w": 130,
+          "h": 50
+        },
+        {
+          "c": "queen-room__head",
+          "x": 90,
+          "y": 136,
+          "w": 360,
+          "h": 43
+        },
+        {
+          "c": "queen-rack",
+          "x": 206,
+          "y": 185,
+          "w": 720,
+          "h": 183
+        },
+        {
+          "c": "queen-jug",
+          "x": 375,
+          "y": 374,
+          "w": 381,
+          "h": 34
+        },
+        {
+          "c": "queen-room__line",
+          "x": 377,
+          "y": 414,
+          "w": 378,
+          "h": 50
+        },
+        {
+          "c": "queen-room__acts",
+          "x": 466,
+          "y": 470,
+          "w": 200,
+          "h": 54
+        },
+        {
+          "c": "room",
+          "x": 30,
+          "y": 122,
+          "w": 1040,
+          "h": 474
+        }
+      ]
+    },
+    {
+      "scene": "two",
+      "width": 1100,
+      "height": 800,
+      "world": "3d",
+      "overflowY": 0,
+      "rackScroll": 0,
+      "movedBy": "drag",
+      "slidBy": "drag",
+      "shelves": [
+        {
+          "weight": "5 of 11",
+          "pin": "18 of 20",
+          "banks": [
+            "Fictional porch renovation",
+            "Fictional trip to the shore",
+            "Fictional date night"
+          ],
+          "dividers": [
+            "Fictional porch renovation 2, Fictional trip to the shore 1",
+            "Fictional trip to the shore 1, Fictional date night 1"
+          ],
+          "ledge": "the top shelf — 3 on it, share 5 of 11, fill mark 18 of 20"
+        },
+        {
+          "weight": "6 of 11",
+          "pin": "to the crown",
+          "banks": [
+            "Fictional wedding weekend"
+          ],
+          "dividers": [],
+          "ledge": "the bottom shelf — 1 on it, share 6 of 11, fill mark to the crown"
+        }
+      ],
+      "sub": "4 things on 2 shelves · the top shelf is fed first"
+    },
+    {
+      "scene": "pour-confirm",
+      "width": 320,
+      "height": 700,
+      "tilt": {
+        "disabled": false,
+        "value": "5",
+        "words": "50% of the safe surplus, $1400.00"
+      },
+      "line": "The jug tilts. $1166.67 to the top shelf (Fictional porch renovation $583.34, Fictional trip to the shore $583.33); $233.33 to the bottom shelf (Fictional wedding weekend $233.33).",
+      "sheet": "Pour $1400.00 of the Fund's surplus over the rackCancel$1166.67 to the top shelf (Fictional porch renovation $583.34, Fictional trip to the shore $583.33); $233.33 to the bottom shelf (Fictional wedding weekend $233.33). This is the Fund's month-end Kitty rollover, split by the shelves as they stand.Hearth records the rollover in your books. Operating plus Kitty stays conserved; no bank transfer occurs.Pour it",
+      "poured": false
+    },
+    {
+      "scene": "pour-confirm",
+      "width": 390,
+      "height": 844,
+      "tilt": {
+        "disabled": false,
+        "value": "5",
+        "words": "50% of the safe surplus, $1400.00"
+      },
+      "line": "The jug tilts. $1166.67 to the top shelf (Fictional porch renovation $583.34, Fictional trip to the shore $583.33); $233.33 to the bottom shelf (Fictional wedding weekend $233.33).",
+      "sheet": "Pour $1400.00 of the Fund's surplus over the rackCancel$1166.67 to the top shelf (Fictional porch renovation $583.34, Fictional trip to the shore $583.33); $233.33 to the bottom shelf (Fictional wedding weekend $233.33). This is the Fund's month-end Kitty rollover, split by the shelves as they stand.Hearth records the rollover in your books. Operating plus Kitty stays conserved; no bank transfer occurs.Pour it",
+      "poured": false
+    },
+    {
+      "scene": "pour-confirm",
+      "width": 1100,
+      "height": 800,
+      "tilt": {
+        "disabled": false,
+        "value": "5",
+        "words": "50% of the safe surplus, $1400.00"
+      },
+      "line": "The jug tilts. $1166.67 to the top shelf (Fictional trip to the shore $583.34, Fictional porch renovation $583.33); $233.33 to the bottom shelf (Fictional wedding weekend $233.33).",
+      "sheet": "Pour $1400.00 of the Fund's surplus over the rackCancel$1166.67 to the top shelf (Fictional trip to the shore $583.34, Fictional porch renovation $583.33); $233.33 to the bottom shelf (Fictional wedding weekend $233.33). This is the Fund's month-end Kitty rollover, split by the shelves as they stand.Hearth records the rollover in your books. Operating plus Kitty stays conserved; no bank transfer occurs.Pour it",
+      "poured": false
+    },
+    {
+      "scene": "poured",
+      "width": 1100,
+      "height": 800,
+      "jug": "$1400.00 safe to pour",
+      "notice": "$1400.00 poured. The banks fire as they fill.",
+      "shelves": [
+        {
+          "banks": [
+            "Fictional trip to the shore",
+            "Fictional porch renovation",
+            "Fictional date night"
+          ],
+          "ledge": "the top shelf — 3 on it, share 5 of 6, fill mark to the crown"
+        },
+        {
+          "banks": [
+            "Fictional wedding weekend"
+          ],
+          "ledge": "the bottom shelf — 1 on it, share 1 of 6, fill mark to the crown"
+        }
+      ]
+    },
+    {
+      "scene": "keyboard",
+      "width": 390,
+      "height": 844,
+      "banks": [
+        "Fictional trip to the shore",
+        "Fictional wedding weekend",
+        "Fictional porch renovation",
+        "Fictional date night"
+      ],
+      "weight": "10 of 10",
+      "focus": {
+        "className": "queen-shelf__weight",
+        "outline": "solid",
+        "width": 3
+      }
+    },
+    {
+      "scene": "axe",
+      "width": 390,
+      "height": 844,
+      "axeSerious": [],
+      "all": []
+    },
+    {
+      "scene": "reduced",
+      "width": 390,
+      "height": 844,
+      "world": "3d",
+      "shelves": 2,
+      "transitions": [
+        "0s",
+        "0s",
+        "0s",
+        "0s",
+        "0s"
+      ]
+    },
+    {
+      "scene": "no-webgl",
+      "width": 390,
+      "height": 844,
+      "world": "flat",
+      "canvases": 0,
+      "shelves": [
+        [
+          "Fictional trip to the shore",
+          "Fictional porch renovation",
+          "Fictional date night"
+        ],
+        [
+          "Fictional wedding weekend"
+        ]
+      ]
+    },
+    {
+      "scene": "no-webgl",
+      "width": 1100,
+      "height": 800,
+      "world": "flat",
+      "canvases": 0,
+      "shelves": [
+        [
+          "Fictional trip to the shore",
+          "Fictional porch renovation",
+          "Fictional date night"
+        ],
+        [
+          "Fictional wedding weekend"
+        ]
+      ]
+    }
+  ],
+  "errors": []
+}

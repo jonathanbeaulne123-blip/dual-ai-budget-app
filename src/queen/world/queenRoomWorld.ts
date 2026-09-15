@@ -54,7 +54,7 @@ export type RoomVessel = {
   finish?: "plain" | "speckle" | "banded" | "crackle";
 };
 export type RoomRect = { x: number; y: number; w: number; h: number };
-export type RoomLayout = { host: RoomRect; seats: Record<string, RoomRect> };
+export type RoomLayout = { host: RoomRect; seats: Record<string, RoomRect>; /** The loft's shelves (2026-09-15): one board per DOM shelf, top first. */ shelves?: RoomRect[] };
 export type RoomStats = { frames: number; lastFrameMs: number; maxFrameMs: number; vessels: number; ambient: boolean; geometries: number };
 
 const VISIBLE_HEIGHT = 10;
@@ -117,6 +117,9 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   scene.add(interior);
   const swaying: { object: THREE.Object3D; amount: number; speed: number; phase: number }[] = [];
   let motes: THREE.InstancedMesh | null = null;
+  // The loft's rack (2026-09-15): a board per shelf the DOM hangs, standing where the shelf stands. The single ledge stays for one shelf.
+  let ledgeParts: { ledge: THREE.Mesh; lip: THREE.Mesh; wood: THREE.Material; beam: THREE.Material } | null = null;
+  const boards: THREE.Group[] = [];
   const moteSeeds: { x: number; y: number; z: number; speed: number; phase: number }[] = [];
 
   const box = geo(new THREE.BoxGeometry(1, 1, 1));
@@ -233,6 +236,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     const lip = mesh(box, beam, interior, "queen-loft-lip");
     lip.scale.set(90, 0.14, 0.22);
     lip.position.set(0, -0.11, -0.48);
+    ledgeParts = { ledge, lip, wood: ledge.material as THREE.Material, beam };
     // The floorboards below, and a crate at the near edge.
     const boards = mesh(new THREE.PlaneGeometry(90, 40), mat(new THREE.MeshStandardMaterial({ color: "#9b7c57", roughness: 0.95 })), interior, "queen-loft-floor");
     boards.rotation.x = -Math.PI / 2;
@@ -586,6 +590,26 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       // The room's floor is the shelf the vessels stand on, and it grows with them.
       interior.position.set(0, floor, 0);
       interior.scale.setScalar(Math.max(0.35, tallest || 1));
+      // The rack: one board per shelf, in the scene (not the interior) so a shelf stands exactly on its DOM row whatever the interior's scale.
+      const shelfRects = next.shelves ?? [];
+      if (ledgeParts) { ledgeParts.ledge.visible = shelfRects.length <= 1; ledgeParts.lip.visible = shelfRects.length <= 1; }
+      while (boards.length < shelfRects.length && ledgeParts) {
+        const board = new THREE.Group();
+        board.name = "queen-loft-board";
+        const plank = new THREE.Mesh(box, ledgeParts.wood); plank.name = "queen-loft-board-plank"; plank.scale.set(1, 0.16, 2.6); plank.position.set(0, -0.1, -1.6); board.add(plank);
+        const edge = new THREE.Mesh(box, ledgeParts.beam); edge.name = "queen-loft-board-lip"; edge.scale.set(1, 0.07, 0.14); edge.position.set(0, -0.05, -0.32); board.add(edge);
+        for (const side of [-1, 1] as const) { const bracket = new THREE.Mesh(box, ledgeParts.beam); bracket.name = "queen-loft-board-bracket"; bracket.scale.set(0.05, 0.34, 0.05); bracket.position.set(side * 0.44, -0.35, -1.2); board.add(bracket); }
+        scene.add(board); boards.push(board);
+      }
+      boards.forEach((board, i) => {
+        const r = shelfRects[i];
+        board.visible = shelfRects.length > 1 && Boolean(r);
+        if (!r) return;
+        const [x, y] = toWorld(hostRect, r.x + r.w / 2, r.y + r.h);
+        const scale = Math.max(0.35, tallest || 1);
+        board.position.set(x, y, 0);
+        board.scale.set(r.w * unitsPerPx + 2 * scale, scale, scale);
+      });
       invalidate();
     },
     /** Whether the room's dust moves. Off under reduced motion, a paused atmosphere or a hidden tab. */

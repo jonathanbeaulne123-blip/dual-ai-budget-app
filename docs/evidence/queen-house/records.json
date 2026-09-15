@@ -820,7 +820,7 @@
     "seats": 0,
     "cats": 2,
     "pots": 0,
-    "liveCanvas": true,
+    "liveCanvas": false,
     "errors": 0,
     "money": false
   },

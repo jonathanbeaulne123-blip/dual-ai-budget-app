@@ -503,6 +503,25 @@
         "test/vision-v2-chapters.test.ts"
       ],
       "reason": "Our Path world (D-262): the shared pathWorld collection changes only on both members' agreement, converges across phones, stays out of every financial hash and Hercules context, and replays exactly; month scores read only shared facts; the page keeps every place reachable without WebGL and keeps today's Our Path mounted behind the tent"
+    },
+    {
+      "sources": [
+        "src/core/queenRack.ts",
+        "src/core/kittyNestDesigns.ts",
+        "src/queen/QueenLoft.tsx",
+        "src/queen/QueenHome.tsx",
+        "src/queen/QueenRoomWorld.tsx",
+        "src/queen/world/queenRoomWorld.ts",
+        "src/queen/queen-home.css",
+        "src/queen/queen-glass.css"
+      ],
+      "tests": [
+        "test/queen-rack.test.ts",
+        "test/queen-loft-rack-ui.test.ts",
+        "test/queen-house.test.ts",
+        "test/queens-nest-ui.test.ts"
+      ],
+      "reason": "The loft's rack: a strictly shaped plan (shelves, shares, fill marks, splits) on the Build plan bank's household design row, refused elsewhere and by older builds; shelves hung and taken down, banks moved by drag and Shift+Arrow, the weight, pin and dividers slid by hand and keyboard; the pour is exact in cents by share, capped at each shelf's mark, flowing down, and posts only through allocateHouseholdFundSurplus behind Confirm by the custodian; the boards in 3D follow the drawn shelves"
     }
   ]
 }
