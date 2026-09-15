@@ -303,7 +303,7 @@ import {
   type ContinuityIdentity,
 } from "./continuity.ts";
 import { afterNextPaint } from "./nextPaint.ts";
-import { requireDemoSuiteContinuityIdentity } from "./demoSuiteIdentity.ts";
+import { demoSuiteSeatFor, requireDemoSuiteContinuityIdentity } from "./demoSuiteIdentity.ts";
 import {
   canRepairProjectionFromAcknowledgedCache,
   canRepairProjectionWithBoundOutbox,
@@ -3669,6 +3669,9 @@ export function App() {
       buildSha: import.meta.env.VITE_GIT_SHA || "local-development",
     });
     let candidate = generated.household;
+    // The showcase keeps its own two people and ids (so the seed replays); the person
+    // pressing the button steps into the seat with their name, else Jonathan's.
+    const demoMemberId = demoSuiteSeatFor(current, memberId, candidate);
     let accepted: Household;
     if (current.syntheticFixture?.kind === "hearth-demo-suite") {
       candidate = preserveDemoShowcaseContinuity(current, candidate);
@@ -3690,7 +3693,7 @@ export function App() {
       accepted = outcome.household;
     } else {
       candidate = linkGoogleIdentity(candidate, {
-        memberId,
+        memberId: demoMemberId,
         email: identity.email,
         subject: identity.subject,
         displayName: authSession?.displayName ?? (googleSession ? googleSession.identity.displayName : currentLink?.displayName) ?? "",
@@ -3702,9 +3705,9 @@ export function App() {
         label: "Create Demo Suite",
         snapshot: current,
         postedIds: [],
-        actorMemberId: memberId,
+        actorMemberId: demoMemberId,
         commandKind: DEMO_SUITE_COMMAND_KIND,
-      }, memberId, {
+      }, demoMemberId, {
         confirmationId,
         forceFlush: true,
         suppressUndo: true,
@@ -3722,7 +3725,7 @@ export function App() {
         equationHolds: true,
       };
       adoptAcceptedHousehold(accepted, status);
-      rememberSession({ memberId, view: "household", householdId: accepted.householdId });
+      rememberSession({ memberId: demoMemberId, view: "household", householdId: accepted.householdId });
       setBooksStatus(status);
       setReplicas(await listHouseholdReplicas(environment));
     }

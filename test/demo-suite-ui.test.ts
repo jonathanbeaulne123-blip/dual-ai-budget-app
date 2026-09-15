@@ -7,10 +7,11 @@ import { requireDemoSuiteContinuityIdentity } from "../src/demoSuiteIdentity.ts"
 describe("Demo Suite paper-room placement", () => {
   const app = readFileSync(join(process.cwd(), "src/App.tsx"), "utf8");
   const styles = readFileSync(join(process.cwd(), "src/styles.css"), "utf8");
+  const ledgerExperience = readFileSync(join(process.cwd(), "src/core/ledgerExperience.ts"), "utf8");
 
   it("adds replay and verification under More without restoring the old destructive reloads", () => {
     expect(app).toContain('data-testid="demo-suite-panel"');
-    expect(app).toContain("Fresh showcase");
+    expect(app).toContain("Investor preview");
     expect(app).toContain("Replay seed");
     expect(app).toContain("Verify now");
     expect(app).toContain('data-testid="demo-suite-report"');
@@ -28,9 +29,12 @@ describe("Demo Suite paper-room placement", () => {
   });
 
   it("keeps the existing navigation and desk grammar", () => {
-    expect(app).toContain('type Tab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more"');
-    expect(app).toContain('className="paper-panel"');
+    // The tab union lives in the ledger experience (`AppTab`); the App only aliases it.
+    expect(app).toContain("type Tab = AppTab;");
+    expect(ledgerExperience).toContain('export type LedgerTab = "home" | "plan" | "calendar" | "shift" | "ledger" | "more"');
+    expect(app).toContain('className="paper-panel sample-data-panel investor-data-panel" data-testid="demo-suite-panel"');
     expect(app).not.toContain('type Tab = "demo"');
+    expect(ledgerExperience).not.toContain('"demo"');
   });
 
   it("adopts a new showcase through the current books-readiness gate", () => {
@@ -45,7 +49,7 @@ describe("Demo Suite paper-room placement", () => {
     expect(createFlow.match(/const confirmationId = newConfirmationId\(\);/g)).toHaveLength(2);
     expect(createFlow).not.toContain("demo-suite-replace-${candidate.householdId}-${seed}");
     expect(createFlow).toContain("adoptAcceptedHousehold(accepted, status)");
-    expect(createFlow).toContain("rememberSession({ memberId, view: \"household\", householdId: accepted.householdId })");
+    expect(createFlow).toContain("rememberSession({ memberId: demoMemberId, view: \"household\", householdId: accepted.householdId })");
   });
 
   it("refuses to bind a new Demo Suite to a cached Auth identity for another member", () => {
