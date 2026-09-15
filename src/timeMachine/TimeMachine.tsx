@@ -69,16 +69,21 @@ function signCad(cents: number): string {
 export function TimeMachine({ household, memberId, view, today, onOpenBooks, initialPeriod }: TimeMachineProps) {
   const active = household.members.some((member) => member.id === memberId && member.active);
   const currentMonth = monthKeyFromDateKey(today);
-  const [period, setPeriod] = useState(currentMonth);
+  const range = useMemo(() => timelineRange(household, today), [household, today]);
+  // A door from elsewhere (an island month) aims the ribbon; a month outside the timeline keeps the default.
+  const doorMonth = (value: string | undefined): value is string => Boolean(value && /^\d{4}-\d{2}$/.test(value) && value >= range.from && value <= range.to);
+  const [period, setPeriod] = useState(() => (doorMonth(initialPeriod) ? initialPeriod : currentMonth));
   const [pane, setPane] = useState<Pane>("month");
   const [against, setAgainst] = useState(() => shiftMonthKey(currentMonth, -1));
   const ribbon = useRef<HTMLDivElement | null>(null);
-
-  const range = useMemo(() => timelineRange(household, today), [household, today]);
-  // A door from elsewhere (an island month) aims the ribbon; a month outside the timeline keeps the default.
+  // Each request is applied once: a later range change never snaps the person's own scrub back.
+  const appliedPeriod = useRef(initialPeriod);
   useEffect(() => {
-    if (initialPeriod && /^\d{4}-\d{2}$/.test(initialPeriod) && initialPeriod >= range.from && initialPeriod <= range.to) setPeriod(initialPeriod);
-  }, [initialPeriod, range.from, range.to]);
+    if (initialPeriod === appliedPeriod.current) return;
+    appliedPeriod.current = initialPeriod;
+    if (doorMonth(initialPeriod)) setPeriod(initialPeriod);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialPeriod]);
   const beads = useMemo(() => timelineBeads(household, today, range), [household, today, range]);
   const month = useMemo(() => monthView(household, period, today), [household, period, today]);
   const comparison = useMemo(() => (pane === "compare" ? compareMonths(household, against, period) : null), [pane, household, against, period]);

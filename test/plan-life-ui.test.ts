@@ -45,8 +45,12 @@ it('opens the Bridge section when Our Path links to it', async () => {
  const household=planLifeFixture('household');
  const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
  try {
-  await act(async()=>root.render(createElement(PlanStudio,{household,memberId:'MEM-001',view:'household',today:'2026-09-11',busy:false,onCommand:async()=>null,sourceFocus:{route:'plan',view:'household',label:'Bridge'}})));
+  await act(async()=>root.render(createElement(PlanStudio,{household,memberId:'MEM-001',view:'household',today:'2026-09-11',busy:false,onCommand:async()=>null,sourceFocus:{route:'plan',view:'household',label:'Bridge',section:'bridge'}})));
   await act(async()=>{await new Promise(r=>setTimeout(r,0));});
   expect([...host.querySelectorAll('button')].some(b=>b.textContent==='Save privately and review')).toBe(true);
+  // A source that merely happens to be labelled "Bridge" is not a request for the section.
+  await act(async()=>root.render(createElement(PlanStudio,{household,memberId:'MEM-001',view:'household',today:'2026-09-11',busy:false,onCommand:async()=>null,key:'plain',sourceFocus:{route:'plan',view:'household',label:'Bridge'}})));
+  await act(async()=>{await new Promise(r=>setTimeout(r,0));});
+  expect([...host.querySelectorAll('button')].some(b=>b.textContent==='Save privately and review')).toBe(false);
  } finally {await act(async()=>root.unmount());host.remove();}
 });

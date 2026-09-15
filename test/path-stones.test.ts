@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { catalogHousehold, postEntry } from "../src/core/index.ts";
+import { addRecurrence, catalogHousehold, postEntry } from "../src/core/index.ts";
 import { completeTask, saveTask, type TaskInput } from "../src/core/tasks.ts";
-import { PATH_STONE_LIMIT, pathStones } from "../src/core/pathStones.ts";
+import { PATH_STONE_LIMIT, pathStones, pathTaskDone } from "../src/core/pathStones.ts";
 
 const B = "MEM-001", J = "MEM-002";
 const TODAY = "2026-09-15";
@@ -65,6 +65,24 @@ describe("Our Path stepping stones (planner tasks)", () => {
     expect(lit).toMatchObject({ state: "done", money: true, lit: true });
     expect(lit.why).toContain("confirmed in the books");
     expect(JSON.stringify(lit)).not.toMatch(/14050|14000|140\.5/);
+  });
+
+  it("lights a household money stone only from shared books evidence, never from someone's personal transaction", () => {
+    let h = addRecurrence(catalogHousehold(), { cadence: "monthly", nextDate: "2026-09-25", type: "expense", amount: "100", accountId: "ACC-VISA", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Fictional internet" }).household;
+    const recurrenceId = h.recurrences.at(-1)!.id;
+    h = saveTask(h, input("net", { title: "Fictional: internet bill", dueDate: "2026-09-25", moneyLink: { kind: "recurrence", recurrenceId, date: "2026-09-25" } })).household;
+    const withPayment = (visibility: "personal" | "household") => {
+      const posted = postEntry(h, { date: "2026-09-25", type: "expense", amount: 100, accountId: "ACC-VISA", subcategoryId: "SUB-HOUSING-ELECTRIC", createdBy: B, note: `Fictional ${visibility} internet`, visibility, confirmDuplicate: true }).household;
+      return { ...posted, transactions: posted.transactions.map((row) => row.note === `Fictional ${visibility} internet` ? { ...row, source: "recurring", sourceId: recurrenceId } : row) } as typeof posted;
+    };
+    expect(pathStones(h, B, TODAY)[0]).toMatchObject({ money: true, lit: false, state: "waiting" });
+    // The owner's device holds their personal row, but the stone must look the same on both phones.
+    for (const member of [B, J]) expect(pathStones(withPayment("personal"), member, TODAY)[0]).toMatchObject({ money: true, lit: false, state: "waiting" });
+    for (const member of [B, J]) expect(pathStones(withPayment("household"), member, TODAY)[0]).toMatchObject({ money: true, lit: true, state: "done" });
+    // A private footpath may still read its owner's own rows (pathTaskDone without the shared flag).
+    const task = withPayment("personal").tasks!.find((row) => row.id === "TASK-net")!;
+    expect(pathTaskDone(withPayment("personal"), task)).toBe(true);
+    expect(pathTaskDone(withPayment("personal"), task, true)).toBe(false);
   });
 
   it("caps at 40 stones, newest first, and drops deleted tasks", () => {

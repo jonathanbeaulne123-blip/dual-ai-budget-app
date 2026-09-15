@@ -1,6 +1,8 @@
 import { evidenceForTask } from "./agenda.ts";
+import { pathWords } from "./pathWords.ts";
+import { belongsToSharedLedger } from "./visibility.ts";
 import type { DateKey } from "./calendar.ts";
-import { taskInView, taskIsFinancial, type Task } from "./tasks.ts";
+import { taskInView, taskIsFinancial, type Task, type TaskEvidence } from "./tasks.ts";
 import type { Household } from "./types.ts";
 
 /**
@@ -31,10 +33,9 @@ export type PathStone = {
 export const PATH_STONE_LIMIT = 40;
 const LABEL_LIMIT = 60;
 
-/** Shared with private footpaths: one line, at most 60 characters. */
-export function pathLabel(title: string): string {
-  const text = title.trim().replace(/\s+/g, " ");
-  return text.length <= LABEL_LIMIT ? text : `${text.slice(0, LABEL_LIMIT - 1).trimEnd()}…`;
+/** Shared with private footpaths: one line of words (no amounts), at most 60 characters. */
+export function pathLabel(title: string, fallback = "A task"): string {
+  return pathWords(title, LABEL_LIMIT, fallback);
 }
 
 /**
@@ -42,9 +43,27 @@ export function pathLabel(title: string): string {
  * when it was completed (a money task can only be completed with evidence already
  * in the books), or when a money-linked task's evidence is found in the books.
  */
-export function pathTaskDone(household: Household, task: Task): boolean {
-  const evidence = task.completedAt ? task.completionEvidence : evidenceForTask(household, task);
-  return Boolean(task.completedAt) || (evidence !== null && task.moneyLink !== null);
+export function pathTaskDone(household: Household, task: Task, shared = false): boolean {
+  if (task.completedAt) return true;
+  const evidence = evidenceForTask(household, task);
+  if (evidence === null || task.moneyLink === null) return false;
+  return !shared || sharedEvidence(household, evidence);
+}
+
+/**
+ * A household stone lights the same on both phones: evidence found in the books
+ * counts only when it is a shared fact (a shared-ledger transaction, or a
+ * contribution to a shared goal). The owner's own Personal rows never light it.
+ * Footpaths pass `shared = false`: they may read the owner's own rows.
+ */
+function sharedEvidence(household: Household, evidence: TaskEvidence): boolean {
+  if (evidence.kind === "transaction") {
+    const tx = household.transactions.find((row) => row.id === evidence.transactionId);
+    return Boolean(tx && belongsToSharedLedger(tx));
+  }
+  const contribution = (household.goalContributions ?? []).find((row) => row.id === evidence.contributionId);
+  const goal = contribution ? household.goals.find((row) => row.id === contribution.goalId) : undefined;
+  return Boolean(goal?.shared);
 }
 
 export function pathStones(household: Household, memberId: string, today: DateKey): PathStone[] {
@@ -57,7 +76,7 @@ export function pathStones(household: Household, memberId: string, today: DateKe
     .slice(0, PATH_STONE_LIMIT)
     .map((task): PathStone => {
       const money = taskIsFinancial(task);
-      const done = pathTaskDone(household, task);
+      const done = pathTaskDone(household, task, true);
       const lit = money && done;
       const state: PathStone["state"] = done ? "done" : money ? "waiting" : "open";
       const owner = nameOf(task.assigneeId);

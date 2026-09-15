@@ -121,3 +121,7 @@ In the other direction, a household island link must never carry a personal goal
    - Do **not** read the couple's category fixes (`pathCategoryMappings`, `:334`). Those are shared decisions, and personal spending would then be shaped by the partner's choices.
    - Never write fixes from the personal side.
    - If Jonathan wants personal fixes later, that is option (ii) or (iii), and it needs its own review.
+
+## §2(g) addendum — owner-only marks on the household island (D-264, step 6)
+
+Step 6 puts owner-only **footpaths** (the member's own personal tasks) and **stage-1 bridge planks** (the member's own Bridge drafts) on the *household* island. They follow the rules above: derived on the device from the owner's own Personal rows with the single owner predicate, nothing written to `pathWorld` or any synced collection, no amounts (labels pass through `pathWords`), and for the glance risk of §2(e): the Mine toggle is keyed per member (`hearth:pathWorld:mine:<memberId>`), and the marks, outline rows and world geometry never appear at Dim. Presence does not hide them (presence means online, not looking at this screen). The partner-render tests (`test/path-footpaths.test.ts`, `test/our-path-world-ui.test.ts`) prove nothing crosses devices: a partner's device assembled from the Shared envelope and its own Personal envelope has no trace of the owner's footpaths or planks. A Codex trust review is still required before merge.

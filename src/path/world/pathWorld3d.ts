@@ -259,6 +259,24 @@ export function createPathWorld(host: HTMLElement, options: {
   // Everything rebuilt per input
   const dynamic = new THREE.Group();
   scene.add(dynamic);
+  // Light cap (review fix, D-264). three.js compiles the light count into every shader, so a Chapter-count-driven
+  // number of PointLights meant a shader recompile storm on each rebuild (Replay rebuilds per month). Real lights are
+  // a fixed pool created once: the lit/blazing campfire (max 1), the stage-3 bridge lantern (max 1) and the cottage
+  // window, plus the walkers' lantern below. Ember fires, the first fire and sunrises are emissive-only.
+  // A pooled light that is not claimed this build is parked at intensity 0 but stays in the count.
+  // Full: hemi + sun + 4 point lights, always. Lite: hemi + sun + the walkers' lantern only.
+  const firePool = new THREE.PointLight(0xffa040, 0, 16, 2);
+  const bridgePool = new THREE.PointLight(0xffc070, 0, 6, 2);
+  const cottagePool = new THREE.PointLight(0xffc860, 0, 6, 2);
+  const lightPool = [firePool, bridgePool, cottagePool];
+  let fireClaimed = false, bridgeClaimed = false;
+  scene.add(...lightPool);
+  const poolAt = (light: THREE.PointLight, group: THREE.Object3D, local: THREE.Vector3, intensity: number, distance: number) => {
+    group.updateMatrixWorld(true);
+    light.position.copy(group.localToWorld(local.clone()));
+    light.intensity = intensity;
+    light.distance = distance;
+  };
   const decor = new THREE.Group();
   scene.add(decor);
   const decorDisposables: (() => void)[] = [];
@@ -524,9 +542,9 @@ export function createPathWorld(host: HTMLElement, options: {
         for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; g.add(part(G.ico, "#9c8f7d", 0.3, 0.25, 0.3, Math.cos(a), 0.15, Math.sin(a))); }
         const f1 = part(G.cone, "#ffb347", 0.45, 1.2, 0.45, 0, 0.9, 0, { emissive: "#ff8a1f", emissiveIntensity: 1.2 }); f1.castShadow = false;
         const f2 = part(G.cone, "#ffe39a", 0.25, 0.8, 0.25, 0, 0.8, 0, { emissive: "#ffd060", emissiveIntensity: 1.4 }); f2.castShadow = false;
-        const light = new THREE.PointLight(0xffa040, 6, 12, 2); light.position.y = 1.4;
-        g.add(f1, f2, light);
-        tickers.push((t) => { const k = 1 + 0.15 * Math.sin(t * 11) + 0.1 * Math.sin(t * 17.3); f1.scale.y = 1.2 * k; f2.scale.y = 0.8 * (2 - k); light.intensity = 5 + 1.5 * Math.sin(t * 9); });
+        // Emissive only (the light cap): the flames glow without a PointLight.
+        g.add(f1, f2);
+        tickers.push((t) => { const k = 1 + 0.15 * Math.sin(t * 11) + 0.1 * Math.sin(t * 17.3); f1.scale.y = 1.2 * k; f2.scale.y = 0.8 * (2 - k); });
         anchor(id, g, 2); break;
       }
       case "dogMeadow": {
@@ -600,6 +618,8 @@ export function createPathWorld(host: HTMLElement, options: {
     while (dynamic.children.length) dynamic.remove(dynamic.children[0]!);
     for (const bank of sculptures.values()) bank.sculpture.group.removeFromParent();
     pickables.length = 0; anchors.clear(); tickers = []; appearing = [];
+    for (const light of lightPool) light.intensity = 0;
+    fireClaimed = false; bridgeClaimed = false;
     for (const dispose of sceneDisposables.splice(0)) dispose();
     const generation = ++sceneGeneration;
     prunePhotos(new Set(input.memories.flatMap((m) => (m.photo ? [m.photo] : []))));
@@ -722,17 +742,18 @@ export function createPathWorld(host: HTMLElement, options: {
       if (fire.sitdown === "closed") {
         // The Sitdown closed: steady embers, no flicker.
         for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; const e = part(G.ico, "#ff9a3c", 0.22, 0.14, 0.22, Math.cos(a) * 0.35, 0.28, Math.sin(a) * 0.35, { emissive: "#ff6a1a", emissiveIntensity: 0.9 }); e.castShadow = false; g.add(e); }
-        const light = new THREE.PointLight(0xff8a30, 2.4, 9, 2); light.position.y = 0.8;
-        g.add(light);
-      } else if (fire.lit) {
+        // Emissive only (the light cap).
+      } else if (fire.lit && !fireClaimed) {
+        fireClaimed = true;
         const blaze = fire.sitdown === "open", both = (input.presentMembers ?? 1) >= 2;
         const tall = blaze ? 2.1 : 1.4, width = blaze ? 0.7 : 0.5;
         const power = (blaze ? 9 : 6) * (both ? 1.4 : 1);
         const amp = Math.min(0.5, (blaze ? 0.25 : 0.15) * (both ? 2 : 1));
         const f = part(G.cone, "#ffb347", width, tall, width, 0, 0.3 + tall / 2, 0, { emissive: "#ff8a1f", emissiveIntensity: 1.2 }); f.castShadow = false;
         const core = part(G.cone, "#ffc860", width * 0.55, tall * 0.62, width * 0.55, 0, 0.3 + tall * 0.31, 0, { emissive: "#ffc860", emissiveIntensity: 1.4 }); core.castShadow = false;
-        const light = new THREE.PointLight(0xffa040, power, blaze ? 22 : 16, 2); light.position.y = 0.6 + tall * 0.7;
-        g.add(f, core, light);
+        const light = firePool;
+        poolAt(light, g, new THREE.Vector3(0, 0.6 + tall * 0.7, 0), power, blaze ? 22 : 16);
+        g.add(f, core);
         // Reduced motion: the fire stands still. Lite: only the base flicker.
         if (!options.reducedMotion) tickers.push((t) => {
           const a = quality === "full" ? amp : 0.15;
@@ -953,7 +974,7 @@ export function createPathWorld(host: HTMLElement, options: {
       // The lit window: someone is home.
       const lit = part(G.box, "#ffe2a0", 0.62, 0.52, 0.05, 0.55, 1.05, 1.02, { emissive: "#ffc860", emissiveIntensity: 1.15 }); lit.castShadow = false; c.add(lit);
       c.add(part(G.box, "#7a5436", 0.7, 0.06, 0.07, 0.55, 0.77, 1.04));
-      const glowAt = new THREE.PointLight(0xffc860, 1.6, 6, 2); glowAt.position.set(0.55, 1.05, 1.6); c.add(glowAt);
+      poolAt(cottagePool, c, new THREE.Vector3(0.55, 1.05, 1.6), 1.6, 6);
       anchor("cottage", c, 3.6); dynamic.add(c);
       reserved.push([spot.x, spot.z]);
     }
@@ -1066,10 +1087,10 @@ export function createPathWorld(host: HTMLElement, options: {
       const x = at.x + at.nx * 9, z = at.z + at.nz * 9;
       const g = new THREE.Group(); g.position.set(x, Math.max(0, heightAt(island, x, z)), z);
       const disc = part(G.sph, "#ffcf7a", 1.3, 1.3, 1.3, 0, 1.4, 0, { emissive: "#ffa040", emissiveIntensity: 1.2, flatShading: false }); disc.castShadow = false;
-      const light = new THREE.PointLight(0xff9a40, 5, 16, 2); light.position.y = 2;
+      // Emissive only (the light cap): the sun disc glows, no PointLight.
       const shaft = new THREE.Mesh(strack(new THREE.PlaneGeometry(1.6, 9)), smat(new THREE.MeshBasicMaterial({ color: "#ffe2b0", transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide })));
       shaft.position.set(0, 5, 0); shaft.rotation.set(0, at.yaw, 0.35);
-      g.add(disc, light, shaft);
+      g.add(disc, shaft);
       anchor(row.id, g, 2.4); dynamic.add(g);
     });
 
@@ -1216,6 +1237,7 @@ export function createPathWorld(host: HTMLElement, options: {
           g.add(part(G.cyl, dark, 0.04, 0.5, 0.04, 0.58, 1.27, 1.4));
           const glow = smat(new THREE.MeshStandardMaterial({ color: "#ffd27a", emissive: "#ffb347", emissiveIntensity: 1.1, roughness: 0.4 }));
           const lamp = new THREE.Mesh(G.sph, glow); lamp.scale.setScalar(0.13); lamp.position.set(0.58, 1.6, 1.4); g.add(lamp);
+          if (!bridgeClaimed) { bridgeClaimed = true; poolAt(bridgePool, g, new THREE.Vector3(0.58, 1.6, 1.4), 1.2, 6); }
           const phase = j * 1.3 + bridge.month;
           tickers.push((t) => {
             const on = ambient && quality === "full" && !options.reducedMotion;
@@ -1533,6 +1555,8 @@ export function createPathWorld(host: HTMLElement, options: {
     renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, PIXEL_RATIO_CAP[next]));
     renderer.shadowMap.enabled = full;
     sun.castShadow = full;
+    // Lite keeps only the walkers' lantern as a real light (the program recompile below covers the count change).
+    for (const light of lightPool) light.visible = full;
     if (!full && sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
     if (first) return;
     // Shadow code is compiled into each program: ask three.js to rebuild them.

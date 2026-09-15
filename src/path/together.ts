@@ -1,4 +1,5 @@
 import { monthKeyFromDateKey, type DateKey } from "../core/calendar.ts";
+import { pathWords } from "../core/pathWords.ts";
 import type { Household } from "../core/types.ts";
 import type { GrownIsland } from "./grow.ts";
 
@@ -44,11 +45,7 @@ export function pathSitdownClosedMonths(household: Household): Set<string> {
 
 /** The Charter's purpose as words only: any figure is removed, then cut at a word boundary. */
 export function charterPurposeWords(purpose: string, max = 120): string {
-  const words = (purpose ?? "").replace(/\$?\d[\d,]*(\.\d+)?/g, " ").replace(/\s+/g, " ").replace(/\s+([.,;:!?])/g, "$1").trim();
-  if (words.length <= max) return words;
-  const cut = words.slice(0, max);
-  const space = cut.lastIndexOf(" ");
-  return `${(space > 40 ? cut.slice(0, space) : cut).replace(/[\s.,;:]+$/, "")}…`;
+  return pathWords(purpose, max, "");
 }
 
 /**

@@ -61,7 +61,7 @@ export function pathBridges(household: Household, memberId: string, today: DateK
   for (const draft of household.planBridgeDrafts ?? []) {
     if (draft.ownerMemberId !== memberId) continue;
     rows.push({
-      id: draft.id, label: pathLabel(draft.label), month: draft.monthKey, kind: draft.kind, stage: 1,
+      id: draft.id, label: pathLabel(draft.label, "An offer"), month: draft.monthKey, kind: draft.kind, stage: 1,
       stageWords: PATH_BRIDGE_WORDS.draft, offeredByMe: true, at: draft.updatedAt,
       why: `Saved privately as ${KIND_WORDS[draft.kind] ?? "an offer"}. Share it with Our Home to lay the next planks.`,
     });
@@ -76,7 +76,7 @@ export function pathBridges(household: Household, memberId: string, today: DateK
     else if (row.state === "declined") { stage = 0; stageWords = PATH_BRIDGE_WORDS.declined; why = `${offered}. It was set aside; the reason lives in the Plan Studio.`; }
     else if (row.state === "withdrawn") { stage = 0; stageWords = PATH_BRIDGE_WORDS.withdrawn; why = `${offered}, then took it back.`; }
     else continue;
-    rows.push({ id: row.id, label: pathLabel(row.label), month: row.monthKey, kind: row.kind, stage, stageWords, offeredByMe: mine, why, at: row.updatedAt });
+    rows.push({ id: row.id, label: pathLabel(row.label, "An offer"), month: row.monthKey, kind: row.kind, stage, stageWords, offeredByMe: mine, why, at: row.updatedAt });
   }
   return rows
     .sort((a, b) => b.at.localeCompare(a.at) || b.id.localeCompare(a.id))

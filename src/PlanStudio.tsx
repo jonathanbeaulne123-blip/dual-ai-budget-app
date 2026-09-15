@@ -36,8 +36,9 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
 }) {
   const consumedSource=useRef<HerculesNumberSource|null>(null);
   const scope = view;
-  const [bankRequest,setBankRequest]=useState<{goalId?:string;lineId?:string;bankId?:string}|null>(null);
-  const openBanks=(goalId?:string,lineId?:string)=>setBankRequest({goalId,lineId});
+  const [bankRequest,setBankRequest]=useState<{goalId?:string;lineId?:string;bankId?:string;request?:number}|null>(null);
+  const bankRequests=useRef(0);
+  const openBanks=(goalId?:string,lineId?:string)=>setBankRequest({goalId,lineId,request:++bankRequests.current});
   const [month, setMonth] = useState<MonthKey>(monthKeyFromDateKey(today));
   const [section, setSection] = useState<Section>("overview");
   const [horizonDays, setHorizonDays] = useState(31);
@@ -128,7 +129,7 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
     if (sourceFocus.goalId || sourceFocus.label === "Goals & reserves") openBanks(sourceFocus.goalId,sourceFocus.planLineId);
     if (sourceFocus.planSitDownSessionId) setSection("sitdown");
     // Our Path's bridges open the Bridge section (a link only; the Bridge editor keeps its own review and Confirm).
-    if (sourceFocus.label === "Bridge") setSection("bridge");
+    if (sourceFocus.section === "bridge") setSection("bridge");
     if (sourceFocus.planDraftId) {
       const privateDraft = household.planDrafts?.find(row => row.id === sourceFocus.planDraftId && row.ownerMemberId === memberId && row.scope === scope);
       if (!privateDraft) { setError("That exact private draft is no longer available. Choose your current Plan."); return; }

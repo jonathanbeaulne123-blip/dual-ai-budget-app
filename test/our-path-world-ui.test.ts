@@ -4,7 +4,7 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { addGoal, offerMove, openChapter, postEntry, recordRitualHeld, type CommitResult, type Household } from "../src/core/index.ts";
 import { movesForChapter, openChapterFor, respondToMove } from "../src/core/chapters.ts";
-import { agreePathProposal, pathIslandName, pendingPathProposals, proposePathName } from "../src/core/pathWorld.ts";
+import { agreePathProposal, herculesPathSuggestion, pathIslandName, pendingPathProposals, proposePathName, proposePathRecipe } from "../src/core/pathWorld.ts";
 import { OurPathWorld } from "../src/path/OurPathWorld.tsx";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
 import { kittyBankBackingStep } from "../src/core/kittyBanks.ts";
@@ -185,6 +185,38 @@ describe("Our Path world page (D-262)", () => {
     await click(byText("Back to the island"));
     expect(world.wake).toHaveBeenCalledTimes(1);
     expect(created.count).toBe(1);
+  });
+
+  it("tells the App the tent closed when the page unmounts with the tent open", async () => {
+    const tent: boolean[] = [];
+    await act(async () => root.render(createElement(OurPathWorld, { household: seeded(), memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null, onTentChange: (open: boolean) => tent.push(open) })));
+    await settle();
+    await click(byText("Open the Plan Studio tent"));
+    expect(tent).toEqual([true]);
+    await act(async () => root.render(createElement("p", null, "another page")));
+    expect(tent).toEqual([true, false]);
+  });
+
+  it("keeps one scene when the App re-renders with fresh inline callbacks and the same household", async () => {
+    created.mode = "fake";
+    const h = seeded();
+    const page = (n: number) => createElement(OurPathWorld, {
+      household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null,
+      onOpenPlay: () => n, onOpenInTent: () => n, onOpenTogether: () => n, onOpenCharter: () => n, onOpenFund: () => n, onOpenCalendar: () => n,
+      onOpenPlanner: () => n, onOpenTimeMachine: () => n, onOpenBank: () => n, onTentChange: () => n,
+    });
+    await act(async () => root.render(page(1)));
+    await settle();
+    const world = created.worlds[0] as FakeWorld;
+    const calls = world.setScene.mock.calls.length;
+    expect(calls).toBeGreaterThan(0);
+    for (let n = 2; n < 5; n++) await act(async () => root.render(page(n)));
+    await settle();
+    expect(world.setScene).toHaveBeenCalledTimes(calls);
+    // The cottage still follows whether Play can open at all.
+    await act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null })));
+    expect(world.setScene).toHaveBeenCalledTimes(calls + 1);
+    expect((world.setScene.mock.calls.at(-1)![0] as { cottage: boolean }).cottage).toBe(false);
   });
 
   it("opens the tent when a Hercules source link arrives, and moves focus with the tent", async () => {
@@ -697,9 +729,40 @@ describe("Our Path world page (D-262)", () => {
     });
 
     it("keeps the Kitty kiln and the recipe kiln hut apart by name", async () => {
-      const source = await import("node:fs").then((fs) => fs.readFileSync("src/path/OurPathWorld.tsx", "utf8"));
-      expect(source).toContain('kiln: "A kiln hut"');
-      expect(source).toContain('label: "The kiln"');
+      // A shared bank (seeded) stands the Kitty kiln; a craft month plus the agreed "The kiln" recipe grows a kiln hut.
+      let h = seeded();
+      const at = "2026-08-01T12:00:00.000Z";
+      h = { ...h, categories: [...h.categories, { id: "SUB-FICTIONAL-POTTERY", parentId: "CAT-LIFE", recordType: "category", name: "Fictional pottery", transactionType: "expense", essential: false, active: true, sortOrder: 98, createdAt: at, updatedAt: at } as Household["categories"][number]] };
+      h = postEntry(h, { type: "expense", date: "2026-08-20", amount: "60", accountId: "ACC-VISA", subcategoryId: "SUB-FICTIONAL-POTTERY", note: "Fictional clay", createdBy: "MEM-001", visibility: "household", confirmDuplicate: true }).household;
+      const spec = herculesPathSuggestion({ signal: "creative" });
+      expect(spec).toMatchObject({ name: "The kiln", brush: "kiln" });
+      h = proposePathRecipe(h, { memberId: "MEM-001", spec, proposedBy: "hercules" }).household;
+      const row = pendingPathProposals(h)[0]!;
+      h = agreePathProposal(h, { memberId: "MEM-002", rowId: row.id, revision: row.pendingRevision }).household;
+      expect(pendingPathProposals(h)).toEqual([]);
+      await render(h);
+      await settle();
+      const names = outline().map((b) => b.textContent ?? "");
+      expect(names).toContain("A kiln hut");
+      expect(names.filter((t) => t.startsWith("The kiln"))).toEqual(["The kiln · cold"]);
+    });
+
+    it("never shows an amount from someone's own words: a task titled with a figure becomes a stone without digits", async () => {
+      created.mode = "fake";
+      let h = seeded();
+      h = saveTask(h, { memberId: "MEM-001", id: "TASK-RENT", expectedRevision: 0, task: {
+        visibility: "household", title: "Pay $1,234 rent", notes: "", listId: null, parentId: null, doDate: null, dueDate: "2026-09-20", repeat: "none", cue: "none",
+        assigneeId: null, backupId: null, chapterId: null, planReference: null, moneyLink: null, expectedAmountCents: null, deleted: false,
+      } }).household;
+      await render(h);
+      await settle();
+      const row = outline().find((b) => b.dataset.place === "stone:TASK-RENT")!;
+      expect(row.textContent).toMatch(/^Pay rent/);
+      expect(row.textContent).not.toMatch(/\d|\$/);
+      const mark = host.querySelector<HTMLButtonElement>('.path-mark[data-place="stone:TASK-RENT"]')!;
+      expect(mark.getAttribute("aria-label")).not.toMatch(/\d|\$/);
+      await openFromOutline("Pay rent");
+      expect(cardText()).not.toMatch(/\$|1,?234/);
     });
   });
 
@@ -871,7 +934,8 @@ describe("Private footpaths and bridges on Our Path", () => {
     expect(byText("Mine").getAttribute("aria-pressed")).toBe("false");
     expect(outline().some((t) => t.includes("my own long walk"))).toBe(false);
     expect(scene().footpaths).toEqual([]);
-    expect(localStorage.getItem("hearth:pathWorld:mine")).toBe("0");
+    expect(localStorage.getItem("hearth:pathWorld:mine:MEM-001")).toBe("0");
+    expect(localStorage.getItem("hearth:pathWorld:mine")).toBeNull();
     await click(byText("Mine"));
     expect(outline()).toContain("Fictional: my own long walk · only you see this");
 
@@ -882,7 +946,7 @@ describe("Private footpaths and bridges on Our Path", () => {
     expect(card).toContain("offered a responsibility to Our Home");
     expect(card).not.toMatch(/\$|65\.43|6543/);
     await click(byText("Open the Bridge"));
-    expect(tent).toEqual([{ route: "plan", view: "household", label: "Bridge" }]);
+    expect(tent).toEqual([{ route: "plan", view: "household", label: "Bridge", section: "bridge" }]);
     expect($(".path-world__room").hidden).toBe(false);
     await click(byText("Back to the island"));
 
@@ -894,6 +958,56 @@ describe("Private footpaths and bridges on Our Path", () => {
     expect(outline()).toContain("Fictional: I'll handle the vet · Offered to Our Home — waiting");
     expect(scene().footpaths).toEqual([{ id: "footpath:TASK-THEIRS", month: now, done: false }]);
     expect(scene().bridges).toEqual([{ id: `bridge:${decisionId}`, month: now, stage: 2 }]);
+  });
+
+  it("never shows private footpaths or my private plank at Dim, in marks, outline or the world; Mine is per member", async () => {
+    created.mode = "fake";
+    const h = withPaths();
+    const draftId = h.planBridgeDrafts!.find((row) => row.ownerMemberId === "MEM-001")!.id;
+    const decisionId = h.planBridgeDecisions![0]!.id;
+    localStorage.setItem("hearth:pathWorld:lantern", "0");
+    // The partner turned their own paths off on this device; mine stay on.
+    localStorage.setItem("hearth:pathWorld:mine:MEM-002", "0");
+    await act(async () => root.render(createElement(Harness, { initial: h, today: TODAY })));
+    await settle();
+    const world = created.worlds[0] as FakeWorld;
+    const scene = () => world.setScene.mock.calls.at(-1)![0] as Scene;
+    const marks = () => [...host.querySelectorAll<HTMLButtonElement>(".path-world__marks button.path-mark")].map((b) => b.dataset.place);
+    const allRows = () => [...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].map((b) => b.dataset.place);
+
+    expect(byText("Dim").getAttribute("aria-pressed")).toBe("true");
+    for (const list of [marks(), allRows()]) {
+      expect(list).not.toContain("footpath:TASK-MINE");
+      expect(list).not.toContain(`bridge:${draftId}`);
+      expect(list).toContain(`bridge:${decisionId}`);
+    }
+    expect(outline().some((t) => t.includes("my own long walk") || t.includes("cover the ferry"))).toBe(false);
+    expect(scene().footpaths).toEqual([]);
+    expect(scene().bridges).toEqual([{ id: `bridge:${decisionId}`, month: expect.any(Number), stage: 2 }]);
+    expect(host.textContent).not.toContain("my own long walk");
+
+    // Warm: they come back for their owner.
+    await click(byText("Warm"));
+    expect(marks()).toContain("footpath:TASK-MINE");
+    expect(marks()).toContain(`bridge:${draftId}`);
+    expect(allRows()).toContain("footpath:TASK-MINE");
+    expect(allRows()).toContain(`bridge:${draftId}`);
+    expect(scene().footpaths.map((f) => f.id)).toEqual(["footpath:TASK-MINE"]);
+    expect(scene().bridges.map((b) => b.stage).sort()).toEqual([1, 2]);
+
+    // Presence is "online", not "looking at my screen": a live partner hides nothing.
+    await act(async () => root.render(createElement(Harness, { initial: h, today: TODAY, extra: { presentMembers: 2 } })));
+    expect(allRows()).toContain("footpath:TASK-MINE");
+
+    // The Mine key belongs to one member: the partner's choice on this device never hides mine, and vice versa.
+    expect(byText("Mine").getAttribute("aria-pressed")).toBe("true");
+    await click($("#switch"));
+    expect(byText("Mine").getAttribute("aria-pressed")).toBe("false");
+    expect(allRows()).not.toContain("footpath:TASK-THEIRS");
+    await click(byText("Mine"));
+    expect(localStorage.getItem("hearth:pathWorld:mine:MEM-002")).toBe("1");
+    expect(allRows()).toContain("footpath:TASK-THEIRS");
+    expect(localStorage.getItem("hearth:pathWorld:mine:MEM-001")).toBeNull();
   });
 
   it("draws the owner's footpaths and the bridge bars on the flat map without WebGL", async () => {

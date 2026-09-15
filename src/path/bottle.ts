@@ -1,4 +1,5 @@
 import { memories } from "../core/chapters.ts";
+import { pathWords } from "../core/pathWords.ts";
 import type { Household } from "../core/types.ts";
 
 /**
@@ -10,16 +11,10 @@ import type { Household } from "../core/types.ts";
 
 export const BOTTLE_NOTE_LIMIT = 200;
 export const BOTTLE_SILENT = "The sea kept this one to itself.";
-const MONEYISH = /\$?\d[\d,]*(\.\d+)?/g;
 
 /** Strip anything that reads like an amount or a number, then tidy the spaces. */
 export function bottleWords(text: string | null | undefined): string {
-  return String(text ?? "")
-    .replace(MONEYISH, "")
-    .replace(/\$/g, "")
-    .replace(/\s+/g, " ")
-    .replace(/\s+([,.;:!?])/g, "$1")
-    .trim();
+  return pathWords(text, Number.POSITIVE_INFINITY, "");
 }
 
 function clip(text: string): string {

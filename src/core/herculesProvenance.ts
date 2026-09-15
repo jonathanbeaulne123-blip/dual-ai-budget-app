@@ -32,6 +32,8 @@ export type HerculesNumberSource = {
   planAssumptionId?: string;
   planBridgeDecisionId?: string;
   planSitDownSessionId?: string;
+  /** A Plan Studio section to open (Our Path's bridges open the Bridge). A link only. */
+  section?: "bridge";
   shiftId?: string;
   from?: DateKey;
   to?: DateKey;

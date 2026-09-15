@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { act } from "react";
-import { createRoot } from "react-dom/client";
+import { createRoot, type Root } from "react-dom/client";
 import { createElement } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fundContributionReviewDigest } from "../src/core/fundContributionSources.ts";
 import {
   catalogHousehold,
@@ -54,17 +54,17 @@ function household(): Household {
 }
 
 let host: HTMLDivElement;
+const mounted: { root: Root; host: HTMLDivElement }[] = [];
+
+function props(initialPeriod?: string, current: Household = household()) {
+  return { household: current, memberId: BIANCA, view: "household" as const, today: TODAY, initialPeriod };
+}
 
 function render(initialPeriod?: string): HTMLDivElement {
   const root = createRoot(host);
+  mounted.push({ root, host });
   act(() => {
-    root.render(createElement(TimeMachine, {
-      household: household(),
-      memberId: BIANCA,
-      view: "household",
-      today: TODAY,
-      initialPeriod,
-    }));
+    root.render(createElement(TimeMachine, props(initialPeriod)));
   });
   return host;
 }
@@ -79,6 +79,13 @@ beforeEach(() => {
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   host = document.createElement("div");
   document.body.append(host);
+});
+
+afterEach(() => {
+  for (const row of mounted.splice(0)) {
+    act(() => row.root.unmount());
+    row.host.remove();
+  }
 });
 
 describe("the time machine surface", () => {
@@ -139,5 +146,21 @@ describe("the time machine surface", () => {
     document.body.append(host);
     const far = render("2019-01");
     expect(far.querySelector("#time-machine-title")?.textContent).toBe("September 2026");
+  });
+
+  it("applies a new door request once and never snaps the person's scrub back when the timeline changes", () => {
+    const page = render("2026-07");
+    const { root } = mounted.at(-1)!;
+    click(page.querySelector('[aria-label="Next month"]'));
+    expect(page.querySelector("#time-machine-title")?.textContent).toBe("August 2026");
+    // Same request, a fresh household (so the range is recomputed): the scrub stays.
+    act(() => root.render(createElement(TimeMachine, props("2026-07", household()))));
+    expect(page.querySelector("#time-machine-title")?.textContent).toBe("August 2026");
+    // A new request from the island moves the ribbon, once.
+    act(() => root.render(createElement(TimeMachine, props("2026-09"))));
+    expect(page.querySelector("#time-machine-title")?.textContent).toBe("September 2026");
+    click(page.querySelector('[aria-label="Previous month"]'));
+    act(() => root.render(createElement(TimeMachine, props("2026-09", household()))));
+    expect(page.querySelector("#time-machine-title")?.textContent).toBe("August 2026");
   });
 });

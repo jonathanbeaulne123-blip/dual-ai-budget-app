@@ -3400,6 +3400,9 @@ export function App() {
   const onboardingReadyOnly = false;
   const ledgerRenderScopeKey=JSON.stringify([environment,household?.householdId,memberId,localLedgerIdentity(memberId??"")??loadSupabaseSession(environment)?.userId]);
   useEffect(() => { setOnboardingBooksOpen(false); }, [ledgerRenderScopeKey]);
+  // Our Path's tent link never outlives its page, its scope, or a newer Hercules link (which wins).
+  useEffect(() => { if (tab !== "plan") setPathTentFocus(null); }, [tab]);
+  useEffect(() => { setPathTentFocus(null); }, [ledgerRenderScopeKey, herculesSourceFocus]);
   const visibleLedgerPending=useLedgerSync&&ledgerPending?.key===ledgerRenderScopeKey?ledgerPending.rows:[];
   const visibleLedgerRejected=useLedgerSync&&ledgerRejected?.key===ledgerRenderScopeKey?ledgerRejected.entries.filter(entry=>!entry.preview||entry.preview.rows.some(row=>isVisibleInView(row,memberId??'',view))):[];
   const scenarioSource = useMemo(() => {
