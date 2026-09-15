@@ -514,6 +514,18 @@
     },
     {
       "sources": [
+        "src/core/pathStones.ts",
+        "src/core/pathLand.ts"
+      ],
+      "tests": [
+        "test/path-stones.test.ts",
+        "test/path-land.test.ts",
+        "test/planner-tasks.test.ts"
+      ],
+      "reason": "Our Path stones and land: household planner tasks become stepping stones with owner and backup names and no amounts, personal tasks never appear, a money task lights only by the D-245 books evidence and never on a tick; closed Books months become permanent land and weekly stamps light lamps in the month their Sunday-start week names; empty households never throw and nothing posts"
+    },
+    {
+      "sources": [
         "src/core/pathWeather.ts"
       ],
       "tests": [
