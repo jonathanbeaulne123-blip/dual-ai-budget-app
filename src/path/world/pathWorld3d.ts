@@ -4,6 +4,7 @@ import type { KittyPieceV1 } from "../../core/types.ts";
 import { createKittySculpture, type KittySculpture } from "../../kitty/sculpture.ts";
 import { CELL, GRID, HALF, SIZE, heightAt, idx, islandHash, type GrownIsland, type Piece } from "../grow.ts";
 import { walkPath, walkSeconds, type WalkPoint } from "../walk.ts";
+import { COIN_POOL, landmarkStepChange } from "../landmarks.ts";
 
 /**
  * The Our Path world (D-262): one renderer, one island, an orbiting camera
@@ -26,6 +27,8 @@ export type PathWorldInput = {
   unknown: { id: string; month: number }[];
   name: string | null;
   layers: { weather: boolean; story: boolean; rhythm: boolean };
+  /** The kiln hut beside the landmarks: present once a shared bank exists; warm when one was fired lately. */
+  kiln?: { warm: boolean } | null;
 };
 export type PathAnchor = { id: string; x: number; y: number; depth: number; visible: boolean };
 export type PathLevel = 0 | 1 | 2 | 3;
@@ -190,7 +193,9 @@ export function createPathWorld(host: HTMLElement, options: {
   let appearing: THREE.Object3D[] = [];
   const anchors = new Map<string, THREE.Vector3>();
   const pickables: THREE.Object3D[] = [];
-  const sculptures = new Map<string, { sculpture: KittySculpture; key: string; height: number }>();
+  const sculptures = new Map<string, { sculpture: KittySculpture; key: string; height: number; shown: number }>();
+  /** The step each landmark showed in the previous scene, so a change can send coins. */
+  const lastSteps = new Map<string, number>();
   let current: PathWorldInput | null = null;
   let palette = PALETTES.taylor;
   let themeKey = "";
@@ -672,6 +677,8 @@ export function createPathWorld(host: HTMLElement, options: {
     });
     // Landmarks: shared Kitty Banks at their real backing step
     const seen = new Set<string>();
+    const arcs = !options.reducedMotion && quality === "full";
+    const landmarkCount = Math.min(6, input.goals.length);
     input.goals.slice(0, 6).forEach((goal, i) => {
       seen.add(goal.id);
       const pos = landmarkPosition(i, Math.min(6, input.goals.length), island);
@@ -685,12 +692,25 @@ export function createPathWorld(host: HTMLElement, options: {
           const sculpture = createKittySculpture(goal.piece, { brass: options.brass ?? "#bda375", wood: options.wood ?? "#62412b", fired: goal.fired, reducedMotion: true });
           sculpture.setOpen(false); sculpture.setSpin(0); sculpture.setIdle(false);
           const box = new THREE.Box3().setFromObject(sculpture.group);
-          bank = { sculpture, key, height: Math.max(0.5, box.max.y - box.min.y) };
+          bank = { sculpture, key, height: Math.max(0.5, box.max.y - box.min.y), shown: -1 };
           sculptures.set(goal.id, bank);
         } catch { bank = undefined; }
       }
+      const previous = lastSteps.get(goal.id);
+      const change = landmarkStepChange(previous, goal.step);
+      lastSteps.set(goal.id, goal.step);
       if (bank) {
-        bank.sculpture.setFill(goal.step, false);
+        if (change && arcs) {
+          // A freshly made sculpture starts from where the old one stood.
+          if (bank.shown < 0 && previous !== undefined) { bank.sculpture.setFill(previous, false); bank.shown = previous; }
+          // Coins carry the change; the bank squashes and stretches when they land (or as they leave).
+          const top = g.position.y + 3.4;
+          if (change.dir === "up") launchCoins(change.n, us.position.x, us.position.y + 1.2, us.position.z, pos.x, top, pos.z, goal.id, goal.step, 1);
+          else { const p = island.spot(island.cur); launchCoins(change.n, pos.x, top, pos.z, p.x, heightAt(island, p.x, p.z) + 1, p.z, goal.id, goal.step, 0); }
+        } else if (bank.shown !== goal.step && !(arcs && fillPending(goal.id, goal.step))) {
+          bank.sculpture.setFill(goal.step, false);
+          bank.shown = goal.step;
+        }
         bank.sculpture.group.scale.setScalar(3.2 / bank.height);
         bank.sculpture.group.position.set(0, 0.25, 0);
         g.add(bank.sculpture.group);
@@ -700,6 +720,38 @@ export function createPathWorld(host: HTMLElement, options: {
       anchor(goal.id, g, 4.2); dynamic.add(g);
     });
     for (const [id, bank] of sculptures) if (!seen.has(id)) { bank.sculpture.group.removeFromParent(); bank.sculpture.dispose(); sculptures.delete(id); }
+    for (const id of lastSteps.keys()) if (!seen.has(id)) lastSteps.delete(id);
+    // The kiln: a brick hut just past the first landmark, where banks are fired.
+    if (input.kiln && landmarkCount > 0) {
+      const first = landmarkPosition(0, landmarkCount, island);
+      const a0 = Math.atan2(first.z, first.x) + Math.min(0.42, Math.PI / landmarkCount * 0.5);
+      const r = island.radiusAt(a0) - 14;
+      const kx = Math.cos(a0) * r, kz = Math.sin(a0) * r;
+      const k = new THREE.Group(); k.position.set(kx, heightAt(island, kx, kz), kz);
+      k.rotation.y = Math.atan2(-Math.cos(a0), -Math.sin(a0));
+      k.add(part(G.cyl, palette.walls[0]!, 1.5, 1.1, 1.5, 0, 0.55, 0));
+      k.add(part(G.sph, palette.roofs[0]!, 1.5, 1.35, 1.5, 0, 1.1, 0));
+      k.add(part(G.cyl, palette.roofs[0]!, 0.28, 1.4, 0.28, 0.7, 2.2, -0.3));
+      k.add(part(G.cyl, palette.walls[0]!, 0.34, 0.14, 0.34, 0.7, 2.95, -0.3));
+      const warm = input.kiln.warm;
+      k.add(part(G.box, warm ? "#ffb347" : "#4c3b24", 0.7, 0.8, 0.08, 0, 0.45, 1.46, warm ? { emissive: "#ff8a1f", emissiveIntensity: 1.1 } : {}));
+      if (warm) {
+        for (let i = 0; i < 3; i++) {
+          const puff = part(G.sph, "#e8e2da", 0.25, 0.25, 0.25, 0.7, 3.2, -0.3, { transparent: true, opacity: 0.85 });
+          puff.castShadow = false; puff.visible = false; k.add(puff);
+          tickers.push((t) => {
+            const on = ambient && quality === "full";
+            puff.visible = on;
+            if (!on) return;
+            const f = (t * 0.35 + i / 3) % 1;
+            puff.position.set(0.7 + f * 0.6, 3.1 + f * 2.4, -0.3 - f * 0.2);
+            puff.scale.setScalar(0.18 + f * 0.42);
+          });
+        }
+      }
+      reserved.push([kx, kz]);
+      anchor("kiln", k, 3.6); dynamic.add(k);
+    }
     // New parts of life with no recipe yet: a "?" signpost, with Hercules's pawprints leading to it.
     input.unknown.forEach((u, i) => {
       const p = island.spot(Math.min(island.cur, Math.max(0, u.month)));
@@ -898,6 +950,64 @@ export function createPathWorld(host: HTMLElement, options: {
     return moving;
   }
 
+  // ------------------------------------------------------------------ coins: a fixed pool that arcs between the two of you and a bank
+  const COIN_SECONDS = 0.9, COIN_GAP = 0.08, COIN_HOP = 4;
+  const coinMat = new THREE.MeshStandardMaterial({ color: "#e0ad3c", emissive: "#8a5a10", emissiveIntensity: 0.55, metalness: 0.6, roughness: 0.35 });
+  cleanup.push(() => coinMat.dispose());
+  const coinGroup = new THREE.Group();
+  scene.add(coinGroup);
+  type Coin = { mesh: THREE.Mesh; from: THREE.Vector3; to: THREE.Vector3; t: number; live: boolean; fill: { goalId: string; step: number; at: number } | null };
+  const coins: Coin[] = [];
+  for (let i = 0; i < COIN_POOL; i++) {
+    const mesh = new THREE.Mesh(G.cyl, coinMat);
+    mesh.scale.set(0.32, 0.06, 0.32); mesh.visible = false; mesh.castShadow = false;
+    coinGroup.add(mesh);
+    coins.push({ mesh, from: new THREE.Vector3(), to: new THREE.Vector3(), t: 0, live: false, fill: null });
+  }
+  let coinsLive = 0;
+  /** Send up to `n` coins; the first one carries the bank's new fill (at = 1 on landing, 0 as it leaves). */
+  function launchCoins(n: number, fx: number, fy: number, fz: number, tx: number, ty: number, tz: number, goalId: string, step: number, at: number) {
+    let sent = 0;
+    for (const coin of coins) {
+      if (sent >= n) break;
+      if (coin.live) continue;
+      coin.from.set(fx, fy, fz); coin.to.set(tx, ty, tz);
+      coin.t = -sent * COIN_GAP / COIN_SECONDS;
+      coin.live = true; coin.mesh.visible = false;
+      coin.fill = sent === 0 ? { goalId, step, at } : null;
+      sent++; coinsLive++;
+    }
+    // The pool was full: the bank still shows its new size, without a flourish.
+    if (!sent) { const bank = sculptures.get(goalId); if (bank) { bank.sculpture.setFill(step, false); bank.shown = step; } }
+  }
+  function fillPending(goalId: string, step: number): boolean {
+    return coins.some((coin) => coin.live && coin.fill?.goalId === goalId && coin.fill.step === step);
+  }
+  function landFill(fill: { goalId: string; step: number }) {
+    const bank = sculptures.get(fill.goalId);
+    // A later scene already asked for another size: that change carries its own fill.
+    if (!bank || bank.shown === fill.step || lastSteps.get(fill.goalId) !== fill.step) return;
+    bank.sculpture.setFill(fill.step, true);
+    bank.shown = fill.step;
+  }
+  /** One frame of flying coins. Returns true while any is in the air. */
+  function stepCoins(dt: number): boolean {
+    if (!coinsLive || dt <= 0) return coinsLive > 0;
+    for (const coin of coins) {
+      if (!coin.live) continue;
+      coin.t += dt / COIN_SECONDS;
+      if (coin.fill && coin.t > 0 && coin.t >= coin.fill.at) { landFill(coin.fill); coin.fill = null; }
+      if (coin.t >= 1) { coin.live = false; coin.mesh.visible = false; coinsLive--; continue; }
+      if (coin.t <= 0) continue;
+      const e = coin.t;
+      coin.mesh.visible = true;
+      coin.mesh.position.lerpVectors(coin.from, coin.to, e);
+      coin.mesh.position.y += Math.sin(Math.PI * e) * COIN_HOP;
+      coin.mesh.rotation.set(Math.PI / 2, e * 9, 0);
+    }
+    return coinsLive > 0;
+  }
+
   // ------------------------------------------------------------------ camera
   const cam = { tx: 0, tz: 0, r: 118, theta: 0.7, phi: 0.95 };
   let fly: { t: number; from: typeof cam; to: typeof cam } | null = null;
@@ -1023,12 +1133,13 @@ export function createPathWorld(host: HTMLElement, options: {
       if (fly.t >= 1) fly = null;
       busy = true;
     }
+    if (stepCoins(dt)) busy = true;
     for (const bank of sculptures.values()) if (bank.sculpture.update(now)) busy = true;
     // A walk (and its fading footprints) keeps the loop awake even with ambient motion on, then lets it rest.
     const walking = stepUs(dt, drifting);
     if (walking) busy = true;
     // Idle is counted from when the island last settled or was touched.
-    const settling = (busy && !drifting) || walking;
+    const settling = (busy && !drifting) || walking || coinsLive > 0;
     if (settling || pointers.size) lastActivity = performance.now();
     place();
     renderer.render(scene, camera);

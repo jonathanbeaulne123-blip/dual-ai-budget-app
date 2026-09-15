@@ -35,6 +35,7 @@ import {
 import type { CommitResult, Household } from "../core/types.ts";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { growIsland, type Piece } from "./grow.ts";
+import { firedRecently, pathMonthAsOf } from "./landmarks.ts";
 import type { PathAnchor, PathCharacter, PathLevel, PathQuality, PathWorld, PathWorldInput } from "./world/pathWorld3d.ts";
 import "./our-path-world.css";
 
@@ -51,7 +52,7 @@ type Mark = {
   id: string;
   label: string;
   sub?: string;
-  kind: "month" | "now" | "fire" | "goal" | "piece" | "move" | "bill" | "memory" | "tent" | "unknown" | "name" | "cove" | "lamp";
+  kind: "month" | "now" | "fire" | "goal" | "piece" | "move" | "bill" | "memory" | "tent" | "unknown" | "name" | "cove" | "lamp" | "kiln";
   minLevel: PathLevel;
   lantern: Lantern;
 };
@@ -72,7 +73,7 @@ const PIECE_LABEL: Record<Piece["kind"], string> = {
 const LANTERN_KEY = "hearth:pathWorld:lantern";
 const QUALITY_KEY = "hearth:pathWorld:quality";
 const MARK_PRIORITY: Record<Mark["kind"], number> = {
-  now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, bill: 6, name: 7, memory: 8, cove: 9, lamp: 10, piece: 11, month: 12,
+  now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, kiln: 6, bill: 6, name: 7, memory: 8, cove: 9, lamp: 10, piece: 11, month: 12,
 };
 
 function monthName(key: string, long = true): string {
@@ -100,18 +101,26 @@ function readQuality(reduced: boolean): PathQuality {
 function commandOk(outcome: unknown): boolean {
   return Boolean(outcome && typeof outcome === "object" && "ok" in outcome && (outcome as { ok: unknown }).ok === true);
 }
+function firedOn(iso: string): string {
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? iso.slice(0, 10) : d.toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric", timeZone: "America/Toronto" });
+}
 function monthIndexOf(months: PathMonth[], iso: string | null | undefined): number {
   if (!iso) return -1;
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, classicRoom, theme: themeOverride, openTentFor, proofWorld }: {
+export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenBank, onTentChange, classicRoom, theme: themeOverride, openTentFor, proofWorld }: {
   household: Household;
   memberId: string;
   today: DateKey;
   busy: boolean;
   onCommand: Run;
   onOpenFund?: () => void;
+  /** A landmark or the kiln asks for one shared Kitty Bank's room. Only a link: the room's own screens move money. */
+  onOpenBank?: (goalId: string) => void;
+  /** The tent opened or closed. */
+  onTentChange?: (open: boolean) => void;
   /** Today's Our Path, kept mounted so drafts survive a trip into the tent. */
   classicRoom: ReactNode;
   /** Proof pages only; the app follows the signed-in person's appearance. */
@@ -165,6 +174,10 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   }, [tentOpen]);
   const openTent = useCallback((next: boolean) => { tentMoved.current = true; setTentOpen(next); }, []);
   useEffect(() => { if (openTentFor) { tentMoved.current = false; setTentOpen(true); } }, [openTentFor]);
+  const tentChange = useRef(onTentChange);
+  tentChange.current = onTentChange;
+  const tentReported = useRef(false);
+  useEffect(() => { if (tentReported.current !== tentOpen) { tentReported.current = tentOpen; tentChange.current?.(tentOpen); } }, [tentOpen]);
 
   // ------------------------------------------------------------ the pieces standing on the island
   const chapter = openChapterFor(household);
@@ -173,6 +186,20 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const next = nextMove(household, memberId);
   const moves = useMemo(() => (chapter && atNow ? movesForChapter(household, chapter.id).filter((m) => m.state !== "declined") : []), [household, chapter, atNow]);
   const goals = useMemo(() => kittyBanksInView(household, "household", memberId), [household, memberId]);
+  // Landmarks read "as of" the shown month, so Replay shows the banks as they stood then.
+  const asOf = atNow || !months[shown] ? today : pathMonthAsOf(months[shown]!.key, today);
+  const landmarks = useMemo(() => goals.slice(0, 6).map((goal) => {
+    const piece = displayedKittyPiece(goal.envelope?.studio);
+    return { goal, piece, step: kittyBankBackingStep(household, goal, asOf) };
+  }), [goals, household, asOf]);
+  const kiln = useMemo(() => {
+    if (!goals.length) return null;
+    const fired = goals
+      .map((goal) => ({ goal, at: displayedKittyPiece(goal.envelope?.studio)?.firedAt ?? null }))
+      .filter((row): row is { goal: typeof row.goal; at: string } => Boolean(row.at))
+      .sort((a, b) => b.at.localeCompare(a.at));
+    return { warm: fired.some((row) => firedRecently(row.at, asOf)), goalId: (fired[0]?.goal ?? goals[0]!).id };
+  }, [goals, asOf]);
   const rhythm = useMemo(() => ourRhythm(household), [household]);
   const kept = useMemo(() => memories(household), [household]);
   const bills = useMemo(() => {
@@ -217,17 +244,15 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         : move.needsAcknowledgment && move.acknowledgedByMemberIds.length < activeMembers.length ? "waiting" as const
           : move.id === next?.id ? "next" as const : "open" as const,
     })),
-    goals: goals.slice(0, 6).map((goal) => {
-      const piece = displayedKittyPiece(goal.envelope?.studio);
-      return { id: `goal:${goal.id}`, step: kittyBankBackingStep(household, goal, today), piece, fired: Boolean(piece?.firedAt) };
-    }),
+    goals: landmarks.map(({ goal, piece, step }) => ({ id: `goal:${goal.id}`, step, piece, fired: Boolean(piece?.firedAt) })),
+    kiln: kiln ? { warm: kiln.warm } : null,
     lamps: rhythm.map((row) => ({ id: `lamp:${row.id}`, month: Math.max(0, monthIndexOf(months, row.heldOn.at(-1) ?? row.updatedAt)) })),
     memories: kept.map((row) => ({ id: `memory:${row.id}`, month: Math.max(0, monthIndexOf(months, row.shownAt)) })).filter((row) => row.month <= shown),
     weather: bills.map((row) => ({ id: `bill:${row.id}`, big: row.big })),
     unknown: unknown.map((row) => ({ id: row.id, month: row.month })),
     name: islandName,
     layers,
-  }), [island, theme, characters, household, months, atNow, moves, activeMembers.length, next, goals, today, rhythm, kept, shown, bills, unknown, islandName, layers]);
+  }), [island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, unknown, islandName, layers]);
 
   // ------------------------------------------------------------ marks: the real buttons over the canvas
   const marks = useMemo(() => {
@@ -239,7 +264,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     });
     for (const row of household.chapters ?? []) if (monthIndexOf(months, row.openedAt) <= shown && monthIndexOf(months, row.openedAt) >= 0) list.push({ id: `fire:${row.id}`, label: row.title, sub: row.state === "open" ? "this Chapter" : row.state.replace("-", " "), kind: "fire", minLevel: 1, lantern: 0 });
     for (const row of moves) list.push({ id: `move:${row.id}`, label: row.text, sub: row.state === "done" ? `done · ${nameOf(row.completedByMemberId)}` : nameOf(row.ownerMemberId), kind: "move", minLevel: 3, lantern: 0 });
-    goals.slice(0, 6).forEach((goal) => list.push({ id: `goal:${goal.id}`, label: goal.name, sub: `${kittyBankBackingStep(household, goal, today)} of 10 steps`, kind: "goal", minLevel: 0, lantern: 0 }));
+    landmarks.forEach(({ goal, step }) => list.push({ id: `goal:${goal.id}`, label: goal.name, sub: `${step} of 10 steps`, kind: "goal", minLevel: 0, lantern: 0 }));
+    if (kiln) list.push({ id: "kiln", label: "The kiln", sub: kiln.warm ? "warm" : "cold", kind: "kiln", minLevel: 1, lantern: 0 });
     island.pieces.forEach((piece, i) => list.push({ id: `piece:${i}`, label: piece.kind === "observatory" ? `Observatory · ${piece.floors} floor${piece.floors === 1 ? "" : "s"}` : PIECE_LABEL[piece.kind], kind: "piece", minLevel: 2, lantern: 1 }));
     island.coves.forEach((cove, i) => {
       list.push({ id: `cove:${i}`, label: cove.name, sub: cove.visits.length > 1 ? `${cove.visits.length} visits` : undefined, kind: "cove", minLevel: 1, lantern: 1 });
@@ -252,7 +278,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     if (atNow && chapter) list.push({ id: "tent", label: "Plan Studio", sub: "today's Our Path", kind: "tent", minLevel: 1, lantern: 0 });
     if (islandName) list.push({ id: "name", label: islandName, kind: "name", minLevel: 1, lantern: 0 });
     return list;
-  }, [months, shown, atNow, characters, household, moves, goals, today, island, rhythm, kept, bills, lantern, unknown, chapter, islandName]);
+  }, [months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, lantern, unknown, chapter, islandName]);
 
   // ------------------------------------------------------------ the world host
   const host = useRef<HTMLDivElement>(null);
@@ -434,14 +460,23 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
       };
     }
     if (id.startsWith("goal:")) {
-      const goal = goals.find((g) => `goal:${g.id}` === id);
-      if (!goal) return null;
-      const step = kittyBankBackingStep(household, goal, today);
+      const row = landmarks.find((g) => `goal:${g.goal.id}` === id);
+      if (!row) return null;
+      const { goal, piece, step } = row;
+      const story = piece?.firedAt ? `Fired on ${firedOn(piece.firedAt)}.` : piece ? "Still bisque — not fired yet." : "Not sculpted yet. Open the studio to make it.";
       return {
         eyebrow: "A landmark · Kitty Bank",
         title: goal.name,
-        lines: [[0, step >= 10 ? "Full." : step >= 5 ? "Past halfway." : "Growing."], [1, `${step} of 10 steps, from money actually set aside`], [2, goal.arrivalDate ? `Hoping for ${goal.arrivalDate}` : "No end date"]],
-        actions: <button type="button" className="primary" onClick={() => openTent(true)}>Open Kitty Banks</button>,
+        lines: [[0, step >= 10 ? "Full." : step >= 5 ? "Past halfway." : "Growing."], [1, story], [1, `${step} of 10 steps, from money actually set aside`], [2, goal.arrivalDate ? `Hoping for ${goal.arrivalDate}` : "No end date"]],
+        actions: <button type="button" className="primary" onClick={() => { onOpenBank?.(goal.id); openTent(true); }}>Open this Kitty Bank</button>,
+      };
+    }
+    if (id === "kiln" && kiln) {
+      return {
+        eyebrow: kiln.warm ? "The kiln · warm" : "The kiln · cold",
+        title: "The kiln",
+        lines: [[0, "Banks are fired here. A fired bank keeps its glaze."], [1, kiln.warm ? "A bank was fired in the last month; the chimney still smokes." : "Nothing fired in the last month. The fire is banked."]],
+        actions: <button type="button" className="primary" onClick={() => { onOpenBank?.(kiln.goalId); openTent(true); }}>Open the studio</button>,
       };
     }
     if (id.startsWith("piece:")) {

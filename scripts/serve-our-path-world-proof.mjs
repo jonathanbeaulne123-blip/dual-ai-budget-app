@@ -20,7 +20,10 @@ if (quality === 'full' || quality === 'lite') localStorage.setItem('hearth:pathW
 // Proof only: frame counters for the performance note, and ?idle=off to measure the loop without the idle pause.
 let liveWorld = null;
 window.__pathWorldStats = () => (liveWorld ? liveWorld.stats() : null);
-const proofWorld = { onWorld: (w) => { liveWorld = w; }, idleMs: idle === 'off' ? Infinity : undefined, paused: motion !== 'full' };
+// Proof only: window.__pathWorldReplay(edit) re-sends the last scene through edit (e.g. a fictional step change, to watch coins fly).
+let lastScene = null;
+window.__pathWorldReplay = (edit) => { if (liveWorld && lastScene) liveWorld.setScene(edit(lastScene[0]), lastScene[1], false); };
+const proofWorld = { onWorld: (w) => { liveWorld = w; if (w) { const set = w.setScene; w.setScene = (...args) => { lastScene = args; return set(...args); }; } },idleMs: idle === 'off' ? Infinity : undefined, paused: motion !== 'full' };
 const scene = resolveThemeScene(theme, 'plan', 'household');
 Object.assign(document.documentElement.dataset, { theme, scene: scene.id, material: scene.material, sceneLighting: scene.dark ? 'dark' : 'light', atmosphere: 'paused', motion });
 for (const [key, value] of Object.entries(sceneTokens(scene))) document.documentElement.style.setProperty(key, value);

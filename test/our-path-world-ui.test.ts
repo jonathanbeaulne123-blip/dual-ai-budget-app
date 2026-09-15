@@ -7,6 +7,11 @@ import { movesForChapter, openChapterFor, respondToMove } from "../src/core/chap
 import { pathIslandName } from "../src/core/pathWorld.ts";
 import { OurPathWorld } from "../src/path/OurPathWorld.tsx";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
+import { kittyBankBackingStep } from "../src/core/kittyBanks.ts";
+import { newKittyPiece } from "../src/core/kittyStudio.ts";
+import { pathMonths } from "../src/core/pathSignals.ts";
+import type { Goal, KittyStudioV1 } from "../src/core/types.ts";
+import { pathMonthAsOf } from "../src/path/landmarks.ts";
 
 // jsdom has no WebGL: by default the world fails to load and the page must stay fully usable.
 // The "fake" variant hands back a stand-in world so the page's calls into it can be counted.
@@ -277,6 +282,90 @@ describe("Our Path world page (D-262)", () => {
     await settle();
     expect(lastScene().island.cur).toBe(last);
     expect(world.focus).toHaveBeenLastCalledWith("now", 2);
+  });
+
+  it("opens a landmark's own Kitty Bank in the tent, and never moves money from the island", async () => {
+    const opened: string[] = [];
+    const tent: boolean[] = [];
+    const h = seeded();
+    const trip = h.goals.find((g) => g.name === "Fictional trip to the shore")!;
+    let commands = 0;
+    await act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => { commands += 1; return { ok: true }; }, theme: "classic", onOpenBank: (id: string) => opened.push(id), onTentChange: (open: boolean) => tent.push(open), classicRoom: createElement("input", { id: "draft" }) })));
+    await settle();
+    await click([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].find((b) => b.textContent?.startsWith("Fictional trip to the shore"))!);
+    expect($(".path-world__card h3").textContent).toBe("Fictional trip to the shore");
+    expect(byText("Open Kitty Banks")).toBeUndefined();
+    $<HTMLInputElement>("#draft").value = "kept";
+    await click(byText("Open this Kitty Bank"));
+    expect(opened).toEqual([trip.id]);
+    expect($(".path-world__room").hidden).toBe(false);
+    expect(tent).toEqual([true]);
+    await click(byText("Back to the island"));
+    expect(tent).toEqual([true, false]);
+    expect($<HTMLInputElement>("#draft").value).toBe("kept");
+    expect(commands).toBe(0);
+  });
+
+  it("stands a kiln beside the landmarks once a shared bank exists, warm only after a recent firing", async () => {
+    const outline = () => [...host.querySelectorAll(".path-world__outline button")].map((b) => b.textContent ?? "");
+    const none = { ...seeded(), goals: [] };
+    await act(async () => root.render(createElement(OurPathWorld, { household: none, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null })));
+    await settle();
+    expect(outline().some((t) => t.startsWith("The kiln"))).toBe(false);
+
+    const h = seeded();
+    const trip = h.goals.find((g) => g.name === "Fictional trip to the shore")!;
+    const piece = (firedAt: string | null) => ({ ...newKittyPiece("PIECE-FICTIONAL", "2026-09-01T12:00:00.000Z"), firedAt });
+    const withStudio = (studio: KittyStudioV1 | undefined): Household => ({ ...h, goals: h.goals.map((g) => (g.id === trip.id ? { ...g, envelope: { ...(g.envelope ?? {}), studio } as Goal["envelope"] } : g)) });
+    const opened: string[] = [];
+    const show = async (household: Household) => act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", onOpenBank: (id: string) => opened.push(id), classicRoom: null })));
+    const openCard = async (prefix: string) => click([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].find((b) => b.textContent?.startsWith(prefix))!);
+
+    await show(withStudio(undefined));
+    await settle();
+    expect(outline()).toContain("The kiln · cold");
+    await openCard("Fictional trip to the shore");
+    expect($(".path-world__card").textContent).toContain("Not sculpted yet. Open the studio to make it.");
+
+    await show(withStudio({ version: 1, draft: piece(null), fired: [] }));
+    expect($(".path-world__card").textContent).toContain("Still bisque — not fired yet.");
+    expect(outline()).toContain("The kiln · cold");
+
+    await show(withStudio({ version: 1, draft: null, fired: [piece("2026-09-10T15:00:00.000Z")] }));
+    expect($(".path-world__card").textContent).toContain("Fired on September 10, 2026.");
+    expect($(".path-world__card").textContent).not.toMatch(/\$/);
+    expect(outline()).toContain("The kiln · warm");
+    await openCard("The kiln");
+    expect($(".path-world__card").textContent).toContain("Banks are fired here. A fired bank keeps its glaze.");
+    await click(byText("Open the studio"));
+    expect(opened).toEqual([trip.id]);
+
+    // A firing more than a month old leaves the kiln cold.
+    await show(withStudio({ version: 1, draft: null, fired: [piece("2026-07-01T15:00:00.000Z")] }));
+    expect(outline()).toContain("The kiln · cold");
+  });
+
+  it("hands the world each bank's step as of the shown month, so Replay shows the banks growing", async () => {
+    created.mode = "fake";
+    const h = seeded();
+    await act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "taylor", classicRoom: null })));
+    await settle();
+    const world = created.worlds[0] as FakeWorld;
+    const scene = () => world.setScene.mock.calls.at(-1)![0] as { goals: { id: string; step: number }[]; kiln?: { warm: boolean } | null };
+    const reserve = h.goals.find((g) => g.name === "Fictional seasonal reserve")!;
+    const stepOf = () => scene().goals.find((g) => g.id === `goal:${reserve.id}`)!.step;
+    expect(stepOf()).toBe(kittyBankBackingStep(h, reserve, "2026-09-15"));
+    expect(scene().kiln).toEqual({ warm: false });
+    const months = pathMonths(h, "2026-09-15");
+    const slider = $<HTMLInputElement>(".path-world__slider input");
+    const past = months.length - 2;
+    await scrub(slider, past);
+    const monthEnd = pathMonthAsOf(months[past]!.key, "2026-09-15");
+    expect(monthEnd).toMatch(/^\d{4}-\d{2}-(28|29|30|31)$/);
+    expect(stepOf()).toBe(kittyBankBackingStep(h, reserve, monthEnd));
+    expect(stepOf()).not.toBe(kittyBankBackingStep(h, reserve, "2026-09-15"));
+    const outlineSub = [...host.querySelectorAll(".path-world__outline button")].map((b) => b.textContent ?? "").find((t) => t.startsWith("Fictional seasonal reserve"));
+    expect(outlineSub).toBe(`Fictional seasonal reserve · ${stepOf()} of 10 steps`);
   });
 
   it("opens on a household with no Chapter yet: no Move, no tent campfire, and still a place to stand", async () => {

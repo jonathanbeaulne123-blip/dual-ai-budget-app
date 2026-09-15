@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import {
   addGoal,
@@ -242,6 +242,9 @@ function Room({
     "active",
   );
   const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? (context?.bankId || initialBankId ? `nest:${context?.bankId ?? initialBankId}` : h.goals.find(row => goalVisibleInView(row,memberId,view) && row.status !== "retired" && !row.envelope?.archivedAt)?.id ?? "nest:king"));
+  // A new request for a named bank (an island landmark) while the room is already open moves to that bank.
+  const requestedGoalId = context?.goalId;
+  useEffect(() => { if (requestedGoalId) setSelected(requestedGoalId); }, [requestedGoalId]);
   const [creating, setCreating] = useState(false);
   const [studioFor, setStudioFor] = useState("");
   const all = h.goals.filter((goal) => goalVisibleInView(goal, memberId, view));

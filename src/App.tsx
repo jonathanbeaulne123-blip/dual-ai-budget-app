@@ -804,6 +804,9 @@ export function App() {
 
   const herculesSourceScope = useRef<string | null>(null);
   const [herculesSourceFocus, setHerculesSourceFocus] = useState<HerculesNumberSource | null>(null);
+  // Our Path island: a landmark opens its own Kitty Bank in the tent. `supersedes` is the Hercules source already
+  // showing when it was pressed, so clearing the island's request never re-opens that older link.
+  const [pathTentFocus, setPathTentFocus] = useState<{ focus: HerculesNumberSource | null; supersedes: HerculesNumberSource | null } | null>(null);
   const workspaceEnabled = import.meta.env.VITE_HERCULES_WORKSPACE === "1";
   const [workspaceCompact, setWorkspaceCompact] = useState(false);
   const [bugReportRequest, setBugReportRequest] = useState<{ id: string; context: FeedbackContext; text?: string; identity: string } | null>(null);
@@ -7011,7 +7014,8 @@ export function App() {
                 setPlanHerculesRequest({ id: crypto.randomUUID(), scopeKey: `${environment}:${household.householdId}:${actorId}:${view}:${localLedgerIdentity(actorId) ?? actorId}:${replicaScopeGenerationRef.current}`, prompt, proposal,
                   isCurrent: () => readGuardScopeIdentity() === identity && (householdRef.current?.companionProfile?.conversations.find(row => row.view === view)?.generation ?? 0) === generation });
               }}
-              sourceFocus={herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesSourceFocus : null}
+              sourceFocus={view === "household" && pathTentFocus?.focus ? pathTentFocus.focus
+                : herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` && !(view === "household" && pathTentFocus && pathTentFocus.supersedes === herculesSourceFocus) ? herculesSourceFocus : null}
               household={household}
               view={view}
               memberId={actorId}
@@ -7035,7 +7039,10 @@ export function App() {
               );
               // D-262: the household Our Path is a world; the tent keeps today's page mounted so drafts survive.
               return view === "household" ? (
-                <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} onOpenFund={() => goTab("ledger")} openTentFor={herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesSourceFocus : null} classicRoom={<>
+                <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} onOpenFund={() => goTab("ledger")}
+                  onOpenBank={goalId => setPathTentFocus({ focus: { route: "plan", view: "household", label: "Goals & reserves", goalId }, supersedes: herculesSourceFocus })}
+                  onTentChange={open => { if (!open) setPathTentFocus(current => current?.focus ? { ...current, focus: null } : current); }}
+                  openTentFor={herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesSourceFocus : null} classicRoom={<>
                   <header className="our-path__head"><p className="kicker">Our Path</p><h2>Where we are going</h2><p className="muted">The Chapter leads. Goals, Kitty Banks, and the Plan Studio are rooms inside.</p></header>
                   <ChapterRoom household={household} memberId={actorId} today={today} onCommand={runKitchen} busy={busy} />
                   <h3 className="our-path__room-title">The Plan Studio · our agreement room</h3>

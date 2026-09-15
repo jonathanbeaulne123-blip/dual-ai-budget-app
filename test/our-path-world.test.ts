@@ -26,6 +26,7 @@ import {
 import { pathMonthCharacter, pathMonths, pathTripType } from "../src/core/pathSignals.ts";
 import { growIsland, heightAt } from "../src/path/grow.ts";
 import { walkPath, walkSeconds } from "../src/path/walk.ts";
+import { COIN_POOL, firedRecently, landmarkStepChange, pathMonthAsOf } from "../src/path/landmarks.ts";
 import type { Goal, GoalContribution, Household, Transaction } from "../src/core/types.ts";
 import { capturedIntent } from "../src/ledgerSync/capture.ts";
 import { commandFromCapture, parseCommand, type Scope } from "../src/ledgerSync/protocol.ts";
@@ -385,5 +386,32 @@ describe("Our Path journey — the road the two of us walk", () => {
     expect(walkSeconds(0, 2)).toBeCloseTo(1.6);
     expect(walkSeconds(0, 30)).toBe(3.2);
     expect(walkSeconds(2, 2)).toBe(0);
+  });
+});
+
+describe("Our Path landmarks: month-end readings, kiln warmth, and coin counts", () => {
+  it("reads a past month as of its last day and the current month as of today", () => {
+    expect(pathMonthAsOf("2026-08", "2026-09-15")).toBe("2026-08-31");
+    expect(pathMonthAsOf("2026-02", "2026-09-15")).toBe("2026-02-28");
+    expect(pathMonthAsOf("2024-02", "2026-09-15")).toBe("2024-02-29");
+    expect(pathMonthAsOf("2025-12", "2026-09-15")).toBe("2025-12-31");
+    expect(pathMonthAsOf("2026-09", "2026-09-15")).toBe("2026-09-15");
+    expect(pathMonthAsOf("2026-10", "2026-09-15")).toBe("2026-09-15");
+  });
+  it("keeps the kiln warm for thirty days after a firing, never before it", () => {
+    expect(firedRecently(null, "2026-09-15")).toBe(false);
+    expect(firedRecently("2026-09-15T02:00:00.000Z", "2026-09-15")).toBe(true);
+    expect(firedRecently("2026-08-16T12:00:00.000Z", "2026-09-15")).toBe(true);
+    expect(firedRecently("2026-08-15T12:00:00.000Z", "2026-09-15")).toBe(false);
+    expect(firedRecently("2026-07-01T12:00:00.000Z", "2026-09-15")).toBe(false);
+    expect(firedRecently("2026-09-20T12:00:00.000Z", "2026-09-15")).toBe(false);
+  });
+  it("sends coins only when a known bank's step changes, capped by the pool", () => {
+    expect(landmarkStepChange(undefined, 4)).toBeNull();
+    expect(landmarkStepChange(4, 4)).toBeNull();
+    expect(landmarkStepChange(2, 5)).toEqual({ dir: "up", n: 3 });
+    expect(landmarkStepChange(7, 3)).toEqual({ dir: "down", n: 4 });
+    expect(landmarkStepChange(0, 10)).toEqual({ dir: "up", n: 10 });
+    expect(COIN_POOL).toBe(12);
   });
 });
