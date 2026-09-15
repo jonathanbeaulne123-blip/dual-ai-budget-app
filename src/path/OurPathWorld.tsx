@@ -533,7 +533,10 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           if (el.offsetWidth) labelSizes.current.set(mark.id, size);
         }
         const box = { x0: a.x - size.w / 2 - 2, x1: a.x + size.w / 2 + 2, y0: a.y - size.h - 2, y1: a.y + 2 };
-        if (mark.kind !== "now" && placed.some((p) => box.x0 < p.x1 && box.x1 > p.x0 && box.y0 < p.y1 && box.y1 > p.y0)) visible = false;
+        // A label that would hang off the stage's side waits too (the outline still lists the place); "We are here" always shows.
+        const stageW = host.current?.clientWidth ?? 0;
+        const offEdge = stageW > 0 && (box.x0 < 0 || box.x1 > stageW);
+        if (mark.kind !== "now" && (offEdge || placed.some((p) => box.x0 < p.x1 && box.x1 > p.x0 && box.y0 < p.y1 && box.y1 > p.y0))) visible = false;
         else placed.push(box);
       }
       if (el.hidden === visible) el.hidden = !visible;
@@ -960,7 +963,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
               >
                 <span className="path-mark__label">{mark.label}</span>
                 {mark.sub && lantern > 0 && <span className="path-mark__sub">{mark.sub}</span>}
-                {mark.id === "tent" && live && <PathHercules pose={herculesPose} size={narrow ? 64 : 88} />}
+                {mark.id === "tent" && live && <PathHercules pose={herculesPose} size={[narrow ? 36 : 48, narrow ? 44 : 60, narrow ? 56 : 76, narrow ? 64 : 88][level]!} />}
               </button>
             ))}
           </div>
