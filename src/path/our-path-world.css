@@ -21,6 +21,9 @@
 /* Us: two small figures sharing one lantern (flat fallback). Coats follow the theme's accent and second. */
 .path-world__us line { stroke: #ffc860; stroke-width: 0.9; stroke-linecap: round; }
 .path-world__us circle { stroke: var(--card); stroke-width: 0.5; }
+.path-world__charter { fill: #a39a8c; stroke: var(--card); stroke-width: 0.6; }
+.path-world--taylor .path-world__charter { fill: #9c9387; }
+.path-world--newfoundland .path-world__charter { fill: #8a8a86; }
 .path-world__us-one { fill: var(--theme-accent, #b5653e); }
 .path-world__us-two { fill: var(--theme-second, #4f6b4a); }
 
@@ -31,7 +34,7 @@
 .path-mark:focus-visible .path-mark__label { outline: 3px solid var(--theme-accent, var(--copper)); outline-offset: 2px; }
 .path-mark--now .path-mark__label { background: var(--ink); color: var(--paper); }
 .path-mark--goal .path-mark__label { font-family: var(--theme-display, var(--display)); font-weight: 600; }
-.path-mark--kiln .path-mark__label { font-family: var(--theme-display, var(--display)); font-style: italic; }
+.path-mark--kiln .path-mark__label, .path-mark--charter .path-mark__label { font-family: var(--theme-display, var(--display)); font-style: italic; }
 .path-mark--unknown .path-mark__label { outline: 2px dashed var(--theme-second, var(--copper)); }
 .path-mark--bill .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 600; }
 .path-world[data-level="0"] .path-mark--goal .path-mark__label { font-size: 17px; }

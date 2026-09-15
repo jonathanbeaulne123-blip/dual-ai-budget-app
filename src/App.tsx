@@ -450,6 +450,7 @@ import {
   canAdvertiseSoftPresence,
   deactivateLocalDevice,
   isSoftPresenceOptedOut,
+  peersFromLivePresence,
   setSoftPresenceOptOut,
   SOFT_PRESENCE_TOUCH_THROTTLE_MS,
   type SoftPresenceLiveRow,
@@ -7040,7 +7041,11 @@ export function App() {
               // D-262: the household Our Path is a world; the tent keeps today's page mounted so drafts survive.
               return view === "household" ? (
                 <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} onOpenFund={() => goTab("ledger")}
-                  onOpenBank={goalId => setPathTentFocus({ focus: { route: "plan", view: "household", label: "Goals & reserves", goalId }, supersedes: herculesSourceFocus })}
+                  onOpenInTent={source => setPathTentFocus({ focus: source, supersedes: herculesSourceFocus })}
+                  onOpenTogether={() => goTab("together")}
+                  onOpenCharter={() => { if (household.charter) setCharterPageOpen(true); else setCharterFoundingOpen(true); }}
+                  // Presence rows carry no tab: any other member live on this household counts as being here.
+                  presentMembers={1 + peersFromLivePresence({ live: softPresenceLive, members: household.members, viewerMemberId: session.memberId }).length}
                   onTentChange={open => { if (!open) setPathTentFocus(current => current?.focus ? { ...current, focus: null } : current); }}
                   openTentFor={herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesSourceFocus : null} classicRoom={<>
                   <header className="our-path__head"><p className="kicker">Our Path</p><h2>Where we are going</h2><p className="muted">The Chapter leads. Goals, Kitty Banks, and the Plan Studio are rooms inside.</p></header>

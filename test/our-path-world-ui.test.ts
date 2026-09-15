@@ -12,6 +12,7 @@ import { newKittyPiece } from "../src/core/kittyStudio.ts";
 import { pathMonths } from "../src/core/pathSignals.ts";
 import type { Goal, KittyStudioV1 } from "../src/core/types.ts";
 import { pathMonthAsOf } from "../src/path/landmarks.ts";
+import { acknowledgeHouseholdPlan, appendPlanSitdownTurn, closeBooksMonth, foundHouseholdCharter, signHouseholdCharter } from "../src/core/commands.ts";
 
 // jsdom has no WebGL: by default the world fails to load and the page must stay fully usable.
 // The "fake" variant hands back a stand-in world so the page's calls into it can be counted.
@@ -366,6 +367,117 @@ describe("Our Path world page (D-262)", () => {
     expect(stepOf()).not.toBe(kittyBankBackingStep(h, reserve, "2026-09-15"));
     const outlineSub = [...host.querySelectorAll(".path-world__outline button")].map((b) => b.textContent ?? "").find((t) => t.startsWith("Fictional seasonal reserve"));
     expect(outlineSub).toBe(`Fictional seasonal reserve · ${stepOf()} of 10 steps`);
+  });
+
+  describe("Together on the island", () => {
+    const outline = () => [...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")];
+    const openFromOutline = async (prefix: string) => click(outline().find((b) => b.textContent?.startsWith(prefix))!);
+    const withCharter = (h: Household) => foundHouseholdCharter(h, {
+      memberId: "MEM-001", custodianMemberId: "MEM-001", purpose: "Keep $1,200.50 of calm between us and 3 paydays without overwork, and talk before any big change to the home.",
+      splitRule: "remainder", splitNote: "Fictional split note.", ceilingKind: "hours-per-week", ceilingValue: "24", cadence: "weekly", cadenceWeekday: 0,
+      clauses: [{ heading: "Bills", body: "Fictional: the Fund covers agreed bills." }], date: "2026-09-01",
+    }).household;
+    const accepted = (h: Household) => {
+      const version = h.planVersions!.find((row) => row.scope === "household" && row.state === "proposed")!;
+      for (const actor of ["MEM-001", "MEM-002"]) h = acknowledgeHouseholdPlan(h, { memberId: actor, createdBy: actor, planVersionId: version.id, expectedDigest: version.digest }).household;
+      return { household: h, version: h.planVersions!.find((row) => row.id === version.id)! };
+    };
+
+    it("makes the open Chapter's campfire a door to Together, keeping the Chapter room as the second way in", async () => {
+      const together: number[] = [];
+      await act(async () => root.render(createElement(OurPathWorld, { household: seeded(), memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", onOpenTogether: () => together.push(1), classicRoom: createElement("p", null, "today") })));
+      await settle();
+      await openFromOutline("Make Rent Boring");
+      const actions = [...host.querySelectorAll<HTMLButtonElement>(".path-world__card .path-world__actions button")];
+      expect(actions.map((b) => b.textContent)).toEqual(["Sit down together", "Open the Chapter room"]);
+      expect(actions[0]!.className).toBe("primary");
+      await click(actions[0]!);
+      expect(together).toEqual([1]);
+      expect($(".path-world__room").hidden).toBe(true);
+      await click(byText("Open the Chapter room"));
+      expect($(".path-world__room").hidden).toBe(false);
+    });
+
+    it("stands the Charter as a stone square: words only, waiting until both sign, and a link to read it", async () => {
+      const charters: number[] = [];
+      const show = async (household: Household) => act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "newfoundland", onOpenCharter: () => charters.push(1), classicRoom: null })));
+      await show(seeded());
+      await settle();
+      expect(outline().some((b) => b.textContent?.startsWith("Our Charter"))).toBe(false);
+
+      let h = withCharter(seeded());
+      await show(h);
+      expect(outline().map((b) => b.textContent)).toContain("Our Charter · waiting for 2");
+      expect(host.querySelector(".path-world__flat .path-world__charter")).toBeTruthy();
+      await openFromOutline("Our Charter");
+      const card = () => $(".path-world__card").textContent ?? "";
+      expect(card()).toContain("Keep of calm between us and paydays without overwork");
+      expect($(".path-world__card li").textContent).not.toMatch(/\d/);
+      expect(card()).not.toMatch(/\$/);
+      expect(card()).toContain("Waiting for Alex (fictional) and Sam (fictional) to sign.");
+      await click(byText("Read the Charter"));
+      expect(charters).toEqual([1]);
+
+      h = signHouseholdCharter(signHouseholdCharter(h, { memberId: "MEM-001" }).household, { memberId: "MEM-002" }).household;
+      await show(h);
+      expect(outline().map((b) => b.textContent)).toContain("Our Charter · signed");
+      expect(card()).toContain("Signed by both of you.");
+    });
+
+    it("forks the path once per agreed decision, and each fork opens that agreement in the tent", async () => {
+      created.mode = "fake";
+      const { household, version } = accepted(seeded());
+      const decisions = version.lines.filter((line) => line.decision?.nextStep);
+      expect(decisions.length).toBe(2);
+      const sources: unknown[] = [];
+      const tent: boolean[] = [];
+      let commands = 0;
+      await act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => { commands += 1; return { ok: true }; }, theme: "taylor", onOpenInTent: (source: unknown) => sources.push(source), onTentChange: (open: boolean) => tent.push(open), classicRoom: null })));
+      await settle();
+      const world = created.worlds[0] as FakeWorld;
+      const scene = world.setScene.mock.calls.at(-1)![0] as { forks: { id: string }[] };
+      expect(scene.forks.map((f) => f.id)).toEqual(decisions.map((line) => `fork:${line.id}`));
+      for (const line of decisions) expect(outline().map((b) => b.textContent)).toContain(`${line.labelSnapshot} · Together`);
+      const line = decisions[0]!;
+      await openFromOutline(line.labelSnapshot);
+      expect($(".path-world__card").textContent).toContain(line.decision!.nextStep!);
+      expect($(".path-world__card").textContent).not.toMatch(/\$/);
+      await click(byText("Read the agreement"));
+      expect(sources).toEqual([{ route: "plan", view: "household", label: line.labelSnapshot, planVersionId: version.id, planLineId: line.id }]);
+      expect($(".path-world__room").hidden).toBe(false);
+      expect(tent).toEqual([true]);
+      expect(commands).toBe(0);
+    });
+
+    it("tells the world who is here, whether the Sitdown is open, and which months are set land", async () => {
+      created.mode = "fake";
+      let h = seeded();
+      h = appendPlanSitdownTurn(h, { sitDownSessionId: "SITDOWN-FICTIONAL", monthKey: "2026-09", planDraftId: "LIFE-DRAFT", memberId: "MEM-001", text: "Fictional: let's start." }).household;
+      h = closeBooksMonth(h, { monthKey: "2026-08", createdBy: "MEM-001" }).household;
+      const render = async (present: number) => act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", presentMembers: present, onOpenTogether: () => {}, classicRoom: null })));
+      await render(1);
+      await settle();
+      const world = created.worlds[0] as FakeWorld;
+      type Scene = { presentMembers: number; campfires: { id: string; sitdown: string; lit: boolean }[]; land: { month: number; closed: boolean; stamps: number }[] };
+      const scene = () => world.setScene.mock.calls.at(-1)![0] as Scene;
+      expect(scene().presentMembers).toBe(1);
+      const fire = scene().campfires.find((c) => c.id === `fire:${openChapterFor(h)!.id}`)!;
+      expect(fire).toMatchObject({ sitdown: "open", lit: true });
+      const months = pathMonths(h, "2026-09-15");
+      const august = months.findIndex((m) => m.key === "2026-08");
+      expect(scene().land).toContainEqual({ month: august, closed: true, stamps: 0, set: false });
+      expect(outline().map((b) => b.textContent)).toContain("Make Rent Boring · this Chapter · Sitdown open");
+
+      await render(2);
+      expect(scene().presentMembers).toBe(2);
+      await openFromOutline("Make Rent Boring");
+      expect($(".path-world__card").textContent).toContain("You're both here.");
+      expect($(".path-world__card").textContent).toContain("Your Sitdown is open. The fire is blazing.");
+
+      // The August month card says why its land is permanent.
+      await openFromOutline("Aug");
+      expect($(".path-world__card").textContent).toContain("Books closed");
+    });
   });
 
   it("opens on a household with no Chapter yet: no Move, no tent campfire, and still a place to stand", async () => {

@@ -501,6 +501,7 @@
         "src/path/grow.ts",
         "src/path/walk.ts",
         "src/path/landmarks.ts",
+        "src/path/together.ts",
         "src/path/OurPathWorld.tsx",
         "src/path/world/pathWorld3d.ts",
         "src/path/our-path-world.css"
@@ -510,7 +511,7 @@
         "test/our-path-world-ui.test.ts",
         "test/vision-v2-chapters.test.ts"
       ],
-      "reason": "Our Path world (D-262): the shared pathWorld collection changes only on both members' agreement, converges across phones, stays out of every financial hash and Hercules context, and replays exactly; month scores read only shared facts; the page keeps every place reachable without WebGL and keeps today's Our Path mounted behind the tent; the two walkers follow the month road (walkPath) and stand at the shown month in the flat fallback; a landmark opens its own Kitty Bank in the tent (a link only), the kiln stands once a shared bank exists and is warm only after a recent firing, and landmark steps are read as of the shown month's end"
+      "reason": "Our Path world (D-262): the shared pathWorld collection changes only on both members' agreement, converges across phones, stays out of every financial hash and Hercules context, and replays exactly; month scores read only shared facts; the page keeps every place reachable without WebGL and keeps today's Our Path mounted behind the tent; the two walkers follow the month road (walkPath) and stand at the shown month in the flat fallback; a landmark opens its own Kitty Bank in the tent (a link only), the kiln stands once a shared bank exists and is warm only after a recent firing, and landmark steps are read as of the shown month's end; the open Chapter's campfire is a door to Together and knows the Shared Sitdown (open blazes, closed settles to embers and sets that month's land), closed books and stamped weeks set land, the Charter stands as a words-only stone square, and each agreed decision forks the path and opens that Plan line in the tent (links only)"
     },
     {
       "sources": [

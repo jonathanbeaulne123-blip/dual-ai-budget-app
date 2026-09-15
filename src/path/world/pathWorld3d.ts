@@ -5,6 +5,7 @@ import { createKittySculpture, type KittySculpture } from "../../kitty/sculpture
 import { CELL, GRID, HALF, SIZE, heightAt, idx, islandHash, type GrownIsland, type Piece } from "../grow.ts";
 import { walkPath, walkSeconds, type WalkPoint } from "../walk.ts";
 import { COIN_POOL, landmarkStepChange } from "../landmarks.ts";
+import { charterSpot, forkAngle, type PathSitdown } from "../together.ts";
 
 /**
  * The Our Path world (D-262): one renderer, one island, an orbiting camera
@@ -18,7 +19,8 @@ export type PathWorldInput = {
   island: GrownIsland;
   theme: ThemeId;
   characters: PathCharacter[];
-  campfires: { id: string; month: number; lit: boolean; state: string }[];
+  /** `sitdown`: the Shared Sitdown in this Chapter's months. Open blazes; closed settles to embers. */
+  campfires: { id: string; month: number; lit: boolean; state: string; sitdown: PathSitdown }[];
   moves: { id: string; state: "done" | "waiting" | "next" | "open" }[];
   goals: { id: string; step: number; piece: KittyPieceV1 | null; fired: boolean }[];
   lamps: { id: string; month: number }[];
@@ -29,6 +31,14 @@ export type PathWorldInput = {
   layers: { weather: boolean; story: boolean; rhythm: boolean };
   /** The kiln hut beside the landmarks: present once a shared bank exists; warm when one was fired lately. */
   kiln?: { warm: boolean } | null;
+  /** Permanent land: closed books (paved kerb), a closed Sitdown (kerb), stamped weeks (small lanterns, max 5). */
+  land?: { month: number; closed: boolean; stamps: number; set?: boolean }[];
+  /** 1 = just me; 2 = both of us live. Nothing is stored. */
+  presentMembers?: number;
+  /** The Charter's stone square: lit when signed, leaning while someone has not signed, one carved line per amendment. */
+  charter?: { signed: boolean; leaning: boolean; amendments: number } | null;
+  /** Agreed decisions as short road stubs off their acceptance month. */
+  forks?: { id: string; month: number; index: number }[];
 };
 export type PathAnchor = { id: string; x: number; y: number; depth: number; visible: boolean };
 export type PathLevel = 0 | 1 | 2 | 3;
@@ -584,6 +594,40 @@ export function createPathWorld(host: HTMLElement, options: {
       if (now) { stone.userData.pickId = `month:${m}`; pickables.push(stone); } else anchor(`month:${m}`, stone, 1.2);
       dynamic.add(stone);
     }
+    // Set land: a closed Sitdown or closed books ring the month stone with a low kerb (paved and a shade darker for closed books);
+    // each stamped week lights a small lantern along that month's road. All static.
+    if (input.land?.length) {
+      const rock = new THREE.Color(palette.rock);
+      const paved = `#${rock.clone().lerp(new THREE.Color("#2b2622"), 0.28).getHexString()}`;
+      const pave = `#${rock.clone().lerp(new THREE.Color("#2b2622"), 0.12).getHexString()}`;
+      for (const row of input.land) {
+        if (row.month < 0 || row.month > island.cur) continue;
+        const p = island.spot(row.month), y = heightAt(island, p.x, p.z);
+        if (row.closed || row.set) {
+          const colour = row.closed ? paved : palette.rock;
+          if (row.closed) { const slab = part(G.cyl, pave, 1.55, 0.08, 1.55, p.x, y + 0.08, p.z); slab.castShadow = false; dynamic.add(slab); }
+          for (let i = 0; i < 8; i++) {
+            const a = i / 8 * Math.PI * 2 + 0.2;
+            const x = p.x + Math.cos(a) * 1.5, z = p.z + Math.sin(a) * 1.5;
+            const stone = part(G.ico, colour, 0.26, 0.2, 0.26, x, heightAt(island, x, z) + 0.12, z);
+            stone.rotation.y = i * 0.9; stone.castShadow = false; dynamic.add(stone);
+          }
+        }
+        const stamps = Math.max(0, Math.min(5, Math.floor(row.stamps)));
+        if (stamps) {
+          const q = row.month > 0 ? island.spot(row.month - 1) : island.spot(row.month + 1);
+          const dx = p.x - q.x, dz = p.z - q.z, len = Math.hypot(dx, dz) || 1;
+          const nx = -dz / len, nz = dx / len;
+          for (let i = 0; i < stamps; i++) {
+            const k = (i + 1) / (stamps + 1) * 0.85;
+            const x = p.x - dx * k + nx * 0.9, z = p.z - dz * k + nz * 0.9, ly = heightAt(island, x, z);
+            const pole = part(G.cyl, "#3d3a38", 0.04, 1.5, 0.04, x, ly + 0.75, z); pole.castShadow = false;
+            const bulb = part(G.sph, "#fff0c0", 0.14, 0.17, 0.14, x, ly + 1.55, z, { emissive: "#ffc860", emissiveIntensity: 1 }); bulb.castShadow = false;
+            dynamic.add(pole, bulb);
+          }
+        }
+      }
+    }
     // "We are here" is wherever the two walkers are, so its mark follows them along the road.
     anchor(`month:${island.cur}`, us, US_MARK_LIFT);
     arrive(island);
@@ -596,11 +640,29 @@ export function createPathWorld(host: HTMLElement, options: {
       const g = new THREE.Group(); g.position.set(x, heightAt(island, x, z), z);
       for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2; g.add(part(G.ico, "#9c8f7d", 0.35, 0.3, 0.35, Math.cos(a) * 1.1, 0.2, Math.sin(a) * 1.1)); }
       for (let i = 0; i < 3; i++) { const l = part(G.cyl, "#7a5436", 0.12, 1.6, 0.12, 0, 0.3, 0); l.rotation.z = Math.PI / 2; l.rotation.y = i * 1.05; g.add(l); }
-      if (fire.lit) {
-        const f = part(G.cone, "#ffb347", 0.5, 1.4, 0.5, 0, 1, 0, { emissive: "#ff8a1f", emissiveIntensity: 1.2 }); f.castShadow = false;
-        const light = new THREE.PointLight(0xffa040, 6, 16, 2); light.position.y = 1.6;
-        g.add(f, light);
-        tickers.push((t) => { f.scale.y = 1.4 * (1 + 0.15 * Math.sin(t * 11)); light.intensity = 5 + 1.5 * Math.sin(t * 9); });
+      if (fire.sitdown === "closed") {
+        // The Sitdown closed: steady embers, no flicker.
+        for (let i = 0; i < 5; i++) { const a = i / 5 * Math.PI * 2; const e = part(G.ico, "#ff9a3c", 0.22, 0.14, 0.22, Math.cos(a) * 0.35, 0.28, Math.sin(a) * 0.35, { emissive: "#ff6a1a", emissiveIntensity: 0.9 }); e.castShadow = false; g.add(e); }
+        const light = new THREE.PointLight(0xff8a30, 2.4, 9, 2); light.position.y = 0.8;
+        g.add(light);
+      } else if (fire.lit) {
+        const blaze = fire.sitdown === "open", both = (input.presentMembers ?? 1) >= 2;
+        const tall = blaze ? 2.1 : 1.4, width = blaze ? 0.7 : 0.5;
+        const power = (blaze ? 9 : 6) * (both ? 1.4 : 1);
+        const amp = Math.min(0.5, (blaze ? 0.25 : 0.15) * (both ? 2 : 1));
+        const f = part(G.cone, "#ffb347", width, tall, width, 0, 0.3 + tall / 2, 0, { emissive: "#ff8a1f", emissiveIntensity: 1.2 }); f.castShadow = false;
+        const core = part(G.cone, "#ffc860", width * 0.55, tall * 0.62, width * 0.55, 0, 0.3 + tall * 0.31, 0, { emissive: "#ffc860", emissiveIntensity: 1.4 }); core.castShadow = false;
+        const light = new THREE.PointLight(0xffa040, power, blaze ? 22 : 16, 2); light.position.y = 0.6 + tall * 0.7;
+        g.add(f, core, light);
+        // Reduced motion: the fire stands still. Lite: only the base flicker.
+        if (!options.reducedMotion) tickers.push((t) => {
+          const a = quality === "full" ? amp : 0.15;
+          const k = 1 + a * Math.sin(t * 11) + (quality === "full" && blaze ? a * 0.4 * Math.sin(t * 17.3) : 0);
+          f.scale.y = tall * k;
+          f.scale.x = f.scale.z = width * (quality === "full" && blaze ? 1 + a * 0.5 * Math.sin(t * 7.1) : 1);
+          core.scale.y = tall * 0.62 * (2 - k);
+          light.intensity = power * (1 + Math.min(0.35, a * 1.2) * Math.sin(t * 9));
+        });
       }
       anchor(fire.id, g, 2.6);
       dynamic.add(g);
@@ -679,6 +741,7 @@ export function createPathWorld(host: HTMLElement, options: {
     const seen = new Set<string>();
     const arcs = !options.reducedMotion && quality === "full";
     const landmarkCount = Math.min(6, input.goals.length);
+    let kilnAt: { x: number; z: number } | null = null;
     input.goals.slice(0, 6).forEach((goal, i) => {
       seen.add(goal.id);
       const pos = landmarkPosition(i, Math.min(6, input.goals.length), island);
@@ -750,8 +813,56 @@ export function createPathWorld(host: HTMLElement, options: {
         }
       }
       reserved.push([kx, kz]);
+      kilnAt = { x: kx, z: kz };
       anchor("kiln", k, 3.6); dynamic.add(k);
     }
+    // The Charter: a paved stone square with a plinth and a standing tablet, off the first month.
+    if (input.charter) {
+      // The slab's half-diagonal is ~3.5 and charterSpot adds 3 more to every radius: keep a clear gap from landmark discs and the kiln.
+      const avoid = Array.from({ length: landmarkCount }, (_, i) => ({ ...landmarkPosition(i, landmarkCount, island), r: 5 }));
+      if (kilnAt) avoid.push({ ...kilnAt, r: 4.5 });
+      const spot = charterSpot(island, avoid);
+      const rock = new THREE.Color(palette.rock);
+      const light = `#${rock.clone().lerp(new THREE.Color("#ffffff"), 0.22).getHexString()}`;
+      const dark = `#${rock.clone().lerp(new THREE.Color("#2b2622"), 0.2).getHexString()}`;
+      const sq = new THREE.Group();
+      sq.position.set(spot.x, heightAt(island, spot.x, spot.z), spot.z);
+      sq.rotation.y = -spot.a + Math.PI / 2;
+      const slab = part(G.box, light, 5, 0.22, 5, 0, 0.11, 0); slab.castShadow = false; sq.add(slab);
+      for (let i = 0; i < 3; i++) {
+        const across = part(G.box, dark, 5, 0.02, 0.05, 0, 0.23, (i - 1) * 1.25); across.castShadow = false;
+        const along = part(G.box, dark, 0.05, 0.02, 5, (i - 1) * 1.25, 0.23, 0); along.castShadow = false;
+        sq.add(across, along);
+      }
+      sq.add(part(G.box, dark, 1.9, 0.45, 1.1, 0, 0.44, 0));
+      const tablet = new THREE.Group();
+      tablet.position.set(0, 0.66, 0);
+      tablet.add(part(G.box, palette.rock, 1.4, 1.9, 0.26, 0, 0.95, 0));
+      const signed = input.charter.signed;
+      tablet.add(part(G.box, signed ? "#fff0c0" : dark, 0.5, 0.5, 0.04, 0, 1.5, 0.14, signed ? { emissive: "#ffc860", emissiveIntensity: 1.1 } : {}));
+      for (let i = 0; i < Math.min(6, input.charter.amendments); i++) tablet.add(part(G.box, dark, 0.9, 0.05, 0.03, 0, 1.0 - i * 0.14, 0.14));
+      if (input.charter.leaning) tablet.rotation.x = -8 * Math.PI / 180;
+      sq.add(tablet);
+      anchor("charter", sq, 3.4); dynamic.add(sq);
+      reserved.push([spot.x, spot.z]);
+    }
+    // Agreed decisions: short road stubs branching off the month they were agreed, each with a signpost.
+    (input.forks ?? []).slice(0, 8).forEach((fork) => {
+      if (fork.month < 0 || fork.month > island.cur) return;
+      const p = island.spot(fork.month);
+      const a = forkAngle(p, fork.index);
+      const g = new THREE.Group();
+      for (let k = 0; k < 5; k++) {
+        const d = 1.6 + k * 0.85, x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d;
+        const step = part(G.cyl, "#d8c49a", 0.36, 0.05, 0.36, x, heightAt(island, x, z) + 0.06, z); step.castShadow = false; g.add(step);
+      }
+      const sx = p.x + Math.cos(a) * 5.9, sz = p.z + Math.sin(a) * 5.9;
+      const post = new THREE.Group(); post.position.set(sx, heightAt(island, sx, sz), sz); post.rotation.y = -a;
+      post.add(part(G.cyl, "#7a5436", 0.06, 1.9, 0.06, 0, 0.95, 0), part(G.box, palette.walls[0]!, 0.95, 0.34, 0.06, 0.3, 1.6, 0), part(G.box, palette.accent, 0.12, 0.34, 0.07, 0.8, 1.6, 0));
+      g.add(post);
+      anchor(fork.id, post, 2.3); dynamic.add(g);
+      reserved.push([sx, sz]);
+    });
     // New parts of life with no recipe yet: a "?" signpost, with Hercules's pawprints leading to it.
     input.unknown.forEach((u, i) => {
       const p = island.spot(Math.min(island.cur, Math.max(0, u.month)));

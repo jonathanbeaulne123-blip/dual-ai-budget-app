@@ -6,6 +6,9 @@ import { kittyBankBackingStep, kittyBanksInView } from "../core/kittyBanks.ts";
 import { displayedKittyPiece } from "../core/kittyStudio.ts";
 import { formatCad } from "../core/money.ts";
 import { monthObligations } from "../core/monthObligations.ts";
+import { charterIsSigned, charterUnsignedMemberIds } from "../core/charter.ts";
+import type { HerculesNumberSource } from "../core/herculesProvenance.ts";
+import { pathLand } from "../core/pathLand.ts";
 import { pathMonthCharacter, pathMonths, type PathMonth } from "../core/pathSignals.ts";
 import {
   PATH_BASE_RECIPES,
@@ -36,6 +39,8 @@ import type { CommitResult, Household } from "../core/types.ts";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { growIsland, type Piece } from "./grow.ts";
 import { firedRecently, pathMonthAsOf } from "./landmarks.ts";
+import { charterPurposeWords, charterSpot, pathSitdownClosedMonths, pathSitdownFor, type PathSitdown } from "./together.ts";
+import { acceptedPlan } from "../HouseholdLife.tsx";
 import type { PathAnchor, PathCharacter, PathLevel, PathQuality, PathWorld, PathWorldInput } from "./world/pathWorld3d.ts";
 import "./our-path-world.css";
 
@@ -52,7 +57,7 @@ type Mark = {
   id: string;
   label: string;
   sub?: string;
-  kind: "month" | "now" | "fire" | "goal" | "piece" | "move" | "bill" | "memory" | "tent" | "unknown" | "name" | "cove" | "lamp" | "kiln";
+  kind: "month" | "now" | "fire" | "goal" | "piece" | "move" | "bill" | "memory" | "tent" | "unknown" | "name" | "cove" | "lamp" | "kiln" | "charter" | "fork";
   minLevel: PathLevel;
   lantern: Lantern;
 };
@@ -73,7 +78,7 @@ const PIECE_LABEL: Record<Piece["kind"], string> = {
 const LANTERN_KEY = "hearth:pathWorld:lantern";
 const QUALITY_KEY = "hearth:pathWorld:quality";
 const MARK_PRIORITY: Record<Mark["kind"], number> = {
-  now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, kiln: 6, bill: 6, name: 7, memory: 8, cove: 9, lamp: 10, piece: 11, month: 12,
+  now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, kiln: 6, bill: 6, charter: 6, name: 7, fork: 8, memory: 8, cove: 9, lamp: 10, piece: 11, month: 12,
 };
 
 function monthName(key: string, long = true): string {
@@ -110,7 +115,7 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenBank, onTentChange, classicRoom, theme: themeOverride, openTentFor, proofWorld }: {
+export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, proofWorld }: {
   household: Household;
   memberId: string;
   today: DateKey;
@@ -119,6 +124,14 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   onOpenFund?: () => void;
   /** A landmark or the kiln asks for one shared Kitty Bank's room. Only a link: the room's own screens move money. */
   onOpenBank?: (goalId: string) => void;
+  /** Aim today's Our Path (in the tent) at a source: a Kitty Bank, an agreed Plan line. Only a link. */
+  onOpenInTent?: (source: HerculesNumberSource) => void;
+  /** The campfire is a door: the Together tab. */
+  onOpenTogether?: () => void;
+  /** The Charter's stone square opens the Charter. */
+  onOpenCharter?: () => void;
+  /** 1 = just me; 2 or more = the other member is live too. Nothing is stored. */
+  presentMembers?: number;
   /** The tent opened or closed. */
   onTentChange?: (open: boolean) => void;
   /** Today's Our Path, kept mounted so drafts survive a trip into the tent. */
@@ -182,6 +195,10 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   // ------------------------------------------------------------ the pieces standing on the island
   const chapter = openChapterFor(household);
   const activeMembers = household.members.filter((m) => m.active);
+  // Like Together's small line: a named person, or "Together" for a joint responsibility.
+  const forkWho = (responsibility: { kind: "joint" | "member"; memberId?: string } | undefined) => responsibility?.kind === "member"
+    ? household.members.find((m) => m.id === responsibility.memberId)?.name ?? "Choose a responsible person"
+    : "Together";
   const nameOf = (id: string | null | undefined) => household.members.find((m) => m.id === id)?.name ?? "Either of us";
   const next = nextMove(household, memberId);
   const moves = useMemo(() => (chapter && atNow ? movesForChapter(household, chapter.id).filter((m) => m.state !== "declined") : []), [household, chapter, atNow]);
@@ -211,6 +228,38 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     } catch { return []; }
   }, [household, today, atNow]);
 
+  // ------------------------------------------------------------ together: the Sitdown, set land, the Charter, agreed decisions
+  const nowKey = monthKeyFromDateKey(today);
+  const land = useMemo(() => pathLand(household, today), [household, today]);
+  const sitdownClosed = useMemo(() => pathSitdownClosedMonths(household), [household]);
+  const fireSitdown = useMemo(() => {
+    const out = new Map<string, PathSitdown>();
+    for (const row of household.chapters ?? []) {
+      const from = row.openedAt.slice(0, 7);
+      const to = row.state === "open" ? nowKey : (row.closedAt ?? row.openedAt).slice(0, 7);
+      out.set(row.id, pathSitdownFor(household, from, to < from ? from : to, today));
+    }
+    return out;
+  }, [household, nowKey, today]);
+  const charter = household.charter ?? null;
+  const charterView = useMemo(() => {
+    if (!charter) return null;
+    const signed = charterIsSigned(charter);
+    const waiting = charterUnsignedMemberIds(charter);
+    const amendments = charter.amendments.length;
+    const sub = !signed ? `waiting for ${Math.max(1, waiting.length)}` : amendments ? `amended ${amendments}×` : "signed";
+    return { signed, waiting, amendments, sub };
+  }, [charter]);
+  const charterShown = Boolean(charter && months[shown] && charter.foundedOn.slice(0, 7) <= months[shown]!.key);
+  const accepted = useMemo(() => acceptedPlan(household, today), [household, today]);
+  const forks = useMemo(() => {
+    if (!accepted) return [];
+    const at = monthIndexOf(months, accepted.activatedAt ?? accepted.createdAt);
+    const month = at >= 0 ? at : months.length - 1;
+    return accepted.lines.filter((line) => line.decision?.nextStep).slice(0, 8).map((line, index) => ({ line, index, month }));
+  }, [accepted, months]);
+  const shownForks = useMemo(() => forks.filter((fork) => fork.month <= shown), [forks, shown]);
+
   const unknown = useMemo(() => {
     const out: { id: string; month: number; spec: PathRecipeSpec; label: string }[] = [];
     const pendingNames = new Set(proposals.flatMap((row) => (row.kind === "recipe" && row.pending ? [JSON.stringify(row.pending.when)] : [])));
@@ -237,7 +286,14 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     island,
     theme,
     characters,
-    campfires: (household.chapters ?? []).map((row) => ({ id: `fire:${row.id}`, month: monthIndexOf(months, row.openedAt), lit: row.state === "open" && atNow, state: row.state })),
+    campfires: (household.chapters ?? []).map((row) => ({ id: `fire:${row.id}`, month: monthIndexOf(months, row.openedAt), lit: row.state === "open" && atNow, state: row.state, sitdown: fireSitdown.get(row.id) ?? "none" })),
+    land: months.flatMap((month, m) => {
+      const row = land[month.key], set = sitdownClosed.has(month.key);
+      return row || set ? [{ month: m, closed: Boolean(row?.closed), stamps: Math.min(5, row?.stampedWeeks.length ?? 0), set }] : [];
+    }),
+    presentMembers: Math.max(1, presentMembers),
+    charter: charterView && charterShown ? { signed: charterView.signed, leaning: charterView.waiting.length > 0, amendments: Math.min(6, charterView.amendments) } : null,
+    forks: shownForks.map((fork) => ({ id: `fork:${fork.line.id}`, month: fork.month, index: fork.index })),
     moves: moves.map((move) => ({
       id: `move:${move.id}`,
       state: move.state === "done" ? "done" as const
@@ -252,7 +308,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     unknown: unknown.map((row) => ({ id: row.id, month: row.month })),
     name: islandName,
     layers,
-  }), [island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, unknown, islandName, layers]);
+  }), [island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, unknown, islandName, layers, fireSitdown, land, sitdownClosed, presentMembers, charterView, charterShown, shownForks]);
 
   // ------------------------------------------------------------ marks: the real buttons over the canvas
   const marks = useMemo(() => {
@@ -262,7 +318,14 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
       if (m === shown) list.push({ id: `month:${m}`, label: atNow ? "We are here" : monthName(month.key), sub: CHARACTER_LABEL[characters[m]!], kind: "now", minLevel: 0, lantern: 0 });
       else list.push({ id: `month:${m}`, label: monthName(month.key, false), sub: CHARACTER_LABEL[characters[m]!], kind: "month", minLevel: 1, lantern: 1 });
     });
-    for (const row of household.chapters ?? []) if (monthIndexOf(months, row.openedAt) <= shown && monthIndexOf(months, row.openedAt) >= 0) list.push({ id: `fire:${row.id}`, label: row.title, sub: row.state === "open" ? "this Chapter" : row.state.replace("-", " "), kind: "fire", minLevel: 1, lantern: 0 });
+    for (const row of household.chapters ?? []) {
+      if (monthIndexOf(months, row.openedAt) > shown || monthIndexOf(months, row.openedAt) < 0) continue;
+      const sitdown = fireSitdown.get(row.id);
+      const base = row.state === "open" ? "this Chapter" : row.state.replace("-", " ");
+      list.push({ id: `fire:${row.id}`, label: row.title, sub: sitdown === "open" ? `${base} · Sitdown open` : sitdown === "closed" ? `${base} · Sitdown closed` : base, kind: "fire", minLevel: 1, lantern: 0 });
+    }
+    if (charterView && charterShown) list.push({ id: "charter", label: "Our Charter", sub: charterView.sub, kind: "charter", minLevel: 1, lantern: 0 });
+    for (const fork of shownForks) list.push({ id: `fork:${fork.line.id}`, label: fork.line.labelSnapshot, sub: forkWho(fork.line.responsibility), kind: "fork", minLevel: 2, lantern: 0 });
     for (const row of moves) list.push({ id: `move:${row.id}`, label: row.text, sub: row.state === "done" ? `done · ${nameOf(row.completedByMemberId)}` : nameOf(row.ownerMemberId), kind: "move", minLevel: 3, lantern: 0 });
     landmarks.forEach(({ goal, step }) => list.push({ id: `goal:${goal.id}`, label: goal.name, sub: `${step} of 10 steps`, kind: "goal", minLevel: 0, lantern: 0 }));
     if (kiln) list.push({ id: "kiln", label: "The kiln", sub: kiln.warm ? "warm" : "cold", kind: "kiln", minLevel: 1, lantern: 0 });
@@ -278,7 +341,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     if (atNow && chapter) list.push({ id: "tent", label: "Plan Studio", sub: "today's Our Path", kind: "tent", minLevel: 1, lantern: 0 });
     if (islandName) list.push({ id: "name", label: islandName, kind: "name", minLevel: 1, lantern: 0 });
     return list;
-  }, [months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, lantern, unknown, chapter, islandName]);
+  }, [months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, lantern, unknown, chapter, islandName, fireSitdown, charterView, charterShown, shownForks]);
 
   // ------------------------------------------------------------ the world host
   const host = useRef<HTMLDivElement>(null);
@@ -410,6 +473,10 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     const outcome = await onCommand(fn);
     if (commandOk(outcome) || outcome === undefined) setNotice(done);
   };
+  const openBank = (goalId: string) => {
+    if (onOpenBank) onOpenBank(goalId);
+    else onOpenInTent?.({ route: "plan", view: "household", label: "Goals & reserves", goalId });
+  };
   function detailFor(id: string): Detail | null {
     if (id.startsWith("month:")) {
       const m = Number(id.slice(6));
@@ -426,17 +493,33 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           ...top.slice(0, 5).map((s): [Lantern, string] => [2, `${PATH_SIGNAL_LABELS[s].label} score ${month.scores[s].toFixed(2)}`]),
           ...(month.why.milestone ? [[0, `Milestone: ${month.why.milestone}`] as [Lantern, string]] : []),
           ...(m === last && m === shown ? [[1, "You walked here together."] as [Lantern, string]] : []),
+          ...(land[month.key]?.why ? [[1, land[month.key]!.why] as [Lantern, string]] : []),
+          ...(sitdownClosed.has(month.key) ? [[1, "Sitdown closed — this month's land is set."] as [Lantern, string]] : []),
         ],
       };
     }
     if (id.startsWith("fire:")) {
       const row = (household.chapters ?? []).find((c) => `fire:${c.id}` === id);
       if (!row) return null;
+      const sitdown = fireSitdown.get(row.id) ?? "none";
+      const lit = row.state === "open" && atNow;
       return {
         eyebrow: row.state === "open" ? "This Chapter" : "A past Chapter",
         title: row.title,
-        lines: [[0, row.meaning || "A Sitdown-to-Sitdown month."], [1, `Opened ${row.openedAt.slice(0, 10)}${row.closedAt ? ` · closed ${row.closedAt.slice(0, 10)}` : ""}`], [1, row.state === "open" ? "Still being lived" : `Closed as ${row.state.replace("-", " ")}`], ...(row.carryForward ? [[2, `Carried forward: ${row.carryForward}`] as [Lantern, string]] : [])],
-        actions: row.state === "open" ? <button type="button" className="primary" onClick={() => openTent(true)}>Open the Chapter room</button> : undefined,
+        lines: [
+          [0, row.meaning || "A Sitdown-to-Sitdown month."],
+          ...(sitdown === "open" ? [[0, "Your Sitdown is open. The fire is blazing."] as [Lantern, string]] : sitdown === "closed" ? [[0, "Sitdown closed — the fire has settled to embers."] as [Lantern, string]] : []),
+          ...(lit && sitdown !== "closed" && presentMembers >= 2 ? [[1, "You're both here."] as [Lantern, string]] : []),
+          [1, `Opened ${row.openedAt.slice(0, 10)}${row.closedAt ? ` · closed ${row.closedAt.slice(0, 10)}` : ""}`],
+          [1, row.state === "open" ? "Still being lived" : `Closed as ${row.state.replace("-", " ")}`],
+          ...(row.carryForward ? [[2, `Carried forward: ${row.carryForward}`] as [Lantern, string]] : []),
+        ],
+        actions: row.state === "open" ? (
+          <>
+            {onOpenTogether && <button type="button" className="primary" onClick={onOpenTogether}>Sit down together</button>}
+            <button type="button" className={onOpenTogether ? undefined : "primary"} onClick={() => openTent(true)}>Open the Chapter room</button>
+          </>
+        ) : undefined,
       };
     }
     if (id.startsWith("move:")) {
@@ -468,7 +551,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         eyebrow: "A landmark · Kitty Bank",
         title: goal.name,
         lines: [[0, step >= 10 ? "Full." : step >= 5 ? "Past halfway." : "Growing."], [1, story], [1, `${step} of 10 steps, from money actually set aside`], [2, goal.arrivalDate ? `Hoping for ${goal.arrivalDate}` : "No end date"]],
-        actions: <button type="button" className="primary" onClick={() => { onOpenBank?.(goal.id); openTent(true); }}>Open this Kitty Bank</button>,
+        actions: <button type="button" className="primary" onClick={() => { openBank(goal.id); openTent(true); }}>Open this Kitty Bank</button>,
       };
     }
     if (id === "kiln" && kiln) {
@@ -476,7 +559,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         eyebrow: kiln.warm ? "The kiln · warm" : "The kiln · cold",
         title: "The kiln",
         lines: [[0, "Banks are fired here. A fired bank keeps its glaze."], [1, kiln.warm ? "A bank was fired in the last month; the chimney still smokes." : "Nothing fired in the last month. The fire is banked."]],
-        actions: <button type="button" className="primary" onClick={() => { onOpenBank?.(kiln.goalId); openTent(true); }}>Open the studio</button>,
+        actions: <button type="button" className="primary" onClick={() => { openBank(kiln.goalId); openTent(true); }}>Open the studio</button>,
       };
     }
     if (id.startsWith("piece:")) {
@@ -523,6 +606,34 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         actions: <button type="button" className="primary" disabled={busy} onClick={() => void run((h) => proposePathRecipe(h, { memberId, spec: row.spec, proposedBy: "hercules" }), "Suggested. It grows once you both agree.")}>Suggest this to both of us</button>,
       };
     }
+    if (id === "charter" && charter && charterView) {
+      const waitingNames = charterView.waiting.map((mid) => household.members.find((m) => m.id === mid)?.name ?? "a member");
+      const purpose = charterPurposeWords(charter.purpose);
+      return {
+        eyebrow: "The stone square",
+        title: "Our Charter",
+        lines: [
+          [0, purpose || "Your household agreement."],
+          [0, charterView.signed ? "Signed by both of you." : `Waiting for ${waitingNames.join(" and ") || "a signature"} to sign.`],
+          ...(charterView.amendments ? [[1, `Amended ${charterView.amendments} time${charterView.amendments === 1 ? "" : "s"}. Each amendment is a carved line.`] as [Lantern, string]] : []),
+          [1, `Founded ${charter.foundedOn}`],
+          [2, charter.clauses.length ? `${charter.clauses.length} clause${charter.clauses.length === 1 ? "" : "s"}` : "No clauses yet"],
+        ],
+        actions: onOpenCharter ? <button type="button" className="primary" onClick={onOpenCharter}>Read the Charter</button> : undefined,
+      };
+    }
+    if (id.startsWith("fork:") && accepted) {
+      const fork = shownForks.find((f) => `fork:${f.line.id}` === id);
+      if (!fork) return null;
+      const { line } = fork;
+      const who = forkWho(line.responsibility);
+      return {
+        eyebrow: "A decision · where the path forks",
+        title: line.labelSnapshot,
+        lines: [[0, line.decision?.nextStep ?? ""], [0, who === "Together" ? "Both of you carry it." : `${who} carries it.`], [1, "Agreed in this month's Plan. The agreement itself lives in the Plan Studio."]],
+        actions: <button type="button" className="primary" onClick={() => { onOpenInTent?.({ route: "plan", view: "household", label: line.labelSnapshot, planVersionId: accepted.id, planLineId: line.id }); openTent(true); }}>Read the agreement</button>,
+      };
+    }
     if (id === "name" && islandName) return { eyebrow: "Our island", title: islandName, lines: [[0, "Named together. The sign stands by your first month."]] };
     return null;
   }
@@ -558,6 +669,11 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
                   const p = island.spot(m), k = flatScale;
                   return <circle key={month.key} cx={p.x * k} cy={p.z * k} r={m === shown ? 3.4 : 2.4} className={`path-world__dot path-world__dot--${characters[m]}`} />;
                 })}
+                {charterView && charterShown && (() => {
+                  // The Charter's stone square. Decision forks are left off the flat map.
+                  const p = charterSpot(island), k = flatScale;
+                  return <rect className="path-world__charter" x={(p.x * k - 2.2).toFixed(2)} y={(p.z * k - 2.2).toFixed(2)} width={4.4} height={4.4} rx={0.6} />;
+                })()}
                 {months.length > 0 && (() => {
                   // Us: the two of you, side by side on the current month.
                   const p = island.spot(shown), k = flatScale;

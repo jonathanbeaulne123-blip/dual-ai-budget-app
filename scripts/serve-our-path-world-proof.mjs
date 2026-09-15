@@ -28,20 +28,37 @@ const scene = resolveThemeScene(theme, 'plan', 'household');
 Object.assign(document.documentElement.dataset, { theme, scene: scene.id, material: scene.material, sceneLighting: scene.dark ? 'dark' : 'light', atmosphere: 'paused', motion });
 for (const [key, value] of Object.entries(sceneTokens(scene))) document.documentElement.style.setProperty(key, value);
 const today = '2026-09-15';
+const present = Number(q.get('present') || '1');
+function withFictionalTogether(h) {
+  const at = '2026-09-03T15:00:00.000Z';
+  const line = (id, label, nextStep, responsibility) => ({ id, lens: 'build', kind: 'goal-contribution', labelSnapshot: label, amountCents: 0, cadence: 'monthly', responsibility, assumptionIds: [], createdBy: 'MEM-001', decision: { funding: 'available', nextStep } });
+  const version = { id: 'PLAN-VERSION-PROOF', scope: 'household', monthKey: '2026-09', sequence: 99, lines: [
+    line('PROOF-LINE-1', 'Fictional winter tires', 'Book the tire swap before the first frost.', { kind: 'joint' }),
+    line('PROOF-LINE-2', 'Fictional weekend away', 'Pick two dates that fit both schedules.', { kind: 'member', memberId: 'MEM-002' }),
+    line('PROOF-LINE-3', 'Fictional pantry reset', 'Clear the pantry and list what we actually use.', { kind: 'member', memberId: 'MEM-001' }),
+  ], assumptions: [], reason: 'Fictional proof agreement', digest: 'proof', state: 'active', createdBy: 'MEM-001', createdAt: at, activatedAt: at };
+  const sitdown = { id: 'PLAN-SITDOWN-PROOF', sitDownSessionId: 'SITDOWN-PROOF', monthKey: '2026-09', planDraftId: 'PLAN-2026-09', state: 'active', startedBy: 'MEM-001', participantMemberIds: ['MEM-001'], turns: [], createdAt: at, updatedAt: at };
+  return { ...h, planVersions: [...(h.planVersions ?? []), version], planHerculesSessions: [...(h.planHerculesSessions ?? []), sitdown] };
+}
 function Proof() {
   const [state, setState] = useState(null);
   const [member, setMember] = useState('MEM-001');
   const ref = useRef(null);
   useEffect(() => {
     if (story === 'empty') { const h = catalogHousehold(); ref.current = h; setState(h); return; }
-    generateDemoSuite({ today, profile: story === 'hard' ? 'habitat-hard' : 'habitat-well', seed: 4242, buildSha: 'proof' }).then(({ household }) => { ref.current = household; setState(household); window.__ready = true; });
+    generateDemoSuite({ today, profile: story === 'hard' ? 'habitat-hard' : 'habitat-well', seed: 4242, buildSha: 'proof' }).then(({ household }) => {
+      // Proof only (?story=well): the habitat has a Charter but no accepted decisions or Shared Sitdown, so add fictional ones in memory.
+      if (story === 'well') household = withFictionalTogether(household);
+      ref.current = household; setState(household); window.__ready = true;
+    });
   }, []);
   if (!state) return React.createElement('p', { className: 'app' }, 'Growing fictional books…');
   const command = async (fn) => { const result = fn(ref.current); ref.current = result.household; setState(result.household); return { ...result, ok: true, kind: 'synchronized' }; };
   return React.createElement('div', { className: 'app', 'data-ledger-tab': 'plan', style: { padding: '12px' } },
     React.createElement('p', { style: { margin: '0 0 8px', fontSize: 12 } }, 'Fictional local proof — ', theme, ' / ', story, ' · acting as ', member, ' ',
       React.createElement('button', { id: 'switch-member', onClick: () => setMember(member === 'MEM-001' ? 'MEM-002' : 'MEM-001') }, 'Switch fictional member')),
-    React.createElement(OurPathWorld, { household: state, memberId: member, today, busy: false, onCommand: command, theme, proofWorld,
+    React.createElement(OurPathWorld, { household: state, memberId: member, today, busy: false, onCommand: command, theme, proofWorld, presentMembers: present,
+      onOpenTogether: () => { window.__opened = 'together'; }, onOpenCharter: () => { window.__opened = 'charter'; }, onOpenInTent: (source) => { window.__opened = source; },
       classicRoom: React.createElement('div', { id: 'classic-room' }, React.createElement('h2', null, "Today's Our Path"), React.createElement('p', null, 'Chapter room and Plan Studio render here in the app.')) }));
 }
 window.__ready = story === 'empty';
