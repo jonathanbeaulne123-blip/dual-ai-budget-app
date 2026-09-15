@@ -24,7 +24,8 @@ import {
   type PathRecipeRow,
 } from "../src/core/pathWorld.ts";
 import { pathMonthCharacter, pathMonths, pathTripType } from "../src/core/pathSignals.ts";
-import { growIsland, heightAt } from "../src/path/grow.ts";
+import { CELL, FIRST_FROST_WHY, GRID, HALF, firstWinterMonth, growIsland, heightAt } from "../src/path/grow.ts";
+import { BOTTLE_NOTE_LIMIT, BOTTLE_SILENT, bottleNote, bottleWords } from "../src/path/bottle.ts";
 import { walkPath, walkSeconds } from "../src/path/walk.ts";
 import { COIN_POOL, firedRecently, landmarkStepChange, pathMonthAsOf } from "../src/path/landmarks.ts";
 import type { Goal, GoalContribution, Household, Transaction } from "../src/core/types.ts";
@@ -307,6 +308,68 @@ describe("Our Path world — the months it grows from", () => {
     const months = pathMonths(h, "2026-09-15");
     expect(months).toHaveLength(36);
     expect(months.at(-1)!.key).toBe("2026-09");
+  });
+});
+
+describe("Our Path little touches — the first frost and the bottle's note", () => {
+  it("frosts only the household's first winter month, never a later winter, and only once it has been reached", () => {
+    const h = { ...catalogHousehold(), transactions: [tx("T-OLD", "2024-10-05", "expense", 100, "SUB-LIFE-FUN")] };
+    const months = pathMonths(h, "2026-09-15");
+    const first = firstWinterMonth(months)!;
+    expect(months[first]!.key).toBe("2024-12");
+    expect(firstWinterMonth([{ key: "2026-06" }, { key: "2026-07" }])).toBeNull();
+    expect(firstWinterMonth([{ key: "2026-02" }, { key: "2026-12" }])).toBe(0);
+
+    const island = growIsland(months, effectivePathRecipes(h), months.length - 1);
+    const frosts = island.pieces.filter((piece) => piece.kind === "frost");
+    expect(frosts).toHaveLength(1);
+    expect(frosts[0]).toMatchObject({ born: first, why: [FIRST_FROST_WHY, expect.stringContaining("2024-12")] });
+    const cellOf = (x: number, z: number) => Math.round((z + HALF) / CELL) * GRID + Math.round((x + HALF) / CELL);
+    const at = (m: number) => { const p = island.spot(m); return island.F[cellOf(p.x, p.z)]!; };
+    expect(at(first)).toBeGreaterThan(0.3);
+    // Later winters (Dec 2025, Jan and Feb 2025/2026) stay unfrosted.
+    for (const key of ["2025-01", "2025-02", "2025-12", "2026-01", "2026-02"]) {
+      const m = months.findIndex((row) => row.key === key);
+      const p = island.spot(m), q = island.spot(first);
+      if (Math.hypot(p.x - q.x, p.z - q.z) > 7) expect(at(m)).toBe(0);
+    }
+    const max = island.F.reduce((a, b) => Math.max(a, b), 0);
+    expect(max).toBeLessThanOrEqual(1);
+
+    // Before the first winter is reached, no frost at all.
+    const before = growIsland(months, effectivePathRecipes(h), first - 1);
+    expect(before.pieces.some((piece) => piece.kind === "frost")).toBe(false);
+    expect(before.F.every((v) => v === 0)).toBe(true);
+    // Deterministic.
+    expect(growIsland(months, effectivePathRecipes(h), months.length - 1).F).toEqual(island.F);
+  });
+
+  it("reads the bottle's note from the household trip, strips every amount and digit, and falls back gently", () => {
+    const event = (id: string, visibility: string, title: string, start: string, notes: string) => ({ version: 1, id, revision: 1, createdBy: ME, visibility, title, start, end: start, allDay: true, timezone: "America/Toronto", fold: "earlier", repeat: "none", until: null, location: "", notes, exceptions: {}, createdAt: AT, updatedAt: AT });
+    const base = catalogHousehold();
+    const h = { ...base, nativeEvents: [
+      event("EV-P", "personal", "Fictional beach trip", "2025-08-02", "Secret words."),
+      event("EV-OTHER", "household", "Fictional beach trip", "2025-09-02", "The wrong month."),
+      event("EV-1", "household", "Fictional beach trip", "2025-08-09", "Paid $1,240.50 for 3 nights, 12 ice creams and 1 kite. Worth it."),
+    ] as never };
+    const note = bottleNote(h, { name: "Fictional beach trip" }, "2025-08");
+    expect(note).toBe("Paid for nights, ice creams and kite. Worth it.");
+    expect(note).not.toMatch(/\d|\$/);
+    expect(bottleWords("$5 and 7.25 and 1,000,000")).toBe("and and");
+
+    const long = bottleNote({ ...h, nativeEvents: [event("EV-L", "household", "Fictional beach trip", "2025-08-09", "a".repeat(400))] as never }, { name: "Fictional beach trip" }, "2025-08");
+    expect(long.length).toBe(BOTTLE_NOTE_LIMIT);
+
+    // No note on the trip: a kept Memory from that month speaks instead (both members kept it).
+    const members = base.members.filter((m) => m.active).map((m) => m.id);
+    const win = (id: string, shownAt: string, note: string, kept: string[]) => ({ version: 1, id, chapterId: null, level: "first", title: "Fictional", evidenceRefs: [], shownAt, fadedAt: null, keptByMemberIds: kept, authoredNote: note, hideAmounts: true, updatedAt: shownAt });
+    const quiet = { ...h, nativeEvents: [event("EV-Q", "household", "Fictional beach trip", "2025-08-09", "  $40  ")] as never, wins: [
+      win("W-HALF", "2025-08-10T12:00:00.000Z", "Only one of us kept this.", [members[0]!]),
+      win("W-KEPT", "2025-08-12T12:00:00.000Z", "The tide came in 2 times while we slept.", members),
+    ] as never };
+    expect(bottleNote(quiet, { name: "Fictional beach trip" }, "2025-08")).toBe("The tide came in times while we slept.");
+    expect(bottleNote({ ...quiet, wins: [] }, { name: "Fictional beach trip" }, "2025-08")).toBe(BOTTLE_SILENT);
+    expect(bottleNote(base, { name: "Anywhere" }, "2025-08")).toBe("The sea kept this one to itself.");
   });
 });
 

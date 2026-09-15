@@ -13,6 +13,10 @@ import { pathMonths } from "../src/core/pathSignals.ts";
 import type { Goal, KittyStudioV1 } from "../src/core/types.ts";
 import { pathMonthAsOf } from "../src/path/landmarks.ts";
 import { acknowledgeHouseholdPlan, appendPlanSitdownTurn, closeBooksMonth, foundHouseholdCharter, signHouseholdCharter } from "../src/core/commands.ts";
+import { addRecurrence, setHouseholdFundMonthPlan, stampWeeklyDocument } from "../src/core/index.ts";
+import { pathWeather } from "../src/core/pathWeather.ts";
+import { pathStones } from "../src/core/pathStones.ts";
+import { completeTask, saveTask, type TaskInput } from "../src/core/tasks.ts";
 
 // jsdom has no WebGL: by default the world fails to load and the page must stay fully usable.
 // The "fake" variant hands back a stand-in world so the page's calls into it can be counted.
@@ -477,6 +481,223 @@ describe("Our Path world page (D-262)", () => {
       // The August month card says why its land is permanent.
       await openFromOutline("Aug");
       expect($(".path-world__card").textContent).toContain("Books closed");
+    });
+  });
+
+  describe("The Calendar as weather, tasks as stepping stones, and the little touches", () => {
+    const TODAY = "2026-09-15";
+    const outline = () => [...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")];
+    const openFromOutline = async (prefix: string) => click(outline().find((b) => b.textContent?.startsWith(prefix))!);
+    const cardText = () => $(".path-world__card").textContent ?? "";
+    type Scene = { weather: { id: string; kind: string; weight: number; dayOffset: number }[]; sunlit: { fromOffset: number; toOffset: number }[]; stones: { id: string; month: number; state: string; lit: boolean; money: boolean; owner: boolean; backup: boolean }[] };
+    const withPayClock = (h: Household): Household => ({
+      ...h,
+      members: h.members.map((row) => row.id === "MEM-001"
+        ? { ...row, earningCadence: { cadence: "biweekly" as const, anchorDate: "2026-09-18", weekday: 5, monthDays: [], customDates: [], reminderTime: "09:00" } }
+        : row),
+    });
+    const withInternet = (h: Household): Household => addRecurrence(h, {
+      cadence: "monthly", nextDate: "2026-09-25", type: "expense", amount: "100", accountId: "ACC-VISA", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Fictional internet",
+      fundingDefault: { fundId: h.householdFund!.id, fundedCents: "full", destinationAccountId: "ACC-VISA" },
+    }).household;
+    const render = async (household: Household, extra: Record<string, unknown> = {}) => act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: TODAY, busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null, ...extra })));
+
+    it("turns Calendar bills into clouds and a storm, paydays into sunrises, with links only and no amounts", async () => {
+      created.mode = "fake";
+      const h = withInternet(withPayClock(planLifeFixture("household")));
+      const weather = pathWeather(h, TODAY);
+      expect(weather.forecast).toBe("clear");
+      const calendar: number[] = [], fund: number[] = [];
+      let commands = 0;
+      await render(h, { onOpenCalendar: () => calendar.push(1), onOpenFund: () => fund.push(1), onCommand: async () => { commands += 1; return { ok: true }; } });
+      await settle();
+      const world = created.worlds[0] as FakeWorld;
+      const scene = () => world.setScene.mock.calls.at(-1)![0] as Scene;
+      const bills = weather.days.filter((d) => d.kind === "cloud" || d.kind === "storm");
+      expect(scene().weather.filter((w) => w.kind === "cloud" || w.kind === "storm")).toEqual(bills.map((d) => ({ id: `bill:${d.sourceId}`, kind: d.kind, weight: d.weight, dayOffset: d.date === "2026-09-20" ? 5 : 10 })));
+      expect(scene().weather.filter((w) => w.kind === "sunrise").map((w) => w.dayOffset)).toEqual([3, 17]);
+      expect(scene().weather.some((w) => w.kind === "mist")).toBe(false);
+      expect(scene().sunlit).toEqual([{ fromOffset: 0, toOffset: 30 }]);
+
+      const labels = outline().map((b) => b.textContent);
+      expect(labels).toContain("Fictional rent · September 20");
+      expect(labels).toContain("Fictional internet · September 25");
+      expect(labels).toContain("Payday · September 18");
+      expect(labels).toContain("Payday · October 2");
+      expect(labels.some((t) => t?.startsWith("Forecast mist") || t?.startsWith("No forecast yet"))).toBe(false);
+      for (const text of labels) expect(text ?? "").not.toMatch(/\$/);
+
+      await openFromOutline("Fictional rent");
+      expect($(".path-world__card h3").textContent).toBe("Fictional rent");
+      expect(cardText()).toContain("Weather ahead · a storm");
+      expect(cardText()).toContain("Rolling in September 20");
+      expect(cardText()).toContain("Fictional rent is one of the heaviest things due in this stretch.");
+      expect(cardText()).not.toMatch(/\$|1,?\d{3}/);
+      await click(byText("Open the Calendar"));
+      expect(calendar).toEqual([1]);
+      await click(byText("Open the Fund"));
+      expect(fund).toEqual([1]);
+
+      // At Bright the mark's sub carries the reason too — still words only.
+      await click(byText("Bright"));
+      expect(outline().map((b) => b.textContent)).toContain("Fictional internet · September 25 · Fictional internet is due.");
+
+      await openFromOutline("Payday");
+      expect(cardText()).toContain("Payday on September 18. The light comes back.");
+      expect(commands).toBe(0);
+    });
+
+    it("puts a signpost in the mist with the horizon's reasons, and says so when there is no forecast", async () => {
+      created.mode = "fake";
+      const misty = setHouseholdFundMonthPlan(planLifeFixture("household"), { memberId: "MEM-001", monthKey: "2026-09", target: "0", buffer: "3000" }).household;
+      const weather = pathWeather(misty, TODAY);
+      expect(weather.forecast).toBe("mist");
+      const fund: number[] = [];
+      await render(misty, { onOpenFund: () => fund.push(1) });
+      await settle();
+      const world = created.worlds[0] as FakeWorld;
+      const scene = () => world.setScene.mock.calls.at(-1)![0] as Scene;
+      expect(scene().weather.find((w) => w.kind === "mist")).toEqual({ id: "mist", kind: "mist", weight: 0.5, dayOffset: 5 });
+      expect(outline().map((b) => b.textContent)).toContain("Forecast mist · why?");
+      await openFromOutline("Forecast mist");
+      const lines = () => [...host.querySelectorAll(".path-world__card li")].map((li) => li.textContent);
+      expect(lines()).toEqual(weather.mistWhy);
+      expect(lines().at(-1)).toContain("Fictional rent");
+      await click(byText("Dim"));
+      expect(lines()).toEqual([weather.mistWhy[0]]);
+      expect(cardText()).not.toMatch(/\$/);
+      await click(byText("Open the Fund"));
+      expect(fund).toEqual([1]);
+
+      const daily = addRecurrence(planLifeFixture("household"), {
+        cadence: "daily", nextDate: "2026-09-16", type: "expense", amount: "5", accountId: "ACC-VISA", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Fictional daily coffee",
+        fundingDefault: { fundId: planLifeFixture("household").householdFund!.id, fundedCents: "full", destinationAccountId: "ACC-VISA" },
+      }).household;
+      expect(pathWeather(daily, TODAY).forecast).toBe("unavailable");
+      await render(daily);
+      expect(outline().map((b) => b.textContent)).toContain("No forecast yet · why?");
+      await openFromOutline("No forecast yet");
+      expect(cardText()).toContain("A daily Fund bill needs a complete recurrence review before a long Plan projection.");
+    });
+
+    it("lays household tasks as stepping stones with footprints, keeps a money stone dark until the books hold it, and never ticks a task", async () => {
+      created.mode = "fake";
+      const draft = (patch: Partial<TaskInput["task"]>): TaskInput["task"] => ({
+        visibility: "household", title: "Water the fern", notes: "", listId: null, parentId: null, doDate: null, dueDate: null, repeat: "none", cue: "none",
+        assigneeId: null, backupId: null, chapterId: null, planReference: null, moneyLink: null, expectedAmountCents: null, deleted: false, ...patch,
+      });
+      let h = seeded();
+      h = saveTask(h, { memberId: "MEM-001", id: "TASK-ferry", expectedRevision: 0, task: draft({ title: "Fictional: book the ferry", assigneeId: "MEM-001", backupId: "MEM-002", dueDate: "2026-09-20" }) }).household;
+      h = saveTask(h, { memberId: "MEM-001", id: "TASK-hydro", expectedRevision: 0, task: draft({ title: "Fictional: pay hydro", expectedAmountCents: 14_000, dueDate: "2026-09-18", assigneeId: "MEM-002" }) }).household;
+      h = saveTask(h, { memberId: "MEM-001", id: "TASK-secret", expectedRevision: 0, task: draft({ title: "Fictional surprise picnic", visibility: "personal" }) }).household;
+      const planner: number[] = [];
+      let commands = 0;
+      await render(h, { onOpenPlanner: () => planner.push(1), onCommand: async () => { commands += 1; return { ok: true }; } });
+      await settle();
+      const world = created.worlds[0] as FakeWorld;
+      const scene = () => world.setScene.mock.calls.at(-1)![0] as Scene;
+      const now = pathMonths(h, TODAY).length - 1;
+      expect(scene().stones).toEqual(expect.arrayContaining([
+        { id: "stone:TASK-ferry", month: now, state: "open", lit: false, money: false, owner: true, backup: true },
+        { id: "stone:TASK-hydro", month: now, state: "waiting", lit: false, money: true, owner: true, backup: false },
+      ]));
+      expect(scene().stones).toHaveLength(2);
+      expect(outline().map((b) => b.textContent)).toContain("Fictional: book the ferry · Owned by Alex (fictional), Sam (fictional) as backup");
+      expect(JSON.stringify(outline().map((b) => b.textContent))).not.toContain("surprise");
+
+      await openFromOutline("Fictional: pay hydro");
+      expect(cardText()).toContain("Owned by Sam (fictional)");
+      expect(cardText()).toContain("Lights when the money is confirmed in the books.");
+      expect(cardText()).not.toMatch(/\$|140/);
+      const actions = [...host.querySelectorAll<HTMLButtonElement>(".path-world__card .path-world__actions button")].map((b) => b.textContent);
+      expect(actions).toEqual(["Open the planner"]);
+      expect(byText(/mark done|complete|tick/i)).toBeUndefined();
+      await click(byText("Open the planner"));
+      expect(planner).toEqual([1]);
+      expect(commands).toBe(0);
+
+      // Posted and attached as evidence (D-245): the stone lights. The island itself never did this.
+      const posted = postEntry(h, { date: "2026-09-14", type: "expense", amount: 140.5, accountId: "ACC-CHEQUING", subcategoryId: "SUB-HOUSING-ELECTRIC", createdBy: "MEM-001", note: "Fictional hydro", confirmDuplicate: true }).household;
+      expect(pathStones(posted, "MEM-001", TODAY).find((s) => s.id === "TASK-hydro")!.lit).toBe(false);
+      const tx = posted.transactions.find((row) => row.note === "Fictional hydro")!;
+      const done = completeTask(posted, { memberId: "MEM-001", id: "TASK-hydro", expectedRevision: 1, evidence: { kind: "transaction", transactionId: tx.id, amountCents: tx.amountCents, date: tx.date } }).household;
+      await render(done);
+      expect(scene().stones.find((s) => s.id === "stone:TASK-hydro")).toMatchObject({ state: "done", lit: true, money: true });
+      expect(cardText()).toContain("Lit because the money is confirmed in the books.");
+    });
+
+    it("lets a year-old sea cove's bottle carry the trip's calendar note, words only", async () => {
+      let h = seeded();
+      h = postEntry(h, { type: "expense", date: "2025-07-05", amount: "20", accountId: "ACC-VISA", subcategoryId: "SUB-LIFE-FUN", note: "Fictional picnic", createdBy: "MEM-001", visibility: "household", confirmDuplicate: true }).household;
+      const event = (id: string, visibility: string, title: string, notes: string) => ({ version: 1, id, revision: 1, createdBy: "MEM-001", visibility, title, start: "2025-08-09", end: "2025-08-11", allDay: true, timezone: "America/Toronto", fold: "earlier", repeat: "none", until: null, location: "Fictional shore", notes, exceptions: {}, createdAt: "2025-07-01T12:00:00.000Z", updatedAt: "2025-07-01T12:00:00.000Z" });
+      h = { ...h, nativeEvents: [
+        event("EV-PRIVATE", "personal", "Fictional private beach trip", "Private words that must never wash up."),
+        event("EV-SHORE", "household", "Fictional beach trip", "We spent $240.50 on 2 lobsters and swore we'd come back every summer."),
+      ] as never };
+      const months = pathMonths(h, TODAY);
+      expect(months[0]!.key).toBe("2025-07");
+      await render(h);
+      await settle();
+      await openFromOutline("A message in a bottle");
+      expect($(".path-world__card h3").textContent).toBe("Fictional beach trip");
+      expect(cardText()).toContain("We spent on lobsters and swore we'd come back every summer.");
+      expect(cardText()).not.toMatch(/\$|\d/);
+      expect(cardText()).not.toContain("Private words");
+    });
+
+    it("rings set land and dots stamped weeks on the flat map", async () => {
+      let h = seeded();
+      h = closeBooksMonth(h, { monthKey: "2026-08", createdBy: "MEM-001" }).household;
+      h = stampWeeklyDocument(h, { memberId: "MEM-001", today: "2026-09-13", now: "2026-09-13T16:00:00.000Z" }).household;
+      await render(h);
+      await settle();
+      const kerbs = [...host.querySelectorAll(".path-world__flat .path-world__kerb")];
+      expect(kerbs).toHaveLength(1);
+      expect(kerbs[0]!.classList.contains("path-world__kerb--closed")).toBe(true);
+      const months = pathMonths(h, TODAY);
+      const august = months.findIndex((m) => m.key === "2026-08");
+      const dots = [...host.querySelectorAll(".path-world__flat .path-world__dot")];
+      const group = kerbs[0]!.parentElement!;
+      expect(group.getAttribute("transform")).toBe(`translate(${Number(dots[august]!.getAttribute("cx")).toFixed(2)} ${Number(dots[august]!.getAttribute("cy")).toFixed(2)})`);
+      expect(host.querySelectorAll(".path-world__flat .path-world__stamp")).toHaveLength(1);
+      // Scrubbed back before August, the kerb is not there yet.
+      await scrub($<HTMLInputElement>(".path-world__slider input"), august - 1);
+      expect(host.querySelectorAll(".path-world__flat .path-world__kerb")).toHaveLength(0);
+    });
+
+    it("folds the quality choice into one Lite toggle on a narrow screen", async () => {
+      created.mode = "fake";
+      const width = window.innerWidth;
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: 360 });
+      try {
+        localStorage.setItem("hearth:pathWorld:quality", "full");
+        await render(seeded());
+        await settle();
+        const world = created.worlds[0] as FakeWorld;
+        const group = $(".path-world__quality");
+        expect(group.getAttribute("role")).toBe("group");
+        expect([...group.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["Lite"]);
+        expect(byText("Full")).toBeUndefined();
+        expect(byText("Lite").getAttribute("aria-pressed")).toBe("false");
+        await click(byText("Lite"));
+        expect(byText("Lite").getAttribute("aria-pressed")).toBe("true");
+        expect(localStorage.getItem("hearth:pathWorld:quality")).toBe("lite");
+        expect(world.setQuality).toHaveBeenLastCalledWith("lite");
+        await click(byText("Lite"));
+        expect(localStorage.getItem("hearth:pathWorld:quality")).toBe("full");
+        // Wide again: the two-button group returns.
+        Object.defineProperty(window, "innerWidth", { configurable: true, value: 1100 });
+        await act(async () => { window.dispatchEvent(new Event("resize")); });
+        expect(byText("Full").getAttribute("aria-pressed")).toBe("true");
+      } finally {
+        Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
+      }
+    });
+
+    it("keeps the Kitty kiln and the recipe kiln hut apart by name", async () => {
+      const source = await import("node:fs").then((fs) => fs.readFileSync("src/path/OurPathWorld.tsx", "utf8"));
+      expect(source).toContain('kiln: "A kiln hut"');
+      expect(source).toContain('label: "The kiln"');
     });
   });
 

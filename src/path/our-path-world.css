@@ -24,6 +24,13 @@
 .path-world__charter { fill: #a39a8c; stroke: var(--card); stroke-width: 0.6; }
 .path-world--taylor .path-world__charter { fill: #9c9387; }
 .path-world--newfoundland .path-world__charter { fill: #8a8a86; }
+/* Set land on the flat map: a kerb ring (a shade darker for closed books) and a dot per stamped week. */
+.path-world__kerb { fill: none; stroke: #a39a8c; stroke-width: 0.7; stroke-dasharray: 1.1 0.5; }
+.path-world__kerb--closed { stroke: #7d756a; stroke-dasharray: none; }
+.path-world__stamp { fill: #ffc860; stroke: var(--card); stroke-width: 0.25; }
+.path-world--taylor .path-world__kerb { stroke: #9c9387; }
+.path-world--newfoundland .path-world__kerb { stroke: #8a8a86; }
+.path-world--newfoundland .path-world__kerb--closed { stroke: #5f5f5b; }
 .path-world__us-one { fill: var(--theme-accent, #b5653e); }
 .path-world__us-two { fill: var(--theme-second, #4f6b4a); }
 
@@ -37,6 +44,10 @@
 .path-mark--kiln .path-mark__label, .path-mark--charter .path-mark__label { font-family: var(--theme-display, var(--display)); font-style: italic; }
 .path-mark--unknown .path-mark__label { outline: 2px dashed var(--theme-second, var(--copper)); }
 .path-mark--bill .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 600; }
+.path-mark--bill .path-mark__sub { max-width: 44vw; overflow: hidden; text-overflow: ellipsis; }
+.path-mark--sunrise .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 700; background: #fff1d6; color: #5a3a12; }
+.path-mark--mist .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 700; border: 1px dashed var(--muted); }
+.path-mark--stone .path-mark__label { font-size: 13px; }
 .path-world[data-level="0"] .path-mark--goal .path-mark__label { font-size: 17px; }
 
 .path-world__controls { position: absolute; z-index: 3; top: 12px; right: 12px; display: grid; gap: 8px; justify-items: end; }
@@ -115,9 +126,13 @@
 
 @media (max-width: 719px) {
   .path-world__stage { height: clamp(420px, 68vh, 620px); }
-  .path-world__controls { top: 8px; right: 8px; left: 8px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
-  .path-world__lantern, .path-world__quality, .path-world__layers { flex: none; flex-wrap: nowrap; }
+  /* Every group fits: lantern and the compact Lite toggle on the first row, layers wrap to a second. */
+  .path-world__controls { top: 8px; right: 8px; left: 8px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+  .path-world__lantern, .path-world__quality, .path-world__layers { flex: none; flex-wrap: nowrap; max-width: 100%; }
   .path-world__lantern button, .path-world__quality button, .path-world__layers button { padding: 6px 9px; }
+  .path-world__lantern { gap: 0; }
+  .path-world__lantern button { padding: 6px 8px; gap: 4px; }
+  .path-world__quality--compact button[aria-pressed="false"] { opacity: 0.8; }
   .path-world__rail { left: 8px; right: 8px; bottom: 64px; justify-content: center; border-radius: 999px; }
   .path-world__rail button { padding: 6px 9px; }
   .path-world__now { left: 8px; right: 8px; bottom: 8px; max-width: none; justify-content: stretch; flex-wrap: nowrap; }

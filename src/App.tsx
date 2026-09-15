@@ -7041,6 +7041,8 @@ export function App() {
               // D-262: the household Our Path is a world; the tent keeps today's page mounted so drafts survive.
               return view === "household" ? (
                 <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} onOpenFund={() => goTab("ledger")}
+                  onOpenCalendar={() => goTab("calendar")}
+                  onOpenPlanner={() => goTab("planner")}
                   onOpenInTent={source => setPathTentFocus({ focus: source, supersedes: herculesSourceFocus })}
                   onOpenTogether={() => goTab("together")}
                   onOpenCharter={() => { if (household.charter) setCharterPageOpen(true); else setCharterFoundingOpen(true); }}

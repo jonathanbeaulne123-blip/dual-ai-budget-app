@@ -10,7 +10,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { OurPathWorld } from '/src/path/OurPathWorld.tsx';
 import { generateDemoSuite } from '/src/core/demoSuite.ts';
-import { catalogHousehold } from '/src/core/index.ts';
+import { catalogHousehold, setHouseholdFundMonthPlan } from '/src/core/index.ts';
+import { saveTask } from '/src/core/tasks.ts';
 import { resolveThemeScene, sceneTokens } from '/src/theme/scenes.ts';
 const q = new URLSearchParams(location.search);
 const theme = q.get('theme') || 'taylor', story = q.get('story') || 'well', motion = q.get('motion') || 'reduced', lantern = q.get('lantern');
@@ -22,6 +23,8 @@ let liveWorld = null;
 window.__pathWorldStats = () => (liveWorld ? liveWorld.stats() : null);
 // Proof only: window.__pathWorldReplay(edit) re-sends the last scene through edit (e.g. a fictional step change, to watch coins fly).
 let lastScene = null;
+// Proof only: turn the camera around the current target (radians), to frame the road ahead.
+window.__pathWorldTurn = (delta) => liveWorld?.turn(delta);
 window.__pathWorldReplay = (edit) => { if (liveWorld && lastScene) liveWorld.setScene(edit(lastScene[0]), lastScene[1], false); };
 const proofWorld = { onWorld: (w) => { liveWorld = w; if (w) { const set = w.setScene; w.setScene = (...args) => { lastScene = args; return set(...args); }; } },idleMs: idle === 'off' ? Infinity : undefined, paused: motion !== 'full' };
 const scene = resolveThemeScene(theme, 'plan', 'household');
@@ -38,7 +41,22 @@ function withFictionalTogether(h) {
     line('PROOF-LINE-3', 'Fictional pantry reset', 'Clear the pantry and list what we actually use.', { kind: 'member', memberId: 'MEM-001' }),
   ], assumptions: [], reason: 'Fictional proof agreement', digest: 'proof', state: 'active', createdBy: 'MEM-001', createdAt: at, activatedAt: at };
   const sitdown = { id: 'PLAN-SITDOWN-PROOF', sitDownSessionId: 'SITDOWN-PROOF', monthKey: '2026-09', planDraftId: 'PLAN-2026-09', state: 'active', startedBy: 'MEM-001', participantMemberIds: ['MEM-001'], turns: [], createdAt: at, updatedAt: at };
-  return { ...h, planVersions: [...(h.planVersions ?? []), version], planHerculesSessions: [...(h.planHerculesSessions ?? []), sitdown] };
+  return withFictionalStones({ ...h, planVersions: [...(h.planVersions ?? []), version], planHerculesSessions: [...(h.planHerculesSessions ?? []), sitdown] });
+}
+// Proof only (?story=well): the habitat has Calendar bills and paydays but no household tasks, so add three fictional stepping stones in memory.
+function withFictionalStones(h) {
+  const task = (patch) => ({ visibility: 'household', title: '', notes: '', listId: null, parentId: null, doDate: null, dueDate: null, repeat: 'none', cue: 'none', assigneeId: null, backupId: null, chapterId: null, planReference: null, moneyLink: null, expectedAmountCents: null, deleted: false, ...patch });
+  const rows = [
+    ['TASK-PROOF-FERRY', { title: 'Fictional: book the ferry', assigneeId: 'MEM-001', backupId: 'MEM-002', dueDate: '2026-09-20' }],
+    ['TASK-PROOF-HYDRO', { title: 'Fictional: pay the hydro bill', assigneeId: 'MEM-002', dueDate: '2026-09-22', expectedAmountCents: 9000 }],
+    ['TASK-PROOF-FERN', { title: 'Fictional: water the fern', assigneeId: 'MEM-002', dueDate: '2026-09-10' }],
+  ];
+  try { for (const [id, patch] of rows) h = saveTask(h, { memberId: 'MEM-001', id, expectedRevision: 0, task: task(patch) }).household; } catch (error) { console.warn('proof stones skipped', error); }
+  return h;
+}
+// Proof only (?mist=1): a fictional cushion far above the Fund so the forecast turns misty, in memory.
+function withFictionalMist(h) {
+  try { return setHouseholdFundMonthPlan(h, { memberId: h.householdFund?.custodianMemberId ?? 'MEM-001', monthKey: '2026-09', target: '0', buffer: '99999' }).household; } catch (error) { console.warn('proof mist skipped', error); return h; }
 }
 function Proof() {
   const [state, setState] = useState(null);
@@ -49,6 +67,7 @@ function Proof() {
     generateDemoSuite({ today, profile: story === 'hard' ? 'habitat-hard' : 'habitat-well', seed: 4242, buildSha: 'proof' }).then(({ household }) => {
       // Proof only (?story=well): the habitat has a Charter but no accepted decisions or Shared Sitdown, so add fictional ones in memory.
       if (story === 'well') household = withFictionalTogether(household);
+      if (q.get('mist') === '1') household = withFictionalMist(household);
       ref.current = household; setState(household); window.__ready = true;
     });
   }, []);
@@ -58,7 +77,7 @@ function Proof() {
     React.createElement('p', { style: { margin: '0 0 8px', fontSize: 12 } }, 'Fictional local proof — ', theme, ' / ', story, ' · acting as ', member, ' ',
       React.createElement('button', { id: 'switch-member', onClick: () => setMember(member === 'MEM-001' ? 'MEM-002' : 'MEM-001') }, 'Switch fictional member')),
     React.createElement(OurPathWorld, { household: state, memberId: member, today, busy: false, onCommand: command, theme, proofWorld, presentMembers: present,
-      onOpenTogether: () => { window.__opened = 'together'; }, onOpenCharter: () => { window.__opened = 'charter'; }, onOpenInTent: (source) => { window.__opened = source; },
+      onOpenTogether: () => { window.__opened = 'together'; }, onOpenCharter: () => { window.__opened = 'charter'; }, onOpenFund: () => { window.__opened = 'fund'; }, onOpenCalendar: () => { window.__opened = 'calendar'; }, onOpenPlanner: () => { window.__opened = 'planner'; }, onOpenInTent: (source) => { window.__opened = source; },
       classicRoom: React.createElement('div', { id: 'classic-room' }, React.createElement('h2', null, "Today's Our Path"), React.createElement('p', null, 'Chapter room and Plan Studio render here in the app.')) }));
 }
 window.__ready = story === 'empty';

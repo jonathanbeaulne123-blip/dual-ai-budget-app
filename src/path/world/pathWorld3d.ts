@@ -25,7 +25,16 @@ export type PathWorldInput = {
   goals: { id: string; step: number; piece: KittyPieceV1 | null; fired: boolean }[];
   lamps: { id: string; month: number }[];
   memories: { id: string; month: number }[];
-  weather: { id: string; big: boolean }[];
+  /**
+   * The Calendar as weather, ahead of the current month along the road to the next one.
+   * `dayOffset`: days from today (0–31 maps to 0–1.2 of that road segment). `weight`: 0–1 shape only.
+   * The `mist` entry is anchored as the mark `mist` (a signpost with an "i").
+   */
+  weather: PathWeatherInput[];
+  /** Covered stretches of the next month's road, as day offsets: a warm tint on the thread. */
+  sunlit?: { fromOffset: number; toOffset: number }[];
+  /** Household planner tasks as stepping stones beside their month (a different thing from Chapter Moves). */
+  stones?: PathStoneInput[];
   unknown: { id: string; month: number }[];
   name: string | null;
   layers: { weather: boolean; story: boolean; rhythm: boolean };
@@ -40,6 +49,14 @@ export type PathWorldInput = {
   /** Agreed decisions as short road stubs off their acceptance month. */
   forks?: { id: string; month: number; index: number }[];
 };
+export type PathWeatherInput = { id: string; kind: "cloud" | "storm" | "sunrise" | "mist"; weight: number; dayOffset: number };
+export type PathStoneInput = { id: string; month: number; state: "open" | "done" | "waiting"; lit: boolean; money: boolean; owner: boolean; backup: boolean };
+/** Days ahead covered by one road segment: 31 days reach 1.2 of the way to the next month. */
+export const PATH_WEATHER_DAYS = 31;
+export const PATH_WEATHER_REACH = 1.2;
+export function weatherAlong(dayOffset: number): number {
+  return Math.max(0, Math.min(PATH_WEATHER_DAYS, dayOffset)) / PATH_WEATHER_DAYS * PATH_WEATHER_REACH;
+}
 export type PathAnchor = { id: string; x: number; y: number; depth: number; visible: boolean };
 export type PathLevel = 0 | 1 | 2 | 3;
 export const PATH_LEVEL_RADIUS: readonly number[] = [150, 82, 44, 20];
@@ -130,6 +147,7 @@ export function createPathWorld(host: HTMLElement, options: {
     box: track(new THREE.BoxGeometry(1, 1, 1)),
     sph: track(new THREE.SphereGeometry(1, 12, 8)),
     disc: track(new THREE.CircleGeometry(1, 12)),
+    ring: track(new THREE.TorusGeometry(1, 0.12, 6, 24)),
     star: track((() => {
       const s = new THREE.Shape();
       for (let i = 0; i < 10; i++) { const r = i % 2 ? 0.42 : 1, a = i / 10 * Math.PI * 2 - Math.PI / 2; if (i) s.lineTo(Math.cos(a) * r, Math.sin(a) * r); else s.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
@@ -296,6 +314,9 @@ export function createPathWorld(host: HTMLElement, options: {
         c.lerp(P.rock, island.R[k]!);
         c.lerp(P.sand, island.S[k]!);
         if (season === "winter") c.lerp(P.snow, Math.min(0.75, 0.35 + h * 0.05) * (1 - island.S[k]!));
+        // The first winter's frost: a thin white stamp that stays in every season.
+        const frost = island.F?.[k] ?? 0;
+        if (frost > 0.02) c.lerp(P.snow, Math.min(0.72, frost * 0.72) * (1 - island.S[k]!));
       }
       toC[k * 3] = c.r; toC[k * 3 + 1] = c.g; toC[k * 3 + 2] = c.b;
     }
@@ -504,6 +525,17 @@ export function createPathWorld(host: HTMLElement, options: {
           }
         }
         anchor(id, g, 1.8); break;
+      }
+      case "frost": {
+        // A frosted boulder with a few ice crystals: static.
+        g.add(part(G.ico, P.rock, 0.9, 0.6, 0.8, 0, 0.35, 0));
+        const cap = part(G.ico, P.snow, 0.8, 0.28, 0.72, 0, 0.72, 0, { roughness: 0.5 }); cap.castShadow = false; g.add(cap);
+        for (let i = 0; i < 4; i++) {
+          const a = i * 1.7 + 0.3;
+          const c = part(G.cone, "#e8f1f6", 0.14, 0.5 + (i % 2) * 0.25, 0.14, Math.cos(a) * 1.1, 0.25, Math.sin(a) * 1.1, { roughness: 0.3, metalness: 0.1, emissive: "#b9d3e0", emissiveIntensity: 0.2 });
+          c.castShadow = false; g.add(c);
+        }
+        anchor(id, g, 2); break;
       }
       default: return null;
     }
@@ -725,18 +757,10 @@ export function createPathWorld(host: HTMLElement, options: {
       tickers.push((t) => { photo.rotation.y = 0.25 * Math.sin(t * 1.3 + i); });
       anchor(memory.id, g, 4); dynamic.add(g);
     });
-    // Weather: upcoming bills as clouds ahead of this month
-    if (input.layers.weather) input.weather.forEach((bill, i) => {
-      const p = island.spot(island.cur), q = island.spot(island.cur + 1);
-      const k = 0.3 + i * 0.22;
-      const x = p.x + (q.x - p.x) * k + Math.cos(p.a) * 3, z = p.z + (q.z - p.z) * k + Math.sin(p.a) * 3;
-      const g = new THREE.Group();
-      for (let c = 0; c < (bill.big ? 7 : 4); c++) { const s = part(G.sph, bill.big ? "#bfc9d6" : "#e3e8ee", 0.9 + ((c * 37) % 7) * 0.08, 0.8, 0.9, (c - 2) * 0.8, ((c * 13) % 5) * 0.1, 0, { flatShading: false }); s.castShadow = false; g.add(s); }
-      g.position.set(x, heightAt(island, x, z) + 7 + i * 0.6, z);
-      const x0 = x;
-      tickers.push((t) => { g.position.x = x0 + Math.sin(t * 0.3 + i * 2) * 0.8; });
-      anchor(bill.id, g, 1.4); dynamic.add(g);
-    });
+    // Weather: the Calendar ahead of this month, along the road toward the next one.
+    if (input.layers.weather) buildWeather(input, island);
+    // Stepping stones: household planner tasks beside their month.
+    buildStones(input, island);
     // Landmarks: shared Kitty Banks at their real backing step
     const seen = new Set<string>();
     const arcs = !options.reducedMotion && quality === "full";
@@ -903,6 +927,125 @@ export function createPathWorld(host: HTMLElement, options: {
     us.updateMatrixWorld(true);
     syncAnchors();
   }
+  /** A point on the road ahead of the current month, `along` of the way to the next month, and the side away from the island's centre. */
+  function roadAhead(island: GrownIsland, along: number) {
+    const p = island.spot(island.cur), q = island.spot(island.cur + 1);
+    const dx = q.x - p.x, dz = q.z - p.z, len = Math.hypot(dx, dz) || 1;
+    let nx = -dz / len, nz = dx / len;
+    const x = p.x + dx * along, z = p.z + dz * along;
+    if (nx * x + nz * z < 0) { nx = -nx; nz = -nz; }
+    return { x, z, nx, nz, yaw: Math.atan2(dx, dz) };
+  }
+
+  function buildWeather(input: PathWorldInput, island: GrownIsland) {
+    const clouds = input.weather.filter((row) => row.kind === "cloud" || row.kind === "storm").slice(0, 8);
+    clouds.forEach((row, i) => {
+      const storm = row.kind === "storm";
+      const w = Math.max(0, Math.min(1, row.weight));
+      const at = roadAhead(island, weatherAlong(row.dayOffset));
+      const side = 3 + ((i % 3) - 1) * 1.6;
+      const x = at.x + at.nx * side, z = at.z + at.nz * side;
+      const g = new THREE.Group();
+      const puffs = storm ? 7 : 4;
+      const colour = storm ? "#8f9aab" : "#e3e8ee";
+      for (let c = 0; c < puffs; c++) {
+        const s = part(G.sph, colour, 0.9 + ((c * 37) % 7) * 0.08, 0.8, 0.9, (c - (puffs - 1) / 2) * 0.8, ((c * 13) % 5) * 0.1, 0, { flatShading: false });
+        s.castShadow = false; g.add(s);
+      }
+      g.scale.setScalar((storm ? 1.15 : 0.75) + w * 0.8);
+      g.position.set(x, heightAt(island, x, z) + 7 + (i % 4) * 0.7 + w * 1.5, z);
+      const x0 = x;
+      // Drift only with ambient motion on Full; reduced motion and Lite keep the clouds still.
+      tickers.push((t) => { g.position.x = ambient && quality === "full" ? x0 + Math.sin(t * 0.3 + i * 2) * 0.8 : x0; });
+      if (storm) {
+        const boltMat = smat(new THREE.MeshBasicMaterial({ color: "#fff6c8", transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
+        const bolt = new THREE.Mesh(strack(new THREE.PlaneGeometry(0.5, 3.2)), boltMat);
+        bolt.position.set(0.2, -1.8, 0); bolt.rotation.z = 0.25; bolt.visible = false;
+        g.add(bolt);
+        // One slow flicker every ~6 s, only on Full with ambient motion.
+        tickers.push((t) => {
+          if (!ambient || quality !== "full" || options.reducedMotion) { bolt.visible = false; return; }
+          const f = (t + i * 2.3) % 6;
+          const o = f < 0.1 ? 0.85 : f > 0.18 && f < 0.26 ? 0.5 : 0;
+          bolt.visible = o > 0; boltMat.opacity = o;
+        });
+      }
+      anchor(row.id, g, 1.4); dynamic.add(g);
+    });
+
+    // Paydays: a low warm sun on the horizon side of the road, with a still light shaft.
+    input.weather.filter((row) => row.kind === "sunrise").slice(0, 4).forEach((row) => {
+      const at = roadAhead(island, weatherAlong(row.dayOffset));
+      const x = at.x + at.nx * 9, z = at.z + at.nz * 9;
+      const g = new THREE.Group(); g.position.set(x, Math.max(0, heightAt(island, x, z)), z);
+      const disc = part(G.sph, "#ffcf7a", 1.3, 1.3, 1.3, 0, 1.4, 0, { emissive: "#ffa040", emissiveIntensity: 1.2, flatShading: false }); disc.castShadow = false;
+      const light = new THREE.PointLight(0xff9a40, 5, 16, 2); light.position.y = 2;
+      const shaft = new THREE.Mesh(strack(new THREE.PlaneGeometry(1.6, 9)), smat(new THREE.MeshBasicMaterial({ color: "#ffe2b0", transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide })));
+      shaft.position.set(0, 5, 0); shaft.rotation.set(0, at.yaw, 0.35);
+      g.add(disc, light, shaft);
+      anchor(row.id, g, 2.4); dynamic.add(g);
+    });
+
+    // Covered stretches: a warm ribbon along the road for each range.
+    for (const range of (input.sunlit ?? []).slice(0, 6)) {
+      const from = weatherAlong(range.fromOffset), to = Math.max(from + 0.02, weatherAlong(range.toOffset + 1));
+      const pts: THREE.Vector3[] = [];
+      for (let k = 0; k <= 8; k++) { const at = roadAhead(island, from + (to - from) * k / 8); pts.push(new THREE.Vector3(at.x, heightAt(island, at.x, at.z) + 0.14, at.z)); }
+      const ribbon = new THREE.Mesh(strack(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 16, 0.2, 6, false)), mat("#ffd27a", { emissive: "#ffb347", emissiveIntensity: 0.6, roughness: 0.5, flatShading: false }));
+      ribbon.castShadow = false; dynamic.add(ribbon);
+    }
+
+    // Mist: a flat fog over the road from where the forecast turns, and a signpost with an "i".
+    const mist = input.weather.find((row) => row.kind === "mist");
+    if (mist) {
+      const from = weatherAlong(mist.dayOffset), to = Math.max(from + 0.15, PATH_WEATHER_REACH);
+      const a = roadAhead(island, from), b = roadAhead(island, to);
+      const len = Math.max(2, Math.hypot(b.x - a.x, b.z - a.z) + 3);
+      const mx = (a.x + b.x) / 2, mz = (a.z + b.z) / 2;
+      const top = Math.max(heightAt(island, a.x, a.z), heightAt(island, mx, mz), heightAt(island, b.x, b.z), 0);
+      const fog = new THREE.Mesh(strack(new THREE.PlaneGeometry(7, len)), smat(new THREE.MeshBasicMaterial({ color: palette.fog, transparent: true, opacity: 0.35, depthWrite: false, side: THREE.DoubleSide })));
+      fog.rotation.order = "YXZ"; fog.rotation.set(-Math.PI / 2, a.yaw, 0);
+      fog.position.set(mx, top + 1.2, mz);
+      dynamic.add(fog);
+      // The signpost stands a little along the road on the inland side, clear of the walkers at "now".
+      const s = roadAhead(island, Math.min(PATH_WEATHER_REACH, from + 0.45));
+      const sx = s.x - s.nx * 3.5, sz = s.z - s.nz * 3.5;
+      const post = new THREE.Group(); post.position.set(sx, heightAt(island, sx, sz), sz); post.rotation.y = a.yaw;
+      post.add(part(G.cyl, "#7a5436", 0.07, 2.2, 0.07, 0, 1.1, 0), part(G.box, "#fdf1f5", 1.2, 0.7, 0.08, 0, 2.1, 0));
+      for (const face of [1, -1]) post.add(part(G.box, palette.second, 0.09, 0.3, 0.03, 0, 2.0, face * 0.06), part(G.sph, palette.second, 0.06, 0.06, 0.03, 0, 2.28, face * 0.06));
+      anchor(mist.id, post, 2.8); dynamic.add(post);
+    }
+  }
+
+  function buildStones(input: PathWorldInput, island: GrownIsland) {
+    const perMonth = new Map<number, number>();
+    for (const stone of input.stones ?? []) {
+      if (stone.month < 0 || stone.month > island.cur) continue;
+      const j = perMonth.get(stone.month) ?? 0;
+      perMonth.set(stone.month, j + 1);
+      const p = island.spot(stone.month);
+      const a = p.a + 0.6 + j * 0.55, d = 2.3 + (j % 2) * 0.9;
+      const x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d, y = heightAt(island, x, z);
+      const done = stone.state === "done";
+      const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = -a;
+      const h = done ? 0.08 : 0.3;
+      const top = done ? 0.06 : 0.36;
+      const disc = part(G.cyl, done ? "#9d9483" : "#e4dccb", 0.55, h, 0.55, 0, top - h / 2, 0); disc.castShadow = !done; g.add(disc);
+      if (stone.money || stone.state === "waiting") {
+        const ring = part(G.ring, stone.lit ? "#e0ad3c" : "#bda375", 0.42, 0.42, 0.42, 0, top + 0.02, 0, stone.lit ? { metalness: 0.6, roughness: 0.35, emissive: "#ffb347", emissiveIntensity: 1.1 } : { metalness: 0.6, roughness: 0.4 });
+        ring.rotation.x = Math.PI / 2; ring.castShadow = false; g.add(ring);
+      }
+      // Footprints: the owner's, and a fainter one for the backup.
+      const feet: [boolean, number, number][] = [[stone.owner, -0.14, 0.62], [stone.backup, 0.14, 0.28]];
+      for (const [on, ox, opacity] of feet) {
+        if (!on) continue;
+        const foot = part(G.disc, "#6b5a44", 0.09, 0.14, 1, ox, top + 0.015, 0, { transparent: true, opacity, depthWrite: false });
+        foot.rotation.x = -Math.PI / 2; foot.castShadow = false; foot.receiveShadow = false; g.add(foot);
+      }
+      anchor(stone.id, g, 1.1); dynamic.add(g);
+    }
+  }
+
   function seasonOfIndex(input: PathWorldInput): string {
     return input.characters.length ? seasonOf(currentKey) : "summer";
   }

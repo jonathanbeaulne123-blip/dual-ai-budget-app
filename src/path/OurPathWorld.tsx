@@ -4,8 +4,8 @@ import { monthKeyFromDateKey } from "../core/calendar.ts";
 import { completeMove, memories, movesForChapter, nextMove, openChapterFor, ourRhythm, respondToMove } from "../core/chapters.ts";
 import { kittyBankBackingStep, kittyBanksInView } from "../core/kittyBanks.ts";
 import { displayedKittyPiece } from "../core/kittyStudio.ts";
-import { formatCad } from "../core/money.ts";
-import { monthObligations } from "../core/monthObligations.ts";
+import { pathStones } from "../core/pathStones.ts";
+import { pathWeather } from "../core/pathWeather.ts";
 import { charterIsSigned, charterUnsignedMemberIds } from "../core/charter.ts";
 import type { HerculesNumberSource } from "../core/herculesProvenance.ts";
 import { pathLand } from "../core/pathLand.ts";
@@ -37,6 +37,7 @@ import {
 } from "../core/pathWorld.ts";
 import type { CommitResult, Household } from "../core/types.ts";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
+import { bottleNote } from "./bottle.ts";
 import { growIsland, type Piece } from "./grow.ts";
 import { firedRecently, pathMonthAsOf } from "./landmarks.ts";
 import { charterPurposeWords, charterSpot, pathSitdownClosedMonths, pathSitdownFor, type PathSitdown } from "./together.ts";
@@ -57,7 +58,7 @@ type Mark = {
   id: string;
   label: string;
   sub?: string;
-  kind: "month" | "now" | "fire" | "goal" | "piece" | "move" | "bill" | "memory" | "tent" | "unknown" | "name" | "cove" | "lamp" | "kiln" | "charter" | "fork";
+  kind: "month" | "now" | "fire" | "goal" | "piece" | "move" | "bill" | "memory" | "tent" | "unknown" | "name" | "cove" | "lamp" | "kiln" | "charter" | "fork" | "sunrise" | "mist" | "stone";
   minLevel: PathLevel;
   lantern: Lantern;
 };
@@ -73,13 +74,30 @@ const CHARACTER_LABEL: Record<PathCharacter, string> = {
 const PIECE_LABEL: Record<Piece["kind"], string> = {
   grove: "Habit grove", cottage: "A cottage", observatory: "The observatory", monument: "A milestone", bench: "We paused here",
   lanterns: "Lanterns", giftTree: "The ribbon tree", loop: "A running loop", cafe: "String lights", rows: "Garden rows", pond: "A still pond",
-  star: "A first", firstFire: "Our first campfire", dogMeadow: "Pet days", kiln: "The kiln", workshop: "A little workshop", creek: "A storm we weathered",
+  star: "A first", firstFire: "Our first campfire", dogMeadow: "Pet days", kiln: "A kiln hut", workshop: "A little workshop", creek: "A storm we weathered",
+  frost: "The first frost",
 };
 const LANTERN_KEY = "hearth:pathWorld:lantern";
 const QUALITY_KEY = "hearth:pathWorld:quality";
 const MARK_PRIORITY: Record<Mark["kind"], number> = {
-  now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, kiln: 6, bill: 6, charter: 6, name: 7, fork: 8, memory: 8, cove: 9, lamp: 10, piece: 11, month: 12,
+  now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, kiln: 6, bill: 6, mist: 6, charter: 6, name: 7, sunrise: 7, fork: 8, memory: 8, stone: 8, cove: 9, lamp: 10, piece: 11, month: 12,
 };
+/** The island shows at most this many clouds (the full timeline lives in the Fund and the Calendar). */
+const WEATHER_CLOUDS = 8;
+const WEATHER_SUNRISES = 4;
+const NARROW = 720;
+
+function dayName(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`);
+  return Number.isNaN(d.getTime()) ? date : d.toLocaleDateString("en-CA", { month: "long", day: "numeric", timeZone: "UTC" });
+}
+function daysFrom(today: string, date: string): number {
+  const ms = Date.parse(`${date}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`);
+  return Number.isFinite(ms) ? Math.max(0, Math.round(ms / 86_400_000)) : 0;
+}
+function readNarrow(): boolean {
+  try { return typeof window !== "undefined" && window.innerWidth < NARROW; } catch { return false; }
+}
 
 function monthName(key: string, long = true): string {
   const [y, m] = key.split("-").map(Number) as [number, number];
@@ -115,13 +133,17 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, proofWorld }: {
+export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, proofWorld }: {
   household: Household;
   memberId: string;
   today: DateKey;
   busy: boolean;
   onCommand: Run;
   onOpenFund?: () => void;
+  /** A cloud is a Calendar bill: open the Calendar. Only a link. */
+  onOpenCalendar?: () => void;
+  /** A stepping stone is a planner task: open the planner. Only a link; the island never ticks a task. */
+  onOpenPlanner?: () => void;
   /** A landmark or the kiln asks for one shared Kitty Bank's room. Only a link: the room's own screens move money. */
   onOpenBank?: (goalId: string) => void;
   /** Aim today's Our Path (in the tent) at a source: a Kitty Bank, an agreed Plan line. Only a link. */
@@ -219,14 +241,46 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   }, [goals, asOf]);
   const rhythm = useMemo(() => ourRhythm(household), [household]);
   const kept = useMemo(() => memories(household), [household]);
-  const bills = useMemo(() => {
-    if (!atNow) return [];
-    try {
-      const rows = monthObligations(household, monthKeyFromDateKey(today), today).rows.filter((row) => row.date >= today).slice(0, 4);
-      const total = rows.reduce((sum, row) => sum + row.amountCents, 0) || 1;
-      return rows.map((row) => ({ ...row, big: row.amountCents / total > 0.4 }));
-    } catch { return []; }
+  // The Calendar as weather (household scope only; the read-model carries no amounts).
+  const weather = useMemo(() => {
+    if (!atNow) return null;
+    try { return pathWeather(household, today); } catch { return null; }
   }, [household, today, atNow]);
+  const bills = useMemo(() => (weather?.days ?? [])
+    .filter((day) => day.kind === "cloud" || day.kind === "storm")
+    .slice(0, WEATHER_CLOUDS)
+    .map((day) => ({ ...day, id: `bill:${day.sourceId ?? `${day.date}${day.label}`}` })), [weather]);
+  const sunrises = useMemo(() => (weather?.days ?? [])
+    .filter((day) => day.kind === "sunrise")
+    .slice(0, WEATHER_SUNRISES)
+    .map((day) => ({ ...day, id: `sunrise:${day.sourceId ?? day.date}` })), [weather]);
+  const mist = useMemo(() => {
+    if (!weather || weather.forecast === "clear") return null;
+    const day = weather.days.find((row) => row.kind === "mist");
+    return {
+      label: weather.forecast === "mist" ? "Forecast mist" : "No forecast yet",
+      date: day?.date ?? today,
+      why: weather.mistWhy,
+      unavailable: weather.forecast === "unavailable",
+    };
+  }, [weather, today]);
+  // Planner tasks as stepping stones (household tasks only; money stones light only by books evidence).
+  const stones = useMemo(() => {
+    try { return pathStones(household, memberId, today); } catch { return []; }
+  }, [household, memberId, today]);
+  const stoneMonth = useCallback((key: string) => {
+    const at = months.findIndex((m) => m.key === key);
+    if (at >= 0) return at;
+    if (!months.length) return -1;
+    return key > months[months.length - 1]!.key ? months.length - 1 : 0;
+  }, [months]);
+  const shownStones = useMemo(() => stones.map((stone) => ({ stone, month: stoneMonth(stone.month) })).filter((row) => row.month >= 0 && row.month <= shown), [stones, stoneMonth, shown]);
+  const [narrow, setNarrow] = useState(readNarrow);
+  useEffect(() => {
+    const onResize = () => setNarrow(readNarrow());
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   // ------------------------------------------------------------ together: the Sitdown, set land, the Charter, agreed decisions
   const nowKey = monthKeyFromDateKey(today);
@@ -304,11 +358,17 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     kiln: kiln ? { warm: kiln.warm } : null,
     lamps: rhythm.map((row) => ({ id: `lamp:${row.id}`, month: Math.max(0, monthIndexOf(months, row.heldOn.at(-1) ?? row.updatedAt)) })),
     memories: kept.map((row) => ({ id: `memory:${row.id}`, month: Math.max(0, monthIndexOf(months, row.shownAt)) })).filter((row) => row.month <= shown),
-    weather: bills.map((row) => ({ id: `bill:${row.id}`, big: row.big })),
+    weather: [
+      ...bills.map((row) => ({ id: row.id, kind: row.kind as "cloud" | "storm", weight: row.weight, dayOffset: daysFrom(today, row.date) })),
+      ...sunrises.map((row) => ({ id: row.id, kind: "sunrise" as const, weight: row.weight, dayOffset: daysFrom(today, row.date) })),
+      ...(mist ? [{ id: "mist", kind: "mist" as const, weight: 0.5, dayOffset: daysFrom(today, mist.date) }] : []),
+    ],
+    sunlit: (weather?.covered ?? []).map((range) => ({ fromOffset: daysFrom(today, range.from), toOffset: daysFrom(today, range.to) })),
+    stones: shownStones.map(({ stone, month }) => ({ id: `stone:${stone.id}`, month, state: stone.state, lit: stone.lit, money: stone.money, owner: stone.owner !== null, backup: stone.backup !== null })),
     unknown: unknown.map((row) => ({ id: row.id, month: row.month })),
     name: islandName,
     layers,
-  }), [island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, unknown, islandName, layers, fireSitdown, land, sitdownClosed, presentMembers, charterView, charterShown, shownForks]);
+  }), [island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, fireSitdown, land, sitdownClosed, presentMembers, charterView, charterShown, shownForks]);
 
   // ------------------------------------------------------------ marks: the real buttons over the canvas
   const marks = useMemo(() => {
@@ -332,16 +392,20 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     island.pieces.forEach((piece, i) => list.push({ id: `piece:${i}`, label: piece.kind === "observatory" ? `Observatory · ${piece.floors} floor${piece.floors === 1 ? "" : "s"}` : PIECE_LABEL[piece.kind], kind: "piece", minLevel: 2, lantern: 1 }));
     island.coves.forEach((cove, i) => {
       list.push({ id: `cove:${i}`, label: cove.name, sub: cove.visits.length > 1 ? `${cove.visits.length} visits` : undefined, kind: "cove", minLevel: 1, lantern: 1 });
-      if (cove.type === "sea" && island.cur >= cove.month + 12) list.push({ id: `bottle:${i}`, label: "A message in a bottle", kind: "cove", minLevel: 2, lantern: 1 });
+      if (cove.type === "sea" && island.cur >= cove.month + 12) list.push({ id: `bottle:${i}`, label: "A message in a bottle", sub: cove.name, kind: "cove", minLevel: 2, lantern: 1 });
     });
     for (const row of rhythm) list.push({ id: `lamp:${row.id}`, label: row.title, sub: "Our Rhythm", kind: "lamp", minLevel: 2, lantern: 1 });
     for (const row of kept) if (Math.max(0, monthIndexOf(months, row.shownAt)) <= shown) list.push({ id: `memory:${row.id}`, label: row.title || "A Memory", kind: "memory", minLevel: 2, lantern: 1 });
-    for (const row of bills) list.push({ id: `bill:${row.id}`, label: row.label, sub: lantern === 2 ? `${formatCad(row.amountCents)} · ${row.date.slice(5)}` : row.date.slice(5), kind: "bill", minLevel: 2, lantern: 1 });
+    // Weather never shows an amount: the read-model has none.
+    for (const row of bills) list.push({ id: row.id, label: row.label, sub: lantern === 2 ? `${dayName(row.date)} · ${row.why}` : dayName(row.date), kind: "bill", minLevel: 1, lantern: 1 });
+    for (const row of sunrises) list.push({ id: row.id, label: "Payday", sub: dayName(row.date), kind: "sunrise", minLevel: 2, lantern: 1 });
+    if (mist) list.push({ id: "mist", label: mist.label, sub: "why?", kind: "mist", minLevel: 1, lantern: 0 });
+    for (const { stone } of shownStones) list.push({ id: `stone:${stone.id}`, label: stone.label, sub: stone.why.split(" · ")[0], kind: "stone", minLevel: 3, lantern: 0 });
     for (const row of unknown) list.push({ id: row.id, label: "Something new", sub: row.label, kind: "unknown", minLevel: 1, lantern: 0 });
     if (atNow && chapter) list.push({ id: "tent", label: "Plan Studio", sub: "today's Our Path", kind: "tent", minLevel: 1, lantern: 0 });
     if (islandName) list.push({ id: "name", label: islandName, kind: "name", minLevel: 1, lantern: 0 });
     return list;
-  }, [months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, lantern, unknown, chapter, islandName, fireSitdown, charterView, charterShown, shownForks]);
+  }, [months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, sunrises, mist, shownStones, lantern, unknown, chapter, islandName, fireSitdown, charterView, charterShown, shownForks]);
 
   // ------------------------------------------------------------ the world host
   const host = useRef<HTMLDivElement>(null);
@@ -349,24 +413,26 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const markRefs = useRef(new Map<string, HTMLButtonElement>());
   const labelSizes = useRef(new Map<string, { w: number; h: number }>());
   useEffect(() => { labelSizes.current.clear(); }, [lantern, marks]);
-  const view = useRef({ level: 0 as PathLevel, lantern, marks });
-  view.current = { level, lantern, marks };
+  const view = useRef({ level: 0 as PathLevel, lantern, marks, selected: null as string | null });
+  view.current = { level, lantern, marks, selected };
   const latestInput = useRef(worldInput);
   latestInput.current = worldInput;
   const selectRef = useRef<(id: string) => void>(() => {});
 
   const applyAnchors = useCallback((anchors: PathAnchor[]) => {
-    const { level: lv, lantern: ln, marks: list } = view.current;
+    const { level: lv, lantern: ln, marks: list, selected: chosen } = view.current;
     const byId = new Map(list.map((m) => [m.id, m]));
     const near = [150, 150, 90, 46][lv]!;
     // Most important first; a label that would sit on top of one already placed waits until you move closer.
+    // The place whose card is open is placed right after "now", so its label never waits behind a neighbour.
+    const rank = (m: Mark) => (m.id === chosen && m.kind !== "now" ? 0.5 : MARK_PRIORITY[m.kind]);
     const candidates = anchors.flatMap((a) => {
       const mark = byId.get(a.id);
       const el = markRefs.current.get(a.id);
       if (!el || !mark) return [];
-      const show = a.visible && lv >= mark.minLevel && ln >= mark.lantern && (mark.kind === "now" || mark.kind === "goal" || lv < 2 || a.depth < near);
+      const show = a.visible && lv >= mark.minLevel && ln >= mark.lantern && (mark.kind === "now" || mark.kind === "goal" || mark.id === chosen || lv < 2 || a.depth < near);
       return [{ a, el, mark, show }];
-    }).sort((x, y) => (MARK_PRIORITY[x.mark.kind] - MARK_PRIORITY[y.mark.kind]) || (x.a.depth - y.a.depth));
+    }).sort((x, y) => (rank(x.mark) - rank(y.mark)) || (x.a.depth - y.a.depth));
     const reported = new Set(anchors.map((a) => a.id));
     for (const [id, el] of markRefs.current) if (!reported.has(id) && !el.hidden) el.hidden = true;
     const placed: { x0: number; x1: number; y0: number; y1: number }[] = [];
@@ -437,7 +503,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     lastShown.current = shown;
     world.current?.setScene(worldInput, months[shown]?.key, grew);
   }, [worldInput, live, shown, months]);
-  useEffect(() => { world.current?.refresh(); }, [lantern, marks, level, live]);
+  useEffect(() => { world.current?.refresh(); }, [lantern, marks, level, live, selected]);
   useEffect(() => { world.current?.setAmbient(!(proofWorld?.paused ?? appearance.paused) && !playing); }, [appearance.paused, proofWorld?.paused, live, playing]);
   useEffect(() => { world.current?.setQuality(quality); }, [quality, live]);
   // The tent hides the island (display: none) but keeps the world: it sleeps, then wakes at the size it has once shown again.
@@ -574,10 +640,18 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     if (id.startsWith("cove:") || id.startsWith("bottle:")) {
       const cove = island.coves[Number(id.split(":")[1])];
       if (!cove) return null;
+      if (id.startsWith("bottle:")) {
+        const monthKey = months[cove.month]?.key ?? "";
+        return {
+          eyebrow: "A message in a bottle",
+          title: cove.name,
+          lines: [[0, bottleNote(household, cove, monthKey)], [1, "A year on, the sea brought it back."], ...cove.why.slice(0, 2).map((w): [Lantern, string] => [2, w])],
+        };
+      }
       return {
-        eyebrow: id.startsWith("bottle:") ? "A message in a bottle" : "The coast a trip shaped",
+        eyebrow: "The coast a trip shaped",
         title: cove.name,
-        lines: [[0, cove.visits.length > 1 ? `You went ${cove.visits.length} times. Each return widened this ${cove.type === "mountain" ? "headland" : "cove"}.` : "Go back to the same place and this spot deepens instead of a new one forming."], ...cove.why.map((w): [Lantern, string] => [1, w]), ...(id.startsWith("bottle:") ? [[0, "A year on, the sea brought something back."] as [Lantern, string]] : [])],
+        lines: [[0, cove.visits.length > 1 ? `You went ${cove.visits.length} times. Each return widened this ${cove.type === "mountain" ? "headland" : "cove"}.` : "Go back to the same place and this spot deepens instead of a new one forming."], ...cove.why.map((w): [Lantern, string] => [1, w])],
       };
     }
     if (id.startsWith("lamp:")) {
@@ -589,12 +663,53 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
       return row ? { eyebrow: "Our Story", title: row.title || "A Memory", lines: [[0, row.authoredNote || "Kept by both of you."], [1, `Kept ${row.shownAt.slice(0, 10)}`]] } : null;
     }
     if (id.startsWith("bill:")) {
-      const row = bills.find((b) => `bill:${b.id}` === id);
+      const row = bills.find((b) => b.id === id);
       return row ? {
-        eyebrow: "Weather ahead", title: row.label,
-        lines: [[0, `Rolling in ${row.date}`], [1, formatCad(row.amountCents)], [2, "Bigger clouds are bigger bills. The full timeline lives in the Fund."]],
-        actions: onOpenFund ? <button type="button" onClick={onOpenFund}>Open the Fund</button> : undefined,
+        eyebrow: row.kind === "storm" ? "Weather ahead · a storm" : "Weather ahead",
+        title: row.label,
+        lines: [[0, `Rolling in ${dayName(row.date)}`], [1, row.why], [2, "Bigger clouds are bigger bills. The full timeline lives in the Fund."]],
+        actions: onOpenFund || onOpenCalendar ? (
+          <>
+            {onOpenFund && <button type="button" onClick={onOpenFund}>Open the Fund</button>}
+            {onOpenCalendar && <button type="button" onClick={onOpenCalendar}>Open the Calendar</button>}
+          </>
+        ) : undefined,
       } : null;
+    }
+    if (id.startsWith("sunrise:")) {
+      const row = sunrises.find((s) => s.id === id);
+      return row ? {
+        eyebrow: "Weather ahead · sunrise",
+        title: "Payday",
+        lines: [[0, `Payday on ${dayName(row.date)}. The light comes back.`]],
+        actions: onOpenCalendar ? <button type="button" onClick={onOpenCalendar}>Open the Calendar</button> : undefined,
+      } : null;
+    }
+    if (id === "mist" && mist) {
+      const why = mist.why.length ? mist.why : ["The forecast isn't available yet."];
+      return {
+        eyebrow: mist.unavailable ? "The signpost · no forecast" : "The signpost · mist ahead",
+        title: mist.label,
+        lines: why.map((line, i): [Lantern, string] => [i === 0 ? 0 : 1, line]),
+        actions: onOpenFund ? <button type="button" className="primary" onClick={onOpenFund}>Open the Fund</button> : undefined,
+      };
+    }
+    if (id.startsWith("stone:")) {
+      const stone = stones.find((s) => `stone:${s.id}` === id);
+      if (!stone) return null;
+      const parts = stone.why.split(" · ").filter((line) => !/confirmed in the books/.test(line));
+      const state = stone.state === "done" ? "Done — the stone has sunk flush." : stone.state === "waiting" ? "Waiting for the books." : "Still to do.";
+      return {
+        eyebrow: stone.money ? "A stepping stone · a money task" : "A stepping stone · the planner",
+        title: stone.label,
+        lines: [
+          ...parts.map((line, i): [Lantern, string] => [i === 0 ? 0 : 1, line]),
+          ...(stone.money ? [[0, stone.lit ? "Lit because the money is confirmed in the books." : "Lights when the money is confirmed in the books."] as [Lantern, string]] : []),
+          [1, state],
+          [2, `Sits in ${monthName(stone.month)}`],
+        ],
+        actions: onOpenPlanner ? <button type="button" className="primary" onClick={onOpenPlanner}>Open the planner</button> : undefined,
+      };
     }
     if (id.startsWith("unknown:")) {
       const row = unknown.find((u) => u.id === id);
@@ -666,6 +781,22 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
             <div className="path-world__flat" aria-hidden="true">
               <svg viewBox="-60 -60 120 120" role="presentation">
                 {months.slice(0, shown + 1).map((month, m) => {
+                  // Set land (closed Sitdown or closed books) gets a kerb; each stamped week a small dot.
+                  const row = land[month.key], set = Boolean(row?.closed) || sitdownClosed.has(month.key);
+                  const stamps = Math.min(5, row?.stampedWeeks.length ?? 0);
+                  if (!set && !stamps) return null;
+                  const p = island.spot(m), k = flatScale, r = (m === shown ? 3.4 : 2.4) + 1.3;
+                  return (
+                    <g key={`land-${month.key}`} transform={`translate(${(p.x * k).toFixed(2)} ${(p.z * k).toFixed(2)})`}>
+                      {set && <circle r={r} className={`path-world__kerb${row?.closed ? " path-world__kerb--closed" : ""}`} />}
+                      {Array.from({ length: stamps }, (_, i) => {
+                        const a = -Math.PI / 2 + (i - (stamps - 1) / 2) * 0.55;
+                        return <circle key={i} className="path-world__stamp" r={0.55} cx={(Math.cos(a) * (r + 1.3)).toFixed(2)} cy={(Math.sin(a) * (r + 1.3)).toFixed(2)} />;
+                      })}
+                    </g>
+                  );
+                })}
+                {months.slice(0, shown + 1).map((month, m) => {
                   const p = island.spot(m), k = flatScale;
                   return <circle key={month.key} cx={p.x * k} cy={p.z * k} r={m === shown ? 3.4 : 2.4} className={`path-world__dot path-world__dot--${characters[m]}`} />;
                 })}
@@ -709,13 +840,18 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
             <div className="path-world__lantern" role="group" aria-label="How much detail to show">
               {LANTERNS.map((l) => <button key={l.value} type="button" aria-pressed={lantern === l.value} onClick={() => setLantern(l.value)}><i aria-hidden="true" />{l.label}</button>)}
             </div>
-            {live && (
+            {live && (narrow ? (
+              // A phone: one compact toggle (same state, same per-device key) so the controls fit at 320px.
+              <div className="path-world__quality path-world__quality--compact" role="group" aria-label="Quality on this device">
+                <button type="button" aria-pressed={quality === "lite"} title="Lite quality: fewer pixels, no shadows" onClick={() => chooseQuality(quality === "lite" ? "full" : "lite")}>Lite</button>
+              </div>
+            ) : (
               <div className="path-world__quality" role="group" aria-label="Quality on this device">
                 <span aria-hidden="true">Quality</span>
                 <button type="button" aria-pressed={quality === "full"} onClick={() => chooseQuality("full")}>Full</button>
                 <button type="button" aria-pressed={quality === "lite"} onClick={() => chooseQuality("lite")}>Lite</button>
               </div>
-            )}
+            ))}
             <div className="path-world__layers" role="group" aria-label="Layers">
               {(["weather", "story", "rhythm"] as const).map((key) => (
                 <button key={key} type="button" aria-pressed={layers[key]} onClick={() => setLayers((v) => ({ ...v, [key]: !v[key] }))}>{key === "weather" ? "Weather" : key === "story" ? "Story" : "Rhythm"}</button>
