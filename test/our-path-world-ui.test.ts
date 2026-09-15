@@ -8,15 +8,25 @@ import { pathIslandName } from "../src/core/pathWorld.ts";
 import { OurPathWorld } from "../src/path/OurPathWorld.tsx";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
 
-// jsdom has no WebGL: the world module fails to load and the page must stay fully usable.
-const created = vi.hoisted(() => ({ count: 0 }));
+// jsdom has no WebGL: by default the world fails to load and the page must stay fully usable.
+// The "fake" variant hands back a stand-in world so the page's calls into it can be counted.
+type FakeWorld = Record<"setScene" | "resize" | "setAmbient" | "setQuality" | "sleep" | "wake" | "refresh" | "focus" | "setLevel" | "zoom" | "turn" | "stats" | "dispose", ReturnType<typeof vi.fn>>;
+const created = vi.hoisted(() => ({ count: 0, mode: "throw" as "throw" | "fake", options: [] as { quality?: string }[], worlds: [] as unknown[] }));
 vi.mock("../src/path/world/pathWorld3d.ts", () => ({
-  createPathWorld: () => { created.count += 1; throw new Error("WebGL unavailable"); },
+  createPathWorld: (_host: HTMLElement, options: { quality?: string }) => {
+    created.count += 1;
+    if (created.mode === "throw") throw new Error("WebGL unavailable");
+    created.options.push(options);
+    const names = ["setScene", "resize", "setAmbient", "setQuality", "sleep", "wake", "refresh", "focus", "setLevel", "zoom", "turn", "stats", "dispose"];
+    const world = Object.fromEntries(names.map((n) => [n, vi.fn()]));
+    created.worlds.push(world);
+    return world;
+  },
 }));
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
 let host: HTMLDivElement, root: Root;
-beforeEach(() => { localStorage.clear(); created.count = 0; host = document.createElement("div"); document.body.append(host); root = createRoot(host); });
+beforeEach(() => { localStorage.clear(); Object.assign(created, { count: 0, mode: "throw", options: [], worlds: [] }); host = document.createElement("div"); document.body.append(host); root = createRoot(host); });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); localStorage.clear(); });
 
 function seeded(): Household {
@@ -96,6 +106,70 @@ describe("Our Path world page (D-262)", () => {
     await click(byText("Back to the island"));
     expect($<HTMLInputElement>("#draft").value).toBe("half-typed");
     expect($(".path-world__island").hidden).toBe(false);
+    // The tent round trip never tries to build a second world.
+    await settle();
+    expect(created.count).toBe(1);
+    // Without a world there is nothing to tune, so no quality toggle.
+    expect(host.querySelector(".path-world__quality")).toBeNull();
+  });
+
+  it("puts one world to sleep in the tent and wakes it on return, and keeps the quality choice on this device", async () => {
+    created.mode = "fake";
+    localStorage.setItem("hearth:pathWorld:quality", "full");
+    await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
+    await settle();
+    expect(created.count).toBe(1);
+    expect(created.options[0]!.quality).toBe("full");
+    const world = created.worlds[0] as FakeWorld;
+    expect($(".path-world__marks").hidden).toBe(false);
+    expect(world.sleep).not.toHaveBeenCalled();
+
+    const draft = $<HTMLInputElement>("#draft");
+    draft.value = "still here";
+    await click(byText("Open the Plan Studio tent"));
+    expect(world.sleep).toHaveBeenCalledTimes(1);
+    expect(world.dispose).not.toHaveBeenCalled();
+    const wakesBefore = world.wake.mock.calls.length;
+    await click(byText("Back to the island"));
+    await settle();
+    expect(world.wake.mock.calls.length).toBe(wakesBefore + 1);
+    expect(world.sleep).toHaveBeenCalledTimes(1);
+    expect(world.dispose).not.toHaveBeenCalled();
+    expect(created.count).toBe(1);
+    expect($<HTMLInputElement>("#draft").value).toBe("still here");
+
+    // Quality: Full / Lite, pressed state, remembered per device, handed to the live world.
+    const group = $(".path-world__quality");
+    expect(group.getAttribute("role")).toBe("group");
+    expect(byText("Full").getAttribute("aria-pressed")).toBe("true");
+    await click(byText("Lite"));
+    expect(byText("Lite").getAttribute("aria-pressed")).toBe("true");
+    expect(byText("Full").getAttribute("aria-pressed")).toBe("false");
+    expect(localStorage.getItem("hearth:pathWorld:quality")).toBe("lite");
+    expect(world.setQuality).toHaveBeenLastCalledWith("lite");
+    expect(created.count).toBe(1);
+
+    // A fresh mount on this device starts on the remembered tier.
+    await act(async () => root.unmount());
+    expect(world.dispose).toHaveBeenCalledTimes(1);
+    root = createRoot(host);
+    await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
+    await settle();
+    expect(created.count).toBe(2);
+    expect(created.options[1]!.quality).toBe("lite");
+    expect(byText("Lite").getAttribute("aria-pressed")).toBe("true");
+  });
+
+  it("opens straight into the tent with the world asleep", async () => {
+    created.mode = "fake";
+    await act(async () => root.render(createElement(OurPathWorld, { household: seeded(), memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "newfoundland", classicRoom: createElement("p", null, "today"), openTentFor: { kind: "goal", id: "G" } })));
+    await settle();
+    const world = created.worlds[0] as FakeWorld;
+    expect($(".path-world__room").hidden).toBe(false);
+    expect(world.sleep).toHaveBeenCalled();
+    await click(byText("Back to the island"));
+    expect(world.wake).toHaveBeenCalledTimes(1);
+    expect(created.count).toBe(1);
   });
 
   it("opens the tent when a Hercules source link arrives, and moves focus with the tent", async () => {

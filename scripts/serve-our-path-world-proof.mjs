@@ -15,6 +15,12 @@ import { resolveThemeScene, sceneTokens } from '/src/theme/scenes.ts';
 const q = new URLSearchParams(location.search);
 const theme = q.get('theme') || 'taylor', story = q.get('story') || 'well', motion = q.get('motion') || 'reduced', lantern = q.get('lantern');
 if (lantern) localStorage.setItem('hearth:pathWorld:lantern', lantern);
+const quality = q.get('quality'), idle = q.get('idle');
+if (quality === 'full' || quality === 'lite') localStorage.setItem('hearth:pathWorld:quality', quality);
+// Proof only: frame counters for the performance note, and ?idle=off to measure the loop without the idle pause.
+let liveWorld = null;
+window.__pathWorldStats = () => (liveWorld ? liveWorld.stats() : null);
+const proofWorld = { onWorld: (w) => { liveWorld = w; }, idleMs: idle === 'off' ? Infinity : undefined, paused: motion !== 'full' };
 const scene = resolveThemeScene(theme, 'plan', 'household');
 Object.assign(document.documentElement.dataset, { theme, scene: scene.id, material: scene.material, sceneLighting: scene.dark ? 'dark' : 'light', atmosphere: 'paused', motion });
 for (const [key, value] of Object.entries(sceneTokens(scene))) document.documentElement.style.setProperty(key, value);
@@ -32,7 +38,7 @@ function Proof() {
   return React.createElement('div', { className: 'app', 'data-ledger-tab': 'plan', style: { padding: '12px' } },
     React.createElement('p', { style: { margin: '0 0 8px', fontSize: 12 } }, 'Fictional local proof — ', theme, ' / ', story, ' · acting as ', member, ' ',
       React.createElement('button', { id: 'switch-member', onClick: () => setMember(member === 'MEM-001' ? 'MEM-002' : 'MEM-001') }, 'Switch fictional member')),
-    React.createElement(OurPathWorld, { household: state, memberId: member, today, busy: false, onCommand: command, theme,
+    React.createElement(OurPathWorld, { household: state, memberId: member, today, busy: false, onCommand: command, theme, proofWorld,
       classicRoom: React.createElement('div', { id: 'classic-room' }, React.createElement('h2', null, "Today's Our Path"), React.createElement('p', null, 'Chapter room and Plan Studio render here in the app.')) }));
 }
 window.__ready = story === 'empty';

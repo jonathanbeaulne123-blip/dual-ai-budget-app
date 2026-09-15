@@ -31,11 +31,13 @@
 .path-world[data-level="0"] .path-mark--goal .path-mark__label { font-size: 17px; }
 
 .path-world__controls { position: absolute; z-index: 3; top: 12px; right: 12px; display: grid; gap: 8px; justify-items: end; }
-.path-world__lantern, .path-world__layers, .path-world__rail { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); flex-wrap: wrap; }
-.path-world__lantern button, .path-world__layers button, .path-world__rail button { border: 0; background: transparent; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13px; min-height: 36px; display: inline-flex; gap: 6px; align-items: center; }
-.path-world__lantern button[aria-pressed="true"], .path-world__rail button[aria-current="true"] { background: var(--ink); color: var(--paper); }
+.path-world__lantern, .path-world__quality, .path-world__layers, .path-world__rail { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); flex-wrap: wrap; }
+.path-world__lantern button, .path-world__quality button, .path-world__layers button, .path-world__rail button { border: 0; background: transparent; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13px; min-height: 36px; display: inline-flex; gap: 6px; align-items: center; }
+.path-world__lantern button[aria-pressed="true"], .path-world__quality button[aria-pressed="true"], .path-world__rail button[aria-current="true"] { background: var(--ink); color: var(--paper); }
 .path-world__layers button[aria-pressed="false"] { text-decoration: line-through; opacity: 0.7; }
 .path-world__lantern i { width: 8px; height: 11px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: currentColor; opacity: 0.6; }
+.path-world__quality { align-items: center; }
+.path-world__quality > span { padding: 0 4px 0 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .path-world__rail { position: absolute; z-index: 3; left: 12px; bottom: 12px; border-radius: 16px; }
 .path-world__now { position: absolute; z-index: 3; right: 12px; bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: min(560px, calc(100% - 24px)); }
 .path-world__compass, .path-world__next { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 8px 14px; font-weight: 700; min-height: 44px; box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); text-align: left; }
@@ -105,8 +107,8 @@
 @media (max-width: 719px) {
   .path-world__stage { height: clamp(420px, 68vh, 620px); }
   .path-world__controls { top: 8px; right: 8px; left: 8px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
-  .path-world__lantern, .path-world__layers { flex: none; flex-wrap: nowrap; }
-  .path-world__lantern button, .path-world__layers button { padding: 6px 9px; }
+  .path-world__lantern, .path-world__quality, .path-world__layers { flex: none; flex-wrap: nowrap; }
+  .path-world__lantern button, .path-world__quality button, .path-world__layers button { padding: 6px 9px; }
   .path-world__rail { left: 8px; right: 8px; bottom: 64px; justify-content: center; border-radius: 999px; }
   .path-world__rail button { padding: 6px 9px; }
   .path-world__now { left: 8px; right: 8px; bottom: 8px; max-width: none; justify-content: stretch; flex-wrap: nowrap; }

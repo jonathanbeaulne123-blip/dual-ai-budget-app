@@ -35,7 +35,7 @@ import {
 import type { CommitResult, Household } from "../core/types.ts";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { growIsland, type Piece } from "./grow.ts";
-import type { PathAnchor, PathCharacter, PathLevel, PathWorld, PathWorldInput } from "./world/pathWorld3d.ts";
+import type { PathAnchor, PathCharacter, PathLevel, PathQuality, PathWorld, PathWorldInput } from "./world/pathWorld3d.ts";
 import "./our-path-world.css";
 
 /**
@@ -70,6 +70,7 @@ const PIECE_LABEL: Record<Piece["kind"], string> = {
   star: "A first", firstFire: "Our first campfire", dogMeadow: "Pet days", kiln: "The kiln", workshop: "A little workshop", creek: "A storm we weathered",
 };
 const LANTERN_KEY = "hearth:pathWorld:lantern";
+const QUALITY_KEY = "hearth:pathWorld:quality";
 const MARK_PRIORITY: Record<Mark["kind"], number> = {
   now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, bill: 6, name: 7, memory: 8, cove: 9, lamp: 10, piece: 11, month: 12,
 };
@@ -81,6 +82,21 @@ function monthName(key: string, long = true): string {
 function readLantern(): Lantern {
   try { const raw = window.localStorage.getItem(LANTERN_KEY); return raw === "0" ? 0 : raw === "2" ? 2 : 1; } catch { return 1; }
 }
+/** Per device: a person's explicit choice wins; otherwise a small phone, a modest device, or reduced motion starts on Lite. */
+function defaultPathQuality(reduced: boolean): PathQuality {
+  if (reduced) return "lite";
+  try {
+    const nav = (typeof navigator === "undefined" ? {} : navigator) as { hardwareConcurrency?: number; deviceMemory?: number };
+    if (typeof nav.hardwareConcurrency === "number" && nav.hardwareConcurrency > 0 && nav.hardwareConcurrency <= 4) return "lite";
+    if (typeof nav.deviceMemory === "number" && nav.deviceMemory > 0 && nav.deviceMemory <= 4) return "lite";
+    if (typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches && window.innerWidth < 720) return "lite";
+  } catch { /* fall through */ }
+  return "full";
+}
+function readQuality(reduced: boolean): PathQuality {
+  try { const raw = window.localStorage.getItem(QUALITY_KEY); if (raw === "full" || raw === "lite") return raw; } catch { /* per-device convenience only */ }
+  return defaultPathQuality(reduced);
+}
 function commandOk(outcome: unknown): boolean {
   return Boolean(outcome && typeof outcome === "object" && "ok" in outcome && (outcome as { ok: unknown }).ok === true);
 }
@@ -89,7 +105,7 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, classicRoom, theme: themeOverride, openTentFor }: {
+export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, classicRoom, theme: themeOverride, openTentFor, proofWorld }: {
   household: Household;
   memberId: string;
   today: DateKey;
@@ -102,6 +118,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   theme?: import("../theme/scenes.ts").ThemeId;
   /** A Hercules source link aimed at today's Our Path: open the tent so the focus lands where people can see it. */
   openTentFor?: unknown;
+  /** Proof pages only: see the live world (for stats) and override the idle pause. The app never passes this. */
+  proofWorld?: { onWorld?: (world: PathWorld | null) => void; idleMs?: number; paused?: boolean };
 }) {
   const appearance = useAppearance();
   const theme = themeOverride ?? appearance.scene.theme;
@@ -122,6 +140,11 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const islandName = pathIslandName(household);
   const proposals = useMemo(() => pendingPathProposals(household), [household]);
   const [lantern, setLantern] = useState<Lantern>(() => readLantern());
+  const [quality, setQuality] = useState<PathQuality>(() => readQuality(reduced));
+  const chooseQuality = (next: PathQuality) => {
+    setQuality(next);
+    try { window.localStorage.setItem(QUALITY_KEY, next); } catch { /* per-device convenience only */ }
+  };
   const [level, setLevel] = useState<PathLevel>(0);
   const [layers, setLayers] = useState({ weather: true, story: true, rhythm: true });
   const [selected, setSelected] = useState<string | null>(null);
@@ -276,9 +299,13 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     }
   }, []);
 
+  // Read at creation time only; later changes arrive through setQuality/sleep/wake below.
+  const createWith = useRef({ quality, proofWorld });
+  createWith.current = { quality, proofWorld };
+
   useEffect(() => {
     const element = host.current;
-    if (!element || !wanted || tentOpen) { setLive(false); return; }
+    if (!element || !wanted) { setLive(false); return; }
     let dead = false;
     let created: PathWorld | null = null;
     let observer: ResizeObserver | null = null;
@@ -288,6 +315,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         try {
           created = createPathWorld(element, {
             reducedMotion: reduced,
+            quality: createWith.current.quality,
+            idleMs: createWith.current.proofWorld?.idleMs,
             onLost: () => { created?.dispose(); world.current = null; if (!dead) setLive(false); },
             onAnchors: applyAnchors,
             onLevel: (lv) => { if (!dead) setLevel(lv); },
@@ -298,16 +327,17 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           return;
         }
         world.current = created;
+        createWith.current.proofWorld?.onWorld?.(created);
         const size = () => created?.resize(element.clientWidth, element.clientHeight);
         size();
         if (typeof ResizeObserver === "function") { observer = new ResizeObserver(size); observer.observe(element); }
         setLive(true);
       })
       .catch(() => { if (!dead) setLive(false); });
-    return () => { dead = true; observer?.disconnect(); created?.dispose(); world.current = null; };
-    // The world is created once per mount/theme gate; scene changes arrive below.
+    return () => { dead = true; observer?.disconnect(); if (created) createWith.current.proofWorld?.onWorld?.(null); created?.dispose(); world.current = null; };
+    // The world is created once per mount/theme gate (the tent only puts it to sleep); scene changes arrive below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wanted, reduced, tentOpen, applyAnchors]);
+  }, [wanted, reduced, applyAnchors]);
 
   const lastShown = useRef(shown);
   useEffect(() => {
@@ -317,7 +347,15 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     world.current?.setScene(worldInput, months[shown]?.key, grew);
   }, [worldInput, live, shown, months]);
   useEffect(() => { world.current?.refresh(); }, [lantern, marks, level, live]);
-  useEffect(() => { world.current?.setAmbient(!appearance.paused && !playing); }, [appearance.paused, live, playing]);
+  useEffect(() => { world.current?.setAmbient(!(proofWorld?.paused ?? appearance.paused) && !playing); }, [appearance.paused, proofWorld?.paused, live, playing]);
+  useEffect(() => { world.current?.setQuality(quality); }, [quality, live]);
+  // The tent hides the island (display: none) but keeps the world: it sleeps, then wakes at the size it has once shown again.
+  useEffect(() => {
+    const current = world.current;
+    if (!live || !current) return;
+    if (tentOpen) current.sleep();
+    else current.wake(host.current?.clientWidth ?? 0, host.current?.clientHeight ?? 0);
+  }, [tentOpen, live]);
   useEffect(() => { try { window.localStorage.setItem(LANTERN_KEY, String(lantern)); } catch { /* per-device convenience only */ } }, [lantern]);
 
   // Replay: grow the island month by month.
@@ -505,6 +543,13 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
             <div className="path-world__lantern" role="group" aria-label="How much detail to show">
               {LANTERNS.map((l) => <button key={l.value} type="button" aria-pressed={lantern === l.value} onClick={() => setLantern(l.value)}><i aria-hidden="true" />{l.label}</button>)}
             </div>
+            {live && (
+              <div className="path-world__quality" role="group" aria-label="Quality on this device">
+                <span aria-hidden="true">Quality</span>
+                <button type="button" aria-pressed={quality === "full"} onClick={() => chooseQuality("full")}>Full</button>
+                <button type="button" aria-pressed={quality === "lite"} onClick={() => chooseQuality("lite")}>Lite</button>
+              </div>
+            )}
             <div className="path-world__layers" role="group" aria-label="Layers">
               {(["weather", "story", "rhythm"] as const).map((key) => (
                 <button key={key} type="button" aria-pressed={layers[key]} onClick={() => setLayers((v) => ({ ...v, [key]: !v[key] }))}>{key === "weather" ? "Weather" : key === "story" ? "Story" : "Rhythm"}</button>

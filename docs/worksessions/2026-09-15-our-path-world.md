@@ -82,8 +82,8 @@ The review found no gap in the wiring parity and no privacy leak. What was fixed
 
 Not changed, and noted:
 
-- Opening and closing the tent disposes the WebGL context and recreates it.
-- With ambient motion on, the loop renders continuously and shadows stay on.
+- Opening and closing the tent disposes the WebGL context and recreates it. *(Later on 2026-09-15, slice/path-perf: the world now sleeps through the tent. See `docs/evidence/our-path-world/PERFORMANCE.md`.)*
+- With ambient motion on, the loop renders continuously and shadows stay on. *(Later on 2026-09-15, slice/path-perf: a 20 s idle pause, a pause when scrolled out of view, and a per-device Lite tier with no shadows.)*
 - The full-snapshot `mergeShared` path trusts its input, as it does for every Shared collection.
 
 ## Decisions

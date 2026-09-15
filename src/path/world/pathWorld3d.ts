@@ -29,7 +29,19 @@ export type PathWorldInput = {
 export type PathAnchor = { id: string; x: number; y: number; depth: number; visible: boolean };
 export type PathLevel = 0 | 1 | 2 | 3;
 export const PATH_LEVEL_RADIUS: readonly number[] = [150, 82, 44, 20];
-export type PathWorldStats = { frames: number; lastFrameMs: number; pieces: number; level: PathLevel; ambient: boolean };
+export type PathQuality = "full" | "lite";
+export type PathWorldStats = {
+  frames: number; lastFrameMs: number; pieces: number; level: PathLevel; ambient: boolean;
+  quality: PathQuality;
+  /** The page asked the world to sleep (the tent is open): nothing renders, everything stays allocated. */
+  sleeping: boolean;
+  /** Ambient motion is on but nobody has touched the island for a while, so the loop has stopped. */
+  idle: boolean;
+};
+/** With ambient motion on, the loop still stops after this long without interaction or a scene change. */
+export const IDLE_MS = 20_000;
+/** Pixel-ratio caps: Full keeps today's 1.5; Lite draws fewer pixels on dense phone screens. */
+const PIXEL_RATIO_CAP: Record<PathQuality, number> = { full: 1.5, lite: 1.25 };
 
 type Palette = {
   sky: [string, string, string]; fog: string; grass: string; dry: string; sand: string; rock: string; sea: string; deep: string;
@@ -67,11 +79,14 @@ export function createPathWorld(host: HTMLElement, options: {
   onPick?: (id: string) => void;
   brass?: string;
   wood?: string;
+  /** Full: soft shadows and every decorative ticker. Lite: no shadows, fewer pixels, no ambient decor. */
+  quality?: PathQuality;
+  /** Proof pages only: override the idle pause (Infinity disables it, to measure the old behaviour). */
+  idleMs?: number;
 }) {
+  const idleMs = options.idleMs ?? IDLE_MS;
   const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true });
-  renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.domElement.setAttribute("aria-hidden", "true");
   renderer.domElement.className = "path-world__canvas";
@@ -83,7 +98,6 @@ export function createPathWorld(host: HTMLElement, options: {
   const hemi = new THREE.HemisphereLight(0xfff0dc, 0x8e8272, 1.35);
   const sun = new THREE.DirectionalLight(0xffe6c4, 2.2);
   sun.position.set(-60, 90, 40);
-  sun.castShadow = true;
   sun.shadow.mapSize.set(1536, 1536);
   Object.assign(sun.shadow.camera, { left: -80, right: 80, top: 80, bottom: -80, near: 10, far: 260 });
   sun.shadow.bias = -0.0006;
@@ -806,8 +820,29 @@ export function createPathWorld(host: HTMLElement, options: {
     }
   }
 
+  // ------------------------------------------------------------------ quality
+  let quality: PathQuality = "full";
+  function applyQuality(next: PathQuality, first = false) {
+    if (!first && next === quality) return;
+    quality = next;
+    const full = next === "full";
+    renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, PIXEL_RATIO_CAP[next]));
+    renderer.shadowMap.enabled = full;
+    sun.castShadow = full;
+    if (!full && sun.shadow.map) { sun.shadow.map.dispose(); sun.shadow.map = null; }
+    if (first) return;
+    // Shadow code is compiled into each program: ask three.js to rebuild them.
+    scene.traverse((obj) => {
+      const m = (obj as THREE.Mesh).material as THREE.Material | THREE.Material[] | undefined;
+      if (Array.isArray(m)) for (const x of m) x.needsUpdate = true;
+      else if (m) m.needsUpdate = true;
+    });
+  }
+  applyQuality(options.quality ?? "full", true);
+
   // ------------------------------------------------------------------ frames
   let raf = 0, dead = false, ambient = false, clock = 0, last = 0, frames = 0, lastFrameMs = 0;
+  let sleeping = false, offscreen = false, idle = false, lastActivity = performance.now();
   const projected = new THREE.Vector3();
   function frame(now: number) {
     raf = 0;
@@ -816,9 +851,10 @@ export function createPathWorld(host: HTMLElement, options: {
     const dt = last ? Math.min(0.05, (now - last) / 1000) : 0;
     last = now;
     let busy = false;
-    if (ambient) { clock += dt; busy = true; cam.theta += dt * 0.012; }
+    const drifting = ambient && !idle;
+    if (drifting) { clock += dt; busy = true; cam.theta += dt * 0.012; }
     for (const t of tickers) t(clock);
-    for (const obj of decor.children) {
+    if (quality === "full") for (const obj of decor.children) {
       if (obj.userData.spin) obj.rotation.y += dt * (obj.userData.spin as number);
       const orbit = obj.userData.orbit as { r: number; speed: number; phase: number; y: number } | undefined;
       if (orbit) { const a = clock * orbit.speed + orbit.phase; obj.position.set(Math.cos(a) * orbit.r, orbit.y, Math.sin(a) * orbit.r); obj.rotation.y = -a; }
@@ -842,6 +878,9 @@ export function createPathWorld(host: HTMLElement, options: {
       busy = true;
     }
     for (const bank of sculptures.values()) if (bank.sculpture.update(now)) busy = true;
+    // Idle is counted from when the island last settled or was touched.
+    const settling = busy && !drifting;
+    if (settling || pointers.size) lastActivity = performance.now();
     place();
     renderer.render(scene, camera);
     syncAnchors();
@@ -855,17 +894,50 @@ export function createPathWorld(host: HTMLElement, options: {
       options.onAnchors(list);
     }
     frames++; lastFrameMs = performance.now() - started;
+    if (drifting && !settling && !pointers.size && performance.now() - lastActivity >= idleMs) { idle = true; busy = false; }
     if (busy || pointers.size) raf = requestAnimationFrame(frame);
     else last = 0;
   }
-  function invalidate() { if (!raf && !dead) raf = requestAnimationFrame(frame); }
-  const onHidden = () => { if (document.hidden) { cancelAnimationFrame(raf); raf = 0; last = 0; } else invalidate(); };
+  function halt() { if (raf) cancelAnimationFrame(raf); raf = 0; last = 0; }
+  /** Something changed or someone touched the island: leave idle and draw (unless asleep or scrolled away). */
+  function invalidate() {
+    if (dead) return;
+    lastActivity = performance.now();
+    idle = false;
+    if (!raf && !sleeping && !offscreen) raf = requestAnimationFrame(frame);
+  }
+  const onHidden = () => { if (document.hidden) halt(); else invalidate(); };
   document.addEventListener("visibilitychange", onHidden);
   cleanup.push(() => document.removeEventListener("visibilitychange", onHidden));
+  // Keyboard and touch count as interaction too (the page's controls are DOM buttons, not the canvas).
+  const onActivity = () => { if (idle) invalidate(); else lastActivity = performance.now(); };
+  window.addEventListener("keydown", onActivity, { passive: true });
+  host.addEventListener("touchstart", onActivity, { passive: true });
+  cleanup.push(() => { window.removeEventListener("keydown", onActivity); host.removeEventListener("touchstart", onActivity); });
+  // Scrolled fully out of view: stop drawing until any of it comes back.
+  if (typeof IntersectionObserver === "function") {
+    const io = new IntersectionObserver((entries) => {
+      const entry = entries[entries.length - 1];
+      if (!entry) return;
+      offscreen = !entry.isIntersecting;
+      if (offscreen) halt();
+      else invalidate();
+    });
+    io.observe(host);
+    cleanup.push(() => io.disconnect());
+  }
   const lost = (event: Event) => { event.preventDefault(); options.onLost?.(); };
   el.addEventListener("webglcontextlost", lost);
   cleanup.push(() => el.removeEventListener("webglcontextlost", lost));
 
+  /** A hidden host measures 0×0; those sizes are ignored so the last real size is kept. */
+  function resize(w: number, h: number) {
+    if (!w || !h || (w === width && h === height)) return;
+    width = w; height = h;
+    camera.aspect = w / h; camera.updateProjectionMatrix();
+    renderer.setSize(w, h, false);
+    invalidate();
+  }
   function flyTo(tx: number, tz: number, r: number, theta = cam.theta) {
     const to = { ...cam, tx, tz, r };
     let dth = theta - cam.theta; dth = Math.atan2(Math.sin(dth), Math.cos(dth));
@@ -882,14 +954,18 @@ export function createPathWorld(host: HTMLElement, options: {
       buildScene(input, animate);
       invalidate();
     },
-    resize(w: number, h: number) {
-      if (!w || !h || (w === width && h === height)) return;
-      width = w; height = h;
-      camera.aspect = w / h; camera.updateProjectionMatrix();
-      renderer.setSize(w, h, false);
+    resize,
+    setAmbient(on: boolean) { ambient = on && !options.reducedMotion; invalidate(); },
+    setQuality(next: PathQuality) { applyQuality(next); invalidate(); },
+    /** The tent is open: stop drawing, keep the context and every buffer. */
+    sleep() { if (dead) return; sleeping = true; halt(); },
+    /** Back from the tent: re-measure (the host was display:none), draw, and re-report anchors. */
+    wake(w?: number, h?: number) {
+      if (dead) return;
+      sleeping = false;
+      if (w && h) resize(w, h);
       invalidate();
     },
-    setAmbient(on: boolean) { ambient = on && !options.reducedMotion; invalidate(); },
     /** Re-report anchors after the page changed what it shows (lantern, layers). */
     refresh() { invalidate(); },
     /** Travel to an anchor, or to "now" (the current month). */
@@ -901,7 +977,7 @@ export function createPathWorld(host: HTMLElement, options: {
     setLevel(next: PathLevel) { flyTo(next === 0 ? 0 : cam.tx, next === 0 ? 0 : cam.tz, PATH_LEVEL_RADIUS[next]!); },
     zoom(factor: number) { fly = null; cam.r = Math.max(14, Math.min(200, cam.r * factor)); invalidate(); },
     turn(delta: number) { cam.theta += delta; invalidate(); },
-    stats(): PathWorldStats { return { frames, lastFrameMs, pieces: pickables.length, level, ambient }; },
+    stats(): PathWorldStats { return { frames, lastFrameMs, pieces: pickables.length, level, ambient, quality, sleeping, idle }; },
     dispose() {
       if (dead) return;
       dead = true;
