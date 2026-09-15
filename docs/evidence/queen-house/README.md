@@ -48,3 +48,11 @@ ledge). Each of the twelve browsers then travelled the house three ways:
 A swipe, by a thumb, on a phone. Every gesture above was made by a mouse or a
 synthetic pointer event on a container CPU. That is the weakest claim in this
 pass and it wants a device.
+
+## Regenerated 2026-09-15 — the ledge's banks dressed
+
+Same 38 records, 0 page errors, axe clean at 1100, after `cellar-bank-dress.patch`:
+on the loft's ledge a goal plants a pennant beside her and a lidded thing wears
+the postman's cap with an envelope on its paws (`queenBankDress.ts`), in the
+sculpture and in the drawn twin; the cellar floor shows the dressed jars at the
+rail's default scale.

@@ -10,7 +10,8 @@ import { postDueRecurrences } from "../core/commands.ts";
 import { projectKittyNest } from "../core/kittyNest.ts";
 import { cellarGateWords, cellarReading, type CellarJar } from "../core/queenCellar.ts";
 import { ConfirmSheet } from "../Confirm.tsx";
-import { QueenCellarRail, cellarBankForm, cellarDayLabel } from "./QueenCellarRail.tsx";
+import { CellarZoomPane, QueenCellarRail, cellarBankForm, cellarDayLabel } from "./QueenCellarRail.tsx";
+import { readCellarZoom, storeCellarZoom } from "./cellarZoom.ts";
 import type { CellarHue } from "../core/queenCellar.ts";
 
 /** The category groups' clays for the sculptures; the flat twin reads the same six from `--queen-hue-*` in queen-cellar.css. */
@@ -55,6 +56,9 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
   const [heldId, setHeldId] = useState<string | null>(null);
   const [striking, setStriking] = useState<CellarJar | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // The size of the banks on the rail: remembered on this device, never synced.
+  const [zoom, setZoom] = useState(() => readCellarZoom(typeof localStorage === "undefined" ? null : localStorage));
+  const onZoom = (next: number) => { setZoom(next); storeCellarZoom(next, typeof localStorage === "undefined" ? null : localStorage); };
   const nest = useMemo(() => household && memberId && today ? projectKittyNest(household, memberId, "household", today) : null, [household, memberId, today]);
   const reading = useMemo(() => {
     if (!household || !nest || !today) return null;
@@ -157,18 +161,19 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
       )}
       {reading && view === "bills" && (
         <>
-          <QueenCellarRail reading={reading} cursor={billCursor} onCursor={(next) => setBillCursor((current) => typeof next === "function" ? next(current) : next)} heldId={heldId} />
+          <QueenCellarRail reading={reading} cursor={billCursor} onCursor={(next) => setBillCursor((current) => typeof next === "function" ? next(current) : next)} heldId={heldId} zoom={zoom} onZoom={onZoom} />
           <div className="queen-scrub">
             <span className="queen-scrub__end">1</span>
             <input type="range" min={0} max={reading.days.length - 1} step={1} value={billAt}
               aria-label="Scrub the month" aria-valuetext={gateDay ? `${cellarDayLabel(gateDay.date)}${gateJar ? `, ${gateJar.label}` : ""}` : ""}
               onChange={(event) => setBillCursor(Number(event.currentTarget.value))} />
             <span className="queen-scrub__end">{reading.days.length}</span>
+            <CellarZoomPane zoom={zoom} onZoom={onZoom} />
           </div>
           <p className="queen-room__line" aria-live="polite">
             <em>{gateJar ? (gateJar.strike === "hammer" ? "The hammer is out." : gateJar.strike === "crack" ? "Cracked." : gateJar.paid ? "A shard, kept." : "Filling.") : gateDay?.today ? "Today." : "The rail."}</em> {cellarGateWords(gateJar, gateDay, formatCad)}
             {heldId && gateJar?.id === heldId ? " Lifted out — a rehearsal; nothing is written." : ""}
-            {!gateJar && reading.jars.length > 0 ? " Its shape is what it is for, its colour where it is filed, its size how large the due is; pick one to read it." : ""}
+            {!gateJar && reading.jars.length > 0 ? " Its shape and what it wears are what it is for, its colour where it is filed, its size how large the due is; pick one to read it." : ""}
           </p>
           <div className="queen-room__acts">
             {gateJar?.strike === "hammer" && gateJar.recurrenceId && (

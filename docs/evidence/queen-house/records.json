@@ -226,39 +226,6 @@
     "seats": 0,
     "cats": 2,
     "pots": 0,
-    "liveCanvas": false,
-    "errors": 0,
-    "money": false
-  },
-  {
-    "width": 320,
-    "height": 568,
-    "mode": "reduced",
-    "floor": "cellar",
-    "scene": "cellar",
-    "world": "3d",
-    "overflowX": 0,
-    "overflowY": 0,
-    "rail": [
-      {
-        "floor": "loft",
-        "here": false,
-        "label": "Go to the loft — Build"
-      },
-      {
-        "floor": "home",
-        "here": false,
-        "label": "Go to the hearth — What now"
-      },
-      {
-        "floor": "cellar",
-        "here": true,
-        "label": "The cellar — Protect, where you are"
-      }
-    ],
-    "seats": 3,
-    "cats": 3,
-    "pots": 0,
     "liveCanvas": true,
     "errors": 0,
     "money": false
@@ -267,6 +234,39 @@
     "width": 320,
     "height": 568,
     "mode": "reduced",
+    "floor": "cellar",
+    "scene": "cellar",
+    "world": "3d",
+    "overflowX": 0,
+    "overflowY": 0,
+    "rail": [
+      {
+        "floor": "loft",
+        "here": false,
+        "label": "Go to the loft — Build"
+      },
+      {
+        "floor": "home",
+        "here": false,
+        "label": "Go to the hearth — What now"
+      },
+      {
+        "floor": "cellar",
+        "here": true,
+        "label": "The cellar — Protect, where you are"
+      }
+    ],
+    "seats": 3,
+    "cats": 3,
+    "pots": 0,
+    "liveCanvas": true,
+    "errors": 0,
+    "money": false
+  },
+  {
+    "width": 320,
+    "height": 568,
+    "mode": "reduced",
     "floor": "loft",
     "scene": "loft",
     "world": "3d",
@@ -325,7 +325,7 @@
     "seats": 0,
     "cats": 2,
     "pots": 0,
-    "liveCanvas": true,
+    "liveCanvas": false,
     "errors": 0,
     "money": false
   },
@@ -523,7 +523,7 @@
     "seats": 0,
     "cats": 2,
     "pots": 0,
-    "liveCanvas": false,
+    "liveCanvas": true,
     "errors": 0,
     "money": false
   },
@@ -919,7 +919,7 @@
     "seats": 0,
     "cats": 2,
     "pots": 0,
-    "liveCanvas": true,
+    "liveCanvas": false,
     "errors": 0,
     "money": false
   },

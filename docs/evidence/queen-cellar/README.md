@@ -68,3 +68,18 @@ frame the rooms' own evidence shows cramped. There the slider and the sub-line
 give way (the rail still drags and takes the arrow keys, and the line beneath
 the gate is hidden by the existing short-frame rule); the stair, head, view
 pills and rail stay inside the room. 320×700 is the honest 320 frame.
+
+## Regenerated 2026-09-15 — dressed for their purpose, and sized by hand
+
+Same 23 records, 0 page errors, 0 serious/critical axe hits, `overflowY` 0
+everywhere, after `cellar-bank-dress.patch`: every jar now wears its purpose
+(`src/queen/world/queenBankDress.ts`) — the house bill a postman's cap and an
+envelope, the recurring payment a wind-up key in its flank, the subscription
+a collar with a bell, the appointment a calendar leaf, the planned expense a
+folded paper hat — in the sculpture and in the drawn twin (`no-webgl-*`), the
+crown still in front of every hat. The rail stands at its remembered scale
+(default 140%: `--cellar-zoom`); the `− 140% +` pane sits in the scrub row
+beside the slider, and the rail also takes a pinch, ctrl-scroll and the +/−
+keys. At 1100×800 the month's largest jar stands up behind the glass view
+pills — a pane standing in the room, by design. Each jar's hover title names
+its purpose and its dressing; the accessible names are unchanged.

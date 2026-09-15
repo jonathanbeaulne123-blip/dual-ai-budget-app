@@ -273,7 +273,10 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   const inkMat = mat(new THREE.MeshStandardMaterial({ color: "#2f2a26", roughness: 0.55 }));
   const ghostMat = mat(new THREE.MeshBasicMaterial({ color: "#8a8071", wireframe: true, transparent: true, opacity: 0.4 }));
   const shadowMat = mat(new THREE.MeshBasicMaterial({ color: "#000000", transparent: true, opacity: 0.2, depthWrite: false }));
-  const bankMaterials: BankMaterials = { clay, glaze, deep: deepClay, brass: brassMat, ink: inkMat, ghost: ghostMat };
+  // The dressing's cloth and paper (queenBankDress): a postman's felt, a calendar's paper.
+  const feltMat = mat(new THREE.MeshStandardMaterial({ color: "#4f6e9c", roughness: 0.85, side: THREE.DoubleSide }));
+  const paperMat = mat(new THREE.MeshStandardMaterial({ color: "#efe6d2", roughness: 0.85 }));
+  const bankMaterials: BankMaterials = { clay, glaze, deep: deepClay, brass: brassMat, ink: inkMat, ghost: ghostMat, felt: feltMat, paper: paperMat };
   // The cellar's tinted, finished clays: one small greyscale canvas per finish (a speckle, bands, a crackle),
   // multiplied by the group's tint, so six hues × four finishes cost four textures and a material per pair in use.
   const finishMaps = new Map<string, THREE.Texture | null>();
