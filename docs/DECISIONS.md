@@ -1,3 +1,30 @@
+## 2026-09-15 — Our Path becomes a world that grows from the couple's months (D-262)
+
+Jonathan asked for the two Our Path prototypes (the explorable journey map and the growing island) to be merged into one world and blended into what the tab already shows. His decisions:
+- One world, with the growing island as the ground.
+- Recipes, the island's name and both-agree approvals live in a new Shared collection now.
+- Hearth guesses which score each category feeds, and either person can fix the guess.
+- The personal Plan is unchanged.
+- No feature flag, as long as today's Our Path stays reachable from the tent.
+- Hercules may propose new biomes and pieces as data, with both approving.
+- Every score imaginable.
+
+The household Our Path tab now renders `OurPathWorld`. The island is grown on read, so nothing about the land is stored:
+- `pathMonths` gives 18 scores a month, read from household-scope facts only. Health categories never feed a score.
+- The recipes turn those scores into land.
+- `growIsland` is a deterministic grower.
+
+Chapters, Moves, Rituals, Wins and shared Kitty Banks stand on the island. The tent keeps the Chapter room and Plan Studio mounted.
+
+The new Shared `pathWorld` collection holds three kinds of row, none of them money:
+- recipe overrides and additions;
+- the island name;
+- category corrections.
+
+It mirrors the Chapter wiring: shape, split, assemble, merge, identity, materialization and replay. Its command kind is `updatePathWorld`. Recipes and the name change only when every active member agrees to the same revision. Concurrent agreements converge by union and are promoted at read time.
+
+High risk (sync). Budget (5): +1, since nothing posts and every picture is traced to accepted facts. Engagement (3): +3. [Worksession, evidence and the open trust-review question](worksessions/2026-09-15-our-path-world.md). Local branch only; no deployment, hosted schema or Production change.
+
 ## 2026-09-12 — Hercules retains work and resolves its real capabilities (D-249 amendment)
 
 Jonathan asked Codex to use Claude's hands-on audit to fix demonstrated failures and expand Hercules's intelligence and tools. The audit's older activation observations remain historical evidence. Current implementation retains private pause and queued confirmation identities, routes side questions around guided fields, bounds complete connection attempts, and gives Workspace and legacy conversation one presentation owner. Easy Read stays inside its scroll owner and remains reachable while scrolling.

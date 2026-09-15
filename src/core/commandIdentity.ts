@@ -36,6 +36,7 @@ export function commandMaterializationFacts(input: {
   rituals?: Household["rituals"];
   moves?: Household["moves"];
   wins?: Household["wins"];
+  pathWorld?: Household["pathWorld"];
 }): unknown {
   return stable({
     ...(input.kittyNestDesigns?.length ? { kittyNestDesigns: byId(input.kittyNestDesigns) } : {}),
@@ -56,6 +57,7 @@ export function commandMaterializationFacts(input: {
     ...(input.rituals?.length ? { rituals: byId(input.rituals) } : {}),
     ...(input.moves?.length ? { moves: byId(input.moves) } : {}),
     ...(input.wins?.length ? { wins: byId(input.wins) } : {}),
+    ...(input.pathWorld?.length ? { pathWorld: byId(input.pathWorld) } : {}),
   });
 }
 
@@ -268,6 +270,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const chapterFactsChanged = (["chapters", "rituals", "moves", "wins"] as const).some((field) => (
     JSON.stringify(stable(previous?.[field] ?? [])) !== JSON.stringify(stable(next[field] ?? []))
   ));
+  const pathWorldChanged = JSON.stringify(stable(previous?.pathWorld ?? [])) !== JSON.stringify(stable(next.pathWorld ?? []));
   return stable({
     householdId: next.householdId,
     environment: next.environment,
@@ -355,6 +358,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
       moves: byId(next.moves),
       wins: byId(next.wins),
     } : {}),
+    ...(pathWorldChanged ? { pathWorld: byId(next.pathWorld) } : {}),
     tombstones,
     charter: charterPosted ? next.charter ?? null : null,
     // Private reconciliation and binding details never affect a shared command identity.

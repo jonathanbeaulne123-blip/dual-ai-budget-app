@@ -1,0 +1,121 @@
+/* Our Path world (D-262). The page reads the scene tokens; each world adds its own paper. */
+.path-world { display: grid; gap: 14px; }
+.path-world [hidden] { display: none !important; }
+.path-world .primary { width: auto; margin-top: 0; padding: 10px 16px; font-size: 15px; }
+
+.path-world__head { display: grid; gap: 4px; }
+.path-world__head h2 { font-family: var(--theme-display, var(--display)); font-weight: 600; font-size: clamp(24px, 4.6vw, 34px); line-height: 1.05; margin: 0; text-wrap: balance; }
+.path-world__lede { margin: 0; color: var(--muted); max-width: 60ch; }
+.path-world__link { justify-self: start; border: 1px dashed var(--theme-accent, var(--copper)); background: transparent; color: var(--ink); border-radius: 999px; padding: 6px 14px; font-weight: 600; min-height: 44px; }
+.path-world__namer { display: grid; gap: 8px; max-width: 420px; padding: 12px; border: 1px solid var(--line); border-radius: var(--world-r-card, 14px); background: var(--card); }
+.path-world__namer input { font-family: var(--theme-display, var(--display)); font-size: 20px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+
+/* The stage: canvas, the real buttons over it, and a few quiet controls. */
+.path-world__stage { position: relative; height: clamp(440px, 72vh, 760px); border-radius: var(--world-r-card, 18px); overflow: hidden; border: 1px solid var(--line); background: var(--paper-2, var(--paper)); isolation: isolate; }
+.path-world__host { position: absolute; inset: 0; }
+.path-world__host canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+.path-world__host canvas:active { cursor: grabbing; }
+.path-world__flat { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; }
+.path-world__flat svg { width: min(100%, 460px); height: auto; }
+.path-world__dot { stroke: var(--card); stroke-width: 0.8; }
+
+.path-world__marks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+.path-mark { position: absolute; left: 0; top: 0; pointer-events: auto; display: grid; justify-items: center; gap: 2px; transform-origin: 0 0; border: 0; background: transparent; padding: 0; min-width: 44px; min-height: 44px; place-content: end center; color: var(--ink); will-change: transform; translate: -50% -100%; }
+.path-mark__label { font-family: var(--theme-hand, var(--display)); font-size: 15px; line-height: 1.1; background: var(--card); padding: 3px 9px 4px; border-radius: 6px; box-shadow: 0 3px 10px -5px rgb(0 0 0 / 0.45); white-space: nowrap; max-width: 44vw; overflow: hidden; text-overflow: ellipsis; }
+.path-mark__sub { font-size: 11px; font-weight: 600; color: var(--muted); background: color-mix(in srgb, var(--card) 88%, transparent); padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.path-mark:focus-visible .path-mark__label { outline: 3px solid var(--theme-accent, var(--copper)); outline-offset: 2px; }
+.path-mark--now .path-mark__label { background: var(--ink); color: var(--paper); }
+.path-mark--goal .path-mark__label { font-family: var(--theme-display, var(--display)); font-weight: 600; }
+.path-mark--unknown .path-mark__label { outline: 2px dashed var(--theme-second, var(--copper)); }
+.path-mark--bill .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 600; }
+.path-world[data-level="0"] .path-mark--goal .path-mark__label { font-size: 17px; }
+
+.path-world__controls { position: absolute; z-index: 3; top: 12px; right: 12px; display: grid; gap: 8px; justify-items: end; }
+.path-world__lantern, .path-world__layers, .path-world__rail { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); flex-wrap: wrap; }
+.path-world__lantern button, .path-world__layers button, .path-world__rail button { border: 0; background: transparent; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13px; min-height: 36px; display: inline-flex; gap: 6px; align-items: center; }
+.path-world__lantern button[aria-pressed="true"], .path-world__rail button[aria-current="true"] { background: var(--ink); color: var(--paper); }
+.path-world__layers button[aria-pressed="false"] { text-decoration: line-through; opacity: 0.7; }
+.path-world__lantern i { width: 8px; height: 11px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: currentColor; opacity: 0.6; }
+.path-world__rail { position: absolute; z-index: 3; left: 12px; bottom: 12px; border-radius: 16px; }
+.path-world__now { position: absolute; z-index: 3; right: 12px; bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: min(560px, calc(100% - 24px)); }
+.path-world__compass, .path-world__next { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 8px 14px; font-weight: 700; min-height: 44px; box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); text-align: left; }
+.path-world__next { display: grid; line-height: 1.2; max-width: 280px; }
+.path-world__next span { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.path-world__tent { border-radius: 999px; min-height: 44px; }
+
+.path-world__card { position: absolute; z-index: 4; top: 64px; left: 12px; width: min(340px, calc(100% - 24px)); max-height: calc(100% - 140px); overflow: auto; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: var(--world-r-card, 14px); padding: 16px 16px 14px; box-shadow: 0 24px 50px -24px rgb(0 0 0 / 0.55); }
+.path-world__card h3 { font-family: var(--theme-display, var(--display)); font-size: 22px; line-height: 1.1; margin: 2px 32px 8px 0; text-wrap: balance; }
+.path-world__card ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; line-height: 1.4; }
+.path-world__close { position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--paper); color: var(--ink); font-size: 18px; }
+.path-world__actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.path-world__actions button { min-height: 44px; border-radius: 999px; padding: 8px 14px; font-weight: 700; }
+
+.path-world__grow { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--world-r-card, 14px); background: var(--card); }
+.path-world__play { grid-row: span 3; min-width: 88px; min-height: 44px; border-radius: 999px; border: 0; background: var(--ink); color: var(--paper); font-weight: 700; }
+.path-world__when { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.path-world__when strong { font-family: var(--theme-display, var(--display)); font-size: 20px; }
+.path-world__slider input { width: 100%; accent-color: var(--theme-accent, var(--copper)); min-height: 32px; }
+.path-world__ticks { list-style: none; margin: 0; padding: 0; display: flex; gap: 3px; }
+.path-world__ticks li { flex: 1; height: 8px; border-radius: 3px; }
+.path-world__ticks li[data-current="true"] { outline: 2px solid var(--ink); outline-offset: 1px; }
+.path-chip { font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; color: #2f261b; }
+.path-chip--steady, .path-world__dot--steady { background: #a9b98f; fill: #a9b98f; }
+.path-chip--bloom, .path-world__dot--bloom { background: #e79ab2; fill: #e79ab2; }
+.path-chip--milestone, .path-world__dot--milestone { background: #e0ad3c; fill: #e0ad3c; }
+.path-chip--uphill, .path-world__dot--uphill { background: #c9a36a; fill: #c9a36a; }
+.path-chip--storm, .path-world__dot--storm { background: #8e9cb2; fill: #8e9cb2; }
+.path-chip--paused, .path-world__dot--paused { background: #cfc5b3; fill: #cfc5b3; }
+.path-world__notice { margin: 0; font-weight: 600; }
+
+.path-world__panels { display: grid; gap: 10px; }
+.path-world__panel { border: 1px solid var(--line); border-radius: var(--world-r-card, 14px); background: var(--card); padding: 12px 14px; }
+.path-world__panel summary { font-weight: 700; cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+.path-world__panel h3 { margin: 0 0 8px; font-family: var(--theme-display, var(--display)); }
+.path-world__proposals { border: 1.5px dashed var(--theme-second, var(--copper)); }
+.path-world__proposals ul, .path-recipes, .path-categories, .path-world__outline ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.path-world__proposals p { margin: 0 0 4px; }
+.path-recipes { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.path-recipe { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--paper); display: grid; gap: 6px; }
+.path-recipe.is-off { opacity: 0.6; }
+.path-recipe__top { display: flex; justify-content: space-between; gap: 8px; }
+.path-recipe__fired { font-weight: 700; color: var(--theme-accent, var(--copper)); font-variant-numeric: tabular-nums; }
+.path-recipe__rule { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.path-recipe__rule select { max-width: 190px; min-height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.path-recipe__rule input[type="range"] { width: 90px; accent-color: var(--theme-accent, var(--copper)); }
+.path-recipe__by { margin: 0; font-size: 12px; }
+.path-categories li { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+.path-categories select { min-height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+.path-world__outline button { border: 0; background: transparent; color: var(--ink); text-align: left; padding: 6px 4px; min-height: 36px; width: 100%; border-radius: 8px; }
+.path-world__outline button:hover { background: var(--paper); }
+
+.path-world__room { display: grid; gap: 12px; }
+.path-world__back { justify-self: start; min-height: 44px; border-radius: 999px; padding: 8px 16px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; }
+
+/* Classic Hearth: a pinboard map on the kitchen table. */
+.path-world--classic .path-world__stage { background: #efe6d6; box-shadow: inset 0 0 0 6px color-mix(in srgb, var(--card) 70%, transparent); }
+.path-world--classic .path-mark__label { border-radius: 2px; box-shadow: 0 2px 0 color-mix(in srgb, var(--theme-accent, #b5653e) 55%, transparent), 0 4px 10px -6px rgb(0 0 0 / 0.4); }
+/* Taylor's Scrapbook: washi tape on the stage and a hand-lettered map. */
+.path-world--taylor .path-world__stage { border-radius: 6px 22px 6px 22px; }
+.path-world--taylor .path-world__stage::before { content: ""; position: absolute; z-index: 5; top: -2px; left: 32px; width: 96px; height: 18px; rotate: -3deg; pointer-events: none; background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--theme-accent, #946522) 45%, transparent) 0 6px, color-mix(in srgb, var(--theme-second, #a63968) 35%, transparent) 6px 12px); }
+.path-world--taylor .path-mark__label { border-radius: 3px; }
+/* Newfoundland: the coastal trail, weathered signboards and fog. */
+.path-world--newfoundland .path-world__stage { background: #dfe7e6; border-width: 2px; }
+.path-world--newfoundland .path-mark__label { font-family: var(--font); font-weight: 700; font-size: 13px; letter-spacing: 0.02em; border-left: 4px solid var(--theme-accent, #a33751); border-radius: 3px; }
+
+@media (max-width: 719px) {
+  .path-world__stage { height: clamp(420px, 68vh, 620px); }
+  .path-world__controls { top: 8px; right: 8px; left: 8px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+  .path-world__lantern, .path-world__layers { flex: none; flex-wrap: nowrap; }
+  .path-world__lantern button, .path-world__layers button { padding: 6px 9px; }
+  .path-world__rail { left: 8px; right: 8px; bottom: 64px; justify-content: center; border-radius: 999px; }
+  .path-world__rail button { padding: 6px 9px; }
+  .path-world__now { left: 8px; right: 8px; bottom: 8px; max-width: none; justify-content: stretch; flex-wrap: nowrap; }
+  .path-world__now > * { flex: 1; font-size: 13px; }
+  .path-world__next { display: none; }
+  .path-world__card { top: auto; bottom: 0; left: 0; width: 100%; max-height: 62%; border-radius: 18px 18px 0 0; z-index: 6; }
+  .path-mark__label { font-size: 13px; }
+  .path-world__grow { grid-template-columns: 1fr; }
+  .path-world__play { grid-row: auto; justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) { .path-mark { transition: none; } }
+@media (forced-colors: active) { .path-mark__label, .path-chip { forced-color-adjust: auto; border: 1px solid CanvasText; } }

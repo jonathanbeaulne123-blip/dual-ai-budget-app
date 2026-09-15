@@ -1,3 +1,39 @@
+## Our Path becomes a world that grows from the couple's months (2026-09-15)
+
+Branch `claude/our-path-world` on `origin/main@e8e2f09`, delivered as a bundle and a patch. **Risk: High**, because the change adds a synced Shared collection (`pathWorld`). The household **Our Path** tab is now an explorable island grown from the household's shared months. Chapters, Moves, Rituals, Wins and shared Kitty Banks stand on it. Distance and a per-person lantern set how much the page shows, and a tent opens today's Our Path unchanged. Budget (5): +1. Engagement (3): +3. Details and evidence are in [the worksession](worksessions/2026-09-15-our-path-world.md) and `docs/evidence/our-path-world/`.
+
+**Examined:**
+- `App.tsx` (the Our Path branch)
+- `chapters.ts` and its full sync, identity and replay wiring, used as the template
+- `kittyBanks.ts`, `monthObligations.ts`, `visibility.ts`
+- the queen worlds' lazy WebGL pattern
+- the habitat fixtures
+
+**Changes:**
+- `src/core/pathWorld.ts`: the collection and its five commands.
+- `src/core/pathSignals.ts`: the month scores.
+- `src/path/*`: the grower, the three.js world and the page.
+- Wiring in `types`, `sync`, `visibility`, `importParity`, `registry`, `commandIdentity`, `commandRuntime`, `materializeSnapshotFromEvents` and `continuityCommandLog`.
+- `App.tsx` household branch.
+- New tests and a focus-map entry.
+- The fictional proof script.
+
+**Verification:**
+- `tsc` is clean.
+- The quick gate at High passed (73.6 s of 300 s after the review fixes). An independent read-only review ran; its fixes are listed in the worksession.
+- `app-startup-p1`, `month-rehearsal-mainline`, `five-boards-entry-app`, `plan-life-ui`, `vision-v2-chapters`, `materialize-snapshot-from-events`, `ledger-import-parity` and `continuity-command-interleaving`: 137 of 137 pass.
+- The import-parity, materialize, continuity-interleaving, chapters, habitat and queens-nest suites are green.
+- `copy-budget` and `sync-integrity` fail identically on the untouched baseline.
+- Browser: 24 SwiftShader captures across Classic, Taylor and Newfoundland at 320 to 1440 px. All were live, with no overflow and no page errors.
+
+**Uncertainty:**
+- There is no capability guard for `pathWorld`, the same as for Chapters. An older client ignores the facts, and whether its later full-snapshot write can drop the rows needs Codex's call.
+- No real-device battery measurement and no axe run.
+
+**Environment:** fictional habitat books only; nothing hosted. **State:** not pushed, not a PR, not merged, not deployed, not live-verified.
+
+**Next owner:** Codex, for the trust review and the guard decision. Then Jonathan merges.
+
 ## The Standing Book as a binder — dividers staggered down the fore-edge, page flags on the open section (2026-09-15)
 
 Branch `claude/fund-book-account-stickies`, fourth commit on `main@97cd2e3` (#484). Jonathan, with two photographs: "i essentially want the widgets and tabs to work like binder in the second picture. and the sticky tabs in the first to be placed on top within the individual binder pages for example binder tab the accounts would have the stickies on top of the book linking to their own individual page." Two levels of navigation: the fore-edge becomes binder dividers — one per Fund widget on the member's rail, wide, labelled, staggered down the edge so every label reads at once — and each section's pages carry thin sticky flags along their top edge, one per item, only for the open section, each opening that item's own page inside the section. The old head strip of accounts (on the whole book, whatever divider was open) is gone; the mechanism is general. **Risk Medium** — presentation only, still behind `VITE_FUND_STANDING_BOOK`; `FundBoard`, `FundStage` and both hosts untouched; the divider tablist contract is byte-identical to `FundBoard`'s (asserted id for id, `aria-controls`, `aria-selected`, `aria-current`, `tabIndex`, on both presentations) and the Bianca pair was run anyway (below). Budget (5): +0 — no command, posting path, schema, synced row, `FundWidgetId`, `DeskPlateId`, `Household` field, route, worker or persisted value (which page is open is component state); every figure is the plate's own list (`TrackMark.cents`, the tally's count), `accountRows`', `accountRegister`'s or `categoryShape`'s, through `formatCad`; the category rule is the shape plate's own, lifted out as `categoryRowEdge` / `categoryRowAmount` / `categoryRowVerdict` / `categoryRowHasShape` / `categoryRowFigure` in `fundPlates.ts` and called by `shapePlate` itself, so there is one rule (`fund-plates.test.ts` 21/21, byte-identical output). Engagement (3): +2 — the Fund reads as one object with two levels: which section, then which page, and both levels are readable across the room.

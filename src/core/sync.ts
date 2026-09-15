@@ -62,6 +62,7 @@ import {
 } from "./householdFund.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "./monthRehearsal.ts";
 import { mergeChapters, mergeMoves, mergeRituals, mergeWins, shapeChapters, shapeMoves, shapeRituals, shapeWins } from "./chapters.ts";
+import { mergePathWorld, shapePathWorld } from "./pathWorld.ts";
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "./weeklyDocumentStamp.ts";
 import { mergeHouseholdCharters, shapeHouseholdCharter } from "./charter.ts";
 import { mergeHouseholdOnboarding, shapeHouseholdOnboarding } from "./onboarding/mode.ts";
@@ -435,6 +436,7 @@ export function ensureHouseholdShape(household: Household): Household {
     rituals: shapeRituals(household.rituals),
     moves: shapeMoves(household.moves),
     wins: shapeWins(household.wins),
+    pathWorld: shapePathWorld(household.pathWorld),
     transactions: household.transactions.map((tx) => ({
       ...tx,
       place: tx.place ?? "",
@@ -603,6 +605,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     rituals: shaped.rituals ?? [],
     moves: shaped.moves ?? [],
     wins: shaped.wins ?? [],
+    pathWorld: shaped.pathWorld ?? [],
     budgetPlans: shaped.budgetPlans,
     sitDownSessions: shaped.sitDownSessions,
     planVersions: sharedPlanVersions,
@@ -1103,6 +1106,7 @@ export function assembleHousehold(
     rituals: shapeRituals(shared.rituals),
     moves: shapeMoves(shared.moves),
     wins: shapeWins(shared.wins),
+    pathWorld: shapePathWorld(shared.pathWorld),
     companionProfile: scopedCompanion(personal?.companionProfile, shared, personal?.memberId),
     fundPrivate: shapeHouseholdFundPrivate(personal?.fundPrivate, personal?.memberId),
     fundContributionSourceClaims: shapeFundSourceClaims(personal?.fundContributionSourceClaims, personal?.memberId),
@@ -1242,6 +1246,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     rituals: mergeRituals(shapeRituals(server.rituals), shapeRituals(client.rituals)),
     moves: mergeMoves(shapeMoves(server.moves), shapeMoves(client.moves)),
     wins: mergeWins(shapeWins(server.wins), shapeWins(client.wins)),
+    pathWorld: mergePathWorld(server.pathWorld, client.pathWorld),
     weeklyDocumentStamps: mergeWeeklyDocumentStamps(
       server.weeklyDocumentStamps,
       client.weeklyDocumentStamps,

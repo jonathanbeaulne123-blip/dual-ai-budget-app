@@ -54,6 +54,7 @@ import {
   type Ritual,
   type Win,
 } from "../core/chapters.ts";
+import { mergePathWorld, pathWorldChangeAuthorized, pathWorldRowsValid, shapePathWorld, type PathWorldRow } from "../core/pathWorld.ts";
 import { advanceCadence } from "../core/recurrence.ts";
 import { dateKeyInZone, parseMonthKey, type DateKey } from "../core/calendar.ts";
 import { mergeWeeklyDocumentStamps, shapeWeeklyDocumentStamps } from "../core/weeklyDocumentStamp.ts";
@@ -134,6 +135,7 @@ export type ContinuityMaterializationFacts = {
   rituals?: Ritual[];
   moves?: Move[];
   wins?: Win[];
+  pathWorld?: PathWorldRow[];
   tombstones?: Tombstone[];
 };
 
@@ -821,6 +823,7 @@ function filterFactsForScope(
     if (facts.rituals?.length) scoped.rituals = shapeRituals(facts.rituals);
     if (facts.moves?.length) scoped.moves = shapeMoves(facts.moves);
     if (facts.wins?.length) scoped.wins = shapeWins(facts.wins);
+    if (facts.pathWorld?.length) scoped.pathWorld = shapePathWorld(facts.pathWorld);
   }
   if (facts.tombstones?.length) {
     scoped.tombstones = facts.tombstones;
@@ -942,6 +945,9 @@ export function extractMaterializationFacts(
       facts.moves = shapeMoves(household.moves);
       facts.wins = shapeWins(household.wins);
     }
+    if (options?.commandKind === "updatePathWorld") {
+      facts.pathWorld = shapePathWorld(household.pathWorld);
+    }
     const weeklyDocumentStamps = shapeWeeklyDocumentStamps(
       household.weeklyDocumentStamps,
       household.members,
@@ -1031,6 +1037,7 @@ async function applyEvent(
     }),
     mergedTombstones,
   );
+  const pathWorld = facts.pathWorld === undefined ? shapePathWorld(snapshot.pathWorld) : mergePathWorld(snapshot.pathWorld, facts.pathWorld);
   const planVersions = applyMoneyCollection(snapshot.planVersions ?? [], facts.planVersions, mergedTombstones);
   const planAcknowledgements = applyAppendOnlyCollection(snapshot.planAcknowledgements ?? [], facts.planAcknowledgements, mergedTombstones);
   const planReflections = applyMoneyCollection(snapshot.planReflections ?? [], facts.planReflections, mergedTombstones);
@@ -1115,6 +1122,7 @@ async function applyEvent(
     rituals,
     moves,
     wins,
+    pathWorld,
     tombstones: mergedTombstones,
   };
   next = rememberReceipt(next, receiptFromPayload(payload));
@@ -1175,6 +1183,7 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     rituals: [],
     moves: [],
     wins: [],
+    pathWorld: [],
     tombstones: [],
     commandReceipts: [],
     conflicts: [],
@@ -1370,6 +1379,10 @@ export async function applyCommandEventLocally(input: {
   const incomingWins = shapeWins(rawIncomingWins);
   const containsChapterCommand = event.command_type === "updateChapters"
     || readableCompactedCommands(event).some((row) => row.commandKind === "updateChapters");
+  const rawIncomingPathWorld = event.payload_json.materializationFacts.pathWorld;
+  const incomingPathWorld = shapePathWorld(rawIncomingPathWorld);
+  const containsPathWorldCommand = event.command_type === "updatePathWorld"
+    || readableCompactedCommands(event).some((row) => row.commandKind === "updatePathWorld");
   let incomingSubmissions: OnboardingSubmission[];
   try {
     incomingSubmissions = shapeOnboardingSubmissions(rawIncomingSubmissions);
@@ -1439,6 +1452,13 @@ export async function applyCommandEventLocally(input: {
       wins: incomingWins,
     }))) {
     return { ok: false, reason: "chapter-materialization-invalid", fallback: true };
+  }
+  if ((rawIncomingPathWorld !== undefined && (!Array.isArray(rawIncomingPathWorld) || incomingPathWorld.length !== rawIncomingPathWorld.length))
+    || (containsPathWorldCommand && !Array.isArray(rawIncomingPathWorld))
+    || (rawIncomingPathWorld !== undefined && !containsPathWorldCommand)
+    || (containsPathWorldCommand && !pathWorldRowsValid(local, incomingPathWorld))
+    || (containsPathWorldCommand && !pathWorldChangeAuthorized(local, incomingPathWorld, event.member_id))) {
+    return { ok: false, reason: "path-world-materialization-invalid", fallback: true };
   }
   if (incomingCategoryProposals.length || incomingCategoryMerges.length) {
     try {
@@ -1603,7 +1623,7 @@ export async function applyCommandEventLocally(input: {
   if (incomingNest.length || incomingRehearsals.length || incomingRecurrences.length || incomingOnboarding || incomingSubmissions.length
     || incomingCategoryProposals.length || incomingCategoryMerges.length || incomingApprovals.length
     || incomingBudgetPlans.length || containsChapterCommand || incomingChapters.length || incomingRituals.length
-    || incomingMoves.length || incomingWins.length) {
+    || incomingMoves.length || incomingWins.length || containsPathWorldCommand || incomingPathWorld.length) {
     const expected = await sha256Hex(commandMaterializationFacts({
       kittyNestDesigns: incomingNest,
       monthRehearsals: incomingRehearsals,
@@ -1619,6 +1639,7 @@ export async function applyCommandEventLocally(input: {
       rituals: incomingRituals,
       moves: incomingMoves,
       wins: incomingWins,
+      pathWorld: incomingPathWorld,
     }));
     const legacyRehearsalHash = !incomingNest.length && incomingRehearsals.length && !incomingRecurrences.length
       ? await sha256Hex(incomingRehearsals)

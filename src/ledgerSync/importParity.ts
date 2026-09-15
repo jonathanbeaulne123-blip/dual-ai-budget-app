@@ -74,6 +74,7 @@ export const IMPORT_FIELD_POLICY = {
   monthRehearsals: 'exact',
   weeklyDocumentStamps: 'exact',
   chapters: 'exact',
+  pathWorld: 'exact',
   rituals: 'exact',
   moves: 'exact',
   wins: 'exact',

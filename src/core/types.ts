@@ -1463,6 +1463,8 @@ export type Household = {
   rituals?: import("./chapters.ts").Ritual[];
   moves?: import("./chapters.ts").Move[];
   wins?: import("./chapters.ts").Win[];
+  /** Our Path world (D-262): recipes, island name, category→score fixes. Non-money; never journal or model context. */
+  pathWorld?: import("./pathWorld.ts").PathWorldRow[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   /** PLAN_SYSTEM_V2: private drafts/scenarios overlay only the signed-in member; Household versions are Shared. */
@@ -1566,6 +1568,8 @@ export type SharedEnvelope = {
   rituals?: import("./chapters.ts").Ritual[];
   moves?: import("./chapters.ts").Move[];
   wins?: import("./chapters.ts").Win[];
+  /** Our Path world (D-262): recipes, island name, category→score fixes. Non-money; never journal or model context. */
+  pathWorld?: import("./pathWorld.ts").PathWorldRow[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   /** Accepted/proposed Household Plan authority. Never contains Personal Plan material. */

@@ -478,6 +478,7 @@ import { fabActionsFor, fabClosedLabel } from "./core/fabActions.ts";
 import { fundDisplayName, spaceLabel } from "./core/spaceNames.ts";
 import { HouseholdHome } from "./HouseholdHome.tsx";
 import { ChapterRoom } from "./ChapterPanel.tsx";
+import { OurPathWorld } from "./path/OurPathWorld.tsx";
 import { ComfortControls } from "./theme/ComfortControls.tsx";
 import { useComfort } from "./theme/comfort.ts";
 
@@ -6995,9 +6996,8 @@ export function App() {
             </div>
           ) : planSystemV2Enabled() ? (
             <div className={`our-path our-path--${view}`}>
-            {view === "household" && <header className="our-path__head"><p className="kicker">Our Path</p><h2>Where we are going</h2><p className="muted">The Chapter leads. Goals, Kitty Banks, and the Plan Studio are rooms inside.</p></header>}
-            {view === "household" && <ChapterRoom household={household} memberId={actorId} today={today} onCommand={runKitchen} busy={busy} />}
-            {view === "household" && <h3 className="our-path__room-title">The Plan Studio · our agreement room</h3>}
+            {(() => {
+              const studio = (
             <PlanStudio
         onOpenWorkspace={workspaceEnabled ? () => { setWorkspaceProjectId(null); goTab("hercules"); } : undefined}
               workspaceCards={workspaceEnabled && workspaceSnapshot?.identity === ledgerRenderScopeKey ? month => <WorkspaceProjectCards projects={workspaceSnapshot.projects} household={household} memberId={actorId} scope={view} month={month} today={today} onOpen={id => {setWorkspaceProjectId(id);goTab("hercules");}} /> : undefined}
@@ -7032,6 +7032,17 @@ export function App() {
                 if (!response.ok || !payload.ok) throw new Error(payload.error || "Hercules could not save the Shared reply.");
               }}
             />
+              );
+              // D-262: the household Our Path is a world; the tent keeps today's page mounted so drafts survive.
+              return view === "household" ? (
+                <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} onOpenFund={() => goTab("ledger")} openTentFor={herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesSourceFocus : null} classicRoom={<>
+                  <header className="our-path__head"><p className="kicker">Our Path</p><h2>Where we are going</h2><p className="muted">The Chapter leads. Goals, Kitty Banks, and the Plan Studio are rooms inside.</p></header>
+                  <ChapterRoom household={household} memberId={actorId} today={today} onCommand={runKitchen} busy={busy} />
+                  <h3 className="our-path__room-title">The Plan Studio · our agreement room</h3>
+                  {studio}
+                </>} />
+              ) : studio;
+            })()}
             </div>
           ) : (
           <div className="plan-wide five-boards-plan">
