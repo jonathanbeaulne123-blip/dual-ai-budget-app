@@ -7,15 +7,16 @@ import { resolve } from "node:path";
 import * as THREE from "three";
 import { QUEEN_GLAZE_AXIS, queenModelStill, queenWorldStill } from "../src/queen/world/queenAuthoring.ts";
 import { QUEEN_HEIGHT, createQueenSculpture } from "../src/queen/world/queenSculpture.ts";
-import { QUEEN_MODEL_SHA256, QUEEN_MODEL_URL, parseQueenModel, queenModelAnchors, queenModelLook, queenModelPart } from "../src/queen/world/queenModel.ts";
+import { HOME_BANK_MODELS, QUEEN_MODEL_SHA256, QUEEN_MODEL_URL, parseQueenModel, queenModelAnchors, queenModelLook, queenModelPart } from "../src/queen/world/queenModel.ts";
 import { queenStill } from "../src/core/queenPresentation.ts";
 import { defaultKittyPaint } from "../src/core/kittyStudio.ts";
+import { createHomeBankModel } from "../src/queen/world/homeBankModel.ts";
 
 const file = resolve(process.cwd(), `public${QUEEN_MODEL_URL}`);
 const bytes = readFileSync(file);
 /** jsdom's TextDecoder refuses Node's buffers, so the GLB header is read through Node's own decoder for this suite. */
-const load = async () => {
-  const b = readFileSync(file);
+const load = async (path = file) => {
+  const b = readFileSync(path);
   const copy = new ArrayBuffer(b.byteLength);
   new Uint8Array(copy).set(b);
   return parseQueenModel(copy);
@@ -178,5 +179,43 @@ describe("The Mandevilla Queen — Jonathan's model, exactly as supplied (D-266)
     expect(world(words)).not.toMatch(/eyes open/);
     expect(world(queenWorldStill(still))).toMatch(/eyes open/);
     expect(queenModelStill(queenStill({ state: "checking", destination: "status" }, "stale"))).toMatch(/coins beside her dull/);
+  });
+});
+
+describe("Protect and Build — Jonathan's Guardian and Mastermind (D-267)", () => {
+  const bankFile = (id: keyof typeof HOME_BANK_MODELS) => resolve(process.cwd(), `public${HOME_BANK_MODELS[id].url}`);
+
+  it("ships both files byte for byte, with transfer copies that inflate to the same bytes", () => {
+    for (const id of ["protect", "build"] as const) {
+      const bytes = readFileSync(bankFile(id));
+      expect(createHash("sha256").update(bytes).digest("hex"), id).toBe(HOME_BANK_MODELS[id].sha256);
+      expect(createHash("sha256").update(gunzipSync(readFileSync(`${bankFile(id)}.gz`))).digest("hex"), id).toBe(HOME_BANK_MODELS[id].sha256);
+    }
+    expect(HOME_BANK_MODELS.protect.name).toBe("Mandevilla Guardian");
+    expect(HOME_BANK_MODELS.build.name).toBe("Mandevilla Mastermind");
+  });
+
+  it("stands each as a bank that grows with its fill and never changes how it looks", async () => {
+    for (const [id, part] of [["protect", "Heraldic shield"], ["build", "Queen chess piece"]] as const) {
+      const template = await load(bankFile(id));
+      expect(queenModelPart(template, part), part).not.toBeNull();
+      template.updateMatrixWorld(true);
+      const templateLook = queenModelLook(template);
+      const bank = createHomeBankModel(template, HOME_BANK_MODELS[id].name);
+      bank.group.updateMatrixWorld(true);
+      const before = queenModelLook(bank.model);
+      const box = () => { bank.group.updateMatrixWorld(true); return new THREE.Box3().setFromObject(bank.group); };
+      expect(box().min.y).toBeCloseTo(0, 3);
+      const empty = box().max.y;
+      bank.setFill(10);
+      expect(box().max.y).toBeGreaterThan(empty * 1.5);
+      expect(box().min.y).toBeCloseTo(0, 3);
+      bank.setFill(0);
+      expect(queenModelLook(bank.model)).toBe(before);
+      // A bank is a clone: disposing it leaves the shared template whole.
+      bank.dispose();
+      expect(bank.group.children).toHaveLength(0);
+      expect(queenModelLook(template)).toBe(templateLook);
+    }
   });
 });

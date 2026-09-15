@@ -83,3 +83,33 @@ Clarified:
 3. The model adds 3.2 MB (2.4 MB gzipped) to the first 3D Home load. It is fetched once and then cached by the browser. There is no immutable cache header, because `/models/` is outside `/assets/`.
 4. Her coin slot faces away from the room (the model's back). The fill reads through the coin stack instead.
 5. D-266 was free on `main@25deb6d`. Unmerged patches from other chats may also claim it.
+
+## Follow-up: Protect and Build models (D-267)
+
+D-266 merged as #492 (`9f18b95`). This follow-up is branch `claude/queen-bank-models`, one commit on that main. It is local only: not pushed, not merged, not deployed.
+
+Jonathan (2026-09-15) uploaded `Mandevilla_Guardian_Lite.glb` and `Mandevilla_Mastermind.glb`: "guardian is protect and mastermind is build … change the models for now and we will discuss how i want users to be able to customize them. after they are live".
+
+**Files.**
+- `public/models/queen/mandevilla-guardian.v1.glb`: SHA-256 `a1f4d3fa…271f`.
+- `public/models/queen/mandevilla-mastermind.v1.glb`: SHA-256 `202b0079…a935`.
+- Each has a `.gz` transfer copy.
+- `HOME_BANK_MODELS` and `loadHomeBankModel` are in `queenModel.ts`.
+
+**Code.**
+- `src/queen/world/homeBankModel.ts`: a bank stood as a clone of a shared template, on the floor, growing `1 + step × 0.055`, and disposed without touching the template.
+- `src/queen/world/queenWorld.ts`:
+  - `setBanks` stands `protect` and `build` as the models.
+  - While a model loads, that bank is not drawn. On failure the studio cat stands.
+  - The templates are released with the world.
+  - `loadBankModel` can be injected.
+  - The stats carry `bankModels`.
+
+**Tests.** `test/queen-model.test.ts` gains two tests (10 in total): both files are byte for byte and their `.gz` copies inflate to them; each bank grows with its fill and never changes the model's look; disposing a clone leaves the template whole.
+
+**Browser.** `test/queen-model-layout.mjs` now also expands Home. It asserts that `bankModels.protect/build === "model"` and that the page does not scroll, at every recorded width and theme (25 records). With the model files refused, both banks fall back to `studio`.
+
+**Open.**
+- How the couple customises the two models.
+- The flat portraits (no WebGL) still show the studio cats.
+- At 390 the house rail sits over part of Protect. This is unchanged from the studio cat (compare `banks-refused-studio-390x844.png`).

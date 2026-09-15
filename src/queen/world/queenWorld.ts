@@ -9,7 +9,8 @@ import type { QueenGlazeAxis, QueenPose } from "./queenAuthoring.ts";
 import type { QueenCharmPart, QueenCharmV1 } from "../../core/queenCharms.ts";
 import { queenLampShare, type QueenLight } from "../../core/queenLight.ts";
 import type { QueenForm } from "./queenCharmSurface.ts";
-import { loadQueenModel } from "./queenModel.ts";
+import { HOME_BANK_MODELS, loadHomeBankModel, loadQueenModel, queenModelResources, type HomeBankModelId } from "./queenModel.ts";
+import { createHomeBankModel } from "./homeBankModel.ts";
 
 /**
  * The Home world: one renderer, one scene, one still camera. A diorama you
@@ -41,7 +42,7 @@ export type WorldQueenInput = {
   light: QueenLight;
 };
 export type WorldLayout = { host: WorldRect; queen: WorldRect; banks: Record<string, WorldRect> };
-export type WorldStats = { frames: number; lastFrameMs: number; maxFrameMs: number; sculptures: number; breathing: boolean; scenery: QueenSceneryKind | "none"; ambient: boolean; sceneryGeometries: number; charms: number; charmDrawCalls: number; charmGeometries: number; keyLight: number; keyHeight: number; keyColor: string; rings: number; tipped: boolean; model: "model" | "awaiting" | "drawn" };
+export type WorldStats = { frames: number; lastFrameMs: number; maxFrameMs: number; sculptures: number; breathing: boolean; scenery: QueenSceneryKind | "none"; ambient: boolean; sceneryGeometries: number; charms: number; charmDrawCalls: number; charmGeometries: number; keyLight: number; keyHeight: number; keyColor: string; rings: number; tipped: boolean; model: "model" | "awaiting" | "drawn"; bankModels?: Record<string, "studio" | "model"> };
 export type WorldPick = (clientX: number, clientY: number) => { part: QueenCharmPart; u: number; v: number } | null;
 
 const VISIBLE_HEIGHT = 10;
@@ -49,7 +50,7 @@ const FOV = 34;
 const BREATH_MS = 6000;
 const BREATH_PX = 14;
 
-export function createQueenWorld(host: HTMLElement, options: { reducedMotion: boolean; onLost?: () => void; brass?: string; wood?: string; /** Jonathan's Mandevilla Queen (D-266). Tests pass `null` to keep the drawn figure; a failed load keeps it too. */ loadModel?: ((signal: AbortSignal) => Promise<THREE.Object3D>) | null; onModel?: (state: "model" | "drawn") => void }) {
+export function createQueenWorld(host: HTMLElement, options: { reducedMotion: boolean; onLost?: () => void; brass?: string; wood?: string; /** Jonathan's Mandevilla Queen (D-266). Tests pass `null` to keep the drawn figure; a failed load keeps it too. */ loadModel?: ((signal: AbortSignal) => Promise<THREE.Object3D>) | null; onModel?: (state: "model" | "drawn") => void; /** Jonathan's Protect and Build models (D-267). Tests pass `null` to keep the studio cats; a failed load keeps them too. */ loadBankModel?: ((id: HomeBankModelId, signal: AbortSignal) => Promise<THREE.Object3D>) | null }) {
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 1.5));
   renderer.shadowMap.enabled = false;
@@ -119,7 +120,36 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     scenery.group.position.set(0, sceneryFloor, 0);
     scenery.group.scale.setScalar(sceneryScale);
   };
-  const banks = new Map<string, { sculpture: KittySculpture; height: number; fired: boolean; pieceId: string; paintKey: string }>();
+  type BankSculpture = Pick<KittySculpture, "group" | "setFill" | "dispose">;
+  const banks = new Map<string, { sculpture: BankSculpture; height: number; fired: boolean; pieceId: string; paintKey: string; kind: "studio" | "model" }>();
+  // Protect and Build stand as Jonathan's models. Each loads once; until it arrives that bank is not drawn (no studio cat flashes up), and if it cannot arrive the studio cat stands as before.
+  const bankModels = new Map<HomeBankModelId, { state: "loading" | "ready" | "failed"; template: THREE.Object3D | null }>();
+  let lastBankInputs: WorldBankInput[] = [];
+  const loadBankModel = options.loadBankModel === undefined ? loadHomeBankModel : options.loadBankModel;
+  const bankModelId = (id: string): HomeBankModelId | null => (id in HOME_BANK_MODELS ? id as HomeBankModelId : null);
+  const bankModelFor = (id: HomeBankModelId) => {
+    let entry = bankModels.get(id);
+    if (entry) return entry;
+    entry = { state: loadBankModel ? "loading" : "failed", template: null };
+    bankModels.set(id, entry);
+    if (loadBankModel) {
+      const current = entry;
+      loadBankModel(id, modelLoad.signal)
+        .then((template) => { if (dead) return; current.state = "ready"; current.template = template; api.setBanks(lastBankInputs); })
+        .catch(() => { if (dead) return; current.state = "failed"; api.setBanks(lastBankInputs); });
+    }
+    return entry;
+  };
+  cleanup.push(() => {
+    for (const entry of bankModels.values()) {
+      if (!entry.template) continue;
+      const { geometries, materials, textures } = queenModelResources(entry.template);
+      for (const g of geometries) g.dispose();
+      for (const m of materials) m.dispose();
+      for (const t of textures) t.dispose();
+    }
+    bankModels.clear();
+  });
 
   let dead = false;
   let pending = 0;
@@ -185,12 +215,12 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     ((hostRect.y + hostRect.h / 2) - py) * unitsPerPx,
   ];
 
-  return {
+  const api = {
     scene,
     camera,
     renderer,
     queen,
-    stats: () => { const c = queen.charmCounts(); return { ...stats, sculptures: 1 + banks.size, charms: c.instances, charmDrawCalls: c.drawCalls, charmGeometries: c.geometries, keyLight: +key.intensity.toFixed(3), keyHeight: +key.position.y.toFixed(2), keyColor: `#${key.color.getHexString()}`, rings: queen.form.rings, tipped: queen.tipped, model: queen.modelState }; },
+    stats: () => { const c = queen.charmCounts(); return { ...stats, sculptures: 1 + banks.size, charms: c.instances, charmDrawCalls: c.drawCalls, charmGeometries: c.geometries, keyLight: +key.intensity.toFixed(3), keyHeight: +key.position.y.toFixed(2), keyColor: `#${key.color.getHexString()}`, rings: queen.form.rings, tipped: queen.tipped, model: queen.modelState, bankModels: Object.fromEntries([...banks].map(([id, bank]) => [id, bank.kind])) }; },
     /** A viewport point → where it lands on her paintable surface. Null off her. */
     pick(clientX: number, clientY: number) {
       if (dead || !hostRect.w || !hostRect.h) return null;
@@ -250,12 +280,30 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     },
     /** Banks are studio sculptures. Rebuilt only when the piece or its firing changes; disposed when they leave. */
     setBanks(inputs: WorldBankInput[]) {
+      if (dead) return;
+      lastBankInputs = inputs;
       const seen = new Set<string>();
       for (const input of inputs) {
+        const modelId = bankModelId(input.id);
+        const model = modelId ? bankModelFor(modelId) : null;
+        // Still on its way: draw nothing for this bank yet.
+        if (model?.state === "loading") continue;
         seen.add(input.id);
-        const paintKey = JSON.stringify(input.piece.paint);
         const existing = banks.get(input.id);
-        if (existing && existing.pieceId === input.piece.id && existing.fired === input.fired && existing.paintKey === paintKey) {
+        if (model?.state === "ready" && model.template) {
+          // The model does not wear the studio piece, so only its fill can change it.
+          if (existing?.kind === "model") { existing.sculpture.setFill(input.step, false); continue; }
+          if (existing) { existing.sculpture.group.removeFromParent(); existing.sculpture.dispose(); banks.delete(input.id); }
+          const bank = createHomeBankModel(model.template, HOME_BANK_MODELS[modelId!].name);
+          bank.setFill(input.step);
+          bank.group.visible = false;
+          scene.add(bank.group);
+          const box = new THREE.Box3().setFromObject(bank.group);
+          banks.set(input.id, { sculpture: bank, height: Math.max(0.5, box.max.y - box.min.y), fired: input.fired, pieceId: input.piece.id, paintKey: "", kind: "model" });
+          continue;
+        }
+        const paintKey = JSON.stringify(input.piece.paint);
+        if (existing && existing.kind === "studio" && existing.pieceId === input.piece.id && existing.fired === input.fired && existing.paintKey === paintKey) {
           existing.sculpture.setFill(input.step, false);
           continue;
         }
@@ -268,7 +316,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
         sculpture.group.visible = false;
         scene.add(sculpture.group);
         const box = new THREE.Box3().setFromObject(sculpture.group);
-        banks.set(input.id, { sculpture, height: Math.max(0.5, box.max.y - box.min.y), fired: input.fired, pieceId: input.piece.id, paintKey });
+        banks.set(input.id, { sculpture, height: Math.max(0.5, box.max.y - box.min.y), fired: input.fired, pieceId: input.piece.id, paintKey, kind: "studio" });
       }
       for (const [id, bank] of banks) if (!seen.has(id)) { bank.sculpture.group.removeFromParent(); bank.sculpture.dispose(); banks.delete(id); }
       lastLayoutKey = "";
@@ -324,5 +372,6 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
       renderer.domElement.remove();
     },
   };
+  return api;
 }
 export type QueenWorld = ReturnType<typeof createQueenWorld>;
