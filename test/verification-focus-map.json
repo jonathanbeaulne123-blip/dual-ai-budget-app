@@ -465,6 +465,21 @@
         "test/demo-suite-ui.test.ts"
       ],
       "reason": "The seat a person takes in a generated Demo Suite or habitat is one of the showcase's own two members (the one with their name, else Jonathan's), for the Google link, the ledger creation and the remembered session; the fixture's ids never change, so the seed still replays"
+    },
+    {
+      "sources": [
+        "src/queen/world/queenBankDress.ts",
+        "src/queen/cellarZoom.ts",
+        "src/queen/world/queenBankSculpture.ts",
+        "src/queen/QueenBankFlat.tsx",
+        "src/queen/QueenCellarRail.tsx"
+      ],
+      "tests": [
+        "test/queen-bank-dress.test.ts",
+        "test/queen-cellar-ui.test.ts",
+        "test/queen-house.test.ts"
+      ],
+      "reason": "The kitty banks' dressing (one prop set per purpose, read by the sculpture and the flat twin from one table, the crown kept in front of any hat) and the cellar rail's size (a per-device scale the cell, the bands and the seats follow; pinch, ctrl-scroll, keys and the pane); nothing posts, no money is read"
     }
   ]
 }

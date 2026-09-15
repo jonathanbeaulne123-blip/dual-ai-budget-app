@@ -667,6 +667,18 @@
 .queen-bank-flat__rim { fill: var(--queen-brass, var(--copper)); }
 .queen-bank-flat__slot { fill: var(--ink); }
 .queen-bank-flat__neck { fill: var(--queen-clay-shadow); }
+/* Her dressing (queenBankDress): the postman's felt cap, the calendar's paper, the wind-up key's brass, the bell, the pennant.
+   Every hat sits behind the head so the crown — the slot that accepts, the lid that refuses — stays in front. */
+.queen-bank-flat__felt { fill: var(--queen-felt, #3b4a63); }
+.queen-bank-flat__paper, .queen-bank-flat__paper-brim { fill: var(--queen-paper, #efe6d2); stroke: var(--queen-clay-deep); stroke-width: 1; }
+.queen-bank-flat__paper-line { stroke: var(--queen-clay-deep); }
+.queen-bank-flat__ink { fill: var(--ink); }
+.queen-bank-flat__ink-line { stroke: var(--ink); }
+.queen-bank-flat__brass { fill: var(--queen-brass, var(--copper)); }
+.queen-bank-flat__brass-ring { stroke: var(--queen-brass, var(--copper)); }
+.queen-bank-flat__pole { fill: var(--queen-clay-deep); }
+.queen-bank-flat[data-hollow="true"] .queen-bank-flat__dress { opacity: .5; }
+.queen-bank-flat[data-frosted="true"] .queen-bank-flat__dress { opacity: .75; }
 [data-hollow="true"] .queen-bank-flat__eye, .queen-bank-flat[data-hollow="true"] .queen-bank-flat__eye { display: none; }
 .queen-bank-flat[data-hollow="true"] .queen-bank-flat__clay,
 .queen-bank-flat[data-hollow="true"] .queen-bank-flat__ear { fill: none; }

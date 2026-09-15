@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { KITTY_HEAD_R, KITTY_HEAD_SCALE, kittyBodyPoints } from "../../kitty/studio/silhouette.ts";
 import { defaultKittySculpt } from "../../core/kittyStudio.ts";
 import type { KittySculptV1 } from "../../core/types.ts";
+import { BANK_DRESS } from "./queenBankDress.ts";
 
 /**
  * The kitty bank, as the rooms hold it (2026-09-14).
@@ -96,6 +97,10 @@ export type BankMaterials = {
   ink: THREE.Material;
   /** A month that posted nothing: an outline claiming nothing. */
   ghost: THREE.Material;
+  /** The envelope, the calendar leaf, the paper hat. Falls back to the clay. */
+  paper?: THREE.Material;
+  /** The postman's cap and the pennant. Falls back to the deep clay. */
+  felt?: THREE.Material;
 };
 
 /** Geometry shared by every bank of a form. Built once, disposed by the room that registered it. */
@@ -132,6 +137,51 @@ export function bankGeometry(form: BankForm, keep: <G extends THREE.BufferGeomet
     tail: tailPoints
       ? keep(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(tailPoints.map((p) => new THREE.Vector3(...p))), 24, 0.085, 8, false))
       : null,
+    dress: bankDressGeometry(form, dial, keep),
+  };
+}
+
+/**
+ * The dressing's geometry (`queenBankDress`): one hat, one back piece, one
+ * collar, one foot prop at most, each from a few primitives in the cat's own
+ * units so it scales with her. Only what the form wears is built.
+ */
+/** A pennant: one triangle of cloth, lit from both sides by the room's felt material. */
+function pennantGeometry(): THREE.BufferGeometry {
+  const cloth = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, 0, 0), new THREE.Vector3(0.62, -0.14, 0), new THREE.Vector3(0, -0.34, 0)]);
+  cloth.setIndex([0, 1, 2]);
+  cloth.computeVertexNormals();
+  return cloth;
+}
+
+function bankDressGeometry(form: BankForm, dial: number, keep: <G extends THREE.BufferGeometry>(g: G) => G) {
+  const dress = BANK_DRESS[form];
+  const r = KITTY_HEAD_R * dial;
+  return {
+    // The postman's cap: a shallow crown and a flat peak, slid back on the head.
+    capCrown: dress.hat === "cap" ? keep(new THREE.CylinderGeometry(r * 0.92, r * 1.0, r * 0.46, 20)) : null,
+    capPeak: dress.hat === "cap" ? keep(new THREE.CylinderGeometry(r * 0.9, r * 0.9, r * 0.07, 18, 1, false, 0, Math.PI)) : null,
+    capBand: dress.hat === "cap" ? keep(new THREE.CylinderGeometry(r * 1.03, r * 1.03, r * 0.14, 20)) : null,
+    // The calendar leaf: a square page, a ring through its top, the day's corner folded.
+    leaf: dress.hat === "calendar" ? keep(new THREE.BoxGeometry(r * 1.5, r * 1.4, r * 0.1)) : null,
+    leafHead: dress.hat === "calendar" ? keep(new THREE.BoxGeometry(r * 1.5, r * 0.34, r * 0.12)) : null,
+    leafRing: dress.hat === "calendar" ? keep(new THREE.TorusGeometry(r * 0.16, r * 0.04, 8, 16)) : null,
+    leafFold: dress.hat === "calendar" ? keep(new THREE.BoxGeometry(r * 0.4, r * 0.4, r * 0.13)) : null,
+    // The folded paper hat: a triangle of paper, its brim turned up.
+    paperHat: dress.hat === "paper" ? keep(new THREE.ConeGeometry(r * 1.05, r * 1.25, 4, 1)) : null,
+    paperBrim: dress.hat === "paper" ? keep(new THREE.BoxGeometry(r * 2.3, r * 0.2, r * 0.5)) : null,
+    // The wind-up key: a stem out of her back and a two-lobed bow you could turn.
+    keyStem: dress.back === "key" ? keep(new THREE.CylinderGeometry(0.07, 0.07, 0.4, 10)) : null,
+    keyBow: dress.back === "key" ? keep(new THREE.TorusGeometry(0.2, 0.06, 8, 18)) : null,
+    keyBar: dress.back === "key" ? keep(new THREE.BoxGeometry(0.72, 0.1, 0.1)) : null,
+    // The collar and its bell.
+    collar: dress.collar === "bell" ? keep(new THREE.TorusGeometry(r * 0.86, r * 0.09, 8, 24)) : null,
+    bell: dress.collar === "bell" ? keep(new THREE.SphereGeometry(r * 0.26, 12, 10)) : null,
+    // The envelope leaning on her paws, and the pennant planted beside her.
+    envelope: dress.foot === "envelope" ? keep(new THREE.BoxGeometry(0.9, 0.58, 0.05)) : null,
+    envelopeFlap: dress.foot === "envelope" ? keep(new THREE.BoxGeometry(0.56, 0.05, 0.06)) : null,
+    flagPole: dress.foot === "flag" ? keep(new THREE.CylinderGeometry(0.03, 0.035, 1.5, 8)) : null,
+    flag: dress.foot === "flag" ? keep(pennantGeometry()) : null,
   };
 }
 
@@ -213,6 +263,96 @@ export function buildBankVessel(shape: BankGeometry, materials: BankMaterials, o
     paw.position.set(side * 0.34 * metrics.radius, 0.1, 0.52 * metrics.radius);
   }
   if (shape.tail) put(shape.tail, clay, "queen-bank-tail");
+
+  // Her dressing — the purpose, readable from across the room (queenBankDress).
+  // Every hat sits back on the skull so the crown, the slot and the lid stay in front of it.
+  const d = shape.dress;
+  const paper = options.hollow ? materials.ghost : materials.paper ?? clay;
+  const felt = options.hollow ? materials.ghost : materials.felt ?? deep;
+  const r = KITTY_HEAD_R * head[1];
+  if (d.capCrown && d.capPeak && d.capBand) {
+    const cap = new THREE.Group();
+    cap.name = "queen-bank-dress-cap";
+    cap.position.set(0, metrics.headY + r * 0.58, -r * 0.18);
+    cap.rotation.x = -0.32;
+    cap.rotation.z = 0.12;
+    norm.add(cap);
+    put(d.capBand, materials.ink, "queen-bank-cap-band", cap).position.y = 0.02;
+    put(d.capCrown, felt, "queen-bank-cap-crown", cap).position.y = r * 0.26;
+    const peak = put(d.capPeak, materials.ink, "queen-bank-cap-peak", cap);
+    peak.position.set(0, -0.02, r * 0.55);
+    peak.rotation.y = Math.PI / 2;
+  }
+  if (d.leaf && d.leafHead && d.leafRing && d.leafFold) {
+    const leaf = new THREE.Group();
+    leaf.name = "queen-bank-dress-calendar";
+    leaf.position.set(0, metrics.headY + r * 1.02, -r * 0.3);
+    leaf.rotation.x = -0.34;
+    leaf.rotation.z = -0.14;
+    norm.add(leaf);
+    put(d.leaf, paper, "queen-bank-leaf", leaf);
+    put(d.leafHead, materials.ink, "queen-bank-leaf-head", leaf).position.y = r * 0.53;
+    const ring = put(d.leafRing, materials.brass, "queen-bank-leaf-ring", leaf);
+    ring.position.set(0, r * 0.74, 0);
+    const fold = put(d.leafFold, deep, "queen-bank-leaf-fold", leaf);
+    fold.position.set(r * 0.5, -r * 0.46, 0.02);
+    fold.rotation.z = Math.PI / 4;
+  }
+  if (d.paperHat && d.paperBrim) {
+    const hat = new THREE.Group();
+    hat.name = "queen-bank-dress-paper";
+    hat.position.set(0, metrics.headY + r * 0.7, -r * 0.2);
+    hat.rotation.x = -0.28;
+    hat.rotation.z = -0.16;
+    norm.add(hat);
+    const cone = put(d.paperHat, paper, "queen-bank-paper-hat", hat);
+    cone.rotation.y = Math.PI / 4;
+    cone.position.y = r * 0.6;
+    put(d.paperBrim, paper, "queen-bank-paper-brim", hat);
+  }
+  if (d.keyStem && d.keyBow && d.keyBar) {
+    const key = new THREE.Group();
+    key.name = "queen-bank-dress-key";
+    // The key stands out of her flank so it reads from the front of the room, as a wind-up toy's does.
+    key.position.set(-metrics.radius * 0.9, metrics.bodyTop * 0.62, 0.05);
+    key.rotation.z = Math.PI / 2;
+    norm.add(key);
+    put(d.keyStem, materials.brass, "queen-bank-key-stem", key).position.y = 0.2;
+    const bow = put(d.keyBow, materials.brass, "queen-bank-key-bow", key);
+    bow.position.y = 0.5;
+    put(d.keyBar, materials.brass, "queen-bank-key-bar", key).position.y = 0.5;
+  }
+  if (d.collar && d.bell) {
+    const collar = put(d.collar, materials.ink, "queen-bank-collar");
+    collar.position.set(0, metrics.bodyTop + 0.02, 0.02);
+    collar.rotation.x = Math.PI / 2;
+    collar.scale.set(1, 0.86, 1);
+    const bell = put(d.bell, materials.brass, "queen-bank-bell");
+    bell.position.set(0, metrics.bodyTop - 0.08, r * 0.86);
+  }
+  if (d.envelope && d.envelopeFlap) {
+    const post = new THREE.Group();
+    post.name = "queen-bank-dress-envelope";
+    post.position.set(metrics.radius * 0.34, 0.25, metrics.radius * 0.98);
+    post.rotation.set(-0.28, 0, 0.14);
+    norm.add(post);
+    put(d.envelope, paper, "queen-bank-envelope", post);
+    for (const side of [-1, 1] as const) {
+      const flap = put(d.envelopeFlap, deep, "queen-bank-envelope-flap", post);
+      flap.position.set(side * 0.19, 0.06, 0.03);
+      flap.rotation.z = -side * 0.5;
+    }
+  }
+  if (d.flagPole && d.flag) {
+    const pennant = new THREE.Group();
+    pennant.name = "queen-bank-dress-flag";
+    pennant.position.set(metrics.radius * 1.05, 0, metrics.radius * 0.3);
+    pennant.rotation.z = -0.08;
+    norm.add(pennant);
+    put(d.flagPole, deep, "queen-bank-flag-pole", pennant).position.y = 0.75;
+    const cloth = put(d.flag, felt, "queen-bank-flag", pennant);
+    cloth.position.set(0.03, 1.48, 0);
+  }
 
   // The slot on her crown, and what answers it.
   if (options.lidded) {
