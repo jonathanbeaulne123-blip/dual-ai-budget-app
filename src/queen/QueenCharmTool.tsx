@@ -25,6 +25,9 @@ export type QueenCharmToolProps = {
   onSelect: (id: string | null) => void;
   onChange: (charm: QueenCharmV1) => void;
   onRemove: (id: string) => void;
+  /** Changes are held on this device until Done (or until she is put down). */
+  dirty?: boolean;
+  onDone?: () => void;
 };
 
 const NUDGE = 0.06;
@@ -41,7 +44,7 @@ export function queenCharmSeatWords(charm: Pick<QueenCharmV1, "part" | "u" | "v"
   return side === "front" ? "her belly" : `her ${side} flank`;
 }
 
-export function QueenCharmTool({ earnings, charms, selectedId, members, busy, keptLine, form, onAdd, onSelect, onChange, onRemove }: QueenCharmToolProps) {
+export function QueenCharmTool({ earnings, charms, selectedId, members, busy, keptLine, form, onAdd, onSelect, onChange, onRemove, dirty = false, onDone }: QueenCharmToolProps) {
   const ids = useId();
   const full = charms.length >= QUEEN_CHARM_LIMITS.count;
   const selected = charms.find((charm) => charm.id === selectedId) ?? null;
@@ -102,7 +105,14 @@ export function QueenCharmTool({ earnings, charms, selectedId, members, busy, ke
             );
           })}
         </ul>
-      ) : <p className="queen-panel__muted queen-charm-empty">Nothing on her yet. Press a charm from the bin and it sits where there is room; press her to move it.</p>}
+      ) : null}
+      {onDone && (dirty || selected) && (
+        <div className="queen-held">
+          {dirty && <span className="queen-held__mark" role="status">Not saved yet</span>}
+          <button type="button" className="queen-go queen-go--primary queen-held__done" disabled={busy} onClick={onDone}>Done</button>
+        </div>
+      )}
+      {charms.length > 0 ? null : <p className="queen-panel__muted queen-charm-empty">Nothing on her yet. Press a charm from the bin and it sits where there is room; press her to move it.</p>}
     </section>
   );
 }

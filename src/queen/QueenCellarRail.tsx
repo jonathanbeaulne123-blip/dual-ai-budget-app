@@ -126,8 +126,14 @@ export function QueenCellarRail({ reading, cursor, onCursor, heldId, zoom = CELL
       style={{ ["--cellar-zoom" as string]: zoom }} data-zoom={zoom}
       aria-label={`${cellarMonthLong(reading.monthKey)}, day by day. Drag the rail or use the arrow keys; the day in the gate is the one described below.${onZoom ? " Pinch, ctrl-scroll or press plus and minus to size the kitty jars." : ""}`}
       onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerCancel={onPointerUp} onWheel={onWheel} onKeyDown={onKeyDown}>
-      <div className="queen-water" aria-hidden="true" style={{ height: `${Math.round(water * 100)}%` }} />
-      <div className="queen-tidemark" aria-hidden="true" style={{ bottom: `${Math.round(mark * 100)}%` }} />
+      <div className="queen-water" aria-hidden="true" style={{ height: `${Math.round(water * 90)}%` }} data-level={Math.round(water * 100)}>
+        {/* The water reads as water (2026-09-15, Jonathan: "the water in the cellar also needs to be more apparent"): a body, a moving surface, and its name. */}
+        <span className="queen-water__body" />
+        <span className="queen-water__wave queen-water__wave--back" />
+        <span className="queen-water__wave" />
+        <span className="queen-water__name">{day?.dry ? "The Fund's water — dry" : day?.belowBuffer ? "The Fund's water — under the buffer" : "The Fund's water"}</span>
+      </div>
+      <div className="queen-tidemark" aria-hidden="true" style={{ bottom: `${Math.round(mark * 90)}%` }} />
       <div className="queen-gate" aria-hidden="true"><span className="queen-gate__tab" /></div>
       <div className="queen-ribbon-track queen-cellar-track" style={{ transform: `translateX(${-(cursor + 0.5) * cell}px)` }}>
         <div className="queen-cellar-days">

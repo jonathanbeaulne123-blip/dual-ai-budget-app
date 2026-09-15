@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { bankGeometry, buildBankVessel, type BankForm, type BankGeometry, type BankMaterials } from "./queenBankSculpture.ts";
 import { bisqueHex } from "../../kitty/studio/paintCanvas.ts";
+import { createKittySculpture, type KittySculpture } from "../../kitty/sculpture.ts";
+import type { KittyPieceV1 } from "../../core/types.ts";
 
 /**
  * The two rooms, in three dimensions: **the cellar**, where Protect runs a
@@ -52,6 +54,13 @@ export type RoomVessel = {
   /** The clay's tint (a hex colour from the category group) and its finish. Absent, the bare clay. */
   tint?: string;
   finish?: "plain" | "speckle" | "banded" | "crackle";
+  /**
+   * The loft (2026-09-15, Jonathan: "the kitty banks in the loft need to be the
+   * 3d models created in the studio"): the bank's own studio piece, stood as
+   * the studio's sculpture — its paint, its add-ons, its firing — growing by
+   * the studio's own ten steps as it fills. Absent, the room's drawn bank.
+   */
+  studio?: { piece: KittyPieceV1; fired: boolean; step: number };
 };
 export type RoomRect = { x: number; y: number; w: number; h: number };
 export type RoomLayout = { host: RoomRect; seats: Record<string, RoomRect>; /** The loft's shelves (2026-09-15): one board per DOM shelf, top first. */ shelves?: RoomRect[] };
@@ -479,6 +488,47 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     (seat.shadow.material as THREE.Material & { opacity: number }).opacity = v.lifted ? 0.12 : 0.2;
   };
 
+  // ---- the studio's own sculptures (the loft) -----------------------------
+  type StudioSeat = { sculpture: KittySculpture; height: number; key: string; vessel: RoomVessel };
+  const studios = new Map<string, StudioSeat>();
+  let animRaf = 0;
+  /** A sculpture that is growing asks for frames; the room runs them only while any is still moving. */
+  const animate = () => {
+    if (dead || animRaf) return;
+    const step = (t: number) => {
+      animRaf = 0;
+      if (dead) return;
+      let busy = false;
+      for (const seat of studios.values()) if (seat.sculpture.update(t)) busy = true;
+      render();
+      if (busy) animRaf = requestAnimationFrame(step);
+    };
+    animRaf = requestAnimationFrame(step);
+  };
+  const studioKey = (v: RoomVessel) => v.studio ? JSON.stringify([v.studio.piece.id, v.studio.fired, v.studio.piece.sculpt, v.studio.piece.paint, v.studio.piece.charms ?? null]) : "";
+  const buildStudio = (vessel: RoomVessel): StudioSeat => {
+    const sculpture = createKittySculpture(vessel.studio!.piece, { brass: "#c99a4b", wood: "#62412b", fired: vessel.studio!.fired, reducedMotion: options.reducedMotion, onAnimate: animate });
+    sculpture.setOpen(false);
+    sculpture.setSpin(0);
+    sculpture.setIdle(false);
+    // Measured at full growth: the seat is the size a full bank stands at, so an empty one visibly has room to grow into.
+    sculpture.setFill(10, false);
+    const bounds = new THREE.Box3().setFromObject(sculpture.group);
+    sculpture.setFill(vessel.studio!.step, false);
+    sculpture.group.name = `queen-room-studio-${vessel.id}`;
+    vesselsGroup.add(sculpture.group);
+    return { sculpture, height: Math.max(0.5, bounds.max.y - bounds.min.y), key: studioKey(vessel), vessel };
+  };
+  const poseStudio = (seat: StudioSeat, next: RoomVessel) => {
+    const before = seat.vessel.studio?.step ?? 0;
+    seat.vessel = next;
+    const step = next.studio?.step ?? 0;
+    // Watching it fill: a deposit swells the cat with the studio's squash and sparkle; using money slims it.
+    if (step !== before) seat.sculpture.setFill(step, true);
+    seat.sculpture.group.rotation.z = next.refusing ? 0.16 : 0;
+  };
+  const dropStudio = (seat: StudioSeat) => { seat.sculpture.group.removeFromParent(); seat.sculpture.dispose(); };
+
   // ---- placement ---------------------------------------------------------
   let hostRect: RoomRect = { x: 0, y: 0, w: host.clientWidth, h: host.clientHeight };
   let unitsPerPx = VISIBLE_HEIGHT / Math.max(1, host.clientHeight);
@@ -538,13 +588,24 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     camera,
     renderer,
     room: options.room,
-    stats: () => ({ ...stats, vessels: seats.size, geometries: geometries.size }),
+    stats: () => ({ ...stats, vessels: seats.size + studios.size, geometries: geometries.size }),
     /** The vessels on the rail or the ledge, by id. Rebuilt only for ids that arrive or leave. */
     setVessels(list: readonly RoomVessel[]) {
       if (dead) return;
       const seen = new Set<string>();
       for (const vessel of list) {
         seen.add(vessel.id);
+        if (vessel.studio) {
+          const drawn = seats.get(vessel.id);
+          if (drawn) { drawn.group.removeFromParent(); drawn.group.clear(); seats.delete(vessel.id); }
+          const known = studios.get(vessel.id);
+          if (known && known.key === studioKey(vessel)) { poseStudio(known, vessel); continue; }
+          if (known) dropStudio(known);
+          studios.set(vessel.id, buildStudio(vessel));
+          continue;
+        }
+        const stale = studios.get(vessel.id);
+        if (stale) { dropStudio(stale); studios.delete(vessel.id); }
         const old = seats.get(vessel.id);
         // A change of kind, hollowness or part count is a different vessel; everything else is a pose.
         if (old && old.vessel.kind === vessel.kind && old.vessel.form === vessel.form && old.vessel.tint === vessel.tint && old.vessel.finish === vessel.finish && old.vessel.hollow === vessel.hollow && old.vessel.frosted === vessel.frosted && old.vessel.parts === vessel.parts) {
@@ -558,6 +619,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
         poseVessel(seat);
       }
       for (const [id, seat] of seats) if (!seen.has(id)) { seat.group.removeFromParent(); seat.group.clear(); seats.delete(id); }
+      for (const [id, seat] of studios) if (!seen.has(id)) { dropStudio(seat); studios.delete(id); }
       lastLayoutKey = "";
       invalidate();
     },
@@ -586,6 +648,18 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
         seat.group.scale.setScalar(scale);
         floor = y;
         tallest = Math.max(tallest, scale);
+      }
+      for (const [id, seat] of studios) {
+        const rect = next.seats[id];
+        seat.sculpture.group.visible = Boolean(rect);
+        if (!rect) continue;
+        const [x, y] = toWorld(hostRect, rect.x + rect.w / 2, rect.y + rect.h);
+        const scale = (rect.h * unitsPerPx) / seat.height;
+        seat.sculpture.group.position.set(x, y + (seat.vessel.lifted ? rect.h * unitsPerPx * 0.14 : 0), 0);
+        seat.sculpture.group.scale.setScalar(scale);
+        floor = y;
+        // The room's furniture follows the tallest bank on the rack, whatever its size.
+        tallest = Math.max(tallest, Math.min(1.6, rect.h * unitsPerPx));
       }
       // The room's floor is the shelf the vessels stand on, and it grows with them.
       interior.position.set(0, floor, 0);
@@ -627,8 +701,11 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       dead = true;
       halt();
       if (pending) cancelAnimationFrame(pending);
+      if (animRaf) cancelAnimationFrame(animRaf);
       for (const seat of seats.values()) { seat.group.removeFromParent(); seat.group.clear(); }
       seats.clear();
+      for (const seat of studios.values()) dropStudio(seat);
+      studios.clear();
       for (const release of cleanup.splice(0).reverse()) { try { release(); } catch { /* keep releasing */ } }
       scene.clear();
       for (const g of geometries) g.dispose();

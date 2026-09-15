@@ -523,7 +523,22 @@ export type QueenShelfItem = {
   designKey: string;
   /** Where the stored order puts it, or null when the order does not name it. */
   place: number | null;
+  /**
+   * How big the bank stands, by its goal (2026-09-15, Jonathan: "a 10$ goal
+   * will be teeny tiny compared to a 10,000 goal"). A continuous scale on a
+   * log of the target — each tenfold is a third of a full bank taller.
+   */
+  scale: number;
+  /** The studio's growth step, 0–10: the bank swells as it fills and slims when money is used. */
+  step: number;
 };
+
+/** $10 → 0.22, $100 → 0.55, $1,000 → 0.88, $10,000 → 1.21, capped at 1.5. Shape only; never read back as a figure. */
+export function loftBankScale(targetCents: number): number {
+  const dollars = Math.max(10, targetCents / 100);
+  const scale = 0.22 + 0.33 * Math.log10(dollars / 10);
+  return Math.round(Math.min(1.5, Math.max(0.22, scale)) * 100) / 100;
+}
 
 /** Three widths, chosen so a shelf reads as a shelf. The thresholds are shape, not money, and never surface as figures. */
 const shelfSize = (targetCents: number): QueenShelfItem["size"] =>
@@ -558,6 +573,8 @@ export function queenShelf(
       parts: bank.children?.length ?? 0,
       designKey: bank.designKey,
       place: place.get(bank.designKey) ?? null,
+      scale: loftBankScale(bank.targetCents > 0 ? bank.targetCents : bank.amountCents),
+      step: bank.targetCents > 0 ? Math.max(0, Math.min(10, Math.floor((bank.amountCents / bank.targetCents) * 10))) : 0,
       nestOrder: index,
     }));
   return rows

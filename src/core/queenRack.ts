@@ -144,6 +144,16 @@ export function rackSlideDivider(rack: QueenRackV1, shelfId: string, index: numb
   }) };
 }
 
+/** Set one bank's split (1–10) on its shelf directly — the tool card's slider. Same bounds as the divider. */
+export function rackSetSplit(rack: QueenRackV1, shelfId: string, index: number, value: number): QueenRackV1 {
+  return { version: 1, shelves: rack.shelves.map((shelf) => {
+    if (shelf.id !== shelfId || index < 0 || index >= shelf.keys.length || shelf.keys.length < 2) return shelf;
+    const splits = withSplits(shelf);
+    splits[index] = Math.max(1, Math.min(RACK_LIMITS.split, Math.round(value)));
+    return tidy({ ...shelf, splits });
+  }) };
+}
+
 /** Hang a shelf below the lowest (or above the top), empty, at the next share down. */
 export function rackHangShelf(rack: QueenRackV1, where: "above" | "below" = "below"): QueenRackV1 {
   if (rack.shelves.length >= RACK_LIMITS.shelves) return rack;

@@ -43,6 +43,8 @@ import { formatDateLabel } from "../core/calendar.ts";
 import type { KittyGlaze, KittyPaintV1, KittyStampKind } from "../core/types.ts";
 import { QueenCellar } from "./QueenCellar.tsx";
 import { QueenLoft } from "./QueenLoft.tsx";
+import { useHeldSave } from "./useHeldSave.ts";
+import { useOutsideClose } from "../useOutsideClose.ts";
 import "./queen-home.css";
 import "./queen-glass.css";
 
@@ -176,10 +178,10 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const shelfOrder = useMemo(() => queenShelfOrder(household.kittyNestDesigns), [household.kittyNestDesigns]);
   const shelf = useMemo(() => queenShelf(nest, household, shelfOrder), [nest, household, shelfOrder]);
   /** The loft's rack, settled to the banks the shelf has. Absent a stored rack, one shelf in the old order. */
-  const rack = useMemo(() => rackSettled(household.kittyNestDesigns?.find((row) => row.bankKey === QUEEN_SHELF_BANK_KEY && row.visibility === "household")?.rack, shelf.map((item) => item.designKey), shelfOrder), [household.kittyNestDesigns, shelf, shelfOrder]);
+  const keptRack = useMemo(() => rackSettled(household.kittyNestDesigns?.find((row) => row.bankKey === QUEEN_SHELF_BANK_KEY && row.visibility === "household")?.rack, shelf.map((item) => item.designKey), shelfOrder), [household.kittyNestDesigns, shelf, shelfOrder]);
   /** Moving a bank, a weight, a pin or a divider writes the whole rack once (and the old order from it). The last save wins, as it does everywhere else here. */
-  const keepRack = useCallback((next: QueenRackV1) => {
-    void onCommand((current) => {
+  const sendRack = useCallback((next: QueenRackV1) => {
+    return onCommand((current) => {
       const design = current.kittyNestDesigns?.find((row) => row.bankKey === QUEEN_SHELF_BANK_KEY && row.visibility === "household");
       return saveKittyNestDesign(current, {
         memberId, view: "household", bankKey: QUEEN_SHELF_BANK_KEY, expectedRevision: design?.revision ?? 0,
@@ -188,6 +190,10 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       });
     });
   }, [memberId, onCommand]);
+  /** The rack is held while the hand is on it and sent once: on Done, on leaving the loft, or when the page goes (useHeldSave). */
+  const heldRack = useHeldSave<QueenRackV1>(sendRack);
+  const rack = useMemo(() => heldRack.draft ? rackSettled(heldRack.draft, shelf.map((item) => item.designKey), shelfOrder) : keptRack, [heldRack.draft, keptRack, shelf, shelfOrder]);
+  const keepRack = heldRack.hold;
   /** The jug: the Fund's safe surplus, poured by its custodian through the month-end rollover, behind Confirm. */
   const loftPour = useMemo(() => {
     const fund = household.householdFund;
@@ -197,8 +203,8 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       safeCents: Math.max(0, projection.safeRolloverCents),
       custodian: fund.custodianMemberId === memberId,
       custodianName: household.members.find((row) => row.id === fund.custodianMemberId)?.name ?? "The custodian",
-      onPour: (allocations: Array<{ goalId: string; amountCents: number }>, _pouredCents: number) => onCommand((current) => allocateHouseholdFundSurplus(current, {
-        memberId, date: today, note: "Poured over the loft's rack", allocations: allocations.map((row) => ({ goalId: row.goalId, amount: (row.amountCents / 100).toFixed(2) })),
+      onPour: (allocations: Array<{ goalId: string; amountCents: number }>, _pouredCents: number, note?: string) => onCommand((current) => allocateHouseholdFundSurplus(current, {
+        memberId, date: today, note: note ?? "Poured over the loft's rack", allocations: allocations.map((row) => ({ goalId: row.goalId, amount: (row.amountCents / 100).toFixed(2) })),
       })),
     };
   }, [household, memberId, today, onCommand]);
@@ -216,7 +222,6 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const [charmDraft, setCharmDraft] = useState<QueenCharmV1[] | null>(null);
   const [selectedCharm, setSelectedCharm] = useState<string | null>(null);
   const committed = useRef<string | null>(null);
-  const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const charms = charmDraft ?? worn;
   // The draft yields to the record once the record says the same thing.
   useEffect(() => { if (committed.current && JSON.stringify(worn) === committed.current) { committed.current = null; setCharmDraft(null); } }, [worn]);
@@ -393,22 +398,9 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
     if (event.clientY - pull.y > PULL_THRESHOLD) { pull.done = true; setTipped(true); }
   }, []);
   const onTipEnd = useCallback(() => { const pull = tipPull.current; tipPull.current = null; return Boolean(pull?.done); }, []);
-  /** Charms are kept as you go: a short pause after the last press, or at once when the panel or the page lets go. */
-  const flushCharms = useCallback((next: QueenCharmV1[]) => {
-    if (commitTimer.current) clearTimeout(commitTimer.current);
-    commitTimer.current = null;
-    committed.current = JSON.stringify(next);
-    void keepDesign({ charms: next });
-  }, [keepDesign]);
-  const pendingCharms = useRef<QueenCharmV1[] | null>(null);
-  const draftCharms = useCallback((next: QueenCharmV1[]) => {
-    setCharmDraft(next);
-    pendingCharms.current = next;
-    if (commitTimer.current) clearTimeout(commitTimer.current);
-    commitTimer.current = setTimeout(() => { pendingCharms.current = null; flushCharms(next); }, 700);
-  }, [flushCharms]);
-  // Leaving Home with a press still pending keeps it rather than losing it.
-  useEffect(() => () => { if (commitTimer.current) { clearTimeout(commitTimer.current); commitTimer.current = null; } if (pendingCharms.current) { const next = pendingCharms.current; pendingCharms.current = null; flushCharms(next); } }, [flushCharms]);
+  /** Charms are held while she is being dressed and kept once: when the charm is put down, the tool closes, the page goes, or Done is pressed. */
+  const heldCharms = useHeldSave<QueenCharmV1[]>((next) => { committed.current = JSON.stringify(next); return keepDesign({ charms: next }); });
+  const draftCharms = useCallback((next: QueenCharmV1[]) => { setCharmDraft(next); heldCharms.hold(next); }, [heldCharms.hold]);
   const addCharm = useCallback((kind: QueenCharmKind) => {
     const seat = queenCharmFreeSeat(charms, form);
     const id = `ch-${Date.now().toString(36)}-${Math.floor(Math.random() * 1e6).toString(36)}`;
@@ -419,6 +411,10 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const changeCharm = useCallback((charm: QueenCharmV1) => draftCharms(charms.map((row) => (row.id === charm.id ? charm : row))), [charms, draftCharms]);
   const removeCharm = useCallback((id: string) => { draftCharms(charms.filter((row) => row.id !== id)); setSelectedCharm((current) => (current === id ? null : current)); }, [charms, draftCharms]);
   const selected = charms.find((row) => row.id === selectedCharm) ?? null;
+  // One send, when the work is put down: leaving the loft sends the rack; putting a charm down, closing her panel or leaving Home sends the charms.
+  const flushRack = heldRack.flush, flushCharms = heldCharms.flush;
+  useEffect(() => { if (scene !== "loft") flushRack(); }, [scene, flushRack]);
+  useEffect(() => { if (!selectedCharm || !open || scene !== "home") flushCharms(); }, [selectedCharm, open, scene, flushCharms]);
   /** A press on her: the world's ray when it is live, the drawn figure's own geometry when it is not. The seat settles; a refused seat is not taken. */
   const pressCharm = useCallback((clientX: number, clientY: number, target: HTMLElement) => {
     if (!selected) return;
@@ -514,6 +510,9 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
     setOpen(door);
     requestAnimationFrame(() => closeRef.current?.focus({ preventScroll: true }));
   }, [open, enterRoom, closePanel]);
+
+  // A tap anywhere off her panel — the rooms, the tabs, the nav — puts it away; her doors toggle it themselves.
+  useOutsideClose([panelRef], open !== null, closePanel, { keep: ".queen-bank__button, [aria-controls], .queen-field" });
 
   const onFieldClick = (event: MouseEvent<HTMLDivElement>) => {
     if ((event.target as HTMLElement).closest("button, a, [role=dialog]")) return;
@@ -807,7 +806,8 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
             </section>
             <QueenPortraits portraits={portraits} members={household.members} />
             <QueenCharmTool earnings={earnings} charms={charms} selectedId={selectedCharm} members={household.members} busy={busy} form={form}
-              keptLine={worn.length ? `${worn.length} ${worn.length === 1 ? "charm" : "charms"} kept; each says who pressed it on.` : "Kept as you go; each charm says who pressed it on."}
+              keptLine={heldCharms.dirty ? "Not saved yet — kept when you press Done or put her down." : worn.length ? `${worn.length} ${worn.length === 1 ? "charm" : "charms"} kept; each says who pressed it on.` : "Kept when you're done; each charm says who pressed it on."}
+              dirty={heldCharms.dirty} onDone={() => { heldCharms.flush(); setSelectedCharm(null); }}
               onAdd={addCharm} onSelect={setSelectedCharm} onChange={changeCharm} onRemove={removeCharm} />
             <button type="button" className="queen-go" onClick={() => onGo("more")}>Open the Status Centre</button>
           </>
@@ -850,7 +850,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       <QueenHouseRail place={scene} onGo={travel} />
 
       <QueenCellar ribbons={ribbons} open={scene === "cellar"} stairRef={cellarStair} onExit={exitRoom} onOpenBanks={() => onOpenBank({ bankId: "plan:protect" })} world={world} household={household} memberId={memberId} today={today} busy={busy} onCommand={onCommand} />
-      <QueenLoft shelf={shelf} rack={rack} open={scene === "loft"} busy={busy} stairRef={loftStair} onExit={exitRoom} onOpenGoal={(goalId) => onOpenBank({ goalId })} onOpenBanks={() => onOpenBank({ bankId: "plan:build" })} onRack={keepRack} pour={loftPour} world={world} />
+      <QueenLoft shelf={shelf} rack={rack} open={scene === "loft"} busy={busy} stairRef={loftStair} onExit={exitRoom} onOpenGoal={(goalId) => onOpenBank({ goalId })} onOpenBanks={() => onOpenBank({ bankId: "plan:build" })} onRack={keepRack} dirty={heldRack.dirty} onDone={heldRack.flush} pour={loftPour} world={world} />
     </div>
   );
 }

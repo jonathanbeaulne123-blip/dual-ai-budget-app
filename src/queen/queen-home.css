@@ -356,9 +356,9 @@
 /* ---- the rack (2026-09-15): shelves on the wall, top first; a post with a pin at the left, a brass weight at the right ---- */
 .queen-rack { display: flex; flex: 0 1 auto; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 4px; width: min(100%, 720px); min-height: 0; overflow: auto; padding: 4px 2px; scrollbar-width: thin; user-select: none; -webkit-user-select: none; }
 /* More shelves, smaller cats: the wall keeps its height, the banks give. Names stay until the wall is four deep; a held bank keeps its name. */
-.queen-room--loft[data-shelves="2"] .queen-goal svg { height: 60px; width: calc(40px * var(--goal-w, 1)); }
-.queen-room--loft[data-shelves="3"] .queen-goal svg { height: 50px; width: calc(34px * var(--goal-w, 1)); }
-.queen-room--loft[data-shelves="4"] .queen-goal svg, .queen-room--loft[data-shelves="5"] .queen-goal svg { height: 42px; width: calc(28px * var(--goal-w, 1)); }
+.queen-room--loft[data-shelves="2"] .queen-goal svg { height: 60px; width: calc(40px * var(--goal-w, 1)); --loft-full: 60px; }
+.queen-room--loft[data-shelves="3"] .queen-goal svg { height: 50px; width: calc(34px * var(--goal-w, 1)); --loft-full: 50px; }
+.queen-room--loft[data-shelves="4"] .queen-goal svg, .queen-room--loft[data-shelves="5"] .queen-goal svg { height: 42px; width: calc(28px * var(--goal-w, 1)); --loft-full: 42px; }
 .queen-room--loft[data-shelves="4"] .queen-goal__name, .queen-room--loft[data-shelves="5"] .queen-goal__name { display: none; }
 .queen-room--loft[data-shelves="4"] .queen-goal[aria-pressed="true"] .queen-goal__name, .queen-room--loft[data-shelves="5"] .queen-goal[aria-pressed="true"] .queen-goal__name { display: block; }
 .queen-room--loft[data-shelves="2"] .queen-shelf__post, .queen-room--loft[data-shelves="3"] .queen-shelf__post { min-height: 60px; }
@@ -423,7 +423,7 @@
   .queen-shelf .queen-ledge { padding: 8px 6px 0; gap: 4px; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
   .queen-shelf .queen-ledge::-webkit-scrollbar { display: none; }
   .queen-shelf .queen-goal { min-width: 36px; }
-  .queen-room--loft .queen-goal svg, .queen-room--loft[data-shelves="2"] .queen-goal svg, .queen-room--loft[data-shelves="3"] .queen-goal svg { height: 54px; width: calc(32px * var(--goal-w, 1)); }
+  .queen-room--loft .queen-goal svg, .queen-room--loft[data-shelves="2"] .queen-goal svg, .queen-room--loft[data-shelves="3"] .queen-goal svg { height: 54px; width: calc(32px * var(--goal-w, 1)); --loft-full: 54px; }
   .queen-room--loft .queen-goal__name { display: none; }
   .queen-room--loft .queen-goal[aria-pressed="true"] .queen-goal__name { display: block; }
   .queen-shelf__post, .queen-room--loft[data-shelves="2"] .queen-shelf__post, .queen-room--loft[data-shelves="3"] .queen-shelf__post { width: 18px; min-height: 58px; }
@@ -444,7 +444,7 @@
   .queen-rack { gap: 2px; }
   .queen-room--loft .queen-ledge-wrap { gap: 6px; }
   .queen-room--loft .queen-room__line { min-height: 0; padding-top: 4px; padding-bottom: 4px; font-size: 13.5px; max-width: 56ch; }
-  .queen-room--loft[data-shelves="2"] .queen-goal svg, .queen-room--loft[data-shelves="3"] .queen-goal svg { height: 44px; width: calc(30px * var(--goal-w, 1)); }
+  .queen-room--loft[data-shelves="2"] .queen-goal svg, .queen-room--loft[data-shelves="3"] .queen-goal svg { height: 44px; width: calc(30px * var(--goal-w, 1)); --loft-full: 44px; }
   .queen-room--loft[data-shelves="2"] .queen-goal__name, .queen-room--loft[data-shelves="3"] .queen-goal__name { display: none; }
   .queen-room--loft[data-shelves="2"] .queen-goal[aria-pressed="true"] .queen-goal__name, .queen-room--loft[data-shelves="3"] .queen-goal[aria-pressed="true"] .queen-goal__name { display: block; }
   .queen-room--loft[data-shelves="2"] .queen-shelf__post, .queen-room--loft[data-shelves="3"] .queen-shelf__post { min-height: 46px; }
@@ -847,3 +847,109 @@
   .queen-house-rail__mark { border-color: CanvasText; }
   .queen-house-rail__stop[aria-current="true"] .queen-house-rail__mark { background: Highlight; }
 }
+
+/* ---- the loft's banks are the studio's own cats, sized by their goal (2026-09-15) ----
+   Jonathan: "kitty banks should also be scaled to their goal sizes. a 10$ goal will be teeny tiny compared to a 10,000 goal".
+   --loft-full is the height a $10,000 bank stands at in this frame (the shelf-count and frame rules above set it);
+   --bank-scale comes from loftBankScale() on the item. The seat is the size of the bank when full, so an emptier cat
+   visibly has room to grow into. The tide (the shelf's pin) is read on the seat itself, so it fits every size. */
+.queen-home .queen-room--loft .queen-goal .queen-goal__vessel { position: relative; display: block; }
+.queen-home .queen-room--loft .queen-shelf .queen-goal .queen-goal__kitty {
+  --loft-h: max(16px, calc(var(--loft-full, 74px) * var(--bank-scale, 1) / 1.21));
+  height: var(--loft-h); width: calc(var(--loft-h) * 300 / 360); max-width: none;
+}
+.queen-home--wide .queen-room--loft[data-shelves="1"] .queen-goal .queen-goal__kitty { --loft-full: 92px; }
+.queen-home .queen-room--loft .queen-rack .queen-shelf .queen-goal::after { content: none; }
+.queen-home .queen-room--loft .queen-shelf .queen-goal__vessel::after {
+  content: ""; position: absolute; left: -4px; right: -4px; bottom: calc(var(--shelf-mark, 1) * 100%);
+  border-top: 1px dashed color-mix(in srgb, var(--queen-brass, var(--copper)) 85%, transparent); pointer-events: none;
+}
+.queen-home .queen-room--loft .queen-shelf[data-mark-full] .queen-goal__vessel::after { content: none; }
+/* ---- held, not yet sent (2026-09-15): one save when the work is put down ---- */
+.queen-held { display: inline-flex; align-items: center; gap: 8px; }
+.queen-held__mark { font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.queen-held__mark::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--queen-brass, var(--copper)); vertical-align: 1px; }
+.queen-charms-tool .queen-held { margin-top: 8px; }
+/* ---- the shelf tools' cards (2026-09-15): a tap on the weight, the pin or a divider says how it works and gives it a slider.
+   The card stands in the line's place under the rack — never over a shelf — and the brass still slides by hand while it is open. */
+.queen-tool-card { width: min(100%, 520px); padding: 10px 14px 12px; border-radius: 14px; text-align: left;
+  background: color-mix(in srgb, var(--paper) 72%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 55%, transparent), 0 6px 18px color-mix(in srgb, var(--ink) 16%, transparent); color: var(--ink); }
+.queen-tool-card:focus { outline: none; }
+.queen-tool-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.queen-tool-card__head { display: flex; align-items: center; gap: 8px; }
+.queen-tool-card__glyph { flex: 0 0 auto; width: 18px; height: 12px; border-radius: 3px; background: var(--queen-brass, var(--copper)); }
+.queen-tool-card__glyph[data-tool="pin"] { width: 12px; height: 12px; border-radius: 50%; }
+.queen-tool-card__glyph[data-tool="divider"] { width: 3px; height: 16px; border-radius: 1px; }
+.queen-tool-card__title { flex: 1 1 auto; min-width: 0; margin: 0; font: 400 15px/1.2 var(--display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.queen-home .queen-tool-card .queen-tool-card__close { flex: 0 0 auto; width: 32px; height: 32px; min-height: 32px; min-width: 32px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink); font-size: 20px; line-height: 1; cursor: pointer; }
+.queen-tool-card__how { margin: 6px 0 8px; font-size: 13px; line-height: 1.4; color: color-mix(in srgb, var(--ink) 82%, transparent); }
+.queen-tool-card__slider { display: grid; gap: 2px; margin: 4px 0; }
+.queen-tool-card__label { display: flex; justify-content: space-between; gap: 8px; font: 500 10px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.queen-tool-card__label b { font-weight: 600; color: var(--ink); white-space: nowrap; }
+.queen-home .queen-tool-card input[type="range"] { width: 100%; height: 28px; min-height: 28px; margin: 0; accent-color: var(--queen-brass, var(--copper)); }
+.queen-tool-card__now { margin: 6px 0 0; font-size: 12.5px; font-style: italic; color: color-mix(in srgb, var(--ink) 78%, transparent); }
+.queen-shelf__pin[data-tool-open] .queen-shelf__pin-head, .queen-shelf__weight[data-tool-open], .queen-divider[data-tool-open]::before { box-shadow: 0 0 0 3px color-mix(in srgb, var(--queen-brass, var(--copper)) 45%, transparent); }
+@container queen (max-height: 560px) { .queen-tool-card__how { margin: 2px 0 4px; font-size: 12px; } .queen-tool-card { padding: 6px 12px 8px; } }
+@container queen (max-height: 400px) { .queen-tool-card__how, .queen-tool-card__now { display: none; } .queen-home .queen-room--loft .queen-ledge-wrap > .queen-tool-card { padding: 4px 10px 6px; bottom: -54px; } }
+/* ---- the money gun (2026-09-15): picked up by the Fund's custodian; each tap on a bank throws a bill; one Send posts the round ---- */
+.queen-gun { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; max-width: 100%; }
+.queen-home .queen-room--loft .queen-ledge-wrap .queen-gun .queen-gun__trigger { display: inline-flex; align-items: center; gap: 8px; min-height: 34px; height: auto; padding: 3px 12px 3px 6px; border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 70%, transparent); backdrop-filter: blur(12px); color: var(--ink); font: 500 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.queen-gun__trigger[aria-pressed="true"] { background: color-mix(in srgb, #2f8a4e 22%, var(--paper)); border-color: #2f8a4e; }
+.queen-gun__trigger:disabled { opacity: .5; cursor: default; }
+.queen-gun__trigger:focus-visible, .queen-gun__bill:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.queen-gun__art { width: 46px; height: 26px; overflow: visible; transition: transform .2s var(--queen-ease); }
+.queen-gun__trigger[aria-pressed="true"] .queen-gun__art { transform: rotate(-14deg); }
+.queen-gun__body { fill: #3e8a58; stroke: #1f4b2f; stroke-width: 1.5; }
+.queen-gun__barrel { fill: #c9a44b; stroke: #6b5520; stroke-width: 1.5; }
+.queen-gun__grip { fill: #6b4a2f; stroke: #3a2716; stroke-width: 1.5; }
+.queen-gun__bills { fill: #cfe8c9; stroke: #3e8a58; stroke-width: 1; }
+.queen-gun__sign { font: 700 7px/1 var(--mono); fill: #1f4b2f; }
+.queen-gun__bills-pick { display: inline-flex; gap: 4px; }
+.queen-home .queen-room--loft .queen-ledge-wrap .queen-gun .queen-gun__bill { min-width: 44px; min-height: 30px; height: 30px; padding: 0 8px; border: 1px solid #3e8a58; border-radius: 6px; background: #eef7ea; color: #1f4b2f; font: 600 11px/1 var(--mono); cursor: pointer; }
+.queen-gun__bill[aria-checked="true"] { background: #3e8a58; color: #fff; }
+/* Armed: the banks become targets. */
+.queen-room--loft[data-armed="true"] .queen-goal--open { cursor: crosshair; }
+.queen-room--loft[data-armed="true"] .queen-goal--open .queen-goal__vessel { outline: 2px dashed color-mix(in srgb, #3e8a58 70%, transparent); outline-offset: 3px; border-radius: 10px; }
+.queen-room--loft[data-armed="true"] .queen-rack { cursor: crosshair; }
+.queen-cash { position: absolute; left: 0; top: 0; z-index: 30; width: 26px; height: 14px; border-radius: 2px; pointer-events: none;
+  display: grid; place-items: center; font: 700 9px/1 var(--mono); color: #1f4b2f;
+  background: linear-gradient(90deg, #b9deb0, #e6f4e1 50%, #b9deb0); box-shadow: inset 0 0 0 1px #3e8a58, 0 2px 4px color-mix(in srgb, #000 25%, transparent); }
+.queen-gun__send { background: #3e8a58 !important; color: #fff !important; }
+@media (forced-colors: active) { .queen-gun__body, .queen-gun__barrel, .queen-gun__grip, .queen-gun__bills { fill: CanvasText; } .queen-gun__bill[aria-checked="true"] { forced-color-adjust: none; background: Highlight; color: HighlightText; } }
+@container queen (max-width: 419px) { .queen-gun__trigger span { font-size: 9px; } .queen-gun__art { width: 36px; height: 20px; } }
+/* The jug and the gun share one row; the bills fly in their own layer, out of the room's flow. */
+.queen-loft-hands { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; max-width: 100%; }
+.queen-home .queen-room > .queen-cash-layer { position: absolute; inset: 0; z-index: 30; pointer-events: none; overflow: visible; }
+.queen-cash-layer .queen-cash { position: absolute; }
+/* The tool card rises over the acts and the stair at the foot of the room, so the rack it adjusts keeps its whole height. */
+.queen-home .queen-room--loft .queen-ledge-wrap > .queen-tool-card { position: absolute; left: 50%; bottom: 0; translate: -50% 0; z-index: 6; width: min(calc(100% - 16px), 520px); }
+.queen-room--loft .queen-ledge-wrap { position: relative; }
+/* A short loft (a 320×568 phone under the chrome): the gun is its icon, beside the jug on one line, so the rack keeps the wall. */
+@container queen (max-height: 400px) {
+  .queen-home .queen-room--loft .queen-loft-hands, .queen-home .queen-room--loft .queen-loft-hands .queen-jug, .queen-home .queen-room--loft .queen-gun { flex-wrap: nowrap; }
+  .queen-home .queen-room--loft .queen-ledge-wrap .queen-loft-hands .queen-gun .queen-gun__trigger { padding: 2px 6px; min-height: 28px; height: 28px; }
+  .queen-home .queen-room--loft .queen-gun__trigger span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .queen-home .queen-room--loft .queen-loft-hands .queen-jug { padding: 1px 8px; gap: 6px; }
+  .queen-home .queen-room--loft .queen-ledge-wrap .queen-loft-hands .queen-jug .queen-jug__tilt { width: min(110px, 28cqw); flex: 0 0 auto; }
+  .queen-home .queen-room--loft .queen-ledge-wrap .queen-loft-hands .queen-gun .queen-gun__bill { min-width: 34px; height: 26px; min-height: 26px; padding: 0 4px; }
+  .queen-home .queen-room--loft .queen-loft-hands .queen-jug { min-width: 0; flex: 0 1 auto; }
+  .queen-home .queen-room--loft .queen-loft-hands .queen-jug__safe { min-width: 0; flex: 0 1 auto; }
+}
+@container queen (max-height: 400px) { .queen-home .queen-room--loft .queen-ledge-wrap > .queen-tool-card { bottom: -54px; padding: 4px 10px 6px; } }
+/* A phone-width loft: the gun is its icon beside the jug, so the jug row stays one line and the rack keeps its height. */
+@container queen (max-width: 899px) {
+  .queen-home .queen-room--loft .queen-loft-hands { flex-wrap: nowrap; }
+  .queen-home .queen-room--loft .queen-loft-hands .queen-jug { min-width: 0; flex: 0 1 auto; }
+  .queen-home .queen-room--loft .queen-loft-hands .queen-jug__safe { min-width: 0; flex: 0 1 auto; }
+  .queen-home .queen-room--loft .queen-ledge-wrap .queen-loft-hands .queen-gun .queen-gun__trigger { padding: 2px 6px; min-height: 34px; height: 34px; }
+  .queen-home .queen-room--loft .queen-gun__trigger span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .queen-home .queen-room--loft .queen-gun { flex-wrap: nowrap; }
+  .queen-home .queen-room--loft .queen-ledge-wrap .queen-loft-hands .queen-gun .queen-gun__bill { min-width: 34px; padding: 0 4px; }
+}
+/* The held mark rides in the loft's title chip, so it never costs the rack a line. */
+.queen-held--head { margin-left: 10px; vertical-align: middle; }
+.queen-home .queen-room--loft .queen-room__head .queen-held.queen-held--head .queen-held__done { min-height: 26px; height: 26px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.queen-home .queen-room--loft .queen-room__head .queen-held__done:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@container queen (max-width: 419px) { .queen-held--head .queen-held__mark { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } }

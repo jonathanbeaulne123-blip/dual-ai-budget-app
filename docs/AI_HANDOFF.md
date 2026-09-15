@@ -1,3 +1,32 @@
+## The loft's studio cats and money gun, held saves, outside-click close, shelf-tool cards, cellar water (2026-09-15)
+
+Branch `claude/loft-kitty-gun`, one commit on `origin/main@fe0cb3b` (#489). **Risk: Medium.** The gun is a second room-side door to the existing `allocateHouseholdFundSurplus`, and the shared `useDialog` now also closes on an outside tap.
+
+What changed:
+- The loft stands each bank's studio piece, in 3D and flat, sized by a log of its goal, and growing by the studio's ten steps.
+- Rack and charm edits are held on the device and sent once: on Done, on leaving, or when the page hides or closes (`useHeldSave`).
+- A tap off any pop-up closes it (`useOutsideClose`, wired into `useDialog` and the house, row, punch and ledger pop-ups). A Confirm closes as Cancel.
+- The weight, the pin and the divider open explaining cards with sliders at the room's foot.
+- The cellar's water is a visible, themed body.
+- The money gun: the custodian picks a bill and taps banks; shots add up on the device, and **Send** posts one round behind Confirm through the rollover.
+- The jug and the gun both read the command outcome before saying money moved.
+
+Details: D-264 and the [worksession](worksessions/2026-09-15-loft-kitty-gun.md).
+
+Verification:
+- `tsc` is clean.
+- The quick gate at Medium passed (23 files, 251 tests, 109 s).
+- `app-startup-p1`: 82/82.
+- Dialog-adjacent suites: 65/66. `ledger-story-ui` fails identically on `main`.
+- New browser proof: 16 records, three worlds, 320 to 1100 px, 0 errors, axe clean.
+
+Uncertainty:
+- Going beyond the safe surplus was not built; that is Jonathan's money call.
+- The loft's size now shows a goal's order of magnitude.
+- The 3D path was checked in SwiftShader only, and each studio cat carries six canvases.
+
+Data: fictional only. Next owner: Codex trust review, then Jonathan's bot opens the PR.
+
 ## The loft's rack — shelves as weights, pins as marks, dividers as splits, and the jug that pours (2026-09-15)
 
 Branch `claude/loft-rack`, one commit on `origin/main@0078ef8` (#488); deliverable `loft-rack.patch`. Jonathan: "more of a shelving system than just one shelf … the different shelves should act as weights … a cutoff point for funding on each shelf … split up automatically both horizontally or vertically … not with information and inputs, but through physical touch and interactivity"; to the choices offered, "3 but we can't make it rigid it needs to be adjustable". **Risk Medium-High** — a new strictly validated field (`rack`) on the synced `kittyNestDesigns` record, refused by older builds ("needs an updated Hearth"); and a room-side door to the existing money command `allocateHouseholdFundSurplus` behind the app's Confirm, custodian only. No new money writer; no money meaning, schema, Auth/RLS, sync transport, hosted state, financial hash or Hercules payload change; behind `VITE_QUEENS_NEST`. Budget (5): +1 — the month-end rollover previewed exactly before Confirm. Engagement (3): +3 — money lands where you hung the shelves.
