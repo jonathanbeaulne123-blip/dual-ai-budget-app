@@ -138,7 +138,13 @@ All commands from the worktree root in the cloud container, Node 22.22.2.
 - `pnpm test -- --risk=medium-high --focus=test/cellar-missing-subscriptions.test.ts --focus=test/cellar-income-jars.test.ts --focus=test/cellar-v3-ui.test.ts --focus-reason=…`: **`quick-gate-passed`** at head `4f287970`.
   - Phases: diff-check, ai-surface, typescript 63.1 s, test-discovery (22 selected: 21 fast, 1 serial), vitest-fast 21 files / 264 tests, vitest-serial 1 file / 7 tests.
   - Total 124.0 s of the 300 s budget, no breach. `uiProofRequired: true`, answered by the browser run below.
-- `HEARTH_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome node test/cellar-v3-layout.mjs`: see `docs/evidence/cellar-v3/README.md`.
+- `HEARTH_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome node test/cellar-v3-layout.mjs`: **22 records, 0 page errors**.
+  - No page scroll at any capture.
+  - axe has no serious or critical hits in the cellar with the card open (Classic).
+  - The sparks animate once, and stand still under reduced motion.
+  - Three themes × 320×700 / 390×844 / 720×900 / 1100×800.
+  - The partner-offer, Confirm and rolled states were captured in Classic at all four sizes, and in Taylor and Newfoundland at 390 and 1100.
+  - 78 PNGs are in `docs/evidence/cellar-v3/` (see its README).
 
 ## Remaining uncertainty
 

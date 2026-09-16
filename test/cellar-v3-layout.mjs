@@ -16,12 +16,14 @@ mkdirSync(output, { recursive: true });
 const proof = await startHouseholdHomeProof({ port: 0 });
 const exe = process.env.HEARTH_CHROMIUM ? { executablePath: process.env.HEARTH_CHROMIUM } : {};
 const browser = await chromium.launch({ ...exe, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
-const records = [], errors = [];
+const records = [], errors = [], picks = [];
 // 320×700 is the honest 320 (the 320×568 frame with the chrome stand-ins is the compromised one the earlier cellar evidence names).
 const SIZES = [[320, 700], [390, 844], [720, 900], [1100, 800]];
 const THEMES = ['classic', 'taylor', 'newfoundland'];
 const only = process.env.RUNS ? process.env.RUNS.split(',') : null;
-const url = (theme, extra = {}) => `${proof.url}?${new URLSearchParams({ composition: 'queen', chrome: '1', state: 'building', bills: '1', cellar3: '1', today: '2026-09-12', theme, ...extra })}`;
+// The App's chrome stand-ins at 800px and taller; the 320×700 frame is measured without them (the honest 320).
+let chrome = '1';
+const url = (theme, extra = {}) => `${proof.url}?${new URLSearchParams({ composition: 'queen', chrome, state: 'building', bills: '1', cellar3: '1', today: '2026-09-12', theme, ...extra })}`;
 const scroll = (page) => page.evaluate(() => ({ x: document.documentElement.scrollWidth - document.documentElement.clientWidth, y: document.documentElement.scrollHeight - document.documentElement.clientHeight }));
 async function clickHer(page) { const her = page.locator('.queen-figure'); await her.waitFor({ timeout: 90_000 }); const b = await her.boundingBox(); await her.click({ position: { x: b.width / 2, y: b.height * 0.3 }, timeout: 60_000, force: true }); }
 async function cellar(page, width) {
@@ -46,7 +48,8 @@ async function gateTo(page, day) {
 }
 async function pick(page, kind) {
   const jar = page.locator(`.queen-jar--extra[data-kind="${kind}"].is-in-gate`).first();
-  await jar.click({ timeout: 30_000 });
+  // A tap where the jar is clear; where the room's line or acts overlap it on a short frame, the keyboard path (focus, Enter).
+  try { await jar.click({ timeout: 8_000 }); } catch { await jar.focus(); await page.keyboard.press('Enter'); picks.push(`${kind}:keyboard`); }
   await page.waitForSelector('.queen-jar-card', { timeout: 60_000 });
   await page.waitForTimeout(250);
 }
@@ -59,6 +62,8 @@ for (const theme of THEMES) for (const [width, height] of SIZES) {
   const tag = `${theme}-${width}x${height}`;
   if (only && !only.includes(tag)) continue;
   const full = theme === 'classic' || width === 390 || width === 1100;
+  chrome = height >= 800 ? '1' : '0';
+  picks.length = 0;
   // ---- the custodian's cellar ----
   const page = await openPage({ width, height });
   page.on('pageerror', (e) => errors.push(`${tag}: ${e.message}`));
@@ -120,7 +125,7 @@ for (const theme of THEMES) for (const [width, height] of SIZES) {
     await pick(page, 'contribution');
     await shot(page, `contribution-card-${tag}`);
   }
-  records.push({ tag, world, roomWorld, rest, zoomRead, gateLine, card: { sparks: card.sparks }, glass: glass.slice(0, 120) });
+  records.push({ tag, chrome, picks: [...picks], world, roomWorld, rest, zoomRead, gateLine, card: { sparks: card.sparks }, glass: glass.slice(0, 120) });
   await closePage(page);
   if (!full) continue;
   // ---- the partner's phone, the offer waiting ----
@@ -159,6 +164,7 @@ for (const theme of THEMES) for (const [width, height] of SIZES) {
 // ---- reduced motion: the sparks stand still ----
 for (const [width, height] of [[390, 844], [1100, 800]]) {
   const tag = `reduced-${width}x${height}`;
+  chrome = '1';
   if (only && !only.includes(tag)) continue;
   const context = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce' });
   const page = await context.newPage();

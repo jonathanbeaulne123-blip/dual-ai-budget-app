@@ -32,7 +32,7 @@ Branch `claude/plan-v3-cellar` on `main@6160fb03` (#495), in small commits. **Ri
   - `queen-cellar` + `queen-cellar-ui` + `queens-nest-ui` still green
   - 6 files, 82/82 in total
 - **Quick gate (Medium-High, three focus files):** `quick-gate-passed`, 22 files / 271 tests, 124 s of 300 s.
-- **Browser:** `test/cellar-v3-layout.mjs` → `docs/evidence/cellar-v3/` (see its README).
+- **Browser:** `test/cellar-v3-layout.mjs` → `docs/evidence/cellar-v3/`: 22 records, 0 errors, no page scroll, axe clean (Classic), three themes × 320×700/390/720/1100, partner/Confirm/rolled states, reduced motion.
 - **Real phone:** not available.
 
 **Defaulted, confirm:**
