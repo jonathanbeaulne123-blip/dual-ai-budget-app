@@ -222,6 +222,25 @@ Branch `claude/plan-v3-cellar` on `main@6160fb03` (#495), in small commits. **Ri
 **State:** not pushed, not a PR, not merged, not deployed, not live verified.
 **Next owners:** Codex (review), then Jonathan (defaults), then the integrator (merge beside the money and studio tracks).
 
+## Journey map full screen toggle (2026-09-16, D-283)
+
+**Status:** branch `claude/journey-fullscreen`, one commit on `origin/main@d7b0151b`. Local only; not pushed.
+
+**Risk:** Low. Presentation only.
+
+**Budget delta (5):** +0. **Engagement delta (3):** +1.
+
+**Changes:** `src/path/OurPathWorld.tsx` (the toggle, full-screen state and the native Fullscreen API on the page) and `src/path/our-path-world.css` (the quiet button, the fixed takeover, and room for the button in the phone controls).
+
+**Verification:**
+- `tsc` is clean.
+- Tests pass: `test/journey-fullscreen-ui.test.ts` (new, 2 tests) and `test/our-path-world-ui.test.ts`.
+- Headless Chromium (the Our Path proof, fictional habitat) at 390 Taylor, 320 Newfoundland, 720 Taylor, and 1100 Classic and Newfoundland. In each: the stage fills the viewport and native full screen is granted. Leaving works. The toggle is 40px, at 30% opacity, with no overlap with the controls and no page errors. Captures are in `docs/evidence/journey-fullscreen/`.
+
+**Uncertainty:** not tried on a real iPhone, which gets the CSS takeover only because it has no element Fullscreen API, or with a screen reader.
+
+**Next owner:** Jonathan / the delivery bot to push and open a PR. This branch is independent of `claude/plan-studio-v3`; both touch `OurPathWorld.tsx` and our-path-world.css in different places.
+
 ## The Journey of Life and the Our Story habitat (2026-09-16, D-268)
 
 Branch `claude/journey-of-life` (one squashed commit) on `origin/main@6160fb03` (#495), delivered as a bundle and a patch; built on #494 and rebased cleanly over #495. **Risk: High.** It adds a new synced row kind (`era`) and a new capability flag (`pathEraVersion`), and changes performance (not output) in `refreshDuplicateFlags`.
