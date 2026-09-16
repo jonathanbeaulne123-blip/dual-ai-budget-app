@@ -155,7 +155,7 @@ describe("Rolling the difference into a goal — the custodian offers, the partn
     const rolled = rollMissingSubscription(agreed, { today, memberId: ALEX, entryId: entry!.id }).household;
     expect(projectHouseholdFund(rolled, today).kittyCents - before).toBe(1600);
     const event = rolled.fundEvents!.at(-1)!;
-    expect(event).toMatchObject({ kind: "kitty-allocated", amountCents: 1600, note: "Cellar roll-over: Fictional streaming's uncharged Sep 12 payment [cellar-roll:" + entry!.recurrenceId + ":2026-09-12]" });
+    expect(event).toMatchObject({ kind: "kitty-allocated", amountCents: 1600, note: "[cellar-roll:" + entry!.recurrenceId + ":2026-09-12] Cellar roll-over: Fictional streaming's uncharged Sep 12 payment" });
     const after = read(rolled, today);
     expect(after.open[0]).toMatchObject({ stage: "rolled", rolledCents: 1600, rolledGoalIds: [goalId] });
     // Both people's open offers are now spent: each device withdraws its own.

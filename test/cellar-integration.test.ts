@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
 import { addGoal, addRecurrence, postDueRecurrences, proposePlanBridge } from "../src/core/commands.ts";
-import { agreeMissingRoll, missingSubscriptions, offerMissingRoll, withdrawMissingRoll } from "../src/core/missingSubscriptions.ts";
+import { agreeMissingRoll, missingSubscriptions, rollMissingSubscription, offerMissingRoll, withdrawMissingRoll } from "../src/core/missingSubscriptions.ts";
 import { isCellarBridgeRow, sharedBridgeDecisions } from "../src/core/cellarBridge.ts";
 import { sitdownBrief } from "../src/core/sitdownBrief.ts";
 import { pathBridges } from "../src/core/pathBridges.ts";
@@ -19,11 +19,11 @@ import { ALEX as FALEX, TODAY as FTODAY, fundBill, fundedHousehold, migrated } f
 const ALEX = "MEM-001", SAM = "MEM-002";
 const today = "2026-09-16";
 
-function offered(): { h: Household; before: Household } {
+function offered(note = "Fictional streaming"): { h: Household; before: Household } {
   let h = planLifeFixture("household");
   const goal = addGoal(h, { name: "Fictional beach weekend", target: "600", shared: true, ownerMemberId: SAM });
   h = goal.household;
-  const added = addRecurrence(h, { cadence: "monthly", nextDate: "2026-08-12", type: "expense", amount: "16", accountId: "ACC-VISA", subcategoryId: "SUB-LIFE-FUN", note: "Fictional streaming", kind: "subscription" });
+  const added = addRecurrence(h, { cadence: "monthly", nextDate: "2026-08-12", type: "expense", amount: "16", accountId: "ACC-VISA", subcategoryId: "SUB-LIFE-FUN", note, kind: "subscription" });
   h = postDueRecurrences(added.household, "2026-08-12", [added.postedIds[0]!], { createdBy: ALEX }).household;
   const before = h;
   const [entry] = missingSubscriptions(h, { today, memberId: ALEX }).open;
@@ -92,5 +92,43 @@ describe("the cellar tints bills by umbrella once sorted (D-281)", () => {
     const hydro = jars.find(jar => jar.label.includes("hydro"))!;
     expect(hydro.umbrellaHue).toBe(umbrellaHueForCategory(sorted, "SUB-HOUSING-ELECTRIC"));
     expect(hydro.umbrellaHue).toBe("#c9a227");
+  });
+});
+
+describe("a cellar roll-over posts once, and only after both said yes, on the authority too (D-281, review B1/H2)", () => {
+  const LONG = `Fictional ${"very long streaming service name ".repeat(6)}`.slice(0, 200);
+  const agreed = (note?: string) => {
+    const { h } = offered(note);
+    const [entry] = missingSubscriptions(h, { today, memberId: SAM }).open;
+    return { h: agreeMissingRoll(h, { today, memberId: SAM, entryId: entry!.id }).household, entryId: entry!.id };
+  };
+  const kitty = (h: Household) => (h.fundKittyAllocations ?? []).reduce((sum, row) => sum + row.amountCents, 0);
+
+  it("a 200-character subscription name rolls once on the phone", () => {
+    expect(LONG.length).toBeGreaterThanOrEqual(138);
+    const { h, entryId } = agreed(LONG);
+    const rolled = rollMissingSubscription(h, { today, memberId: ALEX, entryId }).household;
+    expect(kitty(rolled) - kitty(h)).toBe(1600);
+    expect(missingSubscriptions(rolled, { today, memberId: ALEX }).open[0]!.stage).toBe("rolled");
+    expect(() => rollMissingSubscription(rolled, { today, memberId: ALEX, entryId })).toThrow(/already rolled/);
+  });
+
+  it("the authority replays the roll as itself and refuses a second one, even with a long name", () => {
+    const { h, entryId } = agreed(LONG);
+    const once = executeIntent(h, "rollMissingSubscription", [{ today, memberId: ALEX, entryId }], ALEX, "roll-1").household;
+    expect(kitty(once) - kitty(h)).toBe(1600);
+    expect(() => executeIntent(once, "rollMissingSubscription", [{ today, memberId: ALEX, entryId }], ALEX, "roll-2")).toThrow(/already rolled/);
+    // The partner can't post it, and the actor binding refuses a forged member.
+    expect(() => executeIntent(h, "rollMissingSubscription", [{ today, memberId: ALEX, entryId }], SAM, "roll-3")).toThrow();
+  });
+
+  it("the authority refuses a roll nobody agreed to, and a bare rollover carrying the cellar's key", () => {
+    const { h } = offered();
+    const [entry] = missingSubscriptions(h, { today, memberId: ALEX }).open;
+    expect(() => executeIntent(h, "rollMissingSubscription", [{ today, memberId: ALEX, entryId: entry!.id }], ALEX, "roll-4")).toThrow(/Both of you/);
+    const goalId = h.goals.find(goal => goal.name === "Fictional beach weekend")!.id;
+    expect(() => executeIntent(h, "allocateHouseholdFundSurplus", [{ memberId: ALEX, date: today, allocations: [{ goalId, amount: 16 }], note: `[${entry!.key}] roll` }], ALEX, "roll-5")).toThrow(/through the cellar/);
+    // An ordinary rollover is untouched.
+    expect(() => executeIntent(h, "allocateHouseholdFundSurplus", [{ memberId: ALEX, date: today, allocations: [{ goalId, amount: 16 }], note: "Month-end rollover" }], ALEX, "roll-6")).not.toThrow();
   });
 });

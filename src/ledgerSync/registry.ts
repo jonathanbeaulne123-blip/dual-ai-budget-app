@@ -13,6 +13,7 @@ import * as rehearsal from "../core/monthRehearsal.ts";
 import * as chapterCommands from "../core/chapters.ts";
 import * as pathWorldCommands from "../core/pathWorld.ts";
 import * as fundModelCommands from "../core/fundModelCommands.ts";
+import * as missingSubscriptionCommands from "../core/missingSubscriptions.ts";
 import { saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks } from "../core/tasks.ts";
 import { stampWeeklyDocument } from "../core/weeklyDocumentStamp.ts";
 import { commitCharterFounding } from "../core/charterFounding.ts";
@@ -42,6 +43,7 @@ const functions = {
   restoreSharedPoint,
   stampWeeklyDocument,
   commitCharterFounding,
+  rollMissingSubscription: missingSubscriptionCommands.rollMissingSubscription,
 } as unknown as Record<string, Fn>;
 function bind(args: unknown[], index: number, path: string, actor: string) {
   if (!path) {
@@ -103,6 +105,8 @@ register("setGoogleServices setRecurrenceGoogleSync");
 register("startMonthRehearsal", ["startedByMemberId"]);
 register("openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter closeChapterAtSitdown", ["memberId"]);
 register("migrateFundModel migrateMyFundModel setFundOverride setCategoryHome proposeFundDivision agreeFundDivision declineFundDivision proposeProtectRefill agreeProtectRefill declineProtectRefill withdrawFundProposal", ["memberId"]);
+// D-281: the cellar's roll-over replays as itself, so the authority re-reads consent and "only once" on its own books.
+register("rollMissingSubscription", ["memberId"]);
 register("proposePathRecipe proposePathName agreePathProposal declinePathProposal setPathCategorySignal", ["memberId"]);
 register("upsertCoworker importCoworkerRoster recordCoworkerAttendance", [
   "ownerMemberId",
@@ -210,6 +214,8 @@ export function executeIntent(
   )
     throw new Error("USE_REVERSAL_COMMAND");
   // D-281: a cellar pay choice ("hide my pay") names its member in the key; only that member may write it.
+  // D-281: a cellar roll-over only travels as rollMissingSubscription (both said yes, never twice); a bare rollover may not carry its key.
+  if (kind === "allocateHouseholdFundSurplus" && typeof input?.note === "string" && /cellar-roll:/.test(input.note)) throw new ValidationError("A cellar roll-over goes through the cellar, where both of you say yes first.");
   if (kind === "dismissNotice") {
     const payMark = /^cellar-pay:([^:]+):/.exec(typeof args[0] === "string" ? args[0] : "");
     if (payMark && payMark[1] !== actor) throw new Error("ACTOR_MISMATCH");

@@ -1,4 +1,5 @@
 import { addDays, monthKeyFromDateKey, monthStartKey, parseDateKey, type DateKey } from "./calendar.ts";
+import { captureCommand } from "../ledgerSync/capture.ts";
 import { CELLAR_BRIDGE_PATTERN, CELLAR_BRIDGE_SUFFIX } from "./cellarBridge.ts";
 import { allocateHouseholdFundSurplus, declinePlanBridge, proposePlanBridge, withdrawPlanBridge } from "./commands.ts";
 import { activeHouseholdFundEvents, shapeHouseholdFundConfig, shapeHouseholdFundKittyAllocations } from "./householdFund.ts";
@@ -209,7 +210,8 @@ export function cellarBridgeRows(household: Pick<Household, "planBridgeDecisions
 function rolledFor(household: Household, key: string): { cents: number; goalIds: string[] } {
   const fund = shapeHouseholdFundConfig(household.householdFund);
   if (!fund) return { cents: 0, goalIds: [] };
-  const events = activeHouseholdFundEvents(household, fund.id).filter((event) => event.kind === "kitty-allocated" && event.note.includes(key));
+  // The key leads the note in brackets (D-281), so the rollover's 180-character note limit can never cut it off.
+  const events = activeHouseholdFundEvents(household, fund.id).filter((event) => event.kind === "kitty-allocated" && event.note.includes(`[${key}]`));
   const ids = new Set(events.map((event) => event.id));
   const goalIds = [...new Set(shapeHouseholdFundKittyAllocations(household.fundKittyAllocations).filter((row) => ids.has(row.eventId)).map((row) => row.goalId))];
   return { cents: events.reduce((sum, event) => sum + event.amountCents, 0), goalIds };
@@ -331,7 +333,7 @@ export function withdrawMissingRoll(household: Household, input: { memberId: str
  * Re-read against the books the command runs on, so a stale screen, a
  * double tap or a late charge can never post a second roll for one occurrence.
  */
-export function rollMissingSubscription(household: Household, input: { today: DateKey; memberId: string; entryId: string }): CommitResult {
+export const rollMissingSubscription = captureCommand("rollMissingSubscription", function rollMissingSubscription(household: Household, input: { today: DateKey; memberId: string; entryId: string }): CommitResult {
   const { reading, entry } = requireEntry(household, input);
   if (reading.custodianMemberId !== input.memberId) throw new ValidationError("Only the Fund's custodian can roll money into a goal.");
   if (entry.stage === "rolled" || rolledFor(household, entry.key).cents > 0) throw new ValidationError("That difference was already rolled into a goal.");
@@ -339,9 +341,15 @@ export function rollMissingSubscription(household: Household, input: { today: Da
   return allocateHouseholdFundSurplus(household, {
     memberId: input.memberId, date: input.today,
     allocations: [{ goalId: entry.offer.goalId, amount: entry.differenceCents / 100 }],
-    note: `Cellar roll-over: ${missingWhat(entry)} [${entry.key}]`,
+    note: cellarRollNote(entry),
   });
+});
+
+/** The rollover note: the occurrence key first, then as much of the words as fits the rollover's 180 characters. */
+export function cellarRollNote(entry: Pick<MissingSubscription, "key" | "label" | "date" | "kind">): string {
+  return `[${entry.key}] Cellar roll-over: ${missingWhat(entry)}`.slice(0, 180);
 }
+export const CELLAR_ROLL_NOTE = /\[cellar-roll:/;
 
 /** The mark's words, for the jar and its card. Amounts are confirmation. */
 export function missingWords(entry: MissingSubscription, format: (cents: number) => string): string {
