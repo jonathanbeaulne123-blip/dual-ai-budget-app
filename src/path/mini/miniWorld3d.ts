@@ -863,11 +863,11 @@ export function createMiniWorld(host: HTMLElement, options: {
   function keyframe(i: number, out: typeof KA) {
     out.y = 0;
     if (i === 0) {
-      mp(sOf(day), -0.95, 0, out.t);
-      out.d = fitW(viewSpan()); out.p = 0.62;
+      mp(sOf(day), compact ? -1.2 : -0.95, 0, out.t);
+      out.d = fitW(viewSpan()); out.p = compact ? 0.78 : 0.62;
     } else if (i === 1) {
-      mp(sOf(day), -1.25, 0, out.t);
-      out.d = fitW(compact ? 11 : wide() ? (width >= 1000 ? 18 : 15) : 10.5); out.p = 0.7;
+      mp(sOf(day), compact ? -1.4 : -1.25, 0, out.t);
+      out.d = fitW(compact ? 9 : wide() ? (width >= 1000 ? 18 : 15) : 10.5); out.p = compact ? 0.86 : 0.7;
     } else if (i === 2) {
       out.t.set(0, 0, 0.9);
       const across = 2 * (R + 2.6) + 1.5;

@@ -284,8 +284,8 @@
 .journey-mini--compact .journey-mini__frame { grid-template-areas: "stage"; padding: 4px; gap: 0; position: relative; }
 .journey-mini--compact .journey-mini__stage { height: 100%; min-height: 150px; aspect-ratio: 1 / 1; }
 .journey-mini--compact .journey-mini__scale {
-  grid-area: stage; align-self: end; justify-self: stretch; z-index: 5; margin: 0 4px 4px; padding: 1px; gap: 1px;
-  background: color-mix(in srgb, var(--mini-card) 88%, transparent); border-radius: 999px;
+  position: absolute; left: 4px; right: 4px; bottom: 4px; z-index: 5; padding: 1px; gap: 1px;
+  background: color-mix(in srgb, var(--mini-card) 90%, transparent); border-radius: 999px; box-shadow: 0 4px 12px -8px rgb(0 0 0 / 0.5);
 }
 .journey-mini--compact .journey-mini__zoom { width: 30px; min-height: 30px; font-size: 16px; }
 .journey-mini--compact .journey-mini__levels button { min-height: 30px; font-size: 11px; }

@@ -831,6 +831,7 @@ export function JourneyMini(props: JourneyMiniProps) {
   })();
   useEffect(() => { if (journey) setAnnounce(`${levelName} level. ${head.sub}`); }, [levelName, head.sub, journey]);
 
+  const compactCaption = level <= 1 ? `${levelName} · ${level === 0 ? miniDateLabel(focusDate, false) : week?.label ?? ""}` : level === 2 ? month.shortLabel : level === 3 && focusEra ? `Era ${focusEra.order} · ${focusEra.name}` : "Our journey";
   const scrub = (() => {
     if (!journey) return { min: 0, max: 0, value: 0, step: 1, text: "" };
     if (level <= 1) {
@@ -937,7 +938,7 @@ export function JourneyMini(props: JourneyMiniProps) {
       <section className="journey-mini journey-mini--compact" data-mini-theme={theme} data-level={level} data-flat={flat ? "true" : "false"} aria-label="Journey minimap">
         <div className="journey-mini__frame">
           {stageEl}
-          <p className="journey-mini__compact-caption" aria-hidden="true" data-obstacle="">{levelName} · {head.sub}</p>
+          <p className="journey-mini__compact-caption" aria-hidden="true" data-obstacle="">{compactCaption}</p>
           <p className="journey-mini__sr" aria-live="polite">{announce}</p>
         </div>
       </section>

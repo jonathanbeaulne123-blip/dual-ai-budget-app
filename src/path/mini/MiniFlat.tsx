@@ -107,7 +107,7 @@ export function flatLayout(input: {
       spots.set("gate", { x: gx, y: 80 });
     }
   } else if (level === 2) {
-    const cx = W / 2, cy = 124, r = 82;
+    const cx = W / 2, cy = 122, r = 74;
     const dim = month.days.length;
     const anchor = Number(input.journey.today.slice(8, 10)) || 1;
     const angle = (d: number) => Math.PI / 2 - (d - anchor) * 2 * Math.PI / dim;
@@ -143,7 +143,7 @@ export function flatLayout(input: {
     const banks = era?.banks ?? [];
     const colX = Math.max(cx + 130, W - 150);
     banks.forEach((bank, i) => {
-      const y = 22 + i * Math.min(26, 196 / Math.max(1, banks.length));
+      const y = 40 + i * Math.min(25, 190 / Math.max(1, banks.length));
       out.push(<g key={bank.goalId}>
         <rect x={colX} y={y} width={16} height={18} rx={3} fill={P.glass} stroke={P.stoneEdge} />
         <rect x={colX + 2} y={y + 16 - 14 * bank.fill} width={12} height={14 * bank.fill} rx={1} fill={bank.bought ? P.today : P.gold} />
@@ -151,7 +151,7 @@ export function flatLayout(input: {
       </g>);
       spots.set(`bank:${bank.goalId}`, { x: colX + 22, y: y + 16 });
     });
-    if (banks.length) spots.set("finish", { x: colX + 30, y: 14 });
+    if (banks.length) spots.set("finish", { x: colX + 8, y: 30 });
     if (month.current) spots.set("here", { x: cx, y: cy - miniLapRadius(month.lap, laps.length || 1) * scale - 4 });
   } else {
     const eras = input.sceneEras;
