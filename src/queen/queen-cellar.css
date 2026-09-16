@@ -235,7 +235,7 @@
    All three stand on the rail's one dollar scale (--jar-px from cellarScale). Pay is clear glass with a dashed edge and an "if":
    it never reads as money that exists. A contribution bank is solid clay (hollow when nothing came in). A missing subscription
    is a ghost of its jar with a spark; a smaller one carries a down-mark. They are drawn over the 3D room, not sculpted. */
-.queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--extra { position: relative; display: inline-flex; flex-direction: column; align-items: center; justify-content: flex-end;
+.queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--extra { position: relative; z-index: 3; display: inline-flex; flex-direction: column; align-items: center; justify-content: flex-end;
   width: calc(30px * var(--cellar-zoom, 1)); min-width: 30px; min-height: 44px; height: auto; padding: 0; margin: 0; border: 0; background: transparent; color: inherit; cursor: pointer; overflow: visible; box-shadow: none; }
 .queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--extra:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 6px; }
 .queen-room--cellar .queen-extrajar { position: relative; display: block; width: calc(var(--jar-px, 20px) * .62); min-width: 12px; height: var(--jar-px, 20px); flex: 0 0 auto; }
@@ -279,4 +279,12 @@
   .queen-room--cellar .queen-extrajar__glass, .queen-room--cellar .queen-extrajar__ghost, .queen-room--cellar .queen-extrajar__bank { stroke: CanvasText; fill: Canvas; }
   .queen-room--cellar .queen-extrajar__mark { forced-color-adjust: none; background: Highlight; color: HighlightText; }
   .queen-cellar-cheer { display: none; }
+}
+/* Short frames hide the ordinary card's line; the v3 cards keep theirs (it is the "if" / "not charged" statement) and drop the note's length instead. */
+@container queen (max-height: 560px) {
+  .queen-home .queen-room--cellar .queen-jar-card--missing .queen-jar-card__line,
+  .queen-home .queen-room--cellar .queen-jar-card--hypothetical .queen-jar-card__line,
+  .queen-home .queen-room--cellar .queen-jar-card--contributed .queen-jar-card__line { display: block; font-size: 13px; }
+  .queen-room--cellar .queen-jar-card--hypothetical .queen-jar-card__note { display: none; }
+  .queen-room--cellar .queen-jar-card--missing .queen-jar-card__note { font-size: 12.5px; margin-top: 4px; }
 }

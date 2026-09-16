@@ -90,6 +90,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
   const gateDay = reading?.days[billAt] ?? null;
   const gateJars = railReading && gateDay ? railReading.jars.filter((jar) => jar.date === gateDay.date) : [];
   const gateJar: CellarJar | null = gateJars[0] ?? null;
+  const gateExtras = gateDay ? cellar3.extras.filter((row) => row.date === gateDay.date) : [];
   const openJar: CellarJar | null = openJarId && railReading ? railReading.jars.find((jar) => jar.id === openJarId) ?? null : null;
   const gateRibbon = gateJar?.recurrenceId ? ribbons.find((row) => row.recurrenceId === gateJar.recurrenceId) ?? null : null;
   const ribbon = (view === "months" && gateRibbon) ? gateRibbon : ribbons.find((row) => row.recurrenceId === picked) ?? ribbons[0] ?? null;
@@ -234,10 +235,10 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
             <CellarIncomeCard key={openIncome.id} jar={openIncome} ownPay={cellar3.ownPay} onToggleOwnPay={cellar3.toggleOwnPay} busy={busy} onCommand={onCommand} memberId={memberId} cardRef={card} onClose={closeCard} />
           )}
           {!openJar && !openExtra && <p className="queen-room__line" aria-live="polite">
-            <em>{gateJar ? (gateJar.strike === "hammer" ? "The hammer is out." : gateJar.strike === "crack" ? "Cracked." : gateJar.paid ? "A shard, kept." : "Filling.") : gateDay?.today ? "Today." : "The rail."}</em> {cellarGateWords(gateJar, gateDay, formatCad)}
+            <em>{gateJar ? (gateJar.strike === "hammer" ? "The hammer is out." : gateJar.strike === "crack" ? "Cracked." : gateJar.paid ? "A shard, kept." : "Filling.") : gateExtras.length ? (gateExtras[0]!.kind === "income" ? "If." : gateExtras[0]!.kind === "contribution" ? "Contributed." : "A little windfall.") : gateDay?.today ? "Today." : "The rail."}</em> {!gateJar && gateExtras.length ? `${gateExtras.map((row) => row.label).join(" · ")}. Pick it to read it.` : cellarGateWords(gateJar, gateDay, formatCad)}
             {heldId && gateJar?.id === heldId ? " Lifted out — a rehearsal; nothing is written." : ""}
             {!gateJar && payNote ? ` ${payNote}` : ""}
-            {!gateJar && reading.jars.length > 0 ? " A kitty jar's shape and what it wears are what it is for, its colour where it is filed, its size how large the due is, its glaze how much is in it; pick one to read it." : ""}
+            {!gateJar && !gateExtras.length && reading.jars.length > 0 ? " A kitty jar's shape and what it wears are what it is for, its colour where it is filed, its size how large the due is, its glaze how much is in it; pick one to read it." : ""}
           </p>}
           <div className="queen-room__acts">
             {gateJar?.strike === "hammer" && gateJar.recurrenceId && (
