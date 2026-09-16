@@ -44,6 +44,7 @@ Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-st
 - **After the fixes:**
   - Targeted suites: 118 files, 1151 passed. The same 5 pre-existing failures remain, plus a parity timeout under load; parity passes alone.
   - Evidence refreshed: 87 records, 0 failures.
+  - Quick gate at High on `8fc6599f` (clean tree): `quick-gate-passed; time-budget-breached`. It took 667.2 s over 86 files.
 
 **Defaulted, confirm:** the list is in D-281.
 

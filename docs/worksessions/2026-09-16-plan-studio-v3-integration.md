@@ -233,6 +233,8 @@ Every Blocker, High and Medium finding is fixed. Each fix has its own commit and
   - `uiProofRequired: true` is answered by the browser run below.
 - At `c39c6ce8` (clean tree, after the docs commit): **`quick-gate-passed; time-budget-breached`**. It took 673.9 s; the same 83 files were selected, fast took 173.3 s and serial took 424.7 s.
 
+- At `8fc6599f` (clean tree, after the trust-review fixes): **`quick-gate-passed; time-budget-breached`**. It took 667.2 s over 86 files; fast took 170.4 s and serial took 414.7 s.
+
 **Targeted suites after the trust-review fixes** (118 files): 1151 passed, 6 failed and 7 skipped. The failures are the same 5 pre-existing ones, plus the `ledger-import-parity` timeout under load; that suite passes alone (5/5).
 
 **Targeted suites for all three tracks, before the fixes** (113 files: `plan-`, `queen`, `kitty`, `path-`, `hercules-`, `fund-model`, `cellar-`, `chapter`, `sitdown`, `category-`, `our-path`, `ledger-sync`, `ledger-import-parity`, `app-startup-p1`, `month-rehearsal-mainline`, `onboarding-categories`):
