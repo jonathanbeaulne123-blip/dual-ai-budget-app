@@ -212,6 +212,14 @@ export type PathWorldStats = {
 };
 /** With ambient motion on, the loop still stops after this long without interaction or a scene change. */
 export const IDLE_MS = 20_000;
+/**
+ * Game mode (D-285): the month a journey focus asks for, clamped to the months the island has grown so far
+ * (the Replay slider can hold the island at an earlier month; a later date rests on the newest one).
+ */
+export function monthFocusIndex(index: number, cur: number): number {
+  if (!Number.isFinite(index)) return Math.max(0, cur);
+  return Math.max(0, Math.min(Math.max(0, cur), Math.round(index)));
+}
 /** Pixel-ratio caps: Full keeps today's 1.5; Lite draws fewer pixels on dense phone screens. */
 const PIXEL_RATIO_CAP: Record<PathQuality, number> = { full: 1.5, lite: 1.25 };
 
@@ -2469,6 +2477,12 @@ export function createPathWorld(host: HTMLElement, options: {
       const target = id === "now" && current ? (() => { const p = current.island.spot(current.island.cur); return new THREE.Vector3(p.x, 0, p.z); })() : anchors.get(id);
       if (!target) return;
       flyTo(target.x, target.z, PATH_LEVEL_RADIUS[levelHint ?? 3]!);
+    },
+    /** Game mode (D-285): travel to month `index` of the main island (clamped to the grown months). */
+    focusMonth(index: number, levelHint: PathLevel = 2) {
+      if (!current) return;
+      const p = current.island.spot(monthFocusIndex(index, current.island.cur));
+      flyTo(p.x, p.z, PATH_LEVEL_RADIUS[levelHint]!);
     },
     setLevel(next: PathLevel) {
       // With a journey, Sky frames every era island: the future straight ahead (wide screens turn a little to see it across).
