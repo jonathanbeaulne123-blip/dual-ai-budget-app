@@ -1,0 +1,335 @@
+/* The journey's simple view (D-284). Surfaces and ink come from the app's scene tokens; each theme authors its frame,
+   its lane colours (matching the 3D palette in miniWorld3d.ts) and its label paper. */
+.journey-mini {
+  --mini-card: var(--card, #fffaf2);
+  --mini-paper: var(--paper, #f3eee4);
+  --mini-ink: var(--ink, #1b1712);
+  --mini-muted: var(--muted, #5f574d);
+  --mini-line: var(--line, #d8cfc0);
+  --mini-accent: var(--theme-accent, #8c3f1c);
+  --mini-on-accent: var(--theme-on-accent, #fffaf2);
+  --mini-display: var(--theme-display, var(--display, Georgia, "Times New Roman", serif));
+  --mini-hand: var(--theme-hand, var(--mini-display));
+  --mini-font: var(--font, system-ui, -apple-system, "Segoe UI", sans-serif);
+  --mini-prepare: #8a5639; --mini-protect: #3f5967; --mini-build: #4a6840; --mini-queen: #b4406a; --mini-water: #b4d2d6; --mini-water-ink: #2f4d55;
+  --mini-today: #2c6a4e; --mini-bill: #8c3f1c; --mini-in: #2c6a4e; --mini-stage: #efe6d3;
+  --mini-radius: 14px; --mini-tag-radius: 4px 10px 10px 4px; --mini-tag-border: 1px solid #c8b49a; --mini-name: var(--mini-font);
+  container-type: inline-size;
+  position: relative;
+  min-width: 0;
+  color: var(--mini-ink);
+  background: var(--mini-card);
+  border: 1px solid var(--mini-line);
+  border-top: 4px double #99774f;
+  border-radius: var(--mini-radius);
+  box-shadow: 0 2px 0 rgb(60 40 20 / 0.08), 0 18px 40px -30px rgb(60 40 20 / 0.45);
+  font-family: var(--mini-font);
+}
+.journey-mini [hidden] { display: none !important; }
+:where(.journey-mini) button { font: inherit; color: inherit; }
+.journey-mini[data-mini-theme="taylor"] {
+  --mini-prepare: #9b557c; --mini-protect: #5a5f9e; --mini-build: #3f6a4f; --mini-queen: #a2386a; --mini-water: #c9d1ef; --mini-water-ink: #3f4270;
+  --mini-today: #3f6a4f; --mini-bill: #8b2f6b; --mini-in: #3f6a4f; --mini-stage: #f8e8ec;
+  --mini-radius: 16px 6px 18px 7px; --mini-tag-radius: 12px 4px 12px 4px; --mini-tag-border: 1.5px dashed #b17c97; --mini-name: var(--mini-hand);
+  border: 1.5px dashed #b17c97;
+  border-top: 1.5px dashed #b17c97;
+  box-shadow: 3px 4px 0 rgb(162 56 106 / 0.12), 0 18px 40px -30px rgb(110 40 80 / 0.4);
+}
+/* Washi tape on two corners. */
+.journey-mini[data-mini-theme="taylor"]:not(.journey-mini--compact)::before,
+.journey-mini[data-mini-theme="taylor"]:not(.journey-mini--compact)::after {
+  content: ""; position: absolute; top: -9px; width: 74px; height: 18px; opacity: 0.85; pointer-events: none; z-index: 1;
+  background: repeating-linear-gradient(135deg, #f3b6cb 0 7px, #f8d2df 7px 14px);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+.journey-mini[data-mini-theme="taylor"]:not(.journey-mini--compact)::before { left: 18px; transform: rotate(-4deg); }
+.journey-mini[data-mini-theme="taylor"]:not(.journey-mini--compact)::after { right: 22px; transform: rotate(3deg); background: repeating-linear-gradient(45deg, #f2d27c 0 6px, #f8e3a8 6px 12px); }
+.journey-mini[data-mini-theme="newfoundland"] {
+  --mini-prepare: #9a5236; --mini-protect: #274e55; --mini-build: #4f7a4a; --mini-queen: #a33b5a; --mini-water: #9fc3cc; --mini-water-ink: #1f4d5a;
+  --mini-today: #274e55; --mini-bill: #9a3a26; --mini-in: #2f6a4a; --mini-stage: #e6ebe3;
+  --mini-radius: 5px; --mini-tag-radius: 2px; --mini-tag-border: 2px solid #557e83;
+  border: 2px solid #557e83;
+  border-bottom: 5px solid #be7659;
+  box-shadow: 0 0 0 3px var(--mini-card), 0 0 0 5px #a6927a, 0 18px 40px -30px rgb(20 50 60 / 0.5);
+}
+/* A rope along the top. */
+.journey-mini[data-mini-theme="newfoundland"]:not(.journey-mini--compact)::before {
+  content: ""; position: absolute; left: 10px; right: 10px; top: -6px; height: 7px; border-radius: 4px; pointer-events: none;
+  background: repeating-linear-gradient(115deg, #c2a77f 0 5px, #8f7556 5px 8px);
+}
+:root[data-scene-lighting="dark"] .journey-mini {
+  --mini-prepare: #e3a283; --mini-protect: #9fc1d0; --mini-build: #a9d19b; --mini-queen: #f3a0c0; --mini-water-ink: #cfe6ec;
+  --mini-today: #9fd7bf; --mini-bill: #f3aea3; --mini-in: #a3dfbc;
+}
+
+.journey-mini__frame {
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-areas: "head" "stage" "scale" "row" "note";
+  gap: 8px; min-width: 0; padding: 12px 12px 10px;
+}
+
+/* ---------------------------------------------------------------- head */
+.journey-mini__head { grid-area: head; display: flex; align-items: flex-start; gap: 8px 12px; min-width: 0; }
+.journey-mini__head > div { flex: 1; min-width: 0; }
+.journey-mini__head h2 { margin: 0; font-family: var(--mini-display); font-size: clamp(19px, 5.2cqi, 27px); line-height: 1.12; font-weight: 700; text-wrap: balance; overflow-wrap: anywhere; }
+.journey-mini[data-mini-theme="taylor"] .journey-mini__head h2 { font-family: var(--mini-hand); }
+.journey-mini__sub { margin: 2px 0 0; color: var(--mini-muted); font-size: 13px; line-height: 1.3; overflow-wrap: anywhere; }
+.journey-mini__fig-inline { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.journey-mini__note-short { display: none; }
+.journey-mini__fig { display: none; margin: 2px 0 0; color: var(--mini-muted); font-size: 14px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.journey-mini__list-toggle { flex: none; min-height: 44px; min-width: 56px; padding: 0 14px; border-radius: 999px; border: var(--mini-tag-border); background: var(--mini-card); font-weight: 700; cursor: pointer; }
+.journey-mini__list-toggle[aria-pressed="true"] { background: var(--mini-ink); color: var(--mini-card); border-color: var(--mini-ink); }
+.journey-mini__legend { display: none; list-style: none; margin: -2px 0 0; padding: 0; gap: 4px 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--mini-muted); }
+.journey-mini__legend i { display: inline-block; width: 18px; height: 5px; border-radius: 3px; margin-right: 6px; vertical-align: middle; }
+.journey-mini__legend i.is-queen { width: 10px; height: 10px; border-radius: 50%; background: var(--mini-queen); }
+.journey-mini__legend i.is-prepare { background: var(--mini-prepare); }
+.journey-mini__legend i.is-protect { background: var(--mini-protect); }
+.journey-mini__legend i.is-build { background: var(--mini-build); }
+.journey-mini__legend i.is-everyday { background: var(--mini-water); }
+
+/* ---------------------------------------------------------------- stage */
+.journey-mini__stage {
+  grid-area: stage; position: relative; height: 228px; min-width: 0; overflow: hidden; isolation: isolate;
+  border-radius: calc(var(--mini-radius) - 4px); background: var(--mini-stage); touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+}
+.journey-mini__stage:active { cursor: grabbing; }
+.journey-mini__stage:focus-visible { outline: 3px solid var(--mini-accent); outline-offset: 2px; }
+.journey-mini__host { position: absolute; inset: 0; }
+.journey-mini__canvas { display: block; width: 100%; height: 100%; }
+.journey-mini__flat { position: absolute; inset: 0; display: grid; }
+.journey-mini__flat-svg { width: 100%; height: 100%; display: block; }
+.journey-mini__loading { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; color: var(--mini-muted); font-size: 14px; }
+.journey-mini__stage[data-busy="true"] .journey-mini__labels { opacity: 0.75; }
+.journey-mini__labels { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+
+/* Labels: real buttons at the 3D anchors (or the flat map's spots). The button is a transparent 44px target; the
+   paper inside it is what you see. */
+.journey-mini__label {
+  position: absolute; left: 0; top: 0; pointer-events: auto; margin: 0; padding: 0; cursor: pointer;
+  display: grid; align-content: end; justify-items: center; min-width: 44px; min-height: 44px;
+  background: transparent; border: 0; color: var(--mini-ink); will-change: transform, opacity; --r: 6px;
+}
+.journey-mini__label.is-lane { align-content: center; justify-items: start; }
+.journey-mini__label.is-below { align-content: start; }
+.journey-mini__label.is-flat { transform: translate(-50%, -100%); }
+.journey-mini__label.is-flat.is-below { transform: translate(-50%, 4px); }
+.journey-mini__label.is-flat.is-lane { transform: translate(0, -50%); }
+.journey-mini__paper {
+  display: grid; justify-items: center; gap: 0; padding: 2px 8px 3px;
+  background: color-mix(in srgb, var(--mini-card) 93%, transparent); color: var(--mini-ink);
+  border: var(--mini-tag-border); border-radius: var(--mini-tag-radius);
+  box-shadow: 0 3px 10px -6px rgb(40 25 10 / 0.5);
+  font-size: 12px; line-height: 1.2; text-align: center; white-space: nowrap;
+}
+.journey-mini__paper b { font-family: var(--mini-name); font-weight: 700; font-size: 12.5px; }
+.journey-mini__label:focus-visible { outline: none; z-index: 5; }
+.journey-mini__label:focus-visible .journey-mini__paper { outline: 3px solid var(--mini-accent); outline-offset: 2px; }
+.journey-mini__label:hover .journey-mini__paper { box-shadow: 0 0 0 2px color-mix(in srgb, var(--mini-accent) 35%, transparent), 0 3px 10px -6px rgb(40 25 10 / 0.5); }
+.journey-mini__tag-row { display: grid; justify-items: center; }
+.journey-mini__tag-row + .journey-mini__tag-row { margin-top: 2px; padding-top: 2px; border-top: 1px dotted var(--mini-line); }
+.journey-mini__tag-row--bill b, .journey-mini__tag-row--bill span, .journey-mini .is-bill { color: var(--mini-bill); }
+.journey-mini__tag-row--in span, .journey-mini .is-in { color: var(--mini-in); font-weight: 700; }
+.journey-mini__tag-row--in.is-expected span { font-weight: 600; font-style: italic; }
+.journey-mini__tag-row--task b { color: var(--mini-queen); }
+.journey-mini__tag-row--task.is-done b { text-decoration: line-through; opacity: 0.8; }
+.journey-mini__tag-more { font-size: 11px; color: var(--mini-muted); }
+.journey-mini__paper.journey-mini__tag--today { background: var(--mini-ink); color: var(--mini-card); border-color: var(--mini-ink); }
+.journey-mini__tag--big { padding: 5px 11px 6px; font-size: 12.5px; max-width: min(78cqi, 320px); white-space: normal; }
+.journey-mini__tag--big b { font-family: var(--mini-display); font-size: 15px; }
+.journey-mini[data-mini-theme="taylor"] .journey-mini__tag--big b { font-family: var(--mini-hand); font-size: 16px; }
+.journey-mini__tag--era.is-future, .journey-mini__tag--era.is-sketched { font-style: italic; background: color-mix(in srgb, var(--mini-card) 80%, transparent); }
+.journey-mini__paper.journey-mini__tag--era.is-current { background: var(--mini-ink); color: var(--mini-card); }
+.journey-mini__tag--era.is-current { border-color: var(--mini-today); box-shadow: 0 0 0 2px color-mix(in srgb, var(--mini-today) 30%, transparent), 0 3px 10px -6px rgb(40 25 10 / 0.5); }
+.journey-mini__status { font-size: 11.5px; font-weight: 700; color: var(--mini-muted); }
+.journey-mini__status--open { color: var(--mini-today); }
+.journey-mini__paper.journey-mini__dayname {
+  padding: 0 5px; border: 0; box-shadow: none; background: color-mix(in srgb, var(--mini-card) 70%, transparent);
+  font-size: 11px; font-weight: 600; color: var(--mini-muted); border-radius: 999px; font-variant-numeric: tabular-nums;
+}
+.journey-mini__paper.journey-mini__dayname.is-today { color: var(--mini-card); background: var(--mini-today); font-weight: 800; }
+.journey-mini--compact .journey-mini__label:has(.journey-mini__dayname, .journey-mini__tag--big) { display: none !important; }
+.journey-mini__chip { display: inline-flex; gap: 6px; align-items: baseline; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
+.journey-mini__chip--week { border-radius: 6px; }
+.journey-mini__chip--bank b { font-size: 11.5px; }
+.journey-mini__chip--bank span { color: var(--mini-muted); }
+.journey-mini__paper.journey-mini__lane {
+  display: inline-flex; align-items: baseline; gap: 0; padding: 0 6px 1px; border: 0; border-radius: 3px; font-size: 11.5px;
+  background: color-mix(in srgb, var(--mini-card) 86%, transparent); box-shadow: none;
+}
+.journey-mini__lane b { font-family: var(--mini-font); font-size: 11.5px; }
+.journey-mini__lane span { font-weight: 600; font-variant-numeric: tabular-nums; }
+.journey-mini__lane--prepare { color: var(--mini-prepare); }
+.journey-mini__lane--protect { color: var(--mini-protect); }
+.journey-mini__lane--build { color: var(--mini-build); }
+.journey-mini__paper.journey-mini__lane--everyday { color: var(--mini-water-ink); background: color-mix(in srgb, var(--mini-water) 70%, transparent); font-weight: 700; }
+
+.journey-mini__here-icon {
+  width: 16px; height: 16px; flex: none; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); background: var(--mini-today);
+  box-shadow: inset 0 0 0 4px var(--mini-today), inset 0 0 0 8px var(--mini-card);
+}
+.journey-mini__here-text { display: none; }
+.journey-mini__here {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  position: absolute; z-index: 3; top: 6px; right: 6px; min-width: 44px; min-height: 44px; padding: 0; border-radius: 999px; cursor: pointer;
+  border: var(--mini-tag-border); background: color-mix(in srgb, var(--mini-card) 94%, transparent); font-size: 13.5px; font-weight: 600;
+  box-shadow: 0 4px 14px -10px rgb(0 0 0 / 0.6);
+}
+
+/* ---------------------------------------------------------------- the card */
+.journey-mini__card {
+  position: absolute; z-index: 6; left: 8px; right: 8px; bottom: 8px; max-height: calc(100% - 16px); overflow: auto;
+  background: var(--mini-card); color: var(--mini-ink); border: var(--mini-tag-border); border-radius: var(--mini-radius);
+  padding: 10px 46px 10px 12px; box-shadow: 0 18px 40px -18px rgb(30 20 10 / 0.55); cursor: auto; user-select: text; -webkit-user-select: text;
+  font-size: 13px; line-height: 1.35;
+}
+.journey-mini__card:focus-visible { outline: 3px solid var(--mini-accent); outline-offset: 2px; }
+.journey-mini__eyebrow { margin: 0; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mini-muted); font-weight: 700; }
+.journey-mini__card h3 { margin: 1px 0 4px; font-family: var(--mini-display); font-size: 17px; line-height: 1.15; }
+.journey-mini__card ul { margin: 0; padding-left: 17px; display: grid; gap: 2px; }
+.journey-mini__card-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.journey-mini__card-actions button { min-height: 44px; padding: 0 12px; border-radius: 999px; border: var(--mini-tag-border); background: var(--mini-card); font-weight: 600; font-size: 13px; cursor: pointer; }
+.journey-mini__card-actions button.is-primary { background: var(--mini-accent); border-color: var(--mini-accent); color: var(--mini-on-accent); }
+.journey-mini__close { position: absolute; top: 0; right: 0; width: 44px; height: 44px; border: 0; background: transparent; font-size: 22px; cursor: pointer; border-radius: 50%; }
+
+/* ---------------------------------------------------------------- list */
+.journey-mini__list { position: absolute; inset: 0; z-index: 4; overflow: auto; padding: 10px 12px 12px; background: var(--mini-card); cursor: auto; user-select: text; -webkit-user-select: text; font-size: 13.5px; }
+.journey-mini__list h3 { margin: 0 0 6px; font-family: var(--mini-display); font-size: 17px; }
+.journey-mini__list h4 { margin: 10px 0 2px; font-size: 13.5px; }
+.journey-mini__list ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.journey-mini__list button { display: grid; gap: 1px; width: 100%; min-height: 44px; padding: 4px 8px; text-align: left; border: 0; border-radius: 8px; background: transparent; cursor: pointer; }
+.journey-mini__list button:hover { background: color-mix(in srgb, var(--mini-ink) 6%, transparent); }
+.journey-mini__list button:focus-visible { outline: 3px solid var(--mini-accent); outline-offset: -3px; }
+.journey-mini__list button span { color: var(--mini-muted); font-size: 12.5px; }
+.journey-mini__list h3 button, .journey-mini__list h4 button { font-weight: 700; font-family: inherit; font-size: inherit; padding-left: 0; }
+.journey-mini__list-lanes { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); margin-bottom: 6px !important; }
+.journey-mini__list-lanes li:nth-child(1) button { color: var(--mini-prepare); font-weight: 700; }
+.journey-mini__list-lanes li:nth-child(2) button { color: var(--mini-protect); font-weight: 700; }
+.journey-mini__list-lanes li:nth-child(3) button { color: var(--mini-build); font-weight: 700; }
+.journey-mini__list-lanes li:nth-child(4) button { color: var(--mini-water-ink); font-weight: 700; }
+
+/* ---------------------------------------------------------------- zoom scale */
+.journey-mini__scale { grid-area: scale; display: flex; align-items: stretch; gap: 2px; min-width: 0; padding: 2px; border-radius: 999px; background: color-mix(in srgb, var(--mini-ink) 6%, var(--mini-card)); }
+.journey-mini__zoom { flex: none; width: 44px; min-height: 44px; border: 0; border-radius: 999px; background: var(--mini-card); font-size: 22px; font-weight: 700; line-height: 1; cursor: pointer; box-shadow: 0 1px 0 rgb(0 0 0 / 0.08); }
+.journey-mini__zoom:disabled { opacity: 0.4; cursor: default; }
+.journey-mini__levels { position: relative; flex: 1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); min-width: 0; }
+.journey-mini__levels button { position: relative; z-index: 1; min-height: 44px; min-width: 0; padding: 0 1px; border: 0; background: transparent; border-radius: 999px; font-size: clamp(10.5px, 3.2cqi, 13.5px); letter-spacing: -0.01em; font-weight: 600; color: var(--mini-muted); cursor: pointer; overflow: hidden; text-overflow: ellipsis; }
+.journey-mini__levels button[aria-pressed="true"] { color: var(--mini-card); }
+.journey-mini__thumb { position: absolute; z-index: 0; top: 0; bottom: 0; left: calc(var(--z) * 20%); width: 20%; border-radius: 999px; background: var(--mini-ink); transition: left 0.28s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.journey-mini :is(.journey-mini__zoom, .journey-mini__levels button, .journey-mini__here, .journey-mini__list-toggle, .journey-mini__open):focus-visible { outline: 3px solid var(--mini-accent); outline-offset: 2px; }
+
+/* ---------------------------------------------------------------- scrubber + open the world */
+.journey-mini__row { grid-area: row; display: flex; align-items: center; gap: 10px; min-width: 0; }
+.journey-mini__scrub { flex: 1; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; }
+.journey-mini__scrub span { font-size: 12.5px; font-weight: 700; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.journey-mini__scrub input { width: 100%; min-width: 0; height: 30px; margin: 0; accent-color: var(--mini-accent); }
+.journey-mini__open {
+  flex: none; display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; border-radius: 999px; cursor: pointer;
+  border: 0; background: var(--mini-accent); color: var(--mini-on-accent); font-weight: 800; font-size: 15px;
+  box-shadow: 0 8px 18px -10px color-mix(in srgb, var(--mini-accent) 80%, black);
+}
+.journey-mini__open:hover { filter: brightness(1.06); }
+.journey-mini__open-icon { width: 18px; height: 18px; flex: none; border-radius: 50% 50% 46% 46%; background:
+  radial-gradient(circle at 50% 38%, transparent 0 28%, currentColor 29% 36%, transparent 37%),
+  linear-gradient(currentColor, currentColor) 50% 100% / 70% 2px no-repeat; opacity: 0.95; }
+.journey-mini[data-mini-theme="taylor"] .journey-mini__open { border-radius: 16px 6px 16px 6px; }
+.journey-mini[data-mini-theme="newfoundland"] .journey-mini__open { border-radius: 4px; box-shadow: inset 0 -3px 0 rgb(0 0 0 / 0.2); }
+.journey-mini__note { grid-area: note; margin: 0; font-size: 11.5px; line-height: 1.35; color: var(--mini-muted); }
+.journey-mini__sr { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; margin: 0; }
+
+@container (min-width: 460px) and (max-width: 599px) {
+  .journey-mini__stage { height: 280px; }
+}
+@container (max-width: 459px) {
+  .journey-mini__sub { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+}
+@container (max-width: 599px) {
+  .journey-mini__paper.journey-mini__lane, .journey-mini__lane b { font-size: 10.5px; line-height: 1.15; }
+  .journey-mini__note-long { display: none; }
+  .journey-mini__note-short { display: inline; }
+  .journey-mini__zoom { width: 40px; }
+  .journey-mini__open { min-height: 46px; padding: 0 14px; }
+}
+@container (max-width: 459px) {
+  .journey-mini__era-name { display: none; }
+}
+@container (max-width: 359px) {
+  .journey-mini__open { padding: 0 12px; font-size: 14px; }
+  .journey-mini__open-icon { display: none; }
+  /* The level names are the zoom here; + and − stay on the keyboard. */
+  .journey-mini:not(.journey-mini--compact) .journey-mini__zoom { display: none; }
+  .journey-mini__paper { font-size: 11px; padding: 1px 6px 2px; }
+  .journey-mini__paper b { font-size: 11.5px; }
+}
+
+/* ---------------------------------------------------------------- wide: the rail sits on the model */
+@container (min-width: 600px) {
+  .journey-mini__frame { grid-template-areas: "head" "legend" "stage" "row" "note"; padding: 16px 16px 12px; gap: 10px; }
+  .journey-mini__legend { display: flex; grid-area: legend; }
+  .journey-mini__stage { height: clamp(340px, 46cqi, 540px); }
+  .journey-mini__scale {
+    grid-area: stage; align-self: start; justify-self: start; z-index: 5; margin: 10px 0 0 10px;
+    flex-direction: column; width: 72px; border-radius: 16px; padding: 3px;
+    background: color-mix(in srgb, var(--mini-card) 90%, transparent); border: var(--mini-tag-border); box-shadow: 0 8px 20px -14px rgb(0 0 0 / 0.5);
+  }
+  .journey-mini__zoom { width: 100%; }
+  .journey-mini__levels { grid-template-columns: 1fr; grid-template-rows: repeat(5, 44px); }
+  .journey-mini__levels button { font-size: 12.5px; }
+  .journey-mini__thumb { left: 0; right: 0; width: auto; top: calc(var(--z) * 44px); bottom: auto; height: 44px; transition-property: top; border-radius: 12px; }
+  .journey-mini__here { right: 10px; top: 10px; min-height: 44px; padding: 0 14px 0 12px; }
+  .journey-mini__here-text { display: inline; }
+  .journey-mini__fig { display: block; }
+  .journey-mini__fig-inline { display: none; }
+  .journey-mini__card { left: auto; right: 12px; bottom: 12px; width: min(360px, calc(100% - 110px)); }
+  .journey-mini__list { padding-left: 96px; }
+  .journey-mini__row { gap: 16px; }
+  .journey-mini__scrub { grid-template-columns: auto minmax(0, 1fr); align-items: center; gap: 14px; }
+  .journey-mini__scrub span { min-width: 150px; font-size: 13.5px; }
+  .journey-mini__open { min-height: 50px; padding: 0 22px; font-size: 16px; }
+  .journey-mini__paper { font-size: 12.5px; }
+  .journey-mini__paper b { font-size: 13.5px; }
+  .journey-mini__paper.journey-mini__lane, .journey-mini__lane b { font-size: 12.5px; }
+}
+
+/* ---------------------------------------------------------------- compact: the corner minimap in game mode */
+.journey-mini--compact {
+  width: 100%; border-width: 1px; border-top-width: 1px;
+  box-shadow: 0 10px 26px -14px rgb(0 0 0 / 0.55);
+}
+.journey-mini--compact .journey-mini__frame { grid-template-areas: "stage"; padding: 4px; gap: 0; position: relative; }
+.journey-mini--compact .journey-mini__stage { height: 100%; min-height: 150px; aspect-ratio: 1 / 1; }
+.journey-mini--compact .journey-mini__scale {
+  position: absolute; left: 4px; right: 4px; bottom: 4px; z-index: 5; padding: 1px; gap: 1px;
+  background: color-mix(in srgb, var(--mini-card) 90%, transparent); border-radius: 999px; box-shadow: 0 4px 12px -8px rgb(0 0 0 / 0.5);
+}
+.journey-mini--compact .journey-mini__zoom { width: 30px; min-height: 30px; font-size: 16px; }
+.journey-mini--compact .journey-mini__levels button { min-height: 30px; font-size: 11px; }
+.journey-mini--compact .journey-mini__paper { font-size: 10.5px; padding: 1px 5px; }
+.journey-mini--compact .journey-mini__paper b { font-size: 11px; }
+.journey-mini--compact .journey-mini__label:is(.is-lane, :has(.journey-mini__chip)) { display: none !important; }
+.journey-mini__compact-caption {
+  position: absolute; left: 10px; top: 8px; z-index: 5; margin: 0; max-width: calc(100% - 20px); padding: 1px 8px; border-radius: 999px; pointer-events: none;
+  background: color-mix(in srgb, var(--mini-card) 88%, transparent); font-size: 11px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Touch targets in the corner stay at least 30px, and the whole minimap is one big target around them. */
+@media (pointer: coarse) { .journey-mini--compact .journey-mini__zoom, .journey-mini--compact .journey-mini__levels button { min-height: 36px; } }
+
+@media (prefers-reduced-motion: reduce) { .journey-mini__thumb { transition: none; } }
+:root[data-motion="reduced"] .journey-mini__thumb { transition: none; }
+@media (forced-colors: active) {
+  .journey-mini__paper, .journey-mini__open, .journey-mini__zoom { forced-color-adjust: auto; border: 1px solid ButtonText; }
+  .journey-mini__levels button[aria-pressed="true"] { outline: 2px solid Highlight; color: HighlightText; background: Highlight; }
+  .journey-mini__thumb { display: none; }
+}
+
+/* The world themes give every button a 44px minimum, their control radius and a transform transition
+   (:root[data-theme] :is(button, .btn):not(…)). The simple view keeps the 44px targets but authors its own shapes,
+   and its labels move every frame, so no transition: these outrank that rule on purpose. */
+.journey-mini__zoom, .journey-mini__levels button, .journey-mini__here, .journey-mini__list-toggle, .journey-mini__card-actions button { --r: 999px; }
+.journey-mini__close { --r: 50%; }
+.journey-mini__list button { --r: 8px; }
+.journey-mini__open { --r: 999px; }
+.journey-mini[data-mini-theme="taylor"] .journey-mini__open { --r: 16px 6px 16px 6px; }
+.journey-mini[data-mini-theme="newfoundland"] .journey-mini__open { --r: 4px; }
+:is(:root[data-theme], :root) .journey-mini.journey-mini :is(.journey-mini__label, .journey-mini__zoom, .journey-mini__levels button, .journey-mini__here, .journey-mini__open, .journey-mini__list-toggle, .journey-mini__card-actions button, .journey-mini__close, .journey-mini__list button) {
+  transition: none; border-radius: var(--r, 999px);
+}
+:is(:root[data-theme], :root) .journey-mini.journey-mini--compact :is(.journey-mini__zoom, .journey-mini__levels button) { min-height: 30px; }
