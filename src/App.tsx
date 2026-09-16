@@ -474,7 +474,7 @@ import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizati
 import { AddSlideshow, type AddFormFields, type AddMode } from "./AddSlideshow.tsx";
 import { AddCategoryForm } from "./AddCategoryForm.tsx";
 import { fundModelBootStep, fundModelReloadRequired, saveFundModelSnapshot } from "./fundModelBoot.ts";
-import { FUND_MODEL_RELOAD_MESSAGE } from "./ledgerSync/fundModelStamp.ts";
+import { FUND_MODEL_RELOAD_MESSAGE, clientFundModelVersion } from "./ledgerSync/fundModelStamp.ts";
 import { defaultSubcategoryForMode } from "./addSlideshow.ts";
 import { FabSpeedDial } from "./FabSpeedDial.tsx";
 import { fabActionsFor, fabClosedLabel } from "./core/fabActions.ts";
@@ -3688,12 +3688,15 @@ export function App() {
         ?? (currentLink ? { email: currentLink.email, subject: currentLink.subject } : null),
     });
 
+    // D-281: a money-model build writes the fictional Plan's bills under Prepare, so the household can be sorted.
+    const demoFundModel = clientFundModelVersion() === 2 ? { fundModel: 2 as const } : {};
     const generated = await generateDemoSuite({
       today,
       seed,
       profile,
       numberStyle: "realistic",
       buildSha: import.meta.env.VITE_GIT_SHA || "local-development",
+      ...demoFundModel,
     });
     let candidate = generated.household;
     // The showcase keeps its own two people and ids (so the seed replays); the person
@@ -3702,7 +3705,7 @@ export function App() {
     let accepted: Household;
     if (current.syntheticFixture?.kind === "hearth-demo-suite") {
       candidate = preserveDemoShowcaseContinuity(current, candidate);
-      if(useLedgerSync)candidate=captureExplicit(current,{household:candidate,postedIds:[],warnings:[],undo:{id:crypto.randomUUID(),label:"Replace Demo Suite",snapshot:current,postedIds:[]}},"regenerateDemoSuite",[DEMO_SUITE_VERSION,{today,seed,profile,numberStyle:"realistic",buildSha:import.meta.env.VITE_GIT_SHA||"local-development"}]).household;
+      if(useLedgerSync)candidate=captureExplicit(current,{household:candidate,postedIds:[],warnings:[],undo:{id:crypto.randomUUID(),label:"Replace Demo Suite",snapshot:current,postedIds:[]}},"regenerateDemoSuite",[DEMO_SUITE_VERSION,{today,seed,profile,numberStyle:"realistic",buildSha:import.meta.env.VITE_GIT_SHA||"local-development",...demoFundModel}]).household;
       const confirmationId = newConfirmationId();
       const outcome = await persist(candidate, {
         id: confirmationId,

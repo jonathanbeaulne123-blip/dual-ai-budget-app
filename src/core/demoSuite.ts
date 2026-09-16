@@ -65,6 +65,14 @@ export type DemoSuiteOptions = {
   profile?: SyntheticFixtureProvenance["profile"];
   numberStyle?: StressNumberStyle;
   buildSha?: string;
+  /**
+   * D-281: which money model the fictional Plan is written for. 1 (the default,
+   * byte-identical to before) keeps bills under Protect, the meaning v1 builds
+   * read. 2 files them under Prepare so `migrateFundModel` accepts the
+   * generated household. Set only by a `VITE_FUND_MODEL_V2` build; the
+   * authority replays whatever the command carried.
+   */
+  fundModel?: 1 | 2;
 };
 
 export type DemoEngineResult = {
@@ -327,7 +335,7 @@ function privateScheduleCanary(today: DateKey, seed: number): SevenShiftsSchedul
  */
 export const DEMO_PLAN_DRAFT_ID = "PLAN-DRAFT-DEMO";
 
-function shapeDemoPlan(household: Household, today: DateKey, seed: number): Household {
+function shapeDemoPlan(household: Household, today: DateKey, seed: number, fundModel: 1 | 2 = 1): Household {
   const memberId = "MEM-002";
   const month = monthKeyFromDateKey(today);
   const monthEnd = addDays(`${shiftMonthKey(month, 1)}-01` as DateKey, -1);
@@ -342,7 +350,7 @@ function shapeDemoPlan(household: Household, today: DateKey, seed: number): Hous
   const common = { cadence: "monthly" as const, createdBy: memberId, responsibility: { kind: "joint" as const, memberId }, assumptionIds: [], decision: { funding: "available" as const } };
   const lines: PlanLine[] = [
     ...bills.map((bill, index): PlanLine => ({
-      ...common, id: `demo-bill-${index + 1}`, lens: "protect", kind: "obligation", labelSnapshot: bill.note || `Synthetic bill ${index + 1}`,
+      ...common, id: `demo-bill-${index + 1}`, lens: fundModel === 2 ? "prepare" : "protect", kind: "obligation", labelSnapshot: bill.note || `Synthetic bill ${index + 1}`,
       amountCents: bill.amountCents, dueDate: inMonth(bill.nextDate), sourceReference: { type: "recurrence", id: bill.id },
     })),
     ...(buffer ? [{
@@ -644,7 +652,7 @@ export async function generateDemoSuite(options: DemoSuiteOptions): Promise<{ ho
       note: "Synthetic weekly reconciliation",
     }).household;
 
-    household = shapeDemoPlan(household, options.today, seed);
+    household = shapeDemoPlan(household, options.today, seed, options.fundModel === 2 ? 2 : 1);
 
     const priorMonth = shiftMonthKey(monthKeyFromDateKey(options.today), -1);
     const statementDate = addDays(`${monthKeyFromDateKey(options.today)}-01` as DateKey, -1);

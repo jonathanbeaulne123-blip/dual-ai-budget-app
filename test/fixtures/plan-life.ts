@@ -1,6 +1,11 @@
 import { addGoal, addRecurrence, allocateHouseholdFundSurplus, catalogHousehold, configureHouseholdFund, confirmHouseholdFundContribution, fundGoal, lockPersonalPlan, postEntry, proposeHouseholdFundContribution, proposeHouseholdPlan, savePlanDraft, type LedgerView, type PlanLine } from "../../src/core/index.ts";
 import { fundContributionReviewDigest } from "../../src/core/fundContributionSources.ts";
-export function planLifeFixture(view: LedgerView) {
+/**
+ * Fictional books for the Plan tests. `fundModel: 2` (D-281) files the rent
+ * under Prepare, as a household sorted by the money model would, so
+ * `migrateFundModel` accepts it; the default keeps the v1 meaning (Protect).
+ */
+export function planLifeFixture(view: LedgerView, options: { fundModel?: 1 | 2 } = {}) {
   const memberId = "MEM-001";
   let h = catalogHousehold();
   h.members = h.members.map((row, index) => ({ ...row, name: index === 0 ? "Alex (fictional)" : "Sam (fictional)" }));
@@ -19,7 +24,7 @@ export function planLifeFixture(view: LedgerView) {
   const trip = addGoal(h, { name: "A slower week away", target: "2000", shared: view === "household", ownerMemberId: memberId }); h = trip.household;
   const common = { cadence: "monthly" as const, createdBy: memberId, responsibility: { kind: view === "household" ? "joint" as const : "member" as const, memberId }, assumptionIds: [], decision: { funding: "available" as const } };
   const lines: PlanLine[] = [
-    { ...common, id: "life-rent", lens: "protect", kind: "obligation", labelSnapshot: "Fictional rent", amountCents: 90000, dueDate: "2026-09-20", sourceReference: { type: "recurrence", id: bill.postedIds[0]! } },
+    { ...common, id: "life-rent", lens: options.fundModel === 2 ? "prepare" : "protect", kind: "obligation", labelSnapshot: "Fictional rent", amountCents: 90000, dueDate: "2026-09-20", sourceReference: { type: "recurrence", id: bill.postedIds[0]! } },
     { ...common, id: "life-reserve", lens: "prepare", kind: "true-expense", labelSnapshot: "Seasonal reserve", amountCents: 30000, dueDate: "2026-09-15", sourceReference: { type: "goal", id: reserve.postedIds[0]! }, decision: { funding: "available", targetCents: 120000, deadline: "2026-12-01", paydays: ["2026-09-15", "2026-10-01", "2026-10-15", "2026-11-01", "2026-11-15", "2026-12-01"], nextStep: "Get a quote before choosing the final target." } },
     { ...common, id: "life-trip", lens: "build", kind: "goal-contribution", labelSnapshot: "A slower week away", amountCents: 20000, dueDate: "2026-09-25", sourceReference: { type: "goal", id: trip.postedIds[0]! }, decision: { funding: "available", targetCents: 200000, deadline: "2027-06-01", nextStep: "Compare two dates with time off.", timeConstraint: "Keep Friday evenings free." } },
     { ...common, id: "life-everyday", lens: "everyday", kind: "everyday-pool", labelSnapshot: "Groceries and ordinary pleasures", amountCents: 50000, dueDate: "2026-09-30", sourceReference: { type: "category", id: h.categories.find(row => row.recordType === "category" && row.name.toLowerCase().includes("grocer"))!.id } },
