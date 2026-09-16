@@ -93,8 +93,9 @@ export function pathMonths(household: Household, today: DateKey): PathMonth[] {
   const wins = household.wins ?? [];
   const sitdowns = household.sitDownSessions ?? [];
   // The one check-in (Plan Studio v3) closes a Shared Sitdown session; a closed one counts as that month's Sitdown.
-  const checkIns = (household.planHerculesSessions ?? []).filter((row) => row?.state === "closed" && row.monthKey);
   const sorted = fundModelMode(household) === 2;
+  // Only once the money model sorted the household (D-281, review M3), so a flags-off island is unchanged.
+  const checkIns = sorted ? (household.planHerculesSessions ?? []).filter((row) => row?.state === "closed" && row.monthKey) : [];
   const events = (household.nativeEvents ?? []).filter((row) => row.visibility === "household" && !row.deleted);
   const nowMonth = monthKeyFromDateKey(today);
 

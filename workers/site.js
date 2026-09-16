@@ -277,10 +277,10 @@ const HERCULES_READ_TOOLS = [
     months: { anyOf: [{ type: "integer", minimum: 3, maximum: 12 }, { type: "null" }] },
   }) },
   ...[
-    ["plan_overview", "Read the visible versioned Plan and its Prepare, Protect, Build, and Everyday totals."],
+    ["plan_overview", "Read the visible versioned Plan and its four lens totals."],
     ["plan_line_detail", "Explain one visible Plan line, source, assumptions, and actual."],
     ["plan_cashflow_runway", "Project the visible Plan runway and low point."],
-    ["plan_coverage", "Read Prepare, Protect, Build, and Everyday coverage."],
+    ["plan_coverage", "Read Protect, Prepare, Build, and Everyday coverage."],
     ["plan_assumptions", "Read confidence, freshness, ranges, and Plan sources."],
     ["plan_version_diff", "Compare two visible immutable Plan versions."],
     ["plan_scenario_compare", "Compare a visible Plan with a private alternative without changing either."],

@@ -4,6 +4,7 @@ import { cloneHousehold } from "./household.ts";
 import { nextId, nowIso } from "./ids.ts";
 import type { CommitResult, Household } from "./types.ts";
 import { ValidationError } from "./types.ts";
+import { fundModelMode } from "./fundRules.ts";
 
 /**
  * The Chapter system (Vision v2 §5): Journey → Chapter → Lesson / Ritual / Move → Win → Memory.
@@ -521,7 +522,11 @@ export const openChapter = captureCommand("openChapter", function openChapter(ho
     closedAtSitdownId: null,
     state: "open",
     carryForward: "",
-    intendedMonth: validMonth(input.intendedMonth) ?? monthKeyFromDateKey(dateKeyInZone(new Date(at))),
+    // D-272 months are written only for a household the money model sorted (or when a month is asked for), so a
+    // flags-off build never writes month data that would make older phones reload (D-281, review M1).
+    ...(input.intendedMonth !== undefined || fundModelMode(household) === 2
+      ? { intendedMonth: validMonth(input.intendedMonth) ?? monthKeyFromDateKey(dateKeyInZone(new Date(at))) }
+      : {}),
     updatedAt: at,
   };
   next.chapters = [...(next.chapters ?? []), chapter];
@@ -909,4 +914,5 @@ export const closeChapterAtSitdown = captureCommand("closeChapterAtSitdown", fun
 export function hasChapterMonthData(household: Pick<Household, "chapters">): boolean {
   return (household.chapters ?? []).some((row) => row.intendedMonth !== undefined);
 }
-export const CHAPTER_MONTH_COMMAND_KINDS = ["openChapter", "closeChapterAtSitdown"];
+/** Only the combined close-and-open always writes a month; a plain openChapter is judged by the data it leaves. */
+export const CHAPTER_MONTH_COMMAND_KINDS = ["closeChapterAtSitdown"];
