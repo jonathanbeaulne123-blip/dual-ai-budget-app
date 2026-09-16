@@ -95,7 +95,7 @@ export function flatLayout(input: {
         spots.set("today", { x: X, y: 70 });
       }
       spots.set(`day:${day.date}`, { x: X, y: inflow || day.items.some((row) => row.kind === "task") ? 72 : 96 });
-      out.push(<text key={key("n", d)} x={X} y={228} fontSize={11} textAnchor="middle" fill={day.today ? P.today : P.stoneEdge} fontWeight={day.today ? 700 : 500}>{`${day.weekday} ${d}`}</text>);
+      out.push(<text key={key("n", d)} x={X} y={228} fontSize={11} textAnchor="middle" fill={day.today ? P.today : P.stoneEdge} fontWeight={day.today ? 700 : 500}>{(W - left) / Math.max(n, 5) < 44 ? String(d) : `${day.weekday} ${d}`}</text>);
     }
     if (level === 1) {
       const week = month.weeks.find((w) => input.focusDate >= w.start && input.focusDate <= w.end);

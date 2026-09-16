@@ -146,7 +146,8 @@ async function capture() {
     return { page, errors, close: () => context.close() };
   }
   async function level(page, name, ms = 2600) {
-    await page.locator('.journey-mini__levels button', { hasText: new RegExp(`^${name}$`, 'i') }).first().click();
+    const label = name[0].toUpperCase() + name.slice(1).toLowerCase();
+    await page.locator(`.journey-mini__levels button:is([aria-label="${label}"], :text-is("${label}"))`).first().click();
     await wait(ms);
   }
   async function facts(page, errors) {
@@ -198,13 +199,13 @@ async function capture() {
   // Card, list and keyboard focus.
   for (const width of [390, 1100]) {
     const { page, errors, close } = await open(width, 'theme=taylor&level=day');
-    await page.locator('.journey-mini__label[data-place="today"]').click();
+    await page.locator('.journey-mini__label[data-place="today"]').evaluate((el) => el.click());
     await wait(600);
     await save(page, errors, `${width}-taylor-card-today`);
     await page.keyboard.press('Escape');
     await level(page, 'era');
     const bank = page.locator('.journey-mini__label[data-place="finish"]');
-    if (await bank.isVisible()) { await bank.click(); await wait(600); await save(page, errors, `${width}-taylor-card-finish-line`); await page.keyboard.press('Escape'); }
+    if (await bank.count()) { await bank.evaluate((el) => el.click()); await wait(600); await save(page, errors, `${width}-taylor-card-finish-line`); await page.keyboard.press('Escape'); }
     await page.getByRole('button', { name: 'List' }).click();
     await wait(500);
     await save(page, errors, `${width}-taylor-list-era`);

@@ -264,7 +264,7 @@ export function JourneyMini(props: JourneyMiniProps) {
     for (const def of defs) {
       const el = labelEls.current.get(def.id);
       if (!el) continue;
-      let w = def.levels.reduce((best, c) => Math.max(best, miniLevelWeight(frame.z, c, 0.3, 0.7)), 0);
+      let w = def.levels.reduce((best, c) => Math.max(best, miniLevelWeight(frame.z, c, 0.22, 0.48)), 0);
       if (def.near && frame.z < 1.6) w *= 1 - Math.max(0, Math.min(1, (Math.abs(def.near.day - frame.day) - def.near.within) / 1.2));
       if (def.minWidth && frame.width < def.minWidth) w = 0;
       if (def.maxWidth && frame.width >= def.maxWidth) w = 0;
