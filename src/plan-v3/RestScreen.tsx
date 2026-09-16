@@ -73,14 +73,15 @@ export function RestScreen({ household, memberId, view, today, model, highlight,
         <section className="pv3-court" aria-labelledby="pv3-court-h">
           <h2 id="pv3-court-h" className="pv3-sr">The Queen and her three funds</h2>
           <button type="button" className={`pv3-queenbtn${highlight === "everyday" ? " is-on" : ""}`} data-fund="everyday"
-            aria-label={nowAmount === null ? "Everyday, the Queen. Nothing to read yet. Show lines and highlight in the month." : `Everyday, the Queen: ${moneyWords(nowAmount)} ${snapshot.now.line ?? ""}${undivided ? `, plus ${moneyWords(undivided.amountCents)} not divided yet` : ""}. Show lines and highlight in the month.`}
+            aria-label={nowAmount === null ? "Everyday, the Queen. Nothing to read yet. Show lines and highlight in the month." : `Everyday, the Queen: ${moneyWords(nowAmount)} ${snapshot.now.line ?? ""}${undivided ? (snapshot.mode === 2 ? `. ${moneyWords(undivided.amountCents)} landed and is not divided yet` : `, plus ${moneyWords(undivided.amountCents)} not divided yet`) : ""}. Show lines and highlight in the month.`}
             onClick={event => { onHighlight("everyday"); onFund("everyday", event.currentTarget); }}>
             <span className="pv3-queenfig"><QueenNowFigure household={household} memberId={memberId} view={view} today={today} grave={grave} agreed={agreedBoth} /></span>
             <span className="pv3-qread">
               <b className="pv3-qread__name">Everyday</b>
               <span className="pv3-amt pv3-qread__big">{nowAmount === null || model.firstVisit ? "—" : moneyWords(nowAmount)}</span>
               {snapshot.now.line && <small>{model.firstVisit ? "Contributions land here first" : snapshot.now.line}</small>}
-              {undivided && <span className="pv3-pill">+{moneyWords(undivided.amountCents)} not divided yet</span>}
+              {/* The money model already counts a confirmed contribution in the funds (a division is a record only), so it is never added on top. */}
+              {undivided && <span className="pv3-pill">{snapshot.mode === 2 ? `${moneyWords(undivided.amountCents)} landed · not divided yet` : `+${moneyWords(undivided.amountCents)} not divided yet`}</span>}
             </span>
           </button>
           {undivided && (divide && snapshot.mode === 2

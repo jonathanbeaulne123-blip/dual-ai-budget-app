@@ -2518,6 +2518,15 @@ input, select, textarea {
   box-shadow: inset 0 0 0 2px var(--pine);
 }
 .fund-choice__option:disabled { opacity: 0.55; cursor: default; }
+/* D-281 evidence: at 320px (and in the larger Newfoundland type) three columns broke "Transport" mid-word and pushed the fund words out of their boxes. */
+.fund-choice__option { min-width: 0; }
+.fund-choice__option > * { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 379px) {
+  .umbrella-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .umbrella-tile { min-height: 64px; }
+  .umbrella-tile__name { overflow-wrap: normal; }
+  .fund-choice { grid-template-columns: minmax(0, 1fr); }
+}
 @media (prefers-reduced-motion: no-preference) {
   .umbrella-tile, .fund-choice__option { transition: box-shadow 120ms ease, border-color 120ms ease; }
 }
