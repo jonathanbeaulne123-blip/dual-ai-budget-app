@@ -38,6 +38,8 @@
  * cardPaymentChecks(household, { memberId, view }): CardPaymentCheck[]   // private "check these" list (Q-G)
  * needsHomeCategories(household): Category[]
  * umbrellaChoices(household): UmbrellaChoice[]                            // the add-category grid
+ * umbrellaHueForCategory(household, categoryId): string | null             // cellar/world hue by umbrella id, never by name
+ * fundModelNotice(household, { memberId }): FundModelNotice | null        // "Hearth sorted our money the new way" + Needs a home
  * categoryFilterOptions(household, { memberId, view }): CategoryFilterOption[]
  * ```
  * Re-exports: `fundFor`, `fundResolver`, `UMBRELLAS`, `FUND_IDS`, `FUND_LABELS`,
@@ -54,7 +56,10 @@ import {
   SPENDING_UMBRELLAS,
   fundModelMode,
   householdFundMarker,
+  personalFundMarker,
   pickableExpenseGroups,
+  umbrellaOfCategory,
+  UMBRELLAS,
   umbrellaForRowId,
   type FundDivisionRow,
   type FundId,
@@ -204,6 +209,33 @@ export function categoryFilterOptions(h: Household, input: { memberId: string; v
       return { id: row.id, name: row.name, umbrellaId: parent?.umbrellaId ?? (parent ? umbrellaForRowId(parent.id)?.id ?? null : null), own: !/^SUB-(HOUSING|FOOD|TRANSPORT|LIFE|HEALTH|DEBT|INCOME)-/.test(row.id) };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+/** The presentation hue for a category's umbrella (M6: keyed by umbrella id, never by name). */
+export function umbrellaHueForCategory(h: Household, categoryId: string | null | undefined): string | null {
+  const umbrella = umbrellaOfCategory(h, categoryId);
+  return umbrella ? UMBRELLAS.find((row) => row.id === umbrella)!.hue : null;
+}
+
+export type FundModelNotice = { title: string; body: string; sortedBy: string; sortedAt: string; needsHome: Category[]; mine: "sorted" | "waiting" };
+/**
+ * The shared notice after the household step (R2-L2: "Hearth sorted…", and
+ * whose phone ran it, never "we"). `mine` says whether this member's own
+ * private rows are sorted yet; the private list itself never appears here.
+ */
+export function fundModelNotice(h: Household, input: { memberId: string }): FundModelNotice | null {
+  const marker = householdFundMarker(h);
+  if (!marker) return null;
+  const by = h.members.find((member) => member.id === marker.setBy)?.name ?? "a household phone";
+  const needsHome = needsHomeCategories(h);
+  return {
+    title: "Hearth sorted our money the new way",
+    body: `Sorted on ${by}'s phone. Bills now live in Prepare, Protect is our buffer, and goals live in Build. Nothing moved at the bank.${needsHome.length ? ` ${needsHome.length === 1 ? "One category needs" : `${needsHome.length} categories need`} a home under an umbrella.` : ""}`,
+    sortedBy: marker.setBy,
+    sortedAt: marker.migratedAt,
+    needsHome,
+    mine: personalFundMarker(h, input.memberId) ? "sorted" : "waiting",
+  };
 }
 
 /** One read for the whole Plan Studio v3 rest screen. */

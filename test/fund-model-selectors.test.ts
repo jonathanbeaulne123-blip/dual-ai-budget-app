@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { addCategory, addRecurrence, catalogHousehold, postEntry, splitForSync } from "../src/core/index.ts";
 import { activeHouseholdFundEvents } from "../src/core/householdFund.ts";
 import { agreeFundDivision, agreeProtectRefill, declineFundDivision, proposeFundDivision, proposeProtectRefill, withdrawFundProposal } from "../src/core/fundModelCommands.ts";
-import { cardPaymentChecks, categoryFilterOptions, fundSnapshot, proposedDivision, umbrellaChoices, undividedContributions } from "../src/core/fundModel.ts";
+import { cardPaymentChecks, categoryFilterOptions, fundModelNotice, fundSnapshot, proposedDivision, umbrellaChoices, umbrellaHueForCategory, undividedContributions } from "../src/core/fundModel.ts";
+import { addCategory as addCat } from "../src/core/index.ts";
+import { migrateFundModel, migrateMyFundModel } from "../src/core/fundModelCommands.ts";
 import { projectKittyNest } from "../src/core/kittyNest.ts";
 import { ALEX, SAM, TODAY, buffer, contribute, fundBill, fundedHousehold, migrated, reserveGoal } from "./fixtures/fund-model.ts";
 
@@ -141,4 +143,21 @@ it("does not count an unrelated personal posting in the household Now", () => {
   const before = fundSnapshot(h, { memberId: ALEX, view: "household", today: TODAY }).now;
   const after = postEntry(h, { type: "expense", date: "2026-09-10", amount: "30", accountId: "ACC-VISA", subcategoryId: "SUB-FOOD-GROCERIES", createdBy: ALEX, visibility: "household" }).household;
   expect(fundSnapshot(after, { memberId: ALEX, view: "household", today: TODAY }).now).toBe(before);
+});
+
+it("names whose phone sorted the household, lists Needs a home, and gives hues by umbrella id", () => {
+  let h = addCat(catalogHousehold(), { name: "Zorblax", type: "expense", parentId: "__new__", newGroupName: "Mystery" }).household;
+  expect(fundModelNotice(h, { memberId: ALEX })).toBeNull();
+  h = migrateFundModel(h, { memberId: SAM, at: "2026-09-16T00:00:00.000Z" }).household;
+  const name = h.members.find((row) => row.id === SAM)!.name;
+  const notice = fundModelNotice(h, { memberId: ALEX })!;
+  expect(notice.title).toBe("Hearth sorted our money the new way");
+  expect(notice.body).toContain(`Sorted on ${name}'s phone`);
+  expect(notice.body).toContain("One category needs a home");
+  expect(notice.body).not.toMatch(/\bwe sorted\b/i);
+  expect(notice.needsHome.map((row) => row.name)).toEqual(["Zorblax"]);
+  expect(notice.mine).toBe("waiting");
+  expect(fundModelNotice(migrateMyFundModel(h, { memberId: ALEX }).household, { memberId: ALEX })!.mine).toBe("sorted");
+  expect(umbrellaHueForCategory(h, "SUB-HEALTH-VET")).toBe("#b08a4f");
+  expect(umbrellaHueForCategory(h, "nope")).toBeNull();
 });
