@@ -69,6 +69,8 @@ describe("Our Story under the money model", () => {
     expect(snap.prepare.bills.length).toBeGreaterThan(0);
     expect(snap.prepare.bills.map((row) => row.name)).toEqual(expect.arrayContaining(["Rent"]));
     expect(snap.owedBackCents + snap.prepare.amountCents + snap.protect.amountCents + snap.build.amountCents + snap.everyday.amountCents).toBe(snap.kingCents);
+    // Its bills are paid from cards and accounts, not the Fund: nothing is called short.
+    expect(snap.prepare.shortOn).toBeUndefined();
     // No household bill design is still filed under Protect.
     expect((sorted.kittyNestDesigns ?? []).filter((row) => row.visibility === "household" && row.category === "protect" && /^(recurrence|potential|task|plan-line|appointment):/.test(row.bankKey))).toEqual([]);
     // Posted money is untouched.

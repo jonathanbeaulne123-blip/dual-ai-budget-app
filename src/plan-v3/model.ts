@@ -250,7 +250,9 @@ export const fundModelSnapshot: FundSnapshotSource = (h, input) => {
   const otherPrepare = legacy.prepare.rows.filter(row => !prepareRows.some(bill => bill.id === row.id));
   const shortOn = snap.prepare.shortOn;
   const prepareLine = shortOn ? `Short ${cad(shortOn.shortCents)} for ${shortOn.label}, ${dayWords(shortOn.date)}`
-    : snap.prepare.bills.length ? (flow?.anyEstimated ? `Bills covered all ${month} if expected pay arrives` : `Bills covered all ${month}`)
+    : snap.prepare.fundBills.length ? (flow?.anyEstimated ? `Bills covered all ${month} if expected pay arrives` : `Bills covered all ${month}`)
+    // Bills on the rail that the Fund doesn't pay are never claimed as covered (D-282, Our Story).
+    : snap.prepare.bills.length ? "Paid outside the Fund this month"
     : null;
   const buffer = snap.protect.targetCents > 0 ? snap.protect.targetCents : null;
   const goals = snap.build.goals.length;

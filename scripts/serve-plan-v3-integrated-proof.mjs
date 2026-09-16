@@ -5,6 +5,8 @@
     - proposed: Sam proposed the split; Alex is asked to say yes.
     - divided: the split is agreed; Alex (the custodian) suggested a Protect refill that Sam confirms.
     - agreed: divided, and both agreed the September plan.
+    `page=story-studio` (start with `{ storyJson }`): main's fictional Our Story habitat (#497), generated and sorted
+    beforehand (`scripts/`-local, never committed), with the Plan Studio v3 and the cellar v3 over it.
     The bottom bar is a STAND-IN for the App's navigation. */
 import { createServer } from 'vite';
 import { createServer as createPortProbe } from 'node:net';
@@ -19,8 +21,9 @@ import{PlanStudio}from'/src/PlanStudio.tsx';import{KittyBanks}from'/src/KittyBan
 import{planLifeFixture}from'/test/fixtures/plan-life.ts';import{resolveThemeScene,sceneTokens}from'/src/theme/scenes.ts';
 import{acknowledgeHouseholdPlan,setHouseholdFundMonthPlan}from'/src/core/index.ts';import{openChapter}from'/src/core/chapters.ts';
 import{migrateFundModel,proposeFundDivision,agreeFundDivision,proposeProtectRefill}from'/src/core/fundModelCommands.ts';import{undividedContributions,proposedDivision}from'/src/core/fundModel.ts';
+import storyBooks from'/story-books.json';
 const q=new URLSearchParams(location.search),page=q.get('page')||'studio',theme=q.get('theme')||'classic',state=q.get('state')||'sorted',lite=q.get('lite');
-const today='2026-09-11';
+const story=page.startsWith('story-');const today=story?'2026-09-16':'2026-09-11';
 // Without lite=, the device default decides (Lite under reduced motion).
 try{if(lite===null)localStorage.removeItem('hearth.planV3.lite');else localStorage.setItem('hearth.planV3.lite',lite==='1'?'1':'0');localStorage.setItem('hearth.planV3.drawerHint','1');}catch{}
 const scene=resolveThemeScene(theme,'plan','household');
@@ -28,6 +31,7 @@ Object.assign(document.documentElement.dataset,{theme,scene:scene.id,material:sc
 document.body.style.background='var(--paper)';
 const at=(d)=>'2026-09-'+d+'T12:00:00.000Z';
 function seeded(){
+ if(story)return storyBooks;
  let h=planLifeFixture('household',{fundModel:2});
  h=openChapter(h,{memberId:'MEM-001',foundationId:'make-rent-boring',intendedMonth:'2026-08',at:'2026-08-03T12:00:00.000Z'}).household;
  h=setHouseholdFundMonthPlan(h,{memberId:'MEM-001',monthKey:'2026-09',target:'4000',buffer:'400'}).household;
@@ -55,11 +59,12 @@ function Proof(){const[household,setHousehold]=useState(seeded),[member,setMembe
   React.createElement('nav',{'aria-label':'Stand-in app navigation','data-proof-standin':'nav',style:{position:'fixed',left:0,right:0,bottom:0,height:'var(--nav)',background:'#fff',borderTop:'1px solid #d8d8d8',display:'flex',alignItems:'center',justifyContent:'space-around',zIndex:30,fontSize:12,color:'#555'}},['Home','Calendar','Add','Books','Plan'].map(label=>React.createElement('span',{key:label,'aria-current':label==='Plan'?'page':undefined},label))));
 }
 createRoot(document.getElementById('root')).render(React.createElement(Proof));`;
-export async function startPlanV3IntegratedProof({port=5187}={}) {
+export async function startPlanV3IntegratedProof({port=5187,storyJson=null}={}) {
+const storyBooks=storyJson?readFileSync(storyJson,'utf8'):'null';
 if(port===0){const probe=createPortProbe();await new Promise(resolve=>probe.listen(0,'127.0.0.1',resolve));port=probe.address().port;await new Promise(resolve=>probe.close(resolve));}
-process.env.VITE_PLAN_STUDIO_V3='1';process.env.VITE_FUND_MODEL_V2='1';
+process.env.VITE_PLAN_STUDIO_V3='1';process.env.VITE_FUND_MODEL_V2='1';process.env.VITE_CELLAR_V3='1';
 const cacheDir=mkdtempSync(join(tmpdir(),'hearth-plan-v3-int-'));
-const server=await createServer({configFile:false,define:{'import.meta.env.VITE_HERCULES_CHAT':JSON.stringify('0'),'import.meta.env.VITE_PLAN_STUDIO_V3':JSON.stringify('1'),'import.meta.env.VITE_FUND_MODEL_V2':JSON.stringify('1')},cacheDir,server:{host:'127.0.0.1',port,strictPort:true},plugins:[{name:'plan-v3-int-proof',resolveId(id){if(id==='/plan-v3-int-proof.js')return'\0plan-v3-int-proof';},load(id){if(id==='\0plan-v3-int-proof')return entry;},configureServer(vite){vite.middlewares.use(async(req,res,next)=>{if(req.method==='POST'){res.statusCode=503;res.end(JSON.stringify({ok:false,error:'Fictional local proof; external providers disabled'}));return;}if(req.url?.split('?')[0]!=='/plan-v3-int-proof')return next();res.setHeader('Content-Type','text/html');res.end(await vite.transformIndexHtml('/plan-v3-int-proof','<!doctype html><html lang="en"><head><title>Fictional Plan Studio v3 integrated proof</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/plan-v3-int-proof.js"></script></body></html>'));});}}]});
+const server=await createServer({configFile:false,define:{'import.meta.env.VITE_HERCULES_CHAT':JSON.stringify('0'),'import.meta.env.VITE_PLAN_STUDIO_V3':JSON.stringify('1'),'import.meta.env.VITE_FUND_MODEL_V2':JSON.stringify('1'),'import.meta.env.VITE_CELLAR_V3':JSON.stringify('1')},cacheDir,server:{host:'127.0.0.1',port,strictPort:true},plugins:[{name:'plan-v3-int-proof',resolveId(id){if(id==='/plan-v3-int-proof.js')return'\0plan-v3-int-proof';if(id==='/story-books.json')return'\0story-books';},load(id){if(id==='\0plan-v3-int-proof')return entry;if(id==='\0story-books')return`export default ${storyBooks};`;},configureServer(vite){vite.middlewares.use(async(req,res,next)=>{if(req.method==='POST'){res.statusCode=503;res.end(JSON.stringify({ok:false,error:'Fictional local proof; external providers disabled'}));return;}if(req.url?.split('?')[0]!=='/plan-v3-int-proof')return next();res.setHeader('Content-Type','text/html');res.end(await vite.transformIndexHtml('/plan-v3-int-proof','<!doctype html><html lang="en"><head><title>Fictional Plan Studio v3 integrated proof</title><meta name="viewport" content="width=device-width,initial-scale=1"></head><body><div id="root"></div><script type="module" src="/plan-v3-int-proof.js"></script></body></html>'));});}}]});
 await server.listen();
 return {url:`http://127.0.0.1:${server.httpServer.address().port}/plan-v3-int-proof`,async close(){await server.close();rmSync(cacheDir,{recursive:true,force:true});}};
 }

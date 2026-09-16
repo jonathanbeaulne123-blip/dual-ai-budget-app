@@ -6,7 +6,7 @@ import PlanStudioV3 from "../src/plan-v3/PlanStudioV3.tsx";
 import { defaultFundSnapshotSource, fundModelSnapshot, planStudioFundSnapshot, planStudioV3Model } from "../src/plan-v3/model.ts";
 import { fundSnapshot } from "../src/core/fundModel.ts";
 import { divisionFor } from "../src/core/fundModel.ts";
-import { openChapter, type CommitResult, type Household } from "../src/core/index.ts";
+import { addRecurrence, openChapter, type CommitResult, type Household } from "../src/core/index.ts";
 import { ALEX, SAM, TODAY, buffer, fundBill, fundedHousehold, migrated, reserveGoal } from "./fixtures/fund-model.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -52,6 +52,19 @@ describe("the studio reads the money model (D-282)", () => {
     const snap = fundModelSnapshot(h, { memberId: ALEX, view: "household", today: TODAY });
     expect(snap.prepare.tone).toBe("attention");
     expect(snap.prepare.line).toBe("Short $100 for Fictional insurance, Sep 27");
+  });
+
+  it("never calls a bill the Fund doesn't pay 'short' or 'covered' (D-282, Our Story)", () => {
+    let h = fundedHousehold("2000");
+    h = addRecurrence(h, { cadence: "monthly", nextDate: "2026-09-24", type: "expense", amount: "4", accountId: "ACC-VISA", subcategoryId: "SUB-LIFE-FUN", note: "Fictional cloud storage", kind: "subscription" }).household;
+    h = migrated(h);
+    const core = fundSnapshot(h, { memberId: ALEX, view: "household", today: TODAY });
+    expect(core.prepare.bills.map(row => row.name)).toContain("Fictional cloud storage");
+    expect(core.prepare.fundBills).toEqual([]);
+    expect(core.prepare.shortOn).toBeUndefined();
+    const snap = fundModelSnapshot(h, { memberId: ALEX, view: "household", today: TODAY });
+    expect(snap.prepare.line).toBe("Paid outside the Fund this month");
+    expect(snap.prepare.tone).toBe("calm");
   });
 
   it("lists undivided contributions with Hercules's draft split, and the open proposal once one exists", () => {

@@ -17,6 +17,7 @@ mkdirSync(output, { recursive: true });
 const THEMES = ['classic', 'taylor', 'newfoundland'];
 const WIDTHS = [320, 390, 720, 1100];
 const PARTS = (process.env.PARTS || 'studio,category,cellar').split(',');
+// PARTS=story needs STORY_JSON: main's Our Story habitat, generated and sorted beforehand (fictional; never committed).
 const exe = process.env.HEARTH_CHROMIUM ? { executablePath: process.env.HEARTH_CHROMIUM } : {};
 const browser = await chromium.launch({ headless: true, ...exe, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const records = [];
@@ -212,9 +213,39 @@ if (PARTS.includes('studio') || PARTS.includes('category')) {
   }
 }
 
+// ------------------------------------------------------------------ Our Story (main #497), sorted, both flags on
+if (PARTS.includes('story')) {
+  const proof = await startPlanV3IntegratedProof({ port: 0, storyJson: process.env.STORY_JSON });
+  try {
+    const { page, errors, close } = await newPage();
+    for (const [theme, width] of [['classic', 390], ['taylor', 1100], ['newfoundland', 320], ['classic', 720]]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`${proof.url}?page=story-studio&theme=${theme}&lite=0`);
+      await page.locator('.pv3').waitFor({ timeout: 180_000 });
+      await page.waitForTimeout(500);
+      assert.equal(await page.locator('.pv3-fund').count(), 3, 'three funds on the story household');
+      await record(page, `story-rest-${theme}-${width}`, errors, { runAxe: theme === 'classic' });
+      await shot(page, `story-rest-${theme}-${width}`);
+      if (width === 390) {
+        await page.getByRole('button', { name: /^Prepare, has to leave/ }).click();
+        await page.getByRole('dialog', { name: 'Prepare' }).waitFor();
+        await page.waitForTimeout(200);
+        await record(page, `story-sheet-prepare-${theme}-${width}`, errors, { axeScope: '.pv3-veil' });
+        await shot(page, `story-sheet-prepare-${theme}-${width}`, { full: false });
+        await page.keyboard.press('Escape');
+      }
+    }
+    await close();
+  } finally {
+    await proof.close();
+  }
+}
+
 // ------------------------------------------------------------------ the cellar, sorted
-if (PARTS.includes('cellar')) {
+if (PARTS.includes('cellar') || PARTS.includes('story-cellar')) {
+  const onlyStory = !PARTS.includes('cellar');
   const proof = await startHouseholdHomeProof({ port: 0, fundModel: true, cellarV3: true });
+  const storyProof = process.env.STORY_JSON ? await startHouseholdHomeProof({ port: 0, fundModel: true, cellarV3: true, storyJson: process.env.STORY_JSON }) : proof;
   const SIZES = [[320, 700], [390, 844], [720, 900], [1100, 800]];
   const url = (theme, height, extra = {}) => `${proof.url}?${new URLSearchParams({ composition: 'queen', chrome: height >= 800 ? '1' : '0', state: 'building', bills: '1', cellar3: '1', sorted: '1', today: '2026-09-12', theme, world: 'flat', ...extra })}`;
   const scroll = (page) => page.evaluate(() => ({ x: document.documentElement.scrollWidth - document.documentElement.clientWidth, y: document.documentElement.scrollHeight - document.documentElement.clientHeight }));
@@ -247,7 +278,7 @@ if (PARTS.includes('cellar')) {
     await page.waitForTimeout(250);
   }
   try {
-    for (const theme of THEMES) for (const [width, height] of SIZES) {
+    for (const theme of onlyStory ? [] : THEMES) for (const [width, height] of SIZES) {
       const tag = `${theme}-${width}`;
       const { page, errors, close } = await newPage({ viewport: { width, height } });
       await page.goto(url(theme, height));
@@ -273,7 +304,21 @@ if (PARTS.includes('cellar')) {
       await shot(page, `cellar-income-${tag}`, { full: false });
       await close();
     }
-    for (const [width, height] of [[390, 844], [1100, 800]]) {
+    // Main's Our Story household (#497), sorted, flags on: the cellar over twenty-five fictional months.
+    if (process.env.STORY_JSON) for (const [theme, width, height] of [['classic', 390, 844], ['newfoundland', 1100, 800], ['taylor', 320, 700]]) {
+      const tag = `story-${theme}-${width}`;
+      const { page, errors, close } = await newPage({ viewport: { width, height } });
+      await page.goto(`${storyProof.url}?${new URLSearchParams({ composition: 'queen', chrome: height >= 800 ? '1' : '0', story: '1', today: '2026-09-16', theme, world: 'flat' })}`);
+      await cellar(page, width);
+      const railText = await page.locator('.queen-cellar-rail').textContent();
+      assert.doesNotMatch(railText ?? '', /\$\d/, `${tag}: no figure on the rail`);
+      const s = await scroll(page);
+      if (s.x > 1 || s.y > 0) failures.push(`${tag}: page scrolls ${JSON.stringify(s)}`);
+      await record(page, `cellar-${tag}`, errors, { scope: '.queen-room--cellar', targets: false, runAxe: theme === 'classic', extra: { scroll: s, extras: await page.locator('.queen-jar--extra').count() } });
+      await shot(page, `cellar-${tag}`, { full: false });
+      await close();
+    }
+    for (const [width, height] of onlyStory ? [] : [[390, 844], [1100, 800]]) {
       const { page, errors, close } = await newPage({ viewport: { width, height }, reducedMotion: 'reduce' });
       await page.goto(url('classic', height, { reduced: '1' }));
       await cellar(page, width);
@@ -287,6 +332,7 @@ if (PARTS.includes('cellar')) {
     }
   } finally {
     await proof.close();
+    if (storyProof !== proof) await storyProof.close();
   }
 }
 

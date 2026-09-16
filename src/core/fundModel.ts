@@ -45,8 +45,8 @@
  * Re-exports: `fundFor`, `fundResolver`, `UMBRELLAS`, `FUND_IDS`, `FUND_LABELS`,
  * `FUND_MEANINGS_V2`, `fundModelMode`, `allocateFunds` and the row types.
  */
-import { monthKeyFromDateKey, type DateKey, type MonthKey } from "./calendar.ts";
-import { activeHouseholdFundEvents, projectHouseholdFund } from "./householdFund.ts";
+import { monthEndKey, monthKeyFromDateKey, type DateKey, type MonthKey } from "./calendar.ts";
+import { activeHouseholdFundEvents, projectHouseholdFund, projectHouseholdFundRecurrenceOccurrences } from "./householdFund.ts";
 import { projectKittyNest, type NestBank } from "./kittyNest.ts";
 import {
   allocateFunds,
@@ -107,7 +107,11 @@ export type FundSnapshot = {
   now: number;
   owedBackCents: number;
   undividedContributions: UndividedContribution[];
-  prepare: { amountCents: number; targetCents: number; coveredThrough: DateKey | null; shortOn?: { date: DateKey; label: string; shortCents: number }; bills: NestBank[] };
+  /**
+   * `bills` are every has-to-leave jar; `fundBills` are the ones the Fund is meant to pay this month (D-282:
+   * a bill paid from a card or another account is never "short" in the Fund). Coverage reads `fundBills` only.
+   */
+  prepare: { amountCents: number; targetCents: number; coveredThrough: DateKey | null; shortOn?: { date: DateKey; label: string; shortCents: number }; bills: NestBank[]; fundBills: NestBank[] };
   protect: { amountCents: number; targetCents: number; refills: FundRefillRow[] };
   build: { amountCents: number; targetCents: number; goals: Array<{ goalId: string; name: string; amountCents: number; targetCents: number; date: DateKey | null }> };
   everyday: { amountCents: number };
@@ -247,9 +251,14 @@ export function fundSnapshot(h: Household, input: FundViewInput): FundSnapshot {
   const allocation = nest.allocation;
   const prepareBank = bank("prepare");
   const bills = prepareBank.children.filter((row) => row.tier === "bill");
+  const backed = new Set(input.view === "household" && h.householdFund
+    ? projectHouseholdFundRecurrenceOccurrences(h, h.householdFund.id, input.today, monthEndKey(month)).map((row) => `recurrence:${row.recurrenceId}`)
+    : []);
+  // A personal plan has no Fund: every one of its own bills is its own to cover.
+  const fundBills = input.view === "household" ? bills.filter((row) => backed.has(row.designKey)) : bills;
   let coveredThrough: DateKey | null = null;
   let shortOn: FundSnapshot["prepare"]["shortOn"];
-  for (const row of [...bills].sort((a, b) => (a.date ?? "9999").localeCompare(b.date ?? "9999"))) {
+  for (const row of [...fundBills].sort((a, b) => (a.date ?? "9999").localeCompare(b.date ?? "9999"))) {
     if (row.amountCents >= row.targetCents) { if (row.date) coveredThrough = row.date; continue; }
     shortOn = { date: row.date ?? input.today, label: row.name, shortCents: row.targetCents - row.amountCents };
     break;
@@ -278,7 +287,7 @@ export function fundSnapshot(h: Household, input: FundViewInput): FundSnapshot {
     now: allocation ? allocation.nowCents : bank("everyday").amountCents,
     owedBackCents: allocation?.owedBackCents ?? 0,
     undividedContributions: undividedContributions(h, input),
-    prepare: { amountCents: prepareBank.amountCents, targetCents: allocation ? allocation.desired.prepare + allocation.pinned.prepare : prepareBank.targetCents, coveredThrough, ...(shortOn ? { shortOn } : {}), bills },
+    prepare: { amountCents: prepareBank.amountCents, targetCents: allocation ? allocation.desired.prepare + allocation.pinned.prepare : prepareBank.targetCents, coveredThrough, ...(shortOn ? { shortOn } : {}), bills, fundBills },
     protect: { amountCents: bank("protect").amountCents, targetCents: mode === 2 ? fund?.bufferCents ?? 0 : bank("protect").targetCents, refills: openRefills(h, month) },
     build: {
       amountCents: buildBank.amountCents,
