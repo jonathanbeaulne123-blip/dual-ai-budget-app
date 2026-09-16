@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { sharedBridgeDecisions } from "./core/cellarBridge.ts";
 import {
   addPlanBridgeToDraft,
   declinePlanBridge,
@@ -36,7 +37,8 @@ export function PlanBridgeEditor({ household, memberId, month, householdDraft, b
   const privateDraft = [...(household.planBridgeDrafts ?? [])]
     .filter((row) => row.ownerMemberId === memberId && row.monthKey === month)
     .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))[0] ?? null;
-  const decisions = (household.planBridgeDecisions ?? []).filter((row) => row.monthKey === month);
+  // The cellar keeps its own roll-over offers (D-281); they are not Plan offers.
+  const decisions = sharedBridgeDecisions(household.planBridgeDecisions).filter((row) => row.monthKey === month);
   const active = decisions.filter((row) => ["proposed", "held"].includes(row.state));
   const included = decisions.filter((row) => row.state === "accepted");
   const history = decisions.filter((row) => ["declined", "withdrawn", "superseded"].includes(row.state));

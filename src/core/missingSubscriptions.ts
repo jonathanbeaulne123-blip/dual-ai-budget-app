@@ -1,4 +1,5 @@
 import { addDays, monthKeyFromDateKey, monthStartKey, parseDateKey, type DateKey } from "./calendar.ts";
+import { CELLAR_BRIDGE_PATTERN, CELLAR_BRIDGE_SUFFIX } from "./cellarBridge.ts";
 import { allocateHouseholdFundSurplus, declinePlanBridge, proposePlanBridge, withdrawPlanBridge } from "./commands.ts";
 import { activeHouseholdFundEvents, shapeHouseholdFundConfig, shapeHouseholdFundKittyAllocations } from "./householdFund.ts";
 import { advanceCadence } from "./recurrence.ts";
@@ -35,8 +36,8 @@ import { ValidationError, type CommitResult, type Household, type Recurrence } f
 
 /** A subscription counts as missing this many days after its day (Q-7, defaulted, confirm). */
 export const MISSING_GRACE_DAYS = 3;
-const BRIDGE_SUFFIX = " — from the cellar";
-const BRIDGE_PATTERN = /^Roll (.+) into (.+) — from the cellar$/;
+const BRIDGE_SUFFIX = CELLAR_BRIDGE_SUFFIX;
+const BRIDGE_PATTERN = CELLAR_BRIDGE_PATTERN;
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const shortDay = (date: DateKey) => `${MONTHS[Number(date.slice(5, 7)) - 1] ?? ""} ${Number(date.slice(8, 10))}`;
 

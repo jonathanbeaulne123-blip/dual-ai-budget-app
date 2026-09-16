@@ -209,6 +209,11 @@ export function executeIntent(
     (input.reversalOfId != null || input.source === "reversal")
   )
     throw new Error("USE_REVERSAL_COMMAND");
+  // D-281: a cellar pay choice ("hide my pay") names its member in the key; only that member may write it.
+  if (kind === "dismissNotice") {
+    const payMark = /^cellar-pay:([^:]+):/.exec(typeof args[0] === "string" ? args[0] : "");
+    if (payMark && payMark[1] !== actor) throw new Error("ACTOR_MISMATCH");
+  }
   if (kind === "setRecurrenceGoogleSync")
     for (const patch of args[0] as Array<{ memberId: string }>) {
       if (patch.memberId !== actor) throw new Error("ACTOR_MISMATCH");

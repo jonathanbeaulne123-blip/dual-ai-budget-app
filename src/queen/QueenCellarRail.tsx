@@ -32,7 +32,7 @@ export const cellarPurposeWords = (type: CellarJar["type"]): string => {
 export function CellarJarGlyph({ jar, held = false }: { jar: CellarJar; held?: boolean }) {
   return (
     <span data-room-seat="" className={`queen-billjar queen-billjar--${jar.type} queen-billjar--size-${jar.size}${jar.paid ? " is-shard" : ""}${held ? " is-held" : ""}`} data-hue={jar.hue} data-finish={jar.finish} aria-hidden="true">
-      <QueenBankFlat form={cellarBankForm(jar.type)} className="queen-bank-flat queen-billjar__cat" fill={jar.paid ? 1 : jar.fill} frosted={jar.type === "potential" && !jar.paid} tint={jar.hue === "clay" ? undefined : `var(--queen-hue-${jar.hue})`} finish={jar.finish} />
+      <QueenBankFlat form={cellarBankForm(jar.type)} className="queen-bank-flat queen-billjar__cat" fill={jar.paid ? 1 : jar.fill} frosted={jar.type === "potential" && !jar.paid} tint={jar.umbrellaHue ?? (jar.hue === "clay" ? undefined : `var(--queen-hue-${jar.hue})`)} finish={jar.finish} />
       {(jar.paid || jar.strike === "crack") && (
         <svg viewBox="0 0 100 100" className={`queen-billjar__crack${jar.paid ? " queen-billjar__crack--shard" : " queen-billjar__crack--due"}`}>
           <path d={jar.paid ? "M52 34 L44 52 L56 62 L46 86" : "M54 40 L47 56 L57 66"} />

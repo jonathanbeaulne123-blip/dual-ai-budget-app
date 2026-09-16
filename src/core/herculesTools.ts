@@ -1,3 +1,4 @@
+import { sharedBridgeDecisions } from "./cellarBridge.ts";
 import { redactCompanionText } from "./herculesCompanionContext.ts";
 import { matchPlanEvidence, rehearsePlanPurchase, projectPlan, planSelectionForDraft, planSelectionForVersion, type PlanSelection } from "./planProjection.ts";
 import { planLesson } from "./planLearning.ts";
@@ -701,7 +702,7 @@ function executePlanCall(household: Household, call: HerculesReadToolCall, today
   }
   if (call.name === "plan_drift") return answer(projection.firstExposed ? `${projection.firstExposed.label} has a ${formatCad(projection.firstExposed.gapCents)} gap on ${projection.firstExposed.date}.` : projection.issues[0] ?? "No dated shortfall is visible. Review unresolved intentions before relying on coverage.", [], { projection });
   if (call.name === "plan_bridge_status") {
-    const decisions = (household.planBridgeDecisions ?? []).filter(row => row.monthKey === monthKey);
+    const decisions = sharedBridgeDecisions(household.planBridgeDecisions).filter(row => row.monthKey === monthKey);
     return answer(decisions.map(row => `${row.label}: ${row.state}${row.expectedDate ? `, ${row.expectedDate}` : ""}.`).join(" ") || "No deliberately shared Bridge facts this month.", [], { decisions });
   }
   if (call.name === "plan_sitdown_status") {

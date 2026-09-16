@@ -2,6 +2,7 @@ import type { DateKey } from "./calendar.ts";
 import { pathLabel } from "./pathStones.ts";
 import type { PlanBridgeDecision } from "./planSystem.ts";
 import type { Household } from "./types.ts";
+import { sharedBridgeDecisions } from "./cellarBridge.ts";
 
 /**
  * Our Path bridges (Jonathan's step 6): "'Share with Our Home' builds a bridge
@@ -66,7 +67,7 @@ export function pathBridges(household: Household, memberId: string, today: DateK
       why: `Saved privately as ${KIND_WORDS[draft.kind] ?? "an offer"}. Share it with Our Home to lay the next planks.`,
     });
   }
-  for (const row of household.planBridgeDecisions ?? []) {
+  for (const row of sharedBridgeDecisions(household.planBridgeDecisions)) {
     const mine = row.offeredByMemberId === memberId;
     const offered = `${who(row.offeredByMemberId)} offered ${KIND_WORDS[row.kind] ?? "this"} to Our Home`;
     let stage: PathBridgeStage, stageWords: string, why: string;

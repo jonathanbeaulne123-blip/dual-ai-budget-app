@@ -3,8 +3,7 @@ import { createPortal } from "react-dom";
 import type { CommitResult, Household } from "../core/types.ts";
 import type { DateKey } from "../core/calendar.ts";
 import { formatCad } from "../core/money.ts";
-import { dismissNotice } from "../core/commands.ts";
-import { cellarIncomeJars, cellarPayMark, hiddenPayMembers, incomeJarWords, type CellarIncomeJar, type IncomeJarReading } from "../core/cellarIncomeJars.ts";
+import { cellarIncomeJars, hiddenPayMembers, setMyCellarPay, incomeJarWords, type CellarIncomeJar, type IncomeJarReading } from "../core/cellarIncomeJars.ts";
 import {
   agreeMissingRoll, declineMissingRoll, missingRollGoals, missingSubscriptions, missingWords, offerMissingRoll,
   rollMissingSubscription, withdrawMissingRoll, type MissingReading, type MissingSubscription,
@@ -203,7 +202,8 @@ export function CellarIncomeCard({ jar, ownPay, onToggleOwnPay, busy, onCommand,
   const [notice, setNotice] = useState<string | null>(null);
   const hide = () => {
     if (!onCommand) return;
-    void onCommand((current) => dismissNotice(current, cellarPayMark(memberId, "hide", new Date().toISOString()))).then(
+    if (!jar.mine) return;
+    void onCommand((current) => setMyCellarPay(current, { memberId: jar.memberId, actorMemberId: memberId, choice: "hide", at: new Date().toISOString() })).then(
       (result) => setNotice(cellarPostedOk(result) ? "Your pay is hidden from the jars on both phones." : refusedWords(result, "That could not be saved.")),
       (error: unknown) => setNotice(error instanceof Error ? error.message : "That could not be saved."),
     );
@@ -242,5 +242,5 @@ export function incomeNoteWords(income: IncomeJarReading | null): string {
 
 /** Show my pay again: the newest mark wins on both phones. */
 export function showMyPay(onCommand: Run, memberId: string): Promise<unknown> {
-  return onCommand((current) => dismissNotice(current, cellarPayMark(memberId, "show", new Date().toISOString())));
+  return onCommand((current) => setMyCellarPay(current, { memberId, actorMemberId: memberId, choice: "show", at: new Date().toISOString() }));
 }

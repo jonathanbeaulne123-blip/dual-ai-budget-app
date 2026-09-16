@@ -4,7 +4,8 @@ import { advanceCadence } from "./recurrence.ts";
 import { retreatCadence } from "./missingSubscriptions.ts";
 import { memberEarningSchedule } from "./work.ts";
 import { nextWorkScheduleDate } from "./workSettlement.ts";
-import { JOINT, type Household, type Recurrence } from "./types.ts";
+import { JOINT, ValidationError, type CommitResult, type Household, type Recurrence } from "./types.ts";
+import { dismissNotice } from "./commands.ts";
 
 /**
  * The cellar's income jars (2026-09-16, D-278).
@@ -60,6 +61,17 @@ export type IncomeJarReading = {
 
 const PAY_MARK = /^cellar-pay:([^:]+):(hide|show):(.+)$/;
 export const cellarPayMark = (memberId: string, choice: "hide" | "show", at: string) => `cellar-pay:${memberId}:${choice}:${at}`;
+
+/**
+ * The pay-jar hide choice, own pay only (D-281). The mark names the member who
+ * sets it; the authority refuses a `cellar-pay:<member>` mark from anyone else
+ * (`executeIntent`, ACTOR_MISMATCH), and this wrapper refuses it on the phone.
+ */
+export function setMyCellarPay(household: Household, input: { memberId: string; actorMemberId: string; choice: "hide" | "show"; at: string }): CommitResult {
+  if (input.memberId !== input.actorMemberId) throw new ValidationError("Only you can hide or show your own pay.");
+  if (!household.members.some((row) => row.active && row.id === input.memberId)) throw new ValidationError("Only an active household member can do this.");
+  return dismissNotice(household, cellarPayMark(input.memberId, input.choice, input.at));
+}
 
 /** Whether each member has hidden their pay: the newest mark wins; no mark is shown. */
 export function hiddenPayMembers(household: Pick<Household, "calendar">): Set<string> {

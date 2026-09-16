@@ -13,6 +13,7 @@
  * build, flow }) so that one function can be swapped for the other.
  */
 import { addDays, monthEndKey, monthKeyFromDateKey, monthStartKey, shiftMonthKey, type DateKey, type MonthKey } from "../core/calendar.ts";
+import { sharedBridgeDecisions } from "../core/cellarBridge.ts";
 import { chapterMonth, chapterReminder, openChapterFor } from "../core/chapters.ts";
 import { divisionFor, fundSnapshot, proposedDivision } from "../core/fundModel.ts";
 import { fundModelMode, type FundDivisionRow, type FundRefillRow } from "../core/fundRules.ts";
@@ -354,7 +355,7 @@ export function planStudioV3Model(h: Household, input: { memberId: string; view:
   const monthSet = view === "household" && (h.planHerculesSessions ?? []).some(row => row.monthKey === monthKey && row.state === "closed");
 
   // One badge at most: an offer waiting on me first, then a finding worth a look.
-  const waitingOffers = view === "household" ? (h.planBridgeDecisions ?? []).filter(row => row.monthKey === monthKey && row.offeredByMemberId !== memberId && (row.state === "proposed" || row.state === "held")).length : 0;
+  const waitingOffers = view === "household" ? sharedBridgeDecisions(h.planBridgeDecisions).filter(row => row.monthKey === monthKey && row.offeredByMemberId !== memberId && (row.state === "proposed" || row.state === "held")).length : 0;
   const coaching = h.planCoachingPreferences?.find(row => row.memberId === memberId);
   const finding = version && coaching?.intensity !== "off" ? evaluatePlanDrift(h, version, today).find(row => !coaching?.dismissedIssueIds.includes(row.id) && (!coaching?.snoozedIssueIds[row.id] || coaching.snoozedIssueIds[row.id]! <= today)) : undefined;
   const badge: ToolBadge = waitingOffers ? { tool: "letter", text: `${waitingOffers} waiting` } : finding ? { tool: "lamp", text: "a note to check" } : null;

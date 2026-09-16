@@ -123,7 +123,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
   const vessels = useMemo<RoomVessel[]>(() => {
     const rows: RoomVessel[] = [];
     if (view === "bills" && railReading) {
-      for (const jar of railReading.jars) rows.push({ id: jar.id, kind: "bill", form: cellarBankForm(jar.type), tint: jar.hue === "clay" ? undefined : CELLAR_HUE_HEX[jar.hue], finish: jar.finish, swell: 1, fill: jar.paid ? 1 : jar.fill, hollow: false, frosted: jar.type === "potential" && !jar.paid, outlier: false, lifted: heldId === jar.id });
+      for (const jar of railReading.jars) rows.push({ id: jar.id, kind: "bill", form: cellarBankForm(jar.type), tint: jar.umbrellaHue ?? (jar.hue === "clay" ? undefined : CELLAR_HUE_HEX[jar.hue]), finish: jar.finish, swell: 1, fill: jar.paid ? 1 : jar.fill, hollow: false, frosted: jar.type === "potential" && !jar.paid, outlier: false, lifted: heldId === jar.id });
       return rows;
     }
     for (const jar of jars) {
