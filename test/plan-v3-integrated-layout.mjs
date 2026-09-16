@@ -214,7 +214,7 @@ if (PARTS.includes('studio') || PARTS.includes('category')) {
 
 // ------------------------------------------------------------------ the cellar, sorted
 if (PARTS.includes('cellar')) {
-  const proof = await startHouseholdHomeProof({ port: 0, fundModel: true });
+  const proof = await startHouseholdHomeProof({ port: 0, fundModel: true, cellarV3: true });
   const SIZES = [[320, 700], [390, 844], [720, 900], [1100, 800]];
   const url = (theme, height, extra = {}) => `${proof.url}?${new URLSearchParams({ composition: 'queen', chrome: height >= 800 ? '1' : '0', state: 'building', bills: '1', cellar3: '1', sorted: '1', today: '2026-09-12', theme, world: 'flat', ...extra })}`;
   const scroll = (page) => page.evaluate(() => ({ x: document.documentElement.scrollWidth - document.documentElement.clientWidth, y: document.documentElement.scrollHeight - document.documentElement.clientHeight }));

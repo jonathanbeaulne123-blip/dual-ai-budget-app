@@ -7,6 +7,7 @@ import { queenRibbons } from "../src/core/queenPresentation.ts";
 import { addGoal, addRecurrence, postDueRecurrences, recordBillPayment, recordHouseholdFundReconciliation, type CommitResult, type Household } from "../src/core/index.ts";
 import { projectHouseholdFund } from "../src/core/householdFund.ts";
 import { CELLAR_OWN_PAY_KEY } from "../src/queen/QueenCellarExtras.tsx";
+import { missingSubscriptions, offerMissingRoll } from "../src/core/missingSubscriptions.ts";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -16,8 +17,8 @@ const ALEX = "MEM-001", SAM = "MEM-002";
 const TODAY = "2026-09-16";
 
 let host: HTMLDivElement, root: Root, books: Household, calls: number, mounts = 0;
-beforeEach(() => { host = document.createElement("div"); document.body.append(host); root = createRoot(host); calls = 0; try { localStorage.removeItem(CELLAR_OWN_PAY_KEY); } catch { /* jsdom */ } });
-afterEach(async () => { await act(async () => root.unmount()); host.remove(); vi.restoreAllMocks(); });
+beforeEach(() => { vi.stubEnv("VITE_CELLAR_V3", "1"); host = document.createElement("div"); document.body.append(host); root = createRoot(host); calls = 0; try { localStorage.removeItem(CELLAR_OWN_PAY_KEY); } catch { /* jsdom */ } });
+afterEach(async () => { await act(async () => root.unmount()); host.remove(); vi.restoreAllMocks(); vi.unstubAllEnvs(); });
 
 function seeded(): Household {
   let h = planLifeFixture("household");
@@ -192,5 +193,25 @@ describe("Cellar v3 — pay in glass, contribution banks, missing subscriptions"
     await act(async () => { await new Promise((resolve) => requestAnimationFrame(() => resolve(null))); });
     expect($(".queen-jar-card--missing")).toBeNull();
     expect(document.activeElement).toBe(extra("missing")[0]);
+  });
+});
+
+describe("Cellar v3 stays off without VITE_CELLAR_V3 (D-281, review H1)", () => {
+  it("draws no extra jar, offers nothing and writes nothing, even with a spent offer waiting", async () => {
+    vi.stubEnv("VITE_CELLAR_V3", "0");
+    books = seeded();
+    const sub = books.recurrences.find((row) => row.note === "Fictional streaming")!;
+    const [entry] = missingSubscriptions(books, { today: TODAY, memberId: ALEX }).open;
+    const goalId = books.goals.find((row) => row.name === "Fictional beach weekend")!.id;
+    books = offerMissingRoll(books, { today: TODAY, memberId: ALEX, entryId: entry!.id, goalId }).household;
+    books = recordBillPayment(books, { recurrenceId: sub.id, occurrenceDate: "2026-09-12", paymentDate: "2026-09-15", amount: "16", accountId: "ACC-VISA", createdBy: ALEX }).household;
+    expect(missingSubscriptions(books, { today: TODAY, memberId: ALEX }).voidRowIds).toHaveLength(1);
+    const before = books;
+    await show(ALEX);
+    await settle();
+    expect($$(".queen-jar--extra")).toHaveLength(0);
+    expect(calls).toBe(0);
+    expect(books).toBe(before);
+    expect($(".queen-room__sub")!.textContent).not.toMatch(/glass|missing/);
   });
 });

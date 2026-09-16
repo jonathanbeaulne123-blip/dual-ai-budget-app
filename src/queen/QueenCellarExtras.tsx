@@ -10,6 +10,7 @@ import {
 } from "../core/missingSubscriptions.ts";
 import type { CellarDay } from "../core/queenCellar.ts";
 import { ConfirmSheet } from "../Confirm.tsx";
+import { cellarV3Enabled } from "./cellarV3Flag.ts";
 import type { CellarRailExtra } from "./QueenCellarRail.tsx";
 import { cellarDayLabel } from "./QueenCellarRail.tsx";
 
@@ -37,8 +38,11 @@ const refusedWords = (result: unknown, fallback: string) => {
 };
 
 /** Everything the cellar's extra jars need, read once per render of the room. */
-export function useCellarExtras(input: { household?: Household; memberId?: string; today?: DateKey; days?: CellarDay[]; open: boolean; onCommand?: Run }) {
-  const { household, memberId, today, days, open, onCommand } = input;
+export function useCellarExtras(input: { household?: Household; memberId?: string; today?: DateKey; days?: CellarDay[]; open: boolean; onCommand?: Run; enabled?: boolean }) {
+  const { memberId, today, days, open, onCommand } = input;
+  // D-281: behind VITE_CELLAR_V3 (default off). Off, nothing is read, drawn or written.
+  const enabled = input.enabled ?? cellarV3Enabled();
+  const household = enabled ? input.household : undefined;
   const [ownPay, setOwnPay] = useState(readOwnPayOptIn);
   const missing: MissingReading | null = useMemo(() => household && memberId && today ? missingSubscriptions(household, { today, memberId }) : null, [household, memberId, today]);
   const income: IncomeJarReading | null = useMemo(() => household && memberId && today ? cellarIncomeJars(household, { today, memberId, days, ownPrivateOptIn: ownPay }) : null, [household, memberId, today, days, ownPay]);

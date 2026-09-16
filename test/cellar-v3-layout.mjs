@@ -13,7 +13,7 @@ import { resolve, join } from 'node:path';
 
 const output = resolve(process.env.HEARTH_ARTIFACTS_DIR || '.artifacts/cellar-v3');
 mkdirSync(output, { recursive: true });
-const proof = await startHouseholdHomeProof({ port: 0 });
+const proof = await startHouseholdHomeProof({ port: 0, cellarV3: true });
 const exe = process.env.HEARTH_CHROMIUM ? { executablePath: process.env.HEARTH_CHROMIUM } : {};
 const browser = await chromium.launch({ ...exe, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const records = [], errors = [], picks = [];
