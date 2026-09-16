@@ -186,9 +186,10 @@ export function cellarIncomeJars(household: Household, input: {
 export function incomeJarWords(jar: CellarIncomeJar, format: (cents: number) => string): string {
   const who = jar.mine ? "your" : `${jar.memberName}'s`;
   if (jar.state === "contributed") {
+    const since = jar.mine ? "your" : "their";
     return jar.contributedCents > 0
-      ? `${jar.mine ? "You" : jar.memberName} contributed ${format(jar.contributedCents)} to the Fund since ${who} pay day.`
-      : `Nothing contributed to the Fund yet since ${who} pay day.`;
+      ? `${jar.mine ? "You" : jar.memberName} contributed ${format(jar.contributedCents)} to the Fund since ${since} pay day.`
+      : `${jar.mine ? "You haven't" : `${jar.memberName} hasn't`} contributed to the Fund since ${since} pay day yet.`;
   }
   return `If all of ${who} pay came in — about ${format(jar.expectedCents)} — the Fund could stand at ${jar.ifAllCents === null ? "that much more" : format(jar.ifAllCents)}. Only a contribution moves money.`;
 }
