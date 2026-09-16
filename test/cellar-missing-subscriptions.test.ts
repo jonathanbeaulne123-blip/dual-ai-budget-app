@@ -134,7 +134,7 @@ describe("Rolling the difference into a goal — the custodian offers, the partn
     const offered = offerMissingRoll(h, { today, memberId: ALEX, entryId: entry!.id, goalId }).household;
     const row = offered.planBridgeDecisions!.at(-1)!;
     expect(row).toMatchObject({ kind: "shared-goal", state: "proposed", offeredByMemberId: ALEX, amountCents: 1600, expectedDate: "2026-09-12", monthKey: "2026-09",
-      label: "Roll Fictional streaming's uncharged Sep 12 payment into Fictional beach weekend — from the cellar" });
+      label: "\u2063Roll Fictional streaming's uncharged Sep 12 payment into Fictional beach weekend — from the cellar" });
     expect(row.label).toBe(missingBridgeLabel(entry!, "Fictional beach weekend"));
     // No money moved by offering.
     expect(offered.fundEvents).toEqual(h.fundEvents);
@@ -212,7 +212,7 @@ describe("Rolling the difference into a goal — the custodian offers, the partn
     const lower = pay(h, subId, "2026-09-12", "2026-09-12", "11");
     const entryId = read(lower, today).open[0]!.id;
     const offered = offerMissingRoll(lower, { today, memberId: ALEX, entryId, goalId }).household;
-    expect(offered.planBridgeDecisions!.at(-1)!.label).toBe("Roll Fictional streaming's Sep 12 difference into Fictional beach weekend — from the cellar");
+    expect(offered.planBridgeDecisions!.at(-1)!.label).toBe("\u2063Roll Fictional streaming's Sep 12 difference into Fictional beach weekend — from the cellar");
     expect(offered.planBridgeDecisions!.at(-1)!.amountCents).toBe(500);
     expect(() => declineMissingRoll(offered, { today, memberId: ALEX, entryId })).toThrow();
     const declined = declineMissingRoll(offered, { today, memberId: SAM, entryId }).household;

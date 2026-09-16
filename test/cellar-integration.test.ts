@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
-import { addGoal, addRecurrence, postDueRecurrences, proposePlanBridge } from "../src/core/commands.ts";
+import { addGoal, addRecurrence, postDueRecurrences, proposePlanBridge, savePlanBridgeDraft } from "../src/core/commands.ts";
 import { agreeMissingRoll, missingSubscriptions, rollMissingSubscription, offerMissingRoll, withdrawMissingRoll } from "../src/core/missingSubscriptions.ts";
 import { isCellarBridgeRow, sharedBridgeDecisions } from "../src/core/cellarBridge.ts";
 import { sitdownBrief } from "../src/core/sitdownBrief.ts";
@@ -39,6 +39,11 @@ describe("the cellar's roll-over offers stay in the cellar (D-281)", () => {
     const plain = proposePlanBridge(h, { monthKey: "2026-09", kind: "contribution", label: "Roll the extra into Fictional savings", amountCents: 500, memberId: SAM, createdBy: SAM }).household;
     expect(sharedBridgeDecisions(plain.planBridgeDecisions).map(row => row.label)).toContain("Roll the extra into Fictional savings");
     expect(sharedBridgeDecisions(plain.planBridgeDecisions).some(isCellarBridgeRow)).toBe(false);
+    // A person typing the cellar's words (even pasting its invisible mark) makes an ordinary offer, never a hidden one.
+    const typed = proposePlanBridge(h, { monthKey: "2026-09", kind: "shared-goal", label: "Roll the extra into Fictional savings — from the cellar", amountCents: 500, expectedDate: "2026-09-12", memberId: SAM, createdBy: SAM }).household;
+    expect(sharedBridgeDecisions(typed.planBridgeDecisions).map(row => row.label)).toContain("Roll the extra into Fictional savings — from the cellar");
+    const drafted = savePlanBridgeDraft(h, { monthKey: "2026-09", kind: "shared-goal", label: "\u2063Roll the extra into Fictional savings — from the cellar", expectedDate: "2026-09-12", memberId: SAM, createdBy: SAM }).household;
+    expect(drafted.planBridgeDrafts!.at(-1)!.label.startsWith("\u2063")).toBe(false);
   });
 
   it("the Sitdown brief, the island, the crown's pulse and the studio badge do not see it", () => {

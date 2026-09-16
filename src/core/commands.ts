@@ -1,5 +1,6 @@
 import { shapeGoalEnvelope, goalFundReserve, goalRemainingClaim, goalEnvelopeUsedCents, assertGoalEnvelopeIntegrity } from "./goalEnvelopes.ts";
 import { KITTY_STUDIO_LIMITS } from "./kittyStudio.ts";
+import { stripCellarBridgeMark } from "./cellarBridge.ts";
 
 import { categorySplitAmounts, partitionCategoryOwnership, type CategorySplit } from "./categorySplit.ts";
 import { matchPlanEvidence, planSourceVisible } from "./planProjection.ts";
@@ -3866,7 +3867,8 @@ export const savePlanBridgeDraft = captureCommand("savePlanBridgeDraft", functio
   expectedDate?: DateKey; supersedesId?: string; memberId: string; createdBy: string; expectedUpdatedAt?: string;
 }): CommitResult {
   requirePlanActor(household, input.memberId, input.createdBy);
-  const label = input.label.trim();
+  // A person's own offer never carries the cellar's mark (D-281, review M3).
+  const label = stripCellarBridgeMark(input.label).trim();
   if (!label) throw new ValidationError("Describe the one fact you may want to share.");
   const amounts = [input.amountCents, input.lowCents, input.highCents].filter((value): value is number => value !== undefined);
   if (amounts.some((value) => !Number.isSafeInteger(value) || value < 0) || (input.lowCents !== undefined && input.highCents !== undefined && input.lowCents > input.highCents)) {

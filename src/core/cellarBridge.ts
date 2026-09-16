@@ -11,7 +11,14 @@ import type { PlanBridgeDecision } from "./planSystem.ts";
  * (the crown) and the studio badge leave them out. Pure, no imports beyond types.
  */
 export const CELLAR_BRIDGE_SUFFIX = " — from the cellar";
-export const CELLAR_BRIDGE_PATTERN = /^Roll (.+) into (.+) — from the cellar$/;
+/**
+ * An invisible separator (U+2063) leads every label the cellar writes (review M3). People's own Bridge labels
+ * never carry it: the Bridge draft and Hercules's Bridge action strip it, so a typed "Roll … — from the cellar"
+ * stays an ordinary offer.
+ */
+export const CELLAR_BRIDGE_MARK = "\u2063";
+export const CELLAR_BRIDGE_PATTERN = /^\u2063Roll (.+) into (.+) — from the cellar$/;
+export const stripCellarBridgeMark = (label: string): string => label.replace(/\u2063/g, "");
 
 export function isCellarBridgeRow(row: Pick<PlanBridgeDecision, "kind" | "label" | "expectedDate">): boolean {
   return row.kind === "shared-goal" && Boolean(row.expectedDate) && CELLAR_BRIDGE_PATTERN.test(row.label);

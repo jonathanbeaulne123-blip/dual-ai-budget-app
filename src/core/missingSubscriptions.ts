@@ -1,6 +1,6 @@
 import { addDays, monthKeyFromDateKey, monthStartKey, parseDateKey, type DateKey } from "./calendar.ts";
 import { captureCommand } from "../ledgerSync/capture.ts";
-import { CELLAR_BRIDGE_PATTERN, CELLAR_BRIDGE_SUFFIX } from "./cellarBridge.ts";
+import { CELLAR_BRIDGE_MARK, CELLAR_BRIDGE_PATTERN, CELLAR_BRIDGE_SUFFIX } from "./cellarBridge.ts";
 import { allocateHouseholdFundSurplus, declinePlanBridge, proposePlanBridge, withdrawPlanBridge } from "./commands.ts";
 import { activeHouseholdFundEvents, shapeHouseholdFundConfig, shapeHouseholdFundKittyAllocations } from "./householdFund.ts";
 import { advanceCadence } from "./recurrence.ts";
@@ -196,7 +196,7 @@ function candidates(household: Household, today: DateKey): { live: Candidate[]; 
 export function missingWhat(entry: Pick<MissingSubscription, "label" | "date" | "kind">): string {
   return entry.kind === "missing" ? `${entry.label}'s uncharged ${shortDay(entry.date)} payment` : `${entry.label}'s ${shortDay(entry.date)} difference`;
 }
-export const missingBridgeLabel = (entry: Pick<MissingSubscription, "label" | "date" | "kind">, goalName: string) => `Roll ${missingWhat(entry)} into ${goalName}${BRIDGE_SUFFIX}`;
+export const missingBridgeLabel = (entry: Pick<MissingSubscription, "label" | "date" | "kind">, goalName: string) => `${CELLAR_BRIDGE_MARK}Roll ${missingWhat(entry)} into ${goalName}${BRIDGE_SUFFIX}`;
 
 /** Every Bridge row the cellar wrote, with what it is about and the goal it names. */
 export function cellarBridgeRows(household: Pick<Household, "planBridgeDecisions">): Array<{ row: PlanBridgeDecision; what: string; goalName: string }> {
