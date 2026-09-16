@@ -55,6 +55,7 @@ Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-st
   - Fixed along the way (`92d10315`): card-paid bills are never "short" in the Fund.
 - **Suites.** 122 files; the 6 failures are all pre-existing on `d7b0151b` (`onboarding-categories` ×2, `hercules-wardrobe-*` ×3, `sync-integrity`).
 - **Evidence.** 8 Our Story captures, 0 failures.
+- **High quick gate** at `8761878f` (clean tree, base `d7b0151b`): `quick-gate-passed; time-budget-breached`. It took 1553 s over 93 files: fast took 118.9 s and serial took 1320.4 s. The serial lane includes `habitat-story` 10/10, `habitat-story-fund-model` 4/4, `habitat` 6/6 and `fund-model-demo-seeds` 3/3.
 
 **Defaulted, confirm:** the list is in D-282.
 

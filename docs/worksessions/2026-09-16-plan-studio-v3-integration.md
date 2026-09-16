@@ -262,7 +262,7 @@ Every Blocker, High and Medium finding is fixed. Each fix has its own commit and
   - The 7th was the `ledger-import-parity` timeout under load; that suite passes alone.
 - **Our Story fixture hash** with the flags off is identical to main (`f8ba4485…`).
 - **`test/habitat-story-fund-model.test.ts`:** 4/4.
-- **The final High gate** is recorded in `docs/AI_HANDOFF.md`.
+- **High quick gate** at `8761878f` (clean tree, base `d7b0151b`): `quick-gate-passed; time-budget-breached`. It took 1553 s over 93 files: fast took 118.9 s and serial took 1320.4 s. The serial lane includes `habitat-story` 10/10, `habitat-story-fund-model` 4/4, `habitat` 6/6 and `fund-model-demo-seeds` 3/3.
 
 **Targeted suites after the trust-review fixes** (118 files): 1151 passed, 6 failed and 7 skipped. The failures are the same 5 pre-existing ones, plus the `ledger-import-parity` timeout under load; that suite passes alone (5/5).
 
