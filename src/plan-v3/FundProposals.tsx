@@ -32,11 +32,12 @@ export function DivideCard({ row, memberId, busy, run, headingLevel = 2 }: {
       {split ? <>
         <p className="pv3-note">{proposal ? `${mine ? "You" : "Your partner"} suggested:` : "Hercules suggests:"}</p>
         <ul className="pv3-split" aria-label={proposal ? "Suggested split waiting for a yes" : "Suggested split"}>
-          {ORDER.filter(key => split[key] > 0).map(key => <li key={key}>{FUND_NAMES[key]} <span>+{moneyWords(split[key])}</span></li>)}
+          {ORDER.filter(key => split[key] > 0).map(key => <li key={key}>{FUND_NAMES[key]} <span>{moneyWords(split[key])}</span></li>)}
         </ul>
-      </> : <p className="pv3-note">Not divided yet. It counts once you both confirm a split.</p>}
+        <p className="pv3-note">A shared record of how you see this money. It doesn't change the funds: they still fill Prepare, then Protect, then Build.</p>
+      </> : <p className="pv3-note">Not divided yet. Saying yes together marks it divided; the funds still fill Prepare, then Protect, then Build.</p>}
       {!proposal && split && (
-        <button type="button" className="pv3-btn" disabled={busy} onClick={() => void act(current => proposeFundDivision(current, { memberId, contributionEventId: row.id, split }), "Suggested. It's divided once you both say yes.")}>
+        <button type="button" className="pv3-btn" disabled={busy} onClick={() => void act(current => proposeFundDivision(current, { memberId, contributionEventId: row.id, split }), "Suggested. It's marked divided once you both say yes.")}>
           Propose this split<small>{row.waitingOn.length ? `${row.waitingOn.join(" and ")} confirm` : "You both confirm"}</small>
         </button>
       )}
@@ -47,7 +48,7 @@ export function DivideCard({ row, memberId, busy, run, headingLevel = 2 }: {
       {proposal && !mine && !iAgreed && (
         <div className="pv3-stepnav">
           <button type="button" className="pv3-btn pv3-btn--quiet" disabled={busy} onClick={() => void act(current => declineFundDivision(current, { memberId, id: proposal.id, revision: proposal.revision }), "Set aside. It stays not divided yet.")}>Not this split</button>
-          <button type="button" className="pv3-btn" disabled={busy} onClick={() => void act(current => agreeFundDivision(current, { memberId, id: proposal.id, revision: proposal.revision }), "We both agreed the split.")}>Yes, divide it this way<small>A plan, not a bank move</small></button>
+          <button type="button" className="pv3-btn" disabled={busy} onClick={() => void act(current => agreeFundDivision(current, { memberId, id: proposal.id, revision: proposal.revision }), "Marked divided by both of you. The funds still fill Prepare, then Protect, then Build.")}>Yes, divide it this way<small>A record, not a bank move</small></button>
         </div>
       )}
       {said && <p className="pv3-note" role="status">{said}</p>}

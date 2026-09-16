@@ -19,7 +19,7 @@ function dayFunds(day: FlowDay): (FundKey | "everyday")[] {
 export function stoneLabel(day: FlowDay, today: string): string {
   const parts = [dayWords(day.date, true)];
   if (day.date === today) parts.push("today");
-  for (const row of day.contributions) parts.push(`${row.memberName}'s contribution ${moneyWords(row.amountCents)}${row.estimated ? ", expected" : row.actual ? "" : ", planned"}${row.split ? `, divided: Prepare ${moneyWords(row.split.prepare)}, Protect ${moneyWords(row.split.protect)}, Build ${moneyWords(row.split.build)}, Everyday ${moneyWords(row.split.everyday)}` : ""}`);
+  for (const row of day.contributions) parts.push(`${row.memberName}'s contribution ${moneyWords(row.amountCents)}${row.estimated ? ", expected" : row.actual ? "" : ", planned"}${row.split ? `, marked divided: Prepare ${moneyWords(row.split.prepare)}, Protect ${moneyWords(row.split.protect)}, Build ${moneyWords(row.split.build)}, Everyday ${moneyWords(row.split.everyday)}` : ""}`);
   for (const row of day.outflows) parts.push(`${row.label} ${moneyWords(row.amountCents)}${row.fund ? ` from ${FUND_NAME[row.fund]}` : ""}${row.actual ? "" : ", coming"}`);
   if (!day.contributions.length && !day.outflows.length) parts.push("nothing dated");
   if (day.balanceCents !== null && day.date >= today) parts.push(`the Fund about ${moneyWords(day.balanceCents)}`);

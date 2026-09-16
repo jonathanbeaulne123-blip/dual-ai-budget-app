@@ -105,6 +105,9 @@ describe("the studio's split and refill flows (D-281)", () => {
     const a = mount(sortedMonth(), ALEX);
     await a.render();
     expect(host.querySelector(".pv3-divide")?.textContent).toContain("Divide $2,000");
+    // The words say what a division is: a record that leaves the funds as they fill (review M2).
+    expect(host.querySelector(".pv3-divide")?.textContent).toContain("It doesn't change the funds");
+    expect(host.querySelector(".pv3-divide")?.textContent).not.toMatch(/It counts once|\+\$/);
     await click(findButton("Propose this split"));
     expect(host.textContent).toContain("Waiting for Sam (fictional) to say yes.");
     const eventId = a.state.household.fundModelRows!.find(row => row.kind === "division")!;
@@ -122,6 +125,10 @@ describe("the studio's split and refill flows (D-281)", () => {
     // Divided: the moment is gone, and no Fund event was posted.
     expect(host.querySelector(".pv3-divide")).toBeNull();
     expect(b.state.household.fundEvents!.length).toBe(proposed.fundEvents!.length);
+    // And the figures the words promise are unchanged: a confirmed division moves nothing between funds.
+    const read = (h: Household) => fundModelSnapshot(h, { memberId: SAM, view: "household", today: TODAY });
+    const [x, y] = [read(proposed), read(b.state.household)];
+    expect([y.now.amountCents, y.prepare.amountCents, y.protect.amountCents, y.build.amountCents]).toEqual([x.now.amountCents, x.prepare.amountCents, x.protect.amountCents, x.build.amountCents]);
   });
 
   it("the custodian suggests a Protect refill in its sheet, and the partner confirms", async () => {

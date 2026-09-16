@@ -95,7 +95,7 @@ export function RestScreen({ household, memberId, view, today, model, highlight,
                 <ul className="pv3-split" aria-label="Suggested split">
                   {(["prepare", "protect", "build", "everyday"] as const).filter(key => undivided.suggestion![key] > 0).map(key => <li key={key}>{FUND_WORDS[key].name} <span>+{moneyWords(undivided.suggestion![key])}</span></li>)}
                 </ul>
-              </> : <p className="pv3-note">Not divided yet. It counts once you both confirm a split.</p>}
+              </> : <p className="pv3-note">Not divided yet. Saying yes together marks it divided; the funds still fill Prepare, then Protect, then Build.</p>}
               <p className="pv3-note">Dividing opens with the new money model; until then it stays “not divided yet”.</p>
             </div>
           ))}
