@@ -1121,6 +1121,7 @@ export class LedgerRoom extends DurableObject<Env> {
             companionPlayVersion: 1,
             companionDiscoveryVersion: 1,
             companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, kittyNestVersion: 1, pathWorldVersion: 1,
+            fundModelVersion: 2,
             herculesActionsEnabled: herculesActionsEnabled(a.scope.environment, this.env.HERCULES_ACTIONS_ENABLED),
             sequence: state.sequence,
             hash: await digest({

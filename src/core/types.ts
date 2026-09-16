@@ -118,6 +118,10 @@ export type Category = {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  /** v2 money model (D-268): the locked umbrella a group carries. Groups only. */
+  umbrellaId?: import("./fundRules.ts").UmbrellaId;
+  /** v2 money model (D-268): the fund a child's lines default to. Expense children only; never Protect. */
+  defaultFund?: import("./fundRules.ts").FundId;
 };
 
 export type Split = {
@@ -1382,6 +1386,8 @@ export type Household = {
   nativeEvents?: NativeEvent[];
   /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
   kittyNestDesigns?: import("./kittyNestDesigns.ts").KittyNestDesign[];
+  /** v2 money model (D-268): fund overrides, markers and proposals. Non-money; outside every financial hash. Household rows travel Shared; personal rows only in their owner's Personal envelope. */
+  fundModelRows?: import("./fundRules.ts").FundModelRow[];
   tasks?: Task[];
   taskLists?: TaskList[];
   playRoom?: import("./playContracts.ts").PlayRoom;
@@ -1509,6 +1515,8 @@ export type SharedEnvelope = {
   nativeEvents?: NativeEvent[];
   /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
   kittyNestDesigns?: import("./kittyNestDesigns.ts").KittyNestDesign[];
+  /** v2 money model (D-268): fund overrides, markers and proposals. Non-money; outside every financial hash. Household rows travel Shared; personal rows only in their owner's Personal envelope. */
+  fundModelRows?: import("./fundRules.ts").FundModelRow[];
   tasks?: Task[];
   taskLists?: TaskList[];
   playRoom?: import("./playContracts.ts").PlayRoom;
@@ -1601,6 +1609,8 @@ export type PersonalEnvelope = {
   nativeEvents?: NativeEvent[];
   /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
   kittyNestDesigns?: import("./kittyNestDesigns.ts").KittyNestDesign[];
+  /** v2 money model (D-268): fund overrides, markers and proposals. Non-money; outside every financial hash. Household rows travel Shared; personal rows only in their owner's Personal envelope. */
+  fundModelRows?: import("./fundRules.ts").FundModelRow[];
   tasks?: Task[];
   taskLists?: TaskList[];
   /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */

@@ -194,6 +194,8 @@ export function householdForHerculesContext(
     moves: [],
     wins: [],
     pathWorld: [],
+    // Money model rows (overrides, proposals) never reach model context.
+    fundModelRows: [],
     // `householdForView` already removes every partner-owned Personal account.
     // Keep the requesting member's own Personal accounts here so their visible
     // Personal transactions still compile against a complete journal.

@@ -18,6 +18,8 @@ interface ImportMetaEnv {
   readonly VITE_QUEENS_NEST?: string;
   readonly VITE_FUND_STANDING_BOOK?: string;
   readonly VITE_GOOGLE_CLIENT_ID?: string;
+  /** Money model release N+1 (D-268): stamps commands with fundModelVersion 2 and runs the migration. Default off. */
+  readonly VITE_FUND_MODEL_V2?: string;
 }
 
 interface ImportMeta {

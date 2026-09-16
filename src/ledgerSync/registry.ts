@@ -12,6 +12,7 @@ import * as commands from "../core/commands.ts";
 import * as rehearsal from "../core/monthRehearsal.ts";
 import * as chapterCommands from "../core/chapters.ts";
 import * as pathWorldCommands from "../core/pathWorld.ts";
+import * as fundModelCommands from "../core/fundModelCommands.ts";
 import { saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks } from "../core/tasks.ts";
 import { stampWeeklyDocument } from "../core/weeklyDocumentStamp.ts";
 import { commitCharterFounding } from "../core/charterFounding.ts";
@@ -32,6 +33,9 @@ const functions = {
   ...rehearsal,
   openChapter: chapterCommands.openChapter, addRitual: chapterCommands.addRitual, recordRitualHeld: chapterCommands.recordRitualHeld, setRitualState: chapterCommands.setRitualState,
   offerMove: chapterCommands.offerMove, respondToMove: chapterCommands.respondToMove, completeMove: chapterCommands.completeMove, recordWin: chapterCommands.recordWin, keepWinAsMemory: chapterCommands.keepWinAsMemory, dismissWin: chapterCommands.dismissWin, closeChapter: chapterCommands.closeChapter,
+  migrateFundModel: fundModelCommands.migrateFundModel, migrateMyFundModel: fundModelCommands.migrateMyFundModel, setFundOverride: fundModelCommands.setFundOverride, setCategoryHome: fundModelCommands.setCategoryHome,
+  proposeFundDivision: fundModelCommands.proposeFundDivision, agreeFundDivision: fundModelCommands.agreeFundDivision, declineFundDivision: fundModelCommands.declineFundDivision,
+  proposeProtectRefill: fundModelCommands.proposeProtectRefill, agreeProtectRefill: fundModelCommands.agreeProtectRefill, declineProtectRefill: fundModelCommands.declineProtectRefill, withdrawFundProposal: fundModelCommands.withdrawFundProposal,
   proposePathRecipe: pathWorldCommands.proposePathRecipe, proposePathName: pathWorldCommands.proposePathName, agreePathProposal: pathWorldCommands.agreePathProposal, declinePathProposal: pathWorldCommands.declinePathProposal, setPathCategorySignal: pathWorldCommands.setPathCategorySignal,
   saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks,
   eraseDevelopmentActivity,
@@ -98,6 +102,7 @@ register("linkGoogleIdentity touchHouseholdDevice", ["memberId"]);
 register("setGoogleServices setRecurrenceGoogleSync");
 register("startMonthRehearsal", ["startedByMemberId"]);
 register("openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter", ["memberId"]);
+register("migrateFundModel migrateMyFundModel setFundOverride setCategoryHome proposeFundDivision agreeFundDivision declineFundDivision proposeProtectRefill agreeProtectRefill declineProtectRefill withdrawFundProposal", ["memberId"]);
 register("proposePathRecipe proposePathName agreePathProposal declinePathProposal setPathCategorySignal", ["memberId"]);
 register("upsertCoworker importCoworkerRoster recordCoworkerAttendance", [
   "ownerMemberId",

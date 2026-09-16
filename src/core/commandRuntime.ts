@@ -421,6 +421,8 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         }))
         : input.commandKind === "updatePathWorld"
         ? await sha256Hex(commandMaterializationFacts({ pathWorld: accepted.pathWorld }))
+        : input.commandKind === "updateFundModel"
+        ? await sha256Hex(commandMaterializationFacts({ fundModelRows: (accepted.fundModelRows ?? []).filter((row) => row.visibility === "household"), categories: accepted.categories.filter((row) => postedIds.includes(row.id)) }))
         : input.commandKind === "updateMonthRehearsal"
         ? await sha256Hex(commandMaterializationFacts({ monthRehearsals: accepted.monthRehearsals ?? [] }))
         : input.commandKind === "moveAskGoalClaimToNextMonth"

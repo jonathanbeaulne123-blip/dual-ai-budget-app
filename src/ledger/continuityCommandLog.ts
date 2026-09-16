@@ -159,6 +159,7 @@ export async function compactedCommandPayload(
     ...(mergedFacts?.moves ?? []).map((row) => row.id),
     ...(mergedFacts?.wins ?? []).map((row) => row.id),
     ...(mergedFacts?.pathWorld ?? []).map((row) => row.id),
+    ...(mergedFacts?.fundModelRows ?? []).map((row) => row.id),
     ...(mergedFacts?.tombstones ?? []).map((row) => row.id),
   ])].sort();
   const compactedCommands = await Promise.all(item.commandRefs
@@ -194,6 +195,7 @@ export async function compactedCommandPayload(
       || mergedFacts?.moves?.length
       || mergedFacts?.wins?.length
       || mergedFacts?.pathWorld?.length
+      || mergedFacts?.fundModelRows?.length
       ? await sha256Hex(commandMaterializationFacts({
         monthRehearsals: mergedFacts.monthRehearsals,
         recurrences: mergedFacts.recurrences,
@@ -210,6 +212,7 @@ export async function compactedCommandPayload(
         moves: mergedFacts.moves,
         wins: mergedFacts.wins,
         pathWorld: mergedFacts.pathWorld,
+        fundModelRows: mergedFacts.fundModelRows,
       }))
       : primary.commandPayload.materializationHash,
     postedIds: scopedPostedIds.length ? scopedPostedIds : primary.commandPayload.postedIds.filter((id) => {
@@ -314,6 +317,7 @@ function mergeMaterializationFacts(
     if (facts.moves !== undefined) merged.moves = facts.moves;
     if (facts.wins !== undefined) merged.wins = facts.wins;
     if (facts.pathWorld !== undefined) merged.pathWorld = facts.pathWorld;
+    if (facts.fundModelRows !== undefined) merged.fundModelRows = facts.fundModelRows;
     if (facts.tombstones?.length) {
       merged.tombstones = [...(merged.tombstones ?? []), ...facts.tombstones];
     }

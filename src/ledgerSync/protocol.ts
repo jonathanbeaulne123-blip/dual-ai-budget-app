@@ -7,6 +7,7 @@ import type {
 } from "../core/types.ts";
 import type { CapturedIntent } from "./capture.ts";
 import { digest } from "./patch.ts";
+import { clientFundModelVersion } from "./fundModelStamp.ts";
 import type { ProjectionPatch } from "./patch.ts";
 export type Scope = {
   identity?: { subject: string; email: string };
@@ -41,6 +42,8 @@ export type LedgerCommand = {
   pathWorldVersion?: 1;
   planDecisionVersion?: 1;
   goalEnvelopeVersion?: 1;
+  /** Money model (D-268): 1 = release N (reads v2, never migrates); 2 = release N+1. Refused below 2 once migrated. */
+  fundModelVersion?: 1 | 2;
   id: string;
   householdId: string;
   environment: Environment;
@@ -93,6 +96,7 @@ export async function commandFromCapture(
     companionProfileVersion: 1,
     companionPlayVersion: 1,
     companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, kittyNestVersion: 1, pathWorldVersion: 1,
+    fundModelVersion: clientFundModelVersion(),
     id,
     ...scope,
     observedSequence: input.observedRevision,
@@ -124,6 +128,7 @@ export function parseCommand(value: unknown): LedgerCommand {
     (c.kittyNestVersion !== undefined && c.kittyNestVersion !== 1) ||
     (c.taskPlannerVersion !== undefined && c.taskPlannerVersion !== 1) ||
     (c.pathWorldVersion !== undefined && c.pathWorldVersion !== 1) ||
+    (c.fundModelVersion !== undefined && c.fundModelVersion !== 1 && c.fundModelVersion !== 2) ||
     (c.companionWorkflowVersion !== undefined && c.companionWorkflowVersion !== 1) ||
     (c.companionPlayVersion !== undefined && c.companionPlayVersion !== 1) ||
     (c.companionWardrobeVersion !== undefined && c.companionWardrobeVersion !== 1) ||
