@@ -17,7 +17,8 @@ const proof = await startHouseholdHomeProof({ port: 0 });
 const exe = process.env.HEARTH_CHROMIUM ? { executablePath: process.env.HEARTH_CHROMIUM } : {};
 const browser = await chromium.launch({ ...exe, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
 const records = [], errors = [];
-const SIZES = [[320, 568], [390, 844], [720, 900], [1100, 800]];
+// 320×700 is the honest 320 (the 320×568 frame with the chrome stand-ins is the compromised one the earlier cellar evidence names).
+const SIZES = [[320, 700], [390, 844], [720, 900], [1100, 800]];
 const THEMES = ['classic', 'taylor', 'newfoundland'];
 const only = process.env.RUNS ? process.env.RUNS.split(',') : null;
 const url = (theme, extra = {}) => `${proof.url}?${new URLSearchParams({ composition: 'queen', chrome: '1', state: 'building', bills: '1', cellar3: '1', today: '2026-09-12', theme, ...extra })}`;

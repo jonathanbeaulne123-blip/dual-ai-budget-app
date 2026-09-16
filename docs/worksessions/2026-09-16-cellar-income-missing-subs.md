@@ -134,7 +134,10 @@ What the couple now sees on the rail, on the same dollar scale as the water and 
 All commands from the worktree root in the cloud container, Node 22.22.2.
 
 - `npx tsc --noEmit -p .`: clean (after every code commit).
-- `npx vitest run test/cellar-missing-subscriptions.test.ts test/cellar-income-jars.test.ts test/cellar-v3-ui.test.ts test/queen-cellar.test.ts test/queen-cellar-ui.test.ts test/queens-nest-ui.test.ts`: see the handoff entry for the exact count.
+- `npx vitest run test/cellar-missing-subscriptions.test.ts test/cellar-income-jars.test.ts test/cellar-v3-ui.test.ts test/queen-cellar.test.ts test/queen-cellar-ui.test.ts test/queens-nest-ui.test.ts`: 6 files, **82/82**.
+- `pnpm test -- --risk=medium-high --focus=test/cellar-missing-subscriptions.test.ts --focus=test/cellar-income-jars.test.ts --focus=test/cellar-v3-ui.test.ts --focus-reason=…`: **`quick-gate-passed`** at head `4f287970`.
+  - Phases: diff-check, ai-surface, typescript 63.1 s, test-discovery (22 selected: 21 fast, 1 serial), vitest-fast 21 files / 264 tests, vitest-serial 1 file / 7 tests.
+  - Total 124.0 s of the 300 s budget, no breach. `uiProofRequired: true`, answered by the browser run below.
 - `HEARTH_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome node test/cellar-v3-layout.mjs`: see `docs/evidence/cellar-v3/README.md`.
 
 ## Remaining uncertainty

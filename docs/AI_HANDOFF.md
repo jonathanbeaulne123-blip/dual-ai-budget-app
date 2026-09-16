@@ -30,7 +30,8 @@ Branch `claude/plan-v3-cellar` on `main@6160fb03` (#495), in small commits. **Ri
   - `cellar-income-jars` 7/7
   - `cellar-v3-ui` 6/6
   - `queen-cellar` + `queen-cellar-ui` + `queens-nest-ui` still green
-  - exact counts and the quick gate: see below.
+  - 6 files, 82/82 in total
+- **Quick gate (Medium-High, three focus files):** `quick-gate-passed`, 22 files / 271 tests, 124 s of 300 s.
 - **Browser:** `test/cellar-v3-layout.mjs` → `docs/evidence/cellar-v3/` (see its README).
 - **Real phone:** not available.
 
