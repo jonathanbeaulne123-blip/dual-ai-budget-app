@@ -6,7 +6,7 @@
 - **Assignee or AI:** Claude (integration engineer)
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `claude/plan-studio-v3` (worktree `wt-int`). It merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`.
-- **Head SHA:** see `git log --oneline 556d4bd1..claude/plan-studio-v3` (six integration commits after the three merges).
+- **Head SHA:** see `git log --oneline 556d4bd1..claude/plan-studio-v3` (seventeen integration commits after the three merges: seven for D-281, eight for the trust-review fixes and evidence refresh, and two for the trust-review docs).
 - **Risk:** High. The studio now reads money meaning from the money model, the cellar's consent rows are filtered out of shared surfaces, the authority gains one author check, and Our Path grows new pieces. There is no new synced shape, no schema change and no new command.
 - **Decision owner:** Jonathan (D-281)
 - **Environment impact:** none. Fictional fixtures and proof pages only. `VITE_PLAN_STUDIO_V3` and `VITE_FUND_MODEL_V2` both stay off by default.
@@ -115,7 +115,7 @@ So the v3 check-in resumes only from the Shared Sitdown session, and the old stu
 - **`pathMonths`** (`src/core/pathSignals.ts`)
   - **Umbrella shape.** For sorted households it adds `umbrellas`: a 0–1 shape per spending umbrella, computed as `0.3 + 2 × share` of the month's shared spending, keyed by umbrella id. It never carries an amount, and the reason reads "Spending under <Umbrella>".
   - **Seed tag.** It tags `umbrella-slots` in the month of the first household plan agreed under the money model (`umbrellaSeedMonth`: an active, scheduled or superseded household version activated or created at or after the marker's `migratedAt`). The month is clamped into the island's months.
-  - **The check-in counts.** A closed Shared Sitdown session (the check-in) now counts as that month's Sitdown for Together and Firsts. Closing a Chapter already fed Learning and Together.
+  - **The check-in counts, once sorted.** For sorted households only (review M3), a closed Shared Sitdown session (the check-in) counts as that month's Sitdown for Together and Firsts. Closing a Chapter already fed Learning and Together.
 - **`growIsland`** (`src/path/grow.ts`)
   - `umbrellaPieces` places a ring of twelve slots, radius 6.5, around the seed month's spot.
   - A pennant (`kind: "umbrella"`, with `umbrellaId`, `hue` and `n`) rises the first month, from the seed on, that its umbrella shows. It grows with every such month.
@@ -143,6 +143,49 @@ So the v3 check-in resumes only from the Shared Sitdown session, and the old stu
   - Under the money model, the Queen's pill read "+$4,000 not divided yet" beside a Now that already counted it. It now reads "$4,000 landed · not divided yet".
   - At 320px, and in Newfoundland's type, the category grid broke "Transport" mid-word and spilled the fund words. The grid now takes two columns, and the funds one, below 380px.
 
+### 8. Trust-review fixes (`/home/claude/plan-studio/review/branch-trust-review.md`)
+
+Every Blocker, High and Medium finding is fixed. Each fix has its own commit and test.
+
+- **B1, the double roll (`a2cb65d5`).**
+  - The rollover note now starts with `[cellar-roll:<recurrence>:<date>]`, so the 180-character limit can't cut the key off. `rolledFor` matches `[key]`.
+  - `rollMissingSubscription` is now a captured command. It is registered in `executeIntent` and bound to the actor, so the authority replays it and re-reads "only once" on its own books.
+  - A bare `allocateHouseholdFundSurplus` whose note carries a `cellar-roll:` key is refused.
+  - Tests: a 200-character name rolls once; a second authority replay is refused.
+- **H2, consent only on the phone (same commit).** The authority replay re-derives the stage, so a roll needs both the custodian's open offer and the partner's identical open row. The test replays a roll nobody agreed to, and it is refused.
+- **H1, cellar live on merge (`aacbce63`).**
+  - `VITE_CELLAR_V3`, off by default, gates `useCellarExtras`: the reads, the extra jars, the cards and the auto-withdraw effect.
+  - `VITE_QUEENS_NEST` alone leaves the cellar as it was.
+  - The proofs opt in with `{ cellarV3: true }`.
+  - Test: with the flag off and a spent offer waiting, no extra jar is drawn and no command is sent.
+- **H3, the private step always refused (`3f8ba2d0`).**
+  - `fundModelPersonalUpdateAllowed` (`src/fundModelPersonalRule.ts`) is wired into `assertMemberPersonalUpdate` for `updateFundModel`. The Shared envelope must stay byte-equal, and only the member's own Personal money-model rows, designs and Plan drafts may change.
+  - `commitFundModel` no longer stamps `lastCommittedAt` on a personal result; that stamp alone broke the rule.
+  - Test: the boot's personal step and a private override pass; a Shared change or another private change does not.
+- **M5, the silent boot (same commit).**
+  - `fundModelBootNotice` shows the plan guard's words as a notice.
+  - A lost "already sorted" race clears its error.
+- **M1 and M3, flags-off drift (`625413fd`).**
+  - `openChapter` writes `intendedMonth` only for a sorted household, or when a month is asked for.
+  - `CHAPTER_MONTH_COMMAND_KINDS` is now only `closeChapterAtSitdown`, so an older phone's `openChapter` is judged by the data.
+  - The island counts a closed check-in only once sorted.
+  - Hercules's Plan tool text is `main`'s again, in both the app catalog and the Worker.
+  - `test/plan-v3-flags-off.test.ts` checks that the flags are off, no month is written, an older phone (no stamps) opens and closes a Chapter, the tool text is `main`'s, and the island's Sitdown counting is unchanged.
+- **M3, the Bridge filter (`0d9b316e`).**
+  - Cellar labels now start with U+2063, and the filter requires it.
+  - `savePlanBridgeDraft` and Hercules's Bridge action strip it, so a person's typed "Roll … — from the cellar" stays an ordinary, visible offer.
+- **M2, split copy (`66558706`).** The reviewed plan keeps a division a record ("the Now figure itself is unchanged"), so the words changed rather than the numbers:
+  - The suggestion has no "+".
+  - A note says the funds still fill Prepare, then Protect, then Build.
+  - A confirmation reads "Marked divided".
+  - The test checks that the snapshot figures are the same before and after both confirm.
+- **M4, card payments (`7e02a7ea`).**
+  - Per Jonathan ("use the app's existing transfer/debt logic"), sorted households no longer see Moving-money lines, including the legacy card line, in the Add, Repeating or planned-expense pickers. A line already on a form stays.
+  - Our Path umbrella shares ignore those lines.
+  - Spending totals are unchanged. The Moving money rule now says new card payments are recorded as a transfer and that older lines still count in totals.
+- **M6, test gaps.** Covered above: authority-level roll tests, the two-client stamp case (the older phone), and the personal rule. Two gaps remain, listed under Remaining gaps.
+- **Evidence.** The integrated captures were refreshed (`27356ec3`).
+
 ## Acceptance evidence
 
 **Type check.** `npx tsc --noEmit -p .` is clean at every commit.
@@ -169,6 +212,14 @@ So the v3 check-in resumes only from the Shared Sitdown session, and the old stu
   - no amounts
   - existing pieces unchanged
   - a closed check-in and Chapter feed the month
+- Trust-review tests:
+  - `test/cellar-integration.test.ts` (+3: long name, authority roll-once, authority consent and forged note)
+  - `test/cellar-v3-ui.test.ts` (+1: flag off)
+  - `test/fund-model-personal-boot.test.ts` (4)
+  - `test/plan-v3-flags-off.test.ts` (5)
+  - `test/fund-model-card-payments.test.ts` (3)
+  - `test/fund-model-chapters.test.ts` (sorted-only months)
+  - `test/plan-v3-fund-model.test.ts` (split words, figures unchanged)
 - `test/fund-model-demo-seeds.test.ts` (3), which covers:
   - the investor v1 default is unchanged and still refused
   - v2 migrates, conserves and replays exactly
@@ -182,7 +233,9 @@ So the v3 check-in resumes only from the Shared Sitdown session, and the old stu
   - `uiProofRequired: true` is answered by the browser run below.
 - At `c39c6ce8` (clean tree, after the docs commit): **`quick-gate-passed; time-budget-breached`**. It took 673.9 s; the same 83 files were selected, fast took 173.3 s and serial took 424.7 s.
 
-**Targeted suites for all three tracks** (113 files: `plan-`, `queen`, `kitty`, `path-`, `hercules-`, `fund-model`, `cellar-`, `chapter`, `sitdown`, `category-`, `our-path`, `ledger-sync`, `ledger-import-parity`, `app-startup-p1`, `month-rehearsal-mainline`, `onboarding-categories`):
+**Targeted suites after the trust-review fixes** (118 files): 1151 passed, 6 failed and 7 skipped. The failures are the same 5 pre-existing ones, plus the `ledger-import-parity` timeout under load; that suite passes alone (5/5).
+
+**Targeted suites for all three tracks, before the fixes** (113 files: `plan-`, `queen`, `kitty`, `path-`, `hercules-`, `fund-model`, `cellar-`, `chapter`, `sitdown`, `category-`, `our-path`, `ledger-sync`, `ledger-import-parity`, `app-startup-p1`, `month-rehearsal-mainline`, `onboarding-categories`):
 - 1119 passed, 6 failed and 7 skipped.
 - 5 of the failures are the pre-existing ones above.
 - The 6th was a `ledger-import-parity` timeout under load; that suite passes alone.
@@ -226,13 +279,25 @@ So the v3 check-in resumes only from the Shared Sitdown session, and the old stu
 - The Chapter month and reminder show only for sorted households.
 - Cellar consent stays on Bridge rows and is hidden from shared surfaces. It is not moved to `fundModelRows`, because that would need a new row kind.
 - Pennant slots are seeded by the first household plan agreed after the migration, clamped to the current month. A pennant rises the first month its umbrella shows spending.
-- A closed check-in counts as a Sitdown for Together and Firsts.
+- A closed check-in counts as a Sitdown for Together and Firsts, for sorted households only.
+- Cellar v3 needs `VITE_CELLAR_V3` (default off).
+- A split is a shared record: the words say the funds still fill in order.
+- Sorted households record card payments as transfers. Moving-money lines are hidden from new-spending pickers, and spending totals are unchanged.
+- Chapter months are written only for sorted households.
 - The demo Plan files bills under Prepare only for `VITE_FUND_MODEL_V2` builds.
 - The category grid uses two columns below 380px.
 
 ## Remaining gaps
 
 - **Two resume owners** (step 3): needs Jonathan's call and a Codex trust review.
+- **No App-level boot test.** Nothing drives the fund-model boot through `runKitchen` (review M6). The rule is tested as a pure function over the real command results.
+- **No v1 golden against `main`.** There is still no byte-equal comparison of the nest, Queen or cellar against `main` (review M6); `test/plan-v3-flags-off.test.ts` covers the listed behaviours only.
+- **Low findings not addressed:**
+  - L1: a goal design's fund is dropped (latent).
+  - L2: the strict shaper throws on a newer marker.
+  - L3: the snapshot has no restore path, and a rollback server has no guard.
+  - L4: the pay-hide ordering relies on each phone's clock.
+  - L5: cellar Bridge ids remain in Hercules context.
 - **Pay-hide marks.** Marks written before this change, or replayed from an older client, can't prove their author on the read side. The authority now refuses new foreign marks.
 - **Cellar rows in Hercules context.** They still appear as allowed `plan-bridge` reference ids in `herculesCompanionContext`, and remain in the raw synced Bridge collection.
 - **The era model.** Its islands (`pathWorldVersion` 2) are not built.

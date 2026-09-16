@@ -1,6 +1,6 @@
 ## Plan Studio v3, integrated — the studio reads the money model, the cellar keeps its offers, pennants per umbrella (2026-09-16, D-281)
 
-Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`, plus six integration commits (`40255a58`, `0bb4b73a`, `cd81b063`, `5a5ce7d8`, `4cbabd34`, and the docs commit). **Risk: High.** There is no new synced shape, schema or command.
+Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`, plus seventeen integration commits: seven for D-281, eight for the trust-review fixes and evidence, and two for docs. **Risk: High.** There is no new synced shape, schema or command.
 - Budget (5): +1.
 - Engagement (3): +1.
 - Details: [the worksession](worksessions/2026-09-16-plan-studio-v3-integration.md).
@@ -33,12 +33,26 @@ Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-st
   - Covered: the rest screen, the check-in, drawer sheets, the partner's yes, the category grid and the sorted cellar (missing subscription, pay glass).
   - Three themes × 320/390/720/1100, with reduced motion at 390/1100.
 
+**Trust-review fixes** (`branch-trust-review.md`; every Blocker, High and Medium finding, one commit and test each: `a2cb65d5`, `aacbce63`, `3f8ba2d0`, `625413fd`, `0d9b316e`, `66558706`, `7e02a7ea`; evidence `27356ec3`):
+- **B1 and H2.** The cellar roll-over is an authority-replayed command: its key leads the note, it rolls once, and both yeses are re-checked on the server.
+- **H1.** `VITE_CELLAR_V3` is off by default.
+- **H3.** A rule for the private `updateFundModel` step.
+- **M1 and M3.** Flags off behaves as `main`: no Chapter month, no new refusals for older phones, `main`'s tool text, and the same island Sitdown counting. The Bridge mark can't be typed.
+- **M2.** The split copy says a split is a record.
+- **M4.** Card payments are hidden from new-spending pickers once sorted, and totals are unchanged.
+- **M5.** A blocked boot says why.
+- **After the fixes:**
+  - Targeted suites: 118 files, 1151 passed. The same 5 pre-existing failures remain, plus a parity timeout under load; parity passes alone.
+  - Evidence refreshed: 87 records, 0 failures.
+
 **Defaulted, confirm:** the list is in D-281.
 
 **Uncertainty:**
 - **The resume-owner merge.** It needs a synced link field and a trust review.
 - **Old pay-hide marks.** Existing marks can't prove their author.
 - **Hercules context.** The cellar rows' ids remain in the companion context's `plan-bridge` reference set.
+- **Review test gaps.** There is no App-level `runKitchen` boot test and no v1 byte-equal golden against `main` (M6).
+- **Low findings not addressed:** L1–L5.
 - **Not built.** The era islands.
 - **No real device check.** No real phone and no screen reader were used.
 
