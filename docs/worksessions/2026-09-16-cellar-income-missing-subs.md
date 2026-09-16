@@ -8,7 +8,7 @@
 - **Branch:** `claude/plan-v3-cellar` (worktree `wt-cellar`)
 - **Baseline SHA:** `6160fb03` (`main`, #495)
 - **Risk:** Medium-High. Two new doors onto existing commands. One is `allocateHouseholdFundSurplus`, a money command already reachable from the jug and the gun. The other is `proposePlanBridge` / `declinePlanBridge` / `withdrawPlanBridge` / `dismissNotice`, which already exist and are synced. There is no new command, no schema change, no sync change and no Hercules payload change. The privacy question (a partner's pay in the shared cellar) is resolved by reading household-visible rows only, but it still needs the independent privacy review that the migration review asked for (H8, R2-M5).
-- **Decision owner:** Jonathan (D-278, D-279, D-280)
+- **Decision owner:** Jonathan (D-279, D-280, D-281)
 - **Environment impact:** none. Fictional fixtures and the fictional proof page only.
 - **Flag:** everything here lives in the Queen's cellar, which only opens behind `VITE_QUEENS_NEST`. Nothing changes what money means anywhere else.
 
@@ -123,7 +123,7 @@ What the couple now sees on the rail, on the same dollar scale as the water and 
 - **How the custodian proposes and the partner confirms.** Hearth has no existing "custodian proposes, partner confirms" command for goal banks. The jug and the gun are custodian-only, and Fund contributions run the other way round. So:
   - The two-person consent uses the household's existing shared proposal record, the **Plan Bridge**. The partner's yes is their own identical offer.
   - The money still moves only through the Fund's rollover, by the custodian, behind Confirm.
-  - As a result the offer also shows at the Sitdown and on the Our Path bridge, and lights the crown while it waits. A spent offer is withdrawn, so on the island it reads "offered, then took it back" even after it rolled. *Defaulted, confirm. Trust review asked (D-280).*
+  - As a result the offer also shows at the Sitdown and on the Our Path bridge, and lights the crown while it waits. A spent offer is withdrawn, so on the island it reads "offered, then took it back" even after it rolled. *Defaulted, confirm. Trust review asked (D-281).*
 - **The pay-jar sources are household-visible rows only** (review H8). A partner's pay needs a shared-account income recurrence split to them, or household-visible shifts plus their shared pay cadence. A pay cadence alone makes no jar, and the line says so. Joint income with no member split belongs to no one. *Defaulted, confirm.*
 - **Hiding your pay (Q-E: default shown)** hides your glass on both phones; your contribution bank stays, because it is already a shared Fund fact. The choice travels as time-stamped marks in the calendar's union-merged notice keys through the existing `dismissNotice` command. That avoids a schema change. The mark carries no amount. The hide covers only rows the partner can already see elsewhere, so it is a presentation choice, not a privacy boundary. *Defaulted, confirm.*
 - **Including your own private pay** is a per-device opt-in, default off. It never leaves the phone.

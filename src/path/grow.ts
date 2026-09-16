@@ -292,7 +292,7 @@ export function growIsland(months: PathMonth[], recipes: PathRecipe[], cur: numb
 }
 
 /**
- * Slice 11 (D-281): a ring of twelve pennant slots, one per spending umbrella,
+ * Slice 11 (D-282): a ring of twelve pennant slots, one per spending umbrella,
  * seeded around the month the first plan was agreed under the money model
  * (`umbrella-slots`). An umbrella's pennant rises the first month from then on
  * that the couple's shared spending touched it, and grows a little with every

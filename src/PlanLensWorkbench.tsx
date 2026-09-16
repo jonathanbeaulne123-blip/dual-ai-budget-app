@@ -45,7 +45,7 @@ export function PlanLineEditor({ household, memberId, scope, lens, initial, toda
   const [reopenWhen, setReopenWhen] = useState(initial?.decision?.reopenWhen ?? "");
   const [responsible, setResponsible] = useState(initial?.responsibility?.kind === "member" ? initial.responsibility.memberId ?? memberId : scope === "household" ? "joint" : memberId);
   const [error, setError] = useState("");
-  // Money model v2 (D-270): bills are Prepare's; Protect is the buffer only.
+  // Money model v2 (D-271): bills are Prepare's; Protect is the buffer only.
   const billLens: PlanLens = fundModelMode(household) === 2 ? "prepare" : "protect";
   const options = [
     ...household.recurrences.filter(row => row.active && row.type === "expense" && lens === billLens && planSourceVisible(household, { type: "recurrence", id: row.id }, memberId, scope)).map(row => ({ key: `recurrence:${row.id}`, label: row.note || "Bill", amount: row.amountCents, date: row.nextDate })),

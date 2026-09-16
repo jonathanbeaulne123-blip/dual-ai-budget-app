@@ -8,7 +8,7 @@ import { prepareCommand, type AuthorityState } from "../src/ledgerSync/authority
 import { ALEX, SAM, migrated } from "./fixtures/fund-model.ts";
 
 const AUG = "2026-08-03T14:00:00.000Z";
-/** Months are written for a sorted household (D-281, review M1); `sorted: false` asks for the month explicitly. */
+/** Months are written for a sorted household (D-282, review M1); `sorted: false` asks for the month explicitly. */
 function august(sorted = true) {
   let h = openChapter(sorted ? migrated(catalogHousehold()) : catalogHousehold(), { memberId: ALEX, foundationId: "see-our-shared-life", at: AUG, ...(sorted ? {} : { intendedMonth: "2026-08" as const }) }).household;
   const chapter = openChapterFor(h)!;

@@ -108,7 +108,7 @@ function LedgerSession({
   const [month, setMonth] = useState(initialBookmark.month);
   const [account, setAccount] = useState(initialBookmark.account);
   const [type, setType] = useState(initialBookmark.type);
-  // Money model (D-269): filter by umbrella and by our own categories once the household is sorted.
+  // Money model (D-270): filter by umbrella and by our own categories once the household is sorted.
   const [umbrellaFilter, setUmbrellaFilter] = useState<UmbrellaId | "">("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [section, setSection] = useState<LedgerSection>("expenses");

@@ -1,4 +1,4 @@
-/** Plan Studio v3 (D-273…D-277) on the actual production components, with exclusively fictional local books.
+/** Plan Studio v3 (D-274…D-278) on the actual production components, with exclusively fictional local books.
     `?state=waiting|agreed|set|resume|short|landed|first|badge` · `view=household|personal` · `theme=classic|taylor|newfoundland`
     · `lite=1` · `member=MEM-002` · `tent=1` (inside Our Path's tent) · `dark=1`.
     `landed` is proof-only: it wraps the adapter to add one fictional undivided contribution, because no split command exists yet.

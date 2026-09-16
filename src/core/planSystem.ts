@@ -304,7 +304,7 @@ export const PLAN_LENS_COPY: Record<PlanLens, { title: string; prompt: string }>
   build: { title: "Build", prompt: "Choose the future this month helps create." },
   everyday: { title: "Everyday", prompt: "Give ordinary life a humane, honest boundary." },
 };
-/** v2 words (D-270): Prepare is what has to leave, Protect is the buffer only, Build is what we want to leave, Everyday is Now. */
+/** v2 words (D-271): Prepare is what has to leave, Protect is the buffer only, Build is what we want to leave, Everyday is Now. */
 export const PLAN_LENS_COPY_V2: Record<PlanLens, { title: string; prompt: string }> = {
   prepare: { title: "Prepare", prompt: "Make room for what has to leave: bills, subscriptions and costs that come around." },
   protect: { title: "Protect", prompt: "Agree the buffer for the month we didn't plan." },
@@ -697,7 +697,7 @@ export function planCompatibilityRows(version: PlanVersion, household: Pick<Hous
 export function legacyHouseholdPlanDraft(household: Household, monthKey: MonthKey, memberId: string, at: string): PlanDraft {
   const existing = household.budgetPlans.filter((row) => row.active && row.monthKey === monthKey && row.amountCents > 0);
   const categories = new Map(household.categories.map((category) => [category.id, category]));
-  // Money model v2 (D-270): essential lines are has-to-leave, so they are Prepare's.
+  // Money model v2 (D-271): essential lines are has-to-leave, so they are Prepare's.
   const essentialLens: PlanLens = fundModelMode(household) === 2 ? "prepare" : "protect";
   return {
     id: `PLAN-DRAFT-household-${monthKey}-${memberId}`,
@@ -753,7 +753,7 @@ export function evaluatePlanDrift(household: Household, version: PlanVersion, as
       explanation: `${row.line.labelSnapshot} is ${row.actualCents - row.intendedCents} cents above its monthly intention.`, consequence: "Review upcoming plans before deciding whether this uneven month needs a change.", sourceReferences: row.line.sourceReference ? [row.line.sourceReference] : [] });
   }
   if (v2 && version.scope === "household" && version.monthKey === asOf.slice(0, 7)) {
-    // Protect is the agreed buffer and nothing else (D-270): say so plainly when this month can't hold it yet.
+    // Protect is the agreed buffer and nothing else (D-271): say so plainly when this month can't hold it yet.
     const nest = projectKittyNest(household, version.createdBy, "household", asOf);
     const agreed = projectHouseholdFund(household, asOf).bufferCents;
     const held = nest.allocation?.amounts.protect ?? 0;

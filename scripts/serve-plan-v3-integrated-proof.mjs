@@ -1,4 +1,4 @@
-/** Plan Studio v3 integrated with the money model (D-281): both flags ON (`VITE_PLAN_STUDIO_V3`, `VITE_FUND_MODEL_V2`), the real
+/** Plan Studio v3 integrated with the money model (D-282): both flags ON (`VITE_PLAN_STUDIO_V3`, `VITE_FUND_MODEL_V2`), the real
     components, fictional local books only, sorted by `migrateFundModel` in the page.
     `?page=studio|category` · `state=sorted|proposed|divided|agreed` · `member=MEM-001|MEM-002` · `theme=classic|taylor|newfoundland` · `lite=1`.
     - sorted: Sam's (fictional) contribution landed and is not divided yet; the open Chapter was meant for August, so its reminder shows.

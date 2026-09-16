@@ -1,7 +1,7 @@
 import { addGoal, addRecurrence, allocateHouseholdFundSurplus, catalogHousehold, configureHouseholdFund, confirmHouseholdFundContribution, fundGoal, lockPersonalPlan, postEntry, proposeHouseholdFundContribution, proposeHouseholdPlan, savePlanDraft, type LedgerView, type PlanLine } from "../../src/core/index.ts";
 import { fundContributionReviewDigest } from "../../src/core/fundContributionSources.ts";
 /**
- * Fictional books for the Plan tests. `fundModel: 2` (D-281) files the rent
+ * Fictional books for the Plan tests. `fundModel: 2` (D-282) files the rent
  * under Prepare, as a household sorted by the money model would, so
  * `migrateFundModel` accepts it; the default keeps the v1 meaning (Protect).
  */

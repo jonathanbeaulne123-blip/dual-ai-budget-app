@@ -39,7 +39,7 @@ import { ValidationError } from "./types.ts";
 import { isVisibleInView } from "./visibility.ts";
 
 /**
- * Money model commands (D-268…D-272). Every command here is non-money: no
+ * Money model commands (D-269…D-273). Every command here is non-money: no
  * journal line, no Fund event, no transfer. They write the `fundModelRows`
  * side collection and, for the migration, category rows and bank designs.
  * All of them travel as commandKind `updateFundModel`.
@@ -61,7 +61,7 @@ function withRows(next: Household, rows: FundModelRow[]): void {
   next.fundModelRows = shapeFundModelRows([...(next.fundModelRows ?? []).filter((row) => !ids.has(row.id)), ...rows]);
 }
 function commitFundModel(previous: Household, next: Household, label: string, at: string, postedIds: string[] = [], personal?: string): CommitResult {
-  // A member's own step is Personal only: the Shared envelope (and its commit stamp) stays byte-equal (D-281, review H3).
+  // A member's own step is Personal only: the Shared envelope (and its commit stamp) stays byte-equal (D-282, review H3).
   if (!personal) next.lastCommittedAt = at;
   return {
     household: next,

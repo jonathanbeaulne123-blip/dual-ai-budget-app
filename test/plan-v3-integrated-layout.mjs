@@ -1,4 +1,4 @@
-/** Browser evidence for Plan Studio v3 integrated with the money model (D-281). Both flags ON; fictional books only.
+/** Browser evidence for Plan Studio v3 integrated with the money model (D-282). Both flags ON; fictional books only.
     Studio (scripts/serve-plan-v3-integrated-proof.mjs): the rest screen, the check-in (Coming in with the split, Protect with the
     refill), drawer sheets (the Protect fund sheet with its refill, the Letter tray), the partner's yes, and the 12-tile category grid.
     Cellar (scripts/serve-household-home-proof.mjs with sorted=1): the rail with umbrella hues, the missing subscription card and the

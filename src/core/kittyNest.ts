@@ -29,7 +29,7 @@ export type NestBank = {
 };
 export type KittyNest = {
   king: NestBank; categories: NestBank[]; history: NestBank[]; totalCents: number; sourceLabel: string;
-  /** Which money model read this nest (D-268). 1 = the rules Hearth always had. */
+  /** Which money model read this nest (D-269). 1 = the rules Hearth always had. */
   mode?: FundModelMode;
   /** v2 only: the exact split behind the four banks, including the Queen's "Now" and what the Fund still owes back. */
   allocation?: FundAllocation;
@@ -39,7 +39,7 @@ export const NEST_CATEGORY_LABELS: Record<NestCategory, string> = { protect: "Pr
 export const NEST_CATEGORY_MEANINGS: Record<NestCategory, string> = {
   protect: "Bills and breathing room", everyday: "Day-to-day choices", build: "Dreams we are growing", prepare: "Costs coming around",
 };
-/** The words for each bank under the rules that produced its number (D-268: same release as the numbers). */
+/** The words for each bank under the rules that produced its number (D-269: same release as the numbers). */
 export function nestCategoryMeanings(mode: FundModelMode): Record<NestCategory, string> {
   return mode === 2 ? { ...FUND_MEANINGS_V2 } : NEST_CATEGORY_MEANINGS;
 }
@@ -215,7 +215,7 @@ export function projectKittyNest(h: Household, memberId: string, view: LedgerVie
 }
 
 /**
- * v2 split (D-270). Household: kitty reservations stay pinned in their goal's
+ * v2 split (D-271). Household: kitty reservations stay pinned in their goal's
  * fund (capped at the kitty so no cent sits in two jars), the Fund's owed-back
  * purchases come off first, then Prepare (Fund-backed has-to-leave
  * occurrences), Protect (the agreed buffer, less confirmed refills) and Build

@@ -280,7 +280,7 @@ export function assertCategoryProposalInputs(
   household: Household,
   inputs: Array<{ name: string; parentId: string }>,
 ): Array<{ name: string; parentId: string }> {
-  // v2 (D-269): suggestions go under the fixed spending umbrellas only.
+  // v2 (D-270): suggestions go under the fixed spending umbrellas only.
   const groups = new Set((fundModelMode(household) === 2 ? pickableExpenseGroups(household) : household.categories)
     .filter((row) => row.active && row.recordType === "group" && row.transactionType === "expense").map((row) => row.id));
   const seen = new Set<string>();

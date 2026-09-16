@@ -10,7 +10,7 @@
 - **Head SHA:** see `git log --oneline main..claude/plan-v3-money`
 - **PR or issue:** none. Not pushed.
 - **Risk:** High (money meaning, a synced collection, a command stamp, Hercules context)
-- **Decision owner:** Jonathan. D-268 – D-272 in `docs/DECISIONS.md`.
+- **Decision owner:** Jonathan. D-269 – D-273 in `docs/DECISIONS.md`.
 - **Environment impact:** none. Fictional fixtures only; flag `VITE_FUND_MODEL_V2` defaults off.
 
 ## Household outcome
@@ -133,7 +133,7 @@ fundModelNotice(h, { memberId })
 - [x] Bianca gates: `app-startup-p1` and `month-rehearsal-mainline` are green.
 - [ ] Visual evidence at 320/390/720/1100 in Classic, Taylor and Newfoundland for the category grid, the reload banner and the Chapter reminder. **Not captured in this session**; the Studio track's evidence run should include them.
 - [ ] Codex trust review (stamp, collection, migration, Hercules context).
-- [ ] Jonathan's answers to the defaulted questions (listed in D-268 – D-272).
+- [ ] Jonathan's answers to the defaulted questions (listed in D-269 – D-273).
 
 ## Evidence log
 
@@ -154,7 +154,7 @@ fundModelNotice(h, { memberId })
 
 ## Decisions
 
-D-268 – D-272. Every defaulted answer is marked "defaulted, confirm":
+D-269 – D-273. Every defaulted answer is marked "defaulted, confirm":
 
 - Q-A: goal money is never counted toward bills.
 - Q-B: Now drops only for Fund-paid spending.
@@ -179,4 +179,4 @@ D-268 – D-272. Every defaulted answer is marked "defaulted, confirm":
 
 ## Handoff
 
-Next owner: **Codex** (trust review of D-268 – D-272), then **Jonathan** (answer the defaulted questions and approve turning the flag on in Development). After that comes the Studio track: rebase `src/plan-v3/model.ts` onto `fundModel.ts`. State: local branch only. Not pushed, not a PR, not merged, not deployed, not live-verified.
+Next owner: **Codex** (trust review of D-269 – D-273), then **Jonathan** (answer the defaulted questions and approve turning the flag on in Development). After that comes the Studio track: rebase `src/plan-v3/model.ts` onto `fundModel.ts`. State: local branch only. Not pushed, not a PR, not merged, not deployed, not live-verified.

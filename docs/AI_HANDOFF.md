@@ -1,6 +1,6 @@
-## Plan Studio v3, integrated — the studio reads the money model, the cellar keeps its offers, pennants per umbrella (2026-09-16, D-281)
+## Plan Studio v3, integrated — the studio reads the money model, the cellar keeps its offers, pennants per umbrella (2026-09-16, D-282)
 
-Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`, plus seventeen integration commits: seven for D-281, eight for the trust-review fixes and evidence, and two for docs. **Risk: High.** There is no new synced shape, schema or command.
+Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`, plus seventeen integration commits: seven for D-282, eight for the trust-review fixes and evidence, and two for docs. **Risk: High.** There is no new synced shape, schema or command.
 - Budget (5): +1.
 - Engagement (3): +1.
 - Details: [the worksession](worksessions/2026-09-16-plan-studio-v3-integration.md).
@@ -46,7 +46,7 @@ Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-st
   - Evidence refreshed: 87 records, 0 failures.
   - Quick gate at High on `8fc6599f` (clean tree): `quick-gate-passed; time-budget-breached`. It took 667.2 s over 86 files.
 
-**Defaulted, confirm:** the list is in D-281.
+**Defaulted, confirm:** the list is in D-282.
 
 **Uncertainty:**
 - **The resume-owner merge.** It needs a synced link field and a trust review.
@@ -62,10 +62,10 @@ Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-st
 **State:** not pushed, not a PR, not merged, not deployed, not live-verified.
 
 **Next owner:**
-1. Codex: trust review of D-281 and D-268–D-272, plus the resume-owner design.
+1. Codex: trust review of D-282 and D-269–D-273, plus the resume-owner design.
 2. Jonathan: turn on both flags in Development, walk a split, a refill and a check-in on two phones, and answer the defaulted lists.
 
-## The money model — Everyday Queen, Prepare / Protect / Build, 12 umbrellas, Chapters as months (2026-09-16, D-268 – D-272)
+## The money model — Everyday Queen, Prepare / Protect / Build, 12 umbrellas, Chapters as months (2026-09-16, D-269 – D-273)
 
 Branch `claude/plan-v3-money` on `main@6160fb03`: nine commits, delivered locally. **Risk: High.** The change touches money meaning, adds a new synced non-money collection (`fundModelRows`), adds two command stamps (`fundModelVersion`, `chapterVersion`), and changes Hercules context.
 - Budget (5): +3. Every line has one fund. Prepare fills first. Goal money is never counted toward bills. Now reconciles to the cent.
@@ -99,7 +99,7 @@ Branch `claude/plan-v3-money` on `main@6160fb03`: nine commits, delivered locall
 **Uncertainty:**
 - Codex trust review is needed for the stamp matrix, the collection, the migration payload and the Hercules marker/override context.
 - Once a household is sorted, or any Chapter carries a month, pre-branch clients fail closed. Both phones need the release first.
-- Defaulted answers are listed in D-268 – D-272 ("defaulted, confirm").
+- Defaulted answers are listed in D-269 – D-273 ("defaulted, confirm").
 - There is no Production revert.
 - Demo-suite plans still hold Protect bill lines, so the guard refuses them.
 - Visual evidence (320/390/720/1100 × three themes) for the grid, banner and reminder is still owed.
@@ -113,7 +113,7 @@ Branch `claude/plan-v3-money` on `main@6160fb03`: nine commits, delivered locall
 2. Jonathan: answer the defaulted questions, then approve turning the flag on in Development.
 3. The Studio track: consume `fundModel.ts`.
 4. The Cellar track: read `umbrellaHueForCategory`, and the Q-E consent work.
-## Plan Studio v3, studio track: the plan at rest, the tool drawer, one check-in (2026-09-16, D-273–D-277)
+## Plan Studio v3, studio track: the plan at rest, the tool drawer, one check-in (2026-09-16, D-274–D-278)
 
 Branch `claude/plan-v3-studio` on `main@6160fb03` (#495). **Risk: Medium.** The new UI sits behind the new default-off flag `VITE_PLAN_STUDIO_V3`, so the current studio is unchanged when it is off. The check-in writes only through existing commands (`appendPlanSitdownTurn`, `acknowledgeHouseholdPlan`, `closeChapter`/`openChapter`, `addRitual`). The F2 resume-ownership merge still needs a trust review. Budget (5): +1. Engagement (3): +3. Details: [the worksession](worksessions/2026-09-16-plan-studio-v3.md).
 
@@ -153,7 +153,7 @@ Branch `claude/plan-v3-studio` on `main@6160fb03` (#495). **Risk: Medium.** The 
 **State:** local branch; not pushed, not a PR, not merged, not deployed, not live-verified.
 
 **Next owner:** Codex runs the F2 trust review and the fundModel swap after the money track merges. Jonathan then tries it on both phones with the flag on in Development.
-## The cellar's pay in glass, contribution banks and missing subscriptions — Plan Studio v3, cellar track (2026-09-16, D-278–D-280)
+## The cellar's pay in glass, contribution banks and missing subscriptions — Plan Studio v3, cellar track (2026-09-16, D-279–D-281)
 
 Branch `claude/plan-v3-cellar` on `main@6160fb03` (#495), in small commits. **Risk: Medium-High.** It adds new doors onto existing commands only: `allocateHouseholdFundSurplus`, the Plan Bridge propose/decline/withdraw commands and `dismissNotice`. There is no new command, schema, sync or Hercules payload change, and everything is behind `VITE_QUEENS_NEST`.
 
@@ -176,7 +176,7 @@ Branch `claude/plan-v3-cellar` on `main@6160fb03` (#495), in small commits. **Ri
 - **Rail extras and cards:** `QueenCellarRail.tsx`, `QueenCellarExtras.tsx` (new), `QueenCellar.tsx`, `queen-cellar.css`.
 - **Proof page:** seeds `cellar3=1&roll=…&member=…`.
 - **Focus-map entry** appended last.
-- **D-278, D-279, D-280.**
+- **D-279, D-280, D-281.**
 
 **Verification:**
 - `tsc --noEmit` is clean.

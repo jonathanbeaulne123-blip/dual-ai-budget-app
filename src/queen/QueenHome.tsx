@@ -165,7 +165,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const crown = queenCrown(presence);
   const nest = useMemo(() => projectKittyNest(household, memberId, "household", today), [household, memberId, today]);
   const banks = queenBanks(nest);
-  // Money model (D-270): the words follow the rules that produced the numbers.
+  // Money model (D-271): the words follow the rules that produced the numbers.
   const { labels: QUEEN_BANK_LABELS, meanings: QUEEN_BANK_MEANINGS, lowerTitle, lowerRoom, lowerBankKey } = queenBankWords(nest.mode ?? 1);
   const buds = queenBuds(nest, 4);
   const vine = queenVine(household, chapter, today);

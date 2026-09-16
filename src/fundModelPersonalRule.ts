@@ -2,7 +2,7 @@ import { splitForSync } from "./core/sync.ts";
 import type { Household } from "./core/types.ts";
 
 /**
- * The cloud-authority rule for a member's own money-model step (D-281, review H3).
+ * The cloud-authority rule for a member's own money-model step (D-282, review H3).
  * `migrateMyFundModel` and a personal `setFundOverride` come back as
  * member-personal `updateFundModel` results. They may change only this
  * member's own Personal envelope, and only its money-model rows, its own

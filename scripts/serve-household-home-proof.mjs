@@ -2,7 +2,7 @@
     `?composition=queen&state=checking|needs-us|building|reset|grave|empty|win` renders the Still Queen from the same fictional books (`reduced=1` asks for reduced motion through the comfort attribute); `chrome=1` adds STAND-INS for the App's top bar, sync line and collapsed instruments — they are about five times shorter than the App's real shell was, which is how the Queen came to sit in the bottom quarter of the live page. The no-scroll rule on the actual App page is measured by `scripts/serve-queen-world-page-proof.mjs` + `test/queen-world-page-layout.mjs`; this harness is for her states and the studio paths only.
     `charms=none|few|max` dresses her with fictional charms written through `guardQueenDesignSave` (with the acts that earn them seeded first); `charms=max` is the cap.
     `rings=N` closes N fictional Chapters (growth rings); `wheel=1` seeds a thrown form with both fictional turns; `portraits=N` seeds N fictional yearly portraits (2026 on) with `today=YYYY-MM-DD`;
-    `clock=HH.H` fixes the living light's hour. `sorted=1` (D-281) writes the fictional plan for the money model and runs `migrateFundModel` on the books (start the proof with `{ fundModel: true }` for the flag). `cellar3=1` (start with `{ cellarV3: true }` for `VITE_CELLAR_V3`) seeds the cellar's pay glass and missing subscriptions (`roll=offered|agreed|rolled`, `member=MEM-002` renders the partner). */
+    `clock=HH.H` fixes the living light's hour. `sorted=1` (D-282) writes the fictional plan for the money model and runs `migrateFundModel` on the books (start the proof with `{ fundModel: true }` for the flag). `cellar3=1` (start with `{ cellarV3: true }` for `VITE_CELLAR_V3`) seeds the cellar's pay glass and missing subscriptions (`roll=offered|agreed|rolled`, `member=MEM-002` renders the partner). */
 import { createServer } from 'vite';
 import { createServer as createPortProbe } from 'node:net';
 import { readFileSync, mkdtempSync, rmSync } from 'node:fs';
@@ -50,7 +50,7 @@ function queenSeeded(){let h=seeded();h={...h,name:'Fictional household'};
     /* two more planned expenses in other groups, so the frosted glass reads in olive and slate beside the plum one */
     h=addPotentialExpense(h,{date:'2026-09-13',title:'Fictional big shop',amount:'120',accountId:'ACC-CHEQUING',subcategoryId:'SUB-FOOD-GROCERIES',createdBy:'MEM-002',visibility:'household'}).household;
     h=addPotentialExpense(h,{date:'2026-09-19',title:'Fictional oil change',amount:'90',accountId:'ACC-VISA',subcategoryId:'SUB-TRANSPORT-FUEL',createdBy:'MEM-001',visibility:'household'}).household;}
-  /* Cellar v3 (cellar3=1, D-278/D-279): a fictional video club that was not charged on the 5th (missing), a fictional music app that came in $4 lower on the 3rd (smaller),
+  /* Cellar v3 (cellar3=1, D-279/D-280): a fictional video club that was not charged on the 5th (missing), a fictional music app that came in $4 lower on the 3rd (smaller),
      Alex's fictional pay on the 18th and Sam's on the 10th (both household-visible, split to each person). roll=offered|agreed|rolled walks the video club's roll-over. */
   if(cellar3){const income=h.categories.find(row=>row.recordType==='category'&&row.transactionType==='income').id;
     let a=addRecurrence(h,{cadence:'monthly',nextDate:'2026-08-05',type:'expense',amount:'18',accountId:'ACC-VISA',subcategoryId:'SUB-LIFE-FUN',note:'Fictional video club',kind:'subscription'});h=postDueRecurrences(a.household,'2026-08-05',[a.postedIds[0]],{createdBy:'MEM-001'}).household;

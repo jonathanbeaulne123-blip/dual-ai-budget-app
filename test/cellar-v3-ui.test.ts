@@ -196,7 +196,7 @@ describe("Cellar v3 — pay in glass, contribution banks, missing subscriptions"
   });
 });
 
-describe("Cellar v3 stays off without VITE_CELLAR_V3 (D-281, review H1)", () => {
+describe("Cellar v3 stays off without VITE_CELLAR_V3 (D-282, review H1)", () => {
   it("draws no extra jar, offers nothing and writes nothing, even with a spent offer waiting", async () => {
     vi.stubEnv("VITE_CELLAR_V3", "0");
     books = seeded();

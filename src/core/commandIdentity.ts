@@ -273,7 +273,7 @@ export function commandIdentityFacts(previous: Household | null, next: Household
     JSON.stringify(stable(previous?.[field] ?? [])) !== JSON.stringify(stable(next[field] ?? []))
   ));
   const pathWorldChanged = JSON.stringify(stable(previous?.pathWorld ?? [])) !== JSON.stringify(stable(next.pathWorld ?? []));
-  // Money model rows (D-268): only household rows ever enter a shared identity; a personal row never does.
+  // Money model rows (D-269): only household rows ever enter a shared identity; a personal row never does.
   const sharedFundRows = (rows: Household["fundModelRows"]) => byId((rows ?? []).filter((row) => row.visibility === "household"));
   const fundModelChanged = JSON.stringify(stable(sharedFundRows(previous?.fundModelRows))) !== JSON.stringify(stable(sharedFundRows(next.fundModelRows)));
   return stable({

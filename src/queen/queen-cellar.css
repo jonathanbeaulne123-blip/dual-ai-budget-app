@@ -231,7 +231,7 @@
 .queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--bill[style*="--jar-px"] .queen-billjar .queen-billjar__cat { transform: none; }
 .queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--bill[style*="--jar-px"].is-in-gate .queen-billjar { transform: none; }
 
-/* ---- cellar v3 (2026-09-16, D-278/D-279): pay in glass, contribution banks, missing subscriptions ----
+/* ---- cellar v3 (2026-09-16, D-279/D-280): pay in glass, contribution banks, missing subscriptions ----
    All three stand on the rail's one dollar scale (--jar-px from cellarScale). Pay is clear glass with a dashed edge and an "if":
    it never reads as money that exists. A contribution bank is solid clay (hollow when nothing came in). A missing subscription
    is a ghost of its jar with a spark; a smaller one carries a down-mark. They are drawn over the 3D room, not sculpted. */

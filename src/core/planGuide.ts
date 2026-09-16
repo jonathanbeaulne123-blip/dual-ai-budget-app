@@ -84,7 +84,7 @@ export function planGuideFields(c: ActionContext,v: ActionValues): GuideField[] 
   ask('incomeDate','Expected arrival','When do you expect it to be available?','A positive month total cannot fill a gap before payday. Say a date or a day of the week.', 'date',undefined,source?.date&&source.date>c.today?[choice(source.date,`Use ${source.date}`)]:undefined);
  }
  const known=upcomingBills(c,v);
- // v2 money model (D-270): bills are Prepare's. The field keys stay, so saved answers survive the update.
+ // v2 money model (D-271): bills are Prepare's. The field keys stay, so saved answers survive the update.
  const v2=fundModelMode(c.household)===2, billWhy=v2?WHY_V2_BILLS:WHY.protect;
  ask('protectSource',v2?'Bills to prepare for':'Promises to protect','Which bills or promises should we make room for? ',billWhy,'text',[
   ...(known.length?[choice('known','Use these upcoming bills')]:[]),...bills(c).map(b=>choice(b.id,b.note||'Repeating bill')),choice('unlinked','Add a promise the books do not show'),choice('skip','Keep this open for now')],undefined,known.slice(0,20).map(({bill,date})=>`${bill.note||'Bill'} · ${formatCad(bill.amountCents)} · ${date}`).concat(known.length>20?[`${known.length-20} more occurrences will be included in the complete review.`]:[]));

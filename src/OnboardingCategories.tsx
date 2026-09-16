@@ -33,7 +33,7 @@ export function OnboardingCategories({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [ideas, setIdeas] = useState<DraftIdea[]>([]);
   const [ideaName, setIdeaName] = useState("");
-  // v2 money model (D-269): suggestions go under the 12 fixed umbrellas, in their fixed order.
+  // v2 money model (D-270): suggestions go under the 12 fixed umbrellas, in their fixed order.
   const groups = useMemo(() => fundModelMode(household) === 2 ? pickableExpenseGroups(household) : household.categories
     .filter((row) => row.active && row.recordType === "group" && row.transactionType === "expense")
     .sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name)), [household]);

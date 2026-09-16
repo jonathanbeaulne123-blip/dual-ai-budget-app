@@ -1,4 +1,4 @@
-/* Plan Studio v3 (D-273) — the plan at rest, the tool drawer, the one check-in.
+/* Plan Studio v3 (D-274) — the plan at rest, the tool drawer, the one check-in.
    Every colour comes from the world's tokens (--paper, --card, --ink, --muted,
    --line, --pine, --copper, --gold, --theme-accent) or from the four fund inks
    below; Classic, Taylor and Newfoundland each dress the page, the drawer and
@@ -437,7 +437,7 @@
 :root[data-motion="reduced"] :is(.pv3, .pv3-veil) *, :root[data-motion="reduced"] :is(.pv3, .pv3-veil) *::before, :root[data-motion="reduced"] :is(.pv3, .pv3-veil) *::after { transition: none !important; animation: none !important; }
 .pv3-veil .cue { display: none; }
 
-/* D-281: the money model's proposals and the Chapter's month reminder. */
+/* D-282: the money model's proposals and the Chapter's month reminder. */
 .pv3-reminder { display: block; margin-top: 4px; color: var(--pv3-accent); font-weight: 600; }
 .pv3-refill { margin-top: 10px; }
 .pv3-refill__form { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-top: 8px; }

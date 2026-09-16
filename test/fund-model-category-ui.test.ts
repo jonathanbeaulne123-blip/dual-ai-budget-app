@@ -23,7 +23,7 @@ async function mount(household: Household) {
   return { host, saved, setName, press, save, close: async () => { await act(async () => root.unmount()); host.remove(); } };
 }
 
-describe("add a category under one of the 12 umbrellas (D-269)", () => {
+describe("add a category under one of the 12 umbrellas (D-270)", () => {
   it("keeps the group select before the household is sorted", async () => {
     const ui = await mount(catalogHousehold());
     try {

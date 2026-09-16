@@ -1,5 +1,5 @@
 /**
- * fundModel.ts — the money model's read side (D-268…D-272, Plan Studio v3).
+ * fundModel.ts — the money model's read side (D-269…D-273, Plan Studio v3).
  *
  * Pure selectors the Plan Studio v3 UI (and the Queen, the cellar and
  * Hercules's on-device talk) read. Nothing here posts, writes or moves money;

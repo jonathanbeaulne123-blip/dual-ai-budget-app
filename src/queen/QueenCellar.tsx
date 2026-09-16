@@ -14,7 +14,7 @@ import { ConfirmSheet } from "../Confirm.tsx";
 import { CellarZoomPane, QueenCellarRail, cellarBankForm, cellarDayLabel, cellarPurposeWords } from "./QueenCellarRail.tsx";
 import { readCellarZoom, storeCellarZoom } from "./cellarZoom.ts";
 import type { CellarHue } from "../core/queenCellar.ts";
-// Cellar v3 (D-278/D-279): income glass, contribution banks and missing subscriptions.
+// Cellar v3 (D-279/D-280): income glass, contribution banks and missing subscriptions.
 import { CellarIncomeCard, CellarMissingCard, cellarPostedOk, incomeNoteWords, showMyPay, useCellarExtras } from "./QueenCellarExtras.tsx";
 
 /** The category groups' clays for the sculptures; the flat twin reads the same six from `--queen-hue-*` in queen-cellar.css. */

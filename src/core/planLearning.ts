@@ -14,7 +14,7 @@ export const PLAN_LESSONS = {
 } as const;
 
 /**
- * v2 lessons (D-270): the timing lesson belongs to Prepare (bills), Protect
+ * v2 lessons (D-271): the timing lesson belongs to Prepare (bills), Protect
  * teaches the buffer, and Everyday is what's left ("Now"). Same ids for
  * Build/Everyday so earlier progress still counts.
  */

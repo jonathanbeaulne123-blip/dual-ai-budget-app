@@ -4,7 +4,7 @@ import type { PlanLine } from "./planSystem.ts";
 import type { Category, Household, LedgerView } from "./types.ts";
 
 /**
- * The money model's rules (D-268…D-272, Plan Studio v3, 2026-09-16).
+ * The money model's rules (D-269…D-273, Plan Studio v3, 2026-09-16).
  *
  * Pure. No commands, no projections of the Fund: this file is what every
  * reader and writer asks "which fund does this line belong to?" and "which
@@ -390,7 +390,7 @@ export function isNonSpendingCategory(h: Pick<Household, "categories">, category
 }
 
 /**
- * D-281 (review M4): whether a picker for *new* spending offers this category. Sorted households hide the
+ * D-282 (review M4): whether a picker for *new* spending offers this category. Sorted households hide the
  * Moving-money children (the legacy card-payment line included), so a card payment is recorded through the
  * app's existing transfer path; the line already chosen on a form stays offered so editing never drops it.
  */

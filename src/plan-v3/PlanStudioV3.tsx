@@ -25,7 +25,7 @@ type Sheet =
   | { kind: "fund"; fund: FundKey | "everyday" };
 
 /**
- * Plan Studio v3 (D-273): the plan at rest, the tool drawer and the one
+ * Plan Studio v3 (D-274): the plan at rest, the tool drawer and the one
  * check-in. Every number comes through `planStudioV3Model`; every write goes
  * through the same commands the current studio uses, and a refused write says so.
  */

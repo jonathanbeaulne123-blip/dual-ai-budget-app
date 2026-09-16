@@ -4,7 +4,7 @@ import { offeredForNewSpending, UMBRELLAS } from "../src/core/fundRules.ts";
 import { pathMonths } from "../src/core/pathSignals.ts";
 import { ALEX, fundedHousehold, migrated } from "./fixtures/fund-model.ts";
 
-/** D-281, review M4: card payments are moving money, not spending, once sorted. Fictional books only. */
+/** D-282, review M4: card payments are moving money, not spending, once sorted. Fictional books only. */
 const spend = (h: Household, amount: number, subcategoryId: string) =>
   postEntry(h, { date: "2026-10-03", type: "expense", amount, accountId: "ACC-CHEQUING", subcategoryId, createdBy: ALEX, note: "Fictional", confirmDuplicate: true }).household;
 

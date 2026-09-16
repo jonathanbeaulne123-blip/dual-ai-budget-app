@@ -43,7 +43,7 @@ export function CellarJarGlyph({ jar, held = false }: { jar: CellarJar; held?: b
 }
 
 /**
- * The cellar's other jars (2026-09-16, D-278/D-279), on the same dollar scale:
+ * The cellar's other jars (2026-09-16, D-279/D-280), on the same dollar scale:
  * - `income` — a partner's pay, if all of it came in: clear glass, dashed, an
  *   "if" on its belly. Hypothetical; never money that exists.
  * - `contribution` — on and after the pay day, the kitty bank of what that
@@ -108,7 +108,7 @@ export function CellarExtraGlyph({ extra }: { extra: CellarRailExtra }) {
  */
 export function QueenCellarRail({ reading, cursor, onCursor, heldId, zoom = CELLAR_ZOOM.default, onZoom, openId = null, onPick, extras = [], onPickExtra }: {
   reading: CellarReading;
-  /** Income glass, contribution banks and missing marks (D-278/D-279). */
+  /** Income glass, contribution banks and missing marks (D-279/D-280). */
   extras?: CellarRailExtra[];
   onPickExtra?: (extra: CellarRailExtra) => void;
   cursor: number;

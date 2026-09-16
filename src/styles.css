@@ -2454,7 +2454,7 @@ input, select, textarea {
   border-radius: 16px;
   background: var(--card);
 }
-/* Money model (D-269): the 12-umbrella picker. Tokens only; three themes inherit. */
+/* Money model (D-270): the 12-umbrella picker. Tokens only; three themes inherit. */
 .umbrella-picker__label {
   margin: 8px 0 4px;
   font-weight: 600;
@@ -2518,7 +2518,7 @@ input, select, textarea {
   box-shadow: inset 0 0 0 2px var(--pine);
 }
 .fund-choice__option:disabled { opacity: 0.55; cursor: default; }
-/* D-281 evidence: at 320px (and in the larger Newfoundland type) three columns broke "Transport" mid-word and pushed the fund words out of their boxes. */
+/* D-282 evidence: at 320px (and in the larger Newfoundland type) three columns broke "Transport" mid-word and pushed the fund words out of their boxes. */
 .fund-choice__option { min-width: 0; }
 .fund-choice__option > * { min-width: 0; overflow-wrap: anywhere; }
 @media (max-width: 379px) {

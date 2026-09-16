@@ -1325,7 +1325,7 @@ export async function applyCommandEventLocally(input: {
   if (!event.payload_json.materializationFacts) {
     return { ok: false, reason: "missing-materialization-facts", fallback: true };
   }
-  // Money model (D-268): a fund-model command (migration, overrides, proposals) is never applied
+  // Money model (D-269): a fund-model command (migration, overrides, proposals) is never applied
   // incrementally on this legacy path. The device takes the full accepted snapshot instead.
   if (event.command_type === "updateFundModel" || event.payload_json.materializationFacts.fundModelRows !== undefined
     || readableCompactedCommands(event).some((row) => row.commandKind === "updateFundModel")) {

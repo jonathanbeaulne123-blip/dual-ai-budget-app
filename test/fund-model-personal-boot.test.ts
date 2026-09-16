@@ -7,7 +7,7 @@ import { fundModelPersonalUpdateAllowed } from "../src/fundModelPersonalRule.ts"
 import { planLifeFixture } from "./fixtures/plan-life.ts";
 import { ALEX, fundedHousehold, migrated } from "./fixtures/fund-model.ts";
 
-/** D-281, review H3 and M5. Fictional books only. */
+/** D-282, review H3 and M5. Fictional books only. */
 function withPrivateBill(): Household {
   let h = fundedHousehold("2000");
   h.accounts = [...h.accounts, { ...h.accounts.find((row) => row.id === "ACC-CHEQUING")!, id: "ACC-ALEX-PRIVATE", name: "Alex's fictional private", scope: "personal", ownerMemberId: ALEX }];

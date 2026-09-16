@@ -8,7 +8,7 @@ import { JOINT, ValidationError, type CommitResult, type Household, type Recurre
 import { dismissNotice } from "./commands.ts";
 
 /**
- * The cellar's income jars (2026-09-16, D-278).
+ * The cellar's income jars (2026-09-16, D-279).
  *
  * Jonathan: for each partner, a hypothetical jar at their expected pay date
  * showing how much the Fund could be at if they contributed all their income.
@@ -63,7 +63,7 @@ const PAY_MARK = /^cellar-pay:([^:]+):(hide|show):(.+)$/;
 export const cellarPayMark = (memberId: string, choice: "hide" | "show", at: string) => `cellar-pay:${memberId}:${choice}:${at}`;
 
 /**
- * The pay-jar hide choice, own pay only (D-281). The mark names the member who
+ * The pay-jar hide choice, own pay only (D-282). The mark names the member who
  * sets it; the authority refuses a `cellar-pay:<member>` mark from anyone else
  * (`executeIntent`, ACTOR_MISMATCH), and this wrapper refuses it on the phone.
  */

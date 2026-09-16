@@ -5,10 +5,10 @@ import { fundModelMode } from "../src/core/fundRules.ts";
 import { fundSnapshot } from "../src/core/fundModel.ts";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
 
-/** D-281: fictional seeds a money-model build can sort. Synthetic data only. */
+/** D-282: fictional seeds a money-model build can sort. Synthetic data only. */
 const TODAY = "2026-08-29" as const;
 
-describe("fictional seeds sort under the money model (D-281)", () => {
+describe("fictional seeds sort under the money model (D-282)", () => {
   it("the investor Demo Suite stays as it was by default, and files bills under Prepare for a money-model build", async () => {
     const v1 = await generateDemoSuite({ today: TODAY, seed: 8675309, buildSha: "test-sha" });
     const v1Bills = v1.household.planVersions!.flatMap(row => row.lines).filter(line => line.kind === "obligation");

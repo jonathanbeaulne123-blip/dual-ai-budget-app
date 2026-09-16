@@ -591,7 +591,7 @@
         "test/cellar-v3-ui.test.ts",
         "test/queen-cellar-ui.test.ts"
       ],
-      "reason": "Cellar v3 (D-278/D-279/D-280): pay jars are glass and hypothetical, built only from household-visible income rows (a member's own Personal rows only by their own per-device opt-in), each member can hide their own pay, and the contribution bank reads confirmed Fund contributions; a subscription not charged three days after its day, or charged less, stays one more cycle; the custodian's offer and the partner's yes are existing Plan Bridge rows, and the roll posts once through allocateHouseholdFundSurplus behind Confirm, refused a second time; a late charge clears the mark and withdraws the waiting offer"
+      "reason": "Cellar v3 (D-279/D-280/D-281): pay jars are glass and hypothetical, built only from household-visible income rows (a member's own Personal rows only by their own per-device opt-in), each member can hide their own pay, and the contribution bank reads confirmed Fund contributions; a subscription not charged three days after its day, or charged less, stays one more cycle; the custodian's offer and the partner's yes are existing Plan Bridge rows, and the roll posts once through allocateHouseholdFundSurplus behind Confirm, refused a second time; a late charge clears the mark and withdraws the waiting offer"
     }
   ]
 }

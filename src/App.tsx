@@ -1243,7 +1243,7 @@ export function App() {
       throw new ValidationError("Only you can change your own Personal settings.");
     }
     if (commandKind === "updateFundModel") {
-      // D-281 (review H3): my own money-model step and private overrides touch only my own Personal rows.
+      // D-282 (review H3): my own money-model step and private overrides touch only my own Personal rows.
       if (fundModelPersonalUpdateAllowed(current, result.household, who)) return;
       throw new ValidationError("Only you can sort your own private money.");
     }
@@ -1251,7 +1251,7 @@ export function App() {
     throw new ValidationError("That Personal change does not have a cloud-authority rule.");
   }
 
-  // Money model (D-268): release N+1 sorts the household, then this member's own rows, once per phone session.
+  // Money model (D-269): release N+1 sorts the household, then this member's own rows, once per phone session.
   const fundModelBootTried = useRef(new Set<string>());
   useEffect(() => {
     if (!household || !session?.memberId || !activeBooksGate.ready) return;
@@ -3699,7 +3699,7 @@ export function App() {
         ?? (currentLink ? { email: currentLink.email, subject: currentLink.subject } : null),
     });
 
-    // D-281: a money-model build writes the fictional Plan's bills under Prepare, so the household can be sorted.
+    // D-282: a money-model build writes the fictional Plan's bills under Prepare, so the household can be sorted.
     const demoFundModel = clientFundModelVersion() === 2 ? { fundModel: 2 as const } : {};
     const generated = await generateDemoSuiteOffThread({
       today,

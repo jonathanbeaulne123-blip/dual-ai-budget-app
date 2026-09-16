@@ -1,5 +1,5 @@
 /**
- * Cellar v3 (D-278–D-280, gated in D-281): pay in glass, contribution banks,
+ * Cellar v3 (D-279–D-281, gated in D-282): pay in glass, contribution banks,
  * missing and smaller subscriptions and their roll-over. Opt-in with
  * `VITE_CELLAR_V3=1` (or `true`). `VITE_QUEENS_NEST` alone (on in Pages)
  * keeps the cellar exactly as it was: no extra jars, no cards, no writes.

@@ -107,7 +107,7 @@ register("setGoogleServices setRecurrenceGoogleSync");
 register("startMonthRehearsal", ["startedByMemberId"]);
 register("openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter closeChapterAtSitdown", ["memberId"]);
 register("migrateFundModel migrateMyFundModel setFundOverride setCategoryHome proposeFundDivision agreeFundDivision declineFundDivision proposeProtectRefill agreeProtectRefill declineProtectRefill withdrawFundProposal", ["memberId"]);
-// D-281: the cellar's roll-over replays as itself, so the authority re-reads consent and "only once" on its own books.
+// D-282: the cellar's roll-over replays as itself, so the authority re-reads consent and "only once" on its own books.
 register("rollMissingSubscription", ["memberId"]);
 register("proposePathRecipe proposePathName agreePathProposal declinePathProposal setPathCategorySignal proposePathEra proposePathEraPlan crossPathEra", ["memberId"]);
 register("upsertCoworker importCoworkerRoster recordCoworkerAttendance", [
@@ -215,8 +215,8 @@ export function executeIntent(
     (input.reversalOfId != null || input.source === "reversal")
   )
     throw new Error("USE_REVERSAL_COMMAND");
-  // D-281: a cellar pay choice ("hide my pay") names its member in the key; only that member may write it.
-  // D-281: a cellar roll-over only travels as rollMissingSubscription (both said yes, never twice); a bare rollover may not carry its key.
+  // D-282: a cellar pay choice ("hide my pay") names its member in the key; only that member may write it.
+  // D-282: a cellar roll-over only travels as rollMissingSubscription (both said yes, never twice); a bare rollover may not carry its key.
   if (kind === "allocateHouseholdFundSurplus" && typeof input?.note === "string" && /cellar-roll:/.test(input.note)) throw new ValidationError("A cellar roll-over goes through the cellar, where both of you say yes first.");
   if (kind === "dismissNotice") {
     const payMark = /^cellar-pay:([^:]+):/.exec(typeof args[0] === "string" ? args[0] : "");

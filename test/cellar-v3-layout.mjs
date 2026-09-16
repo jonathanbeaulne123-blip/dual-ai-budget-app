@@ -1,4 +1,4 @@
-/** Browser evidence for the cellar's pay glass, contribution banks and missing subscriptions (2026-09-16, D-278/D-279).
+/** Browser evidence for the cellar's pay glass, contribution banks and missing subscriptions (2026-09-16, D-279/D-280).
     On the `composition=queen` proof page with `bills=1&cellar3=1` (fictional books only), in Classic, Taylor and Newfoundland at
     320/390/720/1100: the rail with the missing mark in the gate; the missing card (its spark burst) as the custodian; the glass pay
     card; the partner's phone with the offer waiting; the custodian's phone after the partner said yes (Confirm open); the rolled

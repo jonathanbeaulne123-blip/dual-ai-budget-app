@@ -24,7 +24,7 @@ export type PathMonth = {
   /** Household categories with spending this month that feed no score yet. */
   unmappedCategories: { id: string; name: string }[];
   /**
-   * Slice 11 (D-281): once the money model sorted the household, a 0–1 shape
+   * Slice 11 (D-282): once the money model sorted the household, a 0–1 shape
    * per spending umbrella (by umbrella id, never by name, never an amount).
    * Absent before the migration, so a v1 island is unchanged.
    */
@@ -100,7 +100,7 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
   const sitdowns = household.sitDownSessions ?? [];
   // The one check-in (Plan Studio v3) closes a Shared Sitdown session; a closed one counts as that month's Sitdown.
   const sorted = fundModelMode(household) === 2;
-  // Only once the money model sorted the household (D-281, review M3), so a flags-off island is unchanged.
+  // Only once the money model sorted the household (D-282, review M3), so a flags-off island is unchanged.
   const checkIns = sorted ? (household.planHerculesSessions ?? []).filter((row) => row?.state === "closed" && row.monthKey) : [];
   const events = (household.nativeEvents ?? []).filter((row) => row.visibility === "household" && !row.deleted);
   const nowMonth = monthKeyFromDateKey(today);

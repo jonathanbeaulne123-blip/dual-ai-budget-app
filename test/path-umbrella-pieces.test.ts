@@ -25,7 +25,7 @@ function sortedBooks(): Household {
   return h;
 }
 
-describe("Slice 11 — world pieces per umbrella (D-281)", () => {
+describe("Slice 11 — world pieces per umbrella (D-282)", () => {
   it("reads a shape per umbrella only once the household is sorted, never an amount", () => {
     const v1 = pathMonths(spend(fundedHousehold("2000"), "2026-09-05", 120, "SUB-FOOD-GROCERIES"), today);
     expect(v1.every(month => month.umbrellas === undefined)).toBe(true);

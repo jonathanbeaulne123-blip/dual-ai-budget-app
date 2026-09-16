@@ -9,7 +9,7 @@ export type StepDef = { id: StepId; title: string; tag?: string; lens?: PlanLens
  *
  * Resume reads the Shared Sitdown session's saved `stage` (0–7). v3 reads that
  * number as its own step index, with the ninth step (the Sitdown closing the
- * Chapter) saved as stage 7 plus the session's `close` checkpoint — see D-275.
+ * Chapter) saved as stage 7 plus the session's `close` checkpoint — see D-276.
  */
 export const STEPS: readonly StepDef[] = [
   { id: "hello", title: "Hello", question: "Doing this together, or getting your own thoughts down first?", personal: "Ready to look at your month?", why: "About 10 minutes. Anything you're unsure of can stay “not sure yet”." },

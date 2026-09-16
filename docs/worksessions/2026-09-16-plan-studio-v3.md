@@ -8,7 +8,7 @@
 - **Branch:** `claude/plan-v3-studio`
 - **Baseline SHA:** `6160fb03` (`main`, #495)
 - **Risk:** Medium. The new UI is behind a default-off flag. Two existing files gain small mount points: `PlanStudio.tsx`, and `OurPathWorld.tsx` (a context provider). The check-in writes only through existing commands: `appendPlanSitdownTurn`, `acknowledgeHouseholdPlan`, `closeChapter` / `openChapter` and `addRitual`. The resume-ownership merge (F2) still needs its Codex trust review.
-- **Decision owner:** Jonathan (D-273–D-277)
+- **Decision owner:** Jonathan (D-274–D-278)
 - **Environment impact:** none. Fictional fixtures only.
 
 ## Household outcome
@@ -52,13 +52,13 @@ The plan becomes a short monthly check-in that ends in a plan both partners agre
 **New files in `src/plan-v3/`:**
 
 - `flag.ts`: `planStudioV3Enabled`.
-- `model.ts`: the adapter (D-274).
+- `model.ts`: the adapter (D-275).
 - `PlanStudioV3.tsx`: the root. It holds the rest/check-in mode, the sheets, the Lite choice and the refused-write alert.
 - `RestScreen.tsx`: the court, the island card, `restAction` (one primary action) and the divide moment.
 - `FlowPanel.tsx`: "Money through the month", with `stoneLabel` as its words.
 - `ToolDrawer.tsx`, `ToolArt.tsx` and `tools.ts`: the 1D drawer and its tool-to-section map.
 - `ToolSheet.tsx`: `SheetFrame` (built on `useDialog`, portalled) and `ToolSheet` (the embedded `PlanStudioClassic`).
-- `CheckIn.tsx` and `steps.ts`: the check-in (D-275).
+- `CheckIn.tsx` and `steps.ts`: the check-in (D-276).
 - `figures.tsx`: the Queen (`QueenFigure`), the fund portraits (`NestPortrait`), the little Queen on the stones, and the paw.
 - `plan-v3.css`.
 
@@ -68,7 +68,7 @@ The plan becomes a short monthly check-in that ends in a plan both partners agre
   - `PlanStudio` is now a small switch.
   - Today's component is `PlanStudioClassic`, with `embeddedSection` / `onEmbeddedClose`. These give a `<section>` root, no masthead, no strip and no mobile consequence bar, and "goals" opens the Kitty room directly.
   - `PlanStudioProps` and `PlanStudioSection` are exported.
-- `src/path/tentContext.ts` (new) and `src/path/OurPathWorld.tsx`: the tent provides `leaveTent` (D-276).
+- `src/path/tentContext.ts` (new) and `src/path/OurPathWorld.tsx`: the tent provides `leaveTent` (D-277).
 - `src/vite-env.d.ts`: the flag's type.
 
 **Tests and evidence:**
@@ -90,7 +90,7 @@ type FundSnapshotV3 = {
 
 `planStudioFundSnapshot` is the default source. `PlanStudioV3` also takes `snapshotSource`, and the proof uses it for the `landed` state. When `src/core/fundModel.ts` lands, pass `fundSnapshot` (mapped if needed) as the source.
 
-## Check-in stages (D-275)
+## Check-in stages (D-276)
 
 | v3 step | Saved Sitdown `stage` | Old studio's title for that stage |
 |---|---|---|

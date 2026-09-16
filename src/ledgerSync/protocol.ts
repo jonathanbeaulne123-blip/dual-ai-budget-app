@@ -44,9 +44,9 @@ export type LedgerCommand = {
   pathEraVersion?: 1;
   planDecisionVersion?: 1;
   goalEnvelopeVersion?: 1;
-  /** Money model (D-268): 1 = release N (reads v2, never migrates); 2 = release N+1. Refused below 2 once migrated. */
+  /** Money model (D-269): 1 = release N (reads v2, never migrates); 2 = release N+1. Refused below 2 once migrated. */
   fundModelVersion?: 1 | 2;
-  /** Client keeps a Chapter's calendar month (D-272). */
+  /** Client keeps a Chapter's calendar month (D-273). */
   chapterVersion?: 1;
   id: string;
   householdId: string;

@@ -9,7 +9,7 @@ import { projectKittyNest } from "../src/core/kittyNest.ts";
 import { saveKittyNestDesign } from "../src/core/kittyNestDesigns.ts";
 import { ALEX, TODAY, buffer, fundBill, fundedHousehold, migrated, reserveGoal } from "./fixtures/fund-model.ts";
 
-/** The regex Hearth shipped before D-268, copied verbatim so v1 can never drift. */
+/** The regex Hearth shipped before D-269, copied verbatim so v1 can never drift. */
 function legacyNestCategoryFor(name: string): FundId {
   if (/vacation|holiday|trip|travel|wedding|renovat|home deposit|date night|concert/i.test(name)) return "build";
   if (/annual|yearly|christmas|birthday|tax|insurance|repair|school/i.test(name)) return "prepare";

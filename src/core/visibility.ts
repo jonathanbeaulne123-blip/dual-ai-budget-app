@@ -195,7 +195,7 @@ export function householdForHerculesContext(
     moves: [],
     wins: [],
     pathWorld: [],
-    // Money model (D-268): only which rules the household reads with (the bare household marker) and
+    // Money model (D-269): only which rules the household reads with (the bare household marker) and
     // household line overrides reach model context, so its fund answers match the app. Personal rows,
     // proposals and the migration receipt never do.
     fundModelRows: (scoped.fundModelRows ?? []).flatMap((row): FundModelRow[] => row.visibility !== "household" ? []

@@ -82,7 +82,7 @@ export function ChapterMoment({ household, memberId, today, onOpenPath, onOpenSe
     );
   }
   const weeks = Math.max(1, Math.floor((Date.parse(`${today}T12:00:00Z`) - Date.parse(chapter.openedAt)) / (7 * 24 * 60 * 60 * 1000)) + 1);
-  // D-272: a Chapter never closes by itself; once its month has ended we say so until the Sitdown closes it.
+  // D-273: a Chapter never closes by itself; once its month has ended we say so until the Sitdown closes it.
   const reminder = fundModelMode(household) === 2 ? chapterReminder(household, { today }) : null;
   return (
     <section className="chapter-moment" aria-label="This Chapter">
@@ -254,7 +254,7 @@ export function ChapterClose({ household, memberId, today, sitdownId, onCommand,
       </div>
     );
   }
-  // D-272 (with the money model release): the Sitdown closes this Chapter and opens the next for this month in one step.
+  // D-273 (with the money model release): the Sitdown closes this Chapter and opens the next for this month in one step.
   const sortedMonths = fundModelMode(household) === 2;
   const nextChoice = defaultNextChapter({ chapters: (household.chapters ?? []).map((row) => row.id === chapter.id ? { ...row, state: "closed" as const } : row) }, monthKeyFromDateKey(today));
   const outcomes: { outcome: ChapterOutcome; label: string; hint: string }[] = [

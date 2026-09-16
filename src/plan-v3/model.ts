@@ -173,9 +173,9 @@ function selectionFor(h: Household, memberId: string, view: LedgerView, monthKey
 }
 
 /**
- * The transitional adapter (D-274), kept as the fallback while `VITE_FUND_MODEL_V2`
+ * The transitional adapter (D-275), kept as the fallback while `VITE_FUND_MODEL_V2`
  * is off and for households the money model has not sorted yet. With the flag
- * on, `fundModelSnapshot` (below) reads `fundSnapshot` instead (D-281). Here:
+ * on, `fundModelSnapshot` (below) reads `fundSnapshot` instead (D-282). Here:
  * - the four amounts are the Kitty Nest's four categories exactly as today (so Protect
  *   still carries the bills the money-model migration moves to Prepare);
  * - Prepare's line reads the Fund walk's dated obligations (the bills);
@@ -219,7 +219,7 @@ function waitingOnFor(h: Household, proposal: FundDivisionRow | null): string[] 
 }
 
 /**
- * The money model's read (D-281, integration): `fundSnapshot` from
+ * The money model's read (D-282, integration): `fundSnapshot` from
  * `src/core/fundModel.ts`, mapped onto the studio's shape. Figures are the
  * snapshot's own (Now, Prepare, Protect, Build); the month's day-by-day walk
  * still comes from `fundWalk` so the flow keeps its balances. A contribution's
@@ -307,7 +307,7 @@ export type PlanStudioV3Model = {
   agreement: AgreementState;
   session: CheckInSession;
   /**
-   * The open Chapter (D-272: a Chapter is a calendar month). `monthLabel` is the month it was meant for;
+   * The open Chapter (D-273: a Chapter is a calendar month). `monthLabel` is the month it was meant for;
    * `reminder` is set once that month has ended and no Sitdown has closed it — nothing closes it by itself.
    */
   chapter: { id: string; title: string; monthKey: MonthKey; monthLabel: string; reminder: string | null } | null;

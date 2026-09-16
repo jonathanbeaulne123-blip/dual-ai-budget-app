@@ -66,7 +66,7 @@ export type DemoSuiteOptions = {
   numberStyle?: StressNumberStyle;
   buildSha?: string;
   /**
-   * D-281: which money model the fictional Plan is written for. 1 (the default,
+   * D-282: which money model the fictional Plan is written for. 1 (the default,
    * byte-identical to before) keeps bills under Protect, the meaning v1 builds
    * read. 2 files them under Prepare so `migrateFundModel` accepts the
    * generated household. Set only by a `VITE_FUND_MODEL_V2` build; the

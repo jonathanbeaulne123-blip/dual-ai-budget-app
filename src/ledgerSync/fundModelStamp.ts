@@ -2,7 +2,7 @@ import { householdFundMarker } from "../core/fundRules.ts";
 import type { Household } from "../core/types.ts";
 
 /**
- * The money-model stamp (D-268, review R2-H1).
+ * The money-model stamp (D-269, review R2-H1).
  *
  * Release N (this flag off) sends `fundModelVersion: 1`; release N+1 (flag on)
  * sends 2 and is the only build that migrates. The authority refuses every

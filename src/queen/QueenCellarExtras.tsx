@@ -40,7 +40,7 @@ const refusedWords = (result: unknown, fallback: string) => {
 /** Everything the cellar's extra jars need, read once per render of the room. */
 export function useCellarExtras(input: { household?: Household; memberId?: string; today?: DateKey; days?: CellarDay[]; open: boolean; onCommand?: Run; enabled?: boolean }) {
   const { memberId, today, days, open, onCommand } = input;
-  // D-281: behind VITE_CELLAR_V3 (default off). Off, nothing is read, drawn or written.
+  // D-282: behind VITE_CELLAR_V3 (default off). Off, nothing is read, drawn or written.
   const enabled = input.enabled ?? cellarV3Enabled();
   const household = enabled ? input.household : undefined;
   const [ownPay, setOwnPay] = useState(readOwnPayOptIn);

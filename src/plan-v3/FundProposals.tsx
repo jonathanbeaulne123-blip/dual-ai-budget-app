@@ -11,7 +11,7 @@ const FUND_NAMES = { prepare: "Prepare", protect: "Protect", build: "Build", eve
 const ORDER = ["prepare", "protect", "build", "everyday"] as const;
 
 /**
- * "Not divided yet" (D-271, wired in D-281): one partner proposes Hercules's
+ * "Not divided yet" (D-272, wired in D-282): one partner proposes Hercules's
  * split, the other confirms it. A record only — nothing moves at the bank, and
  * the words say "agreed" only after the command came back accepted.
  */
@@ -57,7 +57,7 @@ export function DivideCard({ row, memberId, busy, run, headingLevel = 2 }: {
 }
 
 /**
- * Protect refills (D-271, wired in D-281): the Fund's custodian proposes lending
+ * Protect refills (D-272, wired in D-282): the Fund's custodian proposes lending
  * part of the buffer to Build or Everyday for the month; the partner confirms.
  * It changes the month's picture only and posts nothing.
  */

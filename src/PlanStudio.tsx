@@ -39,7 +39,7 @@ export type PlanStudioProps = {
   workspaceCards?: (month: string) => ReactNode;
 };
 
-// D-273: Plan Studio v3 is opt-in (VITE_PLAN_STUDIO_V3) and loaded only when on; off, this is today's studio unchanged.
+// D-274: Plan Studio v3 is opt-in (VITE_PLAN_STUDIO_V3) and loaded only when on; off, this is today's studio unchanged.
 const PlanStudioV3 = lazy(() => import("./plan-v3/PlanStudioV3.tsx"));
 export function PlanStudio(props: PlanStudioProps) {
   if (!planStudioV3Enabled()) return <PlanStudioClassic {...props} />;

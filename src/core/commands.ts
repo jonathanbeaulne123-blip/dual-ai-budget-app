@@ -3420,7 +3420,7 @@ export const addCategory = captureCommand("addCategory", function addCategory(ho
   incomeStability?: "fixed" | "variable";
   monthlyBudget?: string | number;
   monthKey?: MonthKey;
-  /** v2 money model (D-268): the fund this child's lines default to. Never Protect. */
+  /** v2 money model (D-269): the fund this child's lines default to. Never Protect. */
   defaultFund?: FundId;
 }): CommitResult {
   requireTimezone(household);
@@ -3442,7 +3442,7 @@ export const addCategory = captureCommand("addCategory", function addCategory(ho
     if (!income) throw new ValidationError("The Income group is missing. Run Health Check.");
     parentId = income.id;
   } else if (v2) {
-    // Umbrellas are fixed (D-269): a new child goes under one of the 12 spending umbrellas, never a new group.
+    // Umbrellas are fixed (D-270): a new child goes under one of the 12 spending umbrellas, never a new group.
     if (!pickableExpenseGroups(next).some((group) => group.id === parentId)) {
       throw new ValidationError("Choose one of the 12 umbrellas for this category.");
     }
@@ -3867,7 +3867,7 @@ export const savePlanBridgeDraft = captureCommand("savePlanBridgeDraft", functio
   expectedDate?: DateKey; supersedesId?: string; memberId: string; createdBy: string; expectedUpdatedAt?: string;
 }): CommitResult {
   requirePlanActor(household, input.memberId, input.createdBy);
-  // A person's own offer never carries the cellar's mark (D-281, review M3).
+  // A person's own offer never carries the cellar's mark (D-282, review M3).
   const label = stripCellarBridgeMark(input.label).trim();
   if (!label) throw new ValidationError("Describe the one fact you may want to share.");
   const amounts = [input.amountCents, input.lowCents, input.highCents].filter((value): value is number => value !== undefined);

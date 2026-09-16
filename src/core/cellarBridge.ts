@@ -1,7 +1,7 @@
 import type { PlanBridgeDecision } from "./planSystem.ts";
 
 /**
- * The cellar's roll-over consent rows (D-280, filtered in D-281).
+ * The cellar's roll-over consent rows (D-281, filtered in D-282).
  *
  * The cellar's "custodian offers, partner says yes" walk for a missing
  * subscription is stored as Plan Bridge rows, because the money model's

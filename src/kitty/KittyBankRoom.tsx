@@ -136,7 +136,7 @@ const basis = (h: Household) =>
   ]);
 function initialEnvelope(goal: Goal, context?: KittyPlanContext, household?: Household) {
   if (goal.envelope) return goal.envelope;
-  // Money model (D-270): an untyped goal shows the fund the nest already files it under (frozen at migration, never a new Protect default).
+  // Money model (D-271): an untyped goal shows the fund the nest already files it under (frozen at migration, never a new Protect default).
   const fallback = household && fundModelMode(household) === 2 && household.goals.some((row) => row.id === goal.id)
     ? fundFor(household, { kind: "goal", id: goal.id }, { memberId: goal.ownerMemberId ?? "", view: goal.shared ? "household" : "personal" })
     : nestCategoryFor(goal.name);

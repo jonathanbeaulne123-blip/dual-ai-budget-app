@@ -23,7 +23,7 @@ export function AddCategoryForm({
   const [parentId, setParentId] = useState("CAT-LIFE");
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
-  // v2 money model (D-269): pick one of the 12 umbrellas and the fund its lines usually come from.
+  // v2 money model (D-270): pick one of the 12 umbrellas and the fund its lines usually come from.
   const sorted = fundModelMode(household) === 2;
   const [umbrella, setUmbrella] = useState<UmbrellaId | null>(null);
   const [fund, setFund] = useState<FundId | null>(null);

@@ -62,7 +62,7 @@ export type CellarJar = {
   lineName: string | null;
   hue: CellarHue;
   /**
-   * Once the money model sorted the household (D-281): the umbrella's own hue,
+   * Once the money model sorted the household (D-282): the umbrella's own hue,
    * keyed by umbrella id (`umbrellaHueForCategory`), which the rail and the
    * sculptures prefer over the name-read `hue`. Null before the migration.
    */

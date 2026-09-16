@@ -6,9 +6,9 @@
 - **Assignee or AI:** Claude (integration engineer)
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
 - **Branch:** `claude/plan-studio-v3` (worktree `wt-int`). It merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`.
-- **Head SHA:** see `git log --oneline 556d4bd1..claude/plan-studio-v3` (seventeen integration commits after the three merges: seven for D-281, eight for the trust-review fixes and evidence refresh, and two for the trust-review docs).
+- **Head SHA:** see `git log --oneline 556d4bd1..claude/plan-studio-v3` (seventeen integration commits after the three merges: seven for D-282, eight for the trust-review fixes and evidence refresh, and two for the trust-review docs).
 - **Risk:** High. The studio now reads money meaning from the money model, the cellar's consent rows are filtered out of shared surfaces, the authority gains one author check, and Our Path grows new pieces. There is no new synced shape, no schema change and no new command.
-- **Decision owner:** Jonathan (D-281)
+- **Decision owner:** Jonathan (D-282)
 - **Environment impact:** none. Fictional fixtures and proof pages only. `VITE_PLAN_STUDIO_V3` and `VITE_FUND_MODEL_V2` both stay off by default.
 
 ## Household outcome
@@ -226,7 +226,7 @@ Every Blocker, High and Medium finding is fixed. Each fix has its own commit and
   - the habitat migrates
   - `planLifeFixture` v2 migrates
 
-**Quick gate:** `pnpm test -- --risk=high --focus=… --focus-reason="D-281 integration…"`.
+**Quick gate:** `pnpm test -- --risk=high --focus=… --focus-reason="D-282 integration…"`.
 - At `5a5ce7d8` (clean tree): **`quick-gate-passed; time-budget-breached`**. It took 794.7 s against a 300 s budget; the serial phase took 552.7 s, because `demo-suite` generates many fixtures.
   - diff-check, ai-surface and TypeScript (59 s) passed.
   - 83 test files were selected, including `app-startup-p1`, `month-rehearsal-mainline`, `demo-suite`, `habitat`, `ledger-sync-*`, every `plan-*`, `queen*`, `path-*` and `fund-model*` file, and the workspace set.
@@ -273,7 +273,7 @@ Every Blocker, High and Medium finding is fixed. Each fix has its own commit and
   - Under reduced motion the sparks don't animate (390 and 1100).
 - Headless Chromium with SwiftShader. No real phone and no screen reader.
 
-## Decisions (D-281), defaulted, confirm
+## Decisions (D-282), defaulted, confirm
 
 - Under the money model, a landed contribution counts in the funds already, so the pill reads "landed · not divided yet".
 - Anyone may propose Hercules's split. The rest screen offers the draft as-is; editing the split is left to a later tool.
@@ -303,7 +303,7 @@ Every Blocker, High and Medium finding is fixed. Each fix has its own commit and
 - **Pay-hide marks.** Marks written before this change, or replayed from an older client, can't prove their author on the read side. The authority now refuses new foreign marks.
 - **Cellar rows in Hercules context.** They still appear as allowed `plan-bridge` reference ids in `herculesCompanionContext`, and remain in the raw synced Bridge collection.
 - **The era model.** Its islands (`pathWorldVersion` 2) are not built.
-- **Money track items still open:** the Q3 Prepare figure and Knight home; the Codex trust review of D-268–D-272; no Production revert.
+- **Money track items still open:** the Q3 Prepare figure and Knight home; the Codex trust review of D-269–D-273; no Production revert.
 - **Studio track items still open:** personal pause isn't saved; old studio stage titles differ from v3's.
 - **Cellar track items still open:** the privacy review (H8 / R2-M5); the per-pay-date publication isn't built.
 - **Quick gate time.** It breaches its 300 s budget whenever `demo-suite` is selected.
@@ -311,8 +311,8 @@ Every Blocker, High and Medium finding is fixed. Each fix has its own commit and
 ## Handoff
 
 - **Next owner: Codex.** Trust review of:
-  - D-281 (the author check, the Bridge filter, the demo `fundModel` argument through `regenerateDemoSuite`)
-  - the money track's D-268–D-272
+  - D-282 (the author check, the Bridge filter, the demo `fundModel` argument through `regenerateDemoSuite`)
+  - the money track's D-269–D-273
   - the resume-owner question
 - **Then Jonathan:**
   - turn on both flags in Development

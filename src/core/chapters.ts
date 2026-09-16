@@ -17,7 +17,7 @@ import { fundModelMode } from "./fundRules.ts";
  * A Chapter follows the couple's Sitdown, not the calendar. At most one
  * Chapter is open at a time. A month ends; it does not pass or fail.
  *
- * Money model (D-272): a Chapter's *intended span* is a calendar month
+ * Money model (D-273): a Chapter's *intended span* is a calendar month
  * (`intendedMonth`). Nothing ever closes it automatically; once its month
  * has ended, a reminder repeats (at most one nudge a day) until the Sitdown
  * closes it, and the Sitdown opens the next Chapter for the month the
@@ -60,7 +60,7 @@ export type Chapter = {
   state: ChapterState;
   /** What carries forward into the next Chapter, written at closing. */
   carryForward: string;
-  /** The calendar month this Chapter is meant to span (D-272). Legacy rows omit it and read as the month they opened. */
+  /** The calendar month this Chapter is meant to span (D-273). Legacy rows omit it and read as the month they opened. */
   intendedMonth?: MonthKey;
   updatedAt: string;
 };
@@ -522,8 +522,8 @@ export const openChapter = captureCommand("openChapter", function openChapter(ho
     closedAtSitdownId: null,
     state: "open",
     carryForward: "",
-    // D-272 months are written only for a household the money model sorted (or when a month is asked for), so a
-    // flags-off build never writes month data that would make older phones reload (D-281, review M1).
+    // D-273 months are written only for a household the money model sorted (or when a month is asked for), so a
+    // flags-off build never writes month data that would make older phones reload (D-282, review M1).
     ...(input.intendedMonth !== undefined || fundModelMode(household) === 2
       ? { intendedMonth: validMonth(input.intendedMonth) ?? monthKeyFromDateKey(dateKeyInZone(new Date(at))) }
       : {}),
@@ -816,7 +816,7 @@ export const closeChapter = captureCommand("closeChapter", function closeChapter
 });
 
 // ---------------------------------------------------------------------------
-// Chapters as calendar months (D-272).
+// Chapters as calendar months (D-273).
 
 /** The month a Chapter is meant to span; legacy rows read as the Toronto month they opened. */
 export function chapterMonth(chapter: Pick<Chapter, "intendedMonth" | "openedAt">): MonthKey {

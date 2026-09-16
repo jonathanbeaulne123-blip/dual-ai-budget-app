@@ -384,7 +384,7 @@ export const QUEEN_BANK_MEANINGS: Readonly<Record<QueenBankId, string>> = {
   build: "The future you chose.",
 };
 /**
- * v2 words (D-270). The lower door still opens Prepare and Protect together
+ * v2 words (D-271). The lower door still opens Prepare and Protect together
  * (Prepare first) and leads down to the cellar, which is now Prepare's room;
  * which figure Prepare gets and where the Knight lives is still Jonathan's
  * call (plan §6 Q3), so the drawing is unchanged and only the words move.

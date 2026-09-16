@@ -4,7 +4,7 @@ import type { CommitResult, Household } from "./core/types.ts";
 import { clientFundModelVersion, fundModelReloadRequired } from "./ledgerSync/fundModelStamp.ts";
 
 /**
- * Money model boot (D-268, adopt on patch).
+ * Money model boot (D-269, adopt on patch).
  *
  * Release N+1 (flag on) sorts the household the first time an active member's
  * phone opens it, then sorts that member's own private rows on that same

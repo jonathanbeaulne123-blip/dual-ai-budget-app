@@ -21,7 +21,7 @@ function sortedMonth(): Household {
   return migrated(h);
 }
 
-describe("the studio reads the money model (D-281)", () => {
+describe("the studio reads the money model (D-282)", () => {
   it("picks fundSnapshot only when VITE_FUND_MODEL_V2 is on", () => {
     expect(defaultFundSnapshotSource("1")).toBe(fundModelSnapshot);
     expect(defaultFundSnapshotSource("0")).toBe(planStudioFundSnapshot);
@@ -100,7 +100,7 @@ function mount(start: Household, memberId: string) {
 const findButton = (text: string) => [...document.querySelectorAll<HTMLButtonElement>("button")].find(b => (b.textContent ?? "").startsWith(text) || (b.getAttribute("aria-label") ?? "").startsWith(text));
 const click = async (target: HTMLElement | undefined) => { if (!target) throw new Error("missing button"); await act(async () => { target.click(); await new Promise(r => setTimeout(r, 0)); }); };
 
-describe("the studio's split and refill flows (D-281)", () => {
+describe("the studio's split and refill flows (D-282)", () => {
   it("one partner proposes the split, the other confirms, and only then is it divided", async () => {
     const a = mount(sortedMonth(), ALEX);
     await a.render();

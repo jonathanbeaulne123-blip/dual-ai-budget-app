@@ -1442,7 +1442,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           <button ref={backButton} type="button" className="path-world__back" onClick={() => openTent(false)}>Back to the island</button>
           <button type="button" className="path-world__back" onClick={() => openPlanner(null)}>Plan our journey</button>
         </div>
-        {/* D-276: Plan Studio v3 inside the tent can walk back to the island. */}
+        {/* D-277: Plan Studio v3 inside the tent can walk back to the island. */}
         <PathTentContext.Provider value={tentLink}>{classicRoom}</PathTentContext.Provider>
       </section>
     </div>

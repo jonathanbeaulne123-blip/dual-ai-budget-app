@@ -8,7 +8,7 @@ import type { PlanBridgeDecision } from "./planSystem.ts";
 import { ValidationError, type CommitResult, type Household, type Recurrence } from "./types.ts";
 
 /**
- * Missing and smaller subscriptions in the cellar (2026-09-16, D-279).
+ * Missing and smaller subscriptions in the cellar (2026-09-16, D-280).
  *
  * Jonathan: a subscription that is charged less than usual, or is not charged
  * within the grace period after its day, stays in the cellar one more cycle
@@ -210,7 +210,7 @@ export function cellarBridgeRows(household: Pick<Household, "planBridgeDecisions
 function rolledFor(household: Household, key: string): { cents: number; goalIds: string[] } {
   const fund = shapeHouseholdFundConfig(household.householdFund);
   if (!fund) return { cents: 0, goalIds: [] };
-  // The key leads the note in brackets (D-281), so the rollover's 180-character note limit can never cut it off.
+  // The key leads the note in brackets (D-282), so the rollover's 180-character note limit can never cut it off.
   const events = activeHouseholdFundEvents(household, fund.id).filter((event) => event.kind === "kitty-allocated" && event.note.includes(`[${key}]`));
   const ids = new Set(events.map((event) => event.id));
   const goalIds = [...new Set(shapeHouseholdFundKittyAllocations(household.fundKittyAllocations).filter((row) => ids.has(row.eventId)).map((row) => row.goalId))];

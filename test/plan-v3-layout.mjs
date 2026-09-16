@@ -1,4 +1,4 @@
-/** Plan Studio v3 browser evidence (D-273…D-277) on the actual components with fictional books only.
+/** Plan Studio v3 browser evidence (D-274…D-278) on the actual components with fictional books only.
     Writes screenshots and records.json to docs/evidence/plan-studio-v3/ (or HEARTH_ARTIFACTS_DIR).
     Set HEARTH_CHROMIUM to a Chromium binary when Playwright's bundled one is not installed. */
 import { startPlanV3Proof } from '../scripts/serve-plan-v3-proof.mjs';

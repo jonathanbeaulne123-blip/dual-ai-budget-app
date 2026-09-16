@@ -106,7 +106,7 @@ export async function prepareCommand(
   if((hasPathWorldData(current)||command.steps.some(s=>PATH_WORLD_COMMAND_KINDS.includes(s.kind)))&&command.pathWorldVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve your island.');
   if((hasPathEraData(current)||command.steps.some(s=>PATH_ERA_COMMAND_KINDS.includes(s.kind)))&&command.pathEraVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve your journey.');
   if((hasChapterMonthData(current)||command.steps.some(s=>CHAPTER_MONTH_COMMAND_KINDS.includes(s.kind)))&&command.chapterVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to keep your Chapters in their months.');
-  // Money model (D-268, R2-H1): once any fund-model row exists, only a v2 client may write anything.
+  // Money model (D-269, R2-H1): once any fund-model row exists, only a v2 client may write anything.
   if((hasFundModelData(current)||command.steps.some(s=>FUND_MODEL_COMMAND_KINDS.includes(s.kind)))&&command.fundModelVersion!==2)throw new Error('CLIENT_RELOAD_REQUIRED: Hearth has updated how money is sorted. Reload before making changes.');
   const extendedPlan = hasPlanDecisionData(current);
   if (extendedPlan && command.planDecisionVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve the household's Plan evidence and decisions.");

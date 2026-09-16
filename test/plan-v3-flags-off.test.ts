@@ -13,7 +13,7 @@ import { planStudioV3Enabled } from "../src/plan-v3/flag.ts";
 import { defaultFundSnapshotSource, planStudioFundSnapshot } from "../src/plan-v3/model.ts";
 
 /**
- * D-281 (review M1, M3): with every v3 flag off, the branch behaves as `main` did.
+ * D-282 (review M1, M3): with every v3 flag off, the branch behaves as `main` did.
  * Fictional books only.
  */
 const ALEX = "MEM-001";

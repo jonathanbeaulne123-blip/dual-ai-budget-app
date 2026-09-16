@@ -42,7 +42,7 @@ export function RestScreen({ household, memberId, view, today, model, highlight,
   onHighlight: (key: FlowHighlight) => void;
   onFund: (key: FundKey | "everyday", from: HTMLElement) => void;
   action: RestAction;
-  /** The money model's split flow (D-281). Without it, the moment only reads "not divided yet". */
+  /** The money model's split flow (D-282). Without it, the moment only reads "not divided yet". */
   divide?: { busy: boolean; run: (fn: (current: Household) => CommitResult) => Promise<{ household?: Household } | null> };
 }) {
   const { snapshot, agreement } = model;

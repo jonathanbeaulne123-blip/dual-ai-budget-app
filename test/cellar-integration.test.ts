@@ -31,7 +31,7 @@ function offered(note = "Fictional streaming"): { h: Household; before: Househol
   return { h, before };
 }
 
-describe("the cellar's roll-over offers stay in the cellar (D-281)", () => {
+describe("the cellar's roll-over offers stay in the cellar (D-282)", () => {
   it("recognises its own rows and nothing else", () => {
     const { h } = offered();
     const rows = h.planBridgeDecisions!;
@@ -68,7 +68,7 @@ describe("the cellar's roll-over offers stay in the cellar (D-281)", () => {
   });
 });
 
-describe("only the member hides their own pay (D-281)", () => {
+describe("only the member hides their own pay (D-282)", () => {
   const at = "2026-09-16T12:00:00.000Z";
   it("the phone refuses a mark for someone else", () => {
     const h = planLifeFixture("household");
@@ -86,7 +86,7 @@ describe("only the member hides their own pay (D-281)", () => {
   });
 });
 
-describe("the cellar tints bills by umbrella once sorted (D-281)", () => {
+describe("the cellar tints bills by umbrella once sorted (D-282)", () => {
   it("uses umbrellaHueForCategory after the migration and nothing before", () => {
     let h = fundedHousehold("2000");
     h = fundBill(h, { note: "Fictional hydro", amount: "300", subcategoryId: "SUB-HOUSING-ELECTRIC", day: 28 }).household;
@@ -100,7 +100,7 @@ describe("the cellar tints bills by umbrella once sorted (D-281)", () => {
   });
 });
 
-describe("a cellar roll-over posts once, and only after both said yes, on the authority too (D-281, review B1/H2)", () => {
+describe("a cellar roll-over posts once, and only after both said yes, on the authority too (D-282, review B1/H2)", () => {
   const LONG = `Fictional ${"very long streaming service name ".repeat(6)}`.slice(0, 200);
   const agreed = (note?: string) => {
     const { h } = offered(note);
