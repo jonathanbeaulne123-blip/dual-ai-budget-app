@@ -86,6 +86,63 @@ Branch `claude/plan-v3-studio` on `main@6160fb03` (#495). **Risk: Medium.** The 
 **State:** local branch; not pushed, not a PR, not merged, not deployed, not live-verified.
 
 **Next owner:** Codex runs the F2 trust review and the fundModel swap after the money track merges. Jonathan then tries it on both phones with the flag on in Development.
+## The cellar's pay in glass, contribution banks and missing subscriptions — Plan Studio v3, cellar track (2026-09-16, D-278–D-280)
+
+Branch `claude/plan-v3-cellar` on `main@6160fb03` (#495), in small commits. **Risk: Medium-High.** It adds new doors onto existing commands only: `allocateHouseholdFundSurplus`, the Plan Bridge propose/decline/withdraw commands and `dismissNotice`. There is no new command, schema, sync or Hercules payload change, and everything is behind `VITE_QUEENS_NEST`.
+
+- **Budget (5):** +1. A missed or lower subscription charge becomes a visible, agreed, one-time roll into a goal. It is capped at the safe surplus and never doubled. The pay glass never claims money exists.
+- **Engagement (3):** +2.
+- **Details:** [the worksession](worksessions/2026-09-16-cellar-income-missing-subs.md).
+
+**Examined:**
+- The cellar: `queenCellar.ts`, `QueenCellar.tsx`, `QueenCellarRail.tsx`, `cellarZoom.ts` (D-265).
+- `fundWalk.ts`, and `householdFund.ts` (motions, rollover, kitty allocations).
+- The jug and gun: `QueenLoft.tsx`, `queenGun.ts`.
+- Plan Bridge commands and their readers: `fundPulse`, `sitdownBrief`, `pathBridges`.
+- `recordBillPayment`, `skipOccurrence`, `pauseRecurrence`, `planSourceVisible`, `memberEarningSchedule`, `dismissNotice`.
+- The migration plan §2e and review H8 / R2-M5, the BUILD-BRIEF defaults, and the Choices log.
+
+**Changes:**
+- **New pure selectors:**
+  - `src/core/cellarIncomeJars.ts`: household-visible sources; own Personal rows by per-device opt-in only; shared hide/show marks.
+  - `src/core/missingSubscriptions.ts`: 3-day grace; one more cycle; price change, cancelled and Personal excluded; offer, yes and roll wrappers; occurrence key refused twice.
+- **Rail extras and cards:** `QueenCellarRail.tsx`, `QueenCellarExtras.tsx` (new), `QueenCellar.tsx`, `queen-cellar.css`.
+- **Proof page:** seeds `cellar3=1&roll=…&member=…`.
+- **Focus-map entry** appended last.
+- **D-278, D-279, D-280.**
+
+**Verification:**
+- `tsc --noEmit` is clean.
+- `vitest`:
+  - `cellar-missing-subscriptions` 16/16
+  - `cellar-income-jars` 7/7
+  - `cellar-v3-ui` 6/6
+  - `queen-cellar` + `queen-cellar-ui` + `queens-nest-ui` still green
+  - 6 files, 82/82 in total
+- **Quick gate (Medium-High, three focus files):** `quick-gate-passed`, 22 files / 271 tests, 124 s of 300 s.
+- **Browser:** `test/cellar-v3-layout.mjs` → `docs/evidence/cellar-v3/`: 22 records, 0 errors, no page scroll, axe clean (Classic), three themes × 320×700/390/720/1100, partner/Confirm/rolled states, reduced motion.
+- **Real phone:** not available.
+
+**Defaulted, confirm:**
+- The 3-day grace.
+- "One more cycle" means until the cycle after next.
+- "Less" is measured against the current usual amount; two equal lower charges mean a price change.
+- A cancelled subscription is never missing.
+- Consent is carried as Plan Bridge rows: the offer also shows at the Sitdown, on the island and on the crown.
+- Pay sources are household-visible only.
+- "Hide my pay" hides the glass only, via shared notice marks.
+- "Could stand at" is that day's water plus that one pay.
+
+**Uncertainty:**
+- Codex trust and privacy review is needed (the Bridge-as-consent path, the note-key guard, the notice-key marks, the income sources).
+- `dismissNotice` has no author check.
+- A spent offer reads "took it back" on the island.
+- The extras are drawn, not sculpted, in 3D.
+- SwiftShader only.
+
+**Environment:** fictional books only; nothing hosted.
+**State:** not pushed, not a PR, not merged, not deployed, not live verified.
+**Next owners:** Codex (review), then Jonathan (defaults), then the integrator (merge beside the money and studio tracks).
 
 ## Our Path, next level — sturdy island, then the app comes onto it (2026-09-15, D-264)
 

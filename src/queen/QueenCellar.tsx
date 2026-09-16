@@ -14,6 +14,8 @@ import { ConfirmSheet } from "../Confirm.tsx";
 import { CellarZoomPane, QueenCellarRail, cellarBankForm, cellarDayLabel, cellarPurposeWords } from "./QueenCellarRail.tsx";
 import { readCellarZoom, storeCellarZoom } from "./cellarZoom.ts";
 import type { CellarHue } from "../core/queenCellar.ts";
+// Cellar v3 (D-278/D-279): income glass, contribution banks and missing subscriptions.
+import { CellarIncomeCard, CellarMissingCard, cellarPostedOk, incomeNoteWords, showMyPay, useCellarExtras } from "./QueenCellarExtras.tsx";
 
 /** The category groups' clays for the sculptures; the flat twin reads the same six from `--queen-hue-*` in queen-cellar.css. */
 export const CELLAR_HUE_HEX: Record<Exclude<CellarHue, "clay">, string> = { housing: "#c4794f", food: "#8f9a5a", transport: "#6f8fa6", life: "#b76b8a", health: "#6fa391", debt: "#7a7470" };
@@ -70,14 +72,26 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
     const heldObligation = held?.designKey.startsWith("recurrence:") && held.date ? `recurrence:${held.designKey.slice("recurrence:".length)}:${held.date}` : null;
     return cellarReading(household, nest, today, heldObligation ? { deferObligationIds: [heldObligation] } : {});
   }, [household, nest, today, heldId]);
+  const cellar3 = useCellarExtras({ household, memberId, today, days: reading?.days, open, onCommand });
+  // A subscription marked missing stands as its own jar; its ordinary overdue jar steps aside for it.
+  const railReading = useMemo(() => {
+    if (!reading || !cellar3.missing?.open.length) return reading;
+    const marked = new Set(cellar3.missing.open.map((entry) => entry.id));
+    return { ...reading, jars: reading.jars.filter((jar) => !(jar.recurrenceId && marked.has(`missing:${jar.recurrenceId}:${jar.date}`))) };
+  }, [reading, cellar3.missing]);
+  const openExtra = openJarId ? cellar3.extras.find((row) => row.id === openJarId) ?? null : null;
+  const openMissing = openExtra && cellar3.missing ? cellar3.missing.open.find((row) => row.id === openExtra.id) ?? null : null;
+  const openIncome = openExtra && cellar3.income ? cellar3.income.jars.find((row) => row.id === openExtra.id) ?? null : null;
+  const payNote = incomeNoteWords(cellar3.income);
   const todayIndex = reading ? Math.max(0, reading.days.findIndex((day) => day.today)) : 0;
   const [billCursor, setBillCursor] = useState(todayIndex);
   useEffect(() => { setBillCursor(todayIndex); }, [todayIndex, reading?.monthKey]);
   const billAt = reading ? Math.max(0, Math.min(reading.days.length - 1, Math.round(billCursor))) : 0;
   const gateDay = reading?.days[billAt] ?? null;
-  const gateJars = reading && gateDay ? reading.jars.filter((jar) => jar.date === gateDay.date) : [];
+  const gateJars = railReading && gateDay ? railReading.jars.filter((jar) => jar.date === gateDay.date) : [];
   const gateJar: CellarJar | null = gateJars[0] ?? null;
-  const openJar: CellarJar | null = openJarId && reading ? reading.jars.find((jar) => jar.id === openJarId) ?? null : null;
+  const gateExtras = gateDay ? cellar3.extras.filter((row) => row.date === gateDay.date) : [];
+  const openJar: CellarJar | null = openJarId && railReading ? railReading.jars.find((jar) => jar.id === openJarId) ?? null : null;
   const gateRibbon = gateJar?.recurrenceId ? ribbons.find((row) => row.recurrenceId === gateJar.recurrenceId) ?? null : null;
   const ribbon = (view === "months" && gateRibbon) ? gateRibbon : ribbons.find((row) => row.recurrenceId === picked) ?? ribbons[0] ?? null;
   const jars = ribbon?.jars ?? [];
@@ -88,7 +102,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
     const id = openJarId;
     setOpenJarId(null);
     if (id) requestAnimationFrame(() => {
-      const jar = [...(room.current?.querySelectorAll<HTMLButtonElement>(".queen-jar--bill[data-room-vessel]") ?? [])].find((el) => el.dataset.roomVessel === id);
+      const jar = [...(room.current?.querySelectorAll<HTMLButtonElement>(".queen-jar--bill[data-room-vessel], .queen-jar--extra[data-cellar-extra]") ?? [])].find((el) => (el.dataset.roomVessel ?? el.dataset.cellarExtra) === id);
       jar?.focus();
     });
   };
@@ -108,8 +122,8 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
 
   const vessels = useMemo<RoomVessel[]>(() => {
     const rows: RoomVessel[] = [];
-    if (view === "bills" && reading) {
-      for (const jar of reading.jars) rows.push({ id: jar.id, kind: "bill", form: cellarBankForm(jar.type), tint: jar.hue === "clay" ? undefined : CELLAR_HUE_HEX[jar.hue], finish: jar.finish, swell: 1, fill: jar.paid ? 1 : jar.fill, hollow: false, frosted: jar.type === "potential" && !jar.paid, outlier: false, lifted: heldId === jar.id });
+    if (view === "bills" && railReading) {
+      for (const jar of railReading.jars) rows.push({ id: jar.id, kind: "bill", form: cellarBankForm(jar.type), tint: jar.hue === "clay" ? undefined : CELLAR_HUE_HEX[jar.hue], finish: jar.finish, swell: 1, fill: jar.paid ? 1 : jar.fill, hollow: false, frosted: jar.type === "potential" && !jar.paid, outlier: false, lifted: heldId === jar.id });
       return rows;
     }
     for (const jar of jars) {
@@ -117,7 +131,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
       if (jar.outlier) rows.push({ id: `${jar.monthKey}:ghost`, kind: "jar", swell: 1, fill: 0, hollow: true });
     }
     return rows;
-  }, [jars, view, reading, heldId]);
+  }, [jars, view, railReading, heldId]);
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
@@ -164,7 +178,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
         <p className="queen-room__title">The cellar</p>
         <p className="queen-room__sub">
           {reading && view === "bills"
-            ? `${reading.jars.length === 0 ? "No kitty jars on the rail" : reading.jars.length === 1 ? "One kitty jar on the rail" : `${reading.jars.length} kitty jars on the rail`}${reading.walk.dryDate ? " · the cellar runs dry" : reading.walk.belowBufferRuns.length ? " · the water dips under the mark" : ""}`
+            ? `${railReading!.jars.length === 0 ? "No kitty jars on the rail" : railReading!.jars.length === 1 ? "One kitty jar on the rail" : `${railReading!.jars.length} kitty jars on the rail`}${cellar3.extras.some((row) => row.kind === "income") ? ` · ${cellar3.extras.filter((row) => row.kind === "income").length} of pay, in glass` : ""}${cellar3.missing?.open.length ? ` · ${cellar3.missing.open.length} missing` : ""}${reading.walk.dryDate ? " · the cellar runs dry" : reading.walk.belowBufferRuns.length ? " · the water dips under the mark" : ""}`
             : ribbon
             ? `${ribbon.label} · ${ribbon.posted === 0 ? "no months yet" : ribbon.posted === 1 ? "one month" : `${ribbon.posted} months`} on the ribbon${outlierName ? ` · ${outlierName} broke the beat` : ""}`
             : "Nothing recurring is on the ribbon yet."}
@@ -178,7 +192,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
       )}
       {reading && view === "bills" && (
         <>
-          <QueenCellarRail reading={reading} cursor={billCursor} onCursor={(next) => setBillCursor((current) => typeof next === "function" ? next(current) : next)} heldId={heldId} zoom={zoom} onZoom={onZoom}
+          <QueenCellarRail reading={railReading!} extras={cellar3.extras} onPickExtra={(extra) => setOpenJarId((current) => (current === extra.id ? null : extra.id))} cursor={billCursor} onCursor={(next) => setBillCursor((current) => typeof next === "function" ? next(current) : next)} heldId={heldId} zoom={zoom} onZoom={onZoom}
             openId={openJarId} onPick={(jar) => setOpenJarId((current) => (current === jar.id ? null : jar.id))} />
           <div className="queen-scrub">
             <span className="queen-scrub__end">1</span>
@@ -213,10 +227,18 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
               </div>
             </section>
           )}
-          {!openJar && <p className="queen-room__line" aria-live="polite">
-            <em>{gateJar ? (gateJar.strike === "hammer" ? "The hammer is out." : gateJar.strike === "crack" ? "Cracked." : gateJar.paid ? "A shard, kept." : "Filling.") : gateDay?.today ? "Today." : "The rail."}</em> {cellarGateWords(gateJar, gateDay, formatCad)}
+          {openMissing && household && memberId && today && (
+            <CellarMissingCard key={openMissing.id} entry={openMissing} household={household} memberId={memberId} today={today} busy={busy} onCommand={onCommand}
+              custodianId={cellar3.missing?.custodianMemberId ?? null} cardRef={card} onClose={closeCard} />
+          )}
+          {openIncome && memberId && (
+            <CellarIncomeCard key={openIncome.id} jar={openIncome} ownPay={cellar3.ownPay} onToggleOwnPay={cellar3.toggleOwnPay} busy={busy} onCommand={onCommand} memberId={memberId} cardRef={card} onClose={closeCard} />
+          )}
+          {!openJar && !openExtra && <p className="queen-room__line" aria-live="polite">
+            <em>{gateJar ? (gateJar.strike === "hammer" ? "The hammer is out." : gateJar.strike === "crack" ? "Cracked." : gateJar.paid ? "A shard, kept." : "Filling.") : gateExtras.length ? (gateExtras[0]!.kind === "income" ? "If." : gateExtras[0]!.kind === "contribution" ? "Contributed." : "A little windfall.") : gateDay?.today ? "Today." : "The rail."}</em> {!gateJar && gateExtras.length ? `${gateExtras.map((row) => row.label).join(" · ")}. Pick it to read it.` : cellarGateWords(gateJar, gateDay, formatCad)}
             {heldId && gateJar?.id === heldId ? " Lifted out — a rehearsal; nothing is written." : ""}
-            {!gateJar && reading.jars.length > 0 ? " A kitty jar's shape and what it wears are what it is for, its colour where it is filed, its size how large the due is, its glaze how much is in it; pick one to read it." : ""}
+            {!gateJar && payNote ? ` ${payNote}` : ""}
+            {!gateJar && !gateExtras.length && reading.jars.length > 0 ? " A kitty jar's shape and what it wears are what it is for, its colour where it is filed, its size how large the due is, its glaze how much is in it; pick one to read it." : ""}
           </p>}
           <div className="queen-room__acts">
             {gateJar?.strike === "hammer" && gateJar.recurrenceId && (
@@ -231,6 +253,9 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
               </button>
             )}
             {gateJar && !gateJar.recurrenceId && !gateJar.paid && <button type="button" className="queen-go" onClick={onOpenBanks}>Open it in the banks</button>}
+            {!gateJar && !openExtra && cellar3.myPayHidden && onCommand && memberId && (
+              <button type="button" className="queen-go" disabled={busy} onClick={() => { void showMyPay(onCommand, memberId).then((result) => setNotice(cellarPostedOk(result) ? "Your pay is back in the jars, in glass." : "That could not be saved."), () => setNotice("That could not be saved.")); }}>Show my pay in the jars</button>
+            )}
           </div>
           {notice && <p className="queen-room__line queen-cellar-notice" role="status">{notice}</p>}
           {striking && onCommand && today && (

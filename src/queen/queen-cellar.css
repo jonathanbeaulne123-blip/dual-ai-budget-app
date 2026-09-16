@@ -230,3 +230,61 @@
 .queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--bill[style*="--jar-px"] .queen-billjar,
 .queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--bill[style*="--jar-px"] .queen-billjar .queen-billjar__cat { transform: none; }
 .queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--bill[style*="--jar-px"].is-in-gate .queen-billjar { transform: none; }
+
+/* ---- cellar v3 (2026-09-16, D-278/D-279): pay in glass, contribution banks, missing subscriptions ----
+   All three stand on the rail's one dollar scale (--jar-px from cellarScale). Pay is clear glass with a dashed edge and an "if":
+   it never reads as money that exists. A contribution bank is solid clay (hollow when nothing came in). A missing subscription
+   is a ghost of its jar with a spark; a smaller one carries a down-mark. They are drawn over the 3D room, not sculpted. */
+.queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--extra { position: relative; z-index: 3; display: inline-flex; flex-direction: column; align-items: center; justify-content: flex-end;
+  width: calc(30px * var(--cellar-zoom, 1)); min-width: 30px; min-height: 44px; height: auto; padding: 0; margin: 0; border: 0; background: transparent; color: inherit; cursor: pointer; overflow: visible; box-shadow: none; }
+.queen-home .queen-room--cellar .queen-cellar-rail .queen-jar--extra:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 6px; }
+.queen-room--cellar .queen-extrajar { position: relative; display: block; width: calc(var(--jar-px, 20px) * .62); min-width: 12px; height: var(--jar-px, 20px); flex: 0 0 auto; }
+.queen-room--cellar .queen-extrajar__svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.queen-room--cellar .queen-extrajar__glass { fill: color-mix(in srgb, var(--queen-water) 10%, transparent); stroke: color-mix(in srgb, var(--queen-water) 70%, var(--ink)); stroke-width: 2.2; stroke-dasharray: 5 4; vector-effect: non-scaling-stroke; }
+.queen-room--cellar .queen-extrajar__shine { fill: none; stroke: color-mix(in srgb, #fff 80%, transparent); stroke-width: 2; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.queen-room--cellar .queen-extrajar__if { position: absolute; left: 50%; bottom: 3px; transform: translateX(-50%); font: italic 400 11px/1 var(--display); color: color-mix(in srgb, var(--queen-water) 55%, var(--ink)); background: color-mix(in srgb, var(--paper) 70%, transparent); border-radius: 4px; padding: 0 2px; }
+.queen-room--cellar .queen-extrajar__bank { fill: var(--queen-clay, #d8b89a); stroke: var(--queen-clay-deep, #8a5a3c); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.queen-room--cellar .queen-extrajar--contribution.is-empty .queen-extrajar__bank { fill: color-mix(in srgb, var(--queen-clay, #d8b89a) 25%, transparent); stroke-dasharray: 2 3; }
+.queen-room--cellar .queen-extrajar__coins { fill: color-mix(in srgb, #c9a227 70%, var(--queen-clay-deep, #8a5a3c)); opacity: .85; }
+.queen-room--cellar .queen-extrajar__slot { stroke: var(--ink); stroke-width: 2.2; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.queen-room--cellar .queen-extrajar__ghost { fill: color-mix(in srgb, var(--copper) 10%, transparent); stroke: var(--copper); stroke-width: 2; stroke-dasharray: 2 3; vector-effect: non-scaling-stroke; }
+.queen-room--cellar .queen-extrajar__drop { fill: none; stroke: var(--copper); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+.queen-room--cellar .queen-extrajar__mark { position: absolute; right: -8px; top: -9px; min-width: 16px; height: 16px; border-radius: 50%; display: grid; place-items: center;
+  font: 700 10px/1 var(--mono); color: #fff; background: var(--copper); box-shadow: 0 0 0 2px var(--paper); }
+.queen-room--cellar .queen-extrajar--missing.is-rolled .queen-extrajar__mark { background: color-mix(in srgb, var(--theme-second, #4f6b4a) 85%, var(--ink)); }
+.queen-room--cellar .queen-extrajar--missing.is-rolled .queen-extrajar__ghost { stroke-dasharray: none; opacity: .7; }
+.queen-room--cellar .queen-jar--extra.is-open .queen-extrajar { transform: translateY(-3px) scale(1.06); transform-origin: 50% 100%; }
+:root[data-theme="taylor"] .queen-room--cellar .queen-extrajar__glass { stroke-dasharray: 3 3; }
+:root[data-theme="newfoundland"] .queen-room--cellar .queen-extrajar__mark { box-shadow: 0 0 0 2px color-mix(in srgb, var(--paper) 80%, #0d2a30); }
+
+/* The missing card: a short spark burst (one play), and the roll's acts. */
+.queen-room--cellar .queen-jar-card--missing { overflow: hidden; }
+.queen-cellar-cheer { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.queen-cellar-cheer i { position: absolute; left: calc(8% + var(--spark) * 9%); top: 40%; width: 6px; height: 6px; border-radius: 1px; opacity: 0;
+  background: color-mix(in srgb, var(--copper) calc(40% + var(--spark) * 6%), #e8c547); transform: rotate(calc(var(--spark) * 36deg));
+  animation: queen-cellar-spark 1.1s var(--queen-ease, ease-out) calc(var(--spark) * 35ms) 1 both; }
+.queen-cellar-cheer i:nth-child(odd) { border-radius: 50%; background: color-mix(in srgb, var(--queen-water) 70%, #fff); }
+@keyframes queen-cellar-spark {
+  0% { opacity: 0; transform: translateY(18px) scale(.4) rotate(0deg); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-46px) scale(1) rotate(200deg); }
+}
+@media (prefers-reduced-motion: reduce) { .queen-cellar-cheer i { animation: none; opacity: .55; top: 8px; transform: none; } }
+:root[data-motion="reduced"] .queen-cellar-cheer i { animation: none; opacity: .55; top: 8px; transform: none; }
+.queen-room--cellar .queen-missing-acts { flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.queen-room--cellar .queen-missing-goal { display: inline-flex; align-items: center; gap: 6px; font: 600 9.5px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.queen-room--cellar .queen-missing-goal select { min-height: 36px; max-width: 12rem; font: 400 14px/1.2 var(--display); color: var(--ink); background: var(--card, var(--paper)); border: 1px solid var(--line); border-radius: 8px; padding: 2px 6px; }
+.queen-room--cellar .queen-jar-card .queen-cellar-notice { margin: 6px 0 0; padding: 0; background: none; border: 0; box-shadow: none; text-align: left; }
+@media (forced-colors: active) {
+  .queen-room--cellar .queen-extrajar__glass, .queen-room--cellar .queen-extrajar__ghost, .queen-room--cellar .queen-extrajar__bank { stroke: CanvasText; fill: Canvas; }
+  .queen-room--cellar .queen-extrajar__mark { forced-color-adjust: none; background: Highlight; color: HighlightText; }
+  .queen-cellar-cheer { display: none; }
+}
+/* Short frames hide the ordinary card's line; the v3 cards keep theirs (it is the "if" / "not charged" statement) and drop the note's length instead. */
+@container queen (max-height: 560px) {
+  .queen-home .queen-room--cellar .queen-jar-card--missing .queen-jar-card__line,
+  .queen-home .queen-room--cellar .queen-jar-card--hypothetical .queen-jar-card__line,
+  .queen-home .queen-room--cellar .queen-jar-card--contributed .queen-jar-card__line { display: block; font-size: 13px; }
+  .queen-room--cellar .queen-jar-card--hypothetical .queen-jar-card__note { display: none; }
+  .queen-room--cellar .queen-jar-card--missing .queen-jar-card__note { font-size: 12.5px; margin-top: 4px; }
+}

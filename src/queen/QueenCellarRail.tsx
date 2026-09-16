@@ -43,13 +43,74 @@ export function CellarJarGlyph({ jar, held = false }: { jar: CellarJar; held?: b
 }
 
 /**
+ * The cellar's other jars (2026-09-16, D-278/D-279), on the same dollar scale:
+ * - `income` — a partner's pay, if all of it came in: clear glass, dashed, an
+ *   "if" on its belly. Hypothetical; never money that exists.
+ * - `contribution` — on and after the pay day, the kitty bank of what that
+ *   partner actually contributed to the Fund.
+ * - `missing` / `smaller` — a subscription that was not charged, or came in
+ *   lower: its jar stays one more cycle with a mark.
+ */
+export type CellarRailExtra = {
+  id: string;
+  /** The rail day it stands on. */
+  date: string;
+  kind: "income" | "contribution" | "missing" | "smaller";
+  /** Dollars for its height, on the rail's one scale. */
+  cents: number;
+  label: string;
+  /** For a contribution bank: how full (0 when nothing came in). */
+  fill?: number;
+  /** For a missing mark: where the roll stands. */
+  stage?: string;
+};
+
+export function CellarExtraGlyph({ extra }: { extra: CellarRailExtra }) {
+  if (extra.kind === "income") {
+    return (
+      <span data-extra-seat="" className="queen-extrajar queen-extrajar--income" aria-hidden="true">
+        <svg viewBox="0 0 60 100" preserveAspectRatio="none" className="queen-extrajar__svg">
+          <path className="queen-extrajar__glass" d="M16 6 H44 V14 C52 20 56 30 56 44 V88 C56 94 52 98 46 98 H14 C8 98 4 94 4 88 V44 C4 30 8 20 16 14 Z" />
+          <path className="queen-extrajar__shine" d="M12 40 V82" />
+        </svg>
+        <span className="queen-extrajar__if">if</span>
+      </span>
+    );
+  }
+  if (extra.kind === "contribution") {
+    const level = Math.max(0, Math.min(1, extra.fill ?? 0));
+    return (
+      <span data-extra-seat="" className={`queen-extrajar queen-extrajar--contribution${level > 0 ? "" : " is-empty"}`} aria-hidden="true">
+        <svg viewBox="0 0 60 100" preserveAspectRatio="none" className="queen-extrajar__svg">
+          <path className="queen-extrajar__bank" d="M6 30 C6 16 16 8 30 8 C44 8 54 16 54 30 V88 C54 94 50 98 44 98 H16 C10 98 6 94 6 88 Z" />
+          {level > 0 && <rect className="queen-extrajar__coins" x="8" y={98 - 88 * level} width="44" height={88 * level} rx="6" />}
+          <path className="queen-extrajar__slot" d="M22 20 H38" />
+        </svg>
+      </span>
+    );
+  }
+  return (
+    <span data-extra-seat="" className={`queen-extrajar queen-extrajar--missing queen-extrajar--${extra.kind}${extra.stage === "rolled" ? " is-rolled" : ""}`} aria-hidden="true">
+      <svg viewBox="0 0 60 100" preserveAspectRatio="none" className="queen-extrajar__svg">
+        <path className="queen-extrajar__ghost" d="M10 22 C10 12 18 6 30 6 C42 6 50 12 50 22 V88 C50 94 46 98 40 98 H20 C14 98 10 94 10 88 Z" />
+        {extra.kind === "smaller" && <path className="queen-extrajar__drop" d="M30 40 V66 M22 58 L30 66 L38 58" />}
+      </svg>
+      <span className="queen-extrajar__mark">{extra.stage === "rolled" ? "✓" : "✦"}</span>
+    </span>
+  );
+}
+
+/**
  * The rail is time. One cell per day of the month; jars stand on their due
  * day; the water behind the rail is the Fund's balance on the day in the gate.
  * Drag, the slider or the arrow keys scrub the gate; the jar in the gate is the
  * one the line beneath is about. The page never scrolls.
  */
-export function QueenCellarRail({ reading, cursor, onCursor, heldId, zoom = CELLAR_ZOOM.default, onZoom, openId = null, onPick }: {
+export function QueenCellarRail({ reading, cursor, onCursor, heldId, zoom = CELLAR_ZOOM.default, onZoom, openId = null, onPick, extras = [], onPickExtra }: {
   reading: CellarReading;
+  /** Income glass, contribution banks and missing marks (D-278/D-279). */
+  extras?: CellarRailExtra[];
+  onPickExtra?: (extra: CellarRailExtra) => void;
   cursor: number;
   onCursor: (next: number | ((current: number) => number)) => void;
   heldId: string | null;
@@ -91,6 +152,8 @@ export function QueenCellarRail({ reading, cursor, onCursor, heldId, zoom = CELL
   const scale = cellarScale({ columnPx: frame.column, crestCents: reading.crestCents, balanceCents: day && !day.dry ? day.balanceCents : 0, bufferCents: reading.bufferCents, zoom });
   const byDay = new Map<string, CellarJar[]>();
   for (const jar of jars) byDay.set(jar.date, [...(byDay.get(jar.date) ?? []), jar]);
+  const extrasByDay = new Map<string, CellarRailExtra[]>();
+  for (const extra of extras) extrasByDay.set(extra.date, [...(extrasByDay.get(extra.date) ?? []), extra]);
 
   const span = () => { const [a, b] = [...fingers.current.values()]; return a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0; };
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
@@ -165,6 +228,15 @@ export function QueenCellarRail({ reading, cursor, onCursor, heldId, zoom = CELL
                       aria-label={`${jar.label} — ${jar.type === "house" ? "house bill" : jar.type === "subscription" ? "subscription" : jar.type === "potential" ? "planned, not posted" : jar.type === "appointment" ? "appointment" : "recurring payment"}${jar.groupName ? ` (${jar.groupName}${jar.lineName && jar.lineName !== jar.groupName ? ` › ${jar.lineName}` : ""})` : ""}, ${jar.size >= 5 ? "the month's largest" : jar.size === 4 ? "large" : jar.size === 3 ? "middling" : jar.size === 2 ? "small" : "the smallest"}, ${cellarDayLabel(jar.date)}${jar.paid ? ", paid" : jar.full ? ", full" : ", filling"}${jar.strike === "hammer" ? ". The hammer is out" : jar.strike === "crack" ? ". Cracked: due and not full" : ""}`}
                       onClick={() => { onCursor(index); onPick?.(jar); }}>
                       <CellarJarGlyph jar={jar} held={heldId === jar.id} />
+                    </button>
+                  ))}
+                  {(extrasByDay.get(row.date) ?? []).map((extra) => (
+                    <button key={extra.id} type="button" className={`queen-jar queen-jar--extra queen-jar--${extra.kind}${index === at ? " is-in-gate" : ""}${openId === extra.id ? " is-open" : ""}`}
+                      data-cellar-extra={extra.id} data-kind={extra.kind} style={{ ["--jar-px" as string]: `${scale.jarPx(extra.cents)}px` }}
+                      aria-current={index === at ? "true" : undefined} aria-expanded={onPickExtra ? openId === extra.id : undefined}
+                      aria-label={extra.label}
+                      onClick={() => { onCursor(index); onPickExtra?.(extra); }}>
+                      <CellarExtraGlyph extra={extra} />
                     </button>
                   ))}
                 </div>
