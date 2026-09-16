@@ -319,7 +319,7 @@ html.path-world-settled [data-path-world-behind] { visibility: hidden !important
 .path-hud__caption-sub { font-size: 12.5px; color: var(--muted); font-weight: 600; overflow-wrap: anywhere; }
 .path-hud__dock { grid-area: dock; align-self: end; display: grid; justify-items: end; gap: 8px; min-width: 0; }
 .path-hud .path-world__rail { flex-wrap: nowrap; border-radius: 999px; padding: 4px; }
-.path-hud .path-world__rail button { min-height: 44px; min-width: 44px; justify-content: center; padding: 6px 12px; white-space: nowrap; transition: none; }
+.path-hud .path-world__rail button { min-height: 44px; min-width: 44px; justify-content: center; padding: 6px 12px; white-space: nowrap; transition: none !important; }
 .path-hud .path-world__rail button:disabled { opacity: 0.45; }
 .path-hud .path-world__now { flex-wrap: nowrap; align-items: end; }
 .path-hud .path-world__compass { display: inline-flex; gap: 8px; align-items: center; }

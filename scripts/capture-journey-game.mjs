@@ -1,7 +1,7 @@
 /** Game mode (D-285) on the real Our Path page, fictional books only.
     `node scripts/capture-journey-game.mjs` — writes PNGs and report.json to docs/evidence/journey-simple-view/game/.
     OUT=<dir>, THEMES=classic,..., WIDTHS=390,..., STORIES=well,story to narrow a run. */
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import { startOurPathWorldProof } from './serve-our-path-world-proof.mjs';
 
@@ -16,7 +16,8 @@ const STEPS = (process.env.STEPS || 'page,entering,game,settings,minimized').spl
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const benign = (text) => /Failed to load resource.*404|GPU stall|GL_CLOSE_PATH|swiftshader|WebGL.*(performance|warning)|Automatic fallback to software WebGL/i.test(text);
 const proof = await startOurPathWorldProof({ port: 5195 });
-const report = {};
+// A narrowed run (THEMES/WIDTHS/STORIES) updates its own rows and keeps the rest.
+const report = existsSync(`${out}/report.json`) ? JSON.parse(readFileSync(`${out}/report.json`, 'utf8')) : {};
 const storyCache = 'scripts/tmp/our-story.json';
 
 async function open(width, query) {
@@ -95,7 +96,7 @@ try {
           }
           await page.waitForFunction(() => document.querySelector('.path-world__host[data-live="true"]') || document.querySelector('.path-world__stage .path-world__flat'), null, { timeout: 120_000 });
           // Let the camera land where the shared focus asked (Up close on this week) before the shot.
-          await page.waitForFunction(() => !document.querySelector('.path-world__host[data-live="true"]') || document.querySelector('.path-world')?.dataset.level === '3', null, { timeout: 40_000 }).catch(() => console.warn('camera still travelling'));
+          await page.waitForFunction(() => !document.querySelector('.path-world__host[data-live="true"]') || document.querySelector('.path-world')?.dataset.level === '3', null, { timeout: 90_000 }).catch(() => console.warn(`camera still travelling: ${story}-${theme}-${width}`));
           await wait(1500);
           if (STEPS.includes('game')) await shot(page, errors, name('3-game'));
           if (STEPS.includes('settings')) {

@@ -45,11 +45,13 @@ Our Path opens on the simple view (the minigame). "Open the world" turns the isl
 
 ## Acceptance evidence
 
-- [x] tsc green: `npx tsc --noEmit -p .`
+- [x] tsc green (final head): `npx tsc --noEmit -p .`
 - [x] `npx vitest run test/journey-game-mode-ui.test.ts test/journey-fullscreen-ui.test.ts test/our-path-world-ui.test.ts test/path-eras-ui.test.ts test/path-era-islands.test.ts test/journey-focus.test.ts test/path-minimap.test.ts test/path-eras.test.ts test/our-path-world.test.ts test/verification-policy.test.ts`: all pass.
 - [x] Browser evidence: `node scripts/capture-journey-game.mjs` → `docs/evidence/journey-simple-view/game/` (`<story>-<theme>-<width>-<step>.png` for the `well` habitat with the fictional journey and the Our Story habitat `habitat-story`, 320/390/720/1100 × Classic/Taylor/Newfoundland × page, entering, game, settings drawer, minimized) with `report.json` (no page or console errors, no horizontal overflow, nav and header hidden in game mode, page inert, no HUD target under 44px, no HUD overlaps, focus on Minimize after entering and back on Open the world after minimizing, no amounts in the HUD).
 
 ## Evidence log
+
+- `node scripts/capture-journey-game-sync.mjs` → `sync-*.png` and `sync-report.json`: with a stand-in simple view (`?mini=stub`), June picked in the simple view moves Replay to June on the page, the world opens on June (caption "June 2026"), zooming the world out to Sky turns both simple-view copies to Journey (source `world`), and minimizing keeps it; reduced motion enters with no animation and no banner; without WebGL the open world is the flat map with the same HUD (320 and 1100).
 
 - Headless Chromium (`/opt/pw-browsers/chromium-1194`, SwiftShader). Software rendering is slow and uneven, so the script freezes the iris part-way for the "entering" shot, waits for the camera to land Up close before the game shot, and runs with `ambient=off`.
 - The first captures found: world level reports during the opening trip were shared as the simple view's level (fixed: a trip the page asked for reports only where it lands; the person's own drag, wheel or rail move takes over), the 720px caption squeezed between the minimap and the dock (fixed: its own row below 1100px), and 320px rail targets under 44px (fixed).
