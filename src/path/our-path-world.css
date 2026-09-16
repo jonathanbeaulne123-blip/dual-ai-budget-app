@@ -241,3 +241,23 @@
 /* The card's eyebrow never runs under the close button; placeholders read as hints, not answers. */
 .path-world__card > .kicker { margin-right: 40px; overflow-wrap: anywhere; }
 .path-planner input::placeholder { color: var(--muted); opacity: 0.75; font-style: italic; }
+
+/* Full screen toggle: small and nearly invisible until you reach for it. */
+.path-world__full { position: absolute; z-index: 4; top: max(6px, env(safe-area-inset-top)); left: max(6px, env(safe-area-inset-left)); width: 40px; height: 40px; min-height: 40px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--ink); opacity: 0.3; cursor: pointer; filter: drop-shadow(0 0 2px color-mix(in srgb, var(--paper) 85%, transparent)); transition: opacity 0.2s ease, background-color 0.2s ease; }
+.path-world__full svg { width: 18px; height: 18px; }
+.path-world__full:hover, .path-world__full:focus-visible, .path-world__full[aria-pressed="true"]:hover { opacity: 1; background: color-mix(in srgb, var(--card) 88%, transparent); }
+.path-world__full:focus-visible { outline: 3px solid var(--accent, var(--ink)); outline-offset: 1px; }
+.path-world__stage.path-world__stage--full { position: fixed; inset: 0; z-index: 120; width: 100vw; height: 100vh; height: 100dvh; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
+.path-world__stage.path-world__stage--full::before { display: none; }
+.path-world__stage--full .path-world__controls { top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); }
+.path-world__stage--full .path-world__rail { bottom: max(12px, env(safe-area-inset-bottom)); }
+.path-world__stage--full .path-world__now { bottom: max(12px, env(safe-area-inset-bottom)); }
+html.path-world-fullscreen, html.path-world-fullscreen body { overflow: hidden; overscroll-behavior: none; }
+@media (max-width: 719px) {
+  .path-world__controls { left: 52px; }
+  .path-world__stage--full .path-world__controls { top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); left: 52px; }
+  .path-world__stage--full .path-world__rail { bottom: calc(64px + env(safe-area-inset-bottom)); }
+  .path-world__stage--full .path-world__now { bottom: max(8px, env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) { .path-world__full { transition: none; } }
+@media (forced-colors: active) { .path-world__full { opacity: 1; border: 1px solid ButtonText; } }

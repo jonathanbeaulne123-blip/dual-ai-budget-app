@@ -277,6 +277,33 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const openTent = useCallback((next: boolean) => { tentMoved.current = true; setTentOpen(next); }, []);
   const tentLink = useMemo(() => ({ leaveTent: () => openTent(false) }), [openTent]);
   useEffect(() => { if (openTentFor) { tentMoved.current = false; setTentOpen(true); } }, [openTentFor]);
+  // Full screen: the island takes over the whole screen. CSS does the takeover on every device; where the browser
+  // has the Fullscreen API the whole page also goes native full screen (the page, not the stage, so rooms and
+  // dialogs opened from the island still show above it).
+  const stageRef = useRef<HTMLDivElement>(null);
+  const [full, setFull] = useState(false);
+  useEffect(() => {
+    if (!full) return;
+    const root = document.documentElement;
+    root.classList.add("path-world-fullscreen");
+    let native = false;
+    let alive = true;
+    if (typeof root.requestFullscreen === "function" && !document.fullscreenElement) {
+      root.requestFullscreen({ navigationUI: "hide" }).then(() => { native = true; if (!alive) document.exitFullscreen().catch(() => undefined); }).catch(() => { /* CSS takeover still applies */ });
+    }
+    const onChange = () => { if (native && !document.fullscreenElement) setFull(false); };
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && !document.fullscreenElement) setFull(false); };
+    document.addEventListener("fullscreenchange", onChange);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      alive = false;
+      document.removeEventListener("fullscreenchange", onChange);
+      window.removeEventListener("keydown", onKey);
+      root.classList.remove("path-world-fullscreen");
+      if (native && document.fullscreenElement === root) document.exitFullscreen().catch(() => { /* already left */ });
+    };
+  }, [full]);
+  useEffect(() => { if (tentOpen) setFull(false); }, [tentOpen]);
   const tentChange = useRef(onTentChange);
   tentChange.current = onTentChange;
   const tentReported = useRef(false);
@@ -1245,8 +1272,15 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           )}
         </header>
 
-        <div className="path-world__stage">
+        <div ref={stageRef} className={`path-world__stage${full ? " path-world__stage--full" : ""}`}>
           <div ref={host} className="path-world__host" data-live={live} />
+          <button type="button" className="path-world__full" aria-pressed={full} aria-label={full ? "Leave full screen" : "Show the map full screen"} title={full ? "Leave full screen" : "Full screen"} onClick={() => setFull((v) => !v)}>
+            <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              {full
+                ? <path d="M8 3v5H3M12 3v5h5M8 17v-5H3M12 17v-5h5" />
+                : <path d="M3 8V3h5M17 8V3h-5M3 12v5h5M17 12v5h-5" />}
+            </svg>
+          </button>
           {!live && (
             <div className="path-world__flat" aria-hidden="true">
               <PathMiniMap household={household} today={today} shown={shown} theme={theme}
