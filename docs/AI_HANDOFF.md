@@ -1,3 +1,44 @@
+## Plan Studio v3, studio track: the plan at rest, the tool drawer, one check-in (2026-09-16, D-273–D-277)
+
+Branch `claude/plan-v3-studio` on `main@6160fb03` (#495). **Risk: Medium.** The new UI sits behind the new default-off flag `VITE_PLAN_STUDIO_V3`, so the current studio is unchanged when it is off. The check-in writes only through existing commands (`appendPlanSitdownTurn`, `acknowledgeHouseholdPlan`, `closeChapter`/`openChapter`, `addRitual`). The F2 resume-ownership merge still needs a trust review. Budget (5): +1. Engagement (3): +3. Details: [the worksession](worksessions/2026-09-16-plan-studio-v3.md).
+
+**Examined:**
+- the studio side: `PlanStudio.tsx`, `ChapterPanel.tsx`, `useDialog`;
+- the money readings: `kittyNest`, `fundWalk`, `householdFund`, `planProjection`, `queenCellar`;
+- the Plan and Sitdown records: `planSystem` (acknowledgement, the Sitdown session), `commands.appendPlanSitdownTurn`/`acknowledgeHouseholdPlan`, `chapters`, `sitDown`, `sitdownBrief`;
+- Our Path: `pathWorld`, `pathBridges`, `src/path/**` (the tent, `PathMiniMap`, `pathSitdownClosedMonths`);
+- the figures: `QueenFigure`, `queenPresentation`, `NestPortrait`/`KittyFlat`, `HerculesPortrait`;
+- the three mockups and the build plan's Choices log.
+
+**Changes:**
+- `src/plan-v3/**` (new): the rest screen, the drawer, the sheets, the check-in, the adapter and the CSS.
+- `PlanStudio.tsx`: a switch, plus `PlanStudioClassic` with `embeddedSection`.
+- `src/path/tentContext.ts` and a one-line provider in `OurPathWorld.tsx`.
+- `vite-env.d.ts`.
+- `scripts/serve-plan-v3-proof.mjs`, three tests, and `docs/evidence/plan-studio-v3/`.
+
+**Adapter shape:** `planStudioFundSnapshot(h, { memberId, view, today })` returns `{ now, undividedContributions, prepare, protect, build, flow }`, with `TODO(plan-v3 → fundModel)` marking the swap.
+
+**Verification:**
+- `tsc` is clean.
+- The v3 and Plan UI suites pass 37/37.
+- The Medium quick gate returned `quick-gate-passed; time-budget-breached` (354 s against 300 s, of which TypeScript took 126 s): 311 fast and 128 serial tests, including `app-startup-p1`.
+- `test/plan-v3-layout.mjs` produced 52 records with 0 overflow, 0 small targets, 0 serious axe findings and 0 page errors. They cover three worlds × 320/390/720/1100 and the full two-member check-in. Lite runs 0 animations.
+- Chromium here was the headless shell. No real phone was used, and no screen reader was heard.
+
+**Uncertainty:**
+- **Resume.** There are still two resume owners (the Sitdown session and `plan-guided-draft`).
+- **Chapters.** Chapters are not calendar months yet (core).
+- **Protect and Prepare.** Until the money track lands, Protect still holds the bills, and Prepare shows $0 beside "Bills covered".
+- **Stage titles.** The old studio titles saved stages differently.
+- **Unconfirmed defaults.** See the worksession's "Defaulted, confirm" list.
+
+**Environment:** fictional books only; nothing hosted.
+
+**State:** local branch; not pushed, not a PR, not merged, not deployed, not live-verified.
+
+**Next owner:** Codex runs the F2 trust review and the fundModel swap after the money track merges. Jonathan then tries it on both phones with the flag on in Development.
+
 ## Our Path, next level — sturdy island, then the app comes onto it (2026-09-15, D-264)
 
 Branch `claude/our-path-next-level` on `origin/main@fe0cb3bb` (#489), delivered as a bundle and a patch. **Risk: High** — a new per-feature capability flag on the ledger command (`pathWorldVersion`, mirroring D-245), and owner-only Personal rows (footpaths, private bridge planks) drawn on the household surface. Jonathan's two calls today: the Together tab stays its own tab and the campfire is a door to it; step 2 started with the Kitty studio. Budget (5): +0/+1 — nothing posts; the island gains doors to the Fund, Calendar, planner, Together, Charter, Time Machine, Play and the Kitty room. Engagement (3): +3. Details, orchestration log, evidence and every "one step further" idea: [the worksession](worksessions/2026-09-15-our-path-next-level.md).
