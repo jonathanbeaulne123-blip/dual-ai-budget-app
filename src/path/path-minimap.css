@@ -35,3 +35,6 @@
 .path-minimap--newfoundland .path-minimap__footpath { stroke: #bfa56c; }
 .path-minimap--taylor .path-minimap__footpath { stroke: #d6ae6a; }
 @media (forced-colors: active) { .path-minimap * { forced-color-adjust: auto; } }
+/* The current era's name (D-268), a small sign above the island. */
+.path-minimap__era { font-family: var(--theme-display, var(--display, serif)); font-size: 6.5px; font-weight: 600; fill: var(--ink, #2f261b); stroke: var(--card, #fff); stroke-width: 1.6px; paint-order: stroke; }
+.path-minimap--newfoundland .path-minimap__era { font-family: var(--font, sans-serif); letter-spacing: 0.02em; }

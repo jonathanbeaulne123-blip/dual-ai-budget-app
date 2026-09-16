@@ -147,3 +147,97 @@
 /* No idle tail or breathing for Hercules when motion is reduced. */
 @media (prefers-reduced-motion: reduce) { .path-hercules *, .path-hercules *::before, .path-hercules *::after { animation: none !important; transition: none !important; } }
 :root[data-motion="reduced"] .path-hercules * { animation: none !important; transition: none !important; }
+
+/* The Journey of Life (D-268): era marks, state chips, pencil, and the planner. */
+.path-mark--era .path-mark__label { font-family: var(--theme-display, var(--display)); font-weight: 600; font-size: 16px; }
+.path-mark--gate .path-mark__label { font-weight: 700; border-bottom: 3px solid color-mix(in srgb, #e9b949 80%, var(--ink)); }
+.path-mark--home .path-mark__label { font-family: var(--theme-display, var(--display)); font-style: italic; }
+.path-mark--plan .path-mark__label { font-size: 13px; }
+.path-world[data-level="0"] .path-mark--era .path-mark__label { font-size: 15px; }
+/* Pencil: a suggestion only one of us has agreed to. Dashed, a little faded, never a filled label. */
+.path-pencil { font-style: italic; }
+.path-mark.path-mark--pencil .path-mark__label, .path-mark--era[data-state="sketched"] .path-mark__label, .path-mark--plan[data-pencil="true"] .path-mark__label { background: color-mix(in srgb, var(--card) 70%, transparent); border: 1.5px dashed var(--muted); box-shadow: none; font-style: italic; }
+.path-mark--era[data-state="future"] .path-mark__label { background: color-mix(in srgb, var(--card) 82%, #dfe7ea); }
+.path-era-chip { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); white-space: nowrap; }
+.path-era-chip--past { background: color-mix(in srgb, var(--theme-second, #4f6b4a) 16%, var(--paper)); }
+.path-era-chip--current { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.path-era-chip--future { background: color-mix(in srgb, #9fb3bd 22%, var(--paper)); }
+.path-era-chip--sketched { background: transparent; border-style: dashed; font-style: italic; }
+.path-world__era-now { margin: 2px 0 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-weight: 600; }
+.path-world__head { grid-template-columns: minmax(0, 1fr); }
+.path-world__head .path-world__link + .path-world__link { margin-top: 2px; }
+.path-world__room-head { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.path-journey { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.path-journey__era { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.path-journey__era button { flex: 1; min-width: 0; min-height: 44px; text-align: left; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 12px; padding: 8px 12px; font-weight: 600; overflow-wrap: anywhere; }
+.path-journey__era[data-focused] button { border-color: var(--theme-accent, var(--copper)); }
+.path-journey__era--sketched button { border-style: dashed; font-style: italic; }
+.path-journey__era .path-era-chip { min-width: 84px; justify-content: center; }
+.path-world__outline-head { margin: 12px 0 0; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.path-world__outline ul ul { list-style: none; margin: 2px 0 4px 16px; padding: 0; border-left: 2px solid var(--line); }
+.path-world__outline .path-world__outline-journey button { min-height: 44px; }
+
+.path-planner { border: 1.5px solid var(--line); border-radius: var(--world-r-card, 14px); background: var(--card); padding: 14px 16px 16px; display: grid; gap: 12px; min-width: 0; }
+.path-planner__head { display: grid; gap: 4px; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.path-planner__head > * { grid-column: 1; margin: 0; }
+.path-planner__head h3 { font-family: var(--theme-display, var(--display)); font-size: 24px; line-height: 1.1; overflow-wrap: anywhere; }
+.path-planner__head h3:focus { outline: none; }
+.path-planner__head h3:focus-visible { outline: 3px solid var(--world-focus, var(--theme-accent, var(--copper))); outline-offset: 2px; }
+.path-planner__close { grid-column: 2 !important; grid-row: 1 / span 2; min-height: 44px; border-radius: 999px; padding: 8px 14px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-weight: 700; }
+.path-planner__journey { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.path-planner__era { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.path-planner__era--sketched { border-style: dashed; }
+.path-planner__era--current { border-width: 2px; border-color: var(--ink); }
+.path-planner__era-text { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.path-planner__era-text .muted { font-size: 13px; }
+.path-planner__era-actions { display: flex; gap: 6px; }
+.path-planner__era-actions button, .path-planner__plans button, .path-planner__add > button { min-height: 44px; border-radius: 999px; padding: 8px 14px; font-weight: 700; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.path-planner__era-actions .primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.path-planner__editor { display: grid; gap: 10px; min-width: 0; }
+.path-planner__fields { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 0; }
+.path-planner__fields[disabled] { opacity: 0.6; }
+.path-planner__fields > label, .path-planner__cell > label { font-weight: 700; font-size: 14px; margin-top: 4px; }
+.path-planner input:not([type="checkbox"]), .path-planner select { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); padding: 6px 10px; font: inherit; width: 100%; min-width: 0; box-sizing: border-box; }
+.path-planner input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--theme-accent, var(--copper)); flex: none; }
+.path-planner #path-era-new-name, .path-planner [id$="-name"] { font-family: var(--theme-display, var(--display)); font-size: 20px; }
+.path-planner__row, .path-planner__add { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: end; }
+.path-planner__cell { display: grid; gap: 4px; min-width: 0; }
+.path-planner__cell--wide { grid-column: span 2; }
+.path-planner__check { display: flex; gap: 10px; align-items: center; min-height: 44px; font-weight: 600; }
+.path-planner__banks, .path-planner__plans { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px 12px; margin: 6px 0 0; min-width: 0; display: grid; gap: 6px; }
+.path-planner__banks legend, .path-planner__plans legend { font-weight: 700; padding: 0 4px; }
+.path-planner__plans ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.path-planner__plans li { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; padding: 6px 8px; border-radius: 10px; background: var(--paper); overflow-wrap: anywhere; }
+.path-planner__plans li.path-pencil { background: transparent; border: 1.5px dashed var(--muted); }
+.path-planner__waiting { border: 1.5px dashed var(--theme-second, var(--copper)); border-radius: 12px; padding: 10px 12px; }
+.path-planner__waiting p { margin: 0 0 4px; }
+.path-planner__hint { margin: 0; font-size: 13px; }
+.path-planner__error { margin: 0; font-weight: 700; color: var(--danger, #9b2c2c); }
+
+/* Classic Hearth: an index card on the pinboard. */
+.path-world--classic .path-planner { box-shadow: 0 2px 0 color-mix(in srgb, var(--theme-accent, #b5653e) 45%, transparent); border-radius: 4px; }
+.path-world--classic .path-era-chip { border-radius: 3px; }
+/* Taylor's Scrapbook: a taped journal page, stars for the era we are in. */
+.path-world--taylor .path-planner { border-radius: 6px 20px 6px 20px; background: linear-gradient(color-mix(in srgb, var(--card) 96%, #f5dbe2), var(--card)); }
+.path-world--taylor .path-era-chip--current::before { content: "★"; margin-right: 4px; color: #e9b949; }
+.path-world--taylor .path-pencil, .path-world--taylor .path-mark--era .path-mark__label { font-family: var(--theme-hand, var(--display)); }
+/* Newfoundland: trail signboards with a painted edge. */
+.path-world--newfoundland .path-planner { border-left: 6px solid var(--theme-accent, #a33751); border-radius: 4px; }
+.path-world--newfoundland .path-era-chip { border-radius: 3px; border-left: 4px solid var(--theme-second, #26766f); }
+.path-world--newfoundland .path-mark--era .path-mark__label { font-family: var(--font); font-weight: 700; font-size: 14px; }
+
+@media (max-width: 719px) {
+  .path-planner { padding: 12px; }
+  .path-planner__head { grid-template-columns: minmax(0, 1fr); }
+  .path-planner__close { grid-column: 1 !important; grid-row: auto; justify-self: start; }
+  .path-planner__era { grid-template-columns: minmax(0, 1fr); }
+  .path-planner__era .path-era-chip { justify-self: start; }
+  .path-planner__cell--wide { grid-column: auto; }
+  .path-journey__era .path-era-chip { min-width: 72px; }
+  .path-mark--era .path-mark__label { font-size: 14px; }
+}
+@media (forced-colors: active) { .path-era-chip { forced-color-adjust: auto; border: 1px solid CanvasText; } }
+/* The card's eyebrow never runs under the close button; placeholders read as hints, not answers. */
+.path-world__card > .kicker { margin-right: 40px; overflow-wrap: anywhere; }
+.path-planner input::placeholder { color: var(--muted); opacity: 0.75; font-style: italic; }

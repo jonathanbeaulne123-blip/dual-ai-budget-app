@@ -159,6 +159,16 @@ export function findSimilarTransactions(
   return matches.sort((left, right) => right.score - left.score);
 }
 
+/** Days since the epoch for a valid `YYYY-MM-DD`, else NaN (the caller then falls back to the full scan). */
+function civilDayNumber(date: string): number {
+  if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) return Number.NaN;
+  const year = Number(date.slice(0, 4)), month = Number(date.slice(5, 7)), day = Number(date.slice(8, 10));
+  const ms = Date.UTC(year, month - 1, day);
+  const back = new Date(ms);
+  if (year < 1000 || back.getUTCFullYear() !== year || back.getUTCMonth() !== month - 1 || back.getUTCDate() !== day) return Number.NaN;
+  return Math.round(ms / 86_400_000);
+}
+
 export function refreshDuplicateFlags(transactions: Transaction[]): Transaction[] {
   const flags = transactions.map(() => false);
   const buckets = new Map<string, number[]>();
@@ -168,12 +178,20 @@ export function refreshDuplicateFlags(transactions: Transaction[]): Transaction[
     list.push(index);
     buckets.set(bucket, list);
   });
-  for (const indexes of buckets.values()) {
+  for (const bucket of buckets.values()) {
+    // Only rows within SIMILARITY_WINDOW_DAYS of each other can match (scoreSimilarity says so), so a
+    // bucket sorted by civil day only compares neighbours. Years of identical monthly bills would
+    // otherwise cost every commit a comparison per pair. Unreadable dates keep the full scan.
+    const days = bucket.map((index) => civilDayNumber(transactions[index]!.date));
+    const windowed = days.every((day) => Number.isFinite(day));
+    const indexes = windowed ? bucket.map((index, at) => ({ index, day: days[at]! })).sort((a, b) => a.day - b.day || a.index - b.index).map((row) => row.index) : bucket;
+    const dayOf = windowed ? new Map(bucket.map((index, at) => [index, days[at]!])) : null;
     for (let i = 0; i < indexes.length; i += 1) {
       const leftIndex = indexes[i]!;
       const left = transactions[leftIndex]!;
       for (let j = i + 1; j < indexes.length; j += 1) {
         const rightIndex = indexes[j]!;
+        if (dayOf && dayOf.get(rightIndex)! - dayOf.get(leftIndex)! > SIMILARITY_WINDOW_DAYS) break;
         // This projection returns booleans, not all matching pairs. Once both
         // endpoints are true, scoring their relationship cannot change output.
         if (flags[leftIndex] && flags[rightIndex]) continue;

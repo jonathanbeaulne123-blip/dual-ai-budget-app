@@ -136,9 +136,8 @@ import {
   requestShiftEnvelope,
   requestCalendarPane,
   seedDemoHousehold,
-  generateDemoSuite,
   HABITAT_WORDS,
-  verifyDemoSuite,
+  STORY_WORDS,
   freshDemoSeed,
   DEMO_SUITE_COMMAND_KIND,
   preserveDemoShowcaseContinuity,
@@ -304,6 +303,7 @@ import {
 } from "./continuity.ts";
 import { afterNextPaint } from "./nextPaint.ts";
 import { demoSuiteSeatFor, requireDemoSuiteContinuityIdentity } from "./demoSuiteIdentity.ts";
+import { generateDemoSuiteOffThread, verifyDemoSuiteOffThread } from "./demoSuiteOffThread.ts";
 import {
   canRepairProjectionFromAcknowledgedCache,
   canRepairProjectionWithBoundOutbox,
@@ -3674,7 +3674,7 @@ export function App() {
         ?? (currentLink ? { email: currentLink.email, subject: currentLink.subject } : null),
     });
 
-    const generated = await generateDemoSuite({
+    const generated = await generateDemoSuiteOffThread({
       today,
       seed,
       profile,
@@ -3743,7 +3743,7 @@ export function App() {
       setReplicas(await listHouseholdReplicas(environment));
     }
     setDemoSeed(String(seed));
-    setDemoReport(await verifyDemoSuite(accepted, generated.manifest));
+    setDemoReport(await verifyDemoSuiteOffThread(accepted, generated.manifest));
     setHistory([]);
     setToast(null);
   }
@@ -7791,19 +7791,21 @@ export function App() {
                   <button className="primary" disabled={busy} onClick={() => setGuard({ kind: "demo-suite", seed: freshDemoSeed() })}>Investor preview</button>
                   <button className="ghost" disabled={busy || !demoSeed} onClick={() => setGuard({ kind: "demo-suite", seed: Number(demoSeed) >>> 0, profile: household.syntheticFixture?.kind === "hearth-demo-suite" ? household.syntheticFixture.profile : "investor" })}>Replay seed</button>
                 </div>
-                <p className="kicker" style={{ marginTop: 14 }}>Hercules habitats · two households to walk around in</p>
+                <p className="kicker" style={{ marginTop: 14 }}>Hercules habitats · three households to walk around in</p>
                 <Whisper mode="line">The same twelve fictional months, told two ways, so the two of you can open every room with past and present already in it.</Whisper>
                 <p className="muted" style={{ margin: "6px 0 0" }}><strong>{HABITAT_WORDS.well.title}:</strong> {HABITAT_WORDS.well.line}</p>
                 <p className="muted" style={{ margin: "4px 0 0" }}><strong>{HABITAT_WORDS.hard.title}:</strong> {HABITAT_WORDS.hard.line}</p>
+                <p className="muted" style={{ margin: "4px 0 0" }}><strong>{STORY_WORDS.title}:</strong> {STORY_WORDS.line}</p>
                 <div className="button-row demo-suite-actions" style={{ marginTop: 8 }} data-testid="habitat-actions">
                   <button className="primary" disabled={busy} onClick={() => setGuard({ kind: "demo-suite", seed: freshDemoSeed(), profile: "habitat-well" })}>Habitat · doing well</button>
                   <button className="primary" disabled={busy} onClick={() => setGuard({ kind: "demo-suite", seed: freshDemoSeed(), profile: "habitat-hard" })}>Habitat · doing badly</button>
+                  <button className="primary" disabled={busy} onClick={() => setGuard({ kind: "demo-suite", seed: freshDemoSeed(), profile: "habitat-story" })}>Habitat · our story</button>
                   {household.syntheticFixture?.kind === "hearth-demo-suite" && (
                     <button className="ghost" disabled={busy} onClick={() => {
                       void (async () => {
                         setBusy(true);
                         try {
-                          setDemoReport(await verifyDemoSuite(household));
+                          setDemoReport(await verifyDemoSuiteOffThread(household));
                         } catch (caught) {
                           setError(caught instanceof Error ? caught.message : String(caught));
                         } finally {
@@ -8172,8 +8174,8 @@ export function App() {
       )}
       {environment === "development" && guard?.kind === "demo-suite" && (
         <ConfirmSheet
-          title={guard.profile?.startsWith("habitat-") ? (household.syntheticFixture?.kind === "hearth-demo-suite" ? `Replace this showcase with the habitat ${guard.profile === "habitat-well" ? "doing well" : "doing badly"}?` : `Create the Hercules habitat ${guard.profile === "habitat-well" ? "doing well" : "doing badly"}?`) : household.syntheticFixture?.kind === "hearth-demo-suite" ? "Replace this synthetic showcase?" : "Create a dedicated synthetic showcase?"}
-          body={`Seed ${guard.seed} creates twelve months of fictional CAD, shifts, schedules, Evidence envelopes, bills, appointments, claims, goals, Fund plans, reconciliations, and audit coverage. Your ordinary Development household is not replaced. On an existing synthetic showcase, only that showcase is regenerated. Schedule and Evidence rows do not post money.`}
+          title={guard.profile === "habitat-story" ? (household.syntheticFixture?.kind === "hearth-demo-suite" ? "Replace this showcase with the habitat our story?" : "Create the Hercules habitat our story?") : guard.profile?.startsWith("habitat-") ? (household.syntheticFixture?.kind === "hearth-demo-suite" ? `Replace this showcase with the habitat ${guard.profile === "habitat-well" ? "doing well" : "doing badly"}?` : `Create the Hercules habitat ${guard.profile === "habitat-well" ? "doing well" : "doing badly"}?`) : household.syntheticFixture?.kind === "hearth-demo-suite" ? "Replace this synthetic showcase?" : "Create a dedicated synthetic showcase?"}
+          body={guard.profile === "habitat-story" ? `Seed ${guard.seed} creates two fictional years — twenty-five months of CAD, bills, Fund plans, Chapters, Kitty Banks and the Journey of Life — as a dedicated synthetic household. Your ordinary Development household is not replaced. Generating takes a few minutes.` : `Seed ${guard.seed} creates twelve months of fictional CAD, shifts, schedules, Evidence envelopes, bills, appointments, claims, goals, Fund plans, reconciliations, and audit coverage. Your ordinary Development household is not replaced. On an existing synthetic showcase, only that showcase is regenerated. Schedule and Evidence rows do not post money.`}
           extra={googleStepUpExtra}
           confirmLabel="Generate & verify"
           busy={busy}

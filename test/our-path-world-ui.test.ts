@@ -1126,4 +1126,20 @@ describe("Every place on the island is reachable from the DOM (a11y pass)", () =
     expect(rail.map((b) => b.getAttribute("aria-pressed"))).toEqual(["true", "false", "false", "false"]);
     expect(rail.some((b) => b.hasAttribute("aria-current"))).toBe(false);
   });
+  it("without a journey, the scene carries no era keys and the island still grows from the whole history (D-268)", async () => {
+    created.mode = "fake";
+    const h = seeded();
+    await act(async () => root.render(createElement(Harness, { initial: h, today: "2026-09-15" })));
+    await settle();
+    const world = created.worlds[0] as FakeWorld;
+    const scene = world.setScene.mock.calls.at(-1)![0] as Record<string, unknown> & { characters: unknown[] };
+    expect("eras" in scene || "home" in scene || "gate" in scene).toBe(false);
+    expect(scene.characters).toHaveLength(pathMonths(h, "2026-09-15").length);
+    expect(host.querySelector('.path-mark[data-place^="era"]')).toBeNull();
+    // The journey is still one tap away, as a plain form.
+    await click(byText("Plan our journey"));
+    expect($(".path-planner h3").textContent).toBe("Plan our journey");
+    await click(byText("Close the planner"));
+    expect(host.querySelector(".path-planner")).toBeNull();
+  });
 });

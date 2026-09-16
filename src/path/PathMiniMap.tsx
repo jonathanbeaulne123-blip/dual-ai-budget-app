@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import type { DateKey } from "../core/calendar.ts";
 import { charterIsSigned } from "../core/charter.ts";
+import { monthKeyFromDateKey } from "../core/calendar.ts";
+import { currentPathEra } from "../core/pathEras.ts";
 import { pathLand } from "../core/pathLand.ts";
 import { pathMonthCharacter, pathMonths } from "../core/pathSignals.ts";
 import { effectivePathRecipes } from "../core/pathWorld.ts";
@@ -38,7 +40,10 @@ export function PathMiniMap({ household, today, size, shown: shownProp, classNam
 }) {
   const appearance = useAppearance();
   const theme = themeOverride ?? appearance.scene.theme;
-  const months = useMemo(() => pathMonths(household, today), [household, today]);
+  // The Journey of Life (D-268): like the island, the map grows from the current era's months when there is one.
+  const era = useMemo(() => { try { return currentPathEra(household, today); } catch { return null; } }, [household, today]);
+  const eraFrom = era?.months[0] ?? null;
+  const months = useMemo(() => pathMonths(household, today, eraFrom ? { from: eraFrom, through: monthKeyFromDateKey(today) } : undefined), [household, today, eraFrom]);
   const recipes = useMemo(() => effectivePathRecipes(household), [household]);
   const last = months.length - 1;
   const shown = Math.max(0, Math.min(shownProp ?? last, last));
@@ -65,6 +70,7 @@ export function PathMiniMap({ household, today, size, shown: shownProp, classNam
       height={size}
       className={`path-minimap path-minimap--${theme}${className ? ` ${className}` : ""}`}
       data-months={months.length}
+      data-era={era?.spec.name}
     >
       <path className="path-minimap__shore" d={`${shore.map((p, i) => `${i ? "L" : "M"}${at(Math.cos(p.a) * p.r)} ${at(Math.sin(p.a) * p.r)}`).join(" ")} Z`} />
       {island.coves.map((cove, i) => {
@@ -135,6 +141,7 @@ export function PathMiniMap({ household, today, size, shown: shownProp, classNam
           </g>
         );
       })()}
+      {era && <text className="path-minimap__era" x={0} y={-52} textAnchor="middle">{era.spec.name}</text>}
     </svg>
   );
 }

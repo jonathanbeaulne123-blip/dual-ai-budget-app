@@ -36,3 +36,11 @@ Please review these files:
 - `src/core/sync.ts` `mergeShared`, `src/core/conflict.ts` `mergeSharedLastEntryWins`
 - `src/ledger/materializeSnapshotFromEvents.ts` (the `path-world-materialization-invalid` gate)
 - Tests: `test/our-path-world.test.ts` ("pathWorld capability guard")
+
+## Addendum — era rows (D-268)
+The collection gains a fourth row kind, **era** (the Journey of Life). An era row is an agreement row like recipe and name: words (through `pathWords`), months, a home, a finish rule, plans pointing at shared goal ids, `crossedOn` and `retired`. No amounts. The same agreement machinery, merge and replay authority apply (`pathWorldChangeAuthorized` treats it as an agreement row).
+
+- **Capability:** `pathEraVersion?: 1` mirrors `pathWorldVersion`. `authority.ts` refuses a command without it once `hasPathEraData(current)` or a step is in `PATH_ERA_COMMAND_KINDS` (`proposePathEra`, `proposePathEraPlan`, `crossPathEra`); `client.ts` refuses to send until the server's `ready` advertises it; `ledgerRoom` advertises it. A pre-D-268 client (which would drop era rows when it shapes the collection) is refused on households with a journey. `pathWorldVersion` stays 1, so no island-only household is disturbed.
+- **Shape rules:** `assertEraProposalFits` (on propose and again on agree): a crossed era keeps order, months, home, finish rule and `crossedOn`; the current era keeps order and start and cannot be retired; once any bridge has been crossed, nothing new goes before the current era; orders are unique.
+- **Crossing:** `crossPathEra` proposes `crossedOn` only when the finish line reads met from accepted books. Replay does not re-check the finish line (the check reads books that replay order may not have yet); a forged crossing still needs every member's agreement under `pathWorldChangeAuthorized`.
+- **Please review:** the above, plus `src/core/duplicate.ts` (`refreshDuplicateFlags` windowing) and `src/core/syntheticRuntime.ts` (`atSyntheticClock`, fixture-only).

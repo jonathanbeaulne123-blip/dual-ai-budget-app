@@ -6,6 +6,7 @@ import { CELL, GRID, HALF, SIZE, heightAt, idx, islandHash, type GrownIsland, ty
 import { walkPath, walkSeconds, type WalkPoint } from "../walk.ts";
 import { COIN_POOL, landmarkStepChange } from "../landmarks.ts";
 import { charterSpot, cottageSpot, forkAngle, type PathSitdown } from "../together.ts";
+import type { PathEraHome, PathEraPlanKind } from "../../core/pathWorld.ts";
 
 /**
  * The Our Path world (D-262): one renderer, one island, an orbiting camera
@@ -58,6 +59,35 @@ export type PathWorldInput = {
   forks?: { id: string; month: number; index: number }[];
   /** Hercules's cottage (Play): present only when the page can open Play. Anchored as `cottage`. */
   cottage?: boolean;
+  /**
+   * The Journey of Life (D-268). The main island is the current era; every other era floats around it.
+   * Absent or empty: the island draws exactly as before (a household that has not laid out a journey).
+   */
+  eras?: PathEraIslandInput[];
+  /** The current era's home, standing at the centre of the main island. Anchored as `era-home`. */
+  home?: PathEraHome | null;
+  /**
+   * The bridge out of the current era toward the next era island (offset 1). One lantern per part of the finish line.
+   * `open`: every lantern lit. `crossing`: one of us has agreed to cross (planks half down). Anchored as `era-gate`.
+   */
+  gate?: { lanterns: boolean[]; open: boolean; crossing: boolean } | null;
+};
+/**
+ * One floating era island (D-268). Anchors: `era:<id>` for the island, `era:<id>:plan:<planId>` for each plan.
+ * `offset` is the era's place relative to the current era: negative = past (behind), positive = future (ahead);
+ * sketched eras (only one of us agreed) come after the last future era.
+ */
+export type PathEraIslandInput = {
+  id: string;
+  state: "past" | "future" | "sketched";
+  offset: number;
+  name: string;
+  home: PathEraHome;
+  /** Past eras: their own island grown from their own months (the page grows it with `growIsland`). Future: null. */
+  island: GrownIsland | null;
+  plans: { id: string; kind: PathEraPlanKind; step: number | null; bought: boolean; sketched: boolean }[];
+  /** Future and sketched islands sit in fog unless focused. */
+  focused: boolean;
 };
 export type PathWeatherInput = { id: string; kind: "cloud" | "storm" | "sunrise" | "mist"; weight: number; dayOffset: number };
 export type PathFootpathInput = { id: string; month: number; done: boolean };
@@ -68,6 +98,103 @@ export const PATH_WEATHER_DAYS = 31;
 export const PATH_WEATHER_REACH = 1.2;
 export function weatherAlong(dayOffset: number): number {
   return Math.max(0, Math.min(PATH_WEATHER_DAYS, dayOffset)) / PATH_WEATHER_DAYS * PATH_WEATHER_REACH;
+}
+/**
+ * The Journey of Life layout (D-268). The journey is one line through the main island: at the default camera
+ * (theta 0.7) the future lies straight ahead, beyond the island, and the past lies behind it, on the viewer's side.
+ * Each further era turns the same way around the ring and a little further out, so the two ends never meet.
+ */
+export const ERA_AXIS = -2.27;
+export const ERA_RING = 150;
+export const ERA_STEP = 0.3;
+export const ERA_SPREAD = 24;
+/** Past islands: the grown island scaled down to a finished, smaller land (heights flattened a little more), never wider than ERA_PAST_MAX. */
+export const ERA_PAST_SCALE = 0.42;
+export const ERA_PAST_MAX = 24;
+export const ERA_PAST_LIFT = 0.55;
+/** Footprint radius of a future (rock) and a sketched (ghost) islet. */
+export const ERA_FUTURE_RADIUS = 13;
+export const ERA_SKETCH_RADIUS = 10;
+/** Where an era island floats: `a` is the world angle (x = cos a · r, z = sin a · r). Offset 0 is the main island. */
+export function eraRingSpot(offset: number): { a: number; r: number } {
+  const k = Math.abs(Math.round(offset));
+  if (!k) return { a: ERA_AXIS, r: 0 };
+  const raw = ERA_AXIS + (offset < 0 ? Math.PI : 0) + (k - 1) * ERA_STEP;
+  return { a: Math.atan2(Math.sin(raw), Math.cos(raw)), r: ERA_RING + (k - 1) * ERA_SPREAD };
+}
+/** Coarse sampling of a past island's grid: every `step`-th cell (Full 3 → 51×51, Lite 5 → 31×31). */
+export function eraSampleStep(quality: PathQuality): number { return quality === "lite" ? 5 : 3; }
+export function eraSampleDims(step: number): number { return Math.floor((GRID - 1) / Math.max(1, Math.floor(step))) + 1; }
+/** How much a past island grown to month `cur` is scaled down (the coast grows 1.45 per month from 30). */
+export function eraPastScale(cur: number): number { return Math.min(ERA_PAST_SCALE, ERA_PAST_MAX / (30 + Math.max(0, cur) * 1.45)); }
+/** Footprint radius of that past island. */
+export function eraPastRadius(cur: number): number { return (30 + Math.max(0, cur) * 1.45) * eraPastScale(cur); }
+/** The Sky camera turn for a screen shape: phones look down the journey (future ahead), wide screens see it across (past left, future right). */
+export function eraSkyTheta(aspect: number): number { return aspect >= 1.2 ? 1.77 : aspect >= 0.8 ? 1.2 : 0.7; }
+export const ERA_SKY_MIN = 220;
+export const ERA_SKY_MAX = 600;
+/** The share of the stage (0–0.4 per side) the page's own controls cover; the Sky frame keeps the journey clear of it. */
+export type PathSafeArea = { top: number; right: number; bottom: number; left: number };
+const NO_SAFE: PathSafeArea = { top: 0, right: 0, bottom: 0, left: 0 };
+/**
+ * The Sky frame that holds every island (`r`: footprint radius, `y`: how high it floats) for a camera turned to `theta`
+ * at tilt `phi` (from vertical) with a 40° vertical field of view. Islands are projected the way the camera sees them
+ * (nearer islands look bigger), and the journey is fitted inside the part of the stage the page's controls leave clear.
+ */
+export function eraSkyFrame(islands: { x: number; z: number; r: number; y?: number }[], aspect: number, theta: number, phi = 0.95, safe: PathSafeArea = NO_SAFE): { tx: number; tz: number; r: number } {
+  if (!islands.length) return { tx: 0, tz: 0, r: ERA_SKY_MIN };
+  const clampSide = (v: number) => Math.max(0, Math.min(0.4, Number.isFinite(v) ? v : 0));
+  const inset = { top: clampSide(safe.top), right: clampSide(safe.right), bottom: clampSide(safe.bottom), left: clampSide(safe.left) };
+  const tanV = Math.tan(20 * Math.PI / 180), tanH = tanV * Math.max(0.2, aspect);
+  // The clear box in normalised screen units (−1…1), with a small margin so labels above the islands fit too.
+  const bx0 = -1 + 2 * inset.left + 0.04, bx1 = 1 - 2 * inset.right - 0.04;
+  const by0 = -1 + 2 * inset.bottom + 0.04, by1 = 1 - 2 * inset.top - 0.1;
+  const ux = (bx0 + bx1) / 2, uy = (by0 + by1) / 2;
+  // Sample each island's rim at its height, and a little above (homes and signposts).
+  const points = islands.flatMap((p) => Array.from({ length: 8 }, (_, i) => {
+    const a = i / 8 * Math.PI * 2, y = p.y ?? 0;
+    return [{ x: p.x + Math.cos(a) * p.r, y, z: p.z + Math.sin(a) * p.r }, { x: p.x + Math.cos(a) * p.r * 0.5, y: y + 6, z: p.z + Math.sin(a) * p.r * 0.5 }];
+  }).flat());
+  const sinT = Math.sin(theta), cosT = Math.cos(theta), sinP = Math.sin(phi), cosP = Math.cos(phi);
+  // Camera basis (independent of the target and distance): forward, right, up.
+  const F = { x: -sinP * sinT, y: -cosP, z: -sinP * cosT };
+  const R = { x: -F.z, z: F.x }, rl = Math.hypot(R.x, R.z) || 1; R.x /= rl; R.z /= rl;
+  const U = { x: -R.z * F.y, y: R.z * F.x - R.x * F.z, z: R.x * F.y };
+  // Ground-forward: moving the target this way moves every island down the screen by about `gu` per unit.
+  const G = { x: -sinT, z: -cosT };
+  const gu = Math.max(0.2, G.x * U.x + G.z * U.z);
+  const box = (tx: number, tz: number, r: number) => {
+    const cx = tx + r * sinP * sinT, cy = r * cosP, cz = tz + r * sinP * cosT;
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    for (const p of points) {
+      const dx = p.x - cx, dy = p.y - cy, dz = p.z - cz;
+      const depth = Math.max(1, dx * F.x + dy * F.y + dz * F.z);
+      const sx = (dx * R.x + dz * R.z) / (depth * tanH), sy = (dx * U.x + dy * U.y + dz * U.z) / (depth * tanV);
+      x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
+    }
+    return { x0, x1, y0, y1 };
+  };
+  // Centre the journey in the clear box at distance r (a few refinement steps), then report whether it fits.
+  const centre = (r: number) => {
+    let tx = islands.reduce((a, p) => a + p.x, 0) / islands.length, tz = islands.reduce((a, p) => a + p.z, 0) / islands.length;
+    let b = box(tx, tz, r);
+    for (let i = 0; i < 8; i++) {
+      const ex = (b.x0 + b.x1) / 2 - ux, ey = (b.y0 + b.y1) / 2 - uy;
+      const dr = ex * r * tanH, dg = ey * r * tanV / gu;
+      tx += R.x * dr + G.x * dg; tz += R.z * dr + G.z * dg;
+      b = box(tx, tz, r);
+    }
+    return { tx, tz, fits: b.x1 - b.x0 <= bx1 - bx0 && b.y1 - b.y0 <= by1 - by0 };
+  };
+  let lo = ERA_SKY_MIN, hi = ERA_SKY_MAX;
+  if (centre(lo).fits) hi = lo;
+  else for (let i = 0; i < 14; i++) { const mid = (lo + hi) / 2; if (centre(mid).fits) hi = mid; else lo = mid; }
+  const r = Math.round(hi);
+  const at = centre(r);
+  // Never aim far out past the journey (a very lopsided safe area could ask for it).
+  const reach = Math.max(1, ...islands.map((p) => Math.hypot(p.x, p.z)));
+  const d = Math.hypot(at.tx, at.tz), k = d > reach ? reach / d : 1;
+  return { tx: at.tx * k, tz: at.tz * k, r };
 }
 export type PathAnchor = { id: string; x: number; y: number; depth: number; visible: boolean };
 export type PathLevel = 0 | 1 | 2 | 3;
@@ -161,6 +288,8 @@ export function createPathWorld(host: HTMLElement, options: {
     disc: track(new THREE.CircleGeometry(1, 12)),
     ring: track(new THREE.TorusGeometry(1, 0.12, 6, 24)),
     plane: track(new THREE.PlaneGeometry(1, 1)),
+    /** A triangular prism (pitched roofs on era homes). */
+    prism: track(new THREE.CylinderGeometry(1, 1, 1, 3)),
     star: track((() => {
       const s = new THREE.Shape();
       for (let i = 0; i < 10; i++) { const r = i % 2 ? 0.42 : 1, a = i / 10 * Math.PI * 2 - Math.PI / 2; if (i) s.lineTo(Math.cos(a) * r, Math.sin(a) * r); else s.moveTo(Math.cos(a) * r, Math.sin(a) * r); }
@@ -352,35 +481,44 @@ export function createPathWorld(host: HTMLElement, options: {
       }
     }
   }
-  function radialTexture(inner: string, outer: string): THREE.Texture {
+  function radialTexture(inner: string, outer: string, owner: (() => void)[] = decorDisposables): THREE.Texture {
     const c = document.createElement("canvas"); c.width = c.height = 64;
     const g = c.getContext("2d");
     if (g) { const gr = g.createRadialGradient(32, 32, 2, 32, 32, 30); gr.addColorStop(0, inner); gr.addColorStop(1, outer); g.fillStyle = gr; g.fillRect(0, 0, 64, 64); }
-    const t = new THREE.CanvasTexture(c); decorDisposables.push(() => t.dispose()); return t;
+    const t = new THREE.CanvasTexture(c); owner.push(() => t.dispose()); return t;
   }
 
-  function paintTerrain(island: GrownIsland, season: string) {
-    const c = new THREE.Color();
-    const P = {
+  type LandPaint = Record<"grass" | "dry" | "sand" | "rock" | "deep" | "snow" | "autumn" | "bloomA" | "bloomB", THREE.Color>;
+  function landPaint(): LandPaint {
+    return {
       grass: new THREE.Color(palette.grass), dry: new THREE.Color(palette.dry), sand: new THREE.Color(palette.sand), rock: new THREE.Color(palette.rock),
       deep: new THREE.Color(palette.deep), snow: new THREE.Color(palette.snow), autumn: new THREE.Color("#c98a4a"),
       bloomA: new THREE.Color(palette.blooms[0]), bloomB: new THREE.Color(palette.blooms[1]),
     };
+  }
+  /** The colour of one grid cell of a grown island (the main terrain and the past era islands share it). */
+  function landColour(island: GrownIsland, k: number, season: string, P: LandPaint, c: THREE.Color): THREE.Color {
+    const h = island.H[k]!;
+    if (h < 0.05) c.copy(P.deep).lerp(P.sand, Math.max(0, 1 + h / 1.2) * 0.6);
+    else {
+      c.copy(P.dry).lerp(P.grass, Math.max(0, Math.min(1, (island.M[k]! - 0.22) / 0.36)));
+      if (season === "autumn") c.lerp(P.autumn, 0.1);
+      const b = Math.min(1, island.B[k]! * 0.9);
+      if (b > 0.05) c.lerp(k % 3 ? P.bloomA : P.bloomB, b * 0.5);
+      c.lerp(P.rock, island.R[k]!);
+      c.lerp(P.sand, island.S[k]!);
+      if (season === "winter") c.lerp(P.snow, Math.min(0.75, 0.35 + h * 0.05) * (1 - island.S[k]!));
+      // The first winter's frost: a thin white stamp that stays in every season.
+      const frost = island.F?.[k] ?? 0;
+      if (frost > 0.02) c.lerp(P.snow, Math.min(0.72, frost * 0.72) * (1 - island.S[k]!));
+    }
+    return c;
+  }
+  function paintTerrain(island: GrownIsland, season: string) {
+    const c = new THREE.Color();
+    const P = landPaint();
     for (let k = 0; k < GRID * GRID; k++) {
-      const h = island.H[k]!;
-      if (h < 0.05) c.copy(P.deep).lerp(P.sand, Math.max(0, 1 + h / 1.2) * 0.6);
-      else {
-        c.copy(P.dry).lerp(P.grass, Math.max(0, Math.min(1, (island.M[k]! - 0.22) / 0.36)));
-        if (season === "autumn") c.lerp(P.autumn, 0.1);
-        const b = Math.min(1, island.B[k]! * 0.9);
-        if (b > 0.05) c.lerp(k % 3 ? P.bloomA : P.bloomB, b * 0.5);
-        c.lerp(P.rock, island.R[k]!);
-        c.lerp(P.sand, island.S[k]!);
-        if (season === "winter") c.lerp(P.snow, Math.min(0.75, 0.35 + h * 0.05) * (1 - island.S[k]!));
-        // The first winter's frost: a thin white stamp that stays in every season.
-        const frost = island.F?.[k] ?? 0;
-        if (frost > 0.02) c.lerp(P.snow, Math.min(0.72, frost * 0.72) * (1 - island.S[k]!));
-      }
+      landColour(island, k, season, P, c);
       toC[k * 3] = c.r; toC[k * 3 + 1] = c.g; toC[k * 3 + 2] = c.b;
     }
     toH.set(island.H);
@@ -1028,6 +1166,8 @@ export function createPathWorld(host: HTMLElement, options: {
       anchor("name", g, 3); dynamic.add(g);
     }
 
+    // The Journey of Life: the other eras float around this one (nothing is drawn without a journey).
+    buildJourney(input, island, reserved, Array.from({ length: landmarkCount }, (_, i) => landmarkPosition(i, landmarkCount, island)));
     placeFoliage(island, monthSeason, reserved);
     for (const obj of appearing) { obj.userData.pop = options.reducedMotion || !animate ? 1 : 0; obj.scale.setScalar(obj.userData.pop ? 1 : 0.01); }
     sun.intensity = monthSeason === "winter" ? 1.8 : 2.2;
@@ -1248,6 +1388,609 @@ export function createPathWorld(host: HTMLElement, options: {
       anchor(bridge.id, g, 1.6);
       dynamic.add(g);
     }
+  }
+
+  // ------------------------------------------------------------------ the Journey of Life (D-268): era islands, the gate, the home
+  const PENCIL = "#b3ada4";
+  const PENCIL_EXTRA: THREE.MeshStandardMaterialParameters = { transparent: true, opacity: 0.5, wireframe: true, depthWrite: false, emissive: "#6f6a63", emissiveIntensity: 0.4 };
+  const eraFogTexture = radialTexture("rgba(255,255,255,.95)", "rgba(255,255,255,0)", cleanup);
+  /** How much fog each era island showed last frame (0–1), so a focus change fades from where it was. */
+  const eraFogShown = new Map<string, number>();
+  let gateSwing: number | null = null;
+  /** Per-build: step functions (dt) that return true while still moving. */
+  let fades: ((dt: number) => boolean)[] = [];
+  /** Per-build: the floating islands' tops, for the camera's ground and target limits. */
+  let eraTops: { x: number; z: number; r: number; y: number }[] = [];
+  let eraExtent = 0;
+  /** Per-build: every island on the journey (the main one included), for the Sky frame. */
+  let eraFrame: { x: number; z: number; r: number; y: number }[] = [];
+  /** What the page's controls cover (fractions of the stage); the Sky frame keeps the journey clear of it. */
+  let safeArea: PathSafeArea = NO_SAFE;
+  const hasJourney = () => eraExtent > 0;
+  const aspectNow = () => (width && height ? width / height : 1);
+  const skyFrame = () => eraSkyFrame(eraFrame, aspectNow(), eraSkyTheta(aspectNow()), cam.phi, safeArea);
+  const maxRadius = () => (hasJourney() ? Math.max(200, skyFrame().r + 40) : 200);
+  // A sea bed under the wider sea (journey only), so the main terrain's square floor does not show once the haze moves out.
+  const seaBed = new THREE.Mesh(track(new THREE.CircleGeometry(1260, 48)), new THREE.MeshStandardMaterial({ color: "#6fb2ae", roughness: 0.95, flatShading: true }));
+  seaBed.rotation.x = -Math.PI / 2; seaBed.position.y = -3.2; seaBed.visible = false; scene.add(seaBed);
+  cleanup.push(() => (seaBed.material as THREE.Material).dispose());
+  /** The haze reaches past the Sky camera when there is a journey (and comes back to today's values without one). */
+  function journeyHaze() {
+    const fog = scene.fog as THREE.Fog;
+    if (hasJourney()) {
+      const r = skyFrame().r;
+      fog.near = Math.max(themeKey === "newfoundland" ? 300 : 380, r * 1.05); fog.far = fog.near + 750;
+      sea.scale.setScalar(3); seaBed.visible = true;
+      (seaBed.material as THREE.MeshStandardMaterial).color.set(palette.deep);
+      if (camera.far !== 1600) { camera.far = 1600; camera.updateProjectionMatrix(); }
+    } else {
+      fog.near = themeKey === "newfoundland" ? 120 : 190; fog.far = 420;
+      sea.scale.setScalar(1); seaBed.visible = false;
+      if (camera.far !== 900) { camera.far = 900; camera.updateProjectionMatrix(); }
+    }
+  }
+
+  /** One era part: a normal mesh, or the same shape in pencil (pale wireframe). Era parts never cast shadows. */
+  function ep(pencil: boolean, geo: THREE.BufferGeometry, color: string, sx: number, sy: number, sz: number, x: number, y: number, z: number, extra?: THREE.MeshStandardMaterialParameters): THREE.Mesh {
+    const m = pencil ? part(geo, PENCIL, sx, sy, sz, x, y, z, PENCIL_EXTRA) : part(geo, color, sx, sy, sz, x, y, z, extra);
+    m.castShadow = false;
+    return m;
+  }
+  const LIT_WINDOW: THREE.MeshStandardMaterialParameters = { emissive: "#ffc860", emissiveIntensity: 1.1 };
+  const DARK_GLASS: THREE.MeshStandardMaterialParameters = { metalness: 0.35, roughness: 0.25 };
+
+  /** A household home, about 4 units across at scale 1, facing +z. */
+  function buildHome(kind: PathEraHome, pencil: boolean): THREE.Group {
+    const g = new THREE.Group();
+    const P = palette;
+    const seed = ["flat", "furnished", "house", "porch", "cabin", "boat"].indexOf(kind);
+    const wall = P.walls[(seed + 1) % P.walls.length]!, roof = P.roofs[seed % P.roofs.length]!;
+    const add = (geo: THREE.BufferGeometry, color: string, sx: number, sy: number, sz: number, x: number, y: number, z: number, extra?: THREE.MeshStandardMaterialParameters) => {
+      const m = ep(pencil, geo, color, sx, sy, sz, x, y, z, extra); g.add(m); return m;
+    };
+    const win = (x: number, y: number, z: number, lit: boolean) => add(G.box, lit ? "#ffe2a0" : "#3d4c5a", 0.5, 0.55, 0.06, x, y, z, lit ? LIT_WINDOW : DARK_GLASS);
+    // A pitched roof: the prism's ridge runs along x, the triangle spans the depth.
+    const pitched = (w: number, d: number, h: number, base: number, color: string) => {
+      const r = add(G.prism, color, d / 2 / 0.866, w, h / 1.5, 0, base + 0.5 * h / 1.5, 0);
+      r.rotation.set(-Math.PI / 2, Math.PI / 2, 0, "YXZ");
+      return r;
+    };
+    const door = (z: number) => add(G.box, "#6b4a30", 0.6, 1.1, 0.06, 0, 0.55, z);
+    if (kind === "flat" || kind === "furnished") {
+      const lit = kind === "furnished";
+      add(G.box, wall, 3, 3.6, 2.4, 0, 1.8, 0);
+      add(G.box, roof, 3.2, 0.2, 2.6, 0, 3.7, 0);
+      for (const y of [1.1, 2.7]) for (const x of [-0.8, 0.8]) win(x, y, 1.23, lit && !(y < 2 && x < 0));
+      add(G.box, "#6b4a30", 0.5, 0.8, 0.06, 0, 0.4, 1.23);
+      if (lit) {
+        // The balcony: a tiny sofa and two plant pots.
+        add(G.box, "#d8c49a", 2.4, 0.12, 0.9, 0, 2.0, 1.65);
+        add(G.box, P.rock, 2.4, 0.4, 0.05, 0, 2.26, 2.08);
+        add(G.box, P.second, 0.9, 0.22, 0.34, 0, 2.17, 1.5);
+        add(G.box, P.second, 0.9, 0.34, 0.1, 0, 2.3, 1.36);
+        for (const x of [-0.95, 0.95]) {
+          add(G.cyl, "#c0704a", 0.13, 0.22, 0.13, x, 2.17, 1.6);
+          add(G.ico, P.leaves[0]!, 0.2, 0.24, 0.2, x, 2.4, 1.6);
+        }
+      }
+    } else if (kind === "house" || kind === "porch") {
+      add(G.box, wall, 3.2, 2.2, 2.6, 0, 1.1, 0);
+      pitched(3.5, 3, 1.9, 2.2, roof);
+      door(1.31);
+      win(-1, 1.25, 1.31, true); win(1, 1.25, 1.31, false);
+      add(G.box, "#8a5a3e", 0.35, 1.1, 0.35, 0.9, 3.1, -0.45);
+      if (kind === "porch") {
+        const deck = "#b8925f";
+        add(G.box, deck, 4.6, 0.18, 1.3, 0.3, 0.09, 1.95);
+        add(G.box, deck, 1.3, 0.18, 3.9, 2.25, 0.09, 0.65);
+        for (const [x, z] of [[-1.9, 2.5], [2.8, 2.5], [2.8, -1.2]] as const) add(G.cyl, "#fbf1e2", 0.06, 1.8, 0.06, x, 1.0, z);
+        add(G.box, roof, 4.9, 0.1, 1.5, 0.35, 1.95, 2.0);
+        add(G.box, roof, 1.5, 0.1, 3.8, 2.35, 1.95, 0.65);
+        for (const x of [-1.25, -0.45]) {
+          add(G.box, "#7a5436", 0.4, 0.06, 0.4, x, 0.52, 2.05);
+          add(G.box, "#7a5436", 0.4, 0.5, 0.06, x, 0.78, 1.86);
+          for (const s of [-0.16, 0.16]) { const r = add(G.box, "#6b4a30", 0.04, 0.06, 0.6, x + s, 0.24, 2.05); r.rotation.x = 0.1; }
+        }
+        for (const x of [-1.3, 1.3]) {
+          add(G.box, "#7a5436", 1.5, 0.25, 0.6, x, 0.12, 3.3);
+          for (let i = 0; i < 3; i++) add(G.ico, P.blooms[i % P.blooms.length]!, 0.18, 0.18, 0.18, x - 0.45 + i * 0.45, 0.34, 3.3);
+        }
+      }
+    } else if (kind === "cabin") {
+      add(G.box, "#8a5a3e", 3, 1.8, 2.4, 0, 0.9, 0);
+      for (let i = 0; i < 4; i++) { const log = add(G.cyl, "#6b4a30", 0.12, 3.2, 0.12, 0, 0.25 + i * 0.45, 1.22); log.rotation.z = Math.PI / 2; }
+      pitched(3.4, 2.9, 1.6, 1.8, P.roofs[1 % P.roofs.length]!);
+      add(G.box, P.rock, 0.5, 2.9, 0.5, -1.6, 1.45, -0.3);
+      door(1.36);
+      win(0.9, 1.0, 1.36, true);
+    } else {
+      // The houseboat on a little pond.
+      add(G.disc, "#7fb6c4", 3.3, 3.3, 1, 0, 0.06, 0, { roughness: 0.2, flatShading: false }).rotation.x = -Math.PI / 2;
+      add(G.box, "#7a5436", 3.6, 0.6, 1.5, 0, 0.35, 0);
+      add(G.box, P.accent, 3.62, 0.1, 1.52, 0, 0.55, 0);
+      const bow = add(G.prism, "#7a5436", 0.87, 0.6, 0.5, 2.05, 0.35, 0); bow.rotation.y = Math.PI / 2;
+      add(G.box, wall, 2, 1, 1.2, -0.2, 1.15, 0);
+      add(G.box, roof, 2.3, 0.12, 1.5, -0.2, 1.71, 0);
+      for (let i = 0; i < 3; i++) { const w = add(G.cyl, i === 1 ? "#ffe2a0" : "#3d4c5a", 0.14, 0.05, 0.14, -0.8 + i * 0.6, 1.2, 0.61, i === 1 ? LIT_WINDOW : DARK_GLASS); w.rotation.x = Math.PI / 2; }
+    }
+    return g;
+  }
+
+  /** A plan silhouette (about 2 units tall), facing +z. */
+  function buildPlan(plan: PathEraIslandInput["plans"][number], ghost: boolean): THREE.Group {
+    const g = new THREE.Group();
+    const pencil = ghost || plan.sketched;
+    const add = (geo: THREE.BufferGeometry, color: string, sx: number, sy: number, sz: number, x: number, y: number, z: number, extra?: THREE.MeshStandardMaterialParameters) => {
+      const m = ep(pencil, geo, color, sx, sy, sz, x, y, z, extra); g.add(m); return m;
+    };
+    switch (plan.kind) {
+      case "bank": {
+        // A squat cat bank: unlit stone, warming with each step, gold once bought.
+        const k = Math.max(0, Math.min(10, Math.round(plan.step ?? 0))) / 10;
+        const colour = plan.bought ? "#e0ad3c" : tint("#8f8a84", "#e9a86a", k);
+        const extra: THREE.MeshStandardMaterialParameters = plan.bought
+          ? { metalness: 0.6, roughness: 0.35, emissive: "#8a5a10", emissiveIntensity: 0.5 }
+          : k > 0 ? { emissive: "#ff9a3c", emissiveIntensity: Math.round(k * 45) / 100 } : {};
+        add(G.cyl, P0(), 0.95, 0.12, 0.95, 0, 0.06, 0);
+        add(G.sph, colour, 0.72, 0.62, 0.6, 0, 0.72, 0, extra);
+        add(G.sph, colour, 0.42, 0.4, 0.4, 0, 1.4, 0.3, extra);
+        for (const s of [-1, 1]) add(G.cone, colour, 0.12, 0.28, 0.12, s * 0.22, 1.82, 0.28, extra);
+        const tail = add(G.cyl, colour, 0.08, 0.9, 0.08, 0, 0.95, -0.7, extra); tail.rotation.x = -0.6;
+        add(G.box, "#3a2a1c", 0.08, 0.04, 0.34, 0, 1.33, -0.15);
+        break;
+      }
+      case "milestone": {
+        add(G.ico, palette.rock, 0.35, 0.25, 0.35, 0, 0.12, 0);
+        add(G.cyl, "#7a5436", 0.06, 2.4, 0.06, 0, 1.2, 0);
+        add(G.box, palette.accent, 0.9, 0.55, 0.04, 0.45, 2.1, 0);
+        break;
+      }
+      case "trip": {
+        // A folded map on the ground and a pennant on a short pole.
+        for (let i = 0; i < 3; i++) { const p = add(G.box, i % 2 ? "#e8d5b0" : "#f3e6cc", 0.5, 0.03, 0.72, -0.48 + i * 0.48, 0.1, 0.3); p.rotation.z = i % 2 ? -0.25 : 0.25; }
+        add(G.box, palette.second, 0.9, 0.02, 0.05, 0, 0.18, 0.3);
+        add(G.cyl, "#7a5436", 0.04, 1.6, 0.04, 0.6, 0.8, -0.4);
+        const pen = add(G.cone, palette.second, 0.18, 0.6, 0.05, 0.9, 1.45, -0.4); pen.rotation.z = -Math.PI / 2;
+        break;
+      }
+      case "chapter": {
+        // A small campfire ring, not yet lit.
+        for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; add(G.ico, "#9c8f7d", 0.25, 0.2, 0.25, Math.cos(a) * 0.8, 0.12, Math.sin(a) * 0.8); }
+        for (let i = 0; i < 3; i++) { const l = add(G.cyl, "#7a5436", 0.09, 1.1, 0.09, 0, 0.22, 0); l.rotation.z = Math.PI / 2; l.rotation.y = i * 1.05; }
+        break;
+      }
+      default: {
+        add(G.cyl, "#7a5436", 0.06, 1.8, 0.06, 0, 0.9, 0);
+        add(G.box, "#fbf1e2", 1.0, 0.5, 0.06, 0, 1.5, 0);
+        add(G.box, palette.accent, 0.1, 0.5, 0.07, 0.45, 1.5, 0);
+      }
+    }
+    return g;
+  }
+  const P0 = () => tint(palette.rock, "#ffffff", 0.25);
+
+  /** Each era island's signpost, with each theme's authored touch (Taylor's gold star, Classic's paper pennant, Newfoundland's painted board). */
+  function eraSign(pencil: boolean, index: number): THREE.Group {
+    const g = new THREE.Group();
+    const add = (geo: THREE.BufferGeometry, color: string, sx: number, sy: number, sz: number, x: number, y: number, z: number, extra?: THREE.MeshStandardMaterialParameters) => {
+      const m = ep(pencil, geo, color, sx, sy, sz, x, y, z, extra); g.add(m); return m;
+    };
+    const board = themeKey === "newfoundland" ? palette.walls[index % palette.walls.length]! : "#fbf1e2";
+    add(G.cyl, "#7a5436", 0.08, 2.6, 0.08, 0, 1.3, 0);
+    add(G.box, board, 1.5, 0.55, 0.08, 0.55, 2.1, 0);
+    if (themeKey === "taylor") add(G.star, "#e9b949", 0.28, 0.28, 0.28, 0, 2.85, -0.05, { metalness: 0.6, roughness: 0.3, emissive: "#6b4a10", emissiveIntensity: 0.4 });
+    else if (themeKey === "classic") { const p = add(G.cone, "#f2e2c0", 0.2, 0.7, 0.04, 0.35, 2.45, 0); p.rotation.z = -Math.PI / 2; }
+    else add(G.box, "#f1f4f4", 1.5, 0.08, 0.1, 0.55, 1.8, 0);
+    return g;
+  }
+
+  type EraNode = { offset: number; x: number; z: number; y: number; r: number; edge: (towardX: number, towardZ: number) => THREE.Vector3; state: PathEraIslandInput["state"] | "current" };
+
+  /** A past island's land: the grown heightfield sampled coarsely, scaled down, cut along its coast. */
+  function pastLand(island: GrownIsland): THREE.Mesh {
+    const step = eraSampleStep(quality), n = eraSampleDims(step), S = eraPastScale(island.cur), V = ERA_PAST_LIFT;
+    const P = landPaint(), c = new THREE.Color(), cliff = new THREE.Color(palette.rock).lerp(new THREE.Color("#2b2622"), 0.25);
+    const vx = new Float32Array(n * n), vy = new Float32Array(n * n), vz = new Float32Array(n * n), sea = new Uint8Array(n * n);
+    const col = new Float32Array(n * n * 3);
+    for (let j = 0; j < n; j++) for (let i = 0; i < n; i++) {
+      const v = j * n + i, k = idx(i * step, j * step), h = island.H[k]!;
+      vx[v] = (-HALF + i * step * CELL) * S; vz[v] = (-HALF + j * step * CELL) * S;
+      sea[v] = h < 0.05 ? 1 : 0;
+      vy[v] = sea[v] ? -1.6 : h * V;
+      if (sea[v]) c.copy(cliff); else landColour(island, k, "summer", P, c);
+      col[v * 3] = c.r; col[v * 3 + 1] = c.g; col[v * 3 + 2] = c.b;
+    }
+    const pos: number[] = [], rgb: number[] = [];
+    const tri = (a: number, b: number, d: number) => {
+      if (sea[a] && sea[b] && sea[d]) return;
+      for (const v of [a, b, d]) { pos.push(vx[v]!, vy[v]!, vz[v]!); rgb.push(col[v * 3]!, col[v * 3 + 1]!, col[v * 3 + 2]!); }
+    };
+    for (let j = 0; j < n - 1; j++) for (let i = 0; i < n - 1; i++) {
+      const a = j * n + i, b = a + 1, d = a + n, e = d + 1;
+      tri(a, d, b); tri(b, d, e);
+    }
+    const geo = strack(new THREE.BufferGeometry());
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute("color", new THREE.Float32BufferAttribute(rgb, 3));
+    geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, smat(new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true, side: THREE.DoubleSide })));
+    mesh.receiveShadow = false; mesh.castShadow = false;
+    return mesh;
+  }
+
+  /** A few trees and blooms from a past island's fields, as two capped instanced meshes. */
+  function pastGrowth(island: GrownIsland, g: THREE.Group, avoid: [number, number][]) {
+    const S = eraPastScale(island.cur), V = ERA_PAST_LIFT, cap = quality === "lite" ? 18 : 40;
+    const trees = new THREE.InstancedMesh(G.cone, mat(palette.leaves[0]!), cap);
+    const blooms = new THREE.InstancedMesh(G.ico, mat(palette.blooms[0]!), cap);
+    sceneDisposables.push(() => { trees.dispose(); blooms.dispose(); });
+    let t = 0, b = 0;
+    for (const p of CAND) {
+      if (t >= cap && b >= cap) break;
+      const k = idx(Math.max(0, Math.min(GRID - 1, Math.round((p.x + HALF) / CELL))), Math.max(0, Math.min(GRID - 1, Math.round((p.z + HALF) / CELL))));
+      const h = island.H[k]!;
+      if (h < 0.8 || island.S[k]! > 0.35 || island.R[k]! > 0.5) continue;
+      const x = p.x * S, z = p.z * S;
+      if (avoid.some(([ax, az]) => (ax - x) ** 2 + (az - z) ** 2 < 4)) continue;
+      const y = heightAt(island, p.x, p.z) * V;
+      if (t < cap && p.t < 0.12 && p.s < island.M[k]! * 1.25) {
+        const s = 0.35 + p.s * 0.3;
+        dummy.position.set(x, y + 1.2 * s, z); dummy.scale.set(0.9 * s, 2.6 * s, 0.9 * s); dummy.rotation.set(0, p.c * 6, 0); dummy.updateMatrix();
+        trees.setMatrixAt(t++, dummy.matrix);
+      } else if (b < cap && island.B[k]! > 0.18 && p.t < 0.2 + island.B[k]! * 0.5) {
+        const s = 0.14 + p.s * 0.08;
+        dummy.position.set(x, y + 0.12, z); dummy.scale.setScalar(s); dummy.rotation.set(0, 0, 0); dummy.updateMatrix();
+        blooms.setMatrixAt(b++, dummy.matrix);
+      }
+    }
+    trees.count = t; blooms.count = b;
+    g.add(trees, blooms);
+  }
+
+  /** A past island's pieces as small simple markers (capped). */
+  function pastPieces(island: GrownIsland, g: THREE.Group, avoid: [number, number][]) {
+    const S = eraPastScale(island.cur), V = ERA_PAST_LIFT;
+    let shown = 0;
+    for (const piece of island.pieces) {
+      if (shown >= (quality === "lite" ? 5 : 10)) break;
+      const x = piece.x * S, z = piece.z * S;
+      if (avoid.some(([ax, az]) => (ax - x) ** 2 + (az - z) ** 2 < 9)) continue;
+      const y = heightAt(island, piece.x, piece.z) * V;
+      const m = new THREE.Group(); m.position.set(x, y, z);
+      switch (piece.kind) {
+        case "grove": case "giftTree":
+          m.add(ep(false, G.cyl, "#8a6a4a", 0.08, 0.6, 0.08, 0, 0.3, 0), ep(false, G.ico, palette.leaves[1 % palette.leaves.length]!, 0.55, 0.65, 0.55, 0, 0.9, 0));
+          break;
+        case "cottage": case "workshop": case "dogMeadow": case "kiln": case "cafe": {
+          m.add(ep(false, G.box, palette.walls[(piece.n ?? shown) % palette.walls.length]!, 0.9, 0.7, 0.8, 0, 0.35, 0));
+          const r = ep(false, G.roof, palette.roofs[(piece.n ?? shown) % palette.roofs.length]!, 0.75, 0.55, 0.75, 0, 0.97, 0); r.rotation.y = Math.PI / 4; m.add(r);
+          break;
+        }
+        case "observatory": case "monument": case "star": case "lanterns": case "firstFire":
+          m.add(ep(false, G.cyl, "#efe4cf", 0.18, 1.3, 0.18, 0, 0.65, 0), ep(false, G.sph, palette.second, 0.25, 0.25, 0.25, 0, 1.4, 0));
+          break;
+        default: {
+          const d = ep(false, G.cyl, piece.kind === "pond" || piece.kind === "creek" ? "#8cc6d4" : "#d8c49a", 0.9, 0.05, 0.9, 0, 0.05, 0);
+          m.add(d);
+        }
+      }
+      g.add(m);
+      avoid.push([x, z]);
+      shown++;
+    }
+  }
+
+  /** Where the camera stands over the sea, the main island or a floating island. */
+  function groundUnder(x: number, z: number): number {
+    if (!current) return 0;
+    const d = Math.hypot(x, z);
+    if (!hasJourney() || d < 90) return heightAt(current.island, x, z);
+    let g = 0;
+    for (const top of eraTops) {
+      const dd = Math.hypot(x - top.x, z - top.z);
+      const w = Math.max(0, Math.min(1, (top.r + 15 - dd) / 15));
+      g = Math.max(g, top.y * w);
+    }
+    return g;
+  }
+
+  /** A rope-and-plank crossing between two points, sagging a little. */
+  type CrossingStyle = "built" | "open" | "crossing" | "locked" | "faint" | "pencil";
+  function crossing(a: THREE.Vector3, b: THREE.Vector3, style: CrossingStyle) {
+    const flat = Math.hypot(b.x - a.x, b.z - a.z);
+    if (flat < 1) return;
+    const n = Math.max(2, Math.floor(flat / 1.1));
+    const sag = Math.min(4, flat * 0.05);
+    const at = (t: number, out = new THREE.Vector3()) => out.set(a.x + (b.x - a.x) * t, a.y + (b.y - a.y) * t - sag * Math.sin(Math.PI * t), a.z + (b.z - a.z) * t);
+    const yaw = Math.atan2(b.x - a.x, b.z - a.z);
+    const side = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+    const g = new THREE.Group();
+    const planksWanted = style === "built" || style === "open" ? n : style === "crossing" ? Math.ceil(n / 2) : style === "faint" ? Math.ceil(n / 3) : 0;
+    const p = new THREE.Vector3(), q = new THREE.Vector3();
+    if (planksWanted) {
+      const faint = style === "faint";
+      const planks = new THREE.InstancedMesh(G.box, faint ? mat(tint(palette.dry, "#ffffff", 0.35), { transparent: true, opacity: 0.45, depthWrite: false }) : mat("#9c7a55"), planksWanted);
+      sceneDisposables.push(() => planks.dispose());
+      let c = 0;
+      for (let i = 0; i < n && c < planksWanted; i++) {
+        if (faint && i % 3) continue;
+        const t = (i + 0.5) / n;
+        at(t, p); at(Math.min(1, t + 0.01), q);
+        dummy.position.copy(p); dummy.scale.set(1.7, 0.12, 0.8); dummy.rotation.set(0, 0, 0); dummy.lookAt(q.x, q.y, q.z); dummy.updateMatrix();
+        planks.setMatrixAt(c++, dummy.matrix);
+      }
+      planks.count = c;
+      g.add(planks);
+    }
+    const pencil = style === "pencil", faint = style === "faint";
+    if (pencil || faint) {
+      // A dashed rope (pencil: two of them, graphite).
+      for (const s of pencil ? [-0.8, 0.8] : [0]) {
+        const pts: THREE.Vector3[] = [];
+        for (let k = 0; k <= 24; k++) pts.push(at(k / 24).addScaledVector(side, s).add(new THREE.Vector3(0, 0.6, 0)));
+        const line = new THREE.Line(strack(new THREE.BufferGeometry().setFromPoints(pts)), smat(new THREE.LineDashedMaterial({ color: pencil ? PENCIL : palette.accent, dashSize: 1.2, gapSize: 0.9, transparent: true, opacity: pencil ? 0.7 : 0.6 })));
+        line.computeLineDistances();
+        g.add(line);
+      }
+    } else {
+      // Rails and posts.
+      const posts = Math.max(2, Math.round(flat / 7));
+      const postMesh = new THREE.InstancedMesh(G.cyl, mat("#6b523a"), (posts + 1) * 2);
+      sceneDisposables.push(() => postMesh.dispose());
+      let c = 0;
+      for (let i = 0; i <= posts; i++) for (const s of [-0.85, 0.85]) {
+        at(i / posts, p).addScaledVector(side, s);
+        dummy.position.set(p.x, p.y + 0.5, p.z); dummy.scale.set(0.08, 1.2, 0.08); dummy.rotation.set(0, 0, 0); dummy.updateMatrix();
+        postMesh.setMatrixAt(c++, dummy.matrix);
+      }
+      g.add(postMesh);
+      for (const s of [-0.85, 0.85]) {
+        const pts: THREE.Vector3[] = [];
+        for (let k = 0; k <= 16; k++) pts.push(at(k / 16).addScaledVector(side, s).add(new THREE.Vector3(0, style === "locked" ? 0.8 : 1.05, 0)));
+        const rope = new THREE.Mesh(strack(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 32, 0.05, 4, false)), mat(style === "locked" ? "#8a7a62" : "#6b523a"));
+        rope.castShadow = false; g.add(rope);
+      }
+      if (style === "built") {
+        // A lantern on the far post: emissive only (the light cap).
+        at(0.97, p).addScaledVector(side, 0.85);
+        g.add(ep(false, G.cyl, "#3d3a38", 0.05, 0.7, 0.05, p.x, p.y + 1.4, p.z), ep(false, G.sph, "#fff0c0", 0.2, 0.24, 0.2, p.x, p.y + 1.85, p.z, { emissive: "#ffc860", emissiveIntensity: 1.2 }));
+      }
+    }
+    dynamic.add(g);
+  }
+
+  /** Fade something between shown values over ~0.8 s (instantly under reduced motion). */
+  function fadeTo(from: number, to: number, apply: (v: number) => void, remember: (v: number) => void) {
+    apply(from);
+    if (from === to || options.reducedMotion) { apply(to); remember(to); return; }
+    let v = from;
+    fades.push((dt) => {
+      v = to > v ? Math.min(to, v + dt / 0.8) : Math.max(to, v - dt / 0.8);
+      apply(v); remember(v);
+      return v !== to;
+    });
+  }
+
+  /** The main island's widest reach (for the Sky frame). */
+  const mainRadius = (island: GrownIsland) => Math.max(...Array.from({ length: 12 }, (_, i) => island.radiusAt(i / 12 * Math.PI * 2)));
+  function buildJourney(input: PathWorldInput, island: GrownIsland, reserved: [number, number][], landmarkSpots: { x: number; z: number }[]) {
+    fades = []; eraTops = []; eraExtent = 0; eraFrame = [];
+    const eras = (input.eras ?? []).filter((era) => era && Math.round(era.offset) !== 0).slice(0, 12);
+    const bob = (obj: THREE.Object3D, y0: number, phase: number) => tickers.push((t) => {
+      obj.position.y = y0 + (ambient && quality === "full" && !options.reducedMotion ? Math.sin(t * 0.45 + phase) * 0.45 : 0);
+    });
+    const nodes: EraNode[] = [{
+      offset: 0, x: 0, z: 0, y: 0, r: 0, state: "current",
+      edge: (tx, tz) => {
+        const a = Math.atan2(tz, tx), R = island.radiusAt(a) - 2;
+        const x = Math.cos(a) * R, z = Math.sin(a) * R;
+        return new THREE.Vector3(x, Math.max(0.2, heightAt(island, x, z)) + 0.3, z);
+      },
+    }];
+    const seenFog = new Set<string>();
+    eras.forEach((era, index) => {
+      const spot = eraRingSpot(era.offset);
+      const cx = Math.cos(spot.a) * spot.r, cz = Math.sin(spot.a) * spot.r;
+      const past = era.state === "past" && era.island;
+      const ghost = era.state === "sketched";
+      const baseY = era.state === "past" ? 20 : era.state === "future" ? 24 : 27;
+      const R = past ? eraPastRadius(era.island!.cur) : ghost ? ERA_SKETCH_RADIUS : ERA_FUTURE_RADIUS;
+      const g = new THREE.Group(); g.position.set(cx, baseY, cz);
+      const inward = Math.atan2(-cx, -cz);
+      const topAt = past
+        ? (lx: number, lz: number) => Math.max(0, heightAt(era.island!, lx / eraPastScale(era.island!.cur), lz / eraPastScale(era.island!.cur))) * ERA_PAST_LIFT
+        : () => 0;
+      // The rocky underside: an inverted cone and a few hanging stones.
+      const rock = tint(palette.rock, "#2b2622", 0.12);
+      const depth = R * 1.25;
+      const cone = ep(ghost, G.cone, rock, R * 1.02, depth, R * 1.02, 0, -0.45 - depth / 2, 0); cone.rotation.x = Math.PI; g.add(cone);
+      for (let i = 0; i < 4; i++) {
+        const a = i * 1.7 + index;
+        g.add(ep(ghost, G.ico, i % 2 ? palette.rock : rock, R * 0.32, R * 0.28, R * 0.3, Math.cos(a) * R * 0.55, -depth * (0.25 + i * 0.08), Math.sin(a) * R * 0.55));
+      }
+      g.add(ep(ghost, G.ico, rock, R * 0.18, R * 0.3, R * 0.18, R * 0.05, -depth - 0.8, 0));
+      const avoid: [number, number][] = [[0, 0]];
+      if (past) {
+        g.add(pastLand(era.island!));
+      } else {
+        g.add(ep(ghost, G.cyl, tint(palette.grass, palette.dry, 0.15), R, 1.0, R, 0, -0.5, 0));
+        g.add(ep(ghost, G.cyl, palette.dry, R * 1.01, 0.3, R * 1.01, 0, -1.05, 0));
+        for (let i = 0; i < 3; i++) {
+          const a = i * 2.3 + 0.7 + index;
+          g.add(ep(ghost, G.ico, i === 1 ? palette.rock : tint(palette.grass, "#2b2622", 0.2), R * 0.26, R * 0.12, R * 0.22, Math.cos(a) * R * 0.62, 0, Math.sin(a) * R * 0.62));
+        }
+      }
+      // The era's home at the centre, smaller than the current one.
+      const home = buildHome(era.home, ghost);
+      home.scale.setScalar(0.6); home.position.set(0, topAt(0, 0), 0); home.rotation.y = inward;
+      g.add(home);
+      // Plans around the home.
+      const plans = era.plans.slice(0, 10);
+      const ring = R * (past ? 0.5 : 0.62);
+      plans.forEach((plan, i) => {
+        const a = inward + Math.PI / 2 + (i / Math.max(1, plans.length)) * Math.PI * 2 + 0.35;
+        const px = Math.sin(a) * ring, pz = Math.cos(a) * ring;
+        const obj = buildPlan(plan, ghost);
+        obj.position.set(px, topAt(px, pz), pz);
+        obj.rotation.y = Math.atan2(px, pz);
+        obj.scale.setScalar(past ? 0.75 : 1);
+        g.add(obj);
+        avoid.push([px, pz]);
+        anchor(`era:${era.id}:plan:${plan.id}`, obj, 2.6);
+      });
+      // The signpost at the edge that faces the main island.
+      const sx = Math.sin(inward) * R * 0.72 + Math.cos(inward) * 2.2, sz = Math.cos(inward) * R * 0.72 - Math.sin(inward) * 2.2;
+      const sign = eraSign(ghost, index); sign.position.set(sx, topAt(sx, sz), sz); sign.rotation.y = inward + Math.PI / 2;
+      g.add(sign);
+      avoid.push([sx, sz]);
+      if (past) { pastPieces(era.island!, g, avoid); pastGrowth(era.island!, g, avoid); }
+      anchor(`era:${era.id}`, g, 5 + (past ? topAt(0, 0) : 0));
+      dynamic.add(g);
+      bob(g, baseY, index * 1.3);
+      // Fog: future and sketched islands, unless focused. Full: soft sprites; Lite: one pale shell. Not pickable.
+      if (!past) {
+        seenFog.add(era.id);
+        const fog = new THREE.Group(); fog.position.set(cx, baseY, cz);
+        const spriteMat = smat(new THREE.SpriteMaterial({ map: eraFogTexture, color: palette.fog, transparent: true, opacity: 0, depthWrite: false }));
+        const sprites = new THREE.Group();
+        for (let i = 0; i < 10; i++) {
+          const a = i / 10 * Math.PI * 2 + index;
+          const sp = new THREE.Sprite(spriteMat);
+          const k = R * (2 + (i % 3) * 0.3);
+          sp.position.set(Math.cos(a) * R * 0.7, -R * 0.55 + (i % 4) * R * 0.35, Math.sin(a) * R * 0.7);
+          sp.scale.set(k, k * 0.75, 1);
+          sprites.add(sp);
+        }
+        for (const y of [-R * 0.4, R * 0.25]) { const mid = new THREE.Sprite(spriteMat); mid.position.set(0, y, 0); mid.scale.set(R * 3.2, R * 2, 1); sprites.add(mid); }
+        const shellMat = smat(new THREE.MeshBasicMaterial({ color: palette.fog, transparent: true, opacity: 0, depthWrite: false }));
+        const shell = new THREE.Mesh(G.sph, shellMat); shell.scale.set(R * 1.3, R * 1.1, R * 1.3); shell.position.y = -R * 0.2;
+        fog.add(sprites, shell);
+        tickers.push(() => { sprites.visible = quality === "full"; shell.visible = quality !== "full"; });
+        const target = era.focused ? 0 : 1;
+        fadeTo(eraFogShown.get(era.id) ?? target, target, (v) => {
+          spriteMat.opacity = 0.95 * v; shellMat.opacity = 0.7 * v; fog.visible = v > 0.01;
+        }, (v) => eraFogShown.set(era.id, v));
+        dynamic.add(fog);
+        bob(fog, baseY, index * 1.3);
+      }
+      eraTops.push({ x: cx, z: cz, r: R, y: baseY + 1.5 });
+      eraExtent = Math.max(eraExtent, spot.r + R);
+      nodes.push({
+        offset: Math.round(era.offset), x: cx, z: cz, y: baseY, r: R, state: era.state,
+        edge: (tx, tz) => {
+          const a = Math.atan2(tz - cz, tx - cx), lx = Math.cos(a) * R * 0.86, lz = Math.sin(a) * R * 0.86;
+          return new THREE.Vector3(cx + lx, baseY + topAt(lx, lz) + 0.1, cz + lz);
+        },
+      });
+    });
+    for (const id of eraFogShown.keys()) if (!seenFog.has(id)) eraFogShown.delete(id);
+    nodes.sort((a, b) => a.offset - b.offset);
+    const next = nodes.find((node) => node.offset > 0) ?? null;
+
+    // The home at the centre of the main island.
+    if (input.home) {
+      // The clearest spot near the centre: pieces, landmarks, the kiln, the Charter, the cottage, signposts and the road all keep their room.
+      const blockers: { x: number; z: number }[] = [...reserved.map(([x, z]) => ({ x, z })), ...landmarkSpots];
+      for (let m = 0; m <= island.cur; m++) blockers.push(island.spot(m));
+      if (input.name) { const p0 = island.spot(0); blockers.push({ x: p0.x + Math.cos(p0.a + 2.4) * 4, z: p0.z + Math.sin(p0.a + 2.4) * 4 }); }
+      for (const fire of input.campfires) {
+        if (fire.month < 0 || fire.month > island.cur) continue;
+        const p = island.spot(fire.month), x = p.x + Math.cos(p.a + 1.9) * 3, z = p.z + Math.sin(p.a + 1.9) * 3;
+        blockers.push({ x, z }, { x: x + Math.cos(p.a + 3) * 5, z: z + Math.sin(p.a + 3) * 5 });
+      }
+      let best = { x: 0, z: 0 }, bestScore = -Infinity;
+      for (const r of [0, 2.5, 5, 7.5, 10, 13]) for (let i = 0; i < (r ? 12 : 1); i++) {
+        const x = Math.cos(i / 12 * Math.PI * 2) * r, z = Math.sin(i / 12 * Math.PI * 2) * r;
+        const gap = blockers.reduce((m, b) => Math.min(m, Math.hypot(b.x - x, b.z - z)), Infinity);
+        const score = Math.min(gap, 8.5) - r * 0.12;
+        if (score > bestScore + 0.01) { best = { x, z }; bestScore = score; }
+      }
+      const home = buildHome(input.home, false);
+      home.position.set(best.x, heightAt(island, best.x, best.z), best.z);
+      // Face the way the journey goes.
+      home.rotation.y = Math.atan2(Math.cos(ERA_AXIS), Math.sin(ERA_AXIS));
+      home.scale.setScalar(1.1);
+      home.traverse((o) => { o.castShadow = true; });
+      const pad = part(G.cyl, tint(palette.dry, palette.sand, 0.5), 3.3, 0.14, 3.3, 0, 0.02, 0); pad.castShadow = false; home.add(pad);
+      anchor("era-home", home, 5.2);
+      dynamic.add(home);
+      reserved.push([best.x, best.z]);
+    }
+
+    // The gate out of this era, and its crossing to the next island.
+    let gateAt: THREE.Vector3 | null = null;
+    if (input.gate) {
+      const toward = next ? Math.atan2(next.z, next.x) : ERA_AXIS;
+      const blockers = [...reserved.map(([x, z]) => ({ x, z })), ...landmarkSpots];
+      let angle = toward, bestGap = -1;
+      for (const da of [0, 0.1, -0.1, 0.2, -0.2]) {
+        const a = toward + da, R = island.radiusAt(a) - 3;
+        const x = Math.cos(a) * R, z = Math.sin(a) * R;
+        const gap = blockers.reduce((m, b) => Math.min(m, Math.hypot(b.x - x, b.z - z)), Infinity);
+        if (gap > bestGap + 1.5) { angle = a; bestGap = gap; }
+      }
+      const R = island.radiusAt(angle) - 3;
+      const gx = Math.cos(angle) * R, gz = Math.sin(angle) * R;
+      const gy = Math.max(0.2, heightAt(island, gx, gz));
+      const gate = new THREE.Group(); gate.position.set(gx, gy, gz);
+      gate.rotation.y = Math.atan2(Math.cos(angle), Math.sin(angle));
+      const open = input.gate.open;
+      const post = themeKey === "newfoundland" ? palette.walls[0]! : themeKey === "taylor" ? "#fbf1e2" : "#efe4cf";
+      const add = (geo: THREE.BufferGeometry, color: string, sx: number, sy: number, sz: number, x: number, y: number, z: number, extra?: THREE.MeshStandardMaterialParameters, into: THREE.Object3D = gate) => {
+        const m = part(geo, color, sx, sy, sz, x, y, z, extra); into.add(m); return m;
+      };
+      add(G.box, palette.rock, 5.6, 0.25, 1.6, 0, 0.1, 0);
+      for (const s of [-1, 1]) add(G.box, post, 0.5, 4.2, 0.5, s * 2.25, 2.1, 0);
+      add(G.box, open ? "#ffe7a8" : post, 5.3, 0.45, 0.62, 0, 4.35, 0, open ? { emissive: "#e9b949", emissiveIntensity: 0.7 } : {});
+      if (themeKey === "taylor") add(G.star, "#e9b949", 0.4, 0.4, 0.4, 0, 5.0, 0, { metalness: 0.6, roughness: 0.3, emissive: "#6b4a10", emissiveIntensity: 0.4 });
+      else if (themeKey === "classic") { const p = add(G.cone, "#f2e2c0", 0.3, 0.9, 0.05, 0.45, 5.0, 0); p.rotation.z = -Math.PI / 2; add(G.cyl, "#7a5436", 0.04, 0.9, 0.04, 0, 4.9, 0); }
+      else add(G.box, palette.walls[1 % palette.walls.length]!, 5.3, 0.12, 0.64, 0, 4.05, 0);
+      // One lantern per part of the finish line, hanging under the lintel.
+      const lanterns = input.gate.lanterns.slice(0, 12);
+      const size = lanterns.length > 8 ? 0.16 : 0.21;
+      lanterns.forEach((lit, i) => {
+        const x = lanterns.length > 1 ? -1.9 + i * 3.8 / (lanterns.length - 1) : 0;
+        add(G.cyl, "#3d3a38", 0.02, 0.35, 0.02, x, 3.95, 0.34);
+        const l = add(G.sph, lit ? "#ffd27a" : "#2e3a44", size, size * 1.25, size, x, 3.7, 0.34, lit ? { emissive: "#ffb347", emissiveIntensity: 1.7 } : { metalness: 0.4, roughness: 0.25, transparent: true, opacity: 0.9 });
+        l.castShadow = false;
+      });
+      // The doors swing outward when the gate opens.
+      const doors: THREE.Group[] = [];
+      for (const s of [-1, 1]) {
+        const pivot = new THREE.Group(); pivot.position.set(s * 2.0, 0, 0);
+        add(G.box, "#8a6a4a", 1.95, 3.1, 0.12, -s * 0.98, 1.75, 0, undefined, pivot);
+        add(G.box, palette.accent, 1.95, 0.14, 0.14, -s * 0.98, 2.6, 0.02, undefined, pivot);
+        gate.add(pivot); doors.push(pivot);
+      }
+      const arch = new THREE.Mesh(strack(new THREE.TorusGeometry(2.5, 0.14, 6, 28, Math.PI)), smat(new THREE.MeshBasicMaterial({ color: "#ffd27a", transparent: true, opacity: 0, depthWrite: false })));
+      arch.position.set(0, 2.1, -0.1); gate.add(arch);
+      const target = open ? 1 : 0;
+      fadeTo(gateSwing ?? target, target, (v) => {
+        doors[0]!.rotation.y = -1.25 * v; doors[1]!.rotation.y = 1.25 * v;
+        arch.visible = v > 0.01; (arch.material as THREE.MeshBasicMaterial).opacity = 0.85 * v;
+      }, (v) => { gateSwing = v; });
+      anchor("era-gate", gate, 5.6);
+      dynamic.add(gate);
+      reserved.push([gx, gz]);
+      gateAt = new THREE.Vector3(gx + Math.cos(angle) * 1.2, gy + 0.3, gz + Math.sin(angle) * 1.2);
+      const style: CrossingStyle = open ? "open" : input.gate.crossing ? "crossing" : "locked";
+      if (next) crossing(gateAt, next.edge(gx, gz), style);
+      else crossing(gateAt, new THREE.Vector3(gx + Math.cos(angle) * 12, 0.9, gz + Math.sin(angle) * 12), "locked");
+    } else gateSwing = null;
+
+    // The journey's crossings, in order.
+    for (let i = 1; i < nodes.length; i++) {
+      const a = nodes[i - 1]!, b = nodes[i]!;
+      if (a.offset === 0 && gateAt) continue;
+      const pencil = a.state === "sketched" || b.state === "sketched";
+      const style: CrossingStyle = pencil ? "pencil" : b.offset <= 0 ? "built" : "faint";
+      crossing(a.edge(b.x, b.z), b.edge(a.x, a.z), style);
+    }
+
+    eraFrame = hasJourney() ? nodes.map((node) => (node.offset === 0 ? { x: 0, z: 0, r: mainRadius(island), y: 0 } : { x: node.x, z: node.z, r: node.r, y: node.y })) : [];
+    // The haze and the sea reach further when there is a journey to see.
+    journeyHaze();
+    if (!hasJourney()) clampTarget();
   }
 
   function seasonOfIndex(input: PathWorldInput): string {
@@ -1487,13 +2230,17 @@ export function createPathWorld(host: HTMLElement, options: {
   function place() {
     const phi = Math.max(0.35, Math.min(1.35, cam.phi + (1 - Math.min(1, cam.r / 120)) * 0.35));
     const y = cam.r * Math.cos(phi), h = cam.r * Math.sin(phi);
-    const ground = current ? heightAt(current.island, cam.tx, cam.tz) : 0;
+    const ground = groundUnder(cam.tx, cam.tz);
     camera.position.set(cam.tx + h * Math.sin(cam.theta), Math.max(ground + 3, y + ground), cam.tz + h * Math.cos(cam.theta));
     camera.lookAt(cam.tx, ground + 1.5, cam.tz);
     const next = levelOf(cam.r);
     if (next !== level) { level = next; options.onLevel?.(level); }
   }
-  function clampTarget() { const d = Math.hypot(cam.tx, cam.tz); if (d > 84) { cam.tx *= 84 / d; cam.tz *= 84 / d; } }
+  function clampTarget() {
+    // With a journey, the target may travel out to the farthest era island.
+    const limit = hasJourney() ? eraExtent + 20 : 84;
+    const d = Math.hypot(cam.tx, cam.tz); if (d > limit) { cam.tx *= limit / d; cam.tz *= limit / d; }
+  }
 
   const pointers = new Map<number, { x: number; y: number }>();
   let moved = 0, pinch = 0, panMode = false;
@@ -1507,7 +2254,7 @@ export function createPathWorld(host: HTMLElement, options: {
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()] as [{ x: number; y: number }, { x: number; y: number }];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
-      if (pinch) cam.r = Math.max(14, Math.min(200, cam.r * pinch / d));
+      if (pinch) cam.r = Math.max(14, Math.min(maxRadius(), cam.r * pinch / d));
       pinch = d; invalidate(); return;
     }
     if (panMode) {
@@ -1524,7 +2271,7 @@ export function createPathWorld(host: HTMLElement, options: {
     if (pointers.size < 2) pinch = 0;
     if (single && moved < 6) pick(e.clientX, e.clientY);
   };
-  const onWheel = (e: WheelEvent) => { e.preventDefault(); fly = null; cam.r = Math.max(14, Math.min(200, cam.r * Math.exp(e.deltaY * 0.001))); invalidate(); };
+  const onWheel = (e: WheelEvent) => { e.preventDefault(); fly = null; cam.r = Math.max(14, Math.min(maxRadius(), cam.r * Math.exp(e.deltaY * 0.001))); invalidate(); };
   const onContext = (e: Event) => e.preventDefault();
   el.addEventListener("pointerdown", onDown);
   el.addEventListener("pointermove", onMove);
@@ -1605,6 +2352,7 @@ export function createPathWorld(host: HTMLElement, options: {
       if (fly.t >= 1) fly = null;
       busy = true;
     }
+    if (fades.length) { fades = fades.filter((f) => f(dt)); if (fades.length) busy = true; }
     if (stepCoins(dt)) busy = true;
     for (const bank of sculptures.values()) if (bank.sculpture.update(now)) busy = true;
     // A walk (and its fading footprints) keeps the loop awake even with ambient motion on, then lets it rest.
@@ -1667,6 +2415,7 @@ export function createPathWorld(host: HTMLElement, options: {
     if (!w || !h || (w === width && h === height)) return;
     width = w; height = h;
     camera.aspect = w / h; camera.updateProjectionMatrix();
+    if (hasJourney()) journeyHaze();
     renderer.setSize(w, h, false);
     invalidate();
   }
@@ -1685,10 +2434,20 @@ export function createPathWorld(host: HTMLElement, options: {
       current = input;
       buildScene(input, animate);
       invalidate();
+      // One more draw once the first frame's shaders have compiled: a slow first frame (a big household on a
+      // software renderer) was seen to leave a stale terrain on screen until something else asked for a frame.
+      const generation = sceneGeneration;
+      setTimeout(() => { if (!dead && generation === sceneGeneration) invalidate(); }, 400);
     },
     resize,
     setAmbient(on: boolean) { ambient = on && !options.reducedMotion; invalidate(); },
-    setQuality(next: PathQuality) { applyQuality(next); invalidate(); },
+    setQuality(next: PathQuality) {
+      const changed = next !== quality;
+      applyQuality(next);
+      // Era islands sample their land and fog by quality: rebuild them (only when there is a journey).
+      if (changed && current && hasJourney()) buildScene(current, false);
+      invalidate();
+    },
     /** The tent is open: stop drawing, keep the context and every buffer. */
     sleep() { if (dead) return; sleeping = true; halt(); },
     /** Back from the tent: re-measure (the host was display:none), draw, and re-report anchors. */
@@ -1698,6 +2457,11 @@ export function createPathWorld(host: HTMLElement, options: {
       if (w && h) resize(w, h);
       invalidate();
     },
+    /** The page's controls cover these shares of the stage (per side); the next Sky trip frames the journey clear of them. */
+    setSafeArea(next: PathSafeArea) {
+      const same = (["top", "right", "bottom", "left"] as const).every((k) => Math.abs((next[k] ?? 0) - safeArea[k]) < 0.01);
+      if (!same) safeArea = { top: next.top ?? 0, right: next.right ?? 0, bottom: next.bottom ?? 0, left: next.left ?? 0 };
+    },
     /** Re-report anchors after the page changed what it shows (lantern, layers). */
     refresh() { invalidate(); },
     /** Travel to an anchor, or to "now" (the current month). */
@@ -1706,8 +2470,12 @@ export function createPathWorld(host: HTMLElement, options: {
       if (!target) return;
       flyTo(target.x, target.z, PATH_LEVEL_RADIUS[levelHint ?? 3]!);
     },
-    setLevel(next: PathLevel) { flyTo(next === 0 ? 0 : cam.tx, next === 0 ? 0 : cam.tz, PATH_LEVEL_RADIUS[next]!); },
-    zoom(factor: number) { fly = null; cam.r = Math.max(14, Math.min(200, cam.r * factor)); invalidate(); },
+    setLevel(next: PathLevel) {
+      // With a journey, Sky frames every era island: the future straight ahead (wide screens turn a little to see it across).
+      if (next === 0 && hasJourney()) { const f = skyFrame(); flyTo(f.tx, f.tz, f.r, eraSkyTheta(aspectNow())); return; }
+      flyTo(next === 0 ? 0 : cam.tx, next === 0 ? 0 : cam.tz, PATH_LEVEL_RADIUS[next]!);
+    },
+    zoom(factor: number) { fly = null; cam.r = Math.max(14, Math.min(maxRadius(), cam.r * factor)); invalidate(); },
     turn(delta: number) { cam.theta += delta; invalidate(); },
     stats(): PathWorldStats { return { frames, lastFrameMs, pieces: pickables.length, level, ambient, quality, sleeping, idle, walking: walk !== null }; },
     dispose() {
