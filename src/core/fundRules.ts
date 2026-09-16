@@ -64,20 +64,20 @@ export type Umbrella = {
 };
 
 export const UMBRELLAS: readonly Umbrella[] = [
-  { id: "home", rowId: "CAT-HOUSING", name: "Home", rule: "The place itself: rent, owning, fixing, furnishing", spending: true, transactionType: "expense", hue: "#b86b4b", glyph: "⌂", sortOrder: 20 },
-  { id: "utilities", rowId: "UMB-UTILITIES", name: "Utilities", rule: "Metered or monthly services that keep the home on", spending: true, transactionType: "expense", hue: "#c9a227", glyph: "⚡", sortOrder: 22 },
-  { id: "food", rowId: "CAT-FOOD", name: "Food", rule: "Anything we eat or drink, in or out", spending: true, transactionType: "expense", hue: "#6f9a4b", glyph: "🍞", sortOrder: 30 },
-  { id: "transport", rowId: "CAT-TRANSPORT", name: "Transport", rule: "Moving us: car, transit, rides", spending: true, transactionType: "expense", hue: "#4b7fa8", glyph: "🚌", sortOrder: 40 },
-  { id: "health", rowId: "CAT-HEALTH", name: "Health", rule: "Care for our bodies and minds", spending: true, transactionType: "expense", hue: "#5aa39a", glyph: "✚", sortOrder: 45 },
-  { id: "personal", rowId: "UMB-PERSONAL", name: "Personal", rule: "What we wear and how we look after ourselves", spending: true, transactionType: "expense", hue: "#a0679b", glyph: "👕", sortOrder: 50 },
+  { id: "home", rowId: "CAT-HOUSING", name: "Home", rule: "The place itself: rent, owning, fixing, furnishing", spending: true, transactionType: "expense", hue: "#b86b4b", glyph: "🏠", sortOrder: 20 },
+  { id: "utilities", rowId: "UMB-UTILITIES", name: "Utilities", rule: "Metered or monthly services that keep the home on", spending: true, transactionType: "expense", hue: "#c9a227", glyph: "💡", sortOrder: 22 },
+  { id: "food", rowId: "CAT-FOOD", name: "Food", rule: "Anything we eat or drink, in or out", spending: true, transactionType: "expense", hue: "#6f9a4b", glyph: "🥖", sortOrder: 30 },
+  { id: "transport", rowId: "CAT-TRANSPORT", name: "Transport", rule: "Moving us: car, transit, rides", spending: true, transactionType: "expense", hue: "#4b7fa8", glyph: "🚗", sortOrder: 40 },
+  { id: "health", rowId: "CAT-HEALTH", name: "Health", rule: "Care for our bodies and minds", spending: true, transactionType: "expense", hue: "#5aa39a", glyph: "🩺", sortOrder: 45 },
+  { id: "personal", rowId: "UMB-PERSONAL", name: "Personal", rule: "What we wear and how we look after ourselves", spending: true, transactionType: "expense", hue: "#a0679b", glyph: "🧣", sortOrder: 50 },
   { id: "fun", rowId: "UMB-FUN", name: "Fun", rule: "Entertainment and hobbies at home and nearby", spending: true, transactionType: "expense", hue: "#d9774a", glyph: "🎲", sortOrder: 52 },
-  { id: "travel", rowId: "UMB-TRAVEL", name: "Travel", rule: "Trips away from home", spending: true, transactionType: "expense", hue: "#3f8fbf", glyph: "✈", sortOrder: 54 },
+  { id: "travel", rowId: "UMB-TRAVEL", name: "Travel", rule: "Trips away from home", spending: true, transactionType: "expense", hue: "#3f8fbf", glyph: "🧳", sortOrder: 54 },
   { id: "pets-family", rowId: "UMB-PETS-FAMILY", name: "Pets & family", rule: "Those we care for: pets, kids, family support", spending: true, transactionType: "expense", hue: "#b08a4f", glyph: "🐾", sortOrder: 56 },
   { id: "gifts-giving", rowId: "UMB-GIFTS-GIVING", name: "Gifts & giving", rule: "Money that goes to other people", spending: true, transactionType: "expense", hue: "#c2566b", glyph: "🎁", sortOrder: 58 },
-  { id: "work-learning", rowId: "CAT-WORK", name: "Work & learning", rule: "Costs of earning and studying", spending: true, transactionType: "expense", hue: "#6b6fa8", glyph: "🎓", sortOrder: 60 },
-  { id: "money", rowId: "UMB-MONEY", name: "Money", rule: "The cost of money and where the future goes", spending: true, transactionType: "expense", hue: "#4f7f5f", glyph: "🪙", sortOrder: 62 },
-  { id: "coming-in", rowId: "INCOME", name: "Coming in", rule: "Pay, tips, interest and refunds (not spending)", spending: false, transactionType: "income", hue: "#7a9a3a", glyph: "↘", sortOrder: 10 },
-  { id: "moving-money", rowId: "UMB-MOVING-MONEY", name: "Moving money", rule: "Card payments and moves between our own accounts (not spending)", spending: false, transactionType: "expense", hue: "#8a8f98", glyph: "⇄", sortOrder: 90 },
+  { id: "work-learning", rowId: "CAT-WORK", name: "Work & learning", rule: "Costs of earning and studying", spending: true, transactionType: "expense", hue: "#6b6fa8", glyph: "🧰", sortOrder: 60 },
+  { id: "money", rowId: "UMB-MONEY", name: "Money", rule: "The cost of money and where the future goes", spending: true, transactionType: "expense", hue: "#4f7f5f", glyph: "🏦", sortOrder: 62 },
+  { id: "coming-in", rowId: "INCOME", name: "Coming in", rule: "Pay, tips, interest and refunds (not spending)", spending: false, transactionType: "income", hue: "#7a9a3a", glyph: "⬇️", sortOrder: 10 },
+  { id: "moving-money", rowId: "UMB-MOVING-MONEY", name: "Moving money", rule: "Card payments and moves between our own accounts (not spending)", spending: false, transactionType: "expense", hue: "#8a8f98", glyph: "↔️", sortOrder: 90 },
 ];
 export const SPENDING_UMBRELLAS: readonly Umbrella[] = UMBRELLAS.filter((row) => row.spending);
 export const UMBRELLA_IDS: readonly UmbrellaId[] = UMBRELLAS.map((row) => row.id);

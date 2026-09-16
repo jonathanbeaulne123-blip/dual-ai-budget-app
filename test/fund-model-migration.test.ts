@@ -187,3 +187,24 @@ describe("stamps and mixed versions (slice 3, R2-H1)", () => {
     expect(fundModelReloadRequired(h, 2)).toBe(false);
   });
 });
+
+describe("adopt on patch: the boot step (slice 4/7)", () => {
+  it("does nothing on release N, sorts the household then the member on N+1, and saves a snapshot first", async () => {
+    const { fundModelBootStep, saveFundModelSnapshot, fundModelSnapshotKey } = await import("../src/fundModelBoot.ts");
+    let h = withPrivateRows(catalogHousehold());
+    expect(fundModelBootStep(h, ALEX, 1)).toBeNull();
+    const first = fundModelBootStep(h, ALEX, 2)!;
+    expect(first.kind).toBe("household");
+    const store = new Map<string, string>();
+    expect(saveFundModelSnapshot(h, ALEX, { setItem: (k, v) => void store.set(k, v) })).toBe(true);
+    expect(JSON.parse(store.get(fundModelSnapshotKey(h, ALEX))!).household.householdId).toBe(h.householdId);
+    expect(saveFundModelSnapshot(h, ALEX, { setItem: () => { throw new Error("quota"); } })).toBe(false);
+    h = first.run(h).household;
+    const second = fundModelBootStep(h, ALEX, 2)!;
+    expect(second.kind).toBe("personal");
+    h = second.run(h).household;
+    expect(fundModelBootStep(h, ALEX, 2)).toBeNull();
+    expect(fundModelBootStep(h, "MEM-404", 2)).toBeNull();
+    expect(fundModelBootStep(planLifeFixture("household"), ALEX, 2)).toBeNull();
+  });
+});

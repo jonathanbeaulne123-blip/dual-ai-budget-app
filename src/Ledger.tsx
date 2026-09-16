@@ -3,6 +3,8 @@ import { useOutsideClose } from "./useOutsideClose.ts";
 import { createReadingReceiptReader } from "./readingReceipt.ts";
 import { applyDuplicateReview } from "./core/duplicateReviewCommand.ts";
 import { createPortal } from "react-dom";
+import { fundModelMode, umbrellaOfCategory, SPENDING_UMBRELLAS, type UmbrellaId } from "./core/fundRules.ts";
+import { categoryFilterOptions } from "./core/fundModel.ts";
 import type { PendingPreview } from "./ledgerSync/optimistic.ts";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -106,6 +108,9 @@ function LedgerSession({
   const [month, setMonth] = useState(initialBookmark.month);
   const [account, setAccount] = useState(initialBookmark.account);
   const [type, setType] = useState(initialBookmark.type);
+  // Money model (D-269): filter by umbrella and by our own categories once the household is sorted.
+  const [umbrellaFilter, setUmbrellaFilter] = useState<UmbrellaId | "">("");
+  const [categoryFilter, setCategoryFilter] = useState("");
   const [section, setSection] = useState<LedgerSection>("expenses");
   const [query, setQuery] = useState(initialBookmark.query);
   const [showContrast, setShowContrast] = useState(false);
@@ -165,6 +170,7 @@ function LedgerSession({
 
   const matchesFilters = (tx: Transaction) => {
     if (activityFilters && !sourceFocus && ((month && !tx.date.startsWith(month)) || (account && tx.accountId !== account) || (type && tx.type !== type))) return false;
+    if (activityFilters && !sourceFocus && ((umbrellaFilter && umbrellaOfCategory(household, tx.subcategoryId) !== umbrellaFilter) || (categoryFilter && tx.subcategoryId !== categoryFilter))) return false;
     if (!query.trim()) return true;
     const hay = `${tx.note} ${tx.place} ${categoryName(household, tx.subcategoryId)} ${accountName(household, tx.accountId)}`.toLowerCase();
     return (activityFilters && !!sourceFocus) || hay.includes(query.trim().toLowerCase());
@@ -249,6 +255,16 @@ function LedgerSession({
         <label>Month<select value={month} onChange={event => setMonth(event.target.value)} disabled={!!sourceFocus}><option value="">All months</option>{months.map(value => <option key={value}>{value}</option>)}</select></label>
         <label>Account<select value={account} onChange={event => setAccount(event.target.value)} disabled={!!sourceFocus}><option value="">All accounts</option>{accounts.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
         <label>Type<select value={type} onChange={event => setType(event.target.value)} disabled={!!sourceFocus}><option value="">All types</option>{(["expense", "income", "transfer", "refund", "opening"] as const).map(value => <option key={value} value={value}>{value === "opening" ? "Opening balance" : transactionTypeLabel(value)}</option>)}</select></label>
+        {fundModelMode(household) === 2 && (() => {
+          const options = categoryFilterOptions(household, { memberId, view }).filter((row) => !umbrellaFilter || row.umbrellaId === umbrellaFilter);
+          return <>
+            <label>Umbrella<select value={umbrellaFilter} onChange={event => { setUmbrellaFilter(event.target.value as UmbrellaId | ""); setCategoryFilter(""); }} disabled={!!sourceFocus}><option value="">All umbrellas</option>{SPENDING_UMBRELLAS.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label>
+            <label>Category<select value={categoryFilter} onChange={event => setCategoryFilter(event.target.value)} disabled={!!sourceFocus}><option value="">All categories</option>
+              {options.some(row => row.own) && <optgroup label="Ours">{options.filter(row => row.own).map(row => <option key={row.id} value={row.id}>{row.name}</option>)}</optgroup>}
+              <optgroup label="Hearth's">{options.filter(row => !row.own).map(row => <option key={row.id} value={row.id}>{row.name}</option>)}</optgroup>
+            </select></label>
+          </>;
+        })()}
         <p className="muted">{rows.length} accepted {rows.length === 1 ? "entry" : "entries"}{sourceFocus ? " · Clear the source to return to your filters." : ""}</p>
       </section> : <>
       <div className="tabs ledger-tabs">
