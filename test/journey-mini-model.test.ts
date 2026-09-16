@@ -3,7 +3,7 @@ import { openChapter, type Household } from "../src/core/index.ts";
 import { projectKittyNest } from "../src/core/kittyNest.ts";
 import { crossPathEra, currentPathEra, proposePathEra } from "../src/core/pathEras.ts";
 import { pathMonths } from "../src/core/pathSignals.ts";
-import { agreePathProposal, pendingPathProposals, shapePathWorld, type PathEraSpec } from "../src/core/pathWorld.ts";
+import { agreePathProposal, pendingPathProposals, shapePathWorld, type PathEraRow, type PathEraSpec } from "../src/core/pathWorld.ts";
 import { saveTask, type TaskInput } from "../src/core/tasks.ts";
 import { miniCad, miniEraFor, miniItemWords, miniJourney, miniMonth } from "../src/path/mini/miniJourneyModel.ts";
 import { miniLapRadius, miniLevelWeight } from "../src/path/mini/miniWorld3d.ts";
@@ -28,7 +28,7 @@ function agreeAll(h: Household): Household {
   for (const row of pendingPathProposals(h)) {
     if (row.kind !== "era") continue;
     for (const memberId of ["MEM-001", "MEM-002"]) {
-      const fresh = shapePathWorld(h.pathWorld).find((r) => r.id === row.id)!;
+      const fresh = shapePathWorld(h.pathWorld).find((r): r is PathEraRow => r.id === row.id && r.kind === "era")!;
       if (fresh.pending && !fresh.agreedByMemberIds.includes(memberId)) h = agreePathProposal(h, { memberId, rowId: fresh.id, revision: fresh.pendingRevision, at: "2026-02-01T12:00:00.000Z" }).household;
     }
   }

@@ -141,6 +141,12 @@
 .journey-mini__tag--era.is-current { border-color: var(--mini-today); box-shadow: 0 0 0 2px color-mix(in srgb, var(--mini-today) 30%, transparent), 0 3px 10px -6px rgb(40 25 10 / 0.5); }
 .journey-mini__status { font-size: 11.5px; font-weight: 700; color: var(--mini-muted); }
 .journey-mini__status--open { color: var(--mini-today); }
+.journey-mini__paper.journey-mini__dayname {
+  padding: 0 5px; border: 0; box-shadow: none; background: color-mix(in srgb, var(--mini-card) 70%, transparent);
+  font-size: 11px; font-weight: 600; color: var(--mini-muted); border-radius: 999px; font-variant-numeric: tabular-nums;
+}
+.journey-mini__paper.journey-mini__dayname.is-today { color: var(--mini-card); background: var(--mini-today); font-weight: 800; }
+.journey-mini--compact .journey-mini__label:has(.journey-mini__dayname) { display: none !important; }
 .journey-mini__chip { display: inline-flex; gap: 6px; align-items: baseline; padding: 1px 7px; border-radius: 999px; font-size: 11.5px; font-weight: 700; }
 .journey-mini__chip--week { border-radius: 6px; }
 .journey-mini__chip--bank b { font-size: 11.5px; }

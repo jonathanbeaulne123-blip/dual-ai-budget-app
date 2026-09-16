@@ -220,6 +220,7 @@ export function JourneyMini(props: JourneyMiniProps) {
       monthKey,
       anchorDay: Math.min(dayOf(today), daysInMonthKey(monthKey)),
       gate: month.status === "closed" ? "closed" : month.status === "ahead" ? "ahead" : "open",
+      startGate: (() => { const prev = journey.months.find((m) => m.key === shiftMonthKey(monthKey, -1)); return prev ? (prev.status === "closed" ? "closed" : prev.status === "ahead" ? "ahead" : "open") : null; })(),
       days: month.days.map((d) => ({
         date: d.date, day: d.day, today: d.today, past: d.past,
         bills: d.items.flatMap((i) => (i.kind === "bill" ? [i.lane] : [])),
@@ -563,25 +564,38 @@ export function JourneyMini(props: JourneyMiniProps) {
   const scheduleSnap = useCallback(() => {
     if (snapTimer.current) clearTimeout(snapTimer.current);
     snapTimer.current = setTimeout(() => {
-      const next = Math.round(zTarget.current);
+      // A gesture that moved a quarter of the way commits to the next level in its direction.
+      const base = levelRef.current;
+      const diff = zTarget.current - base;
+      const next = Math.max(0, Math.min(4, Math.abs(diff) < 0.22 ? base : base + Math.sign(diff) * Math.max(1, Math.round(Math.abs(diff)))));
       zTarget.current = next;
       world.current?.setView({ z: next });
-      if (next !== levelRef.current) { setLevel(next); setCard(null); }
-    }, reduced ? 60 : 320);
+      if (next !== base) { setLevel(next); setCard(null); }
+    }, reduced ? 60 : 260);
   }, [reduced, setLevel]);
   useEffect(() => () => { if (snapTimer.current) clearTimeout(snapTimer.current); }, []);
+  const lastStep = useRef(0);
+  const stepLevel = useCallback((dir: number) => {
+    const now = Date.now();
+    if (now - lastStep.current < 220) return;
+    lastStep.current = now;
+    if (snapTimer.current) clearTimeout(snapTimer.current);
+    const next = Math.max(0, Math.min(4, levelRef.current + Math.sign(dir)));
+    zTarget.current = next;
+    if (next !== levelRef.current) { setLevel(next); setCard(null); }
+  }, [setLevel]);
   const zoomBy = useCallback((delta: number) => {
     if (flat || listOpen) {
-      if (Math.abs(delta) < 0.25) { zTarget.current += delta; if (Math.abs(zTarget.current - levelRef.current) < 0.5) return; }
-      const next = Math.max(0, Math.min(4, levelRef.current + Math.sign(delta)));
-      zTarget.current = next;
-      if (next !== levelRef.current) { setLevel(next); setCard(null); }
+      zTarget.current += delta;
+      if (Math.abs(zTarget.current - levelRef.current) < 0.3) return;
+      stepLevel(zTarget.current - levelRef.current);
+      zTarget.current = levelRef.current;
       return;
     }
     zTarget.current = Math.max(0, Math.min(4, zTarget.current + delta));
     world.current?.nudge({ z: zTarget.current });
     scheduleSnap();
-  }, [flat, listOpen, setLevel, scheduleSnap]);
+  }, [flat, listOpen, stepLevel, scheduleSnap]);
   const settleRef = useRef((_z: number, _day: number) => {});
   settleRef.current = () => { /* snapping is timer-driven; nothing else to do */ };
 
@@ -591,10 +605,12 @@ export function JourneyMini(props: JourneyMiniProps) {
     const onWheel = (event: WheelEvent) => {
       if ((event.target as HTMLElement).closest?.(".journey-mini__card, .journey-mini__list")) return;
       event.preventDefault();
-      // Trackpads send many small deltas (and ctrl+wheel for pinch); a mouse wheel sends ~100 per notch.
-      const unit = event.deltaMode === 1 ? 0.12 : event.ctrlKey ? 0.012 : 0.0024;
       if (Math.abs(event.deltaX) > Math.abs(event.deltaY) * 1.5 && !event.ctrlKey) { dragTime(event.deltaX * 0.6); return; }
-      zoomBy(Math.max(-0.6, Math.min(0.6, event.deltaY * unit)));
+      // A mouse wheel notch (or a line-mode delta) is one level; a trackpad's stream of small deltas (and its
+      // ctrl+wheel pinch) glides the same model continuously and settles on the nearest level.
+      const notch = !event.ctrlKey && (event.deltaMode === 1 || Math.abs(event.deltaY) >= 40);
+      if (notch) { stepLevel(event.deltaY); return; }
+      zoomBy(Math.max(-0.5, Math.min(0.5, event.deltaY * (event.ctrlKey ? 0.012 : 0.006))));
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
@@ -704,6 +720,12 @@ export function JourneyMini(props: JourneyMiniProps) {
     const out: LabelDef[] = [];
     const focusDay = viewDay;
     for (const d of month.days) {
+      out.push({
+        id: `name:${d.date}`, anchor: `base:${d.date}`, pick: `day:${d.date}`, levels: [0], priority: 9, className: `journey-mini__dayname${d.today ? " is-today" : ""}`, below: true,
+        near: { day: d.day, within: compact ? 1.2 : 3.2 },
+        aria: `${miniDateLabel(d.date)}${d.today ? ", today" : ""}${d.items.length ? `, ${d.items.length} thing${d.items.length === 1 ? "" : "s"}` : ", nothing planned"}`,
+        content: <>{d.weekday} {d.day}</>,
+      });
       const money = d.items.filter((i) => i.kind !== "task");
       const tasks = d.items.filter((i): i is Extract<MiniItem, { kind: "task" }> => i.kind === "task");
       if (d.items.length) {

@@ -229,16 +229,21 @@ describe("JourneyMini — the journey's simple view", () => {
     expect(world.setView).toHaveBeenCalledWith(expect.objectContaining({ z: 0, day: 15 }), true);
     await click(button("Era"));
     expect(world.setView).toHaveBeenLastCalledWith(expect.objectContaining({ z: 3 }), false);
-    // A wheel turn glides the zoom, then snaps to a level.
+    // A trackpad's small deltas glide the zoom, then settle on a level (a nudge short of a quarter falls back).
     const stage = $(".journey-mini__stage");
-    await act(async () => { stage.dispatchEvent(new WheelEvent("wheel", { deltaY: 200, bubbles: true, cancelable: true })); });
-    expect(world.nudge).toHaveBeenCalledWith({ z: expect.closeTo(3.48, 2) });
+    const wheel = async (deltaY: number, extra: WheelEventInit = {}) => act(async () => { stage.dispatchEvent(new WheelEvent("wheel", { deltaY, bubbles: true, cancelable: true, ...extra })); });
+    await wheel(12);
+    expect(world.nudge).toHaveBeenCalledWith({ z: expect.closeTo(3.072, 3) });
     await settle(400);
     expect(pressed()).toBe("Era");
-    await act(async () => { stage.dispatchEvent(new WheelEvent("wheel", { deltaY: 300, bubbles: true, cancelable: true })); });
+    for (let i = 0; i < 4; i++) await wheel(12);
     await settle(400);
     expect(pressed()).toBe("Journey");
     expect(api.focus.level).toBe("journey");
+    // A mouse wheel notch is one level.
+    await wheel(-100);
+    await settle(50);
+    expect(pressed()).toBe("Era");
     // A tap picks through the renderer.
     await click(button("Day"));
     renderer.pickId = "day:2026-09-20";

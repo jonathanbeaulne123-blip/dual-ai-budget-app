@@ -46,6 +46,8 @@ export type MiniSceneInput = {
   anchorDay: number;
   /** The Sitdown that closes this month. */
   gate: "closed" | "open" | "ahead";
+  /** The Sitdown that closed the month before (drawn where this month's path begins), if any. */
+  startGate?: "closed" | "open" | "ahead" | null;
   /** The focused month's era (index into `eras`), its laps, and which lap is this month. */
   eraIndex: number;
   laps: MiniSceneLap[];
@@ -471,7 +473,7 @@ export function createMiniWorld(host: HTMLElement, options: {
     for (const d of pathDisposables.splice(0)) d();
     for (const f of faders.values()) { f.objs = f.objs.filter((o) => !isIn(o, path)); }
     for (let i = pickables.length - 1; i >= 0; i--) if (isIn(pickables[i]!, path)) pickables.splice(i, 1);
-    for (const id of [...anchors.keys()]) if (/^(day|today|gate|lane|week|chapter):?/.test(id)) anchors.delete(id);
+    for (const id of [...anchors.keys()]) if (/^(day|base|today|gate|lane|week|chapter):?/.test(id)) anchors.delete(id);
     path.removeFromParent();
     path = new THREE.Group();
     root.add(path);
@@ -510,6 +512,7 @@ export function createMiniWorld(host: HTMLElement, options: {
         const expected = d.contributions.every((c) => c.expected);
         const q = queen(stone, expected);
         q.position.set(0, lift, 0);
+        q.scale.setScalar(1.45);
         q.rotation.y = -((d.day * 1.7) % 1);
         const ring = mesh(shared.torus, mat("queen", expected ? { opacity: 0.55, transparent: true } : {}), stone, 0, 0.08, 0, r + 0.04, r + 0.04, 1.2);
         ring.rotation.x = Math.PI / 2;
@@ -529,7 +532,8 @@ export function createMiniWorld(host: HTMLElement, options: {
         hercPos = stone;
         anchors.set("today", { at: () => worldOf(stone, 0, 1.05, 0) });
       }
-      anchors.set(`day:${d.date}`, { at: () => worldOf(stone, 0, d.contributions.length ? 0.78 : d.tasks.length ? 0.78 : 0.3, 0) });
+      anchors.set(`day:${d.date}`, { at: () => worldOf(stone, 0, d.contributions.length ? 0.95 : d.tasks.length ? 0.78 : 0.3, 0) });
+      anchors.set(`base:${d.date}`, { at: () => worldOf(path, ...local(sOf(d.day), -0.52, 0)) });
     }
     // Bills drop dotted lines into their lane; contributions split into all three lanes.
     const billBeads: Bead[] = [];
@@ -563,6 +567,11 @@ export function createMiniWorld(host: HTMLElement, options: {
           fade("near", post);
         }
       }
+    }
+    if (inp.startGate) {
+      const start = gate(path, inp.startGate, 0.8);
+      place(start, sOf(0.5), 0, 0);
+      fade("near", start);
     }
     const g = gate(path, inp.gate);
     place(g, sOf(dim + 0.5), 0, 0, "gate");
