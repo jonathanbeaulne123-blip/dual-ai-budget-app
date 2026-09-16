@@ -2250,7 +2250,8 @@ export function createPathWorld(host: HTMLElement, options: {
     camera.position.set(cam.tx + h * Math.sin(cam.theta), Math.max(ground + 3, y + ground), cam.tz + h * Math.cos(cam.theta));
     camera.lookAt(cam.tx, ground + 1.5, cam.tz);
     const next = levelOf(cam.r);
-    if (next !== level) { level = next; options.onLevel?.(level); }
+    // A trip (the page's, or the rail's) reports only where it lands: its hop would otherwise cross the bands twice.
+    if (next !== level && !fly) { level = next; options.onLevel?.(level); }
   }
   function clampTarget() {
     // With a journey, the target may travel out to the farthest era island.

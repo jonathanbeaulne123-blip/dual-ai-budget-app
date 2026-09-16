@@ -134,9 +134,9 @@ describe("One journey, two views (D-284 + D-285)", () => {
     expect(pageMini().querySelector("h2")?.textContent).toBe("Our journey");
   });
 
-  it("reads a minimap pick of another era the way the world does: that era, from its first month, in both copies", async () => {
+  it.each(["past", "future"] as const)("reads a minimap pick of a %s era the way the world does: that era, from its first month, in both copies", async (state) => {
     const h = journeyHousehold();
-    const past = pathEras(h, TODAY).find((e) => e.state === "past")!;
+    const past = pathEras(h, TODAY).find((e) => e.state === state)!;
     await mount(h);
     await openWorld();
     const corner = cornerMini()!;
@@ -151,6 +151,7 @@ describe("One journey, two views (D-284 + D-285)", () => {
     expect(cornerMini()!.dataset.level).toBe("3");
     expect(pageMini().dataset.level).toBe("3");
     expect(pageMini().querySelector("h2")?.textContent).toContain(past.spec.name);
+    expect($(".path-hud__caption").textContent).toMatch(/^Era/);
   });
 
   it("keeps Replay on the simple view's month, and the simple view on Replay's", async () => {

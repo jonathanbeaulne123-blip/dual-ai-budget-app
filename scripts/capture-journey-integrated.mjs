@@ -91,6 +91,8 @@ try {
     const quality = width < 720 ? 'lite' : 'full';
     const query = `theme=${theme}&lantern=1&quality=${quality}&motion=full&ambient=off&chrome=1&${story === 'story' ? 'story=story&cached=1' : 'story=well&eras=demo'}`;
     const tag = `${story}-${theme}-${width}`;
+    // Resume: a combination whose flow already finished is kept.
+    if (report[`${tag}-11-page-back`] && !process.env.FRESH) continue;
     const { page, errors, close } = await open(width, query);
     try {
       await page.evaluate(() => window.scrollTo(0, document.querySelector('.path-world__simple').getBoundingClientRect().top + window.scrollY - 8));
@@ -104,7 +106,7 @@ try {
       await wheelTo(page, 2);
       // Open the world from the simple view.
       await page.locator('.path-world__simple .journey-mini__open').click();
-      await page.waitForSelector('.path-world__host[data-live="true"]', { timeout: 120_000 });
+      await page.waitForFunction(() => document.querySelector('.path-world__host[data-live="true"]'), null, { timeout: 180_000 });
       const atMonth = await landed(page, '2');
       await wait(1500);
       await shot(page, errors, `${tag}-07-world`, { landed: atMonth });
@@ -151,6 +153,9 @@ try {
       await page.evaluate(() => window.scrollTo(0, document.querySelector('.path-world__simple').getBoundingClientRect().top + window.scrollY - 8));
       await wait(500);
       await shot(page, errors, `${tag}-11-page-back`, { levelInWorld: before.cornerLevel, captionInWorld: before.caption });
+    } catch (error) {
+      report[`${tag}-error`] = String(error).slice(0, 300);
+      console.warn(tag, 'failed', String(error).slice(0, 200));
     } finally { await close(); }
     writeFileSync(reportFile, `${JSON.stringify(report, null, 2)}\n`);
   }

@@ -802,6 +802,10 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const journeyRef = useRef(journey);
   journeyRef.current = journey;
   const worldLevel = useRef<PathLevel>(0);
+  /** The agreed era a month falls in (a past era by its months; the current and later ones by their planned range). */
+  const eraForKey = (key: string) => eras.find((row) => row.state !== "sketched"
+    && key >= (row.months[0] ?? row.spec.from)
+    && key <= (row.state === "past" ? (row.months.at(-1) ?? row.spec.from) : (row.spec.by ?? "9999-12"))) ?? null;
   const erasRef = useRef(eras);
   erasRef.current = eras;
   /** Month `m` as a civil date: today for this month, otherwise the month's first day. */
@@ -1046,7 +1050,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     if (focus.level === "era") {
       // The era the date falls in: its own island (its fog lifts), or the one we are on.
       const key = focus.date.slice(0, 7);
-      const era = eras.find((row) => (row.months.length ? row.months.includes(key) : key >= row.spec.from && (!row.spec.by || key <= row.spec.by)));
+      const era = eraForKey(key);
       if (era && era.state !== "current") { guardTrip(2); setFocusedEra(era.id); current.focus(`era:${era.id}`, 2); return; }
       if (currentEra) { guardTrip(lv); setFocusedEra(null); current.focus("era-home", lv); return; }
     }
@@ -1616,7 +1620,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     const key = focus.date.slice(0, 7);
     const monthWords = /^\d{4}-\d{2}$/.test(key) ? monthName(key) : "";
     const character = m >= 0 && months[m]?.key === key ? CHARACTER_LABEL[characters[m]!] : null;
-    const eraWords = currentEra && key >= (currentEra.months[0] ?? "") ? currentEra.spec.name : null;
+    const eraWords = eraForKey(key)?.spec.name ?? null;
     if (focus.level === "month") return { level: "Month", title: monthWords, sub: [character, nearWords ?? eraWords].filter(Boolean).join(" · ") };
     const day = focus.date === today ? "Today" : dayName(focus.date);
     return { level: JOURNEY_LEVEL_LABEL[focus.level], title: focus.level === "day" ? day : `${focus.date === today ? "This week" : `Week of ${dayName(focus.date)}`}`, sub: [monthWords, nearWords ?? eraWords].filter(Boolean).join(" · ") };
