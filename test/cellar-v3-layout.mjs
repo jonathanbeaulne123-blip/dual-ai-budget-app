@@ -22,7 +22,7 @@ const THEMES = ['classic', 'taylor', 'newfoundland'];
 const only = process.env.RUNS ? process.env.RUNS.split(',') : null;
 const url = (theme, extra = {}) => `${proof.url}?${new URLSearchParams({ composition: 'queen', chrome: '1', state: 'building', bills: '1', cellar3: '1', today: '2026-09-12', theme, ...extra })}`;
 const scroll = (page) => page.evaluate(() => ({ x: document.documentElement.scrollWidth - document.documentElement.clientWidth, y: document.documentElement.scrollHeight - document.documentElement.clientHeight }));
-async function clickHer(page) { const her = page.locator('.queen-figure'); await her.waitFor(); const b = await her.boundingBox(); await her.click({ position: { x: b.width / 2, y: b.height * 0.3 }, timeout: 60_000 }); }
+async function clickHer(page) { const her = page.locator('.queen-figure'); await her.waitFor({ timeout: 90_000 }); const b = await her.boundingBox(); await her.click({ position: { x: b.width / 2, y: b.height * 0.3 }, timeout: 60_000, force: true }); }
 async function cellar(page, width) {
   await page.waitForSelector('.queen-home', { timeout: 180_000 });
   await page.waitForTimeout(600);
@@ -61,8 +61,11 @@ for (const theme of THEMES) for (const [width, height] of SIZES) {
   // ---- the custodian's cellar ----
   const page = await openPage({ width, height });
   page.on('pageerror', (e) => errors.push(`${tag}: ${e.message}`));
-  await page.goto(url(theme));
-  await cellar(page, width);
+  // The 3D world first; SwiftShader sometimes never stands her up here, so the flat world is the fallback (recorded).
+  let world = 'auto';
+  try { await page.goto(url(theme)); await cellar(page, width); }
+  catch { world = 'flat'; await page.goto(url(theme, { world })); await cellar(page, width); }
+  const roomWorld = await page.locator('.queen-room--cellar').getAttribute('data-world');
   const rest = await page.evaluate(() => ({
     extras: [...document.querySelectorAll('.queen-jar--extra')].map((el) => ({ kind: el.dataset.kind, label: el.getAttribute('aria-label'), px: el.style.getPropertyValue('--jar-px') })),
     sub: document.querySelector('.queen-room--cellar .queen-room__sub')?.textContent,
@@ -72,12 +75,16 @@ for (const theme of THEMES) for (const [width, height] of SIZES) {
   assert.equal(rest.figures, false, `${tag}: no figure on the rail`);
   // The missing video club, in the gate, with the jars sized up (the rail's own + key; one dollar scale).
   await gateTo(page, 5);
-  for (let i = 0; i < 6; i += 1) await page.keyboard.press('+');
+  const larger = page.locator('.queen-cellar-zoom__step[aria-label="Larger jars"]');
+  const paneShown = await larger.isVisible();
+  for (let i = 0; i < 6; i += 1) { if (paneShown) await larger.click(); else { await page.locator('.queen-cellar-rail').focus(); await page.keyboard.press('+'); } }
   await page.waitForTimeout(700);
+  const zoomRead = await page.locator('.queen-cellar-rail').getAttribute('data-zoom');
   const gateLine = await page.locator('.queen-room--cellar > .queen-room__line').first().textContent();
   assert.match(gateLine, /Fictional video club — missing: not charged, Sep 5/, `${tag}: the gate names the missing jar`);
   await shot(page, `rail-missing-${tag}`);
-  for (let i = 0; i < 6; i += 1) await page.keyboard.press('-');
+  const smallerJars = page.locator('.queen-cellar-zoom__step[aria-label="Smaller jars"]');
+  for (let i = 0; i < 6; i += 1) { if (paneShown) await smallerJars.click(); else { await page.locator('.queen-cellar-rail').focus(); await page.keyboard.press('-'); } }
   await noScroll(page, tag);
   await pick(page, 'missing');
   const card = await page.evaluate(() => ({ text: document.querySelector('.queen-jar-card--missing')?.textContent, sparks: document.querySelectorAll('.queen-cellar-cheer i').length, anim: getComputedStyle(document.querySelector('.queen-cellar-cheer i')).animationName }));
@@ -112,13 +119,13 @@ for (const theme of THEMES) for (const [width, height] of SIZES) {
     await pick(page, 'contribution');
     await shot(page, `contribution-card-${tag}`);
   }
-  records.push({ tag, rest, card: { sparks: card.sparks }, glass: glass.slice(0, 120) });
+  records.push({ tag, world, roomWorld, rest, zoomRead, gateLine, card: { sparks: card.sparks }, glass: glass.slice(0, 120) });
   await closePage(page);
   if (!full) continue;
   // ---- the partner's phone, the offer waiting ----
   const partner = await openPage({ width, height });
   partner.on('pageerror', (e) => errors.push(`${tag} partner: ${e.message}`));
-  await partner.goto(url(theme, { roll: 'offered', member: 'MEM-002' }));
+  await partner.goto(url(theme, { roll: 'offered', member: 'MEM-002', world: 'flat' }));
   await cellar(partner, width);
   await gateTo(partner, 5);
   await pick(partner, 'missing');
@@ -131,14 +138,14 @@ for (const theme of THEMES) for (const [width, height] of SIZES) {
   // ---- the custodian's phone after the yes: Confirm ----
   const agreed = await openPage({ width, height });
   agreed.on('pageerror', (e) => errors.push(`${tag} agreed: ${e.message}`));
-  await agreed.goto(url(theme, { roll: 'agreed' }));
+  await agreed.goto(url(theme, { roll: 'agreed', world: 'flat' }));
   await cellar(agreed, width);
   await gateTo(agreed, 5);
   await pick(agreed, 'missing');
   await agreed.locator('button', { hasText: 'Roll $18.00 into Fictional trip to the shore' }).click();
-  await agreed.waitForSelector('[role=dialog]', { timeout: 60_000 });
+  await agreed.waitForSelector('[role=dialog].sheet', { timeout: 60_000 });
   await shot(agreed, `roll-confirm-${tag}`);
-  await agreed.locator('[role=dialog] button', { hasText: /^Roll \$18\.00$/ }).click();
+  await agreed.locator('[role=dialog].sheet button', { hasText: /^Roll \$18\.00$/ }).click();
   await agreed.waitForTimeout(500);
   const rolled = await agreed.evaluate(() => ({ text: document.querySelector('.queen-jar-card--missing')?.textContent, mark: document.querySelector('.queen-jar--extra[data-kind="missing"] .queen-extrajar__mark')?.textContent }));
   assert.match(rolled.text, /Rolled \$18\.00 into Fictional trip to the shore/, `${tag}: rolled`);
@@ -155,7 +162,7 @@ for (const [width, height] of [[390, 844], [1100, 800]]) {
   const context = await browser.newContext({ viewport: { width, height }, reducedMotion: 'reduce' });
   const page = await context.newPage();
   page.on('pageerror', (e) => errors.push(`${tag}: ${e.message}`));
-  await page.goto(url('classic', { reduced: '1' }));
+  await page.goto(url('classic', { reduced: '1', world: 'flat' }));
   await cellar(page, width);
   await gateTo(page, 5);
   await pick(page, 'missing');
