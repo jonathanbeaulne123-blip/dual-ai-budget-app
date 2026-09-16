@@ -5,8 +5,8 @@
 - **Owner:** Jonathan
 - **Assignee or AI:** Claude (integration engineer)
 - **Repository:** `jonathanbeaulne123-blip/dual-ai-budget-app`
-- **Branch:** `claude/plan-studio-v3` (worktree `wt-int`). It merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`.
-- **Head SHA:** see `git log --oneline 556d4bd1..claude/plan-studio-v3` (seventeen integration commits after the three merges: seven for D-282, eight for the trust-review fixes and evidence refresh, and two for the trust-review docs).
+- **Branch:** `claude/plan-studio-v3` (worktree `wt-int`). It merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`, and was brought up to date with **`main@d7b0151b`** (#497, the Journey of Life) by a merge commit (`5f1e06f6`).
+- **Head SHA:** see `git log --oneline 556d4bd1..claude/plan-studio-v3` (integration commits on top of the three track merges: seven for D-282, eight for the trust-review fixes and evidence, two for the trust-review docs, then the `main@d7b0151b` merge, the renumbering, three for Our Story and the guard composition, and the docs; `git log --oneline origin/main..claude/plan-studio-v3` lists every commit the bundle carries).
 - **Risk:** High. The studio now reads money meaning from the money model, the cellar's consent rows are filtered out of shared surfaces, the authority gains one author check, and Our Path grows new pieces. There is no new synced shape, no schema change and no new command.
 - **Decision owner:** Jonathan (D-282)
 - **Environment impact:** none. Fictional fixtures and proof pages only. `VITE_PLAN_STUDIO_V3` and `VITE_FUND_MODEL_V2` both stay off by default.
@@ -186,6 +186,27 @@ Every Blocker, High and Medium finding is fixed. Each fix has its own commit and
 - **M6, test gaps.** Covered above: authority-level roll tests, the two-client stamp case (the older phone), and the personal rule. Two gaps remain, listed under Remaining gaps.
 - **Evidence.** The integrated captures were refreshed (`27356ec3`).
 
+### 9. Up to date with `main@d7b0151b` (#497, the Journey of Life)
+
+- **Merge (`5f1e06f6`).** A merge commit, not a rebase, because the bundle is already out. Every conflict was resolved by keeping both sides:
+  - **Version stamps.** `protocol`, `client`, `authority` and `workers/ledgerRoom` carry main's `pathEraVersion` beside `fundModelVersion` and `chapterVersion`. Each guard stays its own line, so an older client is refused only for the feature the household uses. `test/plan-v3-flags-off.test.ts` checks both directions: a household with eras refuses only a client missing `pathEraVersion`, and a sorted household refuses only a client missing `fundModelVersion: 2`.
+  - **Registry.** The era commands sit beside the money-model commands, `closeChapterAtSitdown` and `rollMissingSubscription`.
+  - **App.** Uses `generateDemoSuiteOffThread`, which passes our `fundModel` option through the worker unchanged.
+  - **`OurPathWorld`.** Main's room head ("Plan our journey") now wraps our tent link.
+  - **Decisions and handoff.** Both sides' entries are kept.
+  - **Auto-merged files.** `pathWorld.ts`, `pathWorld3d.ts`, `pathSignals.ts`, `demoSuite.ts` and `types.ts`. The era islands, fog, gate, home upgrade and `EraPlanner` sit beside the umbrella pennants and the sorted-only "a closed check-in is the month's Sitdown" signal. The journey suites pass: `path-eras`, `path-era-islands` and `path-eras-ui`.
+- **Renumbering (`2d14b68f`).** Main took D-268, so this branch's D-268…D-281 became D-269…D-282. Only this branch's lines changed; main's Journey of Life references keep D-268. Commit subjects keep the old numbers.
+- **Our Story, flags off (`f7d536ce`).** Generating `habitat-story` (seed 41) with our flags off was not byte-identical to main at first: every shaped household gained an empty `fundModelRows: []`. Empty money-model rows now join no household or envelope shape, while an emptied list still overwrites the old one. Both trees now give fixture hash `f8ba4485…`. `test/plan-v3-flags-off.test.ts` covers the shape.
+- **Our Story, `VITE_FUND_MODEL_V2` on (`f7d536ce`, `92d10315`).**
+  - **Sorting.** The story's plans carry no Protect bill lines, so the guard passes and the migration sorts it. Its bills show in Prepare, and the funds add up to the King.
+  - **Coverage fix.** Its bills are card-paid, so Prepare has no Fund-backed bills. `fundSnapshot` still called "Cloud storage" short by $4 beside $14,965 of Now. Coverage now reads only the month's Fund-backed occurrences (`prepare.fundBills`), and the studio says "Paid outside the Fund this month".
+  - **New test.** `test/habitat-story-fund-model.test.ts` (serial, isolated) checks the sort, the eras and months, the selectors, and a render of the Plan Studio v3 and the cellar v3.
+- **Evidence.** Eight new captures:
+  - The story studio at classic 390 and 720, taylor 1100 and newfoundland 320, plus the Prepare sheet.
+  - The story cellar at classic 390, newfoundland 1100 and taylor 320.
+  - All pass with no overflow and no axe findings.
+  - The story cellar's own rail still reads "Cracked … $0.00 saved of $3.99" for a card-paid subscription. That is the cellar's existing rail, unchanged from `main`, and listed under the remaining gaps.
+
 ## Acceptance evidence
 
 **Type check.** `npx tsc --noEmit -p .` is clean at every commit.
@@ -234,6 +255,14 @@ Every Blocker, High and Medium finding is fixed. Each fix has its own commit and
 - At `c39c6ce8` (clean tree, after the docs commit): **`quick-gate-passed; time-budget-breached`**. It took 673.9 s; the same 83 files were selected, fast took 173.3 s and serial took 424.7 s.
 
 - At `8fc6599f` (clean tree, after the trust-review fixes): **`quick-gate-passed; time-budget-breached`**. It took 667.2 s over 86 files; fast took 170.4 s and serial took 414.7 s.
+
+**After the `main@d7b0151b` merge:**
+- **Targeted suites** (122 files: every track, plus `path-eras*`, `our-path-*` and `demo-suite-ui`): 1190 passed, 7 failed.
+  - 6 failures are pre-existing on `main@d7b0151b`: `onboarding-categories` ×2, `hercules-wardrobe-*` ×3 and `sync-integrity` ×1. All were reproduced in a temporary `d7b0151b` worktree.
+  - The 7th was the `ledger-import-parity` timeout under load; that suite passes alone.
+- **Our Story fixture hash** with the flags off is identical to main (`f8ba4485…`).
+- **`test/habitat-story-fund-model.test.ts`:** 4/4.
+- **The final High gate** is recorded in `docs/AI_HANDOFF.md`.
 
 **Targeted suites after the trust-review fixes** (118 files): 1151 passed, 6 failed and 7 skipped. The failures are the same 5 pre-existing ones, plus the `ledger-import-parity` timeout under load; that suite passes alone (5/5).
 
@@ -300,6 +329,8 @@ Every Blocker, High and Medium finding is fixed. Each fix has its own commit and
   - L3: the snapshot has no restore path, and a rollback server has no guard.
   - L4: the pay-hide ordering relies on each phone's clock.
   - L5: cellar Bridge ids remain in Hercules context.
+- **The cellar rail's own short reading.** For a card-paid bill (Our Story), the rail still reads "Cracked … $0.00 saved". This is main's cellar rail logic; it is not changed here.
+- **`sync-integrity`** fails on `main@d7b0151b` as well (other member's personal rows in a full-snapshot reconcile). This is not caused by this branch, but it deserves a look before merge.
 - **Pay-hide marks.** Marks written before this change, or replayed from an older client, can't prove their author on the read side. The authority now refuses new foreign marks.
 - **Cellar rows in Hercules context.** They still appear as allowed `plan-bridge` reference ids in `herculesCompanionContext`, and remain in the raw synced Bridge collection.
 - **The era model.** Its islands (`pathWorldVersion` 2) are not built.

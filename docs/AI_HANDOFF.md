@@ -1,6 +1,6 @@
 ## Plan Studio v3, integrated — the studio reads the money model, the cellar keeps its offers, pennants per umbrella (2026-09-16, D-282)
 
-Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`, plus seventeen integration commits: seven for D-282, eight for the trust-review fixes and evidence, and two for docs. **Risk: High.** There is no new synced shape, schema or command.
+Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`, then merges **`main@d7b0151b`** (#497). `git log origin/main..claude/plan-studio-v3` lists the commits the bundle carries. **Risk: High.** There is no new synced shape, schema or command.
 - Budget (5): +1.
 - Engagement (3): +1.
 - Details: [the worksession](worksessions/2026-09-16-plan-studio-v3-integration.md).
@@ -45,6 +45,16 @@ Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-st
   - Targeted suites: 118 files, 1151 passed. The same 5 pre-existing failures remain, plus a parity timeout under load; parity passes alone.
   - Evidence refreshed: 87 records, 0 failures.
   - Quick gate at High on `8fc6599f` (clean tree): `quick-gate-passed; time-budget-breached`. It took 667.2 s over 86 files.
+
+**Brought up to date with `main@d7b0151b`** (#497, the Journey of Life):
+- **Merge commit `5f1e06f6`.** `pathEraVersion` sits beside `fundModelVersion` and `chapterVersion`, each guard its own line (composition tested). The era commands sit beside ours. The App uses the off-thread demo generator with our `fundModel` option. Main's room head wraps our tent link.
+- **Renumbered `2d14b68f`.** Our decisions are now D-269–D-282; main keeps D-268.
+- **Our Story.**
+  - Flags off: byte-identical to main (fixture hash `f8ba4485…`) once empty `fundModelRows` stopped joining shapes (`f7d536ce`).
+  - `VITE_FUND_MODEL_V2` on: it sorts cleanly, with bills in Prepare, and renders the studio and the cellar (`test/habitat-story-fund-model.test.ts`).
+  - Fixed along the way (`92d10315`): card-paid bills are never "short" in the Fund.
+- **Suites.** 122 files; the 6 failures are all pre-existing on `d7b0151b` (`onboarding-categories` ×2, `hercules-wardrobe-*` ×3, `sync-integrity`).
+- **Evidence.** 8 Our Story captures, 0 failures.
 
 **Defaulted, confirm:** the list is in D-282.
 
