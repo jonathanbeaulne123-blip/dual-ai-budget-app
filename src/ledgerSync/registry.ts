@@ -32,7 +32,7 @@ const functions = {
   commitCompanionPlay,
   ...rehearsal,
   openChapter: chapterCommands.openChapter, addRitual: chapterCommands.addRitual, recordRitualHeld: chapterCommands.recordRitualHeld, setRitualState: chapterCommands.setRitualState,
-  offerMove: chapterCommands.offerMove, respondToMove: chapterCommands.respondToMove, completeMove: chapterCommands.completeMove, recordWin: chapterCommands.recordWin, keepWinAsMemory: chapterCommands.keepWinAsMemory, dismissWin: chapterCommands.dismissWin, closeChapter: chapterCommands.closeChapter,
+  offerMove: chapterCommands.offerMove, respondToMove: chapterCommands.respondToMove, completeMove: chapterCommands.completeMove, recordWin: chapterCommands.recordWin, keepWinAsMemory: chapterCommands.keepWinAsMemory, dismissWin: chapterCommands.dismissWin, closeChapter: chapterCommands.closeChapter, closeChapterAtSitdown: chapterCommands.closeChapterAtSitdown,
   migrateFundModel: fundModelCommands.migrateFundModel, migrateMyFundModel: fundModelCommands.migrateMyFundModel, setFundOverride: fundModelCommands.setFundOverride, setCategoryHome: fundModelCommands.setCategoryHome,
   proposeFundDivision: fundModelCommands.proposeFundDivision, agreeFundDivision: fundModelCommands.agreeFundDivision, declineFundDivision: fundModelCommands.declineFundDivision,
   proposeProtectRefill: fundModelCommands.proposeProtectRefill, agreeProtectRefill: fundModelCommands.agreeProtectRefill, declineProtectRefill: fundModelCommands.declineProtectRefill, withdrawFundProposal: fundModelCommands.withdrawFundProposal,
@@ -101,7 +101,7 @@ register("saveBoardTask removeBoardTask saveBoardMilestone removeBoardMilestone 
 register("linkGoogleIdentity touchHouseholdDevice", ["memberId"]);
 register("setGoogleServices setRecurrenceGoogleSync");
 register("startMonthRehearsal", ["startedByMemberId"]);
-register("openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter", ["memberId"]);
+register("openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter closeChapterAtSitdown", ["memberId"]);
 register("migrateFundModel migrateMyFundModel setFundOverride setCategoryHome proposeFundDivision agreeFundDivision declineFundDivision proposeProtectRefill agreeProtectRefill declineProtectRefill withdrawFundProposal", ["memberId"]);
 register("proposePathRecipe proposePathName agreePathProposal declinePathProposal setPathCategorySignal", ["memberId"]);
 register("upsertCoworker importCoworkerRoster recordCoworkerAttendance", [

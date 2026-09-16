@@ -5,6 +5,7 @@ import { projectPlan, planSelectionForVersion } from "./planProjection.ts";
 import type { BudgetPlan, Household, Transaction } from "./types.ts";
 import { fundModelMode } from "./fundRules.ts";
 import { projectKittyNest } from "./kittyNest.ts";
+import { chapterReminder, monthName } from "./chapters.ts";
 import { projectHouseholdFund } from "./householdFund.ts";
 
 export type PlanScope = "personal" | "household";
@@ -781,8 +782,14 @@ export function evaluatePlanDrift(household: Household, version: PlanVersion, as
       consequence: "It will not become the accepted plan until both partners acknowledge it.", sourceReferences: [],
     });
   }
+  const stillOpen = v2 && version.scope === "household" ? chapterReminder(household, { today: asOf }) : null;
+  if (stillOpen) add({
+    severity: stillOpen.monthsOpenPast > 1 ? "attention" : "gentle", rule: "chapter-still-open", targetId: stillOpen.chapterId,
+    explanation: stillOpen.message,
+    consequence: "Nothing closes by itself. Our Sitdown closes it and opens this month's Chapter.", sourceReferences: [],
+  });
   if (daysBetween(asOf, monthEndKey(version.monthKey)) >= 0 && daysBetween(asOf, monthEndKey(version.monthKey)) <= PLAN_DRIFT_THRESHOLDS.sitdownDays) add({
-    severity: "gentle", rule: "sitdown-upcoming", targetId: version.monthKey, explanation: "The monthly Sitdown is coming up.",
+    severity: "gentle", rule: "sitdown-upcoming", targetId: version.monthKey, explanation: stillOpen ? `The monthly Sitdown is coming up, and ${stillOpen.title} is still open from ${monthName(stillOpen.intendedMonth)}.` : "The monthly Sitdown is coming up.",
     consequence: "Open questions can become a calm shared agenda instead of a last-minute surprise.", sourceReferences: [],
   });
   return findings;

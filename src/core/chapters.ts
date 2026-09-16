@@ -1,5 +1,5 @@
 import { captureCommand } from "../ledgerSync/capture.ts";
-import type { DateKey } from "./calendar.ts";
+import { dateKeyInZone, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { cloneHousehold } from "./household.ts";
 import { nextId, nowIso } from "./ids.ts";
 import type { CommitResult, Household } from "./types.ts";
@@ -15,6 +15,12 @@ import { ValidationError } from "./types.ts";
  *
  * A Chapter follows the couple's Sitdown, not the calendar. At most one
  * Chapter is open at a time. A month ends; it does not pass or fail.
+ *
+ * Money model (D-272): a Chapter's *intended span* is a calendar month
+ * (`intendedMonth`). Nothing ever closes it automatically; once its month
+ * has ended, a reminder repeats (at most one nudge a day) until the Sitdown
+ * closes it, and the Sitdown opens the next Chapter for the month the
+ * Sitdown happens in. Skipped months read as "no Chapter", never as failed.
  */
 
 export type ChapterState = "open" | "established" | "still-forming" | "life-changed" | "closed";
@@ -53,6 +59,8 @@ export type Chapter = {
   state: ChapterState;
   /** What carries forward into the next Chapter, written at closing. */
   carryForward: string;
+  /** The calendar month this Chapter is meant to span (D-272). Legacy rows omit it and read as the month they opened. */
+  intendedMonth?: MonthKey;
   updatedAt: string;
 };
 
@@ -294,6 +302,7 @@ export function shapeChapters(value: unknown): Chapter[] {
       closedAtSitdownId: row.closedAtSitdownId ? String(row.closedAtSitdownId) : null,
       state: CHAPTER_STATES.includes(row.state as ChapterState) ? (row.state as ChapterState) : "open",
       carryForward: str(row.carryForward),
+      ...(typeof row.intendedMonth === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(row.intendedMonth) ? { intendedMonth: row.intendedMonth } : {}),
       updatedAt: validIso(row.updatedAt, openedAt),
     } satisfies Chapter];
   });
@@ -470,6 +479,9 @@ function commitChapters(previous: Household, next: Household, label: string, at:
     undo: { id: nextId("UNDO-CHAPTER-", []), label, snapshot: previous, postedIds: [], commandKind: "updateChapters" },
   };
 }
+function validMonth(value: unknown): MonthKey | null {
+  return typeof value === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(value) ? value : null;
+}
 function findChapter(household: Household, chapterId: string): Chapter {
   const row = (household.chapters ?? []).find((c) => c.id === chapterId);
   if (!row) throw new ValidationError("That Chapter is no longer available.");
@@ -481,6 +493,8 @@ export type OpenChapterInput = {
   foundationId?: FoundationChapterId;
   custom?: { title: string; meaning: string; lessonId?: string; betterFeelsLike?: string };
   sitdownId?: string;
+  /** The calendar month this Chapter spans; defaults to the Toronto month of `at`. */
+  intendedMonth?: MonthKey;
   at?: string;
 };
 
@@ -507,6 +521,7 @@ export const openChapter = captureCommand("openChapter", function openChapter(ho
     closedAtSitdownId: null,
     state: "open",
     carryForward: "",
+    intendedMonth: validMonth(input.intendedMonth) ?? monthKeyFromDateKey(dateKeyInZone(new Date(at))),
     updatedAt: at,
   };
   next.chapters = [...(next.chapters ?? []), chapter];
@@ -794,3 +809,104 @@ export const closeChapter = captureCommand("closeChapter", function closeChapter
         : `"${chapter.title}" closed`;
   return commitChapters(household, next, label, at);
 });
+
+// ---------------------------------------------------------------------------
+// Chapters as calendar months (D-272).
+
+/** The month a Chapter is meant to span; legacy rows read as the Toronto month they opened. */
+export function chapterMonth(chapter: Pick<Chapter, "intendedMonth" | "openedAt">): MonthKey {
+  return chapter.intendedMonth ?? monthKeyFromDateKey(dateKeyInZone(new Date(chapter.openedAt)));
+}
+
+export type ChapterReminder = {
+  chapterId: string;
+  title: string;
+  /** The month the open Chapter was meant for. */
+  intendedMonth: MonthKey;
+  /** Whole calendar months since that month ended (1 = last month). */
+  monthsOpenPast: number;
+  message: string;
+  /** True when this device may nudge today (at most one nudge a day); the in-app line shows regardless. */
+  nudge: boolean;
+};
+
+const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+export const monthName = (month: MonthKey): string => MONTH_NAMES[Number(month.slice(5, 7)) - 1] ?? month;
+
+/**
+ * The repeating reminder: the open Chapter's month has ended and no Sitdown
+ * has closed it. Never closes anything. `lastNudgedOn` is the device's own
+ * record of the last nudge (Q defaulted: at most one nudge a day).
+ */
+export function chapterReminder(household: Pick<Household, "chapters">, input: { today: DateKey; lastNudgedOn?: DateKey | null }): ChapterReminder | null {
+  const open = openChapterFor(household);
+  if (!open) return null;
+  const month = chapterMonth(open);
+  const current = monthKeyFromDateKey(input.today);
+  if (month >= current) return null;
+  let monthsOpenPast = 0;
+  for (let cursor = month; cursor < current && monthsOpenPast < 1200; cursor = shiftMonthKey(cursor, 1)) monthsOpenPast += 1;
+  return {
+    chapterId: open.id,
+    title: open.title,
+    intendedMonth: month,
+    monthsOpenPast,
+    message: `“${open.title}” is still open from ${monthName(month)}. It closes at our next Sitdown, whenever that is.`,
+    nudge: input.lastNudgedOn !== input.today,
+  };
+}
+
+export type ChapterMonthRow = { month: MonthKey; chapterId: string | null; kind: "own" | "still-open" | "none" };
+
+/**
+ * Everything is divided by Chapters. Each month in the range shows the
+ * Chapter that was meant for it, the earlier Chapter still open across it,
+ * or "no Chapter" — a skipped month is never a failure.
+ */
+export function chapterMonths(household: Pick<Household, "chapters">, from: MonthKey, to: MonthKey): ChapterMonthRow[] {
+  const chapters = shapeChapters(household.chapters).map((row) => {
+    const start = chapterMonth(row);
+    const end = row.state === "open" ? "9999-12" : row.closedAt ? monthKeyFromDateKey(dateKeyInZone(new Date(row.closedAt))) : start;
+    return { row, start, end };
+  });
+  const rows: ChapterMonthRow[] = [];
+  for (let month = from; month <= to && rows.length < 1200; month = shiftMonthKey(month, 1)) {
+    const own = chapters.filter((item) => item.start === month).sort((a, b) => b.row.openedAt.localeCompare(a.row.openedAt))[0];
+    if (own) { rows.push({ month, chapterId: own.row.id, kind: "own" }); continue; }
+    const spanning = chapters.find((item) => item.start < month && month < item.end);
+    rows.push(spanning ? { month, chapterId: spanning.row.id, kind: "still-open" } : { month, chapterId: null, kind: "none" });
+  }
+  return rows;
+}
+
+/** The lesson the next Chapter opens with when nobody picks one: the next foundation Chapter, else a month of our own. */
+export function defaultNextChapter(household: Pick<Household, "chapters">, month: MonthKey): Pick<OpenChapterInput, "foundationId" | "custom"> {
+  const foundation = nextFoundationChapter(household);
+  if (foundation) return { foundationId: foundation.id };
+  return { custom: { title: `Our ${monthName(month)}`, meaning: "A month to keep what works and try one small thing.", lessonId: "cashflow-balance" } };
+}
+
+export type CloseAndOpenChapterInput = CloseChapterInput & {
+  /** Today in Toronto; the next Chapter belongs to this month (Q-C). */
+  today: DateKey;
+  next?: Pick<OpenChapterInput, "foundationId" | "custom">;
+};
+
+/**
+ * The merged check-in's last step (F2/F5): the Sitdown closes the open
+ * Chapter with the outcome the couple chose (Rituals retire only on that
+ * choice) and opens the next Chapter for the Sitdown's month, in one command.
+ */
+export const closeChapterAtSitdown = captureCommand("closeChapterAtSitdown", function closeChapterAtSitdown(household: Household, input: CloseAndOpenChapterInput): CommitResult {
+  const closed = closeChapter(household, input);
+  const month = monthKeyFromDateKey(input.today);
+  const choice = input.next ?? defaultNextChapter(closed.household, month);
+  const opened = openChapter(closed.household, { memberId: input.memberId, ...choice, intendedMonth: month, ...(input.sitdownId ? { sitdownId: input.sitdownId } : {}), ...(input.at ? { at: input.at } : {}) });
+  return { ...opened, undo: { ...opened.undo, snapshot: household, label: "Closed our Chapter and opened the next" } };
+});
+
+/** True once any Chapter carries a calendar month; an older client would drop it, so it must reload first. */
+export function hasChapterMonthData(household: Pick<Household, "chapters">): boolean {
+  return (household.chapters ?? []).some((row) => row.intendedMonth !== undefined);
+}
+export const CHAPTER_MONTH_COMMAND_KINDS = ["openChapter", "closeChapterAtSitdown"];
