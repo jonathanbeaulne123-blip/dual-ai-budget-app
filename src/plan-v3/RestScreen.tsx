@@ -1,5 +1,6 @@
 import type { DateKey } from "../core/calendar.ts";
-import type { Household, LedgerView } from "../core/types.ts";
+import type { CommitResult, Household, LedgerView } from "../core/types.ts";
+import { DivideCard } from "./FundProposals.tsx";
 import { PathMiniMap } from "../path/PathMiniMap.tsx";
 import { usePathTent } from "../path/tentContext.ts";
 import { FlowPanel, type FlowHighlight } from "./FlowPanel.tsx";
@@ -26,7 +27,7 @@ export function restAction(model: PlanStudioV3Model, go: { checkIn: (step?: numb
   if (snapshot.flow?.shortFrom) return { label: `Look at ${snapshot.flow.shortFrom.label} together`, sub: `Short from ${dayWords(snapshot.flow.shortFrom.date)}`, run: () => go.checkIn(STEPS.findIndex(step => step.id === "prepare")) };
   if (agreement.kind === "waiting-me") return { label: "Read it and agree", sub: "Agreeing is your own step", run: () => go.checkIn(STEPS.findIndex(step => step.id === "together")) };
   if (agreement.kind === "none" || agreement.kind === "draft") return { label: `Start the ${model.monthLabel} check-in`, run: () => go.checkIn(0) };
-  if (household && agreement.kind === "agreed" && !model.monthSet) return { label: `Close ${model.monthLabel}'s Chapter together`, sub: "The Sitdown closes it and opens the next", run: () => go.checkIn(STEPS.findIndex(step => step.id === "sitdown")) };
+  if (household && agreement.kind === "agreed" && !model.monthSet) return { label: `Close ${model.chapter?.monthLabel ?? model.monthLabel}'s Chapter together`, sub: "The Sitdown closes it and opens the next", run: () => go.checkIn(STEPS.findIndex(step => step.id === "sitdown")) };
   return { label: "Can we afford something?", run: go.afford };
 }
 
@@ -34,14 +35,15 @@ export function restAction(model: PlanStudioV3Model, go: { checkIn: (step?: numb
  * The plan at rest (Round 1F): the Queen with Everyday's "Now", her three
  * funds each with one honest line, the month's flow, and one primary action.
  */
-export function RestScreen({ household, memberId, view, today, model, highlight, onHighlight, onFund, action, onDivide }: {
+export function RestScreen({ household, memberId, view, today, model, highlight, onHighlight, onFund, action, divide }: {
   household: Household; memberId: string; view: LedgerView; today: DateKey;
   model: PlanStudioV3Model;
   highlight: FlowHighlight;
   onHighlight: (key: FlowHighlight) => void;
   onFund: (key: FundKey | "everyday", from: HTMLElement) => void;
   action: RestAction;
-  onDivide?: (contributionId: string) => void;
+  /** The money model's split flow (D-281). Without it, the moment only reads "not divided yet". */
+  divide?: { busy: boolean; run: (fn: (current: Household) => CommitResult) => Promise<{ household?: Household } | null> };
 }) {
   const { snapshot, agreement } = model;
   const tent = usePathTent();
@@ -81,7 +83,9 @@ export function RestScreen({ household, memberId, view, today, model, highlight,
               {undivided && <span className="pv3-pill">+{moneyWords(undivided.amountCents)} not divided yet</span>}
             </span>
           </button>
-          {undivided && (
+          {undivided && (divide && snapshot.mode === 2
+            ? <DivideCard row={undivided} memberId={memberId} busy={divide.busy} run={divide.run} />
+            : (
             <div className="pv3-divide" role="region" aria-labelledby="pv3-divide-h">
               <p className="pv3-kicker">{undivided.memberName}'s contribution · {dayWords(undivided.date)}</p>
               <h2 id="pv3-divide-h" tabIndex={-1}>Divide {moneyWords(undivided.amountCents)}</h2>
@@ -91,11 +95,9 @@ export function RestScreen({ household, memberId, view, today, model, highlight,
                   {(["prepare", "protect", "build", "everyday"] as const).filter(key => undivided.suggestion![key] > 0).map(key => <li key={key}>{FUND_WORDS[key].name} <span>+{moneyWords(undivided.suggestion![key])}</span></li>)}
                 </ul>
               </> : <p className="pv3-note">Not divided yet. It counts once you both confirm a split.</p>}
-              {onDivide
-                ? <button type="button" className="pv3-btn" onClick={() => onDivide(undivided.id)}>Propose this split<small>{undivided.waitingOn.length ? `${undivided.waitingOn.join(" and ")} confirms` : "You both confirm"}</small></button>
-                : <p className="pv3-note">Dividing opens with the new money model; until then it stays “not divided yet”.</p>}
+              <p className="pv3-note">Dividing opens with the new money model; until then it stays “not divided yet”.</p>
             </div>
-          )}
+          ))}
           <svg className="pv3-vine" viewBox="0 0 300 22" preserveAspectRatio="none" aria-hidden="true" focusable="false"><path d="M150 0 V8 M150 8 Q150 14 50 16 V22 M150 8 V22 M150 8 Q150 14 250 16 V22" /></svg>
           <div className="pv3-three">
             {(["prepare", "protect", "build"] as const).map(key => {
@@ -121,7 +123,7 @@ export function RestScreen({ household, memberId, view, today, model, highlight,
           {view === "household" && (
             <div className="pv3-island">
               <span className="pv3-island__map" aria-hidden="true"><PathMiniMap household={household} today={today} size={64} /></span>
-              <p><b>{model.monthLabel} Chapter</b>{model.chapter ? <small>{model.chapter.title}</small> : null}<small>{model.monthSet ? "Set on our island" : "Growing on our island"}</small></p>
+              <p><b>{model.chapter?.monthLabel ?? model.monthLabel} Chapter</b>{model.chapter ? <small>{model.chapter.title}</small> : null}<small>{model.monthSet ? "Set on our island" : "Growing on our island"}</small>{model.chapter?.reminder && <small className="pv3-reminder" role="note">{model.chapter.reminder}</small>}</p>
               {tent && <button type="button" className="pv3-link" onClick={tent.leaveTent}>See it on our island</button>}
             </div>
           )}

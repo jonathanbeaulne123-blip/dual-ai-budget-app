@@ -13,7 +13,10 @@
  * build, flow }) so that one function can be swapped for the other.
  */
 import { addDays, monthEndKey, monthKeyFromDateKey, monthStartKey, shiftMonthKey, type DateKey, type MonthKey } from "../core/calendar.ts";
-import { openChapterFor } from "../core/chapters.ts";
+import { chapterMonth, chapterReminder, openChapterFor } from "../core/chapters.ts";
+import { divisionFor, fundSnapshot, proposedDivision } from "../core/fundModel.ts";
+import { fundModelMode, type FundDivisionRow, type FundRefillRow } from "../core/fundRules.ts";
+import { clientFundModelVersion } from "../ledgerSync/fundModelStamp.ts";
 import { fundWalk } from "../core/fundWalk.ts";
 import { householdFundContributionMotions, projectHouseholdFund, shapeHouseholdFundConfig } from "../core/householdFund.ts";
 import { projectKittyNest, type NestBank } from "../core/kittyNest.ts";
@@ -38,10 +41,17 @@ export type NowReading = { amountCents: number | null; line: string | null };
 export type SplitSuggestion = Record<FundKey | "everyday", number>;
 export type UndividedContribution = {
   id: string; memberId: string | null; memberName: string; amountCents: number; date: DateKey;
-  /** Hercules's offered split, when the money model supplies one. */
+  /** Hercules's offered split, when the money model supplies one (the open proposal's split once someone proposed). */
   suggestion: SplitSuggestion | null;
   /** Who still needs to confirm the split (both partners confirm). */
   waitingOn: string[];
+  /** The open division record (money model only): who proposed it, who agreed, and its revision for the confirm. */
+  proposal?: { id: string; revision: number; proposedBy: string; agreedBy: string[] } | null;
+};
+/** An open Protect refill (money model only): custodian proposes, partner confirms; a record, never a bank move. */
+export type RefillReading = {
+  id: string; revision: number; toFund: "build" | "everyday"; amountCents: number; note: string;
+  state: "proposed" | "confirmed"; proposedBy: string; proposedByName: string; agreedBy: string[];
 };
 export type FlowContribution = { id: string; memberName: string; amountCents: number; estimated: boolean; actual: boolean; split: SplitSuggestion | null };
 export type FlowOutflow = { id: string; label: string; amountCents: number; fund: FundKey | null; actual: boolean };
@@ -58,6 +68,10 @@ export type FlowReading = {
   source: "fund-walk" | "plan-projection";
 };
 export type FundSnapshotV3 = {
+  /** Which money model produced these readings. Absent = the transitional adapter (v1 meaning). */
+  mode?: 1 | 2;
+  /** Open Protect refills for the month (money model only). */
+  refills?: RefillReading[];
   now: NowReading;
   undividedContributions: UndividedContribution[];
   prepare: FundReading;
@@ -158,8 +172,9 @@ function selectionFor(h: Household, memberId: string, view: LedgerView, monthKey
 }
 
 /**
- * TODO(plan-v3 → fundModel): swap this for `fundSnapshot(household, { memberId, view, today })`
- * from `src/core/fundModel.ts` when the money track lands. Until then:
+ * The transitional adapter (D-274), kept as the fallback while `VITE_FUND_MODEL_V2`
+ * is off and for households the money model has not sorted yet. With the flag
+ * on, `fundModelSnapshot` (below) reads `fundSnapshot` instead (D-281). Here:
  * - the four amounts are the Kitty Nest's four categories exactly as today (so Protect
  *   still carries the bills the money-model migration moves to Prepare);
  * - Prepare's line reads the Fund walk's dated obligations (the bills);
@@ -191,6 +206,78 @@ export const planStudioFundSnapshot: FundSnapshotSource = (h, { memberId, view, 
   };
 };
 
+function refillReading(h: Household, row: FundRefillRow): RefillReading {
+  return {
+    id: row.id, revision: row.revision, toFund: row.toFund, amountCents: row.amountCents, note: row.note,
+    state: row.state === "confirmed" ? "confirmed" : "proposed", proposedBy: row.proposedBy, proposedByName: memberName(h, row.proposedBy), agreedBy: [...row.agreedBy],
+  };
+}
+
+function waitingOnFor(h: Household, proposal: FundDivisionRow | null): string[] {
+  return h.members.filter(row => row.active && !(proposal?.agreedBy ?? []).includes(row.id)).map(row => row.name);
+}
+
+/**
+ * The money model's read (D-281, integration): `fundSnapshot` from
+ * `src/core/fundModel.ts`, mapped onto the studio's shape. Figures are the
+ * snapshot's own (Now, Prepare, Protect, Build); the month's day-by-day walk
+ * still comes from `fundWalk` so the flow keeps its balances. A contribution's
+ * `split` is its confirmed division, and "not divided yet" lists the
+ * snapshot's undivided contributions with Hercules's draft split
+ * (`proposedDivision`) or the open proposal's split.
+ * A household the money model has not sorted yet (mode 1) reads the
+ * transitional adapter, so nothing changes until the household step runs.
+ */
+export const fundModelSnapshot: FundSnapshotSource = (h, input) => {
+  if (fundModelMode(h) !== 2) return planStudioFundSnapshot(h, input);
+  const { memberId, view, today } = input;
+  const snap = fundSnapshot(h, input);
+  const legacy = planStudioFundSnapshot(h, input);
+  const monthKey = monthKeyFromDateKey(today);
+  const month = monthName(monthKey);
+  const flow = legacy.flow && view === "household" ? {
+    ...legacy.flow,
+    days: legacy.flow.days.map(day => ({
+      ...day,
+      contributions: day.contributions.map(row => {
+        const division = divisionFor(h, row.id);
+        return division?.state === "confirmed" ? { ...row, split: { ...division.split } } : row;
+      }),
+    })),
+  } : legacy.flow;
+  const prepareRows: FundRow[] = snap.prepare.bills.map(bill => ({ id: bill.id, label: bill.name, detail: bill.date ? dayWords(bill.date) : null, amountCents: bill.targetCents, date: bill.date }));
+  const otherPrepare = legacy.prepare.rows.filter(row => !prepareRows.some(bill => bill.id === row.id));
+  const shortOn = snap.prepare.shortOn;
+  const prepareLine = shortOn ? `Short ${cad(shortOn.shortCents)} for ${shortOn.label}, ${dayWords(shortOn.date)}`
+    : snap.prepare.bills.length ? (flow?.anyEstimated ? `Bills covered all ${month} if expected pay arrives` : `Bills covered all ${month}`)
+    : null;
+  const buffer = snap.protect.targetCents > 0 ? snap.protect.targetCents : null;
+  const goals = snap.build.goals.length;
+  return {
+    mode: 2,
+    refills: view === "household" ? snap.protect.refills.map(row => refillReading(h, row)) : [],
+    now: { amountCents: snap.now, line: `for ${month}, here now` },
+    undividedContributions: snap.undividedContributions.map(row => ({
+      id: row.eventId, memberId: row.contributorMemberId, memberName: memberName(h, row.contributorMemberId), amountCents: row.amountCents, date: row.date,
+      suggestion: row.proposal ? { ...row.proposal.split } : proposedDivision(h, row.eventId, { memberId, today }),
+      waitingOn: waitingOnFor(h, row.proposal),
+      proposal: row.proposal ? { id: row.proposal.id, revision: row.proposal.revision, proposedBy: row.proposal.proposedBy, agreedBy: [...row.proposal.agreedBy] } : null,
+    })),
+    prepare: { key: "prepare", amountCents: snap.prepare.amountCents, line: prepareLine, tone: shortOn ? "attention" : "calm", targetCents: snap.prepare.targetCents || null, rows: [...prepareRows, ...otherPrepare] },
+    protect: { key: "protect", amountCents: snap.protect.amountCents, line: buffer ? `of ${cad(buffer)} cushion` : null, tone: "calm", targetCents: buffer, rows: legacy.protect.rows },
+    build: {
+      key: "build", amountCents: snap.build.amountCents, line: goals ? `this month, toward ${goals} ${goals === 1 ? "goal" : "goals"}` : null, tone: "calm", targetCents: snap.build.targetCents || null,
+      rows: snap.build.goals.map(goal => ({ id: goal.goalId, label: goal.name, detail: goal.targetCents > 0 ? `${cad(goal.amountCents)} of ${cad(goal.targetCents)}` : "a goal", amountCents: goal.amountCents, date: goal.date })),
+    },
+    flow,
+  };
+};
+
+/** The studio's default source: the money model when `VITE_FUND_MODEL_V2` is on, the transitional adapter otherwise. */
+export function defaultFundSnapshotSource(flag?: string): FundSnapshotSource {
+  return clientFundModelVersion(flag) === 2 ? fundModelSnapshot : planStudioFundSnapshot;
+}
+
 export type AgreementState = {
   kind: "none" | "draft" | "waiting-me" | "waiting-partner" | "agreed" | "kept";
   label: string;
@@ -218,7 +305,11 @@ export type PlanStudioV3Model = {
   snapshot: FundSnapshotV3;
   agreement: AgreementState;
   session: CheckInSession;
-  chapter: { id: string; title: string } | null;
+  /**
+   * The open Chapter (D-272: a Chapter is a calendar month). `monthLabel` is the month it was meant for;
+   * `reminder` is set once that month has ended and no Sitdown has closed it — nothing closes it by itself.
+   */
+  chapter: { id: string; title: string; monthKey: MonthKey; monthLabel: string; reminder: string | null } | null;
   /** This month's Shared Sitdown closed: the island's land for the month is set. */
   monthSet: boolean;
   badge: ToolBadge;
@@ -240,7 +331,7 @@ export function planStudioV3Model(h: Household, input: { memberId: string; view:
   const { memberId, view, today } = input;
   const monthKey = monthKeyFromDateKey(today);
   const monthLabel = monthName(monthKey);
-  const snapshot = (input.source ?? planStudioFundSnapshot)(h, { memberId, view, today });
+  const snapshot = (input.source ?? defaultFundSnapshotSource())(h, { memberId, view, today });
   const version = currentPlanVersion(h, view, monthKey, memberId);
   const draft = (h.planDrafts ?? []).filter(row => row.ownerMemberId === memberId && row.scope === view && row.targetMonth === monthKey).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] ?? null;
   const required = view === "household" ? requiredPlanMemberIds(h) : [memberId];
@@ -292,7 +383,11 @@ export function planStudioV3Model(h: Household, input: { memberId: string; view:
   }
   return {
     monthKey, monthLabel, view, snapshot, agreement, session, monthSet, badge, lenses, firstVisit, sentence, sentenceTone, nextIn,
-    chapter: chapterRow ? { id: chapterRow.id, title: chapterRow.title } : null,
+    // Chapters read as calendar months once the money model sorted the household (the same gate the Chapter moment uses).
+    chapter: chapterRow ? (fundModelMode(h) === 2 ? {
+      id: chapterRow.id, title: chapterRow.title, monthKey: chapterMonth(chapterRow), monthLabel: monthName(chapterMonth(chapterRow)),
+      reminder: chapterReminder(h, { today })?.message ?? null,
+    } : { id: chapterRow.id, title: chapterRow.title, monthKey, monthLabel, reminder: null }) : null,
     previousMonthLabel: previous ? monthName(previousKey) : null,
   };
 }

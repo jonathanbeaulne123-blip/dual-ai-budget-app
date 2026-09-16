@@ -3,6 +3,7 @@ import type { CommitResult, Household } from "../core/index.ts";
 import type { PlanStudioProps, PlanStudioSection } from "../PlanStudio.tsx";
 import { CheckIn } from "./CheckIn.tsx";
 import type { FlowHighlight } from "./FlowPanel.tsx";
+import { RefillPanel } from "./FundProposals.tsx";
 import { moneyWords, planStudioV3Model, type FundKey, type FundSnapshotSource } from "./model.ts";
 import { FUND_WORDS, RestScreen, restAction } from "./RestScreen.tsx";
 import { STEPS } from "./steps.ts";
@@ -79,7 +80,7 @@ export default function PlanStudioV3(props: PlanStudioProps & { snapshotSource?:
         <div className="pv3-main" ref={node => { restHeading.current = node; }}>
           {mode.kind === "rest"
             ? <RestScreen household={household} memberId={memberId} view={view} today={today} model={model} highlight={highlight} onHighlight={setHighlight}
-                onFund={key => setSheet({ kind: "fund", fund: key })} action={action} />
+                onFund={key => setSheet({ kind: "fund", fund: key })} action={action} divide={view === "household" ? { busy: locked, run } : undefined} />
             : <CheckIn household={household} memberId={memberId} view={view} today={today} model={model} busy={locked} run={run} initialStep={mode.step}
                 onLook={look => openTool(look.tool, look.section)}
                 onExit={message => { setMode({ kind: "rest" }); if (message) setNotice(message); }} />}
@@ -107,7 +108,9 @@ export default function PlanStudioV3(props: PlanStudioProps & { snapshotSource?:
             {fundReading.rows.length ? fundReading.rows.map(row => (
               <div key={row.id} className="pv3-row"><div className="pv3-row__grow">{row.label}{row.detail && <small>{row.detail}</small>}</div>{row.amountCents !== null && <span className="pv3-amt">{moneyWords(row.amountCents)}</span>}</div>
             )) : <p className="pv3-muted">Nothing here yet.</p>}
-            {fundSheet === "protect" && view === "household" && <p className="pv3-note">The custodian proposes a refill; the partner confirms, as today.</p>}
+            {fundSheet === "protect" && view === "household" && (model.snapshot.mode === 2
+              ? <RefillPanel household={household} memberId={memberId} monthKey={model.monthKey} refills={model.snapshot.refills ?? []} busy={locked} run={run} />
+              : <p className="pv3-note">The custodian proposes a refill; the partner confirms, as today.</p>)}
           </>}
           <p className="pv3-note">“Set aside” is a way of planning, not a bank move.</p>
           <button type="button" className="pv3-btn" onClick={() => startCheckIn(Math.max(0, STEPS.findIndex(step => step.id === (fundSheet === "everyday" ? "everyday" : fundSheet))))}>Change it in the check-in</button>

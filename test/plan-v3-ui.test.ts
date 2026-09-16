@@ -145,7 +145,7 @@ describe("the plan at rest", () => {
     await render();
     expect(host.querySelector(".pv3-divide")?.textContent).toContain("Divide $1,400");
     expect(host.querySelector(".pv3-sent")?.textContent).toBe("Sam (fictional)'s $1,400 landed today. It's not divided yet.");
-    // No split command exists yet, so nothing offers to post one, and the rest screen has no competing action.
+    // Without the money model (flag off / unsorted), nothing offers to post a split, and the rest screen has no competing action.
     expect(buttons(host).some(b => b.textContent?.startsWith("Propose this split"))).toBe(false);
     expect(host.querySelector(".pv3-cta")).toBeNull();
   });

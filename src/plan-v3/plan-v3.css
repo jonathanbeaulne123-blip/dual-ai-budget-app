@@ -436,3 +436,12 @@
 }
 :root[data-motion="reduced"] :is(.pv3, .pv3-veil) *, :root[data-motion="reduced"] :is(.pv3, .pv3-veil) *::before, :root[data-motion="reduced"] :is(.pv3, .pv3-veil) *::after { transition: none !important; animation: none !important; }
 .pv3-veil .cue { display: none; }
+
+/* D-281: the money model's proposals and the Chapter's month reminder. */
+.pv3-reminder { display: block; margin-top: 4px; color: var(--pv3-accent); font-weight: 600; }
+.pv3-refill { margin-top: 10px; }
+.pv3-refill__form { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-top: 8px; }
+.pv3-refill__form .pv3-field { flex: 1 1 140px; min-width: 0; }
+.pv3-refill__form input, .pv3-refill__form select { min-height: 44px; width: 100%; box-sizing: border-box; }
+.pv3-divide + .pv3-divide { margin-top: 8px; }
+.pv3-divide .pv3-stepnav { margin-top: 8px; }

@@ -10,6 +10,7 @@ import { usePathTent } from "../path/tentContext.ts";
 import { Paw } from "./figures.tsx";
 import { dayWords, moneyWords, pendingContributions, type FundRow, type PlanStudioV3Model } from "./model.ts";
 import { FUND_WORDS } from "./RestScreen.tsx";
+import { DivideCard, RefillPanel } from "./FundProposals.tsx";
 import { STEPS, stageForStep, type StepDef } from "./steps.ts";
 import type { LookCloser } from "./tools.ts";
 
@@ -156,6 +157,7 @@ export function CheckIn({ household, memberId, view, today, model, busy, run, in
       const brief = sitdownBrief(household, { memberId, today });
       body = <>
         <div className="pv3-card">
+          {model.chapter?.reminder && <p className="pv3-note pv3-reminder" role="note">{model.chapter.reminder}</p>}
           {brief.chapter && <Row label={`Chapter: ${brief.chapter.title}`} sub={`Rituals held ${brief.chapter.ritualsHeld} times · ${brief.chapter.movesDone} Moves done · ${brief.chapter.movesOpen} still open`} />}
           {brief.settled.map(row => <Row key={row.id} label={row.text} amount="✓" tone="ok" />)}
           {brief.changed.map(row => <Row key={row.id} label={row.text} />)}
@@ -177,10 +179,11 @@ export function CheckIn({ household, memberId, view, today, model, busy, run, in
         <div className="pv3-card">
           {incoming.map(row => <Row key={row.id} label={row.memberName} sub={`${dayWords(row.date)} · ${row.estimated ? "expected, not certain yet" : row.actual ? "arrived" : "planned"}`} amount={`+${moneyWords(row.amountCents)}`} tone={row.estimated ? "soft" : "ok"} />)}
           {pending.map(row => <Row key={row.id} label={`${row.memberName} (waiting to confirm)`} sub={`${dayWords(row.date)} · ${row.waitingOnMe ? "yours to confirm in the Fund" : "the custodian confirms"}; not counted yet`} amount={moneyWords(row.amountCents)} tone="soft" />)}
-          {snapshot.undividedContributions.map(row => <Row key={row.id} label={`${row.memberName} · not divided yet`} sub={row.waitingOn.length ? `Waiting for ${row.waitingOn.join(" and ")} to confirm the split` : "You both confirm the split"} amount={moneyWords(row.amountCents)} tone="soft" />)}
+          {snapshot.mode !== 2 && snapshot.undividedContributions.map(row => <Row key={row.id} label={`${row.memberName} · not divided yet`} sub={row.waitingOn.length ? `Waiting for ${row.waitingOn.join(" and ")} to confirm the split` : "You both confirm the split"} amount={moneyWords(row.amountCents)} tone="soft" />)}
           {!incoming.length && !pending.length && <p className="pv3-muted">Nothing dated is coming in yet this month.</p>}
           {incoming.length > 0 && <Row label={<b>Coming in</b>} amount={moneyWords(snapshot.flow!.totalInCents)} />}
         </div>
+        {household_ && snapshot.mode === 2 && snapshot.undividedContributions.map(row => <DivideCard key={row.id} row={row} memberId={memberId} busy={busy} run={run} headingLevel={3} />)}
         {chips([look("Where do these come from?", "tracing", "assumptions"), look("What if a pay is late?", "tracing", "protect"), ...(household_ ? [look(`Offers waiting between us${model.badge?.tool === "letter" ? ` (${model.badge.text.split(" ")[0]})` : ""}`, "letter", "bridge")] : [])])}
         {nav("Looks right")}
         <button type="button" className="pv3-link" aria-haspopup="dialog" onClick={event => onLook(look("Change something", "tracing", "assumptions"), event.currentTarget)}>Change something</button>
@@ -212,6 +215,7 @@ export function CheckIn({ household, memberId, view, today, model, busy, run, in
           <FundRows rows={snapshot.protect.rows} empty="Nothing held in Protect yet." />
           <LineRows title="In the plan" lines={model.lenses.protect.lines} />
         </div>
+        {household_ && snapshot.mode === 2 && <RefillPanel household={household} memberId={memberId} monthKey={model.monthKey} refills={snapshot.refills ?? []} busy={busy} run={run} />}
         {chips([look("Open the Kitty bank", "kitty", "goals"), look("What if costs rise?", "tracing", "protect")])}
         {nav("Looks right")}
       </>);
