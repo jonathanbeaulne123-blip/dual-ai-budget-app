@@ -319,7 +319,7 @@ html.path-world-settled [data-path-world-behind] { visibility: hidden !important
 .path-hud__caption-sub { font-size: 12.5px; color: var(--muted); font-weight: 600; overflow-wrap: anywhere; }
 .path-hud__dock { grid-area: dock; align-self: end; display: grid; justify-items: end; gap: 8px; min-width: 0; }
 .path-hud .path-world__rail { flex-wrap: nowrap; border-radius: 999px; padding: 4px; }
-.path-hud .path-world__rail button { min-height: 44px; min-width: 44px; justify-content: center; padding: 6px 12px; white-space: nowrap; }
+.path-hud .path-world__rail button { min-height: 44px; min-width: 44px; justify-content: center; padding: 6px 12px; white-space: nowrap; transition: none; }
 .path-hud .path-world__rail button:disabled { opacity: 0.45; }
 .path-hud .path-world__now { flex-wrap: nowrap; align-items: end; }
 .path-hud .path-world__compass { display: inline-flex; gap: 8px; align-items: center; }
@@ -346,8 +346,10 @@ html.path-world-settled [data-path-world-behind] { visibility: hidden !important
 .path-world--newfoundland .path-hud__caption strong { font-family: var(--font); font-weight: 800; font-size: 18px; letter-spacing: 0.01em; }
 .path-world--newfoundland .path-hud__mini { border-radius: 4px; border-bottom: 3px solid var(--theme-second, #26766f); }
 
-/* 720–1099: a smaller corner map so the caption keeps room. */
+/* 720–1099: the caption takes its own row above the corner map and the dock, so neither squeezes it. */
 @media (max-width: 1099px) {
+  .path-hud { grid-template-rows: auto minmax(0, 1fr) auto auto; grid-template-areas: "start . end" ". . ." "caption caption caption" "mini . dock"; }
+  .path-hud__caption { align-self: end; }
   .path-hud__mini { width: var(--journey-mini-compact-w, 164px); }
   .path-hud .path-world__rail button { padding: 6px 9px; }
   .path-hud__caption strong { font-size: 18px; }
@@ -365,14 +367,18 @@ html.path-world-settled [data-path-world-behind] { visibility: hidden !important
   .path-hud__dock { justify-items: stretch; }
   .path-hud .path-world__rail { justify-content: space-between; }
   .path-hud .path-world__rail { gap: 0; }
-  .path-hud .path-world__rail button { flex: 1 1 auto; min-width: 40px; padding: 6px 5px; font-size: 12.5px; }
+  .path-hud .path-world__rail button { flex: 1 1 auto; min-width: 44px; padding: 6px 4px; font-size: 12.5px; }
   .path-hud .path-world__now { display: grid; grid-template-columns: 1fr 1fr; }
   .path-hud .path-world__now > .path-hercules { display: none; }
   .path-hud .path-world__now > button { justify-content: center; font-size: 14px; }
   .path-hud__banner { top: 26%; }
   .path-world__drawer { right: 0; }
 }
-@media (max-width: 359px) { .path-hud .path-world__compass svg, .path-hud .path-world__tent svg { display: none; } }
+@media (max-width: 359px) {
+  .path-hud .path-world__compass svg, .path-hud .path-world__tent svg { display: none; }
+  .path-hud .path-world__rail { padding: 3px; }
+  .path-hud .path-world__rail button { padding: 6px 2px; font-size: 12px; letter-spacing: -0.01em; }
+}
 @media (pointer: coarse) { .path-hud__esc { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   .path-world__loading span, .path-world__drawer, .path-world[data-game] .path-hud *, .path-hud__banner { animation: none !important; transition: none !important; }
