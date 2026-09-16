@@ -21,14 +21,14 @@ import { savePlanBridgeDraft, sharePlanBridgeDraft } from "../src/core/index.ts"
 
 // jsdom has no WebGL: by default the world fails to load and the page must stay fully usable.
 // The "fake" variant hands back a stand-in world so the page's calls into it can be counted.
-type FakeWorld = Record<"setScene" | "resize" | "setAmbient" | "setQuality" | "sleep" | "wake" | "refresh" | "focus" | "setLevel" | "zoom" | "turn" | "stats" | "dispose", ReturnType<typeof vi.fn>>;
+type FakeWorld = Record<"setScene" | "resize" | "setAmbient" | "setQuality" | "sleep" | "wake" | "refresh" | "focus" | "focusMonth" | "setLevel" | "zoom" | "turn" | "stats" | "dispose", ReturnType<typeof vi.fn>>;
 const created = vi.hoisted(() => ({ count: 0, mode: "throw" as "throw" | "fake", options: [] as { quality?: string }[], worlds: [] as unknown[] }));
 vi.mock("../src/path/world/pathWorld3d.ts", () => ({
   createPathWorld: (_host: HTMLElement, options: { quality?: string }) => {
     created.count += 1;
     if (created.mode === "throw") throw new Error("WebGL unavailable");
     created.options.push(options);
-    const names = ["setScene", "resize", "setAmbient", "setQuality", "sleep", "wake", "refresh", "focus", "setLevel", "zoom", "turn", "stats", "dispose"];
+    const names = ["setScene", "resize", "setAmbient", "setQuality", "sleep", "wake", "refresh", "focus", "focusMonth", "setLevel", "zoom", "turn", "stats", "dispose"];
     const world = Object.fromEntries(names.map((n) => [n, vi.fn()]));
     created.worlds.push(world);
     return world;
@@ -77,14 +77,22 @@ const scrub = async (slider: HTMLInputElement, value: number) => act(async () =>
   slider.dispatchEvent(new Event("input", { bubbles: true }));
 });
 const settle = async () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+/** Game mode (D-285): the world is only built once someone opens it from the simple view. */
+const enter = async () => { await click(byText("Open the world")); await settle(); };
+/** The world's settings (lantern, quality, layers) live in a drawer behind the HUD's settings button. */
+const openDrawer = async () => { if (host.querySelector(".path-hud__gear") && !host.querySelector(".path-world__drawer")) await click($(".path-hud__gear")); };
+/** A lantern or layer button: on the page's bar, or in the open world's drawer. */
+const setting = async (name: string) => { await openDrawer(); await click(byText(name)); };
+const hudTent = () => $<HTMLButtonElement>(".path-hud .path-world__tent");
 
 describe("Our Path world page (D-262)", () => {
   it("keeps every place reachable without WebGL, and the tent keeps today's Our Path mounted", async () => {
     await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
     await settle();
-    expect(created.count).toBe(1);
+    // Lazy (D-285): the page leads with the simple view; nothing tries to build the world until it is opened.
+    expect(created.count).toBe(0);
     expect($("h2").textContent).toBe("Where we are going");
-    expect($(".path-world__flat svg")).toBeTruthy();
+    expect($("[data-slot='journey-mini'] .path-world__flat svg")).toBeTruthy();
     expect($(".path-world__marks").hidden).toBe(true);
     expect(host.querySelectorAll(".path-world__flat circle").length).toBeGreaterThanOrEqual(3);
     const outline = [...host.querySelectorAll(".path-world__outline button")].map((b) => b.textContent);
@@ -96,14 +104,14 @@ describe("Our Path world page (D-262)", () => {
     await click(byText(/^We are here/));
     expect($(".path-world__card h3").textContent).toBe("This month, so far");
     const warmLines = host.querySelectorAll(".path-world__card li").length;
-    await click(byText("Bright"));
+    await setting("Bright");
     expect(host.querySelectorAll(".path-world__card li").length).toBeGreaterThan(warmLines);
     expect(localStorage.getItem("hearth:pathWorld:lantern")).toBe("2");
-    await click(byText("Dim"));
+    await setting("Dim");
     expect($(".path-world__card").textContent).toContain("Turn the lantern up for more.");
 
     // The next Move needs both acknowledgments before it can be done (the proposer's is already there).
-    await click(byText("Warm"));
+    await setting("Warm");
     await click(byText(/^Next Move/));
     expect($(".path-world__card h3").textContent).toBe("Fictional: check the pre-rent payday");
     expect($(".path-world__card").textContent).toContain("Acknowledged by 1 of 2");
@@ -121,10 +129,20 @@ describe("Our Path world page (D-262)", () => {
     await click(byText("Back to the island"));
     expect($<HTMLInputElement>("#draft").value).toBe("half-typed");
     expect($(".path-world__island").hidden).toBe(false);
-    // The tent round trip never tries to build a second world.
+    // The tent round trip never tries to build a world.
     await settle();
+    expect(created.count).toBe(0);
+    expect(host.querySelector(".path-world__quality")).toBeNull();
+
+    // Opening the world tries once; without WebGL the open world shows the flat map, and every place stays in the outline.
+    await enter();
     expect(created.count).toBe(1);
-    // Without a world there is nothing to tune, so no quality toggle.
+    expect($(".path-world__stage .path-world__flat svg")).toBeTruthy();
+    expect($(".path-world__marks").hidden).toBe(true);
+    expect([...host.querySelectorAll<HTMLButtonElement>(".path-world__rail button")].every((b) => b.disabled)).toBe(true);
+    // Without a world there is nothing to tune, so no quality toggle (the lantern and layers stay).
+    await openDrawer();
+    expect(host.querySelector(".path-world__drawer .path-world__lantern")).toBeTruthy();
     expect(host.querySelector(".path-world__quality")).toBeNull();
   });
 
@@ -133,6 +151,7 @@ describe("Our Path world page (D-262)", () => {
     localStorage.setItem("hearth:pathWorld:quality", "full");
     await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
     await settle();
+    await enter();
     expect(created.count).toBe(1);
     expect(created.options[0]!.quality).toBe("full");
     const world = created.worlds[0] as FakeWorld;
@@ -141,12 +160,18 @@ describe("Our Path world page (D-262)", () => {
 
     const draft = $<HTMLInputElement>("#draft");
     draft.value = "still here";
-    await click(byText("Open the Plan Studio tent"));
+    // The tent is a HUD action in the open world: it minimizes the world, which sleeps.
+    expect(hudTent().getAttribute("aria-label")).toBe("Open the Plan Studio tent");
+    await click(hudTent());
     expect(world.sleep).toHaveBeenCalledTimes(1);
     expect(world.dispose).not.toHaveBeenCalled();
+    expect($(".path-world__stage").hidden).toBe(true);
     const wakesBefore = world.wake.mock.calls.length;
     await click(byText("Back to the island"));
     await settle();
+    // Back on the page (the simple view): the world stays asleep until it is opened again.
+    expect(world.wake.mock.calls.length).toBe(wakesBefore);
+    await enter();
     expect(world.wake.mock.calls.length).toBe(wakesBefore + 1);
     expect(world.sleep).toHaveBeenCalledTimes(1);
     expect(world.dispose).not.toHaveBeenCalled();
@@ -154,6 +179,7 @@ describe("Our Path world page (D-262)", () => {
     expect($<HTMLInputElement>("#draft").value).toBe("still here");
 
     // Quality: Full / Lite, pressed state, remembered per device, handed to the live world.
+    await openDrawer();
     const group = $(".path-world__quality");
     expect(group.getAttribute("role")).toBe("group");
     expect(byText("Full").getAttribute("aria-pressed")).toBe("true");
@@ -170,21 +196,27 @@ describe("Our Path world page (D-262)", () => {
     root = createRoot(host);
     await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
     await settle();
+    expect(created.count).toBe(1);
+    await enter();
     expect(created.count).toBe(2);
     expect(created.options[1]!.quality).toBe("lite");
+    await openDrawer();
     expect(byText("Lite").getAttribute("aria-pressed")).toBe("true");
   });
 
-  it("opens straight into the tent with the world asleep", async () => {
+  it("opens straight into the tent without building the world, and builds it awake once it is opened", async () => {
     created.mode = "fake";
     await act(async () => root.render(createElement(OurPathWorld, { household: seeded(), memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "newfoundland", classicRoom: createElement("p", null, "today"), openTentFor: { kind: "goal", id: "G" } })));
     await settle();
-    const world = created.worlds[0] as FakeWorld;
     expect($(".path-world__room").hidden).toBe(false);
-    expect(world.sleep).toHaveBeenCalled();
+    expect(created.count).toBe(0);
     await click(byText("Back to the island"));
-    expect(world.wake).toHaveBeenCalledTimes(1);
+    expect(created.count).toBe(0);
+    await enter();
+    const world = created.worlds[0] as FakeWorld;
     expect(created.count).toBe(1);
+    expect(world.wake).toHaveBeenCalledTimes(1);
+    expect(world.sleep).not.toHaveBeenCalled();
   });
 
   it("tells the App the tent closed when the page unmounts with the tent open", async () => {
@@ -207,6 +239,7 @@ describe("Our Path world page (D-262)", () => {
     });
     await act(async () => root.render(page(1)));
     await settle();
+    await enter();
     const world = created.worlds[0] as FakeWorld;
     const calls = world.setScene.mock.calls.length;
     expect(calls).toBeGreaterThan(0);
@@ -292,9 +325,9 @@ describe("Our Path world page (D-262)", () => {
     await click(byText(/^We are here/));
     expect($(".path-world__card h3").textContent).toBe("This month, so far");
     expect($(".path-world__card").textContent).toContain("You walked here together.");
-    await click(byText("Dim"));
+    await setting("Dim");
     expect($(".path-world__card").textContent).not.toContain("You walked here together.");
-    await click(byText("Warm"));
+    await setting("Warm");
     // An earlier month does not claim it.
     await scrub(slider, 0);
     await click([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].find((b) => b.textContent?.includes("·"))!);
@@ -306,6 +339,7 @@ describe("Our Path world page (D-262)", () => {
     created.mode = "fake";
     await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
     await settle();
+    await enter();
     const world = created.worlds[0] as FakeWorld;
     const slider = $<HTMLInputElement>(".path-world__slider input");
     const last = Number(slider.max);
@@ -388,6 +422,7 @@ describe("Our Path world page (D-262)", () => {
     const h = seeded();
     await act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "taylor", classicRoom: null })));
     await settle();
+    await enter();
     const world = created.worlds[0] as FakeWorld;
     const scene = () => world.setScene.mock.calls.at(-1)![0] as { goals: { id: string; step: number }[]; kiln?: { warm: boolean } | null };
     const reserve = h.goals.find((g) => g.name === "Fictional seasonal reserve")!;
@@ -471,6 +506,7 @@ describe("Our Path world page (D-262)", () => {
       let commands = 0;
       await act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => { commands += 1; return { ok: true }; }, theme: "taylor", onOpenInTent: (source: unknown) => sources.push(source), onTentChange: (open: boolean) => tent.push(open), classicRoom: null })));
       await settle();
+      await enter();
       const world = created.worlds[0] as FakeWorld;
       const scene = world.setScene.mock.calls.at(-1)![0] as { forks: { id: string }[] };
       expect(scene.forks.map((f) => f.id)).toEqual(decisions.map((line) => `fork:${line.id}`));
@@ -494,6 +530,7 @@ describe("Our Path world page (D-262)", () => {
       const render = async (present: number) => act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", presentMembers: present, onOpenTogether: () => {}, classicRoom: null })));
       await render(1);
       await settle();
+      await enter();
       const world = created.worlds[0] as FakeWorld;
       type Scene = { presentMembers: number; campfires: { id: string; sitdown: string; lit: boolean }[]; land: { month: number; closed: boolean; stamps: number }[] };
       const scene = () => world.setScene.mock.calls.at(-1)![0] as Scene;
@@ -544,6 +581,7 @@ describe("Our Path world page (D-262)", () => {
       let commands = 0;
       await render(h, { onOpenCalendar: () => calendar.push(1), onOpenFund: () => fund.push(1), onCommand: async () => { commands += 1; return { ok: true }; } });
       await settle();
+      await enter();
       const world = created.worlds[0] as FakeWorld;
       const scene = () => world.setScene.mock.calls.at(-1)![0] as Scene;
       const bills = weather.days.filter((d) => d.kind === "cloud" || d.kind === "storm");
@@ -572,7 +610,7 @@ describe("Our Path world page (D-262)", () => {
       expect(fund).toEqual([1]);
 
       // At Bright the mark's sub carries the reason too — still words only.
-      await click(byText("Bright"));
+      await setting("Bright");
       expect(outline().map((b) => b.textContent)).toContain("Fictional internet · September 25 · Fictional internet is due.");
 
       await openFromOutline("Payday");
@@ -588,6 +626,7 @@ describe("Our Path world page (D-262)", () => {
       const fund: number[] = [];
       await render(misty, { onOpenFund: () => fund.push(1) });
       await settle();
+      await enter();
       const world = created.worlds[0] as FakeWorld;
       const scene = () => world.setScene.mock.calls.at(-1)![0] as Scene;
       expect(scene().weather.find((w) => w.kind === "mist")).toEqual({ id: "mist", kind: "mist", weight: 0.5, dayOffset: 5 });
@@ -596,7 +635,7 @@ describe("Our Path world page (D-262)", () => {
       const lines = () => [...host.querySelectorAll(".path-world__card li")].map((li) => li.textContent);
       expect(lines()).toEqual(weather.mistWhy);
       expect(lines().at(-1)).toContain("Fictional rent");
-      await click(byText("Dim"));
+      await setting("Dim");
       expect(lines()).toEqual([weather.mistWhy[0]]);
       expect(cardText()).not.toMatch(/\$/);
       await click(byText("Open the Fund"));
@@ -627,6 +666,7 @@ describe("Our Path world page (D-262)", () => {
       let commands = 0;
       await render(h, { onOpenPlanner: () => planner.push(1), onCommand: async () => { commands += 1; return { ok: true }; } });
       await settle();
+      await enter();
       const world = created.worlds[0] as FakeWorld;
       const scene = () => world.setScene.mock.calls.at(-1)![0] as Scene;
       const now = pathMonths(h, TODAY).length - 1;
@@ -699,7 +739,7 @@ describe("Our Path world page (D-262)", () => {
       expect(host.querySelectorAll(".path-world__flat .path-world__kerb")).toHaveLength(0);
     });
 
-    it("folds the quality choice into one Lite toggle on a narrow screen", async () => {
+    it("keeps the quality choice in the world's settings drawer, whole, on a narrow screen (D-285)", async () => {
       created.mode = "fake";
       const width = window.innerWidth;
       Object.defineProperty(window, "innerWidth", { configurable: true, value: 360 });
@@ -707,22 +747,31 @@ describe("Our Path world page (D-262)", () => {
         localStorage.setItem("hearth:pathWorld:quality", "full");
         await render(seeded());
         await settle();
+        await enter();
         const world = created.worlds[0] as FakeWorld;
+        // The HUD stays uncluttered: nothing to tune until the settings drawer opens.
+        expect(host.querySelector(".path-world__quality")).toBeNull();
+        const gear = $<HTMLButtonElement>(".path-hud__gear");
+        expect(gear.getAttribute("aria-expanded")).toBe("false");
+        await openDrawer();
+        expect(gear.getAttribute("aria-expanded")).toBe("true");
+        expect(gear.getAttribute("aria-controls")).toBe($(".path-world__drawer").id);
         const group = $(".path-world__quality");
         expect(group.getAttribute("role")).toBe("group");
-        expect([...group.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["Lite"]);
-        expect(byText("Full")).toBeUndefined();
+        expect([...group.querySelectorAll("button")].map((b) => b.textContent)).toEqual(["Full", "Lite"]);
         expect(byText("Lite").getAttribute("aria-pressed")).toBe("false");
         await click(byText("Lite"));
         expect(byText("Lite").getAttribute("aria-pressed")).toBe("true");
+        expect(byText("Full").getAttribute("aria-pressed")).toBe("false");
         expect(localStorage.getItem("hearth:pathWorld:quality")).toBe("lite");
         expect(world.setQuality).toHaveBeenLastCalledWith("lite");
-        await click(byText("Lite"));
+        await click(byText("Full"));
         expect(localStorage.getItem("hearth:pathWorld:quality")).toBe("full");
-        // Wide again: the two-button group returns.
-        Object.defineProperty(window, "innerWidth", { configurable: true, value: 1100 });
-        await act(async () => { window.dispatchEvent(new Event("resize")); });
-        expect(byText("Full").getAttribute("aria-pressed")).toBe("true");
+        // Escape closes the drawer first (focus back on its button), and leaves the world open.
+        await act(async () => { window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", cancelable: true })); });
+        expect(host.querySelector(".path-world__drawer")).toBeNull();
+        expect(document.activeElement).toBe(gear);
+        expect($(".path-world__stage").hidden).toBe(false);
       } finally {
         Object.defineProperty(window, "innerWidth", { configurable: true, value: width });
       }
@@ -756,6 +805,7 @@ describe("Our Path world page (D-262)", () => {
       } }).household;
       await render(h);
       await settle();
+      await enter();
       const row = outline().find((b) => b.dataset.place === "stone:TASK-RENT")!;
       expect(row.textContent).toMatch(/^Pay rent/);
       expect(row.textContent).not.toMatch(/\d|\$/);
@@ -813,6 +863,7 @@ describe("Our Path world page (D-262)", () => {
       created.mode = "fake";
       await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
       await settle();
+      await enter();
       const world = created.worlds[0] as FakeWorld;
       const outline = () => [...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")];
       expect(outline().some((b) => b.textContent?.startsWith("Hercules's cottage"))).toBe(false);
@@ -837,7 +888,8 @@ describe("Our Path world page (D-262)", () => {
     it("sits Hercules, aria-hidden, beside the tent button when there is no WebGL", async () => {
       await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15" })));
       await settle();
-      const tentButton = byText("Open the Plan Studio tent");
+      await enter();
+      const tentButton = hudTent();
       const hercules = tentButton.previousElementSibling as HTMLElement;
       expect(hercules.classList.contains("path-hercules")).toBe(true);
       expect(hercules.getAttribute("aria-hidden")).toBe("true");
@@ -856,6 +908,7 @@ describe("Our Path world page (D-262)", () => {
       const boardMedia = { getBoardPhoto };
       await act(async () => root.render(createElement(Harness, { initial: withMemory(), today: "2026-09-15", extra: { boardMedia } })));
       await settle();
+      await enter();
       await settle();
       const world = created.worlds[0] as FakeWorld;
       expect(getBoardPhoto.mock.calls.map(([id]) => id).sort()).toEqual(["media-keys", "media-shore"]);
@@ -868,7 +921,7 @@ describe("Our Path world page (D-262)", () => {
       // The card names the photo at Warm and up.
       await click([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].find((b) => b.textContent === "Shore day")!);
       expect($(".path-world__card").textContent).toContain("On the flag: “Our fictional shore day, sandy”");
-      await click(byText("Dim"));
+      await setting("Dim");
       expect($(".path-world__card").textContent).not.toContain("On the flag");
       // Leaving the island revokes every URL it made.
       await act(async () => root.unmount());
@@ -905,6 +958,7 @@ describe("Private footpaths and bridges on Our Path", () => {
     const tent: unknown[] = [], planner: number[] = [];
     await act(async () => root.render(createElement(Harness, { initial: h, today: TODAY, extra: { onOpenInTent: (source: unknown) => tent.push(source), onOpenPlanner: () => planner.push(1) } })));
     await settle();
+    await enter();
     const world = created.worlds[0] as FakeWorld;
     const scene = () => world.setScene.mock.calls.at(-1)![0] as Scene;
     const now = pathMonths(h, TODAY).length - 1;
@@ -927,16 +981,21 @@ describe("Private footpaths and bridges on Our Path", () => {
     expect([...host.querySelectorAll(".path-world__card .path-world__actions button")].map((b) => b.textContent)).toEqual(["Open my planner"]);
     await click(byText("Open my planner"));
     expect(planner).toEqual([1]);
+    // A link out of the island minimizes the open world first, so the planner never opens behind it.
+    expect($(".path-world__stage").hidden).toBe(true);
+    expect(document.documentElement.classList.contains("path-world-fullscreen")).toBe(false);
 
-    // Mine hides my footpaths, on this device only.
+    // Mine hides my footpaths, on this device only (a layer in the open world's settings).
+    await enter();
+    await openDrawer();
     expect(byText("Mine").getAttribute("aria-pressed")).toBe("true");
-    await click(byText("Mine"));
+    await setting("Mine");
     expect(byText("Mine").getAttribute("aria-pressed")).toBe("false");
     expect(outline().some((t) => t.includes("my own long walk"))).toBe(false);
     expect(scene().footpaths).toEqual([]);
     expect(localStorage.getItem("hearth:pathWorld:mine:MEM-001")).toBe("0");
     expect(localStorage.getItem("hearth:pathWorld:mine")).toBeNull();
-    await click(byText("Mine"));
+    await setting("Mine");
     expect(outline()).toContain("Fictional: my own long walk · only you see this");
 
     // The stage-2 bridge: words, then a link into the Plan Studio's Bridge.
@@ -970,11 +1029,13 @@ describe("Private footpaths and bridges on Our Path", () => {
     localStorage.setItem("hearth:pathWorld:mine:MEM-002", "0");
     await act(async () => root.render(createElement(Harness, { initial: h, today: TODAY })));
     await settle();
+    await enter();
     const world = created.worlds[0] as FakeWorld;
     const scene = () => world.setScene.mock.calls.at(-1)![0] as Scene;
     const marks = () => [...host.querySelectorAll<HTMLButtonElement>(".path-world__marks button.path-mark")].map((b) => b.dataset.place);
     const allRows = () => [...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].map((b) => b.dataset.place);
 
+    await openDrawer();
     expect(byText("Dim").getAttribute("aria-pressed")).toBe("true");
     for (const list of [marks(), allRows()]) {
       expect(list).not.toContain("footpath:TASK-MINE");
@@ -987,7 +1048,7 @@ describe("Private footpaths and bridges on Our Path", () => {
     expect(host.textContent).not.toContain("my own long walk");
 
     // Warm: they come back for their owner.
-    await click(byText("Warm"));
+    await setting("Warm");
     expect(marks()).toContain("footpath:TASK-MINE");
     expect(marks()).toContain(`bridge:${draftId}`);
     expect(allRows()).toContain("footpath:TASK-MINE");
@@ -1004,7 +1065,7 @@ describe("Private footpaths and bridges on Our Path", () => {
     await click($("#switch"));
     expect(byText("Mine").getAttribute("aria-pressed")).toBe("false");
     expect(allRows()).not.toContain("footpath:TASK-THEIRS");
-    await click(byText("Mine"));
+    await setting("Mine");
     expect(localStorage.getItem("hearth:pathWorld:mine:MEM-002")).toBe("1");
     expect(allRows()).toContain("footpath:TASK-THEIRS");
     expect(localStorage.getItem("hearth:pathWorld:mine:MEM-001")).toBeNull();
@@ -1013,15 +1074,18 @@ describe("Private footpaths and bridges on Our Path", () => {
   it("draws the owner's footpaths and the bridge bars on the flat map without WebGL", async () => {
     await act(async () => root.render(createElement(Harness, { initial: withPaths(), today: TODAY })));
     await settle();
+    // The page's simple-view placeholder and the open world's flat map draw the same paths.
     expect(host.querySelectorAll(".path-world__flat .path-minimap__footpath")).toHaveLength(1);
-    const bars = [...host.querySelectorAll(".path-world__flat .path-minimap__bridge")].map((g) => `${g.getAttribute("data-stage")}:${g.querySelectorAll(".is-built").length}`);
+    await enter();
+    expect(host.querySelectorAll(".path-world__stage .path-world__flat .path-minimap__footpath")).toHaveLength(1);
+    const bars = [...host.querySelectorAll(".path-world__stage .path-world__flat .path-minimap__bridge")].map((g) => `${g.getAttribute("data-stage")}:${g.querySelectorAll(".is-built").length}`);
     expect(bars.sort()).toEqual(["1:1", "2:2"]);
-    await click(byText("Mine"));
+    await setting("Mine");
     expect(host.querySelectorAll(".path-world__flat .path-minimap__footpath")).toHaveLength(0);
-    await click(byText("Mine"));
+    await setting("Mine");
     await click($("#switch"));
-    expect(host.querySelectorAll(".path-world__flat .path-minimap__footpath")).toHaveLength(1);
-    expect([...host.querySelectorAll(".path-world__flat .path-minimap__bridge")].map((g) => g.getAttribute("data-stage"))).toEqual(["2"]);
+    expect(host.querySelectorAll(".path-world__stage .path-world__flat .path-minimap__footpath")).toHaveLength(1);
+    expect([...host.querySelectorAll(".path-world__stage .path-world__flat .path-minimap__bridge")].map((g) => g.getAttribute("data-stage"))).toEqual(["2"]);
   });
 });
 
@@ -1076,6 +1140,7 @@ describe("Every place on the island is reachable from the DOM (a11y pass)", () =
     const check = async (household: Household) => {
       await act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: TODAY, busy: false, onCommand: async () => ({ ok: true }), theme: "newfoundland", onOpenPlay: () => {}, classicRoom: null })));
       await settle();
+      await enter();
       const world = created.worlds.at(-1) as FakeWorld;
       const scene = world.setScene.mock.calls.at(-1)![0] as Scene;
       const all = ids(scene);
@@ -1111,6 +1176,7 @@ describe("Every place on the island is reachable from the DOM (a11y pass)", () =
     created.mode = "fake";
     await act(async () => root.render(createElement(Harness, { initial: seeded(), today: TODAY })));
     await settle();
+    await enter();
     const outline = host.querySelector<HTMLDetailsElement>(".path-world__outline")!;
     outline.open = true;
     const row = [...outline.querySelectorAll<HTMLButtonElement>("button")].find((b) => b.textContent?.startsWith("We are here"))!;
@@ -1131,6 +1197,7 @@ describe("Every place on the island is reachable from the DOM (a11y pass)", () =
     const h = seeded();
     await act(async () => root.render(createElement(Harness, { initial: h, today: "2026-09-15" })));
     await settle();
+    await enter();
     const world = created.worlds[0] as FakeWorld;
     const scene = world.setScene.mock.calls.at(-1)![0] as Record<string, unknown> & { characters: unknown[] };
     expect("eras" in scene || "home" in scene || "gate" in scene).toBe(false);

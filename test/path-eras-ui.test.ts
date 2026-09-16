@@ -15,7 +15,7 @@ const created = vi.hoisted(() => ({ mode: "throw" as "throw" | "fake", worlds: [
 vi.mock("../src/path/world/pathWorld3d.ts", () => ({
   createPathWorld: () => {
     if (created.mode === "throw") throw new Error("WebGL unavailable");
-    const names = ["setScene", "resize", "setAmbient", "setQuality", "sleep", "wake", "refresh", "focus", "setLevel", "zoom", "turn", "stats", "dispose"];
+    const names = ["setScene", "resize", "setAmbient", "setQuality", "sleep", "wake", "refresh", "focus", "focusMonth", "setLevel", "zoom", "turn", "stats", "dispose"];
     const world = Object.fromEntries(names.map((n) => [n, vi.fn()]));
     created.worlds.push(world);
     return world;
@@ -139,6 +139,10 @@ describe("The Journey of Life on the page (D-268)", () => {
     created.mode = "fake";
     const h = journey();
     await act(async () => root.render(createElement(Harness, { initial: h })));
+    await settle();
+    // Game mode (D-285): the world is built when the open world is first opened.
+    expect(created.worlds).toHaveLength(0);
+    await click(byText("Open the world"));
     await settle();
     const world = created.worlds[0]!;
     const input = world.setScene!.mock.calls.at(-1)![0] as { characters: unknown[]; eras: { id: string; state: string; offset: number; island: unknown; focused: boolean; plans: { sketched: boolean }[] }[]; home: string; gate: { lanterns: boolean[]; open: boolean; crossing: boolean } };

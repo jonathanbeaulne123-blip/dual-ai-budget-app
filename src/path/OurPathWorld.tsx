@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { DateKey } from "../core/calendar.ts";
 import { monthKeyFromDateKey } from "../core/calendar.ts";
 import { completeMove, memories, movesForChapter, nextMove, openChapterFor, ourRhythm, respondToMove } from "../core/chapters.ts";
@@ -58,8 +58,37 @@ import type { BoardMediaClient } from "../boardMedia/index.ts";
 import { useBoardPhotoUrls } from "../boardMedia/householdBoardMedia.tsx";
 import { memoryPhotoMatches } from "./memoryPhotos.ts";
 import { PathMiniMap } from "./PathMiniMap.tsx";
+import { JOURNEY_LEVEL_FOR_WORLD, JOURNEY_LEVEL_LABEL, WORLD_LEVEL_FOR, useJourneyFocus, type JourneyFocus, type JourneyFocusApi, type JourneyFocusSource } from "./journeyFocus.ts";
+import type { ThemeId } from "../theme/scenes.ts";
 import type { PathAnchor, PathCharacter, PathEraIslandInput, PathLevel, PathQuality, PathWorld, PathWorldInput } from "./world/pathWorld3d.ts";
 import "./our-path-world.css";
+
+/**
+ * What the page hands the simple view (D-284) through `renderMini`. The page mounts one on the page and, while
+ * the open world is on screen, one compact copy in the world's corner. Both share the page's one focus.
+ * The integrator can spread it straight onto JourneyMini: `renderMini={(args) => <JourneyMini {...args} />}`.
+ */
+export type JourneyMiniSlotArgs = {
+  household: Household;
+  memberId: string;
+  today: DateKey;
+  /** The one shared focus (owned by OurPathWorld). */
+  focus: JourneyFocusApi;
+  /** Opens the open world (game mode). In the compact corner copy the world is already open, so it does nothing. */
+  onOpenWorld: () => void;
+  /** True for the corner minimap inside the open world. */
+  compact: boolean;
+  theme: ThemeId;
+  quality: PathQuality;
+  /** The open world is on screen: the page copy sits behind it (inert, hidden) and can pause itself. */
+  worldOpen: boolean;
+};
+
+/** Game mode timings (ms). Reduced motion cuts both. */
+const ENTER_MS = 560;
+const LEAVE_MS = 320;
+/** How long a camera trip the page asked for may hold back the world's level reports if it never lands. */
+const FLY_MS = 12_000;
 
 /**
  * Our Path as a world (D-262). The island is grown from the household's shared
@@ -159,12 +188,21 @@ function firedOn(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? iso.slice(0, 10) : d.toLocaleDateString("en-CA", { month: "long", day: "numeric", year: "numeric", timeZone: "America/Toronto" });
 }
+/** The iris for game mode: a circle from the pressed button's centre, open wide enough to cover the stage. */
+function irisFor(stage: HTMLElement, from: HTMLElement | null): { open: string; closed: string } {
+  const w = window.innerWidth || stage.clientWidth || 1, h = window.innerHeight || stage.clientHeight || 1;
+  const r = from?.getBoundingClientRect();
+  const x = r && r.width ? Math.round(r.left + r.width / 2) : Math.round(w / 2);
+  const y = r && r.height ? Math.round(Math.min(h, Math.max(0, r.top + r.height / 2))) : Math.round(h / 2);
+  const reach = Math.ceil(Math.hypot(Math.max(x, w - x), Math.max(y, h - y))) + 4;
+  return { open: `circle(${reach}px at ${x}px ${y}px)`, closed: `circle(0px at ${x}px ${y}px)` };
+}
 function monthIndexOf(months: PathMonth[], iso: string | null | undefined): number {
   if (!iso) return -1;
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, proofWorld }: {
+export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, proofWorld, renderMini }: {
   household: Household;
   memberId: string;
   today: DateKey;
@@ -201,12 +239,23 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   openTentFor?: unknown;
   /** Proof pages only: see the live world (for stats) and override the idle pause. The app never passes this. */
   proofWorld?: { onWorld?: (world: PathWorld | null) => void; idleMs?: number; paused?: boolean };
+  /**
+   * The simple view (D-284). Rendered in the page's `data-slot="journey-mini"` and, compact, in the open world's
+   * corner. Without it the page shows the flat map as a placeholder.
+   */
+  renderMini?: (args: JourneyMiniSlotArgs) => ReactNode;
 }) {
   const appearance = useAppearance();
   // Callback props are only used in handlers: read them through one ref so an inline arrow in the App never
   // invalidates a memo (and so never rebuilds the scene).
-  const links = useRef({ onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay });
-  links.current = { onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay };
+  // A link out of the island leaves the open world first (it would open behind it), then follows.
+  const leaveThen = useRef<(fn: () => void) => void>((fn) => fn());
+  const rawLinks = { onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay };
+  const wrapLinks = (raw: typeof rawLinks) => Object.fromEntries(Object.entries(raw).map(([key, fn]) => [key, typeof fn === "function"
+    ? (...args: unknown[]) => leaveThen.current(() => (fn as (...a: unknown[]) => void)(...args))
+    : undefined])) as typeof rawLinks;
+  const links = useRef(rawLinks);
+  links.current = wrapLinks(rawLinks);
   const canPlay = Boolean(onOpenPlay);
   const theme = themeOverride ?? appearance.scene.theme;
   const reduced = (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches)
@@ -252,6 +301,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const [selected, setSelected] = useState<string | null>(null);
   const [tentOpen, setTentOpen] = useState(false);
   const [live, setLive] = useState(false);
+  // The world could not be built here (no WebGL, or it threw): the open world shows the flat map instead.
+  const [failed, setFailed] = useState(false);
   // Bumped when the browser takes the WebGL context away, so the world is rebuilt (the tent alone only sleeps it).
   const [worldEpoch, setWorldEpoch] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -268,33 +319,153 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   }, [tentOpen]);
   const openTent = useCallback((next: boolean) => { tentMoved.current = true; setTentOpen(next); }, []);
   useEffect(() => { if (openTentFor) { tentMoved.current = false; setTentOpen(true); } }, [openTentFor]);
-  // Full screen: the island takes over the whole screen. CSS does the takeover on every device; where the browser
-  // has the Fullscreen API the whole page also goes native full screen (the page, not the stage, so rooms and
-  // dialogs opened from the island still show above it).
+  // ------------------------------------------------------------ game mode (D-285): the open world, full screen
+  // The page leads with the simple view; the heavy world is only built the first time someone opens it, and it
+  // sleeps whenever they minimize. On every device the stage covers the whole screen and the rest of the app is
+  // hidden and inert; where the browser has the Fullscreen API the page also goes native full screen. Browser
+  // back minimizes (entering pushes one history entry), and Escape closes an open card first, then minimizes.
+  const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const [full, setFull] = useState(false);
+  const [leaving, setLeaving] = useState(false);
+  const [booted, setBooted] = useState(false);
+  const [drawer, setDrawer] = useState(false);
+  const [banner, setBanner] = useState(0);
+  const fullRef = useRef(full);
+  fullRef.current = full;
+  const worldOpener = useRef<HTMLElement | null>(null);
+  const openButton = useRef<HTMLButtonElement>(null);
+  const pageToggle = useRef<HTMLButtonElement>(null);
+  const minimizeButton = useRef<HTMLButtonElement>(null);
+  const gearButton = useRef<HTMLButtonElement>(null);
+  const leaving$ = useRef<Animation | null>(null);
+  const enterWorld = useCallback(() => {
+    if (fullRef.current && !leaving$.current) return;
+    const active = typeof document === "undefined" ? null : document.activeElement;
+    if (!fullRef.current) worldOpener.current = active instanceof HTMLElement && active !== document.body ? active : null;
+    leaving$.current?.cancel();
+    leaving$.current = null;
+    setLeaving(false);
+    setPlaying(false);
+    setBooted(true);
+    setFull(true);
+    setBanner((n) => n + 1);
+  }, []);
+  /** Minimize: a short iris back toward the button that opened the world (reduced motion: a cut). */
+  const exitWorld = useCallback((instant = false) => {
+    if (!fullRef.current) return;
+    setDrawer(false);
+    const stage = stageRef.current;
+    const cut = () => { leaving$.current = null; setLeaving(false); setFull(false); };
+    if (instant || reduced || !stage || typeof stage.animate !== "function") { leaving$.current?.cancel(); cut(); return; }
+    if (leaving$.current) return;
+    setLeaving(true);
+    const iris = irisFor(stage, worldOpener.current ?? openButton.current ?? pageToggle.current);
+    const animation = stage.animate([{ clipPath: iris.open, opacity: 1 }, { clipPath: iris.closed, opacity: 0.4 }], { duration: LEAVE_MS, easing: "cubic-bezier(.5,0,.75,0)", fill: "forwards" });
+    leaving$.current = animation;
+    animation.onfinish = () => { if (leaving$.current === animation) { cut(); animation.cancel(); } };
+  // `reduced` is read at render; a change re-creates the callback.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reduced]);
+  const exitRef = useRef(exitWorld);
+  exitRef.current = exitWorld;
+  // (The App keeps its tab out of the URL, so popping the world's history entry afterwards never undoes the link.)
+  leaveThen.current = (fn) => {
+    if (fullRef.current) exitWorld(true);
+    fn();
+  };
+  // The iris opens from the button that was pressed (reduced motion: a cut).
+  useLayoutEffect(() => {
+    const stage = stageRef.current;
+    if (!full || !stage || reduced || typeof stage.animate !== "function") return;
+    const iris = irisFor(stage, worldOpener.current ?? openButton.current ?? pageToggle.current);
+    stage.animate([{ clipPath: iris.closed, opacity: 0.6 }, { clipPath: iris.open, opacity: 1 }], { duration: ENTER_MS, easing: "cubic-bezier(.2,.75,.2,1)" });
+    const host$ = stage.querySelector<HTMLElement>(".path-world__host");
+    host$?.animate?.([{ transform: "scale(1.12)" }, { transform: "scale(1)" }], { duration: ENTER_MS + 500, easing: "cubic-bezier(.2,.75,.2,1)" });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [full]);
   useEffect(() => {
     if (!full) return;
     const root = document.documentElement;
     root.classList.add("path-world-fullscreen");
     let native = false;
     let alive = true;
+    const keyboard = (typeof navigator === "undefined" ? undefined : (navigator as Navigator & { keyboard?: { lock?: (keys?: string[]) => Promise<void>; unlock?: () => void } }).keyboard);
     if (typeof root.requestFullscreen === "function" && !document.fullscreenElement) {
-      root.requestFullscreen({ navigationUI: "hide" }).then(() => { native = true; if (!alive) document.exitFullscreen().catch(() => undefined); }).catch(() => { /* CSS takeover still applies */ });
+      root.requestFullscreen({ navigationUI: "hide" }).then(() => {
+        native = true;
+        if (!alive) { document.exitFullscreen().catch(() => undefined); return; }
+        // Like a game: Escape stays with the island (a card closes first); holding Escape still leaves full screen.
+        keyboard?.lock?.(["Escape"])?.catch?.(() => undefined);
+      }).catch(() => { /* CSS takeover still applies */ });
     }
-    const onChange = () => { if (native && !document.fullscreenElement) setFull(false); };
-    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape" && !document.fullscreenElement) setFull(false); };
+    // Everything else on the page, and the rest of the app, is inert while the world is open.
+    const behind: Element[] = [];
+    for (let node: Element | null = stageRef.current; node?.parentElement && node !== document.body; node = node.parentElement) {
+      for (const sibling of Array.from(node.parentElement.children)) {
+        if (sibling === node || sibling.hasAttribute("inert") || sibling.tagName === "SCRIPT" || sibling.tagName === "STYLE" || sibling.tagName === "LINK") continue;
+        sibling.setAttribute("inert", "");
+        sibling.setAttribute("data-path-world-behind", "");
+        behind.push(sibling);
+      }
+    }
+    // Browser back (or the phone's back gesture) minimizes instead of leaving the app.
+    const token = `path-world:${Date.now().toString(36)}`;
+    let pushed = false;
+    try {
+      const state = window.history.state;
+      window.history.pushState({ ...(state && typeof state === "object" ? state : {}), hearthPathWorld: token }, "");
+      pushed = true;
+    } catch { /* no history: Escape and the minimize button still work */ }
+    const onPop = () => {
+      if ((window.history.state as { hearthPathWorld?: string } | null)?.hearthPathWorld === token) return;
+      pushed = false;
+      exitRef.current();
+    };
+    const onChange = () => { if (native && !document.fullscreenElement) exitRef.current(true); };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== "Escape" || event.defaultPrevented) return;
+      event.preventDefault();
+      escapeRef.current();
+    };
+    window.addEventListener("popstate", onPop);
     document.addEventListener("fullscreenchange", onChange);
     window.addEventListener("keydown", onKey);
     return () => {
       alive = false;
+      window.removeEventListener("popstate", onPop);
       document.removeEventListener("fullscreenchange", onChange);
       window.removeEventListener("keydown", onKey);
-      root.classList.remove("path-world-fullscreen");
+      root.classList.remove("path-world-fullscreen", "path-world-settled");
+      for (const sibling of behind) { sibling.removeAttribute("inert"); sibling.removeAttribute("data-path-world-behind"); }
+      if (native) keyboard?.unlock?.();
       if (native && document.fullscreenElement === root) document.exitFullscreen().catch(() => { /* already left */ });
+      if (pushed) { try { window.history.back(); } catch { /* ignore */ } }
     };
   }, [full]);
-  useEffect(() => { if (tentOpen) setFull(false); }, [tentOpen]);
+  // Once the iris has opened, the page behind is hidden as well (it only showed through during the transition).
+  useEffect(() => {
+    const root = document.documentElement;
+    if (!full || leaving) { root.classList.remove("path-world-settled"); return; }
+    const timer = window.setTimeout(() => root.classList.add("path-world-settled"), reduced ? 0 : ENTER_MS);
+    return () => window.clearTimeout(timer);
+  }, [full, leaving, reduced]);
+  // Focus moves into the world's controls on enter, and back to the button that opened it on minimize.
+  const worldFocusReady = useRef(false);
+  useEffect(() => {
+    if (!worldFocusReady.current) { worldFocusReady.current = true; return; }
+    if (full) { minimizeButton.current?.focus(); return; }
+    const back = worldOpener.current;
+    worldOpener.current = null;
+    if (tentOpenRef.current || plannerOpenRef.current) return;
+    const usable = (el: HTMLElement | null) => Boolean(el && el.isConnected && !el.closest("[hidden],[inert]"));
+    (usable(back) ? back : usable(openButton.current) ? openButton.current : pageToggle.current)?.focus();
+  }, [full]);
+  const escapeRef = useRef<() => void>(() => {});
+  const tentOpenRef = useRef(tentOpen);
+  tentOpenRef.current = tentOpen;
+  const plannerOpenRef = useRef(false);
+  useEffect(() => { if (tentOpen) exitRef.current(true); }, [tentOpen]);
   const tentChange = useRef(onTentChange);
   tentChange.current = onTentChange;
   const tentReported = useRef(false);
@@ -615,6 +786,71 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     return list;
   }, [eras, currentEra, nextEra, crossing, offsets, focusedEra, placedMonth, fireMonth, months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, sunrises, mist, shownStones, shownFootpaths, shownBridges, lantern, unknown, chapter, islandName, fireSitdown, charterView, charterShown, shownForks, canPlay]);
 
+  // ------------------------------------------------------------ the shared focus (D-284/D-285)
+  // One focus for the simple view and the open world. The world reports its level and picks as "world"; the page's
+  // own controls (Replay, Where we are, the outline) as "page"; the simple view as "mini". Each side applies a change
+  // only when someone else made it.
+  const journey = useJourneyFocus(today);
+  const focus = journey.focus;
+  const focusRef = useRef(focus);
+  focusRef.current = focus;
+  const journeyRef = useRef(journey);
+  journeyRef.current = journey;
+  const worldLevel = useRef<PathLevel>(0);
+  /** Month `m` as a civil date: today for this month, otherwise the month's first day. */
+  const dateForMonth = useCallback((m: number): DateKey | null => {
+    const key = months[m]?.key;
+    if (!key) return null;
+    return (key === nowKey ? today : `${key}-01`) as DateKey;
+  }, [months, nowKey, today]);
+  /** The grown month a date reads as (a later date rests on the newest month, an earlier one on the first). */
+  const monthForDate = useCallback((date: string): number => {
+    if (!months.length) return -1;
+    const key = date.slice(0, 7);
+    const at = months.findIndex((m) => m.key === key);
+    if (at >= 0) return at;
+    return key > months[months.length - 1]!.key ? months.length - 1 : 0;
+  }, [months]);
+  /** The camera distance a pick travels to (months, eras, the home and the bridge read from a Stop). */
+  const pickHint = (id: string): PathLevel => (id.startsWith("month:") || id === "era-home" || id === "era-gate" || (/^era:[^:]+$/.test(id)) ? 2 : 3);
+  /** What a pick means for the shared focus. */
+  const focusChangeFor = useCallback((id: string): Partial<Omit<JourneyFocus, "seq" | "source">> => {
+    if (id.startsWith("month:")) {
+      const date = dateForMonth(Number(id.slice(6)));
+      return { selected: id, level: "month", ...(date ? { date } : {}) };
+    }
+    if (id.startsWith("era:") || id === "era-home" || id === "era-gate") return { selected: id, level: "era", ...(id.startsWith("era:") ? {} : { date: today }) };
+    return { selected: id, level: JOURNEY_LEVEL_FOR_WORLD[pickHint(id)] };
+  }, [dateForMonth, today]);
+  // A camera trip the page asked for passes through other distances; only where it lands (or where the person
+  // takes it afterwards) is reported back.
+  const levelGuard = useRef<{ target: PathLevel; report: boolean } | null>(null);
+  /** The open world has taken the shared focus since it last opened; until then its own camera moves are not reported. */
+  const worldSynced = useRef(false);
+  const guardTimer = useRef(0);
+  const reportLevel = useCallback((lv: PathLevel) => {
+    const guard = levelGuard.current;
+    if (guard) {
+      // A slow device may still be travelling: wait for the trip to land (or for the person to take over).
+      if (lv !== guard.target) return;
+      levelGuard.current = null;
+      window.clearTimeout(guardTimer.current);
+      if (!guard.report) return;
+    }
+    if (!fullRef.current || !worldSynced.current) return;
+    if (WORLD_LEVEL_FOR[focusRef.current.level] === lv) return;
+    journeyRef.current.set({ level: JOURNEY_LEVEL_FOR_WORLD[lv] }, "world");
+  }, []);
+  /** Someone took the camera themselves (drag, wheel, the rail): their moves count from now on. */
+  const dropGuard = useCallback(() => { levelGuard.current = null; window.clearTimeout(guardTimer.current); }, []);
+  const guardTrip = useCallback((target: PathLevel, report = false) => {
+    levelGuard.current = { target, report };
+    window.clearTimeout(guardTimer.current);
+    // A trip that never lands (something else moved the camera) stops holding reports back after a while.
+    guardTimer.current = window.setTimeout(() => { levelGuard.current = null; }, FLY_MS);
+  }, []);
+  useEffect(() => () => window.clearTimeout(guardTimer.current), []);
+
   // ------------------------------------------------------------ the world host
   const host = useRef<HTMLDivElement>(null);
   const world = useRef<PathWorld | null>(null);
@@ -625,16 +861,16 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   view.current = { level, lantern, marks, selected };
   const latestInput = useRef(worldInput);
   latestInput.current = worldInput;
-  const selectRef = useRef<(id: string) => void>(() => {});
+  const selectRef = useRef<(id: string, from?: JourneyFocusSource) => void>(() => {});
   // The controls and the open card sit over the canvas: a mark under them could be seen but not pressed, so it waits.
   const obstacles = useRef<{ x0: number; x1: number; y0: number; y1: number; card: boolean }[]>([]);
   const measureObstacles = useCallback(() => {
     const base = host.current?.getBoundingClientRect();
     const stage = host.current?.parentElement;
     if (!base || !stage) return;
-    obstacles.current = [...stage.querySelectorAll(".path-world__controls > *, .path-world__rail, .path-world__now > *, .path-world__card")].flatMap((el) => {
+    obstacles.current = [...stage.querySelectorAll(".path-hud__corner > *, .path-world__drawer, .path-hud__mini, .path-hud__caption, .path-world__rail, .path-world__now > *, .path-world__card")].flatMap((el) => {
       const r = el.getBoundingClientRect();
-      return r.width > 0 && r.height > 0 ? [{ x0: r.left - base.left, x1: r.right - base.left, y0: r.top - base.top, y1: r.bottom - base.top, card: el.classList.contains("path-world__card") }] : [];
+      return r.width > 0 && r.height > 0 ? [{ x0: r.left - base.left, x1: r.right - base.left, y0: r.top - base.top, y1: r.bottom - base.top, card: el.classList.contains("path-world__card") || el.classList.contains("path-world__drawer") }] : [];
     });
     // The journey's Sky frame keeps clear of the controls (not the card, which comes and goes): each control
     // becomes whichever edge band costs the stage less.
@@ -699,11 +935,20 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
 
   useEffect(() => {
     const element = host.current;
-    if (!element || !wanted) { setLive(false); return; }
+    // Lazy (D-285): nothing heavy is built until someone opens the world.
+    if (!booted) return;
+    if (!element || !wanted) { setLive(false); setFailed(true); return; }
+    setFailed(false);
     let dead = false;
     let created: PathWorld | null = null;
     let observer: ResizeObserver | null = null;
-    import("./world/pathWorld3d.ts")
+    // Building the scene holds the main thread for a moment: let the entering iris play first.
+    const irisPlaying = !reduced && typeof element.animate === "function";
+    const took = () => dropGuard();
+    element.addEventListener("pointerdown", took, { passive: true });
+    element.addEventListener("wheel", took, { passive: true });
+    new Promise((resolve) => window.setTimeout(resolve, irisPlaying ? ENTER_MS + 60 : 0))
+      .then(() => (dead ? Promise.reject(new Error("gone")) : import("./world/pathWorld3d.ts")))
       .then(({ createPathWorld }) => {
         if (dead) return;
         try {
@@ -713,11 +958,11 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
             idleMs: createWith.current.proofWorld?.idleMs,
             onLost: () => { created?.dispose(); world.current = null; if (!dead) { setLive(false); setWorldEpoch((n) => n + 1); } },
             onAnchors: applyAnchors,
-            onLevel: (lv) => { if (!dead) setLevel(lv); },
-            onPick: (id) => selectRef.current(id),
+            onLevel: (lv) => { if (dead) return; setLevel(lv); worldLevel.current = lv; reportLevel(lv); },
+            onPick: (id) => selectRef.current(id, "world"),
           });
         } catch {
-          if (!dead) setLive(false);
+          if (!dead) { setLive(false); setFailed(true); }
           return;
         }
         world.current = created;
@@ -727,11 +972,11 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         if (typeof ResizeObserver === "function") { observer = new ResizeObserver(size); observer.observe(element); }
         setLive(true);
       })
-      .catch(() => { if (!dead) setLive(false); });
-    return () => { dead = true; observer?.disconnect(); if (created) createWith.current.proofWorld?.onWorld?.(null); created?.dispose(); world.current = null; };
+      .catch(() => { if (!dead) { setLive(false); setFailed(true); } });
+    return () => { dead = true; element.removeEventListener("pointerdown", took); element.removeEventListener("wheel", took); observer?.disconnect(); if (created) createWith.current.proofWorld?.onWorld?.(null); created?.dispose(); world.current = null; };
     // The world is created once per mount/theme gate (the tent only puts it to sleep); scene changes arrive below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [wanted, reduced, applyAnchors, worldEpoch]);
+  }, [wanted, reduced, applyAnchors, reportLevel, dropGuard, worldEpoch, booted]);
 
   const lastShown = useRef(shown);
   useEffect(() => {
@@ -740,6 +985,61 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     lastShown.current = shown;
     world.current?.setScene(worldInput, months[shown]?.key, grew);
   }, [worldInput, live, shown, months]);
+  // The shared focus moves the world (when someone else moved it): a place it knows, a month, an era, or the whole journey.
+  const appliedWorldSeq = useRef(-1);
+  useEffect(() => {
+    const current = world.current;
+    if (!full) worldSynced.current = false;
+    if (!live || !current || !full || tentOpen) return;
+    if (focus.seq === appliedWorldSeq.current && worldSynced.current) return;
+    appliedWorldSeq.current = focus.seq;
+    worldSynced.current = true;
+    if (focus.source === "world") return;
+    const id = focus.selected;
+    if (id && id !== "tent" && marks.some((mark) => mark.id === id)) {
+      const hint = pickHint(id);
+      guardTrip(hint);
+      current.focus(id, hint);
+      if (id !== selected && detailFor(id)) setSelected(id);
+      const era = /^era:([^:]+)/.exec(id)?.[1] ?? null;
+      if (era) setFocusedEra(era);
+      else if (id === "era-home" || id.startsWith("month:")) setFocusedEra(null);
+      return;
+    }
+    // A mini-only pick (a bill, a contribution, a task) or no pick: travel to the month in view.
+    if (focus.level === "journey") { guardTrip(0); current.setLevel(0); return; }
+    const lv = WORLD_LEVEL_FOR[focus.level];
+    if (focus.level === "era" && currentEra) { guardTrip(lv); current.focus("era-home", lv); return; }
+    const m = monthForDate(focus.date);
+    if (m < 0) return;
+    guardTrip(lv);
+    if (m === shown && m === last) current.focus("now", lv);
+    else current.focusMonth(m, lv);
+  // detailFor and pickHint read this render's data; the effect runs only for a new focus or when the world opens.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focus, live, full, tentOpen]);
+  // The Replay slider follows the simple view's date (a later date rests on now). World picks never regrow the island.
+  const appliedSliderSeq = useRef(-1);
+  useEffect(() => {
+    if (focus.seq === appliedSliderSeq.current) return;
+    appliedSliderSeq.current = focus.seq;
+    if (focus.source !== "mini" || focus.level === "era" || focus.level === "journey") return;
+    const m = monthForDate(focus.date);
+    if (m < 0 || m === shown) return;
+    setPlaying(false);
+    setFollowNow(m === last);
+    setCur(m);
+  }, [focus, monthForDate, shown, last]);
+  // The page's own time moves (the slider, Replay) tell the simple view.
+  const pageMovedTime = useRef(false);
+  useEffect(() => {
+    if (!pageMovedTime.current) return;
+    pageMovedTime.current = false;
+    const date = dateForMonth(shown);
+    if (!date || monthForDate(focusRef.current.date) === shown) return;
+    const level = focusRef.current.level;
+    journeyRef.current.set({ date, ...(level === "era" || level === "journey" ? { level: "month" as const } : {}) }, "page");
+  }, [shown, dateForMonth, monthForDate]);
   useEffect(() => { world.current?.refresh(); }, [lantern, marks, level, live, selected]);
   // Re-measure what covers the canvas after each render (the card, Next Move, the compact controls) and on resize.
   useEffect(() => { measureObstacles(); world.current?.refresh(); });
@@ -749,19 +1049,22 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   }, [measureObstacles]);
   useEffect(() => { world.current?.setAmbient(!(proofWorld?.paused ?? appearance.paused) && !playing); }, [appearance.paused, proofWorld?.paused, live, playing]);
   useEffect(() => { world.current?.setQuality(quality); }, [quality, live]);
-  // The tent hides the island (display: none) but keeps the world: it sleeps, then wakes at the size it has once shown again.
+  // The world only draws while it is open: minimized (or in the tent) it sleeps, keeping every buffer, and wakes at
+  // the size it has once shown again.
+  const awake = full && !tentOpen;
   useEffect(() => {
     const current = world.current;
     if (!live || !current) return;
-    if (tentOpen) current.sleep();
+    if (!awake) current.sleep();
     else current.wake(host.current?.clientWidth ?? 0, host.current?.clientHeight ?? 0);
-  }, [tentOpen, live]);
+  }, [awake, live]);
   useEffect(() => { try { window.localStorage.setItem(LANTERN_KEY, String(lantern)); } catch { /* per-device convenience only */ } }, [lantern]);
 
   // Replay: grow the island month by month.
   useEffect(() => {
     if (!playing) return;
     const timer = window.setInterval(() => {
+      pageMovedTime.current = true;
       setCur((value) => {
         if (value >= last) { setPlaying(false); setFollowNow(true); return value; }
         return value + 1;
@@ -774,7 +1077,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const opener = useRef<HTMLElement | null>(null);
   const cardWantsFocus = useRef(false);
   const cardRef = useRef<HTMLElement>(null);
-  const select = useCallback((id: string) => {
+  const select = useCallback((id: string, from?: JourneyFocusSource) => {
     if (id === "tent") { openTent(true); return; }
     const active = typeof document === "undefined" ? null : document.activeElement;
     if (active instanceof HTMLElement && active !== document.body && !active.closest(".path-world__card")) {
@@ -789,8 +1092,12 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     const era = /^era:([^:]+)/.exec(id)?.[1] ?? null;
     if (era) setFocusedEra(era);
     else if (id === "era-home" || id.startsWith("month:")) setFocusedEra(null);
-    world.current?.focus(id, id.startsWith("month:") || id === "era-home" || id === "era-gate" || (era && !id.includes(":plan:")) ? 2 : 3);
-  }, [openTent]);
+    // In the open world the camera travels now; from the page, the world travels there when it next opens.
+    const hint = pickHint(id);
+    if (fullRef.current && world.current) { guardTrip(hint); world.current.focus(id, hint); }
+    journeyRef.current.set(focusChangeFor(id), from ?? (fullRef.current ? "world" : "page"));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openTent, guardTrip, focusChangeFor]);
   selectRef.current = select;
 
   // ------------------------------------------------------------ details (the card grows with the lantern)
@@ -803,8 +1110,9 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const openPlanner = (eraId: string | null) => {
     const active = typeof document === "undefined" ? null : document.activeElement;
     plannerOpener.current = active instanceof HTMLElement && active !== document.body ? active : null;
-    // From the tent: back onto the island page, where the planner opens (it takes focus itself).
+    // From the tent or the open world: back onto the island page, where the planner opens (it takes focus itself).
     if (tentOpen) { tentMoved.current = false; setTentOpen(false); }
+    if (fullRef.current) { plannerOpenRef.current = true; exitWorld(true); }
     setPlanner({ eraId });
   };
   const closePlanner = () => {
@@ -1230,6 +1538,13 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     cardWantsFocus.current = false;
     cardRef.current?.focus();
   }, [selected]);
+  plannerOpenRef.current = Boolean(planner);
+  // Escape in the open world: an open card first, then the settings drawer, then minimize.
+  escapeRef.current = () => {
+    if (detail) { closeCard(); return; }
+    if (drawer) { setDrawer(false); gearButton.current?.focus(); return; }
+    exitWorld();
+  };
   const closeCard = () => {
     setSelected(null);
     const back = opener.current;
@@ -1244,13 +1559,71 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   // Hercules waits at the tent; with a "?" signpost on the island he leans toward the pawprints.
   const herculesPose: HerculesFigurePose = unknown.length ? "stretch" : "sit";
   const recipeRows = shapePathWorld(household.pathWorld).filter((row): row is PathRecipeRow => row.kind === "recipe");
+  // What the open world is looking at, in words (the caption at the bottom of the screen).
+  const caption = (() => {
+    const eraOf = (id: string | null) => eras.find((era) => `era:${era.id}` === id || (id?.startsWith(`era:${era.id}:`) ?? false)) ?? null;
+    const picked = focus.selected ? marks.find((mark) => mark.id === focus.selected) ?? null : null;
+    const nearWords = picked && picked.kind !== "now" && picked.kind !== "month" && picked.kind !== "era" ? picked.label : null;
+    if (focus.level === "journey") {
+      return { level: "Journey", title: islandName ?? "Our journey", sub: eras.length ? `${eras.length} era${eras.length === 1 ? "" : "s"}${currentEra ? ` · now: ${currentEra.spec.name}` : ""}` : "The whole island" };
+    }
+    if (focus.level === "era") {
+      const era = eraOf(focus.selected) ?? currentEra;
+      return { level: "Era", title: era?.spec.name ?? islandName ?? "This era", sub: era ? (era.state === "current" ? "The era we are in" : ERA_STATE_LABELS[era.state]) : "Our island" };
+    }
+    const m = monthForDate(focus.date);
+    const key = focus.date.slice(0, 7);
+    const monthWords = /^\d{4}-\d{2}$/.test(key) ? monthName(key) : "";
+    const character = m >= 0 && months[m]?.key === key ? CHARACTER_LABEL[characters[m]!] : null;
+    const eraWords = currentEra && key >= (currentEra.months[0] ?? "") ? currentEra.spec.name : null;
+    if (focus.level === "month") return { level: "Month", title: monthWords, sub: [character, nearWords ?? eraWords].filter(Boolean).join(" · ") };
+    const day = focus.date === today ? "Today" : dayName(focus.date);
+    return { level: JOURNEY_LEVEL_LABEL[focus.level], title: focus.level === "day" ? day : `${focus.date === today ? "This week" : `Week of ${dayName(focus.date)}`}`, sub: [monthWords, nearWords ?? eraWords].filter(Boolean).join(" · ") };
+  })();
+  const miniArgs = (compact: boolean): JourneyMiniSlotArgs => ({
+    household, memberId, today, focus: journey, compact, theme, quality, worldOpen: full,
+    onOpenWorld: compact ? () => {} : enterWorld,
+  });
+  const flatMap = (
+    <PathMiniMap household={household} today={today} shown={shown} theme={theme}
+      footpaths={shownFootpaths.map(({ path, month }) => ({ month, done: path.state === "done" }))}
+      bridges={shownBridges.map(({ bridge, month }) => ({ month, stage: bridge.stage }))} />
+  );
+  const lanternGroup = (
+    <div className="path-world__lantern" role="group" aria-label="How much detail to show">
+      {LANTERNS.map((l) => <button key={l.value} type="button" aria-pressed={lantern === l.value} onClick={() => setLantern(l.value)}><i aria-hidden="true" />{l.label}</button>)}
+    </div>
+  );
+  const goNow = () => {
+    setFollowNow(true);
+    setCur(last);
+    setSelected(null);
+    setFocusedEra(null);
+    if (fullRef.current) {
+      journey.toToday("world", "month");
+      window.setTimeout(() => { guardTrip(2); world.current?.focus("now", 2); }, 0);
+    } else journey.toToday("page");
+  };
+  const cardView = detail && (
+    <aside ref={cardRef} tabIndex={-1} className={`path-world__card${full ? "" : " path-world__card--page"}`} aria-live="polite" aria-labelledby="path-world-card-title">
+      <button type="button" className="path-world__close" aria-label="Close" onClick={closeCard}>×</button>
+      <p className="kicker">{detail.eyebrow}</p>
+      <h3 id="path-world-card-title">{detail.title}</h3>
+      <ul>{detail.lines.filter(([min]) => lantern >= min).map(([, text], i) => <li key={i}>{text}</li>)}</ul>
+      {lantern < 2 && detail.lines.some(([min]) => min > lantern) && <p className="muted">Turn the lantern up for more.</p>}
+      {detail.actions && <div className="path-world__actions">{detail.actions}</div>}
+    </aside>
+  );
+  const nextButton = next && atNow && <button type="button" className="path-world__next" onClick={() => select(`move:${next.id}`)}><span>Next Move</span>{" "}{next.text}</button>;
+  const loading = full && booted && wanted && !live && !failed;
+  const flat = !live && (failed || !wanted);
   return (
-    <div className={`path-world path-world--${theme}`} data-level={level} data-lantern={lantern}>
-      <section className="path-world__island" hidden={tentOpen} aria-labelledby="path-world-title" onKeyDown={(e) => { if (e.key === "Escape" && detail) { e.stopPropagation(); closeCard(); } }}>
+    <div ref={rootRef} className={`path-world path-world--${theme}`} data-level={level} data-lantern={lantern} data-game={full ? (leaving ? "leaving" : "open") : undefined}>
+      <section className="path-world__island" hidden={tentOpen} aria-labelledby="path-world-title" onKeyDown={(e) => { if (e.key === "Escape" && detail) { e.stopPropagation(); e.preventDefault(); closeCard(); } }}>
         <header className="path-world__head">
           <p className="kicker">Our Path</p>
           <h2 id="path-world-title">{islandName ?? "Where we are going"}</h2>
-          <p className="path-world__lede">The land grows from your shared months. Move closer to see more.</p>
+          <p className="path-world__lede">The land grows from your shared months. Open the world to walk the whole island.</p>
           <button type="button" className="path-world__link" aria-expanded={naming} onClick={() => { setNaming((v) => !v); setNameDraft(islandName ?? ""); }}>{islandName ? "Rename together" : "Name our island together"}</button>
           <button type="button" className="path-world__link path-world__plan-journey" aria-expanded={Boolean(planner)} onClick={() => (planner ? closePlanner() : openPlanner(null))}>Plan our journey</button>
           {currentEra && <p className="path-world__era-now"><span className="path-era-chip path-era-chip--current">Now</span> {currentEra.spec.name}</p>}
@@ -1263,23 +1636,46 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           )}
         </header>
 
-        <div ref={stageRef} className={`path-world__stage${full ? " path-world__stage--full" : ""}`}>
-          <div ref={host} className="path-world__host" data-live={live} />
-          <button type="button" className="path-world__full" aria-pressed={full} aria-label={full ? "Leave full screen" : "Show the map full screen"} title={full ? "Leave full screen" : "Full screen"} onClick={() => setFull((v) => !v)}>
-            <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              {full
-                ? <path d="M8 3v5H3M12 3v5h5M8 17v-5H3M12 17v-5h5" />
-                : <path d="M3 8V3h5M17 8V3h-5M3 12v5h5M17 12v5h-5" />}
-            </svg>
-          </button>
-          {!live && (
-            <div className="path-world__flat" aria-hidden="true">
-              <PathMiniMap household={household} today={today} shown={shown} theme={theme}
-                footpaths={shownFootpaths.map(({ path, month }) => ({ month, done: path.state === "done" }))}
-                bridges={shownBridges.map(({ bridge, month }) => ({ month, stage: bridge.stage }))} />
+        {/* The simple view (D-284) leads the page. The integrator mounts JourneyMini here through renderMini. */}
+        <div className="path-world__simple" data-slot="journey-mini" data-world-open={full || undefined}>
+          {renderMini ? renderMini(miniArgs(false)) : (
+            <div className="path-world__preview-card">
+              <div className="path-world__flat path-world__preview" aria-hidden="true">{flatMap}</div>
+              <div className="path-world__preview-copy">
+                <p className="kicker">{caption.level}</p>
+                <p className="path-world__preview-title"><strong>{caption.title}</strong></p>
+                {caption.sub && <p className="muted path-world__preview-sub">{caption.sub}</p>}
+                <button ref={openButton} type="button" className="primary path-world__open" onClick={enterWorld}>
+                  <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8V3h5M17 8V3h-5M3 12v5h5M17 12v5h-5" /></svg>
+                  Open the world
+                </button>
+              </div>
             </div>
           )}
-          <div className="path-world__marks" hidden={!live}>
+          <button ref={pageToggle} type="button" className="path-world__full" aria-pressed={false} aria-label="Open the world full screen" title="Open the world" onClick={enterWorld}>
+            <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 8V3h5M17 8V3h-5M3 12v5h5M17 12v5h-5" /></svg>
+          </button>
+        </div>
+
+        {!full && (
+          <div className="path-world__pagebar">
+            <div className="path-world__now path-world__now--page">
+              <button ref={compassButton} type="button" className="path-world__compass" onClick={goNow}>Where we are</button>
+              {nextButton}
+              <button ref={tentButton} type="button" className="primary path-world__tent" onClick={() => openTent(true)}>Open the Plan Studio tent</button>
+            </div>
+            {lanternGroup}
+          </div>
+        )}
+        {!full && cardView}
+
+        {/* The open world (D-285): built the first time it opens, full screen, with a game HUD over the island. */}
+        <div ref={stageRef} className={`path-world__stage path-world__stage--game${full ? " path-world__stage--full" : ""}`} hidden={!full}
+          role="dialog" aria-modal={full || undefined} aria-label={`${islandName ?? "Our island"} · the open world`} data-loading={loading || undefined}>
+          <div ref={host} className="path-world__host" data-live={live} />
+          {loading && <p className="path-world__loading" role="status"><span aria-hidden="true" />Growing the island…</p>}
+          {full && flat && <div className="path-world__flat" aria-hidden="true">{flatMap}</div>}
+          <div className="path-world__marks" hidden={!live || !full}>
             {marks.map((mark) => (
               <button
                 key={mark.id}
@@ -1291,7 +1687,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
                 data-state={mark.state}
                 data-pencil={mark.pencil || undefined}
                 aria-label={`${mark.label}${mark.sub ? `, ${mark.sub}` : ""}`}
-                onClick={() => select(mark.id)}
+                onClick={() => select(mark.id, "world")}
               >
                 <span className="path-mark__label">{mark.label}</span>
                 {mark.sub && lantern > 0 && <span className="path-mark__sub">{mark.sub}</span>}
@@ -1301,51 +1697,84 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           </div>
 
           {/* The card follows the marks in the tab order; opened from the keyboard, it takes focus itself. */}
-          {detail && (
-            <aside ref={cardRef} tabIndex={-1} className="path-world__card" aria-live="polite" aria-labelledby="path-world-card-title">
-              <button type="button" className="path-world__close" aria-label="Close" onClick={closeCard}>×</button>
-              <p className="kicker">{detail.eyebrow}</p>
-              <h3 id="path-world-card-title">{detail.title}</h3>
-              <ul>{detail.lines.filter(([min]) => lantern >= min).map(([, text], i) => <li key={i}>{text}</li>)}</ul>
-              {lantern < 2 && detail.lines.some(([min]) => min > lantern) && <p className="muted">Turn the lantern up for more.</p>}
-              {detail.actions && <div className="path-world__actions">{detail.actions}</div>}
-            </aside>
+          {full && cardView}
+          {full && (
+            <div className="path-hud" data-drawer={drawer || undefined}>
+              {banner > 0 && !reduced && (
+                <div key={banner} className="path-hud__banner" aria-hidden="true" onAnimationEnd={() => setBanner(0)}>
+                  <span>{currentEra ? currentEra.spec.name : "Our Path"}</span>
+                  <strong>{islandName ?? "Our island"}</strong>
+                </div>
+              )}
+              <div className="path-hud__corner path-hud__corner--start">
+                <button ref={minimizeButton} type="button" className="path-world__full path-hud__min" aria-pressed={true} aria-label="Minimize the world" aria-keyshortcuts="Escape" title="Minimize (Esc)" onClick={() => exitWorld()}>
+                  <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M8 3v5H3M12 3v5h5M8 17v-5H3M12 17v-5h5" /></svg>
+                  <span className="path-hud__min-words" aria-hidden="true">Minimize</span>
+                </button>
+                <span className="path-hud__esc" aria-hidden="true"><kbd>Esc</kbd></span>
+              </div>
+              <div className="path-hud__corner path-hud__corner--end">
+                <button ref={gearButton} type="button" className="path-hud__gear" aria-expanded={drawer} aria-controls="path-world-drawer" aria-label="World settings" title="Settings" onClick={() => setDrawer((v) => !v)}>
+                  <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M3 5.5h8M15 5.5h2M3 10h2M9 10h8M3 14.5h6M13 14.5h4" /><circle cx="13" cy="5.5" r="2" /><circle cx="7" cy="10" r="2" /><circle cx="11" cy="14.5" r="2" /></svg>
+                </button>
+                {nextButton && <div className="path-hud__quest">{nextButton}</div>}
+                {drawer && (
+                  <div id="path-world-drawer" className="path-world__drawer" role="group" aria-label="World settings">
+                    <div className="path-world__controls">
+                      <p className="path-world__drawer-label" aria-hidden="true">Lantern</p>
+                      {lanternGroup}
+                      {live && (
+                        <>
+                          <p className="path-world__drawer-label" aria-hidden="true">Quality</p>
+                          <div className="path-world__quality" role="group" aria-label="Quality on this device">
+                            <button type="button" aria-pressed={quality === "full"} onClick={() => chooseQuality("full")}>Full</button>
+                            <button type="button" aria-pressed={quality === "lite"} title="Lite quality: fewer pixels, no shadows" onClick={() => chooseQuality("lite")}>Lite</button>
+                          </div>
+                        </>
+                      )}
+                      <p className="path-world__drawer-label" aria-hidden="true">Layers</p>
+                      <div className="path-world__layers" role="group" aria-label="Layers">
+                        {(["weather", "story", "rhythm"] as const).map((key) => (
+                          <button key={key} type="button" aria-pressed={layers[key]} onClick={() => setLayers((v) => ({ ...v, [key]: !v[key] }))}>{key === "weather" ? "Weather" : key === "story" ? "Story" : "Rhythm"}</button>
+                        ))}
+                        <button type="button" aria-pressed={mine} title="My private footpaths — only you ever see them" onClick={toggleMine}>Mine</button>
+                      </div>
+                    </div>
+                    <button type="button" className="path-world__link path-world__drawer-plan" onClick={() => openPlanner(null)}>Plan our journey</button>
+                  </div>
+                )}
+              </div>
+              {!(flat && !renderMini) && (
+                <div className="path-hud__mini" data-slot="journey-mini-compact">
+                  {renderMini ? renderMini(miniArgs(true)) : <div className="path-hud__flatmini" aria-hidden="true">{flatMap}</div>}
+                </div>
+              )}
+              <p className="path-hud__caption" aria-live="polite">
+                <span className="path-hud__caption-level">{caption.level}</span>
+                <strong>{caption.title}</strong>
+                {caption.sub && <span className="path-hud__caption-sub">{caption.sub}</span>}
+              </p>
+              <div className="path-hud__dock">
+                <div className="path-world__rail" role="group" aria-label="Distance">
+                  {LEVELS.map((l) => <button key={l.level} type="button" aria-pressed={level === l.level} onClick={() => { guardTrip(l.level, true); world.current?.setLevel(l.level); }} disabled={!live}>{l.label}</button>)}
+                  <button type="button" aria-label="Move closer" onClick={() => { dropGuard(); world.current?.zoom(0.72); }} disabled={!live}>+</button>
+                  <button type="button" aria-label="Move away" onClick={() => { dropGuard(); world.current?.zoom(1.38); }} disabled={!live}>−</button>
+                </div>
+                <div className="path-world__now">
+                  <button ref={compassButton} type="button" className="path-world__compass" onClick={goNow}>
+                    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="10" r="7" /><path d="M12.8 7.2 11 11l-3.8 1.8L9 9z" /></svg>
+                    Where we are
+                  </button>
+                  {flat && <PathHercules pose={herculesPose} size={narrow ? 48 : 64} flat />}
+                  <button ref={tentButton} type="button" className="primary path-world__tent" aria-label="Open the Plan Studio tent" onClick={() => openTent(true)}>
+                    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3 2.5 16.5h15z" /><path d="M10 3v13.5M10 16.5 7.5 11" /></svg>
+                    Plan Studio
+                  </button>
+                </div>
+              </div>
+              {notice && <p className="path-hud__notice" role="status">{notice}</p>}
+            </div>
           )}
-          <div className="path-world__controls">
-            <div className="path-world__lantern" role="group" aria-label="How much detail to show">
-              {LANTERNS.map((l) => <button key={l.value} type="button" aria-pressed={lantern === l.value} onClick={() => setLantern(l.value)}><i aria-hidden="true" />{l.label}</button>)}
-            </div>
-            {live && (narrow ? (
-              // A phone: one compact toggle (same state, same per-device key) so the controls fit at 320px.
-              <div className="path-world__quality path-world__quality--compact" role="group" aria-label="Quality on this device">
-                <button type="button" aria-pressed={quality === "lite"} title="Lite quality: fewer pixels, no shadows" onClick={() => chooseQuality(quality === "lite" ? "full" : "lite")}>Lite</button>
-              </div>
-            ) : (
-              <div className="path-world__quality" role="group" aria-label="Quality on this device">
-                <span aria-hidden="true">Quality</span>
-                <button type="button" aria-pressed={quality === "full"} onClick={() => chooseQuality("full")}>Full</button>
-                <button type="button" aria-pressed={quality === "lite"} onClick={() => chooseQuality("lite")}>Lite</button>
-              </div>
-            ))}
-            <div className="path-world__layers" role="group" aria-label="Layers">
-              {(["weather", "story", "rhythm"] as const).map((key) => (
-                <button key={key} type="button" aria-pressed={layers[key]} onClick={() => setLayers((v) => ({ ...v, [key]: !v[key] }))}>{key === "weather" ? "Weather" : key === "story" ? "Story" : "Rhythm"}</button>
-              ))}
-              <button type="button" aria-pressed={mine} title="My private footpaths — only you ever see them" onClick={toggleMine}>Mine</button>
-            </div>
-          </div>
-          <div className="path-world__rail" role="group" aria-label="Distance">
-            {LEVELS.map((l) => <button key={l.level} type="button" aria-pressed={level === l.level} onClick={() => world.current?.setLevel(l.level)} disabled={!live}>{l.label}</button>)}
-            <button type="button" aria-label="Move closer" onClick={() => world.current?.zoom(0.72)} disabled={!live}>+</button>
-            <button type="button" aria-label="Move away" onClick={() => world.current?.zoom(1.38)} disabled={!live}>−</button>
-          </div>
-          <div className="path-world__now">
-            <button ref={compassButton} type="button" className="path-world__compass" onClick={() => { setFollowNow(true); setCur(last); setSelected(null); setFocusedEra(null); window.setTimeout(() => world.current?.focus("now", 2), 0); }}>Where we are</button>
-            {next && atNow && <button type="button" className="path-world__next" onClick={() => select(`move:${next.id}`)}><span>Next Move</span>{" "}{next.text}</button>}
-            {!live && <PathHercules pose={herculesPose} size={narrow ? 56 : 72} flat />}
-            <button ref={tentButton} type="button" className="primary path-world__tent" onClick={() => openTent(true)}>Open the Plan Studio tent</button>
-          </div>
-
         </div>
 
         {planner && (
@@ -1354,7 +1783,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         )}
 
         <div className="path-world__grow">
-          <button type="button" className="path-world__play" aria-label={playing ? "Pause the replay" : "Replay the island growing"} aria-pressed={playing} disabled={months.length < 2} onClick={() => { if (playing) { setPlaying(false); return; } setFollowNow(false); setCur(0); setPlaying(true); }}>{playing ? "Pause" : "Replay"}</button>
+          <button type="button" className="path-world__play" aria-label={playing ? "Pause the replay" : "Replay the island growing"} aria-pressed={playing} disabled={months.length < 2} onClick={() => { if (playing) { setPlaying(false); return; } pageMovedTime.current = true; setFollowNow(false); setCur(0); setPlaying(true); }}>{playing ? "Pause" : "Replay"}</button>
           <div className="path-world__when">
             <strong>{nowMonth ? monthName(nowMonth.key) : ""}</strong>
             {nowMonth && <span className={`path-chip path-chip--${characters[shown]}`}>{CHARACTER_LABEL[characters[shown]!]}</span>}
@@ -1363,14 +1792,14 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
             <span className="sr-only">Grow through the months</span>
             <input type="range" min={0} max={Math.max(0, last)} step={1} value={shown} disabled={months.length < 2}
               aria-valuetext={nowMonth ? `${monthName(nowMonth.key)}, ${CHARACTER_LABEL[characters[shown]!]}` : undefined}
-              onChange={(e) => { setPlaying(false); const v = Number(e.target.value); setFollowNow(v === last); setCur(v); }} />
+              onChange={(e) => { setPlaying(false); const v = Number(e.target.value); pageMovedTime.current = true; setFollowNow(v === last); setCur(v); }} />
           </label>
           {nowMonth && onOpenTimeMachine && <button type="button" className="path-world__link path-world__time" onClick={() => links.current.onOpenTimeMachine?.(nowMonth.key)}>Open this month in the time machine</button>}
           <ol className="path-world__ticks" aria-hidden="true">
             {months.map((month, m) => <li key={month.key} className={`path-chip--${characters[m]}`} data-current={m === shown} />)}
           </ol>
         </div>
-        {notice && <p className="path-world__notice" role="status">{notice}</p>}
+        {notice && !full && <p className="path-world__notice" role="status">{notice}</p>}
 
         <div className="path-world__panels">
           <section className="path-world__panel path-world__journey" aria-labelledby="path-world-journey">
