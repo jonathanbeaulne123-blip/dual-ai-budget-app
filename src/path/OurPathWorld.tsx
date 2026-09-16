@@ -44,6 +44,7 @@ import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { bottleNote } from "./bottle.ts";
 import { growIsland, type Piece } from "./grow.ts";
 import { firedRecently, pathMonthAsOf } from "./landmarks.ts";
+import { UMBRELLAS } from "../core/fundRules.ts";
 import { charterPurposeWords, pathSitdownClosedMonths, pathSitdownFor, type PathSitdown } from "./together.ts";
 import { acceptedPlan } from "../HouseholdLife.tsx";
 import { HerculesDress } from "../HerculesDress.tsx";
@@ -88,8 +89,14 @@ const PIECE_LABEL: Record<Piece["kind"], string> = {
   grove: "Habit grove", cottage: "A cottage", observatory: "The observatory", monument: "A milestone", bench: "We paused here",
   lanterns: "Lanterns", giftTree: "The ribbon tree", loop: "A running loop", cafe: "String lights", rows: "Garden rows", pond: "A still pond",
   star: "A first", firstFire: "Our first campfire", dogMeadow: "Pet days", kiln: "A kiln hut", workshop: "A little workshop", creek: "A storm we weathered",
-  frost: "The first frost",
+  frost: "The first frost", umbrella: "A part of our life",
 };
+/** Slice 11: an umbrella pennant reads as its umbrella's name. */
+function pieceLabel(piece: Piece): string {
+  if (piece.kind === "observatory") return `Observatory · ${piece.floors} floor${piece.floors === 1 ? "" : "s"}`;
+  if (piece.kind === "umbrella" && piece.umbrellaId) return `${UMBRELLAS.find((row) => row.id === piece.umbrellaId)?.name ?? "A part of our life"} pennant`;
+  return PIECE_LABEL[piece.kind];
+}
 const LANTERN_KEY = "hearth:pathWorld:lantern";
 const QUALITY_KEY = "hearth:pathWorld:quality";
 /**
@@ -465,7 +472,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     for (const row of moves) list.push({ id: `move:${row.id}`, label: row.text, sub: row.state === "done" ? `done · ${nameOf(row.completedByMemberId)}` : nameOf(row.ownerMemberId), kind: "move", minLevel: 3, lantern: 0 });
     landmarks.forEach(({ goal, step }) => list.push({ id: `goal:${goal.id}`, label: goal.name, sub: `${step} of 10 steps`, kind: "goal", minLevel: 0, lantern: 0 }));
     if (kiln) list.push({ id: "kiln", label: "The kiln", sub: kiln.warm ? "warm" : "cold", kind: "kiln", minLevel: 1, lantern: 0 });
-    island.pieces.forEach((piece, i) => list.push({ id: `piece:${i}`, label: piece.kind === "observatory" ? `Observatory · ${piece.floors} floor${piece.floors === 1 ? "" : "s"}` : PIECE_LABEL[piece.kind], kind: "piece", minLevel: 2, lantern: 1 }));
+    island.pieces.forEach((piece, i) => list.push({ id: `piece:${i}`, label: pieceLabel(piece), kind: "piece", minLevel: 2, lantern: 1 }));
     island.coves.forEach((cove, i) => {
       list.push({ id: `cove:${i}`, label: cove.name, sub: cove.visits.length > 1 ? `${cove.visits.length} visits` : undefined, kind: "cove", minLevel: 1, lantern: 1 });
       if (cove.type === "sea" && island.cur >= cove.month + 12) list.push({ id: `bottle:${i}`, label: "A message in a bottle", sub: cove.name, kind: "cove", minLevel: 2, lantern: 1 });
@@ -747,7 +754,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
       if (!piece) return null;
       return {
         eyebrow: "Why this is here",
-        title: piece.kind === "observatory" ? `Observatory · ${piece.floors} floors` : PIECE_LABEL[piece.kind],
+        title: pieceLabel(piece),
         lines: [...piece.why.slice(0, 1).map((w): [Lantern, string] => [0, w]), ...piece.why.slice(1).map((w): [Lantern, string] => [1, w]), ...(piece.kind === "grove" ? [[1, `${piece.age} month${piece.age === 1 ? "" : "s"} old. A small plate reads “together”.`] as [Lantern, string]] : [])],
       };
     }
