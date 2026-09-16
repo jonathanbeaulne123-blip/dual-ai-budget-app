@@ -1,3 +1,55 @@
+## Plan Studio v3, integrated — the studio reads the money model, the cellar keeps its offers, pennants per umbrella (2026-09-16, D-281)
+
+Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`, plus six integration commits (`40255a58`, `0bb4b73a`, `cd81b063`, `5a5ce7d8`, `4cbabd34`, and the docs commit). **Risk: High.** There is no new synced shape, schema or command.
+- Budget (5): +1.
+- Engagement (3): +1.
+- Details: [the worksession](worksessions/2026-09-16-plan-studio-v3-integration.md).
+
+**What changed:**
+1. **Studio.** With `VITE_FUND_MODEL_V2` on, `src/plan-v3/model.ts` reads `fundSnapshot` for sorted households (`fundModelSnapshot`); otherwise it keeps the transitional adapter.
+   - `FundProposals.tsx` wires the split (both confirm) and the Protect refill (custodian proposes, partner confirms).
+   - The open Chapter reads as its calendar month, with its reminder.
+2. **Cellar.** Consent stays on Bridge rows (the division and refill records can't name a goal and an occurrence without a new row kind).
+   - `src/core/cellarBridge.ts` filters those rows out of the Sitdown brief, the island, the Fund pulse and presence lines, the Bridge editor, Hercules's bridge status and the studio badge.
+   - The pay-hide author check sits in `setMyCellarPay` and `executeIntent`.
+   - `CellarJar.umbrellaHue` is set.
+3. **Resume owners.** Left as two, with the reason: the shared session versus the member-personal companion workflow. See the worksession.
+4. **Slice 11.** `PathMonth.umbrellas`, the `umbrella-slots` seed and `umbrellaPieces` pennants, and a closed check-in counts as a Sitdown.
+5. **Demo Plan.** `generateDemoSuite({ fundModel: 2 })` from flag-on builds files bills under Prepare; the default is byte-identical. `planLifeFixture(view, { fundModel: 2 })`.
+6. **Evidence fixes.**
+   - The Queen's pill no longer adds a landed contribution on top of Now.
+   - The category grid takes two columns below 380px.
+
+**Verification:**
+- `npx tsc --noEmit -p .` is clean.
+- **Quick gate at High** (`pnpm test -- --risk=high --focus=… --focus-reason=…`) at `5a5ce7d8`: `quick-gate-passed; time-budget-breached`.
+  - 794.7 s in total: 83 files, of which serial took 552.7 s because of `demo-suite`.
+  - The final run after the docs commit is recorded below.
+- **Targeted suites** for the three tracks: 113 files, 1119 passed.
+- **Failures that are not ours:**
+  - 5 fail identically on a clean `6160fb03` worktree: `onboarding-categories` ×2, and `hercules-wardrobe-catalogue`, `-navigation` and `-ui`.
+  - 1 was a `ledger-import-parity` timeout under load; it passes alone.
+- **Browser:** `HEARTH_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome node test/plan-v3-integrated-layout.mjs` produced 87 records, 0 failures and 103 PNGs in `docs/evidence/plan-studio-v3-integrated/`.
+  - Covered: the rest screen, the check-in, drawer sheets, the partner's yes, the category grid and the sorted cellar (missing subscription, pay glass).
+  - Three themes × 320/390/720/1100, with reduced motion at 390/1100.
+
+**Defaulted, confirm:** the list is in D-281.
+
+**Uncertainty:**
+- **The resume-owner merge.** It needs a synced link field and a trust review.
+- **Old pay-hide marks.** Existing marks can't prove their author.
+- **Hercules context.** The cellar rows' ids remain in the companion context's `plan-bridge` reference set.
+- **Not built.** The era islands.
+- **No real device check.** No real phone and no screen reader were used.
+
+**Environment:** fictional fixtures only. Both flags stay off by default.
+
+**State:** not pushed, not a PR, not merged, not deployed, not live-verified.
+
+**Next owner:**
+1. Codex: trust review of D-281 and D-268–D-272, plus the resume-owner design.
+2. Jonathan: turn on both flags in Development, walk a split, a refill and a check-in on two phones, and answer the defaulted lists.
+
 ## The money model — Everyday Queen, Prepare / Protect / Build, 12 umbrellas, Chapters as months (2026-09-16, D-268 – D-272)
 
 Branch `claude/plan-v3-money` on `main@6160fb03`: nine commits, delivered locally. **Risk: High.** The change touches money meaning, adds a new synced non-money collection (`fundModelRows`), adds two command stamps (`fundModelVersion`, `chapterVersion`), and changes Hercules context.
