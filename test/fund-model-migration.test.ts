@@ -208,3 +208,30 @@ describe("adopt on patch: the boot step (slice 4/7)", () => {
     expect(fundModelBootStep(planLifeFixture("household"), ALEX, 2)).toBeNull();
   });
 });
+
+describe("the island after sorting (slice 4 side effects)", () => {
+  it("names a household vet bill on the weather once it moves to Pets & family (accepted, M1), and keeps Health unnamed", async () => {
+    const { pathWeather } = await import("../src/core/pathWeather.ts");
+    let h = fundedHousehold();
+    for (const [note, subcategoryId, date] of [["Vet visit", "SUB-HEALTH-VET", "2026-09-17"], ["Therapy session", "SUB-HEALTH-THERAPY", "2026-09-18"]] as const) {
+      h = addRecurrence(h, { cadence: "monthly", nextDate: date, type: "expense", amount: "80", accountId: "ACC-VISA", subcategoryId, note, fundingDefault: { fundId: h.householdFund!.id, fundedCents: "full", destinationAccountId: "ACC-VISA" } }).household;
+    }
+    const labels = (x: Household) => pathWeather(x, "2026-09-15").days.map((day) => day.label).join(" | ");
+    expect(labels(h)).not.toContain("Vet visit");
+    const after = migrated(h);
+    expect(labels(after)).toContain("Vet visit");
+    expect(labels(after)).not.toContain("Therapy");
+  });
+  it("does not grow new cottages just because Housing became Home", async () => {
+    const { pathCategoryMappings } = await import("../src/core/pathWorld.ts");
+    let h = addCategory(catalogHousehold(), { name: "Cleaning supplies", type: "expense", parentId: "CAT-HOUSING" }).household;
+    h = addCategory(h, { name: "Pottery", type: "expense", parentId: "CAT-LIFE" }).household;
+    const signals = (x: Household) => Object.fromEntries(pathCategoryMappings(x).map((row) => [row.category.id, row.signal]));
+    const before = signals(h), after = signals(migrated(h));
+    const homeBefore = Object.keys(before).filter((id) => before[id] === "home");
+    const homeAfter = Object.keys(after).filter((id) => after[id] === "home");
+    expect(homeAfter).toEqual(homeBefore);
+    expect(after["SUB-HEALTH-VET"]).toBe("pets");
+    expect(Object.keys(after).filter((id) => after[id] !== before[id])).toEqual(Object.keys(after).filter((id) => after[id] !== before[id] && ["pets", "joy", "generosity", "travel"].includes(String(after[id]))));
+  });
+});
