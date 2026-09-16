@@ -15,8 +15,8 @@ import { planLifeFixture } from "./fixtures/plan-life.ts";
 const ALEX = "MEM-001", SAM = "MEM-002";
 const TODAY = "2026-09-16";
 
-let host: HTMLDivElement, root: Root, books: Household, viewer: string, calls: number, mounts = 0;
-beforeEach(() => { host = document.createElement("div"); document.body.append(host); root = createRoot(host); calls = 0; viewer = undefined as unknown as string; try { localStorage.removeItem(CELLAR_OWN_PAY_KEY); } catch { /* jsdom */ } });
+let host: HTMLDivElement, root: Root, books: Household, calls: number, mounts = 0;
+beforeEach(() => { host = document.createElement("div"); document.body.append(host); root = createRoot(host); calls = 0; try { localStorage.removeItem(CELLAR_OWN_PAY_KEY); } catch { /* jsdom */ } });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); vi.restoreAllMocks(); });
 
 function seeded(): Household {
@@ -47,7 +47,6 @@ function Phone({ memberId, today }: { memberId: string; today: string }) {
   });
 }
 async function show(memberId: string, today = TODAY) {
-  viewer = memberId;
   mounts += 1;
   await act(async () => root.render(createElement(Phone, { key: `${memberId}:${today}:${mounts}`, memberId, today })));
 }
