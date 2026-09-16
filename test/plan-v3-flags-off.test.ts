@@ -19,13 +19,13 @@ import { defaultFundSnapshotSource, planStudioFundSnapshot } from "../src/plan-v
 const ALEX = "MEM-001";
 const AUG = "2026-08-03T14:00:00.000Z";
 
-async function olderPhone(before: Household, after: Household) {
+async function olderPhone(before: Household, after: Household, drop: string[] = ["chapterVersion", "fundModelVersion"], set: Record<string, unknown> = {}) {
   const one = splitForSync(before, ALEX), two = splitForSync(before, "MEM-002");
   const state: AuthorityState = { sequence: before.revision, shared: one.shared, personal: new Map([[ALEX, one.personal], ["MEM-002", two.personal]]) };
   const scope: Scope = { environment: before.environment, householdId: before.householdId, memberId: ALEX, subject: "fictional", role: "owner", expires: Date.now() + 60000, aclEpoch: 1 };
   const command = await commandFromCapture(capturedIntent(after)!, scope, crypto.randomUUID());
-  // A build from before this branch sends neither stamp.
-  const { chapterVersion: _c, fundModelVersion: _f, ...older } = command as typeof command & { fundModelVersion?: number };
+  // A build from before this branch sends neither stamp (or, with `drop`, whichever stamps it lacks).
+  const older = { ...Object.fromEntries(Object.entries(command).filter(([key]) => !drop.includes(key))), ...set };
   return prepareCommand(state, older as typeof command, scope, () => {});
 }
 
@@ -81,5 +81,31 @@ describe("flags off: the household shape is main's (D-282, Our Story byte-identi
     // A list that was emptied still overwrites the old one.
     const emptied = ensureHouseholdShape({ ...h, fundModelRows: [] });
     expect(emptied.fundModelRows).toEqual([]);
+  });
+});
+
+describe("the version guards compose with main's journey (#497)", () => {
+  const era = { order: 1, name: "Moving in", finishLine: "Settle in", from: "2026-07", by: null, home: "flat" as const, finish: { kind: "agree" as const }, plans: [], crossedOn: null };
+  it("a household with eras but no money model refuses only a client without pathEraVersion", async () => {
+    const { proposePathEra } = await import("../src/core/pathEras.ts");
+    const { recordRitualHeld } = await import("../src/core/chapters.ts");
+    let base = openChapter(catalogHousehold(), { memberId: ALEX, foundationId: "see-our-shared-life", at: AUG }).household;
+    base = proposePathEra(base, { memberId: ALEX, spec: era, at: AUG }).household;
+    const write = () => recordRitualHeld(structuredClone(base), { memberId: ALEX, ritualId: base.rituals![0]!.id, onDate: "2026-08-05" }).household;
+    // Missing our stamps is fine here…
+    await expect(olderPhone(base, write())).resolves.toBeTruthy();
+    // …missing main's era stamp is not.
+    await expect(olderPhone(base, write(), ["pathEraVersion"])).rejects.toThrow(/journey/);
+  });
+  it("a sorted household without eras refuses only a client without fundModelVersion 2", async () => {
+    const { migrateFundModel } = await import("../src/core/fundModelCommands.ts");
+    const { recordRitualHeld } = await import("../src/core/chapters.ts");
+    let base = openChapter(catalogHousehold(), { memberId: ALEX, foundationId: "see-our-shared-life", at: AUG }).household;
+    base = migrateFundModel(base, { memberId: ALEX }).household;
+    const write = () => recordRitualHeld(structuredClone(base), { memberId: ALEX, ritualId: base.rituals![0]!.id, onDate: "2026-08-05" }).household;
+    // A money-model build (fundModelVersion 2) from before the journey is fine here…
+    await expect(olderPhone(base, write(), ["pathEraVersion"], { fundModelVersion: 2 })).resolves.toBeTruthy();
+    // …a build without the money model is not.
+    await expect(olderPhone(base, write(), ["fundModelVersion"])).rejects.toThrow(/how money is sorted/);
   });
 });
