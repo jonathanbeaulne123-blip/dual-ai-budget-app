@@ -4,6 +4,8 @@ import { bankGeometry, buildBankVessel, type BankForm, type BankGeometry, type B
 import { bisqueHex } from "../../kitty/studio/paintCanvas.ts";
 import { createKittySculpture, type KittySculpture } from "../../kitty/sculpture.ts";
 import type { KittyPieceV1 } from "../../core/types.ts";
+import { bankModelFor, loadBankModel, type BankModelKey } from "./bankModels.ts";
+import { queenModelResources } from "./queenModel.ts";
 
 /**
  * The two rooms, in three dimensions: **the cellar**, where Protect runs a
@@ -61,22 +63,34 @@ export type RoomVessel = {
    * the studio's own ten steps as it fills. Absent, the room's drawn bank.
    */
   studio?: { piece: KittyPieceV1; fired: boolean; step: number };
+  /**
+   * The Queen's household (2026-09-16): stand one of Jonathan's models here —
+   * a bill as its umbrella's bank, a pay jar as Clink or Poise. The model is
+   * never re-shaped: it is bisque above `fill` and its own glazed self below,
+   * and `glass` shows the whole of it frosted ("if all of it came in"). While
+   * it loads the seat stands nothing; if it can't load, the drawn vessel stands.
+   */
+  model?: { key: BankModelKey; glass?: boolean };
 };
 export type RoomRect = { x: number; y: number; w: number; h: number };
 export type RoomLayout = { host: RoomRect; seats: Record<string, RoomRect>; /** The cellar (2026-09-15): the rail and where its floor sits, so the room's furniture no longer follows the jars' sizes. */ stage?: RoomRect & { floor: number }; /** The loft's shelves (2026-09-15): one board per DOM shelf, top first. */ shelves?: RoomRect[] };
-export type RoomStats = { frames: number; lastFrameMs: number; maxFrameMs: number; vessels: number; ambient: boolean; geometries: number };
+export type RoomStats = { frames: number; lastFrameMs: number; maxFrameMs: number; vessels: number; ambient: boolean; geometries: number; /** Seats standing one of Jonathan's models. */ models?: number };
 
 const VISIBLE_HEIGHT = 10;
 const FOV = 34;
 /** A vessel is authored one unit tall; the seat's height in world units is its scale. */
 const VESSEL_HEIGHT = 1;
 
-export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRoom; reducedMotion?: boolean; onLost?: () => void }) {
+export type RoomModelLoader = (key: BankModelKey, signal?: AbortSignal) => Promise<THREE.Object3D>;
+
+export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRoom; reducedMotion?: boolean; onLost?: () => void; /** `null` never loads a model (tests, and the flat fallback). */ loadModel?: RoomModelLoader | null }) {
   const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true });
   renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = options.room === "cellar" ? 0.7 : 0.88;
+  // A model bank is glazed below its fill line and bisque above it: one clipping plane each.
+  renderer.localClippingEnabled = true;
   renderer.domElement.setAttribute("aria-hidden", "true");
   renderer.domElement.className = "queen-room-world__canvas";
   host.appendChild(renderer.domElement);
@@ -529,6 +543,115 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   };
   const dropStudio = (seat: StudioSeat) => { seat.sculpture.group.removeFromParent(); seat.sculpture.dispose(); };
 
+
+  // ---- Jonathan's models (2026-09-16) -------------------------------------
+  // Each model loads once and is a shared template; a seat is two clones of
+  // its scene graph that share its geometry. The lower clone wears the model's
+  // own materials (cloned only to carry a clipping plane) and stands below the
+  // fill line; the upper clone wears one chalky bisque and stands above it —
+  // the kiln grammar the drawn jars already use, without touching a mesh.
+  type ModelTemplate = { state: "loading" | "ready" | "failed"; template: THREE.Object3D | null; height: number; lift: number };
+  const templates = new Map<BankModelKey, ModelTemplate>();
+  const modelLoad = new AbortController();
+  cleanup.push(() => modelLoad.abort());
+  const loadModel = options.loadModel === undefined ? loadBankModel : options.loadModel;
+  let lastVessels: readonly RoomVessel[] = [];
+  const templateFor = (key: BankModelKey): ModelTemplate => {
+    const known = templates.get(key);
+    if (known) return known;
+    const entry: ModelTemplate = { state: loadModel && bankModelFor(key) ? "loading" : "failed", template: null, height: 1, lift: 0 };
+    templates.set(key, entry);
+    if (entry.state === "loading") {
+      loadModel!(key, modelLoad.signal)
+        .then((template) => {
+          if (dead) return;
+          template.updateWorldMatrix(true, true);
+          const bounds = new THREE.Box3().setFromObject(template);
+          entry.template = template;
+          entry.height = Math.max(0.05, bounds.max.y - bounds.min.y);
+          entry.lift = -bounds.min.y;
+          entry.state = "ready";
+          api.setVessels(lastVessels);
+        })
+        .catch(() => { if (dead) return; entry.state = "failed"; api.setVessels(lastVessels); });
+    }
+    return entry;
+  };
+  cleanup.push(() => {
+    for (const entry of templates.values()) {
+      if (!entry.template) continue;
+      const owned = queenModelResources(entry.template);
+      for (const g of owned.geometries) g.dispose();
+      for (const m of owned.materials) m.dispose();
+      for (const t of owned.textures) t.dispose();
+    }
+    templates.clear();
+  });
+  // Frosted glass that still writes depth, so only the model's outer surface shows and its insides don't crowd the glass.
+  const frostModel = mat(new THREE.MeshPhysicalMaterial({ color: "#dde8ee", roughness: 0.28, metalness: 0, clearcoat: 0.7, clearcoatRoughness: 0.2, transparent: true, opacity: 0.45 }));
+  type ModelSeat = { group: THREE.Group; glazed: THREE.Object3D; bisque: THREE.Object3D; below: THREE.Plane; above: THREE.Plane; own: THREE.Material[]; bisqueMat: THREE.Material; height: number; lift: number; key: string; vessel: RoomVessel };
+  const modelSeats = new Map<string, ModelSeat>();
+  const modelSeatKey = (v: RoomVessel) => `${v.model!.key}:${v.model!.glass ? "glass" : "clay"}`;
+  const buildModel = (vessel: RoomVessel, entry: ModelTemplate): ModelSeat => {
+    const group = new THREE.Group();
+    group.name = `queen-room-model-${vessel.id}`;
+    const holder = new THREE.Group();
+    holder.position.y = entry.lift;
+    group.add(holder);
+    const below = new THREE.Plane(new THREE.Vector3(0, -1, 0), 0);
+    const above = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const own: THREE.Material[] = [];
+    const glazed = entry.template!.clone(true);
+    const bisque = entry.template!.clone(true);
+    const glass = Boolean(vessel.model!.glass);
+    const bisqueMat = new THREE.MeshPhysicalMaterial({ color: "#e6ddce", roughness: 0.94, metalness: 0, clearcoat: 0, clippingPlanes: [above] });
+    const copies = new Map<string, THREE.Material>();
+    glazed.traverse((node) => {
+      if (!(node instanceof THREE.Mesh)) return;
+      const swap = (m: THREE.Material) => {
+        let copy = copies.get(m.uuid);
+        if (!copy) { copy = m.clone(); copy.clippingPlanes = [below]; copies.set(m.uuid, copy); own.push(copy); }
+        return copy;
+      };
+      node.material = Array.isArray(node.material) ? node.material.map(swap) : swap(node.material);
+    });
+    bisque.traverse((node) => {
+      if (node instanceof THREE.Mesh) node.material = glass ? frostModel : bisqueMat;
+    });
+    glazed.visible = !glass;
+    holder.add(glazed, bisque);
+    const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+    shadow.name = "queen-room-vessel-shadow";
+    shadow.rotation.x = -Math.PI / 2;
+    shadow.position.y = 0.004;
+    shadow.scale.setScalar(0.8);
+    group.add(shadow);
+    vesselsGroup.add(group);
+    return { group, glazed, bisque, below, above, own, bisqueMat, height: entry.height, lift: entry.lift, key: modelSeatKey(vessel), vessel };
+  };
+  /** Where the fill line stands in the world, from the seat's own place and scale. */
+  const placeFillLine = (seat: ModelSeat) => {
+    const v = seat.vessel;
+    if (v.model?.glass) { seat.above.constant = 1e4; seat.glazed.visible = false; seat.bisque.visible = true; return; }
+    const band = fillBand(v.fill);
+    const line = seat.group.position.y + seat.group.scale.y * seat.height * (band / BANDS);
+    seat.below.constant = band >= BANDS ? 1e4 : line;
+    seat.above.constant = -line;
+    seat.glazed.visible = band > 0;
+    seat.bisque.visible = band < BANDS;
+  };
+  const poseModel = (seat: ModelSeat, next: RoomVessel) => {
+    seat.vessel = next;
+    seat.group.rotation.z = next.refusing ? 0.16 : next.outlier ? 0.1 : 0;
+    placeFillLine(seat);
+  };
+  const dropModel = (seat: ModelSeat) => {
+    seat.group.removeFromParent();
+    seat.group.clear();
+    for (const m of seat.own) m.dispose();
+    seat.bisqueMat.dispose();
+  };
+
   // ---- placement ---------------------------------------------------------
   let hostRect: RoomRect = { x: 0, y: 0, w: host.clientWidth, h: host.clientHeight };
   let unitsPerPx = VISIBLE_HEIGHT / Math.max(1, host.clientHeight);
@@ -583,18 +706,44 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   renderer.domElement.addEventListener("webglcontextlost", lost);
   cleanup.push(() => renderer.domElement.removeEventListener("webglcontextlost", lost));
 
-  return {
+  const api = {
     scene,
     camera,
     renderer,
     room: options.room,
-    stats: () => ({ ...stats, vessels: seats.size + studios.size, geometries: geometries.size }),
+    stats: () => ({ ...stats, vessels: seats.size + studios.size + modelSeats.size, models: modelSeats.size, geometries: geometries.size }),
     /** The vessels on the rail or the ledge, by id. Rebuilt only for ids that arrive or leave. */
-    setVessels(list: readonly RoomVessel[]) {
+    setVessels(incoming: readonly RoomVessel[]) {
       if (dead) return;
+      lastVessels = incoming;
       const seen = new Set<string>();
+      const list: RoomVessel[] = [];
+      for (const vessel of incoming) {
+        if (!vessel.model) { list.push(vessel); continue; }
+        const entry = templateFor(vessel.model.key);
+        // Still on its way: stand nothing here yet, so no drawn jar flashes up first.
+        if (entry.state === "loading") continue;
+        if (entry.state === "failed") {
+          const { model, ...rest } = vessel;
+          list.push({ ...rest, ...(model.glass ? { frosted: true } : {}) });
+          continue;
+        }
+        seen.add(vessel.id);
+        const drawn = seats.get(vessel.id);
+        if (drawn) { drawn.group.removeFromParent(); drawn.group.clear(); seats.delete(vessel.id); }
+        const staleStudio = studios.get(vessel.id);
+        if (staleStudio) { dropStudio(staleStudio); studios.delete(vessel.id); }
+        const known = modelSeats.get(vessel.id);
+        if (known && known.key === modelSeatKey(vessel)) { poseModel(known, vessel); continue; }
+        if (known) dropModel(known);
+        const seat = buildModel(vessel, entry);
+        modelSeats.set(vessel.id, seat);
+        poseModel(seat, vessel);
+      }
       for (const vessel of list) {
         seen.add(vessel.id);
+        const staleModel = modelSeats.get(vessel.id);
+        if (staleModel) { dropModel(staleModel); modelSeats.delete(vessel.id); }
         if (vessel.studio) {
           const drawn = seats.get(vessel.id);
           if (drawn) { drawn.group.removeFromParent(); drawn.group.clear(); seats.delete(vessel.id); }
@@ -620,6 +769,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       }
       for (const [id, seat] of seats) if (!seen.has(id)) { seat.group.removeFromParent(); seat.group.clear(); seats.delete(id); }
       for (const [id, seat] of studios) if (!seen.has(id)) { dropStudio(seat); studios.delete(id); }
+      for (const [id, seat] of modelSeats) if (!seen.has(id)) { dropModel(seat); modelSeats.delete(id); }
       lastLayoutKey = "";
       invalidate();
     },
@@ -659,6 +809,18 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
         seat.sculpture.group.scale.setScalar(scale);
         floor = y;
         // The room's furniture follows the tallest bank on the rack, whatever its size.
+        tallest = Math.max(tallest, Math.min(1.6, rect.h * unitsPerPx));
+      }
+      for (const [id, seat] of modelSeats) {
+        const rect = next.seats[id];
+        seat.group.visible = Boolean(rect);
+        if (!rect) continue;
+        const [x, y] = toWorld(hostRect, rect.x + rect.w / 2, rect.y + rect.h);
+        const scale = (rect.h * unitsPerPx) / seat.height;
+        seat.group.position.set(x, y + (seat.vessel.lifted ? rect.h * unitsPerPx * 0.14 : 0), seat.vessel.outlier ? 0.6 : 0);
+        seat.group.scale.setScalar(scale);
+        placeFillLine(seat);
+        floor = y;
         tallest = Math.max(tallest, Math.min(1.6, rect.h * unitsPerPx));
       }
       // The cellar's rail is its own floor now that jars are sized by dollars: the furniture stands on the rail at a fixed scale.
@@ -711,6 +873,8 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       seats.clear();
       for (const seat of studios.values()) dropStudio(seat);
       studios.clear();
+      for (const seat of modelSeats.values()) dropModel(seat);
+      modelSeats.clear();
       for (const release of cleanup.splice(0).reverse()) { try { release(); } catch { /* keep releasing */ } }
       scene.clear();
       for (const g of geometries) g.dispose();
@@ -722,5 +886,6 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       renderer.domElement.remove();
     },
   };
+  return api;
 }
 export type QueenRoomWorld = ReturnType<typeof createQueenRoomWorld>;

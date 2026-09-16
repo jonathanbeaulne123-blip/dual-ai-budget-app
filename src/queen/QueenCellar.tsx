@@ -4,6 +4,7 @@ import type { QueenRibbon } from "../core/queenPresentation.ts";
 import { QueenBankFlat } from "./QueenBankFlat.tsx";
 import { QueenRoomWorld } from "./QueenRoomWorld.tsx";
 import type { RoomVessel } from "./world/queenRoomWorld.ts";
+import { umbrellaBankKey } from "./world/bankModels.ts";
 import type { CommitResult, Household } from "../core/types.ts";
 import type { DateKey } from "../core/calendar.ts";
 import { formatCad } from "../core/money.ts";
@@ -123,7 +124,17 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
   const vessels = useMemo<RoomVessel[]>(() => {
     const rows: RoomVessel[] = [];
     if (view === "bills" && railReading) {
-      for (const jar of railReading.jars) rows.push({ id: jar.id, kind: "bill", form: cellarBankForm(jar.type), tint: jar.umbrellaHue ?? (jar.hue === "clay" ? undefined : CELLAR_HUE_HEX[jar.hue]), finish: jar.finish, swell: 1, fill: jar.paid ? 1 : jar.fill, hollow: false, frosted: jar.type === "potential" && !jar.paid, outlier: false, lifted: heldId === jar.id });
+      for (const jar of railReading.jars) {
+        const frosted = jar.type === "potential" && !jar.paid;
+        // A sorted bill stands as its umbrella's bank (2026-09-16); a planned one is that bank in frosted glass.
+        const modelKey = umbrellaBankKey(jar.umbrellaId);
+        rows.push({ id: jar.id, kind: "bill", form: cellarBankForm(jar.type), tint: jar.umbrellaHue ?? (jar.hue === "clay" ? undefined : CELLAR_HUE_HEX[jar.hue]), finish: jar.finish, swell: 1, fill: jar.paid ? 1 : jar.fill, hollow: false, frosted, outlier: false, lifted: heldId === jar.id, ...(modelKey ? { model: { key: modelKey, glass: frosted } } : {}) });
+      }
+      // The pay jars stand as the partner's Work bank: Clink or Poise, frosted until pay day.
+      for (const extra of cellar3.extras) {
+        if (!extra.model) continue;
+        rows.push({ id: extra.id, kind: "goal", swell: 1, fill: extra.fill ?? 0, model: { key: `pay:${extra.model}`, glass: extra.kind === "income" } });
+      }
       return rows;
     }
     for (const jar of jars) {
@@ -131,7 +142,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
       if (jar.outlier) rows.push({ id: `${jar.monthKey}:ghost`, kind: "jar", swell: 1, fill: 0, hollow: true });
     }
     return rows;
-  }, [jars, view, railReading, heldId]);
+  }, [jars, view, railReading, heldId, cellar3.extras]);
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;

@@ -1,0 +1,551 @@
+{
+ "records": [
+  {
+   "theme": "classic",
+   "width": 320,
+   "height": 700,
+   "motion": "full",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "classic",
+   "width": 320,
+   "height": 700,
+   "motion": "full",
+   "gate": "sam-clink",
+   "day": 10,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "classic",
+   "width": 320,
+   "height": 700,
+   "motion": "full",
+   "gate": "alex-poise",
+   "day": 18,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "classic",
+   "width": 390,
+   "height": 844,
+   "motion": "full",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "classic",
+   "width": 390,
+   "height": 844,
+   "motion": "full",
+   "gate": "sam-clink",
+   "day": 10,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "classic",
+   "width": 390,
+   "height": 844,
+   "motion": "full",
+   "gate": "alex-poise",
+   "day": 18,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "classic",
+   "width": 390,
+   "height": 844,
+   "motion": "reduced",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "classic",
+   "width": 720,
+   "height": 900,
+   "motion": "full",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "classic",
+   "width": 720,
+   "height": 900,
+   "motion": "full",
+   "gate": "sam-clink",
+   "day": 10,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "classic",
+   "width": 720,
+   "height": 900,
+   "motion": "full",
+   "gate": "alex-poise",
+   "day": 18,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "classic",
+   "width": 1100,
+   "height": 800,
+   "motion": "full",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "classic",
+   "width": 1100,
+   "height": 800,
+   "motion": "full",
+   "gate": "sam-clink",
+   "day": 10,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "classic",
+   "width": 1100,
+   "height": 800,
+   "motion": "full",
+   "gate": "alex-poise",
+   "day": 18,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "newfoundland",
+   "width": 1100,
+   "height": 800,
+   "motion": "full",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "newfoundland",
+   "width": 320,
+   "height": 700,
+   "motion": "full",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "newfoundland",
+   "width": 390,
+   "height": 844,
+   "motion": "full",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "newfoundland",
+   "width": 720,
+   "height": 900,
+   "motion": "full",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "taylor",
+   "width": 1100,
+   "height": 800,
+   "motion": "full",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "taylor",
+   "width": 320,
+   "height": 700,
+   "motion": "full",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "taylor",
+   "width": 390,
+   "height": 844,
+   "motion": "full",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  },
+  {
+   "theme": "taylor",
+   "width": 720,
+   "height": 900,
+   "motion": "full",
+   "gate": "bill",
+   "day": 5,
+   "canvasLit": 1,
+   "payJars": [
+    "contribution:clink",
+    "income:poise"
+   ],
+   "models": [
+    "/models/banks/food.v1.glb.gz",
+    "/models/banks/fun.v1.glb.gz",
+    "/models/banks/health.v1.glb.gz",
+    "/models/banks/pay-clink.v2.glb.gz",
+    "/models/banks/pay-poise.v2.glb.gz",
+    "/models/banks/transport.v1.glb.gz",
+    "/models/banks/utilities.v1.glb.gz"
+   ],
+   "scroll": {
+    "x": 0,
+    "y": 0
+   }
+  }
+ ],
+ "errors": []
+}

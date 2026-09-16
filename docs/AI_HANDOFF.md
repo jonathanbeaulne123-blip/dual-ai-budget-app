@@ -1,5 +1,22 @@
 ## Plan Studio v3, integrated — the studio reads the money model, the cellar keeps its offers, pennants per umbrella (2026-09-16, D-282)
 
+## The Queen's household — umbrella banks in the cellar, Clink and Poise for pay (2026-09-16, D-282)
+
+Branch `claude/category-bank-models`, one commit on `claude/plan-studio-v3@3a704acf`. **Risk: Medium** (presentation; no schema, sync, command or money meaning). Behind the D-281 flags.
+- Budget (5): 0. The books are untouched; two presentation fields are read from shared facts only.
+- Engagement (3): +1. The cellar's bills become the Queen's household, and each partner's pay looks like them.
+- Details: [the worksession](worksessions/2026-09-16-category-bank-models.md).
+
+**What changed:** fourteen byte-exact models in `public/models/banks/`; `src/queen/world/bankModels.ts`; `RoomVessel.model` in `queenRoomWorld.ts`; `CellarJar.umbrellaId`; `CellarIncomeJar.payStyle` / `payCents`; the cellar and rail pass models; proof page `scripts/serve-bank-models-proof.mjs`; the Home proof seeds one shared shift for Sam.
+
+**Verification:** `test/bank-models.test.ts` (11) plus the cellar and Queen suites (95 tests in 9 files) pass; `tsc --noEmit` clean; browser evidence in `docs/evidence/bank-models/` (see its README).
+
+**Uncertainty:** real-phone GPU cost of up to twelve model seats plus the 1.4 MB pay pair is unmeasured (swiftshader only). Bills are small at the dollar scale, so the models read mainly when zoomed.
+
+**Next owner:** Jonathan applies the bundle on top of `claude/plan-studio-v3`; Codex reviews with that branch.
+
+## Plan Studio v3, integrated — the studio reads the money model, the cellar keeps its offers, pennants per umbrella (2026-09-16, D-281)
+
 Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`, then merges **`main@d7b0151b`** (#497). `git log origin/main..claude/plan-studio-v3` lists the commits the bundle carries. **Risk: High.** There is no new synced shape, schema or command.
 - Budget (5): +1.
 - Engagement (3): +1.
