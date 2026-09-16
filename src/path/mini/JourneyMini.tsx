@@ -152,7 +152,11 @@ export function JourneyMini(props: JourneyMiniProps) {
   const lastSeq = useRef(-1);
   const pendingSelect = useRef<string | null>(null);
 
+  // Two copies can be mounted (the page and the open world's corner) and both speak as "mini": a copy skips only
+  // its own echo (a change it shared a moment ago), and follows the other copy's moves.
+  const sharedAt = useRef(-Infinity);
   const share = useCallback((change: { level?: number; date?: DateKey; selected?: string | null }) => {
+    sharedAt.current = typeof performance !== "undefined" ? performance.now() : Date.now();
     const next: Parameters<JourneyFocusApi["set"]>[0] = {};
     if (change.level !== undefined) next.level = JOURNEY_LEVELS[change.level]!;
     if (change.date !== undefined) next.date = change.date;
@@ -176,7 +180,7 @@ export function JourneyMini(props: JourneyMiniProps) {
     const f = focus.focus;
     if (f.seq === lastSeq.current) return;
     lastSeq.current = f.seq;
-    if (f.source === "mini") return;
+    if (f.source === "mini" && (typeof performance !== "undefined" ? performance.now() : Date.now()) - sharedAt.current < 400) return;
     const nextLevel = LEVEL_INDEX[f.level] ?? levelRef.current;
     if (nextLevel !== levelRef.current) setLevelState(nextLevel);
     if (f.date && f.date !== dateRef.current) setDateState(f.date);
@@ -997,7 +1001,7 @@ export function JourneyMini(props: JourneyMiniProps) {
       <header className="journey-mini__head">
         <div>
           <h2 id="journey-mini-title">{head.title}</h2>
-          <p className="journey-mini__sub" title={head.sub}>{head.sub}{head.fig && <span className="journey-mini__fig-inline"> · {head.fig}</span>}{monthLoading && level <= 2 ? " · reading…" : ""}</p>
+          <p className="journey-mini__sub" title={head.sub}>{head.sub.replace(/(\S)–(\S)/g, "$1\u2060–\u2060$2")}{head.fig && <span className="journey-mini__fig-inline"> · {head.fig}</span>}{monthLoading && level <= 2 ? " · reading…" : ""}</p>
         </div>
         {head.fig && <p className="journey-mini__fig">{head.fig}</p>}
         <button type="button" className="journey-mini__list-toggle" aria-pressed={listOpen} onClick={() => setListOpen((v) => !v)}>{listOpen ? "Map" : "List"}</button>

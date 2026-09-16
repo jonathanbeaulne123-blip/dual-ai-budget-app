@@ -1017,7 +1017,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     const id = focus.selected && (first || !previous || previous.selected !== focus.selected) ? focus.selected : null;
     if (id && id !== "tent" && marks.some((mark) => mark.id === id)) {
       const hint = pickHint(id);
-      guardTrip(hint);
+      // Where the trip lands is shared back, so the simple view shows the world's distance too.
+      guardTrip(hint, WORLD_LEVEL_FOR[focus.level] !== hint);
       current.focus(id, hint);
       if (id !== selected && detailFor(id)) setSelected(id);
       const era = /^era:([^:]+)/.exec(id)?.[1] ?? null;

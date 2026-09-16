@@ -1,6 +1,7 @@
 /** Evidence for Our Path private footpaths and bridges (fictional books only). `node scripts/capture-path-footpaths.mjs` */
 import { chromium } from '@playwright/test';
 import { startOurPathWorldProof } from './serve-our-path-world-proof.mjs';
+import { drawer, onPage, openWorld } from './lib/path-world-game.mjs';
 
 const out = 'docs/evidence/our-path-world';
 const executablePath = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
@@ -16,12 +17,15 @@ async function page(width, height) {
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 const marks = (p) => p.evaluate(() => [...document.querySelectorAll('.path-world__outline button')].map((b) => b.textContent));
 async function outline(p, text) {
-  await p.evaluate(() => { const d = document.querySelector('.path-world__outline'); if (d) d.open = true; });
-  await p.locator('.path-world__outline button', { hasText: text }).first().click();
-  await p.evaluate(() => { document.querySelector('.path-world__outline').open = false; });
+  // The outline is on the page (behind the open world): pick there, and the world opens on the place.
+  await onPage(p, async () => {
+    await p.evaluate(() => { const d = document.querySelector('.path-world__outline'); if (d) d.open = true; });
+    await p.locator('.path-world__outline button', { hasText: text }).first().click();
+    await p.evaluate(() => { document.querySelector('.path-world__outline').open = false; });
+  });
 }
 const toStage = (p) => p.evaluate(() => window.scrollTo(0, document.querySelector('.path-world__stage').getBoundingClientRect().top + window.scrollY - 8));
-const ready = (p) => p.waitForFunction(() => window.__ready && document.querySelector('.path-world__host[data-live="true"]'), null, { timeout: 90_000 });
+const ready = async (p) => { await p.waitForFunction(() => window.__ready, null, { timeout: 90_000 }); await openWorld(p); };
 function assert(ok, message) { if (!ok) { errors.push(`assert: ${message}`); } }
 
 const proof = await startOurPathWorldProof({ port: 5198 });
@@ -70,7 +74,7 @@ try {
     const p = await page(1100, 860);
     await p.goto(`${proof.url}?theme=newfoundland&story=well&lantern=1&quality=full`);
     await ready(p);
-    await p.locator('#switch-member').click();
+    await onPage(p, () => p.locator('#switch-member').click());
     await wait(1500);
     const list = await marks(p);
     report.partnerMarks = list.filter((t) => /only you|Our Home|plank/.test(t));
@@ -93,6 +97,7 @@ try {
     const p = await page(width, 844);
     await p.goto(`${proof.url}?theme=taylor&story=well&lantern=1&quality=lite`);
     await ready(p);
+    await drawer(p);
     await p.getByRole('button', { name: 'Mine', exact: true }).click();
     const list = await marks(p);
     report[`phone-${width}`] = { overflow: await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth), footpathAfterMine: list.some((t) => t.includes('birthday surprise')) };
