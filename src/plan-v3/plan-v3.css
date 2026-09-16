@@ -105,7 +105,7 @@
 .pv3-main { min-width: 0; }
 .pv3-top { display: flex; align-items: center; justify-content: space-between; gap: 6px 10px; flex-wrap: wrap; }
 .pv3-top h1 { font-size: 1.6rem; }
-.pv3-chip { display: inline-flex; align-items: center; gap: 5px; font-size: .82rem; font-weight: 600; padding: 3px 10px 3px 6px; border-radius: 999px; border: 1.5px solid var(--pv3-line); background: var(--pv3-card); }
+.pv3-chip { margin: 0; display: inline-flex; align-items: center; gap: 5px; font-size: .82rem; font-weight: 600; padding: 3px 10px 3px 6px; border-radius: 999px; border: 1.5px solid var(--pv3-line); background: var(--pv3-card); }
 .pv3-chip--wait { border-style: dashed; } .pv3-chip--warn { border-color: var(--pv3-bad); color: var(--pv3-bad); }
 .pv3-chip__paws { display: inline-flex; }
 .pv3-paw { width: 16px; height: 16px; fill: var(--pine, #2c6a4e); opacity: .28; }
@@ -201,8 +201,8 @@
 .pv3-stonebtn[aria-pressed="true"]::after { content: ""; position: absolute; left: 3px; right: 3px; top: 11px; bottom: 11px; border: 2.5px solid var(--pv3-ink); border-radius: 50%; }
 .pv3-flow__herc { position: absolute; width: 40px; height: 40px; margin-left: -20px; pointer-events: none; }
 .pv3-flow__herc .hercules-stage { width: 40px; height: 40px; }
-.pv3-flow__weeks { display: flex; gap: 6px; margin-top: 4px; }
-.pv3-flow__weeks button { flex: 1; min-height: 44px; border: 1px solid var(--pv3-line); background: transparent; border-radius: 10px; cursor: pointer; font-size: .82rem; padding: 2px; }
+.pv3-flow__weeks { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.pv3-flow__weeks button { flex: 1 0 64px; min-height: 44px; border: 1px solid var(--pv3-line); background: transparent; border-radius: 10px; cursor: pointer; font-size: .82rem; padding: 2px; }
 .pv3-flow__day { border-top: 1px solid var(--pv3-line); margin-top: 8px; padding-top: 10px; min-height: 84px; }
 .pv3-flow__day h3 { font-size: 1rem; }
 .pv3-flow__day p { margin: 4px 0 0; font-size: .92rem; }
@@ -388,10 +388,6 @@
 @media (min-width: 720px) {
   .pv3 { padding: 12px 24px 24px; }
   .pv3-layout { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: start; }
-  .pv3-cols { grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); grid-template-areas: "court panel" "cta panel"; grid-template-rows: auto 1fr; column-gap: 24px; align-items: start; }
-  .pv3-court { grid-area: court; }
-  .pv3-flow { grid-area: panel; }
-  .pv3-cta { grid-area: cta; align-self: start; }
   .pv3-checkin { max-width: 640px; }
   .pv3-veil { justify-content: flex-end; align-items: stretch; }
   .pv3-veil .pv3-sheet { margin: 0; max-width: min(560px, 60vw); max-height: none; height: 100%; border-radius: 18px 0 0 18px; padding-top: 14px; }
@@ -414,6 +410,17 @@
   .pv3-dock__whisper { left: auto; right: calc(100% + 12px); bottom: auto; top: 40%; max-width: 260px; }
   .pv3-tally { position: sticky; left: auto; right: auto; bottom: 16px; }
   .pv3-toast { position: sticky; left: auto; right: auto; bottom: 16px; }
+}
+
+/* The court and the month sit side by side once the page is wide enough for both beside the rail. */
+@media (min-width: 1000px) {
+  .pv3-cols { grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); grid-template-areas: "court panel" "cta panel"; grid-template-rows: auto 1fr; column-gap: 24px; align-items: start; }
+  .pv3-court { grid-area: court; }
+  .pv3-flow { grid-area: panel; }
+  .pv3-cta { grid-area: cta; align-self: start; }
+}
+@media (min-width: 720px) and (max-width: 999px) {
+  .pv3-court { max-width: 520px; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

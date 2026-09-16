@@ -58,10 +58,11 @@ export function RestScreen({ household, memberId, view, today, model, highlight,
       <p className="pv3-kicker">{view === "household" ? "Our plan" : "My plan"}</p>
       <div className="pv3-top">
         <h1 tabIndex={-1} id="pv3-rest-heading">{model.monthLabel}</h1>
-        <span className={`pv3-chip${chipTone ? ` pv3-chip--${chipTone}` : ""}`} aria-label={model.firstVisit ? undefined : `${chipLabel}. ${agreement.paws.map(paw => `${paw.name} ${paw.agreed ? "agreed" : "not yet"}`).join(", ")}.`}>
+        <p className={`pv3-chip${chipTone ? ` pv3-chip--${chipTone}` : ""}`}>
           {!model.firstVisit && <span className="pv3-chip__paws" aria-hidden="true">{agreement.paws.map((paw, i) => <Paw key={paw.memberId} on={paw.agreed} tone={i ? "b" : "a"} />)}</span>}
-          <span aria-hidden={model.firstVisit ? undefined : true}>{model.firstVisit ? "No plan yet" : chipLabel}</span>
-        </span>
+          <span>{model.firstVisit ? "No plan yet" : chipLabel}</span>
+          {!model.firstVisit && <span className="pv3-sr">. {agreement.paws.map(paw => `${paw.name} ${paw.agreed ? "agreed" : "not yet"}`).join(", ")}.</span>}
+        </p>
       </div>
       <p className={`pv3-sent${model.sentenceTone === "attention" ? " is-bad" : ""}`} role="status">{model.sentence}</p>
       {agreement.draftChanges && <p className="pv3-note">Showing the agreed plan. Your private draft has changes only you can see.</p>}

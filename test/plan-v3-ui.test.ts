@@ -75,7 +75,7 @@ describe("the plan at rest", () => {
     expect(button(/^Read it and agree/).className).toContain("pv3-cta");
     // Nothing the money model does not supply is claimed.
     expect(host.textContent).not.toContain("not divided yet");
-    expect(host.querySelector(".pv3-chip")?.getAttribute("aria-label")).toContain("Alex (fictional) not yet, Sam (fictional) not yet");
+    expect(host.querySelector(".pv3-chip")?.textContent).toContain("Alex (fictional) not yet, Sam (fictional) not yet");
   });
 
   it("shows seven tools for the household, six for a personal plan, and at most one badge", async () => {

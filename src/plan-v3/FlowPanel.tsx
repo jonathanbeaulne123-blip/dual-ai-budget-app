@@ -75,7 +75,7 @@ export function FlowPanel({ flow, highlight, onClearHighlight, pose }: { flow: F
   };
   return (
     <section className="pv3-card pv3-flow" aria-labelledby={headingId} data-highlight={highlight ?? undefined}>
-      <div className="pv3-flow__head"><h2 id={headingId} tabIndex={-1}>Money through the month</h2><span className="pv3-muted pv3-amt">{flow.anyEstimated ? "Expected" : "In"} {moneyWords(flow.totalInCents)}</span></div>
+      <div className="pv3-flow__head"><h2 id={headingId} tabIndex={-1}>Money through the month</h2>{flow.totalInCents > 0 && <span className="pv3-muted pv3-amt">{flow.anyEstimated ? "Expected" : "In"} {moneyWords(flow.totalInCents)}</span>}</div>
       <div className="pv3-flow__key" aria-hidden="true">
         <span><i className="pv3-key pv3-key--queen" />contribution</span><span><i className="pv3-key pv3-key--prepare" />Prepare</span><span><i className="pv3-key pv3-key--protect" />Protect</span><span><i className="pv3-key pv3-key--build" />Build</span><span><i className="pv3-key pv3-key--water" />Everyday</span>
       </div>
