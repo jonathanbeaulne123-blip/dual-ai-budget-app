@@ -180,7 +180,7 @@ So the v3 check-in resumes only from the Shared Sitdown session, and the old stu
   - diff-check, ai-surface and TypeScript (59 s) passed.
   - 83 test files were selected, including `app-startup-p1`, `month-rehearsal-mainline`, `demo-suite`, `habitat`, `ledger-sync-*`, every `plan-*`, `queen*`, `path-*` and `fund-model*` file, and the workspace set.
   - `uiProofRequired: true` is answered by the browser run below.
-- The final run after the docs commit is recorded in `docs/AI_HANDOFF.md`.
+- At `c39c6ce8` (clean tree, after the docs commit): **`quick-gate-passed; time-budget-breached`**. It took 673.9 s; the same 83 files were selected, fast took 173.3 s and serial took 424.7 s.
 
 **Targeted suites for all three tracks** (113 files: `plan-`, `queen`, `kitty`, `path-`, `hercules-`, `fund-model`, `cellar-`, `chapter`, `sitdown`, `category-`, `our-path`, `ledger-sync`, `ledger-import-parity`, `app-startup-p1`, `month-rehearsal-mainline`, `onboarding-categories`):
 - 1119 passed, 6 failed and 7 skipped.

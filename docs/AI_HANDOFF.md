@@ -24,7 +24,7 @@ Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-st
 - `npx tsc --noEmit -p .` is clean.
 - **Quick gate at High** (`pnpm test -- --risk=high --focus=… --focus-reason=…`) at `5a5ce7d8`: `quick-gate-passed; time-budget-breached`.
   - 794.7 s in total: 83 files, of which serial took 552.7 s because of `demo-suite`.
-  - The final run after the docs commit is recorded below.
+  - Final run at `c39c6ce8` (clean tree, after the docs commit): `quick-gate-passed; time-budget-breached`. It took 673.9 s: 83 files, of which fast took 173.3 s and serial took 424.7 s.
 - **Targeted suites** for the three tracks: 113 files, 1119 passed.
 - **Failures that are not ours:**
   - 5 fail identically on a clean `6160fb03` worktree: `onboarding-categories` ×2, and `hercules-wardrobe-catalogue`, `-navigation` and `-ui`.
