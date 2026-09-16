@@ -802,6 +802,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const journeyRef = useRef(journey);
   journeyRef.current = journey;
   const worldLevel = useRef<PathLevel>(0);
+  const erasRef = useRef(eras);
+  erasRef.current = eras;
   /** Month `m` as a civil date: today for this month, otherwise the month's first day. */
   const dateForMonth = useCallback((m: number): DateKey | null => {
     const key = months[m]?.key;
@@ -824,7 +826,13 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
       const date = dateForMonth(Number(id.slice(6)));
       return { selected: id, level: "month", ...(date ? { date } : {}) };
     }
-    if (id.startsWith("era:") || id === "era-home" || id === "era-gate") return { selected: id, level: "era", ...(id.startsWith("era:") ? {} : { date: today }) };
+    if (id.startsWith("era:")) {
+      // Another era's island: the date moves to where that era begins, so both views read the same era.
+      const era = erasRef.current.find((row) => row.id === id.split(":")[1]);
+      const first = era ? (era.months[0] ?? era.spec.from) : null;
+      return { selected: id, level: "era", ...(first ? { date: (first === nowKey ? today : `${first}-01`) as DateKey } : {}) };
+    }
+    if (id === "era-home" || id === "era-gate") return { selected: id, level: "era", date: today };
     return { selected: id, level: JOURNEY_LEVEL_FOR_WORLD[pickHint(id)] };
   }, [dateForMonth, today]);
   // A camera trip the page asked for passes through other distances; only where it lands (or where the person
@@ -1017,8 +1025,14 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     const id = focus.selected && (first || !previous || previous.selected !== focus.selected) ? focus.selected : null;
     if (id && id !== "tent" && marks.some((mark) => mark.id === id)) {
       const hint = pickHint(id);
-      // Where the trip lands is shared back, so the simple view shows the world's distance too.
-      guardTrip(hint, WORLD_LEVEL_FOR[focus.level] !== hint);
+      guardTrip(hint);
+      // The world reads the pick as it would its own (an era is the Era level at its first month, a month is Month…):
+      // shared back, so both views say the same thing.
+      const meaning = focusChangeFor(id);
+      if ((meaning.level && meaning.level !== focus.level && !(meaning.level === "week" && focus.level === "day")) || (meaning.date && meaning.date.slice(0, 7) !== focus.date.slice(0, 7))) {
+        const { selected: _selected, ...rest } = meaning;
+        journeyRef.current.set(rest, "world");
+      }
       current.focus(id, hint);
       if (id !== selected && detailFor(id)) setSelected(id);
       const era = /^era:([^:]+)/.exec(id)?.[1] ?? null;

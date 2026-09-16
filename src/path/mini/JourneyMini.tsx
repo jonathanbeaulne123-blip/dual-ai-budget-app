@@ -1001,7 +1001,7 @@ export function JourneyMini(props: JourneyMiniProps) {
       <header className="journey-mini__head">
         <div>
           <h2 id="journey-mini-title">{head.title}</h2>
-          <p className="journey-mini__sub" title={head.sub}>{head.sub.replace(/(\S)–(\S)/g, "$1\u2060–\u2060$2")}{head.fig && <span className="journey-mini__fig-inline"> · {head.fig}</span>}{monthLoading && level <= 2 ? " · reading…" : ""}</p>
+          <p className="journey-mini__sub" title={head.sub}>{head.sub.split(/(\S+–\S+)/).map((part, i) => (i % 2 ? <span key={i} className="journey-mini__nowrap">{part}</span> : part))}{head.fig && <span className="journey-mini__fig-inline"> · {head.fig}</span>}{monthLoading && level <= 2 ? " · reading…" : ""}</p>
         </div>
         {head.fig && <p className="journey-mini__fig">{head.fig}</p>}
         <button type="button" className="journey-mini__list-toggle" aria-pressed={listOpen} onClick={() => setListOpen((v) => !v)}>{listOpen ? "Map" : "List"}</button>

@@ -351,3 +351,4 @@
 :root[data-motion="reduced"] :is(.journey-mini__shimmer, .journey-mini__stage[data-busy="true"]::after, .journey-mini__loading::before) { animation: none; }
 /* In the open world's corner the minimap fills its slot. */
 .path-hud__mini .journey-mini--compact { position: absolute; inset: 0; }
+.journey-mini__nowrap { white-space: nowrap; }

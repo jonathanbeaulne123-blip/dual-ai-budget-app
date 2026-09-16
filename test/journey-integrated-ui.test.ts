@@ -134,6 +134,25 @@ describe("One journey, two views (D-284 + D-285)", () => {
     expect(pageMini().querySelector("h2")?.textContent).toBe("Our journey");
   });
 
+  it("reads a minimap pick of another era the way the world does: that era, from its first month, in both copies", async () => {
+    const h = journeyHousehold();
+    const past = pathEras(h, TODAY).find((e) => e.state === "past")!;
+    await mount(h);
+    await openWorld();
+    const corner = cornerMini()!;
+    await click(levelButton(corner, "Journey"));
+    await loaded();
+    const label = [...corner.querySelectorAll<HTMLButtonElement>(".journey-mini__label")].find((b) => b.dataset.place === `era:${past.id}`)!;
+    await click(label);
+    await loaded();
+    expect(world().focus).toHaveBeenLastCalledWith(`era:${past.id}`, 2);
+    expect($(".path-world__card h3").textContent).toBe(past.spec.name);
+    expect($(".path-hud__caption").textContent).toContain(past.spec.name);
+    expect(cornerMini()!.dataset.level).toBe("3");
+    expect(pageMini().dataset.level).toBe("3");
+    expect(pageMini().querySelector("h2")?.textContent).toContain(past.spec.name);
+  });
+
   it("keeps Replay on the simple view's month, and the simple view on Replay's", async () => {
     const h = journeyHousehold();
     const months = pathMonths(h, TODAY, { from: "2026-07", through: "2026-09" });
