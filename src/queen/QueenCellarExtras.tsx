@@ -11,6 +11,7 @@ import {
 import type { CellarDay } from "../core/queenCellar.ts";
 import { ConfirmSheet } from "../Confirm.tsx";
 import { cellarV3Enabled } from "./cellarV3Flag.ts";
+import { payBankFor } from "./world/bankModels.ts";
 import type { CellarRailExtra } from "./QueenCellarRail.tsx";
 import { cellarDayLabel } from "./QueenCellarRail.tsx";
 
@@ -63,8 +64,8 @@ export function useCellarExtras(input: { household?: Household; memberId?: strin
       if (jar.date < monthStart) continue;
       const who = jar.mine ? "Your" : `${jar.memberName}'s`;
       rows.push(jar.state === "hypothetical"
-        ? { id: jar.id, date: jar.date, kind: "income", cents: jar.expectedCents, label: `${who} pay, ${cellarDayLabel(jar.date)} — glass: if all of it came in. Not money in the Fund.` }
-        : { id: jar.id, date: jar.date, kind: "contribution", cents: jar.contributedCents, fill: jar.contributedCents > 0 ? 1 : 0, label: `${who} contributions since pay day, ${cellarDayLabel(jar.date)} — a kitty bank of what actually came in` });
+        ? { id: jar.id, date: jar.date, kind: "income", cents: jar.expectedCents, model: payBankFor(jar.payStyle), label: `${who} pay, ${cellarDayLabel(jar.date)} — glass: if all of it came in. Not money in the Fund.` }
+        : { id: jar.id, date: jar.date, kind: "contribution", cents: jar.contributedCents, model: payBankFor(jar.payStyle), fill: contributionGlaze(jar), label: `${who} contributions since pay day, ${cellarDayLabel(jar.date)} — a kitty bank of what actually came in` });
     }
     for (const entry of missing?.open ?? []) {
       rows.push({ id: entry.id, date: entry.railDate, kind: entry.kind, cents: entry.usualCents, stage: entry.stage,
@@ -75,6 +76,12 @@ export function useCellarExtras(input: { household?: Household; memberId?: strin
   const toggleOwnPay = () => setOwnPay((current) => { storeOwnPayOptIn(!current); return !current; });
   const myPayHidden = Boolean(household && memberId && hiddenPayMembers(household).has(memberId));
   return { missing, income, extras, ownPay, toggleOwnPay, myPayHidden };
+}
+
+/** How far up the contribution bank is glazed: against the pay it imagined when that was shared, otherwise all or nothing. */
+export function contributionGlaze(jar: Pick<CellarIncomeJar, "contributedCents" | "payCents">): number {
+  if (jar.contributedCents <= 0) return 0;
+  return jar.payCents > 0 ? Math.min(1, jar.contributedCents / jar.payCents) : 1;
 }
 
 /** A short burst of sparks when a missing jar is opened. Reduced motion shows the sparks still (CSS). */

@@ -49,6 +49,19 @@ export type CellarIncomeJar = {
   /** Contributed only: the member's confirmed Fund contributions from this pay date until their next one. */
   contributedCents: number;
   sources: IncomeJarSource[];
+  /**
+   * How this partner is paid, from household-visible facts only (2026-09-16):
+   * `shifts` when they keep a Work pay schedule (`earningCadence`, timing
+   * only) or have shared a shift; otherwise `salary`. The room stands Clink
+   * or Poise from it. Both phones read the same answer.
+   */
+  payStyle: "shifts" | "salary";
+  /**
+   * Contributed only: the pay the glass jar imagined for this date, when it
+   * was shared and not hidden (0 otherwise). It only sets how far up the bank
+   * is glazed; the card's words never show it.
+   */
+  payCents: number;
 };
 
 export type IncomeJarReading = {
@@ -140,6 +153,9 @@ export function cellarIncomeJars(household: Household, input: {
   for (const member of household.members.filter((row) => row.active)) {
     const mine = member.id === memberId;
     const privateToo = mine && input.ownPrivateOptIn === true;
+    const payStyle: CellarIncomeJar["payStyle"] = memberEarningSchedule(household, member.id)
+      || (household.shifts ?? []).some((shift) => shift.memberId === member.id && (shift.visibility === "household" || shift.visibility === "both"))
+      ? "shifts" : "salary";
     // Expected pay by date, and where it came from.
     const pay = new Map<DateKey, { cents: number; sources: Set<IncomeJarSource> }>();
     const add = (date: DateKey, cents: number, source: IncomeJarSource) => {
@@ -179,7 +195,8 @@ export function cellarIncomeJars(household: Household, input: {
         const contributedCents = contributions
           .filter((event) => event.contributorMemberId === member.id && event.date >= date && event.date < next)
           .reduce((sum, event) => sum + event.amountCents, 0);
-        jars.push({ id: `income:${member.id}:${date}`, memberId: member.id, memberName: member.name, mine, date, state: "contributed", expectedCents: 0, ifAllCents: null, contributedCents, sources: [] });
+        const payCents = hiddenIds.has(member.id) ? 0 : expected?.cents ?? 0;
+        jars.push({ id: `income:${member.id}:${date}`, memberId: member.id, memberName: member.name, mine, date, state: "contributed", expectedCents: 0, ifAllCents: null, contributedCents, sources: [], payStyle, payCents });
         continue;
       }
       if (!expected || hiddenIds.has(member.id)) continue;
@@ -187,7 +204,7 @@ export function cellarIncomeJars(household: Household, input: {
       jars.push({
         id: `income:${member.id}:${date}`, memberId: member.id, memberName: member.name, mine, date, state: "hypothetical",
         expectedCents: expected.cents, ifAllCents: water === undefined ? null : Math.max(0, water) + expected.cents,
-        contributedCents: 0, sources: [...expected.sources].sort(),
+        contributedCents: 0, sources: [...expected.sources].sort(), payStyle, payCents: 0,
       });
     }
   }

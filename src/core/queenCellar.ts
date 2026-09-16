@@ -4,7 +4,7 @@ import type { KittyNest, NestBank } from "./kittyNest.ts";
 import type { NestCategory } from "./kittyNestDesigns.ts";
 import type { Household } from "./types.ts";
 import { umbrellaHueForCategory } from "./fundModel.ts";
-import { fundModelMode } from "./fundRules.ts";
+import { fundModelMode, umbrellaOfCategory, type UmbrellaId } from "./fundRules.ts";
 
 /**
  * The cellar as the Fund walk, walked.
@@ -67,6 +67,12 @@ export type CellarJar = {
    * sculptures prefer over the name-read `hue`. Null before the migration.
    */
   umbrellaHue: string | null;
+  /**
+   * The umbrella itself, on the same terms as `umbrellaHue` (sorted households
+   * only), so the room can stand the umbrella's own bank (2026-09-16). Null
+   * before the migration. Presentation only.
+   */
+  umbrellaId: UmbrellaId | null;
   finish: CellarFinish;
   size: CellarSize;
   targetCents: number;
@@ -153,7 +159,7 @@ export function cellarSize(targetCents: number, largestCents: number): CellarSiz
 
 /** Where a bank's money is filed: the category line and its group, from the source the bank came from. */
 type CellarBooks = Pick<Household, "recurrences" | "categories" | "potentialExpenses"> & Partial<Pick<Household, "fundModelRows">>;
-function cellarFiling(bank: Pick<NestBank, "designKey">, household: CellarBooks): { groupName: string | null; lineName: string | null; hue: CellarHue; umbrellaHue: string | null; finish: CellarFinish } {
+function cellarFiling(bank: Pick<NestBank, "designKey">, household: CellarBooks): { groupName: string | null; lineName: string | null; hue: CellarHue; umbrellaHue: string | null; umbrellaId: UmbrellaId | null; finish: CellarFinish } {
   const [source, id] = bank.designKey.split(":");
   const subcategoryId = source === "recurrence" ? household.recurrences.find((row) => row.id === id)?.subcategoryId
     : source === "potential" ? (household.potentialExpenses ?? []).find((row) => row.id === id)?.subcategoryId
@@ -162,8 +168,10 @@ function cellarFiling(bank: Pick<NestBank, "designKey">, household: CellarBooks)
   const group = line?.parentId ? household.categories.find((row) => row.id === line.parentId) : null;
   const siblings = group ? household.categories.filter((row) => row.parentId === group.id && row.active !== false).sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || a.id.localeCompare(b.id)) : [];
   const index = line ? Math.max(0, siblings.findIndex((row) => row.id === line.id)) : 0;
-  const umbrellaHue = fundModelMode(household as Household) === 2 ? umbrellaHueForCategory(household as Household, subcategoryId) : null;
-  return { groupName: group?.name ?? null, lineName: line?.name ?? null, hue: cellarHue(group?.name ?? line?.name), umbrellaHue, finish: cellarFinish(index) };
+  const sorted = fundModelMode(household as Household) === 2;
+  const umbrellaHue = sorted ? umbrellaHueForCategory(household as Household, subcategoryId) : null;
+  const umbrellaId = sorted ? umbrellaOfCategory(household, subcategoryId) : null;
+  return { groupName: group?.name ?? null, lineName: line?.name ?? null, hue: cellarHue(group?.name ?? line?.name), umbrellaHue, umbrellaId, finish: cellarFinish(index) };
 }
 
 const daysBetween = (from: DateKey, to: DateKey) => Math.round((Date.parse(`${to}T12:00:00Z`) - Date.parse(`${from}T12:00:00Z`)) / 86_400_000);
@@ -198,6 +206,7 @@ export function cellarJars(nest: Pick<KittyNest, "categories" | "history">, hous
       lineName: filing.lineName,
       hue: filing.hue,
       umbrellaHue: filing.umbrellaHue,
+      umbrellaId: filing.umbrellaId,
       finish: filing.finish,
       size: cellarSize(targetCents, largestCents),
       targetCents,

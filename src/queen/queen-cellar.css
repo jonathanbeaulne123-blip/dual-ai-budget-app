@@ -253,6 +253,9 @@
   font: 700 10px/1 var(--mono); color: #fff; background: var(--copper); box-shadow: 0 0 0 2px var(--paper); }
 .queen-room--cellar .queen-extrajar--missing.is-rolled .queen-extrajar__mark { background: color-mix(in srgb, var(--theme-second, #4f6b4a) 85%, var(--ink)); }
 .queen-room--cellar .queen-extrajar--missing.is-rolled .queen-extrajar__ghost { stroke-dasharray: none; opacity: .7; }
+/* A pay jar with a Work bank behind it (2026-09-16): the live room draws Clink or Poise, so the drawn jar yields; the "if" stays, because the glass is conditional. */
+.queen-room--cellar[data-world="3d"] .queen-extrajar[data-modelled] { width: calc(var(--jar-px, 20px) * .9); }
+.queen-room--cellar[data-world="3d"] .queen-extrajar[data-modelled] .queen-extrajar__svg { visibility: hidden; }
 .queen-room--cellar .queen-jar--extra.is-open .queen-extrajar { transform: translateY(-3px) scale(1.06); transform-origin: 50% 100%; }
 :root[data-theme="taylor"] .queen-room--cellar .queen-extrajar__glass { stroke-dasharray: 3 3; }
 :root[data-theme="newfoundland"] .queen-room--cellar .queen-extrajar__mark { box-shadow: 0 0 0 2px color-mix(in srgb, var(--paper) 80%, #0d2a30); }

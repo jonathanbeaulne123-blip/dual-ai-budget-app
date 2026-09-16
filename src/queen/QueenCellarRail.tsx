@@ -3,6 +3,7 @@ import type { CellarDay, CellarJar, CellarReading } from "../core/queenCellar.ts
 import { QueenBankFlat } from "./QueenBankFlat.tsx";
 import type { BankForm } from "./world/queenBankSculpture.ts";
 import { BANK_DRESS_WORDS } from "./world/queenBankDress.ts";
+import type { PayBankId } from "./world/bankModels.ts";
 import { CELLAR_CELL_ZOOM_MAX, CELLAR_ZOOM, cellarCellPx, cellarScale, clampCellarZoom, stepCellarZoom } from "./cellarZoom.ts";
 import "./queen-cellar.css";
 
@@ -63,12 +64,14 @@ export type CellarRailExtra = {
   fill?: number;
   /** For a missing mark: where the roll stands. */
   stage?: string;
+  /** Pay jars (2026-09-16): which Work bank stands for this partner in the 3D room. */
+  model?: PayBankId;
 };
 
 export function CellarExtraGlyph({ extra }: { extra: CellarRailExtra }) {
   if (extra.kind === "income") {
     return (
-      <span data-extra-seat="" className="queen-extrajar queen-extrajar--income" aria-hidden="true">
+      <span data-extra-seat="" data-room-seat={extra.model ? "" : undefined} data-modelled={extra.model} className="queen-extrajar queen-extrajar--income" aria-hidden="true">
         <svg viewBox="0 0 60 100" preserveAspectRatio="none" className="queen-extrajar__svg">
           <path className="queen-extrajar__glass" d="M16 6 H44 V14 C52 20 56 30 56 44 V88 C56 94 52 98 46 98 H14 C8 98 4 94 4 88 V44 C4 30 8 20 16 14 Z" />
           <path className="queen-extrajar__shine" d="M12 40 V82" />
@@ -80,7 +83,7 @@ export function CellarExtraGlyph({ extra }: { extra: CellarRailExtra }) {
   if (extra.kind === "contribution") {
     const level = Math.max(0, Math.min(1, extra.fill ?? 0));
     return (
-      <span data-extra-seat="" className={`queen-extrajar queen-extrajar--contribution${level > 0 ? "" : " is-empty"}`} aria-hidden="true">
+      <span data-extra-seat="" data-room-seat={extra.model ? "" : undefined} data-modelled={extra.model} className={`queen-extrajar queen-extrajar--contribution${level > 0 ? "" : " is-empty"}`} aria-hidden="true">
         <svg viewBox="0 0 60 100" preserveAspectRatio="none" className="queen-extrajar__svg">
           <path className="queen-extrajar__bank" d="M6 30 C6 16 16 8 30 8 C44 8 54 16 54 30 V88 C54 94 50 98 44 98 H16 C10 98 6 94 6 88 Z" />
           {level > 0 && <rect className="queen-extrajar__coins" x="8" y={98 - 88 * level} width="44" height={88 * level} rx="6" />}
@@ -232,7 +235,7 @@ export function QueenCellarRail({ reading, cursor, onCursor, heldId, zoom = CELL
                   ))}
                   {(extrasByDay.get(row.date) ?? []).map((extra) => (
                     <button key={extra.id} type="button" className={`queen-jar queen-jar--extra queen-jar--${extra.kind}${index === at ? " is-in-gate" : ""}${openId === extra.id ? " is-open" : ""}`}
-                      data-cellar-extra={extra.id} data-kind={extra.kind} style={{ ["--jar-px" as string]: `${scale.jarPx(extra.cents)}px` }}
+                      data-cellar-extra={extra.id} data-room-vessel={extra.model ? extra.id : undefined} data-kind={extra.kind} style={{ ["--jar-px" as string]: `${scale.jarPx(extra.cents)}px` }}
                       aria-current={index === at ? "true" : undefined} aria-expanded={onPickExtra ? openId === extra.id : undefined}
                       aria-label={extra.label}
                       onClick={() => { onCursor(index); onPickExtra?.(extra); }}>
