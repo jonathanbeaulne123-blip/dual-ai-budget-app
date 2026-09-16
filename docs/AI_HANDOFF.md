@@ -1,3 +1,52 @@
+## The money model — Everyday Queen, Prepare / Protect / Build, 12 umbrellas, Chapters as months (2026-09-16, D-268 – D-272)
+
+Branch `claude/plan-v3-money` on `main@6160fb03`: nine commits, delivered locally. **Risk: High.** The change touches money meaning, adds a new synced non-money collection (`fundModelRows`), adds two command stamps (`fundModelVersion`, `chapterVersion`), and changes Hercules context.
+- Budget (5): +3. Every line has one fund. Prepare fills first. Goal money is never counted toward bills. Now reconciles to the cent.
+- Engagement (3): +1. The 12-tile category grid, words that match the Queen's banks, and Chapters as months.
+- Details, the API and what wasn't built: [the worksession](worksessions/2026-09-16-money-model.md).
+
+**What changed:**
+- `src/core/fundRules.ts`: rules, umbrellas, `fundFor`, `allocateFunds`, and the collection.
+- `src/core/fundModelCommands.ts`: the household and personal migration, overrides, `setCategoryHome`, and the division and refill proposals.
+- `src/core/fundModel.ts`: the pure selectors, including `fundSnapshot`.
+- `projectKittyNest` now runs in v2.
+- The umbrella lock is enforced across every writer that could create a group.
+- The words moved with the numbers: planGuide, workbench, adoption, drift, lessons, the Kitty Nest, the Queen and Hercules tool text.
+- Chapters gained `intendedMonth`, reminders and `closeChapterAtSitdown`.
+- Category UI: the add-category grid, onboarding umbrellas, and activity filters.
+- `src/fundModelBoot.ts` plus the App effect and reload banner.
+- Island label guard.
+
+**Verification:**
+- `npx tsc --noEmit -p .` is clean.
+- Quick gate: `pnpm test -- --risk=high --focus=test/fund-model*.test.ts …` → `quick-gate-passed`.
+  - 64 files: 691 passed and 7 skipped, plus 107 serial tests.
+  - 203.6 s of a 300 s budget.
+  - Selected tests include `app-startup-p1` and `month-rehearsal-mainline`.
+  - The gate flagged `uiProofRequired: true`. No browser captures were taken in this session.
+- Additional targeted runs, all green:
+  - 48 `plan-*`/`queen*`/`kitty*`/`path-*`/`hercules-*` files, 477 tests.
+  - `ledger-import-parity`, `category-*` and the ledger-sync set.
+- `test/onboarding-categories.test.ts`: 2 tests fail identically on clean `main` (a Chapter 9 merge through the command boundary). This is pre-existing and not masked.
+
+**Uncertainty:**
+- Codex trust review is needed for the stamp matrix, the collection, the migration payload and the Hercules marker/override context.
+- Once a household is sorted, or any Chapter carries a month, pre-branch clients fail closed. Both phones need the release first.
+- Defaulted answers are listed in D-268 – D-272 ("defaulted, confirm").
+- There is no Production revert.
+- Demo-suite plans still hold Protect bill lines, so the guard refuses them.
+- Visual evidence (320/390/720/1100 × three themes) for the grid, banner and reminder is still owed.
+
+**Environment:** fictional fixtures only; nothing hosted; flag `VITE_FUND_MODEL_V2` off by default.
+
+**State:** not pushed, not a PR, not merged, not deployed, not live-verified.
+
+**Next owner:**
+1. Codex: trust review.
+2. Jonathan: answer the defaulted questions, then approve turning the flag on in Development.
+3. The Studio track: consume `fundModel.ts`.
+4. The Cellar track: read `umbrellaHueForCategory`, and the Q-E consent work.
+
 ## Our Path, next level — sturdy island, then the app comes onto it (2026-09-15, D-264)
 
 Branch `claude/our-path-next-level` on `origin/main@fe0cb3bb` (#489), delivered as a bundle and a patch. **Risk: High** — a new per-feature capability flag on the ledger command (`pathWorldVersion`, mirroring D-245), and owner-only Personal rows (footpaths, private bridge planks) drawn on the household surface. Jonathan's two calls today: the Together tab stays its own tab and the campfire is a door to it; step 2 started with the Kitty studio. Budget (5): +0/+1 — nothing posts; the island gains doors to the Fund, Calendar, planner, Together, Charter, Time Machine, Play and the Kitty room. Engagement (3): +3. Details, orchestration log, evidence and every "one step further" idea: [the worksession](worksessions/2026-09-15-our-path-next-level.md).
