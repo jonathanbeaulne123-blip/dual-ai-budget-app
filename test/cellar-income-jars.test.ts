@@ -56,14 +56,14 @@ describe("Hypothetical income jars — glass until the pay date, then the contri
     expect(reading.unshared).toEqual([]);
     const [, sam11, alex18] = reading.jars;
     expect(incomeJarWords(alex18!, formatCad)).toBe("If all of your pay came in — about $2100.00 — the Fund could stand at $4600.00. Only a contribution moves money.");
-    expect(incomeJarWords(sam11!, formatCad)).toBe("Sam (fictional) contributed $300.00 to the Fund since Sam (fictional)'s pay day.");
+    expect(incomeJarWords(sam11!, formatCad)).toBe("Sam (fictional) contributed $300.00 to the Fund since their pay day.");
   });
 
   it("on the pay date the glass jar is gone and the bank takes its place", () => {
     const h = contribute(books(), ALEX, "2026-09-18", "150");
     const onTheDay = brief(h, ALEX, { today: "2026-09-18" }).find((row) => row[0] === "Alex" && row[1] === "2026-09-18");
     expect(onTheDay).toEqual(["Alex", "2026-09-18", "contributed", 0, null, 15000, ""]);
-    expect(incomeJarWords(view(h, SAM, { today: "2026-09-18" }).jars.find((jar) => jar.id === `income:${ALEX}:2026-09-18`)!, formatCad)).toBe("Alex (fictional) contributed $150.00 to the Fund since Alex (fictional)'s pay day.");
+    expect(incomeJarWords(view(h, SAM, { today: "2026-09-18" }).jars.find((jar) => jar.id === `income:${ALEX}:2026-09-18`)!, formatCad)).toBe("Alex (fictional) contributed $150.00 to the Fund since their pay day.");
   });
 
   it("privacy: a partner's Personal shift never shapes their jar, on either phone", () => {
