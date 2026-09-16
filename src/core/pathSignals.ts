@@ -272,10 +272,12 @@ export function pathMonths(household: Household, today: DateKey): PathMonth[] {
         byUmbrella.set(umbrella, (byUmbrella.get(umbrella) ?? 0) + Math.abs(tx.amountCents));
       }
       umbrellas = {};
+      // Card payments and moves between our accounts are not spending: they never dilute an umbrella's share (review M4).
+      const spendingCents = SPENDING_UMBRELLAS.reduce((sum, umbrella) => sum + (byUmbrella.get(umbrella.id) ?? 0), 0);
       for (const umbrella of SPENDING_UMBRELLAS) {
         const cents = byUmbrella.get(umbrella.id) ?? 0;
-        if (cents <= 0 || expenseCents <= 0) continue;
-        umbrellas[umbrella.id] = clamp(0.3 + (cents / expenseCents) * 2);
+        if (cents <= 0 || spendingCents <= 0) continue;
+        umbrellas[umbrella.id] = clamp(0.3 + (cents / spendingCents) * 2);
         why[`umbrella:${umbrella.id}`] = `Spending under ${umbrella.name}`;
       }
     }

@@ -77,7 +77,7 @@ export const UMBRELLAS: readonly Umbrella[] = [
   { id: "work-learning", rowId: "CAT-WORK", name: "Work & learning", rule: "Costs of earning and studying", spending: true, transactionType: "expense", hue: "#6b6fa8", glyph: "🧰", sortOrder: 60 },
   { id: "money", rowId: "UMB-MONEY", name: "Money", rule: "The cost of money and where the future goes", spending: true, transactionType: "expense", hue: "#4f7f5f", glyph: "🏦", sortOrder: 62 },
   { id: "coming-in", rowId: "INCOME", name: "Coming in", rule: "Pay, tips, interest and refunds (not spending)", spending: false, transactionType: "income", hue: "#7a9a3a", glyph: "⬇️", sortOrder: 10 },
-  { id: "moving-money", rowId: "UMB-MOVING-MONEY", name: "Moving money", rule: "Card payments and moves between our own accounts (not spending)", spending: false, transactionType: "expense", hue: "#8a8f98", glyph: "↔️", sortOrder: 90 },
+  { id: "moving-money", rowId: "UMB-MOVING-MONEY", name: "Moving money", rule: "Card payments and moves between our own accounts. Record new ones as a transfer; older lines filed here still count in spending totals", spending: false, transactionType: "expense", hue: "#8a8f98", glyph: "↔️", sortOrder: 90 },
 ];
 export const SPENDING_UMBRELLAS: readonly Umbrella[] = UMBRELLAS.filter((row) => row.spending);
 export const UMBRELLA_IDS: readonly UmbrellaId[] = UMBRELLAS.map((row) => row.id);
@@ -387,6 +387,15 @@ export function umbrellaOfCategory(h: Pick<Household, "categories">, categoryId:
 export function isNonSpendingCategory(h: Pick<Household, "categories">, categoryId: string): boolean {
   const umbrella = umbrellaOfCategory(h, categoryId);
   return umbrella === "moving-money" || categoryId === LEGACY_CARD_PAYMENT_ID && fundModelMode(h as Household) === 2;
+}
+
+/**
+ * D-281 (review M4): whether a picker for *new* spending offers this category. Sorted households hide the
+ * Moving-money children (the legacy card-payment line included), so a card payment is recorded through the
+ * app's existing transfer path; the line already chosen on a form stays offered so editing never drops it.
+ */
+export function offeredForNewSpending(h: Pick<Household, "categories" | "fundModelRows">, categoryId: string, keepId?: string | null): boolean {
+  return categoryId === keepId || !isNonSpendingCategory(h, categoryId);
 }
 
 /** The expense groups a person may file a new child under. v2: exactly the 12 spending umbrellas, in their fixed order. */

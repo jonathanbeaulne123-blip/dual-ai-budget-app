@@ -475,6 +475,7 @@ import { AddSlideshow, type AddFormFields, type AddMode } from "./AddSlideshow.t
 import { AddCategoryForm } from "./AddCategoryForm.tsx";
 import { fundModelBootNotice, fundModelBootStep, fundModelReloadRequired, harmlessFundModelBootRefusal, saveFundModelSnapshot } from "./fundModelBoot.ts";
 import { fundModelPersonalUpdateAllowed } from "./fundModelPersonalRule.ts";
+import { offeredForNewSpending } from "./core/fundRules.ts";
 import { FUND_MODEL_RELOAD_MESSAGE, clientFundModelVersion } from "./ledgerSync/fundModelStamp.ts";
 import { defaultSubcategoryForMode } from "./addSlideshow.ts";
 import { FabSpeedDial } from "./FabSpeedDial.tsx";
@@ -5893,7 +5894,7 @@ export function App() {
   const googleStepUpExtra = googleConfigured() && memberNeedsGoogleStepUp(household, session.memberId)
     ? "Because your Google account is linked, Google will ask you to confirm it is you first."
     : undefined;
-  const categories = ledger.categories.filter((category) => category.recordType === "category" && category.active && category.transactionType === (mode === "income" ? "income" : "expense"));
+  const categories = ledger.categories.filter((category) => category.recordType === "category" && category.active && category.transactionType === (mode === "income" ? "income" : "expense") && offeredForNewSpending(ledger, category.id, form.subcategoryId));
   const quickPotential = guard?.kind === "quickPotential"
     ? household.potentialExpenses.find((item) => item.id === guard.planId && item.status === "planned")
     : undefined;
