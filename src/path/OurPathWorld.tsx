@@ -5,6 +5,7 @@ import { completeMove, memories, movesForChapter, nextMove, openChapterFor, ourR
 import { kittyBankBackingStep, kittyBanksInView } from "../core/kittyBanks.ts";
 import { displayedKittyPiece } from "../core/kittyStudio.ts";
 import { pathStones } from "../core/pathStones.ts";
+import { PathTentContext } from "./tentContext.ts";
 import { pathFootpaths } from "../core/pathFootpaths.ts";
 import { pathBridges } from "../core/pathBridges.ts";
 import { pathWeather } from "../core/pathWeather.ts";
@@ -251,6 +252,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     (tentOpen ? backButton : tentButton).current?.focus();
   }, [tentOpen]);
   const openTent = useCallback((next: boolean) => { tentMoved.current = true; setTentOpen(next); }, []);
+  const tentLink = useMemo(() => ({ leaveTent: () => openTent(false) }), [openTent]);
   useEffect(() => { if (openTentFor) { tentMoved.current = false; setTentOpen(true); } }, [openTentFor]);
   const tentChange = useRef(onTentChange);
   tentChange.current = onTentChange;
@@ -1083,7 +1085,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
 
       <section className="path-world__room" hidden={!tentOpen} aria-label="Plan Studio tent">
         <button ref={backButton} type="button" className="path-world__back" onClick={() => openTent(false)}>Back to the island</button>
-        {classicRoom}
+        {/* D-276: Plan Studio v3 inside the tent can walk back to the island. */}
+        <PathTentContext.Provider value={tentLink}>{classicRoom}</PathTentContext.Provider>
       </section>
     </div>
   );
