@@ -1,0 +1,600 @@
+{
+  "classic-sky-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [
+      "Fictional furnished flat, Past · crossed Jun 2026",
+      "Fictional first house, Next era · foggy"
+    ],
+    "card": null,
+    "amounts": false
+  },
+  "classic-future-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": "Fictional first house",
+    "amounts": false
+  },
+  "classic-past-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [
+      "Fictional furnished flat, Past · crossed Jun 2026"
+    ],
+    "card": "Fictional furnished flat",
+    "amounts": false
+  },
+  "classic-current-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "classic-planner-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "classic-planner-era-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "classic-sky-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Fictional first house, Next era · foggy",
+      "Fictional cabin idea, Suggested by Jonathan"
+    ],
+    "card": null,
+    "amounts": false
+  },
+  "classic-future-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Fictional first house, Next era",
+      "Moving day, A milestone",
+      "A dog, maybe, A milestone · suggested by Jonathan"
+    ],
+    "card": "Fictional first house",
+    "amounts": false
+  },
+  "classic-past-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Fictional furnished flat, Past · crossed Jun 2026",
+      "The spring trip, A trip"
+    ],
+    "card": "Fictional furnished flat",
+    "amounts": false
+  },
+  "classic-current-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Our home · the flat, furnished, Fictional steady year"
+    ],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "classic-planner-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Our home · the flat, furnished, Fictional steady year"
+    ],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "classic-planner-era-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Our home · the flat, furnished, Fictional steady year"
+    ],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "classic-nowebgl-journey": {
+    "rows": [
+      "Our home · the flat, furnished · Fictional steady year",
+      "The bridge to Fictional first house · 3 of 8 lit",
+      "Fictional first flat · Past · crossed Feb 2026",
+      "Keys to the flat · A milestone",
+      "Fictional furnished flat · Past · crossed Jun 2026",
+      "A weekend away · A Kitty Bank · 7 of 10 steps",
+      "The spring trip · A trip",
+      "Fictional first house · Next era · foggy",
+      "A kitchen of our own · A Kitty Bank · 0 of 10 steps",
+      "Moving day · A milestone",
+      "A road trip east · A trip",
+      "A calm first winter · A Chapter",
+      "Room for a garden · A note",
+      "A dog, maybe · A milestone · suggested by Jonathan",
+      "Fictional porch years · Later era · foggy",
+      "Evenings on the porch · A note",
+      "Fictional cabin idea · Suggested by Jonathan",
+      "A first night by the lake · A trip · suggested by Jonathan",
+      "The shore trip · A Kitty Bank · 4 of 10 steps · this era"
+    ]
+  },
+  "classic-nowebgl-outline-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": null,
+    "amounts": false
+  },
+  "taylor-sky-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [
+      "Fictional furnished flat, Past · crossed Jun 2026",
+      "Fictional first house, Next era · foggy"
+    ],
+    "card": null,
+    "amounts": false
+  },
+  "taylor-future-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": "Fictional first house",
+    "amounts": false
+  },
+  "taylor-past-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [
+      "Fictional furnished flat, Past · crossed Jun 2026"
+    ],
+    "card": "Fictional furnished flat",
+    "amounts": false
+  },
+  "taylor-current-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "taylor-planner-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "taylor-planner-era-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "taylor-sky-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Fictional first house, Next era · foggy",
+      "Fictional cabin idea, Suggested by Jonathan"
+    ],
+    "card": null,
+    "amounts": false
+  },
+  "taylor-future-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Fictional first house, Next era",
+      "Moving day, A milestone",
+      "A dog, maybe, A milestone · suggested by Jonathan"
+    ],
+    "card": "Fictional first house",
+    "amounts": false
+  },
+  "taylor-past-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Fictional furnished flat, Past · crossed Jun 2026",
+      "The spring trip, A trip"
+    ],
+    "card": "Fictional furnished flat",
+    "amounts": false
+  },
+  "taylor-current-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Our home · the flat, furnished, Fictional steady year"
+    ],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "taylor-planner-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Our home · the flat, furnished, Fictional steady year"
+    ],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "taylor-planner-era-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Our home · the flat, furnished, Fictional steady year"
+    ],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "taylor-nowebgl-journey": {
+    "rows": [
+      "Our home · the flat, furnished · Fictional steady year",
+      "The bridge to Fictional first house · 3 of 8 lit",
+      "Fictional first flat · Past · crossed Feb 2026",
+      "Keys to the flat · A milestone",
+      "Fictional furnished flat · Past · crossed Jun 2026",
+      "A weekend away · A Kitty Bank · 7 of 10 steps",
+      "The spring trip · A trip",
+      "Fictional first house · Next era · foggy",
+      "A kitchen of our own · A Kitty Bank · 0 of 10 steps",
+      "Moving day · A milestone",
+      "A road trip east · A trip",
+      "A calm first winter · A Chapter",
+      "Room for a garden · A note",
+      "A dog, maybe · A milestone · suggested by Jonathan",
+      "Fictional porch years · Later era · foggy",
+      "Evenings on the porch · A note",
+      "Fictional cabin idea · Suggested by Jonathan",
+      "A first night by the lake · A trip · suggested by Jonathan",
+      "The shore trip · A Kitty Bank · 4 of 10 steps · this era"
+    ]
+  },
+  "taylor-nowebgl-outline-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": null,
+    "amounts": false
+  },
+  "newfoundland-sky-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [
+      "Fictional furnished flat, Past · crossed Jun 2026",
+      "Fictional first house, Next era · foggy"
+    ],
+    "card": null,
+    "amounts": false
+  },
+  "newfoundland-future-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": "Fictional first house",
+    "amounts": false
+  },
+  "newfoundland-past-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [
+      "Fictional furnished flat, Past · crossed Jun 2026"
+    ],
+    "card": "Fictional furnished flat",
+    "amounts": false
+  },
+  "newfoundland-current-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "newfoundland-planner-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "newfoundland-planner-era-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "newfoundland-sky-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Fictional first house, Next era · foggy",
+      "Fictional cabin idea, Suggested by Jonathan"
+    ],
+    "card": null,
+    "amounts": false
+  },
+  "newfoundland-future-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Fictional first house, Next era",
+      "A dog, maybe, A milestone · suggested by Jonathan"
+    ],
+    "card": "Fictional first house",
+    "amounts": false
+  },
+  "newfoundland-past-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Fictional furnished flat, Past · crossed Jun 2026",
+      "The spring trip, A trip"
+    ],
+    "card": "Fictional furnished flat",
+    "amounts": false
+  },
+  "newfoundland-current-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Our home · the flat, furnished, Fictional steady year"
+    ],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "newfoundland-planner-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Our home · the flat, furnished, Fictional steady year"
+    ],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "newfoundland-planner-era-1100.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 1100,
+    "visibleEraMarks": [
+      "Our home · the flat, furnished, Fictional steady year"
+    ],
+    "card": "Fictional steady year",
+    "amounts": false
+  },
+  "newfoundland-nowebgl-journey": {
+    "rows": [
+      "Our home · the flat, furnished · Fictional steady year",
+      "The bridge to Fictional first house · 3 of 8 lit",
+      "Fictional first flat · Past · crossed Feb 2026",
+      "Keys to the flat · A milestone",
+      "Fictional furnished flat · Past · crossed Jun 2026",
+      "A weekend away · A Kitty Bank · 7 of 10 steps",
+      "The spring trip · A trip",
+      "Fictional first house · Next era · foggy",
+      "A kitchen of our own · A Kitty Bank · 0 of 10 steps",
+      "Moving day · A milestone",
+      "A road trip east · A trip",
+      "A calm first winter · A Chapter",
+      "Room for a garden · A note",
+      "A dog, maybe · A milestone · suggested by Jonathan",
+      "Fictional porch years · Later era · foggy",
+      "Evenings on the porch · A note",
+      "Fictional cabin idea · Suggested by Jonathan",
+      "A first night by the lake · A trip · suggested by Jonathan",
+      "The shore trip · A Kitty Bank · 4 of 10 steps · this era"
+    ]
+  },
+  "newfoundland-nowebgl-outline-390.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 390,
+    "visibleEraMarks": [],
+    "card": null,
+    "amounts": false
+  },
+  "taylor-sky-crossing-320.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 320,
+    "visibleEraMarks": [
+      "Fictional furnished flat, Past · crossed Jun 2026",
+      "Fictional first house, Next era · foggy"
+    ],
+    "card": null,
+    "amounts": false
+  },
+  "taylor-gate-crossing-320.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 320,
+    "visibleEraMarks": [],
+    "card": "The bridge to Fictional first house",
+    "amounts": false
+  },
+  "taylor-planner-new-320.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 320,
+    "visibleEraMarks": [],
+    "card": "The bridge to Fictional first house",
+    "amounts": false
+  },
+  "newfoundland-sky-crossing-720.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 720,
+    "visibleEraMarks": [
+      "Fictional first house, Next era · foggy"
+    ],
+    "card": null,
+    "amounts": false
+  },
+  "newfoundland-gate-crossing-720.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 720,
+    "visibleEraMarks": [],
+    "card": "The bridge to Fictional first house",
+    "amounts": false
+  },
+  "newfoundland-planner-new-720.png": {
+    "pageErrors": [],
+    "consoleErrors": [],
+    "failedRequests": [],
+    "overflow": false,
+    "scrollWidth": 720,
+    "visibleEraMarks": [],
+    "card": "The bridge to Fictional first house",
+    "amounts": false
+  }
+}

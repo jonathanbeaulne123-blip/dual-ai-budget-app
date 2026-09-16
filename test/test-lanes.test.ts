@@ -31,6 +31,8 @@ const serialFixtureTests = [
   "ledger-sync-cutover.test.ts",
   "demo-shift-statistics.test.ts",
   "demo-suite.test.ts",
+  "habitat-story.test.ts",
+  "habitat.test.ts",
   "permission-matrix.test.ts",
   "scale.test.ts",
   "stress-seed.test.ts",
@@ -42,6 +44,8 @@ const serialTimingTests = ["continuity-two-browser-proof.test.ts", "hercules-pri
 
 const rpcIsolatedFixtureTests = [
   "demo-shift-statistics.test.ts",
+  "habitat-story.test.ts",
+  "habitat.test.ts",
   "stress-seed.test.ts",
 ];
 

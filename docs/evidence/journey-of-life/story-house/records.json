@@ -1,0 +1,242 @@
+[
+  {
+    "width": 1100,
+    "settledAfterRailMs": 59287
+  },
+  {
+    "width": 1100,
+    "floor": "home",
+    "jars": [
+      "Rent — house bill (Housing › Rent), the month's largest, Sep 1, paid",
+      "Transit passes — recurring payment (Transport › Transit), small, Sep 1, paid",
+      "Tenant insurance — house bill (Housing › Tenant insurance), the smallest, Sep 3, paid",
+      "Music — subscription (Life › Fun), the smallest, Sep 5, paid",
+      "Streaming — subscription (Life › Fun), the smallest, Sep 6, paid",
+      "Toronto Hydro — house bill (Housing › Electric), the smallest, Sep 8, paid",
+      "Coffee beans — subscription (Pantry › Roaster club), the smallest, Sep 9, paid",
+      "Gym — subscription (Good times › Gym & running), the smallest, Sep 10, paid",
+      "Enbridge Gas — house bill (Housing › Household gas), the smallest, Sep 11, paid",
+      "Internet — house bill (Housing › Internet), the smallest, Sep 12, paid",
+      "Mobile phones — house bill (Life › Phone), the smallest, Sep 14, paid",
+      "Cloud storage — subscription (Life › Fun), the smallest, Sep 16, full. The hammer is out",
+      "Hercules's food delivery — subscription (Hercules › Pet food), the smallest, Sep 18, full",
+      "Car-share — subscription (Transport › Car-share), the smallest, Sep 20, full",
+      "Pet insurance — house bill (Hercules › Pet insurance), the smallest, Sep 22, filling",
+      "Pottery studio — subscription (Good times › Pottery), the smallest, Sep 25, full"
+    ],
+    "cellarSub": "16 kitty jars on the rail",
+    "ledge": [
+      "Kitchen things — open-mouthed, accepts, 1 of 10 on the shelf",
+      "Bed & mattress — open-mouthed, accepts, 2 of 10 on the shelf",
+      "Rug & lamps — open-mouthed, accepts, 3 of 10 on the shelf",
+      "Desk & bookshelf — open-mouthed, accepts, 4 of 10 on the shelf",
+      "Closing costs — open-mouthed, accepts, 5 of 10 on the shelf",
+      "Plant corner — open-mouthed, accepts, 6 of 10 on the shelf",
+      "Retirement nest — open-mouthed, accepts, 7 of 10 on the shelf",
+      "Dining table & chairs — open-mouthed, accepts, 8 of 10 on the shelf",
+      "House down payment — open-mouthed, accepts, 9 of 10 on the shelf",
+      "Art & frames — open-mouthed, accepts, 10 of 10 on the shelf"
+    ],
+    "overflowX": 0
+  },
+  {
+    "width": 1100,
+    "floor": "cellar",
+    "jars": [
+      "Rent — house bill (Housing › Rent), the month's largest, Sep 1, paid",
+      "Transit passes — recurring payment (Transport › Transit), small, Sep 1, paid",
+      "Tenant insurance — house bill (Housing › Tenant insurance), the smallest, Sep 3, paid",
+      "Music — subscription (Life › Fun), the smallest, Sep 5, paid",
+      "Streaming — subscription (Life › Fun), the smallest, Sep 6, paid",
+      "Toronto Hydro — house bill (Housing › Electric), the smallest, Sep 8, paid",
+      "Coffee beans — subscription (Pantry › Roaster club), the smallest, Sep 9, paid",
+      "Gym — subscription (Good times › Gym & running), the smallest, Sep 10, paid",
+      "Enbridge Gas — house bill (Housing › Household gas), the smallest, Sep 11, paid",
+      "Internet — house bill (Housing › Internet), the smallest, Sep 12, paid",
+      "Mobile phones — house bill (Life › Phone), the smallest, Sep 14, paid",
+      "Cloud storage — subscription (Life › Fun), the smallest, Sep 16, full. The hammer is out",
+      "Hercules's food delivery — subscription (Hercules › Pet food), the smallest, Sep 18, full",
+      "Car-share — subscription (Transport › Car-share), the smallest, Sep 20, full",
+      "Pet insurance — house bill (Hercules › Pet insurance), the smallest, Sep 22, filling",
+      "Pottery studio — subscription (Good times › Pottery), the smallest, Sep 25, full"
+    ],
+    "cellarSub": "16 kitty jars on the rail",
+    "ledge": [
+      "Kitchen things — open-mouthed, accepts, 1 of 10 on the shelf",
+      "Bed & mattress — open-mouthed, accepts, 2 of 10 on the shelf",
+      "Rug & lamps — open-mouthed, accepts, 3 of 10 on the shelf",
+      "Desk & bookshelf — open-mouthed, accepts, 4 of 10 on the shelf",
+      "Closing costs — open-mouthed, accepts, 5 of 10 on the shelf",
+      "Plant corner — open-mouthed, accepts, 6 of 10 on the shelf",
+      "Retirement nest — open-mouthed, accepts, 7 of 10 on the shelf",
+      "Dining table & chairs — open-mouthed, accepts, 8 of 10 on the shelf",
+      "House down payment — open-mouthed, accepts, 9 of 10 on the shelf",
+      "Art & frames — open-mouthed, accepts, 10 of 10 on the shelf"
+    ],
+    "overflowX": 0
+  },
+  {
+    "width": 1100,
+    "floor": "loft",
+    "jars": [
+      "Rent — house bill (Housing › Rent), the month's largest, Sep 1, paid",
+      "Transit passes — recurring payment (Transport › Transit), small, Sep 1, paid",
+      "Tenant insurance — house bill (Housing › Tenant insurance), the smallest, Sep 3, paid",
+      "Music — subscription (Life › Fun), the smallest, Sep 5, paid",
+      "Streaming — subscription (Life › Fun), the smallest, Sep 6, paid",
+      "Toronto Hydro — house bill (Housing › Electric), the smallest, Sep 8, paid",
+      "Coffee beans — subscription (Pantry › Roaster club), the smallest, Sep 9, paid",
+      "Gym — subscription (Good times › Gym & running), the smallest, Sep 10, paid",
+      "Enbridge Gas — house bill (Housing › Household gas), the smallest, Sep 11, paid",
+      "Internet — house bill (Housing › Internet), the smallest, Sep 12, paid",
+      "Mobile phones — house bill (Life › Phone), the smallest, Sep 14, paid",
+      "Cloud storage — subscription (Life › Fun), the smallest, Sep 16, full. The hammer is out",
+      "Hercules's food delivery — subscription (Hercules › Pet food), the smallest, Sep 18, full",
+      "Car-share — subscription (Transport › Car-share), the smallest, Sep 20, full",
+      "Pet insurance — house bill (Hercules › Pet insurance), the smallest, Sep 22, filling",
+      "Pottery studio — subscription (Good times › Pottery), the smallest, Sep 25, full"
+    ],
+    "cellarSub": "16 kitty jars on the rail",
+    "ledge": [
+      "Kitchen things — open-mouthed, accepts, 1 of 10 on the shelf",
+      "Bed & mattress — open-mouthed, accepts, 2 of 10 on the shelf",
+      "Rug & lamps — open-mouthed, accepts, 3 of 10 on the shelf",
+      "Desk & bookshelf — open-mouthed, accepts, 4 of 10 on the shelf",
+      "Closing costs — open-mouthed, accepts, 5 of 10 on the shelf",
+      "Plant corner — open-mouthed, accepts, 6 of 10 on the shelf",
+      "Retirement nest — open-mouthed, accepts, 7 of 10 on the shelf",
+      "Dining table & chairs — open-mouthed, accepts, 8 of 10 on the shelf",
+      "House down payment — open-mouthed, accepts, 9 of 10 on the shelf",
+      "Art & frames — open-mouthed, accepts, 10 of 10 on the shelf"
+    ],
+    "overflowX": 0
+  },
+  {
+    "width": 1100,
+    "ourPathClickMs": 39666
+  },
+  {
+    "width": 1100,
+    "errors": []
+  },
+  {
+    "width": 390,
+    "settledAfterRailMs": 94723
+  },
+  {
+    "width": 390,
+    "floor": "home",
+    "jars": [
+      "Rent — house bill (Housing › Rent), the month's largest, Sep 1, paid",
+      "Transit passes — recurring payment (Transport › Transit), small, Sep 1, paid",
+      "Tenant insurance — house bill (Housing › Tenant insurance), the smallest, Sep 3, paid",
+      "Music — subscription (Life › Fun), the smallest, Sep 5, paid",
+      "Streaming — subscription (Life › Fun), the smallest, Sep 6, paid",
+      "Toronto Hydro — house bill (Housing › Electric), the smallest, Sep 8, paid",
+      "Coffee beans — subscription (Pantry › Roaster club), the smallest, Sep 9, paid",
+      "Gym — subscription (Good times › Gym & running), the smallest, Sep 10, paid",
+      "Enbridge Gas — house bill (Housing › Household gas), the smallest, Sep 11, paid",
+      "Internet — house bill (Housing › Internet), the smallest, Sep 12, paid",
+      "Mobile phones — house bill (Life › Phone), the smallest, Sep 14, paid",
+      "Cloud storage — subscription (Life › Fun), the smallest, Sep 16, full. The hammer is out",
+      "Hercules's food delivery — subscription (Hercules › Pet food), the smallest, Sep 18, full",
+      "Car-share — subscription (Transport › Car-share), the smallest, Sep 20, full",
+      "Pet insurance — house bill (Hercules › Pet insurance), the smallest, Sep 22, filling",
+      "Pottery studio — subscription (Good times › Pottery), the smallest, Sep 25, full"
+    ],
+    "cellarSub": "16 kitty jars on the rail",
+    "ledge": [
+      "Kitchen things — open-mouthed, accepts, 1 of 10 on the shelf",
+      "Bed & mattress — open-mouthed, accepts, 2 of 10 on the shelf",
+      "Rug & lamps — open-mouthed, accepts, 3 of 10 on the shelf",
+      "Desk & bookshelf — open-mouthed, accepts, 4 of 10 on the shelf",
+      "Closing costs — open-mouthed, accepts, 5 of 10 on the shelf",
+      "Plant corner — open-mouthed, accepts, 6 of 10 on the shelf",
+      "Retirement nest — open-mouthed, accepts, 7 of 10 on the shelf",
+      "Dining table & chairs — open-mouthed, accepts, 8 of 10 on the shelf",
+      "House down payment — open-mouthed, accepts, 9 of 10 on the shelf",
+      "Art & frames — open-mouthed, accepts, 10 of 10 on the shelf"
+    ],
+    "overflowX": 0
+  },
+  {
+    "width": 390,
+    "floor": "cellar",
+    "jars": [
+      "Rent — house bill (Housing › Rent), the month's largest, Sep 1, paid",
+      "Transit passes — recurring payment (Transport › Transit), small, Sep 1, paid",
+      "Tenant insurance — house bill (Housing › Tenant insurance), the smallest, Sep 3, paid",
+      "Music — subscription (Life › Fun), the smallest, Sep 5, paid",
+      "Streaming — subscription (Life › Fun), the smallest, Sep 6, paid",
+      "Toronto Hydro — house bill (Housing › Electric), the smallest, Sep 8, paid",
+      "Coffee beans — subscription (Pantry › Roaster club), the smallest, Sep 9, paid",
+      "Gym — subscription (Good times › Gym & running), the smallest, Sep 10, paid",
+      "Enbridge Gas — house bill (Housing › Household gas), the smallest, Sep 11, paid",
+      "Internet — house bill (Housing › Internet), the smallest, Sep 12, paid",
+      "Mobile phones — house bill (Life › Phone), the smallest, Sep 14, paid",
+      "Cloud storage — subscription (Life › Fun), the smallest, Sep 16, full. The hammer is out",
+      "Hercules's food delivery — subscription (Hercules › Pet food), the smallest, Sep 18, full",
+      "Car-share — subscription (Transport › Car-share), the smallest, Sep 20, full",
+      "Pet insurance — house bill (Hercules › Pet insurance), the smallest, Sep 22, filling",
+      "Pottery studio — subscription (Good times › Pottery), the smallest, Sep 25, full"
+    ],
+    "cellarSub": "16 kitty jars on the rail",
+    "ledge": [
+      "Kitchen things — open-mouthed, accepts, 1 of 10 on the shelf",
+      "Bed & mattress — open-mouthed, accepts, 2 of 10 on the shelf",
+      "Rug & lamps — open-mouthed, accepts, 3 of 10 on the shelf",
+      "Desk & bookshelf — open-mouthed, accepts, 4 of 10 on the shelf",
+      "Closing costs — open-mouthed, accepts, 5 of 10 on the shelf",
+      "Plant corner — open-mouthed, accepts, 6 of 10 on the shelf",
+      "Retirement nest — open-mouthed, accepts, 7 of 10 on the shelf",
+      "Dining table & chairs — open-mouthed, accepts, 8 of 10 on the shelf",
+      "House down payment — open-mouthed, accepts, 9 of 10 on the shelf",
+      "Art & frames — open-mouthed, accepts, 10 of 10 on the shelf"
+    ],
+    "overflowX": 0
+  },
+  {
+    "width": 390,
+    "floor": "loft",
+    "jars": [
+      "Rent — house bill (Housing › Rent), the month's largest, Sep 1, paid",
+      "Transit passes — recurring payment (Transport › Transit), small, Sep 1, paid",
+      "Tenant insurance — house bill (Housing › Tenant insurance), the smallest, Sep 3, paid",
+      "Music — subscription (Life › Fun), the smallest, Sep 5, paid",
+      "Streaming — subscription (Life › Fun), the smallest, Sep 6, paid",
+      "Toronto Hydro — house bill (Housing › Electric), the smallest, Sep 8, paid",
+      "Coffee beans — subscription (Pantry › Roaster club), the smallest, Sep 9, paid",
+      "Gym — subscription (Good times › Gym & running), the smallest, Sep 10, paid",
+      "Enbridge Gas — house bill (Housing › Household gas), the smallest, Sep 11, paid",
+      "Internet — house bill (Housing › Internet), the smallest, Sep 12, paid",
+      "Mobile phones — house bill (Life › Phone), the smallest, Sep 14, paid",
+      "Cloud storage — subscription (Life › Fun), the smallest, Sep 16, full. The hammer is out",
+      "Hercules's food delivery — subscription (Hercules › Pet food), the smallest, Sep 18, full",
+      "Car-share — subscription (Transport › Car-share), the smallest, Sep 20, full",
+      "Pet insurance — house bill (Hercules › Pet insurance), the smallest, Sep 22, filling",
+      "Pottery studio — subscription (Good times › Pottery), the smallest, Sep 25, full"
+    ],
+    "cellarSub": "16 kitty jars on the rail",
+    "ledge": [
+      "Kitchen things — open-mouthed, accepts, 1 of 10 on the shelf",
+      "Bed & mattress — open-mouthed, accepts, 2 of 10 on the shelf",
+      "Rug & lamps — open-mouthed, accepts, 3 of 10 on the shelf",
+      "Desk & bookshelf — open-mouthed, accepts, 4 of 10 on the shelf",
+      "Closing costs — open-mouthed, accepts, 5 of 10 on the shelf",
+      "Plant corner — open-mouthed, accepts, 6 of 10 on the shelf",
+      "Retirement nest — open-mouthed, accepts, 7 of 10 on the shelf",
+      "Dining table & chairs — open-mouthed, accepts, 8 of 10 on the shelf",
+      "House down payment — open-mouthed, accepts, 9 of 10 on the shelf",
+      "Art & frames — open-mouthed, accepts, 10 of 10 on the shelf"
+    ],
+    "overflowX": 0
+  },
+  {
+    "width": 390,
+    "ourPathClickMs": 39796
+  },
+  {
+    "width": 390,
+    "errors": []
+  }
+]

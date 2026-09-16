@@ -41,7 +41,7 @@ import { sitDownExportText, sitDownWorkbookCsv } from "./sitDown.ts";
 import { booksJournalCsv, booksSqlDump } from "../ledger/export.ts";
 import { formatCad } from "./money.ts";
 import { completeSyntheticDemoOnboarding } from "./onboarding/lifecycle.ts";
-import { HABITAT_NAMES, shapeHabitat, type HabitatStory } from "./habitat.ts";
+import { HABITAT_NAMES, isHabitatProfile, shapeHabitat, shapeStory, STORY_NAME, type HabitatStory } from "./habitat.ts";
 
 export const DEMO_SUITE_VERSION = "2.0.0";
 
@@ -487,11 +487,15 @@ export async function generateDemoSuite(options: DemoSuiteOptions): Promise<{ ho
   const generatedAt = `${options.today}T12:00:00.000Z`;
   const coverageDigest = (await sha256Hex({ version: DEMO_SUITE_VERSION, tools: DEMO_TOOL_COVERAGE })).slice(0, 16);
   const generated = withSyntheticRuntime(seed, generatedAt, () => {
+  // Our Story (D-268) lives two years into the journey: 25 months, the dining room's tip seasons,
+  // and its own bills and banks instead of the seed's samples.
+  const story = profile === "habitat-story";
   let household = seedStressHousehold({
     today: options.today,
     environment: "development",
     seed: deriveDemoSeed(seed, `profile:${profile}`),
     numberStyle,
+    ...(story ? { months: 25, tipSeasons: true, fixedBills: false, sampleGoals: false } : {}),
   });
   const provenance: SyntheticFixtureProvenance = {
     kind: "hearth-demo-suite",
@@ -505,7 +509,7 @@ export async function generateDemoSuite(options: DemoSuiteOptions): Promise<{ ho
     coverageDigest,
     fixtureHashSha256: "",
   };
-  household = { ...household, syntheticFixture: provenance, name: profile === "habitat-well" || profile === "habitat-hard" ? HABITAT_NAMES[profile === "habitat-well" ? "well" : "hard"] : "Jonathan & Bianca · Synthetic Demo" };
+  household = { ...household, syntheticFixture: provenance, name: story ? STORY_NAME : profile === "habitat-well" || profile === "habitat-hard" ? HABITAT_NAMES[profile === "habitat-well" ? "well" : "hard"] : "Jonathan & Bianca · Synthetic Demo" };
 
   // The Hercules habitats (2026-09-14): the same twelve months, with a story laid over them
   // through the ordinary commands — nothing from the investor showcase (canaries, duplicate
@@ -513,8 +517,8 @@ export async function generateDemoSuite(options: DemoSuiteOptions): Promise<{ ho
   const habitat: HabitatStory | null = profile === "habitat-well" ? "well" : profile === "habitat-hard" ? "hard" : null;
   let transactionCountBeforeEvidence = household.transactions.length;
   let transactionCountAfterEvidence = household.transactions.length;
-  if (habitat) {
-    household = shapeHabitat(household, { story: habitat, today: options.today, seed });
+  if (habitat || story) {
+    household = story ? shapeStory(household, { today: options.today, seed }) : shapeHabitat(household, { story: habitat!, today: options.today, seed });
     transactionCountBeforeEvidence = household.transactions.length;
     transactionCountAfterEvidence = household.transactions.length;
   } else {
@@ -743,7 +747,7 @@ export async function verifyDemoSuite(household: Household, manifest?: DemoSuite
   // A Hercules habitat is a story, not the investor rig: the checks that count canaries, shift mail, engine coverage
   // and the calculation matrix are the investor showcase's, so a habitat reports them as skipped, not failed. The
   // books checks — replay, trial balance, the equation, health, PGlite, seals — apply to every showcase.
-  const habitat = fixture?.profile === "habitat-well" || fixture?.profile === "habitat-hard";
+  const habitat = isHabitatProfile(fixture?.profile);
   const INVESTOR_ONLY = new Set(["shift-bible-links", "engines", "privacy-canaries", "tool-run"]);
   // The habitat doing badly has, by its story, not closed or sealed its last two months; that is the point of it.
   const skipped = (id: string) => habitat && (INVESTOR_ONLY.has(id) || (id === "desk-seals" && fixture?.profile === "habitat-hard"));

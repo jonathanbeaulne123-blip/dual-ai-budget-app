@@ -112,6 +112,9 @@ const rpcIsolatedSerialTests = new Set([
   "test/demo-suite.test.ts",
   "test/demo-shift-statistics.test.ts",
   "test/stress-seed.test.ts",
+  // Minutes of synchronous generation (D-259, D-268): alone, so no Vitest worker RPC times out.
+  "test/habitat.test.ts",
+  "test/habitat-story.test.ts",
 ]);
 
 async function runSerialTests(testPaths) {

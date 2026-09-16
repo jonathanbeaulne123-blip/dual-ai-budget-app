@@ -1,3 +1,60 @@
+## The Journey of Life and the Our Story habitat (2026-09-16, D-268)
+
+Branch `claude/journey-of-life` (one squashed commit) on `origin/main@6160fb03` (#495), delivered as a bundle and a patch; built on #494 and rebased cleanly over #495. **Risk: High.** It adds a new synced row kind (`era`) and a new capability flag (`pathEraVersion`), and changes performance (not output) in `refreshDuplicateFlags`.
+
+**Examined:**
+- The Our Path collection and its capability chain: `pathWorld.ts`, `protocol`, `authority`, `client`, `ledgerRoom`, replay authority.
+- The island page and renderer.
+- The habitats and the Demo Suite: `habitat.ts`, `demoSuite.ts`, `stressSeed.ts`, `demoSuiteIdentity.ts`.
+- Migration 021 seat invites.
+
+**Changes:**
+- **Core:**
+  - Era rows are agreement rows with words only.
+  - `pathEras.ts` holds the read-model, the finish lines (survive / banks / agree) and the commands `proposePathEra`, `proposePathEraPlan` and `crossPathEra`.
+  - `assertEraProposalFits` enforces the shape rules.
+  - `pathMonths` accepts an era window.
+  - The `pathEraVersion` guard is added.
+- **Renderer:** floating era islands (past islands grown and coarse-sampled; future ones fogged with plan silhouettes; pencil for suggestions), the gate with lanterns, the home that upgrades, the Sky frame and the safe area.
+- **Page:**
+  - The main island grows from the current era only.
+  - Marks, cards, "Cross together", the journey panel and the outline.
+  - `EraPlanner`, with one save.
+  - The current era's banks stand on the island first.
+- **Habitat:**
+  - `habitat-story` covers 25 months. It adds stress-seed options (`months`, `tipSeasons`, `fixedBills`, `sampleGoals`), whose defaults are byte-identical.
+  - The fixture clock is `atSyntheticClock`.
+  - A third Demo Suite button.
+  - Generation and verification run in `src/demoSuite.worker.ts`.
+- **Test lanes:** `habitat.test.ts` and `habitat-story.test.ts` run alone in the serial lane.
+
+**Verification:**
+- `tsc` is clean.
+- **Integrated High quick gate:** `quick-gate-passed; time-budget-breached`, 1,111 s against 300 s.
+  - Fast lane: 38 files, 385 tests.
+  - Serial lane: 89 tests plus the isolated fixtures, including `habitat-story` 10/10 and `habitat` 6/6.
+  - The breach is the two fixture generators: Our Story takes about 3 min to generate and 3.6 min to verify in Node.
+- **Focused files:** `path-eras` 10, `path-eras-ui` 6, `path-era-islands` 9, `our-path-world` 20, `our-path-world-ui` 36, `path-minimap` 4, `habitat` 6, `demo-suite-seat`/`demo-suite-ui`, `test-lanes`.
+- **Browser evidence** (`docs/evidence/journey-of-life/`):
+  - `islands/`: the renderer on injected scenes.
+  - `page/`: 49 captures across three themes at 320/390/720/1100, including no-WebGL.
+  - `story/`: Our Story generated in the worker on the real component, with page responsiveness recorded in `report.json`.
+  - `story-house/`: Our Story on the actual App page (Queen's Nest on) — Home, the cellar's 16 bills, the loft's ten Build banks (each a fired studio piece dressed for its purpose and sized by its goal) and the Our Path tab, at 1100 and 390.
+  - In this container the App's PGlite open deadline (12 s) trips for the existing `habitat-well` too, so "Books need attention" tops those stills. This is environmental and pre-existing, not a regression; **Retry validation** is the in-app recovery.
+- **Dev-server note:** on the Vite dev server, the proof must load the world module before the long generation. Otherwise the dependency optimiser leaves the dynamic import pending and the page falls back to the flat map. This was found and fixed in the proof script; production bundles are unaffected.
+
+**Uncertainty:**
+- Jonathan still needs to confirm what "without going broke" means (the recommendation was applied).
+- Codex trust review is needed for `pathEraVersion`, `assertEraProposalFits`, era rows under `pathWorldChangeAuthorized`, `duplicate.ts` and `atSyntheticClock`.
+- Nobody has yet invited Bianca into a generated habitat's existing seat on the live Development site.
+- Generating Our Story takes minutes on a phone, so press it on the desktop.
+
+**Environment:** fictional Development data only; nothing hosted was written.
+
+**State:** not pushed, not a PR, not merged, not deployed, not live-verified.
+
+**Next owner:** Jonathan (apply the patch; the delivery bot opens the PR). Then Codex for the trust review. Then press "Habitat · our story" on Development and invite Bianca.
+
 ## Our Path, next level — sturdy island, then the app comes onto it (2026-09-15, D-264)
 
 Branch `claude/our-path-next-level` on `origin/main@fe0cb3bb` (#489), delivered as a bundle and a patch. **Risk: High** — a new per-feature capability flag on the ledger command (`pathWorldVersion`, mirroring D-245), and owner-only Personal rows (footpaths, private bridge planks) drawn on the household surface. Jonathan's two calls today: the Together tab stays its own tab and the campfire is a door to it; step 2 started with the Kitty studio. Budget (5): +0/+1 — nothing posts; the island gains doors to the Fund, Calendar, planner, Together, Charter, Time Machine, Play and the Kitty room. Engagement (3): +3. Details, orchestration log, evidence and every "one step further" idea: [the worksession](worksessions/2026-09-15-our-path-next-level.md).
