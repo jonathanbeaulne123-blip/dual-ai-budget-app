@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import {
   addGoal,
@@ -63,6 +63,8 @@ export type KittyPlanContext = {
   goalId?: string;
   bankId?: string;
   lineId?: string;
+  /** Bumped by each new request, so pressing the same landmark again returns to its bank. */
+  request?: number;
   onClose: () => void;
   onSaveLine: (line: PlanLine, expected?: PlanLine) => Promise<boolean>;
   onScenario: (name: string, lines: PlanLine[]) => Promise<boolean>;
@@ -242,6 +244,10 @@ function Room({
     "active",
   );
   const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? (context?.bankId || initialBankId ? `nest:${context?.bankId ?? initialBankId}` : h.goals.find(row => goalVisibleInView(row,memberId,view) && row.status !== "retired" && !row.envelope?.archivedAt)?.id ?? "nest:king"));
+  // A new request for a named bank (an island landmark) while the room is already open moves to that bank.
+  const requestedGoalId = context?.goalId;
+  const request = context?.request;
+  useEffect(() => { if (requestedGoalId) setSelected(requestedGoalId); }, [requestedGoalId, request]);
   const [creating, setCreating] = useState(false);
   const [studioFor, setStudioFor] = useState("");
   const all = h.goals.filter((goal) => goalVisibleInView(goal, memberId, view));

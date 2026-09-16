@@ -30,7 +30,7 @@ export function monthSpot(m: number, span = 0): Spot {
 
 export type PieceKind =
   | "grove" | "cottage" | "observatory" | "monument" | "bench" | "lanterns" | "giftTree" | "loop" | "cafe"
-  | "rows" | "pond" | "star" | "firstFire" | "dogMeadow" | "kiln" | "workshop" | "creek";
+  | "rows" | "pond" | "star" | "firstFire" | "dogMeadow" | "kiln" | "workshop" | "creek" | "frost";
 export type Piece = {
   kind: PieceKind;
   x: number;
@@ -55,6 +55,8 @@ export type GrownIsland = {
   B: Float32Array;
   S: Float32Array;
   R: Float32Array;
+  /** First frost (0–1): only around the household's first winter month, never a later one. */
+  F: Float32Array;
   pieces: Piece[];
   coves: Cove[];
   widths: number[];
@@ -102,6 +104,13 @@ function blur(F: Float32Array): Float32Array<ArrayBuffer> {
     out[idx(i, j)] = s / c;
   }
   return out;
+}
+
+export const FIRST_FROST_WHY = "Your first winter on the island. It never quite melts.";
+/** The index of the first month whose key is December, January or February, or null. */
+export function firstWinterMonth(months: Pick<PathMonth, "key">[]): number | null {
+  const at = months.findIndex((month) => { const m = Number(month.key.slice(5, 7)); return m === 12 || m === 1 || m === 2; });
+  return at < 0 ? null : at;
 }
 
 export function recipeValue(recipe: PathRecipe, month: PathMonth): number | null {
@@ -222,6 +231,16 @@ export function growIsland(months: PathMonth[], recipes: PathRecipe[], cur: numb
       why: [...storm.why, recovered !== null ? `${label(recovered)} · money was set aside again, so the bridge was built` : "No recovery yet. A bridge appears once money is set aside again."],
     });
   }
+  // The first winter in the household's history leaves a frost that never quite melts.
+  const F = new Float32Array(GRID * GRID);
+  const firstWinter = firstWinterMonth(months);
+  if (firstWinter !== null && firstWinter <= last) {
+    const p = spot(firstWinter);
+    stamp(F, p.x, p.z, 7, 1, firstWinter);
+    for (let k = 0; k < F.length; k++) F[k] = Math.min(1, F[k]!);
+    const q = { x: p.x + Math.cos(p.a - 0.4) * 4.2, z: p.z + Math.sin(p.a - 0.4) * 4.2 };
+    pieces.push({ kind: "frost", x: q.x, z: q.z, ang: p.a, born: firstWinter, age: last - firstWinter, recipeId: null, why: [FIRST_FROST_WHY, `${label(firstWinter)} · the first December, January or February on the island`] });
+  }
   if (floors) pieces.push({ kind: "observatory", x: -6, z: -10, ang: 0, born: 0, age: last, recipeId: null, floors, why: floorWhy });
   for (const piece of pieces) {
     if (piece.kind === "kiln") piece.active = (months[last]?.scores.creative ?? 0) >= 0.3;
@@ -264,7 +283,7 @@ export function growIsland(months: PathMonth[], recipes: PathRecipe[], cur: numb
     S[k] = Math.min(1, sand);
     R[k] = rock;
   }
-  return { cur: last, H, M, B, S, R, pieces, coves, widths, fired, radiusAt, spot };
+  return { cur: last, H, M, B, S, R, F, pieces, coves, widths, fired, radiusAt, spot };
 }
 
 export function heightAt(island: Pick<GrownIsland, "H">, x: number, z: number): number {
