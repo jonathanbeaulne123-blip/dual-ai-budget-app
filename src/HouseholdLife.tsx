@@ -4,7 +4,8 @@ import { planSelectionForVersion, projectPlan } from "./core/planProjection.ts";
 import { SharedBoards, type SharedBoardsProps } from "./widgets/SharedBoards.tsx";
 import { shapeSharedBoards } from "./core/sharedBoards.ts";
 
-function acceptedPlan(household: Household, today: string) {
+/** The household Plan both partners accepted for this month (Together reads the same). */
+export function acceptedPlan(household: Household, today: string) {
   return [...(household.planVersions ?? [])].filter(row => row.scope === "household" && row.monthKey === monthKeyFromDateKey(today) && row.state === "active").sort((a, b) => b.sequence - a.sequence)[0] ?? null;
 }
 export function HouseholdPathHome({ household, memberId, today, onOpen }: { household: Household; memberId: string; today: string; onOpen: (source: HerculesNumberSource) => void }) {

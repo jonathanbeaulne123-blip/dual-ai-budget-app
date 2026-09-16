@@ -491,6 +491,14 @@ export const setPathCategorySignal = captureCommand("setPathCategorySignal", fun
   return commitPathWorld(household, next, "Changed how a category shows on the island", at);
 });
 
+/** Ledger step kinds that write the Our Path world, plus its undo/continuity kind (D-262). */
+export const PATH_WORLD_COMMAND_KINDS = ["proposePathRecipe", "proposePathName", "agreePathProposal", "declinePathProposal", "setPathCategorySignal", "updatePathWorld"];
+
+/** True once the household holds any Our Path world row; older clients must not write over it. */
+export function hasPathWorldData(household: Pick<Household, "pathWorld">): boolean {
+  return Boolean(household.pathWorld?.length) && shapePathWorld(household.pathWorld).length > 0;
+}
+
 /**
  * Replay authority: every change in `incoming` must be one the acting member
  * could make. A member may only add their own agreement, propose under their

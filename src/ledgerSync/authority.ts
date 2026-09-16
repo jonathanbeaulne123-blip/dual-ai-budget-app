@@ -3,6 +3,7 @@ import {hasPlayData,isPlayStep} from '../core/herculesPlay.ts';
 import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
 import { hasPlanDecisionData } from "../core/planSystem.ts";
 import { hasTaskData, TASK_COMMAND_KINDS } from "../core/tasks.ts";
+import { hasPathWorldData, PATH_WORLD_COMMAND_KINDS } from "../core/pathWorld.ts";
 import {companionActionEffect} from '../core/herculesCompanionActions.ts';
 import { validateFundSourceClaim } from "../core/fundContributionSources.ts";
 import { IncrementalBooksGuard } from "../core/booksValidation.ts";
@@ -99,6 +100,7 @@ export async function prepareCommand(
   if((current.nativeEvents?.length||command.steps.some(s=>s.kind==='saveNativeEvent'))&&command.nativeCalendarVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve calendar events.');
   if((hasKittyNestData(current)||command.steps.some(s=>s.kind==='saveKittyNestDesign'))&&command.kittyNestVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve bank designs.');
   if((hasTaskData(current)||command.steps.some(s=>TASK_COMMAND_KINDS.includes(s.kind)))&&command.taskPlannerVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve planner tasks.');
+  if((hasPathWorldData(current)||command.steps.some(s=>PATH_WORLD_COMMAND_KINDS.includes(s.kind)))&&command.pathWorldVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve your island.');
   const extendedPlan = hasPlanDecisionData(current);
   if (extendedPlan && command.planDecisionVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve the household's Plan evidence and decisions.");
   const playStep=command.steps.some(s=>s.kind==='commitCompanionPlay');

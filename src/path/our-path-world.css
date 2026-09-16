@@ -17,25 +17,38 @@
 .path-world__host canvas:active { cursor: grabbing; }
 .path-world__flat { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; }
 .path-world__flat svg { width: min(100%, 460px); height: auto; }
-.path-world__dot { stroke: var(--card); stroke-width: 0.8; }
-
+/* The flat map's own marks (dots, kerbs, the walkers) live in path-minimap.css, shared with Home's window. */
 .path-world__marks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
 .path-mark { position: absolute; left: 0; top: 0; pointer-events: auto; display: grid; justify-items: center; gap: 2px; transform-origin: 0 0; border: 0; background: transparent; padding: 0; min-width: 44px; min-height: 44px; place-content: end center; color: var(--ink); will-change: transform; translate: -50% -100%; }
 .path-mark__label { font-family: var(--theme-hand, var(--display)); font-size: 15px; line-height: 1.1; background: var(--card); padding: 3px 9px 4px; border-radius: 6px; box-shadow: 0 3px 10px -5px rgb(0 0 0 / 0.45); white-space: nowrap; max-width: 44vw; overflow: hidden; text-overflow: ellipsis; }
 .path-mark__sub { font-size: 11px; font-weight: 600; color: var(--muted); background: color-mix(in srgb, var(--card) 88%, transparent); padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
-.path-mark:focus-visible .path-mark__label { outline: 3px solid var(--theme-accent, var(--copper)); outline-offset: 2px; }
+.path-mark:focus-visible { outline: none; }
+.path-mark:focus-visible .path-mark__label { outline: 3px solid var(--world-focus, var(--theme-accent, var(--copper))); outline-offset: 2px; }
+/* Every control on the island shows where the keyboard is. */
+.path-world :is(button, summary, input, select, .path-world__card):not(.path-mark):focus-visible { outline: 3px solid var(--world-focus, var(--theme-accent, var(--copper))); outline-offset: 2px; }
 .path-mark--now .path-mark__label { background: var(--ink); color: var(--paper); }
 .path-mark--goal .path-mark__label { font-family: var(--theme-display, var(--display)); font-weight: 600; }
+.path-mark--kiln .path-mark__label, .path-mark--charter .path-mark__label { font-family: var(--theme-display, var(--display)); font-style: italic; }
 .path-mark--unknown .path-mark__label { outline: 2px dashed var(--theme-second, var(--copper)); }
 .path-mark--bill .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 600; }
+.path-mark--bill .path-mark__sub { max-width: 44vw; overflow: hidden; text-overflow: ellipsis; }
+.path-mark--sunrise .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 700; background: #fff1d6; color: #5a3a12; }
+.path-mark--mist .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 700; border: 1px dashed var(--muted); }
+.path-mark--stone .path-mark__label { font-size: 13px; }
+/* A private footpath: a dashed, slightly see-through label, because only you ever see it. */
+.path-mark--footpath .path-mark__label { font-size: 13px; border: 1px dashed var(--muted); background: color-mix(in srgb, var(--card) 86%, transparent); }
+.path-mark--footpath .path-mark__sub { font-style: italic; }
+.path-mark--bridge .path-mark__label { font-size: 13px; border-bottom: 3px solid #9c7a55; }
 .path-world[data-level="0"] .path-mark--goal .path-mark__label { font-size: 17px; }
 
 .path-world__controls { position: absolute; z-index: 3; top: 12px; right: 12px; display: grid; gap: 8px; justify-items: end; }
-.path-world__lantern, .path-world__layers, .path-world__rail { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); flex-wrap: wrap; }
-.path-world__lantern button, .path-world__layers button, .path-world__rail button { border: 0; background: transparent; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13px; min-height: 36px; display: inline-flex; gap: 6px; align-items: center; }
-.path-world__lantern button[aria-pressed="true"], .path-world__rail button[aria-current="true"] { background: var(--ink); color: var(--paper); }
+.path-world__lantern, .path-world__quality, .path-world__layers, .path-world__rail { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); flex-wrap: wrap; }
+.path-world__lantern button, .path-world__quality button, .path-world__layers button, .path-world__rail button { border: 0; background: transparent; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13px; min-height: 36px; display: inline-flex; gap: 6px; align-items: center; }
+.path-world__lantern button[aria-pressed="true"], .path-world__quality button[aria-pressed="true"], .path-world__rail button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 .path-world__layers button[aria-pressed="false"] { text-decoration: line-through; opacity: 0.7; }
 .path-world__lantern i { width: 8px; height: 11px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: currentColor; opacity: 0.6; }
+.path-world__quality { align-items: center; }
+.path-world__quality > span { padding: 0 4px 0 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .path-world__rail { position: absolute; z-index: 3; left: 12px; bottom: 12px; border-radius: 16px; }
 .path-world__now { position: absolute; z-index: 3; right: 12px; bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: min(560px, calc(100% - 24px)); }
 .path-world__compass, .path-world__next { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 8px 14px; font-weight: 700; min-height: 44px; box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); text-align: left; }
@@ -78,7 +91,7 @@
 .path-recipe { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--paper); display: grid; gap: 6px; }
 .path-recipe.is-off { opacity: 0.6; }
 .path-recipe__top { display: flex; justify-content: space-between; gap: 8px; }
-.path-recipe__fired { font-weight: 700; color: var(--theme-accent, var(--copper)); font-variant-numeric: tabular-nums; }
+.path-recipe__fired { font-weight: 700; color: color-mix(in srgb, var(--theme-accent, var(--copper)) 70%, var(--ink)); font-variant-numeric: tabular-nums; }
 .path-recipe__rule { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
 .path-recipe__rule select { max-width: 190px; min-height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
 .path-recipe__rule input[type="range"] { width: 90px; accent-color: var(--theme-accent, var(--copper)); }
@@ -104,9 +117,13 @@
 
 @media (max-width: 719px) {
   .path-world__stage { height: clamp(420px, 68vh, 620px); }
-  .path-world__controls { top: 8px; right: 8px; left: 8px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
-  .path-world__lantern, .path-world__layers { flex: none; flex-wrap: nowrap; }
-  .path-world__lantern button, .path-world__layers button { padding: 6px 9px; }
+  /* Every group fits: lantern and the compact Lite toggle on the first row, layers wrap to a second. */
+  .path-world__controls { top: 8px; right: 8px; left: 8px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+  .path-world__lantern, .path-world__quality, .path-world__layers { flex: none; flex-wrap: nowrap; max-width: 100%; }
+  .path-world__lantern button, .path-world__quality button, .path-world__layers button { padding: 6px 9px; }
+  .path-world__lantern { gap: 0; }
+  .path-world__lantern button { padding: 6px 8px; gap: 4px; }
+  .path-world__quality--compact button[aria-pressed="false"] { opacity: 0.8; }
   .path-world__rail { left: 8px; right: 8px; bottom: 64px; justify-content: center; border-radius: 999px; }
   .path-world__rail button { padding: 6px 9px; }
   .path-world__now { left: 8px; right: 8px; bottom: 8px; max-width: none; justify-content: stretch; flex-wrap: nowrap; }
@@ -119,3 +136,14 @@
 }
 @media (prefers-reduced-motion: reduce) { .path-mark { transition: none; } }
 @media (forced-colors: active) { .path-mark__label, .path-chip { forced-color-adjust: auto; border: 1px solid CanvasText; } }
+
+/* Hercules waits at the tent (decoration: aria-hidden, never a target). He sits beside the tent's label, clear of it. */
+.path-hercules { pointer-events: none; display: block; line-height: 0; }
+.path-mark .path-hercules { position: absolute; left: calc(100% - 6px); bottom: -6px; filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.18)); }
+.path-world__now > .path-hercules { flex: none; align-self: flex-end; margin-right: -4px; }
+.path-world__time { font-size: 13px; min-height: 40px; grid-column: 2; justify-self: start; padding: 4px 12px; }
+.path-mark--cottage .path-mark__label { font-family: var(--theme-display, var(--display)); font-style: italic; }
+@media (max-width: 719px) { .path-world__time { grid-column: auto; } }
+/* No idle tail or breathing for Hercules when motion is reduced. */
+@media (prefers-reduced-motion: reduce) { .path-hercules *, .path-hercules *::before, .path-hercules *::after { animation: none !important; transition: none !important; } }
+:root[data-motion="reduced"] .path-hercules * { animation: none !important; transition: none !important; }

@@ -45,6 +45,9 @@ import { QueenCellar } from "./QueenCellar.tsx";
 import { QueenLoft } from "./QueenLoft.tsx";
 import { useHeldSave } from "./useHeldSave.ts";
 import { useOutsideClose } from "../useOutsideClose.ts";
+import { PathMiniMap } from "../path/PathMiniMap.tsx";
+import { pathMonths } from "../core/pathSignals.ts";
+import { pathIslandName } from "../core/pathWorld.ts";
 import "./queen-home.css";
 import "./queen-glass.css";
 
@@ -806,6 +809,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
               <p className="queen-panel__muted">The makers' marks — {marks.names.length ? marks.names.join(" and ") : "both of you"} — and the date she was last worked on, {marks.date}. Never painted; no charm sits there.{ringWords}</p>
               <div className="queen-acts"><button type="button" className="queen-act" aria-pressed={tipped} onClick={() => { setTipped((current) => !current); if (mode === "sheet") closePanel(); }}>{tipped ? "Right her" : "Tip her over"}</button></div>
             </section>
+            <QueenWindow household={household} today={today} onWalk={() => onGo("plan")} />
             <QueenPortraits portraits={portraits} members={household.members} />
             <QueenCharmTool earnings={earnings} charms={charms} selectedId={selectedCharm} members={household.members} busy={busy} form={form}
               keptLine={heldCharms.dirty ? "Not saved yet — kept when you press Done or put her down." : worn.length ? `${worn.length} ${worn.length === 1 ? "charm" : "charms"} kept; each says who pressed it on.` : "Kept when you're done; each charm says who pressed it on."}
@@ -888,6 +892,27 @@ const QUEEN_LOOK_PARTS: readonly { id: QueenPaintablePart | "all"; label: string
   { id: "tail", label: "Tail" },
   { id: "paws", label: "Paws" },
 ];
+
+/**
+ * A window onto the island (Our Path, step 11): the island in miniature, its
+ * name and how many shared months it holds, and a door that walks you there.
+ * A link, not a merge: the flat map is decoration, the door is the control.
+ */
+function QueenWindow({ household, today, onWalk }: { household: Household; today: DateKey; onWalk: () => void }) {
+  const id = useId();
+  const months = useMemo(() => pathMonths(household, today).length, [household, today]);
+  const name = pathIslandName(household) ?? "Where we are going";
+  return (
+    <section className="queen-window" aria-labelledby={`${id}-window`}>
+      <p id={`${id}-window`} className="queen-eyebrow">The window</p>
+      <div className="queen-window__pane">
+        <PathMiniMap household={household} today={today} />
+      </div>
+      <p className="queen-window__caption">{name} · {months} {months === 1 ? "month" : "months"}</p>
+      <div className="queen-acts"><button type="button" className="queen-act queen-window__door" onClick={onWalk}>Walk the island</button></div>
+    </section>
+  );
+}
 
 function defaultQueenSculpt() {
   // Her sculpt agrees with her model: pointed ears, a tail that wraps her base, long whiskers, eyes closed and serene.

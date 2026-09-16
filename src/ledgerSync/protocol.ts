@@ -37,6 +37,8 @@ export type LedgerCommand = {
   /** Client understands planner tasks and lists (D-245). */
   taskPlannerVersion?: 1;
   kittyNestVersion?: 1;
+  /** Client understands the Our Path world collection (D-262). */
+  pathWorldVersion?: 1;
   planDecisionVersion?: 1;
   goalEnvelopeVersion?: 1;
   id: string;
@@ -90,7 +92,7 @@ export async function commandFromCapture(
     accountHistoryVersion: 1,
     companionProfileVersion: 1,
     companionPlayVersion: 1,
-    companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, kittyNestVersion: 1,
+    companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, kittyNestVersion: 1, pathWorldVersion: 1,
     id,
     ...scope,
     observedSequence: input.observedRevision,
@@ -121,6 +123,7 @@ export function parseCommand(value: unknown): LedgerCommand {
     (c.nativeCalendarVersion !== undefined && c.nativeCalendarVersion !== 1) ||
     (c.kittyNestVersion !== undefined && c.kittyNestVersion !== 1) ||
     (c.taskPlannerVersion !== undefined && c.taskPlannerVersion !== 1) ||
+    (c.pathWorldVersion !== undefined && c.pathWorldVersion !== 1) ||
     (c.companionWorkflowVersion !== undefined && c.companionWorkflowVersion !== 1) ||
     (c.companionPlayVersion !== undefined && c.companionPlayVersion !== 1) ||
     (c.companionWardrobeVersion !== undefined && c.companionWardrobeVersion !== 1) ||

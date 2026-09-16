@@ -235,6 +235,19 @@ describe("The Queen's world — the flat path is the whole reading", () => {
     expect(described.textContent).toMatch(/vine/);
   });
 
+  it("opens a window onto the island from Status, with a door that walks to Our Path", async () => {
+    const { onGo } = await render(seeded());
+    await click($(".queen-door--status"));
+    const window = $(".queen-window");
+    expect(window).not.toBeNull();
+    expect(window.querySelector("svg.path-minimap")?.getAttribute("aria-hidden")).toBe("true");
+    expect(window.querySelectorAll(".path-world__dot").length).toBeGreaterThan(0);
+    expect(window.querySelector(".path-world__us")).not.toBeNull();
+    expect(window.querySelector(".queen-window__caption")?.textContent).toMatch(/^Where we are going · \d+ months?$/);
+    await click([...window.querySelectorAll<HTMLButtonElement>("button")].find((row) => row.textContent === "Walk the island")!);
+    expect(onGo).toHaveBeenCalledWith("plan");
+  });
+
   it("lets the couple dress her from Status and keeps the look without a kiln, on the shared King design", async () => {
     const h = seeded();
     const { onCommand } = await render(h);
