@@ -260,7 +260,7 @@ export function JourneyMini(props: JourneyMiniProps) {
     }
     const defs = [...labelDefs.current].sort((a, b) => a.priority - b.priority);
     const laneBoxes: { x0: number; x1: number; y0: number; y1: number }[] = [];
-    const railLeft = compact ? 0 : frame.width >= 560 ? 76 : 0;
+    const railLeft = compact ? 0 : frame.width >= 540 ? 84 : 0;
     for (const def of defs) {
       const el = labelEls.current.get(def.id);
       if (!el) continue;
@@ -297,7 +297,7 @@ export function JourneyMini(props: JourneyMiniProps) {
         if (lane) for (const other of laneBoxes) if (y0 < other.y1 && y0 + size.h > other.y0 && x0 < other.x1 + 6) x0 = other.x1 + 8;
         const box = { x0: x0 - pad, x1: x0 + size.w + pad, y0: y0 - pad, y1: y0 + size.h + pad };
         if (lane) laneBoxes.push(box);
-        const off = box.x0 < railLeft - 8 || box.x1 > frame.width + 4 || box.y0 < -4 || box.y1 > frame.height + 4;
+        const off = box.x0 < railLeft - 8 || box.x1 > frame.width - 1 || box.y0 < -4 || box.y1 > frame.height + 4;
         const hit = placed.some((p) => box.x0 < p.x1 && box.x1 > p.x0 && box.y0 < p.y1 && box.y1 > p.y0);
         if ((off && def.priority > 0) || (hit && w > 0.5)) visible = false;
         else if (w > 0.5) placed.push(box);
@@ -341,7 +341,7 @@ export function JourneyMini(props: JourneyMiniProps) {
         }
         world.current = created;
         proofRef.current?.(created);
-        const size = () => created?.resize(element.clientWidth, element.clientHeight, !compact && element.clientWidth >= 560 ? 82 : 0);
+        const size = () => created?.resize(element.clientWidth, element.clientHeight, !compact && element.clientWidth >= 540 ? 82 : 0);
         size();
         if (typeof ResizeObserver === "function") { observer = new ResizeObserver(size); observer.observe(element); }
         setLive(true);
@@ -973,7 +973,7 @@ export function JourneyMini(props: JourneyMiniProps) {
       <header className="journey-mini__head">
         <div>
           <h2 id="journey-mini-title">{head.title}</h2>
-          <p className="journey-mini__sub">{head.sub}{head.fig && <span className="journey-mini__fig-inline"> · {head.fig}</span>}{monthLoading && level <= 2 ? " · reading…" : ""}</p>
+          <p className="journey-mini__sub" title={head.sub}>{head.sub}{head.fig && <span className="journey-mini__fig-inline"> · {head.fig}</span>}{monthLoading && level <= 2 ? " · reading…" : ""}</p>
         </div>
         {head.fig && <p className="journey-mini__fig">{head.fig}</p>}
         <button type="button" className="journey-mini__list-toggle" aria-pressed={listOpen} onClick={() => setListOpen((v) => !v)}>{listOpen ? "Map" : "List"}</button>

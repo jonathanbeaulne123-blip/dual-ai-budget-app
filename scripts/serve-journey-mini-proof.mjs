@@ -1,5 +1,8 @@
 /** The journey's simple view (D-284) on the real JourneyMini component, fictional books only.
     `node scripts/serve-journey-mini-proof.mjs` prints the URL.
+    `node scripts/serve-journey-mini-proof.mjs --capture` writes the browser evidence to docs/evidence/journey-simple-view/mini/
+    (OUT=<dir>, WIDTHS=320,390,720,1100, THEMES=classic,taylor,newfoundland to narrow a run). The Our Story household is
+    generated once into scripts/tmp/our-story.json (git-ignored) when it is not there yet.
     Query: ?story=story|plan-life  ?theme=classic|taylor|newfoundland  ?level=day|week|month|era|journey  ?date=YYYY-MM-DD
            ?quality=full|lite  ?motion=reduced|full  ?compact=1  ?member=MEM-001  ?cached=1 (reads scripts/tmp/our-story.json)  ?today=
     The page shows the simple view; "Open the world" opens a stand-in full-screen world (the integrator mounts OurPathWorld there)
@@ -106,8 +109,170 @@ export async function startJourneyMiniProof({ port = 5196 } = {}) {
   await server.listen();
   return { url: `http://127.0.0.1:${server.httpServer.address().port}/mini-proof`, async close() { await server.close(); rmSync(cacheDir, { recursive: true, force: true }); } };
 }
+async function capture() {
+  const { existsSync, mkdirSync, writeFileSync } = await import('node:fs');
+  const { chromium } = await import('@playwright/test');
+  if (!existsSync('scripts/tmp/our-story.json')) {
+    const { generateDemoSuite } = await (await import('vite')).createServer({ configFile: false, logLevel: 'error', server: { middlewareMode: true } }).then(async (vite) => { const mod = await vite.ssrLoadModule('/src/core/demoSuite.ts'); await vite.close(); return mod; });
+    const { household } = await generateDemoSuite({ today: '2026-09-16', seed: 41, profile: 'habitat-story', numberStyle: 'realistic', buildSha: 'proof' });
+    mkdirSync('scripts/tmp', { recursive: true });
+    writeFileSync('scripts/tmp/our-story.json', JSON.stringify(household));
+  }
+  const out = process.env.OUT || 'docs/evidence/journey-simple-view/mini';
+  mkdirSync(out, { recursive: true });
+  const WIDTHS = (process.env.WIDTHS || '320,390,720,1100').split(',').map(Number);
+  const THEMES = (process.env.THEMES || 'classic,taylor,newfoundland').split(',');
+  const LEVELS = ['day', 'week', 'month', 'era', 'journey'];
+  const executablePath = process.env.CHROME_PATH || '/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+  const browser = await chromium.launch({ executablePath, args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'] });
+  const proof = await startJourneyMiniProof({ port: Number(process.env.PORT || 5397) });
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+  const benign = (text) => /GPU stall|swiftshader|WebGL|Failed to load resource/i.test(text);
+  const noWebgl = () => { const get = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (kind, ...rest) { return /webgl/.test(kind) ? null : get.call(this, kind, ...rest); }; };
+  const PARTS = (process.env.PARTS || 'grid,extras').split(',');
+  const { readFileSync: read } = await import('node:fs');
+  // Runs can be split (PARTS=grid THEMES=taylor …); the report merges into what earlier runs wrote.
+  const report = existsSync(`${out}/report.json`) ? JSON.parse(read(`${out}/report.json`, 'utf8')) : { generated: 'fictional Our Story and plan-life households only', shots: {} };
+  async function open(width, query, { webgl = true, reducedMotion = 'no-preference', height } = {}) {
+    const context = await browser.newContext({ viewport: { width, height: height ?? (width < 720 ? 844 : 900) }, deviceScaleFactor: 1, reducedMotion });
+    const page = await context.newPage();
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(e.message));
+    page.on('console', (m) => { if (m.type() === 'error' && !benign(m.text())) errors.push(m.text().slice(0, 200)); });
+    if (!webgl) await page.addInitScript(noWebgl);
+    await page.goto(`${proof.url}?cached=1&${query}`);
+    await page.waitForFunction(() => window.__ready && document.querySelector('.journey-mini') && !document.querySelector('.journey-mini__loading'), null, { timeout: 180_000 });
+    await wait(1800);
+    return { page, errors, close: () => context.close() };
+  }
+  async function level(page, name, ms = 2600) {
+    await page.locator('.journey-mini__levels button', { hasText: new RegExp(`^${name}$`, 'i') }).first().click();
+    await wait(ms);
+  }
+  async function facts(page, errors) {
+    return page.evaluate((errs) => {
+      const mini = document.querySelector('.journey-mini');
+      const small = [...mini.querySelectorAll('button, input')].filter((el) => el.offsetParent !== null && !el.closest('.journey-mini--compact')).map((el) => { const r = el.getBoundingClientRect(); return { name: el.getAttribute('aria-label') || el.textContent.trim().slice(0, 30), w: Math.round(r.width), h: Math.round(r.height) }; }).filter((b) => b.h < 44 && b.name && !/Move through time/.test(b.name));
+      return {
+        pageOverflow: document.documentElement.scrollWidth > window.innerWidth + 1,
+        cardHeight: Math.round(mini.getBoundingClientRect().height),
+        flat: mini.dataset.flat,
+        heading: mini.querySelector('h2')?.textContent ?? null,
+        sub: mini.querySelector('.journey-mini__sub')?.textContent ?? null,
+        labels: [...mini.querySelectorAll('.journey-mini__label')].filter((b) => !b.hidden).map((b) => b.textContent),
+        controlsUnder44: small,
+        errors: errs.slice(0, 3),
+      };
+    }, errors);
+  }
+  const save = async (page, errors, file, target = '.journey-mini') => {
+    await page.locator(target).first().screenshot({ path: `${out}/${file}.png` });
+    report.shots[file] = await facts(page, errors);
+    process.stdout.write(`${file} `);
+  };
+  // Every width × theme × level.
+  if (PARTS.includes('grid')) for (const theme of THEMES) for (const width of WIDTHS) {
+    const { page, errors, close } = await open(width, `theme=${theme}&level=day`);
+    for (const lv of LEVELS) { await level(page, lv); await save(page, errors, `${width}-${theme}-${lv}`); }
+    await close();
+  }
+  if (!PARTS.includes('extras')) { writeFileSync(`${out}/report.json`, JSON.stringify(report, null, 1)); await browser.close(); await proof.close(); return; }
+  // A contribution day (the Queen splits into the three lanes) and its week.
+  for (const width of [390, 1100]) {
+    const { page, errors, close } = await open(width, 'theme=classic&level=day&date=2026-09-02');
+    await save(page, errors, `${width}-classic-day-contributions`);
+    await level(page, 'week');
+    await save(page, errors, `${width}-classic-week-contributions`);
+    await close();
+  }
+  // The morph between levels, caught halfway (straight → curling → lap → islands).
+  {
+    const { page, errors, close } = await open(1100, 'theme=classic&level=day');
+    for (const z of [0.5, 1.5, 2.5, 3.5]) {
+      await page.evaluate((v) => window.__mini().setView({ z: v }, true), z);
+      await wait(900);
+      await save(page, errors, `1100-classic-morph-z${String(z).replace('.', '_')}`, '.journey-mini__stage');
+    }
+    await close();
+  }
+  // Card, list and keyboard focus.
+  for (const width of [390, 1100]) {
+    const { page, errors, close } = await open(width, 'theme=taylor&level=day');
+    await page.locator('.journey-mini__label[data-place="today"]').click();
+    await wait(600);
+    await save(page, errors, `${width}-taylor-card-today`);
+    await page.keyboard.press('Escape');
+    await level(page, 'era');
+    const bank = page.locator('.journey-mini__label[data-place="finish"]');
+    if (await bank.isVisible()) { await bank.click(); await wait(600); await save(page, errors, `${width}-taylor-card-finish-line`); await page.keyboard.press('Escape'); }
+    await page.getByRole('button', { name: 'List' }).click();
+    await wait(500);
+    await save(page, errors, `${width}-taylor-list-era`);
+    await level(page, 'month', 800);
+    await save(page, errors, `${width}-taylor-list-month`);
+    await page.getByRole('button', { name: 'Map' }).click();
+    await level(page, 'day');
+    await page.locator('.journey-mini__stage').focus();
+    await page.keyboard.press('Tab');
+    await wait(300);
+    await save(page, errors, `${width}-taylor-keyboard-focus`);
+    await close();
+  }
+  // Reduced motion: level changes are cuts (the renderer lands on the level at once).
+  {
+    const { page, errors, close } = await open(390, 'theme=newfoundland&level=day&motion=reduced', { reducedMotion: 'reduce' });
+    const cuts = [];
+    for (const lv of ['week', 'month', 'era', 'journey']) {
+      await page.locator('.journey-mini__levels button', { hasText: new RegExp(`^${lv}$`, 'i') }).click();
+      await wait(120);
+      cuts.push(await page.evaluate(() => window.__mini().view()));
+    }
+    await save(page, errors, '390-newfoundland-reduced-motion-journey');
+    report.reducedMotionCuts = cuts.map((v) => ({ z: v.z, target: v.zTarget, cut: v.z === v.zTarget }));
+    await close();
+  }
+  // Lite (the world's quality setting) and no WebGL at all.
+  for (const [width, theme] of [[390, 'classic'], [1100, 'newfoundland']]) {
+    const { page, errors, close } = await open(width, `theme=${theme}&level=day&quality=lite`);
+    for (const lv of LEVELS) { await level(page, lv, 500); await save(page, errors, `${width}-${theme}-lite-${lv}`); }
+    await close();
+  }
+  {
+    const { page, errors, close } = await open(320, 'theme=taylor&level=week', { webgl: false });
+    await save(page, errors, '320-taylor-no-webgl-week');
+    await close();
+  }
+  // Compact: the corner minimap in game mode (stand-in world), and on its own in each theme.
+  for (const [width, lv] of [[390, 'week'], [1100, 'era']]) {
+    const { page, errors, close } = await open(width, `theme=classic&level=${lv}&world=1`);
+    await page.screenshot({ path: `${out}/${width}-classic-compact-in-world-${lv}.png` });
+    report.shots[`${width}-classic-compact-in-world-${lv}`] = { errors: errors.slice(0, 3), overflow: await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1) };
+    await close();
+  }
+  for (const theme of THEMES) {
+    const { page, errors, close } = await open(390, `theme=${theme}&level=month&compact=1&size=220`);
+    await save(page, errors, `compact-${theme}-month`);
+    await level(page, 'Day', 2200);
+    await save(page, errors, `compact-${theme}-day`);
+    await close();
+  }
+  // The plan-life fixture (a small household without a journey).
+  for (const lv of ['day', 'era']) {
+    const { page, errors, close } = await open(1100, `story=plan-life&theme=classic&level=${lv}`);
+    await save(page, errors, `1100-classic-plan-life-${lv}`);
+    await close();
+  }
+  writeFileSync(`${out}/report.json`, JSON.stringify(report, null, 1));
+  await browser.close();
+  await proof.close();
+  console.log(`\nwrote ${Object.keys(report.shots).length} captures to ${out}`);
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const proof = await startJourneyMiniProof({ port: Number(process.env.PORT || 5196) });
-  console.log(`Journey simple view proof: ${proof.url}`);
-  process.once('SIGINT', async () => { await proof.close(); process.exit(0); });
+  if (process.argv.includes('--capture')) await capture();
+  else {
+    const proof = await startJourneyMiniProof({ port: Number(process.env.PORT || 5196) });
+    console.log(`Journey simple view proof: ${proof.url}`);
+    process.once('SIGINT', async () => { await proof.close(); process.exit(0); });
+  }
 }

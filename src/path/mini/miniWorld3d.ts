@@ -616,8 +616,9 @@ export function createMiniWorld(host: HTMLElement, options: {
   const L = new THREE.Vector3();
   function local(s: number, w: number, y: number): [number, number, number] { mp(s, w, y, L); return [L.x, L.y, L.z]; }
   function laneLabelLocal(lane: "everyday" | "prepare" | "protect" | "build"): [number, number, number] {
-    const span = viewSpan();
-    const s = clamp(sOf(day) - span * 0.5 + 0.2, sOf(0.6), sOf(dim + 0.4));
+    // The left edge of what the camera sees along the path (the page keeps the label clear of its rail).
+    const halfW = camDist * tanHalf * aspect() / Math.max(0.05, path.scale.x);
+    const s = clamp(sOf(day) - halfW * 0.98, sOf(0.6), sOf(dim + 0.4));
     return local(s, lane === "everyday" ? -0.45 : LANE_W[lane], 0.04);
   }
   const W = new THREE.Vector3();
@@ -867,7 +868,7 @@ export function createMiniWorld(host: HTMLElement, options: {
   const aspect = () => (width && height ? width / height : 1);
   const tanHalf = Math.tan(FOV / 2 * Math.PI / 180);
   const fitW = (w: number) => w / 2 / (tanHalf * aspect());
-  const fit = (w: number, h: number, p: number) => Math.max(fitW(w), h * Math.sin(p) / 2 / tanHalf) * 1.04;
+  const fit = (w: number, h: number, p: number) => Math.max(fitW(w), h * Math.sin(p) * 1.22 / 2 / tanHalf) * 1.04;
   function viewSpan() { return compact ? 5 : wide() ? (width >= 1000 ? 11 : 9) : 5.6; }
   function keyframe(i: number, out: typeof KA) {
     out.y = 0;
