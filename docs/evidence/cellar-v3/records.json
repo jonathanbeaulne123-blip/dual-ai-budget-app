@@ -1,0 +1,531 @@
+{
+  "records": [
+    {
+      "tag": "classic-320x700",
+      "chrome": "0",
+      "picks": [
+        "contribution:keyboard"
+      ],
+      "world": "auto",
+      "roomWorld": "3d",
+      "rest": {
+        "extras": [
+          {
+            "kind": "smaller",
+            "label": "Fictional music app — smaller: came in lower, Sep 3",
+            "px": "14px"
+          },
+          {
+            "kind": "missing",
+            "label": "Fictional video club — missing: not charged, Sep 5",
+            "px": "14px"
+          },
+          {
+            "kind": "contribution",
+            "label": "Sam (fictional)'s contributions since pay day, Sep 10 — a kitty bank of what actually came in",
+            "px": "14px"
+          },
+          {
+            "kind": "income",
+            "label": "Your pay, Sep 18 — glass: if all of it came in. Not money in the Fund.",
+            "px": "25.9px"
+          }
+        ],
+        "sub": "11 kitty jars on the rail · 1 of pay, in glass · 2 missing",
+        "figures": false
+      },
+      "zoomRead": "5.1",
+      "gateLine": "A little windfall. Fictional video club — missing: not charged, Sep 5. Pick it to read it.",
+      "card": {
+        "sparks": 10
+      },
+      "glass": "glass · hypotheticalYour pay day · Sep 18×If. If all of your pay came in — about $1800.00 — the Fund could stand at $550"
+    },
+    {
+      "tag": "classic-320x700",
+      "partner": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay",
+      "rolled": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay"
+    },
+    {
+      "tag": "classic-390x844",
+      "chrome": "1",
+      "picks": [],
+      "world": "auto",
+      "roomWorld": "3d",
+      "rest": {
+        "extras": [
+          {
+            "kind": "smaller",
+            "label": "Fictional music app — smaller: came in lower, Sep 3",
+            "px": "14px"
+          },
+          {
+            "kind": "missing",
+            "label": "Fictional video club — missing: not charged, Sep 5",
+            "px": "14px"
+          },
+          {
+            "kind": "contribution",
+            "label": "Sam (fictional)'s contributions since pay day, Sep 10 — a kitty bank of what actually came in",
+            "px": "14px"
+          },
+          {
+            "kind": "income",
+            "label": "Your pay, Sep 18 — glass: if all of it came in. Not money in the Fund.",
+            "px": "34.4px"
+          }
+        ],
+        "sub": "11 kitty jars on the rail · 1 of pay, in glass · 2 missing",
+        "figures": false
+      },
+      "zoomRead": "5.1",
+      "gateLine": "A little windfall. Fictional video club — missing: not charged, Sep 5. Pick it to read it.",
+      "card": {
+        "sparks": 10
+      },
+      "glass": "glass · hypotheticalYour pay day · Sep 18×If. If all of your pay came in — about $1800.00 — the Fund could stand at $550"
+    },
+    {
+      "tag": "classic-390x844",
+      "partner": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay",
+      "rolled": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay"
+    },
+    {
+      "tag": "classic-720x900",
+      "chrome": "1",
+      "picks": [],
+      "world": "auto",
+      "roomWorld": "3d",
+      "rest": {
+        "extras": [
+          {
+            "kind": "smaller",
+            "label": "Fictional music app — smaller: came in lower, Sep 3",
+            "px": "14px"
+          },
+          {
+            "kind": "missing",
+            "label": "Fictional video club — missing: not charged, Sep 5",
+            "px": "14px"
+          },
+          {
+            "kind": "contribution",
+            "label": "Sam (fictional)'s contributions since pay day, Sep 10 — a kitty bank of what actually came in",
+            "px": "14px"
+          },
+          {
+            "kind": "income",
+            "label": "Your pay, Sep 18 — glass: if all of it came in. Not money in the Fund.",
+            "px": "57.1px"
+          }
+        ],
+        "sub": "11 kitty jars on the rail · 1 of pay, in glass · 2 missing",
+        "figures": false
+      },
+      "zoomRead": "5.1",
+      "gateLine": "A little windfall. Fictional video club — missing: not charged, Sep 5. Pick it to read it.",
+      "card": {
+        "sparks": 10
+      },
+      "glass": "glass · hypotheticalYour pay day · Sep 18×If. If all of your pay came in — about $1800.00 — the Fund could stand at $550"
+    },
+    {
+      "tag": "classic-720x900",
+      "partner": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay",
+      "rolled": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay"
+    },
+    {
+      "tag": "classic-1100x800",
+      "chrome": "1",
+      "picks": [],
+      "world": "auto",
+      "roomWorld": "3d",
+      "rest": {
+        "extras": [
+          {
+            "kind": "smaller",
+            "label": "Fictional music app — smaller: came in lower, Sep 3",
+            "px": "14px"
+          },
+          {
+            "kind": "missing",
+            "label": "Fictional video club — missing: not charged, Sep 5",
+            "px": "14px"
+          },
+          {
+            "kind": "contribution",
+            "label": "Sam (fictional)'s contributions since pay day, Sep 10 — a kitty bank of what actually came in",
+            "px": "14px"
+          },
+          {
+            "kind": "income",
+            "label": "Your pay, Sep 18 — glass: if all of it came in. Not money in the Fund.",
+            "px": "24.3px"
+          }
+        ],
+        "sub": "11 kitty jars on the rail · 1 of pay, in glass · 2 missing",
+        "figures": false
+      },
+      "zoomRead": "5.1",
+      "gateLine": "A little windfall. Fictional video club — missing: not charged, Sep 5. Pick it to read it.",
+      "card": {
+        "sparks": 10
+      },
+      "glass": "glass · hypotheticalYour pay day · Sep 18×If. If all of your pay came in — about $1800.00 — the Fund could stand at $550"
+    },
+    {
+      "tag": "classic-1100x800",
+      "partner": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay",
+      "rolled": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay"
+    },
+    {
+      "tag": "taylor-320x700",
+      "chrome": "0",
+      "picks": [],
+      "world": "auto",
+      "roomWorld": "3d",
+      "rest": {
+        "extras": [
+          {
+            "kind": "smaller",
+            "label": "Fictional music app — smaller: came in lower, Sep 3",
+            "px": "14px"
+          },
+          {
+            "kind": "missing",
+            "label": "Fictional video club — missing: not charged, Sep 5",
+            "px": "14px"
+          },
+          {
+            "kind": "contribution",
+            "label": "Sam (fictional)'s contributions since pay day, Sep 10 — a kitty bank of what actually came in",
+            "px": "14px"
+          },
+          {
+            "kind": "income",
+            "label": "Your pay, Sep 18 — glass: if all of it came in. Not money in the Fund.",
+            "px": "25.9px"
+          }
+        ],
+        "sub": "11 kitty jars on the rail · 1 of pay, in glass · 2 missing",
+        "figures": false
+      },
+      "zoomRead": "5.1",
+      "gateLine": "A little windfall. Fictional video club — missing: not charged, Sep 5. Pick it to read it.",
+      "card": {
+        "sparks": 10
+      },
+      "glass": "glass · hypotheticalYour pay day · Sep 18×If. If all of your pay came in — about $1800.00 — the Fund could stand at $550"
+    },
+    {
+      "tag": "taylor-390x844",
+      "chrome": "1",
+      "picks": [],
+      "world": "auto",
+      "roomWorld": "3d",
+      "rest": {
+        "extras": [
+          {
+            "kind": "smaller",
+            "label": "Fictional music app — smaller: came in lower, Sep 3",
+            "px": "14px"
+          },
+          {
+            "kind": "missing",
+            "label": "Fictional video club — missing: not charged, Sep 5",
+            "px": "14px"
+          },
+          {
+            "kind": "contribution",
+            "label": "Sam (fictional)'s contributions since pay day, Sep 10 — a kitty bank of what actually came in",
+            "px": "14px"
+          },
+          {
+            "kind": "income",
+            "label": "Your pay, Sep 18 — glass: if all of it came in. Not money in the Fund.",
+            "px": "34.4px"
+          }
+        ],
+        "sub": "11 kitty jars on the rail · 1 of pay, in glass · 2 missing",
+        "figures": false
+      },
+      "zoomRead": "5.1",
+      "gateLine": "A little windfall. Fictional video club — missing: not charged, Sep 5. Pick it to read it.",
+      "card": {
+        "sparks": 10
+      },
+      "glass": "glass · hypotheticalYour pay day · Sep 18×If. If all of your pay came in — about $1800.00 — the Fund could stand at $550"
+    },
+    {
+      "tag": "taylor-390x844",
+      "partner": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay",
+      "rolled": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay"
+    },
+    {
+      "tag": "taylor-720x900",
+      "chrome": "1",
+      "picks": [],
+      "world": "auto",
+      "roomWorld": "3d",
+      "rest": {
+        "extras": [
+          {
+            "kind": "smaller",
+            "label": "Fictional music app — smaller: came in lower, Sep 3",
+            "px": "14px"
+          },
+          {
+            "kind": "missing",
+            "label": "Fictional video club — missing: not charged, Sep 5",
+            "px": "14px"
+          },
+          {
+            "kind": "contribution",
+            "label": "Sam (fictional)'s contributions since pay day, Sep 10 — a kitty bank of what actually came in",
+            "px": "14px"
+          },
+          {
+            "kind": "income",
+            "label": "Your pay, Sep 18 — glass: if all of it came in. Not money in the Fund.",
+            "px": "57.1px"
+          }
+        ],
+        "sub": "11 kitty jars on the rail · 1 of pay, in glass · 2 missing",
+        "figures": false
+      },
+      "zoomRead": "5.1",
+      "gateLine": "A little windfall. Fictional video club — missing: not charged, Sep 5. Pick it to read it.",
+      "card": {
+        "sparks": 10
+      },
+      "glass": "glass · hypotheticalYour pay day · Sep 18×If. If all of your pay came in — about $1800.00 — the Fund could stand at $550"
+    },
+    {
+      "tag": "taylor-1100x800",
+      "chrome": "1",
+      "picks": [],
+      "world": "auto",
+      "roomWorld": "3d",
+      "rest": {
+        "extras": [
+          {
+            "kind": "smaller",
+            "label": "Fictional music app — smaller: came in lower, Sep 3",
+            "px": "14px"
+          },
+          {
+            "kind": "missing",
+            "label": "Fictional video club — missing: not charged, Sep 5",
+            "px": "14px"
+          },
+          {
+            "kind": "contribution",
+            "label": "Sam (fictional)'s contributions since pay day, Sep 10 — a kitty bank of what actually came in",
+            "px": "14px"
+          },
+          {
+            "kind": "income",
+            "label": "Your pay, Sep 18 — glass: if all of it came in. Not money in the Fund.",
+            "px": "24.3px"
+          }
+        ],
+        "sub": "11 kitty jars on the rail · 1 of pay, in glass · 2 missing",
+        "figures": false
+      },
+      "zoomRead": "5.1",
+      "gateLine": "A little windfall. Fictional video club — missing: not charged, Sep 5. Pick it to read it.",
+      "card": {
+        "sparks": 10
+      },
+      "glass": "glass · hypotheticalYour pay day · Sep 18×If. If all of your pay came in — about $1800.00 — the Fund could stand at $550"
+    },
+    {
+      "tag": "taylor-1100x800",
+      "partner": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay",
+      "rolled": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay"
+    },
+    {
+      "tag": "newfoundland-320x700",
+      "chrome": "0",
+      "picks": [],
+      "world": "auto",
+      "roomWorld": "3d",
+      "rest": {
+        "extras": [
+          {
+            "kind": "smaller",
+            "label": "Fictional music app — smaller: came in lower, Sep 3",
+            "px": "14px"
+          },
+          {
+            "kind": "missing",
+            "label": "Fictional video club — missing: not charged, Sep 5",
+            "px": "14px"
+          },
+          {
+            "kind": "contribution",
+            "label": "Sam (fictional)'s contributions since pay day, Sep 10 — a kitty bank of what actually came in",
+            "px": "14px"
+          },
+          {
+            "kind": "income",
+            "label": "Your pay, Sep 18 — glass: if all of it came in. Not money in the Fund.",
+            "px": "25.9px"
+          }
+        ],
+        "sub": "11 kitty jars on the rail · 1 of pay, in glass · 2 missing",
+        "figures": false
+      },
+      "zoomRead": "5.1",
+      "gateLine": "A little windfall. Fictional video club — missing: not charged, Sep 5. Pick it to read it.",
+      "card": {
+        "sparks": 10
+      },
+      "glass": "glass · hypotheticalYour pay day · Sep 18×If. If all of your pay came in — about $1800.00 — the Fund could stand at $550"
+    },
+    {
+      "tag": "newfoundland-390x844",
+      "chrome": "1",
+      "picks": [],
+      "world": "auto",
+      "roomWorld": "3d",
+      "rest": {
+        "extras": [
+          {
+            "kind": "smaller",
+            "label": "Fictional music app — smaller: came in lower, Sep 3",
+            "px": "14px"
+          },
+          {
+            "kind": "missing",
+            "label": "Fictional video club — missing: not charged, Sep 5",
+            "px": "14px"
+          },
+          {
+            "kind": "contribution",
+            "label": "Sam (fictional)'s contributions since pay day, Sep 10 — a kitty bank of what actually came in",
+            "px": "14px"
+          },
+          {
+            "kind": "income",
+            "label": "Your pay, Sep 18 — glass: if all of it came in. Not money in the Fund.",
+            "px": "34.4px"
+          }
+        ],
+        "sub": "11 kitty jars on the rail · 1 of pay, in glass · 2 missing",
+        "figures": false
+      },
+      "zoomRead": "5.1",
+      "gateLine": "A little windfall. Fictional video club — missing: not charged, Sep 5. Pick it to read it.",
+      "card": {
+        "sparks": 10
+      },
+      "glass": "glass · hypotheticalYour pay day · Sep 18×If. If all of your pay came in — about $1800.00 — the Fund could stand at $550"
+    },
+    {
+      "tag": "newfoundland-390x844",
+      "partner": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay",
+      "rolled": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay"
+    },
+    {
+      "tag": "newfoundland-720x900",
+      "chrome": "1",
+      "picks": [],
+      "world": "auto",
+      "roomWorld": "3d",
+      "rest": {
+        "extras": [
+          {
+            "kind": "smaller",
+            "label": "Fictional music app — smaller: came in lower, Sep 3",
+            "px": "14px"
+          },
+          {
+            "kind": "missing",
+            "label": "Fictional video club — missing: not charged, Sep 5",
+            "px": "14px"
+          },
+          {
+            "kind": "contribution",
+            "label": "Sam (fictional)'s contributions since pay day, Sep 10 — a kitty bank of what actually came in",
+            "px": "14px"
+          },
+          {
+            "kind": "income",
+            "label": "Your pay, Sep 18 — glass: if all of it came in. Not money in the Fund.",
+            "px": "57.1px"
+          }
+        ],
+        "sub": "11 kitty jars on the rail · 1 of pay, in glass · 2 missing",
+        "figures": false
+      },
+      "zoomRead": "5.1",
+      "gateLine": "A little windfall. Fictional video club — missing: not charged, Sep 5. Pick it to read it.",
+      "card": {
+        "sparks": 10
+      },
+      "glass": "glass · hypotheticalYour pay day · Sep 18×If. If all of your pay came in — about $1800.00 — the Fund could stand at $550"
+    },
+    {
+      "tag": "newfoundland-1100x800",
+      "chrome": "1",
+      "picks": [],
+      "world": "auto",
+      "roomWorld": "3d",
+      "rest": {
+        "extras": [
+          {
+            "kind": "smaller",
+            "label": "Fictional music app — smaller: came in lower, Sep 3",
+            "px": "14px"
+          },
+          {
+            "kind": "missing",
+            "label": "Fictional video club — missing: not charged, Sep 5",
+            "px": "14px"
+          },
+          {
+            "kind": "contribution",
+            "label": "Sam (fictional)'s contributions since pay day, Sep 10 — a kitty bank of what actually came in",
+            "px": "14px"
+          },
+          {
+            "kind": "income",
+            "label": "Your pay, Sep 18 — glass: if all of it came in. Not money in the Fund.",
+            "px": "24.3px"
+          }
+        ],
+        "sub": "11 kitty jars on the rail · 1 of pay, in glass · 2 missing",
+        "figures": false
+      },
+      "zoomRead": "5.1",
+      "gateLine": "A little windfall. Fictional video club — missing: not charged, Sep 5. Pick it to read it.",
+      "card": {
+        "sparks": 10
+      },
+      "glass": "glass · hypotheticalYour pay day · Sep 18×If. If all of your pay came in — about $1800.00 — the Fund could stand at $550"
+    },
+    {
+      "tag": "newfoundland-1100x800",
+      "partner": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay",
+      "rolled": "missing · a little windfallFictional video club×Not charged. Fictional video club wasn't charged for Sep 5 — $18.00 stay"
+    },
+    {
+      "tag": "reduced-390x844",
+      "still": {
+        "anim": "none",
+        "opacity": "0.55",
+        "wave": "none"
+      }
+    },
+    {
+      "tag": "reduced-1100x800",
+      "still": {
+        "anim": "none",
+        "opacity": "0.55",
+        "wave": "none"
+      }
+    }
+  ],
+  "errors": []
+}
