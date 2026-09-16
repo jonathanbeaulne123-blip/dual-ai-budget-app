@@ -58,15 +58,18 @@ import type { BoardMediaClient } from "../boardMedia/index.ts";
 import { useBoardPhotoUrls } from "../boardMedia/householdBoardMedia.tsx";
 import { memoryPhotoMatches } from "./memoryPhotos.ts";
 import { PathMiniMap } from "./PathMiniMap.tsx";
+import { JourneyMini } from "./mini/JourneyMini.tsx";
+import { useMiniJourneyLoad } from "./mini/miniJourneyLoader.ts";
+import { miniCad } from "./mini/miniJourneyModel.ts";
 import { JOURNEY_LEVEL_FOR_WORLD, JOURNEY_LEVEL_LABEL, WORLD_LEVEL_FOR, useJourneyFocus, type JourneyFocus, type JourneyFocusApi, type JourneyFocusSource } from "./journeyFocus.ts";
 import type { ThemeId } from "../theme/scenes.ts";
 import type { PathAnchor, PathCharacter, PathEraIslandInput, PathLevel, PathQuality, PathWorld, PathWorldInput } from "./world/pathWorld3d.ts";
 import "./our-path-world.css";
 
 /**
- * What the page hands the simple view (D-284) through `renderMini`. The page mounts one on the page and, while
- * the open world is on screen, one compact copy in the world's corner. Both share the page's one focus.
- * The integrator can spread it straight onto JourneyMini: `renderMini={(args) => <JourneyMini {...args} />}`.
+ * What the page hands the simple view (D-284). By default the page mounts JourneyMini itself: one on the page and,
+ * while the open world is on screen, one compact copy in the world's corner. Both share the page's one focus.
+ * `renderMini` overrides that (tests, proofs); `null` shows the flat-map placeholder instead.
  */
 export type JourneyMiniSlotArgs = {
   household: Household;
@@ -82,6 +85,8 @@ export type JourneyMiniSlotArgs = {
   quality: PathQuality;
   /** The open world is on screen: the page copy sits behind it (inert, hidden) and can pause itself. */
   worldOpen: boolean;
+  /** My own private to-dos may show (Mine is on and the lantern is above Dim), as with the world's footpaths. */
+  privateShown: boolean;
 };
 
 /** Game mode timings (ms). Reduced motion cuts both. */
@@ -241,9 +246,9 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   proofWorld?: { onWorld?: (world: PathWorld | null) => void; idleMs?: number; paused?: boolean };
   /**
    * The simple view (D-284). Rendered in the page's `data-slot="journey-mini"` and, compact, in the open world's
-   * corner. Without it the page shows the flat map as a placeholder.
+   * corner. Default: JourneyMini with the page's Fund and planner links. `null`: the flat map as a placeholder.
    */
-  renderMini?: (args: JourneyMiniSlotArgs) => ReactNode;
+  renderMini?: ((args: JourneyMiniSlotArgs) => ReactNode) | null;
 }) {
   const appearance = useAppearance();
   // Callback props are only used in handlers: read them through one ref so an inline arrow in the App never
@@ -861,6 +866,14 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   view.current = { level, lantern, marks, selected };
   const latestInput = useRef(worldInput);
   latestInput.current = worldInput;
+  // The person moved the world's camera themselves: the simple view follows to the month it now aims at.
+  const viewRef = useRef<(v: { level: PathLevel; month: number | null }) => void>(() => {});
+  viewRef.current = (v) => {
+    if (!fullRef.current || !worldSynced.current || v.month === null) return;
+    const date = dateForMonth(v.month);
+    if (!date || monthForDate(focusRef.current.date) === v.month) return;
+    journeyRef.current.set({ date }, "world");
+  };
   const selectRef = useRef<(id: string, from?: JourneyFocusSource) => void>(() => {});
   // The controls and the open card sit over the canvas: a mark under them could be seen but not pressed, so it waits.
   const obstacles = useRef<{ x0: number; x1: number; y0: number; y1: number; card: boolean }[]>([]);
@@ -960,6 +973,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
             onAnchors: applyAnchors,
             onLevel: (lv) => { if (dead) return; setLevel(lv); worldLevel.current = lv; reportLevel(lv); },
             onPick: (id) => selectRef.current(id, "world"),
+            onView: (v) => { if (!dead) viewRef.current(v); },
           });
         } catch {
           if (!dead) { setLive(false); setFailed(true); }
@@ -987,15 +1001,20 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   }, [worldInput, live, shown, months]);
   // The shared focus moves the world (when someone else moved it): a place it knows, a month, an era, or the whole journey.
   const appliedWorldSeq = useRef(-1);
+  const appliedWorld = useRef<{ selected: string | null; date: string; level: string } | null>(null);
   useEffect(() => {
     const current = world.current;
     if (!full) worldSynced.current = false;
     if (!live || !current || !full || tentOpen) return;
     if (focus.seq === appliedWorldSeq.current && worldSynced.current) return;
     appliedWorldSeq.current = focus.seq;
+    const first = !worldSynced.current;
     worldSynced.current = true;
+    const previous = appliedWorld.current;
+    appliedWorld.current = { selected: focus.selected, date: focus.date, level: focus.level };
     if (focus.source === "world") return;
-    const id = focus.selected;
+    // A pick travels to the place; a later move through time (same pick, new date or level) travels through time.
+    const id = focus.selected && (first || !previous || previous.selected !== focus.selected) ? focus.selected : null;
     if (id && id !== "tent" && marks.some((mark) => mark.id === id)) {
       const hint = pickHint(id);
       guardTrip(hint);
@@ -1009,7 +1028,13 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     // A mini-only pick (a bill, a contribution, a task) or no pick: travel to the month in view.
     if (focus.level === "journey") { guardTrip(0); current.setLevel(0); return; }
     const lv = WORLD_LEVEL_FOR[focus.level];
-    if (focus.level === "era" && currentEra) { guardTrip(lv); current.focus("era-home", lv); return; }
+    if (focus.level === "era") {
+      // The era the date falls in: its own island (its fog lifts), or the one we are on.
+      const key = focus.date.slice(0, 7);
+      const era = eras.find((row) => (row.months.length ? row.months.includes(key) : key >= row.spec.from && (!row.spec.by || key <= row.spec.by)));
+      if (era && era.state !== "current") { guardTrip(2); setFocusedEra(era.id); current.focus(`era:${era.id}`, 2); return; }
+      if (currentEra) { guardTrip(lv); setFocusedEra(null); current.focus("era-home", lv); return; }
+    }
     const m = monthForDate(focus.date);
     if (m < 0) return;
     guardTrip(lv);
@@ -1559,6 +1584,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   // Hercules waits at the tent; with a "?" signpost on the island he leans toward the pawprints.
   const herculesPose: HerculesFigurePose = unknown.length ? "stretch" : "sit";
   const recipeRows = shapePathWorld(household.pathWorld).filter((row): row is PathRecipeRow => row.kind === "recipe");
+  const miniLoad = useMiniJourneyLoad(household, { memberId, view: "household", today });
   // What the open world is looking at, in words (the caption at the bottom of the screen).
   const caption = (() => {
     const eraOf = (id: string | null) => eras.find((era) => `era:${era.id}` === id || (id?.startsWith(`era:${era.id}:`) ?? false)) ?? null;
@@ -1580,8 +1606,21 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     const day = focus.date === today ? "Today" : dayName(focus.date);
     return { level: JOURNEY_LEVEL_LABEL[focus.level], title: focus.level === "day" ? day : `${focus.date === today ? "This week" : `Week of ${dayName(focus.date)}`}`, sub: [monthWords, nearWords ?? eraWords].filter(Boolean).join(" · ") };
   })();
+  // The Fund's lanes, read once for both views (the simple view's own loader entry): the same numbers everywhere.
+  const trackers = (() => {
+    const fund = miniLoad.state.fund;
+    if (!fund) return miniLoad.state.failed ? null : "pending" as const;
+    if (!fund.ready) return null;
+    return (["prepare", "protect", "build"] as const).map((lane) => {
+      const row = fund.lanes[lane];
+      return { lane, label: row.label, amount: `${miniCad(row.amountCents)}${row.targetCents ? ` of ${miniCad(row.targetCents)}` : ""}` };
+    });
+  })();
+  const mini = renderMini === undefined
+    ? (args: JourneyMiniSlotArgs) => <JourneyMini {...args} view="household" onOpenFund={onOpenFund ? () => links.current.onOpenFund?.() : undefined} onOpenPlanner={onOpenPlanner ? () => links.current.onOpenPlanner?.() : undefined} />
+    : renderMini;
   const miniArgs = (compact: boolean): JourneyMiniSlotArgs => ({
-    household, memberId, today, focus: journey, compact, theme, quality, worldOpen: full,
+    household, memberId, today, focus: journey, compact, theme, quality, worldOpen: full, privateShown,
     onOpenWorld: compact ? () => {} : enterWorld,
   });
   const flatMap = (
@@ -1638,7 +1677,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
 
         {/* The simple view (D-284) leads the page. The integrator mounts JourneyMini here through renderMini. */}
         <div className="path-world__simple" data-slot="journey-mini" data-world-open={full || undefined}>
-          {renderMini ? renderMini(miniArgs(false)) : (
+          {mini ? mini(miniArgs(false)) : (
             <div className="path-world__preview-card">
               <div className="path-world__flat path-world__preview" aria-hidden="true">{flatMap}</div>
               <div className="path-world__preview-copy">
@@ -1744,15 +1783,23 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
                   </div>
                 )}
               </div>
-              {!(flat && !renderMini) && (
+              {!(flat && !mini) && (
                 <div className="path-hud__mini" data-slot="journey-mini-compact">
-                  {renderMini ? renderMini(miniArgs(true)) : <div className="path-hud__flatmini" aria-hidden="true">{flatMap}</div>}
+                  {mini ? mini(miniArgs(true)) : <div className="path-hud__flatmini" aria-hidden="true">{flatMap}</div>}
                 </div>
               )}
               <p className="path-hud__caption" aria-live="polite">
                 <span className="path-hud__caption-level">{caption.level}</span>
                 <strong>{caption.title}</strong>
                 {caption.sub && <span className="path-hud__caption-sub">{caption.sub}</span>}
+                {/* The Fund's lanes, as the simple view shows them. Not at Dim: a glance at a shared screen shows words only. */}
+                {lantern >= 1 && trackers && (
+                  <span className="path-hud__trackers" data-pending={trackers === "pending" || undefined}>
+                    {trackers === "pending"
+                      ? (["Prepare", "Protect", "Build"] as const).map((label) => <span key={label} className={`path-hud__tracker path-hud__tracker--${label.toLowerCase()}`}><b>{label}</b><i className="path-hud__shimmer" aria-hidden="true" /></span>)
+                      : trackers.map((row) => <span key={row.lane} className={`path-hud__tracker path-hud__tracker--${row.lane}`}><b>{row.label}</b> {row.amount}</span>)}
+                  </span>
+                )}
               </p>
               <div className="path-hud__dock">
                 <div className="path-world__rail" role="group" aria-label="Distance">

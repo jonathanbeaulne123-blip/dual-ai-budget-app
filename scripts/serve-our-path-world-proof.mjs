@@ -163,7 +163,7 @@ function Proof() {
       onOpenTogether: () => { window.__opened = 'together'; }, onOpenCharter: () => { window.__opened = 'charter'; }, onOpenFund: () => { window.__opened = 'fund'; }, onOpenCalendar: () => { window.__opened = 'calendar'; }, onOpenPlanner: () => { window.__opened = 'planner'; }, onOpenInTent: (source) => { window.__opened = source; },
       onOpenPlay: q.get('play') === '0' ? undefined : () => { window.__opened = 'play'; }, onOpenTimeMachine: (monthKey) => { window.__opened = 'timeMachine:' + monthKey; },
       boardMedia: q.get('photos') === '1' ? proofMedia : null,
-      renderMini: q.get('mini') === 'stub' ? (args) => React.createElement(StubMini, args) : undefined,
+      renderMini: q.get('mini') === 'stub' ? (args) => React.createElement(StubMini, args) : q.get('mini') === 'none' ? null : undefined,
       classicRoom: React.createElement('div', { id: 'classic-room' }, React.createElement('h2', null, "Today's Our Path"), React.createElement('p', null, 'Chapter room and Plan Studio render here in the app.')) })];
   // ?chrome=1 (D-285): the App's own header and bottom nav around the page (real classes, real CSS), to prove game mode hides them.
   if (q.get('chrome') !== '1') return React.createElement('div', { className: 'app', 'data-ledger-tab': 'plan', style: { padding: '12px' } }, ...body);

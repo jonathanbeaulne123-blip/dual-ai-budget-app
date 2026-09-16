@@ -216,6 +216,12 @@ export const IDLE_MS = 20_000;
  * Game mode (D-285): the month a journey focus asks for, clamped to the months the island has grown so far
  * (the Replay slider can hold the island at an earlier month; a later date rests on the newest one).
  */
+/** The grown month whose spot is nearest (x, z), or null when the aim is farther than `reach` from every one (another era's island). */
+export function nearestMonthIndex(spot: (m: number) => { x: number; z: number }, cur: number, x: number, z: number, reach = 30): number | null {
+  let best: number | null = null, bestD = reach * reach;
+  for (let m = 0; m <= cur; m++) { const p = spot(m); const d = (p.x - x) ** 2 + (p.z - z) ** 2; if (d <= bestD) { bestD = d; best = m; } }
+  return best;
+}
 export function monthFocusIndex(index: number, cur: number): number {
   if (!Number.isFinite(index)) return Math.max(0, cur);
   return Math.max(0, Math.min(Math.max(0, cur), Math.round(index)));
@@ -257,6 +263,8 @@ export function createPathWorld(host: HTMLElement, options: {
   onAnchors?: (anchors: PathAnchor[]) => void;
   onLevel?: (level: PathLevel) => void;
   onPick?: (id: string) => void;
+  /** Game mode (D-285): the person moved the camera themselves and it came to rest; the grown month nearest its aim. */
+  onView?: (view: { level: PathLevel; month: number | null }) => void;
   brass?: string;
   wood?: string;
   /** Full: soft shadows and every decorative ticker. Lite: no shadows, fewer pixels, no ambient decor. */
@@ -2273,13 +2281,27 @@ export function createPathWorld(host: HTMLElement, options: {
     } else { cam.theta -= dx * 0.006; cam.phi = Math.max(0.35, Math.min(1.3, cam.phi + dy * 0.004)); }
     invalidate();
   };
+  // A gesture that comes to rest tells the page where the camera now aims (debounced).
+  let viewTimer: ReturnType<typeof setTimeout> | null = null;
+  const gestured = () => {
+    if (!options.onView) return;
+    if (viewTimer) clearTimeout(viewTimer);
+    viewTimer = setTimeout(() => {
+      viewTimer = null;
+      if (dead || !options.onView) return;
+      const month = current ? nearestMonthIndex(current.island.spot, current.island.cur, cam.tx, cam.tz) : null;
+      options.onView({ level: levelOf(cam.r), month });
+    }, 360);
+  };
+  cleanup.push(() => { if (viewTimer) clearTimeout(viewTimer); });
   const onUp = (e: PointerEvent) => {
     const single = pointers.size === 1;
     pointers.delete(e.pointerId);
     if (pointers.size < 2) pinch = 0;
     if (single && moved < 6) pick(e.clientX, e.clientY);
+    else if (!pointers.size) gestured();
   };
-  const onWheel = (e: WheelEvent) => { e.preventDefault(); fly = null; cam.r = Math.max(14, Math.min(maxRadius(), cam.r * Math.exp(e.deltaY * 0.001))); invalidate(); };
+  const onWheel = (e: WheelEvent) => { e.preventDefault(); fly = null; cam.r = Math.max(14, Math.min(maxRadius(), cam.r * Math.exp(e.deltaY * 0.001))); invalidate(); gestured(); };
   const onContext = (e: Event) => e.preventDefault();
   el.addEventListener("pointerdown", onDown);
   el.addEventListener("pointermove", onMove);

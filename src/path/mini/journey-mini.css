@@ -333,3 +333,21 @@
   transition: none; border-radius: var(--r, 999px);
 }
 :is(:root[data-theme], :root) .journey-mini.journey-mini--compact :is(.journey-mini__zoom, .journey-mini__levels button) { min-height: 30px; }
+
+/* D-285 integration: staged reading. Shapes shimmer where numbers and days are still arriving. */
+.journey-mini__shimmer { display: inline-block; vertical-align: middle; width: 4.2em; height: 0.8em; margin-left: 0.4em; border-radius: 999px;
+  background: linear-gradient(90deg, color-mix(in srgb, currentColor 14%, transparent) 0%, color-mix(in srgb, currentColor 32%, transparent) 50%, color-mix(in srgb, currentColor 14%, transparent) 100%);
+  background-size: 200% 100%; animation: journey-mini-shimmer 1.4s ease-in-out infinite; }
+@keyframes journey-mini-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+.journey-mini__stage[data-busy="true"]::after { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 1;
+  background: linear-gradient(105deg, transparent 30%, color-mix(in srgb, var(--mini-paper, #fff) 55%, transparent) 50%, transparent 70%);
+  background-size: 250% 100%; animation: journey-mini-shimmer 1.6s ease-in-out infinite; }
+.journey-mini__loading { gap: 12px; align-content: center; }
+.journey-mini__loading::before { content: ""; width: min(62%, 280px); height: min(38%, 120px); border-radius: 50% / 45%; justify-self: center;
+  border: 10px solid color-mix(in srgb, var(--mini-muted, #888) 16%, transparent);
+  background: linear-gradient(105deg, transparent 30%, color-mix(in srgb, var(--mini-muted, #888) 18%, transparent) 50%, transparent 70%);
+  background-size: 250% 100%; animation: journey-mini-shimmer 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .journey-mini__shimmer, .journey-mini__stage[data-busy="true"]::after, .journey-mini__loading::before { animation: none; } }
+:root[data-motion="reduced"] :is(.journey-mini__shimmer, .journey-mini__stage[data-busy="true"]::after, .journey-mini__loading::before) { animation: none; }
+/* In the open world's corner the minimap fills its slot. */
+.path-hud__mini .journey-mini--compact { position: absolute; inset: 0; }

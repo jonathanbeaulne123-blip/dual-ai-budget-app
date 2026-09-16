@@ -65,7 +65,7 @@ function Harness({ initial, today, extra }: { initial: Household; today: string;
     createElement("button", { id: "switch", onClick: () => setMember(member === "MEM-001" ? "MEM-002" : "MEM-001") }, "switch"),
     createElement(OurPathWorld, {
       household, memberId: member, today, busy: false, onCommand, theme: "taylor", ...extra,
-      classicRoom: createElement("div", { id: "classic" }, createElement("input", { id: "draft", defaultValue: "" })),
+      renderMini: null, classicRoom: createElement("div", { id: "classic" }, createElement("input", { id: "draft", defaultValue: "" })),
     }));
 }
 
@@ -206,7 +206,7 @@ describe("Our Path world page (D-262)", () => {
 
   it("opens straight into the tent without building the world, and builds it awake once it is opened", async () => {
     created.mode = "fake";
-    await act(async () => root.render(createElement(OurPathWorld, { household: seeded(), memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "newfoundland", classicRoom: createElement("p", null, "today"), openTentFor: { kind: "goal", id: "G" } })));
+    await act(async () => root.render(createElement(OurPathWorld, { household: seeded(), memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "newfoundland", renderMini: null, classicRoom: createElement("p", null, "today"), openTentFor: { kind: "goal", id: "G" } })));
     await settle();
     expect($(".path-world__room").hidden).toBe(false);
     expect(created.count).toBe(0);
@@ -221,7 +221,7 @@ describe("Our Path world page (D-262)", () => {
 
   it("tells the App the tent closed when the page unmounts with the tent open", async () => {
     const tent: boolean[] = [];
-    await act(async () => root.render(createElement(OurPathWorld, { household: seeded(), memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null, onTentChange: (open: boolean) => tent.push(open) })));
+    await act(async () => root.render(createElement(OurPathWorld, { household: seeded(), memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", renderMini: null, classicRoom: null, onTentChange: (open: boolean) => tent.push(open) })));
     await settle();
     await click(byText("Open the Plan Studio tent"));
     expect(tent).toEqual([true]);
@@ -233,7 +233,7 @@ describe("Our Path world page (D-262)", () => {
     created.mode = "fake";
     const h = seeded();
     const page = (n: number) => createElement(OurPathWorld, {
-      household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null,
+      household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", renderMini: null, classicRoom: null,
       onOpenPlay: () => n, onOpenInTent: () => n, onOpenTogether: () => n, onOpenCharter: () => n, onOpenFund: () => n, onOpenCalendar: () => n,
       onOpenPlanner: () => n, onOpenTimeMachine: () => n, onOpenBank: () => n, onTentChange: () => n,
     });
@@ -247,14 +247,14 @@ describe("Our Path world page (D-262)", () => {
     await settle();
     expect(world.setScene).toHaveBeenCalledTimes(calls);
     // The cottage still follows whether Play can open at all.
-    await act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null })));
+    await act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", renderMini: null, classicRoom: null })));
     expect(world.setScene).toHaveBeenCalledTimes(calls + 1);
     expect((world.setScene.mock.calls.at(-1)![0] as { cottage: boolean }).cottage).toBe(false);
   });
 
   it("opens the tent when a Hercules source link arrives, and moves focus with the tent", async () => {
     const focus = { kind: "goal", id: "G" };
-    await act(async () => root.render(createElement(OurPathWorld, { household: seeded(), memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: createElement("p", { id: "classic" }, "today"), openTentFor: focus })));
+    await act(async () => root.render(createElement(OurPathWorld, { household: seeded(), memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", renderMini: null, classicRoom: createElement("p", { id: "classic" }, "today"), openTentFor: focus })));
     await settle();
     expect($(".path-world__room").hidden).toBe(false);
     await click(byText("Back to the island"));
@@ -362,7 +362,7 @@ describe("Our Path world page (D-262)", () => {
     const h = seeded();
     const trip = h.goals.find((g) => g.name === "Fictional trip to the shore")!;
     let commands = 0;
-    await act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => { commands += 1; return { ok: true }; }, theme: "classic", onOpenBank: (id: string) => opened.push(id), onTentChange: (open: boolean) => tent.push(open), classicRoom: createElement("input", { id: "draft" }) })));
+    await act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => { commands += 1; return { ok: true }; }, theme: "classic", onOpenBank: (id: string) => opened.push(id), onTentChange: (open: boolean) => tent.push(open), renderMini: null, classicRoom: createElement("input", { id: "draft" }) })));
     await settle();
     await click([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].find((b) => b.textContent?.startsWith("Fictional trip to the shore"))!);
     expect($(".path-world__card h3").textContent).toBe("Fictional trip to the shore");
@@ -381,7 +381,7 @@ describe("Our Path world page (D-262)", () => {
   it("stands a kiln beside the landmarks once a shared bank exists, warm only after a recent firing", async () => {
     const outline = () => [...host.querySelectorAll(".path-world__outline button")].map((b) => b.textContent ?? "");
     const none = { ...seeded(), goals: [] };
-    await act(async () => root.render(createElement(OurPathWorld, { household: none, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null })));
+    await act(async () => root.render(createElement(OurPathWorld, { household: none, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", renderMini: null, classicRoom: null })));
     await settle();
     expect(outline().some((t) => t.startsWith("The kiln"))).toBe(false);
 
@@ -390,7 +390,7 @@ describe("Our Path world page (D-262)", () => {
     const piece = (firedAt: string | null) => ({ ...newKittyPiece("PIECE-FICTIONAL", "2026-09-01T12:00:00.000Z"), firedAt });
     const withStudio = (studio: KittyStudioV1 | undefined): Household => ({ ...h, goals: h.goals.map((g) => (g.id === trip.id ? { ...g, envelope: { ...(g.envelope ?? {}), studio } as Goal["envelope"] } : g)) });
     const opened: string[] = [];
-    const show = async (household: Household) => act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", onOpenBank: (id: string) => opened.push(id), classicRoom: null })));
+    const show = async (household: Household) => act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", onOpenBank: (id: string) => opened.push(id), renderMini: null, classicRoom: null })));
     const openCard = async (prefix: string) => click([...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].find((b) => b.textContent?.startsWith(prefix))!);
 
     await show(withStudio(undefined));
@@ -420,7 +420,7 @@ describe("Our Path world page (D-262)", () => {
   it("hands the world each bank's step as of the shown month, so Replay shows the banks growing", async () => {
     created.mode = "fake";
     const h = seeded();
-    await act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "taylor", classicRoom: null })));
+    await act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "taylor", renderMini: null, classicRoom: null })));
     await settle();
     await enter();
     const world = created.worlds[0] as FakeWorld;
@@ -457,7 +457,7 @@ describe("Our Path world page (D-262)", () => {
 
     it("makes the open Chapter's campfire a door to Together, keeping the Chapter room as the second way in", async () => {
       const together: number[] = [];
-      await act(async () => root.render(createElement(OurPathWorld, { household: seeded(), memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", onOpenTogether: () => together.push(1), classicRoom: createElement("p", null, "today") })));
+      await act(async () => root.render(createElement(OurPathWorld, { household: seeded(), memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", onOpenTogether: () => together.push(1), renderMini: null, classicRoom: createElement("p", null, "today") })));
       await settle();
       await openFromOutline("Make Rent Boring");
       const actions = [...host.querySelectorAll<HTMLButtonElement>(".path-world__card .path-world__actions button")];
@@ -472,7 +472,7 @@ describe("Our Path world page (D-262)", () => {
 
     it("stands the Charter as a stone square: words only, waiting until both sign, and a link to read it", async () => {
       const charters: number[] = [];
-      const show = async (household: Household) => act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "newfoundland", onOpenCharter: () => charters.push(1), classicRoom: null })));
+      const show = async (household: Household) => act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "newfoundland", onOpenCharter: () => charters.push(1), renderMini: null, classicRoom: null })));
       await show(seeded());
       await settle();
       expect(outline().some((b) => b.textContent?.startsWith("Our Charter"))).toBe(false);
@@ -504,7 +504,7 @@ describe("Our Path world page (D-262)", () => {
       const sources: unknown[] = [];
       const tent: boolean[] = [];
       let commands = 0;
-      await act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => { commands += 1; return { ok: true }; }, theme: "taylor", onOpenInTent: (source: unknown) => sources.push(source), onTentChange: (open: boolean) => tent.push(open), classicRoom: null })));
+      await act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => { commands += 1; return { ok: true }; }, theme: "taylor", onOpenInTent: (source: unknown) => sources.push(source), onTentChange: (open: boolean) => tent.push(open), renderMini: null, classicRoom: null })));
       await settle();
       await enter();
       const world = created.worlds[0] as FakeWorld;
@@ -527,7 +527,7 @@ describe("Our Path world page (D-262)", () => {
       let h = seeded();
       h = appendPlanSitdownTurn(h, { sitDownSessionId: "SITDOWN-FICTIONAL", monthKey: "2026-09", planDraftId: "LIFE-DRAFT", memberId: "MEM-001", text: "Fictional: let's start." }).household;
       h = closeBooksMonth(h, { monthKey: "2026-08", createdBy: "MEM-001" }).household;
-      const render = async (present: number) => act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", presentMembers: present, onOpenTogether: () => {}, classicRoom: null })));
+      const render = async (present: number) => act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", presentMembers: present, onOpenTogether: () => {}, renderMini: null, classicRoom: null })));
       await render(1);
       await settle();
       await enter();
@@ -570,7 +570,7 @@ describe("Our Path world page (D-262)", () => {
       cadence: "monthly", nextDate: "2026-09-25", type: "expense", amount: "100", accountId: "ACC-VISA", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Fictional internet",
       fundingDefault: { fundId: h.householdFund!.id, fundedCents: "full", destinationAccountId: "ACC-VISA" },
     }).household;
-    const render = async (household: Household, extra: Record<string, unknown> = {}) => act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: TODAY, busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null, ...extra })));
+    const render = async (household: Household, extra: Record<string, unknown> = {}) => act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: TODAY, busy: false, onCommand: async () => ({ ok: true }), theme: "classic", renderMini: null, classicRoom: null, ...extra })));
 
     it("turns Calendar bills into clouds and a storm, paydays into sunrises, with links only and no amounts", async () => {
       created.mode = "fake";
@@ -1138,7 +1138,7 @@ describe("Every place on the island is reachable from the DOM (a11y pass)", () =
   it("gives every pickable id the world is handed a mark button and an outline row", async () => {
     created.mode = "fake";
     const check = async (household: Household) => {
-      await act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: TODAY, busy: false, onCommand: async () => ({ ok: true }), theme: "newfoundland", onOpenPlay: () => {}, classicRoom: null })));
+      await act(async () => root.render(createElement(OurPathWorld, { household, memberId: "MEM-001", today: TODAY, busy: false, onCommand: async () => ({ ok: true }), theme: "newfoundland", onOpenPlay: () => {}, renderMini: null, classicRoom: null })));
       await settle();
       await enter();
       const world = created.worlds.at(-1) as FakeWorld;

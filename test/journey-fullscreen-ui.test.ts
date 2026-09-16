@@ -18,7 +18,7 @@ async function mount() {
   const onCommand = async (fn: (h: Household) => CommitResult) => ({ ok: true, household: fn(household).household });
   await act(async () => root.render(createElement(OurPathWorld, {
     household, memberId: "MEM-001", today: "2026-09-11", busy: false, onCommand, theme: "classic",
-    classicRoom: createElement("div", { id: "classic" }),
+    renderMini: null, classicRoom: createElement("div", { id: "classic" }),
   } as never)));
 }
 const toggle = () => host.querySelector<HTMLButtonElement>(".path-world__full")!;

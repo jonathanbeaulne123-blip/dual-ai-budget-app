@@ -997,7 +997,7 @@ export function createMiniWorld(host: HTMLElement, options: {
   }
 
   // ---------------------------------------------------------------- frames (render on demand)
-  let raf = 0, dead = false, offscreen = false, lastT = 0, frames = 0, gesture = false;
+  let raf = 0, dead = false, offscreen = false, paused = false, lastT = 0, frames = 0, gesture = false;
   const P = new THREE.Vector3();
   function frame(now: number) {
     raf = 0;
@@ -1030,7 +1030,7 @@ export function createMiniWorld(host: HTMLElement, options: {
     }
   }
   function invalidate() {
-    if (dead || raf || offscreen || (typeof document !== "undefined" && document.hidden)) return;
+    if (dead || raf || offscreen || paused || (typeof document !== "undefined" && document.hidden)) return;
     raf = requestAnimationFrame(frame);
   }
   const onHidden = () => { if (!document.hidden) invalidate(); };
@@ -1129,7 +1129,14 @@ export function createMiniWorld(host: HTMLElement, options: {
       return null;
     },
     refresh() { invalidate(); },
-    stats() { return { frames, z, day, quality, pickables: pickables.length, anchors: anchors.size }; },
+    /** Paused (the page copy behind the open world): no frames at all; the scene and view still update, and draw on resume. */
+    setPaused(next: boolean) {
+      if (next === paused) return;
+      paused = next;
+      if (paused && raf) { cancelAnimationFrame(raf); raf = 0; lastT = 0; }
+      if (!paused) invalidate();
+    },
+    stats() { return { frames, z, day, quality, paused, pickables: pickables.length, anchors: anchors.size }; },
     dispose() {
       if (dead) return;
       dead = true;

@@ -380,7 +380,20 @@ export function miniFund(household: Household, memberId: string, today: DateKey)
   };
 }
 
+/** The journey without its heavy parts (this month's days, the Fund's lanes): the first thing the map can draw. */
+export type MiniJourneyBase = Omit<MiniJourney, "month" | "fund">;
+
+/** The whole read-model in one call (tests, small households). The loader computes the same parts in stages. */
 export function miniJourney(household: Household, options: { memberId: string; view?: LedgerView; today: DateKey }): MiniJourney {
+  const base = miniJourneyBase(household, options);
+  return {
+    ...base,
+    month: miniMonth(household, base.nowMonth, { memberId: options.memberId, view: base.view, today: options.today, journey: base }),
+    fund: miniFund(household, options.memberId, options.today),
+  };
+}
+
+export function miniJourneyBase(household: Household, options: { memberId: string; view?: LedgerView; today: DateKey }): MiniJourneyBase {
   const view = options.view ?? "household";
   const { memberId, today } = options;
   const nowMonth = monthKeyFromDateKey(today);
@@ -443,10 +456,8 @@ export function miniJourney(household: Household, options: { memberId: string; v
   const earliest = worldKeys[0] && worldKeys[0] < first ? worldKeys[0] : first;
   const monthKeys = monthsBetween(earliest, last);
   const months = monthKeys.map((key) => summary(ctx, key));
-  const month = miniMonth(household, nowMonth, { memberId, view, today, journey: { months } });
   return {
-    today, memberId, view, nowMonth, eras, currentEraId: current?.id ?? null, months, month,
-    fund: miniFund(household, memberId, today),
+    today, memberId, view, nowMonth, eras, currentEraId: current?.id ?? null, months,
     span: { from: `${monthKeys[0]}-01`, to: `${monthKeys.at(-1)}-${String(daysInMonthKey(monthKeys.at(-1)!)).padStart(2, "0")}` },
     memberNames: names,
   };

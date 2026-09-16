@@ -83,7 +83,7 @@ function Harness({ initial, today = TODAY, extra }: { initial: Household; today?
     createElement("button", { id: "switch", onClick: () => setMember(member === ME ? PARTNER : ME) }, "switch"),
     createElement(OurPathWorld, {
       household, memberId: member, today, busy: false, onCommand, theme: "classic", ...extra,
-      classicRoom: createElement("div", { id: "classic" }, "Today's Our Path"),
+      renderMini: null, classicRoom: createElement("div", { id: "classic" }, "Today's Our Path"),
     }));
 }
 const $ = <T extends HTMLElement = HTMLElement>(selector: string) => host.querySelector<T>(selector)!;

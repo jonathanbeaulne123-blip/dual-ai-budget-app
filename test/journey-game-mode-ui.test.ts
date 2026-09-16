@@ -105,8 +105,8 @@ describe("Our Path page leads with the simple view (D-285)", () => {
     expect(corner.getAttribute("aria-pressed")).toBe("false");
   });
 
-  it("without renderMini shows a flat-map placeholder with an Open the world button", async () => {
-    await mount({ renderMini: undefined });
+  it("with renderMini: null shows a flat-map placeholder with an Open the world button", async () => {
+    await mount({ renderMini: null });
     const slot = $("[data-slot='journey-mini']");
     expect(slot.querySelector(".path-world__preview svg")).toBeTruthy();
     const open = byText("Open the world")!;
@@ -217,7 +217,7 @@ describe("Game mode: the open world, full screen (D-285)", () => {
 
   it("shows the flat map inside the open world when WebGL is missing", async () => {
     created.mode = "throw";
-    await mount({ renderMini: undefined });
+    await mount({ renderMini: null });
     await click(byText("Open the world")!);
     await settle();
     expect($(".path-world__stage .path-world__flat svg")).toBeTruthy();

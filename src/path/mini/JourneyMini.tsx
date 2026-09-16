@@ -5,14 +5,15 @@ import { useAppearance } from "../../theme/ThemeProvider.tsx";
 import type { ThemeId } from "../../theme/scenes.ts";
 import { JOURNEY_LEVELS, JOURNEY_LEVEL_LABEL, type JourneyFocusApi, type JourneyLevel } from "../journeyFocus.ts";
 import { flatLayout } from "./MiniFlat.tsx";
+import { useMiniJourneyLoad } from "./miniJourneyLoader.ts";
 import {
+  MINI_LANE_LABEL,
   miniCad,
   miniDateLabel,
   miniEraFor,
   miniItemWords,
-  miniJourney,
-  miniMonth,
   miniMonthLabel,
+  type MiniFund,
   type MiniEra,
   type MiniItem,
   type MiniJourney,
@@ -49,6 +50,10 @@ export type JourneyMiniProps = {
   onOpenPlanner?: () => void;
   /** Proof pages only: the live renderer. */
   proofWorld?: (world: MiniWorld | null) => void;
+  /** The open world is on screen and this (page) copy sits hidden behind it: stop drawing, keep following the focus. */
+  worldOpen?: boolean;
+  /** My own private to-dos show (default true). The page turns them off at the Dim lantern, like the world's footpaths. */
+  privateShown?: boolean;
 };
 
 type Card = { id: string; eyebrow: string; title: string; lines: string[]; actions: { label: string; run: () => void; primary?: boolean }[] };
@@ -69,6 +74,17 @@ type LabelDef = {
   below?: boolean;
 };
 
+/** The Fund's lanes before they are read: names only (the labels shimmer until the numbers land). */
+const PENDING_FUND: MiniFund = {
+  ready: false,
+  lanes: {
+    prepare: { lane: "prepare", label: MINI_LANE_LABEL.prepare, amountCents: 0, targetCents: null },
+    protect: { lane: "protect", label: MINI_LANE_LABEL.protect, amountCents: 0, targetCents: null },
+    build: { lane: "build", label: MINI_LANE_LABEL.build, amountCents: 0, targetCents: null },
+  },
+  everyday: { lane: "everyday", label: MINI_LANE_LABEL.everyday, amountCents: 0, targetCents: null },
+  source: "",
+};
 const LEVEL_INDEX: Record<JourneyLevel, number> = { day: 0, week: 1, month: 2, era: 3, journey: 4 };
 const NOTE = "Prepare, Protect and Build are a way of thinking about one Fund. Nothing on this map moves money at a bank.";
 const NOTE_SHORT = "The lanes are a way of thinking. Nothing here moves money.";
@@ -105,21 +121,19 @@ export function JourneyMini(props: JourneyMiniProps) {
   const [reduced] = useState(readReduced);
   const [forced] = useState(readForced);
 
-  // ------------------------------------------------------------------ the model (deferred: a big household takes a moment)
-  const [journey, setJourney] = useState<MiniJourney | null>(null);
-  const monthCache = useRef(new Map<string, MiniMonth>());
-  useEffect(() => {
-    let alive = true;
-    monthCache.current = new Map();
-    const timer = setTimeout(() => {
-      let next: MiniJourney | null = null;
-      try { next = miniJourney(household, { memberId, view, today }); } catch { next = null; }
-      if (!alive || !next) return;
-      monthCache.current.set(next.month.key, next.month);
-      setJourney(next);
-    }, 0);
-    return () => { alive = false; clearTimeout(timer); };
-  }, [household, memberId, view, today]);
+  // ------------------------------------------------------------------ the model (staged, off the main thread, shared per household)
+  const load = useMiniJourneyLoad(household, { memberId, view, today });
+  const { base, month: nowMonthDetail, fund: loadedFund } = load.state;
+  const journey: MiniJourney | null = useMemo(() => {
+    if (!base) return null;
+    const head = base.months.find((m) => m.key === base.nowMonth);
+    return {
+      ...base,
+      month: nowMonthDetail ?? (head ? skeletonMonth(head, today) : skeletonMonth({ key: base.nowMonth, label: miniMonthLabel(base.nowMonth), shortLabel: miniMonthLabel(base.nowMonth, false), worldIndex: null, worldId: null, eraId: null, lap: 0, status: "open", sitdown: "none", booksClosed: false, current: true, chapter: null }, today)),
+      fund: loadedFund ?? PENDING_FUND,
+    };
+  }, [base, nowMonthDetail, loadedFund, today]);
+  const fundPending = Boolean(base && !loadedFund);
 
   // ------------------------------------------------------------------ focus (shared with the world)
   const [level, setLevelState] = useState<number>(() => LEVEL_INDEX[focus.focus.level] ?? 1);
@@ -175,19 +189,25 @@ export function JourneyMini(props: JourneyMiniProps) {
     key: monthKey, label: miniMonthLabel(monthKey), shortLabel: miniMonthLabel(monthKey, false), worldIndex: null, worldId: null, eraId: null, lap: 0,
     status: monthKey > monthKeyFromDateKey(today) ? "ahead" : monthKey === monthKeyFromDateKey(today) ? "open" : "open", sitdown: "none", booksClosed: false, current: monthKey === monthKeyFromDateKey(today), chapter: null,
   }, [journey, monthKey, today]);
-  const [monthTick, setMonthTick] = useState(0);
-  const cachedMonth = journey ? monthCache.current.get(monthKey) : undefined;
-  const month: MiniMonth = cachedMonth ?? skeletonMonth(monthHead, today);
+  const cachedMonth = journey ? (monthKey === journey.nowMonth ? nowMonthDetail : load.month(monthKey)) : null;
+  const skeleton = useMemo(() => skeletonMonth(monthHead, today), [monthHead, today]);
+  const privateShown = props.privateShown !== false;
+  const month: MiniMonth = useMemo(() => {
+    const m = cachedMonth ?? skeleton;
+    if (privateShown || !m.days.some((d) => d.items.some((i) => i.kind === "task" && i.private))) return m;
+    const days = m.days.map((d) => ({ ...d, items: d.items.filter((i) => !(i.kind === "task" && i.private)) }));
+    const hidden = m.days.reduce((n, d) => n + d.items.filter((i) => i.kind === "task" && i.private).length, 0);
+    const weeks = m.weeks.map((w) => ({ ...w, tasks: days.filter((d) => d.date >= w.start && d.date <= w.end).reduce((n, d) => n + d.items.filter((i) => i.kind === "task").length, 0) }));
+    return { ...m, days, weeks, tasks: m.tasks - hidden };
+  }, [cachedMonth, skeleton, privateShown]);
   const monthLoading = Boolean(journey && !cachedMonth);
+  const requestMonth = load.request;
   useEffect(() => {
-    if (!journey || monthCache.current.has(monthKey)) return;
-    const timer = setTimeout(() => {
-      try { monthCache.current.set(monthKey, miniMonth(household, monthKey, { memberId, view, today, journey })); } catch { monthCache.current.set(monthKey, skeletonMonth(monthHead, today)); }
-      setMonthTick((n) => n + 1);
-    }, 90);
+    if (!journey || cachedMonth || monthKey === journey.nowMonth) return;
+    // A short pause: scrubbing through months only reads the one it stops on.
+    const timer = setTimeout(() => requestMonth(monthKey), 90);
     return () => clearTimeout(timer);
-  }, [journey, monthKey, household, memberId, view, today, monthHead]);
-  void monthTick;
+  }, [journey, cachedMonth, monthKey, requestMonth]);
 
   // Eras: the focused era, or the one we are in. A household without a journey reads as one open era.
   const eras: MiniEra[] = useMemo(() => {
@@ -349,6 +369,10 @@ export function JourneyMini(props: JourneyMiniProps) {
       .catch(() => { if (!dead) setLive(false); });
     return () => { dead = true; observer?.disconnect(); if (created) proofRef.current?.(null); created?.dispose(); world.current = null; };
   }, [qualityProp, forced, reduced, compact, applyFrame, epoch]);
+
+  // Behind the open world the page copy stops drawing (it keeps following the focus, so it is ready on minimize).
+  const paused = Boolean(props.worldOpen) && !compact;
+  useEffect(() => { world.current?.setPaused?.(paused); }, [paused, live]);
 
   // Scene and view follow the state.
   const viewDay = Math.min(dayOf(clampDate(date, span)), daysInMonthKey(monthKey));
@@ -760,8 +784,8 @@ export function JourneyMini(props: JourneyMiniProps) {
         const amount = fund.ready ? `${miniCad(tr.amountCents)}${tr.targetCents ? ` of ${miniCad(tr.targetCents)}` : ""}` : "";
         out.push({
           id: `lane:${lane}`, anchor: `lane:${lane}`, pick: `lane:${lane}`, levels: [0, 1], priority: 0.5, className: `journey-mini__lane journey-mini__lane--${lane}`,
-          aria: `${tr.label}${amount ? ` · ${amount}` : ""}`,
-          content: <><b>{tr.label}</b>{amount && <span> · {amount}</span>}</>,
+          aria: `${tr.label}${amount ? ` · ${amount}` : fundPending ? " · reading" : ""}`,
+          content: <><b>{tr.label}</b>{amount ? <span> · {amount}</span> : fundPending ? <span className="journey-mini__shimmer journey-mini__shimmer--amount" aria-hidden="true" /> : null}</>,
         });
       }
     }
@@ -820,7 +844,7 @@ export function JourneyMini(props: JourneyMiniProps) {
       });
     });
     return out;
-  }, [journey, month, fund, focusEra, eras, currentEraIndex, viewDay, compact]);
+  }, [journey, month, fund, fundPending, focusEra, eras, currentEraIndex, viewDay, compact]);
   labelDefs.current = labels;
   useEffect(() => { world.current?.refresh(); }, [labels, live]);
 
