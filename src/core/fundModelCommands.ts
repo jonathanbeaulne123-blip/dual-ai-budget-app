@@ -33,6 +33,7 @@ import {
   type UmbrellaId,
 } from "./fundRules.ts";
 import type { MonthKey } from "./calendar.ts";
+import { activeHouseholdFundEvents } from "./householdFund.ts";
 import type { Category, CommitResult, Household, LedgerView } from "./types.ts";
 import { ValidationError } from "./types.ts";
 import { isVisibleInView } from "./visibility.ts";
@@ -342,10 +343,10 @@ export const proposeFundDivision = captureCommand("proposeFundDivision", functio
 }): CommitResult {
   requireActiveMember(household, input.memberId);
   requireV2(household);
-  const event = (household.fundEvents ?? []).find((row) => row.id === input.contributionEventId && row.kind === "contribution-confirmed");
-  if (!event) throw new ValidationError("Only a confirmed contribution can be divided.");
-  const reversed = (household.fundEvents ?? []).some((row) => row.kind === "reversal" && row.relatedEventId === event.id);
-  if (reversed) throw new ValidationError("That contribution was reversed.");
+  const event = household.householdFund
+    ? activeHouseholdFundEvents(household, household.householdFund.id).find((row) => row.id === input.contributionEventId && row.kind === "contribution-confirmed")
+    : undefined;
+  if (!event) throw new ValidationError("Only a confirmed, active contribution can be divided.");
   const split = Object.fromEntries(FUND_IDS.map((fund) => [fund, input.split?.[fund] ?? 0])) as FundSplit;
   if (!FUND_IDS.every((fund) => Number.isSafeInteger(split[fund]) && split[fund] >= 0) || splitTotal(split) !== event.amountCents) {
     throw new ValidationError("The split has to add up to the contribution, to the cent.");
