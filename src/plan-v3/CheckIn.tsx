@@ -24,9 +24,9 @@ function Row({ label, sub, amount, tone, children }: { label: ReactNode; sub?: R
   );
 }
 
-function LineRows({ lines }: { lines: readonly PlanLine[] }) {
+function LineRows({ lines, title }: { lines: readonly PlanLine[]; title?: string }) {
   if (!lines.length) return null;
-  return <>{lines.map(line => <Row key={line.id} label={line.labelSnapshot} sub={[line.dueDate ? dayWords(line.dueDate) : null, line.cadence !== "monthly" ? line.cadence : null].filter(Boolean).join(" · ") || "in the plan"} amount={moneyWords(line.amountCents)} />)}</>;
+  return <>{title && <p className="pv3-grp">{title}</p>}{lines.map(line => <Row key={line.id} label={line.labelSnapshot} sub={[line.dueDate ? dayWords(line.dueDate) : null, line.cadence !== "monthly" ? line.cadence : null].filter(Boolean).join(" · ") || "in the plan"} amount={moneyWords(line.amountCents)} />)}</>;
 }
 
 function FundRows({ rows, empty }: { rows: readonly FundRow[]; empty: string }) {
@@ -55,7 +55,8 @@ export function CheckIn({ household, memberId, view, today, model, busy, run, in
     const at = steps.findIndex(step => step.id === wanted);
     return at >= 0 ? at : 0;
   });
-  const [answered, setAnswered] = useState<Set<string>>(() => new Set(steps.slice(0, index).map(step => step.id)));
+  // A resumed check-in shows the steps already walked; jumping ahead marks nothing as answered.
+  const [answered, setAnswered] = useState<Set<string>>(() => new Set(model.session.state === "active" && initialStep === model.session.stage ? steps.slice(0, index).map(step => step.id) : []));
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [remember, setRemember] = useState("");
   const [announce, setAnnounce] = useState("");
@@ -195,7 +196,7 @@ export function CheckIn({ household, memberId, view, today, model, busy, run, in
           {bills.length ? bills.map(row => <Row key={`${row.id}:${row.date}`} label={row.label} sub={`${dayWords(row.date)}${row.actual ? " · paid" : ""}`} amount={moneyWords(row.amountCents)} />) : <p className="pv3-muted">No dated bills in the Fund's month.</p>}
           <p className="pv3-grp">Now and then</p>
           <FundRows rows={snapshot.prepare.rows} empty="Nothing set aside for costs coming around yet." />
-          <LineRows lines={model.lenses.prepare.lines} />
+          <LineRows title="In the plan" lines={model.lenses.prepare.lines} />
           {low && <p className="pv3-muted">Tightest day: <b>{dayWords(low.date)}</b> · the Fund about <b className="pv3-amt">{moneyWords(low.balanceCents)}</b>.</p>}
         </div>
         {chips([look("Add or edit a bill", "tracing", "prepare"), look("Try a what-if", "tracing", "scenarios")])}
@@ -206,9 +207,10 @@ export function CheckIn({ household, memberId, view, today, model, busy, run, in
     case "protect":
       body = routine("protect", <>
         <div className="pv3-card">
-          <Row label="Protect" sub={snapshot.protect.line ?? "Our backup"} amount={snapshot.protect.amountCents === null ? "—" : moneyWords(snapshot.protect.amountCents)} />
+          <Row label={<b>Protect</b>} sub={snapshot.protect.line ?? "Our backup"} amount={snapshot.protect.amountCents === null ? "—" : moneyWords(snapshot.protect.amountCents)} />
+          <p className="pv3-grp">Held in Protect</p>
           <FundRows rows={snapshot.protect.rows} empty="Nothing held in Protect yet." />
-          <LineRows lines={model.lenses.protect.lines} />
+          <LineRows title="In the plan" lines={model.lenses.protect.lines} />
         </div>
         {chips([look("Open the Kitty bank", "kitty", "goals"), look("What if costs rise?", "tracing", "protect")])}
         {nav("Looks right")}
@@ -217,8 +219,9 @@ export function CheckIn({ household, memberId, view, today, model, busy, run, in
     case "build":
       body = routine("build", <>
         <div className="pv3-card">
+          <p className="pv3-grp">Growing in Build</p>
           <FundRows rows={snapshot.build.rows} empty="No goals growing yet." />
-          <LineRows lines={model.lenses.build.lines} />
+          <LineRows title="In the plan" lines={model.lenses.build.lines} />
         </div>
         {chips([look("Try another path", "tracing", "scenarios"), look("Open the nest", "kitty", "goals")])}
         {nav("Looks right")}
@@ -230,7 +233,7 @@ export function CheckIn({ household, memberId, view, today, model, busy, run, in
           <p className="pv3-kicker">Now</p>
           <p className="pv3-amt pv3-now__big">{snapshot.now.amountCents === null ? "—" : moneyWords(snapshot.now.amountCents)}</p>
           {snapshot.now.line && <p className="pv3-muted">{snapshot.now.line}</p>}
-          <LineRows lines={model.lenses.everyday.lines} />
+          <LineRows title="In the plan" lines={model.lenses.everyday.lines} />
         </div>
         {chips([look("Can we afford…?", "tracing", "everyday"), look("One useful idea", "recipe", "learn")])}
         {nav("Feels livable")}

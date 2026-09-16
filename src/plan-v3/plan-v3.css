@@ -71,7 +71,7 @@
   --pv3-primary: var(--pv3-ink); --pv3-on-primary: var(--pv3-paper);
 }
 
-.pv3 { position: relative; max-width: 1180px; margin: 0 auto; padding: 8px 16px 16px; font-family: var(--font, system-ui, sans-serif); }
+.pv3 { position: relative; max-width: 1180px; margin: 0 auto; padding: 8px 16px 150px; font-family: var(--font, system-ui, sans-serif); }
 .pv3 *, .pv3-veil * { box-sizing: border-box; }
 .pv3 button, .pv3-veil button, .pv3 input, .pv3-veil input { font: inherit; color: inherit; }
 .pv3 :is(h1, h2, h3), .pv3-veil :is(h1, h2, h3) { font-family: var(--pv3-display); line-height: 1.2; margin: 0; }
@@ -98,7 +98,7 @@
 .pv3-lite button[aria-pressed="true"] { background: var(--pv3-primary); color: var(--pv3-on-primary); }
 .pv3-error { display: flex; gap: 8px; align-items: center; justify-content: space-between; border: 1.5px solid var(--pv3-bad); color: var(--pv3-bad); background: var(--pv3-card); border-radius: 10px; padding: 6px 10px; }
 .pv3-error button { min-height: 44px; border: 1px solid currentColor; border-radius: 10px; background: transparent; cursor: pointer; }
-.pv3-toast { position: sticky; bottom: calc(var(--nav, 76px) + 150px); margin: 12px auto 0; max-width: 360px; background: var(--pv3-primary); color: var(--pv3-on-primary); padding: 10px 14px; border-radius: 10px; font-size: .9rem; z-index: 6; }
+.pv3-toast { position: fixed; left: 16px; right: 16px; bottom: calc(var(--nav, 76px) + 150px); margin: 12px auto 0; max-width: 360px; background: var(--pv3-primary); color: var(--pv3-on-primary); padding: 10px 14px; border-radius: 10px; font-size: .9rem; z-index: 6; }
 
 /* layout: one column on a phone, the drawer below; two columns and a side rail from 720px */
 .pv3-layout { display: flex; flex-direction: column; }
@@ -134,10 +134,9 @@
 .pv3-fund--protect { --c: var(--pv3-protect); } .pv3-fund--build { --c: var(--pv3-build); }
 .pv3-fund:hover { border-color: var(--c); }
 .pv3-fund.is-on { outline: 3px solid var(--c); outline-offset: 1px; }
-.pv3-fund__figrow { display: flex; align-items: flex-end; gap: 4px; height: 60px; }
+.pv3-fund__figrow { display: flex; align-items: flex-end; gap: 4px; min-height: 60px; }
 .pv3-fig { display: flex; flex-direction: column; align-items: center; }
 .pv3-fig .nest-portrait { display: block; width: 52px; height: 52px; position: relative; }
-.pv3-fig .nest-portrait svg { width: 100%; height: 100%; }
 .pv3-standin { font-size: .6rem; color: var(--pv3-muted); letter-spacing: .06em; text-transform: uppercase; border: 1px dashed var(--pv3-line); border-radius: 4px; padding: 0 4px; white-space: nowrap; }
 .pv3-meter { width: 8px; height: 52px; border: 1.5px solid var(--c); border-radius: 4px; position: relative; overflow: hidden; background: var(--pv3-card); }
 .pv3-meter i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--c); }
@@ -227,7 +226,7 @@
 .pv3-sum .pv3-amt { color: var(--pv3-ink); }
 .pv3-tabs { display: flex; gap: 6px; overflow-x: auto; margin: 8px 0 4px; padding-bottom: 2px; }
 .pv3-tabs button { flex: none; min-height: 44px; padding: 4px 12px; border-radius: 999px; border: 1px solid var(--pv3-line); background: transparent; cursor: pointer; font-size: .88rem; }
-.pv3-tabs button[aria-selected="true"] { background: var(--pv3-primary); color: var(--pv3-on-primary); border-color: var(--pv3-primary); }
+.pv3-veil .pv3-tabs button[aria-selected="true"] { background: var(--pv3-primary) !important; color: var(--pv3-on-primary) !important; border-color: var(--pv3-primary) !important; }
 .pv3-sheet__body .plan-studio--embedded { padding: 0; max-width: none; }
 .pv3-sheet__body .plan-studio--embedded .plan-studio__layout { display: block; margin-top: 4px; }
 .pv3-sheet__body .plan-studio--embedded .plan-studio__dock { position: static; }
@@ -276,14 +275,24 @@
 .pv3-set { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
 .pv3-set__map { width: 140px; height: 140px; flex: none; margin: 0 auto; }
 .pv3-set p { flex: 1 1 180px; margin: 0; }
-.pv3-checkin .chapter-close, .pv3-checkin .ritual-form { margin-top: 12px; }
+.pv3-checkin .chapter-close, .pv3-checkin .ritual-form { margin-top: 12px; background: var(--pv3-card); border: var(--pv3-edge); border-radius: var(--pv3-radius); padding: 12px 14px; }
+.pv3-checkin .chapter-close h4 { margin: 2px 0 4px; font-family: var(--pv3-display); }
+.pv3-checkin .chapter-close label, .pv3-checkin .ritual-form label { display: block; font-weight: 600; font-size: .88rem; margin-top: 8px; }
+.pv3-checkin .chapter-close input, .pv3-checkin .ritual-form :is(input, select) { display: block; width: 100%; margin-top: 4px; padding: 8px 10px; border: 1px solid var(--pv3-line); border-radius: 10px; background: var(--pv3-paper); color: var(--pv3-ink); }
+.pv3-checkin .chapter-outcomes { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 10px; }
+.pv3-checkin .chapter-outcomes button { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; padding: 10px 12px; border: var(--pv3-edge); border-radius: 12px; background: var(--pv3-paper); color: var(--pv3-ink); cursor: pointer; }
+.pv3-checkin .chapter-outcomes button small { color: var(--pv3-muted); font-size: .8rem; }
+.pv3-checkin .chapter-actions button, .pv3-checkin .chapter-close > button { margin-top: 10px; padding: 8px 14px; border-radius: 12px; border: 1px solid var(--pv3-primary); background: var(--pv3-primary); color: var(--pv3-on-primary); font-weight: 700; cursor: pointer; }
 .pv3-checkin .chapter-close button, .pv3-checkin .ritual-form button, .pv3-checkin .ritual-form input, .pv3-checkin .ritual-form select { min-height: 44px; }
-.pv3-tally { position: sticky; bottom: calc(var(--nav, 76px) + 8px); z-index: 4; margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--pv3-card); border: var(--pv3-edge); border-radius: 12px; padding: 8px 14px; box-shadow: 0 6px 18px rgba(40, 25, 10, .12); }
+.pv3[data-mode="checkin"] { padding-bottom: 80px; }
+.pv3[data-mode="checkin"] .pv3-dock { display: none; }
+.pv3-tally { position: fixed; left: 12px; right: 12px; bottom: calc(var(--nav, 76px) + 8px); z-index: 20; margin-top: 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--pv3-card); border: var(--pv3-edge); border-radius: 12px; padding: 8px 14px; box-shadow: 0 6px 18px rgba(40, 25, 10, .12); }
 .pv3-tally small { color: var(--pv3-muted); font-size: .75rem; margin-left: 4px; }
 .pv3-tally .pv3-amt { font-size: 1.15rem; }
 
 /* the tool drawer (1D) */
-.pv3-dock { position: sticky; bottom: calc(var(--nav, 76px) + env(safe-area-inset-bottom, 0px)); z-index: 5; margin: 40px -16px 0; background: var(--pv3-grain), var(--pv3-drawer); border-top: 3px solid var(--pv3-drawer-edge); box-shadow: 0 -8px 20px rgba(40, 25, 10, .2); padding: 22px 0 6px; display: flex; flex-direction: column; max-height: calc(100dvh - var(--nav, 76px) - 40px); font-size: 15px; line-height: 1.4; color: var(--pv3-ink); }
+/* On a phone the App's .app clips overflow, so nothing inside it can stick: the drawer is fixed above the navigation, as in 1D. */
+.pv3-dock { position: fixed; left: 0; right: 0; bottom: var(--nav, 76px); z-index: 20; margin: 0; background: var(--pv3-grain), var(--pv3-drawer); border-top: 3px solid var(--pv3-drawer-edge); box-shadow: 0 -8px 20px rgba(40, 25, 10, .2); padding: 22px 0 6px; display: flex; flex-direction: column; max-height: calc(100dvh - var(--nav, 76px) - 40px); font-size: 15px; line-height: 1.4; color: var(--pv3-ink); }
 .pv3-dock :focus-visible { outline-color: var(--pv3-ink); box-shadow: 0 0 0 6px #fff; }
 :root[data-theme="taylor"] .pv3-dock { border-top-style: dashed; }
 :root[data-theme="newfoundland"] .pv3-dock { border-top: 0; }
@@ -367,7 +376,9 @@
   .pv3-qread__big { font-size: 1.5rem; }
   .pv3-queenfig { width: 60px; height: 86px; }
   .pv3-fig .nest-portrait { width: 42px; height: 42px; }
-  .pv3-shelf > li { flex-basis: 46px; }
+  .pv3-shelf { padding-inline: 4px; --art: 40px; }
+  .pv3-shelf > li { flex-basis: 40px; }
+  .pv3-obj__name { font-size: 10.5px; }
   .pv3-dock__knob { min-width: 100px; }
   .pv3-dock { margin-inline: -12px; }
   .pv3-flow__weeks button { font-size: .74rem; }
@@ -383,9 +394,11 @@
   .pv3-cta { grid-area: cta; align-self: start; }
   .pv3-checkin { max-width: 640px; }
   .pv3-veil { justify-content: flex-end; align-items: stretch; }
-  .pv3-sheet { max-width: min(560px, 60vw); max-height: none; height: 100%; border-radius: 18px 0 0 18px; padding-top: 14px; }
+  .pv3-veil .pv3-sheet { margin: 0; max-width: min(560px, 60vw); max-height: none; height: 100%; border-radius: 18px 0 0 18px; padding-top: 14px; }
   .pv3-sheet__grab { display: none; }
-  .pv3-dock { position: sticky; top: 16px; bottom: auto; margin: 0; width: 112px; max-height: calc(100dvh - 32px); border: 3px solid var(--pv3-drawer-edge); border-radius: 16px; padding: 8px 0; }
+  .pv3, .pv3[data-mode="checkin"] { padding-bottom: 24px; }
+  .pv3[data-mode="checkin"] .pv3-dock { display: flex; }
+  .pv3-dock { position: sticky; top: 16px; bottom: auto; left: auto; right: auto; margin: 0; width: 112px; max-height: calc(100dvh - 32px); border: 3px solid var(--pv3-drawer-edge); border-radius: 16px; padding: 8px 0; }
   .pv3[data-lite="true"] .pv3-dock { border: 2px solid var(--pv3-line); }
   :root[data-theme="taylor"] .pv3-dock { border-style: dashed; }
   :root[data-theme="newfoundland"] .pv3-dock { border: 6px solid #5f5a50; }
@@ -399,8 +412,8 @@
   .pv3-obj__name { font-size: 12.5px; }
   .pv3-dock[data-open="true"] .pv3-shelf { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 8px; }
   .pv3-dock__whisper { left: auto; right: calc(100% + 12px); bottom: auto; top: 40%; max-width: 260px; }
-  .pv3-tally { bottom: 16px; }
-  .pv3-toast { bottom: 16px; }
+  .pv3-tally { position: sticky; left: auto; right: auto; bottom: 16px; }
+  .pv3-toast { position: sticky; left: auto; right: auto; bottom: 16px; }
 }
 
 @media (prefers-reduced-motion: no-preference) {

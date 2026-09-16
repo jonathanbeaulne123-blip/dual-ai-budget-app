@@ -53,7 +53,9 @@ export default function PlanStudioV3(props: PlanStudioProps & { snapshotSource?:
   }, [onCommand]);
 
   useEffect(() => { if (!notice) return; const timer = window.setTimeout(() => setNotice(""), 4000); return () => window.clearTimeout(timer); }, [notice]);
-  useEffect(() => { if (mode.kind === "rest") restHeading.current?.querySelector<HTMLElement>("#pv3-rest-heading")?.focus({ preventScroll: true }); }, [mode.kind]);
+  // Coming back from the check-in puts focus on the month heading; the first paint leaves focus alone.
+  const returned = useRef(false);
+  useEffect(() => { if (mode.kind !== "rest") { returned.current = true; return; } if (returned.current) restHeading.current?.querySelector<HTMLElement>("#pv3-rest-heading")?.focus({ preventScroll: true }); }, [mode.kind]);
 
   const chooseLite = (next: boolean) => { setLite(next); try { window.localStorage.setItem(LITE_KEY, next ? "1" : "0"); } catch { /* per-device only */ } };
   const openTool = (tool: ToolId, section?: PlanStudioSection) => setSheet({ kind: "tool", tool, section });
@@ -65,7 +67,7 @@ export default function PlanStudioV3(props: PlanStudioProps & { snapshotSource?:
   const fundReading = fundSheet && fundSheet !== "everyday" ? model.snapshot[fundSheet] : null;
 
   return (
-    <main className={`pv3 pv3--${view}`} data-lite={lite ? "true" : "false"} aria-label={`${view === "household" ? "Household" : "Personal"} Plan Studio`}>
+    <main className={`pv3 pv3--${view}`} data-lite={lite ? "true" : "false"} data-mode={mode.kind} aria-label={`${view === "household" ? "Household" : "Personal"} Plan Studio`}>
       <div className="pv3-bar">
         <div className="pv3-lite" role="group" aria-label="Detail">
           <button type="button" aria-pressed={!lite} onClick={() => chooseLite(false)}>Full</button>

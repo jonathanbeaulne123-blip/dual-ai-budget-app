@@ -116,7 +116,8 @@ function walkFlow(h: Household, monthKey: MonthKey, today: DateKey): FlowReading
     });
     days.push({ date, day, balanceCents: balance, contributions, outflows });
   }
-  const low = walk.points.filter(point => point.date >= start).reduce<{ date: DateKey; balanceCents: number } | null>((min, point) => !min || point.balanceCents < min.balanceCents ? { date: point.date, balanceCents: point.balanceCents } : min, null);
+  // The tightest day still ahead: from today on, never the month's opening entry.
+  const low = walk.points.filter(point => point.kind !== "opening" && point.date >= start && point.date >= today).reduce<{ date: DateKey; balanceCents: number } | null>((min, point) => !min || point.balanceCents < min.balanceCents ? { date: point.date, balanceCents: point.balanceCents } : min, null);
   return {
     monthKey, today, source: "fund-walk", days, lowPoint: low, shortFrom,
     totalInCents: walk.points.filter(point => point.kind === "contribution").reduce((sum, point) => sum + point.deltaCents, 0),
