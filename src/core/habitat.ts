@@ -70,6 +70,14 @@ export const HABITAT_WORDS: Record<HabitatStory, { title: string; line: string }
   hard: { title: "Doing badly", line: "The same year, but the Fund ran low, a vet bill came out of it, two bills are overdue, and the Sitdowns stopped." },
 };
 
+/** The third habitat, "Our Story" (D-268): two years into the Journey of Life. See `habitatStory.ts`. */
+export { STORY_NAME, STORY_WORDS, shapeStory } from "./habitatStory.ts";
+export type HabitatProfile = "habitat-well" | "habitat-hard" | "habitat-story";
+export const HABITAT_PROFILES: readonly HabitatProfile[] = ["habitat-well", "habitat-hard", "habitat-story"];
+export function isHabitatProfile(profile: string | null | undefined): profile is HabitatProfile {
+  return profile === "habitat-well" || profile === "habitat-hard" || profile === "habitat-story";
+}
+
 const M1 = "MEM-001", M2 = "MEM-002";
 const rec = (h: Household, note: string) => h.recurrences.find((row) => row.note === note);
 

@@ -435,6 +435,15 @@
     },
     {
       "sources": [
+        "src/core/habitatStory.ts"
+      ],
+      "tests": [
+        "test/habitat-story.test.ts"
+      ],
+      "reason": "Our Story (D-268 sample household): the third Hercules habitat, twenty-five fictional months from the Demo Suite's own generator with the Journey of Life laid over them through ordinary commands — move-in, a survived first year crossed at M−12, Make it ours with the sofa bought and the plant corner full, a house and retirement ahead, six foundation Chapters, a vet storm covered from the cushion through the Fund, lean winters, three trips, a kept Memory and things still waiting — balanced, health-clean, replaying byte-for-byte and passing the Demo Suite's books verification"
+    },
+    {
+      "sources": [
         "src/core/habitat.ts",
         "src/core/demoSuite.ts",
         "scripts/serve-queen-world-page-proof.mjs"

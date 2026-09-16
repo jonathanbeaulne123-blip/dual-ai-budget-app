@@ -40,6 +40,8 @@ export type LedgerCommand = {
   kittyNestVersion?: 1;
   /** Client understands the Our Path world collection (D-262). */
   pathWorldVersion?: 1;
+  /** Client understands Journey of Life era rows in the Our Path collection (D-268). */
+  pathEraVersion?: 1;
   planDecisionVersion?: 1;
   goalEnvelopeVersion?: 1;
   /** Money model (D-268): 1 = release N (reads v2, never migrates); 2 = release N+1. Refused below 2 once migrated. */
@@ -97,7 +99,7 @@ export async function commandFromCapture(
     accountHistoryVersion: 1,
     companionProfileVersion: 1,
     companionPlayVersion: 1,
-    companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, kittyNestVersion: 1, pathWorldVersion: 1,
+    companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, kittyNestVersion: 1, pathWorldVersion: 1, pathEraVersion: 1,
     fundModelVersion: clientFundModelVersion(),
     chapterVersion: 1,
     id,
@@ -131,6 +133,7 @@ export function parseCommand(value: unknown): LedgerCommand {
     (c.kittyNestVersion !== undefined && c.kittyNestVersion !== 1) ||
     (c.taskPlannerVersion !== undefined && c.taskPlannerVersion !== 1) ||
     (c.pathWorldVersion !== undefined && c.pathWorldVersion !== 1) ||
+    (c.pathEraVersion !== undefined && c.pathEraVersion !== 1) ||
     (c.fundModelVersion !== undefined && c.fundModelVersion !== 1 && c.fundModelVersion !== 2) ||
     (c.chapterVersion !== undefined && c.chapterVersion !== 1) ||
     (c.companionWorkflowVersion !== undefined && c.companionWorkflowVersion !== 1) ||

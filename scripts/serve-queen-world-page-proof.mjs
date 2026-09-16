@@ -19,9 +19,9 @@ const q = new URLSearchParams(location.search);
 localStorage.setItem('hearth:appearance:v1:development:guest', JSON.stringify({appearance:{theme:q.get('theme')||'classic',atmosphere:false},pending:false}));
 let h = completedExistingBooksHousehold('2026-09-12T12:00:00.000Z');
 h.householdId = 'HOUSEHOLD-QUEEN-WORLD-PROOF'; h.name = 'Our fictional home'; h.linked = false;
-/* habitat=well|hard opens one of the two Hercules habitats instead — the same generator the Demo Suite panel runs, twelve fictional months and this one, on the device only. */
+/* habitat=well|hard|story opens one of the three Hercules habitats instead — the same generator the Demo Suite panel runs (twelve fictional months, or two years for our story), on the device only. */
 const habitat = q.get('habitat');
-if (habitat === 'well' || habitat === 'hard') {
+if (habitat === 'well' || habitat === 'hard' || habitat === 'story') {
   h = (await generateDemoSuite({ today: q.get('today') || new Date().toISOString().slice(0, 10), seed: Number(q.get('seed') || 41), profile: 'habitat-' + habitat, numberStyle: 'realistic', buildSha: 'proof' })).household;
   h = { ...h, householdId: 'HOUSEHOLD-HABITAT-' + habitat.toUpperCase(), linked: false };
 }

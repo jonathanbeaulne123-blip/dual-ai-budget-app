@@ -10,9 +10,14 @@ import React, { useRef, useState, useEffect } from 'react';
 import { createRoot } from 'react-dom/client';
 import { OurPathWorld } from '/src/path/OurPathWorld.tsx';
 import { generateDemoSuite } from '/src/core/demoSuite.ts';
+import { generateDemoSuiteOffThread } from '/src/demoSuiteOffThread.ts';
 import { catalogHousehold, setHouseholdFundMonthPlan, savePlanBridgeDraft, sharePlanBridgeDraft } from '/src/core/index.ts';
 import { saveTask } from '/src/core/tasks.ts';
 import { resolveThemeScene, sceneTokens } from '/src/theme/scenes.ts';
+import { agreePathProposal, pendingPathProposals, shapePathWorld } from '/src/core/pathWorld.ts';
+import { crossPathEra, currentPathEra, pathEras, proposePathEra, proposePathEraPlan } from '/src/core/pathEras.ts';
+// Proof only: the world handle, for camera moves in captures.
+window.__pathWorld = () => liveWorld;
 const q = new URLSearchParams(location.search);
 const theme = q.get('theme') || 'taylor', story = q.get('story') || 'well', motion = q.get('motion') || 'reduced', lantern = q.get('lantern');
 if (lantern) localStorage.setItem('hearth:pathWorld:lantern', lantern);
@@ -26,7 +31,47 @@ let lastScene = null;
 // Proof only: turn the camera around the current target (radians), to frame the road ahead.
 window.__pathWorldTurn = (delta) => liveWorld?.turn(delta);
 window.__pathWorldReplay = (edit) => { if (liveWorld && lastScene) liveWorld.setScene(edit(lastScene[0]), lastScene[1], false); };
-const proofWorld = { onWorld: (w) => { liveWorld = w; if (w) { const set = w.setScene; w.setScene = (...args) => { lastScene = args; return set(...args); }; } },idleMs: idle === 'off' ? Infinity : undefined, paused: motion !== 'full' };
+// Proof only (?eras=demo): a fictional Journey of Life laid on the fictional household THROUGH THE REAL COMMANDS
+// (proposePathEra, agreePathProposal, crossPathEra, proposePathEraPlan), so the page wiring is what is proven.
+// Two past eras (crossed Feb and Jun 2026), the current era (survive 8 months → lanterns from the books; ?gate=open for an
+// agree finish line), two future eras (one with a plan Jonathan pencilled in), and one era only Jonathan has suggested.
+// ?crossing=1 has Bianca suggest crossing (with ?gate=open). In memory only; nothing is stored.
+const erasDemo = q.get('eras') === 'demo';
+function withFictionalJourney(h) {
+  const at = '2026-02-01T12:00:00.000Z';
+  const bank = (name) => h.goals.find((g) => g.name === name && g.shared)?.id;
+  const spec = (over) => ({ finishLine: '', by: null, finish: { kind: 'agree' }, plans: [], ...over });
+  const agreeAll = (x) => {
+    for (const row of pendingPathProposals(x)) {
+      if (row.kind !== 'era') continue;
+      for (const memberId of ['MEM-001', 'MEM-002']) {
+        const fresh = shapePathWorld(x.pathWorld).find((r) => r.id === row.id);
+        if (fresh.pending && !fresh.agreedByMemberIds.includes(memberId)) x = agreePathProposal(x, { memberId, rowId: fresh.id, revision: fresh.pendingRevision, at }).household;
+      }
+    }
+    return x;
+  };
+  const plan = (id, kind, label, extra = {}) => ({ id, kind, label, goalId: null, month: null, ...extra });
+  try {
+    const open = q.get('gate') === 'open';
+    h = proposePathEra(h, { memberId: 'MEM-001', at, spec: spec({ order: 1, name: 'Fictional first flat', finishLine: 'Get the keys and unpack every box', from: '2025-10', by: '2026-01', home: 'flat', plans: [plan('PLAN-KEYS', 'milestone', 'Keys to the flat', { month: '2025-10' })] }) }).household;
+    h = proposePathEra(h, { memberId: 'MEM-001', at, spec: spec({ order: 2, name: 'Fictional furnished flat', finishLine: 'A sofa we chose together', from: '2026-02', by: '2026-05', home: 'furnished', plans: [plan('PLAN-MTL', 'bank', 'A weekend away', { goalId: bank('Weekend in Montréal') }), plan('PLAN-TRIP', 'trip', 'The spring trip')] }) }).household;
+    h = proposePathEra(h, { memberId: 'MEM-002', at, spec: spec({ order: 3, name: 'Fictional steady year', finishLine: 'Survive eight months without going broke', from: '2026-06', by: '2027-01', home: 'furnished', finish: open ? { kind: 'agree' } : { kind: 'survive', months: 8 }, plans: [plan('PLAN-SHORE', 'bank', 'The shore trip', { goalId: bank('A trip to the shore') })] }) }).household;
+    h = proposePathEra(h, { memberId: 'MEM-001', at, spec: spec({ order: 4, name: 'Fictional first house', finishLine: 'Our own front door', from: '2027-02', by: '2029-12', home: 'house', plans: [plan('PLAN-KITCHEN', 'bank', 'A kitchen of our own', { goalId: bank('Kitchen renovation') }), plan('PLAN-MOVE', 'milestone', 'Moving day', { month: '2027-06' }), plan('PLAN-ROAD', 'trip', 'A road trip east'), plan('PLAN-CH', 'chapter', 'A calm first winter'), plan('PLAN-NOTE', 'note', 'Room for a garden')] }) }).household;
+    h = proposePathEra(h, { memberId: 'MEM-002', at, spec: spec({ order: 5, name: 'Fictional porch years', from: '2030-01', home: 'porch', plans: [plan('PLAN-PORCH', 'note', 'Evenings on the porch')] }) }).household;
+    h = agreeAll(h);
+    h = crossPathEra(h, { memberId: 'MEM-001', rowId: currentPathEra(h, '2026-02-10').id, today: '2026-02-10', at }).household;
+    h = agreeAll(h);
+    h = crossPathEra(h, { memberId: 'MEM-002', rowId: currentPathEra(h, '2026-06-10').id, today: '2026-06-10', at }).household;
+    h = agreeAll(h);
+    const house = pathEras(h, today).find((e) => e.spec.name === 'Fictional first house');
+    h = proposePathEraPlan(h, { memberId: 'MEM-002', rowId: house.id, plan: plan('PLAN-DOG', 'milestone', 'A dog, maybe'), at }).household;
+    h = proposePathEra(h, { memberId: 'MEM-002', at, spec: spec({ order: 6, name: 'Fictional cabin idea', from: '2034-01', home: 'cabin', plans: [plan('PLAN-LAKE', 'trip', 'A first night by the lake')] }) }).household;
+    if (q.get('crossing') === '1') h = crossPathEra(h, { memberId: 'MEM-001', rowId: currentPathEra(h, today).id, today, at }).household;
+  } catch (error) { console.warn('proof journey skipped', error); }
+  return h;
+}
+const proofWorld = { onWorld: (w) => { liveWorld = w; if (w) { const set = w.setScene; w.setScene = (...args) => { lastScene = args; return set(...args); }; } }, idleMs: idle === 'off' ? Infinity : undefined, paused: motion !== 'full' };
 const scene = resolveThemeScene(theme, 'plan', 'household');
 Object.assign(document.documentElement.dataset, { theme, scene: scene.id, material: scene.material, sceneLighting: scene.dark ? 'dark' : 'light', atmosphere: 'paused', motion });
 for (const [key, value] of Object.entries(sceneTokens(scene))) document.documentElement.style.setProperty(key, value);
@@ -94,12 +139,19 @@ function Proof() {
   const ref = useRef(null);
   useEffect(() => {
     if (story === 'empty') { const h = catalogHousehold(); ref.current = h; setState(h); return; }
-    generateDemoSuite({ today, profile: story === 'hard' ? 'habitat-hard' : 'habitat-well', seed: 4242, buildSha: 'proof' }).then(({ household }) => {
+    // ?story=story: the Our Story habitat (D-268), generated in the Demo Suite worker exactly as the App does; ?today= overrides the date.
+    // Dev server only: load the world module before the long generation, so Vite's dependency optimiser is not still busy when it is needed.
+    void import('/src/path/world/pathWorld3d.ts');
+    const started = Date.now();
+    (story === 'story' && q.get('cached') === '1' ? fetch('/scripts/tmp/our-story.json').then((r) => r.json()).then((h) => new Promise((res) => setTimeout(() => res(h), Number(q.get('delay') || 0)))).then((household) => ({ household })) : story === 'story' ? generateDemoSuiteOffThread({ today: q.get('today') || '2026-09-16', profile: 'habitat-story', seed: Number(q.get('seed') || 41), buildSha: 'proof' }) : generateDemoSuite({ today, profile: story === 'hard' ? 'habitat-hard' : 'habitat-well', seed: 4242, buildSha: 'proof' })).then(({ household }) => {
+      window.__generatedMs = Date.now() - started;
+      if (q.get('roundtrip') === '1') household = JSON.parse(JSON.stringify(household));
       // Proof only (?story=well): the habitat has a Charter but no accepted decisions or Shared Sitdown, so add fictional ones in memory.
       if (story === 'well') household = withFictionalTogether(household);
       if (q.get('mist') === '1') household = withFictionalMist(household);
       if (q.get('photos') === '1') household = withFictionalPhotos(household);
-      ref.current = household; setState(household); window.__ready = true;
+      if (erasDemo) household = withFictionalJourney(household);
+      ref.current = household; setState(household); window.__household = household; window.__ready = true;
     });
   }, []);
   if (!state) return React.createElement('p', { className: 'app' }, 'Growing fictional books…');
@@ -107,7 +159,7 @@ function Proof() {
   return React.createElement('div', { className: 'app', 'data-ledger-tab': 'plan', style: { padding: '12px' } },
     React.createElement('p', { style: { margin: '0 0 8px', fontSize: 12 } }, 'Fictional local proof — ', theme, ' / ', story, ' · acting as ', member, ' ',
       React.createElement('button', { id: 'switch-member', onClick: () => setMember(member === 'MEM-001' ? 'MEM-002' : 'MEM-001') }, 'Switch fictional member')),
-    React.createElement(OurPathWorld, { household: state, memberId: member, today, busy: false, onCommand: command, theme, proofWorld, presentMembers: present,
+    React.createElement(OurPathWorld, { household: state, memberId: member, today: story === 'story' ? (q.get('today') || '2026-09-16') : today, busy: false, onCommand: command, theme, proofWorld, presentMembers: present,
       onOpenTogether: () => { window.__opened = 'together'; }, onOpenCharter: () => { window.__opened = 'charter'; }, onOpenFund: () => { window.__opened = 'fund'; }, onOpenCalendar: () => { window.__opened = 'calendar'; }, onOpenPlanner: () => { window.__opened = 'planner'; }, onOpenInTent: (source) => { window.__opened = source; },
       onOpenPlay: q.get('play') === '0' ? undefined : () => { window.__opened = 'play'; }, onOpenTimeMachine: (monthKey) => { window.__opened = 'timeMachine:' + monthKey; },
       boardMedia: q.get('photos') === '1' ? proofMedia : null,

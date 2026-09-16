@@ -1,0 +1,50 @@
+[
+  {
+    "name": "taylor-1100",
+    "generatedMs": 168141,
+    "totalMs": 188334,
+    "mainThreadTimerMs": 70.60000000149012,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "taylor-390",
+    "generatedMs": 164892,
+    "totalMs": 175389,
+    "mainThreadTimerMs": 50.100000001490116,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "classic-1100",
+    "generatedMs": 161620,
+    "totalMs": 174788,
+    "mainThreadTimerMs": 50.19999999925494,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "classic-390",
+    "generatedMs": 156610,
+    "totalMs": 167588,
+    "mainThreadTimerMs": 56.30000000074506,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "newfoundland-1100",
+    "generatedMs": 154189,
+    "totalMs": 166763,
+    "mainThreadTimerMs": 50.19999999925494,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "name": "newfoundland-390",
+    "generatedMs": 152886,
+    "totalMs": 163100,
+    "mainThreadTimerMs": 50.100000001490116,
+    "overflow": false,
+    "errors": []
+  }
+]

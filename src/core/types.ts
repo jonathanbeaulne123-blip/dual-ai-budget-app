@@ -1360,7 +1360,7 @@ export type SyntheticFixtureProvenance = {
   generatedForDate: string;
   generatedAt: string;
   buildSha: string;
-  profile: "investor" | "edge" | "scale" | "habitat-well" | "habitat-hard";
+  profile: "investor" | "edge" | "scale" | "habitat-well" | "habitat-hard" | "habitat-story";
   numberStyle: "realistic" | "pretty";
   coverageDigest: string;
   /** SHA-256 of generator-owned facts after continuity-only fields are removed. */

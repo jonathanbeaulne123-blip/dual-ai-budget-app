@@ -1,6 +1,7 @@
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { cloneHousehold } from "./household.ts";
 import { nextId, nowIso } from "./ids.ts";
+import { pathWords } from "./pathWords.ts";
 import type { Category, CommitResult, Household } from "./types.ts";
 import { ValidationError } from "./types.ts";
 
@@ -135,7 +136,63 @@ export type PathCategoryRow = {
   setByMemberId: string;
   updatedAt: string;
 };
-export type PathWorldRow = PathRecipeRow | PathNameRow | PathCategoryRow;
+/**
+ * The Journey of Life (D-268): one journey per household, cut into eras. An era
+ * is words, months and references only — never an amount. Every change to an
+ * era (including crossing it) takes effect only when every active member agrees
+ * on the exact revision.
+ */
+export const PATH_ERA_HOMES = ["flat", "furnished", "house", "porch", "cabin", "boat"] as const;
+export type PathEraHome = typeof PATH_ERA_HOMES[number];
+export const PATH_ERA_HOME_LABELS: Record<PathEraHome, string> = {
+  flat: "a small flat", furnished: "the flat, furnished", house: "a house", porch: "a house with a porch", cabin: "a cabin", boat: "a boat",
+};
+export const PATH_ERA_PLAN_KINDS = ["bank", "chapter", "trip", "milestone", "note"] as const;
+export type PathEraPlanKind = typeof PATH_ERA_PLAN_KINDS[number];
+export type PathEraPlan = {
+  id: string;
+  kind: PathEraPlanKind;
+  label: string;
+  /** A shared Kitty Bank this plan points at (kind "bank"). Never an amount. */
+  goalId: string | null;
+  /** YYYY-MM, when the plan has a month. */
+  month: string | null;
+};
+export type PathEraFinish =
+  | { kind: "survive"; months: number }
+  | { kind: "banks"; goalIds: string[] }
+  | { kind: "agree" };
+export type PathEraSpec = {
+  /** Position in the journey (1 = the first era). */
+  order: number;
+  name: string;
+  /** The finish line, in the couple's words. */
+  finishLine: string;
+  /** YYYY-MM the era starts. */
+  from: string;
+  /** YYYY-MM the couple hope to finish by, or null for open-ended. */
+  by: string | null;
+  home: PathEraHome;
+  finish: PathEraFinish;
+  plans: PathEraPlan[];
+  /** YYYY-MM the couple crossed the bridge out of this era (the next era's first month), or null. */
+  crossedOn: string | null;
+  /** A future era the couple agreed to take off the journey. */
+  retired: boolean;
+};
+export type PathEraRow = {
+  version: 1;
+  id: string;
+  kind: "era";
+  updatedAt: string;
+} & Agreement<PathEraSpec>;
+
+export const PATH_ERA_LIMIT = 24;
+export const PATH_ERA_PLAN_LIMIT = 24;
+export const PATH_ERA_MAX_SURVIVE_MONTHS = 120;
+
+export type PathWorldRow = PathRecipeRow | PathNameRow | PathCategoryRow | PathEraRow;
+export type PathAgreementRow = PathRecipeRow | PathNameRow | PathEraRow;
 
 export const PATH_NAME_ID = "PATH-NAME" as const;
 const EPOCH = "1970-01-01T00:00:00.000Z";
@@ -180,6 +237,66 @@ function shapeName(value: unknown): string | null {
   return name || null;
 }
 
+const MONTH = /^\d{4}-(0[1-9]|1[0-2])$/;
+export function isPathMonth(value: unknown): value is string {
+  return typeof value === "string" && MONTH.test(value);
+}
+const PLAN_ID = /^[A-Za-z0-9-]{1,40}$/;
+
+export function shapeEraPlan(value: unknown): PathEraPlan | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (typeof raw.id !== "string" || !PLAN_ID.test(raw.id)) return null;
+  if (!PATH_ERA_PLAN_KINDS.includes(raw.kind as PathEraPlanKind)) return null;
+  const label = pathWords(typeof raw.label === "string" ? raw.label : "", 60, "");
+  if (!label) return null;
+  const goalId = raw.kind === "bank" && typeof raw.goalId === "string" && raw.goalId.length > 0 && raw.goalId.length <= 80 ? raw.goalId : null;
+  if (raw.kind === "bank" && !goalId) return null;
+  if (raw.month != null && !isPathMonth(raw.month)) return null;
+  return { id: raw.id, kind: raw.kind as PathEraPlanKind, label, goalId, month: (raw.month as string | null | undefined) ?? null };
+}
+
+function shapeEraFinish(value: unknown): PathEraFinish | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  if (raw.kind === "survive") {
+    const months = typeof raw.months === "number" && Number.isSafeInteger(raw.months) ? raw.months : 0;
+    return months >= 1 && months <= PATH_ERA_MAX_SURVIVE_MONTHS ? { kind: "survive", months } : null;
+  }
+  if (raw.kind === "banks") {
+    if (!Array.isArray(raw.goalIds)) return null;
+    const goalIds = [...new Set(raw.goalIds.filter((id): id is string => typeof id === "string" && id.length > 0 && id.length <= 80))];
+    return goalIds.length >= 1 && goalIds.length <= PATH_ERA_PLAN_LIMIT && goalIds.length === raw.goalIds.length ? { kind: "banks", goalIds } : null;
+  }
+  if (raw.kind === "agree") return { kind: "agree" };
+  return null;
+}
+
+/** Fails closed. Words pass through `pathWords`, so an era can never carry an amount. */
+export function shapeEraSpec(value: unknown): PathEraSpec | null {
+  if (!value || typeof value !== "object") return null;
+  const raw = value as Record<string, unknown>;
+  const order = typeof raw.order === "number" && Number.isSafeInteger(raw.order) && raw.order >= 1 && raw.order <= 99 ? raw.order : null;
+  const name = pathWords(typeof raw.name === "string" ? raw.name : "", 40, "");
+  const finishLine = pathWords(typeof raw.finishLine === "string" ? raw.finishLine : "", 120, "");
+  if (order === null || !name || !isPathMonth(raw.from)) return null;
+  if (raw.by != null && (!isPathMonth(raw.by) || raw.by < raw.from)) return null;
+  if (raw.crossedOn != null && (!isPathMonth(raw.crossedOn) || raw.crossedOn <= raw.from)) return null;
+  if (!PATH_ERA_HOMES.includes(raw.home as PathEraHome)) return null;
+  const finish = shapeEraFinish(raw.finish);
+  if (!finish || !Array.isArray(raw.plans) || raw.plans.length > PATH_ERA_PLAN_LIMIT) return null;
+  const plans: PathEraPlan[] = [];
+  for (const item of raw.plans) {
+    const plan = shapeEraPlan(item);
+    if (!plan || plans.some((p) => p.id === plan.id)) return null;
+    plans.push(plan);
+  }
+  return {
+    order, name, finishLine, from: raw.from, by: (raw.by as string | null | undefined) ?? null, home: raw.home as PathEraHome,
+    finish, plans, crossedOn: (raw.crossedOn as string | null | undefined) ?? null, retired: raw.retired === true,
+  };
+}
+
 function shapeAgreement<T>(row: Record<string, unknown>, shape: (value: unknown) => T | null): Agreement<T> | null {
   const active = row.active === null || row.active === undefined ? null : shape(row.active);
   const pending = row.pending === null || row.pending === undefined ? null : shape(row.pending);
@@ -218,6 +335,13 @@ export function shapePathWorld(value: unknown): PathWorldRow[] {
       seen.add(row.id);
       return [{ version: 1, id: PATH_NAME_ID, kind: "name", namedAt: row.namedAt ? validIso(row.namedAt, updatedAt) : null, updatedAt, ...agreement }];
     }
+    if (row.kind === "era") {
+      if (!/^PATH-ERA-[A-Za-z0-9-]{1,40}$/.test(row.id)) return [];
+      const agreement = shapeAgreement(row, shapeEraSpec);
+      if (!agreement) return [];
+      seen.add(row.id);
+      return [{ version: 1, id: row.id, kind: "era", updatedAt, ...agreement }];
+    }
     if (row.kind === "category") {
       const categoryId = str(row.categoryId, 80);
       const signal = row.signal === "none" || PATH_CATEGORY_SIGNALS.includes(row.signal as PathCategorySignal) ? row.signal as PathCategorySignal | "none" : null;
@@ -242,7 +366,7 @@ function newer<T extends PathWorldRow>(a: T, b: T): T {
   if (a.updatedAt !== b.updatedAt) return a.updatedAt > b.updatedAt ? a : b;
   return JSON.stringify(a) >= JSON.stringify(b) ? a : b;
 }
-function mergeAgreementRow<T extends PathRecipeRow | PathNameRow>(a: T, b: T): T {
+function mergeAgreementRow<T extends PathAgreementRow>(a: T, b: T): T {
   if (a.pendingRevision !== b.pendingRevision) return a.pendingRevision > b.pendingRevision ? a : b;
   // Same proposal revision: a promoted row outranks the still-pending copy of the same proposal.
   if (!a.pending && b.pending && sameJson(a.active, b.pending)) return a;
@@ -264,7 +388,7 @@ export function mergePathWorld(left: PathWorldRow[] = [], right: PathWorldRow[] 
       rows.set(incoming.id, newer<PathWorldRow>(existing, incoming));
       continue;
     }
-    rows.set(incoming.id, mergeAgreementRow(existing as PathRecipeRow | PathNameRow, incoming as PathRecipeRow | PathNameRow));
+    rows.set(incoming.id, mergeAgreementRow(existing as PathAgreementRow, incoming as PathAgreementRow));
   }
   return [...rows.values()].sort((a, b) => a.id.localeCompare(b.id));
 }
@@ -300,8 +424,8 @@ export function pathIslandName(household: Pick<Household, "members" | "pathWorld
 }
 
 /** Proposals still waiting on at least one active member. */
-export function pendingPathProposals(household: Pick<Household, "members" | "pathWorld">): (PathRecipeRow | PathNameRow)[] {
-  return shapePathWorld(household.pathWorld).filter((row): row is PathRecipeRow | PathNameRow => (
+export function pendingPathProposals(household: Pick<Household, "members" | "pathWorld">): PathAgreementRow[] {
+  return shapePathWorld(household.pathWorld).filter((row): row is PathAgreementRow => (
     row.kind !== "category" && row.pending !== null && agreedValue<unknown>(row as Agreement<unknown>, household) !== row.pending
   ));
 }
@@ -369,12 +493,14 @@ export function herculesPathSuggestion(input: { signal?: PathSignal; categoryId?
 // ---------------------------------------------------------------------------
 // Commands — non-money, member-validated, "updatePathWorld".
 
-function requireMember(household: Household, memberId: string): void {
+/** @internal shared with the era commands in pathEras.ts */
+export function requireMember(household: Household, memberId: string): void {
   if (!household.members.some((member) => member.active && member.id === memberId)) {
     throw new ValidationError("Only an active household member can do this.");
   }
 }
-function commitPathWorld(previous: Household, next: Household, label: string, at: string): CommitResult {
+/** @internal */
+export function commitPathWorld(previous: Household, next: Household, label: string, at: string): CommitResult {
   next.lastCommittedAt = at;
   return {
     household: next,
@@ -383,15 +509,52 @@ function commitPathWorld(previous: Household, next: Household, label: string, at
     undo: { id: nextId("UNDO-PATH-", []), label, snapshot: previous, postedIds: [], commandKind: "updatePathWorld" },
   };
 }
-function promoteIfAgreed<T extends PathRecipeRow | PathNameRow>(household: Household, row: T, at: string): T {
+/** @internal */
+export function promoteIfAgreed<T extends PathAgreementRow>(household: Household, row: T, at: string): T {
   if (!row.pending || !activeMemberIds(household).every((id) => row.agreedByMemberIds.includes(id))) return row;
   return { ...row, active: row.pending, pending: null, pendingBy: null, agreedByMemberIds: [], ...(row.kind === "name" ? { namedAt: at } : {}) };
 }
-function withRow(next: Household, row: PathWorldRow): void {
+/** @internal */
+export function withRow(next: Household, row: PathWorldRow): void {
   const rows = shapePathWorld([...shapePathWorld(next.pathWorld).filter((existing) => existing.id !== row.id), row]);
   // What is accepted must be exactly what replays: the collection is stored shaped, and a row the shaper would drop is refused.
   if (!rows.some((existing) => existing.id === row.id)) throw new ValidationError("The island can't hold that change.");
   next.pathWorld = rows;
+}
+
+/** The agreed, not-retired eras in journey order (optionally without one row). */
+export function agreedPathEras(household: Pick<Household, "members" | "pathWorld">, exceptId?: string): { row: PathEraRow; spec: PathEraSpec }[] {
+  return shapePathWorld(household.pathWorld)
+    .filter((row): row is PathEraRow => row.kind === "era" && row.id !== exceptId)
+    .flatMap((row) => { const spec = agreedValue(row, household); return spec && !spec.retired ? [{ row, spec }] : []; })
+    .sort((a, b) => a.spec.order - b.spec.order || a.row.id.localeCompare(b.row.id));
+}
+
+/**
+ * The shape rules an era proposal must keep, checked when it is proposed and again when it is agreed.
+ * A crossed era keeps its months, order, home and finish line rule (its words and plans may change);
+ * the current era keeps its order and start and cannot be retired; nothing new goes before the current era.
+ */
+export function assertEraProposalFits(household: Pick<Household, "members" | "pathWorld">, rowId: string, spec: PathEraSpec): void {
+  const row = shapePathWorld(household.pathWorld).find((r): r is PathEraRow => r.kind === "era" && r.id === rowId);
+  const prior = row ? agreedValue(row, household) : null;
+  const others = agreedPathEras(household, rowId);
+  const all = agreedPathEras(household);
+  const current = all.find((era) => !era.spec.crossedOn) ?? null;
+  const locked = (keys: (keyof PathEraSpec)[]) => keys.some((key) => !sameJson(prior?.[key], spec[key]));
+  if (prior?.crossedOn) {
+    if (locked(["order", "from", "by", "home", "finish", "crossedOn", "retired"])) throw new ValidationError("A crossed era keeps its months and its finish line. Only its words and plans can change.");
+    return;
+  }
+  if (prior && current && current.row.id === rowId) {
+    if (locked(["order", "from"]) || spec.retired) throw new ValidationError("The era you are in keeps its place and its start.");
+  } else if (current && spec.order <= current.spec.order && all.some((era) => era.spec.crossedOn)) {
+    // Until the first bridge is crossed the journey is still being laid out; after that, the past and the present stay put.
+    throw new ValidationError("A new or future era goes after the era you are in.");
+  }
+  if (!spec.retired && others.some((era) => era.spec.order === spec.order)) throw new ValidationError("Another era already stands in that place on the journey.");
+  const before = others.filter((era) => era.spec.order < spec.order).pop();
+  if (!spec.retired && before && spec.from < before.spec.from) throw new ValidationError("An era can't start before the era ahead of it.");
 }
 
 export type ProposePathRecipeInput = {
@@ -467,11 +630,12 @@ export const agreePathProposal = captureCommand("agreePathProposal", function ag
   requireMember(household, input.memberId);
   const at = input.at ?? nowIso();
   const next = cloneHousehold(household);
-  const row = shapePathWorld(next.pathWorld).find((r): r is PathRecipeRow | PathNameRow => r.id === input.rowId && r.kind !== "category");
+  const row = shapePathWorld(next.pathWorld).find((r): r is PathAgreementRow => r.id === input.rowId && r.kind !== "category");
   if (!row || !row.pending || row.pendingRevision !== input.revision) throw new ValidationError("That suggestion changed. Review its latest version.");
+  if (row.kind === "era") assertEraProposalFits(household, row.id, row.pending as PathEraSpec);
   const agreed = promoteIfAgreed(next, { ...row, agreedByMemberIds: [...new Set([...row.agreedByMemberIds, input.memberId])].sort(), updatedAt: at }, at);
   withRow(next, agreed);
-  const label = row.kind === "name" ? `the island name “${row.pending}”` : `“${(row.pending as PathRecipeSpec).name}”`;
+  const label = row.kind === "name" ? `the island name “${row.pending}”` : row.kind === "era" ? `the era “${(row.pending as PathEraSpec).name}”` : `“${(row.pending as PathRecipeSpec).name}”`;
   return commitPathWorld(household, next, agreed.pending ? `Agreed to ${label}` : `We both agreed: ${label}`, at);
 });
 
@@ -479,7 +643,7 @@ export const declinePathProposal = captureCommand("declinePathProposal", functio
   requireMember(household, input.memberId);
   const at = input.at ?? nowIso();
   const next = cloneHousehold(household);
-  const row = shapePathWorld(next.pathWorld).find((r): r is PathRecipeRow | PathNameRow => r.id === input.rowId && r.kind !== "category");
+  const row = shapePathWorld(next.pathWorld).find((r): r is PathAgreementRow => r.id === input.rowId && r.kind !== "category");
   if (!row || !row.pending || row.pendingRevision !== input.revision) throw new ValidationError("That suggestion changed. Review its latest version.");
   // The revision stays, so a later proposal can never reuse agreement given to this one.
   withRow(next, { ...row, pending: null, pendingBy: null, agreedByMemberIds: [], updatedAt: at });
@@ -497,7 +661,14 @@ export const setPathCategorySignal = captureCommand("setPathCategorySignal", fun
 });
 
 /** Ledger step kinds that write the Our Path world, plus its undo/continuity kind (D-262). */
-export const PATH_WORLD_COMMAND_KINDS = ["proposePathRecipe", "proposePathName", "agreePathProposal", "declinePathProposal", "setPathCategorySignal", "updatePathWorld"];
+export const PATH_WORLD_COMMAND_KINDS = ["proposePathRecipe", "proposePathName", "agreePathProposal", "declinePathProposal", "setPathCategorySignal", "updatePathWorld", "proposePathEra", "proposePathEraPlan", "crossPathEra"];
+/** Ledger step kinds that write eras (D-268). They need the `pathEraVersion` capability. */
+export const PATH_ERA_COMMAND_KINDS = ["proposePathEra", "proposePathEraPlan", "crossPathEra"];
+
+/** True once the household holds any era row; clients without `pathEraVersion` must not write over it. */
+export function hasPathEraData(household: Pick<Household, "pathWorld">): boolean {
+  return Boolean(household.pathWorld?.length) && shapePathWorld(household.pathWorld).some((row) => row.kind === "era");
+}
 
 /** True once the household holds any Our Path world row; older clients must not write over it. */
 export function hasPathWorldData(household: Pick<Household, "pathWorld">): boolean {
@@ -521,7 +692,7 @@ export function pathWorldChangeAuthorized(household: Pick<Household, "members" |
       continue;
     }
     if (before && before.kind !== row.kind) return false;
-    const prior = before as PathRecipeRow | PathNameRow | undefined;
+    const prior = before as PathAgreementRow | undefined;
     const priorRevision = prior?.pendingRevision ?? 0;
     if (row.pendingRevision < priorRevision) continue; // older copy; the merge keeps the local row
     const sameProposal = prior && row.pendingRevision === priorRevision;

@@ -14,6 +14,7 @@ import * as chapterCommands from "../core/chapters.ts";
 import * as pathWorldCommands from "../core/pathWorld.ts";
 import * as fundModelCommands from "../core/fundModelCommands.ts";
 import * as missingSubscriptionCommands from "../core/missingSubscriptions.ts";
+import * as pathEraCommands from "../core/pathEras.ts";
 import { saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks } from "../core/tasks.ts";
 import { stampWeeklyDocument } from "../core/weeklyDocumentStamp.ts";
 import { commitCharterFounding } from "../core/charterFounding.ts";
@@ -38,6 +39,7 @@ const functions = {
   proposeFundDivision: fundModelCommands.proposeFundDivision, agreeFundDivision: fundModelCommands.agreeFundDivision, declineFundDivision: fundModelCommands.declineFundDivision,
   proposeProtectRefill: fundModelCommands.proposeProtectRefill, agreeProtectRefill: fundModelCommands.agreeProtectRefill, declineProtectRefill: fundModelCommands.declineProtectRefill, withdrawFundProposal: fundModelCommands.withdrawFundProposal,
   proposePathRecipe: pathWorldCommands.proposePathRecipe, proposePathName: pathWorldCommands.proposePathName, agreePathProposal: pathWorldCommands.agreePathProposal, declinePathProposal: pathWorldCommands.declinePathProposal, setPathCategorySignal: pathWorldCommands.setPathCategorySignal,
+  proposePathEra: pathEraCommands.proposePathEra, proposePathEraPlan: pathEraCommands.proposePathEraPlan, crossPathEra: pathEraCommands.crossPathEra,
   saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks,
   eraseDevelopmentActivity,
   restoreSharedPoint,
@@ -107,7 +109,7 @@ register("openChapter addRitual recordRitualHeld setRitualState offerMove respon
 register("migrateFundModel migrateMyFundModel setFundOverride setCategoryHome proposeFundDivision agreeFundDivision declineFundDivision proposeProtectRefill agreeProtectRefill declineProtectRefill withdrawFundProposal", ["memberId"]);
 // D-281: the cellar's roll-over replays as itself, so the authority re-reads consent and "only once" on its own books.
 register("rollMissingSubscription", ["memberId"]);
-register("proposePathRecipe proposePathName agreePathProposal declinePathProposal setPathCategorySignal", ["memberId"]);
+register("proposePathRecipe proposePathName agreePathProposal declinePathProposal setPathCategorySignal proposePathEra proposePathEraPlan crossPathEra", ["memberId"]);
 register("upsertCoworker importCoworkerRoster recordCoworkerAttendance", [
   "ownerMemberId",
 ]);

@@ -51,7 +51,7 @@ const clamp = (value: number) => Math.round(Math.min(1, Math.max(0, value)) * 10
 function monthOfIso(iso: string | null | undefined): string | null {
   return typeof iso === "string" && /^\d{4}-\d{2}/.test(iso) ? iso.slice(0, 7) : null;
 }
-function monthsBetween(first: string, last: string): string[] {
+function monthsBetween(first: string, last: string, cap = MAX_MONTHS): string[] {
   const out: string[] = [];
   let [y, m] = first.split("-").map(Number) as [number, number];
   const [ly, lm] = last.split("-").map(Number) as [number, number];
@@ -59,8 +59,10 @@ function monthsBetween(first: string, last: string): string[] {
     out.push(`${y}-${String(m).padStart(2, "0")}`);
     m += 1; if (m > 12) { m = 1; y += 1; }
   }
-  return out.slice(-MAX_MONTHS);
+  return out.slice(-cap);
 }
+/** An era's island can hold up to ten years of months (D-268); the whole-history read keeps 36. */
+export const PATH_ERA_MAX_MONTHS = 120;
 
 const MOUNTAIN = /\b(ski|skiing|snowboard|mountain|mountains|hike|hiking|cabin|banff|whistler|jasper|tremblant|blue mountain|rockies|chalet)\b/i;
 const CITY = /\b(city|montr[eé]al|toronto|ottawa|qu[eé]bec city|vancouver|new york|nyc|chicago|boston|paris|london|weekend in)\b/i;
@@ -83,8 +85,12 @@ function weeklySpread(rows: { date: DateKey; cents: number }[]): number | null {
   return sd / mean;
 }
 
-/** Every month from the household's first shared fact through `today`, at most 36. */
-export function pathMonths(household: Household, today: DateKey): PathMonth[] {
+/**
+ * Every month from the household's first shared fact through `today`, at most 36.
+ * With `window` (an era, D-268): exactly the months `from`–`through`, at most 120, scored with the
+ * same rules (firsts and milestones still count from the household's whole history).
+ */
+export function pathMonths(household: Household, today: DateKey, window?: { from: string; through: string }): PathMonth[] {
   const shared = household.transactions.filter((tx) => belongsToSharedLedger(tx) && !tx.isDuplicate && (tx.type === "expense" || tx.type === "income"));
   const sharedGoals = household.goals.filter((goal) => goal.shared);
   const sharedGoalIds = new Set(sharedGoals.map((goal) => goal.id));
@@ -106,7 +112,9 @@ export function pathMonths(household: Household, today: DateKey): PathMonth[] {
     ...contributions.map((row) => row.date.slice(0, 7)),
   ].filter((key): key is string => Boolean(key) && key! <= nowMonth && key! >= "2000-01");
   const first = starts.length ? starts.sort()[0]! : nowMonth;
-  const keys = monthsBetween(first, nowMonth);
+  const keys = window
+    ? monthsBetween(window.from, window.through < nowMonth ? window.through : nowMonth, PATH_ERA_MAX_MONTHS)
+    : monthsBetween(first, nowMonth);
 
   const mapping = new Map(pathCategoryMappings(household).map((row) => [row.category.id, row]));
   const categoryName = new Map(household.categories.map((row) => [row.id, row]));

@@ -14,11 +14,13 @@ import { charterIsSigned, charterUnsignedMemberIds } from "../core/charter.ts";
 import type { HerculesNumberSource } from "../core/herculesProvenance.ts";
 import { pathLand } from "../core/pathLand.ts";
 import { pathMonthCharacter, pathMonths, type PathMonth } from "../core/pathSignals.ts";
+import { crossPathEra, pathEras, type PathEraPlanView, type PathEraView } from "../core/pathEras.ts";
 import {
   PATH_BASE_RECIPES,
   PATH_BRUSHES,
   PATH_BRUSH_LABELS,
   PATH_CATEGORY_SIGNALS,
+  PATH_ERA_HOME_LABELS,
   PATH_NAME_ID,
   PATH_SIGNALS,
   PATH_SIGNAL_LABELS,
@@ -42,7 +44,9 @@ import {
 import type { CommitResult, Household } from "../core/types.ts";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { bottleNote } from "./bottle.ts";
-import { growIsland, type Piece } from "./grow.ts";
+import { growIsland, type GrownIsland, type Piece } from "./grow.ts";
+import { EraPlanner, ERA_PLAN_KIND_LABELS, ERA_STATE_LABELS } from "./EraPlanner.tsx";
+import { eraCrossingPending, eraProposalTitle, eraFinishWords, eraMonthLabel, eraOffsets, gateSub, nextEraAfterCurrent } from "./eras.ts";
 import { firedRecently, pathMonthAsOf } from "./landmarks.ts";
 import { UMBRELLAS } from "../core/fundRules.ts";
 import { charterPurposeWords, pathSitdownClosedMonths, pathSitdownFor, type PathSitdown } from "./together.ts";
@@ -56,7 +60,7 @@ import type { BoardMediaClient } from "../boardMedia/index.ts";
 import { useBoardPhotoUrls } from "../boardMedia/householdBoardMedia.tsx";
 import { memoryPhotoMatches } from "./memoryPhotos.ts";
 import { PathMiniMap } from "./PathMiniMap.tsx";
-import type { PathAnchor, PathCharacter, PathLevel, PathQuality, PathWorld, PathWorldInput } from "./world/pathWorld3d.ts";
+import type { PathAnchor, PathCharacter, PathEraIslandInput, PathLevel, PathQuality, PathWorld, PathWorldInput } from "./world/pathWorld3d.ts";
 import "./our-path-world.css";
 
 /**
@@ -72,9 +76,14 @@ type Mark = {
   id: string;
   label: string;
   sub?: string;
-  kind: "month" | "now" | "fire" | "goal" | "piece" | "move" | "bill" | "memory" | "tent" | "unknown" | "name" | "cove" | "lamp" | "kiln" | "charter" | "fork" | "sunrise" | "mist" | "stone" | "cottage" | "footpath" | "bridge";
+  kind: "month" | "now" | "fire" | "goal" | "piece" | "move" | "bill" | "memory" | "tent" | "unknown" | "name" | "cove" | "lamp" | "kiln" | "charter" | "fork" | "sunrise" | "mist" | "stone" | "cottage" | "footpath" | "bridge" | "era" | "plan" | "gate" | "home";
   minLevel: PathLevel;
   lantern: Lantern;
+  /** Era marks: the era's state; pencil for a suggestion only one of us agreed to. */
+  state?: PathEraView["state"];
+  pencil?: boolean;
+  /** Overrides the kind's priority (era islands: the nearer era wins a crowded sky). */
+  rank?: number;
 };
 type Detail = { eyebrow: string; title: string; lines: [Lantern, string][]; actions?: ReactNode };
 
@@ -107,7 +116,7 @@ const mineKey = (memberId: string) => `hearth:pathWorld:mine:${memberId}`;
 /** Private marks (footpaths, stage-1 planks) need at least this lantern. */
 const PRIVATE_LANTERN: Lantern = 1;
 const MARK_PRIORITY: Record<Mark["kind"], number> = {
-  now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, kiln: 6, cottage: 6, bill: 6, mist: 6, charter: 6, name: 7, sunrise: 7, fork: 8, memory: 8, stone: 8, bridge: 8, footpath: 9, cove: 9, lamp: 10, piece: 11, month: 12,
+  now: 0, move: 1, unknown: 2, fire: 3, tent: 4, goal: 5, kiln: 6, cottage: 6, bill: 6, mist: 6, charter: 6, name: 7, sunrise: 7, fork: 8, memory: 8, stone: 8, bridge: 8, footpath: 9, cove: 9, lamp: 10, piece: 11, month: 12, gate: 2, era: 3, home: 4, plan: 9,
 };
 /** The island shows at most this many clouds (the full timeline lives in the Fund and the Calendar). */
 const WEATHER_CLOUDS = 8;
@@ -212,7 +221,14 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     || (typeof document !== "undefined" && document.documentElement.dataset.motion === "reduced");
   const wanted = typeof matchMedia !== "function" || !matchMedia("(forced-colors: active)").matches;
 
-  const months = useMemo(() => pathMonths(household, today), [household, today]);
+  const nowKey = monthKeyFromDateKey(today);
+  // The Journey of Life (D-268): with a current era, the main island grows from that era's months only (fresh ground each era).
+  const eras = useMemo(() => { try { return pathEras(household, today); } catch { return []; } }, [household, today]);
+  const currentEra = eras.find((era) => era.state === "current") ?? null;
+  const eraFrom = currentEra?.months[0] ?? null;
+  /** True when the main island is an era's window: facts from outside it are dropped, not squeezed onto its first month. */
+  const windowed = eraFrom !== null;
+  const months = useMemo(() => pathMonths(household, today, eraFrom ? { from: eraFrom, through: nowKey } : undefined), [household, today, eraFrom, nowKey]);
   const recipes = useMemo(() => effectivePathRecipes(household), [household]);
   const [cur, setCur] = useState(() => months.length - 1);
   const [followNow, setFollowNow] = useState(true);
@@ -276,15 +292,31 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     ? household.members.find((m) => m.id === responsibility.memberId)?.name ?? "Choose a responsible person"
     : "Together";
   const nameOf = (id: string | null | undefined) => household.members.find((m) => m.id === id)?.name ?? "Either of us";
+  const goalName = (goalId: string | null) => household.goals.find((goal) => goal.id === goalId)?.name ?? "A Kitty Bank";
+  /** A plan's small line: its kind, a bank's steps (never an amount), and who pencilled it in. */
+  const planSub = (plan: PathEraPlanView, era: PathEraView) => [
+    ERA_PLAN_KIND_LABELS[plan.kind],
+    ...(plan.kind === "bank" ? [plan.bought ? "bought" : (plan.step ?? 0) >= 10 ? "full" : `${plan.step ?? 0} of 10 steps`] : []),
+    ...(plan.sketched ? [`suggested by ${nameOf(era.pendingBy)}`] : []),
+  ].join(" · ");
   const next = nextMove(household, memberId);
   const moves = useMemo(() => (chapter && atNow ? movesForChapter(household, chapter.id).filter((m) => m.state !== "declined") : []), [household, chapter, atNow]);
   const goals = useMemo(() => kittyBanksInView(household, "household", memberId), [household, memberId]);
   // Landmarks read "as of" the shown month, so Replay shows the banks as they stood then.
   const asOf = atNow || !months[shown] ? today : pathMonthAsOf(months[shown]!.key, today);
-  const landmarks = useMemo(() => goals.slice(0, 6).map((goal) => {
+  // With a journey, the main island stands the current era's banks first (in the era's plan order), then banks no
+  // other era claims; banks planned for past or future eras stand on their own islands, not here.
+  const islandGoals = useMemo(() => {
+    if (!currentEra) return goals;
+    const mine = currentEra.plans.filter((plan) => plan.kind === "bank" && !plan.sketched).map((plan) => plan.goalId);
+    const elsewhere = new Set(eras.filter((era) => era.id !== currentEra.id).flatMap((era) => era.plans.map((plan) => plan.goalId)));
+    const rank = (id: string) => { const at = mine.indexOf(id); return at >= 0 ? at : elsewhere.has(id) ? 1000 : 500; };
+    return goals.filter((goal) => rank(goal.id) < 1000).sort((a, b) => rank(a.id) - rank(b.id));
+  }, [goals, eras, currentEra]);
+  const landmarks = useMemo(() => islandGoals.slice(0, 6).map((goal) => {
     const piece = displayedKittyPiece(goal.envelope?.studio);
     return { goal, piece, step: kittyBankBackingStep(household, goal, asOf) };
-  }), [goals, household, asOf]);
+  }), [islandGoals, household, asOf]);
   const kiln = useMemo(() => {
     if (!goals.length) return null;
     const fired = goals
@@ -331,8 +363,18 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     const at = months.findIndex((m) => m.key === key);
     if (at >= 0) return at;
     if (!months.length) return -1;
-    return key > months[months.length - 1]!.key ? months.length - 1 : 0;
-  }, [months]);
+    return key > months[months.length - 1]!.key ? months.length - 1 : windowed ? -1 : 0;
+  }, [months, windowed]);
+  /** A fact's month on the main island; without a journey an unknown month rests on the first one, as before. */
+  const placedMonth = useCallback((iso: string | null | undefined) => {
+    const at = monthIndexOf(months, iso);
+    return at >= 0 || windowed ? at : 0;
+  }, [months, windowed]);
+  /** A Chapter's campfire: an open Chapter that began in an earlier era still burns on this era's first month. */
+  const fireMonth = useCallback((row: { openedAt: string; state: string }) => {
+    const at = monthIndexOf(months, row.openedAt);
+    return at < 0 && windowed && row.state === "open" && months.length ? 0 : at;
+  }, [months, windowed]);
   const shownStones = useMemo(() => stones.map((stone) => ({ stone, month: stoneMonth(stone.month) })).filter((row) => row.month >= 0 && row.month <= shown), [stones, stoneMonth, shown]);
   // Private footpaths: only the signed-in member's own personal tasks (the partner's never reach this device).
   const footpaths = useMemo(() => {
@@ -358,7 +400,6 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   }, []);
 
   // ------------------------------------------------------------ together: the Sitdown, set land, the Charter, agreed decisions
-  const nowKey = monthKeyFromDateKey(today);
   const land = useMemo(() => pathLand(household, today), [household, today]);
   const sitdownClosed = useMemo(() => pathSitdownClosedMonths(household), [household]);
   const fireSitdown = useMemo(() => {
@@ -413,11 +454,55 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     return out.slice(0, 4);
   }, [months, shown, recipes, proposals]);
 
+  // ------------------------------------------------------------ the Journey of Life (D-268): era islands, the gate, the home
+  const [focusedEra, setFocusedEra] = useState<string | null>(null);
+  const [planner, setPlanner] = useState<{ eraId: string | null } | null>(null);
+  const plannerOpener = useRef<HTMLElement | null>(null);
+  const offsets = useMemo(() => eraOffsets(eras), [eras]);
+  const nextEra = nextEraAfterCurrent(eras);
+  const crossing = eraCrossingPending(currentEra);
+  // Past islands grow from their own months. Kept per era while its months and the recipes read the same, so a
+  // command elsewhere on the page never regrows the past.
+  const pastCache = useRef(new Map<string, { key: string; months: PathMonth[]; island: GrownIsland }>());
+  const pastIslands = useMemo(() => {
+    const out = new Map<string, { months: PathMonth[]; island: GrownIsland }>();
+    for (const era of eras) {
+      if (era.state !== "past" || !era.months.length) continue;
+      const eraMonths = pathMonths(household, today, { from: era.months[0]!, through: era.months.at(-1)! });
+      const key = JSON.stringify([eraMonths, recipes]);
+      let hit = pastCache.current.get(era.id);
+      if (!hit || hit.key !== key) {
+        hit = { key, months: eraMonths, island: growIsland(eraMonths, recipes, eraMonths.length - 1) };
+        pastCache.current.set(era.id, hit);
+      }
+      out.set(era.id, hit);
+    }
+    for (const id of pastCache.current.keys()) if (!out.has(id)) pastCache.current.delete(id);
+    return out;
+  }, [eras, household, today, recipes]);
+  const eraIslands = useMemo<PathEraIslandInput[]>(() => eras.flatMap((era) => {
+    if (era.state === "current") return [];
+    const offset = offsets.get(era.id);
+    if (offset === undefined) return [];
+    return [{
+      id: era.id, state: era.state, offset, name: era.spec.name, home: era.spec.home,
+      island: era.state === "past" ? pastIslands.get(era.id)?.island ?? null : null,
+      plans: era.plans.map((plan) => ({ id: plan.id, kind: plan.kind, step: plan.step, bought: plan.bought, sketched: plan.sketched })),
+      focused: focusedEra === era.id,
+    }];
+  }), [eras, offsets, pastIslands, focusedEra]);
+  const gate = useMemo(() => (currentEra ? {
+    lanterns: currentEra.progress.lanterns.map((row) => row.lit),
+    open: currentEra.progress.met,
+    crossing,
+  } : null), [currentEra, crossing]);
+  const eraHome = currentEra?.spec.home ?? null;
+
   const worldInput = useMemo<PathWorldInput>(() => ({
     island,
     theme,
     characters,
-    campfires: (household.chapters ?? []).map((row) => ({ id: `fire:${row.id}`, month: monthIndexOf(months, row.openedAt), lit: row.state === "open" && atNow, state: row.state, sitdown: fireSitdown.get(row.id) ?? "none" })),
+    campfires: (household.chapters ?? []).map((row) => ({ id: `fire:${row.id}`, month: fireMonth(row), lit: row.state === "open" && atNow, state: row.state, sitdown: fireSitdown.get(row.id) ?? "none" })),
     land: months.flatMap((month, m) => {
       const row = land[month.key], set = sitdownClosed.has(month.key);
       return row || set ? [{ month: m, closed: Boolean(row?.closed), stamps: Math.min(5, row?.stampedWeeks.length ?? 0), set }] : [];
@@ -433,11 +518,11 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     })),
     goals: landmarks.map(({ goal, piece, step }) => ({ id: `goal:${goal.id}`, step, piece, fired: Boolean(piece?.firedAt) })),
     kiln: kiln ? { warm: kiln.warm } : null,
-    lamps: rhythm.map((row) => ({ id: `lamp:${row.id}`, month: Math.max(0, monthIndexOf(months, row.heldOn.at(-1) ?? row.updatedAt)) })),
+    lamps: rhythm.map((row) => ({ id: `lamp:${row.id}`, month: placedMonth(row.heldOn.at(-1) ?? row.updatedAt) })).filter((row) => row.month >= 0),
     memories: kept.map((row) => {
       const url = photoUrls[keptPhotos.get(row.id)?.mediaId ?? ""];
-      return { id: `memory:${row.id}`, month: Math.max(0, monthIndexOf(months, row.shownAt)), ...(url ? { photo: url } : {}) };
-    }).filter((row) => row.month <= shown),
+      return { id: `memory:${row.id}`, month: placedMonth(row.shownAt), ...(url ? { photo: url } : {}) };
+    }).filter((row) => row.month >= 0 && row.month <= shown),
     cottage: canPlay,
     weather: [
       ...bills.map((row) => ({ id: row.id, kind: row.kind as "cloud" | "storm", weight: row.weight, dayOffset: daysFrom(today, row.date) })),
@@ -451,7 +536,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     unknown: unknown.map((row) => ({ id: row.id, month: row.month })),
     name: islandName,
     layers,
-  }), [shownFootpaths, shownBridges, island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, fireSitdown, land, sitdownClosed, presentMembers, charterView, charterShown, shownForks, photoUrls, keptPhotos, canPlay]);
+    ...(eras.length ? { eras: eraIslands, home: eraHome, gate } : {}),
+  }), [eras.length, eraIslands, eraHome, gate, fireMonth, placedMonth, shownFootpaths, shownBridges, island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, fireSitdown, land, sitdownClosed, presentMembers, charterView, charterShown, shownForks, photoUrls, keptPhotos, canPlay]);
 
   // ------------------------------------------------------------ marks: the real buttons over the canvas
   const marks = useMemo(() => {
@@ -462,7 +548,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
       else list.push({ id: `month:${m}`, label: monthName(month.key, false), sub: CHARACTER_LABEL[characters[m]!], kind: "month", minLevel: 1, lantern: 1 });
     });
     for (const row of household.chapters ?? []) {
-      if (monthIndexOf(months, row.openedAt) > shown || monthIndexOf(months, row.openedAt) < 0) continue;
+      if (fireMonth(row) > shown || fireMonth(row) < 0) continue;
       const sitdown = fireSitdown.get(row.id);
       const base = row.state === "open" ? "this Chapter" : row.state.replace("-", " ");
       list.push({ id: `fire:${row.id}`, label: row.title, sub: sitdown === "open" ? `${base} · Sitdown open` : sitdown === "closed" ? `${base} · Sitdown closed` : base, kind: "fire", minLevel: 1, lantern: 0 });
@@ -477,8 +563,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
       list.push({ id: `cove:${i}`, label: cove.name, sub: cove.visits.length > 1 ? `${cove.visits.length} visits` : undefined, kind: "cove", minLevel: 1, lantern: 1 });
       if (cove.type === "sea" && island.cur >= cove.month + 12) list.push({ id: `bottle:${i}`, label: "A message in a bottle", sub: cove.name, kind: "cove", minLevel: 2, lantern: 1 });
     });
-    for (const row of rhythm) list.push({ id: `lamp:${row.id}`, label: row.title, sub: "Our Rhythm", kind: "lamp", minLevel: 2, lantern: 1 });
-    for (const row of kept) if (Math.max(0, monthIndexOf(months, row.shownAt)) <= shown) list.push({ id: `memory:${row.id}`, label: pathWords(row.title, 60, "A Memory"), kind: "memory", minLevel: 2, lantern: 1 });
+    for (const row of rhythm) if (placedMonth(row.heldOn.at(-1) ?? row.updatedAt) >= 0) list.push({ id: `lamp:${row.id}`, label: row.title, sub: "Our Rhythm", kind: "lamp", minLevel: 2, lantern: 1 });
+    for (const row of kept) if (placedMonth(row.shownAt) >= 0 && placedMonth(row.shownAt) <= shown) list.push({ id: `memory:${row.id}`, label: pathWords(row.title, 60, "A Memory"), kind: "memory", minLevel: 2, lantern: 1 });
     // Weather never shows an amount: the read-model has none.
     for (const row of bills) list.push({ id: row.id, label: row.label, sub: lantern === 2 ? `${dayName(row.date)} · ${row.why}` : dayName(row.date), kind: "bill", minLevel: 1, lantern: 1 });
     for (const row of sunrises) list.push({ id: row.id, label: "Payday", sub: dayName(row.date), kind: "sunrise", minLevel: 2, lantern: 1 });
@@ -490,8 +576,26 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     if (atNow && chapter) list.push({ id: "tent", label: "Plan Studio", sub: unknown.length ? "Hercules has a suggestion" : "today's Our Path", kind: "tent", minLevel: 1, lantern: 0 });
     if (canPlay) list.push({ id: "cottage", label: "Hercules's cottage", sub: "Play", kind: "cottage", minLevel: 1, lantern: 0 });
     if (islandName) list.push({ id: "name", label: islandName, kind: "name", minLevel: 1, lantern: 0 });
+    // The journey: era islands at every distance; a focused island's plans up close (or with the lantern warm); pencil only at Warm+.
+    if (currentEra) {
+      list.push({ id: "era-home", label: `Our home · ${PATH_ERA_HOME_LABELS[currentEra.spec.home]}`, sub: currentEra.spec.name, kind: "home", minLevel: 1, lantern: 0 });
+      list.push({ id: "era-gate", label: `The bridge to ${nextEra?.spec.name ?? "the next era"}`, sub: gateSub(currentEra.progress, crossing), kind: "gate", minLevel: 1, lantern: 0 });
+    }
+    for (const era of eras) {
+      if (era.state === "current") continue;
+      const offset = offsets.get(era.id) ?? 0;
+      const focused = focusedEra === era.id;
+      const sub = era.state === "past" ? `Past · crossed ${eraMonthLabel(era.spec.crossedOn)}`
+        : era.state === "future" ? `${offset === 1 ? "Next era" : "Later era"}${focused ? "" : " · foggy"}`
+          : `Suggested by ${nameOf(era.pendingBy)}`;
+      list.push({ id: `era:${era.id}`, label: era.spec.name, sub, kind: "era", minLevel: 0, lantern: era.state === "sketched" ? 1 : 0, state: era.state, pencil: era.state === "sketched", rank: MARK_PRIORITY.era + Math.min(0.9, Math.abs(offset) * 0.1) });
+      if (!focused) continue;
+      for (const plan of era.plans) {
+        list.push({ id: `era:${era.id}:plan:${plan.id}`, label: plan.label, sub: planSub(plan, era), kind: "plan", minLevel: lantern >= 1 ? 0 : 2, lantern: plan.sketched ? 1 : 0, state: era.state, pencil: plan.sketched });
+      }
+    }
     return list;
-  }, [months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, sunrises, mist, shownStones, shownFootpaths, shownBridges, lantern, unknown, chapter, islandName, fireSitdown, charterView, charterShown, shownForks, canPlay]);
+  }, [eras, currentEra, nextEra, crossing, offsets, focusedEra, placedMonth, fireMonth, months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, sunrises, mist, shownStones, shownFootpaths, shownBridges, lantern, unknown, chapter, islandName, fireSitdown, charterView, charterShown, shownForks, canPlay]);
 
   // ------------------------------------------------------------ the world host
   const host = useRef<HTMLDivElement>(null);
@@ -505,15 +609,30 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   latestInput.current = worldInput;
   const selectRef = useRef<(id: string) => void>(() => {});
   // The controls and the open card sit over the canvas: a mark under them could be seen but not pressed, so it waits.
-  const obstacles = useRef<{ x0: number; x1: number; y0: number; y1: number }[]>([]);
+  const obstacles = useRef<{ x0: number; x1: number; y0: number; y1: number; card: boolean }[]>([]);
   const measureObstacles = useCallback(() => {
     const base = host.current?.getBoundingClientRect();
     const stage = host.current?.parentElement;
     if (!base || !stage) return;
     obstacles.current = [...stage.querySelectorAll(".path-world__controls > *, .path-world__rail, .path-world__now > *, .path-world__card")].flatMap((el) => {
       const r = el.getBoundingClientRect();
-      return r.width > 0 && r.height > 0 ? [{ x0: r.left - base.left, x1: r.right - base.left, y0: r.top - base.top, y1: r.bottom - base.top }] : [];
+      return r.width > 0 && r.height > 0 ? [{ x0: r.left - base.left, x1: r.right - base.left, y0: r.top - base.top, y1: r.bottom - base.top, card: el.classList.contains("path-world__card") }] : [];
     });
+    // The journey's Sky frame keeps clear of the controls (not the card, which comes and goes): each control
+    // becomes whichever edge band costs the stage less.
+    const W = base.width, H = base.height;
+    if (W > 0 && H > 0 && world.current?.setSafeArea) {
+      const safe = { top: 0, right: 0, bottom: 0, left: 0 };
+      for (const o of obstacles.current) {
+        if (o.card) continue;
+        const band = { top: o.y1 / H, bottom: (H - o.y0) / H, left: o.x1 / W, right: (W - o.x0) / W };
+        const vertical = Math.min(band.top, band.bottom), horizontal = Math.min(band.left, band.right);
+        if (vertical <= horizontal) { if (band.top <= band.bottom) safe.top = Math.max(safe.top, band.top); else safe.bottom = Math.max(safe.bottom, band.bottom); }
+        else if (band.left <= band.right) safe.left = Math.max(safe.left, band.left);
+        else safe.right = Math.max(safe.right, band.right);
+      }
+      world.current.setSafeArea(safe);
+    }
   }, []);
 
   const applyAnchors = useCallback((anchors: PathAnchor[]) => {
@@ -522,7 +641,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     const near = [150, 150, 90, 46][lv]!;
     // Most important first; a label that would sit on top of one already placed waits until you move closer.
     // The place whose card is open is placed right after "now", so its label never waits behind a neighbour.
-    const rank = (m: Mark) => (m.id === chosen && m.kind !== "now" ? 0.5 : MARK_PRIORITY[m.kind]);
+    const rank = (m: Mark) => (m.id === chosen && m.kind !== "now" ? 0.5 : m.rank ?? MARK_PRIORITY[m.kind]);
     const candidates = anchors.flatMap((a) => {
       const mark = byId.get(a.id);
       const el = markRefs.current.get(a.id);
@@ -648,21 +767,190 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
       cardWantsFocus.current = keyboard;
     }
     setSelected(id);
-    world.current?.focus(id, id.startsWith("month:") ? 2 : 3);
+    // An era island lifts its fog when you travel to it; coming back to this era's island clears that.
+    const era = /^era:([^:]+)/.exec(id)?.[1] ?? null;
+    if (era) setFocusedEra(era);
+    else if (id === "era-home" || id.startsWith("month:")) setFocusedEra(null);
+    world.current?.focus(id, id.startsWith("month:") || id === "era-home" || id === "era-gate" || (era && !id.includes(":plan:")) ? 2 : 3);
   }, [openTent]);
   selectRef.current = select;
 
   // ------------------------------------------------------------ details (the card grows with the lantern)
   const run = async (fn: (current: Household) => CommitResult, done: string) => {
     const outcome = await onCommand(fn);
-    if (commandOk(outcome) || outcome === undefined) setNotice(done);
+    const ok = commandOk(outcome) || outcome === undefined;
+    if (ok) setNotice(done);
+    return ok;
+  };
+  const openPlanner = (eraId: string | null) => {
+    const active = typeof document === "undefined" ? null : document.activeElement;
+    plannerOpener.current = active instanceof HTMLElement && active !== document.body ? active : null;
+    // From the tent: back onto the island page, where the planner opens (it takes focus itself).
+    if (tentOpen) { tentMoved.current = false; setTentOpen(false); }
+    setPlanner({ eraId });
+  };
+  const closePlanner = () => {
+    setPlanner(null);
+    const back = plannerOpener.current;
+    plannerOpener.current = null;
+    window.setTimeout(() => { if (back && back.isConnected && !back.closest("[hidden]")) back.focus(); else compassButton.current?.focus(); }, 0);
+  };
+  const showEra = (eraId: string) => {
+    setPlanner(null);
+    select(`era:${eraId}`);
   };
   const openBank = (goalId: string) => {
     const { onOpenBank: bank, onOpenInTent: inTent } = links.current;
     if (bank) bank(goalId);
     else inTent?.({ route: "plan", view: "household", label: "Goals & reserves", goalId });
   };
+  const planLines = (era: PathEraView, min: Lantern = 1): [Lantern, string][] => (era.plans.length
+    ? era.plans.map((plan): [Lantern, string] => [plan.sketched ? Math.max(1, min) as Lantern : min, `${plan.label} · ${planSub(plan, era)}${plan.goalId && plan.kind === "bank" ? ` · ${goalName(plan.goalId)}` : ""}`])
+    : [[min, "Nothing planned here yet."]]);
+  const respondEra = (era: PathEraView, agree: boolean) => {
+    const revision = era.row.pendingRevision;
+    void run((h) => (agree ? agreePathProposal : declinePathProposal)(h, { memberId, rowId: era.id, revision }), agree ? (era.state === "current" && crossing ? "Agreed. The bridge is built once you both agree." : "Agreed.") : "Set aside.");
+  };
+  function eraActions(era: PathEraView, withPlan = true): ReactNode {
+    const pendingMine = era.row.agreedByMemberIds.includes(memberId);
+    const waiting = Boolean(era.pending);
+    return (
+      <>
+        {waiting && !pendingMine && <button type="button" className="primary" disabled={busy} onClick={() => respondEra(era, true)}>Agree</button>}
+        {waiting && <button type="button" disabled={busy} onClick={() => respondEra(era, false)}>{pendingMine ? "Withdraw" : "Set aside"}</button>}
+        {era.state === "current" && !waiting && era.progress.met && (
+          <button type="button" className="primary" disabled={busy} onClick={() => void run((h) => crossPathEra(h, { memberId, rowId: era.id, today }), "Suggested. The bridge is built once you both agree.")}>Cross together</button>
+        )}
+        {withPlan && <button type="button" onClick={() => openPlanner(era.id)}>Plan this era</button>}
+      </>
+    );
+  }
+  /** Each lantern in words; the months still ahead fold into one line. */
+  function lanternLines(era: PathEraView, min: Lantern, lit: string, unlit: string): [Lantern, string][] {
+    const out: [Lantern, string][] = [];
+    const ahead = era.progress.lanterns.filter((row) => !row.lit && /^Month \d+ · still ahead$/.test(row.label));
+    for (const row of era.progress.lanterns) if (!ahead.includes(row)) out.push([min, `${row.lit ? lit : unlit} · ${row.label}`]);
+    if (ahead.length === 1) out.push([min, `${unlit} · ${ahead[0]!.label}`]);
+    else if (ahead.length > 1) out.push([min, `${unlit} · ${ahead[0]!.label.replace(/ · still ahead$/, "")} to ${ahead.at(-1)!.label.replace(/^Month /, "").replace(/ · still ahead$/, "")} · still ahead`]);
+    return out;
+  }
+  function waitingLines(era: PathEraView): [Lantern, string][] {
+    if (!era.pending) return [];
+    const agreed = era.row.agreedByMemberIds.map(nameOf).join(" and ") || "Nobody";
+    if (era.state === "current" && crossing) return [[0, `${agreed} agreed to cross the bridge. It is built once you both agree.`]];
+    if (era.state === "sketched") return [[0, `Suggested by ${nameOf(era.pendingBy)}. It joins the journey once you both agree.`]];
+    return [[0, `${eraProposalTitle(era.row, nameOf)}. Agreed so far: ${agreed}.`]];
+  }
+  function eraDetail(era: PathEraView): Detail {
+    const spec = era.spec;
+    const line: [Lantern, string][] = spec.finishLine ? [[0, `The finish line: “${spec.finishLine}”`]] : [];
+    const finishWords: [Lantern, string] = [1, eraFinishWords(spec, goalName)];
+    if (era.state === "past") {
+      const grown = pastIslands.get(era.id)?.months.map(pathMonthCharacter) ?? [];
+      const count = (kind: PathCharacter, one: string, many: string) => { const n = grown.filter((c) => c === kind).length; return n ? [`${n} ${n === 1 ? one : many}`] : []; };
+      const grew = [...count("bloom", "bloom", "blooms"), ...count("storm", "storm", "storms"), ...count("milestone", "milestone", "milestones")];
+      const first = era.months[0];
+      return {
+        eyebrow: "A past era",
+        title: spec.name,
+        lines: [
+          [0, `${eraMonthLabel(first)} – ${eraMonthLabel(era.months.at(-1))}`],
+          ...line,
+          [0, `Crossed ${eraMonthLabel(spec.crossedOn)}`],
+          [1, grew.length ? `What grew: ${grew.join(" · ")}` : "What grew: steady months, quietly."],
+          [1, `Home: ${PATH_ERA_HOME_LABELS[spec.home]}`],
+          ...planLines(era),
+          ...waitingLines(era),
+        ],
+        actions: (
+          <>
+            {first && onOpenTimeMachine && <button type="button" onClick={() => links.current.onOpenTimeMachine?.(first)}>Open {monthName(first)} in the Time Machine</button>}
+            {eraActions(era)}
+          </>
+        ),
+      };
+    }
+    if (era.state === "current") {
+      return {
+        eyebrow: "The era we are in",
+        title: spec.name,
+        lines: [
+          ...line,
+          ...era.progress.why.map((why, i): [Lantern, string] => [i === 0 ? 0 : 1, why]),
+          ...lanternLines(era, 1, "Lit", "Not lit yet"),
+          ...(spec.by ? [[0, `By ${eraMonthLabel(spec.by)}`] as [Lantern, string]] : []),
+          [1, `Since ${eraMonthLabel(era.months[0])} · home: ${PATH_ERA_HOME_LABELS[spec.home]}`],
+          finishWords,
+          ...planLines(era),
+          ...waitingLines(era),
+        ],
+        actions: eraActions(era),
+      };
+    }
+    const offset = offsets.get(era.id) ?? 0;
+    return {
+      eyebrow: era.state === "sketched" ? "A suggested era · in pencil" : offset === 1 ? "The next era" : "A later era",
+      title: spec.name,
+      lines: [
+        ...waitingLines(era),
+        [0, `Starts ${eraMonthLabel(spec.from)}${spec.by ? ` · by ${eraMonthLabel(spec.by)}` : ""}`],
+        [0, `Home: ${PATH_ERA_HOME_LABELS[spec.home]}`],
+        ...line,
+        finishWords,
+        ...planLines(era, 0),
+      ],
+      actions: eraActions(era),
+    };
+  }
+  function planDetail(era: PathEraView, planId: string): Detail | null {
+    const plan = era.plans.find((row) => row.id === planId);
+    if (!plan) return null;
+    return {
+      eyebrow: `A plan · ${era.spec.name}`,
+      title: plan.label,
+      lines: [
+        [0, ERA_PLAN_KIND_LABELS[plan.kind]],
+        ...(plan.month ? [[0, `In ${monthName(plan.month)}`] as [Lantern, string]] : []),
+        ...(plan.kind === "bank" ? [[0, `${goalName(plan.goalId)} · ${plan.bought ? "Bought" : `${plan.step ?? 0} of 10 steps`}`] as [Lantern, string]] : []),
+        ...(plan.sketched ? [[0, `Suggested by ${nameOf(era.pendingBy)}. Part of the plan once you both agree.`] as [Lantern, string]] : []),
+        [1, `${ERA_STATE_LABELS[era.state]} · ${era.spec.name}`],
+      ],
+      actions: (
+        <>
+          {plan.kind === "bank" && plan.goalId && <button type="button" className="primary" onClick={() => { openBank(plan.goalId!); openTent(true); }}>Open this Kitty Bank</button>}
+          <button type="button" onClick={() => openPlanner(era.id)}>Plan this era</button>
+        </>
+      ),
+    };
+  }
+  function gateDetail(era: PathEraView): Detail {
+    return {
+      eyebrow: "The bridge out of this era",
+      title: `The bridge to ${nextEra?.spec.name ?? "the next era"}`,
+      lines: [
+        [0, crossing ? "Planks are going down." : era.progress.met ? "Every lantern is lit. You can cross together." : "One lantern for each part of the finish line."],
+        ...era.progress.why.map((why): [Lantern, string] => [0, why]),
+        ...lanternLines(era, 0, "Lit", "Unlit"),
+        ...waitingLines(era),
+        ...(nextEra ? [] : [[1, "No next era planned yet. Plan one, as much or as little as you want."] as [Lantern, string]]),
+      ],
+      actions: (
+        <>
+          {eraActions(era, false)}
+          {!nextEra && <button type="button" onClick={() => openPlanner("new")}>Plan the next era</button>}
+        </>
+      ),
+    };
+  }
   function detailFor(id: string): Detail | null {
+    if (id === "era-home") return currentEra ? eraDetail(currentEra) : null;
+    if (id === "era-gate") return currentEra ? gateDetail(currentEra) : null;
+    if (id.startsWith("era:")) {
+      const [, eraId, part, planId] = id.split(":");
+      const era = eras.find((row) => row.id === eraId);
+      if (!era) return null;
+      return part === "plan" && planId ? planDetail(era, planId) : eraDetail(era);
+    }
     if (id.startsWith("month:")) {
       const m = Number(id.slice(6));
       const month = months[m];
@@ -678,10 +966,16 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           ...top.slice(0, 5).map((s): [Lantern, string] => [2, `${PATH_SIGNAL_LABELS[s].label} score ${month.scores[s].toFixed(2)}`]),
           ...(month.why.milestone ? [[0, `Milestone: ${month.why.milestone}`] as [Lantern, string]] : []),
           ...(m === last && m === shown ? [[1, "You walked here together."] as [Lantern, string]] : []),
+          ...(currentEra && m === last ? [[0, `The era: ${currentEra.spec.name}`] as [Lantern, string]] : []),
           ...(land[month.key]?.why ? [[1, land[month.key]!.why] as [Lantern, string]] : []),
           ...(sitdownClosed.has(month.key) ? [[1, "Sitdown closed — this month's land is set."] as [Lantern, string]] : []),
         ],
-        actions: onOpenTimeMachine ? <button type="button" onClick={() => links.current.onOpenTimeMachine?.(month.key)}>Open the time machine</button> : undefined,
+        actions: onOpenTimeMachine || (currentEra && m === last) ? (
+          <>
+            {onOpenTimeMachine && <button type="button" onClick={() => links.current.onOpenTimeMachine?.(month.key)}>Open the time machine</button>}
+            {currentEra && m === last && <button type="button" onClick={() => select("era-home")}>About this era</button>}
+          </>
+        ) : undefined,
       };
     }
     if (id.startsWith("fire:")) {
@@ -940,6 +1234,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           <h2 id="path-world-title">{islandName ?? "Where we are going"}</h2>
           <p className="path-world__lede">The land grows from your shared months. Move closer to see more.</p>
           <button type="button" className="path-world__link" aria-expanded={naming} onClick={() => { setNaming((v) => !v); setNameDraft(islandName ?? ""); }}>{islandName ? "Rename together" : "Name our island together"}</button>
+          <button type="button" className="path-world__link path-world__plan-journey" aria-expanded={Boolean(planner)} onClick={() => (planner ? closePlanner() : openPlanner(null))}>Plan our journey</button>
+          {currentEra && <p className="path-world__era-now"><span className="path-era-chip path-era-chip--current">Now</span> {currentEra.spec.name}</p>}
           {naming && (
             <form className="path-world__namer" onSubmit={(e) => { e.preventDefault(); void run((h) => proposePathName(h, { memberId, name: nameDraft }), "Suggested. The name sticks once you both agree.").then(() => setNaming(false)); }}>
               <label htmlFor="path-world-name">What should our island be called?</label>
@@ -967,6 +1263,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
                 ref={(el) => { if (el) markRefs.current.set(mark.id, el); else markRefs.current.delete(mark.id); }}
                 className={`path-mark path-mark--${mark.kind}`}
                 data-place={mark.id}
+                data-state={mark.state}
+                data-pencil={mark.pencil || undefined}
                 aria-label={`${mark.label}${mark.sub ? `, ${mark.sub}` : ""}`}
                 onClick={() => select(mark.id)}
               >
@@ -1017,13 +1315,18 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
             <button type="button" aria-label="Move away" onClick={() => world.current?.zoom(1.38)} disabled={!live}>−</button>
           </div>
           <div className="path-world__now">
-            <button ref={compassButton} type="button" className="path-world__compass" onClick={() => { setFollowNow(true); setCur(last); setSelected(null); window.setTimeout(() => world.current?.focus("now", 2), 0); }}>Where we are</button>
+            <button ref={compassButton} type="button" className="path-world__compass" onClick={() => { setFollowNow(true); setCur(last); setSelected(null); setFocusedEra(null); window.setTimeout(() => world.current?.focus("now", 2), 0); }}>Where we are</button>
             {next && atNow && <button type="button" className="path-world__next" onClick={() => select(`move:${next.id}`)}><span>Next Move</span>{" "}{next.text}</button>}
             {!live && <PathHercules pose={herculesPose} size={narrow ? 56 : 72} flat />}
             <button ref={tentButton} type="button" className="primary path-world__tent" onClick={() => openTent(true)}>Open the Plan Studio tent</button>
           </div>
 
         </div>
+
+        {planner && (
+          <EraPlanner household={household} memberId={memberId} today={today} busy={busy} eras={eras} startEraId={planner.eraId}
+            run={run} onClose={closePlanner} onShow={showEra} nameOf={nameOf} />
+        )}
 
         <div className="path-world__grow">
           <button type="button" className="path-world__play" aria-label={playing ? "Pause the replay" : "Replay the island growing"} aria-pressed={playing} disabled={months.length < 2} onClick={() => { if (playing) { setPlaying(false); return; } setFollowNow(false); setCur(0); setPlaying(true); }}>{playing ? "Pause" : "Replay"}</button>
@@ -1045,20 +1348,42 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         {notice && <p className="path-world__notice" role="status">{notice}</p>}
 
         <div className="path-world__panels">
+          <section className="path-world__panel path-world__journey" aria-labelledby="path-world-journey">
+            <h3 id="path-world-journey">Our journey</h3>
+            {eras.length ? (
+              <ol className="path-journey">
+                {eras.map((era) => (
+                  <li key={era.id} className={`path-journey__era path-journey__era--${era.state}`} data-focused={focusedEra === era.id || undefined}>
+                    <span className={`path-era-chip path-era-chip--${era.state}`}>{ERA_STATE_LABELS[era.state]}</span>
+                    <button type="button" data-place={era.state === "current" ? "era-home" : `era:${era.id}`} onClick={() => select(era.state === "current" ? "era-home" : `era:${era.id}`)}>
+                      {era.state === "current" ? `Where we are: ${era.spec.name}` : `Take me to ${era.spec.name}`}
+                    </button>
+                  </li>
+                ))}
+              </ol>
+            ) : <p className="muted">One journey, cut into eras — the one you are in, and the ones you hope for. Plan as much or as little as you want.</p>}
+            <div className="path-world__actions">
+              <button type="button" className="primary" onClick={() => openPlanner(null)}>Plan our journey</button>
+              {currentEra && <button type="button" onClick={() => select("era-gate")}>The bridge · {gateSub(currentEra.progress, crossing)}</button>}
+            </div>
+          </section>
+
           {proposals.length > 0 && (
             <section className="path-world__panel path-world__proposals" aria-labelledby="path-world-waiting">
               <h3 id="path-world-waiting">Waiting for both of you</h3>
               <ul>
                 {proposals.map((row) => {
                   const mine = row.agreedByMemberIds.includes(memberId);
-                  const title = row.kind === "name" ? `Call the island “${row.pending}”` : `${(row.pending as PathRecipeSpec).name} — grows ${PATH_BRUSH_LABELS[(row.pending as PathRecipeSpec).brush]}`;
+                  const era = row.kind === "era";
+                  const title = row.kind === "name" ? `Call the island “${row.pending}”` : row.kind === "era" ? eraProposalTitle(row, nameOf) : `${(row.pending as PathRecipeSpec).name} — grows ${PATH_BRUSH_LABELS[(row.pending as PathRecipeSpec).brush]}`;
                   return (
                     <li key={row.id}>
                       <p><strong>{title}</strong></p>
                       <p className="muted">{row.kind === "recipe" && row.proposedBy === "hercules" ? "Hercules suggested it. " : ""}Agreed: {row.agreedByMemberIds.map(nameOf).join(", ") || "nobody yet"}.</p>
                       <div className="path-world__actions">
-                        {!mine && <button type="button" className="primary" disabled={busy} onClick={() => void run((h) => agreePathProposal(h, { memberId, rowId: row.id, revision: row.pendingRevision }), row.id === PATH_NAME_ID ? "Agreed." : "Agreed. The island will regrow.")}>I agree</button>}
-                        <button type="button" disabled={busy} onClick={() => void run((h) => declinePathProposal(h, { memberId, rowId: row.id, revision: row.pendingRevision }), "Set aside.")}>{mine ? "Withdraw" : "Not now"}</button>
+                        {!mine && <button type="button" className="primary" disabled={busy} onClick={() => void run((h) => agreePathProposal(h, { memberId, rowId: row.id, revision: row.pendingRevision }), row.id === PATH_NAME_ID || era ? "Agreed." : "Agreed. The island will regrow.")}>{era ? "Agree" : "I agree"}</button>}
+                        <button type="button" disabled={busy} onClick={() => void run((h) => declinePathProposal(h, { memberId, rowId: row.id, revision: row.pendingRevision }), "Set aside.")}>{mine ? "Withdraw" : era ? "Set aside" : "Not now"}</button>
+                        {era && <button type="button" onClick={() => (eras.some((e) => e.id === row.id && e.state !== "current") ? select(`era:${row.id}`) : select("era-home"))}>Show</button>}
                       </div>
                     </li>
                   );
@@ -1084,14 +1409,39 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           <details className="path-world__panel path-world__outline">
             <summary>Everything on the island</summary>
             <ul>
-              {marks.filter((mark) => (mark.kind !== "footpath" && mark.kind !== "bridge") || lantern >= mark.lantern).map((mark) => <li key={mark.id}><button type="button" data-place={mark.id} onClick={() => select(mark.id)}>{mark.label}{mark.sub ? ` · ${mark.sub}` : ""}</button></li>)}
+              {marks.filter((mark) => mark.kind !== "era" && mark.kind !== "plan" && mark.kind !== "gate" && mark.kind !== "home" && ((mark.kind !== "footpath" && mark.kind !== "bridge") || lantern >= mark.lantern)).map((mark) => <li key={mark.id}><button type="button" data-place={mark.id} onClick={() => select(mark.id)}>{mark.label}{mark.sub ? ` · ${mark.sub}` : ""}</button></li>)}
             </ul>
+            {eras.length > 0 && (
+              <>
+                <h4 className="path-world__outline-head">The journey</h4>
+                <ul className="path-world__outline-journey">
+                  {marks.filter((mark) => mark.kind === "home" || mark.kind === "gate").map((mark) => <li key={mark.id}><button type="button" data-place={mark.id} onClick={() => select(mark.id)}>{mark.label}{mark.sub ? ` · ${mark.sub}` : ""}</button></li>)}
+                  {eras.filter((era) => era.state !== "current").map((era) => {
+                    const mark = marks.find((row) => row.id === `era:${era.id}`);
+                    return (
+                      <li key={era.id}>
+                        <button type="button" data-place={`era:${era.id}`} onClick={() => select(`era:${era.id}`)}>{era.spec.name} · {mark?.sub ?? ERA_STATE_LABELS[era.state]}</button>
+                        {era.plans.length > 0 && (
+                          <ul>
+                            {era.plans.map((plan) => <li key={plan.id}><button type="button" className={plan.sketched ? "path-pencil" : undefined} data-place={`era:${era.id}:plan:${plan.id}`} onClick={() => select(`era:${era.id}:plan:${plan.id}`)}>{plan.label} · {planSub(plan, era)}</button></li>)}
+                          </ul>
+                        )}
+                      </li>
+                    );
+                  })}
+                  {currentEra && currentEra.plans.map((plan) => <li key={`now-${plan.id}`}><button type="button" className={plan.sketched ? "path-pencil" : undefined} onClick={() => select("era-home")}>{plan.label} · {planSub(plan, currentEra)} · this era</button></li>)}
+                </ul>
+              </>
+            )}
           </details>
         </div>
       </section>
 
       <section className="path-world__room" hidden={!tentOpen} aria-label="Plan Studio tent">
-        <button ref={backButton} type="button" className="path-world__back" onClick={() => openTent(false)}>Back to the island</button>
+        <div className="path-world__room-head">
+          <button ref={backButton} type="button" className="path-world__back" onClick={() => openTent(false)}>Back to the island</button>
+          <button type="button" className="path-world__back" onClick={() => openPlanner(null)}>Plan our journey</button>
+        </div>
         {/* D-276: Plan Studio v3 inside the tent can walk back to the island. */}
         <PathTentContext.Provider value={tentLink}>{classicRoom}</PathTentContext.Provider>
       </section>
