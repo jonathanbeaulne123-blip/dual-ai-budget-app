@@ -1,15 +1,18 @@
 import { RememberedDetails } from "./theme/RememberedDetails.tsx";
 import { KittyNest } from "./kitty/KittyNest.tsx";
 import type { KittyPlanContext } from "./kitty/KittyBankRoom.tsx";
-import { useCallback, useEffect, useMemo, useState, useRef, type ReactNode } from "react";
+import { Suspense, lazy, useCallback, useEffect, useMemo, useState, useRef, type ReactNode } from "react";
+import { planStudioV3Enabled } from "./plan-v3/flag.ts";
 import {
-  PLAN_LENSES, PLAN_LENS_COPY, addDays, acknowledgeHouseholdPlan, appendPlanSitdownTurn, createPlanScenario, currentPlanVersion, evaluatePlanDrift,
+  PLAN_LENSES, addDays, acknowledgeHouseholdPlan, appendPlanSitdownTurn, createPlanScenario, currentPlanVersion, evaluatePlanDrift,
   formatCad, monthKeyFromDateKey, planAcknowledgementState, proposeHouseholdPlan, savePlanDraft, savePlanLearningProgress, setPlanCoachingIntensity,
   shiftMonthKey, lockPersonalPlan, updatePlanNudgeState, type CommitResult, type DateKey, type Household, type LedgerView, type MonthKey, type PlanLens, type PlanLine,
   type PlanAssumption, type HerculesPlanContext, type HerculesNumberSource,
 } from "./core/index.ts";
 import { planSelectionForDraft, planSelectionForVersion, planSourceVisible, projectPlan, type PlanSelection } from "./core/planProjection.ts";
 import { planLesson, PLAN_LESSONS } from "./core/planLearning.ts";
+import { fundModelMode } from "./core/fundRules.ts";
+import { planLensCopy, planLensOrder } from "./core/planSystem.ts";
 import { ChapterClose, ModeLabel, RitualForm, SitdownBriefCard } from "./ChapterPanel.tsx";
 import { HerculesPortrait } from "./Hercules.tsx";
 import { PlanBridgeEditor } from "./PlanBridgeEditor.tsx";
@@ -22,7 +25,8 @@ type Section = "overview" | "review" | "settings" | PlanLens | "scenarios" | "as
 /** The eight human steps of the Sitdown (Vision v2 §6). One ritual; a Chapter runs from one Sitdown to the next. */
 const stages = ["Arrive together", "Close the previous Chapter", "Orient to shared reality", "Learn one useful thing", "Make the shared decisions", "Turn the decision into a Ritual", "Look ahead", "Open the next Chapter"];
 
-export function PlanStudio({ household, view, memberId, today, busy, onCommand, onSharedHerculesReply, onAskHercules, onContextChange, sourceFocus, goalsContent, contextIdentity, onOpenWorkspace, workspaceCards }: {
+export type PlanStudioSection = Section;
+export type PlanStudioProps = {
   household: Household; view: LedgerView; memberId: string; today: DateKey; busy: boolean;
   onCommand: (fn: (current: Household) => CommitResult) => Promise<unknown>;
   onSharedHerculesReply?: (sessionId: string, inReplyToTurnId: string) => Promise<void>;
@@ -33,6 +37,22 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
   contextIdentity?: string;
   onOpenWorkspace?: () => void;
   workspaceCards?: (month: string) => ReactNode;
+};
+
+// D-274: Plan Studio v3 is opt-in (VITE_PLAN_STUDIO_V3) and loaded only when on; off, this is today's studio unchanged.
+const PlanStudioV3 = lazy(() => import("./plan-v3/PlanStudioV3.tsx"));
+export function PlanStudio(props: PlanStudioProps) {
+  if (!planStudioV3Enabled()) return <PlanStudioClassic {...props} />;
+  return <Suspense fallback={<p className="plan-empty" role="status">Opening the plan…</p>}><PlanStudioV3 {...props} /></Suspense>;
+}
+
+/**
+ * Today's Plan Studio. Plan Studio v3 also mounts it inside a tool sheet with `embeddedSection`:
+ * the section alone, without the masthead, the tools strip or the mobile consequence bar.
+ */
+export function PlanStudioClassic({ household, view, memberId, today, busy, onCommand, onSharedHerculesReply, onAskHercules, onContextChange, sourceFocus, goalsContent, contextIdentity, onOpenWorkspace, workspaceCards, embeddedSection, onEmbeddedClose }: PlanStudioProps & {
+  embeddedSection?: Section;
+  onEmbeddedClose?: () => void;
 }) {
   const consumedSource=useRef<HerculesNumberSource|null>(null);
   const scope = view;
@@ -40,7 +60,9 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
   const bankRequests=useRef(0);
   const openBanks=(goalId?:string,lineId?:string)=>setBankRequest({goalId,lineId,request:++bankRequests.current});
   const [month, setMonth] = useState<MonthKey>(monthKeyFromDateKey(today));
-  const [section, setSection] = useState<Section>("overview");
+  const [section, setSection] = useState<Section>(embeddedSection ?? "overview");
+  const embedded = Boolean(embeddedSection);
+  const closeEmbedded = useRef(onEmbeddedClose); closeEmbedded.current = onEmbeddedClose;
   const [horizonDays, setHorizonDays] = useState(31);
   const [scenarioId, setScenarioId] = useState<string | null>(null);
   const [versionId, setVersionId] = useState<string | null>(null);
@@ -84,7 +106,7 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
   const sessions = [...(household.planHerculesSessions ?? [])].filter(row => row.monthKey === month).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const session = sessions.find(row => row.state === "active") ?? sessions[0];
   const stage = session?.stage ?? 0;
-  const lesson = planLesson(projection, lessonLens, household.planLearningProgress?.filter(row => row.memberId === memberId && row.state === "completed").map(row => row.lessonId));
+  const lesson = planLesson(projection, lessonLens, household.planLearningProgress?.filter(row => row.memberId === memberId && row.state === "completed").map(row => row.lessonId), fundModelMode(household));
   const progress = household.planLearningProgress?.find(row => row.memberId === memberId && row.monthKey === month && row.lessonId === lesson.id);
   const run = useCallback(async (command: (current: Household) => CommitResult) => {
     setSaving(true); setError("");
@@ -123,6 +145,8 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
   }, [month, scope, through, section, lessonLens, selection.kind, version?.id, draft?.id, scenario?.id, session?.sitDownSessionId, onContextChange, contextIdentity, disruption, purchaseContext, selectedLineId, working]);
   useEffect(() => { setReviewedAt(null); setPrivateNote(null); setRhythm(null); }, [month, memberId, scope]);
   useEffect(()=>setBankRequest(null),[contextIdentity,memberId,scope]);
+  // The Kitty bank tool opens Goals & reserves straight away; closing the room closes the tool.
+  useEffect(() => { if (embeddedSection === "goals") setBankRequest({ request: ++bankRequests.current }); }, [embeddedSection]);
   useEffect(() => {
     if (!sourceFocus || sourceFocus.view !== scope || consumedSource.current===sourceFocus) return;
     consumedSource.current=sourceFocus;
@@ -152,10 +176,11 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
     if (reply && saved && turn && onSharedHerculesReply) try { await onSharedHerculesReply(saved.id, turn.id); } catch { setError("Your shared message is saved. Hercules could not reply; use Retry beside that message after reconnecting."); }
   };
   const monthChange = (offset: number) => { setScenarioId(null); setVersionId(null); setMonth(shiftMonthKey(month, offset)); setSection("overview"); };
-  return <main className={`plan-studio plan-studio--${scope}`} aria-label={`${scope === "household" ? "Household" : "Personal"} Plan Studio`}>
-    <header className="plan-studio__masthead"><div><p className="kicker">{scope === "household" ? "Our Path" : "My private path"}</p><h2>A plan for the life we choose</h2></div><div className="plan-month-switcher"><button aria-label="Previous month" onClick={() => monthChange(-1)}>←</button><strong>{month}</strong><button aria-label="Next month" onClick={() => monthChange(1)}>→</button><span>{scenario ? scenario.name : selection.kind === "draft" ? "Private draft" : version?.state ?? "Not started"}</span></div></header>
+  const Root = embedded ? "section" : "main";
+  return <Root className={`plan-studio plan-studio--${scope}${embedded ? " plan-studio--embedded" : ""}`} aria-label={`${scope === "household" ? "Household" : "Personal"} Plan Studio`}>
+    {!embedded && <><header className="plan-studio__masthead"><div><p className="kicker">{scope === "household" ? "Our Path" : "My private path"}</p><h2>A plan for the life we choose</h2></div><div className="plan-month-switcher"><button aria-label="Previous month" onClick={() => monthChange(-1)}>←</button><strong>{month}</strong><button aria-label="Next month" onClick={() => monthChange(1)}>→</button><span>{scenario ? scenario.name : selection.kind === "draft" ? "Private draft" : version?.state ?? "Not started"}</span></div></header>
     {error && <p className="plan-error" role="alert">{error}<button onClick={() => setError("")}>Dismiss</button></p>}
-    <div className="plan-quiet-navigation">{section !== "overview" && <button type="button" onClick={() => setSection("overview")}>Back to my Plan</button>}<RememberedDetails remember="plan-tools-0" className="plan-tool-menu"><summary>Plan tools</summary><nav className="plan-studio__rail" aria-label="Plan sections">{(["overview", ...PLAN_LENSES, "scenarios", "assumptions", "bridge", "learn", "reflection", "history", "sitdown", "review", "settings", ...(goalsContent ? ["goals"] : [])] as Section[]).map(item => <button key={item} aria-current={section === item ? "page" : undefined} className={section === item ? "active" : ""} onClick={event => {if(item === "goals") openBanks(); else setSection(item); const menu=event.currentTarget.closest("details"); if(menu){menu.open=false;menu.querySelector("summary")?.focus();}}}>{item === "goals" ? "Goals & reserves" : item === "settings" ? "Coaching & look ahead" : item === "review" ? "Review & agreement" : item[0]!.toUpperCase() + item.slice(1)}</button>)}</nav></RememberedDetails></div>
+    <div className="plan-quiet-navigation">{section !== "overview" && <button type="button" onClick={() => setSection("overview")}>Back to my Plan</button>}<RememberedDetails remember="plan-tools-0" className="plan-tool-menu"><summary>Plan tools</summary><nav className="plan-studio__rail" aria-label="Plan sections">{(["overview", ...PLAN_LENSES, "scenarios", "assumptions", "bridge", "learn", "reflection", "history", "sitdown", "review", "settings", ...(goalsContent ? ["goals"] : [])] as Section[]).map(item => <button key={item} aria-current={section === item ? "page" : undefined} className={section === item ? "active" : ""} onClick={event => {if(item === "goals") openBanks(); else setSection(item); const menu=event.currentTarget.closest("details"); if(menu){menu.open=false;menu.querySelector("summary")?.focus();}}}>{item === "goals" ? "Goals & reserves" : item === "settings" ? "Coaching & look ahead" : item === "review" ? "Review & agreement" : item[0]!.toUpperCase() + item.slice(1)}</button>)}</nav></RememberedDetails></div></>}
     <div className={`plan-studio__layout plan-studio__layout--quiet${section === "settings" ? " plan-studio__layout--settings" : ""}`}>
     <section className="plan-studio__canvas">
       {section === "overview" && goalsContent && <KittyNest household={household} memberId={memberId} view={scope} today={today} compact onSelect={bank=>setBankRequest(bank.goal ? {goalId:bank.goal.id} : {bankId:bank.id})} />}
@@ -164,7 +189,7 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
        {workspaceCards?.(month)}
        <section className="plan-conversation-invitation"><HerculesPortrait pose="loaf" size={72} mood="content" hat={null} chain={null} house={null} collar={null} /><div><p className="kicker">Start with a conversation</p><h3>We can figure this month out together.</h3><button type="button" disabled={locked} onClick={() => ask(undefined, {actionId:"plan-guided-draft",values: household.companionProfile?.workflows?.some(row=>row.id===`task-${scope}`&&row.value?.actionId==="plan-guided-draft") ? {} : {monthKey:month}})}>{household.companionProfile?.workflows?.some(row=>row.id===`task-${scope}`&&row.value?.actionId==="plan-guided-draft") ? "Continue planning with Hercules" : onOpenWorkspace ? "Open guided monthly planning" : "Help me create a plan"}</button><small>Your answers stay private until you choose what to share.</small></div></section>
        {working.length > 0 ? <PlanConsequence projection={projection} /> : <p className="plan-empty">Start with what matters this month.</p>}
-       <section className="plan-purpose-list" aria-label="Explore your Plan">{PLAN_LENSES.map(lens => <button type="button" key={lens} onClick={() => setSection(lens)}><span><strong>{PLAN_LENS_COPY[lens].title}</strong><small>{PLAN_LENS_COPY[lens].prompt}</small></span><span>{working.filter(row=>row.lens===lens).length ? `${working.filter(row=>row.lens===lens).length} ${working.filter(row=>row.lens===lens).length===1?'decision':'decisions'}` : "Still open"} →</span></button>)}</section>
+       <section className="plan-purpose-list" aria-label="Explore your Plan">{planLensOrder(household).map(lens => <button type="button" key={lens} onClick={() => setSection(lens)}><span><strong>{planLensCopy(household)[lens].title}</strong><small>{planLensCopy(household)[lens].prompt}</small></span><span>{working.filter(row=>row.lens===lens).length ? `${working.filter(row=>row.lens===lens).length} ${working.filter(row=>row.lens===lens).length===1?'decision':'decisions'}` : "Still open"} →</span></button>)}</section>
        {(draft || version) && <button type="button" className="plan-open-review" onClick={() => {if(scope==="personal"&&version){setVersionId(version.id);setScenarioId(null);}setSection("review");}}>{version?.state === "proposed" ? "Review our proposal" : "Review my Plan"}</button>}
        {scope === "personal" && version && draft && <button type="button" onClick={()=>{setVersionId(null);setScenarioId(null);setSection("review");}}>Review my working draft</button>}
        {version && !draft && <button disabled={locked} onClick={() => void saveWorking(working)}>Start a private draft from this Plan</button>}
@@ -183,9 +208,9 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
       {section === "review" && scope === "household" && version && <section className="plan-ack plan-section"><h3>Independent agreement · version {version.sequence}</h3><p>{version.reason} · {version.state} · {acknowledgement?.acknowledgedMemberIds.length ?? 0} of {acknowledgement?.requiredMemberIds.length ?? 2} acknowledged.</p><details><summary>Read this exact version</summary><PlanDecisionReview household={household} lines={version.lines} assumptions={version.assumptions} /></details>{version.state === "proposed" && <button disabled={locked || acknowledgement?.acknowledgedMemberIds.includes(memberId)} onClick={() => void run(current => acknowledgeHouseholdPlan(current, { planVersionId: version.id, expectedDigest: version.digest, memberId, createdBy: memberId }))}>{acknowledgement?.acknowledgedMemberIds.includes(memberId) ? "You acknowledged this exact version" : "Acknowledge this exact version"}</button>}<button disabled={locked} onClick={async () => { const saved = await run(current => savePlanDraft(current, { ...(draft ? { id: draft.id, expectedUpdatedAt: draft.updatedAt } : {}), memberId, createdBy: memberId, scope, targetMonth: month, baseVersionId: version.id, lines: version.lines.map(line => ({ ...line, createdBy: memberId })), assumptions: version.assumptions, note: draft?.note ?? "" })); if (saved) { setScenarioId(null); setVersionId(null); setReviewedAt(null); } }}>Prepare a counterproposal privately</button></section>}
     </section>
     {section === "settings" && <aside className="plan-studio__dock"><label>Look ahead<select value={horizonDays} onChange={event => setHorizonDays(Number(event.target.value))}><option value={31}>31 days</option><option value={90}>Next season · 90 days</option><option value={180}>Six months · 180 days</option><option value={366}>One year · 366 days</option></select></label><PlanConsequence projection={projection} compact />{topFinding && <section className="plan-finding"><p>{topFinding.explanation}</p><small>{topFinding.consequence}</small><button disabled={locked} onClick={() => void run(current => updatePlanNudgeState(current, { memberId, issueId: topFinding.id, action: "snooze", snoozedUntil: addDays(today, 7), createdBy: memberId }))}>Snooze 7 days</button><button disabled={locked} onClick={() => void run(current => updatePlanNudgeState(current, { memberId, issueId: topFinding.id, action: "dismiss", createdBy: memberId }))}>Dismiss this finding</button></section>}<button className="plan-hercules-launch" onClick={() => ask("Help me understand my selected Plan and the next choice worth making.")}><span aria-hidden="true"><HerculesPortrait mood="content" hat={null} chain={null} house={null} collar={null} size={48} /></span><strong>Work through it with Hercules</strong><small>Your private conversation, with this Plan in view.</small></button><label>Coaching pace<select disabled={locked} value={coaching?.intensity ?? "calm"} onChange={event => void run(current => setPlanCoachingIntensity(current, { memberId, intensity: event.target.value as "off" | "calm" | "active", createdBy: memberId }))}><option value="off">Quiet</option><option value="calm">Calm</option><option value="active">More guidance</option></select></label><section className="plan-private-preferences"><h4>What I want Hercules to remember</h4><p>Private guidance about your goals, time and preferred explanations.</p>{coaching?.lifePreferences?.map(text => <p key={text}>{text}<button onClick={() => { setEditingPreference(text); setRememberText(text); }}>Edit preference</button><button disabled={locked} onClick={() => void run(current => setPlanCoachingIntensity(current, { memberId, createdBy: memberId, intensity: coaching.intensity, expectedUpdatedAt: coaching.updatedAt, forgetText: text }))}>Forget this preference</button></p>)}<label>A preference I choose to keep<textarea maxLength={240} value={rememberText} onChange={event => setRememberText(event.target.value)} /></label><button disabled={locked || !rememberText.trim()} onClick={async () => { const saved = await run(current => setPlanCoachingIntensity(current, { memberId, createdBy: memberId, intensity: coaching?.intensity ?? "calm", ...(coaching ? { expectedUpdatedAt: coaching.updatedAt } : {}), rememberText, ...(editingPreference ? { forgetText: editingPreference } : {}) })); if (saved) { setRememberText(""); setEditingPreference(null); } }}>{editingPreference ? "Save edited preference" : "Remember for private Plan coaching"}</button><small>These preferences never enter the shared Sitdown. Shared agreements retain only what you deliberately propose.</small></section></aside>}</div>
-    {section !== "overview" && section !== "settings" && <div className="plan-mobile-consequence"><div>Everyday from current money<strong>{projection.everydayNowCents === null ? "Evidence to review" : formatCad(projection.everydayNowCents)}</strong></div><button onClick={() => setSection("overview")}>Details</button><button onClick={() => ask("Help me understand the next choice in my selected Plan.")}>Hercules</button></div>}
-  {bankRequest && (typeof goalsContent === "function" ? goalsContent({selection,projection,...bankRequest,onClose:()=>setBankRequest(null),onSaveLine:saveLine,onScenario:saveScenario,onAsk:ask}) : goalsContent)}
-  </main>;
+    {!embedded && section !== "overview" && section !== "settings" && <div className="plan-mobile-consequence"><div>Everyday from current money<strong>{projection.everydayNowCents === null ? "Evidence to review" : formatCad(projection.everydayNowCents)}</strong></div><button onClick={() => setSection("overview")}>Details</button><button onClick={() => ask("Help me understand the next choice in my selected Plan.")}>Hercules</button></div>}
+  {bankRequest && (typeof goalsContent === "function" ? goalsContent({selection,projection,...bankRequest,onClose:()=>{setBankRequest(null);if(embeddedSection==="goals")closeEmbedded.current?.();},onSaveLine:saveLine,onScenario:saveScenario,onAsk:ask}) : goalsContent)}
+  </Root>;
 }
 
 function PlanDecisionReview({ household, lines, assumptions }: { household: Household; lines: readonly PlanLine[]; assumptions: readonly PlanAssumption[] }) {

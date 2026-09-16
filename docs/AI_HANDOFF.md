@@ -1,3 +1,227 @@
+## Plan Studio v3, integrated — the studio reads the money model, the cellar keeps its offers, pennants per umbrella (2026-09-16, D-282)
+
+Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-studio` and `claude/plan-v3-cellar` on `main@6160fb03`, then merges **`main@d7b0151b`** (#497). `git log origin/main..claude/plan-studio-v3` lists the commits the bundle carries. **Risk: High.** There is no new synced shape, schema or command.
+- Budget (5): +1.
+- Engagement (3): +1.
+- Details: [the worksession](worksessions/2026-09-16-plan-studio-v3-integration.md).
+
+**What changed:**
+1. **Studio.** With `VITE_FUND_MODEL_V2` on, `src/plan-v3/model.ts` reads `fundSnapshot` for sorted households (`fundModelSnapshot`); otherwise it keeps the transitional adapter.
+   - `FundProposals.tsx` wires the split (both confirm) and the Protect refill (custodian proposes, partner confirms).
+   - The open Chapter reads as its calendar month, with its reminder.
+2. **Cellar.** Consent stays on Bridge rows (the division and refill records can't name a goal and an occurrence without a new row kind).
+   - `src/core/cellarBridge.ts` filters those rows out of the Sitdown brief, the island, the Fund pulse and presence lines, the Bridge editor, Hercules's bridge status and the studio badge.
+   - The pay-hide author check sits in `setMyCellarPay` and `executeIntent`.
+   - `CellarJar.umbrellaHue` is set.
+3. **Resume owners.** Left as two, with the reason: the shared session versus the member-personal companion workflow. See the worksession.
+4. **Slice 11.** `PathMonth.umbrellas`, the `umbrella-slots` seed and `umbrellaPieces` pennants, and a closed check-in counts as a Sitdown.
+5. **Demo Plan.** `generateDemoSuite({ fundModel: 2 })` from flag-on builds files bills under Prepare; the default is byte-identical. `planLifeFixture(view, { fundModel: 2 })`.
+6. **Evidence fixes.**
+   - The Queen's pill no longer adds a landed contribution on top of Now.
+   - The category grid takes two columns below 380px.
+
+**Verification:**
+- `npx tsc --noEmit -p .` is clean.
+- **Quick gate at High** (`pnpm test -- --risk=high --focus=… --focus-reason=…`) at `5a5ce7d8`: `quick-gate-passed; time-budget-breached`.
+  - 794.7 s in total: 83 files, of which serial took 552.7 s because of `demo-suite`.
+  - Final run at `c39c6ce8` (clean tree, after the docs commit): `quick-gate-passed; time-budget-breached`. It took 673.9 s: 83 files, of which fast took 173.3 s and serial took 424.7 s.
+- **Targeted suites** for the three tracks: 113 files, 1119 passed.
+- **Failures that are not ours:**
+  - 5 fail identically on a clean `6160fb03` worktree: `onboarding-categories` ×2, and `hercules-wardrobe-catalogue`, `-navigation` and `-ui`.
+  - 1 was a `ledger-import-parity` timeout under load; it passes alone.
+- **Browser:** `HEARTH_CHROMIUM=/opt/pw-browsers/chromium-1194/chrome-linux/chrome node test/plan-v3-integrated-layout.mjs` produced 87 records, 0 failures and 103 PNGs in `docs/evidence/plan-studio-v3-integrated/`.
+  - Covered: the rest screen, the check-in, drawer sheets, the partner's yes, the category grid and the sorted cellar (missing subscription, pay glass).
+  - Three themes × 320/390/720/1100, with reduced motion at 390/1100.
+
+**Trust-review fixes** (`branch-trust-review.md`; every Blocker, High and Medium finding, one commit and test each: `a2cb65d5`, `aacbce63`, `3f8ba2d0`, `625413fd`, `0d9b316e`, `66558706`, `7e02a7ea`; evidence `27356ec3`):
+- **B1 and H2.** The cellar roll-over is an authority-replayed command: its key leads the note, it rolls once, and both yeses are re-checked on the server.
+- **H1.** `VITE_CELLAR_V3` is off by default.
+- **H3.** A rule for the private `updateFundModel` step.
+- **M1 and M3.** Flags off behaves as `main`: no Chapter month, no new refusals for older phones, `main`'s tool text, and the same island Sitdown counting. The Bridge mark can't be typed.
+- **M2.** The split copy says a split is a record.
+- **M4.** Card payments are hidden from new-spending pickers once sorted, and totals are unchanged.
+- **M5.** A blocked boot says why.
+- **After the fixes:**
+  - Targeted suites: 118 files, 1151 passed. The same 5 pre-existing failures remain, plus a parity timeout under load; parity passes alone.
+  - Evidence refreshed: 87 records, 0 failures.
+  - Quick gate at High on `8fc6599f` (clean tree): `quick-gate-passed; time-budget-breached`. It took 667.2 s over 86 files.
+
+**Brought up to date with `main@d7b0151b`** (#497, the Journey of Life):
+- **Merge commit `5f1e06f6`.** `pathEraVersion` sits beside `fundModelVersion` and `chapterVersion`, each guard its own line (composition tested). The era commands sit beside ours. The App uses the off-thread demo generator with our `fundModel` option. Main's room head wraps our tent link.
+- **Renumbered `2d14b68f`.** Our decisions are now D-269–D-282; main keeps D-268.
+- **Our Story.**
+  - Flags off: byte-identical to main (fixture hash `f8ba4485…`) once empty `fundModelRows` stopped joining shapes (`f7d536ce`).
+  - `VITE_FUND_MODEL_V2` on: it sorts cleanly, with bills in Prepare, and renders the studio and the cellar (`test/habitat-story-fund-model.test.ts`).
+  - Fixed along the way (`92d10315`): card-paid bills are never "short" in the Fund.
+- **Suites.** 122 files; the 6 failures are all pre-existing on `d7b0151b` (`onboarding-categories` ×2, `hercules-wardrobe-*` ×3, `sync-integrity`).
+- **Evidence.** 8 Our Story captures, 0 failures.
+- **High quick gate** at `8761878f` (clean tree, base `d7b0151b`): `quick-gate-passed; time-budget-breached`. It took 1553 s over 93 files: fast took 118.9 s and serial took 1320.4 s. The serial lane includes `habitat-story` 10/10, `habitat-story-fund-model` 4/4, `habitat` 6/6 and `fund-model-demo-seeds` 3/3.
+
+**Defaulted, confirm:** the list is in D-282.
+
+**Uncertainty:**
+- **The resume-owner merge.** It needs a synced link field and a trust review.
+- **Old pay-hide marks.** Existing marks can't prove their author.
+- **Hercules context.** The cellar rows' ids remain in the companion context's `plan-bridge` reference set.
+- **Review test gaps.** There is no App-level `runKitchen` boot test and no v1 byte-equal golden against `main` (M6).
+- **Low findings not addressed:** L1–L5.
+- **Not built.** The era islands.
+- **No real device check.** No real phone and no screen reader were used.
+
+**Environment:** fictional fixtures only. Both flags stay off by default.
+
+**State:** not pushed, not a PR, not merged, not deployed, not live-verified.
+
+**Next owner:**
+1. Codex: trust review of D-282 and D-269–D-273, plus the resume-owner design.
+2. Jonathan: turn on both flags in Development, walk a split, a refill and a check-in on two phones, and answer the defaulted lists.
+
+## The money model — Everyday Queen, Prepare / Protect / Build, 12 umbrellas, Chapters as months (2026-09-16, D-269 – D-273)
+
+Branch `claude/plan-v3-money` on `main@6160fb03`: nine commits, delivered locally. **Risk: High.** The change touches money meaning, adds a new synced non-money collection (`fundModelRows`), adds two command stamps (`fundModelVersion`, `chapterVersion`), and changes Hercules context.
+- Budget (5): +3. Every line has one fund. Prepare fills first. Goal money is never counted toward bills. Now reconciles to the cent.
+- Engagement (3): +1. The 12-tile category grid, words that match the Queen's banks, and Chapters as months.
+- Details, the API and what wasn't built: [the worksession](worksessions/2026-09-16-money-model.md).
+
+**What changed:**
+- `src/core/fundRules.ts`: rules, umbrellas, `fundFor`, `allocateFunds`, and the collection.
+- `src/core/fundModelCommands.ts`: the household and personal migration, overrides, `setCategoryHome`, and the division and refill proposals.
+- `src/core/fundModel.ts`: the pure selectors, including `fundSnapshot`.
+- `projectKittyNest` now runs in v2.
+- The umbrella lock is enforced across every writer that could create a group.
+- The words moved with the numbers: planGuide, workbench, adoption, drift, lessons, the Kitty Nest, the Queen and Hercules tool text.
+- Chapters gained `intendedMonth`, reminders and `closeChapterAtSitdown`.
+- Category UI: the add-category grid, onboarding umbrellas, and activity filters.
+- `src/fundModelBoot.ts` plus the App effect and reload banner.
+- Island label guard.
+
+**Verification:**
+- `npx tsc --noEmit -p .` is clean.
+- Quick gate: `pnpm test -- --risk=high --focus=test/fund-model*.test.ts …` → `quick-gate-passed`.
+  - 64 files: 691 passed and 7 skipped, plus 107 serial tests.
+  - 203.6 s of a 300 s budget.
+  - Selected tests include `app-startup-p1` and `month-rehearsal-mainline`.
+  - The gate flagged `uiProofRequired: true`. No browser captures were taken in this session.
+- Additional targeted runs, all green:
+  - 48 `plan-*`/`queen*`/`kitty*`/`path-*`/`hercules-*` files, 477 tests.
+  - `ledger-import-parity`, `category-*` and the ledger-sync set.
+- `test/onboarding-categories.test.ts`: 2 tests fail identically on clean `main` (a Chapter 9 merge through the command boundary). This is pre-existing and not masked.
+
+**Uncertainty:**
+- Codex trust review is needed for the stamp matrix, the collection, the migration payload and the Hercules marker/override context.
+- Once a household is sorted, or any Chapter carries a month, pre-branch clients fail closed. Both phones need the release first.
+- Defaulted answers are listed in D-269 – D-273 ("defaulted, confirm").
+- There is no Production revert.
+- Demo-suite plans still hold Protect bill lines, so the guard refuses them.
+- Visual evidence (320/390/720/1100 × three themes) for the grid, banner and reminder is still owed.
+
+**Environment:** fictional fixtures only; nothing hosted; flag `VITE_FUND_MODEL_V2` off by default.
+
+**State:** not pushed, not a PR, not merged, not deployed, not live-verified.
+
+**Next owner:**
+1. Codex: trust review.
+2. Jonathan: answer the defaulted questions, then approve turning the flag on in Development.
+3. The Studio track: consume `fundModel.ts`.
+4. The Cellar track: read `umbrellaHueForCategory`, and the Q-E consent work.
+## Plan Studio v3, studio track: the plan at rest, the tool drawer, one check-in (2026-09-16, D-274–D-278)
+
+Branch `claude/plan-v3-studio` on `main@6160fb03` (#495). **Risk: Medium.** The new UI sits behind the new default-off flag `VITE_PLAN_STUDIO_V3`, so the current studio is unchanged when it is off. The check-in writes only through existing commands (`appendPlanSitdownTurn`, `acknowledgeHouseholdPlan`, `closeChapter`/`openChapter`, `addRitual`). The F2 resume-ownership merge still needs a trust review. Budget (5): +1. Engagement (3): +3. Details: [the worksession](worksessions/2026-09-16-plan-studio-v3.md).
+
+**Examined:**
+- the studio side: `PlanStudio.tsx`, `ChapterPanel.tsx`, `useDialog`;
+- the money readings: `kittyNest`, `fundWalk`, `householdFund`, `planProjection`, `queenCellar`;
+- the Plan and Sitdown records: `planSystem` (acknowledgement, the Sitdown session), `commands.appendPlanSitdownTurn`/`acknowledgeHouseholdPlan`, `chapters`, `sitDown`, `sitdownBrief`;
+- Our Path: `pathWorld`, `pathBridges`, `src/path/**` (the tent, `PathMiniMap`, `pathSitdownClosedMonths`);
+- the figures: `QueenFigure`, `queenPresentation`, `NestPortrait`/`KittyFlat`, `HerculesPortrait`;
+- the three mockups and the build plan's Choices log.
+
+**Changes:**
+- `src/plan-v3/**` (new): the rest screen, the drawer, the sheets, the check-in, the adapter and the CSS.
+- `PlanStudio.tsx`: a switch, plus `PlanStudioClassic` with `embeddedSection`.
+- `src/path/tentContext.ts` and a one-line provider in `OurPathWorld.tsx`.
+- `vite-env.d.ts`.
+- `scripts/serve-plan-v3-proof.mjs`, three tests, and `docs/evidence/plan-studio-v3/`.
+
+**Adapter shape:** `planStudioFundSnapshot(h, { memberId, view, today })` returns `{ now, undividedContributions, prepare, protect, build, flow }`, with `TODO(plan-v3 → fundModel)` marking the swap.
+
+**Verification:**
+- `tsc` is clean.
+- The v3 and Plan UI suites pass 37/37.
+- The Medium quick gate returned `quick-gate-passed; time-budget-breached` (354 s against 300 s, of which TypeScript took 126 s): 311 fast and 128 serial tests, including `app-startup-p1`.
+- `test/plan-v3-layout.mjs` produced 52 records with 0 overflow, 0 small targets, 0 serious axe findings and 0 page errors. They cover three worlds × 320/390/720/1100 and the full two-member check-in. Lite runs 0 animations.
+- Chromium here was the headless shell. No real phone was used, and no screen reader was heard.
+
+**Uncertainty:**
+- **Resume.** There are still two resume owners (the Sitdown session and `plan-guided-draft`).
+- **Chapters.** Chapters are not calendar months yet (core).
+- **Protect and Prepare.** Until the money track lands, Protect still holds the bills, and Prepare shows $0 beside "Bills covered".
+- **Stage titles.** The old studio titles saved stages differently.
+- **Unconfirmed defaults.** See the worksession's "Defaulted, confirm" list.
+
+**Environment:** fictional books only; nothing hosted.
+
+**State:** local branch; not pushed, not a PR, not merged, not deployed, not live-verified.
+
+**Next owner:** Codex runs the F2 trust review and the fundModel swap after the money track merges. Jonathan then tries it on both phones with the flag on in Development.
+## The cellar's pay in glass, contribution banks and missing subscriptions — Plan Studio v3, cellar track (2026-09-16, D-279–D-281)
+
+Branch `claude/plan-v3-cellar` on `main@6160fb03` (#495), in small commits. **Risk: Medium-High.** It adds new doors onto existing commands only: `allocateHouseholdFundSurplus`, the Plan Bridge propose/decline/withdraw commands and `dismissNotice`. There is no new command, schema, sync or Hercules payload change, and everything is behind `VITE_QUEENS_NEST`.
+
+- **Budget (5):** +1. A missed or lower subscription charge becomes a visible, agreed, one-time roll into a goal. It is capped at the safe surplus and never doubled. The pay glass never claims money exists.
+- **Engagement (3):** +2.
+- **Details:** [the worksession](worksessions/2026-09-16-cellar-income-missing-subs.md).
+
+**Examined:**
+- The cellar: `queenCellar.ts`, `QueenCellar.tsx`, `QueenCellarRail.tsx`, `cellarZoom.ts` (D-265).
+- `fundWalk.ts`, and `householdFund.ts` (motions, rollover, kitty allocations).
+- The jug and gun: `QueenLoft.tsx`, `queenGun.ts`.
+- Plan Bridge commands and their readers: `fundPulse`, `sitdownBrief`, `pathBridges`.
+- `recordBillPayment`, `skipOccurrence`, `pauseRecurrence`, `planSourceVisible`, `memberEarningSchedule`, `dismissNotice`.
+- The migration plan §2e and review H8 / R2-M5, the BUILD-BRIEF defaults, and the Choices log.
+
+**Changes:**
+- **New pure selectors:**
+  - `src/core/cellarIncomeJars.ts`: household-visible sources; own Personal rows by per-device opt-in only; shared hide/show marks.
+  - `src/core/missingSubscriptions.ts`: 3-day grace; one more cycle; price change, cancelled and Personal excluded; offer, yes and roll wrappers; occurrence key refused twice.
+- **Rail extras and cards:** `QueenCellarRail.tsx`, `QueenCellarExtras.tsx` (new), `QueenCellar.tsx`, `queen-cellar.css`.
+- **Proof page:** seeds `cellar3=1&roll=…&member=…`.
+- **Focus-map entry** appended last.
+- **D-279, D-280, D-281.**
+
+**Verification:**
+- `tsc --noEmit` is clean.
+- `vitest`:
+  - `cellar-missing-subscriptions` 16/16
+  - `cellar-income-jars` 7/7
+  - `cellar-v3-ui` 6/6
+  - `queen-cellar` + `queen-cellar-ui` + `queens-nest-ui` still green
+  - 6 files, 82/82 in total
+- **Quick gate (Medium-High, three focus files):** `quick-gate-passed`, 22 files / 271 tests, 124 s of 300 s.
+- **Browser:** `test/cellar-v3-layout.mjs` → `docs/evidence/cellar-v3/`: 22 records, 0 errors, no page scroll, axe clean (Classic), three themes × 320×700/390/720/1100, partner/Confirm/rolled states, reduced motion.
+- **Real phone:** not available.
+
+**Defaulted, confirm:**
+- The 3-day grace.
+- "One more cycle" means until the cycle after next.
+- "Less" is measured against the current usual amount; two equal lower charges mean a price change.
+- A cancelled subscription is never missing.
+- Consent is carried as Plan Bridge rows: the offer also shows at the Sitdown, on the island and on the crown.
+- Pay sources are household-visible only.
+- "Hide my pay" hides the glass only, via shared notice marks.
+- "Could stand at" is that day's water plus that one pay.
+
+**Uncertainty:**
+- Codex trust and privacy review is needed (the Bridge-as-consent path, the note-key guard, the notice-key marks, the income sources).
+- `dismissNotice` has no author check.
+- A spent offer reads "took it back" on the island.
+- The extras are drawn, not sculpted, in 3D.
+- SwiftShader only.
+
+**Environment:** fictional books only; nothing hosted.
+**State:** not pushed, not a PR, not merged, not deployed, not live verified.
+**Next owners:** Codex (review), then Jonathan (defaults), then the integrator (merge beside the money and studio tracks).
+
 ## The Journey of Life and the Our Story habitat (2026-09-16, D-268)
 
 Branch `claude/journey-of-life` (one squashed commit) on `origin/main@6160fb03` (#495), delivered as a bundle and a patch; built on #494 and rebased cleanly over #495. **Risk: High.** It adds a new synced row kind (`era`) and a new capability flag (`pathEraVersion`), and changes performance (not output) in `refreshDuplicateFlags`.

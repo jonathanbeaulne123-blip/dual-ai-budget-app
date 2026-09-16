@@ -1,5 +1,6 @@
 import type { PathMonth } from "../core/pathSignals.ts";
 import type { PathBrush, PathRecipe } from "../core/pathWorld.ts";
+import { SPENDING_UMBRELLAS, type UmbrellaId } from "../core/fundRules.ts";
 
 /**
  * The grower (D-262). Pure and deterministic: the same months and recipes grow
@@ -30,7 +31,7 @@ export function monthSpot(m: number, span = 0): Spot {
 
 export type PieceKind =
   | "grove" | "cottage" | "observatory" | "monument" | "bench" | "lanterns" | "giftTree" | "loop" | "cafe"
-  | "rows" | "pond" | "star" | "firstFire" | "dogMeadow" | "kiln" | "workshop" | "creek" | "frost";
+  | "rows" | "pond" | "star" | "firstFire" | "dogMeadow" | "kiln" | "workshop" | "creek" | "frost" | "umbrella";
 export type Piece = {
   kind: PieceKind;
   x: number;
@@ -46,6 +47,9 @@ export type Piece = {
   floors?: number;
   bridge?: number | null;
   active?: boolean;
+  /** Slice 11: the umbrella this pennant stands for, and its presentation hue (keyed by umbrella id). */
+  umbrellaId?: UmbrellaId;
+  hue?: string;
 };
 export type Cove = { month: number; a: number; type: "sea" | "mountain" | "city"; name: string; depth: number; visits: number[]; why: string[] };
 export type GrownIsland = {
@@ -241,6 +245,7 @@ export function growIsland(months: PathMonth[], recipes: PathRecipe[], cur: numb
     const q = { x: p.x + Math.cos(p.a - 0.4) * 4.2, z: p.z + Math.sin(p.a - 0.4) * 4.2 };
     pieces.push({ kind: "frost", x: q.x, z: q.z, ang: p.a, born: firstWinter, age: last - firstWinter, recipeId: null, why: [FIRST_FROST_WHY, `${label(firstWinter)} · the first December, January or February on the island`] });
   }
+  pieces.push(...umbrellaPieces(months, last, spot));
   if (floors) pieces.push({ kind: "observatory", x: -6, z: -10, ang: 0, born: 0, age: last, recipeId: null, floors, why: floorWhy });
   for (const piece of pieces) {
     if (piece.kind === "kiln") piece.active = (months[last]?.scores.creative ?? 0) >= 0.3;
@@ -284,6 +289,36 @@ export function growIsland(months: PathMonth[], recipes: PathRecipe[], cur: numb
     R[k] = rock;
   }
   return { cur: last, H, M, B, S, R, F, pieces, coves, widths, fired, radiusAt, spot };
+}
+
+/**
+ * Slice 11 (D-282): a ring of twelve pennant slots, one per spending umbrella,
+ * seeded around the month the first plan was agreed under the money model
+ * (`umbrella-slots`). An umbrella's pennant rises the first month from then on
+ * that the couple's shared spending touched it, and grows a little with every
+ * such month. Existing pieces are untouched; no amount is ever carried.
+ */
+export function umbrellaPieces(months: PathMonth[], last: number, spot: (m: number) => Spot): Piece[] {
+  const seed = months.findIndex((month, m) => m <= last && month.tags.includes("umbrella-slots"));
+  if (seed < 0) return [];
+  const centre = spot(seed);
+  const out: Piece[] = [];
+  SPENDING_UMBRELLAS.forEach((umbrella, i) => {
+    const hits: number[] = [];
+    for (let m = seed; m <= last; m++) if ((months[m]?.umbrellas?.[umbrella.id] ?? 0) > 0) hits.push(m);
+    if (!hits.length) return;
+    const a = centre.a + (i / SPENDING_UMBRELLAS.length) * Math.PI * 2;
+    const born = hits[0]!;
+    out.push({
+      kind: "umbrella", x: centre.x + Math.cos(a) * 6.5, z: centre.z + Math.sin(a) * 6.5, ang: a, born, age: last - born,
+      recipeId: null, umbrellaId: umbrella.id, hue: umbrella.hue, n: hits.length,
+      why: [
+        `${months[seed]!.key} · ${months[seed]!.why["umbrella-slots"] ?? "Our first plan agreed the new way"}`,
+        ...hits.slice(-3).map((m) => `${months[m]!.key} · ${umbrella.name} — ${months[m]!.why[`umbrella:${umbrella.id}`] ?? `Spending under ${umbrella.name}`}`),
+      ],
+    });
+  });
+  return out;
 }
 
 export function heightAt(island: Pick<GrownIsland, "H">, x: number, z: number): number {

@@ -2454,6 +2454,82 @@ input, select, textarea {
   border-radius: 16px;
   background: var(--card);
 }
+/* Money model (D-270): the 12-umbrella picker. Tokens only; three themes inherit. */
+.umbrella-picker__label {
+  margin: 8px 0 4px;
+  font-weight: 600;
+}
+.umbrella-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (min-width: 720px) {
+  .umbrella-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.umbrella-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 76px;
+  min-width: 0;
+  padding: 8px 4px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: inset 0 -3px 0 color-mix(in srgb, var(--umbrella-hue, var(--line)) 45%, transparent);
+}
+.umbrella-tile[aria-pressed="true"] {
+  border-color: var(--pine);
+  box-shadow: inset 0 0 0 2px var(--pine);
+}
+.umbrella-tile:focus-visible,
+.fund-choice__option:focus-visible {
+  outline: 2px solid var(--pine);
+  outline-offset: 2px;
+}
+.umbrella-tile__glyph { font-size: 1.3rem; line-height: 1; }
+.umbrella-tile__name { font-weight: 600; font-size: 0.82rem; overflow-wrap: anywhere; text-align: center; }
+.umbrella-tile__count { font-size: 0.72rem; color: var(--muted); }
+.fund-choice {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.fund-choice__option {
+  display: grid;
+  gap: 2px;
+  min-height: 48px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+.fund-choice__option small { color: var(--muted); }
+.fund-choice__option[aria-pressed="true"] {
+  border-color: var(--pine);
+  box-shadow: inset 0 0 0 2px var(--pine);
+}
+.fund-choice__option:disabled { opacity: 0.55; cursor: default; }
+/* D-282 evidence: at 320px (and in the larger Newfoundland type) three columns broke "Transport" mid-word and pushed the fund words out of their boxes. */
+.fund-choice__option { min-width: 0; }
+.fund-choice__option > * { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 379px) {
+  .umbrella-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .umbrella-tile { min-height: 64px; }
+  .umbrella-tile__name { overflow-wrap: normal; }
+  .fund-choice { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .umbrella-tile, .fund-choice__option { transition: box-shadow 120ms ease, border-color 120ms ease; }
+}
 .add-account-floor {
   display: grid;
   gap: 14px;

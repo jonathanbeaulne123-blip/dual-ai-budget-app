@@ -1,0 +1,70 @@
+{
+  "generatedBy": "test/plan-v3-integrated-layout.mjs",
+  "flags": {
+    "VITE_PLAN_STUDIO_V3": "1",
+    "VITE_FUND_MODEL_V2": "1"
+  },
+  "data": "fictional only",
+  "failures": [
+    "story-cellar-classic-390: horizontal overflow 692px",
+    "story-cellar-newfoundland-1100: horizontal overflow 337px"
+  ],
+  "records": [
+    {
+      "name": "story-rest-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "story-sheet-prepare-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "story-rest-taylor-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "story-rest-newfoundland-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "story-rest-classic-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "story-cellar-classic-390",
+      "width": 390,
+      "overflow": 692,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "story-cellar-newfoundland-1100",
+      "width": 1100,
+      "overflow": 337,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    }
+  ]
+}

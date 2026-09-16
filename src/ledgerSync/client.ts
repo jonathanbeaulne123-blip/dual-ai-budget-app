@@ -4,6 +4,9 @@ import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
 import { hasPlanDecisionData } from "../core/planSystem.ts";
 import { hasTaskData, TASK_COMMAND_KINDS } from "../core/tasks.ts";
 import { hasPathEraData, hasPathWorldData, PATH_ERA_COMMAND_KINDS, PATH_WORLD_COMMAND_KINDS } from "../core/pathWorld.ts";
+import { hasFundModelData } from "../core/fundRules.ts";
+import { CHAPTER_MONTH_COMMAND_KINDS, hasChapterMonthData } from "../core/chapters.ts";
+import { clientFundModelVersion, FUND_MODEL_COMMAND_KINDS } from "./fundModelStamp.ts";
 import {companionActionEffect} from '../core/herculesCompanionActions.ts';
 import { previewFor, visiblePreviews, type PendingPreview, type RejectedEntry } from "./optimistic.ts";
 import { IncrementalBooksGuard } from "../core/booksValidation.ts";
@@ -76,6 +79,8 @@ export class LedgerSyncClient {
   private taskPlannerVersion = 0;
   private pathWorldVersion = 0;
   private pathEraVersion = 0;
+  private fundModelVersion = 0;
+  private chapterVersion = 0;
   private kittyNestVersion = 0;
   private planDecisionVersion = 0;
   private goalEnvelopeVersion = 0;
@@ -244,6 +249,8 @@ export class LedgerSyncClient {
               this.taskPlannerVersion = message.taskPlannerVersion === 1 ? 1 : 0;
               this.pathWorldVersion = message.pathWorldVersion === 1 ? 1 : 0;
               this.pathEraVersion = message.pathEraVersion === 1 ? 1 : 0;
+              this.fundModelVersion = message.fundModelVersion === 2 ? 2 : 0;
+              this.chapterVersion = message.chapterVersion === 1 ? 1 : 0;
               this.kittyNestVersion = message.kittyNestVersion === 1 ? 1 : 0;
               this.goalEnvelopeVersion = message.goalEnvelopeVersion === 1 ? 1 : 0;
               this.planDecisionVersion = message.planDecisionVersion === 1 ? 1 : 0;
@@ -463,6 +470,8 @@ export class LedgerSyncClient {
     if((hasTaskData(candidate)||capture.steps.some(s=>TASK_COMMAND_KINDS.includes(s.kind)))&&(!this.ready||this.taskPlannerVersion!==1))throw new LedgerCommandRejectedError('PLANNER_UPDATE_REQUIRED: Connect to an updated Hearth to save planner tasks.');
     if((hasPathWorldData(candidate)||capture.steps.some(s=>PATH_WORLD_COMMAND_KINDS.includes(s.kind)))&&(!this.ready||this.pathWorldVersion!==1))throw new LedgerCommandRejectedError('PATH_UPDATE_REQUIRED: Connect to an updated Hearth to save changes to your island.');
     if((hasPathEraData(candidate)||capture.steps.some(s=>PATH_ERA_COMMAND_KINDS.includes(s.kind)))&&(!this.ready||this.pathEraVersion!==1))throw new LedgerCommandRejectedError('PATH_UPDATE_REQUIRED: Connect to an updated Hearth to save changes to your journey.');
+    if((hasChapterMonthData(candidate)||capture.steps.some(s=>CHAPTER_MONTH_COMMAND_KINDS.includes(s.kind)))&&(!this.ready||this.chapterVersion!==1))throw new LedgerCommandRejectedError('CHAPTER_UPDATE_REQUIRED: Connect to an updated Hearth to save Chapters.');
+    if((hasFundModelData(candidate)||capture.steps.some(s=>FUND_MODEL_COMMAND_KINDS.includes(s.kind)))&&(!this.ready||this.fundModelVersion!==2||clientFundModelVersion()!==2))throw new LedgerCommandRejectedError('CLIENT_RELOAD_REQUIRED: Hearth has updated how money is sorted. Reload before making changes.');
     if(capture.steps.some(s=>['executeHerculesAction','cancelHerculesSubmission'].includes(s.kind)||s.kind==='commitCompanion'&&(s.args[0] as {operation?:{kind?:string}})?.operation?.kind==='workflow.set')&&(!this.ready||this.companionWorkflowVersion!==1))throw new LedgerCommandRejectedError('HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving conversational drafts.');
     if(capture.steps.some(step=>companionActionEffect(step)!==null||step.kind==='commitCompanionGallery'||(step.kind==='commitCompanion'&&String((step.args[0] as {operation?:{kind?:string}})?.operation?.kind).startsWith('look.')))&&(!this.ready||this.companionWardrobeVersion!==1))throw new LedgerCommandRejectedError('HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving or sharing looks.');
     if (capture.steps.some(step => step.kind === "commitCompanion") && (!this.ready || this.companionProfileVersion !== 1)) {

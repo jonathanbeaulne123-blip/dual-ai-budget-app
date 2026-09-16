@@ -31,6 +31,8 @@ const serialFixtureTests = [
   "ledger-sync-cutover.test.ts",
   "demo-shift-statistics.test.ts",
   "demo-suite.test.ts",
+  "fund-model-demo-seeds.test.ts",
+  "habitat-story-fund-model.test.ts",
   "habitat-story.test.ts",
   "habitat.test.ts",
   "permission-matrix.test.ts",
@@ -44,6 +46,9 @@ const serialTimingTests = ["continuity-two-browser-proof.test.ts", "hercules-pri
 
 const rpcIsolatedFixtureTests = [
   "demo-shift-statistics.test.ts",
+  // D-282: the Our Story household and the demo seeds under the money model.
+  "fund-model-demo-seeds.test.ts",
+  "habitat-story-fund-model.test.ts",
   "habitat-story.test.ts",
   "habitat.test.ts",
   "stress-seed.test.ts",

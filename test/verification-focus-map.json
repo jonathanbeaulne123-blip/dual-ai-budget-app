@@ -577,6 +577,21 @@
         "test/queens-nest-ui.test.ts"
       ],
       "reason": "The loft's rack: a strictly shaped plan (shelves, shares, fill marks, splits) on the Build plan bank's household design row, refused elsewhere and by older builds; shelves hung and taken down, banks moved by drag and Shift+Arrow, the weight, pin and dividers slid by hand and keyboard; the pour is exact in cents by share, capped at each shelf's mark, flowing down, and posts only through allocateHouseholdFundSurplus behind Confirm by the custodian; the boards in 3D follow the drawn shelves"
+    },
+    {
+      "sources": [
+        "src/core/cellarIncomeJars.ts",
+        "src/core/missingSubscriptions.ts",
+        "src/queen/QueenCellarExtras.tsx",
+        "src/queen/QueenCellar.tsx"
+      ],
+      "tests": [
+        "test/cellar-income-jars.test.ts",
+        "test/cellar-missing-subscriptions.test.ts",
+        "test/cellar-v3-ui.test.ts",
+        "test/queen-cellar-ui.test.ts"
+      ],
+      "reason": "Cellar v3 (D-279/D-280/D-281): pay jars are glass and hypothetical, built only from household-visible income rows (a member's own Personal rows only by their own per-device opt-in), each member can hide their own pay, and the contribution bank reads confirmed Fund contributions; a subscription not charged three days after its day, or charged less, stays one more cycle; the custodian's offer and the partner's yes are existing Plan Bridge rows, and the roll posts once through allocateHouseholdFundSurplus behind Confirm, refused a second time; a late charge clears the mark and withdraws the waiting offer"
     }
   ]
 }

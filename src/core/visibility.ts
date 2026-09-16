@@ -1,4 +1,5 @@
 import { nestDesignInView } from "./kittyNestDesigns.ts";
+import type { FundModelRow } from "./fundRules.ts";
 import { COMPANION, JOINT, type Account, type Goal, type Household, type LedgerView, type Shift, type Transaction, type Visibility } from "./types.ts";
 import { taskInView } from "./tasks.ts";
 
@@ -194,6 +195,12 @@ export function householdForHerculesContext(
     moves: [],
     wins: [],
     pathWorld: [],
+    // Money model (D-269): only which rules the household reads with (the bare household marker) and
+    // household line overrides reach model context, so its fund answers match the app. Personal rows,
+    // proposals and the migration receipt never do.
+    fundModelRows: (scoped.fundModelRows ?? []).flatMap((row): FundModelRow[] => row.visibility !== "household" ? []
+      : row.kind === "marker" ? [{ ...row, changes: [], needsHome: [] }]
+      : row.kind === "override" ? [row] : []),
     // `householdForView` already removes every partner-owned Personal account.
     // Keep the requesting member's own Personal accounts here so their visible
     // Personal transactions still compile against a complete journal.
@@ -276,6 +283,8 @@ export function householdForView(household: Household, memberId: string, view: L
     transactions: (household.transactions ?? []).filter((tx) => isVisibleInView(tx, memberId, view)),
     nativeEvents:(household.nativeEvents??[]).filter(row=>isVisibleInView(row,memberId,view)),
     kittyNestDesigns:(household.kittyNestDesigns??[]).filter(row=>nestDesignInView(row,memberId,view)),
+    // Household rows always; a member's own personal rows (marker, overrides) only for that member.
+    fundModelRows:(household.fundModelRows??[]).filter(row=>row.visibility==='household'||('setBy' in row&&row.setBy===memberId)),
     tasks:(household.tasks??[]).filter(row=>taskInView(row,memberId,view)),
     taskLists:(household.taskLists??[]).filter(row=>taskInView(row,memberId,view)),
     potentialExpenses: (household.potentialExpenses ?? []).filter((row) => isVisibleInView(row, memberId, view)),

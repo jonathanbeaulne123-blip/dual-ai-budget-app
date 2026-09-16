@@ -1,0 +1,1397 @@
+{
+  "generatedBy": "test/plan-v3-integrated-layout.mjs",
+  "flags": {
+    "VITE_PLAN_STUDIO_V3": "1",
+    "VITE_FUND_MODEL_V2": "1"
+  },
+  "data": "fictional only",
+  "failures": [],
+  "records": [
+    {
+      "name": "rest-sorted-classic-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-sorted-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-sorted-classic-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-sorted-classic-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-sorted-taylor-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-sorted-taylor-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-sorted-taylor-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-sorted-taylor-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-sorted-newfoundland-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-sorted-newfoundland-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-sorted-newfoundland-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-sorted-newfoundland-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-proposed-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-divided-after-yes-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-proposed-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-protect-custodian-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-letter-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-protect-custodian-classic-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-letter-classic-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-protect-custodian-taylor-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-letter-taylor-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-protect-custodian-taylor-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-letter-taylor-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-protect-custodian-newfoundland-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-letter-newfoundland-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-protect-custodian-newfoundland-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-letter-newfoundland-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-protect-partner-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-protect-partner-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "sheet-protect-partner-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-in-classic-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-protect-classic-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-back-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-in-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-protect-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-in-classic-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-protect-classic-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-in-classic-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-protect-classic-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-back-taylor-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-in-taylor-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-protect-taylor-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-back-newfoundland-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-in-newfoundland-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-protect-newfoundland-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "reduced-rest-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "animations": 0
+    },
+    {
+      "name": "reduced-checkin-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "animations": 0
+    },
+    {
+      "name": "reduced-rest-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "animations": 0
+    },
+    {
+      "name": "reduced-checkin-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "animations": 0
+    },
+    {
+      "name": "category-grid-classic-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tiles": 12,
+      "funds": [
+        "Everyday\nday to day",
+        "Prepare\nhas to leave",
+        "Build\ngoals we want"
+      ],
+      "clipped": []
+    },
+    {
+      "name": "category-grid-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tiles": 12,
+      "funds": [
+        "Everyday\nday to day",
+        "Prepare\nhas to leave",
+        "Build\ngoals we want"
+      ],
+      "clipped": []
+    },
+    {
+      "name": "category-grid-classic-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tiles": 12,
+      "funds": [
+        "Everyday\nday to day",
+        "Prepare\nhas to leave",
+        "Build\ngoals we want"
+      ],
+      "clipped": []
+    },
+    {
+      "name": "category-grid-classic-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tiles": 12,
+      "funds": [
+        "Everyday\nday to day",
+        "Prepare\nhas to leave",
+        "Build\ngoals we want"
+      ],
+      "clipped": []
+    },
+    {
+      "name": "category-grid-taylor-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tiles": 12,
+      "funds": [
+        "Everyday\nday to day",
+        "Prepare\nhas to leave",
+        "Build\ngoals we want"
+      ],
+      "clipped": []
+    },
+    {
+      "name": "category-grid-taylor-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tiles": 12,
+      "funds": [
+        "Everyday\nday to day",
+        "Prepare\nhas to leave",
+        "Build\ngoals we want"
+      ],
+      "clipped": []
+    },
+    {
+      "name": "category-grid-taylor-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tiles": 12,
+      "funds": [
+        "Everyday\nday to day",
+        "Prepare\nhas to leave",
+        "Build\ngoals we want"
+      ],
+      "clipped": []
+    },
+    {
+      "name": "category-grid-taylor-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tiles": 12,
+      "funds": [
+        "Everyday\nday to day",
+        "Prepare\nhas to leave",
+        "Build\ngoals we want"
+      ],
+      "clipped": []
+    },
+    {
+      "name": "category-grid-newfoundland-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tiles": 12,
+      "funds": [
+        "Everyday\nday to day",
+        "Prepare\nhas to leave",
+        "Build\ngoals we want"
+      ],
+      "clipped": []
+    },
+    {
+      "name": "category-grid-newfoundland-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tiles": 12,
+      "funds": [
+        "Everyday\nday to day",
+        "Prepare\nhas to leave",
+        "Build\ngoals we want"
+      ],
+      "clipped": []
+    },
+    {
+      "name": "category-grid-newfoundland-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tiles": 12,
+      "funds": [
+        "Everyday\nday to day",
+        "Prepare\nhas to leave",
+        "Build\ngoals we want"
+      ],
+      "clipped": []
+    },
+    {
+      "name": "category-grid-newfoundland-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tiles": 12,
+      "funds": [
+        "Everyday\nday to day",
+        "Prepare\nhas to leave",
+        "Build\ngoals we want"
+      ],
+      "clipped": []
+    },
+    {
+      "name": "cellar-missing-classic-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tints": [
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "health",
+          "tint": "#5aa39a"
+        },
+        {
+          "hue": "food",
+          "tint": "#6f9a4b"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "clay",
+          "tint": "#8a8f98"
+        }
+      ],
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "cellar-income-classic-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "cellar-missing-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tints": [
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "health",
+          "tint": "#5aa39a"
+        },
+        {
+          "hue": "food",
+          "tint": "#6f9a4b"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "clay",
+          "tint": "#8a8f98"
+        }
+      ],
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "cellar-income-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "cellar-missing-classic-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tints": [
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "health",
+          "tint": "#5aa39a"
+        },
+        {
+          "hue": "food",
+          "tint": "#6f9a4b"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "clay",
+          "tint": "#8a8f98"
+        }
+      ],
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "cellar-income-classic-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "cellar-missing-classic-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tints": [
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "health",
+          "tint": "#5aa39a"
+        },
+        {
+          "hue": "food",
+          "tint": "#6f9a4b"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "clay",
+          "tint": "#8a8f98"
+        }
+      ],
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "cellar-income-classic-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "cellar-missing-taylor-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tints": [
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "health",
+          "tint": "#5aa39a"
+        },
+        {
+          "hue": "food",
+          "tint": "#6f9a4b"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "clay",
+          "tint": "#8a8f98"
+        }
+      ],
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "cellar-income-taylor-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "cellar-missing-taylor-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tints": [
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "health",
+          "tint": "#5aa39a"
+        },
+        {
+          "hue": "food",
+          "tint": "#6f9a4b"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "clay",
+          "tint": "#8a8f98"
+        }
+      ],
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "cellar-income-taylor-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "cellar-missing-taylor-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tints": [
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "health",
+          "tint": "#5aa39a"
+        },
+        {
+          "hue": "food",
+          "tint": "#6f9a4b"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "clay",
+          "tint": "#8a8f98"
+        }
+      ],
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "cellar-income-taylor-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "cellar-missing-taylor-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tints": [
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "health",
+          "tint": "#5aa39a"
+        },
+        {
+          "hue": "food",
+          "tint": "#6f9a4b"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "clay",
+          "tint": "#8a8f98"
+        }
+      ],
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "cellar-income-taylor-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "cellar-missing-newfoundland-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tints": [
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "health",
+          "tint": "#5aa39a"
+        },
+        {
+          "hue": "food",
+          "tint": "#6f9a4b"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "clay",
+          "tint": "#8a8f98"
+        }
+      ],
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "cellar-income-newfoundland-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "cellar-missing-newfoundland-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tints": [
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "health",
+          "tint": "#5aa39a"
+        },
+        {
+          "hue": "food",
+          "tint": "#6f9a4b"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "clay",
+          "tint": "#8a8f98"
+        }
+      ],
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "cellar-income-newfoundland-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "cellar-missing-newfoundland-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tints": [
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "health",
+          "tint": "#5aa39a"
+        },
+        {
+          "hue": "food",
+          "tint": "#6f9a4b"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "clay",
+          "tint": "#8a8f98"
+        }
+      ],
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "cellar-income-newfoundland-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "cellar-missing-newfoundland-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "tints": [
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "health",
+          "tint": "#5aa39a"
+        },
+        {
+          "hue": "food",
+          "tint": "#6f9a4b"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "transport",
+          "tint": "#4b7fa8"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "housing",
+          "tint": "#c9a227"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "life",
+          "tint": "#d9774a"
+        },
+        {
+          "hue": "clay",
+          "tint": "#8a8f98"
+        }
+      ],
+      "scroll": {
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "name": "cellar-income-newfoundland-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "cellar-reduced-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "sparkAnimation": "none"
+    },
+    {
+      "name": "cellar-reduced-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "sparkAnimation": "none"
+    }
+  ]
+}

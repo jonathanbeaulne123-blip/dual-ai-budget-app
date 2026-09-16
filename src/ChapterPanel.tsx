@@ -4,8 +4,11 @@ import type { DateKey } from "./core/calendar.ts";
 import {
   FOUNDATION_CHAPTERS,
   addRitual,
+  chapterReminder,
   closeChapter,
+  closeChapterAtSitdown,
   completeMove,
+  defaultNextChapter,
   movesForChapter,
   nextFoundationChapter,
   nextMove,
@@ -23,6 +26,8 @@ import {
 } from "./core/chapters.ts";
 import { chapterLesson } from "./core/planLearning.ts";
 import { sitdownBrief } from "./core/sitdownBrief.ts";
+import { fundModelMode } from "./core/fundRules.ts";
+import { monthKeyFromDateKey } from "./core/calendar.ts";
 
 type Run = (fn: (current: Household) => CommitResult) => Promise<unknown>;
 
@@ -77,10 +82,13 @@ export function ChapterMoment({ household, memberId, today, onOpenPath, onOpenSe
     );
   }
   const weeks = Math.max(1, Math.floor((Date.parse(`${today}T12:00:00Z`) - Date.parse(chapter.openedAt)) / (7 * 24 * 60 * 60 * 1000)) + 1);
+  // D-273: a Chapter never closes by itself; once its month has ended we say so until the Sitdown closes it.
+  const reminder = fundModelMode(household) === 2 ? chapterReminder(household, { today }) : null;
   return (
     <section className="chapter-moment" aria-label="This Chapter">
-      <p className="kicker">This month · week {weeks}</p>
+      <p className="kicker">{reminder ? `Still open · ${reminder.intendedMonth}` : `This month · week ${weeks}`}</p>
       <h3>{chapter.title}</h3>
+      {reminder && <p className="chapter-reminder" role="status">{reminder.message}</p>}
       <p className="chapter-meaning">{chapter.meaning}</p>
       {move ? (
         <div className="next-move" aria-label="Our next Move">
@@ -246,6 +254,9 @@ export function ChapterClose({ household, memberId, today, sitdownId, onCommand,
       </div>
     );
   }
+  // D-273 (with the money model release): the Sitdown closes this Chapter and opens the next for this month in one step.
+  const sortedMonths = fundModelMode(household) === 2;
+  const nextChoice = defaultNextChapter({ chapters: (household.chapters ?? []).map((row) => row.id === chapter.id ? { ...row, state: "closed" as const } : row) }, monthKeyFromDateKey(today));
   const outcomes: { outcome: ChapterOutcome; label: string; hint: string }[] = [
     { outcome: "established", label: "Established", hint: "The habit holds. It moves into Our Rhythm." },
     { outcome: "still-forming", label: "Still forming", hint: "Carry it forward only if we choose; change its size, cue, or owner." },
@@ -256,11 +267,14 @@ export function ChapterClose({ household, memberId, today, sitdownId, onCommand,
     <div className="chapter-close">
       <p className="kicker">Close the previous Chapter</p>
       <h4>{chapter.title}</h4>
+      {sortedMonths && <p className="muted">Closing it opens {nextChoice.foundationId ? FOUNDATION_CHAPTERS.find((row) => row.id === nextChoice.foundationId)?.title : nextChoice.custom?.title} for {monthKeyFromDateKey(today)}.</p>}
       {brief.chapter && <p className="muted">Rituals held {brief.chapter.ritualsHeld} times · {brief.chapter.movesDone} Moves done · {brief.chapter.movesOpen} still open.</p>}
       <label>What carries forward<input value={carry} onChange={(e) => setCarry(e.target.value)} placeholder="One sentence we will remember next month" /></label>
       <div className="chapter-outcomes">
         {outcomes.map((row) => (
-          <button key={row.outcome} type="button" disabled={busy} onClick={() => void onCommand((current) => closeChapter(current, { memberId, chapterId: chapter.id, outcome: row.outcome, carryForward: carry, sitdownId: sitdownId ?? undefined }))}>
+          <button key={row.outcome} type="button" disabled={busy} onClick={() => void onCommand((current) => sortedMonths
+            ? closeChapterAtSitdown(current, { memberId, chapterId: chapter.id, outcome: row.outcome, carryForward: carry, sitdownId: sitdownId ?? undefined, today })
+            : closeChapter(current, { memberId, chapterId: chapter.id, outcome: row.outcome, carryForward: carry, sitdownId: sitdownId ?? undefined }))}>
             <strong>{row.label}</strong><small>{row.hint}</small>
           </button>
         ))}

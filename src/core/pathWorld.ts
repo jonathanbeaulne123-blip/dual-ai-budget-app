@@ -463,7 +463,12 @@ export function pathCategoryMappings(household: Pick<Household, "categories" | "
     .map((category) => {
       const row = fixed.get(category.id);
       if (row) return { category, signal: row.signal === "none" ? null : row.signal, source: "fixed" as const };
-      const guessed = guessCategorySignal(category.name, category.parentId ? byId.get(category.parentId)?.name ?? "" : "");
+      const parent = category.parentId ? byId.get(category.parentId) : undefined;
+      const own = guessCategorySignal(category.name);
+      const fromParent = own ? null : guessCategorySignal("", parent?.name ?? "");
+      // Money model (D-270): the Housing group is now the fixed "Home" umbrella. Its label alone never grows a
+      // cottage, so relabelling cannot change the island; a child's own name still can.
+      const guessed = own ?? (fromParent === "home" && parent?.umbrellaId === "home" ? null : fromParent);
       // Essential home costs (rent, utilities) already shape "Essentials pressure"; they do not build cottages.
       const guess = guessed === "home" && category.essential ? null : guessed;
       return { category, signal: guess, source: guess ? "guess" as const : "none" as const };

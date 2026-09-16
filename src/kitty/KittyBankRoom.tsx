@@ -55,6 +55,7 @@ import type { PlanAsk } from "../PlanLensWorkbench.tsx";
 import "./kitty-room.css";
 import { KittyNest, NestBankDetail } from "./KittyNest.tsx";
 import { projectKittyNest, nestCategoryFor, type NestBank } from "../core/kittyNest.ts";
+import { fundFor, fundModelMode } from "../core/fundRules.ts";
 import { Whisper } from "../theme/Whisper.tsx";
 
 export type KittyPlanContext = {
@@ -133,8 +134,12 @@ const basis = (h: Household) =>
     h.appointments,
     h.planVersions,
   ]);
-function initialEnvelope(goal: Goal, context?: KittyPlanContext) {
+function initialEnvelope(goal: Goal, context?: KittyPlanContext, household?: Household) {
   if (goal.envelope) return goal.envelope;
+  // Money model (D-271): an untyped goal shows the fund the nest already files it under (frozen at migration, never a new Protect default).
+  const fallback = household && fundModelMode(household) === 2 && household.goals.some((row) => row.id === goal.id)
+    ? fundFor(household, { kind: "goal", id: goal.id }, { memberId: goal.ownerMemberId ?? "", view: goal.shared ? "household" : "personal" })
+    : nestCategoryFor(goal.name);
   const lens = context?.selection.lines.find(
     (line) =>
       line.sourceReference?.type === "goal" &&
@@ -144,7 +149,7 @@ function initialEnvelope(goal: Goal, context?: KittyPlanContext) {
     ...defaultGoalEnvelope(),
     ...(lens === "protect" || lens === "everyday" || lens === "prepare" || lens === "build"
       ? { kind: lens }
-      : { kind: nestCategoryFor(goal.name) }),
+      : { kind: fallback }),
   };
 }
 function bankEvidence(
@@ -488,7 +493,7 @@ function Room({
               <span>
                 {item.name}
                 <small>
-                  {initialEnvelope(item, context).kind}
+                  {initialEnvelope(item, context, h).kind}
                   {item.envelope?.archivedAt ? " · archived" : ""}
                 </small>
               </span>
@@ -510,6 +515,7 @@ function Room({
       {selectedNest && !creating ? <NestBankDetail key={selectedNest.id} bank={selectedNest} h={h} memberId={memberId} view={view} identity={identity} busy={busy || saving} theme={theme} run={run} readLatest={() => latest.current} onSelect={(bank: NestBank) => select(bank.goal?.id ?? `nest:${bank.id}`)} onOpenCalendar={onOpenCalendar} /> : creating || !goal ? (
         <CreateBank
           key={creating ? "new" : "empty"}
+          fundWords={fundModelMode(h)}
           view={view}
           memberId={memberId}
           busy={busy || saving}
@@ -589,12 +595,14 @@ function Room({
   );
 }
 function CreateBank({
+  fundWords = 1,
   view,
   memberId,
   busy,
   onCreate,
   onCancel,
 }: {
+  fundWords?: 1 | 2;
   view: LedgerView;
   memberId: string;
   busy: boolean;
@@ -674,10 +682,17 @@ function CreateBank({
                 })
               }
             >
-              <option value="build">Build · a future we choose</option>
-              <option value="everyday">Everyday · ordinary pleasures</option>
-              <option value="protect">Protect · a promise or cushion</option>
-              <option value="prepare">Prepare · a cost that comes around</option>
+              {fundWords === 2 ? <>
+                <option value="build">Build · a goal we want to grow</option>
+                <option value="prepare">Prepare · a cost that has to leave</option>
+                <option value="protect">Protect · our buffer</option>
+                <option value="everyday">Everyday · ordinary pleasures</option>
+              </> : <>
+                <option value="build">Build · a future we choose</option>
+                <option value="everyday">Everyday · ordinary pleasures</option>
+                <option value="protect">Protect · a promise or cushion</option>
+                <option value="prepare">Prepare · a cost that comes around</option>
+              </>}
             </select>
           </label>
         </details>
@@ -763,7 +778,7 @@ function Bank({
   const [name, setName] = useState(goal.name),
     [target, setTarget] = useState(String(goal.targetCents / 100)),
     [arrival, setArrival] = useState(goal.arrivalDate ?? ""),
-    [envelope, setEnvelope] = useState(initialEnvelope(goal, context));
+    [envelope, setEnvelope] = useState(initialEnvelope(goal, context, h));
   const [amount, setAmount] = useState(""),
     [source, setSource] = useState(""),
     [spend, setSpend] = useState(""),
@@ -786,7 +801,7 @@ function Bank({
     goal,
     identity,
     memberId,
-    envelope: initialEnvelope(goal, context),
+    envelope: initialEnvelope(goal, context, h),
     active: page === "studio",
     run,
     readLatest,
@@ -941,7 +956,7 @@ function Bank({
                     setArrival(goal.arrivalDate ?? "");
                   }
                   setEnvelope({
-                    ...(!editing ? initialEnvelope(goal, context) : envelope),
+                    ...(!editing ? initialEnvelope(goal, context, h) : envelope),
                     glaze: key as typeof envelope.glaze,
                   });
                   setEditing(true);
@@ -1045,7 +1060,7 @@ function Bank({
                       setName(goal.name);
                       setTarget(String(goal.targetCents / 100));
                       setArrival(goal.arrivalDate ?? "");
-                      setEnvelope(initialEnvelope(goal, context));
+                      setEnvelope(initialEnvelope(goal, context, h));
                     }
                     setEditing(!editing);
                   }}
@@ -1193,7 +1208,7 @@ function Bank({
                           target: goal.targetCents / 100,
                           arrivalDate: goal.arrivalDate,
                           envelope: {
-                            ...initialEnvelope(goal, context),
+                            ...initialEnvelope(goal, context, h),
                             archivedAt: archived
                               ? null
                               : `${date}T12:00:00.000Z`,

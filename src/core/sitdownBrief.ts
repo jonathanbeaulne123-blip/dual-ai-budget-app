@@ -1,6 +1,7 @@
 import type { DateKey } from "./calendar.ts";
 import { monthKeyFromDateKey } from "./calendar.ts";
 import type { Household } from "./types.ts";
+import { sharedBridgeDecisions } from "./cellarBridge.ts";
 import { householdFundContributionMotions, shapeHouseholdFundConfig } from "./householdFund.ts";
 import { currentPlanVersion, evaluatePlanDrift, planAcknowledgementState } from "./planSystem.ts";
 import { movesForChapter, openChapterFor, ritualsForChapter } from "./chapters.ts";
@@ -42,7 +43,7 @@ export function sitdownBrief(household: Household, options: { memberId: string; 
     }
   }
 
-  for (const decision of household.planBridgeDecisions ?? []) {
+  for (const decision of sharedBridgeDecisions(household.planBridgeDecisions)) {
     if (decision.monthKey !== monthKey) continue;
     if (decision.state === "proposed" || decision.state === "held") {
       needsBoth.push({ id: `bridge:${decision.id}`, text: `A Bridge proposal is waiting: ${decision.label}.`, destination: "together" });

@@ -54,6 +54,7 @@ import {
   type Ritual,
   type Win,
 } from "../core/chapters.ts";
+import { mergeFundModelRows, shapeFundModelRows, type FundModelRow } from "../core/fundRules.ts";
 import { mergePathWorld, pathWorldChangeAuthorized, pathWorldRowsValid, shapePathWorld, type PathWorldRow } from "../core/pathWorld.ts";
 import { advanceCadence } from "../core/recurrence.ts";
 import { dateKeyInZone, parseMonthKey, type DateKey } from "../core/calendar.ts";
@@ -136,6 +137,7 @@ export type ContinuityMaterializationFacts = {
   moves?: Move[];
   wins?: Win[];
   pathWorld?: PathWorldRow[];
+  fundModelRows?: FundModelRow[];
   tombstones?: Tombstone[];
 };
 
@@ -824,6 +826,7 @@ function filterFactsForScope(
     if (facts.moves?.length) scoped.moves = shapeMoves(facts.moves);
     if (facts.wins?.length) scoped.wins = shapeWins(facts.wins);
     if (facts.pathWorld?.length) scoped.pathWorld = shapePathWorld(facts.pathWorld);
+    if (facts.fundModelRows?.length) scoped.fundModelRows = shapeFundModelRows(facts.fundModelRows).filter((row) => row.visibility === "household");
   }
   if (facts.tombstones?.length) {
     scoped.tombstones = facts.tombstones;
@@ -948,6 +951,9 @@ export function extractMaterializationFacts(
     if (options?.commandKind === "updatePathWorld") {
       facts.pathWorld = shapePathWorld(household.pathWorld);
     }
+    if (options?.commandKind === "updateFundModel") {
+      facts.fundModelRows = shapeFundModelRows(household.fundModelRows).filter((row) => row.visibility === "household");
+    }
     const weeklyDocumentStamps = shapeWeeklyDocumentStamps(
       household.weeklyDocumentStamps,
       household.members,
@@ -1038,6 +1044,7 @@ async function applyEvent(
     mergedTombstones,
   );
   const pathWorld = facts.pathWorld === undefined ? shapePathWorld(snapshot.pathWorld) : mergePathWorld(snapshot.pathWorld, facts.pathWorld);
+  const fundModelRows = facts.fundModelRows === undefined ? shapeFundModelRows(snapshot.fundModelRows) : mergeFundModelRows(snapshot.fundModelRows, facts.fundModelRows);
   const planVersions = applyMoneyCollection(snapshot.planVersions ?? [], facts.planVersions, mergedTombstones);
   const planAcknowledgements = applyAppendOnlyCollection(snapshot.planAcknowledgements ?? [], facts.planAcknowledgements, mergedTombstones);
   const planReflections = applyMoneyCollection(snapshot.planReflections ?? [], facts.planReflections, mergedTombstones);
@@ -1123,6 +1130,7 @@ async function applyEvent(
     moves,
     wins,
     pathWorld,
+    fundModelRows,
     tombstones: mergedTombstones,
   };
   next = rememberReceipt(next, receiptFromPayload(payload));
@@ -1184,6 +1192,7 @@ export function catalogBaseFromSnapshot(tip: Household): Household {
     moves: [],
     wins: [],
     pathWorld: [],
+    fundModelRows: [],
     tombstones: [],
     commandReceipts: [],
     conflicts: [],
@@ -1315,6 +1324,12 @@ export async function applyCommandEventLocally(input: {
   }
   if (!event.payload_json.materializationFacts) {
     return { ok: false, reason: "missing-materialization-facts", fallback: true };
+  }
+  // Money model (D-269): a fund-model command (migration, overrides, proposals) is never applied
+  // incrementally on this legacy path. The device takes the full accepted snapshot instead.
+  if (event.command_type === "updateFundModel" || event.payload_json.materializationFacts.fundModelRows !== undefined
+    || readableCompactedCommands(event).some((row) => row.commandKind === "updateFundModel")) {
+    return { ok: false, reason: "fund-model-full-snapshot", fallback: true };
   }
   const nestCommands = readableCompactedCommands(event).filter(command => command.commandKind.startsWith("saveKittyNestDesign"));
   if (event.command_type.startsWith("saveKittyNestDesign") && !nestCommands.length) nestCommands.push({ ...event.payload_json, ledgerScope: event.ledger_scope });

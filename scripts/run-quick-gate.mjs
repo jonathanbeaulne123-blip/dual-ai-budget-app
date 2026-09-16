@@ -115,6 +115,9 @@ const rpcIsolatedSerialTests = new Set([
   // Minutes of synchronous generation (D-259, D-268): alone, so no Vitest worker RPC times out.
   "test/habitat.test.ts",
   "test/habitat-story.test.ts",
+  // D-282: the Our Story household under the money model, and the demo seeds a money-model build can sort.
+  "test/habitat-story-fund-model.test.ts",
+  "test/fund-model-demo-seeds.test.ts",
 ]);
 
 async function runSerialTests(testPaths) {

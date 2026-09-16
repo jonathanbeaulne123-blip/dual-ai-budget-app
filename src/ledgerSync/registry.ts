@@ -12,6 +12,8 @@ import * as commands from "../core/commands.ts";
 import * as rehearsal from "../core/monthRehearsal.ts";
 import * as chapterCommands from "../core/chapters.ts";
 import * as pathWorldCommands from "../core/pathWorld.ts";
+import * as fundModelCommands from "../core/fundModelCommands.ts";
+import * as missingSubscriptionCommands from "../core/missingSubscriptions.ts";
 import * as pathEraCommands from "../core/pathEras.ts";
 import { saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks } from "../core/tasks.ts";
 import { stampWeeklyDocument } from "../core/weeklyDocumentStamp.ts";
@@ -32,7 +34,10 @@ const functions = {
   commitCompanionPlay,
   ...rehearsal,
   openChapter: chapterCommands.openChapter, addRitual: chapterCommands.addRitual, recordRitualHeld: chapterCommands.recordRitualHeld, setRitualState: chapterCommands.setRitualState,
-  offerMove: chapterCommands.offerMove, respondToMove: chapterCommands.respondToMove, completeMove: chapterCommands.completeMove, recordWin: chapterCommands.recordWin, keepWinAsMemory: chapterCommands.keepWinAsMemory, dismissWin: chapterCommands.dismissWin, closeChapter: chapterCommands.closeChapter,
+  offerMove: chapterCommands.offerMove, respondToMove: chapterCommands.respondToMove, completeMove: chapterCommands.completeMove, recordWin: chapterCommands.recordWin, keepWinAsMemory: chapterCommands.keepWinAsMemory, dismissWin: chapterCommands.dismissWin, closeChapter: chapterCommands.closeChapter, closeChapterAtSitdown: chapterCommands.closeChapterAtSitdown,
+  migrateFundModel: fundModelCommands.migrateFundModel, migrateMyFundModel: fundModelCommands.migrateMyFundModel, setFundOverride: fundModelCommands.setFundOverride, setCategoryHome: fundModelCommands.setCategoryHome,
+  proposeFundDivision: fundModelCommands.proposeFundDivision, agreeFundDivision: fundModelCommands.agreeFundDivision, declineFundDivision: fundModelCommands.declineFundDivision,
+  proposeProtectRefill: fundModelCommands.proposeProtectRefill, agreeProtectRefill: fundModelCommands.agreeProtectRefill, declineProtectRefill: fundModelCommands.declineProtectRefill, withdrawFundProposal: fundModelCommands.withdrawFundProposal,
   proposePathRecipe: pathWorldCommands.proposePathRecipe, proposePathName: pathWorldCommands.proposePathName, agreePathProposal: pathWorldCommands.agreePathProposal, declinePathProposal: pathWorldCommands.declinePathProposal, setPathCategorySignal: pathWorldCommands.setPathCategorySignal,
   proposePathEra: pathEraCommands.proposePathEra, proposePathEraPlan: pathEraCommands.proposePathEraPlan, crossPathEra: pathEraCommands.crossPathEra,
   saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks,
@@ -40,6 +45,7 @@ const functions = {
   restoreSharedPoint,
   stampWeeklyDocument,
   commitCharterFounding,
+  rollMissingSubscription: missingSubscriptionCommands.rollMissingSubscription,
 } as unknown as Record<string, Fn>;
 function bind(args: unknown[], index: number, path: string, actor: string) {
   if (!path) {
@@ -99,7 +105,10 @@ register("saveBoardTask removeBoardTask saveBoardMilestone removeBoardMilestone 
 register("linkGoogleIdentity touchHouseholdDevice", ["memberId"]);
 register("setGoogleServices setRecurrenceGoogleSync");
 register("startMonthRehearsal", ["startedByMemberId"]);
-register("openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter", ["memberId"]);
+register("openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter closeChapterAtSitdown", ["memberId"]);
+register("migrateFundModel migrateMyFundModel setFundOverride setCategoryHome proposeFundDivision agreeFundDivision declineFundDivision proposeProtectRefill agreeProtectRefill declineProtectRefill withdrawFundProposal", ["memberId"]);
+// D-282: the cellar's roll-over replays as itself, so the authority re-reads consent and "only once" on its own books.
+register("rollMissingSubscription", ["memberId"]);
 register("proposePathRecipe proposePathName agreePathProposal declinePathProposal setPathCategorySignal proposePathEra proposePathEraPlan crossPathEra", ["memberId"]);
 register("upsertCoworker importCoworkerRoster recordCoworkerAttendance", [
   "ownerMemberId",
@@ -206,6 +215,13 @@ export function executeIntent(
     (input.reversalOfId != null || input.source === "reversal")
   )
     throw new Error("USE_REVERSAL_COMMAND");
+  // D-282: a cellar pay choice ("hide my pay") names its member in the key; only that member may write it.
+  // D-282: a cellar roll-over only travels as rollMissingSubscription (both said yes, never twice); a bare rollover may not carry its key.
+  if (kind === "allocateHouseholdFundSurplus" && typeof input?.note === "string" && /cellar-roll:/.test(input.note)) throw new ValidationError("A cellar roll-over goes through the cellar, where both of you say yes first.");
+  if (kind === "dismissNotice") {
+    const payMark = /^cellar-pay:([^:]+):/.exec(typeof args[0] === "string" ? args[0] : "");
+    if (payMark && payMark[1] !== actor) throw new Error("ACTOR_MISMATCH");
+  }
   if (kind === "setRecurrenceGoogleSync")
     for (const patch of args[0] as Array<{ memberId: string }>) {
       if (patch.memberId !== actor) throw new Error("ACTOR_MISMATCH");

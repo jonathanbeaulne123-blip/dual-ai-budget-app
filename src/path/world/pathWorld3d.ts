@@ -738,6 +738,16 @@ export function createPathWorld(host: HTMLElement, options: {
         }
         anchor(id, g, 2); break;
       }
+      case "umbrella": {
+        // Slice 11: a pennant for one part of life, in its umbrella's hue; taller for every month it showed up.
+        const tall = 1.4 + Math.min(1.6, (piece.n ?? 1) * 0.12);
+        g.add(part(G.cyl, "#7a5436", 0.07, tall, 0.07, 0, tall / 2, 0));
+        const flag = part(G.box, piece.hue ?? P.accent, 0.8, 0.45, 0.05, 0.42, tall - 0.3, 0);
+        g.add(flag, part(G.sph, "#e9b949", 0.1, 0.1, 0.1, 0, tall + 0.05, 0, { metalness: 0.4, roughness: 0.4 }));
+        g.rotation.y = -piece.ang;
+        tickers.push((t) => { flag.rotation.y = Math.sin(t * 2 + piece.ang) * 0.25; });
+        anchor(id, g, tall + 0.8); break;
+      }
       default: return null;
     }
     if (piece.born === island.cur) appearing.push(g);

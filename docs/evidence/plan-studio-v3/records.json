@@ -1,0 +1,429 @@
+{
+  "generatedBy": "test/plan-v3-layout.mjs",
+  "data": "fictional only",
+  "failures": [],
+  "records": [
+    {
+      "name": "rest-classic-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-classic-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-classic-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-taylor-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-taylor-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-taylor-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-taylor-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-newfoundland-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-newfoundland-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-newfoundland-720",
+      "width": 720,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "rest-newfoundland-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "state-agreed-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "sentence": "All agreed. Bills covered all September."
+    },
+    {
+      "name": "state-short-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "sentence": "Fictional car repair on Sep 22 isn't covered yet."
+    },
+    {
+      "name": "state-landed-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "sentence": "Sam (fictional)'s $1,400 landed today. It's not divided yet."
+    },
+    {
+      "name": "state-first-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "sentence": "Hercules sees 1 contribution and 1 bill this month. About 15 minutes together."
+    },
+    {
+      "name": "state-resume-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "sentence": "Ready for you to read and agree. Bills covered all September."
+    },
+    {
+      "name": "state-badge-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "sentence": "Ready for you to read and agree. Bills covered all September."
+    },
+    {
+      "name": "state-waiting-view-personal-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "sentence": "Kept as your plan. Bills covered all September."
+    },
+    {
+      "name": "state-waiting-lite-1-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "sentence": "Ready for you to read and agree. Bills covered all September."
+    },
+    {
+      "name": "state-agreed-dark-1-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": [],
+      "sentence": "All agreed. Bills covered all September."
+    },
+    {
+      "name": "state-landed-taylor-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "state-short-taylor-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "drawer-open-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "tool-letter-classic-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "drawer-open-classic-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "tool-letter-classic-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "drawer-open-taylor-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "tool-letter-taylor-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "drawer-open-taylor-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "tool-letter-taylor-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "drawer-open-newfoundland-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "tool-letter-newfoundland-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "drawer-open-newfoundland-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "tool-letter-newfoundland-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "fund-protect-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "flow-list-keyboard-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-in-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-together-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-sitdown-set-320",
+      "width": 320,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-hello-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-in-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "lookcloser-late-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-prepare-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-everyday-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-together-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-sitdown-set-390",
+      "width": 390,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-in-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "lookcloser-late-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-together-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "checkin-sitdown-set-1100",
+      "width": 1100,
+      "overflow": 0,
+      "smallTargets": [],
+      "axe": [],
+      "pageErrors": []
+    },
+    {
+      "name": "motion",
+      "fullAnimations": 4,
+      "liteAnimations": 0
+    }
+  ]
+}

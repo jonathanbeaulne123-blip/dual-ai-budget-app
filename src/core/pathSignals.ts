@@ -2,6 +2,7 @@ import { monthKeyFromDateKey, type DateKey } from "./calendar.ts";
 import { PATH_SIGNALS, pathCategoryMappings, type PathCategorySignal, type PathSignal } from "./pathWorld.ts";
 import type { Household } from "./types.ts";
 import { belongsToSharedLedger } from "./visibility.ts";
+import { fundModelMode, householdFundMarker, SPENDING_UMBRELLAS, umbrellaOfCategory, type UmbrellaId } from "./fundRules.ts";
 
 /**
  * Our Path world read-model (D-262). Pure: household-scope facts in, one row per
@@ -22,7 +23,27 @@ export type PathMonth = {
   trip: { name: string; type: PathTripType } | null;
   /** Household categories with spending this month that feed no score yet. */
   unmappedCategories: { id: string; name: string }[];
+  /**
+   * Slice 11 (D-282): once the money model sorted the household, a 0–1 shape
+   * per spending umbrella (by umbrella id, never by name, never an amount).
+   * Absent before the migration, so a v1 island is unchanged.
+   */
+  umbrellas?: Partial<Record<UmbrellaId, number>>;
 };
+
+/**
+ * The month the island's umbrella slots are seeded (Slice 11): the month of the
+ * first household plan agreed under the money model, or null.
+ */
+export function umbrellaSeedMonth(household: Pick<Household, "fundModelRows" | "planVersions">): string | null {
+  const marker = householdFundMarker(household as Household);
+  if (!marker) return null;
+  const agreed = (household.planVersions ?? [])
+    .filter((row) => row.scope === "household" && ["active", "scheduled", "superseded"].includes(row.state) && (row.activatedAt ?? row.createdAt) >= marker.migratedAt)
+    .map((row) => row.monthKey)
+    .sort();
+  return agreed[0] ?? null;
+}
 
 const MAX_MONTHS = 36;
 const clamp = (value: number) => Math.round(Math.min(1, Math.max(0, value)) * 100) / 100;
@@ -77,6 +98,10 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
   const chapters = household.chapters ?? [];
   const wins = household.wins ?? [];
   const sitdowns = household.sitDownSessions ?? [];
+  // The one check-in (Plan Studio v3) closes a Shared Sitdown session; a closed one counts as that month's Sitdown.
+  const sorted = fundModelMode(household) === 2;
+  // Only once the money model sorted the household (D-282, review M3), so a flags-off island is unchanged.
+  const checkIns = sorted ? (household.planHerculesSessions ?? []).filter((row) => row?.state === "closed" && row.monthKey) : [];
   const events = (household.nativeEvents ?? []).filter((row) => row.visibility === "household" && !row.deleted);
   const nowMonth = monthKeyFromDateKey(today);
 
@@ -93,9 +118,12 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
 
   const mapping = new Map(pathCategoryMappings(household).map((row) => [row.category.id, row]));
   const categoryName = new Map(household.categories.map((row) => [row.id, row]));
+  // An agreed plan for next month seeds the slots now; the island never shows a month that hasn't come.
+  const seedRaw = umbrellaSeedMonth(household);
+  const seedMonth = seedRaw ? (seedRaw > nowMonth ? nowMonth : seedRaw < keys[0]! ? keys[0]! : seedRaw) : null;
   const firstChapterMonth = chapters.map((row) => monthOfIso(row.openedAt)).filter(Boolean).sort()[0] ?? null;
   const firstGoalMonth = sharedGoals.map((row) => monthOfIso(row.createdAt)).filter(Boolean).sort()[0] ?? null;
-  const firstSitdownMonth = sitdowns.map((row) => row.monthKey).filter(Boolean).sort()[0] ?? null;
+  const firstSitdownMonth = [...sitdowns.map((row) => row.monthKey), ...checkIns.map((row) => row.monthKey)].filter(Boolean).sort()[0] ?? null;
 
   // Cumulative shared-goal backing by month, for 50% / 100% milestones.
   const targetById = new Map(sharedGoals.map((goal) => [goal.id, goal.targetCents]));
@@ -179,7 +207,7 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
     // Together: Sitdowns, shared Moves, Wins and Chapter moments.
     let together = 0;
     const reasons: string[] = [];
-    if (sitdowns.some((row) => row.monthKey === key)) { together += 0.4; reasons.push("a Sitdown"); }
+    if (sitdowns.some((row) => row.monthKey === key) || checkIns.some((row) => row.monthKey === key)) { together += 0.4; reasons.push("a Sitdown"); }
     const movesDone = (household.moves ?? []).filter((row) => row.state === "done" && monthOfIso(row.completedAt) === key).length;
     if (movesDone) { together += 0.15 * movesDone; reasons.push(`${movesDone} Move${movesDone === 1 ? "" : "s"} done`); }
     const winsHere = wins.filter((row) => monthOfIso(row.shownAt) === key);
@@ -211,6 +239,7 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
     if (firstGoalMonth === key) firsts.push("your first shared goal");
     if (firstSitdownMonth === key) firsts.push("your first Sitdown");
     if (firsts.length) { scores.firsts = clamp(0.5 + 0.15 * firsts.length); why.firsts = firsts.join(", "); }
+    if (seedMonth === key) { tags.push("umbrella-slots"); why["umbrella-slots"] = "Our first plan agreed the new way: every part of life got a place"; }
     if (firstChapterMonth === key) { tags.push("first-campfire"); why["first-campfire"] = "Your first Chapter began here"; }
 
     // Milestones.
@@ -241,6 +270,26 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
     }
     for (const id of unmapped.keys()) tags.push(`category:${id}`);
 
+    // Slice 11: a shape per umbrella, from the share of the month's shared spending filed under it.
+    let umbrellas: PathMonth["umbrellas"];
+    if (sorted) {
+      const byUmbrella = new Map<UmbrellaId, number>();
+      for (const tx of expenses) {
+        const umbrella = umbrellaOfCategory(household, tx.subcategoryId ?? tx.categoryId);
+        if (!umbrella) continue;
+        byUmbrella.set(umbrella, (byUmbrella.get(umbrella) ?? 0) + Math.abs(tx.amountCents));
+      }
+      umbrellas = {};
+      // Card payments and moves between our accounts are not spending: they never dilute an umbrella's share (review M4).
+      const spendingCents = SPENDING_UMBRELLAS.reduce((sum, umbrella) => sum + (byUmbrella.get(umbrella.id) ?? 0), 0);
+      for (const umbrella of SPENDING_UMBRELLAS) {
+        const cents = byUmbrella.get(umbrella.id) ?? 0;
+        if (cents <= 0 || spendingCents <= 0) continue;
+        umbrellas[umbrella.id] = clamp(0.3 + (cents / spendingCents) * 2);
+        why[`umbrella:${umbrella.id}`] = `Spending under ${umbrella.name}`;
+      }
+    }
+
     return {
       key,
       scores,
@@ -248,6 +297,7 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
       tags: [...new Set(tags)],
       trip,
       unmappedCategories: [...unmapped].map(([id, name]) => ({ id, name })),
+      ...(umbrellas ? { umbrellas } : {}),
     };
   });
 }
