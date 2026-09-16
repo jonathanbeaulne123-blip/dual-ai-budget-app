@@ -1,3 +1,4 @@
+import { fundModelMode, pickableExpenseGroups } from "../fundRules.ts";
 import type { Category, Household } from "../types.ts";
 import { ValidationError } from "../types.ts";
 import { currentSubmission, mergedCategorySelection, shapeOnboardingSubmissions } from "./submissions.ts";
@@ -279,7 +280,9 @@ export function assertCategoryProposalInputs(
   household: Household,
   inputs: Array<{ name: string; parentId: string }>,
 ): Array<{ name: string; parentId: string }> {
-  const groups = new Set(household.categories.filter((row) => row.active && row.recordType === "group" && row.transactionType === "expense").map((row) => row.id));
+  // v2 (D-269): suggestions go under the fixed spending umbrellas only.
+  const groups = new Set((fundModelMode(household) === 2 ? pickableExpenseGroups(household) : household.categories)
+    .filter((row) => row.active && row.recordType === "group" && row.transactionType === "expense").map((row) => row.id));
   const seen = new Set<string>();
   return inputs.map((input) => {
     const name = input.name.trim().replace(/\s+/g, " ");

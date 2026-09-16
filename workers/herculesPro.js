@@ -916,6 +916,8 @@ function writeOptions(books, args, claims) {
     accounts: books.accounts.filter((row) => row.active).map((row) => ({ name: row.name, kind: row.kind, institution: row.institution, last4: row.last4 })),
     categories: type === "transfer" ? [] : books.categories
       .filter((row) => row.active && row.recordType === "category" && row.transactionType === categoryType)
+      // Money model (D-269): "Moving money" is not spending, so it is never offered as a write option.
+      .filter((row) => books.categories.find((item) => item.id === row.parentId)?.umbrellaId !== "moving-money")
       .map((row) => {
         const parent = books.categories.find((item) => item.id === row.parentId);
         return { name: parent ? `${parent.name} · ${row.name}` : row.name, transactionType: row.transactionType };

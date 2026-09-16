@@ -54,6 +54,7 @@ import { detectChalkLetters, hasChalkInk, organizeNeatText, shapeChalkInk } from
 import { activeOpenShift, openShiftConflicts } from "./shiftClock.ts";
 import { assertSevenShiftsBundleMatchesShift, type SevenShiftsEvidenceBundle } from "./evidence.ts";
 import { automationPayrollWeekStart } from "./sevenShiftsAutomation.ts";
+import { fundModelMode, isCategoryDefaultFund, pickableExpenseGroups, proposedDefaultFund, SEED_CHILD_HOMES, umbrellaById, umbrellaForName, umbrellaForRowId, type FundId } from "./fundRules.ts";
 import { shapeSevenShiftsSchedules, type SevenShiftsScheduledShift } from "./sevenShiftsCalendar.ts";
 import {
   bibleForNonWorkOutcome,
@@ -972,7 +973,8 @@ export const mergeOnboardingCategories = captureCommand("mergeOnboardingCategori
     let categoryId = chosen.proposed ? "" : chosen.id;
     if (!categoryId) {
       const proposal = proposalById.get(chosen.id)!;
-      const parent = next.categories.find((row) => row.id === proposal.parentId && row.active && row.recordType === "group" && row.transactionType === "expense");
+      const parent = (fundModelMode(next) === 2 ? pickableExpenseGroups(next) : next.categories)
+        .find((row) => row.id === proposal.parentId && row.active && row.recordType === "group" && row.transactionType === "expense");
       if (!parent) throw new ValidationError("Choose where each suggested category belongs.");
       categoryId = canonicalCategoryId(parent.name, proposal.name, usedIds);
       usedIds.add(categoryId);
@@ -989,6 +991,7 @@ export const mergeOnboardingCategories = captureCommand("mergeOnboardingCategori
         sortOrder,
         createdAt: at,
         updatedAt: at,
+        ...(fundModelMode(next) === 2 ? { defaultFund: proposedDefaultFund(proposal.name, parent.umbrellaId ?? "personal") ?? "everyday" } : {}),
       });
     }
     rowsByName.filter((row) => state.unionIds.includes(row.id))
@@ -2398,12 +2401,15 @@ function ensureWorkPostingCategory(household: Household, input: {
   at: string;
 }): Category {
   let parent = household.categories.find((row) => row.id === input.parentId);
+  const v2 = fundModelMode(household) === 2;
+  const umbrella = umbrellaForRowId(input.parentId);
+  if (!parent && v2 && !umbrella) throw new ValidationError("Categories now live under the fixed umbrellas. Run Health Check.");
   if (!parent) {
     parent = {
       id: input.parentId,
       parentId: null,
       recordType: "group",
-      name: input.parentName,
+      name: v2 && umbrella ? umbrella.name : input.parentName,
       transactionType: input.transactionType,
       essential: false,
       incomeStability: null,
@@ -2411,6 +2417,7 @@ function ensureWorkPostingCategory(household: Household, input: {
       sortOrder: household.categories.reduce((max, row) => Math.max(max, row.sortOrder), 0) + 10,
       createdAt: input.at,
       updatedAt: input.at,
+      ...(v2 && umbrella ? { umbrellaId: umbrella.id } : {}),
     };
     household.categories.push(parent);
   }
@@ -2428,6 +2435,7 @@ function ensureWorkPostingCategory(household: Household, input: {
       sortOrder: household.categories.reduce((max, row) => Math.max(max, row.sortOrder), 0) + 1,
       createdAt: input.at,
       updatedAt: input.at,
+      ...(v2 && input.transactionType === "expense" ? { defaultFund: SEED_CHILD_HOMES[input.id]?.fund ?? proposedDefaultFund(input.name, umbrella?.id ?? "work-learning") ?? "everyday" } : {}),
     };
     household.categories.push(category);
   }
@@ -3411,6 +3419,8 @@ export const addCategory = captureCommand("addCategory", function addCategory(ho
   incomeStability?: "fixed" | "variable";
   monthlyBudget?: string | number;
   monthKey?: MonthKey;
+  /** v2 money model (D-268): the fund this child's lines default to. Never Protect. */
+  defaultFund?: FundId;
 }): CommitResult {
   requireTimezone(household);
   const name = input.name.trim();
@@ -3420,10 +3430,21 @@ export const addCategory = captureCommand("addCategory", function addCategory(ho
   const existingIds = next.categories.map((category) => category.id);
   let parentId = input.parentId ?? "";
   let sortOrder = next.categories.reduce((max, category) => Math.max(max, category.sortOrder), 0);
+  const v2 = fundModelMode(household) === 2;
+  if (input.defaultFund !== undefined && (!v2 || input.type !== "expense" || !isCategoryDefaultFund(input.defaultFund))) {
+    throw new ValidationError("Choose Prepare, Build or Everyday for this category. Nothing starts in Protect.");
+  }
   if (input.type === "income") {
-    const income = next.categories.find((category) => category.recordType === "group" && category.transactionType === "income");
+    const income = v2
+      ? next.categories.find((category) => category.id === "INCOME" && category.active)
+      : next.categories.find((category) => category.recordType === "group" && category.transactionType === "income");
     if (!income) throw new ValidationError("The Income group is missing. Run Health Check.");
     parentId = income.id;
+  } else if (v2) {
+    // Umbrellas are fixed (D-269): a new child goes under one of the 12 spending umbrellas, never a new group.
+    if (!pickableExpenseGroups(next).some((group) => group.id === parentId)) {
+      throw new ValidationError("Choose one of the 12 umbrellas for this category.");
+    }
   } else if (parentId === "__new__" || !parentId) {
     const groupName = (input.newGroupName ?? name).trim();
     if (!groupName) throw new ValidationError("Please name the new category group.");
@@ -3464,6 +3485,9 @@ export const addCategory = captureCommand("addCategory", function addCategory(ho
     createdAt: at,
     updatedAt: at,
   };
+  if (v2 && input.type === "expense") {
+    category.defaultFund = input.defaultFund ?? proposedDefaultFund(name, parent.umbrellaId ?? umbrellaForRowId(parent.id)?.id ?? "personal") ?? "everyday";
+  }
   next.categories.push(category);
   const posted = [subId];
   if (input.monthlyBudget !== undefined && input.monthlyBudget !== "" && Number(input.monthlyBudget) > 0) {
@@ -4174,9 +4198,16 @@ function requireExpenseNamed(household: Household, name: string, groupName = "De
     && category.name.toLowerCase() === name.toLowerCase()
   ));
   if (found) return { household, subcategoryId: found.id };
+  // v2: groups are the fixed umbrellas, found by id — "Debt" is retired and card interest lives under Money.
+  const umbrellaRow = fundModelMode(household) === 2
+    ? umbrellaById(umbrellaForName(name) ?? umbrellaForName(groupName) ?? "money").rowId
+    : null;
   const group = household.categories.find((category) => (
-    category.recordType === "group" && category.transactionType === "expense" && category.name.toLowerCase() === groupName.toLowerCase()
+    umbrellaRow
+      ? category.id === umbrellaRow && category.active
+      : category.recordType === "group" && category.transactionType === "expense" && category.name.toLowerCase() === groupName.toLowerCase()
   ));
+  if (umbrellaRow && !group) throw new ValidationError("That umbrella is missing. Run Health Check.");
   const added = addCategory(household, {
     name,
     type: "expense",
