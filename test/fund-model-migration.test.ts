@@ -94,7 +94,9 @@ describe("household migration (slice 4)", () => {
     }
     // The household step never touched the private design.
     expect(h.kittyNestDesigns!.find((row) => row.visibility === "personal")!.category).toBe("protect");
-    expect(householdForHerculesContext(h, ALEX, "household").fundModelRows).toEqual([]);
+    const context = householdForHerculesContext(h, ALEX, "household").fundModelRows!;
+    expect(context).toEqual([{ ...householdFundMarker(h)!, changes: [], needsHome: [] }]);
+    for (const id of privateIds) expect(JSON.stringify(householdForHerculesContext(h, ALEX, "personal"))).not.toContain(`"sourceId":"${id}"`);
   });
   it("lets each owner sort their own rows on their own device only", () => {
     let h = withPrivateRows(catalogHousehold());

@@ -17,7 +17,7 @@ import { encodeMessage, MessageReader } from "../src/ledgerSync/wire.ts";
 const base = process.env.HEARTH_LEDGER_WORKER_URL;
 it.skipIf(!base)("real SQLite Worker activates due Shared and member-Personal Plans through the durable snapshot backstop", async () => {
   const memberId = "MEM-001", future = "2099-01" as const, due = "2026-09" as const;
-  const line: PlanLine = { id: "PLAN-LINE-CLOCK", lens: "protect", kind: "obligation", labelSnapshot: "Clock proof",
+  const line: PlanLine = { id: "PLAN-LINE-CLOCK", lens: "prepare", kind: "obligation", labelSnapshot: "Clock proof",
     amountCents: 1000, cadence: "monthly", responsibility: { kind: "joint" }, assumptionIds: [], createdBy: memberId };
   let household = { ...catalogHousehold(), householdId: `HH-PLAN-CLOCK-${crypto.randomUUID()}`, revision: 0, baseRevision: 0 };
   household = savePlanDraft(household, { id: "PLAN-DRAFT-CLOCK-PERSONAL", scope: "personal", memberId, targetMonth: future,

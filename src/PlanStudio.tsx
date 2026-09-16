@@ -3,13 +3,15 @@ import { KittyNest } from "./kitty/KittyNest.tsx";
 import type { KittyPlanContext } from "./kitty/KittyBankRoom.tsx";
 import { useCallback, useEffect, useMemo, useState, useRef, type ReactNode } from "react";
 import {
-  PLAN_LENSES, PLAN_LENS_COPY, addDays, acknowledgeHouseholdPlan, appendPlanSitdownTurn, createPlanScenario, currentPlanVersion, evaluatePlanDrift,
+  PLAN_LENSES, addDays, acknowledgeHouseholdPlan, appendPlanSitdownTurn, createPlanScenario, currentPlanVersion, evaluatePlanDrift,
   formatCad, monthKeyFromDateKey, planAcknowledgementState, proposeHouseholdPlan, savePlanDraft, savePlanLearningProgress, setPlanCoachingIntensity,
   shiftMonthKey, lockPersonalPlan, updatePlanNudgeState, type CommitResult, type DateKey, type Household, type LedgerView, type MonthKey, type PlanLens, type PlanLine,
   type PlanAssumption, type HerculesPlanContext, type HerculesNumberSource,
 } from "./core/index.ts";
 import { planSelectionForDraft, planSelectionForVersion, planSourceVisible, projectPlan, type PlanSelection } from "./core/planProjection.ts";
 import { planLesson, PLAN_LESSONS } from "./core/planLearning.ts";
+import { fundModelMode } from "./core/fundRules.ts";
+import { planLensCopy, planLensOrder } from "./core/planSystem.ts";
 import { ChapterClose, ModeLabel, RitualForm, SitdownBriefCard } from "./ChapterPanel.tsx";
 import { HerculesPortrait } from "./Hercules.tsx";
 import { PlanBridgeEditor } from "./PlanBridgeEditor.tsx";
@@ -84,7 +86,7 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
   const sessions = [...(household.planHerculesSessions ?? [])].filter(row => row.monthKey === month).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const session = sessions.find(row => row.state === "active") ?? sessions[0];
   const stage = session?.stage ?? 0;
-  const lesson = planLesson(projection, lessonLens, household.planLearningProgress?.filter(row => row.memberId === memberId && row.state === "completed").map(row => row.lessonId));
+  const lesson = planLesson(projection, lessonLens, household.planLearningProgress?.filter(row => row.memberId === memberId && row.state === "completed").map(row => row.lessonId), fundModelMode(household));
   const progress = household.planLearningProgress?.find(row => row.memberId === memberId && row.monthKey === month && row.lessonId === lesson.id);
   const run = useCallback(async (command: (current: Household) => CommitResult) => {
     setSaving(true); setError("");
@@ -164,7 +166,7 @@ export function PlanStudio({ household, view, memberId, today, busy, onCommand, 
        {workspaceCards?.(month)}
        <section className="plan-conversation-invitation"><HerculesPortrait pose="loaf" size={72} mood="content" hat={null} chain={null} house={null} collar={null} /><div><p className="kicker">Start with a conversation</p><h3>We can figure this month out together.</h3><button type="button" disabled={locked} onClick={() => ask(undefined, {actionId:"plan-guided-draft",values: household.companionProfile?.workflows?.some(row=>row.id===`task-${scope}`&&row.value?.actionId==="plan-guided-draft") ? {} : {monthKey:month}})}>{household.companionProfile?.workflows?.some(row=>row.id===`task-${scope}`&&row.value?.actionId==="plan-guided-draft") ? "Continue planning with Hercules" : onOpenWorkspace ? "Open guided monthly planning" : "Help me create a plan"}</button><small>Your answers stay private until you choose what to share.</small></div></section>
        {working.length > 0 ? <PlanConsequence projection={projection} /> : <p className="plan-empty">Start with what matters this month.</p>}
-       <section className="plan-purpose-list" aria-label="Explore your Plan">{PLAN_LENSES.map(lens => <button type="button" key={lens} onClick={() => setSection(lens)}><span><strong>{PLAN_LENS_COPY[lens].title}</strong><small>{PLAN_LENS_COPY[lens].prompt}</small></span><span>{working.filter(row=>row.lens===lens).length ? `${working.filter(row=>row.lens===lens).length} ${working.filter(row=>row.lens===lens).length===1?'decision':'decisions'}` : "Still open"} →</span></button>)}</section>
+       <section className="plan-purpose-list" aria-label="Explore your Plan">{planLensOrder(household).map(lens => <button type="button" key={lens} onClick={() => setSection(lens)}><span><strong>{planLensCopy(household)[lens].title}</strong><small>{planLensCopy(household)[lens].prompt}</small></span><span>{working.filter(row=>row.lens===lens).length ? `${working.filter(row=>row.lens===lens).length} ${working.filter(row=>row.lens===lens).length===1?'decision':'decisions'}` : "Still open"} →</span></button>)}</section>
        {(draft || version) && <button type="button" className="plan-open-review" onClick={() => {if(scope==="personal"&&version){setVersionId(version.id);setScenarioId(null);}setSection("review");}}>{version?.state === "proposed" ? "Review our proposal" : "Review my Plan"}</button>}
        {scope === "personal" && version && draft && <button type="button" onClick={()=>{setVersionId(null);setScenarioId(null);setSection("review");}}>Review my working draft</button>}
        {version && !draft && <button disabled={locked} onClick={() => void saveWorking(working)}>Start a private draft from this Plan</button>}

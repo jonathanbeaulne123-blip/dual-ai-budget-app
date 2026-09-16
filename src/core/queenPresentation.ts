@@ -45,12 +45,14 @@ export function queenNestPlaceFor(category: NestCategory): QueenNestPlace {
 export type QueenNestDoors = Readonly<Record<QueenNestPlace, NestBank[]>>;
 
 /** Group the four category banks behind two doors and a belly. Banks are passed through, never re-summed. */
-export function queenNestDoors(nest: Pick<KittyNest, "categories">): QueenNestDoors {
+export function queenNestDoors(nest: Pick<KittyNest, "categories" | "mode">): QueenNestDoors {
   const doors: Record<QueenNestPlace, NestBank[]> = { protect: [], build: [], belly: [] };
   for (const bank of nest.categories) {
     if (!bank.category) continue;
     doors[queenNestPlaceFor(bank.category)].push(bank);
   }
+  // v2: Prepare (what has to leave) reads before Protect (the buffer) behind the lower door.
+  if (nest.mode === 2) doors.protect.sort((a, b) => (a.category === "prepare" ? 0 : 1) - (b.category === "prepare" ? 0 : 1));
   return doors;
 }
 
@@ -361,7 +363,7 @@ export type QueenBanks = Readonly<Record<QueenBankId, QueenBank>>;
  * The banks are grouped, never re-summed; conservation stays where
  * `allocateNestTotal` guarantees it. The share is a drawing ratio, quantized.
  */
-export function queenBanks(nest: Pick<KittyNest, "categories" | "king">): QueenBanks {
+export function queenBanks(nest: Pick<KittyNest, "categories" | "king" | "mode">): QueenBanks {
   const doors = queenNestDoors(nest);
   const share = (banks: NestBank[]): number => {
     if (nest.king.amountCents <= 0) return 0;
@@ -381,6 +383,23 @@ export const QUEEN_BANK_MEANINGS: Readonly<Record<QueenBankId, string>> = {
   whatnow: "The present, the remainder.",
   build: "The future you chose.",
 };
+/**
+ * v2 words (D-270). The lower door still opens Prepare and Protect together
+ * (Prepare first) and leads down to the cellar, which is now Prepare's room;
+ * which figure Prepare gets and where the Knight lives is still Jonathan's
+ * call (plan §6 Q3), so the drawing is unchanged and only the words move.
+ */
+export const QUEEN_BANK_LABELS_V2: Readonly<Record<QueenBankId, string>> = { protect: "Prepare · Protect", whatnow: "Now", build: "Build" };
+export const QUEEN_BANK_MEANINGS_V2: Readonly<Record<QueenBankId, string>> = {
+  protect: "What has to leave, and the buffer we agreed.",
+  whatnow: "What's left for day-to-day.",
+  build: "What we chose to grow.",
+};
+export function queenBankWords(mode: 1 | 2): { labels: Readonly<Record<QueenBankId, string>>; meanings: Readonly<Record<QueenBankId, string>>; lowerTitle: string; lowerRoom: string; lowerBankKey: "plan:protect" | "plan:prepare" } {
+  return mode === 2
+    ? { labels: QUEEN_BANK_LABELS_V2, meanings: QUEEN_BANK_MEANINGS_V2, lowerTitle: "What has to leave", lowerRoom: "Prepare · down to the cellar", lowerBankKey: "plan:prepare" }
+    : { labels: QUEEN_BANK_LABELS, meanings: QUEEN_BANK_MEANINGS, lowerTitle: "What arrives", lowerRoom: "Protect · down to the cellar", lowerBankKey: "plan:protect" };
+}
 
 /** At her feet: the nearest dated obligations as pure form — how many and how near. No dates, no labels. */
 export type QueenFeet = { count: number; nearness: Array<QueenStone["size"]> };

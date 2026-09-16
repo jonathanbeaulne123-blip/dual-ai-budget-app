@@ -13,10 +13,24 @@ export const PLAN_LESSONS = {
   everyday: { id: "everyday-flexibility", title: "A choice is easier when its consequence is clear", explain: "An allowance makes room for ordinary life after your commitments. Today's available money and future flexibility are different. Uneven spending can be intentional; compare upcoming plans before calling it drift.", experiment: "Rehearse a purchase today and on the next payday. Compare the amount left and the assumption that makes the difference.", question: "Does a larger grocery week always mean the Plan is wrong?", answer: "No. It may cover several weeks. Review what you bought, what is still coming, and the remaining allowance before changing the Plan.", source: BUDGET },
 } as const;
 
-export function planLesson(projection: PlanProjection, preferred?: PlanLens, completedIds: readonly string[] = []) {
-  const lens = preferred ?? (projection.firstExposed ? "protect" : projection.lines.find(row => row.remainingCents > 0 && !completedIds.includes(PLAN_LESSONS[row.line.lens].id))?.line.lens ?? "everyday");
-  const lesson = PLAN_LESSONS[lens];
-  const evidence = projection.firstExposed && lens === "protect" ? `${projection.firstExposed.label} is exposed by ${formatCad(projection.firstExposed.gapCents)} on ${projection.firstExposed.date}.`
+/**
+ * v2 lessons (D-270): the timing lesson belongs to Prepare (bills), Protect
+ * teaches the buffer, and Everyday is what's left ("Now"). Same ids for
+ * Build/Everyday so earlier progress still counts.
+ */
+export const PLAN_LESSONS_V2 = {
+  prepare: { id: "cashflow-balance", title: "A balanced month can still run short", explain: "Prepare holds what has to leave. The date matters as much as the amount: money expected after a bill is due cannot cover that bill on time. A rehearsal lets you change the timing before making a commitment.", experiment: "Delay an expected contribution by three days. Find the first bill in Prepare it affects, then restore the date.", question: "Can money arriving Monday cover a bill due Friday?", answer: "Only if other available money covers the gap. A positive month-end total does not solve the timing problem.", source: BUDGET },
+  protect: { id: "buffers", title: "A buffer is for the month you didn't plan", explain: "Protect is the buffer you agree on together. Known bills and costs that come around belong in Prepare; the buffer covers what you could not reasonably schedule. Prepare fills first, so Protect only holds money once the bills are covered.", experiment: "Set a buffer, then add an unexpected cost. See Prepare stay whole and Protect take the difference.", question: "Should the buffer pay for a bill we forgot to plan?", answer: "It can, once. Then put that bill in Prepare so next month expects it. If the buffer lends money to another fund, the custodian suggests it and the partner confirms.", source: EMERGENCY },
+  build: PLAN_LESSONS.build,
+  everyday: { ...PLAN_LESSONS.everyday, explain: "Now is what is left after Prepare, Protect and Build. Today's available money and future flexibility are different. Uneven spending can be intentional; compare upcoming plans before calling it drift." },
+} as const;
+
+export function planLesson(projection: PlanProjection, preferred?: PlanLens, completedIds: readonly string[] = [], mode: 1 | 2 = 1) {
+  const lessons = mode === 2 ? PLAN_LESSONS_V2 : PLAN_LESSONS;
+  const timing = mode === 2 ? "prepare" : "protect";
+  const lens = preferred ?? (projection.firstExposed ? timing : projection.lines.find(row => row.remainingCents > 0 && !completedIds.includes(lessons[row.line.lens].id))?.line.lens ?? "everyday");
+  const lesson = lessons[lens];
+  const evidence = projection.firstExposed && lens === timing ? `${projection.firstExposed.label} is exposed by ${formatCad(projection.firstExposed.gapCents)} on ${projection.firstExposed.date}.`
     : lens === "everyday" && projection.everydayNowCents !== null ? `This projection leaves ${formatCad(projection.everydayNowCents)} for Everyday from current money.`
     : projection.lines.find(row => row.line.lens === lens) ? `${projection.lines.find(row => row.line.lens === lens)!.line.labelSnapshot} is a visible decision to explore.` : "Start with the clearly labelled example, then try your own decision.";
   return { ...lesson, lens, evidence, jurisdiction: "Canada", reviewedOn: "2026-09-11" };

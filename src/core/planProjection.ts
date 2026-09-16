@@ -12,6 +12,7 @@ import { monthObligations } from "./monthObligations.ts";
 import { goalVisibleInView, isVisibleInView } from "./visibility.ts";
 import { advanceCadence, projectCadence } from "./recurrence.ts";
 import type { Household, Transaction } from "./types.ts";
+import { fundModelMode } from "./fundRules.ts";
 import type { PlanAssumption, PlanDraft, PlanLine, PlanScope, PlanSourceReference, PlanVersion } from "./planSystem.ts";
 
 export type PlanSelection = {
@@ -378,9 +379,11 @@ export function projectPlan(h: Household, input: {
 
   }
   if (disruption.extraCostCents && disruption.extraCostCents > 0 && Number.isSafeInteger(disruption.extraCostCents)) movements.push({ sourceId: "rehearsal:extra", date: disruption.extraCostDate ?? asOf, deltaCents: -disruption.extraCostCents, label: "Unexpected cost rehearsal", kind: "obligation", estimated: true, memberId: null });
+  // Money model v2 (D-270): the "expenses rise" rehearsal presses on bills, which now live in Prepare.
+  const v2 = fundModelMode(h) === 2;
   const adjusted = movements.map(row => {
     if (row.deltaCents > 0 && row.kind === "contribution") return { ...row, date: addDays(row.date, Math.max(0, Math.min(90, disruption.incomeDelayDays ?? 0))), deltaCents: Math.round(row.deltaCents * (1 - Math.max(0, Math.min(100, disruption.incomeReductionPercent ?? 0)) / 100)) };
-    if (row.deltaCents < 0 && assigned.has(row.sourceId ?? "") && result.lines.some(line => line.line.id === assigned.get(row.sourceId!) && line.line.lens === "protect")) return { ...row, deltaCents: Math.round(row.deltaCents * (1 + Math.max(0, Math.min(100, disruption.expenseIncreasePercent ?? 0)) / 100)) };
+    if (row.deltaCents < 0 && assigned.has(row.sourceId ?? "") && result.lines.some(line => line.line.id === assigned.get(row.sourceId!) && (line.line.lens === "protect" || (v2 && line.line.lens === "prepare" && line.line.kind === "obligation")))) return { ...row, deltaCents: Math.round(row.deltaCents * (1 + Math.max(0, Math.min(100, disruption.expenseIncreasePercent ?? 0)) / 100)) };
     return row;
   }).filter(row => row.deltaCents !== 0 && row.date >= asOf && row.date <= through);
   if (result.cashNowCents === null) return result;

@@ -9,7 +9,7 @@ import { completeMove, nextMove, openChapterFor, respondToMove } from "../core/c
 import { projectKittyNest, NEST_CATEGORY_LABELS } from "../core/kittyNest.ts";
 import { fundDisplayName } from "../core/spaceNames.ts";
 import {
-  QUEEN_BANK_LABELS, QUEEN_BANK_MEANINGS,
+  queenBankWords,
   queenBanks, queenBody, queenBuds, queenCrown, queenFeet, queenHands, queenHem, queenLine, queenRibbons, queenSeams, queenShelf, queenShelfOrder, QUEEN_SHELF_BANK_KEY, queenStill, queenTrace, queenVine,
   type QueenBankId,
 } from "../core/queenPresentation.ts";
@@ -165,6 +165,8 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const crown = queenCrown(presence);
   const nest = useMemo(() => projectKittyNest(household, memberId, "household", today), [household, memberId, today]);
   const banks = queenBanks(nest);
+  // Money model (D-270): the words follow the rules that produced the numbers.
+  const { labels: QUEEN_BANK_LABELS, meanings: QUEEN_BANK_MEANINGS, lowerTitle, lowerRoom, lowerBankKey } = queenBankWords(nest.mode ?? 1);
   const buds = queenBuds(nest, 4);
   const vine = queenVine(household, chapter, today);
   const hands = queenHands(household, memberId, chapter, move);
@@ -655,14 +657,14 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
           <div className="queen-banks">
             <div className="queen-bank queen-bank--protect" inert={!expanded}>
               <button ref={(node) => { bankRefs.current.protect = node; }} type="button" className="queen-bank__button" aria-expanded={open === "protect"} aria-controls={panelId}
-                aria-label={`Protect — ${QUEEN_BANK_MEANINGS.protect} ${bankWords("protect")}. Opens a peek; again for the cellar`} onClick={(event) => openDoor("protect", event.currentTarget)}>Protect</button>
+                aria-label={`${QUEEN_BANK_LABELS.protect} — ${QUEEN_BANK_MEANINGS.protect} ${bankWords("protect")}. Opens a peek; again for the cellar`} onClick={(event) => openDoor("protect", event.currentTarget)}>{QUEEN_BANK_LABELS.protect}</button>
               <BankPortrait row={bankPieces[0]!} />
             </div>
 
             <div className="queen-bank queen-bank--queen">
               {expanded && (
                 <button ref={(node) => { bankRefs.current.whatnow = node; }} type="button" className="queen-bank__button" aria-expanded={open === "whatnow"} aria-controls={panelId}
-                  aria-label={`What now — ${QUEEN_BANK_MEANINGS.whatnow} ${bankWords("whatnow")}. Opens a peek`} onClick={(event) => openDoor("whatnow", event.currentTarget)}>What now</button>
+                  aria-label={`${QUEEN_BANK_LABELS.whatnow} — ${QUEEN_BANK_MEANINGS.whatnow} ${bankWords("whatnow")}. Opens a peek`} onClick={(event) => openDoor("whatnow", event.currentTarget)}>{QUEEN_BANK_LABELS.whatnow}</button>
               )}
               <div className="queen-mount">
                 <button ref={queenRef} type="button" className="queen-figure" data-house-hold="down" aria-expanded={expanded} aria-describedby={`${ids}-still`}
@@ -821,7 +823,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
         {(open === "protect" || open === "build" || open === "whatnow") && (
           <>
             <p className="queen-eyebrow">{QUEEN_BANK_LABELS[open]}</p>
-            <h2 id={`${ids}-panel-title`} className="queen-panel__title">{open === "protect" ? "What arrives" : open === "build" ? "What we chose" : "What now"}</h2>
+            <h2 id={`${ids}-panel-title`} className="queen-panel__title">{open === "protect" ? lowerTitle : open === "build" ? "What we chose" : QUEEN_BANK_LABELS.whatnow}</h2>
             <p className="queen-panel__sub">{QUEEN_BANK_MEANINGS[open]}</p>
             <ul className="queen-rows">
               {banks[open].banks.map((bank) => <li key={bank.id} className="queen-row"><span>{NEST_CATEGORY_LABELS[bank.category!]}</span><span className="queen-amount">{formatCad(bank.amountCents)}</span></li>)}
@@ -842,10 +844,10 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
             <div className="queen-acts">
               {ROOM_FOR[open] && (
                 <button type="button" className="queen-go queen-go--primary" data-door={open} onClick={() => enterRoom(ROOM_FOR[open]!)}>
-                  {open === "protect" ? "Protect · down to the cellar" : "Build · up to the loft"}
+                  {open === "protect" ? lowerRoom : "Build · up to the loft"}
                 </button>
               )}
-              <button type="button" className="queen-go" onClick={() => onOpenBank({ bankId: `plan:${open === "whatnow" ? "everyday" : open}` })}>Open {QUEEN_BANK_LABELS[open]} in the banks</button>
+              <button type="button" className="queen-go" onClick={() => onOpenBank({ bankId: open === "protect" ? lowerBankKey : `plan:${open === "whatnow" ? "everyday" : open}` })}>Open {QUEEN_BANK_LABELS[open]} in the banks</button>
               {open === "whatnow" && <button type="button" className="queen-go" onClick={() => onGo("ledger")}>Open {fundName}</button>}
             </div>
             {ROOM_FOR[open] && mode === "sheet" && <p className="queen-panel__hint">Keep pulling up to go {open === "protect" ? "down to the cellar" : "up to the loft"}.</p>}
@@ -855,7 +857,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
 
       <QueenHouseRail place={scene} onGo={travel} />
 
-      <QueenCellar ribbons={ribbons} open={scene === "cellar"} stairRef={cellarStair} onExit={exitRoom} onOpenBanks={() => onOpenBank({ bankId: "plan:protect" })} world={world} household={household} memberId={memberId} today={today} busy={busy} onCommand={onCommand} />
+      <QueenCellar ribbons={ribbons} open={scene === "cellar"} stairRef={cellarStair} onExit={exitRoom} onOpenBanks={() => onOpenBank({ bankId: lowerBankKey })} world={world} household={household} memberId={memberId} today={today} busy={busy} onCommand={onCommand} />
       <QueenLoft shelf={shelf} rack={rack} open={scene === "loft"} busy={busy} stairRef={loftStair} onExit={exitRoom} onOpenGoal={(goalId) => onOpenBank({ goalId })} onOpenBanks={() => onOpenBank({ bankId: "plan:build" })} onRack={keepRack} dirty={heldRack.dirty} onDone={heldRack.flush} pour={loftPour} world={world} />
     </div>
   );

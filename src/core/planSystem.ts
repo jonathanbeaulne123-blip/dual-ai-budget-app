@@ -3,6 +3,9 @@ import { sha256String } from "./synchronousHash.ts";
 import { projectedExpenseEffect, transactionProjection } from "./budget.ts";
 import { projectPlan, planSelectionForVersion } from "./planProjection.ts";
 import type { BudgetPlan, Household, Transaction } from "./types.ts";
+import { fundModelMode } from "./fundRules.ts";
+import { projectKittyNest } from "./kittyNest.ts";
+import { projectHouseholdFund } from "./householdFund.ts";
 
 export type PlanScope = "personal" | "household";
 export type PlanLens = "protect" | "prepare" | "build" | "everyday";
@@ -266,6 +269,8 @@ export type PlanDriftFinding = {
     | "acknowledgement-needed"
     | "stale-assumption"
     | "sitdown-upcoming"
+    | "buffer-below-agreed"
+    | "chapter-still-open"
     | "verified-milestone";
   targetId: string;
   explanation: string;
@@ -291,12 +296,27 @@ export type HerculesPlanContext = {
 };
 
 export const PLAN_LENSES: readonly PlanLens[] = ["protect", "prepare", "build", "everyday"];
+/** v1 words (no money-model marker). Read `planLensCopy(household)` so the words match the numbers. */
 export const PLAN_LENS_COPY: Record<PlanLens, { title: string; prompt: string }> = {
   protect: { title: "Protect", prompt: "Keep the promises that make the month safe." },
   prepare: { title: "Prepare", prompt: "Turn irregular costs into expected ones." },
   build: { title: "Build", prompt: "Choose the future this month helps create." },
   everyday: { title: "Everyday", prompt: "Give ordinary life a humane, honest boundary." },
 };
+/** v2 words (D-270): Prepare is what has to leave, Protect is the buffer only, Build is what we want to leave, Everyday is Now. */
+export const PLAN_LENS_COPY_V2: Record<PlanLens, { title: string; prompt: string }> = {
+  prepare: { title: "Prepare", prompt: "Make room for what has to leave: bills, subscriptions and costs that come around." },
+  protect: { title: "Protect", prompt: "Agree the buffer for the month we didn't plan." },
+  build: { title: "Build", prompt: "Choose the goals and investing this month helps grow." },
+  everyday: { title: "Everyday", prompt: "What's left is Now: ordinary life, with an honest boundary." },
+};
+export function planLensCopy(household: Pick<Household, "fundModelRows">): Record<PlanLens, { title: string; prompt: string }> {
+  return fundModelMode(household) === 2 ? PLAN_LENS_COPY_V2 : PLAN_LENS_COPY;
+}
+/** The order a lens list is walked in: the v2 check-in order once migrated. */
+export function planLensOrder(household: Pick<Household, "fundModelRows">): readonly PlanLens[] {
+  return fundModelMode(household) === 2 ? ["prepare", "protect", "build", "everyday"] : PLAN_LENSES;
+}
 
 export const PLAN_CURRICULUM = [
   ["values-roles-privacy", "Values, roles, privacy, and money history"],
@@ -676,13 +696,15 @@ export function planCompatibilityRows(version: PlanVersion, household: Pick<Hous
 export function legacyHouseholdPlanDraft(household: Household, monthKey: MonthKey, memberId: string, at: string): PlanDraft {
   const existing = household.budgetPlans.filter((row) => row.active && row.monthKey === monthKey && row.amountCents > 0);
   const categories = new Map(household.categories.map((category) => [category.id, category]));
+  // Money model v2 (D-270): essential lines are has-to-leave, so they are Prepare's.
+  const essentialLens: PlanLens = fundModelMode(household) === 2 ? "prepare" : "protect";
   return {
     id: `PLAN-DRAFT-household-${monthKey}-${memberId}`,
     scope: "household", ownerMemberId: memberId, targetMonth: monthKey,
     lines: existing.flatMap((budget) => {
       const category = categories.get(budget.subcategoryId);
       if (!category) return [];
-      return [{ id: `PLAN-LINE-${budget.id}`, lens: budget.essential ? "protect" : "everyday", kind: budget.essential ? "obligation" : "everyday-pool",
+      return [{ id: `PLAN-LINE-${budget.id}`, lens: budget.essential ? essentialLens : "everyday", kind: budget.essential ? "obligation" : "everyday-pool",
         labelSnapshot: category.name, amountCents: budget.amountCents, cadence: "monthly", responsibility: { kind: "joint" },
         sourceReference: { type: "category", id: category.id }, assumptionIds: [], createdBy: memberId } satisfies PlanLine];
     }),
@@ -712,12 +734,15 @@ export function evaluatePlanDrift(household: Household, version: PlanVersion, as
   if (projection.firstExposed) add({ severity: "critical", rule: "negative-runway", targetId: projection.firstExposed.date,
     explanation: `${projection.firstExposed.label} has a ${projection.firstExposed.gapCents} cent gap on ${projection.firstExposed.date}.`,
     consequence: "Review a contribution date or a commitment in the same projection.", sourceReferences: [] });
+  const v2 = fundModelMode(household) === 2;
+  // v1: Protect held the promises. v2: bills are Prepare obligations; Protect is the buffer (checked below).
+  const isPromise = (line: PlanLine) => v2 ? line.lens === "prepare" && line.kind === "obligation" : line.lens === "protect";
   for (const row of projection.lines) {
-    if (row.line.lens === "protect" && row.gapCents > 0 && row.dueDate && daysBetween(asOf, row.dueDate) <= PLAN_DRIFT_THRESHOLDS.protectedDueDays) add({
+    if (isPromise(row.line) && row.gapCents > 0 && row.dueDate && daysBetween(asOf, row.dueDate) <= PLAN_DRIFT_THRESHOLDS.protectedDueDays) add({
       severity: "critical", rule: "protected-shortfall", targetId: row.line.id,
       explanation: `${row.line.labelSnapshot} has ${row.gapCents} cents without identified coverage by ${row.dueDate}.`,
       consequence: row.issues[0] ?? "Try a different contribution date or a reviewed adjustment.", sourceReferences: row.line.sourceReference ? [row.line.sourceReference] : [] });
-    if (["build", "prepare"].includes(row.line.lens) && row.remainingCents > 0 && row.dueDate && row.dueDate < asOf) add({
+    if (["build", "prepare"].includes(row.line.lens) && !isPromise(row.line) && row.remainingCents > 0 && row.dueDate && row.dueDate < asOf) add({
       severity: "attention", rule: row.line.lens === "build" ? "goal-contribution-late" : "true-expense-pace", targetId: row.line.id,
       explanation: `${row.line.labelSnapshot} still needs ${row.remainingCents} cents after ${row.dueDate}.`,
       consequence: "Review the funding evidence, next contribution and timing together.", sourceReferences: row.line.sourceReference ? [row.line.sourceReference] : [] });
@@ -725,6 +750,15 @@ export function evaluatePlanDrift(household: Household, version: PlanVersion, as
       explanation: `${row.line.labelSnapshot} reached this month's contribution promise.`, consequence: "Review the verified progress and choose what comes next.", sourceReferences: row.line.sourceReference ? [row.line.sourceReference] : [] });
     if (row.line.lens === "everyday" && row.actualCents > row.intendedCents + PLAN_DRIFT_THRESHOLDS.materialCents) add({ severity: "attention", rule: "everyday-pace", targetId: row.line.id,
       explanation: `${row.line.labelSnapshot} is ${row.actualCents - row.intendedCents} cents above its monthly intention.`, consequence: "Review upcoming plans before deciding whether this uneven month needs a change.", sourceReferences: row.line.sourceReference ? [row.line.sourceReference] : [] });
+  }
+  if (v2 && version.scope === "household" && version.monthKey === asOf.slice(0, 7)) {
+    // Protect is the agreed buffer and nothing else (D-270): say so plainly when this month can't hold it yet.
+    const nest = projectKittyNest(household, version.createdBy, "household", asOf);
+    const agreed = projectHouseholdFund(household, asOf).bufferCents;
+    const held = nest.allocation?.amounts.protect ?? 0;
+    if (agreed > 0 && held < agreed) add({ severity: "attention", rule: "buffer-below-agreed", targetId: version.monthKey,
+      explanation: `Protect holds ${held} of the ${agreed} cents we agreed as this month's buffer.`,
+      consequence: "Prepare fills first. A later contribution or a smaller buffer brings Protect back to what we agreed.", sourceReferences: [] });
   }
   for (const assumption of version.assumptions) if (daysBetween(assumption.observedAt.slice(0, 10), asOf) >= PLAN_DRIFT_THRESHOLDS.staleAssumptionDays) add({
     severity: "gentle", rule: "stale-assumption", targetId: assumption.id, explanation: "A material plan assumption has not been refreshed recently.",

@@ -1,6 +1,7 @@
 import { redactCompanionText } from "./herculesCompanionContext.ts";
 import { matchPlanEvidence, rehearsePlanPurchase, projectPlan, planSelectionForDraft, planSelectionForVersion, type PlanSelection } from "./planProjection.ts";
 import { planLesson } from "./planLearning.ts";
+import { fundModelMode } from "./fundRules.ts";
 import {
   addDays,
   calendarDaysBetween,
@@ -239,10 +240,10 @@ export const HERCULES_READ_TOOL_CATALOG: ReadonlyArray<{ name: HerculesReadToolN
   { name: "cash_cinema", description: "13-week forward cash ribbon from tip floor/typical, wage pace, bills, and card mins. Projection only." },
   { name: "what_if_desk", description: "Named unposted scenario versus current cash and tip floor. Never posts." },
   { name: "year_review", description: "Posted tip months, income, spend, budget misses, and shift count for a trailing window." },
-  { name: "plan_overview", description: "Read the visible accepted or proposed Plan version and its Protect, Prepare, Build, and Everyday totals." },
+  { name: "plan_overview", description: "Read the visible accepted or proposed Plan version and its Prepare (bills), Protect (buffer), Build (goals), and Everyday (Now) totals." },
   { name: "plan_line_detail", description: "Explain one visible Plan line, responsibility, source, assumptions, and actual outcome." },
   { name: "plan_cashflow_runway", description: "Project the visible Plan's dated runway and lowest point from accepted scope-correct evidence." },
-  { name: "plan_coverage", description: "Read coverage across Protect, Prepare, Build, and Everyday without treating intentions as payments." },
+  { name: "plan_coverage", description: "Read coverage across Prepare, Protect, Build, and Everyday without treating intentions as payments." },
   { name: "plan_assumptions", description: "Read confidence, freshness, ranges, and sources for visible Plan assumptions." },
   { name: "plan_version_diff", description: "Compare two visible immutable Plan versions exactly and in plain language." },
   { name: "plan_scenario_compare", description: "Compare an accepted Plan with a member-visible private alternative. Never changes either." },
@@ -708,7 +709,7 @@ function executePlanCall(household: Household, call: HerculesReadToolCall, today
     const session = [...(household.planHerculesSessions ?? [])].filter(row => row.monthKey === monthKey).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0];
     return answer(session ? `The Shared Sitdown is ${session.state}, with ${session.turns.length} saved talking points and replies. Agreement still requires each partner's exact acknowledgement.` : "No Shared Sitdown has started for this month.", [], { session: session ?? null });
   }
-  const lesson = planLesson(projection, context.plan?.lens, household.planLearningProgress?.filter(row => row.memberId === context.memberId && row.state === "completed").map(row => row.lessonId));
+  const lesson = planLesson(projection, context.plan?.lens, household.planLearningProgress?.filter(row => row.memberId === context.memberId && row.state === "completed").map(row => row.lessonId), fundModelMode(household));
   return answer(`${lesson.title}. ${lesson.explain} ${lesson.evidence} Try this: ${lesson.experiment} ${lesson.question} ${lesson.answer}`, [], { lesson });
 }
 
