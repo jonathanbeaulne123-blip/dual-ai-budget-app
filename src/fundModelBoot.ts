@@ -32,6 +32,22 @@ export function fundModelBootStep(household: Household, memberId: string, client
   return null;
 }
 
+/**
+ * Why this phone is not sorting yet, in words (review M5): a plan that still keeps
+ * bills in Protect stops the step, and the couple should hear it instead of silence.
+ */
+export function fundModelBootNotice(household: Household, memberId: string, clientVersion: 1 | 2 = clientFundModelVersion()): string | null {
+  if (clientVersion !== 2 || !household.members.some((member) => member.active && member.id === memberId)) return null;
+  if (!householdFundMarker(household)) return householdPlanGuard(household);
+  if (!personalFundMarker(household, memberId)) return personalPlanGuard(household, memberId);
+  return null;
+}
+
+/** Another phone sorted first: the refusal is expected and says nothing new. */
+export function harmlessFundModelBootRefusal(message: string | null | undefined): boolean {
+  return /already sorted the new way/i.test(message ?? "");
+}
+
 export const fundModelSnapshotKey = (household: Pick<Household, "environment" | "householdId">, memberId: string) =>
   `hearth:fund-model-before:${household.environment}:${household.householdId}:${memberId}`;
 

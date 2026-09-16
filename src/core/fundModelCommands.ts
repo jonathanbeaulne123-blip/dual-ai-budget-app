@@ -61,7 +61,8 @@ function withRows(next: Household, rows: FundModelRow[]): void {
   next.fundModelRows = shapeFundModelRows([...(next.fundModelRows ?? []).filter((row) => !ids.has(row.id)), ...rows]);
 }
 function commitFundModel(previous: Household, next: Household, label: string, at: string, postedIds: string[] = [], personal?: string): CommitResult {
-  next.lastCommittedAt = at;
+  // A member's own step is Personal only: the Shared envelope (and its commit stamp) stays byte-equal (D-281, review H3).
+  if (!personal) next.lastCommittedAt = at;
   return {
     household: next,
     warnings: [],

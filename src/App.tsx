@@ -473,7 +473,8 @@ import { HerculesPresence } from "./Hercules.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
 import { AddSlideshow, type AddFormFields, type AddMode } from "./AddSlideshow.tsx";
 import { AddCategoryForm } from "./AddCategoryForm.tsx";
-import { fundModelBootStep, fundModelReloadRequired, saveFundModelSnapshot } from "./fundModelBoot.ts";
+import { fundModelBootNotice, fundModelBootStep, fundModelReloadRequired, harmlessFundModelBootRefusal, saveFundModelSnapshot } from "./fundModelBoot.ts";
+import { fundModelPersonalUpdateAllowed } from "./fundModelPersonalRule.ts";
 import { FUND_MODEL_RELOAD_MESSAGE, clientFundModelVersion } from "./ledgerSync/fundModelStamp.ts";
 import { defaultSubcategoryForMode } from "./addSlideshow.ts";
 import { FabSpeedDial } from "./FabSpeedDial.tsx";
@@ -1240,6 +1241,11 @@ export function App() {
       if (memberPersonalPreferenceUpdateAllowed(current, result.household, who, commandKind)) return;
       throw new ValidationError("Only you can change your own Personal settings.");
     }
+    if (commandKind === "updateFundModel") {
+      // D-281 (review H3): my own money-model step and private overrides touch only my own Personal rows.
+      if (fundModelPersonalUpdateAllowed(current, result.household, who)) return;
+      throw new ValidationError("Only you can sort your own private money.");
+    }
     if (personalCalendarUpdateAllowed(current, result, who)) return;
     throw new ValidationError("That Personal change does not have a cloud-authority rule.");
   }
@@ -1254,8 +1260,12 @@ export function App() {
     if (fundModelBootTried.current.has(key)) return;
     fundModelBootTried.current.add(key);
     if (step.kind === "household") saveFundModelSnapshot(household, session.memberId);
-    void runKitchen(step.run);
+    void runKitchen(step.run).then((outcome) => {
+      // Another phone sorted first: nothing to report (review M5).
+      if (outcome && !outcome.ok && harmlessFundModelBootRefusal(outcome.userMessage)) setError("");
+    });
   }, [household, session?.memberId, activeBooksGate.ready]);
+  const fundModelBlocked = household && session?.memberId ? fundModelBootNotice(household, session.memberId) : null;
   useEffect(() => {
     if (!household || !session?.memberId || !activeBooksGate.ready) return;
     const scope = { environment: household.environment, householdId: household.householdId, memberId: session.memberId };
@@ -6590,6 +6600,7 @@ export function App() {
   return (
     <WornLookContext.Provider value={import.meta.env.VITE_HERCULES_DRESSING_ROOM==='1'&&household.companionProfile?.scope.memberId===session.memberId?household.companionProfile.wornLook.value:null}><div className="app" data-ledger-mode={view} data-ledger-tab={tab} data-world-home={queenWorldHome ? "true" : undefined} data-books-readiness={booksReadiness.phase} data-ledger-live={useLedgerSync && realtimeStatus === "SUBSCRIBED"} data-ledger-transaction-count={household.transactions.length}>
       {["planner", "timeMachine", "hercules", "play"].includes(tab) && <button type="button" className="secondary-back chip" onClick={() => {goTab(secondaryOrigin.current); requestAnimationFrame(() => {if (secondaryTrigger.current?.isConnected) secondaryTrigger.current.focus(); else { const target = document.querySelector<HTMLElement>('nav.nav button[aria-current="page"]') ?? document.querySelector<HTMLElement>('.app'); if (target) { if (!target.hasAttribute("tabindex")) target.tabIndex = -1; target.focus(); } }});}}>Back to {secondaryOrigin.current === "ledger" ? "Books" : secondaryOrigin.current === "more" ? "Status Centre" : secondaryOrigin.current === "plan" ? "Plan" : secondaryOrigin.current === "together" ? "Together" : secondaryOrigin.current === "calendar" ? "Calendar" : secondaryOrigin.current === "shift" ? "Shifts" : secondaryOrigin.current === "till" ? "Till" : "Home"}</button>}
+      {fundModelBlocked && <div className="kitchen-notice fund-model-blocked" role="status"><p>Hearth hasn't sorted our money the new way yet. {fundModelBlocked}</p></div>}
       {fundModelReloadRequired(household) && <div className="kitchen-notice fund-model-reload" role="alert"><p>{FUND_MODEL_RELOAD_MESSAGE}</p><button type="button" className="chip" onClick={() => window.location.reload()}>Reload Hearth</button></div>}
       {charterFoundingVisible && household && session ? (
         <CharterFounding
