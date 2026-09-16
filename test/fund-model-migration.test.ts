@@ -111,7 +111,7 @@ describe("household migration (slice 4)", () => {
     expect(personalFundMarker(h, SAM)).toBeNull();
     const alex = splitForSync(h, ALEX), sam = splitForSync(h, SAM);
     expect(alex.personal.fundModelRows!.map((row) => row.id)).toEqual(["FUND-MODEL:personal:MEM-001"]);
-    expect(sam.personal.fundModelRows).toEqual([]);
+    expect(sam.personal.fundModelRows ?? []).toEqual([]);
     expect(alex.shared.fundModelRows!.map((row) => row.id)).toEqual(["FUND-MODEL:household"]);
     expect(() => migrateMyFundModel(h, { memberId: ALEX })).toThrow(/already sorted/);
   });

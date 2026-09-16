@@ -199,7 +199,7 @@ describe("the synced collection", () => {
     expect(alex.shared.fundModelRows!.every((row) => row.visibility === "household")).toBe(true);
     expect(JSON.stringify(alex.shared)).not.toContain(privateId);
     expect(alex.personal.fundModelRows!.map((row) => row.kind)).toEqual(["override"]);
-    expect(sam.personal.fundModelRows).toEqual([]);
+    expect(sam.personal.fundModelRows ?? []).toEqual([]);
     const back = assembleHousehold(alex.shared, alex.personal, { linked: true });
     expect(back.fundModelRows).toEqual(h.fundModelRows);
     expect(() => shapeFundModelRows([{ ...h.fundModelRows![0]!, version: 3 }])).toThrow();

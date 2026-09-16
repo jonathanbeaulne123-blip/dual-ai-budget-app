@@ -69,3 +69,17 @@ describe("flags off = main behaviour", () => {
     expect(after.every((row) => row.umbrellas === undefined && !row.tags.includes("umbrella-slots"))).toBe(true);
   });
 });
+
+describe("flags off: the household shape is main's (D-282, Our Story byte-identity)", () => {
+  it("adds no fundModelRows key to a household, or to either envelope, the money model never touched", async () => {
+    const { ensureHouseholdShape } = await import("../src/core/sync.ts");
+    const h = ensureHouseholdShape(catalogHousehold());
+    expect("fundModelRows" in h).toBe(false);
+    const { shared, personal } = splitForSync(h, ALEX);
+    expect("fundModelRows" in shared).toBe(false);
+    expect("fundModelRows" in personal).toBe(false);
+    // A list that was emptied still overwrites the old one.
+    const emptied = ensureHouseholdShape({ ...h, fundModelRows: [] });
+    expect(emptied.fundModelRows).toEqual([]);
+  });
+});

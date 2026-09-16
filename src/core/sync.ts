@@ -94,6 +94,15 @@ import {
   shapePlanVersions,
 } from "./planSystem.ts";
 
+/**
+ * Money-model rows (D-269) join a shape only when there are some (D-282): a household the money model never
+ * touched keeps main's exact shape, so fixture hashes and envelopes are byte-identical with the flags off.
+ */
+function fundRowsIf(rows: import("./fundRules.ts").FundModelRow[], had = false): { fundModelRows?: import("./fundRules.ts").FundModelRow[] } {
+  // `had`: the object being spread already carries the key, so an emptied list must still overwrite it.
+  return rows.length || had ? { fundModelRows: rows } : {};
+}
+
 export type { PersonalEnvelope, SharedEnvelope };
 
 function assertSyntheticFixtureEnvironment(value: {
@@ -384,7 +393,7 @@ export function ensureHouseholdShape(household: Household): Household {
     recurrences: (household.recurrences ?? []).map((item) => shapeRecurrence(item, fallbackIso)),
     nativeEvents:shapeNativeEvents(household.nativeEvents),
     kittyNestDesigns:shapeKittyNestDesigns(household.kittyNestDesigns),
-    fundModelRows:shapeFundModelRows(household.fundModelRows),
+    ...fundRowsIf(shapeFundModelRows(household.fundModelRows), household.fundModelRows !== undefined),
     tasks:shapeTasks(household.tasks),
     taskLists:shapeTaskLists(household.taskLists),
     potentialExpenses: shapePotentialExpenses(household.potentialExpenses, fallbackIso),
@@ -500,7 +509,6 @@ export function emptyPersonal(memberId: string): PersonalEnvelope {
     transactions: [],
     nativeEvents:[],
     kittyNestDesigns:[],
-    fundModelRows:[],
     tasks:[],
     taskLists:[],
     potentialExpenses: [],
@@ -575,7 +583,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     recurrences: shaped.recurrences,
     nativeEvents:shapeNativeEvents(shaped.nativeEvents).filter(r=>r.visibility==='household'),
     kittyNestDesigns:shapeKittyNestDesigns(shaped.kittyNestDesigns).filter(r=>r.visibility==='household'),
-    fundModelRows:shapeFundModelRows(shaped.fundModelRows).filter(r=>r.visibility==='household'),
+    ...fundRowsIf(shapeFundModelRows(shaped.fundModelRows).filter(r=>r.visibility==='household')),
     tasks:shapeTasks(shaped.tasks).filter(r=>r.visibility==='household'),
     taskLists:shapeTaskLists(shaped.taskLists).filter(r=>r.visibility==='household'),
     potentialExpenses: sharedPotentialExpenses,
@@ -687,7 +695,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     transactions: personalTx,
     nativeEvents:shapeNativeEvents(shaped.nativeEvents).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     kittyNestDesigns:shapeKittyNestDesigns(shaped.kittyNestDesigns).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
-    fundModelRows:personalFundRows(shapeFundModelRows(shaped.fundModelRows),memberId),
+    ...fundRowsIf(personalFundRows(shapeFundModelRows(shaped.fundModelRows),memberId)),
     tasks:shapeTasks(shaped.tasks).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     taskLists:shapeTaskLists(shaped.taskLists).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     potentialExpenses: personalPotentialExpenses,
@@ -720,7 +728,7 @@ export function personalReplicaForMember(household: Household, memberId: string)
     transactions: personal.transactions.filter((tx) => tx.createdBy === memberId),
     nativeEvents:shapeNativeEvents(personal.nativeEvents).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     kittyNestDesigns:shapeKittyNestDesigns(personal.kittyNestDesigns).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
-    fundModelRows:personalFundRows(shapeFundModelRows(personal.fundModelRows),memberId),
+    ...fundRowsIf(personalFundRows(shapeFundModelRows(personal.fundModelRows),memberId), personal.fundModelRows !== undefined),
     tasks:shapeTasks(personal.tasks).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     taskLists:shapeTaskLists(personal.taskLists).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     potentialExpenses: (personal.potentialExpenses ?? []).filter((row) => row.createdBy === memberId && row.visibility === "personal"),
@@ -796,7 +804,7 @@ export function personalEnvelopeFromPayload(
       : [],
     nativeEvents:shapeNativeEvents(row.nativeEvents).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     kittyNestDesigns:shapeKittyNestDesigns(row.kittyNestDesigns).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
-    fundModelRows:personalFundRows(shapeFundModelRows(row.fundModelRows),memberId),
+    ...fundRowsIf(personalFundRows(shapeFundModelRows(row.fundModelRows),memberId), row.fundModelRows !== undefined),
     tasks:shapeTasks(row.tasks).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     taskLists:shapeTaskLists(row.taskLists).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     potentialExpenses: shapePotentialExpenses(row.potentialExpenses, row.lastCommittedAt ?? MISSING_ISO)
@@ -909,7 +917,7 @@ export function overlayPersonalReplica(
     ],
     nativeEvents:mergeNativeEvents((household.nativeEvents??[]).filter(r=>r.visibility!=='personal'||r.createdBy!==memberId),personal.nativeEvents),
     kittyNestDesigns:mergeKittyNestDesigns((household.kittyNestDesigns??[]).filter(r=>r.visibility!=='personal'||r.createdBy!==memberId),personal.kittyNestDesigns),
-    fundModelRows:mergeFundModelRows(shapeFundModelRows(household.fundModelRows).filter(r=>!(r.visibility==='personal'&&'setBy' in r&&r.setBy===memberId)),personal.fundModelRows),
+    ...fundRowsIf(mergeFundModelRows(shapeFundModelRows(household.fundModelRows).filter(r=>!(r.visibility==='personal'&&'setBy' in r&&r.setBy===memberId)),personal.fundModelRows), household.fundModelRows !== undefined),
     tasks:mergeTasks((household.tasks??[]).filter(r=>r.visibility!=='personal'||r.createdBy!==memberId),personal.tasks),
     taskLists:mergeTaskLists((household.taskLists??[]).filter(r=>r.visibility!=='personal'||r.createdBy!==memberId),personal.taskLists),
     potentialExpenses: mergePotentialExpenses(
@@ -1077,7 +1085,7 @@ export function assembleHousehold(
     recurrences: shared.recurrences,
     nativeEvents:mergeNativeEvents(shared.nativeEvents,personal?.nativeEvents),
     kittyNestDesigns:mergeKittyNestDesigns(shared.kittyNestDesigns,personal?.kittyNestDesigns),
-    fundModelRows:mergeFundModelRows(shapeFundModelRows(shared.fundModelRows).filter(r=>r.visibility==='household'),personal?personalFundRows(personal.fundModelRows,personal.memberId):[]),
+    ...fundRowsIf(mergeFundModelRows(shapeFundModelRows(shared.fundModelRows).filter(r=>r.visibility==='household'),personal?personalFundRows(personal.fundModelRows,personal.memberId):[])),
     tasks:mergeTasks(shared.tasks,personal?.tasks),
     taskLists:mergeTaskLists(shared.taskLists,personal?.taskLists),
     potentialExpenses: mergePotentialExpenses(
@@ -1221,7 +1229,7 @@ export function mergeShared(server: SharedEnvelope, client: SharedEnvelope): Sha
     recurrences: mergeRecords(server.recurrences, client.recurrences, tombstones),
     nativeEvents:mergeNativeEvents(server.nativeEvents,client.nativeEvents),
     kittyNestDesigns:mergeKittyNestDesigns(server.kittyNestDesigns,client.kittyNestDesigns),
-    fundModelRows:mergeFundModelRows(server.fundModelRows,client.fundModelRows).filter(r=>r.visibility==='household'),
+    ...fundRowsIf(mergeFundModelRows(server.fundModelRows,client.fundModelRows).filter(r=>r.visibility==='household')),
     tasks:mergeTasks(server.tasks,client.tasks),
     taskLists:mergeTaskLists(server.taskLists,client.taskLists),
     potentialExpenses: mergePotentialExpenses(server.potentialExpenses, client.potentialExpenses, newer.lastCommittedAt ?? MISSING_ISO),
@@ -1395,7 +1403,7 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
     transactions: mergeRecords(server.transactions, client.transactions, tombstones),
     nativeEvents:mergeNativeEvents(server.nativeEvents,client.nativeEvents).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     kittyNestDesigns:mergeKittyNestDesigns(server.kittyNestDesigns,client.kittyNestDesigns).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
-    fundModelRows:personalFundRows(mergeFundModelRows(server.fundModelRows,client.fundModelRows),memberId),
+    ...fundRowsIf(personalFundRows(mergeFundModelRows(server.fundModelRows,client.fundModelRows),memberId)),
     tasks:mergeTasks(server.tasks,client.tasks).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     taskLists:mergeTaskLists(server.taskLists,client.taskLists).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     potentialExpenses: mergePotentialExpenses(server.potentialExpenses, client.potentialExpenses, newer.lastCommittedAt ?? MISSING_ISO)
