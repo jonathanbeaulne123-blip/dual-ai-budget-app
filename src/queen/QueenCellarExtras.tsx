@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { createPortal } from "react-dom";
 import type { CommitResult, Household } from "../core/types.ts";
 import type { DateKey } from "../core/calendar.ts";
 import { formatCad } from "../core/money.ts";
@@ -97,6 +98,9 @@ export function CellarMissingCard({ entry, household, memberId, today, busy, onC
   const [goalId, setGoalId] = useState(goals[0]?.id ?? "");
   const [confirming, setConfirming] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  // The Confirm stands in the room, not inside the glass card (the card's backdrop filter would hold a fixed sheet inside it).
+  const [sheetHost, setSheetHost] = useState<Element | null>(null);
+  useEffect(() => { setSheetHost(cardRef.current?.closest(".queen-room") ?? null); }, [cardRef]);
   const custodian = household.members.find((row) => row.id === custodianId) ?? null;
   const partner = household.members.find((row) => row.active && row.id !== custodianId) ?? null;
   const isCustodian = custodianId === memberId;
@@ -104,7 +108,7 @@ export function CellarMissingCard({ entry, household, memberId, today, busy, onC
   const run = (fn: (current: Household) => CommitResult, done: string, fallback: string) => {
     if (!onCommand) return;
     void onCommand(fn).then(
-      (result) => setNotice(cellarPostedOk(result) ? done : refusedWords(result, fallback)),
+      (result) => setNotice(cellarPostedOk(result) ? done || null : refusedWords(result, fallback)),
       (error: unknown) => setNotice(error instanceof Error ? `${error.message} Nothing changed.` : fallback),
     );
   };
@@ -168,7 +172,7 @@ export function CellarMissingCard({ entry, household, memberId, today, busy, onC
         </div>
       )}
       {notice && <p className="queen-room__line queen-cellar-notice" role="status">{notice}</p>}
-      {confirming && onCommand && (
+      {confirming && onCommand && sheetHost && createPortal(
         <ConfirmSheet
           title={`Roll ${amount} into ${goalName}`}
           body={`${entry.label} ${entry.kind === "missing" ? `wasn't charged for ${cellarDayLabel(entry.date)}` : `came in ${amount} lower on ${cellarDayLabel(entry.date)}`}, and ${partner?.name ?? "your partner"} said yes. This reserves ${amount} of the Fund's safe surplus for ${goalName}, once, through the Fund's rollover.`}
@@ -178,9 +182,9 @@ export function CellarMissingCard({ entry, household, memberId, today, busy, onC
           onCancel={() => setConfirming(false)}
           onConfirm={() => {
             setConfirming(false);
-            run((current) => rollMissingSubscription(current, { today, memberId, entryId: entry.id }), `Rolled ${amount} into ${goalName}. It won't roll again.`, "The roll-over was refused. Nothing moved.");
+            run((current) => rollMissingSubscription(current, { today, memberId, entryId: entry.id }), "", "The roll-over was refused. Nothing moved.");
           }}
-        />
+        />, sheetHost,
       )}
     </section>
   );
