@@ -12,7 +12,15 @@ const C=document.querySelector("#content"),Q=document.querySelector("#q"),E=docu
 esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c])),
 statusLabel=id=>(STATUSES.find(s=>s.id===id)||{}).label||"No outcome yet",
 allStops=()=>D.concat(X),
-mapSearch=x=>"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent([x.r,x.a].filter(Boolean).join(" "));
+mapSearch=x=>"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent([x.r,x.a].filter(Boolean).join(" ")),
+portalUrl=params=>{
+ const qs=new URLSearchParams(params||{}).toString();
+ if(location.hostname==="html-preview.github.io"){
+   const base="https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Fmap.html";
+   return base+(qs?"&"+qs:"");
+ }
+ return "map.html"+(qs?"?"+qs:"");
+};
 function save(){localStorage.setItem(K,JSON.stringify(S));localStorage.setItem(SK,JSON.stringify(T));localStorage.setItem(CK,JSON.stringify(X))}
 function buildOutcomeFilter(){
  const sel=document.createElement("select");sel.id="outcomeFilter";sel.setAttribute("aria-label","Filter by visit outcome");
@@ -61,12 +69,12 @@ function removeCustom(x){
  X=X.filter(y=>y.n!==x.n);delete S[x.n];delete T[x.n];save();render()
 }
 function renderCard(x,l){
- const e=document.createElement("article"),visited=!!S[x.n],outcome=T[x.n]||"",map=x.custom?mapSearch(x):R[x.u];
+ const e=document.createElement("article"),visited=!!S[x.n],outcome=T[x.n]||"",map=x.custom?portalUrl({}):portalUrl({focusStop:x.n});
  e.className=visited?"done":"";e.dataset.n=x.n;e.dataset.s=[x.r,x.a,x.p,x.d,x.s,x.b].join(" ").toLowerCase();
  const badge=visited?`<button type="button" class="status-badge ${outcome?"has-status":"pending"}" data-edit-status>${esc(statusLabel(outcome))} <span>▾</span></button>`:"";
  const remove=x.custom?'<button type="button" class="remove-stop" data-remove>Remove</button>':"";
  const num=x.custom?"＋":x.n;
- e.innerHTML=`<div class="no">${num}</div><div><div class="tr"><h3>${esc(x.r)}</h3><span class="price">${esc(x.p)}</span>${badge}</div><div class="addr">${esc(x.a||"Address not added")}</div><p class="desc">${esc(x.d)}</p><div class="next"><b>${x.custom?"Type":"Next stop"}:</b> ${esc(x.custom?"Unexpected stop":x.s)}</div><div class="card-actions"><a class="route mobile-link-always" href="${esc(map)}" target="_blank" rel="noopener noreferrer">↗ Google Maps</a>${remove}</div></div><div class="cw"><label for="c${x.n}">Visited</label><input id="c${x.n}" type="checkbox" ${visited?"checked":""}></div>`;
+ e.innerHTML=`<div class="no">${num}</div><div><div class="tr"><h3>${esc(x.r)}</h3><span class="price">${esc(x.p)}</span>${badge}</div><div class="addr">${esc(x.a||"Address not added")}</div><p class="desc">${esc(x.d)}</p><div class="next"><b>${x.custom?"Type":"Next stop"}:</b> ${esc(x.custom?"Unexpected stop":x.s)}</div><div class="card-actions"><a class="route mobile-link-always" href="${esc(map)}">↗ Route Portal</a>${remove}</div></div><div class="cw"><label for="c${x.n}">Visited</label><input id="c${x.n}" type="checkbox" ${visited?"checked":""}></div>`;
  const cb=e.querySelector("input[type=checkbox]");
  cb.onchange=()=>{if(cb.checked){openOutcomeModal(x,true,cb)}else{delete S[x.n];delete T[x.n];save();render()}};
  const edit=e.querySelector("[data-edit-status]");if(edit)edit.onclick=()=>openOutcomeModal(x,false);
@@ -77,7 +85,7 @@ function render(){
  C.innerHTML="";
  B.forEach((b,i)=>{
   const a=D.filter(x=>x.b===b),sec=document.createElement("section"),n=a.filter(x=>S[x.n]).length;
-  sec.innerHTML=`<div class="bh"><div><div class="bk">District ${i+1} · ${a.length} stops</div><h2>${esc(b.replace(/^Block \d+:\s*/,""))}</h2></div><div class="ba"><span class="bc" id="bc${i}">${n} / ${a.length} visited</span><a class="route" href="${esc(R[a[0].u])}" target="_blank" rel="noopener noreferrer">↗ Google Maps</a></div></div><div class="list"></div>`;
+  sec.innerHTML=`<div class="bh"><div><div class="bk">District ${i+1} · ${a.length} stops</div><h2>${esc(b.replace(/^Block \d+:\s*/,""))}</h2></div><div class="ba"><span class="bc" id="bc${i}">${n} / ${a.length} visited</span><a class="route" href="${esc(portalUrl({focusDistrict:i}))}">↗ Route Portal</a></div></div><div class="list"></div>`;
   const l=sec.querySelector(".list");a.forEach(x=>renderCard(x,l));C.append(sec)
  });
  if(X.length){
@@ -108,5 +116,5 @@ document.querySelector("#addUnexpected").onclick=openAddModal;
 document.querySelector("#reset").onclick=()=>{if(confirm("Clear visited checkmarks and outcomes? Unexpected stops will stay on the list.")){S={};T={};localStorage.removeItem(K);localStorage.removeItem(SK);render()}};
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(document.querySelector("#outcomeModal")?.classList.contains("show"))cancelOutcomeModal();if(document.querySelector("#addModal")?.classList.contains("show"))closeAddModal()}});
 
-const routePortal=document.querySelector("#routePortal");if(routePortal&&location.hostname==="html-preview.github.io"){routePortal.href="https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Fmap.html";}
+const routePortal=document.querySelector("#routePortal");if(routePortal)routePortal.href=portalUrl({});
 buildOutcomeFilter();buildOutcomeModal();buildAddModal();render();
