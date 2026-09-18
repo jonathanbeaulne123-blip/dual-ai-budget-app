@@ -45,3 +45,5 @@ button,select{font:inherit}.portal-shell{max-width:1500px;margin:0 auto;padding:
 .map-loading,.map-error{height:100%;display:grid;place-content:center;gap:10px;padding:30px;text-align:center;color:var(--muted);background:#f4efe7}
 .map-error strong{font:500 1.5rem Georgia,serif;color:var(--ink)}
 .map-error span{max-width:520px;line-height:1.5}
+
+.cloud-fix-link{justify-self:center;display:inline-flex;text-decoration:none;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:999px;padding:10px 14px;font-weight:850;font-size:.84rem}.map-error b{color:var(--ink)}
