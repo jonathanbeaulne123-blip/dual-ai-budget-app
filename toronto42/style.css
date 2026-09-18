@@ -31,3 +31,5 @@
 .primary{background:var(--i);color:#fff;border-color:var(--i)}
 .add-card{width:min(600px,100%)}
 @media(max-width:760px){.add-stop{order:4;flex:1}.mobile-link-always{display:inline-flex}.card-actions{margin-top:4px}}
+
+.portal-link{display:inline-flex;align-items:center;text-decoration:none;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:999px;padding:9px 13px;font-weight:800;font-size:.87rem}.portal-link:hover{transform:translateY(-1px)}@media(max-width:760px){.portal-link{order:3;flex:1;justify-content:center}.add-stop{order:4}}
