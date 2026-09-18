@@ -107,4 +107,6 @@ document.querySelectorAll(".f").forEach(b=>b.onclick=()=>{document.querySelector
 document.querySelector("#addUnexpected").onclick=openAddModal;
 document.querySelector("#reset").onclick=()=>{if(confirm("Clear visited checkmarks and outcomes? Unexpected stops will stay on the list.")){S={};T={};localStorage.removeItem(K);localStorage.removeItem(SK);render()}};
 document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(document.querySelector("#outcomeModal")?.classList.contains("show"))cancelOutcomeModal();if(document.querySelector("#addModal")?.classList.contains("show"))closeAddModal()}});
+
+const routePortal=document.querySelector("#routePortal");if(routePortal&&location.hostname==="html-preview.github.io"){routePortal.href="https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Fmap.html";}
 buildOutcomeFilter();buildOutcomeModal();buildAddModal();render();
