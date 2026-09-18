@@ -1,3 +1,38 @@
+const MAP_ERROR_FIXES={
+RefererNotAllowedMapError:{title:"Website restriction mismatch",detail:()=>`Allow this website in the key's HTTP referrers: ${location.origin}/*`,url:"https://console.cloud.google.com/google/maps-apis/credentials"},
+ApiNotActivatedMapError:{title:"Maps JavaScript API is not enabled",detail:()=>"Enable Maps JavaScript API in the same Google Cloud project as this key.",url:"https://console.cloud.google.com/google/maps-apis/apis/maps-backend.googleapis.com"},
+ApiTargetBlockedMapError:{title:"The key's API restrictions block Maps",detail:()=>"Edit the key and allow Maps JavaScript API and Routes API.",url:"https://console.cloud.google.com/google/maps-apis/credentials"},
+BillingNotEnabledMapError:{title:"Billing is not enabled for this project",detail:()=>"Attach your active billing account to the Google Cloud project that owns this API key.",url:"https://console.cloud.google.com/billing"},
+ClientBillingNotEnabledMapError:{title:"Billing is not enabled for this project",detail:()=>"Attach your active billing account to the Google Cloud project that owns this API key.",url:"https://console.cloud.google.com/billing"},
+InvalidKeyMapError:{title:"The Maps API key is invalid",detail:()=>"Check that google-config.js contains the current browser API key.",url:"https://console.cloud.google.com/google/maps-apis/credentials"},
+ExpiredKeyMapError:{title:"The Maps API key is not recognized yet",detail:()=>"If you just created the key, wait a few minutes. Otherwise create a new browser key.",url:"https://console.cloud.google.com/google/maps-apis/credentials"},
+ProjectDeniedMapError:{title:"Google denied this project",detail:()=>"Open the Google Maps Platform project and check its status, billing, and API access.",url:"https://console.cloud.google.com/google/maps-apis/overview"}
+};
+let capturedMapError="";
+function renderMapDiagnostic(code,message=""){
+ const fix=MAP_ERROR_FIXES[code];
+ const title=fix?fix.title:"Google Maps authentication failed";
+ const detail=fix?fix.detail():(message||"Open Chrome DevTools Console for Google's full Maps error.");
+ const url=fix?.url||"https://console.cloud.google.com/google/maps-apis/overview";
+ const el=document.querySelector("#map");
+ if(!el)return;
+ el.innerHTML=`<div class="map-error"><strong>${esc(title)}</strong><span><b>Error:</b> ${esc(code||"Unknown")}</span><span>${esc(detail)}</span><span><b>Current site:</b> ${esc(location.origin)}</span><a class="cloud-fix-link" href="${url}" target="_blank" rel="noopener noreferrer">Open the exact Google Cloud setting ↗</a></div>`;
+}
+const originalConsoleError=console.error.bind(console);
+console.error=(...args)=>{
+ try{
+   const text=args.map(a=>typeof a==="string"?a:(a?.message||String(a))).join(" ");
+   const m=text.match(/Google Maps JavaScript API error:\s*([A-Za-z0-9_]+)/);
+   if(m){capturedMapError=m[1];setTimeout(()=>renderMapDiagnostic(capturedMapError,text),0)}
+ }catch(_){}
+ originalConsoleError(...args);
+};
+window.addEventListener("error",e=>{
+ const text=[e.message,e.error?.message].filter(Boolean).join(" ");
+ const m=text.match(/(RefererNotAllowedMapError|ApiNotActivatedMapError|ApiTargetBlockedMapError|BillingNotEnabledMapError|ClientBillingNotEnabledMapError|InvalidKeyMapError|ExpiredKeyMapError|ProjectDeniedMapError)/);
+ if(m){capturedMapError=m[1];renderMapDiagnostic(capturedMapError,text)}
+});
+
 const K="toronto42-culinary-passport-v1",SK="toronto42-outcomes-v1",CK="toronto42-custom-stops-v1";
 const S=JSON.parse(localStorage.getItem(K)||"{}"),T=JSON.parse(localStorage.getItem(SK)||"{}"),X=JSON.parse(localStorage.getItem(CK)||"[]");
 const STATUSES=[
@@ -82,7 +117,7 @@ async function drawRoutes(){
  const s=document.createElement("div");s.className="google-route-summary";s.innerHTML=`<strong>Google route geometry</strong><span>${routeTotals.loaded}/5 districts loaded${routeTotals.loaded?` · ${fmtDist(routeTotals.distanceMeters)} · ${fmtDur(routeTotals.durationMillis)}`:""}${routeTotals.failed?` · ${routeTotals.failed} unavailable`:""}</span>`;document.querySelector(".overview-card").append(s)
 }
 function showError(msg){document.querySelector("#map").innerHTML=`<div class="map-error"><strong>Google Maps couldn't load.</strong><span>${esc(msg)}</span><span>Check the browser key's website restriction and that Maps JavaScript API + Routes API are enabled.</span></div>`}
-window.gm_authFailure=()=>showError("The configured Google Maps key was rejected for this website.");
+window.gm_authFailure=()=>setTimeout(()=>{if(capturedMapError)renderMapDiagnostic(capturedMapError);else renderMapDiagnostic("AuthenticationError","Google rejected this key. If no specific code appears, verify the website restriction, Maps JavaScript API, Routes API, and billing for the key's project.")},250);
 window.initGooglePortal=async()=>{
  try{
   if(coordMatches.length!==42)throw Error("Could not read all 42 route coordinates.");
