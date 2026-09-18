@@ -116,6 +116,26 @@ async function drawRoutes(){
  connectorPolylines=joins.map(pair=>new google.maps.Polyline({map,path:pair.map(x=>({lat:x.lat,lng:x.lng})),strokeColor:"#8d8982",strokeOpacity:.35,strokeWeight:3,zIndex:8}));
  const s=document.createElement("div");s.className="google-route-summary";s.innerHTML=`<strong>Google route geometry</strong><span>${routeTotals.loaded}/5 districts loaded${routeTotals.loaded?` · ${fmtDist(routeTotals.distanceMeters)} · ${fmtDur(routeTotals.durationMillis)}`:""}${routeTotals.failed?` · ${routeTotals.failed} unavailable`:""}</span>`;document.querySelector(".overview-card").append(s)
 }
+
+function applyInitialFocus(){
+ const params=new URLSearchParams(location.search);
+ const stop=params.get("focusStop"),district=params.get("focusDistrict");
+ if(stop){
+   const x=STOPS.find(s=>String(s.n)===String(stop));
+   const m=markers.find(m=>String(m.stop.n)===String(stop));
+   if(x&&m){
+     map.setCenter({lat:x.lat,lng:x.lng});map.setZoom(16);
+     infoWindow.setContent(popup(x));infoWindow.open({map,anchor:m});
+     return;
+   }
+ }
+ if(district!==null&&district!==""){
+   activeDistrict=String(district);
+   const sel=document.querySelector("#districtFilter");if(sel)sel.value=activeDistrict;
+   applyFilters();
+ }
+}
+
 function showError(msg){document.querySelector("#map").innerHTML=`<div class="map-error"><strong>Google Maps couldn't load.</strong><span>${esc(msg)}</span><span>Check the browser key's website restriction and that Maps JavaScript API + Routes API are enabled.</span></div>`}
 window.gm_authFailure=()=>setTimeout(()=>{if(capturedMapError)renderMapDiagnostic(capturedMapError);else renderMapDiagnostic("AuthenticationError","Google rejected this key. If no specific code appears, verify the website restriction, Maps JavaScript API, Routes API, and billing for the key's project.")},250);
 window.initGooglePortal=async()=>{
@@ -126,7 +146,7 @@ window.initGooglePortal=async()=>{
   map=new Map(document.querySelector("#map"),{center:{lat:43.657,lng:-79.407},zoom:13,mapId:"DEMO_MAP_ID",mapTypeControl:false,streetViewControl:false,fullscreenControl:true,gestureHandling:"greedy"});
   infoWindow=new google.maps.InfoWindow();
   markers=STOPS.map(x=>{const m=new AdvancedMarkerElement({map,position:{lat:x.lat,lng:x.lng},title:`${x.n}. ${x.r}`,gmpClickable:true});m.append(markerEl(x));m.stop=x;m.addEventListener("gmp-click",()=>{infoWindow.setContent(popup(x));infoWindow.open({map,anchor:m})});return m});
-  fitFull();await drawRoutes()
+  fitFull();await drawRoutes();applyInitialFocus()
  }catch(e){console.error(e);showError(e?.message||"Unknown Google Maps error")}
 };
 function loadGoogle(){
