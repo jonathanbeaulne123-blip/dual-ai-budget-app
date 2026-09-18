@@ -5,6 +5,7 @@ const STATUSES=[
 {id:"no-manager",label:"Didn't get to talk to the manager"},
 {id:"interview",label:"Got an interview"},
 {id:"maybe",label:"Maybe"},
+{id:"apply-online",label:"Need to apply online"},
 {id:"job",label:"Got the job"}
 ];
 const C=document.querySelector("#content"),Q=document.querySelector("#q"),E=document.querySelector("#empty"),
