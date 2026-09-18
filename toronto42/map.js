@@ -90,7 +90,7 @@ window.initGooglePortal=async()=>{
   AdvancedMarkerElement=AME;RouteClass=Route;document.querySelector("#map").innerHTML="";
   map=new Map(document.querySelector("#map"),{center:{lat:43.657,lng:-79.407},zoom:13,mapId:"DEMO_MAP_ID",mapTypeControl:false,streetViewControl:false,fullscreenControl:true,gestureHandling:"greedy"});
   infoWindow=new google.maps.InfoWindow();
-  markers=STOPS.map(x=>{const m=new AdvancedMarkerElement({map,position:{lat:x.lat,lng:x.lng},title:`${x.n}. ${x.r}`,content:markerEl(x),gmpClickable:true});m.stop=x;m.addListener("gmp-click",()=>{infoWindow.setContent(popup(x));infoWindow.open({map,anchor:m})});return m});
+  markers=STOPS.map(x=>{const m=new AdvancedMarkerElement({map,position:{lat:x.lat,lng:x.lng},title:`${x.n}. ${x.r}`,content:markerEl(x),gmpClickable:true});m.stop=x;m.addEventListener("gmp-click",()=>{infoWindow.setContent(popup(x));infoWindow.open({map,anchor:m})});return m});
   fitFull();await drawRoutes()
  }catch(e){console.error(e);showError(e?.message||"Unknown Google Maps error")}
 };
