@@ -96,6 +96,6 @@ window.initGooglePortal=async()=>{
 };
 function loadGoogle(){
  const key=window.TORONTO42_GOOGLE_MAPS_API_KEY;if(!key){showError("google-config.js does not contain the expected browser key variable.");return}
- const s=document.createElement("script");s.async=true;s.defer=true;s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(key)+"&v=weekly&loading=async&callback=initGooglePortal&auth_referrer_policy=origin";s.onerror=()=>showError("The Google Maps JavaScript API script could not be loaded.");document.head.append(s)
+ const s=document.createElement("script");s.async=true;s.defer=true;s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(key)+"&v=weekly&loading=async&callback=initGooglePortal";s.onerror=()=>showError("The Google Maps JavaScript API script could not be loaded.");document.head.append(s)
 }
 buildFilters();buildProgress();buildSegments();buildNext();buildDistricts();buildUnexpected();loadGoogle();window.addEventListener("storage",()=>location.reload());
