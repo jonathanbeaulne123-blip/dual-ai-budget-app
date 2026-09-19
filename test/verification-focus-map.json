@@ -1293,6 +1293,53 @@
         "test/hearthside-chapter-tasks.test.ts"
       ],
       "reason": "Web convergence preserves unavailable backing, actual dated shared financial meaning and paired exact monthly Chapter transitions"
+    },
+    {
+      "sources": [
+        "src/hearthside/houseRoutes.ts",
+        "src/hearthside/HouseShell.tsx",
+        "src/hearthside/houseShell.css",
+        "src/hearthside/focusedTool.ts",
+        "src/App.tsx",
+        "src/path/OurPathWorld.tsx"
+      ],
+      "tests": [
+        "test/house-routes.test.ts",
+        "test/house-shell-ui.test.ts",
+        "test/hearthside-actual-app-browser.test.ts",
+        "test/hearthside-actual-app-v2-browser.test.ts"
+      ],
+      "reason": "One web house retains legacy addresses, scoped focused returns, the one Plan Studio, actual App navigation and real local authority privacy/Final Confirm"
+    },
+    {
+      "sources": [
+        "src/core/herculesPlay.ts",
+        "src/core/playContracts.ts",
+        "src/play/HerculesPlay.tsx"
+      ],
+      "tests": [
+        "test/hercules-play.test.ts",
+        "test/hercules-play-ui.test.ts"
+      ],
+      "reason": "Shared stage clothing is an explicit live public-gallery revision; private worn looks, source withdrawal and concurrent accepted room changes stay separate"
+    },
+    {
+      "sources": [
+        "src/core/syntheticChapters.ts",
+        "src/core/habitat.ts",
+        "src/core/habitatStory.ts",
+        "src/core/pathSignals.ts",
+        "src/core/pathStones.ts",
+        "src/core/agenda.ts",
+        "src/core/queenCharms.ts"
+      ],
+      "tests": [
+        "test/synthetic-chapters.test.ts",
+        "test/path-umbrella-pieces.test.ts",
+        "test/queen-charms.test.ts",
+        "test/queens-nest.test.ts"
+      ],
+      "reason": "Canonical Chapter Task responsibility, dated evidence, accepted completion and paired closure remain visible in synthetic history, Queen rewards, Planner and Journey"
     }
   ]
 }
