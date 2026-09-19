@@ -179,6 +179,7 @@ async function main() {
     const proofState = await page.evaluate(() => window.__proof ?? null);
     assert(proofState?.synthetic === true, `${theme}-${width} ${scenario}: proof fixture is not explicitly synthetic`, proofState);
     assert(proofState?.fundModel2 === true, `${theme}-${width} ${scenario}: proof fixture is not explicitly Fund v2`, proofState);
+    assert(proofState?.clientFundModelVersion === 2, `${theme}-${width} ${scenario}: browser build is not reading the real v2 release flag`, proofState?.clientFundModelVersion);
     assert(proofState?.canonicalFundSummary && typeof proofState.canonicalFundSummary === 'object', `${theme}-${width} ${scenario}: canonical Fund summary is missing`, proofState);
     report.fixture ??= proofState;
     await page.waitForFunction(() => !document.querySelector('.path-world__simple .journey-mini__stage[data-busy="true"]'), null, { timeout: 120_000 });

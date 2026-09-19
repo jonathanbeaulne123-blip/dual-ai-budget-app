@@ -15,6 +15,7 @@ import { catalogHousehold, setHouseholdFundMonthPlan, savePlanBridgeDraft, share
 import { saveTask } from '/src/core/tasks.ts';
 import { journeyHousehold } from '/test/fixtures/journey-eras.ts';
 import { fundModelMode } from '/src/core/fundRules.ts';
+import { clientFundModelVersion } from '/src/ledgerSync/fundModelStamp.ts';
 import { defaultFundSnapshotSource } from '/src/plan-v3/model.ts';
 import { resolveThemeScene, sceneTokens } from '/src/theme/scenes.ts';
 import { agreePathProposal, pendingPathProposals, shapePathWorld } from '/src/core/pathWorld.ts';
@@ -154,7 +155,7 @@ function Proof() {
       if (q.get('mist') === '1') household = withFictionalMist(household);
       if (q.get('photos') === '1') household = withFictionalPhotos(household);
       if (erasDemo && story !== 'plan') household = withFictionalJourney(household);
-      ref.current = household; setState(household); window.__household = household; window.__proof = { synthetic: story === 'plan', fundModel2: fundModelMode(household) === 2, canonicalFundSummary: defaultFundSnapshotSource()(household, { memberId: 'MEM-001', view: 'household', today }) }; window.__ready = true;
+      ref.current = household; setState(household); window.__household = household; window.__proof = { synthetic: story === 'plan', fundModel2: fundModelMode(household) === 2, clientFundModelVersion: clientFundModelVersion(), canonicalFundSummary: defaultFundSnapshotSource()(household, { memberId: 'MEM-001', view: 'household', today }) }; window.__ready = true;
     });
   }, []);
   if (!state) return React.createElement('p', { className: 'app' }, 'Growing fictional books…');

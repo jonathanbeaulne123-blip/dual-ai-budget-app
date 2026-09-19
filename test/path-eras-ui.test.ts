@@ -91,6 +91,15 @@ const buttons = () => [...host.querySelectorAll<HTMLButtonElement>("button")];
 const byText = (text: string | RegExp) => buttons().find((b) => (typeof text === "string" ? b.textContent?.trim() === text : text.test(b.textContent ?? "")))!;
 const click = async (element: HTMLElement) => act(async () => { element.click(); });
 const settle = async () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+async function waitForWorld(timeout = 2_000) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const world = created.worlds[0];
+    if (world) return world;
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 25)); });
+  }
+  throw new Error("The fake world did not finish its staged load.");
+}
 const household = () => (window as unknown as { __household: Household }).__household;
 async function type(element: HTMLInputElement | HTMLSelectElement, value: string) {
   await act(async () => {
@@ -143,8 +152,7 @@ describe("The Journey of Life on the page (D-268)", () => {
     // Game mode (D-285): the world is built when the open world is first opened.
     expect(created.worlds).toHaveLength(0);
     await click(byText("Open the world"));
-    await settle();
-    const world = created.worlds[0]!;
+    const world = await waitForWorld();
     const input = world.setScene!.mock.calls.at(-1)![0] as { characters: unknown[]; eras: { id: string; state: string; offset: number; island: unknown; focused: boolean; plans: { sketched: boolean }[] }[]; home: string; gate: { lanterns: boolean[]; open: boolean; crossing: boolean } };
     // The current era began when the bridge was crossed in July: July, August, September.
     expect(input.characters).toHaveLength(3);
@@ -196,6 +204,10 @@ describe("The Journey of Life on the page (D-268)", () => {
     expect($(".path-world__card h3").textContent).toBe("The down payment");
     expect(cardText()).toContain("0 of 10 steps");
     await click(byText("Open this Kitty Bank"));
+    const exitDeadline = Date.now() + 2_000;
+    while (opened.length === 0 && Date.now() < exitDeadline) {
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 25)); });
+    }
     expect(opened).toHaveLength(1);
     await click(byText("Back to the island"));
 

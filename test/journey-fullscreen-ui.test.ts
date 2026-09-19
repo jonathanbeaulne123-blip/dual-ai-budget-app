@@ -24,6 +24,15 @@ async function mount() {
 const toggle = () => host.querySelector<HTMLButtonElement>(".path-world__full")!;
 const stage = () => host.querySelector<HTMLElement>(".path-world__stage")!;
 const isFull = () => stage().classList.contains("path-world__stage--full") && !stage().hidden;
+async function waitFor<T>(read: () => T | null, timeout = 2_000) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const value = read();
+    if (value) return value;
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 25)); });
+  }
+  throw new Error("Timed out waiting for the deferred world exit.");
+}
 
 // D-283's quiet toggle, reshaped by D-285: on the page it sits in the simple view's upper-left corner and opens the
 // world; in the open world the same control is the HUD's minimize button (upper-left).
@@ -74,6 +83,7 @@ describe("Journey map full screen toggle", () => {
       await act(async () => { window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })); });
       expect(isFull()).toBe(false);
       expect(exit).toHaveBeenCalledTimes(1);
+      await waitFor(() => !window.history.state?.hearthPathWorld);
       await act(async () => { toggle().click(); });
       expect(isFull()).toBe(true);
       const tent = host.querySelector<HTMLButtonElement>(".path-hud .path-world__tent")!;
@@ -82,7 +92,8 @@ describe("Journey map full screen toggle", () => {
       expect(isFull()).toBe(false);
       expect(document.documentElement.classList.contains("path-world-fullscreen")).toBe(false);
       // Leaving the browser's own full screen (its Escape) minimizes too.
-      await act(async () => { host.querySelector<HTMLButtonElement>(".path-world__back")!.click(); });
+      const back = await waitFor(() => host.querySelector<HTMLButtonElement>(".path-world__back"));
+      await act(async () => { back.click(); });
       await act(async () => { toggle().click(); });
       expect(isFull()).toBe(true);
       exit.mockImplementationOnce(() => Promise.resolve());

@@ -4,6 +4,7 @@ import { defaultFundSnapshotSource, fundModelSnapshot } from "../src/plan-v3/mod
 import { proposeFundDivision, agreeFundDivision } from "../src/core/fundModelCommands.ts";
 import { divisionFor } from "../src/core/fundModel.ts";
 import { fundSnapshot } from "../src/core/fundModel.ts";
+import * as fundModelStamp from "../src/ledgerSync/fundModelStamp.ts";
 import { fundedHousehold, fundBill, buffer, migrated, reserveGoal } from "./fixtures/fund-model.ts";
 import { crossPathEra, currentPathEra, proposePathEra } from "../src/core/pathEras.ts";
 import { pathMonths } from "../src/core/pathSignals.ts";
@@ -13,7 +14,7 @@ import { miniCad, miniFund, miniEraFor, miniItemWords, miniJourney, miniMonth } 
 import { miniLapRadius, miniLevelWeight } from "../src/path/mini/miniWorld3d.ts";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
 
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => { vi.unstubAllEnvs(); vi.restoreAllMocks(); });
 
 const TODAY = "2026-09-15";
 
@@ -139,7 +140,9 @@ describe("miniJourney — the simple view as data (D-284)", () => {
   });
 
   it("shows no lane division until both partners confirm the exact contribution split", () => {
-    vi.stubEnv("VITE_FUND_MODEL_V2", "1");
+    // The production stamp owns the release flag. Its import-meta environment is
+    // compiled per module, so stub that boundary explicitly in this node test.
+    vi.spyOn(fundModelStamp, "clientFundModelVersion").mockReturnValue(2);
     let h = migrated(fundedHousehold("4000"));
     const eventId = h.fundEvents!.find(row => row.kind === "contribution-confirmed")!.id;
     const contributions = (household: Household) => miniMonth(household, "2026-09", { memberId: "MEM-001", today: TODAY }).days.flatMap(d => d.items).filter(i => i.kind === "contribution");
@@ -149,6 +152,7 @@ describe("miniJourney — the simple view as data (D-284)", () => {
     expect(contributions(h).every(row => row.split === null)).toBe(true);
     const proposal = divisionFor(h, eventId)!;
     h = agreeFundDivision(h, { memberId: "MEM-002", id: proposal.id, revision: proposal.revision }).household;
+    expect(divisionFor(h, eventId)?.state).toBe("confirmed");
     expect(contributions(h)[0]!.split).toEqual(split);
   });
 

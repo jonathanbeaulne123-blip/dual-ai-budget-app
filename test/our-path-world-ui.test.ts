@@ -83,7 +83,17 @@ const scrub = async (slider: HTMLInputElement, value: number) => act(async () =>
 });
 const settle = async () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
 /** Game mode (D-285): the world is only built once someone opens it from the simple view. */
-const enter = async () => { await click(byText("Open the world")); await settle(); };
+const enter = async () => {
+  await click(byText("Open the world"));
+  const deadline = Date.now() + 5_000;
+  const ready = () => created.mode === "fake"
+    ? Boolean(host.querySelector('.path-world__host[data-live="true"]'))
+    : Boolean(host.querySelector(".path-world__stage .path-world__flat svg"));
+  while (!ready() && Date.now() < deadline) {
+    await act(async () => { await new Promise(resolve => setTimeout(resolve, 25)); });
+  }
+  expect(ready()).toBe(true);
+};
 /** The world's settings (lantern, quality, layers) live in a drawer behind the HUD's settings button. */
 const openDrawer = async () => { if (host.querySelector(".path-hud__gear") && !host.querySelector(".path-world__drawer")) await click($(".path-hud__gear")); };
 /** A lantern or layer button: on the page's bar, or in the open world's drawer. */
