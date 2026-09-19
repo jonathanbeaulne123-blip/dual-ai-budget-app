@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f1e8">
+<title>Next Steps — Toronto Culinary Passport</title>
+<link rel="stylesheet" href="nextsteps.css">
+</head>
+<body>
+<main class="steps-shell">
+  <header class="steps-hero">
+    <div>
+      <div class="top-links">
+        <a id="backChecklist" href="index.html">← Checklist</a>
+        <a id="openPortal" href="map.html">Route Portal ↗</a>
+      </div>
+      <div class="eyebrow">Toronto Culinary Passport</div>
+      <h1>Next<br>Steps</h1>
+      <p>Your follow-up pipeline. Restaurants enter this page automatically when the visit outcome is <strong>Sat down and chatted</strong>, <strong>Didn't get to talk to the manager</strong>, <strong>Maybe</strong>, or <strong>Need to apply online</strong>.</p>
+    </div>
+    <aside class="progress-card">
+      <div class="progress-top"><strong id="leadCount">0</strong><span>active leads</span></div>
+      <div class="progress-row"><span id="taskDone">0 / 0 actions</span><span id="taskPct">0%</span></div>
+      <div class="track"><div id="taskFill"></div></div>
+    </aside>
+  </header>
+
+  <section class="command-card">
+    <div>
+      <div class="eyebrow">How it works</div>
+      <h2>Every outcome creates the right follow-up workflow.</h2>
+      <p><strong>Draft Gmail</strong> opens a pre-addressed, pre-written Gmail compose window for review. <strong>Schedule Follow-Up</strong> opens a prefilled Google Calendar reminder. <strong>Revisit Script</strong> gives you the exact next conversation. Application outcomes also surface the verified application link when research has found one.</p>
+    </div>
+  </section>
+
+  <nav class="step-filters" id="stepFilters">
+    <button class="filter active" data-status="all">All</button>
+    <button class="filter" data-status="apply-online">Apply online</button>
+    <button class="filter" data-status="maybe">Maybe</button>
+    <button class="filter" data-status="chat">Chatted</button>
+    <button class="filter" data-status="no-manager">No manager</button>
+  </nav>
+
+  <section id="leadList" class="lead-list"></section>
+  <section id="emptyState" class="empty-state" hidden>
+    <div class="eyebrow">Nothing waiting</div>
+    <h2>No actionable restaurant follow-ups yet.</h2>
+    <p>As soon as you mark a visit with one of the four follow-up outcomes, it will appear here automatically.</p>
+    <a id="emptyChecklist" class="primary-link" href="index.html">Open checklist</a>
+  </section>
+</main>
+
+<script src="stops1.js"></script>
+<script src="stops2.js"></script>
+<script src="restaurant-intel.js"></script>
+<script src="nextsteps.js"></script>
+</body>
+</html>
