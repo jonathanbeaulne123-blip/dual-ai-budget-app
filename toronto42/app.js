@@ -117,6 +117,7 @@ function render(){
 function prog(){
  const A=allStops(),n=A.filter(x=>S[x.n]).length,p=A.length?Math.round(n/A.length*100):0;
  document.querySelector("#done").textContent=n;document.querySelector("#total").textContent=" / "+A.length;document.querySelector("#pct").textContent=p+"% complete";document.querySelector("#fill").style.width=p+"%";
+ const ns=document.querySelector("#nextStepsCount");if(ns)ns.textContent=Object.values(T).filter(x=>["chat","no-manager","maybe","apply-online"].includes(x)).length;
  B.forEach((b,i)=>{const a=D.filter(x=>x.b===b),n=a.filter(x=>S[x.n]).length,z=document.querySelector("#bc"+i);if(z)z.textContent=n+" / "+a.length+" visited"})
 }
 function filter(){
