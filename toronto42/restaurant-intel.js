@@ -391,6 +391,9 @@ window.RESTAURANT_INTEL = {
       general: "cano@canorestaurant.com",
       events: "events@canorestaurant.com",
       phone: "416-901-3655",
+      url: "https://ca.indeed.com/cmp/Cano-Restaurant",
+      urlLabel: "CANO Restaurant jobs",
+      urlCaveat: "Current Cano jobs page; verify the exact FOH posting or replace this with the application link the manager gives you.",
       note: "Hi Cano Team — I stopped by the restaurant today to introduce myself regarding front-of-house opportunities. My background at Capra's includes serving, private-event service and coordination, and Bar Lead experience. Cano's combination of busy guest service, a strong beverage program and private events makes it particularly aligned with my experience. I've attached my resume and would appreciate the opportunity to speak further about any Server/Bartender openings. Thank you, Jonathan."
     },
     sources: [
