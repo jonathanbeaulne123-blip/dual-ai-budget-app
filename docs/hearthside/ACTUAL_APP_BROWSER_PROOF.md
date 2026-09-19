@@ -35,6 +35,8 @@ node node_modules/vitest/vitest.mjs run test/hearthside-actual-app-v2-browser.te
 
 This remains **local synthetic authority evidence**. Separately authorized Google members, hosted Development policy, sleeping/offline recovery, physical two-device interaction, VoiceOver/TalkBack, reference-phone performance, native packaging, deployment and Production readiness remain open acceptance classes.
 
+Measured against the unified-house integration candidate through `70ecb24e`, the focused proof passed **1/1** in **22.25 seconds** (**20.35 seconds** test work). The real LedgerRoom accepted sequences 1–4 for the intention, Task, Calendar and exact Final Confirm. The synthetic outsider received an empty Vault snapshot and an existence-hiding `404` when attempting to read the recipient publication; the selected recipient could read it until withdrawal. This measurement remains loopback evidence and does not turn the synthetic subjects into hosted identity proof.
+
 ## Assertions and artifacts
 
 - Actual shared Home navigation to Common Room; stable exact intention URL after browser reload.

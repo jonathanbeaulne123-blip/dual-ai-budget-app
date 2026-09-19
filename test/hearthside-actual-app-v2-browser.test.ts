@@ -110,7 +110,8 @@ it('runs two actual App clients through real local LedgerRoom, Studio and recipi
   expect(JSON.stringify((await authority.vaultSnapshot('MEM-002')).body)).not.toContain(secret);
   await one.getByRole('button',{name:'Publish this exact letter',exact:true}).click();await one.getByText('Your letter is available to its chosen recipient.',{exact:true}).waitFor();
   await two.getByRole('button',{name:'Refresh letters',exact:true}).click();const received=two.locator('.letters-cabinet').getByRole('button',{name:new RegExp(letterTitle)}).last();await received.waitFor();await received.click();await two.getByText(secret,{exact:true}).waitFor();
-  const recipientAfter=await authority.vaultSnapshot('MEM-002');const publicationId=findPublicationId(recipientAfter.body,letterTitle);expect(publicationId).toBeTruthy();expect((await authority.vaultSnapshot('MEM-outsider')).status).toBe(403);
+  const recipientAfter=await authority.vaultSnapshot('MEM-002');const publicationId=findPublicationId(recipientAfter.body,letterTitle);expect(publicationId).toBeTruthy();
+  const outsider=await authority.vaultSnapshot('MEM-outsider');expect(outsider.status).toBe(200);expect(JSON.stringify(outsider.body)).not.toContain(secret);expect((await authority.vaultCommand('MEM-outsider',{operation:'read-publication',id:publicationId})).status).toBe(404);
   const sent=one.locator('.letters-cabinet').getByRole('button',{name:new RegExp(letterTitle)}).last();await sent.click();await one.getByRole('button',{name:'Withdraw this publication',exact:true}).click();await one.getByRole('button',{name:'Withdraw access now',exact:true}).click();
   await one.getByText('Access to this publication is withdrawn.',{exact:true}).waitFor();expect((await authority.vaultCommand('MEM-002',{operation:'read-publication',id:publicationId})).status).not.toBe(200);
 
