@@ -1,0 +1,36 @@
+.personal-journey {
+  --journey-paper: color-mix(in srgb, var(--paper, #f8f4ed) 88%, #dcebd7);
+  --journey-ink: var(--ink, #23352c);
+  --journey-accent: var(--accent, #9a5d42);
+  border: 1px solid color-mix(in srgb, var(--journey-ink) 16%, transparent);
+  border-radius: 1.5rem;
+  background: var(--journey-paper);
+  color: var(--journey-ink);
+  overflow: clip;
+}
+.personal-journey__head, .personal-journey__body { display: flex; gap: 1rem; justify-content: space-between; padding: 1rem clamp(1rem, 3vw, 2rem); }
+.personal-journey__head h2, .personal-journey__reading h3 { margin: .15rem 0; }
+.personal-journey__head p:not(.kicker) { max-width: 40rem; margin: .3rem 0 0; }
+.personal-journey__scene { position: relative; min-height: clamp(15rem, 39vw, 27rem); background: linear-gradient(160deg, color-mix(in srgb, var(--journey-paper) 25%, #9fc8dd), var(--journey-paper)); }
+.personal-journey__canvas, .personal-journey__canvas canvas, .personal-journey__flat { position: absolute; inset: 0; width: 100%; height: 100%; }
+.personal-journey__flat { padding: 1.25rem; }
+.personal-journey__shore { fill: color-mix(in srgb, #7eb075 65%, var(--journey-paper)); stroke: color-mix(in srgb, var(--journey-ink) 32%, transparent); stroke-width: 1.2; }
+.personal-journey__thread { fill: none; stroke: var(--journey-accent); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.personal-journey__flat circle { fill: #f7e6b7; stroke: var(--journey-accent); stroke-width: 1; }
+.personal-journey__flat circle.is-active { fill: var(--journey-accent); stroke: white; stroke-width: 1.5; }
+.personal-journey__body { align-items: start; background: color-mix(in srgb, var(--journey-paper) 93%, white); }
+.personal-journey__landmarks { display: flex; gap: .45rem; overflow-x: auto; max-width: 65%; padding: .15rem; }
+.personal-journey__landmarks button { min-width: 7.6rem; text-align: left; border: 1px solid color-mix(in srgb, var(--journey-ink) 18%, transparent); border-radius: .85rem; padding: .65rem; background: transparent; color: inherit; cursor: pointer; }
+.personal-journey__landmarks button span, .personal-journey__landmarks button strong { display: block; }
+.personal-journey__landmarks button span { font-size: .78rem; }
+.personal-journey__landmarks button.is-selected { background: var(--journey-accent); color: white; border-color: var(--journey-accent); }
+.personal-journey__reading { width: min(25rem, 38%); padding-left: 1rem; border-left: 1px solid color-mix(in srgb, var(--journey-ink) 14%, transparent); }
+.personal-journey__reading ul { margin: .6rem 0 1rem; padding-left: 1.1rem; }
+.personal-journey__reading .primary { margin-top: .5rem; }
+@media (max-width: 680px) {
+  .personal-journey__head, .personal-journey__body { display: block; }
+  .personal-journey__head > button { margin-top: .8rem; }
+  .personal-journey__scene { min-height: 17rem; }
+  .personal-journey__landmarks { max-width: none; }
+  .personal-journey__reading { width: auto; padding: 1rem 0 0; border-left: 0; }
+}
