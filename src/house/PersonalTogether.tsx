@@ -13,6 +13,7 @@ import {
 import "./personal-together.css";
 import { CollaborativeStudio } from "../hearthside/CollaborativeStudio.tsx";
 import { personalFolioPage, personalSurfaceAvailable } from "./houseTargets.ts";
+import { personalFolioDraftObject, personalFolioObject, personalFolioObjectPath, type PersonalFolioKind } from "./personalFolioRoute.ts";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
 
 type DraftKind = "wish" | "experience" | "note" | "memory";
@@ -61,13 +62,31 @@ export function PersonalTogether({ household, memberId, identity, today, route, 
 }) {
   const appearance = useAppearance();
   const document = useMemo(() => { try { return decodePersonalLife((household as PersonalHousehold).personalLife, memberId); } catch { return null; } }, [household, memberId]);
-  const scope = draftKey(household, memberId, `folio:${identity}`);
-  const [kind, setKind] = useState<DraftKind>(personalFolioPage(route.surface)??"wish");
-  useEffect(()=>{const page=personalFolioPage(route.surface);if(page)setKind(page);},[route.surface]);
-  const [wish, setWish] = useStoredDraft(`${scope}:wish`, blankWish(memberId));
-  const [experience, setExperience] = useStoredDraft(`${scope}:experience`, blankExperience(memberId));
-  const [note, setNote] = useStoredDraft(`${scope}:note`, blankNote(memberId));
-  const [memory, setMemory] = useStoredDraft(`${scope}:memory`, blankMemory(memberId));
+  const addressed = personalFolioObject(route.object);
+  const scope = draftKey(household, memberId, personalFolioDraftObject(identity, addressed));
+  const addressedRow = useMemo(() => {
+    if (!document || !addressed) return null;
+    if (addressed.kind === "wish") return document.wishes.find(row => row.id === addressed.id) ?? null;
+    if (addressed.kind === "experience") return document.experiences.find(row => row.id === addressed.id) ?? null;
+    if (addressed.kind === "note") return document.notes.find(row => row.id === addressed.id) ?? null;
+    return document.memories.find(row => row.id === addressed.id) ?? null;
+  }, [document, addressed?.kind, addressed?.id]);
+  const hasRetainedAddressDraft = Boolean(addressed && readLocal(`${scope}:${addressed.kind}`));
+  const unavailableAddress = Boolean(addressed && document && ((!addressedRow && !hasRetainedAddressDraft)
+    || addressed.kind === "wish" && Boolean((addressedRow as PersonalLifeWish | null)?.archived)
+    || addressed.kind === "experience" && (addressedRow as PersonalLifeExperience | null)?.state === "archived"
+    || addressed.kind === "note" && Boolean((addressedRow as PersonalLifeNote | null)?.archived)
+    || addressed.kind === "memory" && Boolean((addressedRow as PersonalLifeMemory | null)?.withdrawn)));
+  const canonicalWish = addressed?.kind === "wish" ? addressedRow as PersonalLifeWish | null : null;
+  const canonicalExperience = addressed?.kind === "experience" ? addressedRow as PersonalLifeExperience | null : null;
+  const canonicalNote = addressed?.kind === "note" ? addressedRow as PersonalLifeNote | null : null;
+  const canonicalMemory = addressed?.kind === "memory" ? addressedRow as PersonalLifeMemory | null : null;
+  const [kind, setKind] = useState<DraftKind>(addressed?.kind ?? personalFolioPage(route.surface)??"wish");
+  useEffect(()=>{setKind(addressed?.kind ?? personalFolioPage(route.surface)??"wish");},[addressed?.kind,addressed?.id,route.surface]);
+  const [wish, setWish] = useStoredDraft(`${scope}:wish`, canonicalWish ? {...canonicalWish,revision:canonicalWish.revision+1} : blankWish(memberId));
+  const [experience, setExperience] = useStoredDraft(`${scope}:experience`, canonicalExperience ? {...canonicalExperience,revision:canonicalExperience.revision+1} : blankExperience(memberId));
+  const [note, setNote] = useStoredDraft(`${scope}:note`, canonicalNote ? {...canonicalNote,revision:canonicalNote.revision+1} : blankNote(memberId));
+  const [memory, setMemory] = useStoredDraft(`${scope}:memory`, canonicalMemory ? {...canonicalMemory,revision:canonicalMemory.revision+1} : blankMemory(memberId));
   const [pending, setPending] = useStoredDraft<PersonalLifeIntent | null>(`${scope}:intent`, null);
   const [status, setStatus] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
@@ -125,7 +144,21 @@ export function PersonalTogether({ household, memberId, identity, today, route, 
   const selectedReferences=kind==="wish"?wish.references:kind==="experience"?experience.references:[];
   const sameReference=(a:PersonalLifeReference,b:PersonalLifeReference)=>a.kind===b.kind&&a.id===b.id&&a.planVersionId===b.planVersionId;
   const editableReferences=[...references,...selectedReferences.filter(row=>!references.some(candidate=>sameReference(candidate,row)))];
-  const newPage=()=>{if(kind==="wish")setWish(blankWish(memberId));else if(kind==="experience")setExperience(blankExperience(memberId));else if(kind==="note")setNote(blankNote(memberId));else setMemory(blankMemory(memberId));setStatus(null);};
+  const surfaceFor=(page:PersonalFolioKind)=>page==="wish"?"wishes":page==="memory"?"memories":page==="note"?"letters":"personal-experience";
+  const openAddress = (page: PersonalFolioKind, id: string) => onNavigate({ ...route,room:"together",level:page==="memory"?"below":page==="note"?"middle":"above",scope: "personal", surface:surfaceFor(page), object: personalFolioObjectPath(page, id) });
+  const startAddress = (page: PersonalFolioKind, value: unknown) => {
+    const id = (value as { id: string }).id;
+    const nextScope = draftKey(household, memberId, personalFolioDraftObject(identity, { kind: page, id }));
+    try { localStorage.setItem(`${nextScope}:${page}`, plain(value)); } catch { /* The new page remains available in this navigation only. */ }
+    openAddress(page, id);
+  };
+  const newPage=()=>{
+    setStatus(null);
+    if(kind==="wish")startAddress("wish",blankWish(memberId));
+    else if(kind==="experience")startAddress("experience",blankExperience(memberId));
+    else if(kind==="note")startAddress("note",blankNote(memberId));
+    else startAddress("memory",blankMemory(memberId));
+  };
   const beginShare = (sourceKind: "wish" | "experience" | "memory", sourceId: string) => {
     if (!document) return;
     try { const review = preparePersonalLifeShareReview(document, { id: newId("SHARE-REVIEW"), sourceKind, sourceId, sharedId: newId(sourceKind === "memory" ? "SHARED-MEMORY" : "SHARED-EXPERIENCE") }); setShare({ review, digest: personalLifeShareReviewDigest(review) }); }
@@ -135,13 +168,14 @@ export function PersonalTogether({ household, memberId, identity, today, route, 
   const selectedDesign=route.object?.startsWith("piece/")?route.object.split("/"):null;
 
   if(!personalSurfaceAvailable(route.surface))return <section className="personal-together" role="status"><h2>This shared activity belongs in Our Home</h2><p>Your private wishes, notes and memories are still here.</p><button onClick={()=>onNavigate({...route,surface:undefined,object:undefined})}>Return to my room</button></section>;
+  if(unavailableAddress)return <section className="personal-together" role="status"><h2>This private page is no longer available</h2><p>It may have been withdrawn or removed. No other private page was opened in its place.</p><button onClick={()=>onNavigate({...route,surface:undefined,object:undefined})}>Return to my room</button></section>;
 
   return <section className="personal-together" data-folio-theme={appearance.preview ?? appearance.saved.theme} data-personal-life-owner={document?.ownerMemberId ?? "unavailable"} aria-labelledby="personal-together-title">
     <header className="personal-together__masthead"><div><p className="kicker">Personal conservatory</p><h2 id="personal-together-title">A folio for what is yours</h2><p>Private wishes, lived experience, notes and memories stay in your Personal scope until you deliberately review a copy for Our Home.</p></div><div><button type="button" onClick={onOpenPlan}>Open Personal Plan</button>{onOpenCalendar && <button type="button" onClick={onOpenCalendar}>Open calendar</button>}</div></header>
-    {pottery&&<CollaborativeStudio household={household} memberId={memberId} audience="personal" initialDesignId={selectedDesign?.[2]} initialPieceId={selectedDesign?.[1]} onSelection={(designId,pieceId)=>onNavigate({...route,object:`piece/${pieceId}/${designId}`})} onKeep={(designId,pieceId,revision)=>{setMemory({...blankMemory(memberId),title:experience.title||"A little thing I made",experienceId:document?.experiences.some(row=>row.id===experience.id)?experience.id:null,designs:[{version:1,documentId:designId,pieceId,revision}]});setKind("memory");onNavigate({...route,surface:"memories",level:"below"});}}/>}
+    {pottery&&<CollaborativeStudio household={household} memberId={memberId} audience="personal" initialDesignId={selectedDesign?.[2]} initialPieceId={selectedDesign?.[1]} onSelection={(designId,pieceId)=>onNavigate({...route,object:`piece/${pieceId}/${designId}`})} onKeep={(designId,pieceId,revision)=>{const next={...blankMemory(memberId),title:experience.title||"A little thing I made",experienceId:document?.experiences.some(row=>row.id===experience.id)?experience.id:null,designs:[{version:1,documentId:designId,pieceId,revision}]};startAddress("memory",next);}}/>}
     {!document && <p className="personal-together__notice" role="status">Your Personal folio could not be read for this member. Nothing can be changed here.</p>}
     {document && <><section className="personal-together__stage">
-      <nav aria-label="Choose a private page">{(["wish", "experience", "note", "memory"] as DraftKind[]).map(page => <button key={page} type="button" aria-pressed={kind === page} onClick={() => setKind(page)}>{page}</button>)}</nav>
+      <nav aria-label="Choose a private page">{(["wish", "experience", "note", "memory"] as DraftKind[]).map(page => <button key={page} type="button" aria-pressed={kind === page} onClick={() => {setKind(page);if(addressed||personalFolioPage(route.surface))onNavigate({...route,scope:"personal",surface:surfaceFor(page),object:undefined});}}>{page}</button>)}</nav>
       <div className="personal-together__editor"><button type="button" disabled={locked||Boolean(pending)} onClick={newPage}>Start a new {kind}</button>
         {kind !== "note" && <label>Title<input value={"title" in draft ? draft.title : ""} onChange={event => kind === "wish" ? setWish({ ...wish, title: event.target.value }) : kind === "experience" ? setExperience({ ...experience, title: event.target.value }) : setMemory({ ...memory, title: event.target.value })} /></label>}
         {kind === "wish" && <><label>Intention<textarea value={wish.intention} onChange={event => setWish({ ...wish, intention: event.target.value })} /></label><label>Horizon<select value={wish.horizon} onChange={event => setWish({ ...wish, horizon: event.target.value as PersonalLifeWish["horizon"] })}><option value="tonight">Tonight</option><option value="season">This season</option><option value="someday">Someday</option></select></label></>}
@@ -153,12 +187,12 @@ export function PersonalTogether({ household, memberId, identity, today, route, 
       </div>
     </section>
     <section className="personal-together__archive" aria-label="Your saved pages">
-      {document.wishes.filter(row => !row.archived).map(row => <article key={row.id}><p className="kicker">Wish · {row.horizon}</p><h3>{row.title}</h3><p>{row.intention}</p><button type="button" onClick={() => { setWish({ ...row, revision: row.revision + 1 }); setKind("wish"); }}>Edit private page</button><button type="button" onClick={()=>{setExperience({...blankExperience(memberId),title:row.title,intention:row.intention,horizon:row.horizon,wishId:row.id,references:row.references,state:"preparing"});setKind("experience");}}>Prepare this wish</button><button type="button" onClick={() => beginShare("wish", row.id)}>Review Share with Our Home</button></article>)}
-      {document.experiences.map(row => <article key={row.id}><p className="kicker">Experience · {row.state}</p><h3>{row.title}</h3><p>{row.intention}</p><button type="button" onClick={() => { setExperience({ ...row, revision: row.revision + 1 }); setKind("experience"); }}>Edit private page</button>{row.state !== "lived" && <button type="button" disabled={locked} onClick={() => void submit(buildIntent({ kind: "experience.mark-lived", id: row.id, expectedRevision: row.revision, livedOn: today }))}>Mark lived on {today}</button>}<button type="button" onClick={()=>{setMemory({...blankMemory(memberId),title:row.title,date:row.livedOn,experienceId:row.id});setKind("memory");}}>Write my recollection</button><button type="button" onClick={() => beginShare("experience", row.id)}>Review Share with Our Home</button></article>)}
-      {document.notes.filter(row => !row.archived).map(row => <article key={row.id}><p className="kicker">Private note · {row.room}</p><p>{row.text}</p><button type="button" onClick={() => { setNote({ ...row, revision: row.revision + 1 }); setKind("note"); }}>Edit private page</button></article>)}
-      {document.memories.filter(row => !row.withdrawn).map(row => <article key={row.id}><p className="kicker">Memory {row.date ? `· ${row.date}` : ""}</p><h3>{row.title}</h3><p>{row.recollection}</p><button type="button" onClick={() => { setMemory({ ...row, revision: row.revision + 1 }); setKind("memory"); }}>Edit private page</button>{row.keptRevision === row.revision ? <span>Kept in this private folio</span> : <button type="button" disabled={locked} onClick={() => void submit(buildIntent({ kind: "memory.keep", id: row.id, expectedRevision: row.revision }))}>Deliberately keep</button>}<button type="button" disabled={locked} onClick={() => void submit(buildIntent({ kind: "memory.withdraw", id: row.id, expectedRevision: row.revision }))}>Withdraw</button><button type="button" onClick={() => beginShare("memory", row.id)}>Review Share with Our Home</button></article>)}
+      {document.wishes.filter(row => !row.archived).map(row => <article key={row.id}><p className="kicker">Wish · {row.horizon}</p><h3>{row.title}</h3><p>{row.intention}</p><button type="button" onClick={() => openAddress("wish", row.id)}>Edit private page</button><button type="button" onClick={()=>startAddress("experience",{...blankExperience(memberId),title:row.title,intention:row.intention,horizon:row.horizon,wishId:row.id,references:row.references,state:"preparing"})}>Prepare this wish</button><button type="button" onClick={() => beginShare("wish", row.id)}>Review Share with Our Home</button></article>)}
+      {document.experiences.map(row => <article key={row.id}><p className="kicker">Experience · {row.state}</p><h3>{row.title}</h3><p>{row.intention}</p><button type="button" onClick={() => openAddress("experience", row.id)}>Edit private page</button>{row.state !== "lived" && <button type="button" disabled={locked} onClick={() => void submit(buildIntent({ kind: "experience.mark-lived", id: row.id, expectedRevision: row.revision, livedOn: today }))}>Mark lived on {today}</button>}<button type="button" onClick={()=>startAddress("memory",{...blankMemory(memberId),title:row.title,date:row.livedOn,experienceId:row.id})}>Write my recollection</button><button type="button" onClick={() => beginShare("experience", row.id)}>Review Share with Our Home</button></article>)}
+      {document.notes.filter(row => !row.archived).map(row => <article key={row.id}><p className="kicker">Private note · {row.room}</p><p>{row.text}</p><button type="button" onClick={() => openAddress("note", row.id)}>Edit private page</button></article>)}
+      {document.memories.filter(row => !row.withdrawn).map(row => <article key={row.id}><p className="kicker">Memory {row.date ? `· ${row.date}` : ""}</p><h3>{row.title}</h3><p>{row.recollection}</p><button type="button" onClick={() => openAddress("memory", row.id)}>Edit private page</button>{row.keptRevision === row.revision ? <span>Kept in this private folio</span> : <button type="button" disabled={locked} onClick={() => void submit(buildIntent({ kind: "memory.keep", id: row.id, expectedRevision: row.revision }))}>Deliberately keep</button>}<button type="button" disabled={locked} onClick={() => void submit(buildIntent({ kind: "memory.withdraw", id: row.id, expectedRevision: row.revision }))}>Withdraw</button><button type="button" onClick={() => beginShare("memory", row.id)}>Review Share with Our Home</button></article>)}
     </section>
-    {share && <aside className="personal-together__share" aria-label="Reviewed Share with Our Home copy"><p className="kicker">Review before sharing</p><h3>{share.review.copy.value.title}</h3>{"intention" in share.review.copy.value && <p>{share.review.copy.value.intention}</p>}{"recollections" in share.review.copy.value&&<><p>{share.review.copy.value.date??"Undated"}</p>{share.review.copy.value.recollections.map(recollection=><blockquote key={recollection.memberId}>{recollection.text}</blockquote>)}</>}{"references" in share.review.copy.value&&<ul>{share.review.copy.value.references.map(reference=><li key={`${reference.kind}:${reference.id}`}>{reference.kind} · {reference.id}</li>)}</ul>}<p>This exact copy creates a new Shared object. Your private source, notes and unrelated references remain private. A shared memory needs each person’s approval of this composition.</p><button type="button" className="primary" disabled={locked||Boolean(pending)} onClick={() => void submit(buildIntent({ kind: "share.copy", review: share.review, expectedDigest: share.digest }))}>Share this reviewed copy</button><button type="button" onClick={() => setShare(null)}>Keep private</button></aside>}
+    {share && <aside className="personal-together__share" aria-label="Reviewed Share with Our Home copy"><p className="kicker">Review before sharing</p><h3>{share.review.copy.value.title}</h3>{"intention" in share.review.copy.value && <p>{share.review.copy.value.intention}</p>}{"state" in share.review.copy.value&&<p>State: {share.review.copy.value.state} · Horizon: {share.review.copy.value.horizon}{share.review.copy.value.livedOn?` · Lived on ${share.review.copy.value.livedOn}`:""}</p>}{"recollections" in share.review.copy.value&&<><p>{share.review.copy.value.date??"Undated"}</p>{share.review.copy.value.recollections.map(recollection=><blockquote key={recollection.memberId}>{recollection.text}</blockquote>)}</>}{"references" in share.review.copy.value&&<ul>{share.review.copy.value.references.map(reference=><li key={`${reference.kind}:${reference.id}`}>{reference.kind} · {reference.id}</li>)}</ul>}<p>This exact copy creates a new Shared object. Your private source, notes and unrelated references remain private. A shared memory needs each person’s approval of this composition.</p><button type="button" className="primary" disabled={locked||Boolean(pending)} onClick={() => void submit(buildIntent({ kind: "share.copy", review: share.review, expectedDigest: share.digest }))}>Share this reviewed copy</button><button type="button" onClick={() => setShare(null)}>Keep private</button></aside>}
     {pending && <aside className="personal-together__pending" role="status"><strong>Original intent retained</strong><span>{status ?? "Awaiting acknowledgement."}</span>{!working && <button type="button" disabled={locked} onClick={() => void submit(pending)}>Retry original intent</button>}</aside>}
     {status && <p className="personal-together__notice" role="status">{status}</p>}
     {onOpenTask && document.experiences.flatMap(row => row.references.filter(reference => reference.kind === "task" && reference.audience === "personal").map(reference => <button key={`task:${row.id}:${reference.id}`} className="personal-together__task-link" type="button" onClick={() => onOpenTask(reference.id)}>Open linked personal task</button>))}
