@@ -2,7 +2,7 @@
 
 Risk: Medium (test infrastructure; product repairs remain root-owned). Budget delta (5): navigation must preserve the accepted financial hash, receipt count, and operational data. Engagement delta (3): the shared rooms remain reachable from real Home, with useful phone composition and exact returns from connected tools.
 
-The package owns only `test/hearthside-actual-app-browser.test.ts`, `test/fixtures/hearthsideActualApp.ts`, and this note. Its isolated base is `2db4891c82eaf825eceeafefa1a9426457e4c20a`. No App, authority, CSS, package, or configuration source is changed. The regression intentionally needs the integrated root fixes described below; the unmodified base does not satisfy it.
+The legacy package owns `test/hearthside-actual-app-browser.test.ts` and `test/fixtures/hearthsideActualApp.ts`. The separate v2 authority proof owns `test/hearthside-actual-app-v2-browser.test.ts` and `test/fixtures/hearthsideActualAppAuthority.ts`. No App, financial command, authority, CSS, package, or shipping configuration source is changed.
 
 ## Harness boundary
 
@@ -11,6 +11,29 @@ The test serves the real `index.html`, `src/main.tsx`, App, and imported surface
 The Vite server does not load environment files or the repository's hosted proxy configuration. HTTP requests outside its exact local origin and requests to local service/API paths are blocked. Its filesystem allowance is limited to the tested source root and the resolved, existing dependency directory, including PGlite's actual WASM/data files. No dependencies are copied or installed.
 
 This is explicitly a **local legacy-storage shell run**: `VITE_LEDGER_SYNC_V2=0`, `VITE_LEDGER_SYNC_LOCAL_AUTH=0`, `VITE_PRODUCTION_CONTINUITY=0`. Hearthside presentation and the existing Hercules play/dressing/Workspace UI flags are enabled only inside this local Vite process. Every Hearthside service/design/native/export activation flag is explicitly off. Remote fonts/weather are blocked, so captures use the available local/fallback fonts and scenery. A fresh browser context contains no authenticated subject or hosted capability. Shared save remains disabled; no authenticated write, cloud continuity, two-device acceptance, physical device, native AR, or deployment claim follows from this test.
+
+## Separate local v2 authority proof
+
+`test/hearthside-actual-app-v2-browser.test.ts` keeps the visual/geometry matrix above unchanged and adds one focused integration journey. It starts a loopback Miniflare service containing the real `LedgerRoom`, SQLite Durable Object storage, R2 archive, WebSocket protocol and `HearthsideVault`. A Vite proxy carries `/ledger-sync` HTTP/WebSocket and `/api/hearthside-vault` traffic from two isolated Chromium contexts running the actual React App and separate PGlite replicas.
+
+The only test adapters are explicit: `local:MEM-001` / `local:MEM-002` loopback authentication and a synthetic Vault audience lookup over the real active LedgerRoom roster. The Vault still delegates publication acceptance and media-reference checks to the real LedgerRoom. No mocked command acceptance, legacy household REST transport, hosted provider, credential, schema, deployment or Production path participates. Authority sequence and framed ACK receipts prove local acceptance; they do **not** prove Google identity, hosted membership, hosted Vault audience/HMAC policy, or real-device authorization.
+
+The v2 journey asserts:
+
+- one shared intention reaches both clients at one stable object URL and survives a reload without duplication;
+- the actual intention UI creates one canonical household Task and one canonical native Calendar event, with exact references and tool returns;
+- preparing an ordinary expense through review leaves the real authority sequence and transactions unchanged; only its visible Final Confirm receives one valid ACK and creates one canonical transaction;
+- both members append Studio gestures at the same time, then one member's undo removes only that member's gesture;
+- a private letter draft is absent from the recipient's Vault, review still discloses nothing to the recipient, exact publication makes it readable only to the chosen recipient, an outsider is denied, and withdrawal revokes access;
+- nonfinancial Hearthside, Studio and Vault work leaves the accepted post-expense financial audit hash unchanged, and no legacy `household_snapshots`, `continuity_command_events`, or `publish_continuity_snapshot` request occurs.
+
+Run this proof by itself so its browser, PGlite, Vite and Miniflare resources are not competing with another heavy suite:
+
+```sh
+node node_modules/vitest/vitest.mjs run test/hearthside-actual-app-v2-browser.test.ts --maxWorkers=1
+```
+
+This remains **local synthetic authority evidence**. Separately authorized Google members, hosted Development policy, sleeping/offline recovery, physical two-device interaction, VoiceOver/TalkBack, reference-phone performance, native packaging, deployment and Production readiness remain open acceptance classes.
 
 ## Assertions and artifacts
 
