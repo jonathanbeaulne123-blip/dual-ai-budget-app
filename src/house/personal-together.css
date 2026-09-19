@@ -1,0 +1,84 @@
+.personal-together {
+  --folio-paper: color-mix(in srgb, var(--surface, #fff8eb) 92%, #f0d7a4);
+  --folio-ink: var(--text, #2d241c);
+  --folio-leaf: #355e4a;
+  --folio-ribbon: #9b4f3d;
+  color: var(--folio-ink);
+  max-width: 74rem;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  background:
+    radial-gradient(circle at 88% 4%, color-mix(in srgb, #e3b86c 32%, transparent), transparent 28rem),
+    linear-gradient(126deg, color-mix(in srgb, var(--folio-paper) 94%, #e9f2df), var(--folio-paper));
+}
+
+.personal-together button,
+.personal-together input,
+.personal-together textarea,
+.personal-together select { font: inherit; }
+
+.personal-together button {
+  border: 1px solid color-mix(in srgb, var(--folio-ink) 35%, transparent);
+  border-radius: .38rem;
+  padding: .52rem .72rem;
+  color: inherit;
+  background: color-mix(in srgb, var(--folio-paper) 86%, white);
+  cursor: pointer;
+}
+
+.personal-together button:hover:not(:disabled),
+.personal-together button[aria-pressed="true"] { background: color-mix(in srgb, var(--folio-leaf) 17%, var(--folio-paper)); }
+.personal-together button:disabled { cursor: wait; opacity: .55; }
+.personal-together .primary { border-color: var(--folio-leaf); color: white; background: var(--folio-leaf); }
+.personal-together .primary:hover:not(:disabled) { background: color-mix(in srgb, var(--folio-leaf) 84%, black); }
+
+.personal-together__masthead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1.5rem;
+  padding: clamp(1.2rem, 3vw, 2.4rem);
+  border: 1px solid color-mix(in srgb, var(--folio-leaf) 34%, transparent);
+  border-radius: 1.3rem 1.3rem .5rem .5rem;
+  box-shadow: 0 .75rem 2rem color-mix(in srgb, var(--folio-ink) 12%, transparent);
+}
+.personal-together__masthead h2 { margin: .12rem 0 .5rem; font-family: Georgia, "Iowan Old Style", serif; font-size: clamp(2rem, 5vw, 3.8rem); line-height: .98; }
+.personal-together__masthead p { max-width: 45rem; margin: 0; line-height: 1.55; }
+.personal-together__masthead > div:last-child { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .55rem; }
+.personal-together .kicker { margin: 0 0 .35rem; color: var(--folio-leaf); font-size: .76rem; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; }
+
+.personal-together__stage { margin-top: 1.3rem; padding: clamp(1rem, 2.6vw, 2.1rem); border: 1px solid color-mix(in srgb, var(--folio-ribbon) 30%, transparent); border-radius: .6rem 1.5rem 1.5rem .6rem; background: color-mix(in srgb, var(--folio-paper) 91%, white); }
+.personal-together__stage nav { display: flex; flex-wrap: wrap; gap: .45rem; padding-bottom: 1rem; border-bottom: 1px dashed color-mix(in srgb, var(--folio-ink) 28%, transparent); }
+.personal-together__editor { display: flex; flex-direction: column; gap: .9rem; max-width: 48rem; padding-top: 1.2rem; }
+.personal-together__editor label, .personal-together__editor fieldset { display: flex; flex-direction: column; gap: .38rem; font-weight: 650; }
+.personal-together__editor fieldset { padding: .8rem; border: 1px solid color-mix(in srgb, var(--folio-leaf) 28%, transparent); }
+.personal-together__editor fieldset label { flex-direction: row; align-items: center; font-weight: 450; }
+.personal-together__editor input, .personal-together__editor textarea, .personal-together__editor select { width: 100%; box-sizing: border-box; padding: .65rem; border: 1px solid color-mix(in srgb, var(--folio-ink) 36%, transparent); border-radius: .32rem; color: var(--folio-ink); background: color-mix(in srgb, var(--folio-paper) 85%, white); }
+.personal-together__editor textarea { min-height: 6.2rem; resize: vertical; }
+
+.personal-together__archive { display: flex; flex-wrap: wrap; align-items: stretch; gap: 1rem; margin-top: 1.3rem; }
+.personal-together__archive article { display: flex; flex: 1 1 15rem; flex-direction: column; gap: .7rem; min-width: min(100%, 15rem); padding: 1.1rem; border-top: .4rem solid var(--folio-ribbon); background: color-mix(in srgb, var(--folio-paper) 89%, white); box-shadow: .3rem .4rem 0 color-mix(in srgb, var(--folio-ink) 8%, transparent); }
+.personal-together__archive h3, .personal-together__archive p { margin: 0; }
+.personal-together__archive article button { align-self: flex-start; }
+.personal-together__archive article span { font-size: .9rem; color: var(--folio-leaf); }
+
+.personal-together__share, .personal-together__pending, .personal-together__unavailable, .personal-together__notice { margin-top: 1.3rem; padding: 1rem; border-left: .35rem solid var(--folio-ribbon); background: color-mix(in srgb, var(--folio-paper) 78%, #f4e4ba); }
+.personal-together__share { border-left-color: var(--folio-leaf); }
+.personal-together__share h3, .personal-together__share p { margin-top: .3rem; }
+.personal-together__share button, .personal-together__pending button { margin-right: .55rem; }
+.personal-together__pending { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; }
+.personal-together__pending span { flex: 1 1 15rem; }
+.personal-together__unavailable { display: flex; flex-direction: column; gap: .25rem; }
+.personal-together__task-link { margin-top: 1rem; }
+.personal-together__return { display: block; margin: 2rem auto .5rem; }
+
+@media (max-width: 42rem) {
+  .personal-together { padding: 1rem; }
+  .personal-together__masthead { align-items: flex-start; flex-direction: column; }
+  .personal-together__masthead > div:last-child { justify-content: flex-start; }
+  .personal-together__archive article { flex-basis: 100%; }
+}
+
+@media (prefers-color-scheme: dark) {
+  .personal-together { --folio-paper: color-mix(in srgb, var(--surface, #1b211d) 88%, #2b3320); --folio-ink: var(--text, #f4ecdd); --folio-leaf: #91c69e; --folio-ribbon: #e59b7b; }
+}
