@@ -1,6 +1,6 @@
 .personal-together {
-  --folio-paper: color-mix(in srgb, var(--surface, #fff8eb) 92%, #f0d7a4);
-  --folio-ink: var(--text, #2d241c);
+  --folio-paper: #fff5df;
+  --folio-ink: #2d241c;
   --folio-leaf: #355e4a;
   --folio-ribbon: #9b4f3d;
   color: var(--folio-ink);
@@ -18,6 +18,7 @@
 .personal-together select { font: inherit; }
 
 .personal-together button {
+  min-height: 44px;
   border: 1px solid color-mix(in srgb, var(--folio-ink) 35%, transparent);
   border-radius: .38rem;
   padding: .52rem .72rem;
@@ -50,7 +51,7 @@
 .personal-together__stage { margin-top: 1.3rem; padding: clamp(1rem, 2.6vw, 2.1rem); border: 1px solid color-mix(in srgb, var(--folio-ribbon) 30%, transparent); border-radius: .6rem 1.5rem 1.5rem .6rem; background: color-mix(in srgb, var(--folio-paper) 91%, white); }
 .personal-together__stage nav { display: flex; flex-wrap: wrap; gap: .45rem; padding-bottom: 1rem; border-bottom: 1px dashed color-mix(in srgb, var(--folio-ink) 28%, transparent); }
 .personal-together__editor { display: flex; flex-direction: column; gap: .9rem; max-width: 48rem; padding-top: 1.2rem; }
-.personal-together__editor label, .personal-together__editor fieldset { display: flex; flex-direction: column; gap: .38rem; font-weight: 650; }
+.personal-together__editor label, .personal-together__editor fieldset { display: flex; flex-direction: column; gap: .38rem; font-weight: 650; color:var(--folio-ink); }
 .personal-together__editor fieldset { padding: .8rem; border: 1px solid color-mix(in srgb, var(--folio-leaf) 28%, transparent); }
 .personal-together__editor fieldset label { flex-direction: row; align-items: center; font-weight: 450; }
 .personal-together__editor input, .personal-together__editor textarea, .personal-together__editor select { width: 100%; box-sizing: border-box; padding: .65rem; border: 1px solid color-mix(in srgb, var(--folio-ink) 36%, transparent); border-radius: .32rem; color: var(--folio-ink); background: color-mix(in srgb, var(--folio-paper) 85%, white); }
@@ -79,6 +80,9 @@
   .personal-together__archive article { flex-basis: 100%; }
 }
 
-@media (prefers-color-scheme: dark) {
-  .personal-together { --folio-paper: color-mix(in srgb, var(--surface, #1b211d) 88%, #2b3320); --folio-ink: var(--text, #f4ecdd); --folio-leaf: #91c69e; --folio-ribbon: #e59b7b; }
-}
+.personal-together[data-folio-theme="taylor"] { --folio-paper:#f6ede8; --folio-ink:#47313d; --folio-leaf:#74516a; --folio-ribbon:#ad768b; background:repeating-linear-gradient(0deg,transparent 0 29px,#9c768810 30px),var(--folio-paper); }
+.personal-together[data-folio-theme="taylor"] .personal-together__masthead { border-radius:2px; border:8px solid #d9cbbf; box-shadow:6px 7px 0 #ad9d9b; }
+.personal-together[data-folio-theme="newfoundland"] { --folio-paper:#ecebdc; --folio-ink:#243e45; --folio-leaf:#32616c; --folio-ribbon:#a85d46; background:repeating-linear-gradient(90deg,#3a5e6805 0 2px,transparent 2px 8px),var(--folio-paper); }
+.personal-together[data-folio-theme="newfoundland"] .personal-together__masthead { border-radius:4px; border:5px double #7b9188; background:linear-gradient(130deg,#eef0e8,#c9dedb); }
+.personal-together :is(h2,h3,legend) { color:var(--folio-ink); }
+.personal-together :is(button,input,textarea,select):focus-visible { outline:3px solid #176798; outline-offset:3px; }

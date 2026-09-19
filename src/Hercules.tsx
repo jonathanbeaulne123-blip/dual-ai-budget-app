@@ -556,6 +556,21 @@ export function HerculesPresence({
   const rigBlocked = adding || activityBlocked || modalActive || conversationHidden;
   const autonomyBlocked = rigBlocked || focusShellOpen;
   const homeAutonomy = tab === "home" && !autonomyBlocked && documentVisible && !open && !setupSelected && !reducedMotion();
+  useEffect(() => {
+    if (import.meta.env.VITE_HEARTH_HOUSE_WORLD !== "1" || window.innerWidth < WIDE_BREAKPOINT || autonomyBlocked || open) return;
+    const perch = () => {
+      if (drag.current) return;
+      const sill = listFurniture().find(row => row.id === "house-window");
+      if (!sill) return;
+      const landing = perchOnFurniture(sill, { w: window.innerWidth, h: window.innerHeight });
+      perchedOn.current = sill.id;
+      setPos({x:landing.x,y:landing.y});
+      setFlip(landing.faceRight);
+    };
+    const frame = requestAnimationFrame(perch);
+    const unsubscribe = subscribeFurniture(perch);
+    return () => { cancelAnimationFrame(frame); unsubscribe(); };
+  }, [tab, autonomyBlocked, open]);
   idleCaptureAllowed.current = !(
     typeof document === "undefined"
     || document.hidden

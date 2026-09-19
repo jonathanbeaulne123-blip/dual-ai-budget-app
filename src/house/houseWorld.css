@@ -1,0 +1,91 @@
+.app[data-house-world] { --house-wood:#59412f; --house-paper:#f7efdc; --house-ink:#332d24; --house-accent:#526b4c; max-width:none; padding-inline:0; }
+.app[data-house-world] > .topbar,.app[data-house-world] > .view-switch { padding-inline:clamp(16px,3vw,64px); }
+.app[data-house-world] > .view-switch { position:relative; z-index:5; margin:0; padding-block:8px; background:var(--paper); }
+.house-world { color:var(--house-ink); isolation:isolate; margin:0; position:relative; }
+.house-world--taylor { --house-paper:#f5e8de; --house-ink:#47373e; --house-accent:#7e526c; --house-wood:#745557; }
+.house-world--newfoundland { --house-paper:#f0ecdb; --house-ink:#243e45; --house-accent:#326e77; --house-wood:#45686d; }
+.house-world button { font:inherit; min-height:44px; cursor:pointer; color:inherit; }
+.house-world button:focus-visible { outline:3px solid #126fb1; outline-offset:4px; }
+.house-world__header { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:18px clamp(18px,4vw,72px); background:var(--house-paper); border-block:1px solid color-mix(in srgb,var(--house-wood) 24%,transparent); }
+.house-world__header h1 { margin:3px 0 0; font:500 clamp(23px,2.3vw,38px)/1.15 var(--display,Georgia,serif); }
+.house-world__header h1 span { opacity:.68; font-size:.65em; }
+.house-world__scope { text-transform:uppercase; letter-spacing:.18em; font-size:10px; font-weight:750; }
+.house-world__header button { border:1px solid var(--house-wood); border-radius:30px; background:transparent; padding:8px 19px; font-size:12px; }
+.house-world__stage { height:clamp(520px,76dvh,850px); position:relative; overflow:hidden; background:#b7ad92; }
+.house-world__canvas,.house-world__canvas canvas,.house-world__illustration,.house-world__vignette { position:absolute; inset:0; width:100%; height:100%; }
+.house-world__canvas canvas { display:block; }
+.house-world__illustration { object-fit:cover; }
+.house-world__vignette { pointer-events:none; background:linear-gradient(0deg,#18251d33,transparent 27%,transparent 85%,#34362d22); }
+.house-world__levels { position:absolute; z-index:7; top:22px; left:clamp(14px,3vw,48px); display:flex; flex-direction:column; gap:5px; padding:7px; background:color-mix(in srgb,var(--house-paper) 94%,transparent); border:1px solid #ffffff88; box-shadow:0 4px 22px #19201a22; border-radius:5px 18px 18px 5px; }
+.house-world__levels button { border:0; background:transparent; text-align:left; padding:6px 14px 6px 7px; font-size:12px; border-radius:3px 12px 12px 3px; }
+.house-world__levels button span { display:inline-block; margin-right:9px; width:12px; }
+.house-world__levels button[aria-current] { background:var(--house-accent); color:#fff9ea; }
+.house-world__anchors { position:absolute; inset:0; pointer-events:none; z-index:6; }
+.house-world__anchors button { position:absolute; pointer-events:auto; transform:translate(-50%,-50%); border:1px solid #f8efc9aa; background:#f8f1dded; color:#283c31; border-radius:5px; padding:7px 13px; box-shadow:0 5px 15px #17241c33; font-size:12px; display:flex; align-items:center; gap:8px; max-width:200px; text-align:left; }
+.house-world__anchors button:not([data-projected]),.house-world__anchors button[hidden] { display:none; }
+.house-world__pin { display:grid; place-items:center; width:24px; height:24px; border:1px solid #ac9068; border-radius:50%; }
+.house-world__floor-scroll { position:absolute; inset:0; overflow-y:auto; overscroll-behavior-y:contain; scrollbar-width:thin; scrollbar-color:#6f695777 transparent; z-index:2; scroll-snap-type:y proximity; }
+.house-world__floor { height:100%; position:relative; scroll-snap-align:start; pointer-events:none; }
+.house-world__invitation { position:absolute; bottom:23px; left:clamp(18px,4vw,72px); width:min(520px,calc(100% - 36px)); padding:18px 25px 19px; background:linear-gradient(110deg,var(--house-paper) 70%,color-mix(in srgb,var(--house-paper) 90%,transparent)); box-shadow:5px 10px 24px #1b302322; border-left:3px solid var(--house-accent); border-radius:2px 14px 14px 2px; pointer-events:auto; }
+.house-world__invitation .kicker { font-size:9px; letter-spacing:.2em; margin:0 0 6px; color:var(--house-accent); }
+.house-world__invitation h2 { font:500 clamp(23px,2.8vw,39px)/1.07 var(--display,Georgia,serif); margin:0 0 8px; }
+.house-world__invitation p { font-size:13px; margin:0 0 10px; line-height:1.5; }
+.house-world__object-actions { display:flex; gap:6px; flex-wrap:wrap; }
+.house-world__object-actions button { background:var(--house-accent); color:#fff9e8; border:0; border-radius:3px; padding:7px 13px; font-size:12px; }
+.house-world__object-actions button span { padding-left:12px; }
+.house-world__walk { position:absolute; right:24px; top:24px; z-index:7; display:flex; align-items:center; gap:5px; flex-wrap:wrap; max-width:255px; justify-content:flex-end; }
+.house-world__walk button { border:1px solid #fff7da; background:#f4ead6e8; border-radius:23px; padding:7px 14px; color:#364333; font-size:11px; }
+.house-world__walk small { background:var(--house-paper); padding:4px 8px; border-radius:3px; font-size:10px; }
+.house-world__section-nav { position:absolute; z-index:7; inset:auto 5% 35px; display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+.house-world__section-nav button { background:var(--house-paper); border:1px solid var(--house-wood); padding:15px; box-shadow:0 7px 18px #17241c33; }
+.house-world__section-nav span { display:block; font:500 24px var(--display,Georgia,serif); }.house-world__section-nav small { display:block; font-size:10px; margin-top:7px; }
+.house-world__put-back { position:absolute; z-index:8; bottom:20px; left:clamp(20px,4vw,72px); background:var(--house-paper); border:1px solid var(--house-wood); border-radius:30px; padding:9px 22px; box-shadow:0 6px 18px #17241c33; }
+.house-world.has-open-object .house-world__stage { height:300px; min-height:0; }
+.house-world:has(.house-queen-dressing) .house-world__stage { height:clamp(440px,64dvh,760px); }
+.house-world__doors { display:flex; justify-content:center; gap:clamp(14px,5vw,80px); padding:20px 16px 24px; background:var(--house-paper); border-top:1px solid #8c735544; }
+.house-world__doors button { background:none; border:none; display:flex; align-items:center; gap:10px; font-size:12px; }
+.house-world__doors button[aria-current] { color:var(--house-accent); font-weight:750; }
+.house-world__door { display:block; width:19px; height:29px; border:2px solid var(--house-wood); border-radius:10px 10px 1px 1px; background:linear-gradient(90deg,transparent 40%,#a1825a44); }
+.house-world__position { display:grid; grid-template-columns:1fr 1fr; background:var(--house-paper); padding:15px clamp(20px,5vw,85px); gap:24px; border-bottom:1px solid #8c735533; }
+.house-world__position>div,.house-world__position>button { display:grid; gap:3px; align-content:center; text-align:left; }
+.house-world__position>button { border:0; border-left:1px solid #8c735555; padding-left:25px; background:transparent; }
+.house-world__position small { font-size:10px; letter-spacing:.04em; }.house-world__position strong { font:500 clamp(19px,2vw,27px) var(--display,Georgia,serif); }.house-world__position span { font-size:11px; }
+.house-world__fallback { position:absolute; top:7px; left:50%; transform:translateX(-50%); z-index:8; background:var(--house-paper); font-size:11px; padding:8px; border-radius:4px; }
+.house-queen-dressing { max-width:920px; margin:0 auto; background:var(--house-paper); padding:30px clamp(20px,4vw,55px); border-radius:0 0 10px 10px; }
+.house-queen-dressing h2 { font:500 32px var(--display,Georgia,serif); }.house-queen-dressing nav,.house-actions { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0; }.house-queen-dressing button { background:#fffaf044; border:1px solid var(--house-wood); padding:8px 14px; border-radius:5px; }
+.house-queen-options { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-block:24px; }.house-queen-options label { display:grid; gap:7px; text-transform:capitalize; font-size:12px; }.house-queen-options select { min-height:44px; background:#fffaf0; color:#302b23; border:1px solid #897655; border-radius:4px; padding:8px; }
+.app[data-house-world] [data-app-page] { position:relative; background:var(--paper); max-width:1480px; margin:0 auto; padding:24px clamp(14px,4vw,64px) 130px; border:1px solid var(--line); border-radius:8px; box-shadow:0 -8px 40px #22231614; }
+.app[data-house-world] [data-app-page][data-house-resting] { display:none; }
+.app[data-house-world] .world-page { background:none; }
+.app[data-house-world] .page-world,.app[data-house-world] .world-charm,.app[data-house-world] .theme-scene-heading { display:none; }
+.app[data-house-world] .house-tool-heading { display:flex; gap:16px; align-items:center; justify-content:space-between; margin:0 0 24px; border-bottom:1px solid var(--line); padding-bottom:14px; }
+.app[data-house-world] .house-tool-heading h2 { margin:0; font:500 24px var(--display); }.app[data-house-world] .house-tool-heading button { min-height:44px; }
+@media(min-width:720px){.app[data-house-world] .nav[data-house-navigation] { position:fixed; left:auto; right:20px; bottom:16px; width:auto; border-radius:28px; background:var(--card); box-shadow:0 4px 20px #1113; }.app[data-house-world] .nav[data-house-navigation] .house-nav-phone { display:none; }}
+@media(max-width:719px){
+ .house-world__header { padding:12px 15px; gap:10px; }.house-world__header h1 { font-size:24px; }.house-world__header h1 span { display:block; font-size:13px; margin-top:4px; }.house-world__header button { max-width:118px; padding:6px 10px; font-size:11px; }
+ .house-world__stage { height:calc(100dvh - 170px); min-height:360px; max-height:780px; }
+ .house-world__levels { top:12px; left:12px; right:12px; flex-direction:row; justify-content:space-between; padding:4px; border-radius:5px; }.house-world__levels button { font-size:10px; min-width:0; flex:1; text-align:center; padding:5px 3px; border-radius:3px; }.house-world__levels button span { display:none; }
+ .house-world__walk { top:75px; right:12px; max-width:170px; }.house-world__walk button { min-height:38px; padding:5px 10px; font-size:10px; }
+ .house-world__anchors button { max-width:155px; font-size:10px; padding:5px 9px; }.house-world__anchors .house-world__pin { display:none; }
+ .house-world__invitation { left:12px; bottom:13px; width:calc(100% - 24px); padding:15px; border-radius:3px; }.house-world__invitation h2 { font-size:29px; }.house-world__invitation p { font-size:12px; }.house-world__object-actions button { flex:1; font-size:11px; }
+ .house-world__doors { display:none; }.house-world__section-nav { grid-template-columns:1fr 1fr; gap:7px; inset:auto 12px 14px; }.house-world__section-nav span { font-size:19px; }.house-world__section-nav button { padding:10px; }
+ .house-world__position { position:relative; grid-template-columns:1fr 1.2fr; gap:12px; padding:12px 14px; margin-bottom:80px; }.house-world__position>button { padding-left:12px; }.house-world__position strong { font-size:18px; }.house-world__position small,.house-world__position span { font-size:10px; }
+ .house-world.has-open-object .house-world__stage { height:210px; min-height:0; }.house-world:has(.house-queen-dressing) .house-world__stage { height:500px; }
+ .house-world.has-open-object .house-world__walk,.house-world.has-open-object .house-world__anchors { display:none; }
+ .house-world__put-back { font-size:12px; left:14px; bottom:14px; }.house-queen-options { grid-template-columns:1fr 1fr; }
+ .app[data-house-world] [data-app-page] { padding:16px 10px 130px; border-radius:0; border-inline:0; }
+ .app[data-house-world] .nav[data-house-navigation] { gap:0; padding-inline:4px; }.app[data-house-world] .house-nav-phone { min-width:0; font-size:10px; padding-inline:6px; }
+}
+@media(prefers-reduced-motion:reduce){.house-world * { scroll-behavior:auto!important; transition:none!important; animation:none!important; }}
+
+.house-world__kept-objects{display:flex;overflow-x:auto;gap:8px;background:var(--house-paper);padding:10px 18px}.house-world__kept-objects button{flex:0 0 auto;border:1px solid var(--house-wood);border-radius:8px;background:transparent;padding:7px 14px}.house-world[data-world-status="fallback"] .house-world__anchors{display:none}
+
+.app[data-house-world]:has(.house-world.has-open-object) .hercules-live{display:none}.app[data-house-world] .house-companion-door{font-size:11px;padding-inline:12px}@media(max-width:719px){.app[data-house-world] .house-companion-door{display:none}.app[data-house-world] .house-world__walk button{min-width:44px;min-height:44px}.app[data-house-world] .house-world__walk{max-width:228px}}
+
+@media(min-width:720px){
+ .app[data-house-world] .nav[data-house-navigation] { display:flex; align-items:center; gap:18px; height:64px; padding:5px 20px; min-width:220px; }
+ .app[data-house-world] .nav[data-house-navigation]>button { min-height:44px; justify-content:center; }
+ .app[data-house-world] .nav[data-house-navigation] .fab { margin-top:0; width:46px; height:46px; }
+}
+@media(max-width:719px){.app[data-house-world] .nav[data-house-navigation] { grid-template-columns:repeat(6,minmax(44px,1fr)); }}
+.house-book .household-books-heading h2,.house-book .household-books-heading>p:not(.opinion-banner),.house-book .household-books-nav { display:none; }

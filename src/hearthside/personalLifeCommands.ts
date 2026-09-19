@@ -187,6 +187,7 @@ export const commitPersonalLife = captureCommand('commitPersonalLife', (househol
     document.wishes = [...document.wishes.filter(row => row.id !== value.id), value];
   } else if (operation.kind === 'experience.save') {
     const value = decodePersonalLifeExperience(operation.value), old = document.experiences.find(row => row.id === value.id);
+    if(value.state==='lived'&&(old?.state!=='lived'||value.livedOn!==old.livedOn))throw Error('PERSONAL_LIFE_EXPLICIT_LIVED_REQUIRED');
     expectRevision(old?.revision ?? 0, operation.expectedRevision, value.revision);
     if (value.createdBy !== actor || old && old.createdBy !== actor || value.wishId !== null && !document.wishes.some(wish => wish.id === value.wishId) || value.references.some(reference => !personalReferenceExists(household, actor, reference))) throw Error('PERSONAL_LIFE_REFERENCE_FORBIDDEN');
     document.experiences = [...document.experiences.filter(row => row.id !== value.id), value];
@@ -229,7 +230,7 @@ export const commitPersonalLife = captureCommand('commitPersonalLife', (househol
     const exists = target.kind === 'experience' ? document.experiences.some(row => row.id === target.id)
       : target.kind === 'note' ? document.notes.some(row => row.id === target.id && !row.archived)
       : target.kind === 'memory' ? document.memories.some(row => row.id === target.id && !row.withdrawn && row.keptRevision === row.revision)
-      : document.designs.some(row => row.designId === target.designId && row.pieceIds.includes(target.id));
+      : target.kind === 'piece' && document.designs.some(row => row.designId === target.designId && row.pieceIds.includes(target.id));
     if (!exists) throw Error('PERSONAL_LIFE_DISPLAY_REFERENCE_REQUIRED');
     document.placements = [...document.placements.filter(row => row.id !== value.id), value];
   } else if (operation.kind === 'share.copy') {

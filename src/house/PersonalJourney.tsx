@@ -42,7 +42,7 @@ export function PersonalJourney({ household, memberId, today, onOpenPlan, onOpen
   const appearance = useAppearance();
   const months = useMemo(() => pathMonths(household, today, undefined, { view: "personal", memberId }), [household, today, memberId]);
   const characters = useMemo(() => months.map(pathMonthCharacter), [months]);
-  const island = useMemo(() => growIsland(months, PATH_BASE_RECIPES, Math.max(0, months.length - 1)), [months]);
+  const island = useMemo(() => growIsland(months, [...PATH_BASE_RECIPES], Math.max(0, months.length - 1)), [months]);
   const scene = useMemo<PathWorldInput>(() => ({
     island, theme: appearance.scene.theme, characters, campfires: [], moves: [], goals: [], lamps: [], memories: [], weather: [], unknown: [], name: null,
     layers: { weather: false, story: true, rhythm: false }, presentMembers: 1,

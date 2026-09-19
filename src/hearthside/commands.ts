@@ -122,6 +122,7 @@ export const commitHearthside = captureCommand('commitHearthside', (h: Household
     const value = decodeExperience(op.value), old = s.experiences.find(e => e.id === value.id);
     expectRevision(old?.revision ?? 0, op.expectedRevision, value.revision);
     if (value.createdBy !== (old?.createdBy ?? actor)) throw Error('HEARTHSIDE_AUTHOR_MISMATCH');
+    if(value.state==='lived'&&(old?.state!=='lived'||value.livedOn!==old.livedOn))throw Error('HEARTHSIDE_EXPLICIT_LIVED_REQUIRED');
     for (const ref of value.references) if (!old?.references.some(r => canonical(r) === canonical(ref)) && !sharedReferenceExists(h, ref)) throw Error('HEARTHSIDE_SHARED_REFERENCE_REQUIRED');
     s.experiences = [...s.experiences.filter(e => e.id !== value.id), value];
   } else if(op.kind==='room.capture'){

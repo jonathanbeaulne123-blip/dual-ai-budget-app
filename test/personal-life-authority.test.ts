@@ -78,6 +78,24 @@ describe('Personal Together life authority',()=>{
     expect(JSON.stringify(splitForSync(retry,A).shared)).not.toContain(fresh.sourceDigest);
   });
 
+  it('routes private saves through the Personal checkpoint and reviewed copies through shared authority',()=>{
+    const h=withExperience();
+    const saved=commitPersonalLife(h,{version:1,id:crypto.randomUUID(),scope:{environment:h.environment,householdId:h.householdId,memberId:A},operation:{
+      kind:'wish.save',expectedRevision:1,value:wish({revision:2,title:'A private change'}),
+    }});
+    expect(saved).toMatchObject({persistenceScope:'member-personal',personalMemberId:A,undo:{commandKind:'personal-life'}});
+
+    const review=preparePersonalLifeShareReview(h.personalLife!,{id:'REVIEW-route',sourceKind:'wish',sourceId:'PRIVATE-wish',sharedId:'EXP-reviewed-route'});
+    const shared=commitPersonalLife(h,{version:1,id:crypto.randomUUID(),scope:{environment:h.environment,householdId:h.householdId,memberId:A},operation:{
+      kind:'share.copy',review,expectedDigest:personalLifeShareReviewDigest(review),
+    }});
+    expect(shared.persistenceScope).toBeUndefined();
+    expect(shared.personalMemberId).toBeUndefined();
+    expect(shared.undo.commandKind).toBe('personal-life');
+    expect(shared.household.hearthside?.experiences.some(row=>row.id==='EXP-reviewed-route')).toBe(true);
+    expect(shared.household.personalLife?.shareReceipts.some(row=>row.id==='REVIEW-route')).toBe(true);
+  });
+
   it('requires the Personal capability at the serialized authority and survives authority reassembly',async()=>{
     const base={...catalogHousehold(),hearthside:emptyHearthside()};
     const initial=run(base,{kind:'wish.save',expectedRevision:0,value:wish()}), mine=splitForSync(initial,A), partner=splitForSync(initial,B);

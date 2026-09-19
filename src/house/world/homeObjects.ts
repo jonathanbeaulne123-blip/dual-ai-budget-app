@@ -108,7 +108,6 @@ export function createHomeObjects(theme: HouseTheme, initial: HomeObjectsProject
   const mat = <T extends THREE.Material>(value: T) => (materials.add(value), value);
   const wood = mat(new THREE.MeshStandardMaterial({ color: kit.wood, roughness: 0.82 }));
   const trim = mat(new THREE.MeshStandardMaterial({ color: kit.trim, roughness: 0.4, metalness: 0.42 }));
-  const felt = mat(new THREE.MeshStandardMaterial({ color: kit.felt, roughness: 1 }));
   const waterMaterial = mat(new THREE.MeshPhysicalMaterial({ color: kit.water, roughness: 0.22, transparent: true, opacity: 0.68, clearcoat: 0.8 }));
   const shelfGeometry = geo(new THREE.BoxGeometry(5.75, 0.13, 0.72));
   const railGeometry = geo(new THREE.BoxGeometry(5.75, 0.1, 0.5));

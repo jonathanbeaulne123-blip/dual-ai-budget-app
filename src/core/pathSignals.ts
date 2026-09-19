@@ -179,7 +179,7 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
   const sorted = fundModelMode(household) === 2;
   // Only once the money model sorted the household (D-282, review M3), so a flags-off island is unchanged.
   const checkIns = scope.view === "household" && sorted ? (household.planHerculesSessions ?? []).filter((row) => row?.state === "closed" && row.monthKey) : [];
-  const events = (household.nativeEvents ?? []).filter((row) => !row.deleted && (scope.view === "household" ? row.visibility === "household" || row.visibility === "both" : Boolean(scope.memberId) && isVisibleInView(row, scope.memberId!, "personal")));
+  const events = (household.nativeEvents ?? []).filter((row) => !row.deleted && (scope.view === "household" ? row.visibility === "household" : Boolean(scope.memberId) && isVisibleInView(row, scope.memberId!, "personal")));
   const nowMonth = monthKeyFromDateKey(today);
 
   const starts = [

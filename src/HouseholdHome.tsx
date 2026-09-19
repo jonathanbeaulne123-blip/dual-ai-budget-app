@@ -43,6 +43,7 @@ export function HouseholdHome(props: HouseholdHomeProps) {
 }
 
 type HouseholdHomeProps = {
+  initialBankId?:string;
   household: Household;
   memberId: string;
   today: DateKey;
@@ -70,8 +71,8 @@ type HouseholdHomeProps = {
   onHousePlace?: (place: HousePlace) => void;
 };
 
-function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onReadAcceptedCommand, creationIdentity, onOpenMemory, rehearsal, identityArt, composition, world, clock, shell, housePlace, onHousePlace }: HouseholdHomeProps) {
-  const [bankRequest, setBankRequest] = useState<{ goalId?: string; bankId?: string } | null>(null);
+function HouseholdHomeSession({ initialBankId, household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onReadAcceptedCommand, creationIdentity, onOpenMemory, rehearsal, identityArt, composition, world, clock, shell, housePlace, onHousePlace }: HouseholdHomeProps) {
+  const [bankRequest, setBankRequest] = useState<{ goalId?: string; bankId?: string } | null>(initialBankId?{bankId:initialBankId}:null);
   const queen = (composition ?? (queensNestEnabled() ? "queen" : "panels")) === "queen";
   const gallery = bankRequest && <KittyBankRoom household={household} view="household" memberId={memberId} busy={busy}
     identity={`${household.environment}:${household.householdId}:${memberId}:household`}

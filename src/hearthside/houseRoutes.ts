@@ -4,7 +4,7 @@ export const HOUSE_ROOMS = ["home", "study", "kitchen-table", "together"] as con
 export const HOUSE_LEVELS = ["above", "middle", "below"] as const;
 export type HouseRoom = typeof HOUSE_ROOMS[number];
 export type HouseLevel = typeof HOUSE_LEVELS[number];
-export type HouseRoute = { room: HouseRoom; level: HouseLevel; householdId: string };
+export type HouseRoute = { room: HouseRoom; level: HouseLevel; householdId: string; scope?: "personal" | "household"; object?: string; surface?: string; time?: string };
 
 const TOGETHER_ROOM: Record<HouseLevel, HearthsideRoom> = {
   above: "conservatory",
@@ -25,7 +25,11 @@ export function togetherLevelForRoom(room: HearthsideRoom): HouseLevel {
 export function housePath(route: HouseRoute): string {
   if (!HOUSE_ROOMS.includes(route.room) || !HOUSE_LEVELS.includes(route.level) || !route.householdId.trim()) throw new Error("HOUSE_INVALID_ROUTE");
   const query = new URLSearchParams({ household: route.householdId });
-  if (route.room === "together") query.set("room", togetherRoomForLevel(route.level));
+  if (route.room === "together") query.set("room", route.scope&&route.level==="below"?"theatre":togetherRoomForLevel(route.level));
+  if (route.scope) query.set("scope", route.scope);
+  if (route.object) query.set("object", route.object);
+  if (route.surface) query.set("surface", route.surface);
+  if (route.time) query.set("time", route.time);
   return `/house/${route.room}/${route.level}?${query}`;
 }
 
@@ -41,7 +45,10 @@ export function parseHouseRoute(url: string, householdId: string): HouseRoute | 
     if (room === "together" && interior !== null && (!HEARTHSIDE_ROOMS.includes(interior as HearthsideRoom) || togetherLevelForRoom(interior as HearthsideRoom) !== level)) return null;
     const addressedHousehold = parsed.searchParams.get("household") ?? householdId;
     if (!addressedHousehold || addressedHousehold !== householdId) return null;
-    return { room, level, householdId };
+    const scope = parsed.searchParams.get("scope");
+    if (scope !== null && scope !== "personal" && scope !== "household") return null;
+    const bounded = (key: string) => { const value = parsed.searchParams.get(key); return value && value.length <= 180 && !/[\u0000-\u001f]/.test(value) ? value : undefined; };
+    return { room, level, householdId, ...(scope ? {scope} : {}), ...(bounded("object") ? {object: bounded("object")} : {}), ...(bounded("surface") ? {surface: bounded("surface")} : {}), ...(bounded("time") ? {time: bounded("time")} : {}) };
   } catch {
     return null;
   }

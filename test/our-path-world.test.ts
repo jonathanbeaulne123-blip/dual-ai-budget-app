@@ -342,7 +342,7 @@ describe("Our Path world — the months it grows from", () => {
     const h = {
       ...catalogHousehold(),
       transactions: cadence,
-      fundEvents: [{ id: "FE-1", kind: "kitty-released", date: "2026-10-29", amountCents: 100, goalId: null }] as Household["fundEvents"],
+      fundEvents: [{ id: "FE-1", kind: "kitty-released", date: "2026-10-29", amountCents: 100, goalId: null }] as unknown as Household["fundEvents"],
     };
     const october = pathMonths(h, "2026-11-01").find((month) => month.key === "2026-10")!;
     expect(october.scores.calm).toBe(1);
