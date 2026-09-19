@@ -37,3 +37,9 @@
 .plan-link{display:inline-flex;align-items:center;text-decoration:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:9px 13px;font-weight:800;font-size:.87rem}.plan-link:hover{border-color:var(--gold);transform:translateY(-1px)}@media(max-width:760px){.plan-link{order:3;flex:1;justify-content:center}}
 
 .plan-link{display:inline-flex;align-items:center;text-decoration:none;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:9px 13px;font-weight:800;font-size:.87rem}.plan-link:hover{border-color:var(--gold);transform:translateY(-1px)}@media(max-width:760px){.plan-link{order:3;flex:1;justify-content:center}}
+
+.prep-link{display:inline-flex;align-items:center;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:8px 11px;font-weight:850;font-size:.8rem;background:#fff}
+.prep-link:hover{transform:translateY(-1px);border-color:var(--gold)}
+.flash-link{color:#5c4b83;background:#f5f1f9}
+.letter-link{color:var(--accent);background:#faf2ef}
+@media(max-width:760px){.prep-link{flex:1;justify-content:center}}
