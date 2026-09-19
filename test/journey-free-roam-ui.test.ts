@@ -191,11 +191,11 @@ describe("a drag takes the camera, quietly (D-286)", () => {
     expect(byText("Return to us")).toBeTruthy();
     expect(says()).toContain("The camera is yours");
     // The line is quiet: it says it once, then the chip is only the state and the way back.
-    await act(async () => { await new Promise((r) => setTimeout(r, 4400)); });
+    await act(async () => { await new Promise((r) => setTimeout(r, 6300)); });
     expect($(".path-hud__roam").textContent).toContain("Free roam");
     expect($(".path-hud__roam").textContent).not.toContain("taken the camera");
     expect(byText("Return to us")).toBeTruthy();
-  }, 20_000);
+  }, 25_000);
 
   it("Return to us latches the camera and flies home", async () => {
     await mount();

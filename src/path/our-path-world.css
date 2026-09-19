@@ -475,12 +475,17 @@ html.path-world-settled [data-path-world-behind] { visibility: hidden !important
   .path-hud__roam-back { padding: 0 13px; font-size: 13px; }
   .path-hud:has(.path-hud__roam) .path-hud__notice { top: calc(max(10px, env(safe-area-inset-top)) + 104px); }
   /* The state chip sits under the corner row on phones: the hint drops below it rather than across it. */
-  .path-hud__hint { left: 0; top: calc(100% + 56px); width: min(330px, calc(100vw - 20px)); padding: 12px 14px 10px; }
-  .path-hud__hint ul { font-size: 12.5px; }
+  .path-hud__hint { left: 0; top: calc(100% + 56px); width: min(330px, calc(100vw - 20px)); gap: 6px; padding: 11px 13px 9px; }
+  .path-hud__hint-title { font-size: 16px; }
+  .path-hud__hint ul { gap: 4px; font-size: 12.5px; line-height: 1.35; }
+  .path-hud__hint button { min-height: 44px; padding: 0 16px; }
   .path-roam-radar { width: 84px; height: 84px; }
   .path-hud__minicol { gap: 6px; }
 }
 @media (max-width: 359px) {
+  .path-hud__hint { top: calc(100% + 52px); padding: 9px 11px 8px; }
+  .path-hud__hint-title { font-size: 15px; }
+  .path-hud__hint ul { font-size: 12px; line-height: 1.3; }
   .path-roam-radar { width: 76px; height: 76px; }
   .path-hud__roam { max-width: calc(100% - 12px); }
 }

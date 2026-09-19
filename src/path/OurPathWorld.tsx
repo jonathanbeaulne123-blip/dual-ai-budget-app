@@ -1917,10 +1917,10 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
                   <section className="path-hud__hint" aria-label="How to roam the island">
                     <p className="path-hud__hint-title">The camera is yours</p>
                     <ul>
-                      <li><span className="path-hud__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span> or the arrow keys — move where you are looking</li>
+                      <li><span className="path-hud__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span> or arrows — move where you look</li>
                       <li><span className="path-hud__keys"><kbd>Q</kbd><kbd>E</kbd></span> turn · <span className="path-hud__keys"><kbd>R</kbd><kbd>F</kbd></span> rise and fall · <span className="path-hud__keys"><kbd>Shift</kbd></span> hurry</li>
-                      <li>Drag to glide · pinch or scroll to zoom · right-drag to look around</li>
-                      <li><span className="path-hud__keys"><kbd>Space</kbd></span> or Where we are — back to the two of you</li>
+                      <li>Drag to glide · pinch to zoom · right-drag to look</li>
+                      <li><span className="path-hud__keys"><kbd>Space</kbd></span> — back to the two of you</li>
                     </ul>
                     <button type="button" className="primary" onClick={dismissRoamHint}>Got it</button>
                   </section>
