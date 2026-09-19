@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { PathEraHome, PathEraPlanKind } from "../../core/pathWorld.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
+import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 
 /**
  * The journey's simple view in 3D (D-284): one small tabletop model that the
@@ -139,14 +140,22 @@ export function createMiniWorld(host: HTMLElement, options: {
   const probe = document.createElement("canvas");
   if (!(probe.getContext("webgl2") || probe.getContext("webgl"))) throw new Error("WebGL unavailable");
   const compact = Boolean(options.compact);
-  const renderer = new THREE.WebGLRenderer({ antialias: !compact, alpha: false, powerPreference: "low-power", preserveDrawingBuffer: true });
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+  let suspendRenderer = () => {}, resumeRenderer = () => {};
+  const rendererLease = acquireWorldRenderer(host, {
+    parameters: { antialias: !compact, alpha: false, powerPreference: "low-power", preserveDrawingBuffer: true },
+    configure(renderer) {
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.localClippingEnabled = false;
+      renderer.domElement.setAttribute("aria-hidden", "true");
+      renderer.domElement.className = "journey-mini__canvas";
+      renderer.domElement.style.touchAction = "none";
+    },
+    onSuspend: () => suspendRenderer(),
+    onResume: () => resumeRenderer(),
+  });
+  const renderer = rendererLease.renderer;
   const el = renderer.domElement;
-  el.setAttribute("aria-hidden", "true");
-  el.className = "journey-mini__canvas";
-  el.style.touchAction = "none";
-  host.appendChild(el);
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(36, 1, 0.1, 2000);
@@ -1035,6 +1044,7 @@ export function createMiniWorld(host: HTMLElement, options: {
     if (dead || raf || offscreen || paused || (typeof document !== "undefined" && document.hidden)) return;
     raf = requestAnimationFrame(frame);
   }
+  suspendRenderer = () => { if (raf) cancelAnimationFrame(raf); raf = 0; lastT = 0; };
   const onHidden = () => { if (!document.hidden) invalidate(); };
   document.addEventListener("visibilitychange", onHidden);
   let io: IntersectionObserver | null = null;
@@ -1048,20 +1058,21 @@ export function createMiniWorld(host: HTMLElement, options: {
     io.observe(host);
   }
   const lost = (event: Event) => { event.preventDefault(); options.onLost?.(); };
-  el.addEventListener("webglcontextlost", lost);
+  const unlistenLost = rendererLease.listenCanvas("webglcontextlost", lost);
 
   let quality: MiniQuality = "full";
   function applyQuality(next: MiniQuality) {
     quality = next;
     const full = next === "full" && !compact;
     renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, full ? 1.75 : 1.25));
-    renderer.shadowMap.enabled = full;
+    if (rendererLease.active) renderer.shadowMap.enabled = full;
     sun.castShadow = full;
     scene.traverse((o) => { const m = (o as THREE.Mesh).material as THREE.Material | undefined; if (m) m.needsUpdate = true; });
     if (width) renderer.setSize(width, height, false);
     invalidate();
   }
   applyQuality(options.quality ?? "full");
+  resumeRenderer = () => { applyQuality(quality); if (width && height) renderer.setSize(width, height, false); invalidate(); };
 
   const ray = new THREE.Raycaster();
   const ndc = new THREE.Vector2();
@@ -1145,16 +1156,14 @@ export function createMiniWorld(host: HTMLElement, options: {
       if (raf) cancelAnimationFrame(raf);
       document.removeEventListener("visibilitychange", onHidden);
       io?.disconnect();
-      el.removeEventListener("webglcontextlost", lost);
+      unlistenLost();
       for (const d of pathDisposables.splice(0)) d();
       for (const d of islandDisposables.splice(0)) d();
       for (const d of journeyDisposables.splice(0)) d();
       for (const g of geos) g.dispose();
       for (const { m } of mats) m.dispose();
       scene.clear();
-      renderer.dispose();
-      renderer.forceContextLoss();
-      el.remove();
+      rendererLease.release();
     },
   };
 }

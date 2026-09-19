@@ -7,6 +7,7 @@ import { walkPath, walkSeconds, type WalkPoint } from "../walk.ts";
 import { COIN_POOL, landmarkStepChange } from "../landmarks.ts";
 import { charterSpot, cottageSpot, forkAngle, type PathSitdown } from "../together.ts";
 import type { PathEraHome, PathEraPlanKind } from "../../core/pathWorld.ts";
+import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 
 /**
  * The Our Path world (D-262): one renderer, one island, an orbiting camera
@@ -273,13 +274,21 @@ export function createPathWorld(host: HTMLElement, options: {
   idleMs?: number;
 }) {
   const idleMs = options.idleMs ?? IDLE_MS;
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true });
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
-  renderer.domElement.setAttribute("aria-hidden", "true");
-  renderer.domElement.className = "path-world__canvas";
-  renderer.domElement.style.touchAction = "none";
-  host.appendChild(renderer.domElement);
+  let suspendRenderer = () => {}, resumeRenderer = () => {};
+  const rendererLease = acquireWorldRenderer(host, {
+    parameters: { antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true },
+    configure(renderer) {
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
+      renderer.localClippingEnabled = false;
+      renderer.domElement.setAttribute("aria-hidden", "true");
+      renderer.domElement.className = "path-world__canvas";
+      renderer.domElement.style.touchAction = "none";
+    },
+    onSuspend: () => suspendRenderer(),
+    onResume: () => resumeRenderer(),
+  });
+  const renderer = rendererLease.renderer;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, 0.5, 900);
@@ -2314,13 +2323,12 @@ export function createPathWorld(host: HTMLElement, options: {
   };
   const onWheel = (e: WheelEvent) => { e.preventDefault(); fly = null; cam.r = Math.max(14, Math.min(maxRadius(), cam.r * Math.exp(e.deltaY * 0.001))); invalidate(); gestured(); };
   const onContext = (e: Event) => e.preventDefault();
-  el.addEventListener("pointerdown", onDown);
-  el.addEventListener("pointermove", onMove);
-  el.addEventListener("pointerup", onUp);
-  el.addEventListener("pointercancel", onUp);
-  el.addEventListener("wheel", onWheel, { passive: false });
-  el.addEventListener("contextmenu", onContext);
-  cleanup.push(() => { el.removeEventListener("pointerdown", onDown); el.removeEventListener("pointermove", onMove); el.removeEventListener("pointerup", onUp); el.removeEventListener("pointercancel", onUp); el.removeEventListener("wheel", onWheel); el.removeEventListener("contextmenu", onContext); });
+  cleanup.push(rendererLease.listenCanvas("pointerdown", onDown));
+  cleanup.push(rendererLease.listenCanvas("pointermove", onMove));
+  cleanup.push(rendererLease.listenCanvas("pointerup", onUp));
+  cleanup.push(rendererLease.listenCanvas("pointercancel", onUp));
+  cleanup.push(rendererLease.listenCanvas("wheel", onWheel, { passive: false }));
+  cleanup.push(rendererLease.listenCanvas("contextmenu", onContext));
 
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   function pick(x: number, y: number) {
@@ -2341,7 +2349,7 @@ export function createPathWorld(host: HTMLElement, options: {
     quality = next;
     const full = next === "full";
     renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, PIXEL_RATIO_CAP[next]));
-    renderer.shadowMap.enabled = full;
+    if (rendererLease.active) renderer.shadowMap.enabled = full;
     sun.castShadow = full;
     // Lite keeps only the walkers' lantern as a real light (the program recompile below covers the count change).
     for (const light of lightPool) light.visible = full;
@@ -2427,6 +2435,8 @@ export function createPathWorld(host: HTMLElement, options: {
     idle = false;
     if (!raf && !sleeping && !offscreen) raf = requestAnimationFrame(frame);
   }
+  suspendRenderer = () => { halt(); pointers.clear(); pinch = 0; };
+  resumeRenderer = () => { applyQuality(quality, true); if (width && height) renderer.setSize(width, height, false); invalidate(); };
   const onHidden = () => { if (document.hidden) halt(); else invalidate(); };
   document.addEventListener("visibilitychange", onHidden);
   cleanup.push(() => document.removeEventListener("visibilitychange", onHidden));
@@ -2448,8 +2458,7 @@ export function createPathWorld(host: HTMLElement, options: {
     cleanup.push(() => io.disconnect());
   }
   const lost = (event: Event) => { event.preventDefault(); options.onLost?.(); };
-  el.addEventListener("webglcontextlost", lost);
-  cleanup.push(() => el.removeEventListener("webglcontextlost", lost));
+  cleanup.push(rendererLease.listenCanvas("webglcontextlost", lost));
 
   /** A hidden host measures 0×0; those sizes are ignored so the last real size is kept. */
   function resize(w: number, h: number) {
@@ -2537,9 +2546,7 @@ export function createPathWorld(host: HTMLElement, options: {
       for (const g of geometries) g.dispose();
       for (const m of materials.values()) m.dispose();
       scene.clear();
-      renderer.dispose();
-      renderer.forceContextLoss();
-      el.remove();
+      rendererLease.release();
     },
   };
 }
