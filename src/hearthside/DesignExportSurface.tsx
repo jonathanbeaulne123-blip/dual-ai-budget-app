@@ -23,6 +23,7 @@ export function DesignExportSurface(props: DesignExportSurfaceProps) {
 function ExportSurface({ enabled, selection, theme, onClose, dependencies }: DesignExportSurfaceProps) {
   const [state, setState] = useState<ExportJobState>({ phase: 'idle' }), [height, setHeight] = useState('160'), [construction, setConstruction] = useState<'solid' | 'hollow'>('solid');
   const [wall, setWall] = useState('3'), [slotWidth, setSlotWidth] = useState('28'), [slotDepth, setSlotDepth] = useState('4'), [baseOpening, setBaseOpening] = useState('32');
+  const [manufacturingProfile, setManufacturingProfile] = useState('');
   const [repair, setRepair] = useState(false), [repairApproval, setRepairApproval] = useState<string | null>(null), [limitations, setLimitations] = useState(false), [localError, setLocalError] = useState('');
   const job = useRef<DesignExportJob | null>(null), title = useRef<HTMLHeadingElement>(null), heading = useId(), materials = DESIGN_SURFACE_MATERIALS[theme];
   useEffect(() => {
@@ -35,7 +36,7 @@ function ExportSurface({ enabled, selection, theme, onClose, dependencies }: Des
   const changed = (set: (value: string) => void, value: string) => { reset(); set(value); };
   const busy = ['capturing', 'preparing', 'finishing', 'packing'].includes(state.phase);
   const prepare = () => {
-    reset(); const options: ExportOptions = { heightMm: Number(height), construction, ...(construction === 'hollow' ? { hollow: { wallMm: Number(wall), coinSlotWidthMm: Number(slotWidth), coinSlotDepthMm: Number(slotDepth), baseOpeningDiameterMm: Number(baseOpening) } } : {}) };
+    reset(); const options: ExportOptions = { heightMm: Number(height), construction, ...(manufacturingProfile ? { manufacturingProfile } : {}), ...(construction === 'hollow' ? { hollow: { wallMm: Number(wall), coinSlotWidthMm: Number(slotWidth), coinSlotDepthMm: Number(slotDepth), baseOpeningDiameterMm: Number(baseOpening) } } : {}) };
     setRepair(construction === 'hollow'); void job.current?.prepare(options);
   };
   const review = state.phase === 'review' ? state.review : null;
@@ -48,6 +49,7 @@ function ExportSurface({ enabled, selection, theme, onClose, dependencies }: Des
           <fieldset className="design-dimensions" disabled={busy}><legend>Choose the physical piece</legend>
             <label>Height, in millimetres<input type="number" min="30" max="1000" step="1" inputMode="decimal" value={height} onChange={event => changed(setHeight, event.target.value)}/></label>
             <label>Construction<select aria-label="Construction" value={construction} onChange={event => { reset(); setConstruction(event.target.value as 'solid' | 'hollow'); }}><option value="solid">Solid sculpture</option><option value="hollow">Hollow bank with openings</option></select></label>
+            <label>Manufacturing profile, optional<input maxLength={300} value={manufacturingProfile} onChange={event => changed(setManufacturingProfile, event.target.value)} aria-describedby={`${heading}-profile-help`}/></label><p id={`${heading}-profile-help`} className="design-help">Reference notes travel with this exact review and package. They do not change the geometry or verify printer settings.</p>
             {construction === 'hollow' && <div className="design-small-fields">
               <label>Wall, mm<input type="number" min="0.5" max="20" step="0.5" value={wall} onChange={event => changed(setWall, event.target.value)}/></label>
               <label>Coin slot width, mm<input type="number" min="1" step="1" value={slotWidth} onChange={event => changed(setSlotWidth, event.target.value)}/></label>
@@ -60,6 +62,7 @@ function ExportSurface({ enabled, selection, theme, onClose, dependencies }: Des
           {busy && <div className="design-progress" role="status"><p>{state.phase === 'capturing' ? 'Preparing the selected shape and paint…' : state.phase === 'preparing' ? 'Checking geometry and preparing a review…' : state.phase === 'finishing' ? 'Creating the reviewed production files…' : 'Packing and verifying your download…'}</p><button type="button" onClick={reset}>Cancel preparation</button></div>}
           {state.phase === 'error' && <p className="design-error" role="alert">{state.message}</p>}
           {review && <section className="design-review" aria-label="Review production files"><h3>Before it leaves the Studio</h3><GeometrySummary report={review.report}/>
+            {review.selection.manufacturingProfile !== undefined && <p><strong>Manufacturing profile:</strong> {review.selection.manufacturingProfile}<br/><small>Reference only; maker tolerances, fit, strength, shrinkage and printer settings remain unverified.</small></p>}
             {construction === 'solid' && <fieldset><legend>Choose the copy to download</legend><label className="design-choice"><input type="radio" name={`${heading}-repair`} checked={!repair} onChange={() => { setRepair(false); setRepairApproval(null); }}/>Original authored geometry, for reference</label><label className="design-choice"><input type="radio" name={`${heading}-repair`} checked={repair} onChange={() => { setRepair(true); setRepairApproval(null); }}/>Prepare a manufacturing derivative</label></fieldset>}
             {repair && <div className="design-repair"><h4>Proposed changes to the production copy</h4><ol>{review.proposal.actions.map(action => <li key={action}>{action}</li>)}</ol>
               <p><strong>Decorations omitted:</strong> {review.proposal.omittedMeshes.length ? review.proposal.omittedMeshes.join(', ') : 'None'}</p><p><strong>Open ends capped:</strong> {review.proposal.cappedMeshes.length ? review.proposal.cappedMeshes.join(', ') : 'None'}</p>

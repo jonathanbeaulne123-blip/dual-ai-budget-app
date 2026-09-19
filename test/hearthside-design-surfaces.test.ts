@@ -66,6 +66,18 @@ describe('selected design export review and cancellation', () => {
     expect(h.job.state.phase).toBe('preparing'); expect(() => h.job.finish({ limitationsReviewed: true })).toThrow('EXPORT_REVIEW_REQUIRED');
     expect(h.workers.at(-1)!.request).toMatchObject({ selection: { heightMm: 80 } }); h.job.dispose();
   });
+  it('invalidates a review when the supplied manufacturing profile changes and rejects a forged completion profile', async () => {
+    const h = harness(), { worker, prepared } = await h.prepare();
+    await h.job.prepare({ heightMm: 160, construction: 'solid', manufacturingProfile: 'PLA profile A' }); expect(worker.terminate).toHaveBeenCalledOnce();
+    expect(h.workers.at(-1)!.request).toMatchObject({ selection: { manufacturingProfile: 'PLA profile A' } });
+    const latest = h.workers.at(-1)!, request = latest.request; if (request.type !== 'prepare') throw Error();
+    const reviewed = await prepareKittyExport(request.selection, request.capture);
+    latest.emit({ type: 'prepared', requestId: request.requestId, token: reviewed.proposal.digest, selection: reviewed.selection, proposal: reviewed.proposal, report: reviewed.report });
+    const output = await finishKittyExport(reviewed);
+    h.job.finish({ limitationsReviewed: true });
+    latest.emit({ type: 'complete', requestId: latest.request.requestId, manifest: { ...output.manifest, manufacturingProfile: 'forged profile' }, files: [...output.files] });
+    await vi.waitFor(() => expect(h.job.state.phase).toBe('error')); h.job.dispose();
+  });
   it('rejects changed source content or hollow measurements in a preparation reply', async () => {
     const h = harness(); await h.job.prepare({ heightMm: 160, construction: 'solid' });
     const worker = h.workers[0]!, request = worker.request; if (request.type !== 'prepare') throw Error();

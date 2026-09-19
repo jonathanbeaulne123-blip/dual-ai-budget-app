@@ -6,6 +6,8 @@ export type ExportSelection = {
   version: 1; documentId: string; revision: number; piece: KittyPieceV1; appearance?:NestAppearance;
   heightMm: number; construction: 'solid' | 'hollow';
   hollow?: { wallMm: number; coinSlotWidthMm: number; coinSlotDepthMm: number; baseOpeningDiameterMm: number };
+  /** Optional local reference text. It never changes geometry or printability. */
+  manufacturingProfile?: string;
 };
 export type ExportMesh = {
   name: string; positions: number[]; indices: number[]; uv: number[]; material: number;
@@ -33,6 +35,7 @@ export type ExportManifest = {
   version: 1; documentId: string; designRevision: number; pieceId: string;
   selectionDigest: string; sourceGeometryDigest: string; physicalGeometryDigest: string;
   heightMm: number; construction: 'solid' | 'hollow';
+  manufacturingProfile?: string;
   units: { stl: 'millimeter (unitless file; import as mm)'; threeMf: 'millimeter'; glb: 'meter' };
   sourceGeometry: 'authored-kitty-sculpture-v1'|'authored-kitty-nest-v1'; appearance?:NestAppearance; sourceChanged: false;
   repair: RepairProposal | null; report: GeometryReport;

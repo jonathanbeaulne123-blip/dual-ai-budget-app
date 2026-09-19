@@ -6,7 +6,7 @@ import { validateNativeIdentity } from './native.ts';
 import type { DesignSurfaceSelection } from './designSurfaceContracts.ts';
 import type { ExportWorkerRequest } from './exportWorker.ts';
 
-export type ExportOptions = Pick<ExportSelection, 'heightMm' | 'construction' | 'hollow'>;
+export type ExportOptions = Pick<ExportSelection, 'heightMm' | 'construction' | 'hollow' | 'manufacturingProfile'>;
 export type ExportReview = { token: string; selection: ExportSelection; proposal: RepairProposal; report: GeometryReport };
 export type ExportJobState = { phase: 'idle' | 'capturing' | 'preparing' | 'finishing' | 'packing' | 'error'; message?: string }
   | { phase: 'review'; review: ExportReview }
@@ -119,10 +119,11 @@ export class DesignExportJob {
       // start another compression job or revoke a valid in-flight completion.
       this.set({ phase: 'packing' });
       const manifest = value.manifest as ExportManifest;
-      if (!this.selection || !this.prepared || manifest.documentId !== this.selection.documentId || manifest.designRevision !== this.selection.revision || manifest.pieceId !== this.selection.piece.id || manifest.heightMm !== this.selection.heightMm || manifest.construction !== this.selection.construction || manifest.selectionDigest !== this.prepared.proposal.selectionDigest || manifest.sourceGeometryDigest !== this.prepared.proposal.sourceGeometryDigest || (manifest.repair?.digest ?? undefined) !== this.repairDigest || !Array.isArray(value.files) || value.files.length > 320) throw Error('EXPORT_SELECTION_CHANGED');
+      if (!this.selection || !this.prepared || manifest.documentId !== this.selection.documentId || manifest.designRevision !== this.selection.revision || manifest.pieceId !== this.selection.piece.id || manifest.heightMm !== this.selection.heightMm || manifest.construction !== this.selection.construction || manifest.manufacturingProfile !== this.selection.manufacturingProfile || manifest.selectionDigest !== this.prepared.proposal.selectionDigest || manifest.sourceGeometryDigest !== this.prepared.proposal.sourceGeometryDigest || (manifest.repair?.digest ?? undefined) !== this.repairDigest || !Array.isArray(value.files) || value.files.length > 320) throw Error('EXPORT_SELECTION_CHANGED');
       const files = new Map(value.files as [string, Uint8Array][]);
       if (files.size !== value.files.length || [...files].some(([name, bytes]) => !/^(?:paint\/)?[a-zA-Z0-9._-]+$/.test(name) || name.split('/').some(part => part === '.' || part === '..') || !(bytes instanceof Uint8Array)) || [...files.values()].reduce((n, bytes) => n + bytes.length, 0) > 64 * 1024 * 1024) throw Error('EXPORT_PACKAGE_TOO_LARGE');
       const required = ['kitty.stl', 'kitty.3mf', 'kitty.glb', 'source-design.json', 'paint/source-paint.json', 'geometry-report.json', 'geometry-sheet.pdf', 'manifest.json'];
+      if (manifest.manufacturingProfile !== undefined) required.push('manufacturing-profile.txt');
       if (manifest.repair) required.push('source-authored.glb');
       if (required.some(name => !files.has(name)) || manifest.files.length !== files.size - 1 || new Set(manifest.files.map(file => file.name)).size !== manifest.files.length || manifest.files.some(file => file.name === 'manifest.json')) throw Error('EXPORT_PACKAGE_INCOMPLETE');
       if (stable(JSON.parse(new TextDecoder().decode(files.get('manifest.json')))) !== stable(manifest)) throw Error('EXPORT_PACKAGE_CHECKSUM');

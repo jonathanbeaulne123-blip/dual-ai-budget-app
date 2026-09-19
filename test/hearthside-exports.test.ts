@@ -28,6 +28,19 @@ describe('Hearthside production files', () => {
     expect(() => normalizeExportSelection({ ...selection(), heightMm: 0 })).toThrow();
     expect(() => normalizeExportSelection({ ...selection(), construction: 'hollow' })).toThrow();
     expect(() => normalizeExportSelection({ ...selection(), savedCents: 10000 } as ExportSelection)).toThrow();
+    expect(() => normalizeExportSelection({ ...selection(), manufacturingProfile: 'maker\nnotes' })).toThrow('EXPORT_INVALID_MANUFACTURING_PROFILE');
+    expect(() => normalizeExportSelection({ ...selection(), manufacturingProfile: ' '.repeat(301) })).toThrow('EXPORT_INVALID_MANUFACTURING_PROFILE');
+  });
+  it('binds an optional manufacturing profile to the exact review and downloaded record without changing geometry claims', async () => {
+    const profile = 'FDM PLA, 0.4mm nozzle', withProfile = { ...selection(), manufacturingProfile: profile };
+    const plain = await prepareKittyExport(selection(), cube()), prepared = await prepareKittyExport(withProfile, cube());
+    expect(prepared.selectionDigest).not.toBe(plain.selectionDigest); expect(prepared.proposal.digest).not.toBe(plain.proposal.digest);
+    const output = await finishKittyExport(prepared);
+    expect(output.manifest.manufacturingProfile).toBe(profile); expect(output.manifest.report.printerReady).toBe(false);
+    expect(decode(output.files.get('manufacturing-profile.txt')!)).toBe(profile);
+    expect(JSON.parse(decode(output.files.get('source-design.json')!)).manufacturingProfile).toBe(profile);
+    expect(decode(output.files.get('geometry-sheet.pdf')!)).toContain(profile);
+    expect(output.manifest.files.some(file => file.name === 'manufacturing-profile.txt')).toBe(true);
   });
   it('reports topology and dimensions independently of format serialization', () => {
     const c = cube(), report = inspectGeometry(c.meshes);
