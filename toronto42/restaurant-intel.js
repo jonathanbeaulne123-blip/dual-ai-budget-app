@@ -44,50 +44,220 @@ window.RESTAURANT_INTEL = {
     },
     studyNotes: {
       "Management": [
-        {must:true,title:"Daniel van Welie — owner/operator",text:"Daniel van Welie is the verified current owner/operator to know. Public biographies connect him to front- and back-of-house work at Terroni and NODO, with earlier opening coverage also referencing Gusto 101, plus Hospitality Management studies at George Brown. He opened Cano at a young age and later opened Lyla Toronto. For a walk-in, he is the strongest verified senior name to ask for."},
-        {must:true,title:"Current manager / contact path",text:"A publicly named current General Manager could not be verified. OpenTable currently names “Jay” as a private-party contact without a surname or management title, so do not present Jay as the GM. Ask for “Daniel, Jay, or whichever manager is running the floor today.” Public restaurant contact is cano@canorestaurant.com and 416-901-3655; events@canorestaurant.com is the public events contact."},
-        {must:false,title:"Why management is relevant to Jonathan",text:"Cano operates across everyday dining, beverage service and private events. Daniel’s public operator profile emphasizes a broad view of hospitality rather than only food, which makes Jonathan’s combined Bar Lead, Server and Private Event Coordinator experience a stronger pitch than presenting himself as only a server."}
+        {
+          must:true,
+          title:"Daniel van Welie — owner/operator",
+          summary:"Verified senior operator to know; FOH + BOH background, George Brown hospitality training, Cano founder and later Lyla co-owner.",
+          detail:"Daniel van Welie is the strongest verified senior name to know going into Cano. A 2026 hospitality biography describes him as a Montreal-born operator who moved to Toronto at 18, worked both front- and back-of-house at Terroni and NODO while studying Hospitality Management at George Brown, and co-opened Cano at 22 with family before later opening Lyla Toronto. That matters for your approach: he is not only a finance/ownership figure—his public profile is built around understanding floor service, kitchens, wine, cocktails, guest experience and restaurant economics. If you meet him, the useful angle is versatility: Bar Lead + Server + Private Event Coordinator, not simply “I’m looking for server shifts.”"
+        },
+        {
+          must:true,
+          title:"Current GM / who to ask for",
+          summary:"No current GM could be verified publicly. Ask for Daniel, Jay, or the manager running the floor; do not invent a GM title.",
+          detail:"A current publicly named General Manager could not be verified. OpenTable currently lists a private-party contact named “Jay” at the restaurant’s main number, but gives neither a surname nor a management title, so it would be inaccurate to call Jay the GM. The safest walk-in phrasing is: “Is Daniel, Jay, or whichever manager is running the floor today available for a quick introduction?” That shows you did some homework without overclaiming. Cano’s public general contact is cano@canorestaurant.com and 416-901-3655; events@canorestaurant.com is the public events contact."
+        },
+        {
+          must:false,
+          title:"What management is likely to value",
+          summary:"Cano’s operation spans a busy dining room, full beverage program and sizeable private events—exactly where your mixed experience is useful.",
+          detail:"Cano now operates beyond the original small-neighbourhood-room identity: current OpenTable materials advertise private events up to 60 guests and custom inquiries up to 90, while the restaurant also runs a full bar, patio, weekend lunch and dinner service. Daniel’s public operator profile emphasizes genuine service, memorable guest experiences, strong beverage programs and the financial mechanics of restaurant operations. That combination suggests a manager may value someone who can move between a busy section, beverage knowledge and event execution. Your event-coordination experience is not an extra line on the resume here; it is potentially a real operational advantage."
+        }
       ],
       "Chef": [
-        {must:true,title:"Adam Pereira — chef-founder",text:"Adam Pereira is Cano’s verified chef-founder/owner and remains publicly associated with the restaurant. His day-to-day title as current Executive Chef was not independently verified, so use “chef-founder” rather than overstating his present operational title."},
-        {must:true,title:"Career lineage",text:"Public profiles connect Pereira to Grazie, NODO and Gusto 101 before Cano, along with George Brown culinary training. Janet Zuccarini is cited as an important mentor from his Gusto 101 period. He later opened Osteria Alba, giving you a useful lineage from earlier Toronto kitchens to Cano and his newer concept."},
-        {must:false,title:"Culinary influences and conversation hook",text:"Pereira’s public story includes St. Kitts roots plus Portuguese and Lebanese-British family influences, feeding an Italian/Mediterranean cooking style. The gnudi con funghi is one of the cleanest dishes to mention because it appears repeatedly as a Pereira/Cano signature and gives you a specific, credible conversation hook."}
+        {
+          must:true,
+          title:"Adam Pereira — chef-founder",
+          summary:"Cano’s chef-founder/owner; still publicly associated with Cano and now also chef-owner of Osteria Alba.",
+          detail:"Adam Pereira is the chef-founder/owner historically responsible for Cano’s culinary direction and remains publicly associated with the restaurant. Recent 2026 Toronto Life coverage of Osteria Alba describes Pereira as the chef-owner there and explicitly notes that he is also behind Cano. I would still avoid calling him Cano’s current day-to-day Executive Chef because that exact operational title was not independently verified. In conversation, “chef-founder Adam Pereira” is accurate and gives you room to discuss the restaurant’s culinary identity without pretending to know the current kitchen org chart."
+        },
+        {
+          must:true,
+          title:"Career lineage",
+          summary:"Grazie → NODO → Gusto 101 / George Brown → Cano → Osteria Alba; Janet Zuccarini is an important mentor connection.",
+          detail:"Public profiles connect Pereira to Grazie and NODO before Cano, and other biographical coverage describes work at Gusto 101 after George Brown culinary training. Janet Zuccarini is cited as an important mentor from that period. The useful lineage to remember is not every date; it is the progression from established Toronto Italian kitchens into his own St. Clair concept, then into Osteria Alba. If a chef or manager asks what you know about Cano, being able to say you understand Pereira came through Toronto’s modern Italian restaurant scene is much stronger than simply memorizing his name."
+        },
+        {
+          must:false,
+          title:"Cooking influences + signature",
+          summary:"Italian/Mediterranean cooking shaped by St. Kitts roots and Portuguese / Lebanese-British family influences; gnudi ai funghi is the key signature.",
+          detail:"Pereira’s public story includes time around his grandfather’s hotel kitchen in St. Kitts and a family background described as Portuguese on his father’s side and Lebanese-British on his mother’s. Early Cano coverage framed his style as less-traditional Italian cooking with Mediterranean influences. The dish that best connects his past and present is gnudi ai funghi: handmade ricotta-style dumplings in a mushroom/truffle sauce. Current Cano materials label it a signature handmade pasta, and 2026 Toronto Life coverage highlights Pereira’s gnudi al funghi at Osteria Alba. That makes it a specific, credible food hook."
+        }
       ],
       "Food": [
-        {must:true,title:"Signature dish — gnudi con funghi",text:"The strongest signature-food fact to know is the gnudi con funghi: handmade gnudi served with a truffle-cream mushroom sauce and Parmigiano. It is repeatedly featured in Cano coverage and is the best single dish to mention if you want to sound prepared rather than generic."},
-        {must:false,title:"Pasta program",text:"Other current pasta examples include rigatoni alla vodka with pancetta and Calabrian chili, tagliatelle Bolognese, braised-short-rib ravioli, linguine ai gamberi, seafood linguine and lobster tagliatelle. The overall impression is a broad, approachable Italian pasta program rather than a narrowly regional menu."},
-        {must:false,title:"Pizza and larger-menu identity",text:"Public menus include pizzas such as Margherita, Calabrese, funghi, ’nduja and alla vodka, alongside dishes such as branzino and chicken parm. Cano’s food identity is polished neighbourhood Italian/Mediterranean cooking with familiar dishes elevated enough to support a more knowledgeable service style."},
-        {must:false,title:"Chef’s Menu",text:"Current public listings advertise a three-course Chef’s Menu around $49, with selections drawn from dishes such as cavolo, polpette, formaggio fritto, rigatoni alla vodka, pollo alla griglia, Margherita pizza and panna cotta. Verify the current menu and price on the day of use because these can change."}
+        {
+          must:true,
+          title:"Gnudi ai funghi",
+          summary:"The signature dish to know: handmade gnudi, wild mushroom/truffle cream, Parmigiano and pangrattato.",
+          detail:"Cano’s current official menu explicitly labels GNUDI AI FUNGHI as its “SIGNATURE HAND MADE GNUDI PASTA.” The current composition is truffle-cream wild mushroom sauce, Parmigiano and pangrattato. Gnudi are soft ricotta-based dumplings—think of the filling of ravioli without the pasta wrapper—so the appeal is texture as much as sauce. This is the most useful single dish to memorize because it is both current and historically connected to Pereira. If asked what you know about the menu, name the dish and explain why it stands out rather than just reciting three pasta names."
+        },
+        {
+          must:false,
+          title:"Current pasta program",
+          summary:"Rigatoni alla vodka, Bolognese, seafood pasta and other approachable classics support the neighbourhood-trattoria identity.",
+          detail:"Current public menu listings include rigatoni alla vodka, tagliatelle alla Bolognese and linguine ai gamberi, while Cano’s official site emphasizes handmade pasta as part of the restaurant identity. OpenTable’s menu update from September 16, 2026 describes the rigatoni with Tito’s vodka, mascarpone rosé sauce, pancetta and Pecorino Romano; the Bolognese uses veal, pork and beef ragù with aged Parmigiano; and the linguine ai gamberi uses jumbo black tiger shrimp, saffron cream, cherry tomatoes, broccolini and Pecorino. If you are serving, be ready for guests to ask about richness, pork content, dairy and seafood."
+        },
+        {
+          must:false,
+          title:"Antipasti, mains and flavour language",
+          summary:"Kale/pecorino, arancini, calamari, chicken parm, Mediterranean sea bass and prime strip steak show an Italian core with broad Mediterranean comfort.",
+          detail:"The current official menu includes Tuscan black kale with Pecorino Romano and pine nuts; veal-and-pork arancini with mozzarella and pomodoro; fried calamari with Calabrian-chili aioli; grilled calamari with capers, greens, brown butter, lemon and olives; chicken parm; Mediterranean sea bass with gremolata and lemon-caper sauce; and Canadian prime New York steak with red-wine jus. The service takeaway is that Cano is not a tiny purist regional menu: you need comfort with Italian ingredient vocabulary—Pecorino, Parmigiano, pomodoro, gremolata, Calabrian chili—while still handling steak, seafood and familiar crowd-pleasers."
+        },
+        {
+          must:false,
+          title:"Chef’s Menu + group dining",
+          summary:"A current three-course $49 Chef’s Menu supports date nights and groups; learn its structure because it may come up in service.",
+          detail:"OpenTable currently lists a three-course Chef’s Menu at $49 per guest for groups of 1–20. The advertised choices include cavolo, polpette or formaggio fritto to start; Margherita pizza, rigatoni alla vodka or pollo alla griglia as the main; and panna cotta or gelato for dessert. This is useful operational knowledge because prix-fixe menus change the way servers pace a table, explain options, handle substitutions and coordinate larger parties. Re-verify exact dishes and price before a shift because these offers can change."
+        }
       ],
       "Bar & Wine": [
-        {must:true,title:"Italian wine depth",text:"The wine program goes well beyond basic house Italian selections. Public lists include Gavi, Chianti Superiore, Super Tuscan, Valpolicella Ripasso, Langhe Nebbiolo, Barolo, Amarone, Barbaresco and Brunello, alongside Champagne, Chablis, Sancerre and Niagara Riesling. For Jonathan, this is a strong reason to lead with Bar Lead experience plus genuine wine interest."},
-        {must:false,title:"Cocktail program",text:"Public cocktail examples include Guaiava, Avventura, Cano Spritz, Zenzero, L’Amore, La Fresca and Passione Picante, generally built as polished contemporary house cocktails rather than a minimal classic-only list. The Cano Spritz is an easy one to remember as a specific beverage-program reference."},
-        {must:false,title:"Zero-proof and overall beverage identity",text:"Cano also lists zero-proof options built around products such as Seedlip. Historically the beverage program was described as intentionally avoiding overly obvious brands and predictable wine choices; the current list is broader and more recognizably Italian, showing that the program has evolved while retaining real beverage depth."}
+        {
+          must:true,
+          title:"Piedmont reds — Langhe Nebbiolo, Barolo, Barbaresco",
+          summary:"Know the Nebbiolo ladder: Langhe Nebbiolo = more immediate; Barolo = more powerful/structured; Barbaresco = generally more elegant and earlier-drinking.",
+          detail:"Cano currently lists Cascina Adelaide Langhe Nebbiolo, Ellena Giuseppe Barolo and Salvano Barbaresco. All three are built around Nebbiolo, so the useful skill is explaining why they are not interchangeable. Langhe Nebbiolo is the approachable entry point: fresh red fruit, savoury character and polished tannin; Cascina Adelaide specifically describes its version as an expression of Nebbiolo’s elegance and freshness rather than a “baby Barolo.” Barolo must be 100% Nebbiolo and ages at least three years; the official consortium describes it as powerful and elegant, with red fruit, rose/violet, spice, liquorice, cocoa, tobacco and leather, plus complex tannin. Barbaresco is also 100% Nebbiolo but requires at least two years’ ageing and is typically framed around aromatic elegance: raspberry/red fruit, violet, cinnamon/nutmeg, hay, wood, hazelnut and anise. Cano’s Salvano Barbaresco has been reviewed with tart/dried cherry, raspberry, rose, spice and firm but elegant tannin. Service shorthand: Langhe Nebbiolo for someone who wants Nebbiolo character without the weight/price of Barolo; Barbaresco for refinement; Barolo for the guest asking for the most structured, age-worthy Piedmont red. Pair all three naturally with beef, mushrooms, truffle-rich dishes and aged cheese; Barolo is the most obvious steak/Bistecca di Manzo recommendation."
+        },
+        {
+          must:true,
+          title:"Veneto reds — Ripasso vs Amarone",
+          summary:"Ripasso is richer Valpolicella re-fermented on Amarone/Recioto pomace; Amarone uses dried grapes and is bigger, higher-alcohol and more intense.",
+          detail:"Cano currently lists Cantina di Negrar Valpolicella Ripasso Superiore and an Amarone della Valpolicella Classico. Ripasso literally means “re-pass”: basic Valpolicella is fermented again on the pomace left from Amarone and/or Recioto, adding body, alcohol, phenolic material and richness. The Valpolicella consortium describes Ripasso as medium-bodied, dry, soft and velvety with red fruit, cherry, spice and vanilla; Cantina di Negrar’s version uses Corvina, Corvinone and Rondinella and is designed for grilled/braised red meat. Amarone is a different level of concentration: grapes are dried for roughly 100–120 days before fermentation, concentrating sugar and polyphenols; the finished wine is dry, high in alcohol, deeply structured and capable of long ageing. Expect dried/cherry fruit, spice and a full, warming texture. Service shorthand: Ripasso is the bridge between everyday Valpolicella and Amarone; recommend it when a guest wants richness without Amarone’s intensity or price. Amarone is for braised/grilled meat, mature cheese or someone explicitly asking for a powerful contemplative red."
+        },
+        {
+          must:true,
+          title:"Tuscany reds — Chianti Superiore, Super Tuscan, Brunello",
+          summary:"Three different ideas: Chianti = Sangiovese-led Tuscan classic; Super Tuscan = rule-breaking Toscana red/blend; Brunello = 100% Sangiovese from Montalcino with long ageing.",
+          detail:"Cano currently lists Casalbosco Chianti Superiore, Tenuta Aquilaia Super Tuscan and Antonio Gaudioso Brunello di Montalcino “Antonutluca.” For interview/service purposes, know the conceptual differences. Chianti Superiore is the familiar Tuscan Sangiovese lane: bright red-cherry fruit, acidity and savoury/herbal structure make it food-friendly for tomato sauces, pizza, pasta and medium-weight meat dishes. “Super Tuscan” is not a legal appellation; WSET describes it as an informal category for ambitious Tuscan reds that historically fell outside traditional Chianti rules—often Sangiovese blended with Cabernet/Merlot, Bordeaux-variety blends, or high-end pure Sangiovese, frequently labelled Toscana IGT. These can show darker fruit, more oak and more Cabernet-like structure than classic Chianti. Brunello di Montalcino is legally much stricter: 100% Sangiovese from Montalcino, at least two years in oak, and not released until the fifth year after harvest. The Brunello consortium describes it as dry, warm, lightly tannic, robust and harmonious, pairing naturally with red meat, game, mushrooms/truffles and mature cheese. Service shorthand: Chianti = bright/food-flexible; Super Tuscan = modern, often fuller/darker; Brunello = prestigious, structured Sangiovese built for steak or a special bottle."
+        },
+        {
+          must:true,
+          title:"Italian whites — Falanghina, Pinot Grigio, Gavi, Pinot Bianco",
+          summary:"Be able to move a guest from familiar Pinot Grigio to more distinctive Gavi or Pinot Bianco; Gavi is the key Italian white to know deeply.",
+          detail:"Cano’s current white list includes Cantina Teanum Falanghina, Antica Vigna Pinot Grigio from Veneto, Fontanassa Cà Adua Gavi DOCG from Piemonte, and Castel Feder Pinot Bianco “Vom Stein” from Alto Adige. The most useful conversation is not memorizing all four bottles—it is understanding the style ladder. Pinot Grigio is the familiar crisp, light, neutral-to-citrusy choice. Falanghina tends to be more aromatic and textured, often showing citrus, orchard fruit and floral/herbal character. Gavi is made from Cortese in Piemonte; its official consortium describes fresh fruit, white flowers, citrus and bitter almond, with dry, fresh, elegant structure and increasing mineral complexity with age. That makes Gavi a great upsell for a guest who says “I like Pinot Grigio but want something more interesting,” especially with seafood, calamari, light pasta or sea bass. Alto Adige Pinot Bianco is typically clean, alpine and structured—think apple/pear, white flowers, freshness and a little more body than basic Pinot Grigio—making it useful with seafood or richer starters."
+        },
+        {
+          must:false,
+          title:"International whites — Niagara Riesling, Sancerre, Chablis",
+          summary:"Riesling = aromatic/high-acid; Sancerre = Sauvignon Blanc/mineral-citrus; Chablis = unoaked-to-subtle-oak Chardonnay with chalky acidity.",
+          detail:"Cano also carries Two Sisters Riesling from Niagara, Domaine du Nozay Sancerre from the Loire and Seguinot-Bordet Chablis Vieilles Vignes from Burgundy. The useful service distinction is grape and texture. Riesling is high-acid and aromatic; depending on residual sugar it can move from dry to off-dry and works especially well with spice, salty starters and dishes needing freshness. Sancerre is Sauvignon Blanc: expect citrus, green/herbal tones and a mineral/chalky impression, making it an easy recommendation for salads, calamari and lighter seafood. Chablis is Chardonnay from northern Burgundy, typically emphasizing acidity, citrus/apple and stony/mineral character rather than overt tropical fruit or heavy oak; it is a strong pairing for shellfish, sea bass and creamy-but-not-too-heavy dishes. If a guest says “I don’t like buttery Chardonnay,” Chablis is the conversation to have."
+        },
+        {
+          must:false,
+          title:"Sparkling, Champagne and rosé",
+          summary:"Cano carries Prosecco/Prosecco Rosé, several Champagnes, Veneto rosé and Cerasuolo d’Abruzzo—know the difference between light aperitif bubbles and serious Champagne.",
+          detail:"The current list includes Santome Prosecco DOC and Prosecco Rosé, plus Collard-Picard Champagne, Moët & Chandon Brut Impérial and Veuve Clicquot Brut. Service shorthand: Prosecco is generally fruit-forward, fresh and easy as an aperitif; Champagne brings more lees/autolytic complexity, finer structure and is the premium celebration choice. The rosé list includes a Santome rosé and Cerasuolo d’Abruzzo. Cerasuolo is a deeper-coloured, more substantial Italian rosato traditionally associated with Montepulciano grapes in Abruzzo; think cherry/red-fruit intensity and enough structure to handle pizza, charcuterie or richer antipasti. This is useful if a guest wants rosé but is eating more than salad."
+        },
+        {
+          must:false,
+          title:"House cocktails + zero-proof",
+          summary:"The bar is not wine-only: know Cano Spritz and the flavour direction of the house list, plus Seedlip-based zero-proof options.",
+          detail:"Current official cocktails include Guaiava (Crown Royal, guava, lemon, Angostura and egg white), Avventura (vodka, passion fruit, lemon, strawberry, mint), Cano Spritz (Tanqueray gin, Aperol, St-Germain, lemon and Prosecco Rosé), Zenzero (Canadian Club, ginger, lime and ginger beer), L’Amore (reposado tequila, lime, blackberry, basil), La Fresca (gin, St-Germain, lime, cucumber) and Passione Picante (reposado tequila, passion fruit, triple sec, lime and jalapeño). The pattern is approachable fruit, citrus, herbs and spice rather than esoteric technique. Zero-proof drinks use Seedlip Grove 42 and fresh fruit/citrus. For an interview, the Cano Spritz is the easiest house drink to name because it connects the Italian aperitivo idea to their contemporary bar program."
+        }
       ],
       "History": [
-        {must:true,title:"Founded in 2017",text:"Cano opened in 2017 at 1108 St. Clair Avenue West as a family-run Italian/Mediterranean neighbourhood restaurant. The founding names to know are Daniel van Welie and Adam Pereira, with family involvement in the opening and build-out."},
-        {must:false,title:"Original concept and evolution",text:"Early coverage described a relatively small, lively neighbourhood room built around approachable Italian/Mediterranean food and beverage. Since then, Cano has developed a larger private-event business and a more established position on St. Clair West while keeping the same broad trattoria identity."},
-        {must:false,title:"Pandemic adaptation",text:"During the pandemic, public coverage documented Cano converting a storage/back-alley area into a heated patio. It is a useful example of the restaurant adapting physically and operationally rather than shutting down its core identity."}
+        {
+          must:true,
+          title:"Opened in 2017 on St. Clair West",
+          summary:"Cano began as a family-run Italian/Mediterranean neighbourhood restaurant from cousins/co-owners Daniel van Welie and Adam Pereira.",
+          detail:"Contemporary 2017 coverage describes Cano as a new St. Clair West restaurant from cousins and co-owners Daniel van Welie and Adam Pereira. Early press emphasized Pereira’s Italian/Mediterranean cooking and Daniel’s prior Toronto restaurant experience. The room itself was heavily rebuilt: the family raised the ceiling, redid ducts/electrical and custom-built the banquette, tabletops and bar. Remembering “family-built neighbourhood restaurant with serious hospitality ambitions” is more useful than memorizing décor trivia."
+        },
+        {
+          must:false,
+          title:"The beverage program changed substantially",
+          summary:"At opening Cano deliberately avoided obvious brands and even skipped Pinot Grigio/Chianti; today the list is broader and more classically Italian.",
+          detail:"The 2017 opening profile quoted then-bar manager Carlos Crespo saying Cano intentionally avoided obvious mainstream spirits and leaned on Ontario brands and lesser-known Mediterranean wines; at that time the list explicitly did not carry Pinot Grigio or Chianti. The 2026 official list now carries both Pinot Grigio and Chianti Superiore alongside Gavi, Barolo, Amarone, Barbaresco and Brunello. That evolution tells you something useful about the restaurant: its beverage program has become more guest-friendly and recognizable while still maintaining depth."
+        },
+        {
+          must:false,
+          title:"Pandemic adaptation",
+          summary:"Cano converted a former storage/back-alley area into a heated 24-seat patio during indoor-dining restrictions.",
+          detail:"TasteToronto documented Cano converting a back lot previously used for storage into a heated patio with nine tables and capacity for roughly 24 guests during pandemic restrictions. Adam Pereira was still publicly identified as chef/owner in that coverage. It is a small detail, but it reinforces the restaurant’s independent-operator character and willingness to adapt the physical operation rather than wait out restrictions."
+        },
+        {
+          must:false,
+          title:"Current scale: events and multiple dining modes",
+          summary:"Cano now handles lunch, dinner, patio/bar service, large groups and private events up to roughly 60, with custom inquiries up to 90.",
+          detail:"Current OpenTable materials list indoor dining, outdoor patio and bar areas; weekend lunch from noon to 5; dinner nightly; large-group bookings up to 18; private events up to 60; and custom inquiries up to 90. That is a much broader operating footprint than the original small-room story. For a job conversation, it means your private-event coordination and ability to switch between service formats are directly relevant."
+        }
       ],
       "Claim to Fame": [
-        {must:true,title:"What Cano is actually known for",text:"Cano’s strongest defensible claim to fame is not Michelin status; it is established neighbourhood longevity, handmade pasta, Adam Pereira’s cooking and the gnudi con funghi as a recurring signature. That is the identity to repeat in conversation."},
-        {must:false,title:"Michelin caveat",text:"No current Michelin-star claim was verified for Cano, so do not describe it as Michelin-starred or Michelin-listed unless that is re-verified from Michelin on the day of use."},
-        {must:false,title:"Public reputation",text:"Cano has a large OpenTable review base with strong recurring praise for food and friendly service, and TripAdvisor has carried a Travellers’ Choice designation. Those are useful reputation signals, but they are not substitutes for Michelin or major-juried-award status."}
+        {
+          must:true,
+          title:"Signature: handmade gnudi + neighbourhood longevity",
+          summary:"Cano’s defensible identity is not Michelin—it is a durable St. Clair Italian restaurant with a recognizable Pereira pasta signature.",
+          detail:"The strongest claim to fame you can safely use is the combination of neighbourhood longevity, handmade pasta and Adam Pereira’s signature gnudi ai funghi. Cano has been operating since 2017, the current official menu still labels the gnudi a signature handmade pasta, and Pereira’s 2026 Osteria Alba coverage again spotlights gnudi al funghi. That continuity gives you a credible story: the dish is not random menu trivia; it is part of the chef’s recognizable style."
+        },
+        {
+          must:false,
+          title:"Not a Michelin restaurant",
+          summary:"No Michelin-star claim was verified; never describe Cano as Michelin-starred or Michelin-listed unless rechecked.",
+          detail:"Cano does not appear in the current Michelin Guide Toronto restaurant results used during research. That is important because your wider itinerary includes several Michelin-recognized restaurants, making it easy to blur statuses. At Cano, emphasize quality, neighbourhood reputation, pasta and hospitality—not awards it does not have."
+        },
+        {
+          must:false,
+          title:"Public reputation",
+          summary:"Large OpenTable following, 4.6/5 current rating, strong food/service scores and neighbourhood-gem positioning.",
+          detail:"OpenTable currently shows Cano at 4.6/5 from roughly 1,720 diner reviews and labels it charming, a neighbourhood gem and good for special occasions. Food and service have both historically scored strongly. Use this as a signal of broad guest acceptance, not as an objective quality ranking. Recent review sentiment still includes occasional comments about noise, pacing or inconsistency, so the useful takeaway for an applicant is that the room is active and service execution matters."
+        }
       ],
       "Hospitality": [
-        {must:true,title:"Service style",text:"Cano presents as elevated but relaxed neighbourhood hospitality: polished enough to require real product knowledge and confident service, but not hushed formal fine dining. The room is social and busy, so warmth, pace and personality matter alongside accuracy."},
-        {must:false,title:"Guest mix",text:"Public positioning accommodates date nights, family dinners, business meals, groups and celebrations. That broad guest mix means a strong server needs to shift tone easily between casual regulars, special occasions and more formal group/event service."},
-        {must:true,title:"Private events",text:"Private events are a meaningful part of Cano’s current operation. Public booking materials advertise larger group and private-event capability than the original small-room concept. This is one of Jonathan’s strongest direct fits because he has both Private Event Coordinator and Private Event Server experience."}
+        {
+          must:true,
+          title:"Polished, energetic neighbourhood service",
+          summary:"Elegant dining by OpenTable’s label, casual dress in practice: polished product knowledge without stiff fine-dining formality.",
+          detail:"OpenTable categorizes Cano as “Elegant Dining” but also lists casual dress and describes the room as relaxed, energetic and neighbourhood-focused. That combination is useful: expect servers to know food, wine and cocktails and to deliver polished service, but personality and warmth still matter. This is not the hushed choreography of a tasting-menu temple; it is more about being sharp, personable and fast enough for a busy trattoria."
+        },
+        {
+          must:false,
+          title:"Wide guest mix",
+          summary:"Dates, families, business lunches, celebrations, patio drinks and groups all fit Cano’s current positioning.",
+          detail:"Current public materials explicitly position Cano for leisurely lunch, patio drinks, date night, family dinner, business lunch, group gathering and special celebrations. A good server therefore needs range: concise professionalism for a business table, celebratory energy for birthdays, patience for family dining and enough beverage knowledge to guide date-night guests into wine or cocktails."
+        },
+        {
+          must:true,
+          title:"Private events are a real operational lane",
+          summary:"Private events up to ~60 and custom inquiries up to ~90 make your event-coordinator experience especially relevant.",
+          detail:"Cano’s current private-dining listings show large groups up to 18, private events up to 60 and custom inquiries up to 90, with a dedicated events email. For you, that is one of the strongest reasons to target this restaurant. You can credibly explain that you have worked both sides of events—coordination before the event and service during the event—so you understand guest communication, timing, setup expectations, team handoffs and what happens when a plan changes mid-service."
+        }
       ],
       "Conversation Hooks": [
-        {must:true,title:"Food hook",text:"Mention the gnudi con funghi specifically and, if the conversation opens up, note that it has become a recognizable Pereira signature. This is much stronger than saying only that you like Italian food."},
-        {must:true,title:"Wine hook",text:"Mention that the wine list has real Italian depth — Barolo, Barbaresco, Amarone and Brunello are easy examples — and connect that to wanting to keep developing your wine knowledge in service."},
-        {must:true,title:"Events hook",text:"Bring up Cano’s private-event side and connect it directly to your Capra’s experience coordinating and serving private events. This gives management an immediate operational reason to see you as more versatile than a standard resume drop."}
+        {
+          must:true,
+          title:"Food: Pereira’s gnudi",
+          summary:"Mention the gnudi as a recurring Pereira signature, not just “I like the pasta.”",
+          detail:"A natural version is: “I noticed the gnudi ai funghi is still called out as the signature handmade pasta here, and it seems to have followed Chef Pereira into Osteria Alba too.” That is specific enough to prove research, but it is still conversational. If the manager wants to talk about food, you can follow with the current truffle-mushroom/Parmigiano/pangrattato composition."
+        },
+        {
+          must:true,
+          title:"Wine: the menu has a real Italian progression",
+          summary:"Use Barolo/Barbaresco/Amarone/Brunello as proof you noticed the program, then connect it to your desire to deepen wine knowledge.",
+          detail:"A good line is: “I was surprised by how deep the Italian red list is for a neighbourhood trattoria—you can take someone from Ripasso or Langhe Nebbiolo all the way to Barolo, Amarone, Barbaresco and Brunello.” If they engage, demonstrate that you know the categories rather than pretending producer-level mastery: Barolo/Barbaresco are Nebbiolo from Piemonte, Ripasso/Amarone are Valpolicella styles from Veneto, and Brunello is Sangiovese from Montalcino. That is exactly the level of knowledge that sounds useful rather than rehearsed."
+        },
+        {
+          must:true,
+          title:"Events: connect directly to Capra’s",
+          summary:"Cano’s events business gives you a concrete reason to lead with Private Event Coordinator experience.",
+          detail:"A natural hook is: “I saw you handle private events and custom groups here. At Capra’s I wasn’t only serving—I also coordinated private events, so I’m comfortable with the planning side and then actually executing service.” That immediately differentiates you from a candidate who can only describe a section they carried."
+        }
       ],
       "Interview": [
-        {must:true,title:"Why Cano fits Jonathan",text:"The strongest answer is that Cano combines the three areas where Jonathan already has useful experience: polished floor service, bar leadership and private events. It also offers a clear next step in product knowledge through a deeper Italian food and wine program."},
-        {must:false,title:"What Jonathan should prove",text:"Be ready to show that you can handle pace without losing warmth, speak confidently about food and wine, support bar and event service, communicate well with a team, and learn a menu rather than relying on generic hospitality experience."},
-        {must:false,title:"Questions worth asking them",text:"Useful questions include: What separates the strongest FOH people at Cano? How are servers expected to learn and speak about the wine list? How do regular service and private events overlap for the FOH team? Is the role primarily serving, bartending, or intentionally hybrid?"}
+        {
+          must:true,
+          title:"Why Cano?",
+          summary:"Best answer: it combines your three proven lanes—floor service, bar leadership and private events—while pushing your Italian food/wine knowledge forward.",
+          detail:"Do not answer with “I love Italian food” or “it seems like a nice restaurant.” A stronger framework is: Cano appeals because it is busy enough to use your serving pace, beverage-driven enough to use your Bar Lead experience, and event-active enough to use your Private Event Coordinator background. Then add growth: the Italian wine list and menu give you a chance to deepen technical product knowledge in a restaurant that is still warm and neighbourhood-focused."
+        },
+        {
+          must:false,
+          title:"What you should prove",
+          summary:"Pace + warmth + product knowledge + versatility. They should leave believing you can help the floor, bar and events team.",
+          detail:"Have examples ready for: managing several tables under pressure without becoming robotic; handling an event change or guest request; coaching or leading behind the bar; learning a new menu or wine list quickly; and dealing with a dissatisfied guest. The technical knowledge on this page matters, but the interview win is showing you can turn knowledge into service—explaining a dish or wine simply, reading what the guest actually wants and staying composed when the room gets busy."
+        },
+        {
+          must:false,
+          title:"Questions to ask them",
+          summary:"Ask about FOH expectations, wine training, private-event crossover and whether the role is intentionally hybrid.",
+          detail:"Good questions: “What separates the strongest FOH people at Cano?” “How do servers learn the wine list—formal tastings, pre-shift, self-study?” “How much does the regular FOH team cross over into private events?” “Is the position mostly serving, mostly bartending, or intentionally hybrid?” “What would you want someone in this role to be noticeably better at after the first 60 days?” These questions tell you how the job actually works while signalling that you are thinking beyond simply getting hired."
+        }
       ]
     },
     flashcards: [
@@ -143,7 +313,16 @@ window.RESTAURANT_INTEL = {
       ["TasteToronto — pandemic adaptation","https://www.tastetoronto.com/stories/popular-italian-restaurant-adapting-to-dining-restrictions"],
       ["TasteToronto — pasta guide","https://www.tastetoronto.com/guides/best-pasta-toronto"],
       ["Daniel van Welie — LinkedIn","https://ca.linkedin.com/in/daniel-van-welie-135a4b165"],
-      ["Adam Pereira — LinkedIn","https://ca.linkedin.com/in/adam-pereira-a858a0158"]
+      ["Adam Pereira — LinkedIn","https://ca.linkedin.com/in/adam-pereira-a858a0158"],
+      ["Barolo DOCG — Langhe Vini Consortium","https://www.langhevini.it/en/le-denominazioni-tutelate-dal-consorzio/barolo-docg/"],
+      ["Barbaresco DOCG — Langhe Vini Consortium","https://www.langhevini.it/en/le-denominazioni-tutelate-dal-consorzio/barbaresco-docg/"],
+      ["Gavi DOCG — Consorzio Tutela del Gavi","https://www.consorziogavi.com/en/gavi-docg-2/"],
+      ["Valpolicella Ripasso — official consortium","https://www.consorziovalpolicella.it/en/types-of-wines/valpolicella-ripasso-doc/"],
+      ["Amarone — official consortium","https://www.consorziovalpolicella.it/en/types-of-wines/amarone-della-valpolicella-docg/"],
+      ["Brunello di Montalcino — official consortium","https://www.consorziobrunellodimontalcino.it/en/586/il-brunello"],
+      ["Super Tuscan explainer — WSET","https://www.wsetglobal.com/knowledge-centre/blog/2025/what-is-a-super-tuscan-wine"],
+      ["Cascina Adelaide Langhe Nebbiolo — producer","https://www.cascinaadelaide.com/en/vini_langhe_nebbiolo.aspx"],
+      ["Cantina di Negrar Ripasso — producer","https://www.cantinanegrar.com/it/valpolicella-ripasso-doc-classico-superiore-biologico"]
     ]
   }
 };
