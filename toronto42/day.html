@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f1e8">
+<title>Toronto Culinary Passport — Tomorrow Plan</title>
+<link rel="stylesheet" href="day.css">
+</head>
+<body>
+<main class="day-shell">
+  <header class="day-hero">
+    <div>
+      <div class="top-links">
+        <a id="backChecklist" href="index.html">← Checklist</a>
+        <a id="openPortal" href="map.html">Route Portal ↗</a>
+      </div>
+      <div class="eyebrow">Saturday · September 19, 2026</div>
+      <h1>Tomorrow<br>Operating Plan</h1>
+      <p>Restaurant hunt as the backbone. UX-overhaul work fills the bad manager-access windows. Work mode handles restaurant research, cover letters and flash cards just before serious stops.</p>
+    </div>
+    <aside class="progress-card">
+      <div class="progress-row"><strong><span id="doneBlocks">0</span> / 15</strong><span id="dayPct">0% done</span></div>
+      <div class="track"><div id="dayFill"></div></div>
+      <div id="nowLabel" class="now-label">Tomorrow starts at 5:10 AM</div>
+    </aside>
+  </header>
+
+  <section class="launch-card">
+    <div>
+      <div class="eyebrow">First move at 5:10 AM</div>
+      <h2>Open Work mode and ingest <code>~/Downloads/ux-overhaul-feed</code></h2>
+      <p>Turn the folder into an exact execution queue: must finish tomorrow, implementation, review/decision, validation, blockers and later work. The UX sprint labels below are the operating slots; Work mode replaces them with the folder’s actual tasks.</p>
+    </div>
+    <div class="launch-actions">
+      <a id="launchChecklist" class="button primary" href="index.html">Open checklist</a>
+      <a id="launchPortal" class="button" href="map.html">Open full route</a>
+    </div>
+  </section>
+
+  <section class="snapshot">
+    <article><span class="metric" id="visitedMetric">0</span><span class="metric-label">restaurants visited</span></article>
+    <article><span class="metric" id="interviewMetric">0</span><span class="metric-label">interviews</span></article>
+    <article><span class="metric" id="applyMetric">0</span><span class="metric-label">apply online</span></article>
+    <article><span class="metric" id="customMetric">0</span><span class="metric-label">unexpected stops</span></article>
+  </section>
+
+  <div class="layout">
+    <section>
+      <div class="section-head">
+        <div><div class="eyebrow">The day</div><h2>Expected flow</h2></div>
+        <button id="resetDay" type="button">Reset day checks</button>
+      </div>
+      <div id="timeline" class="timeline"></div>
+    </section>
+
+    <aside class="rules">
+      <div class="eyebrow">Operating rules</div>
+      <h2>How tomorrow runs</h2>
+      <div class="rule"><strong>1. Quality over pin-count.</strong><span>42 is the master route, not tomorrow’s success metric. Real conversations beat touching every stop.</span></div>
+      <div class="rule"><strong>2. Prep just in time.</strong><span>Before a serious restaurant, use Work mode for a 5–10 minute micro-pack: research, cover letter and flash cards.</span></div>
+      <div class="rule"><strong>3. Log immediately.</strong><span>After every stop, record the outcome before walking away: chatted, manager unavailable, interview, maybe, apply online or job.</span></div>
+      <div class="rule"><strong>4. Protect service periods.</strong><span>Lunch and dinner rushes become laptop windows unless a restaurant specifically told you to return then.</span></div>
+      <div class="rule"><strong>5. Unexpected stops count.</strong><span>If you find a strong place en route, add it immediately and keep moving.</span></div>
+      <div class="rule"><strong>6. End with a clean state.</strong><span>Applications, follow-ups, route outcomes and the UX continuation queue are closed out before bed.</span></div>
+    </aside>
+  </div>
+</main>
+<script src="day.js"></script>
+</body>
+</html>
