@@ -124,7 +124,7 @@ describe('Connected Hearthside room journeys through the command authority',()=>
     expect(app.read().hearthside!.experiences[0]!.references).toEqual([{kind:'bank',id:bankId},{kind:'calendar-event',id:eventId}]);
     expect(app.read().nativeEvents!.filter(e=>e.id===eventId)).toHaveLength(1);
     expect(app.read().nativeEvents!.find(e=>e.id===eventId)!.start).toBe('2026-10-04');
-    await click('Shape this intention');await field('Where we are','lived');await save('Save our intention');
+    await field('We lived this on','2026-10-04');await click('We lived this');
     await click('Remember this');await field('A name for this moment','The windy weekend');await field('My words','We shared the last warm coffee.');await save('Share this composition for us to keep');
     await app.actor('MEM-002');await click('Add or edit my recollection');await field('My words','I remember how loud the water sounded.');await save('Share this composition for us to keep');
     await click('Keep this version');await app.actor('MEM-001');await click('Keep this version');

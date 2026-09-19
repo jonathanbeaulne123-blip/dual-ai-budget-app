@@ -6512,7 +6512,7 @@ export function App() {
     }
     const back=readHearthsideToolReturn(hearthsideToolReturn,ledgerRenderScopeKey,household.householdId),selected=workspaceExperienceSelection?.scope===workspaceUiScopeKey?household.hearthside?.experiences.find(e=>e.id===workspaceExperienceSelection.id):undefined;
     const path=back?.path??hearthsidePath({version:1,householdId:household.householdId,room:'common',mode:'present',...(selected?{object:{kind:'experience' as const,id:selected.id}}:{})}),focusId=back?.focusId??'hearthside-focus-title';
-    setWorkspaceCompact(false);window.history.pushState({hearthTab:'play',hearthsideFocus:focusId},'',path);goTab('play');requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById(focusId)?.focus()));
+    setWorkspaceCompact(false);returnToSharedLife(path,focusId);
   }
   function selectedExperienceWorkspace():HearthsideWorkspaceBinding|undefined{
     if(!household||workspaceExperienceSelection?.scope!==workspaceUiScopeKey)return;
@@ -6536,6 +6536,15 @@ export function App() {
     const path=`${window.location.pathname}${window.location.search}`,focusId=document.activeElement instanceof HTMLElement?document.activeElement.id||'hearthside-title':'hearthside-title';
     const context=readHearthsideToolReturn({scope:ledgerRenderScopeKey,path,focusId,label,tab:next,...(reference?.kind==='task'?{taskId:reference.id}:{}),...(reference?.kind==='calendar-event'?{eventId:reference.id}:{})},ledgerRenderScopeKey,household.householdId);
     goTab(next);if(context){setHearthsideToolReturn(context);window.history.replaceState({...window.history.state,hearthsideReturn:context},'');}
+  }
+  function returnToSharedLife(path:string,focusId:string){
+    if(!household)return;
+    const addressed=HOUSE_WORLD_ENABLED?parseHouseRoute(path,household.householdId):null;
+    const legacy=HOUSE_WORLD_ENABLED&&!addressed?parseHearthsideRoute(path,household.householdId):null;
+    const route=addressed??(legacy?houseRouteFromLife(legacy,"household"):null);
+    if(route)goTab("play",undefined,{route,history:"push"});
+    else {window.history.pushState({hearthTab:"play",hearthsideFocus:focusId},"",path);goTab("play");}
+    requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById(focusId)?.focus()));
   }
 
   async function beginSignOut() {
@@ -7176,7 +7185,7 @@ export function App() {
         onLegacy={() => openLegacyHercules()} onReview={openLegacyHercules} recordOptions={workspaceRecordOptions(household, actorId)}
         onSnapshot={value => setWorkspaceSnapshot({ ...value, identity: workspaceUiScopeKey })} openProjectId={workspaceProjectId} onProjectOpened={()=>setWorkspaceProjectId(null)}
       />}
-      {HEARTHSIDE_FLAGS.presentation&&view==="household"&&hearthsideToolReturn?.scope===ledgerRenderScopeKey&&hearthsideToolReturn.tab===tab&&<aside className="hearthside-tool-return"><span>{hearthsideToolReturn.label}</span><button onClick={()=>{const back=readHearthsideToolReturn(hearthsideToolReturn,ledgerRenderScopeKey,household.householdId);if(!back)return;window.history.pushState({hearthTab:"play",hearthsideFocus:back.focusId},"",back.path);goTab("play");requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById(back.focusId)?.focus()));}}>Return to {HEARTHSIDE_LABEL}</button></aside>}
+      {HEARTHSIDE_FLAGS.presentation&&view==="household"&&hearthsideToolReturn?.scope===ledgerRenderScopeKey&&hearthsideToolReturn.tab===tab&&<aside className="hearthside-tool-return"><span>{hearthsideToolReturn.label}</span><button onClick={()=>{const back=readHearthsideToolReturn(hearthsideToolReturn,ledgerRenderScopeKey,household.householdId);if(!back)return;returnToSharedLife(back.path,back.focusId);}}>Return to {HEARTHSIDE_LABEL}</button></aside>}
       {(HEARTHSIDE_FLAGS.presentation || HOUSE_WORLD_ENABLED) && (tab === "play" || tab === "together") && view === "household" && <PlayBoundary onExit={() => goTab("home")} exitLabel="Return Home"><Suspense fallback={<p>Opening our shared home…</p>}><Hearthside
         controlledRoute={HOUSE_WORLD_ENABLED?houseLifeRoute(activeHouseRoute):undefined} onReturnToOrigin={HOUSE_WORLD_ENABLED?putHouseObjectBack:undefined} onNavigate={HOUSE_WORLD_ENABLED?(next,replace)=>{const route=houseRouteFromLife(next,view);navigateHouseSurface(route,replace);}:undefined}
         key={ledgerRenderScopeKey} identity={ledgerRenderScopeKey} household={household} memberId={actorId} busy={busy} vaultSource={()=>ledgerSyncRef.current}
@@ -7218,7 +7227,7 @@ export function App() {
           housePlace={(HEARTHSIDE_FLAGS.presentation||HOUSE_WORLD_ENABLED)&&activeHouseRoute.room==="home"?(activeHouseRoute.level==="above"?"loft":activeHouseRoute.level==="below"?"cellar":"home"):undefined}
           onHousePlace={HEARTHSIDE_FLAGS.presentation ? place => goTab("home", undefined, {route:{room:"home",level:place==="loft"?"above":place==="cellar"?"below":"middle",householdId:household.householdId},history:"push"}) : undefined}
           onGo={(next) => goTab(next)}
-          onOpenMemory={id=>{window.history.pushState({hearthTab:'play'},'',hearthsidePath({version:1,householdId:household.householdId,room:'theatre',mode:'remember',object:{kind:'memory',id}}));goTab('play');}}
+          onOpenMemory={id=>returnToSharedLife(hearthsidePath({version:1,householdId:household.householdId,room:'theatre',mode:'remember',object:{kind:'memory',id}}),'hearthside-focus-title')}
           onOpenSetup={(destination) => openJourneyDestination(destination === "charter" ? "people" : "fund")}
           onReadAcceptedCommand={kittyAcceptedCommandReader} creationIdentity={ledgerRenderScopeKey}
           onReadSubmission={async id => { const status = await readWorkShiftSubmission(id); if (status === "pending") ledgerSyncRef.current?.retryPending(); return status; }}

@@ -45,9 +45,11 @@ export async function seal<T>(data: T): Promise<Sealed<T>> {
 /** Personal creative indexes are private projections, but their journals still have to exist in the authority archive. */
 export function assertPersonalDesignArchiveReferences(personal:Checkpoint['personal'],references:readonly DesignArchiveReference[]):void {
   const designs=new Map(references.map(reference=>[reference.designId,decodeDesignArchiveReference(reference)]));
-  for(const [,own] of personal)for(const index of own.personalLife?.designs??[]){
+  for(const [memberId,own] of personal)for(const index of own.personalLife?.designs??[]){
     const reference=designs.get(index.designId);
-    if(!reference||reference.revision!==index.revision||reference.bankId!==null)throw Error('DESIGN_ARCHIVE_REFERENCE_MISSING');
+    const bank=reference?.bankId===null?null:own.goals?.find(goal=>goal.id===reference?.bankId&&!goal.shared&&goal.ownerMemberId===memberId
+      &&goal.envelope?.designRef?.designId===index.designId&&goal.envelope.designRef.revision===index.revision);
+    if(!reference||reference.revision!==index.revision||reference.bankId!==null&&!bank)throw Error('DESIGN_ARCHIVE_REFERENCE_MISSING');
   }
 }
 

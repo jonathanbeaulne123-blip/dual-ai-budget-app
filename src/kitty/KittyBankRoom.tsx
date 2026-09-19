@@ -221,6 +221,13 @@ function bankEvidence(
     };
   }
 }
+/** Nest goal IDs are display handles; a validated goal-backed request opens the
+ * real goal bank so its money review and Final Confirm controls stay available. */
+export function goalBackedBankId(household: Household, memberId: string, view: LedgerView, bankId?: string): string | undefined {
+  if (!bankId?.startsWith("goal:")) return undefined;
+  const id = bankId.slice("goal:".length);
+  return household.goals.some((goal) => goal.id === id && goalVisibleInView(goal, memberId, view)) ? id : undefined;
+}
 export function KittyBankRoom(props: KittyRoomProps) {
   return createPortal(<Room key={props.identity} {...props} />, document.body);
 }
@@ -261,7 +268,9 @@ function Room({
   const [filter, setFilter] = useState<"active" | "archived" | "completed">(
     "active",
   );
-  const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? (context?.bankId || initialBankId ? `nest:${context?.bankId ?? initialBankId}` : h.goals.find(row => goalVisibleInView(row,memberId,view) && row.status !== "retired" && !row.envelope?.archivedAt)?.id ?? "nest:king"));
+  const requestedBankId = context?.bankId || initialBankId;
+  const requestedGoalBankId = goalBackedBankId(h, memberId, view, requestedBankId);
+  const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? requestedGoalBankId ?? (requestedBankId ? `nest:${requestedBankId}` : h.goals.find(row => goalVisibleInView(row,memberId,view) && row.status !== "retired" && !row.envelope?.archivedAt)?.id ?? "nest:king"));
   // A new request for a named bank (an island landmark) while the room is already open moves to that bank.
   const requestedGoalId = context?.goalId;
   const request = context?.request;

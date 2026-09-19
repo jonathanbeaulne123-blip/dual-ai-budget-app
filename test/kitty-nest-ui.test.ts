@@ -3,7 +3,7 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 vi.mock("../src/kitty/KittyStage.tsx",()=>({KittyStage:({name}: {name:string})=>createElement('div',{'data-stage-name':name})}));
-import { KittyBankRoom } from "../src/kitty/KittyBankRoom.tsx";
+import { goalBackedBankId, KittyBankRoom } from "../src/kitty/KittyBankRoom.tsx";
 import { KittyNest } from "../src/kitty/KittyNest.tsx";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
 import { financialAuditHash, recordBillPayment, type Household, type CommitResult } from "../src/core/index.ts";
@@ -11,7 +11,7 @@ import { financialAuditHash, recordBillPayment, type Household, type CommitResul
 const buttons=(text:string)=>[...document.querySelectorAll<HTMLButtonElement>('button')].filter(row=>row.textContent?.trim()===text || row.getAttribute('aria-label')===text || row.matches('.studio-benches button') && row.querySelector('span')?.textContent===text);
 async function click(text:string,last=false){const found=buttons(text);const target=last?found.at(-1):found[0];expect(target,text).toBeTruthy();await act(async()=>target!.click());}
 async function fixture(bankId:string){let h=planLifeFixture('household'),calls=0,fail=false;const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
- const render=()=>root.render(createElement(KittyBankRoom,{household:h,view:'household',memberId:'MEM-001',identity:'nest-ui',initialBankId:bankId==='bill'?`recurrence:${h.recurrences[0]!.id}:2026-09-20`:bankId,onClose:()=>{},onCommand:async(fn:(h:Household)=>CommitResult)=>{calls++;if(fail)return {ok:false,userMessage:'Try again. Your design is still here.'};const result=fn(h);h=result.household;render();return {ok:true,household:h};}}));await act(async()=>render());
+ const render=()=>root.render(createElement(KittyBankRoom,{household:h,view:'household',memberId:'MEM-001',identity:'nest-ui',initialBankId:bankId==='bill'?`recurrence:${h.recurrences[0]!.id}:2026-09-20`:bankId==='goal'?`goal:${h.goals.find(goal=>goal.shared)!.id}`:bankId,onClose:()=>{},onCommand:async(fn:(h:Household)=>CommitResult)=>{calls++;if(fail)return {ok:false,userMessage:'Try again. Your design is still here.'};const result=fn(h);h=result.household;render();return {ok:true,household:h};}}));await act(async()=>render());
  return {get h(){return h;},get calls(){return calls;},set fail(value:boolean){fail=value;},close:async()=>{await act(async()=>root.unmount());host.remove();sessionStorage.clear();}};
 }
 describe('Nest gallery modes',()=>{
@@ -52,5 +52,14 @@ describe('Nest gallery modes',()=>{
   const h=planLifeFixture('household');
   const host=document.createElement('div');document.body.append(host);const root=createRoot(host);let selected='';await act(async()=>root.render(createElement(KittyNest,{household:h,memberId:'MEM-001',view:'household',today:'2026-09-12',onSelect:bank=>{selected=bank.id;}})));
   const door=document.querySelector<HTMLButtonElement>(`[data-bank-id="recurrence:${h.recurrences[0]!.id}:2026-09-20"]`)!;expect(door).toBeTruthy();await act(async()=>door.click());expect(selected).toBe(`recurrence:${h.recurrences[0]!.id}:2026-09-20`);await act(async()=>root.unmount());host.remove();
+ });
+ it('opens a Home goal-bank handle as its real goal bank, with its money controls still available',async()=>{
+  const f=await fixture('goal');try{const goal=f.h.goals.find(row=>row.shared)!;
+   expect(goalBackedBankId(f.h,'MEM-001','household',`goal:${goal.id}`)).toBe(goal.id);
+   expect(goalBackedBankId(f.h,'MEM-002','personal',`goal:${goal.id}`)).toBeUndefined();
+   expect(document.querySelector(`[data-goal-id="${goal.id}"]`)).toBeTruthy();
+   expect(document.body.textContent).not.toContain('A little bank for a real expense');
+   expect(buttons('Use money')[0]).toBeTruthy();expect(f.calls).toBe(0);
+  }finally{await f.close();}
  });
 });
