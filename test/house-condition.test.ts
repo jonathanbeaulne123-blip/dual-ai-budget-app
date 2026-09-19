@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { deriveHouseCondition, houseConditionFromDays } from '../src/core/houseCondition.ts';
 import { financialAuditHash, postEntry, recordHouseholdFundReconciliation, HOUSEHOLD_FUND_ID } from '../src/core/index.ts';
+import { addDays } from '../src/core/calendar.ts';
 import { fundedHousehold, ALEX, TODAY } from './fixtures/fund-model.ts';
 
 describe('living house presentation over accepted shared facts', () => {
@@ -19,6 +20,7 @@ describe('living house presentation over accepted shared facts', () => {
     expect(deriveHouseCondition(h, input).state).toBe('wilting');
     expect(deriveHouseCondition(h, { ...input, freshness:'offline' }).state).toBe('checking');
     expect(deriveHouseCondition(h, { ...input, backingAvailable:false }).state).toBe('checking');
+    expect(deriveHouseCondition(h, { ...input, today:addDays(TODAY, 8) }).state).toBe('checking');
     expect(await financialAuditHash(h)).toBe(before);
   });
 });

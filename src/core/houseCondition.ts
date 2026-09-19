@@ -17,14 +17,16 @@ export function houseConditionFromDays(input: { certain: boolean; growing: boole
 /**
  * Accepted, dated shared facts only. Future obligations, expected income, a low balance,
  * partner activity and private books never cause damage. Successful spending that remains
- * covered is transformation. Unverified/offline/backing-unavailable pictures stay neutral.
+ * covered is transformation. Unverified/offline/backing-unavailable pictures and bank checks older than seven days stay neutral.
  * No stored score, history mutation, financial writer or provider disclosure.
  */
 export function deriveHouseCondition(h: Household, input: { memberId: string; today: DateKey; freshness: FundPulseFreshness; growing?: boolean; backingAvailable?: boolean }): HouseCondition {
   const read = (date: DateKey) => projectHouseholdFundAsOf(h, { anchor: date, period: monthKeyFromDateKey(date), asOf: date });
   const current = read(input.today);
   const backingAvailable = input.backingAvailable ?? projectKittyNest(h, input.memberId, 'household', input.today).categories.every(bank => bank.amountCents !== null);
-  const certain = input.freshness === 'current' && current.configured && current.reconciliationTied === true && backingAvailable;
+  // The existing weekly bank-check rhythm is also the confidence window for visual wear.
+  const recentBankCheck = current.lastReconciledAt !== null && current.lastReconciledAt >= addDays(input.today, -7) && current.lastReconciledAt <= input.today;
+  const certain = input.freshness === 'current' && current.configured && current.reconciliationTied === true && recentBankCheck && backingAvailable;
   const deficits: boolean[] = [];
   if (certain) for (let back = 0; back < 30; back++) {
     const date = addDays(input.today, -back);
