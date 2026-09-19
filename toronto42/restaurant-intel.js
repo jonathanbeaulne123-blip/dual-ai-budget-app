@@ -42,6 +42,54 @@ window.RESTAURANT_INTEL = {
       avoid: "Do not frame Cano as one interchangeable stop in a 42-restaurant blitz.",
       fallback: "No problem. Could I leave my resume, and is there a name I should address my follow-up to? I'd also be happy to email it directly."
     },
+    studyNotes: {
+      "Management": [
+        {must:true,title:"Daniel van Welie — owner/operator",text:"Daniel van Welie is the verified current owner/operator to know. Public biographies connect him to front- and back-of-house work at Terroni and NODO, with earlier opening coverage also referencing Gusto 101, plus Hospitality Management studies at George Brown. He opened Cano at a young age and later opened Lyla Toronto. For a walk-in, he is the strongest verified senior name to ask for."},
+        {must:true,title:"Current manager / contact path",text:"A publicly named current General Manager could not be verified. OpenTable currently names “Jay” as a private-party contact without a surname or management title, so do not present Jay as the GM. Ask for “Daniel, Jay, or whichever manager is running the floor today.” Public restaurant contact is cano@canorestaurant.com and 416-901-3655; events@canorestaurant.com is the public events contact."},
+        {must:false,title:"Why management is relevant to Jonathan",text:"Cano operates across everyday dining, beverage service and private events. Daniel’s public operator profile emphasizes a broad view of hospitality rather than only food, which makes Jonathan’s combined Bar Lead, Server and Private Event Coordinator experience a stronger pitch than presenting himself as only a server."}
+      ],
+      "Chef": [
+        {must:true,title:"Adam Pereira — chef-founder",text:"Adam Pereira is Cano’s verified chef-founder/owner and remains publicly associated with the restaurant. His day-to-day title as current Executive Chef was not independently verified, so use “chef-founder” rather than overstating his present operational title."},
+        {must:true,title:"Career lineage",text:"Public profiles connect Pereira to Grazie, NODO and Gusto 101 before Cano, along with George Brown culinary training. Janet Zuccarini is cited as an important mentor from his Gusto 101 period. He later opened Osteria Alba, giving you a useful lineage from earlier Toronto kitchens to Cano and his newer concept."},
+        {must:false,title:"Culinary influences and conversation hook",text:"Pereira’s public story includes St. Kitts roots plus Portuguese and Lebanese-British family influences, feeding an Italian/Mediterranean cooking style. The gnudi con funghi is one of the cleanest dishes to mention because it appears repeatedly as a Pereira/Cano signature and gives you a specific, credible conversation hook."}
+      ],
+      "Food": [
+        {must:true,title:"Signature dish — gnudi con funghi",text:"The strongest signature-food fact to know is the gnudi con funghi: handmade gnudi served with a truffle-cream mushroom sauce and Parmigiano. It is repeatedly featured in Cano coverage and is the best single dish to mention if you want to sound prepared rather than generic."},
+        {must:false,title:"Pasta program",text:"Other current pasta examples include rigatoni alla vodka with pancetta and Calabrian chili, tagliatelle Bolognese, braised-short-rib ravioli, linguine ai gamberi, seafood linguine and lobster tagliatelle. The overall impression is a broad, approachable Italian pasta program rather than a narrowly regional menu."},
+        {must:false,title:"Pizza and larger-menu identity",text:"Public menus include pizzas such as Margherita, Calabrese, funghi, ’nduja and alla vodka, alongside dishes such as branzino and chicken parm. Cano’s food identity is polished neighbourhood Italian/Mediterranean cooking with familiar dishes elevated enough to support a more knowledgeable service style."},
+        {must:false,title:"Chef’s Menu",text:"Current public listings advertise a three-course Chef’s Menu around $49, with selections drawn from dishes such as cavolo, polpette, formaggio fritto, rigatoni alla vodka, pollo alla griglia, Margherita pizza and panna cotta. Verify the current menu and price on the day of use because these can change."}
+      ],
+      "Bar & Wine": [
+        {must:true,title:"Italian wine depth",text:"The wine program goes well beyond basic house Italian selections. Public lists include Gavi, Chianti Superiore, Super Tuscan, Valpolicella Ripasso, Langhe Nebbiolo, Barolo, Amarone, Barbaresco and Brunello, alongside Champagne, Chablis, Sancerre and Niagara Riesling. For Jonathan, this is a strong reason to lead with Bar Lead experience plus genuine wine interest."},
+        {must:false,title:"Cocktail program",text:"Public cocktail examples include Guaiava, Avventura, Cano Spritz, Zenzero, L’Amore, La Fresca and Passione Picante, generally built as polished contemporary house cocktails rather than a minimal classic-only list. The Cano Spritz is an easy one to remember as a specific beverage-program reference."},
+        {must:false,title:"Zero-proof and overall beverage identity",text:"Cano also lists zero-proof options built around products such as Seedlip. Historically the beverage program was described as intentionally avoiding overly obvious brands and predictable wine choices; the current list is broader and more recognizably Italian, showing that the program has evolved while retaining real beverage depth."}
+      ],
+      "History": [
+        {must:true,title:"Founded in 2017",text:"Cano opened in 2017 at 1108 St. Clair Avenue West as a family-run Italian/Mediterranean neighbourhood restaurant. The founding names to know are Daniel van Welie and Adam Pereira, with family involvement in the opening and build-out."},
+        {must:false,title:"Original concept and evolution",text:"Early coverage described a relatively small, lively neighbourhood room built around approachable Italian/Mediterranean food and beverage. Since then, Cano has developed a larger private-event business and a more established position on St. Clair West while keeping the same broad trattoria identity."},
+        {must:false,title:"Pandemic adaptation",text:"During the pandemic, public coverage documented Cano converting a storage/back-alley area into a heated patio. It is a useful example of the restaurant adapting physically and operationally rather than shutting down its core identity."}
+      ],
+      "Claim to Fame": [
+        {must:true,title:"What Cano is actually known for",text:"Cano’s strongest defensible claim to fame is not Michelin status; it is established neighbourhood longevity, handmade pasta, Adam Pereira’s cooking and the gnudi con funghi as a recurring signature. That is the identity to repeat in conversation."},
+        {must:false,title:"Michelin caveat",text:"No current Michelin-star claim was verified for Cano, so do not describe it as Michelin-starred or Michelin-listed unless that is re-verified from Michelin on the day of use."},
+        {must:false,title:"Public reputation",text:"Cano has a large OpenTable review base with strong recurring praise for food and friendly service, and TripAdvisor has carried a Travellers’ Choice designation. Those are useful reputation signals, but they are not substitutes for Michelin or major-juried-award status."}
+      ],
+      "Hospitality": [
+        {must:true,title:"Service style",text:"Cano presents as elevated but relaxed neighbourhood hospitality: polished enough to require real product knowledge and confident service, but not hushed formal fine dining. The room is social and busy, so warmth, pace and personality matter alongside accuracy."},
+        {must:false,title:"Guest mix",text:"Public positioning accommodates date nights, family dinners, business meals, groups and celebrations. That broad guest mix means a strong server needs to shift tone easily between casual regulars, special occasions and more formal group/event service."},
+        {must:true,title:"Private events",text:"Private events are a meaningful part of Cano’s current operation. Public booking materials advertise larger group and private-event capability than the original small-room concept. This is one of Jonathan’s strongest direct fits because he has both Private Event Coordinator and Private Event Server experience."}
+      ],
+      "Conversation Hooks": [
+        {must:true,title:"Food hook",text:"Mention the gnudi con funghi specifically and, if the conversation opens up, note that it has become a recognizable Pereira signature. This is much stronger than saying only that you like Italian food."},
+        {must:true,title:"Wine hook",text:"Mention that the wine list has real Italian depth — Barolo, Barbaresco, Amarone and Brunello are easy examples — and connect that to wanting to keep developing your wine knowledge in service."},
+        {must:true,title:"Events hook",text:"Bring up Cano’s private-event side and connect it directly to your Capra’s experience coordinating and serving private events. This gives management an immediate operational reason to see you as more versatile than a standard resume drop."}
+      ],
+      "Interview": [
+        {must:true,title:"Why Cano fits Jonathan",text:"The strongest answer is that Cano combines the three areas where Jonathan already has useful experience: polished floor service, bar leadership and private events. It also offers a clear next step in product knowledge through a deeper Italian food and wine program."},
+        {must:false,title:"What Jonathan should prove",text:"Be ready to show that you can handle pace without losing warmth, speak confidently about food and wine, support bar and event service, communicate well with a team, and learn a menu rather than relying on generic hospitality experience."},
+        {must:false,title:"Questions worth asking them",text:"Useful questions include: What separates the strongest FOH people at Cano? How are servers expected to learn and speak about the wine list? How do regular service and private events overlap for the FOH team? Is the role primarily serving, bartending, or intentionally hybrid?"}
+      ]
+    },
     flashcards: [
       {category:"Management",must:true,q:"Who is the owner/operator I should know?",a:"Daniel van Welie."},
       {category:"Management",must:true,q:"What is Daniel's background?",a:"FOH/BOH restaurant experience including Terroni/NODO references, plus George Brown Hospitality Management; he opened Cano young and later opened Lyla."},
