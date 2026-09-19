@@ -15,7 +15,7 @@ function testFiles(directory: string = testDirectoryPath): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) return testFiles(path);
-    return entry.isFile() && entry.name.endsWith(".test.ts") ? [path] : [];
+    return entry.isFile() && /\.test\.(?:ts|tsx|js|mjs)$/.test(entry.name) ? [path] : [];
   });
 }
 
@@ -82,8 +82,8 @@ describe("Vitest lanes", () => {
       expect(booksLane).toContain(`test/${fileName}`);
       expect(fastLane).toContain(`--exclude=test/${fileName}`);
     }
-    expect([...fastLane.matchAll(/--exclude=test\/([^\s]+)/g)].map((match) => match[1]).sort()).toEqual(serialTests);
-    expect([...booksLane.matchAll(/test\/([^\s]+\.test\.ts)/g)].map((match) => match[1]).sort()).toEqual(serialTests);
+    expect([...fastLane.matchAll(/--exclude=test\/([^\s]+\.test\.(?:ts|tsx|js|mjs))/g)].map((match) => match[1]).sort()).toEqual(serialTests);
+    expect([...booksLane.matchAll(/test\/([^\s]+\.test\.(?:ts|tsx|js|mjs))/g)].map((match) => match[1]).sort()).toEqual(serialTests);
     for (const fileName of rpcIsolatedFixtureTests) {
       expect(booksLane).toContain(`&& vitest run test/${fileName} --maxWorkers=1`);
     }

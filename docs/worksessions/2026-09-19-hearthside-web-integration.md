@@ -58,8 +58,9 @@ Remote main was refreshed again immediately before final verification and remain
 The verifier records exact HEAD, command, exit code, elapsed wall time, before/after worktree status and the quick gate's complete change fingerprint. The final result is authoritative only when its process has completed; a pending or missing file is not a pass. Read the latest gate result and build result together. The300s budget is unchanged; any breach must be named and an unchanged-candidate rerun retained. No exhaustive lane is authorized.
 
 - `/tmp/hearthside-web-integration-20260919/gate-final.json` and `gate-final.log`
-- Corrected candidate: `/tmp/hearthside-web-integration-20260919/gate-rerun.json` and `gate-rerun.log`
-- Unchanged candidate budget confirmation: `/tmp/hearthside-web-integration-20260919/gate-confirm.json` and `gate-confirm.log`
+- Intermediate corrected candidate (intentionally stopped for the final guard fix): `/tmp/hearthside-web-integration-20260919/gate-rerun.json` and `gate-rerun.log`
+- Final candidate: `/tmp/hearthside-web-integration-20260919/gate-confirm.json` and `gate-confirm.log`
+- Unchanged final candidate budget confirmation: `/tmp/hearthside-web-integration-20260919/gate-confirm-unchanged.json` and `gate-confirm-unchanged.log`
 - `/tmp/hearthside-web-integration-20260919/build-final.json` and `build-final.log`
 - [P0–P15 web handoff and exact remaining actions](../briefs/HEARTHSIDE_WEB_HANDOFF_2026-09-19.md)
 
@@ -74,3 +75,8 @@ A new Queen reward projection had introduced a real module initialization cycle 
 Real browser tests were incorrectly in the four-worker fast lane; contention caused App/PGlite readiness and furniture matrix timeouts. All twenty directly launched browser files now belong to the existing serial lane, guarded by discovery in the lane test. Coverage, test timeouts, required canaries and the300s soft SLA are unchanged. The combined program is large enough that a functional pass may still exceed the SLA; record it as a breach, rerun the unchanged candidate, and never call it release-green solely because tests pass.
 
 The Journey fixture/scene follow-up passed56/56 across both affected files in10.52s. Fixtures now prepare actual dated Ritual Tasks, accept responsibility and obtain each required agreement. Memoizing the projected next Move by household/member stops redundant scene work while the same test confirms a real changed Task still updates the scene. No assertion or consent boundary was relaxed. The lane/policy narrow check passed before final verification. Final preservation audit confirms all26 originals remain, all21 original untracked files are byte-identical, and every nonblank added line from the retained documentation stash survives (`preservation-final.json`).
+
+
+Independent final review confirmed no dropped coverage, timeout increase or weakened assertion, and found one future guard gap: discovery only recognized `.test.ts`, while the gate supports `.test.tsx`, `.test.js` and `.test.mjs` too. Discovery and both lane-list equality patterns now cover the same extensions. Current coverage was intact. The intermediate `65eeb9a2` run passed TypeScript, all1,412 fast tests, all232 tests in the25-file serial batch, and the first long Demo fixture before it was deliberately stopped937.32s after start to apply this guard correction. It is incomplete, not a gate pass; its budget breach remains recorded.
+
+Final build validation sets every Hearthside web presentation/capability build flag to1 and native AR to0, exercising the included web bundle without deploying it or activating any server. A durable local copy of measured results and the final project-lead summary is written under ignored `artifacts/browser-evidence/hearthside-web-2026-09-19/`. This directory contains synthetic evidence only and does not alter the verified working-change fingerprint.
