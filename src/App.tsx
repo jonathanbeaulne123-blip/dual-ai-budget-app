@@ -1,9 +1,10 @@
 import {kittyUsesLedgerReceipts} from './hearthside/legacyBankAcceptance.ts';
 import { nativeAuthController, nativeWidgetController } from "./hearthside/nativeBootstrap.ts";
 import { NATIVE_AUTH_EVENT } from "./hearthside/nativeAuth.ts";
-import {workspaceExperienceContext} from './hearthside/workspaceContext.ts';
+import {personalWorkspaceExperienceContext,workspaceExperienceContext} from './hearthside/workspaceContext.ts';
 import type {HearthsideWorkspaceBinding} from './hearthside/workspaceSurface.tsx';
 import type {SharedExperience} from './hearthside/contracts.ts';
+import {decodePersonalLife,type PersonalLifeExperience} from './hearthside/personalLifeContracts.ts';
 import { HearthsideDesignProvider } from './hearthside/DesignProvider.tsx';
 import { HEARTHSIDE_FLAGS } from './hearthside/flags.ts';
 import { HEARTHSIDE_LABEL, hearthsidePath, parseHearthsideRoute } from './hearthside/routes.ts';
@@ -13,6 +14,7 @@ import { HouseWorld } from './house/HouseWorld.tsx';
 import { PersonalJourney } from './house/PersonalJourney.tsx';
 import { PersonalTogether } from './house/PersonalTogether.tsx';
 import { HOUSE_WORLD_ENABLED, HOUSE_PLACES, TARGET_NAMES, houseLifeRoute, houseRouteFromLife, readHouseReturn, saveHouseReturn, type HouseIdentity, houseIdentity } from './house/navigation.ts';
+import { houseReturnSlot, needsHouseReturnCapture } from './house/returnCache.ts';
 import { HOUSE_ROOMS, housePath, parseHouseRoute, togetherLevelForRoom, type HouseLevel, type HouseRoom, type HouseRoute } from './hearthside/houseRoutes.ts';
 import { deriveHouseCondition } from './core/houseCondition.ts';
 import {readHearthsideToolReturn,type HearthsideToolReturn} from './hearthside/focusedTool.ts';
@@ -458,6 +460,7 @@ import { CommandProgressStatus } from "./CommandProgressStatus.tsx";
 import {
   buildCommandProgress,
   commandProgressPhaseAfterOutcome,
+  type CommandProgressAudience,
   type CommandProgressPhase,
 } from "./commandProgress.ts";
 import { clearSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
@@ -614,6 +617,7 @@ type CommitHouseholdOptions = {
   onDefinitiveRejected?: KitchenCommandOptions["onDefinitiveRejected"];
   suppressUndo?: boolean;
   onQueued?: () => void;
+  audience?: CommandProgressAudience;
 };
 const WELCOME_GOOGLE_INTENT_KEY = "hearth:welcome-google-intent:v1";
 
@@ -1002,6 +1006,7 @@ export function App() {
   const [ledgerParity, setLedgerParity] = useState<{key:string;message:string} | null>(null);
   const [ledgerCommandId, setLedgerCommandId] = useState<string | undefined>();
   const [commandProgressPhase, setCommandProgressPhase] = useState<CommandProgressPhase>("idle");
+  const [commandProgressAudience, setCommandProgressAudience] = useState<CommandProgressAudience>("household");
   const [softPresenceLive, setSoftPresenceLive] = useState<SoftPresenceLiveRow[]>([]);
   const [softPresenceOptOut, setSoftPresenceOptOutState] = useState(() => isSoftPresenceOptedOut("development"));
   const softPresenceTouchAtRef = useRef(0);
@@ -3511,8 +3516,7 @@ export function App() {
   const memberId = session?.memberId ?? household?.members.find((member) => member.active)?.id ?? "";
 
   const view: LedgerView = session?.view ?? "household";
-  // Personal provider entry stays closed until its owner-bound UI is reviewed.
-  const workspaceEnabled = import.meta.env.VITE_HERCULES_WORKSPACE === "1" && view === "household";
+  const workspaceCapabilityEnabled = import.meta.env.VITE_HERCULES_WORKSPACE === "1";
   const appearance = useAppearance();
   useAppearanceBinding(environment, household && session ? sceneTabFor(tab) : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
   useEffect(() => {
@@ -3544,7 +3548,9 @@ export function App() {
   const onboardingReadyOnly = false;
   const ledgerRenderScopeKey=JSON.stringify([environment,household?.householdId,memberId,localLedgerIdentity(memberId??"")??loadSupabaseSession(environment)?.userId]);
   const workspaceUiScopeKey = JSON.stringify([ledgerRenderScopeKey,view]);
-  useEffect(() => { setOnboardingBooksOpen(false);setWorkspaceExperienceSelection(null);setWorkspaceSnapshot(null);setWorkspaceProjectId(null);setWorkspaceCompact(false); }, [workspaceUiScopeKey]);
+  const personalExperienceWorkspaceSelected = view === "personal" && workspaceExperienceSelection?.scope === workspaceUiScopeKey;
+  const workspaceEnabled = workspaceCapabilityEnabled && (view === "household" || personalExperienceWorkspaceSelected);
+  useEffect(() => { setOnboardingBooksOpen(false);setWorkspaceExperienceSelection(null);setWorkspaceSnapshot(null);setWorkspaceProjectId(null);setWorkspaceCompact(false); setCommandProgressPhase("idle"); setCommandProgressAudience("household"); setLedgerCommandId(undefined); }, [workspaceUiScopeKey]);
   const nativeAuthScopeRef = useRef(ledgerRenderScopeKey);
   useEffect(() => {
     const scopeChanged = nativeAuthScopeRef.current !== ledgerRenderScopeKey;
@@ -3681,8 +3687,9 @@ export function App() {
     () => buildCommandProgress({
       phase: commandProgressPhase,
       transportRequested: Boolean(household?.linked && hostedContinuityAllowed(environment)),
+      audience: commandProgressAudience,
     }),
-    [commandProgressPhase, household?.linked, environment],
+    [commandProgressPhase, commandProgressAudience, household?.linked, environment],
   );
   const softPresenceDisplay = useMemo(
     () => buildSoftPresenceDisplay({
@@ -4263,9 +4270,11 @@ export function App() {
     const presentRememberUndoHistory = present(rememberUndoHistory);
     const presentSetCommandChrome = present(setCommandChrome);
     const presentSetCommandProgressPhase = present(setCommandProgressPhase);
+    const presentSetCommandProgressAudience = present(setCommandProgressAudience);
     const presentSetLedgerCommandId = present(setLedgerCommandId);
     const presentSetSyncState = present(setSyncState);
     const previous = householdRef.current;
+    const progressAudience = options?.audience ?? "household";
     const creatingMember=actorId??session?.memberId;
     if(useLedgerSync&&creatingMember&&next.householdId!==previous?.householdId&&(next.linked||next.google.links.some(link=>link.active&&link.memberId===creatingMember))){
       setBusy(true);
@@ -4287,9 +4296,11 @@ export function App() {
       const confirmationId = options?.confirmationId ?? confirmationRef.current ?? crypto.randomUUID();
       if (!options?.confirmationId) confirmationRef.current = confirmationId;
       presentSetLedgerCommandId(confirmationId);
+      presentSetCommandProgressAudience(progressAudience);
       setBusy(true); presentSetCommandProgressPhase("confirming");
       try {
         const accepted = await client.confirm(next, confirmationId, options?.onQueued);
+        presentSetCommandProgressAudience(accepted.persistenceScope === "member-personal" ? "personal" : "household");
         if (confirmationRef.current === confirmationId) confirmationRef.current = null;
         if (isLedgerWrite(accepted.undo) && !options?.suppressUndo && accepted.postedIds.length) {
           presentSetToast(accepted.undo);
@@ -4328,6 +4339,7 @@ export function App() {
     const memberId = actorId ?? session?.memberId;
     const shareCapable = Boolean((previous?.linked || next.linked) && hostedContinuityAllowed(environment) && memberId);
     if (shareCapable && ledgerWrite) {
+      presentSetCommandProgressAudience(progressAudience);
       presentSetCommandProgressPhase("confirming");
       presentSetCommandChrome(renderCommandChrome(COMMAND_SURFACE_FIXTURES.saving, {
         amountLabel: lastAmountLabelRef.current,
@@ -4962,6 +4974,7 @@ export function App() {
             confirmationId: options?.confirmationId,
             onDefinitiveRejected: () => { if (options?.isCurrent?.() !== false) options?.onDefinitiveRejected?.(); },
             onRejected: message => { if (options?.isCurrent?.() === false) return; setError(message); if (options?.closeAdd !== false && adding && submittedDraftGeneration===draftGenerationRef.current) setAdding(true); options?.onError?.(message); },
+            audience: memberPersonal ? "personal" : "household",
             onQueued: options?.closeAdd !== false && adding ? () => { if(options?.isCurrent?.() === false || submittedDraftGeneration!==draftGenerationRef.current)return;setAdding(false); setConfirm(null); setBooksPaneRequest("register"); goTab("ledger"); } : undefined,
           },
         );
@@ -5076,7 +5089,7 @@ export function App() {
           result.household,
           result.undo,
           memberPersonal ? result.personalMemberId : undefined,
-          { isCurrent: renderedWriteIsCurrent, scopeIsCurrent: renderedWriteIsCurrent, confirmationId: options?.confirmationId, onDefinitiveRejected },
+          { isCurrent: renderedWriteIsCurrent, scopeIsCurrent: renderedWriteIsCurrent, confirmationId: options?.confirmationId, onDefinitiveRejected, audience: memberPersonal ? "personal" : "household" },
         );
         if (!renderedWriteIsCurrent()) return outcome;
         if (outcome?.ok && memberPersonal && result.personalMemberId) {
@@ -6430,22 +6443,22 @@ export function App() {
   }
 
   function navigateHouseSurface(route:HouseRoute,replace=false){
-    if(household&&session&&route.surface&&route.surface!==activeHouseRoute.surface){saveHouseReturn(localStorage,{environment,householdId:household.householdId,memberId:session.memberId,scope:view},activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera()},route.surface);}
+    if(household&&session&&route.surface&&needsHouseReturnCapture(activeHouseRoute,route)){saveHouseReturn(localStorage,{environment,householdId:household.householdId,memberId:session.memberId,scope:view},activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera()},houseReturnSlot(route));}
     goTab(tabForHouseRoute(route),undefined,{route,history:replace?"replace":"push"});
   }
   function readHouseCamera():[number,number,number]|undefined{try{const camera=JSON.parse(document.querySelector<HTMLElement>(".house-world__canvas")?.dataset.houseCamera??"null");return Array.isArray(camera)&&camera.length===3&&camera.every(Number.isFinite)?camera as [number,number,number]:undefined;}catch{return undefined;}}
   function openHouseObject(target:string,object?:string){
     if(!household||!session)return;
     const identity:HouseIdentity={environment,householdId:household.householdId,memberId:session.memberId,scope:view};
-    saveHouseReturn(localStorage,identity,activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera()},target);
     const route={...activeHouseRoute,scope:view,surface:target,...(object?{object}:{}),...(target==="cellar-bills"?{room:"home" as const,level:"below" as const}:target==="loft-banks"?{room:"home" as const,level:"above" as const}:{})};
+    saveHouseReturn(localStorage,identity,activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera()},houseReturnSlot(route));
     goTab(tabForHouseRoute(route),undefined,{route,history:"push"});
     if(target==="hercules") {setWorkspaceCompact(false);if(!workspaceEnabled)openLegacyHercules();}
     requestAnimationFrame(()=>requestAnimationFrame(()=>{const heading=document.getElementById(target==="queen"?"house-queen-title":"house-tool-title");if(target!=="hercules")heading?.focus({preventScroll:true});heading?.scrollIntoView({block:"start",behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});}));
   }
   function putHouseObjectBack(){
     if(!household||!session)return;
-    const back=readHouseReturn(localStorage,{environment,householdId:household.householdId,memberId:session.memberId,scope:view},activeHouseRoute.surface??"");
+    const back=readHouseReturn(localStorage,{environment,householdId:household.householdId,memberId:session.memberId,scope:view},houseReturnSlot(activeHouseRoute));
     const {surface:_surface,...rest}=activeHouseRoute;
     const route=back?.route??rest;
     goTab(tabForHouseRoute(route),undefined,{route,history:"push"});setWorkspaceCompact(false);
@@ -6462,15 +6475,31 @@ export function App() {
   function openExperienceWorkspace(experience:SharedExperience){
     setWorkspaceExperienceSelection({scope:workspaceUiScopeKey,id:experience.id});setWorkspaceProjectId(null);setWorkspaceCompact(false);openHearthsideTool('hercules',undefined,experience.title);
   }
+  function openPersonalExperienceWorkspace(experience:PersonalLifeExperience){
+    if(!workspaceCapabilityEnabled||view!=="personal"||experience.createdBy!==actorId||experience.state==="archived")return;
+    setWorkspaceExperienceSelection({scope:workspaceUiScopeKey,id:experience.id});setWorkspaceProjectId(null);setWorkspaceCompact(false);goTab("hercules");
+  }
   function returnFromExperienceWorkspace(){
-    if(!household)return;const back=readHearthsideToolReturn(hearthsideToolReturn,ledgerRenderScopeKey,household.householdId),selected=workspaceExperienceSelection?.scope===workspaceUiScopeKey?household.hearthside?.experiences.find(e=>e.id===workspaceExperienceSelection.id):undefined;
+    if(!household)return;
+    if(view==="personal"){
+      const selectedId=workspaceExperienceSelection?.scope===workspaceUiScopeKey?workspaceExperienceSelection.id:null;
+      setWorkspaceExperienceSelection(null);setWorkspaceCompact(false);
+      const route:HouseRoute={householdId:household.householdId,room:"together",level:"above",scope:"personal",surface:"personal-experience",...(selectedId?{object:`experience/${selectedId}`}:{})};
+      goTab("play",undefined,{route,history:"push"});requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById("personal-together-title")?.focus()));return;
+    }
+    const back=readHearthsideToolReturn(hearthsideToolReturn,ledgerRenderScopeKey,household.householdId),selected=workspaceExperienceSelection?.scope===workspaceUiScopeKey?household.hearthside?.experiences.find(e=>e.id===workspaceExperienceSelection.id):undefined;
     const path=back?.path??hearthsidePath({version:1,householdId:household.householdId,room:'common',mode:'present',...(selected?{object:{kind:'experience' as const,id:selected.id}}:{})}),focusId=back?.focusId??'hearthside-focus-title';
     setWorkspaceCompact(false);window.history.pushState({hearthTab:'play',hearthsideFocus:focusId},'',path);goTab('play');requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById(focusId)?.focus()));
   }
   function selectedExperienceWorkspace():HearthsideWorkspaceBinding|undefined{
-    if(view!=="household"||!household||workspaceExperienceSelection?.scope!==workspaceUiScopeKey)return;
+    if(!household||workspaceExperienceSelection?.scope!==workspaceUiScopeKey)return;
+    const scope={identity:ledgerRenderScopeKey,environment,householdId:household.householdId,memberId:actorId};
+    if(view==="personal"){
+      try{const document=decodePersonalLife(household.personalLife,actorId),experience=document.experiences.find(row=>row.id===workspaceExperienceSelection.id&&row.state!=="archived");if(!experience||experience.createdBy!==actorId)return;return {scope,experience:personalWorkspaceExperienceContext(experience,actorId),onReturn:returnFromExperienceWorkspace};}catch{return;}
+    }
+    if(view!=="household")return;
     const experience=household.hearthside?.experiences.find(e=>e.id===workspaceExperienceSelection.id&&e.state!=='archived');if(!experience)return;
-    return {scope:{identity:ledgerRenderScopeKey,environment,householdId:household.householdId,memberId:actorId},experience:workspaceExperienceContext(experience),onReturn:returnFromExperienceWorkspace};
+    return {scope,experience:workspaceExperienceContext(experience),onReturn:returnFromExperienceWorkspace};
   }
   const kittyAcceptedCommandReader=kittyUsesLedgerReceipts(useLedgerSync,household,localLedgerIdentity(actorId??''))?readAcceptedKittyCommand:undefined;
   async function readAcceptedKittyCommand(id:string,signal?:AbortSignal){
@@ -7111,7 +7140,7 @@ export function App() {
       {workspaceEnabled && <HerculesWorkspaceRoom
         hearthside={selectedExperienceWorkspace()} onExperienceOpened={id=>{if(household.hearthside?.experiences.some(e=>e.id===id&&e.state!=="archived"))setWorkspaceExperienceSelection({scope:workspaceUiScopeKey,id});}}
         getReportContext={captureReportContext} reporterName={household.members.find(m => m.id === actorId)?.name}
-        reportRequest={bugReportRequest?.identity === ledgerRenderScopeKey ? bugReportRequest : null} onReportOpened={() => setBugReportRequest(null)} onPrivateReportRequested={openPrivateBugReport}
+        reportRequest={bugReportRequest?.identity === ledgerRenderScopeKey ? bugReportRequest : null} onReportOpened={() => setBugReportRequest(null)} onPrivateReportRequested={view==="household"?openPrivateBugReport:undefined}
         key={`workspace:${workspaceUiScopeKey}`} identity={workspaceUiScopeKey} environment={environment} householdId={household.householdId} memberId={actorId} view={view}
         mode={workspaceMode}
         getAccessToken={async () => {
@@ -7122,7 +7151,7 @@ export function App() {
           return fresh.accessToken;
         }}
         getGoogleAccessToken={async () => { const google=loadGoogleSession(environment,actorId,household.householdId);if(!google||!tokenFresh(google))throw new Error("Connect your Google services in Hearth before confirming this change.");return google.accessToken; }}
-        isCurrent={() => environmentRef.current === environment && householdRef.current?.householdId === household.householdId && sessionRef.current?.memberId === actorId}
+        isCurrent={() => environmentRef.current === environment && householdRef.current?.householdId === household.householdId && sessionRef.current?.memberId === actorId && sessionRef.current?.view === view}
         onExpand={() => { setWorkspaceCompact(false); goTab("hercules"); }}
         onClose={() => { if(selectedExperienceWorkspace()){returnFromExperienceWorkspace();return;}setWorkspaceCompact(false); if (tab === "hercules") goTab("home"); }}
         onLegacy={() => openLegacyHercules()} onReview={openLegacyHercules} recordOptions={workspaceRecordOptions(household, actorId)}
@@ -7130,7 +7159,7 @@ export function App() {
       />}
       {HEARTHSIDE_FLAGS.presentation&&view==="household"&&hearthsideToolReturn?.scope===ledgerRenderScopeKey&&hearthsideToolReturn.tab===tab&&<aside className="hearthside-tool-return"><span>{hearthsideToolReturn.label}</span><button onClick={()=>{const back=readHearthsideToolReturn(hearthsideToolReturn,ledgerRenderScopeKey,household.householdId);if(!back)return;window.history.pushState({hearthTab:"play",hearthsideFocus:back.focusId},"",back.path);goTab("play");requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById(back.focusId)?.focus()));}}>Return to {HEARTHSIDE_LABEL}</button></aside>}
       {(HEARTHSIDE_FLAGS.presentation || HOUSE_WORLD_ENABLED) && (tab === "play" || tab === "together") && view === "household" && <PlayBoundary onExit={() => goTab("home")} exitLabel="Return Home"><Suspense fallback={<p>Opening our shared home…</p>}><Hearthside
-        controlledRoute={HOUSE_WORLD_ENABLED?houseLifeRoute(activeHouseRoute):undefined} onNavigate={HOUSE_WORLD_ENABLED?(next,replace)=>{const route=houseRouteFromLife(next,view);goTab("play",undefined,{route,history:replace?"replace":"push"});}:undefined}
+        controlledRoute={HOUSE_WORLD_ENABLED?houseLifeRoute(activeHouseRoute):undefined} onReturnToOrigin={HOUSE_WORLD_ENABLED?putHouseObjectBack:undefined} onNavigate={HOUSE_WORLD_ENABLED?(next,replace)=>{const route=houseRouteFromLife(next,view);navigateHouseSurface(route,replace);}:undefined}
         key={ledgerRenderScopeKey} identity={ledgerRenderScopeKey} household={household} memberId={actorId} busy={busy} vaultSource={()=>ledgerSyncRef.current}
         connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen}
         initialRoom={playInitialArea === "dressing" ? "studio" : undefined}
@@ -7149,7 +7178,7 @@ export function App() {
         practical={<HouseholdTogether embedded household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={taskId=>openHearthsideTool("planner",taskId?{kind:"task",id:taskId}:undefined)} onOpenPlan={source=>{herculesSourceScope.current=`${environment}:${household.householdId}:${session.memberId}:household`;setHerculesSourceFocus(source);openHearthsideTool("plan",undefined,source.label);}}/>}
         studio={<HerculesPlay embedded initialArea="dressing" household={household} memberId={actorId} connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen} onTogether={()=>goTab("together")} onGoal={goalId=>{herculesSourceScope.current=`${environment}:${household.householdId}:${session.memberId}:household`;setHerculesSourceFocus({route:"plan",view:"household",label:"Kitty Banks",...(goalId?{goalId}:{})});goTab("plan");}}/>}
       /></Suspense></PlayBoundary>}
-      {HOUSE_WORLD_ENABLED&&view==="personal"&&tab==="play"&&<PersonalTogether key={ledgerRenderScopeKey} household={household} memberId={actorId} identity={ledgerRenderScopeKey} today={today} route={activeHouseRoute} busy={busy} onCommand={runKitchen} onNavigate={navigateHouseSurface} onOpenPlan={()=>goTab("plan")} onOpenTask={()=>goTab("planner")} onOpenCalendar={()=>goTab("calendar")}/>}
+      {HOUSE_WORLD_ENABLED&&view==="personal"&&tab==="play"&&<PersonalTogether key={`${ledgerRenderScopeKey}:${activeHouseRoute.object??"folio"}`} household={household} memberId={actorId} identity={ledgerRenderScopeKey} today={today} route={activeHouseRoute} busy={busy} onCommand={runKitchen} onNavigate={navigateHouseSurface} onOpenPlan={()=>goTab("plan")} onOpenTask={()=>goTab("planner")} onOpenCalendar={()=>goTab("calendar")} onWorkspace={workspaceCapabilityEnabled?openPersonalExperienceWorkspace:undefined}/>}
       {tab === "planner" && <Planner focusTaskId={hearthsideToolReturn?.scope===ledgerRenderScopeKey?hearthsideToolReturn.taskId:undefined} household={household} memberId={actorId} view={view} today={today} busy={busy} onCommand={runKitchen} onRecord={openTaskInAdd} />}
       {tab === "timeMachine" && <TimeMachine initialPeriod={timeMachineRequest?.monthKey} household={household} memberId={actorId} view={view} today={today} onOpenBooks={() => goTab("ledger")} />}
       {!HOUSE_WORLD_ENABLED&&(!HEARTHSIDE_FLAGS.presentation || view !== "household") && PLAY_ENABLED && tab === "play" && <PlayBoundary onExit={()=>{ if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }}><Suspense fallback={<p>Opening Hercules’s room…</p>}><HerculesPlay initialArea={playInitialArea} key={`${environment}:${household.householdId}:${actorId}`} household={household} memberId={actorId} connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen} onTogether={() => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }} onGoal={goalId => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:household`; setHerculesSourceFocus({route:"plan",view:"household",label:"Kitty Banks",...(goalId?{goalId}:{})}); goTab("plan"); }}/></Suspense></PlayBoundary>}
@@ -7579,6 +7608,7 @@ export function App() {
             )}
           />
         ) : <DeferredBooksPage
+          onOpenHouseBank={HOUSE_WORLD_ENABLED?(id)=>openHouseObject("loft-banks",`bank/${id}`):undefined}
           accountHistorySetup={<AccountHistorySetup household={household} memberId={session.memberId} authUserId={localLedgerIdentity(session.memberId) ?? loadSupabaseSession(environment)?.userId ?? session.memberId} view={view} today={today} busy={busy} onCommand={runKitchen} />}
           duplicateAuthorityGeneration={replicaScopeGenerationRef.current}
           onDuplicateCommand={runKitchen}
@@ -7943,7 +7973,7 @@ export function App() {
                 });
                 assertMemberPersonalUpdate(current, result);
                 if (result.household === current) return { unchanged: current.herculesProPermissions } as const;
-                return commitHousehold(result.household, result.undo, result.personalMemberId, { forceFlush: true });
+                return commitHousehold(result.household, result.undo, result.personalMemberId, { forceFlush: true, audience: "personal" });
               });
               if (outcome && "unchanged" in outcome) {
                 return outcome.unchanged ?? { ...permissions, updatedAt: null };

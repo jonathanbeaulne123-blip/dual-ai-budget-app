@@ -2,7 +2,7 @@ import type { LedgerView } from "../core/types.ts";
 import type { HouseLevel, HouseRoom } from "../hearthside/houseRoutes.ts";
 
 export type HouseTarget = Readonly<{ id: string; label: string }>;
-export type PersonalFolioPage = "wish" | "note" | "memory";
+export type PersonalFolioPage = "wish" | "note" | "memory" | "experience";
 
 const TARGETS: Record<`${HouseRoom}:${HouseLevel}`, readonly HouseTarget[]> = {
   "home:above": [{ id: "loft-banks", label: "Open Kitty Banks" }],
@@ -35,6 +35,7 @@ export function houseTargets(scope: LedgerView, room: HouseRoom, level: HouseLev
 
 /** A house object can select a real private folio page; unsupported shared-only surfaces return null. */
 export function personalFolioPage(surface: string | undefined): PersonalFolioPage | null {
+  if (surface === "personal-experience") return "experience";
   if (surface === "wishes") return "wish";
   if (surface === "letters") return "note";
   if (surface === "memories") return "memory";

@@ -144,7 +144,10 @@ export function createMiniWorld(host: HTMLElement, options: {
   const rendererLease = acquireWorldRenderer(host, {
     parameters: { antialias: !compact, alpha: false, powerPreference: "low-power", preserveDrawingBuffer: true },
     configure(renderer) {
+      renderer.setClearColor(0x000000, 1);
       renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.NoToneMapping;
+      renderer.toneMappingExposure = 1;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.localClippingEnabled = false;
       renderer.domElement.setAttribute("aria-hidden", "true");

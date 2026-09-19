@@ -47,7 +47,7 @@ function outcomeWords(result: Awaited<ReturnType<KitchenCommand>>): string {
   return result.userMessage ?? "Accepted, but synchronization has not been confirmed.";
 }
 
-export function PersonalTogether({ household, memberId, identity, today, route, busy, onCommand, onNavigate, onOpenPlan, onOpenTask, onOpenCalendar }: {
+export function PersonalTogether({ household, memberId, identity, today, route, busy, onCommand, onNavigate, onOpenPlan, onOpenTask, onOpenCalendar, onWorkspace }: {
   household: Household;
   memberId: string;
   identity: string;
@@ -59,6 +59,7 @@ export function PersonalTogether({ household, memberId, identity, today, route, 
   onOpenPlan: () => void;
   onOpenTask?: (id: string) => void;
   onOpenCalendar?: () => void;
+  onWorkspace?: (experience: PersonalLifeExperience) => void;
 }) {
   const appearance = useAppearance();
   const document = useMemo(() => { try { return decodePersonalLife((household as PersonalHousehold).personalLife, memberId); } catch { return null; } }, [household, memberId]);
@@ -87,7 +88,8 @@ export function PersonalTogether({ household, memberId, identity, today, route, 
   const [experience, setExperience] = useStoredDraft(`${scope}:experience`, canonicalExperience ? {...canonicalExperience,revision:canonicalExperience.revision+1} : blankExperience(memberId));
   const [note, setNote] = useStoredDraft(`${scope}:note`, canonicalNote ? {...canonicalNote,revision:canonicalNote.revision+1} : blankNote(memberId));
   const [memory, setMemory] = useStoredDraft(`${scope}:memory`, canonicalMemory ? {...canonicalMemory,revision:canonicalMemory.revision+1} : blankMemory(memberId));
-  const [pending, setPending] = useStoredDraft<PersonalLifeIntent | null>(`${scope}:intent`, null);
+  const pendingScope = draftKey(household, memberId, `folio:${identity}`);
+  const [pending, setPending] = useStoredDraft<PersonalLifeIntent | null>(`${pendingScope}:intent`, null);
   const [status, setStatus] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
   const flight=useRef(false),alive=useRef(true);
@@ -171,7 +173,8 @@ export function PersonalTogether({ household, memberId, identity, today, route, 
   if(unavailableAddress)return <section className="personal-together" role="status"><h2>This private page is no longer available</h2><p>It may have been withdrawn or removed. No other private page was opened in its place.</p><button onClick={()=>onNavigate({...route,surface:undefined,object:undefined})}>Return to my room</button></section>;
 
   return <section className="personal-together" data-folio-theme={appearance.preview ?? appearance.saved.theme} data-personal-life-owner={document?.ownerMemberId ?? "unavailable"} aria-labelledby="personal-together-title">
-    <header className="personal-together__masthead"><div><p className="kicker">Personal conservatory</p><h2 id="personal-together-title">A folio for what is yours</h2><p>Private wishes, lived experience, notes and memories stay in your Personal scope until you deliberately review a copy for Our Home.</p></div><div><button type="button" onClick={onOpenPlan}>Open Personal Plan</button>{onOpenCalendar && <button type="button" onClick={onOpenCalendar}>Open calendar</button>}</div></header>
+    <header className="personal-together__masthead"><div><p className="kicker">Personal conservatory</p><h2 id="personal-together-title" tabIndex={-1}>A folio for what is yours</h2><p>Private wishes, lived experience, notes and memories stay in your Personal scope until you deliberately review a copy for Our Home.</p></div><div><button type="button" onClick={onOpenPlan}>Open Personal Plan</button>{onOpenCalendar && <button type="button" onClick={onOpenCalendar}>Open calendar</button>}</div></header>
+    {!onWorkspace&&<p className="personal-together__notice" role="status">Hercules Workspace is not activated for private intentions. Your folio remains available here.</p>}
     {pottery&&<CollaborativeStudio household={household} memberId={memberId} audience="personal" initialDesignId={selectedDesign?.[2]} initialPieceId={selectedDesign?.[1]} onSelection={(designId,pieceId)=>onNavigate({...route,object:`piece/${pieceId}/${designId}`})} onKeep={(designId,pieceId,revision)=>{const next={...blankMemory(memberId),title:experience.title||"A little thing I made",experienceId:document?.experiences.some(row=>row.id===experience.id)?experience.id:null,designs:[{version:1,documentId:designId,pieceId,revision}]};startAddress("memory",next);}}/>}
     {!document && <p className="personal-together__notice" role="status">Your Personal folio could not be read for this member. Nothing can be changed here.</p>}
     {document && <><section className="personal-together__stage">
@@ -188,7 +191,7 @@ export function PersonalTogether({ household, memberId, identity, today, route, 
     </section>
     <section className="personal-together__archive" aria-label="Your saved pages">
       {document.wishes.filter(row => !row.archived).map(row => <article key={row.id}><p className="kicker">Wish · {row.horizon}</p><h3>{row.title}</h3><p>{row.intention}</p><button type="button" onClick={() => openAddress("wish", row.id)}>Edit private page</button><button type="button" onClick={()=>startAddress("experience",{...blankExperience(memberId),title:row.title,intention:row.intention,horizon:row.horizon,wishId:row.id,references:row.references,state:"preparing"})}>Prepare this wish</button><button type="button" onClick={() => beginShare("wish", row.id)}>Review Share with Our Home</button></article>)}
-      {document.experiences.map(row => <article key={row.id}><p className="kicker">Experience · {row.state}</p><h3>{row.title}</h3><p>{row.intention}</p><button type="button" onClick={() => openAddress("experience", row.id)}>Edit private page</button>{row.state !== "lived" && <button type="button" disabled={locked} onClick={() => void submit(buildIntent({ kind: "experience.mark-lived", id: row.id, expectedRevision: row.revision, livedOn: today }))}>Mark lived on {today}</button>}<button type="button" onClick={()=>startAddress("memory",{...blankMemory(memberId),title:row.title,date:row.livedOn,experienceId:row.id})}>Write my recollection</button><button type="button" onClick={() => beginShare("experience", row.id)}>Review Share with Our Home</button></article>)}
+      {document.experiences.map(row => <article key={row.id}><p className="kicker">Experience · {row.state}</p><h3>{row.title}</h3><p>{row.intention}</p><button type="button" onClick={() => openAddress("experience", row.id)}>Edit private page</button>{row.state !== "lived" && <button type="button" disabled={locked} onClick={() => void submit(buildIntent({ kind: "experience.mark-lived", id: row.id, expectedRevision: row.revision, livedOn: today }))}>Mark lived on {today}</button>}<button type="button" onClick={()=>startAddress("memory",{...blankMemory(memberId),title:row.title,date:row.livedOn,experienceId:row.id})}>Write my recollection</button><button type="button" onClick={() => beginShare("experience", row.id)}>Review Share with Our Home</button>{onWorkspace&&<button type="button" onClick={()=>onWorkspace(row)}>Work on this with Hercules</button>}</article>)}
       {document.notes.filter(row => !row.archived).map(row => <article key={row.id}><p className="kicker">Private note · {row.room}</p><p>{row.text}</p><button type="button" onClick={() => openAddress("note", row.id)}>Edit private page</button></article>)}
       {document.memories.filter(row => !row.withdrawn).map(row => <article key={row.id}><p className="kicker">Memory {row.date ? `· ${row.date}` : ""}</p><h3>{row.title}</h3><p>{row.recollection}</p><button type="button" onClick={() => openAddress("memory", row.id)}>Edit private page</button>{row.keptRevision === row.revision ? <span>Kept in this private folio</span> : <button type="button" disabled={locked} onClick={() => void submit(buildIntent({ kind: "memory.keep", id: row.id, expectedRevision: row.revision }))}>Deliberately keep</button>}<button type="button" disabled={locked} onClick={() => void submit(buildIntent({ kind: "memory.withdraw", id: row.id, expectedRevision: row.revision }))}>Withdraw</button><button type="button" onClick={() => beginShare("memory", row.id)}>Review Share with Our Home</button></article>)}
     </section>

@@ -23,18 +23,21 @@ export function readHouseReturn(storage: Store, identity: HouseIdentity, object 
   } catch { return null; }
 }
 export function houseSurfaceRoute(route: HouseRoute, surface: string, object?: string): HouseRoute {
-  return {...route, surface, ...(object ? {object} : {})};
+  return {...route, surface, ...(object ? {object} : {}), ...(!["pottery", "wardrobe"].includes(surface) ? {studioSelection: undefined} : {})};
 }
-export function houseRoomRoute(route: HouseRoute): HouseRoute { const {surface: _surface, ...room} = route; return room; }
+export function houseRoomRoute(route: HouseRoute): HouseRoute { const {surface: _surface, studioSelection: _studioSelection, ...room} = route; return room; }
 export function houseLifeRoute(route: HouseRoute): HearthsideRoute {
   const room=route.surface==="pottery"||route.surface==="wardrobe"?"studio":route.level==="above"?"conservatory":route.level==="below"?"theatre":"common";
   const surface=route.surface==="pottery"?"studio":(["letters","projector","encounters","wardrobe","practical","history","occasions","worktable","guests","restore"].includes(route.surface??"")?route.surface:undefined) as HearthsideRoute["surface"];
   const [kind,id,designId]=route.object?.split("/")??[];
   const object=(kind==="experience"||kind==="memory"||kind==="note"||kind==="encounter")&&id?{kind,id}:kind==="piece"&&id&&designId?{kind,id,designId}:undefined;
-  return {version:1,householdId:route.householdId,room,mode:room==="conservatory"?"imagine":room==="theatre"?"remember":"present",...(surface?{surface}:{}),...(object?{object:object as HearthsideRoute["object"]}:{})};
+  const studioSelection=route.studioSelection&&(surface==="studio"||surface==="wardrobe")?route.studioSelection:undefined;
+  return {version:1,householdId:route.householdId,room,mode:room==="conservatory"?"imagine":room==="theatre"?"remember":"present",...(surface?{surface}:{}),...(object?{object:object as HearthsideRoute["object"]}:{}),...(studioSelection?{studioSelection}: {})};
 }
 export function houseRouteFromLife(next: HearthsideRoute, scope: LedgerView): HouseRoute {
-  return {householdId:next.householdId,scope,room:"together",level:next.room==="conservatory"?"above":next.room==="theatre"?"below":"middle",surface:next.surface==="studio"?"pottery":next.surface??(next.room==="theatre"?"memories":next.room==="conservatory"?"wishes":"life"),...(next.object?{object:[next.object.kind,next.object.id,...("designId" in next.object?[next.object.designId]:[])].join("/")}:{})};
+  const surface=next.surface==="studio"?"pottery":next.surface??(next.room==="theatre"?"memories":next.room==="conservatory"?"wishes":"life");
+  const studioSelection=next.studioSelection&&(next.surface==="studio"||next.surface==="wardrobe")?next.studioSelection:undefined;
+  return {householdId:next.householdId,scope,room:"together",level:next.surface==="studio"||next.surface==="wardrobe"?"middle":next.room==="conservatory"?"above":next.room==="theatre"?"below":"middle",surface,...(next.object?{object:[next.object.kind,next.object.id,...("designId" in next.object?[next.object.designId]:[])].join("/")}:{}) ,...(studioSelection?{studioSelection}:{})};
 }
 
 export const ROOM_NAMES = {home:"Home", study:"Study", "kitchen-table":"Kitchen Table", together:"Together"} as const;

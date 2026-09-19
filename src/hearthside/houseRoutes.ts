@@ -4,7 +4,7 @@ export const HOUSE_ROOMS = ["home", "study", "kitchen-table", "together"] as con
 export const HOUSE_LEVELS = ["above", "middle", "below"] as const;
 export type HouseRoom = typeof HOUSE_ROOMS[number];
 export type HouseLevel = typeof HOUSE_LEVELS[number];
-export type HouseRoute = { room: HouseRoom; level: HouseLevel; householdId: string; scope?: "personal" | "household"; object?: string; surface?: string; time?: string };
+export type HouseRoute = { room: HouseRoom; level: HouseLevel; householdId: string; scope?: "personal" | "household"; object?: string; surface?: string; studioSelection?: { designId: string; pieceId: string }; time?: string };
 
 const TOGETHER_ROOM: Record<HouseLevel, HearthsideRoom> = {
   above: "conservatory",
@@ -29,6 +29,11 @@ export function housePath(route: HouseRoute): string {
   if (route.scope) query.set("scope", route.scope);
   if (route.object) query.set("object", route.object);
   if (route.surface) query.set("surface", route.surface);
+  if (route.studioSelection) {
+    const { designId, pieceId } = route.studioSelection;
+    if (!["pottery", "wardrobe"].includes(route.surface ?? "") || !designId.trim() || !pieceId.trim() || designId.length > 180 || pieceId.length > 180 || /[\u0000-\u001f]/.test(designId) || /[\u0000-\u001f]/.test(pieceId)) throw new Error("HOUSE_INVALID_STUDIO_SELECTION");
+    query.set("design", designId); query.set("piece", pieceId);
+  }
   if (route.time) query.set("time", route.time);
   return `/house/${route.room}/${route.level}?${query}`;
 }
@@ -48,7 +53,10 @@ export function parseHouseRoute(url: string, householdId: string): HouseRoute | 
     const scope = parsed.searchParams.get("scope");
     if (scope !== null && scope !== "personal" && scope !== "household") return null;
     const bounded = (key: string) => { const value = parsed.searchParams.get(key); return value && value.length <= 180 && !/[\u0000-\u001f]/.test(value) ? value : undefined; };
-    return { room, level, householdId, ...(scope ? {scope} : {}), ...(bounded("object") ? {object: bounded("object")} : {}), ...(bounded("surface") ? {surface: bounded("surface")} : {}), ...(bounded("time") ? {time: bounded("time")} : {}) };
+    const object = bounded("object"), surface = bounded("surface"), designId = bounded("design"), pieceId = bounded("piece");
+    const hasDesign = parsed.searchParams.has("design"), hasPiece = parsed.searchParams.has("piece");
+    if (hasDesign !== hasPiece || hasDesign && (!designId || !pieceId || !["pottery", "wardrobe"].includes(surface ?? ""))) return null;
+    return { room, level, householdId, ...(scope ? {scope} : {}), ...(object ? {object} : {}), ...(surface ? {surface} : {}), ...(designId && pieceId ? {studioSelection: {designId, pieceId}} : {}), ...(bounded("time") ? {time: bounded("time")} : {}) };
   } catch {
     return null;
   }

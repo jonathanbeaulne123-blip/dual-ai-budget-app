@@ -9,15 +9,22 @@ function fakeRenderer() {
   const dispose = vi.fn();
   const forceContextLoss = vi.fn();
   const setPixelRatio = vi.fn();
+  const setClearColor = vi.fn();
+  const setRenderTarget = vi.fn();
+  const setScissorTest = vi.fn();
   const renderer = {
     domElement: canvas,
     render,
     dispose,
     forceContextLoss,
     setPixelRatio,
+    setClearColor,
+    setRenderTarget,
+    setScissorTest,
+    autoClear: false,
     shadowMap: { enabled: false, type: 0 },
   } as unknown as THREE.WebGLRenderer;
-  return { renderer, canvas, render, dispose, forceContextLoss, setPixelRatio };
+  return { renderer, canvas, render, dispose, forceContextLoss, setPixelRatio, setClearColor, setRenderTarget, setScissorTest };
 }
 
 describe("whole-house renderer ownership", () => {
@@ -29,7 +36,7 @@ describe("whole-house renderer ownership", () => {
     const a = acquireWorldRenderer(aHost, {
       shared: true,
       rendererFactory: factory,
-      configure: (renderer) => { renderer.domElement.dataset.owner = "a"; },
+      configure: (renderer) => { renderer.domElement.dataset.owner = "a"; renderer.setClearColor(0x000000, 0); },
       onSuspend: aSuspend,
       onResume: aResume,
     });
@@ -40,7 +47,7 @@ describe("whole-house renderer ownership", () => {
     const b = acquireWorldRenderer(bHost, {
       shared: true,
       rendererFactory: factory,
-      configure: (renderer) => { renderer.domElement.dataset.owner = "b"; },
+      configure: (renderer) => { renderer.domElement.dataset.owner = "b"; renderer.setClearColor(0x000000, 1); },
     });
     const stopB = b.listenCanvas("click", bClick);
     a.renderer.render({} as THREE.Scene, {} as THREE.Camera);
@@ -53,6 +60,10 @@ describe("whole-house renderer ownership", () => {
     expect(b.active).toBe(true);
     expect(bHost.firstElementChild).toBe(made.canvas);
     expect(made.canvas.dataset.owner).toBe("b");
+    expect(made.setClearColor).toHaveBeenLastCalledWith(0x000000, 1);
+    expect(made.setRenderTarget).toHaveBeenLastCalledWith(null);
+    expect(made.setScissorTest).toHaveBeenLastCalledWith(false);
+    expect((made.renderer as unknown as { autoClear: boolean }).autoClear).toBe(true);
     expect(made.render).toHaveBeenCalledTimes(2);
     expect(aClick).toHaveBeenCalledTimes(1);
     expect(bClick).toHaveBeenCalledTimes(1);
@@ -62,6 +73,7 @@ describe("whole-house renderer ownership", () => {
     expect(a.active).toBe(true);
     expect(aHost.firstElementChild).toBe(made.canvas);
     expect(made.canvas.dataset.owner).toBe("a");
+    expect(made.setClearColor).toHaveBeenLastCalledWith(0x000000, 0);
     expect(aResume).toHaveBeenCalledTimes(1);
     made.canvas.click();
     expect(aClick).toHaveBeenCalledTimes(2);

@@ -41,6 +41,7 @@ import './hearthside.css';
 
 export type HearthsideProps = {
   controlledRoute?: HearthsideRoute;
+  onReturnToOrigin?: () => void;
   onNavigate?: (route: HearthsideRoute, replace?: boolean) => void;
   household: Household; memberId: string; identity: string; connected: boolean; busy?: boolean;
   onCommand: KitchenCommand; onReadSubmission?: KittySubmissionReader;
@@ -57,7 +58,7 @@ export default function Hearthside(props: HearthsideProps) {
   const child=<HearthsideHousehold key={`${props.identity}:${props.household.householdId}:${props.memberId}`} {...props}/>;
   return props.vaultSource?<HearthsideVaultProvider household={props.household} memberId={props.memberId} identity={props.identity} connected={props.connected} source={props.vaultSource}>{child}</HearthsideVaultProvider>:child;
 }
-function HearthsideHousehold({household:h,memberId,identity,connected,busy,onCommand,onReadSubmission,onReadAcceptedCommand,onReadAcceptedHousehold,practical,studio,letters,onReference,onWorkspace,initialRoom,vaultSource,controlledRoute,onNavigate}:HearthsideProps) {
+function HearthsideHousehold({household:h,memberId,identity,connected,busy,onCommand,onReadSubmission,onReadAcceptedCommand,onReadAcceptedHousehold,practical,studio,letters,onReference,onWorkspace,initialRoom,vaultSource,controlledRoute,onNavigate,onReturnToOrigin}:HearthsideProps) {
   const vault=useHearthsideVault();
   const appearance=useAppearance(), theme=appearance.scene.theme, state=decodeHearthside(h.hearthside);
   const scope={environment:h.environment,householdId:h.householdId,memberId}, commands=useHearthsideCommands(scope,identity,connected,onCommand);
@@ -80,7 +81,7 @@ function HearthsideHousehold({household:h,memberId,identity,connected,busy,onCom
   const [draftMessage,setDraftMessage]=useState(recovery.error || (Object.values(recovery.drafts).some(Boolean)?'Your unfinished draft is here.':''));
   useEffect(()=>{
     if(controlledRoute){setRoute(controlledRoute);setTool(controlledRoute.surface??null);setBank(null);setLifeStep(null);}
-  },[controlledRoute?.room,controlledRoute?.surface,controlledRoute?.object?.id,controlledRoute?.object?.kind]);
+  },[controlledRoute?.room,controlledRoute?.surface,controlledRoute?.object?.id,controlledRoute?.object?.kind,controlledRoute?.object?.kind==="piece"?controlledRoute.object.designId:undefined]);
   useEffect(()=>{
     if(onNavigate)return;
     const pop=()=>{const next=parseHearthsideRoute(window.location.href,h.householdId);if(next){setRoute(next);setTool(next.surface??null);setBank(null);setLifeStep(null);requestAnimationFrame(()=>document.getElementById(window.history.state?.hearthsideFocus??'hearthside-title')?.focus());}};
@@ -115,7 +116,7 @@ function HearthsideHousehold({household:h,memberId,identity,connected,busy,onCom
   }
   const roomRoute=(room=route.room):HearthsideRoute=>({version:1,householdId:h.householdId,room,mode:room==='conservatory'?'imagine':room==='theatre'?'remember':'present'});
   function openObject(kind:NonNullable<HearthsideRoute['object']>['kind'],id:string,designId?:string){const origin=document.activeElement instanceof HTMLElement?document.activeElement.id||'hearthside-title':'hearthside-title';navigate({...route,surface:undefined,studioSelection:undefined,object:kind==='piece'?{kind,id,designId:designId!}:{kind,id},returnContext:{path:hearthsidePath({...route,returnContext:undefined}),focusId:origin}});}
-  function closeFocused(){const origin=route.returnContext?.focusId??returnFocus.current;setTool(null);setBank(null);navigate(route.returnContext?parseHearthsideRoute(route.returnContext.path,h.householdId)??roomRoute():roomRoute());requestAnimationFrame(()=>document.getElementById(origin)?.focus());}
+  function closeFocused(){if(controlledRoute&&onReturnToOrigin){onReturnToOrigin();return;}const origin=route.returnContext?.focusId??returnFocus.current;setTool(null);setBank(null);navigate(route.returnContext?parseHearthsideRoute(route.returnContext.path,h.householdId)??roomRoute():roomRoute());requestAnimationFrame(()=>document.getElementById(origin)?.focus());}
   function beginExperience(title=''){if(experienceDraft){setDraftMessage('Your intention draft is open below.');return;}setExperienceDraft({version:1,id:`EXP-${crypto.randomUUID()}`,revision:1,title,intention:'',state:'dreaming',horizon:route.room==='conservatory'?horizon:'tonight',createdBy:memberId,references:[]});}
   function beginNote(){if(noteDraft){setDraftMessage('Your note draft is open below.');return;}setNoteDraft({version:1,id:`NOTE-${crypto.randomUUID()}`,revision:1,authorId:memberId,text:'',room:route.room,experienceId:selectedExperience?.id??null,archived:false});}
   function beginMemory(experienceId:string|null=selectedExperience?.id??null){if(memoryDraft){setDraftMessage('Your memory draft is open below.');return;}setMemoryDraft({version:1,id:`MEMORY-${crypto.randomUUID()}`,revision:1,title:selectedExperience?.title??'',date:null,experienceId,media:[],designs:[],recollections:[{memberId,text:''}],hideAmounts:true,approvals:[],withdrawn:false});}
@@ -139,11 +140,15 @@ function HearthsideHousehold({household:h,memberId,identity,connected,busy,onCom
   function memoryPublication(candidate:MemoryComposition,editable=false){return <MemoryPublicationEntry key={`${candidate.id}:${editable?'draft':'read'}`} household={h} memberId={memberId} identity={identity} connected={connected} candidate={candidate} editable={editable} commands={commands} source={vaultSource} theme={theme} artwork={<MemoryArtwork references={candidate.designs} snapshots={editable?draftArtwork.snapshots:memoryArtwork.snapshots}/>} artworkReady={editable?draftArtwork.ready:memoryArtwork.ready} onChange={value=>{if(editable)setMemoryDraft(value);}} onComposed={value=>{setMemoryDraft(null);openObject('memory',value.id);}} onWithdrawn={()=>{setMemoryDraft(null);closeFocused();}}/>;}
   const selected=Boolean(route.object), focused=selected||tool!==null;
   return <main className="hearthside" data-world={theme} data-room={route.room} data-paused={appearance.paused} ref={root} aria-labelledby="hearthside-title">
-    <header className="hearthside-arrival"><div><p className="hearthside-eyebrow">Our shared home</p><h1 id="hearthside-title" tabIndex={-1}>{HEARTHSIDE_LABEL}</h1></div><div className="hearthside-arrival-settings"><span className="hearthside-scope">{h.members.filter(m=>m.active).map(m=>m.name).join(' & ')}</span><AtmosphereControl/></div></header>
-    <nav className="hearthside-room-nav" aria-label="Rooms">{HEARTHSIDE_ROOMS.map(room=><button id={`hearthside-room-${room}`} key={room} aria-current={route.room===room?'page':undefined} onClick={()=>navigate(roomRoute(room))}>{ROOMS[room].name}</button>)}</nav>
+    <header className="hearthside-arrival"><div><p className="hearthside-eyebrow">{controlledRoute?'Our shared folio':'Our shared home'}</p><h1 id="hearthside-title" tabIndex={-1}>{controlledRoute?ROOMS[route.room].name:HEARTHSIDE_LABEL}</h1></div><div className="hearthside-arrival-settings"><span className="hearthside-scope">{h.members.filter(m=>m.active).map(m=>m.name).join(' & ')}</span><AtmosphereControl/></div></header>
+    {!controlledRoute&&<nav className="hearthside-room-nav" aria-label="Rooms">{HEARTHSIDE_ROOMS.map(room=><button id={`hearthside-room-${room}`} key={room} aria-current={route.room===room?'page':undefined} onClick={()=>navigate(roomRoute(room))}>{ROOMS[room].name}</button>)}</nav>}
     {!focused&&<>
       {route.room==='conservatory'&&<FutureHorizonPicker value={horizon} onChange={setHorizon}/>}
-      <HouseholdRoom memberId={memberId} horizon={route.room==='conservatory'?horizon:undefined} household={h} room={route.room} theme={theme} paused={appearance.paused} canArrange={commands.canStart} onOpen={openObject} onNavigate={room=>navigate(roomRoute(room))} submit={commands.submit}/>
+      {controlledRoute?<section className="hearthside-experience-grid" aria-label="Objects in this room">
+        {route.room!=='theatre'&&state.experiences.filter(row=>row.state!=='archived'&&(route.room!=='conservatory'||row.horizon===horizon)).map(row=><button key={row.id} id={`hearthside-experience-${row.id}`} className="hearthside-memory" onClick={()=>openObject('experience',row.id)}><small>{row.state} · {row.horizon}</small><strong>{row.title}</strong><span>{row.intention}</span></button>)}
+        {route.room==='theatre'&&memories.filter(row=>memoryKeptByEveryone(row,activeMembers)).map(row=><button key={row.id} id={`hearthside-memory-${row.id}`} className="hearthside-memory" onClick={()=>openObject('memory',row.id)}><small>Kept by us both · {row.date??'Undated'}</small><strong>{row.title}</strong>{row.recollections.map(row=><span key={row.memberId}>{row.text}</span>)}</button>)}
+        {state.notes.filter(row=>!row.archived&&row.room===route.room).map(row=><button key={row.id} id={`hearthside-note-${row.id}`} className="hearthside-memory" onClick={()=>openObject('note',row.id)}><small>A little note</small><span>{row.text}</span></button>)}
+      </section>:<HouseholdRoom memberId={memberId} horizon={route.room==='conservatory'?horizon:undefined} household={h} room={route.room} theme={theme} paused={appearance.paused} canArrange={commands.canStart} onOpen={openObject} onNavigate={room=>navigate(roomRoute(room))} submit={commands.submit}/>}
       <section className="hearthside-room-actions" aria-label={`Things to do in the ${ROOMS[route.room].name.toLowerCase()}`}>
         <div className="hearthside-scene-actions">
           {letters&&(route.room==='common'||route.room==='theatre')&&<button id="hearthside-open-letters" onClick={()=>openTool('letters')}>Letters, voice, and capsules</button>}

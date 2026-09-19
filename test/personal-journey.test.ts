@@ -6,6 +6,8 @@ import { catalogHousehold } from "../src/core/index.ts";
 import { PersonalJourney } from "../src/house/PersonalJourney.tsx";
 import type { Household, Transaction } from "../src/core/types.ts";
 
+(globalThis as {IS_REACT_ACT_ENVIRONMENT?:boolean}).IS_REACT_ACT_ENVIRONMENT=true;
+
 const fake = vi.hoisted(() => ({ throw: false, scene: vi.fn(), focusMonth: vi.fn(), dispose: vi.fn() }));
 vi.mock("../src/path/world/pathWorld3d.ts", () => ({
   createPathWorld: () => {

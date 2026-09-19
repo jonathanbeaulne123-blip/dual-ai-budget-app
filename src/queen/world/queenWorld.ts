@@ -56,6 +56,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
   const rendererLease = acquireWorldRenderer(host, {
     parameters: { alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true },
     configure(renderer) {
+      renderer.setClearColor(0x000000, 0);
       renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 1.5));
       renderer.shadowMap.enabled = false;
       renderer.outputColorSpace = THREE.SRGBColorSpace;

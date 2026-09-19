@@ -84,8 +84,16 @@
 
 @media(min-width:720px){
  .app[data-house-world] .nav[data-house-navigation] { display:flex; align-items:center; gap:18px; height:64px; padding:5px 20px; min-width:220px; }
- .app[data-house-world] .nav[data-house-navigation]>button { min-height:44px; justify-content:center; }
+ .app[data-house-world] .nav[data-house-navigation]>button { min-height:44px; min-width:44px; justify-content:center; }
  .app[data-house-world] .nav[data-house-navigation] .fab { margin-top:0; width:46px; height:46px; }
 }
 @media(max-width:719px){.app[data-house-world] .nav[data-house-navigation] { grid-template-columns:repeat(6,minmax(44px,1fr)); }}
 .house-book .household-books-heading h2,.house-book .household-books-heading>p:not(.opinion-banner),.house-book .household-books-nav { display:none; }
+
+/* A focused tool keeps the house return within reach while its paper scrolls. */
+.app[data-house-world] .house-tool-heading { position:sticky; top:0; z-index:40; background:var(--paper); padding-top:12px; }
+/* House materials own the contrast; an OS dark preference must not mix dark
+   Hearthside buttons with a light, authored making table. */
+.app[data-house-world] .hearthside { --hs-paper:var(--paper); --hs-ink:var(--ink); --hs-line:var(--line); --hs-accent:var(--accent); }
+.app[data-house-world] .collaborative-studio button { color:var(--ink); background-color:var(--paper); border-color:var(--line); }
+.app[data-house-world] .collaborative-studio .studio-colours button { background-color:revert; }

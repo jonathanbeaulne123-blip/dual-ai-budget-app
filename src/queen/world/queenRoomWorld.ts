@@ -89,6 +89,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   const rendererLease = acquireWorldRenderer(host, {
     parameters: { alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true },
     configure(renderer) {
+      renderer.setClearColor(0x000000, 0);
       renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 1.5));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;

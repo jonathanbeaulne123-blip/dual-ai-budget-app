@@ -14,7 +14,7 @@ export function houseReturnSlot(route: Pick<HouseRoute, "surface" | "object">): 
 
 /** Camera state belongs to the room/time view, while the arrival record keeps its full route. */
 export function houseCameraRoute(route: HouseRoute): HouseRoute {
-  const { surface: _surface, object: _object, ...camera } = route;
+  const { surface: _surface, object: _object, studioSelection: _studioSelection, ...camera } = route;
   return camera;
 }
 

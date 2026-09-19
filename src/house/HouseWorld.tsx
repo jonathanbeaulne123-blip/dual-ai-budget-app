@@ -8,6 +8,7 @@ import { kittyBankBackingStep } from "../core/kittyBanks.ts";
 import { queenBankPiece, queenBankFired, queenBankGlaze } from "../queen/world/queenAuthoring.ts";
 import { booksPresentationFloor, householdWallet, projectHouseholdFund } from "../core/index.ts";
 import { readHouseReturn, saveHouseReturn, houseIdentity } from "./navigation.ts";
+import { houseCameraRoute, houseCameraSlot, sameHouseCameraRoute } from "./returnCache.ts";
 import { projectKittyNest } from "../core/kittyNest.ts";
 import { HOUSE_LEVELS, HOUSE_ROOMS, type HouseRoute, type HouseRoom, type HouseLevel } from "../hearthside/houseRoutes.ts";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
@@ -58,8 +59,8 @@ export function HouseWorld({household,memberId,scope,today,route,ready,freshness
   useEffect(()=>{runtime.current?.setHome(homeObjects);},[homeObjects,status]);
   useEffect(()=>{
     const restore=(event:Event)=>{const detail=(event as CustomEvent).detail;if(detail?.identity===houseIdentity(identity)&&Array.isArray(detail.camera)&&detail.camera.length===3&&detail.camera.every(Number.isFinite))runtime.current?.go({...currentDestination.current,camera:detail.camera});};
-    const remember=()=>saveHouseReturn(localStorage,identity,routeRef.current,{camera:runtime.current?.camera(),scroll:window.scrollY,focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title"});
-    const saved=readHouseReturn(localStorage,identity);if(saved?.camera&&JSON.stringify(saved.route)===JSON.stringify(routeRef.current))runtime.current?.go({...currentDestination.current,camera:saved.camera});
+    const remember=()=>{const current=routeRef.current;saveHouseReturn(localStorage,identity,current,{scroll:window.scrollY,focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title"});saveHouseReturn(localStorage,identity,houseCameraRoute(current),{camera:runtime.current?.camera()},houseCameraSlot(current));};
+    const saved=readHouseReturn(localStorage,identity,houseCameraSlot(routeRef.current));if(saved?.camera&&sameHouseCameraRoute(saved.route,routeRef.current))runtime.current?.go({...currentDestination.current,camera:saved.camera});
     window.addEventListener("hearth:house-return",restore);window.addEventListener("pagehide",remember);
     return()=>{window.removeEventListener("hearth:house-return",restore);window.removeEventListener("pagehide",remember);};
   },[scope,memberId,household.householdId,status]);

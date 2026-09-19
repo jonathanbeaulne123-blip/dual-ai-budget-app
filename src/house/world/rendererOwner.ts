@@ -48,6 +48,12 @@ function detachListeners(state: LeaseState, canvas: HTMLCanvasElement) {
 function activate(state: LeaseState, renderer: THREE.WebGLRenderer, resume: boolean) {
   state.active = true;
   state.host.appendChild(renderer.domElement);
+  // Render targets and scissor state belong to the scene that set them. A
+  // shared canvas must return to the default framebuffer before another tool
+  // configures its own clear colour and alpha.
+  renderer.setRenderTarget(null);
+  renderer.setScissorTest(false);
+  renderer.autoClear = true;
   state.options.configure?.(renderer);
   attachListeners(state, renderer.domElement);
   if (resume) state.options.onResume?.();

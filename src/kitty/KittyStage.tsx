@@ -102,6 +102,7 @@ export function KittyStage({
           rendererLease = acquireWorldRenderer(element, {
             parameters: { alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true },
             configure(active) {
+              active.setClearColor(0x000000, 0);
               active.setPixelRatio(Math.min(devicePixelRatio, 1.6));
               active.shadowMap.enabled = true;
               active.shadowMap.type = T.PCFSoftShadowMap;

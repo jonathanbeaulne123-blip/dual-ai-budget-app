@@ -33,7 +33,7 @@ const endpoint=`/ledger-sync/v2/development/${householdId}`,headers={Authorizati
 let response=await fetch(endpoint+'/snapshot',{headers});
 if(!response.ok){
   let household=completedExistingBooksHousehold('2026-09-19T12:00:00.000Z');
-  household={...household,householdId,name:'Alex & Sam · fictional local house',linked:true};
+  household={...household,householdId,name:'Alex & Sam · fictional local house',linked:true,commandReceipts:[]};
   household.members=household.members.map((member,index)=>({...member,name:index?'Sam (fictional)':'Alex (fictional)'}));
   for(const [id,title,intention,horizon] of [['EXP-FUNDED-WEEKEND','A weekend by the water','A small funded weekend, a place to stay and time together.','season'],['EXP-FREE-EVENING','An evening with the good mugs','Tea, a record, and a words-only memory. No purchase needed.','tonight']] as const){
     clearCapturedIntent(household);household=commitHearthside(household,{version:1,id:crypto.randomUUID(),scope:{environment:'development',householdId,memberId:'MEM-001'},operation:{kind:'experience.save',expectedRevision:0,value:{version:1,id,revision:1,title,intention,horizon,state:'dreaming',createdBy:'MEM-001',references:[]}}}).household;
