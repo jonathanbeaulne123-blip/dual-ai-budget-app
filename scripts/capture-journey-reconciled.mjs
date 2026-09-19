@@ -1,9 +1,8 @@
 /**
- * Proposed post-reconcile Journey browser proof.
+ * Post-reconciliation Journey browser proof.
  *
- * Intended repository location: scripts/capture-journey-reconciled.mjs
- * Run from the repository root after the parent adds the synthetic `story=plan`
- * fixture to startOurPathWorldProof and configures the Fund-v2 server environment.
+ * Runs the synthetic `story=plan` fixture; use VITE_FUND_MODEL_V2=1 and
+ * CHROME_PATH when the default Playwright browser is not installed.
  *
  *   OUT=/absolute/ignored/path node scripts/capture-journey-reconciled.mjs
  *
@@ -64,6 +63,14 @@ function safeName(value) {
   return value.replace(/[^a-z0-9_-]+/gi, '-').replace(/^-|-$/g, '').toLowerCase();
 }
 
+function miniCad(cents) {
+  if (cents === null) return 'Backing unavailable';
+  const abs = Math.abs(Math.round(cents));
+  const whole = abs % 100 === 0;
+  const text = (abs / 100).toLocaleString('en-CA', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 });
+  return `${cents < 0 ? '−' : ''}$${text}`;
+}
+
 function noWebgl() {
   const original = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function getContext(kind, ...args) {
@@ -93,6 +100,9 @@ function visibleState() {
     caption: document.querySelector('.path-hud__caption')?.textContent?.trim() ?? null,
     card: document.querySelector('.path-world__card h3')?.textContent?.trim() ?? null,
     cardEyebrow: document.querySelector('.path-world__card .kicker')?.textContent?.trim() ?? null,
+    fundDisplayed: Object.fromEntries(['prepare', 'protect', 'build'].map((lane) => [lane,
+      document.querySelector(`.path-hud__tracker--${lane}`)?.textContent?.replace(/\s+/g, ' ').trim() ?? null,
+    ])),
     replay: document.querySelector('.path-world__slider input')?.value ?? null,
     flatFallback: Boolean(document.querySelector('.path-world__stage .path-world__flat svg')),
     liveWebgl: document.querySelector('.path-world__host')?.getAttribute('data-live') === 'true',
@@ -245,35 +255,48 @@ async function main() {
           const openerIdentity = await openGame(page);
           await page.waitForSelector('.path-world__host[data-live="true"]', { timeout: 180_000 });
           await page.waitForFunction(() => document.querySelector('.path-hud__mini .journey-mini'), null, { timeout: 60_000 });
+          await page.waitForFunction(() => document.documentElement.classList.contains('path-world-settled'), null, { timeout: 30_000 });
+          await page.waitForFunction(() => document.querySelector('.path-world')?.dataset.level === '2', null, { timeout: 60_000 });
+          const expectedFund = Object.fromEntries(['prepare', 'protect', 'build'].map((lane) => [lane, miniCad(report.fixture.canonicalFundSummary[lane].amountCents)]));
+          await page.waitForFunction((expected) => Object.entries(expected).every(([lane, amount]) => {
+            const hudAmount = document.querySelector(`.path-hud__tracker--${lane}`)?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+            const label = lane[0].toUpperCase() + lane.slice(1);
+            return hudAmount.startsWith(`${label} ${amount}`);
+          }), expectedFund, { timeout: 60_000 });
           let state = await record(page, `${base}-normal-game-open`);
           assert(state.game === 'open' && state.liveWebgl, `${base}: live game did not open`, state);
           assert(!state.navVisible, `${base}: app navigation remained visible in game mode`, state);
+          for (const lane of ['prepare', 'protect', 'build']) {
+            const label = lane[0].toUpperCase() + lane.slice(1);
+            assert(state.fundDisplayed[lane]?.startsWith(`${label} ${expectedFund[lane]}`), `${base}: HUD ${lane} amount differs from the canonical Fund`, state.fundDisplayed[lane]);
+          }
 
-          // Pick a visible month in the world and require both JourneyMini copies to converge on that exact month.
+          // Move out to Region, then pick the always-prioritized current-month marker. At narrow
+          // widths other month labels deliberately yield to nearby labels and HUD obstacles.
+          await page.getByRole('button', { name: 'Region', exact: true }).click();
+          await page.waitForFunction(() => document.querySelector('.path-world')?.dataset.level === '1'
+            && document.querySelector('.path-hud__mini .journey-mini')?.dataset.level === '3', null, { timeout: 60_000 });
+          const today = report.fixture.canonicalFundSummary.flow.today;
+          const expectedMonth = {
+            monthFull: new Date(`${today}T12:00:00Z`).toLocaleString('en-CA', { month: 'long', timeZone: 'UTC' }),
+            monthShort: new Date(`${today}T12:00:00Z`).toLocaleString('en-CA', { month: 'short', timeZone: 'UTC' }).replace('.', ''),
+          };
+          await page.locator('.path-mark--now').waitFor({ state: 'visible', timeout: 30_000 });
           const worldPick = await page.evaluate(() => {
-            const marks = [...document.querySelectorAll('.path-mark--month')].filter((element) => {
-              const box = element.getBoundingClientRect();
-              return !element.hidden && box.width > 0 && box.height > 0;
-            });
-            const months = [
-              ['January', 'Jan'], ['February', 'Feb'], ['March', 'Mar'], ['April', 'Apr'], ['May', 'May'], ['June', 'Jun'],
-              ['July', 'Jul'], ['August', 'Aug'], ['September', 'Sep'], ['October', 'Oct'], ['November', 'Nov'], ['December', 'Dec'],
-            ];
-            const matchFor = (text) => months.find(([full, short]) => text.includes(full) || new RegExp(`(^|[^A-Za-z])${short}([^A-Za-z]|$)`).test(text));
-            const mark = marks.find((element) => matchFor(element.getAttribute('aria-label') || '')) ?? marks[0];
+            const mark = document.querySelector('.path-mark--now');
             if (!mark) return null;
             const aria = mark.getAttribute('aria-label') || mark.textContent.trim();
-            const month = matchFor(aria) ?? null;
-            mark.click();
-            return { place: mark.dataset.place, label: aria, monthFull: month?.[0] ?? null, monthShort: month?.[1] ?? null };
+            return { place: mark.dataset.place, label: aria };
           });
-          assert(worldPick?.place && worldPick.monthFull && worldPick.monthShort, `${base}: no named month world mark was available to pick`, worldPick);
+          assert(worldPick?.place, `${base}: no current-month world mark was available to pick`, worldPick);
+          Object.assign(worldPick, expectedMonth);
+          await page.locator('.path-mark--now').click();
           await page.waitForFunction(({ place, monthFull, monthShort }) => {
             const pageMini = document.querySelector('.path-world__simple .journey-mini');
             const corner = document.querySelector('.path-hud__mini .journey-mini');
             const card = document.querySelector('.path-world__card');
             const eyebrow = card?.querySelector('.kicker')?.textContent ?? '';
-            const selectedMark = document.querySelector(`.path-mark--month[data-place="${CSS.escape(place)}"]`);
+            const selectedMark = document.querySelector(`.path-mark[data-place="${CSS.escape(place)}"]`);
             const pageWords = `${pageMini?.querySelector('h2')?.textContent ?? ''} ${pageMini?.querySelector('.journey-mini__sub')?.textContent ?? ''}`;
             const cornerWords = corner?.querySelector('.journey-mini__compact-caption')?.textContent ?? '';
             return Boolean(selectedMark && card)
@@ -290,7 +313,7 @@ async function main() {
           assert(`${state.cornerTitle ?? ''}`.includes(worldPick.monthShort), `${base}: compact mini does not identify the selected month`, state);
 
           // Move the corner minimap to Journey and pick another era. The world must land and describe it.
-          await page.keyboard.press('Escape');
+          await page.locator('.path-world__card .path-world__close').click();
           await page.waitForFunction(() => !document.querySelector('.path-world__card'), null, { timeout: 10_000 });
           await page.locator('.path-hud__mini .journey-mini__levels button[aria-label="Journey"]').click();
           await page.waitForFunction(() => document.querySelector('.path-hud__mini .journey-mini')?.dataset.level === '4', null, { timeout: 30_000 });

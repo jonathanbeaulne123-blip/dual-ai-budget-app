@@ -53,7 +53,7 @@ describe("the simple view on Our Story", () => {
     expect(current.banks).toHaveLength(8);
     expect(current.banks.filter((b) => b.full).map((b) => b.name).sort()).toEqual(["Plant corner", "The sofa"]);
     expect(current.banks.find((b) => b.name === "The sofa")).toMatchObject({ bought: true, fill: 1 });
-    expect(current.banks.every((b) => b.step >= 0 && b.step <= 10)).toBe(true);
+    expect(current.banks.every((b) => b.step !== null && b.step >= 0 && b.step <= 10)).toBe(true);
     // Twelve Chapters behind us in this era closed at their Sitdowns, this month open, the rest ahead.
     expect(current.months.filter((m) => m.status === "closed")).toHaveLength(12);
     expect(current.months.find((m) => m.current)).toMatchObject({ key: "2026-09", status: "open", worldId: "month:12", lap: 12 });

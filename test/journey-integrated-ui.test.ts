@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CommitResult, Household } from "../src/core/index.ts";
 import { pathEras } from "../src/core/pathEras.ts";
 import { pathMonths } from "../src/core/pathSignals.ts";
+import { fundModelMode } from "../src/core/fundRules.ts";
 import { OurPathWorld } from "../src/path/OurPathWorld.tsx";
 import { loadMiniJourney } from "../src/path/mini/miniJourneyLoader.ts";
 import { miniCad, miniFund, miniJourney } from "../src/path/mini/miniJourneyModel.ts";
@@ -199,6 +200,7 @@ describe("Both views say the same thing (D-284 + D-285)", () => {
   it.each(["0", "1"])("shares era names, months, the Chapter and canonical Fund lanes with model flag %s", async (flag) => {
     vi.stubEnv("VITE_FUND_MODEL_V2", flag);
     const h = journeyHousehold(flag === "1" ? { fundModel: 2 } : {});
+    expect(fundModelMode(h)).toBe(flag === "1" ? 2 : 1);
     const model = miniJourney(h, { memberId: "MEM-001", today: TODAY });
     // The staged loader lands on exactly the one-call model.
     const staged = await loadMiniJourney(h, { memberId: "MEM-001", view: "household", today: TODAY });

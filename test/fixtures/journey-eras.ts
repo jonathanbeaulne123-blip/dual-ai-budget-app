@@ -2,6 +2,7 @@ import { addGoal, openChapter, postEntry, type Household } from "../../src/core/
 import { agreePathProposal, pendingPathProposals, shapePathWorld, type PathEraRow, type PathEraSpec } from "../../src/core/pathWorld.ts";
 import { crossPathEra, currentPathEra, proposePathEra } from "../../src/core/pathEras.ts";
 import { saveTask, type TaskInput } from "../../src/core/tasks.ts";
+import { migrateFundModel } from "../../src/core/fundModelCommands.ts";
 import { planLifeFixture } from "./plan-life.ts";
 
 /** A fictional household with a Journey of Life (a crossed era, the current one, a planned one), a Chapter, a shared bank and to-dos. */
@@ -42,5 +43,5 @@ export function journeyHousehold(options: { fundModel?: 1 | 2 } = {}): Household
   h = agreeAll(h);
   h = saveTask(h, { memberId: ME, id: "TASK-IT-VET", expectedRevision: 0, task: task({ title: "Fictional: book the vet", assigneeId: PARTNER, dueDate: "2026-09-17" }) }).household;
   h = saveTask(h, { memberId: ME, id: "TASK-IT-MINE", expectedRevision: 0, task: task({ visibility: "personal", title: "Fictional: my quiet surprise", dueDate: "2026-09-18" }) }).household;
-  return h;
+  return options.fundModel === 2 ? migrateFundModel(h, { memberId: ME, at: "2026-09-15T12:00:00.000Z" }).household : h;
 }
