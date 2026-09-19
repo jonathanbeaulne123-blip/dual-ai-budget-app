@@ -15,7 +15,7 @@ const created = vi.hoisted(() => ({ mode: "throw" as "throw" | "fake", worlds: [
 vi.mock("../src/path/world/pathWorld3d.ts", () => ({
   createPathWorld: () => {
     if (created.mode === "throw") throw new Error("WebGL unavailable");
-    const names = ["setScene", "resize", "setAmbient", "setQuality", "sleep", "wake", "refresh", "focus", "setLevel", "zoom", "turn", "stats", "dispose"];
+    const names = ["setScene", "resize", "setAmbient", "setQuality", "sleep", "wake", "refresh", "focus", "focusMonth", "setLevel", "zoom", "turn", "stats", "dispose"];
     const world = Object.fromEntries(names.map((n) => [n, vi.fn()]));
     created.worlds.push(world);
     return world;
@@ -83,7 +83,7 @@ function Harness({ initial, today = TODAY, extra }: { initial: Household; today?
     createElement("button", { id: "switch", onClick: () => setMember(member === ME ? PARTNER : ME) }, "switch"),
     createElement(OurPathWorld, {
       household, memberId: member, today, busy: false, onCommand, theme: "classic", ...extra,
-      classicRoom: createElement("div", { id: "classic" }, "Today's Our Path"),
+      renderMini: null, classicRoom: createElement("div", { id: "classic" }, "Today's Our Path"),
     }));
 }
 const $ = <T extends HTMLElement = HTMLElement>(selector: string) => host.querySelector<T>(selector)!;
@@ -91,6 +91,15 @@ const buttons = () => [...host.querySelectorAll<HTMLButtonElement>("button")];
 const byText = (text: string | RegExp) => buttons().find((b) => (typeof text === "string" ? b.textContent?.trim() === text : text.test(b.textContent ?? "")))!;
 const click = async (element: HTMLElement) => act(async () => { element.click(); });
 const settle = async () => act(async () => { await new Promise((r) => setTimeout(r, 0)); });
+async function waitForWorld(timeout = 2_000) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const world = created.worlds[0];
+    if (world) return world;
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 25)); });
+  }
+  throw new Error("The fake world did not finish its staged load.");
+}
 const household = () => (window as unknown as { __household: Household }).__household;
 async function type(element: HTMLInputElement | HTMLSelectElement, value: string) {
   await act(async () => {
@@ -140,7 +149,10 @@ describe("The Journey of Life on the page (D-268)", () => {
     const h = journey();
     await act(async () => root.render(createElement(Harness, { initial: h })));
     await settle();
-    const world = created.worlds[0]!;
+    // Game mode (D-285): the world is built when the open world is first opened.
+    expect(created.worlds).toHaveLength(0);
+    await click(byText("Open the world"));
+    const world = await waitForWorld();
     const input = world.setScene!.mock.calls.at(-1)![0] as { characters: unknown[]; eras: { id: string; state: string; offset: number; island: unknown; focused: boolean; plans: { sketched: boolean }[] }[]; home: string; gate: { lanterns: boolean[]; open: boolean; crossing: boolean } };
     // The current era began when the bridge was crossed in July: July, August, September.
     expect(input.characters).toHaveLength(3);
@@ -192,6 +204,10 @@ describe("The Journey of Life on the page (D-268)", () => {
     expect($(".path-world__card h3").textContent).toBe("The down payment");
     expect(cardText()).toContain("0 of 10 steps");
     await click(byText("Open this Kitty Bank"));
+    const exitDeadline = Date.now() + 2_000;
+    while (opened.length === 0 && Date.now() < exitDeadline) {
+      await act(async () => { await new Promise(resolve => setTimeout(resolve, 25)); });
+    }
     expect(opened).toHaveLength(1);
     await click(byText("Back to the island"));
 

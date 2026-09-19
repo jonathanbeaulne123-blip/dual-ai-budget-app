@@ -1,0 +1,90 @@
+{
+  "sync-390-1-page-june.png": {
+    "errors": [],
+    "focus": [
+      "month · 2026-06-10 · — · mini#1"
+    ],
+    "caption": null,
+    "slider": "0"
+  },
+  "sync-390-2-world-june.png": {
+    "errors": [],
+    "focus": [
+      "month · 2026-06-10 · — · mini#1 · world open",
+      "month · 2026-06-10 · — · mini#1 · world open"
+    ],
+    "caption": "MonthJune 2026Steady · Fictional steady year",
+    "slider": "0"
+  },
+  "sync-390-3-world-sky.png": {
+    "errors": [],
+    "focus": [
+      "journey · 2026-06-10 · — · world#2 · world open",
+      "journey · 2026-06-10 · — · world#2 · world open"
+    ],
+    "caption": "JourneyOur journey6 eras · now: Fictional steady year",
+    "slider": "0"
+  },
+  "sync-390-4-minimized.png": {
+    "errors": [],
+    "focus": [
+      "journey · 2026-06-10 · — · world#2"
+    ],
+    "caption": null,
+    "slider": "0"
+  },
+  "sync-1100-1-page-june.png": {
+    "errors": [],
+    "focus": [
+      "month · 2026-06-10 · — · mini#1"
+    ],
+    "caption": null,
+    "slider": "0"
+  },
+  "sync-1100-2-world-june.png": {
+    "errors": [],
+    "focus": [
+      "month · 2026-06-10 · — · world#3 · world open",
+      "month · 2026-06-10 · — · world#3 · world open"
+    ],
+    "caption": "MonthJune 2026Steady · Fictional steady year",
+    "slider": "0"
+  },
+  "sync-1100-3-world-sky.png": {
+    "errors": [],
+    "focus": [
+      "journey · 2026-06-10 · — · world#4 · world open",
+      "journey · 2026-06-10 · — · world#4 · world open"
+    ],
+    "caption": "JourneyOur journey6 eras · now: Fictional steady year",
+    "slider": "0"
+  },
+  "sync-1100-4-minimized.png": {
+    "errors": [],
+    "focus": [
+      "journey · 2026-06-10 · — · world#4"
+    ],
+    "caption": null,
+    "slider": "0"
+  },
+  "sync-390-reduced-enter.png": {
+    "errors": [],
+    "focus": [],
+    "caption": "WeekThis weekSeptember 2026 · Fictional steady year",
+    "slider": "3",
+    "animations": 0,
+    "banner": false
+  },
+  "sync-320-nowebgl-world.png": {
+    "errors": [],
+    "focus": [],
+    "caption": "WeekThis weekSeptember 2026 · Fictional steady year",
+    "slider": "3"
+  },
+  "sync-1100-nowebgl-world.png": {
+    "errors": [],
+    "focus": [],
+    "caption": "WeekThis weekSeptember 2026 · Fictional steady year",
+    "slider": "3"
+  }
+}

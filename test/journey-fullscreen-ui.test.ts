@@ -18,47 +18,92 @@ async function mount() {
   const onCommand = async (fn: (h: Household) => CommitResult) => ({ ok: true, household: fn(household).household });
   await act(async () => root.render(createElement(OurPathWorld, {
     household, memberId: "MEM-001", today: "2026-09-11", busy: false, onCommand, theme: "classic",
-    classicRoom: createElement("div", { id: "classic" }),
+    renderMini: null, classicRoom: createElement("div", { id: "classic" }),
   } as never)));
 }
 const toggle = () => host.querySelector<HTMLButtonElement>(".path-world__full")!;
 const stage = () => host.querySelector<HTMLElement>(".path-world__stage")!;
+const isFull = () => stage().classList.contains("path-world__stage--full") && !stage().hidden;
+async function waitFor<T>(read: () => T | null, timeout = 2_000) {
+  const deadline = Date.now() + timeout;
+  while (Date.now() < deadline) {
+    const value = read();
+    if (value) return value;
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 25)); });
+  }
+  throw new Error("Timed out waiting for the deferred world exit.");
+}
 
+// D-283's quiet toggle, reshaped by D-285: on the page it sits in the simple view's upper-left corner and opens the
+// world; in the open world the same control is the HUD's minimize button (upper-left).
 describe("Journey map full screen toggle", () => {
-  it("sits in the stage and takes the map full screen, then back", async () => {
+  it("sits in the simple view's corner and takes the map full screen, then back", async () => {
     await mount();
     const button = toggle();
     expect(button).toBeTruthy();
-    expect(button.parentElement).toBe(stage());
-    expect(stage().firstElementChild?.nextElementSibling).toBe(button);
+    const slot = host.querySelector<HTMLElement>("[data-slot='journey-mini']")!;
+    expect(button.parentElement).toBe(slot);
+    expect(slot.lastElementChild).toBe(button);
     expect(button.getAttribute("aria-pressed")).toBe("false");
-    expect(button.getAttribute("aria-label")).toBe("Show the map full screen");
+    expect(button.getAttribute("aria-label")).toBe("Open the world full screen");
+    expect(isFull()).toBe(false);
+    button.focus();
     await act(async () => { button.click(); });
-    expect(stage().classList.contains("path-world__stage--full")).toBe(true);
+    expect(isFull()).toBe(true);
     expect(document.documentElement.classList.contains("path-world-fullscreen")).toBe(true);
-    expect(toggle().getAttribute("aria-pressed")).toBe("true");
-    expect(toggle().getAttribute("aria-label")).toBe("Leave full screen");
-    await act(async () => { toggle().click(); });
-    expect(stage().classList.contains("path-world__stage--full")).toBe(false);
+    // One toggle at a time: the page's corner toggle steps back behind the (inert) page, the HUD's is in front.
+    const inWorld = stage().querySelector<HTMLButtonElement>(".path-world__full")!;
+    expect(inWorld.closest(".path-hud__corner--start")).toBeTruthy();
+    expect(inWorld.getAttribute("aria-pressed")).toBe("true");
+    expect(inWorld.getAttribute("aria-label")).toBe("Minimize the world");
+    expect(button.closest("[inert]")).toBeTruthy();
+    await act(async () => { inWorld.click(); });
+    expect(isFull()).toBe(false);
     expect(document.documentElement.classList.contains("path-world-fullscreen")).toBe(false);
+    expect(document.activeElement).toBe(button);
   });
 
   it("leaves full screen on Escape and when the tent opens, and asks for native full screen where it exists", async () => {
     const request = vi.fn(() => Promise.resolve());
+    const exit = vi.fn(() => Promise.resolve());
+    const lock = vi.fn(() => Promise.resolve());
     (Element.prototype as unknown as { requestFullscreen?: unknown }).requestFullscreen = request;
+    const doc = document as unknown as { exitFullscreen?: unknown };
+    const hadExit = "exitFullscreen" in document;
+    const savedExit = doc.exitFullscreen;
+    doc.exitFullscreen = exit;
+    Object.defineProperty(document, "fullscreenElement", { configurable: true, get: () => (request.mock.calls.length > exit.mock.calls.length ? document.documentElement : null) });
+    (navigator as unknown as { keyboard?: unknown }).keyboard = { lock, unlock: vi.fn() };
     try {
       await mount();
       await act(async () => { toggle().click(); });
       expect(request).toHaveBeenCalledTimes(1);
+      // Like a game, Escape stays with the island (so a card can close first).
+      expect(lock).toHaveBeenCalledWith(["Escape"]);
       await act(async () => { window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })); });
-      expect(stage().classList.contains("path-world__stage--full")).toBe(false);
+      expect(isFull()).toBe(false);
+      expect(exit).toHaveBeenCalledTimes(1);
+      await waitFor(() => !window.history.state?.hearthPathWorld);
       await act(async () => { toggle().click(); });
-      const tent = [...host.querySelectorAll<HTMLButtonElement>("button")].find((b) => b.textContent?.includes("Open the Plan Studio tent"))!;
+      expect(isFull()).toBe(true);
+      const tent = host.querySelector<HTMLButtonElement>(".path-hud .path-world__tent")!;
+      expect(tent.getAttribute("aria-label")).toBe("Open the Plan Studio tent");
       await act(async () => { tent.click(); });
-      expect(stage().classList.contains("path-world__stage--full")).toBe(false);
+      expect(isFull()).toBe(false);
       expect(document.documentElement.classList.contains("path-world-fullscreen")).toBe(false);
+      // Leaving the browser's own full screen (its Escape) minimizes too.
+      const back = await waitFor(() => host.querySelector<HTMLButtonElement>(".path-world__back"));
+      await act(async () => { back.click(); });
+      await act(async () => { toggle().click(); });
+      expect(isFull()).toBe(true);
+      exit.mockImplementationOnce(() => Promise.resolve());
+      await act(async () => { void (document as unknown as { exitFullscreen: () => Promise<void> }).exitFullscreen(); document.dispatchEvent(new Event("fullscreenchange")); });
+      expect(isFull()).toBe(false);
     } finally {
       delete (Element.prototype as unknown as { requestFullscreen?: unknown }).requestFullscreen;
+      delete (document as unknown as { fullscreenElement?: unknown }).fullscreenElement;
+      if (hadExit) doc.exitFullscreen = savedExit; else delete doc.exitFullscreen;
+      delete (navigator as unknown as { keyboard?: unknown }).keyboard;
     }
   });
 });

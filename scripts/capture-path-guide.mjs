@@ -2,6 +2,7 @@
     memory flags, and Home's window onto the island. `node scripts/capture-path-guide.mjs` */
 import { chromium } from '@playwright/test';
 import { startOurPathWorldProof } from './serve-our-path-world-proof.mjs';
+import { onPage, openWorld } from './lib/path-world-game.mjs';
 import { startQueenWorldPageProof } from './serve-queen-world-page-proof.mjs';
 
 const out = 'docs/evidence/our-path-world';
@@ -17,9 +18,12 @@ async function page(width, height) {
 }
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 async function outline(p, text) {
-  await p.evaluate(() => { const d = document.querySelector('.path-world__outline'); if (d) d.open = true; });
-  await p.locator('.path-world__outline button', { hasText: text }).first().click();
-  await p.evaluate(() => { document.querySelector('.path-world__outline').open = false; });
+  // The outline is on the page (behind the open world): pick there, and the world opens on the place.
+  await onPage(p, async () => {
+    await p.evaluate(() => { const d = document.querySelector('.path-world__outline'); if (d) d.open = true; });
+    await p.locator('.path-world__outline button', { hasText: text }).first().click();
+    await p.evaluate(() => { document.querySelector('.path-world__outline').open = false; });
+  }, { live: !p.__flat });
 }
 
 const only = process.env.ONLY;
@@ -29,7 +33,8 @@ if (path) try {
   {
     const p = await page(1100, 860);
     await p.goto(`${path.url}?theme=taylor&story=well&lantern=1&quality=full`);
-    await p.waitForFunction(() => window.__ready && document.querySelector('.path-world__host[data-live="true"]'), null, { timeout: 90_000 });
+    await p.waitForFunction(() => window.__ready, null, { timeout: 90_000 });
+    await openWorld(p);
     await p.getByRole('button', { name: 'Region', exact: true }).click();
     await wait(2500);
     report.tentHercules = await p.evaluate(() => { const h = document.querySelector('.path-mark--tent .path-hercules'); const tent = document.querySelector('.path-mark--tent'); return { hercules: Boolean(h), ariaHidden: h?.getAttribute('aria-hidden'), tentShown: tent ? !tent.hidden : false, pose: h?.dataset.pose, cottageShown: !document.querySelector('.path-mark--cottage')?.hidden }; });
@@ -45,7 +50,8 @@ if (path) try {
   {
     const p = await page(390, 844);
     await p.goto(`${path.url}?theme=newfoundland&story=well&lantern=1&quality=lite`);
-    await p.waitForFunction(() => window.__ready && document.querySelector('.path-world__host[data-live="true"]'), null, { timeout: 90_000 });
+    await p.waitForFunction(() => window.__ready, null, { timeout: 90_000 });
+    await openWorld(p);
     await outline(p, "Hercules's cottage");
     await wait(2500);
     await p.evaluate(() => window.scrollTo(0, document.querySelector('.path-world__stage').getBoundingClientRect().top + window.scrollY - 8));
@@ -60,7 +66,8 @@ if (path) try {
   {
     const p = await page(1100, 860);
     await p.goto(`${path.url}?theme=classic&story=well&lantern=1&quality=full&photos=1`);
-    await p.waitForFunction(() => window.__ready && document.querySelector('.path-world__host[data-live="true"]'), null, { timeout: 90_000 });
+    await p.waitForFunction(() => window.__ready, null, { timeout: 90_000 });
+    await openWorld(p);
     await outline(p, 'Shore day');
     await p.evaluate(() => { document.querySelector('.path-world__outline').open = false; window.scrollTo(0, document.querySelector('.path-world__stage').getBoundingClientRect().top + window.scrollY - 8); });
     await wait(3500);
@@ -71,9 +78,11 @@ if (path) try {
   // 4. No WebGL: Hercules beside the tent button (Taylor, 390 and 320).
   for (const width of [390, 320]) {
     const p = await page(width, 844);
+    p.__flat = true;
     await p.addInitScript(() => { const get = HTMLCanvasElement.prototype.getContext; HTMLCanvasElement.prototype.getContext = function (kind, ...rest) { return /webgl/.test(kind) ? null : get.call(this, kind, ...rest); }; });
     await p.goto(`${path.url}?theme=taylor&story=well&lantern=1`);
-    await p.waitForFunction(() => window.__ready && document.querySelector('.path-world__flat svg'), null, { timeout: 90_000 });
+    await p.waitForFunction(() => window.__ready, null, { timeout: 90_000 });
+    await openWorld(p, { live: false });
     await wait(800);
     await p.evaluate(() => window.scrollTo(0, document.querySelector('.path-world__stage').getBoundingClientRect().top + window.scrollY - 8));
     report[`flat-${width}`] = await p.evaluate(() => ({ hercules: Boolean(document.querySelector('.path-world__now > .path-hercules[aria-hidden="true"]')), overflow: document.documentElement.scrollWidth > window.innerWidth, tentWidth: Math.round(document.querySelector('.path-world__tent').getBoundingClientRect().width) }));

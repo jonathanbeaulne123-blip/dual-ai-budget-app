@@ -1,6 +1,15 @@
+## 2026-09-19 — Journey D-284/D-285 reconciled with House and Plan v3
+
+The simple view and game mode retain current main's canonical House routing, persistent Plan Studio, canonical Task consent/evidence controls and umbrella pennants. Game history is consumed before outbound House navigation or opening the tent, so cleanup cannot undo the destination or leave a ghost game entry.
+
+Journey reads Plan v3's existing Fund snapshot source and its flag/data fallback. Unknown backing remains unavailable, and contribution streams require the exact jointly confirmed division. No new financial calculation, writer, synced shape or external integration is introduced. D-283's quiet fullscreen control remains the corner entrance and HUD minimize.
+
+Risk High. Budget delta (5): one Fund meaning and intact Final Confirm. Engagement delta (3): connected simple map/world, recovery and all three themes. See [worksession](worksessions/2026-09-19-journey-reconciliation.md) for exact candidates and required evidence. Push/PR are conditional on passing gates; deployment, hosted data, schema and Production are excluded.
+
 ## Hearthside web integration — current work (2026-09-19)
 
 Jonathan has narrowed the immediate scope to web. Current-main `f62aa941` is now integrated, including the 33 commits that were missing from the earlier resume. Use the [web handoff](briefs/HEARTHSIDE_WEB_HANDOFF_2026-09-19.md) and [web worksession](worksessions/2026-09-19-hearthside-web-integration.md) for the final candidate and measured verification. Native SDK/AR/widget/distribution work is deferred. The historical resume results below are preserved and do not certify this newer candidate. No hosted release, schema or activation occurred.
+
 
 ## Hearthside resume — current local candidate (2026-09-19)
 
@@ -8,16 +17,9 @@ Branch `codex/hearthside-program`, source head `d0f0c5f731e1f1a331177480ff609ac9
 
 [Current measured worksession](worksessions/2026-09-19-hearthside-resume.md) · [Complete P0–P15 gaps and next owners](briefs/HEARTHSIDE_ACCEPTANCE_GAPS_2026-09-19.md). Preserve the existing documentation/evidence. Earlier Hearthside statements below are historical; do not treat P0–P14 as wholly complete or reuse the `2f8b788d` gate for this head. Reconcile the 33 newer main commits and accepted Home/Study/Kitchen Table/Together direction before release review. No deployment, schema, service activation or native distribution occurred.
 
-## Hearthside full program — local integrated candidate (2026-09-12)
 
-Integration checkout `.codex-work/hearthside-program`, branch `codex/hearthside-program`, merges current main `a96c1ffb0905957d20c16491846ff0ca4b9b5e3c` at `2db4891c82eaf825eceeafefa1a9426457e4c20a`. Preserves #461 and subsequent Nest/King, Calendar and Hercules changes. The full user-approved P0–P15 scope remains open; use the [package register and evidence](worksessions/2026-09-12-hearthside-program.md). All planned local packages are now integrated, including canonical Nest pottery, explicit shared-life restore, actual guest service assembly, unsigned native CI and Workspace merge repairs. Clean implementation head `2f8b788d1d6912c92b4132f49f53875a72108a32` passes the combined High gate (1,230 tests / 159 files, 233.034s of 300s), root build and both exact native web copies. The [durable handoff](briefs/HEARTHSIDE_IMPLEMENTATION_HANDOFF.md) records the candidate and remaining gates; no whole-program completion claim.
-
-Budget (5): one canonical financial truth, exact bank-meaning dependencies and recovered acceptance without duplicate money activity. Engagement (3): connected room, intention, individual creation, affection, memories and immutable selected keepsakes across surfaces. Claude supplied a focused continuity/design second opinion; its proposals were checked against actual authority and recorded in [the review](hearthside/claude-continuity-review.md).
-
-Independent scoped evidence includes actual LedgerRoom/Vault/SQLite/R2, recipient and guest isolation, simultaneous Studio, own undo/redo, creation and ACK recovery, canonical King making, exact paid appearances and preserved ornaments. The actual App/PGlite browser matrix covers stable intention addresses, canonical Task/Calendar handoffs, reload/return focus, all three themes and required widths. Source hashes and final measured results belong in the worksession before a combined verification claim.
-
-The earlier RoomScene High gate took 441.958 seconds and breached the unchanged 300-second budget. It remains explicitly not release-green. Do not run competing heavy compilers. The final required High gate and root build pass. Capacitor copied 214 actual built files to each native project with identical SHA-256; 8 native boundary tests pass. No SDK compilation is implied. Hosted authenticated cross-device continuity, native SDK compilation/instrumentation, physical AR/presentation/performance, signing/distribution and Production readiness remain separate open gates. No deployment, hosted schema application, service activation, guest invitation, external calendar write, provider disclosure, signing or Production activation occurred.
 ## Plan Studio v3, integrated — the studio reads the money model, the cellar keeps its offers, pennants per umbrella (2026-09-16, D-282)
+
 
 ## The Queen's household — umbrella banks in the cellar, Clink and Poise for pay (2026-09-16, D-282)
 
@@ -33,6 +35,7 @@ Branch `claude/category-bank-models`, one commit on `claude/plan-studio-v3@3a704
 **Uncertainty:** real-phone GPU cost of up to twelve model seats plus the 1.4 MB pay pair is unmeasured (swiftshader only). Bills are small at the dollar scale, so the models read mainly when zoomed.
 
 **Next owner:** Jonathan applies the bundle on top of `claude/plan-studio-v3`; Codex reviews with that branch.
+
 
 ## Plan Studio v3, integrated — the studio reads the money model, the cellar keeps its offers, pennants per umbrella (2026-09-16, D-281)
 
@@ -112,6 +115,7 @@ Branch `claude/plan-studio-v3` merges `claude/plan-v3-money`, `claude/plan-v3-st
 1. Codex: trust review of D-282 and D-269–D-273, plus the resume-owner design.
 2. Jonathan: turn on both flags in Development, walk a split, a refill and a check-in on two phones, and answer the defaulted lists.
 
+
 ## The money model — Everyday Queen, Prepare / Protect / Build, 12 umbrellas, Chapters as months (2026-09-16, D-269 – D-273)
 
 Branch `claude/plan-v3-money` on `main@6160fb03`: nine commits, delivered locally. **Risk: High.** The change touches money meaning, adds a new synced non-money collection (`fundModelRows`), adds two command stamps (`fundModelVersion`, `chapterVersion`), and changes Hercules context.
@@ -160,6 +164,7 @@ Branch `claude/plan-v3-money` on `main@6160fb03`: nine commits, delivered locall
 2. Jonathan: answer the defaulted questions, then approve turning the flag on in Development.
 3. The Studio track: consume `fundModel.ts`.
 4. The Cellar track: read `umbrellaHueForCategory`, and the Q-E consent work.
+
 ## Plan Studio v3, studio track: the plan at rest, the tool drawer, one check-in (2026-09-16, D-274–D-278)
 
 Branch `claude/plan-v3-studio` on `main@6160fb03` (#495). **Risk: Medium.** The new UI sits behind the new default-off flag `VITE_PLAN_STUDIO_V3`, so the current studio is unchanged when it is off. The check-in writes only through existing commands (`appendPlanSitdownTurn`, `acknowledgeHouseholdPlan`, `closeChapter`/`openChapter`, `addRitual`). The F2 resume-ownership merge still needs a trust review. Budget (5): +1. Engagement (3): +3. Details: [the worksession](worksessions/2026-09-16-plan-studio-v3.md).
@@ -200,6 +205,7 @@ Branch `claude/plan-v3-studio` on `main@6160fb03` (#495). **Risk: Medium.** The 
 **State:** local branch; not pushed, not a PR, not merged, not deployed, not live-verified.
 
 **Next owner:** Codex runs the F2 trust review and the fundModel swap after the money track merges. Jonathan then tries it on both phones with the flag on in Development.
+
 ## The cellar's pay in glass, contribution banks and missing subscriptions — Plan Studio v3, cellar track (2026-09-16, D-279–D-281)
 
 Branch `claude/plan-v3-cellar` on `main@6160fb03` (#495), in small commits. **Risk: Medium-High.** It adds new doors onto existing commands only: `allocateHouseholdFundSurplus`, the Plan Bridge propose/decline/withdraw commands and `dismissNotice`. There is no new command, schema, sync or Hercules payload change, and everything is behind `VITE_QUEENS_NEST`.
@@ -257,6 +263,37 @@ Branch `claude/plan-v3-cellar` on `main@6160fb03` (#495), in small commits. **Ri
 **Environment:** fictional books only; nothing hosted.
 **State:** not pushed, not a PR, not merged, not deployed, not live verified.
 **Next owners:** Codex (review), then Jonathan (defaults), then the integrator (merge beside the money and studio tracks).
+
+
+## The journey's two views, together (2026-09-16/17, D-284 + D-285)
+
+**Status:** branch `claude/journey-simple-view`, on `origin/main@d7b0151b` (it also carries D-283's full-screen toggle). Local only; not pushed, not merged, not deployed.
+
+**Risk:** Medium. Presentation and view state only.
+
+**Budget delta (5):** +1 — the month's Fund bills, money in and the lane trackers read at a glance from existing selectors. **Engagement delta (3):** +3.
+
+**Changes:** `src/path/journeyFocus.ts` (the shared view state), `src/path/mini/**` (the read-model, its worker and staged loader, the tabletop 3D renderer, the `JourneyMini` card and its flat map), `src/path/OurPathWorld.tsx` and `our-path-world.css` (the page leads with the simple view, the open world is a full-screen game with its own heads-up display and corner minimap, and the world only boots when opened), a small additive `focusMonth` on `pathWorld3d.ts`, and the capture scripts.
+
+**Verification:**
+- `tsc` clean.
+- Tests: `journey-focus`, `journey-mini-model`, `journey-mini-story`, `journey-mini-ui`, `journey-game-mode-ui`, `journey-integrated-ui`, `journey-fullscreen-ui`, `our-path-world-ui`, `our-path-world`, plus the era and habitat suites.
+- Browser: 264 captures across two fictional habitats (Our Story and "doing well") × 320 / 390 / 720 / 1100 × Classic, Taylor and Newfoundland × the whole trip (page → each zoom level → open the world → pick in the world → the minimap follows → pick in the minimap → minimize). `report.json` records no page or console errors, no overflow, no targets under 44px, and no app chrome visible in game mode. Evidence: `docs/evidence/journey-simple-view/{mini,game,integrated}/`.
+- Performance on Our Story: the merged view blocked the main thread for one ~3.0 s task and ~0.54 s per other month; staged in a worker, its longest main-thread task is now ~0.19 s (`integrated/performance.json`).
+
+**Uncertainty:** no real phone and no screen reader; one capture combination (the "doing well" habitat at 390 Classic) recorded a capture-script error after its frames were taken; the original delivery used the transitional Kitty Nest source. The September 19 reconciliation below replaces it with the current Plan v3 source; original screenshots do not certify that reconciliation.
+
+**Next owner:** Codex reconciles and verifies against current main under the September 19 instruction; push and PR are conditional on all required gates. Production remains outside scope.
+
+## Hearthside full program — local integrated candidate (2026-09-12)
+
+Integration checkout `.codex-work/hearthside-program`, branch `codex/hearthside-program`, merges current main `a96c1ffb0905957d20c16491846ff0ca4b9b5e3c` at `2db4891c82eaf825eceeafefa1a9426457e4c20a`. Preserves #461 and subsequent Nest/King, Calendar and Hercules changes. The full user-approved P0–P15 scope remains open; use the [package register and evidence](worksessions/2026-09-12-hearthside-program.md). All planned local packages are now integrated, including canonical Nest pottery, explicit shared-life restore, actual guest service assembly, unsigned native CI and Workspace merge repairs. Clean implementation head `2f8b788d1d6912c92b4132f49f53875a72108a32` passes the combined High gate (1,230 tests / 159 files, 233.034s of 300s), root build and both exact native web copies. The [durable handoff](briefs/HEARTHSIDE_IMPLEMENTATION_HANDOFF.md) records the candidate and remaining gates; no whole-program completion claim.
+
+Budget (5): one canonical financial truth, exact bank-meaning dependencies and recovered acceptance without duplicate money activity. Engagement (3): connected room, intention, individual creation, affection, memories and immutable selected keepsakes across surfaces. Claude supplied a focused continuity/design second opinion; its proposals were checked against actual authority and recorded in [the review](hearthside/claude-continuity-review.md).
+
+Independent scoped evidence includes actual LedgerRoom/Vault/SQLite/R2, recipient and guest isolation, simultaneous Studio, own undo/redo, creation and ACK recovery, canonical King making, exact paid appearances and preserved ornaments. The actual App/PGlite browser matrix covers stable intention addresses, canonical Task/Calendar handoffs, reload/return focus, all three themes and required widths. Source hashes and final measured results belong in the worksession before a combined verification claim.
+
+The earlier RoomScene High gate took 441.958 seconds and breached the unchanged 300-second budget. It remains explicitly not release-green. Do not run competing heavy compilers. The final required High gate and root build pass. Capacitor copied 214 actual built files to each native project with identical SHA-256; 8 native boundary tests pass. No SDK compilation is implied. Hosted authenticated cross-device continuity, native SDK compilation/instrumentation, physical AR/presentation/performance, signing/distribution and Production readiness remain separate open gates. No deployment, hosted schema application, service activation, guest invitation, external calendar write, provider disclosure, signing or Production activation occurred.
 
 ## Journey map full screen toggle (2026-09-16, D-283)
 

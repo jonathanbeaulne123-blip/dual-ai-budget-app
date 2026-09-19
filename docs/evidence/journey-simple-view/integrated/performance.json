@@ -1,0 +1,65 @@
+{
+  "household": "Our Story (habitat-story, cached)",
+  "runs": [
+    {
+      "run": 0,
+      "before": {
+        "miniJourneyMs": 3036,
+        "otherMonthMs": 537,
+        "note": "one main-thread task each, as merged"
+      },
+      "after": {
+        "readyToLanesMs": 8425,
+        "longTasks": [
+          {
+            "at": 19514,
+            "ms": 193
+          },
+          {
+            "at": 20900,
+            "ms": 110
+          },
+          {
+            "at": 24299,
+            "ms": 105
+          }
+        ],
+        "longestTaskMs": 193,
+        "anotherMonthMs": 2353,
+        "anotherMonthLongestTaskMs": 215
+      }
+    },
+    {
+      "run": 1,
+      "before": {
+        "miniJourneyMs": 2804,
+        "otherMonthMs": 583,
+        "note": "one main-thread task each, as merged"
+      },
+      "after": {
+        "readyToLanesMs": 7871,
+        "longTasks": [
+          {
+            "at": 10971,
+            "ms": 117
+          },
+          {
+            "at": 11088,
+            "ms": 56
+          },
+          {
+            "at": 12317,
+            "ms": 102
+          },
+          {
+            "at": 15668,
+            "ms": 87
+          }
+        ],
+        "longestTaskMs": 117,
+        "anotherMonthMs": 3039,
+        "anotherMonthLongestTaskMs": 258
+      }
+    }
+  ]
+}
