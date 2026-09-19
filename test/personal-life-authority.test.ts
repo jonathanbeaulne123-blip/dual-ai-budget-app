@@ -7,7 +7,8 @@ import {saveTask,type TaskInput} from '../src/core/tasks.ts';
 import {householdForAiDisclosure,householdForView} from '../src/core/visibility.ts';
 import {capturedIntent} from '../src/ledgerSync/capture.ts';
 import {prepareCommand,type AuthorityState} from '../src/ledgerSync/authority.ts';
-import {commandFromCapture,type Scope} from '../src/ledgerSync/protocol.ts';
+import {commandFromCapture,ledgerCommandIdForIntent,parseCommand,type Scope} from '../src/ledgerSync/protocol.ts';
+import {encodeMessage,MessageReader} from '../src/ledgerSync/wire.ts';
 import {emptyHearthside} from '../src/hearthside/contracts.ts';
 import {commitHearthside} from '../src/hearthside/commands.ts';
 import {
@@ -110,6 +111,26 @@ describe('Personal Together life authority',()=>{
     expect(accepted.personal.personalLife?.experiences[0]?.id).toBe('PRIVATE-experience');
     expect((accepted.shared as unknown as Record<string,unknown>).personalLife).toBeUndefined();
     expect(assembleHousehold(accepted.shared,accepted.personal).personalLife).toEqual(accepted.household.personalLife);
+  });
+
+  it('maps a retained prefixed Personal intent to one UUID through the actual wire decoder',async()=>{
+    const base={...catalogHousehold(),hearthside:emptyHearthside()},initial=run(base,{kind:'wish.save',expectedRevision:0,value:wish()});
+    const pair=splitForSync(initial,A),current=assembleHousehold(pair.shared,pair.personal),state:AuthorityState={sequence:initial.revision,shared:pair.shared,personal:new Map([[A,pair.personal]])};
+    const scope:Scope={environment:initial.environment,householdId:initial.householdId,memberId:A,subject:'synthetic-a',role:'owner',expires:Date.now()+60_000,aclEpoch:1};
+    const intentId=`PERSONAL-LIFE-${crypto.randomUUID()}`,candidate=commitPersonalLife(current,{version:1,id:intentId,scope:{environment:initial.environment,householdId:initial.householdId,memberId:A},operation:{kind:'wish.save',expectedRevision:1,value:wish({revision:2,title:'A retained private change'})}}).household;
+    const commandId=ledgerCommandIdForIntent(intentId),retryId=ledgerCommandIdForIntent(intentId);
+    expect(commandId).toBe(retryId);
+    expect(commandId).toMatch(/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i);
+    expect(commandId).not.toBe(intentId);
+    const command=await commandFromCapture(capturedIntent(candidate)!,{environment:initial.environment,householdId:initial.householdId},commandId);
+    const reader=new MessageReader();let decoded:unknown;
+    for(const frame of await encodeMessage({type:'command',command}))decoded=await reader.accept(frame)??decoded;
+    const wire=decoded as {type:string;command:unknown};
+    expect(wire.type).toBe('command');
+    expect(parseCommand(wire.command).id).toBe(commandId);
+    const accepted=await prepareCommand(state,wire.command,scope,()=>{});
+    expect(accepted.personal.personalLife?.wishes[0]).toMatchObject({revision:2,title:'A retained private change'});
+    await expect(commandFromCapture(capturedIntent(candidate)!,scope,intentId)).rejects.toThrow('INVALID_COMMAND');
   });
 
   it('binds Workspace context to a private audience and Personal tasks only to their owner Plan',()=>{

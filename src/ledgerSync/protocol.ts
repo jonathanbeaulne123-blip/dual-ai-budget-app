@@ -9,6 +9,8 @@ import type { CapturedIntent } from "./capture.ts";
 import { digest } from "./patch.ts";
 import { clientFundModelVersion } from "./fundModelStamp.ts";
 import type { ProjectionPatch } from "./patch.ts";
+import { sha256String } from "../core/synchronousHash.ts";
+const LEDGER_COMMAND_ID = /^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i;
 export type Scope = {
   identity?: { subject: string; email: string };
   environment: Environment;
@@ -95,6 +97,13 @@ export type Replica = {
   shared: SharedEnvelope;
   personal: PersonalEnvelope;
 };
+/** Stable UUID transport identity for a retained domain intent, including legacy prefixed intent IDs. */
+export function ledgerCommandIdForIntent(intentId: string): string {
+  if (LEDGER_COMMAND_ID.test(intentId)) return intentId;
+  if (typeof intentId !== "string" || !intentId || intentId.length > 512) throw new Error("INVALID_COMMAND_ID_SOURCE");
+  const hex = sha256String(JSON.stringify(["hearth-ledger-command-v1", intentId])).slice(0, 32);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-5${hex.slice(13, 16)}-8${hex.slice(17, 20)}-${hex.slice(20)}`;
+}
 export async function commandFromCapture(
   input: CapturedIntent,
   scope: Pick<Scope, "environment" | "householdId">,
@@ -155,7 +164,7 @@ export function parseCommand(value: unknown): LedgerCommand {
     (c.kittyDesignVersion !== undefined && c.kittyDesignVersion !== 1) ||
     (c.companionPlayVersion !== undefined && c.companionPlayVersion !== 1) ||
     (c.companionWardrobeVersion !== undefined && c.companionWardrobeVersion !== 1) ||
-    !/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(c.id) ||
+    !LEDGER_COMMAND_ID.test(c.id) ||
     !["development", "production"].includes(c.environment) ||
     typeof c.householdId !== "string" ||
     !Number.isSafeInteger(c.observedSequence) ||
