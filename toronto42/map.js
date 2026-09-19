@@ -94,8 +94,7 @@ function buildSegments(){
 function buildNext(){
  const el=document.querySelector("#nextStop"),F=window.PassportFlow, data=window.FLOW_DATA;
  if(!F||!data)return;
- const now=F.torontoNow(),saved=F.read(F.keys.state,{}),p=F.plan(data.restaurants,{state:saved,outcomes:T,steps:F.read(F.keys.steps,{}),date:now.date,time:now.time,cluster:saved.cluster||data.startCluster},data.travel);
- el.innerHTML='<p>The map preserves the original 42 locations. Use the Saturday plan for the recommended order.</p>'+p.moves.map(m=>'<div class="next-card"><strong>'+esc(m.time||'Next')+' · '+esc(m.record?.name||m.title)+'</strong><p>'+esc(m.reason)+'</p>'+(m.record?F.badges(m.record):'')+'</div>').join('')+'<a class="popup-link" href="'+esc(F.link('day.html'))+'">Open the next three moves</a>';
+ el.innerHTML='<div class="next-card"><strong>Prepare first. Visit by neighbourhood.</strong><p>September 19 is for tailored applications, study and interview practice. Later outings are planned by date, opening hours and walking distance from Clarkson rail connections.</p></div><a class="popup-link" href="'+esc(F.link('day.html'))+'">Open Prep & Visits</a><p>The map keeps the original 42 pins and the additional-prospect list. It is a location reference; use the new planner to coordinate a visit block.</p>';
 }
 function buildDistricts(){
  const el=document.querySelector("#districtCards");

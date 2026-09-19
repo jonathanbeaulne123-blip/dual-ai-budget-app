@@ -14,14 +14,14 @@
     <div>
       <div class="top-links">
         <a id="backChecklist" href="index.html">← Checklist</a>
-        <a id="openPortal" href="map.html">Route Portal ↗</a><a id="openHireability" href="https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Fhireability.html">Hireability ↗</a>
+        <a href="day.html">Prep & Visits ↗</a><a id="openPortal" href="map.html">Route Portal ↗</a><a id="openHireability" href="https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Fhireability.html">Hireability ↗</a>
       </div>
       <div class="eyebrow">Toronto Culinary Passport</div>
       <h1>Next<br>Steps</h1>
-      <p>Track an online application from the field plan, or record a visit outcome to create the right follow-up workflow.</p>
+      <p>See application responses from Prep & Visits, alongside the existing tasks created by visit outcomes.</p>
     </div>
     <aside class="progress-card">
-      <div class="progress-top"><strong id="leadCount">0</strong><span>active leads</span></div>
+      <div class="progress-top"><strong id="leadCount">0</strong><span>visit-based leads</span></div>
       <div class="progress-row"><span id="taskDone">0 / 0 actions</span><span id="taskPct">0%</span></div>
       <div class="track"><div id="taskFill"></div></div>
     </aside>
@@ -45,9 +45,9 @@
 
   <section id="leadList" class="lead-list"></section>
   <section id="emptyState" class="empty-state" hidden>
-    <div class="eyebrow">Nothing waiting</div>
-    <h2>No actionable restaurant follow-ups yet.</h2>
-    <p>Track an online application from the field plan, or record a visit outcome, and it will appear here automatically.</p>
+    <div class="eyebrow">Visit-based follow-ups</div>
+    <h2>No visit-based follow-ups match this filter.</h2>
+    <p>Application workshop records appear above. Record a visit outcome in the checklist to create a visit-based task here.</p>
     <a id="emptyChecklist" class="primary-link" href="index.html">Open checklist</a>
   </section>
 </main>
@@ -56,7 +56,8 @@
 <script src="stops2.js?v=20260919-passport"></script>
 <script src="restaurant-intel.js?v=20260919-passport"></script>
 <script src="flow-data.js?v=20260919-passport"></script>
-<script src="flow.js?v=20260919-passport"></script>
+<script src="discoveries.js?v=20260919-prep"></script><script src="audit-data.js?v=20260919-audit"></script>
+<script src="flow.js?v=20260919-briefs"></script>
 <script src="nextsteps.js?v=20260919-passport"></script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 const K="toronto42-culinary-passport-v1",SK="toronto42-outcomes-v1",CK="toronto42-custom-stops-v1";
-let S=JSON.parse(localStorage.getItem(K)||"{}"),T=JSON.parse(localStorage.getItem(SK)||"{}"),X=JSON.parse(localStorage.getItem(CK)||"[]"),F="all",OF="all",HF="all",ACTIVE=null;
+let S=JSON.parse(localStorage.getItem(K)||"{}"),T=JSON.parse(localStorage.getItem(SK)||"{}"),X=JSON.parse(localStorage.getItem(CK)||"[]"),F="all",OF="all",HF="all",JF="all",CF="all",ACTIVE=null;
 const STATUSES=[
 {id:"chat",label:"Sat down and chatted (no confirmation)"},
 {id:"no-manager",label:"Didn't get to talk to the manager"},
@@ -12,8 +12,8 @@ const HIREABILITY_LEVELS=[
  {id:"A-GAME",label:"A-game"},
  {id:"STRONG",label:"Strong"},
  {id:"OPPORTUNISTIC",label:"Opportunistic"},
- {id:"LOW-PROBABILITY",label:"Low probability"},
- {id:"SKIP TODAY",label:"Skip today"}
+ {id:"CAREER WATCH",label:"Career watch"},
+ {id:"VISIT RESTRICTED",label:"Visit restricted"}
 ];
 const C=document.querySelector("#content"),Q=document.querySelector("#q"),E=document.querySelector("#empty"),
 esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c])),
@@ -99,16 +99,16 @@ function removeCustom(x){
 function renderCard(original,l){
  const f=(window.FLOW_DATA?.restaurants||[]).find(r=>String(r.id)===String(original.n));
  const x=f?{...original,a:f.address,p:f.price.estimate||'Price not verified',d:f.reason}:original;
- const e=document.createElement("article"),visited=!!S[x.n],outcome=T[x.n]||"",map=x.custom?portalUrl({}):portalUrl({focusStop:x.n});
- e.className=visited?"done":"";e.dataset.n=x.n;e.dataset.hireability=f?.tier||"";e.dataset.s=[x.r,x.a,x.p,x.d,x.s,x.b,f?.tier].join(" ").toLowerCase();
+ const e=document.createElement("article"),visited=!!S[x.n],outcome=T[x.n]||"",map=x.discovery?'https://www.google.com/maps/dir/?api=1&origin=Clarkson+GO+Station&destination='+encodeURIComponent(x.r+' '+x.a)+'&travelmode=transit':x.custom?portalUrl({}):portalUrl({focusStop:x.n});
+ e.className=visited?"done":"";e.dataset.n=x.n;e.dataset.hireability=f?.tier||"";e.dataset.discovery=x.discovery?'yes':'no';e.dataset.job=f?.hiring.status||'';e.dataset.cluster=f?.cluster||x.b||'';e.dataset.s=[x.r,x.a,x.p,x.d,x.s,x.b,f?.tier,f?.hiring.roles?.join(' '),f?.transit].join(" ").toLowerCase();
  const badge=outcome?(visited?`<button type="button" class="status-badge has-status" data-edit-status>${esc(statusLabel(outcome))} <span>▾</span></button>`:`<span class="status-badge has-status">${esc(statusLabel(outcome))}</span>`):(visited?`<button type="button" class="status-badge pending" data-edit-status>${esc(statusLabel(outcome))} <span>▾</span></button>`:"");
  const remove=x.custom?'<button type="button" class="remove-stop" data-remove>Remove</button>':"";
- const prepLinks=x.custom?"":'<a class="prep-link flash-link" href="'+esc(intelUrl(x.n,"flashcards"))+'">Study Notes</a><a class="prep-link letter-link" href="'+esc(intelUrl(x.n,"coverletter"))+'">Cover Letter</a>';
+ const prepLinks=x.custom?'':x.discovery?'<a class="prep-link flash-link" href="'+esc(intelUrl(x.n,'summary'))+'">Quick brief & jobs</a>':'<a class="prep-link flash-link" href="'+esc(intelUrl(x.n,"flashcards"))+'">Study Notes</a><a class="prep-link letter-link" href="'+esc(intelUrl(x.n,"coverletter"))+'">Cover Letter</a>';
  const actionable=["chat","no-manager","maybe","apply-online"].includes(outcome);
  const nextStepLink=actionable?'<a class="prep-link next-link" href="'+esc(nextStepsUrl(x.n))+'">Next Steps</a>':"";
  const flow=f?PassportFlow.badges(f):"";
  const num=x.custom?"＋":x.n;
- e.innerHTML=`<div class="no">${num}</div><div><div class="tr"><h3>${esc(x.r)}</h3><span class="price">${esc(x.p)}</span>${badge}</div><div class="addr">${esc(x.a||"Address not added")}</div>${flow}<p class="desc">${esc(x.d)}</p><div class="next"><b>${x.custom?"Type":"Original route"}:</b> ${esc(x.custom?"Unexpected stop":x.s)}</div><div class="card-actions"><a class="route mobile-link-always" href="${esc(map)}">↗ Route Portal</a>${prepLinks}${nextStepLink}${remove}</div></div><div class="cw"><label for="c${x.n}">Visited</label><input id="c${x.n}" type="checkbox" ${visited?"checked":""}></div>`;
+ e.innerHTML=`<div class="no">${num}</div><div><div class="tr"><h3>${esc(x.r)}</h3><span class="price">${esc(x.p)}</span>${badge}</div><div class="addr">${esc(x.a||"Address not added")}</div>${flow}<p class="desc">${esc(x.d)}</p><div class="next"><b>${x.discovery?"Rail / walk":x.custom?"Type":"Original route"}:</b> ${esc(x.custom?"Unexpected stop":x.s)}</div><div class="card-actions"><a class="route mobile-link-always" href="${esc(map)}">${x.discovery?"↗ Transit from Clarkson":"↗ Route Portal"}</a>${prepLinks}${nextStepLink}${remove}</div></div><div class="cw"><label for="c${x.n}">Visited</label><input id="c${x.n}" type="checkbox" ${visited?"checked":""}></div>`;
  const cb=e.querySelector("input[type=checkbox]");
  cb.onchange=()=>{if(cb.checked){openOutcomeModal(x,true,cb)}else{delete S[x.n];delete T[x.n];save();render()}};
  const edit=e.querySelector("[data-edit-status]");if(edit)edit.onclick=()=>openOutcomeModal(x,false);
@@ -124,8 +124,13 @@ function render(){
  });
  const additions=window.ADDITIONAL_PROSPECTS||[];
  if(additions.length){
-  const sec=document.createElement("section");sec.className="custom-section";sec.innerHTML='<div class="bh"><div><div class="bk">Researched discoveries · separate from the original 42</div><h2>Additional prospects</h2></div></div><div class="list"></div>';additions.forEach(x=>renderCard(x,sec.querySelector(".list")));C.append(sec);
+  const groups=[...new Set(additions.map(x=>(window.FLOW_DATA.restaurants.find(r=>String(r.id)===String(x.n))?.cluster)||'Additional prospects'))];
+  groups.forEach(group=>{
+   const items=additions.filter(x=>(window.FLOW_DATA.restaurants.find(r=>String(r.id)===String(x.n))?.cluster||'Additional prospects')===group);
+   const sec=document.createElement('section');sec.className='custom-section';sec.innerHTML='<div class="bh"><div><div class="bk">Researched discoveries · '+items.length+' stops</div><h2>'+esc(group)+'</h2></div></div><div class="list"></div>';items.forEach(x=>renderCard(x,sec.querySelector('.list')));C.append(sec);
+  });
  }
+
  if(X.length){
   const sec=document.createElement("section"),n=X.filter(x=>S[x.n]).length;
   sec.className="custom-section";sec.innerHTML=`<div class="bh"><div><div class="bk">Added on the fly · ${X.length} stop${X.length===1?"":"s"}</div><h2>Unexpected Stops</h2></div><div class="ba"><span class="bc">${n} / ${X.length} visited</span></div></div><div class="list"></div>`;
@@ -136,16 +141,16 @@ function render(){
 function prog(){
  const A=allStops(),n=A.filter(x=>S[x.n]).length,p=A.length?Math.round(n/A.length*100):0;
  document.querySelector("#done").textContent=n;document.querySelector("#total").textContent=" / "+A.length;document.querySelector("#pct").textContent=p+"% complete";document.querySelector("#fill").style.width=p+"%";
- const ns=document.querySelector("#nextStepsCount");if(ns)ns.textContent=Object.values(T).filter(x=>["chat","no-manager","maybe","apply-online"].includes(x)).length;
+ const ns=document.querySelector("#nextStepsCount");if(ns)ns.textContent=nextActionCount();
  B.forEach((b,i)=>{const a=D.filter(x=>x.b===b),n=a.filter(x=>S[x.n]).length,z=document.querySelector("#bc"+i);if(z)z.textContent=n+" / "+a.length+" visited"})
 }
 function filter(){
  const q=Q.value.trim().toLowerCase();let v=0;
  document.querySelectorAll("article").forEach(e=>{
-  const n=e.dataset.n,d=!!S[n],base=F==="all"||(F==="done"&&d)||(F==="open"&&!d),
+  const n=e.dataset.n,d=!!S[n],base=F==="all"||(F==="done"&&d)||(F==="open"&&!d)||(F==="new"&&e.dataset.discovery==="yes"),
   outcome=OF==="all"||(OF==="none"&&d&&!T[n])||(T[n]===OF),
   hireability=HF==="all"||(HF==="unrated"&&!e.dataset.hireability)||(e.dataset.hireability===HF),
-  ok=(!q||e.dataset.s.includes(q))&&base&&outcome&&hireability;
+  ok=(!q||e.dataset.s.includes(q))&&base&&outcome&&hireability&&(JF==="all"||e.dataset.job===JF)&&(CF==="all"||e.dataset.cluster===CF);
   e.classList.toggle("hide",!ok);if(ok)v++
  });
  document.querySelectorAll("section").forEach(s=>s.style.display=s.querySelector("article:not(.hide)")?"":"none");E.style.display=v?"none":"block"
@@ -160,5 +165,13 @@ const routePortal=document.querySelector("#routePortal");if(routePortal)routePor
 const dayPlan=document.querySelector("#dayPlan");if(dayPlan)dayPlan.href=location.hostname==="html-preview.github.io"?"https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Fday.html":"day.html";
 const nextStepsNav=document.querySelector("#nextStepsNav");if(nextStepsNav)nextStepsNav.href=nextStepsUrl();
 const hireabilityNav=document.querySelector("#hireabilityNav");if(hireabilityNav)hireabilityNav.href=location.hostname==="html-preview.github.io"?"https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Fhireability.html":"hireability.html";
-const nextStepsCount=document.querySelector("#nextStepsCount");if(nextStepsCount)nextStepsCount.textContent=Object.values(T).filter(x=>["chat","no-manager","maybe","apply-online"].includes(x)).length;
-buildOutcomeFilter();buildHireabilityFilter();buildOutcomeModal();buildAddModal();render();
+const nextStepsCount=document.querySelector("#nextStepsCount");if(nextStepsCount)nextStepsCount.textContent=nextActionCount();
+function buildDiscoveryFilters(){
+ const jobs=document.createElement('select');jobs.id='jobFilter';jobs.setAttribute('aria-label','Filter by job status');
+ jobs.innerHTML='<option value="all">Jobs: All statuses</option>'+[['CONFIRMED ACTIVE','Listed openings'],['GENERAL HIRING / ACCEPTING APPLICATIONS','Accepting future interest'],['POSSIBLE / UNCONFIRMED','Unconfirmed leads'],['STALE / HISTORICAL ONLY','Closed / historical'],['NO CURRENT HIRING FOUND','Scouting only']].map(([id,label])=>'<option value="'+id+'">'+label+'</option>').join('');
+ jobs.onchange=()=>{JF=jobs.value;filter()};document.querySelector('#reset').before(jobs);
+ const area=document.createElement('select');area.id='areaFilter';area.setAttribute('aria-label','Filter by area');area.innerHTML='<option value="all">Area: All clusters</option>'+[...new Set(window.FLOW_DATA.restaurants.map(r=>r.cluster))].map(c=>'<option>'+esc(c)+'</option>').join('');area.onchange=()=>{CF=area.value;filter()};document.querySelector('#reset').before(area);
+}
+buildDiscoveryFilters();buildOutcomeFilter();buildHireabilityFilter();buildOutcomeModal();buildAddModal();render();
+
+function nextActionCount(){const ids=new Set(Object.entries(T).filter(([,v])=>['chat','no-manager','maybe','apply-online'].includes(v)).map(([id])=>id));const apps=window.PassportFlow.read('toronto42-prep-visits-v1',{}).apps||{};for(const [id,a] of Object.entries(apps))if((a.submitted||['reply','interview'].includes(a.stage))&&!['offer','rejected','withdrawn'].includes(a.stage))ids.add(id);return ids.size;}
