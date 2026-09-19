@@ -1,0 +1,363 @@
+{
+  "axe": {
+    "classic-live-390": {
+      "opened": "We are here · Milestone",
+      "card": 1,
+      "visibleMarks": 7,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "count": 27
+        }
+      ],
+      "checks": {
+        "pageErrors": 0,
+        "consoleErrors": 1,
+        "consoleErrorText": [
+          "Failed to load resource: the server responded with a status of 404 (Not Found)"
+        ],
+        "ignoredGpuWarnings": 0,
+        "overflow": false,
+        "scrollWidth": 390,
+        "innerWidth": 390,
+        "live": "true"
+      }
+    },
+    "classic-live-1100": {
+      "opened": "We are here · Milestone",
+      "card": 1,
+      "visibleMarks": 15,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "count": 36
+        }
+      ],
+      "checks": {
+        "pageErrors": 0,
+        "consoleErrors": 0,
+        "consoleErrorText": [],
+        "ignoredGpuWarnings": 0,
+        "overflow": false,
+        "scrollWidth": 1100,
+        "innerWidth": 1100,
+        "live": "true"
+      }
+    },
+    "classic-nowebgl-390": {
+      "opened": "We are here · Milestone",
+      "card": 1,
+      "visibleMarks": 0,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "count": 6
+        }
+      ],
+      "checks": {
+        "pageErrors": 0,
+        "consoleErrors": 1,
+        "consoleErrorText": [
+          "THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context."
+        ],
+        "ignoredGpuWarnings": 0,
+        "overflow": false,
+        "scrollWidth": 390,
+        "innerWidth": 390,
+        "live": "false"
+      }
+    },
+    "classic-reduced-1100": {
+      "opened": "We are here · Milestone",
+      "card": 1,
+      "visibleMarks": 15,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "count": 36
+        }
+      ],
+      "checks": {
+        "pageErrors": 0,
+        "consoleErrors": 0,
+        "consoleErrorText": [],
+        "ignoredGpuWarnings": 0,
+        "overflow": false,
+        "scrollWidth": 1100,
+        "innerWidth": 1100,
+        "live": "true"
+      }
+    },
+    "taylor-live-390": {
+      "opened": "We are here · Milestone",
+      "card": 1,
+      "visibleMarks": 7,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "count": 20,
+          "targets": [
+            ".path-recipe:nth-child(1) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(2) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(3) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(4) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(5) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(6) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]"
+          ],
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.41 (foreground color: #946522, background color: #f7efda, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+        }
+      ],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "count": 33
+        }
+      ],
+      "checks": {
+        "pageErrors": 0,
+        "consoleErrors": 0,
+        "consoleErrorText": [],
+        "ignoredGpuWarnings": 0,
+        "overflow": false,
+        "scrollWidth": 390,
+        "innerWidth": 390,
+        "live": "true"
+      }
+    },
+    "taylor-live-1100": {
+      "opened": "We are here · Milestone",
+      "card": 1,
+      "visibleMarks": 15,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "count": 20,
+          "targets": [
+            ".path-recipe:nth-child(1) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(2) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(3) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(4) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(5) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(6) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]"
+          ],
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.41 (foreground color: #946522, background color: #f7efda, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+        },
+        {
+          "id": "target-size",
+          "impact": "serious",
+          "help": "All touch targets must be 24px large, or leave sufficient space",
+          "count": 1,
+          "targets": [
+            "button[aria-label=\"Mar, Lean · uphill\"]"
+          ],
+          "summary": "Fix any of the following:\n  Target has insufficient size because it is partially obscured (smallest space is 78.8px by 9.2px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 13.2px instead of at least 24px."
+        }
+      ],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "count": 56
+        }
+      ],
+      "checks": {
+        "pageErrors": 0,
+        "consoleErrors": 0,
+        "consoleErrorText": [],
+        "ignoredGpuWarnings": 0,
+        "overflow": false,
+        "scrollWidth": 1100,
+        "innerWidth": 1100,
+        "live": "true"
+      }
+    },
+    "taylor-nowebgl-390": {
+      "opened": "We are here · Milestone",
+      "card": 1,
+      "visibleMarks": 0,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "count": 20,
+          "targets": [
+            ".path-recipe:nth-child(1) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(2) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(3) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(4) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(5) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(6) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]"
+          ],
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.41 (foreground color: #946522, background color: #f7efda, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+        }
+      ],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "count": 14
+        }
+      ],
+      "checks": {
+        "pageErrors": 0,
+        "consoleErrors": 1,
+        "consoleErrorText": [
+          "THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context."
+        ],
+        "ignoredGpuWarnings": 0,
+        "overflow": false,
+        "scrollWidth": 390,
+        "innerWidth": 390,
+        "live": "false"
+      }
+    },
+    "taylor-reduced-1100": {
+      "opened": "We are here · Milestone",
+      "card": 1,
+      "visibleMarks": 15,
+      "violations": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "count": 20,
+          "targets": [
+            ".path-recipe:nth-child(1) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(2) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(3) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(4) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(5) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]",
+            ".path-recipe:nth-child(6) > .path-recipe__top > .path-recipe__fired[title=\"Months this grew something\"]"
+          ],
+          "summary": "Fix any of the following:\n  Element has insufficient color contrast of 4.41 (foreground color: #946522, background color: #f7efda, font size: 12.0pt (16px), font weight: bold). Expected contrast ratio of 4.5:1"
+        }
+      ],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "count": 58
+        }
+      ],
+      "checks": {
+        "pageErrors": 0,
+        "consoleErrors": 0,
+        "consoleErrorText": [],
+        "ignoredGpuWarnings": 0,
+        "overflow": false,
+        "scrollWidth": 1100,
+        "innerWidth": 1100,
+        "live": "true"
+      }
+    },
+    "newfoundland-live-390": {
+      "opened": "We are here · Milestone",
+      "card": 1,
+      "visibleMarks": 7,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "count": 27
+        }
+      ],
+      "checks": {
+        "pageErrors": 0,
+        "consoleErrors": 0,
+        "consoleErrorText": [],
+        "ignoredGpuWarnings": 0,
+        "overflow": false,
+        "scrollWidth": 390,
+        "innerWidth": 390,
+        "live": "true"
+      }
+    },
+    "newfoundland-live-1100": {
+      "opened": "We are here · Milestone",
+      "card": 1,
+      "visibleMarks": 15,
+      "violations": [
+        {
+          "id": "target-size",
+          "impact": "serious",
+          "help": "All touch targets must be 24px large, or leave sufficient space",
+          "count": 1,
+          "targets": [
+            "button[aria-label=\"Mar, Lean · uphill\"]"
+          ],
+          "summary": "Fix any of the following:\n  Target has insufficient size because it is partially obscured (smallest space is 78.8px by 8.6px, should be at least 24px by 24px)\n  Target has insufficient space to its closest neighbors. Safe clickable space has a diameter of 12.6px instead of at least 24px."
+        }
+      ],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "count": 31
+        }
+      ],
+      "checks": {
+        "pageErrors": 0,
+        "consoleErrors": 0,
+        "consoleErrorText": [],
+        "ignoredGpuWarnings": 0,
+        "overflow": false,
+        "scrollWidth": 1100,
+        "innerWidth": 1100,
+        "live": "true"
+      }
+    },
+    "newfoundland-nowebgl-390": {
+      "opened": "We are here · Milestone",
+      "card": 1,
+      "visibleMarks": 0,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "count": 6
+        }
+      ],
+      "checks": {
+        "pageErrors": 0,
+        "consoleErrors": 1,
+        "consoleErrorText": [
+          "THREE.WebGLRenderer: THREE.WebGLRenderer: Error creating WebGL context."
+        ],
+        "ignoredGpuWarnings": 0,
+        "overflow": false,
+        "scrollWidth": 390,
+        "innerWidth": 390,
+        "live": "false"
+      }
+    },
+    "newfoundland-reduced-1100": {
+      "opened": "We are here · Milestone",
+      "card": 1,
+      "visibleMarks": 15,
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "count": 36
+        }
+      ],
+      "checks": {
+        "pageErrors": 0,
+        "consoleErrors": 0,
+        "consoleErrorText": [],
+        "ignoredGpuWarnings": 0,
+        "overflow": false,
+        "scrollWidth": 1100,
+        "innerWidth": 1100,
+        "live": "true"
+      }
+    }
+  },
+  "keyboard": {},
+  "shots": {}
+}

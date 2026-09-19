@@ -1,6 +1,7 @@
 import type { DateKey } from "./calendar.ts";
 import { monthKeyFromDateKey } from "./calendar.ts";
 import type { Household } from "./types.ts";
+import { sharedBridgeDecisions } from "./cellarBridge.ts";
 import {
   householdFundContributionMotions,
   projectHouseholdFund,
@@ -181,7 +182,7 @@ export function deriveFundPulseInput(
   }
 
   // Bridge proposals: a pending proposal waits on the person who did not offer it.
-  for (const decision of household.planBridgeDecisions ?? []) {
+  for (const decision of sharedBridgeDecisions(household.planBridgeDecisions)) {
     if (decision.monthKey !== monthKey) continue;
     if (decision.state !== "proposed" && decision.state !== "held") continue;
     if (decision.offeredByMemberId === options.memberId) awaitingPartner += 1;
@@ -243,7 +244,7 @@ export function presenceLines(household: Household, options: { memberId: string;
       }
     }
   }
-  for (const decision of household.planBridgeDecisions ?? []) {
+  for (const decision of sharedBridgeDecisions(household.planBridgeDecisions)) {
     if (decision.monthKey !== monthKey || (decision.state !== "proposed" && decision.state !== "held")) continue;
     const mine = decision.offeredByMemberId === options.memberId;
     lines.push({ id: `bridge:${decision.id}`, text: mine ? `Your Bridge proposal "${decision.label}" is waiting on ${partner?.name ?? "your partner"}.` : `${name(decision.offeredByMemberId)}'s Bridge proposal "${decision.label}" is waiting for you.`, waitingOn: mine ? "partner" : "me" });

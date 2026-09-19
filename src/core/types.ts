@@ -118,6 +118,10 @@ export type Category = {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
+  /** v2 money model (D-269): the locked umbrella a group carries. Groups only. */
+  umbrellaId?: import("./fundRules.ts").UmbrellaId;
+  /** v2 money model (D-269): the fund a child's lines default to. Expense children only; never Protect. */
+  defaultFund?: import("./fundRules.ts").FundId;
 };
 
 export type Split = {
@@ -828,6 +832,12 @@ export type KittyPieceV1 = {
   firings?: number;
   sculpt: KittySculptV1;
   paint: KittyPaintV1;
+  /** Charms for the Queen (2026-09-14): small add-ons pressed onto the household King's draft. Absent on every other piece. Cosmetic only. */
+  charms?: import("./queenCharms.ts").QueenCharmV1[];
+  /** The Queen's wheel (2026-09-14): who pulled the form and who opened the rim, and when. The form itself is `sculpt.profile`. Absent on every other piece. */
+  wheel?: import("./queenForm.ts").QueenWheelV1;
+  /** The Queen's yearly portraits (2026-09-14): stored stills, one per sealed year, never replaced. Absent on every other piece. */
+  portraits?: import("./queenForm.ts").QueenPortraitV1[];
 };
 export type KittyStudioV1 = {
   version: 1;
@@ -1352,7 +1362,7 @@ export type SyntheticFixtureProvenance = {
   generatedForDate: string;
   generatedAt: string;
   buildSha: string;
-  profile: "investor" | "edge" | "scale";
+  profile: "investor" | "edge" | "scale" | "habitat-well" | "habitat-hard" | "habitat-story";
   numberStyle: "realistic" | "pretty";
   coverageDigest: string;
   /** SHA-256 of generator-owned facts after continuity-only fields are removed. */
@@ -1378,6 +1388,8 @@ export type Household = {
   nativeEvents?: NativeEvent[];
   /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
   kittyNestDesigns?: import("./kittyNestDesigns.ts").KittyNestDesign[];
+  /** v2 money model (D-269): fund overrides, markers and proposals. Non-money; outside every financial hash. Household rows travel Shared; personal rows only in their owner's Personal envelope. */
+  fundModelRows?: import("./fundRules.ts").FundModelRow[];
   tasks?: Task[];
   taskLists?: TaskList[];
   hearthside?: import("../hearthside/contracts.ts").HearthsideState;
@@ -1460,6 +1472,8 @@ export type Household = {
   rituals?: import("./chapters.ts").Ritual[];
   moves?: import("./chapters.ts").Move[];
   wins?: import("./chapters.ts").Win[];
+  /** Our Path world (D-262): recipes, island name, category→score fixes. Non-money; never journal or model context. */
+  pathWorld?: import("./pathWorld.ts").PathWorldRow[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   /** PLAN_SYSTEM_V2: private drafts/scenarios overlay only the signed-in member; Household versions are Shared. */
@@ -1504,6 +1518,8 @@ export type SharedEnvelope = {
   nativeEvents?: NativeEvent[];
   /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
   kittyNestDesigns?: import("./kittyNestDesigns.ts").KittyNestDesign[];
+  /** v2 money model (D-269): fund overrides, markers and proposals. Non-money; outside every financial hash. Household rows travel Shared; personal rows only in their owner's Personal envelope. */
+  fundModelRows?: import("./fundRules.ts").FundModelRow[];
   tasks?: Task[];
   taskLists?: TaskList[];
   hearthside?: import("../hearthside/contracts.ts").HearthsideState;
@@ -1564,6 +1580,8 @@ export type SharedEnvelope = {
   rituals?: import("./chapters.ts").Ritual[];
   moves?: import("./chapters.ts").Move[];
   wins?: import("./chapters.ts").Win[];
+  /** Our Path world (D-262): recipes, island name, category→score fixes. Non-money; never journal or model context. */
+  pathWorld?: import("./pathWorld.ts").PathWorldRow[];
   budgetPlans: BudgetPlan[];
   sitDownSessions: SitDownSession[];
   /** Accepted/proposed Household Plan authority. Never contains Personal Plan material. */
@@ -1595,6 +1613,8 @@ export type PersonalEnvelope = {
   nativeEvents?: NativeEvent[];
   /** Planner (D-245). Household tasks travel Shared; private tasks travel only in their owner's Personal envelope. */
   kittyNestDesigns?: import("./kittyNestDesigns.ts").KittyNestDesign[];
+  /** v2 money model (D-269): fund overrides, markers and proposals. Non-money; outside every financial hash. Household rows travel Shared; personal rows only in their owner's Personal envelope. */
+  fundModelRows?: import("./fundRules.ts").FundModelRow[];
   tasks?: Task[];
   taskLists?: TaskList[];
   /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */

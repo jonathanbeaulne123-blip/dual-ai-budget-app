@@ -1,15 +1,19 @@
 import { addDays, monthKeyFromDateKey, shiftMonthKey, type DateKey } from "./calendar.ts";
 import {
+  acknowledgeHouseholdPlan,
   addAccount,
   addGoal,
   bindHouseholdFundBackingAccount,
   closeBooksMonth,
   configureHouseholdFund,
+  createPlanScenario,
   postEntry,
+  proposeHouseholdPlan,
   recordReconciliation,
   recordHouseholdFundReconciliation,
   refreshShiftEnvelopesFromEvidence,
   refreshSevenShiftsSchedule,
+  savePlanDraft,
   setHouseholdFundMonthPlan,
 } from "./commands.ts";
 import { sha256Hex } from "./commandIdentity.ts";
@@ -23,6 +27,7 @@ import {
 } from "./herculesTools.ts";
 import { booksEquation, compileHousehold, trialBalance } from "./journal.ts";
 import { auditOpinion, balanceSheet, bookBalanceAsOf, cashFlowStatement, closePackageText, incomeStatement } from "./statements.ts";
+import { currentPlanVersion, type PlanLine } from "./planSystem.ts";
 import { seedStressHousehold, torontoOffsetForDate, type StressNumberStyle } from "./stressSeed.ts";
 import { ensureHouseholdShape, personalReplicaForMember, splitForSync } from "./sync.ts";
 import type { SevenShiftsScheduledShift } from "./sevenShiftsCalendar.ts";
@@ -36,6 +41,7 @@ import { sitDownExportText, sitDownWorkbookCsv } from "./sitDown.ts";
 import { booksJournalCsv, booksSqlDump } from "../ledger/export.ts";
 import { formatCad } from "./money.ts";
 import { completeSyntheticDemoOnboarding } from "./onboarding/lifecycle.ts";
+import { HABITAT_NAMES, isHabitatProfile, shapeHabitat, shapeStory, STORY_NAME, type HabitatStory } from "./habitat.ts";
 
 export const DEMO_SUITE_VERSION = "2.0.0";
 
@@ -51,6 +57,7 @@ export const DEMO_ENGINE_NAMES = [
   "privacy-canaries-scale",
 ] as const;
 export type DemoEngineName = (typeof DEMO_ENGINE_NAMES)[number];
+export type DemoSuiteProfile = SyntheticFixtureProvenance["profile"];
 
 export type DemoSuiteOptions = {
   today: DateKey;
@@ -58,6 +65,14 @@ export type DemoSuiteOptions = {
   profile?: SyntheticFixtureProvenance["profile"];
   numberStyle?: StressNumberStyle;
   buildSha?: string;
+  /**
+   * D-282: which money model the fictional Plan is written for. 1 (the default,
+   * byte-identical to before) keeps bills under Protect, the meaning v1 builds
+   * read. 2 files them under Prepare so `migrateFundModel` accepts the
+   * generated household. Set only by a `VITE_FUND_MODEL_V2` build; the
+   * authority replays whatever the command carried.
+   */
+  fundModel?: 1 | 2;
 };
 
 export type DemoEngineResult = {
@@ -88,7 +103,7 @@ export type DemoSuiteManifest = {
 export type DemoCheck = {
   id: string;
   label: string;
-  status: "pass" | "fail";
+  status: "pass" | "fail" | "skip";
   detail: string;
 };
 
@@ -309,6 +324,64 @@ function privateScheduleCanary(today: DateKey, seed: number): SevenShiftsSchedul
   };
 }
 
+/**
+ * The month's Plan (Plan System V2), so every `plan_*` Hercules read has a
+ * visible Household version and a private alternative to calculate against.
+ * Jonathan (MEM-002) prepares privately, proposes to Shared, and acknowledges
+ * his own exact digest; the version stays `proposed` until Bianca acknowledges
+ * hers — no real clock is consulted, so replay is byte-for-byte. Sources are
+ * only what the twelve months already hold: the shared recurrences, the shared
+ * "Emergency buffer" goal, the Household Fund, and the Groceries line.
+ */
+export const DEMO_PLAN_DRAFT_ID = "PLAN-DRAFT-DEMO";
+
+function shapeDemoPlan(household: Household, today: DateKey, seed: number, fundModel: 1 | 2 = 1): Household {
+  const memberId = "MEM-002";
+  const month = monthKeyFromDateKey(today);
+  const monthEnd = addDays(`${shiftMonthKey(month, 1)}-01` as DateKey, -1);
+  const inMonth = (date: DateKey) => (date < `${month}-01` ? `${month}-01` as DateKey : date > monthEnd ? monthEnd : date);
+  const personalAccounts = new Set(household.accounts.filter((row) => row.scope === "personal").map((row) => row.id));
+  const bills = household.recurrences
+    .filter((row) => row.type === "expense" && !personalAccounts.has(row.accountId))
+    .sort((a, b) => a.nextDate.localeCompare(b.nextDate) || a.id.localeCompare(b.id));
+  const buffer = household.goals.find((row) => row.shared && row.name === "Emergency buffer") ?? household.goals.find((row) => row.shared);
+  const groceries = household.categories.find((row) => row.id === "SUB-FOOD-GROCERIES")
+    ?? household.categories.find((row) => row.active && row.recordType === "category" && row.transactionType === "expense");
+  const common = { cadence: "monthly" as const, createdBy: memberId, responsibility: { kind: "joint" as const, memberId }, assumptionIds: [], decision: { funding: "available" as const } };
+  const lines: PlanLine[] = [
+    ...bills.map((bill, index): PlanLine => ({
+      ...common, id: `demo-bill-${index + 1}`, lens: fundModel === 2 ? "prepare" : "protect", kind: "obligation", labelSnapshot: bill.note || `Synthetic bill ${index + 1}`,
+      amountCents: bill.amountCents, dueDate: inMonth(bill.nextDate), sourceReference: { type: "recurrence", id: bill.id },
+    })),
+    ...(buffer ? [{
+      ...common, id: "demo-buffer", lens: "build" as const, kind: "goal-contribution" as const, labelSnapshot: buffer.name,
+      amountCents: 20_000 + (seed % 5) * 2_500, dueDate: inMonth(addDays(today, 8)), sourceReference: { type: "goal" as const, id: buffer.id },
+      decision: { funding: "available" as const, targetCents: buffer.targetCents, ...(buffer.deadline ? { deadline: buffer.deadline } : {}), nextStep: "Move it on the payday after rent clears." },
+    }] : []),
+    ...(household.householdFund ? [{
+      ...common, id: "demo-fund", lens: "prepare" as const, kind: "household-fund" as const, labelSnapshot: household.householdFund.name || "Household Fund",
+      amountCents: household.fundMonthPlans?.find((row) => row.monthKey === month)?.targetCents ?? 300_000, dueDate: monthEnd,
+      sourceReference: { type: "fund" as const, id: household.householdFund.id },
+    }] : []),
+    ...(groceries ? [{
+      ...common, id: "demo-everyday", lens: "everyday" as const, kind: "everyday-pool" as const, labelSnapshot: "Groceries and ordinary pleasures",
+      amountCents: 60_000 + (seed % 7) * 2_500, dueDate: monthEnd, sourceReference: { type: "category" as const, id: groceries.id },
+    }] : []),
+  ];
+  household = savePlanDraft(household, {
+    id: DEMO_PLAN_DRAFT_ID, memberId, scope: "household", targetMonth: month, lines, assumptions: [],
+    note: "Synthetic private preparation", createdBy: memberId,
+  }).household;
+  household = createPlanScenario(household, {
+    memberId, draftId: DEMO_PLAN_DRAFT_ID, scope: "household", name: "Synthetic alternative: a slower buffer",
+    changedLines: lines.map((line) => line.id === "demo-buffer" ? { ...line, amountCents: Math.round(line.amountCents / 2) } : line), createdBy: memberId,
+  }).household;
+  household = proposeHouseholdPlan(household, { memberId, draftId: DEMO_PLAN_DRAFT_ID, reason: "Synthetic shared possibilities", createdBy: memberId }).household;
+  const version = currentPlanVersion(household, "household", month);
+  if (version) household = acknowledgeHouseholdPlan(household, { planVersionId: version.id, expectedDigest: version.digest, memberId, createdBy: memberId }).household;
+  return household;
+}
+
 function sealSyntheticShiftBibles(household: Household, seed: number): Household {
   const confirmedEnvelopes: NonNullable<Household["shiftEnvelopes"]> = [];
   const shifts = household.shifts.map((shift, index) => {
@@ -422,11 +495,15 @@ export async function generateDemoSuite(options: DemoSuiteOptions): Promise<{ ho
   const generatedAt = `${options.today}T12:00:00.000Z`;
   const coverageDigest = (await sha256Hex({ version: DEMO_SUITE_VERSION, tools: DEMO_TOOL_COVERAGE })).slice(0, 16);
   const generated = withSyntheticRuntime(seed, generatedAt, () => {
+  // Our Story (D-268) lives two years into the journey: 25 months, the dining room's tip seasons,
+  // and its own bills and banks instead of the seed's samples.
+  const story = profile === "habitat-story";
   let household = seedStressHousehold({
     today: options.today,
     environment: "development",
     seed: deriveDemoSeed(seed, `profile:${profile}`),
     numberStyle,
+    ...(story ? { months: 25, tipSeasons: true, fixedBills: false, sampleGoals: false } : {}),
   });
   const provenance: SyntheticFixtureProvenance = {
     kind: "hearth-demo-suite",
@@ -440,145 +517,159 @@ export async function generateDemoSuite(options: DemoSuiteOptions): Promise<{ ho
     coverageDigest,
     fixtureHashSha256: "",
   };
-  household = { ...household, syntheticFixture: provenance, name: "Jonathan & Bianca · Synthetic Demo" };
+  household = { ...household, syntheticFixture: provenance, name: story ? STORY_NAME : profile === "habitat-well" || profile === "habitat-hard" ? HABITAT_NAMES[profile === "habitat-well" ? "well" : "hard"] : "Jonathan & Bianca · Synthetic Demo" };
 
-  // Named cross-domain privacy canaries make partner-personal leakage measurable.
-  household = addAccount(household, {
-    name: "Bianca Private Canary Vault",
-    kind: "savings",
-    ownerMemberId: "MEM-001",
-    scope: "personal",
-    institution: "Synthetic Canary Credit Union",
-    last4: "9174",
-    apyPercent: 2.35,
-  }).household;
-  const privateAccount = household.accounts.find((row) => row.name === "Bianca Private Canary Vault")!;
-  household = postEntry(household, {
-    date: addDays(options.today, -13),
-    type: "income",
-    amount: 731.29,
-    accountId: privateAccount.id,
-    subcategoryId: "SUB-INCOME-BIANCA",
-    note: "BIANCA_PRIVATE_CANARY_TRANSACTION",
-    place: "Synthetic Canary Credit Union",
-    createdBy: "MEM-001",
-    visibility: "personal",
-    splits: [{ party: "MEM-001", amountCents: 73_129 }],
-    confirmDuplicate: true,
-  }).household;
-  household = addGoal(household, {
-    name: "BIANCA_PRIVATE_CANARY_GOAL",
-    target: 2_913.47,
-    deadline: `${shiftMonthKey(monthKeyFromDateKey(options.today), 7)}-01`,
-    shared: false,
-    ownerMemberId: "MEM-001",
-  }).household;
-  const originalExpense = household.transactions.find((row) => row.type === "expense" && row.visibility !== "personal")!;
-  household = postEntry(household, {
-    date: addDays(options.today, -9),
-    type: "refund",
-    amount: Math.min(18.37, originalExpense.amountCents / 100),
-    accountId: originalExpense.accountId,
-    subcategoryId: originalExpense.subcategoryId!,
-    note: "Synthetic partial refund",
-    place: originalExpense.place,
-    refundOfId: originalExpense.id,
-    createdBy: "MEM-002",
-    visibility: "household",
-    confirmDuplicate: true,
-  }).household;
-  const duplicateInput = {
-    date: addDays(options.today, -6),
-    type: "expense" as const,
-    amount: 27.43,
-    accountId: "ACC-VISA",
-    subcategoryId: "SUB-FOOD-GROCERIES",
-    note: "Synthetic duplicate review pair",
-    place: "Demo Market",
-    createdBy: "MEM-002",
-    visibility: "household" as const,
-    confirmDuplicate: true,
-  };
-  household = postEntry(household, duplicateInput).household;
-  household = postEntry(household, duplicateInput).household;
-
-  // Schedule and Evidence use their real non-money command paths. Transaction count must not move.
-  const transactionCountBeforeEvidence = household.transactions.length;
-  const schedules = nextScheduleRows(household, options.today);
-  household = refreshSevenShiftsSchedule(household, {
-    memberId: "MEM-002",
-    schedules,
-    confirmedPersonalFeed: true,
-    createdBy: "MEM-002",
-  }).household;
-  household = refreshSevenShiftsSchedule(household, {
-    memberId: "MEM-001",
-    schedules: [privateScheduleCanary(options.today, seed)],
-    confirmedPersonalFeed: true,
-    createdBy: "MEM-001",
-  }).household;
-  const evidenceSchedule = schedules[0];
-  if (evidenceSchedule?.jobId && evidenceSchedule.roleId) {
-    const digest = tinyDigest(deriveDemoSeed(seed, "worked-evidence")).repeat(8);
-    household = refreshShiftEnvelopesFromEvidence(household, {
-      memberId: "MEM-002",
-      createdBy: "MEM-002",
-      proposals: [{
-        canonicalShiftKey: `s7shift_${digest}`,
-        kind: "worked-shift",
-        jobId: evidenceSchedule.jobId,
-        roleId: evidenceSchedule.roleId,
-        date: evidenceSchedule.date,
-        startedAt: evidenceSchedule.startedAt,
-        endedAt: evidenceSchedule.endedAt,
-        workedMinutes: evidenceSchedule.scheduledMinutes,
-        paidBreakMinutes: 0,
-        unpaidBreakMinutes: 0,
-        observedAt: `${options.today}T12:00:00.000Z`,
-        finality: "approved",
-        source: "seven_shifts_timesheet",
-      }],
+  // The Hercules habitats (2026-09-14): the same twelve months, with a story laid over them
+  // through the ordinary commands — nothing from the investor showcase (canaries, duplicate
+  // pairs, schedule evidence) is added, so the rooms read the story and not the test rig.
+  const habitat: HabitatStory | null = profile === "habitat-well" ? "well" : profile === "habitat-hard" ? "hard" : null;
+  let transactionCountBeforeEvidence = household.transactions.length;
+  let transactionCountAfterEvidence = household.transactions.length;
+  if (habitat || story) {
+    household = story ? shapeStory(household, { today: options.today, seed }) : shapeHabitat(household, { story: habitat!, today: options.today, seed });
+    transactionCountBeforeEvidence = household.transactions.length;
+    transactionCountAfterEvidence = household.transactions.length;
+  } else {
+    // Named cross-domain privacy canaries make partner-personal leakage measurable.
+    household = addAccount(household, {
+      name: "Bianca Private Canary Vault",
+      kind: "savings",
+      ownerMemberId: "MEM-001",
+      scope: "personal",
+      institution: "Synthetic Canary Credit Union",
+      last4: "9174",
+      apyPercent: 2.35,
     }).household;
-  }
-  const transactionCountAfterEvidence = household.transactions.length;
-  household = sealSyntheticShiftBibles(household, seed);
+    const privateAccount = household.accounts.find((row) => row.name === "Bianca Private Canary Vault")!;
+    household = postEntry(household, {
+      date: addDays(options.today, -13),
+      type: "income",
+      amount: 731.29,
+      accountId: privateAccount.id,
+      subcategoryId: "SUB-INCOME-BIANCA",
+      note: "BIANCA_PRIVATE_CANARY_TRANSACTION",
+      place: "Synthetic Canary Credit Union",
+      createdBy: "MEM-001",
+      visibility: "personal",
+      splits: [{ party: "MEM-001", amountCents: 73_129 }],
+      confirmDuplicate: true,
+    }).household;
+    household = addGoal(household, {
+      name: "BIANCA_PRIVATE_CANARY_GOAL",
+      target: 2_913.47,
+      deadline: `${shiftMonthKey(monthKeyFromDateKey(options.today), 7)}-01`,
+      shared: false,
+      ownerMemberId: "MEM-001",
+    }).household;
+    const originalExpense = household.transactions.find((row) => row.type === "expense" && row.visibility !== "personal")!;
+    household = postEntry(household, {
+      date: addDays(options.today, -9),
+      type: "refund",
+      amount: Math.min(18.37, originalExpense.amountCents / 100),
+      accountId: originalExpense.accountId,
+      subcategoryId: originalExpense.subcategoryId!,
+      note: "Synthetic partial refund",
+      place: originalExpense.place,
+      refundOfId: originalExpense.id,
+      createdBy: "MEM-002",
+      visibility: "household",
+      confirmDuplicate: true,
+    }).household;
+    const duplicateInput = {
+      date: addDays(options.today, -6),
+      type: "expense" as const,
+      amount: 27.43,
+      accountId: "ACC-VISA",
+      subcategoryId: "SUB-FOOD-GROCERIES",
+      note: "Synthetic duplicate review pair",
+      place: "Demo Market",
+      createdBy: "MEM-002",
+      visibility: "household" as const,
+      confirmDuplicate: true,
+    };
+    household = postEntry(household, duplicateInput).household;
+    household = postEntry(household, duplicateInput).household;
 
-  household = configureHouseholdFund(household, {
-    custodianMemberId: "MEM-001",
-    openedOn: `${shiftMonthKey(monthKeyFromDateKey(options.today), -2)}-01`,
-    createdBy: "MEM-001",
-    name: "Synthetic Household Fund",
-  }).household;
-  household = setHouseholdFundMonthPlan(household, {
-    memberId: "MEM-001",
-    monthKey: monthKeyFromDateKey(options.today),
-    target: 3200 + (seed % 9) * 50,
-    buffer: 400 + (seed % 5) * 25,
-    agreedByMemberIds: ["MEM-001", "MEM-002"],
-  }).household;
-  household = bindHouseholdFundBackingAccount(household, {
-    memberId: "MEM-001",
-    accountId: privateAccount.id,
-    provider: "manual",
-  }).household;
-  household = recordHouseholdFundReconciliation(household, {
-    memberId: "MEM-001",
-    date: options.today,
-    bankTotal: 731.29,
-    note: "Synthetic weekly reconciliation",
-  }).household;
-
-  const priorMonth = shiftMonthKey(monthKeyFromDateKey(options.today), -1);
-  const statementDate = addDays(`${monthKeyFromDateKey(options.today)}-01` as DateKey, -1);
-  for (const account of household.accounts.filter((row) => row.active && row.kind !== "investment" && row.scope !== "personal")) {
-    household = recordReconciliation(household, {
-      accountId: account.id,
-      statementDate,
-      statementAmount: bookBalanceAsOf(household, account.id, statementDate) / 100,
+    // Schedule and Evidence use their real non-money command paths. Transaction count must not move.
+    transactionCountBeforeEvidence = household.transactions.length;
+    const schedules = nextScheduleRows(household, options.today);
+    household = refreshSevenShiftsSchedule(household, {
+      memberId: "MEM-002",
+      schedules,
+      confirmedPersonalFeed: true,
+      createdBy: "MEM-002",
+    }).household;
+    household = refreshSevenShiftsSchedule(household, {
+      memberId: "MEM-001",
+      schedules: [privateScheduleCanary(options.today, seed)],
+      confirmedPersonalFeed: true,
       createdBy: "MEM-001",
     }).household;
+    const evidenceSchedule = schedules[0];
+    if (evidenceSchedule?.jobId && evidenceSchedule.roleId) {
+      const digest = tinyDigest(deriveDemoSeed(seed, "worked-evidence")).repeat(8);
+      household = refreshShiftEnvelopesFromEvidence(household, {
+        memberId: "MEM-002",
+        createdBy: "MEM-002",
+        proposals: [{
+          canonicalShiftKey: `s7shift_${digest}`,
+          kind: "worked-shift",
+          jobId: evidenceSchedule.jobId,
+          roleId: evidenceSchedule.roleId,
+          date: evidenceSchedule.date,
+          startedAt: evidenceSchedule.startedAt,
+          endedAt: evidenceSchedule.endedAt,
+          workedMinutes: evidenceSchedule.scheduledMinutes,
+          paidBreakMinutes: 0,
+          unpaidBreakMinutes: 0,
+          observedAt: `${options.today}T12:00:00.000Z`,
+          finality: "approved",
+          source: "seven_shifts_timesheet",
+        }],
+      }).household;
+    }
+    transactionCountAfterEvidence = household.transactions.length;
+    household = sealSyntheticShiftBibles(household, seed);
+
+    household = configureHouseholdFund(household, {
+      custodianMemberId: "MEM-001",
+      openedOn: `${shiftMonthKey(monthKeyFromDateKey(options.today), -2)}-01`,
+      createdBy: "MEM-001",
+      name: "Synthetic Household Fund",
+    }).household;
+    household = setHouseholdFundMonthPlan(household, {
+      memberId: "MEM-001",
+      monthKey: monthKeyFromDateKey(options.today),
+      target: 3200 + (seed % 9) * 50,
+      buffer: 400 + (seed % 5) * 25,
+      agreedByMemberIds: ["MEM-001", "MEM-002"],
+    }).household;
+    household = bindHouseholdFundBackingAccount(household, {
+      memberId: "MEM-001",
+      accountId: privateAccount.id,
+      provider: "manual",
+    }).household;
+    household = recordHouseholdFundReconciliation(household, {
+      memberId: "MEM-001",
+      date: options.today,
+      bankTotal: 731.29,
+      note: "Synthetic weekly reconciliation",
+    }).household;
+
+    household = shapeDemoPlan(household, options.today, seed, options.fundModel === 2 ? 2 : 1);
+
+    const priorMonth = shiftMonthKey(monthKeyFromDateKey(options.today), -1);
+    const statementDate = addDays(`${monthKeyFromDateKey(options.today)}-01` as DateKey, -1);
+    for (const account of household.accounts.filter((row) => row.active && row.kind !== "investment" && row.scope !== "personal")) {
+      household = recordReconciliation(household, {
+        accountId: account.id,
+        statementDate,
+        statementAmount: bookBalanceAsOf(household, account.id, statementDate) / 100,
+        createdBy: "MEM-001",
+      }).household;
+    }
+    household = closeBooksMonth(household, { monthKey: priorMonth, createdBy: "MEM-001" }).household;
   }
-  household = closeBooksMonth(household, { monthKey: priorMonth, createdBy: "MEM-001" }).household;
   household = ensureHouseholdShape({ ...household, syntheticFixture: provenance });
   household = completeSyntheticDemoOnboarding(household, {
     at: generatedAt,
@@ -661,7 +752,14 @@ export async function verifyDemoSuite(household: Household, manifest?: DemoSuite
   if (!manifest) throw new Error("Demo Suite verification requires synthetic fixture provenance.");
   const observedFixtureHashSha256 = await canonicalDemoFixtureHash(household);
   const checks: DemoCheck[] = [];
-  const check = (id: string, label: string, pass: boolean, detail: string) => checks.push({ id, label, status: pass ? "pass" : "fail", detail });
+  // A Hercules habitat is a story, not the investor rig: the checks that count canaries, shift mail, engine coverage
+  // and the calculation matrix are the investor showcase's, so a habitat reports them as skipped, not failed. The
+  // books checks — replay, trial balance, the equation, health, PGlite, seals — apply to every showcase.
+  const habitat = isHabitatProfile(fixture?.profile);
+  const INVESTOR_ONLY = new Set(["shift-bible-links", "engines", "privacy-canaries", "tool-run"]);
+  // The habitat doing badly has, by its story, not closed or sealed its last two months; that is the point of it.
+  const skipped = (id: string) => habitat && (INVESTOR_ONLY.has(id) || (id === "desk-seals" && fixture?.profile === "habitat-hard"));
+  const check = (id: string, label: string, pass: boolean, detail: string) => checks.push({ id, label, status: skipped(id) ? "skip" : pass ? "pass" : "fail", detail: skipped(id) ? `Not part of this habitat (${detail})` : detail });
   check("development", "Development-only", household.environment === "development", household.environment);
   check("provenance", "Synthetic disclosure", household.syntheticFixture?.kind === "hearth-demo-suite", household.syntheticFixture ? `seed ${household.syntheticFixture.seed}` : "missing");
   const replayMatches = Boolean(fixture
@@ -785,13 +883,20 @@ export async function verifyDemoSuite(household: Household, manifest?: DemoSuite
   };
   const tools: DemoRunReport["tools"] = [];
   const rawTools: HerculesReadToolResult[] = [];
+  // Comparing an alternative is the one Plan read that needs the member's own private
+  // preparation selected, exactly as the Plan page selects it; every other Plan read
+  // calculates against the visible Household version for the month.
+  const demoScenario = (household.planScenarios ?? []).find((row) => row.draftId === DEMO_PLAN_DRAFT_ID && row.ownerMemberId === "MEM-002" && row.scope === "household");
+  const scenarioContext = demoScenario
+    ? { privatePlanPreparation: true, plan: { monthKey: month, scope: "household" as const, draftId: demoScenario.draftId, scenarioId: demoScenario.id } }
+    : {};
   for (const call of plan.calls) {
     const personalTool = DEMO_TOOL_COVERAGE[call.name] === "shifts-schedules-settlements-evidence";
     const run = executeHerculesReadToolPlan(
       household,
       { calls: [call] },
       manifest.today,
-      { memberId: "MEM-002", view: personalTool ? "personal" : "household", toolPageMode: "pro" },
+      { memberId: "MEM-002", view: personalTool ? "personal" : "household", toolPageMode: "pro", ...(call.name === "plan_scenario_compare" ? scenarioContext : {}) },
     );
     rawTools.push(...run.results);
     tools.push(...run.results.map((row) => ({ name: row.name, status: row.status })));
@@ -816,7 +921,7 @@ export async function verifyDemoSuite(household: Household, manifest?: DemoSuite
     seed: manifest.seed,
     generatedForDate: manifest.today,
     buildSha: manifest.buildSha,
-    status: checks.every((row) => row.status === "pass") ? "ready" as const : "not-ready" as const,
+    status: checks.every((row) => row.status !== "fail") ? "ready" as const : "not-ready" as const,
     checks,
     engines: manifest.engines,
     tools,

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { offeredForNewSpending } from "./core/fundRules.ts";
 import { kindClassNames } from "./calendar/semantics.ts";
 import { useDialog } from "./useDialog.ts";
 import { centsDigitsFromDollars, padToDollars } from "./core/cadPad.ts";
@@ -49,7 +50,8 @@ export function PotentialExpenseEditor({ household, memberId, view, date, plan, 
   )), [household.accounts, form.visibility, memberId]);
   const categories = useMemo(() => household.categories.filter((category) => (
     category.active && category.recordType === "category" && category.transactionType === "expense"
-  )), [household.categories]);
+    && offeredForNewSpending(household, category.id, form.subcategoryId)
+  )), [household, form.subcategoryId]);
   const accountId = accounts.some((row) => row.id === form.accountId) ? form.accountId : accounts[0]?.id ?? "";
   const subcategoryId = categories.some((row) => row.id === form.subcategoryId) ? form.subcategoryId : categories[0]?.id ?? "";
   const ready = Boolean(form.date && form.title.trim() && Number(form.amount) > 0 && accountId && subcategoryId);

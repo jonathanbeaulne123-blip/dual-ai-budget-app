@@ -10,6 +10,7 @@ import {
   type Household,
 } from "./core/index.ts";
 import { KitchenNotice } from "./KitchenNotice.tsx";
+import { fundModelMode, pickableExpenseGroups } from "./core/fundRules.ts";
 import "./onboarding.css";
 
 type DraftIdea = { localId: string; name: string; parentId: string };
@@ -32,9 +33,10 @@ export function OnboardingCategories({
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [ideas, setIdeas] = useState<DraftIdea[]>([]);
   const [ideaName, setIdeaName] = useState("");
-  const groups = useMemo(() => household.categories
+  // v2 money model (D-270): suggestions go under the 12 fixed umbrellas, in their fixed order.
+  const groups = useMemo(() => fundModelMode(household) === 2 ? pickableExpenseGroups(household) : household.categories
     .filter((row) => row.active && row.recordType === "group" && row.transactionType === "expense")
-    .sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name)), [household.categories]);
+    .sort((left, right) => left.sortOrder - right.sortOrder || left.name.localeCompare(right.name)), [household]);
   const [ideaParentId, setIdeaParentId] = useState(groups[0]?.id ?? "");
   const [conflictSelections, setConflictSelections] = useState<Record<string, string>>({});
   const [error, setError] = useState("");

@@ -1,0 +1,143 @@
+/*
+ * Glass (2026-09-14). Jonathan: "no more large white in-your-face background
+ * to make things more visible — be smarter, incorporate the glass-like UX
+ * while making it obvious and visible."
+ *
+ * Every chip that used to sit on 78–82% paper now sits on real glass: a thin
+ * tint of the page's own paper, a strong blur so the room behind it becomes
+ * light rather than detail, a bright hairline where the edge catches the
+ * light, and a soft drop so it reads as a pane standing in the room. Text
+ * stays ink; legibility comes from the blur and a hair of paper under each
+ * glyph, not from a wall of paper behind the whole block. The cellar, which
+ * paints itself dark stone in 3D, gets a little more paper in its tint than
+ * the loft and the field, which are light. Forced colours keep Canvas and a
+ * CanvasText border (queen-home.css), and a browser with no backdrop-filter
+ * keeps the tint — the pane is denser there so the text still stands.
+ *
+ * Loaded after queen-home.css from QueenHome.tsx, so these rules win.
+ */
+
+.queen-home {
+  --queen-glass-paper: 30%;
+  --queen-glass: color-mix(in srgb, var(--paper) var(--queen-glass-paper), transparent);
+  --queen-glass-edge: color-mix(in srgb, #fff 58%, transparent);
+  --queen-glass-edge-low: color-mix(in srgb, var(--ink) 14%, transparent);
+  --queen-glass-blur: blur(18px) saturate(1.25);
+  --queen-glass-lift: 0 14px 34px -22px color-mix(in srgb, var(--ink) 70%, transparent);
+  --queen-glass-text: 0 1px 0 color-mix(in srgb, var(--paper) 55%, transparent);
+}
+.queen-room--cellar { --queen-glass-paper: 42%; }
+/* The cellar paints itself dark stone when the world is live, so its panes are smoked glass with paper text — the same
+   pane, the other way round — instead of a light pane on a dark wall with grey words nobody can read. */
+.queen-room--cellar[data-world="3d"] {
+  --queen-glass: color-mix(in srgb, var(--ink) 44%, transparent);
+  --queen-glass-edge: color-mix(in srgb, #fff 34%, transparent);
+  --queen-glass-edge-low: color-mix(in srgb, #000 30%, transparent);
+  --queen-glass-text: none;
+  --queen-glass-ink: var(--paper);
+  --queen-glass-muted: color-mix(in srgb, var(--paper) 82%, transparent);
+}
+.queen-room--cellar[data-world="3d"] .queen-room__title, .queen-room--cellar[data-world="3d"] .queen-room__line, .queen-room--cellar[data-world="3d"] .queen-room__line em,
+.queen-room--cellar[data-world="3d"] .queen-stair, .queen-room--cellar[data-world="3d"] .queen-room__acts .queen-go, .queen-room--cellar[data-world="3d"] .queen-scrub__end,
+.queen-room--cellar[data-world="3d"] .queen-cellar-day__tick:not(:empty) { color: var(--queen-glass-ink); }
+.queen-room--cellar[data-world="3d"] .queen-room__sub, .queen-room--cellar[data-world="3d"] .queen-room__empty { color: var(--queen-glass-muted); }
+.queen-room--cellar[data-world="3d"] .queen-pick { color: var(--paper); border-color: color-mix(in srgb, #fff 45%, transparent); background: color-mix(in srgb, #fff 8%, transparent); }
+.queen-room--cellar[data-world="3d"] .queen-pick[aria-pressed="true"] { background: var(--paper); border-color: var(--paper); color: var(--ink); }
+.queen-room--cellar[data-world="3d"] .queen-room__acts .queen-go { border-bottom-color: color-mix(in srgb, #fff 40%, transparent); }
+.queen-room--cellar[data-world="3d"] .queen-room__acts .queen-go--primary, .queen-room--cellar[data-world="3d"] .queen-room__acts .queen-go:hover { border-bottom-color: var(--paper); }
+.queen-room--cellar[data-world="3d"] .queen-scrub input { accent-color: var(--paper); }
+.queen-room--cellar[data-world="3d"] .queen-goal__name, .queen-room--cellar[data-world="3d"] .queen-months span, .queen-room--cellar[data-world="3d"] .queen-scrub__end, .queen-room--cellar[data-world="3d"] .queen-cellar-day__tick:not(:empty) { background: color-mix(in srgb, var(--ink) 50%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 22%, transparent); }
+.queen-room--cellar[data-world="3d"] .queen-months span.is-now { color: var(--paper); }
+.queen-room--cellar[data-world="3d"] .queen-cellar-notice { color: var(--paper); }
+.queen-room--cellar[data-world="3d"] .queen-jar-card, .queen-room--cellar[data-world="3d"] .queen-jar-card__title, .queen-room--cellar[data-world="3d"] .queen-jar-card__facts dd, .queen-room--cellar[data-world="3d"] .queen-jar-card__note { color: var(--paper); }
+.queen-room--cellar[data-world="3d"] .queen-jar-card__kicker, .queen-room--cellar[data-world="3d"] .queen-jar-card__facts dt { color: var(--queen-glass-muted); }
+.queen-room--cellar[data-world="3d"] .queen-jar-card__close { border-color: color-mix(in srgb, #fff 40%, transparent); }
+.queen-room--cellar[data-world="3d"] .queen-jar-card:focus-visible, .queen-room--cellar[data-world="3d"] .queen-jar-card__close:focus-visible { outline-color: var(--paper); }
+.queen-room--cellar[data-world="3d"] .queen-jar-card .queen-go { color: var(--paper); border-bottom-color: color-mix(in srgb, #fff 40%, transparent); }
+.queen-room--cellar[data-world="3d"] .queen-cellar-zoom { color: var(--paper); border-left: 1px solid color-mix(in srgb, #fff 30%, transparent); }
+.queen-home .queen-cellar-zoom { border-left: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); }
+.queen-room--cellar[data-world="3d"] .queen-cellar-zoom__step:focus-visible { outline-color: var(--paper); }
+
+/* The pane: one recipe, every chip. */
+.queen-home .queen-room__head, .queen-home .queen-room__line, .queen-home .queen-room__picks, .queen-home .queen-scrub,
+.queen-home .queen-room__acts, .queen-home .queen-hand, .queen-home .queen-stair, .queen-home .queen-room > .queen-go,
+.queen-home .queen-house-rail, .queen-home .queen-bank__button, .queen-home .queen-panel, .queen-home .queen-jar-card, .queen-home .queen-jug {
+  background: var(--queen-glass);
+  -webkit-backdrop-filter: var(--queen-glass-blur); backdrop-filter: var(--queen-glass-blur);
+  border: 1px solid var(--queen-glass-edge);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 42%, transparent), inset 0 -1px 0 var(--queen-glass-edge-low), var(--queen-glass-lift);
+}
+.queen-home .queen-room__head, .queen-home .queen-room__line, .queen-home .queen-room__picks, .queen-home .queen-scrub, .queen-home .queen-room__acts, .queen-home .queen-hand { text-shadow: var(--queen-glass-text); }
+/* Small labels: a sliver of glass, no shadow (they sit inside a pane or on a rail). */
+.queen-home .queen-goal__name, .queen-home .queen-months span, .queen-home .queen-scrub__end, .queen-home .queen-cellar-day__tick:not(:empty) {
+  background: color-mix(in srgb, var(--paper) 46%, transparent);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 32%, transparent);
+  text-shadow: var(--queen-glass-text);
+}
+/* A pressed pill is the one solid thing in a pane: ink, so it is obvious. An unpressed one is glass with an ink hairline. */
+.queen-home .queen-pick { border-color: color-mix(in srgb, var(--ink) 38%, transparent); background: color-mix(in srgb, var(--paper) 22%, transparent); color: var(--ink); }
+.queen-home .queen-pick[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); text-shadow: none; }
+.queen-home .queen-pick:disabled { opacity: .45; }
+/* Acts: the rule under an act is the pane's own hairline, and the primary act carries ink. */
+.queen-home .queen-room__acts .queen-go { border-bottom-color: color-mix(in srgb, var(--ink) 30%, transparent); }
+.queen-home .queen-room__acts .queen-go--primary, .queen-home .queen-room__acts .queen-go:hover { border-bottom-color: var(--ink); }
+/* The rail through the house: one slim pane of three marks at the left edge, on every width, so it covers nothing —
+   at 720 the wide rail with its names stood on top of the Protect bank. The names come out to the right of the
+   pane on hover or keyboard focus (a flyout, still glass), and the phone keeps them for the screen reader only. */
+.queen-home .queen-house-rail { border-radius: 14px; left: 6px; padding: 4px; gap: 2px; }
+.queen-home .queen-house-rail__stop { position: relative; padding: 4px 6px; min-height: 32px; min-width: 32px; justify-content: center; }
+.queen-home .queen-house-rail__mark { width: 18px; height: 6px; }
+.queen-home--wide .queen-house-rail__name, .queen-home--wide .queen-house-rail__role {
+  position: absolute; left: calc(100% + 10px); white-space: nowrap; padding: 3px 9px; border-radius: 9px;
+  background: var(--queen-glass); -webkit-backdrop-filter: var(--queen-glass-blur); backdrop-filter: var(--queen-glass-blur);
+  border: 1px solid var(--queen-glass-edge); box-shadow: var(--queen-glass-lift); text-shadow: var(--queen-glass-text);
+  opacity: 0; pointer-events: none; transition: opacity .18s var(--queen-ease);
+}
+.queen-home--wide .queen-house-rail__name { top: 50%; translate: 0 -50%; font-size: 13px; }
+.queen-home--wide .queen-house-rail__role { display: none; }
+.queen-home--wide .queen-house-rail__stop:hover .queen-house-rail__name, .queen-home--wide .queen-house-rail__stop:focus-visible .queen-house-rail__name { opacity: 1; }
+.queen-home--wide .queen-field { padding-inline: 56px; }
+.queen-home--wide .queen-room { padding-left: 60px; }
+/* A room is one column and the column is never wider than the room: a pane that cannot fit shrinks, it does not run off the right edge. */
+.queen-home .queen-room { grid-template-columns: minmax(0, 1fr); }
+.queen-home .queen-room__picks { max-width: 100%; min-width: 0; }
+.queen-home .queen-room__picks .queen-pick { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.queen-home .queen-house-rail__stop[aria-current="true"] { background: color-mix(in srgb, var(--ink) 9%, transparent); }
+/* Standing in the live cellar, the rail is smoked too, so it reads on stone. */
+.queen-home[data-scene="cellar"]:has(.queen-room--cellar[data-world="3d"]) .queen-house-rail { background: color-mix(in srgb, var(--ink) 44%, transparent); border-color: color-mix(in srgb, #fff 34%, transparent); }
+.queen-home[data-scene="cellar"]:has(.queen-room--cellar[data-world="3d"]) .queen-house-rail__stop { color: color-mix(in srgb, var(--paper) 80%, transparent); }
+.queen-home[data-scene="cellar"]:has(.queen-room--cellar[data-world="3d"]) .queen-house-rail__stop[aria-current="true"], .queen-home[data-scene="cellar"]:has(.queen-room--cellar[data-world="3d"]) .queen-house-rail__stop:hover { color: var(--paper); background: color-mix(in srgb, #fff 10%, transparent); }
+.queen-home[data-scene="cellar"]:has(.queen-room--cellar[data-world="3d"]) .queen-house-rail__mark { border-color: color-mix(in srgb, var(--paper) 70%, transparent); }
+.queen-home[data-scene="cellar"]:has(.queen-room--cellar[data-world="3d"]) .queen-house-rail__stop[aria-current="true"] .queen-house-rail__mark { background: var(--paper); border-color: var(--paper); }
+/* The bank buttons above her: glass, and ink when open. */
+.queen-home .queen-bank__button[aria-expanded="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); box-shadow: none; }
+/* A room's stair is a pane too, and it never moves. */
+.queen-home .queen-stair { color: var(--ink); }
+/* Without backdrop-filter the pane is denser, so the words still stand on stone. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .queen-home { --queen-glass-paper: 74%; }
+  .queen-room--cellar { --queen-glass-paper: 80%; }
+}
+@media (prefers-reduced-transparency: reduce) {
+  .queen-home { --queen-glass-paper: 78%; --queen-glass-blur: none; }
+}
+@media (forced-colors: active) {
+  .queen-home .queen-room__head, .queen-home .queen-room__line, .queen-home .queen-room__picks, .queen-home .queen-scrub,
+  .queen-home .queen-room__acts, .queen-home .queen-hand, .queen-home .queen-stair, .queen-home .queen-room > .queen-go,
+  .queen-home .queen-house-rail, .queen-home .queen-bank__button, .queen-home .queen-panel { background: Canvas; border-color: CanvasText; box-shadow: none; text-shadow: none; }
+}
+
+/* On a phone a room is short. The head reads on one line, the slider is a bare control under the rail, and the acts
+   sit tight, so the rail — the thing the room is for — keeps its height. */
+/* Every width: the room head is one line (title, then its sub), so the rail — the thing the room is for — keeps its height. */
+.queen-home .queen-room__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 10px; padding: 4px 10px; }
+.queen-home .queen-room__sub { margin: 0; }
+.queen-home--phone .queen-room__title { font-size: 18px; }
+.queen-home--phone .queen-room__sub { margin: 0; font-size: 12px; }
+.queen-home--phone .queen-scrub { padding: 0 8px; background: transparent; border-color: transparent; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.queen-home--phone .queen-scrub input { min-height: 26px; }
+.queen-home--phone .queen-room__acts { gap: 0 14px; padding: 2px 8px; }
+.queen-home--phone .queen-room__acts .queen-go { min-height: 38px; padding: 4px 0; font-size: 10px; }
+.queen-home--phone .queen-room__line { padding: 4px 10px; font-size: 14px; }
+@container queen (min-height: 401px) { .queen-home--phone .queen-room--cellar .queen-cellar-rail { min-height: 112px; } }

@@ -37,6 +37,8 @@ export function commandMaterializationFacts(input: {
   rituals?: Household["rituals"];
   moves?: Household["moves"];
   wins?: Household["wins"];
+  pathWorld?: Household["pathWorld"];
+  fundModelRows?: Household["fundModelRows"];
 }): unknown {
   return stable({
     ...(input.kittyNestDesigns?.length ? { kittyNestDesigns: byId(input.kittyNestDesigns) } : {}),
@@ -58,6 +60,8 @@ export function commandMaterializationFacts(input: {
     ...(input.rituals?.length ? { rituals: byId(input.rituals) } : {}),
     ...(input.moves?.length ? { moves: byId(input.moves) } : {}),
     ...(input.wins?.length ? { wins: byId(input.wins) } : {}),
+    ...(input.pathWorld?.length ? { pathWorld: byId(input.pathWorld) } : {}),
+    ...(input.fundModelRows?.length ? { fundModelRows: byId(input.fundModelRows) } : {}),
   });
 }
 
@@ -270,6 +274,10 @@ export function commandIdentityFacts(previous: Household | null, next: Household
   const chapterFactsChanged = (["chapters", "rituals", "moves", "wins"] as const).some((field) => (
     JSON.stringify(stable(previous?.[field] ?? [])) !== JSON.stringify(stable(next[field] ?? []))
   ));
+  const pathWorldChanged = JSON.stringify(stable(previous?.pathWorld ?? [])) !== JSON.stringify(stable(next.pathWorld ?? []));
+  // Money model rows (D-269): only household rows ever enter a shared identity; a personal row never does.
+  const sharedFundRows = (rows: Household["fundModelRows"]) => byId((rows ?? []).filter((row) => row.visibility === "household"));
+  const fundModelChanged = JSON.stringify(stable(sharedFundRows(previous?.fundModelRows))) !== JSON.stringify(stable(sharedFundRows(next.fundModelRows)));
   return stable({
     householdId: next.householdId,
     environment: next.environment,
@@ -357,6 +365,8 @@ export function commandIdentityFacts(previous: Household | null, next: Household
       moves: byId(next.moves),
       wins: byId(next.wins),
     } : {}),
+    ...(pathWorldChanged ? { pathWorld: byId(next.pathWorld) } : {}),
+    ...(fundModelChanged ? { fundModelRows: sharedFundRows(next.fundModelRows) } : {}),
     tombstones,
     charter: charterPosted ? next.charter ?? null : null,
     // Private reconciliation and binding details never affect a shared command identity.

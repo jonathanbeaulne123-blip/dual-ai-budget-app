@@ -41,7 +41,22 @@ export type StressSeedOptions = {
   preserveFrom?: Household;
   /** Member who receives harbour tip shifts (default MEM-002 / Jonathan). */
   tipMemberId?: string;
+  /** How many months of books end in `today`'s month (default 12, at most 36). */
+  months?: number;
+  /** Scale harbour tips by the dining room's seasons (slow January, busy July). Default off. */
+  tipSeasons?: boolean;
+  /**
+   * The seed's own fixed bills (rent, music, hydro, gas, phones) and their recurrences.
+   * Default on; a story that posts its bills on their day through recurrences turns them off
+   * so the cellar never shows two rents.
+   */
+  fixedBills?: boolean;
+  /** The seed's three sample goals (Emergency buffer, Montréal, the pottery wheel). Default on. */
+  sampleGoals?: boolean;
 };
+
+/** Harbour tip seasons by calendar month (Jan … Dec), used only with `tipSeasons`. */
+export const STRESS_TIP_SEASONS = [0.62, 0.68, 0.8, 0.9, 1.05, 1.25, 1.4, 1.35, 1.1, 0.95, 0.85, 1.15] as const;
 
 function choose<T>(random: () => number, values: readonly T[]): T {
   return values[Math.min(values.length - 1, Math.floor(random() * values.length))]!;
@@ -402,7 +417,10 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
     },
   };
 
-  const firstMonth = shiftMonthKey(monthKeyFromDateKey(today), -11);
+  const monthCount = options.months ?? 12;
+  if (!Number.isSafeInteger(monthCount) || monthCount < 1 || monthCount > 36) throw new Error("Fictional stress data covers 1–36 months.");
+  const fixedBills = options.fixedBills !== false;
+  const firstMonth = shiftMonthKey(monthKeyFromDateKey(today), -(monthCount - 1));
   const firstDate = `${firstMonth}-01` as DateKey;
   household = upsertWorkJob(household, { job: stressJob(firstDate, tipMemberId) }).household;
   const job = household.workJobs.find((row) => row.name === "Harbour Dining Room")!;
@@ -414,8 +432,9 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
   const dining = ["Harbour Bistro", "Pho House", "Pizza Libretto", "Sushi Corner", "Parkdale Diner"] as const;
   const fuel = ["Esso", "Shell", "Petro-Canada", "Canadian Tire Gas+"] as const;
 
-  for (let monthOffset = 0; monthOffset < 12; monthOffset += 1) {
+  for (let monthOffset = 0; monthOffset < monthCount; monthOffset += 1) {
     const month = shiftMonthKey(firstMonth, monthOffset);
+    const tipSeason = options.tipSeasons ? STRESS_TIP_SEASONS[Number(month.slice(5, 7)) - 1]! : 1;
     const monthStart = `${month}-01` as DateKey;
     const withinToday = (day: DateKey) => day <= today;
 
@@ -463,7 +482,7 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
       { day: 11, amount: money(random, 48, 102, style, 5), accountId: "ACC-CHEQUING", category: "SUB-HOUSING-GAS", note: "Gas bill", place: "Enbridge Gas", hour: 11 },
       { day: 14, amount: style === "pretty" ? 100 : 96.42, accountId: "ACC-CHEQUING", category: "SUB-LIFE-PHONE", note: "Mobile phones", place: "Freedom Mobile", hour: 12 },
     ];
-    for (const item of fixedExpenses) {
+    for (const item of fixedBills ? fixedExpenses : []) {
       const date = `${month}-${String(item.day).padStart(2, "0")}` as DateKey;
       if (!withinToday(date)) continue;
       const stamp = spendStamp(random, date, item.place, item.hour);
@@ -597,7 +616,7 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
       const alcohol = Math.round(salesRounded * alcoholShare);
       const other = Math.max(0, Math.round(salesRounded - food - alcohol));
       const effectiveTipRate = Math.max(0.115, Math.min(0.24, 0.17 + eventSignal * 0.18 + (shiftRandom() - 0.5) * 0.055));
-      const tipPool = salesRounded * effectiveTipRate;
+      const tipPool = tipSeason === 1 ? salesRounded * effectiveTipRate : salesRounded * effectiveTipRate * tipSeason;
       const cashShare = 0.2 + shiftRandom() * 0.16;
       const cashTips = style === "pretty"
         ? Math.max(5, Math.round((tipPool * cashShare) / 5) * 5)
@@ -712,15 +731,17 @@ export function seedStressHousehold(options: StressSeedOptions): Household {
     }
   }
 
-  household = addGoal(household, { name: "Emergency buffer", target: style === "pretty" ? 10_000 : 9_750, deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 8)}-01`, shared: true }).household;
-  household = fundGoal(household, { goalId: household.goals[0]!.id, amount: style === "pretty" ? 3_000 : money(goalRandom, 2_400, 3_800, style, 50), fromAccountId: "ACC-CHEQUING", date: today, createdBy: "MEM-001" }).household;
-  household = addGoal(household, { name: "Weekend in Montréal", target: style === "pretty" ? 2_000 : 2_350, deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 5)}-01`, shared: true }).household;
-  household = fundGoal(household, { goalId: household.goals[1]!.id, amount: style === "pretty" ? 750 : money(goalRandom, 575, 925, style, 25), fromAccountId: "ACC-CHEQUING", date: today, createdBy: "MEM-002" }).household;
-  household = addGoal(household, { name: "Bianca's pottery wheel", target: style === "pretty" ? 1_500 : 1_675, deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 6)}-01`, shared: false, ownerMemberId: "MEM-001" }).household;
+  if (options.sampleGoals !== false) {
+    household = addGoal(household, { name: "Emergency buffer", target: style === "pretty" ? 10_000 : 9_750, deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 8)}-01`, shared: true }).household;
+    household = fundGoal(household, { goalId: household.goals[0]!.id, amount: style === "pretty" ? 3_000 : money(goalRandom, 2_400, 3_800, style, 50), fromAccountId: "ACC-CHEQUING", date: today, createdBy: "MEM-001" }).household;
+    household = addGoal(household, { name: "Weekend in Montréal", target: style === "pretty" ? 2_000 : 2_350, deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 5)}-01`, shared: true }).household;
+    household = fundGoal(household, { goalId: household.goals[1]!.id, amount: style === "pretty" ? 750 : money(goalRandom, 575, 925, style, 25), fromAccountId: "ACC-CHEQUING", date: today, createdBy: "MEM-002" }).household;
+    household = addGoal(household, { name: "Bianca's pottery wheel", target: style === "pretty" ? 1_500 : 1_675, deadline: `${shiftMonthKey(monthKeyFromDateKey(today), 6)}-01`, shared: false, ownerMemberId: "MEM-001" }).household;
+  }
 
-  household = addRecurrence(household, { cadence: "monthly", nextDate: `${shiftMonthKey(monthKeyFromDateKey(today), 1)}-01`, type: "expense", amount: style === "pretty" ? 2_400 : 2_375, accountId: "ACC-CHEQUING", subcategoryId: "SUB-HOUSING-RENT", note: "Rent", splits: equalSplits(["MEM-001", "MEM-002"], (style === "pretty" ? 240_000 : 237_500)) }).household;
-  household = addRecurrence(household, { cadence: "monthly", nextDate: addDays(today, 5), type: "expense", amount: style === "pretty" ? 125 : 118.42, accountId: "ACC-CHEQUING", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Toronto Hydro" }).household;
-  household = addRecurrence(household, { cadence: "monthly", nextDate: addDays(today, 9), type: "expense", amount: style === "pretty" ? 100 : 96.42, accountId: "ACC-CHEQUING", subcategoryId: "SUB-LIFE-PHONE", note: "Freedom Mobile" }).household;
+  if (fixedBills) household = addRecurrence(household, { cadence: "monthly", nextDate: `${shiftMonthKey(monthKeyFromDateKey(today), 1)}-01`, type: "expense", amount: style === "pretty" ? 2_400 : 2_375, accountId: "ACC-CHEQUING", subcategoryId: "SUB-HOUSING-RENT", note: "Rent", splits: equalSplits(["MEM-001", "MEM-002"], (style === "pretty" ? 240_000 : 237_500)) }).household;
+  if (fixedBills) household = addRecurrence(household, { cadence: "monthly", nextDate: addDays(today, 5), type: "expense", amount: style === "pretty" ? 125 : 118.42, accountId: "ACC-CHEQUING", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Toronto Hydro" }).household;
+  if (fixedBills) household = addRecurrence(household, { cadence: "monthly", nextDate: addDays(today, 9), type: "expense", amount: style === "pretty" ? 100 : 96.42, accountId: "ACC-CHEQUING", subcategoryId: "SUB-LIFE-PHONE", note: "Freedom Mobile" }).household;
   household = addRecurrence(household, { cadence: "biweekly", nextDate: addDays(today, 3), type: "income", amount: salaryPay, accountId: "ACC-CHEQUING", subcategoryId: "SUB-INCOME-BIANCA", note: "Bianca payroll deposit", splits: [{ party: "MEM-001", amountCents: Math.round(salaryPay * 100) }] }).household;
   household = addRecurrence(household, { cadence: "monthly", nextDate: addDays(today, 12), type: "transfer", amount: style === "pretty" ? 500 : 425, accountId: "ACC-CHEQUING", transferToAccountId: "ACC-SAVINGS", note: "Automatic savings" }).household;
 

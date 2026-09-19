@@ -71,7 +71,7 @@ describe("trustworthy synthetic Demo Suite", () => {
     expect(report.status).toBe("ready");
   }, 300_000);
 
-  it("accepts dedicated creation, repeated replay, fresh seed, and explicit whole-fixture replacement", async () => {
+  it("accepts dedicated creation, repeated replay, fresh seed, and explicit whole-fixture replacement of an existing fixture only", async () => {
     const generated = await generateDemoSuite({ today: TODAY, seed: 616161, buildSha: "demo-boundary" });
     await yieldToRunner();
     const adapters = {
@@ -81,10 +81,13 @@ describe("trustworthy synthetic Demo Suite", () => {
       transport: async () => ({ ok: true as const }),
     };
     const ordinaryOpenHousehold = catalogHousehold("development");
-    const created = await acceptHouseholdWrite({
+    // A finished showcase completes onboarding v2. The legacy continuity transport
+    // cannot carry new curriculum facts, so it refuses before staging (2026-09-08);
+    // the current Development path is Ledger Sync V2, and the local commit path below.
+    const overLegacyTransport = await acceptHouseholdWrite({
       previous: ordinaryOpenHousehold,
       candidate: generated.household,
-      confirmationId: "CONFIRM-DEMO-DEDICATED",
+      confirmationId: "CONFIRM-DEMO-LEGACY-TRANSPORT",
       commandKind: DEMO_SUITE_COMMAND_KIND,
       postedIds: [],
       actingMemberId: "MEM-001",
@@ -92,8 +95,21 @@ describe("trustworthy synthetic Demo Suite", () => {
       requireSynchronized: true,
       adapters,
     });
+    expect(overLegacyTransport.ok).toBe(false);
+    expect(overLegacyTransport.kind).toBe("permanent-validation-failure");
+    expect(overLegacyTransport.userMessage).toMatch(/current sync connection/);
+
+    const created = await acceptHouseholdWrite({
+      previous: ordinaryOpenHousehold,
+      candidate: generated.household,
+      confirmationId: "CONFIRM-DEMO-DEDICATED",
+      commandKind: DEMO_SUITE_COMMAND_KIND,
+      postedIds: [],
+      actingMemberId: "MEM-001",
+      adapters,
+    });
     expect(created.ok).toBe(true);
-    expect(created.kind).toBe("synchronized");
+    expect(created.kind).toBe("accepted-local");
     if (!created.ok) throw new Error(created.userMessage ?? "Dedicated Demo Suite creation failed");
 
     const replay = preserveDemoShowcaseContinuity(created.household, generated.household);
@@ -104,12 +120,10 @@ describe("trustworthy synthetic Demo Suite", () => {
       commandKind: DEMO_SUITE_COMMAND_KIND,
       postedIds: [],
       actingMemberId: "MEM-001",
-      transportRequested: true,
-      requireSynchronized: true,
       adapters,
     });
     expect(replayed.ok).toBe(true);
-    expect(replayed.kind).toBe("synchronized");
+    expect(replayed.kind).toBe("accepted-local");
     if (!replayed.ok) throw new Error(replayed.userMessage ?? "Demo Suite replay failed");
 
     const editedReplay = { ...replayed.household, name: "Edited synthetic demo" };
@@ -138,12 +152,10 @@ describe("trustworthy synthetic Demo Suite", () => {
       commandKind: DEMO_SUITE_COMMAND_KIND,
       postedIds: [],
       actingMemberId: "MEM-001",
-      transportRequested: true,
-      requireSynchronized: true,
       adapters,
     });
     expect(replaced.ok).toBe(true);
-    expect(replaced.kind).toBe("synchronized");
+    expect(replaced.kind).toBe("accepted-local");
     if (!replaced.ok) throw new Error(replaced.userMessage ?? "Fresh Demo Suite replacement failed");
     expect(replaced.household.householdId).toBe(created.household.householdId);
     expect(replaced.household.syntheticFixture?.seed).toBe(616162);
@@ -166,6 +178,9 @@ describe("trustworthy synthetic Demo Suite", () => {
     });
     expect(migrated.ok).toBe(true);
 
+    // Only an existing fixture may be replaced in place: ordinary Development books
+    // with the same id never become a showcase (the App's `assertDemoReplacementAllowed`
+    // says the same before Confirm).
     const sameIdOrdinary = { ...ordinaryOpenHousehold, householdId: generated.household.householdId };
     const sameIdReplacement = await acceptHouseholdWrite({
       previous: sameIdOrdinary,
@@ -176,7 +191,8 @@ describe("trustworthy synthetic Demo Suite", () => {
       actingMemberId: "MEM-001",
       adapters,
     });
-    expect(sameIdReplacement.ok).toBe(true);
+    expect(sameIdReplacement.ok).toBe(false);
+    expect(sameIdReplacement.postedNothing).toBe(true);
 
     let refusedAdapterCalls = 0;
     for (const input of [

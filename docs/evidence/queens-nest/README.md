@@ -1,0 +1,7 @@
+# The Queen's Nest — Stage 1 evidence
+
+Captured on branch `claude/queens-nest-stage-1` from `origin/main@a96c1ff` with `node test/queens-nest-layout.mjs` (Chromium, `reducedMotion: reduce`). Every household is fictional: `planLifeFixture("household")` renamed "Fictional household", members "Alex (fictional)" and "Sam (fictional)". No real books, no hosted rows.
+
+`records.json` holds all 59 captures: seven pulse seeds (`checking`, `needs-us`, `building`, `reset`, `grave`, `empty`, `win`) × classic at 320×568, 320×700, 390×844, 720×900 and 1100×800, plus `needs-us` and `grave` in Taylor's Scrapbook and Newfoundland (token pass-through only — theme expressions are Stage 4), stale/offline glaze, the reduced-motion check, the keyboard walk, the one-tap Move walk (Done → I acknowledge this → Done → empty hands) and a bud opening the existing gallery with focus returning to the bud. Each capture records horizontal overflow (0 everywhere), vertical scroll with the App's top bar, sync line and collapsed instruments stand-ins (0 at every viewport 700px or taller; 44px on 320×568 where the 300px floor holds), pose data attributes, bud and stone counts, and serious/critical axe hits (0).
+
+The PNGs here are a curated subset; regenerate the full set with `HEARTH_ARTIFACTS_DIR=.artifacts/queens-nest node test/queens-nest-layout.mjs` (set `HEARTH_CHROMIUM` when the Playwright browser cache is older than the package expects).

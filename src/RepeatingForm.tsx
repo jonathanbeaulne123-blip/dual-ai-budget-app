@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { offeredForNewSpending } from "./core/fundRules.ts";
 import {
   accountOptionLabel,
   copy,
@@ -153,9 +154,10 @@ export function RepeatingForm(props: {
       (category) =>
         category.recordType === "category"
         && category.active
-        && category.transactionType === (draft.type === "income" ? "income" : "expense"),
+        && category.transactionType === (draft.type === "income" ? "income" : "expense")
+        && offeredForNewSpending(household, category.id, draft.subcategoryId),
     ),
-    [household.categories, draft.type],
+    [household, draft.type, draft.subcategoryId],
   );
   const accounts = useMemo(
     () => household.accounts.filter((account) => account.active),

@@ -1,0 +1,246 @@
+/**
+ * The Standing Book's paper geometry.
+ *
+ * Presentation only. Every position here is read from a plate figure that
+ * plates.ts already scaled; this file only says where on the page each piece
+ * of paper stands or lies. Two rules from the book's grammar are enforced here
+ * so a component cannot bend them: height is the only channel that carries a
+ * magnitude (fold order, depth and pocket thickness carry order and count,
+ * never a number), and nothing projected stands — a panel right of the corner
+ * lies flat in pencil. The binder's two levels live here too: which sections
+ * carry page flags, what flags a plate's own figure offers, and which page is
+ * open. Nothing here reads a household, computes a balance, or touches a cent.
+ */
+
+import type { PlateEdge, PlateFigure } from "./deskPlates.ts";
+import type { FundWidgetId } from "./types.ts";
+import { fillLevel, pairScale, PLATE_VIEW, sparkHeights, tallyIsCountable, trackX } from "./plates.ts";
+
+/** The floor's near edge and the gate sit at the page's middle. */
+export const BOOK_GATE_X = (PLATE_VIEW.left + PLATE_VIEW.right) / 2;
+
+/** Bookmark reach along the fore-edge: 0 flush, 1 a finger out, 2 proud and dog-eared. */
+export type BookmarkStance = { reach: 0 | 1 | 2; dogEar: boolean };
+
+/** Geometry is state. Only attention stands proud and folds a corner; live shows a finger; quiet and clear sit flush. */
+export function bookmarkStance(edge: PlateEdge): BookmarkStance {
+  if (edge === "attention") return { reach: 2, dogEar: true };
+  if (edge === "live") return { reach: 1, dogEar: false };
+  return { reach: 0, dogEar: false };
+}
+
+/** Shut, the block says nothing when no bookmark reaches. Healthy is quiet. */
+export function foreEdgeIsFlush(edges: readonly PlateEdge[]): boolean {
+  return edges.every((edge) => bookmarkStance(edge).reach === 0);
+}
+
+/** The running head's state word, from the Level plate's edge. Never a number. */
+export function bookHeadState(edge: PlateEdge): string {
+  switch (edge) {
+    case "attention": return "Needs a look";
+    case "live": return "In motion";
+    case "quiet": return "Findings to read";
+    case "clear": return "Covered";
+    default: {
+      const never: never = edge;
+      return never;
+    }
+  }
+}
+
+/** The concertina's page: a baseline with the same room above and below it, so a negative point folds down and never leaves the page. */
+export function concertinaView(room: number): { height: number; base: number } {
+  const safeRoom = Math.max(0, room);
+  return { height: safeRoom * 2 + 12, base: safeRoom + 6 };
+}
+
+export type ConcertinaPanel = {
+  x0: number; x1: number; y0: number; y1: number;
+  /** Left of the corner: happened, ink, standing. Right: projected, pencil, flat. */
+  standing: boolean;
+  /** Alternating fold faces. Order only — never a magnitude. */
+  fold: "a" | "b";
+};
+
+/**
+ * One strip of paper folded once per point. Panel i joins point i-1 to point i
+ * and stands only when both ends have happened (`i < actualCount`). Without an
+ * `actualCount` every point is a fact and every panel stands; no corner is
+ * invented for a figure that carries no boundary.
+ */
+export function concertinaPanels(points: readonly number[], room: number, actualCount?: number): ConcertinaPanel[] {
+  const heights = sparkHeights(points, room);
+  const count = points.length;
+  if (count < 2) return [];
+  const { base } = concertinaView(room);
+  const gap = (PLATE_VIEW.right - PLATE_VIEW.left) / (count - 1);
+  const boundary = Math.min(count, Math.max(0, actualCount ?? count));
+  const y = (index: number) => (points[index] ?? 0) >= 0 ? base - (heights[index] ?? 0) : base + (heights[index] ?? 0);
+  const panels: ConcertinaPanel[] = [];
+  for (let index = 1; index < count; index += 1) {
+    panels.push({
+      x0: PLATE_VIEW.left + (index - 1) * gap,
+      x1: PLATE_VIEW.left + index * gap,
+      y0: y(index - 1),
+      y1: y(index),
+      standing: index < boundary,
+      fold: index % 2 === 1 ? "a" : "b",
+    });
+  }
+  return panels;
+}
+
+/** Where the corner falls: the last point that happened. Null when the figure carries no boundary. */
+export function concertinaCornerX(count: number, actualCount?: number): number | null {
+  if (actualCount === undefined || count < 1) return null;
+  const boundary = Math.min(count, Math.max(0, actualCount));
+  if (boundary < 1) return PLATE_VIEW.left;
+  const gap = count > 1 ? (PLATE_VIEW.right - PLATE_VIEW.left) / (count - 1) : 0;
+  return PLATE_VIEW.left + (boundary - 1) * gap;
+}
+
+/** The gate is fixed; the strip moves. Clamp a cursor onto the marks. */
+export function gateIndex(index: number, count: number): number {
+  if (count <= 0) return 0;
+  return Math.max(0, Math.min(count - 1, Math.round(index)));
+}
+
+/** The strip's tallest mark, the one scale every mark on it shares. Zero when nothing stands. */
+export function trackPeakCents(cents: readonly number[]): number {
+  return Math.max(0, ...cents);
+}
+
+/** How far the strip slides so the mark on `day` stands in the gate. */
+export function gateShift(day: number, days: number): number {
+  return BOOK_GATE_X - trackX(day, days);
+}
+
+/** Wells sunk into the page, side by side; each a vessel, never a tower. */
+export function wellColumns(count: number): { x: number; width: number }[] {
+  if (count <= 0) return [];
+  const gutter = 6;
+  const width = (PLATE_VIEW.right - PLATE_VIEW.left - gutter * (count - 1)) / count;
+  return Array.from({ length: count }, (_, index) => ({ x: PLATE_VIEW.left + index * (width + gutter), width }));
+}
+
+/** A well's water: the level as a share of the well's depth. Never overflows. */
+export function wellWater(savedCents: number, targetCents: number, depth: number): number {
+  return fillLevel(savedCents, targetCents) * Math.max(0, depth);
+}
+
+/** Cards standing in a pocket; thickness is the count. An uncountable tally shows an empty pocket. */
+export function pocketCards(count: number): { x: number; y: number }[] {
+  if (!tallyIsCountable(count)) return [];
+  return Array.from({ length: count }, (_, index) => ({ x: PLATE_VIEW.left + 10 + index * 7, y: 10 - Math.min(index, 8) }));
+}
+
+/** Two ribbons entering from the page edges and meeting at the corner; height is the amount on one scale. */
+export function ribbonHeights(upCents: number, downCents: number, room: number): { up: number; down: number } {
+  const scale = pairScale(upCents, downCents, room);
+  return { up: Math.max(0, upCents) * scale, down: Math.max(0, downCents) * scale };
+}
+
+/** Rulings printed across the floor band, evenly, so the eye reads the fill against ink and not against the perspective. */
+export function floorRulings(count: number): number[] {
+  if (count <= 0) return [];
+  const gap = (PLATE_VIEW.right - PLATE_VIEW.left) / count;
+  return Array.from({ length: count + 1 }, (_, index) => PLATE_VIEW.left + index * gap);
+}
+
+/**
+ * A register raised as a strip. The ink points are the running line as the
+ * journal already wrote it, windowed to the newest `limit` so a long register
+ * still folds legibly; then one flat pencil panel per row the journal does not
+ * count, lying level with the last ink point — an uncounted row moves nothing,
+ * so it carries no height of its own. The boundary is where the ink stops.
+ * With no ink there is nothing for pencil to lie level with, so nothing lies.
+ */
+export function registerStrip(ink: readonly number[], pencilCount: number, limit = 24): { points: number[]; actualCount: number } {
+  const room = Math.max(2, Math.floor(limit));
+  const pencilWanted = Math.max(0, Math.floor(pencilCount));
+  const inkKept = Math.max(2, room - Math.min(pencilWanted, Math.floor(room / 2)));
+  const shown = ink.slice(Math.max(0, ink.length - inkKept));
+  const last = shown[shown.length - 1];
+  const pencil = last === undefined ? [] : Array.from({ length: Math.min(pencilWanted, Math.max(0, room - shown.length)) }, () => last);
+  return { points: [...shown, ...pencil], actualCount: shown.length };
+}
+
+/* ---- the binder: dividers on the fore-edge, page flags on the open section's top edge ---- */
+
+/** A page flag on a section's top edge: which item, what it says, and the state of the rule the item already carries — or none where it carries no rule. */
+export type PageFlag = {
+  id: string;
+  name: string;
+  detail?: string | null;
+  edge?: PlateEdge;
+  /** The spoken name, where the drawn label is not the whole story. */
+  label?: string;
+  /** A pin's caption, where one item belongs to the book itself. */
+  pin?: string;
+};
+
+/**
+ * Sections whose plate is a list carry one flag per item; every other section
+ * is one indivisible reading (the month, this week, the level) and draws no
+ * strip at all. The list is the rule: a section is paged by name, never by
+ * the shape of its figure, so a tally that happens to count something is not
+ * mistaken for pages.
+ */
+export const PAGED_SECTIONS: readonly FundWidgetId[] = ["accounts", "next-out", "waiting", "shape"];
+
+export function sectionIsPaged(id: FundWidgetId): boolean {
+  return PAGED_SECTIONS.includes(id);
+}
+
+/**
+ * The flags a plate's own figure offers, read straight off it: one per mark on
+ * a strip, one per card standing in a countable pocket. An uncountable tally
+ * stands no cards, so it offers no flags; every other primitive is one page.
+ */
+export function figureFlags(figure: PlateFigure): PageFlag[] {
+  switch (figure.primitive) {
+    case "track":
+      return figure.marks.map((mark, index) => ({ id: `mark-${index}`, name: mark.label, detail: `day ${mark.day}` }));
+    case "tally":
+      return pocketCards(figure.count).map((_, index) => ({ id: `card-${index + 1}`, name: `Card ${index + 1} of ${figure.count}` }));
+    default:
+      return [];
+  }
+}
+
+/** The theme's own sequence of flag colours has this many positions; a flag takes the one its place in the strip lands on. Position only, never meaning. */
+export const FLAG_HUES = 6;
+
+export function flagHue(index: number): number {
+  const safe = Number.isFinite(index) ? Math.floor(index) : 0;
+  return ((safe % FLAG_HUES) + FLAG_HUES) % FLAG_HUES + 1;
+}
+
+/**
+ * What the book remembers: the page left open in each section, by section.
+ * Component state, never persisted.
+ */
+export type OpenPages = Partial<Record<FundWidgetId, number>>;
+
+/**
+ * Which page of a section is open. A section never visited opens on its
+ * first page; a section visited before reopens on the page it was left on,
+ * as a reader's binder does — but always clamped onto the flags the section
+ * has now, so no flag past the end, and never a page of another section, is
+ * the selected one.
+ */
+export function openPage(remembered: OpenPages, section: FundWidgetId, count: number): number {
+  const left = remembered[section];
+  if (left === undefined) return 0;
+  return gateIndex(left, count);
+}
+
+/**
+ * The binder's dividers: every section this member may open, the rail's own
+ * slots first in rail order, then the rest in the library's order. The rail
+ * decides what leads, not what exists; nothing here writes to it.
+ */
+export function binderDividers(slots: readonly FundWidgetId[], permitted: readonly FundWidgetId[]): FundWidgetId[] {
+  const lead = slots.filter((id, index) => slots.indexOf(id) === index);
+  return [...lead, ...permitted.filter((id) => !lead.includes(id))];
+}

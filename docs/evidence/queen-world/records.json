@@ -1,0 +1,619 @@
+{
+  "records": [
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "needs-us",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 1.4,
+      "maxFrameMs": 416.9,
+      "sculptures": 4,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "needs-us",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 2,
+      "maxFrameMs": 289.9,
+      "sculptures": 4,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "building",
+      "width": 320,
+      "height": 568,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 2.3,
+      "maxFrameMs": 318.7,
+      "sculptures": 4,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "expanded",
+      "width": 320,
+      "height": 568,
+      "overflowY": 0,
+      "portraits": [
+        {
+          "id": "protect",
+          "fired": "false",
+          "x": 44,
+          "y": 225,
+          "w": 61,
+          "h": 73,
+          "flatVisible": "hidden"
+        },
+        {
+          "id": "build",
+          "fired": "false",
+          "x": 215,
+          "y": 187,
+          "w": 61,
+          "h": 73,
+          "flatVisible": "hidden"
+        },
+        {
+          "id": "goal:GOAL-2a9d20ebb2",
+          "fired": "false",
+          "x": 233,
+          "y": 268,
+          "w": 26,
+          "h": 31,
+          "flatVisible": "hidden"
+        }
+      ],
+      "sculptures": 4,
+      "lastFrameMs": 217.1,
+      "maxFrameMs": 318.7
+    },
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "building",
+      "width": 320,
+      "height": 700,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 1.2,
+      "maxFrameMs": 303.5,
+      "sculptures": 4,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "expanded",
+      "width": 320,
+      "height": 700,
+      "overflowY": 0,
+      "portraits": [
+        {
+          "id": "protect",
+          "fired": "false",
+          "x": 44,
+          "y": 242,
+          "w": 61,
+          "h": 73,
+          "flatVisible": "hidden"
+        },
+        {
+          "id": "build",
+          "fired": "false",
+          "x": 215,
+          "y": 204,
+          "w": 61,
+          "h": 73,
+          "flatVisible": "hidden"
+        },
+        {
+          "id": "goal:GOAL-ec311c112f",
+          "fired": "false",
+          "x": 233,
+          "y": 284,
+          "w": 26,
+          "h": 31,
+          "flatVisible": "hidden"
+        }
+      ],
+      "sculptures": 4,
+      "lastFrameMs": 156.8,
+      "maxFrameMs": 303.5
+    },
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "building",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 2.1,
+      "maxFrameMs": 327.7,
+      "sculptures": 4,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "expanded",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "portraits": [
+        {
+          "id": "protect",
+          "fired": "false",
+          "x": 52,
+          "y": 257,
+          "w": 76,
+          "h": 91,
+          "flatVisible": "hidden"
+        },
+        {
+          "id": "build",
+          "fired": "false",
+          "x": 262,
+          "y": 211,
+          "w": 76,
+          "h": 91,
+          "flatVisible": "hidden"
+        },
+        {
+          "id": "goal:GOAL-69cc711ec1",
+          "fired": "false",
+          "x": 284,
+          "y": 310,
+          "w": 32,
+          "h": 38,
+          "flatVisible": "hidden"
+        }
+      ],
+      "sculptures": 4,
+      "lastFrameMs": 162.4,
+      "maxFrameMs": 327.7
+    },
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "building",
+      "width": 720,
+      "height": 900,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 2.1,
+      "maxFrameMs": 344.5,
+      "sculptures": 4,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "expanded",
+      "width": 720,
+      "height": 900,
+      "overflowY": 0,
+      "portraits": [
+        {
+          "id": "protect",
+          "fired": "false",
+          "x": 143,
+          "y": 444,
+          "w": 96,
+          "h": 115,
+          "flatVisible": "hidden"
+        },
+        {
+          "id": "build",
+          "fired": "false",
+          "x": 481,
+          "y": 387,
+          "w": 96,
+          "h": 115,
+          "flatVisible": "hidden"
+        },
+        {
+          "id": "goal:GOAL-e1cae28a6a",
+          "fired": "false",
+          "x": 509,
+          "y": 511,
+          "w": 40,
+          "h": 48,
+          "flatVisible": "hidden"
+        }
+      ],
+      "sculptures": 4,
+      "lastFrameMs": 155.5,
+      "maxFrameMs": 344.5
+    },
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "building",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 2.3,
+      "maxFrameMs": 312,
+      "sculptures": 4,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "expanded",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "portraits": [
+        {
+          "id": "protect",
+          "fired": "false",
+          "x": 304,
+          "y": 325,
+          "w": 132,
+          "h": 158,
+          "flatVisible": "hidden"
+        },
+        {
+          "id": "build",
+          "fired": "false",
+          "x": 664,
+          "y": 251,
+          "w": 132,
+          "h": 158,
+          "flatVisible": "hidden"
+        },
+        {
+          "id": "goal:GOAL-01f5dbe82b",
+          "fired": "false",
+          "x": 702,
+          "y": 417,
+          "w": 55,
+          "h": 67,
+          "flatVisible": "hidden"
+        }
+      ],
+      "sculptures": 4,
+      "lastFrameMs": 165.2,
+      "maxFrameMs": 312
+    },
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "grave",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 1.5,
+      "maxFrameMs": 317.3,
+      "sculptures": 4,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "grave",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 3.1,
+      "maxFrameMs": 293,
+      "sculptures": 4,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "checking",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 5.6,
+      "maxFrameMs": 366.8,
+      "sculptures": 3,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "checking",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 1.2,
+      "maxFrameMs": 354.4,
+      "sculptures": 3,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "empty",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 1.2,
+      "maxFrameMs": 319.6,
+      "sculptures": 4,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "rest",
+      "state": "empty",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "frames": 4,
+      "lastFrameMs": 1,
+      "maxFrameMs": 275.9,
+      "sculptures": 4,
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "keyboard",
+      "order": [
+        {
+          "className": "queen-door",
+          "outline": "solid",
+          "width": 3
+        },
+        {
+          "className": "queen-figure",
+          "outline": "solid",
+          "width": 3
+        },
+        {
+          "className": "queen-move",
+          "outline": "solid",
+          "width": 3
+        },
+        {
+          "className": "queen-door",
+          "outline": "solid",
+          "width": 3
+        }
+      ]
+    },
+    {
+      "path": "3d",
+      "scene": "offline",
+      "still": "Checking. Unglazed and matte, eyes closed. The evidence is not current, so she claims nothing yet. In the world: body upright at 95% scale, eyes closed, brow soft, mouth level, surface matte, unglazed, offline. Unglazed: this device is offline. Half full; $4000.00 in The Fund. Crown lit: both of you are here. 1 gold seam: a correction mended and left visible. The vine is Make Rent Boring, week 2, grown by 1 act. 3 buds: Fictional seasonal reserve, A slower week away, Fictional trip to the shore. 1 dated obligation at her feet; the nearest is within two weeks. At her hands, one Move: Choose which payday the pre-rent check belongs to."
+    },
+    {
+      "path": "3d",
+      "scene": "motion",
+      "restBreathing": true,
+      "breathFramesPerSecond": 10,
+      "expandedBreathing": false,
+      "framesWhileStill": 1,
+      "lastFrameMs": 5.4,
+      "maxFrameMs": 882.4
+    },
+    {
+      "path": "flat",
+      "scene": "expanded",
+      "width": 320,
+      "height": 568,
+      "overflowY": 0,
+      "portraits": [
+        {
+          "id": "protect",
+          "fired": "false",
+          "x": 44,
+          "y": 225,
+          "w": 61,
+          "h": 73,
+          "flatVisible": "visible"
+        },
+        {
+          "id": "build",
+          "fired": "false",
+          "x": 215,
+          "y": 187,
+          "w": 61,
+          "h": 73,
+          "flatVisible": "visible"
+        },
+        {
+          "id": "goal:GOAL-8352659559",
+          "fired": "false",
+          "x": 233,
+          "y": 268,
+          "w": 26,
+          "h": 31,
+          "flatVisible": "visible"
+        }
+      ]
+    },
+    {
+      "path": "flat",
+      "scene": "expanded",
+      "width": 320,
+      "height": 700,
+      "overflowY": 0,
+      "portraits": [
+        {
+          "id": "protect",
+          "fired": "false",
+          "x": 44,
+          "y": 242,
+          "w": 61,
+          "h": 73,
+          "flatVisible": "visible"
+        },
+        {
+          "id": "build",
+          "fired": "false",
+          "x": 215,
+          "y": 204,
+          "w": 61,
+          "h": 73,
+          "flatVisible": "visible"
+        },
+        {
+          "id": "goal:GOAL-e24d5323ac",
+          "fired": "false",
+          "x": 233,
+          "y": 284,
+          "w": 26,
+          "h": 31,
+          "flatVisible": "visible"
+        }
+      ]
+    },
+    {
+      "path": "flat",
+      "scene": "expanded",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "portraits": [
+        {
+          "id": "protect",
+          "fired": "false",
+          "x": 52,
+          "y": 257,
+          "w": 76,
+          "h": 91,
+          "flatVisible": "visible"
+        },
+        {
+          "id": "build",
+          "fired": "false",
+          "x": 262,
+          "y": 211,
+          "w": 76,
+          "h": 91,
+          "flatVisible": "visible"
+        },
+        {
+          "id": "goal:GOAL-9b48a08421",
+          "fired": "false",
+          "x": 284,
+          "y": 310,
+          "w": 32,
+          "h": 38,
+          "flatVisible": "visible"
+        }
+      ]
+    },
+    {
+      "path": "flat",
+      "scene": "expanded",
+      "width": 720,
+      "height": 900,
+      "overflowY": 0,
+      "portraits": [
+        {
+          "id": "protect",
+          "fired": "false",
+          "x": 143,
+          "y": 444,
+          "w": 96,
+          "h": 115,
+          "flatVisible": "visible"
+        },
+        {
+          "id": "build",
+          "fired": "false",
+          "x": 481,
+          "y": 387,
+          "w": 96,
+          "h": 115,
+          "flatVisible": "visible"
+        },
+        {
+          "id": "goal:GOAL-8672bbb6b8",
+          "fired": "false",
+          "x": 509,
+          "y": 511,
+          "w": 40,
+          "h": 48,
+          "flatVisible": "visible"
+        }
+      ]
+    },
+    {
+      "path": "flat",
+      "scene": "expanded",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "portraits": [
+        {
+          "id": "protect",
+          "fired": "false",
+          "x": 304,
+          "y": 325,
+          "w": 132,
+          "h": 158,
+          "flatVisible": "visible"
+        },
+        {
+          "id": "build",
+          "fired": "false",
+          "x": 664,
+          "y": 251,
+          "w": 132,
+          "h": 158,
+          "flatVisible": "visible"
+        },
+        {
+          "id": "goal:GOAL-6a66e52ae0",
+          "fired": "false",
+          "x": 702,
+          "y": 417,
+          "w": 55,
+          "h": 67,
+          "flatVisible": "visible"
+        }
+      ]
+    },
+    {
+      "path": "no-webgl",
+      "scene": "expanded",
+      "width": 390,
+      "height": 844,
+      "world": "flat",
+      "live": "false",
+      "note": null,
+      "portraits": [
+        "protect",
+        "build",
+        "goal:GOAL-9e89e1d869"
+      ]
+    },
+    {
+      "path": "no-webgl",
+      "scene": "expanded",
+      "width": 1100,
+      "height": 800,
+      "world": "flat",
+      "live": "false",
+      "note": null,
+      "portraits": [
+        "protect",
+        "build",
+        "goal:GOAL-1e7f491b1b"
+      ]
+    }
+  ],
+  "notes": [],
+  "errors": []
+}

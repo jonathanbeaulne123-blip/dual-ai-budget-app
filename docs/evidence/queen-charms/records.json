@@ -1,0 +1,572 @@
+{
+  "records": [
+    {
+      "path": "3d",
+      "bin": "none",
+      "width": 320,
+      "height": 568,
+      "overflowY": 0,
+      "charms": 0,
+      "drawn": 0,
+      "kinds": 0,
+      "mount": {
+        "x": 107,
+        "y": 152,
+        "w": 106,
+        "h": 150
+      },
+      "frames": 4,
+      "lastFrameMs": 2.3,
+      "maxFrameMs": 548.7,
+      "charmDrawCalls": 0,
+      "charmGeometries": 0
+    },
+    {
+      "path": "3d",
+      "bin": "none",
+      "width": 320,
+      "height": 700,
+      "overflowY": 0,
+      "charms": 0,
+      "drawn": 0,
+      "kinds": 0,
+      "mount": {
+        "x": 78,
+        "y": 162,
+        "w": 164,
+        "h": 232
+      },
+      "frames": 4,
+      "lastFrameMs": 1.6,
+      "maxFrameMs": 417.8,
+      "charmDrawCalls": 0,
+      "charmGeometries": 0
+    },
+    {
+      "path": "3d",
+      "bin": "none",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "charms": 0,
+      "drawn": 0,
+      "kinds": 0,
+      "mount": {
+        "x": 82,
+        "y": 202,
+        "w": 227,
+        "h": 321
+      },
+      "frames": 4,
+      "lastFrameMs": 2.2,
+      "maxFrameMs": 415.9,
+      "charmDrawCalls": 0,
+      "charmGeometries": 0
+    },
+    {
+      "path": "3d",
+      "bin": "none",
+      "width": 720,
+      "height": 900,
+      "overflowY": 0,
+      "charms": 0,
+      "drawn": 0,
+      "kinds": 0,
+      "mount": {
+        "x": 234,
+        "y": 212,
+        "w": 251,
+        "h": 356
+      },
+      "frames": 4,
+      "lastFrameMs": 1.6,
+      "maxFrameMs": 452.2,
+      "charmDrawCalls": 0,
+      "charmGeometries": 0
+    },
+    {
+      "path": "3d",
+      "bin": "none",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "charms": 0,
+      "drawn": 0,
+      "kinds": 0,
+      "mount": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      },
+      "frames": 4,
+      "lastFrameMs": 1.8,
+      "maxFrameMs": 399.1,
+      "charmDrawCalls": 0,
+      "charmGeometries": 0
+    },
+    {
+      "path": "3d",
+      "bin": "few",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "charms": 3,
+      "drawn": 3,
+      "kinds": 3,
+      "mount": {
+        "x": 82,
+        "y": 202,
+        "w": 227,
+        "h": 321
+      },
+      "frames": 4,
+      "lastFrameMs": 1.8,
+      "maxFrameMs": 597.3,
+      "charmDrawCalls": 5,
+      "charmGeometries": 5
+    },
+    {
+      "path": "3d",
+      "bin": "few",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "charms": 3,
+      "drawn": 3,
+      "kinds": 3,
+      "mount": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      },
+      "frames": 4,
+      "lastFrameMs": 1.7,
+      "maxFrameMs": 662.6,
+      "charmDrawCalls": 5,
+      "charmGeometries": 5
+    },
+    {
+      "path": "3d",
+      "bin": "max",
+      "width": 320,
+      "height": 568,
+      "overflowY": 0,
+      "charms": 16,
+      "drawn": 16,
+      "kinds": 12,
+      "mount": {
+        "x": 107,
+        "y": 152,
+        "w": 106,
+        "h": 150
+      },
+      "frames": 4,
+      "lastFrameMs": 2.4,
+      "maxFrameMs": 623,
+      "charmDrawCalls": 21,
+      "charmGeometries": 21
+    },
+    {
+      "path": "3d",
+      "bin": "max",
+      "width": 320,
+      "height": 700,
+      "overflowY": 0,
+      "charms": 16,
+      "drawn": 16,
+      "kinds": 12,
+      "mount": {
+        "x": 78,
+        "y": 162,
+        "w": 164,
+        "h": 232
+      },
+      "frames": 4,
+      "lastFrameMs": 4.5,
+      "maxFrameMs": 650.3,
+      "charmDrawCalls": 21,
+      "charmGeometries": 21
+    },
+    {
+      "path": "3d",
+      "bin": "max",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "charms": 16,
+      "drawn": 16,
+      "kinds": 12,
+      "mount": {
+        "x": 82,
+        "y": 202,
+        "w": 227,
+        "h": 321
+      },
+      "frames": 4,
+      "lastFrameMs": 5.1,
+      "maxFrameMs": 575.9,
+      "charmDrawCalls": 21,
+      "charmGeometries": 21
+    },
+    {
+      "path": "3d",
+      "bin": "max",
+      "width": 720,
+      "height": 900,
+      "overflowY": 0,
+      "charms": 16,
+      "drawn": 16,
+      "kinds": 12,
+      "mount": {
+        "x": 234,
+        "y": 212,
+        "w": 251,
+        "h": 356
+      },
+      "frames": 4,
+      "lastFrameMs": 1.9,
+      "maxFrameMs": 599.7,
+      "charmDrawCalls": 21,
+      "charmGeometries": 21
+    },
+    {
+      "path": "3d",
+      "bin": "max",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "charms": 16,
+      "drawn": 16,
+      "kinds": 12,
+      "mount": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      },
+      "frames": 4,
+      "lastFrameMs": 2.1,
+      "maxFrameMs": 566.8,
+      "charmDrawCalls": 21,
+      "charmGeometries": 21
+    },
+    {
+      "path": "flat",
+      "bin": "none",
+      "width": 320,
+      "height": 568,
+      "overflowY": 0,
+      "charms": 0,
+      "drawn": 0,
+      "kinds": 0,
+      "mount": {
+        "x": 107,
+        "y": 152,
+        "w": 106,
+        "h": 150
+      }
+    },
+    {
+      "path": "flat",
+      "bin": "none",
+      "width": 320,
+      "height": 700,
+      "overflowY": 0,
+      "charms": 0,
+      "drawn": 0,
+      "kinds": 0,
+      "mount": {
+        "x": 78,
+        "y": 162,
+        "w": 164,
+        "h": 232
+      }
+    },
+    {
+      "path": "flat",
+      "bin": "none",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "charms": 0,
+      "drawn": 0,
+      "kinds": 0,
+      "mount": {
+        "x": 82,
+        "y": 202,
+        "w": 227,
+        "h": 321
+      }
+    },
+    {
+      "path": "flat",
+      "bin": "none",
+      "width": 720,
+      "height": 900,
+      "overflowY": 0,
+      "charms": 0,
+      "drawn": 0,
+      "kinds": 0,
+      "mount": {
+        "x": 234,
+        "y": 212,
+        "w": 251,
+        "h": 356
+      }
+    },
+    {
+      "path": "flat",
+      "bin": "none",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "charms": 0,
+      "drawn": 0,
+      "kinds": 0,
+      "mount": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      }
+    },
+    {
+      "path": "flat",
+      "bin": "few",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "charms": 3,
+      "drawn": 3,
+      "kinds": 3,
+      "mount": {
+        "x": 82,
+        "y": 202,
+        "w": 227,
+        "h": 321
+      }
+    },
+    {
+      "path": "flat",
+      "bin": "few",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "charms": 3,
+      "drawn": 3,
+      "kinds": 3,
+      "mount": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      }
+    },
+    {
+      "path": "flat",
+      "bin": "max",
+      "width": 320,
+      "height": 568,
+      "overflowY": 0,
+      "charms": 16,
+      "drawn": 16,
+      "kinds": 12,
+      "mount": {
+        "x": 107,
+        "y": 152,
+        "w": 106,
+        "h": 150
+      }
+    },
+    {
+      "path": "flat",
+      "bin": "max",
+      "width": 320,
+      "height": 700,
+      "overflowY": 0,
+      "charms": 16,
+      "drawn": 16,
+      "kinds": 12,
+      "mount": {
+        "x": 78,
+        "y": 162,
+        "w": 164,
+        "h": 232
+      }
+    },
+    {
+      "path": "flat",
+      "bin": "max",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "charms": 16,
+      "drawn": 16,
+      "kinds": 12,
+      "mount": {
+        "x": 82,
+        "y": 202,
+        "w": 227,
+        "h": 321
+      }
+    },
+    {
+      "path": "flat",
+      "bin": "max",
+      "width": 720,
+      "height": 900,
+      "overflowY": 0,
+      "charms": 16,
+      "drawn": 16,
+      "kinds": 12,
+      "mount": {
+        "x": 234,
+        "y": 212,
+        "w": 251,
+        "h": 356
+      }
+    },
+    {
+      "path": "flat",
+      "bin": "max",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "charms": 16,
+      "drawn": 16,
+      "kinds": 12,
+      "mount": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      }
+    },
+    {
+      "path": "3d",
+      "scene": "bench",
+      "width": 1100,
+      "height": 800,
+      "order": [
+        "Move with the arrow keys, or press her where it should go",
+        "Turn, now 0 degrees",
+        "Smaller",
+        "Bigger",
+        "Lean, now 0 degrees",
+        "Cream"
+      ],
+      "axeSerious": []
+    },
+    {
+      "path": "flat",
+      "scene": "bench",
+      "width": 390,
+      "height": 844,
+      "order": [
+        "Move with the arrow keys, or press her where it should go",
+        "Turn, now 0 degrees",
+        "Smaller",
+        "Bigger",
+        "Lean, now 0 degrees",
+        "Cream"
+      ],
+      "axeSerious": []
+    },
+    {
+      "path": "3d",
+      "scene": "bench",
+      "width": 390,
+      "height": 844,
+      "order": [
+        "Move with the arrow keys, or press her where it should go",
+        "Turn, now 0 degrees",
+        "Smaller",
+        "Bigger",
+        "Lean, now 0 degrees",
+        "Cream"
+      ],
+      "axeSerious": []
+    },
+    {
+      "path": "flat",
+      "scene": "forced-colors+easy",
+      "width": 390,
+      "height": 844,
+      "drawn": 16,
+      "overflowY": 0
+    },
+    {
+      "path": "no-webgl",
+      "bin": "none",
+      "width": 390,
+      "height": 844,
+      "world": "flat",
+      "live": "false",
+      "drawn": 0,
+      "overflowY": 0
+    },
+    {
+      "path": "no-webgl",
+      "bin": "few",
+      "width": 390,
+      "height": 844,
+      "world": "flat",
+      "live": "false",
+      "drawn": 3,
+      "overflowY": 0
+    },
+    {
+      "path": "no-webgl",
+      "bin": "max",
+      "width": 320,
+      "height": 568,
+      "world": "flat",
+      "live": "false",
+      "drawn": 16,
+      "overflowY": 0
+    },
+    {
+      "path": "no-webgl",
+      "bin": "max",
+      "width": 320,
+      "height": 700,
+      "world": "flat",
+      "live": "false",
+      "drawn": 16,
+      "overflowY": 0
+    },
+    {
+      "path": "no-webgl",
+      "bin": "max",
+      "width": 390,
+      "height": 844,
+      "world": "flat",
+      "live": "false",
+      "drawn": 16,
+      "overflowY": 0
+    },
+    {
+      "path": "no-webgl",
+      "bin": "max",
+      "width": 720,
+      "height": 900,
+      "world": "flat",
+      "live": "false",
+      "drawn": 16,
+      "overflowY": 0
+    },
+    {
+      "path": "no-webgl",
+      "bin": "max",
+      "width": 1100,
+      "height": 800,
+      "world": "flat",
+      "live": "false",
+      "drawn": 16,
+      "overflowY": 0
+    }
+  ],
+  "errors": []
+}

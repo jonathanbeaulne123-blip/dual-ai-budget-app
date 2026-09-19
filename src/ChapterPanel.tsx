@@ -4,10 +4,14 @@ import type { DateKey } from "./core/calendar.ts";
 import {
   FOUNDATION_CHAPTERS,
   addRitual,
+  chapterReminder,
   closeChapter,
   chapterClosureRevision,
   pendingChapterClosure,
   reviewChapterClosure,
+  closeChapterAtSitdown,
+  completeMove,
+  defaultNextChapter,
   movesForChapter,
   nextFoundationChapter,
   nextMove,
@@ -22,6 +26,8 @@ import {
 import { chapterLesson } from "./core/planLearning.ts";
 import { ChapterAdoption, ChapterMoveActions, RitualCard, RitualTermsRead } from "./ChapterTaskControls.tsx";
 import { sitdownBrief } from "./core/sitdownBrief.ts";
+import { fundModelMode } from "./core/fundRules.ts";
+import { monthKeyFromDateKey } from "./core/calendar.ts";
 
 type Run = (fn: (current: Household) => CommitResult) => Promise<unknown>;
 
@@ -76,10 +82,13 @@ export function ChapterMoment({ household, memberId, today, onOpenPath, onOpenSe
     );
   }
   const weeks = Math.max(1, Math.floor((Date.parse(`${today}T12:00:00Z`) - Date.parse(chapter.openedAt)) / (7 * 24 * 60 * 60 * 1000)) + 1);
+  // D-273: a Chapter never closes by itself; once its month has ended we say so until the Sitdown closes it.
+  const reminder = fundModelMode(household) === 2 ? chapterReminder(household, { today }) : null;
   return (
     <section className="chapter-moment" aria-label="This Chapter">
-      <p className="kicker">This month · week {weeks}</p>
+      <p className="kicker">{reminder ? `Still open · ${reminder.intendedMonth}` : `This month · week ${weeks}`}</p>
       <h3>{chapter.title}</h3>
+      {reminder && <p className="chapter-reminder" role="status">{reminder.message}</p>}
       <p className="chapter-meaning">{chapter.meaning}</p>
       {move ? (
         <div className="next-move" aria-label="Our next Move">
@@ -229,6 +238,9 @@ function ChapterCloseState({ household, memberId, today, sitdownId, onCommand, b
     );
   }
   const pending = pendingChapterClosure(chapter);
+  // D-273 (with the money model release): the Sitdown closes this Chapter and opens the next for this month in one step.
+  const sortedMonths = fundModelMode(household) === 2;
+  const nextChoice = defaultNextChapter({ chapters: (household.chapters ?? []).map((row) => row.id === chapter.id ? { ...row, state: "closed" as const } : row) }, monthKeyFromDateKey(today));
   const outcomes: { outcome: ChapterOutcome; label: string; hint: string }[] = [
     { outcome: "established", label: "Established", hint: "The habit holds. It moves into Our Rhythm." },
     { outcome: "still-forming", label: "Still forming", hint: "Carry it forward only if we choose; change its size, cue, or owner." },
@@ -239,6 +251,7 @@ function ChapterCloseState({ household, memberId, today, sitdownId, onCommand, b
     <div className="chapter-close">
       <p className="kicker">Close the previous Chapter</p>
       <h4>{chapter.title}</h4>
+      {sortedMonths && <p className="muted">Closing it opens {nextChoice.foundationId ? FOUNDATION_CHAPTERS.find((row) => row.id === nextChoice.foundationId)?.title : nextChoice.custom?.title} for {monthKeyFromDateKey(today)}.</p>}
       {brief.chapter && <p className="muted">Rituals held {brief.chapter.ritualsHeld} times · {brief.chapter.movesDone} Moves done · {brief.chapter.movesOpen} still open.</p>}
       <ChapterAdoption household={household} memberId={memberId} onCommand={onCommand} busy={busy} chapterId={chapter.id} />
       {pending && <section className="chapter-review" aria-label="Review Chapter closure"><h5>Choose this exact ending together</h5><p><strong>{pending.terms.outcome}</strong> · {pending.terms.carryForward || "No carry-forward note."}</p>{pending.terms.rituals.map(row => <details key={row.ritualId}><summary>{row.before.title} → {row.afterState}</summary><RitualTermsRead household={household} terms={row.before} /></details>)}{pending.terms.moves.length > 0 && <><p>These open Tasks will pause for both of you. Responsibility stays with their current owner.</p><ul>{pending.terms.moves.map(row => <li key={row.taskId}>{row.title} · {memberName(household, row.ownerMemberId)}</li>)}</ul></>}<p>Agreed by {pending.approvals.map(row => memberName(household, row.memberId)).join(" and ")}.</p>{pending.approvals.some(row => row.memberId === memberId) ? <p>Waiting for the other participant’s exact review.</p> : <button type="button" disabled={busy} onClick={() => void runClose(current => closeChapter(current, { memberId, chapterId: chapter.id, expectedRevision: chapterClosureRevision(chapter), outcome: pending.terms.outcome, carryForward: pending.terms.carryForward, sitdownId: pending.terms.sitdownId ?? undefined, proposalId: pending.id, digest: pending.digest }))}>I agree to close this Chapter</button>}</section>}

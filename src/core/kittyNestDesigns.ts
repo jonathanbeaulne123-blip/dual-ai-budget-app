@@ -5,6 +5,7 @@ import { canonical } from "../ledgerSync/patch.ts";
 import { shapeKittyStudio, KITTY_STUDIO_LIMITS } from "./kittyStudio.ts";
 import { isVisibleInView } from "./visibility.ts";
 import { ValidationError, type CommitResult, type Household, type KittyGlaze, type KittyStudioV1, type LedgerView } from "./types.ts";
+import { shapeQueenRack, type QueenRackV1 } from "./queenRack.ts";
 
 export const NEST_CATEGORIES = ["protect", "everyday", "build", "prepare"] as const;
 export type NestCategory = typeof NEST_CATEGORIES[number];
@@ -24,6 +25,25 @@ export type KittyNestDesign = {
   studio?: KittyStudioV1;
   history?: KittyNestLook[];
   category: NestCategory | null;
+  /**
+   * The order of the banks on this plan bank's shelf, as design keys. Lower is
+   * first: first defended on Protect, first fed on Build. It lives on the
+   * shelf's own row rather than on each bank, because a goal bank has no design
+   * row of its own and because one rearrangement should be one save — the last
+   * save wins, exactly as every other shared change in Hearth does. Keys the
+   * shelf no longer holds are ignored; banks the list does not name keep the
+   * nest's own order behind the ones it does. Carries no money.
+   */
+  order?: string[];
+  /**
+   * The loft's rack (2026-09-15): shelves on the wall with a share, a fill
+   * mark and their banks left to right — the plan for how a pour over the
+   * loft splits. Lives beside `order` on the Build plan row for the same
+   * reasons; `order` stays the rack's flat reading so older readers keep the
+   * ledge. Carries no money: the pour posts only through the Fund's own
+   * rollover command, behind Confirm.
+   */
+  rack?: QueenRackV1;
   archivedAt: string | null;
   setupCompletedAt: string | null;
   createdAt: string;
@@ -33,7 +53,7 @@ export const nestDesignId = (view: LedgerView, memberId: string, bankKey: string
 export const nestDesignInView = (row: KittyNestDesign, memberId: string, view: LedgerView) => row.visibility === view && (view === "household" || row.createdBy === memberId);
 const fail = (): never => { throw new ValidationError("This bank design needs an updated Hearth. Reload and try again."); };
 const iso = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value));
-const keys = ["version", "id", "bankKey", "visibility", "createdBy", "revision", "name", "glaze", "studio", "category", "archivedAt", "setupCompletedAt", "createdAt", "updatedAt", "history", "designRef", "designHasFired"];
+const keys = ["version", "id", "bankKey", "visibility", "createdBy", "revision", "name", "glaze", "studio", "category", "order", "rack", "archivedAt", "setupCompletedAt", "createdAt", "updatedAt", "history", "designRef", "designHasFired"];
 export function shapeKittyNestDesigns(value: unknown): KittyNestDesign[] {
   if (value === undefined) return [];
   if (!Array.isArray(value) || value.length > 4000) return fail();
@@ -45,6 +65,9 @@ export function shapeKittyNestDesigns(value: unknown): KittyNestDesign[] {
       || r.id !== nestDesignId(r.visibility, r.createdBy, r.bankKey) || !Number.isSafeInteger(r.revision) || r.revision < 1
       || typeof r.name !== "string" || r.name.length > 120 || !["cream", "sea-glass", "terracotta", "midnight", "rose"].includes(r.glaze)
       || (r.category !== null && !(NEST_CATEGORIES as readonly string[]).includes(r.category))
+      || (r.order !== undefined && !(Array.isArray(r.order) && r.order.length <= 200 && r.order.every(key => typeof key === "string" && key.length > 0 && key.length <= 300) && new Set(r.order).size === r.order.length))
+      || (r.order !== undefined && !r.bankKey.startsWith("plan:"))
+      || (r.rack !== undefined && (r.bankKey !== "plan:build" || r.visibility !== "household"))
       || (r.archivedAt !== null && !iso(r.archivedAt)) || (r.setupCompletedAt !== null && !iso(r.setupCompletedAt))
       || !iso(r.createdAt) || !iso(r.updatedAt)) return fail();
     if ((r.bankKey === "king" || r.bankKey.startsWith("plan:")) && r.archivedAt !== null) return fail();
@@ -53,6 +76,7 @@ export function shapeKittyNestDesigns(value: unknown): KittyNestDesign[] {
     const studio = shapeKittyStudio(r.studio);
     const designRef=r.designRef===undefined?undefined:decodeKittyDesignReference(r.designRef);
     if(designRef&&studio||r.designHasFired!==undefined&&(typeof r.designHasFired!=="boolean"||!designRef))return fail();
+    const rack = shapeQueenRack(r.rack);
     if (r.history !== undefined && !Array.isArray(r.history)) return fail();
     const history = r.history?.map(look => {
       if (!look || Object.keys(look).some(key => !["at", "name", "glaze", "studio", "designRef"].includes(key)) || !iso(look.at) || typeof look.name !== "string" || look.name.length > 120 || !["cream", "sea-glass", "terracotta", "midnight", "rose"].includes(look.glaze)) return fail();
@@ -61,7 +85,7 @@ export function shapeKittyNestDesigns(value: unknown): KittyNestDesign[] {
       return { ...look, studio: shapeKittyStudio(look.studio), ...(ref?{designRef:ref}:{}) };
     });
     if (history?.some((look, i) => look.at < r.createdAt || look.at > r.updatedAt || (i > 0 && look.at < history[i - 1]!.at))) return fail();
-    return { ...r, name: r.name.trim(), ...(designRef?{designRef}:{}), ...(studio ? { studio } : {}), ...(history?.length ? { history } : {}) };
+    return { ...r, name: r.name.trim(), ...(designRef?{designRef}:{}), ...(studio ? { studio } : {}), ...(rack ? { rack } : {}), ...(history?.length ? { history } : {}) };
   });
   if (new Set(rows.map(row => row.id)).size !== rows.length) return fail();
   return rows;
@@ -85,6 +109,10 @@ export type SaveNestDesignInput = {
   glaze: KittyGlaze;
   studio?: KittyStudioV1;
   category?: NestCategory | null;
+  /** The shelf's order, as design keys. Omit to leave it as it was. */
+  order?: string[];
+  /** The loft's rack. Omit to leave it as it was; `order` is written from it when given. */
+  rack?: QueenRackV1;
   archived?: boolean;
   fire?: boolean;
   completeSetup?: boolean;
@@ -125,6 +153,8 @@ export const saveKittyNestDesign = captureCommand("saveKittyNestDesign", (h: Hou
   const row = shapeKittyNestDesigns([{ version: 1, id, bankKey: input.bankKey, visibility: input.view,
     createdBy: old?.createdBy ?? input.memberId, revision: (old?.revision ?? 0) + 1,
     name: input.name, glaze: input.glaze, ...(old?.designRef?{designRef:old.designRef,designHasFired:old.designHasFired??false}:{}), ...(studio ? { studio } : {}), ...(history?.length ? { history } : {}), category: input.category ?? old?.category ?? null,
+    ...((input.rack ?? old?.rack) !== undefined ? { rack: input.rack ?? old?.rack } : {}),
+    ...((input.rack ? input.rack.shelves.flatMap(shelf => shelf.keys) : input.order ?? old?.order) !== undefined ? { order: [...(input.rack ? input.rack.shelves.flatMap(shelf => shelf.keys) : input.order ?? old?.order ?? [])] } : {}),
     archivedAt: input.archived === undefined ? old?.archivedAt ?? null : input.archived ? now : null,
     setupCompletedAt: old?.setupCompletedAt ?? (input.completeSetup ? now : null), createdAt: old?.createdAt ?? now, updatedAt: now }])[0]!;
   return { household: { ...h, kittyNestDesigns: [...(h.kittyNestDesigns ?? []).filter(r => r.id !== id), row] }, postedIds: [id], warnings: [],

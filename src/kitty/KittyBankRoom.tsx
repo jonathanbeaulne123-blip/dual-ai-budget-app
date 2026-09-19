@@ -4,7 +4,7 @@ import type {KittyAcceptedCommandReader} from '../hearthside/bankReceipt.ts';
 import { useCanonicalKitty } from "../hearthside/DesignProvider.tsx";
 import { CollaborativeStudio } from "../hearthside/CollaborativeStudio.tsx";
 import { HEARTHSIDE_FLAGS } from "../hearthside/flags.ts";
-import { useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { createPortal } from "react-dom";
 import {
   saveGoalEnvelope,
@@ -60,6 +60,7 @@ import type { PlanAsk } from "../PlanLensWorkbench.tsx";
 import "./kitty-room.css";
 import { KittyNest, NestBankDetail } from "./KittyNest.tsx";
 import { projectKittyNest, nestCategoryFor, type NestBank } from "../core/kittyNest.ts";
+import { fundFor, fundModelMode } from "../core/fundRules.ts";
 import { Whisper } from "../theme/Whisper.tsx";
 
 export type KittyPlanContext = {
@@ -68,6 +69,8 @@ export type KittyPlanContext = {
   goalId?: string;
   bankId?: string;
   lineId?: string;
+  /** Bumped by each new request, so pressing the same landmark again returns to its bank. */
+  request?: number;
   onClose: () => void;
   onSaveLine: (line: PlanLine, expected?: PlanLine) => Promise<boolean>;
   onScenario: (name: string, lines: PlanLine[]) => Promise<boolean>;
@@ -140,8 +143,12 @@ const basis = (h: Household) =>
     h.appointments,
     h.planVersions,
   ]);
-function initialEnvelope(goal: Goal, context?: KittyPlanContext) {
+function initialEnvelope(goal: Goal, context?: KittyPlanContext, household?: Household) {
   if (goal.envelope) return goal.envelope;
+  // Money model (D-271): an untyped goal shows the fund the nest already files it under (frozen at migration, never a new Protect default).
+  const fallback = household && fundModelMode(household) === 2 && household.goals.some((row) => row.id === goal.id)
+    ? fundFor(household, { kind: "goal", id: goal.id }, { memberId: goal.ownerMemberId ?? "", view: goal.shared ? "household" : "personal" })
+    : nestCategoryFor(goal.name);
   const lens = context?.selection.lines.find(
     (line) =>
       line.sourceReference?.type === "goal" &&
@@ -151,7 +158,7 @@ function initialEnvelope(goal: Goal, context?: KittyPlanContext) {
     ...defaultGoalEnvelope(),
     ...(lens === "protect" || lens === "everyday" || lens === "prepare" || lens === "build"
       ? { kind: lens }
-      : { kind: nestCategoryFor(goal.name) }),
+      : { kind: fallback }),
   };
 }
 function bankEvidence(
@@ -255,6 +262,10 @@ function Room({
     "active",
   );
   const [selected, setSelected] = useState(context?.goalId ?? initialGoalId ?? (context?.bankId || initialBankId ? `nest:${context?.bankId ?? initialBankId}` : h.goals.find(row => goalVisibleInView(row,memberId,view) && row.status !== "retired" && !row.envelope?.archivedAt)?.id ?? "nest:king"));
+  // A new request for a named bank (an island landmark) while the room is already open moves to that bank.
+  const requestedGoalId = context?.goalId;
+  const request = context?.request;
+  useEffect(() => { if (requestedGoalId) setSelected(requestedGoalId); }, [requestedGoalId, request]);
   const bankScope={identity:creationIdentity??identity,environment:h.environment,householdId:h.householdId,memberId};
   const initiallyNeedsCreation=!selected.startsWith("nest:")&&!h.goals.some(g=>goalVisibleInView(g,memberId,view)&&!g.envelope?.archivedAt&&g.status!=="retired");
   const [creating, setCreating] = useState(()=>{try{return Boolean(creationContext||initiallyNeedsCreation||localStorage.getItem(bankCreationKey(bankScope,creationContext)));}catch{return Boolean(creationContext||initiallyNeedsCreation);}});
@@ -498,7 +509,7 @@ function Room({
               <span>
                 {item.name}
                 <small>
-                  {initialEnvelope(item, context).kind}
+                  {initialEnvelope(item, context, h).kind}
                   {item.envelope?.archivedAt ? " · archived" : ""}
                 </small>
               </span>
@@ -642,7 +653,7 @@ function Bank({
   const [name, setName] = useState(goal.name),
     [target, setTarget] = useState(String(goal.targetCents / 100)),
     [arrival, setArrival] = useState(goal.arrivalDate ?? ""),
-    [envelope, setEnvelope] = useState(initialEnvelope(goal, context));
+    [envelope, setEnvelope] = useState(initialEnvelope(goal, context, h));
   const [amount, setAmount] = useState(""),
     [source, setSource] = useState(""),
     [spend, setSpend] = useState(""),
@@ -667,7 +678,7 @@ function Bank({
     goal,
     identity,
     memberId,
-    envelope: initialEnvelope(goal, context),
+    envelope: initialEnvelope(goal, context, h),
     active: page === "studio" && !collaborative,
     run,
     readLatest,
@@ -822,7 +833,7 @@ function Bank({
                     setArrival(goal.arrivalDate ?? "");
                   }
                   setEnvelope({
-                    ...(!editing ? initialEnvelope(goal, context) : envelope),
+                    ...(!editing ? initialEnvelope(goal, context, h) : envelope),
                     glaze: key as typeof envelope.glaze,
                   });
                   setEditing(true);
@@ -926,7 +937,7 @@ function Bank({
                       setName(goal.name);
                       setTarget(String(goal.targetCents / 100));
                       setArrival(goal.arrivalDate ?? "");
-                      setEnvelope(initialEnvelope(goal, context));
+                      setEnvelope(initialEnvelope(goal, context, h));
                     }
                     setEditing(!editing);
                   }}
@@ -1074,7 +1085,7 @@ function Bank({
                           target: goal.targetCents / 100,
                           arrivalDate: goal.arrivalDate,
                           envelope: {
-                            ...initialEnvelope(goal, context),
+                            ...initialEnvelope(goal, context, h),
                             archivedAt: archived
                               ? null
                               : `${date}T12:00:00.000Z`,

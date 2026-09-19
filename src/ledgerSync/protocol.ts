@@ -7,6 +7,7 @@ import type {
 } from "../core/types.ts";
 import type { CapturedIntent } from "./capture.ts";
 import { digest } from "./patch.ts";
+import { clientFundModelVersion } from "./fundModelStamp.ts";
 import type { ProjectionPatch } from "./patch.ts";
 export type Scope = {
   identity?: { subject: string; email: string };
@@ -42,8 +43,16 @@ export type LedgerCommand = {
   taskPlannerVersion?: 1;
   chapterAgreementVersion?: 1;
   kittyNestVersion?: 1;
+  /** Client understands the Our Path world collection (D-262). */
+  pathWorldVersion?: 1;
+  /** Client understands Journey of Life era rows in the Our Path collection (D-268). */
+  pathEraVersion?: 1;
   planDecisionVersion?: 1;
   goalEnvelopeVersion?: 1;
+  /** Money model (D-269): 1 = release N (reads v2, never migrates); 2 = release N+1. Refused below 2 once migrated. */
+  fundModelVersion?: 1 | 2;
+  /** Client keeps a Chapter's calendar month (D-273). */
+  chapterVersion?: 1;
   id: string;
   householdId: string;
   environment: Environment;
@@ -98,7 +107,9 @@ export async function commandFromCapture(
     hearthsideEncounterVersion:1,
     kittyDesignVersion: 1, nestDesignVersion:1,
     companionPlayVersion: 1,
-    companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, chapterAgreementVersion: 1, kittyNestVersion: 1,
+    companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, kittyNestVersion: 1, chapterAgreementVersion: 1, pathWorldVersion: 1, pathEraVersion: 1,
+    fundModelVersion: clientFundModelVersion(),
+    chapterVersion: 1,
     id,
     ...scope,
     observedSequence: input.observedRevision,
@@ -130,6 +141,10 @@ export function parseCommand(value: unknown): LedgerCommand {
     (c.chapterAgreementVersion !== undefined && c.chapterAgreementVersion !== 1) ||
     (c.kittyNestVersion !== undefined && c.kittyNestVersion !== 1) ||
     (c.taskPlannerVersion !== undefined && c.taskPlannerVersion !== 1) ||
+    (c.pathWorldVersion !== undefined && c.pathWorldVersion !== 1) ||
+    (c.pathEraVersion !== undefined && c.pathEraVersion !== 1) ||
+    (c.fundModelVersion !== undefined && c.fundModelVersion !== 1 && c.fundModelVersion !== 2) ||
+    (c.chapterVersion !== undefined && c.chapterVersion !== 1) ||
     (c.companionWorkflowVersion !== undefined && c.companionWorkflowVersion !== 1) ||
     (c.hearthsideEncounterVersion !== undefined && c.hearthsideEncounterVersion !== 1) ||
     (c.hearthsideVersion !== undefined && c.hearthsideVersion !== 1) ||

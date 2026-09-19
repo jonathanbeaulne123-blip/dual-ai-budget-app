@@ -8,6 +8,10 @@ import {hasPlayData,isPlayStep} from '../core/herculesPlay.ts';
 import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
 import { hasPlanDecisionData } from "../core/planSystem.ts";
 import { hasTaskData, TASK_COMMAND_KINDS } from "../core/tasks.ts";
+import { hasPathEraData, hasPathWorldData, PATH_ERA_COMMAND_KINDS, PATH_WORLD_COMMAND_KINDS } from "../core/pathWorld.ts";
+import { hasFundModelData } from "../core/fundRules.ts";
+import { CHAPTER_MONTH_COMMAND_KINDS, hasChapterMonthData } from "../core/chapters.ts";
+import { FUND_MODEL_COMMAND_KINDS } from "./fundModelStamp.ts";
 import {companionActionEffect} from '../core/herculesCompanionActions.ts';
 import { validateFundSourceClaim } from "../core/fundContributionSources.ts";
 import { IncrementalBooksGuard } from "../core/booksValidation.ts";
@@ -110,6 +114,11 @@ export async function prepareCommand(
   if((hasTaskData(current)||command.steps.some(s=>TASK_COMMAND_KINDS.includes(s.kind)))&&command.taskPlannerVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve planner tasks.');
   if((hasChapterAgreementData(current)||command.steps.some(step=>isChapterAgreementCommand(step.kind)))&&command.chapterAgreementVersion!==1)throw Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve shared Chapter agreements and Tasks.");
   assertChapterTaskGraph(current);
+  if((hasPathWorldData(current)||command.steps.some(s=>PATH_WORLD_COMMAND_KINDS.includes(s.kind)))&&command.pathWorldVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve your island.');
+  if((hasPathEraData(current)||command.steps.some(s=>PATH_ERA_COMMAND_KINDS.includes(s.kind)))&&command.pathEraVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve your journey.');
+  if((hasChapterMonthData(current)||command.steps.some(s=>CHAPTER_MONTH_COMMAND_KINDS.includes(s.kind)))&&command.chapterVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to keep your Chapters in their months.');
+  // Money model (D-269, R2-H1): once any fund-model row exists, only a v2 client may write anything.
+  if((hasFundModelData(current)||command.steps.some(s=>FUND_MODEL_COMMAND_KINDS.includes(s.kind)))&&command.fundModelVersion!==2)throw new Error('CLIENT_RELOAD_REQUIRED: Hearth has updated how money is sorted. Reload before making changes.');
   const extendedPlan = hasPlanDecisionData(current);
   if (extendedPlan && command.planDecisionVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve the household's Plan evidence and decisions.");
   if ((current.hearthside?.designs?.length || current.goals.some(g=>g.envelope?.designRef)) && command.kittyDesignVersion !== 1) throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve collaborative artwork.');

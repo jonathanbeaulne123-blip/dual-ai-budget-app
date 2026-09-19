@@ -33,3 +33,20 @@ export function fillRuntimeRandom(bytes: Uint8Array): void {
 export function runtimeNowIso(fallback = new Date()): string {
   return active?.nowIso ?? fallback.toISOString();
 }
+
+/**
+ * Inside a synthetic fixture only: run `action` with the fixture clock set to a story's own moment,
+ * so rows a command stamps with `nowIso()` read as written on that day and replay byte-for-byte.
+ * Outside a fixture it simply runs the action (the ordinary clock applies).
+ */
+export function atSyntheticClock<T>(nowIso: string, action: () => T): T {
+  if (!active) return action();
+  const runtime = active;
+  const prior = runtime.nowIso;
+  runtime.nowIso = nowIso;
+  try {
+    return action();
+  } finally {
+    runtime.nowIso = prior;
+  }
+}

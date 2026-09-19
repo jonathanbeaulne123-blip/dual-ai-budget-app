@@ -1,0 +1,975 @@
+/* The Still Queen — Household Home as one figure in a field of nothing.
+   Theme-neutral grammar: every colour is a world token remapped through --queen-*,
+   so the three expressions (a later stage) change tokens and nothing else.
+   Her body carries state; the doors carry navigation; nothing moves unless touched;
+   the page never scrolls; every state has a legible still, so motion is garnish. */
+
+.queen-home {
+  /* Her clay is terracotta — the pot she was thrown from — still mixed with the
+     theme's own paper and line so the three expressions tint her rather than
+     replace her. */
+  --queen-terracotta: #c4794f;
+  --queen-terracotta-deep: #a8603b;
+  --queen-terracotta-shadow: #8a4b2c;
+  --queen-petal-white: #f7f1e4;
+  --queen-petal-red: #c8103c;
+  --queen-petal-eye: #e8a33a;
+  --queen-clay: color-mix(in srgb, var(--queen-terracotta) 78%, var(--paper-2));
+  --queen-clay-deep: color-mix(in srgb, var(--queen-terracotta-deep) 76%, var(--line));
+  --queen-clay-shadow: color-mix(in srgb, var(--queen-terracotta-shadow) 72%, var(--ink) 16%);
+  --queen-fill: var(--sill, #b9a68a);
+  --queen-ink: var(--ink);
+  --queen-gold: var(--gold);
+  --queen-leaf: var(--pine);
+  --queen-bud: var(--copper);
+  --queen-focus: var(--world-focus, var(--copper));
+  --queen-trace: var(--card);
+  --queen-glass: color-mix(in srgb, var(--paper) 76%, transparent);
+  --queen-cellar: color-mix(in srgb, var(--paper-2), var(--ink) 9%);
+  --queen-loft: color-mix(in srgb, var(--paper), var(--card) 60%);
+  --queen-ease: cubic-bezier(.4, 0, .2, 1);
+  --queen-scale: 1;
+  --queen-lean: 0deg;
+  --queen-top: 0px;
+  /* Space under Home. Outside the App's world-home frame (the stand-alone proof, a future embed) this is the App's
+     own bottom padding over the fixed navigation plus the collapsed instruments summary. Inside the frame the
+     component measures the real nav (with its safe-area inset) and writes --queen-below itself; see QueenHome. */
+  --queen-under: 100px;
+  --queen-below: calc(var(--nav, 76px) + 28px + env(safe-area-inset-bottom, 0px) + var(--queen-under));
+  --queen-h: min(40dvh, 62cqh);
+  --queen-bank-w: clamp(84px, 15cqw, 150px);
+
+  position: relative;
+  box-sizing: border-box;
+  height: calc(100dvh - var(--queen-top) - var(--queen-below));
+  min-height: 220px;
+  width: 100%;
+  margin: 0 auto;
+  overflow: hidden;
+  color: var(--ink);
+  container-type: size;
+  container-name: queen;
+}
+.queen-home *, .queen-home *::before, .queen-home *::after { box-sizing: border-box; }
+.queen-identity-art { position: absolute; top: 4px; left: 8px; opacity: .6; pointer-events: none; }
+.queen-home .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* ---- the field: emptiness is the reveal control ---- */
+.queen-field {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  gap: clamp(18px, 5vw, 64px);
+  padding-inline: 12px;
+  container-type: size;
+  transition: opacity .5s var(--queen-ease);
+}
+.queen-home:not([data-scene="home"]) .queen-field { opacity: 0; pointer-events: none; }
+.queen-rings {
+  position: absolute; inset: 0; pointer-events: none;
+  background: repeating-radial-gradient(circle at 50% 50%, transparent 0 76px, var(--line) 76px 77px);
+  opacity: .26;
+  -webkit-mask-image: radial-gradient(circle at 50% 50%, #000 0, rgba(0, 0, 0, .6) 32%, transparent 62%);
+          mask-image: radial-gradient(circle at 50% 50%, #000 0, rgba(0, 0, 0, .6) 32%, transparent 62%);
+}
+
+.queen-centre { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-width: 0; }
+
+/* ---- her, and her banks ---- */
+.queen-banks { display: grid; grid-template-columns: auto auto auto; align-items: end; justify-items: center; column-gap: clamp(10px, 3cqw, 36px); }
+.queen-bank { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.queen-bank--protect, .queen-bank--build { width: 0; opacity: 0; visibility: hidden; transition: width .5s var(--queen-ease), opacity .5s var(--queen-ease), visibility 0s linear .5s; }
+.queen-home:not(.is-expanded) .queen-bank--protect, .queen-home:not(.is-expanded) .queen-bank--build { overflow: hidden; }
+.queen-home.is-expanded .queen-bank--protect, .queen-home.is-expanded .queen-bank--build { width: var(--queen-bank-w); opacity: 1; visibility: visible; transition: width .5s var(--queen-ease), opacity .5s var(--queen-ease), visibility 0s; }
+.queen-bank-svg { display: block; width: var(--queen-bank-w); height: auto; overflow: visible; }
+.queen-bank__button {
+  position: relative; z-index: 2;
+  font: inherit; font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase;
+  min-height: 40px; min-width: 44px; padding: 8px 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--queen-glass); color: var(--ink);
+}
+.queen-bank__button:hover { border-color: var(--muted); }
+.queen-bank__button[aria-expanded="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+
+.queen-mount { position: relative; height: var(--queen-h); max-width: 76cqw; aspect-ratio: 240 / 340; transition: height .5s var(--queen-ease); }
+.queen-home.is-expanded .queen-mount { --queen-h: min(34dvh, 50cqh); }
+/* the narrow frame: the same three, composed for the width; she must not disappear */
+.queen-home--phone { --queen-bank-w: min(22cqw, 96px); }
+.queen-home--phone.is-expanded .queen-mount { height: auto; width: min(34cqw, 170px); max-height: 50cqh; }
+.queen-home--phone .queen-bank__button { font-size: 9px; letter-spacing: .05em; padding: 8px 7px; min-width: 0; }
+.queen-home--phone .queen-banks { column-gap: 8px; }
+/* on the phone the doors sit at the field's edges and take no room from her */
+.queen-home--phone .queen-field { gap: 0; padding-inline: 8px; }
+.queen-home--phone .queen-door { position: absolute; top: 50%; transform: translateY(-50%); }
+.queen-home--phone .queen-door--together { left: 6px; }
+.queen-home--phone .queen-door--status { right: 6px; }
+.queen-home--phone .queen-centre { max-width: calc(100% - 96px); }
+/* expanded on the phone, the three sit high so a sheet below leaves her visible; she does not move again when it opens */
+.queen-home--phone.is-expanded .queen-field { align-items: flex-start; padding-top: 10px; }
+.queen-home--phone.is-expanded .queen-centre { max-width: 100%; }
+.queen-home--phone.is-expanded .queen-door { top: 18px; transform: none; }
+.queen-figure {
+  display: block; width: 100%; height: 100%; padding: 0; margin: 0; border: 0; background: transparent; cursor: pointer; border-radius: 40% 40% 30% 30%;
+  -webkit-tap-highlight-color: transparent;
+}
+.queen-svg { display: block; width: 100%; height: 100%; overflow: visible; }
+
+.queen-body { transform: rotate(var(--queen-lean)) scale(var(--queen-scale)); transform-origin: 120px 302px; }
+.queen-belly { transform-origin: 120px 302px; }
+.queen-foot { fill: var(--queen-clay-shadow); opacity: .35; }
+.queen-vessel { fill: var(--queen-clay); stroke: var(--queen-clay-deep); stroke-width: 1; }
+.queen-shade { fill: var(--queen-clay-deep); opacity: .5; }
+.queen-glaze { fill: #fff; opacity: .4; }
+.queen-bank-fill { fill: var(--queen-fill); opacity: .45; }
+.queen-home[data-glaze="matte"] .queen-glaze, .queen-home[data-glaze="offline"] .queen-glaze { opacity: 0; }
+.queen-home[data-glaze="matte"] .queen-vessel { fill: var(--queen-clay-deep); }
+.queen-home[data-glaze="offline"] .queen-vessel { stroke-dasharray: 4 3; stroke-width: 1.6; }
+.queen-seam { fill: none; stroke: var(--queen-gold); stroke-width: 2.2; stroke-linecap: round; }
+.queen-trace { fill: var(--queen-trace); opacity: .75; }
+.queen-eye { fill: none; stroke: var(--queen-ink); stroke-width: 2.4; stroke-linecap: round; }
+.queen-eye-open { fill: none; stroke: var(--queen-ink); stroke-width: 1.6; }
+.queen-pupil { fill: var(--queen-ink); }
+.queen-brow { fill: none; stroke: var(--queen-ink); stroke-width: 2.2; stroke-linecap: round; opacity: 0; }
+.queen-home[data-brow="weighted"] .queen-brow { opacity: .85; }
+.queen-mouth { fill: none; stroke: var(--queen-ink); stroke-width: 2; stroke-linecap: round; opacity: .65; }
+.queen-crown { fill: none; stroke: var(--queen-gold); stroke-width: 2.8; stroke-linecap: round; stroke-linejoin: round; opacity: .24; }
+.queen-home[data-crown="both"] .queen-crown { opacity: 1; filter: drop-shadow(0 0 6px var(--queen-gold)); }
+.queen-crown-point { fill: var(--queen-gold); }
+.queen-stem { fill: none; stroke: var(--queen-leaf); stroke-width: 2.8; stroke-linecap: round; }
+.queen-leaf { fill: var(--queen-leaf); opacity: .8; }
+.queen-vine { transform-origin: 120px 72px; }
+.queen-bud { fill: var(--queen-bud); }
+.queen-stone { fill: var(--queen-clay-shadow); }
+/* She is a cat, and reads as one with no WebGL at all. */
+.queen-speck { fill: #fff; opacity: .55; }
+.queen-home[data-glaze="offline"] .queen-speck { opacity: .25; }
+.queen-tail { fill: none; stroke: var(--queen-clay); stroke-width: 13; stroke-linecap: round; }
+.queen-ear-fold { fill: var(--queen-clay-deep); opacity: .72; }
+.queen-muzzle { opacity: .96; }
+.queen-nose { fill: var(--queen-clay-shadow); }
+.queen-whisker { fill: none; stroke: var(--queen-clay-shadow); stroke-width: 1.1; stroke-linecap: round; opacity: .7; }
+.queen-paw { fill: var(--queen-clay); stroke: var(--queen-clay-deep); stroke-width: 1; }
+.queen-paw-toe { fill: var(--queen-clay-deep); opacity: .8; }
+/* Her hair: the mandevilla, white her left and crimson her right, the two meeting only in the crown. */
+.queen-strand { fill: none; stroke: var(--queen-leaf); stroke-width: 3.2; stroke-linecap: round; opacity: .9; }
+.queen-bloom--white .queen-petal { fill: var(--queen-petal-white); stroke: var(--queen-clay-deep); stroke-width: .5; }
+.queen-bloom--red .queen-petal { fill: var(--queen-petal-red); stroke: var(--queen-clay-shadow); stroke-width: .5; }
+.queen-bloom-eye { fill: var(--queen-petal-eye); }
+.queen-bloom-tip { fill: #e9a0b4; }
+.queen-stone--near { opacity: .85; } .queen-stone--soon { opacity: .6; } .queen-stone--later { opacity: .4; }
+.queen-home[data-grave="true"] .queen-stone--near { stroke: var(--queen-bud); stroke-width: 1.5; }
+.queen-lid { fill: var(--queen-clay-shadow); }
+
+/* the one exception to invisibility: a Move at her hands */
+.queen-move {
+  position: absolute; left: 50%; top: 60.5%; height: max(44px, 15%); aspect-ratio: 1; transform: translate(-50%, -50%);
+  padding: 0; border: 0; background: transparent; cursor: pointer; border-radius: 50%;
+}
+.queen-move svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.queen-move__glow { fill: none; stroke: var(--queen-bud); stroke-width: 1.4; opacity: .45; }
+.queen-move__object { fill: var(--queen-bud); }
+
+/* one quiet line */
+.queen-line {
+  margin: 0; font-family: var(--display); font-weight: 300; font-size: var(--queen-line-size, 17px); letter-spacing: .005em;
+  color: var(--muted); text-align: center; text-wrap: balance; max-width: 40ch;
+}
+.queen-line__word { font-style: italic; color: var(--ink); }
+.queen-line__dot { margin-inline: .45em; color: var(--muted); }
+
+/* ---- the doors: invisible paint, visible semantics ---- */
+.queen-door {
+  position: relative; flex: 0 0 auto; width: 48px; height: 48px; border-radius: 50%;
+  border: 0; padding: 0; background: transparent; cursor: pointer;
+  display: grid; place-items: center; color: var(--muted);
+  opacity: .06;
+  transition: opacity .5s var(--queen-ease);
+}
+.queen-door::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: color-mix(in srgb, var(--queen-clay) 70%, transparent);
+  transform: scale(.55); opacity: 0;
+  transition: transform .5s var(--queen-ease), opacity .5s var(--queen-ease);
+}
+.queen-door svg { position: relative; width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.queen-door__label {
+  position: absolute; left: 50%; top: calc(100% + 6px); transform: translateX(-50%);
+  font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); white-space: nowrap;
+  opacity: 0; transition: opacity .5s var(--queen-ease);
+}
+.queen-door:hover, .queen-door:focus-visible, .queen-home.is-revealed .queen-door, .queen-door[aria-expanded="true"] { opacity: 1; }
+.queen-door:hover::before, .queen-door:focus-visible::before, .queen-home.is-revealed .queen-door::before, .queen-door[aria-expanded="true"]::before { transform: scale(1); opacity: 1; }
+.queen-door:hover .queen-door__label, .queen-door:focus-visible .queen-door__label, .queen-home.is-revealed .queen-door__label, .queen-door[aria-expanded="true"] .queen-door__label { opacity: 1; }
+
+/* one focus ring for everything on the stage; specific enough to outrank the world-level ring while honouring its colour */
+.queen-home[data-pulse][data-scene] button:focus-visible { outline: 3px solid var(--queen-focus); outline-offset: 3px; }
+
+/* ---- panels: a peek, not a destination ---- */
+.queen-dim { position: absolute; inset: 0; background: var(--paper); opacity: 0; pointer-events: none; transition: opacity .5s var(--queen-ease); }
+.queen-home.is-open[data-mode="sheet"] .queen-dim { opacity: .42; pointer-events: auto; }
+.queen-panel {
+  position: absolute; z-index: 5; visibility: hidden;
+  background: var(--queen-glass);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1); backdrop-filter: blur(18px) saturate(1.1);
+  border: 1px solid color-mix(in srgb, var(--line) 80%, transparent);
+  box-shadow: 0 24px 60px -30px rgba(0, 0, 0, .35);
+  overflow-y: auto; overscroll-behavior: contain;
+  font-size: 14px; line-height: 1.5; color: var(--ink);
+  transition: transform .5s var(--queen-ease), visibility 0s linear .5s;
+}
+.queen-panel.is-pulling { transition: none; }
+.queen-home.is-open .queen-panel { visibility: visible; transition: transform .5s var(--queen-ease), visibility 0s; }
+.queen-home[data-mode="panel"] .queen-panel { top: 12px; bottom: 12px; width: clamp(300px, 38%, 400px); border-radius: 24px; padding: 38px 36px 36px; }
+.queen-home[data-mode="panel"][data-side="right"] .queen-panel { right: 12px; transform: translateX(calc(100% + 40px)); }
+.queen-home[data-mode="panel"][data-side="left"] .queen-panel { left: 12px; transform: translateX(calc(-100% - 40px)); }
+.queen-home[data-mode="panel"].is-open .queen-panel { transform: none; }
+.queen-home[data-mode="sheet"] .queen-panel { left: 0; right: 0; bottom: 0; max-height: 62%; border-radius: 22px 22px 0 0; border-bottom: 0; padding: 0 20px 24px; transform: translateY(105%); }
+.queen-home[data-mode="sheet"].is-open .queen-panel { transform: translateY(var(--queen-pull, 0px)); }
+.queen-panel__handle { display: none; height: 28px; margin: 0 auto 6px; width: 120px; place-items: center; touch-action: none; cursor: grab; }
+.queen-panel__handle::after { content: ""; display: block; width: 40px; height: 4px; border-radius: 2px; background: var(--line); }
+.queen-home[data-mode="sheet"] .queen-panel__handle { display: grid; }
+.queen-panel__close {
+  position: absolute; top: 10px; right: 10px; width: 44px; height: 44px; border-radius: 50%;
+  border: 0; background: transparent; color: var(--muted); cursor: pointer; font-size: 20px; line-height: 1;
+}
+.queen-panel__close:hover { color: var(--ink); background: color-mix(in srgb, var(--queen-clay) 40%, transparent); }
+.queen-eyebrow { margin: 0 0 6px; font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); }
+.queen-panel__title { margin: 0 0 4px; font-family: var(--display); font-weight: 500; font-size: 22px; line-height: 1.15; letter-spacing: -.01em; text-wrap: balance; }
+.queen-panel__sub { margin: 0 0 16px; color: var(--muted); }
+.queen-panel p { margin: 0 0 10px; }
+.queen-panel__muted { color: var(--muted); }
+.queen-panel__hint { color: var(--muted); font-size: 12.5px; text-align: center; margin-top: 12px; }
+.queen-rows { list-style: none; margin: 0 0 14px; padding: 0; border-top: 1px solid var(--line); }
+.queen-row { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.queen-rows--key .queen-row { display: grid; grid-template-columns: 64px minmax(0, 1fr); }
+.queen-rows--key .queen-row span:first-child { color: var(--muted); font-family: var(--mono); font-size: 10.5px; letter-spacing: .12em; text-transform: uppercase; padding-top: 3px; }
+.queen-row small { display: block; color: var(--muted); font-size: 12.5px; }
+.queen-row span:first-child { min-width: 0; }
+.queen-row.is-waiting-me::before { content: "◆ "; color: var(--copper); font-size: 10px; }
+.queen-amount { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--muted); white-space: nowrap; }
+.queen-decision { border-left: 2px solid var(--copper); padding: 2px 0 2px 14px; margin: 0 0 14px; }
+.queen-acts { display: flex; flex-wrap: wrap; gap: 8px 18px; align-items: center; margin: 8px 0 4px; }
+.queen-act { font: inherit; font-size: 13.5px; min-height: 44px; padding: 8px 16px; border-radius: 999px; cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.queen-act--primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.queen-act:disabled { cursor: default; opacity: .6; }
+.queen-go {
+  display: inline-flex; align-items: center; gap: 8px; min-height: 44px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .16em; text-transform: uppercase;
+  color: var(--ink); background: transparent; border: 0; border-bottom: 1px solid var(--line); padding: 8px 0; cursor: pointer; text-align: left;
+}
+.queen-go:hover, .queen-go--primary { border-bottom-color: var(--ink); }
+
+/* ---- rooms: she does not follow you in ---- */
+.queen-room {
+  position: absolute; inset: 0; overflow: hidden; padding: 10px 16px 12px;
+  display: grid; gap: 6px; align-content: start;
+  opacity: 0; visibility: hidden; pointer-events: none;
+  transition: opacity .5s var(--queen-ease), transform .5s var(--queen-ease), visibility 0s linear .5s;
+}
+.queen-room--cellar { background: var(--queen-cellar); transform: translateY(28px); grid-template-rows: auto auto auto minmax(0, 1fr) auto auto auto; }
+.queen-room--loft { background: var(--queen-loft); transform: translateY(-28px); grid-template-rows: auto minmax(0, 1fr) auto; }
+.queen-home[data-scene="cellar"] .queen-room--cellar, .queen-home[data-scene="loft"] .queen-room--loft { opacity: 1; visibility: visible; pointer-events: auto; transform: none; transition: opacity .5s var(--queen-ease), transform .5s var(--queen-ease), visibility 0s; }
+.queen-room--loft::before { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 60% 55% at 86% 18%, color-mix(in srgb, #fff 22%, transparent), transparent 70%); }
+.queen-room__head { position: relative; min-width: 0; }
+.queen-room__title { margin: 0; font-family: var(--display); font-weight: 300; font-size: 20px; color: var(--ink); }
+.queen-room__sub { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+.queen-room__line { margin: 0; font-family: var(--display); font-weight: 300; font-size: 15px; color: var(--muted); text-align: center; max-width: 44ch; justify-self: center; min-height: 1.5em; }
+.queen-room__line em { color: var(--ink); }
+.queen-room__acts { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 20px; }
+.queen-room__empty { margin: 0; color: var(--muted); font-size: 13.5px; }
+.queen-room__picks { display: flex; flex-wrap: wrap; gap: 6px; }
+.queen-pick { font: inherit; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; min-height: 32px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: transparent; color: var(--muted); cursor: pointer; }
+.queen-pick[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.queen-pick__mark { color: var(--copper); margin-left: 4px; }
+.queen-stair {
+  position: relative; justify-self: center; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  border: 0; background: transparent; padding: 6px 14px; min-height: 44px; cursor: pointer; border-radius: 12px;
+  font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted);
+}
+.queen-stair svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.queen-stair:hover { color: var(--ink); }
+
+/* A room's 3D world: one canvas behind the room's own controls, never a control itself. */
+.queen-room-world { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.queen-room-world__canvas { display: block; }
+/* The drawn room yields to a live canvas; every control above it stays exactly where it was. */
+.queen-room[data-world="3d"] .queen-bank-flat, .queen-room[data-world="3d"] .queen-jar-ghost { visibility: hidden; }
+/* With a sculpture behind it, the pose belongs to the sculpture: the button stays square so its label stays level. */
+.queen-room[data-world="3d"] .queen-goal, .queen-room[data-world="3d"] .queen-jar { transform: none !important; }
+/* Room text sits on its own paper, so it reads against whatever the room is made of. */
+.queen-room__head, .queen-room__line, .queen-room__picks, .queen-scrub, .queen-room__acts, .queen-hand, .queen-stair {
+  border-radius: 12px; background: color-mix(in srgb, var(--paper) 82%, transparent); backdrop-filter: blur(3px);
+}
+.queen-room__head { padding: 6px 10px; justify-self: start; }
+.queen-room__line { padding: 6px 12px; }
+.queen-room__picks, .queen-scrub, .queen-room__acts { padding: 4px 10px; justify-self: center; }
+.queen-room > .queen-go { justify-self: center; padding: 6px 12px; border-radius: 12px; background: color-mix(in srgb, var(--paper) 82%, transparent); backdrop-filter: blur(3px); border-bottom-color: transparent; }
+.queen-goal__name, .queen-months span, .queen-scrub__end {
+  background: color-mix(in srgb, var(--paper) 78%, transparent); border-radius: 6px; padding: 1px 5px;
+}
+.queen-room > *:not(.queen-room-world) { position: relative; z-index: 1; }
+
+/* the cellar: the ribbon scrubs past a fixed gate; the page never scrolls */
+.queen-gate-view {
+  position: relative; align-self: center; width: 100%; overflow: hidden; padding: 26px 0 4px; min-height: 148px;
+  cursor: grab; touch-action: pan-y; user-select: none; -webkit-user-select: none; border-radius: 10px;
+}
+.queen-gate-view:active { cursor: grabbing; }
+.queen-gate-view:focus-visible { outline: 2px solid var(--queen-focus); outline-offset: 2px; }
+/* The gate is the fixed thing: the month standing inside it is the one the line is about. */
+.queen-gate { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; pointer-events: none; z-index: 2; }
+.queen-gate::before, .queen-gate::after { content: ""; position: absolute; top: 6px; bottom: 6px; width: 0; border-left: 1px solid var(--ink); opacity: .45; }
+.queen-gate::before { left: -50px; } .queen-gate::after { left: 50px; }
+.queen-gate__tab { position: absolute; top: 0; left: 0; transform: translateX(-50%); width: 0; height: 0; border-left: 5px solid transparent; border-right: 5px solid transparent; border-top: 7px solid var(--ink); }
+.queen-ribbon-track { position: relative; width: max-content; transition: transform .28s var(--queen-ease); }
+.queen-sprockets, .queen-months { display: flex; }
+.queen-sprockets i { width: 100px; display: block; height: 6px; position: relative; }
+.queen-sprockets i::after { content: ""; position: absolute; left: 50%; top: 0; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 1px; background: var(--line); }
+.queen-sprockets i.is-now::after { background: var(--ink); width: 6px; height: 6px; margin-left: -3px; transform: rotate(45deg); }
+.queen-ribbon { position: relative; display: flex; align-items: flex-end; }
+.queen-ribbon::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; border-bottom: 1px solid var(--queen-clay-shadow); opacity: .5; }
+.queen-jar-seat { position: relative; width: 100px; display: flex; align-items: flex-end; justify-content: center; }
+.queen-jar { width: 56px; display: flex; flex-direction: column; align-items: center; gap: 6px; flex-shrink: 0; border: 0; background: transparent; padding: 0; cursor: pointer; }
+.queen-jar svg { display: block; width: 32px; height: 46px; overflow: visible; }
+.queen-jar__mouth { fill: none; stroke: var(--queen-clay-shadow); stroke-width: 1.4; }
+.queen-jar--expected .queen-vessel, .queen-jar--quiet .queen-vessel { fill: none; stroke-dasharray: 3 3; }
+.queen-jar.is-outlier { transform: translateY(-14px) rotate(6deg); }
+.queen-jar.is-in-gate svg { filter: drop-shadow(0 5px 5px color-mix(in srgb, var(--ink) 18%, transparent)); }
+/* Where the beat should have been: a dotted hole the month stepped out of. */
+.queen-jar-ghost { position: absolute; bottom: 0; left: 50%; width: 28px; height: 42px; margin-left: -14px; border: 1.5px dotted var(--queen-clay-shadow); border-radius: 46% 46% 12% 12%; opacity: .55; }
+.queen-months span { width: 100px; text-align: center; font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.queen-months span.is-now { color: var(--ink); }
+.queen-scrub { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; justify-self: center; width: min(100%, 460px); }
+.queen-scrub__end { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.queen-scrub input { width: 100%; min-height: 30px; accent-color: var(--ink); }
+.queen-jar.is-outlier svg { width: 42px; height: 62px; transform: translateY(-18px) rotate(-7deg); transform-origin: 50% 100%; }
+.queen-jar--ghost .queen-vessel { fill: none; stroke: var(--muted); stroke-width: 1.2; stroke-dasharray: 3 4; }
+.queen-jar--expected .queen-vessel { fill: none; stroke: var(--queen-clay-shadow); stroke-width: 1.4; stroke-dasharray: 2 3; }
+.queen-jar--quiet .queen-vessel { opacity: .3; }
+.queen-jar.is-now .queen-jar__month { color: var(--copper); }
+
+/* the loft's ledge */
+.queen-window { position: absolute; right: 28px; top: 22px; width: 64px; height: 64px; border: 2px solid var(--queen-clay-shadow); opacity: .28; pointer-events: none; }
+.queen-window::before, .queen-window::after { content: ""; position: absolute; background: var(--queen-clay-shadow); }
+.queen-window::before { left: 50%; top: 0; bottom: 0; width: 2px; margin-left: -1px; }
+.queen-window::after { top: 50%; left: 0; right: 0; height: 2px; margin-top: -1px; }
+.queen-ledge-wrap { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 0; }
+/* ---- the rack (2026-09-15): shelves on the wall, top first; a post with a pin at the left, a brass weight at the right ---- */
+.queen-rack { display: flex; flex: 0 1 auto; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 4px; width: min(100%, 720px); min-height: 0; overflow: auto; padding: 4px 2px; scrollbar-width: thin; user-select: none; -webkit-user-select: none; }
+/* More shelves, smaller cats: the wall keeps its height, the banks give. Names stay until the wall is four deep; a held bank keeps its name. */
+.queen-room--loft[data-shelves="2"] .queen-goal svg { height: 60px; width: calc(40px * var(--goal-w, 1)); --loft-full: 60px; }
+.queen-room--loft[data-shelves="3"] .queen-goal svg { height: 50px; width: calc(34px * var(--goal-w, 1)); --loft-full: 50px; }
+.queen-room--loft[data-shelves="4"] .queen-goal svg, .queen-room--loft[data-shelves="5"] .queen-goal svg { height: 42px; width: calc(28px * var(--goal-w, 1)); --loft-full: 42px; }
+.queen-room--loft[data-shelves="4"] .queen-goal__name, .queen-room--loft[data-shelves="5"] .queen-goal__name { display: none; }
+.queen-room--loft[data-shelves="4"] .queen-goal[aria-pressed="true"] .queen-goal__name, .queen-room--loft[data-shelves="5"] .queen-goal[aria-pressed="true"] .queen-goal__name { display: block; }
+.queen-room--loft[data-shelves="2"] .queen-shelf__post, .queen-room--loft[data-shelves="3"] .queen-shelf__post { min-height: 60px; }
+.queen-room--loft[data-shelves="2"] .queen-shelf__pin, .queen-room--loft[data-shelves="3"] .queen-shelf__pin { bottom: calc(2px + var(--shelf-mark, 1) * 54px); }
+.queen-room--loft[data-shelves="2"] .queen-shelf .queen-goal::after { bottom: calc(24px + var(--shelf-mark, 1) * 46px); }
+.queen-room--loft[data-shelves="3"] .queen-shelf .queen-goal::after { bottom: calc(24px + var(--shelf-mark, 1) * 38px); }
+.queen-room--loft[data-shelves="4"] .queen-shelf__post, .queen-room--loft[data-shelves="5"] .queen-shelf__post { min-height: 46px; }
+.queen-room--loft[data-shelves="4"] .queen-shelf__pin, .queen-room--loft[data-shelves="5"] .queen-shelf__pin { bottom: calc(2px + var(--shelf-mark, 1) * 40px); }
+.queen-room--loft[data-shelves="4"] .queen-shelf .queen-goal::after, .queen-room--loft[data-shelves="5"] .queen-shelf .queen-goal::after { bottom: calc(8px + var(--shelf-mark, 1) * 32px); }
+.queen-room--loft[data-shelves="4"] .queen-shelf .queen-ledge, .queen-room--loft[data-shelves="5"] .queen-shelf .queen-ledge { min-height: 44px; }
+.queen-shelf { position: relative; display: grid; grid-template-columns: 22px minmax(0, 1fr) 78px; align-items: end; column-gap: 4px; }
+.queen-shelf .queen-ledge { position: relative; min-height: 54px; padding: 0 10px; gap: clamp(6px, 3cqw, 28px); }
+.queen-shelf.is-drop-shelf .queen-ledge { border-bottom-color: var(--queen-bud); }
+.queen-shelf__seat { display: inline-flex; align-items: flex-end; }
+.queen-shelf__bare { align-self: center; font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 14px 0; }
+.queen-home .queen-shelf__down { align-self: center; margin-left: 10px; min-height: 30px; padding: 2px 8px; border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); border-radius: 999px; background: transparent; color: var(--muted); font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+/* The post and its pin: the fill mark. The pin rides up the post from the shelf (0) to the height of a bank (1); the tide it sets shows on every bank of the shelf. */
+.queen-shelf__post { position: relative; align-self: stretch; width: 22px; min-height: 74px; }
+.queen-shelf__post::before { content: ""; position: absolute; left: 9px; top: 0; bottom: 0; width: 4px; border-radius: 2px; background: var(--queen-clay-shadow); opacity: .7; }
+.queen-home .queen-shelf__pin { position: absolute; left: 0; bottom: calc(2px + var(--shelf-mark, 1) * 68px); width: 22px; height: 22px; min-height: 22px; min-width: 22px; padding: 0; margin: 0; border: 0; background: transparent; cursor: ns-resize; touch-action: none; transform: translateY(50%); }
+.queen-shelf__pin-head { display: block; width: 14px; height: 14px; margin: 4px; border-radius: 50%; background: var(--queen-brass, var(--copper)); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--ink) 30%, transparent), 0 1px 2px color-mix(in srgb, var(--ink) 30%, transparent); }
+.queen-shelf__pin:disabled { cursor: default; opacity: .6; }
+.queen-shelf__pin:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 50%; }
+.queen-shelf .queen-goal { position: relative; }
+.queen-shelf .queen-goal::after { content: ""; position: absolute; left: 6px; right: 6px; bottom: calc(24px + var(--shelf-mark, 1) * 56px); border-top: 1px dashed color-mix(in srgb, var(--queen-brass, var(--copper)) 80%, transparent); pointer-events: none; opacity: .8; }
+.queen-shelf[style*="--shelf-mark: 1"] .queen-goal::after { display: none; }
+/* The weight: brass on the shelf's end, further right for more. */
+.queen-shelf__end { position: relative; align-self: end; height: 26px; }
+.queen-home .queen-shelf__weight { position: absolute; left: calc((var(--shelf-share, 5) - 1) * 4px); bottom: 2px; width: 42px; height: 24px; min-height: 24px; min-width: 42px; padding: 0; border: 0; border-radius: 5px 5px 3px 3px; background: linear-gradient(to bottom, color-mix(in srgb, var(--queen-brass, var(--copper)) 80%, #fff), var(--queen-brass, var(--copper))); box-shadow: inset 0 -2px 0 color-mix(in srgb, var(--ink) 35%, transparent), 0 1px 2px color-mix(in srgb, var(--ink) 30%, transparent); cursor: ew-resize; touch-action: none; }
+.queen-shelf__weight-read { display: block; font: 600 8.5px/24px var(--mono); letter-spacing: 0; color: color-mix(in srgb, var(--ink) 80%, transparent); text-align: center; white-space: nowrap; }
+.queen-shelf__weight:disabled { cursor: default; opacity: .6; }
+.queen-shelf__weight:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* The divider between two banks on a shelf: a slim brass rule; slide it to change their split. */
+.queen-home .queen-divider { align-self: stretch; width: 14px; min-width: 14px; min-height: 0; margin: 0 -2px; padding: 0; border: 0; background: transparent; cursor: ew-resize; touch-action: none; position: relative; }
+.queen-divider::before { content: ""; position: absolute; left: 6px; top: 12px; bottom: 10px; width: 2px; border-radius: 1px; background: var(--queen-brass, var(--copper)); opacity: .75; }
+.queen-divider:disabled { cursor: default; opacity: .5; }
+.queen-divider:focus-visible { outline: 2px solid var(--ink); outline-offset: 0; border-radius: 4px; }
+/* The world themes give every button 44px (:root[data-theme] :is(button…)); the rack's small brass is a control by hand and by keyboard, sized to the wall — these outrank that rule on purpose. */
+.queen-home .queen-room--loft .queen-rack .queen-shelf .queen-shelf__weight { min-height: 24px; height: 24px; border-radius: 5px 5px 3px 3px; }
+.queen-home .queen-room--loft .queen-rack .queen-shelf .queen-shelf__pin { min-height: 22px; height: 22px; border-radius: 50%; }
+.queen-home .queen-room--loft .queen-rack .queen-shelf .queen-divider { min-height: 0; border-radius: 4px; }
+.queen-home .queen-room--loft .queen-ledge-wrap .queen-rack .queen-shelf .queen-shelf__down, .queen-home .queen-room--loft .queen-ledge-wrap .queen-rack .queen-rack__hang { min-height: 30px; height: 30px; border-radius: 999px; }
+.queen-home .queen-rack__hang { align-self: center; margin-top: 2px; min-height: 30px; padding: 2px 10px; border: 1px dashed color-mix(in srgb, var(--ink) 35%, transparent); border-radius: 999px; background: transparent; color: var(--muted); font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.queen-rack__hang:disabled { opacity: .5; cursor: default; }
+.queen-rack__hang:focus-visible, .queen-shelf__down:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* The jug: the safe surplus and its tilt. */
+.queen-jug { display: flex; flex-wrap: nowrap; align-items: center; justify-content: center; gap: 4px 12px; padding: 3px 12px; border-radius: 12px; max-width: 100%; min-height: 34px; }
+.queen-jug__safe { white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* A short room on a phone (the loft under the chrome at 320×700 is about 370px): the rack has first claim on the wall, so the
+   line keeps only what it has to say — a held bank, a tilted jug, a notice — and its standing hint gives way. */
+@container queen (max-height: 400px) {
+  .queen-room--loft[data-voice="hint"] .queen-room__line:not(.queen-cellar-notice) { display: none; }
+  .queen-room--loft .queen-jug { min-height: 28px; padding-top: 1px; padding-bottom: 1px; }
+  .queen-room--loft .queen-ledge-wrap { gap: 4px; }
+}
+/* A narrow frame (320): the words above the slider, never clipped beside it; a slimmer post and weight; smaller cats, closer, and a
+   shelf that scrolls along itself once four or more stand on it rather than spilling past its ends. */
+@container queen (max-width: 419px) { .queen-jug { flex-wrap: wrap; row-gap: 0; } }
+@container queen (max-width: 359px) {
+  .queen-room--loft .queen-room__sub-hint { display: none; }
+  .queen-shelf { grid-template-columns: 18px minmax(0, 1fr) 66px; column-gap: 2px; }
+  .queen-shelf .queen-ledge { padding: 8px 6px 0; gap: 4px; justify-content: flex-start; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; }
+  .queen-shelf .queen-ledge::-webkit-scrollbar { display: none; }
+  .queen-shelf .queen-goal { min-width: 36px; }
+  .queen-room--loft .queen-goal svg, .queen-room--loft[data-shelves="2"] .queen-goal svg, .queen-room--loft[data-shelves="3"] .queen-goal svg { height: 54px; width: calc(32px * var(--goal-w, 1)); --loft-full: 54px; }
+  .queen-room--loft .queen-goal__name { display: none; }
+  .queen-room--loft .queen-goal[aria-pressed="true"] .queen-goal__name { display: block; }
+  .queen-shelf__post, .queen-room--loft[data-shelves="2"] .queen-shelf__post, .queen-room--loft[data-shelves="3"] .queen-shelf__post { width: 18px; min-height: 58px; }
+  .queen-shelf__post::before { left: 7px; }
+  .queen-home .queen-shelf__pin, .queen-room--loft[data-shelves="2"] .queen-shelf__pin, .queen-room--loft[data-shelves="3"] .queen-shelf__pin { bottom: calc(2px + var(--shelf-mark, 1) * 50px); }
+  .queen-shelf .queen-goal::after, .queen-room--loft[data-shelves="2"] .queen-shelf .queen-goal::after, .queen-room--loft[data-shelves="3"] .queen-shelf .queen-goal::after { bottom: calc(14px + var(--shelf-mark, 1) * 40px); }
+  .queen-home .queen-shelf__weight { left: calc((var(--shelf-share, 5) - 1) * 3px); width: 38px; min-width: 38px; }
+  .queen-shelf__weight-read { font-size: 8px; }
+  .queen-home .queen-divider { width: 10px; min-width: 10px; margin: 0; }
+  .queen-divider::before { left: 4px; }
+}
+.queen-jug__safe, .queen-jug__holder { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.queen-home .queen-room--loft .queen-ledge-wrap .queen-jug .queen-jug__tilt { width: min(200px, 40cqw); height: 22px; min-height: 22px; margin: 0; padding: 0; accent-color: var(--ink); }
+/* Under 3D the drawn shelves yield to the boards; the posts, pins, weights and dividers stay drawn, they are the controls. */
+.queen-room[data-world="3d"] .queen-shelf .queen-ledge { border-bottom-color: transparent; }
+/* A short room (the office at 1100×800 gives the loft 474px): the wall keeps every shelf by letting the cats give first, then the names. */
+@container queen (max-height: 560px) {
+  .queen-rack { gap: 2px; }
+  .queen-room--loft .queen-ledge-wrap { gap: 6px; }
+  .queen-room--loft .queen-room__line { min-height: 0; padding-top: 4px; padding-bottom: 4px; font-size: 13.5px; max-width: 56ch; }
+  .queen-room--loft[data-shelves="2"] .queen-goal svg, .queen-room--loft[data-shelves="3"] .queen-goal svg { height: 44px; width: calc(30px * var(--goal-w, 1)); --loft-full: 44px; }
+  .queen-room--loft[data-shelves="2"] .queen-goal__name, .queen-room--loft[data-shelves="3"] .queen-goal__name { display: none; }
+  .queen-room--loft[data-shelves="2"] .queen-goal[aria-pressed="true"] .queen-goal__name, .queen-room--loft[data-shelves="3"] .queen-goal[aria-pressed="true"] .queen-goal__name { display: block; }
+  .queen-room--loft[data-shelves="2"] .queen-shelf__post, .queen-room--loft[data-shelves="3"] .queen-shelf__post { min-height: 46px; }
+  .queen-room--loft[data-shelves="2"] .queen-shelf__pin, .queen-room--loft[data-shelves="3"] .queen-shelf__pin { bottom: calc(2px + var(--shelf-mark, 1) * 40px); }
+  .queen-room--loft[data-shelves="2"] .queen-shelf .queen-goal::after, .queen-room--loft[data-shelves="3"] .queen-shelf .queen-goal::after { bottom: calc(8px + var(--shelf-mark, 1) * 32px); }
+  .queen-room--loft[data-shelves="2"] .queen-shelf .queen-ledge, .queen-room--loft[data-shelves="3"] .queen-shelf .queen-ledge { min-height: 44px; }
+  .queen-home .queen-room--loft .queen-ledge-wrap .queen-rack .queen-shelf .queen-shelf__down, .queen-home .queen-room--loft .queen-ledge-wrap .queen-rack .queen-rack__hang { min-height: 26px; height: 26px; padding: 1px 8px; }
+  .queen-shelf .queen-ledge { min-height: 44px; }
+  .queen-shelf__post { min-height: 58px; }
+  .queen-home .queen-shelf__pin { bottom: calc(2px + var(--shelf-mark, 1) * 52px); }
+  .queen-shelf .queen-goal::after { bottom: calc(24px + var(--shelf-mark, 1) * 44px); }
+}
+.queen-ledge { display: flex; align-items: flex-end; justify-content: center; flex-wrap: nowrap; gap: clamp(10px, 4cqw, 40px); padding: 0 20px; max-width: 100%; border-bottom: 2px solid var(--queen-clay-shadow); }
+.queen-goal { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 44px; border: 0; background: transparent; padding: 0 0 6px; cursor: pointer; transition: transform .5s var(--queen-ease); }
+.queen-goal svg { display: block; width: calc(48px * var(--goal-w, 1)); height: 74px; overflow: visible; }
+.queen-home--wide .queen-goal svg { width: calc(60px * var(--goal-w, 1)); height: 92px; }
+/* Three widths, so the shelf reads at a glance. The band is form; no figure is on the ledge. */
+.queen-goal--small { --goal-w: .82; } .queen-goal--middling { --goal-w: 1; } .queen-goal--large { --goal-w: 1.2; }
+.queen-goal__glaze { fill: var(--queen-clay-deep); opacity: .85; }
+.queen-goal__neck { fill: var(--queen-clay-shadow); }
+.queen-goal.is-dragging { opacity: .9; transform: translateY(-10px) scale(1.05); z-index: 2; }
+.queen-goal.is-drop { box-shadow: -3px 0 0 var(--queen-bud); }
+.queen-goal[aria-pressed="true"] { transform: translateY(-10px); }
+.queen-goal--lidded[aria-pressed="true"] { transform: rotate(-7deg) translate(-3px, -11px); }
+/* In hand: the one place on the ledge a figure is allowed. */
+.queen-hand { display: grid; gap: 4px; justify-items: center; text-align: center; padding: 8px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--queen-glass); max-width: 34ch; }
+.queen-hand__name { margin: 0; font-family: var(--display); font-weight: 300; font-size: 17px; color: var(--ink); }
+.queen-hand__facts { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; margin: 0; padding: 0; list-style: none; }
+.queen-hand__facts li { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-variant-numeric: tabular-nums; }
+.queen-goal__mouth { fill: none; stroke: var(--queen-clay-shadow); stroke-width: 2; }
+.queen-goal__mark { fill: var(--queen-bud); }
+.queen-goal__name { font-family: var(--mono); font-size: 9.5px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis; }
+.queen-goal[aria-pressed="true"] .queen-goal__name { color: var(--ink); }
+/* lidded things lean away: a pose, so the rule reads with motion off */
+.queen-goal--lidded { transform: rotate(-7deg) translate(-3px, -1px); transform-origin: 50% 100%; }
+.queen-goal--lidded.is-refusing { transform: rotate(-12deg) translate(-9px, -3px); }
+
+/* ---- wide: the office ---- */
+.queen-home--wide { --queen-bank-w: clamp(96px, 13cqw, 150px); }
+.queen-home--wide .queen-room { padding: 14px 28px 16px; }
+.queen-home--wide .queen-room__title { font-size: 22px; }
+
+/* ---- easy read: larger words, findable doors, larger targets ---- */
+.queen-home[data-easy-read="true"] { --queen-line-size: 19.5px; }
+.queen-home[data-easy-read="true"] .queen-door { opacity: .6; }
+.queen-home[data-easy-read="true"] .queen-door::before { transform: scale(1); opacity: .6; }
+.queen-home[data-easy-read="true"] .queen-door__label { opacity: 1; font-size: 11.5px; }
+.queen-home[data-easy-read="true"] .queen-panel { font-size: 16px; }
+.queen-home[data-easy-read="true"] .queen-bank__button, .queen-home[data-easy-read="true"] .queen-go, .queen-home[data-easy-read="true"] .queen-stair, .queen-home[data-easy-read="true"] .queen-pick { font-size: 12px; min-height: 48px; }
+.queen-home[data-easy-read="true"] .queen-room__line, .queen-home[data-easy-read="true"] .queen-room__sub { font-size: 16px; }
+.queen-home[data-easy-read="true"][data-pulse][data-scene] button:focus-visible { outline-width: 4px; }
+
+/* ---- motion is garnish; the still is the data ---- */
+@media (prefers-reduced-motion: no-preference) {
+  .queen-home[data-scene="home"]:not(.is-expanded):not(.is-open) .queen-mount { animation: queen-breathe 6s ease-in-out infinite; }
+  .queen-body { transition: transform .6s var(--queen-ease); }
+  .queen-belly { transition: transform .6s var(--queen-ease); }
+  .queen-vine { transition: transform .7s var(--queen-ease); }
+  .queen-vessel, .queen-glaze, .queen-crown { transition: fill .5s var(--queen-ease), opacity .5s var(--queen-ease); }
+  .queen-trace { animation: queen-sheen 3.4s ease-in-out infinite; }
+}
+@keyframes queen-breathe { 0%, 100% { transform: translateY(14px); } 50% { transform: translateY(-14px); } }
+@keyframes queen-sheen { 0%, 100% { opacity: .35; } 50% { opacity: .85; } }
+@media (prefers-reduced-motion: reduce) {
+  .queen-home *, .queen-home *::before, .queen-home *::after { transition: none !important; animation: none !important; }
+  .queen-door { opacity: .6; }
+  .queen-door::before { transform: scale(1); opacity: .6; }
+  .queen-door__label { opacity: 1; }
+  .queen-goal--lidded.is-refusing { transform: rotate(-7deg) translate(-3px, -1px); }
+}
+:root[data-motion="reduced"] .queen-home *, :root[data-motion="reduced"] .queen-home *::before, :root[data-motion="reduced"] .queen-home *::after { transition: none !important; animation: none !important; }
+:root[data-motion="reduced"] .queen-door { opacity: .6; }
+:root[data-motion="reduced"] .queen-door::before { transform: scale(1); opacity: .6; }
+:root[data-motion="reduced"] .queen-door__label { opacity: 1; }
+
+/* ---- forced colours: shape carries every state; the doors are simply present ---- */
+@media (forced-colors: active) {
+  .queen-door, .queen-move { opacity: 1 !important; border: 1px solid ButtonText; }
+  .queen-door__label { opacity: 1 !important; }
+  .queen-vessel, .queen-foot { fill: Canvas; stroke: CanvasText; stroke-width: 1.5; }
+  .queen-bank-fill { fill: CanvasText; opacity: .35; }
+  .queen-eye, .queen-eye-open, .queen-brow, .queen-mouth, .queen-crown, .queen-stem, .queen-strand, .queen-whisker, .queen-tail, .queen-seam, .queen-jar__mouth, .queen-goal__mouth { stroke: CanvasText; }
+  .queen-speck { display: none; }
+  .queen-goal__glaze, .queen-goal__neck, .queen-jar-ghost { forced-color-adjust: none; }
+  .queen-goal__glaze, .queen-goal__neck { fill: CanvasText; }
+  .queen-pupil, .queen-leaf, .queen-bud, .queen-move__object, .queen-crown-point, .queen-stone, .queen-lid, .queen-goal__mark, .queen-nose, .queen-paw-toe, .queen-ear-fold, .queen-bloom-eye, .queen-bloom-tip { fill: CanvasText; }
+  /* Her two flower colours must not both collapse to one system colour: the white blooms hollow out, the crimson fill. */
+  .queen-bloom--white .queen-petal { fill: Canvas; stroke: CanvasText; stroke-width: 1; }
+  .queen-bloom--red .queen-petal { fill: CanvasText; stroke: CanvasText; }
+  .queen-paw { fill: Canvas; stroke: CanvasText; }
+  .queen-panel, .queen-room { border: 1px solid CanvasText; }
+  .queen-home[data-pulse][data-scene] button:focus-visible { outline: 3px solid Highlight; }
+}
+
+/* ---- short frames: keep her, her line and the stair; let the garnish give first ---- */
+@container queen (max-height: 320px) {
+  .queen-room__line, .queen-panel__hint, .queen-window { display: none; }
+  .queen-line { font-size: 14px; }
+  .queen-room { gap: 2px; padding-block: 4px 6px; }
+  .queen-rail { padding-top: 22px; }
+  .queen-goal svg { width: 40px; height: 60px; }
+  .queen-home[data-mode="sheet"] .queen-panel { max-height: 78%; }
+}
+
+/* ---- the world: one scene behind the controls ---- */
+/* The world she sits in, drawn: the no-WebGL twin of the 3D scenery. It sits
+   behind everything in the field and carries no state, so hiding it when the
+   3D world is live costs no reading. */
+.queen-flat-scene { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.queen-home[data-world="3d"] .queen-flat-scene { visibility: hidden; }
+/* The canvas's own live flag is the one that is always right, so the drawn world
+   yields to it directly rather than through the root's data-world mirror. */
+.queen-field:has(.queen-world[data-live="true"]) .queen-flat-scene { visibility: hidden; }
+.queen-flat-scene--clouds .flat-sky { fill: var(--queen-sky-lover, #f7cfdf); }
+.queen-flat-scene--row .flat-sky { fill: var(--queen-sky-row, #cbdde2); }
+.queen-flat-scene--office .flat-sky { fill: var(--queen-sky-office, #e7dbc8); }
+.flat-puff ellipse { fill: #ffd7e6; }
+.flat-puff--1 ellipse { fill: #ffbcd6; } .flat-puff--2 ellipse { fill: #f3bde4; }
+.flat-puff--3 ellipse { fill: #cfc4f2; } .flat-puff--4 ellipse { fill: #b9d2f7; }
+.queen-flat-scene .flat-far { opacity: .62; }
+.queen-flat-scene .flat-mid { opacity: .85; }
+.flat-harbour { fill: #6d8c9c; }
+.flat-roof { fill: #4b5a60; } .flat-chimney { fill: #fbf6ea; } .flat-pane { fill: #fff1c4; }
+.flat-road { fill: #8e9890; } .flat-pavement { fill: #a5ada3; } .flat-kerb { fill: #c6ccc0; }
+.flat-bollard { fill: #4a5a60; } .flat-lamp rect { fill: #4a5a60; } .flat-lamp-head { fill: #ffeec0; }
+.flat-gull path { fill: none; stroke: #fdfbf4; stroke-width: 3; }
+.flat-window { fill: #cfe3ef; } .flat-frame rect { fill: #6f5946; } .flat-shelf { fill: #9a7350; } .flat-desk { fill: #9a7350; }
+.queen-flat-scene--office .flat-desk { stroke: #7d5b3c; stroke-width: 3; }
+.flat-leaf { fill: #3f7a45; }
+.flat-stem { fill: none; stroke: #2f5f3a; stroke-width: 3; } .flat-plant:nth-child(even) .flat-leaf { fill: #57924f; } .flat-pot { fill: #b4744f; }
+.flat-mug path { fill: #f4efe2; } .flat-brew { fill: #4a2d1c; }
+.flat-mug-handle { fill: none; stroke: #f4efe2; stroke-width: 9; }
+.flat-steam path { fill: none; stroke: #fffaf0; stroke-width: 4; opacity: .5; stroke-linecap: round; }
+.flat-book rect { fill: #efe7d6; } .flat-pen { fill: #8a3b2d; }
+/* Ambient motion, the drawn path's own: the same three gestures the 3D clock makes. */
+@media (prefers-reduced-motion: no-preference) {
+  :root[data-atmosphere="playing"] .queen-flat-scene--clouds .flat-mid { animation: queen-drift 54s linear infinite; }
+  :root[data-atmosphere="playing"] .queen-flat-scene--clouds .flat-near { animation: queen-drift 86s linear infinite reverse; }
+  :root[data-atmosphere="playing"] .flat-gull { animation: queen-cross 22s linear infinite; }
+  :root[data-atmosphere="playing"] .flat-vine { animation: queen-sway 7s ease-in-out infinite; transform-origin: top center; }
+  :root[data-atmosphere="playing"] .flat-vine--1 { animation-duration: 9s; } :root[data-atmosphere="playing"] .flat-vine--2 { animation-duration: 8s; }
+  :root[data-atmosphere="playing"] .flat-steam path { animation: queen-rise 4.5s ease-in-out infinite; }
+  :root[data-atmosphere="playing"] .flat-steam path:last-child { animation-delay: 2.2s; }
+}
+@keyframes queen-drift { from { transform: translateX(-3%); } to { transform: translateX(3%); } }
+@keyframes queen-cross { from { transform: translate(-60px, 150px); } to { transform: translate(1060px, 110px); } }
+@keyframes queen-sway { 0%, 100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+@keyframes queen-rise { 0% { opacity: 0; transform: translateY(6px); } 40% { opacity: .55; } 100% { opacity: 0; transform: translateY(-22px); } }
+.queen-world { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+.queen-world__canvas { display: block; }
+.queen-centre, .queen-door { z-index: 1; }
+/* When the world is live the drawn figure and the flat portraits keep their boxes and lose their paint. */
+.queen-home[data-world="3d"] .queen-svg, .queen-home[data-world="3d"] .queen-bank-flat { visibility: hidden; }
+.queen-home[data-world="3d"] .queen-mount { animation: none !important; }
+/* Banks in the flat path are the studio's own 2D twins: fired reads fired there too. */
+.queen-bank-portrait { display: block; width: var(--queen-bank-w); aspect-ratio: 300 / 360; color: var(--queen-clay-shadow); }
+.queen-bank-flat { display: block; width: 100%; height: 100%; overflow: visible; }
+.queen-bank-portrait[data-fired="false"] .queen-bank-flat { filter: saturate(.8) brightness(1.04); }
+.queen-goalrow { display: flex; gap: 4px; justify-content: center; margin-top: 2px; }
+.queen-bank-portrait--small { width: calc(var(--queen-bank-w) * .42); }
+/* her look */
+.queen-look { margin: 14px 0 6px; }
+.queen-look__row { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; }
+.queen-swatch { width: 32px; height: 32px; min-width: 32px; min-height: 32px; border-radius: 50%; border: 2px solid var(--line); background: var(--swatch); cursor: pointer; padding: 0; }
+.queen-swatch[aria-pressed="true"] { border-color: var(--ink); box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--ink); }
+
+/* ---- her charms: the couple's small things, on her and in the bin ---- */
+.queen-charm__body { stroke: var(--queen-clay-deep); stroke-width: .6; stroke-linejoin: round; }
+.queen-charm__ink { fill: var(--queen-ink); }
+.queen-charm-icon { display: block; flex: none; }
+/* while a charm is picked up she is the place to press it; the target is a real control over her */
+.queen-charm-target { position: absolute; inset: 0; z-index: 3; border: 0; padding: 0; margin: 0; background: transparent; cursor: crosshair; touch-action: none; border-radius: 40% 40% 30% 30%; }
+.queen-charm-target:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.queen-home[data-charm-selected="true"] .queen-figure { cursor: default; }
+.queen-charms-tool { margin: 18px 0 6px; }
+.queen-charm-bin { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 12px; }
+.queen-charm-pick {
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  min-width: 56px; min-height: 56px; padding: 6px 4px 4px; border-radius: 12px; border: 1px solid var(--line); background: transparent; color: var(--ink); cursor: pointer;
+  font: inherit; font-family: var(--mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
+}
+.queen-charm-pick:hover { border-color: var(--muted); }
+.queen-charm-pick.is-unearned { opacity: .5; cursor: default; border-style: dashed; }
+.queen-charm-pick[aria-disabled="true"]:not(.is-unearned) { cursor: default; opacity: .6; }
+.queen-charm-pick__label { max-width: 64px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.queen-charm-list { list-style: none; margin: 0 0 8px; padding: 0; border-top: 1px solid var(--line); }
+.queen-charm-row { border-bottom: 1px solid var(--line); }
+.queen-charm-row__pick {
+  display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px; padding: 6px 4px; border: 0; background: transparent; color: var(--ink); cursor: pointer; text-align: left; font: inherit; font-size: 13.5px;
+}
+.queen-charm-row__pick small { display: block; color: var(--muted); font-size: 12px; }
+.queen-charm-row__pick[aria-pressed="true"] { background: color-mix(in srgb, var(--queen-clay) 35%, transparent); border-radius: 8px; }
+.queen-charm-bench { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 4px 4px 10px; }
+.queen-charm-bench__colours { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.queen-swatch--small { width: 26px; height: 26px; min-width: 26px; min-height: 26px; border-width: 1px; }
+.queen-pick--off { color: var(--ink); border-color: var(--ink); }
+.queen-charm-empty { font-size: 13px; }
+.queen-home[data-easy-read="true"] .queen-charm-pick, .queen-home[data-easy-read="true"] .queen-charm-row__pick { font-size: 12px; min-height: 48px; }
+.queen-home[data-easy-read="true"] .queen-charm-row__pick { font-size: 16px; }
+.queen-home[data-easy-read="true"] .queen-swatch--small { width: 32px; height: 32px; min-width: 32px; min-height: 32px; }
+@media (forced-colors: active) {
+  .queen-charm__body { fill: Canvas !important; stroke: CanvasText; stroke-width: 1; }
+  .queen-charm__ink { fill: CanvasText; }
+  .queen-charm-target:focus-visible { outline: 3px solid Highlight; }
+  .queen-charm-pick, .queen-charm-row__pick[aria-pressed="true"] { border: 1px solid ButtonText; }
+}
+
+/* ---- Her creation and her history (2026-09-14): rings, the wheel, the underside, the shelf, the living light ---- */
+/* Growth rings: a shallow band per closed Chapter. A band, not a stripe. */
+.queen-ring { fill: none; stroke: var(--queen-clay-deep); stroke-width: 1.1; stroke-linecap: round; opacity: .42; }
+/* The living light tints the field across hours; it never touches her glaze classes. */
+.queen-field::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: -1;
+  background:
+    radial-gradient(ellipse at 50% calc(88% - 60% * var(--queen-light-level, .8)), color-mix(in srgb, #ffd9a6 calc(28% * var(--queen-light-warmth, .6)), transparent), transparent 62%),
+    linear-gradient(color-mix(in srgb, #7a8db0 calc(14% * (1 - var(--queen-light-level, .8))), transparent), transparent 70%);
+}
+.queen-field { isolation: isolate; }
+/* Tipped over: her underside, the makers' marks. */
+.queen-underside { fill: var(--queen-clay-deep); stroke: var(--queen-clay-shadow); stroke-width: 1; }
+.queen-underside-ring { fill: none; stroke: var(--queen-clay-shadow); stroke-width: .8; opacity: .6; }
+.queen-mark { fill: var(--ink); }
+.queen-mark--initials { font: 600 22px ui-serif, Georgia, serif; letter-spacing: .04em; }
+.queen-mark--date { font: 11px var(--mono, ui-monospace, monospace); letter-spacing: .06em; }
+.queen-home[data-tipped="true"] .queen-move, .queen-home[data-tipped="true"] .queen-charm-target { display: none; }
+/* The wheel. */
+.queen-wheel { margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.queen-wheel__title { margin: 2px 0 4px; font-size: 16px; font-weight: 600; }
+.queen-wheel__stage { width: min(180px, 60%); aspect-ratio: 240 / 340; margin: 8px auto; cursor: ew-resize; touch-action: pan-y; user-select: none; }
+.queen-wheel__preview { display: block; width: 100%; height: 100%; overflow: visible; }
+.queen-wheel__part.is-turning .queen-vessel { stroke: var(--queen-gold); stroke-width: 2; }
+.queen-wheel__label { display: block; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 8px 0 4px; }
+.queen-wheel__turn { display: block; width: 100%; min-height: 32px; accent-color: var(--queen-gold); }
+.queen-home[data-pulse][data-scene] .queen-wheel__turn:focus-visible { outline: 3px solid var(--queen-focus); outline-offset: 4px; }
+/* Our Story's shelf: stored stills, drawn flat, wrapping — never wider than the panel. */
+.queen-story { margin: 18px 0 6px; padding-top: 14px; border-top: 1px solid var(--line); }
+.queen-shelf-portraits { list-style: none; margin: 8px 0 0; padding: 0 0 6px; display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: flex-end; border-bottom: 2px solid var(--queen-clay-shadow); }
+.queen-portrait { flex: 0 0 auto; width: 54px; }
+.queen-portrait figure { margin: 0; text-align: center; }
+.queen-portrait__svg { width: 54px; height: 76px; }
+.queen-portrait figcaption { font-family: var(--mono); font-size: 10px; letter-spacing: .08em; color: var(--muted); }
+.queen-marks { margin-top: 14px; }
+.queen-home[data-easy-read="true"] .queen-wheel__turn { min-height: 48px; }
+.queen-home[data-easy-read="true"] .queen-portrait figcaption, .queen-home[data-easy-read="true"] .queen-wheel__label { font-size: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .queen-field::before { transition: none; }
+}
+@media (forced-colors: active) {
+  .queen-field::before { display: none; }
+  .queen-ring { stroke: CanvasText; opacity: .6; }
+  .queen-underside { fill: Canvas; stroke: CanvasText; }
+  .queen-mark { fill: CanvasText; }
+  .queen-wheel__part.is-turning .queen-vessel { stroke: Highlight; }
+  .queen-shelf-portraits { border-bottom-color: CanvasText; }
+}
+
+/* ---- the world-home frame: Our Home as one fixed, edge-to-edge world (App.tsx sets data-world-home while the
+   Queen's Nest composes the household Home). No page scroll at any width; the two-space tabs above her and the
+   fixed nav under her are the only chrome; the theme's page world stays as the ground. Every other destination,
+   the personal Home and the panel composition keep the ordinary shell. ---- */
+.app[data-world-home="true"] {
+  position: fixed; inset: 0;
+  max-width: none; margin: 0; padding: 0;
+  min-height: 0; height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.app[data-world-home="true"] > .app-shell { height: 100%; min-height: 0; }
+.app[data-world-home="true"] .view-switch {
+  position: relative; z-index: 3;
+  box-sizing: border-box; width: min(100%, 760px); margin: 0 auto;
+  padding: calc(10px + env(safe-area-inset-top, 0px)) 14px 8px;
+}
+.app[data-world-home="true"] [data-app-page="true"], .app[data-world-home="true"] .world-page { min-height: 0; }
+.app[data-world-home="true"] .page-world-art { border-radius: 0; }
+.app[data-world-home="true"] .queen-home { min-height: 180px; }
+/* Transient trust surfaces the App keeps above her (books validation, sync banners, notices) stay compact so they push her, not the page. */
+.app[data-world-home="true"] > .app-shell > :is(.command-banner, .command-chip, .card) { margin: 6px auto; width: min(100% - 24px, 760px); }
+
+/* The Status door wears the App's attention label: visible at rest only while something needs attention. */
+.queen-door__badge {
+  position: absolute; right: 0; bottom: calc(100% + 6px);
+  font-family: var(--mono); font-size: 9.5px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; white-space: nowrap;
+  padding: 3px 8px; border-radius: 999px; border: 1px solid var(--queen-bud); color: var(--queen-bud); background: var(--queen-glass);
+}
+.queen-door[data-attention="true"], .queen-door[data-attention="true"] .queen-door__label { opacity: 1; }
+.queen-door[data-attention="true"]::before { transform: scale(1); opacity: 1; }
+.queen-door[data-attention="true"] { color: var(--queen-bud); }
+
+/* Behind the Status door: what the top bar, the sync line and the switcher used to say. */
+.queen-shell { margin: 12px 0 16px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: color-mix(in srgb, var(--card) 70%, transparent); }
+.queen-shell--warning { border-color: var(--queen-bud); }
+.queen-shell--danger { border-color: var(--queen-bud); box-shadow: inset 3px 0 0 var(--queen-bud); }
+.queen-shell__attention { margin: 8px 0 12px; padding: 10px 12px; border-radius: 10px; background: color-mix(in srgb, var(--queen-bud) 12%, transparent); }
+.queen-shell__attention p { margin: 0 0 8px; }
+.queen-shell .ledger-switcher { margin: 12px 0 0; }
+.queen-shell .queen-acts { margin-top: 12px; }
+.queen-link { font: inherit; padding: 0; border: 0; background: none; color: var(--queen-ink); text-decoration: underline; cursor: pointer; min-height: 0; }
+.queen-link:disabled { cursor: default; opacity: .6; }
+@media (forced-colors: active) {
+  .queen-door__badge { border-color: CanvasText; color: CanvasText; background: Canvas; }
+  .queen-shell { border-color: CanvasText; }
+}
+/* Due repeating items are reviewed in place on the ordinary page; over the world they rise as a sheet the arrival link opens, so nothing dated is lost under her. */
+.due-preview-host[data-world-sheet="true"] .due-preview-inline { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; margin: 0 auto; max-width: 760px; max-height: min(78dvh, calc(100dvh - 72px)); overflow: auto; border-radius: 14px 14px 0 0; padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); }
+.app[data-world-home="true"] .due-arrival { position: relative; z-index: 3; width: min(100% - 28px, 732px); margin: 0 auto 4px; }
+.due-preview-host[hidden] { display: none; }
+
+
+/* ---- the kitty bank, drawn: the same cat the studio throws, flat ---- */
+/* `queenBankSculpture` spins this silhouette on a lathe; `QueenBankFlat` traces
+   the same points. A room with no WebGL keeps the cat, not a pot. */
+.queen-bank-flat { display: block; overflow: visible; }
+/* The kiln (2026-09-15): the clay is chalky bisque until money stands in her; the glaze below the fill line is the fired look,
+   deep and glossy, with a sheen down its flank; when she is full the head, ears and paws fire with her — glazed to the crown. */
+.queen-bank-flat__clay { fill: var(--queen-bisque, color-mix(in srgb, var(--queen-clay) 62%, #e9e1d3)); }
+.queen-bank-flat__sheen { stroke: color-mix(in srgb, #fff 55%, transparent); opacity: .9; }
+.queen-bank-flat[data-fired="true"] .queen-bank-flat__clay:not(.is-hollow), .queen-bank-flat[data-fired="true"] .queen-bank-flat__ear { fill: var(--queen-clay-deep); }
+.queen-bank-flat__clay.is-hollow { fill: none; }
+.queen-bank-flat__edge { stroke: var(--queen-clay-deep); }
+.queen-bank-flat__glaze { fill: var(--queen-clay-deep); opacity: .85; }
+.queen-bank-flat__ear { fill: var(--queen-clay); stroke: var(--queen-clay-deep); stroke-width: 1.5; }
+.queen-bank-flat__eye { fill: var(--queen-clay-shadow); }
+.queen-bank-flat__nose { fill: var(--queen-clay-shadow); }
+.queen-bank-flat__tail { stroke: var(--queen-clay-deep); }
+/* Lidded refuses; an open slot accepts. The rim is the brass one the studio fires. */
+.queen-bank-flat__lid { fill: var(--queen-clay-shadow); }
+.queen-bank-flat__rim { fill: var(--queen-brass, var(--copper)); }
+.queen-bank-flat__slot { fill: var(--ink); }
+.queen-bank-flat__neck { fill: var(--queen-clay-shadow); }
+/* Her dressing (queenBankDress): the postman's felt cap, the calendar's paper, the wind-up key's brass, the bell, the pennant.
+   Every hat sits behind the head so the crown — the slot that accepts, the lid that refuses — stays in front. */
+.queen-bank-flat__felt { fill: var(--queen-felt, #3b4a63); }
+.queen-bank-flat__paper, .queen-bank-flat__paper-brim { fill: var(--queen-paper, #efe6d2); stroke: var(--queen-clay-deep); stroke-width: 1; }
+.queen-bank-flat__paper-line { stroke: var(--queen-clay-deep); }
+.queen-bank-flat__ink { fill: var(--ink); }
+.queen-bank-flat__ink-line { stroke: var(--ink); }
+.queen-bank-flat__brass { fill: var(--queen-brass, var(--copper)); }
+.queen-bank-flat__brass-ring { stroke: var(--queen-brass, var(--copper)); }
+.queen-bank-flat__pole { fill: var(--queen-clay-deep); }
+.queen-bank-flat[data-hollow="true"] .queen-bank-flat__dress { opacity: .5; }
+.queen-bank-flat[data-frosted="true"] .queen-bank-flat__dress { opacity: .75; }
+[data-hollow="true"] .queen-bank-flat__eye, .queen-bank-flat[data-hollow="true"] .queen-bank-flat__eye { display: none; }
+.queen-bank-flat[data-hollow="true"] .queen-bank-flat__clay,
+.queen-bank-flat[data-hollow="true"] .queen-bank-flat__ear { fill: none; }
+.queen-bank-flat[data-hollow="true"] .queen-bank-flat__edge { stroke-dasharray: 3 3; }
+.queen-jar .queen-bank-flat { width: 52px; height: 52px; }
+.queen-jar.is-outlier .queen-bank-flat { width: 70px; height: 70px; transform: translateY(-16px) rotate(-7deg); transform-origin: 50% 100%; }
+.queen-goal__vessel { display: block; }
+.queen-goal .queen-bank-flat { width: calc(70px * var(--goal-w, 1)); height: calc(70px * var(--goal-w, 1)); }
+.queen-home--wide .queen-goal .queen-bank-flat { width: calc(96px * var(--goal-w, 1)); height: calc(96px * var(--goal-w, 1)); }
+
+/* ---- the house axis: one line, three floors, and up goes up ---- */
+/* Across belongs to the room — the ribbon runs through time, the ledge through
+   order — so the browser keeps horizontal panning and the house takes vertical. */
+.queen-home { touch-action: pan-x; }
+.queen-field, .queen-room { cursor: grab; }
+.queen-home[data-hauling="true"] .queen-field, .queen-home[data-hauling="true"] .queen-room { cursor: grabbing; }
+.queen-field button, .queen-field a, .queen-room button, .queen-room a, .queen-room input { cursor: pointer; }
+/* The house follows the hand. `translate` rather than `transform`, so the rooms
+   keep the slide they enter and leave on. */
+.queen-home[data-hauling="true"] .queen-field, .queen-home[data-hauling="true"] .queen-room { translate: 0 var(--queen-haul, 0px); }
+.queen-ledge, .queen-gate-view { cursor: auto; }
+
+/* The rail: the door for everyone who did not find the gesture. */
+.queen-house-rail {
+  position: absolute; left: 10px; top: 50%; translate: 0 -50%; z-index: 4;
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 5px; border: 1px solid var(--line); border-radius: 12px;
+  background: color-mix(in srgb, var(--paper) 78%, transparent); backdrop-filter: blur(4px);
+}
+.queen-house-rail__stop {
+  display: flex; align-items: center; gap: 7px;
+  min-height: 30px; padding: 3px 8px 3px 5px; border: 0; border-radius: 8px;
+  background: transparent; cursor: pointer; color: var(--muted); text-align: left;
+}
+.queen-house-rail__mark { width: 22px; height: 7px; border-radius: 2px; border: 1px solid var(--muted); flex: 0 0 auto; }
+.queen-house-rail__stop[aria-current="true"] { color: var(--ink); }
+.queen-house-rail__stop[aria-current="true"] .queen-house-rail__mark { background: var(--ink); border-color: var(--ink); }
+.queen-house-rail__stop:hover { color: var(--ink); }
+.queen-house-rail__name { font-family: var(--display); font-weight: 300; font-size: 13px; white-space: nowrap; }
+.queen-house-rail__role { font-family: var(--mono); font-size: 9px; letter-spacing: .12em; text-transform: uppercase; opacity: .75; white-space: nowrap; }
+/* A room's content clears the rail rather than running under it. */
+.queen-home--phone .queen-room { padding-left: 52px; }
+.queen-home--wide .queen-room { padding-left: 196px; }
+/* On a phone the rail is the marks alone: the floor names live on the doors. */
+.queen-home--phone .queen-house-rail { left: 6px; padding: 4px; }
+.queen-home--phone .queen-house-rail__name, .queen-home--phone .queen-house-rail__role { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.queen-home--phone .queen-house-rail__stop { padding: 3px 5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .queen-home[data-hauling="true"] .queen-field, .queen-home[data-hauling="true"] .queen-room { translate: none; }
+}
+@media (forced-colors: active) {
+  .queen-bank-flat__clay, .queen-bank-flat__ear { fill: Canvas; }
+  .queen-bank-flat__edge { stroke: CanvasText; stroke-width: 2; }
+  .queen-bank-flat__glaze, .queen-bank-flat__neck, .queen-bank-flat__lid, .queen-bank-flat__rim, .queen-bank-flat__slot, .queen-bank-flat__eye { forced-color-adjust: none; fill: CanvasText; }
+  .queen-bank-flat__tail { stroke: CanvasText; }
+  .queen-house-rail { border: 1px solid CanvasText; background: Canvas; }
+  .queen-house-rail__mark { border-color: CanvasText; }
+  .queen-house-rail__stop[aria-current="true"] .queen-house-rail__mark { background: Highlight; }
+}
+
+/* ---- the loft's banks are the studio's own cats, sized by their goal (2026-09-15) ----
+   Jonathan: "kitty banks should also be scaled to their goal sizes. a 10$ goal will be teeny tiny compared to a 10,000 goal".
+   --loft-full is the height a $10,000 bank stands at in this frame (the shelf-count and frame rules above set it);
+   --bank-scale comes from loftBankScale() on the item. The seat is the size of the bank when full, so an emptier cat
+   visibly has room to grow into. The tide (the shelf's pin) is read on the seat itself, so it fits every size. */
+.queen-home .queen-room--loft .queen-goal .queen-goal__vessel { position: relative; display: block; }
+.queen-home .queen-room--loft .queen-shelf .queen-goal .queen-goal__kitty {
+  --loft-h: max(16px, calc(var(--loft-full, 74px) * var(--bank-scale, 1) / 1.21 * var(--loft-zoom, 1)));
+  height: var(--loft-h); width: calc(var(--loft-h) * 300 / 360); max-width: none;
+}
+.queen-home--wide .queen-room--loft[data-shelves="1"] .queen-goal .queen-goal__kitty { --loft-full: 92px; }
+.queen-home .queen-room--loft .queen-rack .queen-shelf .queen-goal::after { content: none; }
+.queen-home .queen-room--loft .queen-shelf .queen-goal__vessel::after {
+  content: ""; position: absolute; left: -4px; right: -4px; bottom: calc(var(--shelf-mark, 1) * 100%);
+  border-top: 1px dashed color-mix(in srgb, var(--queen-brass, var(--copper)) 85%, transparent); pointer-events: none;
+}
+.queen-home .queen-room--loft .queen-shelf[data-mark-full] .queen-goal__vessel::after { content: none; }
+/* ---- held, not yet sent (2026-09-15): one save when the work is put down ---- */
+.queen-held { display: inline-flex; align-items: center; gap: 8px; }
+.queen-held__mark { font: 500 9.5px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.queen-held__mark::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: var(--queen-brass, var(--copper)); vertical-align: 1px; }
+.queen-charms-tool .queen-held { margin-top: 8px; }
+/* ---- the shelf tools' cards (2026-09-15): a tap on the weight, the pin or a divider says how it works and gives it a slider.
+   The card stands in the line's place under the rack — never over a shelf — and the brass still slides by hand while it is open. */
+.queen-tool-card { width: min(100%, 520px); padding: 10px 14px 12px; border-radius: 14px; text-align: left;
+  background: color-mix(in srgb, var(--paper) 72%, transparent); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 55%, transparent), 0 6px 18px color-mix(in srgb, var(--ink) 16%, transparent); color: var(--ink); }
+.queen-tool-card:focus { outline: none; }
+.queen-tool-card:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.queen-tool-card__head { display: flex; align-items: center; gap: 8px; }
+.queen-tool-card__glyph { flex: 0 0 auto; width: 18px; height: 12px; border-radius: 3px; background: var(--queen-brass, var(--copper)); }
+.queen-tool-card__glyph[data-tool="pin"] { width: 12px; height: 12px; border-radius: 50%; }
+.queen-tool-card__glyph[data-tool="divider"] { width: 3px; height: 16px; border-radius: 1px; }
+.queen-tool-card__title { flex: 1 1 auto; min-width: 0; margin: 0; font: 400 15px/1.2 var(--display); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.queen-home .queen-tool-card .queen-tool-card__close { flex: 0 0 auto; width: 32px; height: 32px; min-height: 32px; min-width: 32px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink); font-size: 20px; line-height: 1; cursor: pointer; }
+.queen-tool-card__how { margin: 6px 0 8px; font-size: 13px; line-height: 1.4; color: color-mix(in srgb, var(--ink) 82%, transparent); }
+.queen-tool-card__slider { display: grid; gap: 2px; margin: 4px 0; }
+.queen-tool-card__label { display: flex; justify-content: space-between; gap: 8px; font: 500 10px/1.3 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.queen-tool-card__label b { font-weight: 600; color: var(--ink); white-space: nowrap; }
+.queen-home .queen-tool-card input[type="range"] { width: 100%; height: 28px; min-height: 28px; margin: 0; accent-color: var(--queen-brass, var(--copper)); }
+.queen-tool-card__now { margin: 6px 0 0; font-size: 12.5px; font-style: italic; color: color-mix(in srgb, var(--ink) 78%, transparent); }
+.queen-shelf__pin[data-tool-open] .queen-shelf__pin-head, .queen-shelf__weight[data-tool-open], .queen-divider[data-tool-open]::before { box-shadow: 0 0 0 3px color-mix(in srgb, var(--queen-brass, var(--copper)) 45%, transparent); }
+@container queen (max-height: 560px) { .queen-tool-card__how { margin: 2px 0 4px; font-size: 12px; } .queen-tool-card { padding: 6px 12px 8px; } }
+@container queen (max-height: 400px) { .queen-tool-card__how, .queen-tool-card__now { display: none; } .queen-home .queen-room--loft .queen-ledge-wrap > .queen-tool-card { padding: 4px 10px 6px; bottom: -54px; } }
+/* ---- the money gun (2026-09-15): picked up by the Fund's custodian; each tap on a bank throws a bill; one Send posts the round ---- */
+.queen-gun { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; max-width: 100%; }
+.queen-home .queen-room--loft .queen-ledge-wrap .queen-gun .queen-gun__trigger { display: inline-flex; align-items: center; gap: 8px; min-height: 34px; height: auto; padding: 3px 12px 3px 6px; border: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); border-radius: 999px;
+  background: color-mix(in srgb, var(--paper) 70%, transparent); backdrop-filter: blur(12px); color: var(--ink); font: 500 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.queen-gun__trigger[aria-pressed="true"] { background: color-mix(in srgb, #2f8a4e 22%, var(--paper)); border-color: #2f8a4e; }
+.queen-gun__trigger:disabled { opacity: .5; cursor: default; }
+.queen-gun__trigger:focus-visible, .queen-gun__bill:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.queen-gun__art { width: 46px; height: 26px; overflow: visible; transition: transform .2s var(--queen-ease); }
+.queen-gun__trigger[aria-pressed="true"] .queen-gun__art { transform: rotate(-14deg); }
+.queen-gun__body { fill: #3e8a58; stroke: #1f4b2f; stroke-width: 1.5; }
+.queen-gun__barrel { fill: #c9a44b; stroke: #6b5520; stroke-width: 1.5; }
+.queen-gun__grip { fill: #6b4a2f; stroke: #3a2716; stroke-width: 1.5; }
+.queen-gun__bills { fill: #cfe8c9; stroke: #3e8a58; stroke-width: 1; }
+.queen-gun__sign { font: 700 7px/1 var(--mono); fill: #1f4b2f; }
+.queen-gun__bills-pick { display: inline-flex; gap: 4px; }
+.queen-home .queen-room--loft .queen-ledge-wrap .queen-gun .queen-gun__bill { min-width: 44px; min-height: 30px; height: 30px; padding: 0 8px; border: 1px solid #3e8a58; border-radius: 6px; background: #eef7ea; color: #1f4b2f; font: 600 11px/1 var(--mono); cursor: pointer; }
+.queen-gun__bill[aria-checked="true"] { background: #3e8a58; color: #fff; }
+/* Armed: the banks become targets. */
+.queen-room--loft[data-armed="true"] .queen-goal--open { cursor: crosshair; }
+.queen-room--loft[data-armed="true"] .queen-goal--open .queen-goal__vessel { outline: 2px dashed color-mix(in srgb, #3e8a58 70%, transparent); outline-offset: 3px; border-radius: 10px; }
+.queen-room--loft[data-armed="true"] .queen-rack { cursor: crosshair; }
+.queen-cash { position: absolute; left: 0; top: 0; z-index: 30; width: 26px; height: 14px; border-radius: 2px; pointer-events: none;
+  display: grid; place-items: center; font: 700 9px/1 var(--mono); color: #1f4b2f;
+  background: linear-gradient(90deg, #b9deb0, #e6f4e1 50%, #b9deb0); box-shadow: inset 0 0 0 1px #3e8a58, 0 2px 4px color-mix(in srgb, #000 25%, transparent); }
+.queen-gun__send { background: #3e8a58 !important; color: #fff !important; }
+@media (forced-colors: active) { .queen-gun__body, .queen-gun__barrel, .queen-gun__grip, .queen-gun__bills { fill: CanvasText; } .queen-gun__bill[aria-checked="true"] { forced-color-adjust: none; background: Highlight; color: HighlightText; } }
+@container queen (max-width: 419px) { .queen-gun__trigger span { font-size: 9px; } .queen-gun__art { width: 36px; height: 20px; } }
+/* The jug and the gun share one row; the bills fly in their own layer, out of the room's flow. */
+.queen-loft-hands { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 6px 10px; max-width: 100%; }
+.queen-home .queen-room > .queen-cash-layer { position: absolute; inset: 0; z-index: 30; pointer-events: none; overflow: visible; }
+.queen-cash-layer .queen-cash { position: absolute; }
+/* The tool card rises over the acts and the stair at the foot of the room, so the rack it adjusts keeps its whole height. */
+.queen-home .queen-room--loft .queen-ledge-wrap > .queen-tool-card { position: absolute; left: 50%; bottom: 0; translate: -50% 0; z-index: 6; width: min(calc(100% - 16px), 520px); }
+.queen-room--loft .queen-ledge-wrap { position: relative; }
+/* A short loft (a 320×568 phone under the chrome): the gun is its icon, beside the jug on one line, so the rack keeps the wall. */
+@container queen (max-height: 400px) {
+  .queen-home .queen-room--loft .queen-loft-hands, .queen-home .queen-room--loft .queen-loft-hands .queen-jug, .queen-home .queen-room--loft .queen-gun { flex-wrap: nowrap; }
+  .queen-home .queen-room--loft .queen-ledge-wrap .queen-loft-hands .queen-gun .queen-gun__trigger { padding: 2px 6px; min-height: 28px; height: 28px; }
+  .queen-home .queen-room--loft .queen-gun__trigger span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .queen-home .queen-room--loft .queen-loft-hands .queen-jug { padding: 1px 8px; gap: 6px; }
+  .queen-home .queen-room--loft .queen-ledge-wrap .queen-loft-hands .queen-jug .queen-jug__tilt { width: min(110px, 28cqw); flex: 0 0 auto; }
+  .queen-home .queen-room--loft .queen-ledge-wrap .queen-loft-hands .queen-gun .queen-gun__bill { min-width: 34px; height: 26px; min-height: 26px; padding: 0 4px; }
+  .queen-home .queen-room--loft .queen-loft-hands .queen-jug { min-width: 0; flex: 0 1 auto; }
+  .queen-home .queen-room--loft .queen-loft-hands .queen-jug__safe { min-width: 0; flex: 0 1 auto; }
+}
+@container queen (max-height: 400px) { .queen-home .queen-room--loft .queen-ledge-wrap > .queen-tool-card { bottom: -54px; padding: 4px 10px 6px; } }
+/* A phone-width loft: the gun is its icon beside the jug, so the jug row stays one line and the rack keeps its height. */
+@container queen (max-width: 899px) {
+  .queen-home .queen-room--loft .queen-loft-hands { flex-wrap: nowrap; }
+  .queen-home .queen-room--loft .queen-loft-hands .queen-jug { min-width: 0; flex: 0 1 auto; }
+  .queen-home .queen-room--loft .queen-loft-hands .queen-jug__safe { min-width: 0; flex: 0 1 auto; }
+  .queen-home .queen-room--loft .queen-ledge-wrap .queen-loft-hands .queen-gun .queen-gun__trigger { padding: 2px 6px; min-height: 34px; height: 34px; }
+  .queen-home .queen-room--loft .queen-gun__trigger span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .queen-home .queen-room--loft .queen-gun { flex-wrap: nowrap; }
+  .queen-home .queen-room--loft .queen-ledge-wrap .queen-loft-hands .queen-gun .queen-gun__bill { min-width: 34px; padding: 0 4px; }
+}
+/* The held mark rides in the loft's title chip, so it never costs the rack a line. */
+.queen-held--head { margin-left: 10px; vertical-align: middle; }
+.queen-home .queen-room--loft .queen-room__head .queen-held.queen-held--head .queen-held__done { min-height: 26px; height: 26px; padding: 0 10px; border: 0; border-radius: 999px; background: var(--ink); color: var(--paper); font: 600 10px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; cursor: pointer; }
+.queen-home .queen-room--loft .queen-room__head .queen-held__done:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+@container queen (max-width: 419px) { .queen-held--head .queen-held__mark { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); } }
+
+/* ---- the loft's size pane (2026-09-15): the same − / + as the cellar, in the title chip ---- */
+.queen-loft-zoom { display: inline-flex; align-items: center; gap: 0; margin: -4px 0 -4px 8px; line-height: 1; padding-left: 6px; border-left: 1px solid color-mix(in srgb, var(--ink) 22%, transparent); vertical-align: middle; }
+.queen-home .queen-room--loft .queen-room__head .queen-loft-zoom .queen-loft-zoom__step { width: 26px; height: 26px; min-width: 26px; min-height: 26px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--ink); font: 600 17px/1 var(--mono); cursor: pointer; }
+.queen-home .queen-room--loft .queen-room__head .queen-loft-zoom .queen-loft-zoom__step:disabled { opacity: .35; cursor: default; }
+.queen-home .queen-room--loft .queen-room__head .queen-loft-zoom .queen-loft-zoom__step:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.queen-loft-zoom__read { font-family: var(--mono); font-size: 10px; letter-spacing: .06em; min-width: 34px; text-align: center; color: var(--muted); }
+@media (pointer: coarse) { .queen-home .queen-room--loft .queen-room__head .queen-loft-zoom .queen-loft-zoom__step { width: 36px; height: 36px; min-width: 36px; min-height: 36px; } }
+@container queen (max-width: 419px) { .queen-loft-zoom__read { display: none; } }
+.queen-room--loft .queen-rack { touch-action: pan-x pan-y; }
+/* The title chip keeps one line: while the rack is held, its standing hint gives way to the Done. */
+.queen-room--loft .queen-room__head:has(.queen-held--head) .queen-room__sub-hint { display: none; }
+
+/* ---- the window: the island in miniature, and a door to it (Our Path step 11) ---- */
+/* `section.queen-window` outranks the older decorative `.queen-window` square (and its short-frame hide) above. */
+section.queen-window { position: static; display: block; width: auto; height: auto; margin-top: 14px; border: 0; opacity: 1; pointer-events: auto; }
+section.queen-window::before, section.queen-window::after { content: none; }
+.queen-window__pane { position: relative; max-width: 240px; aspect-ratio: 1; margin: 6px 0; padding: 8px; border-radius: 50% 50% 14px 14px / 40% 40% 14px 14px; border: 3px solid var(--queen-clay-deep, var(--line)); background: radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--card) 80%, var(--theme-second, #4f6b4a) 20%), var(--paper-2, var(--paper))); box-shadow: inset 0 0 0 2px var(--card), inset 0 8px 18px -12px rgb(0 0 0 / .35); overflow: hidden; }
+.queen-window__pane::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(90deg, transparent calc(50% - 1.5px), var(--queen-clay-deep, var(--line)) calc(50% - 1.5px) calc(50% + 1.5px), transparent calc(50% + 1.5px)); opacity: .45; }
+.queen-window__caption { margin: 4px 0; font-family: var(--theme-display, var(--display)); font-size: 15px; color: var(--ink); }

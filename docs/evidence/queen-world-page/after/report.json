@@ -1,0 +1,2374 @@
+{
+  "mode": "after",
+  "records": [
+    {
+      "label": "classic 3d books gate",
+      "settled": true
+    },
+    {
+      "label": "classic 3d 320x568",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "scrollHeight": 568,
+      "clientHeight": 568,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 320,
+        "h": 370
+      },
+      "homePct": 65.1,
+      "figure": {
+        "x": 80,
+        "y": 162,
+        "w": 160,
+        "h": 227
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 492,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "classic 3d 320x700",
+      "viewport": {
+        "w": 320,
+        "h": 700
+      },
+      "scrollHeight": 700,
+      "clientHeight": 700,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 320,
+        "h": 502
+      },
+      "homePct": 71.7,
+      "figure": {
+        "x": 61,
+        "y": 202,
+        "w": 198,
+        "h": 280
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 624,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "classic 3d 390x844",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "scrollHeight": 844,
+      "clientHeight": 844,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 390,
+        "h": 646
+      },
+      "homePct": 76.5,
+      "figure": {
+        "x": 76,
+        "y": 257,
+        "w": 238,
+        "h": 338
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 768,
+        "w": 390,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 390,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "classic 3d 720x900",
+      "viewport": {
+        "w": 720,
+        "h": 900
+      },
+      "scrollHeight": 900,
+      "clientHeight": 900,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 720,
+        "h": 702
+      },
+      "homePct": 78,
+      "figure": {
+        "x": 233,
+        "y": 274,
+        "w": 254,
+        "h": 360
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 824,
+        "w": 720,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 720,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "classic 3d 1100x800",
+      "viewport": {
+        "w": 1100,
+        "h": 800
+      },
+      "scrollHeight": 800,
+      "clientHeight": 800,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 1100,
+        "h": 602
+      },
+      "homePct": 75.3,
+      "figure": {
+        "x": 437,
+        "y": 244,
+        "w": 226,
+        "h": 320
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 724,
+        "w": 1100,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 170,
+        "y": 0,
+        "w": 760,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "classic 3d status",
+      "text": "This deviceWhoBianca · Our fictional homeWhenSep 14, 2026, 9:02 a.m.BooksLocal booksEnvDevelopment · Switch environmentSwitch householdHouseholds available on this device. Google membership remains the authority for hosted access.Another fictional homeEdited 1 min agoSep 14, 2026, 9:02 a.m.Open Another fictional homeOur fictional homeEdited 1 min agoSep 14, 2026, 9:02 a.m.Current householdSync helpThe office · instruments and boards",
+      "switcher": true,
+      "office": true,
+      "overflowY": 0
+    },
+    {
+      "label": "classic 3d keyboard",
+      "order": [
+        "BUTTON",
+        "due-arrival",
+        "queen-door",
+        "queen-figure",
+        "queen-move",
+        "queen-door",
+        "hercules-pill",
+        "hercules-live",
+        "nav"
+      ]
+    },
+    {
+      "label": "classic 3d shells",
+      "shells": {
+        "The Fund": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "Our Path": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "Together": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "personal space": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        }
+      }
+    },
+    {
+      "label": "classic no-webgl books gate",
+      "settled": true
+    },
+    {
+      "label": "classic no-webgl 320x568",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "scrollHeight": 568,
+      "clientHeight": 568,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 320,
+        "h": 370
+      },
+      "homePct": 65.1,
+      "figure": {
+        "x": 80,
+        "y": 162,
+        "w": 160,
+        "h": 227
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 492,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "classic no-webgl 320x700",
+      "viewport": {
+        "w": 320,
+        "h": 700
+      },
+      "scrollHeight": 700,
+      "clientHeight": 700,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 320,
+        "h": 502
+      },
+      "homePct": 71.7,
+      "figure": {
+        "x": 61,
+        "y": 202,
+        "w": 198,
+        "h": 280
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 624,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "classic no-webgl 390x844",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "scrollHeight": 844,
+      "clientHeight": 844,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 390,
+        "h": 646
+      },
+      "homePct": 76.5,
+      "figure": {
+        "x": 76,
+        "y": 257,
+        "w": 238,
+        "h": 338
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 768,
+        "w": 390,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 390,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "classic no-webgl 720x900",
+      "viewport": {
+        "w": 720,
+        "h": 900
+      },
+      "scrollHeight": 900,
+      "clientHeight": 900,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 720,
+        "h": 702
+      },
+      "homePct": 78,
+      "figure": {
+        "x": 233,
+        "y": 274,
+        "w": 254,
+        "h": 360
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 824,
+        "w": 720,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 720,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "classic no-webgl 1100x800",
+      "viewport": {
+        "w": 1100,
+        "h": 800
+      },
+      "scrollHeight": 800,
+      "clientHeight": 800,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 1100,
+        "h": 602
+      },
+      "homePct": 75.3,
+      "figure": {
+        "x": 437,
+        "y": 244,
+        "w": 226,
+        "h": 320
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 724,
+        "w": 1100,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 170,
+        "y": 0,
+        "w": 760,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "classic no-webgl status",
+      "text": "This deviceWhoBianca · Our fictional homeWhenSep 14, 2026, 9:03 a.m.BooksLocal booksEnvDevelopment · Switch environmentSwitch householdHouseholds available on this device. Google membership remains the authority for hosted access.Another fictional homeEdited just nowSep 14, 2026, 9:03 a.m.Open Another fictional homeOur fictional homeEdited just nowSep 14, 2026, 9:03 a.m.Current householdSync helpThe office · instruments and boards",
+      "switcher": true,
+      "office": true,
+      "overflowY": 0
+    },
+    {
+      "label": "classic no-webgl keyboard",
+      "order": [
+        "BUTTON",
+        "due-arrival",
+        "queen-door",
+        "queen-figure",
+        "queen-move",
+        "queen-door",
+        "hercules-pill",
+        "hercules-live",
+        "nav"
+      ]
+    },
+    {
+      "label": "classic no-webgl shells",
+      "shells": {
+        "The Fund": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "Our Path": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "Together": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "personal space": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        }
+      }
+    },
+    {
+      "label": "taylor 3d books gate",
+      "settled": true
+    },
+    {
+      "label": "taylor 3d 320x568",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "scrollHeight": 568,
+      "clientHeight": 568,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 320,
+        "h": 370
+      },
+      "homePct": 65.1,
+      "figure": {
+        "x": 80,
+        "y": 162,
+        "w": 160,
+        "h": 227
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 492,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "taylor 3d 320x700",
+      "viewport": {
+        "w": 320,
+        "h": 700
+      },
+      "scrollHeight": 700,
+      "clientHeight": 700,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 320,
+        "h": 502
+      },
+      "homePct": 71.7,
+      "figure": {
+        "x": 61,
+        "y": 202,
+        "w": 198,
+        "h": 280
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 624,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "taylor 3d 390x844",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "scrollHeight": 844,
+      "clientHeight": 844,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 390,
+        "h": 646
+      },
+      "homePct": 76.5,
+      "figure": {
+        "x": 76,
+        "y": 257,
+        "w": 238,
+        "h": 338
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 768,
+        "w": 390,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 390,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "taylor 3d 720x900",
+      "viewport": {
+        "w": 720,
+        "h": 900
+      },
+      "scrollHeight": 900,
+      "clientHeight": 900,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 720,
+        "h": 702
+      },
+      "homePct": 78,
+      "figure": {
+        "x": 233,
+        "y": 274,
+        "w": 254,
+        "h": 360
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 824,
+        "w": 720,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 720,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "taylor 3d 1100x800",
+      "viewport": {
+        "w": 1100,
+        "h": 800
+      },
+      "scrollHeight": 800,
+      "clientHeight": 800,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 1100,
+        "h": 602
+      },
+      "homePct": 75.3,
+      "figure": {
+        "x": 437,
+        "y": 244,
+        "w": 226,
+        "h": 320
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 724,
+        "w": 1100,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 170,
+        "y": 0,
+        "w": 760,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "taylor 3d status",
+      "text": "This deviceWhoBianca · Our fictional homeWhenSep 14, 2026, 9:03 a.m.BooksLocal booksEnvDevelopment · Switch environmentSwitch householdHouseholds available on this device. Google membership remains the authority for hosted access.Another fictional homeEdited just nowSep 14, 2026, 9:03 a.m.Open Another fictional homeOur fictional homeEdited just nowSep 14, 2026, 9:03 a.m.Current householdSync helpThe office · instruments and boards",
+      "switcher": true,
+      "office": true,
+      "overflowY": 0
+    },
+    {
+      "label": "taylor 3d shells",
+      "shells": {
+        "The Fund": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "Our Path": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "Together": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "personal space": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        }
+      }
+    },
+    {
+      "label": "taylor no-webgl books gate",
+      "settled": true
+    },
+    {
+      "label": "taylor no-webgl 320x568",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "scrollHeight": 568,
+      "clientHeight": 568,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 320,
+        "h": 370
+      },
+      "homePct": 65.1,
+      "figure": {
+        "x": 80,
+        "y": 162,
+        "w": 160,
+        "h": 227
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 492,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "taylor no-webgl 320x700",
+      "viewport": {
+        "w": 320,
+        "h": 700
+      },
+      "scrollHeight": 700,
+      "clientHeight": 700,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 320,
+        "h": 502
+      },
+      "homePct": 71.7,
+      "figure": {
+        "x": 61,
+        "y": 202,
+        "w": 198,
+        "h": 280
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 624,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "taylor no-webgl 390x844",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "scrollHeight": 844,
+      "clientHeight": 844,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 390,
+        "h": 646
+      },
+      "homePct": 76.5,
+      "figure": {
+        "x": 76,
+        "y": 257,
+        "w": 238,
+        "h": 338
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 768,
+        "w": 390,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 390,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "taylor no-webgl 720x900",
+      "viewport": {
+        "w": 720,
+        "h": 900
+      },
+      "scrollHeight": 900,
+      "clientHeight": 900,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 720,
+        "h": 702
+      },
+      "homePct": 78,
+      "figure": {
+        "x": 233,
+        "y": 274,
+        "w": 254,
+        "h": 360
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 824,
+        "w": 720,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 720,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "taylor no-webgl 1100x800",
+      "viewport": {
+        "w": 1100,
+        "h": 800
+      },
+      "scrollHeight": 800,
+      "clientHeight": 800,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 1100,
+        "h": 602
+      },
+      "homePct": 75.3,
+      "figure": {
+        "x": 437,
+        "y": 244,
+        "w": 226,
+        "h": 320
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 724,
+        "w": 1100,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 170,
+        "y": 0,
+        "w": 760,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "taylor no-webgl status",
+      "text": "This deviceWhoBianca · Our fictional homeWhenSep 14, 2026, 9:04 a.m.BooksLocal booksEnvDevelopment · Switch environmentSwitch householdHouseholds available on this device. Google membership remains the authority for hosted access.Another fictional homeEdited just nowSep 14, 2026, 9:04 a.m.Open Another fictional homeOur fictional homeEdited just nowSep 14, 2026, 9:04 a.m.Current householdSync helpThe office · instruments and boards",
+      "switcher": true,
+      "office": true,
+      "overflowY": 0
+    },
+    {
+      "label": "taylor no-webgl shells",
+      "shells": {
+        "The Fund": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "Our Path": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "Together": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "personal space": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        }
+      }
+    },
+    {
+      "label": "newfoundland 3d books gate",
+      "settled": true
+    },
+    {
+      "label": "newfoundland 3d 320x568",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "scrollHeight": 568,
+      "clientHeight": 568,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 320,
+        "h": 370
+      },
+      "homePct": 65.1,
+      "figure": {
+        "x": 80,
+        "y": 162,
+        "w": 160,
+        "h": 227
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 492,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "newfoundland 3d 320x700",
+      "viewport": {
+        "w": 320,
+        "h": 700
+      },
+      "scrollHeight": 700,
+      "clientHeight": 700,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 320,
+        "h": 502
+      },
+      "homePct": 71.7,
+      "figure": {
+        "x": 61,
+        "y": 202,
+        "w": 198,
+        "h": 280
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 624,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "newfoundland 3d 390x844",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "scrollHeight": 844,
+      "clientHeight": 844,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 390,
+        "h": 646
+      },
+      "homePct": 76.5,
+      "figure": {
+        "x": 76,
+        "y": 257,
+        "w": 238,
+        "h": 338
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 768,
+        "w": 390,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 390,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "newfoundland 3d 720x900",
+      "viewport": {
+        "w": 720,
+        "h": 900
+      },
+      "scrollHeight": 900,
+      "clientHeight": 900,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 720,
+        "h": 702
+      },
+      "homePct": 78,
+      "figure": {
+        "x": 233,
+        "y": 274,
+        "w": 254,
+        "h": 360
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 824,
+        "w": 720,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 720,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "newfoundland 3d 1100x800",
+      "viewport": {
+        "w": 1100,
+        "h": 800
+      },
+      "scrollHeight": 800,
+      "clientHeight": 800,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 1100,
+        "h": 602
+      },
+      "homePct": 75.3,
+      "figure": {
+        "x": 437,
+        "y": 244,
+        "w": 226,
+        "h": 320
+      },
+      "figurePct": 40,
+      "world": "3d",
+      "live": "true",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": 122,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 724,
+        "w": 1100,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 170,
+        "y": 0,
+        "w": 760,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "newfoundland 3d status",
+      "text": "This deviceWhoBianca · Our fictional homeWhenSep 14, 2026, 9:05 a.m.BooksLocal booksEnvDevelopment · Switch environmentSwitch householdHouseholds available on this device. Google membership remains the authority for hosted access.Another fictional homeEdited 1 min agoSep 14, 2026, 9:05 a.m.Open Another fictional homeOur fictional homeEdited 1 min agoSep 14, 2026, 9:05 a.m.Current householdSync helpThe office · instruments and boards",
+      "switcher": true,
+      "office": true,
+      "overflowY": 0
+    },
+    {
+      "label": "newfoundland 3d shells",
+      "shells": {
+        "The Fund": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "Our Path": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "Together": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "personal space": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        }
+      }
+    },
+    {
+      "label": "newfoundland no-webgl books gate",
+      "settled": true
+    },
+    {
+      "label": "newfoundland no-webgl 320x568",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "scrollHeight": 568,
+      "clientHeight": 568,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 320,
+        "h": 370
+      },
+      "homePct": 65.1,
+      "figure": {
+        "x": 80,
+        "y": 162,
+        "w": 160,
+        "h": 227
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 492,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "newfoundland no-webgl 320x700",
+      "viewport": {
+        "w": 320,
+        "h": 700
+      },
+      "scrollHeight": 700,
+      "clientHeight": 700,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 320,
+        "h": 502
+      },
+      "homePct": 71.7,
+      "figure": {
+        "x": 61,
+        "y": 202,
+        "w": 198,
+        "h": 280
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 624,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "newfoundland no-webgl 390x844",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "scrollHeight": 844,
+      "clientHeight": 844,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 390,
+        "h": 646
+      },
+      "homePct": 76.5,
+      "figure": {
+        "x": 76,
+        "y": 257,
+        "w": 238,
+        "h": 338
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 768,
+        "w": 390,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 390,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "newfoundland no-webgl 720x900",
+      "viewport": {
+        "w": 720,
+        "h": 900
+      },
+      "scrollHeight": 900,
+      "clientHeight": 900,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 720,
+        "h": 702
+      },
+      "homePct": 78,
+      "figure": {
+        "x": 233,
+        "y": 274,
+        "w": 254,
+        "h": 360
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 824,
+        "w": 720,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 0,
+        "y": 0,
+        "w": 720,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "newfoundland no-webgl 1100x800",
+      "viewport": {
+        "w": 1100,
+        "h": 800
+      },
+      "scrollHeight": 800,
+      "clientHeight": 800,
+      "overflowY": 0,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": false,
+        "sync": false,
+        "switcher": false,
+        "heading": false,
+        "atmosphere": false,
+        "office": false,
+        "seals": false,
+        "story": false,
+        "charm": false,
+        "ledge": false
+      },
+      "home": {
+        "x": 0,
+        "y": 122,
+        "w": 1100,
+        "h": 602
+      },
+      "homePct": 75.3,
+      "figure": {
+        "x": 437,
+        "y": 244,
+        "w": 226,
+        "h": 320
+      },
+      "figurePct": 40,
+      "world": "flat",
+      "live": "false",
+      "frameNav": "76",
+      "frameTabs": "66",
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Record an expenseAdd inc",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 724,
+        "w": 1100,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 170,
+        "y": 0,
+        "w": 760,
+        "h": 66
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": "true",
+      "axeSerious": []
+    },
+    {
+      "label": "newfoundland no-webgl status",
+      "text": "This deviceWhoBianca · Our fictional homeWhenSep 14, 2026, 9:06 a.m.BooksLocal booksEnvDevelopment · Switch environmentSwitch householdHouseholds available on this device. Google membership remains the authority for hosted access.Another fictional homeEdited just nowSep 14, 2026, 9:06 a.m.Open Another fictional homeOur fictional homeEdited just nowSep 14, 2026, 9:06 a.m.Current householdSync helpThe office · instruments and boards",
+      "switcher": true,
+      "office": true,
+      "overflowY": 0
+    },
+    {
+      "label": "newfoundland no-webgl shells",
+      "shells": {
+        "The Fund": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "Our Path": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "Together": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        },
+        "personal space": {
+          "topbar": true,
+          "sync": true,
+          "worldHome": null,
+          "fixed": "static"
+        }
+      }
+    }
+  ],
+  "errors": []
+}

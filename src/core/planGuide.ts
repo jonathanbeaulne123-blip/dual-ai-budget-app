@@ -8,6 +8,7 @@ import type { MonthKey } from './calendar.ts';
 import { addDays, isValidDateKey } from './calendar.ts';
 import { formatCad, parseWholeCents } from './money.ts';
 import { currentPlanVersion, type PlanLine, type PlanLens, type PlanAssumption, type PlanSourceReference } from './planSystem.ts';
+import { fundModelMode } from './fundRules.ts';
 import { completePlanDates, planSourceVisible, projectPlan, type PlanSelection } from './planProjection.ts';
 
 export const PLAN_GUIDE_ID = 'plan-guided-draft';
@@ -58,6 +59,7 @@ function guideNote(previous:string|undefined, entries:string[]) {
  while(legacy.test(personal))personal=personal.replace(legacy,'').trim();
  return [personal,start,...entries,end].filter(Boolean).join('\n');
 }
+const WHY_V2_BILLS='Prepare holds what has to leave. Dates and amounts tell us which bills need money first. A bill in the Plan is still separate from recording its payment.';
 const WHY = {
  protect:'Dates and amounts tell us which promises need money first. A bill in the Plan is still separate from recording its payment.',
  prepare:'A known future cost is easier to handle when you can set money aside before it arrives.',
@@ -82,17 +84,19 @@ export function planGuideFields(c: ActionContext,v: ActionValues): GuideField[] 
   ask('incomeDate','Expected arrival','When do you expect it to be available?','A positive month total cannot fill a gap before payday. Say a date or a day of the week.', 'date',undefined,source?.date&&source.date>c.today?[choice(source.date,`Use ${source.date}`)]:undefined);
  }
  const known=upcomingBills(c,v);
- ask('protectSource','Promises to protect','Which bills or promises should we make room for? ',WHY.protect,'text',[
+ // v2 money model (D-271): bills are Prepare's. The field keys stay, so saved answers survive the update.
+ const v2=fundModelMode(c.household)===2, billWhy=v2?WHY_V2_BILLS:WHY.protect;
+ ask('protectSource',v2?'Bills to prepare for':'Promises to protect','Which bills or promises should we make room for? ',billWhy,'text',[
   ...(known.length?[choice('known','Use these upcoming bills')]:[]),...bills(c).map(b=>choice(b.id,b.note||'Repeating bill')),choice('unlinked','Add a promise the books do not show'),choice('skip','Keep this open for now')],undefined,known.slice(0,20).map(({bill,date})=>`${bill.note||'Bill'} · ${formatCad(bill.amountCents)} · ${date}`).concat(known.length>20?[`${known.length-20} more occurrences will be included in the complete review.`]:[]));
  if(!skipped(v.protectSource)) {
   if(v.protectSource!=='known') {
    const bill=bills(c).find(b=>b.id===v.protectSource);
    if(v.protectSource==='unlinked')ask('protectLabel','Promise name','What is the promise?','A clear name helps us remember what this money is for. We will keep it marked as unlinked until there is evidence.');
-   ask('protectAmount','Promise amount','How much needs to be ready for this payment?',WHY.protect,'money',undefined,bill?[choice(dollars(bill.amountCents),`Use ${formatCad(bill.amountCents)} from the bill`)]:undefined);
-   ask('protectDate','Payment date','When does that payment need to happen?',WHY.protect,'date',undefined,bill?[choice(bill.nextDate,`Use ${bill.nextDate} from the bill`)]:undefined);
+   ask('protectAmount',v2?'Bill amount':'Promise amount','How much needs to be ready for this payment?',billWhy,'money',undefined,bill?[choice(dollars(bill.amountCents),`Use ${formatCad(bill.amountCents)} from the bill`)]:undefined);
+   ask('protectDate','Payment date','When does that payment need to happen?',billWhy,'date',undefined,bill?[choice(bill.nextDate,`Use ${bill.nextDate} from the bill`)]:undefined);
   }
   ask('protectOwner','Responsibility','Who will take care of these payments?','Responsibility means who handles the task. It does not decide who owns an account or give anyone permission to spend.','text',[...(c.view==='household'?[choice('joint','Together')]:[]),...c.household.members.filter(m=>m.active&&(c.view==='household'||m.id===c.memberId)).map(m=>choice(m.id,m.name))]);
-  ask('protectFunding','Money for the promises','Which money are you identifying for these promises?','I will check the evidence and timing. Choosing a source does not by itself make a promise covered.','text',[choice('available',c.view==='household'?'Current Fund money':'Current personal cash'),...(!skipped(v.incomeSource)?[choice('expected','The expected money we discussed')]:[]),choice('unknown','I have not identified it yet')]);
+  ask('protectFunding',v2?'Money for the bills':'Money for the promises','Which money are you identifying for these promises?','I will check the evidence and timing. Choosing a source does not by itself make a promise covered.','text',[choice('available',c.view==='household'?'Current Fund money':'Current personal cash'),...(!skipped(v.incomeSource)?[choice('expected','The expected money we discussed')]:[]),choice('unknown','I have not identified it yet')]);
  }
  for(const lens of ['prepare','build'] as const) {
   ask(`${lens}Source`,lens==='prepare'?'Cost to prepare for':'Outcome to build',lens==='prepare'?'Is there a future cost you would rather prepare for now?':'What is one thing you want this money to make possible?',WHY[lens],'text',[...goals(c).filter(g=>v[`${lens==='prepare'?'build':'prepare'}Source`]!==g.id&&!(base(c,v)?.lines??[]).some(l=>l.sourceReference?.type==='goal'&&l.sourceReference.id===g.id&&l.lens!==lens)).map(g=>choice(g.id,g.name)),...(lens==='build'?[choice('new-kitty','Create a new Kitty Bank')]:[]),choice('unlinked',lens==='prepare'?'A cost without a reserve goal yet':'An idea without a savings goal yet'),choice('skip','Keep this open for now')]);
@@ -165,7 +169,9 @@ export function buildGuidedPlan(c:ActionContext,v:ActionValues,id:string) {
  const month=guideMonth(c,v);if(!/^\d{4}-(0[1-9]|1[0-2])$/.test(month))throw new ValidationError('Choose a month using YYYY-MM.');
  const old=base(c,v), lines:PlanLine[]=(old?.lines??[]).map(row=>({...row,createdBy:c.memberId})), assumptions=[...(old?.assumptions??[])].filter(a=>v.incomeSource!=='current-only'||a.kind!=='income');const unresolved:string[]=[];
  const put=(line:PlanLine)=>{if(line.sourceReference&&lines.some(row=>row.lens!==line.lens&&row.sourceReference?.type===line.sourceReference!.type&&row.sourceReference.id===line.sourceReference!.id))throw new ValidationError('That evidence already supports another part of your Plan. Open its existing decision in Plan tools before changing its purpose.');const index=lines.findIndex(row=>row.lens===line.lens&&line.sourceReference&&row.sourceReference?.type===line.sourceReference.type&&row.sourceReference.id===line.sourceReference.id);if(index<0)lines.push(line);else lines[index]={...lines[index]!,...line,id:lines[index]!.id,assumptionIds:lines[index]!.assumptionIds,decision:{...(lines[index]!.decision?.timeConstraint?{timeConstraint:lines[index]!.decision!.timeConstraint}:{}),...(lines[index]!.decision?.reopenWhen?{reopenWhen:lines[index]!.decision!.reopenWhen}:{}),...line.decision}};};
- const line=(lens:PlanLens,label:string,amount:number,date:string,source?:PlanSourceReference,funding?:string):PlanLine=>({id:`GUIDE-${id}-${lens}-${source?.id??'idea'}-${date}`,lens,kind:lens==='protect'?'obligation':lens==='prepare'?'true-expense':lens==='build'?'goal-contribution':'everyday-pool',labelSnapshot:label,amountCents:amount,cadence:'one-time',dueDate:date,createdBy:c.memberId,assumptionIds:[],...(source?{sourceReference:source}:{}),responsibility:lens==='protect'&&v.protectOwner==='joint'?{kind:'joint'}:{kind:'member',memberId:lens==='protect'?v.protectOwner:c.memberId},decision:{...(['available','expected'].includes(funding??'')?{funding:funding as 'available'|'expected'}:{} )}});
+ // Bills (the "protect" answers) are Protect lines under v1 and Prepare obligations under v2; their ids keep the lens they are filed under.
+ const billLens:PlanLens=fundModelMode(c.household)===2?'prepare':'protect';
+ const line=(lens:PlanLens,label:string,amount:number,date:string,source?:PlanSourceReference,funding?:string,bill=lens==='protect'):PlanLine=>({id:`GUIDE-${id}-${bill&&lens!=='protect'?'bill-':''}${lens}-${source?.id??'idea'}-${date}`,lens,kind:bill?'obligation':lens==='prepare'?'true-expense':lens==='build'?'goal-contribution':'everyday-pool',labelSnapshot:label,amountCents:amount,cadence:'one-time',dueDate:date,createdBy:c.memberId,assumptionIds:[],...(source?{sourceReference:source}:{}),responsibility:bill&&v.protectOwner==='joint'?{kind:'joint'}:{kind:'member',memberId:bill?v.protectOwner:c.memberId},decision:{...(['available','expected'].includes(funding??'')?{funding:funding as 'available'|'expected'}:{} )}});
  if(!skipped(v.incomeSource)) {const source=incomeSources(c,v).find(r=>r.id===v.incomeSource);if(!source)throw new ValidationError('That expected money is no longer visible. Choose its current source.');if(!isValidDateKey(v.incomeDate??'')||v.incomeDate!<=c.today)throw new ValidationError('Expected money needs a future arrival date. Received money is already in your books.');
   const ref={type:source.type,id:source.id};const item={id:`GUIDE-${id}-income`,kind:'income' as const,valueCents:cents(v.incomeAmount!),expectedDate:v.incomeDate!,sourceReferences:[ref],observedAt:`${c.today}T12:00:00.000Z`,confidence:'estimated' as const};const arrivals=ref.type==='recurrence'?existingIncome(c,v):[];
   if(arrivals.some(a=>a.id===v.incomeEntry&&incomeHasReceipt(c,a)))throw new ValidationError('That arrival already has a recorded receipt. Choose a separate payday only for additional money.');
@@ -178,12 +184,12 @@ export function buildGuidedPlan(c:ActionContext,v:ActionValues,id:string) {
   for(const bill of bills(c)) {
    const schedule=occurrences.filter(item=>item.bill.id===bill.id).map(({date})=>({date,amountCents:bill.payments?.find(payment=>payment.occurrenceDate===date)?.amountCents??bill.amountCents}));
    if(!schedule.length)continue;
-   const row=line('protect',bill.note||'Repeating bill',schedule.reduce((sum,item)=>sum+item.amountCents,0),schedule[0]!.date,{type:'recurrence',id:bill.id},v.protectFunding);
+   const row=line(billLens,bill.note||'Repeating bill',schedule.reduce((sum,item)=>sum+item.amountCents,0),schedule[0]!.date,{type:'recurrence',id:bill.id},v.protectFunding,true);
    row.cadence='monthly';row.decision={...row.decision,contributionSchedule:schedule};put(row);
   }
  }
- else if(!skipped(v.protectSource)) {const b=bills(c).find(r=>r.id===v.protectSource);if(!b&&v.protectSource!=='unlinked')throw new ValidationError('Choose a currently visible bill.');put(line('protect',b?.note||v.protectLabel!,cents(v.protectAmount!),v.protectDate!,b?{type:'recurrence',id:b.id}:undefined,v.protectFunding));}
- else unresolved.push('Protect: review any promises not already in the draft.');
+ else if(!skipped(v.protectSource)) {const b=bills(c).find(r=>r.id===v.protectSource);if(!b&&v.protectSource!=='unlinked')throw new ValidationError('Choose a currently visible bill.');put(line(billLens,b?.note||v.protectLabel!,cents(v.protectAmount!),v.protectDate!,b?{type:'recurrence',id:b.id}:undefined,v.protectFunding,true));}
+ else unresolved.push(billLens==='prepare'?'Prepare: review any bills not already in the draft.':'Protect: review any promises not already in the draft.');
  for(const lens of ['prepare','build'] as const) {if(skipped(v[`${lens}Source`])){unresolved.push(`${lens==='prepare'?'Prepare':'Build'}: ${old?.lines.some(l=>l.lens===lens)?'kept existing decisions; no new outcome chosen.':'left open for now.'}`);continue;}const g=goals(c).find(r=>r.id===v[`${lens}Source`]);if(!g&&v[`${lens}Source`]!=='unlinked')throw new ValidationError('Choose a currently visible goal.');const row=line(lens,g?.name||v[`${lens}Label`]!,cents(v[`${lens}Amount`]!),v[`${lens}Date`]!,g?{type:'goal',id:g.id}:undefined,v[`${lens}Funding`]);row.decision={...row.decision,targetCents:cents(v[`${lens}Target`]!),deadline:v[`${lens}Deadline`],nextStep:v[`${lens}Step`],...(v[`${lens}Paydays`] && !/^decide later$/i.test(v[`${lens}Paydays`]!)?{paydays:parseGuidePaydays(v[`${lens}Paydays`]!)}:{})};put(row);}
  if(!skipped(v.everydaySource)){const cat=c.household.categories.find(r=>r.id===v.everydaySource&&r.active&&r.parentId&&r.transactionType==='expense');if(!cat&&v.everydaySource!=='unlinked')throw new ValidationError('Choose a current spending category.');put(line('everyday',cat?.name||v.everydayLabel!,cents(v.everydayAmount!),v.everydayDate!,cat?{type:'category',id:cat.id}:undefined,'available'));}else unresolved.push(old?.lines.some(l=>l.lens==='everyday')?'Everyday: kept existing allowance; no new allowance chosen.':'Everyday: allowance left open for now.');
  return {monthKey:month as MonthKey,lines,assumptions,note:guideNote(prior(c,v)?.note,[v.purpose&&`What matters: ${v.purpose}`,v.constraints&&`Private life context: ${v.constraints}`,...unresolved].filter(Boolean) as string[])};

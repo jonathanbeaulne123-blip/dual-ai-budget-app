@@ -110,10 +110,10 @@ const TOOL_CATALOG = [
   ["cash_cinema", "13-week forward cash ribbon from tip floor/typical, wage pace, bills, and card mins. Projection only."],
   ["what_if_desk", "Named unposted scenario versus current cash and tip floor. Never posts."],
   ["year_review", "Posted tip months, income, spend, budget misses, and shift count for a trailing window."],
-  ["plan_overview", "Read the visible versioned Plan and its four lens totals."],
+  ["plan_overview", "Read the visible versioned Plan and its Prepare, Protect, Build, and Everyday totals."],
   ["plan_line_detail", "Explain one visible Plan line, source, assumptions, and actual."],
   ["plan_cashflow_runway", "Project the visible Plan runway and low point."],
-  ["plan_coverage", "Read Protect, Prepare, Build, and Everyday coverage."],
+  ["plan_coverage", "Read Prepare, Protect, Build, and Everyday coverage."],
   ["plan_assumptions", "Read confidence, freshness, ranges, and Plan sources."],
   ["plan_version_diff", "Compare two visible immutable Plan versions."],
   ["plan_scenario_compare", "Compare a visible Plan with a private alternative without changing either."],
@@ -916,6 +916,8 @@ function writeOptions(books, args, claims) {
     accounts: books.accounts.filter((row) => row.active).map((row) => ({ name: row.name, kind: row.kind, institution: row.institution, last4: row.last4 })),
     categories: type === "transfer" ? [] : books.categories
       .filter((row) => row.active && row.recordType === "category" && row.transactionType === categoryType)
+      // Money model (D-270): "Moving money" is not spending, so it is never offered as a write option.
+      .filter((row) => books.categories.find((item) => item.id === row.parentId)?.umbrellaId !== "moving-money")
       .map((row) => {
         const parent = books.categories.find((item) => item.id === row.parentId);
         return { name: parent ? `${parent.name} · ${row.name}` : row.name, transactionType: row.transactionType };

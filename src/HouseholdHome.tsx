@@ -17,6 +17,8 @@ import { fundDisplayName } from "./core/spaceNames.ts";
 import { ChapterMoment } from "./ChapterPanel.tsx";
 import { KittyNest } from "./kitty/KittyNest.tsx";
 import { KittyBankRoom, type KittyCommandOptions, type KittySubmissionReader } from "./kitty/KittyBankRoom.tsx";
+import { queensNestEnabled } from "./core/planFeature.ts";
+import { QueenHome, type QueenShell } from "./queen/QueenHome.tsx";
 import "./household-home.css";
 
 type Run = (fn: (current: Household) => CommitResult, options?: KittyCommandOptions) => Promise<unknown>;
@@ -29,6 +31,11 @@ type Run = (fn: (current: Household) => CommitResult, options?: KittyCommandOpti
  * doors deeper. No register, no seals, no duplicate balances, no scoreboard.
  * The shelf reads accepted books; the gallery retains the existing reviewed
  * command and Final Confirm boundary.
+ *
+ * Two compositions share one kernel. `panels` is the approved Home. `queen`
+ * (the Queen's Nest, Stage 1, behind `VITE_QUEENS_NEST`) composes the same
+ * projections as regions of one body; the gallery door and its Final Confirm
+ * boundary are identical in both.
  */
 export function HouseholdHome(props: HouseholdHomeProps) {
   return <HouseholdHomeSession key={`${props.household.environment}:${props.household.householdId}:${props.memberId}`} {...props} />;
@@ -50,10 +57,31 @@ type HouseholdHomeProps = {
   /** Chapter 1 is the Month-One rehearsal; its access stays inside the Chapter area. */
   rehearsal?: ReactNode;
   identityArt?: ReactNode;
+  /** Defaults to the `VITE_QUEENS_NEST` flag inside the Plan V2 family. */
+  composition?: "panels" | "queen";
+  /** The Queen's world: `auto` (default) tries WebGL and degrades silently; `flat` keeps the drawn figure. */
+  world?: "auto" | "flat" | "3d";
+  /** The Queen's living light: the local clock as a fractional hour. Absent, the device clock. Evidence only. */
+  clock?: number;
+  /** The App's shell readings the Queen's world takes off the page and keeps behind her Status door. */
+  shell?: QueenShell;
 };
 
-function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onReadAcceptedCommand, creationIdentity, onOpenMemory, rehearsal, identityArt }: HouseholdHomeProps) {
-  const [bankRequest, setBankRequest] = useState<{ goalId?: string; bankId?:string } | null>(null);
+function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onReadAcceptedCommand, creationIdentity, onOpenMemory, rehearsal, identityArt, composition, world, clock, shell }: HouseholdHomeProps) {
+  const [bankRequest, setBankRequest] = useState<{ goalId?: string; bankId?: string } | null>(null);
+  const queen = (composition ?? (queensNestEnabled() ? "queen" : "panels")) === "queen";
+  const gallery = bankRequest && <KittyBankRoom household={household} view="household" memberId={memberId} busy={busy}
+    identity={`${household.environment}:${household.householdId}:${memberId}:household`}
+    initialGoalId={bankRequest.goalId} initialBankId={bankRequest.bankId} onOpenCalendar={() => { setBankRequest(null); onGo("calendar"); }} returnTo="Home" onCommand={onCommand} onReadSubmission={onReadSubmission} onReadAcceptedCommand={onReadAcceptedCommand} creationIdentity={creationIdentity}
+    onClose={() => setBankRequest(null)} />;
+  if (queen) {
+    return (
+      <>
+        <QueenHome household={household} memberId={memberId} today={today} freshness={freshness} busy={busy} onCommand={onCommand} onGo={onGo} onOpenSetup={onOpenSetup} onOpenBank={setBankRequest} identityArt={identityArt} world={world} clock={clock} shell={shell} />
+        {gallery}
+      </>
+    );
+  }
   const monthKey = monthKeyFromDateKey(today);
   const chapter = openChapterFor(household);
   const pulse = fundPulse(deriveFundPulseInput(household, { memberId, today, freshness, activeChapter: Boolean(chapter) }));
@@ -99,10 +127,7 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
       )}
 
       <KittyNest household={household} memberId={memberId} view="household" today={today} onSelect={bank => setBankRequest(bank.goal ? { goalId: bank.goal.id } : { bankId: bank.id })} />
-      {bankRequest && <KittyBankRoom household={household} view="household" memberId={memberId} busy={busy}
-        identity={`${household.environment}:${household.householdId}:${memberId}:household`}
-        initialGoalId={bankRequest.goalId} initialBankId={bankRequest.bankId} onOpenCalendar={() => { setBankRequest(null); onGo("calendar"); }} returnTo="Home" onCommand={onCommand} onReadSubmission={onReadSubmission} onReadAcceptedCommand={onReadAcceptedCommand} creationIdentity={creationIdentity}
-        onClose={() => setBankRequest(null)} />}
+      {gallery}
 
       {presence.length > 0 && (
         <section className="home-presence" aria-label="Partner presence">

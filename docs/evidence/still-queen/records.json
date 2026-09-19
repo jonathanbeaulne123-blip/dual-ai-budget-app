@@ -1,0 +1,1259 @@
+{
+  "records": [
+    {
+      "scene": "rest",
+      "state": "checking",
+      "width": 320,
+      "height": 568,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 242,
+      "figure": {
+        "x": 107,
+        "y": 152,
+        "w": 106,
+        "h": 150
+      },
+      "pulse": "checking",
+      "posture": "matte",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "matte",
+      "hands": "move",
+      "line": "Make Rent Boring·checking",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/checking-320x568.png"
+    },
+    {
+      "scene": "rest",
+      "state": "checking",
+      "width": 320,
+      "height": 700,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 374,
+      "figure": {
+        "x": 78,
+        "y": 162,
+        "w": 164,
+        "h": 232
+      },
+      "pulse": "checking",
+      "posture": "matte",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "matte",
+      "hands": "move",
+      "line": "Make Rent Boring·checking",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/checking-320x700.png"
+    },
+    {
+      "scene": "rest",
+      "state": "checking",
+      "width": 390,
+      "height": 844,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 518,
+      "figure": {
+        "x": 82,
+        "y": 202,
+        "w": 227,
+        "h": 321
+      },
+      "pulse": "checking",
+      "posture": "matte",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "matte",
+      "hands": "move",
+      "line": "Make Rent Boring·checking",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/checking-390x844.png"
+    },
+    {
+      "scene": "rest",
+      "state": "checking",
+      "width": 720,
+      "height": 900,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 574,
+      "figure": {
+        "x": 234,
+        "y": 212,
+        "w": 251,
+        "h": 356
+      },
+      "pulse": "checking",
+      "posture": "matte",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "matte",
+      "hands": "move",
+      "line": "Make Rent Boring·checking",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/checking-720x900.png"
+    },
+    {
+      "scene": "rest",
+      "state": "checking",
+      "width": 1100,
+      "height": 800,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 474,
+      "figure": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      },
+      "pulse": "checking",
+      "posture": "matte",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "matte",
+      "hands": "move",
+      "line": "Make Rent Boring·checking",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/checking-1100x800.png"
+    },
+    {
+      "scene": "rest",
+      "state": "needs-us",
+      "width": 320,
+      "height": 568,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 242,
+      "figure": {
+        "x": 107,
+        "y": 141,
+        "w": 106,
+        "h": 150
+      },
+      "pulse": "needs-us",
+      "posture": "attentive",
+      "eyes": "open",
+      "gaze": "crown",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·one thing needs us",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/needs-us-320x568.png"
+    },
+    {
+      "scene": "rest",
+      "state": "needs-us",
+      "width": 320,
+      "height": 700,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 374,
+      "figure": {
+        "x": 78,
+        "y": 162,
+        "w": 164,
+        "h": 232
+      },
+      "pulse": "needs-us",
+      "posture": "attentive",
+      "eyes": "open",
+      "gaze": "crown",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·one thing needs us",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/needs-us-320x700.png"
+    },
+    {
+      "scene": "rest",
+      "state": "needs-us",
+      "width": 390,
+      "height": 844,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 518,
+      "figure": {
+        "x": 82,
+        "y": 189,
+        "w": 227,
+        "h": 321
+      },
+      "pulse": "needs-us",
+      "posture": "attentive",
+      "eyes": "open",
+      "gaze": "crown",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·one thing needs us",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/needs-us-390x844.png"
+    },
+    {
+      "scene": "rest",
+      "state": "needs-us",
+      "width": 720,
+      "height": 900,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 574,
+      "figure": {
+        "x": 234,
+        "y": 212,
+        "w": 251,
+        "h": 356
+      },
+      "pulse": "needs-us",
+      "posture": "attentive",
+      "eyes": "open",
+      "gaze": "crown",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·one thing needs us",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/needs-us-720x900.png"
+    },
+    {
+      "scene": "rest",
+      "state": "needs-us",
+      "width": 1100,
+      "height": 800,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 474,
+      "figure": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      },
+      "pulse": "needs-us",
+      "posture": "attentive",
+      "eyes": "open",
+      "gaze": "crown",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·one thing needs us",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/needs-us-1100x800.png"
+    },
+    {
+      "scene": "rest",
+      "state": "building",
+      "width": 320,
+      "height": 568,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 242,
+      "figure": {
+        "x": 107,
+        "y": 152,
+        "w": 106,
+        "h": 150
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/building-320x568.png"
+    },
+    {
+      "scene": "rest",
+      "state": "building",
+      "width": 320,
+      "height": 700,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 374,
+      "figure": {
+        "x": 78,
+        "y": 162,
+        "w": 164,
+        "h": 232
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/building-320x700.png"
+    },
+    {
+      "scene": "rest",
+      "state": "building",
+      "width": 390,
+      "height": 844,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 518,
+      "figure": {
+        "x": 82,
+        "y": 202,
+        "w": 227,
+        "h": 321
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/building-390x844.png"
+    },
+    {
+      "scene": "rest",
+      "state": "building",
+      "width": 720,
+      "height": 900,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 574,
+      "figure": {
+        "x": 234,
+        "y": 212,
+        "w": 251,
+        "h": 356
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/building-720x900.png"
+    },
+    {
+      "scene": "rest",
+      "state": "building",
+      "width": 1100,
+      "height": 800,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 474,
+      "figure": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/building-1100x800.png"
+    },
+    {
+      "scene": "rest",
+      "state": "reset",
+      "width": 320,
+      "height": 568,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 242,
+      "figure": {
+        "x": 107,
+        "y": 141,
+        "w": 106,
+        "h": 150
+      },
+      "pulse": "reset",
+      "posture": "tilted",
+      "eyes": "open",
+      "gaze": "vine",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·time to reset",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/reset-320x568.png"
+    },
+    {
+      "scene": "rest",
+      "state": "reset",
+      "width": 320,
+      "height": 700,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 374,
+      "figure": {
+        "x": 78,
+        "y": 162,
+        "w": 164,
+        "h": 232
+      },
+      "pulse": "reset",
+      "posture": "tilted",
+      "eyes": "open",
+      "gaze": "vine",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·time to reset",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/reset-320x700.png"
+    },
+    {
+      "scene": "rest",
+      "state": "reset",
+      "width": 390,
+      "height": 844,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 518,
+      "figure": {
+        "x": 82,
+        "y": 202,
+        "w": 227,
+        "h": 321
+      },
+      "pulse": "reset",
+      "posture": "tilted",
+      "eyes": "open",
+      "gaze": "vine",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·time to reset",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/reset-390x844.png"
+    },
+    {
+      "scene": "rest",
+      "state": "reset",
+      "width": 720,
+      "height": 900,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 574,
+      "figure": {
+        "x": 234,
+        "y": 212,
+        "w": 251,
+        "h": 356
+      },
+      "pulse": "reset",
+      "posture": "tilted",
+      "eyes": "open",
+      "gaze": "vine",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·time to reset",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/reset-720x900.png"
+    },
+    {
+      "scene": "rest",
+      "state": "reset",
+      "width": 1100,
+      "height": 800,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 474,
+      "figure": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      },
+      "pulse": "reset",
+      "posture": "tilted",
+      "eyes": "open",
+      "gaze": "vine",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·time to reset",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/reset-1100x800.png"
+    },
+    {
+      "scene": "rest",
+      "state": "grave",
+      "width": 320,
+      "height": 568,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 242,
+      "figure": {
+        "x": 107,
+        "y": 141,
+        "w": 106,
+        "h": 150
+      },
+      "pulse": "needs-us",
+      "posture": "depleted",
+      "eyes": "open",
+      "gaze": "body",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·not yet covered",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/grave-320x568.png"
+    },
+    {
+      "scene": "rest",
+      "state": "grave",
+      "width": 320,
+      "height": 700,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 374,
+      "figure": {
+        "x": 78,
+        "y": 162,
+        "w": 164,
+        "h": 232
+      },
+      "pulse": "needs-us",
+      "posture": "depleted",
+      "eyes": "open",
+      "gaze": "body",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·not yet covered",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/grave-320x700.png"
+    },
+    {
+      "scene": "rest",
+      "state": "grave",
+      "width": 390,
+      "height": 844,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 518,
+      "figure": {
+        "x": 82,
+        "y": 189,
+        "w": 227,
+        "h": 321
+      },
+      "pulse": "needs-us",
+      "posture": "depleted",
+      "eyes": "open",
+      "gaze": "body",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·not yet covered",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/grave-390x844.png"
+    },
+    {
+      "scene": "rest",
+      "state": "grave",
+      "width": 720,
+      "height": 900,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 574,
+      "figure": {
+        "x": 234,
+        "y": 212,
+        "w": 251,
+        "h": 356
+      },
+      "pulse": "needs-us",
+      "posture": "depleted",
+      "eyes": "open",
+      "gaze": "body",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·not yet covered",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/grave-720x900.png"
+    },
+    {
+      "scene": "rest",
+      "state": "grave",
+      "width": 1100,
+      "height": 800,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 474,
+      "figure": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      },
+      "pulse": "needs-us",
+      "posture": "depleted",
+      "eyes": "open",
+      "gaze": "body",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·not yet covered",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/grave-1100x800.png"
+    },
+    {
+      "scene": "rest",
+      "state": "empty",
+      "width": 320,
+      "height": 568,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 242,
+      "figure": {
+        "x": 107,
+        "y": 152,
+        "w": 106,
+        "h": 150
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "empty",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/empty-320x568.png"
+    },
+    {
+      "scene": "rest",
+      "state": "empty",
+      "width": 320,
+      "height": 700,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 374,
+      "figure": {
+        "x": 78,
+        "y": 162,
+        "w": 164,
+        "h": 232
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "empty",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/empty-320x700.png"
+    },
+    {
+      "scene": "rest",
+      "state": "empty",
+      "width": 390,
+      "height": 844,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 518,
+      "figure": {
+        "x": 82,
+        "y": 202,
+        "w": 227,
+        "h": 321
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "empty",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/empty-390x844.png"
+    },
+    {
+      "scene": "rest",
+      "state": "empty",
+      "width": 720,
+      "height": 900,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 574,
+      "figure": {
+        "x": 234,
+        "y": 212,
+        "w": 251,
+        "h": 356
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "empty",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/empty-720x900.png"
+    },
+    {
+      "scene": "rest",
+      "state": "empty",
+      "width": 1100,
+      "height": 800,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 474,
+      "figure": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "empty",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/empty-1100x800.png"
+    },
+    {
+      "scene": "rest",
+      "state": "win",
+      "width": 320,
+      "height": 568,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 242,
+      "figure": {
+        "x": 107,
+        "y": 152,
+        "w": 106,
+        "h": 150
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/win-320x568.png"
+    },
+    {
+      "scene": "rest",
+      "state": "win",
+      "width": 320,
+      "height": 700,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 374,
+      "figure": {
+        "x": 78,
+        "y": 162,
+        "w": 164,
+        "h": 232
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/win-320x700.png"
+    },
+    {
+      "scene": "rest",
+      "state": "win",
+      "width": 390,
+      "height": 844,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 518,
+      "figure": {
+        "x": 82,
+        "y": 202,
+        "w": 227,
+        "h": 321
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/win-390x844.png"
+    },
+    {
+      "scene": "rest",
+      "state": "win",
+      "width": 720,
+      "height": 900,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 574,
+      "figure": {
+        "x": 234,
+        "y": 212,
+        "w": 251,
+        "h": 356
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/win-720x900.png"
+    },
+    {
+      "scene": "rest",
+      "state": "win",
+      "width": 1100,
+      "height": 800,
+      "overflowX": 0,
+      "overflowY": 0,
+      "homeHeight": 474,
+      "figure": {
+        "x": 446,
+        "y": 193,
+        "w": 207,
+        "h": 294
+      },
+      "pulse": "building",
+      "posture": "leaning-in",
+      "eyes": "closed",
+      "gaze": "rest",
+      "glaze": "glazed",
+      "hands": "move",
+      "line": "Make Rent Boring·building",
+      "axeSerious": [],
+      "file": "/home/claude/dual-ai-budget-app/.artifacts/still-queen/win-1100x800.png"
+    },
+    {
+      "scene": "freshness",
+      "state": "stale",
+      "width": 390,
+      "height": 844,
+      "pulse": "checking",
+      "glaze": "matte",
+      "line": "Make Rent Boring·checking"
+    },
+    {
+      "scene": "freshness",
+      "state": "offline",
+      "width": 390,
+      "height": 844,
+      "pulse": "checking",
+      "glaze": "offline",
+      "line": "Make Rent Boring·checking"
+    },
+    {
+      "scene": "expanded",
+      "width": 320,
+      "height": 568,
+      "overflowY": 0,
+      "buttons": [
+        {
+          "name": "Protect",
+          "x": 44,
+          "y": 173,
+          "w": 62,
+          "h": 44
+        },
+        {
+          "name": "What now",
+          "x": 125,
+          "y": 132,
+          "w": 70,
+          "h": 44
+        },
+        {
+          "name": "Build",
+          "x": 223,
+          "y": 173,
+          "w": 45,
+          "h": 44
+        }
+      ],
+      "her": {
+        "x": 113,
+        "y": 182,
+        "w": 94,
+        "h": 116
+      }
+    },
+    {
+      "scene": "expanded",
+      "width": 320,
+      "height": 700,
+      "overflowY": 0,
+      "buttons": [
+        {
+          "name": "Protect",
+          "x": 44,
+          "y": 190,
+          "w": 62,
+          "h": 44
+        },
+        {
+          "name": "What now",
+          "x": 125,
+          "y": 132,
+          "w": 70,
+          "h": 44
+        },
+        {
+          "name": "Build",
+          "x": 223,
+          "y": 190,
+          "w": 45,
+          "h": 44
+        }
+      ],
+      "her": {
+        "x": 113,
+        "y": 182,
+        "w": 94,
+        "h": 133
+      }
+    },
+    {
+      "scene": "expanded",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "buttons": [
+        {
+          "name": "Protect",
+          "x": 59,
+          "y": 205,
+          "w": 62,
+          "h": 44
+        },
+        {
+          "name": "What now",
+          "x": 160,
+          "y": 132,
+          "w": 70,
+          "h": 44
+        },
+        {
+          "name": "Build",
+          "x": 277,
+          "y": 205,
+          "w": 45,
+          "h": 44
+        }
+      ],
+      "her": {
+        "x": 136,
+        "y": 182,
+        "w": 118,
+        "h": 167
+      }
+    },
+    {
+      "scene": "expanded",
+      "width": 720,
+      "height": 900,
+      "overflowY": 0,
+      "buttons": [
+        {
+          "name": "Protect",
+          "x": 145,
+          "y": 391,
+          "w": 92,
+          "h": 44
+        },
+        {
+          "name": "What now",
+          "x": 309,
+          "y": 222,
+          "w": 102,
+          "h": 44
+        },
+        {
+          "name": "Build",
+          "x": 494,
+          "y": 391,
+          "w": 69,
+          "h": 44
+        }
+      ],
+      "her": {
+        "x": 259,
+        "y": 272,
+        "w": 203,
+        "h": 287
+      }
+    },
+    {
+      "scene": "expanded",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "buttons": [
+        {
+          "name": "Protect",
+          "x": 324,
+          "y": 271,
+          "w": 92,
+          "h": 44
+        },
+        {
+          "name": "What now",
+          "x": 499,
+          "y": 197,
+          "w": 102,
+          "h": 44
+        },
+        {
+          "name": "Build",
+          "x": 695,
+          "y": 271,
+          "w": 69,
+          "h": 44
+        }
+      ],
+      "her": {
+        "x": 466,
+        "y": 247,
+        "w": 167,
+        "h": 237
+      }
+    },
+    {
+      "scene": "peek+cellar",
+      "width": 320,
+      "height": 568,
+      "panel": {
+        "x": 14,
+        "y": 175,
+        "w": 292,
+        "h": 189
+      },
+      "her": {
+        "x": 113,
+        "y": 182,
+        "w": 94,
+        "h": 116
+      },
+      "rail": {
+        "jars": 12,
+        "scrollable": true,
+        "outlier": "Jun — swelled and stepped out of the rail; the outlier",
+        "ghost": true,
+        "stair": "queen-stair queen-stair--up",
+        "fieldInert": true
+      }
+    },
+    {
+      "scene": "peek+cellar",
+      "width": 320,
+      "height": 700,
+      "panel": {
+        "x": 14,
+        "y": 264,
+        "w": 292,
+        "h": 232
+      },
+      "her": {
+        "x": 113,
+        "y": 182,
+        "w": 94,
+        "h": 133
+      },
+      "rail": {
+        "jars": 12,
+        "scrollable": true,
+        "outlier": "Jun — swelled and stepped out of the rail; the outlier",
+        "ghost": true,
+        "stair": "queen-stair queen-stair--up",
+        "fieldInert": true
+      }
+    },
+    {
+      "scene": "peek+cellar",
+      "width": 390,
+      "height": 844,
+      "panel": {
+        "x": 14,
+        "y": 319,
+        "w": 362,
+        "h": 321
+      },
+      "her": {
+        "x": 136,
+        "y": 182,
+        "w": 118,
+        "h": 167
+      },
+      "rail": {
+        "jars": 12,
+        "scrollable": true,
+        "outlier": "Jun — swelled and stepped out of the rail; the outlier",
+        "ghost": true,
+        "stair": "queen-stair queen-stair--up",
+        "fieldInert": true
+      }
+    },
+    {
+      "scene": "peek+cellar",
+      "width": 720,
+      "height": 900,
+      "panel": {
+        "x": 390,
+        "y": 134,
+        "w": 300,
+        "h": 550
+      },
+      "her": {
+        "x": 259,
+        "y": 272,
+        "w": 203,
+        "h": 287
+      },
+      "rail": {
+        "jars": 12,
+        "scrollable": true,
+        "outlier": "Jun — swelled and stepped out of the rail; the outlier",
+        "ghost": true,
+        "stair": "queen-stair queen-stair--up",
+        "fieldInert": true
+      }
+    },
+    {
+      "scene": "peek+cellar",
+      "width": 1100,
+      "height": 800,
+      "panel": {
+        "x": 663,
+        "y": 134,
+        "w": 395,
+        "h": 450
+      },
+      "her": {
+        "x": 466,
+        "y": 247,
+        "w": 167,
+        "h": 237
+      },
+      "rail": {
+        "jars": 12,
+        "scrollable": true,
+        "outlier": "Jun — swelled and stepped out of the rail; the outlier",
+        "ghost": true,
+        "stair": "queen-stair queen-stair--up",
+        "fieldInert": true
+      }
+    },
+    {
+      "scene": "loft",
+      "width": 390,
+      "height": 844,
+      "overflowY": 0,
+      "enteredBy": "pull"
+    },
+    {
+      "scene": "loft",
+      "width": 1100,
+      "height": 800,
+      "overflowY": 0,
+      "enteredBy": "same door"
+    },
+    {
+      "scene": "doors+move",
+      "width": 320,
+      "height": 568,
+      "doorOpacity": 0.6
+    },
+    {
+      "scene": "doors+move",
+      "width": 390,
+      "height": 844,
+      "doorOpacity": 0.6
+    },
+    {
+      "scene": "doors+move",
+      "width": 1100,
+      "height": 800,
+      "doorOpacity": 0.6
+    },
+    {
+      "scene": "motion",
+      "motion": {
+        "door": 0.06,
+        "label": 0,
+        "breathe": "queen-breathe",
+        "duration": "6s"
+      },
+      "revealed": 1,
+      "faded": 0.06
+    },
+    {
+      "scene": "reduced-motion",
+      "reduced": true,
+      "mount": "none",
+      "body": "0s",
+      "door": 0.6,
+      "label": 1
+    },
+    {
+      "scene": "keyboard",
+      "order": [
+        {
+          "className": "queen-door",
+          "label": "Together — decisions waiting on both of ",
+          "outline": "solid",
+          "width": 3
+        },
+        {
+          "className": "queen-figure",
+          "label": "The Queen — one thing needs us. Opens he",
+          "outline": "solid",
+          "width": 3
+        },
+        {
+          "className": "queen-move",
+          "label": "A Move is waiting: Choose which payday t",
+          "outline": "solid",
+          "width": 3
+        },
+        {
+          "className": "queen-door",
+          "label": "Status — freshness, sources, settings. G",
+          "outline": "solid",
+          "width": 3
+        }
+      ]
+    },
+    {
+      "scene": "forced-colors",
+      "door": 1,
+      "label": 1,
+      "border": "solid"
+    },
+    {
+      "scene": "easy-read",
+      "plainLine": 17,
+      "line": 19.5,
+      "door": 0.6,
+      "overflowY": 0
+    }
+  ],
+  "notes": [
+    "protect peek 320x568: the sheet covers her in this very short frame (sheet at 175, she at 182)"
+  ],
+  "errors": []
+}

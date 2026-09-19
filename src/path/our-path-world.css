@@ -1,0 +1,263 @@
+/* Our Path world (D-262). The page reads the scene tokens; each world adds its own paper. */
+.path-world { display: grid; gap: 14px; }
+.path-world [hidden] { display: none !important; }
+.path-world .primary { width: auto; margin-top: 0; padding: 10px 16px; font-size: 15px; }
+
+.path-world__head { display: grid; gap: 4px; }
+.path-world__head h2 { font-family: var(--theme-display, var(--display)); font-weight: 600; font-size: clamp(24px, 4.6vw, 34px); line-height: 1.05; margin: 0; text-wrap: balance; }
+.path-world__lede { margin: 0; color: var(--muted); max-width: 60ch; }
+.path-world__link { justify-self: start; border: 1px dashed var(--theme-accent, var(--copper)); background: transparent; color: var(--ink); border-radius: 999px; padding: 6px 14px; font-weight: 600; min-height: 44px; }
+.path-world__namer { display: grid; gap: 8px; max-width: 420px; padding: 12px; border: 1px solid var(--line); border-radius: var(--world-r-card, 14px); background: var(--card); }
+.path-world__namer input { font-family: var(--theme-display, var(--display)); font-size: 20px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+
+/* The stage: canvas, the real buttons over it, and a few quiet controls. */
+.path-world__stage { position: relative; height: clamp(440px, 72vh, 760px); border-radius: var(--world-r-card, 18px); overflow: hidden; border: 1px solid var(--line); background: var(--paper-2, var(--paper)); isolation: isolate; }
+.path-world__host { position: absolute; inset: 0; }
+.path-world__host canvas { display: block; width: 100%; height: 100%; cursor: grab; }
+.path-world__host canvas:active { cursor: grabbing; }
+.path-world__flat { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; }
+.path-world__flat svg { width: min(100%, 460px); height: auto; }
+/* The flat map's own marks (dots, kerbs, the walkers) live in path-minimap.css, shared with Home's window. */
+.path-world__marks { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 2; }
+.path-mark { position: absolute; left: 0; top: 0; pointer-events: auto; display: grid; justify-items: center; gap: 2px; transform-origin: 0 0; border: 0; background: transparent; padding: 0; min-width: 44px; min-height: 44px; place-content: end center; color: var(--ink); will-change: transform; translate: -50% -100%; }
+.path-mark__label { font-family: var(--theme-hand, var(--display)); font-size: 15px; line-height: 1.1; background: var(--card); padding: 3px 9px 4px; border-radius: 6px; box-shadow: 0 3px 10px -5px rgb(0 0 0 / 0.45); white-space: nowrap; max-width: 44vw; overflow: hidden; text-overflow: ellipsis; }
+.path-mark__sub { font-size: 11px; font-weight: 600; color: var(--muted); background: color-mix(in srgb, var(--card) 88%, transparent); padding: 1px 7px; border-radius: 999px; white-space: nowrap; }
+.path-mark:focus-visible { outline: none; }
+.path-mark:focus-visible .path-mark__label { outline: 3px solid var(--world-focus, var(--theme-accent, var(--copper))); outline-offset: 2px; }
+/* Every control on the island shows where the keyboard is. */
+.path-world :is(button, summary, input, select, .path-world__card):not(.path-mark):focus-visible { outline: 3px solid var(--world-focus, var(--theme-accent, var(--copper))); outline-offset: 2px; }
+.path-mark--now .path-mark__label { background: var(--ink); color: var(--paper); }
+.path-mark--goal .path-mark__label { font-family: var(--theme-display, var(--display)); font-weight: 600; }
+.path-mark--kiln .path-mark__label, .path-mark--charter .path-mark__label { font-family: var(--theme-display, var(--display)); font-style: italic; }
+.path-mark--unknown .path-mark__label { outline: 2px dashed var(--theme-second, var(--copper)); }
+.path-mark--bill .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 600; }
+.path-mark--bill .path-mark__sub { max-width: 44vw; overflow: hidden; text-overflow: ellipsis; }
+.path-mark--sunrise .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 700; background: #fff1d6; color: #5a3a12; }
+.path-mark--mist .path-mark__label { font-family: var(--font); font-size: 12px; font-weight: 700; border: 1px dashed var(--muted); }
+.path-mark--stone .path-mark__label { font-size: 13px; }
+/* A private footpath: a dashed, slightly see-through label, because only you ever see it. */
+.path-mark--footpath .path-mark__label { font-size: 13px; border: 1px dashed var(--muted); background: color-mix(in srgb, var(--card) 86%, transparent); }
+.path-mark--footpath .path-mark__sub { font-style: italic; }
+.path-mark--bridge .path-mark__label { font-size: 13px; border-bottom: 3px solid #9c7a55; }
+.path-world[data-level="0"] .path-mark--goal .path-mark__label { font-size: 17px; }
+
+.path-world__controls { position: absolute; z-index: 3; top: 12px; right: 12px; display: grid; gap: 8px; justify-items: end; }
+.path-world__lantern, .path-world__quality, .path-world__layers, .path-world__rail { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); flex-wrap: wrap; }
+.path-world__lantern button, .path-world__quality button, .path-world__layers button, .path-world__rail button { border: 0; background: transparent; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13px; min-height: 36px; display: inline-flex; gap: 6px; align-items: center; }
+.path-world__lantern button[aria-pressed="true"], .path-world__quality button[aria-pressed="true"], .path-world__rail button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.path-world__layers button[aria-pressed="false"] { text-decoration: line-through; opacity: 0.7; }
+.path-world__lantern i { width: 8px; height: 11px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: currentColor; opacity: 0.6; }
+.path-world__quality { align-items: center; }
+.path-world__quality > span { padding: 0 4px 0 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.path-world__rail { position: absolute; z-index: 3; left: 12px; bottom: 12px; border-radius: 16px; }
+.path-world__now { position: absolute; z-index: 3; right: 12px; bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: min(560px, calc(100% - 24px)); }
+.path-world__compass, .path-world__next { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 8px 14px; font-weight: 700; min-height: 44px; box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); text-align: left; }
+.path-world__next { display: grid; line-height: 1.2; max-width: 280px; }
+.path-world__next span { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+.path-world__tent { border-radius: 999px; min-height: 44px; }
+
+.path-world__card { position: absolute; z-index: 4; top: 64px; left: 12px; width: min(340px, calc(100% - 24px)); max-height: calc(100% - 140px); overflow: auto; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: var(--world-r-card, 14px); padding: 16px 16px 14px; box-shadow: 0 24px 50px -24px rgb(0 0 0 / 0.55); }
+.path-world__card h3 { font-family: var(--theme-display, var(--display)); font-size: 22px; line-height: 1.1; margin: 2px 32px 8px 0; text-wrap: balance; }
+.path-world__card ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; line-height: 1.4; }
+.path-world__close { position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--paper); color: var(--ink); font-size: 18px; }
+.path-world__actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.path-world__actions button { min-height: 44px; border-radius: 999px; padding: 8px 14px; font-weight: 700; }
+
+.path-world__grow { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; padding: 10px 14px; border: 1px solid var(--line); border-radius: var(--world-r-card, 14px); background: var(--card); }
+.path-world__play { grid-row: span 3; min-width: 88px; min-height: 44px; border-radius: 999px; border: 0; background: var(--ink); color: var(--paper); font-weight: 700; }
+.path-world__when { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.path-world__when strong { font-family: var(--theme-display, var(--display)); font-size: 20px; }
+.path-world__slider input { width: 100%; accent-color: var(--theme-accent, var(--copper)); min-height: 32px; }
+.path-world__ticks { list-style: none; margin: 0; padding: 0; display: flex; gap: 3px; }
+.path-world__ticks li { flex: 1; height: 8px; border-radius: 3px; }
+.path-world__ticks li[data-current="true"] { outline: 2px solid var(--ink); outline-offset: 1px; }
+.path-chip { font-size: 12px; font-weight: 700; padding: 2px 10px; border-radius: 999px; color: #2f261b; }
+.path-chip--steady, .path-world__dot--steady { background: #a9b98f; fill: #a9b98f; }
+.path-chip--bloom, .path-world__dot--bloom { background: #e79ab2; fill: #e79ab2; }
+.path-chip--milestone, .path-world__dot--milestone { background: #e0ad3c; fill: #e0ad3c; }
+.path-chip--uphill, .path-world__dot--uphill { background: #c9a36a; fill: #c9a36a; }
+.path-chip--storm, .path-world__dot--storm { background: #8e9cb2; fill: #8e9cb2; }
+.path-chip--paused, .path-world__dot--paused { background: #cfc5b3; fill: #cfc5b3; }
+.path-world__notice { margin: 0; font-weight: 600; }
+
+.path-world__panels { display: grid; gap: 10px; }
+.path-world__panel { border: 1px solid var(--line); border-radius: var(--world-r-card, 14px); background: var(--card); padding: 12px 14px; }
+.path-world__panel summary { font-weight: 700; cursor: pointer; min-height: 32px; display: flex; align-items: center; }
+.path-world__panel h3 { margin: 0 0 8px; font-family: var(--theme-display, var(--display)); }
+.path-world__proposals { border: 1.5px dashed var(--theme-second, var(--copper)); }
+.path-world__proposals ul, .path-recipes, .path-categories, .path-world__outline ul { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.path-world__proposals p { margin: 0 0 4px; }
+.path-recipes { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.path-recipe { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: var(--paper); display: grid; gap: 6px; }
+.path-recipe.is-off { opacity: 0.6; }
+.path-recipe__top { display: flex; justify-content: space-between; gap: 8px; }
+.path-recipe__fired { font-weight: 700; color: color-mix(in srgb, var(--theme-accent, var(--copper)) 70%, var(--ink)); font-variant-numeric: tabular-nums; }
+.path-recipe__rule { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.path-recipe__rule select { max-width: 190px; min-height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.path-recipe__rule input[type="range"] { width: 90px; accent-color: var(--theme-accent, var(--copper)); }
+.path-recipe__by { margin: 0; font-size: 12px; }
+.path-categories li { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; }
+.path-categories select { min-height: 36px; border-radius: 8px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
+.path-world__outline button { border: 0; background: transparent; color: var(--ink); text-align: left; padding: 6px 4px; min-height: 36px; width: 100%; border-radius: 8px; }
+.path-world__outline button:hover { background: var(--paper); }
+
+.path-world__room { display: grid; gap: 12px; }
+.path-world__back { justify-self: start; min-height: 44px; border-radius: 999px; padding: 8px 16px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; }
+
+/* Classic Hearth: a pinboard map on the kitchen table. */
+.path-world--classic .path-world__stage { background: #efe6d6; box-shadow: inset 0 0 0 6px color-mix(in srgb, var(--card) 70%, transparent); }
+.path-world--classic .path-mark__label { border-radius: 2px; box-shadow: 0 2px 0 color-mix(in srgb, var(--theme-accent, #b5653e) 55%, transparent), 0 4px 10px -6px rgb(0 0 0 / 0.4); }
+/* Taylor's Scrapbook: washi tape on the stage and a hand-lettered map. */
+.path-world--taylor .path-world__stage { border-radius: 6px 22px 6px 22px; }
+.path-world--taylor .path-world__stage::before { content: ""; position: absolute; z-index: 5; top: -2px; left: 32px; width: 96px; height: 18px; rotate: -3deg; pointer-events: none; background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--theme-accent, #946522) 45%, transparent) 0 6px, color-mix(in srgb, var(--theme-second, #a63968) 35%, transparent) 6px 12px); }
+.path-world--taylor .path-mark__label { border-radius: 3px; }
+/* Newfoundland: the coastal trail, weathered signboards and fog. */
+.path-world--newfoundland .path-world__stage { background: #dfe7e6; border-width: 2px; }
+.path-world--newfoundland .path-mark__label { font-family: var(--font); font-weight: 700; font-size: 13px; letter-spacing: 0.02em; border-left: 4px solid var(--theme-accent, #a33751); border-radius: 3px; }
+
+@media (max-width: 719px) {
+  .path-world__stage { height: clamp(420px, 68vh, 620px); }
+  /* Every group fits: lantern and the compact Lite toggle on the first row, layers wrap to a second. */
+  .path-world__controls { top: 8px; right: 8px; left: 8px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+  .path-world__lantern, .path-world__quality, .path-world__layers { flex: none; flex-wrap: nowrap; max-width: 100%; }
+  .path-world__lantern button, .path-world__quality button, .path-world__layers button { padding: 6px 9px; }
+  .path-world__lantern { gap: 0; }
+  .path-world__lantern button { padding: 6px 8px; gap: 4px; }
+  .path-world__quality--compact button[aria-pressed="false"] { opacity: 0.8; }
+  .path-world__rail { left: 8px; right: 8px; bottom: 64px; justify-content: center; border-radius: 999px; }
+  .path-world__rail button { padding: 6px 9px; }
+  .path-world__now { left: 8px; right: 8px; bottom: 8px; max-width: none; justify-content: stretch; flex-wrap: nowrap; }
+  .path-world__now > * { flex: 1; font-size: 13px; }
+  .path-world__next { display: none; }
+  .path-world__card { top: auto; bottom: 0; left: 0; width: 100%; max-height: 62%; border-radius: 18px 18px 0 0; z-index: 6; }
+  .path-mark__label { font-size: 13px; }
+  .path-world__grow { grid-template-columns: 1fr; }
+  .path-world__play { grid-row: auto; justify-self: start; }
+}
+@media (prefers-reduced-motion: reduce) { .path-mark { transition: none; } }
+@media (forced-colors: active) { .path-mark__label, .path-chip { forced-color-adjust: auto; border: 1px solid CanvasText; } }
+
+/* Hercules waits at the tent (decoration: aria-hidden, never a target). He sits beside the tent's label, clear of it. */
+.path-hercules { pointer-events: none; display: block; line-height: 0; }
+.path-mark .path-hercules { position: absolute; left: calc(100% - 6px); bottom: -6px; filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.18)); }
+.path-world__now > .path-hercules { flex: none; align-self: flex-end; margin-right: -4px; }
+.path-world__time { font-size: 13px; min-height: 40px; grid-column: 2; justify-self: start; padding: 4px 12px; }
+.path-mark--cottage .path-mark__label { font-family: var(--theme-display, var(--display)); font-style: italic; }
+@media (max-width: 719px) { .path-world__time { grid-column: auto; } }
+/* No idle tail or breathing for Hercules when motion is reduced. */
+@media (prefers-reduced-motion: reduce) { .path-hercules *, .path-hercules *::before, .path-hercules *::after { animation: none !important; transition: none !important; } }
+:root[data-motion="reduced"] .path-hercules * { animation: none !important; transition: none !important; }
+
+/* The Journey of Life (D-268): era marks, state chips, pencil, and the planner. */
+.path-mark--era .path-mark__label { font-family: var(--theme-display, var(--display)); font-weight: 600; font-size: 16px; }
+.path-mark--gate .path-mark__label { font-weight: 700; border-bottom: 3px solid color-mix(in srgb, #e9b949 80%, var(--ink)); }
+.path-mark--home .path-mark__label { font-family: var(--theme-display, var(--display)); font-style: italic; }
+.path-mark--plan .path-mark__label { font-size: 13px; }
+.path-world[data-level="0"] .path-mark--era .path-mark__label { font-size: 15px; }
+/* Pencil: a suggestion only one of us has agreed to. Dashed, a little faded, never a filled label. */
+.path-pencil { font-style: italic; }
+.path-mark.path-mark--pencil .path-mark__label, .path-mark--era[data-state="sketched"] .path-mark__label, .path-mark--plan[data-pencil="true"] .path-mark__label { background: color-mix(in srgb, var(--card) 70%, transparent); border: 1.5px dashed var(--muted); box-shadow: none; font-style: italic; }
+.path-mark--era[data-state="future"] .path-mark__label { background: color-mix(in srgb, var(--card) 82%, #dfe7ea); }
+.path-era-chip { display: inline-flex; align-items: center; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); white-space: nowrap; }
+.path-era-chip--past { background: color-mix(in srgb, var(--theme-second, #4f6b4a) 16%, var(--paper)); }
+.path-era-chip--current { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.path-era-chip--future { background: color-mix(in srgb, #9fb3bd 22%, var(--paper)); }
+.path-era-chip--sketched { background: transparent; border-style: dashed; font-style: italic; }
+.path-world__era-now { margin: 2px 0 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-weight: 600; }
+.path-world__head { grid-template-columns: minmax(0, 1fr); }
+.path-world__head .path-world__link + .path-world__link { margin-top: 2px; }
+.path-world__room-head { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.path-journey { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.path-journey__era { display: flex; gap: 10px; align-items: center; min-width: 0; }
+.path-journey__era button { flex: 1; min-width: 0; min-height: 44px; text-align: left; border: 1px solid var(--line); background: var(--paper); color: var(--ink); border-radius: 12px; padding: 8px 12px; font-weight: 600; overflow-wrap: anywhere; }
+.path-journey__era[data-focused] button { border-color: var(--theme-accent, var(--copper)); }
+.path-journey__era--sketched button { border-style: dashed; font-style: italic; }
+.path-journey__era .path-era-chip { min-width: 84px; justify-content: center; }
+.path-world__outline-head { margin: 12px 0 0; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.path-world__outline ul ul { list-style: none; margin: 2px 0 4px 16px; padding: 0; border-left: 2px solid var(--line); }
+.path-world__outline .path-world__outline-journey button { min-height: 44px; }
+
+.path-planner { border: 1.5px solid var(--line); border-radius: var(--world-r-card, 14px); background: var(--card); padding: 14px 16px 16px; display: grid; gap: 12px; min-width: 0; }
+.path-planner__head { display: grid; gap: 4px; grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+.path-planner__head > * { grid-column: 1; margin: 0; }
+.path-planner__head h3 { font-family: var(--theme-display, var(--display)); font-size: 24px; line-height: 1.1; overflow-wrap: anywhere; }
+.path-planner__head h3:focus { outline: none; }
+.path-planner__head h3:focus-visible { outline: 3px solid var(--world-focus, var(--theme-accent, var(--copper))); outline-offset: 2px; }
+.path-planner__close { grid-column: 2 !important; grid-row: 1 / span 2; min-height: 44px; border-radius: 999px; padding: 8px 14px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); font-weight: 700; }
+.path-planner__journey { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.path-planner__era { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); }
+.path-planner__era--sketched { border-style: dashed; }
+.path-planner__era--current { border-width: 2px; border-color: var(--ink); }
+.path-planner__era-text { display: grid; gap: 2px; min-width: 0; overflow-wrap: anywhere; }
+.path-planner__era-text .muted { font-size: 13px; }
+.path-planner__era-actions { display: flex; gap: 6px; }
+.path-planner__era-actions button, .path-planner__plans button, .path-planner__add > button { min-height: 44px; border-radius: 999px; padding: 8px 14px; font-weight: 700; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.path-planner__era-actions .primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.path-planner__editor { display: grid; gap: 10px; min-width: 0; }
+.path-planner__fields { border: 0; margin: 0; padding: 0; display: grid; gap: 6px; min-width: 0; }
+.path-planner__fields[disabled] { opacity: 0.6; }
+.path-planner__fields > label, .path-planner__cell > label { font-weight: 700; font-size: 14px; margin-top: 4px; }
+.path-planner input:not([type="checkbox"]), .path-planner select { min-height: 44px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); padding: 6px 10px; font: inherit; width: 100%; min-width: 0; box-sizing: border-box; }
+.path-planner input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--theme-accent, var(--copper)); flex: none; }
+.path-planner #path-era-new-name, .path-planner [id$="-name"] { font-family: var(--theme-display, var(--display)); font-size: 20px; }
+.path-planner__row, .path-planner__add { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; align-items: end; }
+.path-planner__cell { display: grid; gap: 4px; min-width: 0; }
+.path-planner__cell--wide { grid-column: span 2; }
+.path-planner__check { display: flex; gap: 10px; align-items: center; min-height: 44px; font-weight: 600; }
+.path-planner__banks, .path-planner__plans { border: 1px solid var(--line); border-radius: 12px; padding: 8px 12px 12px; margin: 6px 0 0; min-width: 0; display: grid; gap: 6px; }
+.path-planner__banks legend, .path-planner__plans legend { font-weight: 700; padding: 0 4px; }
+.path-planner__plans ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.path-planner__plans li { display: flex; gap: 8px; justify-content: space-between; align-items: center; flex-wrap: wrap; padding: 6px 8px; border-radius: 10px; background: var(--paper); overflow-wrap: anywhere; }
+.path-planner__plans li.path-pencil { background: transparent; border: 1.5px dashed var(--muted); }
+.path-planner__waiting { border: 1.5px dashed var(--theme-second, var(--copper)); border-radius: 12px; padding: 10px 12px; }
+.path-planner__waiting p { margin: 0 0 4px; }
+.path-planner__hint { margin: 0; font-size: 13px; }
+.path-planner__error { margin: 0; font-weight: 700; color: var(--danger, #9b2c2c); }
+
+/* Classic Hearth: an index card on the pinboard. */
+.path-world--classic .path-planner { box-shadow: 0 2px 0 color-mix(in srgb, var(--theme-accent, #b5653e) 45%, transparent); border-radius: 4px; }
+.path-world--classic .path-era-chip { border-radius: 3px; }
+/* Taylor's Scrapbook: a taped journal page, stars for the era we are in. */
+.path-world--taylor .path-planner { border-radius: 6px 20px 6px 20px; background: linear-gradient(color-mix(in srgb, var(--card) 96%, #f5dbe2), var(--card)); }
+.path-world--taylor .path-era-chip--current::before { content: "★"; margin-right: 4px; color: #e9b949; }
+.path-world--taylor .path-pencil, .path-world--taylor .path-mark--era .path-mark__label { font-family: var(--theme-hand, var(--display)); }
+/* Newfoundland: trail signboards with a painted edge. */
+.path-world--newfoundland .path-planner { border-left: 6px solid var(--theme-accent, #a33751); border-radius: 4px; }
+.path-world--newfoundland .path-era-chip { border-radius: 3px; border-left: 4px solid var(--theme-second, #26766f); }
+.path-world--newfoundland .path-mark--era .path-mark__label { font-family: var(--font); font-weight: 700; font-size: 14px; }
+
+@media (max-width: 719px) {
+  .path-planner { padding: 12px; }
+  .path-planner__head { grid-template-columns: minmax(0, 1fr); }
+  .path-planner__close { grid-column: 1 !important; grid-row: auto; justify-self: start; }
+  .path-planner__era { grid-template-columns: minmax(0, 1fr); }
+  .path-planner__era .path-era-chip { justify-self: start; }
+  .path-planner__cell--wide { grid-column: auto; }
+  .path-journey__era .path-era-chip { min-width: 72px; }
+  .path-mark--era .path-mark__label { font-size: 14px; }
+}
+@media (forced-colors: active) { .path-era-chip { forced-color-adjust: auto; border: 1px solid CanvasText; } }
+/* The card's eyebrow never runs under the close button; placeholders read as hints, not answers. */
+.path-world__card > .kicker { margin-right: 40px; overflow-wrap: anywhere; }
+.path-planner input::placeholder { color: var(--muted); opacity: 0.75; font-style: italic; }
+
+/* Full screen toggle: small and nearly invisible until you reach for it. */
+.path-world__full { position: absolute; z-index: 4; top: max(6px, env(safe-area-inset-top)); left: max(6px, env(safe-area-inset-left)); width: 40px; height: 40px; min-height: 40px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--ink); opacity: 0.3; cursor: pointer; filter: drop-shadow(0 0 2px color-mix(in srgb, var(--paper) 85%, transparent)); transition: opacity 0.2s ease, background-color 0.2s ease; }
+.path-world__full svg { width: 18px; height: 18px; }
+.path-world__full:hover, .path-world__full:focus-visible, .path-world__full[aria-pressed="true"]:hover { opacity: 1; background: color-mix(in srgb, var(--card) 88%, transparent); }
+.path-world__full:focus-visible { outline: 3px solid var(--accent, var(--ink)); outline-offset: 1px; }
+.path-world__stage.path-world__stage--full { position: fixed; inset: 0; z-index: 120; width: 100vw; height: 100vh; height: 100dvh; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
+.path-world__stage.path-world__stage--full::before { display: none; }
+.path-world__stage--full .path-world__controls { top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); }
+.path-world__stage--full .path-world__rail { bottom: max(12px, env(safe-area-inset-bottom)); }
+.path-world__stage--full .path-world__now { bottom: max(12px, env(safe-area-inset-bottom)); }
+html.path-world-fullscreen, html.path-world-fullscreen body { overflow: hidden; overscroll-behavior: none; }
+@media (max-width: 719px) {
+  .path-world__controls { left: 52px; }
+  .path-world__stage--full .path-world__controls { top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); left: 52px; }
+  .path-world__stage--full .path-world__rail { bottom: calc(64px + env(safe-area-inset-bottom)); }
+  .path-world__stage--full .path-world__now { bottom: max(8px, env(safe-area-inset-bottom)); }
+}
+@media (prefers-reduced-motion: reduce) { .path-world__full { transition: none; } }
+@media (forced-colors: active) { .path-world__full { opacity: 1; border: 1px solid ButtonText; } }

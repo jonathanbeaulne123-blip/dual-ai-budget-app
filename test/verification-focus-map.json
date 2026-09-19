@@ -1023,6 +1023,257 @@
         "test/hercules-wardrobe-navigation.test.ts"
       ],
       "reason": "Actual Android packaged wardrobe models preserve every base and collection while web/iOS retain gzip, cancellation and existing fitting workflows"
+    },
+    {
+      "sources": [
+        "src/queen/world/queenAuthoring.ts",
+        "src/queen/world/queenSculpture.ts",
+        "src/queen/world/queenModel.ts",
+        "public/models/queen/mandevilla-queen.v1.glb",
+        "public/models/queen/mandevilla-guardian.v1.glb",
+        "public/models/queen/mandevilla-mastermind.v1.glb",
+        "src/queen/world/homeBankModel.ts",
+        "src/queen/world/queenWorld.ts",
+        "src/queen/QueenWorld.tsx",
+        "src/queen/QueenFigure.tsx",
+        "src/kitty/sculpture.ts",
+        "src/kitty/nestSculpture.ts",
+        "src/kitty/studio/flat.tsx",
+        "src/queen/world/queenCharmSurface.ts",
+        "src/queen/world/queenCharmLibrary.ts",
+        "src/queen/world/queenCharmSet.ts",
+        "src/queen/QueenCharmGlyph.tsx",
+        "src/queen/QueenCharmTool.tsx",
+        "src/core/queenCharms.ts",
+        "src/core/kittyStudio.ts",
+        "src/core/queenForm.ts",
+        "src/core/queenLight.ts",
+        "src/queen/QueenWheel.tsx",
+        "src/queen/QueenPortraits.tsx",
+        "src/queen/world/queenScenery.ts",
+        "src/queen/QueenSceneryFlat.tsx",
+        "src/theme/scenes.ts",
+        "src/queen/world/queenRoomWorld.ts",
+        "src/queen/QueenRoomWorld.tsx",
+        "src/queen/QueenCellar.tsx",
+        "src/queen/QueenLoft.tsx",
+        "src/core/kittyNestDesigns.ts",
+        "src/queen/world/queenBankSculpture.ts",
+        "src/queen/QueenBankFlat.tsx",
+        "src/queen/queenHouse.ts",
+        "src/queen/useHouseAxis.ts",
+        "src/queen/QueenHouseRail.tsx",
+        "src/queen/QueenHome.tsx",
+        "src/kitty/studio/silhouette.ts"
+      ],
+      "tests": [
+        "test/queen-world.test.ts",
+        "test/queen-model.test.ts",
+        "test/queen-charms.test.ts",
+        "test/queens-nest-ui.test.ts",
+        "test/queens-nest.test.ts",
+        "test/kitty-nest.test.ts",
+        "test/kitty-studio.test.ts",
+        "test/queen-ceremony.test.ts",
+        "test/queen-scenery.test.ts",
+        "test/queen-rooms.test.ts",
+        "test/queen-house.test.ts"
+      ],
+      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched; the charms: a charm cannot be written onto any reserved channel through the guard, an unearned charm cannot be placed, every unlock derives from existing Chapter, Charter and goal records, charms round-trip through the guard on the King's draft, the flat path draws the same charms as the 3D path, and disposal returns every count to zero; her creation and history: a closed Chapter adds exactly one ring and rings cannot be painted, charmed or removed, the wheel cannot produce a profile that hides a reserved channel or breaks the 40px silhouette and both turns are attributed with the second changing a different part, the underside is not paintable and holds no charm seat, a portrait is immutable and renders flat in both paths, the glaze axis reads fresh versus stale at the darkest and brightest hour, and disposal returns every count to zero with rings, marks and charms on her; the worlds shared Home opens into: each of the three shared-home scenes gets a world and no other route does, each world builds three real layers of depth, the drawn row wears the same six colours as the sculpted one, ambient motion is a pure function of the clock and is refused outright under reduced motion, no scenery object can claim the name of one of her reserved channels, and every world returns its geometries, materials and textures on unmount; the two rooms in three dimensions: the ledge's order is one list of design keys on the Build plan bank's own row so one rearrangement is one save and the last save wins, a malformed order is refused and a key for a bank that has left the shelf is ignored, moving one bank leaves every other bank where it was, and the jar's swell and the bank's glaze are quantised bands so no figure can be read off a shape; the kitty banks in the rooms and the one axis that reaches them: every bank form is the studio's own silhouette normalised to a single unit and the nest's own tier rather than a new shape, the house stacks loft over hearth over cellar and clamps at both ends, a swipe counts only when it leans vertical and travels far enough or is flicked, and a control that already owns the pointer or the arrow keeps them \u2014 she keeps the pull down that tips her over and lets the climb up pass through"
+    },
+    {
+      "sources": [
+        "src/core/queenPresentation.ts",
+        "src/queen/QueenHome.tsx",
+        "src/queen/queen-home.css",
+        "src/HouseholdHome.tsx",
+        "src/core/planFeature.ts",
+        "scripts/serve-household-home-proof.mjs",
+        "scripts/serve-queen-world-page-proof.mjs"
+      ],
+      "tests": [
+        "test/queens-nest.test.ts",
+        "test/queens-nest-ui.test.ts",
+        "test/kitty-nest.test.ts",
+        "test/home-feedback-ui.test.ts",
+        "test/vision-v2-home-ui.test.ts",
+        "test/queen-charms.test.ts"
+      ],
+      "reason": "The Queen's Nest Stage 1: every pulse state has a distinct still, protect+prepare route to the Protect door and everyday to the belly, the King still conserves to the cent, no Move gives empty hands, every region is a named keyboard control, and the panel Home stays intact behind the flag; the Queen's world page: the App's top bar, sync line and household switcher readings (the attention label, its explanation and recovery action, the household, the device time, the environment, the switcher and the office door) are one tap away behind the Status door, and the field is unchanged when the App passes no shell \u2014 the no-scroll, chrome-free, \u226555% composition on the actual App page is browser evidence (test/queen-world-page-layout.mjs), not a unit test"
+    },
+    {
+      "sources": [
+        "src/core/queenCellar.ts",
+        "src/queen/QueenCellarRail.tsx",
+        "src/queen/queen-cellar.css"
+      ],
+      "tests": [
+        "test/queen-cellar.test.ts",
+        "test/queen-cellar-ui.test.ts",
+        "test/queens-nest-ui.test.ts",
+        "test/kitty-nest.test.ts"
+      ],
+      "reason": "The cellar's bill rail: every bill of the month is a jar on its due day and the Fund walk is the water behind it; the strike rule is exactly Jonathan's (the hammer only by hand, only when due and full, and only where the cellar can post; a crack when due and not full, still payable and named as paying from the water; a shard when paid anywhere else in the app; nothing early); breaking the bank calls the existing postDueRecurrences command behind Final Confirm and moves no bank money; lifting a jar out is the walk's deferObligationIds hypothetical and writes nothing; the rail carries no figure; and conservation is untouched"
+    },
+    {
+      "sources": [
+        "src/core/habitatStory.ts"
+      ],
+      "tests": [
+        "test/habitat-story.test.ts"
+      ],
+      "reason": "Our Story (D-268 sample household): the third Hercules habitat, twenty-five fictional months from the Demo Suite's own generator with the Journey of Life laid over them through ordinary commands \u2014 move-in, a survived first year crossed at M\u221212, Make it ours with the sofa bought and the plant corner full, a house and retirement ahead, six foundation Chapters, a vet storm covered from the cushion through the Fund, lean winters, three trips, a kept Memory and things still waiting \u2014 balanced, health-clean, replaying byte-for-byte and passing the Demo Suite's books verification"
+    },
+    {
+      "sources": [
+        "src/core/habitat.ts",
+        "src/core/demoSuite.ts",
+        "scripts/serve-queen-world-page-proof.mjs"
+      ],
+      "tests": [
+        "test/habitat.test.ts",
+        "test/demo-suite.test.ts",
+        "test/app-startup-p1.test.ts"
+      ],
+      "reason": "The Hercules habitats: two Development-only synthetic households from the Demo Suite's own generator with a story laid over twelve months through the ordinary commands \u2014 doing well reads building with the water above the mark and every bill paid on its day; doing badly reads needs-us with the water under the mark and dry, two bills overdue, subscriptions crept in, a reversal and a lapsed ritual \u2014 both replaying exactly from a seed, balanced, health-clean, and passing the Demo Suite's books verification with the investor-only checks skipped rather than failed"
+    },
+    {
+      "sources": [
+        "src/FundStandingBook.tsx",
+        "src/fund-standing-book.css",
+        "src/core/bookLeaf.ts",
+        "src/core/fundPlates.ts",
+        "src/core/planFeature.ts"
+      ],
+      "tests": [
+        "test/fund-standing-book.test.ts",
+        "test/fund-standing-book-dom.test.ts",
+        "test/fund-ledge.test.ts",
+        "test/fund-plates.test.ts",
+        "test/accounts-widget.test.ts",
+        "test/category-shape.test.ts",
+        "test/desk-plates-dom.test.ts"
+      ],
+      "reason": "The Standing Book: the Fund board as a binder behind the default-off VITE_FUND_STANDING_BOOK flag; its fore-edge is one divider per rail slot, staggered down the edge, and keeps FundBoard's tablist contract id for id; the open section's top edge carries one page flag per item where the plate's data is a list (accountRows, the track's marks, the pocket's cards, categoryShape) as a second tablist that is a sibling of the fore-edge and controls the page, resetting to the first page when the section changes; the running head and plinth print the Level plate's own glance, edge, footing and verdict; divider geometry is read from each plate's edge and a household with every plate clear leaves the fore-edge flush; the six primitives stand as paper mechanisms drawn from plates.ts and bookLeaf.ts geometry only; nothing projected stands; an account's page is its register from accountRegister over the Books page's presentation floor (counted rows in ink, uncounted in pencil, a pop-up concertina over runningCents that never stands an uncounted row), a category's page is categoryShape's own band with the shape plate's own edge rule; the hosts render the book in place of the board only when the flag is on; nothing posts, settles, or moves a cent"
+    },
+    {
+      "sources": [
+        "src/demoSuiteIdentity.ts"
+      ],
+      "tests": [
+        "test/demo-suite-seat.test.ts",
+        "test/demo-suite-ui.test.ts"
+      ],
+      "reason": "The seat a person takes in a generated Demo Suite or habitat is one of the showcase's own two members (the one with their name, else Jonathan's), for the Google link, the ledger creation and the remembered session; the fixture's ids never change, so the seed still replays"
+    },
+    {
+      "sources": [
+        "src/queen/world/queenBankDress.ts",
+        "src/queen/cellarZoom.ts",
+        "src/queen/world/queenBankSculpture.ts",
+        "src/queen/world/queenRoomWorld.ts",
+        "src/queen/QueenBankFlat.tsx",
+        "src/queen/QueenCellarRail.tsx",
+        "src/queen/QueenCellar.tsx",
+        "src/core/queenCellar.ts"
+      ],
+      "tests": [
+        "test/queen-bank-dress.test.ts",
+        "test/queen-cellar.test.ts",
+        "test/queen-cellar-ui.test.ts",
+        "test/queen-house.test.ts"
+      ],
+      "reason": "The kitty jars: one dressing per purpose read by the sculpture and the flat twin with the crown kept in front; the kiln as the fill (bisque above the line, fired glaze below, to the crown when full); the rail's per-device scale; a press opens the jar's card with its facts; nothing posts, no money is read"
+    },
+    {
+      "sources": [
+        "src/core/pathWorld.ts",
+        "src/core/pathSignals.ts",
+        "src/path/grow.ts",
+        "src/path/walk.ts",
+        "src/path/landmarks.ts",
+        "src/path/together.ts",
+        "src/path/bottle.ts",
+        "src/path/OurPathWorld.tsx",
+        "src/path/world/pathWorld3d.ts",
+        "src/path/our-path-world.css",
+        "src/path/PathMiniMap.tsx",
+        "src/path/path-minimap.css",
+        "src/path/memoryPhotos.ts",
+        "src/boardMedia/householdBoardMedia.tsx"
+      ],
+      "tests": [
+        "test/our-path-world.test.ts",
+        "test/our-path-world-ui.test.ts",
+        "test/path-minimap.test.ts",
+        "test/queens-nest-ui.test.ts",
+        "test/time-machine-ui.test.ts",
+        "test/vision-v2-chapters.test.ts",
+        "test/path-weather.test.ts",
+        "test/path-stones.test.ts",
+        "test/path-footpaths.test.ts",
+        "test/path-bridges.test.ts"
+      ],
+      "reason": "Our Path world (D-262): the shared pathWorld collection changes only on both members' agreement, converges across phones, stays out of every financial hash and Hercules context, and replays exactly; month scores read only shared facts; the page keeps every place reachable without WebGL and keeps today's Our Path mounted behind the tent; the two walkers follow the month road (walkPath) and stand at the shown month in the flat fallback; a landmark opens its own Kitty Bank in the tent (a link only), the kiln stands once a shared bank exists and is warm only after a recent firing, and landmark steps are read as of the shown month's end; the open Chapter's campfire is a door to Together and knows the Shared Sitdown (open blazes, closed settles to embers and sets that month's land), closed books and stamped weeks set land, the Charter stands as a words-only stone square, and each agreed decision forks the path and opens that Plan line in the tent (links only); the Calendar arrives as weather (clouds and storms from household bills, sunrises from paydays, sunlit covered stretches, a mist signpost with the horizon's reasons or no forecast yet) with no amounts and only Fund and Calendar links; household planner tasks become stepping stones with owner and backup footprints, a money stone lights only by D-245 books evidence and the island never ticks a task; a year-old sea cove's bottle reads the household trip's calendar note or a kept Memory with every digit stripped; only the first winter month frosts; set land gets a kerb and stamped weeks dots on the flat map; on a phone the quality choice folds into one Lite toggle so the controls fit; Hercules waits aria-hidden at the tent in his saved outfit (beside the tent button without WebGL), Play stands as his cottage only when it can open, every month card and the Replay area open the Time Machine at that month (links only), memory flags carry household board photos matched by caption then slot order with every object URL revoked, the walkers pause at campfires, and Home's window draws the island in miniature (PathMiniMap) with a door to Our Path; private footpaths (the signed-in member's own personal tasks) draw only for their owner with a per-device Mine layer, and bridges show 'Share with Our Home' plank by plank (private draft for its owner only, shared offer for both, built once accepted in a Plan, stumps when set aside) with no amounts and an Open the Bridge link into the Plan Studio"
+    },
+    {
+      "sources": [
+        "src/core/pathStones.ts",
+        "src/core/pathLand.ts",
+        "src/core/pathFootpaths.ts",
+        "src/core/pathBridges.ts"
+      ],
+      "tests": [
+        "test/path-stones.test.ts",
+        "test/path-land.test.ts",
+        "test/planner-tasks.test.ts",
+        "test/path-footpaths.test.ts",
+        "test/path-bridges.test.ts"
+      ],
+      "reason": "Our Path stones and land: household planner tasks become stepping stones with owner and backup names and no amounts, personal tasks never appear, a money task lights only by the D-245 books evidence and never on a tick; closed Books months become permanent land and weekly stamps light lamps in the month their Sunday-start week names; empty households never throw and nothing posts; private footpaths come only from the member's own personal tasks (never the partner's, never a household task, never on the partner's assembled device) and light by the same D-245 rule; bridges derive stage 1 from the owner's private Bridge draft, stage 2 from proposed or held shared decisions, stage 3 from Plan-accepted decisions and stumps from declined or withdrawn ones, carry no amounts, and add nothing to the model disclosure"
+    },
+    {
+      "sources": [
+        "src/core/pathWeather.ts"
+      ],
+      "tests": [
+        "test/path-weather.test.ts"
+      ],
+      "reason": "Our Path weather: the Calendar's household bills become clouds with the heaviest a storm, paydays from the Calendar's pay clock become sunrises, covered stretches are contiguous and inside the window, mist carries the horizon's reasons and names the dipping bill without an amount, an unavailable horizon never throws, health bills stay unnamed, personal-account obligations never surface, and nothing posts"
+    },
+    {
+      "sources": [
+        "src/core/queenRack.ts",
+        "src/core/kittyNestDesigns.ts",
+        "src/queen/QueenLoft.tsx",
+        "src/queen/QueenHome.tsx",
+        "src/queen/QueenRoomWorld.tsx",
+        "src/queen/world/queenRoomWorld.ts",
+        "src/queen/queen-home.css",
+        "src/queen/queen-glass.css"
+      ],
+      "tests": [
+        "test/queen-rack.test.ts",
+        "test/queen-loft-rack-ui.test.ts",
+        "test/queen-house.test.ts",
+        "test/queens-nest-ui.test.ts"
+      ],
+      "reason": "The loft's rack: a strictly shaped plan (shelves, shares, fill marks, splits) on the Build plan bank's household design row, refused elsewhere and by older builds; shelves hung and taken down, banks moved by drag and Shift+Arrow, the weight, pin and dividers slid by hand and keyboard; the pour is exact in cents by share, capped at each shelf's mark, flowing down, and posts only through allocateHouseholdFundSurplus behind Confirm by the custodian; the boards in 3D follow the drawn shelves"
+    },
+    {
+      "sources": [
+        "src/core/cellarIncomeJars.ts",
+        "src/core/missingSubscriptions.ts",
+        "src/queen/QueenCellarExtras.tsx",
+        "src/queen/QueenCellar.tsx"
+      ],
+      "tests": [
+        "test/cellar-income-jars.test.ts",
+        "test/cellar-missing-subscriptions.test.ts",
+        "test/cellar-v3-ui.test.ts",
+        "test/queen-cellar-ui.test.ts"
+      ],
+      "reason": "Cellar v3 (D-279/D-280/D-281): pay jars are glass and hypothetical, built only from household-visible income rows (a member's own Personal rows only by their own per-device opt-in), each member can hide their own pay, and the contribution bank reads confirmed Fund contributions; a subscription not charged three days after its day, or charged less, stays one more cycle; the custodian's offer and the partner's yes are existing Plan Bridge rows, and the roll posts once through allocateHouseholdFundSurplus behind Confirm, refused a second time; a late charge clears the mark and withdraws the waiting offer"
     }
   ]
 }

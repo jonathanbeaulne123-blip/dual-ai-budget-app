@@ -9,9 +9,9 @@
 import { addDays, calendarDaysBetween, formatDateLabel, monthKeyFromDateKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { formatCad } from "./money.ts";
 import { isCreditKind } from "./accounts.ts";
-import { accountRows, chosenAccount } from "./accountsWidget.ts";
+import { accountRows, chosenAccount, type AccountRow } from "./accountsWidget.ts";
 import { claimRemainingCents, outstandingClaims } from "./appointments.ts";
-import { categoryShape } from "./categoryShape.ts";
+import { categoryShape, type CategoryShape } from "./categoryShape.ts";
 import { fundWalk, fundWeekMovements, type FundWalk, type WalkPoint } from "./fundWalk.ts";
 import {
   householdFundContributionMotions,
@@ -21,7 +21,7 @@ import {
 import { openGoals } from "./goalVault.ts";
 import { twoStreams } from "./twoStreams.ts";
 import type { Finding } from "./health.ts";
-import type { DeskPlateModel, FillWell, PlateEdge, TrackMark } from "./deskPlates.ts";
+import type { DeskPlateModel, FillWell, PlateEdge, PlateFigure, TrackMark } from "./deskPlates.ts";
 import type { Goal } from "./types.ts";
 import type { Household } from "./types.ts";
 
@@ -247,32 +247,47 @@ function settlePlate(household: Household, today: DateKey): DeskPlateModel {
  * One Shared account the member chose, or a starting point. Personal
  * account rooms stay on Personal Books and nothing aggregates scopes.
  */
+/** The accounts plate's mark on a card: a share of the limit above which the plate stands proud. */
+export const ACCOUNT_CARD_MARK = 0.3;
+
+/** The accounts plate's one rule for a row, shared with the Standing Book's stickies: a card past the mark, or a non-card below zero. */
+export function accountRowEdge(row: AccountRow): PlateEdge {
+  return (row.utilization ?? 0) > ACCOUNT_CARD_MARK || (!isCreditKind(row.kind) && row.balanceCents < 0) ? "attention" : "clear";
+}
+
+/** The row's figure the way the plate prints it: a card owes without a label; every other kind names its balance. */
+export function accountRowAmount(row: AccountRow): string {
+  return `${formatCad(row.balanceCents)}${isCreditKind(row.kind) ? "" : ` ${row.balanceLabel}`}`;
+}
+
+/** The plate's verdict for one row. */
+export function accountRowVerdict(row: AccountRow): string {
+  if (isCreditKind(row.kind)) return `${row.name} owes ${formatCad(row.balanceCents)}.`;
+  if (row.kind === "investment") return `${row.name} has ${formatCad(row.balanceCents)} of cost basis.`;
+  return `${row.name} has a ${formatCad(row.balanceCents)} book balance.`;
+}
+
+/** The plate's mechanism for one row: a ruled gauge for a card, a single card in the pocket otherwise. */
+export function accountRowFigure(row: AccountRow): PlateFigure {
+  return row.utilization !== null
+    ? { primitive: "gauge", pct: row.utilization, threshold: ACCOUNT_CARD_MARK, label: row.name }
+    : { primitive: "tally", count: 1 };
+}
+
 function accountsPlate(household: Household, memberId: string, today: DateKey): DeskPlateModel {
   const chosen = chosenAccount(household, memberId, today);
   const visibleCount = accountRows(household, memberId, today).length;
   return {
     id: "accounts",
     kicker: "The accounts",
-    glance: chosen
-      ? `${chosen.name} · ${formatCad(chosen.balanceCents)}${isCreditKind(chosen.kind) ? "" : ` ${chosen.balanceLabel}`}`
-      : "None yet",
-    verdict: chosen
-      ? isCreditKind(chosen.kind)
-        ? `${chosen.name} owes ${formatCad(chosen.balanceCents)}.`
-        : chosen.kind === "investment"
-          ? `${chosen.name} has ${formatCad(chosen.balanceCents)} of cost basis.`
-          : `${chosen.name} has a ${formatCad(chosen.balanceCents)} book balance.`
-      : "No accounts on this floor yet.",
+    glance: chosen ? `${chosen.name} · ${accountRowAmount(chosen)}` : "None yet",
+    verdict: chosen ? accountRowVerdict(chosen) : "No accounts on this floor yet.",
     footing: visibleCount > 1
       ? `${visibleCount} accounts you can see. Pick which one shows here.`
       : "Shared accounts only. Personal rooms stay on Personal Books.",
-    edge: chosen && ((chosen.utilization ?? 0) > 0.3 || (!isCreditKind(chosen.kind) && chosen.balanceCents < 0))
-      ? "attention"
-      : "clear",
-    copperVerdict: Boolean(chosen && ((chosen.utilization ?? 0) > 0.3 || (!isCreditKind(chosen.kind) && chosen.balanceCents < 0))),
-    figure: chosen && chosen.utilization !== null
-      ? { primitive: "gauge", pct: chosen.utilization, threshold: 0.3, label: chosen.name }
-      : { primitive: "tally", count: chosen ? 1 : 0 },
+    edge: chosen ? accountRowEdge(chosen) : "clear",
+    copperVerdict: Boolean(chosen && accountRowEdge(chosen) === "attention"),
+    figure: chosen ? accountRowFigure(chosen) : { primitive: "tally", count: 0 },
     empty: chosen ? null : "No accounts on this floor yet.",
     cabinet: "accounts",
     cabinetName: "The accounts",
@@ -341,6 +356,43 @@ function shelfPlate(household: Household): DeskPlateModel {
   };
 }
 
+/** The shape plate's one rule for a category row, shared with the Standing Book's page flags: over its own trailing shape, or not. */
+export function categoryRowEdge(row: CategoryShape): PlateEdge {
+  return row.verdict === "above" ? "attention" : "clear";
+}
+
+/** The row's month-to-date figure the way the plate would print it. */
+export function categoryRowAmount(row: CategoryShape): string {
+  return `${formatCad(row.monthToDateCents)} this month`;
+}
+
+/** The plate's sentence for one row. An unknown or one-off shape says so rather than drawing one. */
+export function categoryRowVerdict(row: CategoryShape): string {
+  switch (row.verdict) {
+    case "above": return `${row.label} has run ${formatCad(row.deltaCents)} over its own trailing shape.`;
+    case "in-shape": return `${row.label} is inside its own trailing shape.`;
+    case "quiet": return `${row.label} is running under its own trailing shape.`;
+    case "one-off": return `${row.label} has one posting this month and no shape yet.`;
+    case "unknown": return `${row.label} has not enough history yet to draw a shape.`;
+    default: {
+      const never: never = row.verdict;
+      return never;
+    }
+  }
+}
+
+/** Whether a row's band is a shape and not a guess: three real months behind it. */
+export function categoryRowHasShape(row: CategoryShape): boolean {
+  return row.verdict === "above" || row.verdict === "in-shape" || row.verdict === "quiet";
+}
+
+/** The plate's mechanism for one row: the band's low and high and the month to date, as one strip; an empty strip where there is no shape to draw. */
+export function categoryRowFigure(row: CategoryShape): PlateFigure {
+  return categoryRowHasShape(row)
+    ? { primitive: "spark", points: [row.bandLowCents, row.bandHighCents, row.monthToDateCents], room: TRACK_ROOM }
+    : { primitive: "spark", points: [], room: TRACK_ROOM };
+}
+
 /** Six sparklines is a desktop idea — the plate only ever names the worst one. */
 function shapePlate(household: Household, monthKey: MonthKey, today: DateKey): DeskPlateModel {
   const rows = categoryShape(household, monthKey, today);
@@ -354,18 +406,16 @@ function shapePlate(household: Household, monthKey: MonthKey, today: DateKey): D
     kicker: "The shape",
     glance: worst ? `${worst.label} ${formatCad(worst.deltaCents)} above` : comparable.length ? "Nothing over shape" : "Not enough yet",
     verdict: worst
-      ? `${worst.label} has run ${formatCad(worst.deltaCents)} over its own trailing shape.`
+      ? categoryRowVerdict(worst)
       : comparable.length
         ? "No category with enough history is above its own trailing shape."
         : "Not enough history yet to draw a shape for anything.",
     footing: over.length > 1
       ? `${over.length} categories are running over their own shape this month.`
       : "Each category against its own trailing three months. Never a household total.",
-    edge: worst ? "attention" : "clear",
+    edge: worst ? categoryRowEdge(worst) : "clear",
     copperVerdict: Boolean(worst),
-    figure: worst
-      ? { primitive: "spark", points: [worst.bandLowCents, worst.bandHighCents, worst.monthToDateCents], room: TRACK_ROOM }
-      : { primitive: "spark", points: [], room: TRACK_ROOM },
+    figure: worst ? categoryRowFigure(worst) : { primitive: "spark", points: [], room: TRACK_ROOM },
     empty: rows.length ? null : "Not enough history yet to draw a shape for anything.",
     // No office instrument is a real match for "a category against its own
     // history" — the blotter is the household's own income/expense read,

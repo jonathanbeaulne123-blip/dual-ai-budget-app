@@ -65,6 +65,7 @@ jobs:
           VITE_PRODUCTION_CONTINUITY: "0"
           VITE_SYNC_PILOT_DIAGNOSTICS: "1"
           VITE_PLAN_SYSTEM_V2: ${{ inputs.plan_system_v2 || '1' }}
+          VITE_QUEENS_NEST: ${{ vars.VITE_QUEENS_NEST || '1' }}
           VITE_HERCULES_ACTIONS: ${{ inputs.hercules_actions || vars.VITE_HERCULES_ACTIONS || '1' }}
           VITE_HERCULES_WORKSPACE: "1"
           VITE_HERCULES_CHAT: ${{ inputs.hercules_chat || vars.VITE_HERCULES_CHAT || '1' }}

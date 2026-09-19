@@ -1,0 +1,1186 @@
+{
+  "mode": "before",
+  "records": [
+    {
+      "label": "taylor 3d 320x568",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "scrollHeight": 1245,
+      "clientHeight": 568,
+      "overflowY": 677,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": true,
+        "sync": true,
+        "switcher": true,
+        "heading": true,
+        "atmosphere": true,
+        "office": true,
+        "seals": false,
+        "story": false,
+        "charm": true,
+        "ledge": true
+      },
+      "home": {
+        "x": 14,
+        "y": 690,
+        "w": 292,
+        "h": 220
+      },
+      "homePct": 38.7,
+      "figure": {
+        "x": 112,
+        "y": 716,
+        "w": 96,
+        "h": 136
+      },
+      "figurePct": 23.9,
+      "world": "3d",
+      "live": "true",
+      "frameNav": null,
+      "frameTabs": null,
+      "canvasTop": 690,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Add expense",
+        "Add income",
+        "Add transfer",
+        "Add shift",
+        "Add money",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 492,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 14,
+        "y": 389,
+        "w": 292,
+        "h": 48
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": null
+    },
+    {
+      "note": "before: taylor 3d 320x568: Home scrolls by 677px (scrollHeight 1245 > clientHeight 568)"
+    },
+    {
+      "note": "before: taylor 3d 320x568: topbar is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x568: sync is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x568: switcher is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x568: heading is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x568: atmosphere is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x568: office is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x568: charm is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x568: ledge is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x568: the App is not in world-home mode"
+    },
+    {
+      "note": "before: taylor 3d 320x568: her composition is 38.7% of the viewport (< 55%)"
+    },
+    {
+      "note": "before: taylor 3d 320x568: her figure is 23.9% of the viewport (≈ 40% wanted)"
+    },
+    {
+      "note": "before: taylor 3d 320x568: the two-space tabs (Our Home | My Money)"
+    },
+    {
+      "note": "before: taylor 3d 320x568: five nav slots (Home | The Fund | Add expense | Add income | Add transfer | Add shift | Add money | Our Path | Together)"
+    },
+    {
+      "note": "before: taylor 3d 320x568: her field ends above the nav (field bottom 910, nav top 492)"
+    },
+    {
+      "label": "taylor 3d 320x700",
+      "viewport": {
+        "w": 320,
+        "h": 700
+      },
+      "scrollHeight": 1245,
+      "clientHeight": 700,
+      "overflowY": 545,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": true,
+        "sync": true,
+        "switcher": true,
+        "heading": true,
+        "atmosphere": true,
+        "office": true,
+        "seals": false,
+        "story": false,
+        "charm": true,
+        "ledge": true
+      },
+      "home": {
+        "x": 14,
+        "y": 690,
+        "w": 292,
+        "h": 220
+      },
+      "homePct": 31.4,
+      "figure": {
+        "x": 112,
+        "y": 716,
+        "w": 96,
+        "h": 136
+      },
+      "figurePct": 19.4,
+      "world": "3d",
+      "live": "true",
+      "frameNav": null,
+      "frameTabs": null,
+      "canvasTop": 690,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Add expense",
+        "Add income",
+        "Add transfer",
+        "Add shift",
+        "Add money",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 624,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 14,
+        "y": 389,
+        "w": 292,
+        "h": 48
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": null
+    },
+    {
+      "note": "before: taylor 3d 320x700: Home scrolls by 545px (scrollHeight 1245 > clientHeight 700)"
+    },
+    {
+      "note": "before: taylor 3d 320x700: topbar is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x700: sync is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x700: switcher is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x700: heading is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x700: atmosphere is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x700: office is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x700: charm is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x700: ledge is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 320x700: the App is not in world-home mode"
+    },
+    {
+      "note": "before: taylor 3d 320x700: her composition is 31.4% of the viewport (< 55%)"
+    },
+    {
+      "note": "before: taylor 3d 320x700: her figure is 19.4% of the viewport (≈ 40% wanted)"
+    },
+    {
+      "note": "before: taylor 3d 320x700: the two-space tabs (Our Home | My Money)"
+    },
+    {
+      "note": "before: taylor 3d 320x700: five nav slots (Home | The Fund | Add expense | Add income | Add transfer | Add shift | Add money | Our Path | Together)"
+    },
+    {
+      "note": "before: taylor 3d 320x700: her field ends above the nav (field bottom 910, nav top 624)"
+    },
+    {
+      "label": "taylor 3d 390x844",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "scrollHeight": 1134,
+      "clientHeight": 844,
+      "overflowY": 290,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": true,
+        "sync": true,
+        "switcher": true,
+        "heading": true,
+        "atmosphere": true,
+        "office": true,
+        "seals": false,
+        "story": false,
+        "charm": true,
+        "ledge": true
+      },
+      "home": {
+        "x": 14,
+        "y": 603,
+        "w": 362,
+        "h": 220
+      },
+      "homePct": 26.1,
+      "figure": {
+        "x": 147,
+        "y": 631,
+        "w": 96,
+        "h": 136
+      },
+      "figurePct": 16.1,
+      "world": "3d",
+      "live": "true",
+      "frameNav": null,
+      "frameTabs": null,
+      "canvasTop": 603,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Add expense",
+        "Add income",
+        "Add transfer",
+        "Add shift",
+        "Add money",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 768,
+        "w": 390,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 14,
+        "y": 348,
+        "w": 362,
+        "h": 48
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": null
+    },
+    {
+      "note": "before: taylor 3d 390x844: Home scrolls by 290px (scrollHeight 1134 > clientHeight 844)"
+    },
+    {
+      "note": "before: taylor 3d 390x844: topbar is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 390x844: sync is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 390x844: switcher is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 390x844: heading is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 390x844: atmosphere is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 390x844: office is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 390x844: charm is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 390x844: ledge is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 390x844: the App is not in world-home mode"
+    },
+    {
+      "note": "before: taylor 3d 390x844: her composition is 26.1% of the viewport (< 55%)"
+    },
+    {
+      "note": "before: taylor 3d 390x844: her figure is 16.1% of the viewport (≈ 40% wanted)"
+    },
+    {
+      "note": "before: taylor 3d 390x844: the two-space tabs (Our Home | My Money)"
+    },
+    {
+      "note": "before: taylor 3d 390x844: five nav slots (Home | The Fund | Add expense | Add income | Add transfer | Add shift | Add money | Our Path | Together)"
+    },
+    {
+      "note": "before: taylor 3d 390x844: her field ends above the nav (field bottom 823, nav top 768)"
+    },
+    {
+      "label": "taylor 3d 720x900",
+      "viewport": {
+        "w": 720,
+        "h": 900
+      },
+      "scrollHeight": 1044,
+      "clientHeight": 900,
+      "overflowY": 144,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": true,
+        "sync": true,
+        "switcher": true,
+        "heading": true,
+        "atmosphere": true,
+        "office": true,
+        "seals": true,
+        "story": false,
+        "charm": true,
+        "ledge": false
+      },
+      "home": {
+        "x": 18,
+        "y": 658,
+        "w": 684,
+        "h": 220
+      },
+      "homePct": 24.4,
+      "figure": {
+        "x": 312,
+        "y": 697,
+        "w": 96,
+        "h": 136
+      },
+      "figurePct": 15.1,
+      "world": "3d",
+      "live": "true",
+      "frameNav": null,
+      "frameTabs": null,
+      "canvasTop": 658,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Add expense",
+        "Add income",
+        "Add transfer",
+        "Add shift",
+        "Add money",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 824,
+        "w": 720,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 18,
+        "y": 312,
+        "w": 684,
+        "h": 48
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": null
+    },
+    {
+      "note": "before: taylor 3d 720x900: Home scrolls by 144px (scrollHeight 1044 > clientHeight 900)"
+    },
+    {
+      "note": "before: taylor 3d 720x900: topbar is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 720x900: sync is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 720x900: switcher is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 720x900: heading is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 720x900: atmosphere is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 720x900: office is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 720x900: seals is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 720x900: charm is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 720x900: the App is not in world-home mode"
+    },
+    {
+      "note": "before: taylor 3d 720x900: her composition is 24.4% of the viewport (< 55%)"
+    },
+    {
+      "note": "before: taylor 3d 720x900: her figure is 15.1% of the viewport (≈ 40% wanted)"
+    },
+    {
+      "note": "before: taylor 3d 720x900: the two-space tabs (Our Home | My Money)"
+    },
+    {
+      "note": "before: taylor 3d 720x900: five nav slots (Home | The Fund | Add expense | Add income | Add transfer | Add shift | Add money | Our Path | Together)"
+    },
+    {
+      "note": "before: taylor 3d 720x900: her field ends above the nav (field bottom 878, nav top 824)"
+    },
+    {
+      "label": "taylor 3d 1100x800",
+      "viewport": {
+        "w": 1100,
+        "h": 800
+      },
+      "scrollHeight": 1056,
+      "clientHeight": 800,
+      "overflowY": 256,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": true,
+        "sync": true,
+        "switcher": true,
+        "heading": true,
+        "atmosphere": true,
+        "office": true,
+        "seals": true,
+        "story": false,
+        "charm": true,
+        "ledge": false
+      },
+      "home": {
+        "x": 30,
+        "y": 670,
+        "w": 1040,
+        "h": 220
+      },
+      "homePct": 27.5,
+      "figure": {
+        "x": 502,
+        "y": 731,
+        "w": 96,
+        "h": 136
+      },
+      "figurePct": 17,
+      "world": "3d",
+      "live": "true",
+      "frameNav": null,
+      "frameTabs": null,
+      "canvasTop": 670,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Add expense",
+        "Add income",
+        "Add transfer",
+        "Add shift",
+        "Add money",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 724,
+        "w": 1100,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 30,
+        "y": 312,
+        "w": 1040,
+        "h": 48
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": null
+    },
+    {
+      "note": "before: taylor 3d 1100x800: Home scrolls by 256px (scrollHeight 1056 > clientHeight 800)"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: topbar is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: sync is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: switcher is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: heading is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: atmosphere is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: office is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: seals is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: charm is still on Home"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: the App is not in world-home mode"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: her composition is 27.5% of the viewport (< 55%)"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: her figure is 17% of the viewport (≈ 40% wanted)"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: the two-space tabs (Our Home | My Money)"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: five nav slots (Home | The Fund | Add expense | Add income | Add transfer | Add shift | Add money | Our Path | Together)"
+    },
+    {
+      "note": "before: taylor 3d 1100x800: her field ends above the nav (field bottom 890, nav top 724)"
+    },
+    {
+      "label": "taylor no-webgl 320x568",
+      "viewport": {
+        "w": 320,
+        "h": 568
+      },
+      "scrollHeight": 1245,
+      "clientHeight": 568,
+      "overflowY": 677,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": true,
+        "sync": true,
+        "switcher": true,
+        "heading": true,
+        "atmosphere": true,
+        "office": true,
+        "seals": false,
+        "story": false,
+        "charm": true,
+        "ledge": true
+      },
+      "home": {
+        "x": 14,
+        "y": 690,
+        "w": 292,
+        "h": 220
+      },
+      "homePct": 38.7,
+      "figure": {
+        "x": 112,
+        "y": 716,
+        "w": 96,
+        "h": 136
+      },
+      "figurePct": 23.9,
+      "world": "flat",
+      "live": "false",
+      "frameNav": null,
+      "frameTabs": null,
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Add expense",
+        "Add income",
+        "Add transfer",
+        "Add shift",
+        "Add money",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 492,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 14,
+        "y": 389,
+        "w": 292,
+        "h": 48
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": null
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: Home scrolls by 677px (scrollHeight 1245 > clientHeight 568)"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: topbar is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: sync is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: switcher is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: heading is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: atmosphere is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: office is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: charm is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: ledge is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: the App is not in world-home mode"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: her composition is 38.7% of the viewport (< 55%)"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: her figure is 23.9% of the viewport (≈ 40% wanted)"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: the two-space tabs (Our Home | My Money)"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: five nav slots (Home | The Fund | Add expense | Add income | Add transfer | Add shift | Add money | Our Path | Together)"
+    },
+    {
+      "note": "before: taylor no-webgl 320x568: her field ends above the nav (field bottom 910, nav top 492)"
+    },
+    {
+      "label": "taylor no-webgl 320x700",
+      "viewport": {
+        "w": 320,
+        "h": 700
+      },
+      "scrollHeight": 1245,
+      "clientHeight": 700,
+      "overflowY": 545,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": true,
+        "sync": true,
+        "switcher": true,
+        "heading": true,
+        "atmosphere": true,
+        "office": true,
+        "seals": false,
+        "story": false,
+        "charm": true,
+        "ledge": true
+      },
+      "home": {
+        "x": 14,
+        "y": 690,
+        "w": 292,
+        "h": 220
+      },
+      "homePct": 31.4,
+      "figure": {
+        "x": 112,
+        "y": 716,
+        "w": 96,
+        "h": 136
+      },
+      "figurePct": 19.4,
+      "world": "flat",
+      "live": "false",
+      "frameNav": null,
+      "frameTabs": null,
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Add expense",
+        "Add income",
+        "Add transfer",
+        "Add shift",
+        "Add money",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 624,
+        "w": 320,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 14,
+        "y": 389,
+        "w": 292,
+        "h": 48
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": null
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: Home scrolls by 545px (scrollHeight 1245 > clientHeight 700)"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: topbar is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: sync is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: switcher is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: heading is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: atmosphere is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: office is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: charm is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: ledge is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: the App is not in world-home mode"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: her composition is 31.4% of the viewport (< 55%)"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: her figure is 19.4% of the viewport (≈ 40% wanted)"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: the two-space tabs (Our Home | My Money)"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: five nav slots (Home | The Fund | Add expense | Add income | Add transfer | Add shift | Add money | Our Path | Together)"
+    },
+    {
+      "note": "before: taylor no-webgl 320x700: her field ends above the nav (field bottom 910, nav top 624)"
+    },
+    {
+      "label": "taylor no-webgl 390x844",
+      "viewport": {
+        "w": 390,
+        "h": 844
+      },
+      "scrollHeight": 1134,
+      "clientHeight": 844,
+      "overflowY": 290,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": true,
+        "sync": true,
+        "switcher": true,
+        "heading": true,
+        "atmosphere": true,
+        "office": true,
+        "seals": false,
+        "story": false,
+        "charm": true,
+        "ledge": true
+      },
+      "home": {
+        "x": 14,
+        "y": 603,
+        "w": 362,
+        "h": 220
+      },
+      "homePct": 26.1,
+      "figure": {
+        "x": 147,
+        "y": 631,
+        "w": 96,
+        "h": 136
+      },
+      "figurePct": 16.1,
+      "world": "flat",
+      "live": "false",
+      "frameNav": null,
+      "frameTabs": null,
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Add expense",
+        "Add income",
+        "Add transfer",
+        "Add shift",
+        "Add money",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 768,
+        "w": 390,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 14,
+        "y": 348,
+        "w": 362,
+        "h": 48
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": null
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: Home scrolls by 290px (scrollHeight 1134 > clientHeight 844)"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: topbar is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: sync is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: switcher is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: heading is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: atmosphere is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: office is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: charm is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: ledge is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: the App is not in world-home mode"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: her composition is 26.1% of the viewport (< 55%)"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: her figure is 16.1% of the viewport (≈ 40% wanted)"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: the two-space tabs (Our Home | My Money)"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: five nav slots (Home | The Fund | Add expense | Add income | Add transfer | Add shift | Add money | Our Path | Together)"
+    },
+    {
+      "note": "before: taylor no-webgl 390x844: her field ends above the nav (field bottom 823, nav top 768)"
+    },
+    {
+      "label": "taylor no-webgl 720x900",
+      "viewport": {
+        "w": 720,
+        "h": 900
+      },
+      "scrollHeight": 1044,
+      "clientHeight": 900,
+      "overflowY": 144,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": true,
+        "sync": true,
+        "switcher": true,
+        "heading": true,
+        "atmosphere": true,
+        "office": true,
+        "seals": true,
+        "story": false,
+        "charm": true,
+        "ledge": false
+      },
+      "home": {
+        "x": 18,
+        "y": 658,
+        "w": 684,
+        "h": 220
+      },
+      "homePct": 24.4,
+      "figure": {
+        "x": 312,
+        "y": 697,
+        "w": 96,
+        "h": 136
+      },
+      "figurePct": 15.1,
+      "world": "flat",
+      "live": "false",
+      "frameNav": null,
+      "frameTabs": null,
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Add expense",
+        "Add income",
+        "Add transfer",
+        "Add shift",
+        "Add money",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 824,
+        "w": 720,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 18,
+        "y": 312,
+        "w": 684,
+        "h": 48
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": null
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: Home scrolls by 144px (scrollHeight 1044 > clientHeight 900)"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: topbar is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: sync is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: switcher is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: heading is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: atmosphere is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: office is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: seals is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: charm is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: the App is not in world-home mode"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: her composition is 24.4% of the viewport (< 55%)"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: her figure is 15.1% of the viewport (≈ 40% wanted)"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: the two-space tabs (Our Home | My Money)"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: five nav slots (Home | The Fund | Add expense | Add income | Add transfer | Add shift | Add money | Our Path | Together)"
+    },
+    {
+      "note": "before: taylor no-webgl 720x900: her field ends above the nav (field bottom 878, nav top 824)"
+    },
+    {
+      "label": "taylor no-webgl 1100x800",
+      "viewport": {
+        "w": 1100,
+        "h": 800
+      },
+      "scrollHeight": 1056,
+      "clientHeight": 800,
+      "overflowY": 256,
+      "overflowX": 0,
+      "chrome": {
+        "topbar": true,
+        "sync": true,
+        "switcher": true,
+        "heading": true,
+        "atmosphere": true,
+        "office": true,
+        "seals": true,
+        "story": false,
+        "charm": true,
+        "ledge": false
+      },
+      "home": {
+        "x": 30,
+        "y": 670,
+        "w": 1040,
+        "h": 220
+      },
+      "homePct": 27.5,
+      "figure": {
+        "x": 502,
+        "y": 731,
+        "w": 96,
+        "h": 136
+      },
+      "figurePct": 17,
+      "world": "flat",
+      "live": "false",
+      "frameNav": null,
+      "frameTabs": null,
+      "canvasTop": null,
+      "tabs": [
+        "Our Home",
+        "My Money"
+      ],
+      "nav": [
+        "Home",
+        "The Fund",
+        "Add expense",
+        "Add income",
+        "Add transfer",
+        "Add shift",
+        "Add money",
+        "Our Path",
+        "Together"
+      ],
+      "navRect": {
+        "x": 0,
+        "y": 724,
+        "w": 1100,
+        "h": 76
+      },
+      "tabsRect": {
+        "x": 30,
+        "y": 312,
+        "w": 1040,
+        "h": 48
+      },
+      "line": "Make Rent Boring·checking",
+      "statusDoor": true,
+      "attention": null,
+      "worldHome": null
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: Home scrolls by 256px (scrollHeight 1056 > clientHeight 800)"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: topbar is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: sync is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: switcher is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: heading is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: atmosphere is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: office is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: seals is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: charm is still on Home"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: the App is not in world-home mode"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: her composition is 27.5% of the viewport (< 55%)"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: her figure is 17% of the viewport (≈ 40% wanted)"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: the two-space tabs (Our Home | My Money)"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: five nav slots (Home | The Fund | Add expense | Add income | Add transfer | Add shift | Add money | Our Path | Together)"
+    },
+    {
+      "note": "before: taylor no-webgl 1100x800: her field ends above the nav (field bottom 890, nav top 724)"
+    }
+  ],
+  "errors": []
+}

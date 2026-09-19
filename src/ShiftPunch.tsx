@@ -2,6 +2,7 @@ import { useId, useRef, useState, type PointerEvent } from "react";
 import { formatPreviewHours, formatTorontoTime, workedHoursFromOpenShift } from "./core/index.ts";
 import type { OpenShift } from "./core/types.ts";
 import "./shift-punch.css";
+import { useOutsideClose } from "./useOutsideClose.ts";
 
 type Drag = { id: number; startY: number; wasOpen: boolean; moved: boolean };
 /** The edge reveals actions; only a later named activation changes the timeline. */
@@ -21,6 +22,8 @@ export function ShiftPunch({ punch, who, now, busy, onStartBreak, onEndBreak, on
     if (handle.current?.hasPointerCapture(active.id)) handle.current.releasePointerCapture(active.id);
   };
   const close = () => { setOpen(false); handle.current?.focus(); };
+  const actions = useRef<HTMLDivElement>(null);
+  useOutsideClose([handle, actions], open && !dragging, () => setOpen(false));
   return <section className="shift-punch-instrument" aria-label="Elapsed and breaks" onKeyDown={event => {
     if (event.key === "Escape" && (drag.current || open)) { event.preventDefault(); event.stopPropagation(); if (drag.current) finish(undefined,true); else close(); }
   }}>
@@ -46,7 +49,7 @@ export function ShiftPunch({ punch, who, now, busy, onStartBreak, onEndBreak, on
       <p className="shift-punch-line">{currentBreak ? `${currentBreak.label} since ${formatTorontoTime(currentBreak.startedAt)}` : "On the clock"}</p>
       {busy && <p className="shift-punch-line" role="status">An action is in progress. Shift controls return when it finishes.</p>}
     </div>
-    <div id={id} className="shift-punch-actions" hidden={!open}>
+    <div ref={actions} id={id} className="shift-punch-actions" hidden={!open}>
       <p className="shift-punch-line">Choose an action for this shift. Confirm still posts pay.</p>
       <div className="shift-punch-buttons">
         {currentBreak ? <button type="button" disabled={busy||dragging} onClick={onEndBreak}>End break</button> : <>
