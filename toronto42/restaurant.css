@@ -48,3 +48,7 @@
 .note-source{display:inline-flex;align-items:center;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:6px 8px;background:#fff;color:#574f46;font-size:.68rem;font-weight:800;line-height:1.2}
 .note-source:hover{border-color:var(--gold);color:var(--ink)}
 @media(max-width:700px){.note-source{font-size:.66rem}.note-source-list{gap:6px}}
+
+.intel-nav-link{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:1px solid #c8d4c7;background:#eef1e8;color:#32634a;border-radius:999px;padding:9px 12px;font:800 .82rem inherit}
+.intel-nav-link:hover{border-color:#32634a}
+@media(max-width:700px){.intel-nav-link{grid-column:1/-1}}
