@@ -52,3 +52,7 @@ button,select{font:inherit}.portal-shell{max-width:1500px;margin:0 auto;padding:
 
 .popup-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:10px}
 .popup-actions .popup-link{margin-top:0;border:1px solid var(--line);border-radius:999px;padding:7px 9px;background:#fff}
+
+.nextsteps-map{background:#eef1e8;color:#32634a;border-color:#c8d4c7;gap:6px}
+.nextsteps-map span{display:grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#32634a;color:#fff;font-size:.67rem}
+.popup-actions .popup-next{background:#eef1e8;color:#32634a;border-color:#c8d4c7}
