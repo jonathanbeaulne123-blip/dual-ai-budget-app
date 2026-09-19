@@ -65,7 +65,7 @@ const startup = vi.hoisted(() => ({
   transportCalls: [] as Household[],
   lifecycle: [] as string[],
   transportResult: null as null | { ok: true; remoteRevision?: number } | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; message: string },
-  householdHomeWorld: null as null | "flat" | "auto",
+  householdHomeWorld: null as null | "flat" | "auto" | "3d",
 }));
 
 vi.mock("../src/ledgerSync/presence.ts", () => ({ attachLedgerPresence: () => () => {} }));
