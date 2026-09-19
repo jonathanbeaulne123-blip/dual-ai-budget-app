@@ -25,4 +25,3 @@ describe("whole-house canonical Home object presentation", () => {
     expect(homeJarAppearance(jar({ paid: true, strike: "shard" }))).toEqual({ paid: true, frosted: false, cracked: false });
   });
 });
-

@@ -97,3 +97,9 @@
 .app[data-house-world] .hearthside { --hs-paper:var(--paper); --hs-ink:var(--ink); --hs-line:var(--line); --hs-accent:var(--accent); }
 .app[data-house-world] .collaborative-studio button { color:var(--ink); background-color:var(--paper); border-color:var(--line); }
 .app[data-house-world] .collaborative-studio .studio-colours button { background-color:revert; }
+
+.house-world.is-overview .house-world__stage { height:calc(100dvh - 180px); min-height:360px; max-height:720px; }
+.house-world__object-actions { display:block; margin-top:14px; }
+.house-world__object-actions summary { min-height:44px; display:flex; align-items:center; cursor:pointer; font-size:13px; text-decoration:underline; text-underline-offset:4px; }
+.house-world__object-actions>div { display:flex; flex-wrap:wrap; gap:8px; }
+@media(max-width:719px){.app[data-house-world] .nav[data-house-navigation] button { font-size:12px; }.house-world__invitation h2 {font-size:25px;}.house-world__invitation p {margin-block:8px;}.house-world__object-actions {margin-top:3px;}}
