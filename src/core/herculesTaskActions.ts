@@ -1,6 +1,6 @@
 import type { ActionContext, ActionDefinition, ActionField, ActionValues } from './herculesActions.ts';
 import { ValidationError } from './types.ts';
-import { completeTask, reopenTask, saveTask, taskInView, taskIsFinancial, type TaskEvidence } from './tasks.ts';
+import { acknowledgeTask, completeTask, reopenTask, saveTask, taskInView, taskIsFinancial, type TaskEvidence } from './tasks.ts';
 import { removeBoardTask, saveBoardTask } from './commands.ts';
 import { householdForView } from './visibility.ts';
 import { evidenceForTask, suggestedEvidence } from './agenda.ts';
@@ -29,12 +29,32 @@ function receipts(c: ActionContext, taskId: string | undefined): { value: string
   }));
 }
 
+/** Exact responsibility facts appear in the same reviewed action that acknowledges them. */
+export function taskAcceptanceReviewRows(c: ActionContext, id: string, v: ActionValues) {
+  if (id !== 'accept-task') return [];
+  const task = modernTasks(c).find(t => t.id === v.id);
+  if (!task) return [];
+  const claiming = task.visibility === 'household' && task.assigneeId === null;
+  const nextBackup = claiming && task.backupId === c.memberId ? null : task.backupId;
+  const name = (memberId: string | null) => c.household.members.find(m => m.id === memberId)?.name ?? 'Unassigned';
+  return [
+    { label: 'Task details', value: task.notes || 'No additional notes' },
+    { label: 'Plan to do', value: task.doDate ?? 'No date chosen' },
+    { label: 'Deadline', value: task.dueDate ?? 'No deadline' },
+    { label: 'Repeat and cue', value: `${task.repeat} · ${task.cue}` },
+    { label: 'Responsibility', value: `${claiming ? `${name(c.memberId)} is taking this unassigned task` : name(task.assigneeId)} · backup: ${nextBackup ? name(nextBackup) : 'None'}` },
+    { label: 'Your acceptance', value: name(c.memberId) },
+    { label: 'Expected cost', value: task.expectedAmountCents === null ? 'No amount chosen' : formatCad(task.expectedAmountCents) },
+    { label: 'Completion', value: taskIsFinancial(task) ? 'Requires matching accepted financial evidence' : 'Recorded by an accepted responsible member' },
+  ];
+}
+
 /** Existing IDs keep old private drafts readable; adopted board identities require fresh selection. */
-export const herculesTaskActions: ActionDefinition[] = (['edit', 'complete', 'reopen', 'remove'] as const).map(operation => {
-  const verb = { edit: 'Edit', complete: 'Finish', reopen: 'Reopen', remove: 'Remove' }[operation];
+export const herculesTaskActions: ActionDefinition[] = (['accept', 'edit', 'complete', 'reopen', 'remove'] as const).map(operation => {
+  const verb = { accept: 'Accept', edit: 'Edit', complete: 'Finish', reopen: 'Reopen', remove: 'Remove' }[operation];
   const fields: ActionField[] = [{ key: 'id', label: 'To-do', question: 'Which to-do?', choices: c => [
-    ...modernTasks(c).filter(t => operation === 'complete' ? !t.completedAt : operation === 'reopen' ? !!t.completedAt : true).map(t => ({ value: t.id, label: t.title })),
-    ...legacyTasks(c).filter(t => operation === 'complete' ? !t.completed : operation === 'reopen' ? t.completed : true).map(t => ({ value: t.id, label: `${t.title} · board` })),
+    ...modernTasks(c).filter(t => operation === 'accept' ? !t.completedAt && !t.acknowledgedBy.includes(c.memberId) && !t.participation?.some(p => p.memberId === c.memberId && p.paused) && (t.visibility === 'personal' || t.assigneeId === null || t.assigneeId === c.memberId || t.backupId === c.memberId) : operation === 'complete' ? !t.completedAt : operation === 'reopen' ? !!t.completedAt : true).map(t => ({ value: t.id, label: t.title })),
+    ...(operation === 'accept' ? [] : legacyTasks(c)).filter(t => operation === 'complete' ? !t.completed : operation === 'reopen' ? t.completed : true).map(t => ({ value: t.id, label: `${t.title} · board` })),
   ] }];
   if (operation === 'edit') fields.push(
     { key: 'title', label: 'Title', question: 'What should it say?', maxLength: 240 },
@@ -43,12 +63,13 @@ export const herculesTaskActions: ActionDefinition[] = (['edit', 'complete', 're
   );
   return {
     id: `${operation}-task`, title: `${verb} a to-do`, example: `${verb} a to-do`,
-    match: new RegExp(`\\b${operation === 'complete' ? '(?:complete|finish)' : operation === 'edit' ? '(?:edit|change|update)' : operation === 'remove' ? '(?:remove|delete)' : 'reopen'} (?:a |the |my |our )?(?:task|to.do)\\b`, 'i'),
+    match: new RegExp(`\\b${operation === 'accept' ? '(?:accept|take)' : operation === 'complete' ? '(?:complete|finish)' : operation === 'edit' ? '(?:edit|change|update)' : operation === 'remove' ? '(?:remove|delete)' : 'reopen'} (?:a |the |my |our )?(?:task|to.do)\\b`, 'i'),
     views: ['household', 'personal'], fields,
     dynamicFields: (c, v) => operation === 'complete' && modernTasks(c).some(t => t.id === v.id && taskIsFinancial(t)) ? [{
       key: 'evidence', label: 'Accepted completion evidence', question: 'Which accepted payment or contribution completed this task?', choices: () => receipts(c, v.id),
     }] : [],
-    consequence: operation === 'complete' ? 'Complete this to-do using its existing rules. A money task needs an accepted receipt; no money is posted.'
+    consequence: operation === 'accept' ? 'Accept this exact task for yourself. Its work, dates and responsibility are shown in this review. This does not complete it or move money.'
+      : operation === 'complete' ? 'Complete this to-do using its existing rules. A money task needs an accepted receipt; no money is posted.'
       : operation === 'reopen' ? 'Reopen this occurrence. Its later repeating tasks and accepted money stay in place.'
       : operation === 'remove' ? 'Remove this to-do from the planner, preserving its accepted money and linked records.'
       : 'Update the supplied task details, preserving its owner, links and other work.',
@@ -58,6 +79,7 @@ export const herculesTaskActions: ActionDefinition[] = (['edit', 'complete', 're
       const task = modernTasks(c).find(t => t.id === v.id);
       if (task) {
         const base = { memberId: c.memberId, id: task.id, expectedRevision: task.revision };
+        if (operation === 'accept') return acknowledgeTask(c.household, base);
         if (operation === 'complete') {
           const evidence = v.evidence ? receipts(c, v.id).find(r => r.value === v.evidence)?.evidence : undefined;
           if (v.evidence && !evidence) throw new ValidationError('Choose current completion evidence in these books.');
@@ -70,7 +92,7 @@ export const herculesTaskActions: ActionDefinition[] = (['edit', 'complete', 're
         }) } });
       }
       const old = legacyTasks(c).find(t => t.id === v.id);
-      if (!old) throw new ValidationError('This to-do changed or moved into the planner. Select its current version and review again.');
+      if (!old || operation === 'accept') throw new ValidationError('This to-do changed or moved into the planner. Select its current version and review again.');
       const base = { memberId: c.memberId, id: old.id, expectedVersion: old.version };
       if (operation === 'remove') return removeBoardTask(c.household, base);
       return saveBoardTask(c.household, { ...base, title: operation === 'edit' ? v.title! : old.title,

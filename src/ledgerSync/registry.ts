@@ -1,3 +1,5 @@
+import {commitSharedLifeRestore} from '../hearthside/sharedLifeRestore.ts';
+import { commitHearthside } from '../hearthside/commands.ts';
 import { saveKittyNestDesign } from "../core/kittyNestDesigns.ts";
 import {commitCompanionPlay} from '../core/herculesPlay.ts';
 import { executeHerculesAction, cancelHerculesSubmission } from '../core/herculesExecution.ts';
@@ -32,7 +34,9 @@ const functions = {
   commitCompanion,
   commitCompanionGallery,
   commitCompanionPlay,
+  commitHearthside, commitSharedLifeRestore,
   ...rehearsal,
+  editRitual: chapterCommands.editRitual, acknowledgeRitualChange: chapterCommands.acknowledgeRitualChange, setRitualParticipation: chapterCommands.setRitualParticipation, adoptChapterTasks: chapterCommands.adoptChapterTasks, prepareRitualOccurrence: chapterCommands.prepareRitualOccurrence,
   openChapter: chapterCommands.openChapter, addRitual: chapterCommands.addRitual, recordRitualHeld: chapterCommands.recordRitualHeld, setRitualState: chapterCommands.setRitualState,
   offerMove: chapterCommands.offerMove, respondToMove: chapterCommands.respondToMove, completeMove: chapterCommands.completeMove, recordWin: chapterCommands.recordWin, keepWinAsMemory: chapterCommands.keepWinAsMemory, dismissWin: chapterCommands.dismissWin, closeChapter: chapterCommands.closeChapter, closeChapterAtSitdown: chapterCommands.closeChapterAtSitdown,
   migrateFundModel: fundModelCommands.migrateFundModel, migrateMyFundModel: fundModelCommands.migrateMyFundModel, setFundOverride: fundModelCommands.setFundOverride, setCategoryHome: fundModelCommands.setCategoryHome,
@@ -100,12 +104,14 @@ register("appendPlanSitdownTurn", ["memberId"]);
 register("commitCompanion", ["scope.memberId"]);
 register("commitCompanionGallery", ["scope.memberId"]);
 register("commitCompanionPlay", ["scope.memberId"]);
+register("commitHearthside", ["scope.memberId"]);
+register("commitSharedLifeRestore", ["scope.memberId"]);
 register("forceUnlockOnboarding", ["memberId", "createdBy"]);
 register("saveBoardTask removeBoardTask saveBoardMilestone removeBoardMilestone setBoardPhoto", ["memberId"]);
 register("linkGoogleIdentity touchHouseholdDevice", ["memberId"]);
 register("setGoogleServices setRecurrenceGoogleSync");
 register("startMonthRehearsal", ["startedByMemberId"]);
-register("openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter closeChapterAtSitdown", ["memberId"]);
+register("editRitual acknowledgeRitualChange setRitualParticipation adoptChapterTasks prepareRitualOccurrence openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter closeChapterAtSitdown", ["memberId"]);
 register("migrateFundModel migrateMyFundModel setFundOverride setCategoryHome proposeFundDivision agreeFundDivision declineFundDivision proposeProtectRefill agreeProtectRefill declineProtectRefill withdrawFundProposal", ["memberId"]);
 // D-282: the cellar's roll-over replays as itself, so the authority re-reads consent and "only once" on its own books.
 register("rollMissingSubscription", ["memberId"]);
@@ -177,6 +183,7 @@ export function executeIntent(
   commandId: string,
   scope?: Pick<Scope, "identity" | "role">,
 ): CommitResult {
+  if(kind==='commitSharedLifeRestore')throw Error('SHARED_LIFE_RESTORE_AUTHORITY_REQUIRED');
   const policy = policies.get(kind);
   if (!policy)
     throw new ValidationError(

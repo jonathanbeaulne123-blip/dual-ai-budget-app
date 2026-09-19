@@ -1,0 +1,135 @@
+--- a/src/hearthside/routes.ts
++++ b/src/hearthside/routes.ts
+@@ -2,12 +2,12 @@
+ export const HEARTHSIDE_LABEL = (import.meta.env?.VITE_HEARTHSIDE_LABEL?.trim() || 'Hearthside').slice(0, 60);
+ export type HearthsideRoute = {
+   version: 1; householdId: string; room: HearthsideRoom;
+-  object?: { kind: 'experience' | 'memory' | 'occasion' | 'note'; id: string } | {kind:'piece';id:string;designId:string};
++  object?: { kind: 'experience' | 'memory' | 'occasion' | 'note' | 'encounter'; id: string } | {kind:'piece';id:string;designId:string};
+   mode: 'present' | 'remember' | 'imagine';
+-  surface?:'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests';
++  surface?:'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'|'encounters'|'wardrobe';
+   returnContext?: { path: string; focusId: string };
+ };
+-const collections = { experience: 'experiences', piece: 'pieces', memory: 'memories', occasion: 'occasions', note: 'notes' } as const;
++const collections = { experience: 'experiences', piece: 'pieces', memory: 'memories', occasion: 'occasions', note: 'notes', encounter: 'encounters' } as const;
+ export function hearthsideFocusId(value:unknown):string {
+   if(typeof value!=='string'||! /^[a-zA-Z0-9][a-zA-Z0-9_.:%~-]{0,767}$/.test(value))throw Error('HEARTHSIDE_INVALID_FOCUS');
+   return value;
+@@ -23,7 +23,7 @@
+   identifier(route.householdId); choice(route.room, HEARTHSIDE_ROOMS); choice(route.mode, ['present', 'remember', 'imagine']);
+   const path = route.object ? `/${collections[route.object.kind]}/${encodeURIComponent(identifier(route.object.id))}` : `/rooms/${route.room}`;
+   const query = new URLSearchParams({ household: route.householdId, room: route.room, mode: route.mode });
+-  if(route.surface)query.set('surface',choice(route.surface,['practical','studio','letters','occasions','projector','history','worktable','guests']));
++  if(route.surface)query.set('surface',choice(route.surface,['practical','studio','letters','occasions','projector','history','worktable','guests','encounters','wardrobe']));
+   if (route.object?.kind==='piece')query.set('design',identifier(route.object.designId));
+   if (route.returnContext) { const back=returnContext(route.returnContext.path,route.returnContext.focusId,route.householdId);query.set('from',back.path);query.set('focus',back.focusId); }
+   return `/hearthside${path}?${query}`;
+@@ -38,7 +38,7 @@
+     if (parts[0] !== 'hearthside') return null;
+     const room = choice(u.searchParams.get('room') ?? (parts[1] === 'rooms' ? parts[2] : 'common') ?? 'common', HEARTHSIDE_ROOMS);
+     const mode = choice(u.searchParams.get('mode') ?? 'present', ['present', 'remember', 'imagine']);
+-    const surface=u.searchParams.has('surface')?{surface:choice(u.searchParams.get('surface'),['practical','studio','letters','occasions','projector','history','worktable','guests'] as const)}:{};
++    const surface=u.searchParams.has('surface')?{surface:choice(u.searchParams.get('surface'),['practical','studio','letters','occasions','projector','history','worktable','guests','encounters','wardrobe'] as const)}:{};
+     const back=u.searchParams.has('from')||u.searchParams.has('focus')?{returnContext:returnContext(u.searchParams.get('from'),u.searchParams.get('focus'),householdId)}:{};
+     if (parts.length === 1 || parts.length === 3 && parts[1] === 'rooms' && HEARTHSIDE_ROOMS.includes(parts[2] as HearthsideRoom)) return { version: 1, householdId, room, mode,...surface,...back };
+     const kind = Object.entries(collections).find(([, name]) => name === parts[1])?.[0] as keyof typeof collections | undefined;
+--- a/src/hearthside/CollaborativeStudio.tsx
++++ b/src/hearthside/CollaborativeStudio.tsx
+@@ -25,15 +25,15 @@
+ const shapes={body:KITTY_BODIES,head:KITTY_HEADS,ears:KITTY_EARS,eyes:KITTY_EYES,mouth:KITTY_MOUTHS,whiskers:KITTY_WHISKERS,tail:KITTY_TAILS,nose:KITTY_NOSES};
+ const colourNames=[['#bb4964','Rose'],['#487d78','Sea glass'],['#4c6092','Evening blue'],['#dca540','Honey'],['#63453b','Cocoa'],['#f7eee0','Cream']] as const;
+ const uuid=(prefix:string)=>`${prefix}-${crypto.randomUUID()}`;
+-export type CollaborativeStudioProps={household:Household;memberId:string;bankId?:string;initialDesignId?:string;initialPieceId?:string;writesEnabled?:boolean;handoff?:(designId:string,pieceId:string,revision:number,pending:boolean)=>ReactNode;onKeep?:(designId:string,pieceId:string,revision:number)=>void;onFundingIntent?:(intent:NativeFundingIntent)=>void;acceptedReceipt?:NativeReceiptUpdate;wardrobe?:ReactNode};
++export type CollaborativeStudioProps={household:Household;memberId:string;bankId?:string;initialDesignId?:string;initialPieceId?:string;initialTab?:'shape'|'wardrobe';writesEnabled?:boolean;handoff?:(designId:string,pieceId:string,revision:number,pending:boolean)=>ReactNode;onKeep?:(designId:string,pieceId:string,revision:number)=>void;onFundingIntent?:(intent:NativeFundingIntent)=>void;acceptedReceipt?:NativeReceiptUpdate;wardrobe?:ReactNode};
+ export function CollaborativeStudio(props:CollaborativeStudioProps){
+   return <StudioSession key={`${props.household.environment}:${props.household.householdId}:${props.memberId}:${props.bankId??props.initialDesignId??'free'}`} {...props}/>;
+ }
+-function StudioSession({household,memberId,bankId,initialDesignId,initialPieceId,writesEnabled=HEARTHSIDE_FLAGS.collaborativeDesign,onKeep,onFundingIntent,acceptedReceipt,wardrobe,handoff}:CollaborativeStudioProps){
++function StudioSession({household,memberId,bankId,initialDesignId,initialPieceId,initialTab='shape',writesEnabled=HEARTHSIDE_FLAGS.collaborativeDesign,onKeep,onFundingIntent,acceptedReceipt,wardrobe,handoff}:CollaborativeStudioProps){
+   const client=useDesignClient(),bank=household.goals.find(g=>g.id===bankId);
+   const appearance=useAppearance(),[surface,setSurface]=useState<{kind:'export'|'ar'|'widget';revision:number}|null>(null);
+   const [designId,setDesignId]=useState(initialDesignId??bank?.envelope?.designRef?.designId??''),[pieceId,setPieceId]=useState(initialPieceId??'');
+-  const [joined,setJoined]=useState(false),[tab,setTab]=useState<'shape'|'paint'|'kiln'|'wardrobe'>('shape'),[message,setMessage]=useState('');
++  const [joined,setJoined]=useState(false),[tab,setTab]=useState<'shape'|'paint'|'kiln'|'wardrobe'>(initialTab),[message,setMessage]=useState('');
+   const [colour,setColour]=useState('#bb4964'),[size,setSize]=useState(14),[opacity,setOpacity]=useState(.9),[mirror,setMirror]=useState(false),[eraser,setEraser]=useState(false),[part,setPart]=useState<KittyPart>('body');
+   const [u,setU]=useState(.5),[v,setV]=useState(.5),[stampKind,setStampKind]=useState<KittyStampKind>('heart'),[stampText,setStampText]=useState(''),[stampId,setStampId]=useState('');
+   const [peers,setPeers]=useState<CreativePeer[]>([]),[presenceState,setPresenceState]=useState('offline'),[fireReview,setFireReview]=useState<number|null>(null),[reveal,setReveal]=useState<string|null>(null);
+--- a/src/hearthside/Hearthside.tsx
++++ b/src/hearthside/Hearthside.tsx
+@@ -1,3 +1,4 @@
++import {EncounterEntry} from './EncounterEntry.tsx';
+ import {WinMemorySource} from './WinMemorySource.tsx';
+ import {GuestVisitsEntry} from './GuestVisitsEntry.tsx';
+ import {HEARTHSIDE_FLAGS} from './flags.ts';
+@@ -9,7 +10,7 @@
+ import {FuturePath,FutureHorizonPicker,type FutureHorizon} from './FutureLandscape.tsx';
+ import {MemoryPublicationEntry} from './MemoryPublicationEntry.tsx';
+ import {ProjectorEntry} from './ProjectorEntry.tsx';
+-import {HearthsideVaultProvider} from './VaultProvider.tsx';
++import {HearthsideVaultProvider,useHearthsideVault} from './VaultProvider.tsx';
+ import type {LedgerSyncClient} from '../ledgerSync/client.ts';
+ import {MemoryArtwork,useMemoryDesigns} from './MemoryArtwork.tsx';
+ import {Occasions} from './Occasions.tsx';
+@@ -50,10 +51,11 @@
+   return props.vaultSource?<HearthsideVaultProvider household={props.household} memberId={props.memberId} identity={props.identity} connected={props.connected} source={props.vaultSource}>{child}</HearthsideVaultProvider>:child;
+ }
+ function HearthsideHousehold({household:h,memberId,identity,connected,busy,onCommand,onReadSubmission,onReadAcceptedHousehold,practical,studio,letters,onReference,onWorkspace,initialRoom,vaultSource}:HearthsideProps) {
++  const vault=useHearthsideVault();
+   const appearance=useAppearance(), theme=appearance.scene.theme, state=decodeHearthside(h.hearthside);
+   const scope={environment:h.environment,householdId:h.householdId,memberId}, commands=useHearthsideCommands(scope,identity,connected,onCommand);
+   const [route,setRoute]=useState<HearthsideRoute>(()=>parseHearthsideRoute(window.location.href,h.householdId)??{version:1,householdId:h.householdId,room:initialRoom??'common',mode:'present'});
+-  const [tool,setTool]=useState<'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'|null>(route.surface??null), [bank,setBank]=useState<{id?:string}|null>(null);
++  const [tool,setTool]=useState<'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'|'encounters'|'wardrobe'|null>(route.surface??null), [bank,setBank]=useState<{id?:string}|null>(null);
+   const nativeFunding=useNativeFundingReview(h,memberId,onCommand,onReadSubmission,onReadAcceptedHousehold);
+   const [horizon,setHorizon]=useState<FutureHorizon>('season');
+   const [lifeStep,setLifeStep]=useState<'task'|'date'|null>(null);
+@@ -80,6 +82,11 @@
+     catch {setDraftMessage('This device cannot keep drafts after closing. Keep this page open.');}
+   },[experienceDraft,memoryDraft,noteDraft,draftsKey]);
+   useEffect(()=>{ if(experienceDraft||memoryDraft||noteDraft){const editor=root.current?.querySelector<HTMLElement>('.hearthside-editor');editor?.scrollIntoView?.({block:'start'});editor?.querySelector<HTMLInputElement>('input,textarea')?.focus();} },[Boolean(experienceDraft),Boolean(memoryDraft),Boolean(noteDraft)]);
++  const encounterEntry=(encounterId?:string)=><EncounterEntry identity={identity} environment={h.environment} householdId={h.householdId} memberId={memberId} connection={vault.connection} theme={theme}
++    roster={h.members.filter(m=>m.active).map(m=>({memberId:m.id,name:m.name}))} encounterId={encounterId} enabled={connected&&HEARTHSIDE_FLAGS.vaultPublication}
++    readContent={async signal=>{const source=vaultSource?.(),current=vault.connection;if(!source||!current||current.identity!==identity||source.options.scope.environment!==h.environment||source.options.scope.householdId!==h.householdId||source.options.scope.memberId!==memberId||source.options.scope.subject!==current.scope.subject)throw Error('SCOPE_CHANGED');return source.hearthsideContent(signal);}}
++    onOpenEncounter={id=>openObject('encounter',id)} onOpenPiece={(pieceId,designId)=>openObject('piece',pieceId,designId)} onOpenMemory={id=>openObject('memory',id)} onOpenWardrobe={()=>openTool('wardrobe')}
++    onMemoryDraft={async candidate=>{if(memoryDraft&&memoryDraft.id!==candidate.id)return false;if(!memoryDraft)setMemoryDraft(candidate);requestAnimationFrame(()=>root.current?.querySelector<HTMLElement>('[aria-label="Memory draft"] input')?.focus());return true;}}/>;
+   function navigate(next:HearthsideRoute) {
+     returnFocus.current=document.activeElement instanceof HTMLElement?document.activeElement.id||'hearthside-title':'hearthside-title';
+     window.history.replaceState({...window.history.state,hearthsideFocus:returnFocus.current},'',window.location.href);
+@@ -94,7 +101,7 @@
+   function beginNote(){if(noteDraft){setDraftMessage('Your note draft is open below.');return;}setNoteDraft({version:1,id:`NOTE-${crypto.randomUUID()}`,revision:1,authorId:memberId,text:'',room:route.room,experienceId:selectedExperience?.id??null,archived:false});}
+   function beginMemory(experienceId:string|null=selectedExperience?.id??null){if(memoryDraft){setDraftMessage('Your memory draft is open below.');return;}setMemoryDraft({version:1,id:`MEMORY-${crypto.randomUUID()}`,revision:1,title:selectedExperience?.title??'',date:null,experienceId,media:[],designs:[],recollections:[{memberId,text:''}],hideAmounts:true,approvals:[],withdrawn:false});}
+   function editMemory(memory:MemoryComposition){setMemoryDraft({...memory,revision:memory.revision+1,approvals:[],recollections:memory.recollections.some(r=>r.memberId===memberId)?memory.recollections:[...memory.recollections,{memberId,text:''}]});}
+-  function openTool(kind:'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'){const origin=document.activeElement instanceof HTMLElement?document.activeElement.id||'hearthside-title':'hearthside-title';navigate({...route,surface:kind,returnContext:{path:hearthsidePath({...route,returnContext:undefined}),focusId:origin}});}
++  function openTool(kind:'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'|'encounters'|'wardrobe'){const origin=document.activeElement instanceof HTMLElement?document.activeElement.id||'hearthside-title':'hearthside-title';navigate({...route,surface:kind,returnContext:{path:hearthsidePath({...route,returnContext:undefined}),focusId:origin}});}
+   async function retrySave() {
+     const request=commands.retry;
+     if (!request || !await commands.retryNow()) return;
+@@ -117,6 +124,7 @@
+           {letters&&(route.room==='common'||route.room==='theatre')&&<button id="hearthside-open-letters" onClick={()=>openTool('letters')}>Letters, voice, and capsules</button>}
+           {route.room==='common'&&<><button id="hearthside-add-intention" onClick={()=>beginExperience()}>Add an intention</button><button id="hearthside-write-note" onClick={beginNote}>Leave a little note</button><button id="hearthside-sit-together" onClick={()=>openTool('practical')}>Sit together</button></>}
+           {route.room==='studio'&&<><button id="hearthside-open-studio" onClick={()=>openTool('studio')}>Enter the Studio</button><button id="hearthside-banks" onClick={()=>bankView()}>Our painted banks</button></>}
++          {(route.room==='common'||route.room==='conservatory')&&<button id="hearthside-discoveries" onClick={()=>openTool('encounters')}>Discover a season together</button>}
+           {route.room==='conservatory'&&<button id="hearthside-new-dream" onClick={()=>beginExperience()}>Plant a possibility</button>}
+           {(route.room==='conservatory'||route.room==='theatre')&&<button id="hearthside-occasions" onClick={()=>openTool('occasions')}>Dates that mean something</button>}
+           {route.room==='common'&&HEARTHSIDE_FLAGS.guestPublication&&<button id="hearthside-guests" onClick={()=>openTool('guests')}>Our doorway and private street</button>}
+@@ -130,7 +138,7 @@
+       <section className="hearthside-invitations" aria-label="Things we can do">{JOURNEYS.filter(j=>j.room===route.room).map(j=><button id={`hearthside-journey-${j.id}`} key={j.id} onClick={()=>{if(j.id==='leave-something')beginNote();else if(j.id==='remember')beginMemory(null);else if(j.id==='care-for-life')openTool('practical');else if(j.id==='make-together')openTool('studio');else beginExperience(j.prompt);}}>{j.label}<span aria-hidden="true">↗</span></button>)}</section>
+     </>}
+     {focused&&<section className="hearthside-focused"><button className="hearthside-back" onClick={closeFocused}>← Back to {ROOMS[route.room].name.toLowerCase()}</button>
+-      {tool==='guests'?<GuestVisitsEntry household={h} theme={theme} onClose={closeFocused}/>:tool==='worktable'&&selectedExperience?<ExperienceWorktable hearthside={{scope:{identity,environment:h.environment,householdId:h.householdId,memberId},experience:workspaceExperienceContext(selectedExperience),onReturn:closeFocused}}/>:tool==='history'?<RoomHistory household={h} memberId={memberId} identity={identity} room={route.room} horizon={horizon} theme={theme} canSave={commands.canStart} submit={commands.submit} onCurrent={target=>openObject(target.kind,target.id,target.kind==='piece'?target.designId:undefined)}/>:tool==='projector'?<ProjectorEntry household={h} memberId={memberId} identity={identity} source={vaultSource} theme={theme} onClose={closeFocused} onReviewMemory={id=>openObject('memory',id)}/>:tool==='occasions'||route.object?.kind==='occasion'?<Occasions state={state} memberId={memberId} identity={identity} canSave={commands.canStart} submit={commands.submit} onOpen={openObject} selectedId={route.object?.kind==='occasion'?route.object.id:undefined}/>:tool==='letters'?letters?.(closeFocused,theme):tool==='practical'?practical:tool==='studio'||route.object?.kind==='piece'?<CollaborativeStudio handoff={(documentId,pieceId,revision,pending)=><StudioHandoff household={h} memberId={memberId} identity={identity} design={{version:1,documentId,pieceId,revision}} canSave={commands.canStart&&!pending} submit={commands.submit}/>} acceptedReceipt={nativeFunding.receipt} onFundingIntent={intent=>{const id=nativeFunding.begin(intent);if(id)setBank({id});}} initialDesignId={route.object?.kind==='piece'?route.object.designId:undefined} initialPieceId={route.object?.kind==='piece'?route.object.id:undefined} household={h} memberId={memberId} wardrobe={studio} onKeep={selectedExperience?(designId,pieceId,revision)=>{void commands.submit({kind:'experience.save',expectedRevision:selectedExperience.revision,value:{...selectedExperience,revision:selectedExperience.revision+1,references:[...selectedExperience.references.filter(r=>!(r.kind==='piece'&&r.id===pieceId&&r.designId===designId)),{kind:'piece',id:pieceId,designId,revision}]}});}:undefined}/>:selectedExperience?<>
++      {tool==='encounters'||!tool&&route.object?.kind==='encounter'?encounterEntry(route.object?.kind==='encounter'?route.object.id:undefined):tool==='guests'?<GuestVisitsEntry household={h} theme={theme} onClose={closeFocused}/>:tool==='worktable'&&selectedExperience?<ExperienceWorktable hearthside={{scope:{identity,environment:h.environment,householdId:h.householdId,memberId},experience:workspaceExperienceContext(selectedExperience),onReturn:closeFocused}}/>:tool==='history'?<RoomHistory household={h} memberId={memberId} identity={identity} room={route.room} horizon={horizon} theme={theme} canSave={commands.canStart} submit={commands.submit} onCurrent={target=>openObject(target.kind,target.id,target.kind==='piece'?target.designId:undefined)}/>:tool==='projector'?<ProjectorEntry household={h} memberId={memberId} identity={identity} source={vaultSource} theme={theme} onClose={closeFocused} onReviewMemory={id=>openObject('memory',id)}/>:tool==='occasions'||route.object?.kind==='occasion'?<Occasions state={state} memberId={memberId} identity={identity} canSave={commands.canStart} submit={commands.submit} onOpen={openObject} selectedId={route.object?.kind==='occasion'?route.object.id:undefined}/>:tool==='letters'?letters?.(closeFocused,theme):tool==='practical'?practical:tool==='studio'||tool==='wardrobe'||route.object?.kind==='piece'?<CollaborativeStudio key={tool==='wardrobe'?'wardrobe':'clay'} initialTab={tool==='wardrobe'?'wardrobe':'shape'} handoff={(documentId,pieceId,revision,pending)=><StudioHandoff household={h} memberId={memberId} identity={identity} design={{version:1,documentId,pieceId,revision}} canSave={commands.canStart&&!pending} submit={commands.submit}/>} acceptedReceipt={nativeFunding.receipt} onFundingIntent={intent=>{const id=nativeFunding.begin(intent);if(id)setBank({id});}} initialDesignId={route.object?.kind==='piece'?route.object.designId:undefined} initialPieceId={route.object?.kind==='piece'?route.object.id:undefined} household={h} memberId={memberId} wardrobe={studio} onKeep={selectedExperience?(designId,pieceId,revision)=>{void commands.submit({kind:'experience.save',expectedRevision:selectedExperience.revision,value:{...selectedExperience,revision:selectedExperience.revision+1,references:[...selectedExperience.references.filter(r=>!(r.kind==='piece'&&r.id===pieceId&&r.designId===designId)),{kind:'piece',id:pieceId,designId,revision}]}});}:undefined}/>:selectedExperience?<>
+         <p className="hearthside-eyebrow">{selectedExperience.state==='paused'?'Resting for now':'Something of ours'}</p><h2 id="hearthside-focus-title" tabIndex={-1}>{selectedExperience.title}</h2><p className="hearthside-intention">{selectedExperience.intention}</p>
+         <div className="hearthside-actions"><button onClick={()=>setExperienceDraft({...selectedExperience,revision:selectedExperience.revision+1})}>Shape this intention</button><button onClick={beginNote}>Leave a note</button><button onClick={()=>openTool('studio')}>Make something for this</button><button id="hearthside-experience-worktable" onClick={()=>onWorkspace?onWorkspace(selectedExperience):openTool('worktable')}>Work on this with Hercules</button><button onClick={()=>setLifeStep('task')}>Choose a next step</button><button onClick={()=>setLifeStep('date')}>Make time for this</button><button onClick={()=>beginMemory()}>Remember this</button></div>
+         {route.room==='conservatory'&&<FuturePath key={selectedExperience.id} household={h} memberId={memberId} experience={selectedExperience} onReference={r=>r.kind==='bank'?bankView(r.id):onReference(r,selectedExperience)}/>}
+--- a/src/hearthside/Encounter.tsx
++++ b/src/hearthside/Encounter.tsx
+@@ -68,7 +68,7 @@
+       {discovered&&<p role="status" className="encounter-discovery">{pack.notice.objects.find(o=>o.id===discovered)?.discovery}</p>}
+       <div className="encounter-private-paper"><p className="encounter-kicker">Only your signed-in account can open this answer before reveal</p><label htmlFor={`${id}-answer`}>{pack.notice.prompt}</label><textarea id={`${id}-answer`} maxLength={4000} value={draft.text} disabled={Boolean(busy)||Boolean(paused)} onChange={e=>editDraft({...draft,text:e.target.value})}/>
+         {pack.mechanic==='mummers'&&<label>My actual wardrobe item<select value={draft.wardrobeId??''} disabled={blocked} onChange={e=>editDraft({...draft,wardrobeId:e.target.value||null})}><option value="">Choose from my wardrobe</option>{wardrobe.map(item=><option key={item.id} value={item.id}>{item.name}</option>)}</select></label>}
+-        {pack.mechanic==='mummers'&&wardrobe.length===0&&<p>Your wardrobe shelf is empty. {onOpenWardrobe&&<button onClick={onOpenWardrobe}>Open the real wardrobe</button>}</p>}
++        {pack.mechanic==='mummers'&&<p>{wardrobe.length===0?'Your wardrobe shelf is empty. ':''}{onOpenWardrobe&&<button type="button" onClick={onOpenWardrobe}>Open the real wardrobe</button>}</p>}
+         <div className="encounter-toolbar"><button disabled={blocked||Boolean(paused)||!draft.text.trim()||(pack.mechanic==='mummers'&&!draft.wardrobeId)} onClick={()=>void run('Saving only your answer…',async()=>{await store.draft(scope,encounter.id,draft);await privateCommand({encounterId:encounter.id,action:'save',expectedRevision:view?.own?.revision??0,answer:{...draft,revision:(view?.own?.revision??0)+1}});setNotice('Your answer is saved privately. Any answer edit clears earlier reveal choices.');})}>Save my private answer</button>
+           <button disabled={blocked||!view?.own} onClick={()=>void run('Deleting your private answer…',async()=>{await privateCommand({encounterId:encounter.id,action:'delete',expectedRevision:view!.own!.revision});await store.draft(scope,encounter.id,null);if(alive.current)setDraft({text:'',objectId:pack.notice.objects[0]!.id,wardrobeId:null});})}>Delete my answer</button></div>
+         {view?.choiceSubmitted&&<p className="encounter-own-submission">You chose to reveal this answer. You can review and choose again whenever you want.</p>}

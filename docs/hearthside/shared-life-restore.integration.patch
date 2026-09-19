@@ -1,0 +1,300 @@
+diff --git a/src/hearthside/Hearthside.tsx b/src/hearthside/Hearthside.tsx
+index a5f2584abcc8caf2c54f1728604dcf6b8d7c28cb..48dab404f12e1a4132e6cc5f75194434bac05f1d 100644
+--- a/src/hearthside/Hearthside.tsx
++++ b/src/hearthside/Hearthside.tsx
+@@ -1,3 +1,4 @@
++import {SharedLifeRestore} from './SharedLifeRestore.tsx';
+ import {ExperienceBankEntry} from './ExperienceBankEntry.tsx';
+ import type {KittyAcceptedCommandReader} from './bankReceipt.ts';
+ import {EncounterEntry} from './EncounterEntry.tsx';
+@@ -14,7 +15,7 @@
+ import {ProjectorEntry} from './ProjectorEntry.tsx';
+ import {HearthsideVaultProvider,useHearthsideVault} from './VaultProvider.tsx';
+ import type {LedgerSyncClient} from '../ledgerSync/client.ts';
+-import {MemoryArtwork,useMemoryDesigns} from './MemoryArtwork.tsx';
++import {MemoryArtwork,useMemoryDesigns,SavedPiecePreview} from './MemoryArtwork.tsx';
+ import {Occasions} from './Occasions.tsx';
+ import { CollaborativeStudio } from './CollaborativeStudio.tsx';
+ import { useEffect, useRef, useState, type ReactNode } from 'react';
+@@ -58,7 +59,7 @@
+   const appearance=useAppearance(), theme=appearance.scene.theme, state=decodeHearthside(h.hearthside);
+   const scope={environment:h.environment,householdId:h.householdId,memberId}, commands=useHearthsideCommands(scope,identity,connected,onCommand);
+   const [route,setRoute]=useState<HearthsideRoute>(()=>parseHearthsideRoute(window.location.href,h.householdId)??{version:1,householdId:h.householdId,room:initialRoom??'common',mode:'present'});
+-  const [tool,setTool]=useState<'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'|'encounters'|'wardrobe'|null>(route.surface??null), [bank,setBank]=useState<{id?:string}|null>(null);
++  const [tool,setTool]=useState<'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'|'encounters'|'wardrobe'|'restore'|null>(route.surface??null), [bank,setBank]=useState<{id?:string}|null>(null);
+   const nativeFunding=useNativeFundingReview(h,memberId,onCommand,onReadSubmission,onReadAcceptedHousehold);
+   const [horizon,setHorizon]=useState<FutureHorizon>('season');
+   const [lifeStep,setLifeStep]=useState<'task'|'date'|null>(null);
+@@ -104,7 +105,7 @@
+   function beginNote(){if(noteDraft){setDraftMessage('Your note draft is open below.');return;}setNoteDraft({version:1,id:`NOTE-${crypto.randomUUID()}`,revision:1,authorId:memberId,text:'',room:route.room,experienceId:selectedExperience?.id??null,archived:false});}
+   function beginMemory(experienceId:string|null=selectedExperience?.id??null){if(memoryDraft){setDraftMessage('Your memory draft is open below.');return;}setMemoryDraft({version:1,id:`MEMORY-${crypto.randomUUID()}`,revision:1,title:selectedExperience?.title??'',date:null,experienceId,media:[],designs:[],recollections:[{memberId,text:''}],hideAmounts:true,approvals:[],withdrawn:false});}
+   function editMemory(memory:MemoryComposition){setMemoryDraft({...memory,revision:memory.revision+1,approvals:[],recollections:memory.recollections.some(r=>r.memberId===memberId)?memory.recollections:[...memory.recollections,{memberId,text:''}]});}
+-  function openTool(kind:'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'|'encounters'|'wardrobe'){const origin=document.activeElement instanceof HTMLElement?document.activeElement.id||'hearthside-title':'hearthside-title';navigate({...route,surface:kind,returnContext:{path:hearthsidePath({...route,returnContext:undefined}),focusId:origin}});}
++  function openTool(kind:'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'|'encounters'|'wardrobe'|'restore'){const origin=document.activeElement instanceof HTMLElement?document.activeElement.id||'hearthside-title':'hearthside-title';navigate({...route,surface:kind,returnContext:{path:hearthsidePath({...route,returnContext:undefined}),focusId:origin}});}
+   async function retrySave() {
+     const request=commands.retry;
+     if (!request || !await commands.retryNow()) return;
+@@ -132,6 +133,7 @@
+           {(route.room==='conservatory'||route.room==='theatre')&&<button id="hearthside-occasions" onClick={()=>openTool('occasions')}>Dates that mean something</button>}
+           {route.room==='common'&&HEARTHSIDE_FLAGS.guestPublication&&<button id="hearthside-guests" onClick={()=>openTool('guests')}>Our doorway and private street</button>}
+           <button id="hearthside-history" onClick={()=>openTool('history')}>Our room, as it was</button>
++          {vaultSource&&<button id="hearthside-restore" onClick={()=>openTool('restore')}>Review an earlier shared-life version</button>}
+           {route.room==='theatre'&&<button id="hearthside-projector" onClick={()=>openTool('projector')}>Set out our story</button>}
+           {route.room==='theatre'&&<button id="hearthside-new-memory" onClick={()=>beginMemory(null)}>Keep an ordinary day</button>}
+         </div>
+@@ -141,7 +143,7 @@
+       <section className="hearthside-invitations" aria-label="Things we can do">{JOURNEYS.filter(j=>j.room===route.room).map(j=><button id={`hearthside-journey-${j.id}`} key={j.id} onClick={()=>{if(j.id==='leave-something')beginNote();else if(j.id==='remember')beginMemory(null);else if(j.id==='care-for-life')openTool('practical');else if(j.id==='make-together')openTool('studio');else beginExperience(j.prompt);}}>{j.label}<span aria-hidden="true">↗</span></button>)}</section>
+     </>}
+     {focused&&<section className="hearthside-focused"><button className="hearthside-back" onClick={closeFocused}>← Back to {ROOMS[route.room].name.toLowerCase()}</button>
+-      {tool==='encounters'||!tool&&route.object?.kind==='encounter'?encounterEntry(route.object?.kind==='encounter'?route.object.id:undefined):tool==='guests'?<GuestVisitsEntry household={h} theme={theme} onClose={closeFocused}/>:tool==='worktable'&&selectedExperience?<ExperienceWorktable hearthside={{scope:{identity,environment:h.environment,householdId:h.householdId,memberId},experience:workspaceExperienceContext(selectedExperience),onReturn:closeFocused}}/>:tool==='history'?<RoomHistory household={h} memberId={memberId} identity={identity} room={route.room} horizon={horizon} theme={theme} canSave={commands.canStart} submit={commands.submit} onCurrent={target=>openObject(target.kind,target.id,target.kind==='piece'?target.designId:undefined)}/>:tool==='projector'?<ProjectorEntry household={h} memberId={memberId} identity={identity} source={vaultSource} theme={theme} onClose={closeFocused} onReviewMemory={id=>openObject('memory',id)}/>:tool==='occasions'||route.object?.kind==='occasion'?<Occasions state={state} memberId={memberId} identity={identity} canSave={commands.canStart} submit={commands.submit} onOpen={openObject} selectedId={route.object?.kind==='occasion'?route.object.id:undefined}/>:tool==='letters'?letters?.(closeFocused,theme):tool==='practical'?practical:tool==='studio'||tool==='wardrobe'||route.object?.kind==='piece'?<CollaborativeStudio key={tool==='wardrobe'?'wardrobe':'clay'} initialTab={tool==='wardrobe'?'wardrobe':'shape'} handoff={(documentId,pieceId,revision,pending)=><StudioHandoff household={h} memberId={memberId} identity={identity} design={{version:1,documentId,pieceId,revision}} canSave={commands.canStart&&!pending} submit={commands.submit}/>} acceptedReceipt={nativeFunding.receipt} onFundingIntent={intent=>{const id=nativeFunding.begin(intent);if(id)setBank({id});}} initialDesignId={route.object?.kind==='piece'?route.object.designId:undefined} initialPieceId={route.object?.kind==='piece'?route.object.id:undefined} household={h} memberId={memberId} wardrobe={studio} onKeep={selectedExperience?(designId,pieceId,revision)=>{void commands.submit({kind:'experience.save',expectedRevision:selectedExperience.revision,value:{...selectedExperience,revision:selectedExperience.revision+1,references:[...selectedExperience.references.filter(r=>!(r.kind==='piece'&&r.id===pieceId&&r.designId===designId)),{kind:'piece',id:pieceId,designId,revision}]}});}:undefined}/>:selectedExperience?<>
++      {tool==='restore'?<SharedLifeRestore household={h} memberId={memberId} identity={identity} theme={theme} connected={connected} source={vaultSource??(()=>null)} onCommand={onCommand} onClose={closeFocused} onEditMemory={id=>{const memory=state.memories.find(m=>m.id===id&&!m.withdrawn);if(memory){openObject('memory',id);editMemory(memory);}}} renderDesign={reference=><SavedPiecePreview reference={reference}/>}/>:tool==='encounters'||!tool&&route.object?.kind==='encounter'?encounterEntry(route.object?.kind==='encounter'?route.object.id:undefined):tool==='guests'?<GuestVisitsEntry household={h} theme={theme} onClose={closeFocused}/>:tool==='worktable'&&selectedExperience?<ExperienceWorktable hearthside={{scope:{identity,environment:h.environment,householdId:h.householdId,memberId},experience:workspaceExperienceContext(selectedExperience),onReturn:closeFocused}}/>:tool==='history'?<RoomHistory household={h} memberId={memberId} identity={identity} room={route.room} horizon={horizon} theme={theme} canSave={commands.canStart} submit={commands.submit} onCurrent={target=>openObject(target.kind,target.id,target.kind==='piece'?target.designId:undefined)}/>:tool==='projector'?<ProjectorEntry household={h} memberId={memberId} identity={identity} source={vaultSource} theme={theme} onClose={closeFocused} onReviewMemory={id=>openObject('memory',id)}/>:tool==='occasions'||route.object?.kind==='occasion'?<Occasions state={state} memberId={memberId} identity={identity} canSave={commands.canStart} submit={commands.submit} onOpen={openObject} selectedId={route.object?.kind==='occasion'?route.object.id:undefined}/>:tool==='letters'?letters?.(closeFocused,theme):tool==='practical'?practical:tool==='studio'||tool==='wardrobe'||route.object?.kind==='piece'?<CollaborativeStudio key={tool==='wardrobe'?'wardrobe':'clay'} initialTab={tool==='wardrobe'?'wardrobe':'shape'} handoff={(documentId,pieceId,revision,pending)=><StudioHandoff household={h} memberId={memberId} identity={identity} design={{version:1,documentId,pieceId,revision}} canSave={commands.canStart&&!pending} submit={commands.submit}/>} acceptedReceipt={nativeFunding.receipt} onFundingIntent={intent=>{const id=nativeFunding.begin(intent);if(id)setBank({id});}} initialDesignId={route.object?.kind==='piece'?route.object.designId:undefined} initialPieceId={route.object?.kind==='piece'?route.object.id:undefined} household={h} memberId={memberId} wardrobe={studio} onKeep={selectedExperience?(designId,pieceId,revision)=>{void commands.submit({kind:'experience.save',expectedRevision:selectedExperience.revision,value:{...selectedExperience,revision:selectedExperience.revision+1,references:[...selectedExperience.references.filter(r=>!(r.kind==='piece'&&r.id===pieceId&&r.designId===designId)),{kind:'piece',id:pieceId,designId,revision}]}});}:undefined}/>:selectedExperience?<>
+         <p className="hearthside-eyebrow">{selectedExperience.state==='paused'?'Resting for now':'Something of ours'}</p><h2 id="hearthside-focus-title" tabIndex={-1}>{selectedExperience.title}</h2><p className="hearthside-intention">{selectedExperience.intention}</p>
+         <div className="hearthside-actions"><button onClick={()=>setExperienceDraft({...selectedExperience,revision:selectedExperience.revision+1})}>Shape this intention</button><button onClick={beginNote}>Leave a note</button><button onClick={()=>openTool('studio')}>Make something for this</button><button id="hearthside-experience-worktable" onClick={()=>onWorkspace?onWorkspace(selectedExperience):openTool('worktable')}>Work on this with Hercules</button><button onClick={()=>setLifeStep('task')}>Choose a next step</button><button onClick={()=>setLifeStep('date')}>Make time for this</button><button onClick={()=>beginMemory()}>Remember this</button></div>
+         <ExperienceBankEntry key={selectedExperience.id} household={h} experience={selectedExperience} identity={identity} memberId={memberId} connected={connected} busy={busy} canStart={commands.canStart} onCommand={onCommand} onReadSubmission={onReadSubmission} onReadAcceptedCommand={onReadAcceptedCommand}/>
+diff --git a/src/hearthside/contracts.ts b/src/hearthside/contracts.ts
+index 2ac3bfd815a7949d3b4c3dfcc33545378ae52fd1..06b8a834698724433a3100e15227d92d11bf7987 100644
+--- a/src/hearthside/contracts.ts
++++ b/src/hearthside/contracts.ts
+@@ -1,3 +1,4 @@
++import {decodeSharedLifeRestoreReviews,type SharedLifeRestoreReview} from './sharedLifeRestoreContracts.ts';
+ import {decodeWinProvenance,type LegacyWinProvenance} from './winMemoryProvenance.ts';
+ import {decodeFurniturePlacements,type FurniturePlacement} from './roomFurniture.ts';
+ import {decodeSharedEncounter,type SharedEncounter} from './encounterContracts.ts';
+@@ -53,6 +54,7 @@
+ export type HearthsideDesignIndex = {version:1; designId:string; revision:number; displayPieceId:string|null; bankId:string|null; pieceIds:string[]};
+ export type HearthsideState = {
+   version: 1; experiences: SharedExperience[]; notes: PlacedNote[];
++  restoreReviews?:SharedLifeRestoreReview[];
+   memories: MemoryComposition[]; occasions: PersonalOccasion[];
+   encounters?:SharedEncounter[];
+   handoffs?:StudioHandoff[];
+@@ -168,8 +170,8 @@
+ }
+ export function decodeHearthside(value: unknown): HearthsideState {
+   if (value === undefined) return emptyHearthside();
+-  const r = object(value, ['version', 'experiences', 'notes', 'memories', 'occasions', 'placements', 'publications', 'designs','handoffs','roomHistory','artifactPublications','encounters','furniture']);
+-  const decoded = { ...(r.furniture!==undefined?{furniture:decodeFurniturePlacements(r.furniture)}:{}),...(r.encounters!==undefined?{encounters:unique(list(r.encounters,decodeSharedEncounter,400),r=>r.id)}:{}),...(r.artifactPublications!==undefined?{artifactPublications:unique(list(r.artifactPublications,decodeArtifactPublication,4000),r=>r.id)}:{}),...(r.roomHistory!==undefined?{roomHistory:unique(list(r.roomHistory,decodeRecordedRoom,120),r=>r.id)}:{}),...(r.handoffs!==undefined?{handoffs:unique(list(r.handoffs,decodeStudioHandoff,2000),r=>r.id)}:{}),version: version(r.version), experiences: unique(list(r.experiences, decodeExperience), r => r.id), notes: unique(list(r.notes, decodeNote, 4000), r => r.id), memories: unique(list(r.memories, decodeMemory, 4000), r => r.id), occasions: unique(list(r.occasions, decodeOccasion, 300), r => r.id), placements: unique(list(r.placements, decodePlacement, 160), r => r.id), publications: unique(list(r.publications, decodePublication, 4000), r => r.id), designs:unique(list(r.designs ?? [],decodeDesignIndex,1000),r=>r.designId) };
++  const r = object(value, ['version', 'experiences', 'notes', 'memories', 'occasions', 'placements', 'publications', 'designs','handoffs','roomHistory','artifactPublications','encounters','furniture','restoreReviews']);
++  const decoded = { ...(r.restoreReviews!==undefined?{restoreReviews:decodeSharedLifeRestoreReviews(r.restoreReviews)}:{}),...(r.furniture!==undefined?{furniture:decodeFurniturePlacements(r.furniture)}:{}),...(r.encounters!==undefined?{encounters:unique(list(r.encounters,decodeSharedEncounter,400),r=>r.id)}:{}),...(r.artifactPublications!==undefined?{artifactPublications:unique(list(r.artifactPublications,decodeArtifactPublication,4000),r=>r.id)}:{}),...(r.roomHistory!==undefined?{roomHistory:unique(list(r.roomHistory,decodeRecordedRoom,120),r=>r.id)}:{}),...(r.handoffs!==undefined?{handoffs:unique(list(r.handoffs,decodeStudioHandoff,2000),r=>r.id)}:{}),version: version(r.version), experiences: unique(list(r.experiences, decodeExperience), r => r.id), notes: unique(list(r.notes, decodeNote, 4000), r => r.id), memories: unique(list(r.memories, decodeMemory, 4000), r => r.id), occasions: unique(list(r.occasions, decodeOccasion, 300), r => r.id), placements: unique(list(r.placements, decodePlacement, 160), r => r.id), publications: unique(list(r.publications, decodePublication, 4000), r => r.id), designs:unique(list(r.designs ?? [],decodeDesignIndex,1000),r=>r.designId) };
+   if (new TextEncoder().encode(JSON.stringify(decoded)).length > HEARTHSIDE_METADATA_BYTES) throw Error('HEARTHSIDE_METADATA_LIMIT: Shared story storage is full. Your new draft has not been saved.');
+   return decoded;
+ }
+diff --git a/src/hearthside/routes.ts b/src/hearthside/routes.ts
+index 91329b2ce03f320ce6f97552bb9695fdde8c966d..bc004d4e1e56e07e04f339029aa40f7f3eae92ff 100644
+--- a/src/hearthside/routes.ts
++++ b/src/hearthside/routes.ts
+@@ -4,7 +4,7 @@
+   version: 1; householdId: string; room: HearthsideRoom;
+   object?: { kind: 'experience' | 'memory' | 'occasion' | 'note' | 'encounter'; id: string } | {kind:'piece';id:string;designId:string};
+   mode: 'present' | 'remember' | 'imagine';
+-  surface?:'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'|'encounters'|'wardrobe';
++  surface?:'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'|'encounters'|'wardrobe'|'restore';
+   returnContext?: { path: string; focusId: string };
+ };
+ const collections = { experience: 'experiences', piece: 'pieces', memory: 'memories', occasion: 'occasions', note: 'notes', encounter: 'encounters' } as const;
+@@ -23,7 +23,7 @@
+   identifier(route.householdId); choice(route.room, HEARTHSIDE_ROOMS); choice(route.mode, ['present', 'remember', 'imagine']);
+   const path = route.object ? `/${collections[route.object.kind]}/${encodeURIComponent(identifier(route.object.id))}` : `/rooms/${route.room}`;
+   const query = new URLSearchParams({ household: route.householdId, room: route.room, mode: route.mode });
+-  if(route.surface)query.set('surface',choice(route.surface,['practical','studio','letters','occasions','projector','history','worktable','guests','encounters','wardrobe']));
++  if(route.surface)query.set('surface',choice(route.surface,['practical','studio','letters','occasions','projector','history','worktable','guests','encounters','wardrobe','restore']));
+   if (route.object?.kind==='piece')query.set('design',identifier(route.object.designId));
+   if (route.returnContext) { const back=returnContext(route.returnContext.path,route.returnContext.focusId,route.householdId);query.set('from',back.path);query.set('focus',back.focusId); }
+   return `/hearthside${path}?${query}`;
+@@ -38,7 +38,7 @@
+     if (parts[0] !== 'hearthside') return null;
+     const room = choice(u.searchParams.get('room') ?? (parts[1] === 'rooms' ? parts[2] : 'common') ?? 'common', HEARTHSIDE_ROOMS);
+     const mode = choice(u.searchParams.get('mode') ?? 'present', ['present', 'remember', 'imagine']);
+-    const surface=u.searchParams.has('surface')?{surface:choice(u.searchParams.get('surface'),['practical','studio','letters','occasions','projector','history','worktable','guests','encounters','wardrobe'] as const)}:{};
++    const surface=u.searchParams.has('surface')?{surface:choice(u.searchParams.get('surface'),['practical','studio','letters','occasions','projector','history','worktable','guests','encounters','wardrobe','restore'] as const)}:{};
+     const back=u.searchParams.has('from')||u.searchParams.has('focus')?{returnContext:returnContext(u.searchParams.get('from'),u.searchParams.get('focus'),householdId)}:{};
+     if (parts.length === 1 || parts.length === 3 && parts[1] === 'rooms' && HEARTHSIDE_ROOMS.includes(parts[2] as HearthsideRoom)) return { version: 1, householdId, room, mode,...surface,...back };
+     const kind = Object.entries(collections).find(([, name]) => name === parts[1])?.[0] as keyof typeof collections | undefined;
+diff --git a/src/ledgerSync/authority.ts b/src/ledgerSync/authority.ts
+index 855180fa1c12c1c35c948267699b58cda420edfc..69f654ef0153df0b346c60b153595f51894037ce 100644
+--- a/src/ledgerSync/authority.ts
++++ b/src/ledgerSync/authority.ts
+@@ -1,3 +1,4 @@
++import {applySharedLifeRestoreIntent,type RestoreDesignAccess} from '../hearthside/sharedLifeRestore.ts';
+ import {hasChapterAgreementData,isChapterAgreementCommand,assertChapterTaskGraph} from "../core/chapterAuthority.ts";
+ import {restoreCanonicalBankArtwork,type CanonicalBankArtwork} from '../hearthside/creativeContinuity.ts';
+ import { hasHearthsideData,hearthsideOperationalCollection } from '../hearthside/commands.ts';
+@@ -83,6 +84,8 @@
+   restorePoint?: (id: string) => Promise<RestorePoint>,
+   booksGuards?: Map<string, IncrementalBooksGuard>,
+   canonicalBankArtwork?: (bankId:string)=>CanonicalBankArtwork|null,
++  restoreDesignAccess?:RestoreDesignAccess,
++  restoreAudienceEpoch?:()=>number,
+ ): Promise<PreparedCommit> {
+   const command = parseCommand(raw);
+   if (
+@@ -107,7 +110,7 @@
+   const extendedPlan = hasPlanDecisionData(current);
+   if (extendedPlan && command.planDecisionVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve the household's Plan evidence and decisions.");
+   if ((current.hearthside?.designs?.length || current.goals.some(g=>g.envelope?.designRef)) && command.kittyDesignVersion !== 1) throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve collaborative artwork.');
+-  const hearthsideStep = command.steps.some(s => s.kind === 'commitHearthside');
++  const hearthsideStep = command.steps.some(s => s.kind === 'commitHearthside'||s.kind==='commitSharedLifeRestore');
+   if ((hasHearthsideData(current) || hearthsideStep) && command.hearthsideVersion !== 1) throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve shared experiences.');
+   if(current.hearthside?.encounters?.length&&command.hearthsideEncounterVersion!==1)throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve shared encounters.');
+   if (hearthsideStep && command.steps.length !== 1) throw Error('HEARTHSIDE_SINGLE_OPERATION_REQUIRED');
+@@ -192,6 +195,10 @@
+           value.id === row.id ? row.before : value,
+         );
+       }
++    } else if(step.kind==='commitSharedLifeRestore'){
++      if(!restorePoint||!restoreDesignAccess||args.length!==1||command.steps.length!==1)throw Error('SHARED_LIFE_RESTORE_AUTHORITY_REQUIRED');
++      result=await applySharedLifeRestoreIntent(current,args[0],{scope,assertCurrent:authorize,point:restorePoint,designAccess:restoreDesignAccess,audienceEpoch:restoreAudienceEpoch});
++      authorize();
+     } else if (step.kind === "restoreSharedPoint" && restorePoint) {
+       if (
+         scope.role !== "owner" ||
+@@ -261,7 +268,8 @@
+         command.id,
+         scope,
+       );
+-    if (step.kind !== 'commitHearthside' && canonical(current.hearthside ?? null) !== canonical(result.household.hearthside ?? null)) throw Error('HEARTHSIDE_OPERATION_REQUIRED');
++    if (!['commitHearthside','commitSharedLifeRestore'].includes(step.kind) && canonical(current.hearthside ?? null) !== canonical(result.household.hearthside ?? null)) throw Error('HEARTHSIDE_OPERATION_REQUIRED');
++    if (step.kind === 'commitSharedLifeRestore'&&canonical({...current,hearthside:null})!==canonical({...result.household,hearthside:null}))throw Error('HEARTHSIDE_NON_FINANCIAL_ONLY');
+     if (step.kind === 'commitHearthside'){
+       const collection=hearthsideOperationalCollection((args[0] as {operation?:unknown})?.operation);
+       if(collection==='tasks'&&command.taskPlannerVersion!==1||collection==='nativeEvents'&&command.nativeCalendarVersion!==1)throw Error('CLIENT_RELOAD_REQUIRED');
+diff --git a/src/ledgerSync/client.ts b/src/ledgerSync/client.ts
+index 703d22d459311b80ed51e8ba77541a35a6aa87e9..081191250a7b714604b17b3cee613302abcd55b1 100644
+--- a/src/ledgerSync/client.ts
++++ b/src/ledgerSync/client.ts
+@@ -1,3 +1,4 @@
++import {decodeRestorePointOptions,decodeSharedLifeRestorePreview,decodeRestoreSelection,type SharedLifeRestoreTarget} from '../hearthside/sharedLifeRestoreContracts.ts';
+ import type {KittyAcceptedCommand} from '../hearthside/bankReceipt.ts';
+ import {hasChapterAgreementData,isChapterAgreementCommand} from "../core/chapterAuthority.ts";
+ import {decodeHearthsideContent} from '../hearthside/contracts.ts';
+@@ -527,6 +528,19 @@
+     if (this.stopped) throw new Error("SCOPE_CLOSED");
+     return rejected.some(row => row.command.id === id) ? "rejected" : "missing";
+   }
++  async sharedLifeRestorePoints(signal?:AbortSignal){
++    if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');const token=await this.options.token();if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');
++    const response=await fetch(this.path('points'),{headers:{Authorization:`Bearer ${token}`},signal,cache:'no-store'});if(!response.ok)throw Error('SHARED_LIFE_RESTORE_UNAVAILABLE');
++    const result=decodeRestorePointOptions(await response.json());if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');return result;
++  }
++  async sharedLifeRestorePreview(input:{pointId:string;selection:SharedLifeRestoreTarget[]},signal?:AbortSignal){
++    if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');const token=await this.options.token();if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');
++    const body=JSON.stringify({pointId:input.pointId,selection:decodeRestoreSelection(input.selection)});
++    const response=await fetch(this.path('shared-life-restore'),{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'},body,signal,cache:'no-store'});
++    const raw=await response.json();if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');
++    if(!response.ok)throw Error(typeof raw?.error==='string'?raw.error:'SHARED_LIFE_RESTORE_UNAVAILABLE');
++    const result=decodeSharedLifeRestorePreview(raw);if(result.audience.environment!==this.options.scope.environment||result.audience.householdId!==this.options.scope.householdId||!result.audience.memberIds.includes(this.options.scope.memberId))throw Error('SCOPE_CLOSED');return result;
++  }
+   async hearthsideContent(signal?:AbortSignal){
+     if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');
+     const token=await this.options.token();if(this.stopped||signal?.aborted)throw Error('SCOPE_CLOSED');
+diff --git a/src/ledgerSync/registry.ts b/src/ledgerSync/registry.ts
+index 1c06aba656de413538ea540e879508d49f12d3d5..42d2a15c333c9fb46cc61b9f49f55b6936a89723 100644
+--- a/src/ledgerSync/registry.ts
++++ b/src/ledgerSync/registry.ts
+@@ -1,3 +1,4 @@
++import {commitSharedLifeRestore} from '../hearthside/sharedLifeRestore.ts';
+ import { commitHearthside } from '../hearthside/commands.ts';
+ import {commitCompanionPlay} from '../core/herculesPlay.ts';
+ import { executeHerculesAction, cancelHerculesSubmission } from '../core/herculesExecution.ts';
+@@ -27,7 +28,7 @@
+   commitCompanion,
+   commitCompanionGallery,
+   commitCompanionPlay,
+-  commitHearthside,
++  commitHearthside, commitSharedLifeRestore,
+   ...rehearsal,
+   editRitual: chapterCommands.editRitual, acknowledgeRitualChange: chapterCommands.acknowledgeRitualChange, setRitualParticipation: chapterCommands.setRitualParticipation, adoptChapterTasks: chapterCommands.adoptChapterTasks, prepareRitualOccurrence: chapterCommands.prepareRitualOccurrence,
+   openChapter: chapterCommands.openChapter, addRitual: chapterCommands.addRitual, recordRitualHeld: chapterCommands.recordRitualHeld, setRitualState: chapterCommands.setRitualState,
+@@ -91,6 +92,7 @@
+ register("commitCompanionGallery", ["scope.memberId"]);
+ register("commitCompanionPlay", ["scope.memberId"]);
+ register("commitHearthside", ["scope.memberId"]);
++register("commitSharedLifeRestore", ["scope.memberId"]);
+ register("forceUnlockOnboarding", ["memberId", "createdBy"]);
+ register("saveBoardTask removeBoardTask saveBoardMilestone removeBoardMilestone setBoardPhoto", ["memberId"]);
+ register("linkGoogleIdentity touchHouseholdDevice", ["memberId"]);
+@@ -164,6 +166,7 @@
+   commandId: string,
+   scope?: Pick<Scope, "identity" | "role">,
+ ): CommitResult {
++  if(kind==='commitSharedLifeRestore')throw Error('SHARED_LIFE_RESTORE_AUTHORITY_REQUIRED');
+   const policy = policies.get(kind);
+   if (!policy)
+     throw new ValidationError(
+diff --git a/src/ledgerSync/resources.ts b/src/ledgerSync/resources.ts
+index 31eaed34194717cd1b60c0cb1af32bf50174e35e..5ecb61f79aaef9ac678e64eff1512fb0c2d01c57 100644
+--- a/src/ledgerSync/resources.ts
++++ b/src/ledgerSync/resources.ts
+@@ -58,7 +58,7 @@
+   if(['saveTask','completeTask','reopenTask','acknowledgeTask'].includes(kind)){const input=args[0] as {id:string};return [{key:`task/${input.id}`,value:household.tasks?.find(r=>r.id===input.id)??null}];}
+   if(kind==='saveTaskList'){const input=args[0] as {id:string};return [{key:`task-list/${input.id}`,value:household.taskLists?.find(r=>r.id===input.id)??null}];}
+   if(kind==='adoptBoardTasks')return [{key:'boards/tasks',value:{rows:household.kitchen.boards?.tasks??[],adopted:(household.tasks??[]).filter(r=>r.id.startsWith('TASK-board-')).map(r=>r.id).sort()}}];
+-  if (kind === "commitHearthside") return []; // Each resource carries an authority-checked expected revision.
++  if (kind === "commitHearthside" || kind === "commitSharedLifeRestore") return []; // Each resource carries an authority-checked expected revision.
+   if (kind === "commitCompanion" || kind === "commitCompanionGallery" || kind === "commitCompanionPlay") return []; // Typed resource revisions and conversation generations are rechecked by the authority.
+   if (['proposeHouseholdFundContribution','replaceHouseholdFundContributionSource'].includes(kind)) {
+     return [{key:'fund-source-allocation',value:{fund:household.householdFund,events:household.fundEvents,claims:household.fundContributionSourceClaims,
+diff --git a/workers/ledgerRoom.ts b/workers/ledgerRoom.ts
+index 6e1cbcfd9af723b2df4e2ab766c54d543762af12..279afd16d4be88c80d25b5e114184294ea1b576f 100644
+--- a/workers/ledgerRoom.ts
++++ b/workers/ledgerRoom.ts
+@@ -1,3 +1,4 @@
++import {readSharedLifeRestorePreview,type RestoreDesignAccess} from '../src/hearthside/sharedLifeRestore.ts';
+ import {rejectLegacyWinPublication} from '../src/hearthside/winMemory.ts';
+ import {createEncounterDesign,encounterDesignIdentity} from '../src/hearthside/encounterDesign.ts';
+ import {commitHearthside} from '../src/hearthside/commands.ts';
+@@ -926,6 +927,18 @@
+     this.check(scope);const state=this.load(),personal=state.personal.get(scope.memberId);
+     if(!personal||!state.shared.members.some(member=>member.active&&member.id===scope.memberId))throw Error('FORBIDDEN');
+     return {state,household:assembleHousehold(state.shared,personal,{linked:true})};
++  }
++  private sharedLifeRestoreDesignAccess(scope:Scope):RestoreDesignAccess {
++    return reference=>{try{this.hearthsideMember(scope);const document=this.designs.read(reference.documentId);
++      if(!document||document.scope.environment!==scope.environment||document.scope.householdId!==scope.householdId||document.scope.ownerMemberId!==null)return false;
++      snapshotKittyDesignRevision(document,reference.pieceId,reference.revision);
++      return projectKittyDesign(document).pieces.some(p=>p.piece.id===reference.pieceId&&p.status!=='archived');
++    }catch{return false;}};
++  }
++  async sharedLifeRestorePreview(scope:Scope,input:unknown){
++    return this.serial(async()=>{this.hearthsideMember(scope);await this.archiveBarrier();this.hearthsideMember(scope);
++      return readSharedLifeRestorePreview(input,{scope,current:()=>this.hearthsideMember(scope).household,assertCurrent:()=>{this.hearthsideMember(scope);},point:id=>this.restorePoint(id),designAccess:this.sharedLifeRestoreDesignAccess(scope),audienceEpoch:()=>Number(this.meta("acl","1"))});
++    });
+   }
+   private memoryDesigns(scope:Scope,memory:MemoryComposition){
+     for(const ref of memory.designs){const document=this.designs.read(ref.documentId);
+@@ -1514,6 +1527,8 @@
+           (id) => this.restorePoint(id),
+           this.booksGuards,
+           bankId=>{const document=this.designs.forBank(bankId);return document?{ownerMemberId:document.scope.ownerMemberId,reference:kittyDesignReference(document)}:null;},
++          this.sharedLifeRestoreDesignAccess(a.scope),
++          ()=>Number(this.meta("acl","1")),
+         );
+         this.check(a.scope);
+         if(command.steps.some(step=>step.kind==='commitHearthside'&&String((step.args[0] as {operation?:{kind?:string}})?.operation?.kind).startsWith('encounter.')))throw Error('HEARTHSIDE_ENCOUNTER_AUTHORITY_REQUIRED');
+diff --git a/workers/ledgerSync.ts b/workers/ledgerSync.ts
+index 552c06ccdd156eb9804138b3fdfb687e25d01866..1e54a49102607ebed0e383187cad3970e8067532 100644
+--- a/workers/ledgerSync.ts
++++ b/workers/ledgerSync.ts
+@@ -23,7 +23,7 @@
+   if (url.pathname === "/ledger-sync/config")
+     return json({ version: 2, enabled: true });
+   const path = url.pathname.match(
+-    /^\/ledger-sync\/v2\/(development|production)\/(HH-[a-zA-Z0-9_-]{1,96})\/(ticket|socket|snapshot|import|revoke|restore|create|delete|points|receipt|parity|design|hearthside-content|encounter-command)$/,
++    /^\/ledger-sync\/v2\/(development|production)\/(HH-[a-zA-Z0-9_-]{1,96})\/(ticket|socket|snapshot|import|revoke|restore|create|delete|points|receipt|parity|design|hearthside-content|shared-life-restore|encounter-command)$/,
+   );
+   if (!path) return json({ error: "NOT_FOUND" }, 404);
+   const environment = path[1]!,
+@@ -140,6 +140,13 @@
+       if(roster)await room.reconcileMembers(scope,roster);
+       return json(await room.hearthsideContent(scope));
+     }
++    if(action==='shared-life-restore'&&request.method==='POST'){
++      const reader=request.body?.getReader();if(!reader)throw Error('SHARED_LIFE_RESTORE_INVALID');const chunks:Uint8Array[]=[];let size=0;
++      try{while(true){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>32*1024)throw Error('SHARED_LIFE_RESTORE_INVALID');chunks.push(part.value);}}finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
++      const bytes=new Uint8Array(size);let at=0;for(const c of chunks){bytes.set(c,at);at+=c.length;}
++      if(roster)await room.reconcileMembers(scope,roster);
++      return json(await room.sharedLifeRestorePreview(scope,JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes))));
++    }
+     if(action==='encounter-command'&&request.method==='POST'){
+       const reader=request.body?.getReader();if(!reader)throw Error('INVALID_ENCOUNTER_COMMAND');const chunks:Uint8Array[]=[];let size=0;
+       try{while(true){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>64*1024)throw Error('INVALID_ENCOUNTER_COMMAND');chunks.push(part.value);}}finally{await reader.cancel().catch(()=>{});reader.releaseLock();}

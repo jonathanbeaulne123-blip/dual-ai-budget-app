@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import type { KitchenCommand } from "../kitchenCommand.ts";
 import { addDays, formatCad, formatDayLabel, formatMonthLabel, type Household, type LedgerView } from "../core/index.ts";
-import { agenda, affordability, suggestedEvidence, type AgendaItem, type AgendaOwnership, type AgendaView, type Affordability } from "../core/agenda.ts";
+import { agenda, affordability, suggestedEvidence,focusedAgendaTask, type AgendaItem, type AgendaOwnership, type AgendaView, type Affordability } from "../core/agenda.ts";
 import { parseTaskCapture } from "../core/taskCapture.ts";
-import { saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks, taskIsFinancial, type Task, type TaskEvidence, type TaskInput, type TaskRepeat } from "../core/tasks.ts";
+import { saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks, taskIsFinancial, taskCompletionBlock, type Task, type TaskEvidence, type TaskInput, type TaskRepeat } from "../core/tasks.ts";
 import { shapeSharedBoards } from "../core/sharedBoards.ts";
 import "./planner.css";
 
@@ -25,6 +25,7 @@ export type PlannerProps = {
   onCommand: KitchenCommand;
   /** Open Add (expense) prefilled from a money task. Ends at Final Confirm like every money verb. */
   onRecord: (task: Task) => void;
+  focusTaskId?:string;
 };
 type Editor = TaskInput & { expectedAmount: string };
 const VIEWS: { id: AgendaView | "lists"; label: string }[] = [
@@ -66,7 +67,7 @@ function moneyLine(item: AgendaItem, money: Affordability | null, today: string)
   return { text: `${formatCad(item.amountCents)} · ${formatCad(line.shortCents)} short`, tone: "warn" };
 }
 
-export function Planner({ household, memberId, view, today, busy, onCommand, onRecord }: PlannerProps) {
+export function Planner({ household, memberId, view, today, busy, onCommand, onRecord,focusTaskId }: PlannerProps) {
   const active = household.members.some((member) => member.id === memberId && member.active);
   const [tab, setTab] = useState<AgendaView | "lists">("today");
   const [ownership, setOwnership] = useState<AgendaOwnership>("all");
@@ -86,6 +87,8 @@ export function Planner({ household, memberId, view, today, busy, onCommand, onR
   const parsed = useMemo(() => capture.trim() ? parseTaskCapture(capture, { today, household, memberId }) : null, [capture, household, today, memberId]);
   const openTasks = (household.tasks ?? []).filter((task) => !task.deleted && !task.completedAt && (view === "household" ? task.visibility === "household" : task.visibility === "personal" && task.createdBy === memberId));
   const coverage = view === "household" ? members.map((member) => ({ member, count: openTasks.filter((task) => task.assigneeId === member.id).length, alone: openTasks.filter((task) => task.assigneeId === member.id && !task.backupId).length })) : [];
+  const focused=focusTaskId?focusedAgendaTask(household,focusTaskId,{memberId,view,today}):null;
+  useEffect(()=>{if(focusTaskId)document.getElementById('planner-focused-task')?.focus();},[focusTaskId]);
   useEffect(() => { if (!notice) return; const t = setTimeout(() => setNotice(""), 4000); return () => clearTimeout(t); }, [notice]);
   if (!active) return <main className="planner"><p className="planner__unavailable">The planner is available to active household members.</p></main>;
 
@@ -133,14 +136,16 @@ export function Planner({ household, memberId, view, today, busy, onCommand, onR
     const line = moneyLine(item, money, today);
     const assignee = task.assigneeId ? members.find((member) => member.id === task.assigneeId) : null;
     const backup = task.backupId ? members.find((member) => member.id === task.backupId) : null;
-    const waitingOnMe = !task.completedAt && (task.assigneeId === memberId || task.backupId === memberId) && !task.acknowledgedBy.includes(memberId);
+    const waitingOnMe = task.visibility === "household" && !task.completedAt && (!task.assigneeId || task.assigneeId === memberId || task.backupId === memberId) && !task.acknowledgedBy.includes(memberId);
     const unseenByThem = view === "household" && !task.completedAt && task.assigneeId && task.assigneeId !== memberId && !task.acknowledgedBy.includes(task.assigneeId);
+    const completionBlock = task.completedAt ? null : taskCompletionBlock(household,task,memberId);
+    const completionHelp=`planner-completion-${task.id}`;
     const derived = !task.completedAt && item.done && item.evidence;
     const suggestions = attaching === task.id ? suggestedEvidence(household, memberId, task, today) : [];
     return <li key={item.key} className={`planner-row planner-row--task${item.done ? " is-done" : ""}${item.overdue ? " is-overdue" : ""}${financial ? " is-money" : ""}`}>
       {financial
         ? <span className="planner-row__mark planner-row__mark--money" aria-hidden="true">{item.done ? "✓" : "$"}</span>
-        : <button type="button" className="planner-row__check" aria-label={`${task.completedAt ? "Reopen" : "Complete"} ${task.title}`} aria-pressed={Boolean(task.completedAt)} disabled={busy} onClick={() => tick(item)}>{task.completedAt ? "✓" : ""}</button>}
+        : <button type="button" className="planner-row__check" aria-label={`${task.completedAt ? "Reopen" : "Complete"} ${task.title}`} aria-pressed={Boolean(task.completedAt)} aria-describedby={completionBlock?completionHelp:undefined} disabled={busy||Boolean(completionBlock)} onClick={() => tick(item)}>{task.completedAt ? "✓" : ""}</button>}
       <div className="planner-row__copy">
         <strong>{task.title}</strong>
         <p className="planner-row__meta">
@@ -150,19 +155,20 @@ export function Planner({ household, memberId, view, today, busy, onCommand, onR
           {task.repeat !== "none" && <span>{REPEAT_LABEL[task.repeat].toLowerCase()}</span>}
           {task.cue === "after-payday" && <span>after payday</span>}
           {assignee && <span>{assignee.id === memberId ? "you" : assignee.name}{backup ? ` · ${backup.id === memberId ? "you know how too" : `${backup.name} knows how`}` : ""}</span>}
-          {unseenByThem && assignee && <span className="planner-quiet">{assignee.name} hasn’t seen this yet</span>}
+          {unseenByThem && assignee && <span className="planner-quiet">{assignee.name} hasn’t accepted this assignment</span>}
         </p>
+        {completionBlock&&<p id={completionHelp} className="planner-quiet">{completionBlock}</p>}
         {task.notes && <p className="planner-row__notes">{task.notes}</p>}
         {attaching === task.id && <div className="planner-attach" role="group" aria-label={`Receipts for ${task.title}`}>
           <p>Pick the receipt that paid for this. The books already hold it; nothing is posted here.</p>
-          {suggestions.length ? <ul>{suggestions.map((evidence) => <li key={evidence.kind === "transaction" ? evidence.transactionId : evidence.contributionId}><button type="button" disabled={busy} onClick={() => attach(task, evidence)}>{formatCad(evidence.amountCents)} · {formatDayLabel(evidence.date)} · {household.transactions.find((row) => evidence.kind === "transaction" && row.id === evidence.transactionId)?.note || "receipt"}</button></li>)}</ul> : <p className="planner-empty">No matching receipt yet. Record the payment first, then attach it here.</p>}
+          {suggestions.length ? <ul>{suggestions.map((evidence) => <li key={evidence.kind === "transaction" ? evidence.transactionId : evidence.contributionId}><button type="button" disabled={busy||Boolean(completionBlock)} onClick={() => attach(task, evidence)}>{formatCad(evidence.amountCents)} · {formatDayLabel(evidence.date)} · {household.transactions.find((row) => evidence.kind === "transaction" && row.id === evidence.transactionId)?.note || "receipt"}</button></li>)}</ul> : <p className="planner-empty">No matching receipt yet. Record the payment first, then attach it here.</p>}
           <button type="button" className="planner-link" onClick={() => setAttaching(null)}>Not now</button>
         </div>}
       </div>
       <div className="planner-row__actions">
         {financial && !task.completedAt && !derived && <button type="button" disabled={busy} onClick={() => onRecord(task)}>Record</button>}
-        {financial && !task.completedAt && !derived && <button type="button" disabled={busy} aria-expanded={attaching === task.id} onClick={() => setAttaching(attaching === task.id ? null : task.id)}>Attach receipt</button>}
-        {derived && <button type="button" disabled={busy} onClick={() => attach(task, item.evidence!)}>Paid · keep it</button>}
+        {financial && !task.completedAt && !derived && <button type="button" disabled={busy||Boolean(completionBlock)} aria-describedby={completionBlock?completionHelp:undefined} aria-expanded={attaching === task.id} onClick={() => setAttaching(attaching === task.id ? null : task.id)}>Attach receipt</button>}
+        {derived && <button type="button" disabled={busy||Boolean(completionBlock)} aria-describedby={completionBlock?completionHelp:undefined} onClick={() => attach(task, item.evidence!)}>Paid · keep it</button>}
         {waitingOnMe && <button type="button" className="planner-take" disabled={busy} onClick={() => run((current) => acknowledgeTask(current, { memberId, id: task.id, expectedRevision: task.revision }), "Taken")}>Taking it</button>}
         {task.completedAt && financial && <button type="button" disabled={busy} onClick={() => tick(item)}>Reopen</button>}
         <button type="button" disabled={busy} aria-label={`Edit ${task.title}`} onClick={() => { setAttaching(null); setEditor(editorFor(task, memberId)); }}>Edit</button>
@@ -204,6 +210,7 @@ export function Planner({ household, memberId, view, today, busy, onCommand, onR
     </div>}
     {listFilter && <p className="planner-filter">Showing <strong>{lists.find((list) => list.id === listFilter)?.name ?? "a list"}</strong> <button type="button" className="planner-link" onClick={() => setListFilter(null)}>Show everything</button></p>}
     {notice && <p className="planner-notice" role="status">{notice}</p>}
+    {focusTaskId&&<section className="planner-day" aria-labelledby="planner-focused-task"><h2 id="planner-focused-task" tabIndex={-1}>The next step you opened</h2>{focused?<ul className="planner-list">{renderTask(focused)}</ul>:<p>This task is no longer available in this ledger.</p>}</section>}
 
     {money && (tab === "week" || tab === "today") && <section className="planner-afford" aria-label="What this period can afford">
       <p><strong>{tab === "week" ? "This week" : "Today"}:</strong> {formatCad(money.plannedCents)} planned, {formatCad(money.availableCents)} available{money.nextPayday ? ` before ${dayName(money.nextPayday, today)}` : ""}{money.incomeCents > 0 ? `, ${formatCad(money.incomeCents)} expected in` : ""}.</p>

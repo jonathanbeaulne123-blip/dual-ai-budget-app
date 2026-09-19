@@ -857,6 +857,8 @@ export type GoalEnvelope = {
   archivedAt: string | null;
   /** Optional studio pieces. Absent on legacy banks. */
   studio?: KittyStudioV1;
+  /** Canonical artwork, loaded separately; legacy studio writes stop after migration. */
+  designRef?: import("../hearthside/designContracts.ts").KittyDesignReference;
 };
 
 
@@ -1390,6 +1392,7 @@ export type Household = {
   fundModelRows?: import("./fundRules.ts").FundModelRow[];
   tasks?: Task[];
   taskLists?: TaskList[];
+  hearthside?: import("../hearthside/contracts.ts").HearthsideState;
   playRoom?: import("./playContracts.ts").PlayRoom;
   companionGallery?: import("./herculesCompanionContracts.ts").GalleryResourceV1[];
   /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */
@@ -1519,6 +1522,7 @@ export type SharedEnvelope = {
   fundModelRows?: import("./fundRules.ts").FundModelRow[];
   tasks?: Task[];
   taskLists?: TaskList[];
+  hearthside?: import("../hearthside/contracts.ts").HearthsideState;
   playRoom?: import("./playContracts.ts").PlayRoom;
   companionGallery?: import("./herculesCompanionContracts.ts").GalleryResourceV1[];
   accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];

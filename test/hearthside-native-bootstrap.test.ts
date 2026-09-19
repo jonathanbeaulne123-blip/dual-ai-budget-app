@@ -1,0 +1,13 @@
+// @vitest-environment jsdom
+import {afterEach,beforeEach,expect,it,vi} from 'vitest';
+const mock=vi.hoisted(()=>({native:true,plugin:{authStorageVersion:vi.fn(async()=>({version:2})),secureGet:vi.fn(async()=>({value:null})),secureSet:vi.fn(async()=>{}),secureRemove:vi.fn(async()=>{}),cancelAuthentication:vi.fn(async()=>{}),clearWidget:vi.fn(async()=>{}),available:vi.fn(async()=>({supported:false}))}}));
+vi.mock('@capacitor/core',()=>({Capacitor:{isNativePlatform:()=>mock.native},registerPlugin:()=>mock.plugin}));
+beforeEach(()=>{vi.resetModules();vi.clearAllMocks();localStorage.clear();mock.native=true;mock.plugin.secureGet.mockImplementation(async()=>({value:null}));vi.stubEnv('VITE_SUPABASE_AUTH_ENABLED','1');vi.stubEnv('VITE_SUPABASE_URL','https://example.supabase.co');vi.stubEnv('VITE_SUPABASE_PUBLISHABLE_KEY','public-anon-key');});
+afterEach(()=>vi.unstubAllEnvs());
+it('hydrates before caller mount, discards old plaintext credentials, and works without AR',async()=>{
+ localStorage.setItem('hearth:v1:supabase-auth:development','old-plaintext-credential');localStorage.setItem('hearth:v1:development:google:member','old-provider-credential');localStorage.setItem('ordinary-setting','keep');
+ const {hydrateNativeAuthentication}=await import('../src/hearthside/nativeBootstrap.ts');await hydrateNativeAuthentication();
+ const {loadSupabaseSession}=await import('../src/auth/supabaseSession.ts');expect(loadSupabaseSession('development')).toBeNull();expect(localStorage.getItem('hearth:v1:supabase-auth:development')).toBeNull();expect(localStorage.getItem('ordinary-setting')).toBe('keep');expect(mock.plugin.available).not.toHaveBeenCalled();expect(mock.plugin.clearWidget).toHaveBeenCalledOnce();expect(mock.plugin.secureGet).toHaveBeenCalledTimes(3);
+});
+it('fails closed on locked secure storage and never falls back to browser tokens',async()=>{mock.plugin.secureGet.mockRejectedValue(new Error('locked'));const {hydrateNativeAuthentication}=await import('../src/hearthside/nativeBootstrap.ts');await expect(hydrateNativeAuthentication()).rejects.toThrow('locked');const {loadSupabaseSession}=await import('../src/auth/supabaseSession.ts');expect(()=>loadSupabaseSession('development')).toThrow('not loaded');});
+it('leaves browser startup and its credential store alone',async()=>{mock.native=false;localStorage.setItem('hearth:v1:supabase-auth:development','web-token');const {hydrateNativeAuthentication}=await import('../src/hearthside/nativeBootstrap.ts');await hydrateNativeAuthentication();expect(localStorage.getItem('hearth:v1:supabase-auth:development')).toBe('web-token');expect(mock.plugin.secureGet).not.toHaveBeenCalled();});

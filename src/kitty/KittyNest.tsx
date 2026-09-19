@@ -1,3 +1,7 @@
+import {NestCanonicalArtwork} from '../hearthside/NestCanonicalArtwork.tsx';
+import {NestCanonicalStudio} from '../hearthside/NestCanonicalStudio.tsx';
+import {HEARTHSIDE_FLAGS} from '../hearthside/flags.ts';
+import {CanonicalKittyFlat} from '../hearthside/DesignProvider.tsx';
 import { NestProp } from "./NestProp.tsx";
 import { useMemo, useState } from "react";
 import { formatCad, type Goal, type Household, type LedgerView } from "../core/index.ts";
@@ -15,19 +19,19 @@ import "./kitty-nest.css";
 
 export function NestPortrait({ bank, theme }: { bank: NestBank; theme: string }) {
   const piece = bank.goal ? displayedKittyPiece(bank.goal.envelope?.studio) : displayedKittyPiece(bank.design?.studio) ?? nestDefaultPiece(bank);
-  const step = bank.targetCents > 0 ? Math.max(0, Math.min(10, Math.floor(bank.amountCents / bank.targetCents * 10))) : 0;
+  const step = bank.amountCents!==null && bank.targetCents > 0 ? Math.max(0, Math.min(10, Math.floor(bank.amountCents / bank.targetCents * 10))) : 0;
   return <span className={`nest-portrait nest-portrait--${bank.tier}${bank.state === "broken" ? " is-broken" : ""}`} aria-hidden="true">
-    <KittyFlat piece={piece} glaze={bank.design?.glaze ?? bank.goal?.envelope?.glaze ?? "cream"} step={step} />
-    <NestProp ornament={nestOrnament(bank, theme)} />
+    {bank.goal ? <CanonicalKittyFlat goal={bank.goal} step={step}/> : bank.design?.designRef ? <NestCanonicalArtwork design={bank.design} step={step}/> : <KittyFlat piece={piece} glaze={bank.design?.glaze ?? "cream"} step={step} />}
+    {!bank.design?.designRef&&<NestProp ornament={nestOrnament(bank, theme)} />}
     {bank.state === "broken" && <svg className="nest-crack" viewBox="0 0 100 100"><path d="M51 15L43 38L62 48L39 66L54 88" fill="none" stroke="currentColor" strokeWidth="4"/></svg>}
   </span>;
 }
 function NestButton({ bank, theme, onSelect }: { bank: NestBank; theme: string; onSelect: (bank: NestBank) => void }) {
   const detail = bank.tier === "bill" ? bank.state === "broken" ? "Paid · a promise kept" : `${bank.date ?? "Coming up"} · ${formatCad(bank.targetCents)} needed` : bank.tier === "goal" ? `Goal · ${formatCad(bank.targetCents)}` : null;
-  const accessibleName = [`Open ${bank.name} in the 3D gallery`, formatCad(bank.amountCents), detail, bank.state === "archived" ? "Archived" : null].filter(Boolean).join(". ");
+  const accessibleName = [`Open ${bank.name} in the 3D gallery`, (bank.amountCents===null?"Backing unavailable":formatCad(bank.amountCents)), detail, bank.state === "archived" ? "Archived" : null].filter(Boolean).join(". ");
   return <button type="button" className={`nest-bank nest-bank--${bank.tier}`} data-bank-id={bank.id} data-category={bank.category ?? undefined} onClick={() => onSelect(bank)} aria-label={accessibleName}>
     <NestPortrait bank={bank} theme={theme}/><span className="nest-bank__name">{bank.name}</span>
-    <strong className="nest-bank__amount">{formatCad(bank.amountCents)}</strong>
+    <strong className="nest-bank__amount">{(bank.amountCents===null?"Backing unavailable":formatCad(bank.amountCents))}</strong>
     {detail && <small>{detail}</small>}
   </button>;
 }
@@ -45,7 +49,7 @@ export function KittyNest({ household, memberId, view, today, onSelect, compact 
   </section>;
 }
 
-export function NestBankDetail({ bank, h, memberId, view, identity, busy, theme, run, readLatest, onSelect, onOpenCalendar }: { bank: NestBank; h: Household; memberId: string; view: LedgerView; identity: string; busy: boolean; theme: string; run: StudioRun; readLatest: () => Household; onSelect: (bank: NestBank) => void; onOpenCalendar?: () => void }) {
+function LegacyNestBankDetail({ bank, h, memberId, view, identity, busy, theme, run, readLatest, onSelect, onOpenCalendar }: { bank: NestBank; h: Household; memberId: string; view: LedgerView; identity: string; busy: boolean; theme: string; run: StudioRun; readLatest: () => Household; onSelect: (bank: NestBank) => void; onOpenCalendar?: () => void }) {
   const [editing, setEditing] = useState(bank.tier === "king" && !bank.design?.setupCompletedAt);
   const [name, setName] = useState(bank.name);
   const [glaze, setGlaze] = useState(bank.design?.glaze ?? "cream");
@@ -56,10 +60,10 @@ export function NestBankDetail({ bank, h, memberId, view, identity, busy, theme,
   const save = (current: Household, next?: KittyStudioV1, fire = false, completeSetup = false, archived?: boolean) => saveKittyNestDesign(current, { memberId, view, bankKey: bank.designKey, expectedRevision: design?.revision ?? 0, name, glaze, studio: next ?? design?.studio, fire, completeSetup, category: bank.tier === "bill" ? category : null, ...(archived !== undefined ? { archived } : {}) });
   const studio = useKittyStudio({ goal, identity, memberId, envelope: goal.envelope!, active: editing && bank.tier === "king", run, readLatest, saveDesign: (current, next, fire) => save(current, next, fire) });
   const full = bank.tier === "king";
-  const step = bank.targetCents ? Math.max(0, Math.min(10, Math.floor(bank.amountCents / bank.targetCents * 10))) : 0;
+  const step = bank.amountCents!==null && bank.targetCents ? Math.max(0, Math.min(10, Math.floor(bank.amountCents / bank.targetCents * 10))) : 0;
   const piece = full ? studio.stagePiece ?? nestDefaultPiece(bank) : editing ? { ...pot, paint: { ...pot.paint, base: KITTY_GLAZES[glaze] } } : displayedKittyPiece(bank.design?.studio) ?? nestDefaultPiece(bank);
   return <section className={`nest-detail nest-detail--${bank.tier}`} data-studio-mode={bank.tier}>
-    <header><p className="kicker">{full ? "King · your foundation chapter" : bank.tier === "plan" ? `${NEST_CATEGORY_LABELS[bank.category!]} · category pottery` : "A little bank for a real expense"}</p><h2>{bank.name}</h2><strong className="nest-detail__amount">{formatCad(bank.amountCents)}</strong>{bank.tier === "bill" && <p>{bank.state === "broken" ? "Paid. This pot kept its promise." : `${formatCad(bank.targetCents)} needed${bank.date ? ` · ${bank.date}` : ""}`}</p>}</header>
+    <header><p className="kicker">{full ? "King · your foundation chapter" : bank.tier === "plan" ? `${NEST_CATEGORY_LABELS[bank.category!]} · category pottery` : "A little bank for a real expense"}</p><h2>{bank.name}</h2><strong className="nest-detail__amount">{(bank.amountCents===null?"Backing unavailable":formatCad(bank.amountCents))}</strong>{bank.tier === "bill" && <p>{bank.state === "broken" ? "Paid. This pot kept its promise." : `${formatCad(bank.targetCents)} needed${bank.date ? ` · ${bank.date}` : ""}`}</p>}</header>
     {full && !design?.setupCompletedAt && <div className="king-chapter-intro"><h3>Make the bank that holds your whole nest</h3><p>Shape it, paint it, add its little stories, then fire it. {fundModelMode(h) === 2 ? "Prepare, Protect, Build and Everyday" : "Protect, Everyday, Build and Prepare"} each have a place inside.</p><ol><li>Give your King a name.</li><li>Build and fire your own piece.</li><li>Meet the four banks inside.</li></ol></div>}
     <div className="nest-detail__workshop"><div className="nest-detail__object"><KittyStage broken={bank.state === "broken"} piece={piece} glaze={glaze} name={bank.name} open={false} step={step} ornament={nestOrnament(bank, theme)} mode={full && editing ? studio.mode : "view"} fired={full ? studio.stageFired : undefined} spin={full && editing ? studio.spin : false} brush={full ? studio.stageBrush : null} apiRef={studio.apiRef} onPaint={full ? (hit, phase) => studio.onPaintRef.current?.(hit, phase) : undefined} onThrow={full ? dy => studio.onThrowRef.current?.(dy) : undefined} onFlatChange={studio.setFlat}/></div>
     <div className="nest-detail__controls">
@@ -77,4 +81,10 @@ export function NestBankDetail({ bank, h, memberId, view, identity, busy, theme,
     </div></div>
     {!!bank.children.length && <section className="nest-detail__children"><h3>Inside {bank.name}</h3><div>{bank.children.map(child=><NestButton key={child.id} bank={child} theme={theme} onSelect={onSelect}/>)}</div></section>}
   </section>;
+}
+
+export function NestBankDetail(props:Parameters<typeof LegacyNestBankDetail>[0]){
+ if(props.bank.state==='broken'&&props.bank.design?.designRef)return <section className="nest-detail nest-detail--bill" aria-label="Saved payment pottery"><h2>{props.bank.name}</h2><p>Paid. This pottery keeps the exact appearance saved with its receipt.</p><NestCanonicalArtwork design={props.bank.design}/>{props.onOpenCalendar&&<button type="button" onClick={props.onOpenCalendar}>See payment in Calendar</button>}</section>;
+ if((props.bank.tier==='king'&&props.view==='household'&&HEARTHSIDE_FLAGS.collaborativeDesign)||props.bank.design?.designRef)return <section className={`nest-detail nest-detail--${props.bank.tier}`} data-studio-mode={props.bank.tier}><header><p className="kicker">King · your foundation chapter</p><h2>{props.bank.name}</h2><strong>{props.bank.amountCents===null?'Backing unavailable':formatCad(props.bank.amountCents)}</strong></header><NestCanonicalStudio {...props}/>{!!props.bank.children.length&&<section className="nest-detail__children"><h3>Inside {props.bank.name}</h3><div>{props.bank.children.map(child=><NestButton key={child.id} bank={child} theme={props.theme} onSelect={props.onSelect}/>)}</div></section>}</section>;
+ return <LegacyNestBankDetail {...props}/>;
 }

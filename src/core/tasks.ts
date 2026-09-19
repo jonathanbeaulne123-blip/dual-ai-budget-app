@@ -6,6 +6,8 @@ import { canonical } from "../ledgerSync/patch.ts";
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { shapeSharedBoards } from "./sharedBoards.ts";
 import { mergeTombstones } from "./sync.ts";
+import { chapterTaskId, shapeChapterTaskSource, type ChapterTaskSource } from './chapterTaskSource.ts';
+import { shapeChapterParticipation, type ChapterParticipation } from './chapterConsent.ts';
 
 /**
  * The planner (feedback row 9, D-245). One Task object wears many faces: a life
@@ -30,7 +32,7 @@ export type Task = {
   version: 1;
   id: string;
   revision: number;
-  createdBy: string;
+  createdBy: string | null;
   visibility: LedgerView;
   title: string;
   notes: string;
@@ -56,6 +58,8 @@ export type Task = {
   deleted: boolean;
   createdAt: string;
   updatedAt: string;
+  chapterSource?: ChapterTaskSource;
+  participation?: ChapterParticipation[];
 };
 export type TaskList = {
   version: 1;
@@ -73,7 +77,7 @@ export const TASK_LIMIT = 4000;
 export const TASK_LIST_LIMIT = 200;
 export const TASK_TITLE_LIMIT = 240;
 export const TASK_NOTES_LIMIT = 2000;
-const TASK_KEYS = ["version", "id", "revision", "createdBy", "visibility", "title", "notes", "listId", "parentId", "doDate", "dueDate", "repeat", "cue", "assigneeId", "backupId", "acknowledgedBy", "chapterId", "planReference", "moneyLink", "expectedAmountCents", "completedAt", "completedBy", "completionEvidence", "deleted", "createdAt", "updatedAt"];
+const TASK_KEYS = ["version", "id", "revision", "createdBy", "visibility", "title", "notes", "listId", "parentId", "doDate", "dueDate", "repeat", "cue", "assigneeId", "backupId", "acknowledgedBy", "chapterId", "planReference", "moneyLink", "expectedAmountCents", "completedAt", "completedBy", "completionEvidence", "deleted", "createdAt", "updatedAt", "chapterSource", "participation"];
 const LIST_KEYS = ["version", "id", "revision", "createdBy", "visibility", "name", "deleted", "createdAt", "updatedAt"];
 const REPEATS: TaskRepeat[] = ["none", "daily", "weekly", "biweekly", "monthly", "yearly"];
 const CUES: TaskCue[] = ["none", "after-payday"];
@@ -84,14 +88,20 @@ const optionalDate = (value: unknown) => value === null || (typeof value === "st
 const iso = (value: unknown) => typeof value === "string" && Number.isFinite(Date.parse(value));
 
 /** Money meaning: a task with an amount or a link is financial. It completes by evidence, never by a tick. */
-export function taskIsFinancial(task: Pick<Task, "expectedAmountCents" | "moneyLink">): boolean {
-  return task.moneyLink !== null || (task.expectedAmountCents !== null && task.expectedAmountCents > 0);
+export function taskIsFinancial(task: Pick<Task, "expectedAmountCents" | "moneyLink"> & Pick<Task, 'chapterSource'>): boolean {
+  return task.chapterSource?.requiresMoneyEvidence === true || task.moneyLink !== null || (task.expectedAmountCents !== null && task.expectedAmountCents > 0);
 }
 
 export function validateTask(raw: Task): Task {
   if (!raw || typeof raw !== "object" || Object.keys(raw).some((key) => !TASK_KEYS.includes(key))) return fail("Unsupported task fields.");
   const row = structuredClone(raw);
-  if (row.version !== 1 || !isId(row.id, "TASK") || !Number.isSafeInteger(row.revision) || row.revision < 1 || !["household", "personal"].includes(row.visibility) || typeof row.createdBy !== "string" || !row.createdBy) return fail("This task needs a valid owner and revision.");
+  const source = shapeChapterTaskSource(row.chapterSource);
+  if (source) row.chapterSource = source;
+  if (row.participation !== undefined) row.participation = shapeChapterParticipation(row.participation);
+  const unknownLegacyAuthor = row.createdBy === null && row.visibility === 'household' && source?.legacy?.createdBy === null;
+  if (row.version !== 1 || !isId(row.id, "TASK") || !Number.isSafeInteger(row.revision) || row.revision < 1 || !["household", "personal"].includes(row.visibility) || !unknownLegacyAuthor && (typeof row.createdBy !== "string" || !row.createdBy)) return fail("This task needs a valid owner and revision.");
+  if (source && (row.id !== chapterTaskId(source.kind, source.sourceId, source.onDate) || source.kind === 'ritual-occurrence' && row.doDate !== source.onDate)) return fail('A Ritual occurrence keeps its original Task identity and date. Prepare another occurrence deliberately.');
+  if (source && (row.visibility !== 'household' || source.chapterId !== row.chapterId || row.repeat !== 'none')) return fail('A Chapter task keeps its shared source and one occurrence identity.');
   if (typeof row.title !== "string" || !row.title.trim() || row.title.length > TASK_TITLE_LIMIT || typeof row.notes !== "string" || row.notes.length > TASK_NOTES_LIMIT) return fail("Check the task title and notes.");
   if (!optionalId(row.listId) || !optionalId(row.parentId) || !optionalId(row.assigneeId) || !optionalId(row.backupId) || !optionalId(row.chapterId) || !optionalId(row.completedBy)) return fail("Check who and where this task belongs.");
   if (row.parentId === row.id) return fail("A task cannot be its own parent.");
@@ -111,7 +121,8 @@ export function validateTask(raw: Task): Task {
     if (!ok) return fail("Check the money link on this task.");
   }
   if (row.expectedAmountCents !== null && (!Number.isSafeInteger(row.expectedAmountCents) || row.expectedAmountCents < 0 || row.expectedAmountCents > 99_999_999)) return fail("Choose a whole-cent expected amount.");
-  if ((row.completedAt === null) !== (row.completedBy === null) || (row.completedAt !== null && !iso(row.completedAt))) return fail("Check the task completion.");
+  const unknownLegacyCompletion = row.completedBy === null && source?.legacy?.completedBy === null && source.legacy.completedAt === row.completedAt;
+  if ((row.completedAt === null) !== (row.completedBy === null) && !unknownLegacyCompletion || (row.completedAt !== null && !iso(row.completedAt))) return fail("Check the task completion.");
   if (row.completionEvidence !== null) {
     const evidence = row.completionEvidence as Record<string, unknown>;
     const ok = evidence && typeof evidence === "object" && Number.isSafeInteger(evidence.amountCents) && isValidDateKey(String(evidence.date)) && (
@@ -186,7 +197,7 @@ function requireCurrent(old: Task | undefined, input: { memberId: string; expect
   if ((old?.revision ?? 0) !== input.expectedRevision || old?.deleted) return fail("This task changed. Review its latest version.");
   if (old?.visibility === "personal" && old.createdBy !== input.memberId) return fail("This is another person’s private task.");
 }
-function checkReferences(h: Household, row: Task) {
+export function validateTaskReferences(h: Household, row: Task) {
   const active = (id: string | null) => id === null || h.members.some((m) => m.id === id && m.active);
   if (!active(row.assigneeId) || !active(row.backupId)) return fail("Choose an active household member for this task.");
   if (row.visibility === "personal" && ((row.assigneeId && row.assigneeId !== row.createdBy) || row.backupId)) return fail("A private task stays with its owner.");
@@ -197,6 +208,10 @@ function checkReferences(h: Household, row: Task) {
   if (row.moneyLink?.kind === "recurrence" && !h.recurrences.some((r) => r.id === (row.moneyLink as { recurrenceId: string }).recurrenceId)) return fail("Choose a current recurring bill.");
   if (row.moneyLink?.kind === "potential-expense" && !(h.potentialExpenses ?? []).some((r) => r.id === (row.moneyLink as { potentialExpenseId: string }).potentialExpenseId)) return fail("Choose a current planned cost.");
   if (row.moneyLink?.kind === "goal" && !h.goals.some((g) => g.id === (row.moneyLink as { goalId: string }).goalId)) return fail("Choose a current goal.");
+  if (row.visibility === 'household' && row.moneyLink) {
+    const link = row.moneyLink;
+    if (link.kind === 'goal' && !h.goals.find(goal => goal.id === link.goalId)?.shared || link.kind === 'potential-expense' && h.potentialExpenses?.find(cost => cost.id === link.potentialExpenseId)?.visibility === 'personal') return fail('Choose a shared financial source for this shared Task.');
+  }
 }
 function undo(h: Household, row: { id: string }, label: string, commandKind: string): CommitResult["undo"] {
   return { id: crypto.randomUUID(), label, snapshot: h, postedIds: [row.id], commandKind };
@@ -208,17 +223,21 @@ export const saveTask = captureCommand("saveTask", (h: Household, input: TaskInp
   requireActor(h, input.memberId);
   const old = h.tasks?.find((r) => r.id === input.id);
   requireCurrent(old, input);
+  if (canonical(input.task.chapterSource ?? null) !== canonical(old?.chapterSource ?? null) || canonical(input.task.participation ?? []) !== canonical(old?.participation ?? [])) return fail('Chapter sources and participation change through their own reviewed actions.');
   if (old && old.visibility !== input.task.visibility) return fail("Keep an existing task in its original space.");
   const now = new Date().toISOString();
   const draft = validateTask({
     ...input.task,
     acknowledgedBy: old?.acknowledgedBy ?? [],
     completedAt: old?.completedAt ?? null, completedBy: old?.completedBy ?? null, completionEvidence: old?.completionEvidence ?? null,
-    version: 1, id: input.id, revision: input.expectedRevision + 1, createdBy: old?.createdBy ?? input.memberId, createdAt: old?.createdAt ?? now, updatedAt: now,
+    version: 1, id: input.id, revision: input.expectedRevision + 1, createdBy: old ? old.createdBy : input.memberId, createdAt: old?.createdAt ?? now, updatedAt: now,
   });
-  // A reassignment is a new ask: only the people who still hold it keep their acknowledgement.
-  const row: Task = { ...draft, acknowledgedBy: draft.acknowledgedBy.filter((id) => id === draft.assigneeId || id === draft.backupId) };
-  checkReferences(h, row);
+  // An acceptance applies to the actual work/date/responsibility that was shown.
+  // Changing material terms creates a fresh ask, even if the assignee is the same.
+  const material = (task: Task) => canonical({ title: task.title, notes: task.notes, assigneeId: task.assigneeId, backupId: task.backupId, doDate: task.doDate, dueDate: task.dueDate, repeat: task.repeat, cue: task.cue, moneyLink: task.moneyLink, expectedAmountCents: task.expectedAmountCents, planReference: task.planReference, deleted: task.deleted });
+  const changed = Boolean(old && material(old) !== material(draft));
+  const row: Task = { ...draft, acknowledgedBy: changed ? [] : draft.acknowledgedBy.filter((id) => id === draft.assigneeId || id === draft.backupId), ...(old?.chapterSource && changed ? { chapterSource: { ...old.chapterSource, materialVersion: old.chapterSource.materialVersion + 1 } } : {}) };
+  validateTaskReferences(h, row);
   if (!old && (h.tasks ?? []).filter((r) => !r.deleted).length >= TASK_LIMIT) return fail("Finish or remove some tasks before adding another.");
   return { household: put(h, row), postedIds: [row.id], warnings: [], undo: undo(h, row, row.deleted ? "Remove task" : old ? "Edit task" : "Add task", "planner-task") };
 });
@@ -231,15 +250,37 @@ export const completeTask = captureCommand("completeTask", (h: Household, input:
   requireCurrent(old, input);
   if (!old) return fail("This task is not here any more.");
   if (old.completedAt) return fail("This task is already done.");
+  if (!(old.visibility === 'personal' && old.createdBy === input.memberId) && old.assigneeId !== input.memberId && old.backupId !== input.memberId) return fail('Only a responsible member can complete this task. Take an agreed assignment first.');
+  if (old.visibility === 'household' && !old.acknowledgedBy.includes(input.memberId)) return fail('Accept this exact assignment before recording its completion.');
+  if (old.participation?.some(row => row.memberId === input.memberId && row.paused)) return fail('Your participation is paused. Resume your own task before completing it.');
+  if (old.chapterSource?.kind === 'ritual-occurrence') {
+    const ritual = h.rituals?.find(row => row.id === old.chapterSource!.sourceId);
+    if (ritual?.participation?.some(row => row.memberId === input.memberId && row.paused)) return fail('Your Ritual participation is paused. Your partner has not inherited it.');
+  }
+  if (old.chapterSource?.kind === 'chapter-move') {
+    const move = h.moves?.find(row => row.id === old.chapterSource!.sourceId);
+    if (move?.needsAcknowledgment && (h.members.filter(m => m.active).length < 2 || move.sharedApprovals?.materialVersion !== old.chapterSource.materialVersion || canonical(move.sharedApprovals?.audience) !== canonical(h.members.filter(m => m.active).map(m => m.id).sort()) || h.members.filter(m => m.active).some(m => !move.sharedApprovals?.memberIds.includes(m.id)))) return fail('This Move needs both of you to acknowledge the exact current task.');
+  }
   const evidence = input.evidence ?? null;
+  if (old.chapterSource?.requiresMoneyEvidence && !old.moneyLink) return fail('This financial Ritual needs its reviewed bank, bill or planned expense link.');
   if (taskIsFinancial(old) && !evidence) return fail("A money task completes by evidence, never by a tick. Record the payment, then attach it.");
   if (evidence) {
+    if (old.chapterSource?.kind === 'ritual-occurrence') {
+      if (evidence.date !== old.chapterSource.onDate) return fail('Choose evidence from this Ritual occurrence’s date.');
+      const key = (row: TaskEvidence) => row.kind === 'transaction' ? `transaction:${row.transactionId}` : `goal:${row.contributionId}`;
+      if ((h.tasks ?? []).some(task => task.id !== old.id && task.completedAt && task.completionEvidence && task.chapterSource?.kind === 'ritual-occurrence' && task.chapterSource.sourceId === old.chapterSource!.sourceId && key(task.completionEvidence) === key(evidence))) return fail('This accepted evidence already completed a Ritual occurrence.');
+    }
     if (evidence.kind === "transaction") {
-      const tx = h.transactions.find((row) => row.id === evidence.transactionId && !row.isDuplicate && (row.visibility !== "personal" || row.createdBy === input.memberId));
+      const tx = h.transactions.find((row) => row.id === evidence.transactionId && !row.isDuplicate && (old.visibility === "personal" ? row.visibility !== "personal" || row.createdBy === input.memberId : row.visibility !== "personal"));
       if (!tx || tx.amountCents !== evidence.amountCents || tx.date !== evidence.date) return fail("That receipt is not in the books as described.");
+      if (h.transactions.some(row => row.reversalOfId === tx.id) || tx.source === 'reversal' || tx.reversalOfId) return fail('Choose accepted evidence that has not been reversed.');
+      if (old.moneyLink?.kind === 'goal') return fail('A linked goal task needs that goal’s accepted contribution.');
+      if (old.moneyLink?.kind === 'recurrence' && (tx.source !== 'recurring' || tx.sourceId !== old.moneyLink.recurrenceId || tx.date !== old.moneyLink.date)) return fail('Choose the accepted receipt for this recurring occurrence.');
+      if (old.moneyLink?.kind === 'potential-expense' && !h.potentialExpenses?.some(row => row.id === (old.moneyLink as { potentialExpenseId: string }).potentialExpenseId && row.status === 'posted' && row.transactionId === tx.id)) return fail('Choose the accepted receipt for this planned expense.');
     } else {
       const contribution = (h.goalContributions ?? []).find((row) => row.id === evidence.contributionId);
       if (!contribution || contribution.amountCents !== evidence.amountCents || contribution.date !== evidence.date) return fail("That contribution is not in the books as described.");
+      if (old.moneyLink?.kind === 'goal' && contribution.goalId !== old.moneyLink.goalId || old.moneyLink?.kind === 'recurrence' || old.moneyLink?.kind === 'potential-expense') return fail('Choose accepted evidence linked to this task.');
     }
   }
   const now = input.completedAt && iso(input.completedAt) ? input.completedAt : new Date().toISOString();
@@ -276,9 +317,11 @@ export const acknowledgeTask = captureCommand("acknowledgeTask", (h: Household, 
   const old = h.tasks?.find((r) => r.id === input.id);
   requireCurrent(old, input);
   if (!old) return fail("This task is not here any more.");
-  if (old.assigneeId !== input.memberId && old.backupId !== input.memberId) return fail("Only the person holding this task can take it.");
+  const claiming = old.visibility === "household" && old.assigneeId === null;
+  if (!claiming && !(old.visibility === "personal" && old.createdBy === input.memberId) && old.assigneeId !== input.memberId && old.backupId !== input.memberId) return fail("Only the person holding this task can take it.");
+  if (old.participation?.some(row => row.memberId === input.memberId && row.paused)) return fail('Resume your own participation before accepting this task.');
   if (old.acknowledgedBy.includes(input.memberId)) return fail("You already have this one.");
-  const row = validateTask({ ...old, revision: old.revision + 1, acknowledgedBy: [...old.acknowledgedBy, input.memberId], updatedAt: new Date().toISOString() });
+  const row = validateTask({ ...old, ...(claiming ? { assigneeId: input.memberId, backupId: old.backupId === input.memberId ? null : old.backupId, ...(old.chapterSource ? { chapterSource: { ...old.chapterSource, materialVersion: old.chapterSource.materialVersion + 1 } } : {}) } : {}), revision: old.revision + 1, acknowledgedBy: [...(claiming ? [] : old.acknowledgedBy), input.memberId], updatedAt: new Date().toISOString() });
   return { household: put(h, row), postedIds: [row.id], warnings: [], undo: undo(h, row, "Take task", "planner-task") };
 });
 
@@ -316,3 +359,16 @@ export const adoptBoardTasks = captureCommand("adoptBoardTasks", (h: Household, 
   const next: Household = { ...h, tasks: [...(h.tasks ?? []), ...adopted], kitchen: { ...h.kitchen, boards: { ...boards, tasks: [] } }, tombstones: mergeTombstones(h.tombstones, boards.tasks.map((row) => ({ id: row.id, deletedAt: now }))) };
   return { household: next, postedIds: adopted.map((row) => row.id), warnings: [], undo: { id: crypto.randomUUID(), label: "Move to-dos into the planner", snapshot: h, postedIds: adopted.map((row) => row.id), commandKind: "planner-adopt" } };
 });
+
+/** Display helper; authority repeats these checks against its accepted state. */
+export function taskCompletionBlock(h: Pick<Household, 'members' | 'rituals' | 'moves'>, task: Task, memberId: string): string | null {
+  if (task.deleted) return 'This Task is archived.';
+  if (task.completedAt) return 'This Task is already complete.';
+  if (!(task.visibility === 'personal' && task.createdBy === memberId) && task.assigneeId !== memberId && task.backupId !== memberId) return task.assigneeId ? 'The responsible person records completion.' : 'Take this Task before completing it.';
+  if (task.visibility === 'household' && !task.acknowledgedBy.includes(memberId)) return 'Accept this exact assignment first.';
+  if (task.participation?.some(row => row.memberId === memberId && row.paused) || task.chapterSource?.kind === 'ritual-occurrence' && h.rituals?.find(row => row.id === task.chapterSource!.sourceId)?.participation?.some(row => row.memberId === memberId && row.paused)) return 'Your participation is paused.';
+  const move = task.chapterSource?.kind === 'chapter-move' ? h.moves?.find(row => row.id === task.chapterSource!.sourceId) : null;
+  const audience = h.members.filter(row => row.active).map(row => row.id).sort();
+  if (move?.needsAcknowledgment && (audience.length < 2 || move.sharedApprovals?.materialVersion !== task.chapterSource!.materialVersion || canonical(move.sharedApprovals.audience) !== canonical(audience) || audience.some(id => !move.sharedApprovals!.memberIds.includes(id)))) return 'Both people need to agree to this exact Move.';
+  return null;
+}

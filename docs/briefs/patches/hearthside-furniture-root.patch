@@ -1,0 +1,162 @@
+--- a/src/hearthside/contracts.ts
++++ b/src/hearthside/contracts.ts
+@@ -1,3 +1,4 @@
++import {decodeFurniturePlacements,type FurniturePlacement} from './roomFurniture.ts';
+ import {decodeSharedEncounter,type SharedEncounter} from './encounterContracts.ts';
+ import {decodeArtifactPublication,type ArtifactPublication} from './workspacePublication.ts';
+ import {decodeRecordedRoom,type RecordedRoom} from './roomHistory.ts';
+@@ -54,6 +55,7 @@
+   encounters?:SharedEncounter[];
+   handoffs?:StudioHandoff[];
+   roomHistory?:RecordedRoom[];
++  furniture?:FurniturePlacement[];
+   artifactPublications?:ArtifactPublication[];
+   placements: RoomPlacement[]; publications: PublicationReference[]; designs: HearthsideDesignIndex[];
+ };
+@@ -163,8 +165,8 @@
+ }
+ export function decodeHearthside(value: unknown): HearthsideState {
+   if (value === undefined) return emptyHearthside();
+-  const r = object(value, ['version', 'experiences', 'notes', 'memories', 'occasions', 'placements', 'publications', 'designs','handoffs','roomHistory','artifactPublications','encounters']);
+-  const decoded = { ...(r.encounters!==undefined?{encounters:unique(list(r.encounters,decodeSharedEncounter,400),r=>r.id)}:{}),...(r.artifactPublications!==undefined?{artifactPublications:unique(list(r.artifactPublications,decodeArtifactPublication,4000),r=>r.id)}:{}),...(r.roomHistory!==undefined?{roomHistory:unique(list(r.roomHistory,decodeRecordedRoom,120),r=>r.id)}:{}),...(r.handoffs!==undefined?{handoffs:unique(list(r.handoffs,decodeStudioHandoff,2000),r=>r.id)}:{}),version: version(r.version), experiences: unique(list(r.experiences, decodeExperience), r => r.id), notes: unique(list(r.notes, decodeNote, 4000), r => r.id), memories: unique(list(r.memories, decodeMemory, 4000), r => r.id), occasions: unique(list(r.occasions, decodeOccasion, 300), r => r.id), placements: unique(list(r.placements, decodePlacement, 160), r => r.id), publications: unique(list(r.publications, decodePublication, 4000), r => r.id), designs:unique(list(r.designs ?? [],decodeDesignIndex,1000),r=>r.designId) };
++  const r = object(value, ['version', 'experiences', 'notes', 'memories', 'occasions', 'placements', 'publications', 'designs','handoffs','roomHistory','artifactPublications','encounters','furniture']);
++  const decoded = { ...(r.furniture!==undefined?{furniture:decodeFurniturePlacements(r.furniture)}:{}),...(r.encounters!==undefined?{encounters:unique(list(r.encounters,decodeSharedEncounter,400),r=>r.id)}:{}),...(r.artifactPublications!==undefined?{artifactPublications:unique(list(r.artifactPublications,decodeArtifactPublication,4000),r=>r.id)}:{}),...(r.roomHistory!==undefined?{roomHistory:unique(list(r.roomHistory,decodeRecordedRoom,120),r=>r.id)}:{}),...(r.handoffs!==undefined?{handoffs:unique(list(r.handoffs,decodeStudioHandoff,2000),r=>r.id)}:{}),version: version(r.version), experiences: unique(list(r.experiences, decodeExperience), r => r.id), notes: unique(list(r.notes, decodeNote, 4000), r => r.id), memories: unique(list(r.memories, decodeMemory, 4000), r => r.id), occasions: unique(list(r.occasions, decodeOccasion, 300), r => r.id), placements: unique(list(r.placements, decodePlacement, 160), r => r.id), publications: unique(list(r.publications, decodePublication, 4000), r => r.id), designs:unique(list(r.designs ?? [],decodeDesignIndex,1000),r=>r.designId) };
+   if (new TextEncoder().encode(JSON.stringify(decoded)).length > HEARTHSIDE_METADATA_BYTES) throw Error('HEARTHSIDE_METADATA_LIMIT: Shared story storage is full. Your new draft has not been saved.');
+   return decoded;
+ }
+--- a/src/hearthside/commands.ts
++++ b/src/hearthside/commands.ts
+@@ -1,3 +1,4 @@
++import {applyFurnitureMove,type FurnitureMove} from './roomFurniture.ts';
+ import {applyEncounterTransition} from './encounterService.ts';
+ import {decodeEncounterCommand,type EncounterCommand} from './encounterContracts.ts';
+ import {ENCOUNTER_WARDROBE} from './encounterWardrobe.ts';
+@@ -11,6 +12,7 @@
+ import { decodeHearthside, decodeExperience, decodeNote, decodeMemory, decodeOccasion, decodePlacement, occasionDate, identifier, object, revisionValue, memoryKeptByEveryone, type SharedExperience, type PlacedNote, type MemoryComposition, type PersonalOccasion, type RoomPlacement, type SharedReference } from './contracts.ts';
+
+ export type HearthsideOperation = EncounterCommand
++  | {kind:'furniture.save';value:FurnitureMove}
+   | {kind:'room.capture';expectedRevision:0;value:RecordedRoom}
+   | {kind:'room.keep'|'room.withdraw';expectedRevision:number;id:string}
+   | {kind:'studio.handoff';expectedRevision:number;value:StudioHandoff}
+@@ -87,7 +89,7 @@
+   const op=input.operation as Exclude<HearthsideOperation,EncounterCommand>;
+   let working=h;
+   object(op, ['kind', 'expectedRevision', 'id', 'value', 'year', 'experience','task','event']);
+-  object(op, op.kind==='experience.add-task'?['kind','expectedRevision','id','task']:op.kind==='experience.schedule'?['kind','expectedRevision','id','event']:op.kind==='occasion.prepare'?['kind','expectedRevision','id','year','experience']:['memory.keep','memory.withdraw','room.keep','room.withdraw'].includes(op.kind) ? ['kind', 'expectedRevision', 'id'] : ['kind', 'expectedRevision', 'value']);
++  object(op, op.kind==='furniture.save'?['kind','value']:op.kind==='experience.add-task'?['kind','expectedRevision','id','task']:op.kind==='experience.schedule'?['kind','expectedRevision','id','event']:op.kind==='occasion.prepare'?['kind','expectedRevision','id','year','experience']:['memory.keep','memory.withdraw','room.keep','room.withdraw'].includes(op.kind) ? ['kind', 'expectedRevision', 'id'] : ['kind', 'expectedRevision', 'value']);
+   const experienceExists = (id: string | null) => { if (id !== null && !s.experiences.some(e => e.id === id)) throw Error('HEARTHSIDE_EXPERIENCE_MISSING'); };
+   if(op.kind==='experience.add-task'||op.kind==='experience.schedule'){
+     const experience=s.experiences.find(e=>e.id===identifier(op.id));if(!experience||experience.state==='archived')throw Error('HEARTHSIDE_EXPERIENCE_MISSING');
+@@ -168,6 +170,8 @@
+     s.experiences.push(experience);
+     const old=occasion.occurrences.find(o=>o.id===id);
+     occasion.occurrences=[...occasion.occurrences.filter(o=>o.id!==id),{id,year:op.year,date:old?.date??date,experienceId:experience.id,memoryIds:old?.memoryIds??[]}];occasion.revision++;
++  } else if(op.kind==='furniture.save'){
++    s.furniture=applyFurnitureMove(s.furniture??[],op.value);
+   } else if (op.kind === 'placement.save') {
+     const value = decodePlacement(op.value), old = s.placements.find(p => p.id === value.id);
+     expectRevision(old?.revision ?? 0, op.expectedRevision, value.revision);
+--- a/src/hearthside/HouseholdRoom.tsx
++++ b/src/hearthside/HouseholdRoom.tsx
+@@ -1,3 +1,4 @@
++import {captureRoomFurniture} from './roomFurniture.ts';
+ import type {Household} from '../core/types.ts';
+ import {decodeHearthside,type HearthsideRoom,type RoomPlacement} from './contracts.ts';
+ import {RoomScene,type RoomSceneObject} from './RoomScene.tsx';
+@@ -8,8 +9,8 @@
+
+
+
+-export function HouseholdRoom({household,room,theme,paused,canArrange,onOpen,onNavigate,submit,horizon}:{
+-  household:Household;room:HearthsideRoom;horizon?:'tonight'|'season'|'someday';theme:'classic'|'taylor'|'newfoundland';paused:boolean;canArrange:boolean;
++export function HouseholdRoom({household,memberId,room,theme,paused,canArrange,onOpen,onNavigate,submit,horizon}:{
++  household:Household;memberId:string;room:HearthsideRoom;horizon?:'tonight'|'season'|'someday';theme:'classic'|'taylor'|'newfoundland';paused:boolean;canArrange:boolean;
+   onOpen:(kind:RoomPlacement['object']['kind'],id:string,designId?:string)=>void;
+   onNavigate:(room:HearthsideRoom)=>void;submit:(operation:HearthsideOperation)=>Promise<boolean>;
+ }){
+@@ -32,5 +33,5 @@
+     const placementId=old?.id??`PLACE-${Array.from(new Uint8Array(digest),byte=>byte.toString(16).padStart(2,'0')).join('')}`;
+     await submit({kind:'placement.save',expectedRevision:old?.revision??0,value:{id:placementId,revision:(old?.revision??0)+1,room,object:target,x,y}});
+   }
+-  return <RoomScene room={room} theme={theme} objects={objects} intention={intention} paused={paused} onNavigate={onNavigate} onArrange={canArrange?(id,x,y)=>void arrange(id,x,y):undefined}/>;
++  return <RoomScene key={`${household.environment}/${household.householdId}/${memberId}`} scopeKey={`${household.environment}/${household.householdId}/${memberId}`} furniture={captureRoomFurniture(room,state.furniture??[])} furnitureSaveAvailable={canArrange} onArrangeFurniture={async value=>{if(!canArrange||!await submit({kind:'furniture.save',value}))throw Error('HEARTHSIDE_FURNITURE_NOT_CONFIRMED');}} room={room} theme={theme} objects={objects} intention={intention} paused={paused} onNavigate={onNavigate} onArrange={canArrange?(id,x,y)=>void arrange(id,x,y):undefined}/>;
+ }
+--- a/src/hearthside/Hearthside.tsx
++++ b/src/hearthside/Hearthside.tsx
+@@ -111,7 +111,7 @@
+     {tool==='guests'&&<GuestVisitsEntry household={h} theme={theme} onClose={closeFocused}/>}
+     {!focused&&<>
+       {route.room==='conservatory'&&<FutureHorizonPicker value={horizon} onChange={setHorizon}/>}
+-      <HouseholdRoom horizon={route.room==='conservatory'?horizon:undefined} household={h} room={route.room} theme={theme} paused={appearance.paused} canArrange={commands.canStart} onOpen={openObject} onNavigate={room=>navigate(roomRoute(room))} submit={commands.submit}/>
++      <HouseholdRoom memberId={memberId} horizon={route.room==='conservatory'?horizon:undefined} household={h} room={route.room} theme={theme} paused={appearance.paused} canArrange={commands.canStart} onOpen={openObject} onNavigate={room=>navigate(roomRoute(room))} submit={commands.submit}/>
+       <section className="hearthside-room-actions" aria-label={`Things to do in the ${ROOMS[route.room].name.toLowerCase()}`}>
+         <div className="hearthside-scene-actions">
+           {letters&&(route.room==='common'||route.room==='theatre')&&<button id="hearthside-open-letters" onClick={()=>openTool('letters')}>Letters, voice, and capsules</button>}
+--- a/src/hearthside/roomHistory.ts
++++ b/src/hearthside/roomHistory.ts
+@@ -1,10 +1,11 @@
++import {captureRoomFurniture,decodeRoomFurniture,type RoomFurnitureLayout} from './roomFurniture.ts';
+ import type {Household} from '../core/types.ts';
+ import {canonical} from '../ledgerSync/patch.ts';
+ import {decodeHearthside,decodeDesignReference,decodePlacement,memoryKeptByEveryone,HEARTHSIDE_ROOMS,object,identifier,revisionValue,textValue,choice,type DesignReference,type HearthsideRoom,type RoomPlacement} from './contracts.ts';
+
+ export type RoomHorizon='tonight'|'season'|'someday';
+ export type RoomHistoryItem={object:RoomPlacement['object'];sourceRevision:number;label:string;detail:string;x:number|null;y:number|null;design:DesignReference|null};
+-export type RecordedRoom={version:1;id:string;revision:number;room:HearthsideRoom;horizon:RoomHorizon|null;title:string;createdBy:string;items:RoomHistoryItem[];approvals:{memberId:string;revision:number}[];withdrawn:boolean};
++export type RecordedRoom={version:1;id:string;revision:number;room:HearthsideRoom;horizon:RoomHorizon|null;title:string;createdBy:string;items:RoomHistoryItem[];furniture?:RoomFurnitureLayout;approvals:{memberId:string;revision:number}[];withdrawn:boolean};
+ export const roomObjectIdentity=(target:RoomPlacement['object'])=>JSON.stringify(target.kind==='piece'?[target.kind,target.designId,target.id]:[target.kind,target.id]);
+
+ /** One source projection serves today's room and deliberate recorded views. It contains no money projection or private content. */
+@@ -30,19 +31,21 @@
+  return {object:p.object,sourceRevision:revisionValue(v.sourceRevision,1),label:textValue(v.label,4000),detail:textValue(v.detail,6000,true),x:v.x===null?null:p.x,y:v.y===null?null:p.y,design:v.design===null?null:decodeDesignReference(v.design)};
+ }
+ export function decodeRecordedRoom(input:unknown):RecordedRoom{
+- const v=object(input,['version','id','revision','room','horizon','title','createdBy','items','approvals','withdrawn']);
++ const v=object(input,['version','id','revision','room','horizon','title','createdBy','items','approvals','withdrawn','furniture']);
+  if(v.version!==1||!Array.isArray(v.items)||v.items.length>100||!Array.isArray(v.approvals)||v.approvals.length>20||typeof v.withdrawn!=='boolean')throw Error('HEARTHSIDE_ROOM_HISTORY_INVALID');
+  const items=v.items.map(decodeItem),approvals=v.approvals.map(a=>{const r=object(a,['memberId','revision']);return {memberId:identifier(r.memberId),revision:revisionValue(r.revision,1)};});
+  if(new Set(items.map(i=>roomObjectIdentity(i.object))).size!==items.length||new Set(approvals.map(a=>a.memberId)).size!==approvals.length)throw Error('HEARTHSIDE_ROOM_HISTORY_DUPLICATE');
+- return {version:1,id:identifier(v.id),revision:revisionValue(v.revision,1),room:choice(v.room,HEARTHSIDE_ROOMS),horizon:v.horizon===null?null:choice(v.horizon,['tonight','season','someday'] as const),title:textValue(v.title,200),createdBy:identifier(v.createdBy),items,approvals,withdrawn:v.withdrawn};
++ const furniture=v.furniture===undefined?undefined:decodeRoomFurniture(v.furniture);if(furniture&&furniture.room!==v.room)throw Error('HEARTHSIDE_ROOM_HISTORY_POSITION');
++ return {...(furniture?{furniture}:{}),version:1,id:identifier(v.id),revision:revisionValue(v.revision,1),room:choice(v.room,HEARTHSIDE_ROOMS),horizon:v.horizon===null?null:choice(v.horizon,['tonight','season','someday'] as const),title:textValue(v.title,200),createdBy:identifier(v.createdBy),items,approvals,withdrawn:v.withdrawn};
+ }
+ export function captureRoom(h:Household,input:{id:string;title:string;room:HearthsideRoom;horizon?:RoomHorizon},actor:string):RecordedRoom{
+- return decodeRecordedRoom({version:1,...input,horizon:input.horizon??null,revision:1,createdBy:actor,items:roomContent(h,input.room,input.horizon),approvals:[],withdrawn:false});
++ return decodeRecordedRoom({version:1,...input,horizon:input.horizon??null,revision:1,createdBy:actor,items:roomContent(h,input.room,input.horizon),furniture:captureRoomFurniture(input.room,h.hearthside?.furniture??[]),approvals:[],withdrawn:false});
+ }
+ export function validateRoomCapture(h:Household,raw:unknown,actor:string):RecordedRoom{
+  const frame=decodeRecordedRoom(raw);
+  if(frame.revision!==1||frame.createdBy!==actor||frame.withdrawn||frame.approvals.length||frame.horizon!==null&&frame.room!=='conservatory')throw Error('HEARTHSIDE_ROOM_HISTORY_REVIEW_REQUIRED');
+  if(h.hearthside?.roomHistory?.some(row=>row.id===frame.id))throw Error('HEARTHSIDE_ROOM_HISTORY_ALREADY_EXISTS');
++ if(!frame.furniture||canonical(frame.furniture)!==canonical(captureRoomFurniture(frame.room,h.hearthside?.furniture??[])))throw Error('HEARTHSIDE_ROOM_CHANGED');
+  if(canonical(frame.items)!==canonical(roomContent(h,frame.room,frame.horizon??undefined)))throw Error('HEARTHSIDE_ROOM_CHANGED');
+  return frame;
+ }
+--- a/src/hearthside/RoomHistory.tsx
++++ b/src/hearthside/RoomHistory.tsx
+@@ -28,7 +28,7 @@
+   {!rows.some(r=>!r.withdrawn)&&!draft&&<p className="room-history-empty">The first view can be an ordinary room, even before you have made anything.</p>}
+   {frame&&<article className="room-history-frame">
+    <div className="room-history-frame-caption"><p>{draft?'Review this room view':kept?'A recorded room we both kept':'An invitation to keep this room view'} · {ROOMS[frame.room].name}</p>{draft?<label>Name this view<input aria-label="Name this view" maxLength={200} value={draft.title} onChange={e=>setDraft({...draft,title:e.target.value})}/></label>:<h3>{frame.title}</h3>}<p>This is recorded history. Opening an object here shows its saved words and design.</p></div>
+-   <RoomScene room={frame.room} theme={theme} illustrated paused objects={available.map(i=>({id:roomObjectIdentity(i.object),kind:i.object.kind,label:i.label,detail:i.detail,x:i.x??undefined,y:i.y??undefined,preview:i.design?<SavedPiecePreview reference={i.design}/>:undefined,onActivate:()=>setObjectId(roomObjectIdentity(i.object))}))}/>
++   <RoomScene furniture={frame.furniture} room={frame.room} theme={theme} illustrated paused objects={available.map(i=>({id:roomObjectIdentity(i.object),kind:i.object.kind,label:i.label,detail:i.detail,x:i.x??undefined,y:i.y??undefined,preview:i.design?<SavedPiecePreview reference={i.design}/>:undefined,onActivate:()=>setObjectId(roomObjectIdentity(i.object))}))}/>
+    {available.length<frame.items.length&&<p role="status">Some objects are no longer shared. They are hidden from this view.</p>}
+    {item&&<aside className="room-history-object" aria-label="Saved object"><h4>{item.label}</h4><p>{item.detail}</p>{item.design&&<SavedPiecePreview reference={item.design}/>}<p>Saved revision {item.sourceRevision}</p><button onClick={()=>onCurrent(item.object)}>Open this object in today’s room</button></aside>}
+    <div className="room-history-controls">{draft?<><button disabled={!canSave||!draft.title.trim()} onClick={()=>void save()}>Invite us to keep this view</button><button onClick={take} disabled={!canSave}>Retake the room view</button><button onClick={()=>setDraft(null)}>Discard this view</button></>:<><button disabled={!canSave||frame.approvals.some(a=>a.memberId===memberId&&a.revision===frame.revision)||available.length!==frame.items.length} onClick={()=>void submit({kind:'room.keep',id:frame.id,expectedRevision:frame.revision})}>{frame.approvals.some(a=>a.memberId===memberId&&a.revision===frame.revision)?'I chose to keep this view':'Keep this exact view'}</button><button disabled={!canSave} onClick={()=>void submit({kind:'room.withdraw',id:frame.id,expectedRevision:frame.revision})}>Withdraw this view</button></>}</div>
+--- a/workers/hearthsideGuestSource.ts
++++ b/workers/hearthsideGuestSource.ts
+@@ -1,3 +1,4 @@
++import {captureRoomFurniture} from '../src/hearthside/roomFurniture.ts';
+ import {memoryKeptByEveryone,type HearthsideState} from '../src/hearthside/contracts.ts';
+ import {guestAssert,guestDigest,GUEST_LIMITS,type GuestMedia} from '../src/hearthside/guestContracts.ts';
+ import type {GuestSourceCatalogue} from '../src/hearthside/guestProjection.ts';
+@@ -10,7 +11,7 @@
+   media(id:string,publicationId:string):Promise<Response>;
+ }):GuestSourceCatalogue{
+  const memory=(id:string)=>state.memories.find(m=>m.id===id);
+- const catalogue:GuestSourceCatalogue={activeMemberIds,
++ const catalogue:GuestSourceCatalogue={activeMemberIds,furniture:room=>captureRoomFurniture(room,state.furniture??[]),
+   experience:id=>{const r=state.experiences.find(e=>e.id===id);return r?{revision:r.revision,shared:true,archived:r.state==='archived',title:r.title,intention:r.intention}:null;},
+   note:id=>{const r=state.notes.find(n=>n.id===id);return r?{revision:r.revision,shared:true,archived:r.archived,text:r.text}:null;},
+   memory:id=>{const r=memory(id);return r?{revision:r.revision,shared:memoryKeptByEveryone(r,activeMemberIds),withdrawn:r.withdrawn,title:r.title,recollections:r.recollections,approvals:r.approvals,

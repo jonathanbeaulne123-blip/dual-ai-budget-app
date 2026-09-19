@@ -1,9 +1,17 @@
+import {assertLegacyWinWriteAllowed} from '../hearthside/winMemory.ts';
 import { captureCommand } from "../ledgerSync/capture.ts";
 import { dateKeyInZone, monthKeyFromDateKey, shiftMonthKey, type DateKey, type MonthKey } from "./calendar.ts";
 import { cloneHousehold } from "./household.ts";
 import { nextId, nowIso } from "./ids.ts";
 import type { CommitResult, Household } from "./types.ts";
 import { ValidationError } from "./types.ts";
+import type { TaskEvidence, TaskMoneyLink } from './tasks.ts';
+import { acknowledgeTask, completeTask, saveTask, validateTask, validateTaskReferences, type Task } from './tasks.ts';
+import { approveChapterConsent, chapterConsentDigest, chapterConsentFail, consentRevision, exactChapterRecord, proposeChapterConsent, shapeChapterConsent, shapeChapterParticipation, mergeChapterParticipation, selectChapterConsent, type ChapterConsent, type ChapterParticipation } from './chapterConsent.ts';
+import { chapterTaskId } from './chapterTaskSource.ts';
+import { canonical } from '../ledgerSync/patch.ts';
+import { isValidDateKey } from './calendar.ts';
+import { chapterTask, projectMoveTask, projectRitualTasks, ritualOperational, taskForMove, taskForRitual, validateRitualClosureReference } from './chapterTasks.ts';
 import { fundModelMode } from "./fundRules.ts";
 
 /**
@@ -63,6 +71,7 @@ export type Chapter = {
   /** The calendar month this Chapter is meant to span (D-273). Legacy rows omit it and read as the month they opened. */
   intendedMonth?: MonthKey;
   updatedAt: string;
+  closure?: ChapterConsent<ChapterClosureTerms>;
 };
 
 export type Ritual = {
@@ -81,6 +90,13 @@ export type Ritual = {
   /** Civil dates on which the Ritual held. Evidence, never a streak; a gap costs nothing. */
   heldOn: DateKey[];
   updatedAt: string;
+  agreement?: ChapterConsent<RitualTerms>;
+  participation?: ChapterParticipation[];
+  taskAdoption?: { version: 1; adoptedAt: string };
+  requiresMoneyEvidence?: boolean;
+  moneyLink?: TaskMoneyLink | null;
+  expectedAmountCents?: number | null;
+  approvalViaClosure?: { chapterId: string; proposalId: string; digest: string };
 };
 
 export type Move = {
@@ -98,6 +114,18 @@ export type Move = {
   /** A pointer to accepted evidence (transaction, Fund event, Plan version id). Never an amount. */
   evidenceRef: string | null;
   updatedAt: string;
+  taskId?: string;
+  createdByMemberId?: string | null;
+  sharedApprovals?: { revision: number; materialVersion: number; audience: string[]; memberIds: string[] };
+};
+
+export type RitualTerms = Pick<Ritual, 'title' | 'cue' | 'cueNote' | 'ownerMemberId' | 'backupMemberId' | 'doneDefinition' | 'recoveryMove' | 'state'> & {
+  requiresMoneyEvidence: boolean; moneyLink: TaskMoneyLink | null; expectedAmountCents: number | null;
+};
+export type NextChapterTerms = Pick<OpenChapterInput, "foundationId" | "custom"> & { month: MonthKey; ownerMemberId: string };
+export type ChapterClosureTerms = { outcome: ChapterOutcome; carryForward: string; sitdownId: string | null; nextChapter?: NextChapterTerms;
+  rituals: { ritualId: string; before: RitualTerms; afterState: RitualState }[];
+  moves: { taskId: string; moveId: string; taskRevision: number; title: string; ownerMemberId: string | null }[];
 };
 
 export type Win = {
@@ -280,6 +308,46 @@ const RITUAL_STATES: readonly RitualState[] = ["active", "graduated", "paused", 
 const MOVE_STATES: readonly MoveState[] = ["offered", "accepted", "done", "declined", "paused"];
 const WIN_LEVELS: readonly WinLevel[] = ["acknowledgment", "shared-win", "first", "graduation"];
 const EPOCH = "1970-01-01T00:00:00.000Z";
+export function ritualTerms(ritual: Ritual): RitualTerms {
+  const { title, cue, cueNote, ownerMemberId, backupMemberId, doneDefinition, recoveryMove, state } = ritual;
+  return { title, cue, cueNote, ownerMemberId, backupMemberId, doneDefinition, recoveryMove, state, requiresMoneyEvidence: ritual.requiresMoneyEvidence === true, moneyLink: ritual.moneyLink ?? null, expectedAmountCents: ritual.expectedAmountCents ?? null };
+}
+function shapeClosureTerms(value: unknown): ChapterClosureTerms {
+  exactChapterRecord(value, ['outcome', 'carryForward', 'sitdownId', 'rituals', 'moves', ...(value && typeof value === 'object' && Object.hasOwn(value, 'nextChapter') ? ['nextChapter'] : [])]);
+  if (!CHAPTER_STATES.includes(value.outcome as ChapterState) || value.outcome === 'open' || typeof value.carryForward !== 'string' || value.carryForward.length > 2000 || value.sitdownId !== null && (typeof value.sitdownId !== 'string' || value.sitdownId.length > 160)) chapterConsentFail('Check the exact Chapter closure terms.');
+  if (!Array.isArray(value.rituals) || !Array.isArray(value.moves) || value.rituals.length > 4000 || value.moves.length > 4000) chapterConsentFail('This Chapter closure has too many linked objects.');
+  for (const row of value.rituals) { exactChapterRecord(row, ['ritualId', 'before', 'afterState']); if (typeof row.ritualId !== 'string' || !row.ritualId || !RITUAL_STATES.includes(row.afterState as RitualState)) chapterConsentFail('Check this Ritual in the closure.'); shapeRitualTerms(row.before); }
+  for (const row of value.moves) { exactChapterRecord(row, ['taskId', 'moveId', 'taskRevision', 'title', 'ownerMemberId']); if (typeof row.taskId !== 'string' || typeof row.moveId !== 'string' || row.taskId !== chapterTaskId('chapter-move', row.moveId) || !Number.isSafeInteger(row.taskRevision) || Number(row.taskRevision) < 1 || typeof row.title !== 'string' || row.title.length > 240 || row.ownerMemberId !== null && typeof row.ownerMemberId !== 'string') chapterConsentFail('Check this Task in the closure.'); }
+  if (value.nextChapter !== undefined) shapeNextChapterTerms(value.nextChapter);
+  return structuredClone(value) as ChapterClosureTerms;
+}
+function shapeNextChapterTerms(value: unknown): NextChapterTerms {
+  exactChapterRecord(value, ['month', 'ownerMemberId', ...['foundationId', 'custom'].filter(key => value && typeof value === 'object' && Object.hasOwn(value, key))]);
+  if (typeof value.month !== 'string' || validMonth(value.month) !== value.month || typeof value.ownerMemberId !== 'string' || !value.ownerMemberId || value.ownerMemberId.length > 160) chapterConsentFail('Review the next Chapter month and owner.');
+  if ((value.foundationId === undefined) === (value.custom === undefined)) chapterConsentFail('Choose exactly one next Chapter.');
+  if (value.foundationId !== undefined && !FOUNDATION_CHAPTERS.some(row => row.id === value.foundationId)) chapterConsentFail('Choose an existing foundation Chapter.');
+  if (value.custom !== undefined) {
+    exactChapterRecord(value.custom, ['title', 'meaning', ...['lessonId', 'betterFeelsLike'].filter(key => value.custom && typeof value.custom === 'object' && Object.hasOwn(value.custom, key))]);
+    for (const [key, max] of [['title', 120], ['meaning', 2000], ['lessonId', 80], ['betterFeelsLike', 2000]] as const) {
+      const text = value.custom[key];
+      if ((key === 'title' || key === 'meaning') && typeof text !== 'string' || text !== undefined && (typeof text !== 'string' || text.length > max || text !== text.trim()) || key === 'title' && !text) chapterConsentFail('Review the exact next Chapter wording.');
+    }
+  }
+  return structuredClone(value) as NextChapterTerms;
+}
+function shapeRitualTerms(value: unknown): RitualTerms {
+  exactChapterRecord(value, ['title', 'cue', 'cueNote', 'ownerMemberId', 'backupMemberId', 'doneDefinition', 'recoveryMove', 'state', 'requiresMoneyEvidence', 'moneyLink', 'expectedAmountCents']);
+  if (typeof value.title !== 'string' || !value.title.trim() || value.title.length > 120 || typeof value.cueNote !== 'string' || value.cueNote.length > 240 || typeof value.doneDefinition !== 'string' || !value.doneDefinition.trim() || value.doneDefinition.length > 2000 || typeof value.recoveryMove !== 'string' || value.recoveryMove.length > 2000 || !RITUAL_CUES.includes(value.cue as RitualCue) || !RITUAL_STATES.includes(value.state as RitualState) || typeof value.ownerMemberId !== 'string' || !value.ownerMemberId || value.backupMemberId !== null && (typeof value.backupMemberId !== 'string' || !value.backupMemberId || value.backupMemberId === value.ownerMemberId) || typeof value.requiresMoneyEvidence !== 'boolean' || value.expectedAmountCents !== null && (!Number.isSafeInteger(value.expectedAmountCents) || Number(value.expectedAmountCents) < 0 || Number(value.expectedAmountCents) > 99_999_999)) chapterConsentFail('Check the exact Ritual terms, responsibility and recovery.');
+  if (value.moneyLink !== null) {
+    const link = value.moneyLink as Record<string, unknown>;
+    if (link.kind === 'goal') exactChapterRecord(link, ['kind', 'goalId']);
+    else if (link.kind === 'potential-expense') exactChapterRecord(link, ['kind', 'potentialExpenseId']);
+    else if (link.kind === 'recurrence') exactChapterRecord(link, ['kind', 'recurrenceId', 'date']);
+    else chapterConsentFail('Choose the Ritual’s existing financial reference.');
+    if (Object.values(link).some(v => typeof v !== 'string' || !v || v.length > 160) || link.kind === 'recurrence' && !isValidDateKey(String(link.date))) chapterConsentFail('Choose a valid existing financial reference.');
+  }
+  return structuredClone(value) as RitualTerms;
+}
 
 export function shapeChapters(value: unknown): Chapter[] {
   if (!Array.isArray(value)) return [];
@@ -305,6 +373,7 @@ export function shapeChapters(value: unknown): Chapter[] {
       carryForward: str(row.carryForward),
       ...(typeof row.intendedMonth === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(row.intendedMonth) ? { intendedMonth: row.intendedMonth } : {}),
       updatedAt: validIso(row.updatedAt, openedAt),
+      ...(row.closure !== undefined ? { closure: shapeChapterConsent(row.closure, shapeClosureTerms) } : {}),
     } satisfies Chapter];
   });
 }
@@ -329,6 +398,13 @@ export function shapeRituals(value: unknown): Ritual[] {
       state: RITUAL_STATES.includes(row.state as RitualState) ? (row.state as RitualState) : "active",
       heldOn: strList(row.heldOn, 400).filter((day) => /^\d{4}-\d{2}-\d{2}$/.test(day)).sort() as DateKey[],
       updatedAt: validIso(row.updatedAt, EPOCH),
+      ...(row.agreement !== undefined ? { agreement: shapeChapterConsent(row.agreement, shapeRitualTerms) } : {}),
+      ...(row.participation !== undefined ? { participation: shapeChapterParticipation(row.participation) } : {}),
+      ...(row.taskAdoption !== undefined ? (() => { exactChapterRecord(row.taskAdoption, ['version', 'adoptedAt']); if (row.taskAdoption.version !== 1 || validIso(row.taskAdoption.adoptedAt, '') === '') chapterConsentFail('This Ritual’s task adoption needs recovery.'); return { taskAdoption: { version: 1 as const, adoptedAt: row.taskAdoption.adoptedAt as string } }; })() : {}),
+      ...(row.requiresMoneyEvidence !== undefined ? (() => { if (typeof row.requiresMoneyEvidence !== 'boolean') chapterConsentFail('This Ritual’s evidence requirement needs recovery.'); return { requiresMoneyEvidence: row.requiresMoneyEvidence }; })() : {}),
+      ...(row.moneyLink !== undefined ? { moneyLink: shapeRitualTerms({ ...ritualTerms(row as Ritual), moneyLink: row.moneyLink }).moneyLink } : {}),
+      ...(row.expectedAmountCents !== undefined ? { expectedAmountCents: shapeRitualTerms(ritualTerms(row as Ritual)).expectedAmountCents } : {}),
+      ...(row.approvalViaClosure !== undefined ? (() => { exactChapterRecord(row.approvalViaClosure, ['chapterId', 'proposalId', 'digest']); if (row.approvalViaClosure.chapterId !== row.chapterId || typeof row.approvalViaClosure.proposalId !== 'string' || !/^[a-f0-9]{64}$/.test(String(row.approvalViaClosure.digest))) chapterConsentFail('This Ritual’s Chapter approval reference needs recovery.'); return { approvalViaClosure: structuredClone(row.approvalViaClosure) as Ritual['approvalViaClosure'] }; })() : {}),
     } satisfies Ritual];
   });
 }
@@ -353,6 +429,9 @@ export function shapeMoves(value: unknown): Move[] {
       completedByMemberId: row.completedByMemberId ? String(row.completedByMemberId) : null,
       evidenceRef: row.evidenceRef ? str(row.evidenceRef, 120) : null,
       updatedAt: validIso(row.updatedAt, EPOCH),
+      ...(row.taskId !== undefined ? (() => { if (typeof row.taskId !== 'string' || row.taskId !== chapterTaskId('chapter-move', String(row.id))) chapterConsentFail('This Move’s canonical Task reference changed.'); return { taskId: row.taskId }; })() : {}),
+      ...(row.createdByMemberId !== undefined ? { createdByMemberId: row.createdByMemberId ? String(row.createdByMemberId) : null } : {}),
+      ...(row.sharedApprovals !== undefined ? (() => { exactChapterRecord(row.sharedApprovals, ['revision', 'materialVersion', 'audience', 'memberIds']); if (!Number.isSafeInteger(row.sharedApprovals.revision) || Number(row.sharedApprovals.revision) < 1 || !Array.isArray(row.sharedApprovals.audience) || row.sharedApprovals.audience.length > 16 || row.sharedApprovals.audience.some(v => typeof v !== 'string' || !v) || new Set(row.sharedApprovals.audience).size !== row.sharedApprovals.audience.length || !Number.isSafeInteger(row.sharedApprovals.materialVersion) || Number(row.sharedApprovals.materialVersion) < 1 || !Array.isArray(row.sharedApprovals.memberIds) || row.sharedApprovals.memberIds.length > 16 || row.sharedApprovals.memberIds.some(v => typeof v !== 'string' || !(row.sharedApprovals as { audience: string[] }).audience.includes(v)) || new Set(row.sharedApprovals.memberIds).size !== row.sharedApprovals.memberIds.length) chapterConsentFail('This Move’s exact acknowledgements need recovery.'); return { sharedApprovals: structuredClone(row.sharedApprovals) as Move['sharedApprovals'] }; })() : {}),
     } satisfies Move];
   });
 }
@@ -393,13 +472,32 @@ function mergeById<T extends { id: string; updatedAt: string }>(left: T[], right
 }
 
 export function mergeChapters(left: Chapter[] = [], right: Chapter[] = []): Chapter[] {
-  return mergeById(left, right);
+  return mergeById(left, right, (newest, other) => {
+    const selected = selectChapterConsent(newest.closure, other.closure);
+    return selected === other.closure && other.closure ? other : newest;
+  });
 }
 export function mergeRituals(left: Ritual[] = [], right: Ritual[] = []): Ritual[] {
-  return mergeById(left, right, (newest, other) => ({ ...newest, heldOn: [...new Set([...newest.heldOn, ...other.heldOn])].sort() as DateKey[] }));
+  return mergeById(left, right, (newest, other) => {
+    const selected = selectChapterConsent(newest.agreement, other.agreement);
+    const base = selected === other.agreement && other.agreement ? other : newest;
+    const peer = base === newest ? other : newest;
+    // Old clients cannot erase an adoption or authorize changed shared terms.
+    const modern = base.agreement || base.taskAdoption ? base : peer.taskAdoption ? peer : base;
+    const closure = !modern.approvalViaClosure && peer.approvalViaClosure && consentRevision(modern.agreement) === consentRevision(peer.agreement) ? peer : modern;
+    if (newest.agreement && other.agreement && consentRevision(newest.agreement) === consentRevision(other.agreement) && !newest.approvalViaClosure && !other.approvalViaClosure && canonical(ritualTerms(newest)) !== canonical(ritualTerms(other))) chapterConsentFail('Conflicting Ritual terms need authoritative recovery.');
+    return { ...closure, participation: mergeChapterParticipation(newest.participation, other.participation), ...(newest.taskAdoption || other.taskAdoption ? { taskAdoption: newest.taskAdoption ?? other.taskAdoption } : {}), heldOn: [...new Set([...newest.heldOn, ...other.heldOn])].sort() as DateKey[] };
+  });
 }
 export function mergeMoves(left: Move[] = [], right: Move[] = []): Move[] {
-  return mergeById(left, right, (newest, other) => ({ ...newest, acknowledgedByMemberIds: [...new Set([...newest.acknowledgedByMemberIds, ...other.acknowledgedByMemberIds])] }));
+  return mergeById(left, right, (newest, other) => {
+    if (!newest.taskId && !other.taskId) return { ...newest, acknowledgedByMemberIds: [...new Set([...newest.acknowledgedByMemberIds, ...other.acknowledgedByMemberIds])] };
+    if (newest.taskId && other.taskId && newest.taskId !== other.taskId) chapterConsentFail('Conflicting Move identities need authoritative recovery.');
+    const a = newest.sharedApprovals, b = other.sharedApprovals;
+    if (a && b && a.revision === b.revision && canonical(a) !== canonical(b)) chapterConsentFail('Conflicting Move approvals need authoritative recovery.');
+    const base = !newest.taskId || b && (!a || b.revision > a.revision) ? other : newest;
+    return { ...base };
+  });
 }
 export function mergeWins(left: Win[] = [], right: Win[] = []): Win[] {
   return mergeById(left, right, (newest, other) => ({ ...newest, keptByMemberIds: [...new Set([...newest.keptByMemberIds, ...other.keptByMemberIds])] }));
@@ -411,18 +509,18 @@ export function mergeWins(left: Win[] = [], right: Win[] = []): Win[] {
 export function openChapterFor(household: Pick<Household, "chapters">): Chapter | null {
   return (household.chapters ?? []).find((row) => row.state === "open") ?? null;
 }
-export function ritualsForChapter(household: Pick<Household, "rituals">, chapterId: string): Ritual[] {
-  return (household.rituals ?? []).filter((row) => row.chapterId === chapterId);
+export function ritualsForChapter(household: Pick<Household, "rituals" | 'tasks'>, chapterId: string): Ritual[] {
+  return (household.rituals ?? []).filter((row) => row.chapterId === chapterId).map(row => projectRitualTasks(household, row));
 }
-export function movesForChapter(household: Pick<Household, "moves">, chapterId: string): Move[] {
-  return (household.moves ?? []).filter((row) => row.chapterId === chapterId);
+export function movesForChapter(household: Pick<Household, "moves" | 'tasks'>, chapterId: string): Move[] {
+  return (household.moves ?? []).filter((row) => row.chapterId === chapterId).map(row => projectMoveTask(household, row));
 }
 /** Graduated habits holding quietly outside the monthly foreground. */
-export function ourRhythm(household: Pick<Household, "rituals">): Ritual[] {
-  return (household.rituals ?? []).filter((row) => row.state === "graduated");
+export function ourRhythm(household: Pick<Household, "rituals" | 'tasks'> & Partial<Pick<Household, 'chapters'>>): Ritual[] {
+  return (household.rituals ?? []).filter((row) => row.state === "graduated" || (row.state === "paused" || row.state === "active") && household.chapters?.some(chapter => chapter.id === row.chapterId && chapter.state === "established")).map(row => projectRitualTasks(household, row));
 }
 /** The next Move: the first offered or accepted Move in the open Chapter, owner-first for the signed-in member. */
-export function nextMove(household: Pick<Household, "chapters" | "moves">, memberId: string): Move | null {
+export function nextMove(household: Pick<Household, "chapters" | "moves" | 'tasks'>, memberId: string): Move | null {
   const chapter = openChapterFor(household);
   if (!chapter) return null;
   const candidates = movesForChapter(household, chapter.id).filter((row) => row.state === "offered" || row.state === "accepted");
@@ -488,6 +586,83 @@ function findChapter(household: Household, chapterId: string): Chapter {
   if (!row) throw new ValidationError("That Chapter is no longer available.");
   return row;
 }
+const activeAudience = (household: Household) => household.members.filter(member => member.active).map(member => member.id).sort();
+export const ritualAgreementRevision = (ritual: Ritual) => consentRevision(ritual.agreement);
+export const chapterClosureRevision = (chapter: Chapter) => consentRevision(chapter.closure);
+export function pendingRitualReview(ritual: Ritual) { return ritual.agreement?.proposals.find(p => p.state === 'pending') ?? null; }
+export function pendingChapterClosure(chapter: Chapter) { return chapter.closure?.proposals.find(p => p.state === 'pending') ?? null; }
+function findRitual(household: Household, ritualId: string): Ritual {
+  const ritual = household.rituals?.find(row => row.id === ritualId);
+  if (!ritual) chapterConsentFail('That Ritual is no longer available.');
+  return ritual;
+}
+function putChapterTask(household: Household, task: Task): void {
+  household.tasks = [...(household.tasks ?? []).filter(row => row.id !== task.id), task];
+}
+function ritualBasis(ritual: Ritual): string { return chapterConsentDigest({ terms: ritualTerms(ritual), accepted: ritual.agreement?.acceptedProposalId ?? null }); }
+function closureBasis(household: Household, chapter: Chapter): string {
+  return chapterConsentDigest({ chapter: { id: chapter.id, title: chapter.title, meaning: chapter.meaning, betterFeelsLike: chapter.betterFeelsLike, state: chapter.state, openedAt: chapter.openedAt },
+    rituals: (household.rituals ?? []).filter(row => row.chapterId === chapter.id).map(row => ({ id: row.id, terms: ritualTerms(row), agreement: row.agreement?.acceptedProposalId ?? null })).sort((a, b) => a.id.localeCompare(b.id)),
+    tasks: (household.tasks ?? []).filter(row => row.chapterId === chapter.id && row.chapterSource).map(row => ({ id: row.id, revision: row.revision })).sort((a, b) => a.id.localeCompare(b.id)),
+    legacyMoves: (household.moves ?? []).filter(row => row.chapterId === chapter.id && !row.taskId),
+  });
+}
+function newRitualAgreement(household: Household, ritual: Ritual, memberId: string, at: string) {
+  if (activeAudience(household).length < 2) return { version: 1 as const, revision: 1, legacyBaseline: false, acceptedProposalId: null, proposals: [] };
+  return proposeChapterConsent<RitualTerms>(undefined, { expectedRevision: 0, identity: `ritual-${ritual.id}`, terms: ritualTerms(ritual), basis: ritualBasis(ritual), audience: activeAudience(household), memberId, at, legacyBaseline: false });
+}
+
+export type EditRitualInput = { memberId: string; ritualId: string; expectedRevision: number; terms: RitualTerms; at?: string };
+export const editRitual = captureCommand('editRitual', (household: Household, input: EditRitualInput): CommitResult => {
+  requireMember(household, input.memberId); const ritual = findRitual(household, input.ritualId), at = input.at ?? nowIso();
+  const terms = shapeRitualTerms(input.terms); requireMember(household, terms.ownerMemberId); if (terms.backupMemberId) requireMember(household, terms.backupMemberId);
+  // Validate references against this authenticated household without creating any
+  // operational occurrence merely to prepare a shared proposal.
+  const validation = taskForRitual({ ...household, tasks: [] }, { ...ritual, ...terms }, '2000-01-01', at, false, input.memberId); validateTaskReferences(household, validation);
+  const next = cloneHousehold(household), target = findRitual(next, ritual.id);
+  target.agreement = proposeChapterConsent(ritual.agreement, { expectedRevision: input.expectedRevision, identity: `ritual-${ritual.id}`, terms, basis: ritualBasis(ritual), audience: activeAudience(household), memberId: input.memberId, at, legacyBaseline: !ritual.agreement });
+  target.updatedAt = at; return commitChapters(household, next, 'Proposed the exact Ritual changes', at);
+});
+export type AcknowledgeRitualChangeInput = { memberId: string; ritualId: string; expectedRevision: number; proposalId: string; digest: string; at?: string };
+export const acknowledgeRitualChange = captureCommand('acknowledgeRitualChange', (household: Household, input: AcknowledgeRitualChangeInput): CommitResult => {
+  requireMember(household, input.memberId); const ritual = findRitual(household, input.ritualId), at = input.at ?? nowIso();
+  const result = approveChapterConsent(ritual.agreement, { ...input, basis: ritualBasis(ritual), audience: activeAudience(household), at });
+  if (result.accepted) { requireMember(household, result.proposal.terms.ownerMemberId); if (result.proposal.terms.backupMemberId) requireMember(household, result.proposal.terms.backupMemberId); }
+  const next = cloneHousehold(household), target = findRitual(next, ritual.id); target.agreement = result.consent;
+  if (result.accepted) { Object.assign(target, result.proposal.terms); delete target.approvalViaClosure; }
+  target.updatedAt = at; return commitChapters(household, next, result.accepted ? 'Both agreed to this Ritual' : 'Agreed to the exact Ritual review', at);
+});
+export const setRitualParticipation = captureCommand('setRitualParticipation', (household: Household, input: { memberId: string; ritualId: string; expectedMemberRevision: number; paused: boolean; at?: string }): CommitResult => {
+  requireMember(household, input.memberId); const ritual = findRitual(household, input.ritualId), at = input.at ?? nowIso();
+  const own = ritual.participation?.find(row => row.memberId === input.memberId);
+  if ((own?.revision ?? 0) !== input.expectedMemberRevision || typeof input.paused !== 'boolean') chapterConsentFail('Your participation changed. Read its current state.');
+  const next = cloneHousehold(household), target = findRitual(next, ritual.id);
+  target.participation = [...(target.participation ?? []).filter(row => row.memberId !== input.memberId), { version: 1, memberId: input.memberId, revision: input.expectedMemberRevision + 1, paused: input.paused, updatedAt: at }];
+  target.updatedAt = at; return commitChapters(household, next, input.paused ? 'Paused your own Ritual participation' : 'Resumed your own Ritual participation', at);
+});
+export const adoptChapterTasks = captureCommand('adoptChapterTasks', (household: Household, input: { memberId: string; chapterId?: string; at?: string }): CommitResult => {
+  requireMember(household, input.memberId); const at = input.at ?? nowIso(), next = cloneHousehold(household);
+  if (input.chapterId) findChapter(household, input.chapterId);
+  for (const move of next.moves ?? []) if ((!input.chapterId || move.chapterId === input.chapterId) && !move.taskId) {
+    const task = taskForMove(next, move, at, true, move.createdByMemberId ?? null); putChapterTask(next, task); move.taskId = task.id; move.sharedApprovals = { revision: 1, materialVersion: task.chapterSource!.materialVersion, audience: activeAudience(next), memberIds: [] }; move.updatedAt = at;
+  }
+  for (const ritual of next.rituals ?? []) if ((!input.chapterId || ritual.chapterId === input.chapterId) && !ritual.taskAdoption) {
+    for (const day of ritual.heldOn) putChapterTask(next, taskForRitual(next, ritual, day, at, true, input.memberId));
+    ritual.taskAdoption = { version: 1, adoptedAt: at }; ritual.updatedAt = at;
+  }
+  return commitChapters(household, next, 'Connected earlier Chapter records to their Tasks', at);
+});
+export const prepareRitualOccurrence = captureCommand('prepareRitualOccurrence', (household: Household, input: { memberId: string; ritualId: string; onDate: DateKey; expectedRevision: number; at?: string }): CommitResult => {
+  requireMember(household, input.memberId); const ritual = findRitual(household, input.ritualId), at = input.at ?? nowIso();
+  if (ritualAgreementRevision(ritual) !== input.expectedRevision || !isValidDateKey(input.onDate)) chapterConsentFail('Choose the current Ritual and a valid occurrence date.');
+  validateRitualClosureReference(household, ritual);
+  if (!ritualOperational(ritual)) chapterConsentFail('Both of you need to agree to this active Ritual before preparing an occurrence.');
+  if (ritual.requiresMoneyEvidence && !ritual.moneyLink) chapterConsentFail('Choose the existing bank, bill or planned expense in this Ritual’s shared review first.');
+  if (!ritual.taskAdoption) chapterConsentFail('Connect the earlier Ritual history to its Tasks first.');
+  if (ritual.participation?.some(row => row.memberId === input.memberId && row.paused)) chapterConsentFail('You paused your participation. Resume when you are ready.');
+  const task = taskForRitual(household, ritual, input.onDate, at, false, input.memberId); validateTaskReferences(household, task);
+  const next = cloneHousehold(household); putChapterTask(next, task); return commitChapters(household, next, 'Prepared this dated Ritual Task', at);
+});
 
 export type OpenChapterInput = {
   memberId: string;
@@ -541,7 +716,10 @@ export const openChapter = captureCommand("openChapter", function openChapter(ho
       state: "active",
       heldOn: [],
       updatedAt: at,
+      taskAdoption: { version: 1, adoptedAt: at },
+      requiresMoneyEvidence: foundation.id === 'build-breathing-room',
     };
+    ritual.agreement = newRitualAgreement(next, ritual, input.memberId, at);
     next.rituals = [...(next.rituals ?? []), ritual];
     const move: Move = {
       version: 1,
@@ -557,7 +735,10 @@ export const openChapter = captureCommand("openChapter", function openChapter(ho
       completedByMemberId: null,
       evidenceRef: null,
       updatedAt: at,
+      createdByMemberId: input.memberId,
     };
+    const task = taskForMove(next, move, at, false, input.memberId); putChapterTask(next, task); move.taskId = task.id;
+    move.sharedApprovals = { revision: 1, materialVersion: 1, audience: activeAudience(next), memberIds: [] };
     next.moves = [...(next.moves ?? []), move];
   }
   return commitChapters(household, next, `Opened the Chapter "${chapter.title}"`, at);
@@ -573,6 +754,9 @@ export type AddRitualInput = {
   backupMemberId?: string | null;
   doneDefinition: string;
   recoveryMove?: string;
+  requiresMoneyEvidence?: boolean;
+  moneyLink?: TaskMoneyLink | null;
+  expectedAmountCents?: number | null;
   at?: string;
 };
 
@@ -586,7 +770,7 @@ export const addRitual = captureCommand("addRitual", function addRitual(househol
   requireMember(household, owner);
   const at = input.at ?? nowIso();
   const next = cloneHousehold(household);
-  next.rituals = [...(next.rituals ?? []), {
+  const ritual: Ritual = {
     version: 1,
     id: nextId("RIT-", (next.rituals ?? []).map((row) => row.id)),
     chapterId: chapter.id,
@@ -600,36 +784,34 @@ export const addRitual = captureCommand("addRitual", function addRitual(househol
     state: "active",
     heldOn: [],
     updatedAt: at,
-  }];
+    taskAdoption: { version: 1, adoptedAt: at },
+    requiresMoneyEvidence: input.requiresMoneyEvidence === true,
+    moneyLink: input.moneyLink ?? null, expectedAmountCents: input.expectedAmountCents ?? null,
+  };
+  const terms = shapeRitualTerms(ritualTerms(ritual)); if (terms.backupMemberId) requireMember(household, terms.backupMemberId);
+  validateTaskReferences(household, taskForRitual({ ...household, tasks: [] }, ritual, at.slice(0, 10) as DateKey, at, false, input.memberId));
+  ritual.agreement = newRitualAgreement(next, ritual, input.memberId, at); next.rituals = [...(next.rituals ?? []), ritual];
   return commitChapters(household, next, `Added the Ritual "${input.title.trim()}"`, at);
 });
 
-export const recordRitualHeld = captureCommand("recordRitualHeld", function recordRitualHeld(household: Household, input: { memberId: string; ritualId: string; onDate: DateKey; at?: string }): CommitResult {
+export const recordRitualHeld = captureCommand("recordRitualHeld", function recordRitualHeld(household: Household, input: { memberId: string; ritualId: string; onDate: DateKey; expectedTaskRevision?: number; evidence?: TaskEvidence | null; at?: string }): CommitResult {
   requireMember(household, input.memberId);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(input.onDate)) throw new ValidationError("Use a civil date.");
+  if (!isValidDateKey(input.onDate)) throw new ValidationError("Use a civil date.");
   const at = input.at ?? nowIso();
-  const next = cloneHousehold(household);
-  const ritual = (next.rituals ?? []).find((row) => row.id === input.ritualId);
-  if (!ritual) throw new ValidationError("That Ritual is no longer available.");
-  if (ritual.state === "retired") throw new ValidationError("A retired Ritual does not hold.");
-  ritual.heldOn = [...new Set([...ritual.heldOn, input.onDate])].sort() as DateKey[];
-  ritual.updatedAt = at;
-  return commitChapters(household, next, `"${ritual.title}" held`, at);
+  const ritual = findRitual(household, input.ritualId), task = chapterTask(household, { kind: 'ritual-occurrence', sourceId: ritual.id, onDate: input.onDate });
+  if (!ritual.taskAdoption || !task || input.expectedTaskRevision !== task.revision) chapterConsentFail('Prepare and read this exact dated Task before recording that the Ritual held.');
+  const result = completeTask(household, { memberId: input.memberId, id: task.id, expectedRevision: input.expectedTaskRevision, evidence: input.evidence, completedAt: at });
+  return commitChapters(household, result.household, `"${ritual.title}" held`, at);
 });
 
-export const setRitualState = captureCommand("setRitualState", function setRitualState(household: Household, input: { memberId: string; ritualId: string; state: RitualState; at?: string }): CommitResult {
+export const setRitualState = captureCommand("setRitualState", function setRitualState(household: Household, input: { memberId: string; ritualId: string; state: RitualState; expectedRevision?: number; at?: string }): CommitResult {
   requireMember(household, input.memberId);
-  const at = input.at ?? nowIso();
-  const next = cloneHousehold(household);
-  const ritual = (next.rituals ?? []).find((row) => row.id === input.ritualId);
-  if (!ritual) throw new ValidationError("That Ritual is no longer available.");
-  ritual.state = input.state;
-  ritual.updatedAt = at;
-  const label = input.state === "graduated" ? `"${ritual.title}" moved into Our Rhythm` : `"${ritual.title}" is now ${input.state}`;
-  return commitChapters(household, next, label, at);
+  const ritual = findRitual(household, input.ritualId);
+  if (input.expectedRevision === undefined) chapterConsentFail('Read the current Ritual review before changing its shared state. You can pause your own participation at any time.');
+  return editRitual(household, { memberId: input.memberId, ritualId: ritual.id, expectedRevision: input.expectedRevision, terms: { ...ritualTerms(ritual), state: input.state }, at: input.at });
 });
 
-export type OfferMoveInput = { memberId: string; chapterId: string; text: string; ownerMemberId?: string | null; ritualId?: string | null; needsAcknowledgment?: boolean; at?: string };
+export type OfferMoveInput = { memberId: string; chapterId: string; text: string; ownerMemberId?: string | null; ritualId?: string | null; needsAcknowledgment?: boolean; moneyLink?: TaskMoneyLink | null; expectedAmountCents?: number | null; at?: string };
 
 export const offerMove = captureCommand("offerMove", function offerMove(household: Household, input: OfferMoveInput): CommitResult {
   requireMember(household, input.memberId);
@@ -639,7 +821,7 @@ export const offerMove = captureCommand("offerMove", function offerMove(househol
   if (input.ownerMemberId) requireMember(household, input.ownerMemberId);
   const at = input.at ?? nowIso();
   const next = cloneHousehold(household);
-  next.moves = [...(next.moves ?? []), {
+  const move: Move = {
     version: 1,
     id: nextId("MOVE-", (next.moves ?? []).map((row) => row.id)),
     chapterId: chapter.id,
@@ -647,58 +829,68 @@ export const offerMove = captureCommand("offerMove", function offerMove(househol
     text: input.text.trim().slice(0, 400),
     ownerMemberId: input.ownerMemberId ?? null,
     needsAcknowledgment: input.needsAcknowledgment === true,
-    acknowledgedByMemberIds: input.needsAcknowledgment ? [input.memberId] : [],
+    acknowledgedByMemberIds: [],
     state: "offered",
     completedAt: null,
     completedByMemberId: null,
     evidenceRef: null,
     updatedAt: at,
-  }];
+    createdByMemberId: input.memberId,
+  };
+  const baseTask = taskForMove(next, move, at, false, input.memberId), task = validateTask({ ...baseTask, moneyLink: input.moneyLink ?? null, expectedAmountCents: input.expectedAmountCents ?? null }); validateTaskReferences(next, task);
+  putChapterTask(next, task); move.taskId = task.id; move.sharedApprovals = { revision: 1, materialVersion: 1, audience: activeAudience(next), memberIds: input.needsAcknowledgment ? [input.memberId] : [] };
+  next.moves = [...(next.moves ?? []), move];
   return commitChapters(household, next, "Offered a Move", at);
 });
 
-export const respondToMove = captureCommand("respondToMove", function respondToMove(household: Household, input: { memberId: string; moveId: string; response: "accept" | "decline" | "pause" | "acknowledge"; at?: string }): CommitResult {
+export const respondToMove = captureCommand("respondToMove", function respondToMove(household: Household, input: { memberId: string; moveId: string; response: "accept" | "decline" | "pause" | "acknowledge"; expectedTaskRevision?: number; at?: string }): CommitResult {
   requireMember(household, input.memberId);
   const at = input.at ?? nowIso();
-  const next = cloneHousehold(household);
+  let next = cloneHousehold(household);
   const move = (next.moves ?? []).find((row) => row.id === input.moveId);
   if (!move) throw new ValidationError("That Move is no longer available.");
-  if (move.state === "done") throw new ValidationError("That Move is already done.");
+  let task = chapterTask(next, { kind: 'chapter-move', sourceId: move.id, onDate: null });
+  if (!move.taskId || !task || task.revision !== input.expectedTaskRevision) chapterConsentFail('Read or connect this exact Task before responding to its Move.');
+  if (task.completedAt || task.deleted) throw new ValidationError("That Move is already done or no longer open.");
   if (input.response === "acknowledge") {
-    move.acknowledgedByMemberIds = [...new Set([...move.acknowledgedByMemberIds, input.memberId])];
+    const previous = move.sharedApprovals?.materialVersion === task.chapterSource!.materialVersion && canonical(move.sharedApprovals.audience) === canonical(activeAudience(next)) ? move.sharedApprovals.memberIds : [];
+    move.sharedApprovals = { revision: (move.sharedApprovals?.revision ?? 0) + 1, materialVersion: task.chapterSource!.materialVersion, audience: activeAudience(next), memberIds: [...new Set([...previous, input.memberId])].sort() };
+  } else if (input.response === 'accept') {
+    if (task.assigneeId !== null && task.assigneeId !== input.memberId && task.backupId !== input.memberId) chapterConsentFail('This task belongs to its responsible member. You cannot take it away from them.');
+    if (task.assigneeId === null) {
+      next = saveTask(next, { memberId: input.memberId, id: task.id, expectedRevision: task.revision, task: { ...task, assigneeId: input.memberId } }).household;
+      task = next.tasks!.find(row => row.id === task!.id)!;
+    }
+    const own = task.participation?.find(row => row.memberId === input.memberId);
+    if (own?.paused) { task = { ...task, revision: task.revision + 1, updatedAt: at, participation: task.participation!.map(row => row.memberId === input.memberId ? { ...row, revision: row.revision + 1, paused: false, updatedAt: at } : row) }; putChapterTask(next, task); }
+    if (!task.acknowledgedBy.includes(input.memberId)) next = acknowledgeTask(next, { memberId: input.memberId, id: task.id, expectedRevision: task.revision }).household;
   } else {
-    move.state = input.response === "accept" ? "accepted" : input.response === "decline" ? "declined" : "paused";
+    const own = task.participation?.find(row => row.memberId === input.memberId);
+    putChapterTask(next, { ...task, revision: task.revision + 1, updatedAt: at, participation: [...(task.participation ?? []).filter(row => row.memberId !== input.memberId), { version: 1, memberId: input.memberId, revision: (own?.revision ?? 0) + 1, paused: true, updatedAt: at }] });
   }
   move.updatedAt = at;
   const verb = input.response === "acknowledge" ? "acknowledged" : input.response === "accept" ? "accepted" : input.response === "decline" ? "declined" : "paused";
   return commitChapters(household, next, `Move ${verb}`, at);
 });
 
-export const completeMove = captureCommand("completeMove", function completeMove(household: Household, input: { memberId: string; moveId: string; evidenceRef?: string; at?: string }): CommitResult {
+export const completeMove = captureCommand("completeMove", function completeMove(household: Household, input: { memberId: string; moveId: string; expectedTaskRevision?: number; evidence?: TaskEvidence | null; evidenceRef?: string; at?: string }): CommitResult {
   requireMember(household, input.memberId);
   const at = input.at ?? nowIso();
-  const next = cloneHousehold(household);
-  const move = (next.moves ?? []).find((row) => row.id === input.moveId);
+  const move = (household.moves ?? []).find((row) => row.id === input.moveId);
   if (!move) throw new ValidationError("That Move is no longer available.");
-  if (move.state === "declined") throw new ValidationError("A declined Move is not completed; offer a new one.");
-  if (move.needsAcknowledgment) {
-    const required = next.members.filter((m) => m.active).map((m) => m.id);
-    const missing = required.filter((id) => !move.acknowledgedByMemberIds.includes(id) && id !== input.memberId);
-    if (missing.length) throw new ValidationError("This Move needs both of you to acknowledge it before it is done.");
-  }
-  move.state = "done";
-  move.completedAt = at;
-  move.completedByMemberId = input.memberId;
-  move.evidenceRef = input.evidenceRef?.slice(0, 120) ?? null;
-  move.updatedAt = at;
+  const task = chapterTask(household, { kind: 'chapter-move', sourceId: move.id, onDate: null });
+  if (!move.taskId || !task || input.expectedTaskRevision !== task.revision) chapterConsentFail('Read or connect this exact Task before completing its Move.');
+  if (input.evidenceRef !== undefined) chapterConsentFail('Choose the actual accepted receipt; an unverified text reference cannot complete a task.');
+  const result = completeTask(household, { memberId: input.memberId, id: task.id, expectedRevision: task.revision, evidence: input.evidence, completedAt: at }), next = result.household;
+  const completed = projectMoveTask(next, move);
   // A completed Move earns a quiet acknowledgment. It fades after a day unless kept.
   next.wins = [...(next.wins ?? []), {
     version: 1,
     id: nextId("WIN-", (next.wins ?? []).map((row) => row.id)),
     chapterId: move.chapterId,
     level: "acknowledgment",
-    title: move.text,
-    evidenceRefs: move.evidenceRef ? [move.evidenceRef] : [],
+    title: completed.text,
+    evidenceRefs: completed.evidenceRef ? [completed.evidenceRef] : [],
     shownAt: at,
     fadedAt: new Date(Date.parse(at) + 24 * 60 * 60 * 1000).toISOString(),
     keptByMemberIds: [],
@@ -740,6 +932,7 @@ export const recordWin = captureCommand("recordWin", function recordWin(househol
 /** Keeping a Memory is opt-in and authored; a shared Memory is kept when both partners choose it. */
 export const keepWinAsMemory = captureCommand("keepWinAsMemory", function keepWinAsMemory(household: Household, input: { memberId: string; winId: string; authoredNote?: string; hideAmounts?: boolean; at?: string }): CommitResult {
   requireMember(household, input.memberId);
+  assertLegacyWinWriteAllowed(household);
   const at = input.at ?? nowIso();
   const next = cloneHousehold(household);
   const win = (next.wins ?? []).find((row) => row.id === input.winId);
@@ -765,7 +958,17 @@ export const dismissWin = captureCommand("dismissWin", function dismissWin(house
   return commitChapters(household, next, "Let a Win fade", at);
 });
 
-export type CloseChapterInput = { memberId: string; chapterId: string; outcome: ChapterOutcome; carryForward?: string; sitdownId?: string; at?: string };
+export type CloseChapterInput = { memberId: string; chapterId: string; outcome: ChapterOutcome; carryForward?: string; sitdownId?: string; expectedRevision?: number; proposalId?: string; digest?: string; reviewDigest?: string; nextChapter?: NextChapterTerms; at?: string };
+
+export function reviewChapterClosure(household: Household, input: Pick<CloseChapterInput, 'chapterId' | 'outcome' | 'carryForward' | 'sitdownId' | 'nextChapter'>): { terms: ChapterClosureTerms; reviewDigest: string; expectedRevision: number } {
+  const chapter = findChapter(household, input.chapterId);
+  const terms: ChapterClosureTerms = shapeClosureTerms({ outcome: input.outcome, carryForward: (input.carryForward ?? '').trim(), sitdownId: input.sitdownId ?? null,
+    ...(input.nextChapter ? { nextChapter: shapeNextChapterTerms(input.nextChapter) } : {}),
+    rituals: (household.rituals ?? []).filter(row => row.chapterId === chapter.id && row.state === 'active').map(row => ({ ritualId: row.id, before: ritualTerms(row), afterState: input.outcome === 'established' ? 'graduated' : input.outcome === 'life-changed' || input.outcome === 'closed' ? 'retired' : row.state })).sort((a, b) => a.ritualId.localeCompare(b.ritualId)),
+    moves: (household.tasks ?? []).filter(row => row.chapterId === chapter.id && row.chapterSource?.kind === 'chapter-move' && !row.deleted && !row.completedAt).map(row => ({ taskId: row.id, moveId: row.chapterSource!.sourceId, taskRevision: row.revision, title: row.title, ownerMemberId: row.assigneeId })).sort((a, b) => a.taskId.localeCompare(b.taskId)),
+  });
+  return { terms, expectedRevision: chapterClosureRevision(chapter), reviewDigest: chapterConsentDigest({ terms, basis: closureBasis(household, chapter), audience: activeAudience(household) }) };
+}
 
 /** A month ends; it does not pass or fail. "Established" graduates the Chapter's Rituals into Our Rhythm. */
 export const closeChapter = captureCommand("closeChapter", function closeChapter(household: Household, input: CloseChapterInput): CommitResult {
@@ -775,6 +978,19 @@ export const closeChapter = captureCommand("closeChapter", function closeChapter
   const chapter = (next.chapters ?? []).find((row) => row.id === input.chapterId);
   if (!chapter) throw new ValidationError("That Chapter is no longer available.");
   if (chapter.state !== "open") throw new ValidationError("That Chapter is already closed.");
+  if (input.expectedRevision === undefined) chapterConsentFail('Read the exact current Chapter closure before proposing or agreeing.');
+  if ((household.moves ?? []).some(move => move.chapterId === chapter.id && !move.taskId)) chapterConsentFail('Connect earlier Chapter Moves to their Tasks before reviewing closure.');
+  const review = reviewChapterClosure(household, input), terms = review.terms;
+  if (terms.nextChapter) requireMember(household, terms.nextChapter.ownerMemberId);
+  if (!input.proposalId) {
+    if (input.reviewDigest !== review.reviewDigest) chapterConsentFail("Read the affected Rituals and Tasks in this exact closure review before giving your agreement.");
+    chapter.closure = proposeChapterConsent(chapter.closure, { expectedRevision: input.expectedRevision, identity: `closure-${chapter.id}`, terms, basis: closureBasis(household, chapter), audience: activeAudience(household), memberId: input.memberId, at, legacyBaseline: !chapter.closure });
+    chapter.updatedAt = at; return commitChapters(household, next, 'Proposed the exact Chapter closure', at);
+  }
+  const approved = approveChapterConsent(chapter.closure, { expectedRevision: input.expectedRevision, proposalId: input.proposalId, digest: input.digest ?? '', basis: closureBasis(household, chapter), audience: activeAudience(household), memberId: input.memberId, at });
+  if (canonical(approved.proposal.terms) !== canonical(terms)) chapterConsentFail('The displayed closure changed. Read its exact current review.');
+  chapter.closure = approved.consent;
+  if (!approved.accepted) { chapter.updatedAt = at; return commitChapters(household, next, 'Agreed to the exact Chapter closure', at); }
   chapter.state = input.outcome;
   chapter.closedAt = at;
   chapter.closedAtSitdownId = input.sitdownId ?? null;
@@ -784,13 +1000,13 @@ export const closeChapter = captureCommand("closeChapter", function closeChapter
     if (ritual.chapterId !== chapter.id || ritual.state !== "active") continue;
     if (input.outcome === "established") ritual.state = "graduated";
     else if (input.outcome === "life-changed" || input.outcome === "closed") ritual.state = "retired";
+    ritual.approvalViaClosure = { chapterId: chapter.id, proposalId: approved.proposal.id, digest: approved.proposal.digest };
     ritual.updatedAt = at;
   }
-  for (const move of next.moves ?? []) {
-    if (move.chapterId === chapter.id && (move.state === "offered" || move.state === "accepted")) {
-      move.state = "paused";
-      move.updatedAt = at;
-    }
+  for (const change of terms.moves) {
+    const task = next.tasks!.find(row => row.id === change.taskId)!;
+    const participation = activeAudience(household).map(memberId => { const own = task.participation?.find(row => row.memberId === memberId); return { version: 1 as const, memberId, revision: (own?.revision ?? 0) + 1, paused: true, updatedAt: at }; });
+    putChapterTask(next, { ...task, revision: task.revision + 1, updatedAt: at, participation });
   }
   if (input.outcome === "established") {
     next.wins = [...(next.wins ?? []), {
@@ -812,7 +1028,11 @@ export const closeChapter = captureCommand("closeChapter", function closeChapter
     : input.outcome === "still-forming" ? `"${chapter.title}" carried forward`
       : input.outcome === "life-changed" ? `"${chapter.title}" closed — life changed`
         : `"${chapter.title}" closed`;
-  return commitChapters(household, next, label, at);
+  const closed = commitChapters(household, next, label, at);
+  if (!terms.nextChapter) return closed;
+  const { month, ownerMemberId, ...choice } = terms.nextChapter;
+  const opened = openChapter(closed.household, { memberId: ownerMemberId, ...choice, intendedMonth: month, ...(terms.sitdownId ? { sitdownId: terms.sitdownId } : {}), at });
+  return { ...opened, undo: { ...opened.undo, snapshot: household, label: "Closed our Chapter and opened the reviewed next Chapter" } };
 });
 
 // ---------------------------------------------------------------------------
@@ -897,22 +1117,35 @@ export type CloseAndOpenChapterInput = CloseChapterInput & {
   next?: Pick<OpenChapterInput, "foundationId" | "custom">;
 };
 
+/** Freeze the next month, wording and owner into the same paired review as the ending. */
+export function nextChapterForClosure(household: Household, input: CloseAndOpenChapterInput): NextChapterTerms {
+  const month = monthKeyFromDateKey(input.today);
+  const pending = pendingChapterClosure(findChapter(household, input.chapterId));
+  if (input.proposalId && pending?.id === input.proposalId && pending.terms.nextChapter) {
+    const reviewed = pending.terms.nextChapter;
+    if (reviewed.month !== month || input.next && canonical(input.next) !== canonical(Object.fromEntries(Object.entries(reviewed).filter(([key]) => key !== 'month' && key !== 'ownerMemberId')))) chapterConsentFail('The next Chapter changed. Review it together again.');
+    return reviewed;
+  }
+  const closed = { chapters: (household.chapters ?? []).map(row => row.id === input.chapterId ? { ...row, state: input.outcome } : row) };
+  return shapeNextChapterTerms({ month, ownerMemberId: input.memberId, ...(input.next ?? defaultNextChapter(closed, month)) });
+}
+export function reviewChapterClosureAtSitdown(household: Household, input: CloseAndOpenChapterInput) {
+  return reviewChapterClosure(household, { ...input, nextChapter: nextChapterForClosure(household, input) });
+}
+
 /**
  * The merged check-in's last step (F2/F5): the Sitdown closes the open
  * Chapter with the outcome the couple chose (Rituals retire only on that
  * choice) and opens the next Chapter for the Sitdown's month, in one command.
  */
 export const closeChapterAtSitdown = captureCommand("closeChapterAtSitdown", function closeChapterAtSitdown(household: Household, input: CloseAndOpenChapterInput): CommitResult {
-  const closed = closeChapter(household, input);
-  const month = monthKeyFromDateKey(input.today);
-  const choice = input.next ?? defaultNextChapter(closed.household, month);
-  const opened = openChapter(closed.household, { memberId: input.memberId, ...choice, intendedMonth: month, ...(input.sitdownId ? { sitdownId: input.sitdownId } : {}), ...(input.at ? { at: input.at } : {}) });
-  return { ...opened, undo: { ...opened.undo, snapshot: household, label: "Closed our Chapter and opened the next" } };
+  const nextChapter = nextChapterForClosure(household, input);
+  return closeChapter(household, { ...input, nextChapter });
 });
 
 /** True once any Chapter carries a calendar month; an older client would drop it, so it must reload first. */
 export function hasChapterMonthData(household: Pick<Household, "chapters">): boolean {
-  return (household.chapters ?? []).some((row) => row.intendedMonth !== undefined);
+  return (household.chapters ?? []).some((row) => row.intendedMonth !== undefined || row.closure?.proposals.some(proposal => proposal.terms.nextChapter !== undefined));
 }
 /** Only the combined close-and-open always writes a month; a plain openChapter is judged by the data it leaves. */
 export const CHAPTER_MONTH_COMMAND_KINDS = ["closeChapterAtSitdown"];

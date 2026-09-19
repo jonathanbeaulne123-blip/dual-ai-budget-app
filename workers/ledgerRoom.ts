@@ -1,3 +1,25 @@
+import {decodeNestSource} from '../src/hearthside/nestDesignBinding.ts';
+import {visibleNestSource,assertNestDocumentVisible,migrateNestDesign} from '../src/hearthside/nestDesignSource.ts';
+import {readSharedLifeRestorePreview,type RestoreDesignAccess} from '../src/hearthside/sharedLifeRestore.ts';
+import {rejectLegacyWinPublication} from '../src/hearthside/winMemory.ts';
+import {createEncounterDesign,encounterDesignIdentity} from '../src/hearthside/encounterDesign.ts';
+import {commitHearthside} from '../src/hearthside/commands.ts';
+import {identifier,object} from '../src/hearthside/contracts.ts';
+import {ENCOUNTER_WARDROBE} from '../src/hearthside/encounterWardrobe.ts';
+import {decodeEncounterCommand,encounterCompositionDigest,type EncounterRevealBinding,type EncounterCommand} from '../src/hearthside/encounterContracts.ts';
+import {guestSourceCatalogue} from './hearthsideGuestSource.ts';
+import {captureGuestSources,validateGuestSources} from '../src/hearthside/guestProjection.ts';
+import {decodeGuestPrepare,decodeGuestSourceProof,type GuestPrepareInput,type GuestSourceProof} from '../src/hearthside/guestContracts.ts';
+import type {WorkspaceEnv} from './workspace/env.ts';
+import {consumeWorkspaceRpc} from '../src/hearthside/workspaceRpc.ts';
+import {workspaceExperienceContext} from '../src/hearthside/workspaceContext.ts';
+import {acceptWorkspacePublicationState} from '../src/hearthside/workspacePublicationState.ts';
+import {decodeArtifactPublication,decodePreparedExperienceArtifact,artifactPublication,type ArtifactPublication,type ArtifactPublicationReceipt} from '../src/hearthside/workspacePublication.ts';
+import {decodeRecordedRoom} from '../src/hearthside/roomHistory.ts';
+import {decodeStudioHandoff} from '../src/hearthside/studioHandoff.ts';
+import {validateMemoryCandidate} from '../src/hearthside/commands.ts';
+import {decodeMemoryPublicationBinding,memoryCompositionDigest,type MemoryPublicationBinding,type MemoryPublicationCandidate,type VaultMemoryCandidateValidation,type VaultMemoryEvidence} from '../src/hearthside/memoryPublication.ts';
+import {decodeHearthside,memoryKeptByEveryone,type MemoryComposition,type HearthsideContentSnapshot} from '../src/hearthside/contracts.ts';
 /// <reference path="./ledger-platform.d.ts" />
 import {herculesActionsEnabled} from '../src/core/herculesActionPolicy.ts';
 import { compareImportParity } from "../src/ledgerSync/importParity.ts";
@@ -43,6 +65,7 @@ import {
 } from "../src/ledgerSync/authority.ts";
 import {
   digest,
+  canonical,
   difference,
   type ProjectionPatch,
 } from "../src/ledgerSync/patch.ts";
@@ -56,18 +79,33 @@ import {
   MessageReader,
   encodeMessage,
   WINDOW,
+  WIRE_LIMIT,
 } from "../src/ledgerSync/wire.ts";
 import { importLegacy, supabase, type AuthEnv } from "./ledgerSyncAuth.ts";
 import { importReservationDigests, reservationDigest } from "./ledgerReservations.ts";
-type Env = AuthEnv & { LEDGER_ARCHIVE: R2Bucket; HERCULES_ACTIONS_ENABLED?: string; HERCULES_EXTERNAL_CALENDAR_WRITES?: string; HERCULES_WORKSPACES?: DurableObjectNamespace; HERCULES_WORKSPACE_EXECUTION?: string };
+import {HearthsideAcceptanceStore} from './hearthsideAcceptanceStore.ts';
+import type {VaultReference} from '../src/hearthside/vaultContracts.ts';
+import { HearthsideDesignStore } from './hearthsideDesignStore.ts';
+import { acceptKittyDesignOperation, projectKittyDesign, createKittyDesignDocument, migrateLegacyKittyStudio, snapshotKittyDesignRevision, type KittyDesignReceipt } from '../src/hearthside/design.ts';
+import { decodeKittyDesignOperation, designId, designInteger, designRecord, KittyDesignError, type KittyDesignDocument } from '../src/hearthside/designContracts.ts';
+import { kittyDesignReference } from '../src/hearthside/design.ts';
+import { applyAcceptedDesignReference } from '../src/hearthside/designProjection.ts';
+import type { DesignArchiveReference } from '../src/hearthside/designArchive.ts';
+import { decodeCreativePresence, type CreativeTarget } from '../src/hearthside/creativePresence.ts';
+type Env = AuthEnv & { HEARTHSIDE_GUESTS_ENABLED?:string; HEARTHSIDE_GUEST_PUBLICATION?:string;  HERCULES_SHARED_WORKSPACES?:WorkspaceEnv['HERCULES_SHARED_WORKSPACES']; HERCULES_WORKSPACE_ENABLED?:string; LEDGER_ARCHIVE: R2Bucket; HEARTHSIDE_DESIGN_WRITES?:string; HEARTHSIDE_VAULT_PUBLICATION?:string; HEARTHSIDE_VAULTS?:DurableObjectNamespace; HERCULES_ACTIONS_ENABLED?: string; HERCULES_EXTERNAL_CALENDAR_WRITES?: string; HERCULES_WORKSPACES?: DurableObjectNamespace; HERCULES_WORKSPACE_EXECUTION?: string };
 type Attachment = {
   scope?: Scope;
   deadline: number;
   ready: boolean;
   lane?: "ledger" | "presence";
   presenceAt?: number;
+  creative?: {target:CreativeTarget;seenAt:number};
+  previewAt?:number;
+  creativeJoinAt?:number;
 };
 export class LedgerRoom extends DurableObject<Env> {
+  private designs:HearthsideDesignStore;
+  private vaultAcceptances:HearthsideAcceptanceStore;
   private booksGuards = new Map<string, IncrementalBooksGuard>();
   private state?: AuthorityState;
   private tail: Promise<unknown> = Promise.resolve();
@@ -81,6 +119,8 @@ export class LedgerRoom extends DurableObject<Env> {
   private socketQueued = new Map<WebSocket, number>();
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
+    this.designs=new HearthsideDesignStore(ctx.storage.sql,env.LEDGER_ARCHIVE);
+    this.vaultAcceptances=new HearthsideAcceptanceStore(ctx.storage.sql,env.LEDGER_ARCHIVE);
     ctx.storage.sql.exec(
       "CREATE TABLE IF NOT EXISTS projection(scope TEXT,field TEXT,entity TEXT,part INTEGER,position INTEGER,data TEXT,PRIMARY KEY(scope,field,entity,part))",
     );
@@ -406,6 +446,7 @@ export class LedgerRoom extends DurableObject<Env> {
         !/^HH-[a-zA-Z0-9_-]{1,96}$/.test(household.householdId)
       )
         throw new Error("INVALID_SCOPE");
+      for(const row of household.kittyNestDesigns??[]){if(!row.designRef)continue;const doc=this.designs.read(row.designRef.designId);if(!doc||!doc.nest||doc.nest.view!==row.visibility||doc.nest.designKey!==row.bankKey||doc.scope.ownerMemberId!==(row.visibility==='personal'?row.createdBy:null)||doc.revision<row.designRef.revision)throw Error('DESIGN_ARCHIVE_RESTORE_REQUIRED');}
       assertAcceptableBooks(household);
       const split = splitForSync(
         { ...household, restorePoints: [], linked: true },
@@ -474,6 +515,7 @@ export class LedgerRoom extends DurableObject<Env> {
         household.householdId !== scope.householdId
       )
         throw new Error("IMPORT_SCOPE_MISMATCH");
+      for(const row of household.kittyNestDesigns??[]){if(!row.designRef)continue;const doc=this.designs.read(row.designRef.designId);if(!doc||!doc.nest||doc.nest.view!==row.visibility||doc.nest.designKey!==row.bankKey||doc.scope.ownerMemberId!==(row.visibility==='personal'?row.createdBy:null)||doc.revision<row.designRef.revision)throw Error('DESIGN_ARCHIVE_RESTORE_REQUIRED');}
       assertAcceptableBooks(household);
       const split = splitForSync(household, scope.memberId),
         sourceHash = await digest(split);
@@ -663,6 +705,7 @@ export class LedgerRoom extends DurableObject<Env> {
         .exec<{ data: string }>("SELECT data FROM receipts ORDER BY sequence")
         .toArray()
         .map((row) => JSON.parse(row.data)),
+      designs: this.designs.references(),
       ...(this.meta("importedReceiptsReady") === "2" ? { importedReceipts: this.importedReceipts(),
         reservationDigests: this.ctx.storage.sql.exec<{ digest: string }>("SELECT digest FROM legacy_reservations ORDER BY digest").toArray().map(row => row.digest) } : {}),
       importBindings: Object.fromEntries(this.ctx.storage.sql.exec<{key:string;value:string}>("SELECT key,value FROM meta WHERE key LIKE 'import:%'").toArray().map(row=>[row.key.slice(7),JSON.parse(row.value)])),
@@ -724,8 +767,11 @@ export class LedgerRoom extends DurableObject<Env> {
         checkpoint,
         records,
       );
+      const restoredDesigns:Array<{document:KittyDesignDocument;reference:DesignArchiveReference}>=[];
+      for(const reference of restored.designs??[])restoredDesigns.push({reference,document:await this.designs.recover(`${scope.environment}/${scope.householdId}`,reference)});
       this.check(scope);
       this.ctx.storage.transactionSync(() => {
+        for(const {document,reference} of restoredDesigns)this.designs.commit(document,reference,restored.sequence,{actor:'authority-recovery',request:'archive-recovery'});
         if (restored.importedReceipts) this.reserveImportedReceipts(restored.importedReceipts);
         if (restored.reservationDigests) this.reserveDigests(restored.reservationDigests);
         for (const [field, value] of Object.entries(restored.shared))
@@ -882,6 +928,273 @@ export class LedgerRoom extends DurableObject<Env> {
       }
     }
   }
+  private hearthsideMember(scope:Scope){
+    this.check(scope);const state=this.load(),personal=state.personal.get(scope.memberId);
+    if(!personal||!state.shared.members.some(member=>member.active&&member.id===scope.memberId))throw Error('FORBIDDEN');
+    return {state,household:assembleHousehold(state.shared,personal,{linked:true})};
+  }
+  private sharedLifeRestoreDesignAccess(scope:Scope):RestoreDesignAccess {
+    return reference=>{try{const {household}=this.hearthsideMember(scope);const document=this.designs.read(reference.documentId);
+      if(!document||document.scope.environment!==scope.environment||document.scope.householdId!==scope.householdId||document.scope.ownerMemberId!==null)return false;
+      assertNestDocumentVisible(household,scope.memberId,document);snapshotKittyDesignRevision(document,reference.pieceId,reference.revision);
+      return projectKittyDesign(document).pieces.some(p=>p.piece.id===reference.pieceId&&p.status!=='archived');
+    }catch{return false;}};
+  }
+  async sharedLifeRestorePreview(scope:Scope,input:unknown){
+    return this.serial(async()=>{this.hearthsideMember(scope);await this.archiveBarrier();this.hearthsideMember(scope);
+      return readSharedLifeRestorePreview(input,{scope,current:()=>this.hearthsideMember(scope).household,assertCurrent:()=>{this.hearthsideMember(scope);},point:id=>this.restorePoint(id),designAccess:this.sharedLifeRestoreDesignAccess(scope),audienceEpoch:()=>Number(this.meta("acl","1"))});
+    });
+  }
+  private memoryDesigns(scope:Scope,memory:MemoryComposition){
+    for(const ref of memory.designs){const document=this.designs.read(ref.documentId);
+      if(!document||document.scope.ownerMemberId!==null||document.scope.environment!==scope.environment||document.scope.householdId!==scope.householdId)throw Error('HEARTHSIDE_SHARED_DESIGN_REQUIRED');
+      assertNestDocumentVisible(this.hearthsideMember(scope).household,scope.memberId,document);snapshotKittyDesignRevision(document,ref.pieceId,ref.revision);
+    }
+  }
+  async workspaceExperience(scope:Scope,id:string){
+    return this.serial(async()=>{const {household}=this.hearthsideMember(scope),experience=household.hearthside?.experiences.find(e=>e.id===id&&e.state!=='archived');
+      if(!experience)throw Error('EXPERIENCE_CONTEXT_CHANGED');await this.archiveBarrier();this.hearthsideMember(scope);return workspaceExperienceContext(experience);
+    });
+  }
+  async workspaceAcceptArtifact(scope:Scope,publication:ArtifactPublication){return this.recordWorkspacePublication(scope,publication,'accepted');}
+  async workspaceWithdrawArtifact(scope:Scope,publication:ArtifactPublication){return this.recordWorkspacePublication(scope,publication,'withdrawn');}
+  private async recordWorkspacePublication(scope:Scope,raw:ArtifactPublication,mode:'accepted'|'withdrawn'):Promise<ArtifactPublicationReceipt>{
+    return this.serial(async()=>{
+      const publication=decodeArtifactPublication(raw),check=()=>{this.hearthsideMember(scope);if(scope.environment!=='development'||this.env.HERCULES_WORKSPACE_ENABLED!=='true'||!this.env.HERCULES_SHARED_WORKSPACES)throw Error('WORKSPACE_PUBLICATION_DISABLED');};
+      check();if(publication.sharedBy!==scope.memberId||publication.state!==mode)throw Error('HEARTHSIDE_ARTIFACT_AUTHOR_REQUIRED');
+      const namespace=this.env.HERCULES_SHARED_WORKSPACES!,shared=namespace.get(namespace.idFromName(`${scope.environment}/${scope.householdId}`));
+      const value=consumeWorkspaceRpc(await shared.preparedExperienceFor(scope,publication.id));check();
+      if(!value)throw Error('ARTIFACT_SOURCE_FORBIDDEN');const copy=decodePreparedExperienceArtifact(value);
+      if(mode==='withdrawn'?copy.state!=='withdrawn':copy.state==='withdrawn')throw Error('ARTIFACT_WITHDRAWN');
+      if(canonical(artifactPublication(copy,mode))!==canonical(publication))throw Error('ARTIFACT_COPY_CHANGED');
+      await this.archiveBarrier();check();
+      const id='HS-ARTIFACT-'+await digest([publication.id,mode]),prior=this.ctx.storage.sql.exec<{data:string}>('SELECT data FROM receipts WHERE id=?',id).toArray()[0];
+      if(prior){const receipt=JSON.parse(prior.data) as Receipt;if(receipt.actor!==scope.memberId||receipt.digest!==await digest(publication))throw Error('ARTIFACT_RECEIPT_MISMATCH');check();return {version:1,id:publication.id,publication,acceptedSequence:receipt.sequence};}
+      const {state,household}=this.hearthsideMember(scope),next=acceptWorkspacePublicationState(household,publication,scope.memberId);
+      next.commandReceipts=[];next.restorePoints=[];next.revision=state.sequence+1;next.baseRevision=state.sequence+1;assertAcceptableBooks(next);
+      const split=splitForSync(next,scope.memberId),acceptedAt=new Date().toISOString(),event:AcceptedEvent={sequence:next.revision,shared:difference(state.shared,split.shared),acceptedAt};
+      const kind=mode==='accepted'?'acceptHearthsideWorkspaceArtifact':'withdrawHearthsideWorkspaceArtifact';
+      const receipt:Receipt={id,sequence:event.sequence,digest:await digest(publication),actor:scope.memberId,postedIds:[],warnings:[],undo:{id,label:mode==='accepted'?'Shared a reviewed artifact':'Withdrew a shared artifact',postedIds:[],actorMemberId:scope.memberId,commandKind:kind},commandKind:kind};
+      const eventText=JSON.stringify(event),eventHash=await digest(event);check();if(this.load().sequence!==state.sequence)throw Error('HEARTHSIDE_CHANGED');
+      this.ctx.storage.transactionSync(()=>{
+        this.writeProjection('shared',event.shared);
+        for(let at=0;at<eventText.length;at+=60000)this.ctx.storage.sql.exec('INSERT INTO journal VALUES (?,?,?)',event.sequence,at/60000,eventText.slice(at,at+60000));
+        this.ctx.storage.sql.exec('INSERT INTO receipts VALUES (?,?,?,?,?)',id,receipt.actor,receipt.digest,receipt.sequence,JSON.stringify(receipt));
+        this.ctx.storage.sql.exec('INSERT INTO archive VALUES (?,?)',receipt.sequence,eventHash);this.set('sequence',String(receipt.sequence));
+      });
+      this.state={sequence:receipt.sequence,shared:split.shared,personal:state.personal};
+      await this.ctx.storage.sync();await this.archiveBarrier();check();
+      for(const peer of this.ctx.getWebSockets()){const attachment=peer.deserializeAttachment() as Attachment;if(attachment.ready&&attachment.scope){try{this.check(attachment.scope);await this.send(peer,{type:'event',event:this.visible(event,attachment.scope.memberId)});}catch{peer.close(4003,'AUTH_EXPIRED');}}}
+      await this.schedule();check();return {version:1,id:publication.id,publication,acceptedSequence:receipt.sequence};
+    });
+  }
+  async vaultEncounterContext(scope:Scope,id:string){
+    return this.serial(async()=>{const {state}=this.hearthsideMember(scope),encounter=state.shared.hearthside?.encounters?.find(e=>e.id===identifier(id));
+      const members=state.shared.members.filter(m=>m.active).map(m=>m.id).sort();
+      if(!encounter||canonical(members)!==canonical(encounter.participantMemberIds)||!members.includes(scope.memberId))throw Error('ENCOUNTER_SCOPE_CHANGED');
+      return {id:encounter.id,packId:encounter.packId,participantMemberIds:members,wardrobeIds:ENCOUNTER_WARDROBE.map(w=>w.id)};
+    });
+  }
+  /** Fresh HTTP Auth and private audience verification precede the serialized canonical write. */
+  async encounterCommand(scope:Scope,authorization:string,raw:unknown){
+    const value=object(raw,['version','id','operation']);if(value.version!==1)throw Error('HEARTHSIDE_UPDATE_REQUIRED');
+    const requestId=identifier(value.id),id='HS-ENCOUNTER-'+requestId,op=decodeEncounterCommand(value.operation),hash=await digest({version:1,id:requestId,operation:op});
+    const check=()=>{this.hearthsideMember(scope);if(scope.environment!=='development'||this.env.HEARTHSIDE_VAULT_PUBLICATION!=='true'&&!['encounter.pause'].includes(op.kind))throw Error('PUBLICATION_DISABLED');};
+    const previous=()=>{const row=this.ctx.storage.sql.exec<{data:string}>('SELECT data FROM receipts WHERE id=?',id).toArray()[0];if(!row)return null;const r=JSON.parse(row.data) as Receipt;if(r.actor!==scope.memberId||r.digest!==hash)throw Error('REQUEST_ID_REUSED');return r;};
+    const before=await this.serial(async()=>{check();await this.archiveBarrier();check();const {state}=this.hearthsideMember(scope);return {receipt:previous(),encounter:state.shared.hearthside?.encounters?.find(e=>e.id===op.id)??null,members:state.shared.members.filter(m=>m.active).map(m=>m.id).sort()};});
+    if(before.receipt)return {version:1,receipt:before.receipt};
+    const binding=op.kind==='encounter.reveal'?op.binding:['encounter.choose','encounter.keep','encounter.outcome','encounter.create-piece'].includes(op.kind)?before.encounter?.reveal:null;
+    // This RPC calls back into vaultEncounterContext. Never run it under serial().
+    if(binding)await this.memoryVault(scope).authorizeEncounterRevealFor(scope,binding,authorization);
+    return this.serial(async()=>{check();await this.archiveBarrier();check();const prior=previous();if(prior)return {version:1,receipt:prior};
+      const {state,household}=this.hearthsideMember(scope),current=state.shared.hearthside?.encounters?.find(e=>e.id===op.id)??null;
+      if(canonical(current)!==canonical(before.encounter)||canonical(state.shared.members.filter(m=>m.active).map(m=>m.id).sort())!==canonical(before.members))throw Error('ENCOUNTER_CHANGED');
+      if(binding){const evidence=consumeWorkspaceRpc(await this.memoryVault(scope).checkEncounterRevealFor(scope,binding));if(canonical(evidence)!==canonical(binding))throw Error('REVEAL_REQUIRED');check();}
+      if(op.kind==='encounter.outcome'){
+        const o=op.outcome;
+        if(o.kind==='design'){const d=this.designs.read(o.designId!);if(!d||d.scope.ownerMemberId!==null||d.scope.environment!==scope.environment||d.scope.householdId!==scope.householdId||!projectKittyDesign(d).pieces.some(p=>p.piece.id===o.id&&p.status!=='archived'))throw Error('OUTCOME_REVIEW_REQUIRED');snapshotKittyDesignRevision(d,o.id,o.revision);}
+        else{const m=state.shared.hearthside?.memories.find(m=>m.id===o.id&&m.revision===o.revision);if(!m||!memoryKeptByEveryone(m,before.members))throw Error('OUTCOME_REVIEW_REQUIRED');this.memoryDesigns(scope,m);if(m.publication&&!await this.memoryVault(scope).isMemoryActiveFor(scope,m.publication))throw Error('OUTCOME_REVIEW_REQUIRED');}
+      }
+      let creative:KittyDesignDocument|null=null,working=household,operation:EncounterCommand=op;
+      if(op.kind==='encounter.create-piece'){
+        if(this.env.HEARTHSIDE_DESIGN_WRITES!=='true'||!current||current.keptMemberIds.length!==2||current.pausedMemberIds.length||await encounterCompositionDigest(current)!==op.digest)throw Error('OUTCOME_REVIEW_REQUIRED');
+        const ids=encounterDesignIdentity(scope.environment,scope.householdId,current.id,op.digest),existing=this.designs.read(ids.designId);
+        const priorOutcome=current.outcomes.find(o=>o.kind==='design'&&o.id===ids.pieceId&&o.designId===ids.designId&&o.recipeDigest===op.digest);
+        if(existing&&!priorOutcome)throw Error('ENCOUNTER_DESIGN_ID_CONFLICT');
+        if(!existing){creative=await createEncounterDesign(current,scope,new Date().toISOString());working=applyAcceptedDesignReference(household,creative,null);}
+        operation={kind:'encounter.outcome',id:op.id,digest:op.digest,outcome:priorOutcome??{kind:'design',id:ids.pieceId,designId:ids.designId,revision:creative!.revision,recipeDigest:op.digest}};
+      }
+      const next=commitHearthside(working,{version:1,id:requestId,scope:{environment:scope.environment,householdId:scope.householdId,memberId:scope.memberId},operation}).household;
+      next.commandReceipts=[];next.restorePoints=[];next.revision=state.sequence+1;next.baseRevision=next.revision;assertAcceptableBooks(next);
+      const split=splitForSync(next,scope.memberId),event:AcceptedEvent={sequence:next.revision,shared:difference(state.shared,split.shared),acceptedAt:new Date().toISOString()};
+      const receipt:Receipt={id,sequence:event.sequence,digest:hash,actor:scope.memberId,postedIds:[],warnings:[],undo:{id,label:'Shared encounter',postedIds:[],actorMemberId:scope.memberId,commandKind:'hearthsideEncounter'},commandKind:'hearthsideEncounter'};
+      const creativeReference=creative?await this.designs.prepare(creative,null):null;
+      const eventText=JSON.stringify(event),eventHash=await digest(event);check();if(this.load().sequence!==state.sequence)throw Error('ENCOUNTER_CHANGED');
+      this.ctx.storage.transactionSync(()=>{if(creative&&creativeReference){this.designs.commit(creative,creativeReference,event.sequence,{actor:scope.memberId,request:id});this.ctx.storage.sql.exec('INSERT INTO creative_broadcast VALUES (?)',event.sequence);}
+        this.writeProjection('shared',event.shared);
+        for(let at=0;at<eventText.length;at+=60000)this.ctx.storage.sql.exec('INSERT INTO journal VALUES (?,?,?)',event.sequence,at/60000,eventText.slice(at,at+60000));
+        this.ctx.storage.sql.exec('INSERT INTO receipts VALUES (?,?,?,?,?)',id,receipt.actor,hash,receipt.sequence,JSON.stringify(receipt));
+        this.ctx.storage.sql.exec('INSERT INTO archive VALUES (?,?)',receipt.sequence,eventHash);this.set('sequence',String(receipt.sequence));});
+      this.state={sequence:receipt.sequence,shared:split.shared,personal:state.personal};if(creative&&creativeReference)this.designs.remember(creative,creativeReference);await this.ctx.storage.sync();await this.archiveBarrier();check();
+      for(const peer of this.ctx.getWebSockets()){const a=peer.deserializeAttachment() as Attachment;if(a.ready&&a.scope){try{this.check(a.scope);await this.send(peer,{type:'event',event:this.visible(event,a.scope.memberId)});}catch{peer.close(4003,'AUTH_EXPIRED');}}}
+      await this.schedule();return {version:1,receipt};
+    });
+  }
+  async validateVaultMemoryCandidate(scope:Scope,candidate:unknown,expectedRevision:number):Promise<VaultMemoryCandidateValidation>{
+    return this.serial(async()=>{
+      const {household}=this.hearthsideMember(scope),value=validateMemoryCandidate(household,scope.memberId,candidate,expectedRevision);
+      this.memoryDesigns(scope,value);const compositionDigest=await memoryCompositionDigest(value);this.hearthsideMember(scope);
+      return {candidate:value,compositionDigest};
+    });
+  }
+  private async memoryAccessNow(scope:Scope,raw:MemoryPublicationBinding,mediaId:string|null){
+    const binding=decodeMemoryPublicationBinding(raw),{state}=this.hearthsideMember(scope),memory=state.shared.hearthside?.memories.find(m=>m.id===binding.memoryId);
+    const current=Boolean(memory&&memory.publication&&!memory.withdrawn&&memory.revision===binding.memoryRevision&&canonical(memory.publication)===canonical(binding)&&(mediaId===null||memory.media.some(m=>m.contentId===mediaId))&&await memoryCompositionDigest(memory)===binding.compositionDigest);
+    this.hearthsideMember(scope);
+    return {current,kept:current&&memoryKeptByEveryone(memory!,state.shared.members.filter(m=>m.active).map(m=>m.id))};
+  }
+  async vaultMemoryAccess(scope:Scope,binding:MemoryPublicationBinding,mediaId:string|null){
+    return this.serial(()=>this.memoryAccessNow(scope,binding,mediaId));
+  }
+  /** Guest service gets a detached allowlist, never a household replica or private media capability. */
+  private async guestCatalogue(scope:Scope){
+    const captured=await this.serial(async()=>{this.guestScope(scope);await this.archiveBarrier();const {state}=this.hearthsideMember(scope);this.guestScope(scope);
+      return {sequence:state.sequence,state:decodeHearthside(state.shared.hearthside),memberIds:state.shared.members.filter(m=>m.active).map(m=>m.id)};
+    });
+    const catalogue=guestSourceCatalogue(captured.state,captured.memberIds,{
+      piece:(designId,pieceId,revision)=>this.serial(async()=>{this.guestScope(scope);const document=this.designs.read(designId);
+        if(!document||document.scope.environment!==scope.environment||document.scope.householdId!==scope.householdId||document.scope.ownerMemberId!==null)return null;
+        const current=projectKittyDesign(document).pieces.find(p=>p.piece.id===pieceId);if(!current)return null;
+        try{assertNestDocumentVisible(this.hearthsideMember(scope).household,scope.memberId,document);const snapshot=snapshotKittyDesignRevision(document,pieceId,revision);return {revision,shared:true,archived:current.status==='archived',piece:snapshot.piece,...(snapshot.appearance?{ornament:snapshot.appearance}:{})};}catch{return null;}
+      }),
+      active:binding=>this.memoryVault(scope).isMemoryActiveFor(scope,binding),
+      media:(id,publicationId)=>this.memoryVault(scope).mediaFor(scope,id,publicationId,'active'),
+    });
+    return {catalogue,unchanged:()=>this.serial(async()=>{this.guestScope(scope);return this.load().sequence===captured.sequence;})};
+  }
+  private guestScope(scope:Scope){this.hearthsideMember(scope);if(scope.environment!=='development'||this.env.HEARTHSIDE_GUESTS_ENABLED!=='true')throw Error('GUEST_DISABLED');}
+  async captureGuestSource(scope:Scope,raw:GuestPrepareInput){
+    if(this.env.HEARTHSIDE_GUEST_PUBLICATION!=='true')throw Error('GUEST_PUBLICATION_DISABLED');
+    const input=decodeGuestPrepare(raw),source=await this.guestCatalogue(scope),capture=await captureGuestSources(input,source.catalogue);
+    if(!await source.unchanged())throw Error('GUEST_SOURCE_CHANGED');return capture;
+  }
+  async validateGuestSource(scope:Scope,raw:GuestSourceProof,mode:'activation'|'visit'){
+    try{if(mode!=='activation'&&mode!=='visit')return false;const proof=decodeGuestSourceProof(raw),source=await this.guestCatalogue(scope);
+      return await validateGuestSources(proof,source.catalogue,mode)&&await source.unchanged();
+    }catch{return false;}
+  }
+  private memoryVault(scope:Scope){
+    if(!this.env.HEARTHSIDE_VAULTS)throw Error('HEARTHSIDE_CONTENT_PUBLICATION_REQUIRED');
+    return this.env.HEARTHSIDE_VAULTS.get(this.env.HEARTHSIDE_VAULTS.idFromName(`${scope.environment}/${scope.householdId}`)) as unknown as {
+      checkMemoryPublicationFor(scope:Scope,binding:MemoryPublicationBinding,candidate:MemoryPublicationCandidate,mode:'compose'|'keep'):Promise<VaultMemoryEvidence>;
+      checkEncounterRevealFor(scope:Scope,binding:EncounterRevealBinding):Promise<EncounterRevealBinding>;
+      authorizeEncounterRevealFor(scope:Scope,binding:EncounterRevealBinding,authorization:string):Promise<EncounterRevealBinding>;
+      isMemoryRevokedFor(scope:Scope,binding:MemoryPublicationBinding):Promise<boolean>;
+      isMemoryActiveFor(scope:Scope,binding:MemoryPublicationBinding):Promise<boolean>;
+      mediaFor(scope:Scope,id:string,publicationId:string,mode:'active'):Promise<Response>;
+    };
+  }
+  /** Trusted Vault RPC only. These private receipts never enter the household journal. */
+  async acceptVaultPublication(scope:Scope,reference:VaultReference){
+    return this.serial(async()=>{
+      const check=()=>{this.check(scope);if(scope.environment!=='development'||(reference.kind==='guest'?this.env.HEARTHSIDE_GUEST_PUBLICATION!=='true'||this.env.HEARTHSIDE_GUESTS_ENABLED!=='true':this.env.HEARTHSIDE_VAULT_PUBLICATION!=='true'))throw Error('PUBLICATION_DISABLED');if(!this.load().shared.members.some(member=>member.active&&member.id===scope.memberId))throw Error('FORBIDDEN');};
+      check();if(reference.kind==='shared-memory'&&(!reference.memory||!(await this.memoryAccessNow(scope,reference.memory,null)).kept))throw Error('HEARTHSIDE_MEMORY_REVIEW_REQUIRED');
+      const accepted=await this.vaultAcceptances.accept(scope,reference,check);await this.ctx.storage.sync();check();return accepted;
+    });
+  }
+  async vaultMediaReferenced(scope:Scope,mediaId:string){
+    return this.serial(async()=>{
+      this.check(scope);const state=this.load();if(!state.shared.members.some(member=>member.active&&member.id===scope.memberId))throw Error('FORBIDDEN');
+      return Boolean(state.shared.hearthside?.memories.some(memory=>!memory.withdrawn&&memory.media.some(media=>media.contentId===mediaId)));
+    });
+  }
+  /** Creative documents share authenticated authority and durability, never financial commands. */
+  async design(scope:Scope, raw:unknown) {
+    return this.serial(async()=>{
+      this.check(scope);
+      await this.archiveBarrier();
+      this.check(scope);
+      const state=this.load(), personal=state.personal.get(scope.memberId);
+      if(!personal || !state.shared.members.some(member=>member.active&&member.id===scope.memberId))throw Error('FORBIDDEN');
+      designRecord(raw,['version','kind','designId','bankId','nestSource','operation','pieceId','revision','knownRevision'],['version','kind']);
+      if(raw.version!==1)throw Error('KITTY_DESIGN_UPDATE_REQUIRED');
+      const household=assembleHousehold(state.shared,personal,{linked:true});
+      const reply=(document:KittyDesignDocument,receipt:KittyDesignReceipt|null,sequence:number)=>{
+        if(raw.knownRevision!==undefined){
+          designInteger(raw.knownRevision);
+          if(raw.knownRevision>document.revision)throw Error('DESIGN_REVISION_AHEAD');
+          return {version:1,delta:{designId:document.id,baseRevision:raw.knownRevision,revision:document.revision,entries:document.operations.slice(raw.knownRevision as number)},receipt,sequence};
+        }
+        return {version:1,document,receipt,sequence};
+      };
+      const read=(id:string)=>{
+        const document=this.designs.read(id);
+        if(!document || document.scope.ownerMemberId!==null&&document.scope.ownerMemberId!==scope.memberId)throw Error('DESIGN_NOT_FOUND');
+        if(document.scope.environment!==scope.environment||document.scope.householdId!==scope.householdId)throw Error('SCOPE_MISMATCH');
+        assertNestDocumentVisible(household,scope.memberId,document);return document;
+      };
+      if(raw.kind==='read'||raw.kind==='snapshot') {
+        designRecord(raw,raw.kind==='read'?['version','kind','designId','knownRevision']:['version','kind','designId','pieceId','revision'],raw.kind==='read'?['version','kind','designId']:['version','kind','designId','pieceId','revision']);designId(raw.designId);
+        const document=read(raw.designId);
+        if(raw.kind==='snapshot'){designId(raw.pieceId);designInteger(raw.revision);return {version:1,snapshot:snapshotKittyDesignRevision(document,raw.pieceId,raw.revision),sequence:state.sequence};}
+        return reply(document,null,state.sequence);
+      }
+      if(this.env.HEARTHSIDE_DESIGN_WRITES!=='true'||scope.environment==='production')throw Error('KITTY_DESIGN_WRITES_PAUSED');
+      let document:KittyDesignDocument,bankId:string|null,id:string,creativeReceipt:KittyDesignReceipt|null=null;
+      if(raw.kind==='create') {
+        designRecord(raw,['version','kind','designId','bankId','nestSource'],['version','kind','designId','bankId']);designId(raw.designId);if(raw.bankId!==null)designId(raw.bankId);
+        bankId=raw.bankId as string|null;
+        const nest=raw.nestSource===undefined?null:visibleNestSource(household,scope.memberId,decodeNestSource(raw.nestSource));
+        if(nest&&bankId!==null)throw Error('DESIGN_NEST_GOAL_CONFLICT');
+        if(nest){const existing=this.designs.forNest(nest.source,nest.source.view==='personal'?scope.memberId:null);if(existing){document=read(existing.id);return {version:1,document,receipt:null,sequence:state.sequence};}if(nest.row.designRef)throw Error('DESIGN_BANK_REFERENCE_RECOVERY_REQUIRED');}
+        const goal=bankId===null?null:household.goals.find(g=>g.id===bankId&&(g.shared||g.ownerMemberId===scope.memberId));
+        if(bankId!==null&&!goal)throw Error('DESIGN_BANK_UNAVAILABLE');
+        if(goal?.envelope?.designRef){document=read(goal.envelope.designRef.designId);return {version:1,document,receipt:null,sequence:state.sequence};}
+        const bankHistory=bankId===null?null:this.designs.forBank(bankId);
+        if(bankHistory)throw Error('DESIGN_BANK_REFERENCE_RECOVERY_REQUIRED');
+        const prior=this.designs.header(raw.designId);
+        if(prior){document=read(raw.designId);if(prior.bank!==bankId||JSON.stringify(document.nest??null)!==JSON.stringify(nest?.source??null))throw Error('DESIGN_ID_CONFLICT');return {version:1,document,receipt:null,sequence:state.sequence};}
+        const designScope={environment:scope.environment,householdId:scope.householdId,ownerMemberId:goal&&!goal.shared?scope.memberId:null};
+        document=nest?migrateNestDesign(household,scope.memberId,raw.designId,nest.source):goal?migrateLegacyKittyStudio(raw.designId,designScope,goal.envelope?.studio,`migration:${await digest([raw.designId,bankId])}`):createKittyDesignDocument(raw.designId,designScope);
+        id=`design-create:${document.id}`;
+      } else if(raw.kind==='operate') {
+        designRecord(raw,['version','kind','operation','knownRevision'],['version','kind','operation']);const operation=decodeKittyDesignOperation(raw.operation);
+        if(raw.knownRevision!==undefined)designInteger(raw.knownRevision);
+        document=read(operation.designId);if(raw.knownRevision!==undefined&&raw.knownRevision>document.revision)throw Error('DESIGN_REVISION_AHEAD');bankId=this.designs.header(document.id)!.bank;
+        const acceptance=acceptKittyDesignOperation(document,operation,{environment:scope.environment,householdId:scope.householdId,actorId:scope.memberId,order:document.revision+1,acceptedAt:new Date().toISOString()});
+        if(acceptance.duplicate)return reply(document,acceptance.receipt,state.sequence);
+        document=acceptance.document;creativeReceipt=acceptance.receipt;id=`design-op:${await digest([document.id,operation.id])}`;
+      } else throw Error('KITTY_DESIGN_OPERATION_UNSUPPORTED');
+      const intentHash=await digest({scope:`${scope.environment}/${scope.householdId}`,actor:scope.memberId,raw});
+      const existingReceipt=this.ctx.storage.sql.exec('SELECT id FROM receipts WHERE id=?',id).toArray()[0];
+      if(existingReceipt)throw Error('DESIGN_RECEIPT_CONFLICT');
+      const acceptedAt=new Date().toISOString();
+      const projected=applyAcceptedDesignReference(household,document,bankId,acceptedAt);
+      const split=splitForSync({...projected,revision:state.sequence+1,baseRevision:state.sequence+1,commandReceipts:[],restorePoints:[]},scope.memberId);
+      const event:AcceptedEvent={sequence:state.sequence+1,shared:difference(state.shared,split.shared),...(document.scope.ownerMemberId!==null?{personal:difference(personal,split.personal),memberId:scope.memberId}:{}),acceptedAt};
+      const receipt:Receipt={id,actor:scope.memberId,digest:intentHash,sequence:event.sequence,postedIds:[],warnings:[],commandKind:'kittyDesignOperation',undo:{id,label:'Creative edit',postedIds:[],actorMemberId:scope.memberId,commandKind:'kittyDesignOperation'},...(document.scope.ownerMemberId!==null?{persistenceScope:'member-personal',personalMemberId:scope.memberId}:{})};
+      const eventText=JSON.stringify(event);
+      const byteLength=(v:unknown)=>new TextEncoder().encode(JSON.stringify(v)).length;
+      if(byteLength({event,receipt})>WIRE_LIMIT-256*1024 || [...state.personal].some(([member,own])=>byteLength({sequence:event.sequence,shared:split.shared,personal:member===scope.memberId&&event.personal?split.personal:own})>WIRE_LIMIT-256*1024))throw Error('HOUSEHOLD_STORAGE_LIMIT');
+      const reference=await this.designs.prepare(document,bankId),eventHash=await digest(event);
+      this.check(scope);
+      this.ctx.storage.transactionSync(()=>{
+        this.designs.commit(document,reference,event.sequence,{actor:scope.memberId,request:id});
+        this.writeProjection('shared',event.shared);if(event.personal)this.writeProjection(scope.memberId,event.personal);
+        for(let at=0;at<eventText.length;at+=60000)this.ctx.storage.sql.exec('INSERT INTO journal VALUES (?,?,?)',event.sequence,at/60000,eventText.slice(at,at+60000));
+        this.ctx.storage.sql.exec('INSERT INTO receipts VALUES (?,?,?,?,?)',id,receipt.actor,receipt.digest,receipt.sequence,JSON.stringify(receipt));
+        this.ctx.storage.sql.exec('INSERT INTO archive VALUES (?,?)',event.sequence,eventHash);this.set('sequence',String(event.sequence));
+        this.ctx.storage.sql.exec('INSERT INTO creative_broadcast VALUES (?)',event.sequence);
+      });
+      this.state={sequence:event.sequence,shared:split.shared,personal:event.personal?new Map(state.personal).set(scope.memberId,split.personal):state.personal};
+      await this.ctx.storage.sync();
+      this.designs.remember(document,reference);
+      // Publish only after both the immutable design and accepted ledger event are recoverable.
+      await this.archiveBarrier();this.check(scope);
+      await this.schedule();
+      return reply(document,creativeReceipt,event.sequence);
+    }).catch(error=>{if(error instanceof KittyDesignError)throw Error(error.code);throw error;});
+  }
   /** Workspace reads never activate a Plan or import/bootstrap financial state. */
   async workspaceQuery(scope: Scope, query: { name: string; args: Record<string, unknown>; view: 'personal' | 'household' }) {
     return this.serial(async () => {
@@ -897,6 +1210,15 @@ export class LedgerRoom extends DurableObject<Env> {
         ...executeWorkspaceActionQuery(query.name, query.args, { household, memberId: scope.memberId, view: query.view, today: todayKey(new Date(), 'America/Toronto') }) };
       const result = executeHerculesReadToolPlan(household, { calls: [{ id: 'workspace-read', name: query.name, args: query.args }] }, todayKey(new Date(), 'America/Toronto'), { memberId: scope.memberId, view: query.view });
       return { scope: query.view, acceptedSequence: state.sequence, observedAt: new Date().toISOString(), results: result.results };
+    });
+  }
+  /** A fresh shared-story read does not activate plans, bootstrap books, or expose private media. */
+  async hearthsideContent(scope:Scope):Promise<HearthsideContentSnapshot>{
+    return this.serial(async()=>{
+      this.check(scope);await this.archiveBarrier();this.check(scope);const state=this.load();
+      const memberIds=state.shared.members.filter(member=>member.active).map(member=>member.id);
+      if(!memberIds.includes(scope.memberId)||!state.personal.has(scope.memberId))throw Error('FORBIDDEN');
+      return {version:1,environment:scope.environment,householdId:scope.householdId,sequence:state.sequence,memberIds,state:decodeHearthside(state.shared.hearthside)};
     });
   }
   async snapshot(scope: Scope) {
@@ -965,6 +1287,39 @@ export class LedgerRoom extends DurableObject<Env> {
     }
   }
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
+    if(typeof message==='string'&&message.length<=8192){
+      try{
+        const value=JSON.parse(message);
+        if(typeof value.type==='string'&&value.type.startsWith('creative-')){
+          const input=decodeCreativePresence(value),a=ws.deserializeAttachment() as Attachment;
+          if(a.lane!=='presence'||!a.scope)throw Error('FORBIDDEN');this.check(a.scope);
+          if(!this.load().shared.members.some(member=>member.active&&member.id===a.scope!.memberId))throw Error('FORBIDDEN');
+          const previous=a.creative;
+          if(input.type==='creative-leave')delete a.creative;
+          else if(input.type==='creative-join'){
+            const header=this.designs.header(input.target.designId);
+            if(!header || header.owner!==null&&header.owner!==a.scope.memberId)throw Error('DESIGN_NOT_FOUND');
+            if(Date.now()-(a.creativeJoinAt??0)<40)return;
+            a.creativeJoinAt=Date.now();a.creative={target:input.target,seenAt:Date.now()};
+          } else {
+            if(!a.creative||Date.now()-a.creative.seenAt>12000)throw Error('CREATIVE_JOIN_REQUIRED');
+            if(input.stroke!==null&&Date.now()-(a.previewAt??0)<40)return;
+            a.previewAt=Date.now();a.creative.seenAt=Date.now();
+          }
+          ws.serializeAttachment(a);
+          const current=a.creative,target=current?.target??previous?.target;
+          if(!target)return;
+          const deviceId=`${a.scope.memberId}:${target.deviceId}`;
+          const payload=input.type==='creative-leave'?{type:'creative-left',deviceId}:{type:'creative-peer',memberId:a.scope.memberId,deviceId,target,seenAt:Date.now(),...(input.type==='creative-preview'?{gestureId:input.gestureId,stroke:input.stroke}:{})};
+          for(const peer of this.ctx.getWebSockets()){
+            const p=peer.deserializeAttachment() as Attachment;
+            if(peer===ws||p.lane!=='presence'||!p.scope||!p.creative||Date.now()-p.creative.seenAt>12000||p.creative.target.designId!==target.designId||p.creative.target.pieceId!==target.pieceId)continue;
+            try{this.check(p.scope);peer.send(JSON.stringify(payload));if(input.type==='creative-join')ws.send(JSON.stringify({type:'creative-peer',memberId:p.scope.memberId,deviceId:`${p.scope.memberId}:${p.creative.target.deviceId}`,target:p.creative.target,seenAt:p.creative.seenAt}));}catch{peer.close(4003,'ACCESS_CHANGED');}
+          }
+          return;
+        }
+      }catch{ws.close(4000,'INVALID_CREATIVE_PRESENCE');return;}
+    }
     if (typeof message === "string" && message.length <= 1024) {
       try {
         const value = JSON.parse(message);
@@ -1118,9 +1473,11 @@ export class LedgerRoom extends DurableObject<Env> {
           await this.send(ws, {
             type: "ready",
             companionProfileVersion: 1,
+            hearthsideVersion: 1,
+            kittyDesignVersion: 1, nestDesignVersion:1,
             companionPlayVersion: 1,
             companionDiscoveryVersion: 1,
-            companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, kittyNestVersion: 1, pathWorldVersion: 1, pathEraVersion: 1,
+            companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, kittyNestVersion: 1, chapterAgreementVersion: 1, pathWorldVersion: 1, pathEraVersion: 1,
             fundModelVersion: 2,
             chapterVersion: 1,
             herculesActionsEnabled: herculesActionsEnabled(a.scope.environment, this.env.HERCULES_ACTIONS_ENABLED),
@@ -1157,6 +1514,7 @@ export class LedgerRoom extends DurableObject<Env> {
           return;
         }
         admission = true;
+        rejectLegacyWinPublication(command.steps);
         // Pause new actions without losing accepted receipts or the ability to cancel pending claims.
         if(command.steps.some(step=>step.kind==='executeHerculesAction')&&!herculesActionsEnabled(a.scope.environment, this.env.HERCULES_ACTIONS_ENABLED))throw new Error('HERCULES_ACTIONS_PAUSED');
         const prepared = await prepareCommand(
@@ -1180,8 +1538,47 @@ export class LedgerRoom extends DurableObject<Env> {
           },
           (id) => this.restorePoint(id),
           this.booksGuards,
+          bankId=>{const document=this.designs.forBank(bankId);return document?{ownerMemberId:document.scope.ownerMemberId,reference:kittyDesignReference(document)}:null;},
+          this.sharedLifeRestoreDesignAccess(a.scope),
+          ()=>Number(this.meta("acl","1")),
         );
         this.check(a.scope);
+        if(command.steps.some(step=>step.kind==='commitHearthside'&&String((step.args[0] as {operation?:{kind?:string}})?.operation?.kind).startsWith('encounter.')))throw Error('HEARTHSIDE_ENCOUNTER_AUTHORITY_REQUIRED');
+        // Private media evidence is supplied only by the Vault, after ordinary canonical admission.
+        for(const step of command.steps){
+          if(step.kind!=='commitHearthside')continue;
+          const op=(step.args[0] as {operation?:{kind?:string;id?:string;expectedRevision?:number;value?:MemoryComposition}})?.operation;
+          if(op?.kind==='room.capture'||op?.kind==='room.keep'){
+            const frame=op.kind==='room.capture'?decodeRecordedRoom(op.value):prepared.shared.hearthside?.roomHistory?.find(row=>row.id===op.id);
+            if(!frame)throw Error('HEARTHSIDE_ROOM_HISTORY_MISSING');
+            for(const item of frame.items){if(!item.design)continue;const document=this.designs.read(item.design.documentId);
+              if(!document||document.scope.ownerMemberId!==null||document.scope.environment!==a.scope.environment||document.scope.householdId!==a.scope.householdId)throw Error('HEARTHSIDE_SHARED_DESIGN_REQUIRED');
+              snapshotKittyDesignRevision(document,item.design.pieceId,item.design.revision);
+            }
+          }
+          if(op?.kind==='studio.handoff'){
+            const handoff=decodeStudioHandoff(op.value),document=this.designs.read(handoff.design.documentId);
+            if(!document||document.scope.ownerMemberId!==null||document.scope.environment!==a.scope.environment||document.scope.householdId!==a.scope.householdId)throw Error('HEARTHSIDE_SHARED_DESIGN_REQUIRED');
+            snapshotKittyDesignRevision(document,handoff.design.pieceId,handoff.design.revision);
+            if(!handoff.withdrawn&&!projectKittyDesign(document).pieces.some(row=>row.piece.id===handoff.design.pieceId&&row.status!=='archived'))throw Error('HEARTHSIDE_PIECE_UNAVAILABLE');
+          }
+          if(!op||!['memory.compose','memory.keep','memory.withdraw'].includes(op.kind??''))continue;
+          const id=op.kind==='memory.compose'?op.value?.id:op.id;
+          const memory=prepared.shared.hearthside?.memories.find(m=>m.id===id);
+          if(!memory)throw Error('HEARTHSIDE_MEMORY_MISSING');this.memoryDesigns(a.scope,memory);
+          if(op.kind==='memory.withdraw'){
+            const previous=state.shared.hearthside?.memories.find(m=>m.id===id);
+            if(previous?.publication&&!await this.memoryVault(a.scope).isMemoryRevokedFor(a.scope,previous.publication))throw Error('HEARTHSIDE_REVOKE_ACCESS_FIRST');
+          }else if(memory.media.length){
+            if(this.env.HEARTHSIDE_VAULT_PUBLICATION!=='true'||a.scope.environment!=='development'||!memory.publication)throw Error('HEARTHSIDE_CONTENT_PUBLICATION_REQUIRED');
+            const mode=op.kind==='memory.compose'?'compose':'keep',evidence=await this.memoryVault(a.scope).checkMemoryPublicationFor(a.scope,memory.publication,memory,mode);
+            if(canonical(evidence.binding)!==canonical(memory.publication)||canonical([...evidence.mediaIds].sort())!==canonical([...new Set(memory.media.map(m=>m.contentId))].sort())||mode==='keep'&&evidence.approvedMemberId!==a.scope.memberId)throw Error('HEARTHSIDE_MEMORY_REVIEW_REQUIRED');
+            if(await memoryCompositionDigest(memory)!==memory.publication.compositionDigest)throw Error('HEARTHSIDE_MEMORY_REVIEW_REQUIRED');
+          }
+          this.hearthsideMember(a.scope);
+          if(this.load().sequence!==state.sequence)throw Error('HEARTHSIDE_CHANGED');
+          if(op.kind==='memory.compose')validateMemoryCandidate(assembleHousehold(state.shared,state.personal.get(a.scope.memberId)!,{linked:true}),a.scope.memberId,op.value,op.expectedRevision!);
+        }
         const eventText = JSON.stringify(prepared.event),
           eventHash = await digest(prepared.event);
         this.check(a.scope);
@@ -1408,6 +1805,7 @@ export class LedgerRoom extends DurableObject<Env> {
         authorityInstance: this.meta("authorityInstance"),
         event,
         receipt: receipt ? JSON.parse(receipt.data) : null,
+        designs: this.designs.eventReferences(row.sequence),
       });
       await this.env.LEDGER_ARCHIVE.put(
         `${prefix}/events/${row.sequence}`,
@@ -1427,6 +1825,15 @@ export class LedgerRoom extends DurableObject<Env> {
         row.sequence,
       );
       await this.ctx.storage.sync();
+    }
+    // A failed R2 barrier leaves this outbox intact. Receipt recovery must also wake existing peers.
+    for(const {sequence} of this.ctx.storage.sql.exec<{sequence:number}>('SELECT sequence FROM creative_broadcast ORDER BY sequence').toArray()){
+      const event=this.readEvent(sequence);
+      for(const peer of this.ctx.getWebSockets()){
+        const attachment=peer.deserializeAttachment() as Attachment;
+        if(attachment.ready&&attachment.scope&&attachment.lane!=='presence')try{this.check(attachment.scope);await this.send(peer,{type:'event',event:this.visible(event,attachment.scope.memberId)});}catch{peer.close(4003,'AUTH_EXPIRED');}
+      }
+      this.ctx.storage.sql.exec('DELETE FROM creative_broadcast WHERE sequence=?',sequence);
     }
   }
   async alarm() {

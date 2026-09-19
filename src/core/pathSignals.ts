@@ -3,6 +3,7 @@ import { PATH_SIGNALS, pathCategoryMappings, type PathCategorySignal, type PathS
 import type { Household } from "./types.ts";
 import { belongsToSharedLedger } from "./visibility.ts";
 import { fundModelMode, householdFundMarker, SPENDING_UMBRELLAS, umbrellaOfCategory, type UmbrellaId } from "./fundRules.ts";
+import { projectMoveTask, projectRitualTasks } from "./chapterTasks.ts";
 
 /**
  * Our Path world read-model (D-262). Pure: household-scope facts in, one row per
@@ -97,6 +98,8 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
   const contributions = (household.goalContributions ?? []).filter((row) => sharedGoalIds.has(row.goalId));
   const chapters = household.chapters ?? [];
   const wins = household.wins ?? [];
+  const moves = (household.moves ?? []).map(row => projectMoveTask(household, row));
+  const rituals = (household.rituals ?? []).map(row => projectRitualTasks(household, row));
   const sitdowns = household.sitDownSessions ?? [];
   // The one check-in (Plan Studio v3) closes a Shared Sitdown session; a closed one counts as that month's Sitdown.
   const sorted = fundModelMode(household) === 2;
@@ -208,7 +211,7 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
     let together = 0;
     const reasons: string[] = [];
     if (sitdowns.some((row) => row.monthKey === key) || checkIns.some((row) => row.monthKey === key)) { together += 0.4; reasons.push("a Sitdown"); }
-    const movesDone = (household.moves ?? []).filter((row) => row.state === "done" && monthOfIso(row.completedAt) === key).length;
+    const movesDone = moves.filter((row) => row.state === "done" && monthOfIso(row.completedAt) === key).length;
     if (movesDone) { together += 0.15 * movesDone; reasons.push(`${movesDone} Move${movesDone === 1 ? "" : "s"} done`); }
     const winsHere = wins.filter((row) => monthOfIso(row.shownAt) === key);
     if (winsHere.length) { together += 0.1 * winsHere.length; reasons.push(`${winsHere.length} Win${winsHere.length === 1 ? "" : "s"}`); }
@@ -217,7 +220,7 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
     if (together > 0) { scores.together = clamp(together); why.together = reasons.join(", "); }
 
     // Rhythm: Ritual days held.
-    const held = (household.rituals ?? []).reduce((count, row) => count + row.heldOn.filter((day) => day.startsWith(key)).length, 0);
+    const held = rituals.reduce((count, row) => count + row.heldOn.filter((day) => day.startsWith(key)).length, 0);
     if (held) { scores.rhythm = clamp(held * 0.2); why.rhythm = `Rituals held on ${held} day${held === 1 ? "" : "s"}`; }
 
     // Learning and Chapter outcomes.

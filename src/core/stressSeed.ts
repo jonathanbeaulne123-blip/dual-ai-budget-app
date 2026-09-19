@@ -1,3 +1,4 @@
+import {currentSharedLifeRecords} from "../hearthside/creativeContinuity.ts";
 import { addDays, kitchenSeason, monthKeyFromDateKey, shiftMonthKey, weekdaySunday0, type DateKey } from "./calendar.ts";
 import {
   addAppointment,
@@ -298,8 +299,7 @@ function keepIdentityWhileErasing(current: Household, blank: Household): Househo
   return {
     ...blank,
     companionProfile: current.companionProfile,
-    companionGallery: current.companionGallery,
-    playRoom: current.playRoom,
+    ...currentSharedLifeRecords(current),
     householdId: current.householdId,
     inviteCode: current.inviteCode,
     linked: current.linked,
@@ -375,8 +375,7 @@ export function preserveContinuityForStressSeed(current: Household, stress: Hous
   return {
     ...stress,
     companionProfile: current.companionProfile,
-    companionGallery: current.companionGallery,
-    playRoom: current.playRoom,
+    ...currentSharedLifeRecords(current),
     householdId: current.householdId,
     inviteCode: current.inviteCode,
     linked: current.linked,

@@ -31,12 +31,17 @@ export type LedgerCommand = {
   /** Client understands signed openings and append-only account history lineage. */
   accountHistoryVersion?: 1;
   companionProfileVersion?: 1;
+  hearthsideVersion?: 1;
+  hearthsideEncounterVersion?:1;
+  kittyDesignVersion?: 1;
+  nestDesignVersion?:1;
   companionPlayVersion?: 1;
   companionWardrobeVersion?: 1;
   companionWorkflowVersion?: 1;
   nativeCalendarVersion?: 1;
   /** Client understands planner tasks and lists (D-245). */
   taskPlannerVersion?: 1;
+  chapterAgreementVersion?: 1;
   kittyNestVersion?: 1;
   /** Client understands the Our Path world collection (D-262). */
   pathWorldVersion?: 1;
@@ -98,8 +103,11 @@ export async function commandFromCapture(
     version: 2,
     accountHistoryVersion: 1,
     companionProfileVersion: 1,
+    hearthsideVersion: 1,
+    hearthsideEncounterVersion:1,
+    kittyDesignVersion: 1, nestDesignVersion:1,
     companionPlayVersion: 1,
-    companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, kittyNestVersion: 1, pathWorldVersion: 1, pathEraVersion: 1,
+    companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, kittyNestVersion: 1, chapterAgreementVersion: 1, pathWorldVersion: 1, pathEraVersion: 1,
     fundModelVersion: clientFundModelVersion(),
     chapterVersion: 1,
     id,
@@ -130,6 +138,7 @@ export function parseCommand(value: unknown): LedgerCommand {
     (c.goalEnvelopeVersion !== undefined && c.goalEnvelopeVersion !== 1) ||
     (c.planDecisionVersion !== undefined && c.planDecisionVersion !== 1) ||
     (c.nativeCalendarVersion !== undefined && c.nativeCalendarVersion !== 1) ||
+    (c.chapterAgreementVersion !== undefined && c.chapterAgreementVersion !== 1) ||
     (c.kittyNestVersion !== undefined && c.kittyNestVersion !== 1) ||
     (c.taskPlannerVersion !== undefined && c.taskPlannerVersion !== 1) ||
     (c.pathWorldVersion !== undefined && c.pathWorldVersion !== 1) ||
@@ -137,6 +146,10 @@ export function parseCommand(value: unknown): LedgerCommand {
     (c.fundModelVersion !== undefined && c.fundModelVersion !== 1 && c.fundModelVersion !== 2) ||
     (c.chapterVersion !== undefined && c.chapterVersion !== 1) ||
     (c.companionWorkflowVersion !== undefined && c.companionWorkflowVersion !== 1) ||
+    (c.hearthsideEncounterVersion !== undefined && c.hearthsideEncounterVersion !== 1) ||
+    (c.hearthsideVersion !== undefined && c.hearthsideVersion !== 1) ||
+    (c.nestDesignVersion !== undefined && c.nestDesignVersion !== 1) ||
+    (c.kittyDesignVersion !== undefined && c.kittyDesignVersion !== 1) ||
     (c.companionPlayVersion !== undefined && c.companionPlayVersion !== 1) ||
     (c.companionWardrobeVersion !== undefined && c.companionWardrobeVersion !== 1) ||
     !/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(c.id) ||

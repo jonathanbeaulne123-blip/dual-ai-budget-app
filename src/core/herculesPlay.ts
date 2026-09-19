@@ -1,6 +1,6 @@
 import {projectedExpenseEffect,transactionProjection} from './budget.ts';
 import type {Household,CommitResult} from './types.ts';
-import type {CompanionScope} from './herculesCompanionContracts.ts';
+import {COMPANION_SLOTS,validateLookForWear,type CompanionScope,type LookV1} from './herculesCompanionContracts.ts';
 import {companionFor} from './herculesCompanion.ts';
 import {captureCommand} from '../ledgerSync/capture.ts';
 import {matchPlanEvidence} from './planProjection.ts';
@@ -8,6 +8,7 @@ import {currentPlanVersion} from './planSystem.ts';
 import {kittyBanksInView} from './kittyBanks.ts';
 import {todayKey} from './calendar.ts';
 import {validatePlayEnvelope,decodePlayOperation,decodePlayRoom,decodePlayPrivate,decodePlayDecor,decodePortrait,decodePlayPlacement,PLAY_SLOTS,PLAY_DISCOVERIES,PLAY_REWARDS,PLAY_THEMES,type PlayOperation,type PlayReward,type PlayAward} from './playContracts.ts';
+import {FITTING_MANIFEST} from '../wardrobe/catalogue.ts';
 export const hasPlayData=(h:Household)=>Boolean(h.playRoom||h.companionProfile?.play||h.companionProfile?.wornLook.value?.portrait||h.companionProfile?.savedLooks.some(l=>l.value?.portrait)||h.companionGallery?.some(g=>g.value?.look.portrait));
 export function isPlayStep(step:{kind:string;args:unknown[]}):boolean {
  if(step.kind==='commitCompanionPlay')return true;
@@ -17,6 +18,12 @@ export function isPlayStep(step:{kind:string;args:unknown[]}):boolean {
 }
 export const playRoomFor=(h:Household)=>decodePlayRoom(h.playRoom);
 export const playPrivateFor=(h:Household,memberId:string)=>decodePlayPrivate(companionFor(h,memberId).play);
+/** Live gallery validation revokes a staged outfit as soon as its published source changes or is withdrawn. */
+export function stageOutfitFor(h:Household):LookV1|null{
+ const stage=playRoomFor(h).stageOutfit.value;if(!stage)return null;const source=h.companionGallery?.find(row=>row.id===stage.galleryId&&row.revision===stage.galleryRevision)?.value;
+ if(!source)return null;
+ try{const publicLook=validateLookForWear(source.look,FITTING_MANIFEST),look:LookV1={version:1,id:'shared-stage-outfit',name:'Shared stage outfit',catalogueVersion:stage.catalogueVersion,selections:structuredClone(stage.selections)};validateLookForWear(look,FITTING_MANIFEST);if(look.catalogueVersion!==publicLook.catalogueVersion||COMPANION_SLOTS.some(slot=>look.selections[slot]?.itemId!==publicLook.selections[slot]?.itemId||look.selections[slot]?.variantId!==publicLook.selections[slot]?.variantId))return null;return look;}catch{return null;}
+}
 function acceptedBankBacking(h:Household,goalId:string,memberId:string,asOf:string) {
  const evidence=matchPlanEvidence(h,{sourceReference:{type:'goal',id:goalId}},asOf.slice(0,7),asOf,memberId,'household');
  const fundIds=new Set((h.fundKittyAllocations??[]).filter(a=>a.goalId===goalId).map(a=>a.id));
@@ -80,6 +87,10 @@ export const commitCompanionPlay=captureCommand('commitCompanionPlay',(h:Househo
  }else if(op.kind==='pin'){
   if(typeof op.pinned!=='boolean'||!kittyBanksInView(h,'household',memberId).some(g=>g.id===op.goalId))throw Error('SHARED_BANK_REQUIRED');
   room.pinnedGoals=room.pinnedGoals.filter(id=>id!==op.goalId);if(op.pinned){if(room.pinnedGoals.length>=3)throw Error('THREE_PINNED_BANKS');room.pinnedGoals.push(op.goalId);}shared=true;
+ }else if(op.kind==='stage-outfit'){
+  revision(room.stageOutfit.revision,op.expectedRevision);let value=null;
+  if(op.galleryId!==null){const source=h.companionGallery?.find(row=>row.id===op.galleryId);if(!source?.value)throw Error('SHARED_STAGE_OUTFIT_REQUIRED');if(source.revision!==op.expectedGalleryRevision)throw Error('PLAY_STAGE_OUTFIT_CHANGED');const look=validateLookForWear(source.value.look,FITTING_MANIFEST);value={galleryId:source.id,galleryRevision:source.revision,catalogueVersion:look.catalogueVersion,selections:structuredClone(look.selections)};}
+  room.stageOutfit={revision:op.expectedRevision+1,value};shared=true;
  }else throw Error('PLAY_OPERATION_UNKNOWN');
  const next:Household={...h,...(shared?{playRoom:decodePlayRoom(room)}:{}),companionProfile:{...profile,play:decodePlayPrivate(personal)}};
  return {household:next,warnings:[],postedIds:[],...(!shared?{persistenceScope:'member-personal' as const,personalMemberId:memberId}:{}),undo:{id:input.id,label:'Hercules Play',snapshot:h,postedIds:[],commandKind:'hercules-play'}};

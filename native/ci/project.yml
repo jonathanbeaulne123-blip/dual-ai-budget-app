@@ -1,0 +1,50 @@
+name: HearthsideNativeChecks
+options:
+  xcodeVersion: "26.3"
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    CODE_SIGNING_ALLOWED: NO
+    CODE_SIGNING_REQUIRED: NO
+    SWIFT_VERSION: "5.0"
+    GENERATE_INFOPLIST_FILE: YES
+    ENABLE_TESTABILITY: YES
+packages:
+  Capacitor:
+    url: https://github.com/ionic-team/capacitor-swift-pm.git
+    exactVersion: "8.5.2"
+targets:
+  HearthsideNative:
+    type: framework
+    platform: iOS
+    sources:
+      - ../plugin/ios/Sources/HearthsideNative
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.hearth.hearthside.native-checks
+    dependencies:
+      - package: Capacitor
+        product: Capacitor
+      - package: Capacitor
+        product: Cordova
+  HearthsideNativeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - ../plugin/ios/Tests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.hearth.hearthside.native-checks.tests
+    dependencies:
+      - target: HearthsideNative
+schemes:
+  HearthsideNativeChecks:
+    build:
+      targets:
+        HearthsideNative: all
+        HearthsideNativeTests: [test]
+    test:
+      gatherCoverageData: false
+      targets:
+        - HearthsideNativeTests

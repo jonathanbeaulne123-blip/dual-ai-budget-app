@@ -1,12 +1,26 @@
 import { describe, expect, it } from "vitest";
 import { catalogHousehold, splitForSync, assembleHousehold } from "../src/core/index.ts";
-import { addRitual, chapterMonth, chapterMonths, chapterReminder, closeChapter, closeChapterAtSitdown, openChapter, openChapterFor, shapeChapters } from "../src/core/chapters.ts";
+import { addRitual, chapterMonth, chapterMonths, chapterReminder, closeChapter as closeCommand, closeChapterAtSitdown as closeMonthCommand, reviewChapterClosure, reviewChapterClosureAtSitdown, chapterClosureRevision, pendingChapterClosure, openChapter, openChapterFor, shapeChapters } from "../src/core/chapters.ts";
 import { evaluatePlanDrift, type PlanVersion } from "../src/core/planSystem.ts";
 import { capturedIntent } from "../src/ledgerSync/capture.ts";
 import { commandFromCapture, type Scope } from "../src/ledgerSync/protocol.ts";
 import { prepareCommand, type AuthorityState } from "../src/ledgerSync/authority.ts";
 import { ALEX, SAM, migrated } from "./fixtures/fund-model.ts";
 
+function closeChapter(h: Parameters<typeof closeCommand>[0], input: Parameters<typeof closeCommand>[1]) {
+  const review = reviewChapterClosure(h, input);
+  const proposed = closeCommand(h, { ...input, expectedRevision: review.expectedRevision, reviewDigest: review.reviewDigest });
+  const chapter = proposed.household.chapters!.find(row => row.id === input.chapterId)!, p = pendingChapterClosure(chapter)!;
+  return closeCommand(proposed.household, { ...input, memberId: input.memberId === ALEX ? SAM : ALEX, expectedRevision: chapterClosureRevision(chapter), proposalId: p.id, digest: p.digest });
+}
+function closeChapterAtSitdown(h: Parameters<typeof closeMonthCommand>[0], input: Parameters<typeof closeMonthCommand>[1]) {
+  const review = reviewChapterClosureAtSitdown(h, input);
+  const proposed = closeMonthCommand(h, { ...input, expectedRevision: review.expectedRevision, reviewDigest: review.reviewDigest });
+  expect(openChapterFor(proposed.household)!.id).toBe(input.chapterId);
+  expect(proposed.household.chapters).toHaveLength(h.chapters!.length);
+  const chapter = openChapterFor(proposed.household)!, p = pendingChapterClosure(chapter)!;
+  return closeMonthCommand(proposed.household, { ...input, memberId: input.memberId === ALEX ? SAM : ALEX, expectedRevision: chapterClosureRevision(chapter), proposalId: p.id, digest: p.digest });
+}
 const AUG = "2026-08-03T14:00:00.000Z";
 /** Months are written for a sorted household (D-282, review M1); `sorted: false` asks for the month explicitly. */
 function august(sorted = true) {
@@ -52,7 +66,7 @@ describe("Chapters are calendar months (slice 8)", () => {
     expect(next).toMatchObject({ intendedMonth: "2026-10", foundationId: "see-our-shared-life", openedAtSitdownId: "SIT-1" });
     expect(next.id).not.toBe(chapter.id);
     expect(result.postedIds).toEqual([]);
-    expect(capturedIntent(after)!.steps.map((row) => row.kind)).toEqual(["openChapter", "addRitual", "closeChapterAtSitdown"]);
+    expect(capturedIntent(after)!.steps.map((row) => row.kind)).toEqual(["openChapter", "addRitual", "closeChapterAtSitdown", "closeChapterAtSitdown"]);
     expect(chapterMonths(after, "2026-07", "2026-11")).toEqual([
       { month: "2026-07", chapterId: null, kind: "none" },
       { month: "2026-08", chapterId: chapter.id, kind: "own" },
@@ -82,7 +96,9 @@ describe("Chapters are calendar months (slice 8)", () => {
     const state: AuthorityState = { sequence: h.revision, shared: one.shared, personal: new Map([[ALEX, one.personal], [SAM, two.personal]]) };
     const scope: Scope = { environment: h.environment, householdId: h.householdId, memberId: ALEX, subject: "fictional", role: "owner", expires: Date.now() + 60000, aclEpoch: 1 };
     const clean = structuredClone(h);
-    const command = await commandFromCapture(capturedIntent(closeChapter(clean, { memberId: ALEX, chapterId: openChapterFor(h)!.id, outcome: "closed" }).household)!, scope, crypto.randomUUID());
+    const input = { memberId: ALEX, chapterId: openChapterFor(h)!.id, outcome: "closed" as const };
+    const review = reviewChapterClosure(clean, input);
+    const command = await commandFromCapture(capturedIntent(closeCommand(clean, { ...input, expectedRevision: review.expectedRevision, reviewDigest: review.reviewDigest }).household)!, scope, crypto.randomUUID());
     expect(command.chapterVersion).toBe(1);
     const { chapterVersion: _old, ...older } = command;
     await expect(prepareCommand(state, older, scope, () => {})).rejects.toThrow("CLIENT_RELOAD_REQUIRED");

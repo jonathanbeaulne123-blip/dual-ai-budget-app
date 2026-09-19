@@ -113,7 +113,9 @@ function ownershipMatches(task: Task, memberId: string, ownership: AgendaOwnersh
 function taskItems(full: Household, visible: Household, input: AgendaInput, from: DateKey, to: DateKey): AgendaItem[] {
   const ownership = input.ownership ?? "all";
   return (visible.tasks ?? []).filter((task) => !task.deleted && ownershipMatches(task, input.memberId, ownership)).flatMap((task): AgendaItem[] => {
-    const evidence = task.completedAt ? task.completionEvidence : evidenceForTask(full, task);
+    // Chapter completion records include explicit assignment acceptance and, for
+    // money Rituals, the exact occurrence's receipt. Do not infer that ceremony.
+    const evidence = task.completedAt ? task.completionEvidence : task.chapterSource ? null : evidenceForTask(full, task);
     const done = Boolean(task.completedAt) || (evidence !== null && task.moneyLink !== null);
     const base = { kind: "task" as const, id: task.id, title: task.title, amountCents: task.expectedAmountCents, money: taskIsFinancial(task), memberId: task.assigneeId, task, evidence, dueDate: task.dueDate };
     const own = dateOf(task);
@@ -124,6 +126,13 @@ function taskItems(full: Household, visible: Household, input: AgendaInput, from
     const dates = own < from ? [own, ...taskOccurrences(task, from, to)] : taskOccurrences(task, from, to);
     return dates.map((date) => ({ ...base, key: `${task.id}@${date}`, date, dueDate: task.dueDate && task.doDate ? addDays(task.dueDate, Math.round((Date.parse(date) - Date.parse(task.doDate)) / 86400000)) : task.dueDate, completedOn: null, done: false, overdue: date < input.today }));
   });
+}
+/** A direct Task link keeps the same operational row even outside the selected week. */
+export function focusedAgendaTask(household:Household,id:string,input:AgendaInput):AgendaItem|null {
+  const visible=householdForView(household,input.memberId,input.view),task=visible.tasks?.find(t=>t.id===id&&!t.deleted);
+  if(!task)return null;
+  const day=task.doDate??task.dueDate??input.today;
+  return taskItems(household,{...visible,tasks:[task]},{...input,ownership:'all'},day,day)[0]??null;
 }
 function booksItems(full: Household, visible: Household, input: AgendaInput, from: DateKey, to: DateKey): AgendaItem[] {
   const items: AgendaItem[] = [];

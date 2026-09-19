@@ -1,3 +1,8 @@
+import {applySharedLifeRestoreIntent,type RestoreDesignAccess} from '../hearthside/sharedLifeRestore.ts';
+import {hasChapterAgreementData,isChapterAgreementCommand,assertChapterTaskGraph} from "../core/chapterAuthority.ts";
+import {restoreCanonicalBankArtwork,type CanonicalBankArtwork} from '../hearthside/creativeContinuity.ts';
+import { hasHearthsideData,hearthsideOperationalCollection } from '../hearthside/commands.ts';
+import { WIRE_LIMIT } from './wire.ts';
 import { hasKittyNestData } from "../core/kittyNestDesigns.ts";
 import {hasPlayData,isPlayStep} from '../core/herculesPlay.ts';
 import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
@@ -83,6 +88,9 @@ export async function prepareCommand(
   undoReceipt?: (id: string) => Receipt,
   restorePoint?: (id: string) => Promise<RestorePoint>,
   booksGuards?: Map<string, IncrementalBooksGuard>,
+  canonicalBankArtwork?: (bankId:string)=>CanonicalBankArtwork|null,
+  restoreDesignAccess?:RestoreDesignAccess,
+  restoreAudienceEpoch?:()=>number,
 ): Promise<PreparedCommit> {
   const command = parseCommand(raw);
   if (
@@ -95,6 +103,7 @@ export async function prepareCommand(
   let current = assembleHousehold(state.shared, personal, { linked: true });
   if (!current.members.some((m) => m.id === scope.memberId && m.active))
     throw new Error("MEMBERSHIP_CHANGED");
+  if(current.kittyNestDesigns?.some(row=>row.designRef)&&command.nestDesignVersion!==1)throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve collaborative Nest pottery.');
   const kittyChange = command.steps.some(step => step.kind === "saveGoalEnvelope" || step.kind === "purchaseGoal" && Boolean((step.args[0] as {keepOpen?:unknown})?.keepOpen) || JSON.stringify(step.args).includes('"envelopeGoalId"') || step.kind === "addGoal" && Boolean((step.args[0] as {envelope?:unknown})?.envelope) || step.kind === "releaseHouseholdFundKitty" && Boolean((step.args[0] as {goalId?:unknown})?.goalId));
   if ((hasGoalEnvelopeData(current) || kittyChange) && command.goalEnvelopeVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve Kitty Bank reserves and links.");
   if ((current.accountOpeningCheckpoints?.length || current.transactions.some(t => t.openingSignedBalanceCents !== undefined)) && command.accountHistoryVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: This household uses reviewed account history. Reload Hearth before making changes.");
@@ -103,6 +112,8 @@ export async function prepareCommand(
   if((current.nativeEvents?.length||command.steps.some(s=>s.kind==='saveNativeEvent'))&&command.nativeCalendarVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve calendar events.');
   if((hasKittyNestData(current)||command.steps.some(s=>s.kind==='saveKittyNestDesign'))&&command.kittyNestVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve bank designs.');
   if((hasTaskData(current)||command.steps.some(s=>TASK_COMMAND_KINDS.includes(s.kind)))&&command.taskPlannerVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve planner tasks.');
+  if((hasChapterAgreementData(current)||command.steps.some(step=>isChapterAgreementCommand(step.kind)))&&command.chapterAgreementVersion!==1)throw Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve shared Chapter agreements and Tasks.");
+  assertChapterTaskGraph(current);
   if((hasPathWorldData(current)||command.steps.some(s=>PATH_WORLD_COMMAND_KINDS.includes(s.kind)))&&command.pathWorldVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve your island.');
   if((hasPathEraData(current)||command.steps.some(s=>PATH_ERA_COMMAND_KINDS.includes(s.kind)))&&command.pathEraVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve your journey.');
   if((hasChapterMonthData(current)||command.steps.some(s=>CHAPTER_MONTH_COMMAND_KINDS.includes(s.kind)))&&command.chapterVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to keep your Chapters in their months.');
@@ -110,6 +121,11 @@ export async function prepareCommand(
   if((hasFundModelData(current)||command.steps.some(s=>FUND_MODEL_COMMAND_KINDS.includes(s.kind)))&&command.fundModelVersion!==2)throw new Error('CLIENT_RELOAD_REQUIRED: Hearth has updated how money is sorted. Reload before making changes.');
   const extendedPlan = hasPlanDecisionData(current);
   if (extendedPlan && command.planDecisionVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve the household's Plan evidence and decisions.");
+  if ((current.hearthside?.designs?.length || current.goals.some(g=>g.envelope?.designRef)) && command.kittyDesignVersion !== 1) throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve collaborative artwork.');
+  const hearthsideStep = command.steps.some(s => s.kind === 'commitHearthside'||s.kind==='commitSharedLifeRestore');
+  if ((hasHearthsideData(current) || hearthsideStep) && command.hearthsideVersion !== 1) throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve shared experiences.');
+  if(current.hearthside?.encounters?.length&&command.hearthsideEncounterVersion!==1)throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve shared encounters.');
+  if (hearthsideStep && command.steps.length !== 1) throw Error('HEARTHSIDE_SINGLE_OPERATION_REQUIRED');
   const playStep=command.steps.some(s=>s.kind==='commitCompanionPlay');
   if((playStep||hasPlayData(current)||command.steps.some(isPlayStep))&&command.companionPlayVersion!==1)throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve Play.');
   if(playStep&&command.steps.length!==1)throw Error('PLAY_SINGLE_OPERATION_REQUIRED');
@@ -191,6 +207,10 @@ export async function prepareCommand(
           value.id === row.id ? row.before : value,
         );
       }
+    } else if(step.kind==='commitSharedLifeRestore'){
+      if(!restorePoint||!restoreDesignAccess||args.length!==1||command.steps.length!==1)throw Error('SHARED_LIFE_RESTORE_AUTHORITY_REQUIRED');
+      result=await applySharedLifeRestoreIntent(current,args[0],{scope,assertCurrent:authorize,point:restorePoint,designAccess:restoreDesignAccess,audienceEpoch:restoreAudienceEpoch});
+      authorize();
     } else if (step.kind === "restoreSharedPoint" && restorePoint) {
       if (
         scope.role !== "owner" ||
@@ -260,6 +280,28 @@ export async function prepareCommand(
         command.id,
         scope,
       );
+    if (!['commitHearthside','commitSharedLifeRestore'].includes(step.kind) && canonical(current.hearthside ?? null) !== canonical(result.household.hearthside ?? null)) throw Error('HEARTHSIDE_OPERATION_REQUIRED');
+    if (step.kind === 'commitSharedLifeRestore'&&canonical({...current,hearthside:null})!==canonical({...result.household,hearthside:null}))throw Error('HEARTHSIDE_NON_FINANCIAL_ONLY');
+    if (step.kind === 'commitHearthside'){
+      const collection=hearthsideOperationalCollection((args[0] as {operation?:unknown})?.operation);
+      if(collection==='tasks'&&command.taskPlannerVersion!==1||collection==='nativeEvents'&&command.nativeCalendarVersion!==1)throw Error('CLIENT_RELOAD_REQUIRED');
+      const omit=collection?{hearthside:null,[collection]:null}:{hearthside:null};
+      if(canonical({...current,...omit})!==canonical({...result.household,...omit}))throw Error('HEARTHSIDE_NON_FINANCIAL_ONLY');
+    }
+    if (canonical(current.hearthside?.designs ?? []) !== canonical(result.household.hearthside?.designs ?? [])) throw Error('KITTY_DESIGN_AUTHORITY_REQUIRED');
+    for(const goal of result.household.goals){const prior=current.goals.find(row=>row.id===goal.id);if(prior?.envelope?.designRef&&(canonical(goal.envelope?.designRef??null)!==canonical(prior.envelope.designRef)||goal.envelope?.studio))throw Error('KITTY_DESIGN_AUTHORITY_REQUIRED');}
+    const canonicalArtwork=new Map<string,CanonicalBankArtwork>();
+    if(canonicalBankArtwork){
+      for(const goal of result.household.goals){const known=canonicalBankArtwork(goal.id);if(known)canonicalArtwork.set(goal.id,known);}
+      if(canonicalArtwork.size&&command.kittyDesignVersion!==1)throw Error('CLIENT_RELOAD_REQUIRED');
+      result={...result,household:{...result.household,goals:restoreCanonicalBankArtwork(result.household.goals,id=>canonicalArtwork.get(id)??null)}};
+    }
+    for (const goal of result.household.goals) {
+      const prior = current.goals.find(row => row.id === goal.id);
+      if (canonical(goal.envelope?.designRef ?? null) !== canonical(canonicalArtwork.get(goal.id)?.reference ?? prior?.envelope?.designRef ?? null)) throw Error('KITTY_DESIGN_AUTHORITY_REQUIRED');
+      if (prior?.envelope?.designRef && goal.envelope?.studio) throw Error('KITTY_DESIGN_AUTHORITY_REQUIRED');
+      if (prior?.envelope?.designRef && (prior.shared!==goal.shared || prior.ownerMemberId!==goal.ownerMemberId)) throw Error('KITTY_DESIGN_OWNERSHIP_REVIEW_REQUIRED');
+    }
     if(step.kind!=='commitCompanionPlay'&&(canonical(current.playRoom??null)!==canonical(result.household.playRoom??null)||canonical(current.companionProfile?.play??null)!==canonical(result.household.companionProfile?.play??null)))throw Error('PLAY_OPERATION_REQUIRED');
     if(step.kind!=='commitCompanionGallery'&&companionActionEffect(step)!=='shared-gallery'&&canonical(current.companionGallery??[])!==canonical(result.household.companionGallery??[]))throw new Error('GALLERY_OPERATION_REQUIRED');
     const privateWardrobe=(h:Household)=>({worn:h.companionProfile?.wornLook??{revision:0,value:null},saved:h.companionProfile?.savedLooks??[]});
@@ -297,6 +339,8 @@ export async function prepareCommand(
     validatedFundSourceClaimIds.add(event.sourceDeclaration.claimId!);
   }
   // Full existing Fund, onboarding and accounting transition rules still run.
+  assertChapterTaskGraph(current);
+  if (hasChapterMonthData(current) && command.chapterVersion !== 1) throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve the reviewed next Chapter.');
   const accepted = await acceptHouseholdWrite({
     previous: ["eraseDevelopmentActivity", "restoreSharedPoint"].includes(
       command.steps[0]!.kind,
@@ -424,8 +468,14 @@ export async function prepareCommand(
     memberId: scope.memberId,
     acceptedAt: new Date().toISOString(),
   };
-  if (canonical(split.shared).length > 32 * 1024 * 1024)
-    throw new Error("HOUSEHOLD_LIMIT");
+  // Admission precedes the durable write. UTF-8 bytes, personal envelopes and
+  // wrapper overhead all count; character count alone underestimates emoji.
+  const bytes = (value: unknown) => new TextEncoder().encode(JSON.stringify(value)).length;
+  const available = WIRE_LIMIT - 256 * 1024;
+  if (bytes({event, receipt}) > available) throw new Error('HOUSEHOLD_LIMIT');
+  for (const [memberId, own] of state.personal) {
+    if (bytes({sequence:receipt.sequence, shared:split.shared, personal:memberId === scope.memberId ? split.personal : own}) > available) throw new Error('HOUSEHOLD_LIMIT');
+  }
   return {
     event,
     receipt,

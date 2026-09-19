@@ -1,0 +1,52 @@
+# P12 — invitation-only guest visits and private street
+
+Implementation complete; final scoped High gate passed. Parent integration acceptance remains conditional. Parent/root explicitly assigned implementation of this whole bounded package. Base `429db8ef0447dac6347e89e945dd04aad05e84fb`, branch `codex/hearthside-guests`, one writer. Root's current Hearthside/Vault files are read-only context; root owns App, canonical contracts, LedgerRoom insertion points and actual deployment configuration. Migration 024 is reserved by root, source only. No hosted apply, keys, flags, uploads, external invitations or deployment are activated here.
+
+Budget delta (5): guest identity never imports a host ledger; published copies omit source IDs, balances, bank links, targets, contribution history and financial cat scaling. Engagement delta (3): couples can jointly review an authored guest room, choose who visits, host together or allow an asynchronous visit, and keep an invitation-only street with harmless shared toys.
+
+Applied Durable Objects/Workers best-practices skills and current Cloudflare primary docs. Latest published Worker types retrieved read-only: 5.20260911.1 (2026-09-12). Existing local runtime remains pinned; its compatibility date is not a deployment change.
+
+## Architecture / seams
+
+- Guest contract: strict closed fields, accessor-safe arrays, maximum 12 selected objects/192KiB manifest, explicit original captions and normalized authored cat appearance at one fixed display size. Guest media copies use new guest-local identities; only reviewed images/voice notes enter the private guest bucket.
+- Source helper: `captureGuestSources(input, catalogue)` / `validateGuestSources(proof,catalogue,mode)` operates on a trusted server catalogue built from canonical shared experience/note/memory/design records. Source IDs/proof remain server-private. Activation checks exact selected versions; published copies never follow later source edits. Private/withdrawn/archived sources close access.
+- Narrow LedgerRoom callbacks: `captureGuestSource(scope,input)`, `validateGuestSource(scope,proof,'activation'|'visit')`, existing private `acceptVaultPublication(scope,reference)` receipt. These callbacks do not grant guests source read access.
+- Separate room, calling-card and private-index Durable Objects. Per-subject Street, per-household private host index. No global discovery. Calling cards are high-entropy, recipient-controlled and revocable; no Auth subject in browser guest payloads. Host grants bind the exact recipient and require joint invitation review before activation.
+- Authority RPC 024: dedicated disabled HMAC key table plus the caller's live Auth session. A visitor's own subject is verified independently from host membership. The Worker-only response can resolve fresh host principals for replacement-member denial. Host writes also require `own_member_id` and the matching active principal. The public JWT alone cannot read host subjects.
+- Publication flow: capture/copy/prepare → exact joint review approvals → fresh source/roster validation → canonical private acceptance receipt → repeat validation after awaits → activate. Each uncertain retry keeps its identity and digest. Invitation delivery has a separate prepared/approved/active lifecycle; no external email or message is sent.
+- Presence: authenticated short-lease polling, fresh own-subject checks per request. Revoke removes server presence immediately; the next client poll closes the view. Toys are bounded ephemeral enums and coordinates, never source edits or guest-authored arbitrary text. Hosted mode requires a live host lease; anytime mode does not.
+- Private R2 journal: SQL row/outbox transaction, immutable checksum chain, conditional head, durable acknowledgement and trusted latest-only empty-DO recovery. Retain revocation tombstones. Financial restore never touches this namespace.
+
+## Risk, owner and outcome
+
+High risk: this adds a new scoped sharing boundary, separate durable storage and recipient grants. Root/Codex is the independent integration reviewer; Jonathan is the decision and release owner. The intended outcome is a room the couple deliberately prepares together, with recipient-only manual invitations and a private Street. No ledger authority, financial state or host replica is made available to a guest.
+
+## Verification completed locally
+
+- TypeScript: `node node_modules/typescript/bin/tsc --noEmit --pretty false` passed on the isolated worktree with the root RoomScene/CSS as read-only build dependencies. Initial TypeScript errors were Node/Worker response type boundaries and were fixed; the later pass exited zero.
+- Contract/client tests: 10 tests cover closed input/accessors, private source denial, exact captions and design copies, no-media memory sharing without Vault, activation versus continued visibility, token/household HMAC binding, aborting unresolved credentials, and bounded chunked media.
+- Actual guest Worker/SQLite DO/R2 runtime: 3 tests cover separate host/visitor households, forged/unknown commands, mutual room and recipient approvals, lost acceptance and archive acknowledgements, exact recipient grants, immutable copies after ordinary source edits, hidden sources, replacement members, toys without source mutation, revoked calling cards, hosted room/media denial without a host, original memory publication replacement, own-session revocation and flags disabled. Recovery includes a stale head plus more than 128 durable tail journals, bounded discovery/replay, and preserved revocation tombstones.
+- Prepared SQL 024: one PGlite/pgcrypto test executes canonical session helpers from migration 017 plus the new source-only migration under authenticated/anon roles. An empty or disabled HMAC key table denies; a live visitor without host membership can authenticate as themself; mismatched token/host/time/environment signatures, revoked sessions and revoked host membership fail closed. No hosted migration was applied.
+- Actual browser: one full journey uses GuestVisits + GuestRoomView + the shared RoomScene and actual guest Worker endpoints. It creates a calling card with a deliberately lost network acknowledgement, switches identity A→B→A, resumes the same saved intent, separately approves the room and invitation as both household members, visits as a recipient from another household, loads the private copied image, uses a toy, keeps an open detail stable across presence refresh, clears media URLs on identity switch, and revokes the card/visit.
+- Browser matrix: four rooms × three themes × widths 320/390/719/720/1100/1440/1920 = 84 room geometry checks plus 42 publishing/Street geometry checks (126 total); nine axe WCAG 2A/AA scans; keyboard entry; reduced motion and 200% text. 24 room screenshots, six themed publishing/Street phone screenshots, plus joint-review/Street/visit/enlarged captures. Evidence is synthetic and remains local at `/tmp/hearthside-guests-proof/evidence.json` and sibling PNGs. Latest expanded browser run: 24.736s test work, 25.68s total, pass. The first matrix exposed a breakpoint transition overflow in the provisional renderer; the final adapter reuses the authored shared RoomScene. A later media test exposed optional Content-Length on R2 streams; the client now validates actual streamed byte length.
+
+Exact focused command:
+
+```sh
+node node_modules/vitest/vitest.mjs run test/hearthside-guests.test.ts test/hearthside-guests-runtime.test.ts test/hearthside-guests-sql.test.ts test/hearthside-guests-browser.test.ts --maxWorkers=1
+```
+
+Final scoped High quick gate passed 41 tests across seven files in 49.039s, with no five-minute breach. TypeScript passed in 23.172s. Evidence fingerprint: `cc27a363486b8f3939e6827cffdb9bd8ef9b1ae8b6424b063b89373c968e5178`; base/head at execution was `429db8ef0447dac6347e89e945dd04aad05e84fb` with the uncommitted package and read-only RoomScene dependencies present. This is scoped quick-gate evidence, not a clean mainline or full-suite release claim. Initial scoped gate also passed in 44.686s. The final run followed added publishing/Street coverage and small media-error/presence-label fixes. No exhaustive/full-suite gate requested or run for this package. No local proof implies deployment readiness.
+
+## Integration / remaining acceptance
+
+The precise interfaces and Worker/App/route/authority insertion points are in `docs/briefs/HEARTHSIDE_GUEST_INTEGRATION.md`. Root's authored `RoomScene.tsx` and `roomScene.css` are copied into the isolated checkout only as read-only build dependencies and excluded from this package's commit. Root already owns those files. New dependency/package/lock changes: none.
+
+Root must execute the exact callbacks with actual LedgerRoom + Vault + current design authority, including media re-entry without a serial-lock deadlock. The isolated runtime assembles actual guest classes and signed server control-plane fixtures; it does not claim to test root's not-yet-inserted callbacks. The guest's own-authenticated Street route must be reachable without host membership/onboarding. Keep flags and bindings disabled until a separate activation decision. Hosted/cross-device meaningful-data and deployment proof remain open.
+
+Presence uses authenticated 3-second polling and a 15-second lease, not WebSockets. Explicit publication/card/grant revocation removes server presence immediately; a connected client closes on its next refresh. Already seen media cannot be unseen. Copying future editable furniture needs its exact approved layout/version added to the guest copy; current furniture is the shared authored room background.
+
+No network writes outside local synthetic test services occurred. Only official documentation and current Worker type metadata were read. No secrets, real households, workbook exports or private chats are committed. Next owner: root integrates and reviews the package, then owns any deployment/schema/binding decision with Jonathan.
+
+
+Read-only RoomScene build dependency blobs used for the proof: `RoomScene.tsx` = `f03c8cceaf99e8bd420e6af46ff31b676ef7417e`; `roomScene.css` = `a2ff838677ca4f7faafc2b6c78c474403bcf853b`. These files are not owned by this commit. Root's focused independent read of guestProjection and guestAuthority found the no-media memory publication requirement; it was corrected and regression-tested. Root has not yet completed a full GuestRoom/archive adversarial audit. Verdict: **CONDITIONAL for integration**, not deployment.

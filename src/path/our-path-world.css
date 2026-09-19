@@ -102,6 +102,7 @@
 .path-world__outline button:hover { background: var(--paper); }
 
 .path-world__room { display: grid; gap: 12px; }
+.path-world__work-centre { display: grid; gap: 12px; max-width: 780px; margin: 0 auto; padding: clamp(18px, 4vw, 40px); border: 1px solid var(--line); border-radius: var(--world-r-control, 12px); background: color-mix(in srgb, var(--card) 92%, var(--paper)); box-shadow: 0 12px 32px color-mix(in srgb, var(--ink) 9%, transparent); }
 .path-world__back { justify-self: start; min-height: 44px; border-radius: 999px; padding: 8px 16px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; }
 
 /* Classic Hearth: a pinboard map on the kitchen table. */

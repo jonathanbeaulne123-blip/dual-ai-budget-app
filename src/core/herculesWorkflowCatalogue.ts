@@ -1,6 +1,7 @@
 /** Human-facing names shared by deterministic adapters, suggestions and model context. */
 export const HERCULES_WORKFLOW_CATALOGUE = [
     { id: 'add-job', title: 'Set up an hourly job', example: 'Add a job', views: ['household', 'personal'] },
+    { id: 'accept-task', title: 'Accept a to-do', example: 'Accept a to-do', views: ['household', 'personal'] },
     { id: 'reopen-task', title: 'Reopen a to-do', example: 'Reopen a to-do', views: ['household', 'personal'] },
     { id: 'expense', title: 'Record a purchase', example: 'I just bought something', views: ['household', 'personal'] },
     { id: 'income', title: 'Record money received', example: 'I received some money', views: ['household', 'personal'] },

@@ -1,3 +1,4 @@
+import { knownCents } from "./fixtures/knownCents.ts";
 import { describe, expect, it } from "vitest";
 import type { Household } from "../src/core/types.ts";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
@@ -82,11 +83,11 @@ describe("The jars on the rail", () => {
     const h = withRail();
     const rows = jarsOn(h, "2026-09-12");
     const rent = byLabel(rows, "Fictional rent");
-    expect(rent.savedCents + rent.leftCents).toBe(rent.targetCents);
-    expect(rent.fill).toBeCloseTo(rent.savedCents / rent.targetCents, 6);
+    expect(knownCents(rent.savedCents) + knownCents(rent.leftCents)).toBe(rent.targetCents);
+    expect(rent.fill).toBeCloseTo(knownCents(rent.savedCents) / rent.targetCents, 6);
     const nest = projectKittyNest(h, memberId, "household", "2026-09-12");
     const bank = nest.categories.flatMap((c) => c.children).find((b) => b.id === rent.bankId)!;
-    expect(rent.savedCents).toBe(Math.min(bank.amountCents, bank.targetCents));
+    expect(knownCents(rent.savedCents)).toBe(Math.min(knownCents(bank.amountCents), bank.targetCents));
     expect(rent.targetCents).toBe(bank.targetCents);
   });
 
@@ -163,7 +164,7 @@ describe("The line beneath the gate", () => {
     const day = reading.days.find((row) => row.date === rent.date)!;
     const words = cellarGateWords(rent, day, formatCad);
     expect(words).toMatch(/^Fictional rent · house bill · Housing › Electric · due today · /);
-    expect(words).toContain(`${formatCad(rent.savedCents)} saved of ${formatCad(rent.targetCents)}, ${formatCad(rent.leftCents)} to be safe`);
+    expect(words).toContain(`${formatCad(knownCents(rent.savedCents))} saved of ${formatCad(rent.targetCents)}, ${formatCad(knownCents(rent.leftCents))} to be safe`);
     expect(words).toContain(`water at ${formatCad(day.balanceCents)} after`);
     const hydro = byLabel(reading.jars, "Fictional hydro");
     expect(cellarGateWords(hydro, reading.days.find((row) => row.date === hydro.date)!, formatCad)).toMatch(/5 days overdue · \$140\.00 saved, ready/);

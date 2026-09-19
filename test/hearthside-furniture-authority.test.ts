@@ -1,0 +1,42 @@
+import {expect,it} from 'vitest';
+import {hearthsideAuthorityHarness} from './fixtures/hearthsideAuthorityHarness.ts';
+import {captureRoom} from '../src/hearthside/roomHistory.ts';
+import {captureRoomFurniture,roomFurnitureCatalogue} from '../src/hearthside/roomFurniture.ts';
+import {decodeHearthside} from '../src/hearthside/contracts.ts';
+import {financialAuditHash} from '../src/core/commandIdentity.ts';
+import {appendRestorePoint,applyRestorePoint} from '../src/core/restorePoints.ts';
+import type {GuestSourceCapture} from '../src/hearthside/guestContracts.ts';
+it('accepts actual per-piece furniture races, preserves historical layouts and rejects changed guest review without changing money',async()=>{
+ const app=await hearthsideAuthorityHarness('HH-furniture-authority',{guestCatalogue:true});
+ try{
+  const initial=await app.household(),money=await financialAuditHash(initial),oldPoint=(await appendRestorePoint(initial,'MEM-001')).restorePoints![0]!;
+  const pieces=roomFurnitureCatalogue('common'),first=pieces[0]!,second=pieces[1]!;
+  const move={room:'common' as const,furnitureId:first.id,expectedRevision:0,x:.6,y:.4};
+  const one=await app.command({kind:'furniture.save',value:move}),two=await app.command({kind:'furniture.save',value:{...move,x:.3}},'MEM-002');
+  const independent=await app.command({kind:'furniture.save',value:{...move,furnitureId:second.id,x:.7}},'MEM-002');
+  const accepted=await app.send(one);expect(accepted).toMatchObject({type:'ack'});expect(await app.send(one)).toEqual(accepted);
+  expect(await app.send(two,'MEM-002')).toMatchObject({type:'error',definitive:true});
+  expect(await app.send(independent,'MEM-002')).toMatchObject({type:'ack'});
+  const latest=await app.household('MEM-002');expect(latest.hearthside?.furniture).toHaveLength(2);
+  expect(latest.hearthside?.furniture?.find(p=>p.furnitureId===first.id)).toMatchObject({revision:1,x:.6,y:.4});
+  expect(decodeHearthside(JSON.parse(JSON.stringify(latest.hearthside)))).toEqual(latest.hearthside);
+  const frame=captureRoom(latest,{id:'ROOM-arranged',title:'We made some room',room:'common'},'MEM-001');
+  expect(await app.submit({kind:'room.capture',expectedRevision:0,value:frame})).toMatchObject({type:'ack'});
+  for(const actor of ['MEM-001','MEM-002'])expect(await app.submit({kind:'room.keep',expectedRevision:1,id:frame.id},actor)).toMatchObject({type:'ack'});
+  const capture=await app.post('guest-source-test',{kind:'capture',input:{publicationId:crypto.randomUUID(),title:'Come sit with us',welcome:'The kettle is on.',theme:'classic',room:'common',mode:'anytime',items:[]}});
+  expect(capture.status,await capture.clone().text()).toBe(200);const guest=await capture.json() as GuestSourceCapture;
+  expect(guest.arrangement.furniture).toEqual(frame.furniture);
+  const valid=async(mode:string)=>{const r=await app.post('guest-source-test',{kind:'validate',proof:guest.proof,mode});expect(r.status,await r.clone().text()).toBe(200);return r.json();};
+  expect(await valid('activation')).toBe(true);
+  expect(await app.submit({kind:'furniture.save',value:{...move,expectedRevision:1,x:.8}},'MEM-002')).toMatchObject({type:'ack'});
+  expect(await valid('activation')).toBe(false);expect(await valid('visit')).toBe(true);
+  const after=await app.household(),recorded=after.hearthside!.roomHistory![0]!;
+  expect(recorded.furniture).toEqual(frame.furniture);expect(guest.arrangement.furniture).toEqual(frame.furniture);
+  expect(captureRoomFurniture('common',after.hearthside!.furniture!)).not.toEqual(frame.furniture);
+  const staleFrame={...frame,id:'ROOM-stale',approvals:[]};await expect(app.command({kind:'room.capture',expectedRevision:0,value:staleFrame})).rejects.toThrow('ROOM_CHANGED');
+  const {furniture:_old,...withoutFurniture}=staleFrame;await expect(app.command({kind:'room.capture',expectedRevision:0,value:withoutFurniture})).rejects.toThrow('ROOM_CHANGED');
+  const restored=applyRestorePoint(after,oldPoint,'MEM-001');expect(restored.hearthside).toEqual(after.hearthside);
+  expect(await financialAuditHash(after)).toBe(money);
+  const forged=structuredClone(one);forged.id=crypto.randomUUID();expect(await app.send(forged,'MEM-002')).toMatchObject({type:'error',definitive:true});
+ }finally{await app.dispose();}
+},60_000);

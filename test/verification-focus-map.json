@@ -3,83 +3,6 @@
   "mappings": [
     {
       "sources": [
-        "src/queen/world/queenAuthoring.ts",
-        "src/queen/world/queenSculpture.ts",
-        "src/queen/world/queenModel.ts",
-        "public/models/queen/mandevilla-queen.v1.glb",
-        "public/models/queen/mandevilla-guardian.v1.glb",
-        "public/models/queen/mandevilla-mastermind.v1.glb",
-        "src/queen/world/homeBankModel.ts",
-        "src/queen/world/queenWorld.ts",
-        "src/queen/QueenWorld.tsx",
-        "src/queen/QueenFigure.tsx",
-        "src/kitty/sculpture.ts",
-        "src/kitty/nestSculpture.ts",
-        "src/kitty/studio/flat.tsx",
-        "src/queen/world/queenCharmSurface.ts",
-        "src/queen/world/queenCharmLibrary.ts",
-        "src/queen/world/queenCharmSet.ts",
-        "src/queen/QueenCharmGlyph.tsx",
-        "src/queen/QueenCharmTool.tsx",
-        "src/core/queenCharms.ts",
-        "src/core/kittyStudio.ts",
-        "src/core/queenForm.ts",
-        "src/core/queenLight.ts",
-        "src/queen/QueenWheel.tsx",
-        "src/queen/QueenPortraits.tsx",
-        "src/queen/world/queenScenery.ts",
-        "src/queen/QueenSceneryFlat.tsx",
-        "src/theme/scenes.ts",
-        "src/queen/world/queenRoomWorld.ts",
-        "src/queen/QueenRoomWorld.tsx",
-        "src/queen/QueenCellar.tsx",
-        "src/queen/QueenLoft.tsx",
-        "src/core/kittyNestDesigns.ts",
-        "src/queen/world/queenBankSculpture.ts",
-        "src/queen/QueenBankFlat.tsx",
-        "src/queen/queenHouse.ts",
-        "src/queen/useHouseAxis.ts",
-        "src/queen/QueenHouseRail.tsx",
-        "src/queen/QueenHome.tsx",
-        "src/kitty/studio/silhouette.ts"
-      ],
-      "tests": [
-        "test/queen-world.test.ts",
-        "test/queen-model.test.ts",
-        "test/queen-charms.test.ts",
-        "test/queens-nest-ui.test.ts",
-        "test/queens-nest.test.ts",
-        "test/kitty-nest.test.ts",
-        "test/kitty-studio.test.ts",
-        "test/queen-ceremony.test.ts",
-        "test/queen-scenery.test.ts",
-        "test/queen-rooms.test.ts",
-        "test/queen-house.test.ts"
-      ],
-      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched; the charms: a charm cannot be written onto any reserved channel through the guard, an unearned charm cannot be placed, every unlock derives from existing Chapter, Charter and goal records, charms round-trip through the guard on the King's draft, the flat path draws the same charms as the 3D path, and disposal returns every count to zero; her creation and history: a closed Chapter adds exactly one ring and rings cannot be painted, charmed or removed, the wheel cannot produce a profile that hides a reserved channel or breaks the 40px silhouette and both turns are attributed with the second changing a different part, the underside is not paintable and holds no charm seat, a portrait is immutable and renders flat in both paths, the glaze axis reads fresh versus stale at the darkest and brightest hour, and disposal returns every count to zero with rings, marks and charms on her; the worlds shared Home opens into: each of the three shared-home scenes gets a world and no other route does, each world builds three real layers of depth, the drawn row wears the same six colours as the sculpted one, ambient motion is a pure function of the clock and is refused outright under reduced motion, no scenery object can claim the name of one of her reserved channels, and every world returns its geometries, materials and textures on unmount; the two rooms in three dimensions: the ledge's order is one list of design keys on the Build plan bank's own row so one rearrangement is one save and the last save wins, a malformed order is refused and a key for a bank that has left the shelf is ignored, moving one bank leaves every other bank where it was, and the jar's swell and the bank's glaze are quantised bands so no figure can be read off a shape; the kitty banks in the rooms and the one axis that reaches them: every bank form is the studio's own silhouette normalised to a single unit and the nest's own tier rather than a new shape, the house stacks loft over hearth over cellar and clamps at both ends, a swipe counts only when it leans vertical and travels far enough or is flicked, and a control that already owns the pointer or the arrow keeps them — she keeps the pull down that tips her over and lets the climb up pass through"
-    },
-    {
-      "sources": [
-        "src/core/queenPresentation.ts",
-        "src/queen/QueenHome.tsx",
-        "src/queen/queen-home.css",
-        "src/HouseholdHome.tsx",
-        "src/core/planFeature.ts",
-        "scripts/serve-household-home-proof.mjs",
-        "scripts/serve-queen-world-page-proof.mjs"
-      ],
-      "tests": [
-        "test/queens-nest.test.ts",
-        "test/queens-nest-ui.test.ts",
-        "test/kitty-nest.test.ts",
-        "test/home-feedback-ui.test.ts",
-        "test/vision-v2-home-ui.test.ts",
-        "test/queen-charms.test.ts"
-      ],
-      "reason": "The Queen's Nest Stage 1: every pulse state has a distinct still, protect+prepare route to the Protect door and everyday to the belly, the King still conserves to the cent, no Move gives empty hands, every region is a named keyboard control, and the panel Home stays intact behind the flag; the Queen's world page: the App's top bar, sync line and household switcher readings (the attention label, its explanation and recovery action, the household, the device time, the environment, the switcher and the office door) are one tap away behind the Status door, and the field is unchanged when the App passes no shell — the no-scroll, chrome-free, ≥55% composition on the actual App page is browser evidence (test/queen-world-page-layout.mjs), not a unit test"
-    },
-    {
-      "sources": [
         "src/core/herculesTaskActions.ts",
         "src/core/herculesWorkActions.ts",
         "src/core/herculesExecution.ts",
@@ -421,6 +344,765 @@
     },
     {
       "sources": [
+        "src/App.tsx",
+        "src/hearthside/CollaborativeStudio.tsx",
+        "src/hearthside/DesignExportJob.ts",
+        "src/hearthside/DesignExportSurface.tsx",
+        "src/hearthside/DesignProvider.tsx",
+        "src/hearthside/Hearthside.tsx",
+        "src/hearthside/HouseholdRoom.tsx",
+        "src/hearthside/Letters.tsx",
+        "src/hearthside/LettersEntry.tsx",
+        "src/hearthside/LettersState.tsx",
+        "src/hearthside/MemoryArtwork.tsx",
+        "src/hearthside/NativeSceneSurface.tsx",
+        "src/hearthside/Occasions.tsx",
+        "src/hearthside/PlanNextSteps.tsx",
+        "src/hearthside/RoomIllustration.tsx",
+        "src/hearthside/RoomScene.tsx",
+        "src/hearthside/catalogue.ts",
+        "src/hearthside/collaborativeStudio.css",
+        "src/hearthside/commands.ts",
+        "src/hearthside/contracts.ts",
+        "src/hearthside/creativeContinuity.ts",
+        "src/hearthside/creativePresence.ts",
+        "src/hearthside/design.ts",
+        "src/hearthside/designArchive.ts",
+        "src/hearthside/designClient.ts",
+        "src/hearthside/designContracts.ts",
+        "src/hearthside/designProjection.ts",
+        "src/hearthside/designSurfaceContracts.ts",
+        "src/hearthside/designSurfaces.css",
+        "src/hearthside/drafts.ts",
+        "src/hearthside/exportCapture.ts",
+        "src/hearthside/exportGeometry.ts",
+        "src/hearthside/exportGlb.ts",
+        "src/hearthside/exportKitty.ts",
+        "src/hearthside/exportManufacturing.ts",
+        "src/hearthside/exportPdf.ts",
+        "src/hearthside/exportStl.ts",
+        "src/hearthside/exportThreeMf.ts",
+        "src/hearthside/exportTypes.ts",
+        "src/hearthside/exportWorker.ts",
+        "src/hearthside/flags.ts",
+        "src/hearthside/focusedTool.ts",
+        "src/hearthside/hearthside.css",
+        "src/hearthside/letters.css",
+        "src/hearthside/lettersMedia.ts",
+        "src/hearthside/native.ts",
+        "src/hearthside/nativeBridge.ts",
+        "src/hearthside/nativeFundingReview.ts",
+        "src/hearthside/occasions.css",
+        "src/hearthside/roomScene.css",
+        "src/hearthside/routes.ts",
+        "src/hearthside/specimen.css",
+        "src/hearthside/specimen.tsx",
+        "src/hearthside/specimenDesign.tsx",
+        "src/hearthside/useHearthsideCommands.ts",
+        "src/hearthside/vaultClient.ts",
+        "src/hearthside/vaultContracts.ts",
+        "src/ledgerSync/authority.ts",
+        "src/ledgerSync/backup.ts",
+        "src/ledgerSync/registry.ts",
+        "src/ledgerSync/resources.ts",
+        "workers/hearthsideAcceptanceStore.ts",
+        "workers/hearthsideDesignStore.ts",
+        "workers/hearthsideVault.ts",
+        "workers/hearthsideVaultArchive.ts",
+        "workers/hearthsideVaultAudience.ts",
+        "workers/hearthsideVaultStore.ts",
+        "workers/ledgerRoom.ts"
+      ],
+      "tests": [
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-collaboration.test.ts",
+        "test/hearthside-journeys.test.ts",
+        "test/hercules-play.test.ts",
+        "test/kitty-studio.test.ts",
+        "test/kitty-studio-ui.test.ts",
+        "test/kitty-envelope.test.ts",
+        "test/kitty-envelope-ui.test.ts",
+        "test/kitty-banks.test.ts",
+        "test/plan-life-contract.test.ts",
+        "test/plan-life-ui.test.ts",
+        "test/plan-system.test.ts",
+        "test/vision-v2-chapters.test.ts",
+        "test/workspace-contracts.test.ts",
+        "test/workspace-command-authority.test.ts",
+        "test/workspace-links.test.ts",
+        "test/app-startup-p1.test.ts",
+        "test/month-rehearsal-mainline.test.ts",
+        "test/ledger-sync-authority.test.ts",
+        "test/ledger-sync-backup.test.ts",
+        "test/home-feedback-ui.test.ts"
+      ],
+      "reason": "Hearthside complete couple journeys, scoped creative authority and recovery preserve affected Play, Kitty, Plan, Chapter, Workspace, startup and month-rehearsal contracts"
+    },
+    {
+      "sources": [
+        "src/hearthside/DesignExportJob.ts",
+        "src/hearthside/DesignExportSurface.tsx",
+        "src/hearthside/DesignProvider.tsx",
+        "src/hearthside/design.ts",
+        "src/hearthside/designArchive.ts",
+        "src/hearthside/designClient.ts",
+        "src/hearthside/designContracts.ts",
+        "src/hearthside/designProjection.ts",
+        "src/hearthside/designSurfaceContracts.ts",
+        "src/hearthside/designSurfaces.css",
+        "src/hearthside/specimenDesign.tsx",
+        "workers/hearthsideDesignStore.ts"
+      ],
+      "tests": [
+        "test/hearthside-design-client.test.ts",
+        "test/hearthside-design-incremental.test.ts",
+        "test/hearthside-design-runtime.test.ts",
+        "test/hearthside-design-surfaces-browser.test.ts",
+        "test/hearthside-design-surfaces.test.ts"
+      ],
+      "reason": "Hearthside canonical design history and selected design surfaces"
+    },
+    {
+      "sources": [
+        "src/hearthside/vaultClient.ts",
+        "src/hearthside/vaultContracts.ts",
+        "workers/hearthsideVault.ts",
+        "workers/hearthsideVaultArchive.ts",
+        "workers/hearthsideVaultAudience.ts",
+        "workers/hearthsideVaultStore.ts"
+      ],
+      "tests": [
+        "test/hearthside-vault-archive.test.ts",
+        "test/hearthside-vault-audience-sql.test.ts",
+        "test/hearthside-vault-audience.test.ts",
+        "test/hearthside-vault-client.test.ts",
+        "test/hearthside-vault-runtime.test.ts",
+        "test/hearthside-vault-service.test.ts",
+        "test/hearthside-vault.test.ts"
+      ],
+      "reason": "Hearthside recipient isolation and recoverable private publication"
+    },
+    {
+      "sources": [
+        "src/hearthside/DesignExportJob.ts",
+        "src/hearthside/DesignExportSurface.tsx",
+        "src/hearthside/exportCapture.ts",
+        "src/hearthside/exportGeometry.ts",
+        "src/hearthside/exportGlb.ts",
+        "src/hearthside/exportKitty.ts",
+        "src/hearthside/exportManufacturing.ts",
+        "src/hearthside/exportPdf.ts",
+        "src/hearthside/exportStl.ts",
+        "src/hearthside/exportThreeMf.ts",
+        "src/hearthside/exportTypes.ts",
+        "src/hearthside/exportWorker.ts"
+      ],
+      "tests": [
+        "test/hearthside-exports.test.ts"
+      ],
+      "reason": "Hearthside immutable physical production packages"
+    },
+    {
+      "sources": [
+        "src/hearthside/NativeSceneSurface.tsx",
+        "src/hearthside/native.ts",
+        "src/hearthside/nativeBridge.ts",
+        "src/hearthside/nativeFundingReview.ts"
+      ],
+      "tests": [
+        "test/hearthside-native.test.ts"
+      ],
+      "reason": "Hearthside native identity and reviewed funding return"
+    },
+    {
+      "sources": [
+        "src/hearthside/HouseholdRoom.tsx",
+        "src/hearthside/RoomIllustration.tsx",
+        "src/hearthside/RoomScene.tsx",
+        "src/hearthside/roomScene.css"
+      ],
+      "tests": [
+        "test/hearthside-room-scene.test.ts"
+      ],
+      "reason": "Hearthside authored rooms and bounded arrangement"
+    },
+    {
+      "sources": [
+        "src/hearthside/Letters.tsx",
+        "src/hearthside/LettersEntry.tsx",
+        "src/hearthside/LettersState.tsx",
+        "src/hearthside/letters.css",
+        "src/hearthside/lettersMedia.ts"
+      ],
+      "tests": [
+        "test/hearthside-letters-browser.test.ts",
+        "test/hearthside-letters-ui.test.ts"
+      ],
+      "reason": "Hearthside private letter and voice encounters"
+    },
+    {
+      "sources": [
+        "src/hearthside/MemoryPublication.tsx",
+        "src/hearthside/MemoryPublicationEntry.tsx",
+        "src/hearthside/memoryPublication.ts",
+        "src/hearthside/memoryPublicationClient.ts",
+        "src/hearthside/VaultProvider.tsx",
+        "src/hearthside/contracts.ts",
+        "src/hearthside/commands.ts",
+        "workers/hearthsideVault.ts",
+        "workers/hearthsideVaultStore.ts",
+        "workers/ledgerRoom.ts",
+        "workers/ledgerSync.ts",
+        "src/ledgerSync/client.ts"
+      ],
+      "tests": [
+        "test/hearthside-memory-authority.test.ts",
+        "test/hearthside-vault-memory.test.ts",
+        "test/hearthside-vault-memory-client.test.ts",
+        "test/hearthside-memory-browser.test.ts",
+        "test/hearthside-contracts.test.ts"
+      ],
+      "reason": "Exact shared-memory composition, private reviewed copies, actual LedgerRoom and Vault admission, paired approval, withdrawal and retry recovery"
+    },
+    {
+      "sources": [
+        "src/hearthside/TheatreProjector.tsx",
+        "src/hearthside/ProjectorEntry.tsx",
+        "src/hearthside/projectorAuthority.ts",
+        "src/hearthside/projectorComposition.ts",
+        "src/hearthside/projectorFilm.ts",
+        "src/hearthside/projectorCanvas.ts",
+        "src/hearthside/projectorStory.ts",
+        "src/hearthside/projectorTypes.ts",
+        "src/hearthside/paintedSnapshot.tsx"
+      ],
+      "tests": [
+        "test/hearthside-projector.test.ts",
+        "test/hearthside-projector-authority.test.ts"
+      ],
+      "reason": "Actual chosen immutable memory/design revisions, fresh exact authorization at download, playable film, cancellation and bounded media resources"
+    },
+    {
+      "sources": [
+        "src/core/chapterAuthority.ts",
+        "src/core/chapterConsent.ts",
+        "src/core/chapterTaskSource.ts",
+        "src/core/chapterTasks.ts",
+        "src/core/chapters.ts",
+        "src/core/tasks.ts",
+        "src/ChapterPanel.tsx",
+        "src/ChapterTaskControls.tsx",
+        "src/hearthside/creativeContinuity.ts",
+        "src/core/restorePoints.ts",
+        "src/ledgerSync/authority.ts",
+        "src/ledger/materializeSnapshotFromEvents.ts",
+        "src/ledger/continuityCommandLog.ts"
+      ],
+      "tests": [
+        "test/hearthside-chapter-tasks.test.ts",
+        "test/hearthside-chapter-browser.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/vision-v2-chapters.test.ts",
+        "test/planner-tasks.test.ts",
+        "test/planner-agenda.test.ts",
+        "test/planner-ui.test.ts",
+        "test/month-rehearsal-mainline.test.ts"
+      ],
+      "reason": "Canonical Chapter/Move/Ritual Task graph, exact mutual review, individual pause, accepted responsibility and financial-restore preservation"
+    },
+    {
+      "sources": [
+        "src/hearthside/LifeStepComposer.tsx",
+        "src/hearthside/focusedTool.ts",
+        "src/calendar/NativeEventEditor.tsx",
+        "src/Calendar.tsx",
+        "src/core/agenda.ts",
+        "src/planner/Planner.tsx"
+      ],
+      "tests": [
+        "test/hearthside-practical.test.ts",
+        "test/hearthside-journeys.test.ts",
+        "test/calendar-weight-ui.test.ts",
+        "test/native-events.test.ts",
+        "test/planner-ui.test.ts"
+      ],
+      "reason": "One intention survives canonical Task/date creation, existing-record changes, pending receipt recovery and focused return"
+    },
+    {
+      "sources": [
+        "src/hearthside/FutureLandscape.tsx",
+        "src/hearthside/futureLandscape.css",
+        "src/hearthside/HouseholdRoom.tsx",
+        "src/hearthside/Hearthside.tsx"
+      ],
+      "tests": [
+        "test/hearthside-futures.test.ts",
+        "test/hearthside-journeys.test.ts",
+        "test/plan-projection.test.ts"
+      ],
+      "reason": "Imagined tonight, season and someday projections reuse exact acknowledged shared Plan evidence, with free intentions and private/unavailable source isolation"
+    },
+    {
+      "sources": [
+        "src/hearthside/StudioHandoff.tsx",
+        "src/hearthside/studioHandoff.ts",
+        "src/hearthside/RoomHistory.tsx",
+        "src/hearthside/roomHistory.ts",
+        "src/hearthside/roomHistory.css",
+        "src/hearthside/commands.ts",
+        "src/hearthside/contracts.ts",
+        "workers/ledgerRoom.ts",
+        "src/hearthside/StudioShelf.tsx",
+        "src/hearthside/studioShelf.css"
+      ],
+      "tests": [
+        "test/hearthside-handoff.test.ts",
+        "test/hearthside-room-history.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-room-scene.test.ts",
+        "test/hearthside-journeys.test.ts"
+      ],
+      "reason": "Author-specific Studio invitations and exact paired recorded room views, retained historical designs, current withdrawal and local real-authority receipt recovery"
+    },
+    {
+      "sources": [
+        "src/hearthside/workspacePublicationState.ts",
+        "src/hearthside/workspaceAuthority.ts",
+        "src/hearthside/workspaceContext.ts",
+        "src/hearthside/workspacePublication.ts",
+        "src/hearthside/workspaceSurface.tsx",
+        "src/hearthside/workspaceDraft.ts",
+        "src/hearthside/resident.ts",
+        "src/hearthside/resident.tsx",
+        "src/workspace/Workspace.tsx",
+        "src/workspace/contracts.ts",
+        "src/workspace/client.ts",
+        "src/workspace/runtime.ts",
+        "workers/workspace/service.ts",
+        "workers/workspace/shared.ts",
+        "workers/workspace/route.ts",
+        "workers/workspace/tools.ts",
+        "workers/ledgerRoom.ts",
+        "src/App.tsx",
+        "test/fixtures/workspaceMergeReviewProof.tsx"
+      ],
+      "tests": [
+        "test/hearthside-workspace.test.ts",
+        "test/hearthside-workspace-runtime.test.ts",
+        "test/hearthside-workspace-browser.test.ts",
+        "test/hearthside-workspace-authority.test.ts",
+        "test/workspace-contracts.test.ts",
+        "test/workspace-trust.test.ts",
+        "test/workspace-ui.test.ts",
+        "test/workspace-links.test.ts",
+        "test/workspace-command-authority.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-journeys.test.ts",
+        "test/app-startup-p1.test.ts",
+        "test/workspace-merge-review-browser.test.ts",
+        "test/workspace-merge-review-client.test.ts",
+        "test/workspace-merge-review-runtime.test.ts",
+        "test/workspace-action-options.test.ts",
+        "test/workspace-action-options-authority.test.ts"
+      ],
+      "reason": "Selected experience continuity, private drafts, exact provider disclosure and immutable reviewed artifacts accepted by real LedgerRoom without private source leakage"
+    },
+    {
+      "sources": [
+        "src/hearthside/designRecovery.ts",
+        "src/hearthside/RejectedDesignEdit.tsx",
+        "src/hearthside/KeyboardPaint.tsx",
+        "src/hearthside/keyboardStrokeDraft.ts",
+        "src/hearthside/designClient.ts",
+        "src/hearthside/CollaborativeStudio.tsx"
+      ],
+      "tests": [
+        "test/hearthside-design-client.test.ts",
+        "test/hearthside-collaboration.test.ts",
+        "test/hearthside-design-runtime.test.ts"
+      ],
+      "reason": "Explicit retained-edit comparison, atomic durable replacement, original surface mapping and privately scoped keyboard draft recovery"
+    },
+    {
+      "sources": [
+        "src/hearthside/encounterContracts.ts",
+        "src/hearthside/encounterService.ts",
+        "src/hearthside/encounterDesign.ts",
+        "src/hearthside/encounterWardrobe.ts",
+        "src/hearthside/encounterSharedClient.ts",
+        "workers/hearthsideVaultEncounters.ts",
+        "workers/hearthsideVaultEncounterAdapter.ts"
+      ],
+      "tests": [
+        "test/hearthside-encounters.test.ts",
+        "test/hearthside-encounter-runtime.test.ts",
+        "test/hearthside-encounter-client.test.ts",
+        "test/hearthside-encounter-authority.test.ts",
+        "test/hearthside-encounter-browser.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-collaboration.test.ts",
+        "test/hearthside-journeys.test.ts"
+      ],
+      "reason": "Exact paired encounter choices, fresh recipient evidence, canonical Studio copy and private recovery"
+    },
+    {
+      "sources": [
+        "src/hearthside/RoomScene.tsx",
+        "src/hearthside/roomFurniture.ts",
+        "src/hearthside/RoomFurnitureArranger.tsx",
+        "src/hearthside/roomHistory.ts"
+      ],
+      "tests": [
+        "test/hearthside-furniture.test.ts",
+        "test/hearthside-furniture-authority.test.ts",
+        "test/hearthside-furniture-browser.test.ts",
+        "test/hearthside-room-history.test.ts",
+        "test/hearthside-room-scene.test.ts",
+        "test/hearthside-guests-runtime.test.ts",
+        "test/hearthside-contracts.test.ts"
+      ],
+      "reason": "Canonical furniture CAS, immutable historical and guest layouts, arrangement recovery and actual SVG controls"
+    },
+    {
+      "sources": [
+        "workers/hearthsideGuestSource.ts",
+        "src/hearthside/guestImage.ts",
+        "src/hearthside/GuestVisitsEntry.tsx",
+        "src/hearthside/StreetEntry.tsx",
+        "src/hearthside/GuestVisits.tsx",
+        "workers/hearthsideGuests.ts"
+      ],
+      "tests": [
+        "test/hearthside-guests.test.ts",
+        "test/hearthside-guests-runtime.test.ts",
+        "test/hearthside-guests-sql.test.ts",
+        "test/hearthside-guests-browser.test.ts",
+        "test/hearthside-memory-authority.test.ts",
+        "test/hearthside-furniture-authority.test.ts",
+        "test/hearthside-guest-image.test.ts",
+        "test/hearthside-street-entry.test.ts",
+        "test/hearthside-guest-assembly.test.ts"
+      ],
+      "reason": "Guest-only namespace and actual entry, original publication binding, source withdrawal and prepared private media"
+    },
+    {
+      "sources": [
+        "src/hearthside/nativeAuth.ts",
+        "src/hearthside/nativeBootstrap.ts",
+        "src/hearthside/nativeSessionStore.ts",
+        "src/hearthside/NativeWidgetEntry.tsx",
+        "src/hearthside/nativeWidget.ts",
+        "src/hearthside/nativeWidgetCapture.ts",
+        "src/auth/supabaseSession.ts",
+        "src/main.tsx"
+      ],
+      "tests": [
+        "test/hearthside-native.test.ts",
+        "test/hearthside-native-auth.test.ts",
+        "test/hearthside-native-bootstrap.test.ts",
+        "test/hearthside-native-ui.test.ts",
+        "test/hearthside-native-widget.test.ts",
+        "test/hearthside-street-entry.test.ts",
+        "test/supabase-auth-session.test.ts",
+        "test/app-startup-p1.test.ts",
+        "test/continuity-auth-reconnect.test.ts"
+      ],
+      "reason": "Secure native hydration and callback recovery, exact widget opt-in and account/guest scope isolation"
+    },
+    {
+      "sources": [
+        "workers/workspace/shared.ts",
+        "workers/workspace/sharedArchive.ts",
+        "workers/workspace/sharedArchiveStorage.ts"
+      ],
+      "tests": [
+        "test/hearthside-workspace-archive.test.ts",
+        "test/hearthside-workspace-authority.test.ts",
+        "test/hearthside-workspace-runtime.test.ts",
+        "test/hearthside-workspace.test.ts",
+        "test/workspace-command-authority.test.ts"
+      ],
+      "reason": "Shared-copy archive-before-ACK, initialization rollback, stale-tail restore and terminal withdrawal"
+    },
+    {
+      "sources": [
+        "src/hearthside/winMemory.ts",
+        "src/hearthside/winMemoryProvenance.ts",
+        "src/hearthside/winMemoryCaptions.ts",
+        "src/hearthside/WinMemoryReview.tsx",
+        "src/hearthside/WinMemorySource.tsx",
+        "src/hearthside/contracts.ts",
+        "src/hearthside/commands.ts",
+        "src/hearthside/memoryPublication.ts",
+        "src/HouseholdHome.tsx",
+        "src/core/chapters.ts",
+        "src/hearthside/projectorCanvas.ts",
+        "src/hearthside/projectorStory.ts",
+        "src/hearthside/guestProjection.ts",
+        "workers/hearthsideGuestSource.ts",
+        "workers/ledgerRoom.ts"
+      ],
+      "tests": [
+        "test/hearthside-win-memory.test.ts",
+        "test/hearthside-win-memory-ui.test.ts",
+        "test/hearthside-win-memory-runtime.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-memory-authority.test.ts",
+        "test/hearthside-projector.test.ts",
+        "test/hearthside-projector-authority.test.ts",
+        "test/hearthside-journeys.test.ts",
+        "test/home-feedback-ui.test.ts",
+        "test/vision-v2-chapters.test.ts",
+        "test/hearthside-guest-assembly.test.ts"
+      ],
+      "reason": "Deterministic legacy Win adoption, exact provenance consent, accepted Home-to-Theatre continuity, retired-write receipt replay and recovery without resurrection"
+    },
+    {
+      "sources": [
+        "src/kitty/KittyStage.tsx",
+        "src/hearthside/designClient.ts",
+        "src/hearthside/RejectedDesignEdit.tsx",
+        "test/fixtures/hearthsideMakingPerformanceProof.tsx"
+      ],
+      "tests": [
+        "test/hearthside-making-performance.test.ts",
+        "test/hearthside-design-client.test.ts"
+      ],
+      "reason": "Actual Studio local pointer and keyboard response, immediate illustrated loading, retained edit continuation and repeated WebGL resource disposal"
+    },
+    {
+      "sources": [
+        "src/hearthside/EncounterEntry.tsx",
+        "src/hearthside/encounterEntryController.ts",
+        "src/hearthside/encounterEntryBridge.ts",
+        "src/hearthside/encounterSharedClient.ts",
+        "src/hearthside/encounterEntry.css"
+      ],
+      "tests": [
+        "test/hearthside-encounter-entry-browser.test.ts",
+        "test/hearthside-encounter-authority.test.ts",
+        "test/hearthside-journeys.test.ts"
+      ],
+      "reason": "Actual recipient-private encounter entry, stable Studio and media identities, paired memory review, scoped recovery and canonical authority"
+    },
+    {
+      "sources": [
+        "src/hearthside/bankReceipt.ts",
+        "src/hearthside/legacyBankAcceptance.ts",
+        "src/hearthside/bankCreation.ts",
+        "src/hearthside/bankJourney.ts",
+        "src/hearthside/BankCreationSurface.tsx",
+        "src/hearthside/ExperienceBankEntry.tsx",
+        "src/hearthside/experienceBank.css",
+        "src/kitty/KittyBankRoom.tsx",
+        "src/ledgerSync/client.ts",
+        "src/hearthside/Hearthside.tsx",
+        "src/HouseholdHome.tsx",
+        "src/KittyBanks.tsx",
+        "src/App.tsx"
+      ],
+      "tests": [
+        "test/hearthside-bank-journey.test.ts",
+        "test/hearthside-bank-journey-ui.test.ts",
+        "test/hearthside-bank-legacy-ui.test.ts",
+        "test/hearthside-bank-journey-runtime.test.ts",
+        "test/hearthside-bank-ack-recovery.test.ts",
+        "test/kitty-envelope-ui.test.ts",
+        "test/kitty-envelope.test.ts",
+        "test/kitty-studio-ui.test.ts",
+        "test/home-feedback-ui.test.ts",
+        "test/plan-life-ui.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-journeys.test.ts"
+      ],
+      "reason": "Exact bank creation receipts, independent intention links, reviewed recovery across reload/scope changes and existing Kitty financial regressions"
+    },
+    {
+      "sources": [
+        "src/hearthside/BrowserSculpture.tsx",
+        "packages/hearthside-browser-ar/index.js",
+        "packages/hearthside-browser-ar/package.json"
+      ],
+      "tests": [
+        "test/hearthside-design-surfaces-browser.test.ts",
+        "test/hearthside-native-ui.test.ts"
+      ],
+      "reason": "Private accepted sculpture viewer, explicit browser placement, supported renderer isolation and scope-close model revocation"
+    },
+    {
+      "sources": [
+        "src/hearthside/sharedLifeRestore.ts",
+        "src/hearthside/sharedLifeRestoreContracts.ts",
+        "src/hearthside/SharedLifeRestore.tsx",
+        "src/hearthside/useSharedLifeRestore.ts",
+        "src/hearthside/sharedLifeRestore.css"
+      ],
+      "tests": [
+        "test/hearthside-shared-life-restore.test.ts",
+        "test/hearthside-shared-life-restore-runtime.test.ts",
+        "test/hearthside-shared-life-restore-browser.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-bank-journey.test.ts",
+        "test/hearthside-furniture-authority.test.ts",
+        "test/ledger-sync-authority.test.ts",
+        "test/month-rehearsal-mainline.test.ts"
+      ],
+      "reason": "Exact paired shared-life restore, current withdrawal and financial preservation, media exclusion and real authority recovery"
+    },
+    {
+      "sources": [
+        "src/core/kittyNestDesigns.ts",
+        "src/kitty/KittyNest.tsx",
+        "src/hearthside/NestCanonicalArtwork.tsx",
+        "src/hearthside/NestCanonicalStudio.tsx",
+        "src/hearthside/NestGuestOrnament.tsx",
+        "src/hearthside/nestCanonical.css",
+        "src/hearthside/nestDesignBinding.ts",
+        "src/hearthside/nestDesignSource.ts",
+        "src/hearthside/nestGuestAppearance.ts",
+        "src/hearthside/design.ts",
+        "src/hearthside/CollaborativeStudio.tsx",
+        "src/hearthside/ProjectorEntry.tsx",
+        "src/hearthside/exportCapture.ts",
+        "src/hearthside/nativeBridge.ts",
+        "src/hearthside/guestProjection.ts",
+        "workers/hearthsideDesignStore.ts",
+        "workers/ledgerRoom.ts"
+      ],
+      "tests": [
+        "test/hearthside-nest-design.test.ts",
+        "test/hearthside-nest-design-runtime.test.ts",
+        "test/hearthside-nest-design-ui.test.ts",
+        "test/hearthside-nest-export.test.ts",
+        "test/kitty-nest.test.ts",
+        "test/kitty-nest-ui.test.ts",
+        "test/hearthside-collaboration.test.ts",
+        "test/hearthside-design-client.test.ts",
+        "test/hearthside-design-runtime.test.ts",
+        "test/hearthside-design-surfaces.test.ts",
+        "test/hearthside-native.test.ts",
+        "test/hearthside-guests.test.ts",
+        "test/hearthside-projector.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-journeys.test.ts"
+      ],
+      "reason": "Canonical Nest source authority, original paid receipt appearance, simultaneous King creation and immutable ornaments across memories, guests, native and exports"
+    },
+    {
+      "sources": [
+        "src/App.tsx",
+        "src/Hercules.tsx",
+        "src/hearthside/Hearthside.tsx",
+        "src/hearthside/routes.ts",
+        "src/hearthside/hearthside.css",
+        "src/hearthside/RoomScene.tsx",
+        "src/hearthside/roomScene.css",
+        "test/fixtures/hearthsideActualApp.ts"
+      ],
+      "tests": [
+        "test/hearthside-actual-app-browser.test.ts",
+        "test/hearthside-contracts.test.ts",
+        "test/hearthside-journeys.test.ts",
+        "test/app-startup-p1.test.ts",
+        "test/month-rehearsal-mainline.test.ts"
+      ],
+      "reason": "Actual App and PGlite intention reload, canonical Task/Calendar handoff and focus recovery, quiet resident, themed responsive room entry and unchanged financial truth"
+    },
+    {
+      "sources": [
+        "src/wardrobe/modelAsset.ts",
+        "src/wardrobe/collectionLoader.ts",
+        "src/wardrobe/scene.ts",
+        "native/android/app/build.gradle",
+        "native/plugin/android/build.gradle"
+      ],
+      "tests": [
+        "test/hearthside-native-wardrobe.test.ts",
+        "test/hercules-wardrobe-catalogue.test.ts",
+        "test/hercules-wardrobe-ui.test.ts",
+        "test/hercules-wardrobe-navigation.test.ts"
+      ],
+      "reason": "Actual Android packaged wardrobe models preserve every base and collection while web/iOS retain gzip, cancellation and existing fitting workflows"
+    },
+    {
+      "sources": [
+        "src/queen/world/queenAuthoring.ts",
+        "src/queen/world/queenSculpture.ts",
+        "src/queen/world/queenModel.ts",
+        "public/models/queen/mandevilla-queen.v1.glb",
+        "public/models/queen/mandevilla-guardian.v1.glb",
+        "public/models/queen/mandevilla-mastermind.v1.glb",
+        "src/queen/world/homeBankModel.ts",
+        "src/queen/world/queenWorld.ts",
+        "src/queen/QueenWorld.tsx",
+        "src/queen/QueenFigure.tsx",
+        "src/kitty/sculpture.ts",
+        "src/kitty/nestSculpture.ts",
+        "src/kitty/studio/flat.tsx",
+        "src/queen/world/queenCharmSurface.ts",
+        "src/queen/world/queenCharmLibrary.ts",
+        "src/queen/world/queenCharmSet.ts",
+        "src/queen/QueenCharmGlyph.tsx",
+        "src/queen/QueenCharmTool.tsx",
+        "src/core/queenCharms.ts",
+        "src/core/kittyStudio.ts",
+        "src/core/queenForm.ts",
+        "src/core/queenLight.ts",
+        "src/queen/QueenWheel.tsx",
+        "src/queen/QueenPortraits.tsx",
+        "src/queen/world/queenScenery.ts",
+        "src/queen/QueenSceneryFlat.tsx",
+        "src/theme/scenes.ts",
+        "src/queen/world/queenRoomWorld.ts",
+        "src/queen/QueenRoomWorld.tsx",
+        "src/queen/QueenCellar.tsx",
+        "src/queen/QueenLoft.tsx",
+        "src/core/kittyNestDesigns.ts",
+        "src/queen/world/queenBankSculpture.ts",
+        "src/queen/QueenBankFlat.tsx",
+        "src/queen/queenHouse.ts",
+        "src/queen/useHouseAxis.ts",
+        "src/queen/QueenHouseRail.tsx",
+        "src/queen/QueenHome.tsx",
+        "src/kitty/studio/silhouette.ts"
+      ],
+      "tests": [
+        "test/queen-world.test.ts",
+        "test/queen-model.test.ts",
+        "test/queen-charms.test.ts",
+        "test/queens-nest-ui.test.ts",
+        "test/queens-nest.test.ts",
+        "test/kitty-nest.test.ts",
+        "test/kitty-studio.test.ts",
+        "test/queen-ceremony.test.ts",
+        "test/queen-scenery.test.ts",
+        "test/queen-rooms.test.ts",
+        "test/queen-house.test.ts"
+      ],
+      "reason": "The Queen's world: every reserved channel stays on its own geometry under any paint, she cannot be fired by any path, freshness owns the glaze axis, fired versus unfired banks resolve to different materials, both paths give every pulse state a distinct still, disposal retains nothing, and conservation is untouched; the charms: a charm cannot be written onto any reserved channel through the guard, an unearned charm cannot be placed, every unlock derives from existing Chapter, Charter and goal records, charms round-trip through the guard on the King's draft, the flat path draws the same charms as the 3D path, and disposal returns every count to zero; her creation and history: a closed Chapter adds exactly one ring and rings cannot be painted, charmed or removed, the wheel cannot produce a profile that hides a reserved channel or breaks the 40px silhouette and both turns are attributed with the second changing a different part, the underside is not paintable and holds no charm seat, a portrait is immutable and renders flat in both paths, the glaze axis reads fresh versus stale at the darkest and brightest hour, and disposal returns every count to zero with rings, marks and charms on her; the worlds shared Home opens into: each of the three shared-home scenes gets a world and no other route does, each world builds three real layers of depth, the drawn row wears the same six colours as the sculpted one, ambient motion is a pure function of the clock and is refused outright under reduced motion, no scenery object can claim the name of one of her reserved channels, and every world returns its geometries, materials and textures on unmount; the two rooms in three dimensions: the ledge's order is one list of design keys on the Build plan bank's own row so one rearrangement is one save and the last save wins, a malformed order is refused and a key for a bank that has left the shelf is ignored, moving one bank leaves every other bank where it was, and the jar's swell and the bank's glaze are quantised bands so no figure can be read off a shape; the kitty banks in the rooms and the one axis that reaches them: every bank form is the studio's own silhouette normalised to a single unit and the nest's own tier rather than a new shape, the house stacks loft over hearth over cellar and clamps at both ends, a swipe counts only when it leans vertical and travels far enough or is flicked, and a control that already owns the pointer or the arrow keeps them \u2014 she keeps the pull down that tips her over and lets the climb up pass through"
+    },
+    {
+      "sources": [
+        "src/core/queenPresentation.ts",
+        "src/queen/QueenHome.tsx",
+        "src/queen/queen-home.css",
+        "src/HouseholdHome.tsx",
+        "src/core/planFeature.ts",
+        "scripts/serve-household-home-proof.mjs",
+        "scripts/serve-queen-world-page-proof.mjs"
+      ],
+      "tests": [
+        "test/queens-nest.test.ts",
+        "test/queens-nest-ui.test.ts",
+        "test/kitty-nest.test.ts",
+        "test/home-feedback-ui.test.ts",
+        "test/vision-v2-home-ui.test.ts",
+        "test/queen-charms.test.ts"
+      ],
+      "reason": "The Queen's Nest Stage 1: every pulse state has a distinct still, protect+prepare route to the Protect door and everyday to the belly, the King still conserves to the cent, no Move gives empty hands, every region is a named keyboard control, and the panel Home stays intact behind the flag; the Queen's world page: the App's top bar, sync line and household switcher readings (the attention label, its explanation and recovery action, the household, the device time, the environment, the switcher and the office door) are one tap away behind the Status door, and the field is unchanged when the App passes no shell \u2014 the no-scroll, chrome-free, \u226555% composition on the actual App page is browser evidence (test/queen-world-page-layout.mjs), not a unit test"
+    },
+    {
+      "sources": [
         "src/core/queenCellar.ts",
         "src/queen/QueenCellarRail.tsx",
         "src/queen/queen-cellar.css"
@@ -440,7 +1122,7 @@
       "tests": [
         "test/habitat-story.test.ts"
       ],
-      "reason": "Our Story (D-268 sample household): the third Hercules habitat, twenty-five fictional months from the Demo Suite's own generator with the Journey of Life laid over them through ordinary commands — move-in, a survived first year crossed at M−12, Make it ours with the sofa bought and the plant corner full, a house and retirement ahead, six foundation Chapters, a vet storm covered from the cushion through the Fund, lean winters, three trips, a kept Memory and things still waiting — balanced, health-clean, replaying byte-for-byte and passing the Demo Suite's books verification"
+      "reason": "Our Story (D-268 sample household): the third Hercules habitat, twenty-five fictional months from the Demo Suite's own generator with the Journey of Life laid over them through ordinary commands \u2014 move-in, a survived first year crossed at M\u221212, Make it ours with the sofa bought and the plant corner full, a house and retirement ahead, six foundation Chapters, a vet storm covered from the cushion through the Fund, lean winters, three trips, a kept Memory and things still waiting \u2014 balanced, health-clean, replaying byte-for-byte and passing the Demo Suite's books verification"
     },
     {
       "sources": [
@@ -453,7 +1135,7 @@
         "test/demo-suite.test.ts",
         "test/app-startup-p1.test.ts"
       ],
-      "reason": "The Hercules habitats: two Development-only synthetic households from the Demo Suite's own generator with a story laid over twelve months through the ordinary commands — doing well reads building with the water above the mark and every bill paid on its day; doing badly reads needs-us with the water under the mark and dry, two bills overdue, subscriptions crept in, a reversal and a lapsed ritual — both replaying exactly from a seed, balanced, health-clean, and passing the Demo Suite's books verification with the investor-only checks skipped rather than failed"
+      "reason": "The Hercules habitats: two Development-only synthetic households from the Demo Suite's own generator with a story laid over twelve months through the ordinary commands \u2014 doing well reads building with the water above the mark and every bill paid on its day; doing badly reads needs-us with the water under the mark and dry, two bills overdue, subscriptions crept in, a reversal and a lapsed ritual \u2014 both replaying exactly from a seed, balanced, health-clean, and passing the Demo Suite's books verification with the investor-only checks skipped rather than failed"
     },
     {
       "sources": [
@@ -592,6 +1274,72 @@
         "test/queen-cellar-ui.test.ts"
       ],
       "reason": "Cellar v3 (D-279/D-280/D-281): pay jars are glass and hypothetical, built only from household-visible income rows (a member's own Personal rows only by their own per-device opt-in), each member can hide their own pay, and the contribution bank reads confirmed Fund contributions; a subscription not charged three days after its day, or charged less, stays one more cycle; the custodian's offer and the partner's yes are existing Plan Bridge rows, and the roll posts once through allocateHouseholdFundSurplus behind Confirm, refused a second time; a late charge clears the mark and withdraws the waiting offer"
+    },
+    {
+      "sources": [
+        "src/core/houseCondition.ts",
+        "src/core/kittyNest.ts",
+        "src/core/fundModel.ts",
+        "src/core/chapters.ts",
+        "src/core/chapterAuthority.ts",
+        "src/core/queenCellar.ts",
+        "src/queen/QueenHome.tsx",
+        "src/ChapterPanel.tsx"
+      ],
+      "tests": [
+        "test/house-condition.test.ts",
+        "test/hearthside-web-financial-compatibility.test.ts",
+        "test/fund-model-chapters.test.ts",
+        "test/hearthside-chapter-tasks.test.ts"
+      ],
+      "reason": "Web convergence preserves unavailable backing, actual dated shared financial meaning and paired exact monthly Chapter transitions"
+    },
+    {
+      "sources": [
+        "src/hearthside/houseRoutes.ts",
+        "src/hearthside/HouseShell.tsx",
+        "src/hearthside/houseShell.css",
+        "src/hearthside/focusedTool.ts",
+        "src/App.tsx",
+        "src/path/OurPathWorld.tsx"
+      ],
+      "tests": [
+        "test/house-routes.test.ts",
+        "test/house-shell-ui.test.ts",
+        "test/hearthside-actual-app-browser.test.ts",
+        "test/hearthside-actual-app-v2-browser.test.ts"
+      ],
+      "reason": "One web house retains legacy addresses, scoped focused returns, the one Plan Studio, actual App navigation and real local authority privacy/Final Confirm"
+    },
+    {
+      "sources": [
+        "src/core/herculesPlay.ts",
+        "src/core/playContracts.ts",
+        "src/play/HerculesPlay.tsx"
+      ],
+      "tests": [
+        "test/hercules-play.test.ts",
+        "test/hercules-play-ui.test.ts"
+      ],
+      "reason": "Shared stage clothing is an explicit live public-gallery revision; private worn looks, source withdrawal and concurrent accepted room changes stay separate"
+    },
+    {
+      "sources": [
+        "src/core/syntheticChapters.ts",
+        "src/core/habitat.ts",
+        "src/core/habitatStory.ts",
+        "src/core/pathSignals.ts",
+        "src/core/pathStones.ts",
+        "src/core/agenda.ts",
+        "src/core/queenCharms.ts"
+      ],
+      "tests": [
+        "test/synthetic-chapters.test.ts",
+        "test/path-umbrella-pieces.test.ts",
+        "test/queen-charms.test.ts",
+        "test/queens-nest.test.ts"
+      ],
+      "reason": "Canonical Chapter Task responsibility, dated evidence, accepted completion and paired closure remain visible in synthetic history, Queen rewards, Planner and Journey"
     }
   ]
 }

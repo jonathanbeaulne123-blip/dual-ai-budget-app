@@ -18,7 +18,7 @@ export type NestBank = {
   parentId: string | null;
   category: NestCategory | null;
   name: string;
-  amountCents: number;
+  amountCents: number | null;
   targetCents: number;
   date: DateKey | null;
   state: "open" | "broken" | "archived";
@@ -28,7 +28,7 @@ export type NestBank = {
   children: NestBank[];
 };
 export type KittyNest = {
-  king: NestBank; categories: NestBank[]; history: NestBank[]; totalCents: number; sourceLabel: string;
+  king: NestBank & { amountCents: number }; categories: NestBank[]; history: NestBank[]; totalCents: number; sourceLabel: string;
   /** Which money model read this nest (D-269). 1 = the rules Hearth always had. */
   mode?: FundModelMode;
   /** v2 only: the exact split behind the four banks, including the Queen's "Now" and what the Fund still owes back. */
@@ -104,8 +104,7 @@ export function projectKittyNest(h: Household, memberId: string, view: LedgerVie
     const resolved = tier === "king" || tier === "plan" ? design?.category ?? category : category;
     return { id, designKey, tier, name: design?.name || name, category: resolved, parentId: tier === "king" ? null : tier === "plan" ? "king" : `plan:${resolved ?? "everyday"}`, amountCents: 0, targetCents, date, state: design?.archivedAt ? "archived" : "open", design, children: [] };
   };
-  const king = make("king", "king", "king", view === "household" ? "Our King" : "My King", null);
-  king.amountCents = totalCents;
+  const king = { ...make("king", "king", "king", view === "household" ? "Our King" : "My King", null), amountCents: totalCents };
   const categories = NEST_CATEGORIES.map(category => make(`plan:${category}`, `plan:${category}`, "plan", NEST_CATEGORY_LABELS[category], category));
   king.children = categories;
   const leaves: NestBank[] = [];
@@ -116,7 +115,7 @@ export function projectKittyNest(h: Household, memberId: string, view: LedgerVie
     const bank = make(`goal:${goal.id}`, `goal:${goal.id}`, "goal", goal.name, category, goal.targetCents, goal.arrivalDate ?? goal.deadline);
     bank.goal = goal;
     const reserve = view === "household" ? goalFundReserve(h, goal.id, today) : null;
-    bank.amountCents = view === "household" ? (reserve?.unresolved ? 0 : reserve?.reservedCents ?? 0) : goalRemainingClaim(h, goal, today);
+    bank.amountCents = view === "household" ? (reserve?.unresolved ? null : reserve?.reservedCents ?? 0) : goalRemainingClaim(h, goal, today);
     bank.state = goal.envelope?.archivedAt ? "archived" : goal.status === "retired" ? "broken" : "open";
     leaves.push(bank);
   }
@@ -187,12 +186,13 @@ export function projectKittyNest(h: Household, memberId: string, view: LedgerVie
     const key = `plan-line:${line.id}`;
     leaves.push(make(key, key, "bill", line.labelSnapshot, fundOf(key, { kind: "plan-line", line }), line.kind === "true-expense" ? line.decision?.targetCents ?? line.amountCents : line.amountCents, line.dueDate ?? line.decision?.deadline ?? null));
   }
+  const unresolved=leaves.some(bank=>bank.goal&&bank.state==='open'&&bank.amountCents===null);
   const desired = { protect: 0, everyday: 0, build: 0, prepare: 0 };
   let allocation: FundAllocation | undefined;
-  if (mode === 2) {
+  if (mode === 2 && !unresolved) {
     allocation = v2Allocation(h, { view, memberId, today, totalCents, fund, leaves, month, fundOf });
   } else {
-  for (const bank of leaves) if (bank.goal && bank.state === "open") desired[bank.category ?? "everyday"] += bank.amountCents;
+  for (const bank of leaves) if (bank.goal && bank.state === "open") desired[bank.category ?? "everyday"] += bank.amountCents ?? 0;
   if (view === "household") {
     // Unattributed historic Fund earmarks stay represented without inventing a goal owner.
     desired.build += Math.max(0, fund.kittyCents - Object.values(desired).reduce((sum, n) => sum + n, 0));
@@ -203,10 +203,11 @@ export function projectKittyNest(h: Household, memberId: string, view: LedgerVie
   }
   const allocations = allocation ? allocation.amounts : allocateNestTotal(totalCents, desired);
   for (const category of categories) {
-    category.amountCents = allocations[category.category!];
+    category.amountCents = unresolved ? null : allocations[category.category!];
     category.children = leaves.filter(bank => bank.category === category.category && bank.state === "open").sort((a, b) => (a.tier === b.tier ? (a.date ?? "9999").localeCompare(b.date ?? "9999") || a.id.localeCompare(b.id) : a.tier === "goal" ? -1 : 1));
     category.targetCents = category.children.reduce((sum, bank) => sum + bank.targetCents, 0);
-    let available = Math.max(0, category.amountCents - category.children.filter(bank => bank.goal).reduce((sum, bank) => sum + bank.amountCents, 0));
+    if(category.amountCents===null){for(const bank of category.children.filter(bank=>!bank.goal))bank.amountCents=null;continue;}
+    let available = Math.max(0, category.amountCents - category.children.filter(bank => bank.goal).reduce((sum, bank) => sum + (bank.amountCents??0), 0));
     for (const bank of category.children.filter(bank => !bank.goal)) { bank.amountCents = Math.min(available, bank.targetCents); available -= bank.amountCents; }
   }
   king.targetCents = categories.reduce((sum, category) => sum + category.targetCents, 0);
@@ -228,9 +229,14 @@ function v2Allocation(h: Household, input: {
   fundOf: (designKey: string, source: FundSource) => FundId;
 }): FundAllocation {
   const { view, today, totalCents, fund, leaves, month } = input;
+  // Never cap an unreadable reservation into a fabricated numeric balance.
+  const known = (bank: NestBank): number => {
+    if (bank.amountCents === null) throw new Error("Goal backing is unavailable.");
+    return bank.amountCents;
+  };
   const desired: Record<FundId, number> = { prepare: 0, protect: 0, build: 0, everyday: 0 };
   if (view !== "household") {
-    for (const bank of leaves) if (bank.goal && bank.state === "open") desired[bank.category ?? "everyday"] += bank.amountCents;
+    for (const bank of leaves) if (bank.goal && bank.state === "open") desired[bank.category ?? "everyday"] += known(bank);
     for (const bank of leaves) if (bank.tier === "bill" && bank.state === "open" && bank.date && bank.date.slice(0, 7) === month) desired[bank.category ?? "everyday"] += bank.targetCents;
     return allocateFunds({ kingCents: totalCents, pinned: {}, owedBackCents: 0, desired });
   }
@@ -238,7 +244,7 @@ function v2Allocation(h: Household, input: {
   let kittyLeft = Math.max(0, fund.kittyCents);
   for (const bank of leaves) {
     if (!bank.goal || bank.state !== "open") continue;
-    const held = Math.min(kittyLeft, Math.max(0, bank.amountCents));
+    const held = Math.min(kittyLeft, Math.max(0, known(bank)));
     bank.amountCents = held;
     pinned[bank.category ?? "build"] += held;
     kittyLeft -= held;

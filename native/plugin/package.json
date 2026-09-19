@@ -1,0 +1,6 @@
+{
+  "name": "@hearth/hearthside-native", "version": "0.1.0", "type": "module", "main": "index.js", "types": "index.d.ts",
+  "capacitor": { "ios": { "src": "ios" }, "android": { "src": "android" } },
+  "peerDependencies": { "@capacitor/core": "^8.0.0" },
+  "files": ["index.js", "index.d.ts", "Package.swift", "ios", "android"]
+}

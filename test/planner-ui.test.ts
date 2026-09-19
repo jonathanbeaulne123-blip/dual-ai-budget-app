@@ -59,6 +59,10 @@ describe("planner UI (D-245)", () => {
     household = saveTask(household, { memberId: B, id: "TASK-hydro", expectedRevision: 0, task: draft({ title: "Pay hydro", expectedAmountCents: 14_000 }) }).household;
     household = postEntry(household, { date: today, type: "expense", amount: 140, accountId: "ACC-CHEQUING", subcategoryId: "SUB-HOUSING-ELECTRIC", createdBy: B, note: "Hydro bill", confirmDuplicate: true }).household;
     await render();
+    expect([...host.querySelectorAll('button')].find(b=>b.textContent==='Attach receipt')!.disabled).toBe(true);
+    await click("Taking it");
+    expect(household.tasks![0]!.assigneeId).toBe(B);
+    expect(household.tasks![0]!.acknowledgedBy).toContain(B);
     await click("Attach receipt");
     const receipt = host.querySelector<HTMLButtonElement>(".planner-attach li button")!;
     expect(receipt.textContent).toContain("$140.00");
@@ -79,7 +83,7 @@ describe("planner UI (D-245)", () => {
     expect(host.textContent).not.toContain("Feed Hercules");
     await click("Theirs");
     expect(host.textContent).toContain("Feed Hercules");
-    expect(host.textContent).toContain("Jonathan hasn’t seen this yet");
+    expect(host.textContent).toContain("Jonathan hasn’t accepted this assignment");
   });
   it("keeps a private task to its owner in the personal view", async () => {
     household = saveTask(household, { memberId: J, id: "TASK-secret", expectedRevision: 0, task: draft({ title: "Surprise", visibility: "personal" }) }).household;

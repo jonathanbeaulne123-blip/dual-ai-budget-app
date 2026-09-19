@@ -12,10 +12,10 @@ async function mount(household: Household, width = 390) {
   const host = document.createElement("div"); document.body.append(host); const root = createRoot(host);
   const requests: string[] = [];
   const props = { household, today, environment: "development" as const, memberId: "MEM-001", view: "household" as const, busy: false,
-    onCommand: () => requests.push("write"), onAskPost: (id: string) => requests.push(id), onAskPostDue: noop,
+    onCommand: () => { requests.push("write"); }, onAskPost: (id: string) => requests.push(id), onAskPostDue: noop,
     onAskSaveRepeating: noop, onAskVisit: noop, onAskSettle: noop, onAskWriteOff: noop, onAskStartJar: noop, onOpenPlan: noop, onOpenShiftEnvelope: noop };
   await act(async () => root.render(createElement(CalendarPage, props)));
-  await act(async () => [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(button => button.textContent === "Month")!.click());
+  await act(async () => [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Calendar display"] button')].find(button => button.textContent === "Cash flow")!.click());
   return { host, root, props, requests, close: async () => { await act(async () => root.unmount()); host.remove(); } };
 }
 async function range(host: HTMLElement, value: number) {
@@ -64,7 +64,7 @@ describe("Month Calendar Weight", () => {
       expect(input.value).toBe("22");
       await act(async () => m.root.render(createElement(CalendarPage, { ...m.props, view: "personal" })));
       expect(m.host.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe("Calendar");
-      await act(async () => [...m.host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find(button => button.textContent === "Month")!.click());
+      await act(async () => [...m.host.querySelectorAll<HTMLButtonElement>('[aria-label="Calendar display"] button')].find(button => button.textContent === "Cash flow")!.click());
       expect(m.host.querySelector<HTMLInputElement>(".weight-range")?.value).toBe("8"); expect(m.requests).toEqual([]);
     } finally { await m.close(); }
   });

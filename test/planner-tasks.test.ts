@@ -22,7 +22,8 @@ describe("planner tasks (D-245)", () => {
     let next = saveTask(h, input("vet")).household;
     next = saveTask(next, input("tires", { title: "Tires", expectedAmountCents: 78_000, dueDate: "2026-09-18" })).household;
     next = saveTaskList(next, { memberId: B, id: "LIST-wedding", expectedRevision: 0, list: { name: "Wedding", visibility: "household", deleted: false } }).household;
-    next = completeTask(next, { memberId: B, id: "TASK-vet", expectedRevision: 1 }).household;
+    next = acknowledgeTask(next, { memberId: B, id: "TASK-vet", expectedRevision: 1 }).household;
+    next = completeTask(next, { memberId: B, id: "TASK-vet", expectedRevision: 2 }).household;
     expect({ ...compileHousehold(next), activity: before.activity, lastCommittedAt: before.lastCommittedAt }).toEqual(before);
     expect(JSON.stringify(financialAuditFacts(next))).toBe(facts);
     expect(next.transactions).toEqual(h.transactions);
@@ -30,20 +31,21 @@ describe("planner tasks (D-245)", () => {
     expect(hasTaskData(next)).toBe(true);
   });
   it("keeps a money task off the tick and completes it only by evidence that exists in the books", () => {
-    const h = saveTask(catalogHousehold(), input("hydro", { title: "Pay hydro", expectedAmountCents: 14_000, dueDate: "2026-09-18" })).household;
+    let h = saveTask(catalogHousehold(), input("hydro", { title: "Pay hydro", expectedAmountCents: 14_000, dueDate: "2026-09-18" })).household;
     expect(taskIsFinancial(h.tasks![0]!)).toBe(true);
-    expect(() => completeTask(h, { memberId: B, id: "TASK-hydro", expectedRevision: 1 })).toThrow(/evidence/);
-    expect(() => completeTask(h, { memberId: B, id: "TASK-hydro", expectedRevision: 1, evidence: { kind: "transaction", transactionId: "TX-missing", amountCents: 14_000, date: "2026-09-17" } })).toThrow(/not in the books/);
+    h = acknowledgeTask(h, { memberId: B, id: "TASK-hydro", expectedRevision: 1 }).household;
+    expect(() => completeTask(h, { memberId: B, id: "TASK-hydro", expectedRevision: 2 })).toThrow(/evidence/);
+    expect(() => completeTask(h, { memberId: B, id: "TASK-hydro", expectedRevision: 2, evidence: { kind: "transaction", transactionId: "TX-missing", amountCents: 14_000, date: "2026-09-17" } })).toThrow(/not in the books/);
     const posted = postEntry(h, { date: "2026-09-17", type: "expense", amount: 140.5, accountId: "ACC-CHEQUING", subcategoryId: "SUB-HOUSING-ELECTRIC", createdBy: B, note: "Hydro", confirmDuplicate: true });
     const tx = posted.household.transactions.find((row) => row.note === "Hydro")!;
-    expect(() => completeTask(posted.household, { memberId: B, id: "TASK-hydro", expectedRevision: 1, evidence: { kind: "transaction", transactionId: tx.id, amountCents: 14_000, date: tx.date } })).toThrow(/not in the books/);
-    const done = completeTask(posted.household, { memberId: B, id: "TASK-hydro", expectedRevision: 1, evidence: { kind: "transaction", transactionId: tx.id, amountCents: tx.amountCents, date: tx.date } }).household;
+    expect(() => completeTask(posted.household, { memberId: B, id: "TASK-hydro", expectedRevision: 2, evidence: { kind: "transaction", transactionId: tx.id, amountCents: 14_000, date: tx.date } })).toThrow(/not in the books/);
+    const done = completeTask(posted.household, { memberId: B, id: "TASK-hydro", expectedRevision: 2, evidence: { kind: "transaction", transactionId: tx.id, amountCents: tx.amountCents, date: tx.date } }).household;
     const task = done.tasks![0]!;
     expect(task.completedBy).toBe(B);
     expect(task.completionEvidence).toMatchObject({ kind: "transaction", transactionId: tx.id, amountCents: 14_050 });
     // The receipt keeps both the plan and the truth; reopening forgets neither the amount planned nor the transaction.
-    const reopened = reopenTask(done, { memberId: B, id: "TASK-hydro", expectedRevision: 2 }).household;
-    expect(reopened.tasks![0]).toMatchObject({ completedAt: null, completionEvidence: null, expectedAmountCents: 14_000, revision: 3 });
+    const reopened = reopenTask(done, { memberId: B, id: "TASK-hydro", expectedRevision: 3 }).household;
+    expect(reopened.tasks![0]).toMatchObject({ completedAt: null, completionEvidence: null, expectedAmountCents: 14_000, revision: 4 });
     expect(reopened.transactions).toHaveLength(posted.household.transactions.length);
   });
   it("requires current revisions, protects private ownership, and keeps a task in its original space", () => {

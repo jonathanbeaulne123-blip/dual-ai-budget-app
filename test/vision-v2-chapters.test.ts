@@ -5,7 +5,8 @@ import {
   FOUNDATION_CHAPTERS,
   addRitual,
   celebrationLevel,
-  closeChapter,
+  closeChapter as closeChapterCommand, reviewChapterClosure,
+  acknowledgeRitualChange, chapterClosureRevision, pendingChapterClosure, pendingRitualReview, prepareRitualOccurrence, ritualAgreementRevision, ritualsForChapter, movesForChapter,
   completeMove,
   keepWinAsMemory,
   memories,
@@ -17,13 +18,16 @@ import {
   openChapterFor,
   ourRhythm,
   recentWin,
-  recordRitualHeld,
+  recordRitualHeld as recordHeldCommand,
   recordWin,
   respondToMove,
   ritualReadyToGraduate,
   shapeChapters,
   shapeRituals,
 } from "../src/core/chapters.ts";
+import { acknowledgeTask } from "../src/core/tasks.ts";
+import { chapterTask } from "../src/core/chapterTasks.ts";
+import type { Household } from "../src/core/types.ts";
 import { CHAPTER_LESSONS, CURRICULUM_BY_CHAPTER, chapterLesson } from "../src/core/planLearning.ts";
 import { PLAN_CURRICULUM } from "../src/core/planSystem.ts";
 import { sitdownBrief } from "../src/core/sitdownBrief.ts";
@@ -34,6 +38,25 @@ import { applyCommandEventLocally, extractMaterializationFacts, type ContinuityC
 const ME = "MEM-002";
 const PARTNER = "MEM-001";
 const AT = "2026-09-12T14:00:00.000Z";
+
+function recordRitualHeld(h: Household, input: Parameters<typeof recordHeldCommand>[1]) {
+  let ritual = h.rituals!.find(row => row.id === input.ritualId)!; const pending = pendingRitualReview(ritual);
+  if (pending) h = acknowledgeRitualChange(h, { memberId: PARTNER, ritualId: ritual.id, expectedRevision: ritualAgreementRevision(ritual), proposalId: pending.id, digest: pending.digest, at: input.at ?? AT }).household;
+  ritual = h.rituals!.find(row => row.id === input.ritualId)!;
+  h = prepareRitualOccurrence(h, { memberId: input.memberId, ritualId: ritual.id, expectedRevision: ritualAgreementRevision(ritual), onDate: input.onDate, at: input.at ?? AT }).household;
+  let task = chapterTask(h, { kind: 'ritual-occurrence', sourceId: ritual.id, onDate: input.onDate })!;
+  if (task.completedAt) { expect(() => recordHeldCommand(h, { ...input, expectedTaskRevision: task.revision })).toThrow(/already done/); return { household: h, postedIds: [], warnings: [], undo: { id: 'already-complete', snapshot: h, label: 'Already complete', postedIds: [] } }; }
+  if (!task.acknowledgedBy.includes(input.memberId)) h = acknowledgeTask(h, { memberId: input.memberId, id: task.id, expectedRevision: task.revision }).household;
+  task = h.tasks!.find(row => row.id === task.id)!;
+  return recordHeldCommand(h, { ...input, expectedTaskRevision: task.revision });
+}
+function closeChapter(h: Household, input: Parameters<typeof closeChapterCommand>[1]) {
+  const chapter = h.chapters!.find(row => row.id === input.chapterId)!;
+  h = closeChapterCommand(h, { ...input, expectedRevision: chapterClosureRevision(chapter), reviewDigest: reviewChapterClosure(h, input).reviewDigest }).household;
+  expect(h.chapters!.find(row => row.id === chapter.id)!.state).toBe('open');
+  const next = h.chapters!.find(row => row.id === chapter.id)!, p = pendingChapterClosure(next)!;
+  return closeChapterCommand(h, { ...input, memberId: PARTNER, expectedRevision: chapterClosureRevision(next), proposalId: p.id, digest: p.digest });
+}
 
 describe("Chapter system — objects (Vision v2 §5)", () => {
   it("opens a foundation Chapter with its primary Ritual and first Move, one at a time", async () => {
@@ -56,7 +79,7 @@ describe("Chapter system — objects (Vision v2 §5)", () => {
     let h = openChapter(catalogHousehold(), { memberId: ME, foundationId: "make-rent-boring", at: AT }).household;
     const ritual = h.rituals![0]!;
     for (const day of ["2026-09-01", "2026-09-15", "2026-09-15", "2026-10-01"]) h = recordRitualHeld(h, { memberId: ME, ritualId: ritual.id, onDate: day }).household;
-    const held = h.rituals![0]!;
+    const held = ritualsForChapter(h, h.chapters![0]!.id)[0]!;
     expect(held.heldOn).toEqual(["2026-09-01", "2026-09-15", "2026-10-01"]);
     expect(ritualReadyToGraduate(held)).toBe(true);
     expect(held.state).toBe("active");
@@ -68,11 +91,14 @@ describe("Chapter system — objects (Vision v2 §5)", () => {
     const chapter = openChapterFor(h)!;
     h = offerMove(h, { memberId: ME, chapterId: chapter.id, text: "Jonathan owns hydro; Bianca knows where the account lives", needsAcknowledgment: true }).household;
     const move = h.moves!.find((row) => row.text.startsWith("Jonathan owns"))!;
-    expect(move.acknowledgedByMemberIds).toEqual([ME]);
-    expect(() => completeMove(h, { memberId: ME, moveId: move.id })).toThrow(/both of you/);
-    h = respondToMove(h, { memberId: PARTNER, moveId: move.id, response: "acknowledge" }).household;
-    h = completeMove(h, { memberId: ME, moveId: move.id, at: AT }).household;
-    expect(h.moves!.find((row) => row.id === move.id)!.state).toBe("done");
+    expect(movesForChapter(h, chapter.id).find(row => row.id === move.id)!.acknowledgedByMemberIds).toEqual([ME]);
+    let task = h.tasks!.find(row => row.id === move.taskId)!;
+    h = respondToMove(h, { memberId: ME, moveId: move.id, response: "accept", expectedTaskRevision: task.revision }).household; task = h.tasks!.find(row => row.id === move.taskId)!;
+    expect(() => completeMove(h, { memberId: ME, moveId: move.id, expectedTaskRevision: task.revision })).toThrow(/both of you/);
+    h = respondToMove(h, { memberId: ME, moveId: move.id, response: "acknowledge", expectedTaskRevision: task.revision }).household;
+    h = respondToMove(h, { memberId: PARTNER, moveId: move.id, response: "acknowledge", expectedTaskRevision: task.revision }).household;
+    h = completeMove(h, { memberId: ME, moveId: move.id, expectedTaskRevision: task.revision, at: AT }).household;
+    expect(movesForChapter(h, chapter.id).find((row) => row.id === move.id)!.state).toBe("done");
     const win = recentWin(h, AT)!;
     expect(win.level).toBe("acknowledgment");
     expect(win.fadedAt).not.toBeNull();
@@ -99,7 +125,7 @@ describe("Chapter system — objects (Vision v2 §5)", () => {
     const chapter = openChapterFor(h)!;
     h = closeChapter(h, { memberId: ME, chapterId: chapter.id, outcome: "life-changed", at: AT }).household;
     expect(h.rituals![0]!.state).toBe("retired");
-    expect(h.moves!.every((row) => row.state === "paused")).toBe(true);
+    expect(movesForChapter(h, chapter.id).every((row) => row.state === "paused")).toBe(true);
     expect(h.wins ?? []).toHaveLength(0);
   });
 
@@ -189,6 +215,7 @@ describe("Chapter system — objects (Vision v2 §5)", () => {
     expect(direct.household.chapters).toEqual(first.household.chapters);
     expect(direct.household.rituals).toEqual(first.household.rituals);
     expect(direct.household.moves).toEqual(first.household.moves);
+    expect(direct.household.tasks).toEqual(first.household.tasks);
     const missingFacts = event("evt-chapter-missing", base.revision, first.household.revision, firstRef);
     missingFacts.payload_json.materializationFacts = {};
     expect(await applyCommandEventLocally({ local: base, event: missingFacts, memberId: ME }))
@@ -229,6 +256,7 @@ describe("Chapter system — objects (Vision v2 §5)", () => {
     if (!compactedReplay.ok) throw new Error(compactedReplay.reason);
     expect(compactedReplay.ok).toBe(true);
     expect(compactedReplay.household.chapters).toEqual(second.household.chapters);
+    expect(compactedReplay.household.tasks).toEqual(second.household.tasks);
     expect(compactedReplay.household.rituals).toEqual(second.household.rituals);
 
     const brokenReference = structuredClone(event("evt-chapter-reference", base.revision, first.household.revision, firstRef));

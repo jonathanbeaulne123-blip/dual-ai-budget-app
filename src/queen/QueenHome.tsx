@@ -5,7 +5,7 @@ import { formatCad } from "../core/money.ts";
 import { monthObligations } from "../core/monthObligations.ts";
 import { duePotentialExpenses, potentialExpensesForView } from "../core/potentialExpenses.ts";
 import { deriveFundPulseInput, fundPulse, presenceLines, type FundPulseFreshness } from "../core/fundPulse.ts";
-import { completeMove, nextMove, openChapterFor, respondToMove } from "../core/chapters.ts";
+import { nextMove, openChapterFor } from "../core/chapters.ts";
 import { projectKittyNest, NEST_CATEGORY_LABELS } from "../core/kittyNest.ts";
 import { fundDisplayName } from "../core/spaceNames.ts";
 import {
@@ -13,6 +13,8 @@ import {
   queenBanks, queenBody, queenBuds, queenCrown, queenFeet, queenHands, queenHem, queenLine, queenRibbons, queenSeams, queenShelf, queenShelfOrder, QUEEN_SHELF_BANK_KEY, queenStill, queenTrace, queenVine,
   type QueenBankId,
 } from "../core/queenPresentation.ts";
+import { ChapterAdoption, ChapterMoveActions } from "../ChapterTaskControls.tsx";
+import { deriveHouseCondition } from "../core/houseCondition.ts";
 import { useEasyRead } from "../useEasyRead.ts";
 import { QueenFigure } from "./QueenFigure.tsx";
 import { QueenWorld, type QueenWorldMode } from "./QueenWorld.tsx";
@@ -71,6 +73,10 @@ export type QueenHomeProps = {
   clock?: number;
   /** The App's shell readings her world takes off the page (Vision v2 §4.2: nothing but her, the tabs and the nav). Kept behind the Status door, never dropped. */
   shell?: QueenShell;
+  /** The unified house shell can address the Queen's existing three-floor axis. */
+  housePlace?: HousePlace;
+  /** Keeps a person-driven floor change addressable by the unified house shell. */
+  onHousePlace?: (place: HousePlace) => void;
 };
 
 /**
@@ -149,7 +155,7 @@ function readWide(): boolean {
  * button above each. Panels peek; the cellar and the loft are the rooms, and
  * she does not follow you in.
  */
-export function QueenHome({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onOpenBank, identityArt, world = "auto", clock, shell }: QueenHomeProps) {
+export function QueenHome({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onOpenBank, identityArt, world = "auto", clock, shell, housePlace, onHousePlace }: QueenHomeProps) {
   const wide = useSyncExternalStore(subscribeWide, readWide, () => false);
   const [easyRead] = useEasyRead(`${household.environment}:${household.householdId}:${memberId}`);
   const ids = useId();
@@ -164,6 +170,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const presence = presenceLines(household, { memberId, today });
   const crown = queenCrown(presence);
   const nest = useMemo(() => projectKittyNest(household, memberId, "household", today), [household, memberId, today]);
+  const living = useMemo(() => deriveHouseCondition(household, { memberId, today, freshness, growing: pulse.state === "building", backingAvailable: nest.categories.every(bank => bank.amountCents !== null) }), [household, memberId, today, freshness, pulse.state, nest]);
   const banks = queenBanks(nest);
   // Money model (D-271): the words follow the rules that produced the numbers.
   const { labels: QUEEN_BANK_LABELS, meanings: QUEEN_BANK_MEANINGS, lowerTitle, lowerRoom, lowerBankKey } = queenBankWords(nest.mode ?? 1);
@@ -202,7 +209,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   /** The jug: the Fund's safe surplus, poured by its custodian through the month-end rollover, behind Confirm. */
   const loftPour = useMemo(() => {
     const fund = household.householdFund;
-    if (!fund) return undefined;
+    if (!fund || nest.categories.some(bank => bank.amountCents === null)) return undefined;
     const projection = projectHouseholdFund(household, today);
     return {
       safeCents: Math.max(0, projection.safeRolloverCents),
@@ -212,7 +219,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
         memberId, date: today, note: note ?? "Poured over the loft's rack", allocations: allocations.map((row) => ({ goalId: row.goalId, amount: (row.amountCents / 100).toFixed(2) })),
       })),
     };
-  }, [household, memberId, today, onCommand]);
+  }, [household, memberId, today, onCommand, nest]);
   const freshBud = trace && trace.region.startsWith("bud:") ? buds.findIndex((bud) => `bud:${bud.goalId}` === trace.region) : -1;
   const pose = POSTURE[still.posture];
 
@@ -272,7 +279,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
     const rows = [
       { id: "protect", bank: protectBank, step: banks.protect.share },
       { id: "build", bank: buildBank, step: banks.build.share },
-      ...shelf.filter((item) => item.goalId).slice(0, 3).map((item) => ({ id: `goal:${item.goalId}`, bank: item.bank, step: item.bank.targetCents > 0 ? Math.max(0, Math.min(10, Math.floor((item.bank.amountCents / item.bank.targetCents) * 10))) : 0 })),
+      ...shelf.filter((item) => item.goalId).slice(0, 3).map((item) => ({ id: `goal:${item.goalId}`, bank: item.bank, step: item.bank.targetCents > 0 && item.bank.amountCents !== null ? Math.max(0, Math.min(10, Math.floor((item.bank.amountCents / item.bank.targetCents) * 10))) : 0 })),
     ];
     return rows.map((row) => { const piece = queenBankPiece(row.bank); return { id: row.id, piece, fired: queenBankFired(piece), glaze: queenBankGlaze(row.bank), step: row.step, name: row.bank.name }; });
   }, [nest, banks.protect.share, banks.build.share, shelf]);
@@ -486,11 +493,19 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
    * ArrowUp climbs a floor; down descends. The rail does the same thing with a
    * button, so no floor is reachable only by gesture.
    */
-  const travel = useCallback((to: Scene) => {
+  const travel = useCallback((to: Scene, report = true) => {
     setSelectedCharm(null);
-    if (to === "home") { if (scene !== "home") exitRoom(); return; }
-    if (to !== scene) enterRoom(to);
-  }, [scene, exitRoom, enterRoom]);
+    if (to === "home") {
+      if (scene !== "home") exitRoom();
+      if (report && scene !== "home") onHousePlace?.(to);
+      return;
+    }
+    if (to !== scene) {
+      enterRoom(to);
+      if (report) onHousePlace?.(to);
+    }
+  }, [scene, exitRoom, enterRoom, onHousePlace]);
+  useEffect(() => { if (housePlace && housePlace !== scene) travel(housePlace, false); }, [housePlace, scene, travel]);
   const moveFloor = useCallback((move: HouseMove) => {
     const next = houseStep(scene, move);
     if (next !== scene) travel(next);
@@ -509,13 +524,13 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
     setRevealed(false);
     if (open === door) {
       const room = ROOM_FOR[door];
-      if (room) enterRoom(room); else closePanel();
+      if (room) travel(room); else closePanel();
       return;
     }
     returnTo.current = from;
     setOpen(door);
     requestAnimationFrame(() => closeRef.current?.focus({ preventScroll: true }));
-  }, [open, enterRoom, closePanel]);
+  }, [open, travel, closePanel]);
 
   // A tap anywhere off her panel — the rooms, the tabs, the nav — puts it away; her doors toggle it themselves.
   useOutsideClose([panelRef], open !== null, closePanel, { keep: ".queen-bank__button, [aria-controls], .queen-field" });
@@ -535,14 +550,14 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (scene !== "home") { exitRoom(); return; }
+      if (scene !== "home") { travel("home"); return; }
       if (open) { closePanel(); return; }
       if (selectedCharm) { setSelectedCharm(null); return; }
       if (expanded) { setExpanded(false); queenRef.current?.focus({ preventScroll: true }); }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [scene, open, expanded, exitRoom, closePanel, selectedCharm]);
+  }, [scene, open, expanded, travel, closePanel, selectedCharm]);
 
   // The sheet: keep pulling past a threshold and you are in the room.
   const onPullStart = (event: PointerEvent<HTMLDivElement>) => {
@@ -562,18 +577,8 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
     panelRef.current?.classList.remove("is-pulling");
     panelRef.current?.style.removeProperty("--queen-pull");
     const room = open ? ROOM_FOR[open] : undefined;
-    if (dy < -PULL_THRESHOLD && room) enterRoom(room);
+    if (dy < -PULL_THRESHOLD && room) travel(room);
   };
-
-  // ---- the Move: one act, from the Together peek ----
-  const onMoveAct = () => {
-    if (hands.kind !== "move") return;
-    if (hands.act === "setup") { onOpenSetup(household.charter ? "fund" : "charter"); return; }
-    if (hands.act === "waiting") { onGo("plan"); return; }
-    if (hands.act === "acknowledge") { void onCommand((current) => respondToMove(current, { memberId, moveId: hands.move.id, response: "acknowledge" })); return; }
-    void onCommand((current) => completeMove(current, { memberId, moveId: hands.move.id }));
-  };
-  const moveVerb = hands.kind !== "move" ? null : hands.act === "done" ? "Done" : hands.act === "acknowledge" ? "I acknowledge this" : hands.act === "setup" ? (household.charter ? "Set up the Fund" : "Create our Charter") : "Waiting on both of us";
 
   // ---- words for the still: pose is the data, so every channel has a sentence ----
   const glazeWords = still.glaze === "glazed" ? "Glazed: the evidence is fresh." : still.glaze === "offline" ? "Unglazed: this device is offline." : "Matte: the evidence is not certain yet, so she claims nothing.";
@@ -590,8 +595,8 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const tipWords = tipped ? ` Tipped over: her underside shows the makers' marks ${marks.initials.join(" and ")} and the date she was last worked on, ${marks.date}.` : "";
   const lightWords = ` ${light.words}`;
   const sculpted = worldLive && worldModel === "model";
-  const stillWords = `${sculpted ? queenModelStill(still) : worldLive ? queenWorldStill(still) : still.description} ${glazeWords} ${bodyWords} ${crownWords} ${seamWords} ${vineWords} ${budWords} ${feetWords} ${handsWords}${charmWords}${ringWords}${formWords}${tipWords}${lightWords}`;
-  const bankWords = (id: QueenBankId) => banks[id].banks.map((bank) => `${NEST_CATEGORY_LABELS[bank.category!]} ${formatCad(bank.amountCents)}`).join(", ");
+  const stillWords = `${living.words} ${sculpted ? queenModelStill(still) : worldLive ? queenWorldStill(still) : still.description} ${glazeWords} ${bodyWords} ${crownWords} ${seamWords} ${vineWords} ${budWords} ${feetWords} ${handsWords}${charmWords}${ringWords}${formWords}${tipWords}${lightWords}`;
+  const bankWords = (id: QueenBankId) => banks[id].banks.map((bank) => `${NEST_CATEGORY_LABELS[bank.category!]} ${(bank.amountCents === null ? "Backing unavailable" : formatCad(bank.amountCents))}`).join(", ");
   const waiting = presence.filter((row) => row.waitingOn).length + (hands.kind === "move" ? 1 : 0);
 
   const mode = wide ? "panel" : "sheet";
@@ -622,6 +627,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       data-glaze={still.glaze}
       data-grave={still.grave ? "true" : "false"}
       data-crown={crown.light}
+      data-house-condition={living.state}
       data-hands={hands.kind}
       data-mode={mode}
       data-scene={scene}
@@ -645,6 +651,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       <div className="queen-field" onClick={onFieldClick} inert={inRoom}>
         <QueenSceneryFlat kind={world3d} />
         <div className="queen-rings" aria-hidden="true" />
+        {(living.state === "wilting" || living.state === "weathered") && <svg className="queen-living-wear" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><path d="M4 0 L6 9 4 14 8 22 M96 100 L93 90 95 84 90 77" /></svg>}
         <QueenWorld root={root} queen={worldQueen} banks={worldBanks} expanded={expanded} breathing={scene === "home" && !expanded && !open} scenery={world3d} sceneryPaper={worldPaper} ambient={!atmospherePaused} mode={world} onLive={onWorldLive} onModel={setWorldModel} />
 
         <button type="button" className="queen-door queen-door--together" aria-label={`Together — decisions waiting on both of you${waiting ? `: ${waiting} waiting` : ""}`}
@@ -732,7 +739,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
                 <p><b>{hands.move.text}</b></p>
                 <p className="queen-panel__muted">{hands.ownerLine}</p>
                 <div className="queen-acts">
-                  <button type="button" className="queen-act queen-act--primary" disabled={busy || hands.act === "waiting"} onClick={onMoveAct}>{moveVerb}</button>
+                  {hands.act === "setup" ? <button type="button" className="queen-act queen-act--primary" disabled={busy} onClick={() => onOpenSetup(household.charter ? "fund" : "charter")}>{household.charter ? "Set up the Fund" : "Create our Charter"}</button> : <><ChapterAdoption household={household} memberId={memberId} chapterId={hands.move.chapterId} onCommand={onCommand} busy={Boolean(busy)} /><ChapterMoveActions household={household} memberId={memberId} move={hands.move} onCommand={onCommand} busy={Boolean(busy)} /></>}
                   <button type="button" className="queen-act" onClick={closePanel}>Not yet</button>
                 </div>
               </div>
@@ -826,7 +833,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
             <h2 id={`${ids}-panel-title`} className="queen-panel__title">{open === "protect" ? lowerTitle : open === "build" ? "What we chose" : QUEEN_BANK_LABELS.whatnow}</h2>
             <p className="queen-panel__sub">{QUEEN_BANK_MEANINGS[open]}</p>
             <ul className="queen-rows">
-              {banks[open].banks.map((bank) => <li key={bank.id} className="queen-row"><span>{NEST_CATEGORY_LABELS[bank.category!]}</span><span className="queen-amount">{formatCad(bank.amountCents)}</span></li>)}
+              {banks[open].banks.map((bank) => <li key={bank.id} className="queen-row"><span>{NEST_CATEGORY_LABELS[bank.category!]}</span><span className="queen-amount">{(bank.amountCents === null ? "Backing unavailable" : formatCad(bank.amountCents))}</span></li>)}
             </ul>
             {open === "protect" && (
               <ul className="queen-rows queen-rows--dated">
@@ -836,14 +843,14 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
             )}
             {open === "build" && (
               <ul className="queen-rows queen-rows--dated">
-                {shelf.slice(0, 5).map((item) => <li key={item.id} className="queen-row"><span>{item.name}<small>{item.mouth === "open" ? "open-mouthed" : "lidded"}{item.date ? ` · ${formatDayLabel(item.date)}` : ""}</small></span><span className="queen-amount">{formatCad(item.bank.amountCents)}</span></li>)}
+                {shelf.slice(0, 5).map((item) => <li key={item.id} className="queen-row"><span>{item.name}<small>{item.mouth === "open" ? "open-mouthed" : "lidded"}{item.date ? ` · ${formatDayLabel(item.date)}` : ""}</small></span><span className="queen-amount">{(item.bank.amountCents === null ? "Backing unavailable" : formatCad(item.bank.amountCents))}</span></li>)}
                 {shelf.length === 0 && <li className="queen-row queen-panel__muted">Nothing chosen yet. A goal would grow a bud on her vine.</li>}
               </ul>
             )}
             {open === "whatnow" && <p>{pulse.detail}</p>}
             <div className="queen-acts">
               {ROOM_FOR[open] && (
-                <button type="button" className="queen-go queen-go--primary" data-door={open} onClick={() => enterRoom(ROOM_FOR[open]!)}>
+                <button type="button" className="queen-go queen-go--primary" data-door={open} onClick={() => travel(ROOM_FOR[open]!)}>
                   {open === "protect" ? lowerRoom : "Build · up to the loft"}
                 </button>
               )}

@@ -37,6 +37,22 @@ type TokenStore = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 const SESSION_PREFIX = "hearth:v1:supabase-auth:";
 export const SUPABASE_SESSION_CHANGED_EVENT = "hearth:supabase-session-changed";
 const REQUIRED_GOOGLE_ACCOUNT_SCOPES = "https://www.googleapis.com/auth/drive.file";
+export interface NativeSessionPersistence {
+  load(environment: Environment): HearthSupabaseSession | null;
+  save(environment: Environment, session: HearthSupabaseSession): Promise<void>;
+  clear(environment: Environment): Promise<void>;
+}
+export interface NativeSignInAdapter {
+  start(environment: Environment, config: HearthAuthConfig, options: { selectAccount?: boolean; returnPath?: string }): boolean;
+  cancel(environment: Environment): Promise<void>;
+}
+let nativePersistence: NativeSessionPersistence | null = null;
+let nativeSignIn: NativeSignInAdapter | null = null;
+/** Installed before native startup; an unhydrated adapter fails closed. */
+export function installNativeSupabaseAuth(store: NativeSessionPersistence, signIn: NativeSignInAdapter): void {
+  nativePersistence = store; nativeSignIn = signIn;
+}
+export function resetNativeSupabaseAuthForTests(): void { nativePersistence = null; nativeSignIn = null; }
 let storeOverride: TokenStore | null = null;
 const refreshFlights = new Map<Environment, Promise<HearthSupabaseSession>>();
 const sessionGenerations = new Map<Environment, number>();
@@ -107,6 +123,7 @@ function isSession(value: unknown): value is HearthSupabaseSession {
 }
 
 export function loadSupabaseSession(environment: Environment): HearthSupabaseSession | null {
+  if (nativePersistence) return nativePersistence.load(environment);
   const raw = browserStore()?.getItem(supabaseSessionKey(environment));
   if (!raw) return null;
   try {
@@ -124,15 +141,19 @@ function notifySupabaseSessionChanged(environment: Environment): void {
   }));
 }
 
-export function saveSupabaseSession(environment: Environment, session: HearthSupabaseSession): void {
+export function saveSupabaseSession(environment: Environment, session: HearthSupabaseSession): Promise<void> {
+  if (nativePersistence) return nativePersistence.save(environment, session).then(() => notifySupabaseSessionChanged(environment));
   browserStore()?.setItem(supabaseSessionKey(environment), JSON.stringify(session));
   notifySupabaseSessionChanged(environment);
+  return Promise.resolve();
 }
 
-export function clearSupabaseSession(environment: Environment): void {
+export function clearSupabaseSession(environment: Environment): Promise<void> {
   sessionGenerations.set(environment, (sessionGenerations.get(environment) ?? 0) + 1);
+  if (nativePersistence) { const persistence = nativePersistence; return (async () => { await nativeSignIn?.cancel(environment); await persistence.clear(environment); notifySupabaseSessionChanged(environment); })(); }
   browserStore()?.removeItem(supabaseSessionKey(environment));
   notifySupabaseSessionChanged(environment);
+  return Promise.resolve();
 }
 
 function sessionGeneration(environment: Environment): number {
@@ -149,6 +170,7 @@ function decodeBase64Url(value: string): string {
 }
 
 type JwtPayload = {
+  iss?: string;
   sub?: string;
   session_id?: string;
   email?: string;
@@ -164,7 +186,7 @@ export function decodeSupabaseJwt(accessToken: string): JwtPayload {
   return parsed as JwtPayload;
 }
 
-function sessionFromTokenPayload(input: {
+export function sessionFromTokenPayload(input: {
   accessToken: string;
   refreshToken: string;
   providerToken?: string;
@@ -217,6 +239,10 @@ export function startSupabaseGoogleSignIn(
   options: { selectAccount?: boolean } = {},
 ): boolean {
   if (!config) throw new Error("Supabase Google sign-in is not enabled in this build.");
+  if (nativeSignIn) {
+    const local = typeof window === "undefined" ? new URL(returnUrl || "https://native.invalid/") : window.location;
+    return nativeSignIn.start(environment, config, { ...options, returnPath: `${local.pathname}${local.search}` });
+  }
   if (!returnUrl) throw new Error("Google sign-in needs a browser return address.");
   if (authRedirectEnvironment && Date.now() - authRedirectStartedAt < AUTH_REDIRECT_LATCH_MS) return false;
   authRedirectEnvironment = environment;
@@ -253,6 +279,7 @@ export function startSupabaseGoogleReauthentication(
 
 /** Consume the standard Supabase OAuth hash and remove tokens from the URL. */
 export function consumeSupabaseAuthRedirect(url = window.location.href): HearthSupabaseSession | null {
+  if (nativePersistence) return null;
   const parsedUrl = new URL(url);
   const params = new URLSearchParams(parsedUrl.hash.replace(/^#/, ""));
   const accessToken = params.get("access_token");
@@ -316,7 +343,7 @@ export async function refreshSupabaseSession(
         throw new Error("Your Hearth cloud session changed while it was refreshing.");
       }
       if (response.status === 400 || response.status === 401) {
-        clearSupabaseSession(environment);
+        await clearSupabaseSession(environment);
         throw new Error("Your Hearth cloud session needs Google confirmation again.");
       }
       throw new Error("Hearth could not refresh the cloud session. The saved session is still on this phone; try again when connected.");
@@ -341,9 +368,11 @@ export async function refreshSupabaseSession(
     }
     const replacement = replacementSupabaseSession(environment, session);
     if (replacement) return replacement;
-    saveSupabaseSession(environment, refreshed);
+    await saveSupabaseSession(environment, refreshed);
+    if (nativePersistence && sessionGeneration(environment) !== refreshGeneration) throw new Error("Your secure session changed while saving its refresh.");
     return refreshed;
   } catch (caught) {
+    if (nativePersistence && sessionGeneration(environment) !== refreshGeneration) throw caught;
     const replacement = replacementSupabaseSession(environment, session);
     if (replacement) return replacement;
     throw caught;

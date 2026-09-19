@@ -1,6 +1,7 @@
 import type { DurableObjectNamespace } from "@cloudflare/workers-types/index.ts";
 import { authorizeRequest, supabase, type AuthEnv } from "./ledgerSyncAuth.ts";
 import type { LedgerRoom } from "./ledgerRoom.ts";
+import { KittyDesignError } from '../src/hearthside/designContracts.ts';
 export { LedgerRoom } from "./ledgerRoom.ts";
 type Env = AuthEnv & {
   LEDGER_ROOMS: DurableObjectNamespace<LedgerRoom>;
@@ -22,7 +23,7 @@ export async function handleLedgerSync(
   if (url.pathname === "/ledger-sync/config")
     return json({ version: 2, enabled: true });
   const path = url.pathname.match(
-    /^\/ledger-sync\/v2\/(development|production)\/(HH-[a-zA-Z0-9_-]{1,96})\/(ticket|socket|snapshot|import|revoke|restore|create|delete|points|receipt|parity)$/,
+    /^\/ledger-sync\/v2\/(development|production)\/(HH-[a-zA-Z0-9_-]{1,96})\/(ticket|socket|snapshot|import|revoke|restore|create|delete|points|receipt|parity|design|hearthside-content|shared-life-restore|encounter-command)$/,
   );
   if (!path) return json({ error: "NOT_FOUND" }, 404);
   const environment = path[1]!,
@@ -135,6 +136,32 @@ export async function handleLedgerSync(
       environment,
       householdId,
     );
+    if(action==='hearthside-content'&&request.method==='GET'){
+      if(roster)await room.reconcileMembers(scope,roster);
+      return json(await room.hearthsideContent(scope));
+    }
+    if(action==='shared-life-restore'&&request.method==='POST'){
+      const reader=request.body?.getReader();if(!reader)throw Error('SHARED_LIFE_RESTORE_INVALID');const chunks:Uint8Array[]=[];let size=0;
+      try{while(true){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>32*1024)throw Error('SHARED_LIFE_RESTORE_INVALID');chunks.push(part.value);}}finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
+      const bytes=new Uint8Array(size);let at=0;for(const c of chunks){bytes.set(c,at);at+=c.length;}
+      if(roster)await room.reconcileMembers(scope,roster);
+      return json(await room.sharedLifeRestorePreview(scope,JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes))));
+    }
+    if(action==='encounter-command'&&request.method==='POST'){
+      const reader=request.body?.getReader();if(!reader)throw Error('INVALID_ENCOUNTER_COMMAND');const chunks:Uint8Array[]=[];let size=0;
+      try{while(true){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>64*1024)throw Error('INVALID_ENCOUNTER_COMMAND');chunks.push(part.value);}}finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
+      const bytes=new Uint8Array(size);let at=0;for(const c of chunks){bytes.set(c,at);at+=c.length;}
+      if(roster)await room.reconcileMembers(scope,roster);
+      return json(await room.encounterCommand(scope,token,JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes))));
+    }
+    if(action==='design'&&request.method==='POST') {
+      const reader=request.body?.getReader();if(!reader)throw Error('INVALID_DESIGN_REQUEST');
+      const chunks:Uint8Array[]=[];let size=0;
+      while(true){const part=await reader.read();if(part.done)break;size+=part.value.length;if(size>128*1024){await reader.cancel();throw Error('DESIGN_REQUEST_TOO_LARGE');}chunks.push(part.value);}
+      const bytes=new Uint8Array(size);let at=0;for(const chunk of chunks){bytes.set(chunk,at);at+=chunk.length;}
+      if(roster)await room.reconcileMembers(scope,roster);
+      return json(await room.design(scope,JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(bytes))));
+    }
     if (action === "parity" && request.method === "POST") {
       const local = env.LEDGER_SYNC_LOCAL_AUTH === "true" && ["localhost", "127.0.0.1"].includes(url.hostname);
       return json(await room.importParity(scope, token, local ? await request.json() : undefined));
@@ -179,7 +206,7 @@ export async function handleLedgerSync(
     }
     return json({ error: "METHOD_NOT_ALLOWED" }, 405);
   } catch (error) {
-    const raw = error instanceof Error ? error.message : "REQUEST_FAILED";
+    const raw = error instanceof KittyDesignError ? error.code : error instanceof Error ? error.message : "REQUEST_FAILED";
     const code = /^[A-Z_]+$/.test(raw) ? raw : "REQUEST_FAILED";
     return json(
       { error: code },

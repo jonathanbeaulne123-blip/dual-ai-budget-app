@@ -1,3 +1,5 @@
+import { shapeTasks, mergeTasks, type Task } from "../core/tasks.ts";
+import { assertChapterTaskGraph } from "../core/chapterAuthority.ts";
 import { shapeKittyNestDesigns, mergeKittyNestDesigns, nestSourceVisible, nestDesignInView, assertNestKeepsakes } from "../core/kittyNestDesigns.ts";
 import {
   commandIdentityHash,
@@ -45,7 +47,7 @@ import {
 } from "../core/onboarding/adoption.ts";
 import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
 import {
-  shapeChapters,
+  shapeChapters, mergeChapters, mergeRituals, mergeMoves,
   shapeMoves,
   shapeRituals,
   shapeWins,
@@ -132,6 +134,7 @@ export type ContinuityMaterializationFacts = {
   fundKittyAllocations?: HouseholdFundKittyAllocation[];
   monthRehearsals?: MonthRehearsal[];
   weeklyDocumentStamps?: WeeklyDocumentStamp[];
+  chapterTasks?: Task[];
   chapters?: Chapter[];
   rituals?: Ritual[];
   moves?: Move[];
@@ -821,6 +824,7 @@ function filterFactsForScope(
     if (facts.weeklyDocumentStamps?.length) {
       scoped.weeklyDocumentStamps = shapeWeeklyDocumentStamps(facts.weeklyDocumentStamps);
     }
+    if (facts.chapterTasks !== undefined) scoped.chapterTasks = shapeTasks(facts.chapterTasks).filter(task => task.visibility === "household" && task.chapterSource);
     if (facts.chapters?.length) scoped.chapters = shapeChapters(facts.chapters);
     if (facts.rituals?.length) scoped.rituals = shapeRituals(facts.rituals);
     if (facts.moves?.length) scoped.moves = shapeMoves(facts.moves);
@@ -943,6 +947,7 @@ export function extractMaterializationFacts(
       facts.monthRehearsals = shapeMonthRehearsals(household.monthRehearsals);
     }
     if (options?.commandKind === "updateChapters") {
+      facts.chapterTasks = shapeTasks(household.tasks).filter(task => task.chapterSource);
       facts.chapters = shapeChapters(household.chapters);
       facts.rituals = shapeRituals(household.rituals);
       facts.moves = shapeMoves(household.moves);
@@ -1008,31 +1013,10 @@ async function applyEvent(
   const existingRituals = shapeRituals(snapshot.rituals);
   const existingMoves = shapeMoves(snapshot.moves);
   const existingWins = shapeWins(snapshot.wins);
-  const chapters = applyMoneyCollection(
-    existingChapters,
-    shapeChapters(facts.chapters),
-    mergedTombstones,
-  );
-  const rituals = applyMoneyCollection(
-    existingRituals,
-    shapeRituals(facts.rituals).map((incoming) => {
-      const existing = existingRituals.find((row) => row.id === incoming.id);
-      return existing
-        ? { ...incoming, heldOn: [...new Set([...existing.heldOn, ...incoming.heldOn])].sort() as DateKey[] }
-        : incoming;
-    }),
-    mergedTombstones,
-  );
-  const moves = applyMoneyCollection(
-    existingMoves,
-    shapeMoves(facts.moves).map((incoming) => {
-      const existing = existingMoves.find((row) => row.id === incoming.id);
-      return existing
-        ? { ...incoming, acknowledgedByMemberIds: [...new Set([...existing.acknowledgedByMemberIds, ...incoming.acknowledgedByMemberIds])] }
-        : incoming;
-    }),
-    mergedTombstones,
-  );
+  const chapters = mergeChapters(existingChapters, shapeChapters(facts.chapters));
+  const rituals = mergeRituals(existingRituals, shapeRituals(facts.rituals));
+  const moves = mergeMoves(existingMoves, shapeMoves(facts.moves));
+  const tasks = mergeTasks(shapeTasks(snapshot.tasks), shapeTasks(facts.chapterTasks));
   const wins = applyMoneyCollection(
     existingWins,
     shapeWins(facts.wins).map((incoming) => {
@@ -1125,6 +1109,7 @@ async function applyEvent(
       weeklyDocumentStamps,
       snapshot.members,
     ),
+    tasks,
     chapters,
     rituals,
     moves,
@@ -1133,6 +1118,7 @@ async function applyEvent(
     fundModelRows,
     tombstones: mergedTombstones,
   };
+  assertChapterTaskGraph(next);
   next = rememberReceipt(next, receiptFromPayload(payload));
   for (const command of onboardingAdoptionCommands(event) ?? []) {
     if (!command.identityHash || !command.auditHash || !command.revision || !command.acceptedAt) continue;
@@ -1384,6 +1370,9 @@ export async function applyCommandEventLocally(input: {
   const incomingCategories = Array.isArray(rawIncomingCategories) ? rawIncomingCategories : [];
   const rawIncomingBudgetPlans = event.payload_json.materializationFacts.budgetPlans;
   const incomingBudgetPlans = shapeOnboardingAdoptionPlans(rawIncomingBudgetPlans);
+  const rawChapterTasks = event.payload_json.materializationFacts.chapterTasks;
+  let incomingChapterTasks: Task[];
+  try { incomingChapterTasks = shapeTasks(rawChapterTasks); if (incomingChapterTasks.some(task => task.visibility !== "household" || !task.chapterSource)) throw new Error("Unscoped Chapter Task"); } catch { return { ok: false, reason: "chapter-task-materialization-invalid", fallback: true }; }
   const rawIncomingChapters = event.payload_json.materializationFacts.chapters;
   const rawIncomingRituals = event.payload_json.materializationFacts.rituals;
   const rawIncomingMoves = event.payload_json.materializationFacts.moves;
@@ -1394,6 +1383,7 @@ export async function applyCommandEventLocally(input: {
   const incomingWins = shapeWins(rawIncomingWins);
   const containsChapterCommand = event.command_type === "updateChapters"
     || readableCompactedCommands(event).some((row) => row.commandKind === "updateChapters");
+  if (incomingChapterTasks.length && !containsChapterCommand || incomingMoves.some(move => move.taskId) && rawChapterTasks === undefined) return { ok: false, reason: "chapter-task-materialization-missing", fallback: true };
   const rawIncomingPathWorld = event.payload_json.materializationFacts.pathWorld;
   const incomingPathWorld = shapePathWorld(rawIncomingPathWorld);
   const containsPathWorldCommand = event.command_type === "updatePathWorld"
@@ -1650,6 +1640,7 @@ export async function applyCommandEventLocally(input: {
       onboardingApprovals: incomingApprovals,
       categories: incomingCategories,
       budgetPlans: incomingBudgetPlans,
+      chapterTasks: incomingChapterTasks,
       chapters: incomingChapters,
       rituals: incomingRituals,
       moves: incomingMoves,

@@ -190,6 +190,7 @@ export async function compactedCommandPayload(
       || mergedFacts?.onboardingApprovals?.length
       || mergedFacts?.categories?.length
       || mergedFacts?.budgetPlans?.length
+      || mergedFacts?.chapterTasks?.length
       || mergedFacts?.chapters?.length
       || mergedFacts?.rituals?.length
       || mergedFacts?.moves?.length
@@ -206,6 +207,7 @@ export async function compactedCommandPayload(
         onboardingApprovals: mergedFacts.onboardingApprovals,
         categories: mergedFacts.categories,
         budgetPlans: mergedFacts.budgetPlans,
+        chapterTasks: mergedFacts.chapterTasks,
         kittyNestDesigns: mergedFacts.kittyNestDesigns,
         chapters: mergedFacts.chapters,
         rituals: mergedFacts.rituals,
@@ -311,6 +313,7 @@ function mergeMaterializationFacts(
         ...facts.weeklyDocumentStamps,
       ];
     }
+    if (facts.chapterTasks !== undefined) merged.chapterTasks = facts.chapterTasks;
     if (facts.kittyNestDesigns !== undefined) merged.kittyNestDesigns = mergeKittyNestDesigns(merged.kittyNestDesigns, facts.kittyNestDesigns);
     if (facts.chapters !== undefined) merged.chapters = facts.chapters;
     if (facts.rituals !== undefined) merged.rituals = facts.rituals;

@@ -24,7 +24,7 @@ afterEach(async () => {
 });
 
 describe("Vision v2 Home UI review repairs", () => {
-  it("offers the second partner Memory consent without an impossible fade action", async () => {
+  it("offers the second partner exact memory review without an impossible fade action", async () => {
     let household = recordWin(catalogHousehold(), {
       memberId: "MEM-001",
       level: "shared-win",
@@ -49,7 +49,8 @@ describe("Vision v2 Home UI review repairs", () => {
     })));
 
     const labels = [...host.querySelectorAll("button")].map((button) => button.textContent);
-    expect(labels).toContain("Keep as a Memory");
+    expect(labels).toContain("Review as a memory");
+    expect(host.textContent).toContain("both of us to review its exact composition");
     expect(labels).not.toContain("Let it fade");
   });
 

@@ -15,7 +15,7 @@ function testFiles(directory: string = testDirectoryPath): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) return testFiles(path);
-    return entry.isFile() && entry.name.endsWith(".test.ts") ? [path] : [];
+    return entry.isFile() && /\.test\.(?:ts|tsx|js|mjs)$/.test(entry.name) ? [path] : [];
   });
 }
 
@@ -24,6 +24,14 @@ function directPGliteRuntimeTests() {
     .map((path) => relative(testDirectoryPath, path).replaceAll("\\", "/"))
     .filter((fileName) => fileName !== "test-lanes.test.ts")
     .filter((fileName) => readFileSync(join(testDirectoryPath, fileName), "utf8").includes("src/ledger/engine.ts"))
+    .sort();
+}
+
+function directBrowserRuntimeTests() {
+  return testFiles()
+    .filter((path) => path !== fileURLToPath(import.meta.url))
+    .filter((path) => /(?:chromium|firefox|webkit)\.launch\(/.test(readFileSync(path, "utf8")))
+    .map((path) => relative(testDirectoryPath, path).replaceAll("\\", "/"))
     .sort();
 }
 
@@ -42,7 +50,9 @@ const serialFixtureTests = [
 
 // The repeated offline companion queue rehearsal timed out with four workers
 // but completes below its original 15-second limit in the serial UI lane.
-const serialTimingTests = ["continuity-two-browser-proof.test.ts", "hercules-private-chat-ui.test.ts"];
+// The wardrobe recovery suite likewise passes alone but exceeds its unchanged
+// 15-second per-test limit under concurrent host pressure.
+const serialTimingTests = ["continuity-two-browser-proof.test.ts", "hercules-private-chat-ui.test.ts", "hercules-wardrobe-ui.test.ts"];
 
 const rpcIsolatedFixtureTests = [
   "demo-shift-statistics.test.ts",
@@ -55,7 +65,7 @@ const rpcIsolatedFixtureTests = [
 ];
 
 describe("Vitest lanes", () => {
-  it("keeps direct PGlite and host-timing tests in the serial books lane", () => {
+  it("keeps PGlite, real browsers and host-timing tests in the serial books lane", () => {
     expect(packageJson.scripts?.["test:full:lanes"]).toBeUndefined();
     expect(packageJson.scripts?.test).toBe("node scripts/run-quick-gate.mjs");
     expect(packageJson.scripts?.check).toBe("node scripts/run-quick-gate.mjs");
@@ -64,17 +74,18 @@ describe("Vitest lanes", () => {
     const booksLane = packageJson.scripts?.["test:books"] ?? "";
     const fastLane = packageJson.scripts?.["test:fast"] ?? "";
     const runtimeTests = directPGliteRuntimeTests();
-    const serialTests = [...runtimeTests, ...serialFixtureTests, ...serialTimingTests].sort();
+    const serialTests = [...new Set([...runtimeTests, ...directBrowserRuntimeTests(), ...serialFixtureTests, ...serialTimingTests])].sort();
 
     // Discovery is the authority: every newly added runtime test must be routed
     // to the serial lane without maintaining a second frozen filename list.
     expect(runtimeTests).toContain("pglite-development-canary.test.ts");
+    expect(directBrowserRuntimeTests()).toContain("hearthside-actual-app-browser.test.ts");
     for (const fileName of serialTests) {
       expect(booksLane).toContain(`test/${fileName}`);
       expect(fastLane).toContain(`--exclude=test/${fileName}`);
     }
-    expect([...fastLane.matchAll(/--exclude=test\/([^\s]+)/g)].map((match) => match[1]).sort()).toEqual(serialTests);
-    expect([...booksLane.matchAll(/test\/([^\s]+\.test\.ts)/g)].map((match) => match[1]).sort()).toEqual(serialTests);
+    expect([...fastLane.matchAll(/--exclude=test\/([^\s]+\.test\.(?:ts|tsx|js|mjs))(?=\s|$)/g)].map((match) => match[1]).sort()).toEqual(serialTests);
+    expect([...booksLane.matchAll(/test\/([^\s]+\.test\.(?:ts|tsx|js|mjs))(?=\s|$)/g)].map((match) => match[1]).sort()).toEqual(serialTests);
     for (const fileName of rpcIsolatedFixtureTests) {
       expect(booksLane).toContain(`&& vitest run test/${fileName} --maxWorkers=1`);
     }

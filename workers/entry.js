@@ -7,3 +7,7 @@ export { HerculesRunWorkflow } from './workspace/workflow.ts';
 export { HerculesSandbox, ContainerProxy } from './workspace/sandbox.ts';
 
 export { HerculesGeminiQuota } from './geminiQuota.ts';
+
+export { HearthsideVault } from './hearthsideVault.ts';
+
+export { HearthsideGuestRoom, HearthsideGuestCard, HearthsideGuestIndex } from './hearthsideGuests.ts';

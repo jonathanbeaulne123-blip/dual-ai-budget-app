@@ -18,6 +18,7 @@ export const IMPORT_FIELD_POLICY = {
   taskLists:'exact',
   companionProfile: 'exact',
   companionGallery: 'exact',
+  hearthside: 'exact',
   playRoom: 'exact',
   householdId: 'exact',
   inviteCode: 'exact',

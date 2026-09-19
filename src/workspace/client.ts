@@ -1,32 +1,37 @@
+import type { ExperienceArtifactReview, ArtifactPublicationReceipt, PreparedExperienceArtifact } from '../hearthside/workspacePublication.ts';
 import type { WorkspaceCommand, WorkspaceSnapshot } from './contracts.ts';
 import type { ArtifactDisclosureReview } from './disclosure.ts';
 import type { ExternalWorkspaceReview, ExternalWorkspaceReceipt } from './external.ts';
 export type WorkspaceRequest = { commandId: string; projectId: string; expectedRevision: number; command: WorkspaceCommand };
 export class WorkspaceClient {
   private cached: WorkspaceSnapshot | null = null;
+  private generation=0;
+  private requests=new Set<AbortController>();
+  cancelRequests(){this.generation++;for(const request of this.requests)request.abort();this.requests.clear();}
   constructor(private endpoint: string, private token: () => Promise<string>, private current: () => boolean = () => true, private timeoutMs = 30000) {}
   private async exchange(body?: unknown, after?: number) {
-    const controller = new AbortController();
+    const controller = new AbortController();this.requests.add(controller);
+    const generation=this.generation;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const deadline = new Promise<never>((_resolve, reject) => {
       timer = setTimeout(() => { controller.abort(); reject(new Error('WORKSPACE_TIMEOUT')); }, this.timeoutMs);
     });
-    try { return await Promise.race([this.exchangeBeforeDeadline(body, after, controller.signal), deadline]); }
-    finally { clearTimeout(timer); }
+    try { return await Promise.race([this.exchangeBeforeDeadline(body, after, controller.signal,generation), deadline]); }
+    finally { clearTimeout(timer); this.requests.delete(controller); }
   }
-  private async exchangeBeforeDeadline(body: unknown, after: number | undefined, signal: AbortSignal) {
+  private async exchangeBeforeDeadline(body: unknown, after: number | undefined, signal: AbortSignal,generation:number) {
     if (!this.current()) throw new Error('Your Hearth account changed. Reopen this workspace.');
     const token = await this.token();
     // A token can resolve after the deadline. It must never dispatch a late write.
+    if (!this.current() || generation!==this.generation) throw new Error('Your Hearth account changed. Reopen this workspace.');
     signal.throwIfAborted();
-    if (!this.current()) throw new Error('Your Hearth account changed. Reopen this workspace.');
     const response = await fetch(this.endpoint+(after===undefined?'':`?after=${after}`), { method: body ? 'POST' : 'GET', credentials: 'omit', cache: 'no-store',
       headers: { Authorization: `Bearer ${token}`, ...(body ? { 'Content-Type': 'application/json' } : {}) },
       body: body ? JSON.stringify(body) : undefined, signal });
-    if (!this.current()) throw new Error('Your Hearth account changed. Reopen this workspace.');
+    if (!this.current() || generation!==this.generation) throw new Error('Your Hearth account changed. Reopen this workspace.');
     const value = await response.json();
+    if (!this.current() || generation!==this.generation) throw new Error('Your Hearth account changed. Reopen this workspace.');
     signal.throwIfAborted();
-    if (!this.current()) throw new Error('Your Hearth account changed. Reopen this workspace.');
     if (!response.ok) throw new Error(value.error ?? 'WORKSPACE_UNAVAILABLE');
     return value;
   }
@@ -44,11 +49,16 @@ export class WorkspaceClient {
   async authorizeAction(confirmationId:string){return this.exchange({operation:'action-confirm',confirmationId});}
   async share(review: ArtifactDisclosureReview, confirmDigest: string): Promise<{ id: string }> { return this.exchange({ operation: 'share', review, confirmDigest }); }
   async sharedArtifacts(): Promise<Array<{ id: string; title: string; format: string; content: string; sharedBy: string }>> { return this.exchange({ operation: 'shared-artifacts' }); }
+  async shareExperience(review:ExperienceArtifactReview,confirmDigest:string):Promise<ArtifactPublicationReceipt>{return this.exchange({operation:'share-experience',review,confirmDigest});}
+  async withdrawExperience(id:string):Promise<ArtifactPublicationReceipt>{return this.exchange({operation:'withdraw-experience',id});}
+  async experienceArtifacts(experienceId:string,after=''):Promise<PreparedExperienceArtifact[]>{return this.exchange({operation:'experience-artifacts',experienceId,after});}
   async external(review: ExternalWorkspaceReview, confirmDigest: string, googleToken: string): Promise<ExternalWorkspaceReceipt> { return this.exchange({ operation: 'external', review, confirmDigest, googleToken }); }
 }
 export function workspaceError(error: unknown): string {
   const message = error instanceof Error ? error.message : '';
   if (message === 'WORKSPACE_NOT_ACTIVATED') return 'Your workspace service has not been activated yet. Existing Hercules conversations and guided actions are still available.';
+  if (message==='EXPERIENCE_DISCLOSURE_REQUIRED')return 'Review this exact intention context before sending it to an activated Hercules run. Your local writing is still here.';
+  if (message==='EXPERIENCE_CONTEXT_CHANGED')return 'This intention changed. Review its current version; your existing work is preserved.';
   if (message === 'WORKSPACE_TIMEOUT') return 'Hercules could not connect in time. Your text is still here. Retry to check the original save.';
   if (message === 'WORKSPACE_CHANGED' || message === 'ARTIFACT_CHANGED') return 'This work changed elsewhere. Your text is still here. Reload the current version before saving again.';
   if (/AUTH|FORBIDDEN/.test(message)) return 'Reconnect to your Hearth account to continue. Your saved work stays private.';

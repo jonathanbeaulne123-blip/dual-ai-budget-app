@@ -1,3 +1,4 @@
+import { bindWorkspaceExperience, decodeWorkspaceExperienceBinding, decodeWorkspaceExperienceContext, requireExperienceDisclosure, workspaceExperienceDigest, workspaceArtifactFormats, type WorkspaceExperienceBinding, type WorkspaceExperienceContext } from '../hearthside/workspaceContext.ts';
 import { feedbackContext, feedbackFromValues, feedbackValues, type FeedbackContext } from './feedback.ts';
 /** Workspace data is deliberately outside Household, Plan digests and ledger hashes. */
 export const WORKSPACE_VERSION = 1;
@@ -45,15 +46,23 @@ export type WorkspaceProject = {
   links: ProjectLink[]; proposals: WorkspaceProposal[]; runs: WorkspaceRun[];
   preferences: { assistance: 'hints' | 'worked-examples' | 'complete'; detail: 'concise' | 'thorough' };
   followUp: { at: string; instruction: string } | null;
+  experience?: WorkspaceExperienceBinding;
+  deletedArtifactIds?: string[];
 };
 export type WorkspaceSnapshot = { feedbackConnected?: boolean; feedbackRecords?: import('./feedback.ts').FeedbackRecord[]; externalReviews?: Array<{review:import('./external.ts').ExternalWorkspaceReview;receipt:import('./external.ts').ExternalWorkspaceReceipt}>; version: 1; sequence: number; projects: WorkspaceProject[]; executionEnabled: boolean };
 export type WorkspaceCommand =
+  | { type: 'create-experience'; id: string; context: WorkspaceExperienceContext; confirmDigest: string }
+  | { type: 'refresh-experience'; context: WorkspaceExperienceContext; previousDigest: string; confirmDigest: string }
+  | { type: 'approve-experience-disclosure'; confirmDigest: string }
+  | { type: 'create-artifact'; id: string; title: string; format: ArtifactFormat; content: string }
+  | { type: 'delete-artifact'; artifactId: string; versionId: string }
+  | { type: 'adopt-experience-copy'; id: string; copyId: string; contentDigest: string }
   | { type: 'create'; id: string; title: string; feedback?: { context: FeedbackContext; owner: string } }
   | { type: 'message'; text: string; id: string; appContext?: FeedbackContext }
   | { type: 'edit-feedback'; proposalId: string; proposalRevision: number; values: Record<string, string> }
   | { type: 'attach'; id: string; filename: string; base64: string }
   | { type: 'research-queries'; queries: string[] }
-  | { type: 'edit-artifact'; artifactId: string; parentId: string; content: string; id: string }
+  | { type: 'edit-artifact'; artifactId: string; parentId: string; content: string; id: string; title?: string }
   | { type: 'control'; runId: string; action: 'pause' | 'cancel' | 'resume' }
   | { type: 'context'; title: string; goal: string; completionCriteria: string; decisions: string[]; constraints: string[]; questions: string[]; preferences: WorkspaceProject['preferences'] }
   | { type: 'link'; link: ProjectLink; remove?: boolean }
@@ -90,12 +99,34 @@ export function applyWorkspaceCommand(original: WorkspaceProject, command: Works
   };
   switch (command.type) {
     case 'message':
+      requireExperienceDisclosure(p);
       if (p.messages.some(m => m.id === command.id) || p.runs.some(r => r.id === command.id)) throw new Error('MESSAGE_EXISTS');
       steer();
       if (command.appContext && !p.appContext) p.appContext = feedbackContext(command.appContext);
       p.messages.push({ id: workspaceId(command.id), role: 'user', text: workspaceText(command.text), createdAt: now });
       if (!p.goal) p.goal = command.text;
       break;
+    case 'refresh-experience': {
+      if(!p.experience || decodeWorkspaceExperienceBinding(p.experience).digest!==command.previousDigest)throw new Error('EXPERIENCE_CONTEXT_CHANGED');
+      const context=decodeWorkspaceExperienceContext(command.context);
+      if(context.id!==p.experience.context.id || context.revision<p.experience.context.revision || workspaceExperienceDigest(context)!==command.confirmDigest)throw new Error('EXPERIENCE_CONTEXT_CHANGED');
+      steer();p.experience=bindWorkspaceExperience(context);break;
+    }
+    case 'approve-experience-disclosure':
+      if(!p.experience || decodeWorkspaceExperienceBinding(p.experience).digest!==command.confirmDigest)throw new Error('EXPERIENCE_CONTEXT_CHANGED');
+      p.experience.providerApprovalDigest=command.confirmDigest;break;
+    case 'create-artifact': {
+      const id=workspaceId(command.id);
+      if(p.artifacts.some(a=>a.artifactId===id || a.id===id) || p.deletedArtifactIds?.includes(id))throw new Error('ARTIFACT_EXISTS');
+      if(!workspaceArtifactFormats.includes(command.format))throw new Error('INVALID_FORMAT');
+      steer();p.artifacts.push({id,artifactId:id,parentId:null,title:workspaceText(command.title,180),format:command.format,content:workspaceText(command.content,WORKSPACE_ARTIFACT_LIMIT),createdAt:now,author:'user',evidenceIds:[],validation:{status:'unchecked',details:'Written by you. Review before sharing or relying on this work.'}});break;
+    }
+    case 'delete-artifact': {
+      const source=latestArtifacts(p).find(a=>a.artifactId===command.artifactId);
+      if(!source || source.id!==command.versionId)throw new Error('ARTIFACT_CHANGED');
+      steer();p.deletedArtifactIds=[...new Set([...(p.deletedArtifactIds??[]),...p.artifacts.filter(a=>a.artifactId===source.artifactId).map(a=>a.id),source.artifactId])];
+      p.artifacts=p.artifacts.filter(a=>a.artifactId!==source.artifactId);break;
+    }
     case 'edit-feedback': {
       const proposal = p.proposals.find(v => v.id === command.proposalId && v.target === 'feedback');
       if (!proposal || proposal.revision !== command.proposalRevision || proposal.receiptId || proposal.status === 'accepted') throw new Error('FEEDBACK_CHANGED');
@@ -105,12 +136,12 @@ export function applyWorkspaceCommand(original: WorkspaceProject, command: Works
       break;
     }
     case 'edit-artifact': {
-      if (p.artifacts.some(a => a.id === command.id)) throw new Error('ARTIFACT_EXISTS');
+      if (p.artifacts.some(a => a.id === command.id) || p.deletedArtifactIds?.includes(command.id)) throw new Error('ARTIFACT_EXISTS');
       const latest = latestArtifacts(p).find(a => a.artifactId === command.artifactId);
       if (!latest || latest.id !== command.parentId) throw new Error('ARTIFACT_CHANGED');
       steer();
       p.artifacts.push({ ...latest, id: workspaceId(command.id), parentId: latest.id,
-        content: workspaceText(command.content, WORKSPACE_ARTIFACT_LIMIT), author: 'user', createdAt: now,
+        content: workspaceText(command.content, WORKSPACE_ARTIFACT_LIMIT), title:command.title===undefined?latest.title:workspaceText(command.title,180), author: 'user', createdAt: now,
         validation: { status: 'unchecked', details: 'Manually edited; verify before relying on this version.' } });
       break;
     }
@@ -131,6 +162,7 @@ export function applyWorkspaceCommand(original: WorkspaceProject, command: Works
       p.proposedResearchQueries = [];
       break;
     case 'control': {
+      if(command.action==='resume')requireExperienceDisclosure(p);
       const run = p.runs.find(r => r.id === command.runId);
       if (!run || run.instructionRevision !== p.instructionRevision || ['complete', 'cancelled', 'superseded'].includes(run.status)) throw new Error('RUN_CHANGED');
       run.status = command.action === 'cancel' ? 'cancelled' : command.action === 'pause' ? 'paused' : 'queued';
@@ -139,6 +171,7 @@ export function applyWorkspaceCommand(original: WorkspaceProject, command: Works
       break;
     }
     case 'link':
+      if(p.experience)throw new Error('EXPERIENCE_SCOPE_READ_DENIED');
       if (!['plan-line', 'kitty-bank', 'calendar-event', 'board-task', 'record'].includes(command.link.kind) || !['personal', 'household'].includes(command.link.scope)) throw new Error('INVALID_LINK');
       workspaceId(command.link.recordId); workspaceId(command.link.id); workspaceText(command.link.label, 180);
       if (command.link.month && !/^\d{4}-\d{2}$/.test(command.link.month)) throw new Error('INVALID_MONTH');
@@ -146,6 +179,7 @@ export function applyWorkspaceCommand(original: WorkspaceProject, command: Works
       if (!command.remove) p.links.push(command.link);
       break;
     case 'follow-up':
+      if(command.at)requireExperienceDisclosure(p);
       for(const run of p.runs)if(run.scheduledFor && run.scheduledFor===p.followUp?.at && ['queued','running','paused','waiting'].includes(run.status)){run.status='cancelled';run.generation++;}
       if (command.at !== null && (!Number.isFinite(Date.parse(command.at)) || Date.parse(command.at) <= Date.parse(now))) throw new Error('FUTURE_DATE_REQUIRED');
       p.followUp = command.at === null ? null : { at: command.at, instruction: workspaceText(command.instruction) };

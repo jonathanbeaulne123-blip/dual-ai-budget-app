@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { acceptHouseholdWrite, assembleHousehold, catalogHousehold, ensureHouseholdShape, financialAuditHash, householdForAiDisclosure, postEntry, splitForSync } from "../src/core/index.ts";
 import { commandIdentityHash, commandMaterializationFacts, sha256Hex } from "../src/core/commandIdentity.ts";
-import { closeChapter, openChapter, recordRitualHeld } from "../src/core/chapters.ts";
+import { openChapter } from "../src/core/chapters.ts";
+import { closeSyntheticChapter, holdSyntheticRitual } from "../src/core/syntheticChapters.ts";
 import {
   PATH_BASE_RECIPES,
   PATH_NAME_ID,
@@ -234,8 +235,8 @@ describe("Our Path world — the months it grows from", () => {
     let h = catalogHousehold();
     h = openChapter(h, { memberId: ME, foundationId: "make-rent-boring", at: "2026-06-03T12:00:00.000Z" }).household;
     const ritual = h.rituals![0]!;
-    for (const day of ["2026-07-02", "2026-07-09", "2026-07-16", "2026-07-23"]) h = recordRitualHeld(h, { memberId: ME, ritualId: ritual.id, onDate: day, at: `${day}T12:00:00.000Z` }).household;
-    h = closeChapter(h, { memberId: ME, chapterId: h.chapters![0]!.id, outcome: "life-changed", at: "2026-08-20T12:00:00.000Z" } as never).household;
+    for (const day of ["2026-07-02", "2026-07-09", "2026-07-16", "2026-07-23"]) h = holdSyntheticRitual(h, { memberId: ME, ritualId: ritual.id, onDate: day, at: `${day}T12:00:00.000Z` });
+    h = closeSyntheticChapter(h, { memberId: ME, chapterId: h.chapters![0]!.id, outcome: "life-changed", at: "2026-08-20T12:00:00.000Z" });
     const goal = { id: "GOAL-TRIP", name: "Halifax", targetCents: 100_000, savedCents: 0, deadline: null, arrivalDate: null, shared: true, ownerMemberId: ME, subcategoryId: null, status: "open", funded: true, retiredAt: null, purchaseId: null, createdAt: "2026-06-01T12:00:00.000Z", updatedAt: "2026-06-01T12:00:00.000Z" } as unknown as Goal;
     const contribution = (id: string, date: string, cents: number): GoalContribution => ({ id, goalId: goal.id, memberId: ME, amountCents: cents, date, transferId: null, createdAt: `${date}T12:00:00.000Z`, updatedAt: `${date}T12:00:00.000Z` });
     h = {

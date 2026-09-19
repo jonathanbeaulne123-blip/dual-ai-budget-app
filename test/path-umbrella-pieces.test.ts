@@ -1,5 +1,6 @@
+import { closeSyntheticChapter, completeSyntheticMove, holdSyntheticRitual } from "../src/core/syntheticChapters.ts";
 import { describe, expect, it } from "vitest";
-import { appendPlanSitdownTurn, closeChapter, openChapter, postEntry, type Household } from "../src/core/index.ts";
+import { appendPlanSitdownTurn, openChapter, postEntry, type Household } from "../src/core/index.ts";
 import { pathMonths, umbrellaSeedMonth } from "../src/core/pathSignals.ts";
 import { effectivePathRecipes } from "../src/core/pathWorld.ts";
 import { umbrellaHueForCategory } from "../src/core/fundModel.ts";
@@ -26,6 +27,20 @@ function sortedBooks(): Household {
 }
 
 describe("Slice 11 — world pieces per umbrella (D-282)", () => {
+  it("reads accepted Ritual and Move Tasks while keeping legacy history untouched", () => {
+    let h = openChapter(sortedBooks(), { memberId: ALEX, foundationId: "make-rent-boring", at: "2026-09-02T12:00:00.000Z" }).household;
+    const before = pathMonths(h, today).find(month => month.key === "2026-10")!;
+    h = holdSyntheticRitual(h, { memberId: ALEX, ritualId: h.rituals![0]!.id, onDate: "2026-10-04", at: "2026-10-04T12:00:00.000Z" });
+    h = completeSyntheticMove(h, { memberId: ALEX, moveId: h.moves![0]!.id, at: "2026-10-05T12:00:00.000Z" });
+    expect(h.rituals![0]!.heldOn).toEqual([]);
+    expect(h.moves![0]!.state).toBe("offered");
+    const after = pathMonths(h, today).find(month => month.key === "2026-10")!;
+    expect(after.scores.rhythm).toBe(0.2);
+    expect(after.why.rhythm).toBe("Rituals held on 1 day");
+    expect(after.why.together).toContain("1 Move done");
+    expect(after.scores.together).toBeGreaterThan(before.scores.together);
+  });
+
   it("reads a shape per umbrella only once the household is sorted, never an amount", () => {
     const v1 = pathMonths(spend(fundedHousehold("2000"), "2026-09-05", 120, "SUB-FOOD-GROCERIES"), today);
     expect(v1.every(month => month.umbrellas === undefined)).toBe(true);
@@ -70,7 +85,7 @@ describe("Slice 11 — world pieces per umbrella (D-282)", () => {
     const session = h.planHerculesSessions!.find(row => row.monthKey === "2026-10")!;
     h = { ...h, planHerculesSessions: h.planHerculesSessions!.map(row => row.id === session.id ? { ...row, state: "closed" as const } : row) };
     const chapterId = h.chapters!.find(row => row.state === "open")!.id;
-    h = closeChapter(h, { memberId: ALEX, chapterId, outcome: "established", at: "2026-10-18T12:00:00.000Z" }).household;
+    h = closeSyntheticChapter(h, { memberId: ALEX, chapterId, outcome: "established", at: "2026-10-18T12:00:00.000Z" });
     const after = pathMonths(h, today).find(m => m.key === "2026-10")!;
     expect(after.scores.together).toBeGreaterThanOrEqual(0.7);
     expect(after.why.together).toContain("a Sitdown");

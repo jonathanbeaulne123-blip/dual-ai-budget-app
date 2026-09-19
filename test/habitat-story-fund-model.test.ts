@@ -1,3 +1,4 @@
+import { knownCents } from "./fixtures/knownCents.ts";
 // @vitest-environment jsdom
 import { execFile, spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
@@ -68,7 +69,7 @@ describe("Our Story under the money model", () => {
     const snap = fundSnapshot(sorted, { memberId: M1, view: "household", today: TODAY });
     expect(snap.prepare.bills.length).toBeGreaterThan(0);
     expect(snap.prepare.bills.map((row) => row.name)).toEqual(expect.arrayContaining(["Rent"]));
-    expect(snap.owedBackCents + snap.prepare.amountCents + snap.protect.amountCents + snap.build.amountCents + snap.everyday.amountCents).toBe(snap.kingCents);
+    expect(snap.owedBackCents + knownCents(snap.prepare.amountCents) + knownCents(snap.protect.amountCents) + knownCents(snap.build.amountCents) + knownCents(snap.everyday.amountCents)).toBe(snap.kingCents);
     // Its bills are paid from cards and accounts, not the Fund: nothing is called short.
     expect(snap.prepare.shortOn).toBeUndefined();
     // No household bill design is still filed under Protect.

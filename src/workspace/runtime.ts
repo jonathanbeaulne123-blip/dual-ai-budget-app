@@ -1,3 +1,4 @@
+import { decodeWorkspaceExperienceBinding, requireExperienceDisclosure } from '../hearthside/workspaceContext.ts';
 import { latestArtifacts, type WorkspaceProject, type WorkspaceRun } from './contracts.ts';
 export const FLASH_MODEL = 'gemini-3.8-flash';
 export const DEFAULT_RUN_BUDGET = { maxSteps: 24, maxTokens: 120_000, maxDurationMs: 30 * 60_000 };
@@ -11,11 +12,13 @@ export function runCanAdvance(project: WorkspaceProject, run: WorkspaceRun, now 
 }
 /** Bounded navigation packet. Originals remain available through project_read. */
 export function projectContext(project: WorkspaceProject): string {
+  requireExperienceDisclosure(project);
+  const experience=project.experience?decodeWorkspaceExperienceBinding(project.experience).context:undefined;
   const bounded = <T,>(values:T[],limit:number) => {let left=limit;return values.filter(value=>{const length=JSON.stringify(value).length;if(length>left)return false;left-=length;return true;});};
   const manifest = project.messages.map(m => ({ id: m.id, role: m.role, length: m.text.length }));
   const messages=bounded([...project.messages].reverse(),65000).reverse();
   const omitted=manifest.filter(m=>!messages.some(x=>x.id===m.id));
-  return JSON.stringify({ appContext: project.appContext, goal:project.goal.length<=4000?project.goal:{retrieve:'context',length:project.goal.length}, completionCriteria:project.completionCriteria,
+  return JSON.stringify({ experience, appContext:project.appContext, goal:project.goal.length<=4000?project.goal:{retrieve:'context',length:project.goal.length}, completionCriteria:project.completionCriteria,
     constraints:bounded(project.constraints,8000),decisions:bounded(project.decisions,8000),questions:bounded(project.questions,4000),
     tasks:bounded(project.tasks,6000),preferences:project.preferences,links:bounded(project.links,5000),
     proposals:bounded([...project.proposals].reverse(),8000), approvedPublicQueries:project.publicResearchQueries,
@@ -23,7 +26,7 @@ export function projectContext(project: WorkspaceProject): string {
     sources:bounded([...project.evidence].reverse().map(({excerpt:_excerpt,...source})=>source),8000),messages,
     conversationManifest:bounded(manifest.slice(-100),6000), omittedMessageIds:omitted.slice(-100).map(m=>m.id),omittedMessageCount:omitted.length,
     contextCounts:{constraints:project.constraints.length,decisions:project.decisions.length,questions:project.questions.length,tasks:project.tasks.length,sources:project.evidence.length,artifacts:project.artifacts.length},
-    instruction:'This is a bounded navigation summary, not the whole project. Use project_read id=context for complete decisions, tasks, links and proposals; id=sources for all evidence; id=artifacts for the artifact manifest. Read omitted messages and artifact content by id or search query. Originals remain available through pagination. Old financial amounts require fresh Hearth reads.' });
+    instruction:'This is a bounded navigation summary, not the whole project. Use project_read id=context for complete decisions, tasks, links and proposals; id=sources for all evidence; id=artifacts for the artifact manifest. Read omitted messages and artifact content by id or search query. Originals remain available through pagination. Old financial amounts require fresh Hearth reads.' + (experience?' This is an experience-bound project: hearth_read is unavailable. Only this deliberately reviewed experience, this project’s deliberately authored inputs and approved shared copies may be used. No private ledger or unrelated household context is accessible.': '') });
 }
 export function adaptiveEffort(project: WorkspaceProject, run: WorkspaceRun): 'low' | 'medium' | 'high' {
   if (project.preferences.detail === 'thorough' || run.step > 5) return 'high';

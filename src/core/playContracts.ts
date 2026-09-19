@@ -1,3 +1,4 @@
+import type { CompanionSlot, CosmeticSelection } from './herculesCompanionContracts.ts';
 /** Finite, serializable Play resources. No URLs, financial values or arbitrary scene transforms. */
 export const PLAY_AREAS = ['dressing','gallery','banks','cabinet','window','desk'] as const;
 export type PlayArea = typeof PLAY_AREAS[number];
@@ -16,9 +17,11 @@ export type PlayPlacement={kind:'portrait'|'bank'|'toy'|'keepsake';id:string};
 export type PlaySlot={id:string;revision:number;value:PlayPlacement|null};
 export type PlayDecor={composition:typeof PLAY_COMPOSITIONS[number];frame:'brass'|'wood'|'paper';furnishing:'warm'|'light'|'deep';lighting:'daylight'|'lamplight'|'studio'};
 export type PlayAward={id:PlayReward;ruleVersion:1;evidence:string;claimedBy:string};
-export type PlayRoom={version:1;decor:{revision:number;value:PlayDecor};slots:PlaySlot[];awards:PlayAward[];pinnedGoals:string[]};
+/** A shared projection of an explicitly published look; never a private look record. */
+export type PlayStageOutfit={galleryId:string;galleryRevision:number;catalogueVersion:number;selections:Partial<Record<CompanionSlot,CosmeticSelection>>};
+export type PlayRoom={version:1;decor:{revision:number;value:PlayDecor};slots:PlaySlot[];awards:PlayAward[];pinnedGoals:string[];stageOutfit:{revision:number;value:PlayStageOutfit|null}};
 export type PlayPrivate={version:1;revision:number;portrait:PortraitSettings;discoveries:PlayDiscovery[];awards:PlayAward[];sound:boolean;paused:boolean};
-export const emptyPlayRoom=():PlayRoom=>({version:1,decor:{revision:0,value:{composition:'centrepiece',frame:'brass',furnishing:'warm',lighting:'daylight'}},slots:[],awards:[],pinnedGoals:[]});
+export const emptyPlayRoom=():PlayRoom=>({version:1,decor:{revision:0,value:{composition:'centrepiece',frame:'brass',furnishing:'warm',lighting:'daylight'}},slots:[],awards:[],pinnedGoals:[],stageOutfit:{revision:0,value:null}});
 export const emptyPlayPrivate=():PlayPrivate=>({version:1,revision:0,portrait:{...DEFAULT_PORTRAIT},discoveries:[],awards:[],sound:false,paused:false});
 function obj(v:unknown,keys:string[]):Record<string,unknown>{if(!v||typeof v!=='object'||Array.isArray(v))throw Error('INVALID_PLAY_RESOURCE');const proto=Object.getPrototypeOf(v);if(proto!==Object.prototype&&proto!==null)throw Error('INVALID_PLAY_PROTOTYPE');for(const key of Reflect.ownKeys(v)){if(typeof key!=='string'||!keys.includes(key)||!('value' in Object.getOwnPropertyDescriptor(v,key)!))throw Error('INVALID_PLAY_FIELD');}return v as Record<string,unknown>;}
 function word(v:unknown,max=128):string{if(typeof v!=='string'||v.length>max||!v.trim()||/[\u0000-\u001f]/.test(v))throw Error('INVALID_PLAY_TEXT');return v;}
@@ -30,7 +33,8 @@ export function decodePortrait(v:unknown):PortraitSettings{const r=obj(v,['pose'
 export function decodePlayPlacement(v:unknown):PlayPlacement|null{if(v===null)return null;const r=obj(v,['kind','id']);const kind=pick(r.kind,['portrait','bank','toy','keepsake']);const id=word(r.id);if(kind==='toy')pick(id,PLAY_REWARDS);if(kind==='keepsake')pick(id,PLAY_KEEPSAKES);return {kind,id};}
 export function decodePlayDecor(v:unknown):PlayDecor{const r=obj(v,['composition','frame','furnishing','lighting']);return {composition:pick(r.composition,PLAY_COMPOSITIONS),frame:pick(r.frame,['brass','wood','paper']),furnishing:pick(r.furnishing,['warm','light','deep']),lighting:pick(r.lighting,['daylight','lamplight','studio'])};}
 function award(v:unknown):PlayAward{const r=obj(v,['id','ruleVersion','evidence','claimedBy']);if(r.ruleVersion!==1)throw Error('PLAY_RULE_VERSION');return {id:pick(r.id,PLAY_REWARDS),ruleVersion:1,evidence:word(r.evidence,240),claimedBy:word(r.claimedBy)};}
-export function decodePlayRoom(v:unknown):PlayRoom{if(v===undefined)return emptyPlayRoom();const r=obj(v,['version','decor','slots','awards','pinnedGoals']);if(r.version!==1)throw Error('PLAY_VERSION');const d=obj(r.decor,['revision','value']);return {version:1,decor:{revision:rev(d.revision),value:decodePlayDecor(d.value)},slots:unique(list(r.slots,21,v=>{const s=obj(v,['id','revision','value']);const id=pick(s.id,PLAY_SLOTS),value=decodePlayPlacement(s.value);if(value&&!id.startsWith(value.kind==='portrait'?'portrait-':value.kind==='bank'?'bank-':value.kind==='toy'?'toy-':'keepsake-'))throw Error('PLAY_SLOT_MISMATCH');return {id,revision:rev(s.revision),value};}),s=>s.id),awards:unique(list(r.awards,6,award),a=>a.id),pinnedGoals:unique(list(r.pinnedGoals,3,v=>word(v)),s=>s)};}
+function stageOutfit(v:unknown):PlayStageOutfit|null{if(v===null)return null;const r=obj(v,['galleryId','galleryRevision','catalogueVersion','selections']);const selections=obj(r.selections,['head','eyewear','neckwear','body','outerwear','charm','tail']);const result:PlayStageOutfit={galleryId:word(r.galleryId),galleryRevision:rev(r.galleryRevision),catalogueVersion:rev(r.catalogueVersion),selections:{}};if(!result.catalogueVersion)throw Error('PLAY_STAGE_CATALOGUE');for(const slot of ['head','eyewear','neckwear','body','outerwear','charm','tail'] as const){if(selections[slot]===undefined)continue;const choice=obj(selections[slot],['itemId','variantId']);result.selections[slot]={itemId:word(choice.itemId),variantId:word(choice.variantId)};}return result;}
+export function decodePlayRoom(v:unknown):PlayRoom{if(v===undefined)return emptyPlayRoom();const r=obj(v,['version','decor','slots','awards','pinnedGoals','stageOutfit']);if(r.version!==1)throw Error('PLAY_VERSION');const d=obj(r.decor,['revision','value']),stage=r.stageOutfit===undefined?{revision:0,value:null}:obj(r.stageOutfit,['revision','value']);return {version:1,decor:{revision:rev(d.revision),value:decodePlayDecor(d.value)},slots:unique(list(r.slots,21,v=>{const s=obj(v,['id','revision','value']);const id=pick(s.id,PLAY_SLOTS),value=decodePlayPlacement(s.value);if(value&&!id.startsWith(value.kind==='portrait'?'portrait-':value.kind==='bank'?'bank-':value.kind==='toy'?'toy-':'keepsake-'))throw Error('PLAY_SLOT_MISMATCH');return {id,revision:rev(s.revision),value};}),s=>s.id),awards:unique(list(r.awards,6,award),a=>a.id),pinnedGoals:unique(list(r.pinnedGoals,3,v=>word(v)),s=>s),stageOutfit:{revision:rev(stage.revision),value:stageOutfit(stage.value)}};}
 export function decodePlayPrivate(v:unknown):PlayPrivate{if(v===undefined)return emptyPlayPrivate();const r=obj(v,['version','revision','portrait','discoveries','awards','sound','paused']);if(r.version!==1||typeof r.sound!=='boolean'||typeof r.paused!=='boolean')throw Error('PLAY_VERSION');return {version:1,revision:rev(r.revision),portrait:decodePortrait(r.portrait),discoveries:unique(list(r.discoveries,12,v=>pick(v,PLAY_DISCOVERIES)),s=>s),awards:unique(list(r.awards,6,award),a=>a.id),sound:r.sound,paused:r.paused};}
 export type PlayOperation=
  |{kind:'slot';slotId:string;expectedRevision:number;value:PlayPlacement|null}
@@ -38,17 +42,19 @@ export type PlayOperation=
  |{kind:'private';expectedRevision:number;portrait:PortraitSettings;sound:boolean;paused:boolean}
  |{kind:'discover';discovery:PlayDiscovery;theme:typeof PLAY_THEMES[number];galleryId?:string}
  |{kind:'claim';reward:PlayReward;goalId?:string;share?:boolean}
- |{kind:'pin';goalId:string;pinned:boolean};
+ |{kind:'pin';goalId:string;pinned:boolean}
+ |{kind:'stage-outfit';expectedRevision:number;galleryId:string|null;expectedGalleryRevision?:number};
 
 export function decodePlayOperation(value:unknown):PlayOperation{
  const kind=(Object.getOwnPropertyDescriptor(value??{},'kind')?.value) as string;
- const keys:Record<string,string[]>={slot:['kind','slotId','expectedRevision','value'],decor:['kind','expectedRevision','value'],private:['kind','expectedRevision','portrait','sound','paused'],discover:['kind','discovery','theme','galleryId'],claim:['kind','reward','goalId','share'],pin:['kind','goalId','pinned']};
+ const keys:Record<string,string[]>={slot:['kind','slotId','expectedRevision','value'],decor:['kind','expectedRevision','value'],private:['kind','expectedRevision','portrait','sound','paused'],discover:['kind','discovery','theme','galleryId'],claim:['kind','reward','goalId','share'],pin:['kind','goalId','pinned'],'stage-outfit':['kind','expectedRevision','galleryId','expectedGalleryRevision']};
  if(!keys[kind])throw Error('PLAY_OPERATION_UNKNOWN');const r=obj(value,keys[kind]!);
  if(kind==='slot')return {kind,slotId:pick(r.slotId,PLAY_SLOTS),expectedRevision:rev(r.expectedRevision),value:decodePlayPlacement(r.value)};
  if(kind==='decor')return {kind,expectedRevision:rev(r.expectedRevision),value:decodePlayDecor(r.value)};
  if(kind==='private'){if(typeof r.sound!=='boolean'||typeof r.paused!=='boolean')throw Error('PLAY_INVALID_SETTINGS');return {kind,expectedRevision:rev(r.expectedRevision),portrait:decodePortrait(r.portrait),sound:r.sound,paused:r.paused};}
  if(kind==='discover')return {kind,discovery:pick(r.discovery,PLAY_DISCOVERIES),theme:pick(r.theme,PLAY_THEMES),...(r.galleryId!==undefined?{galleryId:word(r.galleryId)}:{})};
  if(kind==='claim'){if(r.share!==undefined&&typeof r.share!=='boolean')throw Error('PLAY_INVALID_SHARE');return {kind,reward:pick(r.reward,PLAY_REWARDS),...(r.goalId!==undefined?{goalId:word(r.goalId)}:{}),...(r.share!==undefined?{share:r.share as boolean}:{})};}
+ if(kind==='stage-outfit'){if(r.galleryId===null){obj(r,['kind','expectedRevision','galleryId']);return {kind,expectedRevision:rev(r.expectedRevision),galleryId:null};}return {kind,expectedRevision:rev(r.expectedRevision),galleryId:word(r.galleryId),expectedGalleryRevision:rev(r.expectedGalleryRevision)};}
  if(typeof r.pinned!=='boolean')throw Error('PLAY_INVALID_PIN');return {kind:'pin',goalId:word(r.goalId),pinned:r.pinned};
 }
 

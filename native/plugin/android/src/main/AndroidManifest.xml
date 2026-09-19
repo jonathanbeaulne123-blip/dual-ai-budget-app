@@ -1,0 +1,11 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-feature android:name="android.hardware.camera.ar" android:required="false" />
+    <application>
+        <meta-data android:name="com.google.ar.core" android:value="optional" />
+        <receiver android:name=".HearthSculptureWidget" android:exported="false" android:label="Hearth sculpture">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/hearth_sculpture_widget" />
+        </receiver>
+    </application>
+</manifest>

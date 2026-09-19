@@ -1,0 +1,85 @@
+--- a/workers/hearthsideVaultArchive.ts
++++ b/workers/hearthsideVaultArchive.ts
+@@ -20,7 +20,7 @@
+ const sequenceName = (n: number) => String(n).padStart(16, '0');
+ function checkRow(row: Row, scope: string): void {
+   vaultAssert(row && typeof row.key === 'string' && typeof row.data === 'string' &&
+-    (row.key === 'scope' || /^(draft|media|publication)\/[A-Za-z0-9][A-Za-z0-9_-]{0,95}$/.test(row.key)) &&
++    (row.key === 'scope' || /^(draft|media|publication|encounter)\/[A-Za-z0-9][A-Za-z0-9_-]{0,95}$/.test(row.key)) &&
+     new TextEncoder().encode(row.data).byteLength < ENTRY_LIMIT - 2048, 'VAULT_ARCHIVE_CORRUPT');
+   const value = parse<unknown>(row.data);
+   if (row.key === 'scope') vaultAssert(value === scope, 'VAULT_ARCHIVE_CORRUPT');
+@@ -33,6 +33,7 @@
+   vaultAssert(!(old.state === 'revoked' && next.state !== 'revoked') &&
+     !(old.status === 'deleted' && next.status !== 'deleted') &&
+     !(old.deletedAt !== undefined && next.deletedAt === undefined), 'VAULT_ARCHIVE_CORRUPT');
++  if (key.startsWith('encounter/')) vaultAssert(Number.isSafeInteger(next.generation) && Number(next.generation) >= Number(old.generation), 'VAULT_ARCHIVE_CORRUPT');
+   if (key.startsWith('draft/')) vaultAssert(Number.isSafeInteger(next.revision) && Number(next.revision) >= Number(old.revision), 'VAULT_ARCHIVE_CORRUPT');
+ }
+-
++
+--- a/workers/hearthsideVault.ts
++++ b/workers/hearthsideVault.ts
+@@ -2,6 +2,9 @@
+ import type { DurableObjectId, DurableObjectState, R2Bucket, R2ObjectBody } from '@cloudflare/workers-types';
+ import { authorizeRequest, type AuthEnv } from './ledgerSyncAuth.ts';
+ import type { Scope } from '../src/ledgerSync/protocol.ts';
++import { HearthsideVaultEncounters, type VaultEncounterContext, type EncounterPrivateView } from './hearthsideVaultEncounters.ts';
++import { VaultEncounterAdapter } from './hearthsideVaultEncounterAdapter.ts';
++import type { EncounterRevealBinding } from '../src/hearthside/encounterContracts.ts';
+ import { HearthsideVaultStore } from './hearthsideVaultStore.ts';
+ import { HearthsideVaultArchive, VaultJournalStorage } from './hearthsideVaultArchive.ts';
+ import { createVaultPublicationAuthority, type VaultAudienceEnv } from './hearthsideVaultAudience.ts';
+@@ -25,6 +28,7 @@
+ }
+ /** Narrow structural RPC contract avoids importing the LedgerRoom runtime. */
+ type VaultReferenceRoom = VaultMemoryAuthority & {
++  vaultEncounterContext(scope: Scope, id: string): Promise<VaultEncounterContext>;
+   acceptVaultPublication(scope: Scope, reference: VaultReference): Promise<VaultAcceptance>;
+   vaultMediaReferenced(scope: Scope, mediaId: string): Promise<boolean>;
+ };
+@@ -61,11 +65,14 @@
+   'INPUT_TOO_LARGE', 'BODY_REQUIRED', 'VAULT_UNAVAILABLE', 'VAULT_NOT_ACTIVATED', 'VAULT_AUTHORITY_UNAVAILABLE', 'GUEST_AUTHORITY_REQUIRED',
+   'VAULT_ARCHIVE_UNAVAILABLE', 'VAULT_ARCHIVE_CORRUPT', 'VAULT_ARCHIVE_CONFLICT', 'VAULT_RESTORE_REQUIRED', 'VAULT_RESTORE_NOT_EMPTY',
+   'INVALID_MEMORY_BINDING', 'MEMORY_REVIEW_REQUIRED', 'MEMORY_CHANGED',
++  'INVALID_ENCOUNTER', 'INVALID_ENCOUNTER_COMMAND', 'ENCOUNTER_SCOPE_CHANGED', 'ENCOUNTER_NOT_FOUND', 'ENCOUNTER_WITHDRAWN', 'ENCOUNTER_HISTORY_FULL', 'ENCOUNTER_PAUSED', 'ANSWER_CHANGED', 'REVEAL_REQUIRED', 'COMMAND_ID_REUSED',
+ ]);
+-
++
+ /** SQLite stores JSON per object, so no content lives only in an instance cache. */
+ export class HearthsideVault extends DurableObject<VaultBindings> {
+   private store: HearthsideVaultStore;
++  private readonly encounters: HearthsideVaultEncounters;
++  private readonly encounterAdapter?: VaultEncounterAdapter;
+   private archive: HearthsideVaultArchive;
+   constructor(ctx: DurableObjectState, env: VaultBindings) {
+     const rooms = env.LEDGER_ROOMS;
+@@ -87,6 +94,11 @@
+     const storage = new VaultJournalStorage(this.ctx.storage);
+     this.archive = new HearthsideVaultArchive(storage, env.HEARTHSIDE_VAULT_ARCHIVE ?? env.HEARTHSIDE_VAULT_MEDIA);
+     this.store = new HearthsideVaultStore(storage);
++    this.encounters = new HearthsideVaultEncounters(storage, scope => this.store.check(scope));
++    if (rooms && authority) this.encounterAdapter = new VaultEncounterAdapter(this.encounters, {
++      context: (scope, id) => rooms.get(rooms.idFromName(`${scope.environment}/${scope.householdId}`)).vaultEncounterContext(scope, id),
++      policy: (scope, input, authorization) => authority.policy(scope, input, authorization),
++    });
+   }
+   private async durable<T>(scope: Scope, action: () => T | Promise<T>, finalCheck?: () => void | Promise<void>): Promise<T> {
+     await this.archive.ready(scope); this.store.check(scope);
+@@ -108,7 +120,16 @@
+   async snapshotFor(scope: Scope) {
+     return this.durable(scope, () => ({ version: 1, drafts: this.store.listDrafts(scope), publications: this.store.listReceipts(scope), mail: this.store.listMail(scope), serverTime: Date.now() }));
+   }
++  async checkEncounterRevealFor(scope: Scope, binding: EncounterRevealBinding) {
++    return this.durable(scope, () => this.encounters.evidence(scope, binding), async () => { await this.encounters.evidence(scope, binding); });
++  }
+   async commandFor(scope: Scope, input: unknown, publicationEnabled: boolean, authorization?: string) {
++    const command = vaultObject(input, ['operation', 'input', 'id', 'digest']);
++    if (command.operation === 'encounter-private') {
++      vaultAssert(this.encounterAdapter, 'VAULT_AUTHORITY_UNAVAILABLE');
++      let view: EncounterPrivateView;
++      return this.durable(scope, async () => view = await this.encounterAdapter!.command(scope, command.input, publicationEnabled, authorization), async () => { await this.encounterAdapter!.recheck(scope, view, authorization); });
++    }
+     return this.durable(scope, () => this.executeCommand(scope, input, publicationEnabled, authorization), async () => {
+       const v = vaultObject(input, ['operation', 'input', 'id', 'digest']);
+       if (v.operation === 'read-publication') {

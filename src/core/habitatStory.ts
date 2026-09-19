@@ -28,7 +28,8 @@ import {
   sharePlanBridgeDraft,
   signHouseholdCharter,
 } from "./commands.ts";
-import { closeChapter, completeMove, keepWinAsMemory, movesForChapter, offerMove, openChapter, openChapterFor, recordRitualHeld, recordWin, respondToMove } from "./chapters.ts";
+import { editRitual, keepWinAsMemory, movesForChapter, offerMove, openChapter, openChapterFor, recordWin, ritualAgreementRevision, ritualTerms } from "./chapters.ts";
+import { agreeSyntheticRitual, closeSyntheticChapter, completeSyntheticMove, holdSyntheticRitual } from "./syntheticChapters.ts";
 import { createDemoRandom } from "./demoRandom.ts";
 import { fundContributionReviewDigest } from "./fundContributionSources.ts";
 import { projectHouseholdFund } from "./householdFund.ts";
@@ -40,7 +41,7 @@ import { bookBalanceAsOf } from "./statements.ts";
 import { atSyntheticClock } from "./syntheticRuntime.ts";
 import { defaultKittySculpt } from "./kittyStudio.ts";
 import type { GoalEnvelope, KittyStampV1 } from "./types.ts";
-import { completeTask, saveTask, type Task } from "./tasks.ts";
+import { acknowledgeTask, completeTask, saveTask, type Task } from "./tasks.ts";
 import type { CommitResult, Household } from "./types.ts";
 
 /**
@@ -608,16 +609,18 @@ function chapters(h: Household, c: StoryContext): Household {
   const hold = (k: number, day: number, by: string) => {
     const date = dayIn(c, k, day);
     if (date > c.today) return;
-    next = recordRitualHeld(next, { memberId: by, ritualId: ritualOf(chapter().id).id, onDate: date, at: iso(date, 20) }).household;
+    const ritual = ritualOf(chapter().id);
+    const goalId = ritual.moneyLink?.kind === "goal" ? ritual.moneyLink.goalId : null;
+    const contribution = goalId ? next.goalContributions?.find(row => row.goalId === goalId && row.date === date) : undefined;
+    next = holdSyntheticRitual(next, { memberId: by, ritualId: ritual.id, onDate: date, at: iso(date, 20), ...(contribution ? { evidence: { kind: "goal-contribution", contributionId: contribution.id, amountCents: contribution.amountCents, date: contribution.date } as const } : {}) });
   };
-  const doFirstMove = (k: number, day: number, by: string, evidenceRef?: string) => {
+  const doFirstMove = (k: number, day: number, by: string) => {
     const move = movesForChapter(next, chapter().id).find((row) => row.state === "offered");
     if (!move) return;
-    next = respondToMove(next, { memberId: by === M1 ? M2 : M1, moveId: move.id, response: "accept", at: iso(dayIn(c, k, day), 19) }).household;
-    next = completeMove(next, { memberId: by, moveId: move.id, ...(evidenceRef ? { evidenceRef } : {}), at: iso(dayIn(c, k, day + 1), 19) }).household;
+    next = completeSyntheticMove(next, { memberId: by, moveId: move.id, at: iso(dayIn(c, k, day + 1), 19) });
   };
   const close = (k: number, day: number, by: string, outcome: "established" | "still-forming", carry: string) => {
-    next = closeChapter(next, { memberId: by, chapterId: chapter().id, outcome, carryForward: carry, at: iso(dayIn(c, k, day), 21) }).household;
+    next = closeSyntheticChapter(next, { memberId: by, chapterId: chapter().id, outcome, carryForward: carry, at: iso(dayIn(c, k, day), 21) });
   };
 
   // 1 · See our shared life (M−24 → M−19)
@@ -635,8 +638,7 @@ function chapters(h: Household, c: StoryContext): Household {
   next = offerMove(next, { memberId: M1, chapterId: chapter().id, text: "Fictional: refill the cushion before anything new", at: iso(dayIn(c, -18, 4), 19) }).household;
   {
     const move = movesForChapter(next, chapter().id).find((row) => row.state === "offered")!;
-    next = respondToMove(next, { memberId: M2, moveId: move.id, response: "accept", at: iso(dayIn(c, -18, 5), 19) }).household;
-    next = completeMove(next, { memberId: M1, moveId: move.id, at: iso(dayIn(c, -18, 28), 21) }).household;
+    next = completeSyntheticMove(next, { memberId: M1, moveId: move.id, at: iso(dayIn(c, -18, 28), 21) });
   }
   close(-16, 3, M2, "established", "Fictional: when something breaks, we sit down the same evening.");
 
@@ -648,6 +650,13 @@ function chapters(h: Household, c: StoryContext): Household {
 
   // 4 · Build breathing room (M−12 → M−6)
   next = openChapter(next, { memberId: M1, foundationId: "build-breathing-room", at: iso(dayIn(c, -12, 6), 19) }).household;
+  // Both review the real shared buffer. Only its accepted, same-day contributions
+  // can complete this money Ritual; the other dated occurrences remain open.
+  {
+    const ritual = ritualOf(chapter().id), at = iso(dayIn(c, -12, 6), 20);
+    next = editRitual(next, { memberId: M1, ritualId: ritual.id, expectedRevision: ritualAgreementRevision(ritual), terms: { ...ritualTerms(ritual), moneyLink: { kind: "goal", goalId: c.goal["Emergency buffer"]! } }, at }).household;
+    next = agreeSyntheticRitual(next, ritual.id, at);
+  }
   for (let k = -12; k <= -7; k += 1) { hold(k, 7, M1); hold(k, 22, M2); }
   doFirstMove(-12, 8, M2);
   close(-6, 4, M2, "established", "Fictional: a cushion first, then the fun.");
@@ -662,7 +671,7 @@ function chapters(h: Household, c: StoryContext): Household {
   next = openChapter(next, { memberId: M2, foundationId: "make-room-for-joy", at: iso(dayIn(c, -1, 5), 19) }).household;
   hold(-1, 7, M2); hold(-1, 22, M1);
   const lastHold = addDays(c.today, -2);
-  next = recordRitualHeld(next, { memberId: M2, ritualId: ritualOf(chapter().id).id, onDate: lastHold, at: iso(lastHold, 20) }).household;
+  next = holdSyntheticRitual(next, { memberId: M2, ritualId: ritualOf(chapter().id).id, onDate: lastHold, at: iso(lastHold, 20) });
   next = offerMove(next, { memberId: M2, chapterId: chapter().id, text: "Fictional: a movie night every second Friday, snacks from the joy jar", ownerMemberId: M2, needsAcknowledgment: true, at: iso(addDays(c.today, -1), 20) }).household;
 
   // Wins: the housewarming (a First), the sofa (a First, kept by both), Tofino (a shared win)
@@ -725,7 +734,9 @@ function tasks(h: Household, c: StoryContext): Household {
     next = restamp(next, "tasks", id, when);
   };
   const done = (id: string, by: string, when: string, evidence?: Parameters<typeof completeTask>[1]["evidence"]) => {
-    const row = next.tasks!.find((t) => t.id === id)!;
+    let row = next.tasks!.find((t) => t.id === id)!;
+    next = acknowledgeTask(next, { memberId: by, id, expectedRevision: row.revision }).household;
+    row = next.tasks!.find((t) => t.id === id)!;
     next = completeTask(next, { memberId: by, id, expectedRevision: row.revision, completedAt: when, ...(evidence ? { evidence } : {}) }).household;
     next = restamp(next, "tasks", id, when);
   };

@@ -102,7 +102,7 @@ function rowsOf(bank: NestBank | undefined): FundRow[] {
   return (bank?.children ?? []).map(child => ({
     id: child.id,
     label: child.name,
-    detail: child.tier === "goal" ? (child.targetCents > 0 ? `${cad(child.amountCents)} of ${cad(child.targetCents)}` : "a goal") : child.date ? dayWords(child.date) : null,
+    detail: child.tier === "goal" ? (child.targetCents > 0 ? `${child.amountCents === null ? "Backing unavailable" : cad(child.amountCents)} of ${cad(child.targetCents)}` : "a goal") : child.date ? dayWords(child.date) : null,
     amountCents: child.tier === "goal" ? child.amountCents : child.targetCents,
     date: child.date,
   }));
@@ -249,7 +249,7 @@ export const fundModelSnapshot: FundSnapshotSource = (h, input) => {
   const prepareRows: FundRow[] = snap.prepare.bills.map(bill => ({ id: bill.id, label: bill.name, detail: bill.date ? dayWords(bill.date) : null, amountCents: bill.targetCents, date: bill.date }));
   const otherPrepare = legacy.prepare.rows.filter(row => !prepareRows.some(bill => bill.id === row.id));
   const shortOn = snap.prepare.shortOn;
-  const prepareLine = shortOn ? `Short ${cad(shortOn.shortCents)} for ${shortOn.label}, ${dayWords(shortOn.date)}`
+  const prepareLine = snap.prepare.amountCents === null ? "Backing unavailable — coverage cannot be verified" : shortOn ? `Short ${cad(shortOn.shortCents)} for ${shortOn.label}, ${dayWords(shortOn.date)}`
     : snap.prepare.fundBills.length ? (flow?.anyEstimated ? `Bills covered all ${month} if expected pay arrives` : `Bills covered all ${month}`)
     // Bills on the rail that the Fund doesn't pay are never claimed as covered (D-282, Our Story).
     : snap.prepare.bills.length ? "Paid outside the Fund this month"
@@ -259,7 +259,7 @@ export const fundModelSnapshot: FundSnapshotSource = (h, input) => {
   return {
     mode: 2,
     refills: view === "household" ? snap.protect.refills.map(row => refillReading(h, row)) : [],
-    now: { amountCents: snap.now, line: `for ${month}, here now` },
+    now: { amountCents: snap.now, line: snap.now === null ? "Goal backing is unavailable" : `for ${month}, here now` },
     undividedContributions: snap.undividedContributions.map(row => ({
       id: row.eventId, memberId: row.contributorMemberId, memberName: memberName(h, row.contributorMemberId), amountCents: row.amountCents, date: row.date,
       suggestion: row.proposal ? { ...row.proposal.split } : proposedDivision(h, row.eventId, { memberId, today }),
@@ -270,7 +270,7 @@ export const fundModelSnapshot: FundSnapshotSource = (h, input) => {
     protect: { key: "protect", amountCents: snap.protect.amountCents, line: buffer ? `of ${cad(buffer)} cushion` : null, tone: "calm", targetCents: buffer, rows: legacy.protect.rows },
     build: {
       key: "build", amountCents: snap.build.amountCents, line: goals ? `this month, toward ${goals} ${goals === 1 ? "goal" : "goals"}` : null, tone: "calm", targetCents: snap.build.targetCents || null,
-      rows: snap.build.goals.map(goal => ({ id: goal.goalId, label: goal.name, detail: goal.targetCents > 0 ? `${cad(goal.amountCents)} of ${cad(goal.targetCents)}` : "a goal", amountCents: goal.amountCents, date: goal.date })),
+      rows: snap.build.goals.map(goal => ({ id: goal.goalId, label: goal.name, detail: goal.targetCents > 0 ? `${goal.amountCents === null ? "Backing unavailable" : cad(goal.amountCents)} of ${cad(goal.targetCents)}` : "a goal", amountCents: goal.amountCents, date: goal.date })),
     },
     flow,
   };

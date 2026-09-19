@@ -1,0 +1,27 @@
+{
+  "name": "hearthside-native-companions",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "sync": "cap sync",
+    "ios": "cap open ios",
+    "android": "cap open android",
+    "prepare:platforms": "node scripts/prepare-platforms.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "prepare:assets": "node scripts/prepare-brand-assets.mjs"
+  },
+  "dependencies": {
+    "@capacitor/core": "8.5.2",
+    "@capacitor/ios": "8.5.2",
+    "@capacitor/android": "8.5.2",
+    "@hearth/hearthside-native": "workspace:*"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.2",
+    "typescript": "5.9.2"
+  }
+}

@@ -1,0 +1,102 @@
+import {expect,it} from 'vitest';
+import {createGuestRuntime} from './fixtures/hearthsideGuestRuntime.ts';
+import {guestDigest} from '../src/hearthside/guestContracts.ts';
+import type {GuestReview,GuestInvitationReview,GuestVisit} from '../src/hearthside/guestContracts.ts';
+const publicationId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',cardCode='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',grantId='cccccccc-cccc-4ccc-8ccc-cccccccccccc',sessionId='dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+const input={publicationId,title:'Our open door',welcome:'A quiet visit.',theme:'classic',room:'common',mode:'anytime',items:[{kind:'experience',id:'experience-1',revision:1,x:.2,y:.3},{kind:'piece',id:'piece-1',designId:'design-1',revision:1,x:.7,y:.6},{kind:'memory',id:'memory-1',revision:1,x:.4,y:.5}]};
+const read=async<T>(response:{status:number;text:()=>Promise<string>})=>{const text=await response.text();expect(response.status,text).toBe(200);return JSON.parse(text) as T;};
+it('assembles actual guest Workers, authenticated two-household boundaries, joint review, immutable copies, lost acknowledgement, revocation and R2 restoration',async()=>{
+ const {mf,request,control}=await createGuestRuntime(),host=(body:unknown,actor='alice')=>request('host/HH-FIRST',actor,body),visit=(body:unknown,actor='cara')=>request('visit/'+publicationId,actor,{...body as object,grantId,sessionId});
+ try{
+  expect((await request('host/HH-FIRST','cara')).status).toBe(404);
+  expect((await request('host/HH-FIRST','erin')).status).toBe(404);
+  expect(await read(await request('street','cara'))).toMatchObject({visits:[],cards:[]});
+  expect((await host({operation:'prepare',input:{...input,balance:1}})).status).toBe(400);
+  await read(await control({target:'source',action:'change',input:{key:'state',value:{hidden:true}}}));
+  expect((await host({operation:'prepare',input})).status).toBe(404);
+  await control({target:'source',action:'change',input:{key:'state',value:{}}});
+  const review=await read<GuestReview>(await host({operation:'prepare',input}));
+  expect(JSON.stringify(review.arrangement)).not.toMatch(/experience-1|design-1|piece-1|MEM-A|BANK-SECRET|99999|PRIVATE-PIECE-SOURCE/);
+  expect((await host({operation:'activate',publicationId})).status).toBe(409);
+  expect((await host({operation:'approve',publicationId,digest:review.digest,author:'MEM-B'})).status).toBe(400);
+  await read(await host({operation:'approve',publicationId,digest:review.digest}));
+  expect((await host({operation:'activate',publicationId})).status).toBe(409);
+  await read(await host({operation:'approve',publicationId,digest:review.digest},'bob'));
+  await control({target:'source',action:'change',input:{key:'lose-accept',value:true}});
+  expect((await host({operation:'activate',publicationId})).status).toBe(503);
+  expect(await read(await host({operation:'activate',publicationId}))).toMatchObject({state:'active'});
+  expect(await read(await control({target:'source',action:'facts'}))).toMatchObject({financialSnapshotReads:0,receipts:[{publicationId}]});
+  await read(await request('cards','cara',{operation:'create',id:cardCode,label:'Cara'}));
+  expect((await request('cards','dan',{operation:'revoke',id:cardCode})).status).toBe(404);
+  const expiresAt=Date.now()+86400000,g=await read<GuestInvitationReview>(await host({operation:'prepare-invitation',publicationId,input:{id:grantId,cardCode,expiresAt}}));
+  expect(JSON.stringify(g)).not.toMatch(/33333333|cardCode|subject/);
+  await read(await host({operation:'approve-invitation',publicationId,id:grantId,digest:g.digest}));
+  expect((await host({operation:'activate-invitation',publicationId,id:grantId})).status).toBe(409);
+  await read(await host({operation:'approve-invitation',publicationId,id:grantId,digest:g.digest},'bob'));
+  await read(await host({operation:'activate-invitation',publicationId,id:grantId}));
+  expect(await read(await request('street','dan'))).toMatchObject({visits:[]});
+  expect(await read(await request('street','cara'))).toMatchObject({visits:[{publicationId,id:grantId}]});
+  expect((await visit({operation:'enter',label:'Dan'},'dan')).status).toBe(404);
+  const entered=await read<GuestVisit>(await visit({operation:'enter',label:'Cara'}));
+  expect(entered.presence).toEqual([{id:sessionId,label:'Cara',host:false}]);
+  expect(JSON.stringify(entered)).not.toMatch(/HH-FIRST|11111111|33333333|source|target|balance|memberId|receipt/);
+  await read(await visit({operation:'toy',toy:'firefly',x:.4,y:.4}));
+  expect((await visit({operation:'toy',toy:'command',x:.4,y:.4})).status).toBe(400);
+  expect((await visit({operation:'approve',digest:review.digest})).status).toBe(400);
+  expect(await read(await control({target:'source',action:'facts'}))).toMatchObject({state:{},financialSnapshotReads:0});
+  await control({target:'source',action:'change',input:{key:'state',value:{revision:2,title:'Later source words',furniture:[{room:'common',furnitureId:'sofa',revision:1,x:.8,y:.4}]}}});
+  expect((await read<GuestVisit>(await visit({operation:'pulse'}))).arrangement).toEqual(entered.arrangement);
+  await control({target:'source',action:'change',input:{key:'state',value:{hidden:true}}});
+  expect((await visit({operation:'pulse'})).status).toBe(404);
+  expect(await read(await control({target:'room',action:'presence',id:publicationId}))).toBe(0);
+  await control({target:'source',action:'change',input:{key:'state',value:{}}});
+  await read(await visit({operation:'enter',label:'Cara'}));
+  await control({target:'control',action:'change',input:{key:'roster-HH-FIRST',value:[{memberId:'MEM-A',subject:'11111111-1111-4111-a111-111111111111'},{memberId:'MEM-B',subject:'55555555-5555-4555-a555-555555555555'}]}});
+  expect((await visit({operation:'pulse'})).status).toBe(404);
+  expect(await read(await control({target:'room',action:'presence',id:publicationId}))).toBe(0);
+  await control({target:'control',action:'change',input:{key:'roster-HH-FIRST',value:null}});
+  await read(await visit({operation:'enter',label:'Cara'}));
+  await read(await request('cards','cara',{operation:'revoke',id:cardCode}));
+  expect((await visit({operation:'pulse'})).status).toBe(404);
+  expect(await read(await control({target:'room',action:'presence',id:publicationId}))).toBe(0);
+  expect((await host({operation:'activate-invitation',publicationId,id:grantId})).status).toBe(409);
+  const bucket=await mf.getR2Bucket('HEARTHSIDE_GUEST_ARCHIVE','app'),prefix=`hearthside-guest-archive-v1/development/room/${publicationId}/`,before=await (await bucket.get(prefix+'head.json'))!.text();
+  await control({target:'room',action:'fault',id:publicationId,mode:'after-head'});
+  expect((await host({operation:'revoke',publicationId})).status).toBe(503);
+  await read(await host({operation:'revoke',publicationId}));
+  // A long durable tail is discovered across bounded calls before replay is exposed.
+  const durableHead=await (await bucket.get(prefix+'head.json'))!.json() as {sequence:number;digest:string};
+  const last=await (await bucket.get(prefix+'journal/'+String(durableHead.sequence).padStart(16,'0')+'.json'))!.json() as {journal:{rows:{key:string;data:string}[]}};
+  let tailSequence=durableHead.sequence,tailDigest=durableHead.digest;
+  for(let i=0;i<130;i++){const journal={version:1,scope:'development/room/'+publicationId,sequence:++tailSequence,previous:tailDigest,rows:last.journal.rows};tailDigest=await guestDigest(journal);await bucket.put(prefix+'journal/'+String(tailSequence).padStart(16,'0')+'.json',JSON.stringify({journal,digest:tailDigest}));}
+  await bucket.put(prefix+'head.json',before);
+  expect((await control({target:'restore',action:'review',id:publicationId})).status).toBe(409);
+  let pages=0,progress;do{progress=await read<{complete:boolean}>(await control({target:'restore',action:'restore',id:publicationId}));pages++;}while(!progress.complete&&pages<100);expect(progress.complete).toBe(true);expect(pages).toBeGreaterThan(1);
+  expect(await read(await control({target:'restore',action:'review',id:publicationId}))).toMatchObject({publication:{state:'revoked',arrangement:{furniture:entered.arrangement.furniture}},invitations:[{state:'revoked'}]});
+  expect((await request('visit/'+publicationId,'cara',{operation:'restore',grantId,sessionId})).status).toBe(400);
+ }finally{await mf.dispose();}
+},90000);
+it('requires a present host for both room and media, closes on exact publication replacement, and rejects revoked own sessions',async()=>{
+ const {mf,request,control}=await createGuestRuntime(),host=(body:unknown,actor='alice')=>request('host/HH-FIRST',actor,body),visit=(body:unknown)=>request('visit/'+publicationId,'cara',{...body as object,grantId,sessionId}),hostSession='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee';
+ try{
+  await control({target:'source',action:'change',input:{key:'state',value:{media:true}}});
+  const p=await read<GuestReview>(await host({operation:'prepare',input:{...input,mode:'hosted'}}));
+  for(const actor of ['alice','bob'])await read(await host({operation:'approve',publicationId,digest:p.digest},actor));
+  await read(await host({operation:'activate',publicationId}));await read(await request('cards','cara',{operation:'create',id:cardCode,label:'Cara'}));
+  const g=await read<GuestInvitationReview>(await host({operation:'prepare-invitation',publicationId,input:{id:grantId,cardCode,expiresAt:Date.now()+86400000}}));
+  for(const actor of ['alice','bob'])await read(await host({operation:'approve-invitation',publicationId,id:grantId,digest:g.digest},actor));
+  await read(await host({operation:'activate-invitation',publicationId,id:grantId}));
+  const media=()=>mf.dispatchFetch(`http://localhost/api/hearthside-guests/development/visit/${publicationId}/media/media-1`,{headers:{Authorization:'Bearer cara.synthetic.jwt','X-Guest-Grant':grantId}});
+  expect((await visit({operation:'enter',label:'Cara'})).status).toBe(404);expect((await media()).status).toBe(404);
+  await read(await host({operation:'host-enter',publicationId,sessionId:hostSession,label:'Alice'}));
+  const room=await read<GuestVisit>(await visit({operation:'enter',label:'Cara'}));expect(room.presence).toHaveLength(2);
+  const image=await media();expect(image.status).toBe(200);expect(image.headers.get('Content-Type')).toBe('image/png');expect(image.headers.get('Cache-Control')).toBe('private, no-store');expect((await image.arrayBuffer()).byteLength).toBeGreaterThan(50);
+  await read(await host({operation:'host-leave',publicationId,sessionId:hostSession}));expect((await media()).status).toBe(404);expect(await read(await control({target:'room',action:'presence',id:publicationId}))).toBe(0);
+  await read(await host({operation:'host-enter',publicationId,sessionId:hostSession,label:'Alice'}));await read(await visit({operation:'enter',label:'Cara'}));
+  await control({target:'source',action:'change',input:{key:'state',value:{media:true,publicationId:'replacement-publication'}}});expect((await visit({operation:'pulse'})).status).toBe(404);expect((await media()).status).toBe(404);expect(await read(await control({target:'room',action:'presence',id:publicationId}))).toBe(0);
+  await control({target:'control',action:'change',input:{key:'revoked-cara',value:true}});expect((await request('street','cara')).status).toBe(401);
+ }finally{await mf.dispose();}
+},60000);
+it('keeps the assembled service disabled without its explicit enabling flag',async()=>{const {mf,request}=await createGuestRuntime(false);try{expect(await (await request('street','cara')).json()).toEqual({code:'GUEST_DISABLED'});}finally{await mf.dispose();}},30000);
+
+it('rejects activation when the furniture changes after both exact room approvals',async()=>{const {mf,request,control}=await createGuestRuntime();try{const host=(body:unknown,actor='alice')=>request('host/HH-FIRST',actor,body);const p=await read<GuestReview>(await host({operation:'prepare',input}));expect(p.arrangement.furniture?.placements).toHaveLength(3);for(const actor of ['alice','bob'])await read(await host({operation:'approve',publicationId,digest:p.digest},actor));await control({target:'source',action:'change',input:{key:'state',value:{furniture:[{room:'common',furnitureId:'sofa',revision:1,x:.7,y:.5}]}}});expect((await host({operation:'activate',publicationId})).status).toBe(404);}finally{await mf.dispose();}},30000);

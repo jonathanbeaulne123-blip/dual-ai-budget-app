@@ -1,3 +1,9 @@
+import {HEARTHSIDE_FLAGS} from './hearthside/flags.ts';
+import {HEARTHSIDE_LABEL} from './hearthside/routes.ts';
+import type {KittyAcceptedCommandReader} from './hearthside/bankReceipt.ts';
+import {WinMemoryReview} from './hearthside/WinMemoryReview.tsx';
+import {winMemoryId} from './hearthside/winMemory.ts';
+import {commitHearthside} from './hearthside/commands.ts';
 import { useState, type ReactNode } from "react";
 import type { CommitResult, Household } from "./core/types.ts";
 import type { DateKey } from "./core/calendar.ts";
@@ -6,13 +12,14 @@ import { formatCad } from "./core/money.ts";
 import { monthObligations } from "./core/monthObligations.ts";
 import { duePotentialExpenses, potentialExpensesForView } from "./core/potentialExpenses.ts";
 import { deriveFundPulseInput, fundPulse, presenceLines, type FundPulseFreshness } from "./core/fundPulse.ts";
-import { dismissWin, keepWinAsMemory, openChapterFor, recentWin } from "./core/chapters.ts";
+import { dismissWin, openChapterFor, recentWin } from "./core/chapters.ts";
 import { fundDisplayName } from "./core/spaceNames.ts";
 import { ChapterMoment } from "./ChapterPanel.tsx";
 import { KittyNest } from "./kitty/KittyNest.tsx";
 import { KittyBankRoom, type KittyCommandOptions, type KittySubmissionReader } from "./kitty/KittyBankRoom.tsx";
 import { queensNestEnabled } from "./core/planFeature.ts";
 import { QueenHome, type QueenShell } from "./queen/QueenHome.tsx";
+import type { HousePlace } from "./queen/queenHouse.ts";
 import "./household-home.css";
 
 type Run = (fn: (current: Household) => CommitResult, options?: KittyCommandOptions) => Promise<unknown>;
@@ -45,6 +52,9 @@ type HouseholdHomeProps = {
   onGo: (tab: "ledger" | "plan" | "together" | "calendar" | "more") => void;
   onOpenSetup: (destination: "charter" | "fund") => void;
   onReadSubmission?: KittySubmissionReader;
+  onReadAcceptedCommand?: KittyAcceptedCommandReader;
+  creationIdentity?: string;
+  onOpenMemory?: (memoryId:string)=>void;
   /** Chapter 1 is the Month-One rehearsal; its access stays inside the Chapter area. */
   rehearsal?: ReactNode;
   identityArt?: ReactNode;
@@ -56,19 +66,21 @@ type HouseholdHomeProps = {
   clock?: number;
   /** The App's shell readings the Queen's world takes off the page and keeps behind her Status door. */
   shell?: QueenShell;
+  housePlace?: HousePlace;
+  onHousePlace?: (place: HousePlace) => void;
 };
 
-function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, rehearsal, identityArt, composition, world, clock, shell }: HouseholdHomeProps) {
+function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onReadAcceptedCommand, creationIdentity, onOpenMemory, rehearsal, identityArt, composition, world, clock, shell, housePlace, onHousePlace }: HouseholdHomeProps) {
   const [bankRequest, setBankRequest] = useState<{ goalId?: string; bankId?: string } | null>(null);
   const queen = (composition ?? (queensNestEnabled() ? "queen" : "panels")) === "queen";
   const gallery = bankRequest && <KittyBankRoom household={household} view="household" memberId={memberId} busy={busy}
     identity={`${household.environment}:${household.householdId}:${memberId}:household`}
-    initialGoalId={bankRequest.goalId} initialBankId={bankRequest.bankId} onOpenCalendar={() => { setBankRequest(null); onGo("calendar"); }} returnTo="Home" onCommand={onCommand} onReadSubmission={onReadSubmission}
+    initialGoalId={bankRequest.goalId} initialBankId={bankRequest.bankId} onOpenCalendar={() => { setBankRequest(null); onGo("calendar"); }} returnTo="Home" onCommand={onCommand} onReadSubmission={onReadSubmission} onReadAcceptedCommand={onReadAcceptedCommand} creationIdentity={creationIdentity}
     onClose={() => setBankRequest(null)} />;
   if (queen) {
     return (
       <>
-        <QueenHome household={household} memberId={memberId} today={today} freshness={freshness} busy={busy} onCommand={onCommand} onGo={onGo} onOpenSetup={onOpenSetup} onOpenBank={setBankRequest} identityArt={identityArt} world={world} clock={clock} shell={shell} />
+        <QueenHome household={household} memberId={memberId} today={today} freshness={freshness} busy={busy} onCommand={onCommand} onGo={onGo} onOpenSetup={onOpenSetup} onOpenBank={setBankRequest} identityArt={identityArt} world={world} clock={clock} shell={shell} housePlace={housePlace} onHousePlace={onHousePlace} />
         {gallery}
       </>
     );
@@ -80,9 +92,6 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
   const obligations = monthObligations(household, monthKey, today).rows.filter((row) => row.date >= today).slice(0, 3);
   const planned = duePotentialExpenses(potentialExpensesForView(household.potentialExpenses, memberId, "household"), today).slice(0, 2);
   const win = recentWin(household);
-  const activeMemberIds = household.members.filter((row) => row.active).map((row) => row.id);
-  const memoryComplete = Boolean(win && activeMemberIds.every((id) => win.keptByMemberIds.includes(id)));
-  const memberKeptMemory = Boolean(win?.keptByMemberIds.includes(memberId));
   const fundName = fundDisplayName(household);
   const destinationTab = pulse.destination === "fund" ? "ledger" : pulse.destination === "path" ? "plan" : pulse.destination === "together" ? "together" : "more";
 
@@ -135,14 +144,10 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
         <section className={`home-win home-win--${win.level}`} aria-label="A recent Win">
           <p className="kicker">{win.level === "first" ? "A First" : win.level === "graduation" ? "Graduated" : "A shared Win"}</p>
           <h3>{win.title}</h3>
-          {memoryComplete ? <p className="muted">Kept as a Memory{win.authoredNote ? ` — “${win.authoredNote}”` : ""}.</p> : (
-            <div className="chapter-actions">
-              {memberKeptMemory ? <p className="muted">Kept by you. Shared when your partner agrees.</p> : <>
-                <button type="button" disabled={busy} onClick={() => void onCommand((current) => keepWinAsMemory(current, { memberId, winId: win.id }))}>Keep as a Memory</button>
-                {win.keptByMemberIds.length === 0 ? <button type="button" disabled={busy} onClick={() => void onCommand((current) => dismissWin(current, { memberId, winId: win.id }))}>Let it fade</button> : null}
-              </>}
-            </div>
-          )}
+          <WinMemoryReview key={win.id} household={household} win={win} memory={household.hearthside?.memories.find(m=>m.id===winMemoryId(household,win.id))} busy={busy}
+            onAdopt={(operation,id,recover)=>onCommand(current=>commitHearthside(current,{version:1,id,scope:{environment:current.environment,householdId:current.householdId,memberId},operation}),{confirmationId:id,recoverConfirmation:recover,suppressUndo:true})}
+            onOpen={id=>{if(onOpenMemory)onOpenMemory(id);else onGo('together');}}/>
+          {win.keptByMemberIds.length===0&&!household.hearthside?.memories.some(m=>m.id===winMemoryId(household,win.id))&&<button type="button" disabled={busy} onClick={()=>void onCommand(current=>dismissWin(current,{memberId,winId:win.id}))}>Let it fade</button>}
         </section>
       )}
 
@@ -150,7 +155,7 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
         <button type="button" onClick={() => onGo("calendar")}><strong>Calendar</strong><small>Dates and bills</small></button>
         <button type="button" onClick={() => onGo("ledger")}><strong>{fundName}</strong><small>What is true</small></button>
         <button type="button" onClick={() => onGo("plan")}><strong>Our Path</strong><small>Where we are going</small></button>
-        <button type="button" onClick={() => onGo("together")}><strong>Together</strong><small>What needs us</small></button>
+        <button type="button" onClick={() => onGo("together")}><strong>{HEARTHSIDE_FLAGS.presentation?HEARTHSIDE_LABEL:"Together"}</strong><small>{HEARTHSIDE_FLAGS.presentation?"Our shared life":"What needs us"}</small></button>
       </nav>
     </div>
   );

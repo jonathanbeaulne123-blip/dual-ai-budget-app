@@ -1,0 +1,26 @@
+# Optional local XcodeGen target definition. Merge this target into the host project;
+# no signing team/app group is selected or provisioned by this source file.
+name: HearthSculptureWidget
+options:
+  deploymentTarget:
+    iOS: "15.0"
+settings:
+  base:
+    CODE_SIGNING_ALLOWED: NO
+    SWIFT_VERSION: "5.0"
+    HEARTH_WIDGET_APP_GROUP: ""
+targets:
+  HearthSculptureWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - HearthSculptureWidget.swift
+    info:
+      path: Info.plist
+    entitlements:
+      path: HearthSculptureWidget.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.hearth.hearthside.sculpture-widget
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES

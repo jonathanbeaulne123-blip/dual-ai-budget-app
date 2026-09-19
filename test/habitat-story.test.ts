@@ -1,3 +1,4 @@
+import { movesForChapter, ritualsForChapter } from "../src/core/chapters.ts";
 import { execFile } from "node:child_process";
 import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
@@ -126,7 +127,9 @@ describe("Our Story — the sample household for the Journey of Life", () => {
     const character = new Map(months.map((row) => [row.key, pathMonthCharacter(row)]));
     const winters = months.filter((row) => /-(01|02)$/.test(row.key) && row.key !== at(-19));
     expect(winters.length).toBeGreaterThanOrEqual(3);
-    for (const row of winters) expect(character.get(row.key)).toBe("uphill");
+    // The lean months inside the money Ritual have no accepted buffer receipts.
+    // Their dated Tasks stay open, so the island must not invent a held rhythm.
+    for (const row of winters) expect(character.get(row.key)).toBe([at(-8), at(-7)].includes(row.key) ? "paused" : "uphill");
     expect(character.get(at(-19))).toBe("storm");
     expect(months.find((row) => row.key === at(-18))?.scores.saved).toBeGreaterThan(0);
     expect([...character.values()].filter((row) => row === "milestone").length).toBeGreaterThanOrEqual(3);
@@ -161,10 +164,21 @@ describe("Our Story — the sample household for the Journey of Life", () => {
     ]);
     const joy = chapters.at(-1)!;
     expect(joy.openedAt.slice(0, 7)).toBe(at(-1));
-    expect((story.rituals ?? []).find((row) => row.chapterId === joy.id)?.heldOn).toHaveLength(3);
-    const rent = (story.rituals ?? []).find((row) => row.chapterId === chapters[2]!.id)!;
+    expect(ritualsForChapter(story, joy.id)[0]?.heldOn).toHaveLength(3);
+    const rent = ritualsForChapter(story, chapters[2]!.id)[0]!;
     expect(rent.heldOn.length).toBeGreaterThanOrEqual(12);
-    const waiting = (story.moves ?? []).filter((row) => row.state === "offered" && row.needsAcknowledgment);
+    const buffer = ritualsForChapter(story, chapters[3]!.id)[0]!;
+    const occurrences = story.tasks!.filter(row => row.chapterSource?.sourceId === buffer.id);
+    expect(buffer.requiresMoneyEvidence).toBe(true);
+    expect(buffer.heldOn.length).toBeGreaterThan(0);
+    expect(buffer.heldOn.length).toBeLessThan(12);
+    expect(occurrences).toHaveLength(12);
+    expect(occurrences.some(row => row.completedAt === null)).toBe(true);
+    for (const occurrence of occurrences.filter(row => row.completedAt)) {
+      expect(occurrence.completionEvidence?.kind).toBe("goal-contribution");
+      expect(occurrence.completionEvidence?.date).toBe(occurrence.chapterSource?.onDate);
+    }
+    const waiting = movesForChapter(story, joy.id).filter((row) => row.state === "offered" && row.needsAcknowledgment);
     expect(waiting).toHaveLength(1);
     expect(waiting[0]!.acknowledgedByMemberIds).toEqual([M2]);
     const memory = (story.wins ?? []).find((row) => row.title === "The sofa is home")!;

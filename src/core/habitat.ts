@@ -20,7 +20,8 @@ import {
   signHouseholdCharter,
   updateRecurrence,
 } from "./commands.ts";
-import { closeChapter, movesForChapter, offerMove, openChapter, openChapterFor, recordRitualHeld, recordWin, respondToMove } from "./chapters.ts";
+import { movesForChapter, offerMove, openChapter, openChapterFor, recordWin } from "./chapters.ts";
+import { closeSyntheticChapter, holdSyntheticRitual, respondToSyntheticMove } from "./syntheticChapters.ts";
 import { currentPlanVersion } from "./planSystem.ts";
 import { bookBalanceAsOf } from "./statements.ts";
 import { projectHouseholdFund } from "./householdFund.ts";
@@ -133,19 +134,19 @@ function sharedBills(h: Household, today: DateKey, story: HabitatStory): Househo
 function charterAndChapters(h: Household, today: DateKey, story: HabitatStory): Household {
   let next = h;
   if (!next.charter) {
-    next = foundHouseholdCharter(next, { memberId: M1, custodianMemberId: M1, purpose: "Fictional: make rent boring and keep the Fund honest.", splitRule: "even", splitNote: "Fictional: half each.", ceilingKind: "none", cadence: "weekly", cadenceWeekday: 0, date: addDays(today, -80) }).household;
+    next = foundHouseholdCharter(next, { memberId: M1, custodianMemberId: M1, purpose: "Fictional: make rent boring and keep the Fund honest.", splitRule: "even", splitNote: "Fictional: half each.", ceilingKind: "none", cadence: "weekly", cadenceWeekday: 0, date: addDays(today, -105) }).household;
     next = signHouseholdCharter(next, { memberId: M2 }).household;
     if (story === "well") next = signHouseholdCharter(next, { memberId: M1 }).household;
   }
   // The first foundation Chapter, held to its ritual and closed established two months ago.
-  const openedAt = `${addDays(today, -75)}T12:00:00.000Z`;
+  const openedAt = `${addDays(today, -100)}T12:00:00.000Z`;
   next = openChapter(next, { memberId: M1, foundationId: "see-our-shared-life", at: openedAt }).household;
   const first = openChapterFor(next);
   const ritual = (next.rituals ?? []).find((row) => row.chapterId === first?.id);
   if (first && ritual) {
     const held = story === "well" ? 8 : 2;
-    for (let i = 0; i < held; i += 1) next = recordRitualHeld(next, { memberId: i % 2 ? M2 : M1, ritualId: ritual.id, onDate: addDays(today, -72 + i * 7) }).household;
-    next = closeChapter(next, { memberId: M2, chapterId: first.id, outcome: story === "well" ? "established" : "still-forming", carryForward: story === "well" ? "Fictional: we both know where the truth comes from." : "Fictional: we kept the question list, mostly.", at: `${addDays(today, -40)}T18:00:00.000Z` }).household;
+    for (let i = 0; i < held; i += 1) next = holdSyntheticRitual(next, { memberId: i % 2 ? M2 : M1, ritualId: ritual.id, onDate: addDays(today, -96 + i * 7) });
+    next = closeSyntheticChapter(next, { memberId: M2, chapterId: first.id, outcome: story === "well" ? "established" : "still-forming", carryForward: story === "well" ? "Fictional: we both know where the truth comes from." : "Fictional: we kept the question list, mostly.", at: `${addDays(today, -40)}T18:00:00.000Z` });
   }
   // The second Chapter, open now.
   next = openChapter(next, { memberId: M2, foundationId: "make-rent-boring", at: `${addDays(today, -30)}T12:00:00.000Z` }).household;
@@ -153,15 +154,15 @@ function charterAndChapters(h: Household, today: DateKey, story: HabitatStory): 
   const currentRitual = (next.rituals ?? []).find((row) => row.chapterId === current?.id);
   if (current && currentRitual) {
     if (story === "well") {
-      for (const back of [24, 17, 10, 3]) next = recordRitualHeld(next, { memberId: back % 2 ? M1 : M2, ritualId: currentRitual.id, onDate: addDays(today, -back) }).household;
-      next = offerMove(next, { memberId: M2, chapterId: current.id, text: "Fictional: move the rent transfer to the payday before the 1st", needsAcknowledgment: true }).household;
-      const move = movesForChapter(next, current.id).find((row) => row.state === "offered");
-      if (move) next = respondToMove(next, { memberId: M1, moveId: move.id, response: "accept" }).household;
+      for (const back of [24, 17, 10, 3]) next = holdSyntheticRitual(next, { memberId: back % 2 ? M1 : M2, ritualId: currentRitual.id, onDate: addDays(today, -back) });
+      next = offerMove(next, { memberId: M2, chapterId: current.id, text: "Fictional: move the rent transfer to the payday before the 1st", ownerMemberId: M1, needsAcknowledgment: true }).household;
+      const move = movesForChapter(next, current.id).find((row) => row.needsAcknowledgment && row.state === "offered");
+      if (move) next = respondToSyntheticMove(next, { memberId: M1, moveId: move.id, response: "accept" });
     } else {
-      next = recordRitualHeld(next, { memberId: M1, ritualId: currentRitual.id, onDate: addDays(today, -23) }).household;
-      next = offerMove(next, { memberId: M1, chapterId: current.id, text: "Fictional: sit down about the vet bill and the card", needsAcknowledgment: true }).household;
-      const move = movesForChapter(next, current.id).find((row) => row.state === "offered");
-      if (move) next = respondToMove(next, { memberId: M2, moveId: move.id, response: "decline" }).household;
+      next = holdSyntheticRitual(next, { memberId: M1, ritualId: currentRitual.id, onDate: addDays(today, -23) });
+      next = offerMove(next, { memberId: M1, chapterId: current.id, text: "Fictional: sit down about the vet bill and the card", ownerMemberId: M2, needsAcknowledgment: true }).household;
+      const move = movesForChapter(next, current.id).find((row) => row.needsAcknowledgment && row.state === "offered");
+      if (move) next = respondToSyntheticMove(next, { memberId: M2, moveId: move.id, response: "decline" });
     }
   }
   return next;

@@ -414,6 +414,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
         ? await sha256Hex(commandMaterializationFacts({ kittyNestDesigns: (accepted.kittyNestDesigns ?? []).filter(row => postedIds.includes(row.id)) }))
         : input.commandKind === "updateChapters"
         ? await sha256Hex(commandMaterializationFacts({
+          chapterTasks: accepted.tasks?.filter(task => task.chapterSource),
           chapters: accepted.chapters,
           rituals: accepted.rituals,
           moves: accepted.moves,

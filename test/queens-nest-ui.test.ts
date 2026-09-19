@@ -1,10 +1,11 @@
+import { holdSyntheticRitual, respondToSyntheticMove } from "../src/core/syntheticChapters.ts";
 // @vitest-environment jsdom
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HouseholdHome } from "../src/HouseholdHome.tsx";
 import type { QueenShell } from "../src/queen/QueenHome.tsx";
-import { addGoal, addRecurrence, catalogHousehold, offerMove, openChapter, postEntry, recordHouseholdFundReconciliation, recordRitualHeld, respondToMove, type CommitResult, type Household } from "../src/core/index.ts";
+import { addGoal, addRecurrence, catalogHousehold, offerMove, openChapter, postEntry, recordHouseholdFundReconciliation, type CommitResult, type Household } from "../src/core/index.ts";
 import { movesForChapter, openChapterFor } from "../src/core/chapters.ts";
 import { saveKittyNestDesign } from "../src/core/kittyNestDesigns.ts";
 import { queenCharmKindsEarned } from "../src/core/queenCharms.ts";
@@ -27,10 +28,10 @@ function seeded(): Household {
   h = recordHouseholdFundReconciliation(h, { memberId, date: "2026-09-12", bankTotal: "4000", personalRemainder: "0" }).household;
   h = openChapter(h, { memberId, foundationId: "make-rent-boring", at: "2026-09-01T12:00:00.000Z" }).household;
   const ritual = h.rituals![0]!;
-  h = recordRitualHeld(h, { memberId, ritualId: ritual.id, onDate: "2026-09-04" }).household;
+  h = holdSyntheticRitual(h, { memberId, ritualId: ritual.id, onDate: "2026-09-04" });
   const opening = movesForChapter(h, openChapterFor(h)!.id)[0];
-  if (opening) h = respondToMove(h, { memberId, moveId: opening.id, response: "decline" }).household;
-  h = offerMove(h, { memberId: "MEM-002", chapterId: openChapterFor(h)!.id, text: "Confirm which payday the pre-rent check belongs to", needsAcknowledgment: true }).household;
+    if (opening) for (const member of h.members.filter(row => row.active)) h = respondToSyntheticMove(h, { memberId: member.id, moveId: opening.id, response: "decline" });
+  h = offerMove(h, { memberId: "MEM-002", chapterId: openChapterFor(h)!.id, text: "Confirm which payday the pre-rent check belongs to", ownerMemberId: memberId, needsAcknowledgment: true }).household;
   // Six fictional months of rent on the card, one that swelled, and a lidded Build bill plus an open goal for the loft.
   const rent = h.recurrences.find((row) => row.note === "Fictional rent")!;
   for (const [month, amount] of [["03", "900"], ["04", "900"], ["05", "900"], ["06", "1380"], ["07", "900"], ["08", "900"]] as const) {
@@ -137,7 +138,7 @@ describe("The Still Queen — emptiness and stillness", () => {
   it("shows empty hands, not placeholder content, when nothing needs doing", async () => {
     let h = openChapter(planLifeFixture("household"), { memberId, foundationId: "make-rent-boring", at: "2026-09-01T12:00:00.000Z" }).household;
     const opening = movesForChapter(h, openChapterFor(h)!.id)[0];
-    if (opening) h = respondToMove(h, { memberId, moveId: opening.id, response: "decline" }).household;
+    if (opening) for (const member of h.members.filter(row => row.active)) h = respondToSyntheticMove(h, { memberId: member.id, moveId: opening.id, response: "decline" });
     await render(h);
     expect(host.querySelector(".queen-move")).toBeNull();
     expect(home().dataset.hands).toBe("empty");
@@ -504,25 +505,29 @@ describe("The Still Queen — two interactions, and they are different", () => {
     expect(document.querySelector(".kitty-bank-tabs [aria-pressed='true']")?.textContent).toContain(goal.name);
   });
 
-  it("holds the one Move at her hands and acts on it from Together, in one visible step", async () => {
-    const h = seeded();
-    const { onCommand } = await render(h);
+  it("uses exact assignment acceptance, shared agreement and completion from Together", async () => {
+    let current = seeded();
+    const onCommand = vi.fn(async (fn: (h: Household) => CommitResult) => {
+      current = fn(current).household;
+      return { ok: true, household: current };
+    });
+    await render(current, { onCommand });
     const move = $<HTMLButtonElement>(".queen-move");
     expect(move.getAttribute("aria-label")).toMatch(/^A Move is waiting: Confirm which payday/);
     await click(move);
-    expect(home().dataset.open).toBe("together");
-    const act1 = $<HTMLButtonElement>(".queen-panel .queen-act--primary");
-    expect(act1.textContent).toBe("I acknowledge this");
-    await click(act1);
-    expect(onCommand).toHaveBeenCalledTimes(1);
-    const acknowledged = (onCommand.mock.calls[0]![0] as (current: Household) => CommitResult)(h).household;
-    expect(acknowledged.moves!.find((row) => row.state === "offered")!.acknowledgedByMemberIds).toContain(memberId);
-    await render(acknowledged, { onCommand });
-    expect($(".queen-panel .queen-act--primary").textContent).toBe("Done");
-    await click($(".queen-panel .queen-act--primary"));
-    const completed = (onCommand.mock.calls[1]![0] as (current: Household) => CommitResult)(acknowledged).household;
-    expect(completed.moves!.some((row) => row.state === "done")).toBe(true);
-    await render(completed, { onCommand });
+    const action = (text: string) => [...host.querySelectorAll<HTMLButtonElement>(".chapter-task-controls button")].find(button => button.textContent === text)!;
+    expect(action("Mark done")).toBeUndefined();
+    await click(action("Take this task"));
+    await render(current, { onCommand });
+    expect(action("Mark done")).toBeUndefined();
+    await click(action("Agree to this exact Move"));
+    await render(current, { onCommand });
+    const agreed = movesForChapter(current, openChapterFor(current)!.id).find(row => row.needsAcknowledgment)!;
+    expect(agreed.acknowledgedByMemberIds).toEqual(["MEM-001", "MEM-002"]);
+    await click(action("Mark done"));
+    expect(onCommand).toHaveBeenCalledTimes(3);
+    expect(movesForChapter(current, openChapterFor(current)!.id).some(row => row.state === "done")).toBe(true);
+    await render(current, { onCommand });
     expect(host.querySelector(".queen-move")).toBeNull();
     expect(home().dataset.hands).toBe("empty");
   });

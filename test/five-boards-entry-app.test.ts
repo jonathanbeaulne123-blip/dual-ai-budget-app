@@ -6,9 +6,20 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Household } from "../src/core/index.ts";
 
 const writes = vi.hoisted(() => ({ candidates: [] as Household[], stored: null as Household | null,
-  sync: false, queue: false, confirmations: [] as Array<{ id: string; household: Household }>,
+  sync: false, queue: false, hearthside: false, playFailure: false, confirmations: [] as Array<{ id: string; household: Household }>,
   release: null as null | (() => void),
 }));
+vi.mock("../src/hearthside/flags.ts", async importOriginal => {
+  const actual = await importOriginal<typeof import("../src/hearthside/flags.ts")>();
+  return { ...actual, HEARTHSIDE_FLAGS: { ...actual.HEARTHSIDE_FLAGS, get presentation() { return writes.hearthside; } } };
+});
+vi.mock("../src/play/HerculesPlay.tsx", async importOriginal => {
+  const actual = await importOriginal<typeof import("../src/play/HerculesPlay.tsx")>();
+  return { ...actual, default: (props: Parameters<typeof actual.default>[0]) => {
+    if (writes.playFailure) throw new Error("Synthetic room chunk failure");
+    return createElement(actual.default, props);
+  } };
+});
 vi.mock("../src/prepareQuickSample.ts", async () => {
   const { addQuickSampleScenario } = await import("../src/core/quickSampleData.ts");
   return { prepareQuickSample: async (h: Household, input: Parameters<typeof addQuickSampleScenario>[1]) => addQuickSampleScenario(h, input) };
@@ -102,6 +113,7 @@ vi.mock("../src/deferredSurfaces.tsx", () => ({
     createElement("button", { onClick: () => onGo("add") }, "Open entry"),
     createElement("button", { onClick: () => onGo("plan") }, "Open plan"),
     createElement("button", { onClick: () => onGo("ledger") }, "Open books"),
+    createElement("button", { onClick: () => onGo("play") }, "Open Play"),
     createElement("button", { onClick: () => onOpenFundDestination("ask") }, "Open Ask")),
   DeferredBooksPage: ({ onAddToAccount, onFocusAccount }: { onAddToAccount: (account: Household["accounts"][number] | null) => void; onFocusAccount: (id: string) => void }) => createElement("div", null,
     createElement("button", { onClick: () => onAddToAccount(null) }, "Open entry"),
@@ -163,7 +175,8 @@ let container: HTMLDivElement;
 let mobile = true;
 beforeEach(() => {
   writes.stored = completedExistingBooksHousehold(); writes.candidates = [];
-  writes.sync = false; writes.queue = false; writes.confirmations = []; writes.release = null;
+  writes.sync = false; writes.queue = false; writes.hearthside = false; writes.playFailure = false; writes.confirmations = []; writes.release = null;
+  history.replaceState(null, '', '/');
   localStorage.clear(); sessionStorage.clear();
   localStorage.setItem("hearth:session:v1:development", JSON.stringify({ memberId: "MEM-002", view: "household", householdId: writes.stored.householdId }));
   vi.stubEnv("VITE_LEDGER_SYNC_V2", "0");
@@ -173,9 +186,10 @@ beforeEach(() => {
   }) });
   class TestResizeObserver { observe() {} unobserve() {} disconnect() {} }
   Object.defineProperty(globalThis, "ResizeObserver", { configurable: true, value: TestResizeObserver });
+  vi.stubGlobal("IntersectionObserver", class { observe() {} unobserve() {} disconnect() {} });
   container = document.createElement("div"); document.body.append(container); root = createRoot(container);
 });
-afterEach(() => { act(() => root.unmount()); container.remove(); localStorage.clear(); sessionStorage.clear(); vi.restoreAllMocks(); vi.unstubAllEnvs(); });
+afterEach(() => { act(() => root.unmount()); container.remove(); localStorage.clear(); sessionStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 async function mount() {
   await act(async () => root.render(createElement(App)));
   await waitFor(() => expect(container.textContent).toContain("Open entry"), 15000);
@@ -384,19 +398,40 @@ describe("five boards entry App integration", () => {
     expect(container.querySelector('[data-entry-section="account"] [aria-pressed="true"]')?.textContent).toContain("Visa");
   }, 30000);
 
-  it("Ask opens Together on the Shift Ask board without a ledger save", async () => {
-    mobile = true; await mount();
+  it.each([false, true])("Ask opens its board directly without a ledger save (Hearthside=%s)", async hearthside => {
+    mobile = true; writes.hearthside = hearthside; await mount();
     const writesBefore = writes.candidates.length;
     await act(async () => button("Open Ask").click());
-    expect(container.querySelector('[data-ledger-tab="together"]')).not.toBeNull();
+    await waitFor(() => expect(container.querySelector('[data-ledger-tab="' + (hearthside ? 'play' : 'together') + '"]')).not.toBeNull());
     expect(container.querySelector("[data-add-slideshow]")).toBeNull();
-    expect(container.querySelector<HTMLDivElement>('.shared-board-page--ask')?.hidden).toBe(false);
+    await waitFor(() => expect(container.querySelector<HTMLDivElement>('.shared-board-page--ask')?.hidden).toBe(false));
     expect(container.querySelector('.shared-boards [role="tab"][aria-selected="true"]')?.textContent).toBe("Shift Ask");
+    expect(writes.candidates.length).toBe(writesBefore);
+    if (hearthside) {
+      expect(new URL(location.href).searchParams.get('surface')).toBe('practical');
+      // A fresh lazy mount follows the durable surface URL and scoped board selection.
+      await act(async () => { root.unmount(); root = createRoot(container); root.render(createElement(App)); });
+      await waitFor(() => expect(container.querySelector<HTMLDivElement>('.shared-board-page--ask')?.hidden).toBe(false));
+      expect(container.querySelector('.shared-boards [role="tab"][aria-selected="true"]')?.textContent).toBe('Shift Ask');
+      expect(writes.candidates.length).toBe(writesBefore);
+    }
+  }, 30000);
+
+  it("exits a failed Personal Play room into Household Hearthside", async () => {
+    writes.hearthside = true; writes.playFailure = true;
+    localStorage.setItem("hearth:session:v1:development", JSON.stringify({ memberId: "MEM-002", view: "personal", householdId: writes.stored!.householdId }));
+    await mount();
+    const writesBefore = writes.candidates.length;
+    await act(async () => button("Open Play").click());
+    await waitFor(() => expect(container.textContent).toContain("Hercules’s room could not open"));
+    await act(async () => button("Return to Together").click());
+    await waitFor(() => expect(container.querySelector('.hearthside')).not.toBeNull());
+    expect(container.textContent).not.toContain("Hercules’s room could not open");
+    expect(container.querySelector('[data-ledger-nav="shared"]')).not.toBeNull();
     expect(writes.candidates.length).toBe(writesBefore);
   }, 30000);
 
-  it.each([true, false])("Plan uses hero, Categories, sit-down and Kitty Banks DOM order (mobile=%s)", async phone => {
-    // The five-boards Plan is the documented Plan V2 rollback (D-239/D-248); V2 is the default, so exercise the rollback explicitly.
+  it.each([true, false])("legacy Plan retains hero, Categories, sit-down and the current Nest (mobile=%s)", async phone => {
     vi.stubEnv("VITE_PLAN_SYSTEM_V2", "0");
     mobile = phone; await mount();
     await act(async () => button("Open plan").click());
@@ -407,8 +442,7 @@ describe("five boards entry App integration", () => {
     expect(plan.children[0]!.classList.contains('hero')).toBe(true);
     expect(plan.children[1]!.querySelector('h2')!.textContent).toBe('Categories');
     expect(plan.children[2]!.classList.contains('sit-guide')).toBe(true);
-    // Since #466 the fourth board is the nest itself: one door per bank, the King first.
-    expect(plan.children[3]!.classList.contains('kitty-nest')).toBe(true);
-    expect(plan.children[3]!.querySelector('.nest-bank--king')).not.toBeNull();
+    expect(plan.children[3]!.getAttribute('aria-label')).toBe('Our nesting banks');
+    expect(plan.children[3]!.querySelector('button.nest-bank--king')).not.toBeNull();
   }, 30000);
 });

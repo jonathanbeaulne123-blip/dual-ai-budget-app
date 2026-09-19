@@ -38,6 +38,15 @@ describe('Nest gallery modes',()=>{
   const f=await fixture('plan:protect');try{expect(document.querySelector('[data-studio-mode="plan"]')).toBeTruthy();expect(document.querySelector('.studio-benches')).toBeNull();await click('Choose pot & glaze');await click('loaf');await click('midnight glaze');f.fail=true;await click('Save this design');expect(document.body.textContent).toContain('Your design is still here');expect(buttons('loaf')[0]?.getAttribute('aria-pressed')).toBe('true');expect(f.h.kittyNestDesigns??[]).toHaveLength(0);f.fail=false;await click('Save this design');expect(f.h.kittyNestDesigns?.[0]?.studio?.fired[0]?.sculpt.body).toBe('loaf');expect(f.h.kittyNestDesigns?.[0]?.studio?.fired[0]?.paint.base).toBe('#41546b');
   }finally{await f.close();}
  });
+ it('labels unreadable backing in the actual nest without an empty-bank amount',async()=>{
+  const h=planLifeFixture('household'),event=h.fundEvents!.find(row=>row.kind==='kitty-allocated')??h.fundEvents![0]!;
+  h.fundEvents!.push({...event,id:'FUND-legacy-release',kind:'kitty-released',goalId:undefined,amountCents:1,date:'2026-09-12'});
+  const host=document.createElement('div');document.body.append(host);const root=createRoot(host);
+  try{await act(async()=>root.render(createElement(KittyNest,{household:h,memberId:'MEM-001',view:'household',today:'2026-09-12',onSelect:()=>{}})));
+   const goal=host.querySelector<HTMLButtonElement>('.nest-bank--goal')!;expect(goal).toBeTruthy();expect(goal.getAttribute('aria-label')).toContain('Backing unavailable');expect(goal.querySelector('.nest-bank__amount')!.textContent).toBe('Backing unavailable');
+   expect(host.querySelectorAll('.nest-bank--plan .nest-bank__amount').length).toBe(4);expect([...host.querySelectorAll('.nest-bank--plan .nest-bank__amount')].every(el=>el.textContent==='Backing unavailable')).toBe(true);
+  }finally{await act(async()=>root.unmount());host.remove();}
+ });
  it('opens an automatic bill directly and archives/restores its bank without touching the bill',async()=>{
   const f=await fixture('bill');try{const before=structuredClone(f.h.recurrences);expect(document.querySelector('[data-studio-mode="bill"]')).toBeTruthy();expect(document.querySelector('.studio-benches')).toBeNull();await click('Edit this little bank');await click('Save this design');await click('Archive bank');expect(document.body.textContent).toContain('Restore bank');await click('Restore bank');expect(f.h.recurrences).toEqual(before);}finally{await f.close();}
   const h=planLifeFixture('household');

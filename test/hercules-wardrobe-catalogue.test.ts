@@ -14,11 +14,21 @@ import {unlockedCosmetics,COSMETICS} from '../src/core/companion.ts';
 import {catalogHousehold} from '../src/core/index.ts';
 const parse=async(path:string)=>{const b=readFileSync(path);return new GLTFLoader().parseAsync(b.buffer.slice(b.byteOffset,b.byteOffset+b.byteLength),'');};
 describe('Complete original wardrobe catalogue',()=>{
- // 2026-09-11: three collections (Hearth after dark, Garden Sunday, Snow day) and the tail slot raised 36 new + 12 legacy = 48 to 54 + 12 = 66.
- it('provides exactly 54 new pieces, 12 legacy pieces and real distinct artwork',()=>{
-  expect(FITTING_ITEMS.filter(i=>!i.legacy)).toHaveLength(54);expect(FITTING_ITEMS.filter(i=>i.legacy)).toHaveLength(12);expect(new Set(FITTING_ITEMS.map(i=>i.id)).size).toBe(66);
-  for(const collection of ['cozy','office','rain','applause','kitchen','sunday','night','garden','snow'])expect(FITTING_ITEMS.filter(i=>i.collection===collection)).toHaveLength(6);
-  expect(new Set(FITTING_ITEMS.filter(i=>!i.legacy).map(i=>readFileSync(`public/hercules-wardrobe/${i.id}.svg`,'utf8'))).size).toBe(54);
+ // Play (#460) added three pieces to each original collection, retaining the three later collections and legacy looks.
+ it('provides exactly 72 new pieces, 12 legacy pieces and real distinct artwork',()=>{
+  expect(FITTING_ITEMS.filter(i=>!i.legacy)).toHaveLength(72);expect(FITTING_ITEMS.filter(i=>i.legacy)).toHaveLength(12);expect(new Set(FITTING_ITEMS.map(i=>i.id)).size).toBe(84);
+  for(const collection of ['cozy','office','rain','applause','kitchen','sunday'])expect(FITTING_ITEMS.filter(i=>i.collection===collection)).toHaveLength(9);
+  for(const collection of ['night','garden','snow'])expect(FITTING_ITEMS.filter(i=>i.collection===collection)).toHaveLength(6);
+  // The original 54 recipes have distinct thumbnails. Play intentionally reuses
+  // some shapes/colours; identical artwork must still describe the same recipe.
+  expect(new Set(FITTING_ITEMS.filter(i=>!i.legacy).slice(0,54).map(i=>readFileSync(`public/hercules-wardrobe/${i.id}.svg`,'utf8'))).size).toBe(54);
+  const artwork=new Map<string,string>();
+  for(const item of FITTING_ITEMS.filter(i=>!i.legacy)){
+   const svg=readFileSync(`public/hercules-wardrobe/${item.id}.svg`,'utf8'),recipe=`${item.shape}:${item.variants[0]}`;
+   expect(svg,item.id).toContain('<svg');
+   if(artwork.has(svg))expect(recipe,item.id).toBe(artwork.get(svg));
+   artwork.set(svg,recipe);
+  }
   expect(new Set(FITTING_ITEMS.map(i=>pieceDrawing(i.shape))).size).toBe(new Set(FITTING_ITEMS.map(i=>i.shape)).size);
   for(const item of FITTING_ITEMS.filter(i=>!i.legacy))expect(item.variants.length,item.id).toBeGreaterThanOrEqual(3);
   expect(FITTING_ITEMS.filter(i=>i.slot==='tail').map(i=>i.id)).toEqual(['night-ribbon','garden-tail','snow-bell']);

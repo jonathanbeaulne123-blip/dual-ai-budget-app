@@ -1,11 +1,9 @@
 import * as T from 'three';
 import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {FITTING_ITEMS} from './catalogue.ts';
+import {readWardrobeModel} from './modelAsset.ts';
 export async function readWardrobeAsset(url:string,signal:AbortSignal){
- const compressed=typeof DecompressionStream!=='undefined',response=await fetch(url+(compressed?'.gz':''),{signal});
- if(!response.ok)throw new Error('Wardrobe asset unavailable');let bytes=await response.arrayBuffer();
- if(compressed&&new Uint8Array(bytes)[0]===31&&new Uint8Array(bytes)[1]===139)bytes=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer();
- if(signal.aborted)throw new DOMException('Closed','AbortError');return bytes;
+ return (await readWardrobeModel(url,signal)).bytes;
 }
 export function disposeAsset(root:T.Object3D){const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>(),skeletons=new Set<T.Skeleton>();root.traverse(n=>{if(n instanceof T.SkinnedMesh)skeletons.add(n.skeleton);if(n instanceof T.Mesh){geometries.add(n.geometry);for(const m of Array.isArray(n.material)?n.material:[n.material])materials.add(m);}});skeletons.forEach(s=>s.dispose());geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());}
 /** Collection nodes use the exact same world bind coordinates and one live skeleton. */

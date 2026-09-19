@@ -1,0 +1,26 @@
+name: HearthSculptureWidget
+options:
+  xcodeVersion: "26.3"
+  deploymentTarget:
+    iOS: "15.0"
+targets:
+  HearthSculptureWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - ../widgets/ios/HearthSculptureWidget.swift
+    settings:
+      base:
+        CODE_SIGNING_ALLOWED: NO
+        CODE_SIGNING_REQUIRED: NO
+        SWIFT_VERSION: "5.0"
+        INFOPLIST_FILE: ../widgets/ios/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: app.hearth.hearthside.sculpture-widget
+        APPLICATION_EXTENSION_API_ONLY: YES
+        SKIP_INSTALL: YES
+        HEARTH_WIDGET_APP_GROUP: ""
+schemes:
+  HearthSculptureWidget:
+    build:
+      targets:
+        HearthSculptureWidget: all

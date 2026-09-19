@@ -1,0 +1,29 @@
+{
+  "sources": [
+    "src/hearthside/bankReceipt.ts",
+    "src/hearthside/bankCreation.ts",
+    "src/hearthside/bankJourney.ts",
+    "src/hearthside/BankCreationSurface.tsx",
+    "src/hearthside/ExperienceBankEntry.tsx",
+    "src/hearthside/experienceBank.css",
+    "src/kitty/KittyBankRoom.tsx",
+    "src/ledgerSync/client.ts",
+    "src/hearthside/Hearthside.tsx",
+    "src/HouseholdHome.tsx",
+    "src/KittyBanks.tsx",
+    "src/App.tsx"
+  ],
+  "tests": [
+    "test/hearthside-bank-journey.test.ts",
+    "test/hearthside-bank-journey-ui.test.ts",
+    "test/hearthside-bank-journey-runtime.test.ts",
+    "test/kitty-envelope-ui.test.ts",
+    "test/kitty-envelope.test.ts",
+    "test/kitty-studio-ui.test.ts",
+    "test/home-feedback-ui.test.ts",
+    "test/plan-life-ui.test.ts",
+    "test/hearthside-contracts.test.ts",
+    "test/hearthside-journeys.test.ts"
+  ],
+  "reason": "Exact bank creation receipts, independent intention links, reviewed recovery across reload/scope changes and existing Kitty financial regressions"
+}

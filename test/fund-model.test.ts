@@ -1,3 +1,4 @@
+import { knownCents } from "./fixtures/knownCents.ts";
 import { describe, expect, it } from "vitest";
 import { addCategory, addPotentialExpense, financialAuditHash, postEntry, splitForSync, assembleHousehold } from "../src/core/index.ts";
 import {
@@ -154,8 +155,8 @@ describe("the nest under v2 (slice 2)", () => {
     const a = nest.allocation!;
     expect(a.owedBackCents + a.amounts.prepare + a.amounts.protect + a.amounts.build + a.amounts.everyday).toBe(nest.king.amountCents);
     expect(a.nowCents).toBe(a.amounts.everyday);
-    expect(nest.categories.reduce((sum, row) => sum + row.amountCents, 0) + a.owedBackCents).toBe(nest.king.amountCents);
-    for (const bank of nest.categories) expect(bank.children.reduce((sum, row) => sum + row.amountCents, 0)).toBeLessThanOrEqual(Math.max(0, bank.amountCents));
+    expect(nest.categories.reduce((sum, row) => sum + knownCents(row.amountCents), 0) + a.owedBackCents).toBe(knownCents(nest.king.amountCents));
+    for (const bank of nest.categories) expect(bank.children.reduce((sum, row) => sum + knownCents(row.amountCents), 0)).toBeLessThanOrEqual(Math.max(0, knownCents(bank.amountCents)));
     expect(byFund.prepare!.children.every((row) => row.amountCents === row.targetCents)).toBe(true);
     expect(await financialAuditHash(h)).toBe(before);
   });

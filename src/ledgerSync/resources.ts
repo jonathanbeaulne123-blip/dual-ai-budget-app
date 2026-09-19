@@ -1,3 +1,6 @@
+import {bankLinkBasis} from '../hearthside/bankReceipt.ts';
+import type {SharedExperience} from '../hearthside/contracts.ts';
+import { isChapterAgreementCommand } from "../core/chapterAuthority.ts";
 import { fundContributionReviewDigest } from "../core/fundContributionSources.ts";
 import { accountHistoryState, type AccountHistoryReview } from "../core/accountHistory.ts";
 import { requirementFingerprint } from "../core/onboarding/attestations.ts";
@@ -9,6 +12,15 @@ import { prepareDuplicateReview, reviewedDuplicateRequest } from "../core/duplic
 import type { Household } from "../core/types.ts";
 import { canonical } from "./patch.ts";
 import { shapeSharedBoards } from "../core/sharedBoards.ts";
+/** Creative presentation is unrelated to a reviewed financial action. Whole-envelope
+ * editing deliberately retains its broader dependency until design migration. */
+export function kittyFinancialReviewGoals(household: Household) {
+  return household.goals.map(({updatedAt: _updatedAt, envelope, ...goal}) => {
+    if (!envelope) return goal;
+    const {studio: _studio, glaze: _glaze, designRef: _designRef, ...financialEnvelope}=envelope;
+    return {...goal,envelope:financialEnvelope};
+  });
+}
 export type Resource = { key: string; value: unknown };
 const additive = new Set([
   "postEntry",
@@ -42,12 +54,27 @@ export function observedResources(
   kind: string,
   args: unknown[],
 ): Resource[] {
+  if (isChapterAgreementCommand(kind)) return []; // Exact domain revisions/basis and authenticated actor are rechecked at the authority.
   if (kind === "addQuickSampleData" || kind === "addQuickSampleScenario") return [{ key: "quick-sample-catalog", value: { accounts: household.accounts, categories: household.categories, closedMonths: household.kitchen.books.closedMonths } }];
   if(kind==='saveNativeEvent'){const input=args[0] as {id:string};return [{key:`native-event/${input.id}`,value:household.nativeEvents?.find(r=>r.id===input.id)??null}];}
   if(kind==='saveKittyNestDesign'){const input=args[0] as {view:string;memberId:string;bankKey:string};return [{key:`nest/${input.view}/${input.memberId}/${input.bankKey}`,value:household.kittyNestDesigns?.find(r=>r.bankKey===input.bankKey&&r.visibility===input.view&&(input.view==='household'||r.createdBy===input.memberId))??null}];}
   if(['saveTask','completeTask','reopenTask','acknowledgeTask'].includes(kind)){const input=args[0] as {id:string};return [{key:`task/${input.id}`,value:household.tasks?.find(r=>r.id===input.id)??null}];}
   if(kind==='saveTaskList'){const input=args[0] as {id:string};return [{key:`task-list/${input.id}`,value:household.taskLists?.find(r=>r.id===input.id)??null}];}
   if(kind==='adoptBoardTasks')return [{key:'boards/tasks',value:{rows:household.kitchen.boards?.tasks??[],adopted:(household.tasks??[]).filter(r=>r.id.startsWith('TASK-board-')).map(r=>r.id).sort()}}];
+  if (kind === "commitSharedLifeRestore") return []; // Exact paired restore basis is checked by the authority.
+  if (kind === "commitHearthside") {
+    // The experience revision protects its words and links. A newly selected bank
+    // also needs the exact reviewed meaning checked after the network handoff.
+    const operation=(args[0] as {operation?:{kind?:string;value?:SharedExperience}}|undefined)?.operation;
+    if(operation?.kind==='experience.save'&&operation.value){
+      const previous=household.hearthside?.experiences.find(e=>e.id===operation.value!.id);
+      return operation.value.references.filter(ref=>ref.kind==='bank'&&!previous?.references.some(old=>old.kind==='bank'&&old.id===ref.id)).map(ref=>{
+        const goal=household.goals.find(g=>g.id===ref.id);
+        return {key:`hearthside-bank-link/${ref.id}`,value:goal?bankLinkBasis(goal):null};
+      });
+    }
+    return []; // Other resources carry authority-checked domain revisions.
+  }
   if (kind === "commitCompanion" || kind === "commitCompanionGallery" || kind === "commitCompanionPlay") return []; // Typed resource revisions and conversation generations are rechecked by the authority.
   if (['proposeHouseholdFundContribution','replaceHouseholdFundContributionSource'].includes(kind)) {
     return [{key:'fund-source-allocation',value:{fund:household.householdFund,events:household.fundEvents,claims:household.fundContributionSourceClaims,
@@ -89,7 +116,7 @@ export function observedResources(
     return [{key:'due-occurrence-review',value}];
   }
   if(kind==='settleClaim'&&args[0]&&typeof args[0]==='object'&&(args[0] as Record<string,unknown>).claimReview!==undefined){let value:unknown;try{value={kind:'ready',basis:reviewedClaimInput(household,args[0]).basis};}catch(e){value={kind:'unavailable',reason:e instanceof Error?e.message:String(e)};}return [{key:'claim-settlement-review',value}];}
-  if (["saveGoalEnvelope", "purchaseGoal", "fundGoal", "releaseHouseholdFundKitty", "allocateHouseholdFundSurplus"].includes(kind)) return [{ key: "kitty-backing-review", value: { goals: household.goals, contributions: household.goalContributions, purchases: household.goalPurchases, accounts: household.accounts, transactions: household.transactions, fund: household.householdFund, events: household.fundEvents, allocations: household.fundKittyAllocations } }];
+  if (["saveGoalEnvelope", "purchaseGoal", "fundGoal", "releaseHouseholdFundKitty", "allocateHouseholdFundSurplus"].includes(kind)) return [{ key: "kitty-backing-review", value: { goals: kind === "saveGoalEnvelope" ? household.goals : kittyFinancialReviewGoals(household), contributions: household.goalContributions, purchases: household.goalPurchases, accounts: household.accounts, transactions: household.transactions, fund: household.householdFund, events: household.fundEvents, allocations: household.fundKittyAllocations } }];
   if (additive.has(kind)) return [];
   if (
     [

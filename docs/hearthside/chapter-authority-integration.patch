@@ -1,0 +1,346 @@
+diff --git a/src/core/commandIdentity.ts b/src/core/commandIdentity.ts
+index ee7217e..fbb4f18 100644
+--- a/src/core/commandIdentity.ts
++++ b/src/core/commandIdentity.ts
+@@ -31,6 +31,7 @@ export function commandMaterializationFacts(input: {
+   acceptedStarterPlans?: Household["acceptedStarterPlans"];
+   categories?: Category[];
+   budgetPlans?: BudgetPlan[];
++  chapterTasks?: Household["tasks"];
+   chapters?: Household["chapters"];
+   rituals?: Household["rituals"];
+   moves?: Household["moves"];
+@@ -50,6 +51,7 @@ export function commandMaterializationFacts(input: {
+     ...(input.acceptedStarterPlans?.length ? { acceptedStarterPlans: byId(input.acceptedStarterPlans) } : {}),
+     ...(input.categories?.length ? { categories: byId(input.categories) } : {}),
+     ...(input.budgetPlans?.length ? { budgetPlans: byId(input.budgetPlans) } : {}),
++    ...(input.chapterTasks?.length ? { chapterTasks: byId(input.chapterTasks) } : {}),
+     ...(input.chapters?.length ? { chapters: byId(input.chapters) } : {}),
+     ...(input.rituals?.length ? { rituals: byId(input.rituals) } : {}),
+     ...(input.moves?.length ? { moves: byId(input.moves) } : {}),
+diff --git a/src/core/commandRuntime.ts b/src/core/commandRuntime.ts
+index a82b82a..cd226a1 100644
+--- a/src/core/commandRuntime.ts
++++ b/src/core/commandRuntime.ts
+@@ -408,6 +408,7 @@ export async function acceptHouseholdWrite(input: AcceptWriteInput): Promise<Com
+       commandKind: input.commandKind ?? "commit",
+       materializationHash: input.commandKind === "updateChapters"
+         ? await sha256Hex(commandMaterializationFacts({
++          chapterTasks: accepted.tasks?.filter(task => task.chapterSource),
+           chapters: accepted.chapters,
+           rituals: accepted.rituals,
+           moves: accepted.moves,
+diff --git a/src/core/sync.ts b/src/core/sync.ts
+index 9fce252..1e6ef98 100644
+--- a/src/core/sync.ts
++++ b/src/core/sync.ts
+@@ -1,3 +1,4 @@
++import { assertChapterTaskGraph } from "./chapterAuthority.ts";
+ import {decodePlayRoom} from './playContracts.ts';
+ import { shapeNativeEvents, mergeNativeEvents } from "./nativeEvents.ts";
+ import { shapeTasks, mergeTasks, shapeTaskLists, mergeTaskLists } from "./tasks.ts";
+@@ -364,7 +365,7 @@ export function ensureHouseholdShape(household: Household): Household {
+   const householdFund = shapeHouseholdFundConfig(household.householdFund);
+   const activeMemberIds = members.filter((member) => member.active).map((member) => member.id);
+   const planVersions = shapePlanVersions(household.planVersions);
+-  return {
++  const shaped: Household = {
+     ...household,
+     companionProfile: scopedCompanion(household.companionProfile, household),
+     ...(household.playRoom!==undefined?{playRoom:decodePlayRoom(household.playRoom)}:{}),
+@@ -484,6 +485,8 @@ export function ensureHouseholdShape(household: Household): Household {
+       ? { herculesProPermissions: shapeHerculesProPermissions(household.herculesProPermissions) }
+       : {}),
+   };
++  assertChapterTaskGraph(shaped);
++  return shaped;
+ }
+
+ export function emptyPersonal(memberId: string): PersonalEnvelope {
+diff --git a/src/ledger/continuityCommandLog.ts b/src/ledger/continuityCommandLog.ts
+index dcc3f80..4a30e37 100644
+--- a/src/ledger/continuityCommandLog.ts
++++ b/src/ledger/continuityCommandLog.ts
+@@ -185,6 +185,7 @@ export async function compactedCommandPayload(
+       || mergedFacts?.onboardingApprovals?.length
+       || mergedFacts?.categories?.length
+       || mergedFacts?.budgetPlans?.length
++      || mergedFacts?.chapterTasks?.length
+       || mergedFacts?.chapters?.length
+       || mergedFacts?.rituals?.length
+       || mergedFacts?.moves?.length
+@@ -199,6 +200,7 @@ export async function compactedCommandPayload(
+         onboardingApprovals: mergedFacts.onboardingApprovals,
+         categories: mergedFacts.categories,
+         budgetPlans: mergedFacts.budgetPlans,
++        chapterTasks: mergedFacts.chapterTasks,
+         chapters: mergedFacts.chapters,
+         rituals: mergedFacts.rituals,
+         moves: mergedFacts.moves,
+@@ -301,6 +303,7 @@ function mergeMaterializationFacts(
+         ...facts.weeklyDocumentStamps,
+       ];
+     }
++    if (facts.chapterTasks !== undefined) merged.chapterTasks = facts.chapterTasks;
+     if (facts.chapters !== undefined) merged.chapters = facts.chapters;
+     if (facts.rituals !== undefined) merged.rituals = facts.rituals;
+     if (facts.moves !== undefined) merged.moves = facts.moves;
+diff --git a/src/ledger/materializeSnapshotFromEvents.ts b/src/ledger/materializeSnapshotFromEvents.ts
+index eb94cba..f4b9053 100644
+--- a/src/ledger/materializeSnapshotFromEvents.ts
++++ b/src/ledger/materializeSnapshotFromEvents.ts
+@@ -1,3 +1,5 @@
++import { shapeTasks, mergeTasks, type Task } from "../core/tasks.ts";
++import { assertChapterTaskGraph } from "../core/chapterAuthority.ts";
+ import {
+   commandIdentityHash,
+   commandMaterializationFacts,
+@@ -44,7 +46,7 @@ import {
+ } from "../core/onboarding/adoption.ts";
+ import { mergeMonthRehearsals, shapeMonthRehearsals } from "../core/monthRehearsal.ts";
+ import {
+-  shapeChapters,
++  shapeChapters, mergeChapters, mergeRituals, mergeMoves,
+   shapeMoves,
+   shapeRituals,
+   shapeWins,
+@@ -128,6 +130,7 @@ export type ContinuityMaterializationFacts = {
+   fundKittyAllocations?: HouseholdFundKittyAllocation[];
+   monthRehearsals?: MonthRehearsal[];
+   weeklyDocumentStamps?: WeeklyDocumentStamp[];
++  chapterTasks?: Task[];
+   chapters?: Chapter[];
+   rituals?: Ritual[];
+   moves?: Move[];
+@@ -814,6 +817,7 @@ function filterFactsForScope(
+     if (facts.weeklyDocumentStamps?.length) {
+       scoped.weeklyDocumentStamps = shapeWeeklyDocumentStamps(facts.weeklyDocumentStamps);
+     }
++    if (facts.chapterTasks !== undefined) scoped.chapterTasks = shapeTasks(facts.chapterTasks).filter(task => task.visibility === "household" && task.chapterSource);
+     if (facts.chapters?.length) scoped.chapters = shapeChapters(facts.chapters);
+     if (facts.rituals?.length) scoped.rituals = shapeRituals(facts.rituals);
+     if (facts.moves?.length) scoped.moves = shapeMoves(facts.moves);
+@@ -932,6 +936,7 @@ export function extractMaterializationFacts(
+       facts.monthRehearsals = shapeMonthRehearsals(household.monthRehearsals);
+     }
+     if (options?.commandKind === "updateChapters") {
++      facts.chapterTasks = shapeTasks(household.tasks).filter(task => task.chapterSource);
+       facts.chapters = shapeChapters(household.chapters);
+       facts.rituals = shapeRituals(household.rituals);
+       facts.moves = shapeMoves(household.moves);
+@@ -991,31 +996,10 @@ async function applyEvent(
+   const existingRituals = shapeRituals(snapshot.rituals);
+   const existingMoves = shapeMoves(snapshot.moves);
+   const existingWins = shapeWins(snapshot.wins);
+-  const chapters = applyMoneyCollection(
+-    existingChapters,
+-    shapeChapters(facts.chapters),
+-    mergedTombstones,
+-  );
+-  const rituals = applyMoneyCollection(
+-    existingRituals,
+-    shapeRituals(facts.rituals).map((incoming) => {
+-      const existing = existingRituals.find((row) => row.id === incoming.id);
+-      return existing
+-        ? { ...incoming, heldOn: [...new Set([...existing.heldOn, ...incoming.heldOn])].sort() as DateKey[] }
+-        : incoming;
+-    }),
+-    mergedTombstones,
+-  );
+-  const moves = applyMoneyCollection(
+-    existingMoves,
+-    shapeMoves(facts.moves).map((incoming) => {
+-      const existing = existingMoves.find((row) => row.id === incoming.id);
+-      return existing
+-        ? { ...incoming, acknowledgedByMemberIds: [...new Set([...existing.acknowledgedByMemberIds, ...incoming.acknowledgedByMemberIds])] }
+-        : incoming;
+-    }),
+-    mergedTombstones,
+-  );
++  const chapters = mergeChapters(existingChapters, shapeChapters(facts.chapters));
++  const rituals = mergeRituals(existingRituals, shapeRituals(facts.rituals));
++  const moves = mergeMoves(existingMoves, shapeMoves(facts.moves));
++  const tasks = mergeTasks(shapeTasks(snapshot.tasks), shapeTasks(facts.chapterTasks));
+   const wins = applyMoneyCollection(
+     existingWins,
+     shapeWins(facts.wins).map((incoming) => {
+@@ -1105,12 +1089,14 @@ async function applyEvent(
+       weeklyDocumentStamps,
+       snapshot.members,
+     ),
++    tasks,
+     chapters,
+     rituals,
+     moves,
+     wins,
+     tombstones: mergedTombstones,
+   };
++  assertChapterTaskGraph(next);
+   next = rememberReceipt(next, receiptFromPayload(payload));
+   for (const command of onboardingAdoptionCommands(event) ?? []) {
+     if (!command.identityHash || !command.auditHash || !command.revision || !command.acceptedAt) continue;
+@@ -1312,6 +1298,9 @@ export async function applyCommandEventLocally(input: {
+   const incomingCategories = Array.isArray(rawIncomingCategories) ? rawIncomingCategories : [];
+   const rawIncomingBudgetPlans = event.payload_json.materializationFacts.budgetPlans;
+   const incomingBudgetPlans = shapeOnboardingAdoptionPlans(rawIncomingBudgetPlans);
++  const rawChapterTasks = event.payload_json.materializationFacts.chapterTasks;
++  let incomingChapterTasks: Task[];
++  try { incomingChapterTasks = shapeTasks(rawChapterTasks); if (incomingChapterTasks.some(task => task.visibility !== "household" || !task.chapterSource)) throw new Error("Unscoped Chapter Task"); } catch { return { ok: false, reason: "chapter-task-materialization-invalid", fallback: true }; }
+   const rawIncomingChapters = event.payload_json.materializationFacts.chapters;
+   const rawIncomingRituals = event.payload_json.materializationFacts.rituals;
+   const rawIncomingMoves = event.payload_json.materializationFacts.moves;
+@@ -1322,6 +1311,7 @@ export async function applyCommandEventLocally(input: {
+   const incomingWins = shapeWins(rawIncomingWins);
+   const containsChapterCommand = event.command_type === "updateChapters"
+     || readableCompactedCommands(event).some((row) => row.commandKind === "updateChapters");
++  if (incomingChapterTasks.length && !containsChapterCommand || incomingMoves.some(move => move.taskId) && rawChapterTasks === undefined) return { ok: false, reason: "chapter-task-materialization-missing", fallback: true };
+   let incomingSubmissions: OnboardingSubmission[];
+   try {
+     incomingSubmissions = shapeOnboardingSubmissions(rawIncomingSubmissions);
+@@ -1566,6 +1556,7 @@ export async function applyCommandEventLocally(input: {
+       onboardingApprovals: incomingApprovals,
+       categories: incomingCategories,
+       budgetPlans: incomingBudgetPlans,
++      chapterTasks: incomingChapterTasks,
+       chapters: incomingChapters,
+       rituals: incomingRituals,
+       moves: incomingMoves,
+diff --git a/src/ledgerSync/authority.ts b/src/ledgerSync/authority.ts
+index b1ba650..eea1bff 100644
+--- a/src/ledgerSync/authority.ts
++++ b/src/ledgerSync/authority.ts
+@@ -1,3 +1,4 @@
++import { hasChapterAgreementData, isChapterAgreementCommand, assertChapterTaskGraph } from "../core/chapterAuthority.ts";
+ import {hasPlayData,isPlayStep} from '../core/herculesPlay.ts';
+ import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
+ import { hasPlanDecisionData } from "../core/planSystem.ts";
+@@ -97,6 +98,8 @@ export async function prepareCommand(
+   if((current.companionProfile?.workflows?.length||command.steps.some(s=>s.kind==='commitCompanion'&&(s.args[0] as {operation?:{kind?:string}})?.operation?.kind==='workflow.set'))&&command.companionWorkflowVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve conversational drafts.');
+   if((current.nativeEvents?.length||command.steps.some(s=>s.kind==='saveNativeEvent'))&&command.nativeCalendarVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve calendar events.');
+   if((hasTaskData(current)||command.steps.some(s=>TASK_COMMAND_KINDS.includes(s.kind)))&&command.taskPlannerVersion!==1)throw new Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve planner tasks.');
++  if ((hasChapterAgreementData(current) || command.steps.some(step => isChapterAgreementCommand(step.kind))) && command.chapterAgreementVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve shared Chapter agreements and Tasks.");
++  assertChapterTaskGraph(current);
+   const extendedPlan = hasPlanDecisionData(current);
+   if (extendedPlan && command.planDecisionVersion !== 1) throw new Error("CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve the household's Plan evidence and decisions.");
+   const playStep=command.steps.some(s=>s.kind==='commitCompanionPlay');
+@@ -286,6 +289,7 @@ export async function prepareCommand(
+     validatedFundSourceClaimIds.add(event.sourceDeclaration.claimId!);
+   }
+   // Full existing Fund, onboarding and accounting transition rules still run.
++  assertChapterTaskGraph(current);
+   const accepted = await acceptHouseholdWrite({
+     previous: ["eraseDevelopmentActivity", "restoreSharedPoint"].includes(
+       command.steps[0]!.kind,
+diff --git a/src/ledgerSync/client.ts b/src/ledgerSync/client.ts
+index 60ec576..1ef417a 100644
+--- a/src/ledgerSync/client.ts
++++ b/src/ledgerSync/client.ts
+@@ -1,3 +1,4 @@
++import { hasChapterAgreementData, isChapterAgreementCommand } from "../core/chapterAuthority.ts";
+ import {hasPlayData,isPlayStep} from '../core/herculesPlay.ts';
+ import { hasGoalEnvelopeData } from "../core/goalEnvelopes.ts";
+ import { hasPlanDecisionData } from "../core/planSystem.ts";
+@@ -72,6 +73,7 @@ export class LedgerSyncClient {
+   private herculesActionsEnabled = false;
+   private nativeCalendarVersion = 0;
+   private taskPlannerVersion = 0;
++  private chapterAgreementVersion = 0;
+   private planDecisionVersion = 0;
+   private goalEnvelopeVersion = 0;
+   private initialResolve?: () => void;
+@@ -237,6 +239,7 @@ export class LedgerSyncClient {
+               this.herculesActionsEnabled = message.herculesActionsEnabled === true;
+               this.nativeCalendarVersion = message.nativeCalendarVersion === 1 ? 1 : 0;
+               this.taskPlannerVersion = message.taskPlannerVersion === 1 ? 1 : 0;
++              this.chapterAgreementVersion = message.chapterAgreementVersion === 1 ? 1 : 0;
+               this.goalEnvelopeVersion = message.goalEnvelopeVersion === 1 ? 1 : 0;
+               this.planDecisionVersion = message.planDecisionVersion === 1 ? 1 : 0;
+               this.ready = true;
+@@ -442,6 +445,7 @@ export class LedgerSyncClient {
+   }
+   private async queueConfirmation(candidate:Household,id:string,onQueued?:()=>void):Promise<CommitResult> {
+     const capture=capturedIntent(candidate)!;
++    if ((hasChapterAgreementData(candidate) || capture.steps.some(step => isChapterAgreementCommand(step.kind))) && (!this.ready || this.chapterAgreementVersion !== 1)) throw new LedgerCommandRejectedError("CHAPTER_UPDATE_REQUIRED: Connect to an updated Hearth before saving shared Chapter work.");
+     if (hasGoalEnvelopeData(candidate) && this.goalEnvelopeVersion !== 1) throw new LedgerCommandRejectedError("KITTY_UPDATE_REQUIRED: Connect to updated Hearth before saving this bank. Your review remains open.");
+     const extendedPlan = hasPlanDecisionData(candidate) || capture.steps.some(step => {
+       const input = step.args[0] as { lines?: Array<{ decision?: unknown }>; changedLines?: Array<{ decision?: unknown }>; changedAssumptions?: unknown; checkpoint?: unknown; outcomes?: Array<{ evidenceIds?: unknown }>; planReference?: unknown } | undefined;
+diff --git a/src/ledgerSync/protocol.ts b/src/ledgerSync/protocol.ts
+index a86d4c2..39e3c6c 100644
+--- a/src/ledgerSync/protocol.ts
++++ b/src/ledgerSync/protocol.ts
+@@ -36,6 +36,7 @@ export type LedgerCommand = {
+   nativeCalendarVersion?: 1;
+   /** Client understands planner tasks and lists (D-245). */
+   taskPlannerVersion?: 1;
++  chapterAgreementVersion?: 1;
+   planDecisionVersion?: 1;
+   goalEnvelopeVersion?: 1;
+   id: string;
+@@ -89,7 +90,7 @@ export async function commandFromCapture(
+     accountHistoryVersion: 1,
+     companionProfileVersion: 1,
+     companionPlayVersion: 1,
+-    companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1,
++    companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, chapterAgreementVersion: 1,
+     id,
+     ...scope,
+     observedSequence: input.observedRevision,
+@@ -118,6 +119,7 @@ export function parseCommand(value: unknown): LedgerCommand {
+     (c.goalEnvelopeVersion !== undefined && c.goalEnvelopeVersion !== 1) ||
+     (c.planDecisionVersion !== undefined && c.planDecisionVersion !== 1) ||
+     (c.nativeCalendarVersion !== undefined && c.nativeCalendarVersion !== 1) ||
++    (c.chapterAgreementVersion !== undefined && c.chapterAgreementVersion !== 1) ||
+     (c.taskPlannerVersion !== undefined && c.taskPlannerVersion !== 1) ||
+     (c.companionWorkflowVersion !== undefined && c.companionWorkflowVersion !== 1) ||
+     (c.companionPlayVersion !== undefined && c.companionPlayVersion !== 1) ||
+diff --git a/src/ledgerSync/registry.ts b/src/ledgerSync/registry.ts
+index 6c07f5b..60f43f5 100644
+--- a/src/ledgerSync/registry.ts
++++ b/src/ledgerSync/registry.ts
+@@ -27,6 +27,7 @@ const functions = {
+   commitCompanionGallery,
+   commitCompanionPlay,
+   ...rehearsal,
++  editRitual: chapterCommands.editRitual, acknowledgeRitualChange: chapterCommands.acknowledgeRitualChange, setRitualParticipation: chapterCommands.setRitualParticipation, adoptChapterTasks: chapterCommands.adoptChapterTasks, prepareRitualOccurrence: chapterCommands.prepareRitualOccurrence,
+   openChapter: chapterCommands.openChapter, addRitual: chapterCommands.addRitual, recordRitualHeld: chapterCommands.recordRitualHeld, setRitualState: chapterCommands.setRitualState,
+   offerMove: chapterCommands.offerMove, respondToMove: chapterCommands.respondToMove, completeMove: chapterCommands.completeMove, recordWin: chapterCommands.recordWin, keepWinAsMemory: chapterCommands.keepWinAsMemory, dismissWin: chapterCommands.dismissWin, closeChapter: chapterCommands.closeChapter,
+   saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks,
+@@ -92,7 +93,7 @@ register("saveBoardTask removeBoardTask saveBoardMilestone removeBoardMilestone
+ register("linkGoogleIdentity touchHouseholdDevice", ["memberId"]);
+ register("setGoogleServices setRecurrenceGoogleSync");
+ register("startMonthRehearsal", ["startedByMemberId"]);
+-register("openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter", ["memberId"]);
++register("editRitual acknowledgeRitualChange setRitualParticipation adoptChapterTasks prepareRitualOccurrence openChapter addRitual recordRitualHeld setRitualState offerMove respondToMove completeMove recordWin keepWinAsMemory dismissWin closeChapter", ["memberId"]);
+ register("upsertCoworker importCoworkerRoster recordCoworkerAttendance", [
+   "ownerMemberId",
+ ]);
+diff --git a/src/ledgerSync/resources.ts b/src/ledgerSync/resources.ts
+index e647989..56a7347 100644
+--- a/src/ledgerSync/resources.ts
++++ b/src/ledgerSync/resources.ts
+@@ -1,3 +1,4 @@
++import { isChapterAgreementCommand } from "../core/chapterAuthority.ts";
+ import { fundContributionReviewDigest } from "../core/fundContributionSources.ts";
+ import { accountHistoryState, type AccountHistoryReview } from "../core/accountHistory.ts";
+ import { requirementFingerprint } from "../core/onboarding/attestations.ts";
+@@ -42,6 +43,7 @@ export function observedResources(
+   kind: string,
+   args: unknown[],
+ ): Resource[] {
++  if (isChapterAgreementCommand(kind)) return []; // Exact domain revisions/basis and authenticated actor are rechecked at the authority.
+   if (kind === "addQuickSampleData" || kind === "addQuickSampleScenario") return [{ key: "quick-sample-catalog", value: { accounts: household.accounts, categories: household.categories, closedMonths: household.kitchen.books.closedMonths } }];
+   if(kind==='saveNativeEvent'){const input=args[0] as {id:string};return [{key:`native-event/${input.id}`,value:household.nativeEvents?.find(r=>r.id===input.id)??null}];}
+   if(['saveTask','completeTask','reopenTask','acknowledgeTask'].includes(kind)){const input=args[0] as {id:string};return [{key:`task/${input.id}`,value:household.tasks?.find(r=>r.id===input.id)??null}];}
+diff --git a/workers/ledgerRoom.ts b/workers/ledgerRoom.ts
+index f8744f1..ee2686f 100644
+--- a/workers/ledgerRoom.ts
++++ b/workers/ledgerRoom.ts
+@@ -1117,7 +1117,7 @@ export class LedgerRoom extends DurableObject<Env> {
+             companionProfileVersion: 1,
+             companionPlayVersion: 1,
+             companionDiscoveryVersion: 1,
+-            companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1,
++            companionWardrobeVersion: 1, companionWorkflowVersion: 1, nativeCalendarVersion: 1, planDecisionVersion: 1, goalEnvelopeVersion: 1, taskPlannerVersion: 1, chapterAgreementVersion: 1,
+             herculesActionsEnabled: herculesActionsEnabled(a.scope.environment, this.env.HERCULES_ACTIONS_ENABLED),
+             sequence: state.sequence,
+             hash: await digest({

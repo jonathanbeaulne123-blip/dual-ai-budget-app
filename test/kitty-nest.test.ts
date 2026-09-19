@@ -32,10 +32,17 @@ describe("Four tiers of nesting banks",()=>{
  it("uses the entire Fund, preserves every legacy goal identity and conserves the King to the cent",()=>{
   const h=planLifeFixture("household"),result=nest(h),fund=projectHouseholdFund(h,today);
   expect(result.king.amountCents).toBe(fund.operatingBalanceCents+fund.kittyCents);
-  expect(result.categories.reduce((s,r)=>s+r.amountCents,0)).toBe(result.king.amountCents);
+  expect(result.categories.reduce((s,r)=>s+(r.amountCents??NaN),0)).toBe(result.king.amountCents);
   expect(result.king.targetCents).toBe(result.categories.reduce((sum,row)=>sum+row.targetCents,0));
   expect(banks(h).filter(row=>row.goal).map(row=>row.goal!.id).sort()).toEqual(h.goals.map(row=>row.id).sort());
   expect(nestCategoryFor("Summer vacation")).toBe("build");expect(nestCategoryFor("Unknown purpose")).toBe("everyday");expect(nestCategoryFor("Summer vacation","protect")).toBe("protect");
+ });
+ it("keeps unreadable goal backing and dependent category shares unavailable",()=>{
+  const h=planLifeFixture('household'),event=h.fundEvents!.find(row=>row.kind==='kitty-allocated')??h.fundEvents![0]!;
+  h.fundEvents!.push({...event,id:'FUND-legacy-release',kind:'kitty-released',goalId:undefined,amountCents:1,date:'2026-09-12'});
+  const result=nest(h);expect(result.categories.every(row=>row.amountCents===null)).toBe(true);
+  expect(result.categories.flatMap(row=>row.children).filter(row=>row.goal).every(row=>row.amountCents===null)).toBe(true);
+  expect(Number.isSafeInteger(result.king.amountCents)).toBe(true);
  });
  it("breaks the paid occurrence, automatically shows the next, and restores reversed debt without duplicating either",()=>{
   let h=planLifeFixture("household");const r=h.recurrences[0]!;

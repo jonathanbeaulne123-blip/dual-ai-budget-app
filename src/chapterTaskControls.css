@@ -1,0 +1,25 @@
+.chapter-task-controls, .chapter-occurrence, .chapter-ritual-editor, .chapter-review { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+.ritual.chapter-ritual { display: block; padding: 20px; border: 1px solid var(--line, #baa789); border-radius: 14px; background: var(--card, #fffdf8); color: var(--ink, #332d25); }
+.chapter-ritual h5, .chapter-review h5, .chapter-review h6, .chapter-ritual-editor h6 { font: inherit; font-weight: 700; font-size: 1.1em; margin: 0 0 12px; }
+.chapter-terms { display: grid; grid-template-columns: minmax(90px, 1fr) minmax(0, 3fr); column-gap: 16px; row-gap: 7px; margin: 12px 0; }
+.chapter-terms dt { font-weight: 600; } .chapter-terms dd { margin: 0; overflow-wrap: anywhere; }
+.chapter-review { padding: 18px; margin: 18px 0; border: 2px solid var(--pine, #5c6d55); border-left-width: 5px; border-radius: 8px; background: var(--paper, #f6f1e6); color: var(--ink, #332d25); }
+.chapter-review details { margin: 12px 0; }.chapter-review summary { min-height: 44px; cursor: pointer; }
+.chapter-ritual-editor, .chapter-occurrence { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--line, #baa789); }
+.chapter-ritual-editor { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }.chapter-ritual-editor h6, .chapter-ritual-editor p, .chapter-ritual-editor button { grid-column: 1 / -1; }
+.chapter-ritual label, .chapter-task-completion label { display: grid; gap: 6px; min-width: 0; }.chapter-ritual input, .chapter-ritual select, .chapter-ritual textarea, .chapter-task-completion select { width: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; font: inherit; border: 1px solid var(--line, #baa789); background: var(--card, #fffdf8); color: var(--ink, #332d25); border-radius: 6px; padding: 10px; }
+.chapter-ritual .chapter-check { display: flex; align-items: flex-start; gap: 8px; }.chapter-check input { width: 20px; height: 20px; flex: 0 0 auto; }
+.chapter-task-controls button, .chapter-ritual button, .chapter-review button { min-height: 44px; white-space: normal; overflow-wrap: anywhere; max-width: 100%; }.chapter-actions { flex-wrap: wrap; }
+.chapter-task-completion { margin-top: 14px; }.chapter-task-completion button { margin-top: 8px; }
+.chapter-ritual :focus-visible, .chapter-review :focus-visible, .chapter-task-controls :focus-visible { outline: 3px solid var(--pine, #356147); outline-offset: 3px; }
+:root[data-theme="classic"] .chapter-review { border-top: 4px double var(--pine, #5c6d55); }
+:root[data-theme="taylor"] .chapter-ritual { border-style: dashed; border-radius: 16px 5px 14px 6px; box-shadow: 3px 4px 0 #9b66851c; }:root[data-theme="taylor"] .chapter-review { border-radius: 3px 14px 6px 13px; border-left-style: dashed; }
+:root[data-theme="newfoundland"] .chapter-ritual { border-radius: 4px; border-top: 5px solid var(--pine, #416f74); }:root[data-theme="newfoundland"] .chapter-review { border-radius: 3px; border-left-width: 2px; border-bottom-width: 5px; }
+@media (max-width: 719px) { .chapter-ritual { padding: 14px; }.chapter-terms { grid-template-columns: 1fr; gap: 4px; }.chapter-terms dd { margin-bottom: 8px; }.chapter-ritual-editor { grid-template-columns: 1fr; }.chapter-review { padding: 12px; }.chapter-actions > button { flex: 1 1 145px; } }
+@media (prefers-reduced-motion: reduce) { .chapter-ritual *, .chapter-review * { transition: none !important; animation: none !important; } }
+.chapter-ritual button, .chapter-review button, .chapter-task-controls button { padding: 10px 14px; border: 1px solid var(--pine, #536a53); border-radius: 8px; background: var(--card, #fffcf5); color: var(--ink, #332d25); font: inherit; font-weight: 600; cursor: pointer; }
+.chapter-ritual button:disabled, .chapter-review button:disabled, .chapter-task-controls button:disabled { opacity: .55; cursor: default; }
+.chapter-close .chapter-outcomes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }.chapter-close .chapter-outcomes button { display: grid; gap: 7px; min-width: 0; min-height: 80px; padding: 14px; font: inherit; text-align: left; color: var(--ink, #332d25); background: var(--card, #fffcf5); border: 1px solid var(--line, #baa789); border-radius: 10px; white-space: normal; }.chapter-close .chapter-outcomes small { line-height: 1.5; }.chapter-close > label { display: grid; gap: 6px; margin-bottom: 14px; }.chapter-close input { width: 100%; box-sizing: border-box; min-height: 44px; font: inherit; }
+@media (max-width: 719px) { .chapter-close .chapter-outcomes { grid-template-columns: 1fr; } }
+.chapter-room .chapter-card > button, .chapter-room .chapter-actions > button, .chapter-room .move-form > button, .chapter-close > button { min-height: 44px; padding: 10px 14px; border: 1px solid var(--pine, #536a53); border-radius: 8px; background: var(--card, #fffcf5); color: var(--ink, #332d25); font: inherit; font-weight: 600; cursor: pointer; white-space: normal; }
+.chapter-ritual label, .chapter-task-completion label { font: inherit; }

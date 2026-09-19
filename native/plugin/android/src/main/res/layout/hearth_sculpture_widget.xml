@@ -1,0 +1,4 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/hearth_widget_root" android:layout_width="match_parent" android:layout_height="match_parent" android:padding="12dp" android:background="#FAF2E3">
+ <ImageView android:id="@+id/hearth_widget_image" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitCenter" android:contentDescription="Your chosen Hearth sculpture" android:visibility="gone" />
+ <TextView android:id="@+id/hearth_widget_default" android:layout_width="match_parent" android:layout_height="match_parent" android:gravity="center" android:text="Hearth" android:textColor="#403329" android:textSize="22sp" />
+</FrameLayout>

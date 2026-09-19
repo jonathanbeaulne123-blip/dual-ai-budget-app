@@ -1,0 +1,9 @@
+{
+  "src/hearthside/contracts.ts": "62c91037fc2f80b67c42ad0d4bea3ae0ed176c0f",
+  "src/hearthside/commands.ts": "62562272c241e975be0ea2b71e201860cb8a882f",
+  "src/hearthside/HouseholdRoom.tsx": "d5ef6937dacaee85b5ad41fea13c9b16a1b56865",
+  "src/hearthside/Hearthside.tsx": "352a26729531b43f7b38b070e93cb039c2340118",
+  "src/hearthside/roomHistory.ts": "8e4b7e3bf06d1bb2b85fda8008180074c1530cf9",
+  "src/hearthside/RoomHistory.tsx": "1f84cca88a3e1304744be74429fc5bdcdbe5548b",
+  "workers/hearthsideGuestSource.ts": "6a44cd803a2439a48bcb0936e0857309b9c8ab89"
+}

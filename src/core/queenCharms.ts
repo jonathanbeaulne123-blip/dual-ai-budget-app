@@ -1,6 +1,7 @@
 import type { Household, KittyPart } from "./types.ts";
 import { ValidationError } from "./types.ts";
 import { charterIsSigned } from "./charter.ts";
+import { projectRitualTasks } from "./chapterTaskProjection.ts";
 
 /**
  * Charms for the Queen (2026-09-14): small ceramic add-ons the couple sticks
@@ -91,14 +92,14 @@ export type QueenCharmEarning = { kind: QueenCharmKind; label: string; short: st
 
 /** The travel words the nest already uses to file a goal under Build (`nestCategoryFor`); no goal carries a travel flag. */
 const TRAVEL_WORDS = /vacation|holiday|trip|travel/i;
-type EarningInput = Pick<Household, "chapters" | "rituals" | "goals" | "transactions" | "sitDownSessions"> & { charter?: Household["charter"] };
+type EarningInput = Pick<Household, "chapters" | "rituals" | "tasks" | "goals" | "transactions" | "sitDownSessions"> & { charter?: Household["charter"] };
 
 type EarnedKind = "paper-airplane" | "coffee-mug" | "snail" | "key" | "bell" | "spool";
 const EARNED: Record<EarnedKind, (h: EarningInput) => boolean> = {
   /** A travel goal closed: retired with a purchase behind it (the jar was filled and bought — `goalStatus` reads retired the same way), named the way the nest reads travel. */
   "paper-airplane": (h) => h.goals.some((goal) => (goal.status === "retired" || Boolean(goal.retiredAt)) && Boolean(goal.purchaseId) && TRAVEL_WORDS.test(goal.name)),
-  /** One Ritual held ten times: `heldOn` is evidence, never a streak; a gap costs nothing. */
-  "coffee-mug": (h) => (h.rituals ?? []).some((ritual) => ritual.heldOn.length >= 10),
+  /** Canonical completed occurrences, with earlier adopted history preserved; a gap costs nothing. */
+  "coffee-mug": (h) => (h.rituals ?? []).some((ritual) => projectRitualTasks(h, ritual).heldOn.length >= 10),
   /** A Chapter closed after a hard month: closed as still-forming or life-changed — the honest outcomes that are not "established". */
   snail: (h) => (h.chapters ?? []).some((chapter) => chapter.closedAt !== null && (chapter.state === "still-forming" || chapter.state === "life-changed")),
   /** The Charter signed by every member. */
