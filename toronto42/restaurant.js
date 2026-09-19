@@ -53,41 +53,32 @@ function renderSummary(){
 }
 
 function renderFlashcards(){
-  const cats=["All"].concat(Array.from(new Set(data.flashcards.map(function(x){return x.category}))));
+  const notes=data.studyNotes||{};
+  const cats=["All"].concat(Object.keys(notes));
   let chips="";
-  cats.forEach(function(c,i){
-    chips+='<button class="chip '+(i===0?"active":"")+'" data-cat="'+esc(c)+'">'+esc(c)+"</button>";
+  cats.forEach(function(cat,i){
+    chips+='<button class="chip '+(i===0?"active":"")+'" data-cat="'+esc(cat)+'">'+esc(cat)+"</button>";
   });
 
-  let bullets="";
-  data.flashcards.forEach(function(f,i){
-    const detailId="flash-detail-"+i;
-    bullets+='<li class="flash-bullet '+(f.must?"must-bullet":"")+'" data-cat="'+esc(f.category)+'">';
-    bullets+='<div class="bullet-row">';
-    bullets+='<div class="bullet-copy"><span class="bullet-dot">•</span><div><div class="bullet-category">'+esc(f.category)+'</div><div class="bullet-title">'+(f.must?'<span class="star">★</span>':"")+esc(f.q)+'</div></div></div>';
-    bullets+='<button class="info-toggle" type="button" aria-label="Show answer for '+esc(f.q)+'" aria-expanded="false" aria-controls="'+detailId+'">i</button>';
-    bullets+='</div>';
-    bullets+='<div class="bullet-detail" id="'+detailId+'"><div class="detail-label">Answer</div><div>'+esc(f.a)+'</div></div>';
-    bullets+='</li>';
+  let items="";
+  Object.keys(notes).forEach(function(cat){
+    notes[cat].forEach(function(item){
+      items+='<li class="intel-bullet '+(item.must?"must-note":"")+'" data-cat="'+esc(cat)+'">';
+      items+='<div class="intel-bullet-category">'+esc(cat)+'</div>';
+      items+='<div class="intel-bullet-title">'+(item.must?'<span class="star">★</span>':"")+esc(item.title)+'</div>';
+      items+='<div class="intel-bullet-text">'+esc(item.text)+'</div>';
+      items+='</li>';
+    });
   });
 
-  panel('<div class="eyebrow">Rapid study</div><h2>Flash Cards</h2><p>Choose a category, then tap the small <strong>i</strong> beside any bullet to expand the answer. ★ marks the highest-value facts.</p><div class="flash-toolbar">'+chips+'</div><ul class="flash-bullets">'+bullets+"</ul>");
-
-  contentEl.querySelectorAll(".info-toggle").forEach(function(btn){
-    btn.onclick=function(){
-      const li=btn.closest(".flash-bullet");
-      const open=li.classList.toggle("open");
-      btn.setAttribute("aria-expanded",open?"true":"false");
-      btn.setAttribute("aria-label",(open?"Hide":"Show")+" answer for "+li.querySelector(".bullet-title").textContent.replace("★","").trim());
-    };
-  });
+  panel('<div class="eyebrow">Restaurant research</div><h2>Study Notes</h2><p>Use the category filters to narrow the research. Every bullet contains the full useful information for that point — nothing is hidden behind cards or reveal buttons.</p><div class="flash-toolbar">'+chips+'</div><ul class="intel-bullet-list">'+items+"</ul>");
 
   contentEl.querySelectorAll(".chip").forEach(function(ch){
     ch.onclick=function(){
       contentEl.querySelectorAll(".chip").forEach(function(x){x.classList.remove("active")});
       ch.classList.add("active");
       const cat=ch.dataset.cat;
-      contentEl.querySelectorAll(".flash-bullet").forEach(function(x){
+      contentEl.querySelectorAll(".intel-bullet").forEach(function(x){
         x.style.display=(cat==="All"||x.dataset.cat===cat)?"":"none";
       });
     };
