@@ -8,15 +8,16 @@ function fakeRenderer() {
   const render = vi.fn();
   const dispose = vi.fn();
   const forceContextLoss = vi.fn();
+  const setPixelRatio = vi.fn();
   const renderer = {
     domElement: canvas,
     render,
     dispose,
     forceContextLoss,
-    setPixelRatio: vi.fn(),
+    setPixelRatio,
     shadowMap: { enabled: false, type: 0 },
   } as unknown as THREE.WebGLRenderer;
-  return { renderer, canvas, render, dispose, forceContextLoss };
+  return { renderer, canvas, render, dispose, forceContextLoss, setPixelRatio };
 }
 
 describe("whole-house renderer ownership", () => {
@@ -91,5 +92,45 @@ describe("whole-house renderer ownership", () => {
     b.release();
     expect(second.dispose).toHaveBeenCalledTimes(1);
   });
-});
 
+  it("keeps a focused tool above a remounted house and restores the latest house lease", () => {
+    const made = fakeRenderer(), factory = vi.fn(() => made.renderer);
+    const oldHouseHost = document.createElement("div"), toolHost = document.createElement("div"), newHouseHost = document.createElement("div");
+    const oldHouseConfigure = vi.fn(), toolConfigure = vi.fn(), newHouseConfigure = vi.fn();
+    const toolSuspend = vi.fn(), newHouseResume = vi.fn(), newHouseLost = vi.fn();
+    const oldHouse = acquireWorldRenderer(oldHouseHost, { shared: true, priority: 0, rendererFactory: factory, configure: oldHouseConfigure });
+    const tool = acquireWorldRenderer(toolHost, { shared: true, rendererFactory: factory, configure: toolConfigure, onSuspend: toolSuspend });
+    const rendersBeforeRemount = made.render.mock.calls.length;
+    const newHouse = acquireWorldRenderer(newHouseHost, { shared: true, priority: 0, rendererFactory: factory, configure: newHouseConfigure, onResume: newHouseResume });
+    const stopLost = newHouse.listenCanvas("webglcontextlost", newHouseLost);
+
+    newHouse.renderer.render({} as THREE.Scene, {} as THREE.Camera);
+    newHouse.renderer.setPixelRatio(2);
+    made.canvas.dispatchEvent(new Event("webglcontextlost"));
+    expect(factory).toHaveBeenCalledTimes(1);
+    expect(tool.active).toBe(true);
+    expect(newHouse.active).toBe(false);
+    expect(toolHost.firstElementChild).toBe(made.canvas);
+    expect(toolSuspend).not.toHaveBeenCalled();
+    expect(newHouseConfigure).not.toHaveBeenCalled();
+    expect(made.render).toHaveBeenCalledTimes(rendersBeforeRemount);
+    expect(made.setPixelRatio).not.toHaveBeenCalled();
+    expect(newHouseLost).not.toHaveBeenCalled();
+
+    tool.release();
+    expect(newHouse.active).toBe(true);
+    expect(oldHouse.active).toBe(false);
+    expect(newHouseHost.firstElementChild).toBe(made.canvas);
+    expect(newHouseConfigure).toHaveBeenCalledOnce();
+    expect(newHouseResume).toHaveBeenCalledOnce();
+    made.canvas.dispatchEvent(new Event("webglcontextlost"));
+    expect(newHouseLost).toHaveBeenCalledOnce();
+
+    oldHouse.release();
+    expect(newHouse.active).toBe(true);
+    stopLost();
+    newHouse.release();
+    expect(made.dispose).toHaveBeenCalledOnce();
+    expect(made.forceContextLoss).toHaveBeenCalledOnce();
+  });
+});

@@ -2,6 +2,8 @@ import * as THREE from "three";
 
 export type WorldRendererOptions = {
   parameters?: THREE.WebGLRendererParameters;
+  /** Foreground tools default to 1; the persistent whole-house scene uses 0. */
+  priority?: number;
   /** Reapplied whenever this lease returns to the foreground. */
   configure?: (renderer: THREE.WebGLRenderer) => void;
   onSuspend?: () => void;
@@ -22,6 +24,7 @@ type CanvasListener = { type: string; listener: EventListener; options?: boolean
 type LeaseState = {
   host: HTMLElement;
   options: WorldRendererOptions;
+  priority: number;
   proxy: THREE.WebGLRenderer;
   listeners: CanvasListener[];
   active: boolean;
@@ -57,6 +60,15 @@ function suspend(state: LeaseState, renderer: THREE.WebGLRenderer) {
   state.options.onSuspend?.();
 }
 
+function foreground(leases: LeaseState[]): LeaseState | undefined {
+  let selected: LeaseState | undefined;
+  for (const lease of leases) {
+    if (lease.released) continue;
+    if (!selected || lease.priority >= selected.priority) selected = lease;
+  }
+  return selected;
+}
+
 function rendererProxy(renderer: THREE.WebGLRenderer, state: LeaseState) {
   const methods = new Map<PropertyKey, (...args: unknown[]) => unknown>();
   return new Proxy(renderer, {
@@ -90,7 +102,7 @@ export function acquireWorldRenderer(host: HTMLElement, options: WorldRendererOp
   const shared = options.shared ?? worldEnabled();
   if (!shared) {
     const renderer = makeRenderer(options);
-    const state: LeaseState = { host, options, proxy: renderer, listeners: [], active: true, released: false };
+    const state: LeaseState = { host, options, priority: options.priority ?? 1, proxy: renderer, listeners: [], active: true, released: false };
     state.proxy = rendererProxy(renderer, state);
     host.appendChild(renderer.domElement);
     options.configure?.(renderer);
@@ -125,12 +137,15 @@ export function acquireWorldRenderer(host: HTMLElement, options: WorldRendererOp
     sharedState = { renderer: makeRenderer({ ...options, parameters: { ...options.parameters, alpha: true, antialias: true, preserveDrawingBuffer: true, powerPreference: "low-power" } }), leases: [] };
   }
   const renderer = sharedState.renderer;
-  const previous = sharedState.leases.at(-1);
-  if (previous) suspend(previous, renderer);
-  const state: LeaseState = { host, options, proxy: renderer, listeners: [], active: false, released: false };
+  const previous = foreground(sharedState.leases);
+  const state: LeaseState = { host, options, priority: options.priority ?? 1, proxy: renderer, listeners: [], active: false, released: false };
   state.proxy = rendererProxy(renderer, state);
   sharedState.leases.push(state);
-  activate(state, renderer, false);
+  const selected = foreground(sharedState.leases);
+  if (selected !== previous) {
+    if (previous) suspend(previous, renderer);
+    if (selected) activate(selected, renderer, false);
+  }
 
   return {
     renderer: state.proxy,
@@ -155,7 +170,7 @@ export function acquireWorldRenderer(host: HTMLElement, options: WorldRendererOp
       const wasActive = state.active;
       if (wasActive) suspend(state, renderer);
       owner.leases.splice(index, 1);
-      const next = owner.leases.at(-1);
+      const next = foreground(owner.leases);
       if (wasActive && next) activate(next, renderer, true);
       if (!owner.leases.length) {
         renderer.dispose();
