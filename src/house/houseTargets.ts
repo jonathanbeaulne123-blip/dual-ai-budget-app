@@ -1,0 +1,46 @@
+import type { LedgerView } from "../core/types.ts";
+import type { HouseLevel, HouseRoom } from "../hearthside/houseRoutes.ts";
+
+export type HouseTarget = Readonly<{ id: string; label: string }>;
+export type PersonalFolioPage = "wish" | "note" | "memory";
+
+const TARGETS: Record<`${HouseRoom}:${HouseLevel}`, readonly HouseTarget[]> = {
+  "home:above": [{ id: "loft-banks", label: "Open Kitty Banks" }],
+  "home:middle": [{ id: "queen", label: "Meet the Queen" }, { id: "hercules", label: "Talk with Hercules" }],
+  "home:below": [{ id: "cellar-bills", label: "Read the bill jars" }],
+  "study:above": [{ id: "planner", label: "Open the Master Planner" }],
+  "study:middle": [{ id: "books", label: "Open the Standing Book" }],
+  "study:below": [{ id: "calendar", label: "Unfold the Calendar" }],
+  "kitchen-table:above": [{ id: "journey", label: "Step into Journey" }],
+  "kitchen-table:middle": [{ id: "conversation", label: "Open the conversation folio" }],
+  "kitchen-table:below": [{ id: "plan-studio", label: "Pull out the Plan Studio" }],
+  "together:above": [{ id: "wishes", label: "Tend a wish" }],
+  "together:middle": [{ id: "pottery", label: "Enter the Pottery Studio" }, { id: "letters", label: "Open the writing desk" }, { id: "encounters", label: "Spend a moment together" }],
+  "together:below": [{ id: "memories", label: "Open a memory" }, { id: "projector", label: "Choose three memories" }],
+};
+
+const personalTargets = (key: `${HouseRoom}:${HouseLevel}`, rows: readonly HouseTarget[]): readonly HouseTarget[] => {
+  if (key === "together:above") return [{ id: "wishes", label: "Tend a private wish" }];
+  if (key === "together:middle") return [{ id: "pottery", label: "Enter your private Pottery Studio" }, { id: "letters", label: "Write a private note" }];
+  if (key === "together:below") return [{ id: "memories", label: "Open a private memory" }];
+  return rows;
+};
+
+/** Visible direct actions only. Personal scope never offers a shared encounter or projector. */
+export function houseTargets(scope: LedgerView, room: HouseRoom, level: HouseLevel): readonly HouseTarget[] {
+  const key = `${room}:${level}` as `${HouseRoom}:${HouseLevel}`;
+  const rows = TARGETS[key];
+  return scope === "personal" ? personalTargets(key, rows) : rows;
+}
+
+/** A house object can select a real private folio page; unsupported shared-only surfaces return null. */
+export function personalFolioPage(surface: string | undefined): PersonalFolioPage | null {
+  if (surface === "wishes") return "wish";
+  if (surface === "letters") return "note";
+  if (surface === "memories") return "memory";
+  return null;
+}
+
+export function personalSurfaceAvailable(surface: string | undefined): boolean {
+  return surface !== "encounters" && surface !== "projector";
+}
