@@ -13,3 +13,14 @@
 :root[data-theme=newfoundland] .house-shell{border-inline-start:4px solid var(--theme-accent);box-shadow:3px 3px 0 color-mix(in srgb,var(--theme-second) 25%,transparent);background:linear-gradient(90deg,color-mix(in srgb,var(--theme-accent) 16%,var(--paper)),var(--paper) 48%,color-mix(in srgb,var(--theme-second) 14%,var(--paper)))}:root[data-theme=newfoundland] .house-shell__threshold>span{color:var(--theme-second,var(--theme-accent))}
 @media(max-width:719px){.house-shell{margin-bottom:10px;padding:7px 8px}.house-shell__threshold{grid-template-columns:auto auto 1fr;max-width:none;margin-bottom:4px}.house-shell__threshold small{display:none}.house-shell__rooms{overflow-x:auto;grid-template-columns:repeat(4,minmax(90px,1fr));scrollbar-width:none}.house-shell__levels{gap:3px}.house-shell__levels button{display:flex;min-width:0;justify-content:center;padding:7px 4px;text-align:center}.house-shell__levels button>span{font-size:1rem}.house-shell__levels strong{font-size:.75rem}.house-shell__levels small{display:none}.house-shell__condition{margin-top:5px;font-size:.68rem}}
 @media(prefers-reduced-motion:reduce){.house-shell *{scroll-behavior:auto!important;transition:none!important}}
+/* In the house the scope and room identity already sit above the interior.
+   Keep its tools and all four inner destinations while making room for an object on arrival. */
+@media(max-width:719px){
+ .app:has(.house-shell) .hearthside-arrival{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 6px}
+ .app:has(.house-shell) .hearthside-arrival h1{font-size:24px;line-height:1.15;margin:0}
+ .app:has(.house-shell) .hearthside-arrival .hearthside-eyebrow,.app:has(.house-shell) .hearthside-arrival .hearthside-scope{display:none}
+ .app:has(.house-shell) .hearthside-arrival-settings{display:flex;gap:0;align-items:center}
+ .app:has(.house-shell) .hearthside-arrival-settings button{min-height:44px;padding:6px 10px;font-size:12px}
+ .app:has(.house-shell) .hearthside-room-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:3px;margin-bottom:8px;padding-block:6px}
+ .app:has(.house-shell) .hearthside-room-nav button{min-width:0;min-height:44px;padding:6px 2px;font-size:11px;overflow-wrap:anywhere}
+}
