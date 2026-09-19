@@ -1,7 +1,8 @@
+import { respondToSyntheticMove } from "../src/core/syntheticChapters.ts";
 import { knownCents } from "./fixtures/knownCents.ts";
 import { describe, expect, it } from "vitest";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
-import { addGoal, addRecurrence, catalogHousehold, offerMove, openChapter, respondToMove, reversePostedMoney, postEntry } from "../src/core/index.ts";
+import { addGoal, addRecurrence, catalogHousehold, offerMove, openChapter, reversePostedMoney, postEntry } from "../src/core/index.ts";
 import { fundPulse, type FundPulse, type FundPulseDestination, type FundPulseState } from "../src/core/fundPulse.ts";
 import { allocateNestTotal, projectKittyNest } from "../src/core/kittyNest.ts";
 import { NEST_CATEGORIES } from "../src/core/kittyNestDesigns.ts";
@@ -115,14 +116,14 @@ describe("The Queen's Nest — hands, vine, buds, hem, crown, body", () => {
     let h = openChapter(catalogHousehold(), { memberId, foundationId: "make-rent-boring", at: "2026-09-01T12:00:00.000Z" }).household;
     const chapter = openChapterFor(h)!;
     const opening = nextMove(h, memberId);
-    // The foundation's first Move is offered on open; declining it leaves the hands empty.
-    if (opening) h = respondToMove(h, { memberId, moveId: opening.id, response: "decline" }).household;
+    // Both participants pause the unassigned foundation Move; one person cannot erase it for the other.
+    if (opening) for (const member of h.members.filter(row => row.active)) h = respondToSyntheticMove(h, { memberId: member.id, moveId: opening.id, response: "decline" });
     expect(queenHands(h, memberId, chapter, nextMove(h, memberId))).toEqual({ kind: "empty" });
     // A Move offered by the partner that needs both of us asks for an acknowledgment first, then waits, then is done.
     h = offerMove(h, { memberId: "MEM-002", chapterId: chapter.id, text: "Confirm which payday the pre-rent check belongs to", needsAcknowledgment: true }).household;
     const move = nextMove(h, memberId)!;
     expect(queenHands(h, memberId, chapter, move)).toMatchObject({ kind: "move", act: "acknowledge" });
-    h = respondToMove(h, { memberId, moveId: move.id, response: "acknowledge" }).household;
+    h = respondToSyntheticMove(h, { memberId, moveId: move.id, response: "acknowledge" });
     expect(queenHands(h, memberId, chapter, nextMove(h, memberId))).toMatchObject({ kind: "move", act: "done" });
     const partnerView = queenHands(h, "MEM-002", chapter, nextMove(h, "MEM-002"));
     expect(partnerView).toMatchObject({ kind: "move", act: "done" });
