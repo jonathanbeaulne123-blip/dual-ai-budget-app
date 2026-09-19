@@ -98,6 +98,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       renderer.shadowMap.enabled = false;
       renderer.domElement.setAttribute("aria-hidden", "true");
       renderer.domElement.className = "queen-room-world__canvas";
+      renderer.domElement.style.touchAction = "";
     },
     onSuspend: () => suspendRenderer(),
     onResume: () => resumeRenderer(),

@@ -149,6 +149,8 @@ export function createMiniWorld(host: HTMLElement, options: {
       renderer.localClippingEnabled = false;
       renderer.domElement.setAttribute("aria-hidden", "true");
       renderer.domElement.className = "journey-mini__canvas";
+      renderer.domElement.style.width = "";
+      renderer.domElement.style.height = "";
       renderer.domElement.style.touchAction = "none";
     },
     onSuspend: () => suspendRenderer(),

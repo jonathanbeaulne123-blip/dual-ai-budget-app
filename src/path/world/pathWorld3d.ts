@@ -283,6 +283,8 @@ export function createPathWorld(host: HTMLElement, options: {
       renderer.localClippingEnabled = false;
       renderer.domElement.setAttribute("aria-hidden", "true");
       renderer.domElement.className = "path-world__canvas";
+      renderer.domElement.style.width = "";
+      renderer.domElement.style.height = "";
       renderer.domElement.style.touchAction = "none";
     },
     onSuspend: () => suspendRenderer(),

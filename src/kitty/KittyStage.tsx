@@ -108,7 +108,12 @@ export function KittyStage({
               active.outputColorSpace = T.SRGBColorSpace;
               active.toneMapping = T.ACESFilmicToneMapping;
               active.toneMappingExposure = 1.08;
+              active.localClippingEnabled = false;
               active.domElement.setAttribute("aria-hidden", "true");
+              active.domElement.className = "";
+              active.domElement.style.width = "";
+              active.domElement.style.height = "";
+              active.domElement.style.touchAction = "";
             },
             onSuspend: () => suspendRenderer(),
             onResume: () => resumeRenderer(),

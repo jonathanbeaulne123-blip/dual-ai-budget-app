@@ -64,6 +64,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
       renderer.localClippingEnabled = false;
       renderer.domElement.setAttribute("aria-hidden", "true");
       renderer.domElement.className = "queen-world__canvas";
+      renderer.domElement.style.touchAction = "";
     },
     onSuspend: () => suspendRenderer(),
     onResume: () => resumeRenderer(),
