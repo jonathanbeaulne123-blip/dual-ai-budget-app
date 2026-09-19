@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f1e8">
+<title>Restaurant Prep — Toronto Culinary Passport</title>
+<link rel="stylesheet" href="restaurant.css">
+</head>
+<body>
+<main class="intel-shell">
+  <header class="intel-head">
+    <div>
+      <a id="backLink" class="back" href="index.html">← Checklist</a>
+      <div class="eyebrow">Restaurant Intelligence</div>
+      <h1 id="restaurantName">Restaurant Prep</h1>
+      <p id="restaurantMeta"></p>
+    </div>
+    <div id="statusBadge" class="research-status">Research pending</div>
+  </header>
+
+  <nav class="intel-nav" id="intelNav">
+    <button data-view="summary">Summary</button>
+    <button data-view="flashcards">Flash Cards</button>
+    <button data-view="coverletter">Cover Letter</button>
+    <button data-view="walkin">Walk-In</button>
+    <button data-view="sources">Sources</button>
+  </nav>
+
+  <section id="pending" class="pending-card" hidden>
+    <div class="eyebrow">Not researched yet</div>
+    <h2>This restaurant's binder tab is ready, but the intelligence pack has not been completed.</h2>
+    <p>The Flash Cards and Cover Letter buttons already route here so the interface stays consistent across all 42 restaurants. Once the restaurant's Google Doc tab is verified, its data gets added to the shared intelligence source and these views populate automatically.</p>
+  </section>
+
+  <div id="intelContent"></div>
+</main>
+<script src="stops1.js"></script>
+<script src="stops2.js"></script>
+<script src="restaurant-intel.js"></script>
+<script src="restaurant.js"></script>
+</body>
+</html>
