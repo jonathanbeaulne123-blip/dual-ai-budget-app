@@ -55,19 +55,43 @@ function renderSummary(){
 function renderFlashcards(){
   const cats=["All"].concat(Array.from(new Set(data.flashcards.map(function(x){return x.category}))));
   let chips="";
-  cats.forEach(function(c,i){chips+='<button class="chip '+(i===0?"active":"")+'" data-cat="'+esc(c)+'">'+esc(c)+"</button>"});
-  let cards="";
-  data.flashcards.forEach(function(f){
-    cards+='<button class="flash '+(f.must?"must-card":"")+'" data-cat="'+esc(f.category)+'"><div class="flash-category">'+esc(f.category)+'</div><div class="flash-q">'+(f.must?'<span class="star">★</span>':"")+esc(f.q)+'</div><div class="flash-a">'+esc(f.a)+"</div></button>";
+  cats.forEach(function(c,i){
+    chips+='<button class="chip '+(i===0?"active":"")+'" data-cat="'+esc(c)+'">'+esc(c)+"</button>";
   });
-  panel('<div class="eyebrow">Rapid study</div><h2>Flash Cards</h2><p>Tap any card to reveal the answer. Start with the ★ cards.</p><div class="flash-toolbar">'+chips+'</div><div class="flash-list">'+cards+"</div>");
-  contentEl.querySelectorAll(".flash").forEach(function(x){x.onclick=function(){x.classList.toggle("open")}});
-  contentEl.querySelectorAll(".chip").forEach(function(ch){ch.onclick=function(){
-    contentEl.querySelectorAll(".chip").forEach(function(x){x.classList.remove("active")});
-    ch.classList.add("active");
-    const cat=ch.dataset.cat;
-    contentEl.querySelectorAll(".flash").forEach(function(x){x.style.display=(cat==="All"||x.dataset.cat===cat)?"":"none"});
-  }});
+
+  let bullets="";
+  data.flashcards.forEach(function(f,i){
+    const detailId="flash-detail-"+i;
+    bullets+='<li class="flash-bullet '+(f.must?"must-bullet":"")+'" data-cat="'+esc(f.category)+'">';
+    bullets+='<div class="bullet-row">';
+    bullets+='<div class="bullet-copy"><span class="bullet-dot">•</span><div><div class="bullet-category">'+esc(f.category)+'</div><div class="bullet-title">'+(f.must?'<span class="star">★</span>':"")+esc(f.q)+'</div></div></div>';
+    bullets+='<button class="info-toggle" type="button" aria-label="Show answer for '+esc(f.q)+'" aria-expanded="false" aria-controls="'+detailId+'">i</button>';
+    bullets+='</div>';
+    bullets+='<div class="bullet-detail" id="'+detailId+'"><div class="detail-label">Answer</div><div>'+esc(f.a)+'</div></div>';
+    bullets+='</li>';
+  });
+
+  panel('<div class="eyebrow">Rapid study</div><h2>Flash Cards</h2><p>Choose a category, then tap the small <strong>i</strong> beside any bullet to expand the answer. ★ marks the highest-value facts.</p><div class="flash-toolbar">'+chips+'</div><ul class="flash-bullets">'+bullets+"</ul>");
+
+  contentEl.querySelectorAll(".info-toggle").forEach(function(btn){
+    btn.onclick=function(){
+      const li=btn.closest(".flash-bullet");
+      const open=li.classList.toggle("open");
+      btn.setAttribute("aria-expanded",open?"true":"false");
+      btn.setAttribute("aria-label",(open?"Hide":"Show")+" answer for "+li.querySelector(".bullet-title").textContent.replace("★","").trim());
+    };
+  });
+
+  contentEl.querySelectorAll(".chip").forEach(function(ch){
+    ch.onclick=function(){
+      contentEl.querySelectorAll(".chip").forEach(function(x){x.classList.remove("active")});
+      ch.classList.add("active");
+      const cat=ch.dataset.cat;
+      contentEl.querySelectorAll(".flash-bullet").forEach(function(x){
+        x.style.display=(cat==="All"||x.dataset.cat===cat)?"":"none";
+      });
+    };
+  });
 }
 
 function renderLetter(){
