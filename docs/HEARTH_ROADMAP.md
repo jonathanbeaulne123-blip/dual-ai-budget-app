@@ -1,3 +1,15 @@
+## Current Hearthside scope — web integration (2026-09-19)
+
+Jonathan narrowed the immediate delivery to web; native SDKs, AR/widgets and distribution are deferred. The current-main integration, exact verification and package-by-package remaining acceptance are recorded in the [web handoff](briefs/HEARTHSIDE_WEB_HANDOFF_2026-09-19.md) and [worksession](worksessions/2026-09-19-hearthside-web-integration.md). Local implementation does not close hosted continuity, physical/browser/product acceptance or release authorization.
+
+## Hearthside current acceptance — 2026-09-19
+
+Branch `codex/hearthside-program`, source head `d0f0c5f731e1f1a331177480ff609ac936fddc45`. Required change-focused High gate: **1,280 tests / 164 files passed in 284.307s of 300s**, no breach on the unchanged rerun. Root web build passed in 170.459s. All 214 web assets match in both native copies. Android app and both test packages assembled in 561.112s; final APK assets, signatures, manifest and static library alignment were audited. iOS SDK build and native instrumentation remain blocked/unrun as detailed below. Full P0–P15 acceptance remains OPEN.
+
+The [P0–P15 acceptance register](briefs/HEARTHSIDE_ACCEPTANCE_GAPS_2026-09-19.md) supersedes blanket local-complete claims and identifies exact next owners/actions, including current-main house/Queen integration, stage outfit, manufacturing profile, full authenticated App seam and native/device proof. [Measured worksession](worksessions/2026-09-19-hearthside-resume.md). Earlier entries below remain historical evidence.
+
+> **2026-09-12 · Hearthside — ACTIVE, integrated locally:** The approved full P0–P15 program connects intentions, simultaneous pottery, practical plans, private affection and memories across four rooms in all three themes, with seasons, guests, native companions and production-file keepsakes. Clean implementation `2f8b788` passes the High gate (1,230 tests / 159 files in 233.034s), web build and exact native web-copy checks. Hosted activation, authenticated cross-device proof, native SDK/distribution and physical acceptance remain open; P15 is not complete. [Implementation handoff](briefs/HEARTHSIDE_IMPLEMENTATION_HANDOFF.md) · [Package register and evidence](worksessions/2026-09-12-hearthside-program.md).
+
 > **2026-09-12 · D-249 local implementation:** [Hercules Workspace](HERCULES_WORKSPACE.md) adds durable private life projects, a Flash-only tool runtime, editable artifacts, Plan links and reviewed action bridges. Activation remains off. Live model comparison, hosted/container proof and authenticated physical-device acceptance are Release gates; see [worksession](worksessions/2026-09-12-hercules-workspace.md).
 
 **Guided Plan preparation — local implementation (2026-09-11):** a quieter Plan overview and Hercules conversation collect one answer at a time, explain why, preserve private progress and produce an exact draft review. Existing lens tools and independent agreement remain available. [Worksession and acceptance](worksessions/2026-09-11-plan-guided-conversation.md). Deployment and live product acceptance remain open.

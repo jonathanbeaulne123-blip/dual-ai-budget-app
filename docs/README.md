@@ -1,3 +1,16 @@
+Current Hearthside web integration: [project-lead handoff and P0–P15 remaining acceptance](briefs/HEARTHSIDE_WEB_HANDOFF_2026-09-19.md) · [candidate and measured verification](worksessions/2026-09-19-hearthside-web-integration.md). Native delivery is deferred; prior resume evidence is historical.
+
+## Current Hearthside resume (September 19)
+
+- [Exact candidate, repairs and measured verification](worksessions/2026-09-19-hearthside-resume.md).
+- [Every remaining P0–P15 acceptance gap and lead handoff](briefs/HEARTHSIDE_ACCEPTANCE_GAPS_2026-09-19.md).
+- [Original approved complete program](briefs/HEARTHSIDE_APPROVED_PROGRAM_2026-09-12.md).
+- [Final source and native evidence](evidence/hearthside-program/resume-2026-09-19.json).
+
+Full program acceptance remains OPEN; earlier Hearthside completion/SDK statements are historical and superseded by this resume.
+
+Current Hearthside program: [integrated implementation handoff](briefs/HEARTHSIDE_IMPLEMENTATION_HANDOFF.md) · [P0–P15 package register](worksessions/2026-09-12-hearthside-program.md) · [exact local verification](evidence/hearthside-program/integrated-2f8b788.json). Full program acceptance remains open; local checks do not imply deployment or physical/native acceptance.
+
 Hercules bug reports: [connection and recovery](HERCULES_FEEDBACK.md) · [current worksession](worksessions/2026-09-12-hercules-bug-reports.md).
 
 Current local Kitty Banks work: [cinematic envelope room implementation and evidence](worksessions/2026-09-11-kitty-envelope-implementation.md), integrating both merged Plan overhauls, reusable vault purchases, six theme/scope rooms, Calendar meanings and Hercules readability. [Complete product direction and remaining envelope contracts](briefs/KITTY_BANKS_CINEMATIC_ENVELOPE_APP_2026-09-11.md).
