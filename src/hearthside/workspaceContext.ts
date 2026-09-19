@@ -10,6 +10,9 @@ export type WorkspaceExperienceContext =
   | { version: 2; audience: 'personal'; ownerMemberId: string; id: string; revision: number; title: string; intention: string;
       state: 'dreaming' | 'preparing' | 'lived' | 'paused' | 'archived'; horizon: 'tonight' | 'season' | 'someday'; livedOn: string | null };
 export type WorkspaceExperienceBinding = { context: WorkspaceExperienceContext; digest: string; providerApprovalDigest: string | null };
+export type WorkspaceExperienceReference =
+  | { version: 1; audience: 'household'; ownerMemberId: null; id: string; personalLifeVersion: null }
+  | { version: 1; audience: 'personal'; ownerMemberId: string; id: string; personalLifeVersion: 1 };
 export function exactObject(value: unknown, keys: readonly string[]): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value) || ![Object.prototype, null].includes(Object.getPrototypeOf(value))) throw new Error('INVALID_EXPERIENCE_CONTEXT');
   const descriptors = Object.getOwnPropertyDescriptors(value);
@@ -41,6 +44,22 @@ export function workspaceExperienceContext(experience: WorkspaceExperienceContex
 export function personalWorkspaceExperienceContext(experience: PersonalLifeExperience, ownerMemberId: string): WorkspaceExperienceContext {
   if(experience.createdBy!==ownerMemberId)throw new Error('EXPERIENCE_CONTEXT_OWNER_MISMATCH');
   return decodeWorkspaceExperienceContext({version:2,audience:'personal',ownerMemberId,id:experience.id,revision:experience.revision,title:experience.title,intention:experience.intention,state:experience.state,horizon:experience.horizon,livedOn:experience.livedOn});
+}
+/** Narrow authority reference. Personal requires an explicit compatible reader marker; an id alone is never a Personal request. */
+export function decodeWorkspaceExperienceReference(value: unknown): WorkspaceExperienceReference {
+  let row:Record<string,unknown>;
+  try{row=exactObject(value,['version','audience','ownerMemberId','id','personalLifeVersion']);}catch{throw new Error('INVALID_EXPERIENCE_REFERENCE');}
+  if(row.version!==1)throw new Error('INVALID_EXPERIENCE_REFERENCE');
+  const id=experienceIdentifier(row.id);
+  if(row.audience==='household'&&row.ownerMemberId===null&&row.personalLifeVersion===null)return {version:1,audience:'household',ownerMemberId:null,id,personalLifeVersion:null};
+  if(row.audience==='personal'&&row.personalLifeVersion===1)return {version:1,audience:'personal',ownerMemberId:experienceIdentifier(row.ownerMemberId),id,personalLifeVersion:1};
+  throw new Error('INVALID_EXPERIENCE_REFERENCE');
+}
+export function workspaceExperienceReference(context: WorkspaceExperienceContext): WorkspaceExperienceReference {
+  const selected=decodeWorkspaceExperienceContext(context);
+  return selected.version===2
+    ? {version:1,audience:'personal',ownerMemberId:selected.ownerMemberId,id:selected.id,personalLifeVersion:1}
+    : {version:1,audience:'household',ownerMemberId:null,id:selected.id,personalLifeVersion:null};
 }
 export function workspaceExperienceDigest(context: WorkspaceExperienceContext): string {
   return sha256String(JSON.stringify(decodeWorkspaceExperienceContext(context)));

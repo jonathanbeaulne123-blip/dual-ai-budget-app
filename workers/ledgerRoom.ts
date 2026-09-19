@@ -12,7 +12,8 @@ import {captureGuestSources,validateGuestSources} from '../src/hearthside/guestP
 import {decodeGuestPrepare,decodeGuestSourceProof,type GuestPrepareInput,type GuestSourceProof} from '../src/hearthside/guestContracts.ts';
 import type {WorkspaceEnv} from './workspace/env.ts';
 import {consumeWorkspaceRpc} from '../src/hearthside/workspaceRpc.ts';
-import {workspaceExperienceContext} from '../src/hearthside/workspaceContext.ts';
+import {decodeWorkspaceExperienceReference,personalWorkspaceExperienceContext,workspaceExperienceContext,workspaceExperienceDigest,type WorkspaceExperienceContext,type WorkspaceExperienceReference} from '../src/hearthside/workspaceContext.ts';
+import {decodePersonalLife} from '../src/hearthside/personalLifeContracts.ts';
 import {acceptWorkspacePublicationState} from '../src/hearthside/workspacePublicationState.ts';
 import {decodeArtifactPublication,decodePreparedExperienceArtifact,artifactPublication,type ArtifactPublication,type ArtifactPublicationReceipt} from '../src/hearthside/workspacePublication.ts';
 import {decodeRecordedRoom} from '../src/hearthside/roomHistory.ts';
@@ -951,9 +952,19 @@ export class LedgerRoom extends DurableObject<Env> {
       assertNestDocumentVisible(this.hearthsideMember(scope).household,scope.memberId,document);snapshotKittyDesignRevision(document,ref.pieceId,ref.revision);
     }
   }
-  async workspaceExperience(scope:Scope,id:string){
-    return this.serial(async()=>{const {household}=this.hearthsideMember(scope),experience=household.hearthside?.experiences.find(e=>e.id===id&&e.state!=='archived');
-      if(!experience)throw Error('EXPERIENCE_CONTEXT_CHANGED');await this.archiveBarrier();this.hearthsideMember(scope);return workspaceExperienceContext(experience);
+  async workspaceExperience(scope:Scope,raw:WorkspaceExperienceReference){
+    return this.serial(async()=>{const reference=decodeWorkspaceExperienceReference(raw);
+      if(reference.audience==='personal'&&reference.ownerMemberId!==scope.memberId)throw Error('FORBIDDEN');
+      const read=():WorkspaceExperienceContext=>{const {household}=this.hearthsideMember(scope);
+        if(reference.audience==='personal'){
+          const personal=decodePersonalLife(household.personalLife,scope.memberId),experience=personal.experiences.find(row=>row.id===reference.id&&row.state!=='archived');
+          if(!experience)throw Error('EXPERIENCE_CONTEXT_CHANGED');return personalWorkspaceExperienceContext(experience,scope.memberId);
+        }
+        const experience=household.hearthside?.experiences.find(row=>row.id===reference.id&&row.state!=='archived');
+        if(!experience)throw Error('EXPERIENCE_CONTEXT_CHANGED');return workspaceExperienceContext(experience);
+      };
+      const before=read();await this.archiveBarrier();const accepted=read();
+      if(workspaceExperienceDigest(before)!==workspaceExperienceDigest(accepted))throw Error('EXPERIENCE_CONTEXT_CHANGED');return accepted;
     });
   }
   async workspaceAcceptArtifact(scope:Scope,publication:ArtifactPublication){return this.recordWorkspacePublication(scope,publication,'accepted');}

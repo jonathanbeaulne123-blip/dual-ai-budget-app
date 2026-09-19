@@ -1,6 +1,6 @@
 import type {Scope} from '../ledgerSync/protocol.ts';
 import { applyWorkspaceCommand, createWorkspaceProject, type WorkspaceCommand, type WorkspaceProject } from '../workspace/contracts.ts';
-import { bindWorkspaceExperience, decodeWorkspaceExperienceContext, workspaceExperienceDigest, workspaceExperienceProjectId, type WorkspaceExperienceContext } from './workspaceContext.ts';
+import { bindWorkspaceExperience, decodeWorkspaceExperienceContext, workspaceExperienceDigest, workspaceExperienceProjectId, type WorkspaceExperienceContext, type WorkspaceExperienceReference } from './workspaceContext.ts';
 import { decodePreparedExperienceArtifact, type ArtifactPublication, type ArtifactPublicationReceipt, type PreparedExperienceArtifact, type ArtifactPublicationScope } from './workspacePublication.ts';
 /** Authority supplies acceptedContext after its authenticated household membership check. */
 export function createExperienceWorkspaceProject(scope:ArtifactPublicationScope,id:string,input:WorkspaceExperienceContext,confirmDigest:string,acceptedContext:WorkspaceExperienceContext,now:string):WorkspaceProject {
@@ -18,7 +18,7 @@ export function experienceCommandNeedsFreshContext(command:WorkspaceCommand):boo
 }
 
 export interface WorkspaceHearthsideAuthority {
-  workspaceExperience(scope:Scope,experienceId:string):Promise<WorkspaceExperienceContext>;
+  workspaceExperience(scope:Scope,reference:WorkspaceExperienceReference):Promise<WorkspaceExperienceContext>;
   workspaceAcceptArtifact(scope:Scope,publication:ArtifactPublication):Promise<ArtifactPublicationReceipt>;
   workspaceWithdrawArtifact(scope:Scope,publication:ArtifactPublication):Promise<ArtifactPublicationReceipt>;
 }
