@@ -139,5 +139,6 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(document.querySe
 const routePortal=document.querySelector("#routePortal");if(routePortal)routePortal.href=portalUrl({});
 const dayPlan=document.querySelector("#dayPlan");if(dayPlan)dayPlan.href=location.hostname==="html-preview.github.io"?"https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Fday.html":"day.html";
 const nextStepsNav=document.querySelector("#nextStepsNav");if(nextStepsNav)nextStepsNav.href=nextStepsUrl();
+const hireabilityNav=document.querySelector("#hireabilityNav");if(hireabilityNav)hireabilityNav.href=location.hostname==="html-preview.github.io"?"https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Fhireability.html":"hireability.html";
 const nextStepsCount=document.querySelector("#nextStepsCount");if(nextStepsCount)nextStepsCount.textContent=Object.values(T).filter(x=>["chat","no-manager","maybe","apply-online"].includes(x)).length;
 buildOutcomeFilter();buildOutcomeModal();buildAddModal();render();
