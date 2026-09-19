@@ -9089,7 +9089,7 @@ export function App() {
         </button>
         )}
         {!houseNavigationActive && kitchenPrimaryNav(view).includes("together") && <button className={tab === "together" || HEARTHSIDE_FLAGS.presentation && tab === "play" ? "active" : ""} aria-current={tab === "together" || HEARTHSIDE_FLAGS.presentation && tab === "play" ? "page" : undefined} onClick={() => goTab("together")}>{HEARTHSIDE_FLAGS.presentation ? HEARTHSIDE_LABEL : "Together"}</button>}
-        {kitchenPrimaryNav(view).includes("more") && (
+        {(houseNavigationActive || kitchenPrimaryNav(view).includes("more")) && (
         <button
           className={tab === "more" ? "active" : ""}
           aria-current={tab === "more" ? "page" : undefined}
