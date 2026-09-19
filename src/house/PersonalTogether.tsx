@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { DateKey } from "../core/calendar.ts";
 import type { Household } from "../core/types.ts";
 import type { KitchenCommand } from "../kitchenCommand.ts";
+import { ledgerCommandIdForIntent } from "../ledgerSync/protocol.ts";
 import type { HouseRoute } from "../hearthside/houseRoutes.ts";
 import {
   decodePersonalLife, type PersonalLifeDocument, type PersonalLifeExperience, type PersonalLifeMemory, type PersonalLifeNote, type PersonalLifeReference, type PersonalLifeWish,
@@ -95,7 +96,7 @@ export function PersonalTogether({ household, memberId, identity, today, route, 
     flight.current=true;setWorking(true); setPending(intent); setStatus(null);
     try {
       let recovered=false,definite=false;
-      const result = await onCommand(current => commitPersonalLife(current as PersonalHousehold, intent),{confirmationId:intent.id,recoverConfirmation:pending?.id===intent.id,onRecoveredConfirmation:()=>{recovered=true;},onDefinitiveRejected:()=>{definite=true;}});
+      const result = await onCommand(current => commitPersonalLife(current as PersonalHousehold, intent),{confirmationId:ledgerCommandIdForIntent(intent.id),recoverConfirmation:pending?.id===intent.id,onRecoveredConfirmation:()=>{recovered=true;},onDefinitiveRejected:()=>{definite=true;}});
       if(!alive.current)return;
       setStatus(recovered?"Synchronized.":definite?"This version was rejected. Your draft remains here; review the current saved page.":outcomeWords(result));
       if (recovered || definite || result?.kind === "synchronized"&&result.ok){

@@ -6,6 +6,7 @@ import type { HouseRoute } from "../hearthside/houseRoutes.ts";
 import { decodePersonalLife, type PersonalLifeExperience } from "../hearthside/personalLifeContracts.ts";
 import { commitPersonalLife, type PersonalLifeIntent } from "../hearthside/personalLifeCommands.ts";
 import type { KitchenCommand } from "../kitchenCommand.ts";
+import { ledgerCommandIdForIntent } from "../ledgerSync/protocol.ts";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
 import "./kitchen-folio.css";
 
@@ -132,7 +133,7 @@ function KitchenFolioSession({ household, memberId, view, identity, route, today
     setWorking(true); setPending(next); setMessage("Sending the reviewed intent…");
     try {
       const result = await onCommand(current => next.kind === "personal-note" ? commitPersonalLife(current, next.intent) : commitHearthside(current, next.intent), {
-        confirmationId: next.intent.id,
+        confirmationId: ledgerCommandIdForIntent(next.intent.id),
         recoverConfirmation: retry,
         onRecoveredConfirmation: () => { if (request.current === serial) { setPending(null); setMessage("The prior command was recovered. Check its receipt before making another change."); } },
         onDefinitiveRejected: () => { if (request.current === serial) setMessage("This command was definitively rejected. Its original local copy remains available for revision."); },
