@@ -3,6 +3,8 @@ import { addGoal, financialAuditHash, fundGoal, openChapter } from '../src/core/
 import { editRitual, movesForChapter, ritualAgreementRevision, ritualTerms, ritualsForChapter } from '../src/core/chapters.ts';
 import { closeSyntheticChapter, completeSyntheticMove, holdSyntheticRitual } from '../src/core/syntheticChapters.ts';
 import { assertChapterTaskGraph } from '../src/core/chapterAuthority.ts';
+import { focusedAgendaTask } from '../src/core/agenda.ts';
+import { pathStones } from '../src/core/pathStones.ts';
 import { planLifeFixture } from './fixtures/plan-life.ts';
 
 const first = 'MEM-001', second = 'MEM-002', at = '2026-09-05T20:00:00.000Z';
@@ -33,12 +35,22 @@ describe('synthetic Chapter history uses the actual authority commands', () => {
     h = holdSyntheticRitual(h, { memberId: second, ritualId: ritual.id, onDate: '2026-09-04', at });
     const missing = h.tasks!.find(row => row.chapterSource?.onDate === '2026-09-04')!;
     expect(missing).toMatchObject({ completedAt: null, completionEvidence: null, acknowledgedBy: [second] });
+    const agendaInput = { memberId: second, view: 'household' as const, today: '2026-09-05' };
+    expect(focusedAgendaTask(h, missing.id, agendaInput)).toMatchObject({ done: false, evidence: null });
+    expect(pathStones(h, second, '2026-09-05').find(row => row.id === missing.id)).toMatchObject({ state: 'waiting', lit: false });
     const receipt = h.goalContributions!.find(row => row.goalId === goalId)!;
     const evidence = { kind: 'goal-contribution' as const, contributionId: receipt.id, amountCents: receipt.amountCents, date: receipt.date };
     expect(() => holdSyntheticRitual(h, { memberId: second, ritualId: ritual.id, onDate: '2026-09-04', evidence, at })).toThrow(/occurrence.*date/i);
+    h = holdSyntheticRitual(h, { memberId: second, ritualId: ritual.id, onDate: receipt.date, at });
+    const matching = h.tasks!.find(row => row.chapterSource?.onDate === receipt.date)!;
+    expect(focusedAgendaTask(h, matching.id, agendaInput)).toMatchObject({ done: false, evidence: null });
+    expect(pathStones(h, second, '2026-09-05').find(row => row.id === matching.id)).toMatchObject({ state: 'waiting', lit: false });
     h = holdSyntheticRitual(h, { memberId: second, ritualId: ritual.id, onDate: receipt.date, evidence, at });
     expect(ritualsForChapter(h, ritual.chapterId)[0]!.heldOn).toEqual([receipt.date]);
     expect(h.rituals![0]!.requiresMoneyEvidence).toBe(true);
+    expect(() => assertChapterTaskGraph(h)).not.toThrow();
+    expect(focusedAgendaTask(h, matching.id, agendaInput)).toMatchObject({ done: true, evidence });
+    expect(pathStones(h, second, '2026-09-05').find(row => row.id === matching.id)).toMatchObject({ state: 'done', lit: true });
     expect(await financialAuditHash(h)).toBe(before);
   });
 });

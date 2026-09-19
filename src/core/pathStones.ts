@@ -44,6 +44,9 @@ export function pathLabel(title: string, fallback = "A task"): string {
  * in the books), or when a money-linked task's evidence is found in the books.
  */
 export function pathTaskDone(household: Household, task: Task, shared = false): boolean {
+  // Chapter Tasks complete through their exact responsibility/evidence command.
+  // A nearby bank receipt cannot stand in for an accepted occurrence.
+  if (task.chapterSource) return Boolean(task.completedAt);
   if (task.completedAt) return true;
   const evidence = evidenceForTask(household, task);
   if (evidence === null || task.moneyLink === null) return false;
