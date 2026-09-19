@@ -47,3 +47,5 @@ button,select{font:inherit}.portal-shell{max-width:1500px;margin:0 auto;padding:
 .map-error span{max-width:520px;line-height:1.5}
 
 .cloud-fix-link{justify-self:center;display:inline-flex;text-decoration:none;border:1px solid var(--ink);background:var(--ink);color:#fff;border-radius:999px;padding:10px 14px;font-weight:850;font-size:.84rem}.map-error b{color:var(--ink)}
+
+.portal-nav-link{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
