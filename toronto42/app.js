@@ -1,5 +1,5 @@
 const K="toronto42-culinary-passport-v1",SK="toronto42-outcomes-v1",CK="toronto42-custom-stops-v1";
-let S=JSON.parse(localStorage.getItem(K)||"{}"),T=JSON.parse(localStorage.getItem(SK)||"{}"),X=JSON.parse(localStorage.getItem(CK)||"[]"),F="all",OF="all",ACTIVE=null;
+let S=JSON.parse(localStorage.getItem(K)||"{}"),T=JSON.parse(localStorage.getItem(SK)||"{}"),X=JSON.parse(localStorage.getItem(CK)||"[]"),F="all",OF="all",HF="all",ACTIVE=null;
 const STATUSES=[
 {id:"chat",label:"Sat down and chatted (no confirmation)"},
 {id:"no-manager",label:"Didn't get to talk to the manager"},
@@ -7,6 +7,13 @@ const STATUSES=[
 {id:"maybe",label:"Maybe"},
 {id:"apply-online",label:"Need to apply online"},
 {id:"job",label:"Got the job"}
+];
+const HIREABILITY_LEVELS=[
+ {id:"A-GAME",label:"A-game"},
+ {id:"STRONG",label:"Strong"},
+ {id:"OPPORTUNISTIC",label:"Opportunistic"},
+ {id:"LOW-PROBABILITY",label:"Low probability"},
+ {id:"SKIP TODAY",label:"Skip today"}
 ];
 const C=document.querySelector("#content"),Q=document.querySelector("#q"),E=document.querySelector("#empty"),
 esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c])),
@@ -42,6 +49,11 @@ function buildOutcomeFilter(){
  const sel=document.createElement("select");sel.id="outcomeFilter";sel.setAttribute("aria-label","Filter by visit outcome");
  sel.innerHTML='<option value="all">Outcome: All</option>'+STATUSES.map(s=>`<option value="${s.id}">${esc(s.label)}</option>`).join("")+'<option value="none">No outcome yet</option>';
  sel.onchange=()=>{OF=sel.value;filter()};document.querySelector("#reset").before(sel)
+}
+function buildHireabilityFilter(){
+ const sel=document.createElement("select");sel.id="hireabilityFilter";sel.setAttribute("aria-label","Filter by hireability level");
+ sel.innerHTML='<option value="all">Hireability: All levels</option>'+HIREABILITY_LEVELS.map(s=>`<option value="${s.id}">${esc(s.label)}</option>`).join("")+'<option value="unrated">Not rated</option>';
+ sel.onchange=()=>{HF=sel.value;filter()};document.querySelector("#reset").before(sel)
 }
 function buildOutcomeModal(){
  const d=document.createElement("div");d.id="outcomeModal";d.className="modal";d.setAttribute("aria-hidden","true");
@@ -88,7 +100,7 @@ function renderCard(original,l){
  const f=(window.FLOW_DATA?.restaurants||[]).find(r=>String(r.id)===String(original.n));
  const x=f?{...original,a:f.address,p:f.price.estimate||'Price not verified',d:f.reason}:original;
  const e=document.createElement("article"),visited=!!S[x.n],outcome=T[x.n]||"",map=x.custom?portalUrl({}):portalUrl({focusStop:x.n});
- e.className=visited?"done":"";e.dataset.n=x.n;e.dataset.s=[x.r,x.a,x.p,x.d,x.s,x.b].join(" ").toLowerCase();
+ e.className=visited?"done":"";e.dataset.n=x.n;e.dataset.hireability=f?.tier||"";e.dataset.s=[x.r,x.a,x.p,x.d,x.s,x.b,f?.tier].join(" ").toLowerCase();
  const badge=outcome?(visited?`<button type="button" class="status-badge has-status" data-edit-status>${esc(statusLabel(outcome))} <span>▾</span></button>`:`<span class="status-badge has-status">${esc(statusLabel(outcome))}</span>`):(visited?`<button type="button" class="status-badge pending" data-edit-status>${esc(statusLabel(outcome))} <span>▾</span></button>`:"");
  const remove=x.custom?'<button type="button" class="remove-stop" data-remove>Remove</button>':"";
  const prepLinks=x.custom?"":'<a class="prep-link flash-link" href="'+esc(intelUrl(x.n,"flashcards"))+'">Study Notes</a><a class="prep-link letter-link" href="'+esc(intelUrl(x.n,"coverletter"))+'">Cover Letter</a>';
@@ -132,7 +144,8 @@ function filter(){
  document.querySelectorAll("article").forEach(e=>{
   const n=e.dataset.n,d=!!S[n],base=F==="all"||(F==="done"&&d)||(F==="open"&&!d),
   outcome=OF==="all"||(OF==="none"&&d&&!T[n])||(T[n]===OF),
-  ok=(!q||e.dataset.s.includes(q))&&base&&outcome;
+  hireability=HF==="all"||(HF==="unrated"&&!e.dataset.hireability)||(e.dataset.hireability===HF),
+  ok=(!q||e.dataset.s.includes(q))&&base&&outcome&&hireability;
   e.classList.toggle("hide",!ok);if(ok)v++
  });
  document.querySelectorAll("section").forEach(s=>s.style.display=s.querySelector("article:not(.hide)")?"":"none");E.style.display=v?"none":"block"
@@ -148,4 +161,4 @@ const dayPlan=document.querySelector("#dayPlan");if(dayPlan)dayPlan.href=locatio
 const nextStepsNav=document.querySelector("#nextStepsNav");if(nextStepsNav)nextStepsNav.href=nextStepsUrl();
 const hireabilityNav=document.querySelector("#hireabilityNav");if(hireabilityNav)hireabilityNav.href=location.hostname==="html-preview.github.io"?"https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Fhireability.html":"hireability.html";
 const nextStepsCount=document.querySelector("#nextStepsCount");if(nextStepsCount)nextStepsCount.textContent=Object.values(T).filter(x=>["chat","no-manager","maybe","apply-online"].includes(x)).length;
-buildOutcomeFilter();buildOutcomeModal();buildAddModal();render();
+buildOutcomeFilter();buildHireabilityFilter();buildOutcomeModal();buildAddModal();render();
