@@ -8,11 +8,13 @@
   function torontoNow(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return{date:p.year+'-'+p.month+'-'+p.day,time:p.hour+':'+p.minute};}
   const scoreHiring={'CONFIRMED ACTIVE':40,'VERY RECENT SIGNAL':24,'POSSIBLE / UNCONFIRMED':16,'GENERAL HIRING / ACCEPTING APPLICATIONS':12,'NO CURRENT HIRING FOUND':5,'STALE / HISTORICAL ONLY':0};
   function rank(r,cluster){const s=r.scores||{};return(scoreHiring[r.hiring.status]||0)+(s.fit||0)+(s.access||0)+(s.career||0)+(r.cluster===cluster?10:0)+(s.confidence||0);}
-  function remaining(records,outcomes,state,date){return records.filter(r=>r.price.status==='PASS'&&!r.closedSaturday&&!r.operatingUncertain&&!outcomes[r.id]&&!((state.deferred||{})[r.id]===date||(state.deferred||{})[r.id]===true));}
+  function eligible(r){return r.approvedFit===true||r.price.status==='PASS';}
+  function remaining(records,outcomes,state,date){return records.filter(r=>eligible(r)&&!r.closedSaturday&&!r.operatingUncertain&&!outcomes[r.id]&&!((state.deferred||{})[r.id]===date||(state.deferred||{})[r.id]===true));}
   function transition(from,to,travel,records,cluster){
     if(String(from)===String(to.id))return{minutes:0,label:'You are already here',verified:false};
     const exact=(travel||[]).find(x=>String(x.from)===String(from)&&String(x.to)===String(to.id));if(exact)return exact;
     const origin=(records||[]).find(r=>String(r.id)===String(from)),same=(origin?origin.cluster:cluster)===to.cluster;
+    if(!same && /Clarkson|Oakville|Bronte|Port Credit|Streetsville|Mississauga/.test((origin?.cluster||cluster||'')+' '+to.cluster))return{minutes:100,label:'Regional transfer: provisional 100-minute allowance, not a verified journey. Check GO and the last mile before leaving.',verified:false};
     return{minutes:same?20:50,label:same?'Allow 20 min within this area; confirm the actual walk in Maps':'Allow 50 min for this district change, including a buffer; check live transit in Maps',verified:false};
   }
   function plan(records,input,travel){
@@ -23,7 +25,7 @@
     if(date!==data.date)return{moves:[{kind:'refresh',title:'Refresh before using this route',reason:'Hours, hiring and visit windows were checked for Saturday, September 19. Select that date to inspect the baseline; recheck evidence for another day.'}],anchors,queue:[],deferred:records,pending:[]};
     if(!Number.isFinite(now))return{moves:[{kind:'refresh',title:'Choose a valid planning time',reason:'Enter the time in Toronto to calculate your next moves.'}],anchors,queue:[],deferred:records,pending:[]};
     const queue=remaining(records,outcomes,state,date).sort((a,b)=>rank(b,input.cluster)-rank(a,input.cluster));
-    const applications=records.filter(r=>r.price.status==='PASS'&&!r.operatingUncertain&&r.hiring.status==='CONFIRMED ACTIVE'&&r.hiring.applicationUrl&&!outcomes[r.id]&&!((state.deferred||{})[r.id]===date||(state.deferred||{})[r.id]===true)).sort((a,b)=>rank(b,input.cluster)-rank(a,input.cluster));
+    const applications=records.filter(r=>eligible(r)&&!r.operatingUncertain&&r.hiring.status==='CONFIRMED ACTIVE'&&r.hiring.applicationUrl&&!outcomes[r.id]&&!((state.deferred||{})[r.id]===date||(state.deferred||{})[r.id]===true)).sort((a,b)=>rank(b,input.cluster)-rank(a,input.cluster));
     const pending=records.filter(r=>outcomes[r.id]==='apply-online'&&!steps[r.id+':apply-online:submit-application']);
     const result=moves=>({moves:moves.slice(0,3),anchors,queue,deferred:records.filter(r=>!queue.includes(r)),pending});
     const departed=allAnchors.find(a=>a.type==='departure'&&a.done&&minutes(a.time)<=now);
@@ -58,8 +60,8 @@
     return result(moves);
   }
   function link(file,params){const q=new URLSearchParams(params||{}).toString();return location.hostname==='html-preview.github.io'?'https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2F'+encodeURIComponent(file)+(q?'&'+q:''):file+(q?'?'+q:'');}
-  function maps(r,origin){return'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(r.name+' '+r.address+(/Toronto/i.test(r.address)?'':' Toronto'))+(origin?'&origin='+encodeURIComponent(origin):'')+'&travelmode=walking';}
+  function maps(r,origin){return'https://www.google.com/maps/dir/?api=1&destination='+encodeURIComponent(r.name+' '+r.address)+(origin?'&origin='+encodeURIComponent(origin):'')+'&travelmode=walking';}
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
-  function badges(r){return'<div class="flow-badges"><strong class="tier '+(r.tier==='A-GAME'?'agame':'')+'">'+esc(r.tier)+'</strong><span>'+esc(r.hiring.status)+'</span><span>Manager access: '+esc(r.access.likelihood)+'</span><span>Door risk: '+esc(r.access.risk)+'</span></div>';}
-  root.PassportFlow={keys,read,minutes,clock,torontoNow,rank,plan,remaining,transition,link,maps,badges};if(typeof module!=='undefined')module.exports=root.PassportFlow;
+  function badges(r){if(r.brief){const d=root.PASSPORT_DISCOVERIES.find(x=>x.id===r.id);return '<div class="flow-badges"><strong class="tier '+(r.tier==='A-GAME'?'agame':'')+'">'+esc(r.tier)+'</strong><span>'+esc(d.statusLabel)+'</span></div>';}return'<div class="flow-badges"><strong class="tier '+(r.tier==='A-GAME'?'agame':'')+'">'+esc(r.tier)+'</strong><span>'+esc(r.hiring.status)+'</span><span>Manager access: '+esc(r.access.likelihood)+'</span><span>Door risk: '+esc(r.access.risk)+'</span></div>';}
+  root.PassportFlow={keys,read,minutes,clock,torontoNow,rank,plan,eligible,remaining,transition,link,maps,badges};if(typeof module!=='undefined')module.exports=root.PassportFlow;
 })(typeof window!=='undefined'?window:globalThis);

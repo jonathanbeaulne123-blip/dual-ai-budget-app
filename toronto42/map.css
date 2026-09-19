@@ -59,3 +59,5 @@ button,select{font:inherit}.portal-shell{max-width:1500px;margin:0 auto;padding:
 
 .hireability-map{background:#f3eef8;color:#5e4b78;border-color:#c9bfd9}
 .hireability-map:hover{border-color:#725b92}
+/* Plan routes (Claude, Sept 19) */
+button.segment-link{font:inherit;text-align:left;cursor:pointer;width:100%}.plan-day.active{border-color:var(--accent);background:#f7ecea}.stop-marker.plan-marker{box-shadow:0 0 0 3px #fff,0 0 0 5px #7a2f2f}

@@ -29,13 +29,14 @@ const contentEl=document.querySelector("#intelContent");
 const pending=document.querySelector("#pending");
 const views=["summary","flashcards","coverletter","walkin","interview","sources"];
 
-function panel(html){contentEl.innerHTML='<section class="panel">'+html+"</section>"}
+function panel(html){contentEl.innerHTML='<section class="panel">'+(data?.auditNote?'<div class="flow-banner"><strong>September 19 hiring correction</strong><p>'+esc(data.auditNote)+'</p><a href="'+esc(preview('day.html',{stop:stopId}))+'">Prepare this application</a></div>':'')+html+"</section>"}
 
 function setView(view){
   if(views.indexOf(view)<0)view="summary";
   document.querySelectorAll("#intelNav button").forEach(function(b){b.classList.toggle("active",b.dataset.view===view)});
   if(!data){pending.hidden=false;contentEl.innerHTML="";return}
   pending.hidden=true;
+  if(data.brief){renderQuickBrief(view);return;}
   if(view==="summary")renderSummary();
   if(view==="flashcards")renderFlashcards();
   if(view==="coverletter")renderLetter();
@@ -44,11 +45,22 @@ function setView(view){
   if(view==="interview")renderInterview();
 }
 
+function renderQuickBrief(view){
+ const r=data.discovery,link=(label,url)=>'<a class="note-source" target="_blank" rel="noopener noreferrer" href="'+esc(url)+'">'+esc(label)+' ↗</a>';
+ const jobs=(r.status!=='closed'&&r.url?link(data.application.urlLabel,r.url):'')+r.extra.map(s=>link(s[0],s[1])).join('');
+ const intro='Hi, I’m Jonathan. My background includes bar leadership, upscale Italian service and private-event coordination. '+(r.status==='active'?'I’m interested in the listed '+r.roles+' opportunity.':'I’d like to ask about suitable future front-of-house opportunities.')+' I would welcome a conversation about how my experience could support your team. Thank you, Jonathan Beaulne';
+ let body='<div class="eyebrow">Quick brief · checked September 19</div><h2>'+esc(r.name)+'</h2>'+PassportFlow.badges(flowRecord);
+ if(view==='sources'){panel(body+'<h3>Source links</h3>'+data.sources.map(s=>link(s[0],s[1])).join('')+'<p>Brief research only. Job status is a dated snapshot; recheck before applying.</p>');return;}
+ if(view==='coverletter'){panel(body+'<h3>Short introduction draft</h3><p>Edit the role and examples to match your actual experience before using.</p><div class="letter">'+esc(intro)+'</div>'+jobs+'<p>'+esc(r.job)+'</p>');return;}
+ if(view==='walkin'||view==='interview'){panel(body+'<h3>A simple conversation</h3><p>'+esc(data.walkIn.opening)+'</p><p>'+esc(r.why)+'</p><p>Bring one real example of bar leadership, service or event coordination. Ask about training, shift allocation, tip-out and actual clock-out time.</p><p>'+esc(r.requirements)+'</p><p>No manager appointment is confirmed. Keep any introduction brief and avoid busy service.</p>'+jobs);return;}
+ panel(body+'<p>'+esc(r.why)+'</p><div class="must"><strong>'+esc(r.statusLabel)+'</strong><p>'+esc(r.job)+'</p>'+(r.roles?'<p><strong>Roles:</strong> '+esc(r.roles)+'</p>':'')+(r.pay?'<p><strong>Advertised pay:</strong> '+esc(r.pay)+'</p>':'')+'<p>'+esc(r.requirements)+'</p>'+jobs+'</div><h3>Getting there</h3><p>'+esc(r.transit)+'</p>'+link('Transit from Clarkson','https://www.google.com/maps/dir/?api=1&origin=Clarkson+GO+Station&destination='+encodeURIComponent(r.name+' '+r.address)+'&travelmode=transit')+'<p><strong>Saturday:</strong> '+esc(r.hours)+'</p><p>Hours are not a manager-access promise. Closing duties can run later than guest service.</p><h3>One useful question</h3><p>What would someone with bar-lead and private-event experience need to demonstrate to progress here?</p>'+link('Restaurant / employer',r.site));
+}
+
 function renderSummary(){
   let must="";
   data.mustKnow.forEach(function(x,i){must+='<div class="must"><strong>★ MUST KNOW '+(i+1)+'</strong><br>'+esc(x)+"</div>"});
   let html='<div class="eyebrow">60-second briefing</div><h2>'+esc(data.name)+'</h2><p>'+esc(data.summary)+"</p>";
-  if(flowRecord)html+='<div class="flow-banner">'+PassportFlow.badges(flowRecord)+'<p>'+esc(flowRecord.reason)+'</p><p><strong>Best window:</strong> '+esc(flowRecord.access.best)+'</p><p><strong>Price floor:</strong> '+esc(flowRecord.price.status)+' · '+esc(flowRecord.price.basis)+'</p><a href="'+esc(preview('day.html'))+'">See the next three moves</a></div>';
+  if(flowRecord)html+='<div class="flow-banner">'+PassportFlow.badges(flowRecord)+'<p>'+esc(flowRecord.reason)+'</p><p><strong>Original Saturday access note:</strong> '+esc(flowRecord.access.best)+'</p><p><strong>Menu / fit evidence:</strong> '+esc(flowRecord.price.status)+' · '+esc(flowRecord.price.basis)+'</p><a href="'+esc(preview('day.html'))+'">Open the current application and visit plan</a></div>';
   if(data.researchGaps?.length)html+='<details class="flow-research-gap"><summary>Known research limits</summary><ul>'+data.researchGaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
   if(data.timing)html+='<div class="must"><strong>Timing:</strong> '+esc(data.timing)+"</div>";
   html+='<div class="must-list">'+must+"</div>";

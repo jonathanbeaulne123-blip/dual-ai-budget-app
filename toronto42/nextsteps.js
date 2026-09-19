@@ -32,7 +32,7 @@ function preview(file,params={}){
   }
   return file+(qs?"?"+qs:"");
 }
-document.querySelector("#backChecklist").href=preview("index.html");
+document.querySelector("#backChecklist").href=preview("index.html");{const t=document.querySelector("#todayLink");if(t)t.href=preview("today.html");}
 document.querySelector("#emptyChecklist").href=preview("index.html");
 document.querySelector("#openPortal").href=preview("map.html");
 document.querySelector("#openHireability").href=preview("hireability.html");
@@ -237,3 +237,12 @@ function updateProgress(){
 document.querySelectorAll(".filter").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter").forEach(x=>x.classList.remove("active"));b.classList.add("active");activeStatus=b.dataset.status;render()});
 render();
 window.addEventListener("storage",()=>location.reload());
+
+/* Shared workshop records are visible here without overwriting legacy visits. */
+(function(){
+ const A=window.PASSPORT_AUDIT,records=window.PassportFlow.read('toronto42-prep-visits-v1',{}).apps||{};
+ const rows=Object.entries(records).filter(([,a])=>a.submitted||['reply','interview','offer','rejected','withdrawn'].includes(a.stage));
+ const box=document.createElement('section');box.className='lead-card';box.style.padding='22px';
+ box.innerHTML='<h2>Application workshop follow-through</h2><p>These are the same records as Prep & Visits. Updating them there keeps this list consistent. Visit-based tasks below remain separate.</p>'+(rows.length?rows.map(([id,a])=>{const r=window.FLOW_DATA.restaurants.find(x=>String(x.id)===id);if(!r)return '';const record={...a,assessmentRequired:id==='N21'};return '<article class="flow-note"><h3>'+esc(r.name)+' · '+esc(A.stageLabel(record))+'</h3><p>'+esc(A.nextAction(record))+'</p><p>Submitted: '+esc(a.submittedDate||'date not recorded')+' · Follow-up: '+esc(a.followUpDate||'not set')+'</p>'+(a.interviewAt?'<p>Interview: '+esc(a.interviewAt.replace('T',' '))+' Toronto</p>':'')+'<a href="'+esc(preview('day.html',{stop:id}))+'#workshop">Update application / response</a></article>';}).join(''):'<p>No submissions or employer responses recorded in the workshop yet.</p>');
+ document.querySelector('#leadList').before(box);
+})();

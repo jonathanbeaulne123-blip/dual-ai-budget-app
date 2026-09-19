@@ -27,9 +27,10 @@ function preview(file,params={}){
   }
   return file+(qs?"?"+qs:"");
 }
-document.querySelector("#backChecklist").href=preview("index.html");
+document.querySelector("#backChecklist").href=preview("index.html");{const t=document.querySelector("#todayLink");if(t)t.href=preview("today.html");}
 document.querySelector("#routePortal").href=preview("map.html");
 document.querySelector("#nextSteps").href=preview("nextsteps.html");
+document.querySelector("#prepVisits").href=preview("day.html");
 
 document.querySelectorAll(".mode-tab").forEach(btn=>btn.onclick=()=>{
   document.querySelectorAll(".mode-tab").forEach(x=>x.classList.toggle("active",x===btn));
@@ -193,3 +194,6 @@ function updateReadiness(){
 }
 updateReadiness();
 window.addEventListener("storage",()=>location.reload());
+// Deep links from the application workshop open the requested practice panel.
+const requestedMode=new URLSearchParams(location.search).get("mode");
+if(["drill","stories"].includes(requestedMode))document.querySelector('.mode-tab[data-panel="'+requestedMode+'"]')?.click();

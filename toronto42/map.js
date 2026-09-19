@@ -79,7 +79,7 @@ function buildFilters(){
  document.querySelectorAll(".filter-chip").forEach(b=>b.onclick=()=>{document.querySelectorAll(".filter-chip").forEach(x=>x.classList.remove("active"));b.classList.add("active");activeFilter=b.dataset.filter;applyFilters()});
  const ds=document.querySelector("#districtFilter");B.forEach((_,i)=>ds.insertAdjacentHTML("beforeend",`<option value="${i}">District ${i+1}</option>`));ds.onchange=()=>{activeDistrict=ds.value;applyFilters()};
  const ss=document.querySelector("#statusFilter");ss.insertAdjacentHTML("beforeend",'<option value="unvisited">Not visited</option><option value="none">Visited — no outcome</option>');STATUSES.forEach(s=>ss.insertAdjacentHTML("beforeend",`<option value="${s.id}">${esc(s.label)}</option>`));ss.onchange=()=>{activeStatus=ss.value;applyFilters()};
- document.querySelector("#fitRoute").onclick=()=>{activeFilter=activeDistrict=activeStatus="all";document.querySelectorAll(".filter-chip").forEach((x,i)=>x.classList.toggle("active",i===0));ds.value=ss.value="all";markers.forEach(m=>m.map=map);routePolylines.flat().forEach(p=>p.setVisible(true));connectorPolylines.forEach(p=>p.setVisible(true));fitFull()}
+ document.querySelector("#fitRoute").onclick=()=>{clearPlan();activeFilter=activeDistrict=activeStatus="all";document.querySelectorAll(".filter-chip").forEach((x,i)=>x.classList.toggle("active",i===0));ds.value=ss.value="all";markers.forEach(m=>m.map=map);routePolylines.flat().forEach(p=>p.setVisible(true));connectorPolylines.forEach(p=>p.setVisible(true));fitFull()}
 }
 function buildProgress(){
  const visited=STOPS.filter(x=>S[x.n]).length,pct=Math.round(visited/STOPS.length*100);
@@ -94,8 +94,7 @@ function buildSegments(){
 function buildNext(){
  const el=document.querySelector("#nextStop"),F=window.PassportFlow, data=window.FLOW_DATA;
  if(!F||!data)return;
- const now=F.torontoNow(),saved=F.read(F.keys.state,{}),p=F.plan(data.restaurants,{state:saved,outcomes:T,steps:F.read(F.keys.steps,{}),date:now.date,time:now.time,cluster:saved.cluster||data.startCluster},data.travel);
- el.innerHTML='<p>The map preserves the original 42 locations. Use the Saturday plan for the recommended order.</p>'+p.moves.map(m=>'<div class="next-card"><strong>'+esc(m.time||'Next')+' · '+esc(m.record?.name||m.title)+'</strong><p>'+esc(m.reason)+'</p>'+(m.record?F.badges(m.record):'')+'</div>').join('')+'<a class="popup-link" href="'+esc(F.link('day.html'))+'">Open the next three moves</a>';
+ el.innerHTML='<div class="next-card"><strong>Prepare first. Visit by neighbourhood.</strong><p>September 19 is for tailored applications, study and interview practice. Later outings are planned by date, opening hours and walking distance from Clarkson rail connections.</p></div><a class="popup-link" href="'+esc(F.link('day.html'))+'">Open Prep & Visits</a><p>The map keeps the original 42 pins and the additional-prospect list. It is a location reference; use the new planner to coordinate a visit block.</p>';
 }
 function buildDistricts(){
  const el=document.querySelector("#districtCards");
@@ -123,6 +122,31 @@ async function drawRoutes(){
  }
  connectorPolylines=joins.map(pair=>new google.maps.Polyline({map,path:pair.map(x=>({lat:x.lat,lng:x.lng})),strokeColor:"#8d8982",strokeOpacity:.35,strokeWeight:3,zIndex:8}));
  const s=document.createElement("div");s.className="google-route-summary";s.innerHTML=`<strong>Google route geometry</strong><span>${routeTotals.loaded}/5 districts loaded${routeTotals.loaded?` · ${fmtDist(routeTotals.distanceMeters)} · ${fmtDur(routeTotals.durationMillis)}`:""}${routeTotals.failed?` · ${routeTotals.failed} unavailable`:""}</span>`;document.querySelector(".overview-card").append(s)
+}
+
+
+/* This week's outings (from prep-data + claude-plan) on the same map. */
+let planMarkers=[],planPolys=[],planActive=null;
+function planSprees(){const P=window.PASSPORT_PREP;if(!P||!window.PLAN_GEO)return[];const st=window.PassportFlow.read(P.key,{});const sv=(st&&st.sprees)||{};return P.sprees.map(b=>{const s=sv[b.id]||{date:b.date,start:b.start,omitted:(b.omitted||[]).slice()};return{b,s,stops:b.stops.filter(x=>!(s.omitted||[]).includes(x.id)&&window.PLAN_GEO.stops[x.id]).map(x=>({...x,...window.PLAN_GEO.stops[x.id],r:window.FLOW_DATA.restaurants.find(r=>String(r.id)===x.id)}))};}).sort((a,b)=>a.s.date.localeCompare(b.s.date));}
+function buildPlanRoutes(){
+ const el=document.querySelector("#planRoutes");if(!el)return;const days=planSprees();if(!days.length){el.innerHTML='<span class="segment-meta">No outings loaded.</span>';return;}
+ el.innerHTML=days.map(({b,s,stops})=>{const d=new Date(s.date+"T12:00:00").toLocaleDateString("en-CA",{weekday:"short",month:"short",day:"numeric"});return `<button type="button" class="segment-link plan-day" data-plan="${esc(b.id)}"><span><span class="segment-name">${esc(d)} · ${esc(b.name)}</span><span class="segment-meta" id="planmeta-${esc(b.id)}">${stops.length} stop${stops.length===1?"":"s"} from ${esc(window.PLAN_GEO.stations[b.station]?.short||b.station)} · arrive ${esc(s.start)}</span></span><span class="segment-arrow">›</span></button>`;}).join("")+`<a class="popup-link" href="${esc(window.PassportFlow.link("route.html"))}">Open the phone route pages</a>`;
+ el.querySelectorAll("[data-plan]").forEach(btn=>btn.onclick=()=>showPlan(btn.dataset.plan));
+}
+function clearPlan(){planMarkers.forEach(m=>m.map=null);planMarkers=[];planPolys.forEach(p=>p.setMap(null));planPolys=[];planActive=null;document.querySelectorAll(".plan-day").forEach(b=>b.classList.remove("active"));}
+async function showPlan(id){
+ if(!map)return;const day=planSprees().find(d=>d.b.id===id);if(!day)return;clearPlan();planActive=id;document.querySelector(`[data-plan="${id}"]`)?.classList.add("active");
+ markers.forEach(m=>m.map=null);routePolylines.flat().forEach(p=>p.setVisible(false));connectorPolylines.forEach(p=>p.setVisible(false));
+ const st=window.PLAN_GEO.stations[day.b.station],pts=[{lat:st.lat,lng:st.lng,label:"GO",title:day.b.station,station:true},...day.stops.map((x,i)=>({...x,label:String(i+1),title:x.r?x.r.name:x.id}))];
+ pts.forEach(p=>{const m=new AdvancedMarkerElement({map,position:{lat:p.lat,lng:p.lng},title:p.title,gmpClickable:true});const d=document.createElement("div");d.className="stop-marker "+(p.station?"visited":"unvisited")+" plan-marker";d.textContent=p.label;m.append(d);m.addEventListener("gmp-click",()=>{const r=p.r;infoWindow.setContent(r?`${window.PassportFlow.badges(r)}<div class="popup-name">${esc(r.name)}</div><div class="popup-address">${esc(r.address)}</div><a class="popup-link" href="${esc(window.PassportFlow.link("route.html",{day:id}))}">Open this route</a>`:`<div class="popup-name">${esc(p.title)}</div>`);infoWindow.open({map,anchor:m});});planMarkers.push(m);});
+ const bb=new google.maps.LatLngBounds();pts.forEach(p=>bb.extend({lat:p.lat,lng:p.lng}));map.fitBounds(bb,64);
+ const meta=document.querySelector(`#planmeta-${id}`);
+ if(pts.length<2){if(meta)meta.textContent="Online-first: no walking legs today.";return;}
+ try{
+  const {routes}=await RouteClass.computeRoutes({origin:{lat:pts[0].lat,lng:pts[0].lng},destination:{lat:pts.at(-1).lat,lng:pts.at(-1).lng},intermediates:pts.slice(1,-1).map(x=>({location:{lat:x.lat,lng:x.lng}})),travelMode:"WALKING",polylineQuality:"HIGH_QUALITY",fields:["path","distanceMeters","durationMillis"]});
+  if(!routes?.length)throw Error("No route");const r=routes[0];const polys=r.createPolylines({polylineOptions:{strokeColor:"#7a2f2f",strokeOpacity:.95,strokeWeight:5,zIndex:40}});polys.forEach(p=>p.setMap(map));planPolys=polys;
+  if(meta)meta.textContent=`${day.stops.length} stop${day.stops.length===1?"":"s"} · Google walking ${fmtDist(r.distanceMeters||0)} · ${fmtDur(r.durationMillis||0)} (station → last stop)`;
+ }catch(e){console.error(e);if(meta)meta.textContent="Google walking route unavailable — use the phone route page links.";}
 }
 
 function applyInitialFocus(){
@@ -154,11 +178,11 @@ window.initGooglePortal=async()=>{
   map=new Map(document.querySelector("#map"),{center:{lat:43.657,lng:-79.407},zoom:13,mapId:"DEMO_MAP_ID",mapTypeControl:false,streetViewControl:false,fullscreenControl:true,gestureHandling:"greedy"});
   infoWindow=new google.maps.InfoWindow();
   markers=STOPS.map(x=>{const m=new AdvancedMarkerElement({map,position:{lat:x.lat,lng:x.lng},title:`${x.n}. ${x.r}`,gmpClickable:true});m.append(markerEl(x));m.stop=x;m.addEventListener("gmp-click",()=>{infoWindow.setContent(popup(x));infoWindow.open({map,anchor:m})});return m});
-  fitFull();await drawRoutes();applyInitialFocus()
+  fitFull();await drawRoutes();applyInitialFocus();const pr=new URLSearchParams(location.search).get('planRoute');if(pr)showPlan(pr)
  }catch(e){console.error(e);showError(e?.message||"Unknown Google Maps error")}
 };
 function loadGoogle(){
  const key=window.TORONTO42_GOOGLE_MAPS_API_KEY;if(!key){showError("google-config.js does not contain the expected browser key variable.");return}
  const s=document.createElement("script");s.async=true;s.defer=true;s.src="https://maps.googleapis.com/maps/api/js?key="+encodeURIComponent(key)+"&v=weekly&loading=async&callback=initGooglePortal";s.onerror=()=>showError("The Google Maps JavaScript API script could not be loaded.");document.head.append(s)
 }
-buildFilters();buildProgress();buildSegments();buildNext();buildDistricts();buildUnexpected();loadGoogle();window.addEventListener("storage",()=>location.reload());
+buildFilters();buildProgress();buildSegments();buildPlanRoutes();buildNext();buildDistricts();buildUnexpected();const todayMap=document.querySelector('#todayMap');if(todayMap)todayMap.href=previewUrl('today.html');loadGoogle();window.addEventListener("storage",()=>location.reload());
