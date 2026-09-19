@@ -7299,7 +7299,7 @@ export function App() {
               return view === "household" ? (
                 <HouseholdBoardMedia household={household} memberId={actorId}>{(boardMedia) => (
                 <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} onOpenFund={() => goTab("ledger")}
-                  houseSurface={activeHouseRoute.room==="kitchen-table" ? activeHouseRoute.level==="below" ? "studio" : activeHouseRoute.level==="middle" ? "work" : "journey" : undefined}
+                  houseSurface={HEARTHSIDE_FLAGS.presentation && activeHouseRoute.room==="kitchen-table" ? activeHouseRoute.level==="below" ? "studio" : activeHouseRoute.level==="middle" ? "work" : "journey" : undefined}
                   houseWorkCentre={<section className="kitchen-work-centre"><p className="kicker">Kitchen Table</p><h2>Work centre</h2><p>Bring a question to Hercules, or continue the shared Sitdown. The agreement stays downstairs in the Plan Studio.</p><div className="kitchen-work-centre__actions"><button type="button" onClick={() => openLegacyHercules()}>Open Hercules conversation</button><button type="button" onClick={() => goTab("together", "practical")}>Open our shared Sitdown</button></div><p className="muted" role="status">{workspaceEnabled ? "The expanded workspace is available when you choose to open it." : "The expanded workspace is not activated. Opening a conversation here does not start a provider run."}</p></section>}
                   boardMedia={boardMedia}
                   onOpenTimeMachine={monthKey => { setTimeMachineRequest({ monthKey }); goTab("timeMachine"); }}

@@ -173,7 +173,7 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, proofWorld }: {
+export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld }: {
   household: Household;
   memberId: string;
   today: DateKey;

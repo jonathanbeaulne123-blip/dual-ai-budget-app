@@ -36,6 +36,7 @@ describe("the unified web house address", () => {
     const object = {version:1 as const,householdId:"HH-one",room:"theatre" as const,mode:"remember" as const,object:{kind:"memory" as const,id:"MEM-1"},returnContext:{path:returnPath,focusId:"hearthside-title"}};
     expect(parseHearthsideRoute(hearthsidePath(object), "HH-one")?.returnContext?.path).toBe(returnPath);
     expect(readHearthsideToolReturn({scope:"scope",path:returnPath,focusId:"hearthside-title",label:"Memory",tab:"planner"}, "scope", "HH-one")?.path).toBe(returnPath);
+    for (const path of ["https://outside.example/house/together/middle?household=HH-one", "//outside.example/house/together/middle?household=HH-one"]) expect(readHearthsideToolReturn({scope:"scope",path,focusId:"hearthside-title",label:"Memory",tab:"planner"},"scope","HH-one")).toBeNull();
     expect(readHearthsideToolReturn({scope:"scope",path:"/house/home/middle?household=HH-one",focusId:"hearthside-title",label:"Memory",tab:"planner"}, "scope", "HH-one")).toBeNull();
   });
 
