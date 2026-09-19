@@ -1,11 +1,16 @@
 import {describe,it,expect,beforeAll,beforeEach,afterAll} from 'vitest';
 import {createServer,type ViteDevServer} from 'vite';
 import {chromium,type Browser,type Page} from '@playwright/test';
-import {mkdir} from 'node:fs/promises';
+import {mkdir,writeFile} from 'node:fs/promises';
 import type {} from './fixtures/hearthsideWorkspaceProof.tsx';
 describe('selected intention in the actual compact/full Workspace',()=>{
  let server:ViteDevServer,browser:Browser,page:Page,address:string;const errors:string[]=[];
- beforeAll(async()=>{server=await createServer({configFile:false,root:process.cwd(),cacheDir:'node_modules/.hearthside-workspace-proof',esbuild:{jsx:'automatic'},logLevel:'error',server:{host:'127.0.0.1',port:0},plugins:[{name:'workspace-proof',configureServer(vite){vite.middlewares.use('/__workspace_proof',(_req,res)=>{res.setHeader('Content-Type','text/html');res.end('<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Synthetic worktable proof</title></head><body><div id="root"></div><script type="module" src="/test/fixtures/hearthsideWorkspaceProof.tsx"></script></body></html>');});}}]});await server.listen();address=`http://127.0.0.1:${(server.httpServer!.address()as{port:number}).port}/__workspace_proof`;browser=await chromium.launch({channel:'chrome',headless:true});page=await browser.newPage({viewport:{width:1440,height:1000}});page.setDefaultTimeout(3000);page.on('pageerror',error=>errors.push(error.message));await mkdir('/tmp/hearthside-workspace-proof',{recursive:true});},30000);
+ beforeAll(async()=>{const startedAt=performance.now();server=await createServer({configFile:false,root:process.cwd(),cacheDir:'node_modules/.hearthside-workspace-proof',optimizeDeps:{entries:['test/fixtures/hearthsideWorkspaceProof.tsx']},esbuild:{jsx:'automatic'},logLevel:'error',server:{host:'127.0.0.1',port:0},plugins:[{name:'workspace-proof',configureServer(vite){vite.middlewares.use('/__workspace_proof',(_req,res)=>{res.setHeader('Content-Type','text/html');res.end('<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>Synthetic worktable proof</title></head><body><div id="root"></div><script type="module" src="/test/fixtures/hearthsideWorkspaceProof.tsx"></script></body></html>');});}}]});await server.listen();address=`http://127.0.0.1:${(server.httpServer!.address()as{port:number}).port}/__workspace_proof`;browser=await chromium.launch({channel:'chrome',headless:true});page=await browser.newPage({viewport:{width:1440,height:1000}});page.on('pageerror',error=>errors.push(error.message));await mkdir('/tmp/hearthside-workspace-proof',{recursive:true});
+ // Bootstrap the actual middleware entry within the existing 30s setup bound.
+ // Keep the 3s interaction/reload checks after the module graph is ready.
+ await page.goto(address);await page.getByRole('heading',{name:'An evening at home',exact:true}).waitFor();
+ await writeFile('/tmp/hearthside-workspace-proof/startup.json',JSON.stringify({startupMs:Math.round(performance.now()-startedAt),entry:'hearthsideWorkspaceProof.tsx',errors},null,2));
+ page.setDefaultTimeout(3000);},30000);
  beforeEach(async()=>{errors.length=0;await page.goto(address);await page.evaluate(()=>{sessionStorage.clear();localStorage.clear();});await page.reload();await page.getByRole('heading',{name:'An evening at home',exact:true}).waitFor();});
  afterAll(async()=>{await browser?.close();await server?.close();});
  it('keeps authored free writing through compact/full/hidden and scope switches without model or money calls',async()=>{
