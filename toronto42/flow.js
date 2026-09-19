@@ -6,7 +6,7 @@
   function minutes(t){const m=/^(\d{2}):(\d{2})$/.exec(String(t));return m&&+m[1]<24&&+m[2]<60?+m[1]*60+ +m[2]:NaN;}
   function clock(n){n=Math.max(0,Math.min(1439,Math.round(n)));return String(Math.floor(n/60)).padStart(2,'0')+':'+String(n%60).padStart(2,'0');}
   function torontoNow(){const p=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date()).map(x=>[x.type,x.value]));return{date:p.year+'-'+p.month+'-'+p.day,time:p.hour+':'+p.minute};}
-  const scoreHiring={'CONFIRMED ACTIVE':40,'VERY RECENT SIGNAL':24,'GENERAL HIRING / ACCEPTING APPLICATIONS':12,'NO CURRENT HIRING FOUND':5,'STALE / HISTORICAL ONLY':0};
+  const scoreHiring={'CONFIRMED ACTIVE':40,'VERY RECENT SIGNAL':24,'POSSIBLE / UNCONFIRMED':16,'GENERAL HIRING / ACCEPTING APPLICATIONS':12,'NO CURRENT HIRING FOUND':5,'STALE / HISTORICAL ONLY':0};
   function rank(r,cluster){const s=r.scores||{};return(scoreHiring[r.hiring.status]||0)+(s.fit||0)+(s.access||0)+(s.career||0)+(r.cluster===cluster?10:0)+(s.confidence||0);}
   function remaining(records,outcomes,state,date){return records.filter(r=>r.price.status==='PASS'&&!r.closedSaturday&&!r.operatingUncertain&&!outcomes[r.id]&&!((state.deferred||{})[r.id]===date||(state.deferred||{})[r.id]===true));}
   function transition(from,to,travel,records,cluster){

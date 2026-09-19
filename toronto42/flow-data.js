@@ -35,8 +35,8 @@ window.FLOW_DATA = {
       "name": "Cano Restaurant",
       "address": "1108 St Clair Ave W, Toronto, ON M6E 1A7",
       "website": "https://canorestaurant.com/",
-      "ownership": "Independent; Daniel van Welie/Adam Pereira names require same-day confirmation for current floor leadership.",
-      "operating": "Open; official site checked 2026-09-19.",
+      "ownership": "Daniel van Welie is a current publicly supported Cano owner/operator. Adam Pereira is documented as chef-founder; the current daily kitchen title remains unverified.",
+      "operating": "Mon–Thu 17:00–21:30; Fri 17:00–23:00; Sat 12:00–23:00; Sun 12:00–21:30.",
       "price": {
         "status": "PASS",
         "estimate": "C$64 food before tax/tip",
@@ -50,21 +50,21 @@ window.FLOW_DATA = {
         ]
       },
       "hiring": {
-        "status": "POSSIBLE / UNCONFIRMED",
+        "status": "NO CURRENT HIRING FOUND",
         "roles": [],
-        "careersUrl": "https://ca.indeed.com/cmp/Cano-Restaurant/locations/ON/Toronto",
+        "careersUrl": "",
         "applicationUrl": "",
-        "requirements": "No exact current FOH role verified. Previous indexed requirements are historical only.",
+        "requirements": "No exact current Cano FOH role was verified. The current Indeed surface is company information, not an application listing.",
         "checkedAt": "2026-09-19",
-        "caveat": "Current Indeed surface is company information, not a live exact Server/Bartender application.",
+        "caveat": "Use cano@canorestaurant.com or call only to request the restaurant’s preferred future-interest route; neither establishes a vacancy.",
         "sources": [
           [
-            "Indeed company jobs",
-            "https://ca.indeed.com/cmp/Cano-Restaurant/locations/ON/Toronto"
+            "Official Cano contact",
+            "https://canorestaurant.com/"
           ],
           [
-            "Official contact",
-            "https://canorestaurant.com/"
+            "Indeed Cano company page — not an exact active role",
+            "https://ca.indeed.com/cmp/Cano-Restaurant/locations/ON/Toronto"
           ]
         ]
       },
@@ -81,15 +81,15 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: Saturday 14:30–15:30, after lunch start and before dinner prep.",
-        "backup": "INFERENCE: 12:00–12:20 only if the room is quiet; ask to return later.",
+        "best": "INFERENCE — Optional 14:30–15:30 polite host check during public Saturday service; do not expect manager access or a hiring conversation.",
+        "backup": "If no manager is available, ask once for the correct future-interest route or an agreed return time; use the general inbox only if the team directs you there.",
         "avoid": "17:00–21:30 dinner service.",
-        "likelihood": "MEDIUM",
+        "likelihood": "LOW",
         "risk": "MEDIUM",
-        "why": "Long Saturday operating day and specific recent FOH signal, but ownership/floor leadership may be busy.",
-        "confidence": "INFERENCE based on official hours, not a published hiring window.",
+        "why": "Public all-day Saturday service permits a brief host check, but no verified current FOH role, recruiter or manager-access window exists.",
+        "confidence": "Optional public-service timing, not a published hiring window or manager appointment.",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Based on published service hours; live crowd level and manager availability were not available."
       },
       "manager": {
         "name": "Daniel van Welie",
@@ -114,7 +114,7 @@ window.FLOW_DATA = {
           ]
         ]
       },
-      "fit": "A-GAME: direct Bar Lead + Server + Private Event Coordinator overlap; recent Server/Bartender signal.",
+      "fit": "STRONG future-interest fit: Bar Lead, Server and private-event experience connects to Cano’s food, beverage and event operation; no live role is verified.",
       "cluster": "St Clair West",
       "sources": [
         {
@@ -134,7 +134,7 @@ window.FLOW_DATA = {
       "operatingUncertain": false,
       "scores": {
         "fit": 17,
-        "access": 9,
+        "access": 3,
         "career": 12,
         "confidence": 4
       },
@@ -165,14 +165,14 @@ window.FLOW_DATA = {
         ]
       },
       "materials": "Resume; this restaurant’s cover letter; accurate availability; one relevant Capra’s example.",
-      "failureRisk": "Do not assume Daniel or Jay is on the floor, call a third-party job signal active, or interrupt active Saturday service for a hiring discussion.",
+      "failureRisk": "Do not assume Daniel or Jay is on the floor, call a third-party company page a live job signal, turn a host check into a hiring discussion, or interrupt active Saturday service.",
       "onSiteMinutes": 10,
       "windows": [
         {
-          "start": "14:15",
+          "start": "14:30",
           "end": "15:30",
           "kind": "walkin",
-          "why": "Long Saturday operating day and specific recent FOH signal, but ownership/floor leadership may be busy."
+          "why": "INFERENCE — Optional, brief host routing request during public Saturday service; no manager availability, vacancy or application route is implied."
         }
       ],
       "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
@@ -199,14 +199,18 @@ window.FLOW_DATA = {
         "status": "STALE / HISTORICAL ONLY",
         "roles": [],
         "careersUrl": "",
-        "applicationUrl": "https://www.86network.com/employers/fk-restaurant-toronto/jobs",
-        "requirements": "Mandatory four years in fine dining, experience in a top-tier established Toronto dining room, strong wine/cuisine knowledge, and serving plus bartending. Jonathan’s qualifying tenure has not been established.",
+        "applicationUrl": "",
+        "requirements": "The former Server post is historical calibration only: it does not establish current requirements or an application route.",
         "checkedAt": "2026-09-19",
-        "caveat": "Root live-browser check September 19: exact Server posting says expired and no longer accepting applications. Former requirements were Friday/Saturday evenings plus a flexible weekday. Do not treat this as a current FOH vacancy.",
+        "caveat": "Root live-browser check September 19 found the exact Server post expired and no longer accepting applications. Use the reservation line only to request a future-interest route.",
         "sources": [
           [
-            "Official site",
+            "Official FK site and reservation route",
             "https://www.fkrestauranttoronto.com/"
+          ],
+          [
+            "Former 86 network Server page — closed",
+            "https://www.86network.com/job_postings/server-d8kihq"
           ]
         ]
       },
@@ -227,13 +231,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: call after 13:30 first; if invited, target 15:00–16:00.",
-        "backup": "Ask the reservation line for Shawn/the hiring decision-maker and a suitable return time.",
+        "best": "Call after 13:30 to ask whether future FOH introductions are accepted; visit only at a return time the team gives.",
+        "backup": "Use the reservation line only to request the preferred future-interest route or a suitable return time.",
         "avoid": "Published tasting seating at 18:15 and dinner service.",
-        "likelihood": "MEDIUM",
+        "likelihood": "LOW",
         "risk": "MEDIUM",
-        "why": "Owner-operated, intimate service-oriented room; access is plausible only with a considerate call.",
-        "confidence": "INFERENCE; exact Saturday hours must be confirmed.",
+        "why": "No verified current FOH vacancy, recruiter or Saturday manager-access window.",
+        "confidence": "The published reservation-line start is not a hiring window; no unannounced dinner visit.",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -272,7 +276,7 @@ window.FLOW_DATA = {
       "operatingUncertain": false,
       "scores": {
         "fit": 8,
-        "access": 9,
+        "access": 3,
         "career": 14,
         "confidence": 7
       },
@@ -295,7 +299,7 @@ window.FLOW_DATA = {
         ]
       },
       "materials": "Resume; this restaurant’s cover letter; accurate availability; one relevant Capra’s example.",
-      "failureRisk": "Do not call the former Server post active, presume Shawn is available, claim a wine credential, qualifications, availability or an invitation, or walk in during dinner service.",
+      "failureRisk": "Do not call the former Server post active, presume Shawn is available or recruits, claim qualifications or availability not established, or walk in during dinner service.",
       "onSiteMinutes": 10,
       "windows": [],
       "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
@@ -303,10 +307,10 @@ window.FLOW_DATA = {
     {
       "id": 3,
       "name": "Osteria Giulia",
-      "address": "134 Avenue Rd, Toronto, ON M5R 2H6",
+      "address": "134 Avenue Road, Toronto, ON M5R 2H6",
       "website": "https://osteriagiulia.ca/",
-      "ownership": "Rob Rossi-led sister operation with Giulietta; current FOH leader not verified in this sweep.",
-      "operating": "Open; official site checked.",
+      "ownership": "Rob Rossi and David Minicucci are the publicly documented chef-restaurateur partnership behind Osteria Giulia and sister restaurant Giulietta; SAMMARCO is a later shared venture.",
+      "operating": "Official site: open seven nights, 17:00–22:00.",
       "price": {
         "status": "PASS",
         "estimate": "C$68 food before tax/tip",
@@ -319,21 +323,21 @@ window.FLOW_DATA = {
         ]
       },
       "hiring": {
-        "status": "POSSIBLE / UNCONFIRMED",
+        "status": "NO CURRENT HIRING FOUND",
         "roles": [],
-        "careersUrl": "https://ca.indeed.com/q-casino-restaurant-waitress-l-toronto%2C-on-jobs.html",
-        "applicationUrl": "https://osteriagiulia.ca/",
-        "requirements": "At least five years in a top restaurant environment; elevated wine and spirits knowledge; minimum five shifts/week.",
+        "careersUrl": "",
+        "applicationUrl": "",
+        "requirements": "No exact current Osteria Giulia FOH role or application surface was verified.",
         "checkedAt": "2026-09-19",
-        "caveat": "Third-party Server search result was not verified as an exact active application.",
+        "caveat": "The official general contact is a routing enquiry, not an application endpoint. A third-party Server search result did not establish an exact active role.",
         "sources": [
           [
-            "Indeed exact listing search",
-            "https://ca.indeed.com/q-casino-restaurant-waitress-l-toronto%2C-on-jobs.html"
+            "Official Osteria Giulia contact and hours",
+            "https://osteriagiulia.ca/"
           ],
           [
-            "Official contact/hours",
-            "https://osteriagiulia.ca/"
+            "Third-party Server search — not an exact active application",
+            "https://ca.indeed.com/q-casino-restaurant-waitress-l-toronto%2C-on-jobs.html"
           ]
         ]
       },
@@ -350,13 +354,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: call around 14:30–15:00; only visit at a return time they give.",
-        "backup": "15:30–16:00 external/phone contact, not a long walk-in.",
+        "best": "Call around 14:30 and ask whether a brief introduction is appropriate; visit only at the time the team gives.",
+        "backup": "Use the official general contact to ask whether a suitable future FOH opening or route exists; do not treat it as an application.",
         "avoid": "17:00–22:00 service and likely pre-service preparation.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Exact server signal makes it high priority, but dinner-only Michelin service gives a narrow respectful access window.",
-        "confidence": "INFERENCE.",
+        "why": "Dinner-only Michelin service, no verified current FOH role and no published manager-access window.",
+        "confidence": "INFERENCE from dinner hours; a phone call does not create an access appointment.",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -379,7 +383,7 @@ window.FLOW_DATA = {
           ]
         ]
       },
-      "fit": "A-GAME: exact experienced fine-dining server signal; prepare wine/service proof and leadership trajectory.",
+      "fit": "STRONG future-interest fit for polished Italian food, beverage study and service development; no live exact role is verified.",
       "cluster": "Yorkville",
       "sources": [
         {
@@ -399,10 +403,10 @@ window.FLOW_DATA = {
         "career": 14,
         "confidence": 7
       },
-      "reason": "Strong product and learning value; uncertain live hiring and no agreed Saturday manager access. Contact first.",
+      "reason": "Strong product and learning value, but no verified current hiring or agreed Saturday manager access. Contact first.",
       "tier": "LOW-PROBABILITY",
       "askFor": "the current FOH hiring manager or service manager",
-      "prep": "Current official chef page names Rob Rossi Executive Chef; Theo Clench was not found in inspected primary sources. Saturday dinner is 17:00–22:00; 134 Avenue Road has no published manager-access window. Current price basket: Focaccia di Recco $29 plus lorighittas al mare $39 is $68 before beverage.",
+      "prep": "Current official chef page names Rob Rossi Executive Chef. Saturday dinner is 17:00–22:00; 134 Avenue Road has no published manager-access window. Current food basket: focaccia di Recco $29 plus lorighittas al mare $39 is $68 before beverage.",
       "chef": {
         "name": "Rob Rossi",
         "confidence": "VERIFIED CURRENT",
@@ -422,7 +426,7 @@ window.FLOW_DATA = {
         ]
       },
       "materials": "Resume; this restaurant’s cover letter; accurate availability; one relevant Capra’s example.",
-      "failureRisk": "Do not call it generic Italian, claim Marco Thompson is currently GM, or attempt a long introduction during pre-service.",
+      "failureRisk": "Do not call it generic Italian, claim Marco Thompson is currently GM, call a third-party search a live Server role, or attempt a long introduction during pre-service.",
       "onSiteMinutes": 10,
       "windows": [],
       "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
@@ -432,8 +436,8 @@ window.FLOW_DATA = {
       "name": "Piano Piano",
       "address": "88 Harbord St, Toronto, ON M5S 1G5",
       "website": "https://www.pianopianotherestaurant.com/",
-      "ownership": "Piano Piano group; owner/operator Brendan Piunno is named in a current group GM posting.",
-      "operating": "Open seven days; current location hours corroborated by OpenTable/menu sources.",
+      "ownership": "Piano Piano is a restaurant group founded around chef Victor Barry and Brendan’s collaboration. A current Harbord general manager or other FOH leader is not publicly identified in the reviewed sources.",
+      "operating": "Current Harbord profile lists lunch daily 11:30–16:00, Happy Hour daily 15:00–17:00, and dinner Sunday–Thursday 17:00–22:00 and Friday–Saturday 17:00–23:00.",
       "price": {
         "status": "PASS",
         "estimate": "C$63 food before tax/tip",
@@ -446,21 +450,21 @@ window.FLOW_DATA = {
         ]
       },
       "hiring": {
-        "status": "POSSIBLE / UNCONFIRMED",
+        "status": "NO CURRENT HIRING FOUND",
         "roles": [],
         "careersUrl": "https://www.pianopianotherestaurant.com/workwithus",
         "applicationUrl": "",
-        "requirements": "No exact Harbord role or working online form verified.",
+        "requirements": "The official Work With Us page shows a recruiting heading but no readable role, location-specific opening, form or employment email.",
         "checkedAt": "2026-09-19",
-        "caveat": "Group signals do not establish a Harbord vacancy. Phone to obtain the correct route.",
+        "caveat": "A group-level recruiting page is a route to ask about work, not proof that Harbord is accepting applications or has a FOH vacancy.",
         "sources": [
           [
-            "Indeed Toronto company jobs",
-            "https://emplois.ca.indeed.com/cmp/Piano-Piano-the-Restaurant-1/locations/ON/Toronto"
+            "Official Piano Piano Work With Us",
+            "https://www.pianopianotherestaurant.com/workwithus"
           ],
           [
-            "Official/related location reference",
-            "https://www.cafecancan.com/"
+            "Official Piano Piano story and locations",
+            "https://www.pianopianotherestaurant.com/"
           ]
         ]
       },
@@ -481,13 +485,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: 15:00–15:25, at Happy Hour opening, only if host confirms manager is free.",
-        "backup": "14:30 phone call asking whether the Harbord site is hiring FOH and for manager availability.",
+        "best": "Call Harbord before travelling and ask whether the location accepts a future-FOH introduction; visit only at a return time supplied.",
+        "backup": "Use the official Work With Us page as a routing reference, then phone the Harbord location for the actual application or contact route.",
         "avoid": "17:00 onward dinner and 15:30–17:00 if Happy Hour is building.",
-        "likelihood": "MEDIUM",
+        "likelihood": "LOW",
         "risk": "MEDIUM",
-        "why": "Strong group hiring evidence and management-track relevance, but role location is unresolved.",
-        "confidence": "INFERENCE.",
+        "why": "No exact Harbord vacancy, working online application, named FOH hiring lead or published manager-access window.",
+        "confidence": "Happy Hour is public service time, not a manager-access appointment.",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -514,7 +518,7 @@ window.FLOW_DATA = {
           ]
         ]
       },
-      "fit": "STRONG: active group Server/Bartender signal plus management-track path; qualify location before investing time.",
+      "fit": "STRONG future-interest fit for shared service, bar work and a management trajectory; qualify any Harbord role before investing time.",
       "cluster": "College / Bloor West",
       "sources": [
         {
@@ -538,11 +542,11 @@ window.FLOW_DATA = {
       "operatingUncertain": false,
       "scores": {
         "fit": 17,
-        "access": 9,
+        "access": 3,
         "career": 12,
         "confidence": 4
       },
-      "reason": "Relevant bar, shared-service and event fit; contact first because no exact Harbord vacancy or manager window is verified.",
+      "reason": "Relevant bar, shared-service and event fit; contact first because no exact Harbord vacancy, application form or manager window is verified.",
       "tier": "OPPORTUNISTIC",
       "askFor": "The Harbord FOH manager or general manager, only if the host says an introduction is appropriate",
       "prep": "Management: no current Harbord FOH manager was publicly verified; use the official Work With Us route or ask the location for the appropriate hiring lead. Chef: Victor Barry is the chef/concept principal named by the official story and current Harbord profile; daily Harbord presence is not established. Food and beverage: current dinner includes C$28 Godmother, C$29 mushroom cavatelli and C$75-per-person sharing. Happy Hour has beer, wine, cocktails and zero-proof choices, but no current producer list was recovered.",
@@ -565,7 +569,7 @@ window.FLOW_DATA = {
         ]
       },
       "materials": "Resume; this restaurant’s cover letter; accurate availability; one relevant Capra’s example.",
-      "failureRisk": "Do not claim a job is open, call Victor Barry the day-to-day Harbord chef, claim familiarity with an unavailable wine list, or interrupt a host during an active rush.",
+      "failureRisk": "Do not claim a Harbord job is open, call Victor Barry the day-to-day Harbord chef, treat Happy Hour as access permission, or interrupt an active rush.",
       "onSiteMinutes": 10,
       "windows": [],
       "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
@@ -616,13 +620,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: call 14:30–15:00, request a 16:00–16:20 introduction only if welcome.",
-        "backup": "Leave a concise resume/email via info@actinoliterestaurant.com.",
+        "best": "Call at 14:30 and use only a return time the host offers.",
+        "backup": "Use info@actinoliterestaurant.com once to request the correct future-FOH route; it is a general contact, not a vacancy.",
         "avoid": "16:30 onward prep and 17:30–22:30 service.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Small four-night operation with no live hiring signal; quality is high but access is fragile.",
-        "confidence": "INFERENCE.",
+        "why": "Small four-night operation with no live hiring signal or public Saturday manager-access window.",
+        "confidence": "INFERENCE from dinner hours; do not infer that a pre-service gap is available.",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -740,13 +744,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: 15:15–15:40, after brunch and before dinner prep.",
-        "backup": "Call at 14:30 for permission/time.",
+        "best": "Call at 14:30; request a short 15:15–15:40 introduction only if the team invites it.",
+        "backup": "Call again at a manager-provided time; no official application email or active role was verified.",
         "avoid": "11:00–15:00 brunch and after 16:30 dinner prep/service.",
-        "likelihood": "MEDIUM",
+        "likelihood": "LOW",
         "risk": "MEDIUM",
-        "why": "Visible service gap, though no active hiring evidence.",
-        "confidence": "INFERENCE.",
+        "why": "There is no active hiring evidence or published manager-access window; the interval is an invitation-only operational inference.",
+        "confidence": "INFERENCE from published brunch and dinner hours.",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -781,7 +785,7 @@ window.FLOW_DATA = {
       "operatingUncertain": false,
       "scores": {
         "fit": 17,
-        "access": 9,
+        "access": 3,
         "career": 12,
         "confidence": 4
       },
@@ -865,13 +869,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: 15:45–16:15, preferably after a phone/email heads-up.",
-        "backup": "Send tailored resume/cover letter to official inbox and ask for an introduction window.",
+        "best": "Email the official talent invitation first; discuss an in-person introduction only if the response invites one.",
+        "backup": "Use the published talent email once with a tailored resume and cover letter, then follow the route and timing the team provides.",
         "avoid": "16:30 onward prep and dinner.",
         "likelihood": "MEDIUM",
         "risk": "MEDIUM",
-        "why": "Official talent invitation and events program give credible entry, but no named FOH vacancy.",
-        "confidence": "INFERENCE.",
+        "why": "The official talent invitation is a valid general route, but no named FOH vacancy or Saturday manager-access window is published.",
+        "confidence": "Saturday is email-first; do not infer an on-site window from dinner hours.",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -936,7 +940,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not presume Anna Chen is free, a role is open, an email has been reviewed, or an invitation exists.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hi, I’m Jonathan Beaulne. I’m interested in Alma’s published invitation for talented people, but I do not want to interrupt service. My experience includes Bar Lead, Server and private-event work. Is there a better time or route for me to follow?"
     },
     {
       "id": 8,
@@ -1064,10 +1069,10 @@ window.FLOW_DATA = {
     {
       "id": 9,
       "name": "Ten Restaurant",
-      "address": "1132 College St, Toronto, ON M6H 1B6",
+      "address": "1132 College Street, Toronto, ON M6H 1B6",
       "website": "https://www.10restaurant.ca/",
-      "ownership": "Chef Julian Bentivegna-led small Chef’s Counter; exact ownership/FOH manager not verified.",
-      "operating": "Open Wednesday–Saturday; Saturday open.",
+      "ownership": "Julian Bentivegna is identified by Ten as Chef/Owner. The official staff page identifies Rebecca Pettigrew as Beverage Director.",
+      "operating": "Wednesday through Saturday, dinner 17:00–22:00. The published offer is a $155 tasting menu plus a 20% service charge, shared between FOH and BOH.",
       "price": {
         "status": "PASS",
         "estimate": "C$155 food, plus 20% service and tax",
@@ -1080,21 +1085,21 @@ window.FLOW_DATA = {
         ]
       },
       "hiring": {
-        "status": "POSSIBLE / UNCONFIRMED",
+        "status": "NO CURRENT HIRING FOUND",
         "roles": [],
-        "careersUrl": "https://ca.indeed.com/career/sommelier/salaries/Toronto--ON",
+        "careersUrl": "",
         "applicationUrl": "",
-        "requirements": "Search result showed Ten Restaurant Sommelier, full-time, C$25–30/hr, two weeks ago.",
+        "requirements": "No exact current Ten FOH or beverage role was verified.",
         "checkedAt": "2026-09-19",
-        "caveat": "Earlier third-party sommelier signal was not verified as an active exact application.",
+        "caveat": "A third-party Sommelier salary/search page is not a job posting or application surface. Use official general contact only to request the correct route.",
         "sources": [
           [
-            "Indeed result",
-            "https://ca.indeed.com/career/sommelier/salaries/Toronto--ON"
+            "Ten official contact",
+            "https://www.10restaurant.ca/contact"
           ],
           [
-            "Official site",
-            "https://www.10restaurant.ca/"
+            "Third-party Sommelier salary/search — not a job surface",
+            "https://ca.indeed.com/career/sommelier/salaries/Toronto--ON"
           ]
         ]
       },
@@ -1111,13 +1116,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: call at 14:30; if invited, 15:30–16:00.",
-        "backup": "Use official contact info@10 restaurant.ca / 416-538-3810 to request hiring-contact direction.",
+        "best": "Call or email first; visit only if the team explicitly invites a non-service introduction.",
+        "backup": "Use info@10restaurant.ca or 416-538-3810 to request the correct future-FOH route.",
         "avoid": "16:30 onward and all dinner service.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Only ten Chef’s Counter seats; sommelier role is highly relevant but requires tact and proof.",
-        "confidence": "INFERENCE.",
+        "why": "Ten has only ten counter seats, no verified vacancy and no published manager-access window.",
+        "confidence": "Do not treat a prior inferred 15:30–16:00 gap as availability.",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -1125,7 +1130,7 @@ window.FLOW_DATA = {
         "name": "Rebecca Pettigrew",
         "confidence": "VERIFIED CURRENT",
         "role": "Beverage Director",
-        "contact": "info@10 restaurant.ca | 416-538-3810",
+        "contact": "info@10restaurant.ca | 416-538-3810",
         "history": "Ten’s current staff page describes Pettigrew as a sommelier with more than 15 years’ experience, a 2023 Notable Life Sommelier Award recipient, and the person overseeing Ten’s wine and beverage programme.",
         "hook": "Ask how the beverage programme is refreshed against a menu that changes with the seasons, then listen before presenting any wine knowledge.",
         "caveat": "A Beverage Director title does not establish that Pettigrew hires for every FOH role. Ask the general contact for the current hiring route.",
@@ -1140,7 +1145,7 @@ window.FLOW_DATA = {
           ]
         ]
       },
-      "fit": "A-GAME if Sommelier listing verifies: Bar Lead and wine study matter; intimate fine-dining room demands high preparation.",
+      "fit": "STRONG future-interest fit for disciplined guest communication and beverage learning in an intimate tasting counter; no Sommelier role is verified.",
       "cluster": "College / Bloor West",
       "sources": [
         {
@@ -1160,7 +1165,7 @@ window.FLOW_DATA = {
         "career": 12,
         "confidence": 4
       },
-      "reason": "Small vegetarian tasting counter with no verified vacancy or walk-in hiring access. Make a concise future-interest inquiry.",
+      "reason": "Small vegetarian tasting counter with no verified vacancy or walk-in hiring access. Make a concise future-interest inquiry only if the team invites a route.",
       "tier": "LOW-PROBABILITY",
       "askFor": "the person handling current FOH or beverage hiring, if the restaurant is open to a brief introduction",
       "prep": "Management: Rebecca Pettigrew is verified current Beverage Director, but a current FOH hiring lead is not publicly named. Chef: Julian Bentivegna is verified current Chef/Owner. Food: Ten’s official About page says its ten-course tasting menu is now fully vegetarian; the current offer is a seasonal plant-forward/vegetarian Chef’s Counter experience for ten guests.",
@@ -1183,7 +1188,7 @@ window.FLOW_DATA = {
         ]
       },
       "materials": "Resume; this restaurant’s cover letter; accurate availability; one relevant Capra’s example.",
-      "failureRisk": "Do not interrupt after a refusal, approach during dinner, say that a Sommelier job is open, or imply wine credentials Jonathan has not stated.",
+      "failureRisk": "Do not approach during dinner, say that a Sommelier job is open, use the malformed email address with a space, or imply wine credentials Jonathan has not stated.",
       "onSiteMinutes": 10,
       "windows": [],
       "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
@@ -1191,10 +1196,10 @@ window.FLOW_DATA = {
     {
       "id": 10,
       "name": "Giulietta",
-      "address": "972 College St, Toronto, ON M6H 1A5",
+      "address": "972 College Street, Toronto, ON M6H 1A5",
       "website": "https://giu.ca/",
-      "ownership": "Rob Rossi / David Minicucci operation; current FOH leader not verified.",
-      "operating": "Open daily; Saturday open.",
+      "ownership": "Current public coverage identifies Chef Rob Rossi and restaurateur David Minicucci as the team behind Giulietta; the official pages identify neither a FOH hiring lead nor a manager by name.",
+      "operating": "Monday–Friday 17:00–22:00; Saturday 17:00–22:30; Sunday 17:00–21:00. Official contact: info@giu.ca (general inquiries only), 416-964-0606.",
       "price": {
         "status": "PASS",
         "estimate": "C$60 food before tax/tip",
@@ -1213,19 +1218,19 @@ window.FLOW_DATA = {
       "hiring": {
         "status": "NO CURRENT HIRING FOUND",
         "roles": [],
-        "careersUrl": "https://ca.indeed.com/cmp/Giulietta-5",
+        "careersUrl": "",
         "applicationUrl": "",
-        "requirements": "Current Indeed company result showed only an experienced line-cook position.",
+        "requirements": "No current relevant Giulietta FOH role or application surface was verified.",
         "checkedAt": "2026-09-19",
-        "caveat": "Older third-party server posting is not live proof; no current relevant FOH opening verified.",
+        "caveat": "The official email is for general inquiries only. A third-party company page and older Server material do not establish a current FOH opening.",
         "sources": [
           [
-            "Indeed company result",
-            "https://ca.indeed.com/cmp/Giulietta-5"
+            "Giulietta official contact",
+            "https://giu.ca/contact/"
           ],
           [
-            "Official site",
-            "https://giu.ca/"
+            "Indeed company page — not a relevant current FOH role",
+            "https://ca.indeed.com/cmp/Giulietta-5"
           ]
         ]
       },
@@ -1242,13 +1247,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: call 14:30; visit only by invitation around 15:30–16:00.",
-        "backup": "Ask official general inbox for FOH hiring contact.",
+        "best": "Call or email before travelling; visit only at a return time the team offers.",
+        "backup": "Use info@giu.ca once as a general-inquiries route to ask for the current future-FOH contact.",
         "avoid": "16:30 onward/dinner.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "High-end busy dinner operation with no relevant live role.",
-        "confidence": "INFERENCE.",
+        "why": "Refined dinner operation with no relevant live role or published Saturday manager-access window.",
+        "confidence": "Do not treat a prior inferred 15:30–16:00 period as an appointment.",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -1377,13 +1382,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: phone before 15:00; visit only at a return time supplied.",
-        "backup": "Use info@vianorterest.com to ask for a manager/owner introduction.",
+        "best": "Call or email before a Saturday visit; visit only at a return time supplied.",
+        "backup": "Use info@vianorterest.com to request the correct future-FOH route; do not presume the owner is the recruiter.",
         "avoid": "16:30 onward/dinner.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Owner-chef restaurant, no Saturday lunch and no live hiring evidence.",
-        "confidence": "INFERENCE.",
+        "why": "Owner-chef restaurant, no Saturday lunch, no published manager-access window and no live hiring evidence.",
+        "confidence": "No on-site access time is published.",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -1492,13 +1497,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: call around 14:00 and take any offered window before 16:00.",
-        "backup": "Ask if a return at 15:30 suits the FOH/operations manager.",
+        "best": "Call in advance for the correct future-FOH route; if a short visit is welcome, use only the time the team gives.",
+        "backup": "Use the published phone or reservations contact only as directed to request the appropriate hiring route.",
         "avoid": "16:30 onward/dinner.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Dinner-only Saturday and no hiring signal; private-event operation is a positive fit.",
-        "confidence": "INFERENCE.",
+        "why": "Saturday is dinner-only, no current role or named hiring lead is published, and a pre-service interval is not manager access.",
+        "confidence": "A 16:00–16:30 possibility is an operational inference only, not a promised appointment.",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -1570,8 +1575,8 @@ window.FLOW_DATA = {
       "name": "Bar Isabel",
       "address": "797 College St, Toronto, ON M6G 1C7",
       "website": "https://barisabel.com/",
-      "ownership": "Grant van Gameren-associated operation; current GM/sommelier Alessandro Pietropaolo is listed by Star Wine List.",
-      "operating": "Open; Saturday lunch and dinner.",
+      "ownership": "Chef Grant van Gameren is the named culinary leader in Michelin’s current profile. Alessandro Pietropaolo describes himself in 2022 coverage as having become a co-owner after progressing from assistant general manager; current ownership percentages and the full legal ownership group were not verified.",
+      "operating": "Official hours: Saturday 12:00–23:00; Sunday–Friday 17:00–23:00. Reservations are strongly recommended and walk-in space is limited.",
       "price": {
         "status": "PASS",
         "estimate": "C$85–150 food per person before tax/tip",
@@ -1599,29 +1604,29 @@ window.FLOW_DATA = {
         ]
       },
       "hours": {
-        "official": "Saturday 12:00–23:00; Sunday–Friday 17:00–23:00. Official 2026 closure dates excludeSeptember 19.",
-        "lunch": "Saturday from 12:00",
-        "dinner": "Saturday until 23:00",
-        "closed": "No Saturday closure found.",
+        "official": "Saturday 12:00–23:00; Sunday–Friday 17:00–23:00. No Saturday closure published.",
+        "lunch": "Saturday prix fixe 12:00–16:00; reservations strongly recommended and walk-ins limited.",
+        "dinner": "Saturday until 23:00.",
+        "closed": "No Saturday closure published.",
         "sources": [
           [
-            "Restaurantica current profile",
-            "https://www.restaurantica.com/on/toronto/bar-isabel"
+            "Bar Isabel official info and hours",
+            "https://barisabel.com/info/"
           ],
           [
-            "Star Wine List",
-            "https://starwinelist.com/wine-place/bar-isabel"
+            "Bar Isabel official reservations FAQ",
+            "https://barisabel.com/reserve/"
           ]
         ]
       },
       "access": {
-        "best": "Optional 15:00–15:20 during public Saturday service, only if the host says it is a suitable moment.",
-        "backup": "Call 416-532-2222 and ask whether GM/sommelier Alessandro Pietropaolo is available for a brief introduction.",
+        "best": "INFERENCE — Optional 15:00–15:30 polite host check during public Saturday service; ask only for the correct employment route or a better time, not a manager meeting.",
+        "backup": "Call 416-532-2222 only to request the correct employment route or an appropriate time; do not request Alessandro as a recruiter.",
         "avoid": "17:00–23:00 high-energy dinner/bar service.",
         "likelihood": "LOW",
         "risk": "MEDIUM",
-        "why": "Public continuous Saturday hours support an inferred late-afternoon introduction; manager availability is unknown.",
-        "confidence": "LOW",
+        "why": "Public continuous Saturday service supports a brief host routing request, but no current FOH vacancy or manager appointment is published.",
+        "confidence": "The 15:00–15:30 period is an operational inference within public service, not a promised manager appointment.",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -1664,7 +1669,7 @@ window.FLOW_DATA = {
       "operatingUncertain": false,
       "scores": {
         "fit": 17,
-        "access": 9,
+        "access": 3,
         "career": 12,
         "confidence": 4
       },
@@ -1691,14 +1696,14 @@ window.FLOW_DATA = {
         ]
       },
       "materials": "Resume; this restaurant’s cover letter; accurate availability; one relevant Capra’s example.",
-      "failureRisk": "Do not say Bar Isabel is hiring, ask for a long meeting, treat Pietropaolo as confirmed recruiter, claim sommelier knowledge, or pitch private-event/buyout expertise where the official FAQ says private events are not accommodated.",
+      "failureRisk": "Do not say Bar Isabel is hiring, treat Pietropaolo as a confirmed recruiter, turn the optional public-service host check into a manager meeting, claim sommelier knowledge, or pitch private-event/buyout expertise where the official FAQ says private events are not accommodated.",
       "onSiteMinutes": 10,
       "windows": [
         {
           "start": "15:00",
-          "end": "15:20",
+          "end": "15:30",
           "kind": "walkin",
-          "why": "Inference within public Saturday service; not an appointment."
+          "why": "INFERENCE — Optional, brief host routing request during public Saturday service; not a manager appointment and not evidence of hiring."
         }
       ],
       "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
@@ -1706,10 +1711,10 @@ window.FLOW_DATA = {
     {
       "id": 14,
       "name": "DaiLo",
-      "address": "503 College St, Toronto, ON M6G 1A5",
-      "website": "https://www.dailoto.com/",
-      "ownership": "Nick Liu is chef/partner in current profile; current FOH leader not verified.",
-      "operating": "Open Tuesday–Sunday; Saturday dinner/late night.",
+      "address": "503 College St, Toronto, ON M6J 2J3",
+      "website": "https://dailoto.com/",
+      "ownership": "Nick Liu is presented as owner/chef on official sources.",
+      "operating": "Official hours: Tuesday–Sunday 17:00–23:00; Friday–Saturday 17:00–02:00.",
       "price": {
         "status": "PASS",
         "estimate": "C$125 food before tax/tip",
@@ -1723,45 +1728,43 @@ window.FLOW_DATA = {
       },
       "hiring": {
         "status": "VERY RECENT SIGNAL",
-        "roles": [
-          "Server"
-        ],
-        "careersUrl": "https://www.qc.jobbank.gc.ca/jobsearch/jobposting/50114036?source=searchresults",
+        "roles": [],
+        "careersUrl": "",
         "applicationUrl": "",
-        "requirements": "Permanent part-time Server role on 86 network, posted Aug 19, advertised through Sep 18; Job Bank result checked Sep 19.",
+        "requirements": "No current DaiLo role is verified. The former Server listing expired September 18 and its Job Bank page returned 410 on September 19.",
         "checkedAt": "2026-09-19",
-        "caveat": "Server listing expired September 18 and returned 410 on September 19. Recent past recruiting is a reason to inquire, not a current vacancy.",
+        "caveat": "The former Server listing expired September 18 and returned 410 September 19. This is a very recent expired signal, not an active vacancy. office@dailoto.com is general/special-events contact only.",
         "sources": [
           [
-            "Government Job Bank mirror",
-            "https://www.qc.jobbank.gc.ca/jobsearch/jobposting/50114036?source=searchresults"
+            "DaiLo official Offerings and general/special-events contact",
+            "https://dailoto.com/#offerings"
           ],
           [
-            "Official site",
-            "https://www.dailoto.com/"
+            "Former Job Bank Server result — expired/410",
+            "https://www.qc.jobbank.gc.ca/jobsearch/jobposting/50114036?source=searchresults"
           ]
         ]
       },
       "hours": {
-        "official": "Tue–Sun 17:00–23:00; Fri–Sat 17:00–02:00.",
+        "official": "Tuesday–Sunday dinner 17:00–23:00; the site also lists Friday–Saturday late opening to 02:00. Confirm dining versus late-bar availability directly.",
         "lunch": "No lunch published.",
-        "dinner": "Saturday 17:00–02:00.",
+        "dinner": "Saturday dinner 17:00–23:00; later bar/service scope needs confirmation.",
         "closed": "Monday.",
         "sources": [
           [
-            "Official site",
-            "https://www.dailoto.com/"
+            "DaiLo official site",
+            "https://dailoto.com/"
           ]
         ]
       },
       "access": {
-        "best": "INFERENCE: call 14:30; if welcomed, 15:30–16:00.",
-        "backup": "Email/call before walking in and ask for FOH hiring manager.",
+        "best": "Email office@dailoto.com first for the preferred future-FOH route; dinner or late-bar attendance is not a manager-access appointment.",
+        "backup": "Use the official office contact once to request the appropriate future-interest route; do not ask it to confirm a role that is not published.",
         "avoid": "16:30 onward; Saturday bar/late-night service.",
-        "likelihood": "MEDIUM",
+        "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Recent exact Server signal is compelling, but the listing expired and service window is dinner-led.",
-        "confidence": "INFERENCE.",
+        "why": "No current role, FOH hiring lead or Saturday manager-access window is verified; the former Server post is expired.",
+        "confidence": "Email-first. Published dinner and late-bar hours do not establish in-person hiring access.",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -1783,7 +1786,7 @@ window.FLOW_DATA = {
           ]
         ]
       },
-      "fit": "A-GAME: exact recent Server signal, Bar Lead/private-event/service experience; prepare elevated wine/cocktail and high-volume hospitality examples.",
+      "fit": "STRONG future-interest fit for Bar Lead, Server and private-event service experience in a sharing-menu and bar operation; no live role is verified.",
       "cluster": "College / Bloor West",
       "sources": [
         {
@@ -1803,11 +1806,11 @@ window.FLOW_DATA = {
       "operatingUncertain": false,
       "scores": {
         "fit": 17,
-        "access": 9,
+        "access": 3,
         "career": 14,
         "confidence": 4
       },
-      "reason": "Very recent but expired Server signal and strong shared-table/bar fit. Make a conditional email inquiry; protect Saturday dinner.",
+      "reason": "Strong shared-table and bar fit, but the Server signal expired. Make one concise future-interest email inquiry and protect Saturday dinner service.",
       "tier": "OPPORTUNISTIC",
       "askFor": "the person who handles future front-of-house interest, only if the host says an introduction is welcome",
       "prep": "Official Choice/Premium tasting menus are $125/$160 per person; the current wine-pairing tiers are $75/$105. The Share for Two section lists truffle Hainanese chicken $50, whole fried Jim Giggie trout $55, smoked duck bokkeum $62 and 90-day ribeye $80; those are table choices, not individual price floors. Nick Liu is VERIFIED CURRENT as the chef named by DaiLo; a 2026 professional profile identifies French training at Scaramouche after CN Tower 360 and a subsequent three-year culinary journey.",
@@ -1830,7 +1833,7 @@ window.FLOW_DATA = {
         ]
       },
       "materials": "Resume; this restaurant’s cover letter; accurate availability; one relevant Capra’s example.",
-      "failureRisk": "Do not request Nick Liu, presume a role is open, interrupt dinner or late bar service, or claim a referral, application or prior contact.",
+      "failureRisk": "Do not request Nick Liu, presume a role is open, treat office@dailoto.com as a hiring inbox, interrupt dinner or late-bar service, or claim a referral, application or prior contact.",
       "onSiteMinutes": 10,
       "windows": [],
       "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
@@ -1887,13 +1890,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: Saturday 4:45–5:15 pm, only if a manager agrees to a brief introduction before doors.",
-        "backup": "Wednesday/Thursday 4:45–5:15 pm by prior email/phone arrangement.",
-        "avoid": "Saturday 5:30–10 pm service.",
+        "best": "INFERENCE: call 16:45–17:15. An in-person introduction is appropriate only if a manager permits it before 17:30.",
+        "backup": "Use the public inbox once to ask for the correct future-FOH contact or a manager-approved time; send a résumé only if invited.",
+        "avoid": "Saturday dinner preparation from 17:30 and public service 18:00–22:00.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Single dinner service and a high-touch open-fire program leave little unscheduled FOH bandwidth; no current FOH opening verified.",
-        "confidence": "MEDIUM",
+        "why": "Dinner-only service and an open-fire programme leave little unscheduled FOH bandwidth; no current FOH opening or manager-access window is verified.",
+        "confidence": "LOW",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -2019,12 +2022,12 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Email first and visit only at a time the team agrees.",
-        "backup": "Sunday 2:15–2:35 pm by appointment before paella service.",
-        "avoid": "Saturday after 5:30 pm and Sunday 3–8 pm.",
+        "best": "Email first or call 16:30–16:50 Saturday to ask whether an introduction is welcome; this is not an appointment.",
+        "backup": "Use info@casapaco.ca once for a future-FOH routing inquiry; send a résumé only if invited.",
+        "avoid": "Saturday 17:00 through close and Sunday Paella service 15:00–20:00. Do not treat Sunday 14:15 as automatically clear.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Small reservation-only room opens 18:00; uninvited prep access is not established.",
+        "why": "This is a tiny reservation-only, owner-operated room. No current vacancy or uninvited pre-service access is established.",
         "confidence": "LOW",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
@@ -2068,7 +2071,7 @@ window.FLOW_DATA = {
       "operatingUncertain": false,
       "scores": {
         "fit": 17,
-        "access": 9,
+        "access": 3,
         "career": 12,
         "confidence": 4
       },
@@ -2152,13 +2155,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "15:35–16:10, INFERENCE just after happy-hour opening. Do not arrive during the 15:00–15:30 service gap without an invitation.",
-        "backup": "Wednesday/Thursday 4:00–4:30 pm.",
-        "avoid": "Saturday 10:30 am–3 pm brunch and 3:30 pm onward.",
+        "best": "15:35–16:10, INFERENCE during public happy-hour service after brunch; first ask the host whether a brief conversation is welcome.",
+        "backup": "Use the verified Nadège group careers route and clearly specify Chez Nad, or ask for a manager-chosen return time.",
+        "avoid": "Saturday brunch and any happy-hour or dinner period when service is busy; do not assume a quiet gap.",
         "likelihood": "MEDIUM",
         "risk": "MEDIUM",
-        "why": "A clear between-service window exists; independent FOH hiring still unverified.",
-        "confidence": "HIGH",
+        "why": "The window is inside public happy-hour service, not a closed between-service gap. Manager presence and a Chez Nad FOH vacancy are unverified.",
+        "confidence": "LOW",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -2217,7 +2220,7 @@ window.FLOW_DATA = {
         "career": 12,
         "confidence": 7
       },
-      "reason": "Strong Server/Bartender and leadership-track fit for an elevated French bistro; lead with Bar Lead + Server. Events is relevant for celebrations/private functions, subject to confirmation. A clear between-service window exists; independent FOH hiring still unverified.",
+      "reason": "Strong Server/Bartender and leadership-track fit for an elevated French bistro; lead with Bar Lead and Server experience. The 15:35–16:10 option is an inferred short request during public happy-hour service, not a manager window or an invitation.",
       "tier": "OPPORTUNISTIC",
       "askFor": "The manager on duty or person who handles future front-of-house opportunities.",
       "prep": "Management: founder Nadège Nourian is verified. Ask for the manager handling FOH; the group accepts CVs at careers@nadege-patisserie.com, but Chez Nad vacancies are unconfirmed. Chef: Laura Maxwell is a LIKELY CURRENT kitchen lead from 2026 opening coverage; confirm directly before using a title in person. Food and beverage: OpenTable’s June 2026 menu publishes precise French dishes and prices; it confirms happy-hour half-price bottles but no actual current bottle/producer list.",
@@ -2251,7 +2254,7 @@ window.FLOW_DATA = {
           "start": "15:35",
           "end": "16:10",
           "kind": "walkin",
-          "why": "A clear between-service window exists; independent FOH hiring still unverified."
+          "why": "INFERENCE during public happy-hour service after brunch; ask the host first and leave if service is busy. Manager presence and a Chez Nad FOH vacancy are unverified."
         }
       ],
       "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
@@ -2278,10 +2281,10 @@ window.FLOW_DATA = {
       "hiring": {
         "status": "VERY RECENT SIGNAL",
         "roles": [
-          "Food Runner — Mamakas Taverna"
+          "Food Runner — historical signal; current vacancy unconfirmed"
         ],
         "careersUrl": "",
-        "applicationUrl": "https://mamakas.ca/contact/",
+        "applicationUrl": "",
         "requirements": "Historical August 26 Food Runner mirror described three shifts weekly, evenings and weekend lunch, restaurant-support experience, stamina and organization. Reconfirm the position and requirements directly.",
         "checkedAt": "2026-09-19",
         "caveat": "Recent Food Runner signal could not be reproduced as an active application. Ask about suitable bar, server or events needs and leadership progression; no current management vacancy is established.",
@@ -2420,11 +2423,11 @@ window.FLOW_DATA = {
       "hiring": {
         "status": "NO CURRENT HIRING FOUND",
         "roles": [],
-        "careersUrl": "",
-        "applicationUrl": "https://www.soostoronto.com/",
-        "requirements": "No current FOH posting to verify requirements against. Discuss actual availability and experience with the manager.",
+        "careersUrl": null,
+        "applicationUrl": null,
+        "requirements": "No current FOH posting or official application surface was verified.",
         "checkedAt": "2026-09-19",
-        "caveat": "Recent line-cook evidence is kitchen-only; it does not establish a bar, server or management vacancy.",
+        "caveat": "The official website and public inbox are routing contacts, not an advertised FOH application. Recent line-cook evidence is kitchen-only.",
         "sources": [
           {
             "label": "Official contact",
@@ -2449,12 +2452,12 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Email or arrange a return time. Any 16:15–16:35 introduction before 17:00 opening requires agreement.",
-        "backup": "Use the public general inbox to ask for the recruitment contact.",
-        "avoid": "Saturday dinner rush; uninvited arrival before opening.",
+        "best": "Email info@soostoronto.com or arrange a return time. Any 16:15–16:35 introduction before 17:00 requires agreement.",
+        "backup": "Use the public general inbox once to ask for the appropriate recruitment contact.",
+        "avoid": "Saturday dinner service and any uninvited arrival before opening.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Dinner-only Saturday operation; no active FOH vacancy or confirmed manager-access window.",
+        "why": "Saturday is dinner-only; no active FOH vacancy or public manager-access window is verified.",
         "confidence": "LOW",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
@@ -2578,27 +2581,27 @@ window.FLOW_DATA = {
         ]
       },
       "hours": {
-        "official": "Dining daily noon; Sat dining 12–11 pm, retail 11 am–10 pm.",
-        "lunch": "Daily noon onward.",
-        "dinner": "Sat through 11 pm.",
-        "closed": "No published closed day.",
+        "official": "Dining noon–11 pm Thursday–Saturday; retail 11 am–10 pm Thursday–Saturday. Other-day dining and retail hours differ.",
+        "lunch": "Thursday–Saturday from noon.",
+        "dinner": "Thursday–Saturday through 11 pm.",
+        "closed": "Sunday–Wednesday hours differ; confirm directly before a non-Saturday visit.",
         "sources": [
           {
-            "label": "Official site",
+            "label": "Official Côte de Boeuf home and current hours",
             "url": "https://cotedeboeuf.ca/home/",
             "accessedAt": "2026-09-19",
-            "exactClaims": "Dining/retail hours."
+            "exactClaims": "Dining noon–11 pm and retail 11 am–10 pm Thursday–Saturday."
           }
         ]
       },
       "access": {
-        "best": "14:30–16:00, INFERENCE during continuous dining, after the lunch peak and before dinner.",
-        "backup": "Weekday 2:30–4 pm.",
-        "avoid": "Saturday noon–2 pm and 5 pm onward.",
+        "best": "14:30–15:00, INFERENCE during continuous public dining after the main lunch window; ask whether the FOH manager can spare two minutes.",
+        "backup": "Call for a manager-chosen contact route or return time; events@ is an event inbox, not a verified recruitment route.",
+        "avoid": "Saturday lunch peak, any service period when the host says the floor is busy, and dinner build from 17:00 onward.",
         "likelihood": "MEDIUM",
         "risk": "MEDIUM",
-        "why": "All-day butcher/retail operation offers more access paths; no hiring signal.",
-        "confidence": "MEDIUM",
+        "why": "Continuous dining and retail hours make a brief host-led inquiry possible, but not a guaranteed manager window or hiring signal.",
+        "confidence": "LOW",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -2649,7 +2652,7 @@ window.FLOW_DATA = {
         "career": 12,
         "confidence": 7
       },
-      "reason": "Strong Server/Bartender/leadership-track conversation for wine-bar and butcher-table service; Private Event Coordinator directly fits private dinners. All-day butcher/retail operation offers more access paths; no hiring signal.",
+      "reason": "Strong Server/Bartender and leadership-track conversation for wine-bar and butcher-table service. The rooted 14:30 option is an inferred, host-permitted request during public Saturday service; no vacancy or manager window is verified.",
       "tier": "OPPORTUNISTIC",
       "askFor": "The FOH manager, manager on duty, or the person who handles future front-of-house opportunities.",
       "prep": "Eamon O’Dea and Teo Paul are supported by 2026 reporting as owners; ask for the current FOH hiring manager rather than assuming either is present. Damien Cochez is LIKELY CURRENT: 2026 reporting connects the kitchens at Côte de Boeuf and Brasserie Côte; the exact Saturday kitchen lead is unconfirmed. The current linked menu supports a C$76 tartare-and-steak-frites meal. The wine programme names French regions; current bottle labels are not public.",
@@ -2689,9 +2692,9 @@ window.FLOW_DATA = {
       "windows": [
         {
           "start": "14:30",
-          "end": "16:00",
+          "end": "15:00",
           "kind": "walkin",
-          "why": "All-day butcher/retail operation offers more access paths; no hiring signal."
+          "why": "INFERENCE during continuous public dining. Ask the host first; manager presence and a vacancy are unverified."
         }
       ],
       "backup": "Henry’s, 920–922 Queen West; about 8–9 minutes walking. Aim after its 15:00 brunch finish.",
@@ -3068,7 +3071,7 @@ window.FLOW_DATA = {
           "start": "15:15",
           "end": "16:00",
           "kind": "walkin",
-          "why": "The wine shop is published open after brunch ends at 15:00. A short request through shop staff may be possible, but no manager presence or hiring access is confirmed."
+          "why": "INFERENCE — The wine shop is published open after brunch ends at 15:00. A short request through shop staff may be possible, but no manager presence or hiring access is confirmed."
         }
       ],
       "backup": "Côte de Boeuf, 130 Ossington; about 8–9 minutes walking. Speculative introduction only.",
@@ -3128,7 +3131,7 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Optional 15:00–15:30 during continuous lunch service; host must confirm a conversation is welcome.",
+        "best": "INFERENCE — Optional 15:00–15:30 during continuous lunch service; host must confirm a conversation is welcome.",
         "backup": "Email info@lylatoronto.com or ask for a manager-chosen return time.",
         "avoid": "17:00 transition and Saturday dinner rush.",
         "likelihood": "LOW",
@@ -3171,7 +3174,7 @@ window.FLOW_DATA = {
       "operatingUncertain": false,
       "scores": {
         "fit": 17,
-        "access": 5,
+        "access": 3,
         "career": 12,
         "confidence": 7
       },
@@ -3209,7 +3212,7 @@ window.FLOW_DATA = {
           "start": "15:00",
           "end": "15:30",
           "kind": "walkin",
-          "why": "Public afternoon service exists, but no hiring-manager schedule or current opening is verified."
+          "why": "INFERENCE — Public afternoon service exists, but no hiring-manager schedule or current opening is verified."
         }
       ],
       "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
@@ -3323,11 +3326,11 @@ window.FLOW_DATA = {
       "operatingUncertain": false,
       "scores": {
         "fit": 16,
-        "access": 2,
+        "access": 3,
         "career": 15,
         "confidence": 8
       },
-      "reason": "Strong learning and service value but speculative recruitment and poor Saturday access. Use a laptop-block introduction.",
+      "reason": "Strong learning and service value, but speculative recruitment and no public Saturday access window. Use the official inbox first and visit only if invited.",
       "tier": "LOW-PROBABILITY",
       "askFor": "The appropriate FOH contact, only if staff invite a conversation.",
       "prep": "Management: Chef-owner Michael Caballo oversees operations/guest experience; no current FOH manager/recruiter is public. Chef: Tobey Nemeth is VERIFIED CURRENT as chef-owner/kitchen lead; Caballo is also a current chef-owner. Food and beverage: current dinner C$200 plus 20% service; seasonal seafood/mushrooms and a strict 72-hour dietary-information process. No current bottle inventory published.",
@@ -3354,7 +3357,7 @@ window.FLOW_DATA = {
         ]
       },
       "materials": "Resume; this restaurant’s cover letter; accurate availability; one relevant Capra’s example.",
-      "failureRisk": "Do not claim a current menu, a role opening, a submitted application, a referral, a manager’s name or a private-events program.",
+      "failureRisk": "Do not claim a current daily menu, a role opening, a submitted application, a referral, or a current wine bottle. Published full-buyout terms do not establish a current private-event vacancy, availability or hiring route.",
       "onSiteMinutes": 10,
       "windows": [],
       "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
@@ -3514,37 +3517,37 @@ window.FLOW_DATA = {
       "operating": "OPERATING STATUS REQUIRES SAME-DAY CONFIRMATION — official Buca site lists King Street West, while OpenTable says the restaurant is temporarily offline/not bookable.",
       "price": {
         "status": "UNKNOWN",
-        "estimate": "C$100+ realistic food+drink before tax/tip if operating",
-        "basis": "Historic/current category is fine dining; exact current menu and service status need verification.",
+        "estimate": null,
+        "basis": "No current King Street menu, beverage list or operating service is verified.",
         "sources": [
           {
-            "label": "Official Buca site",
-            "url": "https://buca.ca/",
-            "accessedAt": "2026-09-19",
-            "exactClaims": "King Street West is listed as a location; careers link exists."
-          },
-          {
-            "label": "OpenTable",
+            "label": "OpenTable Buca King Street status",
             "url": "https://www.opentable.com/r/buca-king-street-west-toronto",
             "accessedAt": "2026-09-19",
-            "exactClaims": "Temporarily offline/not bookable."
+            "exactClaims": "Temporarily offline/not bookable; historic hours and menu context are not current pricing evidence."
           }
         ]
       },
       "hiring": {
-        "status": "GENERAL HIRING / ACCEPTING APPLICATIONS",
+        "status": "NO CURRENT HIRING FOUND",
         "roles": [],
-        "careersUrl": "https://buca.ca/",
-        "applicationUrl": "https://buca.ca/",
-        "requirements": "Official site has a careers call-to-action, but no exact King Street FOH vacancy was confirmed.",
+        "careersUrl": null,
+        "applicationUrl": null,
+        "requirements": "No current King Street role, requirements or location-specific application surface is verified.",
         "checkedAt": "2026-09-19",
-        "caveat": "Do not apply or visit until the King Street location itself is confirmed open; careers destination needs direct opening.",
+        "caveat": "The group careers site and roles at other Buca locations are not an application route for the original King Street stop, whose operation remains unconfirmed.",
         "sources": [
           {
-            "label": "Official Buca site",
-            "url": "https://buca.ca/",
+            "label": "Official Buca group and careers pages",
+            "url": "https://buca.ca/careers/",
             "accessedAt": "2026-09-19",
-            "exactClaims": "Careers call-to-action and King Street location listed."
+            "exactClaims": "Group careers surface exists, but no live King Street location-specific role or route was verified."
+          },
+          {
+            "label": "OpenTable Buca King Street status",
+            "url": "https://www.opentable.com/r/buca-king-street-west-toronto",
+            "accessedAt": "2026-09-19",
+            "exactClaims": "King Street renders temporarily offline/not bookable; the stated renovation timing has no year."
           }
         ]
       },
@@ -3563,12 +3566,12 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Do not make a Saturday stop until phone/website reservation path proves the location is open.",
-        "backup": "Use the official Buca careers route, specifying FOH/server/bartender/leadership interest and preferred location.",
-        "avoid": "Unverified on-site visit.",
+        "best": "Do not make a Saturday stop or seek a manager until the King Street location itself is officially confirmed open.",
+        "backup": "Use the next eligible stop. Monitor official Buca and 86 network pages only for a live, King Street-specific opening.",
+        "avoid": "Any on-site job-search visit or applying to another Buca location as if it were King Street.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Conflicting current operating signals.",
+        "why": "King Street is temporarily offline/not bookable and its reopening timing is stale or ambiguous; no operating, hiring or manager-access signal is current.",
         "confidence": "HIGH",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
@@ -3622,8 +3625,8 @@ window.FLOW_DATA = {
       },
       "reason": "King Street operation remains offline/unconfirmed. Do not substitute Yorkville staff or jobs.",
       "tier": "SKIP TODAY",
-      "askFor": "No King Street walk-in: site is offline.",
-      "prep": "Management: King Street is temporarily offline; named current manager/recruiter is UNABLE TO VERIFY. Chef: Jorge Fiestas is retained on an offline profile but is UNABLE TO VERIFY as current King Street day-to-day chef. Food and beverage: no live King Street menu or wine list; all older dishes/bottles are historical only.",
+      "askFor": "No King Street walk-in or application until a live, location-specific route is published.",
+      "prep": "King Street is offline/uncertain. No current King Street manager, chef, menu, beverage list, event programme or hiring role is verified. Keep this original location separate from Buca Osteria and Bar Yorkville, Buca Vaughan and other group venues.",
       "chef": {
         "name": "Jorge Fiestas",
         "confidence": "UNABLE TO VERIFY",
@@ -3643,10 +3646,10 @@ window.FLOW_DATA = {
         ]
       },
       "materials": "Resume; this restaurant’s cover letter; accurate availability; one relevant Capra’s example.",
-      "failureRisk": "Do not claim King Street is open, a manager is present, an old menu is current, or that a Yorkville job is a King Street role.",
+      "failureRisk": "Do not claim King Street is open, a manager is present, an old menu or price is current, or that a group or Yorkville role is a King Street role.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next eligible stop; do not substitute another Buca venue."
     },
     {
       "id": 28,
@@ -3671,16 +3674,22 @@ window.FLOW_DATA = {
         "status": "POSSIBLE / UNCONFIRMED",
         "roles": [],
         "careersUrl": "https://alofoodgroup.com/careers/",
-        "applicationUrl": "https://alofoodgroup.com/careers/",
-        "requirements": "A Busser/Server Assistant mirror names Aloette but the specific outlet and current original accepting page remain unverified.",
+        "applicationUrl": null,
+        "requirements": "A live Busser/Server Assistant record is associated with Aloette Toronto, but its rendered evidence does not establish the specific outlet, current original accepting page or compensation details.",
         "checkedAt": "2026-09-19",
-        "caveat": "Do not treat the mirror as a verified Spadina vacancy or its C$30.10 as established base pay.",
+        "caveat": "The Alo Food Group careers page is a general route, not proof of an exact Spadina opening. Do not treat C$30.10 as confirmed base wage or use a general route as an exact role application.",
         "sources": [
           {
-            "label": "Career platform",
-            "url": "https://careers.smartrecruiters.com/OliverBonacini/aera",
+            "label": "Alo Food Group general careers",
+            "url": "https://alofoodgroup.com/careers/",
             "accessedAt": "2026-09-19",
-            "exactClaims": "Current Toronto opportunities visible; exact Aloette role not established."
+            "exactClaims": "General group route; exact Spadina role unverified."
+          },
+          {
+            "label": "Government Job Bank Aloette Busser/Server Assistant mirror",
+            "url": "https://www.cb.guichetemplois.gc.ca/jobsearch/jobposting/50209970%3Bjsessionid%3D311CF91A77CF935FEC2D2D1B6C0E12A6.jobsearch77",
+            "accessedAt": "2026-09-19",
+            "exactClaims": "Aloette Toronto support-role signal; rendered record does not establish outlet or base wage."
           }
         ]
       },
@@ -3699,13 +3708,13 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "INFERENCE: Saturday 3:15–4:15 pm after brunch and before dinner; introduce yourself only after checking direct hiring route.",
-        "backup": "Friday 3–4 pm happy-hour opening or a scheduled group-careers follow-up.",
-        "avoid": "Saturday brunch and after 4:30 pm.",
-        "likelihood": "MEDIUM",
+        "best": "Confirm and use the exact live role’s stated application route. Do not make a Saturday walk-in during the brunch-to-dinner transition.",
+        "backup": "Use general Spadina contact only for a polite process question if the exact live route cannot resolve location; otherwise continue to the next eligible stop.",
+        "avoid": "Saturday brunch, the 15:00–17:00 transition, dinner service, and treating the general careers page as the exact role application.",
+        "likelihood": "LOW",
         "risk": "MEDIUM",
-        "why": "A real between-service window plus a career-system path, but no role at this location confirmed.",
-        "confidence": "MEDIUM",
+        "why": "The support-role signal is outlet-ambiguous. An online route may be useful only after its exact location and accepting surface are confirmed; there is no verified walk-in access.",
+        "confidence": "LOW",
         "busyConfidence": "INFERRED",
         "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
       },
@@ -3752,11 +3761,11 @@ window.FLOW_DATA = {
       "operatingUncertain": false,
       "scores": {
         "fit": 17,
-        "access": 9,
+        "access": 3,
         "career": 12,
         "confidence": 4
       },
-      "reason": "Aloette support-role signal needs exact outlet verification. Use the group careers route before a Spadina visit.",
+      "reason": "The Aloette support-role signal is outlet-ambiguous. Confirm the exact live accepting surface before applying; do not add a Saturday Spadina walk-in.",
       "tier": "OPPORTUNISTIC",
       "askFor": "Role-specific hiring contact, after using the exact application route.",
       "prep": "Management: Alo Food Group names Kriss, Pearl, Bunner and Donison; exact recruiter/location for current Aloette role is UNABLE TO VERIFY. Chef: Patrick Kriss is VERIFIED CURRENT Chef & Owner; do not claim he runs each shift or interview. Food and beverage: September-updated current menu and real producer/appellation list support burger/raw-bar and wine fluency.",
@@ -3794,7 +3803,7 @@ window.FLOW_DATA = {
       "address": "163 Spadina Ave, 3rd Floor, Toronto, ON M5V 2L6",
       "website": "https://alorestaurant.com/",
       "ownership": "Alo Food Group; chef-owner Patrick Kriss",
-      "operating": "OPEN — official site: Tue–Sat from 5 pm.",
+      "operating": "Tuesday–Saturday from 5 pm.",
       "price": {
         "status": "PASS",
         "estimate": "C$185 for the published six-course experience; C$245 for ten courses, before tax/tip",
@@ -3809,13 +3818,13 @@ window.FLOW_DATA = {
         ]
       },
       "hiring": {
-        "status": "GENERAL HIRING / ACCEPTING APPLICATIONS",
+        "status": "NO CURRENT HIRING FOUND",
         "roles": [],
         "careersUrl": "https://alofoodgroup.com/careers/",
         "applicationUrl": "https://alofoodgroup.com/careers/",
-        "requirements": "Group welcomes CVs and a short introduction; no exact Alo Spadina role verified.",
+        "requirements": "",
         "checkedAt": "2026-09-19",
-        "caveat": "The separately discovered Salon 162 Cumberland seasonal event role is not an Alo 163 Spadina vacancy.",
+        "caveat": "This is a group careers route, not proof of a live opening at Alo 163 Spadina. Confirm restaurant, role and employer before applying.",
         "sources": [
           {
             "label": "86 network: Salon Private Dining Event Bartender",
@@ -3829,7 +3838,13 @@ window.FLOW_DATA = {
             "accessedAt": "2026-09-19",
             "exactClaims": "Invites employment CVs and a few words at careers@alofoodgroup.com."
           }
-        ]
+        ],
+        "role": "",
+        "email": "info@alorestaurant.com",
+        "contact": "",
+        "phone": "416-260-2222",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
         "official": "Tue–Sat, opens 5 pm",
@@ -3846,15 +3861,15 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Weekday 3:30–4:15 pm by prior email/confirmed appointment",
-        "backup": "Use Alo Food Group general careers for a future role; use the dedicated Salon application for the active group-related opportunity.",
-        "avoid": "Saturday dinner service from 5 pm onward",
+        "best": "Use the group careers route or the published general contact outside service; no public manager-access window is verified.",
+        "backup": "Use the location-confirmed route supplied by the team.",
+        "avoid": "Saturday dinner service; do not treat the Salon listing as an Alo vacancy.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Saturday is dinner-only and current FOH leadership is preparing for a high-touch tasting service.",
-        "confidence": "HIGH",
+        "why": "Saturday is dinner service and no location-confirmed Alo opening or manager window is verified.",
+        "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "Shyanne Vautour",
@@ -3917,7 +3932,7 @@ window.FLOW_DATA = {
         "career": 14,
         "confidence": 4
       },
-      "reason": "High learning and event/bar relevance with a group CV route. Apply with exact outlet interest; Saturday walk-in access is unconfirmed.",
+      "reason": "No current Alo vacancy is verified. The group careers route can support future consideration only when the outlet and exact interest are identified; do not present it as active Alo hiring.",
       "tier": "STRONG",
       "askFor": "No uninvited hiring walk-in; use a confirmed route first.",
       "prep": "Alo’s verified current address is 163 Spadina Ave, third floor; it opens Tuesday–Saturday at 5 pm. Patrick Kriss is Chef/Owner; Shyanne Vautour is General Manager; Tim Yun is Chef de Cuisine on the current official team page. Guests choose among Dining Room, Kitchen Counter, Parlour and private dining formats before seasonal tasting details are known.",
@@ -3947,7 +3962,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not identify the Salon Private Dining listing as an Alo role, ask for Vautour during dinner, or state familiarity with unverified current dishes, bottles or cocktails.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "I’m interested in future front-of-house, bar or private-events opportunities at Alo. Could you tell me the right location-confirmed route to share my details?"
     },
     {
       "id": 30,
@@ -3955,7 +3971,7 @@ window.FLOW_DATA = {
       "address": "11 Duncan St, Toronto, ON",
       "website": "https://www.byblostoronto.com/",
       "ownership": "INK Entertainment",
-      "operating": "Operating status not independently reconfirmed from a current primary page in this sweep.",
+      "operating": "Official Downtown page lists dinner service Sunday–Wednesday 17:00–22:00 and Thursday–Saturday 17:00–23:00; Saturday is currently 17:00–23:00.",
       "price": {
         "status": "PASS",
         "estimate": "C$65 food before tax/tip",
@@ -3971,30 +3987,36 @@ window.FLOW_DATA = {
       "hiring": {
         "status": "GENERAL HIRING / ACCEPTING APPLICATIONS",
         "roles": [],
-        "careersUrl": "https://byblosdowntown.com/",
+        "careersUrl": "",
         "applicationUrl": "mailto:info@byblosdowntown.com",
-        "requirements": "Send an appropriate general introduction; no exact vacancy requirements, schedule or pay are published.",
+        "requirements": "",
         "checkedAt": "2026-09-19",
-        "caveat": "Official Join Our Team contact is info@byblosdowntown.com, not teaminfo@ or the older careers address.",
-        "sources": []
+        "caveat": "Official Join Our Team route checked 2026-09-19; no role-specific vacancy was verified.",
+        "sources": [],
+        "role": "",
+        "email": "info@byblosdowntown.com",
+        "contact": "",
+        "phone": "647-660-0909",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
-        "official": "Needs same-day official verification",
+        "official": "Official Downtown page lists dinner service Sunday–Wednesday 17:00–22:00 and Thursday–Saturday 17:00–23:00; Saturday is currently 17:00–23:00.",
         "lunch": "Unknown",
         "dinner": "Unknown",
         "closed": "Unknown",
         "sources": []
       },
       "access": {
-        "best": "Weekday mid-afternoon only after confirming service hours",
-        "backup": "Use the group’s official contact/careers channel",
-        "avoid": "Saturday dinner and any unverified opening window",
+        "best": "Use the official Join Our Team email first; no public manager-access window is verified.",
+        "backup": "Call only to ask for the preferred non-service route or time.",
+        "avoid": "Saturday dinner service 17:00–23:00.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "No current FOH signal or verified Saturday-hours source captured.",
+        "why": "Dinner-only Saturday service and no named manager or role-specific vacancy.",
         "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": null,
@@ -4044,7 +4066,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not make a Saturday dinner walk-in an application attempt, assume a manager is free, claim a current vacancy, or imply an application has been submitted.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hi, I’m Jonathan. I am interested in future front-of-house, bar or private-event service opportunities. Could I ask whether email is the preferred route, or whether there is a better time to make an introduction?"
     },
     {
       "id": 31,
@@ -4052,7 +4075,7 @@ window.FLOW_DATA = {
       "address": "130 King St W, Toronto, ON",
       "website": "https://blackandbluesteakhouse.ca/",
       "ownership": "Glowbal Restaurant Group",
-      "operating": "OPEN — current official Toronto menu and private-dining materials are live.",
+      "operating": "Open and taking reservations. Current official Toronto page publishes weekend brunch Saturday and Sunday 11 am-2 pm; secondary Apple Maps/fresh FindOpen data lists Saturday 10:30 am-midnight, but the restaurant's public page did not expose a day-by-day clock-hours block in this pass.",
       "price": {
         "status": "PASS",
         "estimate": "C$78 food before tax/tip",
@@ -4068,30 +4091,36 @@ window.FLOW_DATA = {
       "hiring": {
         "status": "STALE / HISTORICAL ONLY",
         "roles": [],
-        "careersUrl": "",
+        "careersUrl": "https://www.86network.com/employers/black-blue-toronto-e5/jobs",
         "applicationUrl": "https://www.86network.com/employers/black-blue-toronto-e5/jobs",
         "requirements": "",
         "checkedAt": "2026-09-19",
-        "caveat": "Root live-browser check September 19: exact Server posting expired, current employer page has 0 jobs. Job Bank mirror closing date is superseded by the original application surface.",
-        "sources": []
+        "caveat": "Opened Sep 19: employer page says Jobs 0 / no jobs currently available. Use this to recheck for a new posting; email is the safe routing contact today. The former Server URL is retained as expired historical evidence.",
+        "sources": [],
+        "role": "",
+        "email": "info@blackandbluetoronto.com",
+        "contact": "",
+        "phone": "647-368-8283",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
-        "official": "Official menu confirms lunch, weekend brunch and dinner; exact day-by-day clock hours were not published on that menu page.",
+        "official": "Official weekend brunch Saturday–Sunday 11:00–14:00; official menu Happy Hour daily 14:30–17:30. Exact full-day dining hours need confirmation.",
         "lunch": "Lunch service confirmed; weekday timing needs direct confirmation",
         "dinner": "Dinner service confirmed; exact timing needs direct confirmation",
         "closed": "Unknown",
         "sources": []
       },
       "access": {
-        "best": "Weekday mid-afternoon after confirmation",
-        "backup": "Official group recruiting channel",
-        "avoid": "Saturday dinner",
+        "best": "INFERENCE — Optional 15:00–16:00 host inquiry during public Happy Hour. Use the online route first; no manager appointment is implied.",
+        "backup": "Use the 86 network employer page only if its Apply control becomes live; otherwise use the public email for a routing question.",
+        "avoid": "Any busy service or event setup; a host’s refusal ends the visit.",
         "likelihood": "LOW",
-        "risk": "HIGH",
-        "why": "Premium steakhouse service preparation and no verified live role.",
+        "risk": "MEDIUM",
+        "why": "Optional brief host inquiry during public Happy Hour; ask if a conversation is welcome, leave if busy. No manager availability or exact vacancy is promised.",
         "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "UNABLE TO VERIFY",
@@ -4146,7 +4175,7 @@ window.FLOW_DATA = {
       },
       "reason": "Exact prior Server job expired and employer page showed 0 jobs; optional only if nearby during public Happy Hour.",
       "tier": "OPPORTUNISTIC",
-      "askFor": "Manager on duty only after a weekday phone confirmation.",
+      "askFor": "Ask the host for the appropriate hiring route or a better time; speak to a manager only if the host says it is welcome.",
       "prep": "Original 86 network Server page is currently expired; Job Bank mirror is not proof the application is open. Server eligibility requires 6+ upscale years or 3+ steakhouse/fine-dining years, plus Smart Serve and legal work status. Saturday brunch is officially 11 am-2 pm; exact full-day hours require direct confirmation.",
       "chef": {
         "name": "UNABLE TO VERIFY",
@@ -4174,10 +4203,11 @@ window.FLOW_DATA = {
           "start": "15:00",
           "end": "16:00",
           "kind": "walkin",
-          "why": "Premium steakhouse service preparation and no verified live role."
+          "why": "INFERENCE — Optional brief host inquiry during public Happy Hour; ask if a conversation is welcome, leave if busy. No manager availability or exact vacancy is promised."
         }
       ],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hi, I'm Jonathan Beaulne. I wanted to introduce myself without interrupting service. My background is Bar Lead, Private Event Coordinator, and Private Event Server / Server work. I have been studying Black+Blue's steak, raw-bar and tableside service structure, and I would be interested in an appropriate FOH opportunity if the team is accepting introductions."
     },
     {
       "id": 32,
@@ -4185,7 +4215,7 @@ window.FLOW_DATA = {
       "address": "66 Wellington St W, TD Bank Tower, 54th Floor, Toronto, ON M5K 1H6",
       "website": "https://www.oliverbonacini.com/restaurants/canoe/",
       "ownership": "Oliver & Bonacini Hospitality",
-      "operating": "OPEN — current official O&B restaurant page.",
+      "operating": "Regular dining is Monday-Friday. Canoe's official FAQ specifically addresses Saturday and Sunday buyouts; treat Saturday and Sunday as private-buyout-only, not ordinary restaurant service. Its live Tasting Menu states Monday-Friday, 5-9:30 pm.",
       "price": {
         "status": "PASS",
         "estimate": "C$65 food before tax/tip",
@@ -4203,11 +4233,11 @@ window.FLOW_DATA = {
         "roles": [
           "Server Assistant — Canoe"
         ],
-        "careersUrl": "https://www.oliverbonacini.com/careers/",
+        "careersUrl": "https://jobs.smartrecruiters.com/oneclick-ui/company/OliverBonacini/publication/7f33ad24-2407-4f7f-b3fb-64b4f96fc993?dcr_ci=OliverBonacini",
         "applicationUrl": "https://jobs.smartrecruiters.com/oneclick-ui/company/OliverBonacini/publication/7f33ad24-2407-4f7f-b3fb-64b4f96fc993?dcr_ci=OliverBonacini",
-        "requirements": "Confirm current full job body. Captured requirements: one fast-paced restaurant year, valid Smart Serve, evening/weekend/holiday availability. Jonathan’s eligibility is unconfirmed.",
+        "requirements": "Confirm the live Server Assistant - Canoe body before applying. The captured checklist is one fast-paced restaurant year, valid Smart Serve, and weekend/evening/holiday availability; Jonathan’s eligibility is unconfirmed.",
         "checkedAt": "2026-09-19",
-        "caveat": "Support role, not a management vacancy or guaranteed promotion.",
+        "caveat": "Live official SmartRecruiters surface checked 2026-09-19: Server Assistant - Canoe, Toronto. Recheck immediately before applying; it is not a Server or management application.",
         "sources": [
           {
             "label": "Canoe Server Assistant",
@@ -4222,8 +4252,12 @@ window.FLOW_DATA = {
             "exactClaims": "Posted Sep 9 by Oliver & Bonacini; requirements include 1 year, Smart Serve and weekend/evening/holiday availability."
           }
         ],
-        "schedule": "Full-time in captured posting; confirm present listing.",
-        "compensation": "Mirror: C$17.60/hour plus shared gratuities; confirm original offer."
+        "schedule": "Full-time in the captured posting; confirm the live body.",
+        "compensation": "",
+        "role": "",
+        "email": "",
+        "contact": "",
+        "phone": "416-364-0054"
       },
       "hours": {
         "official": "Regular weekend dining is not published; official FAQ discusses Saturday/Sunday buyouts, and current directory lists Saturday/Sunday closed for regular service.",
@@ -4246,15 +4280,15 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Apply immediately; weekday 2:30–3:30 pm only after Tower access and service hours are confirmed",
-        "backup": "O&B careers and events team",
-        "avoid": "Saturday lunch/dinner service and an unannounced 54 th-floor walk-in",
-        "likelihood": "MEDIUM",
+        "best": "Apply online. Saturday is private-buyout-only; meet a manager only after a specific invitation.",
+        "backup": "Use the official SmartRecruiters route; use O&B careers/contact only for a clarification.",
+        "avoid": "Any Saturday restaurant visit or uninvited 54 th-floor approach.",
+        "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Verified role, but Saturday manager access in a tower fine-dining operation is constrained.",
-        "confidence": "MEDIUM",
+        "why": "The exact role is online, while Saturday is not ordinary Canoe dining or public manager access.",
+        "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "UNABLE TO VERIFY",
@@ -4319,7 +4353,7 @@ window.FLOW_DATA = {
       "operatingUncertain": false,
       "scores": {
         "fit": 17,
-        "access": 9,
+        "access": 3,
         "career": 14,
         "confidence": 4
       },
@@ -4345,7 +4379,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not appear on Saturday, claim a submitted application before it is complete, or describe Server Assistant as a management role.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hello, I'm Jonathan Beaulne. I’m interested in the current Canoe Server Assistant role and wanted to introduce myself only if this is an appropriate time. My background includes Bar Lead, Private Event Coordinator, and Private Event Server / Server work. I was drawn to Canoe's seasonal Canadian menu, detailed wine program and event work, and I am interested in learning the team's service standards."
     },
     {
       "id": 33,
@@ -4353,7 +4388,7 @@ window.FLOW_DATA = {
       "address": "133 Richmond St W, Toronto, ON",
       "website": "https://www.volosgreekcuisine.com/",
       "ownership": "Independent Greek/Mediterranean restaurant",
-      "operating": "Operating status needs primary-source refresh.",
+      "operating": "Monday-Friday lunch 11:30 am-2:30 pm, then dinner from 4:30 pm; Saturday dinner from 4:30 pm; Sunday closed.",
       "price": {
         "status": "PASS",
         "estimate": "C$61 food before tax/tip",
@@ -4371,28 +4406,34 @@ window.FLOW_DATA = {
         "roles": [],
         "careersUrl": "https://www.volos.ca/careers/",
         "applicationUrl": "https://www.volos.ca/careers/",
-        "requirements": "General form asks for desired position and actual availability; no exact vacancy requirements verified.",
+        "requirements": "The live form requests desired position, factual availability, contact details and résumé; no specific vacancy, recruiter, pay or deadline is named.",
         "checkedAt": "2026-09-19",
-        "caveat": "All-positions invitation is not evidence of an individual management opening.",
-        "sources": []
+        "caveat": "The live form says Volos is currently hiring for all positions but does not name a specific vacancy, recruiter, pay or deadline. Complete desired-position, availability, contact and resume fields only with Jonathan’s actual facts.",
+        "sources": [],
+        "role": "",
+        "email": "",
+        "contact": "",
+        "phone": "416-861-1211",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
-        "official": "Needs same-day verification",
+        "official": "Monday-Friday lunch 11:30 am-2:30 pm, then dinner from 4:30 pm; Saturday dinner from 4:30 pm; Sunday closed.",
         "lunch": "Unknown",
         "dinner": "Unknown",
         "closed": "Unknown",
         "sources": []
       },
       "access": {
-        "best": "Weekday 2:30–3:30 pm after confirming lunch service",
-        "backup": "Official contact channel",
-        "avoid": "Saturday service",
+        "best": "Use the official careers form first. A pre-opening call may ask whether an introduction is welcome; no public manager-access window is verified.",
+        "backup": "Complete the careers form with truthful desired role and availability.",
+        "avoid": "Saturday dinner setup and service from 16:30.",
         "likelihood": "LOW",
-        "risk": "MEDIUM",
-        "why": "No hiring proof yet.",
+        "risk": "HIGH",
+        "why": "The general form is live, but it does not establish a named vacancy or manager availability.",
         "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "",
@@ -4446,7 +4487,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not claim an exact vacancy, wine-list knowledge, staff referral, form submission before it occurs, or access to a manager during Saturday dinner.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hello, I’m Jonathan Beaulne. I’m interested in an appropriate front-of-house, bar, or event-service opportunity and wanted to ask for the correct route without interrupting dinner service. My experience includes Bar Lead, Private Event Coordinator, and Private Event Server / Server roles. I was interested in Volos’s Greek seafood direction and private dining work, and I’m interested in growing toward leadership over time."
     },
     {
       "id": 34,
@@ -4454,7 +4496,7 @@ window.FLOW_DATA = {
       "address": "1 Richmond St W, Toronto, ON",
       "website": "https://www.richmondstation.ca/",
       "ownership": "Chef-owned independent",
-      "operating": "Operating status needs primary-source refresh.",
+      "operating": "Weekday lunch 11:30–14:30 and dinner 16:30–22:30. Saturday/Sunday dinner: reservations body says 15:30, site footer says 16:30; confirm directly.",
       "price": {
         "status": "PASS",
         "estimate": "C$115 Chef’s Menu before tax; service already included",
@@ -4470,12 +4512,18 @@ window.FLOW_DATA = {
       "hiring": {
         "status": "GENERAL HIRING / ACCEPTING APPLICATIONS",
         "roles": [],
-        "careersUrl": "https://richmondstation.ca/employment/",
+        "careersUrl": "https://stationgroup.typeform.com/to/tFM2FKTW",
         "applicationUrl": "https://stationgroup.typeform.com/to/tFM2FKTW",
-        "requirements": "No exact advertised role to establish requirements, schedule or compensation.",
+        "requirements": "",
         "checkedAt": "2026-09-19",
-        "caveat": "The official general employment invitation is active; this is not a specific vacancy.",
-        "sources": []
+        "caveat": "General application; no specific current FOH vacancy verified.",
+        "sources": [],
+        "role": "",
+        "email": "info@richmondstation.ca",
+        "contact": "",
+        "phone": "647-748-1444",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
         "official": "Weekday lunch 11:30–14:30 and dinner 16:30–22:30. Saturday/Sunday dinner: reservations body says 15:30, site footer says 16:30; confirm directly.",
@@ -4486,15 +4534,15 @@ window.FLOW_DATA = {
         "saturday": "Reservations body 15:30–22:30; footer 16:30–22:30. Confirm."
       },
       "access": {
-        "best": "Apply online; arrange any visit directly.",
-        "backup": "Ask the published general inbox for the appropriate contact.",
-        "avoid": "Uninvited closed/prep period and Saturday dinner.",
+        "best": "Use the general employment form first; any return time must be agreed.",
+        "backup": "Ask the employer to identify the appropriate FOH hiring contact.",
+        "avoid": "Saturday dinner and any uninvited prep/closed period.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "No public daytime service and conflicting evening opening times; no hiring-manager availability verified.",
+        "why": "Weekend opening information conflicts and no hiring-manager window is published.",
         "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "Hayden Johnston",
@@ -4560,7 +4608,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not claim a vacant role or approach Saturday dinner prep.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hi, I’m Jonathan Beaulne. I saw Richmond Station’s Hospitality Included approach and its work across restaurant and events, and wanted to introduce myself without interrupting service. My background is Bar Lead, Private Event Coordinator, and Private Event Server / Server work, and I’m interested in an appropriate FOH opportunity with room to grow."
     },
     {
       "id": 35,
@@ -4568,7 +4617,7 @@ window.FLOW_DATA = {
       "address": "1 Harbour Sq, Toronto, ON",
       "website": "https://donalfonsotoronto.com/",
       "ownership": "Don Alfonso 1890 / Liberty Entertainment Group",
-      "operating": "Operating status needs primary-source refresh.",
+      "operating": "Closed Monday-Tuesday. Wednesday 5:00-9:00 pm; Thursday 5:00-9:30 pm; Friday-Saturday 5:00-10:00 pm; Sunday 5:00-9:00 pm.",
       "price": {
         "status": "PASS",
         "estimate": "C$225 tasting food before tax/tip",
@@ -4584,30 +4633,36 @@ window.FLOW_DATA = {
       "hiring": {
         "status": "NO CURRENT HIRING FOUND",
         "roles": [],
-        "careersUrl": "",
-        "applicationUrl": "",
+        "careersUrl": "https://careers.smartrecruiters.com/LibertyEntertainmentGroup1",
+        "applicationUrl": "https://careers.smartrecruiters.com/LibertyEntertainmentGroup1",
         "requirements": "",
         "checkedAt": "2026-09-19",
-        "caveat": "No live FOH role captured.",
-        "sources": []
+        "caveat": "This is the group’s live careers surface, not proof of an active Don Alfonso role. Apply only when the exact live posting identifies the role and location. The restaurant’s published info@ address is a general contact route, not a stated recruiting inbox.",
+        "sources": [],
+        "role": "",
+        "email": "info@donalfonsotoronto.com",
+        "contact": "",
+        "phone": "289-805-6290",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
-        "official": "Needs same-day verification",
+        "official": "Closed Monday-Tuesday. Wednesday 5:00-9:00 pm; Thursday 5:00-9:30 pm; Friday-Saturday 5:00-10:00 pm; Sunday 5:00-9:00 pm.",
         "lunch": "Unknown",
         "dinner": "Unknown",
         "closed": "Unknown",
         "sources": []
       },
       "access": {
-        "best": "By appointment/email; weekday between services",
-        "backup": "Group careers contact",
-        "avoid": "Saturday service",
+        "best": "Check Liberty’s exact live careers board or ask the published general contact for the proper route. No public manager-access window is verified.",
+        "backup": "Use the group careers board only when an exact Don Alfonso role and location are displayed.",
+        "avoid": "Saturday dinner service 17:00–22:00.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Fine-dining dinner prep and no verified vacancy.",
+        "why": "No exact Don Alfonso FOH role or public manager window was verified.",
         "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "",
@@ -4726,7 +4781,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not say a role is open; assume Liberty or Westin staff are the hiring manager; cite an old hiring post; or ask for a conversation during Saturday dinner service.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hello, I’m Jonathan Beaulne. I’m interested in an appropriate active front-of-house or event-service opportunity with Don Alfonso 1890, and I wanted to ask for the correct official route without interrupting service. My experience includes Bar Lead, Private Event Coordinator, and Private Event Server / Server roles. I’ve been studying the tasting format and Italian-led wine program, and I’m interested in growing toward leadership over time."
     },
     {
       "id": 36,
@@ -4734,7 +4790,7 @@ window.FLOW_DATA = {
       "address": "51 St Nicholas St, Toronto, ON M4Y 1W6",
       "website": "https://www.avelorestaurant.com/",
       "ownership": "Avelo / Bar Avelo",
-      "operating": "OPEN — official site publishes Wed–Sun service.",
+      "operating": "Avelo Restaurant: Wednesday-Sunday 5:00-11:00 pm, first seating 5:00-6:15 pm and second seating 7:45-8:30 pm. Bar Avelo: Wednesday-Thursday and Sunday 5:00 pm-midnight (last seating 10:00 pm); Friday-Saturday 5:00 pm-midnight (last seating 10:30 pm).",
       "price": {
         "status": "PASS",
         "estimate": "C$85 food plus 20% service and tax",
@@ -4754,8 +4810,14 @@ window.FLOW_DATA = {
         "applicationUrl": "",
         "requirements": "",
         "checkedAt": "2026-09-19",
-        "caveat": "No live careers page or exact FOH role located.",
-        "sources": []
+        "caveat": "The site has a live general contact form and public restaurant/event emails, but it does not label any as a recruiting channel. No current FOH role was verified. Apply online only through a current role page that states its title, employer and status.",
+        "sources": [],
+        "role": "",
+        "email": "reservations@awai.ca",
+        "contact": "",
+        "phone": "647-643-3132",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
         "official": "Restaurant Wed–Sun 5–11 pm; Bar Avelo Fri–Sat 5 pm–midnight",
@@ -4772,15 +4834,15 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Wednesday–Friday 3:30–4:15 pm only after calling",
-        "backup": "Email reservations@awai.ca",
-        "avoid": "Saturday from 5 pm onward; two seatings 5–6:15 and 7:45–8:30",
+        "best": "Use the official contact route before service only to ask for the correct employment channel. No public manager-access window is verified.",
+        "backup": "Keep an inquiry distinct from an application unless an exact live role is supplied.",
+        "avoid": "Saturday restaurant and bar service from 17:00 onward.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Dinner-only Saturday operation and no current hiring evidence.",
-        "confidence": "HIGH",
+        "why": "No current FOH role or published manager-access window was verified.",
+        "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "",
@@ -4861,7 +4923,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not claim a current server opening, dietary-specialist knowledge, a manager referral, an application submission, or access to a manager during Saturday service.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hello, I’m Jonathan Beaulne. I’m interested in an appropriate active front-of-house or bar opportunity at Avelo or Bar Avelo and wanted to ask for the correct official route without interrupting service. My experience includes Bar Lead, Private Event Coordinator, and Private Event Server / Server roles. I’m drawn to the guided tasting format, the cocktail program, and the way your team introduces seasonal ingredients, and I’m interested in growing toward leadership over time."
     },
     {
       "id": 37,
@@ -4869,7 +4932,7 @@ window.FLOW_DATA = {
       "address": "100 Cumberland St, Toronto, ON",
       "website": "https://www.sassafraz.ca/",
       "ownership": "Independent Yorkville restaurant",
-      "operating": "OPEN — official contact page says open seven days weekly.",
+      "operating": "Open seven days. Saturday 11:00 am-11:00 pm; weekday service begins 11:30 am. Restaurant, S-Café Bar, patio, weddings and private events operate from the Yorkville Victorian rowhouse setting.",
       "price": {
         "status": "PASS",
         "estimate": "C$65 food before tax/tip",
@@ -4884,12 +4947,18 @@ window.FLOW_DATA = {
       },
       "hiring": {
         "status": "GENERAL HIRING / ACCEPTING APPLICATIONS",
-        "roles": [],
-        "careersUrl": "https://www.sassafraz.ca/careers-restaurant-toronto/",
+        "roles": [
+          "Server",
+          "Support",
+          "Bartender",
+          "Hostess",
+          "Management interest"
+        ],
+        "careersUrl": "https://www.sassafraz.ca/employment/",
         "applicationUrl": "https://www.sassafraz.ca/employment/",
-        "requirements": "Select the actual desired role and enter truthful experience/availability. Management is a selectable interest, not a verified vacancy.",
+        "requirements": "The live form offers Server, Support, Bartender, Hostess and Management interest. Enter only factual eligibility, Smart Serve, availability and résumé details; no single vacancy, pay or deadline is named.",
         "checkedAt": "2026-09-19",
-        "caveat": "No exact role, pay or deadline published.",
+        "caveat": "The live form accepts applications for several role categories but does not prove any single role is currently vacant. It requests factual eligibility, availability, Smart Serve and resume information; do not invent any of those answers.",
         "sources": [
           {
             "label": "Sassafraz employment form",
@@ -4897,7 +4966,13 @@ window.FLOW_DATA = {
             "accessedAt": "2026-09-19",
             "exactClaims": "Form has Server, Support staff, Bartender, Hostess and Management role selections."
           }
-        ]
+        ],
+        "role": "",
+        "email": "info@sassafraz.ca",
+        "contact": "",
+        "phone": "416-964-2222",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
         "official": "Saturday 11 am–11 pm; official page says open seven days a week.",
@@ -4914,15 +4989,15 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Weekday 2:30–3:30 pm after calling",
-        "backup": "Website contact",
-        "avoid": "Saturday brunch and dinner peaks",
+        "best": "INFERENCE — Optional 14:30–16:00 host inquiry during continuous public Saturday service. Use the online route first; no manager appointment is implied.",
+        "backup": "Use info@sassafraz.ca only for a routing question or directed follow-up.",
+        "avoid": "Any busy service or event setup; a host’s refusal ends the visit.",
         "likelihood": "LOW",
         "risk": "MEDIUM",
-        "why": "Service periods exist but no verified hiring signal.",
-        "confidence": "MEDIUM",
+        "why": "Optional brief host inquiry during continuous public Saturday service; ask if a conversation is welcome, leave if busy. No manager availability or exact vacancy is promised.",
+        "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "Geoff Webb",
@@ -4993,7 +5068,7 @@ window.FLOW_DATA = {
       },
       "reason": "Published team and real events operation, with a general form including management interest. Apply first; any afternoon introduction is an inference during public service.",
       "tier": "STRONG",
-      "askFor": "No unscheduled manager request; use the live employment form first. If invited to speak, ask for the manager on duty at a time they identify.",
+      "askFor": "Ask the host for the appropriate hiring route or a better time; speak to a manager only if the host says it is welcome.",
       "prep": "The official employment form is live and offers Server, Support, Bartender and Management selections. Geoff Webb is verified General Manager; Daniel Hassell is Culinary Head Chef; Dennette Schott is Events Manager; James Pollock is Wine Director. Saturday official hours are 11:00 am-11:00 pm.",
       "chef": {
         "name": "Daniel Hassell",
@@ -5021,10 +5096,11 @@ window.FLOW_DATA = {
           "start": "14:30",
           "end": "16:00",
           "kind": "walkin",
-          "why": "Service periods exist but no verified hiring signal."
+          "why": "INFERENCE — Optional brief host inquiry during continuous public Saturday service; ask if a conversation is welcome, leave if busy. No manager availability or exact vacancy is promised."
         }
       ],
       "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hello, I’m Jonathan Beaulne. I’m interested in Sassafraz’s employment form for front-of-house, bar, event-service or management-track consideration and wanted to introduce myself only if this is a suitable moment. My background includes Bar Lead, Private Event Coordinator, and Private Event Server / Server roles. I was drawn to the restaurant’s market-driven menu, S-Café Bar, and wedding/event work, and I’m interested in growing toward leadership over time.",
       "coordinates": {
         "lat": 43.6703667,
         "lng": -79.3911054
@@ -5036,7 +5112,7 @@ window.FLOW_DATA = {
       "address": "162 Cumberland St, Toronto, ON",
       "website": "https://alobaryorkville.com/",
       "ownership": "Chase Hospitality Group",
-      "operating": "OPEN — current official Yorkville page and current menu are live.",
+      "operating": "Open Sunday–Thursday 5–10 pm and Friday–Saturday 5–10:30 pm.",
       "price": {
         "status": "PASS",
         "estimate": "C$88 food before tax/tip",
@@ -5052,12 +5128,18 @@ window.FLOW_DATA = {
       "hiring": {
         "status": "NO CURRENT HIRING FOUND",
         "roles": [],
-        "careersUrl": "",
-        "applicationUrl": "",
+        "careersUrl": "https://alofoodgroup.com/careers/",
+        "applicationUrl": "https://alofoodgroup.com/careers/",
         "requirements": "",
         "checkedAt": "2026-09-19",
-        "caveat": "No exact current Alobar FOH posting captured.",
-        "sources": []
+        "caveat": "General CV route; no exact Alobar vacancy confirmed.",
+        "sources": [],
+        "role": "",
+        "email": "info@alobaryorkville.com",
+        "contact": "",
+        "phone": "416-961-1222",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
         "official": "Friday–Saturday 5–10:30 pm; Sunday–Thursday 5–10 pm",
@@ -5074,15 +5156,15 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Weekday 2:30–3:30 pm after confirming service",
-        "backup": "Chase Hospitality Group careers/contact",
-        "avoid": "Saturday dinner",
+        "best": "Use the group careers route or public general email first; no public manager-access window is verified.",
+        "backup": "Ask the team whether it is accepting a future FOH/bar conversation or application.",
+        "avoid": "Saturday dinner preparation and service from 17:00.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "High-end service prep plus no evidence of an open role.",
+        "why": "No exact Alobar FOH role or public manager-access window was verified.",
         "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "Charlotte McKay",
@@ -5145,7 +5227,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not ask for a job during Saturday dinner prep, claim a current opening, or call the entire operation a steakhouse.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hi, I’m Jonathan Beaulne. I’m interested in the correct route for future FOH or bar opportunities and wanted to introduce myself only if this is an appropriate time. My background combines Bar Lead, Private Event Coordinator, and Private Event Server / Server work, and I was drawn to Alobar’s cocktail, wine, seafood and grill service."
     },
     {
       "id": 39,
@@ -5153,7 +5236,7 @@ window.FLOW_DATA = {
       "address": "60 Yorkville Ave, Toronto, ON",
       "website": "https://www.fourseasons.com/toronto/dining/restaurants/cafe-boulud/",
       "ownership": "Four Seasons Hotel Toronto / Daniel Boulud",
-      "operating": "OPEN — official current restaurant site publishes breakfast, weekday lunch, weekend brunch and dinner.",
+      "operating": "Breakfast daily 7:00–11:00 am; brunch Saturday–Sunday 11:30 am–2:30 pm; lunch Monday–Friday 11:45 am–2:30 pm; dinner Monday–Saturday 5:30–10:00 pm; five-course tasting Monday–Saturday 5:30–9:15 pm.",
       "price": {
         "status": "PASS",
         "estimate": "C$72 food before tax/tip",
@@ -5169,11 +5252,11 @@ window.FLOW_DATA = {
       "hiring": {
         "status": "STALE / HISTORICAL ONLY",
         "roles": [],
-        "careersUrl": "https://careers.fourseasons.com/",
+        "careersUrl": "https://careers.fourseasons.com/us/en/search-results?keywords=Toronto",
         "applicationUrl": "https://careers.fourseasons.com/us/en/search-results?keywords=Toronto",
-        "requirements": "All located exact Café Boulud role pages were filled. Check current official Toronto listings for a new suitable role.",
+        "requirements": "",
         "checkedAt": "2026-09-19",
-        "caveat": "No live Café Boulud vacancy verified.",
+        "caveat": "Search and read the live official result immediately before applying. All located Café Boulud-specific historic role pages were marked filled on 2026-09-19.",
         "sources": [
           {
             "label": "Four Seasons former Server Assistant posting",
@@ -5181,7 +5264,13 @@ window.FLOW_DATA = {
             "accessedAt": "2026-09-19",
             "exactClaims": "Job page says the role has been filled."
           }
-        ]
+        ],
+        "role": "",
+        "email": "",
+        "contact": "",
+        "phone": "+1 416-964-0411",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
         "official": "Breakfast daily 7–11 am; lunch Mon–Fri 11:45–2:30; brunch Sat–Sun 11:30–2:30; dinner Mon–Sat 5:30–10 pm.",
@@ -5198,15 +5287,15 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Call or email first. Brunch ends 14:30; dining room does not reopen until 17:30. Hotel lobby access is not restaurant-manager access.",
-        "backup": "Four Seasons careers",
-        "avoid": "Saturday hotel dinner service",
+        "best": "Use the official Four Seasons careers search and apply only to a live Toronto role; hotel access is not restaurant-manager access.",
+        "backup": "Ask the restaurant or careers route for the correct employment channel.",
+        "avoid": "Saturday brunch turnover, the service gap, dinner preparation and dinner.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "No active requisition confirmed and luxury-hotel service structure limits walk-in access.",
-        "confidence": "MEDIUM",
+        "why": "Located Café Boulud role pages are filled and no public hiring window is verified.",
+        "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "",
@@ -5281,7 +5370,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not treat hotel access as manager access; claim an old career link is live; call Dario the restaurant manager; assert a referral; or approach during Saturday brunch turnaround/dinner preparation.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hello, I’m Jonathan Beaulne. I am interested in an appropriate Café Boulud front-of-house opportunity and wanted to ask for the correct Four Seasons application route without interrupting service. My experience includes Bar Lead, Private Event Coordinator, and Private Event Server / Server roles. I’m drawn to the restaurant’s thoughtful beverage program, tasting service, and hotel-level guest care, and I’m interested in growing toward leadership over time."
     },
     {
       "id": 40,
@@ -5289,7 +5379,7 @@ window.FLOW_DATA = {
       "address": "23 St Thomas St, Toronto, ON M5S 3E7",
       "website": "https://www.enigmayorkville.com/",
       "ownership": "Enigma Yorkville",
-      "operating": "OPEN — official menu documents service periods.",
+      "operating": "Current official pages advertise Saturday lunch plus dinner; site pages state an eight-course tasting, four-course Prelude, Chef's Counter, à la carte, Macallan Lounge and private dining.",
       "price": {
         "status": "PASS",
         "estimate": "C$72 food before tax/tip",
@@ -5303,14 +5393,20 @@ window.FLOW_DATA = {
         ]
       },
       "hiring": {
-        "status": "NO CURRENT HIRING FOUND",
+        "status": "GENERAL HIRING / ACCEPTING APPLICATIONS",
         "roles": [],
-        "careersUrl": "",
-        "applicationUrl": "",
-        "requirements": "",
+        "careersUrl": "https://www.enigmayorkville.com/careers/",
+        "applicationUrl": "https://www.enigmayorkville.com/careers/",
+        "requirements": "The live general careers form asks for name, email, phone and résumé; cover letter is optional. No named FOH vacancy is verified.",
         "checkedAt": "2026-09-19",
-        "caveat": "No current FOH vacancy located.",
-        "sources": []
+        "caveat": "Live general application form, not a named FOH vacancy. It requires name, email, phone and résumé; cover letter is optional.",
+        "sources": [],
+        "role": "",
+        "email": "info@enigmayorkville.com",
+        "contact": "",
+        "phone": "416-323-3332",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
         "official": "Lunch Fri–Sat noon; lounge/tasting Tue–Sat from 5 pm",
@@ -5327,15 +5423,15 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Saturday 2:30–3:30 pm after lunch closes and before 5 pm dinner prep; call first",
-        "backup": "Website/private-dining contact",
-        "avoid": "Noon–2 pm lunch and from 4 pm onward",
+        "best": "Use Enigma’s general careers form or public email first; any in-person introduction requires an invitation.",
+        "backup": "Ask for the appropriate FOH route through the form or public contact.",
+        "avoid": "Saturday lunch, dinner, lounge and tasting-menu service.",
         "likelihood": "LOW",
-        "risk": "MEDIUM",
-        "why": "A real Saturday between-service window exists, but no hiring signal.",
-        "confidence": "MEDIUM",
+        "risk": "HIGH",
+        "why": "The general form accepts resumes, but no named FOH vacancy or manager-access window is verified.",
+        "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "Taruna Daya",
@@ -5404,7 +5500,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not assume a listed chef/manager is working, claim a live vacancy, or interrupt a tasting-menu service.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hi, I am Jonathan Beaulne. I’m interested in future front-of-house consideration through Enigma’s careers form and wanted to ask whether there is a suitable time to introduce myself briefly."
     },
     {
       "id": 41,
@@ -5412,7 +5509,7 @@ window.FLOW_DATA = {
       "address": "53 Scollard Street, Toronto, ON M5R 0A1 (official contact page displays 23 Scollard; confirm entrance)",
       "website": "https://buca.ca/yorkville/",
       "ownership": "Buca / King Street Food Company",
-      "operating": "OPEN - official Yorkville contact shows Tuesday-Saturday lunch 11:30 am-2:30 pm and dinner 5:00 pm-9:30 pm.",
+      "operating": "Official Yorkville contact: Tuesday–Saturday lunch 11:30 am–2:30 pm; Tuesday–Saturday dinner 5:00 pm–9:30 pm. Sunday and Monday are closed.",
       "price": {
         "status": "PASS",
         "estimate": "C$73 food per person before tax/tip",
@@ -5430,18 +5527,24 @@ window.FLOW_DATA = {
         "roles": [
           "Server — part-time / full-time"
         ],
-        "careersUrl": "https://buca.ca/careers/",
+        "careersUrl": "https://www.86network.com/jobs/toronto/on/buca-osteria-and-bar-yorkville/server-ehr27w",
         "applicationUrl": "https://www.86network.com/jobs/toronto/on/buca-osteria-and-bar-yorkville/server-ehr27w",
-        "requirements": "Smart Serve, work authorization and three days of real availability across morning/afternoon/evening dayparts. Published C$17.60/hour plus tips. Jonathan’s eligibility details are unconfirmed.",
+        "requirements": "Confirm real availability and requirements in the live body. The posting displays Smart Serve, work permit, three-days/week availability and C$17.60/hour plus tips; Jonathan’s eligibility details are unconfirmed.",
         "checkedAt": "2026-09-19",
-        "caveat": "Root verified original Apply Now surface September 19; role is Yorkville, not King.",
+        "caveat": "Create/sign in to 86 network and confirm actual availability and requirements before submission. The live role is Yorkville, not King.",
         "sources": [
           {
             "label": "Buca Yorkville exact active Server application — September 19 check",
             "url": "https://www.86network.com/jobs/toronto/on/buca-osteria-and-bar-yorkville/server-ehr27w",
             "accessedAt": "2026-09-19"
           }
-        ]
+        ],
+        "role": "",
+        "email": "info@bucayorkville.com",
+        "contact": "",
+        "phone": "416-962-2822",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
         "official": "Tuesday-Saturday 11:30 am-2:30 pm and 5:00 pm-9:30 pm",
@@ -5458,15 +5561,15 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Apply online first; any 14:45–15:15 return requires the manager’s agreement during the closed service gap.",
-        "backup": "Use the general email for a concise routing question if necessary.",
-        "avoid": "Lunch service 11:30–14:30, dinner 17:00–21:30, and uninvited closed-gap entry.",
+        "best": "Apply through the live 86 network Server posting first. Any visit requires the manager’s agreement.",
+        "backup": "Use the public email only for a routing question if necessary.",
+        "avoid": "Saturday lunch, dinner and an uninvited closed-gap entry.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "The live opening merits an A-GAME application, but Saturday staffing and manager access are unverified.",
+        "why": "The role is live, but public service hours do not establish manager availability.",
         "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "",
@@ -5555,7 +5658,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not arrive Saturday during lunch/dinner or claim a manager name, wine knowledge or availability that has not been confirmed.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hi, I’m Jonathan Beaulne. I saw the current Server posting and wanted to introduce myself without interrupting service. My background includes Bar Lead, Private Event Coordinator, and Private Event Server / Server work; Buca Yorkville’s seasonal coastal-Italian menu and tableside seafood service stood out to me."
     },
     {
       "id": 42,
@@ -5563,7 +5667,7 @@ window.FLOW_DATA = {
       "address": "202 Davenport Rd, Toronto, ON M5R 1J2",
       "website": "https://www.josos.com/",
       "ownership": "Owned and operated by Leo and Shirley Spralja; founded by Joso Spralja",
-      "operating": "OPEN — official site accepts Tue–Sat reservations 5–8:30 pm.",
+      "operating": "Official site: reservations Tuesday–Saturday, 17:00–20:30. It asks guests to call rather than make email reservations.",
       "price": {
         "status": "PASS",
         "estimate": "C$78 food before tax/tip",
@@ -5577,15 +5681,13 @@ window.FLOW_DATA = {
         ]
       },
       "hiring": {
-        "status": "GENERAL HIRING / ACCEPTING APPLICATIONS",
-        "roles": [
-          "No exact current role published"
-        ],
+        "status": "NO CURRENT HIRING FOUND",
+        "roles": [],
         "careersUrl": "",
         "applicationUrl": "",
-        "requirements": "Accessibility page expressly calls out job applicants and interview accommodations but does not advertise a vacancy.",
+        "requirements": "",
         "checkedAt": "2026-09-19",
-        "caveat": "This is an inclusive-applicant policy, not confirmation that Joso’s is hiring.",
+        "caveat": "No official careers page, recruitment email, public FOH posting or application URL was verified. The contact page says Joso’s does not take email reservations and does not publish an employment inbox.",
         "sources": [
           {
             "label": "Joso's accessibility",
@@ -5593,7 +5695,13 @@ window.FLOW_DATA = {
             "accessedAt": "2026-09-19",
             "exactClaims": "Commits to equitable employment opportunities and interview/application accommodations; gives manager@josos.com."
           }
-        ]
+        ],
+        "role": "",
+        "email": "",
+        "contact": "",
+        "phone": "416-925-1903",
+        "schedule": "",
+        "compensation": ""
       },
       "hours": {
         "official": "Tue–Sat reservations 5–8:30 pm",
@@ -5610,15 +5718,15 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Email manager@josos.com first; weekday 3:30–4:15 pm only if invited",
-        "backup": "Brief pre-service call asking when a resume may be received",
-        "avoid": "Saturday from 4 pm onward and all dinner service",
+        "best": "No public manager-access window is published. Call well before service on a different day/time to ask for the appropriate future-FOH contact or an agreed time.",
+        "backup": "Phone only; no public employment email or application route was verified.",
+        "avoid": "Saturday reservations and dinner service 17:00–20:30.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Small, dinner-only restaurant; owner/GM review is documented but no vacancy is.",
-        "confidence": "HIGH",
+        "why": "Joso’s publishes phone/reservation contact but no FOH vacancy, careers page, employment email or manager-access window.",
+        "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Based on published meal periods; live crowd level was not available. No manager availability is promised."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "Leo Spralja",
@@ -5701,7 +5809,8 @@ window.FLOW_DATA = {
       "failureRisk": "Do not say Joso's is hiring, assume Leo or Marko is available, or interrupt the 17:00–20:30 reservation service.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation."
+      "backup": "Use the next nearby eligible stop, or finish applications. Closed dining rooms need a confirmed invitation.",
+      "opening": "Hi, I am Jonathan Beaulne. I am interested in future front-of-house opportunities and wanted to ask the proper route at a time that does not interrupt service."
     },
     {
       "id": "A02",
@@ -5736,18 +5845,21 @@ window.FLOW_DATA = {
         "role": "Bartender / Server / Junior Server / Host",
         "careersUrl": "https://www.86network.com/jobs/toronto/on/harbour-sixty-steakhouse/server-64zjkw",
         "applicationUrl": "https://www.86network.com/jobs/toronto/on/harbour-sixty-steakhouse/server-64zjkw",
-        "requirements": "Posting requests 3+ years upscale dining, Smart Serve, legal eligibility to work in Canada and strong beverage/cocktail knowledge. These qualifications must be matched to Jonathan’s actual CV.",
-        "schedule": "Evenings, weekends and holidays; structured field says three days/week and body describes full-time. Confirm role-specific schedule.",
-        "compensation": "Employer advertises C$17.55/hr plus C$30–50/hr estimated tips; body says hourly rate depends on position. Tips and role-specific rate are not guaranteed.",
+        "requirements": "The body names Bartender, Server, Junior Server and Host. It requests 3+ years upscale dining, Smart Serve, legal Canadian work eligibility and strong beverage/cocktail knowledge; match all requirements honestly to the CV.",
+        "schedule": "Evenings, weekends and holidays; the body and structured fields differ on employment pattern, so confirm the exact role.",
+        "compensation": "Employer advertises C$17.55/hour plus C$30–50/hour estimated tips; role-specific rate and tips are not guaranteed.",
         "checkedAt": "2026-09-19",
         "posted": "2026-09-17",
-        "caveat": "Root live browser: Apply Now visible September 19; start shown September 28. Several roles appear under a Server heading. Verify actual role, hours and compensation.",
+        "caveat": "Apply Now visible September 19. The body names several roles; compensation and employment type vary and need confirmation.",
         "sources": [
           {
             "label": "Exact live Arianna FOH posting under Harbour Sixty employer",
             "url": "https://www.86network.com/jobs/toronto/on/harbour-sixty-steakhouse/server-64zjkw"
           }
-        ]
+        ],
+        "email": "",
+        "contact": "",
+        "phone": ""
       },
       "hours": {
         "official": "OpenTable lists daily dinner 17:00–00:00; no official hiring-access hours.",
@@ -5762,15 +5874,15 @@ window.FLOW_DATA = {
         ]
       },
       "access": {
-        "best": "Apply first; request an agreed manager time. No uninvited afternoon visit recommended.",
-        "backup": "Use the exact online application; save any manager invitation as a hard anchor.",
-        "avoid": "Dinner opening and busy evening service without an invitation.",
+        "best": "Apply first and request an agreed manager time. No uninvited afternoon visit is recommended.",
+        "backup": "Use the exact online application and save any manager invitation as an anchor.",
+        "avoid": "Dinner opening and evening service without an invitation.",
         "likelihood": "LOW",
         "risk": "HIGH",
-        "why": "Fourth-floor dinner operation; a publicly accessible building does not establish manager availability.",
+        "why": "A fourth-floor dinner venue does not establish public manager availability.",
         "confidence": "LOW",
         "busyConfidence": "INFERRED",
-        "busyEvidence": "Service-period and venue-format inference; no live crowd measurement."
+        "busyEvidence": "Service periods are not manager availability. No public access window is promised."
       },
       "manager": {
         "name": "Current Arianna FOH manager not verified",
@@ -5830,12 +5942,13 @@ window.FLOW_DATA = {
       "reason": "Live events-season FOH recruitment across four roles, with a direct bar, floor and private-event fit. Apply and request a conversation before making a special downtown trip.",
       "tier": "A-GAME",
       "askFor": "The manager responsible for Arianna front-of-house hiring.",
-      "prep": "Confirm role requirements against your real CV. Know this is Arianna on the fourth floor, prepare one true event-handoff example and two Italian wine comparisons.",
+      "prep": "Management: ask for the manager handling Arianna FOH hiring. The current individual is unverified; the live application is the strongest contact route. Chef: Scott MacKenzie is LIKELY CURRENT at Arianna. The 2025 launch called him chef de cuisine; current title and hierarchy need confirmation. Food / beverage: Italian sharing and individual dishes; C$60 flat iron clears the floor. Study the actual Italian glass list and premium pour sizes.",
       "materials": "Resume; Arianna cover letter; accurate availability and certification status; a real Bar Lead or event-service example.",
       "failureRisk": "Do not confuse the steakhouse with Arianna, interrupt dinner setup, claim an application was sent before it was, or assume stated qualifications and availability are satisfied.",
       "onSiteMinutes": 10,
       "windows": [],
-      "backup": "Continue the Queen West plan unless Arianna offers an appointment. Use the same work block for the exact online application."
+      "backup": "Continue the Queen West plan unless Arianna offers an appointment. Use the same work block for the exact online application.",
+      "opening": "Hi, I’m Jonathan Beaulne. I saw Arianna’s current front-of-house posting for the events season. My Capra’s experience includes Bar Lead and Server work, along with private-event coordination and service. Is there a suitable time to speak briefly with the person handling Arianna recruitment?"
     }
   ],
   "travel": [
