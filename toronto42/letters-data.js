@@ -139,6 +139,20 @@ ${core} A members’ club bar asks for classics made properly, wine confidence, 
 
 I hold Smart Serve and I’m available immediately for the mix of lunches, dinners and weekends the posting describes. I travel by GO from Clarkson to Union and the subway to St George.`+sig,
 
+ A02:`Subject: Thank you — [role] interview, Tuesday
+
+Hi [Name],
+
+Thank you for taking the time to meet with me today at Arianna. [One specific thing from the conversation — a dish, a service detail, something they said about the room.]
+
+The role is a close fit for what I’ve done: upscale Italian service and bartending at Sotto Sotto, leading the bar at Gametime Social and Capra’s, and private events since 2024. I’m available for any evening shift and can start before September 28 if that helps. My Smart Serve is current.
+
+If it would be useful, I’m glad to come in for a trial shift or a second conversation at any time this week.
+
+Thank you again,
+Jonathan Beaulne
+[phone] · [email]`,
+
  C09:`Dear Splash Catering team,
 
 I’m applying for the Banquet Server contract at Casa Loma, available to start immediately.

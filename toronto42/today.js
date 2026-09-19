@@ -14,7 +14,7 @@ document.querySelectorAll('#topnav a').forEach(a=>{const f=a.getAttribute('href'
 $('#dateLine').textContent=new Date(today+'T12:00:00').toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric',year:'numeric'}).replace(',',' ·');
 
 const rows=A.rows;
-const tonight=rows.filter(r=>r.wave==='First wave'),sunday=rows.filter(r=>r.wave==='Second wave'),later=rows.filter(r=>!['First wave','Second wave'].includes(r.wave));
+const events=rows.filter(r=>/^Interview/.test(r.wave)),tonight=rows.filter(r=>r.wave==='First wave'),sunday=rows.filter(r=>r.wave==='Second wave'),later=rows.filter(r=>!['First wave','Second wave'].includes(r.wave)&&!/^Interview/.test(r.wave));
 function firstSentence(t){const m=String(t||'').match(/^[^.!?]*[.!?]/);return m?m[0]:String(t||'');}
 function letterFor(id){const r=get(id),a=P.angles[id];return (L.drafts[id])||L.generic(r,a);}
 
@@ -50,7 +50,30 @@ function card(row,index){
   </details>
  </article>`;
 }
+function eventCard(row){
+ const id=row.id,r=get(id),a=P.angles[id]||{},ev=(A.knownEvents||[]).find(x=>x.id===id)||{},s=app(id);
+ const when=ev.at?new Date(ev.at).toLocaleDateString('en-CA',{weekday:'long',month:'long',day:'numeric'})+' · '+ev.at.slice(11):'';
+ const spree=(P.sprees||[]).find(b=>b.anchor&&b.anchor.id===id);
+ return `<article class="card" data-id="${e(id)}" style="border-color:var(--a);box-shadow:0 10px 28px #7a2f2f22">
+  <div class="kicker"><span class="tag">Interview</span><span>${e(when)}</span></div>
+  <h3>${e(r.name)}</h3>
+  <div class="role">${e(ev.where||r.address)}</div>
+  <p class="why">${e(row.why)}</p>
+  <dl class="facts"><dt>Get there</dt><dd>${e((a.portal||'').split('Bring')[0])}</dd><dt>Bring</dt><dd>Two printed résumés, Smart Serve on your phone, references with permission.</dd><dt>Ask them</dt><dd>Which role and shifts they are filling · training and start date · how tips are pooled · when they decide · actual clock-out time.</dd></dl>
+  <div class="actions">${spree?'<a class="btn primary" href="'+e(F.link('route.html',{day:spree.id}))+'">Tuesday route</a>':''}<a class="btn" href="${e(F.link('hireability.html'))}">Mock drill</a><button class="btn" type="button" data-letter="${e(id)}">Thank-you note</button></div>
+  <div class="letter" id="letter-${e(id)}" hidden><p class="hint">Send the evening of the interview. Fill in the name and one specific thing from the conversation.</p><textarea data-letter-text="${e(id)}" spellcheck="true"></textarea><div class="actions"><button class="btn small" type="button" data-copy="${e(id)}">Copy</button><button class="btn small ghost" type="button" data-reset="${e(id)}">Reset to draft</button><span class="status" data-status="${e(id)}"></span></div></div>
+  <details class="more"><summary>Prep: your angle, three stories, what to study</summary>
+   <div class="lbl">Your angle</div><p>${e(a.pitch||'')}</p>
+   <div class="lbl">Three stories</div><p>${e(a.proof||'')}</p>
+   <div class="lbl">Study tonight</div><p>${e(a.study||'')}</p>
+   <div class="lbl">Practice question</div><p>${e(a.question||'')}</p>
+   <div class="lbl">Watch for</div><p>${e(row.gate)}</p>
+   <div class="actions"><a class="btn small" href="${e(F.link('day.html',{stop:id}))}">Open in workshop</a><a class="btn small ghost" href="${e(F.link('restaurant.html',{stop:id,view:'summary'}))}">Full brief</a>${r.hiring.applicationUrl?'<a class="btn small ghost" target="_blank" rel="noopener noreferrer" href="'+e(r.hiring.applicationUrl)+'">Posting ↗</a>':''}</div>
+  </details>
+ </article>`;
+}
 function renderLists(){
+ if(events.length){$('#eventBlock').hidden=false;$('#eventList').innerHTML='<div class="block-head"><div><h2>Interview</h2><p>Fixed point of the week. Everything else bends around it.</p></div></div>'+events.map(eventCard).join('');}
  $('#listTonight').innerHTML=tonight.map((r,i)=>card(r,i+1)).join('');
  $('#listSunday').innerHTML=sunday.map((r,i)=>card(r,tonight.length+i+1)).join('');
  const waves=[...new Set(later.map(r=>r.wave))];
@@ -72,7 +95,8 @@ function progress(){
  $('#tonightDone').textContent=t;$('#tonightTotal').textContent=tonight.length;$('#weekendDone').textContent=w;$('#weekendTotal').textContent=total;
  $('#progressFill').style.width=Math.round(w/total*100)+'%';
  const groups=new Set([...tonight,...sunday].filter(r=>app(r.id).submitted).map(r=>r.group));
- $('#progressNote').textContent=(w?groups.size+' employer group'+(groups.size===1?'':'s')+' reached. ':'')+'A submission is a record you make here, not a portal reading. A confirmation email is not an offer.';
+ const iv=Object.values(state.apps).filter(a=>a.stage==='interview').length;
+ $('#progressNote').textContent=(iv?iv+' interview'+(iv===1?'':'s')+' arranged. ':'')+(w?groups.size+' employer group'+(groups.size===1?'':'s')+' reached. ':'')+'A submission is a record you make here, not a portal reading. A confirmation email is not an offer.';
 }
 function routeCards(){
  const dayName=d=>new Date(d+'T12:00:00').toLocaleDateString('en-CA',{weekday:'short'});
