@@ -54,16 +54,17 @@ let activeFilter="all",activeDistrict="all",activeStatus="all",map,infoWindow,Ad
 let routeTotals={distanceMeters:0,durationMillis:0,loaded:0,failed:0};
 
 function previewUrl(file){return location.hostname==="html-preview.github.io"?"https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2F"+encodeURIComponent(file):file}
+function nextStepsUrl(stop){const qs=stop?new URLSearchParams({stop:String(stop)}).toString():"";if(location.hostname==="html-preview.github.io")return "https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Fnextsteps.html"+(qs?"&"+qs:"");return "nextsteps.html"+(qs?"?"+qs:"")}
 function intelUrl(stop,view){
  const qs=new URLSearchParams({stop:String(stop),view:view}).toString();
  if(location.hostname==="html-preview.github.io")return "https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Frestaurant.html&"+qs;
  return "restaurant.html?"+qs;
 }
-document.querySelector("#backChecklist").href=previewUrl("index.html");const dayPlanMap=document.querySelector("#dayPlanMap");if(dayPlanMap)dayPlanMap.href=previewUrl("day.html");
+document.querySelector("#backChecklist").href=previewUrl("index.html");const dayPlanMap=document.querySelector("#dayPlanMap");if(dayPlanMap)dayPlanMap.href=previewUrl("day.html");const nextStepsMap=document.querySelector("#nextStepsMap");if(nextStepsMap)nextStepsMap.href=nextStepsUrl();const nextStepsMapCount=document.querySelector("#nextStepsMapCount");if(nextStepsMapCount)nextStepsMapCount.textContent=Object.values(T).filter(x=>["chat","no-manager","maybe","apply-online"].includes(x)).length;
 
 function state(x){const visited=!!S[x.n],status=T[x.n]||"";return{visited,status,key:visited?(status||"visited"):"unvisited"}}
 function markerEl(x){const st=state(x),el=document.createElement("div");el.className="stop-marker "+st.key;el.textContent=x.n;el.title=x.n+". "+x.r;return el}
-function popup(x){const st=state(x),label=st.visited?statusLabel(st.status):"Not visited yet";return `<div class="popup-num">Stop ${x.n}</div><div class="popup-name">${esc(x.r)}</div><div class="popup-address">${esc(x.a)}</div><span class="popup-status">${esc(label)}</span><div class="popup-actions"><a class="popup-link" href="${esc(intelUrl(x.n,"flashcards"))}">Flash Cards</a><a class="popup-link" href="${esc(intelUrl(x.n,"coverletter"))}">Cover Letter</a></div>`}
+function popup(x){const st=state(x),label=st.visited?statusLabel(st.status):"Not visited yet",actionable=["chat","no-manager","maybe","apply-online"].includes(st.status),next=actionable?`<a class="popup-link popup-next" href="${esc(nextStepsUrl(x.n))}">Next Steps</a>`:"";return `<div class="popup-num">Stop ${x.n}</div><div class="popup-name">${esc(x.r)}</div><div class="popup-address">${esc(x.a)}</div><span class="popup-status">${esc(label)}</span><div class="popup-actions"><a class="popup-link" href="${esc(intelUrl(x.n,"flashcards"))}">Flash Cards</a><a class="popup-link" href="${esc(intelUrl(x.n,"coverletter"))}">Cover Letter</a>${next}</div>`}
 function bounds(stops){const b=new google.maps.LatLngBounds();stops.forEach(x=>b.extend({lat:x.lat,lng:x.lng}));return b}
 function fitFull(){map.fitBounds(bounds(STOPS),48)}
 function match(x){const st=state(x);return(activeFilter==="all"||activeFilter==="remaining"&&!st.visited||activeFilter==="visited"&&st.visited)&&(activeDistrict==="all"||String(x.u)===activeDistrict)&&(activeStatus==="all"||activeStatus==="unvisited"&&!st.visited||activeStatus==="none"&&st.visited&&!st.status||st.status===activeStatus)}
