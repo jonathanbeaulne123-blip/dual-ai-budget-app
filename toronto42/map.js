@@ -54,7 +54,7 @@ let activeFilter="all",activeDistrict="all",activeStatus="all",map,infoWindow,Ad
 let routeTotals={distanceMeters:0,durationMillis:0,loaded:0,failed:0};
 
 function previewUrl(file){return location.hostname==="html-preview.github.io"?"https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2F"+encodeURIComponent(file):file}
-document.querySelector("#backChecklist").href=previewUrl("index.html");
+document.querySelector("#backChecklist").href=previewUrl("index.html");const dayPlanMap=document.querySelector("#dayPlanMap");if(dayPlanMap)dayPlanMap.href=previewUrl("day.html");
 
 function state(x){const visited=!!S[x.n],status=T[x.n]||"";return{visited,status,key:visited?(status||"visited"):"unvisited"}}
 function markerEl(x){const st=state(x),el=document.createElement("div");el.className="stop-marker "+st.key;el.textContent=x.n;el.title=x.n+". "+x.r;return el}
