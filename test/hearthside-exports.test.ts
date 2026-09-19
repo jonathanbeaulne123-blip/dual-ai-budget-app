@@ -29,6 +29,7 @@ describe('Hearthside production files', () => {
     expect(() => normalizeExportSelection({ ...selection(), construction: 'hollow' })).toThrow();
     expect(() => normalizeExportSelection({ ...selection(), savedCents: 10000 } as ExportSelection)).toThrow();
     expect(() => normalizeExportSelection({ ...selection(), manufacturingProfile: 'maker\nnotes' })).toThrow('EXPORT_INVALID_MANUFACTURING_PROFILE');
+    expect(() => normalizeExportSelection({ ...selection(), manufacturingProfile: 'Profilé français' })).toThrow('EXPORT_INVALID_MANUFACTURING_PROFILE');
     expect(() => normalizeExportSelection({ ...selection(), manufacturingProfile: ' '.repeat(301) })).toThrow('EXPORT_INVALID_MANUFACTURING_PROFILE');
   });
   it('binds an optional manufacturing profile to the exact review and downloaded record without changing geometry claims', async () => {
@@ -41,6 +42,13 @@ describe('Hearthside production files', () => {
     expect(JSON.parse(decode(output.files.get('source-design.json')!)).manufacturingProfile).toBe(profile);
     expect(decode(output.files.get('geometry-sheet.pdf')!)).toContain(profile);
     expect(output.manifest.files.some(file => file.name === 'manufacturing-profile.txt')).toBe(true);
+  });
+  it('keeps the full 300-character reviewed profile on the one-page PDF without a clipped line', async () => {
+    const profile = Array.from({length: 300}, (_, index) => String.fromCharCode(65 + index % 26)).join('');
+    const output = await finishKittyExport(await prepareKittyExport({ ...selection(), manufacturingProfile: profile }, cube()));
+    const pdf = decode(output.files.get('geometry-sheet.pdf')!);
+    expect(pdf.match(/Manufacturing profile/g)).toHaveLength(7);
+    for (let start = 0; start < profile.length; start += 48) expect(pdf).toContain(profile.slice(start, start + 48));
   });
   it('reports topology and dimensions independently of format serialization', () => {
     const c = cube(), report = inspectGeometry(c.meshes);

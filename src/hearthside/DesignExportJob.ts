@@ -37,6 +37,7 @@ const defaults: ExportJobDependencies = {
   timeoutMs: 120_000,
 };
 export function exportFailureText(code: string) {
+  if (code.includes('INVALID_MANUFACTURING_PROFILE')) return 'Use 1 to 300 printable ASCII characters for the manufacturing profile. The portable PDF preserves that supplied text exactly; it does not rewrite it.';
   if (code.includes('HEIGHT_RANGE')) return 'Choose a physical height from 30 to 1,000 mm.';
   if (code.includes('HOLLOW_DIMENSIONS')) return 'Check the wall, slot and base-opening dimensions against the selected height.';
   if (code.includes('CANCELLED')) return 'The preparation was cancelled. Your chosen design is unchanged.';
