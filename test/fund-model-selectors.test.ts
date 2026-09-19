@@ -1,3 +1,4 @@
+import { knownCents } from "./fixtures/knownCents.ts";
 import { describe, expect, it } from "vitest";
 import { addCategory, addRecurrence, catalogHousehold, postEntry, splitForSync } from "../src/core/index.ts";
 import { activeHouseholdFundEvents } from "../src/core/householdFund.ts";
@@ -31,7 +32,7 @@ describe("fundSnapshot (the Plan Studio v3 read)", () => {
     expect(snap.build.amountCents).toBe(10000);
     expect(snap.build.goals.map((row) => row.name)).toEqual(["Trip to Halifax"]);
     expect(snap.now).toBe(0);
-    expect(snap.owedBackCents + snap.prepare.amountCents + snap.protect.amountCents + snap.build.amountCents + snap.everyday.amountCents).toBe(snap.kingCents);
+    expect(snap.owedBackCents + knownCents(snap.prepare.amountCents) + knownCents(snap.protect.amountCents) + knownCents(snap.build.amountCents) + knownCents(snap.everyday.amountCents)).toBe(snap.kingCents);
     expect(snap.flow.map((row) => [row.date, row.kind, row.fund])).toEqual([
       ["2026-09-01", "contribution", null],
       ["2026-09-25", "bill", "prepare"],
@@ -84,6 +85,7 @@ describe("contribution division: both partners confirm (slice 5)", () => {
     let h = month();
     const [eventId] = contributionIds(h);
     const draft = proposedDivision(h, eventId!, { memberId: ALEX, today: TODAY });
+    if (!draft) throw new Error("Expected a readable division.");
     // Before this 2000 arrived the Fund held nothing to fill with: Prepare needs 1800, Protect takes the rest.
     expect(draft).toEqual({ prepare: 180000, protect: 20000, build: 0, everyday: 0 });
     expect(() => proposeFundDivision(h, { memberId: ALEX, contributionEventId: eventId!, split: { ...draft, everyday: 1 } })).toThrow(/to the cent/);

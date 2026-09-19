@@ -1,12 +1,12 @@
 import type { Household } from './types.ts';
 import { chapterConsentFail } from './chapterConsent.ts';
 import { validateRitualClosureReference } from './chapterTasks.ts';
-import { ritualTerms } from './chapters.ts';
+import { FOUNDATION_CHAPTERS, ritualTerms } from './chapters.ts';
 import { canonical } from '../ledgerSync/patch.ts';
 import { chapterTaskId } from './chapterTaskSource.ts';
 /** Explicit reader/writer capability for the new agreement and canonical Task semantics. */
 export const CHAPTER_AGREEMENT_VERSION = 1;
-export const CHAPTER_COMMANDS = ['openChapter', 'addRitual', 'editRitual', 'acknowledgeRitualChange', 'setRitualParticipation', 'adoptChapterTasks', 'prepareRitualOccurrence', 'recordRitualHeld', 'setRitualState', 'offerMove', 'respondToMove', 'completeMove', 'closeChapter'] as const;
+export const CHAPTER_COMMANDS = ['openChapter', 'addRitual', 'editRitual', 'acknowledgeRitualChange', 'setRitualParticipation', 'adoptChapterTasks', 'prepareRitualOccurrence', 'recordRitualHeld', 'setRitualState', 'offerMove', 'respondToMove', 'completeMove', 'closeChapter', 'closeChapterAtSitdown'] as const;
 export function hasChapterAgreementData(h: Pick<Household, 'chapters' | 'rituals' | 'moves' | 'tasks'>): boolean {
   return Boolean(h.chapters?.some(row => row.closure) || h.rituals?.some(row => row.agreement || row.taskAdoption || row.participation?.length) || h.moves?.some(row => row.taskId) || h.tasks?.some(row => row.chapterSource));
 }
@@ -17,6 +17,13 @@ export function assertChapterTaskGraph(h: Pick<Household, 'chapters' | 'rituals'
   for (const chapter of h.chapters ?? []) {
     const accepted = chapter.closure?.proposals.find(row => row.id === chapter.closure?.acceptedProposalId);
     if (accepted && (chapter.state !== accepted.terms.outcome || chapter.carryForward !== accepted.terms.carryForward || chapter.closedAtSitdownId !== accepted.terms.sitdownId || chapter.closedAt !== accepted.acceptedAt)) chapterConsentFail('A Chapter changed outside its accepted closure. Restore its exact history.');
+    if (accepted?.terms.nextChapter) {
+      const next = accepted.terms.nextChapter, foundation = FOUNDATION_CHAPTERS.find(row => row.id === next.foundationId);
+      const openings = (h.chapters ?? []).filter(row => row.id !== chapter.id && row.openedAt === accepted.acceptedAt && row.openedByMemberId === next.ownerMemberId && row.intendedMonth === next.month && row.openedAtSitdownId === accepted.terms.sitdownId);
+      const opened = openings[0];
+      if (openings.length !== 1 || !opened || opened.foundationId !== (next.foundationId ?? null) || opened.title !== (foundation?.title ?? next.custom?.title) || opened.meaning !== (next.custom?.meaning ?? foundation?.meaning ?? '') || opened.lessonId !== (next.custom?.lessonId ?? foundation?.lessonId ?? '') || opened.betterFeelsLike !== (next.custom?.betterFeelsLike ?? foundation?.betterFeelsLike ?? '')) chapterConsentFail('Restore the exact next Chapter that both people reviewed.');
+    }
+
   }
   for (const ritual of h.rituals ?? []) {
     validateRitualClosureReference(h, ritual);

@@ -1,3 +1,4 @@
+import { knownCents } from "./fixtures/knownCents.ts";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
@@ -246,7 +247,7 @@ describe("Charms persist on the King's draft and round-trip through the guard", 
     const h = planLifeFixture("household");
     const nest = projectKittyNest(h, memberId, "household", "2026-09-12");
     const banks = queenBanks(nest);
-    expect([...banks.protect.banks, ...banks.whatnow.banks, ...banks.build.banks].reduce((sum, bank) => sum + bank.amountCents, 0)).toBe(nest.king.amountCents);
+    expect([...banks.protect.banks, ...banks.whatnow.banks, ...banks.build.banks].reduce((sum, bank) => sum + knownCents(bank.amountCents), 0)).toBe(knownCents(nest.king.amountCents));
     for (const total of [0, 1, 12345, -50000]) {
       const allocation = allocateNestTotal(total, { build: 400, protect: 900, prepare: 250 });
       expect(allocation.protect + allocation.prepare + allocation.everyday + allocation.build).toBe(total);

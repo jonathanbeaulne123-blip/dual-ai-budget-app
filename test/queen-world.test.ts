@@ -1,3 +1,4 @@
+import { knownCents } from "./fixtures/knownCents.ts";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
@@ -327,7 +328,7 @@ describe("Banks in the world — studio sculptures, fired reads fired, money unt
     const nest = projectKittyNest(h, "MEM-001", "household", "2026-09-12");
     const banks = queenBanks(nest);
     const shown = [...banks.protect.banks, ...banks.whatnow.banks, ...banks.build.banks];
-    expect(shown.reduce((sum, bank) => sum + bank.amountCents, 0)).toBe(nest.king.amountCents);
+    expect(shown.reduce((sum, bank) => sum + knownCents(bank.amountCents), 0)).toBe(knownCents(nest.king.amountCents));
     for (const total of [0, 1, 12345, -50000]) {
       const allocation = allocateNestTotal(total, { build: 400, protect: 900, prepare: 250 });
       expect(allocation.protect + allocation.prepare + allocation.everyday + allocation.build).toBe(total);

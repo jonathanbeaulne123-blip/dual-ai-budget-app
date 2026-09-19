@@ -272,7 +272,7 @@ export function QueenCellar({ ribbons, open, stairRef, onExit, onOpenBanks, worl
           {striking && onCommand && today && (
             <ConfirmSheet
               title={striking.strike === "crack" ? `Pay ${striking.label} from the cellar's water` : `Break the kitty jar: ${striking.label}`}
-              body={`Post ${formatCad(striking.targetCents)} for ${striking.label} in the books, dated ${cellarDayLabel(striking.date)}, its day.${striking.strike === "crack" ? ` Its jar holds ${formatCad(striking.savedCents)}; the rest comes from the Fund's water and the walk shows the buffer take it.` : " Its jar is full; the bank breaks and stays on the rail as a shard."}`}
+              body={`Post ${formatCad(striking.targetCents)} for ${striking.label} in the books, dated ${cellarDayLabel(striking.date)}, its day.${striking.strike === "crack" ? ` Its jar holds ${(striking.savedCents === null ? "unavailable backing" : formatCad(striking.savedCents))}; the rest comes from the Fund's water and the walk shows the buffer take it.` : " Its jar is full; the bank breaks and stays on the rail as a shard."}`}
               extra="Hearth records the payment in your books. It does not move money at your bank."
               confirmLabel={striking.strike === "crack" ? "Pay it anyway" : "Break it"}
               busy={busy}

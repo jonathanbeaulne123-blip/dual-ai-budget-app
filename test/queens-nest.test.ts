@@ -1,3 +1,4 @@
+import { knownCents } from "./fixtures/knownCents.ts";
 import { describe, expect, it } from "vitest";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
 import { addGoal, addRecurrence, catalogHousehold, offerMove, openChapter, respondToMove, reversePostedMoney, postEntry } from "../src/core/index.ts";
@@ -91,8 +92,8 @@ describe("The Queen's Nest — two doors and a belly over four categories", () =
     expect(shown.map((bank) => bank.category).sort()).toEqual([...NEST_CATEGORIES].sort());
     expect(shown).toHaveLength(4);
     for (const bank of shown) expect(nest.categories).toContain(bank);
-    expect(nest.categories.reduce((sum, bank) => sum + bank.amountCents, 0)).toBe(nest.king.amountCents);
-    expect(shown.reduce((sum, bank) => sum + bank.amountCents, 0)).toBe(nest.king.amountCents);
+    expect(nest.categories.reduce((sum, bank) => sum + knownCents(bank.amountCents), 0)).toBe(knownCents(nest.king.amountCents));
+    expect(shown.reduce((sum, bank) => sum + knownCents(bank.amountCents), 0)).toBe(knownCents(nest.king.amountCents));
     expect(doors.protect.map((bank) => bank.category)).toEqual(["protect", "prepare"]);
     expect(doors.build.map((bank) => bank.category)).toEqual(["build"]);
     expect(doors.belly.map((bank) => bank.category)).toEqual(["everyday"]);
@@ -222,8 +223,8 @@ describe("The Still Queen — three banks, her feet, her line", () => {
     const shown = [...banks.protect.banks, ...banks.whatnow.banks, ...banks.build.banks];
     for (const bank of shown) expect(nest.categories).toContain(bank);
     // Conservation still holds: the four categories sum to the King to the cent, and grouping adds nothing.
-    expect(nest.categories.reduce((sum, bank) => sum + bank.amountCents, 0)).toBe(nest.king.amountCents);
-    expect(shown.reduce((sum, bank) => sum + bank.amountCents, 0)).toBe(nest.king.amountCents);
+    expect(nest.categories.reduce((sum, bank) => sum + knownCents(bank.amountCents), 0)).toBe(knownCents(nest.king.amountCents));
+    expect(shown.reduce((sum, bank) => sum + knownCents(bank.amountCents), 0)).toBe(knownCents(nest.king.amountCents));
     for (const bank of Object.values(banks)) { expect(bank.share).toBeGreaterThanOrEqual(0); expect(bank.share).toBeLessThanOrEqual(10); }
   });
 

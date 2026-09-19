@@ -145,7 +145,7 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
   useOutsideClose([handCard], heldId !== null, () => setHeldId(null), { keep: ".queen-goal, .queen-room__acts, [role=dialog]" });
 
   /** A bank's growth step, with whatever this round of the gun has thrown at it: you watch it swell shot by shot. */
-  const stepOf = (item: QueenShelfItem) => (item.goalId ? gunStep(item.bank, gunLanded(round, item.goalId)) : item.step);
+  const stepOf = (item: QueenShelfItem) => (item.goalId && item.bank.amountCents !== null ? gunStep({ ...item.bank, amountCents: item.bank.amountCents }, gunLanded(round, item.goalId)) : item.step);
   // The studio's own piece for every bank on the rack: what was thrown, painted and fired is what stands here.
   const pieces = useMemo(() => new Map(shown.map((item) => { const piece = queenBankPiece(item.bank); return [item.id, { piece, fired: queenBankFired(piece) }]; })), [shown]);
   const vessels = useMemo<RoomVessel[]>(() => shown.map((item) => ({
@@ -159,7 +159,7 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
     refusing: item.id === refusedId,
   })), [shown, pieces, heldId, dragId, refusedId, round]);
 
-  const banks = useMemo<RackBank[]>(() => shown.map((item) => ({ key: item.designKey, goalId: item.goalId, name: item.name, amountCents: item.bank.amountCents, targetCents: item.bank.targetCents })), [shown]);
+  const banks = useMemo<RackBank[]>(() => shown.filter(item => item.bank.amountCents !== null).map((item) => ({ key: item.designKey, goalId: item.goalId, name: item.name, amountCents: item.bank.amountCents!, targetCents: item.bank.targetCents })), [shown]);
   const pourCents = pour ? Math.round((pour.safeCents * tilt) / 10) : 0;
   const preview = useMemo(() => rackPour(rack, banks.filter((bank) => bank.goalId), pourCents), [rack, banks, pourCents]);
 
@@ -214,6 +214,7 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
   };
   const safeCents = pour?.safeCents ?? 0;
   const fire = (item: QueenShelfItem) => {
+    if (item.bank.amountCents === null) { refuse(item.id); setNotice("This bank’s backing is unavailable. Reconnect before allocating money."); return; }
     if (!pour || item.mouth === "lidded" || !item.goalId) { refuse(item.id); setNotice(`${item.name} is lidded — there is no decision inside it to throw money at.`); return; }
     const shot = gunFire(round, { goalId: item.goalId, name: item.name, amountCents: item.bank.amountCents, targetCents: item.bank.targetCents }, bill, safeCents);
     if (!shot.landed) {
@@ -480,7 +481,7 @@ export function QueenLoft({ shelf, rack, open, busy, stairRef, onExit, onOpenGoa
             <p className="queen-eyebrow">In hand</p>
             <p className="queen-hand__name">{held.name}</p>
             <ul className="queen-hand__facts">
-              <li>{formatCad(held.bank.amountCents)} of {formatCad(held.bank.targetCents)}</li>
+              <li>{(held.bank.amountCents === null ? "Backing unavailable" : formatCad(held.bank.amountCents))} of {formatCad(held.bank.targetCents)}</li>
               {held.date && <li>{formatDayLabel(held.date)}</li>}
               <li>{held.parts ? `${held.parts} ${held.parts === 1 ? "part" : "parts"} inside` : "no parts inside"}</li>
               <li>{ordinal(rows.findIndex((row) => row.items.some((item) => item.id === held.id)), shelfCount)}</li>

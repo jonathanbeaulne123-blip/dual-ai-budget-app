@@ -122,7 +122,8 @@ export type Move = {
 export type RitualTerms = Pick<Ritual, 'title' | 'cue' | 'cueNote' | 'ownerMemberId' | 'backupMemberId' | 'doneDefinition' | 'recoveryMove' | 'state'> & {
   requiresMoneyEvidence: boolean; moneyLink: TaskMoneyLink | null; expectedAmountCents: number | null;
 };
-export type ChapterClosureTerms = { outcome: ChapterOutcome; carryForward: string; sitdownId: string | null;
+export type NextChapterTerms = Pick<OpenChapterInput, "foundationId" | "custom"> & { month: MonthKey; ownerMemberId: string };
+export type ChapterClosureTerms = { outcome: ChapterOutcome; carryForward: string; sitdownId: string | null; nextChapter?: NextChapterTerms;
   rituals: { ritualId: string; before: RitualTerms; afterState: RitualState }[];
   moves: { taskId: string; moveId: string; taskRevision: number; title: string; ownerMemberId: string | null }[];
 };
@@ -312,12 +313,27 @@ export function ritualTerms(ritual: Ritual): RitualTerms {
   return { title, cue, cueNote, ownerMemberId, backupMemberId, doneDefinition, recoveryMove, state, requiresMoneyEvidence: ritual.requiresMoneyEvidence === true, moneyLink: ritual.moneyLink ?? null, expectedAmountCents: ritual.expectedAmountCents ?? null };
 }
 function shapeClosureTerms(value: unknown): ChapterClosureTerms {
-  exactChapterRecord(value, ['outcome', 'carryForward', 'sitdownId', 'rituals', 'moves']);
+  exactChapterRecord(value, ['outcome', 'carryForward', 'sitdownId', 'rituals', 'moves', ...(value && typeof value === 'object' && Object.hasOwn(value, 'nextChapter') ? ['nextChapter'] : [])]);
   if (!CHAPTER_STATES.includes(value.outcome as ChapterState) || value.outcome === 'open' || typeof value.carryForward !== 'string' || value.carryForward.length > 2000 || value.sitdownId !== null && (typeof value.sitdownId !== 'string' || value.sitdownId.length > 160)) chapterConsentFail('Check the exact Chapter closure terms.');
   if (!Array.isArray(value.rituals) || !Array.isArray(value.moves) || value.rituals.length > 4000 || value.moves.length > 4000) chapterConsentFail('This Chapter closure has too many linked objects.');
   for (const row of value.rituals) { exactChapterRecord(row, ['ritualId', 'before', 'afterState']); if (typeof row.ritualId !== 'string' || !row.ritualId || !RITUAL_STATES.includes(row.afterState as RitualState)) chapterConsentFail('Check this Ritual in the closure.'); shapeRitualTerms(row.before); }
   for (const row of value.moves) { exactChapterRecord(row, ['taskId', 'moveId', 'taskRevision', 'title', 'ownerMemberId']); if (typeof row.taskId !== 'string' || typeof row.moveId !== 'string' || row.taskId !== chapterTaskId('chapter-move', row.moveId) || !Number.isSafeInteger(row.taskRevision) || Number(row.taskRevision) < 1 || typeof row.title !== 'string' || row.title.length > 240 || row.ownerMemberId !== null && typeof row.ownerMemberId !== 'string') chapterConsentFail('Check this Task in the closure.'); }
+  if (value.nextChapter !== undefined) shapeNextChapterTerms(value.nextChapter);
   return structuredClone(value) as ChapterClosureTerms;
+}
+function shapeNextChapterTerms(value: unknown): NextChapterTerms {
+  exactChapterRecord(value, ['month', 'ownerMemberId', ...['foundationId', 'custom'].filter(key => value && typeof value === 'object' && Object.hasOwn(value, key))]);
+  if (typeof value.month !== 'string' || validMonth(value.month) !== value.month || typeof value.ownerMemberId !== 'string' || !value.ownerMemberId || value.ownerMemberId.length > 160) chapterConsentFail('Review the next Chapter month and owner.');
+  if ((value.foundationId === undefined) === (value.custom === undefined)) chapterConsentFail('Choose exactly one next Chapter.');
+  if (value.foundationId !== undefined && !FOUNDATION_CHAPTERS.some(row => row.id === value.foundationId)) chapterConsentFail('Choose an existing foundation Chapter.');
+  if (value.custom !== undefined) {
+    exactChapterRecord(value.custom, ['title', 'meaning', ...['lessonId', 'betterFeelsLike'].filter(key => value.custom && typeof value.custom === 'object' && Object.hasOwn(value.custom, key))]);
+    for (const [key, max] of [['title', 120], ['meaning', 2000], ['lessonId', 80], ['betterFeelsLike', 2000]] as const) {
+      const text = value.custom[key];
+      if ((key === 'title' || key === 'meaning') && typeof text !== 'string' || text !== undefined && (typeof text !== 'string' || text.length > max || text !== text.trim()) || key === 'title' && !text) chapterConsentFail('Review the exact next Chapter wording.');
+    }
+  }
+  return structuredClone(value) as NextChapterTerms;
 }
 function shapeRitualTerms(value: unknown): RitualTerms {
   exactChapterRecord(value, ['title', 'cue', 'cueNote', 'ownerMemberId', 'backupMemberId', 'doneDefinition', 'recoveryMove', 'state', 'requiresMoneyEvidence', 'moneyLink', 'expectedAmountCents']);
@@ -942,11 +958,12 @@ export const dismissWin = captureCommand("dismissWin", function dismissWin(house
   return commitChapters(household, next, "Let a Win fade", at);
 });
 
-export type CloseChapterInput = { memberId: string; chapterId: string; outcome: ChapterOutcome; carryForward?: string; sitdownId?: string; expectedRevision?: number; proposalId?: string; digest?: string; reviewDigest?: string; at?: string };
+export type CloseChapterInput = { memberId: string; chapterId: string; outcome: ChapterOutcome; carryForward?: string; sitdownId?: string; expectedRevision?: number; proposalId?: string; digest?: string; reviewDigest?: string; nextChapter?: NextChapterTerms; at?: string };
 
-export function reviewChapterClosure(household: Household, input: Pick<CloseChapterInput, 'chapterId' | 'outcome' | 'carryForward' | 'sitdownId'>): { terms: ChapterClosureTerms; reviewDigest: string; expectedRevision: number } {
+export function reviewChapterClosure(household: Household, input: Pick<CloseChapterInput, 'chapterId' | 'outcome' | 'carryForward' | 'sitdownId' | 'nextChapter'>): { terms: ChapterClosureTerms; reviewDigest: string; expectedRevision: number } {
   const chapter = findChapter(household, input.chapterId);
   const terms: ChapterClosureTerms = shapeClosureTerms({ outcome: input.outcome, carryForward: (input.carryForward ?? '').trim(), sitdownId: input.sitdownId ?? null,
+    ...(input.nextChapter ? { nextChapter: shapeNextChapterTerms(input.nextChapter) } : {}),
     rituals: (household.rituals ?? []).filter(row => row.chapterId === chapter.id && row.state === 'active').map(row => ({ ritualId: row.id, before: ritualTerms(row), afterState: input.outcome === 'established' ? 'graduated' : input.outcome === 'life-changed' || input.outcome === 'closed' ? 'retired' : row.state })).sort((a, b) => a.ritualId.localeCompare(b.ritualId)),
     moves: (household.tasks ?? []).filter(row => row.chapterId === chapter.id && row.chapterSource?.kind === 'chapter-move' && !row.deleted && !row.completedAt).map(row => ({ taskId: row.id, moveId: row.chapterSource!.sourceId, taskRevision: row.revision, title: row.title, ownerMemberId: row.assigneeId })).sort((a, b) => a.taskId.localeCompare(b.taskId)),
   });
@@ -964,6 +981,7 @@ export const closeChapter = captureCommand("closeChapter", function closeChapter
   if (input.expectedRevision === undefined) chapterConsentFail('Read the exact current Chapter closure before proposing or agreeing.');
   if ((household.moves ?? []).some(move => move.chapterId === chapter.id && !move.taskId)) chapterConsentFail('Connect earlier Chapter Moves to their Tasks before reviewing closure.');
   const review = reviewChapterClosure(household, input), terms = review.terms;
+  if (terms.nextChapter) requireMember(household, terms.nextChapter.ownerMemberId);
   if (!input.proposalId) {
     if (input.reviewDigest !== review.reviewDigest) chapterConsentFail("Read the affected Rituals and Tasks in this exact closure review before giving your agreement.");
     chapter.closure = proposeChapterConsent(chapter.closure, { expectedRevision: input.expectedRevision, identity: `closure-${chapter.id}`, terms, basis: closureBasis(household, chapter), audience: activeAudience(household), memberId: input.memberId, at, legacyBaseline: !chapter.closure });
@@ -1010,7 +1028,11 @@ export const closeChapter = captureCommand("closeChapter", function closeChapter
     : input.outcome === "still-forming" ? `"${chapter.title}" carried forward`
       : input.outcome === "life-changed" ? `"${chapter.title}" closed — life changed`
         : `"${chapter.title}" closed`;
-  return commitChapters(household, next, label, at);
+  const closed = commitChapters(household, next, label, at);
+  if (!terms.nextChapter) return closed;
+  const { month, ownerMemberId, ...choice } = terms.nextChapter;
+  const opened = openChapter(closed.household, { memberId: ownerMemberId, ...choice, intendedMonth: month, ...(terms.sitdownId ? { sitdownId: terms.sitdownId } : {}), at });
+  return { ...opened, undo: { ...opened.undo, snapshot: household, label: "Closed our Chapter and opened the reviewed next Chapter" } };
 });
 
 // ---------------------------------------------------------------------------
@@ -1095,22 +1117,35 @@ export type CloseAndOpenChapterInput = CloseChapterInput & {
   next?: Pick<OpenChapterInput, "foundationId" | "custom">;
 };
 
+/** Freeze the next month, wording and owner into the same paired review as the ending. */
+export function nextChapterForClosure(household: Household, input: CloseAndOpenChapterInput): NextChapterTerms {
+  const month = monthKeyFromDateKey(input.today);
+  const pending = pendingChapterClosure(findChapter(household, input.chapterId));
+  if (input.proposalId && pending?.id === input.proposalId && pending.terms.nextChapter) {
+    const reviewed = pending.terms.nextChapter;
+    if (reviewed.month !== month || input.next && canonical(input.next) !== canonical(Object.fromEntries(Object.entries(reviewed).filter(([key]) => key !== 'month' && key !== 'ownerMemberId')))) chapterConsentFail('The next Chapter changed. Review it together again.');
+    return reviewed;
+  }
+  const closed = { chapters: (household.chapters ?? []).map(row => row.id === input.chapterId ? { ...row, state: input.outcome } : row) };
+  return shapeNextChapterTerms({ month, ownerMemberId: input.memberId, ...(input.next ?? defaultNextChapter(closed, month)) });
+}
+export function reviewChapterClosureAtSitdown(household: Household, input: CloseAndOpenChapterInput) {
+  return reviewChapterClosure(household, { ...input, nextChapter: nextChapterForClosure(household, input) });
+}
+
 /**
  * The merged check-in's last step (F2/F5): the Sitdown closes the open
  * Chapter with the outcome the couple chose (Rituals retire only on that
  * choice) and opens the next Chapter for the Sitdown's month, in one command.
  */
 export const closeChapterAtSitdown = captureCommand("closeChapterAtSitdown", function closeChapterAtSitdown(household: Household, input: CloseAndOpenChapterInput): CommitResult {
-  const closed = closeChapter(household, input);
-  const month = monthKeyFromDateKey(input.today);
-  const choice = input.next ?? defaultNextChapter(closed.household, month);
-  const opened = openChapter(closed.household, { memberId: input.memberId, ...choice, intendedMonth: month, ...(input.sitdownId ? { sitdownId: input.sitdownId } : {}), ...(input.at ? { at: input.at } : {}) });
-  return { ...opened, undo: { ...opened.undo, snapshot: household, label: "Closed our Chapter and opened the next" } };
+  const nextChapter = nextChapterForClosure(household, input);
+  return closeChapter(household, { ...input, nextChapter });
 });
 
 /** True once any Chapter carries a calendar month; an older client would drop it, so it must reload first. */
 export function hasChapterMonthData(household: Pick<Household, "chapters">): boolean {
-  return (household.chapters ?? []).some((row) => row.intendedMonth !== undefined);
+  return (household.chapters ?? []).some((row) => row.intendedMonth !== undefined || row.closure?.proposals.some(proposal => proposal.terms.nextChapter !== undefined));
 }
 /** Only the combined close-and-open always writes a month; a plain openChapter is judged by the data it leaves. */
 export const CHAPTER_MONTH_COMMAND_KINDS = ["closeChapterAtSitdown"];

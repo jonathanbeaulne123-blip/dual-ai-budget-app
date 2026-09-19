@@ -1,3 +1,4 @@
+import { knownCents } from "./fixtures/knownCents.ts";
 import { describe, expect, it } from "vitest";
 import { generateDemoSuite } from "../src/core/index.ts";
 import { householdPlanGuard, migrateFundModel } from "../src/core/fundModelCommands.ts";
@@ -24,7 +25,7 @@ describe("fictional seeds sort under the money model (D-282)", () => {
     const sorted = migrateFundModel(v2.household, { memberId: "MEM-002", at: `${TODAY}T13:00:00.000Z` }).household;
     expect(fundModelMode(sorted)).toBe(2);
     const snap = fundSnapshot(sorted, { memberId: "MEM-002", view: "household", today: TODAY });
-    expect(snap.owedBackCents + snap.prepare.amountCents + snap.protect.amountCents + snap.build.amountCents + snap.everyday.amountCents).toBe(snap.kingCents);
+    expect(snap.owedBackCents + knownCents(snap.prepare.amountCents) + knownCents(snap.protect.amountCents) + knownCents(snap.build.amountCents) + knownCents(snap.everyday.amountCents)).toBe(snap.kingCents);
     // Replay of the money-model seed is still exact.
     const again = await generateDemoSuite({ today: TODAY, seed: 8675309, buildSha: "test-sha", fundModel: 2 });
     expect(again.household.syntheticFixture?.fixtureHashSha256).toBe(v2.household.syntheticFixture?.fixtureHashSha256);

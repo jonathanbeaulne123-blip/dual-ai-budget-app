@@ -92,7 +92,7 @@ export type FlowItem = {
   /** `null` for money coming in (it has not been divided yet, or is divided by its record). */
   fund: FundId | null;
   label: string;
-  amountCents: number;
+  amountCents: number | null;
   state: "expected" | "arrived" | "paid" | "open";
   sourceId: string;
 };
@@ -104,17 +104,17 @@ export type FundSnapshot = {
   mode: FundModelMode;
   kingCents: number;
   /** The Queen's big number: the Everyday remainder. */
-  now: number;
+  now: number | null;
   owedBackCents: number;
   undividedContributions: UndividedContribution[];
   /**
    * `bills` are every has-to-leave jar; `fundBills` are the ones the Fund is meant to pay this month (D-282:
    * a bill paid from a card or another account is never "short" in the Fund). Coverage reads `fundBills` only.
    */
-  prepare: { amountCents: number; targetCents: number; coveredThrough: DateKey | null; shortOn?: { date: DateKey; label: string; shortCents: number }; bills: NestBank[]; fundBills: NestBank[] };
-  protect: { amountCents: number; targetCents: number; refills: FundRefillRow[] };
-  build: { amountCents: number; targetCents: number; goals: Array<{ goalId: string; name: string; amountCents: number; targetCents: number; date: DateKey | null }> };
-  everyday: { amountCents: number };
+  prepare: { amountCents: number | null; targetCents: number; coveredThrough: DateKey | null; shortOn?: { date: DateKey; label: string; shortCents: number }; bills: NestBank[]; fundBills: NestBank[] };
+  protect: { amountCents: number | null; targetCents: number; refills: FundRefillRow[] };
+  build: { amountCents: number | null; targetCents: number; goals: Array<{ goalId: string; name: string; amountCents: number | null; targetCents: number; date: DateKey | null }> };
+  everyday: { amountCents: number | null };
   flow: FlowItem[];
   needsHome: Category[];
   checks: CardPaymentCheck[];
@@ -143,11 +143,12 @@ export function undividedContributions(h: Household, input: { view: LedgerView; 
  * Prepare still needs, then Protect, then Build, and the rest to Everyday.
  * A suggestion only — both partners confirm (`proposeFundDivision`).
  */
-export function proposedDivision(h: Household, contributionEventId: string, input: { memberId: string; today: DateKey }): FundSplit {
+export function proposedDivision(h: Household, contributionEventId: string, input: { memberId: string; today: DateKey }): FundSplit | null {
   const event = (h.fundEvents ?? []).find((row) => row.id === contributionEventId);
   const total = event?.amountCents ?? 0;
   const nest = projectKittyNest(h, input.memberId, "household", input.today);
   const allocation = nest.allocation;
+  if (nest.categories.some(bank => bank.amountCents === null)) return null;
   const split: Record<FundId, number> = { prepare: 0, protect: 0, build: 0, everyday: 0 };
   // What the funds held before this contribution arrived; the draft fills their gaps in order.
   const before = allocation ? allocateFunds({ kingCents: nest.king.amountCents - total, pinned: allocation.pinned, owedBackCents: allocation.owedBackCents, desired: allocation.desired }) : null;
@@ -259,6 +260,7 @@ export function fundSnapshot(h: Household, input: FundViewInput): FundSnapshot {
   let coveredThrough: DateKey | null = null;
   let shortOn: FundSnapshot["prepare"]["shortOn"];
   for (const row of [...fundBills].sort((a, b) => (a.date ?? "9999").localeCompare(b.date ?? "9999"))) {
+    if (row.amountCents === null) { coveredThrough = null; shortOn = undefined; break; }
     if (row.amountCents >= row.targetCents) { if (row.date) coveredThrough = row.date; continue; }
     shortOn = { date: row.date ?? input.today, label: row.name, shortCents: row.targetCents - row.amountCents };
     break;
@@ -285,7 +287,7 @@ export function fundSnapshot(h: Household, input: FundViewInput): FundSnapshot {
     mode,
     kingCents: nest.king.amountCents,
     now: allocation ? allocation.nowCents : bank("everyday").amountCents,
-    owedBackCents: allocation?.owedBackCents ?? 0,
+    owedBackCents: allocation?.owedBackCents ?? (mode === 2 && fund ? fund.transferDueCents - fund.transferCreditCents : 0),
     undividedContributions: undividedContributions(h, input),
     prepare: { amountCents: prepareBank.amountCents, targetCents: allocation ? allocation.desired.prepare + allocation.pinned.prepare : prepareBank.targetCents, coveredThrough, ...(shortOn ? { shortOn } : {}), bills, fundBills },
     protect: { amountCents: bank("protect").amountCents, targetCents: mode === 2 ? fund?.bufferCents ?? 0 : bank("protect").targetCents, refills: openRefills(h, month) },

@@ -76,8 +76,8 @@ export type CellarJar = {
   finish: CellarFinish;
   size: CellarSize;
   targetCents: number;
-  savedCents: number;
-  leftCents: number;
+  savedCents: number | null;
+  leftCents: number | null;
   /** 0–1: how high the water stands in the jar. */
   fill: number;
   /** Days from today; negative is overdue. */
@@ -191,10 +191,10 @@ export function cellarJars(nest: Pick<KittyNest, "categories" | "history">, hous
     const [source, id] = bank.designKey.split(":");
     const targetCents = Math.max(0, bank.targetCents);
     const filing = cellarFiling(bank, household);
-    const savedCents = bank.state === "broken" ? targetCents : Math.max(0, Math.min(targetCents, bank.amountCents));
+    const savedCents = bank.state === "broken" ? targetCents : bank.amountCents === null ? null : Math.max(0, Math.min(targetCents, bank.amountCents));
     const paid = bank.state === "broken";
     const due = bank.date <= today;
-    const full = targetCents > 0 && savedCents >= targetCents;
+    const full = savedCents !== null && targetCents > 0 && savedCents >= targetCents;
     const jar: CellarJar = {
       id: `cellar:${bank.id}`,
       bankId: bank.id,
@@ -211,8 +211,8 @@ export function cellarJars(nest: Pick<KittyNest, "categories" | "history">, hous
       size: cellarSize(targetCents, largestCents),
       targetCents,
       savedCents,
-      leftCents: Math.max(0, targetCents - savedCents),
-      fill: targetCents > 0 ? savedCents / targetCents : 0,
+      leftCents: savedCents === null ? null : Math.max(0, targetCents - savedCents),
+      fill: savedCents !== null && targetCents > 0 ? savedCents / targetCents : 0,
       daysAway: daysBetween(today, bank.date),
       due,
       full,
@@ -221,7 +221,7 @@ export function cellarJars(nest: Pick<KittyNest, "categories" | "history">, hous
       recurrenceId: source === "recurrence" ? id ?? null : null,
       obligationId: source === "recurrence" ? `recurrence:${id}:${bank.date}` : null,
     };
-    jar.strike = cellarStrike({ ...jar, payable: jar.recurrenceId !== null });
+    jar.strike = savedCents === null ? "none" : cellarStrike({ ...jar, payable: jar.recurrenceId !== null });
     rows.push(jar);
   }
   return rows.sort((a, b) => a.date.localeCompare(b.date) || a.label.localeCompare(b.label));
@@ -274,13 +274,14 @@ export function cellarGateWords(jar: CellarJar | null, day: CellarDay | null, fo
   if (!jar) return day ? (day.dry ? "The cellar runs dry here." : day.belowBuffer ? "The water is under the mark here." : "No jar on this day.") : "Nothing on the rail this month.";
   const when = jar.paid ? "paid" : jar.daysAway === 0 ? "due today" : jar.daysAway < 0 ? `${-jar.daysAway} ${jar.daysAway === -1 ? "day" : "days"} overdue` : `in ${jar.daysAway} ${jar.daysAway === 1 ? "day" : "days"}`;
   const kind = `${jar.type === "house" ? "house bill" : jar.type === "subscription" ? "subscription" : jar.type === "potential" ? "planned, not posted" : jar.type === "appointment" ? "appointment" : "recurring payment"}${jar.groupName ? ` · ${jar.groupName}${jar.lineName && jar.lineName !== jar.groupName ? ` › ${jar.lineName}` : ""}` : ""}`;
-  const saved = jar.paid ? `${format(jar.targetCents)} paid` : jar.full ? `${format(jar.targetCents)} saved, ready` : `${format(jar.savedCents)} saved of ${format(jar.targetCents)}, ${format(jar.leftCents)} to be safe`;
+  const saved = jar.savedCents === null || jar.leftCents === null ? "backing unavailable" : jar.paid ? `${format(jar.targetCents)} paid` : jar.full ? `${format(jar.targetCents)} saved, ready` : `${format(jar.savedCents)} saved of ${format(jar.targetCents)}, ${format(jar.leftCents)} to be safe`;
   const water = day ? (day.dry ? "the cellar is dry here" : day.belowBuffer ? "the water is under the mark here" : `water at ${format(day.balanceCents)} after`) : "";
   return `${jar.label} · ${kind} · ${when} · ${saved}${water ? ` · ${water}` : ""}.`;
 }
 
 /** How far the kiln has taken a jar, in words: bare, glazed to a mark, fired to the crown. Never a figure. */
-export function cellarGlazeWords(jar: Pick<CellarJar, "fill" | "paid" | "full" | "type">): string {
+export function cellarGlazeWords(jar: Pick<CellarJar, "fill" | "paid" | "full" | "type"> & Partial<Pick<CellarJar, "savedCents">>): string {
+  if (jar.savedCents === null) return "glaze unverified — backing unavailable";
   if (jar.type === "potential" && !jar.paid) return "frosted glass — a plan, not posted";
   if (jar.paid || jar.full || jar.fill >= 0.995) return "fired to the crown";
   const mark = Math.round(Math.max(0, Math.min(1, jar.fill)) * 10);
@@ -304,10 +305,10 @@ export function cellarJarFacts(jar: CellarJar, day: CellarDay | null, household:
   const facts: CellarJarFact[] = [
     { label: "Filed under", value: jar.groupName ? `${jar.groupName}${jar.lineName ? ` › ${jar.lineName}` : ""}` : "not filed yet" },
     { label: "Its day", value: `${jar.date.slice(8, 10).replace(/^0/, "")} of the month · ${when}${cadence ? ` · ${cadence}` : ""}` },
-    { label: "The jar holds", value: jar.paid ? `${format(jar.targetCents)} · paid` : `${format(jar.savedCents)} of ${format(jar.targetCents)}` },
+    { label: "The jar holds", value: jar.savedCents === null ? "Backing unavailable" : jar.paid ? `${format(jar.targetCents)} · paid` : `${format(jar.savedCents)} of ${format(jar.targetCents)}` },
     { label: "In the kiln", value: cellarGlazeWords(jar) },
   ];
-  if (!jar.paid && jar.leftCents > 0) facts.push({ label: "Still to go", value: format(jar.leftCents) });
+  if (!jar.paid && jar.leftCents !== null && jar.leftCents > 0) facts.push({ label: "Still to go", value: format(jar.leftCents) });
   if (recurrence) {
     const fund = recurrence.fundingDefault && household.householdFund ? `the Household Fund's water${account ? `, landing in ${account.name}` : ""}` : account ? account.name : "the books";
     facts.push({ label: "Paid from", value: fund });

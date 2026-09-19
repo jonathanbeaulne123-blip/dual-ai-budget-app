@@ -256,7 +256,7 @@ export type QueenBody = {
   amountCents: number;
 };
 
-export function queenFullness(king: Pick<NestBank, "amountCents" | "targetCents">): { level: number; fullness: QueenFullness } {
+export function queenFullness(king: { amountCents: number; targetCents: number }): { level: number; fullness: QueenFullness } {
   if (king.amountCents <= 0) return { level: 0, fullness: "empty" };
   if (king.targetCents <= 0) return { level: 10, fullness: "held" };
   const level = Math.max(0, Math.min(10, Math.floor(king.amountCents / king.targetCents * 10)));
@@ -366,8 +366,8 @@ export type QueenBanks = Readonly<Record<QueenBankId, QueenBank>>;
 export function queenBanks(nest: Pick<KittyNest, "categories" | "king" | "mode">): QueenBanks {
   const doors = queenNestDoors(nest);
   const share = (banks: NestBank[]): number => {
-    if (nest.king.amountCents <= 0) return 0;
-    const held = banks.reduce((sum, bank) => sum + Math.max(0, bank.amountCents), 0);
+    if (nest.king.amountCents <= 0 || banks.some(bank => bank.amountCents === null)) return 0;
+    const held = banks.reduce((sum, bank) => sum + Math.max(0, bank.amountCents!), 0);
     return Math.max(0, Math.min(10, Math.round((held / nest.king.amountCents) * 10)));
   };
   return {
@@ -587,13 +587,13 @@ export function queenShelf(
       goalId: bank.goal?.id ?? null,
       marks: bank.goal ? (household.goalContributions ?? []).filter((row) => row.goalId === bank.goal!.id).length : 0,
       date: bank.date,
-      fullness: bank.targetCents > 0 ? band(bank.amountCents / bank.targetCents, 0, 1) : 0,
-      size: shelfSize(bank.targetCents > 0 ? bank.targetCents : bank.amountCents),
+      fullness: bank.targetCents > 0 && bank.amountCents !== null ? band(bank.amountCents / bank.targetCents, 0, 1) : 0,
+      size: shelfSize(bank.targetCents > 0 ? bank.targetCents : bank.amountCents ?? 0),
       parts: bank.children?.length ?? 0,
       designKey: bank.designKey,
       place: place.get(bank.designKey) ?? null,
-      scale: loftBankScale(bank.targetCents > 0 ? bank.targetCents : bank.amountCents),
-      step: bank.targetCents > 0 ? Math.max(0, Math.min(10, Math.floor((bank.amountCents / bank.targetCents) * 10))) : 0,
+      scale: loftBankScale(bank.targetCents > 0 ? bank.targetCents : bank.amountCents ?? 0),
+      step: bank.targetCents > 0 && bank.amountCents !== null ? Math.max(0, Math.min(10, Math.floor((bank.amountCents / bank.targetCents) * 10))) : 0,
       nestOrder: index,
     }));
   return rows

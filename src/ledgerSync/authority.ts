@@ -340,6 +340,7 @@ export async function prepareCommand(
   }
   // Full existing Fund, onboarding and accounting transition rules still run.
   assertChapterTaskGraph(current);
+  if (hasChapterMonthData(current) && command.chapterVersion !== 1) throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve the reviewed next Chapter.');
   const accepted = await acceptHouseholdWrite({
     previous: ["eraseDevelopmentActivity", "restoreSharedPoint"].includes(
       command.steps[0]!.kind,
