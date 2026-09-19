@@ -79,6 +79,12 @@ describe("The charm library — a dozen small things, earned by acts", () => {
     expect(queenCharmKindsEarned(h).has("coffee-mug")).toBe(false);
     h = holdSyntheticRitual(h, { memberId, ritualId: ritual.id, onDate: "2026-08-10" });
     expect(queenCharmKindsEarned(h).has("coffee-mug")).toBe(true);
+    expect(h.rituals![0]!.heldOn).toEqual([]);
+    const heldSnapshot = structuredClone(h);
+    touched.clear();
+    queenCharmsEarned(new Proxy(h, { get(target, key) { touched.add(String(key)); return (target as unknown as Record<string, unknown>)[String(key)]; } }));
+    expect([...touched].sort()).toEqual(["chapters", "charter", "goals", "rituals", "sitDownSessions", "tasks", "transactions"]);
+    expect(h).toEqual(heldSnapshot);
     // The bell: the first Sitdown completed — a Chapter closed at one carries its id. The snail: closed after a hard month.
     expect(queenCharmKindsEarned(h).has("bell")).toBe(false);
     const established = closeSyntheticChapter(h, { memberId, chapterId: openChapterFor(h)!.id, outcome: "established", at: "2026-08-30T12:00:00.000Z" });

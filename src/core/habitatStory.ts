@@ -41,7 +41,7 @@ import { bookBalanceAsOf } from "./statements.ts";
 import { atSyntheticClock } from "./syntheticRuntime.ts";
 import { defaultKittySculpt } from "./kittyStudio.ts";
 import type { GoalEnvelope, KittyStampV1 } from "./types.ts";
-import { completeTask, saveTask, type Task } from "./tasks.ts";
+import { acknowledgeTask, completeTask, saveTask, type Task } from "./tasks.ts";
 import type { CommitResult, Household } from "./types.ts";
 
 /**
@@ -734,7 +734,9 @@ function tasks(h: Household, c: StoryContext): Household {
     next = restamp(next, "tasks", id, when);
   };
   const done = (id: string, by: string, when: string, evidence?: Parameters<typeof completeTask>[1]["evidence"]) => {
-    const row = next.tasks!.find((t) => t.id === id)!;
+    let row = next.tasks!.find((t) => t.id === id)!;
+    next = acknowledgeTask(next, { memberId: by, id, expectedRevision: row.revision }).household;
+    row = next.tasks!.find((t) => t.id === id)!;
     next = completeTask(next, { memberId: by, id, expectedRevision: row.revision, completedAt: when, ...(evidence ? { evidence } : {}) }).household;
     next = restamp(next, "tasks", id, when);
   };
