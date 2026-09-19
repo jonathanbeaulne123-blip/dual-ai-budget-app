@@ -29,3 +29,16 @@
 .intel-bullet-title{font-size:.93rem;font-weight:900;line-height:1.4;margin-bottom:4px}
 .intel-bullet-text{font-size:.87rem;color:var(--muted);line-height:1.58;max-width:900px}
 @media(max-width:700px){.intel-bullet-list{padding-left:20px}.intel-bullet{padding:12px 2px 13px 1px}.intel-bullet-text{font-size:.86rem}}
+
+.intel-bullet-main{display:grid;grid-template-columns:minmax(0,1fr) 28px;gap:12px;align-items:start}
+.intel-bullet-copy{min-width:0}
+.intel-bullet-summary{font-size:.86rem;line-height:1.5;color:var(--muted);margin-top:4px}
+.intel-info{width:25px;height:25px;border:1px solid var(--line);border-radius:50%;background:#faf7f1;color:var(--accent);display:grid;place-items:center;padding:0;font:900 .78rem Georgia,"Times New Roman",serif;cursor:pointer;margin-top:2px}
+.intel-info:hover,.intel-info:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px rgba(122,47,47,.08)}
+.intel-info[aria-expanded="true"]{background:var(--accent);color:#fff;border-color:var(--accent)}
+.intel-detail{display:none;margin:12px 38px 0 0;padding:12px 14px;border-left:3px solid #d6c7ba;background:#faf7f2;border-radius:0 10px 10px 0}
+.intel-bullet.open .intel-detail{display:block}
+.intel-detail p{margin:0 0 10px;color:#4f4a43;font-size:.86rem;line-height:1.62}
+.intel-detail p:last-child{margin-bottom:0}
+.intel-detail .detail-label{font-size:.61rem;text-transform:uppercase;letter-spacing:.09em;color:var(--accent);font-weight:900;margin-bottom:5px}
+@media(max-width:700px){.intel-bullet-main{grid-template-columns:minmax(0,1fr) 27px;gap:9px}.intel-detail{margin-right:0;padding:11px 12px}.intel-bullet-summary{font-size:.84rem}}
