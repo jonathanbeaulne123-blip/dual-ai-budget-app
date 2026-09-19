@@ -16,6 +16,7 @@ function preview(file,ps){
 }
 
 document.querySelector("#backLink").href=preview("index.html");
+const nextStepsTab=document.querySelector("#nextStepsTab");if(nextStepsTab)nextStepsTab.href=preview("nextsteps.html",{stop:stopId});
 document.querySelector("#restaurantName").textContent=stop?stop.r:(data?data.name:"Restaurant Prep");
 document.querySelector("#restaurantMeta").textContent=stop?("#"+stop.n+" · "+stop.a+" · "+stop.p):"Restaurant intelligence";
 const badge=document.querySelector("#statusBadge");
