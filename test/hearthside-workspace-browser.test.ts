@@ -10,6 +10,7 @@ describe('selected intention in the actual compact/full Workspace',()=>{
  // Keep the 3s interaction/reload checks after the module graph is ready.
  await page.goto(address);await page.getByRole('heading',{name:'An evening at home',exact:true}).waitFor();
  await writeFile('/tmp/hearthside-workspace-proof/startup.json',JSON.stringify({startupMs:Math.round(performance.now()-startedAt),entry:'hearthsideWorkspaceProof.tsx',errors},null,2));
+ expect(errors).toEqual([]);
  page.setDefaultTimeout(3000);},30000);
  beforeEach(async()=>{errors.length=0;await page.goto(address);await page.evaluate(()=>{sessionStorage.clear();localStorage.clear();});await page.reload();await page.getByRole('heading',{name:'An evening at home',exact:true}).waitFor();});
  afterAll(async()=>{await browser?.close();await server?.close();});
