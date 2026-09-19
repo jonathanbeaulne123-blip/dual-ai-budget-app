@@ -42,3 +42,9 @@
 .intel-detail p:last-child{margin-bottom:0}
 .intel-detail .detail-label{font-size:.61rem;text-transform:uppercase;letter-spacing:.09em;color:var(--accent);font-weight:900;margin-bottom:5px}
 @media(max-width:700px){.intel-bullet-main{grid-template-columns:minmax(0,1fr) 27px;gap:9px}.intel-detail{margin-right:0;padding:11px 12px}.intel-bullet-summary{font-size:.84rem}}
+
+.note-research{margin-top:13px;padding-top:11px;border-top:1px solid #e5dbcf}
+.note-source-list{display:flex;flex-wrap:wrap;gap:7px}
+.note-source{display:inline-flex;align-items:center;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:6px 8px;background:#fff;color:#574f46;font-size:.68rem;font-weight:800;line-height:1.2}
+.note-source:hover{border-color:var(--gold);color:var(--ink)}
+@media(max-width:700px){.note-source{font-size:.66rem}.note-source-list{gap:6px}}
