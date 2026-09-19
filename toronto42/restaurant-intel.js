@@ -387,6 +387,7 @@ window.RESTAURANT_INTEL = {
       "Thank you for your time and consideration,",
       "Jonathan"
     ].join("\n"),
+    nextSteps: {contactName:"Cano Team",contactEmail:"cano@canorestaurant.com"},
     application: {
       general: "cano@canorestaurant.com",
       events: "events@canorestaurant.com",
