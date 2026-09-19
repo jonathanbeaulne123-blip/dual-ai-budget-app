@@ -28,6 +28,7 @@ import { IncrementalBooksGuard } from "../src/core/booksValidation.ts";
 import {
   seal,
   restoreArchive,
+  assertRecoveredPersonalDesignArchives,
   type Checkpoint,
   type Sealed,
   type ArchiveRecord,
@@ -770,6 +771,7 @@ export class LedgerRoom extends DurableObject<Env> {
       );
       const restoredDesigns:Array<{document:KittyDesignDocument;reference:DesignArchiveReference}>=[];
       for(const reference of restored.designs??[])restoredDesigns.push({reference,document:await this.designs.recover(`${scope.environment}/${scope.householdId}`,reference)});
+      assertRecoveredPersonalDesignArchives(restored,restoredDesigns);
       this.check(scope);
       this.ctx.storage.transactionSync(() => {
         for(const {document,reference} of restoredDesigns)this.designs.commit(document,reference,restored.sequence,{actor:'authority-recovery',request:'archive-recovery'});
