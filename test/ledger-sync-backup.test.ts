@@ -17,6 +17,7 @@ import {acceptKittyDesignOperation,createKittyDesignDocument} from '../src/heart
 import {applyAcceptedDesignReference} from '../src/hearthside/designProjection.ts';
 import {emptyPersonalLife} from '../src/hearthside/personalLifeContracts.ts';
 import type {DesignArchiveReference} from '../src/hearthside/designArchive.ts';
+import type { Household } from '../src/core/types.ts';
 it("restores accepted money and exact retry receipts, rejecting a damaged or incomplete archive", async () => {
   const h = catalogHousehold(),
     one = splitForSync(h, "MEM-001"),
@@ -111,7 +112,7 @@ it("restores accepted money and exact retry receipts, rejecting a damaged or inc
 
 function privateDesignFixture(){
   const memberId='MEM-001';
-  let household={...catalogHousehold(),personalLife:emptyPersonalLife(memberId)};
+  let household:Household={...catalogHousehold(),personalLife:emptyPersonalLife(memberId)};
   let document=createKittyDesignDocument('DESIGN-private-archive',{environment:household.environment,householdId:household.householdId,ownerMemberId:memberId});
   document=acceptKittyDesignOperation(document,{version:1,id:'OP-private-archive',designId:document.id,pieceId:'PIECE-private-archive',gestureId:'GESTURE-private-archive',kind:'create-piece',base:'cream'},
     {environment:household.environment,householdId:household.householdId,actorId:memberId,order:1,acceptedAt:'2026-09-19T12:00:00.000Z'}).document;
