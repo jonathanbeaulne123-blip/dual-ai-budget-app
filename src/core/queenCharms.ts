@@ -1,7 +1,7 @@
 import type { Household, KittyPart } from "./types.ts";
 import { ValidationError } from "./types.ts";
 import { charterIsSigned } from "./charter.ts";
-import { projectRitualTasks } from "./chapterTasks.ts";
+import { projectRitualTasks } from "./chapterTaskProjection.ts";
 
 /**
  * Charms for the Queen (2026-09-14): small ceramic add-ons the couple sticks

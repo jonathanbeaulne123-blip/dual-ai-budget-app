@@ -17,7 +17,7 @@ Integrate current main without weakening finance, identity, privacy or exact sha
 
 ## Integration decisions and evidence
 
-Pending. Merge conflicts include additive protocol capability fences and canonical Nest design references versus new rack/fund data. Both must survive. Chapter/month close-and-open must preserve paired closure approval; it cannot revive the earlier single-actor close path. Historical documentation sections are retained, then current resume edits restored.
+At recovery, merge conflicts included additive protocol capability fences and canonical Nest design references versus new rack/fund data. Both were preserved. Chapter/month close-and-open preserves paired closure approval. Historical documentation sections and current resume edits were retained.
 
 ### Recovered integration
 
@@ -63,3 +63,11 @@ The verifier records exact HEAD, command, exit code, elapsed wall time, before/a
 - [P0–P15 web handoff and exact remaining actions](../briefs/HEARTHSIDE_WEB_HANDOFF_2026-09-19.md)
 
 The worktree deliberately retains earlier documentation/evidence; implementation sources are committed. No deployment, schema application, service/provider activation, invitations, external calendar writes, native distribution or Production action occurred. Full program acceptance remains open even when these local checks pass.
+
+### Combined-gate corrections
+
+The first integrated High gate at `46263c4faef3dc166dca2e76f2e42bc3ffcc9fb4` failed: 24 fast-lane files failed, 170 passed; 44 tests failed, 1,285 passed and five skipped. TypeScript passed40.513s; total gate372.366s, process373.538s. Serial checks did not run. Evidence remains `gate-final.log/json`; this attempt exceeded the unchanged300s budget.
+
+A new Queen reward projection had introduced a real module initialization cycle through Task commands, sync and sculpture validators. Extracting the unchanged pure Ritual history reader into a type-only module removes the cycle, retaining canonical Task semantics and the existing public re-export. Independent Sol review confirmed the cycle was broken. The shared outfit concurrency fixture now sends the exact companion scope to companion commands and the richer authenticated scope only to ledger authority. Focused cycle/stage/Queen/export verification passed36/36 in10.22s, including a real browser export.
+
+Real browser tests were incorrectly in the four-worker fast lane; contention caused App/PGlite readiness and furniture matrix timeouts. All twenty directly launched browser files now belong to the existing serial lane, guarded by discovery in the lane test. Coverage, test timeouts, required canaries and the300s soft SLA are unchanged. The combined program is large enough that a functional pass may still exceed the SLA; record it as a breach, rerun the unchanged candidate, and never call it release-green solely because tests pass.

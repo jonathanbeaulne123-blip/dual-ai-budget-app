@@ -1153,3 +1153,8 @@ Living-house wear is a read-only presentation of accepted, dated shared Fund def
 A shared Hercules stage outfit is selected only from an explicitly published gallery look, carries its exact source revision and falls back when that source changes or is withdrawn. Private worn/fitting looks stay private. Export manufacturing notes are optional, bound to the exact reviewed immutable package and do not imply geometry, printer or maker approval.
 
 Risk High. Budget delta (5): one financial truth, exact shared consent and intact Final Confirm. Engagement delta (3): coherent rooms, living presentation and shared making with reliable return paths. Local verification and remaining acceptance are recorded in [the web integration worksession](worksessions/2026-09-19-hearthside-web-integration.md). No deployment, schema application, service/provider activation, invitation, native distribution or Production action is authorized by this implementation.
+
+
+### 2026-09-19 — combined web verification recovery
+
+Keep canonical Ritual history projection independent of Task command/sync imports so sculpture catalogue initialization is safe in browser entry points. Route real browser tests through the existing serial heavy lane on this8GB host; preserve every selected check and the five-minute budget. Neither correction changes money authority, privacy, consent or the accepted house direction. New browser files are discovered by the lane guard rather than silently joining the ordinary four-worker lane.

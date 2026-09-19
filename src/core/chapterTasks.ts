@@ -51,11 +51,7 @@ export function projectMoveTask(household: Pick<Household, 'tasks'> & Partial<Pi
     completedAt: task.completedAt, completedByMemberId: task.completedBy, evidenceRef: task.completionEvidence?.kind === 'transaction' ? task.completionEvidence.transactionId : task.completionEvidence?.kind === 'goal-contribution' ? task.completionEvidence.contributionId : task.chapterSource?.legacy?.evidenceRef ?? null,
   };
 }
-export function projectRitualTasks(household: Pick<Household, 'tasks'>, ritual: Ritual): Ritual {
-  if (!ritual.taskAdoption) return ritual;
-  const heldOn = (household.tasks ?? []).filter(task => task.chapterSource?.kind === 'ritual-occurrence' && task.chapterSource.sourceId === ritual.id && (task.completedAt !== null && !task.deleted || task.chapterSource.legacy?.originalState === 'held')).map(task => task.chapterSource!.onDate!);
-  return { ...ritual, heldOn: [...new Set(heldOn)].sort() };
-}
+export { projectRitualTasks } from './chapterTaskProjection.ts';
 
 export function validateRitualClosureReference(household: Pick<Household, 'chapters'>, ritual: Ritual): void {
   const ref = ritual.approvalViaClosure; if (!ref) return;

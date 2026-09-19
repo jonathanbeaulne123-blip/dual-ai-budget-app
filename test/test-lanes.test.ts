@@ -27,6 +27,14 @@ function directPGliteRuntimeTests() {
     .sort();
 }
 
+function directBrowserRuntimeTests() {
+  return testFiles()
+    .filter((path) => path !== fileURLToPath(import.meta.url))
+    .filter((path) => /(?:chromium|firefox|webkit)\.launch\(/.test(readFileSync(path, "utf8")))
+    .map((path) => relative(testDirectoryPath, path).replaceAll("\\", "/"))
+    .sort();
+}
+
 const serialFixtureTests = [
   "ledger-sync-cutover.test.ts",
   "demo-shift-statistics.test.ts",
@@ -55,7 +63,7 @@ const rpcIsolatedFixtureTests = [
 ];
 
 describe("Vitest lanes", () => {
-  it("keeps direct PGlite and host-timing tests in the serial books lane", () => {
+  it("keeps PGlite, real browsers and host-timing tests in the serial books lane", () => {
     expect(packageJson.scripts?.["test:full:lanes"]).toBeUndefined();
     expect(packageJson.scripts?.test).toBe("node scripts/run-quick-gate.mjs");
     expect(packageJson.scripts?.check).toBe("node scripts/run-quick-gate.mjs");
@@ -64,11 +72,12 @@ describe("Vitest lanes", () => {
     const booksLane = packageJson.scripts?.["test:books"] ?? "";
     const fastLane = packageJson.scripts?.["test:fast"] ?? "";
     const runtimeTests = directPGliteRuntimeTests();
-    const serialTests = [...runtimeTests, ...serialFixtureTests, ...serialTimingTests].sort();
+    const serialTests = [...new Set([...runtimeTests, ...directBrowserRuntimeTests(), ...serialFixtureTests, ...serialTimingTests])].sort();
 
     // Discovery is the authority: every newly added runtime test must be routed
     // to the serial lane without maintaining a second frozen filename list.
     expect(runtimeTests).toContain("pglite-development-canary.test.ts");
+    expect(directBrowserRuntimeTests()).toContain("hearthside-actual-app-browser.test.ts");
     for (const fileName of serialTests) {
       expect(booksLane).toContain(`test/${fileName}`);
       expect(fastLane).toContain(`--exclude=test/${fileName}`);
