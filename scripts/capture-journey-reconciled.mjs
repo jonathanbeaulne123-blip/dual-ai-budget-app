@@ -318,19 +318,25 @@ async function main() {
           await page.waitForFunction(() => !document.querySelector('.path-world__card'), null, { timeout: 10_000 });
           await page.locator('.path-hud__mini .journey-mini__levels button[aria-label="Journey"]').click();
           await page.waitForFunction(() => document.querySelector('.path-hud__mini .journey-mini')?.dataset.level === '4', null, { timeout: 30_000 });
+          await page.waitForFunction(() => [...document.querySelectorAll('.path-hud__mini .journey-mini__label[data-place^="era:"]')].some(element => {
+            const box = element.getBoundingClientRect();
+            return /, (crossed|planned)$/.test(element.getAttribute('aria-label') || '')
+              && !element.hidden && box.width > 0 && box.height > 0 && getComputedStyle(element).pointerEvents !== 'none';
+          }), null, { timeout: 30_000 });
           const miniPick = await page.evaluate(() => {
             const labels = [...document.querySelectorAll('.path-hud__mini .journey-mini__label[data-place^="era:"]')].filter((element) => {
               const box = element.getBoundingClientRect();
-              return !element.hidden && box.width > 0 && box.height > 0 && getComputedStyle(element).pointerEvents !== 'none';
+              return /, (crossed|planned)$/.test(element.getAttribute('aria-label') || '')
+                && !element.hidden && box.width > 0 && box.height > 0 && getComputedStyle(element).pointerEvents !== 'none';
             });
             const label = labels.find((element) => !/We are here/i.test(element.textContent)) ?? labels[0];
             if (!label) return null;
             const aria = label.getAttribute('aria-label') || '';
             const expectedTitle = aria.split(',').slice(1, -1).join(',').trim();
-            label.click();
             return { place: label.dataset.place, label: aria, expectedTitle };
           });
           assert(miniPick?.place && miniPick.expectedTitle, `${base}: no named minimap era was available to pick`, miniPick);
+          await page.locator(`.path-hud__mini .journey-mini__label[data-place="${miniPick.place}"]:visible`).click();
           await page.waitForFunction(({ place, expectedTitle }) => {
             const title = document.querySelector('.path-world__card h3')?.textContent?.trim();
             const selected = document.querySelector(`.path-mark--era[data-place="${CSS.escape(place)}"]`);
@@ -358,6 +364,9 @@ async function main() {
           assert(state.focus?.label === backOpener.label, `${base}: browser Back did not restore opener focus`, { backOpener, state });
           await assertClean(page, errors, blocked, `${base} normal`);
           report.rows[`${base}-normal-timing`] = { durationMs: Math.round(performance.now() - rowStarted) };
+        } catch (error) {
+          await Promise.allSettled([record(page, `${base}-normal-failure`, { errors, blocked })]);
+          throw error;
         } finally {
           await context.close();
         }
@@ -380,6 +389,9 @@ async function main() {
           await record(page, `${base}-reduced-nowebgl-minimized`);
           await assertClean(page, errors, blocked, `${base} reduced-nowebgl`);
           report.rows[`${base}-reduced-nowebgl-timing`] = { durationMs: Math.round(performance.now() - rowStarted) };
+        } catch (error) {
+          await Promise.allSettled([record(page, `${base}-reduced-nowebgl-failure`, { errors, blocked })]);
+          throw error;
         } finally {
           await context.close();
         }
