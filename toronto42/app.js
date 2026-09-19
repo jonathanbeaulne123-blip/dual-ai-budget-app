@@ -20,6 +20,14 @@ portalUrl=params=>{
    return base+(qs?"&"+qs:"");
  }
  return "map.html"+(qs?"?"+qs:"");
+},
+intelUrl=(stop,view)=>{
+ const qs=new URLSearchParams({stop:String(stop),view:view}).toString();
+ if(location.hostname==="html-preview.github.io"){
+   const base="https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Frestaurant.html";
+   return base+"&"+qs;
+ }
+ return "restaurant.html?"+qs;
 };
 function save(){localStorage.setItem(K,JSON.stringify(S));localStorage.setItem(SK,JSON.stringify(T));localStorage.setItem(CK,JSON.stringify(X))}
 function buildOutcomeFilter(){
@@ -73,8 +81,9 @@ function renderCard(x,l){
  e.className=visited?"done":"";e.dataset.n=x.n;e.dataset.s=[x.r,x.a,x.p,x.d,x.s,x.b].join(" ").toLowerCase();
  const badge=visited?`<button type="button" class="status-badge ${outcome?"has-status":"pending"}" data-edit-status>${esc(statusLabel(outcome))} <span>▾</span></button>`:"";
  const remove=x.custom?'<button type="button" class="remove-stop" data-remove>Remove</button>':"";
+ const prepLinks=x.custom?"":'<a class="prep-link flash-link" href="'+esc(intelUrl(x.n,"flashcards"))+'">Flash Cards</a><a class="prep-link letter-link" href="'+esc(intelUrl(x.n,"coverletter"))+'">Cover Letter</a>';
  const num=x.custom?"＋":x.n;
- e.innerHTML=`<div class="no">${num}</div><div><div class="tr"><h3>${esc(x.r)}</h3><span class="price">${esc(x.p)}</span>${badge}</div><div class="addr">${esc(x.a||"Address not added")}</div><p class="desc">${esc(x.d)}</p><div class="next"><b>${x.custom?"Type":"Next stop"}:</b> ${esc(x.custom?"Unexpected stop":x.s)}</div><div class="card-actions"><a class="route mobile-link-always" href="${esc(map)}">↗ Route Portal</a>${remove}</div></div><div class="cw"><label for="c${x.n}">Visited</label><input id="c${x.n}" type="checkbox" ${visited?"checked":""}></div>`;
+ e.innerHTML=`<div class="no">${num}</div><div><div class="tr"><h3>${esc(x.r)}</h3><span class="price">${esc(x.p)}</span>${badge}</div><div class="addr">${esc(x.a||"Address not added")}</div><p class="desc">${esc(x.d)}</p><div class="next"><b>${x.custom?"Type":"Next stop"}:</b> ${esc(x.custom?"Unexpected stop":x.s)}</div><div class="card-actions"><a class="route mobile-link-always" href="${esc(map)}">↗ Route Portal</a>${prepLinks}${remove}</div></div><div class="cw"><label for="c${x.n}">Visited</label><input id="c${x.n}" type="checkbox" ${visited?"checked":""}></div>`;
  const cb=e.querySelector("input[type=checkbox]");
  cb.onchange=()=>{if(cb.checked){openOutcomeModal(x,true,cb)}else{delete S[x.n];delete T[x.n];save();render()}};
  const edit=e.querySelector("[data-edit-status]");if(edit)edit.onclick=()=>openOutcomeModal(x,false);
