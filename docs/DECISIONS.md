@@ -1158,3 +1158,5 @@ Risk High. Budget delta (5): one financial truth, exact shared consent and intac
 ### 2026-09-19 — combined web verification recovery
 
 Keep canonical Ritual history projection independent of Task command/sync imports so sculpture catalogue initialization is safe in browser entry points. Route real browser tests through the existing serial heavy lane on this8GB host; preserve every selected check and the five-minute budget. Neither correction changes money authority, privacy, consent or the accepted house direction. New browser files are discovered by the lane guard rather than silently joining the ordinary four-worker lane.
+
+The accepted books gate also controls decorative Queen rendering. Home, Loft and Cellar stay flat while the exact environment/household/revision is validating or blocked, and load their 3D worlds only after readiness. Validation retry restores the normal world once the books pass. This gives books priority without changing integrity checks, deadlines, financial commands or Final Confirm. It does not claim to resolve every startup delay on a resource-constrained host.
