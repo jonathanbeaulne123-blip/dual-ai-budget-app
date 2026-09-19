@@ -102,6 +102,7 @@ export function preparePersonalLifeShareReview(document: PersonalLifeDocument, i
     : input.sourceKind === 'experience' ? document.experiences.find(row => row.id === input.sourceId)
     : document.memories.find(row => row.id === input.sourceId && !row.withdrawn);
   if (!source) throw Error('PERSONAL_LIFE_SHARE_SOURCE_MISSING');
+  if (input.sourceKind === 'memory' && (source as PersonalLifeMemory).keptRevision !== source.revision) throw Error('PERSONAL_LIFE_KEEP_BEFORE_SHARING');
   if (input.sharedId === source.id) throw Error('PERSONAL_LIFE_SHARED_ID_REQUIRED');
   if (input.sourceKind === 'wish' || input.sourceKind === 'experience') {
     const experience = source as PersonalLifeExperience | PersonalLifeWish;

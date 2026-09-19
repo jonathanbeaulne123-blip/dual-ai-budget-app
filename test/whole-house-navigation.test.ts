@@ -1,10 +1,18 @@
 import {describe,expect,it} from "vitest";
 import {housePath,parseHouseRoute} from "../src/hearthside/houseRoutes.ts";
-import {houseLifeRoute,houseRouteFromLife,readHouseReturn,saveHouseReturn,type HouseIdentity} from "../src/house/navigation.ts";
+import {houseLifeRoute,houseRouteFromLife,houseTargetRoute,readHouseReturn,resolveHouseRouteScope,saveHouseReturn,type HouseIdentity} from "../src/house/navigation.ts";
 import {houseCameraRoute,houseCameraSlot,houseReturnSlot,needsHouseReturnCapture} from "../src/house/returnCache.ts";
 const identity:HouseIdentity={environment:"development",householdId:"HH-house",memberId:"MEM-one",scope:"personal"};
 const storage=()=>{const rows=new Map<string,string>();return {getItem:(key:string)=>rows.get(key)??null,setItem:(key:string,value:string)=>{rows.set(key,value);},removeItem:(key:string)=>{rows.delete(key);}};};
 describe("one scoped house navigator",()=>{
+  it("opens collections while carrying an intention and gives cross-room objects their canonical furniture address",()=>{
+    const origin={room:'kitchen-table' as const,level:'above' as const,householdId:identity.householdId,scope:'personal' as const,surface:'journey',object:'experience/EXP-one'};
+    expect(houseTargetRoute(origin,'wishes')).toMatchObject({room:'together',level:'above',surface:'wishes',object:undefined});
+    expect(houseTargetRoute(origin,'memories','memory/MEMORY-one')).toMatchObject({room:'together',level:'below',surface:'memories',object:'memory/MEMORY-one'});
+    expect(houseTargetRoute(origin,'personal-experience','experience/EXP-one')).toMatchObject({room:'together',level:'above',surface:'personal-experience',object:'experience/EXP-one'});
+    expect(houseTargetRoute(origin,'pottery')).toMatchObject({room:'together',level:'middle',surface:'pottery',object:origin.object});
+    expect(origin.object).toBe('experience/EXP-one');
+  });
   it("round trips object, focused surface, scope and time without a second address",()=>{
     const route={room:"together" as const,level:"middle" as const,householdId:identity.householdId,scope:"personal" as const,object:"piece/PIECE-1/DESIGN-1",surface:"pottery",time:"2026-09"};
     expect(parseHouseRoute(housePath(route),identity.householdId)).toEqual(route);
@@ -38,6 +46,21 @@ describe("one scoped house navigator",()=>{
     expect(readHouseReturn(local,identity,"books")).toMatchObject({route,focus:"books-today",scroll:241,camera:[-3,4,12]});
     for(const change of [{environment:"production" as const},{householdId:"HH-other"},{memberId:"MEM-two"},{scope:"household" as const}])expect(readHouseReturn(local,{...identity,...change},"books")).toBeNull();
     expect(readHouseReturn(local,identity,"pottery")).toBeNull();
+  });
+
+  it("honours a valid scoped deep link while keeping each space's saved arrival separate",()=>{
+    const local=storage();
+    const householdIdentity:HouseIdentity={...identity,scope:"household"};
+    const personalArrival={room:"home" as const,level:"middle" as const,householdId:identity.householdId,scope:"personal" as const,surface:"queen"};
+    const householdArrival={room:"together" as const,level:"middle" as const,householdId:identity.householdId,scope:"household" as const,surface:"pottery",object:"experience/EXP-shared"};
+    saveHouseReturn(local,identity,personalArrival);
+    saveHouseReturn(local,householdIdentity,householdArrival);
+    const deepLink=parseHouseRoute("/house/together/middle?household=HH-house&scope=household&surface=pottery&object=experience%2FEXP-shared",identity.householdId)!;
+    const addressed=resolveHouseRouteScope(deepLink,"personal");
+    expect(addressed).toMatchObject({scope:"household",changesScope:true,route:householdArrival});
+    expect(readHouseReturn(local,householdIdentity)?.route).toEqual(householdArrival);
+    expect(readHouseReturn(local,identity)?.route).toEqual(personalArrival);
+    expect(resolveHouseRouteScope({...personalArrival,scope:undefined},"household")).toMatchObject({scope:"household",changesScope:false,route:{scope:"household"}});
   });
 
   it("keeps an addressed A to B return stack without crossing scope or time",()=>{

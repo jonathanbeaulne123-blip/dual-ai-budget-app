@@ -57,6 +57,7 @@ describe('Personal Together life authority',()=>{
     h=run(h,{kind:'experience.mark-lived',id:'PRIVATE-experience',expectedRevision:1,livedOn:'2026-09-19'});
     expect(h.personalLife!.experiences[0]).toMatchObject({revision:2,state:'lived',livedOn:'2026-09-19'});
     h=run(h,{kind:'memory.save',expectedRevision:0,value:memory()});
+    expect(()=>preparePersonalLifeShareReview(h.personalLife!,{id:'REVIEW-unkept',sourceKind:'memory',sourceId:'PRIVATE-memory',sharedId:'MEMORY-shared'})).toThrow('PERSONAL_LIFE_KEEP_BEFORE_SHARING');
     h=run(h,{kind:'memory.keep',id:'PRIVATE-memory',expectedRevision:1});
     expect(h.personalLife!.memories[0]).toMatchObject({revision:1,keptRevision:1});
     expect(()=>run(h,{kind:'memory.keep',id:'PRIVATE-memory',expectedRevision:0})).toThrow('PERSONAL_LIFE_CHANGED');

@@ -8,6 +8,12 @@ export type HouseReturn = { version: 1; identity: string; route: HouseRoute; foc
 type Store = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 export const houseIdentity = (identity: HouseIdentity) => [identity.environment, identity.householdId, identity.memberId, identity.scope].map(encodeURIComponent).join(":");
 const key = (identity: HouseIdentity, object = "arrival") => `hearth:house:v1:${houseIdentity(identity)}:${encodeURIComponent(object)}`;
+/** A URL may deliberately name another space in the same household. Keep its
+ * address intact while the app changes the active read scope before rendering it. */
+export function resolveHouseRouteScope(route: HouseRoute, currentScope: LedgerView): { route: HouseRoute; scope: LedgerView; changesScope: boolean } {
+  const scope = route.scope ?? currentScope;
+  return { route: route.scope === scope ? route : { ...route, scope }, scope, changesScope: scope !== currentScope };
+}
 export function saveHouseReturn(storage: Store, identity: HouseIdentity, route: HouseRoute, options: Partial<Pick<HouseReturn, "focus" | "scroll" | "camera">> = {}, object = "arrival"): void {
   if (route.householdId !== identity.householdId || route.scope && route.scope !== identity.scope) return;
   const record: HouseReturn = {version: 1, identity: houseIdentity(identity), route: {...route, scope: identity.scope}, focus: options.focus?.slice(0, 180) ?? "house-world-title", scroll: Math.max(0, Math.min(1e7, options.scroll ?? 0)), ...(options.camera?.every(Number.isFinite) ? {camera: options.camera} : {}), at: new Date().toISOString()};
@@ -24,6 +30,17 @@ export function readHouseReturn(storage: Store, identity: HouseIdentity, object 
 }
 export function houseSurfaceRoute(route: HouseRoute, surface: string, object?: string): HouseRoute {
   return {...route, surface, ...(object ? {object} : {}), ...(!["pottery", "wardrobe"].includes(surface) ? {studioSelection: undefined} : {})};
+}
+/** Furniture has one address; collections are browsable even while carrying a folio. */
+export function houseTargetRoute(route:HouseRoute,target:string,object?:string):HouseRoute {
+  const places:Record<string,[HouseRoute['room'],HouseRoute['level']]>= {
+    queen:['home','middle'],'loft-banks':['home','above'],'cellar-bills':['home','below'],
+    planner:['study','above'],books:['study','middle'],calendar:['study','below'],
+    journey:['kitchen-table','above'],conversation:['kitchen-table','middle'],'plan-studio':['kitchen-table','below'],
+    wishes:['together','above'],'personal-experience':['together','above'],pottery:['together','middle'],letters:['together','middle'],encounters:['together','middle'],memories:['together','below'],projector:['together','below'],
+  };
+  const place=places[target];
+  return {...route,...(place?{room:place[0],level:place[1]}:{}),surface:target,object:object??(['wishes','memories','projector'].includes(target)?undefined:route.object),studioSelection:target==='pottery'?route.studioSelection:undefined};
 }
 export function houseRoomRoute(route: HouseRoute): HouseRoute { const {surface: _surface, studioSelection: _studioSelection, ...room} = route; return room; }
 export function houseLifeRoute(route: HouseRoute): HearthsideRoute {

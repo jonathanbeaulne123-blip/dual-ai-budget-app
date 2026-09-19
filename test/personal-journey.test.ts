@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { catalogHousehold } from "../src/core/index.ts";
 import { PersonalJourney } from "../src/house/PersonalJourney.tsx";
 import type { Household, Transaction } from "../src/core/types.ts";
+import { emptyPersonalLife } from "../src/hearthside/personalLifeContracts.ts";
 
 (globalThis as {IS_REACT_ACT_ENVIRONMENT?:boolean}).IS_REACT_ACT_ENVIRONMENT=true;
 
@@ -25,8 +26,8 @@ let host: HTMLDivElement, root: Root;
 beforeEach(() => { fake.throw = false; fake.scene.mockReset(); fake.focusMonth.mockReset(); fake.dispose.mockReset(); host = document.createElement("div"); document.body.append(host); root = createRoot(host); });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); });
 
-function render(household: Household, callbacks = { plan: vi.fn(), back: vi.fn() }) {
-  return act(async () => { root.render(createElement(PersonalJourney, { household, memberId: "MEM-001", today: "2026-09-15", onOpenPlan: callbacks.plan, onReturn: callbacks.back })); });
+function render(household: Household, callbacks: {plan: ReturnType<typeof vi.fn>; back: ReturnType<typeof vi.fn>; open?: ReturnType<typeof vi.fn>} = { plan: vi.fn(), back: vi.fn() }) {
+  return act(async () => { root.render(createElement(PersonalJourney, { household, memberId: "MEM-001", today: "2026-09-15", onOpenPlan: callbacks.plan, onReturn: callbacks.back, onOpenObject:callbacks.open })); });
 }
 
 describe("Personal Journey", () => {
@@ -61,5 +62,22 @@ describe("Personal Journey", () => {
     await act(async () => { await new Promise((resolve) => setTimeout(resolve, 0)); });
     expect(host.querySelector(".personal-journey__flat")).toBeTruthy();
     expect(host.querySelector(".personal-journey__landmarks button")).toBeTruthy();
+  });
+
+  it("opens canonical private objects and shows only deliberately kept memory revisions", async () => {
+    const life=emptyPersonalLife('MEM-001');
+    life.wishes.push({version:1,id:'wish-harbour',revision:1,title:'See the harbour',intention:'Watch the boats',horizon:'season',createdBy:'MEM-001',archived:false,references:[]});
+    const memory={version:1 as const,id:'memory-kept',revision:2,title:'The red boat',date:'2026-09-12',experienceId:null,createdBy:'MEM-001',recollection:'It slipped into the fog',designs:[],hideAmounts:true,keptRevision:2,withdrawn:false};
+    life.memories.push(memory,{...memory,id:'memory-unapproved',title:'An unapproved revision',keptRevision:null},{...memory,id:'memory-withdrawn',title:'A withdrawn memory',withdrawn:true,keptRevision:null});
+    const callbacks={plan:vi.fn(),back:vi.fn(),open:vi.fn()};
+    await render({...catalogHousehold(),transactions:[privateExpense('mine','2026-09-12')],personalLife:life},callbacks);
+    await act(async()=>{await new Promise(resolve=>setTimeout(resolve,0));});
+    expect(fake.scene.mock.calls.at(-1)![0].memories).toEqual([{id:'memory/memory-kept',month:expect.any(Number)}]);
+    expect(host.textContent).not.toContain('An unapproved revision');
+    expect(host.textContent).not.toContain('A withdrawn memory');
+    await act(async()=>[...host.querySelectorAll<HTMLButtonElement>('.personal-journey__objects button')].find(button=>button.textContent?.includes('The red boat'))!.click());
+    expect(callbacks.open).toHaveBeenCalledWith('memory','memory-kept');
+    await act(async()=>[...host.querySelectorAll<HTMLButtonElement>('.personal-journey__objects button')].find(button=>button.textContent?.includes('See the harbour'))!.click());
+    expect(callbacks.open).toHaveBeenCalledWith('wish','wish-harbour');
   });
 });

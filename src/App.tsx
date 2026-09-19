@@ -13,7 +13,7 @@ import { KitchenFolio } from "./house/KitchenFolio.tsx";
 import { HouseWorld } from './house/HouseWorld.tsx';
 import { PersonalJourney } from './house/PersonalJourney.tsx';
 import { PersonalTogether } from './house/PersonalTogether.tsx';
-import { HOUSE_WORLD_ENABLED, HOUSE_PLACES, TARGET_NAMES, houseLifeRoute, houseRouteFromLife, readHouseReturn, saveHouseReturn, type HouseIdentity, houseIdentity } from './house/navigation.ts';
+import { HOUSE_WORLD_ENABLED, HOUSE_PLACES, TARGET_NAMES, houseTargetRoute, houseLifeRoute, houseRouteFromLife, readHouseReturn, resolveHouseRouteScope, saveHouseReturn, type HouseIdentity, houseIdentity } from './house/navigation.ts';
 import { houseReturnSlot, needsHouseReturnCapture } from './house/returnCache.ts';
 import { HOUSE_ROOMS, housePath, parseHouseRoute, togetherLevelForRoom, type HouseLevel, type HouseRoom, type HouseRoute } from './hearthside/houseRoutes.ts';
 import { deriveHouseCondition } from './core/houseCondition.ts';
@@ -77,7 +77,7 @@ import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
 import { captureExplicit } from './ledgerSync/capture.ts';
 import { LedgerSyncClient, LedgerCommandRejectedError } from "./ledgerSync/client.ts";
 import { ledgerSyncEnabled, localLedgerIdentity } from "./ledgerSync/mode.ts";
-import { Suspense, lazy, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   JOINT,
   NeedsConfirmationError,
@@ -893,11 +893,18 @@ export function App() {
   const [playInitialArea,setPlayInitialArea]=useState<"dressing"|undefined>();
   const [hearthsideToolReturn,setHearthsideToolReturn]=useState<HearthsideToolReturn|null>(null);
   const [houseRoute,setHouseRoute]=useState<HouseRoute|null>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if ((!HEARTHSIDE_FLAGS.presentation && !HOUSE_WORLD_ENABLED) || !household || !session || (!HOUSE_WORLD_ENABLED && session.view !== "household")) return;
     const locate = () => {
       const canonical=parseHouseRoute(window.location.href,household.householdId);
-      if(canonical && (!HOUSE_WORLD_ENABLED || !canonical.scope || canonical.scope===session.view)){const route=HOUSE_WORLD_ENABLED?{...canonical,scope:session.view}:canonical;setHouseRoute(route);setTab(tabForHouseRoute(route));setWorkspaceCompact(!HOUSE_WORLD_ENABLED&&route.room==="kitchen-table"&&route.level==="middle");return;}
+      if(canonical&&HOUSE_WORLD_ENABLED){
+        const incoming=resolveHouseRouteScope(canonical,session.view);
+        // A valid same-household address owns its scope. Change the session and
+        // route in this update so private and shared surfaces never briefly mix.
+        if(incoming.changesScope)rememberSession({memberId:session.memberId,view:incoming.scope,householdId:household.householdId});
+        setHouseRoute(incoming.route);setTab(tabForHouseRoute(incoming.route));setWorkspaceCompact(false);return;
+      }
+      if(canonical&&(!HOUSE_WORLD_ENABLED||!canonical.scope||canonical.scope===session.view)){const route=HOUSE_WORLD_ENABLED?{...canonical,scope:session.view}:canonical;setHouseRoute(route);setTab(tabForHouseRoute(route));setWorkspaceCompact(!HOUSE_WORLD_ENABLED&&route.room==="kitchen-table"&&route.level==="middle");return;}
       if(HOUSE_WORLD_ENABLED){
         const identity:HouseIdentity={environment,householdId:household.householdId,memberId:session.memberId,scope:session.view};
         const saved=readHouseReturn(localStorage,identity);
@@ -6442,6 +6449,22 @@ export function App() {
     if(!replace)requestAnimationFrame(()=>document.querySelector<HTMLElement>(HOUSE_WORLD_ENABLED?'.house-world__levels [aria-current="location"]':'.house-shell__levels [aria-current="location"]')?.focus({preventScroll:true}));
   }
 
+  function changeHouseView(nextView: LedgerView) {
+    if (!household || !session || nextView === view) return;
+    if (HOUSE_WORLD_ENABLED) {
+      const identity: HouseIdentity = {environment,householdId:household.householdId,memberId:session.memberId,scope:nextView};
+      const saved=readHouseReturn(localStorage,identity);
+      const route=saved?.route??{room:"home" as const,level:"middle" as const,householdId:household.householdId,scope:nextView};
+      setHouseRoute(route);setTab(tabForHouseRoute(route));setWorkspaceCompact(false);
+      const path=housePath(route);
+      if(`${window.location.pathname}${window.location.search}`!==path)window.history.pushState({hearthTab:tabForHouseRoute(route),houseRoom:route.room,houseLevel:route.level},"",path);
+    } else {
+      if (nextView === "household" && tab === "shift") goTab("home");
+      if (nextView !== "household" && (tab === "till" || tab === "together")) goTab("home");
+    }
+    rememberSession({ memberId: session.memberId, view: nextView, householdId: household.householdId });
+  }
+
   function navigateHouseSurface(route:HouseRoute,replace=false){
     if(household&&session&&route.surface&&needsHouseReturnCapture(activeHouseRoute,route)){saveHouseReturn(localStorage,{environment,householdId:household.householdId,memberId:session.memberId,scope:view},activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera()},houseReturnSlot(route));}
     goTab(tabForHouseRoute(route),undefined,{route,history:replace?"replace":"push"});
@@ -6450,7 +6473,7 @@ export function App() {
   function openHouseObject(target:string,object?:string){
     if(!household||!session)return;
     const identity:HouseIdentity={environment,householdId:household.householdId,memberId:session.memberId,scope:view};
-    const route={...activeHouseRoute,scope:view,surface:target,...(object?{object}:{}),...(target==="cellar-bills"?{room:"home" as const,level:"below" as const}:target==="loft-banks"?{room:"home" as const,level:"above" as const}:{})};
+    const route=houseTargetRoute({...activeHouseRoute,scope:view},target,object);
     saveHouseReturn(localStorage,identity,activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera()},houseReturnSlot(route));
     goTab(tabForHouseRoute(route),undefined,{route,history:"push"});
     if(target==="hercules") {setWorkspaceCompact(false);if(!workspaceEnabled)openLegacyHercules();}
@@ -7093,11 +7116,7 @@ export function App() {
             key={item}
             className={view === item ? "active" : ""}
             aria-pressed={view === item}
-            onClick={() => {
-              if (item === "household" && tab === "shift") goTab("home");
-              if (item !== "household" && (tab === "till" || tab === "together")) goTab("home");
-              rememberSession({ memberId: session.memberId, view: item, householdId: household.householdId });
-            }}
+            onClick={() => changeHouseView(item)}
           >
             {spaceLabel(household, session.memberId, item)}
           </button>
@@ -7321,7 +7340,7 @@ export function App() {
         </>
       )}
 
-      {HOUSE_WORLD_ENABLED&&tab==="plan"&&view==="personal"&&activeHouseRoute.surface==="journey"&&<PersonalJourney household={household} memberId={actorId} today={today} onOpenPlan={()=>openHouseObject("plan-studio")} onReturn={putHouseObjectBack}/>}
+      {HOUSE_WORLD_ENABLED&&tab==="plan"&&view==="personal"&&activeHouseRoute.surface==="journey"&&<PersonalJourney household={household} memberId={actorId} today={today} onOpenPlan={()=>openHouseObject("plan-studio")} onOpenObject={(kind,id)=>openHouseObject(kind==="bank"?"loft-banks":kind==="memory"?"memories":kind==="experience"?"personal-experience":"wishes",`${kind}/${id}`)} onReturn={putHouseObjectBack}/>}
       {tab === "plan" && dashboard && !(HOUSE_WORLD_ENABLED&&view==="personal"&&activeHouseRoute.surface==="journey") && (
         <>
           {(onboardingCategoriesOnly || onboardingEstimatesOnly || onboardingPlanOnly) && <header className="journey-plan-heading"><p className="kicker">Stage 3</p><h2>Our first plan</h2><p>Choose starter categories, review each person's amounts, then independently approve and adopt the same proposal.</p><ol aria-label="First plan steps"><li aria-current={onboardingCategoriesOnly ? "step" : undefined}>Categories</li><li aria-current={onboardingEstimatesOnly ? "step" : undefined}>Starter amounts</li><li aria-current={onboardingPlanOnly ? "step" : undefined}>Review and adopt</li></ol></header>}

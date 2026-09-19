@@ -27,6 +27,10 @@
 .personal-journey__reading { width: min(25rem, 38%); padding-left: 1rem; border-left: 1px solid color-mix(in srgb, var(--journey-ink) 14%, transparent); }
 .personal-journey__reading ul { margin: .6rem 0 1rem; padding-left: 1.1rem; }
 .personal-journey__reading .primary { margin-top: .5rem; }
+.personal-journey__objects { padding: 1rem clamp(1rem,3vw,2rem) 2rem; }
+.personal-journey__objects > div { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,15rem),1fr)); gap:.75rem; }
+.personal-journey__objects button { display:grid; gap:.4rem; text-align:left; min-height:72px; padding:1rem; border:1px solid color-mix(in srgb,var(--journey-ink) 30%,transparent); border-radius:.7rem; color:var(--journey-ink); background:var(--journey-paper); }
+.personal-journey__objects button small { font-size:.8rem; }
 @media (max-width: 680px) {
   .personal-journey__head, .personal-journey__body { display: block; }
   .personal-journey__head > button { margin-top: .8rem; }
