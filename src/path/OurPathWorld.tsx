@@ -65,6 +65,7 @@ import { JourneyMini } from "./mini/JourneyMini.tsx";
 import { useMiniJourneyLoad } from "./mini/miniJourneyLoader.ts";
 import { miniCad } from "./mini/miniJourneyModel.ts";
 import { JOURNEY_LEVEL_FOR_WORLD, JOURNEY_LEVEL_LABEL, WORLD_LEVEL_FOR, useJourneyFocus, type JourneyFocus, type JourneyFocusApi, type JourneyFocusSource } from "./journeyFocus.ts";
+import { PathRoamRadar, type PathRoamRadarHandle } from "./PathRoamRadar.tsx";
 import type { ThemeId } from "../theme/scenes.ts";
 import type { PathAnchor, PathCharacter, PathEraIslandInput, PathLevel, PathQuality, PathWorld, PathWorldInput } from "./world/pathWorld3d.ts";
 import "./our-path-world.css";
@@ -148,6 +149,11 @@ const QUALITY_KEY = "hearth:pathWorld:quality";
  * Default on (it is the owner's own device); they never show at Dim, the shared-screen glance level.
  */
 const mineKey = (memberId: string) => `hearth:pathWorld:mine:${memberId}`;
+/** Free roam (D-286): the controls are spelled out once per device, then never again. */
+const ROAM_HINT_KEY = "hearth:pathWorld:roamHint";
+function readRoamHintSeen(): boolean {
+  try { return window.localStorage.getItem(ROAM_HINT_KEY) === "1"; } catch { return true; }
+}
 /** Private marks (footpaths, stage-1 planks) need at least this lantern. */
 const PRIVATE_LANTERN: Lantern = 1;
 const MARK_PRIORITY: Record<Mark["kind"], number> = {
@@ -327,6 +333,22 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const [naming, setNaming] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [notice, setNotice] = useState("");
+  // ---------------------------------------------------- free roam (D-286)
+  // The camera is normally latched to the two of you. Unlatched, it is the person's own: they explore the island and
+  // the era islands, and come back when they want to.
+  const [roaming, setRoaming] = useState(false);
+  /** The moment the camera changed hands, for the one quiet line. */
+  const [roamTaken, setRoamTaken] = useState(false);
+  const [roamHint, setRoamHint] = useState(false);
+  /** What the polite live region says: the mode changed, or the camera came to rest near a month. */
+  const [roamSays, setRoamSays] = useState("");
+  /** The truth about the mode, readable from a callback without waiting for a render. */
+  const roamingRef = useRef(false);
+  const roamNear = useRef<number | null>(null);
+  const roamHintSeen = useRef<boolean | null>(null);
+  if (roamHintSeen.current === null) roamHintSeen.current = readRoamHintSeen();
+  const radar = useRef<PathRoamRadarHandle>(null);
+  const roamButton = useRef<HTMLButtonElement>(null);
   const tentButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
   const compassButton = useRef<HTMLButtonElement>(null);
@@ -922,9 +944,31 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   viewRef.current = (v) => {
     if (!fullRef.current || !worldSynced.current || v.month === null) return;
     const date = dateForMonth(v.month);
-    if (!date || monthForDate(focusRef.current.date) === v.month) return;
+    if (!date) return;
+    // Roaming, the camera says where it has come to rest, so it is never lost to someone who cannot see it.
+    if (roamingRef.current && roamNear.current !== v.month) {
+      roamNear.current = v.month;
+      setRoamSays(`Near ${monthName(date.slice(0, 7))}`);
+    }
+    if (monthForDate(focusRef.current.date) === v.month) return;
     journeyRef.current.set({ date }, "world");
   };
+  // The world hands the camera over (a drag or a roam key on the island), or takes it back.
+  const roamChanged = useRef<(on: boolean) => void>(() => {});
+  roamChanged.current = (on) => {
+    if (roamingRef.current === on) return;
+    roamingRef.current = on;
+    roamNear.current = null;
+    setRoaming(on);
+    setRoamTaken(on);
+    if (on) { if (!roamHintSeen.current) setRoamHint(true); }
+    else { setRoamHint(false); radar.current?.show(null); }
+    setRoamSays(on
+      ? "Free roam. The camera is yours: drag, or W A S D, to explore. Space brings you back to us."
+      : "The camera is latched to the two of you again.");
+  };
+  const roamHomeRef = useRef<() => void>(() => {});
+  const roamToggleRef = useRef<() => void>(() => {});
   const selectRef = useRef<(id: string, from?: JourneyFocusSource) => void>(() => {});
   // The controls and the open card sit over the canvas: a mark under them could be seen but not pressed, so it waits.
   const obstacles = useRef<{ x0: number; x1: number; y0: number; y1: number; card: boolean }[]>([]);
@@ -932,7 +976,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     const base = host.current?.getBoundingClientRect();
     const stage = host.current?.parentElement;
     if (!base || !stage) return;
-    obstacles.current = [...stage.querySelectorAll(".path-hud__corner > *, .path-world__drawer, .path-hud__mini, .path-hud__caption, .path-world__rail, .path-world__now > *, .path-world__card")].flatMap((el) => {
+    obstacles.current = [...stage.querySelectorAll(".path-hud__corner > *, .path-world__drawer, .path-hud__mini, .path-roam-radar, .path-hud__roam, .path-hud__caption, .path-world__rail, .path-world__now > *, .path-world__card")].flatMap((el) => {
       const r = el.getBoundingClientRect();
       return r.width > 0 && r.height > 0 ? [{ x0: r.left - base.left, x1: r.right - base.left, y0: r.top - base.top, y1: r.bottom - base.top, card: el.classList.contains("path-world__card") || el.classList.contains("path-world__drawer") }] : [];
     });
@@ -1025,6 +1069,10 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
             onLevel: (lv) => { if (dead) return; setLevel(lv); worldLevel.current = lv; reportLevel(lv); },
             onPick: (id) => selectRef.current(id, "world"),
             onView: (v) => { if (!dead) viewRef.current(v); },
+            onRoam: (on) => { if (!dead) roamChanged.current(on); },
+            onRoamView: (v) => { if (!dead) radar.current?.show(v); },
+            onRoamHome: () => { if (!dead) roamHomeRef.current(); },
+            onRoamToggle: () => { if (!dead) roamToggleRef.current(); },
           });
         } catch {
           if (!dead) { setLive(false); setFailed(true); }
@@ -1038,7 +1086,15 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         setLive(true);
       })
       .catch(() => { if (!dead) { setLive(false); setFailed(true); } });
-    return () => { dead = true; element.removeEventListener("pointerdown", took); element.removeEventListener("wheel", took); observer?.disconnect(); if (created) createWith.current.proofWorld?.onWorld?.(null); created?.dispose(); world.current = null; };
+    return () => {
+      dead = true;
+      element.removeEventListener("pointerdown", took); element.removeEventListener("wheel", took);
+      observer?.disconnect();
+      if (created) createWith.current.proofWorld?.onWorld?.(null);
+      created?.dispose();
+      world.current = null;
+      roamChanged.current(false);
+    };
     // The world is created once per mount/theme gate (the tent only puts it to sleep); scene changes arrive below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wanted, reduced, applyAnchors, reportLevel, dropGuard, worldEpoch, booted]);
@@ -1083,6 +1139,10 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
       else if (id === "era-home" || id.startsWith("month:")) setFocusedEra(null);
       return;
     }
+    // Free roam (D-286): a pick is a request and still travels (above), but Replay, the slider and a date change
+    // never yank a camera the person is holding. The world keeps reporting where it rests, so the simple view and
+    // the caption still follow it.
+    if (roamingRef.current) return;
     // A mini-only pick (a bill, a contribution, a task) or no pick: travel to the month in view.
     if (focus.level === "journey") { guardTrip(0); current.setLevel(0); return; }
     const lv = WORLD_LEVEL_FOR[focus.level];
@@ -1142,6 +1202,18 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     else current.wake(host.current?.clientWidth ?? 0, host.current?.clientHeight ?? 0);
   }, [awake, live]);
   useEffect(() => { try { window.localStorage.setItem(LANTERN_KEY, String(lantern)); } catch { /* per-device convenience only */ } }, [lantern]);
+  // Minimized (or the tent opened): the camera is latched again, so the next opening starts with the two of you.
+  useEffect(() => {
+    if (full && !tentOpen) return;
+    world.current?.setRoam?.(false);
+    roamChanged.current(false);
+  }, [full, tentOpen]);
+  // The line that says the camera changed hands is quiet: it says it once and settles into the plain state chip.
+  useEffect(() => {
+    if (!roamTaken) return;
+    const timer = window.setTimeout(() => setRoamTaken(false), reduced ? 6000 : 4200);
+    return () => window.clearTimeout(timer);
+  }, [roamTaken, reduced]);
 
   // Replay: grow the island month by month.
   useEffect(() => {
@@ -1686,6 +1758,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     </div>
   );
   const goNow = () => {
+    // Where we are always brings the camera home, latched, however far it had wandered (D-286).
+    if (roamingRef.current) { world.current?.setRoam?.(false); roamChanged.current(false); }
     setFollowNow(true);
     setCur(last);
     setSelected(null);
@@ -1695,6 +1769,28 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
       window.setTimeout(() => { guardTrip(2); world.current?.focus("now", 2); }, 0);
     } else journey.toToday("page");
   };
+  // Free roam (D-286): one control hands the camera over and takes it back; C does the same from the island.
+  const takeCamera = () => {
+    if (!live) return;
+    const current = world.current;
+    if (current?.setRoam) current.setRoam(true); else roamChanged.current(true);
+    dropGuard();
+    // The keys only reach the island while it holds focus, so taking the camera puts focus there.
+    host.current?.focus();
+  };
+  const latchCamera = () => { goNow(); };
+  const toggleRoam = () => { if (roamingRef.current) latchCamera(); else takeCamera(); };
+  roamHomeRef.current = latchCamera;
+  roamToggleRef.current = toggleRoam;
+  const dismissRoamHint = () => {
+    setRoamHint(false);
+    roamHintSeen.current = true;
+    try { window.localStorage.setItem(ROAM_HINT_KEY, "1"); } catch { /* per-device convenience only */ }
+    roamButton.current?.focus();
+  };
+  const roamLabel = roaming
+    ? "Our island, free roam. W A S D or the arrow keys move the camera, Q and E turn it, R and F rise and fall, Shift hurries, Space brings you back to us."
+    : "Our island. The camera follows the two of you. Press C, or drag the island, to take the camera and roam.";
   const cardView = detail && (
     <aside ref={cardRef} tabIndex={-1} className={`path-world__card${full ? "" : " path-world__card--page"}`} aria-live="polite" aria-labelledby="path-world-card-title">
       <button type="button" className="path-world__close" aria-label="Close" onClick={closeCard}>×</button>
@@ -1763,7 +1859,9 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         {/* The open world (D-285): built the first time it opens, full screen, with a game HUD over the island. */}
         <div ref={stageRef} className={`path-world__stage path-world__stage--game${full ? " path-world__stage--full" : ""}`} hidden={!full}
           role="dialog" aria-modal={full || undefined} aria-label={`${islandName ?? "Our island"} · the open world`} data-loading={loading || undefined}>
-          <div ref={host} className="path-world__host" data-live={live} />
+          <div ref={host} className="path-world__host" data-live={live} data-roaming={roaming || undefined}
+            tabIndex={full && live ? 0 : undefined} role={full && live ? "application" : undefined}
+            aria-label={full && live ? roamLabel : undefined} />
           {loading && <p className="path-world__loading" role="status"><span aria-hidden="true" />Growing the island…</p>}
           {full && flat && <div className="path-world__flat" aria-hidden="true">{flatMap}</div>}
           <div className="path-world__marks" hidden={!live || !full}>
@@ -1803,6 +1901,24 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
                   <span className="path-hud__min-words" aria-hidden="true">Minimize</span>
                 </button>
                 <span className="path-hud__esc" aria-hidden="true"><kbd>Esc</kbd></span>
+                <button ref={roamButton} type="button" className="path-hud__roamer" aria-pressed={roaming} disabled={!live}
+                  aria-label="Free roam camera" aria-keyshortcuts="C" title="Free roam — unlatch the camera and explore (C)"
+                  onClick={toggleRoam}>
+                  <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="10" r="2.2" /><path d="M10 2.2v2.6M10 15.2v2.6M2.2 10h2.6M15.2 10h2.6" /><path d="M5.2 5.2 6.9 6.9M13.1 13.1l1.7 1.7M14.8 5.2 13.1 6.9M6.9 13.1l-1.7 1.7" /></svg>
+                  <span className="path-hud__roamer-words">Free roam</span>
+                </button>
+                {roamHint && roaming && (
+                  <section className="path-hud__hint" aria-label="How to roam the island">
+                    <p className="path-hud__hint-title">The camera is yours</p>
+                    <ul>
+                      <li><span className="path-hud__keys"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span> or the arrow keys — move where you are looking</li>
+                      <li><span className="path-hud__keys"><kbd>Q</kbd><kbd>E</kbd></span> turn · <span className="path-hud__keys"><kbd>R</kbd><kbd>F</kbd></span> rise and fall · <span className="path-hud__keys"><kbd>Shift</kbd></span> hurry</li>
+                      <li>Drag to glide · pinch or scroll to zoom · right-drag to look around</li>
+                      <li><span className="path-hud__keys"><kbd>Space</kbd></span> or Where we are — back to the two of you</li>
+                    </ul>
+                    <button type="button" className="primary" onClick={dismissRoamHint}>Got it</button>
+                  </section>
+                )}
               </div>
               <div className="path-hud__corner path-hud__corner--end">
                 <button ref={gearButton} type="button" className="path-hud__gear" aria-expanded={drawer} aria-controls="path-world-drawer" aria-label="World settings" title="Settings" onClick={() => setDrawer((v) => !v)}>
@@ -1835,11 +1951,16 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
                   </div>
                 )}
               </div>
-              {!(flat && !mini) && (
-                <div className="path-hud__mini" data-slot="journey-mini-compact">
-                  {mini ? mini(miniArgs(true)) : <div className="path-hud__flatmini" aria-hidden="true">{flatMap}</div>}
-                </div>
-              )}
+              <div className="path-hud__minicol">
+                {/* Roaming, a small radar over the corner map: where the camera stands, the wedge it sees, and the
+                    two of you as their own mark. Tapping it flies the camera there. */}
+                {roaming && live && <PathRoamRadar ref={radar} onGo={(x, z) => { dropGuard(); world.current?.roamTo?.(x, z); }} />}
+                {!(flat && !mini) && (
+                  <div className="path-hud__mini" data-slot="journey-mini-compact">
+                    {mini ? mini(miniArgs(true)) : <div className="path-hud__flatmini" aria-hidden="true">{flatMap}</div>}
+                  </div>
+                )}
+              </div>
               <p className="path-hud__caption" aria-live="polite">
                 <span className="path-hud__caption-level">{caption.level}</span>
                 <strong>{caption.title}</strong>
@@ -1871,7 +1992,15 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
                   </button>
                 </div>
               </div>
+              {roaming && (
+                <div className="path-hud__roam" data-taken={roamTaken || undefined}>
+                  <span className="path-hud__roam-state">{roamTaken ? "You\u2019ve taken the camera" : "Free roam"}</span>
+                  <button type="button" className="path-hud__roam-back" onClick={latchCamera}>Return to us</button>
+                </div>
+              )}
               {notice && <p className="path-hud__notice" role="status">{notice}</p>}
+              {/* The mode, and where a resting free camera has come to, read out politely and nowhere on screen. */}
+              <p className="sr-only" role="status" aria-live="polite">{roamSays}</p>
             </div>
           )}
         </div>
@@ -1961,6 +2090,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
 
           <details className="path-world__panel path-world__outline">
             <summary>Everything on the island</summary>
+            {flat && <p className="muted">This device draws the flat map, so there is no free roam camera here. Every place is still listed below, and opens the same card.</p>}
             <ul>
               {marks.filter((mark) => mark.kind !== "era" && mark.kind !== "plan" && mark.kind !== "gate" && mark.kind !== "home" && ((mark.kind !== "footpath" && mark.kind !== "bridge") || lantern >= mark.lantern)).map((mark) => <li key={mark.id}><button type="button" data-place={mark.id} onClick={() => select(mark.id)}>{mark.label}{mark.sub ? ` · ${mark.sub}` : ""}</button></li>)}
             </ul>
