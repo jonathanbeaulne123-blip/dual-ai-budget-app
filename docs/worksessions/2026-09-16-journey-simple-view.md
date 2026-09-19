@@ -129,3 +129,13 @@ Only fictional Development data was used (Our Story habitat, plan-life fixture).
 ## Next owner
 
 The integrator (D-285 / game mode) mounts the component and wires the world side of the shared focus.
+
+## Integration (2026-09-17)
+
+The two halves are one feature on `claude/journey-simple-view`; D-284 and D-285 in `docs/DECISIONS.md` carry the detail.
+
+- **Mounted by Our Path itself.** The page copy sits in the simple-view slot, and the compact copy is the open world's corner minimap. `renderMini` still overrides for proofs and tests.
+- **One staged read-model** in a worker, memoized per household revision and shared by both copies and the world's caption. The longest main-thread task on Our Story fell from about 3.0 s to about 0.19 s.
+- **The two views talk both ways:** picks, levels, camera rests, landed trips and Replay all travel through `useJourneyFocus`.
+- **Same words in both:** `test/journey-integrated-ui.test.ts` holds the eras, months, Chapter, "where we are" and the lane amounts to the same values.
+- **Evidence:** `docs/evidence/journey-simple-view/integrated/` — 264 captures, `report.json`, `performance.json`.

@@ -1,3 +1,23 @@
+## The journey's two views, together (2026-09-16/17, D-284 + D-285)
+
+**Status:** branch `claude/journey-simple-view`, on `origin/main@d7b0151b` (it also carries D-283's full-screen toggle). Local only; not pushed, not merged, not deployed.
+
+**Risk:** Medium. Presentation and view state only.
+
+**Budget delta (5):** +1 — the month's Fund bills, money in and the lane trackers read at a glance from existing selectors. **Engagement delta (3):** +3.
+
+**Changes:** `src/path/journeyFocus.ts` (the shared view state), `src/path/mini/**` (the read-model, its worker and staged loader, the tabletop 3D renderer, the `JourneyMini` card and its flat map), `src/path/OurPathWorld.tsx` and `our-path-world.css` (the page leads with the simple view, the open world is a full-screen game with its own heads-up display and corner minimap, and the world only boots when opened), a small additive `focusMonth` on `pathWorld3d.ts`, and the capture scripts.
+
+**Verification:**
+- `tsc` clean.
+- Tests: `journey-focus`, `journey-mini-model`, `journey-mini-story`, `journey-mini-ui`, `journey-game-mode-ui`, `journey-integrated-ui`, `journey-fullscreen-ui`, `our-path-world-ui`, `our-path-world`, plus the era and habitat suites.
+- Browser: 264 captures across two fictional habitats (Our Story and "doing well") × 320 / 390 / 720 / 1100 × Classic, Taylor and Newfoundland × the whole trip (page → each zoom level → open the world → pick in the world → the minimap follows → pick in the minimap → minimize). `report.json` records no page or console errors, no overflow, no targets under 44px, and no app chrome visible in game mode. Evidence: `docs/evidence/journey-simple-view/{mini,game,integrated}/`.
+- Performance on Our Story: the merged view blocked the main thread for one ~3.0 s task and ~0.54 s per other month; staged in a worker, its longest main-thread task is now ~0.19 s (`integrated/performance.json`).
+
+**Uncertainty:** no real phone and no screen reader; one capture combination (the "doing well" habitat at 390 Classic) recorded a capture-script error after its frames were taken; the lane trackers still read `projectKittyNest` and carry `TODO(fundModel)` until the money-model branch lands.
+
+**Next owner:** Jonathan / the delivery bot to push and open a PR, then a Codex trust review of the shared view state before Production.
+
 ## Journey map full screen toggle (2026-09-16, D-283)
 
 **Status:** branch `claude/journey-fullscreen`, one commit on `origin/main@d7b0151b`. Local only; not pushed.
