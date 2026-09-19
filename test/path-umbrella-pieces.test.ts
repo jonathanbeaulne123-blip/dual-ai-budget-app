@@ -1,5 +1,6 @@
+import { closeSyntheticChapter } from "../src/core/syntheticChapters.ts";
 import { describe, expect, it } from "vitest";
-import { appendPlanSitdownTurn, closeChapter, openChapter, postEntry, type Household } from "../src/core/index.ts";
+import { appendPlanSitdownTurn, openChapter, postEntry, type Household } from "../src/core/index.ts";
 import { pathMonths, umbrellaSeedMonth } from "../src/core/pathSignals.ts";
 import { effectivePathRecipes } from "../src/core/pathWorld.ts";
 import { umbrellaHueForCategory } from "../src/core/fundModel.ts";
@@ -70,7 +71,7 @@ describe("Slice 11 — world pieces per umbrella (D-282)", () => {
     const session = h.planHerculesSessions!.find(row => row.monthKey === "2026-10")!;
     h = { ...h, planHerculesSessions: h.planHerculesSessions!.map(row => row.id === session.id ? { ...row, state: "closed" as const } : row) };
     const chapterId = h.chapters!.find(row => row.state === "open")!.id;
-    h = closeChapter(h, { memberId: ALEX, chapterId, outcome: "established", at: "2026-10-18T12:00:00.000Z" }).household;
+    h = closeSyntheticChapter(h, { memberId: ALEX, chapterId, outcome: "established", at: "2026-10-18T12:00:00.000Z" });
     const after = pathMonths(h, today).find(m => m.key === "2026-10")!;
     expect(after.scores.together).toBeGreaterThanOrEqual(0.7);
     expect(after.why.together).toContain("a Sitdown");

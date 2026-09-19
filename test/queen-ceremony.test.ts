@@ -1,11 +1,12 @@
 import { knownCents } from "./fixtures/knownCents.ts";
+import { closeSyntheticChapter } from "../src/core/syntheticChapters.ts";
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { saveKittyNestDesign } from "../src/core/index.ts";
-import { closeChapter, openChapter, openChapterFor } from "../src/core/chapters.ts";
+import { openChapter, openChapterFor } from "../src/core/chapters.ts";
 import { newKittyPiece, shapeKittyPiece } from "../src/core/kittyStudio.ts";
 import { allocateNestTotal, projectKittyNest } from "../src/core/kittyNest.ts";
 import { queenBanks } from "../src/core/queenPresentation.ts";
@@ -42,7 +43,7 @@ function closed(h: Household, n: number, from = 1): Household {
   for (let i = 0; i < n; i += 1) {
     const at = `2026-0${Math.min(9, from + Math.floor(i / 3))}-${String(2 + (i % 3) * 8).padStart(2, "0")}T12:00:00.000Z`;
     h = openChapter(h, { memberId, foundationId: "see-our-shared-life", at }).household;
-    h = closeChapter(h, { memberId, chapterId: openChapterFor(h)!.id, outcome: i % 2 ? "established" : "still-forming", at: at.replace("T12", "T18") }).household;
+    h = closeSyntheticChapter(h, { memberId, chapterId: openChapterFor(h)!.id, outcome: i % 2 ? "established" : "still-forming", at: at.replace("T12", "T18") });
   }
   return h;
 }
@@ -62,7 +63,7 @@ describe("Growth rings — one shallow band per closed Chapter, derived and perm
     expect(queenRingCount(h)).toBe(0);
     h = openChapter(h, { memberId, foundationId: "see-our-shared-life", at: "2026-08-01T12:00:00.000Z" }).household;
     expect(queenRingCount(h)).toBe(0);
-    h = closeChapter(h, { memberId, chapterId: openChapterFor(h)!.id, outcome: "established", at: "2026-08-30T12:00:00.000Z" }).household;
+    h = closeSyntheticChapter(h, { memberId, chapterId: openChapterFor(h)!.id, outcome: "established", at: "2026-08-30T12:00:00.000Z" });
     expect(queenRingCount(h)).toBe(1);
     expect(queenRingCount(closed(h, 11, 9))).toBe(12);
     expect(queenRingCount(closed(h, 11, 9), "2026-08-31T00:00:00.000Z")).toBe(1);

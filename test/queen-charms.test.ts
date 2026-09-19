@@ -1,11 +1,12 @@
 import { knownCents } from "./fixtures/knownCents.ts";
+import { closeSyntheticChapter, holdSyntheticRitual } from "../src/core/syntheticChapters.ts";
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { addGoal, fundGoal, purchaseGoal, foundHouseholdCharter, signHouseholdCharter, postEntry, reversePostedMoney, saveKittyNestDesign } from "../src/core/index.ts";
-import { closeChapter, openChapter, recordRitualHeld, openChapterFor } from "../src/core/chapters.ts";
+import { openChapter, openChapterFor } from "../src/core/chapters.ts";
 import { shapeKittyPiece, newKittyPiece } from "../src/core/kittyStudio.ts";
 import { allocateNestTotal, projectKittyNest } from "../src/core/kittyNest.ts";
 import { queenBanks, queenStill } from "../src/core/queenPresentation.ts";
@@ -74,15 +75,15 @@ describe("The charm library — a dozen small things, earned by acts", () => {
     // The coffee mug: one Ritual held ten times — heldOn is evidence, and nine is not ten.
     h = openChapter(h, { memberId, foundationId: "see-our-shared-life", at: "2026-08-01T12:00:00.000Z" }).household;
     const ritual = h.rituals![0]!;
-    for (let day = 1; day <= 9; day += 1) h = recordRitualHeld(h, { memberId, ritualId: ritual.id, onDate: `2026-08-${String(day).padStart(2, "0")}` }).household;
+    for (let day = 1; day <= 9; day += 1) h = holdSyntheticRitual(h, { memberId, ritualId: ritual.id, onDate: `2026-08-${String(day).padStart(2, "0")}` });
     expect(queenCharmKindsEarned(h).has("coffee-mug")).toBe(false);
-    h = recordRitualHeld(h, { memberId, ritualId: ritual.id, onDate: "2026-08-10" }).household;
+    h = holdSyntheticRitual(h, { memberId, ritualId: ritual.id, onDate: "2026-08-10" });
     expect(queenCharmKindsEarned(h).has("coffee-mug")).toBe(true);
     // The bell: the first Sitdown completed — a Chapter closed at one carries its id. The snail: closed after a hard month.
     expect(queenCharmKindsEarned(h).has("bell")).toBe(false);
-    const established = closeChapter(h, { memberId, chapterId: openChapterFor(h)!.id, outcome: "established", at: "2026-08-30T12:00:00.000Z" }).household;
+    const established = closeSyntheticChapter(h, { memberId, chapterId: openChapterFor(h)!.id, outcome: "established", at: "2026-08-30T12:00:00.000Z" });
     expect(queenCharmKindsEarned(established).has("snail")).toBe(false);
-    h = closeChapter(h, { memberId, chapterId: openChapterFor(h)!.id, outcome: "still-forming", sitdownId: "SIT-FICTION", at: "2026-08-30T12:00:00.000Z" }).household;
+    h = closeSyntheticChapter(h, { memberId, chapterId: openChapterFor(h)!.id, outcome: "still-forming", sitdownId: "SIT-FICTION", at: "2026-08-30T12:00:00.000Z" });
     expect(queenCharmKindsEarned(h).has("snail")).toBe(true);
     expect(queenCharmKindsEarned(h).has("bell")).toBe(true);
     expect(queenCharmKindsEarned({ ...planLifeFixture("household"), sitDownSessions: [{ id: "S", monthKey: "2026-09", targetMonth: "2026-10", act: 3, leftoverCents: 0, cashLikeCents: 0, billsNext30Cents: 0, minPaymentsCents: 0, slices: [], transferIds: [], contributionIds: [], budgetPosted: false, closedMonth: false, driveFileId: null, status: "closed", createdBy: memberId, createdAt: "2026-09-01T00:00:00.000Z", updatedAt: "2026-09-01T00:00:00.000Z" }] }).has("bell")).toBe(true);
