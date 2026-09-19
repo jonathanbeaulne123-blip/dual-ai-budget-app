@@ -84,7 +84,21 @@ describe('Complete wardrobe interactions',()=>{
   const command=vi.fn((_fn:unknown,options:{recoverConfirmation?:boolean;confirmationId?:string;onRecoveredConfirmation?:()=>void})=>{expect(options.recoverConfirmation).toBe(true);expect(options.confirmationId).toBe(id);options.onRecoveredConfirmation?.();return null;});
   await act(async()=>root.render(createElement(HerculesDressingRoom,{...props,...scope,household:h,connected:true,onCommand:command as never,onClose:vi.fn()})));await click('Retry unconfirmed request');expect(document.body.textContent).toContain('Earlier request confirmed');expect(h.companionProfile.wornLook.revision).toBe(2);expect(h.companionProfile.wornLook.value!.selections).toEqual({});expect(button('Retry unconfirmed request')).toBeUndefined();
  });
- it('explains incompatible replacements before applying them and keeps explicit None through view changes',async()=>{
-  await render();await click('Tiny office manager');await click('Try Pinstripe jacket');expect(document.body.textContent).toContain('This piece replaces Cable-knit sweater');expect(vi.mocked(scene.setLook).mock.calls.at(-1)?.[0].selections.body?.itemId).toBe('cozy-sweater');await click('Replace and try on');expect(vi.mocked(scene.setLook).mock.calls.at(-1)?.[0].selections.outerwear?.itemId).toBe('office-jacket');await click('No accessories');await act(async()=>root.render(createElement(HerculesDressingRoom,{...props,view:'personal',onClose:vi.fn()})));expect(vi.mocked(scene.setLook).mock.calls.at(-1)?.[0].selections).toEqual({});expect(vi.mocked(scene.setRoom).mock.calls.at(-1)?.[0].personal).toBe(true);expect(scene.dispose).not.toHaveBeenCalled();
+ it('reviews replacements, clears only accessories and preserves explicit garment removal through view changes',async()=>{
+  await render();await click('Tiny office manager');await click('Try Pinstripe jacket');
+  expect(document.body.textContent).toContain('This piece replaces Cable-knit sweater');
+  expect(vi.mocked(scene.setLook).mock.calls.at(-1)?.[0].selections.body?.itemId).toBe('cozy-sweater');
+  await click('Replace and try on');
+  const jacket=vi.mocked(scene.setLook).mock.calls.at(-1)![0].selections.outerwear!;
+  expect(jacket.itemId).toBe('office-jacket');
+  await click('Clear accessories');
+  expect(vi.mocked(scene.setLook).mock.calls.at(-1)?.[0].selections).toEqual({outerwear:jacket});
+  await act(async()=>root.render(createElement(HerculesDressingRoom,{...props,view:'personal',onClose:vi.fn()})));
+  expect(vi.mocked(scene.setLook).mock.calls.at(-1)?.[0].selections).toEqual({outerwear:jacket});
+  expect(vi.mocked(scene.setRoom).mock.calls.at(-1)?.[0].personal).toBe(true);
+  await click('Remove pinstripe jacket');
+  await act(async()=>root.render(createElement(HerculesDressingRoom,{...props,view:'household',onClose:vi.fn()})));
+  expect(vi.mocked(scene.setLook).mock.calls.at(-1)?.[0].selections).toEqual({});
+  expect(vi.mocked(scene.setRoom).mock.calls.at(-1)?.[0].personal).toBe(false);expect(scene.dispose).not.toHaveBeenCalled();
  });
 });

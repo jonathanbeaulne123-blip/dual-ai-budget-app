@@ -1,3 +1,9 @@
+## 2026-09-19 — Hearthside resume preserves direct practical entrances
+
+Shift Ask, onboarding boards and retained board-draft recovery explicitly select Hearthside's practical surface when its presentation is enabled. The departing Office can consume the transient board request, so navigation cannot depend on that request still being pending at the lazy room mount. Scoped board selection remains session-only; the stable surface URL and mounted-room notification preserve direct access and reload. Existing financial commands, data and Final Confirm are unchanged. Android startup instrumentation now waits for the actual App welcome state after secure hydration, rather than accepting any root content including the loading/error placeholders. See the [resume worksession](worksessions/2026-09-19-hearthside-resume.md).
+
+Personal Play's error exit now makes the same explicit Household-view transition as its normal Together exit, avoiding a loop back to the failed Personal room. The shared-room fallback labels its actual Home destination. These are navigation recovery changes, with no household write or added financial authority.
+
 ## 2026-09-12 — Hearthside full implementation program (in progress)
 
 Actual Android compilation identified a compressed-model asset collision: Android aliases `.glb.gz` to `.glb`. Native Android now loads the original raw base/collection models through the shared loader, and its package excludes only redundant `.glb.gz` sidecars. Web/iOS retain their compressed transport. Every authored model remains available; cancellation, transfer measurement and asset provenance are preserved. The native plugin declares its direct pinned AppCompat dependency instead of assuming Capacitor exports it.

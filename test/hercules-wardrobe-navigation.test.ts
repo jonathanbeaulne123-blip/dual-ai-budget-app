@@ -62,8 +62,11 @@ describe('Wardrobe navigation in the room',()=>{
   await click('Remove Cable-knit sweater');expect(lastLook()?.selections.body).toBeUndefined();expect(wearing.textContent).not.toContain('Cable-knit sweater');
  });
  it('steps through the current slot with the arrows and [ ] keys, and skips text fields',async()=>{
-  await render();await act(async()=>button('Head').click());const heads=FITTING_ITEMS.filter(p=>p.collection==='cozy'&&p.slot==='head');
-  await click('Next head piece');expect(lastLook()?.selections.head?.itemId).toBe(heads[0]!.id);
+  await render();await act(async()=>button('Head').click());
+  expect(lastLook()?.selections.head?.itemId).toBe('cozy-toque');
+  await click('Next head piece');expect(lastLook()?.selections.head?.itemId).toBe('cozy-beret');
+  await key({key:'['});expect(lastLook()?.selections.head?.itemId).toBe('cozy-toque');
+  await key({key:']'});expect(lastLook()?.selections.head?.itemId).toBe('cozy-beret');
   await act(async()=>button('Tiny office manager').click());await act(async()=>button('All').click());await act(async()=>button('Head').click());
   await key({key:']'});expect(lastLook()?.selections.head?.itemId).toBe('office-visor');
   await key({key:'['});expect(lastLook()?.selections.head?.itemId).toBe('office-visor');

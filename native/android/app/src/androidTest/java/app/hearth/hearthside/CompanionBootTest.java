@@ -23,13 +23,15 @@ public class CompanionBootTest {
             while (System.nanoTime() < deadline) {
                 CountDownLatch response = new CountDownLatch(1);
                 activity.onActivity(host -> host.getBridge().getWebView().evaluateJavascript(
-                    "Boolean(location.protocol === 'https:' && location.hostname === 'localhost' && document.getElementById('root')?.childElementCount > 0)",
+                    // Only App renders this welcome state. The pre-hydration
+                    // placeholder, secure-storage error and lazy fallback cannot pass.
+                    "Boolean(location.protocol === 'https:' && location.hostname === 'localhost' && document.querySelector('#root .welcome-card[data-welcome-mode=home]'))",
                     value -> { result.set(value); response.countDown(); }));
                 assertTrue("The local WebView did not answer", response.await(5, TimeUnit.SECONDS));
                 if ("true".equals(result.get())) return;
                 Thread.sleep(200);
             }
-            fail("The packaged React entry did not mount after secure native hydration: " + result.get());
+            fail("The packaged App welcome did not mount after secure native hydration: " + result.get());
         }
     }
 }

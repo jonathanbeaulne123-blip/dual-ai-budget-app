@@ -6243,7 +6243,7 @@ export function App() {
       isCurrent: () => householdRef.current?.householdId === household.householdId && sessionRef.current?.memberId === actorId });
   }
 
-  function goTab(next: Tab) {
+  function goTab(next: Tab, requestedBoardSurface?: "practical") {
     if(hearthsideToolReturn?.tab!==next)setHearthsideToolReturn(null);
     if (HEARTHSIDE_FLAGS.presentation && next === "together") next = "play";
     if(next === "play" && !PLAY_ENABLED && !HEARTHSIDE_FLAGS.presentation)next="together";
@@ -6258,6 +6258,14 @@ export function App() {
     closeAdd();
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
+    if (HEARTHSIDE_FLAGS.presentation && next === "play" && requestedBoardSurface) {
+      // A board request may already have been consumed by the departing Office.
+      // Route to its real surface explicitly, including when Hearthside is mounted.
+      const path = hearthsidePath({ version: 1, householdId: household.householdId, room: "common", mode: "present", surface: requestedBoardSurface });
+      if (path !== `${url.pathname}${url.search}`) window.history.pushState({ hearthTab: "play" }, "", path);
+      window.dispatchEvent(new PopStateEvent("popstate"));
+      return;
+    }
     if (HEARTHSIDE_FLAGS.presentation && next !== "play" && url.pathname.startsWith("/hearthside")) {
       url.pathname = "/"; url.searchParams.delete("household"); url.searchParams.delete("room"); url.searchParams.delete("mode"); url.searchParams.delete("from"); url.searchParams.delete("focus"); url.searchParams.delete("design"); url.searchParams.delete("surface"); url.searchParams.delete("piece");
       window.history.pushState({hearthTab:next}, "", `${url.pathname}${url.search}${url.hash}`);
@@ -6404,7 +6412,7 @@ export function App() {
   const openFundDestination = (destination: FundDestination | "ask" = "record") => {
     rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
     if (destination === "swipe") { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); return; }
-    if (destination === "ask") { requestSharedBoard({ environment, householdId: household.householdId, memberId: session.memberId }, "ask"); goTab("together"); return; }
+    if (destination === "ask") { requestSharedBoard({ environment, householdId: household.householdId, memberId: session.memberId }, "ask"); goTab("together", "practical"); return; }
     if (destination === "shelf") { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:household`; setHerculesSourceFocus({route:"plan",view:"household",label:"Goals & reserves"}); goTab("plan"); return; }
     if (destination === "minutes") { goTab("more"); return; }
     setBooksPaneRequest(destination === "contribute" ? "fund" : destination === "seven-days" ? "register" : "fund-register");
@@ -6602,7 +6610,7 @@ export function App() {
     if (destination === "bills") { requestCalendarPane("bills", localStorage); goTab("calendar"); return; }
     if (destination === "boards") {
       requestSharedBoard({ environment, householdId: household!.householdId, memberId: session!.memberId }, "tasks");
-      goTab("together"); return;
+      goTab("together", "practical"); return;
     }
     if (destination === "hercules") { goTab(workspaceEnabled ? "hercules" : "home"); return; }
     setFocusedAccountId(null);
@@ -6750,7 +6758,7 @@ export function App() {
           {entry.preview?.rows.filter(row=>isVisibleInView(row,memberId??'',view)).map(row=><p key={row.id}>{row.date} · {row.note} · {formatCad(row.amountCents)} · {row.splits.map(split=>`${split.party}: ${formatCad(split.amountCents)}`).join(', ')}</p>)}
           {isBoardDraft(entry.command) ? <BoardRejectedDraft command={entry.command} household={household} onOpen={board=>{
             requestSharedBoard({environment,householdId:household.householdId,memberId:actorId},board);
-            goTab("together");
+            goTab("together", "practical");
           }} /> : <button type="button" className="chip" onClick={()=>openAddFor(null)}>Start a new entry</button>}{" "}
           <button type="button" className="ghost" onClick={()=>{void ledgerSyncRef.current?.dismissRejected(entry.command.id);}}>Dismiss retained entry</button>
         </article>)}
@@ -6893,7 +6901,7 @@ export function App() {
         onSnapshot={value => setWorkspaceSnapshot({ ...value, identity: ledgerRenderScopeKey })} openProjectId={workspaceProjectId} onProjectOpened={()=>setWorkspaceProjectId(null)}
       />}
       {HEARTHSIDE_FLAGS.presentation&&view==="household"&&hearthsideToolReturn?.scope===ledgerRenderScopeKey&&hearthsideToolReturn.tab===tab&&<aside className="hearthside-tool-return"><span>{hearthsideToolReturn.label}</span><button onClick={()=>{const back=readHearthsideToolReturn(hearthsideToolReturn,ledgerRenderScopeKey,household.householdId);if(!back)return;window.history.pushState({hearthTab:"play",hearthsideFocus:back.focusId},"",back.path);goTab("play");requestAnimationFrame(()=>requestAnimationFrame(()=>document.getElementById(back.focusId)?.focus()));}}>Return to {HEARTHSIDE_LABEL}</button></aside>}
-      {HEARTHSIDE_FLAGS.presentation && (tab === "play" || tab === "together") && view === "household" && <PlayBoundary onExit={() => goTab("home")}><Suspense fallback={<p>Opening our shared home…</p>}><Hearthside
+      {HEARTHSIDE_FLAGS.presentation && (tab === "play" || tab === "together") && view === "household" && <PlayBoundary onExit={() => goTab("home")} exitLabel="Return Home"><Suspense fallback={<p>Opening our shared home…</p>}><Hearthside
         key={ledgerRenderScopeKey} identity={ledgerRenderScopeKey} household={household} memberId={actorId} busy={busy} vaultSource={()=>ledgerSyncRef.current}
         connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen}
         initialRoom={playInitialArea === "dressing" ? "studio" : undefined}
@@ -6914,7 +6922,7 @@ export function App() {
       /></Suspense></PlayBoundary>}
       {tab === "planner" && <Planner focusTaskId={hearthsideToolReturn?.scope===ledgerRenderScopeKey?hearthsideToolReturn.taskId:undefined} household={household} memberId={actorId} view={view} today={today} busy={busy} onCommand={runKitchen} onRecord={openTaskInAdd} />}
       {tab === "timeMachine" && <TimeMachine household={household} memberId={actorId} view={view} today={today} onOpenBooks={() => goTab("ledger")} />}
-      {(!HEARTHSIDE_FLAGS.presentation || view !== "household") && PLAY_ENABLED && tab === "play" && <PlayBoundary onExit={()=>goTab("together")}><Suspense fallback={<p>Opening Hercules’s room…</p>}><HerculesPlay initialArea={playInitialArea} key={`${environment}:${household.householdId}:${actorId}`} household={household} memberId={actorId} connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen} onTogether={() => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }} onGoal={goalId => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:household`; setHerculesSourceFocus({route:"plan",view:"household",label:"Kitty Banks",...(goalId?{goalId}:{})}); goTab("plan"); }}/></Suspense></PlayBoundary>}
+      {(!HEARTHSIDE_FLAGS.presentation || view !== "household") && PLAY_ENABLED && tab === "play" && <PlayBoundary onExit={()=>{ if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }}><Suspense fallback={<p>Opening Hercules’s room…</p>}><HerculesPlay initialArea={playInitialArea} key={`${environment}:${household.householdId}:${actorId}`} household={household} memberId={actorId} connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen} onTogether={() => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }} onGoal={goalId => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:household`; setHerculesSourceFocus({route:"plan",view:"household",label:"Kitty Banks",...(goalId?{goalId}:{})}); goTab("plan"); }}/></Suspense></PlayBoundary>}
       {!HEARTHSIDE_FLAGS.presentation && tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={() => goTab("planner")} onOpenPlay={PLAY_ENABLED ? () => {setPlayInitialArea(undefined);goTab("play");} : undefined} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
       {tab === "home" && dashboard && view === "household" && householdHomeV2Enabled() && (
