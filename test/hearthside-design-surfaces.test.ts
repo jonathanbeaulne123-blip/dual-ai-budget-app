@@ -67,7 +67,7 @@ describe('selected design export review and cancellation', () => {
     expect(h.workers.at(-1)!.request).toMatchObject({ selection: { heightMm: 80 } }); h.job.dispose();
   });
   it('invalidates a review when the supplied manufacturing profile changes and rejects a forged completion profile', async () => {
-    const h = harness(), { worker, prepared } = await h.prepare();
+    const h = harness(), { worker } = await h.prepare();
     await h.job.prepare({ heightMm: 160, construction: 'solid', manufacturingProfile: 'PLA profile A' }); expect(worker.terminate).toHaveBeenCalledOnce();
     expect(h.workers.at(-1)!.request).toMatchObject({ selection: { manufacturingProfile: 'PLA profile A' } });
     const latest = h.workers.at(-1)!, request = latest.request; if (request.type !== 'prepare') throw Error();
