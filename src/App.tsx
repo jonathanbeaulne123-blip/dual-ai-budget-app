@@ -7103,6 +7103,7 @@ export function App() {
           busy={busy}
           onCommand={runKitchen}
           composition={HEARTHSIDE_FLAGS.presentation ? "queen" : undefined}
+          world={activeBooksGate.ready ? "auto" : "flat"}
           housePlace={HEARTHSIDE_FLAGS.presentation&&activeHouseRoute.room==="home"?(activeHouseRoute.level==="above"?"loft":activeHouseRoute.level==="below"?"cellar":"home"):undefined}
           onHousePlace={HEARTHSIDE_FLAGS.presentation ? place => goTab("home", undefined, {route:{room:"home",level:place==="loft"?"above":place==="cellar"?"below":"middle",householdId:household.householdId},history:"push"}) : undefined}
           onGo={(next) => goTab(next)}

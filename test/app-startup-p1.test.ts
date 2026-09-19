@@ -65,6 +65,7 @@ const startup = vi.hoisted(() => ({
   transportCalls: [] as Household[],
   lifecycle: [] as string[],
   transportResult: null as null | { ok: true; remoteRevision?: number } | { ok: false; errorClass: "pending-transport" | "conflict-detected" | "disconnected"; message: string },
+  householdHomeWorld: null as null | "flat" | "auto",
 }));
 
 vi.mock("../src/ledgerSync/presence.ts", () => ({ attachLedgerPresence: () => () => {} }));
@@ -214,6 +215,17 @@ vi.mock("../src/api.ts", async (importOriginal) => {
 });
 
 vi.mock("../src/Till.tsx",async importOriginal=>{const actual=await importOriginal<typeof import("../src/Till.tsx")>();return {...actual,Till:(props:import("react").ComponentProps<typeof actual.Till>)=>{startup.tillOpen=props.onOpenSwipe;startup.receiptUndo=(props.strip as import("react").ReactElement<{onUndo?:()=>void}>|null)?.props?.onUndo??null;return createElement(actual.Till,props);}};});
+
+vi.mock("../src/HouseholdHome.tsx", async importOriginal => {
+  const actual = await importOriginal<typeof import("../src/HouseholdHome.tsx")>();
+  return {
+    ...actual,
+    HouseholdHome: (props: import("react").ComponentProps<typeof actual.HouseholdHome>) => {
+      startup.householdHomeWorld = props.world ?? null;
+      return createElement(actual.HouseholdHome, props);
+    },
+  };
+});
 
 vi.mock("../src/Swipe.tsx",()=>({Swipe:(props:NonNullable<typeof startup.swipeProps>)=>{startup.swipeProps=props;return createElement("div",{"data-testid":"swipe-stub"},props.error||"Swipe draft");}}));
 
@@ -456,6 +468,7 @@ describe("cached-shell startup books gate", () => {
     startup.transportCalls = [];
     startup.lifecycle = [];
     startup.transportResult = null;
+    startup.householdHomeWorld = null;
     localStorage.setItem("hearth:session:v1:development", JSON.stringify({
       memberId: "MEM-002",
       view: "household",
@@ -672,6 +685,35 @@ describe("cached-shell startup books gate", () => {
     await waitForUi(() => expect(startup.saveCalls).toBeGreaterThan(savesBeforePost));
     expect(startup.saveCalls).toBeGreaterThan(savesBeforePost);
     expect(container.querySelector("[role='dialog'][aria-labelledby='add-sheet-title']")).toBeNull();
+  });
+
+  it("keeps the decorative Queen world flat until local books are ready", async () => {
+    startup.inspections.push(Promise.resolve({
+      ok: false,
+      issue: "projection-mismatch",
+      message: "The cached snapshot and accepted journal do not agree.",
+      entryCount: 2,
+    }));
+
+    await act(async () => {
+      root.render(createElement(App));
+      await Promise.resolve();
+    });
+
+    expect(container.querySelector("[data-books-readiness='validating']")).not.toBeNull();
+    expect(startup.householdHomeWorld).toBe("flat");
+
+    await startValidation();
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='blocked']")).not.toBeNull());
+    expect(startup.householdHomeWorld).toBe("flat");
+
+    startup.inspections.push(Promise.resolve({ ok: true, message: "PGlite agrees.", entryCount: 2 }));
+    await act(async () => {
+      button("Retry validation").click();
+      await Promise.resolve();
+    });
+    await waitForUi(() => expect(container.querySelector("[data-books-readiness='ready']")).not.toBeNull());
+    expect(startup.householdHomeWorld).toBe("auto");
   });
 
   it.each(["household", "personal"] as const)("keeps %s Confirm uncommitted before staging while a cloud-backed device is offline", async (view) => {
