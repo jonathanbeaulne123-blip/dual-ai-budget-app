@@ -18,3 +18,15 @@ h1{font:500 clamp(2.8rem,7vw,5.8rem)/.92 Georgia,"Times New Roman",serif;letter-
 .type.chatgpt{background:#e3ecee;color:#41676d}.type.claude{background:#f1e6da;color:#8a5c2b}.type.compare{background:#ece6f2;color:var(--purple)}
 .estimate{display:grid;gap:3px;padding:10px 0;border-bottom:1px solid #eee6da}.estimate strong{font-size:.82rem}.estimate span{font-size:.78rem;color:var(--muted);line-height:1.4}.rule-divider{height:1px;background:var(--line);margin:18px 0}
 @media(max-width:900px){.model-plan{grid-template-columns:1fr}}
+
+.pack-card{margin:18px 0 22px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:var(--shadow)}
+.pack-head{display:flex;justify-content:space-between;gap:18px;align-items:end;margin-bottom:14px}
+.pack-head h2{font:500 1.7rem Georgia,serif;margin:.3rem 0 .45rem}.pack-head p{margin:0;color:var(--muted);font-size:.87rem;line-height:1.5;max-width:720px}
+.pack-progress{display:flex;align-items:baseline;gap:6px;white-space:nowrap}.pack-progress strong{font-size:1.5rem}.pack-progress span{font-size:.7rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:850}
+.pack-list{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:start}
+.pack-group{border:1px solid #e9e0d4;border-radius:14px;padding:12px;background:#fff}.pack-group-title{font-size:.66rem;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);font-weight:900;margin-bottom:8px}
+.pack-item{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-top:1px solid #f1ebe2;font-size:.79rem;line-height:1.35}.pack-item:first-of-type{border-top:0}.pack-item.done{opacity:.55;text-decoration:line-through}
+.pack-item input{appearance:none;width:21px;height:21px;flex:0 0 21px;border:2px solid #b9afa0;border-radius:6px;background:#fff;display:grid;place-content:center;margin:0}.pack-item input:before{content:"✓";color:#fff;font-size:14px;font-weight:900;transform:scale(0)}.pack-item input:checked{background:var(--green);border-color:var(--green)}.pack-item input:checked:before{transform:scale(1)}
+.staples-card{margin-top:12px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;border:1px solid #d6c7ba;border-left:4px solid var(--accent);border-radius:13px;padding:14px;background:#faf6f0}.staples-card h3{margin:.25rem 0 .35rem}.staples-card p{margin:0;color:var(--muted);font-size:.82rem;line-height:1.45}
+@media(max-width:980px){.pack-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.pack-head{align-items:flex-start;flex-direction:column}.pack-list{grid-template-columns:1fr}.staples-card{grid-template-columns:1fr}.staples-card .button{justify-self:start}}
