@@ -336,7 +336,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     ...(plan.kind === "bank" ? [plan.bought ? "bought" : (plan.step ?? 0) >= 10 ? "full" : `${plan.step ?? 0} of 10 steps`] : []),
     ...(plan.sketched ? [`suggested by ${nameOf(era.pendingBy)}`] : []),
   ].join(" · ");
-  const next = nextMove(household, memberId);
+  const next = useMemo(() => nextMove(household, memberId), [household, memberId]);
   const moves = useMemo(() => (chapter && atNow ? movesForChapter(household, chapter.id).filter((m) => m.state !== "declined") : []), [household, chapter, atNow]);
   const goals = useMemo(() => kittyBanksInView(household, "household", memberId), [household, memberId]);
   // Landmarks read "as of" the shown month, so Replay shows the banks as they stood then.

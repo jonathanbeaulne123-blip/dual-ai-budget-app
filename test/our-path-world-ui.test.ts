@@ -2,8 +2,9 @@
 import { act, createElement, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { addGoal, offerMove, openChapter, postEntry, recordRitualHeld, type CommitResult, type Household } from "../src/core/index.ts";
-import { movesForChapter, openChapterFor, respondToMove } from "../src/core/chapters.ts";
+import { addGoal, offerMove, openChapter, postEntry, type CommitResult, type Household } from "../src/core/index.ts";
+import { movesForChapter, openChapterFor } from "../src/core/chapters.ts";
+import { holdSyntheticRitual, respondToSyntheticMove } from "../src/core/syntheticChapters.ts";
 import { agreePathProposal, herculesPathSuggestion, pathIslandName, pendingPathProposals, proposePathName, proposePathRecipe } from "../src/core/pathWorld.ts";
 import { OurPathWorld } from "../src/path/OurPathWorld.tsx";
 import { planLifeFixture } from "./fixtures/plan-life.ts";
@@ -16,7 +17,7 @@ import { acknowledgeHouseholdPlan, appendPlanSitdownTurn, closeBooksMonth, found
 import { addRecurrence, setHouseholdFundMonthPlan, stampWeeklyDocument } from "../src/core/index.ts";
 import { pathWeather } from "../src/core/pathWeather.ts";
 import { pathStones } from "../src/core/pathStones.ts";
-import { completeTask, saveTask, type TaskInput } from "../src/core/tasks.ts";
+import { acknowledgeTask, completeTask, saveTask, type TaskInput } from "../src/core/tasks.ts";
 import { savePlanBridgeDraft, sharePlanBridgeDraft } from "../src/core/index.ts";
 
 // jsdom has no WebGL: by default the world fails to load and the page must stay fully usable.
@@ -43,10 +44,10 @@ afterEach(async () => { await act(async () => root.unmount()); host.remove(); lo
 function seeded(): Household {
   let h = planLifeFixture("household");
   h = openChapter(h, { memberId: "MEM-001", foundationId: "make-rent-boring", at: "2026-07-01T12:00:00.000Z" }).household;
-  h = recordRitualHeld(h, { memberId: "MEM-001", ritualId: h.rituals![0]!.id, onDate: "2026-08-04" }).household;
+  h = holdSyntheticRitual(h, { memberId: "MEM-001", ritualId: h.rituals![0]!.id, onDate: "2026-08-04" });
   const opening = movesForChapter(h, openChapterFor(h)!.id)[0]!;
-  h = respondToMove(h, { memberId: "MEM-001", moveId: opening.id, response: "decline" }).household;
-  h = offerMove(h, { memberId: "MEM-002", chapterId: openChapterFor(h)!.id, text: "Fictional: check the pre-rent payday", needsAcknowledgment: true }).household;
+  for (const member of h.members.filter(row => row.active)) h = respondToSyntheticMove(h, { memberId: member.id, moveId: opening.id, response: "decline" });
+  h = offerMove(h, { memberId: "MEM-002", chapterId: openChapterFor(h)!.id, text: "Fictional: check the pre-rent payday", ownerMemberId: "MEM-001", needsAcknowledgment: true }).household;
   h = addGoal(h, { name: "Fictional trip to the shore", target: "2000", shared: true, ownerMemberId: "MEM-001" }).household;
   h = postEntry(h, { type: "expense", date: "2026-08-12", amount: "80", accountId: "ACC-VISA", subcategoryId: "SUB-LIFE-FUN", note: "Fictional concert", createdBy: "MEM-001", visibility: "household", confirmDuplicate: true }).household;
   return h;
@@ -102,15 +103,17 @@ describe("Our Path world page (D-262)", () => {
     await click(byText("Dim"));
     expect($(".path-world__card").textContent).toContain("Turn the lantern up for more.");
 
-    // The next Move needs both acknowledgments before it can be done (the proposer's is already there).
+    // The responsible person takes the Task and both agree to its exact terms before completion.
     await click(byText("Warm"));
     await click(byText(/^Next Move/));
     expect($(".path-world__card h3").textContent).toBe("Fictional: check the pre-rent payday");
     expect($(".path-world__card").textContent).toContain("Acknowledged by 1 of 2");
-    expect(byText("Mark done").disabled).toBe(true);
-    await click(byText("Acknowledge"));
+    expect(byText("Mark done")).toBeUndefined();
+    await click(byText("Take this task"));
+    expect(byText("Mark done")).toBeUndefined();
+    await click(byText("Agree to this exact Move"));
     expect(byText("Mark done").disabled).toBe(false);
-    expect(byText("Acknowledge")).toBeUndefined();
+    expect(byText("Agree to this exact Move")).toBeUndefined();
 
     // Into the tent and back: the classic page never unmounts, so a draft survives.
     const draft = $<HTMLInputElement>("#draft");
@@ -200,8 +203,8 @@ describe("Our Path world page (D-262)", () => {
   it("keeps one scene when the App re-renders with fresh inline callbacks and the same household", async () => {
     created.mode = "fake";
     const h = seeded();
-    const page = (n: number) => createElement(OurPathWorld, {
-      household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null,
+    const page = (n: number, household = h) => createElement(OurPathWorld, {
+      household, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null,
       onOpenPlay: () => n, onOpenInTent: () => n, onOpenTogether: () => n, onOpenCharter: () => n, onOpenFund: () => n, onOpenCalendar: () => n,
       onOpenPlanner: () => n, onOpenTimeMachine: () => n, onOpenBank: () => n, onTentChange: () => n,
     });
@@ -213,9 +216,16 @@ describe("Our Path world page (D-262)", () => {
     for (let n = 2; n < 5; n++) await act(async () => root.render(page(n)));
     await settle();
     expect(world.setScene).toHaveBeenCalledTimes(calls);
-    // The cottage still follows whether Play can open at all.
-    await act(async () => root.render(createElement(OurPathWorld, { household: h, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null })));
+    // A real Task/Move change still reaches the existing scene.
+    const move = movesForChapter(h, openChapterFor(h)!.id).find(row => row.state === "offered")!;
+    const taken = respondToSyntheticMove(h, { memberId: "MEM-001", moveId: move.id, response: "accept" });
+    const agreed = respondToSyntheticMove(taken, { memberId: "MEM-001", moveId: move.id, response: "acknowledge" });
+    await act(async () => root.render(page(5, agreed)));
     expect(world.setScene).toHaveBeenCalledTimes(calls + 1);
+    expect((world.setScene.mock.calls.at(-1)![0] as { moves: { id: string; state: string }[] }).moves).toContainEqual({ id: `move:${move.id}`, state: "next" });
+    // The cottage still follows whether Play can open at all.
+    await act(async () => root.render(createElement(OurPathWorld, { household: agreed, memberId: "MEM-001", today: "2026-09-15", busy: false, onCommand: async () => ({ ok: true }), theme: "classic", classicRoom: null })));
+    expect(world.setScene).toHaveBeenCalledTimes(calls + 2);
     expect((world.setScene.mock.calls.at(-1)![0] as { cottage: boolean }).cottage).toBe(false);
   });
 
@@ -634,7 +644,9 @@ describe("Our Path world page (D-262)", () => {
         { id: "stone:TASK-ferry", month: now, state: "open", lit: false, money: false, owner: true, backup: true },
         { id: "stone:TASK-hydro", month: now, state: "waiting", lit: false, money: true, owner: true, backup: false },
       ]));
-      expect(scene().stones).toHaveLength(2);
+      // The three canonical Chapter Tasks share this surface with the two planner Tasks.
+      expect(scene().stones).toHaveLength(5);
+      expect(scene().stones.some(row => row.id === "stone:TASK-secret")).toBe(false);
       expect(outline().map((b) => b.textContent)).toContain("Fictional: book the ferry · Owned by Alex (fictional), Sam (fictional) as backup");
       // The private task is never a stepping stone; for its owner it is a private footpath instead.
       expect(outline().map((b) => b.textContent).filter((t) => t?.includes("surprise"))).toEqual(["Fictional surprise picnic · only you see this"]);
@@ -654,7 +666,8 @@ describe("Our Path world page (D-262)", () => {
       const posted = postEntry(h, { date: "2026-09-14", type: "expense", amount: 140.5, accountId: "ACC-CHEQUING", subcategoryId: "SUB-HOUSING-ELECTRIC", createdBy: "MEM-001", note: "Fictional hydro", confirmDuplicate: true }).household;
       expect(pathStones(posted, "MEM-001", TODAY).find((s) => s.id === "TASK-hydro")!.lit).toBe(false);
       const tx = posted.transactions.find((row) => row.note === "Fictional hydro")!;
-      const done = completeTask(posted, { memberId: "MEM-001", id: "TASK-hydro", expectedRevision: 1, evidence: { kind: "transaction", transactionId: tx.id, amountCents: tx.amountCents, date: tx.date } }).household;
+      const taken = acknowledgeTask(posted, { memberId: "MEM-002", id: "TASK-hydro", expectedRevision: 1 }).household;
+      const done = completeTask(taken, { memberId: "MEM-002", id: "TASK-hydro", expectedRevision: 2, evidence: { kind: "transaction", transactionId: tx.id, amountCents: tx.amountCents, date: tx.date } }).household;
       await render(done);
       expect(scene().stones.find((s) => s.id === "stone:TASK-hydro")).toMatchObject({ state: "done", lit: true, money: true });
       expect(cardText()).toContain("Lit because the money is confirmed in the books.");
