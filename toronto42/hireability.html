@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f1e8">
+<title>Hireability Mode — Toronto Culinary Passport</title>
+<link rel="stylesheet" href="hireability.css?v=20260919-passport">
+<link rel="stylesheet" href="flow.css?v=20260919-passport">
+</head>
+<body>
+<main class="hire-shell">
+  <header class="hire-hero">
+    <div>
+      <div class="top-links">
+        <a id="backChecklist" href="index.html">← Checklist</a>
+        <a id="routePortal" href="map.html">Route Portal ↗</a>
+        <a id="nextSteps" href="nextsteps.html">Next Steps ↗</a>
+      </div>
+      <div class="eyebrow">Candidate-side command center</div>
+      <h1>Hireability<br>Mode</h1>
+      <p>The restaurant research proves you know <em>them</em>. This screen makes sure you can prove <strong>you</strong>: readiness, evidence, A-GAME answers, warm introductions, and whether conversations are converting.</p>
+    </div>
+    <aside class="readiness-card">
+      <div class="score"><span id="readinessScore">0</span><small>% ready</small></div>
+      <div class="track"><div id="readinessFill"></div></div>
+      <div id="readinessLabel" class="score-label">Complete the passport and proof stories.</div>
+    </aside>
+  </header>
+
+  <nav class="mode-tabs" id="modeTabs">
+    <button class="mode-tab active" data-panel="passport">Ready-to-Hire Passport</button>
+    <button class="mode-tab" data-panel="stories">Evidence Bank</button>
+    <button class="mode-tab" data-panel="drill">A-GAME Drill</button>
+    <button class="mode-tab" data-panel="referrals">Warm Intros</button>
+    <button class="mode-tab" data-panel="conversion">Conversion</button>
+  </nav>
+
+  <section class="mode-panel active" data-panel-view="passport">
+    <div class="section-head">
+      <div><div class="eyebrow">Remove hiring friction</div><h2>Ready-to-Hire Passport</h2></div>
+      <div class="section-note">Unknown fields stay unknown until you enter them.</div>
+    </div>
+    <div class="passport-grid">
+      <article class="panel-card">
+        <h3>Eligibility & availability</h3>
+        <label class="field"><span>Smart Serve status</span>
+          <select data-passport="smartServe">
+            <option value="">Unknown / not entered</option>
+            <option value="current">Current</option>
+            <option value="expired">Expired</option>
+            <option value="not-completed">Not completed</option>
+          </select>
+        </label>
+        <label class="field"><span>Smart Serve expiry / note</span><input data-passport="smartServeNote" placeholder="Expiry date or note"></label>
+        <label class="field"><span>Earliest start date</span><input data-passport="startDate" type="date"></label>
+        <label class="field"><span>Exact weekly availability</span><textarea data-passport="availability" rows="4" placeholder="e.g. Tue/Thu/Sat open, Sunday mornings..."></textarea></label>
+        <label class="check-row"><input type="checkbox" data-passport-check="workEligibility"><span>Work eligibility confirmed and ready to state clearly</span></label>
+      </article>
+
+      <article class="panel-card">
+        <h3>Roles you'll accept</h3>
+        <div class="role-grid">
+          <label class="check-row"><input type="checkbox" data-role="Server"><span>Server</span></label>
+          <label class="check-row"><input type="checkbox" data-role="Bartender"><span>Bartender</span></label>
+          <label class="check-row"><input type="checkbox" data-role="Server/Bartender"><span>Server / Bartender hybrid</span></label>
+          <label class="check-row"><input type="checkbox" data-role="Bar Lead"><span>Bar Lead</span></label>
+          <label class="check-row"><input type="checkbox" data-role="Private Events"><span>Private Events</span></label>
+          <label class="check-row"><input type="checkbox" data-role="Management-track"><span>Management-track</span></label>
+        </div>
+        <label class="field"><span>Role boundary / dealbreakers</span><textarea data-passport="roleNotes" rows="3" placeholder="Anything you will not accept, schedule limits, minimum level, etc."></textarea></label>
+      </article>
+
+      <article class="panel-card">
+        <h3>Materials ready</h3>
+        <label class="check-row"><input type="checkbox" data-passport-check="resumeReady"><span>Resume current</span></label>
+        <label class="check-row"><input type="checkbox" data-passport-check="resumeCopies"><span>Printed resume copies packed</span></label>
+        <label class="check-row"><input type="checkbox" data-passport-check="smartServeProof"><span>Smart Serve proof accessible on phone</span></label>
+        <label class="check-row"><input type="checkbox" data-passport-check="interviewClothes"><span>Presentation / outfit ready</span></label>
+        <label class="field"><span>Resume link (optional)</span><input data-passport="resumeUrl" placeholder="Drive / Docs / portfolio link"></label>
+      </article>
+
+      <article class="panel-card">
+        <h3>References</h3>
+        <p class="card-copy">Only add people who have agreed to be a reference.</p>
+        <div class="reference">
+          <strong>Reference 1</strong>
+          <label class="field"><span>Name</span><input data-passport="ref1Name"></label>
+          <label class="field"><span>Relationship / role</span><input data-passport="ref1Role"></label>
+          <label class="field"><span>Professional contact</span><input data-passport="ref1Contact"></label>
+          <label class="check-row"><input type="checkbox" data-passport-check="ref1Permission"><span>Permission confirmed</span></label>
+        </div>
+        <div class="reference">
+          <strong>Reference 2</strong>
+          <label class="field"><span>Name</span><input data-passport="ref2Name"></label>
+          <label class="field"><span>Relationship / role</span><input data-passport="ref2Role"></label>
+          <label class="field"><span>Professional contact</span><input data-passport="ref2Contact"></label>
+          <label class="check-row"><input type="checkbox" data-passport-check="ref2Permission"><span>Permission confirmed</span></label>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <section class="mode-panel" data-panel-view="stories">
+    <div class="section-head">
+      <div><div class="eyebrow">Past behaviour, ready on demand</div><h2>Six-story Evidence Bank</h2></div>
+      <div class="section-note">Use real details only. No invented metrics.</div>
+    </div>
+    <div id="storyBank" class="story-bank"></div>
+  </section>
+
+  <section class="mode-panel" data-panel-view="drill">
+    <div class="section-head">
+      <div><div class="eyebrow">90-second pre-door check</div><h2>A-GAME Drill</h2></div>
+      <div class="section-note">Restaurant-specific prep + your proof.</div>
+    </div>
+    <div class="drill-top">
+      <label class="field"><span>Restaurant</span><select id="drillRestaurant"></select></label>
+      <div id="drillLinks" class="drill-links"></div>
+    </div>
+    <div id="drillContext" class="context-card"></div>
+    <div id="drillQuestions" class="drill-questions"></div>
+  </section>
+
+  <section class="mode-panel" data-panel-view="referrals">
+    <div class="section-head">
+      <div><div class="eyebrow">Turn cold leads warm</div><h2>Warm Intro / Referral Capture</h2></div>
+      <button id="addReferral" class="primary-button" type="button">+ Add referral</button>
+    </div>
+    <p class="section-copy">If someone says “talk to Alex at ___,” capture it before walking away. The value is the named bridge, not just another restaurant name.</p>
+    <div id="referralList" class="referral-list"></div>
+  </section>
+
+  <section class="mode-panel" data-panel-view="conversion">
+    <div class="section-head">
+      <div><div class="eyebrow">Measure what actually converts</div><h2>Conversation → Interview Dashboard</h2></div>
+      <div class="section-note">This measures your real pipeline; it does not invent a hiring probability.</div>
+    </div>
+    <div id="conversionMetrics" class="conversion-metrics"></div>
+    <div class="conversion-table-wrap">
+      <table class="conversion-table">
+        <thead><tr><th>Restaurant</th><th>Manager reached</th><th>Resume accepted</th><th>Active role</th><th>Application requested</th><th>Interview</th><th>Referral</th><th>Follow-up sent</th><th>Reply</th></tr></thead>
+        <tbody id="conversionRows"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script src="stops1.js?v=20260919-passport"></script>
+<script src="stops2.js?v=20260919-passport"></script>
+<script src="restaurant-intel.js?v=20260919-passport"></script>
+<script src="flow-data.js?v=20260919-passport"></script>
+<script src="flow.js?v=20260919-passport"></script>
+<script src="hireability.js?v=20260919-passport"></script>
+</body>
+</html>

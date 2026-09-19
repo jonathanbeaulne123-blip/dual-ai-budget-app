@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f6f1e8">
+<title>Toronto Culinary Passport — Route Portal</title>
+<link rel="stylesheet" href="map.css?v=20260919-passport">
+<link rel="stylesheet" href="flow.css?v=20260919-passport">
+</head>
+<body>
+<div class="portal-shell">
+  <header class="portal-header">
+    <div class="portal-heading">
+      <a id="backChecklist" class="back-link" href="index.html">← Checklist</a>
+      <div class="eyebrow">Toronto Culinary Passport</div>
+      <h1>Route Portal</h1>
+      <p>All 42 itinerary stops in one view, plotted from the exact coordinates encoded in your original Google Maps routes.</p>
+    </div>
+    <div class="headline-progress">
+      <div class="headline-count"><span id="visitedCount">0</span><span id="totalCount"> / 42</span></div>
+      <div id="headlinePct" class="headline-pct">0% visited</div>
+      <div class="progress-track"><div id="headlineFill" class="progress-fill"></div></div>
+    </div>
+  </header>
+
+  <div class="portal-toolbar">
+    <div class="view-filters" id="viewFilters">
+      <button class="filter-chip active" data-filter="all">All stops</button>
+      <button class="filter-chip" data-filter="remaining">Remaining</button>
+      <button class="filter-chip" data-filter="visited">Visited</button>
+    </div>
+    <select id="districtFilter" aria-label="Filter by district">
+      <option value="all">All districts</option>
+    </select>
+    <select id="statusFilter" aria-label="Filter by outcome">
+      <option value="all">All outcomes</option>
+    </select>
+    <button id="fitRoute" class="secondary-action">Fit full route</button><a id="dayPlanMap" class="secondary-action portal-nav-link" href="day.html">Saturday Plan</a><a id="nextStepsMap" class="secondary-action portal-nav-link nextsteps-map" href="nextsteps.html">Next Steps <span id="nextStepsMapCount">0</span></a><a id="hireabilityMap" class="secondary-action portal-nav-link hireability-map" href="hireability.html">Hireability</a>
+  </div>
+
+  <main class="portal-grid">
+    <aside class="side-panel">
+      <section class="panel-card overview-card">
+        <div class="panel-kicker">Progress</div>
+        <h2>Where you stand</h2>
+        <div id="outcomeStats" class="outcome-stats"></div>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">Google Maps</div>
+            <h2>Original route segments</h2>
+          </div>
+        </div>
+        <p class="panel-copy">These are the five live Google Maps routes from the original itinerary. Together they cover all 42 stops.</p>
+        <div id="routeSegments" class="route-segments"></div>
+      </section>
+
+      <section class="panel-card">
+        <div class="panel-kicker">Up next</div>
+        <h2>Next unvisited stop</h2>
+        <div id="nextStop"></div>
+      </section>
+
+      <section id="unexpectedPanel" class="panel-card" hidden>
+        <div class="panel-kicker">Added on the fly</div>
+        <h2>Unexpected stops</h2>
+        <div id="unexpectedList" class="unexpected-list"></div>
+      </section>
+    </aside>
+
+    <section class="map-panel">
+      <div id="map" aria-label="Interactive route map"></div>
+      <div class="map-legend" id="mapLegend"></div>
+      <div class="map-source">
+        <strong>Route source:</strong> coordinates are read directly from your original Google Maps route URLs. Solid lines are computed by Google Routes for each district; lighter connectors bridge the district-to-district jumps.
+      </div>
+    </section>
+  </main>
+
+  <section class="district-progress">
+    <div class="section-heading">
+      <div>
+        <div class="eyebrow">Route at a glance</div>
+        <h2>District progress</h2>
+      </div>
+    </div>
+    <div id="districtCards" class="district-cards"></div>
+  </section>
+</div>
+
+<script src="stops1.js?v=20260919-passport"></script>
+<script src="stops2.js?v=20260919-passport"></script>
+<script src="routes.js?v=20260919-passport"></script>
+<script src="google-config.js"></script>
+<script src="flow-data.js?v=20260919-passport"></script>
+<script src="flow.js?v=20260919-passport"></script>
+<script src="map.js?v=20260919-passport"></script>
+</body>
+</html>
