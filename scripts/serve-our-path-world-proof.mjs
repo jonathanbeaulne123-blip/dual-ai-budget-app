@@ -13,6 +13,9 @@ import { generateDemoSuite } from '/src/core/demoSuite.ts';
 import { generateDemoSuiteOffThread } from '/src/demoSuiteOffThread.ts';
 import { catalogHousehold, setHouseholdFundMonthPlan, savePlanBridgeDraft, sharePlanBridgeDraft } from '/src/core/index.ts';
 import { saveTask } from '/src/core/tasks.ts';
+import { journeyHousehold } from '/test/fixtures/journey-eras.ts';
+import { fundModelMode } from '/src/core/fundRules.ts';
+import { defaultFundSnapshotSource } from '/src/plan-v3/model.ts';
 import { resolveThemeScene, sceneTokens } from '/src/theme/scenes.ts';
 import { agreePathProposal, pendingPathProposals, shapePathWorld } from '/src/core/pathWorld.ts';
 import { crossPathEra, currentPathEra, pathEras, proposePathEra, proposePathEraPlan } from '/src/core/pathEras.ts';
@@ -71,7 +74,7 @@ function withFictionalJourney(h) {
   } catch (error) { console.warn('proof journey skipped', error); }
   return h;
 }
-const proofWorld = { onWorld: (w) => { liveWorld = w; if (w) { const set = w.setScene; w.setScene = (...args) => { lastScene = args; return set(...args); }; } }, idleMs: idle === 'off' ? Infinity : undefined, paused: motion !== 'full' };
+const proofWorld = { onWorld: (w) => { liveWorld = w; if (w) { const set = w.setScene; w.setScene = (...args) => { lastScene = args; return set(...args); }; } }, idleMs: idle === 'off' ? Infinity : undefined, paused: q.get('ambient') === 'off' || motion !== 'full' };
 const scene = resolveThemeScene(theme, 'plan', 'household');
 Object.assign(document.documentElement.dataset, { theme, scene: scene.id, material: scene.material, sceneLighting: scene.dark ? 'dark' : 'light', atmosphere: 'paused', motion });
 for (const [key, value] of Object.entries(sceneTokens(scene))) document.documentElement.style.setProperty(key, value);
@@ -143,27 +146,48 @@ function Proof() {
     // Dev server only: load the world module before the long generation, so Vite's dependency optimiser is not still busy when it is needed.
     void import('/src/path/world/pathWorld3d.ts');
     const started = Date.now();
-    (story === 'story' && q.get('cached') === '1' ? fetch('/scripts/tmp/our-story.json').then((r) => r.json()).then((h) => new Promise((res) => setTimeout(() => res(h), Number(q.get('delay') || 0)))).then((household) => ({ household })) : story === 'story' ? generateDemoSuiteOffThread({ today: q.get('today') || '2026-09-16', profile: 'habitat-story', seed: Number(q.get('seed') || 41), buildSha: 'proof' }) : generateDemoSuite({ today, profile: story === 'hard' ? 'habitat-hard' : 'habitat-well', seed: 4242, buildSha: 'proof' })).then(({ household }) => {
+    (story === 'plan' ? Promise.resolve({ household: journeyHousehold({ fundModel: 2 }) }) : story === 'story' && q.get('cached') === '1' ? fetch('/scripts/tmp/our-story.json').then((r) => r.json()).then((h) => new Promise((res) => setTimeout(() => res(h), Number(q.get('delay') || 0)))).then((household) => ({ household })) : story === 'story' ? generateDemoSuiteOffThread({ today: q.get('today') || '2026-09-16', profile: 'habitat-story', seed: Number(q.get('seed') || 41), buildSha: 'proof' }) : generateDemoSuite({ today, profile: story === 'hard' ? 'habitat-hard' : 'habitat-well', seed: 4242, buildSha: 'proof' })).then(({ household }) => {
       window.__generatedMs = Date.now() - started;
       if (q.get('roundtrip') === '1') household = JSON.parse(JSON.stringify(household));
       // Proof only (?story=well): the habitat has a Charter but no accepted decisions or Shared Sitdown, so add fictional ones in memory.
       if (story === 'well') household = withFictionalTogether(household);
       if (q.get('mist') === '1') household = withFictionalMist(household);
       if (q.get('photos') === '1') household = withFictionalPhotos(household);
-      if (erasDemo) household = withFictionalJourney(household);
-      ref.current = household; setState(household); window.__household = household; window.__ready = true;
+      if (erasDemo && story !== 'plan') household = withFictionalJourney(household);
+      ref.current = household; setState(household); window.__household = household; window.__proof = { synthetic: story === 'plan', fundModel2: fundModelMode(household) === 2, canonicalFundSummary: defaultFundSnapshotSource()(household, { memberId: 'MEM-001', view: 'household', today }) }; window.__ready = true;
     });
   }, []);
   if (!state) return React.createElement('p', { className: 'app' }, 'Growing fictional books…');
   const command = async (fn) => { const result = fn(ref.current); ref.current = result.household; setState(result.household); return { ...result, ok: true, kind: 'synchronized' }; };
-  return React.createElement('div', { className: 'app', 'data-ledger-tab': 'plan', style: { padding: '12px' } },
+  const body = [
     React.createElement('p', { style: { margin: '0 0 8px', fontSize: 12 } }, 'Fictional local proof — ', theme, ' / ', story, ' · acting as ', member, ' ',
       React.createElement('button', { id: 'switch-member', onClick: () => setMember(member === 'MEM-001' ? 'MEM-002' : 'MEM-001') }, 'Switch fictional member')),
     React.createElement(OurPathWorld, { household: state, memberId: member, today: story === 'story' ? (q.get('today') || '2026-09-16') : today, busy: false, onCommand: command, theme, proofWorld, presentMembers: present,
       onOpenTogether: () => { window.__opened = 'together'; }, onOpenCharter: () => { window.__opened = 'charter'; }, onOpenFund: () => { window.__opened = 'fund'; }, onOpenCalendar: () => { window.__opened = 'calendar'; }, onOpenPlanner: () => { window.__opened = 'planner'; }, onOpenInTent: (source) => { window.__opened = source; },
       onOpenPlay: q.get('play') === '0' ? undefined : () => { window.__opened = 'play'; }, onOpenTimeMachine: (monthKey) => { window.__opened = 'timeMachine:' + monthKey; },
       boardMedia: q.get('photos') === '1' ? proofMedia : null,
-      classicRoom: React.createElement('div', { id: 'classic-room' }, React.createElement('h2', null, "Today's Our Path"), React.createElement('p', null, 'Chapter room and Plan Studio render here in the app.')) }));
+      renderMini: q.get('mini') === 'stub' ? (args) => React.createElement(StubMini, args) : q.get('mini') === 'none' ? null : undefined,
+      classicRoom: React.createElement('div', { id: 'classic-room' }, React.createElement('h2', null, "Today's Our Path"), React.createElement('p', null, 'Chapter room and Plan Studio render here in the app.')) })];
+  // ?chrome=1 (D-285): the App's own header and bottom nav around the page (real classes, real CSS), to prove game mode hides them.
+  if (q.get('chrome') !== '1') return React.createElement('div', { className: 'app', 'data-ledger-tab': 'plan', style: { padding: '12px' } }, ...body);
+  const nav = ['Home', 'Calendar', 'Fund', 'Our Path', 'More'].map((label) => React.createElement('button', { key: label, className: label === 'Our Path' ? 'active' : '', 'aria-current': label === 'Our Path' ? 'page' : undefined }, label));
+  return React.createElement('div', { className: 'app', 'data-ledger-tab': 'plan' },
+    React.createElement('div', { className: 'app-shell' },
+      React.createElement('header', { className: 'topbar' }, React.createElement('div', { className: 'brand' }, React.createElement('div', null, React.createElement('h1', null, 'Hearth'), React.createElement('p', { className: 'brand__identity' }, 'Fictional member · Fictional household'))), React.createElement('button', { type: 'button', className: 'pill dev' }, 'Development')),
+      React.createElement('div', { 'data-app-page': 'true' }, React.createElement('div', { className: 'world-page', style: { padding: '12px' } }, ...body)),
+      React.createElement('nav', { className: 'nav', 'aria-label': 'Hearth' }, ...nav)));
+}
+// ?mini=stub (D-285 proof only): a stand-in for the simple view that shows the shared focus and moves it as "mini".
+function StubMini({ focus: api, compact, onOpenWorld, worldOpen }) {
+  const f = api.focus;
+  const b = (label, change) => React.createElement('button', { type: 'button', key: label, onClick: () => api.set(change, 'mini'), style: { minHeight: 44 } }, label);
+  return React.createElement('div', { className: 'stub-mini', 'data-compact': compact || undefined, style: { display: 'grid', gap: 6, padding: compact ? 8 : 16, height: '100%', boxSizing: 'border-box', background: 'var(--card)', border: compact ? 0 : '1px dashed var(--line)', borderRadius: 18, fontSize: compact ? 11 : 14, alignContent: 'start' } },
+    React.createElement('strong', null, compact ? 'Mini (compact stand-in)' : 'Simple view stand-in (D-284 mounts here)'),
+    React.createElement('code', { 'data-focus': '' }, [f.level, f.date, f.selected || '—', f.source + '#' + f.seq].join(' · ') + (worldOpen ? ' · world open' : '')),
+    compact ? null : React.createElement('div', { style: { display: 'flex', flexWrap: 'wrap', gap: 6 } },
+      b('Day', { level: 'day' }), b('Week', { level: 'week' }), b('Month', { level: 'month' }), b('Era', { level: 'era', selected: null }), b('Journey', { level: 'journey', selected: null }),
+      b('June', { level: 'month', date: '2026-06-10', selected: null }), b('A bill', { level: 'day', date: '2026-09-22', selected: 'bill:proof@2026-09-22' }),
+      React.createElement('button', { type: 'button', key: 'open', className: 'primary', onClick: onOpenWorld, style: { minHeight: 44 } }, 'Open the world')));
 }
 window.__ready = story === 'empty';
 createRoot(document.getElementById('root')).render(React.createElement(Proof));`;

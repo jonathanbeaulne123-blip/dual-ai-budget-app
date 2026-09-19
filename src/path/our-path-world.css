@@ -11,7 +11,8 @@
 .path-world__namer input { font-family: var(--theme-display, var(--display)); font-size: 20px; padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); }
 
 /* The stage: canvas, the real buttons over it, and a few quiet controls. */
-.path-world__stage { position: relative; height: clamp(440px, 72vh, 760px); border-radius: var(--world-r-card, 18px); overflow: hidden; border: 1px solid var(--line); background: var(--paper-2, var(--paper)); isolation: isolate; }
+/* The open world (D-285) is always full screen; it is only on screen while it is open. */
+.path-world__stage { position: fixed; inset: 0; z-index: 1300; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; background: var(--paper-2, var(--paper)); isolation: isolate; overscroll-behavior: none; }
 .path-world__host { position: absolute; inset: 0; }
 .path-world__host canvas { display: block; width: 100%; height: 100%; cursor: grab; }
 .path-world__host canvas:active { cursor: grabbing; }
@@ -41,7 +42,7 @@
 .path-mark--bridge .path-mark__label { font-size: 13px; border-bottom: 3px solid #9c7a55; }
 .path-world[data-level="0"] .path-mark--goal .path-mark__label { font-size: 17px; }
 
-.path-world__controls { position: absolute; z-index: 3; top: 12px; right: 12px; display: grid; gap: 8px; justify-items: end; }
+.path-world__controls { display: grid; gap: 6px; justify-items: stretch; }
 .path-world__lantern, .path-world__quality, .path-world__layers, .path-world__rail { display: flex; gap: 2px; padding: 3px; border-radius: 999px; background: color-mix(in srgb, var(--card) 92%, transparent); border: 1px solid var(--line); box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); flex-wrap: wrap; }
 .path-world__lantern button, .path-world__quality button, .path-world__layers button, .path-world__rail button { border: 0; background: transparent; color: var(--muted); border-radius: 999px; padding: 6px 12px; font-weight: 700; font-size: 13px; min-height: 36px; display: inline-flex; gap: 6px; align-items: center; }
 .path-world__lantern button[aria-pressed="true"], .path-world__quality button[aria-pressed="true"], .path-world__rail button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
@@ -49,14 +50,14 @@
 .path-world__lantern i { width: 8px; height: 11px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: currentColor; opacity: 0.6; }
 .path-world__quality { align-items: center; }
 .path-world__quality > span { padding: 0 4px 0 10px; font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
-.path-world__rail { position: absolute; z-index: 3; left: 12px; bottom: 12px; border-radius: 16px; }
-.path-world__now { position: absolute; z-index: 3; right: 12px; bottom: 12px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; max-width: min(560px, calc(100% - 24px)); }
+.path-world__rail { border-radius: 16px; }
+.path-world__now { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
 .path-world__compass, .path-world__next { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; padding: 8px 14px; font-weight: 700; min-height: 44px; box-shadow: 0 6px 18px -12px rgb(0 0 0 / 0.5); text-align: left; }
 .path-world__next { display: grid; line-height: 1.2; max-width: 280px; }
 .path-world__next span { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
 .path-world__tent { border-radius: 999px; min-height: 44px; }
 
-.path-world__card { position: absolute; z-index: 4; top: 64px; left: 12px; width: min(340px, calc(100% - 24px)); max-height: calc(100% - 140px); overflow: auto; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: var(--world-r-card, 14px); padding: 16px 16px 14px; box-shadow: 0 24px 50px -24px rgb(0 0 0 / 0.55); }
+.path-world__card { position: absolute; z-index: 6; top: calc(max(14px, env(safe-area-inset-top)) + 58px); left: max(14px, env(safe-area-inset-left)); width: min(360px, calc(100% - 28px)); max-height: calc(100% - 58px - max(14px, env(safe-area-inset-top)) - 250px); overflow: auto; background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: var(--world-r-card, 14px); padding: 16px 16px 14px; box-shadow: 0 24px 50px -24px rgb(0 0 0 / 0.55); }
 .path-world__card h3 { font-family: var(--theme-display, var(--display)); font-size: 22px; line-height: 1.1; margin: 2px 32px 8px 0; text-wrap: balance; }
 .path-world__card ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; line-height: 1.4; }
 .path-world__close { position: absolute; top: 8px; right: 8px; width: 36px; height: 36px; border-radius: 50%; border: 0; background: var(--paper); color: var(--ink); font-size: 18px; }
@@ -106,31 +107,20 @@
 .path-world__back { justify-self: start; min-height: 44px; border-radius: 999px; padding: 8px 16px; border: 1px solid var(--line); background: var(--card); color: var(--ink); font-weight: 700; }
 
 /* Classic Hearth: a pinboard map on the kitchen table. */
-.path-world--classic .path-world__stage { background: #efe6d6; box-shadow: inset 0 0 0 6px color-mix(in srgb, var(--card) 70%, transparent); }
+.path-world--classic .path-world__stage { background: #efe6d6; }
 .path-world--classic .path-mark__label { border-radius: 2px; box-shadow: 0 2px 0 color-mix(in srgb, var(--theme-accent, #b5653e) 55%, transparent), 0 4px 10px -6px rgb(0 0 0 / 0.4); }
 /* Taylor's Scrapbook: washi tape on the stage and a hand-lettered map. */
-.path-world--taylor .path-world__stage { border-radius: 6px 22px 6px 22px; }
-.path-world--taylor .path-world__stage::before { content: ""; position: absolute; z-index: 5; top: -2px; left: 32px; width: 96px; height: 18px; rotate: -3deg; pointer-events: none; background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--theme-accent, #946522) 45%, transparent) 0 6px, color-mix(in srgb, var(--theme-second, #a63968) 35%, transparent) 6px 12px); }
+.path-world--taylor .path-world__preview-card { border-radius: 6px 22px 6px 22px; }
+.path-world--taylor .path-world__simple::before { content: ""; position: absolute; z-index: 5; top: -2px; left: 32px; width: 96px; height: 18px; rotate: -3deg; pointer-events: none; background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--theme-accent, #946522) 45%, transparent) 0 6px, color-mix(in srgb, var(--theme-second, #a63968) 35%, transparent) 6px 12px); }
 .path-world--taylor .path-mark__label { border-radius: 3px; }
 /* Newfoundland: the coastal trail, weathered signboards and fog. */
-.path-world--newfoundland .path-world__stage { background: #dfe7e6; border-width: 2px; }
+.path-world--newfoundland .path-world__stage { background: #dfe7e6; }
 .path-world--newfoundland .path-mark__label { font-family: var(--font); font-weight: 700; font-size: 13px; letter-spacing: 0.02em; border-left: 4px solid var(--theme-accent, #a33751); border-radius: 3px; }
 
 @media (max-width: 719px) {
-  .path-world__stage { height: clamp(420px, 68vh, 620px); }
-  /* Every group fits: lantern and the compact Lite toggle on the first row, layers wrap to a second. */
-  .path-world__controls { top: 8px; right: 8px; left: 8px; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
-  .path-world__lantern, .path-world__quality, .path-world__layers { flex: none; flex-wrap: nowrap; max-width: 100%; }
-  .path-world__lantern button, .path-world__quality button, .path-world__layers button { padding: 6px 9px; }
-  .path-world__lantern { gap: 0; }
-  .path-world__lantern button { padding: 6px 8px; gap: 4px; }
-  .path-world__quality--compact button[aria-pressed="false"] { opacity: 0.8; }
-  .path-world__rail { left: 8px; right: 8px; bottom: 64px; justify-content: center; border-radius: 999px; }
+  .path-world__lantern button { padding: 6px 9px; gap: 4px; }
   .path-world__rail button { padding: 6px 9px; }
-  .path-world__now { left: 8px; right: 8px; bottom: 8px; max-width: none; justify-content: stretch; flex-wrap: nowrap; }
-  .path-world__now > * { flex: 1; font-size: 13px; }
-  .path-world__next { display: none; }
-  .path-world__card { top: auto; bottom: 0; left: 0; width: 100%; max-height: 62%; border-radius: 18px 18px 0 0; z-index: 6; }
+  .path-world__card { top: auto; bottom: 0; left: 0; width: 100%; max-height: 62%; border-radius: 18px 18px 0 0; z-index: 7; padding-bottom: max(14px, env(safe-area-inset-bottom)); }
   .path-mark__label { font-size: 13px; }
   .path-world__grow { grid-template-columns: 1fr; }
   .path-world__play { grid-row: auto; justify-self: start; }
@@ -243,22 +233,185 @@
 .path-world__card > .kicker { margin-right: 40px; overflow-wrap: anywhere; }
 .path-planner input::placeholder { color: var(--muted); opacity: 0.75; font-style: italic; }
 
-/* Full screen toggle: small and nearly invisible until you reach for it. */
-.path-world__full { position: absolute; z-index: 4; top: max(6px, env(safe-area-inset-top)); left: max(6px, env(safe-area-inset-left)); width: 40px; height: 40px; min-height: 40px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--ink); opacity: 0.3; cursor: pointer; filter: drop-shadow(0 0 2px color-mix(in srgb, var(--paper) 85%, transparent)); transition: opacity 0.2s ease, background-color 0.2s ease; }
-.path-world__full svg { width: 18px; height: 18px; }
-.path-world__full:hover, .path-world__full:focus-visible, .path-world__full[aria-pressed="true"]:hover { opacity: 1; background: color-mix(in srgb, var(--card) 88%, transparent); }
-.path-world__full:focus-visible { outline: 3px solid var(--accent, var(--ink)); outline-offset: 1px; }
-.path-world__stage.path-world__stage--full { position: fixed; inset: 0; z-index: 120; width: 100vw; height: 100vh; height: 100dvh; max-height: none; border: 0; border-radius: 0; box-shadow: none; }
-.path-world__stage.path-world__stage--full::before { display: none; }
-.path-world__stage--full .path-world__controls { top: max(12px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); }
-.path-world__stage--full .path-world__rail { bottom: max(12px, env(safe-area-inset-bottom)); }
-.path-world__stage--full .path-world__now { bottom: max(12px, env(safe-area-inset-bottom)); }
-html.path-world-fullscreen, html.path-world-fullscreen body { overflow: hidden; overscroll-behavior: none; }
+
+/* ============================================================ D-285: the page leads with the simple view */
+.path-world__simple { position: relative; min-width: 0; }
+.path-world__simple > .path-world__full { position: absolute; z-index: 4; top: 8px; left: 8px; }
+.path-world__preview-card { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(240px, 1fr); min-height: 300px; border: 1px solid var(--line); border-radius: var(--world-r-card, 18px); overflow: hidden; background: var(--paper-2, var(--paper)); }
+.path-world__preview { position: relative; display: grid; place-items: center; padding: 22px 18px 18px; background: radial-gradient(ellipse 70% 60% at 50% 55%, color-mix(in srgb, var(--card) 70%, transparent), transparent 75%); }
+.path-world__preview svg { width: min(100%, 440px); height: auto; }
+.path-world__preview-copy { display: grid; align-content: center; gap: 4px; padding: 22px 24px; background: var(--card); border-left: 1px solid var(--line); min-width: 0; }
+.path-world__preview-copy > * { margin: 0; }
+.path-world__preview-title strong { font-family: var(--theme-display, var(--display)); font-weight: 600; font-size: clamp(22px, 3vw, 30px); line-height: 1.1; overflow-wrap: anywhere; }
+.path-world__preview-sub { font-size: 14px; }
+.path-world .path-world__open { display: inline-flex; gap: 10px; align-items: center; justify-content: center; justify-self: start; min-height: 50px; margin-top: 14px; padding: 12px 22px; border-radius: 999px; font-size: 16px; font-weight: 700; box-shadow: 0 12px 24px -14px color-mix(in srgb, var(--theme-accent, var(--copper)) 80%, #000); }
+.path-world__open svg { width: 18px; height: 18px; flex: none; }
+.path-world__pagebar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; justify-content: space-between; }
+.path-world__pagebar .path-world__now { justify-content: flex-start; }
+.path-world__pagebar .path-world__lantern button { min-height: 44px; }
+.path-world__card--page { position: relative; z-index: auto; top: auto; left: auto; width: auto; max-width: 560px; max-height: none; box-shadow: 0 16px 36px -28px rgb(0 0 0 / 0.55); }
 @media (max-width: 719px) {
-  .path-world__controls { left: 52px; }
-  .path-world__stage--full .path-world__controls { top: max(8px, env(safe-area-inset-top)); right: max(8px, env(safe-area-inset-right)); left: 52px; }
-  .path-world__stage--full .path-world__rail { bottom: calc(64px + env(safe-area-inset-bottom)); }
-  .path-world__stage--full .path-world__now { bottom: max(8px, env(safe-area-inset-bottom)); }
+  .path-world__preview-card { grid-template-columns: minmax(0, 1fr); min-height: 0; }
+  .path-world__preview { padding: 18px 12px 10px; }
+  .path-world__preview-copy { border-left: 0; border-top: 1px solid var(--line); padding: 16px; }
+  .path-world .path-world__open { justify-self: stretch; }
+  .path-world__pagebar .path-world__now { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+  .path-world__pagebar .path-world__next { grid-column: 1 / -1; order: 3; max-width: none; }
+  .path-world__pagebar .path-world__lantern { width: 100%; justify-content: space-between; }
+  .path-world__pagebar .path-world__lantern button { flex: 1; justify-content: center; }
+  .path-world__card--page { max-width: none; }
 }
+
+/* ============================================================ D-285: game mode */
+html.path-world-fullscreen, html.path-world-fullscreen body { overflow: hidden; overscroll-behavior: none; }
+/* The page's stacking context would otherwise keep the world under the app's bottom bar. */
+html.path-world-fullscreen .world-page { isolation: auto; }
+/* Nothing of the app shows around the island: the header, sync line, Fund ledge, Hercules and the bottom nav. */
+html.path-world-fullscreen :is(.topbar, .nav, .sync-freshness, .fund-ledge, .hercules-live, .hercules-bubble, .hercules-pill, .hercules-pill-note, .command-banner, .toast) { display: none !important; }
+html.path-world-settled [data-path-world-behind] { visibility: hidden !important; }
+.path-world__stage--game { contain: layout paint; }
+.path-world__stage--game .path-world__host { transform-origin: 50% 55%; }
+.path-world__stage--game .path-world__flat { position: absolute; inset: 0; display: grid; place-items: center; padding: 96px 24px 230px; }
+.path-world__stage--game .path-world__flat svg { width: min(100%, 620px); max-height: 100%; }
+.path-world--taylor .path-world__stage--game { background: #f3e6e3; }
+.path-world__loading { position: absolute; inset: 0; margin: 0; display: grid; place-content: center; justify-items: center; gap: 12px; font-family: var(--theme-display, var(--display)); font-size: 20px; color: var(--ink); background: radial-gradient(ellipse at 50% 55%, color-mix(in srgb, var(--card) 80%, transparent), transparent 70%); }
+.path-world__loading span { width: 44px; height: 44px; border-radius: 50%; border: 3px solid color-mix(in srgb, var(--theme-accent, var(--copper)) 25%, transparent); border-top-color: var(--theme-accent, var(--copper)); animation: path-hud-spin 1s linear infinite; }
+@keyframes path-hud-spin { to { rotate: 1turn; } }
+
+.path-hud { --hud-pad: 16px; --hud-glass: color-mix(in srgb, var(--card) 84%, transparent); --hud-edge: color-mix(in srgb, var(--ink) 12%, transparent); --hud-shadow: 0 14px 34px -20px rgb(0 0 0 / 0.6), inset 0 1px 0 rgb(255 255 255 / 0.35);
+  position: absolute; inset: 0; z-index: 5; pointer-events: none; display: grid; gap: 12px;
+  padding: max(var(--hud-pad), env(safe-area-inset-top)) max(var(--hud-pad), env(safe-area-inset-right)) max(var(--hud-pad), env(safe-area-inset-bottom)) max(var(--hud-pad), env(safe-area-inset-left));
+  grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-areas: "start . end" ". . ." "mini caption dock"; }
+.path-hud > *, .path-hud__corner > * { pointer-events: auto; }
+.path-hud :is(.path-hud__min, .path-hud__gear, .path-hud__mini, .path-hud__caption, .path-world__rail, .path-world__compass, .path-world__next, .path-hud__esc) {
+  background: var(--hud-glass); border: 1px solid var(--hud-edge); box-shadow: var(--hud-shadow); -webkit-backdrop-filter: blur(12px) saturate(1.25); backdrop-filter: blur(12px) saturate(1.25); }
+.path-hud__corner { display: flex; gap: 10px; align-items: center; position: relative; min-width: 0; }
+.path-hud__corner--start { grid-area: start; align-self: start; }
+.path-hud__corner--end { grid-area: end; align-self: start; display: grid; justify-items: end; gap: 10px; }
+.path-world .path-hud__min { position: static; opacity: 1; width: auto; height: 44px; min-height: 44px; padding: 0 16px 0 13px; gap: 8px; display: inline-flex; align-items: center; border-radius: 999px; color: var(--ink); font-weight: 700; font-size: 14px; filter: none; }
+.path-hud__min:hover { background: var(--card); }
+.path-hud__min svg { width: 18px; height: 18px; }
+.path-hud__esc { display: inline-flex; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--muted); pointer-events: none !important; }
+.path-hud__esc kbd { font: 700 11px/1 var(--font, system-ui); padding: 4px 6px 3px; border-radius: 5px; border: 1px solid var(--line); background: var(--paper); color: var(--ink); box-shadow: 0 2px 0 var(--line); }
+.path-hud__esc::after { content: "to minimize"; }
+.path-hud__gear { width: 44px; height: 44px; min-height: 44px; padding: 0; display: grid; place-items: center; border-radius: 50%; color: var(--ink); }
+.path-hud__gear[aria-expanded="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.path-hud__gear svg { width: 20px; height: 20px; }
+.path-world__drawer { position: absolute; top: calc(100% + 8px); right: 0; z-index: 8; width: min(330px, calc(100vw - 28px)); display: grid; gap: 10px; padding: 14px; border-radius: 20px; background: color-mix(in srgb, var(--card) 96%, transparent); border: 1px solid var(--line); box-shadow: 0 24px 50px -24px rgb(0 0 0 / 0.6); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); transform-origin: top right; animation: path-hud-drop 0.18s ease-out; }
+@keyframes path-hud-drop { from { opacity: 0; transform: translateY(-6px) scale(0.98); } }
+.path-world__drawer-label { margin: 4px 2px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.path-world__drawer :is(.path-world__lantern, .path-world__quality, .path-world__layers) { box-shadow: none; background: var(--paper); flex-wrap: nowrap; }
+.path-world__drawer :is(.path-world__lantern, .path-world__quality, .path-world__layers) button { flex: 1; justify-content: center; min-height: 44px; padding: 6px 8px; }
+.path-world__drawer .path-world__layers { flex-wrap: wrap; border-radius: 18px; }
+.path-world__drawer .path-world__layers button { flex: 1 1 40%; }
+.path-world__drawer .path-world__layers button[aria-pressed="true"] { background: var(--card); color: var(--ink); box-shadow: 0 2px 8px -5px rgb(0 0 0 / 0.45); }
+.path-world__drawer .path-world__layers button[aria-pressed="true"]::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--theme-accent, var(--copper)); }
+.path-world__drawer-plan { justify-self: stretch; text-align: center; margin-top: 4px; }
+.path-hud__quest { max-width: min(300px, 40vw); }
+.path-hud .path-world__next { max-width: none; width: 100%; border-radius: 16px; padding: 10px 14px; }
+
+.path-hud__mini { grid-area: mini; align-self: end; position: relative; width: var(--journey-mini-compact-w, clamp(170px, 19vw, 250px)); aspect-ratio: 4 / 3; border-radius: 18px; overflow: hidden; }
+.path-hud__flatmini { position: absolute; inset: 0; display: grid; place-items: center; padding: 6px; pointer-events: none; }
+.path-hud__flatmini svg { width: 100%; height: 100%; }
+.path-hud__caption { grid-area: caption; align-self: end; justify-self: center; margin: 0; display: grid; justify-items: center; text-align: center; gap: 1px; padding: 8px 20px 10px; border-radius: 18px; max-width: min(440px, 100%); min-width: 0; pointer-events: none !important; }
+.path-hud__caption-level { font-size: 10.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: color-mix(in srgb, var(--theme-accent, var(--copper)) 75%, var(--ink)); }
+.path-hud__caption strong { font-family: var(--theme-display, var(--display)); font-weight: 600; font-size: 21px; line-height: 1.15; overflow-wrap: anywhere; }
+.path-hud__caption-sub { font-size: 12.5px; color: var(--muted); font-weight: 600; overflow-wrap: anywhere; }
+.path-hud__dock { grid-area: dock; align-self: end; display: grid; justify-items: end; gap: 8px; min-width: 0; }
+.path-hud .path-world__rail { flex-wrap: nowrap; border-radius: 999px; padding: 4px; }
+.path-hud .path-world__rail button { min-height: 44px; min-width: 44px; justify-content: center; padding: 6px 12px; white-space: nowrap; transition: none !important; }
+.path-hud .path-world__rail button:disabled { opacity: 0.45; }
+.path-hud .path-world__now { flex-wrap: nowrap; align-items: end; }
+.path-hud .path-world__compass { display: inline-flex; gap: 8px; align-items: center; }
+.path-hud .path-world__compass svg, .path-hud .path-world__tent svg { width: 18px; height: 18px; flex: none; }
+.path-hud .path-world__tent { display: inline-flex; gap: 8px; align-items: center; min-height: 44px; padding: 10px 18px; box-shadow: 0 14px 28px -16px color-mix(in srgb, var(--theme-accent, var(--copper)) 90%, #000); }
+.path-hud__notice { position: absolute; left: 50%; top: calc(max(16px, env(safe-area-inset-top)) + 58px); translate: -50% 0; margin: 0; padding: 8px 16px; border-radius: 999px; background: var(--ink); color: var(--paper); font-weight: 700; max-width: calc(100% - 32px); }
+.path-hud__banner { position: absolute; left: 50%; top: 20%; translate: -50% 0; display: grid; justify-items: center; gap: 4px; text-align: center; pointer-events: none !important; animation: path-hud-banner 2.8s ease both; color: var(--ink); text-shadow: 0 1px 0 color-mix(in srgb, var(--paper) 80%, transparent), 0 0 18px color-mix(in srgb, var(--paper) 90%, transparent); }
+.path-hud__banner span { font-size: 12px; font-weight: 800; letter-spacing: 0.22em; text-transform: uppercase; }
+.path-hud__banner strong { font-family: var(--theme-display, var(--display)); font-weight: 600; font-size: clamp(30px, 5.4vw, 54px); line-height: 1; white-space: nowrap; }
+.path-hud__banner::after { content: ""; width: 64%; height: 2px; margin-top: 6px; background: linear-gradient(90deg, transparent, var(--theme-accent, var(--copper)), transparent); }
+@keyframes path-hud-banner { 0% { opacity: 0; transform: translateY(10px); } 18%, 70% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-6px); } }
+/* The HUD settles in after the iris. */
+.path-world[data-game="open"] .path-hud :is(.path-hud__corner, .path-hud__mini, .path-hud__caption, .path-hud__dock) { animation: path-hud-in 0.5s 0.3s cubic-bezier(.2,.75,.2,1) both; }
+.path-world[data-game="leaving"] .path-hud { opacity: 0; transition: opacity 0.12s ease; }
+@keyframes path-hud-in { from { opacity: 0; transform: translateY(6px); } }
+
+/* Themes: Classic is a pinboard HUD; Taylor a scrapbook one; Newfoundland a trail signboard. */
+.path-world--classic .path-hud :is(.path-hud__caption, .path-hud__mini) { border-radius: 6px; }
+.path-world--classic .path-hud__caption { box-shadow: var(--hud-shadow), 0 3px 0 color-mix(in srgb, var(--theme-accent, #b5653e) 45%, transparent); }
+.path-world--taylor .path-hud__caption strong, .path-world--taylor .path-hud__banner strong { font-family: var(--theme-hand, var(--theme-display, var(--display))); }
+.path-world--taylor .path-hud__mini { border-radius: 6px 18px 6px 18px; }
+.path-world--taylor .path-hud__caption { border-radius: 6px 18px 6px 18px; }
+.path-world--newfoundland .path-hud__caption { border-left: 5px solid var(--theme-accent, #a33751); border-radius: 4px; }
+.path-world--newfoundland .path-hud__caption strong { font-family: var(--font); font-weight: 800; font-size: 18px; letter-spacing: 0.01em; }
+.path-world--newfoundland .path-hud__mini { border-radius: 4px; border-bottom: 3px solid var(--theme-second, #26766f); }
+
+/* 720–1099: the caption takes its own row above the corner map and the dock, so neither squeezes it. */
+@media (max-width: 1099px) {
+  .path-hud { grid-template-rows: auto minmax(0, 1fr) auto auto; grid-template-areas: "start . end" ". . ." "caption caption caption" "mini . dock"; }
+  .path-hud__caption { align-self: end; }
+  .path-hud__mini { width: var(--journey-mini-compact-w, 164px); }
+  .path-hud .path-world__rail button { padding: 6px 9px; }
+  .path-hud__caption strong { font-size: 18px; }
+}
+/* Phones: minimize and settings on top; the corner map and caption, then the distance rail, then the two actions. */
+@media (max-width: 719px) {
+  .path-hud { --hud-pad: 10px; gap: 8px; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas: "start . end" ". . ." "mini caption caption" "dock dock dock"; }
+  .path-hud__min-words, .path-hud__esc, .path-hud__quest { display: none !important; }
+  .path-world .path-hud__min { width: 44px; padding: 0; justify-content: center; }
+  .path-hud__mini { width: var(--journey-mini-compact-w, 116px); border-radius: 14px; }
+  .path-hud__caption { justify-self: stretch; justify-items: start; text-align: left; padding: 7px 12px 8px; border-radius: 14px; }
+  .path-hud__caption strong { font-size: 17px; }
+  .path-hud__caption-sub { font-size: 12px; }
+  .path-hud__dock { justify-items: stretch; }
+  .path-hud .path-world__rail { justify-content: space-between; }
+  .path-hud .path-world__rail { gap: 0; }
+  .path-hud .path-world__rail button { flex: 1 1 auto; min-width: 44px; padding: 6px 4px; font-size: 12.5px; }
+  .path-hud .path-world__now { display: grid; grid-template-columns: 1fr 1fr; }
+  .path-hud .path-world__now > .path-hercules { display: none; }
+  .path-hud .path-world__now > button { justify-content: center; font-size: 14px; }
+  .path-hud__banner { top: 26%; }
+  .path-world__drawer { right: 0; }
+}
+@media (max-width: 359px) {
+  .path-hud .path-world__compass svg, .path-hud .path-world__tent svg { display: none; }
+  .path-hud .path-world__rail { padding: 3px; }
+  .path-hud .path-world__rail button { padding: 6px 2px; font-size: 12px; letter-spacing: -0.01em; }
+}
+@media (pointer: coarse) { .path-hud__esc { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .path-world__loading span, .path-world__drawer, .path-world[data-game] .path-hud *, .path-hud__banner { animation: none !important; transition: none !important; }
+}
+:root[data-motion="reduced"] :is(.path-world__loading span, .path-world__drawer, .path-hud *) { animation: none !important; transition: none !important; }
+@media (forced-colors: active) {
+  .path-hud :is(.path-hud__min, .path-hud__gear, .path-hud__mini, .path-hud__caption, .path-world__rail, .path-world__compass, .path-world__next) { border: 1px solid CanvasText; background: Canvas; forced-color-adjust: auto; }
+  .path-world__drawer { border: 1px solid CanvasText; background: Canvas; }
+}
+
+/* The quiet page toggle (D-283) now opens the world from the simple view's corner. */
+.path-world__full { position: absolute; z-index: 4; width: 40px; height: 40px; min-height: 40px; padding: 0; display: grid; place-items: center; border: 0; border-radius: 10px; background: transparent; color: var(--ink); opacity: 0.35; cursor: pointer; filter: drop-shadow(0 0 2px color-mix(in srgb, var(--paper) 85%, transparent)); transition: opacity 0.2s ease, background-color 0.2s ease; }
+.path-world__full svg { width: 18px; height: 18px; }
+.path-world__full:hover, .path-world__full:focus-visible { opacity: 1; background: color-mix(in srgb, var(--card) 88%, transparent); }
+.path-world__full:focus-visible { outline: 3px solid var(--accent, var(--ink)); outline-offset: 1px; }
 @media (prefers-reduced-motion: reduce) { .path-world__full { transition: none; } }
 @media (forced-colors: active) { .path-world__full { opacity: 1; border: 1px solid ButtonText; } }
+
+/* D-285 integration: the Fund's lanes in the caption, the same numbers the simple view shows. */
+.path-hud__trackers { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 10px; margin-top: 4px; padding-top: 5px; border-top: 1px solid color-mix(in srgb, var(--ink) 10%, transparent); font-size: 12px; font-variant-numeric: tabular-nums; }
+.path-hud__tracker b { font-weight: 800; }
+.path-hud__tracker--prepare b { color: #8a5639; }
+.path-hud__tracker--protect b { color: #3f5967; }
+.path-hud__tracker--build b { color: #4a6840; }
+.path-world--taylor .path-hud__tracker--prepare b { color: #9b557c; }
+.path-world--taylor .path-hud__tracker--protect b { color: #5a5f9e; }
+.path-world--taylor .path-hud__tracker--build b { color: #3f6a4f; }
+.path-world--newfoundland .path-hud__tracker--prepare b { color: #9a5236; }
+.path-world--newfoundland .path-hud__tracker--protect b { color: #274e55; }
+.path-world--newfoundland .path-hud__tracker--build b { color: #4f7a4a; }
+.path-hud__shimmer { display: inline-block; vertical-align: middle; width: 3.4em; height: 0.75em; margin-left: 0.35em; border-radius: 999px; background: linear-gradient(90deg, color-mix(in srgb, var(--ink) 10%, transparent), color-mix(in srgb, var(--ink) 24%, transparent), color-mix(in srgb, var(--ink) 10%, transparent)); background-size: 200% 100%; animation: journey-mini-shimmer 1.4s ease-in-out infinite; }
+@keyframes journey-mini-shimmer { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+@media (max-width: 719px) { .path-hud__trackers { justify-content: flex-start; font-size: 11.5px; gap: 2px 8px; } }
+@media (prefers-reduced-motion: reduce) { .path-hud__shimmer { animation: none; } }
+@media (forced-colors: active) { .path-hud__tracker b { color: CanvasText; } }

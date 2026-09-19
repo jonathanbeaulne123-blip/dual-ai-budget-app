@@ -212,6 +212,20 @@ export type PathWorldStats = {
 };
 /** With ambient motion on, the loop still stops after this long without interaction or a scene change. */
 export const IDLE_MS = 20_000;
+/**
+ * Game mode (D-285): the month a journey focus asks for, clamped to the months the island has grown so far
+ * (the Replay slider can hold the island at an earlier month; a later date rests on the newest one).
+ */
+/** The grown month whose spot is nearest (x, z), or null when the aim is farther than `reach` from every one (another era's island). */
+export function nearestMonthIndex(spot: (m: number) => { x: number; z: number }, cur: number, x: number, z: number, reach = 30): number | null {
+  let best: number | null = null, bestD = reach * reach;
+  for (let m = 0; m <= cur; m++) { const p = spot(m); const d = (p.x - x) ** 2 + (p.z - z) ** 2; if (d <= bestD) { bestD = d; best = m; } }
+  return best;
+}
+export function monthFocusIndex(index: number, cur: number): number {
+  if (!Number.isFinite(index)) return Math.max(0, cur);
+  return Math.max(0, Math.min(Math.max(0, cur), Math.round(index)));
+}
 /** Pixel-ratio caps: Full keeps today's 1.5; Lite draws fewer pixels on dense phone screens. */
 const PIXEL_RATIO_CAP: Record<PathQuality, number> = { full: 1.5, lite: 1.25 };
 
@@ -249,6 +263,8 @@ export function createPathWorld(host: HTMLElement, options: {
   onAnchors?: (anchors: PathAnchor[]) => void;
   onLevel?: (level: PathLevel) => void;
   onPick?: (id: string) => void;
+  /** Game mode (D-285): the person moved the camera themselves and it came to rest; the grown month nearest its aim. */
+  onView?: (view: { level: PathLevel; month: number | null }) => void;
   brass?: string;
   wood?: string;
   /** Full: soft shadows and every decorative ticker. Lite: no shadows, fewer pixels, no ambient decor. */
@@ -2244,7 +2260,8 @@ export function createPathWorld(host: HTMLElement, options: {
     camera.position.set(cam.tx + h * Math.sin(cam.theta), Math.max(ground + 3, y + ground), cam.tz + h * Math.cos(cam.theta));
     camera.lookAt(cam.tx, ground + 1.5, cam.tz);
     const next = levelOf(cam.r);
-    if (next !== level) { level = next; options.onLevel?.(level); }
+    // A trip (the page's, or the rail's) reports only where it lands: its hop would otherwise cross the bands twice.
+    if (next !== level && !fly) { level = next; options.onLevel?.(level); }
   }
   function clampTarget() {
     // With a journey, the target may travel out to the farthest era island.
@@ -2275,13 +2292,27 @@ export function createPathWorld(host: HTMLElement, options: {
     } else { cam.theta -= dx * 0.006; cam.phi = Math.max(0.35, Math.min(1.3, cam.phi + dy * 0.004)); }
     invalidate();
   };
+  // A gesture that comes to rest tells the page where the camera now aims (debounced).
+  let viewTimer: ReturnType<typeof setTimeout> | null = null;
+  const gestured = () => {
+    if (!options.onView) return;
+    if (viewTimer) clearTimeout(viewTimer);
+    viewTimer = setTimeout(() => {
+      viewTimer = null;
+      if (dead || !options.onView) return;
+      const month = current ? nearestMonthIndex(current.island.spot, current.island.cur, cam.tx, cam.tz) : null;
+      options.onView({ level: levelOf(cam.r), month });
+    }, 360);
+  };
+  cleanup.push(() => { if (viewTimer) clearTimeout(viewTimer); });
   const onUp = (e: PointerEvent) => {
     const single = pointers.size === 1;
     pointers.delete(e.pointerId);
     if (pointers.size < 2) pinch = 0;
     if (single && moved < 6) pick(e.clientX, e.clientY);
+    else if (!pointers.size) gestured();
   };
-  const onWheel = (e: WheelEvent) => { e.preventDefault(); fly = null; cam.r = Math.max(14, Math.min(maxRadius(), cam.r * Math.exp(e.deltaY * 0.001))); invalidate(); };
+  const onWheel = (e: WheelEvent) => { e.preventDefault(); fly = null; cam.r = Math.max(14, Math.min(maxRadius(), cam.r * Math.exp(e.deltaY * 0.001))); invalidate(); gestured(); };
   const onContext = (e: Event) => e.preventDefault();
   el.addEventListener("pointerdown", onDown);
   el.addEventListener("pointermove", onMove);
@@ -2479,6 +2510,12 @@ export function createPathWorld(host: HTMLElement, options: {
       const target = id === "now" && current ? (() => { const p = current.island.spot(current.island.cur); return new THREE.Vector3(p.x, 0, p.z); })() : anchors.get(id);
       if (!target) return;
       flyTo(target.x, target.z, PATH_LEVEL_RADIUS[levelHint ?? 3]!);
+    },
+    /** Game mode (D-285): travel to month `index` of the main island (clamped to the grown months). */
+    focusMonth(index: number, levelHint: PathLevel = 2) {
+      if (!current) return;
+      const p = current.island.spot(monthFocusIndex(index, current.island.cur));
+      flyTo(p.x, p.z, PATH_LEVEL_RADIUS[levelHint]!);
     },
     setLevel(next: PathLevel) {
       // With a journey, Sky frames every era island: the future straight ahead (wide screens turn a little to see it across).

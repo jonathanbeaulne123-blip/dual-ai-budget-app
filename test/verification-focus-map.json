@@ -1195,6 +1195,14 @@
         "src/path/together.ts",
         "src/path/bottle.ts",
         "src/path/OurPathWorld.tsx",
+        "src/path/journeyFocus.ts",
+        "src/path/mini/JourneyMini.tsx",
+        "src/path/mini/MiniFlat.tsx",
+        "src/path/mini/journey-mini.css",
+        "src/path/mini/miniJourneyModel.ts",
+        "src/path/mini/miniJourneyLoader.ts",
+        "src/path/mini/miniJourney.worker.ts",
+        "src/path/mini/miniWorld3d.ts",
         "src/path/world/pathWorld3d.ts",
         "src/path/our-path-world.css",
         "src/path/PathMiniMap.tsx",
@@ -1205,6 +1213,12 @@
       "tests": [
         "test/our-path-world.test.ts",
         "test/our-path-world-ui.test.ts",
+        "test/journey-game-mode-ui.test.ts",
+        "test/journey-integrated-ui.test.ts",
+        "test/journey-focus.test.ts",
+        "test/journey-mini-ui.test.ts",
+        "test/journey-mini-model.test.ts",
+        "test/journey-fullscreen-ui.test.ts",
         "test/path-minimap.test.ts",
         "test/queens-nest-ui.test.ts",
         "test/time-machine-ui.test.ts",
@@ -1214,7 +1228,7 @@
         "test/path-footpaths.test.ts",
         "test/path-bridges.test.ts"
       ],
-      "reason": "Our Path world (D-262): the shared pathWorld collection changes only on both members' agreement, converges across phones, stays out of every financial hash and Hercules context, and replays exactly; month scores read only shared facts; the page keeps every place reachable without WebGL and keeps today's Our Path mounted behind the tent; the two walkers follow the month road (walkPath) and stand at the shown month in the flat fallback; a landmark opens its own Kitty Bank in the tent (a link only), the kiln stands once a shared bank exists and is warm only after a recent firing, and landmark steps are read as of the shown month's end; the open Chapter's campfire is a door to Together and knows the Shared Sitdown (open blazes, closed settles to embers and sets that month's land), closed books and stamped weeks set land, the Charter stands as a words-only stone square, and each agreed decision forks the path and opens that Plan line in the tent (links only); the Calendar arrives as weather (clouds and storms from household bills, sunrises from paydays, sunlit covered stretches, a mist signpost with the horizon's reasons or no forecast yet) with no amounts and only Fund and Calendar links; household planner tasks become stepping stones with owner and backup footprints, a money stone lights only by D-245 books evidence and the island never ticks a task; a year-old sea cove's bottle reads the household trip's calendar note or a kept Memory with every digit stripped; only the first winter month frosts; set land gets a kerb and stamped weeks dots on the flat map; on a phone the quality choice folds into one Lite toggle so the controls fit; Hercules waits aria-hidden at the tent in his saved outfit (beside the tent button without WebGL), Play stands as his cottage only when it can open, every month card and the Replay area open the Time Machine at that month (links only), memory flags carry household board photos matched by caption then slot order with every object URL revoked, the walkers pause at campfires, and Home's window draws the island in miniature (PathMiniMap) with a door to Our Path; private footpaths (the signed-in member's own personal tasks) draw only for their owner with a per-device Mine layer, and bridges show 'Share with Our Home' plank by plank (private draft for its owner only, shared offer for both, built once accepted in a Plan, stumps when set aside) with no amounts and an Open the Bridge link into the Plan Studio"
+      "reason": "Our Path world (D-262): the shared pathWorld collection changes only on both members' agreement, converges across phones, stays out of every financial hash and Hercules context, and replays exactly; month scores read only shared facts; the page keeps every place reachable without WebGL and keeps today's Our Path mounted behind the tent; the two walkers follow the month road (walkPath) and stand at the shown month in the flat fallback; a landmark opens its own Kitty Bank in the tent (a link only), the kiln stands once a shared bank exists and is warm only after a recent firing, and landmark steps are read as of the shown month's end; the open Chapter's campfire is a door to Together and knows the Shared Sitdown (open blazes, closed settles to embers and sets that month's land), closed books and stamped weeks set land, the Charter stands as a words-only stone square, and each agreed decision forks the path and opens that Plan line in the tent (links only); the Calendar arrives as weather (clouds and storms from household bills, sunrises from paydays, sunlit covered stretches, a mist signpost with the horizon's reasons or no forecast yet) with no amounts and only Fund and Calendar links; household planner tasks become stepping stones with owner and backup footprints, a money stone lights only by D-245 books evidence and the island never ticks a task; a year-old sea cove's bottle reads the household trip's calendar note or a kept Memory with every digit stripped; only the first winter month frosts; set land gets a kerb and stamped weeks dots on the flat map; the page leads with the simple view (D-284 slot) and the world is built only when the open world is first opened (D-285 game mode: full screen with the app chrome hidden and inert, a HUD with minimize/Escape/back, a settings drawer holding lantern, quality and layers, a compact minimap and a caption synced through the shared journey focus); the simple view (D-284) is JourneyMini, mounted by default on the page and in the world's corner, reading one staged, worker-loaded read-model per household revision, so both views show the same eras, months, Chapter, where we are and Fund lanes; Hercules waits aria-hidden at the tent in his saved outfit (beside the tent button without WebGL), Play stands as his cottage only when it can open, every month card and the Replay area open the Time Machine at that month (links only), memory flags carry household board photos matched by caption then slot order with every object URL revoked, the walkers pause at campfires, and Home's window draws the island in miniature (PathMiniMap) with a door to Our Path; private footpaths (the signed-in member's own personal tasks) draw only for their owner with a per-device Mine layer, and bridges show 'Share with Our Home' plank by plank (private draft for its owner only, shared offer for both, built once accepted in a Plan, stumps when set aside) with no amounts and an Open the Bridge link into the Plan Studio"
     },
     {
       "sources": [

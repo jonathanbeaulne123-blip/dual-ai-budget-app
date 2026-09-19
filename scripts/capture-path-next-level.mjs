@@ -4,6 +4,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import { startOurPathWorldProof } from './serve-our-path-world-proof.mjs';
+import { minimize, onPage, openWorld } from './lib/path-world-game.mjs';
 
 const out = 'docs/evidence/our-path-world/next-level';
 mkdirSync(out, { recursive: true });
@@ -34,7 +35,10 @@ async function open(width, query, { webgl = true, reduced = false, height = 900 
   if (!webgl) await page.addInitScript(noWebgl);
   if (reduced) await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(`${proof.url}?${query}`);
-  await page.waitForFunction((live) => window.__ready && document.querySelector('.path-world') && (live ? document.querySelector('.path-world__host[data-live="true"]') : document.querySelector('.path-world__flat svg')), webgl, { timeout: 120_000 });
+  await page.waitForFunction(() => window.__ready && document.querySelector('.path-world'), null, { timeout: 120_000 });
+  // Game mode (D-285): the world is built when it is opened.
+  page.__flat = !webgl;
+  await openWorld(page, { live: webgl });
   await wait(1200);
   return { page, errors, close: () => context.close() };
 }
@@ -48,15 +52,17 @@ async function level(page, name) {
 }
 async function outlineOpen(page) { await page.evaluate(() => { const d = document.querySelector('.path-world__outline'); if (d) d.open = true; }); }
 async function fromOutline(page, match) {
-  await outlineOpen(page);
-  const found = await page.evaluate((src) => {
-    const re = new RegExp(src);
-    const b = [...document.querySelectorAll('.path-world__outline button')].find((x) => re.test(x.textContent ?? ''));
-    if (!b) return null;
-    b.click();
-    return b.textContent;
-  }, match);
-  return found;
+  // The outline is on the page, behind the open world: pick there, then the world opens on the place.
+  return onPage(page, async () => {
+    await outlineOpen(page);
+    return page.evaluate((src) => {
+      const re = new RegExp(src);
+      const b = [...document.querySelectorAll('.path-world__outline button')].find((x) => re.test(x.textContent ?? ''));
+      if (!b) return null;
+      b.click();
+      return b.textContent;
+    }, match);
+  }, { live: !page.__flat });
 }
 async function toStage(page) {
   await page.evaluate(() => window.scrollTo(0, document.querySelector('.path-world__stage').getBoundingClientRect().top + window.scrollY - 8));
@@ -101,13 +107,14 @@ try {
       await level(page, 'Region');
       await toStage(page);
       const visible = await page.evaluate(() => [...document.querySelectorAll('.path-mark')].filter((b) => !b.hidden).map((b) => b.dataset.place));
-      await page.evaluate(() => document.querySelector('.path-world__head .path-world__link').focus());
+      // In the open world the HUD's Minimize is the first stop (the page behind is inert).
+      await page.evaluate(() => document.querySelector('.path-hud__min').focus());
       const walk = [];
       for (let i = 0; i < 160; i++) {
         await page.keyboard.press('Tab');
         const f = await page.evaluate(() => {
           const el = document.activeElement;
-          if (!el || !el.closest('.path-world')) return null;
+          if (!el || !el.closest('.path-world__stage')) return null;
           const target = el.classList.contains('path-mark') ? el.querySelector('.path-mark__label') : el;
           const style = getComputedStyle(target);
           return { place: el.dataset.place ?? null, cls: el.className?.toString().split(' ')[0] || el.tagName.toLowerCase(), name: (el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40), ring: style.outlineStyle !== 'none' && parseFloat(style.outlineWidth) >= 2, hidden: el.hidden };
@@ -187,6 +194,7 @@ try {
         }
         if (s.stage) await toStage(page);
         if (s.outline) {
+          await minimize(page);
           await outlineOpen(page);
           await page.evaluate(() => document.querySelector('.path-world__outline').scrollIntoView({ block: 'start' }));
           await wait(400);

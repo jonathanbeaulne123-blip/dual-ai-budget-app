@@ -4,6 +4,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import { startOurPathWorldProof } from './serve-our-path-world-proof.mjs';
+import { minimize, onPage, openWorld } from './lib/path-world-game.mjs';
 
 const out = process.env.OUT || 'docs/evidence/journey-of-life/page';
 mkdirSync(out, { recursive: true });
@@ -31,7 +32,10 @@ async function open(width, query, { webgl = true } = {}) {
   });
   if (!webgl) await page.addInitScript(noWebgl);
   await page.goto(`${proof.url}?${query}`);
-  await page.waitForFunction((live) => window.__ready && document.querySelector('.path-world') && (live ? document.querySelector('.path-world__host[data-live="true"]') : document.querySelector('.path-world__flat svg')), webgl, { timeout: 180_000 });
+  await page.waitForFunction(() => window.__ready && document.querySelector('.path-world'), null, { timeout: 180_000 });
+  // Game mode (D-285): the world is built when it is opened; the journey panel and planner are on the page behind it.
+  page.__flat = !webgl;
+  await openWorld(page, { live: webgl, timeout: 180_000 });
   await wait(1500);
   return { page, errors, close: () => context.close() };
 }
@@ -54,7 +58,8 @@ async function toStage(page) {
   await wait(500);
 }
 async function press(page, name) {
-  await page.getByRole('button', { name, exact: true }).first().click();
+  // The journey panel is on the page, behind the open world: press there, and the world opens on the place.
+  await onPage(page, () => page.getByRole('button', { name, exact: true }).first().click(), { live: !page.__flat });
   await wait(2800);
 }
 async function shot(page, errors, file, target) {
@@ -87,6 +92,7 @@ try {
         await toStage(page);
         await shot(page, errors, `${theme}-current-${width}.png`, 'stage');
         // The planner, open on the future era.
+        await minimize(page);
         await page.locator('.path-world__head .path-world__plan-journey').click();
         await wait(500);
         await page.locator('.path-planner').screenshot({ path: `${out}/${theme}-planner-${width}.png` });
@@ -101,6 +107,7 @@ try {
     // No WebGL: the outline and the journey panel reach every era and plan.
     const { page, errors, close } = await open(390, `theme=${theme}&story=well&eras=demo&lantern=1`, { webgl: false });
     try {
+      await minimize(page);
       await page.evaluate(() => { document.querySelector('.path-world__outline').open = true; });
       await wait(300);
       report[`${theme}-nowebgl-journey`] = { rows: await page.evaluate(() => [...document.querySelectorAll('.path-world__outline-journey button')].map((b) => b.textContent)) };
@@ -118,10 +125,11 @@ try {
         await toStage(page);
         await level(page, 'Sky');
         await shot(page, errors, `${theme}-sky-crossing-${width}.png`, 'stage');
-        await page.getByRole('button', { name: /^The bridge ·/ }).click();
+        await onPage(page, () => page.getByRole('button', { name: /^The bridge ·/ }).click());
         await wait(2800);
         await toStage(page);
         await shot(page, errors, `${theme}-gate-crossing-${width}.png`, 'stage');
+        await minimize(page);
         await page.locator('.path-world__head .path-world__plan-journey').click();
         await wait(500);
         await page.getByRole('button', { name: 'Add an era', exact: true }).click();
