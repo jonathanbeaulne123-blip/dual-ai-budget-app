@@ -6258,7 +6258,7 @@ export function App() {
     closeAdd();
     if (typeof window === "undefined") return;
     const url = new URL(window.location.href);
-    if (HEARTHSIDE_FLAGS.presentation && next === "play" && requestedBoardSurface) {
+    if (HEARTHSIDE_FLAGS.presentation && next === "play" && requestedBoardSurface && household) {
       // A board request may already have been consumed by the departing Office.
       // Route to its real surface explicitly, including when Hearthside is mounted.
       const path = hearthsidePath({ version: 1, householdId: household.householdId, room: "common", mode: "present", surface: requestedBoardSurface });
