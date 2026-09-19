@@ -60,7 +60,7 @@ function intelUrl(stop,view){
  if(location.hostname==="html-preview.github.io")return "https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Frestaurant.html&"+qs;
  return "restaurant.html?"+qs;
 }
-document.querySelector("#backChecklist").href=previewUrl("index.html");const dayPlanMap=document.querySelector("#dayPlanMap");if(dayPlanMap)dayPlanMap.href=previewUrl("day.html");const nextStepsMap=document.querySelector("#nextStepsMap");if(nextStepsMap)nextStepsMap.href=nextStepsUrl();const nextStepsMapCount=document.querySelector("#nextStepsMapCount");if(nextStepsMapCount)nextStepsMapCount.textContent=Object.values(T).filter(x=>["chat","no-manager","maybe","apply-online"].includes(x)).length;
+document.querySelector("#backChecklist").href=previewUrl("index.html");const dayPlanMap=document.querySelector("#dayPlanMap");if(dayPlanMap)dayPlanMap.href=previewUrl("day.html");const nextStepsMap=document.querySelector("#nextStepsMap");if(nextStepsMap)nextStepsMap.href=nextStepsUrl();const nextStepsMapCount=document.querySelector("#nextStepsMapCount");if(nextStepsMapCount)nextStepsMapCount.textContent=Object.values(T).filter(x=>["chat","no-manager","maybe","apply-online"].includes(x)).length;const hireabilityMap=document.querySelector("#hireabilityMap");if(hireabilityMap)hireabilityMap.href=previewUrl("hireability.html");
 
 function state(x){const visited=!!S[x.n],status=T[x.n]||"";return{visited,status,key:visited?(status||"visited"):"unvisited"}}
 function markerEl(x){const st=state(x),el=document.createElement("div");el.className="stop-marker "+st.key;el.textContent=x.n;el.title=x.n+". "+x.r;return el}
