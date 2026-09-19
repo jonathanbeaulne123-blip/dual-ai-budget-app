@@ -56,3 +56,6 @@ button,select{font:inherit}.portal-shell{max-width:1500px;margin:0 auto;padding:
 .nextsteps-map{background:#eef1e8;color:#32634a;border-color:#c8d4c7;gap:6px}
 .nextsteps-map span{display:grid;place-items:center;min-width:20px;height:20px;padding:0 5px;border-radius:999px;background:#32634a;color:#fff;font-size:.67rem}
 .popup-actions .popup-next{background:#eef1e8;color:#32634a;border-color:#c8d4c7}
+
+.hireability-map{background:#f3eef8;color:#5e4b78;border-color:#c9bfd9}
+.hireability-map:hover{border-color:#725b92}
