@@ -8,7 +8,7 @@ import { HearthsideDesignProvider } from './hearthside/DesignProvider.tsx';
 import { HEARTHSIDE_FLAGS } from './hearthside/flags.ts';
 import { HEARTHSIDE_LABEL, hearthsidePath, parseHearthsideRoute } from './hearthside/routes.ts';
 import { HouseShell } from './hearthside/HouseShell.tsx';
-import { housePath, parseHouseRoute, togetherLevelForRoom, type HouseLevel, type HouseRoom, type HouseRoute } from './hearthside/houseRoutes.ts';
+import { HOUSE_ROOMS, housePath, parseHouseRoute, togetherLevelForRoom, type HouseLevel, type HouseRoom, type HouseRoute } from './hearthside/houseRoutes.ts';
 import { deriveHouseCondition } from './core/houseCondition.ts';
 import {readHearthsideToolReturn,type HearthsideToolReturn} from './hearthside/focusedTool.ts';
 import type {SharedReference} from './hearthside/contracts.ts';
@@ -6396,6 +6396,14 @@ export function App() {
     requestAnimationFrame(()=>document.querySelector<HTMLElement>('.house-shell__levels [aria-current="location"]')?.focus({preventScroll:true}));
   }
 
+  function syncKitchenTent(open: boolean) {
+    if (!household || !HEARTHSIDE_FLAGS.presentation || activeHouseRoute.room !== "kitchen-table" || activeHouseRoute.level === "middle") return;
+    const level: HouseLevel = open ? "below" : "above";
+    if (activeHouseRoute.level === level) return;
+    goTab("plan", undefined, { route: { room: "kitchen-table", level, householdId: household.householdId }, history: "push" });
+    window.dispatchEvent(new PopStateEvent("popstate"));
+  }
+
   function openExperienceWorkspace(experience:SharedExperience){
     setWorkspaceExperienceSelection({scope:ledgerRenderScopeKey,id:experience.id});setWorkspaceProjectId(null);setWorkspaceCompact(false);openHearthsideTool('hercules',undefined,experience.title);
   }
@@ -7311,7 +7319,7 @@ export function App() {
                   onOpenCharter={() => { if (household.charter) setCharterPageOpen(true); else setCharterFoundingOpen(true); }}
                   // Presence rows carry no tab: any other member live on this household counts as being here.
                   presentMembers={1 + peersFromLivePresence({ live: softPresenceLive, members: household.members, viewerMemberId: session.memberId }).length}
-                  onTentChange={open => { if (!open) setPathTentFocus(current => current?.focus ? { ...current, focus: null } : current); }}
+                  onTentChange={open => { if (!open) setPathTentFocus(current => current?.focus ? { ...current, focus: null } : current); syncKitchenTent(open); }}
                   openTentFor={herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesSourceFocus : null} classicRoom={<>
                   <header className="our-path__head"><p className="kicker">Our Path</p><h2>Where we are going</h2><p className="muted">The Chapter leads. Goals, Kitty Banks, and the Plan Studio are rooms inside.</p></header>
                   <ChapterRoom household={household} memberId={actorId} today={today} onCommand={runKitchen} busy={busy} />
@@ -9005,7 +9013,8 @@ export function App() {
       ) : null}
 
       {!charterTakeoverVisible ? (
-      <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label={houseNavigationActive ? "Hearth utilities" : "Hearth"}>
+      <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} data-house-navigation={houseNavigationActive || undefined} aria-label={houseNavigationActive ? "Hearth utilities" : "Hearth"}>
+        {houseNavigationActive && HOUSE_ROOMS.map(room => <button key={room} type="button" className={`house-nav-phone house-nav-phone--${room}`} aria-label={room === "kitchen-table" ? "Kitchen Table" : room === "together" ? "Together" : room[0]!.toUpperCase() + room.slice(1)} aria-current={activeHouseRoute.room === room ? "page" : undefined} onClick={() => goHouse(room, activeHouseRoute.room === room ? activeHouseRoute.level : "middle")}>{room === "kitchen-table" ? "Kitchen" : room === "together" ? "Together" : room[0]!.toUpperCase() + room.slice(1)}</button>)}
         {!houseNavigationActive && kitchenPrimaryNav(view).includes("home") && (
         <button
           className={tab === "home" && !adding ? "active" : ""}

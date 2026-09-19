@@ -698,6 +698,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
 .nav[data-ledger-nav="personal"] {
   grid-template-columns: 1fr 1fr 1fr 56px 1.5fr 1.5fr;
 }
+.house-nav-phone { display: none; }
 .nav button {
   border: 0;
   background: transparent;
@@ -792,6 +793,29 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
   font-size: 28px;
   line-height: 1;
   justify-content: center;
+}
+@media (max-width: 719px) {
+  .house-shell__rooms { display: none; }
+  .nav[data-house-navigation="true"] {
+    grid-template-columns: repeat(7, minmax(44px, 1fr));
+    min-width: 0;
+    overflow: hidden;
+  }
+  .nav[data-house-navigation="true"] .house-nav-phone {
+    display: flex;
+    min-height: 44px;
+    padding: 0 1px;
+    font-size: 9px;
+    line-height: 1.05;
+    text-align: center;
+    white-space: normal;
+  }
+  .nav[data-house-navigation="true"] .house-nav-phone--home { grid-column: 1; }
+  .nav[data-house-navigation="true"] .house-nav-phone--study { grid-column: 2; }
+  .nav[data-house-navigation="true"] .house-nav-phone--kitchen-table { grid-column: 3; }
+  .nav[data-house-navigation="true"] .house-nav-phone--together { grid-column: 5; }
+  .nav[data-house-navigation="true"] .fab-dial { grid-column: 4; }
+  .nav[data-house-navigation="true"] > button:not(.house-nav-phone) { grid-column: 6; }
 }
 @media (prefers-reduced-motion: reduce) {
   .fab-dial-action,
