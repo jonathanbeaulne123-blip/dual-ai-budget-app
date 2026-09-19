@@ -699,6 +699,8 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
   grid-template-columns: 1fr 1fr 1fr 56px 1.5fr 1.5fr;
 }
 .nav .house-nav-phone { display: none; }
+.nav[data-house-navigation="true"] > .fab-dial { grid-column: 3; grid-row: 1; }
+.nav[data-house-navigation="true"] > button:not(.house-nav-phone) { grid-column: 5; grid-row: 1; }
 .nav button {
   border: 0;
   background: transparent;
@@ -795,7 +797,7 @@ h1, h2, h3 { font-family: var(--display); font-weight: 600; letter-spacing: -0.0
   justify-content: center;
 }
 @media (max-width: 719px) {
-  .house-shell__rooms { display: none; }
+  .house-shell .house-shell__rooms { display: none; }
   .nav[data-house-navigation="true"] {
     grid-template-columns: repeat(7, minmax(44px, 1fr));
     min-width: 0;
