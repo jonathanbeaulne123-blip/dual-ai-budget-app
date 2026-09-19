@@ -1,4 +1,4 @@
-import type { PathMonth } from "../core/pathSignals.ts";
+import { PATH_GEOGRAPHY_VERSION, pathMonthGeographyId, type PathMonth } from "../core/pathSignals.ts";
 import type { PathBrush, PathRecipe } from "../core/pathWorld.ts";
 import { SPENDING_UMBRELLAS, type UmbrellaId } from "../core/fundRules.ts";
 
@@ -17,6 +17,7 @@ export const HALF = SIZE / 2;
 export const idx = (i: number, j: number) => j * GRID + i;
 
 export type Spot = { x: number; z: number; a: number };
+export type GeographyAnchor = { id: string; version: typeof PATH_GEOGRAPHY_VERSION; key: string };
 /**
  * Where month `m` sits on the spiral. `span` is the index of the household's
  * latest month: the spiral tightens for long histories so the newest month
@@ -29,10 +30,33 @@ export function monthSpot(m: number, span = 0): Spot {
   return { x: Math.cos(a) * r, z: Math.sin(a) * r, a };
 }
 
+function monthOrdinal(key: string): number {
+  const match = /^(\d{4})-(\d{2})$/.exec(key);
+  return match ? Number(match[1]) * 12 + Number(match[2]) - 1 : 0;
+}
+
+/**
+ * Stable geography v2: an absolute calendar month always occupies the same
+ * anchor. The fixed 120-slot constellation covers an era's maximum window;
+ * its coordinates never depend on how many months happen to be rendered.
+ * monthSpot remains the legacy index alias for older callers.
+ */
+export function monthGeographyAnchor(month: Pick<PathMonth, "key" | "geographyId">): GeographyAnchor {
+  return { id: month.geographyId ?? pathMonthGeographyId(month.key), version: PATH_GEOGRAPHY_VERSION, key: month.key };
+}
+export function stableMonthSpot(month: Pick<PathMonth, "key" | "geographyId">): Spot {
+  const slot = ((monthOrdinal(month.key) % 120) + 120) % 120;
+  const a = slot * 2.399963229728653 + 0.4;
+  const r = 8 + slot * 0.62;
+  return { x: Math.cos(a) * r, z: Math.sin(a) * r, a };
+}
+
 export type PieceKind =
   | "grove" | "cottage" | "observatory" | "monument" | "bench" | "lanterns" | "giftTree" | "loop" | "cafe"
   | "rows" | "pond" | "star" | "firstFire" | "dogMeadow" | "kiln" | "workshop" | "creek" | "frost" | "umbrella";
 export type Piece = {
+  /** Stable v2 object identity; born remains the legacy renderer/focus index. */
+  id?: string;
   kind: PieceKind;
   x: number;
   z: number;
@@ -146,8 +170,10 @@ const PIECE_FOR: Partial<Record<PathBrush, { kind: PieceKind; d: number; ang: nu
 
 export function growIsland(months: PathMonth[], recipes: PathRecipe[], cur: number): GrownIsland {
   const last = Math.max(0, Math.min(months.length - 1, cur));
-  const span = Math.max(0, months.length - 1);
-  const spot = (m: number) => monthSpot(m, span);
+  // The numeric index remains the renderer's legacy focus alias. Coordinates
+  // come from immutable month identities, so appending or trimming history
+  // cannot move an existing landmark.
+  const spot = (m: number) => stableMonthSpot(months[m] ?? { key: "2000-01" });
   const M = new Float32Array(GRID * GRID).fill(0.55);
   let B: Float32Array<ArrayBuffer> = new Float32Array(GRID * GRID);
   const fired: Record<string, number[]> = Object.fromEntries(recipes.map((r) => [r.id, []]));
@@ -159,6 +185,8 @@ export function growIsland(months: PathMonth[], recipes: PathRecipe[], cur: numb
   let villageAt: { x: number; z: number } | null = null;
   const floorWhy: string[] = [];
   const label = (m: number) => months[m]?.key ?? "";
+  const anchor = (m: number) => monthGeographyAnchor(months[m] ?? { key: "2000-01" });
+  const ageAt = (m: number) => Math.max(0, monthOrdinal(months[last]?.key ?? "2000-01") - monthOrdinal(months[m]?.key ?? "2000-01"));
 
   for (let m = 0; m <= last && months.length; m++) {
     const month = months[m]!;
@@ -174,14 +202,14 @@ export function growIsland(months: PathMonth[], recipes: PathRecipe[], cur: numb
       const why = [`${label(m)} · ${recipe.name}${reason ? ` — ${reason}` : ""}`];
       const place = (kind: PieceKind, d: number, ang: number, extra: Partial<Piece> = {}) => {
         const q = off(d, ang);
-        pieces.push({ kind, x: q.x, z: q.z, ang: p.a, born: m, age: last - m, recipeId: recipe.id, why, ...extra });
+        pieces.push({ id: `${anchor(m).id}:object:${recipe.id}:${kind}`, kind, x: q.x, z: q.z, ang: p.a, born: m, age: ageAt(m), recipeId: recipe.id, why, ...extra });
       };
       let did = true;
       switch (recipe.brush) {
-        case "bloom": stamp(B, p.x, p.z, 6 + 8 * k, 1.2 * k, m); break;
-        case "dry": stamp(M, p.x, p.z, 7 + 6 * k, -0.75 * k, m); break;
-        case "fertile": stamp(M, p.x, p.z, 8, 0.25 * k, m); fertility += 0.07 * k; break;
-        case "storm": stamp(M, p.x, p.z, 6, 0.3, m); if (!storms.some((s) => s.m === m)) storms.push({ m, spot: p, why }); else did = false; break;
+        case "bloom": stamp(B, p.x, p.z, 6 + 8 * k, 1.2 * k, monthOrdinal(month.key)); break;
+        case "dry": stamp(M, p.x, p.z, 7 + 6 * k, -0.75 * k, monthOrdinal(month.key)); break;
+        case "fertile": stamp(M, p.x, p.z, 8, 0.25 * k, monthOrdinal(month.key)); fertility += 0.07 * k; break;
+        case "storm": stamp(M, p.x, p.z, 6, 0.3, monthOrdinal(month.key)); if (!storms.some((s) => s.m === m)) storms.push({ m, spot: p, why }); else did = false; break;
         case "cove": {
           if (!month.trip) { did = false; break; }
           const same = coves.find((c) => c.name === month.trip!.name && c.type === month.trip!.type);
@@ -198,7 +226,7 @@ export function growIsland(months: PathMonth[], recipes: PathRecipe[], cur: numb
         case "village": {
           villageAt ??= off(7, -1.5);
           const a = cottages * 1.2, r = 2.5 + cottages * 0.4;
-          pieces.push({ kind: "cottage", x: villageAt.x + Math.cos(a) * r, z: villageAt.z + Math.sin(a) * r, ang: a, born: m, age: last - m, recipeId: recipe.id, why, n: cottages });
+          pieces.push({ id: `${anchor(m).id}:object:${recipe.id}:cottage:${cottages}`, kind: "cottage", x: villageAt.x + Math.cos(a) * r, z: villageAt.z + Math.sin(a) * r, ang: a, born: m, age: ageAt(m), recipeId: recipe.id, why, n: cottages });
           cottages++;
           break;
         }
@@ -206,8 +234,8 @@ export function growIsland(months: PathMonth[], recipes: PathRecipe[], cur: numb
         default: {
           const spec = PIECE_FOR[recipe.brush];
           if (!spec) { did = false; break; }
-          if (recipe.brush === "dogMeadow") stamp(M, off(spec.d, spec.ang).x, off(spec.d, spec.ang).z, 6, 0.35, m);
-          if (recipe.brush === "vegRows") stamp(M, off(spec.d, spec.ang).x, off(spec.d, spec.ang).z, 5, 0.2, m);
+          if (recipe.brush === "dogMeadow") stamp(M, off(spec.d, spec.ang).x, off(spec.d, spec.ang).z, 6, 0.35, monthOrdinal(month.key));
+          if (recipe.brush === "vegRows") stamp(M, off(spec.d, spec.ang).x, off(spec.d, spec.ang).z, 5, 0.2, monthOrdinal(month.key));
           if (recipe.brush === "bench") widths[m] = 0.1;
           // Pieces that belong to a part of life appear once and then keep growing.
           if ((recipe.brush === "dogMeadow" || recipe.brush === "kiln" || recipe.brush === "workshop") && pieces.some((piece) => piece.recipeId === recipe.id)) {
@@ -231,7 +259,7 @@ export function growIsland(months: PathMonth[], recipes: PathRecipe[], cur: numb
       if ((months[k]?.scores.saved ?? 0) >= 0.5) { recovered = k; break; }
     }
     pieces.push({
-      kind: "creek", x: storm.spot.x, z: storm.spot.z, ang: storm.spot.a, born: storm.m, age: last - storm.m, recipeId: null, bridge: recovered,
+      id: `${anchor(storm.m).id}:object:storm-creek`, kind: "creek", x: storm.spot.x, z: storm.spot.z, ang: storm.spot.a, born: storm.m, age: ageAt(storm.m), recipeId: null, bridge: recovered,
       why: [...storm.why, recovered !== null ? `${label(recovered)} · money was set aside again, so the bridge was built` : "No recovery yet. A bridge appears once money is set aside again."],
     });
   }
@@ -240,18 +268,20 @@ export function growIsland(months: PathMonth[], recipes: PathRecipe[], cur: numb
   const firstWinter = firstWinterMonth(months);
   if (firstWinter !== null && firstWinter <= last) {
     const p = spot(firstWinter);
-    stamp(F, p.x, p.z, 7, 1, firstWinter);
+    stamp(F, p.x, p.z, 7, 1, monthOrdinal(months[firstWinter]!.key));
     for (let k = 0; k < F.length; k++) F[k] = Math.min(1, F[k]!);
     const q = { x: p.x + Math.cos(p.a - 0.4) * 4.2, z: p.z + Math.sin(p.a - 0.4) * 4.2 };
-    pieces.push({ kind: "frost", x: q.x, z: q.z, ang: p.a, born: firstWinter, age: last - firstWinter, recipeId: null, why: [FIRST_FROST_WHY, `${label(firstWinter)} · the first December, January or February on the island`] });
+    pieces.push({ id: `${anchor(firstWinter).id}:object:first-frost`, kind: "frost", x: q.x, z: q.z, ang: p.a, born: firstWinter, age: ageAt(firstWinter), recipeId: null, why: [FIRST_FROST_WHY, `${label(firstWinter)} · the first December, January or February on the island`] });
   }
   pieces.push(...umbrellaPieces(months, last, spot));
-  if (floors) pieces.push({ kind: "observatory", x: -6, z: -10, ang: 0, born: 0, age: last, recipeId: null, floors, why: floorWhy });
+  if (floors) pieces.push({ id: `${anchor(0).id}:object:observatory`, kind: "observatory", x: -6, z: -10, ang: 0, born: 0, age: ageAt(0), recipeId: null, floors, why: floorWhy });
   for (const piece of pieces) {
     if (piece.kind === "kiln") piece.active = (months[last]?.scores.creative ?? 0) >= 0.3;
   }
 
-  const Rbase = 30 + last * 1.45;
+  // Stable anchors can begin anywhere in the fixed constellation. Keep every
+  // reached anchor on land without reintroducing a span-dependent coordinate.
+  const Rbase = Math.max(30 + last * 1.45, ...Array.from({ length: last + 1 }, (_, m) => Math.hypot(spot(m).x, spot(m).z) + 8));
   const radiusAt = (a: number): number => {
     let R = Rbase + 3 * (vnoise(Math.cos(a) * 2 + 5, Math.sin(a) * 2 + 5) - 0.5) * 2;
     for (const c of coves) {
@@ -310,7 +340,8 @@ export function umbrellaPieces(months: PathMonth[], last: number, spot: (m: numb
     const a = centre.a + (i / SPENDING_UMBRELLAS.length) * Math.PI * 2;
     const born = hits[0]!;
     out.push({
-      kind: "umbrella", x: centre.x + Math.cos(a) * 6.5, z: centre.z + Math.sin(a) * 6.5, ang: a, born, age: last - born,
+      id: `${monthGeographyAnchor(months[seed]!).id}:object:umbrella:${umbrella.id}`, kind: "umbrella", x: centre.x + Math.cos(a) * 6.5, z: centre.z + Math.sin(a) * 6.5, ang: a, born,
+      age: Math.max(0, monthOrdinal(months[last]?.key ?? "2000-01") - monthOrdinal(months[born]?.key ?? "2000-01")),
       recipeId: null, umbrellaId: umbrella.id, hue: umbrella.hue, n: hits.length,
       why: [
         `${months[seed]!.key} · ${months[seed]!.why["umbrella-slots"] ?? "Our first plan agreed the new way"}`,

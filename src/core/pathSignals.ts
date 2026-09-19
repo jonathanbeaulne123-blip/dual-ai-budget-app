@@ -1,7 +1,7 @@
 import { monthKeyFromDateKey, type DateKey } from "./calendar.ts";
 import { PATH_SIGNALS, pathCategoryMappings, type PathCategorySignal, type PathSignal } from "./pathWorld.ts";
-import type { Household } from "./types.ts";
-import { belongsToSharedLedger } from "./visibility.ts";
+import type { Household, LedgerView, Transaction } from "./types.ts";
+import { belongsToSharedLedger, isVisibleInView } from "./visibility.ts";
 import { fundModelMode, householdFundMarker, SPENDING_UMBRELLAS, umbrellaOfCategory, type UmbrellaId } from "./fundRules.ts";
 import { projectMoveTask, projectRitualTasks } from "./chapterTasks.ts";
 
@@ -17,6 +17,8 @@ import { projectMoveTask, projectRitualTasks } from "./chapterTasks.ts";
 export type PathTripType = "sea" | "mountain" | "city";
 export type PathMonth = {
   key: string;
+  /** Stable v2 geography identity. Presentation may retain index aliases for older callers. */
+  geographyId?: string;
   scores: Record<PathSignal, number>;
   /** Plain-language reasons, keyed by score or tag. */
   why: Partial<Record<PathSignal | string, string>>;
@@ -31,6 +33,76 @@ export type PathMonth = {
    */
   umbrellas?: Partial<Record<UmbrellaId, number>>;
 };
+
+export const PATH_GEOGRAPHY_VERSION = "v2";
+export const pathMonthGeographyId = (key: string) => `${PATH_GEOGRAPHY_VERSION}:month:${key}`;
+
+/**
+ * A read-only boundary for worlds. The existing Journey remains Household by
+ * default; a Personal world must name its owner and can never borrow a partner's
+ * private evidence. This is interpretation only: it does not write or reshape
+ * the ledger.
+ */
+export type PathReadScope = { view: LedgerView; memberId?: string };
+const DEFAULT_PATH_SCOPE: PathReadScope = { view: "household" };
+
+type PathEconomicEntry = Pick<Transaction, "date" | "categoryId" | "subcategoryId"> & {
+  type: "expense" | "income";
+  /** Positive adds economic evidence; negative corrects its canonical ancestor. */
+  amountCents: number;
+};
+
+function inPathScope(tx: Transaction, scope: PathReadScope): boolean {
+  if (scope.view === "household") return belongsToSharedLedger(tx);
+  return Boolean(scope.memberId) && isVisibleInView(tx, scope.memberId!, "personal");
+}
+
+/**
+ * Canonical, net path evidence. Refunds and reversal chains point back to the
+ * original receipt, so a correction changes that receipt's month/category only
+ * and cannot make an unrelated landmark grow. Unlinked or malformed corrections
+ * stay out of geography rather than being guessed at.
+ */
+export function pathEconomicEntries(household: Household, scope: PathReadScope = DEFAULT_PATH_SCOPE): {
+  entries: PathEconomicEntry[];
+  unknownCorrectionIds: string[];
+} {
+  const visible = household.transactions.filter((tx) => !tx.isDuplicate && inPathScope(tx, scope));
+  const byId = new Map(visible.map((tx) => [tx.id, tx]));
+  const unknownCorrectionIds = new Set<string>();
+  const visiting = new Set<string>();
+  const resolve = (tx: Transaction): PathEconomicEntry | null => {
+    if (visiting.has(tx.id)) { unknownCorrectionIds.add(tx.id); return null; }
+    visiting.add(tx.id);
+    try {
+      if (tx.reversalOfId) {
+        const prior = byId.get(tx.reversalOfId);
+        const entry = prior ? resolve(prior) : null;
+        if (!entry) { unknownCorrectionIds.add(tx.id); return null; }
+        return { ...entry, amountCents: -entry.amountCents };
+      }
+      if (tx.type === "expense" || tx.type === "income") {
+        return { date: tx.date, type: tx.type, amountCents: Math.abs(tx.amountCents), categoryId: tx.categoryId, subcategoryId: tx.subcategoryId };
+      }
+      if (tx.type !== "refund") return null;
+      const original = tx.refundOfId ? byId.get(tx.refundOfId) : undefined;
+      if (!original || original.type !== "expense") { unknownCorrectionIds.add(tx.id); return null; }
+      return {
+        date: original.date,
+        type: "expense",
+        amountCents: -Math.abs(tx.amountCents),
+        categoryId: original.categoryId,
+        subcategoryId: original.subcategoryId,
+      };
+    } finally {
+      visiting.delete(tx.id);
+    }
+  };
+  return { entries: visible.flatMap((tx) => {
+    const entry = resolve(tx);
+    return entry ? [entry] : [];
+  }), unknownCorrectionIds: [...unknownCorrectionIds].sort() };
+}
 
 /**
  * The month the island's umbrella slots are seeded (Slice 11): the month of the
@@ -79,7 +151,9 @@ function weeklySpread(rows: { date: DateKey; cents: number }[]): number | null {
   if (rows.length < 3) return null;
   const weeks = [0, 0, 0, 0, 0];
   for (const row of rows) weeks[Math.min(4, Math.floor((Number(row.date.slice(8, 10)) - 1) / 7))]! += row.cents;
-  const used = weeks.slice(0, 4);
+  // The fifth cadence bucket contains days 29–31. Leaving it out made a full
+  // final week invisible to the island's rhythm reading.
+  const used = weeks.filter((total) => total > 0);
   const mean = used.reduce((a, b) => a + b, 0) / used.length;
   if (mean <= 0) return null;
   const sd = Math.sqrt(used.reduce((a, b) => a + (b - mean) ** 2, 0) / used.length);
@@ -91,21 +165,21 @@ function weeklySpread(rows: { date: DateKey; cents: number }[]): number | null {
  * With `window` (an era, D-268): exactly the months `from`–`through`, at most 120, scored with the
  * same rules (firsts and milestones still count from the household's whole history).
  */
-export function pathMonths(household: Household, today: DateKey, window?: { from: string; through: string }): PathMonth[] {
-  const shared = household.transactions.filter((tx) => belongsToSharedLedger(tx) && !tx.isDuplicate && (tx.type === "expense" || tx.type === "income"));
-  const sharedGoals = household.goals.filter((goal) => goal.shared);
+export function pathMonths(household: Household, today: DateKey, window?: { from: string; through: string }, scope: PathReadScope = DEFAULT_PATH_SCOPE): PathMonth[] {
+  const { entries: shared } = pathEconomicEntries(household, scope);
+  const sharedGoals = household.goals.filter((goal) => scope.view === "household" ? goal.shared : Boolean(scope.memberId) && !goal.shared && goal.ownerMemberId === scope.memberId);
   const sharedGoalIds = new Set(sharedGoals.map((goal) => goal.id));
   const contributions = (household.goalContributions ?? []).filter((row) => sharedGoalIds.has(row.goalId));
-  const chapters = household.chapters ?? [];
-  const wins = household.wins ?? [];
-  const moves = (household.moves ?? []).map(row => projectMoveTask(household, row));
-  const rituals = (household.rituals ?? []).map(row => projectRitualTasks(household, row));
-  const sitdowns = household.sitDownSessions ?? [];
+  const chapters = scope.view === "household" ? household.chapters ?? [] : [];
+  const wins = scope.view === "household" ? household.wins ?? [] : [];
+  const moves = scope.view === "household" ? (household.moves ?? []).map(row => projectMoveTask(household, row)) : [];
+  const rituals = scope.view === "household" ? (household.rituals ?? []).map(row => projectRitualTasks(household, row)) : [];
+  const sitdowns = scope.view === "household" ? household.sitDownSessions ?? [] : [];
   // The one check-in (Plan Studio v3) closes a Shared Sitdown session; a closed one counts as that month's Sitdown.
   const sorted = fundModelMode(household) === 2;
   // Only once the money model sorted the household (D-282, review M3), so a flags-off island is unchanged.
-  const checkIns = sorted ? (household.planHerculesSessions ?? []).filter((row) => row?.state === "closed" && row.monthKey) : [];
-  const events = (household.nativeEvents ?? []).filter((row) => row.visibility === "household" && !row.deleted);
+  const checkIns = scope.view === "household" && sorted ? (household.planHerculesSessions ?? []).filter((row) => row?.state === "closed" && row.monthKey) : [];
+  const events = (household.nativeEvents ?? []).filter((row) => !row.deleted && (scope.view === "household" ? row.visibility === "household" || row.visibility === "both" : Boolean(scope.memberId) && isVisibleInView(row, scope.memberId!, "personal")));
   const nowMonth = monthKeyFromDateKey(today);
 
   const starts = [
@@ -152,16 +226,26 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
     const why: PathMonth["why"] = {};
     const tags: string[] = [];
     const inMonth = shared.filter((tx) => tx.date.startsWith(key));
-    const expenses = inMonth.filter((tx) => tx.type === "expense");
-    const expenseCents = expenses.reduce((sum, tx) => sum + Math.abs(tx.amountCents), 0);
-    const incomeCents = inMonth.filter((tx) => tx.type === "income").reduce((sum, tx) => sum + Math.abs(tx.amountCents), 0);
+    const net = <T extends "expense" | "income">(type: T) => {
+      const byReceipt = new Map<string, PathEconomicEntry>();
+      for (const tx of inMonth.filter((row) => row.type === type)) {
+        const id = `${tx.date}|${tx.categoryId ?? ""}|${tx.subcategoryId ?? ""}`;
+        const prior = byReceipt.get(id);
+        byReceipt.set(id, { ...tx, amountCents: (prior?.amountCents ?? 0) + tx.amountCents });
+      }
+      return [...byReceipt.values()].filter((tx) => tx.amountCents > 0);
+    };
+    const expenses = net("expense");
+    const incomes = net("income");
+    const expenseCents = expenses.reduce((sum, tx) => sum + tx.amountCents, 0);
+    const incomeCents = incomes.reduce((sum, tx) => sum + tx.amountCents, 0);
 
     // Essentials against income (or spending when income was not recorded).
     const essentialCents = expenses.filter((tx) => {
       const category = categoryName.get(tx.subcategoryId ?? tx.categoryId ?? "");
       const parent = category?.parentId ? categoryName.get(category.parentId) : undefined;
       return Boolean(category?.essential || parent?.essential);
-    }).reduce((sum, tx) => sum + Math.abs(tx.amountCents), 0);
+    }).reduce((sum, tx) => sum + tx.amountCents, 0);
     const base = Math.max(incomeCents, expenseCents);
     if (base > 0 && essentialCents > 0) {
       scores.essentials = clamp(essentialCents / base * 1.15);
@@ -179,7 +263,7 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
       // A category the couple set to "Nothing on the island" is muted, not new.
       if (!row.signal) { if (row.source === "none" && !categoryName.get(id)?.essential) unmapped.set(row.category.id, row.category.name); continue; }
       const entry = bySignal.get(row.signal) ?? { cents: 0, names: new Set<string>() };
-      entry.cents += Math.abs(tx.amountCents);
+      entry.cents += tx.amountCents;
       entry.names.add(row.category.name);
       bySignal.set(row.signal, entry);
     }
@@ -199,12 +283,14 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
       why.saved = `${saved.length} contribution${saved.length === 1 ? "" : "s"} to shared Kitty Banks`;
     }
 
-    // Cushion used through the Fund.
-    const released = (household.fundEvents ?? []).filter((row) => row.kind === "kitty-released" && row.date.startsWith(key));
+    // A planned or successful buffer release is evidence of care, not weather.
+    // Keep the explanation without feeding the old storm signal/recipe.
+    const released = scope.view === "household"
+      ? (household.fundEvents ?? []).filter((row) => row.kind === "kitty-released" && row.date.startsWith(key))
+      : [];
     if (released.length) {
-      const target = Math.max(1, ...released.map((row) => targetById.get(row.goalId ?? "") ?? 0));
-      scores.cushionUsed = clamp(0.3 + released.reduce((t, row) => t + row.amountCents, 0) / target);
-      why.cushionUsed = "Money came out of a Kitty Bank to cover something";
+      tags.push("buffer-used");
+      why["buffer-used"] = "A Kitty Bank was used as planned to cover something";
     }
 
     // Together: Sitdowns, shared Moves, Wins and Chapter moments.
@@ -233,7 +319,7 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
     }
 
     // Calm: steady week-to-week spending.
-    const spread = weeklySpread(expenses.map((tx) => ({ date: tx.date, cents: Math.abs(tx.amountCents) })));
+    const spread = weeklySpread(expenses.map((tx) => ({ date: tx.date as DateKey, cents: tx.amountCents })));
     if (spread !== null && key < nowMonth) { scores.calm = clamp(1 - spread); if (scores.calm > 0) why.calm = "Spending stayed steady week to week"; }
 
     // Firsts.
@@ -295,6 +381,7 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
 
     return {
       key,
+      geographyId: pathMonthGeographyId(key),
       scores,
       why,
       tags: [...new Set(tags)],
@@ -309,7 +396,7 @@ export function pathMonths(household: Household, today: DateKey, window?: { from
 export type PathMonthCharacter = "steady" | "bloom" | "milestone" | "uphill" | "storm" | "paused";
 export function pathMonthCharacter(month: PathMonth): PathMonthCharacter {
   if (month.tags.includes("milestone")) return "milestone";
-  if (month.scores.cushionUsed >= 0.3 || month.tags.includes("life-changed")) return "storm";
+  if (month.tags.includes("life-changed")) return "storm";
   if (month.tags.includes("paused")) return "paused";
   if (month.scores.essentials >= 0.7) return "uphill";
   if (month.scores.joy >= 0.6 || (month.scores.saved >= 0.5 && month.scores.rhythm >= 0.6)) return "bloom";
