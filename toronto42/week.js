@@ -6,7 +6,7 @@ let C;
 const stageOptions=[['submitted','Awaiting response'],['reply','Employer replied'],['interview','Interview arranged'],['offer','Offer received'],['rejected','Not selected'],['withdrawn','Withdrawn']];
 function render(){
  const records=Object.entries(C.state.apps).filter(([id])=>C.get(id));
- const complete=records.filter(([id,a])=>A.complete({...a,assessmentRequired:id==='N21'}));
+ const complete=records.filter(([id,a])=>A.complete({...a,assessmentRequired:['N21','C01'].includes(id)}));
  const groups=new Set(complete.map(([id])=>A.rows.find(r=>r.id===id)?.group||C.get(id).name));
  const count=stages=>records.filter(([,a])=>stages.includes(a.stage)).length;
  const today=root.PassportFlow.torontoNow().date;

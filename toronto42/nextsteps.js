@@ -32,7 +32,7 @@ function preview(file,params={}){
   }
   return file+(qs?"?"+qs:"");
 }
-document.querySelector("#backChecklist").href=preview("index.html");
+document.querySelector("#backChecklist").href=preview("index.html");{const t=document.querySelector("#todayLink");if(t)t.href=preview("today.html");}
 document.querySelector("#emptyChecklist").href=preview("index.html");
 document.querySelector("#openPortal").href=preview("map.html");
 document.querySelector("#openHireability").href=preview("hireability.html");

@@ -12,7 +12,7 @@
 <div class="portal-shell">
   <header class="portal-header">
     <div class="portal-heading">
-      <a id="backChecklist" class="back-link" href="index.html">← Checklist</a>
+      <a id="backChecklist" class="back-link" href="index.html">← Checklist</a> <a id="todayMap" class="back-link" href="today.html">Today</a>
       <div class="eyebrow">Toronto Culinary Passport</div>
       <h1>Route Portal</h1>
       <p>All 42 itinerary stops in one view, plotted from the exact coordinates encoded in your original Google Maps routes.</p>
@@ -45,6 +45,17 @@
         <div class="panel-kicker">Progress</div>
         <h2>Where you stand</h2>
         <div id="outcomeStats" class="outcome-stats"></div>
+      </section>
+
+      <section class="panel-card" id="planPanel">
+        <div class="panel-head">
+          <div>
+            <div class="panel-kicker">This week</div>
+            <h2>Plan routes</h2>
+          </div>
+        </div>
+        <p class="panel-copy">The outings from Today / Prep &amp; Visits, plotted with Google walking legs from the GO station. Pick a day to focus the map; “Fit full route” returns to the 42-stop itinerary.</p>
+        <div id="planRoutes" class="route-segments"></div>
       </section>
 
       <section class="panel-card">
@@ -96,7 +107,7 @@
 <script src="routes.js?v=20260919-passport"></script>
 <script src="google-config.js"></script>
 <script src="flow-data.js?v=20260919-passport"></script>
-<script src="discoveries.js?v=20260919-prep"></script><script src="audit-data.js?v=20260919-audit"></script><script src="claude-plan.js?v=20260919-claude"></script>
+<script src="discoveries.js?v=20260919-prep"></script><script src="audit-data.js?v=20260919-audit"></script><script src="management-data.js?v=20260919-passport"></script><script src="prep-data.js?v=20260919-prep"></script><script src="claude-plan.js?v=20260919-claude"></script><script src="plan-geo.js?v=20260919-claude"></script>
 <script src="flow.js?v=20260919-briefs"></script>
 <script src="map.js?v=20260919-prep"></script>
 </body>
