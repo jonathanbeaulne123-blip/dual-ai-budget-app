@@ -426,7 +426,9 @@ html.path-world-settled [data-path-world-behind] { visibility: hidden !important
 .path-hud__roamer { height: 44px; min-height: 44px; padding: 0 15px 0 12px; display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; border: 1px solid var(--hud-edge); background: var(--hud-glass); box-shadow: var(--hud-shadow); -webkit-backdrop-filter: blur(12px) saturate(1.25); backdrop-filter: blur(12px) saturate(1.25); color: var(--ink); font-weight: 700; font-size: 14px; cursor: pointer; }
 .path-hud__roamer svg { width: 18px; height: 18px; flex: none; }
 .path-hud__roamer:hover:not(:disabled) { background: var(--card); }
-.path-hud__roamer[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+/* Pressed beats hover: the pointer resting on the control must never make a free camera look latched. */
+.path-hud .path-hud__roamer[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.path-hud .path-hud__roamer[aria-pressed="true"]:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 84%, var(--theme-accent, var(--copper))); }
 .path-hud__roamer:disabled { opacity: 0.45; cursor: default; }
 .path-hud__roamer:focus-visible { outline: 3px solid var(--theme-accent, var(--copper)); outline-offset: 2px; }
 

@@ -121,6 +121,8 @@ What the captures found and fixed, in order:
 - The corner map carried its old `grid-area: mini` into the new column it shares with the radar and was pushed diagonally out of place. Fixed.
 - On phones the first-time hint sat across the state chip. Fixed: it drops below it.
 - The radar was too faint to read at phone size. Fixed: drawn to the land rather than the whole ring, stronger land, sea and marks, a larger disc.
+- At 320 the first-time hint ran into the radar and the caption. Fixed: shorter lines and tighter type on phones.
+- The reduced-motion shots caught the pressed **Free roam** control looking unpressed: `:hover:not(:disabled)` outranks `[aria-pressed="true"]`, so resting the pointer on it made a free camera look latched. Fixed: pressed beats hover, with its own hover shade.
 
 Environment notes, honestly:
 
