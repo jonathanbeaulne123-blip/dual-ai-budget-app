@@ -54,11 +54,16 @@ let activeFilter="all",activeDistrict="all",activeStatus="all",map,infoWindow,Ad
 let routeTotals={distanceMeters:0,durationMillis:0,loaded:0,failed:0};
 
 function previewUrl(file){return location.hostname==="html-preview.github.io"?"https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2F"+encodeURIComponent(file):file}
+function intelUrl(stop,view){
+ const qs=new URLSearchParams({stop:String(stop),view:view}).toString();
+ if(location.hostname==="html-preview.github.io")return "https://html-preview.github.io/?url=https%3A%2F%2Fgithub.com%2Fjonathanbeaulne123-blip%2Fdual-ai-budget-app%2Fblob%2Ftoronto-42-host%2Ftoronto42%2Frestaurant.html&"+qs;
+ return "restaurant.html?"+qs;
+}
 document.querySelector("#backChecklist").href=previewUrl("index.html");const dayPlanMap=document.querySelector("#dayPlanMap");if(dayPlanMap)dayPlanMap.href=previewUrl("day.html");
 
 function state(x){const visited=!!S[x.n],status=T[x.n]||"";return{visited,status,key:visited?(status||"visited"):"unvisited"}}
 function markerEl(x){const st=state(x),el=document.createElement("div");el.className="stop-marker "+st.key;el.textContent=x.n;el.title=x.n+". "+x.r;return el}
-function popup(x){const st=state(x),label=st.visited?statusLabel(st.status):"Not visited yet";return `<div class="popup-num">Stop ${x.n}</div><div class="popup-name">${esc(x.r)}</div><div class="popup-address">${esc(x.a)}</div><span class="popup-status">${esc(label)}</span><br><a class="popup-link" href="${esc(mapSearch(x))}" target="_blank" rel="noopener noreferrer">Open this stop in Google Maps ↗</a>`}
+function popup(x){const st=state(x),label=st.visited?statusLabel(st.status):"Not visited yet";return `<div class="popup-num">Stop ${x.n}</div><div class="popup-name">${esc(x.r)}</div><div class="popup-address">${esc(x.a)}</div><span class="popup-status">${esc(label)}</span><div class="popup-actions"><a class="popup-link" href="${esc(intelUrl(x.n,"flashcards"))}">Flash Cards</a><a class="popup-link" href="${esc(intelUrl(x.n,"coverletter"))}">Cover Letter</a></div>`}
 function bounds(stops){const b=new google.maps.LatLngBounds();stops.forEach(x=>b.extend({lat:x.lat,lng:x.lng}));return b}
 function fitFull(){map.fitBounds(bounds(STOPS),48)}
 function match(x){const st=state(x);return(activeFilter==="all"||activeFilter==="remaining"&&!st.visited||activeFilter==="visited"&&st.visited)&&(activeDistrict==="all"||String(x.u)===activeDistrict)&&(activeStatus==="all"||activeStatus==="unvisited"&&!st.visited||activeStatus==="none"&&st.visited&&!st.status||st.status===activeStatus)}
