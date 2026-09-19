@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { addRecurrence, catalogHousehold, postEntry } from "../src/core/index.ts";
-import { completeTask, saveTask, type TaskInput } from "../src/core/tasks.ts";
+import { acknowledgeTask, completeTask, saveTask, type TaskInput } from "../src/core/tasks.ts";
 import { PATH_STONE_LIMIT, pathStones, pathTaskDone } from "../src/core/pathStones.ts";
 
 const B = "MEM-001", J = "MEM-002";
@@ -42,25 +42,27 @@ describe("Our Path stepping stones (planner tasks)", () => {
 
   it("marks a plain task done on a tick, but never lights it", () => {
     let h = saveTask(catalogHousehold(), input("vet", { title: "Call the vet", dueDate: "2026-09-14" })).household;
-    h = completeTask(h, { memberId: J, id: "TASK-vet", expectedRevision: 1 }).household;
+    h = acknowledgeTask(h, { memberId: J, id: "TASK-vet", expectedRevision: 1 }).household;
+    h = completeTask(h, { memberId: J, id: "TASK-vet", expectedRevision: 2 }).household;
     const [stone] = pathStones(h, B, TODAY);
     expect(stone).toMatchObject({ state: "done", money: false, lit: false, month: "2026-09" });
     expect(stone!.why).toContain("Done");
   });
 
   it("keeps a money task waiting and unlit until the books hold its evidence", () => {
-    const h = saveTask(catalogHousehold(), input("hydro", { title: "Pay hydro", expectedAmountCents: 14_000, dueDate: "2026-09-18", assigneeId: J })).household;
+    let h = saveTask(catalogHousehold(), input("hydro", { title: "Pay hydro", expectedAmountCents: 14_000, dueDate: "2026-09-18", assigneeId: J })).household;
+    h = acknowledgeTask(h, { memberId: J, id: "TASK-hydro", expectedRevision: 1 }).household;
     const waiting = pathStones(h, B, TODAY)[0]!;
     expect(waiting).toMatchObject({ state: "waiting", money: true, lit: false, owner: "Jonathan" });
     expect(waiting.why).toContain("Lights when the money is confirmed in the books");
     // A tick is refused: the stone stays dark.
-    expect(() => completeTask(h, { memberId: B, id: "TASK-hydro", expectedRevision: 1 })).toThrow(/evidence/);
+    expect(() => completeTask(h, { memberId: J, id: "TASK-hydro", expectedRevision: 2 })).toThrow(/evidence/);
     expect(pathStones(h, B, TODAY)[0]!.lit).toBe(false);
     // Posted in the books but not yet attached: still dark.
     const posted = postEntry(h, { date: "2026-09-17", type: "expense", amount: 140.5, accountId: "ACC-CHEQUING", subcategoryId: "SUB-HOUSING-ELECTRIC", createdBy: B, note: "Hydro", confirmDuplicate: true });
     expect(pathStones(posted.household, B, TODAY)[0]!.lit).toBe(false);
     const tx = posted.household.transactions.find((row) => row.note === "Hydro")!;
-    const done = completeTask(posted.household, { memberId: B, id: "TASK-hydro", expectedRevision: 1, evidence: { kind: "transaction", transactionId: tx.id, amountCents: tx.amountCents, date: tx.date } }).household;
+    const done = completeTask(posted.household, { memberId: J, id: "TASK-hydro", expectedRevision: 2, evidence: { kind: "transaction", transactionId: tx.id, amountCents: tx.amountCents, date: tx.date } }).household;
     const lit = pathStones(done, B, TODAY)[0]!;
     expect(lit).toMatchObject({ state: "done", money: true, lit: true });
     expect(lit.why).toContain("confirmed in the books");
