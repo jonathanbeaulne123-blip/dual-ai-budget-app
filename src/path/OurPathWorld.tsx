@@ -209,7 +209,9 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   /** A Hercules source link aimed at today's Our Path: open the tent so the focus lands where people can see it. */
   openTentFor?: unknown;
   /** The unified Kitchen Table route addresses the existing journey or its one Plan Studio tent. */
-  houseSurface?: "journey" | "studio";
+  houseSurface?: "journey" | "work" | "studio";
+  /** The unified middle floor uses existing conversation entries while the tent remains mounted below it. */
+  houseWorkCentre?: ReactNode;
   /** Proof pages only: see the live world (for stats) and override the idle pause. The app never passes this. */
   proofWorld?: { onWorld?: (world: PathWorld | null) => void; idleMs?: number; paused?: boolean };
 }) {
@@ -1257,7 +1259,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const recipeRows = shapePathWorld(household.pathWorld).filter((row): row is PathRecipeRow => row.kind === "recipe");
   return (
     <div className={`path-world path-world--${theme}`} data-level={level} data-lantern={lantern}>
-      <section className="path-world__island" hidden={tentOpen} aria-labelledby="path-world-title" onKeyDown={(e) => { if (e.key === "Escape" && detail) { e.stopPropagation(); closeCard(); } }}>
+      <section className="path-world__island" hidden={tentOpen || houseSurface === "work"} aria-labelledby="path-world-title" onKeyDown={(e) => { if (e.key === "Escape" && detail) { e.stopPropagation(); closeCard(); } }}>
         <header className="path-world__head">
           <p className="kicker">Our Path</p>
           <h2 id="path-world-title">{islandName ?? "Where we are going"}</h2>
@@ -1473,6 +1475,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
         </div>
       </section>
 
+      {houseSurface === "work" && <section className="path-world__work-centre" aria-label="Kitchen Table work centre">{houseWorkCentre}</section>}
       <section className="path-world__room" hidden={!tentOpen} aria-label="Plan Studio tent">
         <div className="path-world__room-head">
           <button ref={backButton} type="button" className="path-world__back" onClick={() => openTent(false)}>Back to the island</button>

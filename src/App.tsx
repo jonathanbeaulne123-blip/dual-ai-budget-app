@@ -579,7 +579,7 @@ function houseRouteForTab(tab: Tab, householdId: string): HouseRoute | null {
   if (tab === "planner") return {room:"study",level:"above",householdId};
   if (tab === "ledger" || tab === "timeMachine") return {room:"study",level:"middle",householdId};
   if (tab === "calendar") return {room:"study",level:"below",householdId};
-  if (tab === "plan") return {room:"kitchen-table",level:"above",householdId};
+  if (tab === "plan") return {room:"kitchen-table",level:"below",householdId};
   if (tab === "play" || tab === "together") return {room:"together",level:"middle",householdId};
   return null;
 }
@@ -3628,8 +3628,8 @@ export function App() {
   );
   const houseFreshness = syncFreshnessDisplay.transportMode === "offline" ? "offline" : syncFreshnessDisplay.tone === "danger" || syncFreshnessDisplay.tone === "warning" ? "stale" : "current";
   const houseCondition = useMemo(
-    () => household && memberId ? deriveHouseCondition(household, { memberId, today, freshness: houseFreshness }) : null,
-    [household, memberId, today, houseFreshness],
+    () => HEARTHSIDE_FLAGS.presentation && view === "household" && household && memberId ? deriveHouseCondition(household, { memberId, today, freshness: houseFreshness }) : null,
+    [household, memberId, today, houseFreshness, view],
   );
   const syncNeedsAttention = syncFreshnessDisplay.tone !== "neutral"
     || syncFreshnessDisplay.transportMode === "offline"
@@ -6335,8 +6335,11 @@ export function App() {
     if(hearthsideToolReturn?.tab!==next)setHearthsideToolReturn(null);
     if (HEARTHSIDE_FLAGS.presentation && next === "together") next = "play";
     if(next === "play" && !PLAY_ENABLED && !HEARTHSIDE_FLAGS.presentation)next="together";
+    const addressedHearthside = HEARTHSIDE_FLAGS.presentation && household && view === "household" && !houseNavigation && next === "play"
+      ? parseHearthsideRoute(window.location.href, household.householdId)
+      : null;
     const nextHouse = HEARTHSIDE_FLAGS.presentation && household && view === "household"
-      ? houseNavigation?.route ?? houseRouteForTab(next, household.householdId)
+      ? houseNavigation?.route ?? (addressedHearthside ? {room:"together",level:togetherLevelForRoom(addressedHearthside.room),householdId:household.householdId} : houseRouteForTab(next, household.householdId))
       : null;
     if (nextHouse) setHouseRoute(nextHouse);
     if (["planner", "timeMachine", "hercules", "play"].includes(next) && !["planner", "timeMachine", "hercules", "play"].includes(tab)) {
@@ -6358,6 +6361,7 @@ export function App() {
       window.dispatchEvent(new PopStateEvent("popstate"));
       return;
     }
+    if (addressedHearthside) return;
     if (nextHouse) {
       const path = housePath(nextHouse);
       const current = `${window.location.pathname}${window.location.search}`;
@@ -6744,6 +6748,7 @@ export function App() {
   }
 
   const hearthsideOpen = HEARTHSIDE_FLAGS.presentation && view === "household" && tab === "play";
+  const houseNavigationActive = HEARTHSIDE_FLAGS.presentation && view === "household";
   const activeHouseRoute=houseRoute??houseRouteForTab(tab,household.householdId)??{room:"home",level:"middle",householdId:household.householdId};
   const workspaceMode = !workspaceEnabled || Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded) ? "hidden" : tab === "hercules" ? "room" : workspaceCompact ? "compact" : "hidden";
 
@@ -7079,8 +7084,8 @@ export function App() {
       {tab === "timeMachine" && <TimeMachine initialPeriod={timeMachineRequest?.monthKey} household={household} memberId={actorId} view={view} today={today} onOpenBooks={() => goTab("ledger")} />}
       {(!HEARTHSIDE_FLAGS.presentation || view !== "household") && PLAY_ENABLED && tab === "play" && <PlayBoundary onExit={()=>{ if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }}><Suspense fallback={<p>Opening Hercules’s room…</p>}><HerculesPlay initialArea={playInitialArea} key={`${environment}:${household.householdId}:${actorId}`} household={household} memberId={actorId} connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen} onTogether={() => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); goTab("together"); }} onGoal={goalId => { if(view!=="household")rememberSession({memberId:session.memberId,view:"household",householdId:household.householdId}); herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:household`; setHerculesSourceFocus({route:"plan",view:"household",label:"Kitty Banks",...(goalId?{goalId}:{})}); goTab("plan"); }}/></Suspense></PlayBoundary>}
       {!HEARTHSIDE_FLAGS.presentation && tab === "together" && view === "household" && <HouseholdTogether household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} scenarioSource={scenarioSource} onOpenPlanner={() => goTab("planner")} onOpenPlay={PLAY_ENABLED ? () => {setPlayInitialArea(undefined);goTab("play");} : undefined} onOpenPlan={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
-      {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
-      {tab === "home" && dashboard && view === "household" && householdHomeV2Enabled() && (
+      {tab === "home" && view === "household" && planSystemV2Enabled() && !householdHomeV2Enabled() && !HEARTHSIDE_FLAGS.presentation && <HouseholdPathHome household={household} memberId={actorId} today={today} onOpen={source => { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:${view}`; setHerculesSourceFocus(source); goTab("plan"); }} />}
+      {tab === "home" && dashboard && view === "household" && (householdHomeV2Enabled() || HEARTHSIDE_FLAGS.presentation) && (
         <HouseholdHome
           key={ledgerRenderScopeKey}
           household={household}
@@ -7089,8 +7094,9 @@ export function App() {
           freshness={syncFreshnessDisplay.transportMode === "offline" ? "offline" : syncFreshnessDisplay.tone === "danger" || syncFreshnessDisplay.tone === "warning" ? "stale" : "current"}
           busy={busy}
           onCommand={runKitchen}
-          housePlace={activeHouseRoute.room==="home"?(activeHouseRoute.level==="above"?"loft":activeHouseRoute.level==="below"?"cellar":"home"):undefined}
-          onHousePlace={place => goTab("home", undefined, {route:{room:"home",level:place==="loft"?"above":place==="cellar"?"below":"middle",householdId:household.householdId},history:"push"})}
+          composition={HEARTHSIDE_FLAGS.presentation ? "queen" : undefined}
+          housePlace={HEARTHSIDE_FLAGS.presentation&&activeHouseRoute.room==="home"?(activeHouseRoute.level==="above"?"loft":activeHouseRoute.level==="below"?"cellar":"home"):undefined}
+          onHousePlace={HEARTHSIDE_FLAGS.presentation ? place => goTab("home", undefined, {route:{room:"home",level:place==="loft"?"above":place==="cellar"?"below":"middle",householdId:household.householdId},history:"push"}) : undefined}
           onGo={(next) => goTab(next)}
           onOpenMemory={id=>{window.history.pushState({hearthTab:'play'},'',hearthsidePath({version:1,householdId:household.householdId,room:'theatre',mode:'remember',object:{kind:'memory',id}}));goTab('play');}}
           onOpenSetup={(destination) => openJourneyDestination(destination === "charter" ? "people" : "fund")}
@@ -7293,7 +7299,8 @@ export function App() {
               return view === "household" ? (
                 <HouseholdBoardMedia household={household} memberId={actorId}>{(boardMedia) => (
                 <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} onOpenFund={() => goTab("ledger")}
-                  houseSurface={activeHouseRoute.room==="kitchen-table"&&activeHouseRoute.level==="below"?"studio":activeHouseRoute.room==="kitchen-table"?"journey":undefined}
+                  houseSurface={activeHouseRoute.room==="kitchen-table" ? activeHouseRoute.level==="below" ? "studio" : activeHouseRoute.level==="middle" ? "work" : "journey" : undefined}
+                  houseWorkCentre={<section className="kitchen-work-centre"><p className="kicker">Kitchen Table</p><h2>Work centre</h2><p>Bring a question to Hercules, or continue the shared Sitdown. The agreement stays downstairs in the Plan Studio.</p><div className="kitchen-work-centre__actions"><button type="button" onClick={() => openLegacyHercules()}>Open Hercules conversation</button><button type="button" onClick={() => goTab("together", "practical")}>Open our shared Sitdown</button></div><p className="muted" role="status">{workspaceEnabled ? "The expanded workspace is available when you choose to open it." : "The expanded workspace is not activated. Opening a conversation here does not start a provider run."}</p></section>}
                   boardMedia={boardMedia}
                   onOpenTimeMachine={monthKey => { setTimeMachineRequest({ monthKey }); goTab("timeMachine"); }}
                   onOpenPlay={PLAY_ENABLED ? () => { setPlayInitialArea(undefined); goTab("play"); } : undefined}
@@ -8998,8 +9005,8 @@ export function App() {
       ) : null}
 
       {!charterTakeoverVisible ? (
-      <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label="Hearth">
-        {kitchenPrimaryNav(view).includes("home") && (
+      <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} aria-label={houseNavigationActive ? "Hearth utilities" : "Hearth"}>
+        {!houseNavigationActive && kitchenPrimaryNav(view).includes("home") && (
         <button
           className={tab === "home" && !adding ? "active" : ""}
           aria-current={tab === "home" && !adding ? "page" : undefined}
@@ -9010,7 +9017,7 @@ export function App() {
           Home
         </button>
         )}
-        {kitchenPrimaryNav(view).includes("calendar") && (
+        {!houseNavigationActive && kitchenPrimaryNav(view).includes("calendar") && (
         <button
           className={tab === "calendar" ? "active" : ""}
           aria-current={tab === "calendar" ? "page" : undefined}
@@ -9021,7 +9028,7 @@ export function App() {
           Calendar
         </button>
         )}
-        {kitchenPrimaryNav(view).includes("shift") && (
+        {!houseNavigationActive && kitchenPrimaryNav(view).includes("shift") && (
         <button
           className={tab === "shift" ? "active" : ""}
           aria-current={tab === "shift" ? "page" : undefined}
@@ -9033,7 +9040,7 @@ export function App() {
           Work
         </button>
         )}
-        {view === "household" && kitchenPrimaryNav(view).includes("ledger") && (
+        {!houseNavigationActive && view === "household" && kitchenPrimaryNav(view).includes("ledger") && (
         <button
           className={tab === "ledger" || tab === "timeMachine" ? "active" : ""}
           aria-current={tab === "ledger" || tab === "timeMachine" ? "page" : undefined}
@@ -9052,7 +9059,7 @@ export function App() {
           onPick={(nextMode) => openAddFor(null, nextMode)}
           onGo={(nextTab) => goTab(nextTab)}
         />
-        {view !== "household" && kitchenPrimaryNav(view).includes("ledger") && (
+        {!houseNavigationActive && view !== "household" && kitchenPrimaryNav(view).includes("ledger") && (
         <button
           className={tab === "ledger" || tab === "timeMachine" ? "active" : ""}
           aria-current={tab === "ledger" || tab === "timeMachine" ? "page" : undefined}
@@ -9063,7 +9070,7 @@ export function App() {
           Books
         </button>
         )}
-        {kitchenPrimaryNav(view).includes("plan") && (
+        {!houseNavigationActive && kitchenPrimaryNav(view).includes("plan") && (
         <button
           className={tab === "plan" ? "active" : ""}
           aria-current={tab === "plan" ? "page" : undefined}
@@ -9072,14 +9079,14 @@ export function App() {
           {view === "household" ? "Our Path" : "Plan"}
         </button>
         )}
-        {kitchenPrimaryNav(view).includes("together") && <button className={tab === "together" || HEARTHSIDE_FLAGS.presentation && tab === "play" ? "active" : ""} aria-current={tab === "together" || HEARTHSIDE_FLAGS.presentation && tab === "play" ? "page" : undefined} onClick={() => goTab("together")}>{HEARTHSIDE_FLAGS.presentation ? HEARTHSIDE_LABEL : "Together"}</button>}
+        {!houseNavigationActive && kitchenPrimaryNav(view).includes("together") && <button className={tab === "together" || HEARTHSIDE_FLAGS.presentation && tab === "play" ? "active" : ""} aria-current={tab === "together" || HEARTHSIDE_FLAGS.presentation && tab === "play" ? "page" : undefined} onClick={() => goTab("together")}>{HEARTHSIDE_FLAGS.presentation ? HEARTHSIDE_LABEL : "Together"}</button>}
         {kitchenPrimaryNav(view).includes("more") && (
         <button
           className={tab === "more" ? "active" : ""}
           aria-current={tab === "more" ? "page" : undefined}
           onClick={() => goTab("more")}
         >
-          More
+          {houseNavigationActive ? "Status" : "More"}
         </button>
         )}
       </nav>

@@ -15,9 +15,12 @@ export function hearthsideFocusId(value:unknown):string {
   return value;
 }
 function returnContext(path: unknown, focusId: unknown, householdId: string): NonNullable<HearthsideRoute['returnContext']> {
-  if (typeof path !== 'string' || path.length > 2000 || !path.startsWith('/hearthside/')) throw Error('HEARTHSIDE_INVALID_RETURN');
+  if (typeof path !== 'string' || path.length > 2000) throw Error('HEARTHSIDE_INVALID_RETURN');
   const url = new URL(path, 'https://hearth.invalid');
-  if (url.origin !== 'https://hearth.invalid' || url.pathname.split('/')[1] !== 'hearthside' || url.searchParams.get('household') !== householdId) throw Error('HEARTHSIDE_INVALID_RETURN');
+  const house = parseHouseRoute(path, householdId);
+  const legacy = url.pathname.split('/')[1] === 'hearthside' && url.searchParams.get('household') === householdId;
+  const canonicalTogether = house?.room === 'together' && url.searchParams.get('household') === householdId;
+  if (url.origin !== 'https://hearth.invalid' || (!legacy && !canonicalTogether)) throw Error('HEARTHSIDE_INVALID_RETURN');
   url.searchParams.delete('from'); url.searchParams.delete('focus');
   return {path:`${url.pathname}${url.search}`,focusId:hearthsideFocusId(focusId)};
 }
