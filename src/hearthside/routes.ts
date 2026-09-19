@@ -1,4 +1,5 @@
 import { HEARTHSIDE_ROOMS, choice, identifier, type HearthsideRoom } from './contracts.ts';
+import { parseHouseRoute, togetherRoomForLevel } from './houseRoutes.ts';
 export const HEARTHSIDE_LABEL = (import.meta.env?.VITE_HEARTHSIDE_LABEL?.trim() || 'Hearthside').slice(0, 60);
 export type HearthsideRoute = {
   version: 1; householdId: string; room: HearthsideRoom;
@@ -36,6 +37,12 @@ export function hearthsidePath(route: HearthsideRoute): string {
 export function parseHearthsideRoute(url: string, selectedHouseholdId: string): HearthsideRoute | null {
   try {
     const u = new URL(url, 'https://hearth.invalid');
+    const house = parseHouseRoute(url, selectedHouseholdId);
+    if (house?.room === 'together') {
+      const addressed = u.searchParams.get('room');
+      const room = addressed && HEARTHSIDE_ROOMS.includes(addressed as HearthsideRoom) ? addressed as HearthsideRoom : togetherRoomForLevel(house.level);
+      return {version:1,householdId:selectedHouseholdId,room,mode:'present'};
+    }
     if (!u.pathname.startsWith('/hearthside')) return null;
     const householdId = identifier(u.searchParams.get('household') ?? selectedHouseholdId);
     if (householdId !== selectedHouseholdId) return null;

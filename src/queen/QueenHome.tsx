@@ -73,6 +73,10 @@ export type QueenHomeProps = {
   clock?: number;
   /** The App's shell readings her world takes off the page (Vision v2 §4.2: nothing but her, the tabs and the nav). Kept behind the Status door, never dropped. */
   shell?: QueenShell;
+  /** The unified house shell can address the Queen's existing three-floor axis. */
+  housePlace?: HousePlace;
+  /** Keeps a person-driven floor change addressable by the unified house shell. */
+  onHousePlace?: (place: HousePlace) => void;
 };
 
 /**
@@ -151,7 +155,7 @@ function readWide(): boolean {
  * button above each. Panels peek; the cellar and the loft are the rooms, and
  * she does not follow you in.
  */
-export function QueenHome({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onOpenBank, identityArt, world = "auto", clock, shell }: QueenHomeProps) {
+export function QueenHome({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onOpenBank, identityArt, world = "auto", clock, shell, housePlace, onHousePlace }: QueenHomeProps) {
   const wide = useSyncExternalStore(subscribeWide, readWide, () => false);
   const [easyRead] = useEasyRead(`${household.environment}:${household.householdId}:${memberId}`);
   const ids = useId();
@@ -489,11 +493,19 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
    * ArrowUp climbs a floor; down descends. The rail does the same thing with a
    * button, so no floor is reachable only by gesture.
    */
-  const travel = useCallback((to: Scene) => {
+  const travel = useCallback((to: Scene, report = true) => {
     setSelectedCharm(null);
-    if (to === "home") { if (scene !== "home") exitRoom(); return; }
-    if (to !== scene) enterRoom(to);
-  }, [scene, exitRoom, enterRoom]);
+    if (to === "home") {
+      if (scene !== "home") exitRoom();
+      if (report && scene !== "home") onHousePlace?.(to);
+      return;
+    }
+    if (to !== scene) {
+      enterRoom(to);
+      if (report) onHousePlace?.(to);
+    }
+  }, [scene, exitRoom, enterRoom, onHousePlace]);
+  useEffect(() => { if (housePlace && housePlace !== scene) travel(housePlace, false); }, [housePlace, scene, travel]);
   const moveFloor = useCallback((move: HouseMove) => {
     const next = houseStep(scene, move);
     if (next !== scene) travel(next);
@@ -512,13 +524,13 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
     setRevealed(false);
     if (open === door) {
       const room = ROOM_FOR[door];
-      if (room) enterRoom(room); else closePanel();
+      if (room) travel(room); else closePanel();
       return;
     }
     returnTo.current = from;
     setOpen(door);
     requestAnimationFrame(() => closeRef.current?.focus({ preventScroll: true }));
-  }, [open, enterRoom, closePanel]);
+  }, [open, travel, closePanel]);
 
   // A tap anywhere off her panel — the rooms, the tabs, the nav — puts it away; her doors toggle it themselves.
   useOutsideClose([panelRef], open !== null, closePanel, { keep: ".queen-bank__button, [aria-controls], .queen-field" });
@@ -538,14 +550,14 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
-      if (scene !== "home") { exitRoom(); return; }
+      if (scene !== "home") { travel("home"); return; }
       if (open) { closePanel(); return; }
       if (selectedCharm) { setSelectedCharm(null); return; }
       if (expanded) { setExpanded(false); queenRef.current?.focus({ preventScroll: true }); }
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [scene, open, expanded, exitRoom, closePanel, selectedCharm]);
+  }, [scene, open, expanded, travel, closePanel, selectedCharm]);
 
   // The sheet: keep pulling past a threshold and you are in the room.
   const onPullStart = (event: PointerEvent<HTMLDivElement>) => {
@@ -565,7 +577,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
     panelRef.current?.classList.remove("is-pulling");
     panelRef.current?.style.removeProperty("--queen-pull");
     const room = open ? ROOM_FOR[open] : undefined;
-    if (dy < -PULL_THRESHOLD && room) enterRoom(room);
+    if (dy < -PULL_THRESHOLD && room) travel(room);
   };
 
   // ---- words for the still: pose is the data, so every channel has a sentence ----
@@ -838,7 +850,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
             {open === "whatnow" && <p>{pulse.detail}</p>}
             <div className="queen-acts">
               {ROOM_FOR[open] && (
-                <button type="button" className="queen-go queen-go--primary" data-door={open} onClick={() => enterRoom(ROOM_FOR[open]!)}>
+                <button type="button" className="queen-go queen-go--primary" data-door={open} onClick={() => travel(ROOM_FOR[open]!)}>
                   {open === "protect" ? lowerRoom : "Build · up to the loft"}
                 </button>
               )}

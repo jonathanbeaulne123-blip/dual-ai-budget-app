@@ -7,6 +7,9 @@ import type {SharedExperience} from './hearthside/contracts.ts';
 import { HearthsideDesignProvider } from './hearthside/DesignProvider.tsx';
 import { HEARTHSIDE_FLAGS } from './hearthside/flags.ts';
 import { HEARTHSIDE_LABEL, hearthsidePath, parseHearthsideRoute } from './hearthside/routes.ts';
+import { HouseShell } from './hearthside/HouseShell.tsx';
+import { housePath, parseHouseRoute, togetherLevelForRoom, type HouseLevel, type HouseRoom, type HouseRoute } from './hearthside/houseRoutes.ts';
+import { deriveHouseCondition } from './core/houseCondition.ts';
 import {readHearthsideToolReturn,type HearthsideToolReturn} from './hearthside/focusedTool.ts';
 import type {SharedReference} from './hearthside/contracts.ts';
 import { feedbackContext, type FeedbackContext } from './workspace/feedback.ts';
@@ -571,6 +574,23 @@ import {
 
 type Tab = AppTab;
 
+function houseRouteForTab(tab: Tab, householdId: string): HouseRoute | null {
+  if (tab === "home") return {room:"home",level:"middle",householdId};
+  if (tab === "planner") return {room:"study",level:"above",householdId};
+  if (tab === "ledger" || tab === "timeMachine") return {room:"study",level:"middle",householdId};
+  if (tab === "calendar") return {room:"study",level:"below",householdId};
+  if (tab === "plan") return {room:"kitchen-table",level:"above",householdId};
+  if (tab === "play" || tab === "together") return {room:"together",level:"middle",householdId};
+  return null;
+}
+
+function tabForHouseRoute(route: HouseRoute): Tab {
+  if (route.room === "home") return "home";
+  if (route.room === "study") return route.level === "above" ? "planner" : route.level === "middle" ? "ledger" : "calendar";
+  if (route.room === "kitchen-table") return "plan";
+  return "play";
+}
+
 function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner" | "timeMachine" | "hercules" | "play"> {
   if (tab === "planner" || tab === "till" || tab === "hercules") return "home";
   const scene = sceneTabFor(tab);
@@ -862,11 +882,23 @@ export function App() {
   sessionRef.current = session;
   const [playInitialArea,setPlayInitialArea]=useState<"dressing"|undefined>();
   const [hearthsideToolReturn,setHearthsideToolReturn]=useState<HearthsideToolReturn|null>(null);
+  const [houseRoute,setHouseRoute]=useState<HouseRoute|null>(null);
   useEffect(() => {
     if (!HEARTHSIDE_FLAGS.presentation || !household || !session || session.view !== "household") return;
     const locate = () => {
-      if (parseHearthsideRoute(window.location.href, household.householdId)) setTab("play");
-      else { const target = window.history.state?.hearthTab; if (["home","plan","calendar","shift","ledger","more","till","planner","timeMachine","hercules"].includes(target)) setTab(target); }
+      const canonical=parseHouseRoute(window.location.href,household.householdId);
+      if(canonical){setHouseRoute(canonical);setTab(tabForHouseRoute(canonical));setWorkspaceCompact(canonical.room==="kitchen-table"&&canonical.level==="middle");return;}
+      const hearthside=parseHearthsideRoute(window.location.href, household.householdId);
+      if (hearthside) {setHouseRoute({room:"together",level:togetherLevelForRoom(hearthside.room),householdId:household.householdId});setTab("play");}
+      else {
+        const target = window.history.state?.hearthTab;
+        if (["home","plan","calendar","shift","ledger","more","till","planner","timeMachine","hercules"].includes(target)) {
+          setTab(target);
+          setHouseRoute(houseRouteForTab(target, household.householdId));
+        } else {
+          setHouseRoute(houseRouteForTab("home", household.householdId));
+        }
+      }
     };
     locate(); window.addEventListener("popstate", locate); return () => window.removeEventListener("popstate", locate);
   }, [environment, household?.householdId, session?.memberId, session?.view]);
@@ -3594,6 +3626,11 @@ export function App() {
     () => sharedHouseholdFreshnessCopy(syncFreshnessDisplay, syncState),
     [syncFreshnessDisplay, syncState],
   );
+  const houseFreshness = syncFreshnessDisplay.transportMode === "offline" ? "offline" : syncFreshnessDisplay.tone === "danger" || syncFreshnessDisplay.tone === "warning" ? "stale" : "current";
+  const houseCondition = useMemo(
+    () => household && memberId ? deriveHouseCondition(household, { memberId, today, freshness: houseFreshness }) : null,
+    [household, memberId, today, houseFreshness],
+  );
   const syncNeedsAttention = syncFreshnessDisplay.tone !== "neutral"
     || syncFreshnessDisplay.transportMode === "offline"
     || syncFreshnessDisplay.transportMode === "auth-required";
@@ -6294,10 +6331,14 @@ export function App() {
       isCurrent: () => householdRef.current?.householdId === household.householdId && sessionRef.current?.memberId === actorId });
   }
 
-  function goTab(next: Tab, requestedBoardSurface?: "practical") {
+  function goTab(next: Tab, requestedBoardSurface?: "practical", houseNavigation?: { route: HouseRoute; history: "push" | "replace" }) {
     if(hearthsideToolReturn?.tab!==next)setHearthsideToolReturn(null);
     if (HEARTHSIDE_FLAGS.presentation && next === "together") next = "play";
     if(next === "play" && !PLAY_ENABLED && !HEARTHSIDE_FLAGS.presentation)next="together";
+    const nextHouse = HEARTHSIDE_FLAGS.presentation && household && view === "household"
+      ? houseNavigation?.route ?? houseRouteForTab(next, household.householdId)
+      : null;
+    if (nextHouse) setHouseRoute(nextHouse);
     if (["planner", "timeMachine", "hercules", "play"].includes(next) && !["planner", "timeMachine", "hercules", "play"].includes(tab)) {
       secondaryOrigin.current = tab;
       secondaryTrigger.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -6317,6 +6358,16 @@ export function App() {
       window.dispatchEvent(new PopStateEvent("popstate"));
       return;
     }
+    if (nextHouse) {
+      const path = housePath(nextHouse);
+      const current = `${window.location.pathname}${window.location.search}`;
+      if (path !== current) {
+        const state = { hearthTab: next, houseRoom: nextHouse.room, houseLevel: nextHouse.level };
+        if (houseNavigation?.history === "push") window.history.pushState(state, "", path);
+        else window.history.replaceState(state, "", path);
+      }
+      return;
+    }
     if (HEARTHSIDE_FLAGS.presentation && next !== "play" && url.pathname.startsWith("/hearthside")) {
       url.pathname = "/"; url.searchParams.delete("household"); url.searchParams.delete("room"); url.searchParams.delete("mode"); url.searchParams.delete("from"); url.searchParams.delete("focus"); url.searchParams.delete("design"); url.searchParams.delete("surface"); url.searchParams.delete("piece");
       window.history.pushState({hearthTab:next}, "", `${url.pathname}${url.search}${url.hash}`);
@@ -6328,6 +6379,17 @@ export function App() {
     const rendered = `${url.pathname}${url.search}${url.hash}`;
     const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (rendered !== current) window.history.replaceState({hearthTab:next}, "", rendered);
+  }
+
+  function goHouse(room:HouseRoom,level:HouseLevel){
+    if(!household)return;
+    const route:HouseRoute={room,level,householdId:household.householdId};
+    const next=tabForHouseRoute(route);
+    if(room==="kitchen-table")setWorkspaceCompact(level==="middle");
+    else setWorkspaceCompact(false);
+    goTab(next, undefined, {route, history:"push"});
+    window.dispatchEvent(new PopStateEvent("popstate"));
+    requestAnimationFrame(()=>document.querySelector<HTMLElement>('.house-shell__levels [aria-current="location"]')?.focus({preventScroll:true}));
   }
 
   function openExperienceWorkspace(experience:SharedExperience){
@@ -6682,6 +6744,7 @@ export function App() {
   }
 
   const hearthsideOpen = HEARTHSIDE_FLAGS.presentation && view === "household" && tab === "play";
+  const activeHouseRoute=houseRoute??houseRouteForTab(tab,household.householdId)??{room:"home",level:"middle",householdId:household.householdId};
   const workspaceMode = !workspaceEnabled || Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded) ? "hidden" : tab === "hercules" ? "room" : workspaceCompact ? "compact" : "hidden";
 
   /** The Queen's world (Vision v2 §4.2, `VITE_QUEENS_NEST`): Our Home is one fixed, edge-to-edge world. Only the
@@ -6942,6 +7005,7 @@ export function App() {
           </button>
         ))}
       </div>
+      {HEARTHSIDE_FLAGS.presentation&&view==="household"&&<HouseShell route={activeHouseRoute} onNavigate={goHouse} condition={houseCondition}/>}
       <div data-app-page="true">
         <div className={hearthsideOpen ? "hearthside-page" : "world-page"}>
       {!hearthsideOpen && <PageWorld page={sceneTabFor(tab)} />}
@@ -7025,6 +7089,8 @@ export function App() {
           freshness={syncFreshnessDisplay.transportMode === "offline" ? "offline" : syncFreshnessDisplay.tone === "danger" || syncFreshnessDisplay.tone === "warning" ? "stale" : "current"}
           busy={busy}
           onCommand={runKitchen}
+          housePlace={activeHouseRoute.room==="home"?(activeHouseRoute.level==="above"?"loft":activeHouseRoute.level==="below"?"cellar":"home"):undefined}
+          onHousePlace={place => goTab("home", undefined, {route:{room:"home",level:place==="loft"?"above":place==="cellar"?"below":"middle",householdId:household.householdId},history:"push"})}
           onGo={(next) => goTab(next)}
           onOpenMemory={id=>{window.history.pushState({hearthTab:'play'},'',hearthsidePath({version:1,householdId:household.householdId,room:'theatre',mode:'remember',object:{kind:'memory',id}}));goTab('play');}}
           onOpenSetup={(destination) => openJourneyDestination(destination === "charter" ? "people" : "fund")}
@@ -7227,6 +7293,7 @@ export function App() {
               return view === "household" ? (
                 <HouseholdBoardMedia household={household} memberId={actorId}>{(boardMedia) => (
                 <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} onOpenFund={() => goTab("ledger")}
+                  houseSurface={activeHouseRoute.room==="kitchen-table"&&activeHouseRoute.level==="below"?"studio":activeHouseRoute.room==="kitchen-table"?"journey":undefined}
                   boardMedia={boardMedia}
                   onOpenTimeMachine={monthKey => { setTimeMachineRequest({ monthKey }); goTab("timeMachine"); }}
                   onOpenPlay={PLAY_ENABLED ? () => { setPlayInitialArea(undefined); goTab("play"); } : undefined}

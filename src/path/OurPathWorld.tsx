@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { DateKey } from "../core/calendar.ts";
 import { monthKeyFromDateKey } from "../core/calendar.ts";
-import { completeMove, memories, movesForChapter, nextMove, openChapterFor, ourRhythm, respondToMove } from "../core/chapters.ts";
+import { memories, movesForChapter, nextMove, openChapterFor, ourRhythm } from "../core/chapters.ts";
+import { ChapterMoveActions } from "../ChapterTaskControls.tsx";
 import { kittyBankBackingStep, kittyBanksInView } from "../core/kittyBanks.ts";
 import { displayedKittyPiece } from "../core/kittyStudio.ts";
 import { pathStones } from "../core/pathStones.ts";
@@ -172,7 +173,7 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, proofWorld }: {
+export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, proofWorld }: {
   household: Household;
   memberId: string;
   today: DateKey;
@@ -207,6 +208,8 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   theme?: import("../theme/scenes.ts").ThemeId;
   /** A Hercules source link aimed at today's Our Path: open the tent so the focus lands where people can see it. */
   openTentFor?: unknown;
+  /** The unified Kitchen Table route addresses the existing journey or its one Plan Studio tent. */
+  houseSurface?: "journey" | "studio";
   /** Proof pages only: see the live world (for stats) and override the idle pause. The app never passes this. */
   proofWorld?: { onWorld?: (world: PathWorld | null) => void; idleMs?: number; paused?: boolean };
 }) {
@@ -277,6 +280,11 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const openTent = useCallback((next: boolean) => { tentMoved.current = true; setTentOpen(next); }, []);
   const tentLink = useMemo(() => ({ leaveTent: () => openTent(false) }), [openTent]);
   useEffect(() => { if (openTentFor) { tentMoved.current = false; setTentOpen(true); } }, [openTentFor]);
+  useEffect(() => {
+    if (!houseSurface) return;
+    tentMoved.current = false;
+    setTentOpen(houseSurface === "studio");
+  }, [houseSurface]);
   // Full screen: the island takes over the whole screen. CSS does the takeover on every device; where the browser
   // has the Fullscreen API the whole page also goes native full screen (the page, not the stage, so rooms and
   // dialogs opened from the island still show above it).
@@ -1033,7 +1041,6 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     if (id.startsWith("move:")) {
       const move = moves.find((m) => `move:${m.id}` === id);
       if (!move) return null;
-      const acked = move.acknowledgedByMemberIds.includes(memberId);
       return {
         eyebrow: "A Move · this Chapter",
         title: move.text,
@@ -1042,12 +1049,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           ...(move.needsAcknowledgment ? [[1, `Acknowledged by ${move.acknowledgedByMemberIds.length} of ${activeMembers.length}`] as [Lantern, string]] : []),
           ...(move.completedAt ? [[2, `Finished ${move.completedAt.slice(0, 10)}`] as [Lantern, string]] : []),
         ],
-        actions: move.state === "done" ? undefined : (
-          <>
-            {move.needsAcknowledgment && !acked && <button type="button" className="primary" disabled={busy} onClick={() => void run((h) => respondToMove(h, { memberId, moveId: move.id, response: "acknowledge" }), "Acknowledged. The stone knows.")}>Acknowledge</button>}
-            <button type="button" disabled={busy || (move.needsAcknowledgment && move.acknowledgedByMemberIds.length < activeMembers.length)} onClick={() => void run((h) => completeMove(h, { memberId, moveId: move.id }), "Done. The stone is lit.")}>Mark done</button>
-          </>
-        ),
+        actions: move.state === "done" ? undefined : <ChapterMoveActions household={household} memberId={memberId} move={move} onCommand={onCommand} busy={busy} />,
       };
     }
     if (id.startsWith("goal:")) {

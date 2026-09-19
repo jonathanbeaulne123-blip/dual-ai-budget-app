@@ -78,7 +78,7 @@ function HearthsideHousehold({household:h,memberId,identity,connected,busy,onCom
   useEffect(()=>{
     const pop=()=>{const next=parseHearthsideRoute(window.location.href,h.householdId);if(next){setRoute(next);setTool(next.surface??null);setBank(null);setLifeStep(null);requestAnimationFrame(()=>document.getElementById(window.history.state?.hearthsideFocus??'hearthside-title')?.focus());}};
     window.addEventListener('popstate',pop);
-    window.history.replaceState({...window.history.state,hearthTab:'play'},'',hearthsidePath(route));
+    if (!window.location.pathname.startsWith('/house/together/')) window.history.replaceState({...window.history.state,hearthTab:'play'},'',hearthsidePath(route));
     // A tool return may mount this lazy room after App's next animation frame.
     // Restore only an explicitly recorded target inside this household surface.
     const arrivalFocus=window.history.state?.hearthsideFocus;

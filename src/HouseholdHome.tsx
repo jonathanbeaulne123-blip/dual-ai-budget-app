@@ -19,6 +19,7 @@ import { KittyNest } from "./kitty/KittyNest.tsx";
 import { KittyBankRoom, type KittyCommandOptions, type KittySubmissionReader } from "./kitty/KittyBankRoom.tsx";
 import { queensNestEnabled } from "./core/planFeature.ts";
 import { QueenHome, type QueenShell } from "./queen/QueenHome.tsx";
+import type { HousePlace } from "./queen/queenHouse.ts";
 import "./household-home.css";
 
 type Run = (fn: (current: Household) => CommitResult, options?: KittyCommandOptions) => Promise<unknown>;
@@ -65,9 +66,11 @@ type HouseholdHomeProps = {
   clock?: number;
   /** The App's shell readings the Queen's world takes off the page and keeps behind her Status door. */
   shell?: QueenShell;
+  housePlace?: HousePlace;
+  onHousePlace?: (place: HousePlace) => void;
 };
 
-function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onReadAcceptedCommand, creationIdentity, onOpenMemory, rehearsal, identityArt, composition, world, clock, shell }: HouseholdHomeProps) {
+function HouseholdHomeSession({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onReadAcceptedCommand, creationIdentity, onOpenMemory, rehearsal, identityArt, composition, world, clock, shell, housePlace, onHousePlace }: HouseholdHomeProps) {
   const [bankRequest, setBankRequest] = useState<{ goalId?: string; bankId?: string } | null>(null);
   const queen = (composition ?? (queensNestEnabled() ? "queen" : "panels")) === "queen";
   const gallery = bankRequest && <KittyBankRoom household={household} view="household" memberId={memberId} busy={busy}
@@ -77,7 +80,7 @@ function HouseholdHomeSession({ household, memberId, today, freshness, busy, onC
   if (queen) {
     return (
       <>
-        <QueenHome household={household} memberId={memberId} today={today} freshness={freshness} busy={busy} onCommand={onCommand} onGo={onGo} onOpenSetup={onOpenSetup} onOpenBank={setBankRequest} identityArt={identityArt} world={world} clock={clock} shell={shell} />
+        <QueenHome household={household} memberId={memberId} today={today} freshness={freshness} busy={busy} onCommand={onCommand} onGo={onGo} onOpenSetup={onOpenSetup} onOpenBank={setBankRequest} identityArt={identityArt} world={world} clock={clock} shell={shell} housePlace={housePlace} onHousePlace={onHousePlace} />
         {gallery}
       </>
     );
