@@ -127,7 +127,9 @@ describe("Our Story — the sample household for the Journey of Life", () => {
     const character = new Map(months.map((row) => [row.key, pathMonthCharacter(row)]));
     const winters = months.filter((row) => /-(01|02)$/.test(row.key) && row.key !== at(-19));
     expect(winters.length).toBeGreaterThanOrEqual(3);
-    for (const row of winters) expect(character.get(row.key)).toBe("uphill");
+    // The lean months inside the money Ritual have no accepted buffer receipts.
+    // Their dated Tasks stay open, so the island must not invent a held rhythm.
+    for (const row of winters) expect(character.get(row.key)).toBe([at(-8), at(-7)].includes(row.key) ? "paused" : "uphill");
     expect(character.get(at(-19))).toBe("storm");
     expect(months.find((row) => row.key === at(-18))?.scores.saved).toBeGreaterThan(0);
     expect([...character.values()].filter((row) => row === "milestone").length).toBeGreaterThanOrEqual(3);
