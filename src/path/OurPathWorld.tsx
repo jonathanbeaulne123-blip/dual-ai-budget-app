@@ -1208,10 +1208,16 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     world.current?.setRoam?.(false);
     roamChanged.current(false);
   }, [full, tentOpen]);
+  // The radar mounts a render after the camera changes hands, so it asks the world where it is rather than
+  // waiting for the next move.
+  useEffect(() => {
+    if (!roaming) return;
+    radar.current?.show(world.current?.roamView?.() ?? null);
+  }, [roaming]);
   // The line that says the camera changed hands is quiet: it says it once and settles into the plain state chip.
   useEffect(() => {
     if (!roamTaken) return;
-    const timer = window.setTimeout(() => setRoamTaken(false), reduced ? 6000 : 4200);
+    const timer = window.setTimeout(() => setRoamTaken(false), reduced ? 8000 : 6000);
     return () => window.clearTimeout(timer);
   }, [roamTaken, reduced]);
 

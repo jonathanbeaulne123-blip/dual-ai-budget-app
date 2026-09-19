@@ -450,18 +450,23 @@ html.path-world-settled [data-path-world-behind] { visibility: hidden !important
 
 /* The corner map and, above it while roaming, the little radar. */
 .path-hud__minicol { grid-area: mini; align-self: end; justify-self: start; display: grid; gap: 8px; justify-items: start; min-width: 0; }
-.path-roam-radar { width: 96px; height: 96px; padding: 0; border-radius: 50%; border: 1px solid var(--hud-edge); background: var(--hud-glass); box-shadow: var(--hud-shadow); -webkit-backdrop-filter: blur(12px) saturate(1.25); backdrop-filter: blur(12px) saturate(1.25); display: grid; place-items: center; cursor: crosshair; overflow: hidden; }
+/* The corner map's own `grid-area: mini` names a line this column does not have: place it plainly instead. */
+.path-hud__minicol > * { grid-area: auto; }
+.path-roam-radar { width: 104px; height: 104px; padding: 0; border-radius: 50%; border: 1px solid var(--hud-edge); background: var(--hud-glass); box-shadow: var(--hud-shadow); -webkit-backdrop-filter: blur(12px) saturate(1.25); backdrop-filter: blur(12px) saturate(1.25); display: grid; place-items: center; cursor: crosshair; overflow: hidden; }
 .path-roam-radar svg { width: 100%; height: 100%; display: block; }
 .path-roam-radar:focus-visible { outline: 3px solid var(--theme-accent, var(--copper)); outline-offset: 2px; }
-.path-roam-radar__ring { fill: none; stroke: color-mix(in srgb, var(--ink) 22%, transparent); stroke-width: 1; stroke-dasharray: 3 4; }
-.path-roam-radar__land { fill: color-mix(in srgb, var(--ink) 15%, transparent); stroke: color-mix(in srgb, var(--ink) 26%, transparent); stroke-width: 0.7; }
-.path-roam-radar__land.is-home { fill: color-mix(in srgb, var(--theme-second, #5b7a52) 38%, transparent); }
-.path-roam-radar__cone { fill: color-mix(in srgb, var(--theme-accent, var(--copper)) 30%, transparent); stroke: color-mix(in srgb, var(--theme-accent, var(--copper)) 70%, transparent); stroke-width: 0.8; }
-.path-roam-radar__eye { fill: var(--ink); stroke: var(--paper); stroke-width: 1.2; }
-.path-roam-radar__us-halo { fill: color-mix(in srgb, var(--theme-accent, var(--copper)) 30%, transparent); }
-.path-roam-radar__us-dot { fill: var(--theme-accent, var(--copper)); stroke: var(--paper); stroke-width: 1; }
+.path-roam-radar__sea { fill: color-mix(in srgb, var(--ink) 9%, transparent); }
+.path-roam-radar__ring { fill: none; stroke: color-mix(in srgb, var(--ink) 34%, transparent); stroke-width: 1.1; stroke-dasharray: 3 4; }
+.path-roam-radar__land { fill: color-mix(in srgb, var(--ink) 34%, transparent); stroke: color-mix(in srgb, var(--ink) 62%, transparent); stroke-width: 0.9; }
+.path-roam-radar__land.is-home { fill: color-mix(in srgb, var(--theme-second, #5b7a52) 78%, transparent); stroke: color-mix(in srgb, var(--ink) 70%, transparent); }
+.path-roam-radar__cone { fill: color-mix(in srgb, var(--theme-accent, var(--copper)) 42%, transparent); stroke: color-mix(in srgb, var(--theme-accent, var(--copper)) 90%, transparent); stroke-width: 1; }
+.path-roam-radar__eye { fill: var(--ink); stroke: var(--paper); stroke-width: 1.4; }
+.path-roam-radar__us-halo { fill: none; stroke: var(--paper); stroke-width: 1.6; }
+.path-roam-radar__us-dot { fill: #d8402f; stroke: var(--paper); stroke-width: 1.2; }
+.path-world--taylor .path-roam-radar__us-dot { fill: #b2306a; }
+.path-world--newfoundland .path-roam-radar__us-dot { fill: #a33751; }
 
-@media (max-width: 1099px) { .path-roam-radar { width: 84px; height: 84px; } }
+@media (max-width: 1099px) { .path-roam-radar { width: 92px; height: 92px; } }
 @media (max-width: 719px) {
   .path-hud__roamer-words { display: none !important; }
   .path-hud__roamer { width: 44px; padding: 0; justify-content: center; }
@@ -469,12 +474,14 @@ html.path-world-settled [data-path-world-behind] { visibility: hidden !important
   .path-hud__roam-state { font-size: 12.5px; }
   .path-hud__roam-back { padding: 0 13px; font-size: 13px; }
   .path-hud:has(.path-hud__roam) .path-hud__notice { top: calc(max(10px, env(safe-area-inset-top)) + 104px); }
-  .path-hud__hint { left: 0; width: min(330px, calc(100vw - 20px)); }
-  .path-roam-radar { width: 72px; height: 72px; }
+  /* The state chip sits under the corner row on phones: the hint drops below it rather than across it. */
+  .path-hud__hint { left: 0; top: calc(100% + 56px); width: min(330px, calc(100vw - 20px)); padding: 12px 14px 10px; }
+  .path-hud__hint ul { font-size: 12.5px; }
+  .path-roam-radar { width: 84px; height: 84px; }
   .path-hud__minicol { gap: 6px; }
 }
 @media (max-width: 359px) {
-  .path-roam-radar { width: 64px; height: 64px; }
+  .path-roam-radar { width: 76px; height: 76px; }
   .path-hud__roam { max-width: calc(100% - 12px); }
 }
 @media (prefers-reduced-motion: reduce) { .path-hud__roam, .path-hud__hint, .path-roam-radar { animation: none !important; transition: none !important; } }
@@ -482,6 +489,7 @@ html.path-world-settled [data-path-world-behind] { visibility: hidden !important
   .path-hud :is(.path-hud__roamer, .path-hud__roam, .path-hud__roam-back, .path-roam-radar) { border: 1px solid CanvasText; background: Canvas; color: CanvasText; forced-color-adjust: auto; }
   .path-hud__roamer[aria-pressed="true"] { background: Highlight; color: HighlightText; border-color: HighlightText; }
   .path-hud__hint { border: 1px solid CanvasText; background: Canvas; }
+  .path-roam-radar__sea { fill: Canvas; }
   .path-roam-radar__ring, .path-roam-radar__land { stroke: CanvasText; fill: Canvas; }
   .path-roam-radar__cone { fill: Highlight; stroke: CanvasText; }
   .path-roam-radar__eye, .path-roam-radar__us-dot { fill: CanvasText; stroke: Canvas; }

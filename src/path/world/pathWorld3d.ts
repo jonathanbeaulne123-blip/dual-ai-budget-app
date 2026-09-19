@@ -2294,6 +2294,10 @@ export function createPathWorld(host: HTMLElement, options: {
   let width = 0, height = 0;
   let level: PathLevel = 0;
   const levelOf = (r: number): PathLevel => (r > 110 ? 0 : r > 62 ? 1 : r > 30 ? 2 : 3);
+  /** The tilt the latched camera actually uses: its own, plus the lean it takes on as it comes in close. */
+  function latchedPhi(): number {
+    return Math.max(0.35, Math.min(1.35, cam.phi + (1 - Math.min(1, cam.r / 120)) * 0.35));
+  }
   function place() {
     if (roaming) {
       // Free roam (D-286): the tilt is exactly the one you chose, and the eye clears whatever is under it — the sea,
@@ -2303,7 +2307,7 @@ export function createPathWorld(host: HTMLElement, options: {
       camera.position.set(eye.x, eye.y, eye.z);
       camera.lookAt(cam.tx, eye.lookY, cam.tz);
     } else {
-      const phi = Math.max(0.35, Math.min(1.35, cam.phi + (1 - Math.min(1, cam.r / 120)) * 0.35));
+      const phi = latchedPhi();
       const y = cam.r * Math.cos(phi), h = cam.r * Math.sin(phi);
       const ground = groundUnder(cam.tx, cam.tz);
       camera.position.set(cam.tx + h * Math.sin(cam.theta), Math.max(ground + 3, y + ground), cam.tz + h * Math.cos(cam.theta));
@@ -2366,8 +2370,11 @@ export function createPathWorld(host: HTMLElement, options: {
     boost = false;
     readRoamInput();
     roamRested = true;
-    // Taking the camera keeps the exact view you had; the ring it may roam simply widens around you.
-    if (on) Object.assign(cam, adoptRoam(cam, roamRing()));
+    // Taking the camera keeps the exact view you had — including the lean the latched camera takes on up close,
+    // which becomes the free camera's own tilt — and the ring it may roam simply widens around you.
+    if (on) { cam.phi = latchedPhi(); Object.assign(cam, adoptRoam(cam, roamRing())); }
+    // Handing it back: the tilt goes back to the plain one the latched camera leans from.
+    else cam.phi = Math.max(0.35, Math.min(1.3, cam.phi - (1 - Math.min(1, cam.r / 120)) * 0.35));
     options.onRoam?.(on, why);
     if (on) reportRoam(true);
     else options.onRoamView?.(null);
@@ -2585,6 +2592,7 @@ export function createPathWorld(host: HTMLElement, options: {
     }
     // Free roam (D-286): the camera the person is holding. A trip they asked for (a pick from either view) runs
     // first and is not interrupted; once it lands, roaming carries on from wherever it left them.
+    if (roaming && fly) { roamRested = false; reportRoam(); }
     if (roaming && !fly) {
       const asking = roamInputActive(roamInput);
       if (asking || roamMoving(roamMotion)) {

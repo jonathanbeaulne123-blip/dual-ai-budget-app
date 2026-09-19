@@ -19,11 +19,24 @@ export type PathRoamRadarHandle = {
 
 const BOX = 100;
 const PAD = 9;
+const EDGE = BOX / 2 - PAD;
 
-type Land = { radius: number; islands: { x: number; z: number; r: number }[]; us: { x: number; z: number } | null };
+type Pose = { mx: number; mz: number; turn: number; cone: string };
+type Land = { radius: number; span: number; islands: { x: number; z: number; r: number }[]; us: { x: number; z: number } | null; pose: Pose };
 
 const signature = (view: PathRoamView) =>
   `${view.radius.toFixed(0)}|${view.us ? `${view.us.x.toFixed(0)},${view.us.z.toFixed(0)}` : "-"}|${view.islands.map((i) => `${i.x.toFixed(0)},${i.z.toFixed(0)},${i.r.toFixed(0)}`).join(";")}`;
+
+/**
+ * The map is drawn to the land, not to the roam ring: the islands fill the disc and stay legible. It changes only
+ * when the island does, so the camera's mark can move without anything being redrawn.
+ */
+function spanOf(view: PathRoamView): number {
+  let far = 60;
+  for (const island of view.islands) far = Math.max(far, Math.hypot(island.x, island.z) + island.r);
+  if (view.us) far = Math.max(far, Math.hypot(view.us.x, view.us.z) + 8);
+  return far * 1.1;
+}
 
 /** The cone the camera sees, drawn pointing straight down the map before it is turned. */
 function conePath(half: number, reach: number): string {
@@ -46,16 +59,26 @@ export const PathRoamRadar = forwardRef<PathRoamRadarHandle, {
     show(view) {
       if (!view) { sig.current = ""; last.current = null; setLand(null); return; }
       const next = signature(view);
-      if (next !== sig.current) {
-        sig.current = next;
-        setLand({ radius: view.radius, islands: view.islands, us: view.us });
-      }
-      const k = (BOX / 2 - PAD) / Math.max(1, view.radius);
+      const span = spanOf(view);
+      const k = EDGE / Math.max(1, span);
       scale.current = k;
       last.current = { x: view.x, z: view.z };
-      const turn = (-view.heading * 180) / Math.PI;
-      here.current?.setAttribute("transform", `translate(${(BOX / 2 + view.x * k).toFixed(2)} ${(BOX / 2 + view.z * k).toFixed(2)}) rotate(${turn.toFixed(1)})`);
-      cone.current?.setAttribute("d", conePath(view.cone / 2, Math.max(7, view.reach * k)));
+      // Roamed out past the land, the camera's mark rides the rim rather than leaving the map.
+      let mx = view.x * k, mz = view.z * k;
+      const out = Math.hypot(mx, mz);
+      if (out > EDGE) { mx *= EDGE / out; mz *= EDGE / out; }
+      const pose: Pose = {
+        mx: BOX / 2 + mx, mz: BOX / 2 + mz, turn: (-view.heading * 180) / Math.PI,
+        cone: conePath(view.cone / 2, Math.max(9, Math.min(EDGE * 1.6, view.reach * k))),
+      };
+      // The first view draws the map; every one after it only moves the camera's mark.
+      if (next !== sig.current) {
+        sig.current = next;
+        setLand({ radius: view.radius, span, islands: view.islands, us: view.us, pose });
+        return;
+      }
+      here.current?.setAttribute("transform", `translate(${pose.mx.toFixed(2)} ${pose.mz.toFixed(2)}) rotate(${pose.turn.toFixed(1)})`);
+      cone.current?.setAttribute("d", pose.cone);
     },
   }), []);
 
@@ -74,8 +97,9 @@ export const PathRoamRadar = forwardRef<PathRoamRadarHandle, {
   }, [land, onGo]);
 
   if (!land) return null;
-  const k = (BOX / 2 - PAD) / Math.max(1, land.radius);
+  const k = EDGE / Math.max(1, land.span);
   const at = (v: number) => BOX / 2 + v * k;
+  const ring = Math.min(EDGE + 3, land.radius * k);
   return (
     <button
       type="button"
@@ -84,12 +108,13 @@ export const PathRoamRadar = forwardRef<PathRoamRadarHandle, {
       aria-label="Island map. Tap anywhere on it to fly the camera there; press Enter to fly back over the two of you."
     >
       <svg viewBox={`0 0 ${BOX} ${BOX}`} aria-hidden="true" focusable="false">
-        <circle className="path-roam-radar__ring" cx={BOX / 2} cy={BOX / 2} r={BOX / 2 - PAD + 3} />
+        <circle className="path-roam-radar__sea" cx={BOX / 2} cy={BOX / 2} r={EDGE + 6} />
+        <circle className="path-roam-radar__ring" cx={BOX / 2} cy={BOX / 2} r={ring} />
         {land.islands.map((island, i) => (
-          <circle key={i} className={`path-roam-radar__land${i === 0 ? " is-home" : ""}`} cx={at(island.x)} cy={at(island.z)} r={Math.max(2.2, island.r * k)} />
+          <circle key={i} className={`path-roam-radar__land${Math.hypot(island.x, island.z) < 1 ? " is-home" : ""}`} cx={at(island.x)} cy={at(island.z)} r={Math.max(3.4, island.r * k)} />
         ))}
-        <g ref={here} className="path-roam-radar__here">
-          <path ref={cone} className="path-roam-radar__cone" d={conePath(0.5, 18)} />
+        <g ref={here} className="path-roam-radar__here" transform={`translate(${land.pose.mx.toFixed(2)} ${land.pose.mz.toFixed(2)}) rotate(${land.pose.turn.toFixed(1)})`}>
+          <path ref={cone} className="path-roam-radar__cone" d={land.pose.cone} />
           <circle className="path-roam-radar__eye" cx="0" cy="0" r="3.4" />
         </g>
         {land.us && (
