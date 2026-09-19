@@ -2,6 +2,7 @@ import {applySharedLifeRestoreIntent,type RestoreDesignAccess} from '../hearthsi
 import {hasChapterAgreementData,isChapterAgreementCommand,assertChapterTaskGraph} from "../core/chapterAuthority.ts";
 import {restoreCanonicalBankArtwork,type CanonicalBankArtwork} from '../hearthside/creativeContinuity.ts';
 import { hasHearthsideData,hearthsideOperationalCollection } from '../hearthside/commands.ts';
+import { hasPersonalLifeData } from '../hearthside/personalLifeCommands.ts';
 import { WIRE_LIMIT } from './wire.ts';
 import { hasKittyNestData } from "../core/kittyNestDesigns.ts";
 import {hasPlayData,isPlayStep} from '../core/herculesPlay.ts';
@@ -126,6 +127,9 @@ export async function prepareCommand(
   if ((hasHearthsideData(current) || hearthsideStep) && command.hearthsideVersion !== 1) throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve shared experiences.');
   if(current.hearthside?.encounters?.length&&command.hearthsideEncounterVersion!==1)throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve shared encounters.');
   if (hearthsideStep && command.steps.length !== 1) throw Error('HEARTHSIDE_SINGLE_OPERATION_REQUIRED');
+  const personalLifeStep = command.steps.some(s => s.kind === 'commitPersonalLife');
+  if ((hasPersonalLifeData(current) || personalLifeStep) && command.personalLifeVersion !== 1) throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve your private wishes and memories.');
+  if (personalLifeStep && command.steps.length !== 1) throw Error('PERSONAL_LIFE_SINGLE_OPERATION_REQUIRED');
   const playStep=command.steps.some(s=>s.kind==='commitCompanionPlay');
   if((playStep||hasPlayData(current)||command.steps.some(isPlayStep))&&command.companionPlayVersion!==1)throw Error('CLIENT_RELOAD_REQUIRED: Reload Hearth to preserve Play.');
   if(playStep&&command.steps.length!==1)throw Error('PLAY_SINGLE_OPERATION_REQUIRED');
@@ -280,7 +284,9 @@ export async function prepareCommand(
         command.id,
         scope,
       );
-    if (!['commitHearthside','commitSharedLifeRestore'].includes(step.kind) && canonical(current.hearthside ?? null) !== canonical(result.household.hearthside ?? null)) throw Error('HEARTHSIDE_OPERATION_REQUIRED');
+    if (!['commitHearthside','commitPersonalLife','commitSharedLifeRestore'].includes(step.kind) && canonical(current.hearthside ?? null) !== canonical(result.household.hearthside ?? null)) throw Error('HEARTHSIDE_OPERATION_REQUIRED');
+    if (step.kind !== 'commitPersonalLife' && canonical(current.personalLife ?? null) !== canonical(result.household.personalLife ?? null)) throw Error('PERSONAL_LIFE_OPERATION_REQUIRED');
+    if (step.kind === 'commitPersonalLife' && canonical({...current,personalLife:null,hearthside:null})!==canonical({...result.household,personalLife:null,hearthside:null})) throw Error('PERSONAL_LIFE_NON_FINANCIAL_ONLY');
     if (step.kind === 'commitSharedLifeRestore'&&canonical({...current,hearthside:null})!==canonical({...result.household,hearthside:null}))throw Error('HEARTHSIDE_NON_FINANCIAL_ONLY');
     if (step.kind === 'commitHearthside'){
       const collection=hearthsideOperationalCollection((args[0] as {operation?:unknown})?.operation);

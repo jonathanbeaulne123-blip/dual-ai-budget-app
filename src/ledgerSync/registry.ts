@@ -1,5 +1,6 @@
 import {commitSharedLifeRestore} from '../hearthside/sharedLifeRestore.ts';
 import { commitHearthside } from '../hearthside/commands.ts';
+import { commitPersonalLife } from '../hearthside/personalLifeCommands.ts';
 import { saveKittyNestDesign } from "../core/kittyNestDesigns.ts";
 import {commitCompanionPlay} from '../core/herculesPlay.ts';
 import { executeHerculesAction, cancelHerculesSubmission } from '../core/herculesExecution.ts';
@@ -34,7 +35,7 @@ const functions = {
   commitCompanion,
   commitCompanionGallery,
   commitCompanionPlay,
-  commitHearthside, commitSharedLifeRestore,
+  commitHearthside, commitPersonalLife, commitSharedLifeRestore,
   ...rehearsal,
   editRitual: chapterCommands.editRitual, acknowledgeRitualChange: chapterCommands.acknowledgeRitualChange, setRitualParticipation: chapterCommands.setRitualParticipation, adoptChapterTasks: chapterCommands.adoptChapterTasks, prepareRitualOccurrence: chapterCommands.prepareRitualOccurrence,
   openChapter: chapterCommands.openChapter, addRitual: chapterCommands.addRitual, recordRitualHeld: chapterCommands.recordRitualHeld, setRitualState: chapterCommands.setRitualState,
@@ -105,6 +106,7 @@ register("commitCompanion", ["scope.memberId"]);
 register("commitCompanionGallery", ["scope.memberId"]);
 register("commitCompanionPlay", ["scope.memberId"]);
 register("commitHearthside", ["scope.memberId"]);
+register("commitPersonalLife", ["scope.memberId"]);
 register("commitSharedLifeRestore", ["scope.memberId"]);
 register("forceUnlockOnboarding", ["memberId", "createdBy"]);
 register("saveBoardTask removeBoardTask saveBoardMilestone removeBoardMilestone setBoardPhoto", ["memberId"]);

@@ -50,6 +50,10 @@ it('accepts simultaneous creative operations in SQLite, migrates legacy artwork 
     expect((await post('design',{version:1,kind:'read',designId:'DESIGN-private'},'MEM-002')).status).toBe(409);
     expect((await post('design',{version:1,kind:'read',designId:'DESIGN-bank'},'MEM-outsider')).status).toBe(403);
     await design({kind:'create',designId:'DESIGN-free',bankId:null});
+    const privateFree=document(await design({kind:'create',designId:'DESIGN-personal-free',bankId:null,audience:'personal'}));
+    expect(privateFree.scope.ownerMemberId).toBe('MEM-001');
+    expect((await post('design',{version:1,kind:'read',designId:'DESIGN-personal-free'},'MEM-002')).status).toBe(409);
+    await design({kind:'operate',operation:{version:1,designId:'DESIGN-personal-free',pieceId:'PIECE-personal-free',id:'OP-personal-create',gestureId:'GESTURE-personal-create',kind:'create-piece',base:'cream'}});
     const common={version:1 as const,designId:'DESIGN-free',pieceId:'PIECE-free'};
     await design({kind:'operate',operation:{...common,id:'OP-create',gestureId:'GESTURE-create',kind:'create-piece',base:'cream'}});
     const stroke=(id:string,color:string):KittyDesignOperation=>({...common,id,gestureId:'GESTURE-'+id,kind:'append-stroke',expectedEditEpoch:0,surfaceRevision:0,stroke:{part:'body',tool:'brush',color,size:12,opacity:1,mirror:false,pts:[.2,.2,.3,.3]}});
@@ -74,10 +78,14 @@ it('accepts simultaneous creative operations in SQLite, migrates legacy artwork 
     expect(next.shared.goals.find(g=>g.id===bankId)?.envelope?.studio).toBeUndefined();
     expect(next.shared.goals.find(g=>g.id===bankId)?.envelope?.designRef?.designId).toBe('DESIGN-bank');
     expect(JSON.stringify(next.shared)).not.toContain('DESIGN-private');expect(JSON.stringify(next.shared)).not.toContain('OP-one');expect(JSON.stringify(next)).not.toContain('LETTER-private');
+    expect(JSON.stringify(next.shared)).not.toContain('DESIGN-personal-free');
+    expect(next.personal?.personalLife?.designs.find(row=>row.designId==='DESIGN-personal-free')).toEqual({version:1,designId:'DESIGN-personal-free',revision:1,pieceIds:['PIECE-personal-free']});
     const restored=await post('restore',{},'MEM-001',true);expect(restored.status,await restored.text()).toBe(200);
     expect(document(await design({kind:'read',designId:'DESIGN-free'},'MEM-002',true))).toEqual(accepted);
     expect(document(await design({kind:'read',designId:'DESIGN-bank'},'MEM-002',true))).toEqual(migrated);
     expect((await post('design',{version:1,kind:'read',designId:'DESIGN-private'},'MEM-002',true)).status).toBe(409);
+    expect((await post('design',{version:1,kind:'read',designId:'DESIGN-personal-free'},'MEM-002',true)).status).toBe(409);
+    expect(document(await design({kind:'read',designId:'DESIGN-personal-free'},'MEM-001',true)).scope.ownerMemberId).toBe('MEM-001');
     expect(await (await post('vault-accept',publication,'MEM-001',true)).json()).toEqual(acceptance);
     const replay=document(await design({kind:'operate',operation:one},'MEM-001',true));expect(replay.operations).toEqual(accepted.operations);
   } finally {await mf.dispose();}

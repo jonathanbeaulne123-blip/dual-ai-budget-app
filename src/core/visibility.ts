@@ -75,6 +75,10 @@ function activitySafeForMember(household: Household, memberId: string) {
     ...(household.shiftBibles ?? []).filter((row) => row.memberId !== memberId).map((row) => row.id),
     ...(household.fundPrivate?.bankBindings ?? []).filter((row) => row.memberId !== memberId).map((row) => row.id),
     ...(household.fundPrivate?.reconciliations ?? []).filter((row) => row.memberId !== memberId).map((row) => row.id),
+    ...(household.personalLife?.ownerMemberId!==memberId ? household.personalLife?.wishes.flatMap(row=>[row.id,row.title,row.intention])??[] : []),
+    ...(household.personalLife?.ownerMemberId!==memberId ? household.personalLife?.experiences.flatMap(row=>[row.id,row.title,row.intention])??[] : []),
+    ...(household.personalLife?.ownerMemberId!==memberId ? household.personalLife?.notes.flatMap(row=>[row.id,row.text])??[] : []),
+    ...(household.personalLife?.ownerMemberId!==memberId ? household.personalLife?.memories.flatMap(row=>[row.id,row.title,row.recollection])??[] : []),
   ].filter((token) => token.length >= 4);
   return (household.activity ?? []).filter((row) => !partnerPrivateTokens.some((token) => row.summary.includes(token)));
 }
@@ -114,6 +118,7 @@ export function householdForAiDisclosure(
     ...contextual,
     companionProfile: undefined,
     hearthside: undefined,
+    personalLife: undefined,
     // Personal account IDs remain available so the member's Personal journal
     // still compiles, but private bank/product metadata never enters the model
     // disclosure projection.
@@ -177,6 +182,7 @@ export function householdForHerculesContext(
     ...scoped,
     companionProfile: undefined,
     hearthside: undefined,
+    personalLife: undefined,
     accountHistoryReviews: [],
     accountHistoryApprovals: [],
     activity: activitySafeForMember(household, memberId),
@@ -275,6 +281,7 @@ export function householdForView(household: Household, memberId: string, view: L
   return {
     ...household,
     companionProfile: household.companionProfile?.scope.memberId === memberId ? household.companionProfile : undefined,
+    personalLife: view==='personal'&&household.personalLife?.ownerMemberId===memberId?household.personalLife:undefined,
     accountOpeningCheckpoints: (household.accountOpeningCheckpoints ?? []).filter(row => view === "household" ? row.visibility === "household" : row.visibility === "personal" && row.ownerMemberId === memberId),
     accountHistoryApprovals: (household.accountHistoryApprovals ?? []).filter(row => view === "household" ? row.visibility === "household" : row.visibility === "personal" && row.ownerMemberId === memberId),
     accountHistoryReviews: (household.accountHistoryReviews ?? []).filter(row => view === "household" ? row.visibility === "household" : row.visibility === "personal" && row.ownerMemberId === memberId),

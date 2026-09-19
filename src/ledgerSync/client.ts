@@ -17,6 +17,7 @@ import { previewFor, visiblePreviews, type PendingPreview, type RejectedEntry } 
 import { IncrementalBooksGuard } from "../core/booksValidation.ts";
 import type { Household, CommitResult } from "../core/types.ts";
 import { assembleHousehold } from "../core/sync.ts";
+import { hasPersonalLifeData } from '../hearthside/personalLifeCommands.ts';
 import { validatedLedgerBooksStatus } from "./validatedBooks.ts";
 import type { BooksStatus } from "../ledger/engine.ts";
 import { financialAuditHash } from "../core/commandIdentity.ts";
@@ -76,6 +77,7 @@ export class LedgerSyncClient {
   private ready = false;
   private companionProfileVersion = 0;
   private hearthsideVersion = 0;
+  private personalLifeVersion = 0;
   private kittyDesignVersion = 0;
   private nestDesignVersion=0;
   private companionPlayVersion = 0;
@@ -250,6 +252,7 @@ export class LedgerSyncClient {
               }
               this.companionProfileVersion = message.companionProfileVersion === 1 ? 1 : 0;
               this.hearthsideVersion = message.hearthsideVersion === 1 ? 1 : 0;
+              this.personalLifeVersion = message.personalLifeVersion === 1 ? 1 : 0;
               this.nestDesignVersion=message.nestDesignVersion===1?1:0;
               this.kittyDesignVersion = message.kittyDesignVersion === 1 ? 1 : 0;
               this.companionPlayVersion = message.companionPlayVersion === 1 ? 1 : 0;
@@ -541,6 +544,7 @@ export class LedgerSyncClient {
       throw new LedgerCommandRejectedError("HERCULES_UPDATE_REQUIRED: Connect to an updated Hearth before saving suggestions.");
     }
     if ((hasHearthsideData(candidate) || capture.steps.some(s => s.kind === 'commitHearthside')) && (!this.ready || this.hearthsideVersion !== 1)) throw new LedgerCommandRejectedError('HEARTHSIDE_UPDATE_REQUIRED: Connect to the updated Hearth to save this experience.');
+    if ((hasPersonalLifeData(candidate) || capture.steps.some(s => s.kind === 'commitPersonalLife')) && (!this.ready || this.personalLifeVersion !== 1)) throw new LedgerCommandRejectedError('PERSONAL_LIFE_UPDATE_REQUIRED: Connect to the updated Hearth to save private wishes or memories.');
     if ((candidate.hearthside?.designs?.length || candidate.goals.some(g => g.envelope?.designRef)) && (!this.ready || this.kittyDesignVersion !== 1)) throw new LedgerCommandRejectedError('KITTY_DESIGN_UPDATE_REQUIRED: Connect to the updated Hearth to preserve collaborative artwork.');
     if ((hasPlayData(candidate) || capture.steps.some(isPlayStep)) && (!this.ready || this.companionPlayVersion!==1)) throw new LedgerCommandRejectedError('PLAY_UPDATE_REQUIRED: Connect to the updated Hearth to save this room.');
     const replica=this.replica;

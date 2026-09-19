@@ -5,7 +5,8 @@ import { decodePreparedExperienceArtifact, type ArtifactPublication, type Artifa
 /** Authority supplies acceptedContext after its authenticated household membership check. */
 export function createExperienceWorkspaceProject(scope:ArtifactPublicationScope,id:string,input:WorkspaceExperienceContext,confirmDigest:string,acceptedContext:WorkspaceExperienceContext,now:string):WorkspaceProject {
   const context=decodeWorkspaceExperienceContext(input), accepted=decodeWorkspaceExperienceContext(acceptedContext);
-  if(workspaceExperienceProjectId(scope,context.id)!==id)throw new Error('EXPERIENCE_PROJECT_SCOPE_MISMATCH');
+  if(context.version===2&&context.ownerMemberId!==scope.memberId)throw new Error('EXPERIENCE_PROJECT_SCOPE_MISMATCH');
+  if(workspaceExperienceProjectId(scope,context.id,context.version===2?'personal':'household')!==id)throw new Error('EXPERIENCE_PROJECT_SCOPE_MISMATCH');
   if(workspaceExperienceDigest(context)!==confirmDigest || workspaceExperienceDigest(accepted)!==confirmDigest)throw new Error('EXPERIENCE_CONTEXT_CHANGED');
   const project=createWorkspaceProject(id,context.title.slice(0,180),scope.memberId,now);project.experience=bindWorkspaceExperience(context);return project;
 }
@@ -23,7 +24,7 @@ export interface WorkspaceHearthsideAuthority {
 }
 export function adoptReviewedExperienceCopy(project:WorkspaceProject,copy:PreparedExperienceArtifact,command:Extract<WorkspaceCommand,{type:'adopt-experience-copy'}>,expectedRevision:number,now:string):WorkspaceProject {
   const selected=decodePreparedExperienceArtifact(copy);
-  if(!project.experience || selected.experienceId!==project.experience.context.id || selected.state!=='active')throw new Error('ARTIFACT_SOURCE_FORBIDDEN');
+  if(!project.experience || project.experience.context.version===2 || selected.experienceId!==project.experience.context.id || selected.state!=='active')throw new Error('ARTIFACT_SOURCE_FORBIDDEN');
   if(command.copyId!==selected.id || command.contentDigest!==selected.contentDigest)throw new Error('DISCLOSURE_REVIEW_CHANGED');
   const result=applyWorkspaceCommand(project,{type:'create-artifact',id:command.id,title:selected.title,format:selected.format,content:selected.content},expectedRevision,now);
   result.evidence.push({id:command.id,origin:'user-estimate',scope:'household',title:'Reviewed shared copy: '+selected.title,source:'shared-artifact:'+selected.id,sourceVersion:selected.contentDigest,observedAt:now});

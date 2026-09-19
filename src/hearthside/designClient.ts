@@ -4,10 +4,10 @@ import type { Environment } from '../core/types.ts';
 import { acceptKittyDesignOperation, decodeKittyDesignDocument, type KittyDesignReceipt } from './design.ts';
 import { canonicalDesignJSON, decodeKittyDesignOperation, designArray, designId, designRecord, type KittyAcceptedDesignOperation, type KittyDesignDocument, type KittyDesignOperation } from './designContracts.ts';
 
-export type DesignRequest={version:1;kind:'create';designId:string;bankId:string|null;nestSource?:NestDesignSource}|{version:1;kind:'operate';operation:KittyDesignOperation};
+export type DesignRequest={version:1;kind:'create';designId:string;bankId:string|null;audience?:'personal';nestSource?:NestDesignSource}|{version:1;kind:'operate';operation:KittyDesignOperation};
 export type PendingDesignRequest={id:string;request:DesignRequest;status:'queued'|'uncertain'|'rejected';message:string};
 type Options={environment:Environment;householdId:string;memberId:string;identity:string;token:()=>Promise<string>;storage?:Storage;fetch?:typeof fetch};
-const DEFINITE=new Set(['INVALID_NEST_SOURCE','DESIGN_NEST_UNAVAILABLE','DESIGN_NEST_GOAL_CONFLICT','DESIGN_NEST_HISTORY_CONFLICT','INVALID_ID','INVALID_VALUE','INVALID_REVISION','INVALID_FIELD','INVALID_SHAPE','INVALID_TIME','INVALID_BASELINE','OPERATION_TOO_LARGE','OPERATION_ID_REUSED','ORDER_CONFLICT','STALE_GESTURE','FIELD_REVISION_CONFLICT','STALE_FIELD','STALE_PIECE','PIECE_NOT_FOUND','PIECE_UNAVAILABLE','PIECE_ARCHIVED','PIECE_ALREADY_EXISTS','PIECE_LIMIT','HISTORY_LIMIT','CHECKPOINT_LIMIT','DESIGN_BANK_UNAVAILABLE','DESIGN_ID_CONFLICT','DESIGN_OWNERSHIP_CHANGED','KITTY_DESIGN_WRITES_PAUSED','STALE_EDIT_EPOCH','PIECE_FIRED','PIECE_NOT_FIRED','STALE_DISPLAY','GESTURE_CONFLICT','NOT_YOUR_GESTURE','UNKNOWN_SURFACE','PAINT_LIMIT','STAMP_LIMIT','STAMP_EXISTS','STAMP_UNAVAILABLE','FIRING_LIMIT','HOUSEHOLD_STORAGE_LIMIT','DESIGN_REVISION_AHEAD']);
+const DEFINITE=new Set(['INVALID_NEST_SOURCE','DESIGN_NEST_UNAVAILABLE','DESIGN_NEST_GOAL_CONFLICT','DESIGN_NEST_HISTORY_CONFLICT','DESIGN_AUDIENCE_CONFLICT','INVALID_ID','INVALID_VALUE','INVALID_REVISION','INVALID_FIELD','INVALID_SHAPE','INVALID_TIME','INVALID_BASELINE','OPERATION_TOO_LARGE','OPERATION_ID_REUSED','ORDER_CONFLICT','STALE_GESTURE','FIELD_REVISION_CONFLICT','STALE_FIELD','STALE_PIECE','PIECE_NOT_FOUND','PIECE_UNAVAILABLE','PIECE_ARCHIVED','PIECE_ALREADY_EXISTS','PIECE_LIMIT','HISTORY_LIMIT','CHECKPOINT_LIMIT','DESIGN_BANK_UNAVAILABLE','DESIGN_ID_CONFLICT','DESIGN_OWNERSHIP_CHANGED','KITTY_DESIGN_WRITES_PAUSED','STALE_EDIT_EPOCH','PIECE_FIRED','PIECE_NOT_FIRED','STALE_DISPLAY','GESTURE_CONFLICT','NOT_YOUR_GESTURE','UNKNOWN_SURFACE','PAINT_LIMIT','STAMP_LIMIT','STAMP_EXISTS','STAMP_UNAVAILABLE','FIRING_LIMIT','HOUSEHOLD_STORAGE_LIMIT','DESIGN_REVISION_AHEAD']);
 export class DesignTransportError extends Error { constructor(public code:string,public definite:boolean){super(code);} }
 /** Accepted documents are a cache; retained requests are private and partitioned by authenticated identity. */
 export class HearthsideDesignClient {
@@ -105,7 +105,7 @@ export class HearthsideDesignClient {
           const basis=row.request.kind==='operate'?this.documents.get(row.request.operation.designId):undefined;
           const value=await this.request({...row.request,...(basis?{knownRevision:basis.revision}:{})});if(this.stopped)return;
           const document=this.acceptResponse(value,basis);
-          if(row.request.kind==='operate'&&document.id!==row.request.operation.designId)throw Error('CREATIVE_RESPONSE_SCOPE');
+          if(row.request.kind==='operate'&&document.id!==row.request.operation.designId || row.request.kind==='create'&&row.request.audience==='personal'&&document.scope.ownerMemberId!==this.options.memberId)throw Error('CREATIVE_RESPONSE_SCOPE');
           if(row.request.kind==='operate'){const operation=row.request.operation,entry=document.operations.find(item=>item.operation.id===operation.id),receipt=value.receipt as KittyDesignReceipt|undefined;if(!receipt||receipt.version!==1||receipt.designId!==document.id||receipt.id!==operation.id||receipt.actorId!==this.options.memberId||receipt.kind!==operation.kind||receipt.revision!==entry?.order||entry.actorId!==this.options.memberId||canonicalDesignJSON(entry.operation)!==canonicalDesignJSON(operation))throw Error('CREATIVE_RECEIPT_MISMATCH');this.receipts.set(receipt.id,receipt);}else {if(row.request.nestSource&&(!document.nest||document.nest.view!==row.request.nestSource.view||document.nest.designKey!==row.request.nestSource.designKey))throw Error('CREATIVE_RESPONSE_SCOPE');this.resolutions.set(row.request.designId,document.id);}
           // Removal happens after accepted content and receipt were verified. Failure leaves the same identity retryable.
           this.persist(this.pending.filter(item=>item.id!==row.id));
@@ -123,10 +123,11 @@ export class HearthsideDesignClient {
   close(){this.stopped=true;this.controller.abort();this.documents.clear();this.receipts.clear();this.listeners.clear();}
 }
 function decodeRequest(value:unknown):DesignRequest {
-  designRecord(value,['version','kind','designId','bankId','nestSource','operation'],['version','kind']);
+  designRecord(value,['version','kind','designId','bankId','audience','nestSource','operation'],['version','kind']);
   if(value.version!==1)throw Error('CREATIVE_REQUEST_VERSION');
   if(value.kind==='operate'){designRecord(value,['version','kind','operation']);return {version:1,kind:'operate',operation:decodeKittyDesignOperation(value.operation)};}
-  designRecord(value,['version','kind','designId','bankId','nestSource'],['version','kind','designId','bankId']);if(value.kind!=='create')throw Error('CREATIVE_REQUEST_KIND');designId(value.designId);if(value.bankId!==null)designId(value.bankId);
+  designRecord(value,['version','kind','designId','bankId','audience','nestSource'],['version','kind','designId','bankId']);if(value.kind!=='create')throw Error('CREATIVE_REQUEST_KIND');designId(value.designId);if(value.bankId!==null)designId(value.bankId);if(value.audience!==undefined&&value.audience!=='personal')throw Error('DESIGN_AUDIENCE_CONFLICT');
   const nestSource=value.nestSource===undefined?undefined:decodeNestSource(value.nestSource);if(nestSource&&value.bankId!==null)throw Error('DESIGN_NEST_GOAL_CONFLICT');
-  return {version:1,kind:'create',designId:value.designId,bankId:value.bankId as string|null,...(nestSource?{nestSource}:{})};
+  if(value.audience==='personal'&&(value.bankId!==null||nestSource))throw Error('DESIGN_AUDIENCE_CONFLICT');
+  return {version:1,kind:'create',designId:value.designId,bankId:value.bankId as string|null,...(value.audience==='personal'?{audience:'personal' as const}:{}),...(nestSource?{nestSource}:{})};
 }

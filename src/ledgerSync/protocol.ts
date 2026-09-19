@@ -32,6 +32,7 @@ export type LedgerCommand = {
   accountHistoryVersion?: 1;
   companionProfileVersion?: 1;
   hearthsideVersion?: 1;
+  personalLifeVersion?: 1;
   hearthsideEncounterVersion?:1;
   kittyDesignVersion?: 1;
   nestDesignVersion?:1;
@@ -104,6 +105,7 @@ export async function commandFromCapture(
     accountHistoryVersion: 1,
     companionProfileVersion: 1,
     hearthsideVersion: 1,
+    personalLifeVersion: 1,
     hearthsideEncounterVersion:1,
     kittyDesignVersion: 1, nestDesignVersion:1,
     companionPlayVersion: 1,
@@ -148,6 +150,7 @@ export function parseCommand(value: unknown): LedgerCommand {
     (c.companionWorkflowVersion !== undefined && c.companionWorkflowVersion !== 1) ||
     (c.hearthsideEncounterVersion !== undefined && c.hearthsideEncounterVersion !== 1) ||
     (c.hearthsideVersion !== undefined && c.hearthsideVersion !== 1) ||
+    (c.personalLifeVersion !== undefined && c.personalLifeVersion !== 1) ||
     (c.nestDesignVersion !== undefined && c.nestDesignVersion !== 1) ||
     (c.kittyDesignVersion !== undefined && c.kittyDesignVersion !== 1) ||
     (c.companionPlayVersion !== undefined && c.companionPlayVersion !== 1) ||

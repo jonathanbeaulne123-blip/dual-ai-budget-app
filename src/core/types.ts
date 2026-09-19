@@ -1393,6 +1393,8 @@ export type Household = {
   tasks?: Task[];
   taskLists?: TaskList[];
   hearthside?: import("../hearthside/contracts.ts").HearthsideState;
+  /** Active member's private wishes and memories. Never enters SharedEnvelope. */
+  personalLife?: import("../hearthside/personalLifeContracts.ts").PersonalLifeDocument;
   playRoom?: import("./playContracts.ts").PlayRoom;
   companionGallery?: import("./herculesCompanionContracts.ts").GalleryResourceV1[];
   /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */
@@ -1617,6 +1619,8 @@ export type PersonalEnvelope = {
   fundModelRows?: import("./fundRules.ts").FundModelRow[];
   tasks?: Task[];
   taskLists?: TaskList[];
+  /** Owner-bound Personal Together document. Never enters SharedEnvelope. */
+  personalLife?: import("../hearthside/personalLifeContracts.ts").PersonalLifeDocument;
   /** Private member-owned Hercules continuity. Never part of SharedEnvelope. */
   companionProfile?: import("./herculesCompanionContracts.ts").CompanionProfileV1;
   accountHistoryReviews?: import("./accountHistory.ts").AccountHistoryReviewRecord[];

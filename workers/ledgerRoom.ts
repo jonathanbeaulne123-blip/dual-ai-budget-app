@@ -1116,7 +1116,7 @@ export class LedgerRoom extends DurableObject<Env> {
       this.check(scope);
       const state=this.load(), personal=state.personal.get(scope.memberId);
       if(!personal || !state.shared.members.some(member=>member.active&&member.id===scope.memberId))throw Error('FORBIDDEN');
-      designRecord(raw,['version','kind','designId','bankId','nestSource','operation','pieceId','revision','knownRevision'],['version','kind']);
+      designRecord(raw,['version','kind','designId','bankId','audience','nestSource','operation','pieceId','revision','knownRevision'],['version','kind']);
       if(raw.version!==1)throw Error('KITTY_DESIGN_UPDATE_REQUIRED');
       const household=assembleHousehold(state.shared,personal,{linked:true});
       const reply=(document:KittyDesignDocument,receipt:KittyDesignReceipt|null,sequence:number)=>{
@@ -1142,19 +1142,21 @@ export class LedgerRoom extends DurableObject<Env> {
       if(this.env.HEARTHSIDE_DESIGN_WRITES!=='true'||scope.environment==='production')throw Error('KITTY_DESIGN_WRITES_PAUSED');
       let document:KittyDesignDocument,bankId:string|null,id:string,creativeReceipt:KittyDesignReceipt|null=null;
       if(raw.kind==='create') {
-        designRecord(raw,['version','kind','designId','bankId','nestSource'],['version','kind','designId','bankId']);designId(raw.designId);if(raw.bankId!==null)designId(raw.bankId);
+        designRecord(raw,['version','kind','designId','bankId','audience','nestSource'],['version','kind','designId','bankId']);designId(raw.designId);if(raw.bankId!==null)designId(raw.bankId);if(raw.audience!==undefined&&raw.audience!=='personal')throw Error('DESIGN_AUDIENCE_CONFLICT');
         bankId=raw.bankId as string|null;
         const nest=raw.nestSource===undefined?null:visibleNestSource(household,scope.memberId,decodeNestSource(raw.nestSource));
         if(nest&&bankId!==null)throw Error('DESIGN_NEST_GOAL_CONFLICT');
+        if(raw.audience==='personal'&&(bankId!==null||nest))throw Error('DESIGN_AUDIENCE_CONFLICT');
         if(nest){const existing=this.designs.forNest(nest.source,nest.source.view==='personal'?scope.memberId:null);if(existing){document=read(existing.id);return {version:1,document,receipt:null,sequence:state.sequence};}if(nest.row.designRef)throw Error('DESIGN_BANK_REFERENCE_RECOVERY_REQUIRED');}
         const goal=bankId===null?null:household.goals.find(g=>g.id===bankId&&(g.shared||g.ownerMemberId===scope.memberId));
         if(bankId!==null&&!goal)throw Error('DESIGN_BANK_UNAVAILABLE');
         if(goal?.envelope?.designRef){document=read(goal.envelope.designRef.designId);return {version:1,document,receipt:null,sequence:state.sequence};}
         const bankHistory=bankId===null?null:this.designs.forBank(bankId);
         if(bankHistory)throw Error('DESIGN_BANK_REFERENCE_RECOVERY_REQUIRED');
+        const ownerMemberId=raw.audience==='personal'||goal&&!goal.shared||nest?.source.view==='personal'?scope.memberId:null;
         const prior=this.designs.header(raw.designId);
-        if(prior){document=read(raw.designId);if(prior.bank!==bankId||JSON.stringify(document.nest??null)!==JSON.stringify(nest?.source??null))throw Error('DESIGN_ID_CONFLICT');return {version:1,document,receipt:null,sequence:state.sequence};}
-        const designScope={environment:scope.environment,householdId:scope.householdId,ownerMemberId:goal&&!goal.shared?scope.memberId:null};
+        if(prior){document=read(raw.designId);if(prior.bank!==bankId||document.scope.ownerMemberId!==ownerMemberId||JSON.stringify(document.nest??null)!==JSON.stringify(nest?.source??null))throw Error('DESIGN_ID_CONFLICT');return {version:1,document,receipt:null,sequence:state.sequence};}
+        const designScope={environment:scope.environment,householdId:scope.householdId,ownerMemberId};
         document=nest?migrateNestDesign(household,scope.memberId,raw.designId,nest.source):goal?migrateLegacyKittyStudio(raw.designId,designScope,goal.envelope?.studio,`migration:${await digest([raw.designId,bankId])}`):createKittyDesignDocument(raw.designId,designScope);
         id=`design-create:${document.id}`;
       } else if(raw.kind==='operate') {
@@ -1474,6 +1476,7 @@ export class LedgerRoom extends DurableObject<Env> {
             type: "ready",
             companionProfileVersion: 1,
             hearthsideVersion: 1,
+            personalLifeVersion: 1,
             kittyDesignVersion: 1, nestDesignVersion:1,
             companionPlayVersion: 1,
             companionDiscoveryVersion: 1,

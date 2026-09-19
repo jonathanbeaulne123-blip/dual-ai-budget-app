@@ -20,6 +20,7 @@ export type HearthsideOperation = EncounterCommand | AdoptWinMemoryOperation
   | {kind:'experience.add-task';id:string;expectedRevision:number;task:TaskInput}
   | {kind:'experience.schedule';id:string;expectedRevision:number;event:NativeEventInput}
   | { kind: 'experience.save'; expectedRevision: number; value: SharedExperience }
+  | { kind: 'experience.mark-lived'; expectedRevision: number; id: string; livedOn: string }
   | { kind: 'note.save'; expectedRevision: number; value: PlacedNote }
   | { kind: 'memory.compose'; expectedRevision: number; value: MemoryComposition }
   | { kind: 'memory.keep' | 'memory.withdraw'; expectedRevision: number; id: string }
@@ -97,8 +98,8 @@ export const commitHearthside = captureCommand('commitHearthside', (h: Household
     const memory=adoptWinMemory(h,actor,op);s.memories=[...s.memories.filter(m=>m.id!==memory.id),memory];
     return {household:{...h,hearthside:decodeHearthside(s)},postedIds:[],warnings:[],undo:{id:input.id,label:'Review an earlier Win as a memory',snapshot:h,postedIds:[],actorMemberId:actor,commandKind:'hearthside'}};
   }
-  object(op, ['kind', 'expectedRevision', 'id', 'value', 'year', 'experience','task','event']);
-  object(op, op.kind==='furniture.save'?['kind','value']:op.kind==='experience.add-task'?['kind','expectedRevision','id','task']:op.kind==='experience.schedule'?['kind','expectedRevision','id','event']:op.kind==='occasion.prepare'?['kind','expectedRevision','id','year','experience']:['memory.keep','memory.withdraw','room.keep','room.withdraw'].includes(op.kind) ? ['kind', 'expectedRevision', 'id'] : ['kind', 'expectedRevision', 'value']);
+  object(op, ['kind', 'expectedRevision', 'id', 'livedOn', 'value', 'year', 'experience','task','event']);
+  object(op, op.kind==='furniture.save'?['kind','value']:op.kind==='experience.add-task'?['kind','expectedRevision','id','task']:op.kind==='experience.schedule'?['kind','expectedRevision','id','event']:op.kind==='experience.mark-lived'?['kind','expectedRevision','id','livedOn']:op.kind==='occasion.prepare'?['kind','expectedRevision','id','year','experience']:['memory.keep','memory.withdraw','room.keep','room.withdraw'].includes(op.kind) ? ['kind', 'expectedRevision', 'id'] : ['kind', 'expectedRevision', 'value']);
   const experienceExists = (id: string | null) => { if (id !== null && !s.experiences.some(e => e.id === id)) throw Error('HEARTHSIDE_EXPERIENCE_MISSING'); };
   if(op.kind==='experience.add-task'||op.kind==='experience.schedule'){
     const experience=s.experiences.find(e=>e.id===identifier(op.id));if(!experience||experience.state==='archived')throw Error('HEARTHSIDE_EXPERIENCE_MISSING');
@@ -111,6 +112,12 @@ export const commitHearthside = captureCommand('commitHearthside', (h: Household
       working=saveNativeEvent(h,op.event).household;experience.references.push({kind:'calendar-event',id:op.event.id});
     }
     experience.revision++;
+  } else if (op.kind === 'experience.mark-lived') {
+    const experience=s.experiences.find(e=>e.id===identifier(op.id));
+    if(!experience||experience.state==='archived')throw Error('HEARTHSIDE_EXPERIENCE_MISSING');
+    expectRevision(experience.revision,op.expectedRevision);
+    const next=decodeExperience({...experience,revision:experience.revision+1,state:'lived',livedOn:op.livedOn});
+    s.experiences=[...s.experiences.filter(e=>e.id!==next.id),next];
   } else if (op.kind === 'experience.save') {
     const value = decodeExperience(op.value), old = s.experiences.find(e => e.id === value.id);
     expectRevision(old?.revision ?? 0, op.expectedRevision, value.revision);
