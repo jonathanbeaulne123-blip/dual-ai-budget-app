@@ -40,6 +40,15 @@ describe("the unified web house address", () => {
     expect(readHearthsideToolReturn({scope:"scope",path:"/house/home/middle?household=HH-one",focusId:"hearthside-title",label:"Memory",tab:"planner"}, "scope", "HH-one")).toBeNull();
   });
 
+  it("rejects a Together interior addressed on the wrong level, including focused returns", () => {
+    for (const path of ["/house/together/above?household=HH-one&room=studio", "/house/together/middle?household=HH-one&room=theatre", "/house/together/below?household=HH-one&room=conservatory", "/house/together/middle?household=HH-one&room=unknown"]) {
+      expect(parseHouseRoute(path,"HH-one")).toBeNull();
+      expect(parseHearthsideRoute(path,"HH-one")).toBeNull();
+      expect(readHearthsideToolReturn({scope:"scope",path,focusId:"hearthside-title",label:"Memory",tab:"planner"},"scope","HH-one")).toBeNull();
+      expect(() => hearthsidePath({version:1,householdId:"HH-one",room:"theatre",mode:"remember",returnContext:{path,focusId:"hearthside-title"}})).toThrow('HEARTHSIDE_INVALID_RETURN');
+    }
+  });
+
   it("keeps malformed and unrelated paths out of the house", () => {
     for (const path of ["/house/home/roof", "/house/garage/middle", "/house/home/middle/extra", "/hearthside/rooms/common"]) {
       expect(parseHouseRoute(path,"HH-one")).toBeNull();

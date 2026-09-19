@@ -1,4 +1,4 @@
-import type { HearthsideRoom } from "./contracts.ts";
+import { HEARTHSIDE_ROOMS, type HearthsideRoom } from "./contracts.ts";
 
 export const HOUSE_ROOMS = ["home", "study", "kitchen-table", "together"] as const;
 export const HOUSE_LEVELS = ["above", "middle", "below"] as const;
@@ -37,6 +37,8 @@ export function parseHouseRoute(url: string, householdId: string): HouseRoute | 
     const room = parts[1] as HouseRoom;
     const level = parts[2] as HouseLevel;
     if (!HOUSE_ROOMS.includes(room) || !HOUSE_LEVELS.includes(level)) return null;
+    const interior = parsed.searchParams.get("room");
+    if (room === "together" && interior !== null && (!HEARTHSIDE_ROOMS.includes(interior as HearthsideRoom) || togetherLevelForRoom(interior as HearthsideRoom) !== level)) return null;
     const addressedHousehold = parsed.searchParams.get("household") ?? householdId;
     if (!addressedHousehold || addressedHousehold !== householdId) return null;
     return { room, level, householdId };
