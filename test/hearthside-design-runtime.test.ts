@@ -82,7 +82,7 @@ it('accepts simultaneous creative operations in SQLite, migrates legacy artwork 
     expect(JSON.stringify(next.shared)).not.toContain('DESIGN-personal-free');
     expect(next.personal?.personalLife?.designs.find(row=>row.designId==='DESIGN-personal-free')).toEqual({version:1,designId:'DESIGN-personal-free',revision:1,pieceIds:['PIECE-personal-free']});
     const personalIndex=next.personal!.personalLife!.designs.find(row=>row.designId==='DESIGN-personal-free')!;
-    const foreignGoal={...next.personal!.goals[0]!,id:'GOAL-foreign-bank',ownerMemberId:'MEM-002',envelope:{...defaultGoalEnvelope(),designRef:{version:1 as const,designId:personalIndex.designId,revision:personalIndex.revision,displayPieceId:null}}};
+    const foreignGoal={...next.personal!.goals![0]!,id:'GOAL-foreign-bank',ownerMemberId:'MEM-002',envelope:{...defaultGoalEnvelope(),designRef:{version:1 as const,designId:personalIndex.designId,revision:personalIndex.revision,displayPieceId:null}}};
     expect(()=>assertPersonalDesignArchiveReferences([['MEM-001',{...next.personal!,goals:[foreignGoal],personalLife:{...next.personal!.personalLife!,designs:[personalIndex]}}]],[{version:1,designId:personalIndex.designId,revision:personalIndex.revision,sha256:'a'.repeat(64),bankId:foreignGoal.id}])).toThrow('DESIGN_ARCHIVE_REFERENCE_MISSING');
     const restored=await post('restore',{},'MEM-001',true);expect(restored.status,await restored.text()).toBe(200);
     expect(document(await design({kind:'read',designId:'DESIGN-free'},'MEM-002',true))).toEqual(accepted);
