@@ -49,7 +49,7 @@ const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&
 const statusLabel=id=>(STATUSES.find(s=>s.id===id)||{}).label||"Visited — no outcome";
 const mapSearch=x=>"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent([x.r,x.a,"Toronto Ontario"].filter(Boolean).join(" "));
 const coordMatches=[...R.join("").matchAll(/!1d(-?\d+(?:\.\d+)?)!2d(-?\d+(?:\.\d+)?)/g)].map(m=>({lng:+m[1],lat:+m[2]}));
-const STOPS=D.map((x,i)=>({...x,lat:coordMatches[i]?.lat,lng:coordMatches[i]?.lng}));
+const STOPS=D.map((x,i)=>{const f=window.FLOW_DATA?.restaurants.find(r=>String(r.id)===String(x.n));return {...x,a:f?.address||x.a,lat:f?.coordinates?.lat||coordMatches[i]?.lat,lng:f?.coordinates?.lng||coordMatches[i]?.lng};});
 let activeFilter="all",activeDistrict="all",activeStatus="all",map,infoWindow,AdvancedMarkerElement,RouteClass,markers=[],routePolylines=[],connectorPolylines=[];
 let routeTotals={distanceMeters:0,durationMillis:0,loaded:0,failed:0};
 
@@ -64,7 +64,7 @@ document.querySelector("#backChecklist").href=previewUrl("index.html");const day
 
 function state(x){const visited=!!S[x.n],status=T[x.n]||"";return{visited,status,key:visited?(status||"visited"):"unvisited"}}
 function markerEl(x){const st=state(x),el=document.createElement("div");el.className="stop-marker "+st.key;el.textContent=x.n;el.title=x.n+". "+x.r;return el}
-function popup(x){const st=state(x),label=st.visited?statusLabel(st.status):"Not visited yet",actionable=["chat","no-manager","maybe","apply-online"].includes(st.status),next=actionable?`<a class="popup-link popup-next" href="${esc(nextStepsUrl(x.n))}">Next Steps</a>`:"";return `<div class="popup-num">Stop ${x.n}</div><div class="popup-name">${esc(x.r)}</div><div class="popup-address">${esc(x.a)}</div><span class="popup-status">${esc(label)}</span><div class="popup-actions"><a class="popup-link" href="${esc(intelUrl(x.n,"flashcards"))}">Flash Cards</a><a class="popup-link" href="${esc(intelUrl(x.n,"coverletter"))}">Cover Letter</a>${next}</div>`}
+function popup(x){const st=state(x),label=st.visited?statusLabel(st.status):"Not visited yet",actionable=["chat","no-manager","maybe","apply-online"].includes(st.status),next=actionable?`<a class="popup-link popup-next" href="${esc(nextStepsUrl(x.n))}">Next Steps</a>`:"";const f=window.FLOW_DATA?.restaurants.find(r=>String(r.id)===String(x.n));return `${f?PassportFlow.badges(f):""}<div class="popup-num">Stop ${x.n}</div><div class="popup-name">${esc(x.r)}</div><div class="popup-address">${esc(x.a)}</div><span class="popup-status">${esc(label)}</span><div class="popup-actions"><a class="popup-link" href="${esc(intelUrl(x.n,"flashcards"))}">Study Notes</a><a class="popup-link" href="${esc(intelUrl(x.n,"coverletter"))}">Cover Letter</a>${next}</div>`}
 function bounds(stops){const b=new google.maps.LatLngBounds();stops.forEach(x=>b.extend({lat:x.lat,lng:x.lng}));return b}
 function fitFull(){map.fitBounds(bounds(STOPS),48)}
 function match(x){const st=state(x);return(activeFilter==="all"||activeFilter==="remaining"&&!st.visited||activeFilter==="visited"&&st.visited)&&(activeDistrict==="all"||String(x.u)===activeDistrict)&&(activeStatus==="all"||activeStatus==="unvisited"&&!st.visited||activeStatus==="none"&&st.visited&&!st.status||st.status===activeStatus)}
@@ -92,8 +92,10 @@ function buildSegments(){
  document.querySelector("#routeSegments").innerHTML=R.map((url,i)=>{const[a,b]=SEGMENT_RANGES[i],arr=STOPS.filter(x=>x.n>=a&&x.n<=b),v=arr.filter(x=>S[x.n]).length;return `<a class="segment-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer"><span><span class="segment-name">District ${i+1} · Stops ${a}–${b}</span><span class="segment-meta" id="segmeta-${i}">${v}/${arr.length} visited · Google route loading…</span></span><span class="segment-arrow">↗</span></a>`}).join("")
 }
 function buildNext(){
- const x=STOPS.find(x=>!S[x.n]),el=document.querySelector("#nextStop");
- el.innerHTML=x?`<div class="next-card"><div class="next-num">Stop ${x.n}</div><div class="next-name">${esc(x.r)}</div><div class="next-address">${esc(x.a)}</div><a class="popup-link" href="${esc(mapSearch(x))}" target="_blank">Open in Google Maps ↗</a></div>`:'<div class="empty-state">All 42 original itinerary stops are marked visited.</div>'
+ const el=document.querySelector("#nextStop"),F=window.PassportFlow, data=window.FLOW_DATA;
+ if(!F||!data)return;
+ const now=F.torontoNow(),saved=F.read(F.keys.state,{}),p=F.plan(data.restaurants,{state:saved,outcomes:T,steps:F.read(F.keys.steps,{}),date:now.date,time:now.time,cluster:saved.cluster||data.startCluster},data.travel);
+ el.innerHTML='<p>The map preserves the original 42 locations. Use the Saturday plan for the recommended order.</p>'+p.moves.map(m=>'<div class="next-card"><strong>'+esc(m.time||'Next')+' · '+esc(m.record?.name||m.title)+'</strong><p>'+esc(m.reason)+'</p>'+(m.record?F.badges(m.record):'')+'</div>').join('')+'<a class="popup-link" href="'+esc(F.link('day.html'))+'">Open the next three moves</a>';
 }
 function buildDistricts(){
  const el=document.querySelector("#districtCards");
@@ -101,8 +103,8 @@ function buildDistricts(){
  el.querySelectorAll(".district-card").forEach(c=>c.onclick=()=>{activeDistrict=c.dataset.district;document.querySelector("#districtFilter").value=activeDistrict;applyFilters();document.querySelector("#map").scrollIntoView({behavior:"smooth",block:"center"})})
 }
 function buildUnexpected(){
- const panel=document.querySelector("#unexpectedPanel"),list=document.querySelector("#unexpectedList");if(!X.length)return;panel.hidden=false;
- list.innerHTML=X.map(x=>{const st=S[x.n]?(T[x.n]?statusLabel(T[x.n]):"Visited — no outcome"):"Not visited";return `<div class="unexpected-item"><strong>${esc(x.r)}</strong><span>${esc(x.a||"No address")} · ${esc(st)}</span><a href="${esc(mapSearch(x))}" target="_blank">Locate in Google Maps ↗</a></div>`}).join("")
+ const panel=document.querySelector("#unexpectedPanel"),list=document.querySelector("#unexpectedList"),extras=(window.ADDITIONAL_PROSPECTS||[]).concat(X);if(!extras.length)return;panel.hidden=false;
+ list.innerHTML=extras.map(x=>{const st=S[x.n]?(T[x.n]?statusLabel(T[x.n]):"Visited — no outcome"):"Not visited";return `<div class="unexpected-item"><strong>${esc(x.r)}</strong><span>${esc(x.a||"No address")} · ${esc(st)}</span><a href="${esc(mapSearch(x))}" target="_blank">Locate in Google Maps ↗</a></div>`}).join("")
 }
 function fmtDist(m){return m>=1000?(m/1000).toFixed(1)+" km":Math.round(m)+" m"}
 function fmtDur(ms){const n=Math.round(ms/60000),h=Math.floor(n/60),m=n%60;return h?`${h}h ${m}m`:`${m} min`}

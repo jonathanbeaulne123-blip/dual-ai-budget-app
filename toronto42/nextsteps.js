@@ -15,9 +15,13 @@ const X=JSON.parse(localStorage.getItem(CUSTOM_KEY)||"[]");
 let STEP_STATE=JSON.parse(localStorage.getItem(STEP_KEY)||"{}");
 let CONTACTS=JSON.parse(localStorage.getItem(CONTACT_KEY)||"{}");
 let activeStatus="all";
+const DRAFT_KEY="toronto42-followup-drafts-v1";
+let DRAFTS=JSON.parse(localStorage.getItem(DRAFT_KEY)||"{}");
+const FOLLOWUP_KEY="toronto42-followup-times-v1";
+let FOLLOWUPS=JSON.parse(localStorage.getItem(FOLLOWUP_KEY)||"{}");
 
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
-const allStops=()=>D.concat(X);
+const allStops=()=>D.concat(window.ADDITIONAL_PROSPECTS||[],X);
 const intelFor=id=>(window.RESTAURANT_INTEL||{})[String(id)]||null;
 
 function preview(file,params={}){
@@ -31,14 +35,15 @@ function preview(file,params={}){
 document.querySelector("#backChecklist").href=preview("index.html");
 document.querySelector("#emptyChecklist").href=preview("index.html");
 document.querySelector("#openPortal").href=preview("map.html");
+document.querySelector("#openHireability").href=preview("hireability.html");
 
 function contactDefaults(stop){
   const intel=intelFor(stop.n);
   const saved=CONTACTS[String(stop.n)]||{};
-  let email=saved.email||intel?.nextSteps?.contactEmail||intel?.application?.general||"";
+  let email=('email' in saved)?saved.email:intel?.nextSteps?.contactEmail||intel?.application?.general||"";
   if(email && !email.includes("@")) email="";
-  let person=saved.person||intel?.nextSteps?.contactName||intel?.manager?.name||"";
-  let applyUrl=saved.applyUrl||intel?.nextSteps?.applyUrl||intel?.application?.url||"";
+  let person=('person' in saved)?saved.person:intel?.nextSteps?.contactName||intel?.manager?.name||"";
+  let applyUrl=('applyUrl' in saved)?saved.applyUrl:intel?.nextSteps?.applyUrl||intel?.application?.url||"";
   let applyLabel=intel?.application?.urlLabel||"Application website";
   let applyCaveat=intel?.application?.urlCaveat||"";
   return {email,person,applyUrl,applyLabel,applyCaveat};
@@ -55,50 +60,69 @@ function nextBusinessDay(date,days){
   return d;
 }
 function pad(n){return String(n).padStart(2,"0")}
-function calendarUrl(stop,status){
-  const offsets={"chat":1,"no-manager":1,"maybe":2,"apply-online":3};
-  const d=nextBusinessDay(new Date(),offsets[status]||1);
-  d.setHours(status==="no-manager"?14:10,0,0,0);
-  const end=new Date(d.getTime()+30*60000);
-  const fmt=x=>x.getFullYear()+pad(x.getMonth()+1)+pad(x.getDate())+"T"+pad(x.getHours())+pad(x.getMinutes())+"00";
-  const text=status==="no-manager"?"Revisit / contact "+stop.r:"Follow up with "+stop.r;
-  const details="Toronto Culinary Passport follow-up. Outcome: "+STATUS_LABELS[status]+". Review next steps, contact notes and restaurant prep before following up.";
-  return "https://calendar.google.com/calendar/render?action=TEMPLATE&text="+encodeURIComponent(text)+"&dates="+fmt(d)+"/"+fmt(end)+"&details="+encodeURIComponent(details)+"&ctz=America%2FToronto";
+function followupTime(stop,status){
+  const key=stop.n+':'+status;if(FOLLOWUPS[key])return FOLLOWUPS[key];
+  const cadence=intelFor(stop.n)?.nextSteps?.cadence?.[status]||'';
+  let days=({'chat':0,'no-manager':1,'maybe':5,'apply-online':3})[status]||0;
+  if(/five business|5 business/i.test(cadence))days=5;
+  if(/seven calendar|7 calendar/i.test(cadence))days=7;
+  const d=/calendar/i.test(cadence)?new Date(Date.now()+days*86400000):nextBusinessDay(new Date(),days);
+  d.setHours(status==='chat'?16:11,0,0,0);
+  if(d<new Date())d.setTime(Date.now()+60*60000);
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
 }
-function gmailDraftUrl(stop,status,contact){
+function calendarUrl(stop,status,value){
+  const d=new Date(value||followupTime(stop,status));if(Number.isNaN(d.getTime()))return '';
+  const end=new Date(d.getTime()+30*60000);
+  const fmt=x=>x.getFullYear()+pad(x.getMonth()+1)+pad(x.getDate())+'T'+pad(x.getHours())+pad(x.getMinutes())+'00';
+  const text='Follow up with '+stop.r;
+  const cadence=intelFor(stop.n)?.nextSteps?.cadence?.[status]||'Follow the timing agreed with the team.';
+  const details='Toronto Culinary Passport. Outcome: '+STATUS_LABELS[status]+'. '+cadence+' Review your notes and contact before acting. This reminder does not confirm a restaurant appointment.';
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE&text='+encodeURIComponent(text)+'&dates='+fmt(d)+'/'+fmt(end)+'&details='+encodeURIComponent(details)+'&ctz=America%2FToronto';
+}
+function hasVisit(stop){try{return !!JSON.parse(localStorage.getItem(VISIT_KEY)||'{}')[stop.n];}catch(_){return false;}}
+function applicationRecord(stop){return (window.FLOW_DATA?.restaurants||[]).find(r=>String(r.id)===String(stop.n))||{};}
+function exactRole(stop){const hiring=applicationRecord(stop).hiring||{};return hiring.role||(hiring.roles||[]).join(' / ')||'[exact role]';}
+function applicationSite(contact){return contact.applyLabel||'the application site';}
+function submissionDate(stop,status){return STEP_STATE[stepKey(stop,status,'submission-date')]||new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());}
+function draftFor(stop,status,contact){
+  const intel=intelFor(stop.n), next=intel?.nextSteps||{}, submitted=!!STEP_STATE[stepKey(stop,status,"submit-application")];
+  const key=stop.n+":"+status+":"+(submitted?"submitted":"before"), saved=DRAFTS[key];
+  if(saved)return {...saved,key};
+  const greeting="Hi "+(contact.person||stop.r+" Team")+",\n\n";
+  const angle=intel?.application?.note||"My background at Capra’s includes serving, bar leadership and private-event work.";
+  let body=next.gmailBody?.[status]||greeting+angle+"\n\nThank you,\nJonathan Beaulne";
+  let subject=next.gmailSubject?.[status]||"Front-of-house introduction — "+stop.r;
+  if(status==='apply-online'&&!hasVisit(stop)){
+    const role=exactRole(stop),site=applicationSite(contact);
+    const background='My Capra’s experience includes Bar Lead, Server, Private Event Coordinator and Private Event Server roles.';
+    if(!submitted){
+      subject='Application preparation — '+stop.r;
+      body=greeting+'I am preparing an application for '+role+' through '+site+'.\n\n'+background+'\n\nCould you please confirm the exact role and preferred application link before I submit?\n\nThank you,\nJonathan Beaulne';
+    }else{
+      subject='Application submitted — '+stop.r;
+      body=greeting+'I have submitted my application for '+role+' through '+site+' on '+submissionDate(stop,status)+'.\n\n'+background+'\n\nCould you please let me know whether any further information would be useful?\n\nThank you,\nJonathan Beaulne';
+    }
+  }
+  return {subject,body,key};
+}
+function gmailDraftUrl(contact,draft){
   if(!contact.email)return "";
-  const intel=intelFor(stop.n);
-  const who=contact.person?(/\bTeam\b/i.test(contact.person)?contact.person:contact.person.split(" ")[0]):(stop.r+" Team");
-  const greeting="Hi "+who+",";
-  const subjects={
-    chat:"Thank you — "+stop.r,
-    "no-manager":"Front-of-house introduction — "+stop.r,
-    maybe:"Following up — "+stop.r,
-    "apply-online":"Application follow-up — "+stop.r
-  };
-  const angle=intel?.hiringAngle||"My background includes serving, bar leadership, and private-event experience.";
-  const bodies={
-    chat:[greeting,"","Thank you for taking the time to speak with me when I stopped by. I enjoyed learning a little more about "+stop.r+" and wanted to follow up while our conversation was still fresh.","",angle,"","I'd be very interested in continuing the conversation if there may be a fit with your front-of-house team.","","Thank you again,","Jonathan"],
-    "no-manager":[greeting,"","I stopped by "+stop.r+" today hoping to introduce myself regarding front-of-house opportunities, but I wasn't able to catch the manager at a good time.","",angle,"","I wanted to send a quick introduction and would be happy to come back at a better time or forward my resume directly.","","Thank you,","Jonathan"],
-    maybe:[greeting,"","Thank you again for speaking with me about a possible opportunity at "+stop.r+". I wanted to follow up and reiterate my interest.","",angle,"","Please let me know if there is any other information I can provide or a good time to reconnect.","","Thank you,","Jonathan"],
-    "apply-online":[greeting,"","I stopped by "+stop.r+" and was directed to apply online for a front-of-house opportunity. I wanted to follow up directly as well and express my interest in joining the team.","",angle,"","I'm completing the online application and would be happy to provide anything else that would be useful.","","Thank you,","Jonathan"]
-  };
-  return "https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(contact.email)+"&su="+encodeURIComponent(subjects[status])+"&body="+encodeURIComponent(bodies[status].join("\n"));
+  return "https://mail.google.com/mail/?view=cm&fs=1&to="+encodeURIComponent(contact.email)+"&su="+encodeURIComponent(draft.subject)+"&body="+encodeURIComponent(draft.body);
 }
 function revisitScript(stop,status,contact){
-  const name=contact.person?contact.person.split(" ")[0]:"the manager";
-  if(status==="chat") return "Hi, I stopped by recently and had a chance to speak with "+name+". I wanted to follow up on our conversation about front-of-house opportunities and see whether there might be a good next step from here.";
-  if(status==="no-manager") return "Hi, I stopped by recently hoping to introduce myself about front-of-house work but missed the manager. Is "+name+" or whoever handles FOH hiring available for a quick introduction today?";
-  if(status==="maybe") return "Hi, I spoke with the team recently about a possible opportunity and was told there may be a fit. I wanted to follow up in person and see whether there has been any movement or whether there is anything else I can provide.";
-  return "Hi, I stopped by and was directed to apply online. I've followed that instruction and wanted to briefly introduce myself / follow up so the team can put a face to the application.";
+  const submitted=!!STEP_STATE[stepKey(stop,status,'submit-application')];
+  if(status==='apply-online'&&!hasVisit(stop))return submitted?'Hi, I submitted an online application for '+exactRole(stop)+' on '+submissionDate(stop,status)+'. Is there any further information that would be useful?':'Hi, I am preparing an online application for '+exactRole(stop)+' through '+applicationSite(contact)+'. Could you please confirm the exact role and preferred application link before I submit?';
+  if(status==="apply-online"&&!submitted)return "Hi, I am preparing the online application. May I confirm the exact role and application link before I submit?";
+  return intelFor(stop.n)?.nextSteps?.revisitScripts?.[status]||"Hi, I’m following up on my earlier visit. Is there a good time to speak briefly with whoever handles front-of-house hiring?";
 }
 function tasksFor(stop,status,contact){
   const base=[];
   if(status==="apply-online"){
     base.push({id:"open-application",title:"Open the application website",desc:contact.applyUrl?"Use the verified/researched application path below.":"No verified application URL is stored yet. Add the exact link the restaurant gave you under Contact & application details."});
     base.push({id:"submit-application",title:"Submit the online application",desc:"Use the tailored cover letter and make sure your resume reflects the role you're applying for."});
-    base.push({id:"followup-email",title:"Send a short application follow-up",desc:"Open the prewritten Gmail draft after submitting so the team can connect your application with your in-person visit."});
-    base.push({id:"reminder",title:"Schedule a follow-up",desc:"Set a reminder for three business days after the application."});
+    base.push({id:"followup-email",title:"Send a short application follow-up",desc:"After submitting, use the reviewed draft to ask whether any further information would be useful."});
+    base.push({id:"reminder",title:"Schedule a follow-up",desc:"Use the researched cadence below, or the date agreed with the manager."});
     base.push({id:"prep",title:"Keep interview prep ready",desc:"Review Study Notes before any call-back or interview."});
   } else if(status==="no-manager"){
     base.push({id:"intro-email",title:"Send an introduction email",desc:"Let the restaurant know you stopped in and ask for the best time/person to reconnect with."});
@@ -112,7 +136,7 @@ function tasksFor(stop,status,contact){
     base.push({id:"prep",title:"Prepare for the next conversation",desc:"Review Study Notes and the tailored cover letter before a callback, second visit, or interview."});
   } else if(status==="maybe"){
     base.push({id:"followup-email",title:"Send a concise follow-up email",desc:"Reiterate interest without overdoing it; reference the conversation and the strongest fit."});
-    base.push({id:"reminder",title:"Schedule a two-business-day check-in",desc:"Give them room, then make sure you actually reconnect."});
+    base.push({id:"reminder",title:"Schedule the agreed check-in",desc:"Give them room, then make sure you actually reconnect."});
     base.push({id:"revisit",title:"Prepare the follow-up / revisit script",desc:"Have a short, confident line ready if you go back in person."});
     base.push({id:"prep",title:"Review likely interview questions",desc:"Treat a Maybe as a live lead and be ready if it turns into an interview quickly."});
   }
@@ -121,7 +145,13 @@ function tasksFor(stop,status,contact){
 function stepKey(stop,status,id){return String(stop.n)+":"+status+":"+id}
 function saveStep(stop,status,id,checked){
   const k=stepKey(stop,status,id);
-  if(checked)STEP_STATE[k]=1;else delete STEP_STATE[k];
+  if(checked){
+    STEP_STATE[k]=1;
+    if(id==='submit-application'&&!STEP_STATE[stepKey(stop,status,'submission-date')])STEP_STATE[stepKey(stop,status,'submission-date')]=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Toronto',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  }else{
+    delete STEP_STATE[k];
+    if(id==='submit-application')delete STEP_STATE[stepKey(stop,status,'submission-date')];
+  }
   localStorage.setItem(STEP_KEY,JSON.stringify(STEP_STATE));
   updateProgress();
 }
@@ -147,7 +177,8 @@ function render(){
     const card=document.createElement("article");
     card.className="lead-card"+(String(focus)===String(stop.n)?" highlight":"");
     card.dataset.lead=stop.n;
-    const gmail=gmailDraftUrl(stop,status,contact);
+    const draft=draftFor(stop,status,contact);
+    const gmail=gmailDraftUrl(contact,draft);
     const cal=calendarUrl(stop,status);
     const prep=stop.custom?"":preview("restaurant.html",{stop:stop.n,view:"flashcards"});
     const cover=stop.custom?"":preview("restaurant.html",{stop:stop.n,view:"coverletter"});
@@ -160,9 +191,9 @@ function render(){
     if(status==="apply-online"){
       applyButton=contact.applyUrl?'<a class="action apply" href="'+esc(contact.applyUrl)+'" target="_blank" rel="noopener noreferrer">'+esc(contact.applyLabel||"Open Application")+' ↗</a>':'<span class="action apply disabled">Application link needed</span>';
     }
-    card.innerHTML='<div class="lead-head"><div><div class="lead-num">Stop '+esc(stop.n)+'</div><div class="lead-name">'+esc(stop.r)+'</div><div class="lead-address">'+esc(stop.a||"")+'</div></div><span class="status-pill status-'+esc(status)+'">'+esc(STATUS_LABELS[status])+'</span></div>'+
-      '<div class="lead-body"><div class="tasks">'+taskHtml+'</div><div class="actions">'+
-        (gmail?'<a class="action primary gmail" href="'+esc(gmail)+'" target="_blank" rel="noopener noreferrer">Draft Gmail ↗</a>':'<span class="action gmail disabled">Add email to draft Gmail</span>')+
+    card.innerHTML='<div class="lead-head"><div><div class="lead-num">Stop '+esc(stop.n)+'</div><div class="lead-name">'+esc(stop.r)+'</div><div class="lead-address">'+esc((window.FLOW_DATA?.restaurants||[]).find(r=>String(r.id)===String(stop.n))?.address||stop.a||"")+'</div></div><span class="status-pill status-'+esc(status)+'">'+esc(STATUS_LABELS[status])+'</span></div>'+
+      '<div class="flow-note">'+esc(intel?.nextSteps?.cadence?.[status]||'Follow the timing agreed with the team.')+'</div>'+(status==='apply-online'&&!hasVisit(stop)?'<div class="flow-note">Online application · no visit recorded</div>':'')+'<div class="lead-body"><div class="tasks">'+taskHtml+'</div><div class="actions">'+
+        (gmail?'<a class="action primary gmail" href="'+esc(gmail)+'" target="_blank" rel="noopener noreferrer">Open reviewed Gmail draft ↗</a>':'<span class="action gmail disabled">Add email to draft Gmail</span>')+
         applyButton+
         '<a class="action calendar" href="'+esc(cal)+'" target="_blank" rel="noopener noreferrer">Schedule Follow-Up ↗</a>'+
         '<button class="action script" data-script-toggle>Revisit / Follow-Up Script</button>'+
@@ -170,15 +201,21 @@ function render(){
         (cover?'<a class="action" href="'+esc(cover)+'">Open Cover Letter</a>':"")+
         (contact.applyCaveat?'<div class="action-note">'+esc(contact.applyCaveat)+'</div>':"")+
       '</div></div>'+
+      '<details class="lead-details"><summary>Follow-up timing</summary><p>'+esc(intel?.nextSteps?.cadence?.[status]||'Use the timing agreed with the team.')+'</p><label class="contact-field"><span>Date and time in Toronto · editable suggestion</span><input data-followup-time type="datetime-local" value="'+esc(followupTime(stop,status))+'"></label><p>Opening Calendar prepares an event. Save it there when you are ready.</p></details>'+
+      '<details class="lead-details" open><summary>Review your draft</summary><p>Replace bracketed details and check the recipient before opening Gmail.</p><label class="contact-field"><span>Subject</span><input data-draft-subject value="'+esc(draft.subject)+'"></label><label class="contact-field"><span>Message</span><textarea data-draft-body rows="10">'+esc(draft.body)+'</textarea></label><button class="tiny" data-copy-draft>Copy message</button></details>'+
       '<div class="script-box" data-script-box>'+esc(script)+'<div class="script-tools"><button class="tiny" data-copy-script>Copy script</button></div></div>'+
       '<details class="lead-details"><summary>Contact & application details</summary><div class="contact-grid">'+
         '<label class="contact-field"><span>Contact / manager</span><input data-person value="'+esc(contact.person)+'" placeholder="Manager or contact name"></label>'+
         '<label class="contact-field"><span>Email</span><input data-email type="email" value="'+esc(contact.email)+'" placeholder="Public / provided work email"></label>'+
         '<label class="contact-field full"><span>Application URL</span><input data-apply-url value="'+esc(contact.applyUrl)+'" placeholder="Paste exact application link if they give you one"></label>'+
       '</div><button class="save-contact">Save details</button></details>';
-    card.querySelectorAll("[data-step]").forEach(cb=>cb.onchange=()=>{saveStep(stop,status,cb.dataset.step,cb.checked);cb.closest(".task").classList.toggle("done",cb.checked)});
+    card.querySelectorAll("[data-step]").forEach(cb=>cb.onchange=()=>{saveStep(stop,status,cb.dataset.step,cb.checked);render()});
     card.querySelector("[data-script-toggle]").onclick=()=>card.querySelector("[data-script-box]").classList.toggle("show");
     card.querySelector("[data-copy-script]").onclick=async function(){try{await navigator.clipboard.writeText(script);this.textContent="Copied ✓"}catch(e){this.textContent="Select + copy"}};
+    card.querySelector('[data-followup-time]').onchange=ev=>{if(!ev.target.value)return;FOLLOWUPS[stop.n+':'+status]=ev.target.value;localStorage.setItem(FOLLOWUP_KEY,JSON.stringify(FOLLOWUPS));card.querySelector('a.calendar').href=calendarUrl(stop,status,ev.target.value);};
+    const updateDraft=()=>{const updated={subject:card.querySelector('[data-draft-subject]').value,body:card.querySelector('[data-draft-body]').value};DRAFTS[draft.key]=updated;localStorage.setItem(DRAFT_KEY,JSON.stringify(DRAFTS));const link=card.querySelector('a.gmail');if(link)link.href=gmailDraftUrl(contact,updated);};
+    card.querySelector('[data-draft-subject]').oninput=updateDraft;card.querySelector('[data-draft-body]').oninput=updateDraft;
+    card.querySelector('[data-copy-draft]').onclick=async function(){try{await navigator.clipboard.writeText(card.querySelector('[data-draft-body]').value);this.textContent='Copied ✓';}catch(_){this.textContent='Select and copy the message';}};
     card.querySelector(".save-contact").onclick=()=>saveContact(stop,card);
     list.append(card);
   });

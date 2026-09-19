@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#f6f1e8">
 <title>Toronto Culinary Passport — Route Portal</title>
-<link rel="stylesheet" href="map.css">
+<link rel="stylesheet" href="map.css?v=20260919-passport">
+<link rel="stylesheet" href="flow.css?v=20260919-passport">
 </head>
 <body>
 <div class="portal-shell">
@@ -35,7 +36,7 @@
     <select id="statusFilter" aria-label="Filter by outcome">
       <option value="all">All outcomes</option>
     </select>
-    <button id="fitRoute" class="secondary-action">Fit full route</button><a id="dayPlanMap" class="secondary-action portal-nav-link" href="day.html">Tomorrow Plan</a><a id="nextStepsMap" class="secondary-action portal-nav-link nextsteps-map" href="nextsteps.html">Next Steps <span id="nextStepsMapCount">0</span></a><a id="hireabilityMap" class="secondary-action portal-nav-link hireability-map" href="hireability.html">Hireability</a>
+    <button id="fitRoute" class="secondary-action">Fit full route</button><a id="dayPlanMap" class="secondary-action portal-nav-link" href="day.html">Saturday Plan</a><a id="nextStepsMap" class="secondary-action portal-nav-link nextsteps-map" href="nextsteps.html">Next Steps <span id="nextStepsMapCount">0</span></a><a id="hireabilityMap" class="secondary-action portal-nav-link hireability-map" href="hireability.html">Hireability</a>
   </div>
 
   <main class="portal-grid">
@@ -90,10 +91,12 @@
   </section>
 </div>
 
-<script src="stops1.js"></script>
-<script src="stops2.js"></script>
-<script src="routes.js"></script>
+<script src="stops1.js?v=20260919-passport"></script>
+<script src="stops2.js?v=20260919-passport"></script>
+<script src="routes.js?v=20260919-passport"></script>
 <script src="google-config.js"></script>
-<script src="map.js"></script>
+<script src="flow-data.js?v=20260919-passport"></script>
+<script src="flow.js?v=20260919-passport"></script>
+<script src="map.js?v=20260919-passport"></script>
 </body>
 </html>

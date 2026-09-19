@@ -17,7 +17,8 @@ const outcomes=JSON.parse(localStorage.getItem(OUTCOME_KEY)||"{}");
 const custom=JSON.parse(localStorage.getItem(CUSTOM_KEY)||"[]");
 
 const esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
-const allStops=()=>D.concat(custom);
+const researchedStops=()=>D.concat(window.ADDITIONAL_PROSPECTS||[]);
+const allStops=()=>researchedStops().concat(custom);
 function preview(file,params={}){
   const qs=new URLSearchParams(params).toString();
   if(location.hostname==="html-preview.github.io"){
@@ -74,8 +75,8 @@ renderStories();
 const drillSelect=document.querySelector("#drillRestaurant");
 const params=new URLSearchParams(location.search);
 const initialStop=params.get("stop");
-drillSelect.innerHTML='<option value="">Choose a restaurant</option>'+D.map(x=>'<option value="'+x.n+'">'+x.n+'. '+esc(x.r)+'</option>').join("");
-if(initialStop&&D.some(x=>String(x.n)===String(initialStop)))drillSelect.value=initialStop;
+drillSelect.innerHTML='<option value="">Choose a restaurant</option>'+researchedStops().map(x=>'<option value="'+x.n+'">'+x.n+'. '+esc(x.r)+'</option>').join("");
+if(initialStop&&researchedStops().some(x=>String(x.n)===String(initialStop)))drillSelect.value=initialStop;
 const DRILL_Q=[
   ["intro","Your 20-second introduction"],
   ["whyHere","Why this restaurant specifically?"],
@@ -88,8 +89,11 @@ function renderDrill(){
   const id=drillSelect.value;
   const links=document.querySelector("#drillLinks"),ctx=document.querySelector("#drillContext"),qs=document.querySelector("#drillQuestions");
   if(!id){links.innerHTML="";ctx.innerHTML='<p>Choose a restaurant to build the A-GAME pre-door check.</p>';qs.innerHTML="";return}
-  const stop=D.find(x=>String(x.n)===String(id)),intel=(window.RESTAURANT_INTEL||{})[String(id)];
-  links.innerHTML='<a class="mini-link" href="'+esc(preview("restaurant.html",{stop:id,view:"flashcards"}))+'">Study Notes</a><a class="mini-link" href="'+esc(preview("restaurant.html",{stop:id,view:"coverletter"}))+'">Cover Letter</a><a class="mini-link" href="'+esc(preview("map.html",{focusStop:id}))+'">Map</a>';
+  const stop=researchedStops().find(x=>String(x.n)===String(id)),intel=(window.RESTAURANT_INTEL||{})[String(id)],flowRecord=(window.FLOW_DATA?.restaurants||[]).find(r=>String(r.id)===String(id));
+  const originalStop=D.some(x=>String(x.n)===String(id));
+  const mapHref=originalStop?preview("map.html",{focusStop:id}):(flowRecord&&window.PassportFlow?window.PassportFlow.maps(flowRecord):"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent([stop.r,stop.a,"Toronto Ontario"].filter(Boolean).join(" ")));
+  const mapTarget=originalStop?"":' target="_blank" rel="noopener noreferrer"';
+  links.innerHTML='<a class="mini-link" href="'+esc(preview("restaurant.html",{stop:id,view:"flashcards"}))+'">Study Notes</a><a class="mini-link" href="'+esc(preview("restaurant.html",{stop:id,view:"coverletter"}))+'">Cover Letter</a><a class="mini-link" href="'+esc(mapHref)+'"'+mapTarget+'>Map</a>';
   ctx.innerHTML='<div class="context-title">A-GAME context</div><h3>'+esc(stop.r)+'</h3>'+
     '<p><strong>Restaurant identity:</strong> '+esc(intel?.summary||stop.d||"Research not completed yet.")+'</p>'+
     '<p><strong>Your current researched fit:</strong> '+esc(intel?.hiringAngle||"Not researched yet — rely on your verified experience, not guesses.")+'</p>'+

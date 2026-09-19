@@ -1,8 +1,9 @@
 const params=new URLSearchParams(location.search);
 const stopId=params.get("stop")||"1";
 const initialView=params.get("view")||"summary";
-const stop=D.find(function(x){return String(x.n)===String(stopId)});
+const stop=D.concat((window.ADDITIONAL_PROSPECTS||[])).find(function(x){return String(x.n)===String(stopId)});
 const data=(window.RESTAURANT_INTEL||{})[String(stopId)];
+const flowRecord=(window.FLOW_DATA?.restaurants||[]).find(x=>String(x.id)===String(stopId));
 const esc=function(x){return String(x==null?"":x).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]})};
 
 function preview(file,ps){
@@ -20,12 +21,13 @@ const nextStepsTab=document.querySelector("#nextStepsTab");if(nextStepsTab)nextS
 const hireabilityTab=document.querySelector("#hireabilityTab");if(hireabilityTab)hireabilityTab.href=preview("hireability.html",{stop:stopId});
 document.querySelector("#restaurantName").textContent=stop?stop.r:(data?data.name:"Restaurant Prep");
 document.querySelector("#restaurantMeta").textContent=stop?("#"+stop.n+" · "+stop.a+" · "+stop.p):"Restaurant intelligence";
+if(flowRecord)document.querySelector("#restaurantMeta").textContent='#'+stopId+' · '+flowRecord.address+' · '+(flowRecord.price.estimate||'Price not verified');
 const badge=document.querySelector("#statusBadge");
 badge.textContent=data?data.status:"NOT RESEARCHED";
 badge.classList.toggle("verified",!!data&&data.status==="VERIFIED");
 const contentEl=document.querySelector("#intelContent");
 const pending=document.querySelector("#pending");
-const views=["summary","flashcards","coverletter","walkin","sources"];
+const views=["summary","flashcards","coverletter","walkin","interview","sources"];
 
 function panel(html){contentEl.innerHTML='<section class="panel">'+html+"</section>"}
 
@@ -39,12 +41,15 @@ function setView(view){
   if(view==="coverletter")renderLetter();
   if(view==="walkin")renderWalkin();
   if(view==="sources")renderSources();
+  if(view==="interview")renderInterview();
 }
 
 function renderSummary(){
   let must="";
   data.mustKnow.forEach(function(x,i){must+='<div class="must"><strong>★ MUST KNOW '+(i+1)+'</strong><br>'+esc(x)+"</div>"});
   let html='<div class="eyebrow">60-second briefing</div><h2>'+esc(data.name)+'</h2><p>'+esc(data.summary)+"</p>";
+  if(flowRecord)html+='<div class="flow-banner">'+PassportFlow.badges(flowRecord)+'<p>'+esc(flowRecord.reason)+'</p><p><strong>Best window:</strong> '+esc(flowRecord.access.best)+'</p><p><strong>Price floor:</strong> '+esc(flowRecord.price.status)+' · '+esc(flowRecord.price.basis)+'</p><a href="'+esc(preview('day.html'))+'">See the next three moves</a></div>';
+  if(data.researchGaps?.length)html+='<details class="flow-research-gap"><summary>Known research limits</summary><ul>'+data.researchGaps.map(x=>'<li>'+esc(x)+'</li>').join('')+'</ul></details>';
   if(data.timing)html+='<div class="must"><strong>Timing:</strong> '+esc(data.timing)+"</div>";
   html+='<div class="must-list">'+must+"</div>";
   html+='</section><div class="grid" style="margin-top:12px">';
@@ -74,9 +79,10 @@ function renderFlashcards(){
       items+='<div class="intel-bullet-title">'+(item.must?'<span class="star">★</span>':"")+esc(item.title)+'</div>';
       items+='<div class="intel-bullet-summary">'+esc(item.summary||"")+'</div>';
       items+='</div>';
-      items+='<button class="intel-info" type="button" aria-expanded="false" aria-controls="'+detailId+'" aria-label="More information about '+esc(item.title)+'">i</button>';
+      const hasDetail=!!(item.detail||item.text)&&!!item.sources?.length;
+      if(hasDetail)items+='<button class="intel-info" type="button" aria-expanded="false" aria-controls="'+detailId+'" aria-label="More information about '+esc(item.title)+'">i</button>';
       items+='</div>';
-      items+='<div class="intel-detail" id="'+detailId+'"><div class="detail-label">Useful detail</div>'+formatDetail(item.detail||item.text||"")+formatNoteSources(item.sources||[])+'</div>';
+      if(hasDetail)items+='<div class="intel-detail" id="'+detailId+'"><div class="detail-label">Useful detail</div>'+formatDetail(item.detail||item.text||"")+(item.question?'<p class="note-question"><strong>Research question:</strong> '+esc(item.question)+'</p>':'')+(item.freshness?'<p class="flow-note"><strong>Freshness:</strong> '+esc(item.freshness)+'</p>':'')+formatNoteSources(item.sources||[])+'</div>';
       items+='</li>';
     });
   });
@@ -121,7 +127,7 @@ function formatNoteSources(sources){
 function renderLetter(){
   let app="";
   if(data.application){
-    app='<div class="card" style="margin-top:12px"><div class="mini">Application mode</div><p><strong>General:</strong> '+esc(data.application.general)+'</p><p><strong>Events:</strong> '+esc(data.application.events)+'</p><p><strong>Phone:</strong> '+esc(data.application.phone)+'</p><p><strong>Short note:</strong> '+esc(data.application.note)+"</p></div>";
+    app='<div class="card" style="margin-top:12px"><div class="mini">Application mode</div><p><strong>General:</strong> '+esc(data.application.general)+'</p><p><strong>Events:</strong> '+esc(data.application.events)+'</p><p><strong>Phone:</strong> '+esc(data.application.phone)+'</p><p>'+(data.application.url?'<a href="'+esc(data.application.url)+'" target="_blank" rel="noopener noreferrer">'+esc(data.application.urlLabel||'Application route')+'</a>':'')+'</p><p>'+esc(data.application.urlCaveat)+'</p><p><strong>Short note:</strong> '+esc(data.application.note)+"</p></div>";
   }
   panel('<div class="eyebrow">Tailored application</div><h2>Cover Letter</h2><button id="copyLetter" class="copy-btn">Copy cover letter</button><div class="letter">'+esc(data.coverLetter)+"</div>"+app);
   document.querySelector("#copyLetter").onclick=async function(){
@@ -133,6 +139,11 @@ function renderWalkin(){
   let mentions="";
   data.walkIn.mentions.forEach(function(x){mentions+="<li>"+esc(x)+"</li>"});
   panel('<div class="eyebrow">Walk-in strategy</div><h2>What to do at the door</h2><div class="card"><div class="mini">Ask for</div><h3>'+esc(data.walkIn.askFor)+'</h3></div><div class="card" style="margin-top:10px"><div class="mini">Opening line</div><p>'+esc(data.walkIn.opening)+'</p></div><div class="card" style="margin-top:10px"><div class="mini">Three intelligent mentions</div><ol class="mentions">'+mentions+'</ol></div><div class="grid" style="margin-top:10px"><div class="card"><div class="mini">Do not say</div><p>'+esc(data.walkIn.avoid)+'</p></div><div class="card"><div class="mini">If manager unavailable</div><p>'+esc(data.walkIn.fallback)+"</p></div></div>");
+}
+
+function renderInterview(){
+ const prep=data.interview||{};
+ panel('<div class="eyebrow">Interview preparation</div><h2>Practise for this room</h2><p>Use a real example from your experience. These are answer frameworks, not claims about events that happened.</p>'+(prep.questions||[]).map(q=>'<details class="flow-section"><summary>'+esc(q.question)+'</summary><p><strong>What they may be testing:</strong> '+esc(q.testing)+'</p><p>'+esc(q.framework)+'</p></details>').join('')+'<h3>Review before the conversation</h3><p>'+esc(prep.review||'Review the Food, Bar & Wine, Hospitality and Interview Study Notes.')+'</p><h3>Questions to ask them</h3><ul>'+(prep.askThem||[]).map(q=>'<li>'+esc(q)+'</li>').join('')+'</ul>');
 }
 
 function renderSources(){

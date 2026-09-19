@@ -11,7 +11,7 @@ const STATUSES=[
 const C=document.querySelector("#content"),Q=document.querySelector("#q"),E=document.querySelector("#empty"),
 esc=x=>String(x??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c])),
 statusLabel=id=>(STATUSES.find(s=>s.id===id)||{}).label||"No outcome yet",
-allStops=()=>D.concat(X),
+allStops=()=>D.concat(window.ADDITIONAL_PROSPECTS||[],X),
 mapSearch=x=>"https://www.google.com/maps/search/?api=1&query="+encodeURIComponent([x.r,x.a].filter(Boolean).join(" ")),
 portalUrl=params=>{
  const qs=new URLSearchParams(params||{}).toString();
@@ -84,16 +84,19 @@ function removeCustom(x){
  if(!confirm("Remove "+x.r+" from unexpected stops?"))return;
  X=X.filter(y=>y.n!==x.n);delete S[x.n];delete T[x.n];save();render()
 }
-function renderCard(x,l){
+function renderCard(original,l){
+ const f=(window.FLOW_DATA?.restaurants||[]).find(r=>String(r.id)===String(original.n));
+ const x=f?{...original,a:f.address,p:f.price.estimate||'Price not verified',d:f.reason}:original;
  const e=document.createElement("article"),visited=!!S[x.n],outcome=T[x.n]||"",map=x.custom?portalUrl({}):portalUrl({focusStop:x.n});
  e.className=visited?"done":"";e.dataset.n=x.n;e.dataset.s=[x.r,x.a,x.p,x.d,x.s,x.b].join(" ").toLowerCase();
- const badge=visited?`<button type="button" class="status-badge ${outcome?"has-status":"pending"}" data-edit-status>${esc(statusLabel(outcome))} <span>▾</span></button>`:"";
+ const badge=outcome?(visited?`<button type="button" class="status-badge has-status" data-edit-status>${esc(statusLabel(outcome))} <span>▾</span></button>`:`<span class="status-badge has-status">${esc(statusLabel(outcome))}</span>`):(visited?`<button type="button" class="status-badge pending" data-edit-status>${esc(statusLabel(outcome))} <span>▾</span></button>`:"");
  const remove=x.custom?'<button type="button" class="remove-stop" data-remove>Remove</button>':"";
- const prepLinks=x.custom?"":'<a class="prep-link flash-link" href="'+esc(intelUrl(x.n,"flashcards"))+'">Flash Cards</a><a class="prep-link letter-link" href="'+esc(intelUrl(x.n,"coverletter"))+'">Cover Letter</a>';
+ const prepLinks=x.custom?"":'<a class="prep-link flash-link" href="'+esc(intelUrl(x.n,"flashcards"))+'">Study Notes</a><a class="prep-link letter-link" href="'+esc(intelUrl(x.n,"coverletter"))+'">Cover Letter</a>';
  const actionable=["chat","no-manager","maybe","apply-online"].includes(outcome);
  const nextStepLink=actionable?'<a class="prep-link next-link" href="'+esc(nextStepsUrl(x.n))+'">Next Steps</a>':"";
+ const flow=f?PassportFlow.badges(f):"";
  const num=x.custom?"＋":x.n;
- e.innerHTML=`<div class="no">${num}</div><div><div class="tr"><h3>${esc(x.r)}</h3><span class="price">${esc(x.p)}</span>${badge}</div><div class="addr">${esc(x.a||"Address not added")}</div><p class="desc">${esc(x.d)}</p><div class="next"><b>${x.custom?"Type":"Next stop"}:</b> ${esc(x.custom?"Unexpected stop":x.s)}</div><div class="card-actions"><a class="route mobile-link-always" href="${esc(map)}">↗ Route Portal</a>${prepLinks}${nextStepLink}${remove}</div></div><div class="cw"><label for="c${x.n}">Visited</label><input id="c${x.n}" type="checkbox" ${visited?"checked":""}></div>`;
+ e.innerHTML=`<div class="no">${num}</div><div><div class="tr"><h3>${esc(x.r)}</h3><span class="price">${esc(x.p)}</span>${badge}</div><div class="addr">${esc(x.a||"Address not added")}</div>${flow}<p class="desc">${esc(x.d)}</p><div class="next"><b>${x.custom?"Type":"Original route"}:</b> ${esc(x.custom?"Unexpected stop":x.s)}</div><div class="card-actions"><a class="route mobile-link-always" href="${esc(map)}">↗ Route Portal</a>${prepLinks}${nextStepLink}${remove}</div></div><div class="cw"><label for="c${x.n}">Visited</label><input id="c${x.n}" type="checkbox" ${visited?"checked":""}></div>`;
  const cb=e.querySelector("input[type=checkbox]");
  cb.onchange=()=>{if(cb.checked){openOutcomeModal(x,true,cb)}else{delete S[x.n];delete T[x.n];save();render()}};
  const edit=e.querySelector("[data-edit-status]");if(edit)edit.onclick=()=>openOutcomeModal(x,false);
@@ -107,6 +110,10 @@ function render(){
   sec.innerHTML=`<div class="bh"><div><div class="bk">District ${i+1} · ${a.length} stops</div><h2>${esc(b.replace(/^Block \d+:\s*/,""))}</h2></div><div class="ba"><span class="bc" id="bc${i}">${n} / ${a.length} visited</span><a class="route" href="${esc(portalUrl({focusDistrict:i}))}">↗ Route Portal</a></div></div><div class="list"></div>`;
   const l=sec.querySelector(".list");a.forEach(x=>renderCard(x,l));C.append(sec)
  });
+ const additions=window.ADDITIONAL_PROSPECTS||[];
+ if(additions.length){
+  const sec=document.createElement("section");sec.className="custom-section";sec.innerHTML='<div class="bh"><div><div class="bk">Researched discoveries · separate from the original 42</div><h2>Additional prospects</h2></div></div><div class="list"></div>';additions.forEach(x=>renderCard(x,sec.querySelector(".list")));C.append(sec);
+ }
  if(X.length){
   const sec=document.createElement("section"),n=X.filter(x=>S[x.n]).length;
   sec.className="custom-section";sec.innerHTML=`<div class="bh"><div><div class="bk">Added on the fly · ${X.length} stop${X.length===1?"":"s"}</div><h2>Unexpected Stops</h2></div><div class="ba"><span class="bc">${n} / ${X.length} visited</span></div></div><div class="list"></div>`;
