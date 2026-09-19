@@ -61,17 +61,33 @@ function renderFlashcards(){
   });
 
   let items="";
+  let index=0;
   Object.keys(notes).forEach(function(cat){
     notes[cat].forEach(function(item){
+      const detailId="note-detail-"+index++;
       items+='<li class="intel-bullet '+(item.must?"must-note":"")+'" data-cat="'+esc(cat)+'">';
+      items+='<div class="intel-bullet-main">';
+      items+='<div class="intel-bullet-copy">';
       items+='<div class="intel-bullet-category">'+esc(cat)+'</div>';
       items+='<div class="intel-bullet-title">'+(item.must?'<span class="star">★</span>':"")+esc(item.title)+'</div>';
-      items+='<div class="intel-bullet-text">'+esc(item.text)+'</div>';
+      items+='<div class="intel-bullet-summary">'+esc(item.summary||"")+'</div>';
+      items+='</div>';
+      items+='<button class="intel-info" type="button" aria-expanded="false" aria-controls="'+detailId+'" aria-label="More information about '+esc(item.title)+'">i</button>';
+      items+='</div>';
+      items+='<div class="intel-detail" id="'+detailId+'"><div class="detail-label">Useful detail</div>'+formatDetail(item.detail||item.text||"")+'</div>';
       items+='</li>';
     });
   });
 
-  panel('<div class="eyebrow">Restaurant research</div><h2>Study Notes</h2><p>Use the category filters to narrow the research. Every bullet contains the full useful information for that point — nothing is hidden behind cards or reveal buttons.</p><div class="flash-toolbar">'+chips+'</div><ul class="intel-bullet-list">'+items+"</ul>");
+  panel('<div class="eyebrow">Restaurant research</div><h2>Study Notes</h2><p>Each bullet gives you the memory-friendly summary first. Tap the small <strong>i</strong> for the full briefing, including the deeper context that may help in a conversation, interview, or on the floor.</p><div class="flash-toolbar">'+chips+'</div><ul class="intel-bullet-list">'+items+"</ul>");
+
+  contentEl.querySelectorAll(".intel-info").forEach(function(btn){
+    btn.onclick=function(){
+      const li=btn.closest(".intel-bullet");
+      const open=li.classList.toggle("open");
+      btn.setAttribute("aria-expanded",open?"true":"false");
+    };
+  });
 
   contentEl.querySelectorAll(".chip").forEach(function(ch){
     ch.onclick=function(){
@@ -83,6 +99,12 @@ function renderFlashcards(){
       });
     };
   });
+}
+
+function formatDetail(text){
+  return String(text||"").split(/\n\n+/).filter(Boolean).map(function(p){
+    return '<p>'+esc(p)+'</p>';
+  }).join("");
 }
 
 function renderLetter(){
