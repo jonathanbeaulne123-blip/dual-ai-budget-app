@@ -158,7 +158,7 @@ function renderMetrics(){
   const all=Object.values(conversions);
   const n=k=>all.filter(x=>x&&x[k]).length;
   const manager=n("manager"),interviews=Math.max(n("interview"),Object.values(outcomes).filter(x=>x==="interview"||x==="job").length);
-  const rate=manager?Math.round(interviews/manager*100):null;
+  const rate=(manager&&interviews<=manager)?Math.round(interviews/manager*100):null;
   document.querySelector("#conversionMetrics").innerHTML=[
     [manager,"manager conversations"],
     [n("resume"),"resumes accepted"],
