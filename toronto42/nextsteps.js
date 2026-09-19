@@ -68,7 +68,7 @@ function calendarUrl(stop,status){
 function gmailDraftUrl(stop,status,contact){
   if(!contact.email)return "";
   const intel=intelFor(stop.n);
-  const who=contact.person?contact.person.split(" ")[0]:(stop.r+" Team");
+  const who=contact.person?(/\bTeam\b/i.test(contact.person)?contact.person:contact.person.split(" ")[0]):(stop.r+" Team");
   const greeting="Hi "+who+",";
   const subjects={
     chat:"Thank you — "+stop.r,
