@@ -74,7 +74,7 @@ function renderFlashcards(){
       items+='</div>';
       items+='<button class="intel-info" type="button" aria-expanded="false" aria-controls="'+detailId+'" aria-label="More information about '+esc(item.title)+'">i</button>';
       items+='</div>';
-      items+='<div class="intel-detail" id="'+detailId+'"><div class="detail-label">Useful detail</div>'+formatDetail(item.detail||item.text||"")+'</div>';
+      items+='<div class="intel-detail" id="'+detailId+'"><div class="detail-label">Useful detail</div>'+formatDetail(item.detail||item.text||"")+formatNoteSources(item.sources||[])+'</div>';
       items+='</li>';
     });
   });
@@ -105,6 +105,15 @@ function formatDetail(text){
   return String(text||"").split(/\n\n+/).filter(Boolean).map(function(p){
     return '<p>'+esc(p)+'</p>';
   }).join("");
+}
+
+function formatNoteSources(sources){
+  if(!sources||!sources.length)return "";
+  let links="";
+  sources.forEach(function(s){
+    links+='<a class="note-source" target="_blank" rel="noopener noreferrer" href="'+esc(s[1])+'">'+esc(s[0])+' ↗</a>';
+  });
+  return '<div class="note-research"><div class="detail-label">Research for this note</div><div class="note-source-list">'+links+'</div></div>';
 }
 
 function renderLetter(){
