@@ -9,6 +9,8 @@ export type CommandProgressPhase =
   | "cloud-ack"
   | "failed";
 
+export type CommandProgressAudience = "household" | "personal";
+
 export type CommandProgressStepState = "pending" | "active" | "done" | "failed";
 
 export type CommandProgressStep = {
@@ -52,31 +54,33 @@ export function buildCommandProgress(input: {
   phase: CommandProgressPhase;
   transportRequested: boolean;
   failedAt?: "local" | "cloud";
+  audience?: CommandProgressAudience;
 }): CommandProgressDisplay {
   if (input.phase === "idle" || !input.transportRequested) return HIDDEN;
 
+  const personal = input.audience === "personal";
   const states = stepStatesForPhase(input.phase);
   const steps: CommandProgressStep[] = [
     { id: "local", label: "This phone", state: input.failedAt === "local" ? "failed" : states[0] ?? "pending" },
     { id: "cloud", label: "Cloud", state: input.failedAt === "cloud" ? "failed" : states[1] ?? "pending" },
-    { id: "household", label: "Household", state: states[2] ?? "pending" },
+    { id: "household", label: personal ? "Private books" : "Household", state: states[2] ?? "pending" },
   ];
 
   let summary = "";
   let liveAnnouncement: string | null = null;
 
   if (input.phase === "confirming") {
-    summary = "Saving on this phone…";
-    liveAnnouncement = "Saving.";
+    summary = personal ? "Saving to your private books…" : "Saving on this phone…";
+    liveAnnouncement = personal ? "Saving to your private books." : "Saving.";
   } else if (input.phase === "accepted-local") {
-    summary = "Posted here. Sharing to the cloud…";
-    liveAnnouncement = "Posted on this phone. Sharing to the cloud.";
+    summary = personal ? "Saved here. Syncing your private books…" : "Posted here. Sharing to the cloud…";
+    liveAnnouncement = personal ? "Saved on this phone. Syncing your private books." : "Posted on this phone. Sharing to the cloud.";
   } else if (input.phase === "cloud-ack") {
-    summary = "Shared with the household books.";
-    liveAnnouncement = "Shared with the household books.";
+    summary = personal ? "Saved to your private books." : "Shared with the household books.";
+    liveAnnouncement = summary;
   } else if (input.phase === "failed") {
-    summary = "Could not finish sharing.";
-    liveAnnouncement = "Could not finish sharing.";
+    summary = personal ? "Could not finish saving to your private books." : "Could not finish sharing.";
+    liveAnnouncement = summary;
   }
 
   return {
