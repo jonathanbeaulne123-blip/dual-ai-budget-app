@@ -188,8 +188,13 @@ function prefersReducedMotion(): boolean {
   } catch { return false; }
 }
 
-const PHONE_TOWER: Pose = { target: [0, 1.5, 0], r: 8.6, theta: 0, phi: 1.06 };
-const DESKTOP_TOWER: Pose = { target: [0, 1.7, 0], r: 9.8, theta: 0.3, phi: 0.98 };
+/**
+ * The camera stands below the lifted roof and looks in, not down on it: the
+ * Court's own tilt limit (`COURT_BOUNDS.maxPhi`) is the binding constraint, so
+ * the target sits low and the distance carries the height instead.
+ */
+const PHONE_TOWER: Pose = { target: [0, 2.0, 0], r: 10.4, theta: 0.05, phi: 1.34 };
+const DESKTOP_TOWER: Pose = { target: [0, 2.1, 0], r: 11.0, theta: 0.34, phi: 1.34 };
 
 /**
  * Camera poses in the one convention every place is written in:
@@ -606,7 +611,7 @@ export function createTower(scene: THREE.Scene, options: TowerOptions): TowerHan
   function applyRoof(): void {
     if (!shell) return;
     const k = clamp(roofLift, 0, 1);
-    shell.roof.position.y = shell.wallTop + k * 1.55;
+    shell.roof.position.y = shell.wallTop + k * 1.05;
     shell.roof.rotation.z = k * 0.1;
     shell.roof.rotation.x = k * 0.05;
   }

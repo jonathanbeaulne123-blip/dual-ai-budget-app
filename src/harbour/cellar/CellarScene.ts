@@ -148,8 +148,12 @@ export type CellarOptions = {
   loadModels?: boolean;
 };
 
-const PHONE_CELLAR: Pose = { target: [0, 0.95, -1.4], r: 6.4, theta: 0, phi: 1.24 };
-const DESKTOP_CELLAR: Pose = { target: [0, 0.9, -1.6], r: 7.6, theta: 0.26, phi: 1.18 };
+/**
+ * Inside the room, below the vault: the undercroft is 2.35 to the springing and
+ * 8.2 deep, so the eye has to sit under the ceiling and inside the back wall.
+ */
+const PHONE_CELLAR: Pose = { target: [0, 0.9, -1.8], r: 5.8, theta: 0.03, phi: 1.32 };
+const DESKTOP_CELLAR: Pose = { target: [0, 0.95, -1.9], r: 6.2, theta: 0.16, phi: 1.33 };
 
 /**
  * Pose keys in the one convention every place is written in,
@@ -545,6 +549,10 @@ export const cellarPlace: Place = registerPlace({
       dressing: cellarDressingFrom(dressing),
       reading,
       quality,
+      // The place reads the person's motion preference the way the Tower does,
+      // so an arriving cellar cuts its water into place instead of easing it.
+      reduced: typeof window !== "undefined" && typeof window.matchMedia === "function"
+        ? window.matchMedia("(prefers-reduced-motion: reduce)").matches : false,
       ...(context?.signal ? { signal: context.signal } : {}),
       onLanded: () => context?.invalidate(),
     });

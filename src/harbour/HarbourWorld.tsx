@@ -193,6 +193,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
         court.current = first === "court" ? world.place() as CourtHandle : null;
         world.setToolOpen(Boolean(routeRef.current.surface));
         void holdRail(world);
+        world.invalidate();
         const saved = readHouseReturn(localStorage, identityRef.current, harbourCameraSlot(houseComposition(element.getBoundingClientRect().width || window.innerWidth), first));
         if (saved?.camera && sameHouseCameraRoute(saved.route, routeRef.current)) world.restore(saved.camera);
         if (first !== "court") return;
@@ -231,6 +232,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       if (cancelled || runtime.current !== world) return;
       if (from === "court") { queen.current?.dispose(); queen.current = null; court.current = null; world.setBreathing(false); }
       world.enter(place, { from });
+      world.invalidate();
       court.current = place === "court" ? world.place() as CourtHandle : null;
       void holdRail(world);
       if (place !== "court" || tier === "flat") return;
@@ -259,6 +261,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     const date = words && typeof words === "object" && "date" in words ? String((words as { date: unknown }).date) : null;
     if (date) setPhrase(date);
     setScrub(rail.current?.index() ?? null);
+    // The water has a new level to find, and the jars ahead of the line go pale.
+    runtime.current?.invalidate();
   }, []);
   const walk = useCallback((move: number | "today" | { to: number }) => {
     const controls = rail.current; if (!controls) return;

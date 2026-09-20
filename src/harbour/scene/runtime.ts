@@ -65,6 +65,12 @@ export type HarbourRuntime = {
   setBreathing: (on: boolean) => void;
   /** Something else that moves each animated frame (the Queen's breath); returns the way to stop it. */
   addAnimator: (animate: (t: number, dt: number) => void) => () => void;
+  /**
+   * Something inside the place started moving that the runtime did not ask for
+   * — the cellar's water finding its level, a bank's squash after a deposit.
+   * Runs animated frames until the place's own `animate` says it has settled.
+   */
+  invalidate: () => void;
   /** A return record's camera. */
   restore: (position: Vec3) => void;
   camera: () => Vec3;
@@ -156,7 +162,7 @@ type Pointer = { id: number; x: number; y: number; startX: number; startY: numbe
  * projects DOM twins; snapshots on suspend; disposes everything.
  */
 export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: RenderTier, callbacks: HarbourCallbacks): HarbourRuntime {
-  let disposed = false, frame = 0, previous = 0, lastPaint = 0, lastAnimated = 0, visible = true, toolOpen = false, breathing = false, intervalMs = CAMERA_INTERVAL_MS;
+  let disposed = false, frame = 0, previous = 0, lastPaint = 0, lastAnimated = 0, visible = true, toolOpen = false, breathing = false, settling = false, intervalMs = CAMERA_INTERVAL_MS;
   const mountedAt = performance.now();
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
   const dressing = callbacks.dressing ?? SCENE_DRESSING[theme];
@@ -345,12 +351,15 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (frame.done) { if (journey.from !== placeId) pull(journey.from); journey = null; }
     }
     const moving = easing || journey !== null;
-    const policy = harbourFramePolicy({ reduced: reduced.matches, moving, breathing, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen });
+    const policy = harbourFramePolicy({ reduced: reduced.matches, moving, breathing: breathing || settling, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen });
     intervalMs = policy.intervalMs;
     let animated = false;
     if (policy.animate && pointers.size === 0) {
       const t = (now - mountedAt) / 1000, adt = lastAnimated ? Math.min((now - lastAnimated) / 1000, 0.1) : 0;
-      animated = handle.animate(t, adt) === true || animators.size > 0;
+      const moved = handle.animate(t, adt) === true;
+      // The place has stopped moving of its own accord: stop asking for frames.
+      if (settling && !moved) settling = false;
+      animated = moved || animators.size > 0;
       for (const animate of animators) animate(t, adt);
       lastAnimated = now;
     }
@@ -452,6 +461,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     gesture(input) { court.setReduced(reduced.matches); if (input.kind === "orbit") court.drag(input.dx, input.dy); else court.zoom(input.delta); moved(); },
     setToolOpen(open) { toolOpen = open; schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
+    invalidate() { settling = true; dirty = true; previous = performance.now(); schedule(); },
     addAnimator(animate) { animators.add(animate); schedule(); return () => { animators.delete(animate); }; },
     restore(position) { court.restore(position); dirty = true; render(); schedule(); },
     camera: () => camera.position.toArray() as [number, number, number],
