@@ -4,7 +4,7 @@ import type { HearthsideRoute } from "../hearthside/routes.ts";
 
 export const HOUSE_WORLD_ENABLED = import.meta.env.VITE_HEARTH_HOUSE_WORLD === "1";
 export type HouseIdentity = { environment: Environment; householdId: string; memberId: string; scope: LedgerView };
-export type HouseReturn = { version: 1; identity: string; route: HouseRoute; focus: string; scroll: number; camera?: [number, number, number]; at: string };
+export type HouseReturn = { version: 1; identity: string; route: HouseRoute; focus: string; scroll: number; camera?: [number, number, number]; cameraComposition?: "phone" | "desktop"; at: string };
 type Store = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 export const houseIdentity = (identity: HouseIdentity) => [identity.environment, identity.householdId, identity.memberId, identity.scope].map(encodeURIComponent).join(":");
 const key = (identity: HouseIdentity, object = "arrival") => `hearth:house:v1:${houseIdentity(identity)}:${encodeURIComponent(object)}`;
@@ -14,9 +14,9 @@ export function resolveHouseRouteScope(route: HouseRoute, currentScope: LedgerVi
   const scope = route.scope ?? currentScope;
   return { route: route.scope === scope ? route : { ...route, scope }, scope, changesScope: scope !== currentScope };
 }
-export function saveHouseReturn(storage: Store, identity: HouseIdentity, route: HouseRoute, options: Partial<Pick<HouseReturn, "focus" | "scroll" | "camera">> = {}, object = "arrival"): void {
+export function saveHouseReturn(storage: Store, identity: HouseIdentity, route: HouseRoute, options: Partial<Pick<HouseReturn, "focus" | "scroll" | "camera" | "cameraComposition">> = {}, object = "arrival"): void {
   if (route.householdId !== identity.householdId || route.scope && route.scope !== identity.scope) return;
-  const record: HouseReturn = {version: 1, identity: houseIdentity(identity), route: {...route, scope: identity.scope}, focus: options.focus?.slice(0, 180) ?? "house-world-title", scroll: Math.max(0, Math.min(1e7, options.scroll ?? 0)), ...(options.camera?.every(Number.isFinite) ? {camera: options.camera} : {}), at: new Date().toISOString()};
+  const record: HouseReturn = {version: 1, identity: houseIdentity(identity), route: {...route, scope: identity.scope}, focus: options.focus?.slice(0, 180) ?? "house-world-title", scroll: Math.max(0, Math.min(1e7, options.scroll ?? 0)), ...(options.camera?.every(Number.isFinite) ? {camera: options.camera, cameraComposition:options.cameraComposition} : {}), at: new Date().toISOString()};
   try { storage.setItem(key(identity, object), JSON.stringify(record)); } catch { /* Navigation still works when device storage is unavailable. */ }
 }
 export function readHouseReturn(storage: Store, identity: HouseIdentity, object = "arrival"): HouseReturn | null {

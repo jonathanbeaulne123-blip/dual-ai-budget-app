@@ -22,10 +22,11 @@ let frames: Map<number, FrameRequestCallback>;
 let serial: number;
 let clock: number;
 let width: number;
+let height: number;
 let resize: () => void;
 
 beforeEach(() => {
-  frames = new Map(); serial = 0; width = 1440; clock = performance.now();
+  frames = new Map(); serial = 0; width = 1440; height = 720; clock = performance.now();
   vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { frames.set(++serial, callback); return serial; });
   vi.stubGlobal("cancelAnimationFrame", (id: number) => frames.delete(id));
   vi.stubGlobal("matchMedia", () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
@@ -35,7 +36,7 @@ beforeEach(() => {
   });
   vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
   host = document.createElement("div");
-  host.getBoundingClientRect = () => ({ width, height: 720, left: 0, top: 0, right: width, bottom: 720, x: 0, y: 0, toJSON: () => ({}) });
+  host.getBoundingClientRect = () => ({ width, height, left: 0, top: 0, right: width, bottom: height, x: 0, y: 0, toJSON: () => ({}) });
   world = mountHouseWorld(host, "classic", () => new Map(), vi.fn(), vi.fn());
 });
 afterEach(() => { world?.dispose(); vi.unstubAllGlobals(); });
@@ -64,4 +65,14 @@ it("pulls back from Queen detail while preserving an ordinary room's exact retur
   world!.go({ zone: "study:middle", camera: [2, 4, 5] });
   frame();
   expect(world!.camera()).toEqual([2, 4, 5]);
+});
+
+it("keeps a phone furniture composition when its open-object frame becomes shallow", () => {
+  width = 390; resize();
+  world!.go({ zone: "together:middle", phoneTarget: "pottery" }); frame();
+  const phone = world!.camera();
+  height = 240; resize(); frame();
+  expect(world!.camera()).toEqual(phone);
+  expect(phone[1]).toBeCloseTo(5.05);
+  expect(phone[2]).toBeCloseTo(4.55);
 });

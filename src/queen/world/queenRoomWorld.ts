@@ -709,7 +709,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   const pump = () => { if (!dead && stats.ambient && !raf) { started = 0; raf = rendererLease.requestFrame(frame); } };
   const halt = () => { if (raf) rendererLease.cancelFrame(raf); raf = 0; };
   suspendRenderer = () => { halt(); if (pending) rendererLease.cancelFrame(pending); pending = 0; if (animRaf) rendererLease.cancelFrame(animRaf); animRaf = 0; };
-  resumeRenderer = () => { if (hostRect.w && hostRect.h) { renderer.setSize(hostRect.w, hostRect.h, false); renderer.domElement.style.width = `${hostRect.w}px`; renderer.domElement.style.height = `${hostRect.h}px`; } invalidate(); pump(); };
+  resumeRenderer = () => { if (hostRect.w && hostRect.h) { renderer.setSize(hostRect.w, hostRect.h, false); renderer.domElement.style.width = `${hostRect.w}px`; renderer.domElement.style.height = `${hostRect.h}px`; } invalidate(); animate(); pump(); };
   const onHidden = () => { if (typeof document !== "undefined" && document.hidden) halt(); else pump(); };
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", onHidden);

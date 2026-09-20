@@ -76,7 +76,7 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
       const next=steps[0]!,point=new THREE.Vector3(next.point.x,next.point.y,next.point.z),distance=avatar.position.distanceTo(point);
       if(reduced.matches){const last=steps.at(-1)!;avatar.position.set(last.point.x,last.point.y,last.point.z);steps=[];finishWalk();}
       else {avatar.position.lerp(point,Math.min(1,dt*3/Math.max(distance,.001)));if(distance<.05){avatar.position.copy(point);arrivedNode=next;steps.shift();if(!steps.length)finishWalk();}}
-      if(steps.length){lookDestination.copy(avatar.position).add(new THREE.Vector3(0,1.1,-.5));destination.copy(avatar.position).add(new THREE.Vector3(camera.aspect<1?2:3,3.8,camera.aspect<1?9:12));}
+      if(steps.length){lookDestination.copy(avatar.position).add(new THREE.Vector3(0,1.1,-.5));destination.copy(avatar.position).add(new THREE.Vector3(viewportPhone?2:3,3.8,viewportPhone?9:12));}
     }
     moving=!reduced.matches&&(camera.position.distanceTo(destination)>.003||target.distanceTo(lookDestination)>.003);
     if(!moving){camera.position.copy(destination);target.copy(lookDestination);}else{camera.position.lerp(destination,1-Math.exp(-dt*7));target.lerp(lookDestination,1-Math.exp(-dt*7));}
@@ -89,8 +89,8 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
   }
   function resize(){const {width,height}=host.getBoundingClientRect();if(width<1||height<1||!lease.active)return;const phone=width<720;if(viewportPhone!==undefined&&viewportPhone!==phone)current={...current,camera:undefined};viewportPhone=phone;renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();go(current);render();}
   function poseFor(next:WorldDestination):Pose|undefined{
-    if(next.overview)return {center:[0,4,0],camera:[1,12,camera.aspect<1?51:30],phoneCamera:[1,12,51]};
-    const focus=next.target?set.focus[next.target]:camera.aspect<1&&next.phoneTarget?set.focus[next.phoneTarget]:undefined;
+    if(next.overview)return {center:[0,4,0],camera:[1,12,viewportPhone?51:30],phoneCamera:[1,12,51]};
+    const focus=next.target?set.focus[next.target]:viewportPhone&&next.phoneTarget?set.focus[next.phoneTarget]:undefined;
     return focus||set.zones[next.zone as keyof typeof set.zones];
   }
   function go(next:WorldDestination){
@@ -99,7 +99,7 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
     if(next.overview)next={...next,camera:undefined,queenView:undefined};
     const changed=current.zone!==next.zone;current=next;const pose=poseFor(next);if(!pose)return;
     if(changed){steps=[];walkEnd=null;}
-    destination.fromArray(next.camera??(camera.aspect<1?pose.phoneCamera:pose.camera));lookDestination.fromArray(pose.center);
+    destination.fromArray(next.camera??(viewportPhone?pose.phoneCamera:pose.camera));lookDestination.fromArray(pose.center);
     if(next.queenView){const anchor=set.anchors.find(a=>a.id==="queen");if(anchor){const p=new THREE.Vector3().fromArray(anchor.position);lookDestination.copy(p).add(new THREE.Vector3(0,next.queenView==="roots"?.25:1.1,0));destination.copy(lookDestination).add(new THREE.Vector3(next.queenView==="detail"?1:0,next.queenView==="roots"?.4:.3,next.queenView==="back"?-4:next.queenView==="detail"?2.5:4.7));}}
     const [room,level]=next.zone.split(":"),node=HOUSE_WALK_GRAPH.nodes.find(node=>node.id===`room:${room}:${level}`);
     if(node&&!steps.length){avatar.position.set(node.point.x,node.point.y,node.point.z);arrivedNode=node;host.dataset.walkNode=node.id;}

@@ -20,7 +20,8 @@ describe("house return cache addresses", () => {
   it("uses a room/time camera slot without changing the full arrival route", () => {
     const focused = { ...room, surface: "pottery", object: "piece/PIECE-1/DESIGN-1", time: "2026-09" };
     expect(houseCameraRoute(focused)).toEqual({ ...room, time: "2026-09" });
-    expect(houseCameraSlot(focused)).toBe("camera:together:middle:2026-09");
+    expect(houseCameraSlot(focused)).toBe("camera:v2:desktop:together:middle:2026-09");
+    expect(houseCameraSlot(focused,"phone")).not.toBe(houseCameraSlot(focused,"desktop"));
     expect(sameHouseCameraRoute(room, focused)).toBe(false);
     expect(sameHouseCameraRoute(room, { ...focused, time: undefined })).toBe(true);
     expect(sameHouseCameraRoute(room, { ...room, scope: "personal" })).toBe(false);

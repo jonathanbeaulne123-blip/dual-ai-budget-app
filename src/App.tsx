@@ -14,7 +14,7 @@ import { HouseWorld } from './house/HouseWorld.tsx';
 import { PersonalJourney } from './house/PersonalJourney.tsx';
 import { PersonalTogether } from './house/PersonalTogether.tsx';
 import { HOUSE_WORLD_ENABLED, HOUSE_PLACES, TARGET_NAMES, houseTargetRoute, houseLifeRoute, houseRouteFromLife, readHouseReturn, resolveHouseRouteScope, saveHouseReturn, type HouseIdentity, houseIdentity } from './house/navigation.ts';
-import { houseReturnSlot, needsHouseReturnCapture } from './house/returnCache.ts';
+import { houseReturnSlot, needsHouseReturnCapture, houseComposition } from './house/returnCache.ts';
 import { HOUSE_ROOMS, housePath, parseHouseRoute, togetherLevelForRoom, type HouseLevel, type HouseRoom, type HouseRoute } from './hearthside/houseRoutes.ts';
 import { deriveHouseCondition } from './core/houseCondition.ts';
 import {readHearthsideToolReturn,type HearthsideToolReturn} from './hearthside/focusedTool.ts';
@@ -6467,15 +6467,16 @@ export function App() {
   }
 
   function navigateHouseSurface(route:HouseRoute,replace=false){
-    if(household&&session&&route.surface&&needsHouseReturnCapture(activeHouseRoute,route)){saveHouseReturn(localStorage,{environment,householdId:household.householdId,memberId:session.memberId,scope:view},activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera()},houseReturnSlot(route));}
+    if(household&&session&&route.surface&&needsHouseReturnCapture(activeHouseRoute,route)){saveHouseReturn(localStorage,{environment,householdId:household.householdId,memberId:session.memberId,scope:view},activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera(),cameraComposition:readHouseComposition()},houseReturnSlot(route));}
     goTab(tabForHouseRoute(route),undefined,{route,history:replace?"replace":"push"});
   }
-  function readHouseCamera():[number,number,number]|undefined{try{const camera=JSON.parse(document.querySelector<HTMLElement>(".house-world__canvas")?.dataset.houseCamera??"null");return Array.isArray(camera)&&camera.length===3&&camera.every(Number.isFinite)?camera as [number,number,number]:undefined;}catch{return undefined;}}
+  function readHouseComposition(){return houseComposition(document.querySelector<HTMLElement>(".house-world__canvas")?.getBoundingClientRect().width||window.innerWidth);}
+  function readHouseCamera():[number,number,number]|undefined{if(document.querySelector(".house-world.is-overview,.house-world__stage[aria-label]"))return undefined;try{const camera=JSON.parse(document.querySelector<HTMLElement>(".house-world__canvas")?.dataset.houseCamera??"null");return Array.isArray(camera)&&camera.length===3&&camera.every(Number.isFinite)?camera as [number,number,number]:undefined;}catch{return undefined;}}
   function openHouseObject(target:string,object?:string){
     if(!household||!session)return;
     const identity:HouseIdentity={environment,householdId:household.householdId,memberId:session.memberId,scope:view};
     const route=houseTargetRoute({...activeHouseRoute,scope:view},target,object);
-    saveHouseReturn(localStorage,identity,activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera()},houseReturnSlot(route));
+    saveHouseReturn(localStorage,identity,activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera(),cameraComposition:readHouseComposition()},houseReturnSlot(route));
     goTab(tabForHouseRoute(route),undefined,{route,history:"push"});
     if(target==="hercules") {setWorkspaceCompact(false);if(!workspaceEnabled)openLegacyHercules();}
     requestAnimationFrame(()=>requestAnimationFrame(()=>{const heading=document.getElementById(target==="queen"?"house-queen-title":"house-tool-title");if(target!=="hercules")heading?.focus({preventScroll:true});heading?.scrollIntoView({block:"start",behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});}));
@@ -6486,7 +6487,7 @@ export function App() {
     const {surface:_surface,...rest}=activeHouseRoute;
     const route=back?.route??rest;
     goTab(tabForHouseRoute(route),undefined,{route,history:"push"});setWorkspaceCompact(false);
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{(document.getElementById(back?.focus||"house-world-title")??document.getElementById("house-world-title"))?.focus({preventScroll:true});window.scrollTo({top:back?.scroll??0,behavior:"instant"});if(back?.camera)window.dispatchEvent(new CustomEvent("hearth:house-return",{detail:{identity:houseIdentity({environment,householdId:household.householdId,memberId:session.memberId,scope:view}),camera:back.camera}}));}));
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{(document.getElementById(back?.focus||"house-world-title")??document.getElementById("house-world-title"))?.focus({preventScroll:true});window.scrollTo({top:back?.scroll??0,behavior:"instant"});if(back?.camera&&back.cameraComposition===readHouseComposition())window.dispatchEvent(new CustomEvent("hearth:house-return",{detail:{identity:houseIdentity({environment,householdId:household.householdId,memberId:session.memberId,scope:view}),camera:back.camera}}));}));
   }
   function syncKitchenTent(open: boolean) {
     if (HOUSE_WORLD_ENABLED || !household || !HEARTHSIDE_FLAGS.presentation || activeHouseRoute.room !== "kitchen-table" || activeHouseRoute.level === "middle") return;

@@ -18,9 +18,11 @@ export function houseCameraRoute(route: HouseRoute): HouseRoute {
   return camera;
 }
 
-export function houseCameraSlot(route: HouseRoute): string {
+export const houseComposition = (width: number): "phone" | "desktop" => width < 720 ? "phone" : "desktop";
+
+export function houseCameraSlot(route: HouseRoute, composition: "phone" | "desktop" = "desktop"): string {
   const camera = houseCameraRoute(route);
-  return `camera:${camera.room}:${camera.level}:${camera.time ?? ""}`;
+  return `camera:v2:${composition}:${camera.room}:${camera.level}:${camera.time ?? ""}`;
 }
 
 export function sameHouseCameraRoute(left: HouseRoute, right: HouseRoute): boolean {

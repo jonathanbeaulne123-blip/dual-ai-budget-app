@@ -56,12 +56,15 @@ export function createWorldFrameScheduler(native: NativeFrames = {
   };
   const flush = (time: number) => {
     nativeId = 0;
-    const batch = [...queued];
-    for (const [id] of batch) queued.delete(id);
-    for (const [, job] of batch) {
-      if (job.owner.active && !job.owner.released) job.callback(time);
-    }
-    schedule();
+    const batch = [...queued.keys()];
+    try {
+      for (const id of batch) {
+        const job = queued.get(id);
+        if (!job) continue; // An earlier callback may cancel later work in this frame.
+        queued.delete(id);
+        if (job.owner.active && !job.owner.released) job.callback(time);
+      }
+    } finally { schedule(); }
   };
   return {
     request(owner: FrameOwner, callback: WorldFrameCallback) {

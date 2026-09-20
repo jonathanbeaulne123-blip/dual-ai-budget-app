@@ -232,3 +232,13 @@ describe("world renderer frame scheduler", () => {
     }
   });
 });
+
+it("honours cancellation of another callback within the same world frame", async () => {
+  const { createWorldFrameScheduler } = await import("../src/house/world/rendererOwner.ts");
+  const native = fakeFrames(), scheduler = createWorldFrameScheduler(native), owner = { active: true, released: false }, drew = vi.fn();
+  let second = 0;
+  scheduler.request(owner, () => scheduler.cancel(second));
+  second = scheduler.request(owner, drew);
+  native.fire();
+  expect(drew).not.toHaveBeenCalled();
+});

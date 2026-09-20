@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { houseStairOffset } from "./walkPaths.ts";
 
 export type HouseTheme = "classic" | "taylor" | "newfoundland";
 export type HouseRoom = "home" | "study" | "kitchen-table" | "together";
@@ -387,7 +388,7 @@ export function createHouseSet(theme: HouseTheme): HouseSet {
     const stairEntries: { position: [number, number, number]; scale: [number, number, number] }[] = [];
     const railEntries: { position: [number, number, number]; scale: [number, number, number]; rotation: [number, number, number] }[] = [];
     ROOMS.forEach((room, roomIndex) => {
-      const x = WING_X[room] + (roomIndex % 2 ? 1.86 : -1.86);
+      const x = WING_X[room] + houseStairOffset(room);
       for (let floorIndex = 0; floorIndex < 2; floorIndex += 1) {
         const fromY = floorIndex * FLOOR_HEIGHT;
         for (let step = 0; step < 9; step += 1) {
@@ -633,6 +634,11 @@ export function createHouseSet(theme: HouseTheme): HouseSet {
   };
   const focus = Object.fromEntries(anchors.map((anchor): [string, HouseFocus] => {
     const [x, y, z] = anchor.position;
+    if (anchor.id === "pottery") return [anchor.id, {
+      center: [x, y + 0.05, z],
+      camera: [x + 0.42, y + 1.15, z + 6.8],
+      phoneCamera: [x + 0.2, y + 0.85, z + 5.6],
+    }];
     const distance = focusDistance[anchor.id] ?? 5.5;
     const center: [number, number, number] = [x, y + (anchor.id.startsWith("door-") ? 1.05 : 0.72), z];
     return [anchor.id, {

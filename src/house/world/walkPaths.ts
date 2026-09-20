@@ -17,6 +17,8 @@ const LEVELS: readonly WalkLevel[] = ["below", "middle", "above"];
 const ROOM_X: Record<WalkRoom, number> = { home: -9.3, study: -3.1, "kitchen-table": 3.1, together: 9.3 };
 const FLOOR_Y: Record<WalkLevel, number> = { below: 0, middle: 3.05, above: 6.1 };
 const STAIR_ROOMS: readonly WalkRoom[] = ["home", "study", "together"];
+/** Together's flight leaves the pottery wheel and the adjoining bench clear. */
+export const houseStairOffset = (room: WalkRoom): number => room === "together" ? 0.35 : ROOMS.indexOf(room) % 2 ? 1.86 : -1.86;
 
 const point = (x: number, y: number, z: number): WalkPoint => ({ x, y, z });
 const roomNode = (room: WalkRoom, level: WalkLevel) => `room:${room}:${level}`;
@@ -58,8 +60,7 @@ export function createWalkGraph(): WalkGraph {
 
   // Three authored stairwells: kitchen floors reach a stair through its real adjoining thresholds.
   for (const room of STAIR_ROOMS) {
-    const index = ROOMS.indexOf(room);
-    const x = ROOM_X[room] + (index % 2 ? 1.86 : -1.86);
+    const x = ROOM_X[room] + houseStairOffset(room);
     for (const level of LEVELS) {
       const id = stairNode(room, level);
       nodes.push({ id, kind: "stair", room, level, point: point(x, FLOOR_Y[level], -1.78) });
