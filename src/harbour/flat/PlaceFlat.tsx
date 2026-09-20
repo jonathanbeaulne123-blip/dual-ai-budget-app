@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { HarbourPlaceId } from "../flag.ts";
-import type { CellarReadingView, GlasshouseReading, HarbourReading, TowerReading } from "../data/reading.ts";
+import type { BoathouseReading, CellarReadingView, GlasshouseReading, HarbourReading, KitchenReading, TowerReading } from "../data/reading.ts";
 import { CourtFlat, engravedCents, type CourtFlatProps, type CourtFlatStatus } from "./CourtFlat.tsx";
 import "../harbour.css";
 
@@ -31,6 +31,9 @@ export function HarbourFlat({ place, ...props }: PlaceFlatProps) {
   if (place === "tower") return <TowerFlat {...props} />;
   if (place === "cellar") return <CellarFlat {...props} />;
   if (place === "glasshouse") return <GlasshouseFlat {...props} />;
+  if (place === "kitchen") return <KitchenFlat {...props} />;
+  if (place === "boathouse") return <BoathouseFlat {...props} />;
+  if (place === "library") return <LibraryFlat {...props} />;
   const { reading, status, theme, partnerName, onOpen, onEnter, overlay } = props;
   return <CourtFlat reading={reading} status={status} theme={theme} partnerName={partnerName} onOpen={onOpen} onEnter={onEnter} overlay={overlay} />;
 }
@@ -181,6 +184,86 @@ export function GlasshouseFlat({ reading, status = "loading", theme = "classic",
         <button type="button" onClick={() => onOpen?.("planner")}>Open the Master Planner</button>
         <button type="button" onClick={() => onOpen?.("calendar")}>Unfold the Calendar</button>
       </div>
+    </div>
+  </section>;
+}
+
+const POT_NAMES = { everyday: "Everyday", prepare: "Prepare", protect: "Protect", build: "Build" } as const;
+const whoNames = (who: "both" | "mine" | "partner" | null): string =>
+  who === "both" ? "both of you" : who === "mine" ? "yours" : who === "partner" ? "the partner’s" : "unassigned";
+
+/**
+ * The Kitchen, read as paper: the cookbook wall as a list of five-line cards,
+ * each a real button onto the Plan Studio, and the empty card first.
+ */
+export function KitchenFlat({ reading, status = "loading", theme = "classic", onOpen, overlay = false, onStair }: Omit<PlaceFlatProps, "place">) {
+  const kitchen: KitchenReading | null = reading?.kitchen ?? null;
+  return <section className={`court-flat place-flat place-flat--kitchen court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="kitchen" aria-label="The Kitchen, reading edition" aria-busy={status === "loading" || undefined}>
+    <div className="court-flat__sheet">
+      <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Kitchen")}</p>
+      {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Through the kitchen door to the Court</button>}
+      <div className="place-flat__doors">
+        <button type="button" onClick={() => onOpen?.("plan-studio")}>Sit down — five questions, one card</button>
+        <button type="button" onClick={() => onOpen?.("conversation")}>Open the conversation folio</button>
+      </div>
+      {kitchen && kitchen.waiting && <p className="place-flat__line">A card is on the table until the other of you sits. Not now is a valid answer.</p>}
+      <div className="place-flat__bench">
+        <h3>The cookbook wall{(kitchen?.cards.length ?? 0) === 0 ? " — bare, an empty card waiting" : ` — ${kitchen?.monthKey}`}</h3>
+        {(kitchen?.cards.length ?? 0) > 0 && <ul className="place-flat__pots">
+          {kitchen!.cards.map((card) => <li key={card.key}>
+            <button type="button" onClick={() => onOpen?.("plan-studio", card.key)}>
+              <strong>{card.what}</strong>
+              <span>{engravedCents(card.amountCents)}{card.when ? ` · by ${card.when}` : ""} · {POT_NAMES[card.pot] ?? card.pot} · {whoNames(card.who)}</span>
+            </button>
+          </li>)}
+        </ul>}
+      </div>
+      {(kitchen?.overflow ?? 0) > 0 && <p className="place-flat__line">And {kitchen?.overflow} more in the drawer.</p>}
+    </div>
+  </section>;
+}
+
+/**
+ * The Boathouse, read as paper: what the shore rooms hold, in counts and
+ * never in contents, every station a real button.
+ */
+export function BoathouseFlat({ reading, status = "loading", theme = "classic", onOpen, overlay = false, onStair }: Omit<PlaceFlatProps, "place">) {
+  const boathouse: BoathouseReading | null = reading?.boathouse ?? null;
+  const rows: [string, string, number | null][] = [
+    ["wishes", "Tend a wish — ideas in the light", boathouse?.wishes ?? null],
+    ["memories", "Open a memory — kept on the shelf", boathouse?.memories ?? null],
+    ["projector", "Choose three memories — the sail is up", null],
+    ["letters", "Open the writing desk — notes placed", boathouse?.letters ?? null],
+    ["pottery", "Enter the Pottery Studio — clay on the bench", null],
+    ["encounters", "Spend a moment together — the rowboat seats two", boathouse?.encounters ?? null],
+  ];
+  return <section className={`court-flat place-flat place-flat--boathouse court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="boathouse" aria-label="The Boathouse, reading edition" aria-busy={status === "loading" || undefined}>
+    <div className="court-flat__sheet">
+      <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Boathouse")}</p>
+      {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Through the shore door to the Court</button>}
+      <ul className="place-flat__pots">
+        {rows.map(([target, words, count]) => <li key={target}>
+          <button type="button" onClick={() => onOpen?.(target)}>
+            <strong>{words.split(" — ")[0]}</strong>
+            <span>{words.split(" — ")[1]}{count !== null ? ` · ${count === 0 ? "nothing yet" : count}` : ""}</span>
+          </button>
+        </li>)}
+      </ul>
+    </div>
+  </section>;
+}
+
+/** The Library, read as paper: the Book, the Bindery and the Time Machine, each a real button. */
+export function LibraryFlat({ status = "loading", theme = "classic", onOpen, overlay = false, onStair }: Omit<PlaceFlatProps, "place">) {
+  return <section className={`court-flat place-flat place-flat--library court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="library" aria-label="The Library, reading edition" aria-busy={status === "loading" || undefined}>
+    <div className="court-flat__sheet">
+      <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Library")}</p>
+      {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Through the hall door to the Court</button>}
+      <ul className="place-flat__pots">
+        <li><button type="button" onClick={() => onOpen?.("books")}><strong>The Standing Book</strong><span>open on its lectern — every figure has a source</span></button></li>
+        <li><button type="button" onClick={() => onOpen?.("books")}><strong>The Bindery</strong><span>five machines, one per divider</span></button></li>
+        <li><button type="button" onClick={() => onOpen?.("books")}><strong>The Time Machine</strong><span>thumbing back through the leaves</span></button></li>
+      </ul>
     </div>
   </section>;
 }

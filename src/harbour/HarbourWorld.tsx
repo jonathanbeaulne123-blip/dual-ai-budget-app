@@ -15,7 +15,7 @@ import type { ThemeId } from "../theme/scenes.ts";
 import { useHarbourReading } from "./data/useHarbourReading.ts";
 import { HarbourFlat } from "./flat/PlaceFlat.tsx";
 import { HarbourTwins } from "./court/CourtTwins.tsx";
-import { HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, HARBOUR_PLACE_ROOMS, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
+import { HARBOUR_LANDMARKS, HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, HARBOUR_PLACE_ROOMS, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
 import { classifyGesture, gestureAction, spark, type QueenAction, type QueenRegion, type QueenSpark } from "./court/queenTouch.ts";
 import type { QueenPlace } from "./court/queenPlace.ts";
 import type { CourtHandle } from "./court/CourtScene.ts";
@@ -65,6 +65,9 @@ const PLACE_MODULES: Readonly<Record<HarbourPlaceId, () => Promise<unknown>>> = 
   tower: () => import("./tower/TowerScene.ts"),
   cellar: () => import("./cellar/CellarScene.ts"),
   glasshouse: () => import("./glasshouse/GlasshouseScene.ts"),
+  kitchen: () => import("./kitchen/KitchenScene.ts"),
+  boathouse: () => import("./boathouse/BoathouseScene.ts"),
+  library: () => import("./library/LibraryScene.ts"),
 };
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
@@ -157,9 +160,9 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // then does a door open an HTML surface in front of the place.
     const way = harbourWayFor(id, zone);
     if (way) { onNavigateRef.current(HARBOUR_PLACE_ROOMS[way], HARBOUR_PLACE_LEVELS[way]); return; }
-    // The Boathouse (LITTLE_HARBOUR_v2 §5): Together, tucked away on the shore.
-    // The room is still the house's own, so the way is a route, not a place.
-    if (id === "boathouse" || zone === "boathouse") { onNavigateRef.current("together", "middle"); return; }
+    // A landmark on the island is a whole room's door: tapping it walks there.
+    const landmark = HARBOUR_LANDMARKS[id];
+    if (landmark) { onNavigateRef.current(landmark.room, landmark.level); return; }
     // The rail's own controls: a day earlier, a day later, back to today. A reading, never a write.
     if (id === "scrub-back") { walk(-1); return; }
     if (id === "scrub-forward") { walk(1); return; }
@@ -404,7 +407,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const showFlat = status === "flat" || status === "fallback" || (status === "loading" && tier === "flat");
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => props.onNavigate("home", "middle");
-  return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : place === "cellar" ? "The Cellar" : "The Glasshouse"}>
+  return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : place === "cellar" ? "The Cellar" : place === "glasshouse" ? "The Glasshouse" : place === "kitchen" ? "The Kitchen" : place === "boathouse" ? "The Boathouse" : "The Library"}>
     <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : `${placeName[0]!.toUpperCase()}${placeName.slice(1)}. Arrow keys orbit, W A S D walk, plus and minus zoom, Space opens all tools, Escape steps back.`} onKeyDown={onStageKey}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => props.onNavigate("home", HARBOUR_PLACE_LEVELS[next])} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}

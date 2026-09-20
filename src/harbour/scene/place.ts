@@ -117,6 +117,21 @@ export const PLACE_HOLDS: Readonly<Record<HarbourPlaceId, RoomHold | null>> = Ob
     target: { min: [-3.2, 0.2, -2.8] as Vec3, max: [3.2, 2.1, 2.2] as Vec3 },
     minR: 1.4, maxR: 6.2, minPhi: 0.85, maxPhi: 1.38,
   }),
+  kitchen: Object.freeze({
+    eye: { min: [-3.75, 0.35, -2.7] as Vec3, max: [3.75, 2.45, 2.75] as Vec3 },
+    target: { min: [-3.0, 0.2, -2.5] as Vec3, max: [3.0, 2.0, 2.0] as Vec3 },
+    minR: 1.3, maxR: 5.8, minPhi: 0.85, maxPhi: 1.38,
+  }),
+  boathouse: Object.freeze({
+    eye: { min: [-3.35, 0.3, -2.6] as Vec3, max: [3.35, 3.1, 2.7] as Vec3 },
+    target: { min: [-2.8, 0.1, -2.4] as Vec3, max: [2.8, 2.4, 2.2] as Vec3 },
+    minR: 1.3, maxR: 5.6, minPhi: 0.85, maxPhi: 1.38,
+  }),
+  library: Object.freeze({
+    eye: { min: [-4.15, 0.35, -3.1] as Vec3, max: [4.15, 3.5, 3.05] as Vec3 },
+    target: { min: [-3.4, 0.2, -2.9] as Vec3, max: [3.4, 2.9, 2.4] as Vec3 },
+    minR: 1.3, maxR: 6.8, minPhi: 0.85, maxPhi: 1.38,
+  }),
 });
 
 /** The registry the runtime reads the active place from. `court/CourtScene.ts` registers itself on import. */

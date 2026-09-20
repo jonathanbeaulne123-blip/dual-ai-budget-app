@@ -13,6 +13,7 @@
  */
 import { addDays, compareDateKeys, weekdaySunday0, type DateKey } from "../../core/calendar.ts";
 import { openChapterFor, type Ritual } from "../../core/chapters.ts";
+import { currentPlanVersion, planAcknowledgementState, type PlanLens } from "../../core/planSystem.ts";
 import { shapeTasks, taskInView, type Task } from "../../core/tasks.ts";
 import { fundSnapshot, type FlowItem, type FundSnapshot } from "../../core/fundModel.ts";
 import { deriveFundPulseInput, fundPulse, presenceLines, type FundPulse, type FundPulseDestination, type FundPulseFreshness } from "../../core/fundPulse.ts";
@@ -76,6 +77,10 @@ export type HarbourReading = {
   cistern: CisternReading;
   /** The Glasshouse behind the Library: the planner as benches of pots by week. */
   glasshouse: GlasshouseReading;
+  /** The Kitchen: the month's plan as recipe cards on the cookbook wall. */
+  kitchen: KitchenReading;
+  /** The Boathouse: what the shore rooms hold, in counts and never in contents. */
+  boathouse: BoathouseReading;
 };
 
 /**
@@ -170,6 +175,97 @@ export function buildGlasshouseReading(
   const perennials = (household.rituals ?? []).filter((ritual) => ritual.state === "active").slice(0, 6)
     .map((ritual) => ({ key: `ritual/${ritual.id}`, title: ritual.title || "A ritual" }));
   return { pots: standing, harvested, perennials, dry, overflow: pots.length - standing.length };
+}
+
+/**
+ * The Kitchen (LITTLE_HARBOUR_v2 §4): a plan is a recipe card — five lines,
+ * always the same five. What; how much; by when; from which pot; who. The
+ * wall of the kitchen is the cookbook: every line of the month's standing
+ * plan, as a card. Everything else — steps, alternatives, review, versions —
+ * hangs off the card and never appears unless you turn it over, which is a
+ * door onto the Plan Studio, never anything the room does itself.
+ */
+export type RecipeCard = {
+  /** `line/<id>` — the door's object into the Plan Studio, and the twin's key. */
+  key: string;
+  /** 1 · What. */
+  what: string;
+  /** 2 · How much (the decision's target when one was set, else the line's amount). */
+  amountCents: number;
+  /** 3 · By when. Not every card has a date. */
+  when: DateKey | null;
+  /** 4 · From which pot. */
+  pot: PlanLens;
+  /** 5 · Who. */
+  who: "both" | "mine" | "partner" | null;
+};
+export type KitchenReading = {
+  /** The cookbook wall, newest month's standing plan. Capped for the wall; the drawer holds the rest. */
+  cards: RecipeCard[];
+  monthKey: string | null;
+  /** The plan's own standing: active, scheduled, proposed — or null with no plan at all. */
+  state: "active" | "scheduled" | "proposed" | null;
+  /** A proposed card sits on the table with a second chair until the other of you sits. */
+  waiting: boolean;
+  overflow: number;
+};
+
+export const KITCHEN_CARD_CAP = 12;
+/** A kitchen before any plan: a bare wall, a clear table, the empty card waiting. */
+export const EMPTY_KITCHEN_READING: KitchenReading = Object.freeze({ cards: [], monthKey: null, state: null, waiting: false, overflow: 0 });
+
+/** The month's standing plan as recipe cards. Pure; reads `planVersions`, posts nothing. */
+export function buildKitchenReading(
+  household: { planVersions?: unknown[]; planAcknowledgements?: unknown[]; members: { id: string; leftAt?: string | null }[] },
+  memberId: string,
+  today: DateKey,
+): KitchenReading {
+  const version = currentPlanVersion(household as never, "household", monthKeyFromDateKey(today));
+  if (!version) return EMPTY_KITCHEN_READING;
+  const cards: RecipeCard[] = version.lines.map((line) => ({
+    key: `line/${line.id}`,
+    what: line.labelSnapshot,
+    amountCents: line.decision?.targetCents ?? line.amountCents,
+    when: line.decision?.deadline ?? line.dueDate ?? null,
+    pot: line.lens,
+    who: line.responsibility
+      ? line.responsibility.kind === "joint" ? "both" : line.responsibility.memberId === memberId ? "mine" : "partner"
+      : null,
+  }));
+  const acknowledgement = planAcknowledgementState(household as never, version);
+  const state: KitchenReading["state"] = version.state === "active" ? "active" : version.state === "scheduled" ? "scheduled" : version.state === "proposed" ? "proposed" : null;
+  return {
+    cards: cards.slice(0, KITCHEN_CARD_CAP),
+    monthKey: version.monthKey,
+    state,
+    waiting: !acknowledgement.complete,
+    overflow: Math.max(0, cards.length - KITCHEN_CARD_CAP),
+  };
+}
+
+/**
+ * The Boathouse (LITTLE_HARBOUR_v2 §5): what the shore rooms hold, in counts
+ * and never in contents. Shared rows only — a private wish never renders in
+ * the other copy, so it never renders here either.
+ */
+export type BoathouseReading = {
+  /** Ideas in the light (the Conservatory's shared experiences). */
+  wishes: number;
+  /** Kept compositions (the Theatre). */
+  memories: number;
+  /** Placed notes around the common rooms. */
+  letters: number;
+  /** Moments spent together. */
+  encounters: number;
+};
+export const EMPTY_BOATHOUSE_READING: BoathouseReading = Object.freeze({ wishes: 0, memories: 0, letters: 0, encounters: 0 });
+
+/** Counts from the shared Hearthside state. Pure, total: a household without one is an empty boathouse. */
+export function buildBoathouseReading(household: { hearthside?: { experiences?: unknown[]; memories?: unknown[]; notes?: unknown[]; encounters?: unknown[] } }): BoathouseReading {
+  const state = household.hearthside;
+  if (!state || typeof state !== "object") return EMPTY_BOATHOUSE_READING;
+  const count = (rows: unknown): number => (Array.isArray(rows) ? rows.length : 0);
+  return { wishes: count(state.experiences), memories: count(state.memories), letters: count(state.notes), encounters: count(state.encounters) };
 }
 
 export const HARBOUR_SLIP_LINES = 3;
@@ -380,6 +476,8 @@ export function buildHarbourReading(household: Household, memberId: string, toda
     mode,
     freshness,
     glasshouse: buildGlasshouseReading(household, memberId, today),
+    kitchen: buildKitchenReading(household, memberId, today),
+    boathouse: buildBoathouseReading(household),
     tower: buildTowerReading(household, memberId, today, nest),
     cellar: buildCellarReading(household, memberId, today, nest, snapshot.prepare.amountCents),
     cistern: buildCisternReading({ cents: snapshot.protect.amountCents, target: snapshot.protect.targetCents }),

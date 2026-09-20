@@ -86,7 +86,10 @@ def measure(page):
 # journey starts, so waiting on it alone catches the room you just left.
 # Any one of them will do: a phone's tower may push the shelf plate off the stage,
 # and an empty rack has no banks at all.
-PLACE_TWIN = {"court": ["queen"], "tower": ["shelf", "bank", "jug"], "cellar": ["rail", "jar", "waterline"], "glasshouse": ["beds", "pot", "harvest"]}
+PLACE_TWIN = {
+    "court": ["queen"], "tower": ["shelf", "bank", "jug"], "cellar": ["rail", "jar", "waterline"], "glasshouse": ["beds", "pot", "harvest"],
+    "kitchen": ["empty-card", "card", "drawer"], "boathouse": ["boat", "projector", "wishes"], "library": ["book", "bindery", "balcony"],
+}
 
 
 def wait_place(page, place: str, timeout=45000):
@@ -109,10 +112,10 @@ def twin(page, name: str):
     return page.query_selector(f"[data-twin='{name}']")
 
 
-LEVELS = {"court": "middle", "tower": "above", "cellar": "below", "glasshouse": "above"}
+LEVELS = {"court": "middle", "tower": "above", "cellar": "below", "glasshouse": "above", "kitchen": "middle", "boathouse": "middle", "library": "middle"}
 
 
-ROOMS = {"court": "home", "tower": "home", "cellar": "home", "glasshouse": "study"}
+ROOMS = {"court": "home", "tower": "home", "cellar": "home", "glasshouse": "study", "kitchen": "kitchen-table", "boathouse": "together", "library": "study"}
 
 
 def route_to(page, place: str) -> None:
@@ -237,6 +240,51 @@ def slice2_pass(browser, theme: str, width: int, report: list) -> None:
             errors.append("no pot twin in the glasshouse")
     except Exception as error:
         errors.append(f"glasshouse: {error}")
+    # ── The Kitchen: the five-question recipe card on the table. ─────────────
+    kitchen = None
+    try:
+        route_to(page, "kitchen")
+        wait_place(page, "kitchen")
+        kitchen = measure(page)
+        snap(page, f"{tag}-13-kitchen.png")
+        card = page.query_selector("[data-twin='empty-card']") or page.query_selector("[data-twin^='card:']")
+        if card:
+            card.evaluate("b => b.click()")
+            page.wait_for_selector(".app[data-harbour-door]", timeout=20000)
+            page.wait_for_timeout(1600)
+            snap(page, f"{tag}-14-kitchen-door-sheet.png")
+            put_back(page)
+        else:
+            errors.append("no card twin in the kitchen")
+    except Exception as error:
+        errors.append(f"kitchen: {error}")
+    # ── The Boathouse: the slip, the rowboat, the sail. ──────────────────────
+    boathouse = None
+    try:
+        route_to(page, "boathouse")
+        wait_place(page, "boathouse")
+        boathouse = measure(page)
+        snap(page, f"{tag}-15-boathouse.png")
+    except Exception as error:
+        errors.append(f"boathouse: {error}")
+    # ── The Library: the Standing Book's hall. ───────────────────────────────
+    library = None
+    try:
+        route_to(page, "library")
+        wait_place(page, "library")
+        library = measure(page)
+        snap(page, f"{tag}-16-library.png")
+        book = page.query_selector("[data-twin='book']")
+        if book:
+            book.evaluate("b => b.click()")
+            page.wait_for_selector(".app[data-harbour-door]", timeout=20000)
+            page.wait_for_timeout(1600)
+            snap(page, f"{tag}-17-library-door-sheet.png")
+            put_back(page)
+        else:
+            errors.append("no book twin in the library")
+    except Exception as error:
+        errors.append(f"library: {error}")
     context.close()
 
     # ── Mid-travel frames: full motion, caught part way through each journey. ─
@@ -286,8 +334,11 @@ def slice2_pass(browser, theme: str, width: int, report: list) -> None:
             errors.append(f"{name}: {error}")
         flat.close()
 
-    report.append({"tag": tag, "court": court, "tower": tower, "cellar": cellar, "glasshouse": glasshouse, "errors": errors[:12]})
-    print(tag, "court", court.get("drawCalls"), "tower", (tower or {}).get("drawCalls"), "cellar", (cellar or {}).get("drawCalls"), "errors", len(errors), flush=True)
+    report.append({"tag": tag, "court": court, "tower": tower, "cellar": cellar, "glasshouse": glasshouse,
+                   "kitchen": kitchen, "boathouse": boathouse, "library": library, "errors": errors[:12]})
+    print(tag, "court", court.get("drawCalls"), "tower", (tower or {}).get("drawCalls"), "cellar", (cellar or {}).get("drawCalls"),
+          "kitchen", (kitchen or {}).get("drawCalls"), "boathouse", (boathouse or {}).get("drawCalls"), "library", (library or {}).get("drawCalls"),
+          "errors", len(errors), flush=True)
     for error in errors[:6]:
         print("   ·", str(error)[:170], flush=True)
 
