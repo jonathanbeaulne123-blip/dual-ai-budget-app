@@ -251,7 +251,7 @@ describe("Plan System V2 authority", () => {
     const saved = executeIntent(catalogHousehold(), "savePlanDraft", [draft], jonathan, "personal-plan-save");
     expect(saved.household.planDrafts?.[0]).toMatchObject({ scope: "personal", ownerMemberId: jonathan, id: draft.id });
     const alternative = executeIntent(saved.household, "createPlanScenario", [{
-      id: "SCENARIO-PRIVATE-HARBOUR", memberId: jonathan, createdBy: jonathan, scope: "personal" as const,
+      memberId: jonathan, createdBy: jonathan, scope: "personal" as const,
       draftId: draft.id, name: "One quiet next step", changedLines: [privateLine], changedAssumptions: [],
     }], jonathan, "personal-plan-scenario");
     expect(alternative.household.planScenarios?.[0]).toMatchObject({ ownerMemberId: jonathan, draftId: draft.id });
