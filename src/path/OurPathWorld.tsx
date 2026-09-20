@@ -292,8 +292,8 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   const currentMonths = useMemo(() => pathMonths(household, today, eraFrom ? { from: eraFrom, through: nowKey } : undefined), [household, today, eraFrom, nowKey]);
   const currentRecipes = useMemo(() => effectivePathRecipes(household), [household]);
   const currentWeather = useMemo(() => { try { return pathWeather(household, today); } catch { return null; } }, [household, today]);
-  const gate = interpretationGate ?? { current: true, freshness: "current" as const, detail: "Current local books" };
-  const supported = useSupportedJourneyInterpretation({identity:{environment:household.environment,householdId:household.householdId,memberId,scope:"household"},gate,current:{months:currentMonths,recipes:currentRecipes,weather:currentWeather},fallback:{months:quietJourneyMonths(currentMonths),recipes:currentRecipes,weather:null},sourceRevision:household.revision,supportedAt:supportedAtFor(household,today)});
+  const sceneEvidenceGate = interpretationGate ?? { current: true, freshness: "current" as const, detail: "Current local books" };
+  const supported = useSupportedJourneyInterpretation({identity:{environment:household.environment,householdId:household.householdId,memberId,scope:"household"},gate:sceneEvidenceGate,current:{months:currentMonths,recipes:currentRecipes,weather:currentWeather},fallback:{months:quietJourneyMonths(currentMonths),recipes:currentRecipes,weather:null},sourceRevision:household.revision,supportedAt:supportedAtFor(household,today)});
   const months = supported.value.months;
   const recipes = supported.value.recipes;
   const [cur, setCur] = useState(() => months.length - 1);
