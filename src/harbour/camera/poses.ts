@@ -116,12 +116,17 @@ export function courtPose(mode: CourtMode, anchor: CourtAnchor | undefined, comp
     return { target: [0, 0.4, 0.8], r: COURT_BOUNDS.maxR, theta: phone ? 0.12 : 0.18, phi: phone ? 0.55 : 0.62 };
   }
   if (mode === "court") {
-    // Fit the plinths (x = ±4.2, plus a shoulder) inside the horizontal field at the pieces' depth.
+    // Fit the plinths (x = ±4.2, plus a shoulder) inside the horizontal field at the pieces' depth. The desktop
+    // diorama is a true three-quarter: swung half a radian from the gate so the gate and the sundial stand at the
+    // frame's edge instead of looming in front of her, and low enough that the plinth plates read.
     const halfH = Math.tan((fov * Math.PI) / 360) * safeAspect;
-    const phi = phone ? 0.85 : 0.95;
-    const wanted = (4.2 + 0.9) / halfH / Math.sin(phi) - 3.0;
-    const r = phone ? 9.5 : clamp(wanted, 11, COURT_BOUNDS.maxR - 2);
-    return { target: [0, phone ? 0.5 : 0.6, 1.0], r, theta: phone ? 0.12 : 0.18, phi };
+    // A portrait tablet is a wide phone: the plinths cannot fit its column either, so she stays large.
+    const column = phone || safeAspect < 1.05;
+    const phi = column ? 0.9 : 1.04;
+    const wanted = (4.2 + 1.2) / halfH / Math.sin(phi);
+    const r = phone ? 8.0 : column ? 9.5 : clamp(wanted, 11.5, COURT_BOUNDS.maxR - 2);
+    // The desktop target sits a little right of and in front of her so the sundial clears the compass pill.
+    return { target: column ? [0, 0.85, 0.7] : [0.5, 0.9, 0.9], r, theta: column ? 0.15 : 0.5, phi };
   }
   const id: CourtAnchor = anchor ?? "queen";
   const [ax, , az] = COURT_ANCHORS[id];

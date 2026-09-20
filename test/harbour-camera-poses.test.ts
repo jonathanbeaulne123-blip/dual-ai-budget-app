@@ -82,12 +82,13 @@ describe("Little Harbour · the Court's poses (BUILD_PLAN #18)", () => {
 
   it("is a three-quarter diorama: tilted from vertical, swung a little from the gate, the Queen in the upper half", () => {
     const desktop = courtPose("court", undefined, "desktop", 1440 / 900), phone = courtPose("court", undefined, "phone", 390 / 844);
-    expect(desktop.phi).toBeCloseTo(0.95, 6);
-    expect(phone.phi).toBeCloseTo(0.85, 6);
-    for (const pose of [desktop, phone]) {
-      expect(pose.theta).toBeGreaterThan(0);
-      expect(pose.theta).toBeLessThan(0.3);
-    }
+    expect(desktop.phi).toBeCloseTo(1.04, 6);
+    expect(phone.phi).toBeCloseTo(0.9, 6);
+    // A phone swings only a little (its frame is a narrow column); the desktop takes a real three-quarter view.
+    expect(phone.theta).toBeGreaterThan(0);
+    expect(phone.theta).toBeLessThan(0.3);
+    expect(desktop.theta).toBeGreaterThan(0.3);
+    expect(desktop.theta).toBeLessThan(0.7);
     // On a phone the Queen stands above the flagstone: her crown high, the stone in the lower third.
     const crown = projectPoint(phone, [0, 2.05, 0], 390 / 844), stone = projectPoint(phone, [FLAGSTONE.x, 0, FLAGSTONE.z], 390 / 844);
     expect(crown.y).toBeGreaterThan(0.3);

@@ -293,13 +293,14 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   const [sx, , sz] = COURT_LAYOUT.sundial, [mx, , mz] = COURT_LAYOUT.mailbox, [hx, , hz] = COURT_LAYOUT.hercules;
   const at = (x: number, y: number, z: number): Vec3 => [x, y, z];
   const box = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number) => new THREE.Box3(new THREE.Vector3(x0, y0, z0), new THREE.Vector3(x1, y1, z1));
+  // Labels carry the engraved words, so a twin reads what the stone says.
   const anchorList = (): Anchor[] => [
-    { id: "queen", position: at(0, 1.1, 0), zone: "queen", label: "The Queen — Everyday", door: { target: "queen" } },
-    { id: "flagstone", position: at(fx, 0.1, fz), zone: "queen", label: "The Everyday flagstone" },
-    ...pieces.anchors(),
-    { id: "sundial", position: at(sx, 1.0, sz), zone: "prop", label: "The sundial — next dated commitment" },
-    { id: "mailbox", position: at(mx, 1.2, mz), zone: "prop", label: "The mailbox — what she noticed" },
-    { id: "slip", position: at(mx + 0.55, 0.72, mz + 0.13), zone: "prop", label: "Since you were here" },
+    { id: "queen", position: at(0, 1.1, 0), zone: "queen", label: `The Queen — Everyday ${everyday.words}. Meet the Queen.`, door: { target: "queen" } },
+    { id: "flagstone", position: at(fx, 0.1, fz), zone: "queen", label: `The Everyday flagstone — ${everyday.words}` },
+    ...pieces.anchors().map((anchor) => ({ ...anchor, label: `${anchor.label} ${pieces.slots[anchor.id as PieceId].plate.words}. ${anchor.id === "rook" ? "Open the Loft." : anchor.id === "bishop" ? "Open the Cellar." : "Open the cistern."}` })),
+    { id: "sundial", position: at(sx, 1.0, sz), zone: "prop", label: tagWords ? `The sundial — next: ${tagWords}` : "The sundial — no dated commitment" },
+    { id: "mailbox", position: at(mx, 1.2, mz), zone: "prop", label: mailbox.flagUp() ? "The mailbox, flag up — she noticed something" : "The mailbox — nothing new" },
+    { id: "slip", position: at(mx + 0.55, 0.72, mz + 0.13), zone: "prop", label: slipWords.length ? `Since you were here: ${slipWords.join("; ")}` : "Since you were here — nothing yet" },
     { id: "hercules", position: at(hx, 0.3, hz), zone: "prop", label: "Hercules, asleep", door: { target: "hercules" } },
     { id: "gate", position: at(gx, 0.9, gz), zone: "gate", label: "The court gate" },
   ];

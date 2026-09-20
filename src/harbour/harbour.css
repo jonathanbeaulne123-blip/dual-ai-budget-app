@@ -71,9 +71,11 @@
 /* ── Desktop: the environment pill and the sync line sit in the top corners; the compass is the pill bottom-right (harbour-nav.css). ── */
 @media (min-width: 720px) {
   .app[data-harbour-court] .harbour-world__stage { height: 100dvh; }
-  .harbour-world__phrase { bottom: 40px; }
+  /* The compass pill owns the bottom-right; her line and the sync words keep to the left. */
+  .harbour-world__phrase { left: 24px; transform: none; bottom: 58px; }
   .harbour-world__supported { left: 24px; transform: none; bottom: 22px; }
-  .harbour-world__checking { left: 24px; transform: none; bottom: 54px; }
+  .harbour-world__checking { left: 24px; transform: none; bottom: 22px; }
+  .harbour-world__supported + .harbour-world__checking { bottom: 54px; }
 }
 
 /* ── Phone ≤ 719: she fills the portrait; the compass is the bottom bar; the sync line is one thin strip. ── */
