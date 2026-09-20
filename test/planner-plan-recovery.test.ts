@@ -71,6 +71,34 @@ describe("Planner Plan links and local editor recovery", () => {
     expect(host.textContent).toContain("It was not rebound to another decision.");
   });
 
+  it("submits detailed task fields once while acknowledgement is pending and keeps them after rejection", async () => {
+    let calls = 0;
+    let settle!: (outcome: CommandOutcome) => void;
+    const deferred: KitchenCommand = (fn) => {
+      calls += 1;
+      fn(household);
+      return new Promise<CommandOutcome>((resolve) => { settle = resolve; });
+    };
+    await act(async () => root.render(createElement(Planner, { ...props("personal"), onCommand: deferred })));
+    await act(async () => button("New task with details").click());
+    await change(labelControl<HTMLInputElement>("Title"), "Call the ferry office");
+    const form = host.querySelector<HTMLFormElement>(".planner-editor")!;
+    await act(async () => {
+      form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      await Promise.resolve();
+    });
+    expect(calls).toBe(1);
+    expect(button("Add task").disabled).toBe(true);
+    expect(button("Cancel").disabled).toBe(true);
+    await act(async () => { settle(rejected()); await Promise.resolve(); });
+    expect(calls).toBe(1);
+    expect(labelControl<HTMLInputElement>("Title").value).toBe("Call the ferry office");
+    expect(button("Add task").disabled).toBe(false);
+    expect(button("Cancel").disabled).toBe(false);
+    expect(host.textContent).toContain("That task changed. Review it again.");
+  });
+
   it("retries an interrupted quick capture with the same exact Task ID after reload", async () => {
     const attemptedIds: string[] = [];
     const interrupted: KitchenCommand = (fn) => { const preview = fn(household); attemptedIds.push(preview.household.tasks!.at(-1)!.id); return rejected(); };

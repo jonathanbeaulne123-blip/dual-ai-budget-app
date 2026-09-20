@@ -96,6 +96,8 @@ function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRe
   const [captureSubmitting, setCaptureSubmitting] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(restored.editor);
   const editorRef = useRef(editor); editorRef.current = editor;
+  const editorInFlight = useRef(false);
+  const [editorSubmitting, setEditorSubmitting] = useState(false);
   const [attaching, setAttaching] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [draftWarning, setDraftWarning] = useState(restored.warning);
@@ -156,30 +158,37 @@ function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRe
   }
   async function saveEditor(event: FormEvent) {
     event.preventDefault();
-    if (!editor || busy) return;
+    if (!editor || busy || editorInFlight.current) return;
     const amount = cents(editor.expectedAmount);
     if (Number.isNaN(amount)) { setNotice("Use a whole-cent amount like 140 or 140.50."); return; }
     const submitted = editor, fingerprint = JSON.stringify(editor);
     const input: TaskInput = { memberId: submitted.memberId, id: submitted.id, expectedRevision: submitted.expectedRevision, task: { ...submitted.task, title: submitted.task.title.trim(), expectedAmountCents: amount, assigneeId: submitted.task.visibility === "personal" ? null : submitted.task.assigneeId, backupId: submitted.task.visibility === "personal" ? null : submitted.task.backupId } };
+    editorInFlight.current = true;
+    setEditorSubmitting(true);
     try {
       const outcome = await Promise.resolve(run((current) => saveTask(current, input), submitted.expectedRevision ? "Saved" : "Added"));
       if (acknowledged(outcome) && editorRef.current && JSON.stringify(editorRef.current) === fingerprint) { const storage = localDraftStorage(); if (storage) try { clearPlannerEditor(storage, draftIdentity, submitted.id); } catch { setDraftWarning("The task saved, but its device recovery copy could not be cleared."); } setEditor(null); }
       else if (acknowledged(outcome)) { const saved = outcome && typeof outcome === "object" && "household" in outcome ? outcome.household.tasks?.find((row) => row.id === submitted.id) : null; setEditor((current) => current?.id === submitted.id ? { ...current, expectedRevision: saved?.revision ?? current.expectedRevision } : current); setNotice("The submitted task saved. Your newer fields remain open for review."); }
       else if (!outcome) setNotice("The task is still waiting for acknowledgement. Your fields are kept here.");
     } catch { setNotice("The task was not acknowledged. Your fields are kept here."); }
+    finally { editorInFlight.current = false; setEditorSubmitting(false); }
   }
   async function removeEditor() {
-    if (!editor || busy) return;
+    if (!editor || busy || editorInFlight.current) return;
     const submitted = editor, fingerprint = JSON.stringify(editor);
     const input: TaskInput = { ...submitted, task: { ...submitted.task, deleted: true, expectedAmountCents: cents(submitted.expectedAmount) || null } };
+    editorInFlight.current = true;
+    setEditorSubmitting(true);
     try {
       const outcome = await Promise.resolve(run((current) => saveTask(current, input), "Removed"));
       if (acknowledged(outcome) && editorRef.current && JSON.stringify(editorRef.current) === fingerprint) { const storage = localDraftStorage(); if (storage) try { clearPlannerEditor(storage, draftIdentity, submitted.id); } catch { setDraftWarning("The task was removed, but its device recovery copy could not be cleared."); } setEditor(null); }
       else if (acknowledged(outcome)) setNotice("The submitted removal was acknowledged. Your newer local fields remain for review.");
       else if (!outcome) setNotice("Removal is still waiting for acknowledgement. Your fields are kept here.");
     } catch { setNotice("Removal was not acknowledged. Your fields are kept here."); }
+    finally { editorInFlight.current = false; setEditorSubmitting(false); }
   }
   function cancelEditor() {
+    if (editorInFlight.current) return;
     if (editor) { const storage = localDraftStorage(); if (storage) try { clearPlannerEditor(storage, draftIdentity, editor.id); } catch { setDraftWarning("The device recovery copy could not be cleared. Try Cancel again."); return; } }
     setEditor(null);
   }
@@ -320,7 +329,7 @@ function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRe
 
     <div className="planner-add"><button type="button" disabled={busy} onClick={() => setEditor(blankTask(view, memberId, today, listFilter))}>New task with details</button></div>
 
-    {editor && <form className="planner-editor" onSubmit={saveEditor} aria-label={editor.expectedRevision ? "Edit task" : "New task"}>
+    {editor && <form className="planner-editor" onSubmit={saveEditor} aria-label={editor.expectedRevision ? "Edit task" : "New task"} aria-busy={editorSubmitting}>
       <h2>{editor.expectedRevision ? "Edit task" : "New task"}</h2>
       <label>Title<input value={editor.task.title} maxLength={240} required autoFocus onChange={(event) => setEditor({ ...editor, task: { ...editor.task, title: event.target.value } })} /></label>
       <div className="planner-editor__pair">
@@ -342,9 +351,9 @@ function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRe
       {editor.expectedRevision === 0 && view === "household" && <label className="planner-editor__check"><input type="checkbox" checked={editor.task.visibility === "personal"} onChange={(event) => setEditor({ ...editor, task: { ...editor.task, visibility: event.target.checked ? "personal" : "household", assigneeId: null, backupId: null, planReference: null } })} /> Just for me{partner ? ` (${partner.name} won’t see it)` : ""}</label>}
       {editor.task.visibility === "personal" && editor.expectedRevision > 0 && <p className="planner-quiet">Private to you.</p>}
       <div className="planner-editor__actions">
-        <button type="submit" disabled={busy || !editor.task.title.trim()}>{editor.expectedRevision ? "Save" : "Add task"}</button>
-        <button type="button" onClick={cancelEditor}>Cancel</button>
-        {editor.expectedRevision > 0 && <button type="button" className="planner-danger" disabled={busy} onClick={() => void removeEditor()}>Remove</button>}
+        <button type="submit" disabled={busy || editorSubmitting || !editor.task.title.trim()}>{editor.expectedRevision ? "Save" : "Add task"}</button>
+        <button type="button" disabled={editorSubmitting} onClick={cancelEditor}>Cancel</button>
+        {editor.expectedRevision > 0 && <button type="button" className="planner-danger" disabled={busy || editorSubmitting} onClick={() => void removeEditor()}>Remove</button>}
       </div>
     </form>}
   </main>;
