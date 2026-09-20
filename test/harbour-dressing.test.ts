@@ -117,7 +117,7 @@ describe("the Court", () => {
     expect(poses["court:phone"]!.phi).toBeGreaterThan(poses["sky:phone"]!.phi);
     expect(handle.regions().map((r) => r.id)).toEqual(expect.arrayContaining(["queen", "flagstone", "rook", "bishop", "knight", "sundial", "mailbox", "slip", "gate", "hercules"]));
     expect(COURT_LAYOUT.flagstone).toEqual([0, 0, 1.6]);
-    expect(handle.drawCalls()).toBeLessThanOrEqual(60);
+    expect(handle.drawCalls()).toBeLessThanOrEqual(68); // 60 with the Cistern (slice 2); the rest is headroom for the court itself
     handle.dispose();
     expect(scene.children).not.toContain(handle.group);
   });
