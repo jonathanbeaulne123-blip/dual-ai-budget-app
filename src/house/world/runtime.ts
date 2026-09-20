@@ -94,6 +94,9 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
     return focus||set.zones[next.zone as keyof typeof set.zones];
   }
   function go(next:WorldDestination){
+    // A delayed object return can arrive after the user has pulled back.
+    // The overview owns its pose; a room camera or Queen detail cannot replace it.
+    if(next.overview)next={...next,camera:undefined,queenView:undefined};
     const changed=current.zone!==next.zone;current=next;const pose=poseFor(next);if(!pose)return;
     if(changed){steps=[];walkEnd=null;}
     destination.fromArray(next.camera??(camera.aspect<1?pose.phoneCamera:pose.camera));lookDestination.fromArray(pose.center);

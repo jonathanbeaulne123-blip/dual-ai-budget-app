@@ -104,3 +104,19 @@
 .house-world__object-actions>div { display:flex; flex-wrap:wrap; gap:8px; }
 @media(max-width:719px){.app[data-house-world] .nav[data-house-navigation] button { font-size:12px; }.house-world__invitation h2 {font-size:25px;}.house-world__invitation p {margin-block:8px;}.house-world__object-actions {margin-top:3px;}}
 .app[data-house-world] .nav[data-house-navigation] .fab { background:#854733; color:#fff7e8; font-size:28px; font-weight:700; }
+
+/* The overview has one navigation task; floor and walking controls belong inside. */
+.house-world.is-overview .house-world__levels,
+.house-world.is-overview .house-world__walk,
+.house-world.is-overview .house-world__doors { display:none; }
+@media(max-width:719px){
+ /* Collapse the companion into the reserved navigation, never over a money figure. */
+ .app[data-house-world] .hercules-pill { display:none; }
+ .app[data-house-world] .nav[data-house-navigation] { grid-template-columns:repeat(7,minmax(44px,1fr)); }
+ .app[data-house-world] .nav[data-house-navigation] .fab { width:min(52px,100%); }
+ .app[data-house-world] .nav[data-house-navigation]>.house-companion-door { display:flex; grid-column:6; grid-row:1; padding-inline:0; font-size:10px; min-width:44px; }
+ .app[data-house-world] .nav[data-house-navigation]>button:not(.house-nav-phone):not(.house-companion-door) { grid-column:7; }
+ .app[data-house-world] [data-app-page] { padding-bottom:max(130px,calc(var(--nav) + var(--fund-ledge-height,0px) + var(--fund-return-height,0px) + 32px)); }
+ .app[data-house-world] .house-tool-heading h2 { scroll-margin-top:16px; }
+}
+@media(max-width:359px){.app[data-house-world] .nav[data-house-navigation] button:not(.fab){font-size:10px;}}
