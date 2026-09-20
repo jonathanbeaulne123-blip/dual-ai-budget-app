@@ -5,7 +5,9 @@ export type PlannerEditor = TaskInput & { expectedAmount: string };
 export type PlannerDraftIdentity = { environment: string; householdId: string; memberId: string; view: LedgerView };
 export type PlannerDraftStorage = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 
-type CaptureDraft = { version: 1; identity: PlannerDraftIdentity; taskId: "capture"; value: string };
+export type PlannerCaptureDraft = { value: string; pending: TaskInput | null };
+type CaptureDraftV1 = { version: 1; identity: PlannerDraftIdentity; taskId: "capture"; value: string };
+type CaptureDraft = { version: 2; identity: PlannerDraftIdentity; taskId: "capture"; value: string; pending: TaskInput | null };
 type EditorDraft = { version: 1; identity: PlannerDraftIdentity; taskId: string; editor: PlannerEditor };
 type NavigationDraft = { version: 1; identity: PlannerDraftIdentity; taskId: string };
 
@@ -48,19 +50,28 @@ function validEditor(value: unknown, expectedTaskId: string, expectedMemberId: s
   return (task.visibility === "personal" || task.visibility === "household") && typeof task.title === "string" && task.title.length <= 240 && typeof task.notes === "string" && task.notes.length <= 2000;
 }
 
-export function readPlannerCapture(storage: PlannerDraftStorage, expected: PlannerDraftIdentity): string {
-  const value = readJson(storage, plannerDraftKey(expected, "capture"));
-  if (value === null) return "";
-  if (!value || typeof value !== "object") throw new Error("PLANNER_CAPTURE_INVALID");
-  const row = value as Partial<CaptureDraft>, savedIdentity = decodeIdentity(row.identity);
-  if (row.version !== 1 || row.taskId !== "capture" || !savedIdentity || !sameIdentity(savedIdentity, expected) || typeof row.value !== "string" || row.value.length > 4000) throw new Error("PLANNER_CAPTURE_INVALID");
-  return row.value;
+function validTaskInput(value: unknown, expectedMemberId: string): value is TaskInput {
+  if (!value || typeof value !== "object") return false;
+  const row = value as Record<string, unknown>, task = row.task as Record<string, unknown> | null;
+  return row.memberId === expectedMemberId && typeof row.id === "string" && /^TASK-[A-Za-z0-9-]{1,100}$/.test(row.id) && Number.isSafeInteger(row.expectedRevision) && Boolean(task) && (task!.visibility === "personal" || task!.visibility === "household") && typeof task!.title === "string" && task!.title.length <= 240 && typeof task!.notes === "string" && task!.notes.length <= 2000;
 }
 
-export function savePlannerCapture(storage: PlannerDraftStorage, identity: PlannerDraftIdentity, value: string): void {
-  if (value.length > 4000) throw new Error("PLANNER_CAPTURE_INVALID");
-  const draft: CaptureDraft = { version: 1, identity, taskId: "capture", value };
-  if (value) storage.setItem(plannerDraftKey(identity, "capture"), JSON.stringify(draft));
+export function readPlannerCapture(storage: PlannerDraftStorage, expected: PlannerDraftIdentity): PlannerCaptureDraft {
+  const value = readJson(storage, plannerDraftKey(expected, "capture"));
+  if (value === null) return { value: "", pending: null };
+  if (!value || typeof value !== "object") throw new Error("PLANNER_CAPTURE_INVALID");
+  const row = value as Partial<CaptureDraft> & Partial<CaptureDraftV1>, savedIdentity = decodeIdentity(row.identity);
+  if ((row.version !== 1 && row.version !== 2) || row.taskId !== "capture" || !savedIdentity || !sameIdentity(savedIdentity, expected) || typeof row.value !== "string" || row.value.length > 4000) throw new Error("PLANNER_CAPTURE_INVALID");
+  if (row.version === 1) return { value: row.value, pending: null };
+  if (!(row.pending === null || validTaskInput(row.pending, expected.memberId))) throw new Error("PLANNER_CAPTURE_INVALID");
+  if (row.pending && expected.view === "personal" && row.pending.task.visibility !== "personal") throw new Error("PLANNER_CAPTURE_SCOPE_MISMATCH");
+  return { value: row.value, pending: row.pending };
+}
+
+export function savePlannerCapture(storage: PlannerDraftStorage, identity: PlannerDraftIdentity, input: PlannerCaptureDraft): void {
+  if (input.value.length > 4000 || input.pending && !validTaskInput(input.pending, identity.memberId) || input.pending && identity.view === "personal" && input.pending.task.visibility !== "personal") throw new Error("PLANNER_CAPTURE_INVALID");
+  const draft: CaptureDraft = { version: 2, identity, taskId: "capture", value: input.value, pending: input.pending };
+  if (input.value || input.pending) storage.setItem(plannerDraftKey(identity, "capture"), JSON.stringify(draft));
   else storage.removeItem(plannerDraftKey(identity, "capture"));
 }
 

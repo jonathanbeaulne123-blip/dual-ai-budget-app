@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { KitchenCommand } from "../kitchenCommand.ts";
 import { addDays, formatCad, formatDayLabel, formatMonthLabel, type Household, type LedgerView } from "../core/index.ts";
 import { agenda, affordability, suggestedEvidence,focusedAgendaTask, type AgendaItem, type AgendaOwnership, type AgendaView, type Affordability } from "../core/agenda.ts";
@@ -81,8 +81,8 @@ function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRe
   const draftIdentity = plannerDraftIdentity(household, memberId, view);
   const [restored] = useState(() => {
     const storage = localDraftStorage();
-    if (!storage) return { capture: "", editor: null as Editor | null, warning: "This device cannot keep unfinished Planner work after closing. Keep this page open." };
-    let capture = "", editor: Editor | null = null, warning = "";
+    if (!storage) return { capture: { value: "", pending: null }, editor: null as Editor | null, warning: "This device cannot keep unfinished Planner work after closing. Keep this page open." };
+    let capture = { value: "", pending: null as TaskInput | null }, editor: Editor | null = null, warning = "";
     try { capture = readPlannerCapture(storage, draftIdentity); } catch { warning = "The saved task capture could not be read. It remains on this device for recovery."; }
     try { editor = readPlannerEditor(storage, draftIdentity); } catch { warning = warning || "The saved task details could not be read. They remain on this device for recovery."; }
     return { capture, editor, warning };
@@ -91,8 +91,11 @@ function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRe
   const [tab, setTab] = useState<AgendaView | "lists">("today");
   const [ownership, setOwnership] = useState<AgendaOwnership>("all");
   const [listFilter, setListFilter] = useState<string | null>(null);
-  const [capture, setCapture] = useState(restored.capture);
+  const [capture, setCapture] = useState(restored.capture.value);
+  const [capturePending, setCapturePending] = useState<TaskInput | null>(restored.capture.pending);
+  const [captureSubmitting, setCaptureSubmitting] = useState(false);
   const [editor, setEditor] = useState<Editor | null>(restored.editor);
+  const editorRef = useRef(editor); editorRef.current = editor;
   const [attaching, setAttaching] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
   const [draftWarning, setDraftWarning] = useState(restored.warning);
@@ -116,9 +119,9 @@ function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRe
   useEffect(() => {
     const storage = localDraftStorage();
     if (!storage) { if (capture) setDraftWarning("This device cannot keep unfinished Planner work after closing. Keep this page open."); return; }
-    try { savePlannerCapture(storage, draftIdentity, capture); }
+    try { savePlannerCapture(storage, draftIdentity, { value: capture, pending: capturePending }); }
     catch { setDraftWarning("This device cannot keep the unfinished task capture after closing. Keep this page open."); }
-  }, [capture]);
+  }, [capture, capturePending]);
   useEffect(() => {
     if (!editor) return;
     const storage = localDraftStorage();
@@ -140,40 +143,51 @@ function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRe
   }
   async function submitCapture(event: FormEvent) {
     event.preventDefault();
-    if (!parsed || !parsed.title.trim() || busy) return;
-    const listId = parsed.listName ? lists.find((list) => list.name.toLowerCase() === parsed.listName!.toLowerCase())?.id ?? listFilter : listFilter;
-    const visibility = view === "personal" ? "personal" : parsed.visibility;
-    const input: TaskInput = { memberId, id: `TASK-${crypto.randomUUID()}`, expectedRevision: 0, task: { visibility, title: parsed.title, notes: "", listId, parentId: null, doDate: parsed.doDate, dueDate: parsed.dueDate, repeat: parsed.repeat, cue: parsed.cue, assigneeId: visibility === "personal" ? null : parsed.assigneeId, backupId: null, chapterId: null, planReference: null, moneyLink: null, expectedAmountCents: parsed.expectedAmountCents, deleted: false } };
+    if ((!capturePending && (!parsed || !parsed.title.trim())) || busy || captureSubmitting) return;
+    const input: TaskInput = capturePending ?? (() => { const listId = parsed!.listName ? lists.find((list) => list.name.toLowerCase() === parsed!.listName!.toLowerCase())?.id ?? listFilter : listFilter; const visibility = view === "personal" ? "personal" : parsed!.visibility; return { memberId, id: `TASK-${crypto.randomUUID()}`, expectedRevision: 0, task: { visibility, title: parsed!.title, notes: "", listId, parentId: null, doDate: parsed!.doDate, dueDate: parsed!.dueDate, repeat: parsed!.repeat, cue: parsed!.cue, assigneeId: visibility === "personal" ? null : parsed!.assigneeId, backupId: null, chapterId: null, planReference: null, moneyLink: null, expectedAmountCents: parsed!.expectedAmountCents, deleted: false } }; })();
+    if (!capturePending) { setCapturePending(input); const storage = localDraftStorage(); if (storage) try { savePlannerCapture(storage, draftIdentity, { value: capture, pending: input }); } catch { setDraftWarning("This device cannot keep the exact task retry after closing. Keep this page open."); } }
+    setCaptureSubmitting(true);
     try {
-      const outcome = await Promise.resolve(run((current) => saveTask(current, input), `Added “${parsed.title}”`));
-      if (acknowledged(outcome)) setCapture("");
+      const outcome = await Promise.resolve(run((current) => saveTask(current, input), `Added “${input.task.title}”`));
+      if (acknowledged(outcome)) { const storage = localDraftStorage(); if (storage) try { savePlannerCapture(storage, draftIdentity, { value: "", pending: null }); } catch { setDraftWarning("The task saved, but its exact device retry could not be cleared."); } setCapturePending((current) => current?.id === input.id ? null : current); setCapture((current) => current === capture ? "" : current); }
       else if (!outcome) setNotice("The task is still waiting for acknowledgement. Your capture is kept here.");
     } catch { setNotice("The task was not acknowledged. Your capture is kept here."); }
+    finally { setCaptureSubmitting(false); }
   }
   async function saveEditor(event: FormEvent) {
     event.preventDefault();
     if (!editor || busy) return;
     const amount = cents(editor.expectedAmount);
     if (Number.isNaN(amount)) { setNotice("Use a whole-cent amount like 140 or 140.50."); return; }
-    const input: TaskInput = { memberId: editor.memberId, id: editor.id, expectedRevision: editor.expectedRevision, task: { ...editor.task, title: editor.task.title.trim(), expectedAmountCents: amount, assigneeId: editor.task.visibility === "personal" ? null : editor.task.assigneeId, backupId: editor.task.visibility === "personal" ? null : editor.task.backupId } };
+    const submitted = editor, fingerprint = JSON.stringify(editor);
+    const input: TaskInput = { memberId: submitted.memberId, id: submitted.id, expectedRevision: submitted.expectedRevision, task: { ...submitted.task, title: submitted.task.title.trim(), expectedAmountCents: amount, assigneeId: submitted.task.visibility === "personal" ? null : submitted.task.assigneeId, backupId: submitted.task.visibility === "personal" ? null : submitted.task.backupId } };
     try {
-      const outcome = await Promise.resolve(run((current) => saveTask(current, input), editor.expectedRevision ? "Saved" : "Added"));
-      if (acknowledged(outcome)) { const storage = localDraftStorage(); if (storage) try { clearPlannerEditor(storage, draftIdentity, editor.id); } catch { setDraftWarning("The task saved, but its device recovery copy could not be cleared."); } setEditor(null); }
+      const outcome = await Promise.resolve(run((current) => saveTask(current, input), submitted.expectedRevision ? "Saved" : "Added"));
+      if (acknowledged(outcome) && editorRef.current && JSON.stringify(editorRef.current) === fingerprint) { const storage = localDraftStorage(); if (storage) try { clearPlannerEditor(storage, draftIdentity, submitted.id); } catch { setDraftWarning("The task saved, but its device recovery copy could not be cleared."); } setEditor(null); }
+      else if (acknowledged(outcome)) { const saved = outcome && typeof outcome === "object" && "household" in outcome ? outcome.household.tasks?.find((row) => row.id === submitted.id) : null; setEditor((current) => current?.id === submitted.id ? { ...current, expectedRevision: saved?.revision ?? current.expectedRevision } : current); setNotice("The submitted task saved. Your newer fields remain open for review."); }
       else if (!outcome) setNotice("The task is still waiting for acknowledgement. Your fields are kept here.");
     } catch { setNotice("The task was not acknowledged. Your fields are kept here."); }
   }
   async function removeEditor() {
     if (!editor || busy) return;
-    const input: TaskInput = { ...editor, task: { ...editor.task, deleted: true, expectedAmountCents: cents(editor.expectedAmount) || null } };
+    const submitted = editor, fingerprint = JSON.stringify(editor);
+    const input: TaskInput = { ...submitted, task: { ...submitted.task, deleted: true, expectedAmountCents: cents(submitted.expectedAmount) || null } };
     try {
       const outcome = await Promise.resolve(run((current) => saveTask(current, input), "Removed"));
-      if (acknowledged(outcome)) { const storage = localDraftStorage(); if (storage) try { clearPlannerEditor(storage, draftIdentity, editor.id); } catch { setDraftWarning("The task was removed, but its device recovery copy could not be cleared."); } setEditor(null); }
+      if (acknowledged(outcome) && editorRef.current && JSON.stringify(editorRef.current) === fingerprint) { const storage = localDraftStorage(); if (storage) try { clearPlannerEditor(storage, draftIdentity, submitted.id); } catch { setDraftWarning("The task was removed, but its device recovery copy could not be cleared."); } setEditor(null); }
+      else if (acknowledged(outcome)) setNotice("The submitted removal was acknowledged. Your newer local fields remain for review.");
       else if (!outcome) setNotice("Removal is still waiting for acknowledgement. Your fields are kept here.");
     } catch { setNotice("Removal was not acknowledged. Your fields are kept here."); }
   }
   function cancelEditor() {
     if (editor) { const storage = localDraftStorage(); if (storage) try { clearPlannerEditor(storage, draftIdentity, editor.id); } catch { setDraftWarning("The device recovery copy could not be cleared. Try Cancel again."); return; } }
     setEditor(null);
+  }
+  function discardCaptureRetry() {
+    if (captureSubmitting) return;
+    const storage = localDraftStorage();
+    if (storage) try { savePlannerCapture(storage, draftIdentity, { value: "", pending: null }); } catch { setDraftWarning("The exact task retry could not be discarded on this device."); return; }
+    setCapturePending(null); setCapture("");
   }
   function tick(item: AgendaItem) {
     const task = item.task!;
@@ -251,9 +265,10 @@ function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRe
     <form className="planner-capture" onSubmit={submitCapture}>
       <label htmlFor="planner-capture">Add something</label>
       <div className="planner-capture__row">
-        <input id="planner-capture" value={capture} autoComplete="off" placeholder="pay hydro friday $140 · book the hotel by next friday $600 · bins out every week" onChange={(event) => setCapture(event.target.value)} />
-        <button type="submit" disabled={busy || !parsed?.title.trim()}>Add</button>
+        <input id="planner-capture" value={capture} disabled={Boolean(capturePending) || captureSubmitting} autoComplete="off" placeholder="pay hydro friday $140 · book the hotel by next friday $600 · bins out every week" onChange={(event) => setCapture(event.target.value)} />
+        <button type="submit" disabled={busy || captureSubmitting || (!capturePending && !parsed?.title.trim())}>{capturePending ? "Retry same task" : "Add"}</button>
       </div>
+      {capturePending && <p className="planner-capture__understood" role="status">Retry keeps task {capturePending.id} exact. <button type="button" className="planner-link" disabled={captureSubmitting} onClick={discardCaptureRetry}>Discard saved retry</button></p>}
       {parsed && parsed.understood.length > 0 && <p className="planner-capture__understood" aria-live="polite">{parsed.title} · {parsed.understood.join(" · ")}</p>}
     </form>
     {boardRows.length > 0 && view === "household" && <div className="planner-adopt" role="status"><span>{boardRows.length} to-do{boardRows.length === 1 ? "" : "s"} on the Together board can live here.</span><button type="button" disabled={busy} onClick={() => run((current) => adoptBoardTasks(current, { memberId }), "The board to-dos are in the planner")}>Bring them in</button></div>}

@@ -70,4 +70,19 @@ describe("Planner Plan links and local editor recovery", () => {
     expect(labelControl<HTMLSelectElement>("Plan decision").selectedOptions[0]!.text).toContain("Unavailable Plan step");
     expect(host.textContent).toContain("It was not rebound to another decision.");
   });
+
+  it("retries an interrupted quick capture with the same exact Task ID after reload", async () => {
+    const attemptedIds: string[] = [];
+    const interrupted: KitchenCommand = (fn) => { const preview = fn(household); attemptedIds.push(preview.household.tasks!.at(-1)!.id); return rejected(); };
+    await act(async () => root.render(createElement(Planner, { ...props("personal"), onCommand: interrupted })));
+    await change(host.querySelector<HTMLInputElement>("#planner-capture")!, "book the ferry friday");
+    await act(async () => button("Add").click());
+    expect(button("Retry same task")).toBeTruthy();
+    await act(async () => root.unmount()); host.replaceChildren(); root = createRoot(host);
+    await act(async () => root.render(createElement(Planner, { ...props("personal"), onCommand: interrupted })));
+    expect(button("Retry same task")).toBeTruthy();
+    await act(async () => button("Retry same task").click());
+    expect(attemptedIds).toHaveLength(2);
+    expect(attemptedIds[1]).toBe(attemptedIds[0]);
+  });
 });
