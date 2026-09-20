@@ -1387,9 +1387,14 @@
         "src/harbour/scene/framePolicy.ts",
         "src/harbour/scene/ground.ts",
         "src/harbour/scene/lightRig.ts",
+        "src/harbour/scene/contact.ts",
         "src/harbour/scene/place.ts",
         "src/harbour/scene/quality.ts",
         "src/harbour/scene/runtime.ts",
+        "src/harbour/tower/TowerScene.ts",
+        "src/harbour/tower/banks.ts",
+        "src/harbour/tower/dressing.ts",
+        "src/harbour/tower/landing.ts",
         "src/house/world/rendererOwner.ts"
       ],
       "tests": [
@@ -1398,6 +1403,7 @@
         "test/harbour-camera-poses.test.ts",
         "test/harbour-compass-ui.test.ts",
         "test/harbour-door-signs.test.ts",
+        "test/harbour-tower.test.ts",
         "test/harbour-dressing.test.ts",
         "test/harbour-queen-touch.test.ts",
         "test/harbour-quick-sheet-ui.test.ts",
