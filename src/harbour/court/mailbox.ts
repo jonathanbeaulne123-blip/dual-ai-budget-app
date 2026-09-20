@@ -39,23 +39,32 @@ export function createMailbox(dressing: CourtDressing): Mailbox {
   const flagPaint = track(new THREE.MeshStandardMaterial({ color: dressing.accent, roughness: 0.5 }));
   const metal = track(new THREE.MeshStandardMaterial({ color: dressing.metal, roughness: 0.35, metalness: 0.6 }));
 
-  const post = new THREE.Mesh(track(new THREE.BoxGeometry(0.12, 1.05, 0.12)), timber);
-  post.position.y = 0.525; post.castShadow = true; group.add(post);
+  const post = new THREE.Mesh(track(new THREE.BoxGeometry(0.13, 1.0, 0.13)), timber);
+  post.position.y = 0.5; post.castShadow = true; group.add(post);
 
-  // Box: a body with a half-cylinder lid, door on the +z face.
-  const body = new THREE.Mesh(track(new THREE.BoxGeometry(0.34, 0.26, 0.5)), paint);
-  body.position.set(0, 1.18, 0); body.castShadow = true; group.add(body);
-  const lid = new THREE.Mesh(track(new THREE.CylinderGeometry(0.17, 0.17, 0.5, 16, 1, false, 0, Math.PI)), paint);
-  lid.rotation.z = Math.PI / 2; lid.rotation.y = Math.PI / 2; lid.position.set(0, 1.31, 0); lid.castShadow = true; group.add(lid);
-  const door = new THREE.Mesh(track(new THREE.BoxGeometry(0.3, 0.22, 0.02)), metal);
-  door.position.set(0, 1.19, 0.255); group.add(door);
+  // Box: a real rural box — a body with a rounded lid, the door outlined on the +z face with a knob.
+  const dark = track(new THREE.MeshStandardMaterial({ color: dressing.ink, roughness: 0.7 }));
+  const body = new THREE.Mesh(track(new THREE.BoxGeometry(0.44, 0.3, 0.62)), paint);
+  body.position.set(0, 1.15, 0); body.castShadow = true; group.add(body);
+  const lid = new THREE.Mesh(track(new THREE.CylinderGeometry(0.22, 0.22, 0.62, 18, 1, false, 0, Math.PI)), paint);
+  lid.rotation.z = Math.PI / 2; lid.rotation.y = Math.PI / 2; lid.position.set(0, 1.3, 0); lid.castShadow = true; group.add(lid);
+  const doorFrame = new THREE.Mesh(track(new THREE.BoxGeometry(0.4, 0.4, 0.015)), dark);
+  doorFrame.position.set(0, 1.22, 0.312); group.add(doorFrame);
+  const doorLid = new THREE.Mesh(track(new THREE.CylinderGeometry(0.2, 0.2, 0.015, 18, 1, false, 0, Math.PI)), dark);
+  doorLid.rotation.z = Math.PI / 2; doorLid.rotation.y = Math.PI / 2; doorLid.position.set(0, 1.3, 0.312); group.add(doorLid);
+  const door = new THREE.Mesh(track(new THREE.BoxGeometry(0.34, 0.34, 0.012)), paint);
+  door.position.set(0, 1.2, 0.322); group.add(door);
+  const doorTop = new THREE.Mesh(track(new THREE.CylinderGeometry(0.17, 0.17, 0.012, 18, 1, false, 0, Math.PI)), paint);
+  doorTop.rotation.z = Math.PI / 2; doorTop.rotation.y = Math.PI / 2; doorTop.position.set(0, 1.3, 0.322); group.add(doorTop);
+  const knob = new THREE.Mesh(track(new THREE.SphereGeometry(0.025, 8, 8)), metal);
+  knob.position.set(0, 1.12, 0.34); group.add(knob);
 
   // Flag on a pivot at the box's right edge.
-  const flagPivot = new THREE.Group(); flagPivot.position.set(0.19, 1.24, 0.12); group.add(flagPivot);
-  const flagArm = new THREE.Mesh(track(new THREE.BoxGeometry(0.02, 0.28, 0.05)), flagPaint);
-  flagArm.position.y = 0.14; flagPivot.add(flagArm);
-  const flagHead = new THREE.Mesh(track(new THREE.BoxGeometry(0.02, 0.1, 0.16)), flagPaint);
-  flagHead.position.set(0, 0.26, 0.06); flagPivot.add(flagHead);
+  const flagPivot = new THREE.Group(); flagPivot.position.set(0.24, 1.22, 0.14); group.add(flagPivot);
+  const flagArm = new THREE.Mesh(track(new THREE.BoxGeometry(0.025, 0.36, 0.05)), flagPaint);
+  flagArm.position.y = 0.18; flagPivot.add(flagArm);
+  const flagHead = new THREE.Mesh(track(new THREE.BoxGeometry(0.025, 0.14, 0.22)), flagPaint);
+  flagHead.position.set(0, 0.32, 0.09); flagPivot.add(flagHead);
 
   // Slip: a paper plate pinned to a short stake beside the post.
   const stake = new THREE.Mesh(track(new THREE.BoxGeometry(0.05, 0.62, 0.05)), timber);

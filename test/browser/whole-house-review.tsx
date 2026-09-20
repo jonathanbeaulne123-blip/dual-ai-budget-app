@@ -9,6 +9,8 @@ import {financialAuditHash} from '../../src/core/commandIdentity.ts';
 import {saveHousehold} from '../../src/storage.ts';
 import {saveSession} from '../../src/session.ts';
 import {clearCapturedIntent} from '../../src/ledgerSync/capture.ts';
+import {generateDemoSuite} from '../../src/core/demoSuite.ts';
+import {todayKey} from '../../src/core/calendar.ts';
 import {commitHearthside} from '../../src/hearthside/commands.ts';
 import '../../src/styles.css';
 import '../../src/office.css';
@@ -28,9 +30,18 @@ import '../../src/theme/page-calendar.css';
 import '../../src/theme/page-plan.css';
 import '../../src/theme/page-more.css';
 import '../../src/theme/page-books.css';
-const householdId='HH-WHOLE-HOUSE-FICTIONAL-REVIEW',memberId=new URLSearchParams(location.search).get('member')==='MEM-002'?'MEM-002':'MEM-001';
+// `?seed=demo` (Development-only, like everything here) loads the Demo Suite's synthetic "doing well" habitat instead of the small fictional house, so populated stones and plinths can be captured.
+const seed=new URLSearchParams(location.search).get('seed')==='demo';
+const householdId=seed?'HH-WHOLE-HOUSE-HABITAT-REVIEW':'HH-WHOLE-HOUSE-FICTIONAL-REVIEW',memberId=new URLSearchParams(location.search).get('member')==='MEM-002'?'MEM-002':'MEM-001';
 const endpoint=`/ledger-sync/v2/development/${householdId}`,headers={Authorization:`Bearer local:${memberId}`,'Content-Type':'application/json'};
 let response=await fetch(endpoint+'/snapshot',{headers});
+if(!response.ok&&seed){
+  const generated=await generateDemoSuite({today:todayKey(),profile:'habitat-well',seed:4242,buildSha:'whole-house-review'});
+  const household={...generated.household,householdId,linked:true,commandReceipts:[]};
+  clearCapturedIntent(household);household.booksAcceptedHash=await financialAuditHash(household);
+  const imported=await fetch(endpoint+'/import',{method:'POST',headers,body:JSON.stringify(household)});if(!imported.ok)throw Error(await imported.text());
+  response=await fetch(endpoint+'/snapshot',{headers});
+}
 if(!response.ok){
   let household=completedExistingBooksHousehold('2026-09-19T12:00:00.000Z');
   household={...household,householdId,name:'Alex & Sam · fictional local house',linked:true,commandReceipts:[]};

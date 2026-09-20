@@ -13,8 +13,9 @@ from playwright.sync_api import sync_playwright
 
 OUT = sys.argv[1] if len(sys.argv) > 1 and not sys.argv[1].startswith("--") else "docs/evidence/little-harbour"
 QUICK = "--quick" in sys.argv
-BASE = "http://127.0.0.1:4186/__review?member=MEM-001"
-WIDTHS = [390, 1100] if QUICK else [320, 390, 720, 1100, 1440]
+# `seed=demo` is the Demo Suite's synthetic "doing well" habitat (populated stones); `--fictional` takes the small review house.
+BASE = "http://127.0.0.1:4186/__review?member=MEM-001" + ("" if "--fictional" in sys.argv else "&seed=demo")
+WIDTHS = [390, 1440] if QUICK else [320, 390, 720, 1100, 1440]
 THEMES = ["classic"] if QUICK else ["classic", "taylor", "newfoundland"]
 HEIGHT = {320: 640, 390: 844, 720: 1024, 1100: 800, 1440: 900}
 ARGS = ["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist", "--enable-unsafe-swiftshader"]
@@ -38,6 +39,11 @@ def wait_court(page, timeout=45000):
     # The Queen lands after the court: wait for her twins (crown … pot rim) or give up quietly.
     try:
         page.wait_for_function("() => document.querySelectorAll('[data-twin-group=queen]').length >= 4", timeout=timeout)
+    except Exception:
+        pass
+    # The books gate validates the habitat's journal on first load; its banner sits above the stage until then.
+    try:
+        page.wait_for_function("() => !/Validating the local journal/.test(document.body.textContent || '')", timeout=90000)
     except Exception:
         pass
     page.wait_for_timeout(1200)

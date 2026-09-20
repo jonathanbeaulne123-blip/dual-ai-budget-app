@@ -184,7 +184,7 @@ export function createCourtPieces(dressing: CourtDressing, options: CourtPiecesO
           merged.rotation.y = slot.def.turn;
           merged.position.y = PLINTH.height + 0.06;
           merged.traverse((node) => {
-            if (node instanceof THREE.Mesh) { node.castShadow = options.quality === "full"; node.receiveShadow = false; node.userData.anchor = id; }
+            if (node instanceof THREE.Mesh) { node.castShadow = true; node.receiveShadow = false; node.userData.anchor = id; }
           });
           slot.model = merged;
           slot.holder.add(merged);

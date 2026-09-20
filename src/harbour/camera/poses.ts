@@ -124,9 +124,10 @@ export function courtPose(mode: CourtMode, anchor: CourtAnchor | undefined, comp
     const column = phone || safeAspect < 1.05;
     const phi = column ? 0.9 : 1.04;
     const wanted = (4.2 + 1.2) / halfH / Math.sin(phi);
-    const r = phone ? 8.0 : column ? 9.5 : clamp(wanted, 11.5, COURT_BOUNDS.maxR - 2);
+    const r = phone ? 8.6 : column ? 9.8 : clamp(wanted, 11.5, COURT_BOUNDS.maxR - 2);
     // The desktop target sits a little right of and in front of her so the sundial clears the compass pill.
-    return { target: column ? [0, 0.85, 0.7] : [0.5, 0.9, 0.9], r, theta: column ? 0.15 : 0.5, phi };
+    // The phone target sits a little toward the gate so the Bishop's head and plate are inside the column.
+    return { target: column ? [0.15, 0.8, 1.7] : [0.5, 0.9, 0.9], r, theta: column ? 0.06 : 0.5, phi };
   }
   const id: CourtAnchor = anchor ?? "queen";
   const [ax, , az] = COURT_ANCHORS[id];

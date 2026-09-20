@@ -23,7 +23,7 @@ export const COURT_LAYOUT = {
   lawnOuter: 9.5,
   board: 8,
   tile: 1.05,
-  joint: 0.06,
+  joint: 0.035,
   tileHeight: 0.12,
   queen: [0, 0, 0],
   flagstone: [0, 0, 1.6],
@@ -148,7 +148,31 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   const disposables: { dispose(): void }[] = [];
   const track = <T extends { dispose(): void }>(item: T): T => { disposables.push(item); return item; };
   const mat = (color: string, extra: Partial<THREE.MeshStandardMaterialParameters> = {}) => track(new THREE.MeshStandardMaterial({ color, roughness: 0.85, metalness: 0, ...extra }));
-  const shadowed = <T extends THREE.Object3D>(object: T, cast = true, receive = true): T => { object.castShadow = full && cast; object.receiveShadow = receive; return object; };
+  // Both tiers cast: the sun's soft shadow is what makes a model village sit on its table.
+  const shadowed = <T extends THREE.Object3D>(object: T, cast = true, receive = true): T => { object.castShadow = cast; object.receiveShadow = receive; return object; };
+
+  // Contact shadows: a radial-gradient disc under anything that stands, so it touches the ground.
+  let contactTexture: THREE.CanvasTexture | null = null;
+  const contactMaterial = (): THREE.MeshBasicMaterial | null => {
+    if (!contactTexture) {
+      try {
+        const canvas = document.createElement("canvas"); canvas.width = 128; canvas.height = 128;
+        const ctx = canvas.getContext("2d"); if (!ctx) return null;
+        const gradient = ctx.createRadialGradient(64, 64, 8, 64, 64, 64);
+        gradient.addColorStop(0, "rgba(20,16,10,0.42)"); gradient.addColorStop(0.55, "rgba(20,16,10,0.18)"); gradient.addColorStop(1, "rgba(20,16,10,0)");
+        ctx.fillStyle = gradient; ctx.fillRect(0, 0, 128, 128);
+        contactTexture = track(new THREE.CanvasTexture(canvas)); contactTexture.colorSpace = THREE.SRGBColorSpace;
+      } catch { return null; }
+    }
+    return track(new THREE.MeshBasicMaterial({ map: contactTexture, transparent: true, depthWrite: false, opacity: 1 }));
+  };
+  const contact = (x: number, z: number, radius: number, opacity = 1, parent: THREE.Object3D = group): void => {
+    const material = contactMaterial(); if (!material) return;
+    material.opacity = opacity;
+    const disc = new THREE.Mesh(track(new THREE.PlaneGeometry(radius * 2, radius * 2)), material);
+    disc.rotation.x = -Math.PI / 2; disc.position.set(x, 0.014, z); disc.renderOrder = 2; disc.name = "contact";
+    parent.add(disc);
+  };
 
   // ── Ground: terrace apron and lawn ring ─────────────────────────────────────
   const terrace = shadowed(new THREE.Mesh(track(new THREE.CircleGeometry(COURT_LAYOUT.terraceRadius, 56)), mat(dressing.terrace, { roughness: 0.95 })), false);
@@ -164,17 +188,18 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   shadowed(paving, false);
   const rand = seeded(0x51c0);
   const stone = new THREE.Color(dressing.stone), stoneAlt = new THREE.Color(dressing.stoneAlt), tone = new THREE.Color();
-  const matrix = new THREE.Matrix4(), position = new THREE.Vector3(), quaternion = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1), euler = new THREE.Euler();
+  const matrix = new THREE.Matrix4(), position = new THREE.Vector3(), quaternion = new THREE.Quaternion(), scale = new THREE.Vector3(1, 1, 1);
   const half = (board * tile) / 2 - tile / 2;
   const crackedIndex = 27; // row 3, column 3 — the tile the frost got to
+  // One calm terrace with a faint checker: tone varies by ±4 % lightness only, every tile lies flat
+  // and level (a tilted tile dips under the joint plane and reads as a dark triangle), joints are thin.
+  quaternion.identity();
   for (let row = 0; row < board; row++) for (let col = 0; col < board; col++) {
     const index = row * board + col;
-    position.set(col * tile - half + (rand() - 0.5) * 0.02, -tileHeight / 2 - rand() * 0.012, row * tile - half + (rand() - 0.5) * 0.02);
-    euler.set((rand() - 0.5) * 0.012, (rand() - 0.5) * 0.02, (rand() - 0.5) * 0.012);
-    quaternion.setFromEuler(euler);
+    position.set(col * tile - half, -tileHeight / 2 + 0.012, row * tile - half);
     matrix.compose(position, quaternion, scale);
     paving.setMatrixAt(index, matrix);
-    tone.copy((row + col) % 2 ? stoneAlt : stone).offsetHSL((rand() - 0.5) * 0.012, (rand() - 0.5) * 0.06, (rand() - 0.5) * 0.07);
+    tone.copy((row + col) % 2 ? stoneAlt : stone).offsetHSL(0, 0, (rand() - 0.5) * 0.08);
     paving.setColorAt(index, tone);
   }
   paving.instanceMatrix.needsUpdate = true;
@@ -184,7 +209,20 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   // Joints: a plane under the tiles whose colour moves from joint to moss with coverage.
   const jointMaterial = mat(dressing.joint, { roughness: 1 });
   const joints = shadowed(new THREE.Mesh(track(new THREE.PlaneGeometry(board * tile + 0.05, board * tile + 0.05)), jointMaterial), false);
-  joints.rotation.x = -Math.PI / 2; joints.position.y = -0.008; group.add(joints);
+  joints.rotation.x = -Math.PI / 2; joints.position.y = -0.03; group.add(joints);
+  // Three soft chipped corners: small rounded notches in the joint's colour, sunk into a tile's corner.
+  const chipGeometry = track(new THREE.CylinderGeometry(0.07, 0.09, 0.02, 9));
+  const chips = new THREE.InstancedMesh(chipGeometry, jointMaterial, 3);
+  chips.name = "chips";
+  [[1, 2, 1, 1], [5, 6, -1, 1], [6, 1, 1, -1]].forEach(([col, row, sx, sz], i) => {
+    position.set(col! * tile - half + sx! * (tile / 2 - 0.09), 0.006, row! * tile - half + sz! * (tile / 2 - 0.09));
+    scale.set(1, 1, 0.8);
+    matrix.compose(position, quaternion, scale);
+    chips.setMatrixAt(i, matrix);
+  });
+  scale.set(1, 1, 1);
+  chips.instanceMatrix.needsUpdate = true;
+  group.add(chips);
   // Moss pads at joint crossings: one instanced mesh, count scaled by coverage.
   const PADS = full ? 56 : 28;
   const pads = new THREE.InstancedMesh(track(new THREE.SphereGeometry(0.075, 7, 5)), mat(dressing.moss, { roughness: 1 }), PADS);
@@ -192,7 +230,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   const padRand = seeded(0x3055);
   for (let i = 0; i < PADS; i++) {
     const cx = Math.floor(padRand() * (board - 1)) + 1, cz = Math.floor(padRand() * (board - 1)) + 1;
-    position.set(cx * tile - half - tile / 2 + (padRand() - 0.5) * 0.12, -0.005, cz * tile - half - tile / 2 + (padRand() - 0.5) * 0.12);
+    position.set(cx * tile - half - tile / 2 + (padRand() - 0.5) * 0.12, 0.012, cz * tile - half - tile / 2 + (padRand() - 0.5) * 0.12);
     scale.set(0.8 + padRand() * 0.9, 0.22 + padRand() * 0.16, 0.8 + padRand() * 0.9);
     quaternion.identity();
     matrix.compose(position, quaternion, scale);
@@ -204,21 +242,24 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   // The cracked tile: a dark hairline across one tile, shown when weathered.
   const crackRow = Math.floor(crackedIndex / board), crackCol = crackedIndex % board;
   const crack = new THREE.Mesh(track(new THREE.BoxGeometry(tile * 1.1, 0.01, 0.025)), mat(dressing.joint, { roughness: 1 }));
-  crack.position.set(crackCol * tile - half, 0.004, crackRow * tile - half); crack.rotation.y = 0.62; crack.visible = false; group.add(crack);
+  crack.position.set(crackCol * tile - half, 0.02, crackRow * tile - half); crack.rotation.y = 0.62; crack.visible = false; group.add(crack);
 
   // ── Everyday flagstone: the one big number, at her feet ─────────────────────
   const [fx, , fz] = COURT_LAYOUT.flagstone;
   const flagstone = shadowed(new THREE.Mesh(track(new THREE.BoxGeometry(1.7, 0.08, 1.0)), mat(dressing.plate, { roughness: 0.8 })));
-  flagstone.position.set(fx, 0.04, fz); flagstone.userData.anchor = "flagstone"; group.add(flagstone);
+  flagstone.position.set(fx, 0.05, fz); flagstone.userData.anchor = "flagstone"; group.add(flagstone);
+  contact(fx, fz, 1.15, 0.5);
   const everyday = track(new EngravedPlate({ stone: dressing.plate, highlight: dressing.plateHighlight, ink: dressing.ink, size: "large" }, 1.52, 0.84));
-  everyday.mesh.rotation.x = -Math.PI / 2; everyday.mesh.position.set(fx, 0.086, fz); everyday.mesh.userData.anchor = "flagstone"; group.add(everyday.mesh);
+  everyday.mesh.rotation.x = -Math.PI / 2; everyday.mesh.position.set(fx, 0.096, fz); everyday.mesh.userData.anchor = "flagstone"; group.add(everyday.mesh);
 
   // ── The Queen's spot ────────────────────────────────────────────────────────
   const queenSlot = new THREE.Group(); queenSlot.name = "queen-slot"; queenSlot.position.set(...COURT_LAYOUT.queen); group.add(queenSlot);
+  contact(COURT_LAYOUT.queen[0], COURT_LAYOUT.queen[2], 1.05, 0.9);
 
   // ── Her three, on plinths ───────────────────────────────────────────────────
   const pieces = createCourtPieces(dressing, { quality, signal: options.signal, load: options.load, loadModels: options.loadModels, onLanded: (id) => { pendingRedraw = true; options.onLanded?.(id); } });
   group.add(pieces.group);
+  for (const id of PIECE_IDS) contact(COURT_PIECES[id].position[0], COURT_PIECES[id].position[2], 0.95, 0.85);
 
   // ── Sundial and mailbox ─────────────────────────────────────────────────────
   const sundial = track(createSundial(dressing)); sundial.group.position.set(...COURT_LAYOUT.sundial); group.add(sundial.group);
@@ -226,16 +267,19 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   if (!full) [sundial.group, mailbox.group].forEach((g) => g.traverse((node) => { node.castShadow = false; }));
   // A raycast resolves a court object through `userData.anchor` (scene/runtime.ts).
   sundial.group.userData.anchor = "sundial"; mailbox.group.userData.anchor = "mailbox";
+  contact(COURT_LAYOUT.sundial[0], COURT_LAYOUT.sundial[2], 0.9, 0.7); contact(COURT_LAYOUT.mailbox[0], COURT_LAYOUT.mailbox[2], 0.42, 0.7);
 
   // ── The gate: two posts, two rails, a low arch ──────────────────────────────
+  // A low garden gate: two posts, a picket leaf between them on two rails, brass only on the hinges.
   const [gx, , gz] = COURT_LAYOUT.gate;
-  const gatePosts = shadowed(mergedMesh([placed(new THREE.BoxGeometry(0.22, 1.5, 0.22), gx - 1.05, 0.75, gz), placed(new THREE.BoxGeometry(0.22, 1.5, 0.22), gx + 1.05, 0.75, gz)], mat(dressing.gate.post, { roughness: 0.8 })));
-  const gateRails = shadowed(mergedMesh([placed(new THREE.BoxGeometry(1.9, 0.07, 0.06), gx, 0.5, gz), placed(new THREE.BoxGeometry(1.9, 0.07, 0.06), gx, 0.92, gz)], mat(dressing.gate.rail, { roughness: 0.7 })));
+  const gatePosts = shadowed(mergedMesh([placed(new THREE.BoxGeometry(0.16, 1.0, 0.16), gx - 0.95, 0.5, gz), placed(new THREE.BoxGeometry(0.16, 1.0, 0.16), gx + 0.95, 0.5, gz), placed(new THREE.SphereGeometry(0.1, 8, 6), gx - 0.95, 1.02, gz), placed(new THREE.SphereGeometry(0.1, 8, 6), gx + 0.95, 1.02, gz)], mat(dressing.gate.post, { roughness: 0.8 })));
+  const pickets: THREE.BufferGeometry[] = [placed(new THREE.BoxGeometry(1.7, 0.05, 0.04), gx, 0.32, gz), placed(new THREE.BoxGeometry(1.7, 0.05, 0.04), gx, 0.72, gz)];
+  for (let i = 0; i < 7; i++) { const x = gx - 0.72 + i * 0.24; const h = 0.78 - Math.abs(i - 3) * 0.05; pickets.push(placed(new THREE.BoxGeometry(0.05, h, 0.03), x, h / 2 + 0.06, gz + 0.01)); }
+  const gateRails = shadowed(mergedMesh(pickets, mat(dressing.gate.rail, { roughness: 0.7 })));
   const gateArch = shadowed(mergedMesh([
-    placed(new THREE.TorusGeometry(1.05, 0.06, 8, 26, Math.PI), gx, 1.5, gz),
-    placed(new THREE.SphereGeometry(0.1, 10, 8), gx - 1.05, 1.58, gz),
-    placed(new THREE.SphereGeometry(0.1, 10, 8), gx + 1.05, 1.58, gz),
-  ], mat(dressing.gate.accent, { roughness: 0.4, metalness: dressing.theme === "classic" ? 0.5 : 0.1 })));
+    placed(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 8), gx - 0.84, 0.32, gz), placed(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 8), gx - 0.84, 0.72, gz),
+    placed(new THREE.BoxGeometry(0.05, 0.05, 0.03), gx + 0.78, 0.55, gz + 0.03),
+  ], mat(dressing.gate.accent, { roughness: 0.35, metalness: 0.6 })));
   track(gatePosts.geometry); track(gateRails.geometry); track(gateArch.geometry);
   for (const part of [gatePosts, gateRails, gateArch]) part.userData.anchor = "gate";
   group.add(gatePosts, gateRails, gateArch);
@@ -244,14 +288,23 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   const hercules = new THREE.Group(); hercules.name = "hercules"; hercules.position.set(...COURT_LAYOUT.hercules); hercules.rotation.y = -0.5; hercules.userData.anchor = "hercules"; group.add(hercules);
   const porcelain = mat(dressing.porcelain, { roughness: 0.35 });
   const pink = mat(dressing.pink, { roughness: 0.6 });
+  const noseTone = mat("#b9605e", { roughness: 0.5 });
   const body = shadowed(new THREE.Mesh(track(new THREE.SphereGeometry(0.3, 18, 12)), porcelain)); body.scale.set(1.3, 0.62, 0.92); body.position.y = 0.19; hercules.add(body);
   const head = shadowed(new THREE.Mesh(track(new THREE.SphereGeometry(0.19, 16, 12)), porcelain)); head.scale.set(1, 0.9, 0.95); head.position.set(0.36, 0.28, 0.04); hercules.add(head);
-  const ears = shadowed(mergedMesh([placed(new THREE.ConeGeometry(0.06, 0.11, 8), 0.42, 0.45, -0.07, [0.15, 0, -0.35]), placed(new THREE.ConeGeometry(0.06, 0.11, 8), 0.42, 0.45, 0.15, [-0.15, 0, -0.35])], pink));
+  // Ears: a porcelain outer cone with a pink inner, upright on the head so they read from above.
+  const earOuter = shadowed(mergedMesh([placed(new THREE.ConeGeometry(0.075, 0.15, 6), 0.4, 0.46, -0.1, [0.25, 0, -0.2]), placed(new THREE.ConeGeometry(0.075, 0.15, 6), 0.4, 0.46, 0.18, [-0.25, 0, -0.2])], porcelain));
+  track(earOuter.geometry); hercules.add(earOuter);
+  const ears = mergedMesh([placed(new THREE.ConeGeometry(0.04, 0.09, 6), 0.42, 0.47, -0.1, [0.25, 0, -0.2]), placed(new THREE.ConeGeometry(0.04, 0.09, 6), 0.42, 0.47, 0.18, [-0.25, 0, -0.2])], pink);
   track(ears.geometry); hercules.add(ears);
-  const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.022, 8, 6)), pink); nose.position.set(0.55, 0.24, 0.05); hercules.add(nose);
-  const tailPivot = new THREE.Group(); tailPivot.position.set(-0.36, 0.1, 0.02); hercules.add(tailPivot);
-  const tail = shadowed(new THREE.Mesh(track(new THREE.TorusGeometry(0.2, 0.035, 6, 14, Math.PI * 0.85)), porcelain)); tail.rotation.x = Math.PI / 2; tail.rotation.z = Math.PI; tail.position.x = -0.2; tailPivot.add(tail);
+  const nose = new THREE.Mesh(track(new THREE.SphereGeometry(0.03, 8, 6)), noseTone); nose.position.set(0.55, 0.25, 0.05); hercules.add(nose);
+  const eyes = mergedMesh([placed(new THREE.BoxGeometry(0.05, 0.012, 0.01), 0.53, 0.31, -0.05), placed(new THREE.BoxGeometry(0.05, 0.012, 0.01), 0.53, 0.31, 0.13)], noseTone);
+  track(eyes.geometry); hercules.add(eyes);
+  // The tail curls around the body's flank, flat on the stone, so it is a cat's tail at a glance.
+  const tailPivot = new THREE.Group(); tailPivot.position.set(-0.3, 0.07, 0.18); hercules.add(tailPivot);
+  const tail = shadowed(new THREE.Mesh(track(new THREE.TorusGeometry(0.22, 0.045, 7, 16, Math.PI * 1.25)), porcelain)); tail.rotation.x = Math.PI / 2; tail.rotation.z = Math.PI * 0.55; tail.position.set(-0.05, 0, 0.12); tailPivot.add(tail);
+  const tailTip = new THREE.Mesh(track(new THREE.SphereGeometry(0.048, 8, 6)), porcelain); tailTip.position.set(0.14, 0, 0.3); tailPivot.add(tailTip);
   const TAIL_REST = 0.1; tailPivot.rotation.y = TAIL_REST;
+  contact(0, 0, 0.62, 0.7, hercules);
 
   // ── Partner marker: a small figure pin at the gate ──────────────────────────
   const partner = new THREE.Group(); partner.name = "partner"; partner.position.set(...COURT_LAYOUT.partner); partner.visible = false; group.add(partner);
@@ -264,16 +317,31 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     paper: mat(dressing.paper, { roughness: 0.7 }), leaf: mat(dressing.leaf, { roughness: 0.95 }), bloom: mat(dressing.bloom, { roughness: 0.7 }),
     rail: mat(dressing.gate.rail, { roughness: 0.6 }), post: mat(dressing.gate.post, { roughness: 0.6 }), spine: mat(dressing.plinth, { roughness: 0.7 }),
   };
+  // A thrown pot: a lathe profile (foot, belly, lip). A shrub: a cluster of icosahedra, flat-shaded.
+  const potGeometry = (foot: number, belly: number, lip: number, height: number) => track(new THREE.LatheGeometry([
+    new THREE.Vector2(0, 0), new THREE.Vector2(foot, 0), new THREE.Vector2(foot * 1.05, height * 0.08), new THREE.Vector2(belly, height * 0.55),
+    new THREE.Vector2(lip * 0.94, height * 0.9), new THREE.Vector2(lip, height * 0.92), new THREE.Vector2(lip, height), new THREE.Vector2(lip * 0.86, height), new THREE.Vector2(lip * 0.84, height * 0.9),
+  ], 18));
+  const shrubGeometry = (radius: number) => track(mergeGeometries([
+    placed(new THREE.IcosahedronGeometry(radius, 0), 0, radius * 0.9, 0), placed(new THREE.IcosahedronGeometry(radius * 0.72, 0), radius * 0.6, radius * 0.7, radius * 0.2),
+    placed(new THREE.IcosahedronGeometry(radius * 0.66, 0), -radius * 0.55, radius * 0.75, -radius * 0.3), placed(new THREE.IcosahedronGeometry(radius * 0.6, 0), radius * 0.1, radius * 1.45, -radius * 0.4),
+  ], false) ?? new THREE.IcosahedronGeometry(radius, 0));
+  const leafMaterial = track(new THREE.MeshStandardMaterial({ color: dressing.leaf, roughness: 0.95, flatShading: true }));
+  const bloomMaterial = track(new THREE.MeshStandardMaterial({ color: dressing.bloom, roughness: 0.75, flatShading: true }));
+  const potted = (pot: THREE.BufferGeometry, potMaterial: THREE.Material, potHeight: number, crown: THREE.BufferGeometry, crownMaterial: THREE.Material): THREE.Object3D[] => {
+    const crownMesh = new THREE.Mesh(crown, crownMaterial); crownMesh.position.y = potHeight - 0.04;
+    return [new THREE.Mesh(pot, potMaterial), crownMesh];
+  };
   const propBuilders: Record<CourtProp, () => THREE.Object3D[]> = {
-    "terracotta-pot": () => [new THREE.Mesh(track(placed(new THREE.CylinderGeometry(0.3, 0.22, 0.42, 14), 0, 0.21, 0)), propMaterials.clay), new THREE.Mesh(track(placed(new THREE.SphereGeometry(0.34, 12, 9), 0, 0.6, 0)), propMaterials.leaf)],
-    "herb-pot": () => [new THREE.Mesh(track(placed(new THREE.CylinderGeometry(0.2, 0.15, 0.3, 12), 0, 0.15, 0)), propMaterials.clay), new THREE.Mesh(track(placed(new THREE.ConeGeometry(0.24, 0.5, 9), 0, 0.53, 0)), propMaterials.leaf)],
+    "terracotta-pot": () => potted(potGeometry(0.2, 0.3, 0.3, 0.44), propMaterials.clay, 0.44, shrubGeometry(0.26), leafMaterial),
+    "herb-pot": () => potted(potGeometry(0.13, 0.2, 0.21, 0.32), propMaterials.clay, 0.32, shrubGeometry(0.19), leafMaterial),
     "brass-lantern": () => [new THREE.Mesh(track(placed(new THREE.BoxGeometry(0.26, 0.5, 0.26), 0, 0.55, 0)), propMaterials.metal), new THREE.Mesh(track(placed(new THREE.CylinderGeometry(0.03, 0.03, 0.3, 6), 0, 0.15, 0)), propMaterials.timber)],
-    "clay-urn": () => [new THREE.Mesh(track(placed(new THREE.SphereGeometry(0.32, 14, 10), 0, 0.36, 0)), propMaterials.clay), new THREE.Mesh(track(placed(new THREE.SphereGeometry(0.28, 12, 9), 0, 0.82, 0)), propMaterials.bloom)],
+    "clay-urn": () => potted(potGeometry(0.16, 0.36, 0.22, 0.6), propMaterials.clay, 0.6, shrubGeometry(0.2), bloomMaterial),
     "washi-lantern": () => [new THREE.Mesh(track(placed(new THREE.CylinderGeometry(0.22, 0.22, 0.5, 12), 0, 0.75, 0)), propMaterials.paper), new THREE.Mesh(track(placed(new THREE.CylinderGeometry(0.03, 0.03, 0.5, 6), 0, 0.25, 0)), propMaterials.timber)],
     "album-planter": () => [new THREE.Mesh(track(mergeGeometries([placed(new THREE.BoxGeometry(0.5, 0.42, 0.12), -0.18, 0.21, 0), placed(new THREE.BoxGeometry(0.5, 0.36, 0.12), 0, 0.18, 0.02), placed(new THREE.BoxGeometry(0.5, 0.4, 0.12), 0.18, 0.2, -0.01)], false) ?? new THREE.BoxGeometry(0.6, 0.4, 0.3)), propMaterials.spine), new THREE.Mesh(track(placed(new THREE.SphereGeometry(0.28, 12, 9), 0, 0.6, 0)), propMaterials.leaf)],
-    "paper-rose": () => [new THREE.Mesh(track(placed(new THREE.CylinderGeometry(0.24, 0.18, 0.36, 12), 0, 0.18, 0)), propMaterials.paper), new THREE.Mesh(track(placed(new THREE.SphereGeometry(0.3, 12, 9), 0, 0.6, 0)), propMaterials.bloom)],
-    "heart-pot": () => [new THREE.Mesh(track(placed(new THREE.CylinderGeometry(0.26, 0.2, 0.36, 12), 0, 0.18, 0)), propMaterials.clay), new THREE.Mesh(track(mergeGeometries([placed(new THREE.SphereGeometry(0.16, 10, 8), -0.12, 0.62, 0), placed(new THREE.SphereGeometry(0.16, 10, 8), 0.12, 0.62, 0), placed(new THREE.ConeGeometry(0.26, 0.3, 4), 0, 0.42, 0, [Math.PI, Math.PI / 4, 0])], false) ?? new THREE.SphereGeometry(0.2, 10, 8)), propMaterials.bloom)],
-    "wharf-barrel": () => [new THREE.Mesh(track(placed(new THREE.CylinderGeometry(0.3, 0.27, 0.56, 14), 0, 0.28, 0)), propMaterials.timber), new THREE.Mesh(track(placed(new THREE.SphereGeometry(0.3, 12, 9), 0, 0.7, 0)), propMaterials.leaf)],
+    "paper-rose": () => potted(potGeometry(0.18, 0.24, 0.25, 0.38), propMaterials.paper, 0.38, shrubGeometry(0.22), bloomMaterial),
+    "heart-pot": () => potted(potGeometry(0.2, 0.27, 0.27, 0.38), propMaterials.clay, 0.38, shrubGeometry(0.2), bloomMaterial),
+    "wharf-barrel": () => potted(potGeometry(0.27, 0.31, 0.28, 0.56), propMaterials.timber, 0.56, shrubGeometry(0.24), leafMaterial),
     buoy: () => [new THREE.Mesh(track(placed(new THREE.SphereGeometry(0.3, 14, 10), 0, 0.3, 0)), propMaterials.post), new THREE.Mesh(track(placed(new THREE.CylinderGeometry(0.05, 0.05, 0.3, 8), 0, 0.72, 0)), propMaterials.rail)],
     "rope-coil": () => [new THREE.Mesh(track(placed(new THREE.TorusGeometry(0.28, 0.09, 8, 20), 0, 0.09, 0, [Math.PI / 2, 0, 0])), mat(dressing.joint, { roughness: 1 })), new THREE.Mesh(track(placed(new THREE.TorusGeometry(0.2, 0.08, 8, 18), 0, 0.24, 0, [Math.PI / 2, 0, 0])), mat(dressing.joint, { roughness: 1 }))],
     "lobster-pot": () => [new THREE.Mesh(track(placed(new THREE.BoxGeometry(0.62, 0.36, 0.42), 0, 0.18, 0)), propMaterials.timber), new THREE.Mesh(track(placed(new THREE.CylinderGeometry(0.2, 0.2, 0.44, 12), 0, 0.18, 0, [0, 0, Math.PI / 2])), propMaterials.rail)],
@@ -284,6 +352,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     const slot = COURT_LAYOUT.props[index]!;
     const holder = new THREE.Group(); holder.position.set(slot[0], slot[1], slot[2]); holder.rotation.y = index * 1.3;
     for (const part of propBuilders[prop]()) holder.add(shadowed(part));
+    contact(0, 0, 0.42, 0.6, holder);
     propsGroup.add(holder);
   });
 

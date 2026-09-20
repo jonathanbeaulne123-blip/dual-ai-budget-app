@@ -88,7 +88,9 @@
   .court-flat__gate { grid-template-columns: 1fr; }
   .harbour-world.has-open-object .harbour-world__stage { height: 210px; }
   .harbour-world__put-back { left: 14px; bottom: 14px; font-size: 12px; }
-  .harbour-world__phrase { bottom: 56px; font-size: 14px; }
+  /* The compass handle rises 22px above the bar; her line sits well above it. */
+  .harbour-world__phrase { bottom: 70px; font-size: 14px; }
+  .harbour-world__supported, .harbour-world__checking { bottom: 30px; }
 }
 @media (max-width: 359px) { .app[data-harbour-court] .sync-freshness { max-width: calc(100vw - 130px); } }
 

@@ -27,10 +27,13 @@ export function createLightRig(scene: THREE.Scene, light: PlaceLight, tier: Rend
   sun.name = "Harbour sun";
   sun.position.set(-11, 17, 13);
   sun.target.position.set(0, 0, 0);
-  if (tier === "full") {
+  // Both tiers cast a soft shadow at 1024: the shadow is what sets a model on its table.
+  void tier;
+  {
     sun.castShadow = true;
     sun.shadow.mapSize.set(SUN_SHADOW_SIZE, SUN_SHADOW_SIZE);
     sun.shadow.bias = SUN_SHADOW_BIAS;
+    sun.shadow.normalBias = 0.02;
     sun.shadow.camera.left = -SUN_SHADOW_EXTENT; sun.shadow.camera.right = SUN_SHADOW_EXTENT;
     sun.shadow.camera.top = SUN_SHADOW_EXTENT; sun.shadow.camera.bottom = -SUN_SHADOW_EXTENT;
     sun.shadow.camera.near = 4; sun.shadow.camera.far = 60;
@@ -63,7 +66,7 @@ export function configureHarbourRenderer(renderer: THREE.WebGLRenderer, tier: Re
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NoToneMapping;
   renderer.toneMappingExposure = 1;
-  renderer.shadowMap.enabled = tier === "full";
+  renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.localClippingEnabled = false;
   renderer.setScissorTest(false);

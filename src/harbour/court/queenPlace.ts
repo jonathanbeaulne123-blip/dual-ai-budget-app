@@ -110,6 +110,7 @@ export type DressQueenInput = { tier: QueenTier; source: QueenSource; style: Que
 export function dressQueenPlace(group: THREE.Group, input: DressQueenInput): QueenPlace {
   group.name = `Queen · ${input.source}`;
   tagQueenRegions(group);
+  group.traverse((node) => { if (node instanceof THREE.Mesh) { node.castShadow = true; node.receiveShadow = true; } });
   let growth = group.children.find((child) => child.name === "Supported history · identity anchored") ?? null;
   if (!growth) { growth = createBloomGrowth(input.style, input.evidence); group.add(growth); }
   const seat = () => seatGrowthAtRoots(group, growth!, regionBoxes(group));
