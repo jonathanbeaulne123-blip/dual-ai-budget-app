@@ -1404,6 +1404,7 @@
         "test/harbour-compass-ui.test.ts",
         "test/harbour-door-signs.test.ts",
         "test/harbour-dressing.test.ts",
+        "test/harbour-place-flat-ui.test.ts",
         "test/harbour-queen-touch.test.ts",
         "test/harbour-quick-sheet-ui.test.ts",
         "test/harbour-reading.test.ts",

@@ -149,6 +149,12 @@ export const EMPTY_CISTERN_READING: CisternReading = Object.freeze({ cents: null
  * shelf order), each shelf's brass share and pin, and one bank per key with
  * the studio's 0–10 backing step. A shelf is `full` when every bank on it has
  * reached the shelf's pin — the same room the pour computes, at zero poured.
+ *
+ * The tower stands exactly what `QueenLoft` stands: the Build ledge
+ * (`queenShelf`), not every open goal bank in the nest. A household whose
+ * goals are filed under Protect or Everyday therefore has a bare tower and an
+ * honest one — tapping a bank here opens the Loft at that bank, so the tower
+ * may never show a bank the Loft does not have.
  */
 export function buildTowerReading(household: Household, memberId: string, today: DateKey, nest: Pick<KittyNest, "categories">): TowerReading {
   const order = queenShelfOrder(household.kittyNestDesigns);
