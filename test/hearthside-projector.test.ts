@@ -48,6 +48,13 @@ describe('Theatre Projector composition integrity', () => {
     const current = [{ ...old, revision: old.revision + 1, approvals: members.map(memberId => ({ memberId, revision: old.revision + 1 })) }, stable, { ...withdrawn, withdrawn: true }];
     expect(readProjectorDraft(storage, draftScope, keptCompositions(current, members))).toMatchObject({ order: [memoryKey(stable)], discarded: 2 });
   });
+  it('rejects an oversized reel record before parsing it', () => {
+    const storage = draftStore();
+    storage.setItem(projectorDraftKey(draftScope), ' '.repeat(64 * 1024 + 1));
+    const parse = vi.spyOn(JSON, 'parse');
+    try { expect(readProjectorDraft(storage, draftScope, [memory()]).status).toBe('rejected'); expect(parse).not.toHaveBeenCalled(); }
+    finally { parse.mockRestore(); }
+  });
   it('truthfully keeps reel choices visit-only when saved recovery cannot be read', () => {
     const unavailable = { getItem: () => { throw Error('blocked'); }, setItem: () => { throw Error('blocked'); } };
     const html = renderToStaticMarkup(createElement(TheatreProjector, { memories: [memory()], activeMemberIds: members, theme: 'classic', scopeKey: 'visit', draftScope, draftStorage: unavailable, ...loaders, validateDownload: async () => true, onClose: () => {} }));

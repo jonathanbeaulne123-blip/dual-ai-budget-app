@@ -62,6 +62,7 @@ function decodeStoredProjectorDraft(input: unknown, scope: ProjectorDraftScope):
 export function readProjectorDraft(storage: ProjectorDraftStore, scope: ProjectorDraftScope, eligible: readonly MemoryComposition[]): ProjectorDraftRecovery {
   const raw = storage.getItem(projectorDraftKey(scope));
   if (raw === null) return defaults('absent');
+  if (raw.length > 64 * 1024) return defaults('rejected');
   let parsed: unknown;
   try { parsed = JSON.parse(raw); } catch { return defaults('rejected'); }
   const stored = decodeStoredProjectorDraft(parsed, scope);
