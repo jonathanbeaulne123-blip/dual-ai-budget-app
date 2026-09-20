@@ -10,6 +10,7 @@ import { queenBankPiece, queenBankFired } from "../queen/world/queenAuthoring.ts
 import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { growIsland, type GrownIsland } from "../path/grow.ts";
 import type { PathWorld, PathWorldInput } from "../path/world/pathWorld3d.ts";
+import { interpretationSourceRevision, quietJourneyMonths, supportedAtFor, useSupportedJourneyInterpretation, type InterpretationGate } from "./supportedInterpretation.ts";
 import "./personal-journey.css";
 
 const CHARACTER_WORDS = {
@@ -36,10 +37,11 @@ function PersonalJourneyFlat({ island, active }: { island: GrownIsland; active: 
 }
 
 export type PersonalJourneyObject = 'wish' | 'experience' | 'memory' | 'bank';
-export function PersonalJourney({ household, memberId, today, onOpenPlan, onOpenTask: _onOpenTask, onReturn, onOpenObject }: {
+export function PersonalJourney({ household, memberId, today, interpretationGate, onOpenPlan, onOpenTask: _onOpenTask, onReturn, onOpenObject }: {
   household: Household;
   memberId: string;
   today: DateKey;
+  interpretationGate?: InterpretationGate;
   onOpenPlan: () => void;
   onOpenTask?: (id: string) => void;
   onReturn?: () => void;
@@ -49,9 +51,12 @@ export function PersonalJourney({ household, memberId, today, onOpenPlan, onOpen
   const life = useMemo(() => decodePersonalLife(household.personalLife, memberId), [household.personalLife, memberId]);
   const kept = life.memories.filter(memory => !memory.withdrawn && memory.keptRevision === memory.revision);
   const banks = useMemo(() => projectKittyNest(household, memberId, 'personal', today).categories.flatMap(category => category.children).filter(bank => bank.tier === 'goal' && bank.state === 'open'), [household, memberId, today]);
-  const months = useMemo(() => pathMonths(household, today, undefined, { view: "personal", memberId }), [household, today, memberId]);
+  const currentMonths = useMemo(() => pathMonths(household, today, undefined, { view: "personal", memberId }), [household, today, memberId]);
+  const gate = interpretationGate ?? { current: true, freshness: "current" as const, detail: "Current local books" };
+  const supported = useSupportedJourneyInterpretation({identity:{environment:household.environment,householdId:household.householdId,memberId,scope:"personal"},gate,current:{months:currentMonths,recipes:[...PATH_BASE_RECIPES],weather:null},fallback:{months:quietJourneyMonths(currentMonths),recipes:[...PATH_BASE_RECIPES],weather:null},sourceRevision:interpretationSourceRevision(household,"personal"),supportedAt:supportedAtFor(household,today)});
+  const months = supported.value.months;
   const characters = useMemo(() => months.map(pathMonthCharacter), [months]);
-  const island = useMemo(() => growIsland(months, [...PATH_BASE_RECIPES], Math.max(0, months.length - 1)), [months]);
+  const island = useMemo(() => growIsland(months, supported.value.recipes, Math.max(0, months.length - 1)), [months, supported.value.recipes]);
   const scene = useMemo<PathWorldInput>(() => ({
     island, theme: appearance.scene.theme, characters, campfires: [], moves: [],
     goals: banks.map(bank => { const piece = queenBankPiece(bank); return {id:`bank/${bank.id}`, step:bank.goal ? kittyBankBackingStep(household, bank.goal, today) : 0, piece, fired:queenBankFired(piece)}; }),
@@ -105,7 +110,7 @@ export function PersonalJourney({ household, memberId, today, onOpenPlan, onOpen
 
   return <section className={`personal-journey personal-journey--${appearance.scene.theme}`} aria-labelledby="personal-journey-title">
     <header className="personal-journey__head">
-      <div><p className="kicker">Personal Journey</p><h2 id="personal-journey-title">Your own island</h2><p>Your Personal books shape the land. Your deliberately kept memories mark their dates.</p></div>
+      <div><p className="kicker">Personal Journey</p><h2 id="personal-journey-title">Your own island</h2><p>Your Personal books shape the land. Your deliberately kept memories mark their dates.</p>{supported.statusLine&&<p className="muted" role="status">{supported.statusLine}</p>}</div>
       {onReturn && <button type="button" className="ghost" onClick={onReturn}>Return home</button>}
     </header>
     <div className="personal-journey__scene" data-renderer={renderer}>

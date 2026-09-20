@@ -175,6 +175,7 @@
 }
 .queen-line__word { font-style: italic; color: var(--ink); }
 .queen-line__dot { margin-inline: .45em; color: var(--muted); }
+.queen-supported { margin:.3rem 0 0; max-width:42ch; color:var(--muted); font:500 11px/1.35 var(--sans); text-align:center; text-wrap:balance; }
 
 /* ---- the doors: invisible paint, visible semantics ---- */
 .queen-door {

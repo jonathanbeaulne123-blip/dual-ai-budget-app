@@ -1,4 +1,4 @@
-import type { QueenBody, QueenCrown, QueenFeet, QueenRegionId, QueenStill, QueenVine } from "../core/queenPresentation.ts";
+import type { QueenBody, QueenCrown, QueenFeet, QueenRegionId, QueenStill } from "../core/queenPresentation.ts";
 import type { QueenCharmV1 } from "../core/queenCharms.ts";
 import { QueenCharmGlyphs } from "./QueenCharmGlyph.tsx";
 import { QUEEN_FLAT, QUEEN_FORM_BASE, queenRingSeatsOn, queenSkirtAt, type QueenForm } from "./world/queenCharmSurface.ts";
@@ -146,7 +146,7 @@ export type QueenFigureProps = {
   still: QueenStill;
   body: QueenBody;
   crown: QueenCrown["light"];
-  vine: QueenVine;
+  vine: { chapter: unknown; growth: 0 | 1 | 2 | 3 | 4 };
   buds: number;
   feet: QueenFeet;
   /** Lets the vine's "fresh glaze" sheen sit on a bud when the partner touched it recently. */

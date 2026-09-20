@@ -10,6 +10,7 @@
 .house-world__header h1 { margin:3px 0 0; font:500 clamp(23px,2.3vw,38px)/1.15 var(--display,Georgia,serif); }
 .house-world__header h1 span { opacity:.68; font-size:.65em; }
 .house-world__scope { text-transform:uppercase; letter-spacing:.18em; font-size:10px; font-weight:750; }
+.house-world__supported { display:block; margin-top:5px; color:color-mix(in srgb,var(--house-ink) 72%,transparent); font-size:11px; }
 .house-world__header button { border:1px solid var(--house-wood); border-radius:30px; background:transparent; padding:8px 19px; font-size:12px; }
 .house-world__stage { height:clamp(520px,76dvh,850px); position:relative; overflow:hidden; background:#b7ad92; }
 .house-world__canvas,.house-world__canvas canvas,.house-world__illustration,.house-world__vignette { position:absolute; inset:0; width:100%; height:100%; }

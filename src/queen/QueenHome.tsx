@@ -50,6 +50,7 @@ import { useOutsideClose } from "../useOutsideClose.ts";
 import { PathMiniMap } from "../path/PathMiniMap.tsx";
 import { pathMonths } from "../core/pathSignals.ts";
 import { pathIslandName } from "../core/pathWorld.ts";
+import { supportedAtFor, useSupportedQueenInterpretation, type InterpretationGate, type QueenSceneInterpretation } from "../house/supportedInterpretation.ts";
 import "./queen-home.css";
 import "./queen-glass.css";
 
@@ -60,6 +61,8 @@ export type QueenHomeProps = {
   memberId: string;
   today: DateKey;
   freshness: FundPulseFreshness;
+  /** Shared read support for the scene. Financial tools continue to read the current Household. */
+  interpretationGate?: InterpretationGate;
   busy: boolean;
   onCommand: Run;
   onGo: (tab: "ledger" | "plan" | "together" | "calendar" | "more") => void;
@@ -155,7 +158,7 @@ function readWide(): boolean {
  * button above each. Panels peek; the cellar and the loft are the rooms, and
  * she does not follow you in.
  */
-export function QueenHome({ household, memberId, today, freshness, busy, onCommand, onGo, onOpenSetup, onOpenBank, identityArt, world = "auto", clock, shell, housePlace, onHousePlace }: QueenHomeProps) {
+export function QueenHome({ household, memberId, today, freshness, interpretationGate, busy, onCommand, onGo, onOpenSetup, onOpenBank, identityArt, world = "auto", clock, shell, housePlace, onHousePlace }: QueenHomeProps) {
   const wide = useSyncExternalStore(subscribeWide, readWide, () => false);
   const [easyRead] = useEasyRead(`${household.environment}:${household.householdId}:${memberId}`);
   const ids = useId();
@@ -165,25 +168,56 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const monthKey = monthKeyFromDateKey(today);
   const chapter = openChapterFor(household);
   const move = nextMove(household, memberId);
-  const pulse = fundPulse(deriveFundPulseInput(household, { memberId, today, freshness, activeChapter: Boolean(chapter) }));
-  const still = queenStill(pulse, freshness);
+  const gate = interpretationGate ?? { current: freshness === "current", freshness, detail: freshness === "offline" ? "Offline" : freshness === "stale" ? "Shared evidence needs attention" : "Current shared books" };
+  const currentPulse = fundPulse(deriveFundPulseInput(household, { memberId, today, freshness: "current", activeChapter: Boolean(chapter) }));
+  const fallbackPulse = fundPulse(deriveFundPulseInput(household, { memberId, today, freshness, activeChapter: Boolean(chapter) }));
   const presence = presenceLines(household, { memberId, today });
   const crown = queenCrown(presence);
   const nest = useMemo(() => projectKittyNest(household, memberId, "household", today), [household, memberId, today]);
-  const living = useMemo(() => deriveHouseCondition(household, { memberId, today, freshness, growing: pulse.state === "building", backingAvailable: nest.categories.every(bank => bank.amountCents !== null) }), [household, memberId, today, freshness, pulse.state, nest]);
+  const backingAvailable = nest.categories.every(bank => bank.amountCents !== null);
+  const currentLiving = useMemo(() => deriveHouseCondition(household, { memberId, today, freshness: "current", growing: currentPulse.state === "building", backingAvailable }), [household, memberId, today, currentPulse.state, backingAvailable]);
+  const fallbackLiving = useMemo(() => deriveHouseCondition(household, { memberId, today, freshness, growing: fallbackPulse.state === "building", backingAvailable }), [household, memberId, today, freshness, fallbackPulse.state, backingAvailable]);
   const banks = queenBanks(nest);
   // Money model (D-271): the words follow the rules that produced the numbers.
   const { labels: QUEEN_BANK_LABELS, meanings: QUEEN_BANK_MEANINGS, lowerTitle, lowerRoom, lowerBankKey } = queenBankWords(nest.mode ?? 1);
-  const buds = queenBuds(nest, 4);
-  const vine = queenVine(household, chapter, today);
+  const currentBuds = queenBuds(nest, 4);
+  const currentVine = queenVine(household, chapter, today);
   const hands = queenHands(household, memberId, chapter, move);
-  const body = queenBody(nest, freshness, queenSeams(household, today));
+  const currentBody = queenBody(nest, freshness, queenSeams(household, today));
   const trace = queenTrace(household, memberId, today);
   const obligations = monthObligations(household, monthKey, today).rows;
   const planned = duePotentialExpenses(potentialExpensesForView(household.potentialExpenses, memberId, "household"), today);
   const stones = queenHem(obligations, planned, today, 4);
-  const feet = queenFeet(stones);
-  const line = queenLine(chapter, still);
+  const currentFeet = queenFeet(stones);
+  const currentVisual: QueenSceneInterpretation["visual"] = {
+    body: { level: currentBody.level, fullness: currentBody.fullness, seams: currentBody.seams },
+    vine: currentVine.chapter
+      ? { chapter: true, title: currentVine.title, week: currentVine.week, acts: currentVine.acts, growth: currentVine.growth }
+      : { chapter: false, title: null, week: 0, acts: 0, growth: 0 as const },
+    buds: currentBuds.map(({ name, size }) => ({ name, size })),
+    feet: currentFeet,
+  };
+  const unavailableVisual: QueenSceneInterpretation["visual"] = {
+    body: { level: 0, fullness: "empty" as const, seams: 0 },
+    vine: { chapter: false, title: null, week: 0, acts: 0, growth: 0 as const },
+    buds: [],
+    feet: { count: 0, nearness: [] },
+  };
+  const supported = useSupportedQueenInterpretation({
+    identity: { environment: household.environment, householdId: household.householdId, memberId, scope: "household" },
+    gate,
+    current: { pulse: currentPulse, condition: currentLiving, visual: currentVisual },
+    fallback: { pulse: fallbackPulse, condition: fallbackLiving, visual: unavailableVisual },
+    sourceRevision: household.revision, supportedAt: supportedAtFor(household, today),
+  });
+  const pulse = supported.value.pulse;
+  const living = supported.value.condition;
+  const still = queenStill(pulse, freshness);
+  const body = { ...currentBody, ...supported.value.visual.body };
+  const vine = supported.value.visual.vine;
+  const buds = supported.value.visual.buds;
+  const feet = supported.value.visual.feet;
+  const line = { ...queenLine(chapter, still), chapter: vine.title };
   const fundName = fundDisplayName(household);
   const ribbons = useMemo(() => queenRibbons(household, today), [household, today]);
   // The ledge, in the order the household put it in: one list of design keys on the Build plan bank's own row.
@@ -220,7 +254,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
       })),
     };
   }, [household, memberId, today, onCommand, nest]);
-  const freshBud = trace && trace.region.startsWith("bud:") ? buds.findIndex((bud) => `bud:${bud.goalId}` === trace.region) : -1;
+  const freshBud = supported.source === "current" && trace && trace.region.startsWith("bud:") ? currentBuds.findIndex((bud) => `bud:${bud.goalId}` === trace.region) : -1;
   const pose = POSTURE[still.posture];
 
   // ---- the world: her look, her banks as studio sculptures ----
@@ -595,7 +629,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
   const tipWords = tipped ? ` Tipped over: her underside shows the makers' marks ${marks.initials.join(" and ")} and the date she was last worked on, ${marks.date}.` : "";
   const lightWords = ` ${light.words}`;
   const sculpted = worldLive && worldModel === "model";
-  const stillWords = `${living.words} ${sculpted ? queenModelStill(still) : worldLive ? queenWorldStill(still) : still.description} ${glazeWords} ${bodyWords} ${crownWords} ${seamWords} ${vineWords} ${budWords} ${feetWords} ${handsWords}${charmWords}${ringWords}${formWords}${tipWords}${lightWords}`;
+  const stillWords = `${supported.statusLine ? `${supported.statusLine}. ` : ""}${living.words} ${sculpted ? queenModelStill(still) : worldLive ? queenWorldStill(still) : still.description} ${glazeWords} ${bodyWords} ${crownWords} ${seamWords} ${vineWords} ${budWords} ${feetWords} ${handsWords}${charmWords}${ringWords}${formWords}${tipWords}${lightWords}`;
   const bankWords = (id: QueenBankId) => banks[id].banks.map((bank) => `${NEST_CATEGORY_LABELS[bank.category!]} ${(bank.amountCents === null ? "Backing unavailable" : formatCad(bank.amountCents))}`).join(", ");
   const waiting = presence.filter((row) => row.waitingOn).length + (hands.kind === "move" ? 1 : 0);
 
@@ -712,6 +746,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
             <span className="queen-line__dot" aria-hidden="true">·</span>
             <em className="queen-line__word">{line.word}</em>
           </p>
+          {supported.statusLine && <p className="queen-supported" role="status">{supported.statusLine}</p>}
         </div>
 
         <button type="button" className="queen-door queen-door--status" aria-label={`Status — freshness, sources, settings.${shell?.sync.attentionLabel ? ` ${shell.sync.attentionLabel}.` : ""} ${glazeWords}`}
@@ -755,6 +790,7 @@ export function QueenHome({ household, memberId, today, freshness, busy, onComma
             <p className="queen-eyebrow">Status</p>
             <h2 id={`${ids}-panel-title`} className="queen-panel__title">{pulse.headline}</h2>
             <p className="queen-panel__sub">{pulse.detail}</p>
+            {supported.statusLine && <p className="queen-panel__muted" role="status">{supported.statusLine}</p>}
             {shell && (
               <section className={`queen-shell queen-shell--${shell.sync.tone}`} aria-labelledby={`${ids}-shell`} data-attention={shell.sync.attentionLabel ? "true" : "false"}>
                 <p id={`${ids}-shell`} className="queen-eyebrow">This device</p>

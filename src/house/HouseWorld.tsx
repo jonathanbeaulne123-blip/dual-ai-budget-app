@@ -16,13 +16,14 @@ import { HOUSE_PLACES, ROOM_NAMES } from "./navigation.ts";
 import { DEFAULT_QUEEN_STYLE, type QueenStyle } from "./queenStyle.ts";
 import type { HouseRuntime } from "./world/runtime.ts";
 import { livingEvidence } from "./interpretation.ts";
+import { interpretationSourceRevision, supportedAtFor, useSupportedHouseInterpretation, type InterpretationGate } from "./supportedInterpretation.ts";
 import { houseTargets } from "./houseTargets.ts";
 import { QueenDressing } from "./QueenDressing.tsx";
 import "./houseWorld.css";
 
 
-type Props={household:Household;memberId:string;scope:LedgerView;today:DateKey;route:HouseRoute;ready:boolean;freshness:string;onNavigate:(room:HouseRoom,level:HouseLevel,replace?:boolean)=>void;onOpen:(target:string,object?:string)=>void;onClose:()=>void};
-export function HouseWorld({household,memberId,scope,today,route,ready,freshness,onNavigate,onOpen,onClose}:Props){
+type Props={household:Household;memberId:string;scope:LedgerView;today:DateKey;route:HouseRoute;ready:boolean;freshness:string;interpretationGate?:InterpretationGate;onNavigate:(room:HouseRoom,level:HouseLevel,replace?:boolean)=>void;onOpen:(target:string,object?:string)=>void;onClose:()=>void};
+export function HouseWorld({household,memberId,scope,today,route,ready,freshness,interpretationGate,onNavigate,onOpen,onClose}:Props){
   const appearance=useAppearance(),theme=appearance.preview??appearance.saved.theme;
   const host=useRef<HTMLDivElement>(null),runtime=useRef<HouseRuntime|null>(null),buttons=useRef(new Map<string,HTMLElement>());
   const [status,setStatus]=useState<"loading"|"ready"|"fallback">("loading"),[overview,setOverview]=useState(false),[walking,setWalking]=useState(false),[preview,setPreview]=useState<QueenStyle|null>(null),[queenView,setQueenView]=useState<"front"|"back"|"roots"|"detail">("front");
@@ -39,7 +40,9 @@ export function HouseWorld({household,memberId,scope,today,route,ready,freshness
   const pointerDown=useRef<{x:number;y:number}|null>(null);
   const position=useMemo(()=>{const fund=projectHouseholdFund(household,today);if(scope!=="household"||fund.configured)return {label:nest.sourceLabel,cents:nest.totalCents};const wallet=householdWallet(booksPresentationFloor(household,memberId,scope),today);return {label:"Shared operating cash · Fund not set up",cents:wallet.tiles.filter(tile=>tile.kind==="chequing"||tile.kind==="other").reduce((sum,tile)=>sum+tile.balanceCents,0)};},[household,memberId,scope,today,nest]);
   const commitment=useMemo(()=>nest.categories.flatMap(c=>c.children).filter(bank=>bank.date&&bank.state==="open").sort((a,b)=>a.date!.localeCompare(b.date!))[0],[nest]);
-  const evidence=useMemo(()=>livingEvidence(household,memberId,scope),[household.hearthside,household.personalLife,memberId,scope]);
+  const currentEvidence=useMemo(()=>livingEvidence(household,memberId,scope),[household.hearthside,household.personalLife,memberId,scope]);
+  const supported=useSupportedHouseInterpretation({identity:{environment:household.environment,householdId:household.householdId,memberId,scope},gate:interpretationGate??{current:true,freshness:"current",detail:"Current local books"},current:{bloom:currentEvidence},fallback:{bloom:[]},sourceRevision:interpretationSourceRevision(household,scope),supportedAt:supportedAtFor(household,today)});
+  const evidence=supported.value.bloom;
   const evidenceSignature=JSON.stringify(evidence);
   const currentDestination=useRef({zone,phoneTarget:place.target,target:undefined as string|undefined,overview,queenView:undefined as typeof queenView|undefined});
   currentDestination.current={zone,phoneTarget:place.target,target:route.surface==="queen"?"queen":undefined,overview,queenView:route.surface==="queen"?queenView:undefined};
@@ -76,7 +79,7 @@ export function HouseWorld({household,memberId,scope,today,route,ready,freshness
   useEffect(()=>{const element=floorScroller.current;if(!element||route.surface)return;scrollLock.current=true;element.scrollTop=HOUSE_LEVELS.indexOf(route.level)*element.clientHeight;clearTimeout(scrollTimer.current);scrollTimer.current=setTimeout(()=>{scrollLock.current=false;},150);return()=>clearTimeout(scrollTimer.current);},[route.room,route.level,route.surface]);
   function floorScroll(){const element=floorScroller.current;if(!element||scrollLock.current||overview)return;clearTimeout(scrollTimer.current);scrollTimer.current=setTimeout(()=>{const index=Math.max(0,Math.min(2,Math.round(element.scrollTop/element.clientHeight))),level=HOUSE_LEVELS[index]!;if(level!==route.level)onNavigate(route.room,level,true);},160);}
   return <section className={`house-world house-world--${theme}${overview?" is-overview":""}${route.surface?" has-open-object":""}`} data-world-status={status} data-world-scope={scope} aria-label={`${scope==="personal"?"My":"Our"} house`}>
-    <header className="house-world__header"><div><span className="house-world__scope">{scope==="personal"?"My private house":"Our home"}</span><h1 id="house-world-title" tabIndex={-1}>{overview?"The whole house":ROOM_NAMES[route.room]}<span> / {overview?"Choose a wing":place.title}</span></h1></div><button onClick={()=>setOverview(value=>!value)} aria-pressed={overview}>{overview?"Return to room":"See the whole house"}</button></header>
+    <header className="house-world__header"><div><span className="house-world__scope">{scope==="personal"?"My private house":"Our home"}</span><h1 id="house-world-title" tabIndex={-1}>{overview?"The whole house":ROOM_NAMES[route.room]}<span> / {overview?"Choose a wing":place.title}</span></h1>{supported.statusLine&&<small className="house-world__supported" role="status">{supported.statusLine}</small>}</div><button onClick={()=>setOverview(value=>!value)} aria-pressed={overview}>{overview?"Return to room":"See the whole house"}</button></header>
     <div className="house-world__stage" tabIndex={walking?0:undefined} aria-label={walking?"Walking area. Arrow keys move your avatar through doorways and stairs. Tap a path to walk there. Furniture remains directly available.":undefined} onPointerDown={event=>{pointerDown.current={x:event.clientX,y:event.clientY};}} onPointerUp={event=>{const start=pointerDown.current;pointerDown.current=null;if(walking&&start&&Math.hypot(start.x-event.clientX,start.y-event.clientY)<8&&!(event.target as HTMLElement).closest("button,input,textarea,select,a"))runtime.current?.walkTo(event.clientX,event.clientY);}} onKeyDown={event=>{if(!walking||event.target!==event.currentTarget)return;if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(event.key)){event.preventDefault();runtime.current?.walk(event.key.slice(5).toLowerCase() as "left"|"right"|"up"|"down");}}}>
       <div className="house-world__canvas" ref={host}/>
       {status!=="ready"&&<HouseIllustration room={route.room} theme={theme}/>}

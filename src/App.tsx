@@ -13,6 +13,7 @@ import { KitchenFolio } from "./house/KitchenFolio.tsx";
 import { HouseWorld } from './house/HouseWorld.tsx';
 import { PersonalJourney } from './house/PersonalJourney.tsx';
 import { PersonalTogether } from './house/PersonalTogether.tsx';
+import { interpretationGate } from './house/supportedInterpretation.ts';
 import { HOUSE_WORLD_ENABLED, HOUSE_PLACES, TARGET_NAMES, houseTargetRoute, houseLifeRoute, houseRouteFromLife, readHouseReturn, resolveHouseRouteScope, saveHouseReturn, type HouseIdentity, houseIdentity } from './house/navigation.ts';
 import { houseReturnSlot, needsHouseReturnCapture, houseComposition } from './house/returnCache.ts';
 import { HOUSE_ROOMS, housePath, parseHouseRoute, togetherLevelForRoom, type HouseLevel, type HouseRoom, type HouseRoute } from './hearthside/houseRoutes.ts';
@@ -3671,7 +3672,8 @@ export function App() {
     () => sharedHouseholdFreshnessCopy(syncFreshnessDisplay, syncState),
     [syncFreshnessDisplay, syncState],
   );
-  const houseFreshness = syncFreshnessDisplay.transportMode === "offline" ? "offline" : syncFreshnessDisplay.tone === "danger" || syncFreshnessDisplay.tone === "warning" ? "stale" : "current";
+  const sceneInterpretationGate = useMemo(() => interpretationGate(syncFreshnessDisplay, activeBooksGate.ready), [syncFreshnessDisplay, activeBooksGate.ready]);
+  const houseFreshness = sceneInterpretationGate.freshness === "offline" ? "offline" : sceneInterpretationGate.current ? "current" : "stale";
   const houseCondition = useMemo(
     () => HEARTHSIDE_FLAGS.presentation && view === "household" && household && memberId ? deriveHouseCondition(household, { memberId, today, freshness: houseFreshness }) : null,
     [household, memberId, today, houseFreshness, view],
@@ -7137,7 +7139,7 @@ export function App() {
         ))}
       </div>
       {!HOUSE_WORLD_ENABLED&&HEARTHSIDE_FLAGS.presentation&&view==="household"&&<HouseShell route={activeHouseRoute} onNavigate={goHouse} condition={houseCondition}/>}
-      {HOUSE_WORLD_ENABLED&&<HouseWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack}/>}
+      {HOUSE_WORLD_ENABLED&&<HouseWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack}/>}
       <div data-app-page="true" data-house-resting={HOUSE_WORLD_ENABLED&&!houseToolsVisible&&!adding&&!swipeOpen&&!confirm&&!guard&&!commandOpen||undefined}>
         {HOUSE_WORLD_ENABLED&&houseToolsVisible&&<header className="house-tool-heading"><h2 tabIndex={-1} id="house-tool-title">{TARGET_NAMES[activeHouseRoute.surface??""]??HOUSE_PLACES[activeHouseRoute.room][activeHouseRoute.level].title}</h2><button onClick={putHouseObjectBack}>Put it back</button></header>}
         <div className={hearthsideOpen ? "hearthside-page" : "world-page"}>
@@ -7223,7 +7225,8 @@ export function App() {
           household={household}
           memberId={actorId}
           today={today}
-          freshness={syncFreshnessDisplay.transportMode === "offline" ? "offline" : syncFreshnessDisplay.tone === "danger" || syncFreshnessDisplay.tone === "warning" ? "stale" : "current"}
+          freshness={houseFreshness}
+          interpretationGate={sceneInterpretationGate}
           busy={busy}
           onCommand={runKitchen}
           composition={HOUSE_WORLD_ENABLED?"queen":HEARTHSIDE_FLAGS.presentation ? "queen" : undefined}
@@ -7354,7 +7357,7 @@ export function App() {
         </>
       )}
 
-      {HOUSE_WORLD_ENABLED&&tab==="plan"&&view==="personal"&&activeHouseRoute.surface==="journey"&&<PersonalJourney household={household} memberId={actorId} today={today} onOpenPlan={()=>openHouseObject("plan-studio")} onOpenObject={(kind,id)=>openHouseObject(kind==="bank"?"loft-banks":kind==="memory"?"memories":kind==="experience"?"personal-experience":"wishes",`${kind}/${id}`)} onReturn={putHouseObjectBack}/>}
+      {HOUSE_WORLD_ENABLED&&tab==="plan"&&view==="personal"&&activeHouseRoute.surface==="journey"&&<PersonalJourney household={household} memberId={actorId} today={today} interpretationGate={sceneInterpretationGate} onOpenPlan={()=>openHouseObject("plan-studio")} onOpenObject={(kind,id)=>openHouseObject(kind==="bank"?"loft-banks":kind==="memory"?"memories":kind==="experience"?"personal-experience":"wishes",`${kind}/${id}`)} onReturn={putHouseObjectBack}/>}
       {tab === "plan" && dashboard && !(HOUSE_WORLD_ENABLED&&view==="personal"&&activeHouseRoute.surface==="journey") && (
         <>
           {(onboardingCategoriesOnly || onboardingEstimatesOnly || onboardingPlanOnly) && <header className="journey-plan-heading"><p className="kicker">Stage 3</p><h2>Our first plan</h2><p>Choose starter categories, review each person's amounts, then independently approve and adopt the same proposal.</p><ol aria-label="First plan steps"><li aria-current={onboardingCategoriesOnly ? "step" : undefined}>Categories</li><li aria-current={onboardingEstimatesOnly ? "step" : undefined}>Starter amounts</li><li aria-current={onboardingPlanOnly ? "step" : undefined}>Review and adopt</li></ol></header>}
@@ -7433,7 +7436,7 @@ export function App() {
               // D-262: the household Our Path is a world; the tent keeps today's page mounted so drafts survive.
               return view === "household" ? (
                 <HouseholdBoardMedia household={household} memberId={actorId}>{(boardMedia) => (
-                <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} busy={busy} onCommand={runKitchen} onOpenFund={() => goTab("ledger")}
+                <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} interpretationGate={sceneInterpretationGate} busy={busy} onCommand={runKitchen} onOpenFund={() => goTab("ledger")}
                   houseSurface={(HEARTHSIDE_FLAGS.presentation||HOUSE_WORLD_ENABLED) && activeHouseRoute.room==="kitchen-table" ? activeHouseRoute.level==="below" ? "studio" : activeHouseRoute.level==="middle" ? "work" : "journey" : undefined}
                   houseWorkCentre={<section className="kitchen-work-centre"><p className="kicker">Kitchen Table</p><h2>Work centre</h2><p>Bring a question to Hercules, or continue the shared Sitdown. The agreement stays downstairs in the Plan Studio.</p><div className="kitchen-work-centre__actions"><button type="button" onClick={() => openLegacyHercules()}>Open Hercules conversation</button><button type="button" onClick={() => goTab("together", "practical")}>Open our shared Sitdown</button></div><p className="muted" role="status">{workspaceEnabled ? "The expanded workspace is available when you choose to open it." : "The expanded workspace is not activated. Opening a conversation here does not start a provider run."}</p></section>}
                   boardMedia={boardMedia}

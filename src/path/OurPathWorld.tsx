@@ -62,6 +62,7 @@ import { useBoardPhotoUrls } from "../boardMedia/householdBoardMedia.tsx";
 import { memoryPhotoMatches } from "./memoryPhotos.ts";
 import { PathMiniMap } from "./PathMiniMap.tsx";
 import { JourneyMini } from "./mini/JourneyMini.tsx";
+import { quietJourneyMonths, supportedAtFor, useSupportedJourneyInterpretation, type InterpretationGate } from "../house/supportedInterpretation.ts";
 import { useMiniJourneyLoad } from "./mini/miniJourneyLoader.ts";
 import { miniCad } from "./mini/miniJourneyModel.ts";
 import { JOURNEY_LEVEL_FOR_WORLD, JOURNEY_LEVEL_LABEL, WORLD_LEVEL_FOR, useJourneyFocus, type JourneyFocus, type JourneyFocusApi, type JourneyFocusSource } from "./journeyFocus.ts";
@@ -216,10 +217,11 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini }: {
+export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini }: {
   household: Household;
   memberId: string;
   today: DateKey;
+  interpretationGate?: InterpretationGate;
   busy: boolean;
   onCommand: Run;
   onOpenFund?: () => void;
@@ -287,8 +289,13 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const eraFrom = currentEra?.months[0] ?? null;
   /** True when the main island is an era's window: facts from outside it are dropped, not squeezed onto its first month. */
   const windowed = eraFrom !== null;
-  const months = useMemo(() => pathMonths(household, today, eraFrom ? { from: eraFrom, through: nowKey } : undefined), [household, today, eraFrom, nowKey]);
-  const recipes = useMemo(() => effectivePathRecipes(household), [household]);
+  const currentMonths = useMemo(() => pathMonths(household, today, eraFrom ? { from: eraFrom, through: nowKey } : undefined), [household, today, eraFrom, nowKey]);
+  const currentRecipes = useMemo(() => effectivePathRecipes(household), [household]);
+  const currentWeather = useMemo(() => { try { return pathWeather(household, today); } catch { return null; } }, [household, today]);
+  const gate = interpretationGate ?? { current: true, freshness: "current" as const, detail: "Current local books" };
+  const supported = useSupportedJourneyInterpretation({identity:{environment:household.environment,householdId:household.householdId,memberId,scope:"household"},gate,current:{months:currentMonths,recipes:currentRecipes,weather:currentWeather},fallback:{months:quietJourneyMonths(currentMonths),recipes:currentRecipes,weather:null},sourceRevision:household.revision,supportedAt:supportedAtFor(household,today)});
+  const months = supported.value.months;
+  const recipes = supported.value.recipes;
   const [cur, setCur] = useState(() => months.length - 1);
   const [followNow, setFollowNow] = useState(true);
   useEffect(() => { if (followNow) setCur(months.length - 1); }, [months.length, followNow]);
@@ -566,10 +573,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
   const keptMediaIds = useMemo(() => [...keptPhotos.values()].map((row) => row.mediaId), [keptPhotos]);
   const photoUrls = useBoardPhotoUrls(boardMedia, keptMediaIds);
   // The Calendar as weather (household scope only; the read-model carries no amounts).
-  const weather = useMemo(() => {
-    if (!atNow) return null;
-    try { return pathWeather(household, today); } catch { return null; }
-  }, [household, today, atNow]);
+  const weather = atNow ? supported.value.weather : null;
   const bills = useMemo(() => (weather?.days ?? [])
     .filter((day) => day.kind === "cloud" || day.kind === "storm")
     .slice(0, WEATHER_CLOUDS)
@@ -1676,7 +1680,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
     onOpenWorld: compact ? () => {} : enterWorld,
   });
   const flatMap = (
-    <PathMiniMap household={household} today={today} shown={shown} theme={theme}
+    <PathMiniMap household={household} today={today} shown={shown} theme={theme} interpretation={supported.value}
       footpaths={shownFootpaths.map(({ path, month }) => ({ month, done: path.state === "done" }))}
       bridges={shownBridges.map(({ bridge, month }) => ({ month, stage: bridge.stage }))} />
   );
@@ -1715,6 +1719,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
           <p className="kicker">Our Path</p>
           <h2 id="path-world-title">{islandName ?? "Where we are going"}</h2>
           <p className="path-world__lede">The land grows from your shared months. Open the world to walk the whole island.</p>
+          {supported.statusLine && <p className="muted" role="status">{supported.statusLine}</p>}
           <button type="button" className="path-world__link" aria-expanded={naming} onClick={() => { setNaming((v) => !v); setNameDraft(islandName ?? ""); }}>{islandName ? "Rename together" : "Name our island together"}</button>
           <button type="button" className="path-world__link path-world__plan-journey" aria-expanded={Boolean(planner)} onClick={() => (planner ? closePlanner() : openPlanner(null))}>Plan our journey</button>
           {currentEra && <p className="path-world__era-now"><span className="path-era-chip path-era-chip--current">Now</span> {currentEra.spec.name}</p>}
@@ -1844,6 +1849,7 @@ export function OurPathWorld({ household, memberId, today, busy, onCommand, onOp
                 <span className="path-hud__caption-level">{caption.level}</span>
                 <strong>{caption.title}</strong>
                 {caption.sub && <span className="path-hud__caption-sub">{caption.sub}</span>}
+                {supported.statusLine && <span className="path-hud__caption-sub">{supported.statusLine}</span>}
                 {/* The Fund's lanes, as the simple view shows them. Not at Dim: a glance at a shared screen shows words only. */}
                 {lantern >= 1 && trackers && (
                   <span className="path-hud__trackers" data-pending={trackers === "pending" || undefined}>
