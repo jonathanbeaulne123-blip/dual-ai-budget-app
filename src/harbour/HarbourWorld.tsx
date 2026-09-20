@@ -266,4 +266,3 @@ function queenRegions(her: QueenPlace): Region[] {
   const boxes = her.regions();
   return (Object.keys(boxes) as QueenRegion[]).flatMap(id => { const box = boxes[id]; return box && !box.isEmpty() ? [{ id, group: "queen", label: QUEEN_LABELS[id], box }] : []; });
 }
-
