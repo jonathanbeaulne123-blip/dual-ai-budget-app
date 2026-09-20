@@ -846,6 +846,7 @@ export function App() {
   const [moreFocusTarget, setMoreFocusTarget] = useState<"sync-help" | "office" | null>(null);
   /** Over the Queen's world the due-reminders review rises as a sheet only when its arrival link is taken; on the ordinary page it stays inline. */
   const [dueSheetOpen, setDueSheetOpen] = useState(false);
+  const [dueReviewActive, setDueReviewActive] = useState(false);
   const [onboardingBooksOpen, setOnboardingBooksOpen] = useState(false);
   const [booksPaneRequest, setBooksPaneRequest] = useState<"fund" | "fund-register" | "wallet" | "opening" | "register" | null>(null);
   const [, setDismissedOnboardingCompletionDigest] = useState<string | null>(null);
@@ -880,7 +881,7 @@ export function App() {
   const claimReturnFocusRef=useRef<HTMLElement|null>(null);
   const guardOpeningRef=useRef(0),guardIdentityRef=useRef(''),guardScopeIdentityRef=useRef('');
   useEffect(() => { if (guard?.kind !== "duePreview") setDueSheetOpen(false); }, [guard]);
-  const setGuard=(next:Guard|null)=>{guardOpeningRef.current+=1;guardIdentityRef.current=next?readDangerIdentity(next):'';guardScopeIdentityRef.current=next?readGuardScopeIdentity():'';storeGuard(next);};
+  const setGuard=(next:Guard|null)=>{guardOpeningRef.current+=1;guardIdentityRef.current=next?readDangerIdentity(next):'';guardScopeIdentityRef.current=next?readGuardScopeIdentity():'';setDueReviewActive(false);storeGuard(next);};
   const [demoSeed, setDemoSeed] = useState("");
   const [demoReport, setDemoReport] = useState<DemoRunReport | null>(null);
   const [saveRepeatingPostFirst, setSaveRepeatingPostFirst] = useState(false);
@@ -6877,7 +6878,7 @@ export function App() {
   const houseToolsVisible = !HOUSE_WORLD_ENABLED || Boolean(activeHouseRoute.surface && activeHouseRoute.surface!=="queen");
   // Due reminders are an inline list until one occurrence's review sheet opens.
   // They must not silently disable the companion's ordinary help entry.
-  const herculesReviewBlocked = Boolean(guard && (guard.kind !== "duePreview" || dueSheetOpen));
+  const herculesReviewBlocked = Boolean(guard && (guard.kind !== "duePreview" || dueSheetOpen || dueReviewActive));
   const workspaceMode = !workspaceEnabled || Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen || fundLedgeExpanded) ? "hidden" : tab === "hercules" ? "room" : workspaceCompact ? "compact" : "hidden";
 
   /** The Queen's world (Vision v2 §4.2, `VITE_QUEENS_NEST`): Our Home is one fixed, edge-to-edge world. Only the
@@ -8652,6 +8653,7 @@ export function App() {
       {guard?.kind === "duePreview" && (
         <div className="due-preview-host" hidden={queenWorldHome && !dueSheetOpen} data-world-sheet={queenWorldHome ? "true" : undefined}>
         <DuePreviewSheet key={dueOpening} rows={guard.rows} household={household} memberId={actorId} view={view} today={today} busy={busy} isCurrent={dueIsCurrent}
+          onReviewActiveChange={setDueReviewActive}
           onDismiss={()=>setGuard(null)}
           onPost={async reviewed=>{let accepted=false;await run(current=>{const fresh=dueOccurrenceReview(current,reviewed.request);if(fresh.kind!=='ready'||fresh.basis!==reviewed.basis)throw new Error('This occurrence changed. Review its current details.');return postOneRecurrence(current,reviewed.request.recurrenceId,reviewed.request.today,{createdBy:actorId,dueReview:reviewed.request});},{isCurrent:dueIsCurrent,scopeIsCurrent:deskScopeIsCurrent,closeAdd:false,onAccepted:()=>{accepted=true;}});return accepted;}}
         />
