@@ -9,6 +9,8 @@ vi.mock("../src/house/world/rendererOwner.ts", () => ({
       render: vi.fn(), setSize: vi.fn(),
       info: { render: { calls: 0 }, memory: { geometries: 0, textures: 0 } },
     },
+    requestFrame: (callback: FrameRequestCallback) => requestAnimationFrame(callback),
+    cancelFrame: (id: number) => cancelAnimationFrame(id),
     listenCanvas: () => () => undefined,
     release: vi.fn(),
   }),
