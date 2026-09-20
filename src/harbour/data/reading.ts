@@ -21,11 +21,21 @@ import { bubbleNotice, type HerculesNotice } from "../../core/notices.ts";
 import { cellarJars } from "../../core/queenCellar.ts";
 import { queenGlazeFor, type QueenGlaze } from "../../core/queenPresentation.ts";
 import type { Household } from "../../core/types.ts";
+import type { UmbrellaBankId } from "../../queen/world/bankModels.ts";
 
 /** The 16 house tools (`TARGET_NAMES`, `src/house/navigation.ts`) plus the Status tab the pulse can point at. */
 export type HouseTargetId =
   | "queen" | "loft-banks" | "cellar-bills" | "books" | "planner" | "calendar" | "journey" | "conversation"
   | "plan-studio" | "wishes" | "pottery" | "memories" | "letters" | "projector" | "hercules" | "encounters" | "more";
+
+/**
+ * Slice 2 · the Cellar and the Cistern (BUILD_PLAN_SLICE2 §5). Additive and
+ * optional, so every slice-1 caller keeps working. Unknown cents stay `null`
+ * and read "—" downstream; they are never shown as $0.
+ */
+export type CellarJarReading = { key: string; label: string; umbrella: UmbrellaBankId | null; amountCents: number; fill: number; state: "planned" | "set-aside" | "paid" | "short"; size: 1|2|3|4|5; due: DateKey | null; missingMark: boolean };
+export type CellarReadingView = { jars: CellarJarReading[]; days: { date: DateKey; balanceCents: number; belowBuffer: boolean; today: boolean }[]; todayIndex: number; prepareCents: number | null; scaleCents: number };
+export type CisternReading = { cents: number | null; target: number; level: number };
 
 export type HarbourReading = {
   /** `fundSnapshot.now` — the Everyday remainder carved at her feet. `null` = unknown, never 0. */
@@ -47,6 +57,9 @@ export type HarbourReading = {
   jars: number;
   mode: 1 | 2;
   freshness: FundPulseFreshness;
+  /** Slice 2. Absent while only the Court is mounted. */
+  cellar?: CellarReadingView;
+  cistern?: CisternReading;
 };
 
 export const HARBOUR_SLIP_LINES = 3;
