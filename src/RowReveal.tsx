@@ -1,9 +1,12 @@
-import {Component,createRef,useEffect,useRef,useState,type ReactNode,type KeyboardEvent} from 'react';
+import {Component,createRef,useEffect,useLayoutEffect,useRef,useState,type ReactNode,type KeyboardEvent} from 'react';
 import './row-reveal.css';
 import {useOutsideClose} from './useOutsideClose.ts';
 /** A row gesture discloses controls. It cannot activate them. */
-export function RowReveal({label,children,right,left,busy=false,focusOnMount=false}:{label:string;children:ReactNode;right:ReactNode;left?:ReactNode;busy?:boolean;focusOnMount?:boolean}){
+export function RowReveal({label,children,right,left,busy=false,focusOnMount=false,onRevealChange}:{label:string;children:ReactNode;right:ReactNode;left?:ReactNode;busy?:boolean;focusOnMount?:boolean;onRevealChange?:(side:'left'|'right'|null)=>void}){
  const [side,setSide]=useState<'left'|'right'|null>(null),[dragging,setDragging]=useState(false);
+ const revealObserver=useRef(onRevealChange);revealObserver.current=onRevealChange;
+ useLayoutEffect(()=>{revealObserver.current?.(side);},[side]);
+ useLayoutEffect(()=>()=>{revealObserver.current?.(null);},[]);
  const clickAllowed=useRef(true);
  const handle=useRef<HTMLButtonElement>(null),gesture=useRef<{id:number;x:number;y:number;before:typeof side}|null>(null);
  useEffect(()=>{if(focusOnMount)handle.current?.focus();},[]);

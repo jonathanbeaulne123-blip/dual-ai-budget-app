@@ -20,6 +20,7 @@ import { PlanReflectionEditor } from "./PlanReflectionEditor.tsx";
 import { PlanConsequence, PlanLensWorkbench, type PlanAsk } from "./PlanLensWorkbench.tsx";
 import "./plan-studio.css";
 import { Whisper } from "./theme/Whisper.tsx";
+import { planDecisionIdentity, readPlanDecisionNavigation, type PlanDecisionDraftContext, type PlanDecisionNavigation } from "./planDecisionDraft.ts";
 
 type Section = "overview" | "review" | "settings" | PlanLens | "scenarios" | "assumptions" | "bridge" | "learn" | "reflection" | "history" | "sitdown" | "goals";
 /** The eight human steps of the Sitdown (Vision v2 §6). One ritual; a Chapter runs from one Sitdown to the next. */
@@ -54,18 +55,25 @@ export function PlanStudioClassic({ household, view, memberId, today, busy, onCo
   embeddedSection?: Section;
   onEmbeddedClose?: () => void;
 }) {
+  const decisionIdentity = planDecisionIdentity(household, memberId, view);
+  const readDecisionNavigation = (): PlanDecisionNavigation | null => {
+    if (embeddedSection) return null;
+    try { return typeof window === "undefined" ? null : readPlanDecisionNavigation(window.localStorage, decisionIdentity); }
+    catch { return null; }
+  };
+  const [initialDecisionNavigation] = useState(readDecisionNavigation);
   const consumedSource=useRef<HerculesNumberSource|null>(null);
   const scope = view;
   const [bankRequest,setBankRequest]=useState<{goalId?:string;lineId?:string;bankId?:string;request?:number}|null>(null);
   const bankRequests=useRef(0);
   const openBanks=(goalId?:string,lineId?:string)=>setBankRequest({goalId,lineId,request:++bankRequests.current});
-  const [month, setMonth] = useState<MonthKey>(monthKeyFromDateKey(today));
-  const [section, setSection] = useState<Section>(embeddedSection ?? "overview");
+  const [month, setMonth] = useState<MonthKey>((initialDecisionNavigation?.month as MonthKey | undefined) ?? monthKeyFromDateKey(today));
+  const [section, setSection] = useState<Section>(embeddedSection ?? initialDecisionNavigation?.target.lens ?? "overview");
   const embedded = Boolean(embeddedSection);
   const closeEmbedded = useRef(onEmbeddedClose); closeEmbedded.current = onEmbeddedClose;
   const [horizonDays, setHorizonDays] = useState(31);
-  const [scenarioId, setScenarioId] = useState<string | null>(null);
-  const [versionId, setVersionId] = useState<string | null>(null);
+  const [scenarioId, setScenarioId] = useState<string | null>(initialDecisionNavigation?.selectionKind === "scenario" ? initialDecisionNavigation.selectionId : null);
+  const [versionId, setVersionId] = useState<string | null>(initialDecisionNavigation?.selectionKind === "version" ? initialDecisionNavigation.selectionId : null);
   const [reason, setReason] = useState("");
   const [reviewedVersionId, setReviewedVersionId] = useState<string | null>(null);
   const [selectedLineId, setSelectedLineId] = useState<string | null>(null);
@@ -97,6 +105,7 @@ export function PlanStudioClassic({ household, view, memberId, today, busy, onCo
     const baseline: PlanSelection = !versionId && draft ? planSelectionForDraft(draft) : version ? planSelectionForVersion(version) : { kind: "draft", id: "new", ownerMemberId: memberId, scope, monthKey: month, lines: [], assumptions: [] };
     return scenario ? { ...baseline, kind: "scenario", id: scenario.id, ownerMemberId: memberId, lines: scenario.changedLines, assumptions: scenario.changedAssumptions ?? baseline.assumptions } : baseline;
   }, [draft, version, versionId, scenario, memberId, scope, month]);
+  const decisionDraftContext = useMemo<PlanDecisionDraftContext>(() => ({ ...decisionIdentity, month, selectionKind: selection.kind, selectionId: selection.id, selectionRevision: scenario?.updatedAt ?? (selection.kind === "draft" ? draft?.updatedAt : version?.digest) ?? `source:${household.revision}` }), [decisionIdentity.environment, decisionIdentity.householdId, decisionIdentity.memberId, decisionIdentity.view, month, selection.kind, selection.id, scenario?.updatedAt, draft?.updatedAt, version?.digest, household.revision]);
   const working = selection.lines;
   const projection = useMemo(() => projectPlan(household, { memberId, scope, acceptedRevision: household.revision, asOf: today, through, selection }), [household, memberId, scope, today, through, selection]);
   const baselineProjection = useMemo(() => projectPlan(household, { memberId, scope, acceptedRevision: household.revision, asOf: today, through, selection: draft ? planSelectionForDraft(draft) : selection }), [household, memberId, scope, today, through, draft, selection]);
@@ -144,6 +153,17 @@ export function PlanStudioClassic({ household, view, memberId, today, busy, onCo
     return () => onContextChange?.(null);
   }, [month, scope, through, section, lessonLens, selection.kind, version?.id, draft?.id, scenario?.id, session?.sitDownSessionId, onContextChange, contextIdentity, disruption, purchaseContext, selectedLineId, working]);
   useEffect(() => { setReviewedAt(null); setPrivateNote(null); setRhythm(null); }, [month, memberId, scope]);
+  const decisionIdentityKey = `${decisionIdentity.environment}:${decisionIdentity.householdId}:${decisionIdentity.memberId}:${decisionIdentity.view}`;
+  const previousDecisionIdentity = useRef(decisionIdentityKey);
+  useEffect(() => {
+    if (previousDecisionIdentity.current === decisionIdentityKey) return;
+    previousDecisionIdentity.current = decisionIdentityKey;
+    const navigation = readDecisionNavigation();
+    setMonth((navigation?.month as MonthKey | undefined) ?? monthKeyFromDateKey(today));
+    setSection(embeddedSection ?? navigation?.target.lens ?? "overview");
+    setScenarioId(navigation?.selectionKind === "scenario" ? navigation.selectionId : null);
+    setVersionId(navigation?.selectionKind === "version" ? navigation.selectionId : null);
+  }, [decisionIdentityKey, embeddedSection, today]);
   useEffect(()=>setBankRequest(null),[contextIdentity,memberId,scope]);
   // The Kitty bank tool opens Goals & reserves straight away; closing the room closes the tool.
   useEffect(() => { if (embeddedSection === "goals") setBankRequest({ request: ++bankRequests.current }); }, [embeddedSection]);
@@ -195,7 +215,7 @@ export function PlanStudioClassic({ household, view, memberId, today, busy, onCo
        {version && !draft && <button disabled={locked} onClick={() => void saveWorking(working)}>Start a private draft from this Plan</button>}
        {working.length > 0 && <details className="plan-working-list"><summary>All working decisions · {working.length}</summary>{working.map(line => <article key={line.id}><div><strong>{line.labelSnapshot}</strong><small>{line.lens} · {line.dueDate ?? "Choose a date"}</small></div><b>{formatCad(line.amountCents)}</b><button onClick={() => setSection(line.lens)}>Open</button><button disabled={locked} aria-label={`Remove ${line.labelSnapshot} from private draft`} onClick={() => void saveWorking(working.filter(row => row.id !== line.id))}>Remove</button></article>)}</details>}
       </>}
-      {PLAN_LENSES.includes(section as PlanLens) && <PlanLensWorkbench key={`${scope}-${month}-${section}-${scenario?.id ?? "working"}`} household={household} memberId={memberId} scope={scope} lens={section as PlanLens} today={today} projection={projection} selection={selection} busy={locked} onSave={saveLine} onScenario={saveScenario} onAsk={ask} onDisruptionChange={setDisruption} onPurchaseChange={setPurchaseContext} onGoals={goalsContent ? openBanks : undefined} />}
+      {PLAN_LENSES.includes(section as PlanLens) && <PlanLensWorkbench key={`${scope}-${month}-${section}-${selection.kind}-${selection.id}`} household={household} memberId={memberId} scope={scope} lens={section as PlanLens} today={today} projection={projection} selection={selection} busy={locked} onSave={saveLine} onScenario={saveScenario} onAsk={ask} onDisruptionChange={setDisruption} onPurchaseChange={setPurchaseContext} onGoals={goalsContent ? openBanks : undefined} draftContext={decisionDraftContext} />}
       {section === "scenarios" && <section className="plan-section"><p className="kicker">Scenario Lab</p><h3>Compare the consequence, then choose</h3><label>Alternative<select value={scenarioId ?? ""} onChange={event => { setScenarioId(event.target.value || null); setVersionId(null); }}><option value="">Working draft</option>{scenarios.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}</select></label><div className="plan-comparison"><div><h4>Working draft</h4><PlanConsequence projection={baselineProjection} compact /></div><div><h4>{scenario?.name ?? "Select an alternative"}</h4><PlanConsequence projection={projection} compact /></div></div><Whisper mode="aside" id="plan.scenarios">Compare covered commitments, the lowest date and Everyday flexibility. Goal cards keep their target, schedule and time constraints.</Whisper><label>Name another possibility<input value={scenarioName} onChange={event => setScenarioName(event.target.value)} /></label><button disabled={locked || !scenarioName.trim()} onClick={() => void saveScenario(scenarioName.trim(), [...working])}>Save a private alternative</button>{scenario && <><p>Open any lens to edit this alternative. Accepted books and agreements remain unchanged.</p><div className="plan-editor-actions">{PLAN_LENSES.map(lens => <button key={lens} onClick={() => setSection(lens)}>Edit {lens}</button>)}</div><button disabled={locked} onClick={async () => { const result = await run(current => savePlanDraft(current, { id: draft!.id, expectedUpdatedAt: draft!.updatedAt, memberId, scope, targetMonth: month, baseVersionId: draft!.baseVersionId, lines: scenario.changedLines, assumptions: scenario.changedAssumptions ?? draft!.assumptions, note: `Alternative considered: ${scenario.name}. ${draft!.note}`, createdBy: memberId })); if (result) { setScenarioId(null); setReason(`Choose ${scenario.name}`); setSection("overview"); } }}>Bring this alternative into draft review</button></>}</section>}
       {section === "assumptions" && <section className="plan-section plan-editor"><h3>What must be true for this Plan to work?</h3><p>Expected money is a forecast. Received money is already in current resources and must not be added again.</p>{selection.assumptions.map(row => <article key={row.id}><strong>{row.kind} · {formatCad(row.valueCents ?? 0)}</strong><p>{row.expectedDate ?? "Date to review"} · {row.confidence} · reviewed {row.observedAt.slice(0, 10)}</p><button disabled={locked} onClick={() => void saveWorking(working, selection.assumptions.filter(item => item.id !== row.id))}>Remove from private work</button></article>)}<form onSubmit={event => { event.preventDefault(); const cents = /^\d+(?:\.\d{1,2})?$/.test(incomeAmount) ? Math.round(Number(incomeAmount) * 100) : NaN; if (!Number.isSafeInteger(cents) || incomeDate <= today || !incomeSource) { setError("Choose a visible source, future date and valid CAD amount."); return; } void saveWorking(working, [...selection.assumptions, { id: crypto.randomUUID(), kind: "income", valueCents: cents, expectedDate: incomeDate, confidence: "estimated", observedAt: new Date().toISOString(), sourceReferences: [{ type: scope === "household" ? "bridge" : "recurrence", id: incomeSource }] }]); }}><label>Expected money source<select required value={incomeSource} onChange={event => setIncomeSource(event.target.value)}><option value="">Choose disclosed evidence</option>{scope === "household" ? household.planBridgeDecisions?.filter(row => row.kind === "contribution" && row.monthKey === month && ["proposed", "held", "accepted"].includes(row.state)).map(row => <option key={row.id} value={row.id}>{row.label}</option>) : household.recurrences.filter(row => row.active && row.type === "income" && planSourceVisible(household, { type: "recurrence", id: row.id }, memberId, scope)).map(row => <option key={row.id} value={row.id}>{row.note || "Scheduled income"}</option>)}</select></label><label>Expected date<input required type="date" value={incomeDate} min={addDays(today, 1)} onChange={event => setIncomeDate(event.target.value)} /></label><label>Expected CAD amount<input required inputMode="decimal" value={incomeAmount} onChange={event => setIncomeAmount(event.target.value)} /></label><button disabled={locked}>Save expected money in private work</button></form><button onClick={() => setSection("bridge")}>Prepare a contribution offer</button></section>}
       {section === "bridge" && <PlanBridgeEditor key={`${memberId}-${month}`} household={household} memberId={memberId} month={month} householdDraft={scope === "household" ? draft : null} busy={locked} onCommand={run} />}

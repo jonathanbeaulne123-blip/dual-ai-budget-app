@@ -2068,7 +2068,7 @@ describe("cached-shell startup books gate", () => {
     const close=[...document.querySelectorAll<HTMLButtonElement>('.hercules-setup button')].find(b=>b.textContent==='Close')!;
     await act(async()=>close.click());
     expect(document.querySelector<HTMLElement>('.hercules-setup-backdrop')!.hidden).toBe(true);
-    expect(document.activeElement).toBe(opener);
+    await waitForUi(()=>expect(document.activeElement).toBe(opener));
   });
 
 

@@ -204,7 +204,13 @@ export function validateTaskReferences(h: Household, row: Task) {
   if (row.listId && !(h.taskLists ?? []).some((list) => list.id === row.listId && !list.deleted && (list.visibility === "household" || list.createdBy === row.createdBy))) return fail("Choose one of your lists.");
   if (row.parentId && !(h.tasks ?? []).some((task) => task.id === row.parentId && !task.deleted && task.visibility === row.visibility && (task.visibility === "household" || task.createdBy === row.createdBy))) return fail("Choose a parent task you can see.");
   if (row.chapterId && !(h.chapters ?? []).some((chapter) => chapter.id === row.chapterId)) return fail("Choose a current Chapter.");
-  if (row.planReference && !h.planVersions?.some((plan) => plan.id === row.planReference!.planVersionId && plan.scope === "household" && plan.state === "active" && plan.lines.some((line) => line.id === row.planReference!.planLineId))) return fail("Refresh the active Shared Plan before assigning its next step.");
+  if (row.planReference && !h.planVersions?.some((plan) => plan.id === row.planReference!.planVersionId
+    && plan.scope === row.visibility
+    && (plan.scope === "household" || plan.ownerMemberId === row.createdBy)
+    && plan.state === "active"
+    && plan.lines.some((line) => line.id === row.planReference!.planLineId))) {
+    return fail(row.visibility === "personal" ? "Refresh your active Personal Plan before assigning its next step." : "Refresh the active Shared Plan before assigning its next step.");
+  }
   if (row.moneyLink?.kind === "recurrence" && !h.recurrences.some((r) => r.id === (row.moneyLink as { recurrenceId: string }).recurrenceId)) return fail("Choose a current recurring bill.");
   if (row.moneyLink?.kind === "potential-expense" && !(h.potentialExpenses ?? []).some((r) => r.id === (row.moneyLink as { potentialExpenseId: string }).potentialExpenseId)) return fail("Choose a current planned cost.");
   if (row.moneyLink?.kind === "goal" && !h.goals.some((g) => g.id === (row.moneyLink as { goalId: string }).goalId)) return fail("Choose a current goal.");

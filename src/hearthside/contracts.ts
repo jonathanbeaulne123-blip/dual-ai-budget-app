@@ -18,7 +18,7 @@ export const HEARTHSIDE_METADATA_BYTES = 4 * 1024 * 1024;
 export type SharedExperience = {
   version: 1; id: string; revision: number; title: string; intention: string;
   state: typeof EXPERIENCE_STATES[number]; horizon: 'tonight' | 'season' | 'someday';
-  createdBy: string; references: SharedReference[];
+  createdBy: string; livedOn?: string; references: SharedReference[];
 };
 export type DesignReference = { version: 1; documentId: string; pieceId: string; revision: number };
 export type MediaReference = { version: 1; contentId: string; revision: number; kind: 'image' | 'audio'; alt: string };
@@ -115,8 +115,11 @@ export function decodeReference(value: unknown): SharedReference {
   return { kind, id: identifier(r.id), ...(kind === 'piece' ? {designId: identifier(r.designId)} : {}), ...(kind === 'plan-line' ? {planVersionId: identifier(r.planVersionId)} : {}), ...(r.revision !== undefined ? { revision: revisionValue(r.revision, kind === 'piece' ? 0 : 1) } : {}) };
 }
 export function decodeExperience(value: unknown): SharedExperience {
-  const r = object(value, ['version', 'id', 'revision', 'title', 'intention', 'state', 'horizon', 'createdBy', 'references']);
-  return { version: version(r.version), id: identifier(r.id), revision: revisionValue(r.revision, 1), title: textValue(r.title), intention: textValue(r.intention, 4000, true), state: choice(r.state, EXPERIENCE_STATES), horizon: choice(r.horizon, ['tonight', 'season', 'someday']), createdBy: identifier(r.createdBy), references: unique(list(r.references, decodeReference, 100), r => `${r.kind}:${r.planVersionId ?? r.designId ?? ''}:${r.id}`) };
+  const r = object(value, ['version', 'id', 'revision', 'title', 'intention', 'state', 'horizon', 'createdBy', 'livedOn', 'references']);
+  const state=choice(r.state, EXPERIENCE_STATES), livedOn=r.livedOn===undefined?undefined:civilDate(r.livedOn);
+  // Legacy lived records predate the civil-date field. New explicit lived transitions always add it.
+  if(state!=='lived'&&livedOn!==undefined)throw Error('HEARTHSIDE_LIVED_DATE_REQUIRED');
+  return { version: version(r.version), id: identifier(r.id), revision: revisionValue(r.revision, 1), title: textValue(r.title), intention: textValue(r.intention, 4000, true), state, horizon: choice(r.horizon, ['tonight', 'season', 'someday']), createdBy: identifier(r.createdBy), ...(livedOn?{livedOn}:{}), references: unique(list(r.references, decodeReference, 100), r => `${r.kind}:${r.planVersionId ?? r.designId ?? ''}:${r.id}`) };
 }
 export function decodeMediaReference(value: unknown): MediaReference {
   const r = object(value, ['version', 'contentId', 'revision', 'kind', 'alt']);

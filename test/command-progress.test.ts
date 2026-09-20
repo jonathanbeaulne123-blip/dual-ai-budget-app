@@ -28,6 +28,36 @@ describe("commandProgress (T3-S1)", () => {
     expect(ack.summary).not.toMatch(/Bianca/i);
   });
 
+  it("labels member-personal progress as private while household remains the default", () => {
+    const confirming = buildCommandProgress({
+      phase: "confirming",
+      transportRequested: true,
+      audience: "personal",
+    });
+    expect(confirming.steps[2]?.label).toBe("Private books");
+    expect(confirming.summary).toBe("Saving to your private books…");
+
+    const accepted = buildCommandProgress({
+      phase: "accepted-local",
+      transportRequested: true,
+      audience: "personal",
+    });
+    expect(accepted.summary).toBe("Saved here. Syncing your private books…");
+
+    const ack = buildCommandProgress({
+      phase: "cloud-ack",
+      transportRequested: true,
+      audience: "personal",
+    });
+    expect(ack.steps.every((step) => step.state === "done")).toBe(true);
+    expect(ack.summary).toBe("Saved to your private books.");
+    expect(ack.liveAnnouncement).toBe("Saved to your private books.");
+    expect(ack.summary).not.toMatch(/shared|household/i);
+
+    const householdAck = buildCommandProgress({ phase: "cloud-ack", transportRequested: true });
+    expect(householdAck.summary).toBe("Shared with the household books.");
+  });
+
   it("maps CommandOutcome phases without celebrating before PGlite accept", () => {
     const household = catalogHousehold();
     const pending = outcome({

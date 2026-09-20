@@ -92,25 +92,39 @@ export function KittyStage({
       for (const release of cleanup.splice(0).reverse())
         try { release(); } catch { /* Continue releasing other owned resources. */ }
     };
-    Promise.all([import("three"), import("./sculpture.ts"), import("three/examples/jsm/environments/RoomEnvironment.js")])
-      .then(([T, { createKittySculpture }, { RoomEnvironment }]) => {
+    Promise.all([import("three"), import("./sculpture.ts"), import("three/examples/jsm/environments/RoomEnvironment.js"), import("../house/world/rendererOwner.ts")])
+      .then(([T, { createKittySculpture }, { RoomEnvironment }, { acquireWorldRenderer }]) => {
         if (dead) return;
+        let suspendRenderer = () => {}, resumeRenderer = () => {};
         let renderer: InstanceType<typeof T.WebGLRenderer>;
+        let rendererLease: ReturnType<typeof acquireWorldRenderer>;
         try {
-          renderer = new T.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true });
+          rendererLease = acquireWorldRenderer(element, {
+            parameters: { alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true },
+            configure(active) {
+              active.setClearColor(0x000000, 0);
+              active.setPixelRatio(Math.min(devicePixelRatio, 1.6));
+              active.shadowMap.enabled = true;
+              active.shadowMap.type = T.PCFSoftShadowMap;
+              active.outputColorSpace = T.SRGBColorSpace;
+              active.toneMapping = T.ACESFilmicToneMapping;
+              active.toneMappingExposure = 1.08;
+              active.localClippingEnabled = false;
+              active.domElement.setAttribute("aria-hidden", "true");
+              active.domElement.className = "";
+              active.domElement.style.width = "";
+              active.domElement.style.height = "";
+              active.domElement.style.touchAction = "";
+            },
+            onSuspend: () => suspendRenderer(),
+            onResume: () => resumeRenderer(),
+          });
+          renderer = rendererLease.renderer;
         } catch {
           setFailed(true);
           return;
         }
-        cleanup.push(() => { renderer.dispose(); renderer.forceContextLoss(); renderer.domElement.remove(); });
-        renderer.setPixelRatio(Math.min(devicePixelRatio, 1.6));
-        renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = T.PCFSoftShadowMap;
-        renderer.outputColorSpace = T.SRGBColorSpace;
-        renderer.toneMapping = T.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.08;
-        renderer.domElement.setAttribute("aria-hidden", "true");
-        element.appendChild(renderer.domElement);
+        cleanup.push(() => rendererLease.release());
         const scene = new T.Scene(), camera = new T.PerspectiveCamera(34, 1, 0.1, 40);
         camera.position.set(0.25, 3.1, 7.1);
         camera.lookAt(0, 1.55, 0);
@@ -145,10 +159,11 @@ export function KittyStage({
           if (dead || document.hidden) return;
           const more = cat.update();
           render();
-          if (more) raf = requestAnimationFrame(loop);
+          if (more) raf = rendererLease.requestFrame(loop);
         };
-        const kick = () => { if (!raf && !dead && !document.hidden) raf = requestAnimationFrame(loop); };
-        cleanup.push(() => { if (raf) cancelAnimationFrame(raf); raf = 0; });
+        const kick = () => { if (!raf && !dead && !document.hidden) raf = rendererLease.requestFrame(loop); };
+        suspendRenderer = () => { if (raf) rendererLease.cancelFrame(raf); raf = 0; };
+        cleanup.push(() => { if (raf) rendererLease.cancelFrame(raf); raf = 0; });
         const cat = createKittySculpture(latest.current.piece, {
           ornament,
           broken,
@@ -188,6 +203,7 @@ export function KittyStage({
           renderer.setSize(box.width, box.height);
           render();
         };
+        resumeRenderer = () => { resize(); kick(); };
         let currentSculpt = latest.current.piece?.sculpt;
         api.current = {
           rotate(n) { cat.group.rotation.y += n; render(); },
@@ -206,6 +222,7 @@ export function KittyStage({
           spin(v) { cat.setSpin(v ? 0.5 : 0); render(); },
           idle(v) { cat.setIdle(v); render(); },
           hit(x, y, outside = false) {
+            if (!rendererLease.active) return null;
             const box = renderer.domElement.getBoundingClientRect();
             pointer.set(((x - box.left) / box.width) * 2 - 1, -((y - box.top) / box.height) * 2 + 1);
             raycaster.setFromCamera(pointer, camera);
@@ -227,12 +244,11 @@ export function KittyStage({
         });
         visibility.observe(element);
         cleanup.push(() => visibility.disconnect());
-        const onHidden = () => { if (document.hidden) { if (raf) cancelAnimationFrame(raf); raf = 0; cat.setIdle(false); } else { cat.setIdle(onScreen); if (onScreen) kick(); } };
+        const onHidden = () => { if (document.hidden) { if (raf) rendererLease.cancelFrame(raf); raf = 0; cat.setIdle(false); } else { cat.setIdle(onScreen); if (onScreen) kick(); } };
         document.addEventListener("visibilitychange", onHidden);
         cleanup.push(() => document.removeEventListener("visibilitychange", onHidden));
         const lost = (e: Event) => { e.preventDefault(); dispose(); setFailed(true); };
-        renderer.domElement.addEventListener("webglcontextlost", lost);
-        cleanup.push(() => renderer.domElement.removeEventListener("webglcontextlost", lost));
+        cleanup.push(rendererLease.listenCanvas("webglcontextlost", lost));
       })
       .catch(() => { dispose(); if (!dead) setFailed(true); });
     return () => { dead = true; dispose(); };

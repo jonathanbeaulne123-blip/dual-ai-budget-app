@@ -1,4 +1,5 @@
 import type { AppearanceAccount } from "./appearanceAccount.ts";
+import { parseQueenStyle, type QueenStyle } from "../house/queenStyle.ts";
 import { DEFAULT_APPEARANCE, parseAppearance, type Appearance, type AppearanceScope, type ThemeId, type ThemeAccessory } from "./scenes.ts";
 
 export type AppearanceSnapshot = {
@@ -59,6 +60,7 @@ export class AppearanceStore {
   cancelPreview = (): void => { if (this.value.preview !== null) this.publish({ preview: null }); };
   apply = (theme: ThemeId): void => this.save({ theme });
   setAtmosphere = (atmosphere: boolean): void => this.save({ atmosphere }, false);
+  setQueen = (queen: QueenStyle): void => this.save({queen: parseQueenStyle(queen)}, false);
   setAccessoryHidden = (slot: ThemeAccessory, hidden: boolean): void => {
     this.save(slot === "hat" ? { hideThemeHat: hidden } : { hideThemeNeck: hidden }, false);
   };
@@ -120,5 +122,5 @@ export class AppearanceStore {
 
 function allowlistedChanges(raw: unknown): Partial<Appearance> {
   const value = raw && typeof raw === "object" ? raw as Partial<Appearance> : {};
-  return { ...(value.theme !== undefined ? { theme: parseAppearance(value).theme } : {}), ...(typeof value.atmosphere === "boolean" ? { atmosphere: value.atmosphere } : {}), ...(typeof value.hideThemeHat === "boolean" ? { hideThemeHat: value.hideThemeHat } : {}), ...(typeof value.hideThemeNeck === "boolean" ? { hideThemeNeck: value.hideThemeNeck } : {}) };
+  return { ...(value.theme !== undefined ? { theme: parseAppearance(value).theme } : {}), ...(typeof value.atmosphere === "boolean" ? { atmosphere: value.atmosphere } : {}), ...(typeof value.hideThemeHat === "boolean" ? { hideThemeHat: value.hideThemeHat } : {}), ...(typeof value.hideThemeNeck === "boolean" ? { hideThemeNeck: value.hideThemeNeck } : {}), ...(value.queen ? {queen: parseQueenStyle(value.queen)} : {}) };
 }

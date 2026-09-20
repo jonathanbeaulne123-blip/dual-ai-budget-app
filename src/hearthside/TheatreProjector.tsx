@@ -6,6 +6,7 @@ import { amountForMemory, captureProjectorSelection, checkProjectorCurrent, kept
 import { buildProjectorPages, paintProjectorPage, type ProjectorPage } from './projectorCanvas.ts';
 import { recordProjectorFilm, supportedProjectorMime } from './projectorFilm.ts';
 import { createProjectorStory } from './projectorStory.ts';
+import { projectorDraftKey, readProjectorDraft, writeProjectorDraft, type ProjectorDraftScope, type ProjectorDraftStore } from './projectorDraft.ts';
 import type { PreparedProjector, ProjectorAmountSnapshot, ProjectorFile, ProjectorLoaders, ProjectorOptions, ProjectorDownloadProof, ProjectorDownloadValidator } from './projectorTypes.ts';
 import './theatreProjector.css';
 
@@ -13,6 +14,7 @@ export type TheatreProjectorProps = ProjectorLoaders & {
   memories: MemoryComposition[]; activeMemberIds: string[]; theme: ThemeId;
   /** Change on environment, household, member or access-epoch changes. */
   scopeKey: string; publicationEpoch?: string | number;
+  draftScope: ProjectorDraftScope; draftStorage?: ProjectorDraftStore;
   authorLabels?: Record<string, string>; amountSnapshots?: ProjectorAmountSnapshot[];
   validateDownload: ProjectorDownloadValidator;
   onReviewMemory?: (memoryId: string, revision: number) => void;
@@ -21,18 +23,35 @@ export type TheatreProjectorProps = ProjectorLoaders & {
 function ProjectorMechanism() {
   return <svg viewBox="0 0 300 160" aria-hidden="true" className="htp-machine"><path d="M64 130L50 155M173 130L191 155" stroke="currentColor" strokeWidth="12"/><path d="M32 73H213V132H32Z" fill="var(--htp-metal)" stroke="currentColor" strokeWidth="3"/><path d="M211 85H248L274 74V132L248 120H211Z" fill="var(--htp-accent)" stroke="currentColor" strokeWidth="3"/>{[76,164].map(x=><g key={x} className="htp-reel" style={{transformOrigin:`${x}px 51px`}}><circle cx={x} cy="51" r="41" fill="var(--htp-paper)" stroke="currentColor" strokeWidth="5"/><circle cx={x} cy="51" r="8" fill="currentColor"/>{[0,1,2,3,4].map(i=><circle key={i} cx={x+Math.cos(i*Math.PI*.4)*24} cy={51+Math.sin(i*Math.PI*.4)*24} r="8" fill="var(--htp-metal)" stroke="currentColor" strokeWidth="1.5"/>)}</g>)}<path d="M60 94H168M60 104H168M60 114H141" stroke="currentColor" opacity=".45" strokeWidth="3"/></svg>;
 }
+function projectorDraftStore(explicit?: ProjectorDraftStore): { storage: ProjectorDraftStore | null; warning: string } {
+  if (explicit) return { storage: explicit, warning: '' };
+  if (typeof window === 'undefined') return { storage: null, warning: '' };
+  try { return { storage: window.localStorage, warning: '' }; } catch { return { storage: null, warning: 'Reel choices are only in this visit. This device could not open local draft storage.' }; }
+}
 export function TheatreProjector(props: TheatreProjectorProps) {
+  return <TheatreProjectorScoped key={projectorDraftKey(props.draftScope)} {...props}/>;
+}
+function TheatreProjectorScoped(props: TheatreProjectorProps) {
   const id = useId(), eligible = keptCompositions(props.memories, props.activeMemberIds);
-  const [order, setOrder] = useState<string[]>(() => eligible[0] ? [memoryKey(eligible[0])] : []);
-  const [seconds, setSeconds] = useState(5), [showAmounts, setShowAmounts] = useState(false);
+  const [draftAccess] = useState(() => projectorDraftStore(props.draftStorage)), storage = draftAccess.storage;
+  const [recovery] = useState(() => { try { return { value: storage ? readProjectorDraft(storage, props.draftScope, eligible) : null, warning: draftAccess.warning }; } catch { return { value: null, warning: 'Reel choices are only in this visit. This device could not read the saved reel.' }; } });
+  const restored = recovery.value;
+  const [order, setOrder] = useState<string[]>(() => restored?.status === 'restored' || restored?.status === 'rejected' ? restored.order : eligible[0] ? [memoryKey(eligible[0])] : []);
+  const [seconds, setSeconds] = useState(restored?.secondsPerPage ?? 5), [showAmounts, setShowAmounts] = useState(restored?.showAmounts ?? false);
   const [prepared, setPrepared] = useState<{ stamp: string; value: PreparedProjector } | null>(null), [pageIndex, setPageIndex] = useState(0), [playing, setPlaying] = useState(false);
   const [busy, setBusy] = useState<'load' | 'film' | 'story' | 'download' | null>(null), [message, setMessage] = useState(''), [progress, setProgress] = useState(0);
   const [file, setFile] = useState<{ stamp: string; value: ProjectorFile; proof: ProjectorDownloadProof } | null>(null), [fileUrl, setFileUrl] = useState(''), [audioUrl, setAudioUrl] = useState('');
   const [filmSupported, setFilmSupported] = useState(false), [reduced, setReduced] = useState(false), [mechanismVisible, setMechanismVisible] = useState(false);
+  const [draftNotice, setDraftNotice] = useState(() => {
+    if (recovery.warning) return recovery.warning;
+    if (restored?.status === 'rejected') return 'The saved reel could not be recovered. No memories were selected.';
+    return restored?.discarded ? 'A selected memory changed or is no longer available, so it was left off this reel.' : '';
+  });
   const heading = useRef<HTMLElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null), audio = useRef<HTMLAudioElement>(null), loadAbort = useRef<AbortController | null>(null), exportAbort = useRef<AbortController | null>(null);
   const options: ProjectorOptions = { theme: props.theme, secondsPerPage: seconds, showAmounts, amountSnapshots: props.amountSnapshots, authorLabels: props.authorLabels };
-  const eligibleKeys = eligible.map(memoryKey), chosen = order.filter(key => eligibleKeys.includes(key));
+  const eligibleKeys = eligible.map(memoryKey), chosen = order.filter(key => eligibleKeys.includes(key)), chosenStamp = JSON.stringify(chosen);
+  const chosenMemories = chosen.map(key => eligible.find(memory => memoryKey(memory) === key)!).filter(Boolean);
   const sourceStamp = JSON.stringify([props.scopeKey, props.publicationEpoch, props.activeMemberIds, eligible]);
   const stamp = JSON.stringify([sourceStamp, chosen, options]), liveStamp = useRef(stamp); liveStamp.current = stamp;
   const active = prepared?.stamp === stamp ? prepared.value : null;
@@ -41,7 +60,8 @@ export function TheatreProjector(props: TheatreProjectorProps) {
   const operationBusy = busy === 'film' || busy === 'story' || busy === 'download';
   useEffect(() => { setFilmSupported(Boolean(supportedProjectorMime()) && typeof HTMLCanvasElement.prototype.captureStream === 'function'); const media = matchMedia('(prefers-reduced-motion: reduce)'); const update = () => setReduced(media.matches); update(); media.addEventListener('change', update); return () => media.removeEventListener('change', update); }, []);
   useEffect(() => { const node = heading.current; if (!node) return; const observer = new IntersectionObserver(([entry]) => setMechanismVisible(Boolean(entry?.isIntersecting))); observer.observe(node); return () => observer.disconnect(); }, []);
-  useEffect(() => { setOrder(previous => previous.filter(key => eligibleKeys.includes(key))); }, [sourceStamp]);
+  useEffect(() => { const next = order.filter(key => eligibleKeys.includes(key)); if (next.length === order.length) return; setOrder(next); setDraftNotice('A selected memory changed or is no longer available, so it was left off this reel.'); }, [sourceStamp, order]);
+  useEffect(() => { if (!storage) return; try { writeProjectorDraft(storage, props.draftScope, chosenMemories, { secondsPerPage: seconds, showAmounts }); } catch { setDraftNotice('Reel choices are only in this visit. This device could not save the reel.'); } }, [storage, props.draftScope.environment, props.draftScope.householdId, props.draftScope.memberId, props.draftScope.audience, chosenStamp, seconds, showAmounts, sourceStamp]);
   useEffect(() => {
     const controller = new AbortController(); loadAbort.current = controller; exportAbort.current?.abort(); exportAbort.current = null; setFile(null); setPlaying(false); setMessage('');
     if (!chosen.length) { setPrepared(null); setBusy(null); return () => controller.abort(); }
@@ -131,6 +151,6 @@ export function TheatreProjector(props: TheatreProjectorProps) {
     {active && page && <section className="htp-caption-copy" aria-label="The complete kept captions"><header><div><small>KEPT VERSION {page.memory.revision}{page.memory.date ? ` · ${page.memory.date}` : ''}</small><h3>{page.memory.title}</h3></div>{props.onReviewMemory && <button type="button" onClick={() => props.onReviewMemory!(page.memory.id, page.memory.revision)}>Review our captions</button>}</header><WinMemorySource source={page.memory.legacySource} history={false}/><div>{page.memory.recollections.map(row => <article key={row.memberId}><h4>{props.authorLabels?.[row.memberId] || `Voice ${page.memory.recollections.indexOf(row) + 1}`}</h4><p>{row.text || 'No caption was added to this kept version.'}</p></article>)}</div>{amountForMemory(active.selection, page.memory) && <p className="htp-amount">{amountForMemory(active.selection, page.memory)!.provenance} · snapshot {amountForMemory(active.selection, page.memory)!.asOf}</p>}</section>}
     <div className="htp-desk"><section className="htp-selection" aria-label="Choose and order memories"><header><div><small>SET OUT OUR REEL</small><h3>The order we remember</h3></div><span>{chosen.length} chosen</span></header><ol>{[...chosen.map(key => eligible.find(memory => memoryKey(memory) === key)!).filter(Boolean), ...eligible.filter(memory => !chosen.includes(memoryKey(memory)))].map(memory => { const key = memoryKey(memory), index = chosen.indexOf(key); return <li key={key}><label><input type="checkbox" checked={index >= 0} disabled={operationBusy} onChange={event => setOrder(previous => event.target.checked ? [...previous, key] : previous.filter(item => item !== key))}/><span><strong>{memory.title}</strong><small>{memory.date || 'A moment we kept'} · version {memory.revision}</small></span></label>{index >= 0 && <div><button type="button" disabled={index === 0 || operationBusy} aria-label={`Move ${memory.title} earlier`} onClick={() => move(key, -1)}>↑</button><button type="button" disabled={index === chosen.length - 1 || operationBusy} aria-label={`Move ${memory.title} later`} onClick={() => move(key, 1)}>↓</button></div>}</li>; })}</ol>{!eligible.length && <p>There are no mutually kept versions to project yet.</p>}</section>
       <section className="htp-export" aria-labelledby={`${id}-export`}><small>TAKE OUR STORY WITH US</small><h3 id={`${id}-export`}>A film to keep</h3><p>Our chosen moments, saved artwork and each person’s own words, in the order we choose.</p><label htmlFor={`${id}-seconds`}>Seconds per page<input id={`${id}-seconds`} type="number" min="1" max="30" value={seconds} disabled={operationBusy} onChange={event => { const value = Number(event.target.value); if (value >= 1 && value <= 30) setSeconds(value); }}/></label><p className="htp-help">Voice notes play in full. Longer captions continue onto more pages.</p>{canShowAmounts && <label className="htp-check"><input type="checkbox" checked={showAmounts} disabled={operationBusy} onChange={event => setShowAmounts(event.target.checked)}/>Include the explicitly kept amount snapshots</label>}<div className="htp-export-actions"><button type="button" disabled={!active || operationBusy || !filmSupported} onClick={() => void createFile('film')}>Create film</button><button type="button" disabled={!active || operationBusy} onClick={() => void createFile('story')}>Create story file</button></div>{!filmSupported && <p className="htp-help">Video recording is unavailable here. The readable story file keeps the chosen words and media.</p>}{operationBusy && <div className="htp-progress"><label htmlFor={`${id}-progress`}>{busy === 'film' ? 'Recording our film' : busy === 'download' ? 'Checking access to our story' : 'Preparing our story'}</label><progress id={`${id}-progress`} max="1" value={busy === 'film' ? progress : undefined}/><button type="button" onClick={cancel}>Cancel export</button></div>}{file?.stamp === stamp && fileUrl && <button type="button" className="htp-download" disabled={operationBusy} onClick={() => void downloadFile()}>Download {file.value.kind === 'film' ? 'film' : 'readable story file'}</button>}</section></div>
-    <p className="htp-status" role="status">{message}</p>
+    <p className="htp-status" role="status">{message || draftNotice}</p>
   </section>;
 }

@@ -18,6 +18,18 @@ function fixture(){let h=catalogHousehold();h.hearthside={...emptyHearthside(),e
 }
 const path=(h:Household)=>`/hearthside/experiences/EXP-weekend?household=${h.householdId}&room=common&mode=present`;
 describe('accepted bank identity and separate intention link',()=>{
+ it('keeps an addressed Household house return through bank creation without crossing an audience or intention',()=>{
+  const f=fixture(),housePath=`/house/together/above?household=${f.h.householdId}&scope=household&surface=wishes&object=experience%2FEXP-weekend`;
+  const journey=newBankJourney(f.scope,experience,housePath,'hearthside-bank-intention-EXP-weekend');
+  expect(journey.returnPath).toBe(housePath);
+  for(const invalid of [
+   housePath.replace('scope=household','scope=personal'),
+   housePath.replace('EXP-weekend','EXP-other'),
+   housePath.replace(f.h.householdId,'HH-other'),
+   `https://elsewhere.invalid${housePath}`,
+   housePath.replace('object=experience%2FEXP-weekend','object=memory%2FEXP-weekend'),
+  ])expect(()=>newBankJourney(f.scope,experience,invalid,'hearthside-title')).toThrow('BANK_JOURNEY_INVALID');
+ });
  it('keeps a free intention unchanged until explicit creation, then links the exact accepted goal without posting money',async()=>{const f=fixture(),before=structuredClone(f.h),j=newBankJourney(f.scope,experience,path(f.h),'hearthside-title');expect(f.h).toEqual(before);const created=await f.accept(h=>addGoal(h,{name:'The same bank name',target:'240',shared:true,ownerMemberId:null,envelope:newBankEnvelope(j.context.purpose)}));const bank=acceptedCreatedBank(created,created.receipt.id,f.scope,'household');expect(created.receipt.commandKind).toBe('addGoal');expect(created.receipt.postedIds).toEqual([bank.id]);expect(f.h.hearthside!.experiences).toEqual(before.hearthside!.experiences);for(const key of ['transactions','fundEvents','fundKittyAllocations','goalContributions','goalPurchases'] as const)expect(f.h[key]??[]).toEqual(before[key]??[]);
  const next={...j,bankId:bank.id,creationId:created.receipt.id};next.link=reviewBankLink(f.h,next);const money=await financialAuditHash(f.h),linked=await f.accept(h=>{assertBankLinkReview(h,next);return commitHearthside(h,{version:1,id:next.link!.id,scope:{environment:f.scope.environment,householdId:f.scope.householdId,memberId:f.scope.memberId},operation:next.link!.operation});},next.link.id);expect(linked.receipt.postedIds).toEqual([]);expect(acceptedBankLink(linked,next)).toBe(true);expect(await financialAuditHash(f.h)).toBe(money);expect(f.h.hearthside!.experiences[0]!.references).toEqual([{kind:'bank',id:bank.id}]);
  });

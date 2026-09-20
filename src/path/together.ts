@@ -2,6 +2,7 @@ import { monthKeyFromDateKey, type DateKey } from "../core/calendar.ts";
 import { pathWords } from "../core/pathWords.ts";
 import type { Household } from "../core/types.ts";
 import type { GrownIsland } from "./grow.ts";
+import { pathObjectNearAnchor } from "./world/pathGeometry.ts";
 
 /**
  * Together on the island (Jonathan, 2026-09-15): the campfire is a door to the
@@ -49,48 +50,25 @@ export function charterPurposeWords(purpose: string, max = 120): string {
 }
 
 /**
- * Where the Charter's stone square stands: off the first month's spot, clear of
- * the pieces, the other month stones and whatever else the caller lists (the
- * landmarks and the kiln). Deterministic; falls back to the first candidate.
+ * Where the Charter's stone square stands: off the first month's stable spot.
+ * The legacy `avoid` argument remains source-compatible, but accepted object
+ * corrections cannot move the Charter, so it no longer participates in placement.
  */
 export function charterSpot(island: GrownIsland, avoid: { x: number; z: number; r: number }[] = []): { x: number; z: number; a: number } {
-  return clearSpotNearFirstMonth(island, avoid, Math.PI);
+  void avoid;
+  return fixedSpotNearFirstMonth(island, "charter", Math.PI);
 }
 
 /**
- * Where Hercules's cottage (Play) stands: the same search as the Charter, turned
- * a quarter away from it, and clear of the Charter's square as well.
+ * Where Hercules's cottage (Play) stands: a stable quarter turn from the Charter.
  */
 export function cottageSpot(island: GrownIsland, avoid: { x: number; z: number; r: number }[] = [], charter = false): { x: number; z: number; a: number } {
-  const blockers = charter ? [...avoid, { ...charterSpot(island, avoid), r: 6 }] : avoid;
-  return clearSpotNearFirstMonth(island, blockers, Math.PI / 2);
+  void avoid; void charter;
+  return fixedSpotNearFirstMonth(island, "cottage", Math.PI / 2);
 }
 
-function clearSpotNearFirstMonth(island: GrownIsland, avoid: { x: number; z: number; r: number }[], turn: number): { x: number; z: number; a: number } {
+function fixedSpotNearFirstMonth(island: GrownIsland, id: "charter" | "cottage", turn: number): { x: number; z: number; a: number } {
   const p = island.spot(0);
-  const blockers = [
-    ...avoid,
-    ...island.pieces.map((piece) => ({ x: piece.x, z: piece.z, r: piece.kind === "loop" || piece.kind === "dogMeadow" ? 8 : 5.5 })),
-    ...Array.from({ length: island.cur + 2 }, (_, m) => ({ ...island.spot(m), r: 4.5 })),
-  ];
-  let first: { x: number; z: number; a: number } | null = null;
-  for (const radius of [8, 11, 14]) {
-    for (let k = 0; k < 12; k++) {
-      const a = p.a + turn + (k % 2 ? 1 : -1) * Math.ceil(k / 2) * 0.45;
-      const x = p.x + Math.cos(a) * radius, z = p.z + Math.sin(a) * radius;
-      const candidate = { x, z, a: Math.atan2(p.z - z, p.x - x) };
-      first ??= candidate;
-      const reach = Math.hypot(x, z);
-      if (reach > island.radiusAt(Math.atan2(z, x)) - 7) continue;
-      if (blockers.some((b) => Math.hypot(b.x - x, b.z - z) < b.r + 3)) continue;
-      return candidate;
-    }
-  }
-  return first!;
-}
-
-const FORK_SLOTS = [0, 0.55, -0.55, 1.1, -1.1, 1.65, -1.65, 2.2];
-/** A decision fork's direction off its month spot: eight slots fixed by index, fanned toward the island's middle (the spiral's newest months sit near the coast). */
-export function forkAngle(spot: { x: number; z: number }, index: number): number {
-  return Math.atan2(-spot.z, -spot.x) + FORK_SLOTS[index % 8]!;
+  const spot = pathObjectNearAnchor(id, id, p, { turn, angleSpread: 0.28, distance: 8.5, distanceSpread: 2 });
+  return { x: spot.x, z: spot.z, a: Math.atan2(p.z - spot.z, p.x - spot.x) };
 }

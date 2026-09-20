@@ -1,3 +1,8 @@
+## 2026-09-19 — The theatre keeps an exact local reel draft
+
+The Theatre Projector persists only its ordered `{memory id, revision}` references and display options in a versioned device-local record partitioned by environment, household, member and Personal/Household audience. Reloading, changing theme or leaving the room restores that order only where the exact revisions are still currently eligible. A changed, withdrawn or unavailable memory is removed rather than upgraded to a newer revision; no recollection text, media, approval or canonical household state is copied into the draft.
+
+**Risk: Medium. Budget delta (5): +0** — no money projection, command, approval or Final Confirm path changes. **Engagement delta (3): +2** — a deliberately arranged story survives ordinary navigation and reload. No schema, hosted row, provider, Production data, deployment or canonical writer is added.
 ## 2026-09-19 — Free roam: the camera comes off the two of you and the island becomes a place you walk (D-286)
 
 Jonathan (2026-09-19): "I love it, it's been merged — the journey map is beautiful, fast and fun to use. Now I want a free roam cam in journey mode: a way to explore the world. This will give it an open world feeling. One can unlatch the camera from their avatars and explore their island as they wish."
@@ -1228,3 +1233,26 @@ Risk High. Budget delta (5): one financial truth, exact shared consent and intac
 Keep canonical Ritual history projection independent of Task command/sync imports so sculpture catalogue initialization is safe in browser entry points. Route real browser tests through the existing serial heavy lane on this8GB host; preserve every selected check and the five-minute budget. Neither correction changes money authority, privacy, consent or the accepted house direction. New browser files are discovered by the lane guard rather than silently joining the ordinary four-worker lane.
 
 The accepted books gate also controls decorative Queen rendering. Home, Loft and Cellar stay flat while the exact environment/household/revision is validating or blocked, and load their 3D worlds only after readiness. Validation retry restores the normal world once the books pass. This gives books priority without changing integrity checks, deadlines, financial commands or Final Confirm. It does not claim to resolve every startup delay on a resource-constrained host.
+
+### 2026-09-19 — local recovery for unfinished Plan decisions
+
+An open Plan decision editor keeps only its unfinished field values and a navigation pointer in versioned device storage. Recovery is partitioned by environment, household, member, Personal/Household view, month, selected draft/scenario/version, and line identity. Reloading or returning to a scope reopens that exact editor. Cancel or a successful private-draft save clears only that editor's local record.
+
+The recovery record retains the accepted source revision, selected draft revision and exact source-line fingerprint it began from. If any changes, Hearth preserves the input but requires an explicit comparison with the current decision before save; a removed line cannot be silently recreated. Device recovery does not write canonical Plan data, post money, share Personal fields, or bypass the existing save conflict check and Final Confirm boundaries.
+
+Risk High. Budget delta (5): unfinished amounts, dates, funding evidence and responsibility survive navigation without becoming accepted truth. Engagement delta (3): people can leave a room or change themes and resume the exact decision. Focused local tests cover recovery, scope isolation, revision conflict and exact clearing; release and hosted continuity evidence remain separate.
+
+### 2026-09-19 — Planner journey links and acknowledged draft recovery
+
+Planner task details may link to a line from the active accepted Plan in the task's own audience. Personal tasks offer only the active member-owned Personal Plan; Household tasks offer only an active Household Plan. Changing a new task's visibility clears its Plan link. A reference that later becomes inactive or invisible remains visibly unavailable for exact review and is never rebound to a similarly named line.
+
+Quick capture and detailed task fields keep a versioned device recovery copy partitioned by environment, household, member, Personal/Household view and exact task ID. Once a quick capture is submitted, its original Task input and ID remain the retry until an exactly-once acknowledgement or explicit discard; a lost acknowledgement cannot create a second task identity. A reload or safe scope remount restores the editor. Rejected, failed and unacknowledged writes retain it; only an exactly-once acknowledged save/removal or explicit Cancel clears that task's recovery record. This adds no task authority, Plan writer, provider, schema, or financial posting path.
+
+Risk High. Budget delta (5): accepted Plan decisions can carry an exact practical next step without weakening Plan or task validation. Engagement delta (3): private journey work survives room and theme navigation. Focused tests cover audience choices, visibility clearing, reload isolation, rejection retention and stale-reference disclosure.
+
+
+### 2026-09-20 — Whole-house PR handoff and user-owned visual acceptance
+
+Jonathan’s latest instruction is to wrap the implemented actual app into a PR for a second opinion and let him perform the user-facing tests. Both scopes use the continuous house; canonical accounting, private owner boundaries and Final Confirm stay authoritative. The whole-house presentation flag remains independent of service/provider activation.
+
+The local web build and selected math/command regressions passed. The full High gate remains failed because it exceeded five minutes and one Chapter test read a pre-commit DOM state; the latter has a test-only bounded-wait correction. Do not describe the PR as shipped, fully accepted, or a green gate. The [review brief](briefs/WHOLE_HOUSE_REVIEW_2026-09-19.md) records evidence, limits and the next review. PR #501’s old recovery/activation, hosted schema/services, Production, deployment and native work remain separate.

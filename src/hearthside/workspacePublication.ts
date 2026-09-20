@@ -44,6 +44,7 @@ export function assertArtifactPublicationReceipt(value:unknown,expected:Artifact
   return {version:1,id:p.id,publication:p,acceptedSequence:v.acceptedSequence as number};
 }
 export function validateArtifactSource(project:WorkspaceProject,context:WorkspaceExperienceContext,review:ExperienceArtifactReview,actor:string):void {
+  if(context.version===2||project.experience?.context.version===2)throw new Error('PERSONAL_LIFE_COPY_REVIEW_REQUIRED');
   const r=decodeExperienceArtifactReview(review), version=project.artifacts.find(a=>a.id===r.artifactVersionId);
   if(project.ownerMemberId!==actor || project.id!==r.projectId || project.experience?.context.id!==r.experienceId)throw new Error('ARTIFACT_SOURCE_FORBIDDEN');
   if(context.id!==r.experienceId || context.revision!==r.experienceRevision)throw new Error('EXPERIENCE_CONTEXT_CHANGED');

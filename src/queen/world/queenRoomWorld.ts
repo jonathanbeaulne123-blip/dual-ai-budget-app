@@ -6,6 +6,7 @@ import { createKittySculpture, type KittySculpture } from "../../kitty/sculpture
 import type { KittyPieceV1 } from "../../core/types.ts";
 import { bankModelFor, loadBankModel, type BankModelKey } from "./bankModels.ts";
 import { queenModelResources } from "./queenModel.ts";
+import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 
 /**
  * The two rooms, in three dimensions: **the cellar**, where Protect runs a
@@ -84,16 +85,26 @@ const VESSEL_HEIGHT = 1;
 export type RoomModelLoader = (key: BankModelKey, signal?: AbortSignal) => Promise<THREE.Object3D>;
 
 export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRoom; reducedMotion?: boolean; onLost?: () => void; /** `null` never loads a model (tests, and the flat fallback). */ loadModel?: RoomModelLoader | null }) {
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true });
-  renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 1.5));
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = options.room === "cellar" ? 0.7 : 0.88;
-  // A model bank is glazed below its fill line and bisque above it: one clipping plane each.
-  renderer.localClippingEnabled = true;
-  renderer.domElement.setAttribute("aria-hidden", "true");
-  renderer.domElement.className = "queen-room-world__canvas";
-  host.appendChild(renderer.domElement);
+  let suspendRenderer = () => {}, resumeRenderer = () => {};
+  const rendererLease = acquireWorldRenderer(host, {
+    parameters: { alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true },
+    configure(renderer) {
+      renderer.setClearColor(0x000000, 0);
+      renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 1.5));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = options.room === "cellar" ? 0.7 : 0.88;
+      // A model bank is glazed below its fill line and bisque above it: one clipping plane each.
+      renderer.localClippingEnabled = true;
+      renderer.shadowMap.enabled = false;
+      renderer.domElement.setAttribute("aria-hidden", "true");
+      renderer.domElement.className = "queen-room-world__canvas";
+      renderer.domElement.style.touchAction = "";
+    },
+    onSuspend: () => suspendRenderer(),
+    onResume: () => resumeRenderer(),
+  });
+  const renderer = rendererLease.renderer;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 90);
@@ -515,9 +526,9 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       let busy = false;
       for (const seat of studios.values()) if (seat.sculpture.update(t)) busy = true;
       render();
-      if (busy) animRaf = requestAnimationFrame(step);
+      if (busy) animRaf = rendererLease.requestFrame(step);
     };
-    animRaf = requestAnimationFrame(step);
+    animRaf = rendererLease.requestFrame(step);
   };
   const studioKey = (v: RoomVessel) => v.studio ? JSON.stringify([v.studio.piece.id, v.studio.fired, v.studio.piece.sculpt, v.studio.piece.paint, v.studio.piece.charms ?? null]) : "";
   const buildStudio = (vessel: RoomVessel): StudioSeat => {
@@ -673,7 +684,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     stats.lastFrameMs = ms;
     stats.maxFrameMs = Math.max(stats.maxFrameMs, ms);
   };
-  const invalidate = () => { if (dead || pending) return; pending = requestAnimationFrame(() => { pending = 0; render(); }); };
+  const invalidate = () => { if (dead || pending) return; pending = rendererLease.requestFrame(() => { pending = 0; render(); }); };
 
   const seatMatrix = new THREE.Object3D();
   const tick = (seconds: number) => {
@@ -693,18 +704,19 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     if (!started) started = t;
     tick((t - started) / 1000);
     render();
-    raf = requestAnimationFrame(frame);
+    raf = rendererLease.requestFrame(frame);
   };
-  const pump = () => { if (!dead && stats.ambient && !raf) { started = 0; raf = requestAnimationFrame(frame); } };
-  const halt = () => { if (raf) cancelAnimationFrame(raf); raf = 0; };
+  const pump = () => { if (!dead && stats.ambient && !raf) { started = 0; raf = rendererLease.requestFrame(frame); } };
+  const halt = () => { if (raf) rendererLease.cancelFrame(raf); raf = 0; };
+  suspendRenderer = () => { halt(); if (pending) rendererLease.cancelFrame(pending); pending = 0; if (animRaf) rendererLease.cancelFrame(animRaf); animRaf = 0; };
+  resumeRenderer = () => { if (hostRect.w && hostRect.h) { renderer.setSize(hostRect.w, hostRect.h, false); renderer.domElement.style.width = `${hostRect.w}px`; renderer.domElement.style.height = `${hostRect.h}px`; } invalidate(); animate(); pump(); };
   const onHidden = () => { if (typeof document !== "undefined" && document.hidden) halt(); else pump(); };
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", onHidden);
     cleanup.push(() => document.removeEventListener("visibilitychange", onHidden));
   }
   const lost = (event: Event) => { event.preventDefault(); options.onLost?.(); };
-  renderer.domElement.addEventListener("webglcontextlost", lost);
-  cleanup.push(() => renderer.domElement.removeEventListener("webglcontextlost", lost));
+  cleanup.push(rendererLease.listenCanvas("webglcontextlost", lost));
 
   const api = {
     scene,
@@ -784,8 +796,10 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       camera.aspect = hostRect.w / hostRect.h;
       camera.updateProjectionMatrix();
       renderer.setSize(hostRect.w, hostRect.h, false);
-      renderer.domElement.style.width = `${hostRect.w}px`;
-      renderer.domElement.style.height = `${hostRect.h}px`;
+      if (rendererLease.active) {
+        renderer.domElement.style.width = `${hostRect.w}px`;
+        renderer.domElement.style.height = `${hostRect.h}px`;
+      }
       let floor = -VISIBLE_HEIGHT / 2;
       let tallest = 0;
       for (const [id, seat] of seats) {
@@ -867,8 +881,8 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       if (dead) return;
       dead = true;
       halt();
-      if (pending) cancelAnimationFrame(pending);
-      if (animRaf) cancelAnimationFrame(animRaf);
+      if (pending) rendererLease.cancelFrame(pending);
+      if (animRaf) rendererLease.cancelFrame(animRaf);
       for (const seat of seats.values()) { seat.group.removeFromParent(); seat.group.clear(); }
       seats.clear();
       for (const seat of studios.values()) dropStudio(seat);
@@ -881,9 +895,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       for (const m of materials) m.dispose();
       for (const t of textures) t.dispose();
       geometries.clear(); materials.clear(); textures.clear();
-      renderer.dispose();
-      renderer.forceContextLoss();
-      renderer.domElement.remove();
+      rendererLease.release();
     },
   };
   return api;

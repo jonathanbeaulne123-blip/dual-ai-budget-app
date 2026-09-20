@@ -1,11 +1,18 @@
 import { sha256String } from '../core/synchronousHash.ts';
 import type { ArtifactFormat, WorkspaceProject } from '../workspace/contracts.ts';
+import type { PersonalLifeExperience } from './personalLifeContracts.ts';
 
 export type WorkspaceExperienceScope = { identity: string; environment: 'development' | 'production'; householdId: string; memberId: string };
 /** Explicit minimum projection. Links, balances, private sources and participant activity never enter it. */
-export type WorkspaceExperienceContext = { version: 1; id: string; revision: number; title: string; intention: string;
-  state: 'dreaming' | 'preparing' | 'lived' | 'paused' | 'archived'; horizon: 'tonight' | 'season' | 'someday' };
+export type WorkspaceExperienceContext =
+  | { version: 1; id: string; revision: number; title: string; intention: string;
+      state: 'dreaming' | 'preparing' | 'lived' | 'paused' | 'archived'; horizon: 'tonight' | 'season' | 'someday' }
+  | { version: 2; audience: 'personal'; ownerMemberId: string; id: string; revision: number; title: string; intention: string;
+      state: 'dreaming' | 'preparing' | 'lived' | 'paused' | 'archived'; horizon: 'tonight' | 'season' | 'someday'; livedOn: string | null };
 export type WorkspaceExperienceBinding = { context: WorkspaceExperienceContext; digest: string; providerApprovalDigest: string | null };
+export type WorkspaceExperienceReference =
+  | { version: 1; audience: 'household'; ownerMemberId: null; id: string; personalLifeVersion: null }
+  | { version: 1; audience: 'personal'; ownerMemberId: string; id: string; personalLifeVersion: 1 };
 export function exactObject(value: unknown, keys: readonly string[]): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value) || ![Object.prototype, null].includes(Object.getPrototypeOf(value))) throw new Error('INVALID_EXPERIENCE_CONTEXT');
   const descriptors = Object.getOwnPropertyDescriptors(value);
@@ -21,24 +28,55 @@ export function boundedText(value: unknown, max: number, empty = false): string 
   return value;
 }
 export function decodeWorkspaceExperienceContext(value: unknown): WorkspaceExperienceContext {
-  const v = exactObject(value, ['version','id','revision','title','intention','state','horizon']);
-  if (v.version !== 1 || !Number.isSafeInteger(v.revision) || (v.revision as number) < 1 || !['dreaming','preparing','lived','paused','archived'].includes(String(v.state)) || !['tonight','season','someday'].includes(String(v.horizon))) throw new Error('INVALID_EXPERIENCE_CONTEXT');
-  return {version:1,id:experienceIdentifier(v.id),revision:v.revision as number,title:boundedText(v.title,240),intention:boundedText(v.intention,4000,true),state:v.state as WorkspaceExperienceContext['state'],horizon:v.horizon as WorkspaceExperienceContext['horizon']};
+  const base=['version','id','revision','title','intention','state','horizon'];
+  const v = exactObject(value, value&&typeof value==='object'&&(value as {version?:unknown}).version===2?[...base,'audience','ownerMemberId','livedOn']:base);
+  if (![1,2].includes(v.version as number) || !Number.isSafeInteger(v.revision) || (v.revision as number) < 1 || !['dreaming','preparing','lived','paused','archived'].includes(String(v.state)) || !['tonight','season','someday'].includes(String(v.horizon))) throw new Error('INVALID_EXPERIENCE_CONTEXT');
+  const common={id:experienceIdentifier(v.id),revision:v.revision as number,title:boundedText(v.title,240),intention:boundedText(v.intention,4000,true),state:v.state as 'dreaming'|'preparing'|'lived'|'paused'|'archived',horizon:v.horizon as 'tonight'|'season'|'someday'};
+  if(v.version===1)return {version:1,...common};
+  const livedOn=v.livedOn;
+  if(v.audience!=='personal' || livedOn!==null && (typeof livedOn!=='string'||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(livedOn)||!Number.isFinite(Date.parse(livedOn+'T12:00:00Z'))||new Date(livedOn+'T12:00:00Z').toISOString().slice(0,10)!==livedOn))throw new Error('INVALID_EXPERIENCE_CONTEXT');
+  return {version:2,audience:'personal',ownerMemberId:experienceIdentifier(v.ownerMemberId),...common,livedOn:v.livedOn as string|null};
 }
 /** Call on a validated accepted experience, never on a caller-supplied household replica at the authority. */
 export function workspaceExperienceContext(experience: WorkspaceExperienceContext): WorkspaceExperienceContext {
-  return decodeWorkspaceExperienceContext({version:1,id:experience.id,revision:experience.revision,title:experience.title,intention:experience.intention,state:experience.state,horizon:experience.horizon});
+  return decodeWorkspaceExperienceContext(experience.version===2?experience:{version:1,id:experience.id,revision:experience.revision,title:experience.title,intention:experience.intention,state:experience.state,horizon:experience.horizon});
+}
+export function personalWorkspaceExperienceContext(experience: PersonalLifeExperience, ownerMemberId: string): WorkspaceExperienceContext {
+  if(experience.createdBy!==ownerMemberId)throw new Error('EXPERIENCE_CONTEXT_OWNER_MISMATCH');
+  return decodeWorkspaceExperienceContext({version:2,audience:'personal',ownerMemberId,id:experience.id,revision:experience.revision,title:experience.title,intention:experience.intention,state:experience.state,horizon:experience.horizon,livedOn:experience.livedOn});
+}
+/** Narrow authority reference. Personal requires an explicit compatible reader marker; an id alone is never a Personal request. */
+export function decodeWorkspaceExperienceReference(value: unknown): WorkspaceExperienceReference {
+  let row:Record<string,unknown>;
+  try{row=exactObject(value,['version','audience','ownerMemberId','id','personalLifeVersion']);}catch{throw new Error('INVALID_EXPERIENCE_REFERENCE');}
+  if(row.version!==1)throw new Error('INVALID_EXPERIENCE_REFERENCE');
+  const id=experienceIdentifier(row.id);
+  if(row.audience==='household'&&row.ownerMemberId===null&&row.personalLifeVersion===null)return {version:1,audience:'household',ownerMemberId:null,id,personalLifeVersion:null};
+  if(row.audience==='personal'&&row.personalLifeVersion===1)return {version:1,audience:'personal',ownerMemberId:experienceIdentifier(row.ownerMemberId),id,personalLifeVersion:1};
+  throw new Error('INVALID_EXPERIENCE_REFERENCE');
+}
+export function workspaceExperienceReference(context: WorkspaceExperienceContext): WorkspaceExperienceReference {
+  const selected=decodeWorkspaceExperienceContext(context);
+  return selected.version===2
+    ? {version:1,audience:'personal',ownerMemberId:selected.ownerMemberId,id:selected.id,personalLifeVersion:1}
+    : {version:1,audience:'household',ownerMemberId:null,id:selected.id,personalLifeVersion:null};
 }
 export function workspaceExperienceDigest(context: WorkspaceExperienceContext): string {
   return sha256String(JSON.stringify(decodeWorkspaceExperienceContext(context)));
 }
-export function workspaceExperienceKey(scope: WorkspaceExperienceScope, experienceId: string): string {
+export function workspaceExperienceKey(scope: WorkspaceExperienceScope, experienceId: string, audience: 'household'|'personal'='household'): string {
   if (!['development','production'].includes(scope.environment)) throw new Error('INVALID_EXPERIENCE_SCOPE');
-  return sha256String(JSON.stringify([boundedText(scope.identity,500),scope.environment,experienceIdentifier(scope.householdId),experienceIdentifier(scope.memberId),experienceIdentifier(experienceId)]));
+  const values=audience==='personal'
+    ? [boundedText(scope.identity,500),scope.environment,experienceIdentifier(scope.householdId),experienceIdentifier(scope.memberId),'personal',experienceIdentifier(experienceId)]
+    : [boundedText(scope.identity,500),scope.environment,experienceIdentifier(scope.householdId),experienceIdentifier(scope.memberId),experienceIdentifier(experienceId)];
+  return sha256String(JSON.stringify(values));
 }
 /** Project identity omits local auth identity; the service owns the authenticated member namespace. */
-export function workspaceExperienceProjectId(scope: Omit<WorkspaceExperienceScope,'identity'>, experienceId: string): string {
-  return 'experience_'+sha256String(JSON.stringify([scope.environment,experienceIdentifier(scope.householdId),experienceIdentifier(scope.memberId),experienceIdentifier(experienceId)]));
+export function workspaceExperienceProjectId(scope: Omit<WorkspaceExperienceScope,'identity'>, experienceId: string, audience: 'household'|'personal'='household'): string {
+  const values=audience==='personal'
+    ? [scope.environment,experienceIdentifier(scope.householdId),experienceIdentifier(scope.memberId),'personal',experienceIdentifier(experienceId)]
+    : [scope.environment,experienceIdentifier(scope.householdId),experienceIdentifier(scope.memberId),experienceIdentifier(experienceId)];
+  return 'experience_'+sha256String(JSON.stringify(values));
 }
 export function bindWorkspaceExperience(context: WorkspaceExperienceContext): WorkspaceExperienceBinding {
   const selected = decodeWorkspaceExperienceContext(context);

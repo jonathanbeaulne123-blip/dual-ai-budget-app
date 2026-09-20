@@ -577,7 +577,9 @@ describe("swipe posting contract", () => {
     expect(applyUndo).toContain("suppressUndo: fundedTransactionIds.length > 0");
     expect(applyUndo).toContain("swipeUndoScopeMatches");
     expect(appSource).toContain("!options?.suppressUndo");
-    expect(appSource).toContain("activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded)}");
+    expect(appSource).toContain("activityBlocked={Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen || fundLedgeExpanded)}");
+    expect(appSource).toContain('guard.kind !== "duePreview" || dueSheetOpen || dueReviewActive');
+    expect(appSource).toContain("onReviewActiveChange={setDueReviewActive}");
     expect(readFileSync(resolve(process.cwd(), "src/swipe.css"), "utf8")).toContain("z-index: 32");
   });
 });

@@ -4,6 +4,7 @@ import { defaultGoalEnvelope } from '../core/goalEnvelopes.ts';
 import { decodeHearthside } from './contracts.ts';
 import { kittyDesignReference, projectKittyDesign } from './design.ts';
 import type { KittyDesignDocument } from './designContracts.ts';
+import {decodePersonalLife} from './personalLifeContracts.ts';
 
 /** Authority-only reference update. It cannot change backing, targets, ownership, or financial timestamps. */
 export function applyAcceptedDesignReference(household:Household,document:KittyDesignDocument,bankId:string|null,acceptedAt=new Date().toISOString()):Household {
@@ -21,6 +22,10 @@ export function applyAcceptedDesignReference(household:Household,document:KittyD
     const hearthside=decodeHearthside(household.hearthside);
     const index={...reference,bankId,pieceIds:view.pieces.map(row=>row.piece.id)};
     next.hearthside=decodeHearthside({...hearthside,designs:[...hearthside.designs.filter(row=>row.designId!==document.id),index]});
+  } else {
+    const personalLife=decodePersonalLife(household.personalLife,document.scope.ownerMemberId);
+    const index={version:1 as const,designId:document.id,revision:document.revision,pieceIds:view.pieces.map(row=>row.piece.id)};
+    next.personalLife=decodePersonalLife({...personalLife,designs:[...personalLife.designs.filter(row=>row.designId!==document.id),index]},document.scope.ownerMemberId);
   }
   return next;
 }

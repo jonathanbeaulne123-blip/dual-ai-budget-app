@@ -9,6 +9,7 @@ import { effectivePathRecipes } from "../core/pathWorld.ts";
 import type { Household } from "../core/types.ts";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
 import type { ThemeId } from "../theme/scenes.ts";
+import type { JourneySceneInterpretation } from "../house/supportedInterpretation.ts";
 import { growIsland } from "./grow.ts";
 import { charterSpot, pathSitdownClosedMonths } from "./together.ts";
 import "./path-minimap.css";
@@ -20,7 +21,7 @@ import "./path-minimap.css";
  * two walkers on the shown month. Pure decoration (`aria-hidden`); the words
  * live beside it. Our Path's no-WebGL map and Home's window both draw this.
  */
-export function PathMiniMap({ household, today, size, shown: shownProp, className, theme: themeOverride, footpaths, bridges }: {
+export function PathMiniMap({ household, today, size, shown: shownProp, className, theme: themeOverride, footpaths, bridges, interpretation, liveDerivedScene = true }: {
   household: Household;
   today: DateKey;
   /** Rendered width in px; omit to fill the container. */
@@ -37,20 +38,29 @@ export function PathMiniMap({ household, today, size, shown: shownProp, classNam
   footpaths?: { month: number; done: boolean }[];
   /** Our Path only: bridges beside their month, one segment per built stage (0 = none). */
   bridges?: { month: number; stage: 0 | 1 | 2 | 3 }[];
+  /** Frozen, dated scene input. Financial links and commands continue to use `household`. */
+  interpretation?: JourneySceneInterpretation;
+  /** False while a cached interpretation is shown: uncached landmarks are suppressed rather than mixed in. */
+  liveDerivedScene?: boolean;
 }) {
   const appearance = useAppearance();
   const theme = themeOverride ?? appearance.scene.theme;
   // The Journey of Life (D-268): like the island, the map grows from the current era's months when there is one.
-  const era = useMemo(() => { try { return currentPathEra(household, today); } catch { return null; } }, [household, today]);
+  const projectedEra = useMemo(() => { try { return currentPathEra(household, today); } catch { return null; } }, [household, today]);
+  const era = liveDerivedScene ? projectedEra : null;
   const eraFrom = era?.months[0] ?? null;
-  const months = useMemo(() => pathMonths(household, today, eraFrom ? { from: eraFrom, through: monthKeyFromDateKey(today) } : undefined), [household, today, eraFrom]);
-  const recipes = useMemo(() => effectivePathRecipes(household), [household]);
+  const projectedMonths = useMemo(() => pathMonths(household, today, eraFrom ? { from: eraFrom, through: monthKeyFromDateKey(today) } : undefined), [household, today, eraFrom]);
+  const projectedRecipes = useMemo(() => effectivePathRecipes(household), [household]);
+  const months = interpretation?.months ?? projectedMonths;
+  const recipes = interpretation?.recipes ?? projectedRecipes;
   const last = months.length - 1;
   const shown = Math.max(0, Math.min(shownProp ?? last, last));
   const island = useMemo(() => growIsland(months, recipes, shown), [months, recipes, shown]);
-  const land = useMemo(() => pathLand(household, today), [household, today]);
-  const sitdownClosed = useMemo(() => pathSitdownClosedMonths(household), [household]);
-  const charter = household.charter ?? null;
+  const projectedLand = useMemo(() => pathLand(household, today), [household, today]);
+  const projectedSitdownClosed = useMemo(() => pathSitdownClosedMonths(household), [household]);
+  const land: ReturnType<typeof pathLand> = liveDerivedScene ? projectedLand : {};
+  const sitdownClosed = liveDerivedScene ? projectedSitdownClosed : new Set<string>();
+  const charter = liveDerivedScene ? household.charter ?? null : null;
   const charterShown = Boolean(charter && months[shown] && charter.foundedOn.slice(0, 7) <= months[shown]!.key);
 
   const spotMax = Math.max(20, Math.hypot(island.spot(Math.max(0, last)).x, island.spot(Math.max(0, last)).z));

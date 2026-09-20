@@ -12,7 +12,8 @@ import {captureGuestSources,validateGuestSources} from '../src/hearthside/guestP
 import {decodeGuestPrepare,decodeGuestSourceProof,type GuestPrepareInput,type GuestSourceProof} from '../src/hearthside/guestContracts.ts';
 import type {WorkspaceEnv} from './workspace/env.ts';
 import {consumeWorkspaceRpc} from '../src/hearthside/workspaceRpc.ts';
-import {workspaceExperienceContext} from '../src/hearthside/workspaceContext.ts';
+import {decodeWorkspaceExperienceReference,personalWorkspaceExperienceContext,workspaceExperienceContext,workspaceExperienceDigest,type WorkspaceExperienceContext,type WorkspaceExperienceReference} from '../src/hearthside/workspaceContext.ts';
+import {decodePersonalLife} from '../src/hearthside/personalLifeContracts.ts';
 import {acceptWorkspacePublicationState} from '../src/hearthside/workspacePublicationState.ts';
 import {decodeArtifactPublication,decodePreparedExperienceArtifact,artifactPublication,type ArtifactPublication,type ArtifactPublicationReceipt} from '../src/hearthside/workspacePublication.ts';
 import {decodeRecordedRoom} from '../src/hearthside/roomHistory.ts';
@@ -27,6 +28,7 @@ import { IncrementalBooksGuard } from "../src/core/booksValidation.ts";
 import {
   seal,
   restoreArchive,
+  assertRecoveredPersonalDesignArchives,
   type Checkpoint,
   type Sealed,
   type ArchiveRecord,
@@ -769,6 +771,7 @@ export class LedgerRoom extends DurableObject<Env> {
       );
       const restoredDesigns:Array<{document:KittyDesignDocument;reference:DesignArchiveReference}>=[];
       for(const reference of restored.designs??[])restoredDesigns.push({reference,document:await this.designs.recover(`${scope.environment}/${scope.householdId}`,reference)});
+      assertRecoveredPersonalDesignArchives(restored,restoredDesigns);
       this.check(scope);
       this.ctx.storage.transactionSync(() => {
         for(const {document,reference} of restoredDesigns)this.designs.commit(document,reference,restored.sequence,{actor:'authority-recovery',request:'archive-recovery'});
@@ -951,9 +954,19 @@ export class LedgerRoom extends DurableObject<Env> {
       assertNestDocumentVisible(this.hearthsideMember(scope).household,scope.memberId,document);snapshotKittyDesignRevision(document,ref.pieceId,ref.revision);
     }
   }
-  async workspaceExperience(scope:Scope,id:string){
-    return this.serial(async()=>{const {household}=this.hearthsideMember(scope),experience=household.hearthside?.experiences.find(e=>e.id===id&&e.state!=='archived');
-      if(!experience)throw Error('EXPERIENCE_CONTEXT_CHANGED');await this.archiveBarrier();this.hearthsideMember(scope);return workspaceExperienceContext(experience);
+  async workspaceExperience(scope:Scope,raw:WorkspaceExperienceReference){
+    return this.serial(async()=>{const reference=decodeWorkspaceExperienceReference(raw);
+      if(reference.audience==='personal'&&reference.ownerMemberId!==scope.memberId)throw Error('FORBIDDEN');
+      const read=():WorkspaceExperienceContext=>{const {household}=this.hearthsideMember(scope);
+        if(reference.audience==='personal'){
+          const personal=decodePersonalLife(household.personalLife,scope.memberId),experience=personal.experiences.find(row=>row.id===reference.id&&row.state!=='archived');
+          if(!experience)throw Error('EXPERIENCE_CONTEXT_CHANGED');return personalWorkspaceExperienceContext(experience,scope.memberId);
+        }
+        const experience=household.hearthside?.experiences.find(row=>row.id===reference.id&&row.state!=='archived');
+        if(!experience)throw Error('EXPERIENCE_CONTEXT_CHANGED');return workspaceExperienceContext(experience);
+      };
+      const before=read();await this.archiveBarrier();const accepted=read();
+      if(workspaceExperienceDigest(before)!==workspaceExperienceDigest(accepted))throw Error('EXPERIENCE_CONTEXT_CHANGED');return accepted;
     });
   }
   async workspaceAcceptArtifact(scope:Scope,publication:ArtifactPublication){return this.recordWorkspacePublication(scope,publication,'accepted');}
@@ -1116,7 +1129,7 @@ export class LedgerRoom extends DurableObject<Env> {
       this.check(scope);
       const state=this.load(), personal=state.personal.get(scope.memberId);
       if(!personal || !state.shared.members.some(member=>member.active&&member.id===scope.memberId))throw Error('FORBIDDEN');
-      designRecord(raw,['version','kind','designId','bankId','nestSource','operation','pieceId','revision','knownRevision'],['version','kind']);
+      designRecord(raw,['version','kind','designId','bankId','audience','nestSource','operation','pieceId','revision','knownRevision'],['version','kind']);
       if(raw.version!==1)throw Error('KITTY_DESIGN_UPDATE_REQUIRED');
       const household=assembleHousehold(state.shared,personal,{linked:true});
       const reply=(document:KittyDesignDocument,receipt:KittyDesignReceipt|null,sequence:number)=>{
@@ -1142,19 +1155,21 @@ export class LedgerRoom extends DurableObject<Env> {
       if(this.env.HEARTHSIDE_DESIGN_WRITES!=='true'||scope.environment==='production')throw Error('KITTY_DESIGN_WRITES_PAUSED');
       let document:KittyDesignDocument,bankId:string|null,id:string,creativeReceipt:KittyDesignReceipt|null=null;
       if(raw.kind==='create') {
-        designRecord(raw,['version','kind','designId','bankId','nestSource'],['version','kind','designId','bankId']);designId(raw.designId);if(raw.bankId!==null)designId(raw.bankId);
+        designRecord(raw,['version','kind','designId','bankId','audience','nestSource'],['version','kind','designId','bankId']);designId(raw.designId);if(raw.bankId!==null)designId(raw.bankId);if(raw.audience!==undefined&&raw.audience!=='personal')throw Error('DESIGN_AUDIENCE_CONFLICT');
         bankId=raw.bankId as string|null;
         const nest=raw.nestSource===undefined?null:visibleNestSource(household,scope.memberId,decodeNestSource(raw.nestSource));
         if(nest&&bankId!==null)throw Error('DESIGN_NEST_GOAL_CONFLICT');
+        if(raw.audience==='personal'&&(bankId!==null||nest))throw Error('DESIGN_AUDIENCE_CONFLICT');
         if(nest){const existing=this.designs.forNest(nest.source,nest.source.view==='personal'?scope.memberId:null);if(existing){document=read(existing.id);return {version:1,document,receipt:null,sequence:state.sequence};}if(nest.row.designRef)throw Error('DESIGN_BANK_REFERENCE_RECOVERY_REQUIRED');}
         const goal=bankId===null?null:household.goals.find(g=>g.id===bankId&&(g.shared||g.ownerMemberId===scope.memberId));
         if(bankId!==null&&!goal)throw Error('DESIGN_BANK_UNAVAILABLE');
         if(goal?.envelope?.designRef){document=read(goal.envelope.designRef.designId);return {version:1,document,receipt:null,sequence:state.sequence};}
         const bankHistory=bankId===null?null:this.designs.forBank(bankId);
         if(bankHistory)throw Error('DESIGN_BANK_REFERENCE_RECOVERY_REQUIRED');
+        const ownerMemberId=raw.audience==='personal'||goal&&!goal.shared||nest?.source.view==='personal'?scope.memberId:null;
         const prior=this.designs.header(raw.designId);
-        if(prior){document=read(raw.designId);if(prior.bank!==bankId||JSON.stringify(document.nest??null)!==JSON.stringify(nest?.source??null))throw Error('DESIGN_ID_CONFLICT');return {version:1,document,receipt:null,sequence:state.sequence};}
-        const designScope={environment:scope.environment,householdId:scope.householdId,ownerMemberId:goal&&!goal.shared?scope.memberId:null};
+        if(prior){document=read(raw.designId);if(prior.bank!==bankId||document.scope.ownerMemberId!==ownerMemberId||JSON.stringify(document.nest??null)!==JSON.stringify(nest?.source??null))throw Error('DESIGN_ID_CONFLICT');return {version:1,document,receipt:null,sequence:state.sequence};}
+        const designScope={environment:scope.environment,householdId:scope.householdId,ownerMemberId};
         document=nest?migrateNestDesign(household,scope.memberId,raw.designId,nest.source):goal?migrateLegacyKittyStudio(raw.designId,designScope,goal.envelope?.studio,`migration:${await digest([raw.designId,bankId])}`):createKittyDesignDocument(raw.designId,designScope);
         id=`design-create:${document.id}`;
       } else if(raw.kind==='operate') {
@@ -1474,6 +1489,7 @@ export class LedgerRoom extends DurableObject<Env> {
             type: "ready",
             companionProfileVersion: 1,
             hearthsideVersion: 1,
+            personalLifeVersion: 1,
             kittyDesignVersion: 1, nestDesignVersion:1,
             companionPlayVersion: 1,
             companionDiscoveryVersion: 1,

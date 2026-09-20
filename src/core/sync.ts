@@ -1,5 +1,6 @@
 import {assertChapterTaskGraph} from "./chapterAuthority.ts";
 import { decodeHearthside } from '../hearthside/contracts.ts';
+import { decodePersonalLife } from '../hearthside/personalLifeContracts.ts';
 import { shapeKittyNestDesigns, mergeKittyNestDesigns } from "./kittyNestDesigns.ts";
 import { mergeFundModelRows, personalFundRows, shapeFundModelRows } from "./fundRules.ts";
 import {decodePlayRoom} from './playContracts.ts';
@@ -382,6 +383,7 @@ export function ensureHouseholdShape(household: Household): Household {
     ...household,
     companionProfile: scopedCompanion(household.companionProfile, household),
     ...(household.hearthside!==undefined?{hearthside:decodeHearthside(household.hearthside)}:{}),
+    ...(household.personalLife!==undefined?{personalLife:decodePersonalLife(household.personalLife,household.personalLife.ownerMemberId)}:{}),
     ...(household.playRoom!==undefined?{playRoom:decodePlayRoom(household.playRoom)}:{}),
     ...(household.companionGallery!==undefined?{companionGallery:decodeCompanionGallery(household.companionGallery,household)}:{}),
     householdId: household.householdId || randomHouseholdId(),
@@ -568,6 +570,10 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     ...(shaped.fundContributionSourceClaims ?? []).flatMap(row => [row.id, row.sourceTransactionId]),
     ...(shaped.fundPrivate?.bankBindings ?? []).map((row) => row.id),
     ...(shaped.fundPrivate?.reconciliations ?? []).map((row) => row.id),
+    ...(shaped.personalLife?.experiences ?? []).flatMap((row) => [row.id,row.title,row.intention]),
+    ...(shaped.personalLife?.wishes ?? []).flatMap((row) => [row.id,row.title,row.intention]),
+    ...(shaped.personalLife?.notes ?? []).flatMap((row) => [row.id,row.text]),
+    ...(shaped.personalLife?.memories ?? []).flatMap((row) => [row.id,row.title,row.recollection]),
   ].filter((token) => token.length >= 4);
   const sharedActivity = shaped.activity.filter((row) => !privateActivityTokens.some((token) => row.summary.includes(token)));
   const activeMemberIds = shaped.members.filter((member) => member.active).map((member) => member.id);
@@ -658,6 +664,7 @@ export function splitForSync(household: Household, memberId: string): { shared: 
     ...(shaped.companionProfile?.scope.memberId === memberId ? { companionProfile: scopedCompanion(shaped.companionProfile, shaped, memberId) } : {}),
     kind: "personal",
     memberId,
+    ...(shaped.personalLife?.ownerMemberId===memberId?{personalLife:decodePersonalLife(shaped.personalLife,memberId)}:{}),
     planDrafts: shapePlanDrafts(shaped.planDrafts, memberId),
     planVersions: shapePlanVersions(shaped.planVersions, { scope: "personal", ownerMemberId: memberId }),
     planScenarios: shapePlanScenarios(shaped.planScenarios, memberId),
@@ -731,6 +738,7 @@ export function personalReplicaForMember(household: Household, memberId: string)
   const personal = splitForSync(household, memberId).personal;
   return {
     ...personal,
+    ...(personal.personalLife!==undefined?{personalLife:decodePersonalLife(personal.personalLife,memberId)}:{}),
     transactions: personal.transactions.filter((tx) => tx.createdBy === memberId),
     nativeEvents:shapeNativeEvents(personal.nativeEvents).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
     kittyNestDesigns:shapeKittyNestDesigns(personal.kittyNestDesigns).filter(r=>r.visibility==='personal'&&r.createdBy===memberId),
@@ -779,6 +787,7 @@ export function personalEnvelopeFromPayload(
     .filter((item) => item.scope === "personal" && item.ownerMemberId === memberId);
   return {
     ...row,
+    ...(row.personalLife!==undefined?{personalLife:decodePersonalLife(row.personalLife,memberId)}:{}),
     companionProfile: row.companionProfile === undefined ? undefined : decodeCompanionProfile(row.companionProfile, { ...row.companionProfile.scope, memberId }),
     ...(isLandingSurface(row.landingSurface)
       ? {
@@ -854,7 +863,7 @@ export function overlayPersonalReplica(
   personal: PersonalEnvelope | null | undefined,
   memberId: string,
 ): Household {
-  if (!personal || personal.kind !== "personal" || personal.memberId !== memberId) return { ...household, companionProfile: undefined };
+  if (!personal || personal.kind !== "personal" || personal.memberId !== memberId) return { ...household, companionProfile: undefined, personalLife: undefined };
   const personalTransactionIds = new Set(personal.transactions.map((item) => item.id));
   const personalShiftIds = new Set(personal.shifts.map((item) => item.id));
   const personalScheduleIds = new Set((personal.sevenShiftsSchedules ?? []).map((item) => item.id));
@@ -874,6 +883,7 @@ export function overlayPersonalReplica(
   ], memberBibles, memberId);
   return ensureHouseholdShape({
     ...household,
+    personalLife: personal.personalLife===undefined?undefined:decodePersonalLife(personal.personalLife,memberId),
     companionProfile: scopedCompanion(personal.companionProfile, household, memberId),
     members: household.members.map((member) => {
       if (member.id !== memberId) return memberWithoutLandingSurface(member);
@@ -1035,6 +1045,7 @@ export function assembleHousehold(
     revision: shared.revision,
     baseRevision: shared.revision,
     booksAcceptedHash: null,
+    ...(personal?.personalLife!==undefined?{personalLife:decodePersonalLife(personal.personalLife,personal.memberId)}:{}),
     accountOpeningCheckpoints: [...(shared.accountOpeningCheckpoints ?? []).filter(r => r.visibility === "household"), ...(personal?.accountOpeningCheckpoints ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === personal?.memberId)],
     accountHistoryReviews: [...(shared.accountHistoryReviews ?? []).filter(r => r.visibility === "household"), ...(personal?.accountHistoryReviews ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === personal?.memberId)],
     accountHistoryApprovals: [...(shared.accountHistoryApprovals ?? []).filter(r => r.visibility === "household"), ...(personal?.accountHistoryApprovals ?? []).filter(r => r.visibility === "personal" && r.ownerMemberId === personal?.memberId)],
@@ -1313,6 +1324,10 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
   if ((server.companionProfile || client.companionProfile) && JSON.stringify(server.companionProfile) !== JSON.stringify(client.companionProfile)) {
     throw new Error("COMPANION_REQUIRES_AUTHORITY_REFRESH");
   }
+  if (server.personalLife !== undefined && client.personalLife !== undefined
+    && JSON.stringify(server.personalLife) !== JSON.stringify(client.personalLife)) {
+    throw new Error("PERSONAL_LIFE_REQUIRES_AUTHORITY_REFRESH");
+  }
   const tombstones = mergeTombstones(server.tombstones, client.tombstones);
   const newer = laterEnvelope(server, client);
   const memberId = client.memberId || server.memberId;
@@ -1378,6 +1393,8 @@ export function mergePersonal(server: PersonalEnvelope, client: PersonalEnvelope
     kind: "personal",
     ...(server.companionProfile ? { companionProfile: structuredClone(server.companionProfile) } : {}),
     memberId,
+    ...(server.personalLife!==undefined||client.personalLife!==undefined
+      ? {personalLife:decodePersonalLife(server.personalLife??client.personalLife,memberId)}:{}),
     ...(landingSurface
       ? {
           landingSurface,

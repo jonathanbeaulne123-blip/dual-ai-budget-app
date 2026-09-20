@@ -49,6 +49,15 @@ describe("the unified web house address", () => {
     }
   });
 
+  it("restores the exact private linked task only for its originating audience", () => {
+    const record = {scope:"scope",audience:"personal",path:"/house/together/above?household=HH-one&scope=personal&object=experience%2FPRIVATE-1&surface=personal-experience",focusId:"personal-task-PRIVATE-1-TASK-1",label:"My private folio",tab:"planner",taskId:"TASK-1"};
+    expect(readHearthsideToolReturn(record,"scope","HH-one","personal")).toEqual(record);
+    expect(readHearthsideToolReturn(record,"scope","HH-one","household")).toBeNull();
+    expect(readHearthsideToolReturn({...record,audience:"household"},"scope","HH-one","personal")).toBeNull();
+    expect(readHearthsideToolReturn({...record,scope:"another-member"},"scope","HH-one","personal")).toBeNull();
+    expect(readHearthsideToolReturn({...record,path:"/hearthside/rooms/common?household=HH-one&room=common&mode=present"},"scope","HH-one","personal")).toBeNull();
+  });
+
   it("keeps malformed and unrelated paths out of the house", () => {
     for (const path of ["/house/home/roof", "/house/garage/middle", "/house/home/middle/extra", "/hearthside/rooms/common"]) {
       expect(parseHouseRoute(path,"HH-one")).toBeNull();

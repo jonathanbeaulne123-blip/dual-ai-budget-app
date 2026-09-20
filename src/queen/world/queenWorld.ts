@@ -11,6 +11,7 @@ import { queenLampShare, type QueenLight } from "../../core/queenLight.ts";
 import type { QueenForm } from "./queenCharmSurface.ts";
 import { HOME_BANK_MODELS, loadHomeBankModel, loadQueenModel, queenModelResources, type HomeBankModelId } from "./queenModel.ts";
 import { createHomeBankModel } from "./homeBankModel.ts";
+import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 
 /**
  * The Home world: one renderer, one scene, one still camera. A diorama you
@@ -51,15 +52,25 @@ const BREATH_MS = 6000;
 const BREATH_PX = 14;
 
 export function createQueenWorld(host: HTMLElement, options: { reducedMotion: boolean; onLost?: () => void; brass?: string; wood?: string; /** Jonathan's Mandevilla Queen (D-266). Tests pass `null` to keep the drawn figure; a failed load keeps it too. */ loadModel?: ((signal: AbortSignal) => Promise<THREE.Object3D>) | null; onModel?: (state: "model" | "drawn") => void; /** Jonathan's Protect and Build models (D-267). Tests pass `null` to keep the studio cats; a failed load keeps them too. */ loadBankModel?: ((id: HomeBankModelId, signal: AbortSignal) => Promise<THREE.Object3D>) | null }) {
-  const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true });
-  renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 1.5));
-  renderer.shadowMap.enabled = false;
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.96;
-  renderer.domElement.setAttribute("aria-hidden", "true");
-  renderer.domElement.className = "queen-world__canvas";
-  host.appendChild(renderer.domElement);
+  let suspendRenderer = () => {}, resumeRenderer = () => {};
+  const rendererLease = acquireWorldRenderer(host, {
+    parameters: { alpha: true, antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true },
+    configure(renderer) {
+      renderer.setClearColor(0x000000, 0);
+      renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, 1.5));
+      renderer.shadowMap.enabled = false;
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 0.96;
+      renderer.localClippingEnabled = false;
+      renderer.domElement.setAttribute("aria-hidden", "true");
+      renderer.domElement.className = "queen-world__canvas";
+      renderer.domElement.style.touchAction = "";
+    },
+    onSuspend: () => suspendRenderer(),
+    onResume: () => resumeRenderer(),
+  });
+  const renderer = rendererLease.renderer;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(FOV, 1, 0.1, 80);
@@ -173,7 +184,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
   /** One frame, coalesced. */
   const invalidate = () => {
     if (dead || pending) return;
-    pending = requestAnimationFrame(() => { pending = 0; render(); });
+    pending = rendererLease.requestFrame(() => { pending = 0; render(); });
   };
 
   // ---- the ambient clock: her breath and the world she is in, on one loop ----
@@ -190,10 +201,12 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     if (stats.breathing) queen.setBreath(Math.sin((elapsed / BREATH_MS) * Math.PI * 2) * BREATH_PX * unitsPerPx);
     if (stats.ambient && scenery) scenery.tick(elapsed / 1000);
     render();
-    breathRaf = requestAnimationFrame(breathFrame);
+    breathRaf = rendererLease.requestFrame(breathFrame);
   };
-  const pump = () => { if (!dead && running() && !breathRaf) { breathStart = 0; breathRaf = requestAnimationFrame(breathFrame); } };
-  const halt = () => { if (breathRaf) cancelAnimationFrame(breathRaf); breathRaf = 0; };
+  const pump = () => { if (!dead && running() && !breathRaf) { breathStart = 0; breathRaf = rendererLease.requestFrame(breathFrame); } };
+  const halt = () => { if (breathRaf) rendererLease.cancelFrame(breathRaf); breathRaf = 0; };
+  suspendRenderer = () => { if (pending) rendererLease.cancelFrame(pending); pending = 0; halt(); };
+  resumeRenderer = () => { if (hostRect.w && hostRect.h) { renderer.setSize(hostRect.w, hostRect.h, false); renderer.domElement.style.width = `${hostRect.w}px`; renderer.domElement.style.height = `${hostRect.h}px`; } invalidate(); pump(); };
   const setBreathing = (on: boolean) => {
     const next = on && !options.reducedMotion;
     if (next === stats.breathing) return;
@@ -206,8 +219,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
   cleanup.push(() => document.removeEventListener("visibilitychange", onHidden));
 
   const lost = (event: Event) => { event.preventDefault(); options.onLost?.(); };
-  renderer.domElement.addEventListener("webglcontextlost", lost);
-  cleanup.push(() => renderer.domElement.removeEventListener("webglcontextlost", lost));
+  cleanup.push(rendererLease.listenCanvas("webglcontextlost", lost));
 
   /** Screen px (relative to the viewport) → the z = 0 plane. */
   const toWorld = (hostRect: WorldRect, px: number, py: number): [number, number] => [
@@ -334,8 +346,10 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
       camera.aspect = hostRect.w / hostRect.h;
       camera.updateProjectionMatrix();
       renderer.setSize(hostRect.w, hostRect.h, false);
-      renderer.domElement.style.width = `${hostRect.w}px`;
-      renderer.domElement.style.height = `${hostRect.h}px`;
+      if (rendererLease.active) {
+        renderer.domElement.style.width = `${hostRect.w}px`;
+        renderer.domElement.style.height = `${hostRect.h}px`;
+      }
       const [qx, qy] = toWorld(hostRect, next.queen.x + next.queen.w / 2, next.queen.y + next.queen.h);
       const queenScale = (next.queen.h * unitsPerPx) / QUEEN_HEIGHT;
       queen.group.position.set(qx, qy, 0);
@@ -358,7 +372,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     dispose() {
       if (dead) return;
       dead = true;
-      if (pending) cancelAnimationFrame(pending);
+      if (pending) rendererLease.cancelFrame(pending);
       halt();
       for (const bank of banks.values()) { bank.sculpture.group.removeFromParent(); bank.sculpture.dispose(); }
       banks.clear();
@@ -367,9 +381,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
       queen.dispose();
       for (const release of cleanup.splice(0).reverse()) { try { release(); } catch { /* keep releasing */ } }
       scene.clear();
-      renderer.dispose();
-      renderer.forceContextLoss();
-      renderer.domElement.remove();
+      rendererLease.release();
     },
   };
   return api;

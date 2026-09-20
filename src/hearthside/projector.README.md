@@ -1,6 +1,6 @@
 # Theatre Projector
 
-`TheatreProjector` is a scoped view over exact, mutually kept `MemoryComposition` values. It owns temporary selection, order, playback and export work. It does not persist captions, publish media, load private Vault objects, mutate designs, or dispatch ledger commands.
+`TheatreProjector` is a scoped view over exact, mutually kept `MemoryComposition` values. It persists only the ordered memory ids/revisions and display options in a device-local draft partitioned by environment, household, member and audience. Playback and export remain temporary. It does not persist captions, publish media, load private Vault objects, mutate designs, or dispatch ledger commands.
 
 ## Host integration
 

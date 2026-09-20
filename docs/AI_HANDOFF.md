@@ -1,3 +1,28 @@
+## PR #507 reconciled with main: the whole house meets free roam (2026-09-20)
+
+Branch `codex/whole-house-app`, merge commit on top of `47d8100e` (Codex's handoff head) and `de2a49dd` (main, which had advanced past the #507 baseline by one squash: free roam, D-286, #505). Local only: not pushed, no PR update, not merged, not deployed, not live verified. **Risk: Medium** — a presentation-layer merge only. No money meaning, calculation, writer, schema, sync, Auth/RLS or Hercules payload change; nothing posts. Fictional Development data throughout.
+
+- Budget (5): +0. Neither side of the merge touches a figure, a command or the Final Confirm boundary.
+- Engagement (3): +0 for the merge itself; it keeps #505's +2 reachable inside #507's house.
+
+**Why it was needed:** GitHub reported #507 as `mergeable: false / dirty`. Four files had changed on both sides since the `4de2b28e` merge base; two auto-merged (`docs/AI_HANDOFF.md`, `src/path/OurPathWorld.tsx`) and two conflicted.
+
+**What was resolved:**
+- `src/path/world/pathWorld3d.ts` — both sides rewrote `halt()`. #507 moved frame ownership onto the shared renderer lease (`rendererLease.cancelFrame`, from `acquireWorldRenderer`); #505 added the free-roam reset, so a held key or a running glide cannot carry the camera off in one enormous step when the world comes back. Both are kept: the frame is cancelled **through the lease**, and the roam state is still reset (`roamMotion = restRoam()`, `heldKeys.clear()`, `boost = false`, `readRoamInput()`, `roamRested = true`). Taking either side alone would have been a real defect — #505's version would have leaked the lease, #507's would have let a free camera fly on resume. Both import blocks are kept.
+- `docs/DECISIONS.md` — two entries dated 2026-09-19 (the theatre's exact local reel draft, and D-286 free roam) landed in the same place. Both are kept and the log stays newest-first.
+
+**Verification, on the merge result:**
+- `tsc --noEmit` and `typecheck:workspace` both clean (exit 0). The twelve optional-package resolution errors recorded in the free-roam entry below do not appear here: this checkout has a complete `pnpm install --frozen-lockfile`.
+- `test/journey-roam-camera.test.ts` (30) and `test/journey-free-roam-ui.test.ts` (16) — **46/46 pass**, which is the behavioural cover for the `halt()` resolution.
+- `test/hearthside-chapter-browser.test.ts` — **4/4, five consecutive runs**. This is the single failure #507 shipped with: `7c7392a7` rewrote it to poll for both empty Chapter inputs after the React household remount, and was never rerun. It is a race, so one green run would not have settled it; five did.
+- Regression sweep: the `test:fast` selection was run on the merge result **and on `47d8100e` in the same container**, same command, same `node_modules`. Both: **41 failing files / 56 failing cases**, and the failing-file sets are **identical**. The merge result passes **+46** cases — exactly the two free-roam files main brought in. The only per-case difference is two different cases inside `test/hearthside-letters-ui.test.ts`, which is flaky on both trees. **The merge introduces no regression.**
+- `vite build` and `build:hercules-pro-ui` on the merge result: see the worksession note.
+
+**Uncertainty:** the 41 pre-existing failing files fall outside what the quick gate selects (Codex's High gate executed 176 files; this sweep executed ~600). Sampled causes are environment-dependent in this Linux container and not repository defects: `renderer2.setClearColor is not a function` (no WebGL), `Cannot find package 'cloudflare:workers'` / `node:async_hooks` (no `workerd`), and `docs/evidence-gates/browser-journeys.json` absent because the sweep ran on a tree trimmed of `docs/evidence*`. They are unproven either way on Jonathan's Mac and identical on both sides of the merge, so they are not this merge's business — but `test/appearance.test.ts` asserting a 3.22 contrast ratio against a 4.5 floor is worth someone's eye on its own. No browser evidence was recaptured; no real-device measurement. The quick gate itself was not rerun end to end (it resolves its test selection from `origin/main` through git, and this verification ran from a source snapshot).
+
+**Next owner:** Jonathan pushes the merge commit (this session has no push credential for the repository) and decides whether #507 leaves draft. The slow-gate split Codex asked the second reviewer for is in `docs/briefs/WHOLE_HOUSE_GATE_SPLIT_2026-09-20.md`; it is a CI-configuration change and nothing in it has been applied.
+
+
 ## Free roam in the journey's open world (2026-09-19, D-286)
 
 Branch `claude/journey-free-roam` from `main@4de2b28e`. Local only: not pushed, no PR, not merged, not deployed, not live verified. **Risk: Medium** — the open world's camera and HUD. No money meaning, calculation, writer, schema, sync, Auth/RLS or Hercules payload change; nothing posts. Fictional habitats only in every test and screenshot.
@@ -4170,3 +4195,12 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 - Local evidence: 18 synthetic theme/viewport checks passed; latest focused chat/recovery 30/30 and adapter/provider 25/25 passed. Additional native, Fund, companion, appointment and wardrobe continuity scenarios passed at the snapshots recorded in [the worksession](worksessions/2026-09-10-hercules-conversational-app.md).
 - High gate is not complete: the first run failed one subsequently repaired assertion after passing TypeScript; the expanded run was stopped after more than 35 minutes in TypeScript and used a superseded source fingerprint. Both breached the five-minute target. Re-run the focused High gate on a stable final source tree before acceptance.
 - Authenticated devices, live-model dialogue, Google event operations, full scope parity, physical keyboard/VoiceOver and real 200% browser zoom remain unverified. Chat actions are off by default with separate client/server gates. External calendar writing is not implemented or enabled. No release or hosted change occurred.
+
+
+## 2026-09-20 — Whole-house actual-app PR handoff
+
+Jonathan requested immediate PR handoff and took over user-facing testing. Branch `codex/whole-house-app` implements the four-room house in Personal and Household from main `4de2b28e`, with scoped private continuity, exact object returns, living Journey/Bloom, Books and the existing financial/creative authorities.
+
+The web build passed on `7fac9972` in **212.809s**. TypeScript passed in **78.418s**. The change-focused High gate passed **1,512 tests** and failed **one Chapter browser assertion** that read fields before React committed a household remount; the actual App startup subset passed **83/83**. The gate exceeded its **300s budget**, taking **775.209s** wall time. It remains failed. The Chapter test now uses bounded polling for the actual remounted DOM; this final test-only correction was independently reviewed and was not rerun after Jonathan requested immediate PR handoff. The application trees (`src`, `workers`, `scripts`, `public`) are identical to the built/tested candidate. No full green gate is claimed. See the adjacent evidence JSON for exact hashes and outcomes.
+
+Next owner: Jonathan and an independent reviewer. Start with [the review brief](briefs/WHOLE_HOUSE_REVIEW_2026-09-19.md), the adjacent JSON evidence and the labelled local preview at http://127.0.0.1:4186/__review. Do not resume PR #501’s old recovery/activation or deploy/activate/native work from this handoff.

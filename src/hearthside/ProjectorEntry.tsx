@@ -9,9 +9,11 @@ import {decodeHearthside,memoryKeptByEveryone,type MemoryComposition} from './co
 import {checkProjectorProof} from './projectorAuthority.ts';
 import {paintedSnapshot} from './paintedSnapshot.tsx';
 import type {ProjectorLoadScope} from './projectorTypes.ts';
+import type {ProjectorDraftScope} from './projectorDraft.ts';
 
 export function ProjectorEntry({household,memberId,identity,source,theme,onClose,onReviewMemory}:{household:Household;memberId:string;identity:string;source?:()=>LedgerSyncClient|null;theme:'classic'|'taylor'|'newfoundland';onClose:()=>void;onReviewMemory:(id:string)=>void}){
   const vault=useHearthsideVault().connection,designs=useDesignClient(),current=useRef({household,source,identity});current.current={household,source,identity};
+  const draftScope:ProjectorDraftScope={environment:household.environment,householdId:household.householdId,memberId,audience:'household'};
   function assertCurrent(signal:AbortSignal){if(signal.aborted||current.current.identity!==identity)throw Error('SCOPE_CLOSED');}
   async function fresh(signal:AbortSignal){
     assertCurrent(signal);const authority=current.current.source?.();
@@ -23,7 +25,7 @@ export function ProjectorEntry({household,memberId,identity,source,theme,onClose
     if(!memory||memory.revision!==scope.memoryRevision||!memoryKeptByEveryone(memory,snapshot.memberIds))throw Error('MEMORY_CHANGED');return memory;
   }
   const state=decodeHearthside(household.hearthside);
-  return <TheatreProjector memories={state.memories} activeMemberIds={household.members.filter(m=>m.active).map(m=>m.id)} theme={theme} scopeKey={identity}
+  return <TheatreProjector memories={state.memories} activeMemberIds={household.members.filter(m=>m.active).map(m=>m.id)} theme={theme} scopeKey={identity} draftScope={draftScope}
     publicationEpoch={JSON.stringify([state.memories,household.members.filter(m=>m.active).map(m=>m.id)])}
     authorLabels={Object.fromEntries(household.members.map(member=>[member.id,member.name]))} onClose={onClose} onReviewMemory={onReviewMemory}
     resolveMedia={async(reference,scope)=>{

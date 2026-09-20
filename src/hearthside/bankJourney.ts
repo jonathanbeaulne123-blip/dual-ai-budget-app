@@ -4,19 +4,27 @@ import {decodeExperience,type SharedExperience} from './contracts.ts';
 import type {HearthsideOperation} from './commands.ts';
 import {vaultAssert,vaultObject} from './vaultContracts.ts';
 import {hearthsideFocusId,parseHearthsideRoute} from './routes.ts';
+import {parseHouseRoute} from './houseRoutes.ts';
 import type {BankCreationContext,BankCreationStorage} from './bankCreation.ts';
 import {bankLinkBasis,validateBankReceipt,type BankScope,type KittyAcceptedCommand} from './bankReceipt.ts';
 export type ExperienceBankLink={id:string;operation:Extract<HearthsideOperation,{kind:'experience.save'}>;goalBasis:string;attempted:boolean};
 export type ExperienceBankJourney={version:1;scope:BankScope;experience:SharedExperience;context:BankCreationContext;returnPath:string;focusId:string;mode:'choose'|'new'|'existing';bankId:string|null;creationId:string|null;link:ExperienceBankLink|null};
 export const bankJourneyKey=(scope:BankScope,id:string)=>`hearth:experience-bank:${JSON.stringify([scope.identity,scope.environment,scope.householdId,scope.memberId,id])}`;
 const uuid=(id:unknown)=>typeof id==='string'&&/^[0-9a-f-]{36}$/i.test(id);
+function validExperienceReturnPath(path:string,scope:BankScope,id:string):boolean{
+ if(!path.startsWith('/')||path.startsWith('//'))return false;
+ const legacy=parseHearthsideRoute(path,scope.householdId);
+ if(legacy?.object?.kind==='experience'&&legacy.object.id===id)return true;
+ const house=parseHouseRoute(path,scope.householdId);
+ return house?.scope==='household'&&house.object===`experience/${id}`;
+}
 export function newBankJourney(scope:BankScope,experience:SharedExperience,returnPath:string,focusId:string):ExperienceBankJourney{
  const current=decodeExperience(experience);return decodeBankJourney({version:1,scope,experience:current,context:{id:crypto.randomUUID(),experienceId:current.id,experienceRevision:current.revision,name:current.title.slice(0,100),purpose:current.intention.slice(0,1000)},returnPath,focusId,mode:'choose',bankId:null,creationId:null,link:null},scope,current.id);
 }
 export function decodeBankJourney(raw:unknown,scope:BankScope,id:string):ExperienceBankJourney{
  const r=vaultObject(raw,['version','scope','experience','context','returnPath','focusId','mode','bankId','creationId','link']);
  const experience=decodeExperience(r.experience),c=vaultObject(r.context,['id','experienceId','experienceRevision','name','purpose']);
- vaultAssert(r.version===1&&canonical(r.scope)===canonical(scope)&&experience.id===id&&uuid(c.id)&&c.experienceId===id&&c.experienceRevision===experience.revision&&c.name===experience.title.slice(0,100)&&c.purpose===experience.intention.slice(0,1000)&&typeof r.returnPath==='string'&&r.returnPath.length<=3000&&parseHearthsideRoute(r.returnPath,scope.householdId)?.object?.kind==='experience'&&parseHearthsideRoute(r.returnPath,scope.householdId)?.object?.id===id&&typeof r.focusId==='string'&&['choose','new','existing'].includes(String(r.mode))&&(r.bankId===null||typeof r.bankId==='string'&&r.bankId.length<=160)&&(r.creationId===null||uuid(r.creationId)),'BANK_JOURNEY_INVALID');
+ vaultAssert(r.version===1&&canonical(r.scope)===canonical(scope)&&experience.id===id&&uuid(c.id)&&c.experienceId===id&&c.experienceRevision===experience.revision&&c.name===experience.title.slice(0,100)&&c.purpose===experience.intention.slice(0,1000)&&typeof r.returnPath==='string'&&r.returnPath.length<=3000&&validExperienceReturnPath(r.returnPath,scope,id)&&typeof r.focusId==='string'&&['choose','new','existing'].includes(String(r.mode))&&(r.bankId===null||typeof r.bankId==='string'&&r.bankId.length<=160)&&(r.creationId===null||uuid(r.creationId)),'BANK_JOURNEY_INVALID');
  let link:ExperienceBankLink|null=null;if(r.link!==null){const l=vaultObject(r.link,['id','operation','goalBasis','attempted']),op=vaultObject(l.operation,['kind','expectedRevision','value']),value=decodeExperience(op.value);vaultAssert(uuid(l.id)&&op.kind==='experience.save'&&value.id===id&&Number.isSafeInteger(op.expectedRevision)&&value.revision===Number(op.expectedRevision)+1&&value.references.some(ref=>ref.kind==='bank'&&ref.id===r.bankId)&&typeof l.goalBasis==='string'&&l.goalBasis.length<=10000&&typeof l.attempted==='boolean','BANK_LINK_REVIEW_INVALID');link={id:l.id as string,operation:{kind:'experience.save',expectedRevision:Number(op.expectedRevision),value},goalBasis:l.goalBasis,attempted:l.attempted};}
  return {version:1,scope,experience,context:c as BankCreationContext,returnPath:r.returnPath,focusId:hearthsideFocusId(r.focusId),mode:r.mode as ExperienceBankJourney['mode'],bankId:r.bankId as string|null,creationId:r.creationId as string|null,link};
 }

@@ -9,7 +9,7 @@ type Replica={shared:Parameters<typeof assembleHousehold>[0];personal:Parameters
  * Only authentication and the Vault audience lookup are synthetic loopback
  * adapters; publication acceptance remains inside the real LedgerRoom.
  */
-export async function startHearthsideActualAppAuthority(householdId:string){
+export async function startHearthsideActualAppAuthority(householdId:string,resourcePersistencePath?:string){
  const bundle=await build({stdin:{resolveDir:process.cwd(),contents:`
   import {LedgerRoom} from './workers/ledgerRoom.ts'; export {LedgerRoom};
   import {HearthsideVault} from './workers/hearthsideVault.ts';
@@ -37,9 +37,9 @@ export async function startHearthsideActualAppAuthority(householdId:string){
    return await handleHearthsideVault(request,env) ?? await handleLedgerSync(request,env) ?? new Response('Not found',{status:404});
   }};
  `},bundle:true,write:false,platform:'browser',external:['cloudflare:*','node:*'],format:'esm',target:'es2022'});
- const mf=new Miniflare(convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0]!.text,compatibilityDate:'2026-08-27',compatibilityFlags:['nodejs_compat'],
+ const mf=new Miniflare({...convertV4MiniflareOptions({modules:true,script:bundle.outputFiles[0]!.text,compatibilityDate:'2026-08-27',compatibilityFlags:['nodejs_compat'],
   durableObjects:{LEDGER_ROOMS:{className:'LedgerRoom',useSQLite:true},HEARTHSIDE_VAULTS:{className:'TestVault',useSQLite:true}},
-  r2Buckets:['LEDGER_ARCHIVE','HEARTHSIDE_VAULT_MEDIA','HEARTHSIDE_VAULT_ARCHIVE'],bindings:{LEDGER_SYNC_LOCAL_AUTH:'true',HEARTHSIDE_DESIGN_WRITES:'true',HEARTHSIDE_VAULT_ENABLED:'true',HEARTHSIDE_VAULT_PUBLICATION:'true',SUPABASE_URL:'http://127.0.0.1:1',SUPABASE_PUBLISHABLE_KEY:'synthetic'}}));
+  r2Buckets:['LEDGER_ARCHIVE','HEARTHSIDE_VAULT_MEDIA','HEARTHSIDE_VAULT_ARCHIVE'],bindings:{LEDGER_SYNC_LOCAL_AUTH:'true',HEARTHSIDE_DESIGN_WRITES:'true',HEARTHSIDE_VAULT_ENABLED:'true',HEARTHSIDE_VAULT_PUBLICATION:'true',SUPABASE_URL:'http://127.0.0.1:1',SUPABASE_PUBLISHABLE_KEY:'synthetic'}}),...(resourcePersistencePath?{resourcePersistencePath}:{})});
  const base=(await mf.ready).toString().replace(/\/$/,''),ledgerPath=`/ledger-sync/v2/development/${householdId}`;
  const headers=(actor:string)=>({Authorization:`Bearer local:${actor}`,'Content-Type':'application/json'});
  async function snapshot(actor='MEM-001'){

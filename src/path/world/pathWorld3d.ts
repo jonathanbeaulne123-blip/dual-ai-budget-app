@@ -5,8 +5,18 @@ import { createKittySculpture, type KittySculpture } from "../../kitty/sculpture
 import { CELL, GRID, HALF, SIZE, heightAt, idx, islandHash, type GrownIsland, type Piece } from "../grow.ts";
 import { walkPath, walkSeconds, type WalkPoint } from "../walk.ts";
 import { COIN_POOL, landmarkStepChange } from "../landmarks.ts";
-import { charterSpot, cottageSpot, forkAngle, type PathSitdown } from "../together.ts";
+import { charterSpot, cottageSpot, type PathSitdown } from "../together.ts";
 import type { PathEraHome, PathEraPlanKind } from "../../core/pathWorld.ts";
+import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
+import {
+  PATH_ERA_GATE_RADIUS,
+  PATH_GOAL_RING,
+  PATH_KILN_RING,
+  pathObjectGeometry,
+  pathObjectNearAnchor,
+  pathObjectOnAuthoredRing,
+  pathPointOnAuthoredRing,
+} from "./pathGeometry.ts";
 import {
   ZERO_INPUT, adoptRoam, clampRoamCam, flickVelocity, panDelta, restRoam, roamBounds, roamEye, roamFacing,
   roamInputActive, roamInputFrom, roamKeyAxis, roamMoving, stepRoam, wrapAngle,
@@ -314,13 +324,26 @@ export function createPathWorld(host: HTMLElement, options: {
   idleMs?: number;
 }) {
   const idleMs = options.idleMs ?? IDLE_MS;
-  const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true });
-  renderer.outputColorSpace = THREE.SRGBColorSpace;
-  renderer.shadowMap.type = THREE.PCFShadowMap;
-  renderer.domElement.setAttribute("aria-hidden", "true");
-  renderer.domElement.className = "path-world__canvas";
-  renderer.domElement.style.touchAction = "none";
-  host.appendChild(renderer.domElement);
+  let suspendRenderer = () => {}, resumeRenderer = () => {};
+  const rendererLease = acquireWorldRenderer(host, {
+    parameters: { antialias: true, powerPreference: "low-power", preserveDrawingBuffer: true },
+    configure(renderer) {
+      renderer.setClearColor(0x000000, 1);
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.NoToneMapping;
+      renderer.toneMappingExposure = 1;
+      renderer.shadowMap.type = THREE.PCFShadowMap;
+      renderer.localClippingEnabled = false;
+      renderer.domElement.setAttribute("aria-hidden", "true");
+      renderer.domElement.className = "path-world__canvas";
+      renderer.domElement.style.width = "";
+      renderer.domElement.style.height = "";
+      renderer.domElement.style.touchAction = "none";
+    },
+    onSuspend: () => suspendRenderer(),
+    onResume: () => resumeRenderer(),
+  });
+  const renderer = rendererLease.renderer;
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(40, 1, 0.5, 900);
@@ -811,10 +834,9 @@ export function createPathWorld(host: HTMLElement, options: {
     return g;
   }
 
-  function landmarkPosition(i: number, count: number, island: GrownIsland): { x: number; z: number } {
-    const a = (i / Math.max(1, count)) * Math.PI * 2 + 2.1;
-    const r = island.radiusAt(a) - 9;
-    return { x: Math.cos(a) * r, z: Math.sin(a) * r };
+  function landmarkPosition(id: string): { x: number; z: number } {
+    const { x, z } = pathObjectOnAuthoredRing("goal", id, PATH_GOAL_RING);
+    return { x, z };
   }
 
   function buildScene(input: PathWorldInput, animate: boolean) {
@@ -995,8 +1017,8 @@ export function createPathWorld(host: HTMLElement, options: {
         dynamic.add(tent);
         // Move stones on the way to next month
         const q = island.spot(island.cur + 1);
-        input.moves.forEach((move, i) => {
-          const k = (i + 1) / (input.moves.length + 1);
+        input.moves.forEach((move) => {
+          const k = pathObjectGeometry("move", move.id).progress;
           const mx = p.x + (q.x - p.x) * k * 0.8, mz = p.z + (q.z - p.z) * k * 0.8;
           const colour = move.state === "done" ? "#f1d48a" : move.state === "waiting" ? "#efd0dc" : "#e9e1cf";
           const extra = move.state === "done" ? { emissive: "#e0a82e", emissiveIntensity: 0.55 } : move.state === "waiting" ? { emissive: palette.second, emissiveIntensity: 0.25 } : {};
@@ -1013,19 +1035,21 @@ export function createPathWorld(host: HTMLElement, options: {
       }
     }
     // Ritual lampposts (Our Rhythm)
-    if (input.layers.rhythm) input.lamps.forEach((lamp, i) => {
+    if (input.layers.rhythm) input.lamps.forEach((lamp) => {
       const p = island.spot(Math.min(island.cur, Math.max(0, lamp.month)));
-      const x = p.x + Math.cos(p.a - 2.6) * (2.4 + i * 0.4), z = p.z + Math.sin(p.a - 2.6) * (2.4 + i * 0.4);
+      const spot = pathObjectNearAnchor("lamp", lamp.id, p, { turn: -2.6, angleSpread: 0.35, distance: 2.4, distanceSpread: 2.4 });
+      const { x, z } = spot;
       const g = new THREE.Group(); g.position.set(x, heightAt(island, x, z), z);
       g.add(part(G.cyl, "#3d3a38", 0.07, 2.8, 0.07, 0, 1.4, 0), part(G.sph, "#fff0c0", 0.25, 0.3, 0.25, 0, 2.9, 0, { emissive: "#ffc860", emissiveIntensity: 1 }));
       anchor(lamp.id, g, 3.4); dynamic.add(g);
     });
     // Memory flags (Our Story)
-    if (input.layers.story) input.memories.forEach((memory, i) => {
+    if (input.layers.story) input.memories.forEach((memory) => {
       const p = island.spot(Math.min(island.cur, Math.max(0, memory.month)));
-      const x = p.x + Math.cos(p.a - 1.2) * (3.6 + i * 0.3), z = p.z + Math.sin(p.a - 1.2) * (3.6 + i * 0.3);
+      const spot = pathObjectNearAnchor("memory", memory.id, p, { turn: -1.2, angleSpread: 0.4, distance: 3.6, distanceSpread: 2.8 });
+      const { x, z, geometry } = spot;
       const g = new THREE.Group(); g.position.set(x, heightAt(island, x, z), z);
-      const border = part(G.box, palette.blooms[i % palette.blooms.length]!, 1.3, 1.2, 0.05, 0.8, 2.75, 0);
+      const border = part(G.box, palette.blooms[geometry.palette % palette.blooms.length]!, 1.3, 1.2, 0.05, 0.8, 2.75, 0);
       g.add(part(G.cyl, "#8a6a4a", 0.05, 3.2, 0.05, 0, 1.6, 0), part(G.box, "#ffffff", 1.5, 1.75, 0.04, 0.8, 2.6, 0), border);
       if (memory.photo) {
         // The board photo sits inside the coloured border, on the front face. It appears once loaded; a failure keeps the plain card.
@@ -1040,7 +1064,7 @@ export function createPathWorld(host: HTMLElement, options: {
         });
       }
       const photo = g.children[1]!;
-      tickers.push((t) => { photo.rotation.y = 0.25 * Math.sin(t * 1.3 + i); });
+      tickers.push((t) => { photo.rotation.y = 0.25 * Math.sin(t * 1.3 + geometry.phase); });
       anchor(memory.id, g, 4); dynamic.add(g);
     });
     // Weather: the Calendar ahead of this month, along the road toward the next one.
@@ -1053,11 +1077,10 @@ export function createPathWorld(host: HTMLElement, options: {
     // Landmarks: shared Kitty Banks at their real backing step
     const seen = new Set<string>();
     const arcs = !options.reducedMotion && quality === "full";
-    const landmarkCount = Math.min(6, input.goals.length);
-    let kilnAt: { x: number; z: number } | null = null;
-    input.goals.slice(0, 6).forEach((goal, i) => {
+    const shownGoals = input.goals.slice(0, 6), landmarkCount = shownGoals.length;
+    shownGoals.forEach((goal) => {
       seen.add(goal.id);
-      const pos = landmarkPosition(i, Math.min(6, input.goals.length), island);
+      const pos = landmarkPosition(goal.id);
       const g = new THREE.Group(); g.position.set(pos.x, heightAt(island, pos.x, pos.z), pos.z);
       g.add(part(G.cyl, "#e4d4b4", 2.2, 0.25, 2.2, 0, 0.12, 0));
       const key = JSON.stringify([goal.piece?.id ?? null, goal.piece?.paint ?? null, goal.fired]);
@@ -1099,10 +1122,8 @@ export function createPathWorld(host: HTMLElement, options: {
     for (const id of lastSteps.keys()) if (!seen.has(id)) lastSteps.delete(id);
     // The kiln: a brick hut just past the first landmark, where banks are fired.
     if (input.kiln && landmarkCount > 0) {
-      const first = landmarkPosition(0, landmarkCount, island);
-      const a0 = Math.atan2(first.z, first.x) + Math.min(0.42, Math.PI / landmarkCount * 0.5);
-      const r = island.radiusAt(a0) - 14;
-      const kx = Math.cos(a0) * r, kz = Math.sin(a0) * r;
+      const kilnSpot = pathObjectOnAuthoredRing("kiln", "kiln", PATH_KILN_RING);
+      const a0 = kilnSpot.a, kx = kilnSpot.x, kz = kilnSpot.z;
       const k = new THREE.Group(); k.position.set(kx, heightAt(island, kx, kz), kz);
       k.rotation.y = Math.atan2(-Math.cos(a0), -Math.sin(a0));
       k.add(part(G.cyl, palette.walls[0]!, 1.5, 1.1, 1.5, 0, 0.55, 0));
@@ -1126,15 +1147,11 @@ export function createPathWorld(host: HTMLElement, options: {
         }
       }
       reserved.push([kx, kz]);
-      kilnAt = { x: kx, z: kz };
       anchor("kiln", k, 3.6); dynamic.add(k);
     }
     // The Charter: a paved stone square with a plinth and a standing tablet, off the first month.
     if (input.charter) {
-      // The slab's half-diagonal is ~3.5 and charterSpot adds 3 more to every radius: keep a clear gap from landmark discs and the kiln.
-      const avoid = Array.from({ length: landmarkCount }, (_, i) => ({ ...landmarkPosition(i, landmarkCount, island), r: 5 }));
-      if (kilnAt) avoid.push({ ...kilnAt, r: 4.5 });
-      const spot = charterSpot(island, avoid);
+      const spot = charterSpot(island);
       const rock = new THREE.Color(palette.rock);
       const light = `#${rock.clone().lerp(new THREE.Color("#ffffff"), 0.22).getHexString()}`;
       const dark = `#${rock.clone().lerp(new THREE.Color("#2b2622"), 0.2).getHexString()}`;
@@ -1161,10 +1178,7 @@ export function createPathWorld(host: HTMLElement, options: {
     }
     // Hercules's cottage (Play): a small house with a cat door and a lit window, off the first month.
     if (input.cottage) {
-      const avoid = Array.from({ length: landmarkCount }, (_, i) => ({ ...landmarkPosition(i, landmarkCount, island), r: 5 }));
-      if (kilnAt) avoid.push({ ...kilnAt, r: 4.5 });
-      if (input.name) { const p0 = island.spot(0); avoid.push({ x: p0.x + Math.cos(p0.a + 2.4) * 4, z: p0.z + Math.sin(p0.a + 2.4) * 4, r: 3 }); }
-      const spot = cottageSpot(island, avoid, Boolean(input.charter));
+      const spot = cottageSpot(island);
       const wall = palette.walls[1] ?? palette.walls[0]!, roof = palette.roofs[1] ?? palette.roofs[0]!;
       const c = new THREE.Group();
       c.position.set(spot.x, heightAt(island, spot.x, spot.z), spot.z);
@@ -1187,7 +1201,7 @@ export function createPathWorld(host: HTMLElement, options: {
     (input.forks ?? []).slice(0, 8).forEach((fork) => {
       if (fork.month < 0 || fork.month > island.cur) return;
       const p = island.spot(fork.month);
-      const a = forkAngle(p, fork.index);
+      const geometry = pathObjectGeometry("fork", fork.id), a = Math.atan2(-p.z, -p.x) + geometry.angle * 2.2;
       const g = new THREE.Group();
       for (let k = 0; k < 5; k++) {
         const d = 1.6 + k * 0.85, x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d;
@@ -1201,13 +1215,15 @@ export function createPathWorld(host: HTMLElement, options: {
       reserved.push([sx, sz]);
     });
     // New parts of life with no recipe yet: a "?" signpost, with Hercules's pawprints leading to it.
-    input.unknown.forEach((u, i) => {
+    const firstUnknown = input.unknown.reduce<string | null>((first, row) => first === null || row.id < first ? row.id : first, null);
+    input.unknown.forEach((u) => {
       const p = island.spot(Math.min(island.cur, Math.max(0, u.month)));
-      const x = p.x + Math.cos(p.a - 2) * (3 + i * 0.8), z = p.z + Math.sin(p.a - 2) * (3 + i * 0.8);
+      const spot = pathObjectNearAnchor("unknown", u.id, p, { turn: -2, angleSpread: 0.4, distance: 3, distanceSpread: 3.2 });
+      const { x, z } = spot;
       const g = new THREE.Group(); g.position.set(x, heightAt(island, x, z), z);
       g.add(part(G.cyl, "#7a5436", 0.07, 2.2, 0.07, 0, 1.1, 0), part(G.box, "#fdf1f5", 1.2, 0.7, 0.08, 0, 2.1, 0), part(G.sph, palette.second, 0.12, 0.12, 0.12, 0, 2.1, 0.08));
       anchor(u.id, g, 2.8); dynamic.add(g);
-      if (i === 0) pawTrail(island, island.spot(island.cur), { x, z });
+      if (u.id === firstUnknown) pawTrail(island, island.spot(island.cur), { x, z });
     });
     // The island's name, carved beside the first month.
     if (input.name) {
@@ -1234,7 +1250,7 @@ export function createPathWorld(host: HTMLElement, options: {
     }
 
     // The Journey of Life: the other eras float around this one (nothing is drawn without a journey).
-    buildJourney(input, island, reserved, Array.from({ length: landmarkCount }, (_, i) => landmarkPosition(i, landmarkCount, island)));
+    buildJourney(input, island, reserved);
     placeFoliage(island, monthSeason, reserved);
     for (const obj of appearing) { obj.userData.pop = options.reducedMotion || !animate ? 1 : 0; obj.scale.setScalar(obj.userData.pop ? 1 : 0.01); }
     sun.intensity = monthSeason === "winter" ? 1.8 : 2.2;
@@ -1254,11 +1270,11 @@ export function createPathWorld(host: HTMLElement, options: {
 
   function buildWeather(input: PathWorldInput, island: GrownIsland) {
     const clouds = input.weather.filter((row) => row.kind === "cloud" || row.kind === "storm").slice(0, 8);
-    clouds.forEach((row, i) => {
+    clouds.forEach((row) => {
       const storm = row.kind === "storm";
       const w = Math.max(0, Math.min(1, row.weight));
       const at = roadAhead(island, weatherAlong(row.dayOffset));
-      const side = 3 + ((i % 3) - 1) * 1.6;
+      const geometry = pathObjectGeometry("weather", row.id), side = 3 + geometry.angle * 1.6;
       const x = at.x + at.nx * side, z = at.z + at.nz * side;
       const g = new THREE.Group();
       const puffs = storm ? 7 : 4;
@@ -1268,10 +1284,10 @@ export function createPathWorld(host: HTMLElement, options: {
         s.castShadow = false; g.add(s);
       }
       g.scale.setScalar((storm ? 1.15 : 0.75) + w * 0.8);
-      g.position.set(x, heightAt(island, x, z) + 7 + (i % 4) * 0.7 + w * 1.5, z);
+      g.position.set(x, heightAt(island, x, z) + 7 + geometry.radius * 2.1 + w * 1.5, z);
       const x0 = x;
       // Drift only with ambient motion on Full; reduced motion and Lite keep the clouds still.
-      tickers.push((t) => { g.position.x = ambient && quality === "full" ? x0 + Math.sin(t * 0.3 + i * 2) * 0.8 : x0; });
+      tickers.push((t) => { g.position.x = ambient && quality === "full" ? x0 + Math.sin(t * 0.3 + geometry.phase) * 0.8 : x0; });
       if (storm) {
         const boltMat = smat(new THREE.MeshBasicMaterial({ color: "#fff6c8", transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }));
         const bolt = new THREE.Mesh(strack(new THREE.PlaneGeometry(0.5, 3.2)), boltMat);
@@ -1280,7 +1296,7 @@ export function createPathWorld(host: HTMLElement, options: {
         // One slow flicker every ~6 s, only on Full with ambient motion.
         tickers.push((t) => {
           if (!ambient || quality !== "full" || options.reducedMotion) { bolt.visible = false; return; }
-          const f = (t + i * 2.3) % 6;
+          const f = (t + geometry.phase) % 6;
           const o = f < 0.1 ? 0.85 : f > 0.18 && f < 0.26 ? 0.5 : 0;
           bolt.visible = o > 0; boltMat.opacity = o;
         });
@@ -1333,14 +1349,11 @@ export function createPathWorld(host: HTMLElement, options: {
   }
 
   function buildStones(input: PathWorldInput, island: GrownIsland) {
-    const perMonth = new Map<number, number>();
     for (const stone of input.stones ?? []) {
       if (stone.month < 0 || stone.month > island.cur) continue;
-      const j = perMonth.get(stone.month) ?? 0;
-      perMonth.set(stone.month, j + 1);
       const p = island.spot(stone.month);
-      const a = p.a + 0.6 + j * 0.55, d = 2.3 + (j % 2) * 0.9;
-      const x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d, y = heightAt(island, x, z);
+      const spot = pathObjectNearAnchor("stone", stone.id, p, { turn: 0.6, angleSpread: 0.85, distance: 2.3, distanceSpread: 1.5 });
+      const { x, z, a } = spot, y = heightAt(island, x, z);
       const done = stone.state === "done";
       const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = -a;
       const h = done ? 0.08 : 0.3;
@@ -1366,21 +1379,18 @@ export function createPathWorld(host: HTMLElement, options: {
   }
 
   function buildFootpaths(input: PathWorldInput, island: GrownIsland) {
-    const perMonth = new Map<number, number>();
     for (const path of input.footpaths ?? []) {
       if (path.month < 0 || path.month > island.cur) continue;
-      const j = perMonth.get(path.month) ?? 0;
-      perMonth.set(path.month, j + 1);
       const p = island.spot(path.month);
       // Inland from the month spot, fanning out so several footpaths do not overlap.
-      const inland = Math.atan2(-p.z, -p.x);
-      const fan = (j % 2 ? 1 : -1) * (0.5 + Math.floor(j / 2) * 0.45);
-      const len = 7 + (j % 3) * 1.4;
+      const geometry = pathObjectGeometry("footpath", path.id), inland = Math.atan2(-p.z, -p.x);
+      const fan = geometry.angle * 1.55;
+      const len = 7 + geometry.radius * 2.8;
       const colour = path.done ? tint(palette.dry, palette.grass, 0.65) : tint(palette.dry, "#ffffff", 0.2);
       const dash = { transparent: true, opacity: path.done ? 0.85 : 0.7, depthWrite: false };
       let x = p.x, z = p.z;
       for (let d = 1.4, k = 0; d <= len; d += 1.2, k++) {
-        const dir = inland + fan + Math.sin(k * 0.9 + j) * 0.18;
+        const dir = inland + fan + Math.sin(k * 0.9 + geometry.phase) * 0.18;
         x = p.x + Math.cos(inland + fan) * d + Math.cos(dir + Math.PI / 2) * Math.sin(k * 0.9) * 0.25;
         z = p.z + Math.sin(inland + fan) * d + Math.sin(dir + Math.PI / 2) * Math.sin(k * 0.9) * 0.25;
         const mark = part(G.disc, colour, 0.34, 0.12, 1, x, heightAt(island, x, z) + 0.05, z, dash);
@@ -1404,15 +1414,12 @@ export function createPathWorld(host: HTMLElement, options: {
   }
 
   function buildBridges(input: PathWorldInput, island: GrownIsland) {
-    const perMonth = new Map<number, number>();
     const wood = "#9c7a55", dark = "#6b523a";
     for (const bridge of input.bridges ?? []) {
       if (bridge.month < 0 || bridge.month > island.cur) continue;
-      const j = perMonth.get(bridge.month) ?? 0;
-      perMonth.set(bridge.month, j + 1);
       const p = island.spot(bridge.month);
-      const a = p.a - 0.9 - j * 0.6, d = 3.6 + (j % 2) * 1.1;
-      const x = p.x + Math.cos(a) * d, z = p.z + Math.sin(a) * d;
+      const spot = pathObjectNearAnchor("bridge", bridge.id, p, { turn: -0.9, angleSpread: 0.8, distance: 3.6, distanceSpread: 1.8 });
+      const { x, z, a, geometry } = spot;
       const g = new THREE.Group(); g.position.set(x, heightAt(island, x, z), z); g.rotation.y = -a;
       // The shallow dip the bridge crosses (drawn, never carved): a wet hollow.
       const dip = part(G.disc, palette.deep, 0.9, 1.5, 1, 0, 0.04, 0, { transparent: true, opacity: 0.55, depthWrite: false, roughness: 0.3 });
@@ -1445,7 +1452,7 @@ export function createPathWorld(host: HTMLElement, options: {
           const glow = smat(new THREE.MeshStandardMaterial({ color: "#ffd27a", emissive: "#ffb347", emissiveIntensity: 1.1, roughness: 0.4 }));
           const lamp = new THREE.Mesh(G.sph, glow); lamp.scale.setScalar(0.13); lamp.position.set(0.58, 1.6, 1.4); g.add(lamp);
           if (!bridgeClaimed) { bridgeClaimed = true; poolAt(bridgePool, g, new THREE.Vector3(0.58, 1.6, 1.4), 1.2, 6); }
-          const phase = j * 1.3 + bridge.month;
+          const phase = geometry.phase + bridge.month;
           tickers.push((t) => {
             const on = ambient && quality === "full" && !options.reducedMotion;
             glow.emissiveIntensity = on ? 1.1 + 0.25 * Math.sin(t * 7 + phase) + 0.1 * Math.sin(t * 13.1 + phase) : 1.1;
@@ -1637,12 +1644,12 @@ export function createPathWorld(host: HTMLElement, options: {
   const P0 = () => tint(palette.rock, "#ffffff", 0.25);
 
   /** Each era island's signpost, with each theme's authored touch (Taylor's gold star, Classic's paper pennant, Newfoundland's painted board). */
-  function eraSign(pencil: boolean, index: number): THREE.Group {
+  function eraSign(pencil: boolean, paletteIndex: number): THREE.Group {
     const g = new THREE.Group();
     const add = (geo: THREE.BufferGeometry, color: string, sx: number, sy: number, sz: number, x: number, y: number, z: number, extra?: THREE.MeshStandardMaterialParameters) => {
       const m = ep(pencil, geo, color, sx, sy, sz, x, y, z, extra); g.add(m); return m;
     };
-    const board = themeKey === "newfoundland" ? palette.walls[index % palette.walls.length]! : "#fbf1e2";
+    const board = themeKey === "newfoundland" ? palette.walls[paletteIndex % palette.walls.length]! : "#fbf1e2";
     add(G.cyl, "#7a5436", 0.08, 2.6, 0.08, 0, 1.3, 0);
     add(G.box, board, 1.5, 0.55, 0.08, 0.55, 2.1, 0);
     if (themeKey === "taylor") add(G.star, "#e9b949", 0.28, 0.28, 0.28, 0, 2.85, -0.05, { metalness: 0.6, roughness: 0.3, emissive: "#6b4a10", emissiveIntensity: 0.4 });
@@ -1840,7 +1847,7 @@ export function createPathWorld(host: HTMLElement, options: {
 
   /** The main island's widest reach (for the Sky frame). */
   const mainRadius = (island: GrownIsland) => Math.max(...Array.from({ length: 12 }, (_, i) => island.radiusAt(i / 12 * Math.PI * 2)));
-  function buildJourney(input: PathWorldInput, island: GrownIsland, reserved: [number, number][], landmarkSpots: { x: number; z: number }[]) {
+  function buildJourney(input: PathWorldInput, island: GrownIsland, reserved: [number, number][]) {
     fades = []; eraTops = []; eraExtent = 0; eraFrame = [];
     const eras = (input.eras ?? []).filter((era) => era && Math.round(era.offset) !== 0).slice(0, 12);
     const bob = (obj: THREE.Object3D, y0: number, phase: number) => tickers.push((t) => {
@@ -1855,7 +1862,8 @@ export function createPathWorld(host: HTMLElement, options: {
       },
     }];
     const seenFog = new Set<string>();
-    eras.forEach((era, index) => {
+    eras.forEach((era) => {
+      const eraGeometry = pathObjectGeometry("era", era.id);
       const spot = eraRingSpot(era.offset);
       const cx = Math.cos(spot.a) * spot.r, cz = Math.sin(spot.a) * spot.r;
       const past = era.state === "past" && era.island;
@@ -1872,7 +1880,7 @@ export function createPathWorld(host: HTMLElement, options: {
       const depth = R * 1.25;
       const cone = ep(ghost, G.cone, rock, R * 1.02, depth, R * 1.02, 0, -0.45 - depth / 2, 0); cone.rotation.x = Math.PI; g.add(cone);
       for (let i = 0; i < 4; i++) {
-        const a = i * 1.7 + index;
+        const a = i * 1.7 + eraGeometry.phase;
         g.add(ep(ghost, G.ico, i % 2 ? palette.rock : rock, R * 0.32, R * 0.28, R * 0.3, Math.cos(a) * R * 0.55, -depth * (0.25 + i * 0.08), Math.sin(a) * R * 0.55));
       }
       g.add(ep(ghost, G.ico, rock, R * 0.18, R * 0.3, R * 0.18, R * 0.05, -depth - 0.8, 0));
@@ -1883,7 +1891,7 @@ export function createPathWorld(host: HTMLElement, options: {
         g.add(ep(ghost, G.cyl, tint(palette.grass, palette.dry, 0.15), R, 1.0, R, 0, -0.5, 0));
         g.add(ep(ghost, G.cyl, palette.dry, R * 1.01, 0.3, R * 1.01, 0, -1.05, 0));
         for (let i = 0; i < 3; i++) {
-          const a = i * 2.3 + 0.7 + index;
+          const a = i * 2.3 + 0.7 + eraGeometry.phase;
           g.add(ep(ghost, G.ico, i === 1 ? palette.rock : tint(palette.grass, "#2b2622", 0.2), R * 0.26, R * 0.12, R * 0.22, Math.cos(a) * R * 0.62, 0, Math.sin(a) * R * 0.62));
         }
       }
@@ -1894,8 +1902,8 @@ export function createPathWorld(host: HTMLElement, options: {
       // Plans around the home.
       const plans = era.plans.slice(0, 10);
       const ring = R * (past ? 0.5 : 0.62);
-      plans.forEach((plan, i) => {
-        const a = inward + Math.PI / 2 + (i / Math.max(1, plans.length)) * Math.PI * 2 + 0.35;
+      plans.forEach((plan) => {
+        const a = inward + Math.PI / 2 + pathObjectGeometry("era-plan", `${era.id}:${plan.id}`).phase + 0.35;
         const px = Math.sin(a) * ring, pz = Math.cos(a) * ring;
         const obj = buildPlan(plan, ghost);
         obj.position.set(px, topAt(px, pz), pz);
@@ -1907,13 +1915,13 @@ export function createPathWorld(host: HTMLElement, options: {
       });
       // The signpost at the edge that faces the main island.
       const sx = Math.sin(inward) * R * 0.72 + Math.cos(inward) * 2.2, sz = Math.cos(inward) * R * 0.72 - Math.sin(inward) * 2.2;
-      const sign = eraSign(ghost, index); sign.position.set(sx, topAt(sx, sz), sz); sign.rotation.y = inward + Math.PI / 2;
+      const sign = eraSign(ghost, eraGeometry.palette); sign.position.set(sx, topAt(sx, sz), sz); sign.rotation.y = inward + Math.PI / 2;
       g.add(sign);
       avoid.push([sx, sz]);
       if (past) { pastPieces(era.island!, g, avoid); pastGrowth(era.island!, g, avoid); }
       anchor(`era:${era.id}`, g, 5 + (past ? topAt(0, 0) : 0));
       dynamic.add(g);
-      bob(g, baseY, index * 1.3);
+      bob(g, baseY, eraGeometry.phase);
       // Fog: future and sketched islands, unless focused. Full: soft sprites; Lite: one pale shell. Not pickable.
       if (!past) {
         seenFog.add(era.id);
@@ -1921,7 +1929,7 @@ export function createPathWorld(host: HTMLElement, options: {
         const spriteMat = smat(new THREE.SpriteMaterial({ map: eraFogTexture, color: palette.fog, transparent: true, opacity: 0, depthWrite: false }));
         const sprites = new THREE.Group();
         for (let i = 0; i < 10; i++) {
-          const a = i / 10 * Math.PI * 2 + index;
+          const a = i / 10 * Math.PI * 2 + eraGeometry.phase;
           const sp = new THREE.Sprite(spriteMat);
           const k = R * (2 + (i % 3) * 0.3);
           sp.position.set(Math.cos(a) * R * 0.7, -R * 0.55 + (i % 4) * R * 0.35, Math.sin(a) * R * 0.7);
@@ -1938,7 +1946,7 @@ export function createPathWorld(host: HTMLElement, options: {
           spriteMat.opacity = 0.95 * v; shellMat.opacity = 0.7 * v; fog.visible = v > 0.01;
         }, (v) => eraFogShown.set(era.id, v));
         dynamic.add(fog);
-        bob(fog, baseY, index * 1.3);
+        bob(fog, baseY, eraGeometry.phase);
       }
       eraTops.push({ x: cx, z: cz, r: R, y: baseY + 1.5 });
       eraExtent = Math.max(eraExtent, spot.r + R);
@@ -1956,22 +1964,9 @@ export function createPathWorld(host: HTMLElement, options: {
 
     // The home at the centre of the main island.
     if (input.home) {
-      // The clearest spot near the centre: pieces, landmarks, the kiln, the Charter, the cottage, signposts and the road all keep their room.
-      const blockers: { x: number; z: number }[] = [...reserved.map(([x, z]) => ({ x, z })), ...landmarkSpots];
-      for (let m = 0; m <= island.cur; m++) blockers.push(island.spot(m));
-      if (input.name) { const p0 = island.spot(0); blockers.push({ x: p0.x + Math.cos(p0.a + 2.4) * 4, z: p0.z + Math.sin(p0.a + 2.4) * 4 }); }
-      for (const fire of input.campfires) {
-        if (fire.month < 0 || fire.month > island.cur) continue;
-        const p = island.spot(fire.month), x = p.x + Math.cos(p.a + 1.9) * 3, z = p.z + Math.sin(p.a + 1.9) * 3;
-        blockers.push({ x, z }, { x: x + Math.cos(p.a + 3) * 5, z: z + Math.sin(p.a + 3) * 5 });
-      }
-      let best = { x: 0, z: 0 }, bestScore = -Infinity;
-      for (const r of [0, 2.5, 5, 7.5, 10, 13]) for (let i = 0; i < (r ? 12 : 1); i++) {
-        const x = Math.cos(i / 12 * Math.PI * 2) * r, z = Math.sin(i / 12 * Math.PI * 2) * r;
-        const gap = blockers.reduce((m, b) => Math.min(m, Math.hypot(b.x - x, b.z - z)), Infinity);
-        const score = Math.min(gap, 8.5) - r * 0.12;
-        if (score > bestScore + 0.01) { best = { x, z }; bestScore = score; }
-      }
+      // The current era's home is the authored centre. Unrelated object edits
+      // must not relocate it by changing a collision candidate score.
+      const best = { x: 0, z: 0 };
       const home = buildHome(input.home, false);
       home.position.set(best.x, heightAt(island, best.x, best.z), best.z);
       // Face the way the journey goes.
@@ -1988,16 +1983,11 @@ export function createPathWorld(host: HTMLElement, options: {
     let gateAt: THREE.Vector3 | null = null;
     if (input.gate) {
       const toward = next ? Math.atan2(next.z, next.x) : ERA_AXIS;
-      const blockers = [...reserved.map(([x, z]) => ({ x, z })), ...landmarkSpots];
-      let angle = toward, bestGap = -1;
-      for (const da of [0, 0.1, -0.1, 0.2, -0.2]) {
-        const a = toward + da, R = island.radiusAt(a) - 3;
-        const x = Math.cos(a) * R, z = Math.sin(a) * R;
-        const gap = blockers.reduce((m, b) => Math.min(m, Math.hypot(b.x - x, b.z - z)), Infinity);
-        if (gap > bestGap + 1.5) { angle = a; bestGap = gap; }
-      }
-      const R = island.radiusAt(angle) - 3;
-      const gx = Math.cos(angle) * R, gz = Math.sin(angle) * R;
+      // The gate keeps its semantic direction toward the next era. Nearby
+      // additions no longer choose a different collision-search candidate.
+      const angle = toward;
+      const gateSpot = pathPointOnAuthoredRing(angle, PATH_ERA_GATE_RADIUS);
+      const gx = gateSpot.x, gz = gateSpot.z;
       const gy = Math.max(0.2, heightAt(island, gx, gz));
       const gate = new THREE.Group(); gate.position.set(gx, gy, gz);
       gate.rotation.y = Math.atan2(Math.cos(angle), Math.sin(angle));
@@ -2473,13 +2463,12 @@ export function createPathWorld(host: HTMLElement, options: {
     invalidate(); gestured();
   };
   const onContext = (e: Event) => e.preventDefault();
-  el.addEventListener("pointerdown", onDown);
-  el.addEventListener("pointermove", onMove);
-  el.addEventListener("pointerup", onUp);
-  el.addEventListener("pointercancel", onUp);
-  el.addEventListener("wheel", onWheel, { passive: false });
-  el.addEventListener("contextmenu", onContext);
-  cleanup.push(() => { el.removeEventListener("pointerdown", onDown); el.removeEventListener("pointermove", onMove); el.removeEventListener("pointerup", onUp); el.removeEventListener("pointercancel", onUp); el.removeEventListener("wheel", onWheel); el.removeEventListener("contextmenu", onContext); });
+  cleanup.push(rendererLease.listenCanvas("pointerdown", onDown));
+  cleanup.push(rendererLease.listenCanvas("pointermove", onMove));
+  cleanup.push(rendererLease.listenCanvas("pointerup", onUp));
+  cleanup.push(rendererLease.listenCanvas("pointercancel", onUp));
+  cleanup.push(rendererLease.listenCanvas("wheel", onWheel, { passive: false }));
+  cleanup.push(rendererLease.listenCanvas("contextmenu", onContext));
 
   // Roaming from the keyboard. The page makes the canvas wrapper focusable and names it; these keys only act while
   // it holds focus, so Tab still walks the HUD and the marks.
@@ -2538,7 +2527,7 @@ export function createPathWorld(host: HTMLElement, options: {
     quality = next;
     const full = next === "full";
     renderer.setPixelRatio(Math.min(typeof devicePixelRatio === "number" ? devicePixelRatio : 1, PIXEL_RATIO_CAP[next]));
-    renderer.shadowMap.enabled = full;
+    if (rendererLease.active) renderer.shadowMap.enabled = full;
     sun.castShadow = full;
     // Lite keeps only the walkers' lantern as a real light (the program recompile below covers the count change).
     for (const light of lightPool) light.visible = full;
@@ -2633,11 +2622,12 @@ export function createPathWorld(host: HTMLElement, options: {
     }
     frames++; lastFrameMs = performance.now() - started;
     if (drifting && !settling && !pointers.size && performance.now() - lastActivity >= idleMs) { idle = true; busy = false; }
-    if (busy || pointers.size) raf = requestAnimationFrame(frame);
+    if (busy || pointers.size) raf = rendererLease.requestFrame(frame);
     else last = 0;
   }
   function halt() {
-    if (raf) cancelAnimationFrame(raf); raf = 0; last = 0;
+    // The renderer is leased now (D-264), so the frame is cancelled through the lease, not the window.
+    if (raf) rendererLease.cancelFrame(raf); raf = 0; last = 0;
     // Nothing is drawing any more, so nothing may still be moving: a held key or a glide would otherwise carry the
     // camera off in one enormous step when the world comes back.
     roamMotion = restRoam();
@@ -2649,8 +2639,10 @@ export function createPathWorld(host: HTMLElement, options: {
     if (dead) return;
     lastActivity = performance.now();
     idle = false;
-    if (!raf && !sleeping && !offscreen) raf = requestAnimationFrame(frame);
+    if (!raf && !sleeping && !offscreen) raf = rendererLease.requestFrame(frame);
   }
+  suspendRenderer = () => { halt(); pointers.clear(); pinch = 0; };
+  resumeRenderer = () => { applyQuality(quality, true); if (width && height) renderer.setSize(width, height, false); invalidate(); };
   const onHidden = () => { if (document.hidden) halt(); else invalidate(); };
   document.addEventListener("visibilitychange", onHidden);
   cleanup.push(() => document.removeEventListener("visibilitychange", onHidden));
@@ -2672,8 +2664,7 @@ export function createPathWorld(host: HTMLElement, options: {
     cleanup.push(() => io.disconnect());
   }
   const lost = (event: Event) => { event.preventDefault(); options.onLost?.(); };
-  el.addEventListener("webglcontextlost", lost);
-  cleanup.push(() => el.removeEventListener("webglcontextlost", lost));
+  cleanup.push(rendererLease.listenCanvas("webglcontextlost", lost));
 
   /** A hidden host measures 0×0; those sizes are ignored so the last real size is kept. */
   function resize(w: number, h: number) {
@@ -2768,7 +2759,7 @@ export function createPathWorld(host: HTMLElement, options: {
     dispose() {
       if (dead) return;
       dead = true;
-      cancelAnimationFrame(raf);
+      rendererLease.cancelFrame(raf);
       for (const bank of sculptures.values()) bank.sculpture.dispose();
       sculptures.clear();
       for (const dispose of sceneDisposables.splice(0)) dispose();
@@ -2777,9 +2768,7 @@ export function createPathWorld(host: HTMLElement, options: {
       for (const g of geometries) g.dispose();
       for (const m of materials.values()) m.dispose();
       scene.clear();
-      renderer.dispose();
-      renderer.forceContextLoss();
-      el.remove();
+      rendererLease.release();
     },
   };
 }

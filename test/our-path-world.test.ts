@@ -24,7 +24,7 @@ import {
   shapePathWorld,
   type PathRecipeRow,
 } from "../src/core/pathWorld.ts";
-import { pathMonthCharacter, pathMonths, pathTripType } from "../src/core/pathSignals.ts";
+import { pathEconomicEntries, pathMonthCharacter, pathMonths, pathTripType } from "../src/core/pathSignals.ts";
 import { CELL, FIRST_FROST_WHY, GRID, HALF, firstWinterMonth, growIsland, heightAt } from "../src/path/grow.ts";
 import { BOTTLE_NOTE_LIMIT, BOTTLE_SILENT, bottleNote, bottleWords } from "../src/path/bottle.ts";
 import { walkPath, walkSeconds } from "../src/path/walk.ts";
@@ -309,6 +309,55 @@ describe("Our Path world — the months it grows from", () => {
     const months = pathMonths(h, "2026-09-15");
     expect(months).toHaveLength(36);
     expect(months.at(-1)!.key).toBe("2026-09");
+  });
+
+  it("keeps absolute month anchors when history appends or its visible window rolls", () => {
+    const h = { ...catalogHousehold(), transactions: [tx("T-OLD", "2019-01-05", "expense", 100, "SUB-LIFE-FUN")] };
+    const before = pathMonths(h, "2026-09-15");
+    const appended = pathMonths(h, "2026-10-15");
+    const beforeIsland = growIsland(before, [], before.length - 1);
+    const appendedIsland = growIsland(appended, [], appended.length - 1);
+    for (const key of before.map((month) => month.key).filter((key) => appended.some((month) => month.key === key))) {
+      const a = beforeIsland.spot(before.findIndex((month) => month.key === key));
+      const b = appendedIsland.spot(appended.findIndex((month) => month.key === key));
+      expect(b).toEqual(a);
+    }
+    expect(before.at(-1)!.geographyId).toBe("v2:month:2026-09");
+  });
+
+  it("nets linked refunds and reversals at their canonical receipt, while withholding unknown corrections", () => {
+    const expense = tx("T-EXP", "2026-06-10", "expense", 10_000, "SUB-LIFE-FUN");
+    const refund = { ...tx("T-RF", "2026-08-20", "expense", 4_000, "SUB-LIFE-FUN"), type: "refund" as const, refundOfId: expense.id };
+    const reversal = { ...tx("T-REV", "2026-09-01", "expense", 6_000, "SUB-LIFE-FUN"), reversalOfId: expense.id };
+    const unknown = { ...tx("T-UNKNOWN", "2026-09-02", "expense", 1_000, "SUB-LIFE-FUN"), type: "refund" as const, refundOfId: "missing" };
+    const h = { ...catalogHousehold(), transactions: [expense, refund, reversal, unknown] };
+    const evidence = pathEconomicEntries(h);
+    expect(evidence.unknownCorrectionIds).toEqual(["T-UNKNOWN"]);
+    const june = pathMonths(h, "2026-09-15").find((month) => month.key === "2026-06")!;
+    expect(june.scores.joy).toBe(0);
+  });
+
+  it("counts days 29–31 in a completed month and treats buffer use as care, not a storm", () => {
+    const cadence = ["2026-10-01", "2026-10-08", "2026-10-15", "2026-10-29"].map((date, index) => tx("T-CAD-" + index, date, "expense", 100, "SUB-LIFE-FUN"));
+    const h = {
+      ...catalogHousehold(),
+      transactions: cadence,
+      fundEvents: [{ id: "FE-1", kind: "kitty-released", date: "2026-10-29", amountCents: 100, goalId: null }] as unknown as Household["fundEvents"],
+    };
+    const october = pathMonths(h, "2026-11-01").find((month) => month.key === "2026-10")!;
+    expect(october.scores.calm).toBe(1);
+    expect(october.scores.cushionUsed).toBe(0);
+    expect(october.tags).toContain("buffer-used");
+    expect(pathMonthCharacter(october)).not.toBe("storm");
+  });
+
+  it("keeps Personal evidence member-scoped and out of the Household world", () => {
+    const mine = tx("T-MINE", "2026-09-05", "expense", 1_000, "SUB-LIFE-FUN", "personal");
+    const partner = { ...tx("T-PARTNER", "2026-09-05", "expense", 9_000, "SUB-LIFE-FUN", "personal"), createdBy: PARTNER };
+    const h = { ...catalogHousehold(), transactions: [mine, partner] };
+    const personal = pathMonths(h, "2026-09-15", undefined, { view: "personal", memberId: ME });
+    expect(personal[0]!.scores.joy).toBeGreaterThan(0);
+    expect(pathMonths(h, "2026-09-15")[0]!.scores.joy).toBe(0);
   });
 });
 

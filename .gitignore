@@ -33,3 +33,4 @@ scripts/tmp/
 /.artifacts/habitat/
 /.artifacts/queen-loft/
 /.artifacts/bank-models*/
+.whole-house-review/

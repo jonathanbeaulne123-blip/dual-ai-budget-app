@@ -1,9 +1,10 @@
 import type { Environment, LedgerView } from "../core/types.ts";
+import { parseQueenStyle, type QueenStyle } from "../house/queenStyle.ts";
 
 export type ThemeId = "classic" | "taylor" | "newfoundland";
 export type SceneRoute = "home" | "calendar" | "plan" | "ledger" | "more" | "till" | "shift" | "entry";
 export type ThemeAccessory = "hat" | "neck";
-export type Appearance = { theme: ThemeId; atmosphere: boolean; hideThemeHat?: boolean; hideThemeNeck?: boolean };
+export type Appearance = { theme: ThemeId; atmosphere: boolean; hideThemeHat?: boolean; hideThemeNeck?: boolean; queen?: QueenStyle };
 export type AppearanceScope = { environment: Environment; userId: string | null };
 export type ScenePalette = {
   paper: string; card: string; ink: string; muted: string; accent: string; second: string; line: string;
@@ -25,6 +26,7 @@ export function parseAppearance(value: unknown): Appearance {
     atmosphere: typeof row.atmosphere === "boolean" ? row.atmosphere : true,
     ...(typeof row.hideThemeHat === "boolean" ? { hideThemeHat: row.hideThemeHat } : {}),
     ...(typeof row.hideThemeNeck === "boolean" ? { hideThemeNeck: row.hideThemeNeck } : {}),
+    ...(row.queen && typeof row.queen === "object" ? {queen: parseQueenStyle(row.queen)} : {}),
   };
 }
 const palette = (paper: string, card: string, ink: string, muted: string, accent: string, second: string, line: string): ScenePalette => ({ paper, card, ink, muted, accent, second, line });

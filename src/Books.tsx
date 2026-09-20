@@ -64,6 +64,8 @@ import { DeferredSurface } from "./deferredSurfaces.tsx";
 import { Register } from "./Register.tsx";
 import { OpeningTruthCard } from "./OpeningTruthCard.tsx";
 import { Whisper } from "./theme/Whisper.tsx";
+import { HOUSE_WORLD_ENABLED } from "./house/navigation.ts";
+import { HouseBooks, type BookDivision } from "./house/HouseBooks.tsx";
 
 const DeferredBatchImportCard = lazy(() => import("./BatchImport.tsx").then((module) => ({ default: module.BatchImportCard })));
 
@@ -89,11 +91,13 @@ const SEAL_PANE_IDS = ["wallet", "register", "close"] as const;
 
 type Pane = (typeof PANES)[number]["id"] | "overview";
 
-export function BooksPage(props: ComponentProps<typeof BooksSession>) {
+export function BooksPage(props: ComponentProps<typeof BooksSession> & {onOpenHouseBank?:(id:string)=>void}) {
+  if(HOUSE_WORLD_ENABLED)return <HouseBooks key={JSON.stringify([props.booksHousehold.environment,props.booksHousehold.householdId,props.memberId,props.view,props.duplicateAuthorityGeneration??0])} household={props.booksHousehold} memberId={props.memberId} view={props.view} onOpenBank={props.onOpenHouseBank}>{division=>division==="Goals"?<KittyBanks household={props.household} booksHousehold={props.booksHousehold} view={props.view} createdBy={props.memberId} surface="home" onCommand={props.onCommand}/>:<BooksSession {...props} houseDivision={division}/>}</HouseBooks>;
   return <BooksSession key={JSON.stringify([props.booksHousehold.environment, props.booksHousehold.householdId, props.memberId, props.view, props.duplicateAuthorityGeneration ?? 0])} {...props} />;
 }
 
 function BooksSession({
+  houseDivision,
   pendingRows,
   household,
   booksHousehold,
@@ -118,6 +122,7 @@ function BooksSession({
   onConsumeRequestedPane,
   onOpenTimeMachine,
 }: {
+  houseDivision?: BookDivision;
   pendingRows?: PendingPreview[];
   household: Household;
   booksHousehold: Household;
@@ -144,6 +149,7 @@ function BooksSession({
   onOpenTimeMachine?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "overview");
+  useEffect(()=>{if(houseDivision)setPane(houseDivision==="Accounts"?"wallet":houseDivision==="Today"?view==="personal"?"wallet":"overview":houseDivision==="Bills"?view==="household"?"fund-register":"register":houseDivision==="Record"?"journal":houseDivision==="Contributions"&&view==="household"?"fund":"register");},[houseDivision,view]);
   const [accountFormOpenRequest, setAccountFormOpenRequest] = useState(0);
   const [openingCardOpen, setOpeningCardOpen] = useState(false);
   const controlId = useId();

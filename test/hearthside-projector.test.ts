@@ -7,12 +7,15 @@ import { buildProjectorPages, wrapProjectorText } from '../src/hearthside/projec
 import { PROJECTOR_MAX_ENCODED_BYTES, projectorWait, recordProjectorFilm, supportedProjectorMime } from '../src/hearthside/projectorFilm.ts';
 import { createProjectorStory, projectorManifest } from '../src/hearthside/projectorStory.ts';
 import { TheatreProjector } from '../src/hearthside/TheatreProjector.tsx';
+import { projectorDraftKey, readProjectorDraft, writeProjectorDraft, type ProjectorDraftScope } from '../src/hearthside/projectorDraft.ts';
 import type { ProjectorLoaders } from '../src/hearthside/projectorTypes.ts';
 const memory = (id = 'memory-1'): MemoryComposition => ({ version: 1, id, revision: 3, title: 'An ordinary afternoon', date: '2026-09-12', experienceId: null, media: [], designs: [], recollections: [{ memberId: 'a', text: 'My own exact words.\nA second line.' }, { memberId: 'b', text: 'Your separate words.' }], hideAmounts: true, approvals: [{ memberId: 'a', revision: 3 }, { memberId: 'b', revision: 3 }], withdrawn: false });
 const members = ['a', 'b'], options = { theme: 'classic' as const, secondsPerPage: 1, showAmounts: false };
 const guard = () => ({ signal: new AbortController().signal, isCurrent: () => true });
 const loaders: ProjectorLoaders = { resolveMedia: async () => ({ status: 'unavailable' }), loadDesignSnapshot: async () => ({ status: 'unavailable' }) };
 const select = (rows = [memory()], extra = {}) => captureProjectorSelection(rows, members, rows.map(memoryKey), { ...options, ...extra });
+const draftScope: ProjectorDraftScope = { environment: 'development', householdId: 'house-1', memberId: 'a', audience: 'household' };
+const draftStore = () => { const rows = new Map<string, string>(); return { getItem: (key: string) => rows.get(key) ?? null, setItem: (key: string, value: string) => { rows.set(key, value); } }; };
 describe('Theatre Projector composition integrity', () => {
   it('requires two distinct active members, exact approvals and no withdrawal', () => {
     expect(keptCompositions([memory()], ['a', 'a'])).toEqual([]); expect(keptCompositions([memory()], ['a'])).toEqual([]); expect(keptCompositions([memory(), { ...memory(), withdrawn: true }], members)).toEqual([]);
@@ -24,6 +27,38 @@ describe('Theatre Projector composition integrity', () => {
     const source = [memory(), memory('second')], snapshot = captureProjectorSelection(source, members, [memoryKey(source[1]!), memoryKey(source[0]!)], options);
     expect(snapshot.memories.map(row => row.id)).toEqual(['second', 'memory-1']); source[0]!.recollections[0]!.text = 'Edited later';
     expect(snapshot.memories[1]!.recollections[0]!.text).toBe('My own exact words.\nA second line.'); expect(Object.isFrozen(snapshot.memories[0]!.recollections[0])).toBe(true);
+  });
+  it('recovers a reloaded reel in its selected order and partitions every audience identity', () => {
+    const storage = draftStore(), rows = [{ ...memory('weekend'), title: 'Weekend' }, { ...memory('free-evening'), title: 'Free evening' }, { ...memory('mug-up'), title: 'Mug-up' }], selected = [rows[1]!, rows[2]!, rows[0]!];
+    writeProjectorDraft(storage, draftScope, selected, { secondsPerPage: 7, showAmounts: true });
+    expect(readProjectorDraft(storage, draftScope, rows)).toEqual({ status: 'restored', order: selected.map(memoryKey), discarded: 0, secondsPerPage: 7, showAmounts: true });
+    const html = renderToStaticMarkup(createElement(TheatreProjector, { memories: rows, activeMemberIds: members, theme: 'taylor', scopeKey: 'reload', draftScope, draftStorage: storage, ...loaders, validateDownload: async () => true, onClose: () => {} }));
+    expect(html.indexOf('Free evening')).toBeLessThan(html.indexOf('Mug-up')); expect(html.indexOf('Mug-up')).toBeLessThan(html.indexOf('Weekend')); expect(html).toContain('3 chosen');
+    for (const changed of [{ ...draftScope, memberId: 'b' }, { ...draftScope, householdId: 'house-2' }, { ...draftScope, environment: 'production' }, { ...draftScope, audience: 'personal' as const }]) {
+      expect(projectorDraftKey(changed)).not.toBe(projectorDraftKey(draftScope));
+      expect(readProjectorDraft(storage, changed, rows).status).toBe('absent');
+    }
+    const personal = { ...draftScope, audience: 'personal' as const };
+    storage.setItem(projectorDraftKey(personal), storage.getItem(projectorDraftKey(draftScope))!);
+    expect(readProjectorDraft(storage, personal, rows)).toMatchObject({ status: 'rejected', order: [] });
+  });
+  it('never upgrades, revives or silently replaces a selected memory revision', () => {
+    const storage = draftStore(), old = memory('changed'), stable = memory('stable'), withdrawn = memory('withdrawn');
+    writeProjectorDraft(storage, draftScope, [old, stable, withdrawn], { secondsPerPage: 5, showAmounts: false });
+    const current = [{ ...old, revision: old.revision + 1, approvals: members.map(memberId => ({ memberId, revision: old.revision + 1 })) }, stable, { ...withdrawn, withdrawn: true }];
+    expect(readProjectorDraft(storage, draftScope, keptCompositions(current, members))).toMatchObject({ order: [memoryKey(stable)], discarded: 2 });
+  });
+  it('rejects an oversized reel record before parsing it', () => {
+    const storage = draftStore();
+    storage.setItem(projectorDraftKey(draftScope), ' '.repeat(64 * 1024 + 1));
+    const parse = vi.spyOn(JSON, 'parse');
+    try { expect(readProjectorDraft(storage, draftScope, [memory()]).status).toBe('rejected'); expect(parse).not.toHaveBeenCalled(); }
+    finally { parse.mockRestore(); }
+  });
+  it('truthfully keeps reel choices visit-only when saved recovery cannot be read', () => {
+    const unavailable = { getItem: () => { throw Error('blocked'); }, setItem: () => { throw Error('blocked'); } };
+    const html = renderToStaticMarkup(createElement(TheatreProjector, { memories: [memory()], activeMemberIds: members, theme: 'classic', scopeKey: 'visit', draftScope, draftStorage: unavailable, ...loaders, validateDownload: async () => true, onClose: () => {} }));
+    expect(html).toContain('Reel choices are only in this visit.'); expect(html).toContain('1 chosen');
   });
   it('rejects accessor-backed canonical input without reading its contents', () => {
     const getter = vi.fn(() => 'forged'); const source = { ...memory() }; Object.defineProperty(source, 'title', { get: getter }); expect(keptCompositions([source], members)).toEqual([]); expect(getter).not.toHaveBeenCalled();
@@ -107,6 +142,6 @@ describe('Theatre Projector composition integrity', () => {
     try { await expect(recordProjectorFilm({ selection: select(), assets: [] }, { signal: controller.signal, isCurrent: () => true })).rejects.toMatchObject({ name: 'AbortError' }); expect(trackStop).toHaveBeenCalledTimes(1); } finally { vi.unstubAllGlobals(); }
   });
   for (const theme of ['classic', 'taylor', 'newfoundland'] as const) it(`renders an accessible ${theme} theatre without unkept data or fabricated memories`, () => {
-    const html = renderToStaticMarkup(createElement(TheatreProjector, { memories: [{ ...memory(), withdrawn: true }], activeMemberIds: members, theme, scopeKey: 'scope', ...loaders, validateDownload: async () => true, onClose: () => {} })); expect(html).toContain('Our little theatre'); expect(html).toContain('no mutually kept versions'); expect(html).not.toContain('An ordinary afternoon'); expect(html).not.toContain('data:image');
+    const html = renderToStaticMarkup(createElement(TheatreProjector, { memories: [{ ...memory(), withdrawn: true }], activeMemberIds: members, theme, scopeKey: 'scope', draftScope, ...loaders, validateDownload: async () => true, onClose: () => {} })); expect(html).toContain('Our little theatre'); expect(html).toContain('no mutually kept versions'); expect(html).not.toContain('An ordinary afternoon'); expect(html).not.toContain('data:image');
   });
 });

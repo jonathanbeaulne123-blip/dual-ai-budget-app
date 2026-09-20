@@ -51,6 +51,14 @@ it('requires an exact receipt and accepted operation before removing a private r
   expect(await client.enqueue({version:1,kind:'operate',operation:create})).toBe(false);expect(client.pending[0]?.status).toBe('uncertain');client.close();
 });
 
+it('retains Personal audience on standalone create and accepts only an owner-bound document',async()=>{
+  const retained=storage(),document=createKittyDesignDocument('DESIGN-personal-free',{...scope,ownerMemberId:'MEM-001'});let sent:unknown;
+  const client=new HearthsideDesignClient({...scope,memberId:'MEM-001',identity:'personal-create',storage:retained,token:async()=> 'synthetic',fetch:async(_url,init)=>{sent=JSON.parse(init!.body as string);return Response.json({version:1,document,receipt:null,sequence:1});}});
+  expect(await client.enqueue({version:1,kind:'create',designId:document.id,bankId:null,audience:'personal'})).toBe(true);
+  expect(sent).toMatchObject({version:1,kind:'create',designId:document.id,bankId:null,audience:'personal'});
+  expect(client.documents.get(document.id)?.scope.ownerMemberId).toBe('MEM-001');client.close();
+});
+
 it('resumes an accepted delta from the retained revision without reloading the whole history',async()=>{
   const server=setup(),a=server.client(),b=server.client('same-member-second-device');
   await a.enqueue({version:1,kind:'operate',operation:create});await b.load('DESIGN-client');

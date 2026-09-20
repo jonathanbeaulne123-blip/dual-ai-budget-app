@@ -62,6 +62,7 @@ export function observedResources(
   if(kind==='saveTaskList'){const input=args[0] as {id:string};return [{key:`task-list/${input.id}`,value:household.taskLists?.find(r=>r.id===input.id)??null}];}
   if(kind==='adoptBoardTasks')return [{key:'boards/tasks',value:{rows:household.kitchen.boards?.tasks??[],adopted:(household.tasks??[]).filter(r=>r.id.startsWith('TASK-board-')).map(r=>r.id).sort()}}];
   if (kind === "commitSharedLifeRestore") return []; // Exact paired restore basis is checked by the authority.
+  if (kind === "commitPersonalLife") return []; // Private revisions and reviewed-copy digests are rechecked by the authority.
   if (kind === "commitHearthside") {
     // The experience revision protects its words and links. A newly selected bank
     // also needs the exact reviewed meaning checked after the network handoff.

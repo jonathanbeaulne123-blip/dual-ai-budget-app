@@ -9,6 +9,8 @@ import type {
 import type { AcceptedEvent, Receipt } from "./protocol.ts";
 import { digest, project } from "./patch.ts";
 import { decodeDesignArchiveReference, type DesignArchiveReference } from '../hearthside/designArchive.ts';
+import {projectKittyDesign} from '../hearthside/design.ts';
+import type {KittyDesignDocument} from '../hearthside/designContracts.ts';
 export type RestorePointSummary = Omit<RestorePoint, "shared">;
 export type Checkpoint = {
   version: 2;
@@ -35,8 +37,34 @@ export type ArchiveRecord = {
   designs?: DesignArchiveReference[];
 };
 export type Sealed<T> = { data: T; sha256: string };
+export type RecoveredDesignArchive = {document:KittyDesignDocument;reference:DesignArchiveReference};
 export async function seal<T>(data: T): Promise<Sealed<T>> {
   return { data, sha256: await digest(data) };
+}
+
+/** Personal creative indexes are private projections, but their journals still have to exist in the authority archive. */
+export function assertPersonalDesignArchiveReferences(personal:Checkpoint['personal'],references:readonly DesignArchiveReference[]):void {
+  const designs=new Map(references.map(reference=>[reference.designId,decodeDesignArchiveReference(reference)]));
+  for(const [memberId,own] of personal)for(const index of own.personalLife?.designs??[]){
+    const reference=designs.get(index.designId);
+    const bank=reference?.bankId===null?null:own.goals?.find(goal=>goal.id===reference?.bankId&&!goal.shared&&goal.ownerMemberId===memberId
+      &&goal.envelope?.designRef?.designId===index.designId&&goal.envelope.designRef.revision===index.revision);
+    if(!reference||reference.revision!==index.revision||reference.bankId!==null&&!bank)throw Error('DESIGN_ARCHIVE_REFERENCE_MISSING');
+  }
+}
+
+/** Run after immutable design documents have been recovered and before any restored state is committed. */
+export function assertRecoveredPersonalDesignArchives(state:Pick<Checkpoint,'shared'|'personal'>,recovered:readonly RecoveredDesignArchive[]):void {
+  const designs=new Map(recovered.map(row=>[row.document.id,row]));
+  if(designs.size!==recovered.length)throw Error('DESIGN_ARCHIVE_CONFLICT');
+  for(const [memberId,own] of state.personal)for(const index of own.personalLife?.designs??[]){
+    const row=designs.get(index.designId),document=row?.document;
+    if(!row||!document||row.reference.designId!==index.designId||row.reference.revision!==index.revision||document.revision!==index.revision)throw Error('DESIGN_ARCHIVE_REFERENCE_MISSING');
+    if(document.scope.environment!==state.shared.environment||document.scope.householdId!==state.shared.householdId)throw Error('DESIGN_ARCHIVE_SCOPE');
+    if(document.scope.ownerMemberId!==memberId)throw Error('DESIGN_ARCHIVE_OWNERSHIP_MISMATCH');
+    const archived=[...index.pieceIds].sort(),recoveredPieces=projectKittyDesign(document).pieces.map(piece=>piece.piece.id).sort();
+    if(JSON.stringify(archived)!==JSON.stringify(recoveredPieces))throw Error('DESIGN_ARCHIVE_PIECES_MISMATCH');
+  }
 }
 export async function restoreArchive(
   scope: string,
@@ -97,6 +125,7 @@ export async function restoreArchive(
   for(const row of [...(state.shared.kittyNestDesigns??[]),...state.personal.flatMap(([,own])=>own.kittyNestDesigns??[])]){
     if(!row.designRef)continue;const ref=designs.get(row.designRef.designId);if(!ref||ref.revision!==row.designRef.revision||ref.bankId!==null)throw Error('DESIGN_ARCHIVE_REFERENCE_MISSING');
   }
+  assertPersonalDesignArchiveReferences(state.personal,[...designs.values()]);
   for (const [memberId, own] of state.personal) {
     if (own.memberId !== memberId) throw new Error("PERSONAL_SCOPE_MISMATCH");
     assertAcceptableBooks(

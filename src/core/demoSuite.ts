@@ -952,6 +952,7 @@ export function preserveDemoShowcaseContinuity(current: Household, generated: Ho
   const preserved = {
     ...generated,
     companionProfile: current.companionProfile,
+    personalLife: current.personalLife,
     companionGallery: current.companionGallery,
     hearthside: current.hearthside,
     playRoom: current.playRoom,
