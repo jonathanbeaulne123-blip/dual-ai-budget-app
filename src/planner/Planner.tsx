@@ -5,6 +5,8 @@ import { agenda, affordability, suggestedEvidence,focusedAgendaTask, type Agenda
 import { parseTaskCapture } from "../core/taskCapture.ts";
 import { saveTask, completeTask, reopenTask, acknowledgeTask, saveTaskList, adoptBoardTasks, taskIsFinancial, taskCompletionBlock, type Task, type TaskEvidence, type TaskInput, type TaskRepeat } from "../core/tasks.ts";
 import { shapeSharedBoards } from "../core/sharedBoards.ts";
+import { clearPlannerEditor, plannerDraftIdentity, readPlannerCapture, readPlannerEditor, savePlannerCapture, savePlannerEditor, type PlannerEditor } from "./draftRecovery.ts";
+import { plannerPlanChoices, plannerPlanReferenceValue } from "./planReferences.ts";
 import "./planner.css";
 
 /**
@@ -27,7 +29,7 @@ export type PlannerProps = {
   onRecord: (task: Task) => void;
   focusTaskId?:string;
 };
-type Editor = TaskInput & { expectedAmount: string };
+type Editor = PlannerEditor;
 const VIEWS: { id: AgendaView | "lists"; label: string }[] = [
   { id: "today", label: "Today" }, { id: "week", label: "This week" }, { id: "anytime", label: "Anytime" }, { id: "logbook", label: "Logbook" }, { id: "lists", label: "Lists" },
 ];
@@ -67,15 +69,33 @@ function moneyLine(item: AgendaItem, money: Affordability | null, today: string)
   return { text: `${formatCad(item.amountCents)} · ${formatCad(line.shortCents)} short`, tone: "warn" };
 }
 
-export function Planner({ household, memberId, view, today, busy, onCommand, onRecord,focusTaskId }: PlannerProps) {
+const localDraftStorage = () => { try { return typeof window === "undefined" ? null : window.localStorage; } catch { return null; } };
+const acknowledged = (outcome: unknown): boolean => Boolean(outcome && typeof outcome === "object" && (outcome as { ok?: boolean }).ok && (outcome as { postedExactlyOnce?: boolean }).postedExactlyOnce);
+
+export function Planner(props: PlannerProps) {
+  const identity = plannerDraftIdentity(props.household, props.memberId, props.view);
+  return <PlannerScoped key={`${identity.environment}:${identity.householdId}:${identity.memberId}:${identity.view}`} {...props} />;
+}
+
+function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRecord,focusTaskId }: PlannerProps) {
+  const draftIdentity = plannerDraftIdentity(household, memberId, view);
+  const [restored] = useState(() => {
+    const storage = localDraftStorage();
+    if (!storage) return { capture: "", editor: null as Editor | null, warning: "This device cannot keep unfinished Planner work after closing. Keep this page open." };
+    let capture = "", editor: Editor | null = null, warning = "";
+    try { capture = readPlannerCapture(storage, draftIdentity); } catch { warning = "The saved task capture could not be read. It remains on this device for recovery."; }
+    try { editor = readPlannerEditor(storage, draftIdentity); } catch { warning = warning || "The saved task details could not be read. They remain on this device for recovery."; }
+    return { capture, editor, warning };
+  });
   const active = household.members.some((member) => member.id === memberId && member.active);
   const [tab, setTab] = useState<AgendaView | "lists">("today");
   const [ownership, setOwnership] = useState<AgendaOwnership>("all");
   const [listFilter, setListFilter] = useState<string | null>(null);
-  const [capture, setCapture] = useState("");
-  const [editor, setEditor] = useState<Editor | null>(null);
+  const [capture, setCapture] = useState(restored.capture);
+  const [editor, setEditor] = useState<Editor | null>(restored.editor);
   const [attaching, setAttaching] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
+  const [draftWarning, setDraftWarning] = useState(restored.warning);
   const members = household.members.filter((member) => member.active);
   const partner = members.find((member) => member.id !== memberId) ?? null;
   const lists = (household.taskLists ?? []).filter((list) => !list.deleted && (list.visibility === "household" ? view === "household" : list.createdBy === memberId && view === "personal"));
@@ -88,8 +108,24 @@ export function Planner({ household, memberId, view, today, busy, onCommand, onR
   const openTasks = (household.tasks ?? []).filter((task) => !task.deleted && !task.completedAt && (view === "household" ? task.visibility === "household" : task.visibility === "personal" && task.createdBy === memberId));
   const coverage = view === "household" ? members.map((member) => ({ member, count: openTasks.filter((task) => task.assigneeId === member.id).length, alone: openTasks.filter((task) => task.assigneeId === member.id && !task.backupId).length })) : [];
   const focused=focusTaskId?focusedAgendaTask(household,focusTaskId,{memberId,view,today}):null;
+  const planChoices = editor ? plannerPlanChoices(household, memberId, editor.task.visibility) : [];
+  const planReferenceValue = editor?.task.planReference ? plannerPlanReferenceValue(editor.task.planReference) : "";
+  const stalePlanReference = Boolean(planReferenceValue && !planChoices.some((choice) => choice.value === planReferenceValue));
   useEffect(()=>{if(focusTaskId)document.getElementById('planner-focused-task')?.focus();},[focusTaskId]);
   useEffect(() => { if (!notice) return; const t = setTimeout(() => setNotice(""), 4000); return () => clearTimeout(t); }, [notice]);
+  useEffect(() => {
+    const storage = localDraftStorage();
+    if (!storage) { if (capture) setDraftWarning("This device cannot keep unfinished Planner work after closing. Keep this page open."); return; }
+    try { savePlannerCapture(storage, draftIdentity, capture); }
+    catch { setDraftWarning("This device cannot keep the unfinished task capture after closing. Keep this page open."); }
+  }, [capture]);
+  useEffect(() => {
+    if (!editor) return;
+    const storage = localDraftStorage();
+    if (!storage) { setDraftWarning("This device cannot keep unfinished Planner work after closing. Keep this editor open."); return; }
+    try { savePlannerEditor(storage, draftIdentity, editor); }
+    catch { setDraftWarning("This device cannot keep the unfinished task details after closing. Keep this editor open."); }
+  }, [editor]);
   if (!active) return <main className="planner"><p className="planner__unavailable">The planner is available to active household members.</p></main>;
 
   // Copy follows the data outcome, never the intent: the notice appears only once the boundary accepted the write.
@@ -102,22 +138,41 @@ export function Planner({ household, memberId, view, today, busy, onCommand, onR
     }).catch(() => undefined);
     return result;
   }
-  function submitCapture(event: FormEvent) {
+  async function submitCapture(event: FormEvent) {
     event.preventDefault();
     if (!parsed || !parsed.title.trim() || busy) return;
     const listId = parsed.listName ? lists.find((list) => list.name.toLowerCase() === parsed.listName!.toLowerCase())?.id ?? listFilter : listFilter;
     const visibility = view === "personal" ? "personal" : parsed.visibility;
     const input: TaskInput = { memberId, id: `TASK-${crypto.randomUUID()}`, expectedRevision: 0, task: { visibility, title: parsed.title, notes: "", listId, parentId: null, doDate: parsed.doDate, dueDate: parsed.dueDate, repeat: parsed.repeat, cue: parsed.cue, assigneeId: visibility === "personal" ? null : parsed.assigneeId, backupId: null, chapterId: null, planReference: null, moneyLink: null, expectedAmountCents: parsed.expectedAmountCents, deleted: false } };
-    run((current) => saveTask(current, input), `Added “${parsed.title}”`);
-    setCapture("");
+    try {
+      const outcome = await Promise.resolve(run((current) => saveTask(current, input), `Added “${parsed.title}”`));
+      if (acknowledged(outcome)) setCapture("");
+      else if (!outcome) setNotice("The task is still waiting for acknowledgement. Your capture is kept here.");
+    } catch { setNotice("The task was not acknowledged. Your capture is kept here."); }
   }
-  function saveEditor(event: FormEvent) {
+  async function saveEditor(event: FormEvent) {
     event.preventDefault();
     if (!editor || busy) return;
     const amount = cents(editor.expectedAmount);
     if (Number.isNaN(amount)) { setNotice("Use a whole-cent amount like 140 or 140.50."); return; }
     const input: TaskInput = { memberId: editor.memberId, id: editor.id, expectedRevision: editor.expectedRevision, task: { ...editor.task, title: editor.task.title.trim(), expectedAmountCents: amount, assigneeId: editor.task.visibility === "personal" ? null : editor.task.assigneeId, backupId: editor.task.visibility === "personal" ? null : editor.task.backupId } };
-    run((current) => saveTask(current, input), editor.expectedRevision ? "Saved" : "Added");
+    try {
+      const outcome = await Promise.resolve(run((current) => saveTask(current, input), editor.expectedRevision ? "Saved" : "Added"));
+      if (acknowledged(outcome)) { const storage = localDraftStorage(); if (storage) try { clearPlannerEditor(storage, draftIdentity, editor.id); } catch { setDraftWarning("The task saved, but its device recovery copy could not be cleared."); } setEditor(null); }
+      else if (!outcome) setNotice("The task is still waiting for acknowledgement. Your fields are kept here.");
+    } catch { setNotice("The task was not acknowledged. Your fields are kept here."); }
+  }
+  async function removeEditor() {
+    if (!editor || busy) return;
+    const input: TaskInput = { ...editor, task: { ...editor.task, deleted: true, expectedAmountCents: cents(editor.expectedAmount) || null } };
+    try {
+      const outcome = await Promise.resolve(run((current) => saveTask(current, input), "Removed"));
+      if (acknowledged(outcome)) { const storage = localDraftStorage(); if (storage) try { clearPlannerEditor(storage, draftIdentity, editor.id); } catch { setDraftWarning("The task was removed, but its device recovery copy could not be cleared."); } setEditor(null); }
+      else if (!outcome) setNotice("Removal is still waiting for acknowledgement. Your fields are kept here.");
+    } catch { setNotice("Removal was not acknowledged. Your fields are kept here."); }
+  }
+  function cancelEditor() {
+    if (editor) { const storage = localDraftStorage(); if (storage) try { clearPlannerEditor(storage, draftIdentity, editor.id); } catch { setDraftWarning("The device recovery copy could not be cleared. Try Cancel again."); return; } }
     setEditor(null);
   }
   function tick(item: AgendaItem) {
@@ -210,6 +265,7 @@ export function Planner({ household, memberId, view, today, busy, onCommand, onR
     </div>}
     {listFilter && <p className="planner-filter">Showing <strong>{lists.find((list) => list.id === listFilter)?.name ?? "a list"}</strong> <button type="button" className="planner-link" onClick={() => setListFilter(null)}>Show everything</button></p>}
     {notice && <p className="planner-notice" role="status">{notice}</p>}
+    {draftWarning && <p className="planner-notice" role="status">{draftWarning}</p>}
     {focusTaskId&&<section className="planner-day" aria-labelledby="planner-focused-task"><h2 id="planner-focused-task" tabIndex={-1}>The next step you opened</h2>{focused?<ul className="planner-list">{renderTask(focused)}</ul>:<p>This task is no longer available in this ledger.</p>}</section>}
 
     {money && (tab === "week" || tab === "today") && <section className="planner-afford" aria-label="What this period can afford">
@@ -266,13 +322,14 @@ export function Planner({ household, memberId, view, today, busy, onCommand, onR
         <label>Who else knows how<select value={editor.task.backupId ?? ""} onChange={(event) => setEditor({ ...editor, task: { ...editor.task, backupId: event.target.value || null } })}><option value="">Nobody yet</option>{members.filter((member) => member.id !== editor.task.assigneeId).map((member) => <option key={member.id} value={member.id}>{member.name}</option>)}</select></label>
       </div>}
       {lists.length > 0 && <label>List<select value={editor.task.listId ?? ""} onChange={(event) => setEditor({ ...editor, task: { ...editor.task, listId: event.target.value || null } })}><option value="">No list</option>{lists.map((list) => <option key={list.id} value={list.id}>{list.name}</option>)}</select></label>}
+      <label>Plan decision<select value={planReferenceValue} onChange={(event) => { const choice = planChoices.find((row) => row.value === event.target.value); setEditor({ ...editor, task: { ...editor.task, planReference: choice?.reference ?? null } }); }}><option value="">No Plan decision</option>{stalePlanReference && <option value={planReferenceValue}>Unavailable Plan step — clear this link to save</option>}{planChoices.map((choice) => <option key={choice.value} value={choice.value}>{choice.label}</option>)}</select>{stalePlanReference && <small>This exact Plan step is no longer active or visible here. It was not rebound to another decision.</small>}</label>
       <label>Notes<textarea value={editor.task.notes} maxLength={2000} rows={2} onChange={(event) => setEditor({ ...editor, task: { ...editor.task, notes: event.target.value } })} /></label>
-      {editor.expectedRevision === 0 && view === "household" && <label className="planner-editor__check"><input type="checkbox" checked={editor.task.visibility === "personal"} onChange={(event) => setEditor({ ...editor, task: { ...editor.task, visibility: event.target.checked ? "personal" : "household", assigneeId: null, backupId: null } })} /> Just for me{partner ? ` (${partner.name} won’t see it)` : ""}</label>}
+      {editor.expectedRevision === 0 && view === "household" && <label className="planner-editor__check"><input type="checkbox" checked={editor.task.visibility === "personal"} onChange={(event) => setEditor({ ...editor, task: { ...editor.task, visibility: event.target.checked ? "personal" : "household", assigneeId: null, backupId: null, planReference: null } })} /> Just for me{partner ? ` (${partner.name} won’t see it)` : ""}</label>}
       {editor.task.visibility === "personal" && editor.expectedRevision > 0 && <p className="planner-quiet">Private to you.</p>}
       <div className="planner-editor__actions">
         <button type="submit" disabled={busy || !editor.task.title.trim()}>{editor.expectedRevision ? "Save" : "Add task"}</button>
-        <button type="button" onClick={() => setEditor(null)}>Cancel</button>
-        {editor.expectedRevision > 0 && <button type="button" className="planner-danger" disabled={busy} onClick={() => { const input: TaskInput = { ...editor, task: { ...editor.task, deleted: true, expectedAmountCents: cents(editor.expectedAmount) || null } }; run((current) => saveTask(current, input), "Removed"); setEditor(null); }}>Remove</button>}
+        <button type="button" onClick={cancelEditor}>Cancel</button>
+        {editor.expectedRevision > 0 && <button type="button" className="planner-danger" disabled={busy} onClick={() => void removeEditor()}>Remove</button>}
       </div>
     </form>}
   </main>;

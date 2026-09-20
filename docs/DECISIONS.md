@@ -1228,3 +1228,11 @@ An open Plan decision editor keeps only its unfinished field values and a naviga
 The recovery record retains the accepted source revision, selected draft revision and exact source-line fingerprint it began from. If any changes, Hearth preserves the input but requires an explicit comparison with the current decision before save; a removed line cannot be silently recreated. Device recovery does not write canonical Plan data, post money, share Personal fields, or bypass the existing save conflict check and Final Confirm boundaries.
 
 Risk High. Budget delta (5): unfinished amounts, dates, funding evidence and responsibility survive navigation without becoming accepted truth. Engagement delta (3): people can leave a room or change themes and resume the exact decision. Focused local tests cover recovery, scope isolation, revision conflict and exact clearing; release and hosted continuity evidence remain separate.
+
+### 2026-09-19 — Planner journey links and acknowledged draft recovery
+
+Planner task details may link to a line from the active accepted Plan in the task's own audience. Personal tasks offer only the active member-owned Personal Plan; Household tasks offer only an active Household Plan. Changing a new task's visibility clears its Plan link. A reference that later becomes inactive or invisible remains visibly unavailable for exact review and is never rebound to a similarly named line.
+
+Quick capture and detailed task fields keep a versioned device recovery copy partitioned by environment, household, member, Personal/Household view and exact task ID. A reload or safe scope remount restores the editor. Rejected, failed and unacknowledged writes retain it; only an exactly-once acknowledged save/removal or explicit Cancel clears that task's recovery record. This adds no task authority, Plan writer, provider, schema, or financial posting path.
+
+Risk High. Budget delta (5): accepted Plan decisions can carry an exact practical next step without weakening Plan or task validation. Engagement delta (3): private journey work survives room and theme navigation. Focused tests cover audience choices, visibility clearing, reload isolation, rejection retention and stale-reference disclosure.
