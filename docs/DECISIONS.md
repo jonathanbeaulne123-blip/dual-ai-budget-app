@@ -1,3 +1,9 @@
+## 2026-09-19 — The theatre keeps an exact local reel draft
+
+The Theatre Projector persists only its ordered `{memory id, revision}` references and display options in a versioned device-local record partitioned by environment, household, member and Personal/Household audience. Reloading, changing theme or leaving the room restores that order only where the exact revisions are still currently eligible. A changed, withdrawn or unavailable memory is removed rather than upgraded to a newer revision; no recollection text, media, approval or canonical household state is copied into the draft.
+
+**Risk: Medium. Budget delta (5): +0** — no money projection, command, approval or Final Confirm path changes. **Engagement delta (3): +2** — a deliberately arranged story survives ordinary navigation and reload. No schema, hosted row, provider, Production data, deployment or canonical writer is added.
+
 ## 2026-09-19 — Journey D-284/D-285 reconciled with House and Plan v3
 
 The simple view and game mode retain current main's canonical House routing, persistent Plan Studio, canonical Task consent/evidence controls and umbrella pennants. Game history is consumed before outbound House navigation or opening the tent, so cleanup cannot undo the destination or leave a ghost game entry.
