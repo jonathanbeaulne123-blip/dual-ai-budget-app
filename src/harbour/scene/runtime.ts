@@ -6,7 +6,7 @@ import { COURT_ANCHOR_IDS, COURT_FOV, type CourtAnchor, type CourtMode, type Cou
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
 import { createGround } from "./ground.ts";
 import { configureHarbourRenderer, createLightRig } from "./lightRig.ts";
-import { EMPTY_PLACE, PLACES, SCENE_DRESSING, poseFor, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlaceReading, type Vec3 } from "./place.ts";
+import { EMPTY_PLACE, PLACES, PLACE_HOLDS, SCENE_DRESSING, poseFor, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlaceReading, type Vec3 } from "./place.ts";
 import { travelAt, travelPlan, type TravelPlan } from "./travel.ts";
 import type { HarbourPlaceId } from "../flag.ts";
 import type { RenderTier } from "./quality.ts";
@@ -234,6 +234,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     }
   }
   const court: CourtCamera = createCourtCamera({ camera, composition, reduced: reduced.matches, fov: fovFor(composition) });
+  // The standing room holds the camera from the first frame: a stale return
+  // slot or a wild zoom can never show a room from the lawn.
+  court.setHold(PLACE_HOLDS[placeId] ?? null);
   court.go("court");
 
   const raycaster = new THREE.Raycaster();
@@ -348,7 +351,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const frame = travelAt(journey.plan, now - journey.startedAt);
       settle(frame.roof, frame.lid);
       dirty = true;
-      if (frame.done) { if (journey.from !== placeId) pull(journey.from); journey = null; }
+      if (frame.done) {
+        if (journey.from !== placeId) pull(journey.from);
+        journey = null;
+        court.setHold(PLACE_HOLDS[placeId] ?? null);
+      }
     }
     const moving = easing || journey !== null;
     const policy = harbourFramePolicy({ reduced: reduced.matches, moving, breathing: breathing || settling, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen });
@@ -480,6 +487,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       placeId = next;
       // The place you arrive in declares its own idle motion; until it does, nothing moves.
       breathing = false;
+      // A cut lands at once, so the destination's hold applies at once. A full
+      // journey flies through the open air between the rooms: the hold is
+      // lifted for the flight and the destination's takes over when it lands
+      // (the `frame.done` branch of the loop).
+      court.setHold(plan.cut ? PLACE_HOLDS[next] ?? null : null);
       aim(plan.camera.mode, plan.camera.anchor ?? undefined);
       if (plan.cut) {
         settle(plan.roof[1], plan.lid[1]);

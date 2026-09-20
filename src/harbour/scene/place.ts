@@ -4,6 +4,7 @@ import { COURT_DRESSING, type CourtDressing } from "../court/dressing.ts";
 import type { HarbourPlaceId } from "../flag.ts";
 import type { HarbourReading } from "../data/reading.ts";
 import type { RenderTier } from "./quality.ts";
+import type { RoomHold } from "../camera/poses.ts";
 
 /**
  * The contract between the harbour runtime and a place (BUILD_PLAN §2 #4).
@@ -89,6 +90,29 @@ export interface Place {
   readonly id: HarbourPlaceId;
   build(scene: THREE.Scene, dressing: PlaceDressing, reading: PlaceReading | null, quality: RenderTier, context: PlaceBuildContext): PlaceHandle;
 }
+
+/**
+ * Each room's hold on the camera (`camera/poses.ts` `holdPoseInRoom`). The
+ * Court is open sky and has none. The Tower's box reaches out through the
+ * wall's open side (+z) to the doorway, so the room poses that stand in the
+ * gap remain legal; the Cellar's box is its four walls less the thickness of
+ * the stone. A hand on the camera, a restored return slot and every named
+ * pose all pass through the standing place's hold, so a room can never be
+ * seen from the lawn.
+ */
+export const PLACE_HOLDS: Readonly<Record<HarbourPlaceId, RoomHold | null>> = Object.freeze({
+  court: null,
+  tower: Object.freeze({
+    eye: { min: [-2.85, 0.3, -2.85] as Vec3, max: [2.85, 3.4, 4.6] as Vec3 },
+    target: { min: [-2.2, 0.2, -2.2] as Vec3, max: [2.2, 3.0, 2.2] as Vec3 },
+    minR: 1.4, maxR: 5.2, minPhi: 0.85, maxPhi: 1.38,
+  }),
+  cellar: Object.freeze({
+    eye: { min: [-4.9, 0.3, -3.1] as Vec3, max: [4.9, 2.85, 3.15] as Vec3 },
+    target: { min: [-4.2, 0.2, -2.9] as Vec3, max: [4.2, 2.2, 2.4] as Vec3 },
+    minR: 1.4, maxR: 6.5, minPhi: 0.85, maxPhi: 1.38,
+  }),
+});
 
 /** The registry the runtime reads the active place from. `court/CourtScene.ts` registers itself on import. */
 export const PLACES: Partial<Record<HarbourPlaceId, Place>> = {};

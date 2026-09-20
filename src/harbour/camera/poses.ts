@@ -200,6 +200,55 @@ export function flagstoneVisible(pose: CourtPose, aspect: number, fov = COURT_FO
   });
 }
 
+/**
+ * A room's hold on the camera (BUILD_PLAN_SLICE2 addendum): the box the **eye**
+ * must stay inside, the smaller box the target may wander in, and the room's
+ * own distance and tilt limits. The Court has no hold — it is open sky — but a
+ * room six units across must not be seen from the lawn: with the ceiling
+ * one-sided and the walls thin, an eye outside the shell shows a doll's box,
+ * and a stale return slot written by an older build can put it there.
+ */
+export type RoomHold = {
+  /** The eye stays inside this box, inclusive. */
+  eye: { min: Vec3; max: Vec3 };
+  /** The target stays inside this box. */
+  target: { min: Vec3; max: Vec3 };
+  minR: number;
+  maxR: number;
+  minPhi: number;
+  maxPhi: number;
+};
+
+const held = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
+
+/**
+ * Hold a pose inside a room. Pure and total. The target is clamped into its
+ * box first; then, with the pose's own direction kept, `r` is shortened until
+ * the eye sits inside the eye box — never lengthened, and never below `minR`.
+ * A pose already inside comes back identical.
+ */
+export function holdPoseInRoom(pose: CourtPose, hold: RoomHold | null): CourtPose {
+  if (!hold) return pose;
+  const target: [number, number, number] = [
+    held(pose.target[0], hold.target.min[0], hold.target.max[0]),
+    held(pose.target[1], hold.target.min[1], hold.target.max[1]),
+    held(pose.target[2], hold.target.min[2], hold.target.max[2]),
+  ];
+  const phi = held(Number.isFinite(pose.phi) ? pose.phi : hold.maxPhi, hold.minPhi, hold.maxPhi);
+  const theta = wrap(Number.isFinite(pose.theta) ? pose.theta : 0);
+  let r = held(Number.isFinite(pose.r) ? pose.r : hold.maxR, hold.minR, hold.maxR);
+  // The eye sits at target + r·direction; shorten r so every axis stays in its box.
+  const direction: Vec3 = [Math.sin(phi) * Math.sin(theta), Math.cos(phi), Math.sin(phi) * Math.cos(theta)];
+  for (let axis = 0; axis < 3; axis++) {
+    const d = direction[axis]!;
+    if (Math.abs(d) < 1e-9) continue;
+    const room = ((d > 0 ? hold.eye.max[axis]! : hold.eye.min[axis]!) - target[axis]!) / d;
+    if (room < r) r = room;
+  }
+  r = held(r, hold.minR, hold.maxR);
+  return { target, r, theta, phi };
+}
+
 /** Hold a pose inside the Court's bounds (the same rule `clampRoamCam` applies to the live camera). */
 export function clampCourtPose(pose: CourtPose): CourtPose {
   const [tx, ty, tz] = pose.target;

@@ -9,6 +9,7 @@ import {
   TERRACE_RADIUS,
   clampCourtPose,
   courtPose,
+  holdPoseInRoom,
   flagstoneVisible,
   poseEye,
   projectPoint,
@@ -18,6 +19,9 @@ import {
   type CourtPose,
 } from "../src/harbour/camera/poses.ts";
 import { EASE, ROAM_COURT_BOUNDS, clampPose, createCourtCamera } from "../src/harbour/camera/courtCamera.ts";
+import { PLACE_HOLDS } from "../src/harbour/scene/place.ts";
+import { towerPoses } from "../src/harbour/tower/TowerScene.ts";
+import { cellarPoses } from "../src/harbour/cellar/CellarScene.ts";
 import { clampRoamCam } from "../src/path/world/roamCamera.ts";
 
 const PHONE_ASPECTS = [320 / 568, 390 / 844, 430 / 932];
@@ -327,3 +331,45 @@ describe("Little Harbour · the Court's camera (BUILD_PLAN #19)", () => {
     }
   });
 });
+
+describe("a room's hold on the camera (holdPoseInRoom)", () => {
+  it("returns a legal pose untouched, holds a wild one, and is total", () => {
+    const tower = PLACE_HOLDS.tower!;
+    const standing: CourtPose = { target: [0, 0.5, 0.25], r: 3.25, theta: 0.1, phi: 1.375 };
+    expect(samePose(holdPoseInRoom(standing, tower), standing, 1e-9)).toBe(true);
+    expect(holdPoseInRoom(standing, null)).toBe(standing);
+    // The Court's diorama pose, restored by a stale return slot, is pulled inside the tower.
+    const fromTheLawn: CourtPose = { target: [0, 2.1, 0], r: 11, theta: 0.34, phi: 1.34 };
+    const heldPose = holdPoseInRoom(fromTheLawn, tower);
+    expect(heldPose.r).toBeLessThanOrEqual(tower.maxR);
+    const eye = poseEye(heldPose);
+    expect(eye[0]).toBeGreaterThanOrEqual(tower.eye.min[0] - 1e-6);
+    expect(eye[0]).toBeLessThanOrEqual(tower.eye.max[0] + 1e-6);
+    expect(eye[1]).toBeLessThanOrEqual(tower.eye.max[1] + 1e-6);
+    expect(eye[2]).toBeLessThanOrEqual(tower.eye.max[2] + 1e-6);
+    // Total: rubbish in, a legal pose out.
+    const rubbish = holdPoseInRoom({ target: [Number.NaN, 99, -99], r: Number.NaN, theta: Number.NaN, phi: Number.NaN }, tower);
+    expect(Number.isFinite(rubbish.r)).toBe(true);
+    expect(rubbish.phi).toBeGreaterThanOrEqual(tower.minPhi);
+    expect(rubbish.phi).toBeLessThanOrEqual(tower.maxPhi);
+  });
+
+  it("keeps every named pose of the tower and the cellar legal in its own room", () => {
+    for (const [id, poses] of [["tower", towerPoses([])], ["cellar", cellarPoses([])]] as const) {
+      const roomHold = PLACE_HOLDS[id]!;
+      for (const [key, pose] of Object.entries(poses)) {
+        // The sky poses are establishing shots and are deliberately held (they framed the room from the lawn).
+        const heldPose = holdPoseInRoom(pose, roomHold);
+        const eye = poseEye(heldPose);
+        for (let axis = 0; axis < 3; axis++) {
+          expect(eye[axis]!, `${id} ${key} eye[${axis}]`).toBeGreaterThanOrEqual(roomHold.eye.min[axis]! - 1e-6);
+          expect(eye[axis]!, `${id} ${key} eye[${axis}]`).toBeLessThanOrEqual(roomHold.eye.max[axis]! + 1e-6);
+        }
+        // The room's own pose (the one you stand in) must come through unshortened.
+        // (`samePose`, not deep equality: the wrap of theta re-derives it through atan2.)
+        if (key.startsWith(`${id}:`)) expect(samePose(heldPose, pose, 1e-9), `${id} ${key} untouched`).toBe(true);
+      }
+    }
+  });
+});
+
