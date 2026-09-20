@@ -8,7 +8,15 @@ const hash = (text: string) => [...text].reduce((sum,c)=>Math.imul(sum ^ c.charC
 let master:Promise<THREE.Group>|null=null,masterRoot:THREE.Group|null=null,users=0;
 async function acquireMaster(){users++;try{master??=new GLTFLoader().loadAsync("/models/mandevilla-living-presence.glb").then(gltf=>{masterRoot=gltf.scene;return gltf.scene;});return await master;}catch(error){users--;master=null;throw error;}}
 function releaseMaster(){users--;if(users===0&&masterRoot){disposeObject(masterRoot);masterRoot=null;master=null;}}
-export async function createBloomQueen(style: QueenStyle, evidence: BloomEvidence[]): Promise<THREE.Group> {
+/**
+ * What is drawn around the master. The house keeps both (today's look); the
+ * Court asks for `{decoration:false}` so nothing is drawn over her own pot —
+ * no second pot, crown torus, trellis or eggs — while the growth stems stay.
+ */
+export type BloomQueenOptions = { decoration?: boolean; growth?: boolean };
+export const BLOOM_QUEEN_HEIGHT = 2.05;
+export async function createBloomQueen(style: QueenStyle, evidence: BloomEvidence[], options: BloomQueenOptions = {}): Promise<THREE.Group> {
+  const {decoration:withDecoration=true,growth:withGrowth=true}=options;
   const loaded = await acquireMaster();
   const group = new THREE.Group(); group.name = "Bloom V2 · Living Presence";
   const sculpture = loaded.clone(true);
@@ -16,9 +24,10 @@ export async function createBloomQueen(style: QueenStyle, evidence: BloomEvidenc
   group.userData.releaseBloomMaster=releaseMaster;
   const box = new THREE.Box3().setFromObject(sculpture), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
   sculpture.position.set(-center.x,-box.min.y,-center.z);
-  const normal = new THREE.Group(); normal.add(sculpture); normal.scale.setScalar(2.05 / Math.max(size.y,.01)); group.add(normal);
+  const normal = new THREE.Group(); normal.name="Normalised master"; normal.add(sculpture); normal.scale.setScalar(BLOOM_QUEEN_HEIGHT / Math.max(size.y,.01)); group.add(normal);
   sculpture.traverse(node => {if(node instanceof THREE.Mesh){node.castShadow=true;node.receiveShadow=true;}});
   group.userData.evidence=evidence;
+  if(withDecoration){
   const decoration = new THREE.Group(); decoration.name="Personal styling · never financial form";
   group.add(decoration);
   const potColor={terracotta:0xb66547,porcelain:0xf0e7d4,"sea-glass":0x609e91}[style.pot];
@@ -31,7 +40,17 @@ export async function createBloomQueen(style: QueenStyle, evidence: BloomEvidenc
     const points=style.trellis==="fan"?[new THREE.Vector3(0,.1,-.35),new THREE.Vector3(Math.sin(angle)*1.7,2.3,-.35)]:[new THREE.Vector3(x,.2,-.4),new THREE.Vector3(x,2.1+(.4-Math.abs(x)*.5),-.4)];
     decoration.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),8,.013,5,false),new THREE.MeshStandardMaterial({color:0xa78652,roughness:.7})));
   }
-  const growth=new THREE.Group();growth.name="Supported history · identity anchored";group.add(growth);
+  for(let i=0;i<3;i++){
+    const minion=new THREE.Mesh(new THREE.SphereGeometry(.14,14,10),new THREE.MeshStandardMaterial({color:[0xd9bd84,0x8ca890,0xcf937f][i],roughness:.34}));minion.scale.y=1.45;
+    minion.position.set(style.minions==="pairs"?(i-1)*.4:Math.cos((i+1)*.8)*.85,.11,style.minions==="garden"?-.65: .5+Math.sin(i)*.18);decoration.add(minion);
+  }
+  }
+  if(withGrowth)group.add(createBloomGrowth(style,evidence));
+  return group;
+}
+/** The supported-history stems and blooms alone, seated at the group origin (stem bases at y≈0.15). The Court seats them at the roots itself. */
+export function createBloomGrowth(style: QueenStyle, evidence: BloomEvidence[]): THREE.Group {
+  const growth=new THREE.Group();growth.name="Supported history · identity anchored";
   // Each authored event has its own stable branch. Appending history cannot move another branch.
   for(const row of evidence.slice(0,36)){
     const seed=hash(row.id),angle=(seed%628)/100, height=.5+(seed%130)/100, radius=.45+(seed%25)/100;
@@ -42,11 +61,7 @@ export async function createBloomQueen(style: QueenStyle, evidence: BloomEvidenc
       const petal=new THREE.Mesh(new THREE.SphereGeometry(.075,8,6),new THREE.MeshStandardMaterial({color:bloomColor,roughness:.58}));petal.scale.set(1.1,.42,1.5);petal.position.copy(end).add(new THREE.Vector3(Math.cos(p*Math.PI*.4)*.08,Math.sin(p*Math.PI*.4)*.06,0));growth.add(petal);
     } else {const bud=new THREE.Mesh(new THREE.SphereGeometry(row.kind==="revision"?.045:.07,8,6),new THREE.MeshStandardMaterial({color:row.kind==="revision"?0xab884c:0x6f944e}));bud.position.copy(end);growth.add(bud);}
   }
-  for(let i=0;i<3;i++){
-    const minion=new THREE.Mesh(new THREE.SphereGeometry(.14,14,10),new THREE.MeshStandardMaterial({color:[0xd9bd84,0x8ca890,0xcf937f][i],roughness:.34}));minion.scale.y=1.45;
-    minion.position.set(style.minions==="pairs"?(i-1)*.4:Math.cos((i+1)*.8)*.85,.11,style.minions==="garden"?-.65: .5+Math.sin(i)*.18);decoration.add(minion);
-  }
-  return group;
+  return growth;
 }
 export function disposeObject(root: THREE.Object3D): void {
   const geometries=new Set<THREE.BufferGeometry>(),materials=new Set<THREE.Material>(),textures=new Set<THREE.Texture>();
