@@ -47,7 +47,7 @@
   min-height: calc(100dvh - var(--harbour-band) + 26px);
   padding: 10px clamp(10px, 2vw, 24px) 0;
 }
-.app[data-harbour-door] .house-tool-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 6px 2px; }
+.app[data-harbour-door] .house-tool-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 128px 2px 6px; }
 /* A tool that is a body-level portal room (Kitty Banks) sits below the band too:
    the room stays the sky whichever way a door chooses to open. */
 :root:has(.app[data-harbour-door]) .kitty-room {
