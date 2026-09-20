@@ -250,9 +250,18 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     const world = runtime.current;
     if (!world) return;
     world.setToolOpen(toolOpen);
-    // The Court is wide enough to read in a strip from wherever you were standing;
-    // a room six units across is not, so it steps back to its own establishing pose.
-    if (toolOpen) { setRects([]); if (placeRef.current !== "court") world.go("sky"); } else world.go("court");
+    // The band above the sheet is a frieze, and each place declares its own
+    // (`door` in its pose table): the rack close and level, the rail at eye
+    // height, her portrait in the Court.
+    if (!toolOpen) { world.go("court"); return; }
+    setRects([]);
+    world.go("door");
+    // The App focuses the tool it opened, and the browser scrolls the focus
+    // into view — which can throw the sheet to the top and the room's band
+    // off the screen. The door's promise is the room staying the sky, so the
+    // page comes back to the top once the focus has landed.
+    const settle = window.setTimeout(() => window.scrollTo({ top: 0 }), 160);
+    return () => window.clearTimeout(settle);
   }, [toolOpen]);
 
   /**

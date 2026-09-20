@@ -52,8 +52,13 @@ export const fovFor = (composition: Composition): number => (composition === "ph
 const isCourtAnchor = (id: string | undefined): id is CourtAnchor => (COURT_ANCHOR_IDS as readonly string[]).includes(id ?? "");
 
 export type HarbourRuntime = {
-  /** Fly to a mode; `anchor` is one of `poses.ts`'s named anchors or any anchor the place exposes. */
-  go: (mode: CourtMode, anchor?: string) => void;
+  /**
+   * Fly to a mode; `anchor` is one of `poses.ts`'s named anchors or any anchor
+   * the place exposes. `"door"` is the frieze a place shows in the band above
+   * an open tool: its own `door` pose when it names one, else its sky; the
+   * Court's frieze is her portrait.
+   */
+  go: (mode: CourtMode | "door", anchor?: string) => void;
   setReading: (reading: PlaceReading | null) => void;
   /** A close look at any point (the Queen's roots, the slip). */
   look: (look: CourtLook) => void;
@@ -448,13 +453,14 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * by their own pose tables — `<placeId>:<composition>` for the room itself,
    * `object:<anchor>:<composition>` for one thing in it, `sky` for the whole.
    */
-  function aim(mode: CourtMode, anchor?: string): void {
+  function aim(mode: CourtMode | "door", anchor?: string): void {
     court.setReduced(reduced.matches);
     if (placeId !== "court") {
       const key = mode === "court" ? placeId : mode === "object" && anchor ? `object:${anchor}` : mode;
-      const pose = poseFor(handle.poses(), key, composition);
+      const pose = poseFor(handle.poses(), key, composition) ?? (mode === "door" ? poseFor(handle.poses(), "sky", composition) : undefined);
       if (pose) { court.goTo({ target: pose.target, r: pose.r, theta: pose.theta, phi: pose.phi }); return; }
     }
+    if (mode === "door") { court.go("object", "queen"); return; }
     if (mode !== "object" || isCourtAnchor(anchor)) { court.go(mode, isCourtAnchor(anchor) ? anchor : undefined); return; }
     const found = handle.anchors().find(a => a.id === anchor);
     if (found) court.goTo({ target: [found.position[0], Math.max(0.6, found.position[1]), found.position[2]] });

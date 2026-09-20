@@ -2,18 +2,18 @@
 
 /* ── "No chrome but the compass" (BUILD_PLAN §1.3). The brand and the space switch move into the quick sheet;
       the environment pill floats top-right and the sync line stays as one thin line — trust chrome never hides. ── */
-.app[data-harbour-court] { --harbour-nav: var(--nav, 76px); max-width: none; padding: 0; }
-.app[data-harbour-court] .app-shell { position: relative; }
-.app[data-harbour-court] .topbar { position: absolute; top: 0; right: 0; left: auto; z-index: 14; margin: 0; padding: 10px clamp(12px, 3vw, 28px); background: none; border: 0; box-shadow: none; pointer-events: none; }
-.app[data-harbour-court] .topbar .brand { display: none; }
-.app[data-harbour-court] .topbar .pill { pointer-events: auto; box-shadow: 0 2px 10px #1a201822; }
-.app[data-harbour-court] .view-switch, .app[data-harbour-court] .ledger-switcher { display: none; }
-.app[data-harbour-court] .sync-freshness { position: absolute; left: clamp(12px, 3vw, 28px); right: auto; top: 10px; z-index: 14; margin: 0; max-width: min(62vw, 420px); min-height: 34px; padding: 5px 10px; font-size: 0.72rem; background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(6px); }
-.app[data-harbour-court] .sync-freshness__space { display: none; }
-.app[data-harbour-court] [data-app-page][data-house-resting] { display: none; }
-.app[data-harbour-court] .hercules-pill, .app[data-harbour-court] .hercules-live { display: none; }
+.app:is([data-harbour-court], [data-harbour-door]) { --harbour-nav: var(--nav, 76px); max-width: none; padding: 0; }
+.app:is([data-harbour-court], [data-harbour-door]) .app-shell { position: relative; }
+.app:is([data-harbour-court], [data-harbour-door]) .topbar { position: absolute; top: 0; right: 0; left: auto; z-index: 14; margin: 0; padding: 10px clamp(12px, 3vw, 28px); background: none; border: 0; box-shadow: none; pointer-events: none; }
+.app:is([data-harbour-court], [data-harbour-door]) .topbar .brand { display: none; }
+.app:is([data-harbour-court], [data-harbour-door]) .topbar .pill { pointer-events: auto; box-shadow: 0 2px 10px #1a201822; }
+.app:is([data-harbour-court], [data-harbour-door]) .view-switch, .app:is([data-harbour-court], [data-harbour-door]) .ledger-switcher { display: none; }
+.app:is([data-harbour-court], [data-harbour-door]) .sync-freshness { position: absolute; left: clamp(12px, 3vw, 28px); right: auto; top: 10px; z-index: 14; margin: 0; max-width: min(62vw, 420px); min-height: 34px; padding: 5px 10px; font-size: 0.72rem; background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(6px); }
+.app:is([data-harbour-court], [data-harbour-door]) .sync-freshness__space { display: none; }
+.app:is([data-harbour-court], [data-harbour-door]) [data-app-page][data-house-resting] { display: none; }
+.app:is([data-harbour-court], [data-harbour-door]) .hercules-pill, .app:is([data-harbour-court], [data-harbour-door]) .hercules-live { display: none; }
 /* Banners (books validation, command banner, the kitchen notice) keep their place above the scene. */
-.app[data-harbour-court] .kitchen-notice, .app[data-harbour-court] .command-banner { position: relative; z-index: 13; margin: 56px clamp(12px, 3vw, 28px) 0; }
+.app:is([data-harbour-court], [data-harbour-door]) .kitchen-notice, .app:is([data-harbour-court], [data-harbour-door]) .command-banner { position: relative; z-index: 13; margin: 56px clamp(12px, 3vw, 28px) 0; }
 
 /* ── The stage: full-bleed above the compass. ── */
 .harbour-world { position: relative; isolation: isolate; margin: 0; color: var(--house-ink, #332d24); }
@@ -24,8 +24,37 @@
 .harbour-world__stage .house-world__canvas, .harbour-world__stage .house-world__canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .harbour-world__stage .house-world__canvas canvas { display: block; }
 .harbour-world__stage .house-world__canvas { background-size: 100% 100%; }
-/* The mantel above an open tool. Tall enough that the room behind it is still a room. */
-.harbour-world.has-open-object .harbour-world__stage { height: clamp(260px, 34vh, 420px); min-height: 0; }
+/* ── A door open in a room (slice 3): the room stays the sky. The world fixes itself as a
+      band across the top of the viewport and the page arrives as a sheet over it, rounded
+      and shadowed, sliding up over the room as it scrolls. The old mantel — shrinking the
+      stage in flow and reflowing the whole page — is gone. ── */
+/* The band's height lives on :root (via :has) because some tools are body-level
+   portal rooms (`.kitty-room`) that cannot inherit a variable from `.app`. */
+:root:has(.app[data-harbour-door]) { --harbour-band: clamp(250px, 36dvh, 440px); }
+@media (max-width: 719px) { :root:has(.app[data-harbour-door]) { --harbour-band: clamp(170px, 26dvh, 300px); } }
+.app[data-harbour-door] { max-width: none; padding: 0; }
+.app[data-harbour-door] .harbour-world { position: fixed; inset: 0 0 auto 0; z-index: 0; }
+.app[data-harbour-door] .harbour-world .harbour-world__stage,
+.harbour-world.has-open-object .harbour-world__stage { height: var(--harbour-band, clamp(250px, 36dvh, 440px)); min-height: 0; pointer-events: none; }
+/* The sheet's own header carries "Put it back"; the floating one would hide beneath it. */
+.app[data-harbour-door] .harbour-world__put-back { display: none; }
+.app[data-harbour-door] [data-app-page] {
+  position: relative; z-index: 2;
+  margin-top: calc(var(--harbour-band) - 26px);
+  background: var(--card, #fffaf2);
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -16px 44px #17241c40;
+  min-height: calc(100dvh - var(--harbour-band) + 26px);
+  padding: 10px clamp(10px, 2vw, 24px) 0;
+}
+.app[data-harbour-door] .house-tool-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 6px 2px; }
+/* A tool that is a body-level portal room (Kitty Banks) sits below the band too:
+   the room stays the sky whichever way a door chooses to open. */
+:root:has(.app[data-harbour-door]) .kitty-room {
+  top: calc(var(--harbour-band, 36dvh) - 26px);
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -16px 44px #17241c40;
+}
 .harbour-world__put-back { position: absolute; z-index: 8; bottom: 20px; left: clamp(20px, 4vw, 72px); min-height: 44px; font: inherit; font-size: 13px; background: var(--paper, #f7efdc); color: var(--ink, #332d24); border: 1px solid var(--line, #59412f); border-radius: 30px; padding: 9px 22px; box-shadow: 0 6px 18px #17241c33; cursor: pointer; }
 .harbour-world__put-back:focus-visible { outline: 3px solid #126fb1; outline-offset: 3px; }
 .harbour-world__stair { position: absolute; z-index: 8; top: 52px; left: clamp(12px, 3vw, 28px); min-height: 44px; font: inherit; font-size: 13px; background: var(--paper, #f7efdc); color: var(--ink, #332d24); border: 1px solid var(--line, #59412f); border-radius: 30px; padding: 9px 20px; box-shadow: 0 6px 18px #17241c33; cursor: pointer; }
@@ -73,7 +102,7 @@
 
 /* ── Desktop: the environment pill and the sync line sit in the top corners; the compass is the pill bottom-right (harbour-nav.css). ── */
 @media (min-width: 720px) {
-  .app[data-harbour-court] .harbour-world__stage { height: 100dvh; }
+  .app:is([data-harbour-court], [data-harbour-door]) .harbour-world__stage { height: 100dvh; }
   /* The compass pill owns the bottom-right; her line and the sync words keep to the left. */
   .harbour-world__phrase { left: 24px; transform: none; bottom: 58px; }
   .harbour-world__supported { left: 24px; transform: none; bottom: 22px; }
@@ -83,19 +112,18 @@
 
 /* ── Phone ≤ 719: she fills the portrait; the compass is the bottom bar; the sync line is one thin strip. ── */
 @media (max-width: 719px) {
-  .app[data-harbour-court] .topbar { padding: 8px 10px; }
-  .app[data-harbour-court] .topbar .pill { font-size: 11px; padding: 5px 10px; }
-  .app[data-harbour-court] .sync-freshness { left: 10px; top: 8px; max-width: calc(100vw - 150px); font-size: 0.68rem; min-height: 30px; padding: 3px 8px; }
+  .app:is([data-harbour-court], [data-harbour-door]) .topbar { padding: 8px 10px; }
+  .app:is([data-harbour-court], [data-harbour-door]) .topbar .pill { font-size: 11px; padding: 5px 10px; }
+  .app:is([data-harbour-court], [data-harbour-door]) .sync-freshness { left: 10px; top: 8px; max-width: calc(100vw - 150px); font-size: 0.68rem; min-height: 30px; padding: 3px 8px; }
   .court-flat__sheet { padding-inline: 12px; }
   .court-flat__plinths { grid-template-columns: 1fr; }
   .court-flat__gate { grid-template-columns: 1fr; }
-  .harbour-world.has-open-object .harbour-world__stage { height: clamp(200px, 26vh, 260px); }
   .harbour-world__put-back { left: 14px; bottom: 14px; font-size: 12px; }
   /* The compass handle rises 22px above the bar; her line sits well above it. */
   .harbour-world__phrase { bottom: 70px; font-size: 14px; }
   .harbour-world__supported, .harbour-world__checking { bottom: 30px; }
 }
-@media (max-width: 359px) { .app[data-harbour-court] .sync-freshness { max-width: calc(100vw - 130px); } }
+@media (max-width: 359px) { .app:is([data-harbour-court], [data-harbour-door]) .sync-freshness { max-width: calc(100vw - 130px); } }
 
 /* ── Reduced motion: cuts, no breathing, no spark, no easing anywhere in the shell. ── */
 @media (prefers-reduced-motion: reduce) {
