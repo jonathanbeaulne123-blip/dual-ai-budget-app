@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { seedDemoHousehold } from "../src/core/seed.ts";
+import { newHouseholdTemplate, seedDemoHousehold } from "../src/core/seed.ts";
 import { fundSnapshot, type FundSnapshot } from "../src/core/fundModel.ts";
 import { fundPulse, deriveFundPulseInput, presenceLines, type FundPulse } from "../src/core/fundPulse.ts";
 import { bubbleNotice, type HerculesNotice } from "../src/core/notices.ts";
 import { projectKittyNest } from "../src/core/kittyNest.ts";
 import { cellarJars } from "../src/core/queenCellar.ts";
-import { buildHarbourReading, nextCommitment, noticedItem, HARBOUR_SLIP_LINES, type HarbourReading } from "../src/harbour/data/reading.ts";
+import { queenShelf, queenShelfOrder } from "../src/core/queenPresentation.ts";
+import { buildCisternReading, buildHarbourReading, CISTERN_FLOOR, jarState, jarUmbrella, nextCommitment, noticedItem, HARBOUR_SLIP_LINES, type HarbourReading } from "../src/harbour/data/reading.ts";
 
 // Fictional Development data only (seedDemoHousehold); the civil date is fixed so every assertion is stable.
 const today = "2026-09-20";
@@ -130,5 +131,132 @@ describe("noticedItem — need before good news", () => {
     expect(noticedItem(pulseOf("building"), { ...hercules, action: "reviewPotentialExpense" })?.next).toBe("Review it with Hercules.");
     expect(noticedItem(pulseOf("building"), { ...hercules, action: "none" })).toBeNull();
     expect(noticedItem(pulseOf("covered"), null)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Slice 2: the tower, the cellar and the cistern (BUILD_PLAN_SLICE2 §5).
+
+describe("the tower, the cellar and the cistern — slice 2's reading", () => {
+  const reading = buildHarbourReading(household, memberId, today, "current");
+  const empty = newHouseholdTemplate();
+  const emptyReading = buildHarbourReading(empty, empty.members[0]?.id ?? "MEM-001", today, "current");
+
+  it("stands the rack's shelves in the tower, each bank with its 0–10 step", () => {
+    const nest = projectKittyNest(household, memberId, "household", today);
+    const order = queenShelfOrder(household.kittyNestDesigns);
+    const shelf = queenShelf(nest, household, order);
+    expect(reading.tower.shelves.length).toBeGreaterThan(0);
+    const banks = reading.tower.shelves.flatMap((row) => row.banks);
+    expect(banks.map((bank) => bank.key).sort()).toEqual(shelf.map((item) => item.designKey).sort());
+    for (const bank of banks) {
+      expect(Number.isInteger(bank.step)).toBe(true);
+      expect(bank.step).toBeGreaterThanOrEqual(0);
+      expect(bank.step).toBeLessThanOrEqual(10);
+      expect(bank.targetCents).toBeGreaterThanOrEqual(0);
+      expect(bank.sculptSeed).toBe(bank.key);
+      expect(["protect", "everyday", "build", "prepare"]).toContain(bank.category);
+    }
+    for (const row of reading.tower.shelves) {
+      expect(row.share).toBeGreaterThanOrEqual(1);
+      expect(row.cutoff).toBeGreaterThanOrEqual(0);
+      expect(row.cutoff).toBeLessThanOrEqual(20);
+    }
+  });
+
+  it("names the goal scale's ends, largest and smallest, over the banks that have a target", () => {
+    const targets = reading.tower.shelves.flatMap((row) => row.banks).map((bank) => bank.targetCents).filter((cents) => cents > 0);
+    expect(reading.tower.largestTargetCents).toBe(targets.length ? Math.max(...targets) : 0);
+    expect(reading.tower.smallestTargetCents).toBe(targets.length ? Math.min(...targets) : 0);
+    expect(reading.tower.largestTargetCents).toBeGreaterThanOrEqual(reading.tower.smallestTargetCents);
+    // A shelf of goals nobody has put a target on has no scale to speak of, and says 0 rather than infinity.
+    expect(Number.isFinite(reading.tower.largestTargetCents)).toBe(true);
+    expect(Number.isFinite(reading.tower.smallestTargetCents)).toBe(true);
+  });
+
+  it("hands the jug and the gun to the Fund's custodian only", () => {
+    const custodianId = household.householdFund?.custodianMemberId ?? null;
+    expect(reading.tower.jug.custodian).toBe(custodianId === memberId);
+    expect(reading.tower.gun.available).toBe(reading.tower.jug.custodian);
+    expect(reading.tower.jug.safeCents).toBeGreaterThanOrEqual(0);
+    if (custodianId) expect(reading.tower.jug.holder).toBe(household.members.find((row) => row.id === custodianId)?.name ?? null);
+    const other = household.members.find((row) => row.id !== custodianId);
+    if (other) expect(buildHarbourReading(household, other.id, today, "current").tower.jug.custodian).toBe(false);
+  });
+
+  it("puts one jar on the rail per bill, in the cellar's own states and sizes", () => {
+    const jars = cellarJars(projectKittyNest(household, memberId, "household", today), household, today);
+    expect(reading.cellar.jars).toHaveLength(jars.length);
+    expect(reading.cellar.jars.map((jar) => jar.key)).toEqual(jars.map((jar) => jar.id));
+    for (const jar of reading.cellar.jars) {
+      expect(["planned", "set-aside", "paid", "short"]).toContain(jar.state);
+      expect([1, 2, 3, 4, 5]).toContain(jar.size);
+      expect(jar.fill).toBeGreaterThanOrEqual(0);
+      expect(jar.fill).toBeLessThanOrEqual(1);
+      expect(jar.due).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(jar.umbrella === null || typeof jar.umbrella === "string").toBe(true);
+      expect(jar.umbrella).not.toBe("coming-in");
+      expect(jar.umbrella).not.toBe("moving-money");
+    }
+  });
+
+  it("walks the month day by day and points at today", () => {
+    expect(reading.cellar.days.length).toBeGreaterThan(27);
+    expect(reading.cellar.days[reading.cellar.todayIndex]?.date).toBe(today);
+    expect(reading.cellar.days[reading.cellar.todayIndex]?.today).toBe(true);
+    expect(reading.cellar.days.filter((day) => day.today)).toHaveLength(1);
+  });
+
+  it("gives the water and the jars one dollar scale: the largest of the biggest jar, the prepare balance and the month's crest", () => {
+    const biggest = reading.cellar.jars.reduce((top, jar) => Math.max(top, jar.amountCents), 0);
+    // The water is walked day by day, and its crest is routinely above the standing
+    // balance; a ruler that stopped at the balance pinned the cistern to the top of its
+    // glass for half the month.
+    const crest = reading.cellar.days.reduce((top, day) => Math.max(top, day.balanceCents), 0);
+    expect(reading.cellar.prepareCents).toBe(reading.prepare.cents);
+    expect(reading.cellar.scaleCents).toBe(Math.max(biggest, reading.prepare.cents ?? 0, crest));
+    expect(reading.cellar.scaleCents).toBeGreaterThanOrEqual(biggest);
+    expect(reading.cellar.scaleCents).toBeGreaterThanOrEqual(crest);
+  });
+
+  it("reads the cistern as Protect against its target, never below a dark ring", () => {
+    expect(reading.cistern.cents).toBe(reading.protect.cents);
+    expect(reading.cistern.target).toBe(reading.protect.target);
+    expect(reading.cistern.level).toBeGreaterThanOrEqual(CISTERN_FLOOR);
+    expect(reading.cistern.level).toBeLessThanOrEqual(1);
+    expect(buildCisternReading({ cents: null, target: 300000 }).level).toBe(CISTERN_FLOOR);
+    expect(buildCisternReading({ cents: 50000, target: 0 }).level).toBe(CISTERN_FLOOR);
+    expect(buildCisternReading({ cents: 150000, target: 300000 }).level).toBeCloseTo(0.5, 6);
+    expect(buildCisternReading({ cents: 900000, target: 300000 }).level).toBe(1);
+    expect(buildCisternReading({ cents: null, target: 0 })).toEqual({ cents: null, target: 0, level: CISTERN_FLOOR });
+  });
+
+  it("is cosy, not broken, on a household with nothing in it", () => {
+    expect(emptyReading.tower.shelves.flatMap((row) => row.banks)).toEqual([]);
+    expect(emptyReading.tower.largestTargetCents).toBe(0);
+    expect(emptyReading.tower.smallestTargetCents).toBe(0);
+    expect(emptyReading.tower.jug.custodian).toBe(false);
+    expect(emptyReading.tower.gun.available).toBe(false);
+    expect(emptyReading.cellar.jars).toEqual([]);
+    expect(emptyReading.cellar.todayIndex).toBeGreaterThanOrEqual(0);
+    expect(emptyReading.cistern.level).toBe(CISTERN_FLOOR);
+    // Unknown stays unknown: an empty house never engraves a confident zero.
+    expect(emptyReading.cellar.prepareCents).toBe(emptyReading.prepare.cents);
+  });
+
+  it("reads a jar's state exactly as the vision words it", () => {
+    expect(jarState({ paid: true, full: true, strike: "shard" })).toBe("paid");
+    expect(jarState({ paid: false, full: false, strike: "crack" })).toBe("short");
+    expect(jarState({ paid: false, full: true, strike: "hammer" })).toBe("set-aside");
+    expect(jarState({ paid: false, full: false, strike: "none" })).toBe("planned");
+    // A confirmed shortfall is the only crack: a jar that is merely not full is still planned.
+    expect(jarState({ paid: false, full: false, strike: "none" })).not.toBe("short");
+  });
+
+  it("keeps the two bankless umbrellas out of the jars", () => {
+    expect(jarUmbrella({ umbrellaId: "coming-in" })).toBeNull();
+    expect(jarUmbrella({ umbrellaId: "moving-money" })).toBeNull();
+    expect(jarUmbrella({ umbrellaId: null })).toBeNull();
+    expect(jarUmbrella({ umbrellaId: "home" })).toBe("home");
   });
 });

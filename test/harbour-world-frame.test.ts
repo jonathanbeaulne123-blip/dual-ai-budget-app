@@ -6,6 +6,12 @@ import { BREATH_INTERVAL_MS, CAMERA_INTERVAL_MS, harbourFramePolicy } from "../s
 import { dprCap, effectiveDpr, qualityTier } from "../src/harbour/scene/quality.ts";
 import { GROUND_RADIUS, LAWN_RADIUS, SEA_LEVEL, TERRACE_LEVEL, TERRACE_RADIUS, groundHeightAt } from "../src/harbour/scene/ground.ts";
 import { EMPTY_PLACE, PLACES, SCENE_DRESSING, poseFor, registerPlace, type Place } from "../src/harbour/scene/place.ts";
+// Importing a place registers it: the convention test below reads all three.
+import "../src/harbour/court/CourtScene.ts";
+import "../src/harbour/tower/TowerScene.ts";
+import "../src/harbour/cellar/CellarScene.ts";
+// Captured at import, before any test swaps a place out of the registry.
+const REGISTERED = [PLACES.court, PLACES.tower, PLACES.cellar];
 import { createCourtCamera } from "../src/harbour/camera/courtCamera.ts";
 import { COURT_BOUNDS } from "../src/harbour/camera/poses.ts";
 
@@ -79,11 +85,33 @@ describe("groundHeightAt", () => {
 });
 
 describe("place registry", () => {
-  it("resolves a composition's own pose before the shared one", () => {
+  it("resolves a composition's own pose before the shared one, in either spelling", () => {
     const poses = { court: { target: [0, 1, 0] as const, r: 9, theta: 0, phi: 1 }, "court@phone": { target: [0, 1, 0] as const, r: 12, theta: 0, phi: 1 } };
     expect(poseFor(poses, "court", "phone")?.r).toBe(12);
     expect(poseFor(poses, "court", "desktop")?.r).toBe(9);
     expect(poseFor(poses, "sky", "phone")).toBeUndefined();
+    // `key:composition` is the convention and wins over the older `key@composition`.
+    const both = { ...poses, "court:phone": { target: [0, 1, 0] as const, r: 7, theta: 0, phi: 1 } };
+    expect(poseFor(both, "court", "phone")?.r).toBe(7);
+  });
+
+  it("every place writes its poses in one convention: key:composition", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const places = REGISTERED;
+    expect(places.filter(Boolean)).toHaveLength(3);
+    for (const place of places) {
+      if (!place) continue;
+      const scene = new THREE.Scene();
+      const handle = place.build(scene, SCENE_DRESSING.classic, null, "lite", { composition: "phone", signal: new AbortController().signal, invalidate: () => {} });
+      // The registry's own build: no loaders, no reading — just the geometry and the tables.
+      const keys = Object.keys(handle.poses());
+      expect(keys.length, place.id).toBeGreaterThan(0);
+      // No `@` spelling survives, and the room's own key resolves for both compositions.
+      expect(keys.filter((key) => key.includes("@")), place.id).toEqual([]);
+      expect(poseFor(handle.poses(), place.id, "phone"), place.id).toBeDefined();
+      expect(poseFor(handle.poses(), place.id, "desktop"), place.id).toBeDefined();
+      handle.dispose();
+    }
   });
   it("registers the court by id and offers every theme a dressing", () => {
     const place: Place = { id: "court", build: EMPTY_PLACE.build };
