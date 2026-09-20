@@ -1039,7 +1039,7 @@ export function createMiniWorld(host: HTMLElement, options: {
       }
       options.onFrame({ anchors: list, z, day, width, height });
     }
-    if (moving) raf = requestAnimationFrame(frame);
+    if (moving) raf = rendererLease.requestFrame(frame);
     else {
       lastT = 0;
       if (gesture) { gesture = false; options.onSettle?.(z, day); }
@@ -1047,9 +1047,9 @@ export function createMiniWorld(host: HTMLElement, options: {
   }
   function invalidate() {
     if (dead || raf || offscreen || paused || (typeof document !== "undefined" && document.hidden)) return;
-    raf = requestAnimationFrame(frame);
+    raf = rendererLease.requestFrame(frame);
   }
-  suspendRenderer = () => { if (raf) cancelAnimationFrame(raf); raf = 0; lastT = 0; };
+  suspendRenderer = () => { if (raf) rendererLease.cancelFrame(raf); raf = 0; lastT = 0; };
   const onHidden = () => { if (!document.hidden) invalidate(); };
   document.addEventListener("visibilitychange", onHidden);
   let io: IntersectionObserver | null = null;
@@ -1151,14 +1151,14 @@ export function createMiniWorld(host: HTMLElement, options: {
     setPaused(next: boolean) {
       if (next === paused) return;
       paused = next;
-      if (paused && raf) { cancelAnimationFrame(raf); raf = 0; lastT = 0; }
+      if (paused && raf) { rendererLease.cancelFrame(raf); raf = 0; lastT = 0; }
       if (!paused) invalidate();
     },
     stats() { return { frames, z, day, quality, paused, pickables: pickables.length, anchors: anchors.size }; },
     dispose() {
       if (dead) return;
       dead = true;
-      if (raf) cancelAnimationFrame(raf);
+      if (raf) rendererLease.cancelFrame(raf);
       document.removeEventListener("visibilitychange", onHidden);
       io?.disconnect();
       unlistenLost();

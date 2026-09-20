@@ -184,7 +184,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
   /** One frame, coalesced. */
   const invalidate = () => {
     if (dead || pending) return;
-    pending = requestAnimationFrame(() => { pending = 0; render(); });
+    pending = rendererLease.requestFrame(() => { pending = 0; render(); });
   };
 
   // ---- the ambient clock: her breath and the world she is in, on one loop ----
@@ -201,11 +201,11 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     if (stats.breathing) queen.setBreath(Math.sin((elapsed / BREATH_MS) * Math.PI * 2) * BREATH_PX * unitsPerPx);
     if (stats.ambient && scenery) scenery.tick(elapsed / 1000);
     render();
-    breathRaf = requestAnimationFrame(breathFrame);
+    breathRaf = rendererLease.requestFrame(breathFrame);
   };
-  const pump = () => { if (!dead && running() && !breathRaf) { breathStart = 0; breathRaf = requestAnimationFrame(breathFrame); } };
-  const halt = () => { if (breathRaf) cancelAnimationFrame(breathRaf); breathRaf = 0; };
-  suspendRenderer = () => { if (pending) cancelAnimationFrame(pending); pending = 0; halt(); };
+  const pump = () => { if (!dead && running() && !breathRaf) { breathStart = 0; breathRaf = rendererLease.requestFrame(breathFrame); } };
+  const halt = () => { if (breathRaf) rendererLease.cancelFrame(breathRaf); breathRaf = 0; };
+  suspendRenderer = () => { if (pending) rendererLease.cancelFrame(pending); pending = 0; halt(); };
   resumeRenderer = () => { if (hostRect.w && hostRect.h) { renderer.setSize(hostRect.w, hostRect.h, false); renderer.domElement.style.width = `${hostRect.w}px`; renderer.domElement.style.height = `${hostRect.h}px`; } invalidate(); pump(); };
   const setBreathing = (on: boolean) => {
     const next = on && !options.reducedMotion;
@@ -372,7 +372,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     dispose() {
       if (dead) return;
       dead = true;
-      if (pending) cancelAnimationFrame(pending);
+      if (pending) rendererLease.cancelFrame(pending);
       halt();
       for (const bank of banks.values()) { bank.sculpture.group.removeFromParent(); bank.sculpture.dispose(); }
       banks.clear();

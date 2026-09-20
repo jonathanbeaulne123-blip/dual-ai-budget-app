@@ -146,3 +146,89 @@ describe("whole-house renderer ownership", () => {
     expect(made.forceContextLoss).toHaveBeenCalledOnce();
   });
 });
+
+function fakeFrames() {
+  let id = 0;
+  const callbacks = new Map<number, FrameRequestCallback>();
+  const request = vi.fn((callback: FrameRequestCallback) => {
+    const next = ++id;
+    callbacks.set(next, callback);
+    return next;
+  });
+  const cancel = vi.fn((token: number) => { callbacks.delete(token); });
+  return {
+    request,
+    cancel,
+    fire(time = 16) {
+      const next = [...callbacks];
+      callbacks.clear();
+      for (const [, callback] of next) callback(time);
+    },
+  };
+}
+
+describe("world renderer frame scheduler", () => {
+  it("coalesces runnable scene callbacks under one native frame and schedules a later tick", async () => {
+    const { createWorldFrameScheduler } = await import("../src/house/world/rendererOwner.ts");
+    const native = fakeFrames();
+    const scheduler = createWorldFrameScheduler(native);
+    const first = { active: true, released: false }, second = { active: true, released: false };
+    const drew = vi.fn();
+
+    scheduler.request(first, time => { drew("first", time); scheduler.request(first, next => drew("next", next)); });
+    scheduler.request(second, time => drew("second", time));
+    expect(native.request).toHaveBeenCalledTimes(1);
+
+    native.fire(20);
+    expect(drew).toHaveBeenCalledWith("first", 20);
+    expect(drew).toHaveBeenCalledWith("second", 20);
+    expect(native.request).toHaveBeenCalledTimes(2);
+
+    native.fire(36);
+    expect(drew).toHaveBeenCalledWith("next", 36);
+  });
+
+  it("drops canceled, suspended, and released lease work without leaving a native frame", async () => {
+    const { createWorldFrameScheduler } = await import("../src/house/world/rendererOwner.ts");
+    const native = fakeFrames();
+    const scheduler = createWorldFrameScheduler(native);
+    const canceled = { active: true, released: false }, suspended = { active: true, released: false }, released = { active: true, released: false };
+    const drew = vi.fn();
+
+    const canceledId = scheduler.request(canceled, drew);
+    scheduler.cancel(canceledId);
+    expect(native.cancel).toHaveBeenCalledTimes(1);
+
+    scheduler.request(suspended, drew);
+    scheduler.request(released, drew);
+    suspended.active = false;
+    released.released = true;
+    native.fire();
+    expect(drew).not.toHaveBeenCalled();
+  });
+
+  it("cancels a background lease frame and leaves the foreground lease runnable", () => {
+    const native = fakeFrames();
+    vi.stubGlobal("requestAnimationFrame", native.request);
+    vi.stubGlobal("cancelAnimationFrame", native.cancel);
+    try {
+      const made = fakeRenderer(), factory = vi.fn(() => made.renderer);
+      const back = acquireWorldRenderer(document.createElement("div"), { shared: true, priority: 0, rendererFactory: factory });
+      const drawn = vi.fn();
+      back.requestFrame(drawn);
+      const front = acquireWorldRenderer(document.createElement("div"), { shared: true, priority: 1, rendererFactory: factory });
+      expect(native.cancel).toHaveBeenCalledTimes(1);
+
+      front.requestFrame(drawn);
+      native.fire();
+      expect(drawn).toHaveBeenCalledTimes(1);
+      front.release();
+      back.requestFrame(drawn);
+      native.fire();
+      expect(drawn).toHaveBeenCalledTimes(2);
+      back.release();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+});

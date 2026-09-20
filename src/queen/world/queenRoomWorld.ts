@@ -526,9 +526,9 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       let busy = false;
       for (const seat of studios.values()) if (seat.sculpture.update(t)) busy = true;
       render();
-      if (busy) animRaf = requestAnimationFrame(step);
+      if (busy) animRaf = rendererLease.requestFrame(step);
     };
-    animRaf = requestAnimationFrame(step);
+    animRaf = rendererLease.requestFrame(step);
   };
   const studioKey = (v: RoomVessel) => v.studio ? JSON.stringify([v.studio.piece.id, v.studio.fired, v.studio.piece.sculpt, v.studio.piece.paint, v.studio.piece.charms ?? null]) : "";
   const buildStudio = (vessel: RoomVessel): StudioSeat => {
@@ -684,7 +684,7 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     stats.lastFrameMs = ms;
     stats.maxFrameMs = Math.max(stats.maxFrameMs, ms);
   };
-  const invalidate = () => { if (dead || pending) return; pending = requestAnimationFrame(() => { pending = 0; render(); }); };
+  const invalidate = () => { if (dead || pending) return; pending = rendererLease.requestFrame(() => { pending = 0; render(); }); };
 
   const seatMatrix = new THREE.Object3D();
   const tick = (seconds: number) => {
@@ -704,11 +704,11 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
     if (!started) started = t;
     tick((t - started) / 1000);
     render();
-    raf = requestAnimationFrame(frame);
+    raf = rendererLease.requestFrame(frame);
   };
-  const pump = () => { if (!dead && stats.ambient && !raf) { started = 0; raf = requestAnimationFrame(frame); } };
-  const halt = () => { if (raf) cancelAnimationFrame(raf); raf = 0; };
-  suspendRenderer = () => { halt(); if (pending) cancelAnimationFrame(pending); pending = 0; };
+  const pump = () => { if (!dead && stats.ambient && !raf) { started = 0; raf = rendererLease.requestFrame(frame); } };
+  const halt = () => { if (raf) rendererLease.cancelFrame(raf); raf = 0; };
+  suspendRenderer = () => { halt(); if (pending) rendererLease.cancelFrame(pending); pending = 0; if (animRaf) rendererLease.cancelFrame(animRaf); animRaf = 0; };
   resumeRenderer = () => { if (hostRect.w && hostRect.h) { renderer.setSize(hostRect.w, hostRect.h, false); renderer.domElement.style.width = `${hostRect.w}px`; renderer.domElement.style.height = `${hostRect.h}px`; } invalidate(); pump(); };
   const onHidden = () => { if (typeof document !== "undefined" && document.hidden) halt(); else pump(); };
   if (typeof document !== "undefined") {
@@ -881,8 +881,8 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       if (dead) return;
       dead = true;
       halt();
-      if (pending) cancelAnimationFrame(pending);
-      if (animRaf) cancelAnimationFrame(animRaf);
+      if (pending) rendererLease.cancelFrame(pending);
+      if (animRaf) rendererLease.cancelFrame(animRaf);
       for (const seat of seats.values()) { seat.group.removeFromParent(); seat.group.clear(); }
       seats.clear();
       for (const seat of studios.values()) dropStudio(seat);

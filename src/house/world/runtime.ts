@@ -21,7 +21,7 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
     priority:0,
     parameters:{antialias:true,alpha:false,powerPreference:"low-power"},
     configure(renderer){renderer.domElement.className="";renderer.domElement.style.cssText="";renderer.domElement.setAttribute("aria-hidden","true");renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;renderer.shadowMap.enabled=false;renderer.setScissorTest(false);renderer.setClearAlpha(1);},
-    onSuspend(){cancelAnimationFrame(frame);frame=0;if(!disposed){try{host.style.backgroundImage=`url(${renderer.domElement.toDataURL("image/webp",.75)})`;host.style.backgroundSize="100% 100%";}catch{/* The readable frame remains available. */}}host.dataset.renderer="suspended";},
+    onSuspend(){lease.cancelFrame(frame);frame=0;if(!disposed){try{host.style.backgroundImage=`url(${renderer.domElement.toDataURL("image/webp",.75)})`;host.style.backgroundSize="100% 100%";}catch{/* The readable frame remains available. */}}host.dataset.renderer="suspended";},
     onResume(){host.style.backgroundImage="";host.dataset.renderer="active";previous=performance.now();resize();schedule();}
   });
   const renderer=lease.renderer;host.dataset.renderer=lease.active?"active":"suspended";
@@ -65,7 +65,7 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
     host.dataset.renderMs=(paintSamples.reduce((a,b)=>a+b,0)/paintSamples.length).toFixed(2);
     host.dataset.houseCamera=JSON.stringify(camera.position.toArray());host.dataset.drawCalls=String(renderer.info.render.calls);host.dataset.geometries=String(renderer.info.memory.geometries);host.dataset.textures=String(renderer.info.memory.textures);
   }
-  function schedule(){if(!disposed&&!frame&&visible&&!document.hidden&&lease.active)frame=requestAnimationFrame(loop);}
+  function schedule(){if(!disposed&&!frame&&visible&&!document.hidden&&lease.active)frame=lease.requestFrame(loop);}
   function finishWalk(){const end=walkEnd;walkEnd=null;if(end?.room&&end.level){host.dataset.walkNode=end.id;onArrival?.(end.room,end.level);}}
   function loop(now:number){
     frame=0;if(disposed||!visible||document.hidden||!lease.active)return;
@@ -136,9 +136,9 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
   const controlsRoot=host.parentElement;
   const controlsObserver=controlsRoot&&typeof MutationObserver!=="undefined"?new MutationObserver(()=>render()):null;
   if(controlsRoot)controlsObserver?.observe(controlsRoot,{childList:true,subtree:true,characterData:true});
-  const intersection=new IntersectionObserver(([entry])=>{visible=Boolean(entry?.isIntersecting);if(visible){previous=performance.now();schedule();}else{cancelAnimationFrame(frame);frame=0;}});intersection.observe(host);
-  const visibility=()=>{if(document.hidden){cancelAnimationFrame(frame);frame=0;}else{previous=performance.now();schedule();}};
-  const removeLost=lease.listenCanvas("webglcontextlost",event=>{event.preventDefault();cancelAnimationFrame(frame);frame=0;onFailure();});
+  const intersection=new IntersectionObserver(([entry])=>{visible=Boolean(entry?.isIntersecting);if(visible){previous=performance.now();schedule();}else{lease.cancelFrame(frame);frame=0;}});intersection.observe(host);
+  const visibility=()=>{if(document.hidden){lease.cancelFrame(frame);frame=0;}else{previous=performance.now();schedule();}};
+  const removeLost=lease.listenCanvas("webglcontextlost",event=>{event.preventDefault();lease.cancelFrame(frame);frame=0;onFailure();});
   document.addEventListener("visibilitychange",visibility);reduced.addEventListener("change",schedule);resize();onReady();
-  return {setHome(input){home.update(input);render();schedule();},go,walk,walkTo,setWalking(enabled){avatar.visible=enabled;if(!enabled){steps=[];walkEnd=null;go(current);}render();schedule();},setQueen:(style,evidence)=>{void setQueen(style,evidence);},camera:()=>camera.position.toArray() as [number,number,number],dispose(){disposed=true;queenGeneration++;cancelAnimationFrame(frame);observer.disconnect();controlsObserver?.disconnect();intersection.disconnect();document.removeEventListener("visibilitychange",visibility);reduced.removeEventListener("change",schedule);removeLost();if(queen)disposeObject(queen);disposeObject(avatar);floor.geometry.dispose();(floor.material as THREE.Material).dispose();home.dispose();set.dispose();lease.release();host.style.backgroundImage="";}};
+  return {setHome(input){home.update(input);render();schedule();},go,walk,walkTo,setWalking(enabled){avatar.visible=enabled;if(!enabled){steps=[];walkEnd=null;go(current);}render();schedule();},setQueen:(style,evidence)=>{void setQueen(style,evidence);},camera:()=>camera.position.toArray() as [number,number,number],dispose(){disposed=true;queenGeneration++;lease.cancelFrame(frame);observer.disconnect();controlsObserver?.disconnect();intersection.disconnect();document.removeEventListener("visibilitychange",visibility);reduced.removeEventListener("change",schedule);removeLost();if(queen)disposeObject(queen);disposeObject(avatar);floor.geometry.dispose();(floor.material as THREE.Material).dispose();home.dispose();set.dispose();lease.release();host.style.backgroundImage="";}};
 }

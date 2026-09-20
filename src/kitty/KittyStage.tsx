@@ -159,11 +159,11 @@ export function KittyStage({
           if (dead || document.hidden) return;
           const more = cat.update();
           render();
-          if (more) raf = requestAnimationFrame(loop);
+          if (more) raf = rendererLease.requestFrame(loop);
         };
-        const kick = () => { if (!raf && !dead && !document.hidden) raf = requestAnimationFrame(loop); };
-        suspendRenderer = () => { if (raf) cancelAnimationFrame(raf); raf = 0; };
-        cleanup.push(() => { if (raf) cancelAnimationFrame(raf); raf = 0; });
+        const kick = () => { if (!raf && !dead && !document.hidden) raf = rendererLease.requestFrame(loop); };
+        suspendRenderer = () => { if (raf) rendererLease.cancelFrame(raf); raf = 0; };
+        cleanup.push(() => { if (raf) rendererLease.cancelFrame(raf); raf = 0; });
         const cat = createKittySculpture(latest.current.piece, {
           ornament,
           broken,
@@ -244,7 +244,7 @@ export function KittyStage({
         });
         visibility.observe(element);
         cleanup.push(() => visibility.disconnect());
-        const onHidden = () => { if (document.hidden) { if (raf) cancelAnimationFrame(raf); raf = 0; cat.setIdle(false); } else { cat.setIdle(onScreen); if (onScreen) kick(); } };
+        const onHidden = () => { if (document.hidden) { if (raf) rendererLease.cancelFrame(raf); raf = 0; cat.setIdle(false); } else { cat.setIdle(onScreen); if (onScreen) kick(); } };
         document.addEventListener("visibilitychange", onHidden);
         cleanup.push(() => document.removeEventListener("visibilitychange", onHidden));
         const lost = (e: Event) => { e.preventDefault(); dispose(); setFailed(true); };

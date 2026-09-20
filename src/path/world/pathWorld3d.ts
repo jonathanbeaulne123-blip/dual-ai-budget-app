@@ -2405,16 +2405,16 @@ export function createPathWorld(host: HTMLElement, options: {
     }
     frames++; lastFrameMs = performance.now() - started;
     if (drifting && !settling && !pointers.size && performance.now() - lastActivity >= idleMs) { idle = true; busy = false; }
-    if (busy || pointers.size) raf = requestAnimationFrame(frame);
+    if (busy || pointers.size) raf = rendererLease.requestFrame(frame);
     else last = 0;
   }
-  function halt() { if (raf) cancelAnimationFrame(raf); raf = 0; last = 0; }
+  function halt() { if (raf) rendererLease.cancelFrame(raf); raf = 0; last = 0; }
   /** Something changed or someone touched the island: leave idle and draw (unless asleep or scrolled away). */
   function invalidate() {
     if (dead) return;
     lastActivity = performance.now();
     idle = false;
-    if (!raf && !sleeping && !offscreen) raf = requestAnimationFrame(frame);
+    if (!raf && !sleeping && !offscreen) raf = rendererLease.requestFrame(frame);
   }
   suspendRenderer = () => { halt(); pointers.clear(); pinch = 0; };
   resumeRenderer = () => { applyQuality(quality, true); if (width && height) renderer.setSize(width, height, false); invalidate(); };
@@ -2518,7 +2518,7 @@ export function createPathWorld(host: HTMLElement, options: {
     dispose() {
       if (dead) return;
       dead = true;
-      cancelAnimationFrame(raf);
+      rendererLease.cancelFrame(raf);
       for (const bank of sculptures.values()) bank.sculpture.dispose();
       sculptures.clear();
       for (const dispose of sceneDisposables.splice(0)) dispose();

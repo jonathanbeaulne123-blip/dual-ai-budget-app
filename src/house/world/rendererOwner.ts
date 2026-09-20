@@ -13,9 +13,14 @@ export type WorldRendererOptions = {
   rendererFactory?: (parameters?: THREE.WebGLRendererParameters) => THREE.WebGLRenderer;
 };
 
+export type WorldFrameCallback = (time: number) => void;
+
 export type WorldRendererLease = {
   renderer: THREE.WebGLRenderer;
   readonly active: boolean;
+  /** Queues one render callback on the shared world frame. */
+  requestFrame(callback: WorldFrameCallback): number;
+  cancelFrame(id: number): void;
   listenCanvas<E extends Event>(type: string, listener: (event: E) => void, options?: boolean | AddEventListenerOptions): () => void;
   release(): void;
 };
@@ -32,6 +37,53 @@ type LeaseState = {
 };
 type SharedState = { renderer: THREE.WebGLRenderer; leases: LeaseState[] };
 
+type FrameOwner = Pick<LeaseState, "active" | "released">;
+type NativeFrames = { request(callback: FrameRequestCallback): number; cancel(id: number): void };
+
+/**
+ * One browser animation frame feeds every runnable renderer lease. A lease may
+ * still ask for another frame from its callback, but an old, suspended, or
+ * released scene can never keep the native loop alive.
+ */
+export function createWorldFrameScheduler(native: NativeFrames = {
+  request: callback => requestAnimationFrame(callback),
+  cancel: id => cancelAnimationFrame(id),
+}) {
+  let nativeId = 0, nextId = 1;
+  const queued = new Map<number, { owner: FrameOwner; callback: WorldFrameCallback }>();
+  const schedule = () => {
+    if (!nativeId && queued.size) nativeId = native.request(flush);
+  };
+  const flush = (time: number) => {
+    nativeId = 0;
+    const batch = [...queued];
+    for (const [id] of batch) queued.delete(id);
+    for (const [, job] of batch) {
+      if (job.owner.active && !job.owner.released) job.callback(time);
+    }
+    schedule();
+  };
+  return {
+    request(owner: FrameOwner, callback: WorldFrameCallback) {
+      if (!owner.active || owner.released) return 0;
+      const id = nextId++;
+      queued.set(id, { owner, callback });
+      schedule();
+      return id;
+    },
+    cancel(id: number) {
+      if (!id) return;
+      queued.delete(id);
+      if (!queued.size && nativeId) { native.cancel(nativeId); nativeId = 0; }
+    },
+    cancelOwner(owner: FrameOwner) {
+      for (const [id, job] of queued) if (job.owner === owner) queued.delete(id);
+      if (!queued.size && nativeId) { native.cancel(nativeId); nativeId = 0; }
+    },
+  };
+}
+
+const worldFrames = createWorldFrameScheduler();
 let sharedState: SharedState | null = null;
 
 const worldEnabled = () => import.meta.env.VITE_HEARTH_HOUSE_WORLD === "1";
@@ -62,6 +114,7 @@ function activate(state: LeaseState, renderer: THREE.WebGLRenderer, resume: bool
 function suspend(state: LeaseState, renderer: THREE.WebGLRenderer) {
   if (!state.active) return;
   state.active = false;
+  worldFrames.cancelOwner(state);
   detachListeners(state, renderer.domElement);
   state.options.onSuspend?.();
 }
@@ -114,7 +167,9 @@ export function acquireWorldRenderer(host: HTMLElement, options: WorldRendererOp
     options.configure?.(renderer);
     return {
       renderer: state.proxy,
-      get active() { return !state.released; },
+      get active() { return state.active && !state.released; },
+      requestFrame(callback) { return worldFrames.request(state, callback); },
+      cancelFrame(id) { worldFrames.cancel(id); },
       listenCanvas(type, listener, listenerOptions) {
         const row = { type, listener: listener as EventListener, options: listenerOptions };
         state.listeners.push(row);
@@ -128,6 +183,7 @@ export function acquireWorldRenderer(host: HTMLElement, options: WorldRendererOp
       release() {
         if (state.released) return;
         state.released = true;
+        worldFrames.cancelOwner(state);
         detachListeners(state, renderer.domElement);
         renderer.dispose();
         renderer.forceContextLoss();
@@ -156,6 +212,8 @@ export function acquireWorldRenderer(host: HTMLElement, options: WorldRendererOp
   return {
     renderer: state.proxy,
     get active() { return state.active && !state.released; },
+    requestFrame(callback) { return worldFrames.request(state, callback); },
+    cancelFrame(id) { worldFrames.cancel(id); },
     listenCanvas(type, listener, listenerOptions) {
       const row = { type, listener: listener as EventListener, options: listenerOptions };
       state.listeners.push(row);
@@ -169,6 +227,7 @@ export function acquireWorldRenderer(host: HTMLElement, options: WorldRendererOp
     release() {
       if (state.released) return;
       state.released = true;
+      worldFrames.cancelOwner(state);
       const owner = sharedState;
       if (!owner || owner.renderer !== renderer) return;
       const index = owner.leases.indexOf(state);
