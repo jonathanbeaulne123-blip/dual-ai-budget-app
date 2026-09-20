@@ -19,10 +19,11 @@ import { PLACES, registerPlace, type Place, type PlaceHandle } from "../src/harb
  */
 
 const release = vi.fn();
+const painted = vi.hoisted(() => ({ frames: 0 }));
 vi.mock("../src/house/world/rendererOwner.ts", () => ({
   acquireWorldRenderer: () => ({
     active: true,
-    renderer: { render: vi.fn(), setSize: vi.fn(), info: { render: { calls: 0 }, memory: { geometries: 0, textures: 0 } } },
+    renderer: { render: () => { painted.frames += 1; }, setSize: () => undefined, info: { render: { calls: 0 }, memory: { geometries: 0, textures: 0 } } },
     requestFrame: (callback: FrameRequestCallback) => requestAnimationFrame(callback),
     cancelFrame: (id: number) => cancelAnimationFrame(id),
     listenCanvas: () => () => undefined,
@@ -215,6 +216,19 @@ describe("the runtime's journey", () => {
     expect(world.traveling()).toBe(false);
     expect(disposed.court).toBe(1);
     expect(roofs.tower).toBe(1);
+  });
+
+  it("asks for no frames once the journey is over", async () => {
+    const court = registerPlace(probePlace("court"));
+    registerPlace(probePlace("tower"));
+    world = mountHarbourWorld(host(), "classic", "lite", { onReady: () => {}, onFailure: () => {}, place: court, composition: "desktop" });
+    world.enter("tower");
+    await settle(TRAVEL_UP_MS + 300);
+    expect(world.traveling()).toBe(false);
+    const settledAt = painted.frames;
+    await settle(300);
+    // A tower at rest has no idle motion of its own: nothing is drawn until something invalidates it.
+    expect(painted.frames).toBe(settledAt);
   });
 
   it("cuts under reduced motion: the roof is simply present, and the place you left goes at once", () => {

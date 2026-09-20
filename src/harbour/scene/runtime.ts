@@ -155,7 +155,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
 
   const activePlace = callbacks.place ?? PLACES.court ?? EMPTY_PLACE;
-  breathing = activePlace !== EMPTY_PLACE;
+  // Only the Court has an idle motion (her breath). A tower or a cellar at
+  // rest asks for no frames until something in it says otherwise.
+  breathing = activePlace !== EMPTY_PLACE && activePlace.id === "court";
   let placeId: HarbourPlaceId = activePlace.id;
   let handle: PlaceHandle = raise(activePlace);
   /**
@@ -401,7 +403,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // The place being entered is raised first, so both stand for the length of the journey.
       handle = raise(place);
       placeId = next;
-      breathing = place !== EMPTY_PLACE;
+      // The place you arrive in declares its own idle motion; until it does, nothing moves.
+      breathing = false;
       court.setReduced(reduced.matches);
       court.go(plan.camera.mode, isCourtAnchor(plan.camera.anchor ?? undefined) ? plan.camera.anchor as CourtAnchor : undefined);
       if (plan.cut) {
