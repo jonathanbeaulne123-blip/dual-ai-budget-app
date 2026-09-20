@@ -4151,3 +4151,12 @@ Sheets-era handoff notes (museum): [reference/sheets-era/AI_HANDOFF.md](referenc
 - Local evidence: 18 synthetic theme/viewport checks passed; latest focused chat/recovery 30/30 and adapter/provider 25/25 passed. Additional native, Fund, companion, appointment and wardrobe continuity scenarios passed at the snapshots recorded in [the worksession](worksessions/2026-09-10-hercules-conversational-app.md).
 - High gate is not complete: the first run failed one subsequently repaired assertion after passing TypeScript; the expanded run was stopped after more than 35 minutes in TypeScript and used a superseded source fingerprint. Both breached the five-minute target. Re-run the focused High gate on a stable final source tree before acceptance.
 - Authenticated devices, live-model dialogue, Google event operations, full scope parity, physical keyboard/VoiceOver and real 200% browser zoom remain unverified. Chat actions are off by default with separate client/server gates. External calendar writing is not implemented or enabled. No release or hosted change occurred.
+
+
+## 2026-09-20 — Whole-house actual-app PR handoff
+
+Jonathan requested immediate PR handoff and took over user-facing testing. Branch `codex/whole-house-app` implements the four-room house in Personal and Household from main `4de2b28e`, with scoped private continuity, exact object returns, living Journey/Bloom, Books and the existing financial/creative authorities.
+
+The web build passed on `7fac9972` in **212.809s**. TypeScript passed in **78.418s**. The change-focused High gate passed **1,512 tests** and failed **one Chapter browser assertion** that read fields before React committed a household remount; the actual App startup subset passed **83/83**. The gate exceeded its **300s budget**, taking **775.209s** wall time. It remains failed. The Chapter test now uses bounded polling for the actual remounted DOM; this final test-only correction was independently reviewed and was not rerun after Jonathan requested immediate PR handoff. The application trees (`src`, `workers`, `scripts`, `public`) are identical to the built/tested candidate. No full green gate is claimed. See the adjacent evidence JSON for exact hashes and outcomes.
+
+Next owner: Jonathan and an independent reviewer. Start with [the review brief](briefs/WHOLE_HOUSE_REVIEW_2026-09-19.md), the adjacent JSON evidence and the labelled local preview at http://127.0.0.1:4186/__review. Do not resume PR #501’s old recovery/activation or deploy/activate/native work from this handoff.

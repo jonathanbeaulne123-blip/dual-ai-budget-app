@@ -1236,3 +1236,10 @@ Planner task details may link to a line from the active accepted Plan in the tas
 Quick capture and detailed task fields keep a versioned device recovery copy partitioned by environment, household, member, Personal/Household view and exact task ID. Once a quick capture is submitted, its original Task input and ID remain the retry until an exactly-once acknowledgement or explicit discard; a lost acknowledgement cannot create a second task identity. A reload or safe scope remount restores the editor. Rejected, failed and unacknowledged writes retain it; only an exactly-once acknowledged save/removal or explicit Cancel clears that task's recovery record. This adds no task authority, Plan writer, provider, schema, or financial posting path.
 
 Risk High. Budget delta (5): accepted Plan decisions can carry an exact practical next step without weakening Plan or task validation. Engagement delta (3): private journey work survives room and theme navigation. Focused tests cover audience choices, visibility clearing, reload isolation, rejection retention and stale-reference disclosure.
+
+
+### 2026-09-20 — Whole-house PR handoff and user-owned visual acceptance
+
+Jonathan’s latest instruction is to wrap the implemented actual app into a PR for a second opinion and let him perform the user-facing tests. Both scopes use the continuous house; canonical accounting, private owner boundaries and Final Confirm stay authoritative. The whole-house presentation flag remains independent of service/provider activation.
+
+The local web build and selected math/command regressions passed. The full High gate remains failed because it exceeded five minutes and one Chapter test read a pre-commit DOM state; the latter has a test-only bounded-wait correction. Do not describe the PR as shipped, fully accepted, or a green gate. The [review brief](briefs/WHOLE_HOUSE_REVIEW_2026-09-19.md) records evidence, limits and the next review. PR #501’s old recovery/activation, hosted schema/services, Production, deployment and native work remain separate.

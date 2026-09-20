@@ -1,0 +1,51 @@
+{
+  "testedCandidate": "7fac9972666cb6a55912f3f6b4756ebd52017b99",
+  "testSynchronizationFix": "7c7392a70f0bffcd5914db55a9a925a4e57b76d3",
+  "baseline": "4de2b28ea9663f635c3c769eef35617602b8f7ef",
+  "risk": "High",
+  "gate": {
+    "exitCode": 1,
+    "wrapperSeconds": 775.209,
+    "budgetSeconds": 300,
+    "timeBudgetBreached": true,
+    "typeScriptSeconds": 78.418,
+    "fastFilesPassed": 160,
+    "fastTestsPassed": 1329,
+    "serialFilesPassed": 15,
+    "serialFilesFailed": 1,
+    "serialTestsPassed": 183,
+    "serialTestsFailed": 1,
+    "executedTestsPassed": 1512,
+    "executedTestsFailed": 1,
+    "failedTest": "hearthside-chapter-browser: immediate read before React commits household remount",
+    "fix": "Await bounded expect.poll for both remounted empty inputs; no product changes; not rerun after user requested immediate PR handoff."
+  },
+  "build": {
+    "exitCode": 0,
+    "wrapperSeconds": 212.809,
+    "viteBuild": "1m28s"
+  },
+  "appStartup": {
+    "passed": 83
+  },
+  "applicationTrees": {
+    "src": {
+      "tested": "712774aadbd8da252a0d54733914364b2d11d744",
+      "handoff": "712774aadbd8da252a0d54733914364b2d11d744"
+    },
+    "workers": {
+      "tested": "08761b1255a9e51ba5a45e140302605de37d656b",
+      "handoff": "08761b1255a9e51ba5a45e140302605de37d656b"
+    },
+    "scripts": {
+      "tested": "ef6a2d3dae8bce215e623a659a58866c89bd158b",
+      "handoff": "ef6a2d3dae8bce215e623a659a58866c89bd158b"
+    },
+    "public": {
+      "tested": "d3540e1ca396ec3d909766055728c08897e899a8",
+      "handoff": "d3540e1ca396ec3d909766055728c08897e899a8"
+    }
+  },
+  "acceptance": "Not release accepted. Jonathan requested PR now and owns subsequent user-facing testing; no further broad rerun was started.",
+  "networkBoundary": "No hosted deployment, service/schema activation, Production mutation, or native work."
+}
