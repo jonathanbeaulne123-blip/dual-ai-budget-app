@@ -16,6 +16,7 @@ import { openChapterFor } from "../../core/chapters.ts";
 import { fundSnapshot, type FlowItem, type FundSnapshot } from "../../core/fundModel.ts";
 import { deriveFundPulseInput, fundPulse, presenceLines, type FundPulse, type FundPulseDestination, type FundPulseFreshness } from "../../core/fundPulse.ts";
 import { deriveHouseCondition, type HouseCondition } from "../../core/houseCondition.ts";
+import type { NestCategory } from "../../core/kittyNestDesigns.ts";
 import { projectKittyNest, type KittyNest, type NestBank } from "../../core/kittyNest.ts";
 import { bubbleNotice, type HerculesNotice } from "../../core/notices.ts";
 import { cellarJars } from "../../core/queenCellar.ts";
@@ -26,6 +27,17 @@ import type { Household } from "../../core/types.ts";
 export type HouseTargetId =
   | "queen" | "loft-banks" | "cellar-bills" | "books" | "planner" | "calendar" | "journey" | "conversation"
   | "plan-studio" | "wishes" | "pottery" | "memories" | "letters" | "projector" | "hercules" | "encounters" | "more";
+
+/**
+ * Slice 2 — the Rook's Tower (BUILD_PLAN_SLICE2 §5). The rack's shelves, the
+ * banks standing on them, the jug and the money gun on the landing. Every
+ * figure is read, never written; `targetCents` drives a bank's size and `step`
+ * (the 10% backing step) its fill. `sculptSeed` is a stable string the tower
+ * derives a look from when a bank has no studio piece.
+ */
+export type TowerBank = { key: string; goalId: string | null; name: string; cents: number; targetCents: number; step: number; category: NestCategory; sculptSeed: string };
+export type TowerShelf = { id: string; share: number; cutoff: number; full: boolean; banks: TowerBank[] };
+export type TowerReading = { shelves: TowerShelf[]; jug: { safeCents: number; custodian: boolean; holder: string | null }; gun: { available: boolean }; largestTargetCents: number; smallestTargetCents: number };
 
 export type HarbourReading = {
   /** `fundSnapshot.now` — the Everyday remainder carved at her feet. `null` = unknown, never 0. */
@@ -47,6 +59,8 @@ export type HarbourReading = {
   jars: number;
   mode: 1 | 2;
   freshness: FundPulseFreshness;
+  /** The Tower's own reading (slice 2). Optional so every slice-1 caller keeps working. */
+  tower?: TowerReading;
 };
 
 export const HARBOUR_SLIP_LINES = 3;

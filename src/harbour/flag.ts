@@ -9,7 +9,8 @@ import type { LedgerView } from "../core/types.ts";
  */
 export const HARBOUR_ENABLED = HOUSE_WORLD_ENABLED && import.meta.env.VITE_HEARTH_HARBOUR === "1";
 
-export type HarbourPlaceId = "court";
+/** One place per level of the `home` room (BUILD_PLAN_SLICE2 §0): the Court, the Rook's Tower above it, the Cellar below. */
+export type HarbourPlaceId = "court" | "tower";
 
 /** Rooms the harbour owns, by house room. Later slices add rows to this one table. */
 export const HARBOUR_ROOMS: Readonly<Partial<Record<HouseRoom, HarbourPlaceId>>> = Object.freeze({ home: "court" });
