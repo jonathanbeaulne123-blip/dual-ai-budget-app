@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { seedDemoHousehold } from "../src/core/seed.ts";
-import { buildHarbourReading, type HarbourReading } from "../src/harbour/data/reading.ts";
+import { buildHarbourReading, EMPTY_CELLAR_READING, EMPTY_CISTERN_READING, EMPTY_TOWER_READING, type HarbourReading } from "../src/harbour/data/reading.ts";
 import { doorSigns, plainDollars, shortDate } from "../src/harbour/nav/doorSigns.ts";
 
 const today = "2026-09-20";
@@ -18,6 +18,12 @@ const settled: HarbourReading = {
   jars: 3,
   mode: 2,
   freshness: "current",
+  tower: {
+    ...EMPTY_TOWER_READING,
+    shelves: [{ id: "shelf-1", share: 5, cutoff: 20, full: false, banks: ["Trip", "Table", "Vet", "Winter"].map((name, i) => ({ key: `goal:${i}`, goalId: `G-${i}`, name, cents: 10_000, targetCents: 100_000, step: 1, category: "build" as const, sculptSeed: `goal:${i}` })) }],
+  },
+  cellar: EMPTY_CELLAR_READING,
+  cistern: EMPTY_CISTERN_READING,
 };
 
 describe("plain words for the door signs", () => {
@@ -39,6 +45,11 @@ describe("plain words for the door signs", () => {
 });
 
 describe("doorSigns — tower, cellar, cistern", () => {
+  it("counts the banks the rack actually holds, so the sign and the room agree", () => {
+    expect(doorSigns({ ...settled, banks: 9 }).tower.line).toBe("4 banks · $1,240 saved");
+    expect(doorSigns({ ...settled, banks: 9, tower: { ...settled.tower, shelves: [{ ...settled.tower.shelves[0]!, banks: [] }] } }).tower.line).toBe("0 banks · $1,240 saved");
+  });
+
   it("reads the plan's examples back word for word", () => {
     const signs = doorSigns(settled);
     expect(signs.tower.line).toBe("4 banks · $1,240 saved");
@@ -50,14 +61,14 @@ describe("doorSigns — tower, cellar, cistern", () => {
   });
 
   it("uses singular words for one bank, one bill", () => {
-    const signs = doorSigns({ ...settled, banks: 1, jars: 1, next: { ...settled.next!, daysAhead: 1 } });
+    const signs = doorSigns({ ...settled, banks: 1, jars: 1, tower: { ...settled.tower, shelves: [{ ...settled.tower.shelves[0]!, banks: settled.tower.shelves[0]!.banks.slice(0, 1) }] }, next: { ...settled.next!, daysAhead: 1 } });
     expect(signs.tower.line).toBe("1 bank · $1,240 saved");
     expect(signs.cellar.line).toBe("1 bill · next Internet Sep 18");
     expect(signs.cellar.aria).toContain("1 bill jar this month; the next is Internet on Sep 18, tomorrow.");
   });
 
   it("shows a dash, never $0, when the money is unknown", () => {
-    const signs = doorSigns({ ...settled, build: { cents: null, target: 0, goals: 0 }, protect: { cents: null, target: 300000 } });
+    const signs = doorSigns({ ...settled, build: { cents: null, target: 0, goals: 0 }, protect: { cents: null, target: 300000 }, cistern: { cents: null, target: 300000, level: 0.06 } });
     expect(signs.tower.line).toBe("4 banks · — saved");
     expect(signs.tower.aria).toContain("not known yet");
     expect(signs.cistern.line).toBe("—");
@@ -73,7 +84,7 @@ describe("doorSigns — tower, cellar, cistern", () => {
   });
 
   it("names a buffer that is set aside without an agreed target", () => {
-    const signs = doorSigns({ ...settled, protect: { cents: 50000, target: 0 } });
+    const signs = doorSigns({ ...settled, protect: { cents: 50000, target: 0 }, cistern: { cents: 50000, target: 0, level: 0.06 } });
     expect(signs.cistern.line).toBe("$500 set aside");
     expect(signs.cistern.aria).toContain("no buffer agreed yet");
   });

@@ -24,9 +24,12 @@
 .harbour-world__stage .house-world__canvas, .harbour-world__stage .house-world__canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .harbour-world__stage .house-world__canvas canvas { display: block; }
 .harbour-world__stage .house-world__canvas { background-size: 100% 100%; }
-.harbour-world.has-open-object .harbour-world__stage { height: 300px; min-height: 0; }
+/* The mantel above an open tool. Tall enough that the room behind it is still a room. */
+.harbour-world.has-open-object .harbour-world__stage { height: clamp(260px, 34vh, 420px); min-height: 0; }
 .harbour-world__put-back { position: absolute; z-index: 8; bottom: 20px; left: clamp(20px, 4vw, 72px); min-height: 44px; font: inherit; font-size: 13px; background: var(--paper, #f7efdc); color: var(--ink, #332d24); border: 1px solid var(--line, #59412f); border-radius: 30px; padding: 9px 22px; box-shadow: 0 6px 18px #17241c33; cursor: pointer; }
 .harbour-world__put-back:focus-visible { outline: 3px solid #126fb1; outline-offset: 3px; }
+.harbour-world__stair { position: absolute; z-index: 8; top: 52px; left: clamp(12px, 3vw, 28px); min-height: 44px; font: inherit; font-size: 13px; background: var(--paper, #f7efdc); color: var(--ink, #332d24); border: 1px solid var(--line, #59412f); border-radius: 30px; padding: 9px 20px; box-shadow: 0 6px 18px #17241c33; cursor: pointer; }
+.harbour-world__stair:focus-visible { outline: 3px solid #126fb1; outline-offset: 3px; }
 .harbour-world__fallback { position: absolute; top: 52px; left: 50%; transform: translateX(-50%); z-index: 8; margin: 0; background: var(--paper, #f7efdc); font-size: 11px; padding: 8px 12px; border-radius: 4px; }
 .harbour-world__supported, .harbour-world__checking { position: absolute; z-index: 8; left: 50%; transform: translateX(-50%); bottom: 14px; background: color-mix(in srgb, var(--paper, #f7efdc) 90%, transparent); color: var(--ink, #332d24); font-size: 11px; padding: 5px 10px; border-radius: 12px; white-space: nowrap; max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; }
 .harbour-world__checking { bottom: 42px; }
@@ -86,7 +89,7 @@
   .court-flat__sheet { padding-inline: 12px; }
   .court-flat__plinths { grid-template-columns: 1fr; }
   .court-flat__gate { grid-template-columns: 1fr; }
-  .harbour-world.has-open-object .harbour-world__stage { height: 210px; }
+  .harbour-world.has-open-object .harbour-world__stage { height: clamp(200px, 26vh, 260px); }
   .harbour-world__put-back { left: 14px; bottom: 14px; font-size: 12px; }
   /* The compass handle rises 22px above the bar; her line sits well above it. */
   .harbour-world__phrase { bottom: 70px; font-size: 14px; }
@@ -98,4 +101,32 @@
 @media (prefers-reduced-motion: reduce) {
   .harbour-world *, .court-flat *, .court-twins * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
   .harbour-spark { display: none; }
+}
+
+/* ---- the tower and the cellar, read (BUILD_PLAN_SLICE2 §5) --------------- */
+.place-flat .court-flat__sheet { gap: 14px; }
+.place-flat__stair, .place-flat__today { justify-self: start; min-height: 44px; font: inherit; font-size: 13px; padding: 8px 18px; background: #fff8e6cc; color: inherit; border: 1px solid #8f7d6055; border-radius: 30px; cursor: pointer; }
+.place-flat__today:disabled { opacity: .55; cursor: default; }
+.place-flat__landing { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.place-flat__landing .court-flat__plate:disabled { opacity: .7; cursor: default; }
+.place-flat__shelves, .place-flat__banks, .place-flat__jars { margin: 0; padding: 0; list-style: none; }
+.place-flat__shelves { display: grid; gap: 14px; }
+.place-flat__shelf-mark { margin: 0 0 6px; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; opacity: .75; }
+.place-flat__banks, .place-flat__jars { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.place-flat__empty { margin: 0; padding: 12px 14px; font-size: 13px; background: #fff8e6aa; border-left: 3px solid #8f7d60; }
+.place-flat__water { display: grid; gap: 8px; padding: 12px 14px; background: #fff8e6aa; border: 1px solid #8f7d6055; border-radius: 6px; }
+.place-flat__waterline { display: grid; gap: 2px; margin: 0; }
+.place-flat__scrub-label { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; opacity: .8; }
+.place-flat__scrub { width: 100%; min-height: 44px; accent-color: #4f98aa; }
+.place-flat__scrub:focus-visible { outline: 3px solid #126fb1; outline-offset: 3px; }
+.place-flat__jars .court-flat__plate[data-jar-state="paid"] { opacity: .68; }
+.place-flat__jars .court-flat__plate[data-jar-state="set-aside"] { border-color: #6d7f4f; box-shadow: inset 4px 0 0 #6d7f4f; }
+.place-flat__jars .court-flat__plate[data-jar-state="short"] { border-color: #c9503c; box-shadow: inset 4px 0 0 #c9503c; }
+
+@media (max-width: 719px) {
+  .place-flat__banks, .place-flat__jars, .place-flat__landing { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .place-flat *, .harbour-world__stair { transition: none !important; animation: none !important; }
 }
