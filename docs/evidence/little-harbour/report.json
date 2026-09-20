@@ -6,10 +6,10 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "116",
-      "renderMs": "30.29",
+      "drawCalls": "286",
+      "renderMs": "43.12",
       "queen": null,
-      "camera": "[0.9365,5.8229,6.8962]",
+      "camera": "[0.554,6.1458,8.4245]",
       "stage": {
         "w": 320,
         "h": 564
@@ -18,83 +18,101 @@
       "twins": [
         {
           "id": "crown",
-          "w": 63,
-          "h": 73,
+          "w": 51,
+          "h": 60,
           "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
         },
         {
           "id": "vines",
-          "w": 125,
-          "h": 152,
+          "w": 103,
+          "h": 127,
           "label": "Her vines \u2014 up a week, down a week"
         },
         {
           "id": "hands",
-          "w": 51,
-          "h": 92,
+          "w": 44,
+          "h": 78,
           "label": "Her hands \u2014 what she holds for you"
         },
         {
           "id": "face",
-          "w": 54,
-          "h": 49,
+          "w": 45,
+          "h": 44,
           "label": "Her face \u2014 a portrait"
         },
         {
           "id": "roots",
-          "w": 69,
-          "h": 72,
+          "w": 57,
+          "h": 59,
           "label": "Her roots \u2014 what feeds her"
         },
         {
           "id": "potRim",
-          "w": 69,
-          "h": 67,
+          "w": 56,
+          "h": 53,
           "label": "The pot's rim \u2014 spin her, or come closer"
         },
         {
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
-          "w": 137,
-          "h": 75,
-          "label": "The Everyday flagstone \u2014 $0"
+          "w": 112,
+          "h": 52,
+          "label": "The Everyday flagstone \u2014 $6,746"
         },
         {
           "id": "bishop",
-          "w": 220,
-          "h": 320,
+          "w": 146,
+          "h": 252,
           "label": "The Bishop \u2014 Prepare $0. Open the Cellar."
         },
         {
           "id": "knight",
-          "w": 108,
-          "h": 141,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "w": 97,
+          "h": 127,
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
+        },
+        {
+          "id": "mailbox",
+          "w": 102,
+          "h": 140,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 85,
+          "h": 74,
+          "label": "Since you were here \u2014 nothing yet"
         },
         {
           "id": "hercules",
-          "w": 122,
-          "h": 101,
+          "w": 101,
+          "h": 75,
           "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 315,
+          "h": 152,
+          "label": "The court gate"
         }
       ],
       "phrase": "",
-      "scrollHeight": 1291,
+      "scrollHeight": 682,
       "innerHeight": 640
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "162",
-      "renderMs": "24.34",
+      "drawCalls": "342",
+      "renderMs": "30.74",
       "queen": null,
-      "camera": "[0.9365,5.8229,6.8962]",
+      "camera": "[0.554,6.1458,8.4245]",
       "stage": {
         "w": 320,
         "h": 210
@@ -102,7 +120,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1581,
+      "scrollHeight": 1153,
       "innerHeight": 640
     },
     "errors": []
@@ -114,10 +132,10 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "110",
-      "renderMs": "23.94",
+      "drawCalls": "280",
+      "renderMs": "35.07",
       "queen": null,
-      "camera": "[0.9365,5.8229,6.8962]",
+      "camera": "[0.554,6.1458,8.4245]",
       "stage": {
         "w": 390,
         "h": 768
@@ -126,83 +144,95 @@
       "twins": [
         {
           "id": "crown",
-          "w": 86,
-          "h": 99,
+          "w": 70,
+          "h": 82,
           "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
         },
         {
           "id": "vines",
-          "w": 170,
-          "h": 207,
+          "w": 140,
+          "h": 173,
           "label": "Her vines \u2014 up a week, down a week"
         },
         {
           "id": "hands",
-          "w": 70,
-          "h": 126,
+          "w": 56,
+          "h": 107,
           "label": "Her hands \u2014 what she holds for you"
         },
         {
           "id": "face",
-          "w": 73,
-          "h": 67,
+          "w": 61,
+          "h": 55,
           "label": "Her face \u2014 a portrait"
         },
         {
           "id": "roots",
-          "w": 94,
-          "h": 98,
+          "w": 77,
+          "h": 80,
           "label": "Her roots \u2014 what feeds her"
         },
         {
           "id": "potRim",
-          "w": 94,
-          "h": 91,
+          "w": 77,
+          "h": 73,
           "label": "The pot's rim \u2014 spin her, or come closer"
         },
         {
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
-          "w": 187,
-          "h": 102,
-          "label": "The Everyday flagstone \u2014 $0"
+          "w": 153,
+          "h": 71,
+          "label": "The Everyday flagstone \u2014 $6,746"
         },
         {
           "id": "bishop",
-          "w": 299,
-          "h": 436,
+          "w": 199,
+          "h": 343,
           "label": "The Bishop \u2014 Prepare $0. Open the Cellar."
         },
         {
-          "id": "knight",
-          "w": 148,
-          "h": 192,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "id": "mailbox",
+          "w": 139,
+          "h": 190,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 116,
+          "h": 101,
+          "label": "Since you were here \u2014 nothing yet"
         },
         {
           "id": "hercules",
-          "w": 167,
-          "h": 138,
+          "w": 137,
+          "h": 102,
           "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 390,
+          "h": 207,
+          "label": "The court gate"
         }
       ],
       "phrase": "",
-      "scrollHeight": 1471,
+      "scrollHeight": 886,
       "innerHeight": 844
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "162",
-      "renderMs": "19.13",
+      "drawCalls": "342",
+      "renderMs": "23.42",
       "queen": null,
-      "camera": "[0.9365,5.8229,6.8962]",
+      "camera": "[0.554,6.1458,8.4245]",
       "stage": {
         "w": 390,
         "h": 210
@@ -210,7 +240,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1540,
+      "scrollHeight": 1114,
       "innerHeight": 844
     },
     "errors": []
@@ -222,10 +252,10 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "126",
-      "renderMs": "21.98",
+      "drawCalls": "295",
+      "renderMs": "36.35",
       "queen": null,
-      "camera": "[1.1121,6.7553,8.058]",
+      "camera": "[0.6103,6.8918,9.3628]",
       "stage": {
         "w": 720,
         "h": 1024
@@ -234,87 +264,105 @@
       "twins": [
         {
           "id": "crown",
-          "w": 122,
-          "h": 142,
+          "w": 104,
+          "h": 123,
           "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
         },
         {
           "id": "vines",
-          "w": 243,
-          "h": 298,
+          "w": 209,
+          "h": 261,
           "label": "Her vines \u2014 up a week, down a week"
         },
         {
           "id": "hands",
-          "w": 100,
-          "h": 181,
+          "w": 84,
+          "h": 161,
           "label": "Her hands \u2014 what she holds for you"
         },
         {
           "id": "face",
-          "w": 104,
-          "h": 95,
+          "w": 91,
+          "h": 82,
           "label": "Her face \u2014 a portrait"
         },
         {
           "id": "roots",
-          "w": 135,
-          "h": 141,
+          "w": 116,
+          "h": 121,
           "label": "Her roots \u2014 what feeds her"
         },
         {
           "id": "potRim",
-          "w": 137,
-          "h": 131,
+          "w": 116,
+          "h": 110,
           "label": "The pot's rim \u2014 spin her, or come closer"
         },
         {
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
-          "w": 265,
-          "h": 141,
-          "label": "The Everyday flagstone \u2014 $0"
+          "w": 229,
+          "h": 105,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "rook",
+          "w": 200,
+          "h": 279,
+          "label": "The Rook \u2014 Build $0. Open the Loft."
         },
         {
           "id": "bishop",
-          "w": 358,
-          "h": 571,
+          "w": 272,
+          "h": 489,
           "label": "The Bishop \u2014 Prepare $0. Open the Cellar."
         },
         {
           "id": "knight",
-          "w": 211,
-          "h": 286,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "w": 196,
+          "h": 265,
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
         },
         {
           "id": "mailbox",
-          "w": 244,
-          "h": 311,
+          "w": 181,
+          "h": 272,
           "label": "The mailbox, flag up \u2014 she noticed something"
         },
         {
+          "id": "slip",
+          "w": 158,
+          "h": 141,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
           "id": "hercules",
-          "w": 230,
-          "h": 191,
+          "w": 202,
+          "h": 152,
           "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 571,
+          "h": 298,
+          "label": "The court gate"
         }
       ],
       "phrase": "",
-      "scrollHeight": 1697,
+      "scrollHeight": 1052,
       "innerHeight": 1024
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "171",
-      "renderMs": "19.36",
+      "drawCalls": "342",
+      "renderMs": "24.10",
       "queen": null,
       "camera": "[5.2548,6.7215,9.6036]",
       "stage": {
@@ -324,7 +372,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1586,
+      "scrollHeight": 1055,
       "innerHeight": 1024
     },
     "errors": []
@@ -336,8 +384,8 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "171",
-      "renderMs": "22.38",
+      "drawCalls": "342",
+      "renderMs": "29.36",
       "queen": null,
       "camera": "[5.405,6.9054,9.8785]",
       "stage": {
@@ -386,13 +434,13 @@
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
           "w": 172,
           "h": 93,
-          "label": "The Everyday flagstone \u2014 $0"
+          "label": "The Everyday flagstone \u2014 $6,746"
         },
         {
           "id": "rook",
@@ -410,13 +458,13 @@
           "id": "knight",
           "w": 116,
           "h": 172,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
         },
         {
           "id": "sundial",
           "w": 234,
           "h": 293,
-          "label": "The sundial \u2014 no dated commitment"
+          "label": "The sundial \u2014 next: Toronto Hydro"
         },
         {
           "id": "mailbox",
@@ -444,15 +492,15 @@
         }
       ],
       "phrase": "",
-      "scrollHeight": 1473,
+      "scrollHeight": 828,
       "innerHeight": 800
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "171",
-      "renderMs": "19.24",
+      "drawCalls": "342",
+      "renderMs": "22.02",
       "queen": null,
       "camera": "[5.2548,6.7215,9.6036]",
       "stage": {
@@ -462,7 +510,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1586,
+      "scrollHeight": 1041,
       "innerHeight": 800
     },
     "errors": []
@@ -474,8 +522,8 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "171",
-      "renderMs": "27.11",
+      "drawCalls": "342",
+      "renderMs": "34.80",
       "queen": null,
       "camera": "[5.2548,6.7215,9.6036]",
       "stage": {
@@ -524,13 +572,13 @@
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
           "w": 200,
           "h": 109,
-          "label": "The Everyday flagstone \u2014 $0"
+          "label": "The Everyday flagstone \u2014 $6,746"
         },
         {
           "id": "rook",
@@ -548,13 +596,13 @@
           "id": "knight",
           "w": 133,
           "h": 198,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
         },
         {
           "id": "sundial",
           "w": 275,
           "h": 345,
-          "label": "The sundial \u2014 no dated commitment"
+          "label": "The sundial \u2014 next: Toronto Hydro"
         },
         {
           "id": "mailbox",
@@ -582,15 +630,15 @@
         }
       ],
       "phrase": "",
-      "scrollHeight": 1573,
+      "scrollHeight": 928,
       "innerHeight": 900
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "171",
-      "renderMs": "21.78",
+      "drawCalls": "342",
+      "renderMs": "26.07",
       "queen": null,
       "camera": "[5.2548,6.7215,9.6036]",
       "stage": {
@@ -600,7 +648,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1586,
+      "scrollHeight": 1041,
       "innerHeight": 900
     },
     "errors": []
@@ -612,10 +660,10 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "116",
-      "renderMs": "24.17",
+      "drawCalls": "286",
+      "renderMs": "46.13",
       "queen": null,
-      "camera": "[0.9365,5.8229,6.8962]",
+      "camera": "[0.554,6.1458,8.4245]",
       "stage": {
         "w": 320,
         "h": 564
@@ -624,83 +672,101 @@
       "twins": [
         {
           "id": "crown",
-          "w": 63,
-          "h": 73,
+          "w": 51,
+          "h": 60,
           "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
         },
         {
           "id": "vines",
-          "w": 125,
-          "h": 152,
+          "w": 103,
+          "h": 127,
           "label": "Her vines \u2014 up a week, down a week"
         },
         {
           "id": "hands",
-          "w": 51,
-          "h": 92,
+          "w": 44,
+          "h": 78,
           "label": "Her hands \u2014 what she holds for you"
         },
         {
           "id": "face",
-          "w": 54,
-          "h": 49,
+          "w": 45,
+          "h": 44,
           "label": "Her face \u2014 a portrait"
         },
         {
           "id": "roots",
-          "w": 69,
-          "h": 72,
+          "w": 57,
+          "h": 59,
           "label": "Her roots \u2014 what feeds her"
         },
         {
           "id": "potRim",
-          "w": 69,
-          "h": 67,
+          "w": 56,
+          "h": 53,
           "label": "The pot's rim \u2014 spin her, or come closer"
         },
         {
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
-          "w": 137,
-          "h": 75,
-          "label": "The Everyday flagstone \u2014 $0"
+          "w": 112,
+          "h": 52,
+          "label": "The Everyday flagstone \u2014 $6,746"
         },
         {
           "id": "bishop",
-          "w": 220,
-          "h": 320,
+          "w": 146,
+          "h": 252,
           "label": "The Bishop \u2014 Prepare $0. Open the Cellar."
         },
         {
           "id": "knight",
-          "w": 108,
-          "h": 141,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "w": 97,
+          "h": 127,
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
+        },
+        {
+          "id": "mailbox",
+          "w": 102,
+          "h": 140,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 85,
+          "h": 74,
+          "label": "Since you were here \u2014 nothing yet"
         },
         {
           "id": "hercules",
-          "w": 122,
-          "h": 101,
+          "w": 101,
+          "h": 75,
           "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 315,
+          "h": 152,
+          "label": "The court gate"
         }
       ],
       "phrase": "",
-      "scrollHeight": 1291,
+      "scrollHeight": 682,
       "innerHeight": 640
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "162",
-      "renderMs": "19.48",
+      "drawCalls": "342",
+      "renderMs": "39.67",
       "queen": null,
-      "camera": "[0.9365,5.8229,6.8962]",
+      "camera": "[0.554,6.1458,8.4245]",
       "stage": {
         "w": 320,
         "h": 210
@@ -708,7 +774,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1581,
+      "scrollHeight": 1153,
       "innerHeight": 640
     },
     "errors": []
@@ -720,10 +786,10 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "110",
-      "renderMs": "24.34",
+      "drawCalls": "280",
+      "renderMs": "41.08",
       "queen": null,
-      "camera": "[0.9365,5.8229,6.8962]",
+      "camera": "[0.554,6.1458,8.4245]",
       "stage": {
         "w": 390,
         "h": 768
@@ -732,83 +798,95 @@
       "twins": [
         {
           "id": "crown",
-          "w": 86,
-          "h": 99,
+          "w": 70,
+          "h": 82,
           "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
         },
         {
           "id": "vines",
-          "w": 170,
-          "h": 207,
+          "w": 140,
+          "h": 173,
           "label": "Her vines \u2014 up a week, down a week"
         },
         {
           "id": "hands",
-          "w": 70,
-          "h": 126,
+          "w": 56,
+          "h": 107,
           "label": "Her hands \u2014 what she holds for you"
         },
         {
           "id": "face",
-          "w": 73,
-          "h": 67,
+          "w": 61,
+          "h": 55,
           "label": "Her face \u2014 a portrait"
         },
         {
           "id": "roots",
-          "w": 94,
-          "h": 98,
+          "w": 77,
+          "h": 80,
           "label": "Her roots \u2014 what feeds her"
         },
         {
           "id": "potRim",
-          "w": 94,
-          "h": 91,
+          "w": 77,
+          "h": 73,
           "label": "The pot's rim \u2014 spin her, or come closer"
         },
         {
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
-          "w": 187,
-          "h": 102,
-          "label": "The Everyday flagstone \u2014 $0"
+          "w": 153,
+          "h": 71,
+          "label": "The Everyday flagstone \u2014 $6,746"
         },
         {
           "id": "bishop",
-          "w": 299,
-          "h": 436,
+          "w": 199,
+          "h": 343,
           "label": "The Bishop \u2014 Prepare $0. Open the Cellar."
         },
         {
-          "id": "knight",
-          "w": 148,
-          "h": 192,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "id": "mailbox",
+          "w": 139,
+          "h": 190,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 116,
+          "h": 101,
+          "label": "Since you were here \u2014 nothing yet"
         },
         {
           "id": "hercules",
-          "w": 167,
-          "h": 138,
+          "w": 137,
+          "h": 102,
           "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 390,
+          "h": 207,
+          "label": "The court gate"
         }
       ],
       "phrase": "",
-      "scrollHeight": 1471,
+      "scrollHeight": 886,
       "innerHeight": 844
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "162",
-      "renderMs": "19.88",
+      "drawCalls": "342",
+      "renderMs": "26.90",
       "queen": null,
-      "camera": "[0.9365,5.8229,6.8962]",
+      "camera": "[0.554,6.1458,8.4245]",
       "stage": {
         "w": 390,
         "h": 210
@@ -816,7 +894,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1540,
+      "scrollHeight": 1114,
       "innerHeight": 844
     },
     "errors": []
@@ -828,10 +906,10 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "126",
-      "renderMs": "21.44",
+      "drawCalls": "295",
+      "renderMs": "28.86",
       "queen": null,
-      "camera": "[1.1121,6.7553,8.058]",
+      "camera": "[0.6103,6.8918,9.3628]",
       "stage": {
         "w": 720,
         "h": 1024
@@ -840,87 +918,105 @@
       "twins": [
         {
           "id": "crown",
-          "w": 122,
-          "h": 142,
+          "w": 104,
+          "h": 123,
           "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
         },
         {
           "id": "vines",
-          "w": 243,
-          "h": 298,
+          "w": 209,
+          "h": 261,
           "label": "Her vines \u2014 up a week, down a week"
         },
         {
           "id": "hands",
-          "w": 100,
-          "h": 181,
+          "w": 84,
+          "h": 161,
           "label": "Her hands \u2014 what she holds for you"
         },
         {
           "id": "face",
-          "w": 104,
-          "h": 95,
+          "w": 91,
+          "h": 82,
           "label": "Her face \u2014 a portrait"
         },
         {
           "id": "roots",
-          "w": 135,
-          "h": 141,
+          "w": 116,
+          "h": 121,
           "label": "Her roots \u2014 what feeds her"
         },
         {
           "id": "potRim",
-          "w": 137,
-          "h": 131,
+          "w": 116,
+          "h": 110,
           "label": "The pot's rim \u2014 spin her, or come closer"
         },
         {
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
-          "w": 265,
-          "h": 141,
-          "label": "The Everyday flagstone \u2014 $0"
+          "w": 229,
+          "h": 105,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "rook",
+          "w": 200,
+          "h": 279,
+          "label": "The Rook \u2014 Build $0. Open the Loft."
         },
         {
           "id": "bishop",
-          "w": 358,
-          "h": 571,
+          "w": 272,
+          "h": 489,
           "label": "The Bishop \u2014 Prepare $0. Open the Cellar."
         },
         {
           "id": "knight",
-          "w": 211,
-          "h": 286,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "w": 196,
+          "h": 265,
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
         },
         {
           "id": "mailbox",
-          "w": 244,
-          "h": 311,
+          "w": 181,
+          "h": 272,
           "label": "The mailbox, flag up \u2014 she noticed something"
         },
         {
+          "id": "slip",
+          "w": 158,
+          "h": 141,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
           "id": "hercules",
-          "w": 230,
-          "h": 191,
+          "w": 202,
+          "h": 152,
           "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 571,
+          "h": 298,
+          "label": "The court gate"
         }
       ],
       "phrase": "",
-      "scrollHeight": 1697,
+      "scrollHeight": 1052,
       "innerHeight": 1024
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "171",
-      "renderMs": "19.26",
+      "drawCalls": "342",
+      "renderMs": "24.30",
       "queen": null,
       "camera": "[5.2548,6.7215,9.6036]",
       "stage": {
@@ -930,7 +1026,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1586,
+      "scrollHeight": 1055,
       "innerHeight": 1024
     },
     "errors": []
@@ -942,8 +1038,8 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "171",
-      "renderMs": "21.93",
+      "drawCalls": "342",
+      "renderMs": "38.05",
       "queen": null,
       "camera": "[5.405,6.9054,9.8785]",
       "stage": {
@@ -992,13 +1088,13 @@
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
           "w": 172,
           "h": 93,
-          "label": "The Everyday flagstone \u2014 $0"
+          "label": "The Everyday flagstone \u2014 $6,746"
         },
         {
           "id": "rook",
@@ -1016,13 +1112,13 @@
           "id": "knight",
           "w": 116,
           "h": 172,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
         },
         {
           "id": "sundial",
           "w": 234,
           "h": 293,
-          "label": "The sundial \u2014 no dated commitment"
+          "label": "The sundial \u2014 next: Toronto Hydro"
         },
         {
           "id": "mailbox",
@@ -1050,15 +1146,15 @@
         }
       ],
       "phrase": "",
-      "scrollHeight": 1473,
+      "scrollHeight": 828,
       "innerHeight": 800
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "171",
-      "renderMs": "18.88",
+      "drawCalls": "342",
+      "renderMs": "29.91",
       "queen": null,
       "camera": "[5.2548,6.7215,9.6036]",
       "stage": {
@@ -1068,7 +1164,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1586,
+      "scrollHeight": 1041,
       "innerHeight": 800
     },
     "errors": []
@@ -1080,8 +1176,8 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "171",
-      "renderMs": "22.42",
+      "drawCalls": "342",
+      "renderMs": "31.57",
       "queen": null,
       "camera": "[5.2548,6.7215,9.6036]",
       "stage": {
@@ -1130,13 +1226,13 @@
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
           "w": 200,
           "h": 109,
-          "label": "The Everyday flagstone \u2014 $0"
+          "label": "The Everyday flagstone \u2014 $6,746"
         },
         {
           "id": "rook",
@@ -1154,13 +1250,13 @@
           "id": "knight",
           "w": 133,
           "h": 198,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
         },
         {
           "id": "sundial",
           "w": 275,
           "h": 345,
-          "label": "The sundial \u2014 no dated commitment"
+          "label": "The sundial \u2014 next: Toronto Hydro"
         },
         {
           "id": "mailbox",
@@ -1188,15 +1284,15 @@
         }
       ],
       "phrase": "",
-      "scrollHeight": 1573,
+      "scrollHeight": 928,
       "innerHeight": 900
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "171",
-      "renderMs": "18.06",
+      "drawCalls": "342",
+      "renderMs": "20.31",
       "queen": null,
       "camera": "[5.2548,6.7215,9.6036]",
       "stage": {
@@ -1206,7 +1302,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1586,
+      "scrollHeight": 1041,
       "innerHeight": 900
     },
     "errors": []
@@ -1218,10 +1314,10 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "118",
-      "renderMs": "24.01",
+      "drawCalls": "291",
+      "renderMs": "39.86",
       "queen": null,
-      "camera": "[0.9365,5.8229,6.8962]",
+      "camera": "[0.554,6.1458,8.4245]",
       "stage": {
         "w": 320,
         "h": 564
@@ -1230,83 +1326,101 @@
       "twins": [
         {
           "id": "crown",
-          "w": 63,
-          "h": 73,
+          "w": 51,
+          "h": 60,
           "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
         },
         {
           "id": "vines",
-          "w": 125,
-          "h": 152,
+          "w": 103,
+          "h": 127,
           "label": "Her vines \u2014 up a week, down a week"
         },
         {
           "id": "hands",
-          "w": 51,
-          "h": 92,
+          "w": 44,
+          "h": 78,
           "label": "Her hands \u2014 what she holds for you"
         },
         {
           "id": "face",
-          "w": 54,
-          "h": 49,
+          "w": 45,
+          "h": 44,
           "label": "Her face \u2014 a portrait"
         },
         {
           "id": "roots",
-          "w": 69,
-          "h": 72,
+          "w": 57,
+          "h": 59,
           "label": "Her roots \u2014 what feeds her"
         },
         {
           "id": "potRim",
-          "w": 69,
-          "h": 67,
+          "w": 56,
+          "h": 53,
           "label": "The pot's rim \u2014 spin her, or come closer"
         },
         {
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
-          "w": 137,
-          "h": 75,
-          "label": "The Everyday flagstone \u2014 $0"
+          "w": 112,
+          "h": 52,
+          "label": "The Everyday flagstone \u2014 $6,746"
         },
         {
           "id": "bishop",
-          "w": 220,
-          "h": 320,
+          "w": 146,
+          "h": 252,
           "label": "The Bishop \u2014 Prepare $0. Open the Cellar."
         },
         {
           "id": "knight",
-          "w": 108,
-          "h": 141,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "w": 97,
+          "h": 127,
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
+        },
+        {
+          "id": "mailbox",
+          "w": 102,
+          "h": 140,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 85,
+          "h": 74,
+          "label": "Since you were here \u2014 nothing yet"
         },
         {
           "id": "hercules",
-          "w": 122,
-          "h": 101,
+          "w": 101,
+          "h": 75,
           "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 315,
+          "h": 152,
+          "label": "The court gate"
         }
       ],
       "phrase": "",
-      "scrollHeight": 1291,
+      "scrollHeight": 682,
       "innerHeight": 640
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "164",
-      "renderMs": "19.53",
+      "drawCalls": "347",
+      "renderMs": "33.12",
       "queen": null,
-      "camera": "[0.9365,5.8229,6.8962]",
+      "camera": "[0.554,6.1458,8.4245]",
       "stage": {
         "w": 320,
         "h": 210
@@ -1314,7 +1428,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1581,
+      "scrollHeight": 1153,
       "innerHeight": 640
     },
     "errors": []
@@ -1326,10 +1440,10 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "113",
-      "renderMs": "26.68",
+      "drawCalls": "285",
+      "renderMs": "35.19",
       "queen": null,
-      "camera": "[0.9365,5.8229,6.8962]",
+      "camera": "[0.554,6.1458,8.4245]",
       "stage": {
         "w": 390,
         "h": 768
@@ -1338,83 +1452,95 @@
       "twins": [
         {
           "id": "crown",
-          "w": 86,
-          "h": 99,
+          "w": 70,
+          "h": 82,
           "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
         },
         {
           "id": "vines",
-          "w": 170,
-          "h": 207,
+          "w": 140,
+          "h": 173,
           "label": "Her vines \u2014 up a week, down a week"
         },
         {
           "id": "hands",
-          "w": 70,
-          "h": 126,
+          "w": 56,
+          "h": 107,
           "label": "Her hands \u2014 what she holds for you"
         },
         {
           "id": "face",
-          "w": 73,
-          "h": 67,
+          "w": 61,
+          "h": 55,
           "label": "Her face \u2014 a portrait"
         },
         {
           "id": "roots",
-          "w": 94,
-          "h": 98,
+          "w": 77,
+          "h": 80,
           "label": "Her roots \u2014 what feeds her"
         },
         {
           "id": "potRim",
-          "w": 94,
-          "h": 91,
+          "w": 77,
+          "h": 73,
           "label": "The pot's rim \u2014 spin her, or come closer"
         },
         {
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
-          "w": 187,
-          "h": 102,
-          "label": "The Everyday flagstone \u2014 $0"
+          "w": 153,
+          "h": 71,
+          "label": "The Everyday flagstone \u2014 $6,746"
         },
         {
           "id": "bishop",
-          "w": 299,
-          "h": 436,
+          "w": 199,
+          "h": 343,
           "label": "The Bishop \u2014 Prepare $0. Open the Cellar."
         },
         {
-          "id": "knight",
-          "w": 148,
-          "h": 192,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "id": "mailbox",
+          "w": 139,
+          "h": 190,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 116,
+          "h": 101,
+          "label": "Since you were here \u2014 nothing yet"
         },
         {
           "id": "hercules",
-          "w": 167,
-          "h": 138,
+          "w": 137,
+          "h": 102,
           "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 390,
+          "h": 207,
+          "label": "The court gate"
         }
       ],
       "phrase": "",
-      "scrollHeight": 1471,
+      "scrollHeight": 886,
       "innerHeight": 844
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "164",
-      "renderMs": "21.20",
+      "drawCalls": "347",
+      "renderMs": "23.54",
       "queen": null,
-      "camera": "[0.9365,5.8229,6.8962]",
+      "camera": "[0.554,6.1458,8.4245]",
       "stage": {
         "w": 390,
         "h": 210
@@ -1422,7 +1548,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1540,
+      "scrollHeight": 1114,
       "innerHeight": 844
     },
     "errors": []
@@ -1434,10 +1560,10 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "128",
-      "renderMs": "21.31",
+      "drawCalls": "300",
+      "renderMs": "35.76",
       "queen": null,
-      "camera": "[1.1121,6.7553,8.058]",
+      "camera": "[0.6103,6.8918,9.3628]",
       "stage": {
         "w": 720,
         "h": 1024
@@ -1446,87 +1572,105 @@
       "twins": [
         {
           "id": "crown",
-          "w": 122,
-          "h": 142,
+          "w": 104,
+          "h": 123,
           "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
         },
         {
           "id": "vines",
-          "w": 243,
-          "h": 298,
+          "w": 209,
+          "h": 261,
           "label": "Her vines \u2014 up a week, down a week"
         },
         {
           "id": "hands",
-          "w": 100,
-          "h": 181,
+          "w": 84,
+          "h": 161,
           "label": "Her hands \u2014 what she holds for you"
         },
         {
           "id": "face",
-          "w": 104,
-          "h": 95,
+          "w": 91,
+          "h": 82,
           "label": "Her face \u2014 a portrait"
         },
         {
           "id": "roots",
-          "w": 135,
-          "h": 141,
+          "w": 116,
+          "h": 121,
           "label": "Her roots \u2014 what feeds her"
         },
         {
           "id": "potRim",
-          "w": 137,
-          "h": 131,
+          "w": 116,
+          "h": 110,
           "label": "The pot's rim \u2014 spin her, or come closer"
         },
         {
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
-          "w": 265,
-          "h": 141,
-          "label": "The Everyday flagstone \u2014 $0"
+          "w": 229,
+          "h": 105,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "rook",
+          "w": 200,
+          "h": 279,
+          "label": "The Rook \u2014 Build $0. Open the Loft."
         },
         {
           "id": "bishop",
-          "w": 358,
-          "h": 571,
+          "w": 272,
+          "h": 489,
           "label": "The Bishop \u2014 Prepare $0. Open the Cellar."
         },
         {
           "id": "knight",
-          "w": 211,
-          "h": 286,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "w": 196,
+          "h": 265,
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
         },
         {
           "id": "mailbox",
-          "w": 244,
-          "h": 311,
+          "w": 181,
+          "h": 272,
           "label": "The mailbox, flag up \u2014 she noticed something"
         },
         {
+          "id": "slip",
+          "w": 158,
+          "h": 141,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
           "id": "hercules",
-          "w": 230,
-          "h": 191,
+          "w": 202,
+          "h": 152,
           "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 571,
+          "h": 298,
+          "label": "The court gate"
         }
       ],
       "phrase": "",
-      "scrollHeight": 1697,
+      "scrollHeight": 1052,
       "innerHeight": 1024
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "173",
-      "renderMs": "18.72",
+      "drawCalls": "347",
+      "renderMs": "23.83",
       "queen": null,
       "camera": "[5.2548,6.7215,9.6036]",
       "stage": {
@@ -1536,7 +1680,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1586,
+      "scrollHeight": 1055,
       "innerHeight": 1024
     },
     "errors": []
@@ -1548,8 +1692,8 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "173",
-      "renderMs": "22.25",
+      "drawCalls": "347",
+      "renderMs": "28.77",
       "queen": null,
       "camera": "[5.405,6.9054,9.8785]",
       "stage": {
@@ -1598,13 +1742,13 @@
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
           "w": 172,
           "h": 93,
-          "label": "The Everyday flagstone \u2014 $0"
+          "label": "The Everyday flagstone \u2014 $6,746"
         },
         {
           "id": "rook",
@@ -1622,13 +1766,13 @@
           "id": "knight",
           "w": 116,
           "h": 172,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
         },
         {
           "id": "sundial",
           "w": 234,
           "h": 293,
-          "label": "The sundial \u2014 no dated commitment"
+          "label": "The sundial \u2014 next: Toronto Hydro"
         },
         {
           "id": "mailbox",
@@ -1656,15 +1800,15 @@
         }
       ],
       "phrase": "",
-      "scrollHeight": 1473,
+      "scrollHeight": 828,
       "innerHeight": 800
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "173",
-      "renderMs": "19.17",
+      "drawCalls": "347",
+      "renderMs": "22.35",
       "queen": null,
       "camera": "[5.2548,6.7215,9.6036]",
       "stage": {
@@ -1674,7 +1818,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1586,
+      "scrollHeight": 1041,
       "innerHeight": 800
     },
     "errors": []
@@ -1686,8 +1830,8 @@
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "173",
-      "renderMs": "21.68",
+      "drawCalls": "347",
+      "renderMs": "27.51",
       "queen": null,
       "camera": "[5.2548,6.7215,9.6036]",
       "stage": {
@@ -1736,13 +1880,13 @@
           "id": "queen",
           "w": 44,
           "h": 44,
-          "label": "The Queen \u2014 Everyday $0. Meet the Queen."
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
         },
         {
           "id": "flagstone",
           "w": 200,
           "h": 109,
-          "label": "The Everyday flagstone \u2014 $0"
+          "label": "The Everyday flagstone \u2014 $6,746"
         },
         {
           "id": "rook",
@@ -1760,13 +1904,13 @@
           "id": "knight",
           "w": 133,
           "h": 198,
-          "label": "The Knight \u2014 Protect $0. Open the cistern."
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
         },
         {
           "id": "sundial",
           "w": 275,
           "h": 345,
-          "label": "The sundial \u2014 no dated commitment"
+          "label": "The sundial \u2014 next: Toronto Hydro"
         },
         {
           "id": "mailbox",
@@ -1794,15 +1938,15 @@
         }
       ],
       "phrase": "",
-      "scrollHeight": 1573,
+      "scrollHeight": 928,
       "innerHeight": 900
     },
     "opened": {
       "status": "ready",
       "tier": "lite",
       "renderer": "active",
-      "drawCalls": "173",
-      "renderMs": "17.62",
+      "drawCalls": "347",
+      "renderMs": "21.92",
       "queen": null,
       "camera": "[5.2548,6.7215,9.6036]",
       "stage": {
@@ -1812,7 +1956,7 @@
       "court": false,
       "twins": [],
       "phrase": "",
-      "scrollHeight": 1586,
+      "scrollHeight": 1041,
       "innerHeight": 900
     },
     "errors": []

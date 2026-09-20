@@ -16,7 +16,7 @@ QUICK = "--quick" in sys.argv
 # `seed=demo` is the Demo Suite's synthetic "doing well" habitat (populated stones); `--fictional` takes the small review house.
 BASE = "http://127.0.0.1:4186/__review?member=MEM-001" + ("" if "--fictional" in sys.argv else "&seed=demo")
 WIDTHS = [390, 1440] if QUICK else [320, 390, 720, 1100, 1440]
-THEMES = ["classic"] if QUICK else ["classic", "taylor", "newfoundland"]
+THEMES = [a.split("=", 1)[1] for a in sys.argv if a.startswith("--theme=")] or (["classic"] if QUICK else ["classic", "taylor", "newfoundland"])
 HEIGHT = {320: 640, 390: 844, 720: 1024, 1100: 800, 1440: 900}
 ARGS = ["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist", "--enable-unsafe-swiftshader"]
 
@@ -150,6 +150,11 @@ with sync_playwright() as p:
             print(tag, status, arrival.get("tier"), arrival.get("drawCalls"), "twins", len(arrival.get("twins") or []), "errors", len(errors), flush=True)
     browser.close()
 
-with open(os.path.join(OUT, "report.json"), "w", encoding="utf-8") as handle:
-    json.dump(report, handle, indent=2)
+report_path = os.path.join(OUT, "report.json")
+previous = []
+if os.path.exists(report_path):
+    with open(report_path, encoding="utf-8") as handle:
+        previous = [row for row in json.load(handle) if row.get("tag") not in {row["tag"] for row in report}]
+with open(report_path, "w", encoding="utf-8") as handle:
+    json.dump(previous + report, handle, indent=2)
 print("wrote", OUT)
