@@ -211,8 +211,49 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, tier]);
 
+  /**
+   * Warm the other places of the room once this one is standing and the frame
+   * loop has gone quiet. A place is its own chunk, and the chunk is fetched
+   * before `enter` can move anything — so without this the first tap on the
+   * Rook is a beat of nothing, and then the whole journey at once.
+   */
+  useEffect(() => {
+    if (status !== "ready") return;
+    let cancelled = false;
+    const warm = () => {
+      if (cancelled) return;
+      for (const id of Object.keys(PLACE_MODULES) as HarbourPlaceId[]) {
+        if (id !== placeRef.current) void PLACE_MODULES[id]().catch(() => undefined);
+      }
+    };
+    const host = window as typeof window & {
+      requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    const idle = typeof host.requestIdleCallback === "function" ? host.requestIdleCallback.bind(host) : null;
+    const handle = idle ? idle(warm, { timeout: 2500 }) : window.setTimeout(warm, 900);
+    return () => {
+      cancelled = true;
+      if (idle && typeof host.cancelIdleCallback === "function") host.cancelIdleCallback(handle);
+      else window.clearTimeout(handle);
+    };
+  }, [status]);
+
   useEffect(() => { runtime.current?.setReading(placeReading); }, [placeReading, status]);
-  useEffect(() => { runtime.current?.setToolOpen(toolOpen); if (toolOpen) setRects([]); else runtime.current?.go("court"); }, [toolOpen]);
+  /**
+   * A tool is open in front of the place. The stage becomes a mantel above it —
+   * a wide, short strip — so the camera steps back to the place's own establishing
+   * pose rather than holding a close-up that a strip cannot hold. Closing it
+   * walks back into the room.
+   */
+  useEffect(() => {
+    const world = runtime.current;
+    if (!world) return;
+    world.setToolOpen(toolOpen);
+    // The Court is wide enough to read in a strip from wherever you were standing;
+    // a room six units across is not, so it steps back to its own establishing pose.
+    if (toolOpen) { setRects([]); if (placeRef.current !== "court") world.go("sky"); } else world.go("court");
+  }, [toolOpen]);
 
   /**
    * The journey between the places of this room (BUILD_PLAN_SLICE2 §1): the
