@@ -157,6 +157,9 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // then does a door open an HTML surface in front of the place.
     const way = harbourWayFor(id, zone);
     if (way) { onNavigateRef.current(HARBOUR_PLACE_ROOMS[way], HARBOUR_PLACE_LEVELS[way]); return; }
+    // The Boathouse (LITTLE_HARBOUR_v2 §5): Together, tucked away on the shore.
+    // The room is still the house's own, so the way is a route, not a place.
+    if (id === "boathouse" || zone === "boathouse") { onNavigateRef.current("together", "middle"); return; }
     // The rail's own controls: a day earlier, a day later, back to today. A reading, never a write.
     if (id === "scrub-back") { walk(-1); return; }
     if (id === "scrub-forward") { walk(1); return; }

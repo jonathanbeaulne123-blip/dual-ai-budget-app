@@ -7,6 +7,7 @@ import { registerPlace, type Anchor, type Place, type PlaceHandle, type Pose, ty
 import { courtDressingFrom, type CourtDressing, type CourtProp } from "./dressing.ts";
 import { EngravedPlate, engravedWords, plateFinish, seeded, type PlateFinish } from "./engraved.ts";
 import { createMailbox, slipLines } from "./mailbox.ts";
+import { groundHeightAt } from "../scene/ground.ts";
 import { COURT_PIECES, PIECE_IDS, createCourtPieces, type CourtPieces, type CourtPiecesOptions, type PieceId } from "./pieces.ts";
 import { CISTERN_POSITION, createCistern } from "./cistern.ts";
 import { createSundial } from "./sundial.ts";
@@ -284,6 +285,33 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   const pickets: THREE.BufferGeometry[] = [placed(new THREE.BoxGeometry(1.7, 0.05, 0.04), gx, 0.32, gz), placed(new THREE.BoxGeometry(1.7, 0.05, 0.04), gx, 0.72, gz)];
   for (let i = 0; i < 7; i++) { const x = gx - 0.72 + i * 0.24; const h = 0.78 - Math.abs(i - 3) * 0.05; pickets.push(placed(new THREE.BoxGeometry(0.05, h, 0.03), x, h / 2 + 0.06, gz + 0.01)); }
   const gateRails = shadowed(mergedMesh(pickets, mat(dressing.gate.rail, { roughness: 0.7 })));
+
+  // ── The Boathouse (LITTLE_HARBOUR_v2 §5): Together, tucked away — one small
+  //    building down on the shore with its own door. It keeps everything the
+  //    common rooms hold (wishes, memories, letters, the projector, the
+  //    conversation); it just stops being a quarter of the app. You go there
+  //    when you want it — which is why it is small, far, and by the water.
+  const BOATHOUSE: readonly [number, number] = [5.6, -10.9];
+  const boathouseY = groundHeightAt(BOATHOUSE[0], BOATHOUSE[1]);
+  const boathouse = new THREE.Group();
+  boathouse.name = "boathouse";
+  boathouse.userData.anchor = "boathouse";
+  {
+    const body = shadowed(new THREE.Mesh(track(new THREE.BoxGeometry(1.9, 1.1, 1.4)), mat(dressing.timber, { roughness: 0.86 })));
+    body.position.y = 0.55; boathouse.add(body);
+    const roof = shadowed(new THREE.Mesh(track(new THREE.CylinderGeometry(0.02, 1.25, 0.85, 4, 1)), mat(dressing.gate.post, { roughness: 0.8, flatShading: true })));
+    roof.rotation.y = Math.PI / 4; roof.scale.set(1.05, 1, 0.78); roof.position.y = 1.5; boathouse.add(roof);
+    const door = new THREE.Mesh(track(new THREE.BoxGeometry(0.62, 0.86, 0.06)), mat(dressing.gate.accent, { roughness: 0.7 }));
+    door.position.set(0, 0.43, 0.71); boathouse.add(door);
+    // A porch deck at the door — the jetty waits for the real shore in a later slice.
+    const porch = shadowed(new THREE.Mesh(track(new THREE.BoxGeometry(1.1, 0.08, 0.6)), mat(dressing.timber, { roughness: 0.9 })), false, true);
+    porch.position.set(0, 0.06, 1.0); boathouse.add(porch);
+    boathouse.traverse((node) => { node.userData.anchor = "boathouse"; });
+    boathouse.position.set(BOATHOUSE[0], boathouseY, BOATHOUSE[1]);
+    // Face the door toward the court.
+    boathouse.rotation.y = Math.atan2(-BOATHOUSE[0], -BOATHOUSE[1]) + Math.PI;
+    group.add(boathouse);
+  }
   const gateArch = shadowed(mergedMesh([
     placed(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 8), gx - 0.84, 0.32, gz), placed(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 8), gx - 0.84, 0.72, gz),
     placed(new THREE.BoxGeometry(0.05, 0.05, 0.03), gx + 0.78, 0.55, gz + 0.03),
@@ -423,6 +451,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     { id: "hercules", position: at(hx, 0.3, hz), zone: "prop", label: "Hercules, asleep", door: { target: "hercules" } },
     { id: "cellar-stair", position: at(hx0, 0.35, hz0), zone: "stair", label: "The cellar stairhead — go down to the Cellar" },
     { id: "gate", position: at(gx, 0.9, gz), zone: "gate", label: "The court gate" },
+    { id: "boathouse", position: at(5.6, groundHeightAt(5.6, -10.9) + 1.0, -10.9), zone: "boathouse", label: "The Boathouse, down on the shore — the two of you. Go there when you want it." },
   ];
   let queenRegions: (() => Region[]) | null = null;
   const regionList = (): Region[] => [
@@ -436,6 +465,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     { id: "hercules", group: "court", label: "Hercules, asleep", box: box(hx - 0.7, 0, hz - 0.5, hx + 0.7, 0.55, hz + 0.5) },
     { id: "cellar-stair", group: "court", label: "The cellar stairhead", box: box(hx0 - STAIRHEAD.width / 2, 0, hz0 - STAIRHEAD.run / 2, hx0 + STAIRHEAD.width / 2, 0.55, hz0 + STAIRHEAD.run / 2) },
     { id: "gate", group: "court", label: "The court gate", box: box(gx - 1.2, 0, gz - 0.2, gx + 1.2, 1.7, gz + 0.2) },
+    { id: "boathouse", group: "court", label: "The Boathouse, down on the shore", box: box(4.3, groundHeightAt(5.6, -10.9), -12.1, 6.9, groundHeightAt(5.6, -10.9) + 2.1, -9.7) },
   ];
 
   // ── Reading → objects ───────────────────────────────────────────────────────
