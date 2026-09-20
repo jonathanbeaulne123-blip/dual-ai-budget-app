@@ -62,8 +62,8 @@ export type HarbourRuntime = {
   setReading: (reading: PlaceReading | null) => void;
   /** A close look at any point (the Queen's roots, the slip). */
   look: (look: CourtLook) => void;
-  /** Keyboard: arrows orbit, +/− zoom. */
-  gesture: (input: { kind: "orbit"; dx: number; dy: number } | { kind: "zoom"; delta: number }) => void;
+  /** Keyboard: arrows orbit, +/− zoom, WASD walks (a screen-space pan of the target, held inside the room). */
+  gesture: (input: { kind: "orbit"; dx: number; dy: number } | { kind: "zoom"; delta: number } | { kind: "pan"; dx: number; dy: number }) => void;
   /** A tool is open in front of the court: no breathing, the strip only redraws on demand. */
   setToolOpen: (open: boolean) => void;
   /** The place's idle animation (the Queen's breath). Off by default for an empty island. */
@@ -471,7 +471,13 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     go(mode, anchor) { aim(mode, anchor); moved(); },
     setReading(next) { reading = next; for (const { handle: each } of live.values()) each.update(next); dirty = true; render(); schedule(); },
     look(next) { court.setReduced(reduced.matches); court.goTo(next); moved(); },
-    gesture(input) { court.setReduced(reduced.matches); if (input.kind === "orbit") court.drag(input.dx, input.dy); else court.zoom(input.delta); moved(); },
+    gesture(input) {
+      court.setReduced(reduced.matches);
+      if (input.kind === "orbit") court.drag(input.dx, input.dy);
+      else if (input.kind === "pan") court.pan(input.dx, input.dy);
+      else court.zoom(input.delta);
+      moved();
+    },
     setToolOpen(open) { toolOpen = open; schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
     invalidate() { settling = true; dirty = true; previous = performance.now(); schedule(); },
