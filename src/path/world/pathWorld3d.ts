@@ -17,6 +17,11 @@ import {
   pathObjectOnAuthoredRing,
   pathPointOnAuthoredRing,
 } from "./pathGeometry.ts";
+import {
+  ZERO_INPUT, adoptRoam, clampRoamCam, flickVelocity, panDelta, restRoam, roamBounds, roamEye, roamFacing,
+  roamInputActive, roamInputFrom, roamKeyAxis, roamMoving, stepRoam, wrapAngle,
+  type RoamInput, type RoamMotion,
+} from "./roamCamera.ts";
 
 /**
  * The Our Path world (D-262): one renderer, one island, an orbiting camera
@@ -207,6 +212,28 @@ export function eraSkyFrame(islands: { x: number; z: number; r: number; y?: numb
   return { tx: at.tx * k, tz: at.tz * k, r };
 }
 export type PathAnchor = { id: string; x: number; y: number; depth: number; visible: boolean };
+/**
+ * Free roam (D-286): where the unlatched camera rests, which way it faces, and enough of the land to draw a minimap.
+ * Everything is in world units on the ground plane; `heading` is the direction the screen's "up" points.
+ */
+export type PathRoamView = {
+  /** The spot the camera looks at. */
+  tx: number; tz: number;
+  /** Where the eye stands, straight down onto the ground. */
+  x: number; z: number;
+  heading: number;
+  /** How wide the view opens, in radians, and how far ahead it reaches. */
+  cone: number; reach: number;
+  r: number;
+  /** The ring the free camera may not leave. */
+  radius: number;
+  /** Where the two of you are (this month's stone), so you can find your way back. */
+  us: { x: number; z: number } | null;
+  /** The land as circles: the island you live on first, then each era island. */
+  islands: { x: number; z: number; r: number }[];
+};
+/** Why the camera changed hands. */
+export type PathRoamReason = "drag" | "key" | "api";
 export type PathLevel = 0 | 1 | 2 | 3;
 export const PATH_LEVEL_RADIUS: readonly number[] = [150, 82, 44, 20];
 export type PathQuality = "full" | "lite";
@@ -219,9 +246,15 @@ export type PathWorldStats = {
   idle: boolean;
   /** The two walkers are on the road between months. */
   walking: boolean;
+  /** Free roam (D-286): the camera has been unlatched from the two of you. */
+  roaming: boolean;
 };
 /** With ambient motion on, the loop still stops after this long without interaction or a scene change. */
 export const IDLE_MS = 20_000;
+/** A press that travels less than this is a tap on a place, not a drag of the camera. */
+export const PICK_SLOP = 6;
+/** Free roam (D-286): the key that hands the camera over and takes it back, on the island itself. */
+export const ROAM_TOGGLE_KEY = "c";
 /**
  * Game mode (D-285): the month a journey focus asks for, clamped to the months the island has grown so far
  * (the Replay slider can hold the island at an earlier month; a later date rests on the newest one).
@@ -275,6 +308,14 @@ export function createPathWorld(host: HTMLElement, options: {
   onPick?: (id: string) => void;
   /** Game mode (D-285): the person moved the camera themselves and it came to rest; the grown month nearest its aim. */
   onView?: (view: { level: PathLevel; month: number | null }) => void;
+  /** Free roam (D-286): the camera was latched to the two of you, or taken from them. */
+  onRoam?: (roaming: boolean, why: PathRoamReason) => void;
+  /** Free roam: where the free camera is, often enough for a minimap; `null` once it is latched again. */
+  onRoamView?: (view: PathRoamView | null) => void;
+  /** Free roam: Space or Home on the island — take me back to the two of us. */
+  onRoamHome?: () => void;
+  /** Free roam: the latch/unlatch keyboard shortcut was pressed on the island. */
+  onRoamToggle?: () => void;
   brass?: string;
   wood?: string;
   /** Full: soft shadows and every decorative ticker. Lite: no shadows, fewer pixels, no ambient decor. */
@@ -2243,43 +2284,146 @@ export function createPathWorld(host: HTMLElement, options: {
   let width = 0, height = 0;
   let level: PathLevel = 0;
   const levelOf = (r: number): PathLevel => (r > 110 ? 0 : r > 62 ? 1 : r > 30 ? 2 : 3);
+  /** The tilt the latched camera actually uses: its own, plus the lean it takes on as it comes in close. */
+  function latchedPhi(): number {
+    return Math.max(0.35, Math.min(1.35, cam.phi + (1 - Math.min(1, cam.r / 120)) * 0.35));
+  }
   function place() {
-    const phi = Math.max(0.35, Math.min(1.35, cam.phi + (1 - Math.min(1, cam.r / 120)) * 0.35));
-    const y = cam.r * Math.cos(phi), h = cam.r * Math.sin(phi);
-    const ground = groundUnder(cam.tx, cam.tz);
-    camera.position.set(cam.tx + h * Math.sin(cam.theta), Math.max(ground + 3, y + ground), cam.tz + h * Math.cos(cam.theta));
-    camera.lookAt(cam.tx, ground + 1.5, cam.tz);
+    if (roaming) {
+      // Free roam (D-286): the tilt is exactly the one you chose, and the eye clears whatever is under it — the sea,
+      // your island, or an era island floating out in the journey.
+      const h = cam.r * Math.sin(cam.phi);
+      const eye = roamEye(cam, groundUnder(cam.tx + h * Math.sin(cam.theta), cam.tz + h * Math.cos(cam.theta)), groundUnder(cam.tx, cam.tz));
+      camera.position.set(eye.x, eye.y, eye.z);
+      camera.lookAt(cam.tx, eye.lookY, cam.tz);
+    } else {
+      const phi = latchedPhi();
+      const y = cam.r * Math.cos(phi), h = cam.r * Math.sin(phi);
+      const ground = groundUnder(cam.tx, cam.tz);
+      camera.position.set(cam.tx + h * Math.sin(cam.theta), Math.max(ground + 3, y + ground), cam.tz + h * Math.cos(cam.theta));
+      camera.lookAt(cam.tx, ground + 1.5, cam.tz);
+    }
     const next = levelOf(cam.r);
     // A trip (the page's, or the rail's) reports only where it lands: its hop would otherwise cross the bands twice.
     if (next !== level && !fly) { level = next; options.onLevel?.(level); }
   }
+  /** How far the latched camera's target may travel; with a journey, out to the farthest era island. */
+  const latchedLimit = () => (hasJourney() ? eraExtent + 20 : 84);
   function clampTarget() {
-    // With a journey, the target may travel out to the farthest era island.
-    const limit = hasJourney() ? eraExtent + 20 : 84;
+    const limit = latchedLimit();
     const d = Math.hypot(cam.tx, cam.tz); if (d > limit) { cam.tx *= limit / d; cam.tz *= limit / d; }
   }
 
+  // ----------------------------------------------------------------- free roam
+  /** The camera has been unlatched from the two of you and is the person's own (D-286). */
+  let roaming = false;
+  let roamMotion: RoamMotion = restRoam();
+  let roamInput: RoamInput = { ...ZERO_INPUT };
+  let roamRested = true;
+  let roamReported = 0;
+  /** Keys currently held on the island, normalised so Shift+W and w are the same key. */
+  const heldKeys = new Set<string>();
+  let boost = false;
+  const normKey = (key: string) => (key.length === 1 ? key.toLowerCase() : key);
+  const roamRing = () => roamBounds({ eraExtent, latched: latchedLimit(), maxRadius: maxRadius() });
+  const readRoamInput = () => { roamInput = roamInputFrom(heldKeys, boost); };
+  /** Distance limits: a free camera may come closer and pull back further than a latched one. */
+  function clampRadius(r: number): number {
+    if (!roaming) return Math.max(14, Math.min(maxRadius(), r));
+    const ring = roamRing();
+    return Math.max(ring.minR, Math.min(ring.maxR, r));
+  }
+  function roamViewNow(): PathRoamView {
+    const ring = roamRing();
+    const facing = roamFacing(cam, aspectNow());
+    const us = current ? current.island.spot(current.island.cur) : null;
+    const islands = eraFrame.length ? eraFrame.map((i) => ({ x: i.x, z: i.z, r: i.r })) : current ? [{ x: 0, z: 0, r: mainRadius(current.island) }] : [];
+    return {
+      tx: cam.tx, tz: cam.tz, x: facing.x, z: facing.z, heading: facing.heading, cone: facing.cone,
+      reach: facing.reach, r: cam.r, radius: ring.radius, us: us ? { x: us.x, z: us.z } : null, islands,
+    };
+  }
+  /** Tell the minimap where the camera is — at most ten times a second, and only while it is free. */
+  function reportRoam(force = false) {
+    if (!options.onRoamView || !roaming) return;
+    const now = performance.now();
+    if (!force && now - roamReported < 90) return;
+    roamReported = now;
+    options.onRoamView(roamViewNow());
+  }
+  function setRoam(on: boolean, why: PathRoamReason = "api") {
+    if (on === roaming || dead) return;
+    roaming = on;
+    fly = null;
+    roamMotion = restRoam();
+    heldKeys.clear();
+    boost = false;
+    readRoamInput();
+    roamRested = true;
+    // Taking the camera keeps the exact view you had — including the lean the latched camera takes on up close,
+    // which becomes the free camera's own tilt — and the ring it may roam simply widens around you.
+    if (on) { cam.phi = latchedPhi(); Object.assign(cam, adoptRoam(cam, roamRing())); }
+    // Handing it back: the tilt goes back to the plain one the latched camera leans from.
+    else cam.phi = Math.max(0.35, Math.min(1.3, cam.phi - (1 - Math.min(1, cam.r / 120)) * 0.35));
+    options.onRoam?.(on, why);
+    if (on) reportRoam(true);
+    else options.onRoamView?.(null);
+    invalidate();
+    gestured();
+  }
+  /** A drag on the island takes the camera: from here on it is yours. */
+  function takeCamera(why: PathRoamReason) { if (!roaming) setRoam(true, why); }
+
   const pointers = new Map<number, { x: number; y: number }>();
-  let moved = 0, pinch = 0, panMode = false;
+  let moved = 0, pinch = 0, twist: number | null = null, panMode = false;
+  /** The last step of a roam drag, so letting go leaves the camera gliding at the speed it had. */
+  let flick: { dx: number; dz: number; dt: number; at: number } | null = null;
   const el = renderer.domElement;
-  const onDown = (e: PointerEvent) => { el.setPointerCapture?.(e.pointerId); pointers.set(e.pointerId, { x: e.clientX, y: e.clientY }); moved = 0; panMode = e.button === 2 || e.shiftKey; fly = null; };
+  const onDown = (e: PointerEvent) => {
+    el.setPointerCapture?.(e.pointerId);
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    moved = 0; panMode = e.button === 2 || e.shiftKey; fly = null; flick = null;
+    if (roaming) { roamMotion = restRoam(); roamRested = false; }
+  };
   const onMove = (e: PointerEvent) => {
     const prev = pointers.get(e.pointerId); if (!prev) return;
     const dx = e.clientX - prev.x, dy = e.clientY - prev.y;
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     moved += Math.abs(dx) + Math.abs(dy);
+    // A drag is not a tap: past the pick threshold the camera becomes yours (D-286).
+    if (moved >= PICK_SLOP) takeCamera("drag");
     if (pointers.size === 2) {
       const [a, b] = [...pointers.values()] as [{ x: number; y: number }, { x: number; y: number }];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
-      if (pinch) cam.r = Math.max(14, Math.min(maxRadius(), cam.r * pinch / d));
-      pinch = d; invalidate(); return;
+      const angle = Math.atan2(b.y - a.y, b.x - a.x);
+      if (pinch) cam.r = clampRadius(cam.r * pinch / d);
+      // Free roam: two fingers twisting turn the island under you.
+      if (roaming && twist !== null) cam.theta = wrapAngle(cam.theta + wrapAngle(angle - twist));
+      pinch = d; twist = angle;
+      if (roaming) { roamRested = false; reportRoam(); }
+      invalidate(); return;
     }
-    if (panMode) {
-      const k = cam.r * 0.0018;
-      cam.tx += (-dx * Math.cos(cam.theta) - dy * Math.sin(cam.theta)) * k;
-      cam.tz += (dx * Math.sin(cam.theta) - dy * Math.cos(cam.theta)) * k;
-      clampTarget();
-    } else { cam.theta -= dx * 0.006; cam.phi = Math.max(0.35, Math.min(1.3, cam.phi + dy * 0.004)); }
+    // Latched, a drag looks around from where you stand. Free, it glides you across the island; right-drag (or
+    // Shift) looks around instead.
+    const glide = roaming ? !panMode : panMode;
+    if (glide) {
+      const move = panDelta(dx, dy, cam.r, cam.theta);
+      cam.tx += move.dx; cam.tz += move.dz;
+      if (roaming) {
+        Object.assign(cam, clampRoamCam(cam, roamRing()));
+        const at = performance.now();
+        flick = { dx: move.dx, dz: move.dz, dt: Math.max(0.004, ((flick ? at - flick.at : 16)) / 1000), at };
+        roamRested = false;
+      } else clampTarget();
+    } else {
+      cam.theta = wrapAngle(cam.theta - dx * 0.006);
+      const ring = roamRing();
+      cam.phi = roaming
+        ? Math.max(ring.minPhi, Math.min(ring.maxPhi, cam.phi + dy * 0.004))
+        : Math.max(0.35, Math.min(1.3, cam.phi + dy * 0.004));
+      if (roaming) roamRested = false;
+    }
+    if (roaming) reportRoam();
     invalidate();
   };
   // A gesture that comes to rest tells the page where the camera now aims (debounced).
@@ -2298,11 +2442,26 @@ export function createPathWorld(host: HTMLElement, options: {
   const onUp = (e: PointerEvent) => {
     const single = pointers.size === 1;
     pointers.delete(e.pointerId);
-    if (pointers.size < 2) pinch = 0;
-    if (single && moved < 6) pick(e.clientX, e.clientY);
-    else if (!pointers.size) gestured();
+    if (pointers.size < 2) { pinch = 0; twist = null; }
+    if (single && moved < PICK_SLOP) pick(e.clientX, e.clientY);
+    else if (!pointers.size) {
+      // Letting go of a roam drag leaves the camera gliding a little (never under reduced motion).
+      if (roaming && flick && !options.reducedMotion && performance.now() - flick.at < 90) {
+        const thrown = flickVelocity(flick.dx, flick.dz, flick.dt);
+        roamMotion = { ...roamMotion, vx: thrown.vx, vz: thrown.vz };
+        roamRested = false;
+        invalidate();
+      }
+      flick = null;
+      gestured();
+    }
   };
-  const onWheel = (e: WheelEvent) => { e.preventDefault(); fly = null; cam.r = Math.max(14, Math.min(maxRadius(), cam.r * Math.exp(e.deltaY * 0.001))); invalidate(); gestured(); };
+  const onWheel = (e: WheelEvent) => {
+    e.preventDefault(); fly = null;
+    cam.r = clampRadius(cam.r * Math.exp(e.deltaY * 0.001));
+    if (roaming) { roamRested = false; reportRoam(); }
+    invalidate(); gestured();
+  };
   const onContext = (e: Event) => e.preventDefault();
   cleanup.push(rendererLease.listenCanvas("pointerdown", onDown));
   cleanup.push(rendererLease.listenCanvas("pointermove", onMove));
@@ -2310,6 +2469,44 @@ export function createPathWorld(host: HTMLElement, options: {
   cleanup.push(rendererLease.listenCanvas("pointercancel", onUp));
   cleanup.push(rendererLease.listenCanvas("wheel", onWheel, { passive: false }));
   cleanup.push(rendererLease.listenCanvas("contextmenu", onContext));
+
+  // Roaming from the keyboard. The page makes the canvas wrapper focusable and names it; these keys only act while
+  // it holds focus, so Tab still walks the HUD and the marks.
+  const onRoamKeyDown = (event: KeyboardEvent) => {
+    if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+    boost = event.shiftKey;
+    if (event.key === " " || event.key === "Home") { event.preventDefault(); options.onRoamHome?.(); return; }
+    if (normKey(event.key) === ROAM_TOGGLE_KEY) { event.preventDefault(); options.onRoamToggle?.(); return; }
+    const key = normKey(event.key);
+    if (!roamKeyAxis(key)) { if (event.key === "Shift") { readRoamInput(); invalidate(); } return; }
+    event.preventDefault();
+    takeCamera("key");
+    fly = null;
+    if (!heldKeys.has(key)) heldKeys.add(key);
+    readRoamInput();
+    roamRested = false;
+    invalidate();
+  };
+  const onRoamKeyUp = (event: KeyboardEvent) => {
+    boost = event.shiftKey;
+    const key = normKey(event.key);
+    if (heldKeys.delete(key) || event.key === "Shift") { readRoamInput(); invalidate(); }
+  };
+  /** Focus left the island (or the tab did): no key can still be held, so nothing drifts on. */
+  const releaseKeys = () => {
+    if (!heldKeys.size && !boost) return;
+    heldKeys.clear(); boost = false; readRoamInput(); invalidate();
+  };
+  host.addEventListener("keydown", onRoamKeyDown);
+  host.addEventListener("keyup", onRoamKeyUp);
+  host.addEventListener("blur", releaseKeys, true);
+  window.addEventListener("blur", releaseKeys);
+  cleanup.push(() => {
+    host.removeEventListener("keydown", onRoamKeyDown);
+    host.removeEventListener("keyup", onRoamKeyUp);
+    host.removeEventListener("blur", releaseKeys, true);
+    window.removeEventListener("blur", releaseKeys);
+  });
 
   const ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
   function pick(x: number, y: number) {
@@ -2382,6 +2579,26 @@ export function createPathWorld(host: HTMLElement, options: {
       if (fly.t >= 1) fly = null;
       busy = true;
     }
+    // Free roam (D-286): the camera the person is holding. A trip they asked for (a pick from either view) runs
+    // first and is not interrupted; once it lands, roaming carries on from wherever it left them.
+    if (roaming && fly) { roamRested = false; reportRoam(); }
+    if (roaming && !fly) {
+      const asking = roamInputActive(roamInput);
+      if (asking || roamMoving(roamMotion)) {
+        const stepped = stepRoam(cam, roamMotion, roamInput, dt, roamRing(), options.reducedMotion);
+        Object.assign(cam, stepped.cam);
+        roamMotion = stepped.motion;
+        roamRested = false;
+        busy = true;
+        reportRoam();
+      } else if (!roamRested) {
+        // It has come to rest: say exactly where, once, and let the page name the month it is near.
+        roamRested = true;
+        roamMotion = restRoam();
+        reportRoam(true);
+        gestured();
+      }
+    }
     if (fades.length) { fades = fades.filter((f) => f(dt)); if (fades.length) busy = true; }
     if (stepCoins(dt)) busy = true;
     for (const bank of sculptures.values()) if (bank.sculpture.update(now)) busy = true;
@@ -2408,7 +2625,15 @@ export function createPathWorld(host: HTMLElement, options: {
     if (busy || pointers.size) raf = rendererLease.requestFrame(frame);
     else last = 0;
   }
-  function halt() { if (raf) rendererLease.cancelFrame(raf); raf = 0; last = 0; }
+  function halt() {
+    // The renderer is leased now (D-264), so the frame is cancelled through the lease, not the window.
+    if (raf) rendererLease.cancelFrame(raf); raf = 0; last = 0;
+    // Nothing is drawing any more, so nothing may still be moving: a held key or a glide would otherwise carry the
+    // camera off in one enormous step when the world comes back.
+    roamMotion = restRoam();
+    heldKeys.clear(); boost = false; readRoamInput();
+    roamRested = true;
+  }
   /** Something changed or someone touched the island: leave idle and draw (unless asleep or scrolled away). */
   function invalidate() {
     if (dead) return;
@@ -2451,6 +2676,8 @@ export function createPathWorld(host: HTMLElement, options: {
     invalidate();
   }
   function flyTo(tx: number, tz: number, r: number, theta = cam.theta) {
+    // A pick is a request: the free camera travels there, and stays free when it arrives.
+    if (roaming) { roamMotion = restRoam(); roamRested = false; }
     const to = { ...cam, tx, tz, r };
     let dth = theta - cam.theta; dth = Math.atan2(Math.sin(dth), Math.cos(dth));
     to.theta = cam.theta + dth;
@@ -2479,7 +2706,7 @@ export function createPathWorld(host: HTMLElement, options: {
       if (changed && current && hasJourney()) buildScene(current, false);
       invalidate();
     },
-    /** The tent is open: stop drawing, keep the context and every buffer. */
+    /** The tent is open (or the world was minimized): stop drawing, keep the context and every buffer. */
     sleep() { if (dead) return; sleeping = true; halt(); },
     /** Back from the tent: re-measure (the host was display:none), draw, and re-report anchors. */
     wake(w?: number, h?: number) {
@@ -2512,9 +2739,23 @@ export function createPathWorld(host: HTMLElement, options: {
       if (next === 0 && hasJourney()) { const f = skyFrame(); flyTo(f.tx, f.tz, f.r, eraSkyTheta(aspectNow())); return; }
       flyTo(next === 0 ? 0 : cam.tx, next === 0 ? 0 : cam.tz, PATH_LEVEL_RADIUS[next]!);
     },
-    zoom(factor: number) { fly = null; cam.r = Math.max(14, Math.min(maxRadius(), cam.r * factor)); invalidate(); },
-    turn(delta: number) { cam.theta += delta; invalidate(); },
-    stats(): PathWorldStats { return { frames, lastFrameMs, pieces: pickables.length, level, ambient, quality, sleeping, idle, walking: walk !== null }; },
+    zoom(factor: number) { fly = null; cam.r = clampRadius(cam.r * factor); if (roaming) reportRoam(true); invalidate(); },
+    turn(delta: number) { cam.theta = wrapAngle(cam.theta + delta); if (roaming) reportRoam(true); invalidate(); },
+    /**
+     * Free roam (D-286). `true` unlatches the camera from the two of you, keeping the exact view it has; `false`
+     * latches it again (the page then flies it home).
+     */
+    setRoam(on: boolean) { setRoam(on, "api"); },
+    roaming(): boolean { return roaming; },
+    /** Free roam: fly the free camera to a spot on the ground (the minimap was tapped). It stays free. */
+    roamTo(x: number, z: number) {
+      if (!roaming) setRoam(true, "api");
+      const to = clampRoamCam({ ...cam, tx: x, tz: z }, roamRing());
+      flyTo(to.tx, to.tz, cam.r);
+    },
+    /** Free roam: where the camera is now, for the minimap (also handed over through `onRoamView`). */
+    roamView(): PathRoamView | null { return roaming ? roamViewNow() : null; },
+    stats(): PathWorldStats { return { frames, lastFrameMs, pieces: pickables.length, level, ambient, quality, sleeping, idle, walking: walk !== null, roaming }; },
     dispose() {
       if (dead) return;
       dead = true;

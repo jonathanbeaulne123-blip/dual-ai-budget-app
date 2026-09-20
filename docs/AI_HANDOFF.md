@@ -1,3 +1,22 @@
+## Free roam in the journey's open world (2026-09-19, D-286)
+
+Branch `claude/journey-free-roam` from `main@4de2b28e`. Local only: not pushed, no PR, not merged, not deployed, not live verified. **Risk: Medium** — the open world's camera and HUD. No money meaning, calculation, writer, schema, sync, Auth/RLS or Hercules payload change; nothing posts. Fictional habitats only in every test and screenshot.
+
+- Budget (5): +0. Presentation only. A free camera at rest draws no frames, so it costs no more than a latched one.
+- Engagement (3): +2. The island stops being a diorama you orbit and becomes a place you walk through, with the way back always on screen.
+- Details: [the worksession](worksessions/2026-09-19-journey-free-roam.md) · [D-286](DECISIONS.md).
+
+**What changed:** `src/path/world/roamCamera.ts` (new, pure: bounds, view-relative movement, exact exponential damping, capped flick, reduced motion, the eye that clears the ground, the minimap facing); `src/path/world/pathWorld3d.ts` (the free camera, its gestures and keys, the per-frame step, `setRoam` / `roaming` / `roamTo` / `roamView`, `onRoam` / `onRoamView` / `onRoamHome` / `onRoamToggle`, `PathRoamView`, `PICK_SLOP`, `ROAM_TOGGLE_KEY`); `src/path/OurPathWorld.tsx` (the control, the chip, the first-time hint, the announcements, the latching rules, the focusable canvas wrapper); `src/path/PathRoamRadar.tsx` (new); `src/path/our-path-world.css`; `test/journey-roam-camera.test.ts` and `test/journey-free-roam-ui.test.ts` (new); `scripts/capture-journey-free-roam.mjs` (new).
+
+**Controls:** drag glides with inertia; right-drag / Shift-drag / two-finger twist / `Q`·`E` look around; pinch and wheel zoom; `W`·`A`·`S`·`D` and the arrows move relative to where you are looking; `R`·`F` (or `+`·`−`) rise and fall; `Shift` hurries; `Space`, `Home`, **Where we are**, **Return to us** and the control latch and fly home; `C` toggles. Keys act while the canvas wrapper holds focus.
+
+**Verification:** `npx tsc --noEmit -p .` clean apart from 12 pre-existing failures in `src/hearthside/*` and `src/wardrobe/*` caused by uninstalled optional packages (`@capacitor/core`, `@hearth/browser-ar`, `manifold-3d`). 30 pure camera tests and 16 free-roam UI tests pass; the Our Path, journey, era and habitat suites stay green (`test/habitat-story-fund-model.ts` fails to resolve `@capacitor/core` in this checkout and did so before the change). Quick gate: `pnpm test -- --risk=medium-high --focus=test/journey-free-roam-ui.test.ts --focus-reason="free roam camera in game mode"` — `diff-check` and `ai-surface` pass; the `typescript` phase fails on the twelve pre-existing optional-package resolution errors, so the gate stops there. The same `tsc --noEmit` run against a clean `git archive` of `4de2b28e` with the same symlinked `node_modules` gives byte-identical output, so the gate is red on the baseline too; installing was out of scope. No time-budget breach (72.6s of 300s). The suites the gate would have selected were run directly: 261 tests in 26 files, all passing. Browser evidence in `docs/evidence/journey-free-roam/` with `report.json`.
+
+**Uncertainty:** no real-phone measurement (headless SwiftShader only, which draws about two frames a second and so understates how far a held key travels; the capture records the measured displacement instead). Two-finger twist was not exercised on a touch device. `C` was not checked for collisions on a live App page. The flat / no-WebGL fallback has no free roam by design and says so in its outline.
+
+**Next owner:** Jonathan reviews the evidence and decides whether free roam should also be offered from the page's simple view corner; Codex integrates and runs the exhaustive lane if he asks for it.
+
+
 ## 2026-09-19 — Journey D-284/D-285 reconciled with House and Plan v3
 
 The simple view and game mode retain current main's canonical House routing, persistent Plan Studio, canonical Task consent/evidence controls and umbrella pennants. Game history is consumed before outbound House navigation or opening the tent, so cleanup cannot undo the destination or leave a ghost game entry.
