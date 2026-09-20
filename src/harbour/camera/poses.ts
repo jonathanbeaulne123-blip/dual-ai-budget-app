@@ -237,15 +237,19 @@ export function holdPoseInRoom(pose: CourtPose, hold: RoomHold | null): CourtPos
   const phi = held(Number.isFinite(pose.phi) ? pose.phi : hold.maxPhi, hold.minPhi, hold.maxPhi);
   const theta = wrap(Number.isFinite(pose.theta) ? pose.theta : 0);
   let r = held(Number.isFinite(pose.r) ? pose.r : hold.maxR, hold.minR, hold.maxR);
-  // The eye sits at target + r·direction; shorten r so every axis stays in its box.
+  // The eye sits at target + r·direction; shorten r so every axis stays in its
+  // box. Containment beats closeness: when the box demands it, r goes below
+  // `minR` too — a floor that pushed the eye back through the wall would be a
+  // floor on the wrong thing — with a hand's breadth left as the last resort.
   const direction: Vec3 = [Math.sin(phi) * Math.sin(theta), Math.cos(phi), Math.sin(phi) * Math.cos(theta)];
+  let room = Number.POSITIVE_INFINITY;
   for (let axis = 0; axis < 3; axis++) {
     const d = direction[axis]!;
     if (Math.abs(d) < 1e-9) continue;
-    const room = ((d > 0 ? hold.eye.max[axis]! : hold.eye.min[axis]!) - target[axis]!) / d;
-    if (room < r) r = room;
+    const limit = ((d > 0 ? hold.eye.max[axis]! : hold.eye.min[axis]!) - target[axis]!) / d;
+    if (limit < room) room = limit;
   }
-  r = held(r, hold.minR, hold.maxR);
+  r = Math.min(r, Math.max(0.2, room));
   return { target, r, theta, phi };
 }
 

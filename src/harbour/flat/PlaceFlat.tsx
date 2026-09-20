@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { HarbourPlaceId } from "../flag.ts";
-import type { CellarReadingView, HarbourReading, TowerReading } from "../data/reading.ts";
+import type { CellarReadingView, GlasshouseReading, HarbourReading, TowerReading } from "../data/reading.ts";
 import { CourtFlat, engravedCents, type CourtFlatProps, type CourtFlatStatus } from "./CourtFlat.tsx";
 import "../harbour.css";
 
@@ -30,6 +30,7 @@ export type PlaceFlatProps = Omit<CourtFlatProps, "reading"> & {
 export function HarbourFlat({ place, ...props }: PlaceFlatProps) {
   if (place === "tower") return <TowerFlat {...props} />;
   if (place === "cellar") return <CellarFlat {...props} />;
+  if (place === "glasshouse") return <GlasshouseFlat {...props} />;
   const { reading, status, theme, partnerName, onOpen, onEnter, overlay } = props;
   return <CourtFlat reading={reading} status={status} theme={theme} partnerName={partnerName} onOpen={onOpen} onEnter={onEnter} overlay={overlay} />;
 }
@@ -139,6 +140,47 @@ export function CellarFlat({ reading, status = "loading", theme = "classic", onO
           </li>)}
         </ul>}
       {cellar && cellar.scaleCents > 0 && <p className="court-flat__condition">The jars and the water are drawn on one scale, up to {engravedCents(cellar.scaleCents)}.</p>}
+    </div>
+  </section>;
+}
+
+const BENCH_NAMES = ["This week", "Next week", "The month"] as const;
+const potStateWords = (state: "seed" | "sprout" | "bloom") => (state === "seed" ? "a seed" : state === "sprout" ? "a sprout" : "in bloom");
+const threadWords = (thread: "mine" | "partner" | "both" | "plain") =>
+  thread === "both" ? "both of you" : thread === "mine" ? "yours" : thread === "partner" ? "the partner’s" : "nobody’s yet";
+
+/**
+ * The Glasshouse, read as paper: the three benches as three lists, each pot a
+ * real button onto the Master Planner, the harvest and the perennials in
+ * words, and the Calendar's own door. No figure appears here at all — the
+ * planner's paper carries those.
+ */
+export function GlasshouseFlat({ reading, status = "loading", theme = "classic", onOpen, overlay = false, onStair }: Omit<PlaceFlatProps, "place">) {
+  const glasshouse: GlasshouseReading | null = reading?.glasshouse ?? null;
+  const benches: [typeof BENCH_NAMES[number], NonNullable<GlasshouseReading["pots"]>][] =
+    BENCH_NAMES.map((name, index) => [name, (glasshouse?.pots ?? []).filter((pot) => pot.bench === index)]);
+  return <section className={`court-flat place-flat place-flat--glasshouse court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="glasshouse" aria-label="The Glasshouse, reading edition" aria-busy={status === "loading" || undefined}>
+    <div className="court-flat__sheet">
+      <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Glasshouse")}</p>
+      {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Through the garden door to the Court</button>}
+      {benches.map(([name, pots]) => <div className="place-flat__bench" key={name}>
+        <h3>{name}{pots.length === 0 ? " — a clear bench" : ""}</h3>
+        {pots.length > 0 && <ul className="place-flat__pots">
+          {pots.map((pot) => <li key={pot.key}>
+            <button type="button" onClick={() => onOpen?.("planner", pot.key)}>
+              <strong>{pot.title}</strong>
+              <span>{potStateWords(pot.state)} · {threadWords(pot.thread)}{pot.dry ? " · dry — the can is out" : ""}{pot.date ? ` · ${pot.date}` : ""}</span>
+            </button>
+          </li>)}
+        </ul>}
+      </div>)}
+      <p className="place-flat__line">{(glasshouse?.harvested ?? 0) === 0 ? "The harvest shelf — nothing yet this week." : `Harvested — ${glasshouse?.harvested} this week. Nothing is deleted; it is harvested.`}</p>
+      {(glasshouse?.perennials.length ?? 0) > 0 && <p className="place-flat__line">The long bed — {glasshouse!.perennials.map((p) => p.title).join(", ")}.</p>}
+      {(glasshouse?.overflow ?? 0) > 0 && <p className="place-flat__line">And {glasshouse?.overflow} more on the paper.</p>}
+      <div className="place-flat__doors">
+        <button type="button" onClick={() => onOpen?.("planner")}>Open the Master Planner</button>
+        <button type="button" onClick={() => onOpen?.("calendar")}>Unfold the Calendar</button>
+      </div>
     </div>
   </section>;
 }

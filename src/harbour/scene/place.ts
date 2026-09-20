@@ -112,6 +112,11 @@ export const PLACE_HOLDS: Readonly<Record<HarbourPlaceId, RoomHold | null>> = Ob
     target: { min: [-4.2, 0.2, -2.9] as Vec3, max: [4.2, 2.2, 2.4] as Vec3 },
     minR: 1.4, maxR: 6.5, minPhi: 0.85, maxPhi: 1.38,
   }),
+  glasshouse: Object.freeze({
+    eye: { min: [-3.95, 0.35, -2.9] as Vec3, max: [3.95, 2.7, 3.1] as Vec3 },
+    target: { min: [-3.2, 0.2, -2.8] as Vec3, max: [3.2, 2.1, 2.2] as Vec3 },
+    minR: 1.4, maxR: 6.2, minPhi: 0.85, maxPhi: 1.38,
+  }),
 });
 
 /** The registry the runtime reads the active place from. `court/CourtScene.ts` registers itself on import. */
