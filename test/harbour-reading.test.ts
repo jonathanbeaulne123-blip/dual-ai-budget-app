@@ -207,11 +207,16 @@ describe("the tower, the cellar and the cistern — slice 2's reading", () => {
     expect(reading.cellar.days.filter((day) => day.today)).toHaveLength(1);
   });
 
-  it("gives the water and the jars one dollar scale: the larger of the biggest jar and the prepare balance", () => {
+  it("gives the water and the jars one dollar scale: the largest of the biggest jar, the prepare balance and the month's crest", () => {
     const biggest = reading.cellar.jars.reduce((top, jar) => Math.max(top, jar.amountCents), 0);
+    // The water is walked day by day, and its crest is routinely above the standing
+    // balance; a ruler that stopped at the balance pinned the cistern to the top of its
+    // glass for half the month.
+    const crest = reading.cellar.days.reduce((top, day) => Math.max(top, day.balanceCents), 0);
     expect(reading.cellar.prepareCents).toBe(reading.prepare.cents);
-    expect(reading.cellar.scaleCents).toBe(Math.max(biggest, reading.prepare.cents ?? 0));
+    expect(reading.cellar.scaleCents).toBe(Math.max(biggest, reading.prepare.cents ?? 0, crest));
     expect(reading.cellar.scaleCents).toBeGreaterThanOrEqual(biggest);
+    expect(reading.cellar.scaleCents).toBeGreaterThanOrEqual(crest);
   });
 
   it("reads the cistern as Protect against its target, never below a dark ring", () => {

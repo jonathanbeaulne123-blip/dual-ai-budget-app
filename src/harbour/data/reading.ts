@@ -230,12 +230,16 @@ export function buildCellarReading(household: Household, memberId: string, today
     .map((day) => ({ date: day.date, balanceCents: day.balanceCents, belowBuffer: day.belowBuffer, today: day.today }));
   const found = days.findIndex((day) => day.today);
   const biggest = rows.reduce((top, row) => Math.max(top, row.amountCents), 0);
+  // The room's ruler has to hold everything the room draws. The month's water is walked
+  // day by day, and its crest is routinely above the standing balance — a ruler that
+  // stopped at the balance pinned the cistern to the top of its glass for half the month.
+  const crest = days.reduce((top, day) => Math.max(top, day.balanceCents), 0);
   return {
     jars: rows,
     days,
     todayIndex: found < 0 ? 0 : found,
     prepareCents,
-    scaleCents: Math.max(biggest, prepareCents ?? 0),
+    scaleCents: Math.max(biggest, prepareCents ?? 0, crest),
   };
 }
 

@@ -115,7 +115,7 @@ export function CellarFlat({ reading, status = "loading", theme = "classic", onO
       <div className="place-flat__water">
         <p className="place-flat__waterline">
           <small>The water · Prepare behind the rail</small>
-          <strong>{engravedCents(cellar?.prepareCents ?? null)}</strong>
+          <strong>{engravedCents(day?.balanceCents ?? cellar?.prepareCents ?? null)}</strong>
           <span>{day ? `On ${day.date} the water stands at ${engravedCents(day.balanceCents)}${day.belowBuffer ? " — under the mark" : ""}${day.today ? " · today" : ""}` : "No days walked yet"}</span>
         </p>
         {days.length > 0 && <>
