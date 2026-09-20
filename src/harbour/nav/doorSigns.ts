@@ -31,30 +31,44 @@ export function shortDate(date: string): string {
 
 const count = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-export function doorSigns(reading: Pick<HarbourReading, "banks" | "jars" | "build" | "protect" | "next">): DoorSigns {
+/**
+ * The three signs, read from the slice-2 reading where it is richer than the
+ * slice-1 counts: the tower counts the banks standing on the rack's shelves,
+ * the cellar counts the jars on the rail, and the cistern reads its own water
+ * before falling back to the Protect bank. An empty extension keeps the
+ * slice-1 numbers, so a sign is never blanker than it was.
+ */
+export type DoorSignReading = Pick<HarbourReading, "banks" | "jars" | "build" | "protect" | "next"> & Partial<Pick<HarbourReading, "tower" | "cellar" | "cistern">>;
+
+export function doorSigns(reading: DoorSignReading): DoorSigns {
   const saved = plainDollars(reading.build.cents);
+  const onShelves = (reading.tower?.shelves ?? []).reduce((sum, shelf) => sum + shelf.banks.length, 0);
+  const banks = onShelves || reading.banks;
   const tower = {
-    line: `${count(reading.banks, "bank", "banks")} · ${saved} saved`,
+    line: `${count(banks, "bank", "banks")} · ${saved} saved`,
     aria: reading.build.cents === null
-      ? `The tower. ${count(reading.banks, "kitty bank", "kitty banks")}; what is saved is not known yet. Opens the Loft.`
-      : `The tower. ${count(reading.banks, "kitty bank", "kitty banks")}, ${saved} saved. Opens the Loft.`,
+      ? `The tower. ${count(banks, "kitty bank", "kitty banks")}; what is saved is not known yet. Opens the Loft.`
+      : `The tower. ${count(banks, "kitty bank", "kitty banks")}, ${saved} saved. Opens the Loft.`,
   };
 
   const nextBill = reading.next && reading.next.target === "cellar-bills" ? reading.next : null;
+  const jars = reading.cellar?.jars.length || reading.jars;
   const cellar = {
     line: nextBill
-      ? `${count(reading.jars, "bill", "bills")} · next ${nextBill.label} ${shortDate(nextBill.date)}`
-      : `${count(reading.jars, "bill", "bills")} · nothing dated`,
+      ? `${count(jars, "bill", "bills")} · next ${nextBill.label} ${shortDate(nextBill.date)}`
+      : `${count(jars, "bill", "bills")} · nothing dated`,
     aria: nextBill
-      ? `The cellar stair. ${count(reading.jars, "bill jar", "bill jars")} this month; the next is ${nextBill.label} on ${shortDate(nextBill.date)}${nextBill.daysAhead === 0 ? ", today" : nextBill.daysAhead === 1 ? ", tomorrow" : nextBill.daysAhead > 1 ? `, in ${nextBill.daysAhead} days` : ""}. Opens the Cellar.`
-      : `The cellar stair. ${count(reading.jars, "bill jar", "bill jars")} this month; no dated bill is next. Opens the Cellar.`,
+      ? `The cellar stair. ${count(jars, "bill jar", "bill jars")} this month; the next is ${nextBill.label} on ${shortDate(nextBill.date)}${nextBill.daysAhead === 0 ? ", today" : nextBill.daysAhead === 1 ? ", tomorrow" : nextBill.daysAhead > 1 ? `, in ${nextBill.daysAhead} days` : ""}. Opens the Cellar.`
+      : `The cellar stair. ${count(jars, "bill jar", "bill jars")} this month; no dated bill is next. Opens the Cellar.`,
   };
 
-  const water = plainDollars(reading.protect.cents);
-  const cistern = reading.protect.cents === null
+  const cents = reading.cistern?.cents ?? reading.protect.cents;
+  const target = reading.cistern?.target || reading.protect.target;
+  const water = plainDollars(cents);
+  const cistern = cents === null
     ? { line: "—", aria: "The cistern. The buffer is not known yet. Opens the Protect bank." }
-    : reading.protect.target > 0
-      ? { line: `${water} of ${plainDollars(reading.protect.target)}`, aria: `The cistern. ${water} of a ${plainDollars(reading.protect.target)} buffer. Opens the Protect bank.` }
+    : target > 0
+      ? { line: `${water} of ${plainDollars(target)}`, aria: `The cistern. ${water} of a ${plainDollars(target)} buffer. Opens the Protect bank.` }
       : { line: `${water} set aside`, aria: `The cistern. ${water} set aside; no buffer agreed yet. Opens the Protect bank.` };
 
   return { tower, cellar, cistern };

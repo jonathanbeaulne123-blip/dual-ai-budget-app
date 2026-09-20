@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { seedDemoHousehold } from "../src/core/seed.ts";
-import { buildHarbourReading, type HarbourReading } from "../src/harbour/data/reading.ts";
+import { buildHarbourReading, EMPTY_CELLAR_READING, EMPTY_CISTERN_READING, EMPTY_TOWER_READING, type HarbourReading } from "../src/harbour/data/reading.ts";
 import { doorSigns, plainDollars, shortDate } from "../src/harbour/nav/doorSigns.ts";
 
 const today = "2026-09-20";
@@ -18,6 +18,9 @@ const settled: HarbourReading = {
   jars: 3,
   mode: 2,
   freshness: "current",
+  tower: EMPTY_TOWER_READING,
+  cellar: EMPTY_CELLAR_READING,
+  cistern: EMPTY_CISTERN_READING,
 };
 
 describe("plain words for the door signs", () => {

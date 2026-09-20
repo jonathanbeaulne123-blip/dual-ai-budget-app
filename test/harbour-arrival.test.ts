@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ARRIVAL_KEY_PREFIX, arrivalKey, harbourArrivalRoute, hasArrived, markArrived, type ArrivalSession } from "../src/harbour/nav/arrival.ts";
-import { COURT_ROUTE, HARBOUR_ENABLED, HARBOUR_ROOMS, harbourOwnsRoute, harbourPlaceFor } from "../src/harbour/flag.ts";
+import { COURT_ROUTE, HARBOUR_ENABLED, HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, HARBOUR_ROOMS, harbourOwnsRoute, harbourPlaceFor } from "../src/harbour/flag.ts";
 import type { HouseRoute } from "../src/hearthside/houseRoutes.ts";
 
 function fakeSession(): ArrivalSession & { store: Map<string, string> } {
@@ -16,13 +16,23 @@ describe("the flag", () => {
     expect(harbourOwnsRoute({ room: "home" }, "household")).toBe(false);
   });
   it("owns Household × home only, from one table", () => {
-    expect(HARBOUR_ROOMS).toEqual({ home: "court" });
+    expect(HARBOUR_ROOMS).toEqual({ home: { above: "tower", middle: "court", below: "cellar" } });
     expect(harbourOwnsRoute({ room: "home" }, "household", true)).toBe(true);
     expect(harbourOwnsRoute({ room: "study" }, "household", true)).toBe(false);
     expect(harbourOwnsRoute({ room: "home" }, "personal", true)).toBe(false);
     expect(harbourOwnsRoute(null, "household", true)).toBe(false);
-    expect(harbourPlaceFor({ room: "home" }, "household", true)).toBe("court");
-    expect(harbourPlaceFor({ room: "together" }, "household", true)).toBeNull();
+  });
+  it("gives each level of home its own place", () => {
+    expect(harbourPlaceFor({ room: "home", level: "middle" }, "household", true)).toBe("court");
+    expect(harbourPlaceFor({ room: "home", level: "above" }, "household", true)).toBe("tower");
+    expect(harbourPlaceFor({ room: "home", level: "below" }, "household", true)).toBe("cellar");
+    expect(harbourPlaceFor({ room: "together", level: "middle" }, "household", true)).toBeNull();
+    expect(harbourPlaceFor({ room: "home", level: "middle" }, "personal", true)).toBeNull();
+    expect(harbourPlaceFor({ room: "home", level: "middle" }, "household")).toBeNull();
+  });
+  it("names each place and the level it stands on", () => {
+    expect(HARBOUR_PLACE_NAMES).toEqual({ court: "the Court", tower: "the Tower", cellar: "the Cellar" });
+    expect(HARBOUR_PLACE_LEVELS).toEqual({ court: "middle", tower: "above", cellar: "below" });
   });
   it("names the Court as home/middle in the household scope", () => {
     expect(COURT_ROUTE("HH-one")).toEqual({ room: "home", level: "middle", householdId: "HH-one", scope: "household" });
