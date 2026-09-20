@@ -268,7 +268,7 @@ function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRe
         <input id="planner-capture" value={capture} disabled={Boolean(capturePending) || captureSubmitting} autoComplete="off" placeholder="pay hydro friday $140 · book the hotel by next friday $600 · bins out every week" onChange={(event) => setCapture(event.target.value)} />
         <button type="submit" disabled={busy || captureSubmitting || (!capturePending && !parsed?.title.trim())}>{capturePending ? "Retry same task" : "Add"}</button>
       </div>
-      {capturePending && <p className="planner-capture__understood" role="status">Retry keeps task {capturePending.id} exact. <button type="button" className="planner-link" disabled={captureSubmitting} onClick={discardCaptureRetry}>Discard saved retry</button></p>}
+      {capturePending && <p className="planner-capture__understood" role="status">Retry keeps this exact task and its details. <button type="button" className="planner-link" disabled={captureSubmitting} onClick={discardCaptureRetry}>Discard saved retry</button></p>}
       {parsed && parsed.understood.length > 0 && <p className="planner-capture__understood" aria-live="polite">{parsed.title} · {parsed.understood.join(" · ")}</p>}
     </form>
     {boardRows.length > 0 && view === "household" && <div className="planner-adopt" role="status"><span>{boardRows.length} to-do{boardRows.length === 1 ? "" : "s"} on the Together board can live here.</span><button type="button" disabled={busy} onClick={() => run((current) => adoptBoardTasks(current, { memberId }), "The board to-dos are in the planner")}>Bring them in</button></div>}
