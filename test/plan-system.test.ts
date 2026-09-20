@@ -4,6 +4,7 @@ import {
   appendPlanSitdownTurn,
   appendTrustedPlanHerculesTurn,
   activateScheduledPlans,
+  createPlanScenario,
   currentPlanVersion,
   executeHerculesReadToolPlan,
   financialAuditHash,
@@ -232,6 +233,50 @@ describe("Plan System V2 authority", () => {
     expect(result).toMatchObject({ persistenceScope: "member-personal", personalMemberId: jonathan });
     expect(currentPlanVersion(result.household, "personal", future, jonathan)?.state).toBe("active");
     expect(splitForSync(result.household, bianca).personal.planVersions).toEqual([]);
+  });
+
+  it("accepts an owner's private Plan lifecycle and next-step task without relaxing foreign account or member checks", () => {
+    const privateLine: PlanLine = {
+      ...line(jonathan, "Fictional private harbour notebook", 0),
+      id: "LINE-PRIVATE-HARBOUR",
+      cadence: "one-time",
+      kind: "reserve",
+      responsibility: { kind: "member", memberId: jonathan },
+      decision: { nextStep: "Choose one quiet next step." },
+    };
+    const draft = {
+      id: "DRAFT-PRIVATE-HARBOUR", scope: "personal" as const, memberId: jonathan, createdBy: jonathan,
+      targetMonth: month, lines: [privateLine], assumptions: [], note: "Fictional private harbour notebook",
+    };
+    const saved = executeIntent(catalogHousehold(), "savePlanDraft", [draft], jonathan, "personal-plan-save");
+    expect(saved.household.planDrafts?.[0]).toMatchObject({ scope: "personal", ownerMemberId: jonathan, id: draft.id });
+    const alternative = executeIntent(saved.household, "createPlanScenario", [{
+      id: "SCENARIO-PRIVATE-HARBOUR", memberId: jonathan, createdBy: jonathan, scope: "personal" as const,
+      draftId: draft.id, name: "One quiet next step", changedLines: [privateLine], changedAssumptions: [],
+    }], jonathan, "personal-plan-scenario");
+    expect(alternative.household.planScenarios?.[0]).toMatchObject({ ownerMemberId: jonathan, draftId: draft.id });
+    const locked = executeIntent(alternative.household, "lockPersonalPlan", [{
+      memberId: jonathan, createdBy: jonathan, draftId: draft.id, reason: "Keep this private",
+    }], jonathan, "personal-plan-lock");
+    const version = currentPlanVersion(locked.household, "personal", month, jonathan)!;
+    const task = executeIntent(locked.household, "saveTask", [{
+      memberId: jonathan, id: "TASK-private-harbour-next-step", expectedRevision: 0,
+      task: { visibility: "personal", title: "Choose one quiet next step", notes: "", listId: null, parentId: null,
+        doDate: null, dueDate: null, repeat: "none", cue: "none", assigneeId: jonathan, backupId: null,
+        chapterId: null, planReference: { planVersionId: version.id, planLineId: privateLine.id }, moneyLink: null,
+        expectedAmountCents: null, deleted: false },
+    }], jonathan, "personal-plan-task");
+    expect(task.household.tasks?.[0]).toMatchObject({ visibility: "personal", createdBy: jonathan, planReference: { planVersionId: version.id, planLineId: privateLine.id } });
+
+    expect(() => executeIntent(catalogHousehold(), "savePlanDraft", [{ ...draft, memberId: bianca, createdBy: bianca }], jonathan, "forged-member"))
+      .toThrow("ACTOR_MISMATCH");
+    const foreignAccountHousehold = catalogHousehold();
+    foreignAccountHousehold.accounts = [...foreignAccountHousehold.accounts, {
+      ...foreignAccountHousehold.accounts[0]!, id: "ACC-PRIVATE-BIANCA", name: "Bianca private account",
+      scope: "personal", ownerMemberId: bianca,
+    }];
+    expect(() => executeIntent(foreignAccountHousehold, "savePlanDraft", [{ ...draft, accountId: "ACC-PRIVATE-BIANCA" }], jonathan, "foreign-account"))
+      .toThrow("FORBIDDEN_ACCOUNT");
   });
 
   it("invalidates acknowledgement when an included Bridge proposal closes", () => {

@@ -154,7 +154,18 @@ policies.set("buildBatchImport", {
 });
 export const registeredCommands = [...policies.keys()].sort();
 export const dedicatedCommands: string[] = [];
-function privateReferences(h: Household, args: unknown[], actor: string) {
+/**
+ * These Plan commands use `memberId` as their authoritative private owner and
+ * materialize `ownerMemberId` only in the resulting personal record. Their
+ * registry policies bind that memberId to the command actor before this check.
+ * Do not generalize this to arbitrary personal inputs: account and goal
+ * references retain their explicit owner checks below.
+ */
+function privateOwnerForCommand(kind: string, input: Record<string, unknown> | undefined) {
+  if (["savePlanDraft", "createPlanScenario"].includes(kind)) return input?.memberId;
+  return input?.ownerMemberId;
+}
+function privateReferences(h: Household, kind: string, args: unknown[], actor: string) {
   const text = JSON.stringify(args);
   for (const account of h.accounts)
     if (
@@ -172,7 +183,7 @@ function privateReferences(h: Household, args: unknown[], actor: string) {
     )
       throw new Error("FORBIDDEN_ACCOUNT");
   }
-  if (input?.scope === "personal" && input.ownerMemberId !== actor)
+  if (input?.scope === "personal" && privateOwnerForCommand(kind, input) !== actor)
     throw new Error("FORBIDDEN_ACCOUNT");
   if (input?.shared === false && input.ownerMemberId !== actor)
     throw new Error("FORBIDDEN_GOAL");
@@ -197,7 +208,7 @@ export function executeIntent(
   // Accepted Shared setup times belong to the authority, not a caller's clock.
   if (["recordChapterAcknowledgement", "recordObservedChapterCompletion"].includes(kind)
     && args[0] && typeof args[0] === "object") (args[0] as Record<string, unknown>).at = new Date().toISOString();
-  privateReferences(household, args, actor);
+  privateReferences(household, kind, args, actor);
   const input = args[0] as Record<string, unknown> | undefined;
   if (
     ["eraseDevelopmentActivity", "restoreSharedPoint"].includes(kind) &&
