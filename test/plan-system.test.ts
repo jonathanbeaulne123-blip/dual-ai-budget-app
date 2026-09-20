@@ -4,7 +4,6 @@ import {
   appendPlanSitdownTurn,
   appendTrustedPlanHerculesTurn,
   activateScheduledPlans,
-  createPlanScenario,
   currentPlanVersion,
   executeHerculesReadToolPlan,
   financialAuditHash,
