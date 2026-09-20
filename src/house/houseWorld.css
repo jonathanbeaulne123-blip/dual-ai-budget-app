@@ -103,7 +103,14 @@
 .house-world__object-actions { display:block; margin-top:14px; }
 .house-world__object-actions summary { min-height:44px; display:flex; align-items:center; cursor:pointer; font-size:13px; text-decoration:underline; text-underline-offset:4px; }
 .house-world__object-actions>div { display:flex; flex-wrap:wrap; gap:8px; }
-@media(max-width:719px){.app[data-house-world] .nav[data-house-navigation] button { font-size:12px; }.house-world__invitation h2 {font-size:25px;}.house-world__invitation p {margin-block:8px;}.house-world__object-actions {margin-top:3px;}}
+@media(max-width:719px){
+ .app[data-house-world] .nav[data-house-navigation] button { font-size:12px; }
+ /* The room is already named above the scene. Leave its furniture in view. */
+ .house-world__invitation { padding:8px 12px; }
+ .house-world__invitation h2,.house-world__invitation .kicker { display:none; }
+ .house-world__invitation p { margin:0 0 3px; line-height:1.35; }
+ .house-world__object-actions { margin-top:3px; }
+}
 .app[data-house-world] .nav[data-house-navigation] .fab { background:#854733; color:#fff7e8; font-size:28px; font-weight:700; }
 
 /* The overview has one navigation task; floor and walking controls belong inside. */
