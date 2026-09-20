@@ -8,7 +8,7 @@ import { registerPlace, type Anchor, type Place, type PlaceHandle, type Pose, ty
 import { cellarDressingFrom, cellarLightFor, shelfTrimWords, type CellarDressing } from "./dressing.ts";
 import { createJar, isUmbrellaBankId, jarFootprint, type CellarJar } from "./jars.ts";
 import { scrubDateWords, scrubReading, scrubStep, scrubToday } from "./scrub.ts";
-import { CELLAR_WATER, createWater, type CellarWater } from "./water.ts";
+import { CELLAR_WATER, createWater, dollarsToUnits, type CellarWater } from "./water.ts";
 
 /**
  * The Cellar — the undercroft under the court's terrace (LITTLE_HARBOUR_v2 §2,
@@ -301,7 +301,9 @@ export function createCellar(scene: THREE.Scene, options: CellarOptions): Cellar
   track(lampBody.geometry); lampBody.name = "cellar-lamp"; group.add(lampBody);
   const glow = new THREE.Mesh(track(new THREE.SphereGeometry(0.085, 10, 8)), track(new THREE.MeshBasicMaterial({ color: light.lamp })));
   glow.position.set(lx, ly, lz); glow.name = "cellar-lamp-glow"; group.add(glow);
-  const lamp = new THREE.PointLight(new THREE.Color(light.lamp), light.lampIntensity, 14, 1.6);
+  // Decay 2 and a short reach: on a pale wall (Taylor's) a 14-unit lamp at decay 1.6
+  // blew a white hole where the light should have been a warm pool.
+  const lamp = new THREE.PointLight(new THREE.Color(light.lamp), light.lampIntensity, 6.5, 2);
   lamp.position.set(lx, ly, lz); lamp.castShadow = full; group.add(lamp);
   const ambient = new THREE.HemisphereLight(new THREE.Color(light.hemiSky), new THREE.Color(light.hemiGround), light.ambient);
   group.add(ambient);
@@ -337,6 +339,20 @@ export function createCellar(scene: THREE.Scene, options: CellarOptions): Cellar
     mat(dressing.stain, { roughness: 1, transparent: true, opacity: 0.45, side: THREE.DoubleSide }),
   );
   oldMark.position.set(cisternX, CELLAR_WATER.plinth + 0.7, cisternZ); oldMark.name = "cellar-old-mark"; oldMark.userData.anchor = "waterline"; group.add(oldMark);
+
+  // The month's crest: a brass collar at the highest the water stands all month. On the
+  // room's ruler a month's spending is a small part of a buffer, so the surface moves
+  // only a little as you walk the rail — the collar is what that little is measured from.
+  const crest = new THREE.Mesh(
+    track(new THREE.CylinderGeometry(CELLAR_WATER.radius + 0.05, CELLAR_WATER.radius + 0.05, 0.02, 24, 1, true)),
+    mat(dressing.brass, { roughness: 0.34, metalness: 0.66, side: THREE.DoubleSide }),
+  );
+  crest.name = "cellar-crest"; crest.userData.anchor = "waterline"; crest.visible = false; group.add(crest);
+  const setCrest = (cents: number | null): void => {
+    if (cents === null || !Number.isFinite(cents) || cents <= 0 || scaleCents <= 0) { crest.visible = false; return; }
+    crest.visible = true;
+    crest.position.set(cisternX, CELLAR_WATER.plinth + CELLAR_WATER.floor + dollarsToUnits(cents, scaleCents), cisternZ);
+  };
 
   // ── The rail along the back wall ────────────────────────────────────────────
   const railGroup = new THREE.Group(); railGroup.name = "cellar-rail"; railGroup.userData.anchor = "rail"; group.add(railGroup);
@@ -462,6 +478,7 @@ export function createCellar(scene: THREE.Scene, options: CellarOptions): Cellar
     // Worn or damaged: the stone darkens to the old line and the water sits low.
     oldMark.visible = worn;
     stoneMaterial.color.set(worn ? dressing.stoneAlt : dressing.stone);
+    setCrest(incoming.days.length ? Math.max(...incoming.days.map((day) => day.balanceCents)) : incoming.prepareCents);
     applyScrub();
   }
   update(options.reading ?? null);
