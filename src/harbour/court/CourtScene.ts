@@ -7,6 +7,7 @@ import { courtDressingFrom, type CourtDressing, type CourtProp } from "./dressin
 import { EngravedPlate, engravedWords, plateFinish, seeded, type PlateFinish } from "./engraved.ts";
 import { createMailbox, slipLines } from "./mailbox.ts";
 import { COURT_PIECES, PIECE_IDS, createCourtPieces, type CourtPieces, type CourtPiecesOptions, type PieceId } from "./pieces.ts";
+import { CISTERN_POSITION, createCistern } from "./cistern.ts";
 import { createSundial } from "./sundial.ts";
 
 /**
@@ -30,6 +31,7 @@ export const COURT_LAYOUT = {
   sundial: [4.0, 0, 3.2],
   mailbox: [-1.2, 0, 5.4],
   gate: [0, 0, 6.2],
+  cistern: CISTERN_POSITION,
   hercules: [1.35, 0, 1.85],
   partner: [-0.78, 0, 5.9],
   props: [[-4.6, 0, 2.6], [4.9, 0, 0.6], [-5.0, 0, -0.4], [2.6, 0, -4.8], [-2.4, 0, -4.9]],
@@ -269,6 +271,13 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   sundial.group.userData.anchor = "sundial"; mailbox.group.userData.anchor = "mailbox";
   contact(COURT_LAYOUT.sundial[0], COURT_LAYOUT.sundial[2], 0.9, 0.7); contact(COURT_LAYOUT.mailbox[0], COURT_LAYOUT.mailbox[2], 0.42, 0.7);
 
+  // ── The Cistern, beside the Knight: Protect's water against its target ──────
+  const cistern = track(createCistern(dressing, options.reading));
+  cistern.group.position.set(...COURT_LAYOUT.cistern);
+  if (!full) cistern.group.traverse((node) => { node.castShadow = false; });
+  group.add(cistern.group);
+  contact(COURT_LAYOUT.cistern[0], COURT_LAYOUT.cistern[2], 0.78, 0.8);
+
   // ── The gate: two posts, two rails, a low arch ──────────────────────────────
   // A low garden gate: two posts, a picket leaf between them on two rails, brass only on the hinges.
   const [gx, , gz] = COURT_LAYOUT.gate;
@@ -370,6 +379,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     { id: "sundial", position: at(sx, 1.0, sz), zone: "prop", label: tagWords ? `The sundial — next: ${tagWords}` : "The sundial — no dated commitment" },
     { id: "mailbox", position: at(mx, 1.2, mz), zone: "prop", label: mailbox.flagUp() ? "The mailbox, flag up — she noticed something" : "The mailbox — nothing new" },
     { id: "slip", position: at(mx + 0.55, 0.72, mz + 0.13), zone: "prop", label: slipWords.length ? `Since you were here: ${slipWords.join("; ")}` : "Since you were here — nothing yet" },
+    ...cistern.anchors(),
     { id: "hercules", position: at(hx, 0.3, hz), zone: "prop", label: "Hercules, asleep", door: { target: "hercules" } },
     { id: "gate", position: at(gx, 0.9, gz), zone: "gate", label: "The court gate" },
   ];
@@ -381,6 +391,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     { id: "sundial", group: "court", label: "The sundial", box: box(sx - 0.7, 0, sz - 0.7, sx + 0.7, 1.5, sz + 0.7) },
     { id: "mailbox", group: "court", label: "The mailbox", box: box(mx - 0.3, 0, mz - 0.3, mx + 0.3, 1.5, mz + 0.3) },
     { id: "slip", group: "court", label: "Since you were here", box: box(mx + 0.2, 0.4, mz - 0.1, mx + 0.9, 1.0, mz + 0.3) },
+    ...cistern.regions(),
     { id: "hercules", group: "court", label: "Hercules, asleep", box: box(hx - 0.7, 0, hz - 0.5, hx + 0.7, 0.55, hz + 0.5) },
     { id: "gate", group: "court", label: "The court gate", box: box(gx - 1.2, 0, gz - 0.2, gx + 1.2, 1.7, gz + 0.2) },
   ];
@@ -410,6 +421,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     pads.count = Math.round(PADS * coverage);
     crack.visible = state === "weathered";
     partner.visible = reading.partner?.fresh === true;
+    cistern.update(value);
     pendingRedraw = true;
   }
   update(options.reading ?? EMPTY_COURT_READING);
