@@ -82,10 +82,21 @@ def measure(page):
 
 
 
+# A twin that only the arrived place has: the place attribute flips the moment the
+# journey starts, so waiting on it alone catches the room you just left.
+PLACE_TWIN = {"court": "queen", "tower": "shelf", "cellar": "rail"}
+
+
 def wait_place(page, place: str, timeout=45000):
     page.wait_for_function(f"() => document.querySelector('.harbour-world')?.dataset.harbourPlace === {json.dumps(place)}", timeout=timeout)
     page.wait_for_selector(".harbour-world[data-world-status='ready']", timeout=timeout)
-    page.wait_for_timeout(1400)
+    want = PLACE_TWIN.get(place)
+    if want:
+        page.wait_for_function(
+            "(id) => [...document.querySelectorAll('[data-twin]')].some(b => b.dataset.twin === id || (b.dataset.twin || '').startsWith(id + ':'))",
+            arg=want, timeout=timeout,
+        )
+    page.wait_for_timeout(1600)
 
 
 def twin(page, name: str):

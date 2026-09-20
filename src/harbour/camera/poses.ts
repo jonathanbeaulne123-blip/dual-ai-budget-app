@@ -71,9 +71,12 @@ export const FLAGSTONE = Object.freeze({ x: 0, z: 1.6, size: 0.9 });
  * How far the camera may go. `maxPhi` is a tilt from vertical: slice 1's Court
  * never needed below 1.2, but the Tower is six units tall and the Cellar is a
  * room with a ceiling, and both are read from nearly eye level — so the limit
- * is 1.38 (about 11° above the horizon). Every Court pose is unchanged.
+ * is 1.38 (about 11° above the horizon). `minR` is 2 for the same reason: a
+ * room six units across has to be able to bring one bank or one jar close, and
+ * three was already most of the way to the far wall. Every Court pose is
+ * unchanged; the bounds only say how far a hand may take the camera.
  */
-export const COURT_BOUNDS = Object.freeze({ minR: 3, maxR: 22, minPhi: 0.25, maxPhi: 1.38, targetRadius: 9 });
+export const COURT_BOUNDS = Object.freeze({ minR: 2, maxR: 22, minPhi: 0.25, maxPhi: 1.38, targetRadius: 9 });
 
 /** How high on each anchor the "object" pose looks (about mid-height of what stands there). */
 const ANCHOR_LOOK_HEIGHT: Readonly<Record<CourtAnchor, number>> = Object.freeze({

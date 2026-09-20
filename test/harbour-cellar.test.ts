@@ -55,8 +55,15 @@ describe("the cellar's one dollar scale", () => {
       expect(dollarsToUnits(cents, SCALE)).toBeGreaterThanOrEqual(JAR_MIN_HEIGHT);
       expect(jarHeight(cents, SCALE)).toBeCloseTo(dollarsToUnits(cents, SCALE), 12);
     }
-    // Twice the money is twice the height, for water and glass alike.
-    expect(dollarsToUnits(100_000, SCALE)).toBeCloseTo(dollarsToUnits(50_000, SCALE) * 2, 12);
+    // The ruler is logarithmic (a buffer is routinely twenty times the largest bill, and a
+    // straight scale buries every jar at the floor). What it promises is the ordering, not
+    // proportion: more money is always more height, on both the water and the glass.
+    const ladder = [5_000, 20_000, 50_000, 120_000, SCALE];
+    for (let i = 1; i < ladder.length; i++) {
+      expect(dollarsToUnits(ladder[i]!, SCALE)).toBeGreaterThan(dollarsToUnits(ladder[i - 1]!, SCALE));
+    }
+    // And the small end stays legible: a bill a twentieth of the ruler is still a third of its height.
+    expect(dollarsToUnits(SCALE / 20, SCALE)).toBeGreaterThan(CELLAR_SCALE_UNITS * 0.3);
   });
 
   it("is total: an unusable scale, a negative or a non-finite amount is no height, never a wrong one", () => {

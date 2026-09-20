@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { TowerBank, TowerReading, TowerShelf } from "../data/reading.ts";
 import { EngravedPlate, engravedWords, plateFinish, type PlateFinish } from "../court/engraved.ts";
 import { createContactShadows } from "../scene/contact.ts";
-import { registerPlace, type Anchor, type Place, type PlaceHandle, type Pose, type Region, type Vec3 } from "../scene/place.ts";
+import { registerPlace, type Anchor, type Composition, type Place, type PlaceHandle, type Pose, type Region, type Vec3 } from "../scene/place.ts";
 import type { RenderTier } from "../scene/quality.ts";
 import { bankHeight, createBankSculpture, squash, SQUASH_SECONDS, type BankSculpture } from "./banks.ts";
 import { createLanding, LANDING_LAYOUT, type Landing } from "./landing.ts";
@@ -29,8 +29,8 @@ export const TOWER_LAYOUT = {
   wall: 0.34,
   /** The wall is open toward the camera (+z); the gap is this wide, in radians. */
   gap: 1.55,
-  /** Floor-to-floor. The landing is floor 0 at y = 0. */
-  floorHeight: 1.55,
+  /** Floor-to-floor. The landing is floor 0 at y = 0. Tall enough that an eye standing on a floor has a room over its head and not a lid. */
+  floorHeight: 1.92,
   /** Headroom above the top floor before the wall's top course. */
   headroom: 1.25,
   /** At least a landing and one floor above it; never more than four. */
@@ -39,6 +39,11 @@ export const TOWER_LAYOUT = {
   /** Banks stand in a line across each floor, this far forward of its centre. */
   bankZ: 0.25,
   bankSpread: 1.95,
+  /** Banks stand a step apart from the middle outward; the spread is only the limit. */
+  bankStep: 0.92,
+  /** A portrait phone holds about 1.4 world units across at the tower's own distance, so its rack closes up. */
+  phoneBankStep: 0.58,
+  phoneBankSpread: 1.15,
   /** The rack's post, and the brass end-plate at the other end of each shelf. */
   post: [2.5, 0, 0.9] as const,
   endPlate: [-2.45, 0, 0.9] as const,
@@ -135,11 +140,14 @@ export function shelfOnFloor(shelves: readonly TowerShelf[], floor: number): Tow
 }
 
 /** Where a bank stands on its floor: a line across the room, left to right. */
-export function bankSpot(index: number, count: number): { x: number; z: number } {
+export function bankSpot(index: number, count: number, composition: Composition = "desktop"): { x: number; z: number } {
   if (count <= 1) return { x: 0, z: TOWER_LAYOUT.bankZ };
-  const span = TOWER_LAYOUT.bankSpread * 2;
-  const step = span / (count - 1);
-  return { x: -TOWER_LAYOUT.bankSpread + index * step, z: TOWER_LAYOUT.bankZ + (index % 2 ? -0.22 : 0.22) };
+  // A step apart, centred. Stretching two banks to the ends of the shelf leaves a
+  // hole where the shelf's whole story should be; the spread is the limit, not the gap.
+  const phone = composition === "phone";
+  const widest = phone ? TOWER_LAYOUT.phoneBankSpread : TOWER_LAYOUT.bankSpread;
+  const step = Math.min(phone ? TOWER_LAYOUT.phoneBankStep : TOWER_LAYOUT.bankStep, (widest * 2) / (count - 1));
+  return { x: -(step * (count - 1)) / 2 + index * step, z: TOWER_LAYOUT.bankZ + (index % 2 ? -0.22 : 0.22) };
 }
 
 /** Words for a shelf's plate and twin: shares are parts of the rack, never money. */
@@ -179,6 +187,8 @@ export type TowerOptions = {
   reducedMotion?: boolean;
   /** A frame is wanted (a sculpture started moving). */
   onAnimate?: () => void;
+  /** Which frame the tower is being composed for; a portrait phone closes the rack up. */
+  composition?: Composition;
 };
 
 function prefersReducedMotion(): boolean {
@@ -193,8 +203,25 @@ function prefersReducedMotion(): boolean {
  * Court's own tilt limit (`COURT_BOUNDS.maxPhi`) is the binding constraint, so
  * the target sits low and the distance carries the height instead.
  */
-const PHONE_TOWER: Pose = { target: [0, 2.0, 0], r: 10.4, theta: 0.05, phi: 1.34 };
-const DESKTOP_TOWER: Pose = { target: [0, 2.1, 0], r: 11.0, theta: 0.34, phi: 1.34 };
+/**
+ * Where you stand in the Tower. Not outside it: at r = 11 the eye clears the
+ * wall's top course and the tower reads as a cut-open model on a lawn, with
+ * the lifted roof hanging in the middle of the frame and the island's sea
+ * around it. These two poses bring the eye in through the wall's open side to
+ * just beyond the sill — about z = +5 — at a person's height on the landing,
+ * so the round wall wraps the whole background, the floor above crops the top
+ * of the frame, and the rack of banks is the thing you are looking at.
+ */
+// The eye sits `r·cos(phi)` **above** the target, so a low eye needs a low
+// target and a tilt close to the horizon. Desktop stands on the landing at
+// about 1.4 high and 2.5 forward of the middle — inside the wall, so the round
+// stone wraps the background and the floor above is the ceiling. A portrait
+// phone cannot hold the rack's width at any distance the tower allows (it
+// would need r ≈ 9, well outside the wall), so the phone takes the tower the
+// way a tower wants to be taken in a portrait frame: up the well, the landing
+// under the eye and the floors above it stacked.
+const PHONE_TOWER: Pose = { target: [0, 0.74, 0.25], r: 2.7, theta: 0.02, phi: 1.37 };
+const DESKTOP_TOWER: Pose = { target: [0, 0.5, 0.25], r: 3.25, theta: 0.10, phi: 1.375 };
 
 /**
  * Camera poses in the one convention every place is written in:
@@ -211,9 +238,10 @@ export function towerPoses(anchors: readonly Anchor[]): Record<string, Pose> {
   for (const anchor of anchors) {
     const [x, y, z] = anchor.position;
     const theta = clamp(Math.atan2(x, z + 6) * 0.7, -0.7, 0.7);
-    const close = anchor.zone === "bank" ? 2.6 : anchor.zone === "shelf" ? 4.4 : 3.4;
-    poses[`object:${anchor.id}:phone`] = { target: [x, Math.max(0.5, y), z], r: close, theta, phi: 1.08 };
-    poses[`object:${anchor.id}:desktop`] = { target: [x, Math.max(0.5, y), z], r: close + 0.9, theta: theta + 0.22, phi: 1.0 };
+    // Closer than the room's own pose, always: looking at a thing is stepping toward it.
+    const close = anchor.zone === "bank" ? 1.75 : anchor.zone === "shelf" ? 2.35 : 2.15;
+    poses[`object:${anchor.id}:phone`] = { target: [x, Math.max(0.5, y), z], r: close, theta, phi: 1.2 };
+    poses[`object:${anchor.id}:desktop`] = { target: [x, Math.max(0.5, y), z], r: close + 0.45, theta: theta + 0.22, phi: 1.14 };
   }
   return poses;
 }
@@ -236,11 +264,14 @@ export function createTower(scene: THREE.Scene, options: TowerOptions): TowerHan
   const timberMaterial = mat(dressing.timber, { roughness: 0.82 });
   const boardMaterial = mat(dressing.floorboard, { roughness: 0.78 });
   const beamMaterial = mat(dressing.beam, { roughness: 0.85 });
+  // The ceiling of the floor you stand on. It faces down, so the sun never touches it and
+  // only the hemisphere's ground colour does: a beam-dark underside reads as a black lid.
+  const ceilingMaterial = mat(dressing.roofUnder, { roughness: 0.92 });
   const brassMaterial = mat(dressing.brass, { roughness: 0.34, metalness: 0.62 });
   const ropeMaterial = mat(dressing.rope, { roughness: 0.95 });
   const lampMaterial = mat(dressing.lamp, { roughness: 0.4, metalness: 0.5 });
   const glowMaterial = track(new THREE.MeshBasicMaterial({ color: dressing.lampGlow, transparent: true, opacity: 0.85 }));
-  const daylightMaterial = track(new THREE.MeshBasicMaterial({ color: dressing.windowLight, transparent: true, opacity: 0.16, depthWrite: false, side: THREE.DoubleSide }));
+  const daylightMaterial = track(new THREE.MeshBasicMaterial({ color: dressing.windowLight, transparent: true, opacity: 0.085, depthWrite: false, side: THREE.DoubleSide }));
   const glassMaterial = track(new THREE.MeshBasicMaterial({ color: dressing.windowLight, transparent: true, opacity: 0.6 }));
   const frameMaterial = mat(dressing.windowFrame, { roughness: 0.7 });
   const roofMaterial = mat(dressing.roof, { roughness: 0.88, side: THREE.DoubleSide });
@@ -302,8 +333,21 @@ export function createTower(scene: THREE.Scene, options: TowerOptions): TowerHan
     }
     courses.instanceMatrix.needsUpdate = true;
     host.add(courses);
+    // The same course on the inside face: from a landing the wall is the whole background,
+    // and a bare cylinder there is a gradient, not masonry.
+    const innerGeometry = keep(new THREE.CylinderGeometry(radius - 0.015, radius - 0.015, 0.09, 40, 1, true, gap / 2, Math.PI * 2 - gap));
+    const inner = new THREE.InstancedMesh(innerGeometry, mortarMaterial, floors * 2);
+    inner.name = "inner-courses";
+    shadowed(inner, false, true);
+    for (let i = 0; i < floors * 2; i++) {
+      position.set(0, (i / 2) * floorHeight + (i % 2 ? floorHeight / 2 : 0.02), 0);
+      quaternion.identity(); scale.set(1, 1, 1);
+      inner.setMatrixAt(i, matrix.compose(position, quaternion, scale));
+    }
+    inner.instanceMatrix.needsUpdate = true;
+    host.add(inner);
     const underGeometry = keep(new THREE.CylinderGeometry(radius, radius, 0.1, 32));
-    const unders = new THREE.InstancedMesh(underGeometry, beamMaterial, floors);
+    const unders = new THREE.InstancedMesh(underGeometry, ceilingMaterial, floors);
     unders.name = "floor-undersides";
     shadowed(unders, false, true);
     for (let i = 0; i < floors; i++) {
@@ -541,8 +585,8 @@ export function createTower(scene: THREE.Scene, options: TowerOptions): TowerHan
       const y = floor * floorHeight;
       // The shelf's own plate, standing against the post's side of the room.
       const plate = new EngravedPlate({ stone: dressing.plate, highlight: dressing.plateHighlight, ink: dressing.ink, size: "small" }, 1.05, 0.26);
-      plate.mesh.position.set(1.35, y + 0.2, TOWER_LAYOUT.bankZ + 0.95);
-      plate.mesh.rotation.x = -Math.PI / 2.35;
+      plate.mesh.position.set(0, y + 0.13, TOWER_LAYOUT.bankZ + 0.92);
+      plate.mesh.rotation.x = -Math.PI / 2.2;
       plate.mesh.userData.anchor = `shelf:${shelf?.id ?? `floor-${floor}`}`;
       host.add(plate.mesh);
       plates.push(plate);
@@ -562,7 +606,7 @@ export function createTower(scene: THREE.Scene, options: TowerOptions): TowerHan
         continue;
       }
       banks.forEach((bank, index) => {
-        const spot = bankSpot(index, banks.length);
+        const spot = bankSpot(index, banks.length, options.composition ?? "desktop");
         const sculpture = createBankSculpture(bank, {
           brass: dressing.brass,
           wood: dressing.wood,
@@ -816,6 +860,7 @@ export const towerPlace: Place = registerPlace({
       dressing: towerDressingFrom(typeof dressing === "object" && dressing ? dressing.theme : dressing),
       reading,
       quality,
+      ...(context?.composition ? { composition: context.composition } : {}),
       ...(context?.invalidate ? { onAnimate: context.invalidate } : {}),
     });
   },

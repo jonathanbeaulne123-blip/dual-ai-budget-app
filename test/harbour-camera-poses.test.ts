@@ -139,7 +139,7 @@ describe("Little Harbour · the Court's poses (BUILD_PLAN #18)", () => {
         }
       }
     }
-    expect(COURT_BOUNDS).toEqual({ minR: 3, maxR: 22, minPhi: 0.25, maxPhi: 1.38, targetRadius: 9 });
+    expect(COURT_BOUNDS).toEqual({ minR: 2, maxR: 22, minPhi: 0.25, maxPhi: 1.38, targetRadius: 9 });
     const wild: CourtPose = { target: [30, 0.5, -40], r: 80, theta: 9, phi: -2 };
     const held = clampCourtPose(wild);
     expect(held.r).toBe(22);
@@ -147,7 +147,7 @@ describe("Little Harbour · the Court's poses (BUILD_PLAN #18)", () => {
     expect(Math.abs(held.theta)).toBeLessThanOrEqual(Math.PI);
     expect(Math.hypot(held.target[0], held.target[2])).toBeCloseTo(9, 9);
     expect(held.target[1]).toBe(0.5);
-    expect(clampCourtPose({ ...wild, r: 0.1, phi: 5 })).toMatchObject({ r: 3, phi: COURT_BOUNDS.maxPhi });
+    expect(clampCourtPose({ ...wild, r: 0.1, phi: 5 })).toMatchObject({ r: COURT_BOUNDS.minR, phi: COURT_BOUNDS.maxPhi });
     // clampPose is the island's clampRoamCam with the Court's bounds: same answer on every axis it knows.
     const roam = clampRoamCam({ tx: 30, tz: -40, r: 80, theta: 9, phi: -2 }, ROAM_COURT_BOUNDS);
     expect(clampPose(wild)).toEqual({ target: [roam.tx, 0.5, roam.tz], r: roam.r, theta: roam.theta, phi: roam.phi });

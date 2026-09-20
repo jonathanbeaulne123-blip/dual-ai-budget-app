@@ -28,17 +28,19 @@ import { CELLAR_WATER, createWater, type CellarWater } from "./water.ts";
 /** Layout shared with the poses. +z faces the camera; the rail runs along the back wall at −z. */
 export const CELLAR_LAYOUT = {
   width: 10.4,
-  depth: 8.2,
+  /** Shallow on purpose: a deeper room puts the eye against the front wall and fills half the frame with bare floor. */
+  depth: 6.8,
   /** Floor to the springing of the vault, and to the crown. */
-  wallHeight: 2.35,
+  wallHeight: 2.15,
   vaultRise: 0.85,
   railZ: -2.15,
-  railTop: 0.92,
-  railLength: 8.6,
-  stair: [4.15, 0, 2.55],
-  lamp: [-3.5, 1.72, 0.4],
-  datePlate: [0, 1.22, -2.5],
-  waterline: [-4.55, 0.6, -3.4],
+  railTop: 1.05,
+  /** The whole month has to sit inside a desktop frame from a pose that stands in the room. */
+  railLength: 7.3,
+  stair: [2.35, 0, -0.55],
+  lamp: [-1.15, 1.62, -3.12],
+  datePlate: [0, 1.62, -2.3],
+  waterline: [-2.15, 0.85, -2.75],
 } as const satisfies Record<string, unknown>;
 
 /** How many vault ribs the ceiling carries. One instanced mesh, both tiers. */
@@ -152,8 +154,13 @@ export type CellarOptions = {
  * Inside the room, below the vault: the undercroft is 2.35 to the springing and
  * 8.2 deep, so the eye has to sit under the ceiling and inside the back wall.
  */
-const PHONE_CELLAR: Pose = { target: [0, 0.9, -1.8], r: 5.8, theta: 0.03, phi: 1.32 };
-const DESKTOP_CELLAR: Pose = { target: [0, 0.95, -1.9], r: 6.2, theta: 0.16, phi: 1.33 };
+// The eye has to stand **inside** the room: the front wall's inner face is at
+// z = +3.95, so anything past it presses the camera through the masonry and the
+// room stops reading as a room. These two poses put the eye at about z = 3.0,
+// a little over head height, looking down the rail with the vault overhead, the
+// floor under it and the water's surface — not only its face — in the frame.
+const PHONE_CELLAR: Pose = { target: [-0.5, 1.26, -2.1], r: 3.3, theta: 0.55, phi: 1.335 };
+const DESKTOP_CELLAR: Pose = { target: [0, 1.0, -1.9], r: 4.3, theta: 0.10, phi: 1.355 };
 
 /**
  * Pose keys in the one convention every place is written in,
@@ -304,9 +311,32 @@ export function createCellar(scene: THREE.Scene, options: CellarOptions): Cellar
   let water: CellarWater = createWater({ dressing, scaleCents, reduced });
   group.add(water.group);
 
-  // The wall's old water mark: where the water used to stand. Dropped and darkened when worn.
-  const oldMark = new THREE.Mesh(track(new THREE.PlaneGeometry(CELLAR_WATER.halfWidth * 2, 0.03)), mat(dressing.stain, { roughness: 1, transparent: true, opacity: 0.45 }));
-  oldMark.position.set(0, 0.7, CELLAR_WATER.backZ + 0.014); oldMark.name = "cellar-old-mark"; oldMark.userData.anchor = "waterline"; group.add(oldMark);
+  // The cistern's plinth, and the brass rule beside it. The glass itself is the water's
+  // own (`water.ts`): what the room owns is what it stands on and what you read it against.
+  const cisternX = CELLAR_WATER.centerX, cisternZ = CELLAR_WATER.centerZ;
+  const cisternPlinth = merged([
+    placed(new THREE.BoxGeometry(CELLAR_WATER.radius * 2 + 0.46, CELLAR_WATER.plinth, CELLAR_WATER.radius * 2 + 0.46), cisternX, CELLAR_WATER.plinth / 2, cisternZ),
+    placed(new THREE.BoxGeometry(CELLAR_WATER.radius * 2 + 0.62, 0.06, CELLAR_WATER.radius * 2 + 0.62), cisternX, 0.03, cisternZ),
+  ], mat(dressing.stairStone, { roughness: 0.9 }));
+  track(cisternPlinth.geometry); cisternPlinth.receiveShadow = true; cisternPlinth.castShadow = full; cisternPlinth.name = "cellar-cistern-plinth"; group.add(cisternPlinth);
+
+  // A brass rule on a post beside the glass: five ticks, so the level is read against something.
+  const rulePost = CELLAR_WATER.radius + 0.24;
+  const ruleParts: THREE.BufferGeometry[] = [
+    placed(new THREE.CylinderGeometry(0.022, 0.022, CELLAR_WATER.glassTop, 8), cisternX - rulePost, CELLAR_WATER.plinth + CELLAR_WATER.glassTop / 2, cisternZ + 0.1),
+  ];
+  for (let i = 1; i <= 5; i++) {
+    ruleParts.push(placed(new THREE.BoxGeometry(0.13, 0.02, 0.026), cisternX - rulePost + 0.06, CELLAR_WATER.plinth + (CELLAR_WATER.glassTop / 6) * i, cisternZ + 0.1));
+  }
+  const rule = merged(ruleParts, mat(dressing.brass, { roughness: 0.34, metalness: 0.66 }));
+  track(rule.geometry); rule.name = "cellar-cistern-rule"; group.add(rule);
+
+  // Where the water used to stand: a faint collar on the glass, dropped and darkened when worn.
+  const oldMark = new THREE.Mesh(
+    track(new THREE.CylinderGeometry(CELLAR_WATER.radius + 0.045, CELLAR_WATER.radius + 0.045, 0.028, 24, 1, true)),
+    mat(dressing.stain, { roughness: 1, transparent: true, opacity: 0.45, side: THREE.DoubleSide }),
+  );
+  oldMark.position.set(cisternX, CELLAR_WATER.plinth + 0.7, cisternZ); oldMark.name = "cellar-old-mark"; oldMark.userData.anchor = "waterline"; group.add(oldMark);
 
   // ── The rail along the back wall ────────────────────────────────────────────
   const railGroup = new THREE.Group(); railGroup.name = "cellar-rail"; railGroup.userData.anchor = "rail"; group.add(railGroup);
@@ -469,7 +499,7 @@ export function createCellar(scene: THREE.Scene, options: CellarOptions): Cellar
     const rows: Region[] = [
       { id: "stair", group: "cellar", label: "The stair up to the court", box: box(stx - 0.9, 0, stz - 0.3, stx + 0.9, 1.6, stz + 2.5) },
       { id: "rail", group: "cellar", label: "The bill rail", box: box(-railLength / 2, railTop - 0.2, railZ - 0.3, railLength / 2, railTop + 0.3, railZ + 0.3) },
-      { id: "waterline", group: "cellar", label: "Prepare's water line", box: box(-CELLAR_WATER.halfWidth, 0, CELLAR_WATER.backZ - 0.1, CELLAR_WATER.halfWidth, 1.3, CELLAR_WATER.backZ + 0.2) },
+      { id: "waterline", group: "cellar", label: "Prepare's water line", box: box(CELLAR_WATER.centerX - CELLAR_WATER.radius - 0.3, 0, CELLAR_WATER.centerZ - CELLAR_WATER.radius - 0.3, CELLAR_WATER.centerX + CELLAR_WATER.radius + 0.3, CELLAR_WATER.plinth + CELLAR_WATER.glassTop + 0.1, CELLAR_WATER.centerZ + CELLAR_WATER.radius + 0.3) },
       { id: "date", group: "cellar", label: "The day on the rail", box: box(dpx - 0.35, dpy - 0.18, dpz - 0.1, dpx + 0.35, dpy + 0.18, dpz + 0.1) },
       { id: "scrub-back", group: "cellar", label: "A day earlier", box: box(-railLength / 2 - 0.6, railTop - 0.1, railZ - 0.3, -railLength / 2 - 0.1, railTop + 0.42, railZ + 0.3) },
       { id: "scrub-forward", group: "cellar", label: "A day later", box: box(railLength / 2 + 0.1, railTop - 0.1, railZ - 0.3, railLength / 2 + 0.6, railTop + 0.42, railZ + 0.3) },
