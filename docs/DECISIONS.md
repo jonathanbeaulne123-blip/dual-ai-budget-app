@@ -1220,3 +1220,11 @@ Risk High. Budget delta (5): one financial truth, exact shared consent and intac
 Keep canonical Ritual history projection independent of Task command/sync imports so sculpture catalogue initialization is safe in browser entry points. Route real browser tests through the existing serial heavy lane on this8GB host; preserve every selected check and the five-minute budget. Neither correction changes money authority, privacy, consent or the accepted house direction. New browser files are discovered by the lane guard rather than silently joining the ordinary four-worker lane.
 
 The accepted books gate also controls decorative Queen rendering. Home, Loft and Cellar stay flat while the exact environment/household/revision is validating or blocked, and load their 3D worlds only after readiness. Validation retry restores the normal world once the books pass. This gives books priority without changing integrity checks, deadlines, financial commands or Final Confirm. It does not claim to resolve every startup delay on a resource-constrained host.
+
+### 2026-09-19 — local recovery for unfinished Plan decisions
+
+An open Plan decision editor keeps only its unfinished field values and a navigation pointer in versioned device storage. Recovery is partitioned by environment, household, member, Personal/Household view, month, selected draft/scenario/version, and line identity. Reloading or returning to a scope reopens that exact editor. Cancel or a successful private-draft save clears only that editor's local record.
+
+The recovery record retains the accepted source revision, selected draft revision and exact source-line fingerprint it began from. If any changes, Hearth preserves the input but requires an explicit comparison with the current decision before save; a removed line cannot be silently recreated. Device recovery does not write canonical Plan data, post money, share Personal fields, or bypass the existing save conflict check and Final Confirm boundaries.
+
+Risk High. Budget delta (5): unfinished amounts, dates, funding evidence and responsibility survive navigation without becoming accepted truth. Engagement delta (3): people can leave a room or change themes and resume the exact decision. Focused local tests cover recovery, scope isolation, revision conflict and exact clearing; release and hosted continuity evidence remain separate.

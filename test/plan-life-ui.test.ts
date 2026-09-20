@@ -54,3 +54,24 @@ it('opens the Bridge section when Our Path links to it', async () => {
   expect([...host.querySelectorAll('button')].some(b=>b.textContent==='Save privately and review')).toBe(false);
  } finally {await act(async()=>root.unmount());host.remove();}
 });
+
+it('reopens the exact unfinished Plan line after a remount and keeps another scope separate', async () => {
+ localStorage.clear();
+ const personal=planLifeFixture('personal'), host=document.createElement('div');document.body.append(host);
+ let root=createRoot(host);
+ try {
+  await act(async()=>root.render(createElement(PlanStudio,{household:personal,memberId:'MEM-001',view:'personal',today:'2026-09-11',busy:false,onCommand:async()=>null})));
+  await act(async()=>[...host.querySelectorAll('button')].find(button=>button.textContent==='Prepare')!.click());
+  await act(async()=>[...host.querySelectorAll('button')].find(button=>button.textContent==='Edit / link evidence')!.click());
+  const label=[...host.querySelectorAll('label')].find(row=>row.textContent?.startsWith('What is this for?'))!.querySelector('input')!;
+  await act(async()=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(label,'Preserved tire plan');label.dispatchEvent(new Event('input',{bubbles:true}));});
+  await act(async()=>root.unmount());host.replaceChildren();root=createRoot(host);
+  await act(async()=>root.render(createElement(PlanStudio,{household:personal,memberId:'MEM-001',view:'personal',today:'2026-09-11',busy:false,onCommand:async()=>null})));
+  expect((([...host.querySelectorAll('label')].find(row=>row.textContent?.startsWith('What is this for?'))!.querySelector('input')) as HTMLInputElement).value).toBe('Preserved tire plan');
+  await act(async()=>root.render(createElement(PlanStudio,{household:planLifeFixture('household'),memberId:'MEM-001',view:'household',today:'2026-09-11',busy:false,onCommand:async()=>null})));
+  expect(host.textContent).toContain('A plan for the life we choose');
+  expect(host.textContent).not.toContain('Preserved tire plan');
+  await act(async()=>root.render(createElement(PlanStudio,{household:personal,memberId:'MEM-001',view:'personal',today:'2026-09-11',busy:false,onCommand:async()=>null})));
+  expect((([...host.querySelectorAll('label')].find(row=>row.textContent?.startsWith('What is this for?'))!.querySelector('input')) as HTMLInputElement).value).toBe('Preserved tire plan');
+ } finally {await act(async()=>root.unmount());host.remove();localStorage.clear();}
+});
