@@ -42,7 +42,7 @@ const isGzip = (bytes: ArrayBuffer) => {
 
 /** Inflate a gzip buffer with the browser's own stream — no Blob, which some hosts (jsdom) cannot stream. */
 async function inflateGzip(bytes: ArrayBuffer): Promise<ArrayBuffer> {
-  const source = new ReadableStream<Uint8Array>({ start(controller) { controller.enqueue(new Uint8Array(bytes)); controller.close(); } });
+  const source = new ReadableStream<BufferSource>({ start(controller) { controller.enqueue(new Uint8Array(bytes)); controller.close(); } });
   return new Response(source.pipeThrough(new DecompressionStream("gzip"))).arrayBuffer();
 }
 
@@ -99,17 +99,26 @@ export async function acquireGlb(asset: GlbAsset, signal?: AbortSignal): Promise
   entry.users += 1;
   let released = false;
   const release = () => { if (released) return; released = true; dropHold(asset.url); };
+  const abort = signal ? abortRace(signal) : null;
   try {
-    const root = await (signal ? Promise.race([entry.promise, new Promise<never>((_, reject) => {
-      const onAbort = () => reject(abortError());
-      if (signal.aborted) onAbort(); else signal.addEventListener("abort", onAbort, { once: true });
-    })]) : entry.promise);
+    const root = await (abort ? Promise.race([entry.promise, abort.rejected]) : entry.promise);
     if (signal?.aborted) throw abortError();
     return { root, asset, release };
   } catch (error) {
     release();
     throw error;
+  } finally {
+    abort?.unlisten();
   }
+}
+
+/** A promise that rejects with AbortError when the signal fires, and a way to stop listening once the race is over. */
+function abortRace(signal: AbortSignal): { rejected: Promise<never>; unlisten: () => void } {
+  let reject: (error: Error) => void = () => undefined;
+  const rejected = new Promise<never>((_, r) => { reject = r; });
+  const onAbort = () => reject(abortError());
+  signal.addEventListener("abort", onAbort, { once: true });
+  return { rejected, unlisten: () => signal.removeEventListener("abort", onAbort) };
 }
 
 /** How many holds a url has right now (0 when it is not cached). For tests and the runtime's own bookkeeping. */

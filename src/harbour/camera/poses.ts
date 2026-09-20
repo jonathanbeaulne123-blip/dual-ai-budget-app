@@ -201,5 +201,5 @@ export function clampCourtPose(pose: CourtPose): CourtPose {
 /** Are two poses the same to the eye? */
 export function samePose(a: CourtPose, b: CourtPose, epsilon = 1e-3): boolean {
   return Math.abs(a.r - b.r) < epsilon && Math.abs(a.phi - b.phi) < epsilon && Math.abs(wrap(a.theta - b.theta)) < epsilon
-    && a.target.every((v, i) => Math.abs(v - b.target[i]) < epsilon);
+    && a.target.every((v, i) => Math.abs(v - (b.target[i] ?? Number.NaN)) < epsilon);
 }
