@@ -249,7 +249,7 @@ function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRe
         {derived && <button type="button" disabled={busy||Boolean(completionBlock)} aria-describedby={completionBlock?completionHelp:undefined} onClick={() => attach(task, item.evidence!)}>Paid · keep it</button>}
         {waitingOnMe && <button type="button" className="planner-take" disabled={busy} onClick={() => run((current) => acknowledgeTask(current, { memberId, id: task.id, expectedRevision: task.revision }), "Taken")}>Taking it</button>}
         {task.completedAt && financial && <button type="button" disabled={busy} onClick={() => tick(item)}>Reopen</button>}
-        <button type="button" disabled={busy} aria-label={`Edit ${task.title}`} onClick={() => { setAttaching(null); setEditor(editorFor(task, memberId)); }}>Edit</button>
+        <button type="button" disabled={busy || editorSubmitting} aria-label={`Edit ${task.title}`} onClick={() => { if (editorInFlight.current) return; setAttaching(null); setEditor(editorFor(task, memberId)); }}>Edit</button>
       </div>
     </li>;
   }
@@ -327,7 +327,7 @@ function PlannerScoped({ household, memberId, view, today, busy, onCommand, onRe
       {coverage.length > 0 && <div className="planner-coverage"><h2>Who’s carrying what</h2><ul>{coverage.map((row) => <li key={row.member.id}><strong>{row.member.id === memberId ? "You" : row.member.name}</strong> · {row.count} open{row.alone ? ` · ${row.alone} only in ${row.member.id === memberId ? "your" : "their"} head` : " · every one has a backup"}</li>)}</ul><small>Is anything only in one person’s head? A backup owner is who else knows how.</small></div>}
     </section>}
 
-    <div className="planner-add"><button type="button" disabled={busy} onClick={() => setEditor(blankTask(view, memberId, today, listFilter))}>New task with details</button></div>
+    <div className="planner-add"><button type="button" disabled={busy || editorSubmitting} onClick={() => { if (!editorInFlight.current) setEditor(blankTask(view, memberId, today, listFilter)); }}>New task with details</button></div>
 
     {editor && <form className="planner-editor" onSubmit={saveEditor} aria-label={editor.expectedRevision ? "Edit task" : "New task"} aria-busy={editorSubmitting}>
       <h2>{editor.expectedRevision ? "Edit task" : "New task"}</h2>

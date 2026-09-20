@@ -86,16 +86,20 @@ describe("Planner Plan links and local editor recovery", () => {
     await act(async () => {
       form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
       form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+      button("New task with details").click();
       await Promise.resolve();
     });
     expect(calls).toBe(1);
     expect(button("Add task").disabled).toBe(true);
     expect(button("Cancel").disabled).toBe(true);
+    expect(button("New task with details").disabled).toBe(true);
+    expect(labelControl<HTMLInputElement>("Title").value).toBe("Call the ferry office");
     await act(async () => { settle(rejected()); await Promise.resolve(); });
     expect(calls).toBe(1);
     expect(labelControl<HTMLInputElement>("Title").value).toBe("Call the ferry office");
     expect(button("Add task").disabled).toBe(false);
     expect(button("Cancel").disabled).toBe(false);
+    expect(button("New task with details").disabled).toBe(false);
     expect(host.textContent).toContain("That task changed. Review it again.");
   });
 
