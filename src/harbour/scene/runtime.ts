@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
-import { createCourtCamera, type CourtCamera } from "../camera/courtCamera.ts";
+import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/courtCamera.ts";
 import { COURT_ANCHOR_IDS, COURT_FOV, type CourtAnchor, type CourtMode, type CourtPose } from "../camera/poses.ts";
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
 import { createGround } from "./ground.ts";
@@ -27,7 +27,8 @@ export type HarbourCallbacks = {
   onReady: () => void;
   onFailure: () => void;
   onProject?: (rects: ProjectedRect[]) => void;
-  onTap?: (hit: HarbourHit) => void;
+  /** A tap, with where it landed in stage pixels. */
+  onTap?: (hit: HarbourHit, at: { x: number; y: number }) => void;
   onGesture?: (gesture: HarbourGesture) => void;
   /** Defaults: the registered court, the theme's scene dressing, no reading. */
   place?: Place;
@@ -45,6 +46,8 @@ export type HarbourRuntime = {
   /** Fly to a mode; `anchor` is one of `poses.ts`'s named anchors or any anchor the place exposes. */
   go: (mode: CourtMode, anchor?: string) => void;
   setReading: (reading: PlaceReading | null) => void;
+  /** A close look at any point (the Queen's roots, the slip). */
+  look: (look: CourtLook) => void;
   /** Keyboard: arrows orbit, +/− zoom. */
   gesture: (input: { kind: "orbit"; dx: number; dy: number } | { kind: "zoom"; delta: number }) => void;
   /** A tool is open in front of the court: no breathing, the strip only redraws on demand. */
@@ -267,7 +270,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     try { host.releasePointerCapture(event.pointerId); } catch { /* jsdom */ }
     if (event.type === "pointercancel") return;
     const travelled = Math.hypot(pointer.x - pointer.startX, pointer.y - pointer.startY), lasted = performance.now() - pointer.startedAt;
-    if (travelled < TAP_PIXELS && lasted < TAP_MS) callbacks.onTap?.(pointer.hit);
+    if (travelled < TAP_PIXELS && lasted < TAP_MS) callbacks.onTap?.(pointer.hit, { x: pointer.startX, y: pointer.startY });
     else if (pointer.hit.kind === "queen") callbacks.onGesture?.({ region: pointer.hit.region, samples: pointer.samples });
     schedule();
   }
@@ -304,6 +307,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       moved();
     },
     setReading(reading) { handle.update(reading); dirty = true; render(); schedule(); },
+    look(next) { court.setReduced(reduced.matches); court.goTo(next); moved(); },
     gesture(input) { court.setReduced(reduced.matches); if (input.kind === "orbit") court.drag(input.dx, input.dy); else court.zoom(input.delta); moved(); },
     setToolOpen(open) { toolOpen = open; schedule(); },
     setBreathing(on) { breathing = on; schedule(); },

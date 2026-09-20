@@ -1,50 +1,97 @@
-/* Little Harbour · slice 1 (the Court). Scaffold; step 7 completes the stage, twins and door strip. */
+/* Little Harbour · slice 1: the Court. Colours come from the court's dressing (three.js) and the theme tokens (HTML). */
 
-/* "No chrome but the compass" (BUILD_PLAN §1.3). The brand and the space switch move into the quick sheet;
-   the environment pill and the sync line stay — trust chrome never hides. */
-.app[data-harbour-court] { --harbour-nav: var(--nav, 64px); }
+/* ── "No chrome but the compass" (BUILD_PLAN §1.3). The brand and the space switch move into the quick sheet;
+      the environment pill floats top-right and the sync line stays as one thin line — trust chrome never hides. ── */
+.app[data-harbour-court] { --harbour-nav: var(--nav, 76px); max-width: none; padding: 0; }
 .app[data-harbour-court] .app-shell { position: relative; }
-.app[data-harbour-court] .topbar { position: absolute; inset: 0 0 auto 0; z-index: 12; justify-content: flex-end; padding: 12px clamp(14px, 3vw, 40px); background: none; border: 0; box-shadow: none; pointer-events: none; }
+.app[data-harbour-court] .topbar { position: absolute; top: 0; right: 0; left: auto; z-index: 14; margin: 0; padding: 10px clamp(12px, 3vw, 28px); background: none; border: 0; box-shadow: none; pointer-events: none; }
 .app[data-harbour-court] .topbar .brand { display: none; }
-.app[data-harbour-court] .topbar .pill { pointer-events: auto; }
-.app[data-harbour-court] .view-switch { display: none; }
+.app[data-harbour-court] .topbar .pill { pointer-events: auto; box-shadow: 0 2px 10px #1a201822; }
+.app[data-harbour-court] .view-switch, .app[data-harbour-court] .ledger-switcher { display: none; }
+.app[data-harbour-court] .sync-freshness { position: absolute; left: clamp(12px, 3vw, 28px); right: auto; top: 10px; z-index: 14; margin: 0; max-width: min(62vw, 420px); min-height: 34px; padding: 5px 10px; font-size: 0.72rem; background: color-mix(in srgb, var(--card) 88%, transparent); backdrop-filter: blur(6px); }
+.app[data-harbour-court] .sync-freshness__space { display: none; }
 .app[data-harbour-court] [data-app-page][data-house-resting] { display: none; }
+.app[data-harbour-court] .hercules-pill, .app[data-harbour-court] .hercules-live { display: none; }
+/* Banners (books validation, command banner, the kitchen notice) keep their place above the scene. */
+.app[data-harbour-court] .kitchen-notice, .app[data-harbour-court] .command-banner { position: relative; z-index: 13; margin: 56px clamp(12px, 3vw, 28px) 0; }
 
-/* The stage is full-bleed above the compass. */
+/* ── The stage: full-bleed above the compass. ── */
 .harbour-world { position: relative; isolation: isolate; margin: 0; color: var(--house-ink, #332d24); }
-.harbour-world__stage { position: relative; min-height: calc(100dvh - var(--harbour-nav, 64px)); overflow: hidden; background: #cbb48f; touch-action: none; }
+.harbour-world__stage { position: relative; height: calc(100dvh - var(--harbour-nav, 76px)); min-height: 420px; overflow: hidden; background: #e8dcc4; touch-action: none; outline: none; }
+.harbour-world--taylor .harbour-world__stage { background: #f2e3ea; }
+.harbour-world--newfoundland .harbour-world__stage { background: #dfe9ec; }
+.harbour-world__stage:focus-visible { box-shadow: inset 0 0 0 3px #126fb1; }
 .harbour-world__stage .house-world__canvas, .harbour-world__stage .house-world__canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .harbour-world__stage .house-world__canvas canvas { display: block; }
-.harbour-world.has-open-object .harbour-world__stage { min-height: 0; height: 300px; }
-.harbour-world__put-back { position: absolute; z-index: 8; bottom: 20px; left: clamp(20px, 4vw, 72px); min-height: 44px; font: inherit; background: var(--house-paper, #f7efdc); color: inherit; border: 1px solid var(--house-wood, #59412f); border-radius: 30px; padding: 9px 22px; box-shadow: 0 6px 18px #17241c33; cursor: pointer; }
-.harbour-world__fallback { position: absolute; top: 7px; left: 50%; transform: translateX(-50%); z-index: 8; background: var(--house-paper, #f7efdc); font-size: 11px; padding: 8px; border-radius: 4px; }
+.harbour-world__stage .house-world__canvas { background-size: 100% 100%; }
+.harbour-world.has-open-object .harbour-world__stage { height: 300px; min-height: 0; }
+.harbour-world__put-back { position: absolute; z-index: 8; bottom: 20px; left: clamp(20px, 4vw, 72px); min-height: 44px; font: inherit; font-size: 13px; background: var(--paper, #f7efdc); color: var(--ink, #332d24); border: 1px solid var(--line, #59412f); border-radius: 30px; padding: 9px 22px; box-shadow: 0 6px 18px #17241c33; cursor: pointer; }
+.harbour-world__put-back:focus-visible { outline: 3px solid #126fb1; outline-offset: 3px; }
+.harbour-world__fallback { position: absolute; top: 52px; left: 50%; transform: translateX(-50%); z-index: 8; margin: 0; background: var(--paper, #f7efdc); font-size: 11px; padding: 8px 12px; border-radius: 4px; }
+.harbour-world__supported, .harbour-world__checking { position: absolute; z-index: 8; left: 50%; transform: translateX(-50%); bottom: 14px; background: color-mix(in srgb, var(--paper, #f7efdc) 90%, transparent); color: var(--ink, #332d24); font-size: 11px; padding: 5px 10px; border-radius: 12px; white-space: nowrap; max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; }
+.harbour-world__checking { bottom: 42px; }
+/* One line beneath her at most (the Still Queen's rule). Empty until she is touched. */
+.harbour-world__phrase { position: absolute; z-index: 8; left: 50%; transform: translateX(-50%); bottom: 68px; margin: 0; padding: 0 12px; font: italic 500 clamp(14px, 1.6vw, 18px)/1.3 var(--display, Georgia, serif); color: var(--ink, #332d24); text-shadow: 0 1px 0 #ffffff88; pointer-events: none; white-space: nowrap; }
+.harbour-world__phrase:empty { display: none; }
 
-/* The reading edition: the same objects, as buttons. */
-.court-flat { position: relative; min-height: calc(100dvh - var(--harbour-nav, 64px)); display: grid; grid-template-rows: auto auto auto 1fr; gap: 12px; padding: 0 clamp(14px, 3vw, 40px) 24px; background: #d9c9a8; color: #332d24; }
+/* ── DOM twins: the a11y layer over the canvas. The canvas is the touch surface. ── */
+.court-twins { position: absolute; inset: 0; z-index: 6; pointer-events: none; }
+.court-twins__twin { position: absolute; margin: 0; padding: 0; border: 0; background: transparent; color: transparent; border-radius: 10px; pointer-events: none; }
+.court-twins__twin:focus-visible { outline: 3px solid #126fb1; outline-offset: 2px; background: #126fb11a; }
+.court-twins__twin[data-twin-group="queen"]:focus-visible { border-radius: 40%; }
+
+/* ── The spark: six petals for 600 ms, feedback only. ── */
+.harbour-spark { position: absolute; z-index: 7; width: 0; height: 0; pointer-events: none; }
+.harbour-spark span { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50% 50% 50% 0; background: var(--spark, #e39bae); opacity: 0; transform: rotate(calc(var(--i) * 60deg)) translateY(-6px); animation: harbour-petal 600ms ease-out forwards; }
+@keyframes harbour-petal { 0% { opacity: .95; transform: rotate(calc(var(--i) * 60deg)) translateY(-4px) scale(.6); } 100% { opacity: 0; transform: rotate(calc(var(--i) * 60deg + 40deg)) translateY(-34px) scale(1); } }
+
+/* ── The reading edition: the same objects, as buttons. ── */
+.court-flat { position: relative; min-height: calc(100dvh - var(--harbour-nav, 76px)); background: #e8dcc4; color: #332d24; }
 .court-flat--taylor { background: #f2e3ea; color: #47373e; }
 .court-flat--newfoundland { background: #dfe9ec; color: #243e45; }
-.court-flat__scene { display: block; width: 100%; max-height: 46dvh; margin: 0 auto; }
+.court-flat--overlay { position: absolute; inset: 0; z-index: 5; min-height: 0; }
+.court-flat__scene { display: block; width: 100%; height: clamp(220px, 38dvh, 360px); }
+.court-flat--overlay .court-flat__scene { height: 100%; position: absolute; inset: 0; }
+.court-flat--overlay .court-flat__sheet { position: absolute; inset: auto 0 0 0; max-height: 62%; overflow: auto; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--paper, #f7efdc) 92%, transparent) 26px); }
+.court-flat__sheet { display: grid; gap: 12px; padding: 12px clamp(14px, 3vw, 40px) 24px; max-width: 1100px; margin: 0 auto; }
 .court-flat__status { margin: 0; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
 .court-flat__plate, .court-flat__sundial, .court-flat__mailbox { display: grid; gap: 2px; width: 100%; min-height: 56px; padding: 10px 14px; text-align: left; font: inherit; color: inherit; background: #fff8e6cc; border: 1px solid #8f7d6055; border-radius: 6px; cursor: pointer; }
 .court-flat button:focus-visible { outline: 3px solid #126fb1; outline-offset: 3px; }
 .court-flat small { font-size: 11px; letter-spacing: .04em; opacity: .8; }
 .court-flat strong { font: 500 clamp(20px, 2.4vw, 30px)/1.1 var(--display, Georgia, serif); font-variant-numeric: tabular-nums; }
 .court-flat span { font-size: 12px; }
-.court-flat__stone--everyday .court-flat__plate strong { font-size: clamp(30px, 4vw, 44px); }
+.court-flat__stone--everyday .court-flat__plate { background: #fff8e6ee; border-width: 2px; }
+.court-flat__stone--everyday .court-flat__plate strong { font-size: clamp(32px, 4.6vw, 48px); }
 .court-flat__plinths { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0; padding: 0; list-style: none; }
 .court-flat__gate { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
-.court-flat__mailbox[data-flag="up"] { border-color: #c9503c; }
+.court-flat__mailbox[data-flag="up"] { border-color: #c9503c; box-shadow: inset 4px 0 0 #c9503c; }
 .court-flat__slip { grid-column: 1 / -1; margin: 0; padding: 10px 14px; list-style: none; font-size: 13px; line-height: 1.5; background: #fff8e6aa; border-left: 3px solid #8f7d60; }
-.court-flat__partner { grid-column: 1 / -1; margin: 0; font-size: 12px; opacity: .8; }
+.court-flat__partner, .court-flat__condition { grid-column: 1 / -1; margin: 0; font-size: 12px; opacity: .8; }
 
+/* ── Desktop: the environment pill and the sync line sit in the top corners; the compass is the pill bottom-right (harbour-nav.css). ── */
+@media (min-width: 720px) {
+  .app[data-harbour-court] .harbour-world__stage { height: 100dvh; }
+  .harbour-world__phrase { bottom: 40px; }
+  .harbour-world__supported { left: 24px; transform: none; bottom: 22px; }
+  .harbour-world__checking { left: 24px; transform: none; bottom: 54px; }
+}
+
+/* ── Phone ≤ 719: she fills the portrait; the compass is the bottom bar; the sync line is one thin strip. ── */
 @media (max-width: 719px) {
-  .court-flat { padding-inline: 12px; }
+  .app[data-harbour-court] .topbar { padding: 8px 10px; }
+  .app[data-harbour-court] .topbar .pill { font-size: 11px; padding: 5px 10px; }
+  .app[data-harbour-court] .sync-freshness { left: 10px; top: 8px; max-width: calc(100vw - 150px); font-size: 0.68rem; min-height: 30px; padding: 3px 8px; }
+  .court-flat__sheet { padding-inline: 12px; }
   .court-flat__plinths { grid-template-columns: 1fr; }
   .court-flat__gate { grid-template-columns: 1fr; }
   .harbour-world.has-open-object .harbour-world__stage { height: 210px; }
   .harbour-world__put-back { left: 14px; bottom: 14px; font-size: 12px; }
+  .harbour-world__phrase { bottom: 56px; font-size: 14px; }
 }
+@media (max-width: 359px) { .app[data-harbour-court] .sync-freshness { max-width: calc(100vw - 130px); } }
 
+/* ── Reduced motion: cuts, no breathing, no spark, no easing anywhere in the shell. ── */
 @media (prefers-reduced-motion: reduce) {
-  .harbour-world *, .court-flat * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+  .harbour-world *, .court-flat *, .court-twins * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
+  .harbour-spark { display: none; }
 }

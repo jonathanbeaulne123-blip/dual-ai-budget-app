@@ -1,0 +1,80 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+import { describe, expect, it } from "vitest";
+
+/**
+ * Little Harbour source fences (BUILD_PLAN §0 #4, §8). The Court reads existing
+ * selectors and opens existing doors; it never reaches the books, the kitchen,
+ * storage, continuity or the network, and it reads the environment in one
+ * file. The App seams stay behind `HARBOUR_ENABLED` / `harbourOwnsRoute`.
+ */
+const root = process.cwd();
+const harbour = join(root, "src", "harbour");
+
+function walk(dir: string): string[] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    return statSync(path).isDirectory() ? walk(path) : /\.(ts|tsx)$/.test(name) ? [path] : [];
+  });
+}
+
+const files = walk(harbour);
+const importsOf = (source: string): string[] => [...source.matchAll(/(?:from|import\()\s*["']([^"']+)["']/g)].map((m) => m[1]!);
+
+const FORBIDDEN: { name: string; test: (specifier: string) => boolean }[] = [
+  { name: "core/commands", test: (s) => /\/core\/commands(\.ts)?$/.test(s) || /\/core\/commands\//.test(s) },
+  { name: "core/index (the command surface)", test: (s) => /\/core\/index\.ts$/.test(s) || /\/core$/.test(s) },
+  { name: "kitchenCommand", test: (s) => /kitchenCommand/.test(s) },
+  { name: "ledger/", test: (s) => /\/ledger\//.test(s) || /\/ledger\.ts$/.test(s) },
+  { name: "ledgerSync/", test: (s) => /\/ledgerSync\//.test(s) },
+  { name: "storage", test: (s) => /\/storage(\.ts)?$/.test(s) },
+  { name: "continuity", test: (s) => /\/continuity(\.ts)?$/.test(s) },
+  { name: "api", test: (s) => /\/api(\.ts)?$/.test(s) },
+  { name: "supabase", test: (s) => /supabase/i.test(s) },
+];
+
+describe("src/harbour source fences", () => {
+  it("has the module skeleton the plan names", () => {
+    const names = files.map((f) => relative(harbour, f).replace(/\\/g, "/"));
+    for (const expected of ["flag.ts", "HarbourWorld.tsx", "nav/arrival.ts", "nav/Compass.tsx", "nav/QuickSheet.tsx", "scene/place.ts", "scene/runtime.ts", "court/CourtScene.ts", "court/CourtTwins.tsx", "flat/CourtFlat.tsx", "data/reading.ts"]) expect(names).toContain(expected);
+  });
+
+  it("never imports commands, the kitchen, the ledger, storage, continuity or the api", () => {
+    const offences: string[] = [];
+    for (const file of files) {
+      for (const specifier of importsOf(readFileSync(file, "utf8"))) {
+        for (const rule of FORBIDDEN) if (rule.test(specifier)) offences.push(`${relative(root, file)} → ${specifier} (${rule.name})`);
+      }
+    }
+    expect(offences).toEqual([]);
+  });
+
+  it("reads import.meta.env in flag.ts only", () => {
+    const readers = files.filter((file) => /import\.meta\.env/.test(readFileSync(file, "utf8"))).map((file) => relative(harbour, file).replace(/\\/g, "/"));
+    expect(readers).toEqual(["flag.ts"]);
+  });
+
+  it("never touches fetch, localStorage or the books outside the loaders and the shell's return records", () => {
+    const allowed = new Set(["assets/loadGlb.ts", "court/queenPlace.ts", "scene/quality.ts", "nav/QuickSheet.tsx", "nav/arrival.ts", "HarbourWorld.tsx"]);
+    const offences: string[] = [];
+    for (const file of files) {
+      const name = relative(harbour, file).replace(/\\/g, "/");
+      const source = readFileSync(file, "utf8");
+      if (allowed.has(name)) continue;
+      if (/\bfetch\(/.test(source)) offences.push(`${name} fetches`);
+      if (/localStorage|sessionStorage|indexedDB/.test(source)) offences.push(`${name} reads storage`);
+    }
+    expect(offences).toEqual([]);
+    const money = files.filter((file) => /postEntry|postShift|postVisit|acceptHouseholdWrite|allocateHouseholdFundSurplus|commitCommand/.test(readFileSync(file, "utf8")));
+    expect(money).toEqual([]);
+  });
+
+  it("keeps the App seams behind the flag", () => {
+    const app = readFileSync(join(root, "src", "App.tsx"), "utf8");
+    expect(app).toMatch(/harbourOwnsRoute\(activeHouseRoute,view\)\?<Suspense fallback=\{<CourtFlat/);
+    expect(app).toMatch(/data-harbour-court=\{harbourOwnsRoute\(activeHouseRoute,view\)&&!activeHouseRoute\.surface\|\|undefined\}/);
+    expect(app).toMatch(/HARBOUR_ENABLED&&view==="household"\?<><Compass/);
+    expect(app).toMatch(/harbourArrivalRoute\(\{saved:saved\?\.route,scope:session\.view/);
+    expect(app).toMatch(/const HarbourWorld = lazy\(\(\) => import\("\.\/harbour\/HarbourWorld\.tsx"\)\)/);
+  });
+});
