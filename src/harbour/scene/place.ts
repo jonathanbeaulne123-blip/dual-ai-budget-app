@@ -1,7 +1,8 @@
 import * as THREE from "three";
 import type { ThemeId } from "../../theme/scenes.ts";
+import { COURT_DRESSING, type CourtDressing } from "../court/dressing.ts";
 import type { HarbourPlaceId } from "../flag.ts";
-import type { HarbourReadingLike } from "../flat/CourtFlat.tsx";
+import type { HarbourReading } from "../data/reading.ts";
 import type { RenderTier } from "./quality.ts";
 
 /**
@@ -18,11 +19,19 @@ import type { RenderTier } from "./quality.ts";
 export type Vec3 = readonly [number, number, number];
 export type Composition = "phone" | "desktop";
 
+/** The partner's presence, from the App's soft-presence display (never from the books). */
+export type PlacePartner = { fresh: boolean; name?: string };
+/** What a place reads: writer B's `HarbourReading` plus the partner the shell adds. */
+export type PlaceReading = HarbourReading & { partner?: PlacePartner | null };
+
 /** Colours are CSS hex strings; the scene makes a `THREE.Color` of each once. */
 export type PlaceLight = { sun: string; hemiSky: string; hemiGround: string; intensity: number };
 export type PlaceDressing = {
+  theme: ThemeId;
   stone: string; joint: string; moss: string; plinth: string; timber: string; metal: string; gate: string;
-  sky: string; fog: string; sea: string;
+  /** The island around a place: the apron under its objects, the lawn ring, the sea and the air. */
+  terrace: string; lawn: string; sky: string; sea: string;
+  fog: string; fogNear: number; fogFar: number;
   light: PlaceLight;
 };
 
@@ -42,13 +51,19 @@ export type Pose = { target: Vec3; r: number; theta: number; phi: number };
 /** Pose keys: `"sky"`, `"court"`, `` `object:${anchorId}` ``; a key may carry `@phone` or `@desktop` and the runtime prefers the composition's own. */
 export type PoseKey = string;
 
-/** A touchable part of the Queen (or another body). Every mesh in `objects` carries `userData.region = id` so a raycast resolves it. */
+/**
+ * A touchable part of a body: the Queen's crown, a piece on its plinth. The
+ * twins take their rect from `box` (world space) when given, else from the
+ * union of `objects`. For a raycast to land, every mesh of a Queen region
+ * carries `userData.region = id`; court objects carry `userData.anchor`.
+ */
 export type Region = {
   id: string;
-  /** The body the region belongs to; the twins rove inside one group. */
+  /** The body the region belongs to ("queen", "court"); the twins rove inside one group. */
   group: string;
   label: string;
-  objects: THREE.Object3D[];
+  box?: THREE.Box3;
+  objects?: THREE.Object3D[];
 };
 
 export type PlaceBuildContext = {
@@ -61,9 +76,9 @@ export type PlaceBuildContext = {
 
 export interface PlaceHandle {
   readonly group: THREE.Object3D;
-  update(reading: HarbourReadingLike | null): void;
-  /** `t` seconds since mount, `dt` seconds since the last animated frame. Only called when the frame policy animates. */
-  animate(t: number, dt: number): void;
+  update(reading: PlaceReading | null): void;
+  /** `t` seconds since mount, `dt` seconds since the last animated frame. Only called when the frame policy animates. May return true when something moved and a paint is worth it. */
+  animate(t: number, dt: number): boolean | void;
   dispose(): void;
   anchors(): Anchor[];
   poses(): Record<PoseKey, Pose>;
@@ -72,7 +87,7 @@ export interface PlaceHandle {
 
 export interface Place {
   readonly id: HarbourPlaceId;
-  build(scene: THREE.Scene, dressing: PlaceDressing, reading: HarbourReadingLike | null, quality: RenderTier, context: PlaceBuildContext): PlaceHandle;
+  build(scene: THREE.Scene, dressing: PlaceDressing, reading: PlaceReading | null, quality: RenderTier, context: PlaceBuildContext): PlaceHandle;
 }
 
 /** The registry the runtime reads the active place from. `court/CourtScene.ts` registers itself on import. */
@@ -102,14 +117,21 @@ export const EMPTY_PLACE: Place = {
   },
 };
 
-/**
- * The court's dressing by theme (BUILD_PLAN §6), used until writer D's
- * `court/dressing.ts` derives the same fields from `resolveThemeScene`.
- */
+/** The island's dressing is the court's (`court/dressing.ts`, BUILD_PLAN §6) seen from the scene's side: one table, no second palette. */
+export function sceneDressingFrom(court: CourtDressing): PlaceDressing {
+  return {
+    theme: court.theme,
+    stone: court.stone, joint: court.joint, moss: court.moss, plinth: court.plinth, timber: court.timber, metal: court.metal, gate: court.gate.post,
+    terrace: court.terrace, lawn: court.lawn, sky: court.sky, sea: court.sea,
+    fog: court.light.fog.color, fogNear: court.light.fog.near, fogFar: court.light.fog.far,
+    light: { sun: court.light.sun, hemiSky: court.light.hemiSky, hemiGround: court.light.hemiGround, intensity: court.light.sunIntensity },
+  };
+}
+
 export const SCENE_DRESSING: Readonly<Record<ThemeId, PlaceDressing>> = Object.freeze({
-  classic: { stone: "#cbb48f", joint: "#8f7d60", moss: "#6d7f4f", plinth: "#b9a07a", timber: "#6b4a32", metal: "#caa252", gate: "#6b4a32", sky: "#d9c9a8", fog: "#d9c9a8", sea: "#7fa9a4", light: { sun: "#ffe6be", hemiSky: "#fff1df", hemiGround: "#5c4230", intensity: 2.2 } },
-  taylor: { stone: "#ead8d2", joint: "#d9b8c4", moss: "#9fae86", plinth: "#e0c5c9", timber: "#8a6a72", metal: "#d9b8c4", gate: "#8a6a72", sky: "#f2e3ea", fog: "#f2e3ea", sea: "#a9c7cc", light: { sun: "#ffd9e4", hemiSky: "#fff4f7", hemiGround: "#7a5a66", intensity: 2.0 } },
-  newfoundland: { stone: "#7d8d93", joint: "#c9b48c", moss: "#5f7f6a", plinth: "#5c6b70", timber: "#45686d", metal: "#c9ae5a", gate: "#b75a4e", sky: "#dfe9ec", fog: "#dfe9ec", sea: "#6f9aa3", light: { sun: "#fff3e0", hemiSky: "#e9f2f4", hemiGround: "#4d7582", intensity: 2.4 } },
+  classic: sceneDressingFrom(COURT_DRESSING.classic),
+  taylor: sceneDressingFrom(COURT_DRESSING.taylor),
+  newfoundland: sceneDressingFrom(COURT_DRESSING.newfoundland),
 });
 
 /** Resolves a pose for the composition: `key@phone` wins over `key` on a phone, and so on. */

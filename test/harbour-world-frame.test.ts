@@ -4,9 +4,10 @@ import * as THREE from "three";
 import { mountHarbourWorld, type HarbourHit, type HarbourRuntime, type ProjectedRect } from "../src/harbour/scene/runtime.ts";
 import { BREATH_INTERVAL_MS, CAMERA_INTERVAL_MS, harbourFramePolicy } from "../src/harbour/scene/framePolicy.ts";
 import { dprCap, effectiveDpr, qualityTier } from "../src/harbour/scene/quality.ts";
-import { GROUND_RADIUS, LAWN_RADIUS, SEA_LEVEL, TERRACE_RADIUS, groundHeightAt } from "../src/harbour/scene/ground.ts";
+import { GROUND_RADIUS, LAWN_RADIUS, SEA_LEVEL, TERRACE_LEVEL, TERRACE_RADIUS, groundHeightAt } from "../src/harbour/scene/ground.ts";
 import { EMPTY_PLACE, PLACES, SCENE_DRESSING, poseFor, registerPlace, type Place } from "../src/harbour/scene/place.ts";
-import { COURT_BOUNDS, createCourtCamera } from "../src/harbour/camera/courtCamera.ts";
+import { createCourtCamera } from "../src/harbour/camera/courtCamera.ts";
+import { COURT_BOUNDS } from "../src/harbour/camera/poses.ts";
 
 const release = vi.fn();
 vi.mock("../src/house/world/rendererOwner.ts", () => ({
@@ -67,10 +68,11 @@ describe("qualityTier", () => {
 
 describe("groundHeightAt", () => {
   it("keeps the terrace level, lifts the lawn a little and lets the shore fall to the sea", () => {
-    expect(groundHeightAt(0, 0)).toBe(0);
-    expect(groundHeightAt(TERRACE_RADIUS - 0.1, 0)).toBe(0);
+    expect(groundHeightAt(0, 0)).toBe(TERRACE_LEVEL);
+    expect(TERRACE_LEVEL).toBeLessThan(0); // the court's paving, not the island, is the surface
+    expect(groundHeightAt(TERRACE_RADIUS - 0.1, 0)).toBe(TERRACE_LEVEL);
     expect(groundHeightAt((TERRACE_RADIUS + LAWN_RADIUS) / 2, 0)).toBeGreaterThan(0.2);
-    expect(groundHeightAt(LAWN_RADIUS, 0)).toBeCloseTo(0, 5);
+    expect(groundHeightAt(LAWN_RADIUS, 0)).toBeCloseTo(TERRACE_LEVEL, 5);
     expect(groundHeightAt(GROUND_RADIUS, 0)).toBeLessThan(-0.8);
     expect(groundHeightAt(GROUND_RADIUS + 5, 0)).toBeLessThan(SEA_LEVEL);
   });
@@ -92,7 +94,7 @@ describe("place registry", () => {
   });
 });
 
-describe("courtCamera placeholder", () => {
+describe("courtCamera through the runtime's eyes", () => {
   it("stays inside the court's bounds and cuts under reduced motion", () => {
     const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 220);
     const court = createCourtCamera({ camera, composition: "desktop", reduced: true });
@@ -110,7 +112,12 @@ describe("courtCamera placeholder", () => {
     expect(court.tick(0.033)).toBe(true);
     for (let i = 0; i < 400; i += 1) court.tick(0.033);
     expect(court.tick(0.033)).toBe(false);
-    expect(court.pose().r).toBeCloseTo(19, 3);
+    expect(court.pose().r).toBeCloseTo(COURT_BOUNDS.maxR, 3);
+    court.goTo({ target: [1.35, 0.6, 1.85] });
+    for (let i = 0; i < 400; i += 1) court.tick(0.033);
+    expect(court.pose().target).toEqual([1.35, 0.6, 1.85]);
+    court.restore([6, 5, 6]);
+    expect(court.pose().r).toBeCloseTo(Math.hypot(6 - 1.35, 5 - 0.6, 6 - 1.85), 6);
   });
 });
 

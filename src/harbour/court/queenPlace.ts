@@ -16,15 +16,16 @@ import * as THREE from "three";
 import type { QueenStyle } from "../../house/queenStyle.ts";
 import { BLOOM_QUEEN_HEIGHT, createBloomGrowth, createBloomQueen, disposeObject, type BloomEvidence } from "../../house/world/bloom.ts";
 import { parseQueenModel, readQueenModel } from "../../queen/world/queenModel.ts";
+import { QUEEN_ASSETS as QUEEN_MANIFEST } from "../assets/manifest.ts";
 import { QUEEN_REGION_ORDER, queenNodeKey, regionBoxes, regionOfNode, type QueenRegion, type RegionBoxes } from "./queenTouch.ts";
 
 export type QueenTier = "full" | "lite";
 export type QueenSource = "presence" | "court" | "v1";
 
-/** Local until writer C's `assets/manifest.ts` lands; the court copy is the one C is adding. */
+/** The Queen's files by source: the manifest's two (`assets/manifest.ts`, hash-fenced) and the v1 fallback the house already ships. */
 export const QUEEN_ASSETS: Record<QueenSource, string> = {
-  presence: "/models/mandevilla-living-presence.glb",
-  court: "/models/mandevilla-living-presence.court.glb",
+  presence: QUEEN_MANIFEST.presence.url,
+  court: QUEEN_MANIFEST.court.url,
   v1: "/models/queen/mandevilla-queen.v1.glb",
 };
 

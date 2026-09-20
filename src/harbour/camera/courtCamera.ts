@@ -2,6 +2,7 @@ import type { PerspectiveCamera } from "three";
 import { clampRoamCam, panDelta, wrapAngle, type RoamBounds, type RoamCam } from "../../path/world/roamCamera.ts";
 import {
   COURT_BOUNDS,
+  COURT_FOV,
   clampCourtPose,
   courtPose,
   poseEye,
@@ -10,6 +11,7 @@ import {
   type CourtAnchor,
   type CourtMode,
   type CourtPose,
+  type Vec3,
 } from "./poses.ts";
 
 /**
@@ -43,11 +45,22 @@ export type CourtCameraOptions = {
   reduced: boolean;
   /** Stage width ÷ height; defaults from the composition until `setAspect` is called. */
   aspect?: number;
+  /** Vertical field of view in degrees; defaults to `COURT_FOV`. A phone may take a wider field. */
+  fov?: number;
 };
+
+/** A point in the Court, for a close look at something `poses.ts` has no name for (the slip, Hercules). */
+export type CourtLook = { target: Vec3; r?: number; theta?: number; phi?: number };
 
 export type CourtCamera = {
   /** Fly (or, with reduced motion, cut) to the pose for a mode. `anchor` only matters for `object` (default: the Queen). */
   go(mode: CourtMode, anchor?: CourtAnchor): void;
+  /** Fly to a close look at any point: an "object" pose for a thing without a named anchor. */
+  goTo(look: CourtLook): void;
+  /** A return record's eye position: the camera is set there at once (a cut), looking at its current target. */
+  restore(eye: Vec3): void;
+  /** Change the vertical field of view (degrees); the pose for the current mode is recomputed. */
+  setFov(fov: number): void;
   /** Orbit by a pointer drag of `dx`,`dy` pixels: right swings the Court right under the eye, down tilts to look more from above. */
   drag(dx: number, dy: number): void;
   /** Slide the target over the ground by a drag of `dx`,`dy` pixels (two fingers, or a modifier drag). */
@@ -99,9 +112,11 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
   let composition = options.composition;
   let reduced = options.reduced;
   let aspect = options.aspect ?? defaultAspect(composition);
+  let fov = options.fov ?? COURT_FOV;
   let mode: CourtMode = "court";
   let anchor: CourtAnchor | undefined;
-  let goal: CourtPose = clampPose(clampCourtPose(courtPose(mode, anchor, composition, aspect)));
+  let look: CourtLook | null = null;
+  let goal: CourtPose = clampPose(clampCourtPose(courtPose(mode, anchor, composition, aspect, fov)));
   let current: CourtPose = goal;
 
   function apply(): void {
@@ -112,7 +127,9 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
   }
 
   function retarget(): void {
-    goal = clampPose(clampCourtPose(courtPose(mode, anchor, composition, aspect)));
+    goal = clampPose(clampCourtPose(look
+      ? { target: look.target, r: look.r ?? 3.2, theta: look.theta ?? Math.atan2(look.target[0], look.target[2] + 6) * 0.6, phi: look.phi ?? (composition === "phone" ? 1.0 : 1.05) }
+      : courtPose(mode, anchor, composition, aspect, fov)));
     if (reduced) { current = goal; apply(); }
   }
 
@@ -131,6 +148,23 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
     go(nextMode, nextAnchor) {
       mode = nextMode;
       anchor = nextMode === "object" ? nextAnchor ?? "queen" : undefined;
+      look = null;
+      retarget();
+    },
+    goTo(next) {
+      mode = "object"; anchor = undefined; look = next;
+      retarget();
+    },
+    restore(eye) {
+      const [tx, ty, tz] = goal.target;
+      const dx = eye[0] - tx, dy = eye[1] - ty, dz = eye[2] - tz;
+      const r = Math.hypot(dx, dy, dz);
+      if (!Number.isFinite(r) || r < 1e-3) return;
+      take({ target: [tx, ty, tz], r, theta: Math.atan2(dx, dz), phi: Math.acos(Math.max(-1, Math.min(1, dy / r))) });
+    },
+    setFov(next) {
+      if (!(next > 0) || !Number.isFinite(next) || Math.abs(next - fov) < 1e-4) return;
+      fov = next;
       retarget();
     },
     drag(dx, dy) {

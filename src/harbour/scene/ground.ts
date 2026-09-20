@@ -9,9 +9,12 @@ import type { RenderTier } from "./quality.ts";
  * falls to the sea — plus the sea plane and the theme's fog.
  */
 export const GROUND_RADIUS = 30;
-export const TERRACE_RADIUS = 9;
+/** The court's own terrace and lawn ring (`COURT_LAYOUT`) reach 9.5; the island's apron sits just under them. */
+export const TERRACE_RADIUS = 9.6;
 export const LAWN_RADIUS = 20;
 export const SEA_LEVEL = -0.45;
+/** The apron is a hair below the court's paving so the tiles, not the island, are the surface you see. */
+export const TERRACE_LEVEL = -0.05;
 
 const RINGS = 26;
 const SECTORS = 96;
@@ -19,15 +22,15 @@ const SECTORS = 96;
 /** Height of the island at a point. Pure; the terrace is level so every plinth and paving stone sits at 0. */
 export function groundHeightAt(x: number, z: number): number {
   const r = Math.hypot(x, z);
-  if (r <= TERRACE_RADIUS) return 0;
+  if (r <= TERRACE_RADIUS) return TERRACE_LEVEL;
   if (r <= LAWN_RADIUS) {
     const t = (r - TERRACE_RADIUS) / (LAWN_RADIUS - TERRACE_RADIUS);
     // A gentle hump peaking mid-lawn, back to the terrace level at the shore's edge.
-    return Math.sin(t * Math.PI) * 0.28;
+    return TERRACE_LEVEL + Math.sin(t * Math.PI) * 0.28;
   }
   if (r <= GROUND_RADIUS) {
     const t = (r - LAWN_RADIUS) / (GROUND_RADIUS - LAWN_RADIUS);
-    return -t * t * 0.9;
+    return TERRACE_LEVEL - t * t * 0.9;
   }
   return SEA_LEVEL - 0.2;
 }
@@ -42,8 +45,8 @@ export type Ground = {
 };
 
 function paintVertices(colors: Float32Array, positions: Float32Array, dressing: PlaceDressing): void {
-  const stone = new THREE.Color(dressing.stone), joint = new THREE.Color(dressing.joint), moss = new THREE.Color(dressing.moss), sea = new THREE.Color(dressing.sea);
-  const sand = stone.clone().lerp(sea, 0.25);
+  const stone = new THREE.Color(dressing.terrace), joint = new THREE.Color(dressing.joint), moss = new THREE.Color(dressing.lawn), sea = new THREE.Color(dressing.sea);
+  const sand = new THREE.Color(dressing.stone).lerp(sea, 0.25);
   const c = new THREE.Color();
   for (let i = 0; i < positions.length / 3; i += 1) {
     const x = positions[i * 3] ?? 0, z = positions[i * 3 + 2] ?? 0, r = Math.hypot(x, z);
@@ -108,7 +111,7 @@ export function createGround(scene: THREE.Scene, dressing: PlaceDressing, tier: 
   const applyAir = (next: PlaceDressing) => {
     const sky = new THREE.Color(next.sky);
     scene.background = sky;
-    scene.fog = new THREE.Fog(new THREE.Color(next.fog), 42, 130);
+    scene.fog = new THREE.Fog(new THREE.Color(next.fog), next.fogNear, next.fogFar);
   };
   applyAir(dressing);
 

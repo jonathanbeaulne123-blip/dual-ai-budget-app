@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
-import { COURT_ASSETS } from "../assets/manifest.ts";
-import { loadGlb } from "../assets/loadGlb.ts";
+import { COURT_ASSETS, type GlbAsset } from "../assets/manifest.ts";
+import { acquireGlb, type GlbHandle } from "../assets/loadGlb.ts";
 import type { Anchor, Region } from "../scene/place.ts";
 import type { CourtDressing } from "./dressing.ts";
 import { EngravedPlate, engravedWords, type PlateFinish } from "./engraved.ts";
@@ -16,8 +16,8 @@ export type PieceDef = {
   position: [number, number, number];
   /** `suggestedScaleBesideQueen` from the Form Core kit: height as a fraction of the Queen. */
   scale: number;
-  /** Door target for `onOpen` — the money paths stay where they are. */
-  target: string;
+  /** Door for `onOpen(target, object)` — the money paths stay where they are. */
+  door: { target: string; object?: string };
   /** Slight turn toward the court's centre so the pieces attend the Queen. */
   turn: number;
 };
@@ -27,9 +27,9 @@ export const QUEEN_HEIGHT = 2.05;
 export const PLINTH = { width: 1.0, height: 0.5, depth: 1.0 } as const;
 
 export const COURT_PIECES: Record<PieceId, PieceDef> = {
-  rook: { id: "rook", label: "The Rook — Build", fund: "build", position: [4.2, 0, -3.0], scale: 0.82, target: "loft-banks", turn: -0.32 },
-  knight: { id: "knight", label: "The Knight — Protect", fund: "protect", position: [-4.2, 0, -3.0], scale: 0.79, target: "loft-banks:protect", turn: 0.32 },
-  bishop: { id: "bishop", label: "The Bishop — Prepare", fund: "prepare", position: [0, 0, 4.6], scale: 0.91, target: "cellar-bills", turn: 0 },
+  rook: { id: "rook", label: "The Rook — Build", fund: "build", position: [4.2, 0, -3.0], scale: 0.82, door: { target: "loft-banks" }, turn: -0.32 },
+  knight: { id: "knight", label: "The Knight — Protect", fund: "protect", position: [-4.2, 0, -3.0], scale: 0.79, door: { target: "loft-banks", object: "bank/plan:protect" }, turn: 0.32 },
+  bishop: { id: "bishop", label: "The Bishop — Prepare", fund: "prepare", position: [0, 0, 4.6], scale: 0.91, door: { target: "cellar-bills" }, turn: 0 },
 };
 export const PIECE_IDS: readonly PieceId[] = ["rook", "bishop", "knight"];
 
@@ -125,8 +125,8 @@ export type CourtPiecesOptions = {
   signal?: AbortSignal;
   /** Called when a piece's model lands so the runtime can schedule a frame. */
   onLanded?: (id: PieceId) => void;
-  /** Injectable loader (tests). */
-  load?: (url: string, opts?: { signal?: AbortSignal }) => Promise<THREE.Group>;
+  /** Injectable loader (tests): a hold on the shared parsed scene; callers clone the root. */
+  load?: (asset: GlbAsset, signal?: AbortSignal) => Promise<Pick<GlbHandle, "root" | "release">>;
   /** Skip the network entirely: plinths and plates only. */
   loadModels?: boolean;
 };
@@ -168,15 +168,18 @@ export function createCourtPieces(dressing: CourtDressing, options: CourtPiecesO
 
   const landedIds: PieceId[] = [];
   const failures: Partial<Record<PieceId, unknown>> = {};
-  const load = options.load ?? loadGlb;
+  const load = options.load ?? acquireGlb;
   const shouldLoad = options.loadModels ?? true;
+  const holds: Pick<GlbHandle, "release">[] = [];
   const ready = shouldLoad
     ? Promise.allSettled(PIECE_IDS.map(async (id) => {
         const slot = slots[id];
         try {
-          const scene = await load(COURT_ASSETS[id].url, { signal: options.signal });
+          const hold = await load(COURT_ASSETS[id], options.signal);
+          holds.push(hold);
           if (options.signal?.aborted) return;
-          const merged = mergeByMaterial(scene);
+          // The shared root belongs to the loader's cache; the court stands its own copy on the plinth.
+          const merged = mergeByMaterial(hold.root.clone(true));
           normalisePiece(merged, slot.def.scale);
           merged.rotation.y = slot.def.turn;
           merged.position.y = PLINTH.height + 0.06;
@@ -195,14 +198,14 @@ export function createCourtPieces(dressing: CourtDressing, options: CourtPiecesO
 
   const anchors = (): Anchor[] => PIECE_IDS.map((id) => {
     const def = COURT_PIECES[id];
-    return { id, position: new THREE.Vector3(def.position[0], PLINTH.height + QUEEN_HEIGHT * def.scale * 0.5, def.position[2]), zone: "piece", label: def.label, target: def.target };
+    return { id, position: [def.position[0], PLINTH.height + QUEEN_HEIGHT * def.scale * 0.5, def.position[2]], zone: "piece", label: def.label, door: def.door };
   });
   const regions = (): Region[] => PIECE_IDS.map((id) => {
     const def = COURT_PIECES[id];
     const [x, , z] = def.position;
     const half = Math.max(PLINTH.width, PLINTH.depth) / 2 + 0.1;
     const top = PLINTH.height + 0.06 + QUEEN_HEIGHT * def.scale + 0.1;
-    return { id, box: new THREE.Box3(new THREE.Vector3(x - half, 0, z - half), new THREE.Vector3(x + half, top, z + half)) };
+    return { id, group: "court", label: def.label, box: new THREE.Box3(new THREE.Vector3(x - half, 0, z - half), new THREE.Vector3(x + half, top, z + half)) };
   });
 
   return {
@@ -220,6 +223,7 @@ export function createCourtPieces(dressing: CourtDressing, options: CourtPiecesO
         if (model) model.traverse((node) => { if (node instanceof THREE.Mesh) { node.geometry.dispose(); const m = node.material as THREE.Material | THREE.Material[]; (Array.isArray(m) ? m : [m]).forEach((material) => material.dispose()); } });
       }
       for (const item of disposables) item.dispose();
+      for (const hold of holds.splice(0)) hold.release();
     },
   };
 }

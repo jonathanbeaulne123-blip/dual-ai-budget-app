@@ -105,12 +105,12 @@ describe("the Court", () => {
     const ids = anchors.map((a) => a.id);
     for (const id of ["queen", "rook", "bishop", "knight", "sundial", "mailbox", "gate"]) expect(ids).toContain(id);
     const byId = Object.fromEntries(anchors.map((a) => [a.id, a]));
-    expect(byId.rook!.target).toBe("loft-banks");
-    expect(byId.bishop!.target).toBe("cellar-bills");
-    expect(byId.knight!.target).toBe("loft-banks:protect");
-    expect(byId.rook!.position.x).toBeCloseTo(4.2); expect(byId.rook!.position.z).toBeCloseTo(-3.0);
-    expect(byId.knight!.position.x).toBeCloseTo(-4.2);
-    expect(byId.bishop!.position.z).toBeCloseTo(4.6);
+    expect(byId.rook!.door).toEqual({ target: "loft-banks" });
+    expect(byId.bishop!.door).toEqual({ target: "cellar-bills" });
+    expect(byId.knight!.door).toEqual({ target: "loft-banks", object: "bank/plan:protect" });
+    expect(byId.rook!.position[0]).toBeCloseTo(4.2); expect(byId.rook!.position[2]).toBeCloseTo(-3.0);
+    expect(byId.knight!.position[0]).toBeCloseTo(-4.2);
+    expect(byId.bishop!.position[2]).toBeCloseTo(4.6);
     expect(byId.gate!.zone).toBe("gate"); expect(byId.queen!.zone).toBe("queen"); expect(byId.rook!.zone).toBe("piece");
     const poses = handle.poses();
     for (const key of ["court:phone", "court:desktop", "sky:phone", "sky:desktop", "object:queen:phone", "object:rook:desktop", "object:mailbox:phone"]) expect(poses[key]).toBeDefined();

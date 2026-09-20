@@ -1,12 +1,12 @@
 import * as THREE from "three";
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
-import type { HarbourReadingLike } from "../flat/CourtFlat.tsx";
-import { createCourtCamera, type CourtCamera, type CourtCameraMode } from "../camera/courtCamera.ts";
+import { createCourtCamera, type CourtCamera } from "../camera/courtCamera.ts";
+import { COURT_ANCHOR_IDS, COURT_FOV, type CourtAnchor, type CourtMode, type CourtPose } from "../camera/poses.ts";
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
 import { createGround } from "./ground.ts";
 import { configureHarbourRenderer, createLightRig } from "./lightRig.ts";
-import { EMPTY_PLACE, PLACES, SCENE_DRESSING, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type Pose, type Vec3 } from "./place.ts";
+import { EMPTY_PLACE, PLACES, SCENE_DRESSING, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlaceReading, type Vec3 } from "./place.ts";
 import type { RenderTier } from "./quality.ts";
 
 /** What a pointer landed on. */
@@ -32,23 +32,31 @@ export type HarbourCallbacks = {
   /** Defaults: the registered court, the theme's scene dressing, no reading. */
   place?: Place;
   dressing?: PlaceDressing;
-  reading?: HarbourReadingLike | null;
+  reading?: PlaceReading | null;
   composition?: Composition;
 };
 
+/** A phone's portrait frame takes a wider field so the Queen and her flagstone fit at a friendly distance. */
+export const PHONE_FOV = 52;
+export const fovFor = (composition: Composition): number => (composition === "phone" ? PHONE_FOV : COURT_FOV);
+const isCourtAnchor = (id: string | undefined): id is CourtAnchor => (COURT_ANCHOR_IDS as readonly string[]).includes(id ?? "");
+
 export type HarbourRuntime = {
-  go: (mode: CourtCameraMode, anchor?: string) => void;
-  setReading: (reading: HarbourReadingLike | null) => void;
+  /** Fly to a mode; `anchor` is one of `poses.ts`'s named anchors or any anchor the place exposes. */
+  go: (mode: CourtMode, anchor?: string) => void;
+  setReading: (reading: PlaceReading | null) => void;
   /** Keyboard: arrows orbit, +/− zoom. */
   gesture: (input: { kind: "orbit"; dx: number; dy: number } | { kind: "zoom"; delta: number }) => void;
   /** A tool is open in front of the court: no breathing, the strip only redraws on demand. */
   setToolOpen: (open: boolean) => void;
   /** The place's idle animation (the Queen's breath). Off by default for an empty island. */
   setBreathing: (on: boolean) => void;
+  /** Something else that moves each animated frame (the Queen's breath); returns the way to stop it. */
+  addAnimator: (animate: (t: number, dt: number) => void) => () => void;
   /** A return record's camera. */
   restore: (position: Vec3) => void;
   camera: () => Vec3;
-  pose: () => Pose;
+  pose: () => CourtPose;
   place: () => PlaceHandle;
   dispose: () => void;
 };
@@ -86,7 +94,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   host.dataset.renderer = lease.active ? "active" : "suspended";
   host.dataset.harbourTier = tier;
 
-  const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 220);
+  const camera = new THREE.PerspectiveCamera(fovFor(composition), 1, 0.1, 220);
+  const animators = new Set<(t: number, dt: number) => void>();
   const rig = createLightRig(scene, dressing.light, tier);
   const ground = createGround(scene, dressing, tier);
   const invalidate = () => { if (!disposed) { dirty = true; schedule(); } };
@@ -95,7 +104,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   let handle: PlaceHandle;
   try { handle = activePlace.build(scene, dressing, callbacks.reading ?? null, tier, { composition, signal: abort.signal, invalidate }); }
   catch { handle = EMPTY_PLACE.build(scene, dressing, null, tier, { composition, signal: abort.signal, invalidate }); }
-  const court: CourtCamera = createCourtCamera({ camera, composition, reduced: reduced.matches, poses: () => handle.poses(), anchors: () => handle.anchors() });
+  const court: CourtCamera = createCourtCamera({ camera, composition, reduced: reduced.matches, fov: fovFor(composition) });
   court.go("court");
 
   const raycaster = new THREE.Raycaster();
@@ -160,15 +169,20 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if (bounds.width < 1 || bounds.height < 1) return;
     camera.updateMatrixWorld(); scene.updateMatrixWorld();
     const rects: ProjectedRect[] = [];
+    const anchors = handle.anchors();
     for (const region of handle.regions()) {
-      box.makeEmpty();
-      for (const object of region.objects) box.expandByObject(object);
+      if (region.box) box.copy(region.box);
+      else { box.makeEmpty(); for (const object of region.objects ?? []) box.expandByObject(object); }
       if (box.isEmpty()) continue;
       const corners = [0, 1, 2, 3, 4, 5, 6, 7].map(i => new THREE.Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z));
       const rect = rectOf(corners, bounds);
-      if (rect) rects.push({ id: region.id, kind: "region", group: region.group, label: region.label, ...rect });
+      if (!rect) continue;
+      // An anchor with the same id lends the region its door and its words: one twin per thing.
+      const anchor = anchors.find(a => a.id === region.id);
+      rects.push({ id: region.id, kind: "region", group: region.group, label: anchor?.label ?? region.label, door: anchor?.door, ...rect });
     }
-    for (const anchor of handle.anchors()) {
+    for (const anchor of anchors) {
+      if (rects.some(r => r.id === anchor.id)) continue;
       const [x, y, z] = anchor.position;
       const rect = rectOf([new THREE.Vector3(x, y + 0.6, z)], bounds);
       if (rect) rects.push({ id: anchor.id, kind: "anchor", group: anchor.zone, label: anchor.label, door: anchor.door, ...rect });
@@ -201,8 +215,14 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const moving = court.tick(dt);
     const policy = harbourFramePolicy({ reduced: reduced.matches, moving, breathing, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen });
     intervalMs = policy.intervalMs;
-    if (policy.animate) { handle.animate((now - mountedAt) / 1000, lastAnimated ? Math.min((now - lastAnimated) / 1000, 0.1) : 0); lastAnimated = now; }
-    if (policy.render) { render(); lastPaint = now; dirty = false; }
+    let animated = false;
+    if (policy.animate && pointers.size === 0) {
+      const t = (now - mountedAt) / 1000, adt = lastAnimated ? Math.min((now - lastAnimated) / 1000, 0.1) : 0;
+      animated = handle.animate(t, adt) === true || animators.size > 0;
+      for (const animate of animators) animate(t, adt);
+      lastAnimated = now;
+    }
+    if (policy.render || animated) { render(); lastPaint = now; dirty = false; }
     if (policy.schedule) schedule();
   }
 
@@ -210,9 +230,10 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const { width, height } = host.getBoundingClientRect();
     if (width < 1 || height < 1 || !lease.active) return;
     const next: Composition = width < 720 ? "phone" : "desktop";
-    if (next !== composition) { composition = next; court.setComposition(next); }
+    if (next !== composition) { composition = next; camera.fov = fovFor(next); court.setFov(camera.fov); court.setComposition(next); }
     renderer.setSize(width, height, false);
     camera.aspect = width / height; camera.updateProjectionMatrix();
+    court.setAspect(camera.aspect);
     dirty = true;
     render(); schedule();
   }
@@ -272,11 +293,21 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   resize(); callbacks.onReady();
 
   return {
-    go(mode, anchor) { court.setReduced(reduced.matches); court.go(mode, anchor); moved(); },
+    go(mode, anchor) {
+      court.setReduced(reduced.matches);
+      if (mode !== "object" || isCourtAnchor(anchor)) court.go(mode, isCourtAnchor(anchor) ? anchor : undefined);
+      else {
+        const found = handle.anchors().find(a => a.id === anchor);
+        if (found) court.goTo({ target: [found.position[0], Math.max(0.6, found.position[1]), found.position[2]] });
+        else court.go("object");
+      }
+      moved();
+    },
     setReading(reading) { handle.update(reading); dirty = true; render(); schedule(); },
     gesture(input) { court.setReduced(reduced.matches); if (input.kind === "orbit") court.drag(input.dx, input.dy); else court.zoom(input.delta); moved(); },
     setToolOpen(open) { toolOpen = open; schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
+    addAnimator(animate) { animators.add(animate); schedule(); return () => { animators.delete(animate); }; },
     restore(position) { court.restore(position); dirty = true; render(); schedule(); },
     camera: () => camera.position.toArray() as [number, number, number],
     pose: () => court.pose(),

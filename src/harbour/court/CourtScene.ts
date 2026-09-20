@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { FundPulseFreshness } from "../../core/fundPulse.ts";
 import type { HouseCondition } from "../../core/houseCondition.ts";
-import type { Anchor, Place, PlaceHandle, Pose, Region } from "../scene/place.ts";
+import type { Anchor, Place, PlaceHandle, Pose, Region, Vec3 } from "../scene/place.ts";
 import { courtDressingFrom, type CourtDressing, type CourtProp } from "./dressing.ts";
 import { EngravedPlate, engravedWords, plateFinish, seeded, type PlateFinish } from "./engraved.ts";
 import { createMailbox, slipLines } from "./mailbox.ts";
@@ -81,8 +81,10 @@ export function readCourtReading(value: unknown): CourtReading {
 export const EMPTY_COURT_READING: CourtReading = { everyday: null, prepare: { cents: null }, protect: { cents: null }, build: { cents: null }, next: null, noticed: null, slip: [], condition: null, freshness: "current", partner: null };
 
 export type CourtHandle = PlaceHandle & {
-  /** The Queen's spot: writer B's `queenPlace` seats her here. Replaces any previous occupant. */
-  attachQueen(object: THREE.Object3D): void;
+  /** Accepts any reading-shaped value (`readCourtReading` narrows it); missing parts read as "—". */
+  update(value: unknown): void;
+  /** The Queen's spot: writer B's `queenPlace` seats her here. Replaces any previous occupant. Her touch regions, when given, replace the coarse "queen" region for the twins. */
+  attachQueen(object: THREE.Object3D, regions?: () => Region[]): void;
   detachQueen(): THREE.Object3D | null;
   pieces: CourtPieces;
   /** Resolves when the three pieces have landed or failed. */
@@ -117,7 +119,7 @@ export function courtPoses(anchors: readonly Anchor[]): Record<string, Pose> {
     "sky:desktop": { target: [0, 0, 0.4], r: 21, theta: 0.3, phi: 0.5 },
   };
   for (const anchor of anchors) {
-    const { x, y, z } = anchor.position;
+    const [x, y, z] = anchor.position;
     const theta = Math.atan2(x, z + 9) * 0.6;
     const close = anchor.zone === "queen" ? 5.2 : anchor.zone === "gate" ? 5.5 : 4.2;
     poses[`object:${anchor.id}:phone`] = { target: [x, Math.max(0.6, y * 0.8), z], r: close, theta, phi: 1.05 };
@@ -222,6 +224,8 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   const sundial = track(createSundial(dressing)); sundial.group.position.set(...COURT_LAYOUT.sundial); group.add(sundial.group);
   const mailbox = track(createMailbox(dressing)); mailbox.group.position.set(...COURT_LAYOUT.mailbox); group.add(mailbox.group);
   if (!full) [sundial.group, mailbox.group].forEach((g) => g.traverse((node) => { node.castShadow = false; }));
+  // A raycast resolves a court object through `userData.anchor` (scene/runtime.ts).
+  sundial.group.userData.anchor = "sundial"; mailbox.group.userData.anchor = "mailbox";
 
   // ── The gate: two posts, two rails, a low arch ──────────────────────────────
   const [gx, , gz] = COURT_LAYOUT.gate;
@@ -233,10 +237,11 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     placed(new THREE.SphereGeometry(0.1, 10, 8), gx + 1.05, 1.58, gz),
   ], mat(dressing.gate.accent, { roughness: 0.4, metalness: dressing.theme === "classic" ? 0.5 : 0.1 })));
   track(gatePosts.geometry); track(gateRails.geometry); track(gateArch.geometry);
+  for (const part of [gatePosts, gateRails, gateArch]) part.userData.anchor = "gate";
   group.add(gatePosts, gateRails, gateArch);
 
   // ── Hercules, asleep: a porcelain loaf ──────────────────────────────────────
-  const hercules = new THREE.Group(); hercules.name = "hercules"; hercules.position.set(...COURT_LAYOUT.hercules); hercules.rotation.y = -0.5; group.add(hercules);
+  const hercules = new THREE.Group(); hercules.name = "hercules"; hercules.position.set(...COURT_LAYOUT.hercules); hercules.rotation.y = -0.5; hercules.userData.anchor = "hercules"; group.add(hercules);
   const porcelain = mat(dressing.porcelain, { roughness: 0.35 });
   const pink = mat(dressing.pink, { roughness: 0.6 });
   const body = shadowed(new THREE.Mesh(track(new THREE.SphereGeometry(0.3, 18, 12)), porcelain)); body.scale.set(1.3, 0.62, 0.92); body.position.y = 0.19; hercules.add(body);
@@ -286,24 +291,28 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
 
   // ── Anchors, regions, poses ─────────────────────────────────────────────────
   const [sx, , sz] = COURT_LAYOUT.sundial, [mx, , mz] = COURT_LAYOUT.mailbox, [hx, , hz] = COURT_LAYOUT.hercules;
+  const at = (x: number, y: number, z: number): Vec3 => [x, y, z];
+  const box = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number) => new THREE.Box3(new THREE.Vector3(x0, y0, z0), new THREE.Vector3(x1, y1, z1));
   const anchorList = (): Anchor[] => [
-    { id: "queen", position: new THREE.Vector3(0, 1.1, 0), zone: "queen", label: "The Queen — Everyday", target: "queen" },
+    { id: "queen", position: at(0, 1.1, 0), zone: "queen", label: "The Queen — Everyday", door: { target: "queen" } },
+    { id: "flagstone", position: at(fx, 0.1, fz), zone: "queen", label: "The Everyday flagstone" },
     ...pieces.anchors(),
-    { id: "sundial", position: new THREE.Vector3(sx, 1.0, sz), zone: "prop", label: "The sundial — next dated commitment" },
-    { id: "mailbox", position: new THREE.Vector3(mx, 1.2, mz), zone: "prop", label: "The mailbox — what she noticed" },
-    { id: "slip", position: new THREE.Vector3(mx + 0.55, 0.72, mz + 0.13), zone: "prop", label: "Since you were here" },
-    { id: "hercules", position: new THREE.Vector3(hx, 0.3, hz), zone: "prop", label: "Hercules, asleep", target: "hercules" },
-    { id: "gate", position: new THREE.Vector3(gx, 0.9, gz), zone: "gate", label: "The court gate" },
+    { id: "sundial", position: at(sx, 1.0, sz), zone: "prop", label: "The sundial — next dated commitment" },
+    { id: "mailbox", position: at(mx, 1.2, mz), zone: "prop", label: "The mailbox — what she noticed" },
+    { id: "slip", position: at(mx + 0.55, 0.72, mz + 0.13), zone: "prop", label: "Since you were here" },
+    { id: "hercules", position: at(hx, 0.3, hz), zone: "prop", label: "Hercules, asleep", door: { target: "hercules" } },
+    { id: "gate", position: at(gx, 0.9, gz), zone: "gate", label: "The court gate" },
   ];
+  let queenRegions: (() => Region[]) | null = null;
   const regionList = (): Region[] => [
-    { id: "queen", box: new THREE.Box3(new THREE.Vector3(-1.15, 0, -1.15), new THREE.Vector3(1.15, 2.4, 1.15)) },
-    { id: "flagstone", box: new THREE.Box3(new THREE.Vector3(fx - 0.85, 0, fz - 0.5), new THREE.Vector3(fx + 0.85, 0.12, fz + 0.5)) },
+    ...(queenRegions ? queenRegions() : [{ id: "queen", group: "queen", label: "The Queen", box: box(-1.15, 0, -1.15, 1.15, 2.4, 1.15) }]),
+    { id: "flagstone", group: "court", label: "The Everyday flagstone", box: box(fx - 0.85, 0, fz - 0.5, fx + 0.85, 0.12, fz + 0.5) },
     ...pieces.regions(),
-    { id: "sundial", box: new THREE.Box3(new THREE.Vector3(sx - 0.7, 0, sz - 0.7), new THREE.Vector3(sx + 0.7, 1.5, sz + 0.7)) },
-    { id: "mailbox", box: new THREE.Box3(new THREE.Vector3(mx - 0.3, 0, mz - 0.3), new THREE.Vector3(mx + 0.3, 1.5, mz + 0.3)) },
-    { id: "slip", box: new THREE.Box3(new THREE.Vector3(mx + 0.2, 0.4, mz - 0.1), new THREE.Vector3(mx + 0.9, 1.0, mz + 0.3)) },
-    { id: "hercules", box: new THREE.Box3(new THREE.Vector3(hx - 0.7, 0, hz - 0.5), new THREE.Vector3(hx + 0.7, 0.55, hz + 0.5)) },
-    { id: "gate", box: new THREE.Box3(new THREE.Vector3(gx - 1.2, 0, gz - 0.2), new THREE.Vector3(gx + 1.2, 1.7, gz + 0.2)) },
+    { id: "sundial", group: "court", label: "The sundial", box: box(sx - 0.7, 0, sz - 0.7, sx + 0.7, 1.5, sz + 0.7) },
+    { id: "mailbox", group: "court", label: "The mailbox", box: box(mx - 0.3, 0, mz - 0.3, mx + 0.3, 1.5, mz + 0.3) },
+    { id: "slip", group: "court", label: "Since you were here", box: box(mx + 0.2, 0.4, mz - 0.1, mx + 0.9, 1.0, mz + 0.3) },
+    { id: "hercules", group: "court", label: "Hercules, asleep", box: box(hx - 0.7, 0, hz - 0.5, hx + 0.7, 0.55, hz + 0.5) },
+    { id: "gate", group: "court", label: "The court gate", box: box(gx - 1.2, 0, gz - 0.2, gx + 1.2, 1.7, gz + 0.2) },
   ];
 
   // ── Reading → objects ───────────────────────────────────────────────────────
@@ -352,8 +361,8 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     anchors: anchorList,
     poses: () => courtPoses(anchorList()),
     regions: regionList,
-    attachQueen(object) { queenSlot.clear(); queenSlot.add(object); pendingRedraw = true; },
-    detachQueen() { const first = queenSlot.children[0] ?? null; if (first) queenSlot.remove(first); return first; },
+    attachQueen(object, regions) { queenSlot.clear(); queenSlot.add(object); queenRegions = regions ?? null; pendingRedraw = true; },
+    detachQueen() { const first = queenSlot.children[0] ?? null; if (first) queenSlot.remove(first); queenRegions = null; return first; },
     pieces,
     ready: pieces.ready,
     words: () => ({ everyday: everyday.words, rook: pieces.slots.rook.plate.words, bishop: pieces.slots.bishop.plate.words, knight: pieces.slots.knight.plate.words, tag: tagWords, slip: [...slipWords], flagUp: mailbox.flagUp() }),
@@ -374,8 +383,8 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
 /** The registry entry: `PLACES.court`. Accepts writer B's `HarbourReading` and any `CourtDressing`/ThemeId. */
 export const courtPlace: Place = {
   id: "court",
-  build(scene, dressing, reading, quality) {
-    return createCourt(scene, { dressing: courtDressingFrom(dressing), reading: readCourtReading(reading), quality });
+  build(scene, dressing, reading, quality, context) {
+    return createCourt(scene, { dressing: courtDressingFrom(dressing), reading: readCourtReading(reading), quality, signal: context?.signal, onLanded: () => context?.invalidate() });
   },
 };
 
