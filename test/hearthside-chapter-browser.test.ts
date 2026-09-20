@@ -32,7 +32,9 @@ describe('Chapter controls in the actual browser components', () => {
     await move.getByRole('button', { name: 'Resume my participation' }).click(); await move.getByRole('button', { name: 'Mark done' }).click();
     await page.getByLabel('Offer a small Move').fill('Private unsaved text from this household'); await page.getByLabel('What carries forward').fill('Only for this Chapter');
     await page.evaluate(() => { const h = window.chapterProof.household(); h.householdId = 'another-synthetic-house'; window.chapterProof.replace(h); });
-    expect(await page.getByLabel('Offer a small Move').inputValue()).toBe(''); expect(await page.getByLabel('What carries forward').inputValue()).toBe(''); expect(errors).toEqual([]);
+    await expect.poll(() => page.getByLabel('Offer a small Move').inputValue()).toBe('');
+    await expect.poll(() => page.getByLabel('What carries forward').inputValue()).toBe('');
+    expect(errors).toEqual([]);
   });
   it('attaches an existing financial receipt without creating any financial activity', async () => {
     await page.evaluate(() => window.chapterProof.funded()); const before = await page.evaluate(() => window.chapterProof.household());
