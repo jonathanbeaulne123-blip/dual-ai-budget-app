@@ -7,6 +7,8 @@ import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
 import { createGround } from "./ground.ts";
 import { configureHarbourRenderer, createLightRig } from "./lightRig.ts";
 import { EMPTY_PLACE, PLACES, SCENE_DRESSING, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlaceReading, type Vec3 } from "./place.ts";
+import { travelAt, travelPlan, type TravelPlan } from "./travel.ts";
+import type { HarbourPlaceId } from "../flag.ts";
 import type { RenderTier } from "./quality.ts";
 
 /** What a pointer landed on. */
@@ -61,7 +63,34 @@ export type HarbourRuntime = {
   camera: () => Vec3;
   pose: () => CourtPose;
   place: () => PlaceHandle;
+  /** Which place is standing now. */
+  placeId: () => HarbourPlaceId;
+  /**
+   * Go into another place of this room (BUILD_PLAN_SLICE2 §1). The place is
+   * built if it is not standing yet, both places live for the length of the
+   * journey, the roof and the lid move through `travelPlan`, and the one you
+   * left is disposed when the travel ends. Returns the plan it is following.
+   */
+  enter: (place: HarbourPlaceId, options?: { from?: HarbourPlaceId; reduced?: boolean }) => TravelPlan;
+  /** Whether a journey is in flight (both places are mounted). */
+  traveling: () => boolean;
   dispose: () => void;
+};
+
+/** A place's handle may open its roof or its lid, and a cellar may scrub its rail. Feature-detected, never required. */
+type Movable = { setRoof?: (k: number) => void; setLid?: (k: number) => void; setScrub?: (index: number) => void };
+const roofOf = (handle: PlaceHandle): ((k: number) => void) | null => {
+  const found = (handle as PlaceHandle & Movable).setRoof;
+  return typeof found === "function" ? found.bind(handle) : null;
+};
+const lidOf = (handle: PlaceHandle): ((k: number) => void) | null => {
+  const found = (handle as PlaceHandle & Movable).setLid;
+  return typeof found === "function" ? found.bind(handle) : null;
+};
+/** The cellar's day scrub, when the standing place has one. */
+export const scrubOf = (handle: PlaceHandle): ((index: number) => void) | null => {
+  const found = (handle as PlaceHandle & Movable).setScrub;
+  return typeof found === "function" ? found.bind(handle) : null;
 };
 
 const TAP_PIXELS = 8, TAP_MS = 350, MIN_TWIN = 44;
@@ -102,11 +131,47 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const rig = createLightRig(scene, dressing.light, tier);
   const ground = createGround(scene, dressing, tier);
   const invalidate = () => { if (!disposed) { dirty = true; schedule(); } };
+  let reading: PlaceReading | null = callbacks.reading ?? null;
+  /** Every place standing right now: one while at rest, two for the length of a journey. */
+  const live = new Map<HarbourPlaceId, { handle: PlaceHandle; abort: AbortController }>();
+
+  function raise(place: Place): PlaceHandle {
+    const standing = live.get(place.id);
+    if (standing) return standing.handle;
+    const control = new AbortController();
+    abort.signal.addEventListener("abort", () => control.abort(), { once: true });
+    let built: PlaceHandle;
+    try { built = place.build(scene, dressing, reading, tier, { composition, signal: control.signal, invalidate }); }
+    catch { built = EMPTY_PLACE.build(scene, dressing, null, tier, { composition, signal: control.signal, invalidate }); }
+    live.set(place.id, { handle: built, abort: control });
+    return built;
+  }
+  function pull(id: HarbourPlaceId): void {
+    const standing = live.get(id);
+    if (!standing) return;
+    live.delete(id);
+    standing.abort.abort();
+    standing.handle.dispose();
+  }
+
   const activePlace = callbacks.place ?? PLACES.court ?? EMPTY_PLACE;
   breathing = activePlace !== EMPTY_PLACE;
-  let handle: PlaceHandle;
-  try { handle = activePlace.build(scene, dressing, callbacks.reading ?? null, tier, { composition, signal: abort.signal, invalidate }); }
-  catch { handle = EMPTY_PLACE.build(scene, dressing, null, tier, { composition, signal: abort.signal, invalidate }); }
+  let placeId: HarbourPlaceId = activePlace.id;
+  let handle: PlaceHandle = raise(activePlace);
+  /**
+   * The journey in flight: the plan, the place being left behind, and the
+   * frame clock it started on — taken from the first frame that runs, so the
+   * elapsed time is always read on the same clock the frames arrive on.
+   */
+  let journey: { plan: TravelPlan; startedAt: number | null; from: HarbourPlaceId } | null = null;
+
+  /** Put the roof and the lid where a frame of the journey says they are; a handle without one simply has none. */
+  function settle(roof: number, lid: number): void {
+    for (const { handle: each } of live.values()) {
+      roofOf(each)?.(roof);
+      lidOf(each)?.(lid);
+    }
+  }
   const court: CourtCamera = createCourtCamera({ camera, composition, reduced: reduced.matches, fov: fovFor(composition) });
   court.go("court");
 
@@ -215,7 +280,16 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if (intervalMs > 0 && now - lastPaint < intervalMs) { schedule(); return; }
     const dt = Math.min((now - previous) / 1000, 0.08); previous = now;
     court.setReduced(reduced.matches);
-    const moving = court.tick(dt);
+    const easing = court.tick(dt);
+    // A journey is the camera moving: it keeps frames flowing at the camera's rate and ends by dropping the place it left.
+    if (journey) {
+      if (journey.startedAt === null) journey.startedAt = now;
+      const frame = travelAt(journey.plan, now - journey.startedAt);
+      settle(frame.roof, frame.lid);
+      dirty = true;
+      if (frame.done) { if (journey.from !== placeId) pull(journey.from); journey = null; }
+    }
+    const moving = easing || journey !== null;
     const policy = harbourFramePolicy({ reduced: reduced.matches, moving, breathing, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen });
     intervalMs = policy.intervalMs;
     let animated = false;
@@ -306,7 +380,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       }
       moved();
     },
-    setReading(reading) { handle.update(reading); dirty = true; render(); schedule(); },
+    setReading(next) { reading = next; for (const { handle: each } of live.values()) each.update(next); dirty = true; render(); schedule(); },
     look(next) { court.setReduced(reduced.matches); court.goTo(next); moved(); },
     gesture(input) { court.setReduced(reduced.matches); if (input.kind === "orbit") court.drag(input.dx, input.dy); else court.zoom(input.delta); moved(); },
     setToolOpen(open) { toolOpen = open; schedule(); },
@@ -316,13 +390,40 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     camera: () => camera.position.toArray() as [number, number, number],
     pose: () => court.pose(),
     place: () => handle,
+    placeId: () => placeId,
+    traveling: () => journey !== null,
+    enter(next, options = {}) {
+      const from = options.from ?? placeId;
+      const cut = options.reduced ?? reduced.matches;
+      const plan = travelPlan(from, next, cut);
+      const place = PLACES[next];
+      if (!place) return plan;
+      // The place being entered is raised first, so both stand for the length of the journey.
+      handle = raise(place);
+      placeId = next;
+      breathing = place !== EMPTY_PLACE;
+      court.setReduced(reduced.matches);
+      court.go(plan.camera.mode, isCourtAnchor(plan.camera.anchor ?? undefined) ? plan.camera.anchor as CourtAnchor : undefined);
+      if (plan.cut) {
+        settle(plan.roof[1], plan.lid[1]);
+        if (from !== next) pull(from);
+        journey = null;
+      } else {
+        settle(plan.roof[0], plan.lid[0]);
+        journey = { plan, startedAt: null, from };
+      }
+      projectionSignature = "";
+      moved();
+      return plan;
+    },
     dispose() {
       disposed = true; abort.abort();
       lease.cancelFrame(frame);
       host.removeEventListener("pointerdown", onPointerDown); host.removeEventListener("pointermove", onPointerMove); host.removeEventListener("pointerup", onPointerEnd); host.removeEventListener("pointercancel", onPointerEnd); host.removeEventListener("wheel", onWheel);
       observer?.disconnect(); intersection?.disconnect();
       document.removeEventListener("visibilitychange", visibility); reduced.removeEventListener("change", onReduced); removeLost();
-      handle.dispose(); ground.dispose(); rig.dispose();
+      for (const id of [...live.keys()]) pull(id);
+      ground.dispose(); rig.dispose();
       lease.release();
       host.style.backgroundImage = "";
       delete host.dataset.renderer; delete host.dataset.houseCamera;

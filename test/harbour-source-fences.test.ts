@@ -39,6 +39,23 @@ describe("src/harbour source fences", () => {
     for (const expected of ["flag.ts", "HarbourWorld.tsx", "nav/arrival.ts", "nav/Compass.tsx", "nav/QuickSheet.tsx", "scene/place.ts", "scene/runtime.ts", "court/CourtScene.ts", "court/CourtTwins.tsx", "flat/CourtFlat.tsx", "data/reading.ts"]) expect(names).toContain(expected);
   });
 
+  it("has slice 2's three places, each its own directory and its own chunk", () => {
+    const names = files.map((f) => relative(harbour, f).replace(/\\/g, "/"));
+    for (const expected of ["scene/travel.ts", "tower/TowerScene.ts", "cellar/CellarScene.ts", "flat/PlaceFlat.tsx"]) expect(names).toContain(expected);
+    const shell = readFileSync(join(harbour, "HarbourWorld.tsx"), "utf8");
+    // Lazy, one import each: standing in the Court downloads neither the tower nor the cellar.
+    expect(shell).toMatch(/import\("\.\/tower\/TowerScene\.ts"\)/);
+    expect(shell).toMatch(/import\("\.\/cellar\/CellarScene\.ts"\)/);
+    expect(shell).not.toMatch(/^import .*(tower|cellar)\/.*Scene\.ts/m);
+  });
+
+  it("keeps every place's directory inside the same fences", () => {
+    const dirs = ["court", "tower", "cellar", "scene", "flat", "nav", "data", "camera", "assets"];
+    const seen = new Set(files.map((f) => relative(harbour, f).replace(/\\/g, "/").split("/")[0]).filter((part) => part && !part.endsWith(".ts") && !part.endsWith(".tsx")));
+    for (const dir of ["court", "tower", "cellar", "scene", "flat"]) expect([...seen]).toContain(dir);
+    for (const name of [...seen]) expect(dirs).toContain(name);
+  });
+
   it("never imports commands, the kitchen, the ledger, storage, continuity or the api", () => {
     const offences: string[] = [];
     for (const file of files) {
@@ -67,6 +84,9 @@ describe("src/harbour source fences", () => {
     expect(offences).toEqual([]);
     const money = files.filter((file) => /postEntry|postShift|postVisit|acceptHouseholdWrite|allocateHouseholdFundSurplus|commitCommand/.test(readFileSync(file, "utf8")));
     expect(money).toEqual([]);
+    // Scrubbing the cellar's rail is a reading: no place may write a hypothetical back to the books.
+    const writers = files.filter((file) => /fundWalkWith\s*\(|deferObligation|hypothetical:/.test(readFileSync(file, "utf8")));
+    expect(writers).toEqual([]);
   });
 
   it("keeps the App seams behind the flag", () => {

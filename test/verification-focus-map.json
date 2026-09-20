@@ -1365,6 +1365,7 @@
         "src/harbour/assets/manifest.ts",
         "src/harbour/camera/courtCamera.ts",
         "src/harbour/camera/poses.ts",
+        "src/harbour/cellar/CellarScene.ts",
         "src/harbour/court/CourtScene.ts",
         "src/harbour/court/CourtTwins.tsx",
         "src/harbour/court/dressing.ts",
@@ -1378,6 +1379,7 @@
         "src/harbour/data/useHarbourReading.ts",
         "src/harbour/flag.ts",
         "src/harbour/flat/CourtFlat.tsx",
+        "src/harbour/flat/PlaceFlat.tsx",
         "src/harbour/harbour.css",
         "src/harbour/nav/Compass.tsx",
         "src/harbour/nav/QuickSheet.tsx",
@@ -1390,9 +1392,12 @@
         "src/harbour/scene/place.ts",
         "src/harbour/scene/quality.ts",
         "src/harbour/scene/runtime.ts",
+        "src/harbour/scene/travel.ts",
+        "src/harbour/tower/TowerScene.ts",
         "src/house/world/rendererOwner.ts"
       ],
       "tests": [
+        "test/app-startup-p1.test.ts",
         "test/harbour-arrival.test.ts",
         "test/harbour-assets.test.ts",
         "test/harbour-camera-poses.test.ts",
@@ -1403,13 +1408,13 @@
         "test/harbour-quick-sheet-ui.test.ts",
         "test/harbour-reading.test.ts",
         "test/harbour-source-fences.test.ts",
+        "test/harbour-travel.test.ts",
         "test/harbour-world-frame.test.ts",
-        "test/house-world-camera.test.ts",
         "test/house-shell-ui.test.ts",
-        "test/renderer-owner.test.ts",
-        "test/app-startup-p1.test.ts"
+        "test/house-world-camera.test.ts",
+        "test/renderer-owner.test.ts"
       ],
-      "reason": "Little Harbour slice 1 (the Court): the flag and arrival rule keep the unchanged App behind VITE_HEARTH_HARBOUR; the reading is pure over existing selectors and freezes with the supported-interpretation pattern; the Queen's touch regions cover every node name in both GLBs and the grammar is a pure table; camera poses keep the Everyday flagstone in every phone frame; the frame policy, ground and runtime run on the rendererOwner mock; the assets are hash- and size-fenced; the compass and quick sheet keep every tool one tap away; the source fences keep src/harbour out of commands, kitchen, ledger, storage, continuity and api; the house runtime and full-App startup are untouched"
+      "reason": "Little Harbour slice 1 (the Court): the flag and arrival rule keep the unchanged App behind VITE_HEARTH_HARBOUR; the reading is pure over existing selectors and freezes with the supported-interpretation pattern; the Queen's touch regions cover every node name in both GLBs and the grammar is a pure table; camera poses keep the Everyday flagstone in every phone frame; the frame policy, ground and runtime run on the rendererOwner mock; the assets are hash- and size-fenced; the compass and quick sheet keep every tool one tap away; the source fences keep src/harbour out of commands, kitchen, ledger, storage, continuity and api; the house runtime and full-App startup are untouched; slice 2 gives the room three places by level, the tower, cellar and cistern readings stay pure over the same shipped selectors, and the travel plan, the per-place camera slots and the reduced-motion cut are proved without a renderer"
     }
   ]
 }
