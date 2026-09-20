@@ -89,7 +89,7 @@ export function createWorldFrameScheduler(native: NativeFrames = {
 const worldFrames = createWorldFrameScheduler();
 let sharedState: SharedState | null = null;
 
-const worldEnabled = () => import.meta.env.VITE_HEARTH_HOUSE_WORLD === "1";
+const worldEnabled = () => import.meta.env.VITE_HEARTH_HOUSE_WORLD === "1" || import.meta.env.VITE_HEARTH_HARBOUR === "1";
 const makeRenderer = (options: WorldRendererOptions) => (options.rendererFactory ?? ((parameters) => new THREE.WebGLRenderer(parameters)))(options.parameters);
 
 function attachListeners(state: LeaseState, canvas: HTMLCanvasElement) {
