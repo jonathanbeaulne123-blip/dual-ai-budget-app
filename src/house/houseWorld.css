@@ -63,7 +63,7 @@
 @media(min-width:720px){.app[data-house-world] .nav[data-house-navigation] { position:fixed; left:auto; right:20px; bottom:16px; width:auto; border-radius:28px; background:var(--card); box-shadow:0 4px 20px #1113; }.app[data-house-world] .nav[data-house-navigation] .house-nav-phone { display:none; }}
 @media(max-width:719px){
  .house-world__header { padding:12px 15px; gap:10px; }.house-world__header h1 { font-size:24px; }.house-world__header h1 span { display:block; font-size:13px; margin-top:4px; }.house-world__header button { max-width:118px; padding:6px 10px; font-size:11px; }
- .house-world__stage { height:calc(100dvh - 170px); min-height:360px; max-height:780px; }
+ .house-world__stage { height:clamp(340px,45dvh,480px); min-height:340px; max-height:480px; }
  .house-world__levels { top:12px; left:12px; right:12px; flex-direction:row; justify-content:space-between; padding:4px; border-radius:5px; }.house-world__levels button { font-size:10px; min-width:0; flex:1; text-align:center; padding:5px 3px; border-radius:3px; }.house-world__levels button span { display:none; }
  .house-world__walk { top:75px; right:12px; max-width:170px; }.house-world__walk button { min-height:38px; padding:5px 10px; font-size:10px; }
  .house-world__anchors button { max-width:155px; font-size:10px; padding:5px 9px; }.house-world__anchors .house-world__pin { display:none; }
