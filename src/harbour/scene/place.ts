@@ -134,7 +134,12 @@ export const SCENE_DRESSING: Readonly<Record<ThemeId, PlaceDressing>> = Object.f
   newfoundland: sceneDressingFrom(COURT_DRESSING.newfoundland),
 });
 
-/** Resolves a pose for the composition: `key@phone` wins over `key` on a phone, and so on. */
+/**
+ * Resolves a pose for the composition. **The convention is `key:composition`**
+ * — `court:phone`, `object:rook:desktop` — which is what every place's table
+ * is written in. `key@composition` is still accepted so an older table keeps
+ * working, and a bare `key` is the last resort.
+ */
 export function poseFor(poses: Record<PoseKey, Pose>, key: PoseKey, composition: Composition): Pose | undefined {
-  return poses[`${key}@${composition}`] ?? poses[key];
+  return poses[`${key}:${composition}`] ?? poses[`${key}@${composition}`] ?? poses[key];
 }

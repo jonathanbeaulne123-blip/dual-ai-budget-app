@@ -152,13 +152,12 @@ const PHONE_CELLAR: Pose = { target: [0, 0.95, -1.4], r: 6.4, theta: 0, phi: 1.2
 const DESKTOP_CELLAR: Pose = { target: [0, 0.9, -1.6], r: 7.6, theta: 0.26, phi: 1.18 };
 
 /**
- * Pose keys in both spellings the contract has been written in: `scene/place.ts`
- * resolves `key@phone` through `poseFor`, while the Court's own table uses
- * `key:phone`. A place that answers to both works under either shell.
+ * Pose keys in the one convention every place is written in,
+ * `<key>:<composition>`, with the bare key as the desktop fallback.
  */
 function composed(poses: Record<string, Pose>, key: string, phone: Pose, desktop: Pose): void {
-  poses[`${key}@phone`] = phone; poses[`${key}:phone`] = phone;
-  poses[`${key}@desktop`] = desktop; poses[`${key}:desktop`] = desktop;
+  poses[`${key}:phone`] = phone;
+  poses[`${key}:desktop`] = desktop;
   poses[key] = desktop;
 }
 

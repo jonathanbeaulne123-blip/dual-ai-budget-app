@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
+import { poseFor } from "../src/harbour/scene/place.ts";
 import { CELLAR_DRESSING, CELLAR_LIGHT, CELLAR_THEMES, cellarDressingFrom, cellarLightFor, shelfTrimWords } from "../src/harbour/cellar/dressing.ts";
 import { CELLAR_LAYOUT, cellarPlace, createCellar, physicalConditionOf, readCellarView, type CellarHandle } from "../src/harbour/cellar/CellarScene.ts";
 import { JAR_MIN_HEIGHT, JAR_RADIUS, createJar, isUmbrellaBankId, jarHeight, jarVisualFor, umbrellaAsset } from "../src/harbour/cellar/jars.ts";
@@ -290,7 +291,9 @@ describe("the Cellar place", () => {
     // Every touchable thing says words, not just a number.
     for (const anchor of anchors) expect(anchor.label).toMatch(/[A-Za-z]{3}/);
     const poses = handle.poses();
-    for (const key of ["cellar@phone", "cellar@desktop", "cellar:phone", "cellar:desktop", "object:stair@phone", "object:jar:bank/hydro@desktop"]) expect(poses[key]).toBeDefined();
+    for (const key of ["cellar:phone", "cellar:desktop", "object:stair:phone", "object:jar:bank/hydro:desktop"]) expect(poses[key]).toBeDefined();
+    expect(poses["cellar@phone"]).toBeUndefined();
+    expect(poseFor(poses, "cellar", "phone")).toEqual(poses["cellar:phone"]);
     const regions = handle.regions().map((r) => r.id);
     expect(regions).toEqual(expect.arrayContaining(["stair", "rail", "waterline", "jar:bank/rent", "scrub-back", "scrub-forward", "today"]));
     handle.dispose();

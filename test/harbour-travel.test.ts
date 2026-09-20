@@ -6,7 +6,7 @@ import {
   TRAVEL_BACK_MS, TRAVEL_UP_MS,
 } from "../src/harbour/scene/travel.ts";
 import { HARBOUR_PLACE_LEVELS, type HarbourPlaceId } from "../src/harbour/flag.ts";
-import { mountHarbourWorld, scrubOf, type HarbourRuntime } from "../src/harbour/scene/runtime.ts";
+import { mountHarbourWorld, scrubControls, scrubOf, type HarbourRuntime } from "../src/harbour/scene/runtime.ts";
 import { PLACES, registerPlace, type Place, type PlaceHandle } from "../src/harbour/scene/place.ts";
 
 /**
@@ -273,5 +273,69 @@ describe("the runtime's journey", () => {
     scrubOf(world.place())?.(11);
     expect(scrubbed).toBe(11);
     expect(scrubOf({ ...world.place(), setScrub: undefined } as unknown as PlaceHandle)).toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// The seams between the three places (slice-2 integration).
+
+describe("the seams between the places", () => {
+  const kept = { court: PLACES.court, tower: PLACES.tower, cellar: PLACES.cellar };
+  let world: HarbourRuntime | null = null;
+  beforeEach(() => {
+    vi.stubGlobal("matchMedia", () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
+    vi.stubGlobal("IntersectionObserver", class { observe() {} disconnect() {} });
+  });
+  afterEach(() => {
+    world?.dispose(); world = null;
+    document.body.innerHTML = "";
+    PLACES.court = kept.court; PLACES.tower = kept.tower; PLACES.cellar = kept.cellar;
+    vi.unstubAllGlobals();
+  });
+
+  it("adapts to the cellar's own scrub names, and to the shorter one", () => {
+    const base = { group: new THREE.Group(), update() {}, animate() {}, dispose() {}, anchors: () => [], poses: () => ({}), regions: () => [] } as PlaceHandle;
+    const moves: string[] = [];
+    let where = 5;
+    const cellar = { ...base, index: () => where, scrubTo: (i: number) => { where = i; moves.push(`to:${i}`); }, step: (d: number) => { where += d; moves.push(`step:${d}`); }, today: () => { where = 9; moves.push("today"); } } as PlaceHandle;
+    const controls = scrubControls(cellar, 9)!;
+    expect(controls).not.toBeNull();
+    controls.to(3); controls.step(1); controls.today();
+    expect(moves).toEqual(["to:3", "step:1", "today"]);
+    expect(controls.index()).toBe(9);
+
+    // A place that only says `setScrub` still gets a step and a today, from the index it reports.
+    const plain = { ...base, setScrub: (i: number) => { where = i; moves.push(`set:${i}`); } } as PlaceHandle;
+    const simple = scrubControls(plain, 12)!;
+    moves.length = 0;
+    simple.step(-1); simple.today();
+    expect(moves).toEqual(["set:11", "set:12"]);
+    // A place with no rail at all has no controls, and nothing to walk.
+    expect(scrubControls(base)).toBeNull();
+  });
+
+  it("frames a place that is not the Court through its own pose table", () => {
+    // Reduced motion so the camera cuts to its goal and the pose can be read at once.
+    vi.stubGlobal("matchMedia", () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    const court = registerPlace(probePlace("court"));
+    registerPlace({
+      id: "tower",
+      build(scene) {
+        const group = new THREE.Group(); scene.add(group);
+        return { group, update() {}, animate() {}, dispose() { scene.remove(group); },
+          anchors: () => [], regions: () => [],
+          poses: () => ({ "tower:desktop": { target: [0, 4, 0] as const, r: 3.5, theta: 0, phi: 1 } }) };
+      },
+    });
+    world = mountHarbourWorld(host(), "classic", "lite", { onReady: () => {}, onFailure: () => {}, place: court, composition: "desktop" });
+    const inCourt = world.pose();
+    world.enter("tower", { reduced: true });
+    const inTower = world.pose();
+    // The tower's own pose: up in the tower, and closer in than the court's diorama.
+    expect(inTower.target[1]).toBe(4);
+    expect(inTower.r).toBe(3.5);
+    expect(inTower.target[1]).toBeGreaterThan(inCourt.target[1]);
+    expect(inTower.r).toBeLessThan(inCourt.r);
   });
 });

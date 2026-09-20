@@ -6,7 +6,7 @@ import { COURT_ANCHOR_IDS, COURT_FOV, type CourtAnchor, type CourtMode, type Cou
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
 import { createGround } from "./ground.ts";
 import { configureHarbourRenderer, createLightRig } from "./lightRig.ts";
-import { EMPTY_PLACE, PLACES, SCENE_DRESSING, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlaceReading, type Vec3 } from "./place.ts";
+import { EMPTY_PLACE, PLACES, SCENE_DRESSING, poseFor, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlaceReading, type Vec3 } from "./place.ts";
 import { travelAt, travelPlan, type TravelPlan } from "./travel.ts";
 import type { HarbourPlaceId } from "../flag.ts";
 import type { RenderTier } from "./quality.ts";
@@ -32,6 +32,13 @@ export type HarbourCallbacks = {
   /** A tap, with where it landed in stage pixels. */
   onTap?: (hit: HarbourHit, at: { x: number; y: number }) => void;
   onGesture?: (gesture: HarbourGesture) => void;
+  /**
+   * A drag that began on the rail (or its water line): where the pointer is
+   * now, in stage pixels, and how wide the stage is. The cellar turns this
+   * into a day with its own `scrubIndex`; the runtime stays out of it. While
+   * such a drag is in flight the camera does not orbit.
+   */
+  onRailDrag?: (x: number, width: number) => void;
   /** Defaults: the registered court, the theme's scene dressing, no reading. */
   place?: Place;
   dressing?: PlaceDressing;
@@ -77,23 +84,69 @@ export type HarbourRuntime = {
   dispose: () => void;
 };
 
-/** A place's handle may open its roof or its lid, and a cellar may scrub its rail. Feature-detected, never required. */
-type Movable = { setRoof?: (k: number) => void; setLid?: (k: number) => void; setScrub?: (index: number) => void };
-const roofOf = (handle: PlaceHandle): ((k: number) => void) | null => {
-  const found = (handle as PlaceHandle & Movable).setRoof;
-  return typeof found === "function" ? found.bind(handle) : null;
+/**
+ * What a place's handle may also do, all feature-detected and none required.
+ * The tower lifts its roof; the Court lifts its own floor away as the cellar's
+ * lid; the cellar walks its rail through the month. Two spellings are accepted
+ * for the scrub so a place may say it either way (`scrubTo`/`step`/`today` is
+ * the cellar's own; `setScrub` is the shorter one the runtime first asked for).
+ */
+type Movable = {
+  setRoof?: (k: number) => void;
+  setLid?: (k: number) => void;
+  setScrub?: (index: number) => void;
+  scrubTo?: (index: number) => void;
+  step?: (delta: number) => void;
+  today?: () => void;
+  index?: () => number;
 };
-const lidOf = (handle: PlaceHandle): ((k: number) => void) | null => {
-  const found = (handle as PlaceHandle & Movable).setLid;
-  return typeof found === "function" ? found.bind(handle) : null;
+const methodOf = <K extends keyof Movable>(handle: PlaceHandle, name: K): NonNullable<Movable[K]> | null => {
+  const found = (handle as PlaceHandle & Movable)[name];
+  return typeof found === "function" ? (found as NonNullable<Movable[K]>).bind(handle) as NonNullable<Movable[K]> : null;
 };
-/** The cellar's day scrub, when the standing place has one. */
-export const scrubOf = (handle: PlaceHandle): ((index: number) => void) | null => {
-  const found = (handle as PlaceHandle & Movable).setScrub;
-  return typeof found === "function" ? found.bind(handle) : null;
+const roofOf = (handle: PlaceHandle): ((k: number) => void) | null => methodOf(handle, "setRoof");
+const lidOf = (handle: PlaceHandle): ((k: number) => void) | null => methodOf(handle, "setLid");
+
+/** The cellar's day scrub, under either spelling. */
+export const scrubOf = (handle: PlaceHandle): ((index: number) => void) | null =>
+  methodOf(handle, "setScrub") ?? methodOf(handle, "scrubTo");
+
+export type ScrubControls = {
+  /** Go to a day by index; the place clamps it. */
+  to: (index: number) => void;
+  /** A day earlier or later — the ◀ ▶ twins and the arrow keys. */
+  step: (delta: number) => void;
+  /** Back to today, in one tap. */
+  today: () => void;
+  /** Where the rail stands now, when the place says. */
+  index: () => number;
 };
 
+/**
+ * The walk along the rail, when the standing place has one. Everything here is
+ * a reading: the water rises and falls and the jars pale, and nothing is
+ * written. A place with only `setScrub` still gets a step and a today, worked
+ * out from the index it reports.
+ */
+export function scrubControls(handle: PlaceHandle, todayIndex = 0): ScrubControls | null {
+  const to = scrubOf(handle);
+  if (!to) return null;
+  const at = methodOf(handle, "index");
+  const own = methodOf(handle, "step");
+  const home = methodOf(handle, "today");
+  const index = at ?? (() => todayIndex);
+  return {
+    to,
+    step: own ?? ((delta: number) => to(index() + delta)),
+    today: home ?? (() => to(todayIndex)),
+    index,
+  };
+}
+
 const TAP_PIXELS = 8, TAP_MS = 350, MIN_TWIN = 44;
+/** Zones a drag walks rather than orbits: the cellar's rail and the water behind it. */
+const RAIL_ZONES = new Set(["rail", "water"]);
+const isRail = (hit: HarbourHit): boolean => hit.kind === "anchor" && RAIL_ZONES.has(hit.anchor.zone);
 type Pointer = { id: number; x: number; y: number; startX: number; startY: number; startedAt: number; hit: HarbourHit; samples: GestureSample[] };
 
 /**
@@ -337,6 +390,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (pinchDistance > 0 && distance > 0) { court.zoom(Math.log(pinchDistance / distance)); dirty = true; }
       pinchDistance = distance;
     } else if (pointer.hit.kind === "queen") pointer.samples.push({ x, y, t: performance.now() - pointer.startedAt });
+    else if (isRail(pointer.hit) && callbacks.onRailDrag) { callbacks.onRailDrag(x, host.getBoundingClientRect().width); dirty = true; }
     else { court.drag(dx, dy); dirty = true; }
     schedule();
   }
@@ -371,17 +425,28 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   previous = performance.now();
   resize(); callbacks.onReady();
 
+  /**
+   * Point the camera at a mode in the place that is standing. The Court keeps
+   * the camera's own layout (`camera/poses.ts`) exactly as slice 1 tuned it;
+   * the tower and the cellar are somewhere else entirely, so they are framed
+   * by their own pose tables — `<placeId>:<composition>` for the room itself,
+   * `object:<anchor>:<composition>` for one thing in it, `sky` for the whole.
+   */
+  function aim(mode: CourtMode, anchor?: string): void {
+    court.setReduced(reduced.matches);
+    if (placeId !== "court") {
+      const key = mode === "court" ? placeId : mode === "object" && anchor ? `object:${anchor}` : mode;
+      const pose = poseFor(handle.poses(), key, composition);
+      if (pose) { court.goTo({ target: pose.target, r: pose.r, theta: pose.theta, phi: pose.phi }); return; }
+    }
+    if (mode !== "object" || isCourtAnchor(anchor)) { court.go(mode, isCourtAnchor(anchor) ? anchor : undefined); return; }
+    const found = handle.anchors().find(a => a.id === anchor);
+    if (found) court.goTo({ target: [found.position[0], Math.max(0.6, found.position[1]), found.position[2]] });
+    else court.go("object");
+  }
+
   return {
-    go(mode, anchor) {
-      court.setReduced(reduced.matches);
-      if (mode !== "object" || isCourtAnchor(anchor)) court.go(mode, isCourtAnchor(anchor) ? anchor : undefined);
-      else {
-        const found = handle.anchors().find(a => a.id === anchor);
-        if (found) court.goTo({ target: [found.position[0], Math.max(0.6, found.position[1]), found.position[2]] });
-        else court.go("object");
-      }
-      moved();
-    },
+    go(mode, anchor) { aim(mode, anchor); moved(); },
     setReading(next) { reading = next; for (const { handle: each } of live.values()) each.update(next); dirty = true; render(); schedule(); },
     look(next) { court.setReduced(reduced.matches); court.goTo(next); moved(); },
     gesture(input) { court.setReduced(reduced.matches); if (input.kind === "orbit") court.drag(input.dx, input.dy); else court.zoom(input.delta); moved(); },
@@ -405,8 +470,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       placeId = next;
       // The place you arrive in declares its own idle motion; until it does, nothing moves.
       breathing = false;
-      court.setReduced(reduced.matches);
-      court.go(plan.camera.mode, isCourtAnchor(plan.camera.anchor ?? undefined) ? plan.camera.anchor as CourtAnchor : undefined);
+      aim(plan.camera.mode, plan.camera.anchor ?? undefined);
       if (plan.cut) {
         settle(plan.roof[1], plan.lid[1]);
         if (from !== next) pull(from);

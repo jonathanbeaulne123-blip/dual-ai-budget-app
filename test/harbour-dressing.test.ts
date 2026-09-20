@@ -168,3 +168,63 @@ describe("the Court", () => {
     handle.dispose();
   });
 });
+
+describe("the way down, and the court as the cellar's lid", () => {
+  const build = () => {
+    const scene = new THREE.Scene();
+    const handle = createCourt(scene, { dressing: COURT_DRESSING.classic, quality: "lite", loadModels: false });
+    return { handle, scene };
+  };
+
+  it("stands a stairhead beside the Bishop, with a stair zone that leads down", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { handle } = build();
+    const stair = handle.anchors().find((a) => a.id === "cellar-stair");
+    expect(stair).toBeDefined();
+    expect(stair!.zone).toBe("stair");
+    // A way, not a door: it opens nothing, it walks you down.
+    expect(stair!.door).toBeUndefined();
+    expect(stair!.label).toMatch(/Cellar/);
+    // Beside the Bishop (0, 4.6), clear of the gate, the sundial and the mailbox.
+    const [x, , z] = stair!.position;
+    expect(Math.hypot(x - 0, z - 4.6)).toBeLessThan(2);
+    for (const other of [COURT_LAYOUT.gate, COURT_LAYOUT.sundial, COURT_LAYOUT.mailbox] as const) {
+      expect(Math.hypot(x - other[0], z - other[2])).toBeGreaterThan(1);
+    }
+    expect(handle.regions().map((r) => r.id)).toContain("cellar-stair");
+    handle.dispose();
+  });
+
+  it("names the Rook and the Bishop as ways into the tower and the cellar", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { handle } = build();
+    const byId = Object.fromEntries(handle.anchors().map((a) => [a.id, a]));
+    expect(byId.rook!.label).toMatch(/Climb the Tower\./);
+    expect(byId.bishop!.label).toMatch(/Go down to the Cellar\./);
+    // The Knight still opens Protect; he is not a way.
+    expect(byId.knight!.label).toMatch(/Open the cistern\./);
+    handle.dispose();
+  });
+
+  it("lifts the whole court away as the cellar's lid, and sets it back down", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { handle } = build();
+    expect(handle.lid()).toBe(0);
+    expect(handle.group.position.y).toBe(0);
+    expect(handle.group.visible).toBe(true);
+    handle.setLid(0.5);
+    expect(handle.lid()).toBe(0.5);
+    expect(handle.group.position.y).toBeGreaterThan(1);
+    expect(handle.group.visible).toBe(true);
+    handle.setLid(1);
+    // Fully lifted: the camera is through it and the court is out of the frame.
+    expect(handle.group.visible).toBe(false);
+    handle.setLid(0);
+    expect(handle.group.position.y).toBe(0);
+    expect(handle.group.visible).toBe(true);
+    // Nonsense is held at the ends rather than throwing.
+    handle.setLid(Number.NaN); expect(handle.lid()).toBe(0);
+    handle.setLid(4); expect(handle.lid()).toBe(1);
+    handle.dispose();
+  });
+});

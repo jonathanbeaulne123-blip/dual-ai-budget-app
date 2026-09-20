@@ -2,7 +2,7 @@
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 import type { TowerBank, TowerReading, TowerShelf } from "../src/harbour/data/reading.ts";
-import { PLACES } from "../src/harbour/scene/place.ts";
+import { PLACES, poseFor } from "../src/harbour/scene/place.ts";
 import {
   BANK_EVEN_HEIGHT, BANK_MAX_HEIGHT, BANK_MIN_HEIGHT, SQUASH_SECONDS,
   bankGlaze, bankHeight, bankPiece, bankSculpt, bankStepFill, squash,
@@ -273,8 +273,9 @@ describe("the tower as a place", () => {
     for (const key of ["tower:phone", "tower:desktop", "sky:phone", "sky:desktop", "object:jug:phone", "object:bank:k1:desktop", "object:stair:phone"]) {
       expect(poses[key], key).toBeDefined();
     }
-    // Aliased for `poseFor`, so either convention resolves.
-    expect(poses["tower@phone"]).toEqual(poses["tower:phone"]);
+    // One convention: `<key>:<composition>`, resolved by `poseFor`.
+    expect(poses["tower@phone"]).toBeUndefined();
+    expect(poseFor(poses, "tower", "phone")).toEqual(poses["tower:phone"]);
     expect(poses["tower:phone"]!.phi).toBeGreaterThan(poses["sky:phone"]!.phi);
     expect(poses["tower:phone"]!.r).toBeLessThan(poses["sky:phone"]!.r);
     expect(poses["object:jug:phone"]!.r).toBeLessThan(poses["tower:phone"]!.r);

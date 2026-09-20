@@ -49,6 +49,31 @@ export function harbourPlaceFor(route: Pick<HouseRoute, "room" | "level"> | null
   return HARBOUR_ROOMS[route.room]?.[route.level] ?? null;
 }
 
+/**
+ * Anchors that are a **way into another place of the room**, not a door onto
+ * an HTML surface (BUILD_PLAN_SLICE2 §0 "Enter, then Open"). Tapping the Rook
+ * climbs the tower; tapping the Bishop or the stairhead goes down to the
+ * cellar; a stair in either of them comes back up to the Court. The Knight is
+ * not here: he still opens Protect, through the cistern.
+ */
+export const HARBOUR_WAYS: Readonly<Record<string, HarbourPlaceId>> = Object.freeze({
+  rook: "tower",
+  "tower-stair": "tower",
+  bishop: "cellar",
+  "cellar-stair": "cellar",
+  hatch: "cellar",
+  stair: "court",
+});
+
+/**
+ * Where an anchor leads, or null when it is not a way at all. An anchor the
+ * table does not name but whose zone is `stair` comes back to the Court, so a
+ * place may add a stair without amending this table.
+ */
+export function harbourWayFor(anchorId: string, zone?: string): HarbourPlaceId | null {
+  return HARBOUR_WAYS[anchorId] ?? (zone === "stair" ? "court" : null);
+}
+
 /** The Court: the first screen after sign-in (LITTLE_HARBOUR_v2 §1). */
 export function COURT_ROUTE(householdId: string): HouseRoute {
   return { room: "home", level: "middle", householdId, scope: "household" };

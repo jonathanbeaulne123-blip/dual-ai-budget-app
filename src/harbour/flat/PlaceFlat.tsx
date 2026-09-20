@@ -30,8 +30,8 @@ export type PlaceFlatProps = Omit<CourtFlatProps, "reading"> & {
 export function HarbourFlat({ place, ...props }: PlaceFlatProps) {
   if (place === "tower") return <TowerFlat {...props} />;
   if (place === "cellar") return <CellarFlat {...props} />;
-  const { reading, status, theme, partnerName, onOpen, overlay } = props;
-  return <CourtFlat reading={reading} status={status} theme={theme} partnerName={partnerName} onOpen={onOpen} overlay={overlay} />;
+  const { reading, status, theme, partnerName, onOpen, onEnter, overlay } = props;
+  return <CourtFlat reading={reading} status={status} theme={theme} partnerName={partnerName} onOpen={onOpen} onEnter={onEnter} overlay={overlay} />;
 }
 
 const STATUS_WORDS = (status: CourtFlatStatus, place: string) =>

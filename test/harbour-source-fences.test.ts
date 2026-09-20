@@ -91,7 +91,7 @@ describe("src/harbour source fences", () => {
 
   it("keeps the App seams behind the flag", () => {
     const app = readFileSync(join(root, "src", "App.tsx"), "utf8");
-    expect(app).toMatch(/harbourOwnsRoute\(activeHouseRoute,view\)\?<Suspense fallback=\{<CourtFlat/);
+    expect(app).toMatch(/harbourOwnsRoute\(activeHouseRoute,view\)\?<Suspense fallback=\{<HarbourFlat place=\{harbourPlaceFor\(activeHouseRoute,view,true\)\?\?"court"\}/);
     expect(app).toMatch(/data-harbour-court=\{harbourOwnsRoute\(activeHouseRoute,view\)&&!activeHouseRoute\.surface\|\|undefined\}/);
     expect(app).toMatch(/HARBOUR_ENABLED&&view==="household"\?<><Compass/);
     expect(app).toMatch(/harbourArrivalRoute\(\{saved:saved\?\.route,scope:session\.view/);

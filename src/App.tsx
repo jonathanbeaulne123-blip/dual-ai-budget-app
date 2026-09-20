@@ -11,11 +11,11 @@ import { HEARTHSIDE_LABEL, hearthsidePath, parseHearthsideRoute } from './hearth
 import { HouseShell } from './hearthside/HouseShell.tsx';
 import { KitchenFolio } from "./house/KitchenFolio.tsx";
 import { HouseWorld } from './house/HouseWorld.tsx';
-import { HARBOUR_ENABLED, harbourOwnsRoute } from './harbour/flag.ts';
+import { HARBOUR_ENABLED, harbourOwnsRoute, harbourPlaceFor } from './harbour/flag.ts';
 import { harbourArrivalRoute, tabSession } from './harbour/nav/arrival.ts';
 import { Compass } from './harbour/nav/Compass.tsx';
 import { QuickSheet } from './harbour/nav/QuickSheet.tsx';
-import { CourtFlat } from './harbour/flat/CourtFlat.tsx';
+import { HarbourFlat } from './harbour/flat/PlaceFlat.tsx';
 import { PersonalJourney } from './house/PersonalJourney.tsx';
 import { PersonalTogether } from './house/PersonalTogether.tsx';
 import { interpretationGate } from './house/supportedInterpretation.ts';
@@ -7155,7 +7155,7 @@ export function App() {
       {!harbourOwnsRoute(activeHouseRoute,view)&&householdSwitcherNode}
       {!harbourOwnsRoute(activeHouseRoute,view)&&spaceSwitchNode}
       {!HOUSE_WORLD_ENABLED&&HEARTHSIDE_FLAGS.presentation&&view==="household"&&<HouseShell route={activeHouseRoute} onNavigate={goHouse} condition={houseCondition}/>}
-      {HOUSE_WORLD_ENABLED&&(harbourOwnsRoute(activeHouseRoute,view)?<Suspense fallback={<CourtFlat reading={null} status="loading"/>}><HarbourWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack} presence={softPresenceDisplay} partnerName={household.members.find(member=>member.id!==session.memberId)?.name??null} onQuickSheet={()=>setQuickSheetOpen(true)}/></Suspense>:<HouseWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack}/>)}
+      {HOUSE_WORLD_ENABLED&&(harbourOwnsRoute(activeHouseRoute,view)?<Suspense fallback={<HarbourFlat place={harbourPlaceFor(activeHouseRoute,view,true)??"court"} reading={null} status="loading"/>}><HarbourWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack} presence={softPresenceDisplay} partnerName={household.members.find(member=>member.id!==session.memberId)?.name??null} onQuickSheet={()=>setQuickSheetOpen(true)}/></Suspense>:<HouseWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack}/>)}
       <div data-app-page="true" data-house-resting={HOUSE_WORLD_ENABLED&&!houseToolsVisible&&!adding&&!swipeOpen&&!confirm&&!guard&&!commandOpen||undefined}>
         {HOUSE_WORLD_ENABLED&&houseToolsVisible&&<header className="house-tool-heading"><h2 tabIndex={-1} id="house-tool-title">{TARGET_NAMES[activeHouseRoute.surface??""]??HOUSE_PLACES[activeHouseRoute.room][activeHouseRoute.level].title}</h2><button onClick={putHouseObjectBack}>Put it back</button></header>}
         <div className={hearthsideOpen ? "hearthside-page" : "world-page"}>

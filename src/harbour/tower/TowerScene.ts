@@ -192,8 +192,9 @@ const PHONE_TOWER: Pose = { target: [0, 1.5, 0], r: 8.6, theta: 0, phi: 1.06 };
 const DESKTOP_TOWER: Pose = { target: [0, 1.7, 0], r: 9.8, theta: 0.3, phi: 0.98 };
 
 /**
- * Camera poses, keyed the Court's way (`tower:phone`, `object:<anchor>:desktop`)
- * and aliased for `poseFor` (`tower@phone`), so either convention resolves.
+ * Camera poses in the one convention every place is written in:
+ * `<key>:<composition>` — `tower:phone`, `object:<anchor>:desktop` — which
+ * `scene/place.ts`'s `poseFor` resolves.
  */
 export function towerPoses(anchors: readonly Anchor[]): Record<string, Pose> {
   const poses: Record<string, Pose> = {
@@ -208,11 +209,6 @@ export function towerPoses(anchors: readonly Anchor[]): Record<string, Pose> {
     const close = anchor.zone === "bank" ? 2.6 : anchor.zone === "shelf" ? 4.4 : 3.4;
     poses[`object:${anchor.id}:phone`] = { target: [x, Math.max(0.5, y), z], r: close, theta, phi: 1.08 };
     poses[`object:${anchor.id}:desktop`] = { target: [x, Math.max(0.5, y), z], r: close + 0.9, theta: theta + 0.22, phi: 1.0 };
-  }
-  for (const [key, pose] of Object.entries(poses)) {
-    const parts = key.split(":");
-    const composition = parts[parts.length - 1]!;
-    poses[`${parts.slice(0, -1).join(":")}@${composition}`] = pose;
   }
   return poses;
 }

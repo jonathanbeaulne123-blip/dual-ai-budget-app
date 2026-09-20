@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ARRIVAL_KEY_PREFIX, arrivalKey, harbourArrivalRoute, hasArrived, markArrived, type ArrivalSession } from "../src/harbour/nav/arrival.ts";
-import { COURT_ROUTE, HARBOUR_ENABLED, HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, HARBOUR_ROOMS, harbourOwnsRoute, harbourPlaceFor } from "../src/harbour/flag.ts";
+import { COURT_ROUTE, HARBOUR_ENABLED, HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, HARBOUR_ROOMS, HARBOUR_WAYS, harbourOwnsRoute, harbourPlaceFor, harbourWayFor } from "../src/harbour/flag.ts";
 import type { HouseRoute } from "../src/hearthside/houseRoutes.ts";
 
 function fakeSession(): ArrivalSession & { store: Map<string, string> } {
@@ -82,5 +82,32 @@ describe("harbourArrivalRoute", () => {
     const broken: ArrivalSession = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };
     expect(harbourArrivalRoute({ saved, scope: "household", householdId: "HH-one", identity, session: broken, enabled: true })).toEqual(COURT_ROUTE("HH-one"));
     expect(harbourArrivalRoute({ saved, scope: "household", householdId: "HH-one", identity, session: null, enabled: true })).toEqual(COURT_ROUTE("HH-one"));
+  });
+});
+
+describe("ways into the other places of the room", () => {
+  it("sends the Rook up, the Bishop and the stairhead down, and a stair back to the Court", () => {
+    expect(harbourWayFor("rook")).toBe("tower");
+    expect(harbourWayFor("bishop")).toBe("cellar");
+    expect(harbourWayFor("cellar-stair", "stair")).toBe("cellar");
+    expect(harbourWayFor("stair", "stair")).toBe("court");
+    // A place may add a stair of its own without amending the table.
+    expect(harbourWayFor("back-stair", "stair")).toBe("court");
+  });
+
+  it("leaves the Knight and every door alone", () => {
+    expect(harbourWayFor("knight")).toBeNull();
+    expect(harbourWayFor("cistern")).toBeNull();
+    expect(harbourWayFor("sundial", "prop")).toBeNull();
+    expect(harbourWayFor("jar:bank/rent", "jar")).toBeNull();
+    expect(harbourWayFor("bank:goal:trip", "bank")).toBeNull();
+  });
+
+  it("names a level for every way, so a tap is one navigation", () => {
+    for (const [anchor, place] of Object.entries(HARBOUR_WAYS)) {
+      expect(HARBOUR_PLACE_LEVELS[place], anchor).toMatch(/^(above|middle|below)$/);
+    }
+    expect(HARBOUR_PLACE_LEVELS[harbourWayFor("rook")!]).toBe("above");
+    expect(HARBOUR_PLACE_LEVELS[harbourWayFor("bishop")!]).toBe("below");
   });
 });

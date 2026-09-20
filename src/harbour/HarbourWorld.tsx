@@ -15,11 +15,11 @@ import type { ThemeId } from "../theme/scenes.ts";
 import { useHarbourReading } from "./data/useHarbourReading.ts";
 import { HarbourFlat } from "./flat/PlaceFlat.tsx";
 import { HarbourTwins } from "./court/CourtTwins.tsx";
-import { HARBOUR_PLACE_NAMES, harbourPlaceFor, type HarbourPlaceId } from "./flag.ts";
+import { HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
 import { classifyGesture, gestureAction, spark, type QueenAction, type QueenRegion, type QueenSpark } from "./court/queenTouch.ts";
 import type { QueenPlace } from "./court/queenPlace.ts";
 import type { CourtHandle } from "./court/CourtScene.ts";
-import type { HarbourRuntime, HarbourGesture, HarbourHit, ProjectedRect } from "./scene/runtime.ts";
+import type { HarbourRuntime, HarbourGesture, HarbourHit, ProjectedRect, ScrubControls } from "./scene/runtime.ts";
 import { PLACES, sceneDressingFrom, type PlaceReading, type Region } from "./scene/place.ts";
 import { harbourCameraSlot } from "./scene/travel.ts";
 import { qualityTier, readQualityInput, type QualityTier, type RenderTier } from "./scene/quality.ts";
@@ -108,6 +108,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const readingRef = useRef(placeReading); readingRef.current = placeReading;
   const onOpenRef = useRef(onOpen); onOpenRef.current = onOpen;
   const onNavigateRef = useRef(props.onNavigate); onNavigateRef.current = props.onNavigate;
+  const onRailDragRef = useRef<(x: number, width: number) => void>(() => undefined);
   const evidenceRef = useRef(evidence); evidenceRef.current = evidence;
 
   const say = useCallback((next: QueenSpark | null, at?: { x: number; y: number }) => {
@@ -151,8 +152,14 @@ export default function HarbourWorld(props: HarbourWorldProps) {
 
   function activate(id: string, door?: { target: string; object?: string }, zone?: string) {
     const world = runtime.current, current = readingRef.current;
-    // The stair is travel, not a door: it walks you back to the Court's own level.
-    if (zone === "stair" || id === "stair") { onNavigateRef.current("home", "middle"); return; }
+    // Enter, then Open. A way walks you to another level of this room; only
+    // then does a door open an HTML surface in front of the place.
+    const way = harbourWayFor(id, zone);
+    if (way) { onNavigateRef.current("home", HARBOUR_PLACE_LEVELS[way]); return; }
+    // The rail's own controls: a day earlier, a day later, back to today. A reading, never a write.
+    if (id === "scrub-back") { walk(-1); return; }
+    if (id === "scrub-forward") { walk(1); return; }
+    if (id === "today") { walk("today"); return; }
     if (door) { onOpenRef.current(door.target, door.object); return; }
     if (id === "flagstone") { world?.go("object", "queen"); return; }
     if (id === "sundial") { onOpenRef.current(current.next?.target ?? "cellar-bills"); return; }
@@ -179,12 +186,13 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       try {
         const world = mountHarbourWorld(element, theme, renderTier, {
           onReady: () => setStatus("ready"), onFailure: () => setStatus("fallback"),
-          onProject: next => setRects(next), onTap, onGesture,
+          onProject: next => setRects(next), onTap, onGesture, onRailDrag: (x, width) => onRailDragRef.current(x, width),
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
         runtime.current = world;
         court.current = first === "court" ? world.place() as CourtHandle : null;
         world.setToolOpen(Boolean(routeRef.current.surface));
+        void holdRail(world);
         const saved = readHouseReturn(localStorage, identityRef.current, harbourCameraSlot(houseComposition(element.getBoundingClientRect().width || window.innerWidth), first));
         if (saved?.camera && sameHouseCameraRoute(saved.route, routeRef.current)) world.restore(saved.camera);
         if (first !== "court") return;
@@ -224,6 +232,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       if (from === "court") { queen.current?.dispose(); queen.current = null; court.current = null; world.setBreathing(false); }
       world.enter(place, { from });
       court.current = place === "court" ? world.place() as CourtHandle : null;
+      void holdRail(world);
       if (place !== "court" || tier === "flat") return;
       void import("./court/queenPlace.ts").then(({ loadQueenPlace }) => loadQueenPlace(tier as RenderTier, appearance.saved.queen ?? DEFAULT_QUEEN_STYLE, evidenceRef.current, abort.signal)).then(her => {
         if (cancelled || runtime.current !== world || placeRef.current !== "court") { her.dispose(); return; }
@@ -237,12 +246,41 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [place, status]);
 
-  /** The cellar's day scrub is a reading: it moves the rail's water, and writes nothing. */
-  useEffect(() => {
-    if (scrub === null) return;
-    const world = runtime.current; if (!world) return;
-    void import("./scene/runtime.ts").then(({ scrubOf }) => { if (runtime.current === world) scrubOf(world.place())?.(scrub); });
-  }, [scrub]);
+  /**
+   * The walk along the rail (BUILD_PLAN_SLICE2 §3): a drag along the rail, the
+   * ◀ ▶ twins, the arrow keys with the stage focused, and one tap back to
+   * today. It moves the water and pales the jars ahead of the line, and it
+   * writes nothing — the books are not touched by looking at another day.
+   */
+  const rail = useRef<ScrubControls | null>(null);
+  const announce = useCallback(() => {
+    const handle = runtime.current?.place();
+    const words = handle ? (handle as { words?: () => unknown }).words?.() : null;
+    const date = words && typeof words === "object" && "date" in words ? String((words as { date: unknown }).date) : null;
+    if (date) setPhrase(date);
+    setScrub(rail.current?.index() ?? null);
+  }, []);
+  const walk = useCallback((move: number | "today" | { to: number }) => {
+    const controls = rail.current; if (!controls) return;
+    if (move === "today") controls.today();
+    else if (typeof move === "number") controls.step(move);
+    else controls.to(move.to);
+    announce();
+  }, [announce]);
+  /** Take hold of the standing place's rail, if it has one, once it is built. */
+  const holdRail = useCallback(async (world: HarbourRuntime) => {
+    const { scrubControls } = await import("./scene/runtime.ts");
+    if (runtime.current !== world) return;
+    rail.current = scrubControls(world.place(), readingRef.current.cellar.todayIndex);
+    setScrub(rail.current?.index() ?? null);
+  }, []);
+  const onRailDrag = useCallback((x: number, width: number) => {
+    const controls = rail.current, days = readingRef.current.cellar.days.length;
+    if (!controls || days < 2 || width < 1) return;
+    void import("./cellar/scrub.ts").then(({ scrubIndex }) => { if (rail.current === controls) { controls.to(scrubIndex(x, width, days)); announce(); } });
+  }, [announce]);
+  onRailDragRef.current = onRailDrag;
+
   // The Queen's lenses: hide her gardens for the growth and shape lenses, scale them for botanical presence, redress her history for the weeks window.
   useEffect(() => {
     const her = queen.current; if (!her) return;
@@ -282,7 +320,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     if (event.target !== event.currentTarget) return;
     const world = runtime.current; if (!world) return;
     const step = 40;
-    if (event.key === "ArrowLeft") world.gesture({ kind: "orbit", dx: -step, dy: 0 });
+    const onRail = placeRef.current === "cellar" && rail.current !== null;
+    if (onRail && (event.key === "Home" || event.key === "0")) walk("today");
+    else if (onRail && event.key === "ArrowLeft") walk(-1);
+    else if (onRail && event.key === "ArrowRight") walk(1);
+    else if (event.key === "ArrowLeft") world.gesture({ kind: "orbit", dx: -step, dy: 0 });
     else if (event.key === "ArrowRight") world.gesture({ kind: "orbit", dx: step, dy: 0 });
     else if (event.key === "ArrowUp") world.gesture({ kind: "orbit", dx: 0, dy: -step });
     else if (event.key === "ArrowDown") world.gesture({ kind: "orbit", dx: 0, dy: step });
@@ -300,7 +342,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : "The Cellar"}>
     <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : `${placeName[0]!.toUpperCase()}${placeName.slice(1)}. Arrow keys orbit, plus and minus zoom, Space opens all tools, Escape steps back.`} onKeyDown={onStageKey}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
-      {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={setScrub} onStair={place === "court" ? undefined : stair} />}
+      {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => props.onNavigate("home", HARBOUR_PLACE_LEVELS[next])} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
       {sparkle && <div className="harbour-spark" aria-hidden="true" style={{ left: `${sparkle.x}px`, top: `${sparkle.y}px`, "--spark": sparkle.color } as CSSProperties}>{Array.from({ length: sparkle.petals }, (_, i) => <span key={i} style={{ "--i": i } as CSSProperties} />)}</div>}
       <p className="harbour-world__phrase" role="status" aria-live="polite">{phrase}</p>

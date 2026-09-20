@@ -12,6 +12,12 @@ export type CourtFlatProps = {
   theme?: "classic" | "taylor" | "newfoundland";
   partnerName?: string | null;
   onOpen?: (target: string, object?: string) => void;
+  /**
+   * Enter, then Open (BUILD_PLAN_SLICE2 §0): the Rook and the Bishop are ways
+   * into the Tower and the Cellar, not doors onto HTML. Without this the
+   * buttons fall back to the surfaces, so the App's Suspense frame still works.
+   */
+  onEnter?: (place: "tower" | "cellar") => void;
   /** Laid over a stage that is still being built, rather than standing on its own. */
   overlay?: boolean;
 };
@@ -46,8 +52,9 @@ const SEA = { classic: "#7fb2b8", taylor: "#a9c9dd", newfoundland: "#4f98aa" } a
  * the Suspense fallback, the `flat` tier, and the WebGL fallback. Every door a
  * piece opens in the scene is a real button here; nothing here posts money.
  */
-export function CourtFlat({ reading, status = "loading", theme = "classic", partnerName = null, onOpen, overlay = false }: CourtFlatProps) {
+export function CourtFlat({ reading, status = "loading", theme = "classic", partnerName = null, onOpen, onEnter, overlay = false }: CourtFlatProps) {
   const open = (target: string, object?: string) => () => onOpen?.(target, object);
+  const enter = (place: "tower" | "cellar", target: string, object?: string) => () => (onEnter ? onEnter(place) : onOpen?.(target, object));
   const label = status === "loading" ? "The Court is being laid" : status === "fallback" ? "Reading edition · the Court could not be drawn" : "Reading edition";
   const next = reading?.next ?? null;
   const notice = reading?.noticed ?? null;
@@ -99,8 +106,8 @@ export function CourtFlat({ reading, status = "loading", theme = "classic", part
         </button>
       </div>
       <ul className="court-flat__plinths" aria-label="Her court">
-        <li><button type="button" className="court-flat__plate" onClick={open("loft-banks")} aria-label={`The Rook, Build ${engravedCents(reading?.build.cents)}. Open the Loft.`}><small>Build · the Rook</small><strong>{engravedCents(reading?.build.cents)}</strong><span>{reading ? `${reading.build.goals} ${reading.build.goals === 1 ? "goal" : "goals"} · ${reading.banks} ${reading.banks === 1 ? "bank" : "banks"}` : "The Loft"}</span></button></li>
-        <li><button type="button" className="court-flat__plate" onClick={open("cellar-bills")} aria-label={`The Bishop, Prepare ${engravedCents(reading?.prepare.cents)}. Open the Cellar.`}><small>Prepare · the Bishop</small><strong>{engravedCents(reading?.prepare.cents)}</strong><span>{reading?.prepare.coveredThrough ? `Covered through ${reading.prepare.coveredThrough}` : reading ? `${reading.jars} ${reading.jars === 1 ? "jar" : "jars"}` : "The Cellar"}</span></button></li>
+        <li><button type="button" className="court-flat__plate" onClick={enter("tower", "loft-banks")} aria-label={`The Rook, Build ${engravedCents(reading?.build.cents)}. Climb the Tower.`}><small>Build · the Rook</small><strong>{engravedCents(reading?.build.cents)}</strong><span>{reading ? `${reading.build.goals} ${reading.build.goals === 1 ? "goal" : "goals"} · ${reading.banks} ${reading.banks === 1 ? "bank" : "banks"}` : "The Loft"}</span></button></li>
+        <li><button type="button" className="court-flat__plate" onClick={enter("cellar", "cellar-bills")} aria-label={`The Bishop, Prepare ${engravedCents(reading?.prepare.cents)}. Go down to the Cellar.`}><small>Prepare · the Bishop</small><strong>{engravedCents(reading?.prepare.cents)}</strong><span>{reading?.prepare.coveredThrough ? `Covered through ${reading.prepare.coveredThrough}` : reading ? `${reading.jars} ${reading.jars === 1 ? "jar" : "jars"}` : "The Cellar"}</span></button></li>
         <li><button type="button" className="court-flat__plate" onClick={open("loft-banks", "bank/plan:protect")} aria-label={`The Knight, Protect ${engravedCents(reading?.protect.cents)}. Open the cistern.`}><small>Protect · the Knight</small><strong>{engravedCents(reading?.protect.cents)}</strong><span>{reading && reading.protect.target > 0 ? `of ${engravedCents(reading.protect.target)}` : "The cistern"}</span></button></li>
       </ul>
       <div className="court-flat__gate">

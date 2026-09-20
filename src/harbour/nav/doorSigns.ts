@@ -42,8 +42,12 @@ export type DoorSignReading = Pick<HarbourReading, "banks" | "jars" | "build" | 
 
 export function doorSigns(reading: DoorSignReading): DoorSigns {
   const saved = plainDollars(reading.build.cents);
+  // The sign counts what is actually on the rack, so the door and the room agree:
+  // a tower with a bare shelf says so rather than promising banks it does not hold.
+  // OPEN PRODUCT QUESTION (raised with Jonathan): whether the Loft's ledge should
+  // hold every goal bank, not only those filed under Build. Money model untouched.
   const onShelves = (reading.tower?.shelves ?? []).reduce((sum, shelf) => sum + shelf.banks.length, 0);
-  const banks = onShelves || reading.banks;
+  const banks = reading.tower ? onShelves : reading.banks;
   const tower = {
     line: `${count(banks, "bank", "banks")} · ${saved} saved`,
     aria: reading.build.cents === null

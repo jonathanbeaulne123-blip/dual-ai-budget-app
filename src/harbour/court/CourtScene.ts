@@ -3,7 +3,7 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import type { FundPulseFreshness } from "../../core/fundPulse.ts";
 import type { HouseCondition } from "../../core/houseCondition.ts";
 import { createContactShadows } from "../scene/contact.ts";
-import type { Anchor, Place, PlaceHandle, Pose, Region, Vec3 } from "../scene/place.ts";
+import { registerPlace, type Anchor, type Place, type PlaceHandle, type Pose, type Region, type Vec3 } from "../scene/place.ts";
 import { courtDressingFrom, type CourtDressing, type CourtProp } from "./dressing.ts";
 import { EngravedPlate, engravedWords, plateFinish, seeded, type PlateFinish } from "./engraved.ts";
 import { createMailbox, slipLines } from "./mailbox.ts";
@@ -20,6 +20,9 @@ import { createSundial } from "./sundial.ts";
  */
 
 /** Layout shared with the camera poses (writer C) — +z faces the camera. */
+/** The stairhead beside the Bishop, and how far the court lifts when it is the cellar's lid. */
+export const STAIRHEAD = Object.freeze({ width: 1.15, run: 0.95, depth: 0.7, lift: 7 });
+
 export const COURT_LAYOUT = {
   terraceRadius: 6,
   lawnOuter: 9.5,
@@ -34,6 +37,8 @@ export const COURT_LAYOUT = {
   gate: [0, 0, 6.2],
   cistern: CISTERN_POSITION,
   hercules: [1.35, 0, 1.85],
+  /** The way down: a stone stairhead beside the Bishop, opening onto the cellar. */
+  stairhead: [1.75, 0, 4.15],
   partner: [-0.78, 0, 5.9],
   props: [[-4.6, 0, 2.6], [4.9, 0, 0.6], [-5.0, 0, -0.4], [2.6, 0, -4.8], [-2.4, 0, -4.9]],
 } as const satisfies Record<string, unknown>;
@@ -95,6 +100,15 @@ export type CourtHandle = PlaceHandle & {
   /** Current engraved words, for the DOM twins and tests. */
   words(): { everyday: string; rook: string; bishop: string; knight: string; tag: string | null; slip: string[]; flagUp: boolean };
   mossCoverage(): number;
+  /**
+   * The court's own floor, lifting away as the cellar's lid (BUILD_PLAN_SLICE2
+   * §1). 0 is the court seated on its island; 1 is the whole court lifted
+   * clear so the camera can descend through where it stood. The cellar's
+   * ceiling is the underside of these flagstones, so this is the same move
+   * read from below.
+   */
+  setLid(k: number): void;
+  lid(): number;
   drawCalls(): number;
 };
 
@@ -350,6 +364,47 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     propsGroup.add(holder);
   });
 
+  // ── The way down: a stone stairhead beside the Bishop ───────────────────────
+  // A modest rectangular opening in the paving with two steps falling into the
+  // dark and a low rail on three sides. It is a door you can see from the path;
+  // tapping it walks you down to `home/below` rather than opening anything.
+  const [hx0, , hz0] = COURT_LAYOUT.stairhead;
+  const stairhead = new THREE.Group();
+  stairhead.name = "stairhead";
+  stairhead.position.set(hx0, 0, hz0);
+  const stairMouth = STAIRHEAD.width, stairRun = STAIRHEAD.run;
+  const kerbMaterial = mat(dressing.stoneAlt, { roughness: 0.95 });
+  const darkMaterial = mat(dressing.light.fog.color, { roughness: 1 });
+  // The opening: a dark well, so it reads as somewhere to go rather than a slab.
+  const well = new THREE.Mesh(track(new THREE.BoxGeometry(stairMouth - 0.12, STAIRHEAD.depth, stairRun - 0.12)), darkMaterial);
+  well.position.y = -STAIRHEAD.depth / 2 - 0.01;
+  stairhead.add(well);
+  // Two steps falling in from the near edge, and the kerb around three sides — one mesh.
+  const stoneParts: THREE.BufferGeometry[] = [];
+  for (let step = 0; step < 2; step += 1) {
+    stoneParts.push(placed(new THREE.BoxGeometry(stairMouth - 0.16, 0.07, stairRun / 3.2), 0, -0.09 - step * 0.16, stairRun / 2 - stairRun / 6.4 - step * (stairRun / 3.2)));
+  }
+  for (const [dx, dz, w, d] of [[0, -stairRun / 2, stairMouth, 0.14], [-stairMouth / 2, 0, 0.14, stairRun], [stairMouth / 2, 0, 0.14, stairRun]] as const) {
+    stoneParts.push(placed(new THREE.BoxGeometry(w, 0.13, d), dx, 0.065, dz));
+  }
+  const stoneWork = shadowed(mergedMesh(stoneParts, kerbMaterial));
+  track(stoneWork.geometry);
+  stairhead.add(stoneWork);
+  // The low rail on the far edge: two posts and a handrail, one mesh.
+  const railMaterial = mat(dressing.metal, { roughness: 0.42, metalness: 0.55 });
+  const railParts: THREE.BufferGeometry[] = [
+    placed(new THREE.CylinderGeometry(0.03, 0.03, stairMouth - 0.16, 8), 0, 0.5, -stairRun / 2 + 0.07, [0, 0, Math.PI / 2]),
+  ];
+  for (const side of [-1, 1]) {
+    railParts.push(placed(new THREE.CylinderGeometry(0.035, 0.04, 0.52, 8), side * (stairMouth / 2 - 0.08), 0.26, -stairRun / 2 + 0.07));
+  }
+  const rail = shadowed(mergedMesh(railParts, railMaterial));
+  track(rail.geometry);
+  stairhead.add(rail);
+  contact(hx0, hz0, stairMouth * 0.7, 0.5);
+  stairhead.userData.anchor = "cellar-stair";
+  group.add(stairhead);
+
   scene.add(group);
 
   // ── Anchors, regions, poses ─────────────────────────────────────────────────
@@ -360,12 +415,13 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   const anchorList = (): Anchor[] => [
     { id: "queen", position: at(0, 1.1, 0), zone: "queen", label: `The Queen — Everyday ${everyday.words}. Meet the Queen.`, door: { target: "queen" } },
     { id: "flagstone", position: at(fx, 0.1, fz), zone: "queen", label: `The Everyday flagstone — ${everyday.words}` },
-    ...pieces.anchors().map((anchor) => ({ ...anchor, label: `${anchor.label} ${pieces.slots[anchor.id as PieceId].plate.words}. ${anchor.id === "rook" ? "Open the Loft." : anchor.id === "bishop" ? "Open the Cellar." : "Open the cistern."}` })),
+    ...pieces.anchors().map((anchor) => ({ ...anchor, label: `${anchor.label} ${pieces.slots[anchor.id as PieceId].plate.words}. ${anchor.id === "rook" ? "Climb the Tower." : anchor.id === "bishop" ? "Go down to the Cellar." : "Open the cistern."}` })),
     { id: "sundial", position: at(sx, 1.0, sz), zone: "prop", label: tagWords ? `The sundial — next: ${tagWords}` : "The sundial — no dated commitment" },
     { id: "mailbox", position: at(mx, 1.2, mz), zone: "prop", label: mailbox.flagUp() ? "The mailbox, flag up — she noticed something" : "The mailbox — nothing new" },
     { id: "slip", position: at(mx + 0.55, 0.72, mz + 0.13), zone: "prop", label: slipWords.length ? `Since you were here: ${slipWords.join("; ")}` : "Since you were here — nothing yet" },
     ...cistern.anchors(),
     { id: "hercules", position: at(hx, 0.3, hz), zone: "prop", label: "Hercules, asleep", door: { target: "hercules" } },
+    { id: "cellar-stair", position: at(hx0, 0.35, hz0), zone: "stair", label: "The cellar stairhead — go down to the Cellar" },
     { id: "gate", position: at(gx, 0.9, gz), zone: "gate", label: "The court gate" },
   ];
   let queenRegions: (() => Region[]) | null = null;
@@ -378,11 +434,13 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     { id: "slip", group: "court", label: "Since you were here", box: box(mx + 0.2, 0.4, mz - 0.1, mx + 0.9, 1.0, mz + 0.3) },
     ...cistern.regions(),
     { id: "hercules", group: "court", label: "Hercules, asleep", box: box(hx - 0.7, 0, hz - 0.5, hx + 0.7, 0.55, hz + 0.5) },
+    { id: "cellar-stair", group: "court", label: "The cellar stairhead", box: box(hx0 - STAIRHEAD.width / 2, 0, hz0 - STAIRHEAD.run / 2, hx0 + STAIRHEAD.width / 2, 0.55, hz0 + STAIRHEAD.run / 2) },
     { id: "gate", group: "court", label: "The court gate", box: box(gx - 1.2, 0, gz - 0.2, gx + 1.2, 1.7, gz + 0.2) },
   ];
 
   // ── Reading → objects ───────────────────────────────────────────────────────
   let pendingRedraw = false;
+  let lidK = 0;
   let coverage = MOSS_BY_CONDITION.settled;
   let tagWords: string | null = null;
   let slipWords: string[] = [];
@@ -434,6 +492,15 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     ready: pieces.ready,
     words: () => ({ everyday: everyday.words, rook: pieces.slots.rook.plate.words, bishop: pieces.slots.bishop.plate.words, knight: pieces.slots.knight.plate.words, tag: tagWords, slip: [...slipWords], flagUp: mailbox.flagUp() }),
     mossCoverage: () => coverage,
+    setLid(k) {
+      const next = Math.max(0, Math.min(1, Number.isFinite(k) ? k : 0));
+      if (next === lidK) return;
+      lidK = next;
+      group.position.y = next * STAIRHEAD.lift;
+      group.visible = next < 0.999;
+      pendingRedraw = true;
+    },
+    lid: () => lidK,
     drawCalls() {
       let count = 0;
       group.traverse((node) => { if ((node instanceof THREE.Mesh || node instanceof THREE.InstancedMesh) && node.visible) count++; });
@@ -447,12 +514,16 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   };
 }
 
-/** The registry entry: `PLACES.court`. Accepts writer B's `HarbourReading` and any `CourtDressing`/ThemeId. */
-export const courtPlace: Place = {
+/**
+ * The registry entry: `PLACES.court`. Accepts writer B's `HarbourReading` and
+ * any `CourtDressing`/ThemeId. Registered on import, the way the tower and the
+ * cellar are, so the shell can raise it by id like any other place.
+ */
+export const courtPlace: Place = registerPlace({
   id: "court",
   build(scene, dressing, reading, quality, context) {
     return createCourt(scene, { dressing: courtDressingFrom(dressing), reading: readCourtReading(reading), quality, signal: context?.signal, onLanded: () => context?.invalidate() });
   },
-};
+});
 
 export { COURT_PIECES, PIECE_IDS };
