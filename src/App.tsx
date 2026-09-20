@@ -6875,7 +6875,10 @@ export function App() {
   const houseNavigationActive = HOUSE_WORLD_ENABLED || HEARTHSIDE_FLAGS.presentation && view === "household";
   const activeHouseRoute=(HOUSE_WORLD_ENABLED&&houseRoute?.scope!==view?null:houseRoute)??houseRouteForTab(tab,household.householdId)??{room:"home",level:"middle",householdId:household.householdId};
   const houseToolsVisible = !HOUSE_WORLD_ENABLED || Boolean(activeHouseRoute.surface && activeHouseRoute.surface!=="queen");
-  const workspaceMode = !workspaceEnabled || Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded) ? "hidden" : tab === "hercules" ? "room" : workspaceCompact ? "compact" : "hidden";
+  // Due reminders are an inline list until one occurrence's review sheet opens.
+  // They must not silently disable the companion's ordinary help entry.
+  const herculesReviewBlocked = Boolean(guard && (guard.kind !== "duePreview" || dueSheetOpen));
+  const workspaceMode = !workspaceEnabled || Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen || fundLedgeExpanded) ? "hidden" : tab === "hercules" ? "room" : workspaceCompact ? "compact" : "hidden";
 
   /** The Queen's world (Vision v2 §4.2, `VITE_QUEENS_NEST`): Our Home is one fixed, edge-to-edge world. Only the
       two-space tabs, her field and the five-slot nav are on it; the top bar, the sync line, the household switcher,
@@ -8977,7 +8980,7 @@ export function App() {
         adding={adding || swipeOpen}
         visorPop={visorPop}
         spark={spark}
-        activityBlocked={Boolean(adding || swipeOpen || confirm || guard || commandOpen || fundLedgeExpanded)}
+        activityBlocked={Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen || fundLedgeExpanded)}
         memberId={session.memberId}
         view={view}
         freshness={syncFreshnessDisplay.transportMode === "offline" ? "offline" : syncFreshnessDisplay.tone === "danger" || syncFreshnessDisplay.tone === "warning" ? "stale" : "current"}
