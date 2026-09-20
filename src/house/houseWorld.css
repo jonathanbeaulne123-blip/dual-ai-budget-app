@@ -65,7 +65,7 @@
 @media(max-width:719px){
  .house-world__header { padding:12px 15px; gap:10px; }.house-world__header h1 { font-size:24px; }.house-world__header h1 span { display:block; font-size:13px; margin-top:4px; }.house-world__header button { max-width:118px; padding:6px 10px; font-size:11px; }
  .house-world__stage { height:clamp(340px,45dvh,480px); min-height:340px; max-height:480px; }
- .house-world__levels { top:12px; left:12px; right:12px; flex-direction:row; justify-content:space-between; padding:4px; border-radius:5px; }.house-world__levels button { font-size:10px; min-width:0; flex:1; text-align:center; padding:5px 3px; border-radius:3px; }.house-world__levels button span { display:none; }
+ .house-world__levels { top:12px; left:12px; right:12px; flex-direction:row; justify-content:space-between; padding:4px; border-radius:5px; }.house-world__levels button { font-size:10px; min-width:0; flex:1; text-align:center; padding:5px 3px; border-radius:3px; }.house-world__levels button span { display:inline-block; width:auto; margin-right:4px; font-size:12px; }
  .house-world__walk { top:75px; right:12px; max-width:170px; }.house-world__walk button { min-height:38px; padding:5px 10px; font-size:10px; }
  .house-world__anchors button { max-width:155px; font-size:10px; padding:5px 9px; }.house-world__anchors .house-world__pin { display:none; }
  .house-world__invitation { left:12px; bottom:13px; width:calc(100% - 24px); padding:15px; border-radius:3px; }.house-world__invitation h2 { font-size:29px; }.house-world__invitation p { font-size:12px; }.house-world__object-actions button { flex:1; font-size:11px; }
