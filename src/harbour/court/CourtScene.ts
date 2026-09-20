@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import type { FundPulseFreshness } from "../../core/fundPulse.ts";
 import type { HouseCondition } from "../../core/houseCondition.ts";
+import { createContactShadows } from "../scene/contact.ts";
 import type { Anchor, Place, PlaceHandle, Pose, Region, Vec3 } from "../scene/place.ts";
 import { courtDressingFrom, type CourtDressing, type CourtProp } from "./dressing.ts";
 import { EngravedPlate, engravedWords, plateFinish, seeded, type PlateFinish } from "./engraved.ts";
@@ -152,26 +153,10 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   const shadowed = <T extends THREE.Object3D>(object: T, cast = true, receive = true): T => { object.castShadow = cast; object.receiveShadow = receive; return object; };
 
   // Contact shadows: a radial-gradient disc under anything that stands, so it touches the ground.
-  let contactTexture: THREE.CanvasTexture | null = null;
-  const contactMaterial = (): THREE.MeshBasicMaterial | null => {
-    if (!contactTexture) {
-      try {
-        const canvas = document.createElement("canvas"); canvas.width = 128; canvas.height = 128;
-        const ctx = canvas.getContext("2d"); if (!ctx) return null;
-        const gradient = ctx.createRadialGradient(64, 64, 8, 64, 64, 64);
-        gradient.addColorStop(0, "rgba(20,16,10,0.42)"); gradient.addColorStop(0.55, "rgba(20,16,10,0.18)"); gradient.addColorStop(1, "rgba(20,16,10,0)");
-        ctx.fillStyle = gradient; ctx.fillRect(0, 0, 128, 128);
-        contactTexture = track(new THREE.CanvasTexture(canvas)); contactTexture.colorSpace = THREE.SRGBColorSpace;
-      } catch { return null; }
-    }
-    return track(new THREE.MeshBasicMaterial({ map: contactTexture, transparent: true, depthWrite: false, opacity: 1 }));
-  };
+  // Shared with the Tower through `scene/contact.ts`; both places sit their objects the same way.
+  const contacts = track(createContactShadows());
   const contact = (x: number, z: number, radius: number, opacity = 1, parent: THREE.Object3D = group): void => {
-    const material = contactMaterial(); if (!material) return;
-    material.opacity = opacity;
-    const disc = new THREE.Mesh(track(new THREE.PlaneGeometry(radius * 2, radius * 2)), material);
-    disc.rotation.x = -Math.PI / 2; disc.position.set(x, 0.014, z); disc.renderOrder = 2; disc.name = "contact";
-    parent.add(disc);
+    contacts.disc(x, z, radius, opacity, parent);
   };
 
   // ── Ground: terrace apron and lawn ring ─────────────────────────────────────
