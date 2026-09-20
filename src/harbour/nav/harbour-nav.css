@@ -1,0 +1,175 @@
+/* Little Harbour · compass + quick sheet. Colours come from theme tokens only. */
+
+/* ── Compass (phone): 3 | + | 2 with the + exactly centred, like the personal nav. ── */
+.nav.compass {
+  grid-template-columns: 1fr 1fr 1fr 56px 1.5fr 1.5fr;
+  grid-template-rows: auto;
+  align-items: end;
+  background: color-mix(in srgb, var(--paper) 90%, transparent);
+  border-top: 1px solid var(--line);
+  padding-top: 4px;
+}
+.nav.compass .compass__district {
+  grid-row: 1;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1.1;
+  padding: 0 2px;
+  border-radius: 12px;
+  color: var(--muted);
+}
+.nav.compass .compass__district.active,
+.nav.compass .compass__district[aria-current="page"] { color: var(--ink); }
+.nav.compass .compass__district[aria-current="page"]::after {
+  content: "";
+  display: block;
+  width: 18px;
+  height: 3px;
+  margin-top: 1px;
+  border-radius: 3px;
+  background: var(--theme-accent, var(--pine));
+}
+.nav.compass .compass__district--home { grid-column: 1; }
+.nav.compass .compass__district--study { grid-column: 2; }
+.nav.compass .compass__district--kitchen { grid-column: 3; }
+.nav.compass > .fab-dial { grid-column: 4; grid-row: 1; }
+.nav.compass .compass__district--making { grid-column: 5; }
+.nav.compass .compass__district--together { grid-column: 6; }
+
+/* The quick-sheet handle: a 44px target that sits on the top edge, drawn as a slim bar. */
+.nav.compass .compass__handle {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 96px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  z-index: 3;
+}
+.nav.compass .compass__handle-bar {
+  display: block;
+  width: 36px;
+  height: 4px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--ink) 35%, var(--paper));
+}
+.nav.compass .compass__handle-text { padding-bottom: 2px; }
+.nav.compass .compass__handle:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; border-radius: 10px; }
+
+/* ── Compass (desktop ≥ 720): a fixed pill bottom-right, like houseWorld.css:64. ── */
+@media (min-width: 720px) {
+  .nav.compass {
+    position: fixed;
+    left: auto;
+    right: 20px;
+    bottom: 16px;
+    width: auto;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 5px 18px 5px 20px;
+    border-radius: 28px;
+    border: 1px solid var(--line);
+    background: var(--card);
+    box-shadow: var(--shadow);
+  }
+  .nav.compass .compass__district { font-size: 11px; padding: 0 6px; }
+  .nav.compass .fab { margin-top: 0; width: 46px; height: 46px; }
+  .nav.compass .compass__handle {
+    position: static;
+    transform: none;
+    width: auto;
+    order: 9;
+    flex-direction: row;
+    gap: 6px;
+    padding: 0 6px;
+    border-left: 1px solid var(--line);
+    border-radius: 0;
+  }
+  .nav.compass .compass__handle-bar { width: 14px; height: 14px; border-radius: 4px; border: 2px solid currentColor; background: none; box-sizing: border-box; }
+  .nav.compass .compass__handle-text { padding: 0; }
+}
+
+/* ── Quick sheet ── */
+.quick-sheet { position: fixed; inset: 0; z-index: 40; }
+.quick-sheet__scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: color-mix(in srgb, var(--ink) 35%, transparent);
+}
+.quick-sheet__panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  max-height: calc(100dvh - 40px);
+  overflow-y: auto;
+  background: var(--paper);
+  color: var(--ink);
+  border-top: 1px solid var(--line);
+  border-radius: 18px 18px 0 0;
+  box-shadow: var(--shadow);
+  padding: 8px 16px calc(16px + env(safe-area-inset-bottom));
+  font-family: var(--font);
+}
+.quick-sheet__panel:focus { outline: none; }
+.quick-sheet__head { display: flex; align-items: center; justify-content: space-between; gap: 12px; position: sticky; top: 0; background: var(--paper); padding: 8px 0 6px; }
+.quick-sheet__head h2 { margin: 0; font: 500 22px var(--display); }
+.quick-sheet__close { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 999px; font-size: 22px; line-height: 1; }
+.quick-sheet__space { display: grid; gap: 10px; padding: 6px 0 12px; border-bottom: 1px solid var(--line); }
+.quick-sheet__group { padding: 10px 0 4px; }
+.quick-sheet__group h3 { margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.quick-sheet__tools { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.quick-sheet__tool {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--line);
+  border-radius: var(--theme-radius, 12px);
+  background: var(--card);
+  color: var(--ink);
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.quick-sheet__tool[aria-current="true"] { border-color: var(--theme-accent, var(--pine)); box-shadow: inset 3px 0 0 var(--theme-accent, var(--pine)); }
+.quick-sheet__footer { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+.quick-sheet__footer > button { border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); font-weight: 600; font-size: 13px; padding: 8px 14px; }
+.quick-sheet__edition { grid-column: 1 / -1; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left; }
+.quick-sheet__edition small { color: var(--muted); font-weight: 500; font-size: 11px; }
+.quick-sheet__edition[aria-checked="true"] { background: color-mix(in srgb, var(--theme-accent, var(--pine)) 12%, var(--card)); }
+.quick-sheet__panel button:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; }
+
+@media (min-width: 720px) {
+  .quick-sheet__panel {
+    left: auto;
+    top: 0;
+    bottom: 0;
+    width: min(420px, 92vw);
+    max-height: none;
+    border-radius: 18px 0 0 18px;
+    border-top: 0;
+    border-left: 1px solid var(--line);
+    padding: 12px 22px 22px;
+  }
+  .quick-sheet__tools { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-sheet__panel, .nav.compass { transition: none; animation: none; }
+}
