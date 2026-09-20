@@ -7,6 +7,7 @@ import type { Transaction } from "../src/core/types.ts";
 import {
   interpretationGate,
   interpretationSourceRevision,
+  journeyDerivedSceneForSupport,
   readSupportedInterpretation,
   resolveSupportedInterpretation,
   supportedAtFor,
@@ -130,6 +131,20 @@ describe("last-supported scene interpretation", () => {
     const reloaded = readSupportedInterpretation(store, identity())!;
     expect(reloaded.support.sourceRevision).toBe(12);
     expect(reloaded.journey!.months.find((month) => month.key === "2026-06")!.scores.joy).toBe(0);
+  });
+
+  it("suppresses a newer era, Charter and closed land beside a stale cached island", () => {
+    const oldIsland: JourneySceneInterpretation = { months: [], recipes: [], weather: null };
+    const captured = resolveSupportedInterpretation({ gate: current, current: oldIsland, fallback: oldIsland, sourceRevision: 20, supportedAt: "2026-09-18T12:00:00.000Z" }).capture!;
+    const frozen = resolveSupportedInterpretation({ gate: stale, current: oldIsland, fallback: oldIsland, cached: captured, sourceRevision: 21, supportedAt: "2026-09-19T12:00:00.000Z" }).result;
+    const visible = journeyDerivedSceneForSupport(frozen.source, {
+      eras: [{ id: "ERA-NEW" }],
+      land: { "2026-09": { closed: true } },
+      sitdownClosed: new Set(["2026-09"]),
+      chapterSitdown: new Map([["CHAPTER-NEW", "closed"]]),
+      charter: { id: "CHARTER-NEW" },
+    });
+    expect(visible).toEqual({ eras: [], land: {}, sitdownClosed: new Set(), chapterSitdown: new Map(), charter: null });
   });
 });
 

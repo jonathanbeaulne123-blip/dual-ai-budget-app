@@ -72,6 +72,20 @@ export type SupportedInterpretationResult<T> = {
   statusLine: string | null;
 };
 
+/** Derived objects outside a captured section must disappear instead of mixing a newer scene into a frozen one. */
+export function allowsLiveJourneyDerivedScene(source: SupportedInterpretationResult<unknown>["source"]): boolean {
+  return source === "current";
+}
+
+/** Keeps uncached Journey selectors together so a stale scene cannot accidentally admit one new landmark. */
+export function journeyDerivedSceneForSupport<E, L, S, C>(
+  source: SupportedInterpretationResult<unknown>["source"],
+  current: { eras: E[]; land: Record<string, L>; sitdownClosed: Set<string>; chapterSitdown: Map<string, S>; charter: C | null },
+): { eras: E[]; land: Record<string, L>; sitdownClosed: Set<string>; chapterSitdown: Map<string, S>; charter: C | null } {
+  if (allowsLiveJourneyDerivedScene(source)) return current;
+  return { eras: [], land: {}, sitdownClosed: new Set(), chapterSitdown: new Map(), charter: null };
+}
+
 type Store = Pick<Storage, "getItem" | "setItem" | "removeItem">;
 const PREFIX = "hearth:scene-interpretation:v1";
 const MAX_TEXT = 320;

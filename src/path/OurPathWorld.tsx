@@ -62,7 +62,7 @@ import { useBoardPhotoUrls } from "../boardMedia/householdBoardMedia.tsx";
 import { memoryPhotoMatches } from "./memoryPhotos.ts";
 import { PathMiniMap } from "./PathMiniMap.tsx";
 import { JourneyMini } from "./mini/JourneyMini.tsx";
-import { quietJourneyMonths, supportedAtFor, useSupportedJourneyInterpretation, type InterpretationGate } from "../house/supportedInterpretation.ts";
+import { allowsLiveJourneyDerivedScene, journeyDerivedSceneForSupport, quietJourneyMonths, supportedAtFor, useSupportedJourneyInterpretation, type InterpretationGate } from "../house/supportedInterpretation.ts";
 import { useMiniJourneyLoad } from "./mini/miniJourneyLoader.ts";
 import { miniCad } from "./mini/miniJourneyModel.ts";
 import { JOURNEY_LEVEL_FOR_WORLD, JOURNEY_LEVEL_LABEL, WORLD_LEVEL_FOR, useJourneyFocus, type JourneyFocus, type JourneyFocusApi, type JourneyFocusSource } from "./journeyFocus.ts";
@@ -294,6 +294,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   const currentWeather = useMemo(() => { try { return pathWeather(household, today); } catch { return null; } }, [household, today]);
   const sceneEvidenceGate = interpretationGate ?? { current: true, freshness: "current" as const, detail: "Current local books" };
   const supported = useSupportedJourneyInterpretation({identity:{environment:household.environment,householdId:household.householdId,memberId,scope:"household"},gate:sceneEvidenceGate,current:{months:currentMonths,recipes:currentRecipes,weather:currentWeather},fallback:{months:quietJourneyMonths(currentMonths),recipes:currentRecipes,weather:null},sourceRevision:household.revision,supportedAt:supportedAtFor(household,today)});
+  const liveDerivedScene = allowsLiveJourneyDerivedScene(supported.source);
   const months = supported.value.months;
   const recipes = supported.value.recipes;
   const [cur, setCur] = useState(() => months.length - 1);
@@ -658,6 +659,20 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     return { signed, waiting, amendments, sub };
   }, [charter]);
   const charterShown = Boolean(charter && months[shown] && charter.foundedOn.slice(0, 7) <= months[shown]!.key);
+  // These selectors are not part of the cached month recipe. During a frozen read they disappear from the scene;
+  // their canonical HTML details and command buttons below continue to inspect the current Household.
+  const sceneDerived = useMemo(() => journeyDerivedSceneForSupport(supported.source, {
+    eras,
+    land,
+    sitdownClosed,
+    chapterSitdown: fireSitdown,
+    charter: charterView && charterShown ? charterView : null,
+  }), [supported.source, eras, land, sitdownClosed, fireSitdown, charterView, charterShown]);
+  const sceneLand = sceneDerived.land;
+  const sceneSitdownClosed = sceneDerived.sitdownClosed;
+  const sceneFireSitdown = sceneDerived.chapterSitdown;
+  const sceneCharterView = sceneDerived.charter;
+  const sceneCharterShown = sceneCharterView !== null;
   const accepted = useMemo(() => acceptedPlan(household, today), [household, today]);
   const forks = useMemo(() => {
     if (!accepted) return [];
@@ -698,12 +713,16 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   const offsets = useMemo(() => eraOffsets(eras), [eras]);
   const nextEra = nextEraAfterCurrent(eras);
   const crossing = eraCrossingPending(currentEra);
+  const sceneEras = sceneDerived.eras;
+  const sceneCurrentEra = sceneEras.find((era) => era.state === "current") ?? null;
+  const sceneNextEra = nextEraAfterCurrent(sceneEras);
+  const sceneCrossing = eraCrossingPending(sceneCurrentEra);
   // Past islands grow from their own months. Kept per era while its months and the recipes read the same, so a
   // command elsewhere on the page never regrows the past.
   const pastCache = useRef(new Map<string, { key: string; months: PathMonth[]; island: GrownIsland }>());
   const pastIslands = useMemo(() => {
     const out = new Map<string, { months: PathMonth[]; island: GrownIsland }>();
-    for (const era of eras) {
+    for (const era of sceneEras) {
       if (era.state !== "past" || !era.months.length) continue;
       const eraMonths = pathMonths(household, today, { from: era.months[0]!, through: era.months.at(-1)! });
       const key = JSON.stringify([eraMonths, recipes]);
@@ -716,8 +735,8 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     }
     for (const id of pastCache.current.keys()) if (!out.has(id)) pastCache.current.delete(id);
     return out;
-  }, [eras, household, today, recipes]);
-  const eraIslands = useMemo<PathEraIslandInput[]>(() => eras.flatMap((era) => {
+  }, [sceneEras, household, today, recipes]);
+  const eraIslands = useMemo<PathEraIslandInput[]>(() => sceneEras.flatMap((era) => {
     if (era.state === "current") return [];
     const offset = offsets.get(era.id);
     if (offset === undefined) return [];
@@ -727,25 +746,25 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
       plans: era.plans.map((plan) => ({ id: plan.id, kind: plan.kind, step: plan.step, bought: plan.bought, sketched: plan.sketched })),
       focused: focusedEra === era.id,
     }];
-  }), [eras, offsets, pastIslands, focusedEra]);
-  const gate = useMemo(() => (currentEra ? {
-    lanterns: currentEra.progress.lanterns.map((row) => row.lit),
-    open: currentEra.progress.met,
-    crossing,
-  } : null), [currentEra, crossing]);
-  const eraHome = currentEra?.spec.home ?? null;
+  }), [sceneEras, offsets, pastIslands, focusedEra]);
+  const gate = useMemo(() => (sceneCurrentEra ? {
+    lanterns: sceneCurrentEra.progress.lanterns.map((row) => row.lit),
+    open: sceneCurrentEra.progress.met,
+    crossing: sceneCrossing,
+  } : null), [sceneCurrentEra, sceneCrossing]);
+  const eraHome = sceneCurrentEra?.spec.home ?? null;
 
   const worldInput = useMemo<PathWorldInput>(() => ({
     island,
     theme,
     characters,
-    campfires: (household.chapters ?? []).map((row) => ({ id: `fire:${row.id}`, month: fireMonth(row), lit: row.state === "open" && atNow, state: row.state, sitdown: fireSitdown.get(row.id) ?? "none" })),
+    campfires: (household.chapters ?? []).map((row) => ({ id: `fire:${row.id}`, month: fireMonth(row), lit: row.state === "open" && atNow, state: row.state, sitdown: sceneFireSitdown.get(row.id) ?? "none" })),
     land: months.flatMap((month, m) => {
-      const row = land[month.key], set = sitdownClosed.has(month.key);
+      const row = sceneLand[month.key], set = sceneSitdownClosed.has(month.key);
       return row || set ? [{ month: m, closed: Boolean(row?.closed), stamps: Math.min(5, row?.stampedWeeks.length ?? 0), set }] : [];
     }),
     presentMembers: Math.max(1, presentMembers),
-    charter: charterView && charterShown ? { signed: charterView.signed, leaning: charterView.waiting.length > 0, amendments: Math.min(6, charterView.amendments) } : null,
+    charter: sceneCharterView && sceneCharterShown ? { signed: sceneCharterView.signed, leaning: sceneCharterView.waiting.length > 0, amendments: Math.min(6, sceneCharterView.amendments) } : null,
     forks: shownForks.map((fork) => ({ id: `fork:${fork.line.id}`, month: fork.month, index: fork.index })),
     moves: moves.map((move) => ({
       id: `move:${move.id}`,
@@ -773,8 +792,8 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     unknown: unknown.map((row) => ({ id: row.id, month: row.month })),
     name: islandName,
     layers,
-    ...(eras.length ? { eras: eraIslands, home: eraHome, gate } : {}),
-  }), [eras.length, eraIslands, eraHome, gate, fireMonth, placedMonth, shownFootpaths, shownBridges, island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, fireSitdown, land, sitdownClosed, presentMembers, charterView, charterShown, shownForks, photoUrls, keptPhotos, canPlay]);
+    ...(sceneEras.length ? { eras: eraIslands, home: eraHome, gate } : {}),
+  }), [sceneEras.length, eraIslands, eraHome, gate, fireMonth, placedMonth, shownFootpaths, shownBridges, island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, sceneFireSitdown, sceneLand, sceneSitdownClosed, presentMembers, sceneCharterView, sceneCharterShown, shownForks, photoUrls, keptPhotos, canPlay]);
 
   // ------------------------------------------------------------ marks: the real buttons over the canvas
   const marks = useMemo(() => {
@@ -786,11 +805,11 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     });
     for (const row of household.chapters ?? []) {
       if (fireMonth(row) > shown || fireMonth(row) < 0) continue;
-      const sitdown = fireSitdown.get(row.id);
+      const sitdown = sceneFireSitdown.get(row.id);
       const base = row.state === "open" ? "this Chapter" : row.state.replace("-", " ");
       list.push({ id: `fire:${row.id}`, label: row.title, sub: sitdown === "open" ? `${base} · Sitdown open` : sitdown === "closed" ? `${base} · Sitdown closed` : base, kind: "fire", minLevel: 1, lantern: 0 });
     }
-    if (charterView && charterShown) list.push({ id: "charter", label: "Our Charter", sub: charterView.sub, kind: "charter", minLevel: 1, lantern: 0 });
+    if (sceneCharterView && sceneCharterShown) list.push({ id: "charter", label: "Our Charter", sub: sceneCharterView.sub, kind: "charter", minLevel: 1, lantern: 0 });
     for (const fork of shownForks) list.push({ id: `fork:${fork.line.id}`, label: fork.label, sub: forkWho(fork.line.responsibility), kind: "fork", minLevel: 2, lantern: 0 });
     for (const row of moves) list.push({ id: `move:${row.id}`, label: row.text, sub: row.state === "done" ? `done · ${nameOf(row.completedByMemberId)}` : nameOf(row.ownerMemberId), kind: "move", minLevel: 3, lantern: 0 });
     landmarks.forEach(({ goal, step }) => list.push({ id: `goal:${goal.id}`, label: goal.name, sub: `${step} of 10 steps`, kind: "goal", minLevel: 0, lantern: 0 }));
@@ -814,11 +833,11 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     if (canPlay) list.push({ id: "cottage", label: "Hercules's cottage", sub: "Play", kind: "cottage", minLevel: 1, lantern: 0 });
     if (islandName) list.push({ id: "name", label: islandName, kind: "name", minLevel: 1, lantern: 0 });
     // The journey: era islands at every distance; a focused island's plans up close (or with the lantern warm); pencil only at Warm+.
-    if (currentEra) {
-      list.push({ id: "era-home", label: `Our home · ${PATH_ERA_HOME_LABELS[currentEra.spec.home]}`, sub: currentEra.spec.name, kind: "home", minLevel: 1, lantern: 0 });
-      list.push({ id: "era-gate", label: `The bridge to ${nextEra?.spec.name ?? "the next era"}`, sub: gateSub(currentEra.progress, crossing), kind: "gate", minLevel: 1, lantern: 0 });
+    if (sceneCurrentEra) {
+      list.push({ id: "era-home", label: `Our home · ${PATH_ERA_HOME_LABELS[sceneCurrentEra.spec.home]}`, sub: sceneCurrentEra.spec.name, kind: "home", minLevel: 1, lantern: 0 });
+      list.push({ id: "era-gate", label: `The bridge to ${sceneNextEra?.spec.name ?? "the next era"}`, sub: gateSub(sceneCurrentEra.progress, sceneCrossing), kind: "gate", minLevel: 1, lantern: 0 });
     }
-    for (const era of eras) {
+    for (const era of sceneEras) {
       if (era.state === "current") continue;
       const offset = offsets.get(era.id) ?? 0;
       const focused = focusedEra === era.id;
@@ -832,7 +851,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
       }
     }
     return list;
-  }, [eras, currentEra, nextEra, crossing, offsets, focusedEra, placedMonth, fireMonth, months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, sunrises, mist, shownStones, shownFootpaths, shownBridges, lantern, unknown, chapter, islandName, fireSitdown, charterView, charterShown, shownForks, canPlay]);
+  }, [sceneEras, sceneCurrentEra, sceneNextEra, sceneCrossing, offsets, focusedEra, placedMonth, fireMonth, months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, sunrises, mist, shownStones, shownFootpaths, shownBridges, lantern, unknown, chapter, islandName, sceneFireSitdown, sceneCharterView, sceneCharterShown, shownForks, canPlay]);
 
   // ------------------------------------------------------------ the shared focus (D-284/D-285)
   // One focus for the simple view and the open world. The world reports its level and picks as "world"; the page's
@@ -1680,7 +1699,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     onOpenWorld: compact ? () => {} : enterWorld,
   });
   const flatMap = (
-    <PathMiniMap household={household} today={today} shown={shown} theme={theme} interpretation={supported.value}
+    <PathMiniMap household={household} today={today} shown={shown} theme={theme} interpretation={supported.value} liveDerivedScene={liveDerivedScene}
       footpaths={shownFootpaths.map(({ path, month }) => ({ month, done: path.state === "done" }))}
       bridges={shownBridges.map(({ bridge, month }) => ({ month, stage: bridge.stage }))} />
   );
