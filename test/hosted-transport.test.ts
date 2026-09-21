@@ -184,7 +184,6 @@ describe("D-110 local-first sharing", () => {
   });
 
   it("posts normally after a metadata-only revision advanced beyond the PGlite receipt", async () => {
-    vi.stubEnv("VITE_PGLITE_INCREMENTAL_DEV", "1");
     await resetBrowserBooksForTests();
     const { acceptHouseholdWrite } = await import("../src/core/commandRuntime.ts");
     const { financialAuditHash } = await import("../src/core/commandIdentity.ts");

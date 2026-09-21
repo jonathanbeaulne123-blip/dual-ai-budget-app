@@ -140,21 +140,23 @@ describe("double-entry books", () => {
     })).ok).toBe(true);
     await resetBrowserBooksForTests();
   }, 30_000);
-  it("keeps the incremental canary default-off and permanently off in Production", () => {
-    vi.stubEnv("VITE_PGLITE_INCREMENTAL_DEV", "");
-    expect(incrementalBooksEnabled("development")).toBe(false);
-    vi.stubEnv("VITE_PGLITE_INCREMENTAL_DEV", "1");
+  it("defaults the delta writer on in both environments and obeys the full-projection kill switch", () => {
     expect(incrementalBooksEnabled("development")).toBe(true);
+    expect(incrementalBooksEnabled("production")).toBe(true);
+    vi.stubEnv("VITE_PGLITE_FULL_PROJECTION", "1");
+    expect(incrementalBooksEnabled("development")).toBe(false);
     expect(incrementalBooksEnabled("production")).toBe(false);
     vi.unstubAllEnvs();
   });
 
-  it("forces the full writer path when a Production caller explicitly requests incremental ingest", async () => {
+  it("applies a Production delta and returns to the full writer under the kill switch", async () => {
     const base = catalogHousehold();
     let previous = { ...base, environment: "production" as const };
     previous = { ...previous, booksAcceptedHash: await hashBooksSnapshot(previous) };
-    const nextDraft = { ...previous, revision: previous.revision + 1, name: "Production stays full" };
+    const nextDraft = { ...previous, revision: previous.revision + 1, name: "Production posts a delta" };
     const next = { ...nextDraft, booksAcceptedHash: await hashBooksSnapshot(nextDraft) };
+    const laterDraft = { ...next, revision: next.revision + 1, name: "Production stays full" };
+    const later = { ...laterDraft, booksAcceptedHash: await hashBooksSnapshot(laterDraft) };
     const db = await openMemoryBooks();
     try {
       await ingestBooks(db, previous);
@@ -162,10 +164,21 @@ describe("double-entry books", () => {
         previous,
         incremental: true,
       });
-      expect(status.writeMode).toBe("full");
-      expect(status.compactionReason).toBe("production-full-path");
+      expect(status.writeMode).toBe("incremental");
+      expect(status.compactionReason).toBeUndefined();
+      expect((await db.query<{ environment: string; name: string }>("SELECT environment, name FROM households")).rows)
+        .toEqual([{ environment: "production", name: "Production posts a delta" }]);
+
+      vi.stubEnv("VITE_PGLITE_FULL_PROJECTION", "1");
+      const forced = await ingestBooks(db, later, compileHousehold(later), {
+        previous: next,
+        incremental: true,
+      });
+      expect(forced.writeMode).toBe("full");
+      expect(forced.compactionReason).toBe("incremental-disabled");
       expect((await db.query<{ environment: string; name: string }>("SELECT environment, name FROM households")).rows)
         .toEqual([{ environment: "production", name: "Production stays full" }]);
+      vi.unstubAllEnvs();
     } finally {
       await db.close();
     }

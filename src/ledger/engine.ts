@@ -42,7 +42,7 @@ export type BooksStatus = {
   equationHolds: boolean;
   writeMode?: "full" | "incremental";
   changedRowCount?: number;
-  compactionReason?: "first-ingest" | "household-switch" | "untrusted-previous" | "metadata-reanchor" | "large-delta" | "periodic-compaction" | "incremental-disabled" | "production-full-path";
+  compactionReason?: "first-ingest" | "household-switch" | "untrusted-previous" | "metadata-reanchor" | "large-delta" | "periodic-compaction" | "incremental-disabled" | "delta-fallback";
   error?: string;
   hosted?: {
     provider: "supabase";
@@ -83,6 +83,8 @@ export type BooksIngestOptions = {
   incremental?: boolean;
   /** Canonical hash already computed by the accepted-write boundary. */
   auditHash?: string;
+  /** Set only by the rollback-and-rebuild retry so the receipt names the reason. */
+  fallbackFromIncremental?: boolean;
 };
 
 const INCREMENTAL_COMPACTION_RECEIPTS = 64;
@@ -307,8 +309,22 @@ export function stagedBooksIdbName(environment: Environment, householdId: string
   return `idb://hearth-books-staged-${environment}-${safeHouseholdId}`;
 }
 
-export function incrementalBooksEnabled(environment: Environment): boolean {
-  return environment === "development" && String(import.meta.env.VITE_PGLITE_INCREMENTAL_DEV ?? "0") === "1";
+/**
+ * Build kill-switch. `VITE_PGLITE_FULL_PROJECTION=1` forces every books write
+ * back onto the full transactional TRUNCATE rebuild in every environment, for
+ * every caller, without a code change.
+ */
+export function fullProjectionForced(): boolean {
+  return String(import.meta.env.VITE_PGLITE_FULL_PROJECTION ?? "0") === "1";
+}
+
+/**
+ * Bounded deterministic row deltas are the default write path everywhere. The
+ * full rebuild still owns first ingest, replica switch, missing or untrusted
+ * proof, large deltas, periodic compaction, and the kill switch above.
+ */
+export function incrementalBooksEnabled(_environment: Environment): boolean {
+  return !fullProjectionForced();
 }
 
 export async function migrateBooks(db: Queryable): Promise<void> {
@@ -782,6 +798,45 @@ export class UnbalancedBooksError extends Error {
   }
 }
 
+/**
+ * D-177 keeps its refusal: a projection that changed after its own receipt is
+ * a proved mismatch and is never silently rebuilt over.
+ */
+export class BooksProjectionDriftError extends Error {
+  readonly code = "PROJECTION_DRIFT";
+  constructor(message: string) {
+    super(message);
+    this.name = "BooksProjectionDriftError";
+  }
+}
+
+/**
+ * The stored receipt is not the one this write claims to follow: the durable
+ * projection is ahead of the supplied previous snapshot, or its accepted hash
+ * disagrees. Rebuilding would erase a newer tip, so this stays a refusal in
+ * every environment.
+ */
+export class BooksReceiptMismatchError extends Error {
+  readonly code = "RECEIPT_MISMATCH";
+  constructor(message: string) {
+    super(message);
+    this.name = "BooksReceiptMismatchError";
+  }
+}
+
+/**
+ * The delta could not be trusted or could not be applied. The transaction is
+ * rolled back untouched and the same command is rebuilt through the full
+ * transactional path, which re-runs every balance, equation and receipt check.
+ */
+class IncrementalProjectionFallbackError extends Error {
+  readonly code = "INCREMENTAL_FALLBACK";
+  constructor(readonly cause: unknown) {
+    super(cause instanceof Error ? cause.message : String(cause));
+    this.name = "IncrementalProjectionFallbackError";
+  }
+}
+
 function assertBalanced(compiled: CompiledBooks, household: Household): {
   equation: ReturnType<typeof booksEquation>;
   tb: ReturnType<typeof trialBalance>;
@@ -813,7 +868,18 @@ export async function ingestBooks(
   compiled = compileHousehold(household),
   options: BooksIngestOptions = {},
 ): Promise<BooksStatus> {
-  return db.transaction((tx) => writeBooks(tx, household, compiled, options));
+  try {
+    return await db.transaction((tx) => writeBooks(tx, household, compiled, options));
+  } catch (caught) {
+    if (!(caught instanceof IncrementalProjectionFallbackError)) throw caught;
+    // Postgres aborts the whole transaction on the first failed statement, so a
+    // delta can only be abandoned by rolling back and rebuilding in a new one.
+    return db.transaction((tx) => writeBooks(tx, household, compiled, {
+      ...options,
+      incremental: false,
+      fallbackFromIncremental: true,
+    }));
+  }
 }
 
 export async function resetBrowserBooksForTests(): Promise<void> {
@@ -1075,6 +1141,39 @@ function projectBooksTables(household: Household, compiled: CompiledBooks, snaps
   ];
 }
 
+/**
+ * A delta needs the previous snapshot projected as well as the new one, and
+ * projecting a household means rebuilding every row and re-stringifying every
+ * transaction plus the whole snapshot payload. The previous projection was
+ * already built by the write that accepted it, so remember it against that
+ * exact snapshot object and its exact compile rather than paying for it twice.
+ *
+ * Both identities must match: a different compile means the rows would differ,
+ * so the projection is rebuilt.
+ */
+const projectionTablesCache = new WeakMap<Household, { compiled: CompiledBooks; snapshotUpdatedAt: string; tables: ProjectionTable[] }>();
+
+function withSnapshotUpdatedAt(tables: ProjectionTable[], snapshotUpdatedAt: string): ProjectionTable[] {
+  return tables.map((table) => {
+    if (table.table !== "household_snapshots") return table;
+    const column = table.columns.indexOf("updated_at");
+    if (column < 0) return table;
+    return { ...table, rows: table.rows.map((row) => row.map((value, index) => (index === column ? snapshotUpdatedAt : value))) };
+  });
+}
+
+function projectBooksTablesCached(household: Household, compiled: CompiledBooks, snapshotUpdatedAt: string): ProjectionTable[] {
+  const cached = projectionTablesCache.get(household);
+  if (cached && cached.compiled === compiled) {
+    return cached.snapshotUpdatedAt === snapshotUpdatedAt
+      ? cached.tables
+      : withSnapshotUpdatedAt(cached.tables, snapshotUpdatedAt);
+  }
+  const tables = projectBooksTables(household, compiled, snapshotUpdatedAt);
+  projectionTablesCache.set(household, { compiled, snapshotUpdatedAt, tables });
+  return tables;
+}
+
 function rowsEqual(left: InsertValue[], right: InsertValue[]): boolean {
   return left.length === right.length && left.every((value, index) => Object.is(value, right[index]));
 }
@@ -1119,15 +1218,15 @@ async function writeIncrementalProjection(db: Queryable, tables: ProjectionTable
 async function writeBooks(db: Queryable, household: Household, compiled: CompiledBooks, options: BooksIngestOptions = {}): Promise<BooksStatus> {
   const { equation, tb } = assertBalanced(compiled, household);
   const snapshotUpdatedAt = new Date().toISOString();
-  const tables = projectBooksTables(household, compiled, snapshotUpdatedAt);
+  const tables = projectBooksTablesCached(household, compiled, snapshotUpdatedAt);
   let writeMode: "full" | "incremental" = "full";
   let changedRowCount = tables.reduce((sum, table) => sum + table.rows.length, 0);
-  const incrementalAllowed = options.incremental === true && household.environment === "development";
-  let compactionReason: BooksStatus["compactionReason"] = household.environment === "production" && options.incremental
-    ? "production-full-path"
-    : options.incremental === false
-      ? "incremental-disabled"
-      : "untrusted-previous";
+  const incrementalAllowed = options.incremental === true && !fullProjectionForced();
+  let compactionReason: BooksStatus["compactionReason"] = options.fallbackFromIncremental
+    ? "delta-fallback"
+    : incrementalAllowed
+      ? "untrusted-previous"
+      : "incremental-disabled";
 
   if (
     incrementalAllowed
@@ -1135,65 +1234,76 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
     && options.previous.householdId === household.householdId
     && options.previous.booksAcceptedHash
   ) {
-    const current = await db.query<{
-      id: string;
-      revision: number;
-      snapshot_hash: string;
-      projection_hash: string | null;
-      actual_projection_hash: string;
-      receipts: number;
-    }>(
-      `SELECT h.id, h.revision,
-              COALESCE((SELECT ar.snapshot_hash FROM audit_revisions ar WHERE ar.household_id = h.id ORDER BY ar.revision DESC, ar.at DESC LIMIT 1), '') AS snapshot_hash,
-              (SELECT ar.projection_hash FROM audit_revisions ar WHERE ar.household_id = h.id ORDER BY ar.revision DESC, ar.at DESC LIMIT 1) AS projection_hash,
-              ${projectionDigestExpression("h.id")} AS actual_projection_hash,
-              (SELECT count(*)::int FROM audit_revisions ar WHERE ar.household_id = h.id) AS receipts
-       FROM households h
-       WHERE h.id = $1`,
-      [household.householdId],
-    );
-    const tip = current.rows[0];
-    if (tip) {
-      const tipRevision = Number(tip.revision);
-      if (
-        !Number.isSafeInteger(tipRevision)
-        || tipRevision > options.previous.revision
-        || tip.snapshot_hash !== options.previous.booksAcceptedHash
-      ) {
-        throw new Error("The accepted PGlite receipt does not match the previous household revision and hash.");
-      }
-      if (tipRevision < options.previous.revision) {
-        // D-175 permits proven non-financial metadata to advance the saved
-        // snapshot without rewriting PGlite. Re-anchor transactionally before
-        // the next books write; never calculate a delta from a projection that
-        // predates the supplied previous snapshot.
-        compactionReason = "metadata-reanchor";
-      } else if (tip.projection_hash) {
-        if (tip.projection_hash !== tip.actual_projection_hash) {
-          throw new Error("The accepted PGlite projection changed after its receipt. Nothing was posted.");
+    try {
+      const current = await db.query<{
+        id: string;
+        revision: number;
+        snapshot_hash: string;
+        projection_hash: string | null;
+        actual_projection_hash: string;
+        receipts: number;
+      }>(
+        `SELECT h.id, h.revision,
+                COALESCE((SELECT ar.snapshot_hash FROM audit_revisions ar WHERE ar.household_id = h.id ORDER BY ar.revision DESC, ar.at DESC LIMIT 1), '') AS snapshot_hash,
+                (SELECT ar.projection_hash FROM audit_revisions ar WHERE ar.household_id = h.id ORDER BY ar.revision DESC, ar.at DESC LIMIT 1) AS projection_hash,
+                ${projectionDigestExpression("h.id")} AS actual_projection_hash,
+                (SELECT count(*)::int FROM audit_revisions ar WHERE ar.household_id = h.id) AS receipts
+         FROM households h
+         WHERE h.id = $1`,
+        [household.householdId],
+      );
+      const tip = current.rows[0];
+      if (tip) {
+        const tipRevision = Number(tip.revision);
+        if (
+          !Number.isSafeInteger(tipRevision)
+          || tipRevision > options.previous.revision
+          || tip.snapshot_hash !== options.previous.booksAcceptedHash
+        ) {
+          throw new BooksReceiptMismatchError("The accepted PGlite receipt does not match the previous household revision and hash.");
         }
-        const previousCompiled = options.previousCompiled
-          ?? recalledCompiledBooks(options.previous)
-          ?? compileHousehold(options.previous);
-        const previousTables = projectBooksTables(options.previous, previousCompiled, options.previous.lastCommittedAt ?? snapshotUpdatedAt);
-        const delta = projectionDelta(previousTables, tables);
-        changedRowCount = delta.changedRowCount;
-        const changeLimit = Math.min(
-          INCREMENTAL_MAX_CHANGED_ROWS,
-          Math.max(INCREMENTAL_MIN_CHANGED_ROWS, Math.ceil(delta.priorRowCount * INCREMENTAL_CHANGED_RATIO)),
-        );
-        if (Number(tip.receipts) >= INCREMENTAL_COMPACTION_RECEIPTS) {
-          compactionReason = "periodic-compaction";
-        } else if (delta.changedRowCount > changeLimit) {
-          compactionReason = "large-delta";
-        } else {
-          await writeIncrementalProjection(db, tables, delta);
-          writeMode = "incremental";
-          compactionReason = undefined;
+        if (tipRevision < options.previous.revision) {
+          // D-175 permits proven non-financial metadata to advance the saved
+          // snapshot without rewriting PGlite. Re-anchor transactionally before
+          // the next books write; never calculate a delta from a projection that
+          // predates the supplied previous snapshot.
+          compactionReason = "metadata-reanchor";
+        } else if (tip.projection_hash) {
+          if (tip.projection_hash !== tip.actual_projection_hash) {
+            throw new BooksProjectionDriftError("The accepted PGlite projection changed after its receipt. Nothing was posted.");
+          }
+          const previousCompiled = options.previousCompiled
+            ?? recalledCompiledBooks(options.previous)
+            ?? compileHousehold(options.previous);
+          const previousTables = projectBooksTablesCached(options.previous, previousCompiled, options.previous.lastCommittedAt ?? snapshotUpdatedAt);
+          const delta = projectionDelta(previousTables, tables);
+          changedRowCount = delta.changedRowCount;
+          const changeLimit = Math.min(
+            INCREMENTAL_MAX_CHANGED_ROWS,
+            Math.max(INCREMENTAL_MIN_CHANGED_ROWS, Math.ceil(delta.priorRowCount * INCREMENTAL_CHANGED_RATIO)),
+          );
+          if (Number(tip.receipts) >= INCREMENTAL_COMPACTION_RECEIPTS) {
+            compactionReason = "periodic-compaction";
+          } else if (delta.changedRowCount > changeLimit) {
+            compactionReason = "large-delta";
+          } else {
+            await writeIncrementalProjection(db, tables, delta);
+            writeMode = "incremental";
+            compactionReason = undefined;
+          }
         }
+      } else {
+        compactionReason = "first-ingest";
       }
-    } else {
-      compactionReason = "first-ingest";
+    } catch (caught) {
+      // A proved projection mismatch and a receipt that disagrees with the
+      // supplied previous snapshot stay refusals (D-177): neither is rebuilt
+      // over, because that would erase a newer or tampered-with tip. Anything
+      // else — an unavailable previous compile, a failed delta statement —
+      // rolls this transaction back and rebuilds the whole projection, which is
+      // what every environment did before deltas existed.
+      if (caught instanceof BooksProjectionDriftError || caught instanceof BooksReceiptMismatchError) throw caught;
+      throw new IncrementalProjectionFallbackError(caught);
     }
   } else if (options.previous && options.previous.householdId !== household.householdId) {
     compactionReason = "household-switch";
@@ -1203,22 +1313,33 @@ async function writeBooks(db: Queryable, household: Household, compiled: Compile
 
   if (writeMode === "full") await writeFullProjection(db, tables);
 
-  const unbalanced = await db.query<{ entry_id: string }>("SELECT entry_id FROM v_unbalanced_entries WHERE household_id = $1", [compiled.householdId]);
+  // A delta that cannot then prove itself against the real SQL views is never
+  // accepted: it rolls back and the command is rebuilt through the full path,
+  // which runs these same checks over a projection built from scratch.
+  const rejectionOrFallback = (caught: unknown): unknown => (
+    writeMode === "incremental" ? new IncrementalProjectionFallbackError(caught) : caught
+  );
+  const rethrow = (caught: unknown): never => { throw rejectionOrFallback(caught); };
+
+  const unbalanced = await db.query<{ entry_id: string }>("SELECT entry_id FROM v_unbalanced_entries WHERE household_id = $1", [compiled.householdId]).catch(rethrow);
   if (unbalanced.rows.length) {
-    throw new UnbalancedBooksError("PGlite rejected an unbalanced journal. Nothing was posted.");
+    throw rejectionOrFallback(new UnbalancedBooksError("PGlite rejected an unbalanced journal. Nothing was posted."));
   }
   const version = await db.query<{ v: string }>("SELECT current_setting('server_version') AS v");
   const sqlEquation = await db.query<{
     net_worth_cents: number;
     net_income_cents: number;
     equity_cents: number;
-  }>("SELECT net_worth_cents, net_income_cents, equity_cents FROM v_net_worth WHERE household_id = $1", [compiled.householdId]);
+  }>("SELECT net_worth_cents, net_income_cents, equity_cents FROM v_net_worth WHERE household_id = $1", [compiled.householdId]).catch(rethrow);
   const row = sqlEquation.rows[0];
   const sqlHolds = row
     ? Number(row.net_worth_cents) === Number(row.equity_cents) + Number(row.net_income_cents)
     : equation.holds;
   if (!tb.inBalance || !equation.holds || !sqlHolds) {
-    throw new UnbalancedBooksError("The accounting equation does not hold after ingest. Nothing was posted.");
+    // The trial balance and the equation are the compiler's own verdict on this
+    // snapshot and stay a refusal; only the SQL half can be a delta artefact.
+    const error = new UnbalancedBooksError("The accounting equation does not hold after ingest. Nothing was posted.");
+    throw tb.inBalance && equation.holds ? rejectionOrFallback(error) : error;
   }
 
   const projectionHash = await actualProjectionHash(db, compiled.householdId);

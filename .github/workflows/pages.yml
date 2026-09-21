@@ -61,7 +61,6 @@ jobs:
           VITE_CONTINUITY_REALTIME: "1"
           VITE_CONTINUITY_COMMAND_LOG: "1"
           VITE_CLOUD_LEDGER_ONLINE_REQUIRED: "1"
-          VITE_PGLITE_INCREMENTAL_DEV: "1"
           VITE_PRODUCTION_CONTINUITY: "0"
           VITE_SYNC_PILOT_DIAGNOSTICS: "1"
           VITE_PLAN_SYSTEM_V2: ${{ inputs.plan_system_v2 || '1' }}
@@ -82,7 +81,6 @@ jobs:
           test "$VITE_CONTINUITY_REALTIME" = "1"
           test "$VITE_CONTINUITY_COMMAND_LOG" = "1"
           test "$VITE_CLOUD_LEDGER_ONLINE_REQUIRED" = "1"
-          test "$VITE_PGLITE_INCREMENTAL_DEV" = "1"
           test "$VITE_PRODUCTION_CONTINUITY" = "0"
           test "$VITE_SYNC_PILOT_DIAGNOSTICS" = "1"
           case "$VITE_PLAN_SYSTEM_V2" in 0|1) ;; *) echo "::error::Invalid Plan System V2 presentation switch"; exit 1;; esac
