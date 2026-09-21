@@ -5,23 +5,38 @@ import type { QueenStyle } from "../queenStyle.ts";
 export type BloomEvidence = {id: string; title: string; kind:"intention"|"lived"|"revision"|"care"; date: string | null; revision: number};
 export const BLOOM_MASTER_SHA256 = "ddde35ae3ce025563ab546b13dc54f6f4376a1cddffe947c14dca082e05c2561";
 const hash = (text: string) => [...text].reduce((sum,c)=>Math.imul(sum ^ c.charCodeAt(0),16777619)>>>0,2166136261);
-let master:Promise<THREE.Group>|null=null,masterRoot:THREE.Group|null=null,users=0;
-async function acquireMaster(){users++;try{master??=new GLTFLoader().loadAsync("/models/mandevilla-living-presence.glb").then(gltf=>{masterRoot=gltf.scene;return gltf.scene;});return await master;}catch(error){users--;master=null;throw error;}}
-function releaseMaster(){users--;if(users===0&&masterRoot){disposeObject(masterRoot);masterRoot=null;master=null;}}
+/** Which tier of her the figure is cloned from. `lite` is the decimated court copy: same node names, a quarter of the bytes. */
+export type BloomTier = "full" | "lite";
+export const BLOOM_MASTERS: Readonly<Record<BloomTier,string>> = Object.freeze({
+  full: "/models/mandevilla-living-presence.glb",
+  lite: "/models/mandevilla-living-presence.court.glb",
+});
+type MasterHold = {model:Promise<THREE.Group>|null;root:THREE.Group|null;users:number};
+/** One hold per file, ref-counted: a page that shows her twice downloads her once. */
+const holds = new Map<string,MasterHold>();
+const holdFor = (url:string):MasterHold => { let hold=holds.get(url); if(!hold){hold={model:null,root:null,users:0};holds.set(url,hold);} return hold; };
+async function acquireMaster(url:string){const hold=holdFor(url);hold.users++;try{hold.model??=new GLTFLoader().loadAsync(url).then(gltf=>{hold.root=gltf.scene;return gltf.scene;});return await hold.model;}catch(error){hold.users--;hold.model=null;throw error;}}
+function releaseMaster(url:string){const hold=holds.get(url);if(!hold)return;hold.users--;if(hold.users===0&&hold.root){disposeObject(hold.root);hold.root=null;hold.model=null;}}
 /**
  * What is drawn around the master. The house keeps both (today's look); the
  * Court asks for `{decoration:false}` so nothing is drawn over her own pot —
  * no second pot, crown torus, trellis or eggs — while the growth stems stay.
+ * `tier` picks the file she is cloned from; it does not change what is drawn.
  */
-export type BloomQueenOptions = { decoration?: boolean; growth?: boolean };
+export type BloomQueenOptions = { decoration?: boolean; growth?: boolean; tier?: BloomTier };
 export const BLOOM_QUEEN_HEIGHT = 2.05;
 export async function createBloomQueen(style: QueenStyle, evidence: BloomEvidence[], options: BloomQueenOptions = {}): Promise<THREE.Group> {
-  const {decoration:withDecoration=true,growth:withGrowth=true}=options;
-  const loaded = await acquireMaster();
+  const {decoration:withDecoration=true,growth:withGrowth=true,tier="full"}=options;
+  // A lite tier that cannot find its court copy still gets her: the master is
+  // the fallback, exactly as it was before the tiers existed.
+  let url = BLOOM_MASTERS[tier] ?? BLOOM_MASTERS.full;
+  let loaded: THREE.Group;
+  try { loaded = await acquireMaster(url); }
+  catch (error) { if (url === BLOOM_MASTERS.full) throw error; url = BLOOM_MASTERS.full; loaded = await acquireMaster(url); }
   const group = new THREE.Group(); group.name = "Bloom V2 · Living Presence";
   const sculpture = loaded.clone(true);
   sculpture.traverse(node=>{node.userData.bloomSharedResource=true;});
-  group.userData.releaseBloomMaster=releaseMaster;
+  group.userData.releaseBloomMaster=()=>releaseMaster(url);
   const box = new THREE.Box3().setFromObject(sculpture), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
   sculpture.position.set(-center.x,-box.min.y,-center.z);
   const normal = new THREE.Group(); normal.name="Normalised master"; normal.add(sculpture); normal.scale.setScalar(BLOOM_QUEEN_HEIGHT / Math.max(size.y,.01)); group.add(normal);

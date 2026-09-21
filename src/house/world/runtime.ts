@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { createHomeObjects, type HomeObjectsProjection } from "./homeObjects.ts";
 import { createHouseSet } from "./houseSet.ts";
 import { acquireWorldRenderer } from "./rendererOwner.ts";
-import { createBloomQueen, disposeObject, type BloomEvidence } from "./bloom.ts";
+import { createBloomQueen, disposeObject, type BloomEvidence, type BloomTier } from "./bloom.ts";
 import { HOUSE_WALK_GRAPH, findPath, nearestNode, type WalkNode } from "./walkPaths.ts";
 import { houseFramePolicy } from "./framePolicy.ts";
 import { worldDiagnostics } from "./diagnostics.ts";
@@ -24,6 +24,13 @@ export type HouseWorldOptions={
    * them per frame. An id the runtime leaves out is one that does not stand.
    */
   onProject?:(twins:HouseTwin[])=>void;
+  /**
+   * Which Queen the house stands. `full` is the 12.9 MB Living Presence
+   * master; `lite` is the 3.5 MB court copy, which is what a phone or a small
+   * machine gets — the same routing the harbour's court already uses. Default
+   * `full`, so a caller that says nothing keeps today's file.
+   */
+  tier?:BloomTier;
 };
 export type HouseRuntime={setHome:(input:HomeObjectsProjection)=>void;go:(destination:WorldDestination)=>void;walk:(direction:Direction)=>void;walkTo:(x:number,y:number)=>void;setWalking:(enabled:boolean)=>void;setQueen:(style:QueenStyle,evidence:BloomEvidence[])=>void;camera:()=>[number,number,number];dispose:()=>void};
 export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<string,HTMLElement>,onReady:()=>void,onFailure:()=>void,onArrival?:(room:string,level:string)=>void,options:HouseWorldOptions={}):HouseRuntime{
@@ -179,7 +186,7 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
     if(nearest)travel(nearest);
   }
   async function setQueen(style:QueenStyle,evidence:BloomEvidence[]){
-    const generation=++queenGeneration;try{const next=await createBloomQueen(style,evidence);if(disposed||generation!==queenGeneration){disposeObject(next);return;}
+    const generation=++queenGeneration;try{const next=await createBloomQueen(style,evidence,{tier:options.tier??"full"});if(disposed||generation!==queenGeneration){disposeObject(next);return;}
       if(queen){scene.remove(queen);disposeObject(queen);}queen=next;
       const anchor=set.anchors.find(a=>a.id==="queen");if(anchor)next.position.fromArray(anchor.position);scene.add(next);
       sun.color.set(style.light==="moon"?0xc4d6ff:style.light==="amber"?0xffc788:0xffe6be);render();schedule();

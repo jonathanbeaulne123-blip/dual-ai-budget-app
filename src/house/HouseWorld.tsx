@@ -15,6 +15,7 @@ import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { HOUSE_PLACES, ROOM_NAMES } from "./navigation.ts";
 import { DEFAULT_QUEEN_STYLE, type QueenStyle } from "./queenStyle.ts";
 import type { HouseRuntime } from "./world/runtime.ts";
+import { renderTierFor } from "./world/tier.ts";
 import { livingEvidence } from "./interpretation.ts";
 import { interpretationSourceRevision, supportedAtFor, useSupportedHouseInterpretation, type InterpretationGate } from "./supportedInterpretation.ts";
 import { houseTargets } from "./houseTargets.ts";
@@ -53,7 +54,10 @@ export function HouseWorld({household,memberId,scope,today,route,ready,freshness
     const element=host.current;if(!element)return;let cancelled=false;setStatus("loading");
     void import("./world/runtime.ts").then(({mountHouseWorld})=>{
       if(cancelled)return;
-      try{const world=mountHouseWorld(element,theme,()=>buttons.current,()=>setStatus("ready"),()=>setStatus("fallback"),(room,level)=>navigationRef.current(room as HouseRoom,level as HouseLevel,true),{onProject:rows=>setTwins(Object.fromEntries(rows.map(row=>[row.id,{x:row.x,y:row.y}])))});runtime.current=world;world.go(currentDestination.current);world.setQueen(preview??appearance.saved.queen??DEFAULT_QUEEN_STYLE,evidence);world.setHome(homeObjects);world.setWalking(walking);}
+      // A phone or a small machine carries the 3.5 MB court copy of her, not
+      // the 12.9 MB master — the harbour's own routing, read the same way.
+      const tier=renderTierFor(element.getBoundingClientRect().width||window.innerWidth);
+      try{const world=mountHouseWorld(element,theme,()=>buttons.current,()=>setStatus("ready"),()=>setStatus("fallback"),(room,level)=>navigationRef.current(room as HouseRoom,level as HouseLevel,true),{tier,onProject:rows=>setTwins(Object.fromEntries(rows.map(row=>[row.id,{x:row.x,y:row.y}])))});runtime.current=world;world.go(currentDestination.current);world.setQueen(preview??appearance.saved.queen??DEFAULT_QUEEN_STYLE,evidence);world.setHome(homeObjects);world.setWalking(walking);}
       catch{setStatus("fallback");}
     }).catch(()=>setStatus("fallback"));
     return()=>{cancelled=true;runtime.current?.dispose();runtime.current=null;};
