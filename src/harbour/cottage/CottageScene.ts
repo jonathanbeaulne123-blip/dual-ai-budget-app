@@ -34,9 +34,9 @@ export const COTTAGE_LAYOUT = {
   /** The rail the wainscot stops at, and the picture rail above it. */
   chair: 0.95,
   picture: 1.85,
-  /** The armoire and the cheval glass, along the left wall. */
+  /** The armoire against the left wall; the cheval glass standing free on the rug, clear of it. */
   wardrobe: [-2.55, 0, -0.55] as const,
-  mirror: [-1.85, 0, 1.35] as const,
+  mirror: [-0.65, 0, -0.22] as const,
   /** The cabinet of wonders, along the right wall. */
   cabinet: [2.7, 0, -0.35] as const,
   /** The bay window at the back, and the seat under it. */
@@ -63,10 +63,13 @@ export function wearingWords(worn: number, name: string): string {
   return `${name} is wearing ${worn} ${worn === 1 ? "piece" : "pieces"}`;
 }
 
-// Stand just inside the cottage door: the armoire and the glass down the left
-// wall, the cabinet on the right, the window seat and the cat straight ahead.
-const PHONE_ROOM: Pose = { target: [-0.15, 1.0, -0.6], r: 3.5, theta: 0.1, phi: 1.3 };
-const DESKTOP_ROOM: Pose = { target: [0, 1.0, -0.5], r: 3.8, theta: 0.28, phi: 1.29 };
+// Stand in the front-right corner and look diagonally across the room: the
+// armoire and the glass down the far wall, the cabinet's glazing along the
+// near one, the window seat and the cat between them. Facing the back wall
+// square-on put both tall stations off the stage, and a station off the stage
+// is a twin nobody can press.
+const PHONE_ROOM: Pose = { target: [-0.7, 1.15, -0.85], r: 3.8, theta: 0.72, phi: 1.345 };
+const DESKTOP_ROOM: Pose = { target: [-0.75, 1.15, -0.9], r: 4.15, theta: 0.72, phi: 1.36 };
 
 export function cottagePoses(anchors: readonly Anchor[]): Record<string, Pose> {
   const poses: Record<string, Pose> = {
@@ -190,6 +193,16 @@ export function createCottage(scene: THREE.Scene, options: CottageOptions): Plac
 
   const hemi = new THREE.HemisphereLight(new THREE.Color(dressing.light.hemiSky), new THREE.Color(dressing.light.hemiGround), 0.52);
   group.add(hemi);
+
+  // ── The hooked rug, laid between the stations ─────────────────────────────
+  const rug = new THREE.Mesh(track(new THREE.CircleGeometry(1.35, 28)), mat(dressing.cushion, { roughness: 0.99 }));
+  rug.rotation.x = -Math.PI / 2; rug.scale.set(1, 0.68, 1); rug.position.set(-0.35, 0.008, -0.35);
+  rug.receiveShadow = true; rug.name = "cottage-rug"; group.add(rug);
+  const rugRings = merged([
+    placed(new THREE.RingGeometry(0.98, 1.08, 28), -0.35, 0.012, -0.35, [-Math.PI / 2, 0, 0]),
+    placed(new THREE.RingGeometry(0.52, 0.6, 24), -0.35, 0.012, -0.35, [-Math.PI / 2, 0, 0]),
+  ], mat(dressing.wainscot, { roughness: 0.99 }));
+  rugRings.scale.set(1, 1, 0.68); rugRings.name = "cottage-rug-rings"; group.add(rugRings);
 
   // ── The bay window at the back, and the seat he sleeps on ─────────────────
   const [sx, , sz] = COTTAGE_LAYOUT.seat;
@@ -318,7 +331,8 @@ export function createCottage(scene: THREE.Scene, options: CottageOptions): Plac
     glint.rotation.y = Math.PI / 2; glint.rotation.z = 0.14; glint.position.set(0.04, 0.1, -0.16); glint.renderOrder = 3; swing.add(glint);
     cheval.add(swing);
     cheval.position.set(mx, 0, mz);
-    cheval.rotation.y = 0.62;
+    // Turned to the door, the way a glass is left when somebody last used it.
+    cheval.rotation.y = -0.744;
     owned(cheval, "mirror");
     group.add(cheval);
   }
@@ -478,7 +492,7 @@ export function createCottage(scene: THREE.Scene, options: CottageOptions): Plac
 
   const regionList = (): Region[] => [
     { id: "wardrobe", group: "cottage", label: "The armoire", box: box(wx - 0.4, 0, wz - 0.85, wx + 0.75, 2.3, wz + 0.85) },
-    { id: "mirror", group: "cottage", label: "The cheval glass", box: box(mx - 0.55, 0, mz - 0.6, mx + 0.55, 1.9, mz + 0.6) },
+    { id: "mirror", group: "cottage", label: "The cheval glass", box: box(mx - 0.6, 0, mz - 0.6, mx + 0.6, 1.95, mz + 0.6) },
     { id: "cabinet", group: "cottage", label: "The cabinet of wonders", box: box(cx - 0.45, 0, cz - 1.05, cx + 0.35, 2.0, cz + 1.05) },
     { id: "window-seat", group: "cottage", label: "The window seat", box: box(sx - 1.1, 0.3, sz - 0.3, sx + 1.1, 1.05, sz + 0.45) },
     { id: "bell", group: "cottage", label: "The bell by the door", box: box(bx - 0.2, by - 0.7, bz - 0.4, bx + 0.2, by + 0.35, bz + 0.1) },
