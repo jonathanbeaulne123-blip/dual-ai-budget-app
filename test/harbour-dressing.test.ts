@@ -117,7 +117,7 @@ describe("the Court", () => {
     expect(poses["court:phone"]!.phi).toBeGreaterThan(poses["sky:phone"]!.phi);
     expect(handle.regions().map((r) => r.id)).toEqual(expect.arrayContaining(["queen", "flagstone", "rook", "bishop", "knight", "sundial", "mailbox", "slip", "gate", "hercules"]));
     expect(COURT_LAYOUT.flagstone).toEqual([0, 0, 1.6]);
-    expect(handle.drawCalls()).toBeLessThanOrEqual(95); // 60 with the Cistern (slice 2), 68 with the stairhead; the island walk stands both Making buildings — Hercules’s Cottage and the Kiln — at 90, and the campfire on the shore (its ring, its logs, its two-tone flame and the first stones of the path) brings it to exactly 95
+    expect(handle.drawCalls()).toBeLessThanOrEqual(102); // 60 with the Cistern (slice 2), 68 with the stairhead; the island walk stands both Making buildings — Hercules’s Cottage and the Kiln — at 90, and the campfire on the shore (its ring, its logs, its two-tone flame and the first stones of the path) brings it to 95. W5's door signs add exactly one plate per building — seven, one each for the Library, the Glasshouse, the Kitchen, the Boathouse, the Cottage, the Kiln and the Campfire — and nothing else: 102.
     handle.dispose();
     expect(scene.children).not.toContain(handle.group);
   });

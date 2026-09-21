@@ -1,7 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { seedDemoHousehold } from "../src/core/seed.ts";
 import { buildHarbourReading, EMPTY_ATLAS_READING, EMPTY_BOATHOUSE_READING, EMPTY_CAMPFIRE_READING, EMPTY_CELLAR_READING, EMPTY_CISTERN_READING, EMPTY_COTTAGE_READING, EMPTY_GLASSHOUSE_READING, EMPTY_KILN_READING, EMPTY_KITCHEN_READING, EMPTY_TOWER_READING, type HarbourReading } from "../src/harbour/data/reading.ts";
-import { doorSigns, plainDollars, shortDate } from "../src/harbour/nav/doorSigns.ts";
+import { COURT_SIGN_PLACES, SIGN_LINE_MAX, SIGN_TITLES, courtSigns, doorSigns, placeSigns, plainDollars, shortDate, shortMonth } from "../src/harbour/nav/doorSigns.ts";
+import { HARBOUR_PLACE_NAMES, type HarbourPlaceId } from "../src/harbour/flag.ts";
+import { engravedPlate } from "../src/harbour/court/engraved.ts";
 
 const today = "2026-09-20";
 const settled: HarbourReading = {
@@ -42,6 +44,12 @@ describe("plain words for the door signs", () => {
     expect(plainDollars(-12050)).toBe("-$121");
     expect(plainDollars(-40)).toBe("$0");
     expect(plainDollars(null)).toBe("—");
+  });
+
+  it("shortens a month key to its month, and leaves anything else alone", () => {
+    expect(shortMonth("2026-09")).toBe("Sep");
+    expect(shortMonth("2027-01")).toBe("Jan");
+    expect(shortMonth("later")).toBe("later");
   });
 
   it("shortens civil dates and leaves anything else alone", () => {
@@ -108,5 +116,117 @@ describe("doorSigns — tower, cellar, cistern", () => {
       expect(sign.line + sign.aria).not.toMatch(/cents|snapshot|nest|pulse|null|undefined|NaN/i);
     }
     expect(signs.cellar.line).toBe("4 bills · next Internet Sep 20");
+  });
+});
+
+describe("placeSigns — every building on the island wears its own", () => {
+  const places = Object.keys(HARBOUR_PLACE_NAMES) as HarbourPlaceId[];
+
+  it("gives every place a sign, and no place a blank one", () => {
+    const signs = placeSigns(settled);
+    expect(Object.keys(signs).sort()).toEqual([...places].sort());
+    for (const place of places) {
+      const sign = signs[place];
+      expect(sign.line.length).toBeGreaterThan(0);
+      expect(sign.line.length).toBeLessThanOrEqual(SIGN_LINE_MAX);
+      expect(sign.aria.length).toBeGreaterThan(sign.line.length);
+    }
+  });
+
+  it("reads the empty island without jargon, a lie or a fault", () => {
+    const signs = placeSigns(settled);
+    for (const sign of Object.values(signs)) {
+      expect(sign.line + sign.aria).not.toMatch(/cents|snapshot|nest|pulse|null|undefined|NaN|\[object/i);
+    }
+    expect(signs.glasshouse.line).toBe("Clear benches");
+    expect(signs.kitchen.line).toBe("No plan on the wall");
+    expect(signs.boathouse.line).toBe("0 wishes · 0 memories");
+    expect(signs.cottage.line).toBe("0 looks · 0 keepsakes");
+    expect(signs.kiln.line).toBe("0 pieces fired · cold");
+    expect(signs.campfire.line).toBe("Unlit kindling");
+    expect(signs.atlas.line).toBe("No era yet");
+    expect(signs.library.line).toBe("Books current · settled");
+    expect(signs.court.line).toBe("$413 everyday · settled");
+  });
+
+  it("counts what each room actually holds", () => {
+    const signs = placeSigns({
+      ...settled,
+      glasshouse: { ...EMPTY_GLASSHOUSE_READING, pots: [1, 2, 3].map((n) => ({ key: `task/${n}`, title: `Pot ${n}`, state: "seed" as const, dry: n === 1, thread: "both" as const, bench: 0 as const, staked: false, cat: false, date: null })), dry: 1, overflow: 2 },
+      kitchen: { ...EMPTY_KITCHEN_READING, cards: [{ key: "line/1", what: "Groceries", amountCents: 40_000, when: null, pot: "everyday" as const, who: "both" as const }], monthKey: "2026-09", overflow: 0 },
+      boathouse: { wishes: 1, memories: 4, letters: 2, encounters: 0, hung: 0 },
+      cottage: { name: "Hercules", worn: 2, looks: 1, keepsakes: 7 },
+      kiln: { ...EMPTY_KILN_READING, fired: 6, onTheWheel: 1, sinceFiring: 0, warmth: 1 },
+      campfire: { ...EMPTY_CAMPFIRE_READING, lit: true, stones: 5, month: "2026-09", close: "awaiting-partner" as const },
+      atlas: { ...EMPTY_ATLAS_READING, eras: 3, stones: 14, era: { key: "era:2", name: "The flat by the water", index: 2, months: 7, home: "rented" as never, homeLabel: "a small flat", finishLine: "a place of our own", plans: 2 } },
+      freshness: "stale",
+    });
+    expect(signs.glasshouse.line).toBe("5 pots · 1 dry");
+    expect(signs.kitchen.line).toBe("1 card · Sep");
+    expect(signs.boathouse.line).toBe("1 wish · 4 memories");
+    expect(signs.cottage.line).toBe("1 look · 7 keepsakes");
+    expect(signs.kiln.line).toBe("6 pieces fired · still hot");
+    expect(signs.campfire.line).toBe("5 stones · one seat empty");
+    expect(signs.atlas.line).toBe("Era 2 of 3 · 14 stones");
+    expect(signs.library.line).toBe("Books not fresh · settled");
+    for (const sign of Object.values(signs)) expect(sign.line.length).toBeLessThanOrEqual(SIGN_LINE_MAX);
+  });
+
+  it("never shows a private content — only how many there are", () => {
+    const signs = placeSigns({
+      ...settled,
+      kiln: { ...EMPTY_KILN_READING, fired: 2, keptPrivate: 3 },
+      atlas: { ...EMPTY_ATLAS_READING, eras: 1, stones: 2, keptPrivate: 4, era: { key: "era:1", name: "Now", index: 1, months: 1, home: "rented" as never, homeLabel: "a small flat", finishLine: "the secret goal", plans: 1 } },
+    });
+    // A private piece or bank is counted inside the room, and never named on the wall outside it.
+    expect(signs.kiln.line + signs.kiln.aria).not.toMatch(/private/i);
+    expect(signs.atlas.line).toBe("The first era · 2 stones");
+  });
+
+  it("stays legible on the demo household, and every sign says which door it opens", () => {
+    const signs = placeSigns(buildHarbourReading(seedDemoHousehold({ today }), "MEM-001", today, "current"));
+    for (const [place, sign] of Object.entries(signs)) {
+      expect(sign.line.length, `${place}: ${sign.line}`).toBeLessThanOrEqual(SIGN_LINE_MAX);
+      expect(sign.aria, place).toMatch(/Opens the|Opens Journey|Meet the Queen/);
+    }
+  });
+});
+
+describe("courtSigns — the plates standing on the Court's lawn", () => {
+  it("engraves one plate per building, with the building's name over its line", () => {
+    const lawn = courtSigns(settled);
+    expect(Object.keys(lawn).sort()).toEqual(Object.keys(COURT_SIGN_PLACES).sort());
+    for (const [anchor, sign] of Object.entries(lawn)) {
+      const [title, line] = sign.plate.split("\n");
+      expect(title).toBe(SIGN_TITLES[COURT_SIGN_PLACES[anchor]!]);
+      expect(line).toBe(sign.line);
+      // Two lines is all an engraved plate holds; a third would be carved too small to read from the path.
+      expect(sign.plate.split("\n")).toHaveLength(2);
+    }
+    // Every landmark building on the lawn has a sign; the Court's own three doors keep their plinth plates.
+    expect(Object.keys(lawn)).toContain("kiln-house");
+    expect(lawn["library-hall"]!.place).toBe("library");
+  });
+
+  it("is an empty table, never a throw, before the books answer", () => {
+    expect(courtSigns(null)).toEqual({});
+    expect(courtSigns(undefined)).toEqual({});
+    expect(courtSigns({ everyday: 1 } as unknown as HarbourReading)).toEqual({});
+  });
+});
+
+describe("the sign board itself", () => {
+  it("draws to the board's own shape and brings the letters down to fit it", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined); // jsdom has no 2D canvas; the plate falls back to blank stone.
+    // node-canvas is not installed, so this exercises the pure geometry of the
+    // fit: the canvas takes the board's aspect instead of growing around the
+    // letters. Without `fit`, slice 1's box is unchanged.
+    const board = engravedPlate("The Glasshouse\n12 pots · 2 dry", { width: 640, size: "small", aspect: 1.7 / 0.54 });
+    expect(board.image.width).toBe(640);
+    expect(board.image.height).toBe(Math.round(640 / (1.7 / 0.54)));
+    const box = engravedPlate("$1,240", { width: 512, size: "large" });
+    expect(box.image.width).toBe(512);
+    expect(box.image.height).toBeGreaterThan(64);
+    board.dispose(); box.dispose();
   });
 });

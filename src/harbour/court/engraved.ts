@@ -23,6 +23,17 @@ export type EngravedOptions = {
   /** Letter scale: "large" for the one big number, "small" for tags. */
   size?: "large" | "medium" | "small";
   align?: "left" | "center";
+  /**
+   * Draw the canvas to this width ÷ height and shrink the letters until every
+   * line fits inside it (W5 #1). A number or a tag is a few glyphs and the
+   * default box is drawn around them; a **door sign** is a line of words on a
+   * board of a fixed shape, and its letters have to come down to the board
+   * rather than the board stretch around them. `EngravedPlate` passes the
+   * mesh's own aspect here when its options say `fit`.
+   */
+  aspect?: number;
+  /** The plate is a board of a fixed shape: `EngravedPlate` draws it to the mesh's aspect and fits the words to it. */
+  fit?: boolean;
 };
 
 /** "$1,240" for cents; "—" for unknown. Zero cents IS "$0"; only `null` is unknown. */
@@ -74,9 +85,14 @@ export function engravedPlate(text: string, options: EngravedOptions = {}): THRE
   const width = Math.max(64, Math.round(options.width ?? 512));
   const lines = plateLines(text);
   const size = options.size ?? (lines.length > 1 ? "small" : "medium");
-  const lineHeight = Math.round(width * FONT_SIZE[size] * 0.72);
   const pad = Math.round(width * 0.08);
-  const height = Math.max(64, lines.length * lineHeight + pad * 2);
+  // A board of a fixed shape keeps its shape and the letters come down to it;
+  // everything else keeps slice 1's box, drawn around the letters.
+  const fitted = Number.isFinite(options.aspect) && (options.aspect ?? 0) > 0;
+  const lineHeight = fitted
+    ? Math.max(8, Math.floor((Math.max(64, Math.round(width / options.aspect!)) - pad * 2) / lines.length))
+    : Math.round(width * FONT_SIZE[size] * 0.72);
+  const height = fitted ? Math.max(64, Math.round(width / options.aspect!)) : Math.max(64, lines.length * lineHeight + pad * 2);
   const canvas = document.createElement("canvas");
   canvas.width = width; canvas.height = height;
   const texture = new THREE.CanvasTexture(canvas);
@@ -112,8 +128,19 @@ export function engravedPlate(text: string, options: EngravedOptions = {}): THRE
     ctx.strokeRect(ctx.lineWidth, ctx.lineWidth, width - ctx.lineWidth * 2, height - ctx.lineWidth * 2);
   }
   // Letters.
-  const px = Math.round(width * FONT_SIZE[size] * 0.6);
-  ctx.font = `${options.paper ? 500 : 600} ${px}px ${options.paper ? '"Caveat", "Fraunces", Georgia, serif' : '"Fraunces", Georgia, serif'}`;
+  const family = options.paper ? '"Caveat", "Fraunces", Georgia, serif' : '"Fraunces", Georgia, serif';
+  const weight = options.paper ? 500 : 600;
+  let px = Math.round(width * FONT_SIZE[size] * 0.6);
+  if (fitted) {
+    // Down to the line's height first, then down again until the longest line
+    // fits the board's width — so a sign is never carved off its own edge.
+    px = Math.max(8, Math.min(px, Math.floor(lineHeight * 0.72)));
+    ctx.font = `${weight} ${px}px ${family}`;
+    const widest = lines.reduce((wide, line) => Math.max(wide, ctx.measureText(line).width), 0);
+    const room = width - pad * 2;
+    if (widest > room && room > 0) px = Math.max(8, Math.floor(px * (room / widest)));
+  }
+  ctx.font = `${weight} ${px}px ${family}`;
   ctx.textBaseline = "middle";
   ctx.textAlign = options.align ?? "center";
   const x = (options.align ?? "center") === "left" ? pad : width / 2;
@@ -163,6 +190,18 @@ export class EngravedPlate {
     const width = this.base.width ?? 512;
     const lines = plateLines(text).length;
     const size = this.base.size ?? (lines > 1 ? "small" : "medium");
+    // A board of a fixed shape (a door sign): the canvas takes the board's own
+    // aspect and the letters are fitted to it.
+    if (this.base.fit) {
+      const board = engravedPlate(text, { ...this.base, size, finish, width, aspect });
+      this.texture?.dispose();
+      this.texture = board;
+      this.mesh.material.map = board;
+      this.mesh.material.color.set("#ffffff");
+      this.mesh.material.roughness = finish === "glazed" ? 0.55 : 0.92;
+      this.mesh.material.needsUpdate = true;
+      return true;
+    }
     // Pick a canvas width whose natural height matches the plate's aspect (avoids stretching letters).
     const naturalHeight = lines * Math.round(width * FONT_SIZE[size] * 0.72) + Math.round(width * 0.08) * 2;
     const drawWidth = Math.round(Math.max(64, Math.min(1024, naturalHeight * aspect)));
