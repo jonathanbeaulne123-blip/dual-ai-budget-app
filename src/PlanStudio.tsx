@@ -42,9 +42,35 @@ export type PlanStudioProps = {
 
 // D-274: Plan Studio v3 is opt-in (VITE_PLAN_STUDIO_V3) and loaded only when on; off, this is today's studio unchanged.
 const PlanStudioV3 = lazy(() => import("./plan-v3/PlanStudioV3.tsx"));
-export function PlanStudio(props: PlanStudioProps) {
+// K2: the Kitchen wizard is the Plan Studio's front door. Loaded only when the door is the door.
+const KitchenWizard = lazy(() => import("./plan-wizard/KitchenWizard.tsx"));
+
+/** The tools in the drawer: today's studio, or v3 when its flag is on. Unchanged by the door. */
+export function PlanStudioTools(props: PlanStudioProps) {
   if (!planStudioV3Enabled()) return <PlanStudioClassic {...props} />;
   return <Suspense fallback={<p className="plan-empty" role="status">Opening the plan…</p>}><PlanStudioV3 {...props} /></Suspense>;
+}
+
+/**
+ * The front door (K2). The Kitchen's empty card, drawer and Hercules' chair all
+ * open here: five questions, one card, one pull. The old studio is not deleted
+ * and not hidden — it is the drawer under the table, one press away, and once
+ * it is open it stays open for this visit.
+ */
+export function PlanStudio(props: PlanStudioProps) {
+  const [drawer, setDrawer] = useState(false);
+  if (drawer) return (
+    <div className="plan-door plan-door--tools">
+      <button type="button" className="plan-door__back" onClick={() => setDrawer(false)}>Back to the table</button>
+      <PlanStudioTools {...props} />
+    </div>
+  );
+  return (
+    <Suspense fallback={<p className="plan-empty" role="status">Laying a card on the table…</p>}>
+      <KitchenWizard household={props.household} view={props.view} memberId={props.memberId} today={props.today} busy={props.busy}
+        onCommand={props.onCommand} onOpenDrawer={() => setDrawer(true)} />
+    </Suspense>
+  );
 }
 
 /**
