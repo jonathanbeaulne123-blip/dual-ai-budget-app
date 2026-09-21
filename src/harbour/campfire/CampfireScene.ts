@@ -40,8 +40,8 @@ export const CAMPFIRE_LAYOUT = {
    * and the water, the newest nearest the ring.
    */
   path: { x: -0.25, z: -1.95, stepZ: -0.56, sway: 0.42, cols: 1 },
-  /** Hercules, curled between the logs where the heat reaches. He asks the questions. */
-  hercules: [0.12, 0, 1.42] as const,
+  /** Hercules, curled by the near log where the heat reaches. He asks the questions. */
+  hercules: [1.18, 0, 1.16] as const,
   /** The footpath up the shore: the way back to the Court. */
   door: [0, 0, 3.45] as const,
   /** The Boathouse, standing behind the fire with its back to the water. */
@@ -80,8 +80,8 @@ export function stonePin(index: number): { x: number; z: number } {
 // Stand a little up the shore, at the fire's own height, so both logs and the
 // whole path read at once: the ring fills the frame on a phone, and the path
 // and the Boathouse behind it come in on desktop.
-const PHONE_SHORE: Pose = { target: [0, 0.55, -0.35], r: 4.1, theta: 0.12, phi: 1.29 };
-const DESKTOP_SHORE: Pose = { target: [0, 0.6, -0.9], r: 5.1, theta: 0.18, phi: 1.24 };
+const PHONE_SHORE: Pose = { target: [0, 0.45, -0.5], r: 6.5, theta: 0.1, phi: 1.26 };
+const DESKTOP_SHORE: Pose = { target: [0, 0.5, -0.7], r: 5.9, theta: 0.16, phi: 1.22 };
 
 export function campfirePoses(anchors: readonly Anchor[]): Record<string, Pose> {
   const poses: Record<string, Pose> = {
@@ -303,7 +303,7 @@ export function createCampfire(scene: THREE.Scene, options: CampfireOptions): Pl
   const plateFor = (width: number, height: number): EngravedPlate =>
     track(new EngravedPlate({ stone: dressing.plate, highlight: dressing.plateHighlight, ink: dressing.ink, size: "small" }, width, height));
   const firePlate = plateFor(1.55, 0.2);
-  firePlate.mesh.position.set(0, 0.03, 1.45); firePlate.mesh.rotation.x = -Math.PI / 2;
+  firePlate.mesh.position.set(0, 0.03, 2.2); firePlate.mesh.rotation.x = -Math.PI / 2;
   owned(firePlate.mesh, "fire"); group.add(firePlate.mesh);
   const pathPlate = plateFor(1.3, 0.18);
   pathPlate.mesh.position.set(CAMPFIRE_LAYOUT.path.x + 1.15, 0.03, CAMPFIRE_LAYOUT.path.z + 0.2); pathPlate.mesh.rotation.x = -Math.PI / 2;
