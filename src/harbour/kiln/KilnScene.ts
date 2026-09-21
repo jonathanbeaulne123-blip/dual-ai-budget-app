@@ -80,7 +80,7 @@ export function pieceScale(step: number): number {
 // wheel in the foreground, the kiln standing behind it — and the shelf and the
 // bench are one swipe to the right. Desktop holds the whole shed in one look.
 const PHONE_ROOM: Pose = { target: [-1.4, 0.9, -0.15], r: 4.2, theta: 0.85, phi: 1.37 };
-const DESKTOP_ROOM: Pose = { target: [-0.1, 0.95, -0.45], r: 4.35, theta: 0.74, phi: 1.315 };
+const DESKTOP_ROOM: Pose = { target: [-0.3, 1.1, -0.6], r: 4.3, theta: 0.72, phi: 1.3 };
 
 export function kilnPoses(anchors: readonly Anchor[]): Record<string, Pose> {
   const poses: Record<string, Pose> = {

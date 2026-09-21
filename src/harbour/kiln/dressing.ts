@@ -18,7 +18,7 @@ export type KilnGlazeTable = { cream: string; "sea-glass": string; terracotta: s
 
 export type KilnDressing = {
   theme: ThemeId;
-  /** The shell: the brick walls, their mortar, the floor and the roof beams. */
+  /** The shell: the brick walls, the mortar in their courses (a shade off the brick, never a painted stripe), the floor and the roof beams. */
   brick: string;
   mortar: string;
   floor: string;
@@ -56,7 +56,7 @@ export type KilnDressing = {
 export const KILN_DRESSING: Readonly<Record<ThemeId, KilnDressing>> = Object.freeze({
   classic: {
     theme: "classic",
-    brick: "#b06a4a", mortar: "#e0d3b8", floor: "#a8815c", beam: "#6b4e33",
+    brick: "#b06a4a", mortar: "#c08a67", floor: "#a8815c", beam: "#6b4e33",
     kilnBody: "#c4795a", kilnBand: "#6f5a42", kilnDoor: "#4a3628", ember: "#ff9a4d", emberGlow: "#ffca7a",
     wheelHead: "#cfc4ad", wheelFrame: "#8a6742", clay: "#c98f66",
     bench: "#8a6742", benchTop: "#6f6558", jar: "#e9ddc2",
@@ -68,7 +68,7 @@ export const KILN_DRESSING: Readonly<Record<ThemeId, KilnDressing>> = Object.fre
   },
   taylor: {
     theme: "taylor",
-    brick: "#c08a86", mortar: "#f6e8e4", floor: "#c39a8c", beam: "#8a6255",
+    brick: "#c08a86", mortar: "#d3a49f", floor: "#c39a8c", beam: "#8a6255",
     kilnBody: "#cf9891", kilnBand: "#8a6f68", kilnDoor: "#5e4640", ember: "#ff9fb0", emberGlow: "#ffd2dc",
     wheelHead: "#e3d6d2", wheelFrame: "#a97c6c", clay: "#dda995",
     bench: "#a97c6c", benchTop: "#7f6e68", jar: "#fbeee7",
@@ -80,7 +80,7 @@ export const KILN_DRESSING: Readonly<Record<ThemeId, KilnDressing>> = Object.fre
   },
   newfoundland: {
     theme: "newfoundland",
-    brick: "#9c5540", mortar: "#d9cfba", floor: "#8a7052", beam: "#5c3a2c",
+    brick: "#9c5540", mortar: "#ad7053", floor: "#8a7052", beam: "#5c3a2c",
     kilnBody: "#a9614a", kilnBand: "#4e463a", kilnDoor: "#3a2f26", ember: "#f2913c", emberGlow: "#f7c56c",
     wheelHead: "#c3bca9", wheelFrame: "#7d6448", clay: "#b08872",
     bench: "#7d6448", benchTop: "#5f5a4e", jar: "#f1ecdd",
