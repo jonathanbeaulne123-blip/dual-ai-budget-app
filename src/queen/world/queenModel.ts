@@ -48,9 +48,8 @@ export async function readQueenModel(signal?: AbortSignal, url = QUEEN_MODEL_URL
 }
 
 export async function parseQueenModel(bytes: ArrayBuffer): Promise<THREE.Group> {
-  const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
-  const gltf = await new GLTFLoader().parseAsync(bytes, "");
-  return gltf.scene;
+  const { parseGlbScene } = await import("../../assets/gltf.ts");
+  return parseGlbScene(bytes);
 }
 
 export async function loadQueenModel(signal?: AbortSignal): Promise<THREE.Group> {

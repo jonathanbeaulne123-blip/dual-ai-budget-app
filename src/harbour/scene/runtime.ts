@@ -1,12 +1,13 @@
 import * as THREE from "three";
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
+import { worldDiagnostics } from "../../house/world/diagnostics.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
 import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/courtCamera.ts";
 import { COURT_ANCHOR_IDS, COURT_FOV, type CourtAnchor, type CourtMode, type CourtPose } from "../camera/poses.ts";
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
 import { createGround } from "./ground.ts";
 import { configureHarbourRenderer, createLightRig } from "./lightRig.ts";
-import { EMPTY_PLACE, PLACES, PLACE_HOLDS, SCENE_DRESSING, poseFor, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlaceReading, type Vec3 } from "./place.ts";
+import { EMPTY_PLACE, PLACES, PLACE_HOLDS, SCENE_DRESSING, poseFor, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlaceReading, type Region, type Vec3 } from "./place.ts";
 import { travelAt, travelPlan, type TravelPlan } from "./travel.ts";
 import type { HarbourPlaceId } from "../flag.ts";
 import type { RenderTier } from "./quality.ts";
@@ -169,10 +170,24 @@ type Pointer = { id: number; x: number; y: number; startX: number; startY: numbe
 export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: RenderTier, callbacks: HarbourCallbacks): HarbourRuntime {
   let disposed = false, frame = 0, previous = 0, lastPaint = 0, lastAnimated = 0, visible = true, toolOpen = false, breathing = false, settling = false, intervalMs = CAMERA_INTERVAL_MS;
   const mountedAt = performance.now();
+  const diagnostics = worldDiagnostics();
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
   const dressing = callbacks.dressing ?? SCENE_DRESSING[theme];
   const abort = new AbortController();
   let composition: Composition = callbacks.composition ?? (host.getBoundingClientRect().width < 720 ? "phone" : "desktop");
+
+  /**
+   * The stage's size, kept from the last resize. Reading it back from the DOM
+   * inside a frame is a forced reflow, and the ResizeObserver already knows.
+   */
+  let stageWidth = 0, stageHeight = 0;
+  /**
+   * The standing place's own tables. A place hands back fresh arrays every
+   * call, so they are taken once and kept until something says the scene
+   * changed — the place's own `invalidate`, a reading, a journey.
+   */
+  let anchorList: Anchor[] = [], regionList: Region[] = [], listsDirty = true;
+  const anchorById = new Map<string, Anchor>();
 
   const scene = new THREE.Scene();
   const lease = acquireWorldRenderer(host, {
@@ -194,7 +209,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const animators = new Set<(t: number, dt: number) => void>();
   const rig = createLightRig(scene, dressing.light, tier);
   const ground = createGround(scene, dressing, tier);
-  const invalidate = () => { if (!disposed) { dirty = true; schedule(); } };
+  // A place says something in it changed: the twins' tables are read again.
+  const invalidate = () => { if (!disposed) { dirty = true; listsDirty = true; schedule(); } };
   let reading: PlaceReading | null = callbacks.reading ?? null;
   /** Every place standing right now: one while at rest, two for the length of a journey. */
   const live = new Map<HarbourPlaceId, { handle: PlaceHandle; abort: AbortController }>();
@@ -208,11 +224,13 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     try { built = place.build(scene, dressing, reading, tier, { composition, signal: control.signal, invalidate }); }
     catch { built = EMPTY_PLACE.build(scene, dressing, null, tier, { composition, signal: control.signal, invalidate }); }
     live.set(place.id, { handle: built, abort: control });
+    listsDirty = true;
     return built;
   }
   function pull(id: HarbourPlaceId): void {
     const standing = live.get(id);
     if (!standing) return;
+    listsDirty = true;
     live.delete(id);
     standing.abort.abort();
     standing.handle.dispose();
@@ -246,15 +264,19 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
 
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2(), projected = new THREE.Vector3(), box = new THREE.Box3();
-  // `project` runs on every rendered frame. These are reused rather than
-  // reallocated: the eight box corners alone were ~160 fresh Vector3 per frame
-  // across the Court's regions, and the single-point form one more per anchor.
-  const cornerPool = [0, 1, 2, 3, 4, 5, 6, 7].map(() => new THREE.Vector3());
-  const pointPool = [new THREE.Vector3()];
-  const anchorById = new Map<string, ReturnType<typeof handle.anchors>[number]>();
-  const claimedIds = new Set<string>();
   const pointers = new Map<number, Pointer>();
   let projectionSignature = "", pinchDistance = 0, paintSamples: number[] = [], projectSamples: number[] = [], dirty = true;
+  function lists(): void {
+    if (!listsDirty) return;
+    listsDirty = false;
+    anchorList = handle.anchors();
+    regionList = handle.regions();
+    anchorById.clear();
+    for (const anchor of anchorList) anchorById.set(anchor.id, anchor);
+  }
+  /** The eight corners of a region's bounds and the one point an anchor projects from, allocated once. */
+  const corners = [0, 1, 2, 3, 4, 5, 6, 7].map(() => new THREE.Vector3());
+  const single = [new THREE.Vector3()];
   /** The camera was asked to move: paint at least one frame even if it cut there under reduced motion. */
   const moved = () => { dirty = true; court.setReduced(reduced.matches); previous = performance.now(); schedule(); };
 
@@ -278,7 +300,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         if (typeof region === "string") return { kind: "queen", region, object: hit.object, point };
         const anchorId = node.userData.anchor;
         if (typeof anchorId === "string") {
-          const anchor = handle.anchors().find(a => a.id === anchorId);
+          lists();
+          const anchor = anchorById.get(anchorId);
           if (anchor) return { kind: "anchor", id: anchorId, anchor, point };
         }
         if (node.userData.ground === true) return { kind: "ground", point };
@@ -290,59 +313,60 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     return { kind: "none" };
   }
 
-  function rectOf(corners: THREE.Vector3[], bounds: DOMRect): { x: number; y: number; w: number; h: number; visible: boolean } | null {
+  function rectOf(points: THREE.Vector3[], count: number, width: number, height: number): { x: number; y: number; w: number; h: number; visible: boolean } | null {
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity, behind = 0;
-    for (const corner of corners) {
-      projected.copy(corner).project(camera);
+    for (let i = 0; i < count; i += 1) {
+      projected.copy(points[i]!).project(camera);
       if (projected.z >= 1) behind += 1;
-      const sx = (projected.x * 0.5 + 0.5) * bounds.width, sy = (-projected.y * 0.5 + 0.5) * bounds.height;
+      const sx = (projected.x * 0.5 + 0.5) * width, sy = (-projected.y * 0.5 + 0.5) * height;
       minX = Math.min(minX, sx); maxX = Math.max(maxX, sx); minY = Math.min(minY, sy); maxY = Math.max(maxY, sy);
     }
-    if (behind === corners.length || !Number.isFinite(minX)) return null;
+    if (behind === count || !Number.isFinite(minX)) return null;
     let w = Math.max(MIN_TWIN, maxX - minX), h = Math.max(MIN_TWIN, maxY - minY);
-    w = Math.min(w, bounds.width); h = Math.min(h, bounds.height);
+    w = Math.min(w, width); h = Math.min(h, height);
     const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-    const x = Math.max(0, Math.min(bounds.width - w, cx - w / 2)), y = Math.max(0, Math.min(bounds.height - h, cy - h / 2));
-    const visible = maxX > 0 && minX < bounds.width && maxY > 0 && minY < bounds.height;
+    const x = Math.max(0, Math.min(width - w, cx - w / 2)), y = Math.max(0, Math.min(height - h, cy - h / 2));
+    const visible = maxX > 0 && minX < width && maxY > 0 && minY < height;
     return { x, y, w, h, visible };
   }
 
+  /**
+   * Where each twin stands. Called just after the renderer has drawn, so the
+   * scene's world matrices are the ones the frame was drawn with and are not
+   * walked a second time; only the camera's own inverse is refreshed, which the
+   * projection reads directly. Nothing here is allocated per frame but the
+   * rects themselves, and those are only handed on when one of them moved.
+   */
   function project(): void {
     if (!callbacks.onProject) return;
-    const bounds = host.getBoundingClientRect();
-    if (bounds.width < 1 || bounds.height < 1) return;
-    // `renderer.render` has already updated the world matrices one line above
-    // the only call to this function, so a second full-scene pass was pure
-    // duplicate work. The camera stays explicit as cheap insurance.
+    if (stageWidth < 1 || stageHeight < 1) return;
     camera.updateMatrixWorld();
+    lists();
     const rects: ProjectedRect[] = [];
-    const anchors = handle.anchors();
-    // Two nested scans over ~17 anchors and ~17 regions ran per frame; index once.
-    anchorById.clear();
-    for (const anchor of anchors) anchorById.set(anchor.id, anchor);
-    claimedIds.clear();
-    for (const region of handle.regions()) {
+    let signature = "";
+    const placed = new Set<string>();
+    for (const region of regionList) {
       if (region.box) box.copy(region.box);
       else { box.makeEmpty(); for (const object of region.objects ?? []) box.expandByObject(object); }
       if (box.isEmpty()) continue;
-      for (let i = 0; i < 8; i++) {
-        cornerPool[i]!.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z);
-      }
-      const rect = rectOf(cornerPool, bounds);
+      for (let i = 0; i < 8; i += 1) corners[i]!.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z);
+      const rect = rectOf(corners, 8, stageWidth, stageHeight);
       if (!rect) continue;
       // An anchor with the same id lends the region its door and its words: one twin per thing.
       const anchor = anchorById.get(region.id);
+      placed.add(region.id);
       rects.push({ id: region.id, kind: "region", group: region.group, label: anchor?.label ?? region.label, door: anchor?.door, ...rect });
-      claimedIds.add(region.id);
+      signature += `${region.id}:${rect.x | 0}:${rect.y | 0}:${rect.w | 0}:${rect.h | 0}:${rect.visible ? 1 : 0}:${anchor?.label ?? region.label}|`;
     }
-    for (const anchor of anchors) {
-      if (claimedIds.has(anchor.id)) continue;
+    for (const anchor of anchorList) {
+      if (placed.has(anchor.id)) continue;
       const [x, y, z] = anchor.position;
-      pointPool[0]!.set(x, y + 0.6, z);
-      const rect = rectOf(pointPool, bounds);
-      if (rect) { rects.push({ id: anchor.id, kind: "anchor", group: anchor.zone, label: anchor.label, door: anchor.door, ...rect }); claimedIds.add(anchor.id); }
+      single[0]!.set(x, y + 0.6, z);
+      const rect = rectOf(single, 1, stageWidth, stageHeight);
+      if (!rect) continue;
+      rects.push({ id: anchor.id, kind: "anchor", group: anchor.zone, label: anchor.label, door: anchor.door, ...rect });
+      signature += `${anchor.id}:${rect.x | 0}:${rect.y | 0}:${rect.w | 0}:${rect.h | 0}:${rect.visible ? 1 : 0}:${anchor.label}|`;
     }
-    const signature = rects.map(r => `${r.id}:${r.x | 0}:${r.y | 0}:${r.w | 0}:${r.h | 0}:${r.visible ? 1 : 0}:${r.label}`).join("|");
     if (signature === projectionSignature) return;
     projectionSignature = signature;
     callbacks.onProject(rects);
@@ -359,9 +383,17 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const rendered = performance.now();
     project();
     const projected = performance.now();
-    paintSamples.push(rendered - began); if (paintSamples.length > 60) paintSamples.shift();
-    projectSamples.push(projected - rendered); if (projectSamples.length > 60) projectSamples.shift();
+    // `renderMs` is what the GPU was asked for. Projecting the twins is CPU
+    // work on this side of the frame and is measured separately in diagnostics.
+    if (diagnostics) {
+      paintSamples.push(rendered - began); if (paintSamples.length > 60) paintSamples.shift();
+      projectSamples.push(projected - rendered); if (projectSamples.length > 60) projectSamples.shift();
+    }
+    // Development, the review server and a page asked for them keep the
+    // numbers; a shipped frame writes nothing to the DOM at all.
+    if (!diagnostics) return;
     host.dataset.renderMs = (paintSamples.reduce((a, b) => a + b, 0) / paintSamples.length).toFixed(2);
+    host.dataset.projectMs = (projectSamples.reduce((a, b) => a + b, 0) / projectSamples.length).toFixed(2);
     host.dataset.projectMs = (projectSamples.reduce((a, b) => a + b, 0) / projectSamples.length).toFixed(2);
     host.dataset.houseCamera = JSON.stringify(camera.position.toArray().map(n => Number(n.toFixed(4))));
     host.dataset.drawCalls = String(renderer.info.render.calls); host.dataset.geometries = String(renderer.info.memory.geometries); host.dataset.textures = String(renderer.info.memory.textures);
@@ -408,6 +440,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   function resize(): void {
     const { width, height } = host.getBoundingClientRect();
     if (width < 1 || height < 1 || !lease.active) return;
+    // The one place the stage is measured: every frame after this reads it from here.
+    stageWidth = width; stageHeight = height;
     const next: Composition = width < 720 ? "phone" : "desktop";
     if (next !== composition) { composition = next; camera.fov = fovFor(next); court.setFov(camera.fov); court.setComposition(next); }
     renderer.setSize(width, height, false);
@@ -437,7 +471,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (pinchDistance > 0 && distance > 0) { court.zoom(Math.log(pinchDistance / distance)); dirty = true; }
       pinchDistance = distance;
     } else if (pointer.hit.kind === "queen") pointer.samples.push({ x, y, t: performance.now() - pointer.startedAt });
-    else if (isRail(pointer.hit) && callbacks.onRailDrag) { callbacks.onRailDrag(x, host.getBoundingClientRect().width); dirty = true; }
+    else if (isRail(pointer.hit) && callbacks.onRailDrag) { callbacks.onRailDrag(x, stageWidth || host.getBoundingClientRect().width); dirty = true; }
     else { court.drag(dx, dy); dirty = true; }
     schedule();
   }
@@ -495,7 +529,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
 
   return {
     go(mode, anchor) { aim(mode, anchor); moved(); },
-    setReading(next) { reading = next; for (const { handle: each } of live.values()) each.update(next); dirty = true; render(); schedule(); },
+    setReading(next) { reading = next; for (const { handle: each } of live.values()) each.update(next); dirty = true; listsDirty = true; render(); schedule(); },
     look(next) { court.setReduced(reduced.matches); court.goTo(next); moved(); },
     gesture(input) {
       court.setReduced(reduced.matches);
@@ -507,7 +541,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     setToolOpen(open) { toolOpen = open; schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
     invalidate() { settling = true; dirty = true; previous = performance.now(); schedule(); },
-    addAnimator(animate) { animators.add(animate); schedule(); return () => { animators.delete(animate); }; },
+    addAnimator(animate) { animators.add(animate); listsDirty = true; schedule(); return () => { animators.delete(animate); }; },
     restore(position) { court.restore(position); dirty = true; render(); schedule(); },
     camera: () => camera.position.toArray() as [number, number, number],
     pose: () => court.pose(),

@@ -29,7 +29,7 @@ export type GlbAsset = {
 };
 
 export type CourtPieceId = "knight" | "bishop" | "rook";
-export type QueenAssetId = "presence" | "court";
+export type QueenAssetId = "presence" | "court" | "master";
 
 /** A piece may not weigh more than this raw; the fence test enforces it. */
 export const PIECE_MAX_BYTES = 1_700_000;
@@ -44,13 +44,26 @@ export const COURT_ASSETS: Readonly<Record<CourtPieceId, GlbAsset>> = Object.fre
 });
 
 /**
- * The Queen herself: the Living Presence master on the full tier (the same
- * file `bloom.ts` loads, `BLOOM_MASTER_SHA256`), the decimated court copy on
- * the lite tier. Both carry the same node names, so the region map is shared.
+ * The Queen herself.
+ *
+ * - `presence` is what the full tier draws and what `bloom.ts` loads: the
+ *   Living Presence sculpt run through `scripts/optimize-models.mjs`
+ *   (dedup → prune → weld → 16-bit quantise → `EXT_meshopt_compression`).
+ *   Same 71 meshes, same 656 380 triangles, same 26 materials, same node
+ *   names; the scene bounds move by 2.35e-6 units, which is 5e-6 units at
+ *   her shipped height of 2.05. Verified by eye against the master at three
+ *   cameras — `docs/evidence/model-fidelity/`.
+ * - `court` is the decimated copy the lite tier draws.
+ * - `master` is Jonathan's file as he supplied it. Nothing fetches it today;
+ *   it is kept for rollback and so the sculpt's own SHA-256 stays fenced.
+ *   Remove it once the optimised presence has been accepted visually.
+ *
+ * All three carry the same node names, so the region map is shared.
  */
 export const QUEEN_ASSETS: Readonly<Record<QueenAssetId, GlbAsset>> = Object.freeze({
-  presence: { url: "/models/mandevilla-living-presence.glb", gz: null, sha256: "ddde35ae3ce025563ab546b13dc54f6f4376a1cddffe947c14dca082e05c2561", bytes: 12_922_440, tier: "full" },
+  presence: { url: "/models/queen/mandevilla-living-presence.v2.glb", gz: "/models/queen/mandevilla-living-presence.v2.glb.gz", sha256: "d6b3e1549a6d111ca331412b13f39d07641300f101bf9a2a7074c79b3e4ec598", bytes: 3_132_636, tier: "full" },
   court: { url: "/models/mandevilla-living-presence.court.glb", gz: "/models/mandevilla-living-presence.court.glb.gz", sha256: "bb6337beadb5b47329f5ec238ff303e45be87755f387f63c90d4de7bc33321a4", bytes: 3_488_792, tier: "lite" },
+  master: { url: "/models/mandevilla-living-presence.glb", gz: "/models/mandevilla-living-presence.glb.gz", sha256: "ddde35ae3ce025563ab546b13dc54f6f4376a1cddffe947c14dca082e05c2561", bytes: 12_922_440, tier: "full" },
 });
 
 /** The Queen stands 2.05 units tall in the Court (`bloom.ts` normalisation); the pieces are sized against her. */

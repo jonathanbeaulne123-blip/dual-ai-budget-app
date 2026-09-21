@@ -14,6 +14,9 @@ import type { QueenSceneryKind } from "./world/queenScenery.ts";
  */
 export type QueenWorldMode = "auto" | "flat" | "3d";
 
+/** How many still frames the layout settle keeps measuring before it sleeps. */
+const SETTLE_TAIL_FRAMES = 12;
+
 export function QueenWorld({ root, queen, banks, expanded, breathing, scenery = null, sceneryPaper, ambient = false, mode = "auto", onLive, onModel }: {
   /** The Home root; sculptures are placed where its `.queen-mount` and `[data-world-bank]` elements sit. */
   root: RefObject<HTMLElement | null>;
@@ -84,30 +87,60 @@ export function QueenWorld({ root, queen, banks, expanded, breathing, scenery = 
     const rootElement = root.current, element = host.current;
     if (!live || !rootElement || !element || !world.current) return;
     const rect = (el: Element): WorldRect => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; };
-    const measure = () => {
+    const measure = (): boolean => {
       const current = world.current;
       const mount = rootElement.querySelector(".queen-mount");
-      if (!current || !mount) return;
+      if (!current || !mount) return false;
       const bankRects: Record<string, WorldRect> = {};
       for (const el of rootElement.querySelectorAll<HTMLElement>("[data-world-bank]")) {
         if (el.closest("[inert]")) continue;
         const r = rect(el);
         if (r.w > 8 && r.h > 8) bankRects[el.dataset.worldBank!] = r;
       }
-      current.layout({ host: rect(element), queen: rect(mount), banks: bankRects });
+      return current.layout({ host: rect(element), queen: rect(mount), banks: bankRects });
     };
     measure();
-    const observer = new ResizeObserver(measure);
+    // The expand is a 0.5s CSS transition; keep the sculptures on their
+    // controls through it, on her own lease, and stop a few still frames after
+    // she comes to rest — never while she is off the screen or the tab is hidden.
+    let frame = 0, still = SETTLE_TAIL_FRAMES, onScreen = true;
+    const step = () => {
+      frame = 0;
+      const current = world.current;
+      if (!current || !onScreen || document.hidden) return;
+      still = measure() ? 0 : still + 1;
+      if (still < SETTLE_TAIL_FRAMES) frame = current.requestFrame(step);
+    };
+    const settle = () => {
+      const current = world.current;
+      if (!current || !onScreen || document.hidden) return;
+      still = 0;
+      if (!frame) frame = current.requestFrame(step);
+    };
+    const stop = () => { if (frame) world.current?.cancelFrame(frame); frame = 0; still = SETTLE_TAIL_FRAMES; };
+    const observer = new ResizeObserver(settle);
     observer.observe(element);
     observer.observe(rootElement);
     for (const el of rootElement.querySelectorAll("[data-world-bank], .queen-mount")) observer.observe(el);
-    // The expand is a 0.5s CSS transition; keep the sculptures on their controls through it.
-    let frames = 0;
-    const settle = () => { measure(); if (frames < 40) { frames += 1; raf = requestAnimationFrame(settle); } };
-    let raf = requestAnimationFrame(settle);
-    const onEnd = () => measure();
-    rootElement.addEventListener("transitionend", onEnd);
-    return () => { observer.disconnect(); cancelAnimationFrame(raf); rootElement.removeEventListener("transitionend", onEnd); };
+    const intersection = typeof IntersectionObserver === "function"
+      ? new IntersectionObserver(([entry]) => { onScreen = entry?.isIntersecting ?? true; if (onScreen) settle(); else stop(); })
+      : null;
+    intersection?.observe(element);
+    const onHidden = () => { if (document.hidden) stop(); else settle(); };
+    document.addEventListener("visibilitychange", onHidden);
+    rootElement.addEventListener("transitionend", settle);
+    window.addEventListener("scroll", settle, { passive: true });
+    window.addEventListener("resize", settle);
+    settle();
+    return () => {
+      stop();
+      observer.disconnect();
+      intersection?.disconnect();
+      document.removeEventListener("visibilitychange", onHidden);
+      rootElement.removeEventListener("transitionend", settle);
+      window.removeEventListener("scroll", settle);
+      window.removeEventListener("resize", settle);
+    };
   }, [live, expanded, root, banks.length]);
 
   if (!wanted) return null;

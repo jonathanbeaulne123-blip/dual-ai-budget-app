@@ -2,18 +2,42 @@ import * as THREE from "three";
 import { createHomeObjects, type HomeObjectsProjection } from "./homeObjects.ts";
 import { createHouseSet } from "./houseSet.ts";
 import { acquireWorldRenderer } from "./rendererOwner.ts";
-import { createBloomQueen, disposeObject, type BloomEvidence } from "./bloom.ts";
+import { createBloomQueen, disposeObject, type BloomEvidence, type BloomTier } from "./bloom.ts";
 import { HOUSE_WALK_GRAPH, findPath, nearestNode, type WalkNode } from "./walkPaths.ts";
 import { houseFramePolicy } from "./framePolicy.ts";
+import { worldDiagnostics } from "./diagnostics.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
 import type { QueenStyle } from "../queenStyle.ts";
 
+/** How many frames a control that has only just been told to stand is given to report a width. */
+const MEASURE_TRIES=8;
 type Pose = {center:[number,number,number];camera:[number,number,number];phoneCamera:[number,number,number]};
 type Direction="left"|"right"|"up"|"down";
 export type WorldDestination={zone:string;target?:string;phoneTarget?:string;overview?:boolean;queenView?:"front"|"back"|"roots"|"detail";camera?:[number,number,number]};
+/** Where one object's control stands on the stage, in stage pixels, at its centre. */
+export type HouseTwin={id:string;x:number;y:number};
+export type HouseWorldOptions={
+  /**
+   * Hands the object controls their places instead of writing to them. The
+   * runtime never touches their `hidden` or their `style` — a write between
+   * two reads is a forced synchronous layout, and there were up to twenty of
+   * them per frame. An id the runtime leaves out is one that does not stand.
+   */
+  onProject?:(twins:HouseTwin[])=>void;
+  /**
+   * Which Queen the house stands. `full` is the 12.9 MB Living Presence
+   * master; `lite` is the 3.5 MB court copy, which is what a phone or a small
+   * machine gets — the same routing the harbour's court already uses. Default
+   * `full`, so a caller that says nothing keeps today's file.
+   */
+  tier?:BloomTier;
+};
 export type HouseRuntime={setHome:(input:HomeObjectsProjection)=>void;go:(destination:WorldDestination)=>void;walk:(direction:Direction)=>void;walkTo:(x:number,y:number)=>void;setWalking:(enabled:boolean)=>void;setQueen:(style:QueenStyle,evidence:BloomEvidence[])=>void;camera:()=>[number,number,number];dispose:()=>void};
-export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<string,HTMLElement>,onReady:()=>void,onFailure:()=>void,onArrival?:(room:string,level:string)=>void):HouseRuntime{
+export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<string,HTMLElement>,onReady:()=>void,onFailure:()=>void,onArrival?:(room:string,level:string)=>void,options:HouseWorldOptions={}):HouseRuntime{
   let disposed=false,frame=0,previous=0,visible=true,moving=true,queenGeneration=0,lastPaint=0;
+  const diagnostics=worldDiagnostics();
+  /** The stage's size, from the last resize: measuring it inside a frame is a reflow the ResizeObserver already paid for. */
+  let stageWidth=0,stageHeight=0;
   const reduced=window.matchMedia("(prefers-reduced-motion: reduce)");
   const scene=new THREE.Scene();scene.background=new THREE.Color(theme==="newfoundland"?0x9bbdc0:theme==="taylor"?0xe6c8bc:0xbaa589);
   scene.fog=new THREE.Fog(scene.background,34,78);
@@ -39,29 +63,65 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
   const head=new THREE.Mesh(new THREE.SphereGeometry(.13,12,8),new THREE.MeshStandardMaterial({color:0xe2bc91}));head.position.y=.83;avatar.add(head);avatar.visible=false;scene.add(avatar);
   let arrivedNode:WalkNode|undefined,viewportPhone:boolean|undefined;
   let current:WorldDestination={zone:"home:middle"},queen:THREE.Group|null=null,steps:WalkNode[]=[],walkEnd:WalkNode|null=null;
-  const projected=new THREE.Vector3();let lastProjection="",paintSamples:number[]=[];
+  const projected=new THREE.Vector3(),anchorWorld=new THREE.Vector3();
+  let lastProjection="",paintSamples:number[]=[],lastTwins="";
+  /** Control sizes, read in one pass and kept: a label only changes when the DOM does, and the MutationObserver says when. */
+  const sizes=new Map<string,{w:number;h:number}>();let sizesDirty=true,measureTries=0,remeasure=false;
+  const standing:{id:string;sx:number;sy:number}[]=[];
   function project(){
-    const bounds=host.getBoundingClientRect(),controls=buttons();
-    const placed:{x:number;y:number;w:number;h:number}[]=[];
-    const dynamic=[...home.anchors.values()].map(anchor=>({id:anchor.id,zone:anchor.zone,position:anchor.target.getWorldPosition(new THREE.Vector3()).toArray() as [number,number,number]}));
-    for(const anchor of [...set.anchors,...dynamic]){
-      const button=controls.get(anchor.id);if(!button)continue;
-      projected.fromArray(anchor.position);projected.y+=.8;projected.project(camera);
-      const inZone=current.overview?anchor.id.startsWith("door-"):anchor.zone===current.zone;
-      button.dataset.projected="true";button.hidden=!inZone||projected.z>=1||Math.abs(projected.x)>=.95||Math.abs(projected.y)>=.9||(bounds.width<720&&anchor.id!==current.phoneTarget);
-      if(!button.hidden){
-        const w=button.offsetWidth||170,h=button.offsetHeight||44;
-        const x=Math.max(w/2+14,Math.min(bounds.width-w/2-14,(projected.x*.5+.5)*bounds.width));
-        let y=Math.max(80,Math.min(bounds.height-100,(-projected.y*.5+.5)*bounds.height));
-        for(const other of placed)if(Math.abs(x-other.x)<(w+other.w)/2+8&&Math.abs(y-other.y)<(h+other.h)/2+8)y=other.y+(h+other.h)/2+12;
-        placed.push({x,y,w,h});button.style.left=`${x}px`;button.style.top=`${y}px`;
-      }
+    const controls=buttons();
+    if(stageWidth<1||stageHeight<1)return;
+    standing.length=0;
+    const phone=stageWidth<720;
+    for(const anchor of set.anchors){
+      if(!controls.has(anchor.id))continue;
+      projected.fromArray(anchor.position);
+      place(anchor.id,anchor.zone,phone);
     }
+    for(const anchor of home.anchors.values()){
+      if(!controls.has(anchor.id))continue;
+      anchor.target.getWorldPosition(anchorWorld);projected.copy(anchorWorld);
+      place(anchor.id,anchor.zone,phone);
+    }
+    // One read pass, with no write between two reads: at worst one layout, and
+    // none at all once every standing control has been measured.
+    let unmeasured=sizesDirty;
+    if(!unmeasured)for(const row of standing)if(!sizes.has(row.id)){unmeasured=true;break;}
+    if(unmeasured){
+      sizesDirty=false;
+      for(const row of standing){const button=controls.get(row.id);if(!button)continue;const w=button.offsetWidth,h=button.offsetHeight;if(w&&h)sizes.set(row.id,{w,h});}
+    }
+    // A control that has only just been told to stand has no size yet: come
+    // back for it next frame, a bounded number of times, then keep the default.
+    const missing=standing.some(row=>!sizes.has(row.id));
+    remeasure=missing&&measureTries<MEASURE_TRIES;
+    if(remeasure){measureTries+=1;schedule();}else if(!missing)measureTries=0;
+    const placed:{x:number;y:number;w:number;h:number}[]=[];const twins:HouseTwin[]=[];let signature="";
+    for(const row of standing){
+      const size=sizes.get(row.id),w=size?.w||170,h=size?.h||44;
+      const x=Math.max(w/2+14,Math.min(stageWidth-w/2-14,row.sx));
+      let y=Math.max(80,Math.min(stageHeight-100,row.sy));
+      for(const other of placed)if(Math.abs(x-other.x)<(w+other.w)/2+8&&Math.abs(y-other.y)<(h+other.h)/2+8)y=other.y+(h+other.h)/2+12;
+      placed.push({x,y,w,h});twins.push({id:row.id,x,y});signature+=`${row.id}:${x|0}:${y|0}|`;
+    }
+    if(signature===lastTwins)return;
+    lastTwins=signature;options.onProject?.(twins);
+  }
+  /** `projected` already holds the anchor's world point: lift it to shoulder height and keep it if it stands in this room and on this screen. */
+  function place(id:string,zone:string,phone:boolean){
+    projected.y+=.8;projected.project(camera);
+    const inZone=current.overview?id.startsWith("door-"):zone===current.zone;
+    if(!inZone||projected.z>=1||Math.abs(projected.x)>=.95||Math.abs(projected.y)>=.9||(phone&&id!==current.phoneTarget))return;
+    standing.push({id,sx:(projected.x*.5+.5)*stageWidth,sy:(-projected.y*.5+.5)*stageHeight});
   }
   function render(){
     if(!lease.active||disposed)return;
-    const began=performance.now();renderer.render(scene,camera);project();
-    paintSamples.push(performance.now()-began);if(paintSamples.length>60)paintSamples.shift();
+    const began=performance.now();renderer.render(scene,camera);
+    if(diagnostics){paintSamples.push(performance.now()-began);if(paintSamples.length>60)paintSamples.shift();}
+    project();
+    // Development, the review server and a page asked for them keep the
+    // numbers; a shipped frame writes nothing to the DOM at all.
+    if(!diagnostics)return;
     host.dataset.renderMs=(paintSamples.reduce((a,b)=>a+b,0)/paintSamples.length).toFixed(2);
     host.dataset.houseCamera=JSON.stringify(camera.position.toArray());host.dataset.drawCalls=String(renderer.info.render.calls);host.dataset.geometries=String(renderer.info.memory.geometries);host.dataset.textures=String(renderer.info.memory.textures);
   }
@@ -82,12 +142,12 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
     if(!moving){camera.position.copy(destination);target.copy(lookDestination);}else{camera.position.lerp(destination,1-Math.exp(-dt*7));target.lerp(lookDestination,1-Math.exp(-dt*7));}
     camera.lookAt(target);
     const projection=[camera.position.x,camera.position.y,camera.position.z,target.x,target.y].map(n=>n.toFixed(3)).join(":");
-    const policy=houseFramePolicy({reduced:reduced.matches,moving,walking:steps.length>0,movedWalker,settledCamera:wasMoving&&!moving,projectionChanged:projection!==lastProjection});
+    const policy=houseFramePolicy({reduced:reduced.matches,moving,walking:steps.length>0,movedWalker,settledCamera:wasMoving&&!moving,projectionChanged:projection!==lastProjection||remeasure});
     if(policy.animate)set.animate(now/1000);
     if(policy.render){render();lastProjection=projection;}
     if(policy.schedule)schedule();
   }
-  function resize(){const {width,height}=host.getBoundingClientRect();if(width<1||height<1||!lease.active)return;const phone=width<720;if(viewportPhone!==undefined&&viewportPhone!==phone)current={...current,camera:undefined};viewportPhone=phone;renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();go(current);render();}
+  function resize(){const {width,height}=host.getBoundingClientRect();if(width<1||height<1||!lease.active)return;stageWidth=width;stageHeight=height;sizesDirty=true;measureTries=0;lastTwins="";const phone=width<720;if(viewportPhone!==undefined&&viewportPhone!==phone)current={...current,camera:undefined};viewportPhone=phone;renderer.setSize(width,height,false);camera.aspect=width/height;camera.updateProjectionMatrix();go(current);render();}
   function poseFor(next:WorldDestination):Pose|undefined{
     if(next.overview)return {center:[0,4,0],camera:[1,12,viewportPhone?51:30],phoneCamera:[1,12,51]};
     const focus=next.target?set.focus[next.target]:viewportPhone&&next.phoneTarget?set.focus[next.phoneTarget]:undefined;
@@ -103,7 +163,7 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
     if(next.queenView){const anchor=set.anchors.find(a=>a.id==="queen");if(anchor){const p=new THREE.Vector3().fromArray(anchor.position);lookDestination.copy(p).add(new THREE.Vector3(0,next.queenView==="roots"?.25:1.1,0));destination.copy(lookDestination).add(new THREE.Vector3(next.queenView==="detail"?1:0,next.queenView==="roots"?.4:.3,next.queenView==="back"?-4:next.queenView==="detail"?2.5:4.7));}}
     const [room,level]=next.zone.split(":"),node=HOUSE_WALK_GRAPH.nodes.find(node=>node.id===`room:${room}:${level}`);
     if(node&&!steps.length){avatar.position.set(node.point.x,node.point.y,node.point.z);arrivedNode=node;host.dataset.walkNode=node.id;}
-    host.dataset.zone=next.zone;host.dataset.room=room;moving=true;lastProjection="";schedule();
+    host.dataset.zone=next.zone;host.dataset.room=room;moving=true;lastProjection="";lastTwins="";measureTries=0;schedule();
   }
   function travel(to:WalkNode){
     if(!avatar.visible)return;
@@ -126,7 +186,7 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
     if(nearest)travel(nearest);
   }
   async function setQueen(style:QueenStyle,evidence:BloomEvidence[]){
-    const generation=++queenGeneration;try{const next=await createBloomQueen(style,evidence);if(disposed||generation!==queenGeneration){disposeObject(next);return;}
+    const generation=++queenGeneration;try{const next=await createBloomQueen(style,evidence,{tier:options.tier??"full"});if(disposed||generation!==queenGeneration){disposeObject(next);return;}
       if(queen){scene.remove(queen);disposeObject(queen);}queen=next;
       const anchor=set.anchors.find(a=>a.id==="queen");if(anchor)next.position.fromArray(anchor.position);scene.add(next);
       sun.color.set(style.light==="moon"?0xc4d6ff:style.light==="amber"?0xffc788:0xffe6be);render();schedule();
@@ -134,7 +194,8 @@ export function mountHouseWorld(host:HTMLElement,theme:ThemeId,buttons:()=>Map<s
   }
   const observer=new ResizeObserver(resize);observer.observe(host);
   const controlsRoot=host.parentElement;
-  const controlsObserver=controlsRoot&&typeof MutationObserver!=="undefined"?new MutationObserver(()=>render()):null;
+  // The controls themselves changed: their labels, so their widths, are new.
+  const controlsObserver=controlsRoot&&typeof MutationObserver!=="undefined"?new MutationObserver(()=>{sizesDirty=true;measureTries=0;lastTwins="";render();}):null;
   if(controlsRoot)controlsObserver?.observe(controlsRoot,{childList:true,subtree:true,characterData:true});
   const intersection=new IntersectionObserver(([entry])=>{visible=Boolean(entry?.isIntersecting);if(visible){previous=performance.now();schedule();}else{lease.cancelFrame(frame);frame=0;}});intersection.observe(host);
   const visibility=()=>{if(document.hidden){lease.cancelFrame(frame);frame=0;}else{previous=performance.now();schedule();}};

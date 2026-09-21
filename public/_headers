@@ -6,13 +6,35 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
-# Every model file is content-hash fenced in src/harbour/assets/manifest.ts
-# (SHA-256 plus an exact byte count) and a new sculpt ships under a new
-# versioned filename, so these are immutable in practice. Without this they
-# fell back to the Workers-Assets default and were revalidated on each visit —
-# the Queen master alone is 12.9 MB.
-/models/*
+# Models.
+#
+# Cloudflare joins the values of a header that two matching rules both set
+# (`_headers` docs: "If a header is applied twice ... the values are joined
+# with a comma separator"), so these rules must not overlap: there is
+# deliberately no `/models/*` catch-all next to the three directory rules.
+#
+# The three versioned directories are safe to freeze: every file in them
+# carries a `.vN.` in its name and its exact SHA-256 is fenced in a manifest
+# (`src/queen/world/bankModels.ts`, `src/queen/world/queenModel.ts`,
+# `src/harbour/assets/manifest.ts`), so new bytes always arrive under a new
+# url. New models belong in one of these directories for the same reason.
+/models/banks/*
   Cache-Control: public, max-age=31536000, immutable
+
+/models/court/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/models/queen/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# The two legacy masters at the root of /models/ carry no version in their
+# names (`mandevilla-living-presence.glb` and `.court.glb`, plus their `.gz`
+# twins), so a replacement would reuse the same url. They get a week of
+# browser cache and then revalidate — cheap, because the assets binding
+# answers a revalidation with a 304 against its ETag. Freeze them the day
+# they move to a versioned name.
+/models/mandevilla-living-presence*
+  Cache-Control: public, max-age=604800, must-revalidate
 
 /hercules-wardrobe/*
   Cache-Control: public, max-age=31536000, immutable
