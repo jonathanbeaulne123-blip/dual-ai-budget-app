@@ -124,11 +124,19 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   };
 
   const pmrem = new THREE.PMREMGenerator(renderer);
+  // The room the environment is baked from is scaffolding: it owns geometry,
+  // materials and per-instance buffers that outlive the bake unless they are
+  // let go here (the pattern `kitty/KittyStage.tsx` settled).
+  const environment = new RoomEnvironment();
   try {
-    const env = pmrem.fromScene(new RoomEnvironment(), 0.05);
+    const env = pmrem.fromScene(environment, 0.05);
     scene.environment = env.texture;
     cleanup.push(() => { env.dispose(); pmrem.dispose(); });
   } catch { pmrem.dispose(); }
+  finally {
+    environment.traverse((object) => { if (object instanceof THREE.InstancedMesh) object.dispose(); });
+    environment.dispose();
+  }
 
   // ---- the light each room is lit by ------------------------------------
   const cellar = options.room === "cellar";

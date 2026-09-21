@@ -80,11 +80,19 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
 
   const cleanup: Array<() => void> = [];
   const pmrem = new THREE.PMREMGenerator(renderer);
+  // The room the environment is baked from is scaffolding: it owns geometry,
+  // materials and per-instance buffers that outlive the bake unless they are
+  // let go here (the pattern `kitty/KittyStage.tsx` settled).
+  const environment = new RoomEnvironment();
   try {
-    const env = pmrem.fromScene(new RoomEnvironment(), 0.04);
+    const env = pmrem.fromScene(environment, 0.04);
     scene.environment = env.texture;
     cleanup.push(() => { env.dispose(); pmrem.dispose(); });
   } catch { pmrem.dispose(); }
+  finally {
+    environment.traverse((object) => { if (object instanceof THREE.InstancedMesh) object.dispose(); });
+    environment.dispose();
+  }
   // The rig: a sky, a key and a rim. The living light scales them within a floor and moves the key with the sun's height; it never touches a material.
   const sky = new THREE.HemisphereLight("#fff1d9", "#8a8276", 1.1);
   scene.add(sky);
