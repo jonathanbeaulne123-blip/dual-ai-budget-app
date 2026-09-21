@@ -100,7 +100,10 @@ export function createPlaceholderWalker(options: WalkerOptions): Walker {
       if (clamped === opacity) return;
       opacity = clamped;
       cloth.opacity = clamped; skin.opacity = clamped;
-      group.visible = clamped > 0.01;
+      // Each mesh, not only the group: a place's draw-call budget counts nodes.
+      const shown = clamped > 0.01;
+      group.visible = shown;
+      for (const mesh of [body, head, nose]) mesh.visible = shown;
     },
     animate(_t, dt) {
       if (!moving) return;

@@ -23,7 +23,9 @@ import type { QueenPlace } from "./court/queenPlace.ts";
 import type { CourtHandle } from "./court/CourtScene.ts";
 import type { HarbourRuntime, HarbourGesture, HarbourHit, ProjectedRect, ScrubControls } from "./scene/runtime.ts";
 import { PLACES, sceneDressingFrom, type PlaceReading, type Region } from "./scene/place.ts";
-import { usePartnerWalk } from "./presence/usePartnerWalk.ts";
+import { publishLocalPose, useWorldFeed } from "./presence/feed.ts";
+import { WalkTogether } from "./presence/WalkTogether.tsx";
+import { readWorldPresenceShare, type WorldPresenceShare } from "../softPresenceWorld.ts";
 import { harbourCameraSlot } from "./scene/travel.ts";
 import { qualityTier, readQualityInput, type QualityTier, type RenderTier } from "./scene/quality.ts";
 import "./harbour.css";
@@ -123,16 +125,25 @@ export default function HarbourWorld(props: HarbourWorldProps) {
    * gone — the reading carries only `fresh`, which is the pin the app has
    * always had. State reflects the data outcome, never the sync outcome.
    */
-  const partnerWalk = usePartnerWalk({
+  const [walkShare, setWalkShare] = useState<WorldPresenceShare>(() => readWorldPresenceShare(household.environment));
+  useEffect(() => { setWalkShare(readWorldPresenceShare(household.environment)); }, [household.environment]);
+  // Where this person is standing, put on the shelf for whoever owns a socket.
+  // The harbour never reaches out for the network (`harbour-source-fences`).
+  useEffect(() => publishLocalPose(() => {
+    const world = runtime.current;
+    if (!world) return null;
+    const pose = world.pose();
+    return { target: pose.target, theta: pose.theta };
+  }), []);
+  const partnerWalk = useWorldFeed({
     environment: household.environment,
     householdId: household.householdId,
     memberId,
     linked: household.linked === true,
     view: scope,
     placeId: place,
-    pose: () => runtime.current?.pose() ?? null,
-    softPeer,
     softPresenceOptedOut: presence?.optedOut === true,
+    share: walkShare,
   });
   const partner = useMemo(() => {
     // The live body's name is the household's word for the member the *server*
@@ -143,6 +154,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     return partnerName ? { fresh: false, name: partnerName, walk: partnerWalk.walk } : null;
   }, [presence, softPeer, partnerName, partnerWalk.walk, partnerWalk.memberId, household.members]);
   const placeReading: PlaceReading = useMemo(() => ({ ...reading, partner }), [reading, partner]);
+
 
   const currentEvidence = useMemo(() => livingEvidence(household, memberId, scope), [household.hearthside, household.personalLife, memberId, scope]); // eslint-disable-line react-hooks/exhaustive-deps
   const supported = useSupportedHouseInterpretation({ identity, gate: interpretationGate ?? { current: true, freshness: "current", detail: "Current local books" }, current: { bloom: currentEvidence }, fallback: { bloom: [] }, sourceRevision: interpretationSourceRevision(household, scope), supportedAt: supportedAtFor(household, today) });
@@ -498,6 +510,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {stick && <div className="harbour-stick" data-harbour-stick="" aria-hidden="true" style={{ left: `${stick.x}px`, top: `${stick.y}px` }}><span className="harbour-stick__ring" /><span className="harbour-stick__knob" ref={knob as unknown as React.Ref<HTMLSpanElement>} /></div>}
       {sparkle && <div className="harbour-spark" aria-hidden="true" style={{ left: `${sparkle.x}px`, top: `${sparkle.y}px`, "--spark": sparkle.color } as CSSProperties}>{Array.from({ length: sparkle.petals }, (_, i) => <span key={i} style={{ "--i": i } as CSSProperties} />)}</div>}
       <p className="harbour-world__phrase" role="status" aria-live="polite">{phrase}</p>
+      {status === "ready" && !toolOpen && <WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />}
       {statusLine && <small className="harbour-world__supported" role="status">{statusLine}</small>}
       {!ready && status === "ready" && <small className="harbour-world__checking" role="status">Checking the books · {freshness}</small>}
       {toolOpen && <button type="button" className="harbour-world__put-back" onClick={onClose}>← Put it back in {placeName}</button>}

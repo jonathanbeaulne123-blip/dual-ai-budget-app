@@ -145,18 +145,18 @@ export function canPublishWorldPresence(input: WorldPresenceGateInput): boolean 
  * degrades to the treatment the app already had.
  */
 export type WorldPartnerTreatment =
-  | { kind: "walking"; name: string; placeId: WorldPlaceId }
-  | { kind: "parked"; name: string; placeId: WorldPlaceId; opacity: number }
+  | { kind: "walking"; name: string; placeId: string }
+  | { kind: "parked"; name: string; placeId: string; opacity: number }
   | { kind: "recent"; name: string }
   | { kind: "none" };
 
 export type WorldPartnerInput = {
   /** The live peer, if the world lane has one for this place. */
-  walk: { name: string; placeId: WorldPlaceId; state: "walking" | "parked" | "gone"; opacity: number } | null;
+  walk: { name: string; placeId: string; state: "walking" | "parked" | "gone"; opacity: number } | null;
   /** Today's soft presence for the same person, which is the fallback. */
   soft: SoftPresencePeer | null;
   /** The place the viewer is standing in; a peer somewhere else is not in this scene. */
-  here: WorldPlaceId | string | null | undefined;
+  here: string | null | undefined;
   nowMs: number;
 };
 

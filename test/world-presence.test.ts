@@ -36,7 +36,8 @@ import {
 } from "../src/softPresenceWorld.ts";
 import { HARBOUR_PLACE_NAMES } from "../src/harbour/flag.ts";
 import { createPlaceholderWalker, createWalker, useWalkerFactory, walkerFactoryIsPlaceholder, type Walker } from "../src/harbour/presence/walker.ts";
-import { localBodyFromPose } from "../src/harbour/presence/usePartnerWalk.ts";
+import { localBodyFromPose } from "../src/ledgerSync/worldPresenceMount.tsx";
+import * as feed from "../src/harbour/presence/feed.ts";
 import * as courtScene from "../src/harbour/court/CourtScene.ts";
 import { readCourtReading } from "../src/harbour/court/CourtScene.ts";
 import { COURT_DRESSING } from "../src/harbour/court/dressing.ts";
@@ -418,5 +419,30 @@ describe("the Court: a pin when they were here, a body when they are", () => {
     expect(bodyOf(scene).visible).toBe(false);
     expect(pinOf(scene).visible).toBe(false);
     handle.dispose();
+  });
+});
+
+describe("the harbour's feed seam", () => {
+  const request = {
+    environment: "development" as const, householdId: "HH-1", memberId: "MEM-001",
+    linked: false, view: "household" as const, placeId: "court" as const,
+    softPresenceOptedOut: false, share: "live" as const,
+  };
+
+  it("is quiet until something that owns a socket installs itself", () => {
+    expect(feed.worldFeedIsQuiet()).toBe(true);
+    expect(feed.useWorldFeed(request)).toEqual({ walk: null, memberId: null });
+    const restore = feed.useWorldFeedProvider(() => ({ walk: { pose: () => null }, memberId: "MEM-002" }));
+    expect(feed.useWorldFeed(request).memberId).toBe("MEM-002");
+    restore();
+    expect(feed.worldFeedIsQuiet()).toBe(true);
+  });
+
+  it("carries the local pose out without the harbour reaching for a socket", () => {
+    expect(feed.readLocalPose()).toBeNull();
+    const restore = feed.publishLocalPose(() => ({ target: [1, 0, 2] as const, theta: 0.5 }));
+    expect(feed.readLocalPose()).toEqual({ target: [1, 0, 2], theta: 0.5 });
+    restore();
+    expect(feed.readLocalPose()).toBeNull();
   });
 });

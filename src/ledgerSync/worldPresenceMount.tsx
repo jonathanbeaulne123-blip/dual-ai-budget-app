@@ -1,34 +1,37 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Environment, LedgerView } from "../../core/types.ts";
-import { localDeviceId } from "../../core/devices.ts";
-import { ensureSupabaseSession, loadSupabaseSession } from "../../auth/supabaseSession.ts";
-import { ledgerSyncEnabled, localLedgerIdentity } from "../../ledgerSync/mode.ts";
-import { attachWorldPresence, type WorldPeer, type WorldPresenceHandle, type WorldPresenceState } from "../../ledgerSync/worldPresence.ts";
-import { WORLD_STEP_MS, isWorldPlaceId, type WorldPlaceId } from "../../ledgerSync/worldPresenceWire.ts";
-import { readWorldPresenceShare, worldPresenceGate, type WorldPresenceShare } from "../../softPresenceWorld.ts";
-import type { SoftPresencePeer } from "../../softPresence.ts";
-import type { PlaceWalkSource } from "../scene/place.ts";
-import type { HarbourPlaceId } from "../flag.ts";
+import { localDeviceId } from "../core/devices.ts";
+import { ensureSupabaseSession, loadSupabaseSession } from "../auth/supabaseSession.ts";
+import { ledgerSyncEnabled, localLedgerIdentity } from "./mode.ts";
+import { attachWorldPresence, type WorldPeer, type WorldPresenceHandle } from "./worldPresence.ts";
+import { WORLD_STEP_MS, isWorldPlaceId, type WorldPlaceId } from "./worldPresenceWire.ts";
+import { worldPresenceGate } from "../softPresenceWorld.ts";
+import { readLocalPose, useWorldFeedProvider, type WorldFeed, type WorldFeedRequest } from "../harbour/presence/feed.ts";
+import type { PlaceWalkSource } from "../harbour/scene/place.ts";
+import type { Environment } from "../core/types.ts";
 
 /**
- * The Court's end of the world-presence lane.
+ * The socket end of the walking partner, kept outside `src/harbour/**` because
+ * the harbour is not allowed to touch the network
+ * (`test/harbour-source-fences.test.ts`). It installs itself into the
+ * harbour's feed seam (`harbour/presence/feed.ts`) from the app's entry
+ * module; until it does, the harbour has no live lane and shows the pin it
+ * always had.
  *
- * Two jobs, and both of them are narrow on purpose:
+ * Two jobs, both narrow:
  *
  *  - **Send.** Every 80 ms it reads where this person is standing out of the
- *    runtime's own camera pose and offers it to the lane. The lane's gate
- *    (`softPresenceWorld.ts`) is asked on every single offer, so turning
- *    position sharing off, switching to the personal view, or backgrounding
- *    the tab stops the very next frame — nothing is published, not even a
- *    keepalive.
- *  - **Receive.** It hands the Court a `PlaceWalkSource`: a stable object the
- *    scene polls once per animated frame. Samples arriving at 12.5 Hz never
- *    become React renders; only the *existence* of a partner does.
+ *    world's own camera pose and offers it. The privacy gate
+ *    (`softPresenceWorld.ts`) is asked on every offer, so turning position
+ *    sharing off, switching to the personal view, or backgrounding the tab
+ *    stops on the very next frame — nothing is published, not even a keepalive.
+ *  - **Receive.** It hands back a stable `PlaceWalkSource` the scene polls once
+ *    per animated frame, so 12.5 samples a second never become 12.5 React
+ *    renders. Only the *existence* of a partner re-renders anything.
  *
- * It deliberately does not own the body. Where a person is standing comes
- * from the runtime, and what a body looks like comes from
- * `presence/walker.ts`'s factory — both seams the character lane can take over
- * without touching this file.
+ * It deliberately does not own the body: where a person is standing comes from
+ * the world runtime, and what a body looks like comes from
+ * `harbour/presence/walker.ts`'s factory. Both are seams the character lane
+ * takes over without touching this file.
  */
 
 /**
@@ -47,34 +50,7 @@ export function localBodyFromPose(pose: { target: readonly [number, number, numb
 }
 
 /** Enough movement between two ticks to call it walking rather than standing. */
-const MOVING_EPSILON = 0.012;
-
-export type PartnerWalkInput = {
-  environment: Environment;
-  householdId: string;
-  memberId: string | null;
-  /** The household books are linked to a cloud identity; local dev auth bypasses it. */
-  linked: boolean;
-  view: LedgerView;
-  placeId: HarbourPlaceId;
-  /** The runtime's current camera pose, or null before the world stands. */
-  pose: () => { target: readonly [number, number, number]; theta: number } | null;
-  /** Today's soft-presence peer for the partner — the honest fallback the caller keeps. */
-  softPeer?: SoftPresencePeer | null;
-  /** The coarse opt-out (`softPresence.ts`). */
-  softPresenceOptedOut: boolean;
-  /** Test seams. */
-  share?: WorldPresenceShare;
-  enabled?: boolean;
-};
-
-export type PartnerWalkResult = {
-  /** Handed to the Court through `reading.partner.walk`. Null when there is no live body. */
-  walk: PlaceWalkSource | null;
-  /** The live peer's member id — the server's word for who it is, never the client's. */
-  memberId: string | null;
-  state: WorldPresenceState;
-};
+export const MOVING_EPSILON = 0.012;
 
 /** The token the lane authenticates with, or null when this browser has no standing to open it. */
 export function worldPresenceToken(environment: Environment, memberId: string, linked: boolean): (() => Promise<string>) | null {
@@ -89,15 +65,11 @@ export function worldPresenceToken(environment: Environment, memberId: string, l
   };
 }
 
-export function usePartnerWalk(input: PartnerWalkInput): PartnerWalkResult {
-  const { environment, householdId, memberId, linked, view, placeId, softPresenceOptedOut } = input;
+export function useWorldPresenceFeed(request: WorldFeedRequest): WorldFeed {
+  const { environment, householdId, memberId, linked, view, placeId, softPresenceOptedOut, share } = request;
   const [peers, setPeers] = useState<WorldPeer[]>([]);
-  const [state, setState] = useState<WorldPresenceState>("offline");
   const handle = useRef<WorldPresenceHandle | null>(null);
-  const poseRef = useRef(input.pose); poseRef.current = input.pose;
-
-  const share = input.share ?? readWorldPresenceShare(environment);
-  const enabled = input.enabled ?? ledgerSyncEnabled(environment);
+  const enabled = ledgerSyncEnabled(environment);
   const place: WorldPlaceId | null = isWorldPlaceId(placeId) ? placeId : null;
 
   // The gate is kept in a ref so the lane can ask it on every offer without
@@ -106,9 +78,9 @@ export function usePartnerWalk(input: PartnerWalkInput): PartnerWalkResult {
   gate.current = { share, view, softPresenceOptedOut, memberId, environment };
 
   useEffect(() => {
-    if (!enabled || !memberId || !place) { setPeers([]); setState("offline"); return; }
+    if (!enabled || !memberId || !place) { setPeers([]); return; }
     const token = worldPresenceToken(environment, memberId, linked);
-    if (!token) { setPeers([]); setState("offline"); return; }
+    if (!token) { setPeers([]); return; }
     const canPublish = () => {
       const g = gate.current;
       return worldPresenceGate({
@@ -124,13 +96,13 @@ export function usePartnerWalk(input: PartnerWalkInput): PartnerWalkResult {
     };
     const lane = attachWorldPresence({
       environment, householdId, placeId: place, deviceId: localDeviceId(),
-      token, canPublish, onPeers: setPeers, onState: setState,
+      token, canPublish, onPeers: setPeers,
     });
     handle.current = lane;
 
     let last: { x: number; z: number } | null = null;
     const timer = window.setInterval(() => {
-      const pose = poseRef.current();
+      const pose = readLocalPose();
       if (!pose) return;
       const body = localBodyFromPose(pose);
       const moving = last !== null && Math.hypot(body.x - last.x, body.z - last.z) > MOVING_EPSILON;
@@ -153,11 +125,19 @@ export function usePartnerWalk(input: PartnerWalkInput): PartnerWalkResult {
 
   const peer = useMemo(() => peers.find((row) => row.memberId !== memberId && row.placeId === place) ?? null, [peers, memberId, place]);
 
-  const walk: PlaceWalkSource | null = useMemo(() => {
-    if (!peer) return null;
-    // Stable for the life of the peer: the Court polls this every frame.
-    return { pose: (nowMs: number) => peer.track.pose(nowMs) };
-  }, [peer]);
+  const walk: PlaceWalkSource | null = useMemo(
+    // Stable for the life of the peer: the place polls this every frame.
+    () => (peer ? { pose: (nowMs: number) => peer.track.pose(nowMs) } : null),
+    [peer],
+  );
 
-  return { walk, memberId: peer?.memberId ?? null, state };
+  return { walk, memberId: peer?.memberId ?? null };
+}
+
+/**
+ * The whole installation. Called once from the app's entry module, before the
+ * first render, because the provider is a hook.
+ */
+export function installWorldPresence(): () => void {
+  return useWorldFeedProvider(useWorldPresenceFeed);
 }

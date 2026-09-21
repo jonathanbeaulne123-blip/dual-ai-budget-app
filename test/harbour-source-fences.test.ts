@@ -50,7 +50,10 @@ describe("src/harbour source fences", () => {
   });
 
   it("keeps every place's directory inside the same fences", () => {
-    const dirs = ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets"];
+    // `presence` is the partner's body and the seam the live-position lane
+    // installs itself into; like every other directory here it reaches nothing
+    // outside the harbour, which the import fence below is what proves.
+    const dirs = ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "presence"];
     const seen = new Set(files.map((f) => relative(harbour, f).replace(/\\/g, "/").split("/")[0]).filter((part) => part && !part.endsWith(".ts") && !part.endsWith(".tsx")));
     for (const dir of ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat"]) expect([...seen]).toContain(dir);
     for (const name of [...seen]) expect(dirs).toContain(name);
