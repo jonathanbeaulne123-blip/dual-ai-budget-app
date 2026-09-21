@@ -37,7 +37,7 @@ export const ATLAS_LAYOUT = {
   /** The island model's own radius on that top, and how high its turf stands. */
   island: { radius: 0.78, turf: 0.19 },
   /** The side table across the plank: the next era, in the fog. */
-  side: { x: 1.92, z: -0.72, radius: 0.5, top: 0.7 },
+  side: { x: 1.68, z: -1.15, radius: 0.48, top: 0.7 },
   /** The era plaque on its brass easel, in the back-left corner, turned to the door. */
   easel: [-2.25, 0, -1.55] as const,
   /** The dormer in the back wall, and the lamp hanging over the stand. */
@@ -103,7 +103,7 @@ export function stonePin(index: number, total: number): { x: number; z: number }
 // Stand just inside the loft door: the stand in front with the island on it,
 // the easel on the left wall, the next island and the dormer beyond.
 const PHONE_ROOM: Pose = { target: [-0.3, 0.9, -0.5], r: 4.2, theta: 0.8, phi: 1.3 };
-const DESKTOP_ROOM: Pose = { target: [-0.15, 0.92, -0.48], r: 4.05, theta: 0.775, phi: 1.315 };
+const DESKTOP_ROOM: Pose = { target: [-0.05, 0.92, -0.5], r: 4.05, theta: 0.775, phi: 1.315 };
 
 export function atlasPoses(anchors: readonly Anchor[]): Record<string, Pose> {
   const poses: Record<string, Pose> = {
@@ -382,7 +382,7 @@ export function createAtlas(scene: THREE.Scene, options: AtlasOptions): PlaceHan
   }
   // The weather it keeps: a soft dome over the whole of it, thicker while nothing is planned.
   const fog = new THREE.Mesh(
-    track(new THREE.SphereGeometry(0.36, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2)),
+    track(new THREE.SphereGeometry(0.33, 16, 10, 0, Math.PI * 2, 0, Math.PI / 2)),
     track(new THREE.MeshBasicMaterial({ color: dressing.fog, transparent: true, opacity: 0.62, depthWrite: false, side: THREE.DoubleSide })),
   );
   fog.position.set(side.x, side.top + 0.01, side.z); fog.renderOrder = 3;
