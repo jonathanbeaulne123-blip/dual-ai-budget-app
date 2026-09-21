@@ -129,6 +129,15 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const onOpenRef = useRef(onOpen); onOpenRef.current = onOpen;
   const onNavigateRef = useRef(props.onNavigate); onNavigateRef.current = props.onNavigate;
   const onRailDragRef = useRef<(x: number, width: number) => void>(() => undefined);
+  /**
+   * The route change that is in flight because a doorway was **crossed**
+   * (`scene/runtime.ts` §3) rather than because a building was tapped from
+   * across the lawn. Both make the same route change — which is the point, so
+   * the compass, the quick sheet and the reading edition cannot tell them
+   * apart — but a crossing must not then fly the camera anywhere: you already
+   * walked in.
+   */
+  const crossing = useRef<HarbourPlaceId | null>(null);
   const evidenceRef = useRef(evidence); evidenceRef.current = evidence;
 
   const say = useCallback((next: QueenSpark | null, at?: { x: number; y: number }) => {
@@ -162,6 +171,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     if (hit.kind !== "anchor") return;
     activate(hit.id, hit.anchor.door, hit.anchor.zone);
   }, [act]); // eslint-disable-line react-hooks/exhaustive-deps
+  const onThreshold = useCallback((next: HarbourPlaceId) => {
+    if (placeRef.current === next) return;
+    crossing.current = next;
+    onNavigateRef.current(HARBOUR_PLACE_ROOMS[next], HARBOUR_PLACE_LEVELS[next]);
+  }, []);
   const onStick = useCallback((next: { x: number; y: number; dx: number; dy: number } | null) => {
     if (!next) { setStick(null); return; }
     setStick(current => (current && current.x === next.x && current.y === next.y ? current : { x: next.x, y: next.y }));
@@ -236,7 +250,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
         const world = mountHarbourWorld(element, theme, renderTier, {
           onReady: () => setStatus("ready"), onFailure: () => setStatus("fallback"),
           onProject: next => setRects(next), onTap, onGesture, onRailDrag: (x, width) => onRailDragRef.current(x, width),
-          onStick, onClose: setClosed,
+          onStick, onClose: setClosed, onThreshold,
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
         runtime.current = world;
@@ -272,9 +286,15 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     let cancelled = false;
     const warm = () => {
       if (cancelled) return;
-      for (const id of Object.keys(PLACE_MODULES) as HarbourPlaceId[]) {
-        if (id !== placeRef.current) void PLACE_MODULES[id]().catch(() => undefined);
-      }
+      const pending = (Object.keys(PLACE_MODULES) as HarbourPlaceId[])
+        .filter((id) => id !== placeRef.current)
+        .map((id) => PLACE_MODULES[id]().catch(() => undefined));
+      // A placed interior can only be streamed in once its chunk has landed;
+      // asking the runtime again here saves it waiting for the next move.
+      void Promise.all(pending).then(() => {
+        if (cancelled) return;
+        runtime.current?.restream();
+      });
     };
     const host = window as typeof window & {
       requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number;
@@ -330,8 +350,14 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     setRects([]); setPhrase(""); setScrub(null); setStick(null);
     void PLACE_MODULES[place]().then(() => {
       if (cancelled || runtime.current !== world) return;
-      if (from === "court") { queen.current?.dispose(); queen.current = null; court.current = null; world.setBreathing(false); }
-      world.enter(place, { from });
+      // The Court's group may survive the journey now (walking into a building
+      // on the island keeps the island standing), so she is taken out of her
+      // slot before she is disposed — a disposed geometry left in a standing
+      // scene is a black hole where the Queen was.
+      if (from === "court") { court.current?.detachQueen(); queen.current?.dispose(); queen.current = null; court.current = null; world.setBreathing(false); }
+      const walked = crossing.current === place;
+      crossing.current = null;
+      world.enter(place, { from, ...(walked ? { threshold: true } : {}) });
       world.invalidate();
       court.current = place === "court" ? world.place() as CourtHandle : null;
       void holdRail(world);
