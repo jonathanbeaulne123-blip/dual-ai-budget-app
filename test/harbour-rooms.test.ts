@@ -2,9 +2,12 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import {
-  EMPTY_BOATHOUSE_READING, EMPTY_COTTAGE_READING, EMPTY_KILN_READING, EMPTY_KITCHEN_READING, buildBoathouseReading, buildCottageReading,
+  CAMPFIRE_SEAL_DAYS, CAMPFIRE_STONE_CAP, EMPTY_BOATHOUSE_READING, EMPTY_CAMPFIRE_READING, EMPTY_COTTAGE_READING, EMPTY_KILN_READING,
+  EMPTY_KITCHEN_READING, buildBoathouseReading, buildCampfireReading, buildCottageReading,
   buildKilnReading, buildKitchenReading, KILN_SHELF_CAP, KILN_WARM_DAYS, KITCHEN_CARD_CAP,
 } from "../src/harbour/data/reading.ts";
+import { CAMPFIRE_DRESSING } from "../src/harbour/campfire/dressing.ts";
+import { campfireWords, campfirePoses, createCampfire, readCampfireReading, stonePin, stoneWords } from "../src/harbour/campfire/CampfireScene.ts";
 import { COTTAGE_DRESSING } from "../src/harbour/cottage/dressing.ts";
 import { createCottage, cottagePoses, kept, readCottageReading, wearingWords } from "../src/harbour/cottage/CottageScene.ts";
 import { KILN_DRESSING } from "../src/harbour/kiln/dressing.ts";
@@ -18,6 +21,7 @@ import { BINDERY_MACHINES, createLibrary, libraryPoses } from "../src/harbour/li
 import { PLACES, PLACE_HOLDS } from "../src/harbour/scene/place.ts";
 import { holdPoseInRoom, poseEye } from "../src/harbour/camera/poses.ts";
 import type { PlanLine, PlanVersion } from "../src/core/planSystem.ts";
+import type { Chapter } from "../src/core/chapters.ts";
 
 const today = "2026-09-20";
 
@@ -161,6 +165,116 @@ describe("the Kiln reading (LITTLE_HARBOUR_v2 §2)", () => {
   });
 });
 
+
+// ── The Campfire (LITTLE_HARBOUR_v2 §6): the monthly close ──────────────────
+
+const chapterRow = (over: Partial<Chapter> & { id: string }): Chapter => ({
+  version: 1, foundationId: null, title: "Make rent boring", meaning: "", betterFeelsLike: "", lessonId: "cashflow-balance",
+  openedAt: "2026-09-01T09:00:00.000Z", openedByMemberId: "MEM-001", openedAtSitdownId: null,
+  closedAt: null, closedAtSitdownId: null, state: "open", carryForward: "", intendedMonth: "2026-09",
+  updatedAt: "2026-09-01T09:00:00.000Z", ...over,
+}) as Chapter;
+
+/** A closure consent with exactly the approvals given — the shape `closeChapter` leaves behind. */
+const closureConsent = (approvals: string[], state: "pending" | "accepted") => ({
+  version: 1 as const, revision: 1, legacyBaseline: false,
+  acceptedProposalId: state === "accepted" ? "PROP-1" : null,
+  proposals: [{
+    id: "PROP-1", sequence: 1, terms: { outcome: "established", carryForward: "", sitdownId: "SIT-1", rituals: [], moves: [] },
+    basis: "basis", audience: ["MEM-001", "MEM-002"], proposedBy: "MEM-001", proposedAt: "2026-09-20T10:00:00.000Z", digest: "digest",
+    approvals: approvals.map((memberId) => ({ memberId, at: "2026-09-20T10:00:00.000Z" })),
+    state, acceptedAt: state === "accepted" ? "2026-09-20T10:05:00.000Z" : null,
+  }],
+}) as unknown as Chapter["closure"];
+
+const fireHousehold = (chapters: Chapter[]) => ({
+  chapters,
+  members: [{ id: "MEM-001", name: "Jonathan", active: true }, { id: "MEM-002", name: "Bianca", active: true }],
+});
+
+/** The month that closed on the 20th, and the reviewed successor it opened in the same breath. */
+const sealedChapters = (): Chapter[] => [
+  chapterRow({ id: "CH-1", state: "established", closedAt: "2026-09-20T10:05:00.000Z", closedAtSitdownId: "SIT-1", intendedMonth: "2026-08", closure: closureConsent(["MEM-001", "MEM-002"], "accepted") }),
+  chapterRow({ id: "CH-2", title: "Make room for joy", openedAt: "2026-09-20T10:05:00.000Z", intendedMonth: "2026-09" }),
+];
+
+describe("the Campfire reading (LITTLE_HARBOUR_v2 §6)", () => {
+  it("is unlit kindling until the very first Sitdown closes something", () => {
+    const first = buildCampfireReading(fireHousehold([chapterRow({ id: "CH-1" })]), "MEM-001", today);
+    expect(first).toMatchObject({ month: "2026-09", title: "Make rent boring", close: "none", stones: 0, lit: false, seal: 0, sinceClose: null, lastClosedOn: null, overdue: false });
+    expect(first.seats.map((seat) => [seat.name, seat.seated])).toEqual([["Jonathan", false], ["Bianca", false]]);
+    expect(first.seated).toBe(0);
+    expect(campfireWords(first)).toContain("unlit kindling");
+    // Nothing at all: a household with no Chapters is an empty shore, not a broken one.
+    expect(buildCampfireReading({ chapters: [] }, "MEM-001", today)).toEqual(EMPTY_CAMPFIRE_READING);
+  });
+
+  it("reads the paired review from the seat it is waiting on, and never from a clock", () => {
+    const proposed = fireHousehold([chapterRow({ id: "CH-1", closure: closureConsent(["MEM-002"], "pending") })]);
+    // Bianca proposed and agreed; Jonathan has not sat down yet.
+    const mine = buildCampfireReading(proposed, "MEM-001", today);
+    expect(mine.close).toBe("proposed");
+    expect(mine.seats).toEqual([
+      { memberId: "MEM-001", name: "Jonathan", seated: false },
+      { memberId: "MEM-002", name: "Bianca", seated: true },
+    ]);
+    expect(mine.seated).toBe(1);
+    expect(campfireWords(mine)).toContain("on the table");
+    // The same facts read from the other log: she has sat, and the fire waits for him.
+    const hers = buildCampfireReading(proposed, "MEM-002", today);
+    expect(hers.close).toBe("awaiting-partner");
+    expect(campfireWords(hers)).toBe("you have sat; the fire is waiting for Jonathan");
+    // Neither reading has closed anything: the Chapter is still open on both.
+    expect(mine.stones).toBe(0);
+    expect(hers.stones).toBe(0);
+    expect(mine.lit).toBe(false);
+  });
+
+  it("lays the stone only once the final agreement closed it, and lets the seal cool", () => {
+    const household = fireHousehold(sealedChapters());
+    const sealed = buildCampfireReading(household, "MEM-001", today);
+    expect(sealed).toMatchObject({ close: "sealed", month: "2026-09", title: "Make room for joy", stones: 1, lit: true, lastClosedOn: "2026-09-20", sinceClose: 0, seal: 1, overdue: false });
+    expect(sealed.seats.every((seat) => seat.seated)).toBe(true);
+    expect(sealed.seated).toBe(2);
+    expect(campfireWords(sealed)).toContain("sealed");
+    // A day later the stone is cooler; past the window it is only a stone, and
+    // the fire is still lit because the first campfire never goes fully cold.
+    const cooling = buildCampfireReading(household, "MEM-001", "2026-09-21");
+    expect(cooling.sinceClose).toBe(1);
+    expect(cooling.seal).toBeCloseTo(1 - 1 / CAMPFIRE_SEAL_DAYS, 6);
+    expect(cooling.close).toBe("sealed");
+    const cold = buildCampfireReading(household, "MEM-001", "2026-09-30");
+    expect(cold).toMatchObject({ close: "none", seal: 0, sinceClose: 10, lit: true, stones: 1 });
+    expect(cold.seats.every((seat) => !seat.seated)).toBe(true);
+    expect(campfireWords(cold)).toBe("burning quietly, nothing on the table");
+  });
+
+  it("keeps saying the month is open until a Sitdown closes it — it never closes one itself", () => {
+    const late = fireHousehold([
+      chapterRow({ id: "CH-0", state: "established", closedAt: "2026-07-31T10:00:00.000Z", intendedMonth: "2026-07" }),
+      chapterRow({ id: "CH-1", intendedMonth: "2026-08" }),
+    ]);
+    const reading = buildCampfireReading(late, "MEM-001", today);
+    expect(reading).toMatchObject({ month: "2026-08", overdue: true, close: "none", stones: 1, lit: true, seal: 0 });
+    expect(campfireWords(reading)).toBe("the month has ended and this Chapter is still open");
+    // A month later nothing has closed on its own: the same Chapter is still the open one.
+    expect(buildCampfireReading(late, "MEM-001", "2026-10-20")).toMatchObject({ month: "2026-08", overdue: true, stones: 1 });
+  });
+
+  it("stands names and counts and not one figure", () => {
+    const words = JSON.stringify(buildCampfireReading(fireHousehold(sealedChapters()), "MEM-001", today));
+    expect(words).not.toMatch(/cents/i);
+    expect(words).not.toMatch(/amount/i);
+    expect(words).toContain("Jonathan");
+    expect(stoneWords(0)).toBe("no stones on the path yet");
+    expect(stoneWords(1)).toBe("1 stone on the path");
+    expect(stoneWords(4)).toBe("4 stones on the path");
+    // The path runs away from the ring, one stone per month, and never doubles back.
+    expect(stonePin(1).z).toBeLessThan(stonePin(0).z);
+    expect(stonePin(0).x).not.toBe(stonePin(1).x);
+  });
+});
+
 describe("the three rooms as places", () => {
   const kitchenReading = { kitchen: buildKitchenReading(household([version([
     line({ id: "a", dueDate: "2026-10-08", responsibility: { kind: "joint" } }),
@@ -264,6 +378,68 @@ describe("the three rooms as places", () => {
     expect(scene.children.length).toBe(0);
   });
 
+
+  it("the Campfire: the fire, both logs and the path of months are doors — the ring never closes a Chapter", () => {
+    const scene = new THREE.Scene();
+    const reading = { campfire: buildCampfireReading(fireHousehold(sealedChapters()), "MEM-001", today), partner: { name: "Bianca", fresh: true } };
+    const handle = PLACES.campfire!.build(scene, { theme: "classic" } as never, reading as never, "lite", { composition: "desktop", signal: new AbortController().signal, invalidate: () => {} });
+    const anchors = handle.anchors();
+    const doors = Object.fromEntries(anchors.filter((anchor) => anchor.door).map((anchor) => [anchor.id, anchor.door!.target]));
+    expect(doors).toEqual({ fire: "plan-studio", "seat:0": "plan-studio", "seat:1": "plan-studio", stones: "journey", hercules: "hercules" });
+    expect(anchors.find((anchor) => anchor.id === "fire")?.label).toContain("Make room for joy");
+    expect(anchors.find((anchor) => anchor.id === "stones")?.label).toContain("1 stone on the path");
+    expect(anchors.find((anchor) => anchor.id === "seat:0")?.label).toContain("Jonathan");
+    expect(anchors.find((anchor) => anchor.id === "boathouse")?.zone).toBe("landmark");
+    expect(anchors.find((anchor) => anchor.id === "court-door")?.zone).toBe("stair");
+    for (const region of handle.regions()) expect(region.box).toBeTruthy();
+    handle.dispose();
+    expect(scene.children.length).toBe(0);
+    expect(readCampfireReading(null)).toEqual({ campfire: null, partnerName: null });
+    expect(campfirePoses([])["door:phone"]).toBeTruthy();
+  });
+
+  it("the Campfire seats exactly who the reading says has sat, and stands the fresh stone only when one is fresh", () => {
+    const figures = (options: Parameters<typeof createCampfire>[1]) => {
+      const handle = createCampfire(new THREE.Scene(), options);
+      const names: string[] = [];
+      handle.group.traverse((node) => { if (node.name.startsWith("campfire-figure-") || node.name === "campfire-stone-sealed") names.push(node.name); });
+      handle.dispose();
+      return names.sort();
+    };
+    const base = { dressing: CAMPFIRE_DRESSING.classic, quality: "lite" as const };
+    // Both have acknowledged: two figures round the ring, and the newest stone still sealing.
+    expect(figures({ ...base, reading: { campfire: buildCampfireReading(fireHousehold(sealedChapters()), "MEM-001", today) } }))
+      .toEqual(["campfire-figure-0", "campfire-figure-1", "campfire-stone-sealed"]);
+    // One has: one figure and one empty log, and nothing claims a close that has not happened.
+    const half = { campfire: buildCampfireReading(fireHousehold([chapterRow({ id: "CH-1", closure: closureConsent(["MEM-002"], "pending") })]), "MEM-001", today) };
+    expect(figures({ ...base, reading: half })).toEqual(["campfire-figure-1"]);
+    // Nobody has: the empty ring.
+    expect(figures({ ...base, reading: { campfire: buildCampfireReading(fireHousehold([chapterRow({ id: "CH-1" })]), "MEM-001", today) } })).toEqual([]);
+    // Once the seal has cooled the stone is laid with the others and glows at nobody.
+    expect(figures({ ...base, reading: { campfire: buildCampfireReading(fireHousehold(sealedChapters()), "MEM-001", "2026-09-30") } })).toEqual([]);
+  });
+
+  it("the Campfire burns on the frame policy and rests when it has never been lit", () => {
+    const build = (reading: unknown) => createCampfire(new THREE.Scene(), { dressing: CAMPFIRE_DRESSING.classic, reading, quality: "lite" });
+    const cold = build({ campfire: buildCampfireReading(fireHousehold([chapterRow({ id: "CH-1" })]), "MEM-001", today) });
+    // Unlit kindling asks for no frames at all: rest is rest.
+    expect(cold.animate(0, 0)).toBe(false);
+    expect(cold.animate(4.5, 0.05)).toBe(false);
+    cold.dispose();
+    const lit = build({ campfire: buildCampfireReading(fireHousehold(sealedChapters()), "MEM-001", today) });
+    expect(lit.animate(0, 0)).toBe(true);
+    const flame = lit.group.getObjectByName("campfire-flame")!;
+    lit.animate(0.35, 0.05);
+    const first = flame.scale.y;
+    lit.animate(1.15, 0.05);
+    expect(flame.scale.y).not.toBe(first);
+    lit.dispose();
+    // A fire lit only because a closing is on the table still burns: the ritual is under way.
+    const waiting = build({ campfire: buildCampfireReading(fireHousehold([chapterRow({ id: "CH-1", closure: closureConsent(["MEM-002"], "pending") })]), "MEM-001", today) });
+    expect(waiting.animate(2, 0.05)).toBe(true);
+    waiting.dispose();
+  });
+
   it("draws each room inside the harbour's budget and keeps every pose inside its own hold", () => {
     for (const [id, build] of [
       ["kitchen", () => createKitchen(new THREE.Scene(), { dressing: KITCHEN_DRESSING.classic, reading: kitchenReading, quality: "lite" })],
@@ -271,6 +447,7 @@ describe("the three rooms as places", () => {
       ["library", () => createLibrary(new THREE.Scene(), { dressing: LIBRARY_DRESSING.classic, quality: "lite" })],
       ["cottage", () => createCottage(new THREE.Scene(), { dressing: COTTAGE_DRESSING.classic, reading: { cottage: { name: "Hercules", worn: 4, looks: 5, keepsakes: 4 } }, quality: "lite" })],
       ["kiln", () => createKiln(new THREE.Scene(), { dressing: KILN_DRESSING.classic, reading: { kiln: kilnReading }, quality: "lite" })],
+      ["campfire", () => createCampfire(new THREE.Scene(), { dressing: CAMPFIRE_DRESSING.classic, reading: { campfire: { ...buildCampfireReading(fireHousehold(sealedChapters()), "MEM-001", today), stones: CAMPFIRE_STONE_CAP + 4 } }, quality: "lite" })],
     ] as const) {
       const handle = build();
       let meshes = 0;
@@ -288,6 +465,7 @@ describe("the three rooms as places", () => {
       handle.dispose();
     }
     expect(readKilnReading(null)).toEqual({ kiln: null, partnerName: null });
+    expect(campfirePoses([])["campfire:desktop"]).toBeTruthy();
     expect(kilnPoses([])["door:phone"]).toBeTruthy();
     expect(readKitchenReading(null)).toEqual({ kitchen: null, partnerName: null });
     expect(readBoathouseReading(null)).toEqual({ boathouse: null, partnerName: null });
