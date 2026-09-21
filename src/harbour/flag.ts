@@ -10,7 +10,7 @@ import type { LedgerView } from "../core/types.ts";
 export const HARBOUR_ENABLED = HOUSE_WORLD_ENABLED && import.meta.env.VITE_HEARTH_HARBOUR === "1";
 
 /** Slice 2: one room, three places — one per level (BUILD_PLAN_SLICE2 §0). */
-export type HarbourPlaceId = "court" | "tower" | "cellar" | "glasshouse" | "kitchen" | "boathouse" | "library";
+export type HarbourPlaceId = "court" | "tower" | "cellar" | "glasshouse" | "kitchen" | "boathouse" | "library" | "kiln";
 
 /**
  * Rooms the harbour owns, by house room **and level**. Slice 1 gave `home` one
@@ -30,27 +30,32 @@ export const HARBOUR_ROOMS: Readonly<Partial<Record<HouseRoom, Readonly<Partial<
   // Studio open onto one warm room. Journey (`above`) keeps the house's own
   // atlas — stepping into it is its own world, not a room of this one.
   "kitchen-table": Object.freeze({ middle: "kitchen", below: "kitchen" }),
-  // The Boathouse (§5): the whole Together room, tucked into one small
-  // building on the shore — Conservatory above, common room, Theatre below.
-  together: Object.freeze({ above: "boathouse", middle: "boathouse", below: "boathouse" }),
+  // The Boathouse (§5): Together, tucked into one small building on the shore
+  // — the Conservatory above and the Theatre below.
+  // The Kiln (§2, the Making district): pottery is the Together room's own
+  // middle — `houseTargetRoute` sends the `pottery` target to `together/middle`
+  // — so the kitty studio's route stands the Kiln, the building the studio
+  // lives in. The Boathouse keeps the Conservatory above and the Theatre
+  // below; walking to it on the island goes to `above`.
+  together: Object.freeze({ above: "boathouse", middle: "kiln", below: "boathouse" }),
 });
 
 /** The place's own name, as the door strip and the twins say it ("← Put it back in the Tower"). */
 export const HARBOUR_PLACE_NAMES: Readonly<Record<HarbourPlaceId, string>> = Object.freeze({
   court: "the Court", tower: "the Tower", cellar: "the Cellar", glasshouse: "the Glasshouse",
-  kitchen: "the Kitchen", boathouse: "the Boathouse", library: "the Library",
+  kitchen: "the Kitchen", boathouse: "the Boathouse", library: "the Library", kiln: "the Kiln",
 });
 
 /** Which level of its room a place stands on: the stair's destination, and the route a door tap navigates to. */
 export const HARBOUR_PLACE_LEVELS: Readonly<Record<HarbourPlaceId, HouseLevel>> = Object.freeze({
   court: "middle", tower: "above", cellar: "below", glasshouse: "above",
-  kitchen: "middle", boathouse: "middle", library: "middle",
+  kitchen: "middle", boathouse: "above", library: "middle", kiln: "middle",
 });
 
 /** Which room a place belongs to, so a way out of one room can name a place in another. */
 export const HARBOUR_PLACE_ROOMS: Readonly<Record<HarbourPlaceId, HouseRoom>> = Object.freeze({
   court: "home", tower: "home", cellar: "home", glasshouse: "study",
-  kitchen: "kitchen-table", boathouse: "together", library: "study",
+  kitchen: "kitchen-table", boathouse: "together", library: "study", kiln: "together",
 });
 
 /**
@@ -60,10 +65,12 @@ export const HARBOUR_PLACE_ROOMS: Readonly<Record<HarbourPlaceId, HouseRoom>> = 
  * ways rather than inside them; `HarbourWorld.activate` checks them after.
  */
 export const HARBOUR_LANDMARKS: Readonly<Record<string, { room: HouseRoom; level: HouseLevel }>> = Object.freeze({
-  boathouse: { room: "together", level: "middle" },
+  boathouse: { room: "together", level: "above" },
   "library-hall": { room: "study", level: "middle" },
   "glasshouse-shed": { room: "study", level: "above" },
   "kitchen-cottage": { room: "kitchen-table", level: "middle" },
+  /** The Kiln on the Making lawn: the pottery studio's own building. */
+  "kiln-house": { room: "together", level: "middle" },
   /** The Library's own back door into the garden behind it. */
   "glasshouse-way": { room: "study", level: "above" },
   /** The atlas up the kitchen stair: Journey keeps the house's own world. */
