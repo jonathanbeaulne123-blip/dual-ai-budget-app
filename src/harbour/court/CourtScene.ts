@@ -11,6 +11,7 @@ import { groundHeightAt } from "../scene/ground.ts";
 import { COURT_PIECES, PIECE_IDS, createCourtPieces, type CourtPieces, type CourtPiecesOptions, type PieceId } from "./pieces.ts";
 import { CISTERN_POSITION, createCistern } from "./cistern.ts";
 import { createSundial } from "./sundial.ts";
+import { COURT_SIGN_PLACES, SIGN_TITLES, courtSigns, type CourtSign } from "../nav/doorSigns.ts";
 
 /**
  * The Court — the first screen. A worn chessboard terrace with the Queen's spot
@@ -100,6 +101,8 @@ export type CourtHandle = PlaceHandle & {
   ready: Promise<void>;
   /** Current engraved words, for the DOM twins and tests. */
   words(): { everyday: string; rook: string; bishop: string; knight: string; tag: string | null; slip: string[]; flagUp: boolean };
+  /** The door signs standing on the path, by the building's anchor id — what each plate is engraved with right now. */
+  signs(): Record<string, CourtSign>;
   mossCoverage(): number;
   /**
    * The court's own floor, lifting away as the cellar's lid (BUILD_PLAN_SLICE2
@@ -290,8 +293,10 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   //    lives, each one a whole room's door. The Library's hall behind the
   //    court, the Glasshouse in the garden behind the Library, the Kitchen's
   //    cottage with its chimney smoking on the west lawn. Tapping one — or
-  //    walking up and tapping its twin — goes there; nothing else about them
-  //    is a claim, so they carry no figures and no plates.
+  //    walking up and tapping its twin — goes there. Each one carries **one**
+  //    plate — its door sign (W5 #1) — standing on the path in front of it, so
+  //    what the room holds is readable without going in. Nothing else about a
+  //    building is a claim: the sign is the room's own reading and nothing more.
   const LIBRARY_SPOT: readonly [number, number] = [-4.7, -11.6];
   const libraryY = groundHeightAt(LIBRARY_SPOT[0], LIBRARY_SPOT[1]);
   {
@@ -505,6 +510,36 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     group.add(fire);
   }
 
+  // ── The door signs (W5 #1) ─────────────────────────────────────────────────
+  //    One plate per building, standing on the path a step in front of its
+  //    door and turned to face the Court, so the walk past a building tells
+  //    you what is in it. The words are the room's own pure reading
+  //    (`nav/doorSigns.ts`), never its contents; the plate re-engraves itself
+  //    only when those words change, and the twin reads the same line.
+  const SIGN_SPOTS: Readonly<Record<string, readonly [number, number]>> = {
+    "library-hall": LIBRARY_SPOT, "glasshouse-shed": SHED_SPOT, "kitchen-cottage": COTTAGE_SPOT,
+    boathouse: BOATHOUSE, "hercules-cottage": HERCULES_COTTAGE, "kiln-house": KILN_SPOT, campfire: CAMPFIRE,
+  };
+  /** How far in front of a building its sign stands, and how high off the ground. */
+  const SIGN_STEP = 1.7, SIGN_LIFT = 0.8;
+  // Driven by the sign table, not by this file: a building that gains a sign
+  // and no spot here simply has none, and never a plate with the wrong words.
+  const signPlates = Object.keys(COURT_SIGN_PLACES).flatMap((id) => {
+    const spot = SIGN_SPOTS[id];
+    if (!spot) return [];
+    const [px, pz] = spot;
+    const length = Math.hypot(px, pz) || 1;
+    const x = px - (px / length) * SIGN_STEP, z = pz - (pz / length) * SIGN_STEP;
+    const plate = track(new EngravedPlate({ stone: dressing.plinth, highlight: dressing.stoneAlt, ink: "#2a221c", size: "small", width: 640, fit: true }, 1.7, 0.54));
+    plate.mesh.position.set(x, groundHeightAt(x, z) + SIGN_LIFT, z);
+    plate.mesh.rotation.y = Math.atan2(-x, -z);
+    plate.mesh.userData.anchor = id;
+    plate.mesh.name = `sign-${id}`;
+    plate.set(`${SIGN_TITLES[COURT_SIGN_PLACES[id]!]}\n—`, "glazed");
+    group.add(plate.mesh);
+    return [{ id, plate }];
+  });
+
   const gateArch = shadowed(mergedMesh([
     placed(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 8), gx - 0.84, 0.32, gz), placed(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 8), gx - 0.84, 0.72, gz),
     placed(new THREE.BoxGeometry(0.05, 0.05, 0.03), gx + 0.78, 0.55, gz + 0.03),
@@ -633,6 +668,8 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   const at = (x: number, y: number, z: number): Vec3 => [x, y, z];
   const box = (x0: number, y0: number, z0: number, x1: number, y1: number, z1: number) => new THREE.Box3(new THREE.Vector3(x0, y0, z0), new THREE.Vector3(x1, y1, z1));
   // Labels carry the engraved words, so a twin reads what the stone says.
+  /** The sign the building wears, in the twin's own words, appended to its label. */
+  const signWords = (id: string): string => (signs[id] ? ` ${signs[id]!.aria}` : "");
   const anchorList = (): Anchor[] => [
     { id: "queen", position: at(0, 1.1, 0), zone: "queen", label: `The Queen — Everyday ${everyday.words}. Meet the Queen.`, door: { target: "queen" } },
     { id: "flagstone", position: at(fx, 0.1, fz), zone: "queen", label: `The Everyday flagstone — ${everyday.words}` },
@@ -644,13 +681,13 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     { id: "hercules", position: at(hx, 0.3, hz), zone: "prop", label: "Hercules, asleep", door: { target: "hercules" } },
     { id: "cellar-stair", position: at(hx0, 0.35, hz0), zone: "stair", label: "The cellar stairhead — go down to the Cellar" },
     { id: "gate", position: at(gx, 0.9, gz), zone: "gate", label: "The court gate" },
-    { id: "boathouse", position: at(5.6, groundHeightAt(5.6, -10.9) + 1.0, -10.9), zone: "boathouse", label: "The Boathouse, down on the shore — the two of you. Go there when you want it." },
-    { id: "library-hall", position: at(-4.7, groundHeightAt(-4.7, -11.6) + 1.3, -11.6), zone: "landmark", label: "The Library — the Standing Book's hall. Walk over and go in." },
-    { id: "glasshouse-shed", position: at(-8.2, groundHeightAt(-8.2, -9.4) + 0.9, -9.4), zone: "landmark", label: "The Glasshouse, in the garden behind the Library — the planner's benches. Walk over and go in." },
-    { id: "kitchen-cottage", position: at(-11.2, groundHeightAt(-11.2, -3.4) + 0.9, -3.4), zone: "landmark", label: "The Kitchen, smoke up — sit down and make a plan. Walk over and go in." },
-    { id: "hercules-cottage", position: at(9.8, groundHeightAt(9.8, 5.6) + 0.9, 5.6), zone: "landmark", label: "Hercules’s Cottage, lamp on — a door for you and a smaller one for him. Walk over and go in." },
-    { id: "kiln-house", position: at(10.6, groundHeightAt(10.6, -4.4) + 1.0, -4.4), zone: "landmark", label: "The Kiln, the bottle stack smoking — the wheel, the bench and the shelf of fired pieces. Walk over and go in." },
-    { id: "campfire", position: at(7.2, groundHeightAt(7.2, -9.4) + 0.5, -9.4), zone: "landmark", label: "The campfire on the shore, in front of the Boathouse — where the month closes, the two of you. Walk down and sit." },
+    { id: "boathouse", position: at(5.6, groundHeightAt(5.6, -10.9) + 1.0, -10.9), zone: "boathouse", label: `The Boathouse, down on the shore — the two of you. Go there when you want it.${signWords("boathouse")}` },
+    { id: "library-hall", position: at(-4.7, groundHeightAt(-4.7, -11.6) + 1.3, -11.6), zone: "landmark", label: `The Library — the Standing Book's hall. Walk over and go in.${signWords("library-hall")}` },
+    { id: "glasshouse-shed", position: at(-8.2, groundHeightAt(-8.2, -9.4) + 0.9, -9.4), zone: "landmark", label: `The Glasshouse, in the garden behind the Library — the planner's benches. Walk over and go in.${signWords("glasshouse-shed")}` },
+    { id: "kitchen-cottage", position: at(-11.2, groundHeightAt(-11.2, -3.4) + 0.9, -3.4), zone: "landmark", label: `The Kitchen, smoke up — sit down and make a plan. Walk over and go in.${signWords("kitchen-cottage")}` },
+    { id: "hercules-cottage", position: at(9.8, groundHeightAt(9.8, 5.6) + 0.9, 5.6), zone: "landmark", label: `Hercules’s Cottage, lamp on — a door for you and a smaller one for him. Walk over and go in.${signWords("hercules-cottage")}` },
+    { id: "kiln-house", position: at(10.6, groundHeightAt(10.6, -4.4) + 1.0, -4.4), zone: "landmark", label: `The Kiln, the bottle stack smoking — the wheel, the bench and the shelf of fired pieces. Walk over and go in.${signWords("kiln-house")}` },
+    { id: "campfire", position: at(7.2, groundHeightAt(7.2, -9.4) + 0.5, -9.4), zone: "landmark", label: `The campfire on the shore, in front of the Boathouse — where the month closes, the two of you. Walk down and sit.${signWords("campfire")}` },
   ];
   let queenRegions: (() => Region[]) | null = null;
   const regionList = (): Region[] => [
@@ -679,6 +716,8 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   let coverage = MOSS_BY_CONDITION.settled;
   let tagWords: string | null = null;
   let slipWords: string[] = [];
+  /** The lawn signs' words, kept so the twins read exactly what the plates say. */
+  let signs: Record<string, CourtSign> = {};
   const jointColor = new THREE.Color(dressing.joint), mossColor = new THREE.Color(dressing.moss);
   function update(value: unknown): void {
     const reading = readCourtReading(value);
@@ -699,6 +738,12 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     pads.count = Math.round(PADS * coverage);
     crack.visible = state === "weathered";
     partner.visible = reading.partner?.fresh === true;
+    // The door signs: one plate per building, re-engraved only when the words change.
+    signs = courtSigns(value as Parameters<typeof courtSigns>[0]);
+    for (const { id, plate } of signPlates) {
+      const sign = signs[id];
+      plate.set(sign ? sign.plate : `${SIGN_TITLES[COURT_SIGN_PLACES[id]!]}\n—`, finish);
+    }
     cistern.update(value);
     pendingRedraw = true;
   }
@@ -726,6 +771,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     pieces,
     ready: pieces.ready,
     words: () => ({ everyday: everyday.words, rook: pieces.slots.rook.plate.words, bishop: pieces.slots.bishop.plate.words, knight: pieces.slots.knight.plate.words, tag: tagWords, slip: [...slipWords], flagUp: mailbox.flagUp() }),
+    signs: () => ({ ...signs }),
     mossCoverage: () => coverage,
     setLid(k) {
       const next = Math.max(0, Math.min(1, Number.isFinite(k) ? k : 0));

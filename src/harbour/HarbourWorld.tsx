@@ -16,6 +16,8 @@ import { useHarbourReading } from "./data/useHarbourReading.ts";
 import { HarbourFlat } from "./flat/PlaceFlat.tsx";
 import { HarbourTwins } from "./court/CourtTwins.tsx";
 import { HARBOUR_LANDMARKS, HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, HARBOUR_PLACE_ROOMS, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
+import { HARBOUR_GO_EVENT } from "./nav/QuickSheet.tsx";
+import { HOUSE_LEVELS, HOUSE_ROOMS } from "../hearthside/houseRoutes.ts";
 import { classifyGesture, gestureAction, spark, type QueenAction, type QueenRegion, type QueenSpark } from "./court/queenTouch.ts";
 import type { QueenPlace } from "./court/queenPlace.ts";
 import type { CourtHandle } from "./court/CourtScene.ts";
@@ -92,6 +94,16 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const [weeks, setWeeks] = useState<number | null>(null);
   /** The cellar's rail, scrubbed to a day. `null` is today. */
   const [scrub, setScrub] = useState<number | null>(null);
+  /**
+   * The phone's thumb-stick (W7 b): where it was pressed, while a thumb is on
+   * it. The knob itself is written straight to the DOM through `knob` so a
+   * thumb sliding around does not re-render the whole stage thirty times a
+   * second — the runtime is already doing the walking.
+   */
+  const [stick, setStick] = useState<{ x: number; y: number } | null>(null);
+  const knob = useRef<HTMLDivElement | null>(null);
+  /** The place's close hold (W7 a), for the stage's own word for it. */
+  const [closed, setClosed] = useState(false);
   const toolOpen = Boolean(route.surface);
   /** One room, three places: the route's level says which one stands (BUILD_PLAN_SLICE2 §0). */
   const place: HarbourPlaceId = harbourPlaceFor(route, scope, true) ?? "court";
@@ -150,6 +162,13 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     if (hit.kind !== "anchor") return;
     activate(hit.id, hit.anchor.door, hit.anchor.zone);
   }, [act]); // eslint-disable-line react-hooks/exhaustive-deps
+  const onStick = useCallback((next: { x: number; y: number; dx: number; dy: number } | null) => {
+    if (!next) { setStick(null); return; }
+    setStick(current => (current && current.x === next.x && current.y === next.y ? current : { x: next.x, y: next.y }));
+    const node = knob.current;
+    if (node) node.style.transform = `translate(${Math.round(next.dx)}px, ${Math.round(next.dy)}px)`;
+  }, []);
+
   const onGesture = useCallback((gesture: HarbourGesture) => {
     if (placeRef.current !== "court") return;
     const kind = classifyGesture(gesture.samples); if (!kind) return;
@@ -179,6 +198,25 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     const region = id as QueenRegion; const action = gestureAction(region, "tap"); if (action) act(region, action);
   }
 
+  /**
+   * The quick sheet's place rows (W5 #2). The App owns the router; this shell
+   * is mounted for every household route, so it is the one place that can walk
+   * the sheet's row to a room × level without the App handing it a second
+   * navigator. The event carries a route and nothing else — never a write, and
+   * a route the house does not have is ignored rather than guessed at.
+   */
+  useEffect(() => {
+    const walkTo = (event: Event) => {
+      const detail = (event as CustomEvent<{ room?: unknown; level?: unknown }>).detail;
+      const room = detail?.room, level = detail?.level;
+      if (typeof room !== "string" || typeof level !== "string") return;
+      if (!(HOUSE_ROOMS as readonly string[]).includes(room) || !(HOUSE_LEVELS as readonly string[]).includes(level)) return;
+      onNavigateRef.current(room as HouseRoom, level as HouseLevel);
+    };
+    window.addEventListener(HARBOUR_GO_EVENT, walkTo);
+    return () => window.removeEventListener(HARBOUR_GO_EVENT, walkTo);
+  }, []);
+
   // The tier is decided once per mount and again when the reading edition is chosen or the stage crosses 720.
   useEffect(() => {
     const decide = () => setTier(decideTier(host.current?.getBoundingClientRect().width || window.innerWidth));
@@ -198,6 +236,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
         const world = mountHarbourWorld(element, theme, renderTier, {
           onReady: () => setStatus("ready"), onFailure: () => setStatus("fallback"),
           onProject: next => setRects(next), onTap, onGesture, onRailDrag: (x, width) => onRailDragRef.current(x, width),
+          onStick, onClose: setClosed,
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
         runtime.current = world;
@@ -288,7 +327,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     let cancelled = false;
     const abort = new AbortController();
     const from = world.placeId();
-    setRects([]); setPhrase(""); setScrub(null);
+    setRects([]); setPhrase(""); setScrub(null); setStick(null);
     void PLACE_MODULES[place]().then(() => {
       if (cancelled || runtime.current !== world) return;
       if (from === "court") { queen.current?.dispose(); queen.current = null; court.current = null; world.setBreathing(false); }
@@ -383,7 +422,17 @@ export default function HarbourWorld(props: HarbourWorldProps) {
 
   function onStageKey(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget) return;
-    const world = runtime.current; if (!world) return;
+    // Space opens the quick sheet wherever you are standing — including the
+    // reading edition and the fallback, where there is no world to drive.
+    // Everything the app can do has to be one key away even when the island
+    // could not be drawn at all.
+    if (event.key === " " && onQuickSheet) { onQuickSheet(); event.preventDefault(); return; }
+    const world = runtime.current;
+    if (!world) {
+      // The reading edition still steps back out of a place the same way.
+      if (event.key === "Escape" && placeRef.current !== "court") { onNavigateRef.current("home", "middle"); event.preventDefault(); }
+      return;
+    }
     const step = 40;
     const onRail = placeRef.current === "cellar" && rail.current !== null;
     if (onRail && (event.key === "Home" || event.key === "0")) walk("today");
@@ -402,8 +451,15 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     else if (event.key === "d" || event.key === "D") world.gesture({ kind: "pan", dx: -26, dy: 0 });
     else if (event.key === "+" || event.key === "=") world.gesture({ kind: "zoom", delta: -0.2 });
     else if (event.key === "-" || event.key === "_") world.gesture({ kind: "zoom", delta: 0.2 });
-    else if (event.key === "Escape") { if (placeRef.current === "court") world.go("court"); else onNavigateRef.current("home", "middle"); }
-    else if (event.key === " " && onQuickSheet) onQuickSheet();
+    // The close hold (W7 a), on and off with the same key, like the gesture.
+    else if (event.key === "c" || event.key === "C") setClosed(world.toggleClose());
+    else if (event.key === "Escape") {
+      // The hold comes off first: Escape is "out of this", and the thing you
+      // are most immediately in is the close-up.
+      if (world.closed()) setClosed(world.toggleClose(false));
+      else if (placeRef.current === "court") world.go("court");
+      else onNavigateRef.current("home", "middle");
+    }
     else return;
     event.preventDefault();
   }
@@ -412,10 +468,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => props.onNavigate("home", "middle");
   return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : place === "cellar" ? "The Cellar" : place === "glasshouse" ? "The Glasshouse" : place === "kitchen" ? "The Kitchen" : place === "boathouse" ? "The Boathouse" : place === "cottage" ? "Hercules’s Cottage" : place === "kiln" ? "The Kiln" : place === "campfire" ? "The Campfire" : place === "atlas" ? "The Atlas" : "The Library"}>
-    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : `${placeName[0]!.toUpperCase()}${placeName.slice(1)}. Arrow keys orbit, W A S D walk, plus and minus zoom, Space opens all tools, Escape steps back.`} onKeyDown={onStageKey}>
+    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : `${placeName[0]!.toUpperCase()}${placeName.slice(1)}. Arrow keys orbit, W A S D walk, plus and minus zoom, C ${closed ? "steps back from" : "comes close to"} what this place is about, Space opens all tools, Escape steps back.`} onKeyDown={onStageKey}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => props.onNavigate("home", HARBOUR_PLACE_LEVELS[next])} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
+      {stick && <div className="harbour-stick" data-harbour-stick="" aria-hidden="true" style={{ left: `${stick.x}px`, top: `${stick.y}px` }}><span className="harbour-stick__ring" /><span className="harbour-stick__knob" ref={knob as unknown as React.Ref<HTMLSpanElement>} /></div>}
       {sparkle && <div className="harbour-spark" aria-hidden="true" style={{ left: `${sparkle.x}px`, top: `${sparkle.y}px`, "--spark": sparkle.color } as CSSProperties}>{Array.from({ length: sparkle.petals }, (_, i) => <span key={i} style={{ "--i": i } as CSSProperties} />)}</div>}
       <p className="harbour-world__phrase" role="status" aria-live="polite">{phrase}</p>
       {statusLine && <small className="harbour-world__supported" role="status">{statusLine}</small>}

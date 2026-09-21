@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
-import { mountHarbourWorld, type HarbourHit, type HarbourRuntime, type ProjectedRect } from "../src/harbour/scene/runtime.ts";
+import { STICK_RADIUS, mountHarbourWorld, type HarbourHit, type HarbourRuntime, type ProjectedRect } from "../src/harbour/scene/runtime.ts";
 import { BREATH_INTERVAL_MS, CAMERA_INTERVAL_MS, harbourFramePolicy } from "../src/harbour/scene/framePolicy.ts";
 import { dprCap, effectiveDpr, qualityTier } from "../src/harbour/scene/quality.ts";
 import { GROUND_RADIUS, LAWN_RADIUS, SEA_LEVEL, TERRACE_LEVEL, TERRACE_RADIUS, groundHeightAt } from "../src/harbour/scene/ground.ts";
@@ -281,5 +281,99 @@ describe("mountHarbourWorld", () => {
     expect(release).toHaveBeenCalledTimes(1);
     expect(host.dataset.houseCamera).toBeUndefined();
     expect(frames.size).toBe(0);
+  });
+
+  /**
+   * The phone's thumb-stick (W7 b) and the close hold's gesture (W7 a). Both
+   * are driven from the same pointers the camera already reads, so neither
+   * costs a timer, a listener or a frame the world was not already spending.
+   */
+  it("grows a thumb-stick from a press held still on the ground, and walks with it", () => {
+    const sticks: ({ x: number; y: number; dx: number; dy: number } | null)[] = [];
+    width = 390; height = 844; // the stick is a phone's, and the stage decides that by its width
+    world = mountHarbourWorld(host, "classic", "lite", { onReady: vi.fn(), onFailure: vi.fn(), place: anchorPlace, onStick: (next) => sticks.push(next) });
+    const before = world.camera();
+    // A press out on the open ground, well away from anything that stands.
+    pointer("pointerdown", 40, 700);
+    // Too soon, and still a tap: no stick yet.
+    frame(200);
+    expect(sticks).toEqual([]);
+    // Held past the threshold, and still: the stick appears where the thumb is.
+    frame(300);
+    expect(sticks).toHaveLength(1);
+    expect(sticks[0]).toEqual({ x: 40, y: 700, dx: 0, dy: 0 });
+
+    // Push it up: the camera walks forward, and the push is reported for drawing.
+    pointer("pointermove", 40, 620);
+    const pushed = sticks[sticks.length - 1]!;
+    expect(pushed!.dy).toBeLessThan(0);
+    // Clamped to the stick's own radius, so a thumb off the edge does not run away.
+    expect(Math.hypot(pushed!.dx, pushed!.dy)).toBeLessThanOrEqual(STICK_RADIUS + 1e-9);
+    frame(40); frame(40);
+    expect(world.camera()).not.toEqual(before);
+
+    // The thumb comes off and the stick goes with it.
+    pointer("pointerup", 40, 620);
+    expect(sticks[sticks.length - 1]).toBeNull();
+  });
+
+  it("never grows a stick on a desktop, or from a press that was really a drag", () => {
+    const sticks: unknown[] = [];
+    world = mountHarbourWorld(host, "classic", "lite", { onReady: vi.fn(), onFailure: vi.fn(), place: anchorPlace, onStick: (next) => sticks.push(next) });
+    pointer("pointerdown", 40, 700); frame(500);
+    expect(sticks).toEqual([]);
+    pointer("pointerup", 40, 700);
+    world.dispose(); world = undefined;
+
+    const phone: unknown[] = [];
+    width = 390; height = 844;
+    world = mountHarbourWorld(host, "classic", "lite", { onReady: vi.fn(), onFailure: vi.fn(), place: anchorPlace, onStick: (next) => phone.push(next) });
+    pointer("pointerdown", 40, 700);
+    pointer("pointermove", 90, 700); // an orbit, not a press
+    frame(500);
+    expect(phone).toEqual([]);
+  });
+
+  it("takes the close hold on and off with two taps on the open ground, and only there", () => {
+    const closes: boolean[] = [];
+    world = mountHarbourWorld(host, "classic", "lite", { onReady: vi.fn(), onFailure: vi.fn(), place: anchorPlace, onClose: (on) => closes.push(on) });
+    const tap = (x: number, y: number) => { pointer("pointerdown", x, y); pointer("pointerup", x, y); };
+    // One tap on the ground is one tap: the ground opens nothing, and nothing happens.
+    tap(40, 700);
+    expect(world.closed()).toBe(false);
+    // The second, quickly and in the same spot, is the gesture.
+    clock += 100;
+    tap(42, 702);
+    expect(world.closed()).toBe(true);
+    expect(closes).toEqual([true]);
+    // And the same gesture lets it go — it can never strand you.
+    clock += 100; tap(40, 700);
+    clock += 100; tap(41, 701);
+    expect(world.closed()).toBe(false);
+    expect(closes).toEqual([true, false]);
+
+    // Two taps too far apart in time are two taps.
+    clock += 100; tap(40, 700);
+    clock += 4000; tap(40, 700);
+    expect(world.closed()).toBe(false);
+  });
+
+  it("has no close hold in a place that has not earned one, and remembers the ones that have", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined); // jsdom has no 2D canvas; the plates fall back to blank stone.
+    // An earlier test takes the Court out of the registry; walking back into
+    // it needs something standing there, and `anchorPlace` carries its id.
+    const registered = PLACES.court;
+    registerPlace(anchorPlace);
+    world = mountHarbourWorld(host, "classic", "lite", { onReady: vi.fn(), onFailure: vi.fn(), place: anchorPlace });
+    // `anchorPlace` stands under the Court's id, which has a close hold.
+    expect(world.toggleClose(true)).toBe(true);
+    expect(world.closed()).toBe(true);
+    // Walking to a place with none simply leaves the camera alone.
+    world.enter("tower", { from: "court", reduced: true });
+    expect(world.closed()).toBe(false);
+    // And back: the Court opens the way it was left.
+    world.enter("court", { from: "tower", reduced: true });
+    expect(world.closed()).toBe(true);
+    if (registered) registerPlace(registered); else delete PLACES.court;
   });
 });

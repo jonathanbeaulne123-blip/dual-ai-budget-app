@@ -11,6 +11,9 @@ import {
   courtPose,
   holdPoseInRoom,
   flagstoneVisible,
+  CLOSE_HOLDS,
+  CLOSE_PLACES,
+  closePose,
   poseEye,
   projectPoint,
   samePose,
@@ -20,6 +23,7 @@ import {
 } from "../src/harbour/camera/poses.ts";
 import { EASE, ROAM_COURT_BOUNDS, clampPose, createCourtCamera } from "../src/harbour/camera/courtCamera.ts";
 import { PLACE_HOLDS } from "../src/harbour/scene/place.ts";
+import { HARBOUR_PLACE_NAMES } from "../src/harbour/flag.ts";
 import { towerPoses } from "../src/harbour/tower/TowerScene.ts";
 import { cellarPoses } from "../src/harbour/cellar/CellarScene.ts";
 import { clampRoamCam } from "../src/path/world/roamCamera.ts";
@@ -370,5 +374,103 @@ describe("a room's hold on the camera (holdPoseInRoom)", () => {
         if (key.startsWith(`${id}:`)) expect(samePose(heldPose, pose, 1e-9), `${id} ${key} untouched`).toBe(true);
       }
     }
+  });
+});
+
+describe("the close hold — the third camera hold (W7 a)", () => {
+  it("is only where a place has earned it: the Court, the lectern, the wheel", () => {
+    expect([...CLOSE_PLACES].sort()).toEqual(["court", "kiln", "library"]);
+    expect(CLOSE_HOLDS.court!.anchor).toBe("queen");
+    expect(CLOSE_HOLDS.library!.anchor).toBe("book");
+    expect(CLOSE_HOLDS.kiln!.anchor).toBe("wheel");
+    for (const place of Object.keys(HARBOUR_PLACE_NAMES)) {
+      if (CLOSE_PLACES.includes(place)) continue;
+      expect(closePose(place, "phone"), place).toBeNull();
+    }
+  });
+
+  it("stands inside its own room, on a phone and on a desktop both", () => {
+    for (const place of CLOSE_PLACES) {
+      for (const composition of ["phone", "desktop"] as const) {
+        const pose = closePose(place, composition)!;
+        expect(pose, `${place} ${composition}`).not.toBeNull();
+        const hold = PLACE_HOLDS[place as keyof typeof PLACE_HOLDS];
+        if (!hold) continue; // The Court is open sky and has no hold.
+        // Held means unchanged: a close pose the room had to pull back is a
+        // close pose that was outside the room, which is the bug this catches.
+        expect(samePose(holdPoseInRoom(pose, hold), pose, 1e-9), `${place} ${composition} is outside its room`).toBe(true);
+        const eye = poseEye(pose);
+        for (let axis = 0; axis < 3; axis++) {
+          expect(eye[axis]!, `${place} ${composition} eye axis ${axis}`).toBeGreaterThanOrEqual(hold.eye.min[axis]!);
+          expect(eye[axis]!, `${place} ${composition} eye axis ${axis}`).toBeLessThanOrEqual(hold.eye.max[axis]!);
+        }
+        expect(pose.r).toBeGreaterThanOrEqual(hold.minR);
+        expect(pose.r).toBeLessThanOrEqual(hold.maxR);
+        expect(pose.phi).toBeGreaterThanOrEqual(hold.minPhi);
+        expect(pose.phi).toBeLessThanOrEqual(hold.maxPhi);
+      }
+    }
+  });
+
+  it("comes nearer than the room's own establishing pose, or it is not close at all", () => {
+    for (const place of CLOSE_PLACES) {
+      const pose = closePose(place, "phone")!;
+      const open = place === "court" ? courtPose("court", undefined, "phone", 390 / 844) : null;
+      if (open) expect(pose.r).toBeLessThan(open.r);
+      else expect(pose.r).toBeLessThan(3);
+    }
+  });
+
+  it("holds, and lets go back to exactly where the camera stood", () => {
+    const camera = new THREE.PerspectiveCamera(COURT_FOV, 390 / 844, 0.1, 200);
+    const court = createCourtCamera({ camera, composition: "phone", reduced: true, aspect: 390 / 844 });
+    court.go("sky");
+    const before = court.pose();
+    expect(court.closed()).toBe(false);
+
+    court.close(closePose("court", "phone"));
+    expect(court.closed()).toBe(true);
+    expect(samePose(court.pose(), closePose("court", "phone")!, 1e-6)).toBe(true);
+
+    // Re-aiming the hold while it is on does not lose where we came from.
+    court.close(closePose("library", "phone"));
+    court.close(null);
+    expect(court.closed()).toBe(false);
+    expect(samePose(court.pose(), before, 1e-6)).toBe(true);
+
+    // And a camera a hand has moved — a drag, a zoom, a restored return record
+    // — has no named mode to go back to, so the pose itself is what is kept.
+    court.drag(60, -20);
+    court.zoom(-0.3);
+    const byHand = court.pose();
+    expect(samePose(byHand, before, 1e-6)).toBe(false);
+    court.close(closePose("court", "phone"));
+    court.close(null);
+    expect(samePose(court.pose(), byHand, 1e-6), "a hand-held view was thrown away by the close hold").toBe(true);
+  });
+
+  it("is dropped by any plain ask to be somewhere else", () => {
+    const camera = new THREE.PerspectiveCamera(COURT_FOV, 1.6, 0.1, 200);
+    const court = createCourtCamera({ camera, composition: "desktop", reduced: true, aspect: 1.6 });
+    for (const escape of [() => court.go("court"), () => court.goTo({ target: [0, 1, 0] }), () => court.restore([2, 2, 2])]) {
+      court.close(closePose("court", "desktop"));
+      expect(court.closed()).toBe(true);
+      escape();
+      expect(court.closed()).toBe(false);
+    }
+  });
+
+  it("is a cut under reduced motion, and one easing otherwise", () => {
+    const camera = new THREE.PerspectiveCamera(COURT_FOV, 1.6, 0.1, 200);
+    const cut = createCourtCamera({ camera, composition: "desktop", reduced: true, aspect: 1.6 });
+    cut.close(closePose("court", "desktop"));
+    expect(cut.tick(1 / 60)).toBe(false);
+    expect(samePose(cut.pose(), cut.goal(), 1e-9)).toBe(true);
+
+    const eased = createCourtCamera({ camera, composition: "desktop", reduced: false, aspect: 1.6 });
+    eased.close(closePose("court", "desktop"));
+    expect(eased.tick(1 / 60)).toBe(true);
+    for (let i = 0; i < 400 && eased.tick(1 / 60); i += 1) { /* fly in */ }
+    expect(samePose(eased.pose(), eased.goal(), 1e-6)).toBe(true);
   });
 });
