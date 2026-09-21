@@ -333,7 +333,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   let follow: FollowCamera | null = null;
   let following = false;
   let bodyInput: BodyInput = NO_INPUT;
-  let bodySamples: number[] = [];
+  const bodySamples: number[] = [];
   function raiseBody(): void {
     if (walker || placeId !== "court") return;
     walker = createWalker({ groundHeightAt: ground.groundHeightAt, tier, start: COURT_ARRIVAL });
@@ -359,6 +359,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       follow.seed(court.pose());
     } else {
       // Hand it back at the eye it is actually showing: no jump either way.
+      // Asking to be somewhere else also stops the walk — otherwise a body
+      // still crossing the lawn would take the camera straight back off the
+      // pose that was just asked for.
+      walker?.cancel();
+      bodyInput = NO_INPUT;
       court.restore(camera.position.toArray() as Vec3);
     }
     dirty = true;
