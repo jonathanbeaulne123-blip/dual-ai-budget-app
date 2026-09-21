@@ -289,15 +289,52 @@ export type BoathouseReading = {
   letters: number;
   /** Moments spent together. */
   encounters: number;
+  /**
+   * Wishes hung in the last `BOATHOUSE_NEW_DAYS` days — a count, never a
+   * wish. The newest lantern glows warmer and sways while this is above zero.
+   *
+   * Read from a wish row's own timestamp, so nothing about the member's
+   * comings and goings is ever stored to work it out. Today a shared
+   * experience carries no creation stamp at all (`decodeExperience` does not
+   * admit the key), so this is `0` for every real household and no lantern
+   * glows falsely; the moment a wish record keeps a `createdAt`, the room
+   * lights up on its own.
+   */
+  hung: number;
 };
-export const EMPTY_BOATHOUSE_READING: BoathouseReading = Object.freeze({ wishes: 0, memories: 0, letters: 0, encounters: 0 });
 
-/** Counts from the shared Hearthside state. Pure, total: a household without one is an empty boathouse. */
-export function buildBoathouseReading(household: { hearthside?: { experiences?: unknown[]; memories?: unknown[]; notes?: unknown[]; encounters?: unknown[] } }): BoathouseReading {
+/** How long a wish stays "newly hung": three days, read off the wish's own stamp. */
+export const BOATHOUSE_NEW_DAYS = 3;
+export const EMPTY_BOATHOUSE_READING: BoathouseReading = Object.freeze({ wishes: 0, memories: 0, letters: 0, encounters: 0, hung: 0 });
+
+/**
+ * The day a row says it was made, or null where it says nothing. Only a row's
+ * own stamp counts — the room never guesses a date and never keeps one.
+ */
+function rowMadeOn(row: unknown): DateKey | null {
+  if (!row || typeof row !== "object") return null;
+  const stamp = (row as { createdAt?: unknown }).createdAt;
+  return typeof stamp === "string" && /^\d{4}-\d{2}-\d{2}/.test(stamp) ? stamp.slice(0, 10) : null;
+}
+
+/**
+ * Counts from the shared Hearthside state. Pure, total: a household without one
+ * is an empty boathouse. With a `today`, wishes stamped within the last three
+ * days are counted as newly hung — see `BoathouseReading.hung` for why that is
+ * zero until a wish record keeps a stamp.
+ */
+export function buildBoathouseReading(
+  household: { hearthside?: { experiences?: unknown[]; memories?: unknown[]; notes?: unknown[]; encounters?: unknown[] } },
+  today?: DateKey,
+): BoathouseReading {
   const state = household.hearthside;
   if (!state || typeof state !== "object") return EMPTY_BOATHOUSE_READING;
   const count = (rows: unknown): number => (Array.isArray(rows) ? rows.length : 0);
-  return { wishes: count(state.experiences), memories: count(state.memories), letters: count(state.notes), encounters: count(state.encounters) };
+  const since = today ? addDays(today, -BOATHOUSE_NEW_DAYS) : null;
+  const hung = since && Array.isArray(state.experiences)
+    ? state.experiences.filter((row) => { const made = rowMadeOn(row); return made !== null && compareDateKeys(made, since) >= 0; }).length
+    : 0;
+  return { wishes: count(state.experiences), memories: count(state.memories), letters: count(state.notes), encounters: count(state.encounters), hung };
 }
 
 /**
@@ -689,7 +726,7 @@ export function buildHarbourReading(household: Household, memberId: string, toda
     freshness,
     glasshouse: buildGlasshouseReading(household, memberId, today),
     kitchen: buildKitchenReading(household, memberId, today),
-    boathouse: buildBoathouseReading(household),
+    boathouse: buildBoathouseReading(household, today),
     cottage: buildCottageReading(household),
     kiln: buildKilnReading(household, memberId, today),
     tower: buildTowerReading(household, memberId, today, nest),
