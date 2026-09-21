@@ -5,3 +5,14 @@
 
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Every model file is content-hash fenced in src/harbour/assets/manifest.ts
+# (SHA-256 plus an exact byte count) and a new sculpt ships under a new
+# versioned filename, so these are immutable in practice. Without this they
+# fell back to the Workers-Assets default and were revalidated on each visit —
+# the Queen master alone is 12.9 MB.
+/models/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/hercules-wardrobe/*
+  Cache-Control: public, max-age=31536000, immutable

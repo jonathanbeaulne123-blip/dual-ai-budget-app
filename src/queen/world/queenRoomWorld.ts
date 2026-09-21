@@ -124,11 +124,20 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   };
 
   const pmrem = new THREE.PMREMGenerator(renderer);
-  try {
-    const env = pmrem.fromScene(new RoomEnvironment(), 0.05);
-    scene.environment = env.texture;
-    cleanup.push(() => { env.dispose(); pmrem.dispose(); });
-  } catch { pmrem.dispose(); }
+  {
+    const environment = new RoomEnvironment();
+    try {
+      const env = pmrem.fromScene(environment, 0.05);
+      scene.environment = env.texture;
+      cleanup.push(() => { env.dispose(); pmrem.dispose(); });
+    } catch { pmrem.dispose(); }
+    finally {
+      // See queenWorld.ts: dispose the environment scene and its instanced
+      // furniture rather than leaking both once per mount.
+      environment.traverse(object => { if (object instanceof THREE.InstancedMesh) object.dispose(); });
+      environment.dispose();
+    }
+  }
 
   // ---- the light each room is lit by ------------------------------------
   const cellar = options.room === "cellar";

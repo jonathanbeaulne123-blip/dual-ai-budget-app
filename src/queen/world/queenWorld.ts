@@ -80,11 +80,22 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
 
   const cleanup: Array<() => void> = [];
   const pmrem = new THREE.PMREMGenerator(renderer);
-  try {
-    const env = pmrem.fromScene(new RoomEnvironment(), 0.04);
-    scene.environment = env.texture;
-    cleanup.push(() => { env.dispose(); pmrem.dispose(); });
-  } catch { pmrem.dispose(); }
+  {
+    const environment = new RoomEnvironment();
+    try {
+      const env = pmrem.fromScene(environment, 0.04);
+      scene.environment = env.texture;
+      cleanup.push(() => { env.dispose(); pmrem.dispose(); });
+    } catch { pmrem.dispose(); }
+    finally {
+      // RoomEnvironment owns shared geometry/materials, and its instanced
+      // furniture owns a per-instance buffer in the renderer. Dropping the
+      // reference without disposing leaked both once per mount.
+      // Mirrors src/kitty/KittyStage.tsx.
+      environment.traverse(object => { if (object instanceof THREE.InstancedMesh) object.dispose(); });
+      environment.dispose();
+    }
+  }
   // The rig: a sky, a key and a rim. The living light scales them within a floor and moves the key with the sun's height; it never touches a material.
   const sky = new THREE.HemisphereLight("#fff1d9", "#8a8276", 1.1);
   scene.add(sky);

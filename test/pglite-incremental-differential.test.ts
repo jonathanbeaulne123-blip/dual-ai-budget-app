@@ -69,15 +69,6 @@ const VOLATILE_COLUMNS: Record<string, readonly string[]> = {
   household_snapshots: ["updated_at"],
 };
 
-/** The digest PGlite recorded for the derived projection at the latest revision. */
-async function tipProjectionHash(db: Awaited<ReturnType<typeof openMemoryBooks>>): Promise<string> {
-  const row = await db.query<{ projection_hash: string | null }>(
-    `SELECT projection_hash FROM audit_revisions ORDER BY revision DESC, at DESC LIMIT 1`,
-  );
-  const hash = row.rows[0]?.projection_hash;
-  expect(hash).toBeTruthy();
-  return hash as string;
-}
 
 async function dump(db: Awaited<ReturnType<typeof openMemoryBooks>>) {
   const out: Record<string, unknown[]> = {};

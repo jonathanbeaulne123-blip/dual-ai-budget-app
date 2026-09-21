@@ -246,8 +246,15 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
 
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2(), projected = new THREE.Vector3(), box = new THREE.Box3();
+  // `project` runs on every rendered frame. These are reused rather than
+  // reallocated: the eight box corners alone were ~160 fresh Vector3 per frame
+  // across the Court's regions, and the single-point form one more per anchor.
+  const cornerPool = [0, 1, 2, 3, 4, 5, 6, 7].map(() => new THREE.Vector3());
+  const pointPool = [new THREE.Vector3()];
+  const anchorById = new Map<string, ReturnType<typeof handle.anchors>[number]>();
+  const claimedIds = new Set<string>();
   const pointers = new Map<number, Pointer>();
-  let projectionSignature = "", pinchDistance = 0, paintSamples: number[] = [], dirty = true;
+  let projectionSignature = "", pinchDistance = 0, paintSamples: number[] = [], projectSamples: number[] = [], dirty = true;
   /** The camera was asked to move: paint at least one frame even if it cut there under reduced motion. */
   const moved = () => { dirty = true; court.setReduced(reduced.matches); previous = performance.now(); schedule(); };
 
@@ -304,25 +311,36 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if (!callbacks.onProject) return;
     const bounds = host.getBoundingClientRect();
     if (bounds.width < 1 || bounds.height < 1) return;
-    camera.updateMatrixWorld(); scene.updateMatrixWorld();
+    // `renderer.render` has already updated the world matrices one line above
+    // the only call to this function, so a second full-scene pass was pure
+    // duplicate work. The camera stays explicit as cheap insurance.
+    camera.updateMatrixWorld();
     const rects: ProjectedRect[] = [];
     const anchors = handle.anchors();
+    // Two nested scans over ~17 anchors and ~17 regions ran per frame; index once.
+    anchorById.clear();
+    for (const anchor of anchors) anchorById.set(anchor.id, anchor);
+    claimedIds.clear();
     for (const region of handle.regions()) {
       if (region.box) box.copy(region.box);
       else { box.makeEmpty(); for (const object of region.objects ?? []) box.expandByObject(object); }
       if (box.isEmpty()) continue;
-      const corners = [0, 1, 2, 3, 4, 5, 6, 7].map(i => new THREE.Vector3(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z));
-      const rect = rectOf(corners, bounds);
+      for (let i = 0; i < 8; i++) {
+        cornerPool[i]!.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z);
+      }
+      const rect = rectOf(cornerPool, bounds);
       if (!rect) continue;
       // An anchor with the same id lends the region its door and its words: one twin per thing.
-      const anchor = anchors.find(a => a.id === region.id);
+      const anchor = anchorById.get(region.id);
       rects.push({ id: region.id, kind: "region", group: region.group, label: anchor?.label ?? region.label, door: anchor?.door, ...rect });
+      claimedIds.add(region.id);
     }
     for (const anchor of anchors) {
-      if (rects.some(r => r.id === anchor.id)) continue;
+      if (claimedIds.has(anchor.id)) continue;
       const [x, y, z] = anchor.position;
-      const rect = rectOf([new THREE.Vector3(x, y + 0.6, z)], bounds);
-      if (rect) rects.push({ id: anchor.id, kind: "anchor", group: anchor.zone, label: anchor.label, door: anchor.door, ...rect });
+      pointPool[0]!.set(x, y + 0.6, z);
+      const rect = rectOf(pointPool, bounds);
+      if (rect) { rects.push({ id: anchor.id, kind: "anchor", group: anchor.zone, label: anchor.label, door: anchor.door, ...rect }); claimedIds.add(anchor.id); }
     }
     const signature = rects.map(r => `${r.id}:${r.x | 0}:${r.y | 0}:${r.w | 0}:${r.h | 0}:${r.visible ? 1 : 0}:${r.label}`).join("|");
     if (signature === projectionSignature) return;
@@ -332,11 +350,19 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
 
   function render(): void {
     if (!lease.active || disposed) return;
+    // `renderMs` used to span `project()` as well, so DOM-twin projection cost
+    // was reported as render cost — which is why the Court's telemetry looked
+    // GPU-bound when most of it was main-thread work. They are measured apart
+    // now; `projectMs` is published beside it rather than hidden inside it.
     const began = performance.now();
     renderer.render(scene, camera);
+    const rendered = performance.now();
     project();
-    paintSamples.push(performance.now() - began); if (paintSamples.length > 60) paintSamples.shift();
+    const projected = performance.now();
+    paintSamples.push(rendered - began); if (paintSamples.length > 60) paintSamples.shift();
+    projectSamples.push(projected - rendered); if (projectSamples.length > 60) projectSamples.shift();
     host.dataset.renderMs = (paintSamples.reduce((a, b) => a + b, 0) / paintSamples.length).toFixed(2);
+    host.dataset.projectMs = (projectSamples.reduce((a, b) => a + b, 0) / projectSamples.length).toFixed(2);
     host.dataset.houseCamera = JSON.stringify(camera.position.toArray().map(n => Number(n.toFixed(4))));
     host.dataset.drawCalls = String(renderer.info.render.calls); host.dataset.geometries = String(renderer.info.memory.geometries); host.dataset.textures = String(renderer.info.memory.textures);
   }

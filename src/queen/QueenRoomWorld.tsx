@@ -79,11 +79,39 @@ export function QueenRoomWorld({ room, root, vessels, ambient = false, mode = "a
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     observer.observe(rootElement);
-    // The ribbon scrubs and the ledge reorders; both move seats without resizing anything.
+
+    // The ribbon scrubs and the ledge reorders; both move seats without resizing
+    // anything, so this has to keep measuring per frame while the room is in
+    // front of someone. What it must NOT do is keep measuring when nobody can
+    // see it: `measure` walks the room with querySelectorAll and forces a layout
+    // flush through getBoundingClientRect, and this loop used the native
+    // requestAnimationFrame directly, so neither the world frame scheduler nor
+    // the renderer lease's suspend could stop it. A hidden tab or a scrolled-away
+    // room burned a 60Hz reflow loop on the main thread for as long as it stayed
+    // mounted. Gated the way every other surface in the app already is; the
+    // measurement cadence while on screen is unchanged, so nothing moves
+    // differently.
     let raf = 0;
+    let following = false;
+    let onScreen = true;
+    const stop = () => { if (raf) cancelAnimationFrame(raf); raf = 0; following = false; };
     const follow = () => { measure(); raf = requestAnimationFrame(follow); };
-    raf = requestAnimationFrame(follow);
-    return () => { observer.disconnect(); cancelAnimationFrame(raf); };
+    const start = () => { if (following) return; following = true; raf = requestAnimationFrame(follow); };
+    // Re-measure on the way back in: the room may have moved while unwatched.
+    const sync = () => { if (document.hidden || !onScreen) stop(); else { measure(); start(); } };
+    const seen = new IntersectionObserver((entries) => {
+      onScreen = entries.some((entry) => entry.isIntersecting);
+      sync();
+    });
+    seen.observe(element);
+    document.addEventListener("visibilitychange", sync);
+    sync();
+    return () => {
+      stop();
+      observer.disconnect();
+      seen.disconnect();
+      document.removeEventListener("visibilitychange", sync);
+    };
   }, [live, root, vessels.length]);
 
   if (!wanted) return null;
