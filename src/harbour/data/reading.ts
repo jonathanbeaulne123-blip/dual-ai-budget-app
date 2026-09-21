@@ -29,7 +29,7 @@ import { queenGlazeFor, queenShelf, queenShelfOrder, QUEEN_SHELF_BANK_KEY, type 
 import { RACK_LIMITS, rackSettled, type QueenRackV1 } from "../../core/queenRack.ts";
 import { fundWalk } from "../../core/fundWalk.ts";
 import { monthKeyFromDateKey } from "../../core/calendar.ts";
-import type { Household } from "../../core/types.ts";
+import type { Goal, Household, KittyGlaze } from "../../core/types.ts";
 import type { UmbrellaBankId } from "../../queen/world/bankModels.ts";
 
 /** The 16 house tools (`TARGET_NAMES`, `src/house/navigation.ts`) plus the Status tab the pulse can point at. */
@@ -81,6 +81,8 @@ export type HarbourReading = {
   kitchen: KitchenReading;
   /** The Boathouse: what the shore rooms hold, in counts and never in contents. */
   boathouse: BoathouseReading;
+  /** The Kiln: the shelf of fired pieces, and how warm the kiln still is. */
+  kiln: KilnReading;
 };
 
 /**
@@ -266,6 +268,140 @@ export function buildBoathouseReading(household: { hearthside?: { experiences?: 
   if (!state || typeof state !== "object") return EMPTY_BOATHOUSE_READING;
   const count = (rows: unknown): number => (Array.isArray(rows) ? rows.length : 0);
   return { wishes: count(state.experiences), memories: count(state.memories), letters: count(state.notes), encounters: count(state.encounters) };
+}
+
+/**
+ * The Kiln (LITTLE_HARBOUR_v2 §2, the Making district): pottery, full screen —
+ * a wheel, a workbench, the kiln itself and **a shelf of fired pieces**. The
+ * shelf is a reading of the kitty banks the household has already sculpted,
+ * painted and fired in the Studio (`core/kittyStudio.ts`): one little piece
+ * per bank that has come out of the kiln, in that bank's own glaze, at that
+ * bank's own growth step — the same ten steps the Loft and the Tower stand
+ * their cats in. No money is read beyond that step, which the studio already
+ * shows on every bank.
+ *
+ * **Private pieces are counts, never contents.** A design row filed
+ * `personal` by the other member, or a goal that is neither shared nor yours,
+ * is added to `keptPrivate` and nothing else — no name, no glaze, no date.
+ */
+export type FiredPiece = {
+  /** `bank/<bankKey>` or `goal/<id>` — the door's object into the Studio, and the twin's key. */
+  key: string;
+  name: string;
+  glaze: KittyGlaze;
+  /** Which of the four the bank stands under, or null for a bank the nest has not sorted. */
+  category: NestCategory | null;
+  /** 0–10, the studio's own backing step. 0 is resting clay, never a fault. */
+  step: number;
+  /** How many pieces this bank has taken out of the kiln. */
+  firings: number;
+  /** The day this bank last came out of the kiln, when the piece carries one. */
+  firedOn: DateKey | null;
+};
+export type KilnReading = {
+  /** The shelves, newest firing first. Capped for the room; the Studio holds the rest. */
+  pieces: FiredPiece[];
+  /** Fired pieces this member may see. */
+  fired: number;
+  /** Fired pieces on somebody else's own shelf: a count, and nothing else. */
+  keptPrivate: number;
+  /** Drafts still on the wheel — clay, not yet fired. */
+  onTheWheel: number;
+  /** The last day anything came out of the kiln, of the pieces this member may see. */
+  lastFiredOn: DateKey | null;
+  /** Days since that firing; 0 is today, null when nothing has ever been fired. */
+  sinceFiring: number | null;
+  /** How warm the kiln still is, 1 on the firing day fading to 0 over `KILN_WARM_DAYS`. */
+  warmth: number;
+  /** Pieces the shelf could not stand (over the cap). */
+  overflow: number;
+};
+
+/** The shelf stands at most this many pieces; the Studio holds every one. */
+export const KILN_SHELF_CAP = 12;
+/** The bricks keep the heat about a week; the glow fades day by day. */
+export const KILN_WARM_DAYS = 7;
+/** A cold kiln, a swept shelf, nothing on the wheel. */
+export const EMPTY_KILN_READING: KilnReading = Object.freeze({
+  pieces: [], fired: 0, keptPrivate: 0, onTheWheel: 0, lastFiredOn: null, sinceFiring: null, warmth: 0, overflow: 0,
+}) as KilnReading;
+
+const firedDay = (at: string | null | undefined): DateKey | null => {
+  if (typeof at !== "string" || at.length < 10) return null;
+  const day = at.slice(0, 10);
+  return /^\d{4}-\d{2}-\d{2}$/.test(day) ? (day as DateKey) : null;
+};
+const laterDay = (a: DateKey | null, b: DateKey | null): DateKey | null =>
+  a === null ? b : b === null ? a : compareDateKeys(a, b) >= 0 ? a : b;
+
+/**
+ * The shelf of fired pieces. Pure and total: it reads the design rows and the
+ * goals' own envelopes, never the design documents, never the books. A
+ * household with no studio work is a swept shelf and a cold kiln, which is a
+ * state and not a fault.
+ */
+export function buildKilnReading(household: Household, memberId: string, today: DateKey): KilnReading {
+  const pieces: FiredPiece[] = [];
+  let keptPrivate = 0;
+  let onTheWheel = 0;
+  let lastFiredOn: DateKey | null = null;
+
+  for (const row of household.kittyNestDesigns ?? []) {
+    // A design row is the member's to see when the household shares it, or when it is their own.
+    const visible = row.visibility === "household" || row.createdBy === memberId;
+    const fired = row.studio?.fired ?? [];
+    const firings = fired.length > 0 ? fired.length : row.designHasFired ? 1 : 0;
+    if (!visible) { keptPrivate += firings; continue; }
+    if (row.studio?.draft) onTheWheel += 1;
+    if (firings === 0) continue;
+    const firedOn = fired.reduce<DateKey | null>((latest, piece) => laterDay(latest, firedDay(piece.firedAt)), null);
+    lastFiredOn = laterDay(lastFiredOn, firedOn);
+    pieces.push({ key: `bank/${row.bankKey}`, name: row.name || "A bank", glaze: row.glaze, category: row.category, step: 0, firings, firedOn });
+  }
+
+  for (const goal of household.goals ?? []) {
+    const studio = goal.envelope?.studio;
+    if (!studio) continue;
+    const visible = goal.shared || goal.ownerMemberId === memberId;
+    const firings = studio.fired.length;
+    if (!visible) { keptPrivate += firings; continue; }
+    if (studio.draft) onTheWheel += 1;
+    if (firings === 0) continue;
+    const firedOn = studio.fired.reduce<DateKey | null>((latest, piece) => laterDay(latest, firedDay(piece.firedAt)), null);
+    lastFiredOn = laterDay(lastFiredOn, firedOn);
+    pieces.push({
+      key: `goal/${goal.id}`,
+      name: goal.name || "A bank",
+      glaze: goal.envelope?.glaze ?? "cream",
+      category: kilnCategoryOf(goal),
+      step: kittyBankBackingStep(household, goal, today),
+      firings,
+      firedOn,
+    });
+  }
+
+  // Newest out of the kiln stands nearest the door; an undated piece waits behind the dated ones.
+  pieces.sort((a, b) =>
+    (a.firedOn && b.firedOn ? compareDateKeys(b.firedOn, a.firedOn) : a.firedOn ? -1 : b.firedOn ? 1 : 0) || a.name.localeCompare(b.name));
+  const standing = pieces.slice(0, KILN_SHELF_CAP);
+  const sinceFiring = lastFiredOn === null ? null : Math.max(0, daysBetween(lastFiredOn, today));
+  const warmth = sinceFiring === null ? 0 : Math.max(0, Math.min(1, 1 - sinceFiring / KILN_WARM_DAYS));
+  return {
+    pieces: standing,
+    fired: pieces.reduce((sum, piece) => sum + piece.firings, 0),
+    keptPrivate,
+    onTheWheel,
+    lastFiredOn,
+    sinceFiring,
+    warmth,
+    overflow: pieces.length - standing.length,
+  };
+}
+
+/** A goal's bank stands under the envelope's own kind; a bank without an envelope is unsorted. */
+function kilnCategoryOf(goal: Goal): NestCategory | null {
+  const kind = goal.envelope?.kind;
+  return kind === "protect" || kind === "everyday" || kind === "prepare" || kind === "build" ? kind : null;
 }
 
 export const HARBOUR_SLIP_LINES = 3;
@@ -478,6 +614,7 @@ export function buildHarbourReading(household: Household, memberId: string, toda
     glasshouse: buildGlasshouseReading(household, memberId, today),
     kitchen: buildKitchenReading(household, memberId, today),
     boathouse: buildBoathouseReading(household),
+    kiln: buildKilnReading(household, memberId, today),
     tower: buildTowerReading(household, memberId, today, nest),
     cellar: buildCellarReading(household, memberId, today, nest, snapshot.prepare.amountCents),
     cistern: buildCisternReading({ cents: snapshot.protect.amountCents, target: snapshot.protect.targetCents }),
