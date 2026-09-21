@@ -66,9 +66,8 @@ export async function readGlb(asset: GlbAsset, signal?: AbortSignal): Promise<Ar
 
 /** Parse GLB bytes into a scene. The loader is imported on first use. */
 export async function parseGlb(bytes: ArrayBuffer): Promise<THREE.Group> {
-  const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader.js");
-  const gltf = await new GLTFLoader().parseAsync(bytes, "");
-  return gltf.scene;
+  const { parseGlbScene } = await import("../../assets/gltf.ts");
+  return parseGlbScene(bytes);
 }
 
 function dropHold(url: string): void {

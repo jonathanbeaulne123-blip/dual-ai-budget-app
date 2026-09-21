@@ -57,6 +57,7 @@
     "fflate": "0.8.2",
     "jsqr": "1.4.0",
     "manifold-3d": "3.5.3",
+    "meshoptimizer": "^1.2.0",
     "pdfjs-dist": "^6.3.289",
     "postgres": "^3.4.9",
     "react": "^19.1.1",
@@ -67,6 +68,9 @@
   "devDependencies": {
     "@axe-core/playwright": "^4.13.0",
     "@cloudflare/workers-types": "^5.20260906.1",
+    "@gltf-transform/core": "^4.5.0",
+    "@gltf-transform/extensions": "^4.5.0",
+    "@gltf-transform/functions": "^4.5.0",
     "@playwright/test": "^1.62.1",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",

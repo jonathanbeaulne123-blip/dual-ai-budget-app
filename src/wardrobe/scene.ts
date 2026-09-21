@@ -3,7 +3,7 @@ import type {PlayArea,PlayDecor} from '../core/playContracts.ts';
 import {loadCollection} from './collectionLoader.ts';
 import {readWardrobeModel} from './modelAsset.ts';
 import * as T from 'three';
-import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {parseGltf} from '../assets/gltf.ts';
 import {Reflector} from 'three/addons/objects/Reflector.js';
 import type {LookV1} from '../core/herculesCompanionContracts.ts';
 import {FITTING_ITEMS,WARDROBE_ASSET,canPlayReaction,fittingColour,type FittingReaction} from './catalogue.ts';
@@ -56,7 +56,7 @@ export async function createWardrobeScene(host:HTMLElement,options:{play?:boolea
  options.signal.addEventListener('abort',dispose,{once:true});
  try{
   const {bytes:buffer,transferBytes}=await readWardrobeModel(WARDROBE_ASSET,options.signal);host.dataset.transferBytes=String(transferBytes);
-  if(disposed)throw new DOMException('Closed','AbortError');const gltf=await new GLTFLoader().parseAsync(buffer,'');model=gltf.scene;clips=gltf.animations;
+  if(disposed)throw new DOMException('Closed','AbortError');const gltf=await parseGltf(buffer);model=gltf.scene;clips=gltf.animations;
   if(disposed){const lateSkeletons=new Set<T.Skeleton>();model.traverse(n=>{if(n instanceof T.SkinnedMesh)lateSkeletons.add(n.skeleton);if(n instanceof T.Mesh){n.geometry.dispose();for(const m of Array.isArray(n.material)?n.material:[n.material])m.dispose();}});for(const skeleton of lateSkeletons)skeleton.dispose();throw new DOMException('Closed','AbortError');}
   model.position.y=.047;scene.add(model);mixer=new T.AnimationMixer(model);
   mixer.addEventListener('finished',()=>{if(disposed||paused)return;const idle=clips.find(c=>c.name==='breathe-blink');if(idle){mixer!.stopAllAction();mixer!.clipAction(idle).reset().setLoop(T.LoopRepeat,Infinity).play();}});
