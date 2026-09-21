@@ -6,7 +6,7 @@ import { COURT_ANCHOR_IDS, COURT_FOV, type CourtAnchor, type CourtMode, type Cou
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
 import { createGround } from "./ground.ts";
 import { configureHarbourRenderer, createLightRig } from "./lightRig.ts";
-import { EMPTY_PLACE, PLACES, SCENE_DRESSING, poseFor, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlaceReading, type Vec3 } from "./place.ts";
+import { EMPTY_PLACE, PLACES, PLACE_HOLDS, SCENE_DRESSING, poseFor, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlaceReading, type Vec3 } from "./place.ts";
 import { travelAt, travelPlan, type TravelPlan } from "./travel.ts";
 import type { HarbourPlaceId } from "../flag.ts";
 import type { RenderTier } from "./quality.ts";
@@ -52,13 +52,18 @@ export const fovFor = (composition: Composition): number => (composition === "ph
 const isCourtAnchor = (id: string | undefined): id is CourtAnchor => (COURT_ANCHOR_IDS as readonly string[]).includes(id ?? "");
 
 export type HarbourRuntime = {
-  /** Fly to a mode; `anchor` is one of `poses.ts`'s named anchors or any anchor the place exposes. */
-  go: (mode: CourtMode, anchor?: string) => void;
+  /**
+   * Fly to a mode; `anchor` is one of `poses.ts`'s named anchors or any anchor
+   * the place exposes. `"door"` is the frieze a place shows in the band above
+   * an open tool: its own `door` pose when it names one, else its sky; the
+   * Court's frieze is her portrait.
+   */
+  go: (mode: CourtMode | "door", anchor?: string) => void;
   setReading: (reading: PlaceReading | null) => void;
   /** A close look at any point (the Queen's roots, the slip). */
   look: (look: CourtLook) => void;
-  /** Keyboard: arrows orbit, +/− zoom. */
-  gesture: (input: { kind: "orbit"; dx: number; dy: number } | { kind: "zoom"; delta: number }) => void;
+  /** Keyboard: arrows orbit, +/− zoom, WASD walks (a screen-space pan of the target, held inside the room). */
+  gesture: (input: { kind: "orbit"; dx: number; dy: number } | { kind: "zoom"; delta: number } | { kind: "pan"; dx: number; dy: number }) => void;
   /** A tool is open in front of the court: no breathing, the strip only redraws on demand. */
   setToolOpen: (open: boolean) => void;
   /** The place's idle animation (the Queen's breath). Off by default for an empty island. */
@@ -234,6 +239,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     }
   }
   const court: CourtCamera = createCourtCamera({ camera, composition, reduced: reduced.matches, fov: fovFor(composition) });
+  // The standing room holds the camera from the first frame: a stale return
+  // slot or a wild zoom can never show a room from the lawn.
+  court.setHold(PLACE_HOLDS[placeId] ?? null);
   court.go("court");
 
   const raycaster = new THREE.Raycaster();
@@ -348,7 +356,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const frame = travelAt(journey.plan, now - journey.startedAt);
       settle(frame.roof, frame.lid);
       dirty = true;
-      if (frame.done) { if (journey.from !== placeId) pull(journey.from); journey = null; }
+      if (frame.done) {
+        if (journey.from !== placeId) pull(journey.from);
+        journey = null;
+        court.setHold(PLACE_HOLDS[placeId] ?? null);
+      }
     }
     const moving = easing || journey !== null;
     const policy = harbourFramePolicy({ reduced: reduced.matches, moving, breathing: breathing || settling, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen });
@@ -441,13 +453,14 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * by their own pose tables — `<placeId>:<composition>` for the room itself,
    * `object:<anchor>:<composition>` for one thing in it, `sky` for the whole.
    */
-  function aim(mode: CourtMode, anchor?: string): void {
+  function aim(mode: CourtMode | "door", anchor?: string): void {
     court.setReduced(reduced.matches);
     if (placeId !== "court") {
       const key = mode === "court" ? placeId : mode === "object" && anchor ? `object:${anchor}` : mode;
-      const pose = poseFor(handle.poses(), key, composition);
+      const pose = poseFor(handle.poses(), key, composition) ?? (mode === "door" ? poseFor(handle.poses(), "sky", composition) : undefined);
       if (pose) { court.goTo({ target: pose.target, r: pose.r, theta: pose.theta, phi: pose.phi }); return; }
     }
+    if (mode === "door") { court.go("object", "queen"); return; }
     if (mode !== "object" || isCourtAnchor(anchor)) { court.go(mode, isCourtAnchor(anchor) ? anchor : undefined); return; }
     const found = handle.anchors().find(a => a.id === anchor);
     if (found) court.goTo({ target: [found.position[0], Math.max(0.6, found.position[1]), found.position[2]] });
@@ -458,7 +471,13 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     go(mode, anchor) { aim(mode, anchor); moved(); },
     setReading(next) { reading = next; for (const { handle: each } of live.values()) each.update(next); dirty = true; render(); schedule(); },
     look(next) { court.setReduced(reduced.matches); court.goTo(next); moved(); },
-    gesture(input) { court.setReduced(reduced.matches); if (input.kind === "orbit") court.drag(input.dx, input.dy); else court.zoom(input.delta); moved(); },
+    gesture(input) {
+      court.setReduced(reduced.matches);
+      if (input.kind === "orbit") court.drag(input.dx, input.dy);
+      else if (input.kind === "pan") court.pan(input.dx, input.dy);
+      else court.zoom(input.delta);
+      moved();
+    },
     setToolOpen(open) { toolOpen = open; schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
     invalidate() { settling = true; dirty = true; previous = performance.now(); schedule(); },
@@ -480,6 +499,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       placeId = next;
       // The place you arrive in declares its own idle motion; until it does, nothing moves.
       breathing = false;
+      // A cut lands at once, so the destination's hold applies at once. A full
+      // journey flies through the open air between the rooms: the hold is
+      // lifted for the flight and the destination's takes over when it lands
+      // (the `frame.done` branch of the loop).
+      court.setHold(plan.cut ? PLACE_HOLDS[next] ?? null : null);
       aim(plan.camera.mode, plan.camera.anchor ?? undefined);
       if (plan.cut) {
         settle(plan.roof[1], plan.lid[1]);

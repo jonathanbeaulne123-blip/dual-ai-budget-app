@@ -2,6 +2,8 @@ import type { PerspectiveCamera } from "three";
 import { clampRoamCam, panDelta, wrapAngle, type RoamBounds, type RoamCam } from "../../path/world/roamCamera.ts";
 import {
   COURT_BOUNDS,
+  holdPoseInRoom,
+  type RoomHold,
   COURT_FOV,
   clampCourtPose,
   courtPose,
@@ -71,6 +73,8 @@ export type CourtCamera = {
   /** The stage's width ÷ height, so the diorama can fit the Court's width. */
   setAspect(aspect: number): void;
   setReduced(reduced: boolean): void;
+  /** The standing room's hold on the camera (`holdPoseInRoom`); null in the open Court. Applied to every pose from then on, the current one included. */
+  setHold(hold: RoomHold | null): void;
   /** Advance by `dt` seconds and write the camera. Returns true while still moving (a frame is worth scheduling). */
   tick(dt: number): boolean;
   /** The pose the camera shows right now. */
@@ -116,7 +120,10 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
   let mode: CourtMode = "court";
   let anchor: CourtAnchor | undefined;
   let look: CourtLook | null = null;
-  let goal: CourtPose = clampPose(clampCourtPose(courtPose(mode, anchor, composition, aspect, fov)));
+  /** The standing room's hold on the camera; null in the open Court. */
+  let hold: RoomHold | null = null;
+  const legal = (pose: CourtPose): CourtPose => holdPoseInRoom(clampPose(clampCourtPose(pose)), hold);
+  let goal: CourtPose = legal(courtPose(mode, anchor, composition, aspect, fov));
   let current: CourtPose = goal;
 
   function apply(): void {
@@ -127,15 +134,15 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
   }
 
   function retarget(): void {
-    goal = clampPose(clampCourtPose(look
+    goal = legal(look
       ? { target: look.target, r: look.r ?? 3.2, theta: look.theta ?? Math.atan2(look.target[0], look.target[2] + 6) * 0.6, phi: look.phi ?? (composition === "phone" ? 1.0 : 1.05) }
-      : courtPose(mode, anchor, composition, aspect, fov)));
+      : courtPose(mode, anchor, composition, aspect, fov));
     if (reduced) { current = goal; apply(); }
   }
 
   /** A hand on the camera moves it directly: the goal follows so nothing eases back afterwards. */
   function take(next: CourtPose): void {
-    current = clampPose(next);
+    current = legal(next);
     goal = current;
     apply();
   }
@@ -189,6 +196,14 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
       if (!(next > 0) || !Number.isFinite(next) || Math.abs(next - aspect) < 1e-4) return;
       aspect = next;
       retarget();
+    },
+    setHold(next) {
+      hold = next;
+      // The hold changed under the camera (a journey ended in another room):
+      // both the goal and the standing pose must already obey it.
+      goal = legal(goal);
+      current = legal(current);
+      apply();
     },
     setReduced(next) {
       reduced = next;

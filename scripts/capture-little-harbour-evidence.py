@@ -84,7 +84,12 @@ def measure(page):
 
 # A twin that only the arrived place has: the place attribute flips the moment the
 # journey starts, so waiting on it alone catches the room you just left.
-PLACE_TWIN = {"court": "queen", "tower": "shelf", "cellar": "rail"}
+# Any one of them will do: a phone's tower may push the shelf plate off the stage,
+# and an empty rack has no banks at all.
+PLACE_TWIN = {
+    "court": ["queen"], "tower": ["shelf", "bank", "jug"], "cellar": ["rail", "jar", "waterline"], "glasshouse": ["beds", "pot", "harvest"],
+    "kitchen": ["empty-card", "card", "drawer"], "boathouse": ["boat", "projector", "wishes"], "library": ["book", "bindery", "balcony"],
+}
 
 
 def wait_place(page, place: str, timeout=45000):
@@ -92,10 +97,14 @@ def wait_place(page, place: str, timeout=45000):
     page.wait_for_selector(".harbour-world[data-world-status='ready']", timeout=timeout)
     want = PLACE_TWIN.get(place)
     if want:
-        page.wait_for_function(
-            "(id) => [...document.querySelectorAll('[data-twin]')].some(b => b.dataset.twin === id || (b.dataset.twin || '').startsWith(id + ':'))",
-            arg=want, timeout=timeout,
-        )
+        try:
+            page.wait_for_function(
+                "(ids) => [...document.querySelectorAll('[data-twin]')].some(b => ids.some(id => b.dataset.twin === id || (b.dataset.twin || '').startsWith(id + ':')))",
+                arg=want, timeout=timeout,
+            )
+        except Exception:
+            # The place is standing and ready; it simply has nothing of that name in frame.
+            page.wait_for_timeout(1200)
     page.wait_for_timeout(1600)
 
 
@@ -103,30 +112,37 @@ def twin(page, name: str):
     return page.query_selector(f"[data-twin='{name}']")
 
 
-LEVELS = {"court": "middle", "tower": "above", "cellar": "below"}
+LEVELS = {"court": "middle", "tower": "above", "cellar": "below", "glasshouse": "above", "kitchen": "middle", "boathouse": "middle", "library": "middle"}
+
+
+ROOMS = {"court": "home", "tower": "home", "cellar": "home", "glasshouse": "study", "kitchen": "kitchen-table", "boathouse": "together", "library": "study"}
 
 
 def route_to(page, place: str) -> None:
     """Walk to a level the way the compass does: push the route and let the App hear it."""
     page.evaluate(
-        """(level) => {
+        """([room, level]) => {
           const here = new URL(location.href);
           const household = here.searchParams.get('household') || 'HH-WHOLE-HOUSE-HABITAT-REVIEW';
-          history.pushState({}, '', `/house/home/${level}?household=${household}&scope=household`);
+          history.pushState({}, '', `/house/${room}/${level}?household=${household}&scope=household`);
           window.dispatchEvent(new PopStateEvent('popstate'));
         }""",
-        LEVELS[place],
+        [ROOMS[place], LEVELS[place]],
     )
 
 
 def put_back(page) -> None:
-    """Close whatever the door opened. The Loft and the Cellar are modal rooms, so the strip may be behind them."""
+    """Close whatever the door opened: the sheet's own header button first, then Escape."""
     try:
         page.keyboard.press("Escape")
         page.wait_for_timeout(500)
-        if page.query_selector(".harbour-world.has-open-object"):
-            page.click(".harbour-world__put-back", timeout=5000)
-        page.wait_for_selector(".harbour-world:not(.has-open-object)", timeout=10000)
+        if page.query_selector(".app[data-harbour-door]"):
+            for selector in (".house-tool-heading button", ".harbour-world__put-back"):
+                button = page.query_selector(selector)
+                if button:
+                    button.click()
+                    break
+        page.wait_for_selector(".app:not([data-harbour-door])", timeout=10000)
     except Exception:
         pass
     page.wait_for_timeout(500)
@@ -206,6 +222,69 @@ def slice2_pass(browser, theme: str, width: int, report: list) -> None:
             errors.append("no jar twin in the cellar")
     except Exception as error:
         errors.append(f"cellar: {error}")
+    # ── The Glasshouse: the planner as a room, and a door open over it. ──────
+    glasshouse = None
+    try:
+        route_to(page, "glasshouse")
+        wait_place(page, "glasshouse")
+        glasshouse = measure(page)
+        snap(page, f"{tag}-11-glasshouse.png")
+        pot = page.query_selector("[data-twin^='pot:']")
+        if pot:
+            pot.evaluate("b => b.click()")
+            page.wait_for_selector(".app[data-harbour-door]", timeout=20000)
+            page.wait_for_timeout(1600)
+            snap(page, f"{tag}-12-glasshouse-door-sheet.png")
+            put_back(page)
+        else:
+            errors.append("no pot twin in the glasshouse")
+    except Exception as error:
+        errors.append(f"glasshouse: {error}")
+    # ── The Kitchen: the five-question recipe card on the table. ─────────────
+    kitchen = None
+    try:
+        route_to(page, "kitchen")
+        wait_place(page, "kitchen")
+        kitchen = measure(page)
+        snap(page, f"{tag}-13-kitchen.png")
+        card = page.query_selector("[data-twin='empty-card']") or page.query_selector("[data-twin^='card:']")
+        if card:
+            card.evaluate("b => b.click()")
+            page.wait_for_selector(".app[data-harbour-door]", timeout=20000)
+            page.wait_for_timeout(1600)
+            snap(page, f"{tag}-14-kitchen-door-sheet.png")
+            put_back(page)
+        else:
+            errors.append("no card twin in the kitchen")
+    except Exception as error:
+        errors.append(f"kitchen: {error}")
+    # ── The Boathouse: the slip, the rowboat, the sail. ──────────────────────
+    boathouse = None
+    try:
+        route_to(page, "boathouse")
+        wait_place(page, "boathouse")
+        boathouse = measure(page)
+        snap(page, f"{tag}-15-boathouse.png")
+    except Exception as error:
+        errors.append(f"boathouse: {error}")
+    # ── The Library: the Standing Book's hall. ───────────────────────────────
+    library = None
+    try:
+        route_to(page, "library")
+        wait_place(page, "library")
+        library = measure(page)
+        snap(page, f"{tag}-16-library.png")
+        book = page.query_selector("[data-twin='book']")
+        if book:
+            book.evaluate("b => b.click()")
+            page.wait_for_selector(".app[data-harbour-door]", timeout=20000)
+            page.wait_for_timeout(1600)
+            snap(page, f"{tag}-17-library-door-sheet.png")
+            put_back(page)
+        else:
+            errors.append("no book twin in the library")
+    except Exception as error:
+        errors.append(f"library: {error}")
     context.close()
 
     # ── Mid-travel frames: full motion, caught part way through each journey. ─
@@ -255,8 +334,11 @@ def slice2_pass(browser, theme: str, width: int, report: list) -> None:
             errors.append(f"{name}: {error}")
         flat.close()
 
-    report.append({"tag": tag, "court": court, "tower": tower, "cellar": cellar, "errors": errors[:12]})
-    print(tag, "court", court.get("drawCalls"), "tower", (tower or {}).get("drawCalls"), "cellar", (cellar or {}).get("drawCalls"), "errors", len(errors), flush=True)
+    report.append({"tag": tag, "court": court, "tower": tower, "cellar": cellar, "glasshouse": glasshouse,
+                   "kitchen": kitchen, "boathouse": boathouse, "library": library, "errors": errors[:12]})
+    print(tag, "court", court.get("drawCalls"), "tower", (tower or {}).get("drawCalls"), "cellar", (cellar or {}).get("drawCalls"),
+          "kitchen", (kitchen or {}).get("drawCalls"), "boathouse", (boathouse or {}).get("drawCalls"), "library", (library or {}).get("drawCalls"),
+          "errors", len(errors), flush=True)
     for error in errors[:6]:
         print("   ·", str(error)[:170], flush=True)
 

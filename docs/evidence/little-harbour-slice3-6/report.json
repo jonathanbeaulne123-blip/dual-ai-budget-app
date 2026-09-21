@@ -1,0 +1,1850 @@
+[
+  {
+    "tag": "classic-390",
+    "court": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "288",
+      "renderMs": "48.51",
+      "queen": null,
+      "camera": "[0.554,6.1458,8.4245]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "crown",
+          "w": 70,
+          "h": 82,
+          "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
+        },
+        {
+          "id": "vines",
+          "w": 140,
+          "h": 173,
+          "label": "Her vines \u2014 up a week, down a week"
+        },
+        {
+          "id": "hands",
+          "w": 56,
+          "h": 107,
+          "label": "Her hands \u2014 what she holds for you"
+        },
+        {
+          "id": "face",
+          "w": 61,
+          "h": 55,
+          "label": "Her face \u2014 a portrait"
+        },
+        {
+          "id": "roots",
+          "w": 77,
+          "h": 80,
+          "label": "Her roots \u2014 what feeds her"
+        },
+        {
+          "id": "potRim",
+          "w": 77,
+          "h": 73,
+          "label": "The pot's rim \u2014 spin her, or come closer"
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44,
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
+        },
+        {
+          "id": "flagstone",
+          "w": 153,
+          "h": 71,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "bishop",
+          "w": 199,
+          "h": 343,
+          "label": "The Bishop \u2014 Prepare $0. Go down to the Cellar."
+        },
+        {
+          "id": "mailbox",
+          "w": 139,
+          "h": 190,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 116,
+          "h": 101,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
+          "id": "hercules",
+          "w": 137,
+          "h": 102,
+          "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 390,
+          "h": 207,
+          "label": "The court gate"
+        },
+        {
+          "id": "cellar-stair",
+          "w": 152,
+          "h": 136,
+          "label": "The cellar stairhead \u2014 go down to the Cellar"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "tower": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "247",
+      "renderMs": "40.03",
+      "queen": null,
+      "camera": "[0.0529,1.2785,2.8952]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "bank:goal:GOAL-8b0beb9a67",
+          "w": 346,
+          "h": 330,
+          "label": "A trip to the shore \u2014 $0 of $2,400. Open the Loft."
+        },
+        {
+          "id": "bank:goal:GOAL-fbe9267ec2",
+          "w": 301,
+          "h": 373,
+          "label": "Kitchen renovation \u2014 $0 of $6,000. Open the Loft."
+        },
+        {
+          "id": "lamp",
+          "w": 390,
+          "h": 372,
+          "label": "The lamp on the landing"
+        },
+        {
+          "id": "window",
+          "w": 176,
+          "h": 228,
+          "label": "The window \u2014 the day coming in"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "cellar": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "44",
+      "renderMs": "29.18",
+      "queen": null,
+      "camera": "[1.1771,2.0309,0.6355]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 390,
+          "h": 768,
+          "label": "The stair up to the court"
+        },
+        {
+          "id": "rail",
+          "w": 390,
+          "h": 768,
+          "label": "The bill rail, pinned with brass \u2014 7 jars on Sep 20 \u00b7 today"
+        },
+        {
+          "id": "waterline",
+          "w": 382,
+          "h": 374,
+          "label": "Prepare's water \u2014 $7,411 on Sep 20 \u00b7 today"
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2f4ddfd35f:2026-09-10",
+          "w": 84,
+          "h": 69,
+          "label": "Gym \u2014 $44, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-401145377a:2026-09-18",
+          "w": 96,
+          "h": 122,
+          "label": "Transit pass \u2014 $128, paid. Open the jar."
+        },
+        {
+          "id": "date",
+          "w": 189,
+          "h": 109,
+          "label": "The day on the rail \u2014 Sep 20 \u00b7 today"
+        },
+        {
+          "id": "today",
+          "w": 248,
+          "h": 122,
+          "label": "Back to today on the rail"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "glasshouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "54",
+      "renderMs": "22.12",
+      "queen": null,
+      "camera": "[1.0938,1.7403,2.3157]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "beds",
+          "w": 377,
+          "h": 118,
+          "label": "The beds around the glasshouse \u2014 unfold the Calendar."
+        },
+        {
+          "id": "garden-door",
+          "w": 390,
+          "h": 768,
+          "label": "The garden door \u2014 back to the Court."
+        },
+        {
+          "id": "pot:task/TASK-476eeb4512bf977744873b93b258946594bfbd105b1adbebeb3df396bbafc8a9",
+          "w": 103,
+          "h": 118,
+          "label": "Choose which payday the pre-rent check belongs to. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-4be5c04994c387576bd1d0dc89bc761308d9b4a50adc86b7c829ec596c4b5e08",
+          "w": 87,
+          "h": 121,
+          "label": "Sign the Charter together and name who holds the Fund. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-8a2848e911720079cb5d80076ac022b1f68ef85b04c5517bb9c1b431b94c9532",
+          "w": 95,
+          "h": 119,
+          "label": "Fictional: move the rent transfer to the payday before the 1st \u2014 a sprout, yours. Open the Master Planner."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "errors": []
+  },
+  {
+    "tag": "classic-1440",
+    "court": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "362",
+      "renderMs": "37.03",
+      "queen": null,
+      "camera": "[5.2548,6.7215,9.6036]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "crown",
+          "w": 96,
+          "h": 103,
+          "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
+        },
+        {
+          "id": "vines",
+          "w": 187,
+          "h": 227,
+          "label": "Her vines \u2014 up a week, down a week"
+        },
+        {
+          "id": "hands",
+          "w": 83,
+          "h": 135,
+          "label": "Her hands \u2014 what she holds for you"
+        },
+        {
+          "id": "face",
+          "w": 74,
+          "h": 74,
+          "label": "Her face \u2014 a portrait"
+        },
+        {
+          "id": "roots",
+          "w": 110,
+          "h": 107,
+          "label": "Her roots \u2014 what feeds her"
+        },
+        {
+          "id": "potRim",
+          "w": 117,
+          "h": 96,
+          "label": "The pot's rim \u2014 spin her, or come closer"
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44,
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
+        },
+        {
+          "id": "flagstone",
+          "w": 200,
+          "h": 109,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "rook",
+          "w": 178,
+          "h": 259,
+          "label": "The Rook \u2014 Build $0. Climb the Tower."
+        },
+        {
+          "id": "bishop",
+          "w": 279,
+          "h": 406,
+          "label": "The Bishop \u2014 Prepare $0. Go down to the Cellar."
+        },
+        {
+          "id": "knight",
+          "w": 133,
+          "h": 198,
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
+        },
+        {
+          "id": "cistern",
+          "w": 165,
+          "h": 145,
+          "label": "The cistern \u2014 Protect $853 of $12,243. Open Protect."
+        },
+        {
+          "id": "sundial",
+          "w": 275,
+          "h": 345,
+          "label": "The sundial \u2014 next: Toronto Hydro"
+        },
+        {
+          "id": "mailbox",
+          "w": 161,
+          "h": 224,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 126,
+          "h": 127,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
+          "id": "hercules",
+          "w": 188,
+          "h": 150,
+          "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 359,
+          "h": 358,
+          "label": "The court gate"
+        },
+        {
+          "id": "boathouse",
+          "w": 237,
+          "h": 199,
+          "label": "The Boathouse, down on the shore \u2014 the two of you. Go there when you want it."
+        },
+        {
+          "id": "cellar-stair",
+          "w": 199,
+          "h": 188,
+          "label": "The cellar stairhead \u2014 go down to the Cellar"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "tower": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "261",
+      "renderMs": "22.93",
+      "queen": null,
+      "camera": "[0.3183,1.1323,3.422]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 1440,
+          "h": 900,
+          "label": "The stair \u2014 back down to the Court"
+        },
+        {
+          "id": "jug",
+          "w": 956,
+          "h": 794,
+          "label": "The jug \u2014 $6,746 safe to pour. Open the Loft."
+        },
+        {
+          "id": "gun",
+          "w": 740,
+          "h": 571,
+          "label": "The money gun \u2014 throw a bill at a bank. Open the Loft."
+        },
+        {
+          "id": "shelf:floor-1",
+          "w": 1440,
+          "h": 900,
+          "label": "An empty floor \u2014 nothing on the shelf yet"
+        },
+        {
+          "id": "shelf:shelf-1",
+          "w": 1375,
+          "h": 784,
+          "label": "The landing shelf \u2014 5 parts of 5, mark at 100%"
+        },
+        {
+          "id": "bank:goal:GOAL-8b0beb9a67",
+          "w": 437,
+          "h": 378,
+          "label": "A trip to the shore \u2014 $0 of $2,400. Open the Loft."
+        },
+        {
+          "id": "bank:goal:GOAL-fbe9267ec2",
+          "w": 377,
+          "h": 481,
+          "label": "Kitchen renovation \u2014 $0 of $6,000. Open the Loft."
+        },
+        {
+          "id": "lamp",
+          "w": 486,
+          "h": 461,
+          "label": "The lamp on the landing"
+        },
+        {
+          "id": "window",
+          "w": 238,
+          "h": 315,
+          "label": "The window \u2014 the day coming in"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "cellar": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "57",
+      "renderMs": "17.68",
+      "queen": null,
+      "camera": "[0.4193,1.9207,2.2793]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 1440,
+          "h": 900,
+          "label": "The stair up to the court"
+        },
+        {
+          "id": "rail",
+          "w": 1440,
+          "h": 193,
+          "label": "The bill rail, pinned with brass \u2014 7 jars on Sep 20 \u00b7 today"
+        },
+        {
+          "id": "waterline",
+          "w": 519,
+          "h": 450,
+          "label": "Prepare's water \u2014 $7,411 on Sep 20 \u00b7 today"
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2070622163:2026-09-29",
+          "w": 116,
+          "h": 106,
+          "label": "Freedom Mobile \u2014 $96, not its day yet. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2f4ddfd35f:2026-09-10",
+          "w": 90,
+          "h": 71,
+          "label": "Gym \u2014 $44, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-37e9012419:2026-09-25",
+          "w": 90,
+          "h": 112,
+          "label": "Toronto Hydro \u2014 $118, not its day yet. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-401145377a:2026-09-18",
+          "w": 77,
+          "h": 113,
+          "label": "Transit pass \u2014 $128, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-49c4298800:2026-09-06",
+          "w": 103,
+          "h": 64,
+          "label": "Streaming \u2014 $16, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-8d7ddba927:2026-09-01",
+          "w": 223,
+          "h": 245,
+          "label": "Rent \u2014 $2,375, paid. Open the jar."
+        },
+        {
+          "id": "date",
+          "w": 186,
+          "h": 98,
+          "label": "The day on the rail \u2014 Sep 20 \u00b7 today"
+        },
+        {
+          "id": "today",
+          "w": 225,
+          "h": 99,
+          "label": "Back to today on the rail"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "glasshouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "68",
+      "renderMs": "21.43",
+      "queen": null,
+      "camera": "[0.7012,1.9438,2.942]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "beds",
+          "w": 507,
+          "h": 154,
+          "label": "The beds around the glasshouse \u2014 unfold the Calendar."
+        },
+        {
+          "id": "garden-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The garden door \u2014 back to the Court."
+        },
+        {
+          "id": "harvest",
+          "w": 1440,
+          "h": 619,
+          "label": "The harvest shelf \u2014 1 harvested this week. Open the Master Planner."
+        },
+        {
+          "id": "perennials",
+          "w": 1440,
+          "h": 900,
+          "label": "The long bed \u2014 1 perennial. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-476eeb4512bf977744873b93b258946594bfbd105b1adbebeb3df396bbafc8a9",
+          "w": 127,
+          "h": 158,
+          "label": "Choose which payday the pre-rent check belongs to. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-4be5c04994c387576bd1d0dc89bc761308d9b4a50adc86b7c829ec596c4b5e08",
+          "w": 108,
+          "h": 161,
+          "label": "Sign the Charter together and name who holds the Fund. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-8a2848e911720079cb5d80076ac022b1f68ef85b04c5517bb9c1b431b94c9532",
+          "w": 114,
+          "h": 159,
+          "label": "Fictional: move the rent transfer to the payday before the 1st \u2014 a sprout, yours. Open the Master Planner."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "errors": []
+  },
+  {
+    "tag": "taylor-390",
+    "court": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "288",
+      "renderMs": "38.86",
+      "queen": null,
+      "camera": "[0.554,6.1458,8.4245]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "crown",
+          "w": 70,
+          "h": 82,
+          "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
+        },
+        {
+          "id": "vines",
+          "w": 140,
+          "h": 173,
+          "label": "Her vines \u2014 up a week, down a week"
+        },
+        {
+          "id": "hands",
+          "w": 56,
+          "h": 107,
+          "label": "Her hands \u2014 what she holds for you"
+        },
+        {
+          "id": "face",
+          "w": 61,
+          "h": 55,
+          "label": "Her face \u2014 a portrait"
+        },
+        {
+          "id": "roots",
+          "w": 77,
+          "h": 80,
+          "label": "Her roots \u2014 what feeds her"
+        },
+        {
+          "id": "potRim",
+          "w": 77,
+          "h": 73,
+          "label": "The pot's rim \u2014 spin her, or come closer"
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44,
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
+        },
+        {
+          "id": "flagstone",
+          "w": 153,
+          "h": 71,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "bishop",
+          "w": 199,
+          "h": 343,
+          "label": "The Bishop \u2014 Prepare $0. Go down to the Cellar."
+        },
+        {
+          "id": "mailbox",
+          "w": 139,
+          "h": 190,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 116,
+          "h": 101,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
+          "id": "hercules",
+          "w": 137,
+          "h": 102,
+          "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 390,
+          "h": 207,
+          "label": "The court gate"
+        },
+        {
+          "id": "cellar-stair",
+          "w": 152,
+          "h": 136,
+          "label": "The cellar stairhead \u2014 go down to the Cellar"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "tower": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "247",
+      "renderMs": "33.68",
+      "queen": null,
+      "camera": "[0.0529,1.2785,2.8952]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "bank:goal:GOAL-8b0beb9a67",
+          "w": 346,
+          "h": 330,
+          "label": "A trip to the shore \u2014 $0 of $2,400. Open the Loft."
+        },
+        {
+          "id": "bank:goal:GOAL-fbe9267ec2",
+          "w": 301,
+          "h": 373,
+          "label": "Kitchen renovation \u2014 $0 of $6,000. Open the Loft."
+        },
+        {
+          "id": "lamp",
+          "w": 390,
+          "h": 372,
+          "label": "The lamp on the landing"
+        },
+        {
+          "id": "window",
+          "w": 176,
+          "h": 228,
+          "label": "The window \u2014 the day coming in"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "cellar": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "44",
+      "renderMs": "25.82",
+      "queen": null,
+      "camera": "[1.1771,2.0309,0.6355]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 390,
+          "h": 768,
+          "label": "The stair up to the court"
+        },
+        {
+          "id": "rail",
+          "w": 390,
+          "h": 768,
+          "label": "The bill rail, taped with washi \u2014 7 jars on Sep 20 \u00b7 today"
+        },
+        {
+          "id": "waterline",
+          "w": 382,
+          "h": 374,
+          "label": "Prepare's water \u2014 $7,411 on Sep 20 \u00b7 today"
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2f4ddfd35f:2026-09-10",
+          "w": 84,
+          "h": 69,
+          "label": "Gym \u2014 $44, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-401145377a:2026-09-18",
+          "w": 96,
+          "h": 122,
+          "label": "Transit pass \u2014 $128, paid. Open the jar."
+        },
+        {
+          "id": "date",
+          "w": 189,
+          "h": 109,
+          "label": "The day on the rail \u2014 Sep 20 \u00b7 today"
+        },
+        {
+          "id": "today",
+          "w": 248,
+          "h": 122,
+          "label": "Back to today on the rail"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "glasshouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "54",
+      "renderMs": "19.18",
+      "queen": null,
+      "camera": "[1.0938,1.7403,2.3157]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "beds",
+          "w": 377,
+          "h": 118,
+          "label": "The beds around the glasshouse \u2014 unfold the Calendar."
+        },
+        {
+          "id": "garden-door",
+          "w": 390,
+          "h": 768,
+          "label": "The garden door \u2014 back to the Court."
+        },
+        {
+          "id": "pot:task/TASK-476eeb4512bf977744873b93b258946594bfbd105b1adbebeb3df396bbafc8a9",
+          "w": 103,
+          "h": 118,
+          "label": "Choose which payday the pre-rent check belongs to. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-4be5c04994c387576bd1d0dc89bc761308d9b4a50adc86b7c829ec596c4b5e08",
+          "w": 87,
+          "h": 121,
+          "label": "Sign the Charter together and name who holds the Fund. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-8a2848e911720079cb5d80076ac022b1f68ef85b04c5517bb9c1b431b94c9532",
+          "w": 95,
+          "h": 119,
+          "label": "Fictional: move the rent transfer to the payday before the 1st \u2014 a sprout, yours. Open the Master Planner."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "errors": []
+  },
+  {
+    "tag": "taylor-1440",
+    "court": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "362",
+      "renderMs": "37.47",
+      "queen": null,
+      "camera": "[5.2548,6.7215,9.6036]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "crown",
+          "w": 96,
+          "h": 103,
+          "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
+        },
+        {
+          "id": "vines",
+          "w": 187,
+          "h": 227,
+          "label": "Her vines \u2014 up a week, down a week"
+        },
+        {
+          "id": "hands",
+          "w": 83,
+          "h": 135,
+          "label": "Her hands \u2014 what she holds for you"
+        },
+        {
+          "id": "face",
+          "w": 74,
+          "h": 74,
+          "label": "Her face \u2014 a portrait"
+        },
+        {
+          "id": "roots",
+          "w": 110,
+          "h": 107,
+          "label": "Her roots \u2014 what feeds her"
+        },
+        {
+          "id": "potRim",
+          "w": 117,
+          "h": 96,
+          "label": "The pot's rim \u2014 spin her, or come closer"
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44,
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
+        },
+        {
+          "id": "flagstone",
+          "w": 200,
+          "h": 109,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "rook",
+          "w": 178,
+          "h": 259,
+          "label": "The Rook \u2014 Build $0. Climb the Tower."
+        },
+        {
+          "id": "bishop",
+          "w": 279,
+          "h": 406,
+          "label": "The Bishop \u2014 Prepare $0. Go down to the Cellar."
+        },
+        {
+          "id": "knight",
+          "w": 133,
+          "h": 198,
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
+        },
+        {
+          "id": "cistern",
+          "w": 165,
+          "h": 145,
+          "label": "The cistern \u2014 Protect $853 of $12,243. Open Protect."
+        },
+        {
+          "id": "sundial",
+          "w": 275,
+          "h": 345,
+          "label": "The sundial \u2014 next: Toronto Hydro"
+        },
+        {
+          "id": "mailbox",
+          "w": 161,
+          "h": 224,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 126,
+          "h": 127,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
+          "id": "hercules",
+          "w": 188,
+          "h": 150,
+          "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 359,
+          "h": 358,
+          "label": "The court gate"
+        },
+        {
+          "id": "boathouse",
+          "w": 237,
+          "h": 199,
+          "label": "The Boathouse, down on the shore \u2014 the two of you. Go there when you want it."
+        },
+        {
+          "id": "cellar-stair",
+          "w": 199,
+          "h": 188,
+          "label": "The cellar stairhead \u2014 go down to the Cellar"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "tower": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "261",
+      "renderMs": "32.69",
+      "queen": null,
+      "camera": "[0.3183,1.1323,3.422]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 1440,
+          "h": 900,
+          "label": "The stair \u2014 back down to the Court"
+        },
+        {
+          "id": "jug",
+          "w": 956,
+          "h": 794,
+          "label": "The jug \u2014 $6,746 safe to pour. Open the Loft."
+        },
+        {
+          "id": "gun",
+          "w": 740,
+          "h": 571,
+          "label": "The money gun \u2014 throw a bill at a bank. Open the Loft."
+        },
+        {
+          "id": "shelf:floor-1",
+          "w": 1440,
+          "h": 900,
+          "label": "An empty floor \u2014 nothing on the shelf yet"
+        },
+        {
+          "id": "shelf:shelf-1",
+          "w": 1375,
+          "h": 784,
+          "label": "The landing shelf \u2014 5 parts of 5, mark at 100%"
+        },
+        {
+          "id": "bank:goal:GOAL-8b0beb9a67",
+          "w": 437,
+          "h": 378,
+          "label": "A trip to the shore \u2014 $0 of $2,400. Open the Loft."
+        },
+        {
+          "id": "bank:goal:GOAL-fbe9267ec2",
+          "w": 377,
+          "h": 481,
+          "label": "Kitchen renovation \u2014 $0 of $6,000. Open the Loft."
+        },
+        {
+          "id": "lamp",
+          "w": 486,
+          "h": 461,
+          "label": "The lamp on the landing"
+        },
+        {
+          "id": "window",
+          "w": 238,
+          "h": 315,
+          "label": "The window \u2014 the day coming in"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "cellar": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "57",
+      "renderMs": "19.99",
+      "queen": null,
+      "camera": "[0.4193,1.9207,2.2793]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 1440,
+          "h": 900,
+          "label": "The stair up to the court"
+        },
+        {
+          "id": "rail",
+          "w": 1440,
+          "h": 193,
+          "label": "The bill rail, taped with washi \u2014 7 jars on Sep 20 \u00b7 today"
+        },
+        {
+          "id": "waterline",
+          "w": 519,
+          "h": 450,
+          "label": "Prepare's water \u2014 $7,411 on Sep 20 \u00b7 today"
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2070622163:2026-09-29",
+          "w": 116,
+          "h": 106,
+          "label": "Freedom Mobile \u2014 $96, not its day yet. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2f4ddfd35f:2026-09-10",
+          "w": 90,
+          "h": 71,
+          "label": "Gym \u2014 $44, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-37e9012419:2026-09-25",
+          "w": 90,
+          "h": 112,
+          "label": "Toronto Hydro \u2014 $118, not its day yet. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-401145377a:2026-09-18",
+          "w": 77,
+          "h": 113,
+          "label": "Transit pass \u2014 $128, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-49c4298800:2026-09-06",
+          "w": 103,
+          "h": 64,
+          "label": "Streaming \u2014 $16, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-8d7ddba927:2026-09-01",
+          "w": 223,
+          "h": 245,
+          "label": "Rent \u2014 $2,375, paid. Open the jar."
+        },
+        {
+          "id": "date",
+          "w": 186,
+          "h": 98,
+          "label": "The day on the rail \u2014 Sep 20 \u00b7 today"
+        },
+        {
+          "id": "today",
+          "w": 225,
+          "h": 99,
+          "label": "Back to today on the rail"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "glasshouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "68",
+      "renderMs": "20.53",
+      "queen": null,
+      "camera": "[0.7012,1.9438,2.942]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "beds",
+          "w": 507,
+          "h": 154,
+          "label": "The beds around the glasshouse \u2014 unfold the Calendar."
+        },
+        {
+          "id": "garden-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The garden door \u2014 back to the Court."
+        },
+        {
+          "id": "harvest",
+          "w": 1440,
+          "h": 619,
+          "label": "The harvest shelf \u2014 1 harvested this week. Open the Master Planner."
+        },
+        {
+          "id": "perennials",
+          "w": 1440,
+          "h": 900,
+          "label": "The long bed \u2014 1 perennial. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-476eeb4512bf977744873b93b258946594bfbd105b1adbebeb3df396bbafc8a9",
+          "w": 127,
+          "h": 158,
+          "label": "Choose which payday the pre-rent check belongs to. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-4be5c04994c387576bd1d0dc89bc761308d9b4a50adc86b7c829ec596c4b5e08",
+          "w": 108,
+          "h": 161,
+          "label": "Sign the Charter together and name who holds the Fund. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-8a2848e911720079cb5d80076ac022b1f68ef85b04c5517bb9c1b431b94c9532",
+          "w": 114,
+          "h": 159,
+          "label": "Fictional: move the rent transfer to the payday before the 1st \u2014 a sprout, yours. Open the Master Planner."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "errors": []
+  },
+  {
+    "tag": "newfoundland-390",
+    "court": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "293",
+      "renderMs": "37.62",
+      "queen": null,
+      "camera": "[0.554,6.1458,8.4245]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "crown",
+          "w": 70,
+          "h": 82,
+          "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
+        },
+        {
+          "id": "vines",
+          "w": 140,
+          "h": 173,
+          "label": "Her vines \u2014 up a week, down a week"
+        },
+        {
+          "id": "hands",
+          "w": 56,
+          "h": 107,
+          "label": "Her hands \u2014 what she holds for you"
+        },
+        {
+          "id": "face",
+          "w": 61,
+          "h": 55,
+          "label": "Her face \u2014 a portrait"
+        },
+        {
+          "id": "roots",
+          "w": 77,
+          "h": 80,
+          "label": "Her roots \u2014 what feeds her"
+        },
+        {
+          "id": "potRim",
+          "w": 77,
+          "h": 73,
+          "label": "The pot's rim \u2014 spin her, or come closer"
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44,
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
+        },
+        {
+          "id": "flagstone",
+          "w": 153,
+          "h": 71,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "bishop",
+          "w": 199,
+          "h": 343,
+          "label": "The Bishop \u2014 Prepare $0. Go down to the Cellar."
+        },
+        {
+          "id": "mailbox",
+          "w": 139,
+          "h": 190,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 116,
+          "h": 101,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
+          "id": "hercules",
+          "w": 137,
+          "h": 102,
+          "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 390,
+          "h": 207,
+          "label": "The court gate"
+        },
+        {
+          "id": "cellar-stair",
+          "w": 152,
+          "h": 136,
+          "label": "The cellar stairhead \u2014 go down to the Cellar"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "tower": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "247",
+      "renderMs": "46.62",
+      "queen": null,
+      "camera": "[0.0529,1.2785,2.8952]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "bank:goal:GOAL-8b0beb9a67",
+          "w": 346,
+          "h": 330,
+          "label": "A trip to the shore \u2014 $0 of $2,400. Open the Loft."
+        },
+        {
+          "id": "bank:goal:GOAL-fbe9267ec2",
+          "w": 301,
+          "h": 373,
+          "label": "Kitchen renovation \u2014 $0 of $6,000. Open the Loft."
+        },
+        {
+          "id": "lamp",
+          "w": 390,
+          "h": 372,
+          "label": "The lamp on the landing"
+        },
+        {
+          "id": "window",
+          "w": 176,
+          "h": 228,
+          "label": "The window \u2014 the day coming in"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "cellar": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "44",
+      "renderMs": "28.88",
+      "queen": null,
+      "camera": "[1.1771,2.0309,0.6355]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 390,
+          "h": 768,
+          "label": "The stair up to the court"
+        },
+        {
+          "id": "rail",
+          "w": 390,
+          "h": 768,
+          "label": "The bill rail, lashed with rope \u2014 7 jars on Sep 20 \u00b7 today"
+        },
+        {
+          "id": "waterline",
+          "w": 382,
+          "h": 374,
+          "label": "Prepare's water \u2014 $7,411 on Sep 20 \u00b7 today"
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2f4ddfd35f:2026-09-10",
+          "w": 84,
+          "h": 69,
+          "label": "Gym \u2014 $44, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-401145377a:2026-09-18",
+          "w": 96,
+          "h": 122,
+          "label": "Transit pass \u2014 $128, paid. Open the jar."
+        },
+        {
+          "id": "date",
+          "w": 189,
+          "h": 109,
+          "label": "The day on the rail \u2014 Sep 20 \u00b7 today"
+        },
+        {
+          "id": "today",
+          "w": 248,
+          "h": 122,
+          "label": "Back to today on the rail"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "glasshouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "54",
+      "renderMs": "21.16",
+      "queen": null,
+      "camera": "[1.0938,1.7403,2.3157]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "beds",
+          "w": 377,
+          "h": 118,
+          "label": "The beds around the glasshouse \u2014 unfold the Calendar."
+        },
+        {
+          "id": "garden-door",
+          "w": 390,
+          "h": 768,
+          "label": "The garden door \u2014 back to the Court."
+        },
+        {
+          "id": "pot:task/TASK-476eeb4512bf977744873b93b258946594bfbd105b1adbebeb3df396bbafc8a9",
+          "w": 103,
+          "h": 118,
+          "label": "Choose which payday the pre-rent check belongs to. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-4be5c04994c387576bd1d0dc89bc761308d9b4a50adc86b7c829ec596c4b5e08",
+          "w": 87,
+          "h": 121,
+          "label": "Sign the Charter together and name who holds the Fund. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-8a2848e911720079cb5d80076ac022b1f68ef85b04c5517bb9c1b431b94c9532",
+          "w": 95,
+          "h": 119,
+          "label": "Fictional: move the rent transfer to the payday before the 1st \u2014 a sprout, yours. Open the Master Planner."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "errors": []
+  },
+  {
+    "tag": "newfoundland-1440",
+    "court": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "367",
+      "renderMs": "42.11",
+      "queen": null,
+      "camera": "[5.2548,6.7215,9.6036]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "crown",
+          "w": 96,
+          "h": 103,
+          "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
+        },
+        {
+          "id": "vines",
+          "w": 187,
+          "h": 227,
+          "label": "Her vines \u2014 up a week, down a week"
+        },
+        {
+          "id": "hands",
+          "w": 83,
+          "h": 135,
+          "label": "Her hands \u2014 what she holds for you"
+        },
+        {
+          "id": "face",
+          "w": 74,
+          "h": 74,
+          "label": "Her face \u2014 a portrait"
+        },
+        {
+          "id": "roots",
+          "w": 110,
+          "h": 107,
+          "label": "Her roots \u2014 what feeds her"
+        },
+        {
+          "id": "potRim",
+          "w": 117,
+          "h": 96,
+          "label": "The pot's rim \u2014 spin her, or come closer"
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44,
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
+        },
+        {
+          "id": "flagstone",
+          "w": 200,
+          "h": 109,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "rook",
+          "w": 178,
+          "h": 259,
+          "label": "The Rook \u2014 Build $0. Climb the Tower."
+        },
+        {
+          "id": "bishop",
+          "w": 279,
+          "h": 406,
+          "label": "The Bishop \u2014 Prepare $0. Go down to the Cellar."
+        },
+        {
+          "id": "knight",
+          "w": 133,
+          "h": 198,
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
+        },
+        {
+          "id": "cistern",
+          "w": 165,
+          "h": 145,
+          "label": "The cistern \u2014 Protect $853 of $12,243. Open Protect."
+        },
+        {
+          "id": "sundial",
+          "w": 275,
+          "h": 345,
+          "label": "The sundial \u2014 next: Toronto Hydro"
+        },
+        {
+          "id": "mailbox",
+          "w": 161,
+          "h": 224,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 126,
+          "h": 127,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
+          "id": "hercules",
+          "w": 188,
+          "h": 150,
+          "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 359,
+          "h": 358,
+          "label": "The court gate"
+        },
+        {
+          "id": "boathouse",
+          "w": 237,
+          "h": 199,
+          "label": "The Boathouse, down on the shore \u2014 the two of you. Go there when you want it."
+        },
+        {
+          "id": "cellar-stair",
+          "w": 199,
+          "h": 188,
+          "label": "The cellar stairhead \u2014 go down to the Cellar"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "tower": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "261",
+      "renderMs": "29.40",
+      "queen": null,
+      "camera": "[0.3183,1.1323,3.422]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 1440,
+          "h": 900,
+          "label": "The stair \u2014 back down to the Court"
+        },
+        {
+          "id": "jug",
+          "w": 956,
+          "h": 794,
+          "label": "The jug \u2014 $6,746 safe to pour. Open the Loft."
+        },
+        {
+          "id": "gun",
+          "w": 740,
+          "h": 571,
+          "label": "The money gun \u2014 throw a bill at a bank. Open the Loft."
+        },
+        {
+          "id": "shelf:floor-1",
+          "w": 1440,
+          "h": 900,
+          "label": "An empty floor \u2014 nothing on the shelf yet"
+        },
+        {
+          "id": "shelf:shelf-1",
+          "w": 1375,
+          "h": 784,
+          "label": "The landing shelf \u2014 5 parts of 5, mark at 100%"
+        },
+        {
+          "id": "bank:goal:GOAL-8b0beb9a67",
+          "w": 437,
+          "h": 378,
+          "label": "A trip to the shore \u2014 $0 of $2,400. Open the Loft."
+        },
+        {
+          "id": "bank:goal:GOAL-fbe9267ec2",
+          "w": 377,
+          "h": 481,
+          "label": "Kitchen renovation \u2014 $0 of $6,000. Open the Loft."
+        },
+        {
+          "id": "lamp",
+          "w": 486,
+          "h": 461,
+          "label": "The lamp on the landing"
+        },
+        {
+          "id": "window",
+          "w": 238,
+          "h": 315,
+          "label": "The window \u2014 the day coming in"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "cellar": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "57",
+      "renderMs": "19.79",
+      "queen": null,
+      "camera": "[0.4193,1.9207,2.2793]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 1440,
+          "h": 900,
+          "label": "The stair up to the court"
+        },
+        {
+          "id": "rail",
+          "w": 1440,
+          "h": 193,
+          "label": "The bill rail, lashed with rope \u2014 7 jars on Sep 20 \u00b7 today"
+        },
+        {
+          "id": "waterline",
+          "w": 519,
+          "h": 450,
+          "label": "Prepare's water \u2014 $7,411 on Sep 20 \u00b7 today"
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2070622163:2026-09-29",
+          "w": 116,
+          "h": 106,
+          "label": "Freedom Mobile \u2014 $96, not its day yet. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2f4ddfd35f:2026-09-10",
+          "w": 90,
+          "h": 71,
+          "label": "Gym \u2014 $44, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-37e9012419:2026-09-25",
+          "w": 90,
+          "h": 112,
+          "label": "Toronto Hydro \u2014 $118, not its day yet. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-401145377a:2026-09-18",
+          "w": 77,
+          "h": 113,
+          "label": "Transit pass \u2014 $128, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-49c4298800:2026-09-06",
+          "w": 103,
+          "h": 64,
+          "label": "Streaming \u2014 $16, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-8d7ddba927:2026-09-01",
+          "w": 223,
+          "h": 245,
+          "label": "Rent \u2014 $2,375, paid. Open the jar."
+        },
+        {
+          "id": "date",
+          "w": 186,
+          "h": 98,
+          "label": "The day on the rail \u2014 Sep 20 \u00b7 today"
+        },
+        {
+          "id": "today",
+          "w": 225,
+          "h": 99,
+          "label": "Back to today on the rail"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "glasshouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "68",
+      "renderMs": "21.09",
+      "queen": null,
+      "camera": "[0.7012,1.9438,2.942]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "beds",
+          "w": 507,
+          "h": 154,
+          "label": "The beds around the glasshouse \u2014 unfold the Calendar."
+        },
+        {
+          "id": "garden-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The garden door \u2014 back to the Court."
+        },
+        {
+          "id": "harvest",
+          "w": 1440,
+          "h": 619,
+          "label": "The harvest shelf \u2014 1 harvested this week. Open the Master Planner."
+        },
+        {
+          "id": "perennials",
+          "w": 1440,
+          "h": 900,
+          "label": "The long bed \u2014 1 perennial. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-476eeb4512bf977744873b93b258946594bfbd105b1adbebeb3df396bbafc8a9",
+          "w": 127,
+          "h": 158,
+          "label": "Choose which payday the pre-rent check belongs to. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-4be5c04994c387576bd1d0dc89bc761308d9b4a50adc86b7c829ec596c4b5e08",
+          "w": 108,
+          "h": 161,
+          "label": "Sign the Charter together and name who holds the Fund. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-8a2848e911720079cb5d80076ac022b1f68ef85b04c5517bb9c1b431b94c9532",
+          "w": 114,
+          "h": 159,
+          "label": "Fictional: move the rent transfer to the payday before the 1st \u2014 a sprout, yours. Open the Master Planner."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "errors": []
+  }
+]

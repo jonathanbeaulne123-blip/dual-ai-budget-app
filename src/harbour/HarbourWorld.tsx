@@ -15,7 +15,7 @@ import type { ThemeId } from "../theme/scenes.ts";
 import { useHarbourReading } from "./data/useHarbourReading.ts";
 import { HarbourFlat } from "./flat/PlaceFlat.tsx";
 import { HarbourTwins } from "./court/CourtTwins.tsx";
-import { HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
+import { HARBOUR_LANDMARKS, HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, HARBOUR_PLACE_ROOMS, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
 import { classifyGesture, gestureAction, spark, type QueenAction, type QueenRegion, type QueenSpark } from "./court/queenTouch.ts";
 import type { QueenPlace } from "./court/queenPlace.ts";
 import type { CourtHandle } from "./court/CourtScene.ts";
@@ -64,6 +64,10 @@ const PLACE_MODULES: Readonly<Record<HarbourPlaceId, () => Promise<unknown>>> = 
   court: () => import("./court/CourtScene.ts"),
   tower: () => import("./tower/TowerScene.ts"),
   cellar: () => import("./cellar/CellarScene.ts"),
+  glasshouse: () => import("./glasshouse/GlasshouseScene.ts"),
+  kitchen: () => import("./kitchen/KitchenScene.ts"),
+  boathouse: () => import("./boathouse/BoathouseScene.ts"),
+  library: () => import("./library/LibraryScene.ts"),
 };
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
@@ -155,7 +159,10 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // Enter, then Open. A way walks you to another level of this room; only
     // then does a door open an HTML surface in front of the place.
     const way = harbourWayFor(id, zone);
-    if (way) { onNavigateRef.current("home", HARBOUR_PLACE_LEVELS[way]); return; }
+    if (way) { onNavigateRef.current(HARBOUR_PLACE_ROOMS[way], HARBOUR_PLACE_LEVELS[way]); return; }
+    // A landmark on the island is a whole room's door: tapping it walks there.
+    const landmark = HARBOUR_LANDMARKS[id];
+    if (landmark) { onNavigateRef.current(landmark.room, landmark.level); return; }
     // The rail's own controls: a day earlier, a day later, back to today. A reading, never a write.
     if (id === "scrub-back") { walk(-1); return; }
     if (id === "scrub-forward") { walk(1); return; }
@@ -250,9 +257,18 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     const world = runtime.current;
     if (!world) return;
     world.setToolOpen(toolOpen);
-    // The Court is wide enough to read in a strip from wherever you were standing;
-    // a room six units across is not, so it steps back to its own establishing pose.
-    if (toolOpen) { setRects([]); if (placeRef.current !== "court") world.go("sky"); } else world.go("court");
+    // The band above the sheet is a frieze, and each place declares its own
+    // (`door` in its pose table): the rack close and level, the rail at eye
+    // height, her portrait in the Court.
+    if (!toolOpen) { world.go("court"); return; }
+    setRects([]);
+    world.go("door");
+    // The App focuses the tool it opened, and the browser scrolls the focus
+    // into view — which can throw the sheet to the top and the room's band
+    // off the screen. The door's promise is the room staying the sky, so the
+    // page comes back to the top once the focus has landed.
+    const settle = window.setTimeout(() => window.scrollTo({ top: 0 }), 160);
+    return () => window.clearTimeout(settle);
   }, [toolOpen]);
 
   /**
@@ -373,6 +389,13 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     else if (event.key === "ArrowRight") world.gesture({ kind: "orbit", dx: step, dy: 0 });
     else if (event.key === "ArrowUp") world.gesture({ kind: "orbit", dx: 0, dy: -step });
     else if (event.key === "ArrowDown") world.gesture({ kind: "orbit", dx: 0, dy: step });
+    // WASD walks: forward is toward what you are looking at, held inside the room.
+    // `panDelta` speaks drag: a drag down (dy > 0) slides the ground toward you,
+    // which walks the target away — so W is a positive dy, and A drags right.
+    else if (event.key === "w" || event.key === "W") world.gesture({ kind: "pan", dx: 0, dy: 26 });
+    else if (event.key === "s" || event.key === "S") world.gesture({ kind: "pan", dx: 0, dy: -26 });
+    else if (event.key === "a" || event.key === "A") world.gesture({ kind: "pan", dx: 26, dy: 0 });
+    else if (event.key === "d" || event.key === "D") world.gesture({ kind: "pan", dx: -26, dy: 0 });
     else if (event.key === "+" || event.key === "=") world.gesture({ kind: "zoom", delta: -0.2 });
     else if (event.key === "-" || event.key === "_") world.gesture({ kind: "zoom", delta: 0.2 });
     else if (event.key === "Escape") { if (placeRef.current === "court") world.go("court"); else onNavigateRef.current("home", "middle"); }
@@ -384,8 +407,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const showFlat = status === "flat" || status === "fallback" || (status === "loading" && tier === "flat");
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => props.onNavigate("home", "middle");
-  return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : "The Cellar"}>
-    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : `${placeName[0]!.toUpperCase()}${placeName.slice(1)}. Arrow keys orbit, plus and minus zoom, Space opens all tools, Escape steps back.`} onKeyDown={onStageKey}>
+  return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : place === "cellar" ? "The Cellar" : place === "glasshouse" ? "The Glasshouse" : place === "kitchen" ? "The Kitchen" : place === "boathouse" ? "The Boathouse" : "The Library"}>
+    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : `${placeName[0]!.toUpperCase()}${placeName.slice(1)}. Arrow keys orbit, W A S D walk, plus and minus zoom, Space opens all tools, Escape steps back.`} onKeyDown={onStageKey}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => props.onNavigate("home", HARBOUR_PLACE_LEVELS[next])} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}

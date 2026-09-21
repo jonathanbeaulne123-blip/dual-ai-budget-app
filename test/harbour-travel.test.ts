@@ -74,7 +74,7 @@ describe("travelPlan — the one shared motion", () => {
       if (from === to) { expect(plan.cut).toBe(true); expect(plan.ms).toBe(0); expect(plan.rise).toBe(0); }
     }
     // Level-to-level: the tower is above, the cellar below, the court between them.
-    expect(HARBOUR_PLACE_LEVELS).toEqual({ court: "middle", tower: "above", cellar: "below" });
+    expect(HARBOUR_PLACE_LEVELS).toEqual({ court: "middle", tower: "above", cellar: "below", glasshouse: "above", kitchen: "middle", boathouse: "middle", library: "middle" });
     expect(travelPlan("tower", "cellar", false).rise).toBe(-1);
     expect(travelPlan("cellar", "tower", false).rise).toBe(1);
   });
@@ -325,7 +325,7 @@ describe("the seams between the places", () => {
         const group = new THREE.Group(); scene.add(group);
         return { group, update() {}, animate() {}, dispose() { scene.remove(group); },
           anchors: () => [], regions: () => [],
-          poses: () => ({ "tower:desktop": { target: [0, 4, 0] as const, r: 3.5, theta: 0, phi: 1 } }) };
+          poses: () => ({ "tower:desktop": { target: [0, 1, 0] as const, r: 3, theta: 0, phi: 1.3 } }) };
       },
     });
     world = mountHarbourWorld(host(), "classic", "lite", { onReady: () => {}, onFailure: () => {}, place: court, composition: "desktop" });
@@ -333,9 +333,16 @@ describe("the seams between the places", () => {
     world.enter("tower", { reduced: true });
     const inTower = world.pose();
     // The tower's own pose: up in the tower, and closer in than the court's diorama.
-    expect(inTower.target[1]).toBe(4);
-    expect(inTower.r).toBe(3.5);
+    // The pose sits inside the tower's hold (PLACE_HOLDS.tower), so it lands untouched.
+    expect(inTower.target[1]).toBe(1);
+    expect(inTower.r).toBe(3);
     expect(inTower.target[1]).toBeGreaterThan(inCourt.target[1]);
     expect(inTower.r).toBeLessThan(inCourt.r);
+    // And the room holds what a hand does next: no zoom can pull the eye out through the wall.
+    world.gesture({ kind: "zoom", delta: 5 });
+    const heldPose = world.pose();
+    expect(heldPose.r).toBeLessThanOrEqual(5.2);
+    const eyeY = heldPose.target[1] + heldPose.r * Math.cos(heldPose.phi);
+    expect(eyeY).toBeLessThanOrEqual(3.4 + 1e-6);
   });
 });

@@ -234,6 +234,10 @@ export function towerPoses(anchors: readonly Anchor[]): Record<string, Pose> {
     "tower:desktop": DESKTOP_TOWER,
     "sky:phone": { target: [0, 2.2, 0], r: 17, theta: 0, phi: 0.6 },
     "sky:desktop": { target: [0, 2.4, 0], r: 19, theta: 0.28, phi: 0.66 },
+    // The door frieze: what the band above an open tool shows — the rack close,
+    // level, filling a wide short frame (harbour.css `--harbour-band`).
+    "door:phone": { target: [0, 0.55, 0.25], r: 2.2, theta: 0.02, phi: 1.3 },
+    "door:desktop": { target: [0, 0.55, 0.25], r: 2.4, theta: 0.06, phi: 1.3 },
   };
   for (const anchor of anchors) {
     const [x, y, z] = anchor.position;

@@ -177,6 +177,9 @@ export function cellarPoses(anchors: readonly Anchor[]): Record<string, Pose> {
   composed(poses, "cellar", PHONE_CELLAR, DESKTOP_CELLAR);
   composed(poses, "court", PHONE_CELLAR, DESKTOP_CELLAR);
   composed(poses, "sky", { target: [0, 1.0, -1.0], r: 9.2, theta: 0, phi: 1.0 }, { target: [0, 1.0, -1.0], r: 10.2, theta: 0.3, phi: 0.98 });
+  // The door frieze: the rail at eye level for the band above an open tool —
+  // jars, marker and date plate in a wide short frame (harbour.css `--harbour-band`).
+  composed(poses, "door", { target: [0, 1.05, -2.1], r: 2.3, theta: 0.02, phi: 1.32 }, { target: [0, 1.05, -2.1], r: 2.5, theta: 0.05, phi: 1.32 });
   for (const anchor of anchors) {
     const [x, y, z] = anchor.position;
     const theta = Math.atan2(x, z + 6) * 0.5;
