@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { HarbourPlaceId } from "../flag.ts";
-import type { BoathouseReading, CellarReadingView, GlasshouseReading, HarbourReading, KitchenReading, TowerReading } from "../data/reading.ts";
+import type { BoathouseReading, CellarReadingView, GlasshouseReading, HarbourReading, KilnReading, KitchenReading, TowerReading } from "../data/reading.ts";
 import { CourtFlat, engravedCents, type CourtFlatProps, type CourtFlatStatus } from "./CourtFlat.tsx";
 import "../harbour.css";
 
@@ -34,6 +34,7 @@ export function HarbourFlat({ place, ...props }: PlaceFlatProps) {
   if (place === "kitchen") return <KitchenFlat {...props} />;
   if (place === "boathouse") return <BoathouseFlat {...props} />;
   if (place === "library") return <LibraryFlat {...props} />;
+  if (place === "kiln") return <KilnFlat {...props} />;
   const { reading, status, theme, partnerName, onOpen, onEnter, overlay } = props;
   return <CourtFlat reading={reading} status={status} theme={theme} partnerName={partnerName} onOpen={onOpen} onEnter={onEnter} overlay={overlay} />;
 }
@@ -249,6 +250,48 @@ export function BoathouseFlat({ reading, status = "loading", theme = "classic", 
           </button>
         </li>)}
       </ul>
+    </div>
+  </section>;
+}
+
+const glazeWords = (glaze: string) => (glaze === "sea-glass" ? "sea glass" : glaze);
+const pieceStepWords = (step: number) => (step <= 0 ? "resting clay" : step >= 10 ? "grown full" : `${step * 10}% of the way`);
+
+/**
+ * The Kiln, read as paper: the wheel, the bench and the kiln as real buttons
+ * onto the Studio, then the shelf of fired pieces — each piece its bank's
+ * name, its glaze and its growth step, and never a figure. Private pieces are
+ * one closing line with a count and nothing else.
+ */
+export function KilnFlat({ reading, status = "loading", theme = "classic", onOpen, overlay = false, onStair }: Omit<PlaceFlatProps, "place">) {
+  const kiln: KilnReading | null = reading?.kiln ?? null;
+  const heat = kiln === null || kiln.sinceFiring === null ? "cold, nothing fired yet"
+    : kiln.sinceFiring === 0 ? "still hot, fired today"
+      : kiln.sinceFiring === 1 ? "warm, fired yesterday"
+        : `${kiln.warmth > 0 ? "warm" : "cold"}, last fired ${kiln.sinceFiring} days ago`;
+  return <section className={`court-flat place-flat place-flat--kiln court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="kiln" aria-label="The Kiln, reading edition" aria-busy={status === "loading" || undefined}>
+    <div className="court-flat__sheet">
+      <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Kiln")}</p>
+      {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Through the kiln door to the Court</button>}
+      <div className="place-flat__doors">
+        <button type="button" onClick={() => onOpen?.("pottery", "wheel")}>Sit down at the wheel</button>
+        <button type="button" onClick={() => onOpen?.("pottery", "paint")}>Take a brush to the workbench</button>
+        <button type="button" onClick={() => onOpen?.("pottery", "kiln")}>Open the kiln — {heat}</button>
+      </div>
+      {(kiln?.onTheWheel ?? 0) > 0 && <p className="place-flat__line">{kiln!.onTheWheel} {kiln!.onTheWheel === 1 ? "piece is" : "pieces are"} still clay, waiting for the kiln.</p>}
+      <div className="place-flat__bench">
+        <h3>The shelf{(kiln?.pieces.length ?? 0) === 0 ? " — swept and waiting" : ` — ${kiln!.fired} ${kiln!.fired === 1 ? "piece" : "pieces"} fired`}</h3>
+        {(kiln?.pieces.length ?? 0) > 0 && <ul className="place-flat__pots">
+          {kiln!.pieces.map((piece) => <li key={piece.key}>
+            <button type="button" onClick={() => onOpen?.("pottery", piece.key)}>
+              <strong>{piece.name}</strong>
+              <span>{glazeWords(piece.glaze)} glaze · {pieceStepWords(piece.step)}{piece.firings > 1 ? ` · fired ${piece.firings} times` : ""}{piece.firedOn ? ` · ${piece.firedOn}` : ""}</span>
+            </button>
+          </li>)}
+        </ul>}
+      </div>
+      {(kiln?.overflow ?? 0) > 0 && <p className="place-flat__line">And {kiln?.overflow} more on the Studio's own shelf.</p>}
+      {(kiln?.keptPrivate ?? 0) > 0 && <p className="place-flat__line">{kiln!.keptPrivate} {kiln!.keptPrivate === 1 ? "piece is" : "pieces are"} kept privately — counted here, never shown.</p>}
     </div>
   </section>;
 }
