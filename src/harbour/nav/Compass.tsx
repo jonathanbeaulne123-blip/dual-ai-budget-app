@@ -50,6 +50,7 @@ export function compassDistrict(route: CompassProps["route"]): CompassDistrict {
     case "study": return "study";
     case "kitchen-table": return "kitchen";
     case "together": return "together";
+    case "making": return "making";
     default: return "home";
   }
 }
