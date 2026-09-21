@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import {
-  PLACED_PLACE_IDS, PLACE_HOLDS, PLACE_PLACEMENTS, PLACEMENT_SILL, SCENE_DRESSING, STREAM_MARGIN, STREAM_RELEASE,
+  PLACED_PLACE_IDS, PLACES, PLACE_HOLDS, PLACE_PLACEMENTS, PLACEMENT_SILL, SCENE_DRESSING, STREAM_MARGIN, STREAM_RELEASE,
   atThreshold, insidePlacement, placedHold, placedPose, placementDoor, placementLift, placementOf, placementReach,
   placementToWorld, streamInRadius, streamOutRadius, streamPlaces, type PlacePlacement,
 } from "../src/harbour/scene/place.ts";
@@ -357,6 +357,40 @@ describe("the standing world", () => {
     // The Library is twenty units behind you by the time you reach the Kiln.
     expect(runtime.resident()).not.toContain("library");
     expect(shell("library-hall")?.visible).toBe(true);
+  });
+
+  it("comes back standing after the whole runtime is torn down and rebuilt (a theme or tier change)", () => {
+    const kiln = PLACE_PLACEMENTS.kiln!;
+    // Stand in the Kiln, then throw the world away the way `HarbourWorld.tsx`
+    // does when the theme or the render tier changes.
+    let runtime = mount();
+    runtime.setFocus(kiln.spot[0], kiln.spot[1]);
+    runtime.enter("kiln", { from: "court", threshold: true });
+    expect(runtime.placeId()).toBe("kiln");
+    world!.dispose(); host!.remove();
+    crossings.length = 0;
+
+    // The shell remounts with the place the route says, and the body puts the
+    // focus back where it was.
+    vi.stubGlobal("matchMedia", () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+    host = document.createElement("div");
+    host.getBoundingClientRect = () => ({ width: 1440, height: 900, top: 0, left: 0, right: 1440, bottom: 900, x: 0, y: 0, toJSON: () => ({}) }) as DOMRect;
+    document.body.append(host);
+    runtime = mountHarbourWorld(host, "taylor", "lite", {
+      onReady: () => undefined, onFailure: () => undefined,
+      onThreshold: (place) => { crossings.push(place); },
+      place: PLACES.kiln, dressing: SCENE_DRESSING.taylor,
+    });
+    world = runtime;
+    runtime.setFocus(kiln.spot[0], kiln.spot[1]);
+    expect(runtime.placeId()).toBe("kiln");
+    expect(runtime.resident()).toContain("kiln");
+    // The island came back under it, and its shell is hidden again.
+    expect(named("court")).not.toBeNull();
+    expect(shell("kiln-house")?.visible).toBe(false);
+    // Standing inside where you already were is not a fresh arrival: the shell
+    // must not be sent navigating on a rebuild.
+    expect(crossings).toEqual([]);
   });
 
   it("stands all three at once when the route is in one and the viewer is between the other two", () => {
