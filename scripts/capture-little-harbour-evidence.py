@@ -91,6 +91,7 @@ PLACE_TWIN = {
     "kitchen": ["empty-card", "card", "drawer"], "boathouse": ["boat", "projector", "wishes"], "library": ["book", "bindery", "balcony"],
     "cottage": ["wardrobe", "mirror", "cabinet", "window-seat", "bell"],
     "kiln": ["wheel", "bench", "shelf", "piece"],
+    "campfire": ["fire", "stones", "seat"],
 }
 
 
@@ -114,10 +115,10 @@ def twin(page, name: str):
     return page.query_selector(f"[data-twin='{name}']")
 
 
-LEVELS = {"court": "middle", "tower": "above", "cellar": "below", "glasshouse": "above", "kitchen": "middle", "boathouse": "middle", "library": "middle", "cottage": "middle", "kiln": "above"}
+LEVELS = {"court": "middle", "tower": "above", "cellar": "below", "glasshouse": "above", "kitchen": "middle", "boathouse": "middle", "library": "middle", "cottage": "middle", "kiln": "above", "campfire": "below"}
 
 
-ROOMS = {"court": "home", "tower": "home", "cellar": "home", "glasshouse": "study", "kitchen": "kitchen-table", "boathouse": "together", "library": "study", "cottage": "making", "kiln": "making"}
+ROOMS = {"court": "home", "tower": "home", "cellar": "home", "glasshouse": "study", "kitchen": "kitchen-table", "boathouse": "together", "library": "study", "cottage": "making", "kiln": "making", "campfire": "making"}
 
 
 def route_to(page, place: str) -> None:
@@ -323,6 +324,24 @@ def slice2_pass(browser, theme: str, width: int, report: list) -> None:
             errors.append("no wheel twin in the kiln")
     except Exception as error:
         errors.append(f"kiln: {error}")
+    # ── The Campfire: the ring, the two logs, the fire, the path of months. ──
+    campfire = None
+    try:
+        route_to(page, "campfire")
+        wait_place(page, "campfire")
+        campfire = measure(page)
+        snap(page, f"{tag}-22-campfire.png")
+        fire = page.query_selector("[data-twin='fire']") or page.query_selector("[data-twin='stones']")
+        if fire:
+            fire.evaluate("b => b.click()")
+            page.wait_for_selector(".app[data-harbour-door]", timeout=20000)
+            page.wait_for_timeout(1600)
+            snap(page, f"{tag}-23-campfire-door-sheet.png")
+            put_back(page)
+        else:
+            errors.append("no fire or stones twin at the campfire")
+    except Exception as error:
+        errors.append(f"campfire: {error}")
     context.close()
 
     # ── Mid-travel frames: full motion, caught part way through each journey. ─
@@ -373,10 +392,10 @@ def slice2_pass(browser, theme: str, width: int, report: list) -> None:
         flat.close()
 
     report.append({"tag": tag, "court": court, "tower": tower, "cellar": cellar, "glasshouse": glasshouse,
-                   "kitchen": kitchen, "boathouse": boathouse, "library": library, "cottage": cottage, "kiln": kiln, "errors": errors[:12]})
+                   "kitchen": kitchen, "boathouse": boathouse, "library": library, "cottage": cottage, "kiln": kiln, "campfire": campfire, "errors": errors[:12]})
     print(tag, "court", court.get("drawCalls"), "tower", (tower or {}).get("drawCalls"), "cellar", (cellar or {}).get("drawCalls"),
           "kitchen", (kitchen or {}).get("drawCalls"), "boathouse", (boathouse or {}).get("drawCalls"), "library", (library or {}).get("drawCalls"),
-          "cottage", (cottage or {}).get("drawCalls"), "kiln", (kiln or {}).get("drawCalls"),
+          "cottage", (cottage or {}).get("drawCalls"), "kiln", (kiln or {}).get("drawCalls"), "campfire", (campfire or {}).get("drawCalls"),
           "errors", len(errors), flush=True)
     for error in errors[:6]:
         print("   ·", str(error)[:170], flush=True)
