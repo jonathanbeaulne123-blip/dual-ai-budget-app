@@ -394,6 +394,41 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     group.add(cottage);
   }
 
+  // ── The Kiln (LITTLE_HARBOUR_v2 §2, the Making district): the pottery's own
+  //    building on the east lawn — a stout brick shed with the bottle kiln's
+  //    throat standing over it, smoke at the chimney because somebody is
+  //    always firing something. Walking to it goes to the Studio's own room.
+  const KILN_SPOT: readonly [number, number] = [10.6, -4.4];
+  const kilnY = groundHeightAt(KILN_SPOT[0], KILN_SPOT[1]);
+  {
+    const shed = new THREE.Group();
+    shed.name = "kiln-house";
+    shed.userData.anchor = "kiln-house";
+    const body = shadowed(new THREE.Mesh(track(new THREE.BoxGeometry(1.8, 1.0, 1.45)), mat(dressing.plinth, { roughness: 0.95 })));
+    body.position.y = 0.5; shed.add(body);
+    const roof = shadowed(new THREE.Mesh(track(new THREE.CylinderGeometry(0.02, 1.28, 0.7, 4, 1)), mat(dressing.timber, { roughness: 0.86, flatShading: true })));
+    roof.rotation.y = Math.PI / 4; roof.scale.set(1.0, 1, 0.78); roof.position.y = 1.32; shed.add(roof);
+    // The bottle kiln through the roof: the silhouette you can name from the gate.
+    const bottle = mergedMesh([
+      placed(new THREE.CylinderGeometry(0.34, 0.44, 0.75, 10), -0.42, 0.38, -0.2),
+      placed(new THREE.CylinderGeometry(0.2, 0.34, 0.55, 10), -0.42, 1.03, -0.2),
+      placed(new THREE.CylinderGeometry(0.13, 0.2, 0.62, 8), -0.42, 1.6, -0.2),
+      placed(new THREE.TorusGeometry(0.15, 0.03, 5, 10), -0.42, 1.9, -0.2, [Math.PI / 2, 0, 0]),
+    ], mat(dressing.terrace, { roughness: 0.94 }));
+    shadowed(bottle); track(bottle.geometry); shed.add(bottle);
+    const smoke = new THREE.Mesh(track(new THREE.SphereGeometry(0.15, 8, 6)), track(new THREE.MeshStandardMaterial({ color: "#f2ece0", transparent: true, opacity: 0.5, roughness: 1 })));
+    smoke.position.set(-0.42, 2.24, -0.2); smoke.scale.set(1, 0.72, 1); shed.add(smoke);
+    const door = new THREE.Mesh(track(new THREE.BoxGeometry(0.58, 0.82, 0.06)), mat(dressing.gate.accent, { roughness: 0.72 }));
+    door.position.set(0.34, 0.41, 0.74); shed.add(door);
+    const glow = new THREE.Mesh(track(new THREE.BoxGeometry(0.26, 0.24, 0.05)), track(new THREE.MeshBasicMaterial({ color: "#ffb469" })));
+    glow.position.set(-0.36, 0.5, 0.74); shed.add(glow);
+    shed.traverse((node) => { node.userData.anchor = "kiln-house"; });
+    shed.position.set(KILN_SPOT[0], kilnY, KILN_SPOT[1]);
+    // Face the door toward the Court.
+    shed.rotation.y = Math.atan2(-KILN_SPOT[0], -KILN_SPOT[1]) + Math.PI;
+    group.add(shed);
+  }
+
   // ── The Boathouse (LITTLE_HARBOUR_v2 §5): Together, tucked away — one small
   //    building down on the shore with its own door. It keeps everything the
   //    common rooms hold (wishes, memories, letters, the projector, the
@@ -564,6 +599,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     { id: "glasshouse-shed", position: at(-8.2, groundHeightAt(-8.2, -9.4) + 0.9, -9.4), zone: "landmark", label: "The Glasshouse, in the garden behind the Library — the planner's benches. Walk over and go in." },
     { id: "kitchen-cottage", position: at(-11.2, groundHeightAt(-11.2, -3.4) + 0.9, -3.4), zone: "landmark", label: "The Kitchen, smoke up — sit down and make a plan. Walk over and go in." },
     { id: "hercules-cottage", position: at(9.8, groundHeightAt(9.8, 5.6) + 0.9, 5.6), zone: "landmark", label: "Hercules’s Cottage, lamp on — a door for you and a smaller one for him. Walk over and go in." },
+    { id: "kiln-house", position: at(10.6, groundHeightAt(10.6, -4.4) + 1.0, -4.4), zone: "landmark", label: "The Kiln, the bottle stack smoking — the wheel, the bench and the shelf of fired pieces. Walk over and go in." },
   ];
   let queenRegions: (() => Region[]) | null = null;
   const regionList = (): Region[] => [
@@ -582,6 +618,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     { id: "glasshouse-shed", group: "court", label: "The Glasshouse in the garden", box: box(-9.2, groundHeightAt(-8.2, -9.4), -10.2, -7.2, groundHeightAt(-8.2, -9.4) + 1.8, -8.6) },
     { id: "kitchen-cottage", group: "court", label: "The Kitchen's cottage", box: box(-12.2, groundHeightAt(-11.2, -3.4), -4.3, -10.2, groundHeightAt(-11.2, -3.4) + 2.3, -2.5) },
     { id: "hercules-cottage", group: "court", label: "Hercules’s Cottage on the east lawn", box: box(8.8, groundHeightAt(9.8, 5.6), 4.6, 10.8, groundHeightAt(9.8, 5.6) + 2.1, 6.6) },
+    { id: "kiln-house", group: "court", label: "The Kiln on the Making lawn", box: box(9.5, groundHeightAt(10.6, -4.4), -5.3, 11.7, groundHeightAt(10.6, -4.4) + 2.5, -3.5) },
   ];
 
   // ── Reading → objects ───────────────────────────────────────────────────────

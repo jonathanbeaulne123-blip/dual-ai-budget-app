@@ -69,6 +69,7 @@ const PLACE_MODULES: Readonly<Record<HarbourPlaceId, () => Promise<unknown>>> = 
   boathouse: () => import("./boathouse/BoathouseScene.ts"),
   library: () => import("./library/LibraryScene.ts"),
   cottage: () => import("./cottage/CottageScene.ts"),
+  kiln: () => import("./kiln/KilnScene.ts"),
 };
 
 const REDUCED = "(prefers-reduced-motion: reduce)";

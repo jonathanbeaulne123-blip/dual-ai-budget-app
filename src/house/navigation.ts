@@ -37,7 +37,12 @@ export function houseTargetRoute(route:HouseRoute,target:string,object?:string):
     queen:['home','middle'],'loft-banks':['home','above'],'cellar-bills':['home','below'],
     planner:['study','above'],books:['study','middle'],calendar:['study','below'],
     journey:['kitchen-table','above'],conversation:['kitchen-table','middle'],'plan-studio':['kitchen-table','below'],
-    wishes:['together','above'],'personal-experience':['together','above'],pottery:['together','middle'],letters:['together','middle'],encounters:['together','middle'],memories:['together','below'],projector:['together','below'],
+    wishes:['together','above'],'personal-experience':['together','above'],letters:['together','middle'],encounters:['together','middle'],memories:['together','below'],projector:['together','below'],
+    // Making: the Pottery Studio's own building is the Kiln (`making/above`,
+    // the slot `HOUSE_PLACES.making.above` has always named "The Kiln"), so the
+    // `pottery` target opens where the studio actually stands. Together keeps
+    // every one of its own levels; only pottery moved.
+    pottery:['making','above'],
   };
   const place=places[target];
   return {...route,...(place?{room:place[0],level:place[1]}:{}),surface:target,object:object??(['wishes','memories','projector'].includes(target)?undefined:route.object),studioSelection:target==='pottery'?route.studioSelection:undefined};

@@ -46,7 +46,7 @@ export function quickSheetGroups(): QuickSheetGroup[] {
   for (const [id, name] of Object.entries(TARGET_NAMES)) {
     if (MAKING_TOOLS.has(id)) { groups.making.push({ id, name }); continue; }
     const room = houseTargetRoute(probe, id).room;
-    const district: CompassDistrict = room === "study" ? "study" : room === "kitchen-table" ? "kitchen" : room === "together" ? "together" : "home";
+    const district: CompassDistrict = room === "study" ? "study" : room === "kitchen-table" ? "kitchen" : room === "together" ? "together" : room === "making" ? "making" : "home";
     groups[district].push({ id, name });
   }
   return DISTRICT_ORDER.map((district) => ({ district, title: DISTRICT_TITLES[district], tools: groups[district] })).filter((group) => group.tools.length > 0);
