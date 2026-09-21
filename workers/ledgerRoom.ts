@@ -94,6 +94,7 @@ import { kittyDesignReference } from '../src/hearthside/design.ts';
 import { applyAcceptedDesignReference } from '../src/hearthside/designProjection.ts';
 import type { DesignArchiveReference } from '../src/hearthside/designArchive.ts';
 import { decodeCreativePresence, type CreativeTarget } from '../src/hearthside/creativePresence.ts';
+import { decodeWorldPresence, worldPeerKey, WORLD_MIN_GAP_MS, WORLD_TARGET_MS, type WorldTarget } from '../src/ledgerSync/worldPresenceWire.ts';
 type Env = AuthEnv & { HEARTHSIDE_GUESTS_ENABLED?:string; HEARTHSIDE_GUEST_PUBLICATION?:string;  HERCULES_SHARED_WORKSPACES?:WorkspaceEnv['HERCULES_SHARED_WORKSPACES']; HERCULES_WORKSPACE_ENABLED?:string; LEDGER_ARCHIVE: R2Bucket; HEARTHSIDE_DESIGN_WRITES?:string; HEARTHSIDE_VAULT_PUBLICATION?:string; HEARTHSIDE_VAULTS?:DurableObjectNamespace; HERCULES_ACTIONS_ENABLED?: string; HERCULES_EXTERNAL_CALENDAR_WRITES?: string; HERCULES_WORKSPACES?: DurableObjectNamespace; HERCULES_WORKSPACE_EXECUTION?: string };
 type Attachment = {
   scope?: Scope;
@@ -104,6 +105,10 @@ type Attachment = {
   creative?: {target:CreativeTarget;seenAt:number};
   previewAt?:number;
   creativeJoinAt?:number;
+  /** The world-presence lane's joined target: which shared place this socket's body is standing in. */
+  world?: {target:WorldTarget;seenAt:number};
+  worldStepAt?:number;
+  worldJoinAt?:number;
 };
 export class LedgerRoom extends DurableObject<Env> {
   private designs:HearthsideDesignStore;
@@ -1302,6 +1307,66 @@ export class LedgerRoom extends DurableObject<Env> {
     }
   }
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer) {
+    /**
+     * The world-presence lane (`src/ledgerSync/worldPresenceWire.ts`): a live
+     * body walking the island. It sits beside the creative lane on the same
+     * `?lane=presence` socket, is bounded to 1 KiB a frame, and obeys the same
+     * three rules the other presence lanes do:
+     *
+     *  - the payload is **re-built here**, never forwarded. A client's own
+     *    `memberId` is ignored; identity comes from the authenticated scope.
+     *  - every coordinate is validated and clamped by `decodeWorldPresence`
+     *    before it is looked at, so an absurd position is rejected rather than
+     *    broadcast, and an out-of-range one is pulled back onto the island.
+     *  - every peer is `check()`ed again immediately before the send, so a
+     *    membership change mid-walk closes the peer instead of leaking a frame.
+     *
+     * Nothing here reads or writes ledger state beyond the active-member test
+     * the other presence lanes already make.
+     */
+    if(typeof message==='string'&&message.length<=1024&&message.includes('"world-')){
+      try{
+        const raw=JSON.parse(message);
+        if(typeof raw.type==='string'&&raw.type.startsWith('world-')){
+          const input=decodeWorldPresence(raw),a=ws.deserializeAttachment() as Attachment;
+          if(a.lane!=='presence'||!a.scope)throw Error('FORBIDDEN');
+          this.check(a.scope);
+          if(!this.load().shared.members.some(member=>member.active&&member.id===a.scope!.memberId))throw Error('FORBIDDEN');
+          const at=Date.now(),previous=a.world;
+          if(input.type==='world-leave')delete a.world;
+          else if(input.type==='world-join'){
+            // A re-join is also the lane's heartbeat; throttled so it cannot be a flood.
+            if(at-(a.worldJoinAt??0)<WORLD_MIN_GAP_MS)return;
+            a.worldJoinAt=at;a.world={target:input.target,seenAt:at};
+          } else {
+            if(!a.world||at-a.world.seenAt>WORLD_TARGET_MS)throw Error('WORLD_JOIN_REQUIRED');
+            if(at-(a.worldStepAt??0)<WORLD_MIN_GAP_MS)return;
+            a.worldStepAt=at;a.world.seenAt=at;
+          }
+          ws.serializeAttachment(a);
+          const target=a.world?.target??previous?.target;
+          if(!target)return;
+          const deviceId=worldPeerKey(a.scope.memberId,target.deviceId);
+          const payload=input.type==='world-leave'
+            ?{type:'world-left',deviceId}
+            :{type:'world-peer',memberId:a.scope.memberId,deviceId,placeId:target.placeId,seenAt:at,
+              ...(input.type==='world-step'?{x:input.x,z:input.z,yaw:input.yaw,moving:input.moving}:{})};
+          const frame=JSON.stringify(payload);
+          for(const peer of this.ctx.getWebSockets()){
+            const p=peer.deserializeAttachment() as Attachment;
+            // Scoped exactly as the creative lane is: only sockets standing in the same place hear it.
+            if(peer===ws||p.lane!=='presence'||!p.scope||!p.world||at-p.world.seenAt>WORLD_TARGET_MS||p.world.target.placeId!==target.placeId)continue;
+            try{
+              this.check(p.scope);
+              peer.send(frame);
+              // A joiner is told who is already here, so a body does not wait a whole heartbeat to appear.
+              if(input.type==='world-join')ws.send(JSON.stringify({type:'world-peer',memberId:p.scope.memberId,deviceId:worldPeerKey(p.scope.memberId,p.world.target.deviceId),placeId:p.world.target.placeId,seenAt:p.world.seenAt}));
+            }catch{peer.close(4003,'ACCESS_CHANGED');}
+          }
+          return;
+        }
+      }catch{ws.close(4000,'INVALID_WORLD_PRESENCE');return;}
+    }
     if(typeof message==='string'&&message.length<=8192){
       try{
         const value=JSON.parse(message);
