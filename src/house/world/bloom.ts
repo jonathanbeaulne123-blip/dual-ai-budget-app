@@ -3,18 +3,22 @@ import { parseQueenModel, readQueenModel } from "../../queen/world/queenModel.ts
 import type { QueenStyle } from "../queenStyle.ts";
 
 export type BloomEvidence = {id: string; title: string; kind:"intention"|"lived"|"revision"|"care"; date: string | null; revision: number};
+/** Jonathan's Living Presence sculpt as he supplied it — the file kept for rollback (`QUEEN_ASSETS.master`). */
 export const BLOOM_MASTER_SHA256 = "ddde35ae3ce025563ab546b13dc54f6f4376a1cddffe947c14dca082e05c2561";
-/** The Living Presence master, as `src/harbour/assets/manifest.ts` lists it. */
 export const BLOOM_MASTER_URL = "/models/mandevilla-living-presence.glb";
+/** What the house actually draws: the same sculpt, `scripts/optimize-models.mjs`-compressed (`QUEEN_ASSETS.presence`). */
+export const BLOOM_QUEEN_URL = "/models/queen/mandevilla-living-presence.v2.glb";
+export const BLOOM_QUEEN_SHA256 = "d6b3e1549a6d111ca331412b13f39d07641300f101bf9a2a7074c79b3e4ec598";
 const hash = (text: string) => [...text].reduce((sum,c)=>Math.imul(sum ^ c.charCodeAt(0),16777619)>>>0,2166136261);
 let master:Promise<THREE.Group>|null=null,masterRoot:THREE.Group|null=null,users=0;
 /**
- * The master is fetched through `readQueenModel`, which asks for the `.gz`
- * transfer twin first and falls back to the raw `.glb` — 8.15 MB instead of
- * 12.32 MB over the wire, the same bytes either way. Nothing else changes:
- * the parsed scene is the file exactly as Jonathan supplied it.
+ * Fetched through `readQueenModel`, which asks for the `.gz` transfer twin
+ * first and falls back to the raw `.glb`, and parsed through the shared
+ * loader, which carries the meshopt decoder. 1.74 MB over the wire where the
+ * raw master was 12.32 MB — same 71 meshes, same 656 380 triangles, same 26
+ * materials, same node names, bounds within 2.4e-6 units.
  */
-async function acquireMaster(){users++;try{master??=readQueenModel(undefined,BLOOM_MASTER_URL).then(parseQueenModel).then(scene=>{masterRoot=scene;return scene;});return await master;}catch(error){users--;master=null;throw error;}}
+async function acquireMaster(){users++;try{master??=readQueenModel(undefined,BLOOM_QUEEN_URL).then(parseQueenModel).then(scene=>{masterRoot=scene;return scene;});return await master;}catch(error){users--;master=null;throw error;}}
 function releaseMaster(){users--;if(users===0&&masterRoot){disposeObject(masterRoot);masterRoot=null;master=null;}}
 /**
  * What is drawn around the master. The house keeps both (today's look); the
