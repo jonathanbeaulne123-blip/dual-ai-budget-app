@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { HarbourPlaceId } from "../flag.ts";
-import type { BoathouseReading, CellarReadingView, CottageReading, GlasshouseReading, HarbourReading, KilnReading, KitchenReading, TowerReading } from "../data/reading.ts";
+import type { AtlasReading, BoathouseReading, CellarReadingView, CottageReading, GlasshouseReading, HarbourReading, KilnReading, KitchenReading, TowerReading } from "../data/reading.ts";
 import { CourtFlat, engravedCents, type CourtFlatProps, type CourtFlatStatus } from "./CourtFlat.tsx";
 import "../harbour.css";
 
@@ -36,6 +36,7 @@ export function HarbourFlat({ place, ...props }: PlaceFlatProps) {
   if (place === "library") return <LibraryFlat {...props} />;
   if (place === "cottage") return <CottageFlat {...props} />;
   if (place === "kiln") return <KilnFlat {...props} />;
+  if (place === "atlas") return <AtlasFlat {...props} />;
   const { reading, status, theme, partnerName, onOpen, onEnter, overlay } = props;
   return <CourtFlat reading={reading} status={status} theme={theme} partnerName={partnerName} onOpen={onOpen} onEnter={onEnter} overlay={overlay} />;
 }
@@ -326,6 +327,55 @@ export function KilnFlat({ reading, status = "loading", theme = "classic", onOpe
       </div>
       {(kiln?.overflow ?? 0) > 0 && <p className="place-flat__line">And {kiln?.overflow} more on the Studio's own shelf.</p>}
       {(kiln?.keptPrivate ?? 0) > 0 && <p className="place-flat__line">{kiln!.keptPrivate} {kiln!.keptPrivate === 1 ? "piece is" : "pieces are"} kept privately — counted here, never shown.</p>}
+    </div>
+  </section>;
+}
+
+/**
+ * The Atlas, read as paper: the same facts the model on the stand carries, in
+ * words — the era and where it stands on the journey, the months walked, the
+ * gate's lanterns, the island across the bridge (or that nothing is planned),
+ * and the stones laid so far. Every line is a real button into Journey; the
+ * page never names a bank somebody keeps to themselves, only counts it.
+ */
+export function AtlasFlat({ reading, status = "loading", theme = "classic", onOpen, overlay = false, onStair }: Omit<PlaceFlatProps, "place">) {
+  const atlas: AtlasReading | null = reading?.atlas ?? null;
+  const era = atlas?.era ?? null;
+  const months = era === null ? "not a month yet" : era.months === 0 ? "not a month yet" : `${era.months} ${era.months === 1 ? "month" : "months"} walked`;
+  const place = era === null ? "" : atlas!.eras > 1 ? `${era.index} of ${atlas!.eras} eras` : "the first era";
+  return <section className={`court-flat place-flat place-flat--atlas court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="atlas" aria-label="The Atlas, reading edition" aria-busy={status === "loading" || undefined}>
+    <div className="court-flat__sheet">
+      <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Atlas")}</p>
+      {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Down the stair to the Court</button>}
+      <div className="place-flat__doors">
+        <button type="button" onClick={() => onOpen?.("journey", era?.key)}>Step into Journey</button>
+      </div>
+      <div className="place-flat__bench">
+        <h3>The island on the stand{era ? ` — ${era.name}` : " — no era yet"}</h3>
+        <ul className="place-flat__pots">
+          <li>
+            <button type="button" onClick={() => onOpen?.("journey", era?.key ?? "era-home")}>
+              <strong>{era ? era.name : "The island is waiting to be named"}</strong>
+              <span>{era ? `${place} · ${months} · in ${era.homeLabel}` : "Step into Journey and begin the first era"}</span>
+            </button>
+          </li>
+          {atlas?.gate && <li>
+            <button type="button" onClick={() => onOpen?.("journey", era?.key ?? "era-home")}>
+              <strong>The gate at the end of the ring</strong>
+              <span>{atlas.gate.words}{era?.finishLine ? ` · ${era.finishLine}` : ""}</span>
+            </button>
+          </li>}
+          <li>
+            <button type="button" onClick={() => onOpen?.("journey", atlas?.next?.key)}>
+              <strong>{atlas?.next ? `Across the bridge — ${atlas.next.name}` : "Across the bridge — unplanned"}</strong>
+              <span>{atlas?.next ? (atlas.next.sketched ? "Only one of you has suggested it so far" : "Named and agreed, still in its own weather") : "Nothing planned past this era yet"}</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+      <p className="place-flat__line">{`${atlas?.stones ?? 0} ${(atlas?.stones ?? 0) === 1 ? "stone" : "stones"} laid on the path so far`}{(atlas?.crossed ?? 0) > 0 ? ` · ${atlas!.crossed} ${atlas!.crossed === 1 ? "era" : "eras"} crossed` : ""}.</p>
+      {atlas?.crossing && <p className="place-flat__line">A crossing is waiting for both of you. Nothing crosses from this page.</p>}
+      {(atlas?.keptPrivate ?? 0) > 0 && <p className="place-flat__line">{atlas!.keptPrivate} {atlas!.keptPrivate === 1 ? "bank on this era is" : "banks on this era are"} kept privately — counted here, never named.</p>}
     </div>
   </section>;
 }
