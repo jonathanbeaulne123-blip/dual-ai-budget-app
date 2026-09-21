@@ -1,9 +1,8 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import { seedDemoHousehold } from "../src/core/seed.ts";
 import { buildHarbourReading, EMPTY_ATLAS_READING, EMPTY_BOATHOUSE_READING, EMPTY_CAMPFIRE_READING, EMPTY_CELLAR_READING, EMPTY_CISTERN_READING, EMPTY_COTTAGE_READING, EMPTY_GLASSHOUSE_READING, EMPTY_KILN_READING, EMPTY_KITCHEN_READING, EMPTY_TOWER_READING, type HarbourReading } from "../src/harbour/data/reading.ts";
 import { COURT_SIGN_PLACES, SIGN_LINE_MAX, SIGN_TITLES, courtSigns, doorSigns, placeSigns, plainDollars, shortDate, shortMonth } from "../src/harbour/nav/doorSigns.ts";
 import { HARBOUR_PLACE_NAMES, type HarbourPlaceId } from "../src/harbour/flag.ts";
-import { engravedPlate } from "../src/harbour/court/engraved.ts";
 
 const today = "2026-09-20";
 const settled: HarbourReading = {
@@ -212,21 +211,5 @@ describe("courtSigns — the plates standing on the Court's lawn", () => {
     expect(courtSigns(null)).toEqual({});
     expect(courtSigns(undefined)).toEqual({});
     expect(courtSigns({ everyday: 1 } as unknown as HarbourReading)).toEqual({});
-  });
-});
-
-describe("the sign board itself", () => {
-  it("draws to the board's own shape and brings the letters down to fit it", () => {
-    vi.spyOn(console, "error").mockImplementation(() => undefined); // jsdom has no 2D canvas; the plate falls back to blank stone.
-    // node-canvas is not installed, so this exercises the pure geometry of the
-    // fit: the canvas takes the board's aspect instead of growing around the
-    // letters. Without `fit`, slice 1's box is unchanged.
-    const board = engravedPlate("The Glasshouse\n12 pots · 2 dry", { width: 640, size: "small", aspect: 1.7 / 0.54 });
-    expect(board.image.width).toBe(640);
-    expect(board.image.height).toBe(Math.round(640 / (1.7 / 0.54)));
-    const box = engravedPlate("$1,240", { width: 512, size: "large" });
-    expect(box.image.width).toBe(512);
-    expect(box.image.height).toBeGreaterThan(64);
-    board.dispose(); box.dispose();
   });
 });

@@ -26,6 +26,12 @@ import {
  *   and back to see the whole Court.
  * - **Close** — `go("object", anchor)` frames one thing: the Queen's
  *   portrait, a piece on its plinth, the sundial, the mailbox, the gate.
+ * - **The close hold** — `close(pose)` is the third hold (W7 a), a step
+ *   beyond "object": the one thing this place is about, held until the same
+ *   gesture lets it go. `close(null)` leaves it and puts the camera back
+ *   where it stood before, so the hold can never strand you. Any explicit
+ *   destination — `go`, `goTo`, `restore` — drops it, because asking to be
+ *   somewhere else is the plainest way of saying you are done looking.
  * - **Walk** — not in this slice; `go` ignores nothing, there is simply no
  *   walking pose yet.
  *
@@ -59,6 +65,14 @@ export type CourtCamera = {
   go(mode: CourtMode, anchor?: CourtAnchor): void;
   /** Fly to a close look at any point: an "object" pose for a thing without a named anchor. */
   goTo(look: CourtLook): void;
+  /**
+   * The close hold: `close(pose)` frames that one pose and holds it;
+   * `close(null)` lets it go and returns to the pose held before it. Both
+   * pass through the room's hold like everything else.
+   */
+  close(pose: CourtPose | null): void;
+  /** Is the close hold on? */
+  closed(): boolean;
   /** A return record's eye position: the camera is set there at once (a cut), looking at its current target. */
   restore(eye: Vec3): void;
   /** Change the vertical field of view (degrees); the pose for the current mode is recomputed. */
@@ -120,6 +134,9 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
   let mode: CourtMode = "court";
   let anchor: CourtAnchor | undefined;
   let look: CourtLook | null = null;
+  /** The close hold's pose while it is on, and the pose to return to when it is let go. */
+  let held: CourtPose | null = null;
+  let before: { mode: CourtMode; anchor: CourtAnchor | undefined; look: CourtLook | null } | null = null;
   /** The standing room's hold on the camera; null in the open Court. */
   let hold: RoomHold | null = null;
   const legal = (pose: CourtPose): CourtPose => holdPoseInRoom(clampPose(clampCourtPose(pose)), hold);
@@ -134,7 +151,7 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
   }
 
   function retarget(): void {
-    goal = legal(look
+    goal = legal(held ? held : look
       ? { target: look.target, r: look.r ?? 3.2, theta: look.theta ?? Math.atan2(look.target[0], look.target[2] + 6) * 0.6, phi: look.phi ?? (composition === "phone" ? 1.0 : 1.05) }
       : courtPose(mode, anchor, composition, aspect, fov));
     if (reduced) { current = goal; apply(); }
@@ -156,13 +173,29 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
       mode = nextMode;
       anchor = nextMode === "object" ? nextAnchor ?? "queen" : undefined;
       look = null;
+      held = null; before = null;
       retarget();
     },
     goTo(next) {
       mode = "object"; anchor = undefined; look = next;
+      held = null; before = null;
       retarget();
     },
+    close(next) {
+      if (next) {
+        // Remember where we stood the first time in, so leaving puts it back
+        // however many times the hold is re-aimed while it is on.
+        if (!held) before = { mode, anchor, look };
+        held = next;
+      } else {
+        held = null;
+        if (before) { mode = before.mode; anchor = before.anchor; look = before.look; before = null; }
+      }
+      retarget();
+    },
+    closed: () => held !== null,
     restore(eye) {
+      held = null; before = null;
       const [tx, ty, tz] = goal.target;
       const dx = eye[0] - tx, dy = eye[1] - ty, dz = eye[2] - tz;
       const r = Math.hypot(dx, dy, dz);

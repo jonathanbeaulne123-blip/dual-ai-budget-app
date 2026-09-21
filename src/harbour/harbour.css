@@ -132,6 +132,13 @@
 .place-flat__sign > small { font-size: .74em; letter-spacing: .04em; text-transform: uppercase; opacity: .62; }
 .place-flat__sign > strong { font-size: 1.06em; }
 
+/* The phone's thumb-stick (W7 b): it appears where the ground was pressed and
+   goes away when the thumb comes off. Drawn, never tapped — the walking is the
+   runtime's, and the knob's transform is written straight to the node. */
+.harbour-stick { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 3; }
+.harbour-stick__ring { position: absolute; left: -56px; top: -56px; width: 112px; height: 112px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .55); background: rgba(20, 18, 16, .18); box-shadow: 0 2px 14px rgba(0, 0, 0, .22); }
+.harbour-stick__knob { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, .82); box-shadow: 0 2px 8px rgba(0, 0, 0, .3); }
+
 @media (prefers-reduced-motion: reduce) {
   .harbour-world *, .court-flat *, .court-twins * { scroll-behavior: auto !important; transition: none !important; animation: none !important; }
   .harbour-spark { display: none; }
