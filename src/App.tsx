@@ -1,4 +1,5 @@
 import {kittyUsesLedgerReceipts} from './hearthside/legacyBankAcceptance.ts';
+import { useVisibleClock } from "./useVisibleClock.ts";
 import { nativeAuthController, nativeWidgetController } from "./hearthside/nativeBootstrap.ts";
 import { NATIVE_AUTH_EVENT } from "./hearthside/nativeAuth.ts";
 import {personalWorkspaceExperienceContext,workspaceExperienceContext} from './hearthside/workspaceContext.ts';
@@ -534,6 +535,8 @@ import { CharterFounding } from "./CharterFounding.tsx";
 import { Charter } from "./Charter.tsx";
 import { OnboardingChat } from "./OnboardingChat.tsx";
 const PLAY_ENABLED = import.meta.env.VITE_HERCULES_PLAY !== "0";
+/** Resolution the dashboard needs from the wall clock (freshnessHours only). */
+const FRESHNESS_BUCKET_MS = 15 * 60_000;
 const Hearthside = lazy(() => import("./hearthside/Hearthside.tsx"));
 const HearthsideLetters = lazy(() => import("./hearthside/LettersEntry.tsx"));
 const HerculesPlay = lazy(() => import("./play/HerculesPlay.tsx"));
@@ -896,7 +899,11 @@ export function App() {
   const [saveRepeatingPostFirst, setSaveRepeatingPostFirst] = useState(false);
   const [commandOpen, setCommandOpen] = useState(false);
   const [splitDraft, setSplitDraft] = useState<SplitDraft | null>(null);
-  const [now, setNow] = useState(() => new Date());
+  // Ticks every 30s while visible, aligned to the boundary, and STOPS while the
+  // tab is hidden (the old raw interval kept re-rendering the whole tree in the
+  // background). Refreshes on visibilitychange/pageshow so a returning tab is
+  // never showing a stale time.
+  const now = useVisibleClock(30_000);
   const [session, setSession] = useState<Session | null>(initialStartup.session);
   const sessionRef = useRef<Session | null>(session);
   sessionRef.current = session;
@@ -1900,16 +1907,6 @@ export function App() {
       window.removeEventListener("storage", onStorage);
     };
   }, [environment]);
-
-  useEffect(() => {
-    const refreshClock = () => setNow(new Date());
-    const interval = window.setInterval(refreshClock, 30_000);
-    document.addEventListener("visibilitychange", refreshClock);
-    return () => {
-      window.clearInterval(interval);
-      document.removeEventListener("visibilitychange", refreshClock);
-    };
-  }, []);
 
   useEffect(() => {
     if (!confirm) return;
@@ -3618,9 +3615,23 @@ export function App() {
     [personalSource, memberId, view],
   );
   const scopedHousehold = experience && experience.ok ? experience.scopedHousehold : visible;
+  // `now` only reaches buildDashboard through freshnessHours, which feeds a
+  // fractional hour count and the `stale` (>24h) test — neither needs
+  // 30-second resolution. Depending on the raw clock rebuilt
+  // month/week/tip/board/pulses (five full passes over the ledger) twice a
+  // minute at complete idle, so this memo sees a quarter-hour bucket. The
+  // displayed time elsewhere still uses `now` directly.
+  const freshnessBucket = Math.floor(now.getTime() / FRESHNESS_BUCKET_MS);
   const dashboard = useMemo(
-    () => (scopedHousehold ? buildDashboard(scopedHousehold, today, now, experience && experience.ok ? experience.integrityFindings.length : 0) : null),
-    [scopedHousehold, today, now, experience],
+    () => (scopedHousehold
+      ? buildDashboard(
+          scopedHousehold,
+          today,
+          new Date(freshnessBucket * FRESHNESS_BUCKET_MS),
+          experience && experience.ok ? experience.integrityFindings.length : 0,
+        )
+      : null),
+    [scopedHousehold, today, freshnessBucket, experience],
   );
   const deskAttention = useMemo(
     () => (scopedHousehold && dashboard ? sillOverview(scopedHousehold, dashboard, today) : null),

@@ -757,9 +757,35 @@ export async function appendContinuityCommand(
   };
 }
 
+/**
+ * A successful probe answers a STATIC question — "is public.households in this
+ * project's API?" — so re-asking it before every command was one wasted
+ * round trip per money action. Only the healthy answer is memoised, and only
+ * briefly: every failure, auth rejection and missing-table result re-probes, so
+ * a project that is being migrated or a session whose token just expired still
+ * recovers on the next call rather than latching a stale verdict.
+ */
+const SUPABASE_PROBE_TTL_MS = 5 * 60_000;
+const supabaseProbeMemo = new Map<string, { at: number; probe: SupabaseProbe }>();
+
+function supabaseProbeKey(config: SupabaseConfig): string {
+  // The access token is part of the key: a different signed-in session can get
+  // a different answer from the same project.
+  return `${config.url}\u0000${config.key}\u0000${config.accessToken ?? ""}`;
+}
+
+/** Test seam: drop every memoised probe. */
+export function resetSupabaseProbeMemo(): void {
+  supabaseProbeMemo.clear();
+}
+
 export async function probeSupabase(config = readSupabaseConfig()): Promise<SupabaseProbe> {
   if (!config) return { configured: false, reachable: false, schema: false };
   const project = projectRef(config.url);
+  const memoKey = supabaseProbeKey(config);
+  const memoised = supabaseProbeMemo.get(memoKey);
+  if (memoised && Date.now() - memoised.at < SUPABASE_PROBE_TTL_MS) return memoised.probe;
+  if (memoised) supabaseProbeMemo.delete(memoKey);
   try {
     const result = await rest(config, "households?select=id&limit=1", { method: "GET", headers: { Prefer: "return=representation" } });
     if (isMissingTable(result.body)) {
@@ -777,7 +803,9 @@ export async function probeSupabase(config = readSupabaseConfig()): Promise<Supa
     if (!result.ok) {
       return { configured: true, reachable: true, schema: false, project, error: messageOf(result.body) };
     }
-    return { configured: true, reachable: true, schema: true, project };
+    const healthy: SupabaseProbe = { configured: true, reachable: true, schema: true, project };
+    supabaseProbeMemo.set(memoKey, { at: Date.now(), probe: healthy });
+    return healthy;
   } catch (caught) {
     return {
       configured: true,

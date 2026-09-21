@@ -22,6 +22,7 @@ export { assertReadOnlySelect } from "./queryGuard.ts";
 export { booksSqlDump, booksJournalCsv, downloadText, booksFilename } from "./export.ts";
 export {
   probeSupabase,
+  resetSupabaseProbeMemo,
   pullSupabaseHousehold,
   pullHouseholdSnapshotById,
   pullPersonalSnapshotById,

@@ -7,8 +7,31 @@ import type { Account, AccountKind, Household, Transaction } from "./types.ts";
 
 type BalanceReader = (accountId: string, asOf?: DateKey) => number;
 
-/** One immutable calculation scope; never cache across mutable Household edits. */
+/**
+ * Readers are memoised per published `Household` OBJECT, not per household id
+ * or revision. That is safe because a published snapshot is never mutated in
+ * place: every command calls `cloneHousehold` (a `structuredClone`) and mutates
+ * the clone, so the object a selector holds can never change underneath it, and
+ * a new object always misses the cache. A `WeakMap` also means a superseded
+ * snapshot's books are collected with the snapshot.
+ *
+ * This matters because `accountRows` calls two readers per account, so an
+ * uncached reader re-compiled the entire ledger once per account per call.
+ * Guarded by test/accounts-balance-reader-cache.test.ts.
+ */
+const balanceReaders = new WeakMap<Household, BalanceReader>();
+
+/** One immutable calculation scope per snapshot object. */
 function balanceReader(household: Household): BalanceReader {
+  const memoised = balanceReaders.get(household);
+  if (memoised) return memoised;
+  const created = createBalanceReader(household);
+  balanceReaders.set(household, created);
+  return created;
+}
+
+/** One immutable calculation scope; never reused across mutable Household edits. */
+function createBalanceReader(household: Household): BalanceReader {
   const books = compileHousehold(household);
   const registers = new Map<string, ReturnType<typeof accountRegister>>();
   return (accountId, asOf) => {
