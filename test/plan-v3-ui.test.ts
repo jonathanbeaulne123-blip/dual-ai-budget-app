@@ -2,7 +2,7 @@
 import { act, createElement, useRef, useState } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it } from "vitest";
-import { PlanStudio } from "../src/PlanStudio.tsx";
+import { PlanStudioTools } from "../src/PlanStudio.tsx";
 import PlanStudioV3 from "../src/plan-v3/PlanStudioV3.tsx";
 import { planStudioFundSnapshot, type FundSnapshotSource } from "../src/plan-v3/model.ts";
 import { PathTentContext } from "../src/path/tentContext.ts";
@@ -53,9 +53,9 @@ const agreedHousehold = () => {
 afterEach(async () => { await act(async () => root?.unmount()); host?.remove(); document.body.innerHTML = ""; });
 
 describe("Plan Studio v3 behind its flag", () => {
-  it("keeps today's studio when the flag is off", async () => {
+  it("keeps today's studio behind the drawer when the flag is off", async () => {
     host = document.createElement("div"); document.body.append(host); root = createRoot(host);
-    await act(async () => root.render(createElement(PlanStudio, { household: planLifeFixture("household"), view: "household", memberId: "MEM-001", today, busy: false, onCommand: async () => null })));
+    await act(async () => root.render(createElement(PlanStudioTools, { household: planLifeFixture("household"), view: "household", memberId: "MEM-001", today, busy: false, onCommand: async () => null })));
     expect(host.querySelector(".pv3")).toBeNull();
     expect(host.querySelector(".plan-studio")).not.toBeNull();
     expect(host.textContent).toContain("Plan tools");

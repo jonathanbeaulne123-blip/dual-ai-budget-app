@@ -71,7 +71,11 @@ describe("the Tower, read", () => {
     const after = [...host.querySelectorAll(".place-flat__landing button")] as HTMLButtonElement[];
     expect(after.every((button) => button.disabled)).toBe(true);
     expect(after[0]!.getAttribute("aria-label")).toContain("holds the jug");
-    expect(host.textContent).not.toContain("$0");
+    // The jug's stand is what must never read "$0": a jug somebody else is
+    // holding is unknown to you, and unknown money says nothing. (The door
+    // sign above it may honestly read "$0 saved" — a household with nothing
+    // saved yet is a state, and the Court's own stone says the same.)
+    expect(host.querySelector(".place-flat__landing")!.textContent).not.toContain("$0");
   });
 
   it("is cosy, not broken, with a bare rack", async () => {

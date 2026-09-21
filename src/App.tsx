@@ -63,10 +63,10 @@ import { FundLedge } from "./FundLedge.tsx";
 import { isVisibleInView } from "./core/visibility.ts";
 import { useAppearanceBinding } from "./theme/ThemeProvider.tsx";
 import { AppearancePicker } from "./theme/AppearancePicker.tsx";
-import { Memorabilia } from "./theme/Memorabilia.tsx";
-import { PageWorld, WorldCharm } from "./theme/PageWorld.tsx";
+import { Memorabilia as MemorabiliaScene } from "./theme/Memorabilia.tsx";
+import { PageWorld as PageWorldScene, WorldCharm as WorldCharmScene } from "./theme/PageWorld.tsx";
 import { useAppearance } from "./theme/ThemeProvider.tsx";
-import { ThemeSceneHeading } from "./theme/SceneArtwork.tsx";
+import { ThemeSceneHeading as ThemeSceneHeadingScene } from "./theme/SceneArtwork.tsx";
 import { PlanStudio } from "./PlanStudio.tsx";
 import { tokenFresh } from "./google/tokens.ts";
 import { WorkspaceProjectCards } from "./workspace/ProjectCards.tsx";
@@ -85,7 +85,7 @@ import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
 import { captureExplicit } from './ledgerSync/capture.ts';
 import { LedgerSyncClient, LedgerCommandRejectedError } from "./ledgerSync/client.ts";
 import { ledgerSyncEnabled, localLedgerIdentity } from "./ledgerSync/mode.ts";
-import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, lazy, memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   JOINT,
   NeedsConfirmationError,
@@ -464,7 +464,7 @@ import {
   type CommandChromeResult,
 } from "./commandSurface.tsx";
 import { COMMAND_SURFACE_FIXTURES } from "./claude/commandContract.ts";
-import { CommandProgressStatus } from "./CommandProgressStatus.tsx";
+import { CommandProgressStatus as CommandProgressStatusLine } from "./CommandProgressStatus.tsx";
 import {
   buildCommandProgress,
   commandProgressPhaseAfterOutcome,
@@ -474,7 +474,7 @@ import {
 import { clearSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
 import { SyncFreshnessStatus } from "./SyncFreshnessStatus.tsx";
 import { KitchenNotice } from "./KitchenNotice.tsx";
-import { SoftPresenceStatus } from "./SoftPresenceStatus.tsx";
+import { SoftPresenceStatus as SoftPresenceStatusLine } from "./SoftPresenceStatus.tsx";
 import {
   buildSoftPresenceDisplay,
   canAdvertiseSoftPresence,
@@ -498,7 +498,7 @@ import {
   restorePointsHeaderPill,
 } from "./recentChangesCopy.ts";
 import { useDialog } from "./useDialog.ts";
-import { LedgerPurposeBanner } from "./LedgerPurposeBanner.tsx";
+import { LedgerPurposeBanner as LedgerPurposeBannerLine } from "./LedgerPurposeBanner.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
 import { AddSlideshow, type AddFormFields, type AddMode } from "./AddSlideshow.tsx";
@@ -527,6 +527,7 @@ import { householdHomeV2Enabled, queensNestEnabled } from "./core/planFeature.ts
 import type { DemoSuiteProfile } from "./core/demoSuite.ts";
 import type { QueenShell } from "./queen/QueenHome.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
+import { BooksTab } from "./tabs/BooksTab.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { MonthRehearsalAccess } from "./MonthRehearsalAccess.tsx";
 import { Swipe } from "./Swipe.tsx";
@@ -543,13 +544,11 @@ const HearthsideLetters = lazy(() => import("./hearthside/LettersEntry.tsx"));
 const HerculesPlay = lazy(() => import("./play/HerculesPlay.tsx"));
 /** Little Harbour: the Court owns Household × home behind VITE_HEARTH_HARBOUR; every other room keeps HouseWorld. */
 const HarbourWorld = lazy(() => import("./harbour/HarbourWorld.tsx"));
-const AccountHistorySetup = lazy(() => import("./AccountHistorySetup.tsx").then(module => ({ default: module.AccountHistorySetup })));
 import { type JourneyDestination } from "./OnboardingJourney.tsx";
 import { GuidedSetupPreview } from "./GuidedSetupPreview.tsx";
 import { OnboardingCategories } from "./OnboardingCategories.tsx";
 import { OnboardingEstimates } from "./OnboardingEstimates.tsx";
 import { OnboardingPlan } from "./OnboardingPlan.tsx";
-import { OnboardingReady } from "./OnboardingReady.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -565,7 +564,6 @@ import {
 import type { DiscoveredHousehold } from "./ledger/supabase.ts";
 import type { PostWorkShiftInput, ShiftAttendanceReviewDraft } from "./core/index.ts";
 import {
-  DeferredBooksPage,
   DeferredCalendarPage,
   DeferredOffice,
   DeferredPairingCard,
@@ -591,6 +589,25 @@ import {
   type BooksReadiness,
   type BooksWriteGate,
 } from "./startup/booksReadiness.ts";
+
+/**
+ * Render fences (P3). `App()` holds one household snapshot and no memo
+ * boundary, so every state change — a keystroke in Add, a sync freshness tick,
+ * a toast — re-rendered the whole mounted tree. These children are shown the
+ * same thing on nearly all of those renders: they take value props only (no
+ * handlers), so `memo` here is an exact identity comparison and cannot change
+ * what any of them does. Children that receive a Hearth command keep their
+ * per-render handler identity on purpose: `enqueueScopedWrite` refuses a write
+ * issued by a render whose household, member or room has since changed, so a
+ * command handed to a child must stay the closure that render created.
+ */
+const PageWorld = memo(PageWorldScene);
+const WorldCharm = memo(WorldCharmScene);
+const ThemeSceneHeading = memo(ThemeSceneHeadingScene);
+const Memorabilia = memo(MemorabiliaScene);
+const SoftPresenceStatus = memo(SoftPresenceStatusLine);
+const CommandProgressStatus = memo(CommandProgressStatusLine);
+const LedgerPurposeBanner = memo(LedgerPurposeBannerLine);
 
 type Tab = AppTab;
 
@@ -3730,6 +3747,15 @@ export function App() {
       live: softPresenceLive,
     }),
     [household, session?.memberId, environment, softPresenceOptOut, softPresenceLive],
+  );
+  /**
+   * Hercules' Fund reading (P3). This runs the contribution register over the
+   * accepted books; it was recomputed inside the Hercules props on every single
+   * App render. Same projection, same inputs, once per change.
+   */
+  const discoveryFund = useMemo(
+    () => (household && session ? buildDiscoveryFund(household, session.memberId, view, today) : null),
+    [household, session, view, today],
   );
 
   function applySoftPresenceOptOut(nextOptOut: boolean) {
@@ -7657,24 +7683,9 @@ export function App() {
       )}
 
       {tab === "ledger" && (
-        <DeferredSurface label="Books">
-        {onboardingBooksOpen && onboardingReadyOnly && <button className="ghost" type="button" onClick={() => setOnboardingBooksOpen(false)}>Back to Ready together</button>}
-        {onboardingReadyOnly && !onboardingBooksOpen ? (
-          <OnboardingReady
-            key={`${ledgerRenderScopeKey}:${view}`}
-            household={household}
-            memberId={session.memberId}
-            today={today}
-            busy={busy}
-            onCommit={runKitchen}
-            onDismiss={() => setDismissedOnboardingCompletionDigest(
-              acceptedHouseholdOnboarding(household)?.completionDigest ?? null,
-            )}
-          />
-        ) : <DeferredBooksPage
+        <BooksTab
           onOpenHouseBank={HOUSE_WORLD_ENABLED?(id)=>openHouseObject("loft-banks",`bank/${id}`):undefined}
           openBookAt={HOUSE_WORLD_ENABLED&&activeHouseRoute.surface==="books"?binderyDivisionFor(activeHouseRoute.object):null}
-          accountHistorySetup={<AccountHistorySetup household={household} memberId={session.memberId} authUserId={localLedgerIdentity(session.memberId) ?? loadSupabaseSession(environment)?.userId ?? session.memberId} view={view} today={today} busy={busy} onCommand={runKitchen} />}
           duplicateAuthorityGeneration={replicaScopeGenerationRef.current}
           onDuplicateCommand={runKitchen}
           duplicateBusy={busy}
@@ -7696,33 +7707,22 @@ export function App() {
           onOpenTimeMachine={() => goTab("timeMachine")}
           requestedPane={booksPaneRequest}
           onConsumeRequestedPane={() => setBooksPaneRequest(null)}
-          onRemove={(transaction) => {
-            const dollars = formatCad(transaction.amountCents);
-            const summary = transaction.source === "shift"
-              ? `This posts reversing income for the whole shift (${dollars} wages and tips). The shift row stays.`
-              : transaction.type === "transfer"
-                ? `This posts a reversing transfer for ${dollars}. Both original legs stay.`
-                : `This posts a reversing entry for ${dollars}${transaction.note ? ` (${transaction.note})` : ""}. The original row stays.`;
-            setGuard({ kind: "remove", transactionId: transaction.id, summary, reviewedSummaryBasis:canonical([transaction.id,transaction.amountCents,transaction.type,transaction.source,transaction.note]) });
-          }}
-        />}
-        {view === "household" && planSystemV2Enabled() && dashboard && (
-          <section className="close-the-month" aria-label="Close the month">
-            <p className="kicker">Close the month</p>
-            <h2>Where leftover goes</h2>
-            <Whisper mode="line">A bounded action with its own Final Confirm.</Whisper>
-            <Whisper mode="aside" id="books.close-month">The Sitdown's "Make the shared decisions" step opens this in context; it is not the Sitdown itself.</Whisper>
-            <SitDownGuide
-              household={household}
-              displayHousehold={displayHousehold}
-              dashboard={dashboard}
-              view={view}
-              memberId={actorId}
-              onApply={(next, token) => persist(next, token)}
-            />
-          </section>
-        )}
-        </DeferredSurface>
+          today={today}
+          busy={busy}
+          authUserId={localLedgerIdentity(session.memberId) ?? loadSupabaseSession(environment)?.userId ?? session.memberId}
+          readyIdentity={`${ledgerRenderScopeKey}:${view}`}
+          onboardingBooksOpen={onboardingBooksOpen}
+          onboardingReadyOnly={onboardingReadyOnly}
+          onCloseOnboardingBooks={() => setOnboardingBooksOpen(false)}
+          onReadyCommit={runKitchen}
+          onReadyDismiss={() => setDismissedOnboardingCompletionDigest(
+            acceptedHouseholdOnboarding(household)?.completionDigest ?? null,
+          )}
+          onAskRemove={(request) => setGuard({ kind: "remove", ...request })}
+          closeTheMonth={view === "household" && planSystemV2Enabled() && dashboard
+            ? { household, displayHousehold, dashboard, view, memberId: actorId, onApply: (next, token) => persist(next, token) }
+            : null}
+        />
       )}
 
       {tab === "more" && (
@@ -9112,7 +9112,7 @@ export function App() {
           setFocusedAccountId(null);
           goTab("ledger");
         }}
-        discoveryFund={buildDiscoveryFund(household, session.memberId, view, today)}
+        discoveryFund={discoveryFund}
         discoveryAccountId={focusedAccountId}
         onDiscoveryNavigate={(destination: DiscoveryDestination) => {
           if (adding || swipeOpen || confirm || commandOpen) return;

@@ -3,7 +3,7 @@ import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import { worldDiagnostics } from "../../house/world/diagnostics.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
 import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/courtCamera.ts";
-import { COURT_ANCHOR_IDS, COURT_FOV, type CourtAnchor, type CourtMode, type CourtPose } from "../camera/poses.ts";
+import { CLOSE_HOLDS, COURT_ANCHOR_IDS, COURT_FOV, closePose, type CourtAnchor, type CourtMode, type CourtPose } from "../camera/poses.ts";
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
 import { createGround } from "./ground.ts";
 import { configureHarbourRenderer, createLightRig } from "./lightRig.ts";
@@ -40,6 +40,16 @@ export type HarbourCallbacks = {
    * such a drag is in flight the camera does not orbit.
    */
   onRailDrag?: (x: number, width: number) => void;
+  /**
+   * The phone's thumb-stick (W7 b). A press held still on the ground becomes
+   * a stick under the thumb: `{x, y}` is where it was pressed, `{dx, dy}` is
+   * how far the thumb has pushed from there, already clamped to the stick's
+   * own radius. `null` when the thumb comes off. The runtime does the walking
+   * — this is only so the shell can draw it.
+   */
+  onStick?: (stick: { x: number; y: number; dx: number; dy: number } | null) => void;
+  /** The close hold went on or off (a double-tap on the ground, or the shell asking). */
+  onClose?: (closed: boolean) => void;
   /** Defaults: the registered court, the theme's scene dressing, no reading. */
   place?: Place;
   dressing?: PlaceDressing;
@@ -93,6 +103,14 @@ export type HarbourRuntime = {
   enter: (place: HarbourPlaceId, options?: { from?: HarbourPlaceId; reduced?: boolean }) => TravelPlan;
   /** Whether a journey is in flight (both places are mounted). */
   traveling: () => boolean;
+  /**
+   * The place's third camera hold (W7 a): the one object it is about, framed
+   * and held. On and off by the same gesture — a double-tap on the ground, or
+   * the shell's own key — and remembered per place for as long as this world
+   * stands. A place with no close hold answers false and does nothing.
+   */
+  toggleClose: (on?: boolean) => boolean;
+  closed: () => boolean;
   dispose: () => void;
 };
 
@@ -156,6 +174,15 @@ export function scrubControls(handle: PlaceHandle, todayIndex = 0): ScrubControl
 }
 
 const TAP_PIXELS = 8, TAP_MS = 350, MIN_TWIN = 44;
+/** A second tap this soon after the first, and this near it, is one deliberate gesture. */
+export const DOUBLE_TAP_MS = 320, DOUBLE_TAP_PIXELS = 28;
+/**
+ * The thumb-stick (W7 b): how long the ground is held still before it becomes
+ * a stick, how far the thumb may push it, and how much walking a full push is
+ * worth per second — in the same pixels-of-drag `pan` already speaks, so the
+ * stick and W A S D drive one input and not two.
+ */
+export const STICK_MS = 380, STICK_RADIUS = 56, STICK_GAIN = 3.4;
 /** Zones a drag walks rather than orbits: the cellar's rail and the water behind it. */
 const RAIL_ZONES = new Set(["rail", "water"]);
 const isRail = (hit: HarbourHit): boolean => hit.kind === "anchor" && RAIL_ZONES.has(hit.anchor.zone);
@@ -265,6 +292,16 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2(), projected = new THREE.Vector3(), box = new THREE.Box3();
   const pointers = new Map<number, Pointer>();
+  /**
+   * The close hold, remembered per place for as long as this world stands
+   * (W7 a). Nothing is stored: come back tomorrow and every room opens the
+   * way it always opens.
+   */
+  const closedIn = new Map<HarbourPlaceId, boolean>();
+  /** The last ground tap, for the double-tap that takes the close hold on and off. */
+  let lastGroundTap: { x: number; y: number; at: number } | null = null;
+  /** The thumb-stick while a thumb is on it (W7 b). */
+  let stick: { id: number; x0: number; y0: number; dx: number; dy: number } | null = null;
   let projectionSignature = "", pinchDistance = 0, paintSamples: number[] = [], projectSamples: number[] = [], dirty = true;
   function lists(): void {
     if (!listsDirty) return;
@@ -407,6 +444,30 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if (intervalMs > 0 && now - lastPaint < intervalMs) { schedule(); return; }
     const dt = Math.min((now - previous) / 1000, 0.08); previous = now;
     court.setReduced(reduced.matches);
+    // ── The thumb-stick (W7 b) ─────────────────────────────────────────────
+    // A press held still on the open ground becomes a stick under the thumb.
+    // It is grown and walked here rather than on a timer of its own: frames
+    // are already flowing while a pointer is down, so the stick costs the
+    // frame policy nothing it was not already spending, and there is no raw
+    // `requestAnimationFrame` anywhere near it.
+    if (!stick && pointers.size === 1 && composition === "phone") {
+      const only = [...pointers.values()][0];
+      if (only && only.hit.kind === "ground" && now - only.startedAt >= STICK_MS
+        && Math.hypot(only.x - only.startX, only.y - only.startY) < TAP_PIXELS) {
+        stick = { id: only.id, x0: only.startX, y0: only.startY, dx: 0, dy: 0 };
+        lastGroundTap = null;
+        callbacks.onStick?.({ x: stick.x0, y: stick.y0, dx: 0, dy: 0 });
+        dirty = true;
+      }
+    }
+    if (stick && (stick.dx !== 0 || stick.dy !== 0) && dt > 0) {
+      // The same walk W A S D does, and through the same `pan`: pushing the
+      // stick up walks forward, which is a drag downward. Held inside the
+      // room by the place's own hold, exactly as the keys are.
+      const step = STICK_GAIN * Math.min(dt, 0.08);
+      court.pan(-stick.dx * step, -stick.dy * step);
+      dirty = true;
+    }
     const easing = court.tick(dt);
     // A journey is the camera moving: it keeps frames flowing at the camera's rate and ends by dropping the place it left.
     if (journey) {
@@ -421,6 +482,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       }
     }
     const moving = easing || journey !== null;
+    // Reduced motion (and a tool standing in front of the place): no animated
+    // frame will ever run, so a place that asked to settle is settled the
+    // moment it asks. Without this the flag stays up for the life of the
+    // world and the policy is asked a question it has already answered.
+    if (settling && (reduced.matches || toolOpen)) settling = false;
     const policy = harbourFramePolicy({ reduced: reduced.matches, moving, breathing: breathing || settling, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen });
     intervalMs = policy.intervalMs;
     let animated = false;
@@ -470,6 +536,15 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const distance = a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
       if (pinchDistance > 0 && distance > 0) { court.zoom(Math.log(pinchDistance / distance)); dirty = true; }
       pinchDistance = distance;
+    } else if (stick && stick.id === pointer.id) {
+      // A thumb on the stick walks; it never orbits. The push is clamped to
+      // the stick's radius so a thumb that slides off the edge does not run.
+      const px = x - stick.x0, py = y - stick.y0;
+      const reach = Math.hypot(px, py);
+      const k = reach > STICK_RADIUS && reach > 0 ? STICK_RADIUS / reach : 1;
+      stick.dx = px * k; stick.dy = py * k;
+      callbacks.onStick?.({ x: stick.x0, y: stick.y0, dx: stick.dx, dy: stick.dy });
+      dirty = true;
     } else if (pointer.hit.kind === "queen") pointer.samples.push({ x, y, t: performance.now() - pointer.startedAt });
     else if (isRail(pointer.hit) && callbacks.onRailDrag) { callbacks.onRailDrag(x, stageWidth || host.getBoundingClientRect().width); dirty = true; }
     else { court.drag(dx, dy); dirty = true; }
@@ -479,9 +554,22 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const pointer = pointers.get(event.pointerId); if (!pointer) return;
     pointers.delete(event.pointerId); pinchDistance = 0;
     try { host.releasePointerCapture(event.pointerId); } catch { /* jsdom */ }
+    // The thumb came off the stick: it goes away with it.
+    if (stick && stick.id === pointer.id) { stick = null; callbacks.onStick?.(null); dirty = true; }
     if (event.type === "pointercancel") return;
     const travelled = Math.hypot(pointer.x - pointer.startX, pointer.y - pointer.startY), lasted = performance.now() - pointer.startedAt;
-    if (travelled < TAP_PIXELS && lasted < TAP_MS) callbacks.onTap?.(pointer.hit, { x: pointer.startX, y: pointer.startY });
+    if (travelled < TAP_PIXELS && lasted < TAP_MS) {
+      callbacks.onTap?.(pointer.hit, { x: pointer.startX, y: pointer.startY });
+      // Two quick taps on the open ground take the place's close hold on and
+      // off: the ground itself opens nothing, so this steals no other tap.
+      const at = performance.now();
+      if (pointer.hit.kind === "ground") {
+        const doubled = lastGroundTap !== null && at - lastGroundTap.at < DOUBLE_TAP_MS
+          && Math.hypot(pointer.startX - lastGroundTap.x, pointer.startY - lastGroundTap.y) < DOUBLE_TAP_PIXELS;
+        if (doubled) { lastGroundTap = null; applyClose(!court.closed()); moved(); }
+        else lastGroundTap = { x: pointer.startX, y: pointer.startY, at };
+      } else lastGroundTap = null;
+    }
     else if (pointer.hit.kind === "queen") callbacks.onGesture?.({ region: pointer.hit.region, samples: pointer.samples });
     schedule();
   }
@@ -513,6 +601,19 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * by their own pose tables — `<placeId>:<composition>` for the room itself,
    * `object:<anchor>:<composition>` for one thing in it, `sky` for the whole.
    */
+  /**
+   * Put the close hold where the standing place says it belongs — or let it
+   * go. A place with no close hold is simply never held.
+   */
+  function applyClose(on: boolean): boolean {
+    const wanted = on && CLOSE_HOLDS[placeId] !== undefined;
+    closedIn.set(placeId, wanted);
+    const was = court.closed();
+    court.close(wanted ? closePose(placeId, composition) : null);
+    if (was !== wanted) callbacks.onClose?.(wanted);
+    return wanted;
+  }
+
   function aim(mode: CourtMode | "door", anchor?: string): void {
     court.setReduced(reduced.matches);
     if (placeId !== "court") {
@@ -548,6 +649,12 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     place: () => handle,
     placeId: () => placeId,
     traveling: () => journey !== null,
+    toggleClose(on) {
+      const next = applyClose(on ?? !court.closed());
+      moved();
+      return next;
+    },
+    closed: () => court.closed(),
     enter(next, options = {}) {
       const from = options.from ?? placeId;
       const cut = options.reduced ?? reduced.matches;
@@ -565,6 +672,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // (the `frame.done` branch of the loop).
       court.setHold(plan.cut ? PLACE_HOLDS[next] ?? null : null);
       aim(plan.camera.mode, plan.camera.anchor ?? undefined);
+      // The room you are walking into opens the way you left it: its close
+      // hold, if it had one on, goes straight back on.
+      applyClose(closedIn.get(next) ?? false);
       if (plan.cut) {
         settle(plan.roof[1], plan.lid[1]);
         if (from !== next) pull(from);
@@ -579,6 +689,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     },
     dispose() {
       disposed = true; abort.abort();
+      if (stick) { stick = null; callbacks.onStick?.(null); }
       lease.cancelFrame(frame);
       host.removeEventListener("pointerdown", onPointerDown); host.removeEventListener("pointermove", onPointerMove); host.removeEventListener("pointerup", onPointerEnd); host.removeEventListener("pointercancel", onPointerEnd); host.removeEventListener("wheel", onWheel);
       observer?.disconnect(); intersection?.disconnect();

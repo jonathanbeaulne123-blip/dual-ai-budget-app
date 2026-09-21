@@ -1,0 +1,145 @@
+[
+  {
+    "tag": "classic-390",
+    "quickSheetOpenedBy": "space",
+    "doorSigns": {
+      "boathouse": "The Boathouse, down on the shore \u2014 the two of you. Go there when you want it. The Boathouse. 2 wishes in the light, 0 memories kept. Opens the Conservatory.",
+      "glasshouse-shed": "The Glasshouse, in the garden behind the Library \u2014 the planner's benches. Walk over and go in. The Glasshouse. Every bench is clear. Opens the Master Planner.",
+      "library-hall": "The Library \u2014 the Standing Book's hall. Walk over and go in. The Library. The books are current and the house is checking. Opens the Standing Book."
+    },
+    "quickSheet": {
+      "tools": [
+        "queen",
+        "loft-banks",
+        "cellar-bills",
+        "books",
+        "planner",
+        "calendar",
+        "journey",
+        "conversation",
+        "plan-studio",
+        "pottery",
+        "hercules",
+        "wardrobe",
+        "wishes",
+        "memories",
+        "letters",
+        "projector",
+        "encounters"
+      ],
+      "places": [
+        "home:above=The TowerHome \u00b7 Loft",
+        "home:middle=The CourtHome \u00b7 Queen\u2019s Bay",
+        "home:below=The CellarHome \u00b7 Cellar",
+        "study:above=The GlasshouseStudy \u00b7 Master Planner",
+        "study:middle=The LibraryStudy \u00b7 The Standing Book",
+        "study:below=The GlasshouseStudy \u00b7 Calendar",
+        "kitchen-table:above=The AtlasKitchen Table \u00b7 Journey",
+        "kitchen-table:middle=The KitchenKitchen Table \u00b7 One Conversation",
+        "kitchen-table:below=The KitchenKitchen Table \u00b7 Plan Studio",
+        "together:above=The BoathouseTogether \u00b7 Conservatory",
+        "together:middle=The BoathouseTogether \u00b7 Common room",
+        "together:below=The BoathouseTogether \u00b7 Theatre",
+        "making:above=The KilnMaking \u00b7 The Kiln",
+        "making:middle=The CottageMaking \u00b7 Hercules\u2019s Cottage",
+        "making:below=The CampfireMaking \u00b7 The cabinet of wonders"
+      ],
+      "roomless": [
+        "hercules",
+        "wardrobe"
+      ],
+      "groups": [
+        "home",
+        "study",
+        "kitchen",
+        "making",
+        "together"
+      ]
+    },
+    "closeMode": {
+      "before": "[0.554,6.1458,8.4245]",
+      "close": "[0.2994,2.488,2.483]",
+      "after": "[0.554,6.1458,8.4245]",
+      "moved": true,
+      "returned": true
+    },
+    "flatSign": [
+      "court \u2014 The Court$0 everyday \u00b7 checking"
+    ],
+    "errors": []
+  },
+  {
+    "tag": "classic-1440",
+    "quickSheetOpenedBy": "space",
+    "doorSigns": {
+      "boathouse": "The Boathouse, down on the shore \u2014 the two of you. Go there when you want it. The Boathouse. 2 wishes in the light, 0 memories kept. Opens the Conservatory.",
+      "campfire": "The campfire on the shore, in front of the Boathouse \u2014 where the month closes, the two of you. Walk down and sit. The Campfire. Unlit kindling; the fire is lit at your first Sitdown. Opens the Plan Studio.",
+      "glasshouse-shed": "The Glasshouse, in the garden behind the Library \u2014 the planner's benches. Walk over and go in. The Glasshouse. Every bench is clear. Opens the Master Planner.",
+      "kitchen-cottage": "The Kitchen, smoke up \u2014 sit down and make a plan. Walk over and go in. The Kitchen. The cookbook wall is bare and an empty card is waiting. Opens the Plan Studio.",
+      "library-hall": "The Library \u2014 the Standing Book's hall. Walk over and go in. The Library. The books are current and the house is checking. Opens the Standing Book."
+    },
+    "quickSheet": {
+      "tools": [
+        "queen",
+        "loft-banks",
+        "cellar-bills",
+        "books",
+        "planner",
+        "calendar",
+        "journey",
+        "conversation",
+        "plan-studio",
+        "pottery",
+        "hercules",
+        "wardrobe",
+        "wishes",
+        "memories",
+        "letters",
+        "projector",
+        "encounters"
+      ],
+      "places": [
+        "home:above=The TowerHome \u00b7 Loft",
+        "home:middle=The CourtHome \u00b7 Queen\u2019s Bay",
+        "home:below=The CellarHome \u00b7 Cellar",
+        "study:above=The GlasshouseStudy \u00b7 Master Planner",
+        "study:middle=The LibraryStudy \u00b7 The Standing Book",
+        "study:below=The GlasshouseStudy \u00b7 Calendar",
+        "kitchen-table:above=The AtlasKitchen Table \u00b7 Journey",
+        "kitchen-table:middle=The KitchenKitchen Table \u00b7 One Conversation",
+        "kitchen-table:below=The KitchenKitchen Table \u00b7 Plan Studio",
+        "together:above=The BoathouseTogether \u00b7 Conservatory",
+        "together:middle=The BoathouseTogether \u00b7 Common room",
+        "together:below=The BoathouseTogether \u00b7 Theatre",
+        "making:above=The KilnMaking \u00b7 The Kiln",
+        "making:middle=The CottageMaking \u00b7 Hercules\u2019s Cottage",
+        "making:below=The CampfireMaking \u00b7 The cabinet of wonders"
+      ],
+      "roomless": [
+        "hercules",
+        "wardrobe"
+      ],
+      "groups": [
+        "home",
+        "study",
+        "kitchen",
+        "making",
+        "together"
+      ]
+    },
+    "closeMode": {
+      "before": "[5.2548,6.7215,9.6036]",
+      "close": "[0.32,2.5893,2.6542]",
+      "after": "[5.2548,6.7215,9.6036]",
+      "moved": true,
+      "returned": true
+    },
+    "flatSign": [
+      "court \u2014 The Court$0 everyday \u00b7 checking"
+    ],
+    "errors": [
+      "console: WebSocket is already in CLOSING or CLOSED state.",
+      "console: WebSocket is already in CLOSING or CLOSED state."
+    ]
+  }
+]

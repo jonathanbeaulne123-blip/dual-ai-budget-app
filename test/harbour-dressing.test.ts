@@ -2,7 +2,7 @@
 import * as THREE from "three";
 import { describe, expect, it, vi } from "vitest";
 import { COURT_DRESSING, COURT_THEMES, contrastRatio, courtDressingFrom } from "../src/harbour/court/dressing.ts";
-import { engravedWords, plateFinish, plateLines } from "../src/harbour/court/engraved.ts";
+import { engravedPlate, engravedWords, plateFinish, plateLines } from "../src/harbour/court/engraved.ts";
 import { SUNDIAL_HORIZON_DAYS, sundialAngle, sundialReach } from "../src/harbour/court/sundial.ts";
 import { slipLines } from "../src/harbour/court/mailbox.ts";
 import { COURT_PIECES, normalisePiece } from "../src/harbour/court/pieces.ts";
@@ -117,7 +117,7 @@ describe("the Court", () => {
     expect(poses["court:phone"]!.phi).toBeGreaterThan(poses["sky:phone"]!.phi);
     expect(handle.regions().map((r) => r.id)).toEqual(expect.arrayContaining(["queen", "flagstone", "rook", "bishop", "knight", "sundial", "mailbox", "slip", "gate", "hercules"]));
     expect(COURT_LAYOUT.flagstone).toEqual([0, 0, 1.6]);
-    expect(handle.drawCalls()).toBeLessThanOrEqual(95); // 60 with the Cistern (slice 2), 68 with the stairhead; the island walk stands both Making buildings — Hercules’s Cottage and the Kiln — at 90, and the campfire on the shore (its ring, its logs, its two-tone flame and the first stones of the path) brings it to exactly 95
+    expect(handle.drawCalls()).toBeLessThanOrEqual(102); // 60 with the Cistern (slice 2), 68 with the stairhead; the island walk stands both Making buildings — Hercules’s Cottage and the Kiln — at 90, and the campfire on the shore (its ring, its logs, its two-tone flame and the first stones of the path) brings it to 95. W5's door signs add exactly one plate per building — seven, one each for the Library, the Glasshouse, the Kitchen, the Boathouse, the Cottage, the Kiln and the Campfire — and nothing else: 102.
     handle.dispose();
     expect(scene.children).not.toContain(handle.group);
   });
@@ -226,5 +226,21 @@ describe("the way down, and the court as the cellar's lid", () => {
     handle.setLid(Number.NaN); expect(handle.lid()).toBe(0);
     handle.setLid(4); expect(handle.lid()).toBe(1);
     handle.dispose();
+  });
+});
+
+describe("the sign board itself", () => {
+  it("draws to the board's own shape and brings the letters down to fit it", () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined); // jsdom has no 2D canvas; the plate falls back to blank stone.
+    // node-canvas is not installed, so this exercises the pure geometry of the
+    // fit: the canvas takes the board's aspect instead of growing around the
+    // letters. Without `fit`, slice 1's box is unchanged.
+    const board = engravedPlate("The Glasshouse\n12 pots · 2 dry", { width: 640, size: "small", aspect: 1.7 / 0.54 });
+    expect(board.image.width).toBe(640);
+    expect(board.image.height).toBe(Math.round(640 / (1.7 / 0.54)));
+    const box = engravedPlate("$1,240", { width: 512, size: "large" });
+    expect(box.image.width).toBe(512);
+    expect(box.image.height).toBeGreaterThan(64);
+    board.dispose(); box.dispose();
   });
 });

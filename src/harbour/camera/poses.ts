@@ -271,3 +271,56 @@ export function samePose(a: CourtPose, b: CourtPose, epsilon = 1e-3): boolean {
   return Math.abs(a.r - b.r) < epsilon && Math.abs(a.phi - b.phi) < epsilon && Math.abs(wrap(a.theta - b.theta)) < epsilon
     && a.target.every((v, i) => Math.abs(v - (b.target[i] ?? Number.NaN)) < epsilon);
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * The third hold: **close** (W7 a)
+ *
+ * Look is the room. Close is the one object in it worth standing over — and
+ * only where a place earns one. The Court has the Queen; the Library has the
+ * Standing Book open on its lectern; the Kiln has the wheel. Nowhere else: a
+ * hold every room had would be a zoom level, not a hold.
+ *
+ * It is entered and left by the **same** deliberate gesture — a double-tap on
+ * the ground, or `c` with the stage focused — so the camera can never strand
+ * you somewhere you cannot get back out of, and it is remembered per place for
+ * as long as you are here. Nothing is stored.
+ *
+ * Every pose below is inside its room's `PLACE_HOLD`, which
+ * `test/harbour-camera-poses.test.ts` proves rather than assumes: close mode
+ * cannot show a room from the lawn any more than a wild zoom can.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** Where a place's close hold stands: the object it frames, and how the camera stands over it. */
+export type CloseHold = {
+  /** The anchor the hold is about, so a twin and a pose agree on what "close" means here. */
+  anchor: string;
+  target: Vec3;
+  /** How near the eye comes. A phone's narrow column comes a little nearer than a desktop's. */
+  r: { phone: number; desktop: number };
+  theta: number;
+  phi: number;
+};
+
+/**
+ * The places that have earned a close hold, and the one object each frames.
+ * Keyed by place id as a plain string so this file stays free of the flag
+ * module; `scene/runtime.ts` reads it with a `HarbourPlaceId`.
+ */
+export const CLOSE_HOLDS: Readonly<Record<string, CloseHold>> = Object.freeze({
+  /** The Queen herself, close enough to read her face and her flagstone at once. */
+  court: Object.freeze({ anchor: "queen", target: [0, 1.02, 0] as Vec3, r: { phone: 2.9, desktop: 3.1 }, theta: 0.12, phi: 1.04 }),
+  /** The Standing Book, open on its lectern — close enough that a page is a page. */
+  library: Object.freeze({ anchor: "book", target: [0, 1.22, -0.9] as Vec3, r: { phone: 1.9, desktop: 2.1 }, theta: 0.06, phi: 1.12 }),
+  /** The wheel, from the side the potter sits on, the clay standing on its head. */
+  kiln: Object.freeze({ anchor: "wheel", target: [-1.0, 0.92, 1.1] as Vec3, r: { phone: 1.7, desktop: 1.8 }, theta: 0.26, phi: 1.16 }),
+});
+
+/** Which places have a close hold, in a stable order. */
+export const CLOSE_PLACES: readonly string[] = Object.freeze(Object.keys(CLOSE_HOLDS));
+
+/** The close pose for a place, or null where the place has not earned one. Pure. */
+export function closePose(place: string, composition: Composition): CourtPose | null {
+  const hold = CLOSE_HOLDS[place];
+  if (!hold) return null;
+  return { target: hold.target, r: hold.r[composition], theta: hold.theta, phi: hold.phi };
+}
