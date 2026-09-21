@@ -10,7 +10,8 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "rm -rf dist && tsc --noEmit && pnpm typecheck:workspace && vite build && pnpm build:hercules-pro-ui && test ! -e dist/_redirects",
+    "build": "rm -rf dist && pnpm typecheck && pnpm typecheck:workspace && vite build && pnpm build:hercules-pro-ui && test ! -e dist/_redirects",
+    "typecheck": "node --max-old-space-size=6144 node_modules/typescript/bin/tsc --noEmit",
     "typecheck:workspace": "node --max-old-space-size=6144 node_modules/typescript/bin/tsc -p workers/workspace/tsconfig.json --pretty false",
     "build:hercules-pro-ui": "node scripts/build-hercules-pro-ui.mjs",
     "preview": "vite preview",

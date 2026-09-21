@@ -204,7 +204,7 @@ export async function main(argv = process.argv.slice(2)) {
       await run("git", ["diff", "--check"]);
     });
     await phase("ai-surface", () => runPnpm("ai:verify"));
-    await phase("typescript", () => runPnpm("exec", "tsc", "--noEmit"));
+    await phase("typescript", () => runPnpm("typecheck"));
 
     let related = [];
     await phase("test-discovery", async () => {
