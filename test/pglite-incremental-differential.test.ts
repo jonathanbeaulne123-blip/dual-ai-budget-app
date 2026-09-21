@@ -10,10 +10,13 @@ import type { Household } from "../src/core/types.ts";
 /**
  * The incremental PGlite writer is the single largest saving available on the
  * command path (a full write TRUNCATEs and re-INSERTs every projection table).
- * It is gated off in Production by an explicit release boundary — see
- * test/pglite-development-canary.test.ts, which this file does NOT relax.
+ * It is the default write path in EVERY environment since the D-177 amendment
+ * of 2026-09-21 (docs/DECISIONS.md), which acted on exactly the evidence this
+ * file produces; the only way back to the full rebuild is the
+ * `VITE_PGLITE_FULL_PROJECTION=1` kill switch, asserted below and in
+ * test/pglite-development-canary.test.ts.
  *
- * What this file provides is the evidence needed to make that call: after a
+ * What this file provides is the evidence that activation rests on: after a
  * run of incremental writes, the projection must be INDISTINGUISHABLE from a
  * full write of the same final household. Every projection table is compared
  * row for row, so a delta that drops, duplicates or staleness-leaks a row
@@ -99,9 +102,10 @@ describe("incremental PGlite projection is identical to the full projection", ()
   afterEach(() => { vi.unstubAllEnvs(); });
 
   it("matches a from-scratch full write after a run of incremental commands", async () => {
-    vi.stubEnv("VITE_PGLITE_INCREMENTAL_DEV", "1");
-
-    // A development household, which is where the incremental writer is allowed.
+    // A development household. The writer is no longer environment-gated, but
+    // this case is kept on Development so the differential evidence is read on
+    // the same ledger it was originally produced against; the Production case
+    // below proves the two now take the identical path.
     const base = await seal({ ...catalogHousehold(), environment: "development" as const });
 
     // Ten ordinary expenses, posted one at a time, exactly as a user would.
@@ -182,8 +186,28 @@ describe("incremental PGlite projection is identical to the full projection", ()
     }
   }, 120_000);
 
-  it("still refuses the incremental writer for a Production household", async () => {
-    vi.stubEnv("VITE_PGLITE_INCREMENTAL_DEV", "1");
+  it("takes the same delta for a Production household", async () => {
+    // The D-177 amendment: there is no longer a "production-full-path". The
+    // environment is not consulted, so a Production command gets the same
+    // bounded delta this file just proved indistinguishable from a full write.
+    const previous = await seal({ ...catalogHousehold(), environment: "production" as const });
+    const next = await seal({ ...previous, revision: previous.revision + 1, name: "Now incremental" });
+    const db = await openMemoryBooks();
+    try {
+      await ingestBooks(db, previous);
+      const status = await ingestBooks(db, next, compileHousehold(next), { previous, incremental: true });
+      expect(status.writeMode).toBe("incremental");
+      expect(status.compactionReason).toBeUndefined();
+    } finally {
+      await db.close();
+    }
+  }, 60_000);
+
+  it("forces the full rebuild in Production when the kill switch is set", async () => {
+    // `VITE_PGLITE_FULL_PROJECTION=1` is the single remaining rollback: it puts
+    // every environment back on the full transactional TRUNCATE rebuild without
+    // a code change, which is the documented way to retire the delta.
+    vi.stubEnv("VITE_PGLITE_FULL_PROJECTION", "1");
     const previous = await seal({ ...catalogHousehold(), environment: "production" as const });
     const next = await seal({ ...previous, revision: previous.revision + 1, name: "Still full" });
     const db = await openMemoryBooks();
@@ -191,7 +215,7 @@ describe("incremental PGlite projection is identical to the full projection", ()
       await ingestBooks(db, previous);
       const status = await ingestBooks(db, next, compileHousehold(next), { previous, incremental: true });
       expect(status.writeMode).toBe("full");
-      expect(status.compactionReason).toBe("production-full-path");
+      expect(status.compactionReason).toBe("incremental-disabled");
     } finally {
       await db.close();
     }
