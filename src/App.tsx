@@ -527,6 +527,7 @@ import { householdHomeV2Enabled, queensNestEnabled } from "./core/planFeature.ts
 import type { DemoSuiteProfile } from "./core/demoSuite.ts";
 import type { QueenShell } from "./queen/QueenHome.tsx";
 import { SitDownGuide } from "./SitDownGuide.tsx";
+import { BooksTab } from "./tabs/BooksTab.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import { MonthRehearsalAccess } from "./MonthRehearsalAccess.tsx";
 import { Swipe } from "./Swipe.tsx";
@@ -543,13 +544,11 @@ const HearthsideLetters = lazy(() => import("./hearthside/LettersEntry.tsx"));
 const HerculesPlay = lazy(() => import("./play/HerculesPlay.tsx"));
 /** Little Harbour: the Court owns Household × home behind VITE_HEARTH_HARBOUR; every other room keeps HouseWorld. */
 const HarbourWorld = lazy(() => import("./harbour/HarbourWorld.tsx"));
-const AccountHistorySetup = lazy(() => import("./AccountHistorySetup.tsx").then(module => ({ default: module.AccountHistorySetup })));
 import { type JourneyDestination } from "./OnboardingJourney.tsx";
 import { GuidedSetupPreview } from "./GuidedSetupPreview.tsx";
 import { OnboardingCategories } from "./OnboardingCategories.tsx";
 import { OnboardingEstimates } from "./OnboardingEstimates.tsx";
 import { OnboardingPlan } from "./OnboardingPlan.tsx";
-import { OnboardingReady } from "./OnboardingReady.tsx";
 import { playClink } from "./clink.ts";
 import { GoogleBridgeCard } from "./GoogleBridge.tsx";
 import {
@@ -565,7 +564,6 @@ import {
 import type { DiscoveredHousehold } from "./ledger/supabase.ts";
 import type { PostWorkShiftInput, ShiftAttendanceReviewDraft } from "./core/index.ts";
 import {
-  DeferredBooksPage,
   DeferredCalendarPage,
   DeferredOffice,
   DeferredPairingCard,
@@ -7685,24 +7683,9 @@ export function App() {
       )}
 
       {tab === "ledger" && (
-        <DeferredSurface label="Books">
-        {onboardingBooksOpen && onboardingReadyOnly && <button className="ghost" type="button" onClick={() => setOnboardingBooksOpen(false)}>Back to Ready together</button>}
-        {onboardingReadyOnly && !onboardingBooksOpen ? (
-          <OnboardingReady
-            key={`${ledgerRenderScopeKey}:${view}`}
-            household={household}
-            memberId={session.memberId}
-            today={today}
-            busy={busy}
-            onCommit={runKitchen}
-            onDismiss={() => setDismissedOnboardingCompletionDigest(
-              acceptedHouseholdOnboarding(household)?.completionDigest ?? null,
-            )}
-          />
-        ) : <DeferredBooksPage
+        <BooksTab
           onOpenHouseBank={HOUSE_WORLD_ENABLED?(id)=>openHouseObject("loft-banks",`bank/${id}`):undefined}
           openBookAt={HOUSE_WORLD_ENABLED&&activeHouseRoute.surface==="books"?binderyDivisionFor(activeHouseRoute.object):null}
-          accountHistorySetup={<AccountHistorySetup household={household} memberId={session.memberId} authUserId={localLedgerIdentity(session.memberId) ?? loadSupabaseSession(environment)?.userId ?? session.memberId} view={view} today={today} busy={busy} onCommand={runKitchen} />}
           duplicateAuthorityGeneration={replicaScopeGenerationRef.current}
           onDuplicateCommand={runKitchen}
           duplicateBusy={busy}
@@ -7724,33 +7707,22 @@ export function App() {
           onOpenTimeMachine={() => goTab("timeMachine")}
           requestedPane={booksPaneRequest}
           onConsumeRequestedPane={() => setBooksPaneRequest(null)}
-          onRemove={(transaction) => {
-            const dollars = formatCad(transaction.amountCents);
-            const summary = transaction.source === "shift"
-              ? `This posts reversing income for the whole shift (${dollars} wages and tips). The shift row stays.`
-              : transaction.type === "transfer"
-                ? `This posts a reversing transfer for ${dollars}. Both original legs stay.`
-                : `This posts a reversing entry for ${dollars}${transaction.note ? ` (${transaction.note})` : ""}. The original row stays.`;
-            setGuard({ kind: "remove", transactionId: transaction.id, summary, reviewedSummaryBasis:canonical([transaction.id,transaction.amountCents,transaction.type,transaction.source,transaction.note]) });
-          }}
-        />}
-        {view === "household" && planSystemV2Enabled() && dashboard && (
-          <section className="close-the-month" aria-label="Close the month">
-            <p className="kicker">Close the month</p>
-            <h2>Where leftover goes</h2>
-            <Whisper mode="line">A bounded action with its own Final Confirm.</Whisper>
-            <Whisper mode="aside" id="books.close-month">The Sitdown's "Make the shared decisions" step opens this in context; it is not the Sitdown itself.</Whisper>
-            <SitDownGuide
-              household={household}
-              displayHousehold={displayHousehold}
-              dashboard={dashboard}
-              view={view}
-              memberId={actorId}
-              onApply={(next, token) => persist(next, token)}
-            />
-          </section>
-        )}
-        </DeferredSurface>
+          today={today}
+          busy={busy}
+          authUserId={localLedgerIdentity(session.memberId) ?? loadSupabaseSession(environment)?.userId ?? session.memberId}
+          readyIdentity={`${ledgerRenderScopeKey}:${view}`}
+          onboardingBooksOpen={onboardingBooksOpen}
+          onboardingReadyOnly={onboardingReadyOnly}
+          onCloseOnboardingBooks={() => setOnboardingBooksOpen(false)}
+          onReadyCommit={runKitchen}
+          onReadyDismiss={() => setDismissedOnboardingCompletionDigest(
+            acceptedHouseholdOnboarding(household)?.completionDigest ?? null,
+          )}
+          onAskRemove={(request) => setGuard({ kind: "remove", ...request })}
+          closeTheMonth={view === "household" && planSystemV2Enabled() && dashboard
+            ? { household, displayHousehold, dashboard, view, memberId: actorId, onApply: (next, token) => persist(next, token) }
+            : null}
+        />
       )}
 
       {tab === "more" && (
