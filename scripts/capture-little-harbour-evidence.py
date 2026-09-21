@@ -89,6 +89,7 @@ def measure(page):
 PLACE_TWIN = {
     "court": ["queen"], "tower": ["shelf", "bank", "jug"], "cellar": ["rail", "jar", "waterline"], "glasshouse": ["beds", "pot", "harvest"],
     "kitchen": ["empty-card", "card", "drawer"], "boathouse": ["boat", "projector", "wishes"], "library": ["book", "bindery", "balcony"],
+    "cottage": ["wardrobe", "mirror", "cabinet", "window-seat", "bell"],
 }
 
 
@@ -112,10 +113,10 @@ def twin(page, name: str):
     return page.query_selector(f"[data-twin='{name}']")
 
 
-LEVELS = {"court": "middle", "tower": "above", "cellar": "below", "glasshouse": "above", "kitchen": "middle", "boathouse": "middle", "library": "middle"}
+LEVELS = {"court": "middle", "tower": "above", "cellar": "below", "glasshouse": "above", "kitchen": "middle", "boathouse": "middle", "library": "middle", "cottage": "middle"}
 
 
-ROOMS = {"court": "home", "tower": "home", "cellar": "home", "glasshouse": "study", "kitchen": "kitchen-table", "boathouse": "together", "library": "study"}
+ROOMS = {"court": "home", "tower": "home", "cellar": "home", "glasshouse": "study", "kitchen": "kitchen-table", "boathouse": "together", "library": "study", "cottage": "making"}
 
 
 def route_to(page, place: str) -> None:
@@ -285,6 +286,24 @@ def slice2_pass(browser, theme: str, width: int, report: list) -> None:
             errors.append("no book twin in the library")
     except Exception as error:
         errors.append(f"library: {error}")
+    # ── Hercules's Cottage: the armoire, the glass, the cabinet, the seat. ───
+    cottage = None
+    try:
+        route_to(page, "cottage")
+        wait_place(page, "cottage")
+        cottage = measure(page)
+        snap(page, f"{tag}-18-cottage.png")
+        station = page.query_selector("[data-twin='cabinet']") or page.query_selector("[data-twin='wardrobe']")
+        if station:
+            station.evaluate("b => b.click()")
+            page.wait_for_selector(".app[data-harbour-door]", timeout=20000)
+            page.wait_for_timeout(1600)
+            snap(page, f"{tag}-19-cottage-door-sheet.png")
+            put_back(page)
+        else:
+            errors.append("no cabinet or wardrobe twin in the cottage")
+    except Exception as error:
+        errors.append(f"cottage: {error}")
     context.close()
 
     # ── Mid-travel frames: full motion, caught part way through each journey. ─
@@ -335,9 +354,10 @@ def slice2_pass(browser, theme: str, width: int, report: list) -> None:
         flat.close()
 
     report.append({"tag": tag, "court": court, "tower": tower, "cellar": cellar, "glasshouse": glasshouse,
-                   "kitchen": kitchen, "boathouse": boathouse, "library": library, "errors": errors[:12]})
+                   "kitchen": kitchen, "boathouse": boathouse, "library": library, "cottage": cottage, "errors": errors[:12]})
     print(tag, "court", court.get("drawCalls"), "tower", (tower or {}).get("drawCalls"), "cellar", (cellar or {}).get("drawCalls"),
           "kitchen", (kitchen or {}).get("drawCalls"), "boathouse", (boathouse or {}).get("drawCalls"), "library", (library or {}).get("drawCalls"),
+          "cottage", (cottage or {}).get("drawCalls"),
           "errors", len(errors), flush=True)
     for error in errors[:6]:
         print("   ·", str(error)[:170], flush=True)

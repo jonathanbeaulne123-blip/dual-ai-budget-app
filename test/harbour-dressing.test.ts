@@ -117,7 +117,7 @@ describe("the Court", () => {
     expect(poses["court:phone"]!.phi).toBeGreaterThan(poses["sky:phone"]!.phi);
     expect(handle.regions().map((r) => r.id)).toEqual(expect.arrayContaining(["queen", "flagstone", "rook", "bishop", "knight", "sundial", "mailbox", "slip", "gate", "hercules"]));
     expect(COURT_LAYOUT.flagstone).toEqual([0, 0, 1.6]);
-    expect(handle.drawCalls()).toBeLessThanOrEqual(84); // 60 with the Cistern (slice 2), 68 with the stairhead; the island walk stands four house exteriors and keeps the rest as headroom
+    expect(handle.drawCalls()).toBeLessThanOrEqual(88); // 60 with the Cistern (slice 2), 68 with the stairhead; the island walk stands five house exteriors (Hercules's Cottage is six of them) and keeps the rest as headroom
     handle.dispose();
     expect(scene.children).not.toContain(handle.group);
   });

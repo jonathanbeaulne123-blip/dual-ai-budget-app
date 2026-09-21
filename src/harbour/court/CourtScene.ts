@@ -352,6 +352,48 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     group.add(cottage);
   }
 
+  // ── Hercules's Cottage (LITTLE_HARBOUR_v2 §2, "Making"): the one building on
+  //    the island that is his and not ours. Small, crooked and charming: a
+  //    settled body, a roof that sags off true, a chimney leaning with it, a
+  //    lit window — and, beside the person's door, a cat-sized one of his own.
+  //    Unlike its older neighbours it is turned to *face* the Court, so the two
+  //    doors read from the terrace.
+  const HERCULES_COTTAGE: readonly [number, number] = [9.8, 5.6];
+  const herculesCottageY = groundHeightAt(HERCULES_COTTAGE[0], HERCULES_COTTAGE[1]);
+  {
+    const cottage = new THREE.Group();
+    cottage.name = "hercules-cottage";
+    // Six draw calls, one per material: body, roof, the plinth stonework, the
+    // two doors and the lit window. Everything that shares a material is merged.
+    const body = shadowed(mergedMesh([placed(new THREE.BoxGeometry(1.5, 0.98, 1.25), 0, 0.49, 0, [0, 0, 0.018])], mat(dressing.terrace, { roughness: 0.93 })));
+    track(body.geometry); cottage.add(body);
+    // The roof sits a little over-square and a little off true: charming, not broken.
+    const roof = shadowed(new THREE.Mesh(track(new THREE.CylinderGeometry(0.02, 1.15, 0.72, 4, 1)), mat(dressing.timber, { roughness: 0.86, flatShading: true })));
+    roof.rotation.y = Math.PI / 4; roof.rotation.z = 0.035; roof.scale.set(1.0, 1, 0.74); roof.position.set(0.02, 1.32, 0); cottage.add(roof);
+    // The leaning chimney and the doorstep are the same stone.
+    const stonework = shadowed(mergedMesh([
+      placed(new THREE.BoxGeometry(0.17, 0.46, 0.17), -0.42, 1.48, -0.18, [0, 0, 0.07]),
+      placed(new THREE.BoxGeometry(1.0, 0.07, 0.42), 0, 0.04, 0.86),
+    ], mat(dressing.plinth, { roughness: 0.94 })));
+    track(stonework.geometry); cottage.add(stonework);
+    // The person's door, and his own beside it — the whole point of the building.
+    const door = new THREE.Mesh(track(new THREE.BoxGeometry(0.4, 0.74, 0.05)), mat(dressing.gate.accent, { roughness: 0.7 }));
+    door.position.set(0.22, 0.37, 0.64); cottage.add(door);
+    const catWay = mergedMesh([
+      placed(new THREE.BoxGeometry(0.2, 0.22, 0.05), -0.34, 0.11, 0.64),
+      placed(new THREE.CylinderGeometry(0.1, 0.1, 0.05, 10, 1, false, 0, Math.PI), -0.34, 0.22, 0.64, [Math.PI / 2, 0, 0]),
+    ], mat(dressing.gate.post, { roughness: 0.72 }));
+    track(catWay.geometry); cottage.add(catWay);
+    // The lamp is on: his window, warm, from the terrace.
+    const warmWindow = new THREE.Mesh(track(new THREE.BoxGeometry(0.3, 0.28, 0.05)), track(new THREE.MeshBasicMaterial({ color: "#ffd98e" })));
+    warmWindow.position.set(0.58, 0.6, 0.15); warmWindow.rotation.y = Math.PI / 2; cottage.add(warmWindow);
+    cottage.traverse((node) => { node.userData.anchor = "hercules-cottage"; });
+    cottage.userData.anchor = "hercules-cottage";
+    cottage.position.set(HERCULES_COTTAGE[0], herculesCottageY, HERCULES_COTTAGE[1]);
+    cottage.rotation.y = Math.atan2(-HERCULES_COTTAGE[0], -HERCULES_COTTAGE[1]);
+    group.add(cottage);
+  }
+
   // ── The Boathouse (LITTLE_HARBOUR_v2 §5): Together, tucked away — one small
   //    building down on the shore with its own door. It keeps everything the
   //    common rooms hold (wishes, memories, letters, the projector, the
@@ -521,6 +563,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     { id: "library-hall", position: at(-4.7, groundHeightAt(-4.7, -11.6) + 1.3, -11.6), zone: "landmark", label: "The Library — the Standing Book's hall. Walk over and go in." },
     { id: "glasshouse-shed", position: at(-8.2, groundHeightAt(-8.2, -9.4) + 0.9, -9.4), zone: "landmark", label: "The Glasshouse, in the garden behind the Library — the planner's benches. Walk over and go in." },
     { id: "kitchen-cottage", position: at(-11.2, groundHeightAt(-11.2, -3.4) + 0.9, -3.4), zone: "landmark", label: "The Kitchen, smoke up — sit down and make a plan. Walk over and go in." },
+    { id: "hercules-cottage", position: at(9.8, groundHeightAt(9.8, 5.6) + 0.9, 5.6), zone: "landmark", label: "Hercules’s Cottage, lamp on — a door for you and a smaller one for him. Walk over and go in." },
   ];
   let queenRegions: (() => Region[]) | null = null;
   const regionList = (): Region[] => [
@@ -538,6 +581,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     { id: "library-hall", group: "court", label: "The Library's hall", box: box(-6.2, groundHeightAt(-4.7, -11.6), -12.6, -3.2, groundHeightAt(-4.7, -11.6) + 2.7, -10.6) },
     { id: "glasshouse-shed", group: "court", label: "The Glasshouse in the garden", box: box(-9.2, groundHeightAt(-8.2, -9.4), -10.2, -7.2, groundHeightAt(-8.2, -9.4) + 1.8, -8.6) },
     { id: "kitchen-cottage", group: "court", label: "The Kitchen's cottage", box: box(-12.2, groundHeightAt(-11.2, -3.4), -4.3, -10.2, groundHeightAt(-11.2, -3.4) + 2.3, -2.5) },
+    { id: "hercules-cottage", group: "court", label: "Hercules’s Cottage on the east lawn", box: box(8.8, groundHeightAt(9.8, 5.6), 4.6, 10.8, groundHeightAt(9.8, 5.6) + 2.1, 6.6) },
   ];
 
   // ── Reading → objects ───────────────────────────────────────────────────────
