@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
+import { worldDiagnostics } from "../../house/world/diagnostics.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
 import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/courtCamera.ts";
 import { COURT_ANCHOR_IDS, COURT_FOV, type CourtAnchor, type CourtMode, type CourtPose } from "../camera/poses.ts";
@@ -169,6 +170,7 @@ type Pointer = { id: number; x: number; y: number; startX: number; startY: numbe
 export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: RenderTier, callbacks: HarbourCallbacks): HarbourRuntime {
   let disposed = false, frame = 0, previous = 0, lastPaint = 0, lastAnimated = 0, visible = true, toolOpen = false, breathing = false, settling = false, intervalMs = CAMERA_INTERVAL_MS;
   const mountedAt = performance.now();
+  const diagnostics = worldDiagnostics();
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
   const dressing = callbacks.dressing ?? SCENE_DRESSING[theme];
   const abort = new AbortController();
@@ -376,8 +378,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     renderer.render(scene, camera);
     // `renderMs` is what the GPU was asked for. Projecting the twins is CPU
     // work on this side of the frame and is measured nowhere near it.
-    paintSamples.push(performance.now() - began); if (paintSamples.length > 60) paintSamples.shift();
+    if (diagnostics) { paintSamples.push(performance.now() - began); if (paintSamples.length > 60) paintSamples.shift(); }
     project();
+    // Development, the review server and a page asked for them keep the
+    // numbers; a shipped frame writes nothing to the DOM at all.
+    if (!diagnostics) return;
     host.dataset.renderMs = (paintSamples.reduce((a, b) => a + b, 0) / paintSamples.length).toFixed(2);
     host.dataset.houseCamera = JSON.stringify(camera.position.toArray().map(n => Number(n.toFixed(4))));
     host.dataset.drawCalls = String(renderer.info.render.calls); host.dataset.geometries = String(renderer.info.memory.geometries); host.dataset.textures = String(renderer.info.memory.textures);
