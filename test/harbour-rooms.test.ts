@@ -2,8 +2,10 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import {
-  EMPTY_BOATHOUSE_READING, EMPTY_KITCHEN_READING, buildBoathouseReading, buildKitchenReading, KITCHEN_CARD_CAP,
+  EMPTY_BOATHOUSE_READING, EMPTY_COTTAGE_READING, EMPTY_KITCHEN_READING, buildBoathouseReading, buildCottageReading, buildKitchenReading, KITCHEN_CARD_CAP,
 } from "../src/harbour/data/reading.ts";
+import { COTTAGE_DRESSING } from "../src/harbour/cottage/dressing.ts";
+import { createCottage, cottagePoses, kept, readCottageReading, wearingWords } from "../src/harbour/cottage/CottageScene.ts";
 import { KITCHEN_DRESSING } from "../src/harbour/kitchen/dressing.ts";
 import { cardDollars, cardPin, cardWords, createKitchen, kitchenPoses, readKitchenReading } from "../src/harbour/kitchen/KitchenScene.ts";
 import { BOATHOUSE_DRESSING } from "../src/harbour/boathouse/dressing.ts";
@@ -125,11 +127,50 @@ describe("the three rooms as places", () => {
     handle.dispose();
   });
 
+  it("the Cottage reading counts what Hercules keeps and never what it is", () => {
+    const reading = buildCottageReading({
+      kitchen: { companion: { name: "Hercules", equipped: { hat: "straw", chain: null, house: "", collar: "bell" } } },
+      companionGallery: [{ value: { look: { name: "Sunday best" } } }, { value: null }, { value: { look: { name: "Snow day" } } }],
+      playRoom: { slots: [{ value: { kind: "keepsake", id: "shell" } }, { value: null }] },
+    });
+    expect(reading).toEqual({ name: "Hercules", worn: 2, looks: 2, keepsakes: 1 });
+    // The staged outfit outranks the legacy four when one is on.
+    expect(buildCottageReading({
+      kitchen: { companion: { name: "Herc", equipped: { hat: "straw", chain: null, house: null, collar: null } } },
+      playRoom: { stageOutfit: { value: { selections: { head: { itemId: "a", variantId: "b" }, body: { itemId: "c", variantId: "d" }, charm: { itemId: "e", variantId: "f" } } } } },
+    })).toMatchObject({ name: "Herc", worn: 3 });
+    // A household without a companion is an empty cottage, not a broken one.
+    expect(buildCottageReading({})).toEqual(EMPTY_COTTAGE_READING);
+    expect(kept(0, "look kept", "looks kept")).toBe("nothing yet");
+    expect(kept(1, "look kept", "looks kept")).toBe("1 look kept");
+    expect(wearingWords(0, "Hercules")).toBe("Hercules is in his own fur today");
+    expect(wearingWords(1, "Hercules")).toBe("Hercules is wearing 1 piece");
+  });
+
+  it("the Cottage: five stations, each a door onto the room that already owns it — and the room writes nothing", () => {
+    const scene = new THREE.Scene();
+    const reading = { cottage: buildCottageReading({ kitchen: { companion: { name: "Hercules", equipped: { hat: "straw", chain: null, house: null, collar: "bell" } } }, companionGallery: [{ value: { look: {} } }] }) };
+    const handle = PLACES.cottage!.build(scene, { theme: "classic" } as never, reading as never, "lite", { composition: "desktop", signal: new AbortController().signal, invalidate: () => {} });
+    const anchors = handle.anchors();
+    const doors = Object.fromEntries(anchors.filter((anchor) => anchor.door).map((anchor) => [anchor.id, anchor.door!.target]));
+    expect(doors).toEqual({ wardrobe: "wardrobe", mirror: "wardrobe", cabinet: "wardrobe", "window-seat": "hercules", bell: "hercules" });
+    expect(anchors.find((anchor) => anchor.id === "cabinet")?.label).toContain("1 look kept");
+    expect(anchors.find((anchor) => anchor.id === "window-seat")?.label).toContain("wearing 2 pieces");
+    expect(anchors.find((anchor) => anchor.id === "court-door")?.zone).toBe("stair");
+    // Every region the twins can reach is one of the six stations, and each has a box.
+    for (const region of handle.regions()) expect(region.box).toBeTruthy();
+    handle.dispose();
+    expect(scene.children.length).toBe(0);
+    expect(readCottageReading(null)).toEqual({ cottage: null });
+    expect(cottagePoses([])["door:phone"]).toBeTruthy();
+  });
+
   it("draws each room inside the harbour's budget and keeps every pose inside its own hold", () => {
     for (const [id, build] of [
       ["kitchen", () => createKitchen(new THREE.Scene(), { dressing: KITCHEN_DRESSING.classic, reading: kitchenReading, quality: "lite" })],
       ["boathouse", () => createBoathouse(new THREE.Scene(), { dressing: BOATHOUSE_DRESSING.classic, reading: { boathouse: { wishes: 4, memories: 3, letters: 2, encounters: 1 } }, quality: "lite" })],
       ["library", () => createLibrary(new THREE.Scene(), { dressing: LIBRARY_DRESSING.classic, quality: "lite" })],
+      ["cottage", () => createCottage(new THREE.Scene(), { dressing: COTTAGE_DRESSING.classic, reading: { cottage: { name: "Hercules", worn: 4, looks: 5, keepsakes: 4 } }, quality: "lite" })],
     ] as const) {
       const handle = build();
       let meshes = 0;

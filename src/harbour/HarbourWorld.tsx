@@ -68,6 +68,7 @@ const PLACE_MODULES: Readonly<Record<HarbourPlaceId, () => Promise<unknown>>> = 
   kitchen: () => import("./kitchen/KitchenScene.ts"),
   boathouse: () => import("./boathouse/BoathouseScene.ts"),
   library: () => import("./library/LibraryScene.ts"),
+  cottage: () => import("./cottage/CottageScene.ts"),
 };
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
@@ -407,7 +408,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const showFlat = status === "flat" || status === "fallback" || (status === "loading" && tier === "flat");
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => props.onNavigate("home", "middle");
-  return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : place === "cellar" ? "The Cellar" : place === "glasshouse" ? "The Glasshouse" : place === "kitchen" ? "The Kitchen" : place === "boathouse" ? "The Boathouse" : "The Library"}>
+  return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : place === "cellar" ? "The Cellar" : place === "glasshouse" ? "The Glasshouse" : place === "kitchen" ? "The Kitchen" : place === "boathouse" ? "The Boathouse" : place === "cottage" ? "Hercules’s Cottage" : "The Library"}>
     <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : `${placeName[0]!.toUpperCase()}${placeName.slice(1)}. Arrow keys orbit, W A S D walk, plus and minus zoom, Space opens all tools, Escape steps back.`} onKeyDown={onStageKey}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => props.onNavigate("home", HARBOUR_PLACE_LEVELS[next])} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}

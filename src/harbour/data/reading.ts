@@ -81,6 +81,8 @@ export type HarbourReading = {
   kitchen: KitchenReading;
   /** The Boathouse: what the shore rooms hold, in counts and never in contents. */
   boathouse: BoathouseReading;
+  /** Hercules's Cottage: what his own room holds, in counts and never in contents. */
+  cottage: CottageReading;
 };
 
 /**
@@ -266,6 +268,52 @@ export function buildBoathouseReading(household: { hearthside?: { experiences?: 
   if (!state || typeof state !== "object") return EMPTY_BOATHOUSE_READING;
   const count = (rows: unknown): number => (Array.isArray(rows) ? rows.length : 0);
   return { wishes: count(state.experiences), memories: count(state.memories), letters: count(state.notes), encounters: count(state.encounters) };
+}
+
+/**
+ * Hercules's Cottage (LITTLE_HARBOUR_v2 §2, "Making"): what his own room
+ * holds, in **counts and never in contents**. Which pieces he has on, whose
+ * look is on which shelf and what anybody wrote on a keepsake all stay behind
+ * the doors that own them; the cottage only ever says how many.
+ */
+export type CottageReading = {
+  /** His name, as the household set it. The one word here that is not a count. */
+  name: string;
+  /** Pieces he has on right now — filled slots, never which piece or which colour. */
+  worn: number;
+  /** Looks kept in the cabinet: the household's standing gallery rows. */
+  looks: number;
+  /** Keepsakes and toys standing on his shelves (the play room's filled slots). */
+  keepsakes: number;
+};
+export const EMPTY_COTTAGE_READING: CottageReading = Object.freeze({ name: "Hercules", worn: 0, looks: 0, keepsakes: 0 });
+
+/** The staged outfit's slots, then the legacy equipped four. Structural only: a count never needs the catalogue. */
+function wornCount(household: CottageSource): number {
+  const staged = household.playRoom?.stageOutfit?.value?.selections;
+  if (staged && typeof staged === "object") {
+    const filled = Object.values(staged as Record<string, unknown>).filter((slot) => slot && typeof slot === "object").length;
+    if (filled > 0) return filled;
+  }
+  const equipped = household.kitchen?.companion?.equipped;
+  if (!equipped || typeof equipped !== "object") return 0;
+  return Object.values(equipped as Record<string, unknown>).filter((piece) => typeof piece === "string" && piece.length > 0).length;
+}
+
+/** What `buildCottageReading` needs, and no more: the shape, not the `Household`. */
+type CottageSource = {
+  kitchen?: { companion?: { name?: string; equipped?: unknown } };
+  companionGallery?: unknown[];
+  playRoom?: { slots?: unknown[]; stageOutfit?: { value?: { selections?: unknown } | null } | null };
+};
+
+/** Counts from the shared companion state. Pure, total: a household without one is an empty cottage. */
+export function buildCottageReading(household: CottageSource): CottageReading {
+  const name = household.kitchen?.companion?.name?.trim() || EMPTY_COTTAGE_READING.name;
+  // A withdrawn gallery row and an empty shelf both carry a `null` value; neither is a kept thing.
+  const standing = (rows: unknown): number =>
+    Array.isArray(rows) ? rows.filter((row) => row && typeof row === "object" && (row as { value?: unknown }).value != null).length : 0;
+  return { name, worn: wornCount(household), looks: standing(household.companionGallery), keepsakes: standing(household.playRoom?.slots) };
 }
 
 export const HARBOUR_SLIP_LINES = 3;
@@ -478,6 +526,7 @@ export function buildHarbourReading(household: Household, memberId: string, toda
     glasshouse: buildGlasshouseReading(household, memberId, today),
     kitchen: buildKitchenReading(household, memberId, today),
     boathouse: buildBoathouseReading(household),
+    cottage: buildCottageReading(household),
     tower: buildTowerReading(household, memberId, today, nest),
     cellar: buildCellarReading(household, memberId, today, nest, snapshot.prepare.amountCents),
     cistern: buildCisternReading({ cents: snapshot.protect.amountCents, target: snapshot.protect.targetCents }),

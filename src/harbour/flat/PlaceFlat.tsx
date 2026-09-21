@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { HarbourPlaceId } from "../flag.ts";
-import type { BoathouseReading, CellarReadingView, GlasshouseReading, HarbourReading, KitchenReading, TowerReading } from "../data/reading.ts";
+import type { BoathouseReading, CellarReadingView, CottageReading, GlasshouseReading, HarbourReading, KitchenReading, TowerReading } from "../data/reading.ts";
 import { CourtFlat, engravedCents, type CourtFlatProps, type CourtFlatStatus } from "./CourtFlat.tsx";
 import "../harbour.css";
 
@@ -34,6 +34,7 @@ export function HarbourFlat({ place, ...props }: PlaceFlatProps) {
   if (place === "kitchen") return <KitchenFlat {...props} />;
   if (place === "boathouse") return <BoathouseFlat {...props} />;
   if (place === "library") return <LibraryFlat {...props} />;
+  if (place === "cottage") return <CottageFlat {...props} />;
   const { reading, status, theme, partnerName, onOpen, onEnter, overlay } = props;
   return <CourtFlat reading={reading} status={status} theme={theme} partnerName={partnerName} onOpen={onOpen} onEnter={onEnter} overlay={overlay} />;
 }
@@ -249,6 +250,39 @@ export function BoathouseFlat({ reading, status = "loading", theme = "classic", 
           </button>
         </li>)}
       </ul>
+    </div>
+  </section>;
+}
+
+/**
+ * Hercules's Cottage, read as paper: the armoire, the glass, the cabinet with
+ * its counts, the window seat with what he has on, and the bell — every one a
+ * real button onto the room that already owns it. Counts, never contents.
+ */
+export function CottageFlat({ reading, status = "loading", theme = "classic", onOpen, overlay = false, onStair }: Omit<PlaceFlatProps, "place">) {
+  const cottage: CottageReading | null = reading?.cottage ?? null;
+  const name = cottage?.name ?? "Hercules";
+  const count = (n: number | undefined, one: string, many: string) => (n === undefined ? "" : n === 0 ? "nothing yet" : `${n} ${n === 1 ? one : many}`);
+  const rows: [string, string | undefined, string, string][] = [
+    ["wardrobe", undefined, "The armoire", `${name}’s rail of pieces, doors a hand open`],
+    ["wardrobe", "mirror", "The cheval glass", "See how a piece sits before he wears it"],
+    ["wardrobe", "looks", "The cabinet of wonders", `${count(cottage?.looks, "look kept", "looks kept")} · ${count(cottage?.keepsakes, "keepsake on the shelf", "keepsakes on the shelves")}`],
+    ["hercules", undefined, "The window seat", cottage ? (cottage.worn === 0 ? `${name} asleep in his own fur today` : `${name} asleep, wearing ${cottage.worn} ${cottage.worn === 1 ? "piece" : "pieces"}`) : `${name} asleep in the light`],
+    ["hercules", undefined, "The bell by the door", `Ring it and ${name} comes`],
+  ];
+  return <section className={`court-flat place-flat place-flat--cottage court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="cottage" aria-label="Hercules’s Cottage, reading edition" aria-busy={status === "loading" || undefined}>
+    <div className="court-flat__sheet">
+      <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Cottage")}</p>
+      {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Through the cottage door to the Court</button>}
+      <ul className="place-flat__pots">
+        {rows.map(([target, object, title, words], index) => <li key={`${target}:${object ?? index}`}>
+          <button type="button" onClick={() => onOpen?.(target, object)}>
+            <strong>{title}</strong>
+            <span>{words}</span>
+          </button>
+        </li>)}
+      </ul>
+      <p className="place-flat__line">This room counts what is kept; it never shows what is in it. Nothing on this page moves money.</p>
     </div>
   </section>;
 }

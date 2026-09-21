@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { seedDemoHousehold } from "../src/core/seed.ts";
-import { buildHarbourReading, EMPTY_BOATHOUSE_READING, EMPTY_CELLAR_READING, EMPTY_CISTERN_READING, EMPTY_GLASSHOUSE_READING, EMPTY_KITCHEN_READING, EMPTY_TOWER_READING, type HarbourReading } from "../src/harbour/data/reading.ts";
+import { buildHarbourReading, EMPTY_BOATHOUSE_READING, EMPTY_CELLAR_READING, EMPTY_CISTERN_READING, EMPTY_COTTAGE_READING, EMPTY_GLASSHOUSE_READING, EMPTY_KITCHEN_READING, EMPTY_TOWER_READING, type HarbourReading } from "../src/harbour/data/reading.ts";
 import { doorSigns, plainDollars, shortDate } from "../src/harbour/nav/doorSigns.ts";
 
 const today = "2026-09-20";
@@ -27,6 +27,7 @@ const settled: HarbourReading = {
   glasshouse: EMPTY_GLASSHOUSE_READING,
   kitchen: EMPTY_KITCHEN_READING,
   boathouse: EMPTY_BOATHOUSE_READING,
+  cottage: EMPTY_COTTAGE_READING,
 };
 
 describe("plain words for the door signs", () => {
