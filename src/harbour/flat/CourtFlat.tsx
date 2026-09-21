@@ -1,5 +1,6 @@
 import { formatCad } from "../../core/money.ts";
 import type { HarbourReading } from "../data/reading.ts";
+import { DoorSign } from "./DoorSign.tsx";
 import "../harbour.css";
 
 export type CourtFlatStatus = "loading" | "fallback" | "flat";
@@ -62,7 +63,7 @@ export function CourtFlat({ reading, status = "loading", theme = "classic", part
   const busy = status === "loading";
   const angle = next ? sundialAngle(next.daysAhead) : Math.PI / 2;
   const shadow = { x: Math.sin(angle) * 26, y: -Math.cos(angle) * 26 };
-  return <section className={`court-flat court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} aria-label="The Queen's Court, reading edition" aria-busy={busy || undefined}>
+  return <section className={`court-flat court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="court" aria-label="The Queen's Court, reading edition" aria-busy={busy || undefined}>
     <svg className="court-flat__scene" viewBox="0 0 800 520" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMid slice">
       <rect width="800" height="520" fill={SKY[theme]} />
       <ellipse cx="400" cy="620" rx="720" ry="300" fill={SEA[theme]} opacity=".55" />
@@ -100,6 +101,7 @@ export function CourtFlat({ reading, status = "loading", theme = "classic", part
     </svg>
     <div className="court-flat__sheet">
       <p className="court-flat__status" role="status">{label}</p>
+      <DoorSign place="court" reading={reading} />
       <div className="court-flat__stone court-flat__stone--everyday">
         <button type="button" className="court-flat__plate" onClick={open("queen")} aria-label={`The Queen. Everyday ${engravedCents(reading?.everyday)}. Meet the Queen.`}>
           <small>Everyday · at her feet</small><strong>{engravedCents(reading?.everyday)}</strong>

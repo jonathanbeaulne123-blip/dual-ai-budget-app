@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { HarbourPlaceId } from "../flag.ts";
 import type { AtlasReading, BoathouseReading, CampfireReading, CellarReadingView, CottageReading, GlasshouseReading, HarbourReading, KilnReading, KitchenReading, TowerReading } from "../data/reading.ts";
 import { CourtFlat, engravedCents, type CourtFlatProps, type CourtFlatStatus } from "./CourtFlat.tsx";
+import { DoorSign } from "./DoorSign.tsx";
 import "../harbour.css";
 
 /**
@@ -61,7 +62,13 @@ export function TowerFlat({ reading, status = "loading", theme = "classic", onOp
   return <section className={`court-flat place-flat place-flat--tower court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="tower" aria-label="The Rook's Tower, reading edition" aria-busy={status === "loading" || undefined}>
     <div className="court-flat__sheet">
       <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Tower")}</p>
+      <DoorSign place="tower" reading={reading} />
       {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Down the stair to the Court</button>}
+      {/* The room's own door, always: a rack that has not been read yet is a
+          reason to open the Loft, not a reason to have no way into it. */}
+      <div className="place-flat__doors">
+        <button type="button" onClick={() => onOpen?.("loft-banks")}>Open Kitty Banks</button>
+      </div>
       <div className="place-flat__landing">
         <button type="button" className="court-flat__plate" onClick={() => onOpen?.("loft-banks", "pour")} disabled={!tower?.jug.custodian}
           aria-label={tower?.jug.custodian ? `The jug. ${engravedCents(tower.jug.safeCents)} of safe surplus to pour. Open the Loft at the pour.` : `The jug's stand is empty. ${tower?.jug.holder ?? "The custodian"} holds the jug.`}>
@@ -119,7 +126,13 @@ export function CellarFlat({ reading, status = "loading", theme = "classic", onO
   return <section className={`court-flat place-flat place-flat--cellar court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="cellar" aria-label="The Cellar, reading edition" aria-busy={status === "loading" || undefined}>
     <div className="court-flat__sheet">
       <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Cellar")}</p>
+      <DoorSign place="cellar" reading={reading} />
       {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Up the stair to the Court</button>}
+      {/* The room's own door, always: an empty rail is a reason to read the
+          bill jars, not a reason to have no way to them. */}
+      <div className="place-flat__doors">
+        <button type="button" onClick={() => onOpen?.("cellar-bills")}>Read the bill jars</button>
+      </div>
       <div className="place-flat__water">
         <p className="place-flat__waterline">
           <small>The water · Prepare behind the rail</small>
@@ -169,6 +182,7 @@ export function GlasshouseFlat({ reading, status = "loading", theme = "classic",
   return <section className={`court-flat place-flat place-flat--glasshouse court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="glasshouse" aria-label="The Glasshouse, reading edition" aria-busy={status === "loading" || undefined}>
     <div className="court-flat__sheet">
       <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Glasshouse")}</p>
+      <DoorSign place="glasshouse" reading={reading} />
       {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Through the garden door to the Court</button>}
       {benches.map(([name, pots]) => <div className="place-flat__bench" key={name}>
         <h3>{name}{pots.length === 0 ? " — a clear bench" : ""}</h3>
@@ -182,6 +196,9 @@ export function GlasshouseFlat({ reading, status = "loading", theme = "classic",
         </ul>}
       </div>)}
       <p className="place-flat__line">{(glasshouse?.harvested ?? 0) === 0 ? "The harvest shelf — nothing yet this week." : `Harvested — ${glasshouse?.harvested} this week. Nothing is deleted; it is harvested.`}</p>
+      {glasshouse && (glasshouse.mine.seed + glasshouse.mine.sprout + glasshouse.mine.bloom) > 0 && <p className="place-flat__line" data-place-fact="mine">
+        The side bench — your own: {glasshouse.mine.seed} {glasshouse.mine.seed === 1 ? "seed" : "seeds"}, {glasshouse.mine.sprout} {glasshouse.mine.sprout === 1 ? "sprout" : "sprouts"}, {glasshouse.mine.bloom} in bloom. Counted here, never named.
+      </p>}
       {(glasshouse?.perennials.length ?? 0) > 0 && <p className="place-flat__line">The long bed — {glasshouse!.perennials.map((p) => p.title).join(", ")}.</p>}
       {(glasshouse?.overflow ?? 0) > 0 && <p className="place-flat__line">And {glasshouse?.overflow} more on the paper.</p>}
       <div className="place-flat__doors">
@@ -205,11 +222,17 @@ export function KitchenFlat({ reading, status = "loading", theme = "classic", on
   return <section className={`court-flat place-flat place-flat--kitchen court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="kitchen" aria-label="The Kitchen, reading edition" aria-busy={status === "loading" || undefined}>
     <div className="court-flat__sheet">
       <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Kitchen")}</p>
+      <DoorSign place="kitchen" reading={reading} />
       {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Through the kitchen door to the Court</button>}
       <div className="place-flat__doors">
         <button type="button" onClick={() => onOpen?.("plan-studio")}>Sit down — five questions, one card</button>
         <button type="button" onClick={() => onOpen?.("conversation")}>Open the conversation folio</button>
       </div>
+      {kitchen?.state && <p className="place-flat__line" data-place-fact="state">{
+        kitchen.state === "active" ? "The plan on the wall is the one you are living."
+          : kitchen.state === "scheduled" ? "The plan on the wall starts on its own date; nothing has changed yet."
+            : "The plan on the wall is proposed — nothing is agreed until both of you sit."
+      }</p>}
       {kitchen && kitchen.waiting && <p className="place-flat__line">A card is on the table until the other of you sits. Not now is a valid answer.</p>}
       <div className="place-flat__bench">
         <h3>The cookbook wall{(kitchen?.cards.length ?? 0) === 0 ? " — bare, an empty card waiting" : ` — ${kitchen?.monthKey}`}</h3>
@@ -244,6 +267,7 @@ export function BoathouseFlat({ reading, status = "loading", theme = "classic", 
   return <section className={`court-flat place-flat place-flat--boathouse court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="boathouse" aria-label="The Boathouse, reading edition" aria-busy={status === "loading" || undefined}>
     <div className="court-flat__sheet">
       <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Boathouse")}</p>
+      <DoorSign place="boathouse" reading={reading} />
       {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Through the shore door to the Court</button>}
       <ul className="place-flat__pots">
         {rows.map(([target, words, count]) => <li key={target}>
@@ -253,6 +277,7 @@ export function BoathouseFlat({ reading, status = "loading", theme = "classic", 
           </button>
         </li>)}
       </ul>
+      {(boathouse?.hung ?? 0) > 0 && <p className="place-flat__line" data-place-fact="hung">{boathouse!.hung} {boathouse!.hung === 1 ? "wish was" : "wishes were"} hung in the last few days — the newest lantern is still warm.</p>}
     </div>
   </section>;
 }
@@ -276,6 +301,7 @@ export function CottageFlat({ reading, status = "loading", theme = "classic", on
   return <section className={`court-flat place-flat place-flat--cottage court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="cottage" aria-label="Hercules’s Cottage, reading edition" aria-busy={status === "loading" || undefined}>
     <div className="court-flat__sheet">
       <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Cottage")}</p>
+      <DoorSign place="cottage" reading={reading} />
       {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Through the cottage door to the Court</button>}
       <ul className="place-flat__pots">
         {rows.map(([target, object, title, words], index) => <li key={`${target}:${object ?? index}`}>
@@ -308,6 +334,7 @@ export function KilnFlat({ reading, status = "loading", theme = "classic", onOpe
   return <section className={`court-flat place-flat place-flat--kiln court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="kiln" aria-label="The Kiln, reading edition" aria-busy={status === "loading" || undefined}>
     <div className="court-flat__sheet">
       <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Kiln")}</p>
+      <DoorSign place="kiln" reading={reading} />
       {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Through the kiln door to the Court</button>}
       <div className="place-flat__doors">
         <button type="button" onClick={() => onOpen?.("pottery", "wheel")}>Sit down at the wheel</button>
@@ -354,6 +381,7 @@ export function CampfireFlat({ reading, status = "loading", theme = "classic", o
   return <section className={`court-flat place-flat place-flat--campfire court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="campfire" aria-label="The Campfire, reading edition" aria-busy={status === "loading" || undefined}>
     <div className="court-flat__sheet">
       <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Campfire")}</p>
+      <DoorSign place="campfire" reading={reading} />
       {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Up the footpath to the Court</button>}
       <div className="place-flat__doors">
         <button type="button" onClick={() => onOpen?.("plan-studio")}>
@@ -361,6 +389,7 @@ export function CampfireFlat({ reading, status = "loading", theme = "classic", o
         </button>
       </div>
       <p className="place-flat__line">{where}</p>
+      {seats.length > 0 && <p className="place-flat__line" data-place-fact="seated">{fire!.seated} of {seats.length} {seats.length === 1 ? "log" : "logs"} taken.</p>}
       {seats.length > 0 && <ul className="place-flat__pots" aria-label="The logs around the fire">
         {seats.map((seat) => <li key={seat.memberId}>
           <button type="button" onClick={() => onOpen?.("plan-studio")}>
@@ -401,6 +430,7 @@ export function AtlasFlat({ reading, status = "loading", theme = "classic", onOp
   return <section className={`court-flat place-flat place-flat--atlas court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="atlas" aria-label="The Atlas, reading edition" aria-busy={status === "loading" || undefined}>
     <div className="court-flat__sheet">
       <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Atlas")}</p>
+      <DoorSign place="atlas" reading={reading} />
       {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Down the stair to the Court</button>}
       <div className="place-flat__doors">
         <button type="button" onClick={() => onOpen?.("journey", era?.key)}>Step into Journey</button>
@@ -411,7 +441,7 @@ export function AtlasFlat({ reading, status = "loading", theme = "classic", onOp
           <li>
             <button type="button" onClick={() => onOpen?.("journey", era?.key ?? "era-home")}>
               <strong>{era ? era.name : "The island is waiting to be named"}</strong>
-              <span>{era ? `${place} · ${months} · in ${era.homeLabel}` : "Step into Journey and begin the first era"}</span>
+              <span>{era ? `${place} · ${months} · in ${era.homeLabel}${era.plans > 0 ? ` · ${era.plans} ${era.plans === 1 ? "plan" : "plans"} standing` : ""}` : "Step into Journey and begin the first era"}</span>
             </button>
           </li>
           {atlas?.gate && <li>
@@ -436,16 +466,23 @@ export function AtlasFlat({ reading, status = "loading", theme = "classic", onOp
 }
 
 /** The Library, read as paper: the Book, the Bindery and the Time Machine, each a real button. */
-export function LibraryFlat({ status = "loading", theme = "classic", onOpen, overlay = false, onStair }: Omit<PlaceFlatProps, "place">) {
+export function LibraryFlat({ reading, status = "loading", theme = "classic", onOpen, overlay = false, onStair }: Omit<PlaceFlatProps, "place">) {
   return <section className={`court-flat place-flat place-flat--library court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="library" aria-label="The Library, reading edition" aria-busy={status === "loading" || undefined}>
     <div className="court-flat__sheet">
       <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Library")}</p>
+      <DoorSign place="library" reading={reading} />
       {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Through the hall door to the Court</button>}
       <ul className="place-flat__pots">
         <li><button type="button" onClick={() => onOpen?.("books")}><strong>The Standing Book</strong><span>open on its lectern — every figure has a source</span></button></li>
         <li><button type="button" onClick={() => onOpen?.("books")}><strong>The Bindery</strong><span>five machines, one per divider</span></button></li>
         <li><button type="button" onClick={() => onOpen?.("books")}><strong>The Time Machine</strong><span>thumbing back through the leaves</span></button></li>
       </ul>
+      {reading && <p className="place-flat__line" data-place-fact="books">{
+        reading.freshness === "current" ? "The books are current: every figure on this island was read from them."
+          : reading.freshness === "stale" ? "The books have not just been checked. Every figure still comes from them, read a little while ago."
+            : "The books are offline. Every figure is the last one that was read; nothing here is guessed."
+      }</p>}
+      {reading?.condition && reading.condition.state !== "checking" && <p className="court-flat__condition" data-condition={reading.condition.state}>{reading.condition.words}</p>}
     </div>
   </section>;
 }
