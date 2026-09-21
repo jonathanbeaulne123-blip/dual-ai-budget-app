@@ -1,12 +1,20 @@
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { parseQueenModel, readQueenModel } from "../../queen/world/queenModel.ts";
 import type { QueenStyle } from "../queenStyle.ts";
 
 export type BloomEvidence = {id: string; title: string; kind:"intention"|"lived"|"revision"|"care"; date: string | null; revision: number};
 export const BLOOM_MASTER_SHA256 = "ddde35ae3ce025563ab546b13dc54f6f4376a1cddffe947c14dca082e05c2561";
+/** The Living Presence master, as `src/harbour/assets/manifest.ts` lists it. */
+export const BLOOM_MASTER_URL = "/models/mandevilla-living-presence.glb";
 const hash = (text: string) => [...text].reduce((sum,c)=>Math.imul(sum ^ c.charCodeAt(0),16777619)>>>0,2166136261);
 let master:Promise<THREE.Group>|null=null,masterRoot:THREE.Group|null=null,users=0;
-async function acquireMaster(){users++;try{master??=new GLTFLoader().loadAsync("/models/mandevilla-living-presence.glb").then(gltf=>{masterRoot=gltf.scene;return gltf.scene;});return await master;}catch(error){users--;master=null;throw error;}}
+/**
+ * The master is fetched through `readQueenModel`, which asks for the `.gz`
+ * transfer twin first and falls back to the raw `.glb` — 8.15 MB instead of
+ * 12.32 MB over the wire, the same bytes either way. Nothing else changes:
+ * the parsed scene is the file exactly as Jonathan supplied it.
+ */
+async function acquireMaster(){users++;try{master??=readQueenModel(undefined,BLOOM_MASTER_URL).then(parseQueenModel).then(scene=>{masterRoot=scene;return scene;});return await master;}catch(error){users--;master=null;throw error;}}
 function releaseMaster(){users--;if(users===0&&masterRoot){disposeObject(masterRoot);masterRoot=null;master=null;}}
 /**
  * What is drawn around the master. The house keeps both (today's look); the

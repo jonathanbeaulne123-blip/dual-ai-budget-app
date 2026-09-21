@@ -49,7 +49,7 @@ export const COURT_ASSETS: Readonly<Record<CourtPieceId, GlbAsset>> = Object.fre
  * the lite tier. Both carry the same node names, so the region map is shared.
  */
 export const QUEEN_ASSETS: Readonly<Record<QueenAssetId, GlbAsset>> = Object.freeze({
-  presence: { url: "/models/mandevilla-living-presence.glb", gz: null, sha256: "ddde35ae3ce025563ab546b13dc54f6f4376a1cddffe947c14dca082e05c2561", bytes: 12_922_440, tier: "full" },
+  presence: { url: "/models/mandevilla-living-presence.glb", gz: "/models/mandevilla-living-presence.glb.gz", sha256: "ddde35ae3ce025563ab546b13dc54f6f4376a1cddffe947c14dca082e05c2561", bytes: 12_922_440, tier: "full" },
   court: { url: "/models/mandevilla-living-presence.court.glb", gz: "/models/mandevilla-living-presence.court.glb.gz", sha256: "bb6337beadb5b47329f5ec238ff303e45be87755f387f63c90d4de7bc33321a4", bytes: 3_488_792, tier: "lite" },
 });
 
