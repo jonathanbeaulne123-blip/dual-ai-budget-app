@@ -20,8 +20,19 @@ import type { RoomHold } from "../camera/poses.ts";
 export type Vec3 = readonly [number, number, number];
 export type Composition = "phone" | "desktop";
 
+/**
+ * A live position feed for the partner's body (`ledgerSync/worldPresence.ts`).
+ * The object is stable for the life of a peer and is **polled once per
+ * animated frame** by the place, so 12.5 samples a second never become 12.5
+ * React renders a second. `null` means there is no live position to draw and
+ * the place must fall back to its honest "was here recently" treatment.
+ */
+export type PlaceWalkSource = {
+  pose(nowMs: number): { x: number; z: number; yaw: number; moving: boolean; opacity: number } | null;
+};
+
 /** The partner's presence, from the App's soft-presence display (never from the books). */
-export type PlacePartner = { fresh: boolean; name?: string };
+export type PlacePartner = { fresh: boolean; name?: string; walk?: PlaceWalkSource | null };
 /** What a place reads: writer B's `HarbourReading` plus the partner the shell adds. */
 export type PlaceReading = HarbourReading & { partner?: PlacePartner | null };
 

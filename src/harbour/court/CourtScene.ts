@@ -3,7 +3,8 @@ import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js
 import type { FundPulseFreshness } from "../../core/fundPulse.ts";
 import type { HouseCondition } from "../../core/houseCondition.ts";
 import { createContactShadows } from "../scene/contact.ts";
-import { registerPlace, type Anchor, type Place, type PlaceHandle, type Pose, type Region, type Vec3 } from "../scene/place.ts";
+import { registerPlace, type Anchor, type Place, type PlaceWalkSource, type PlaceHandle, type Pose, type Region, type Vec3 } from "../scene/place.ts";
+import { createWalker, type Walker } from "../presence/walker.ts";
 import { courtDressingFrom, type CourtDressing, type CourtProp } from "./dressing.ts";
 import { EngravedPlate, engravedWords, plateFinish, seeded, type PlateFinish } from "./engraved.ts";
 import { createMailbox, slipLines } from "./mailbox.ts";
@@ -59,7 +60,7 @@ export type CourtReading = {
   slip: string[];
   condition: { state: HouseCondition["state"] } | null;
   freshness: FundPulseFreshness;
-  partner: { fresh: boolean; name?: string } | null;
+  partner: { fresh: boolean; name?: string; walk?: PlaceWalkSource | null } | null;
 };
 
 const asCents = (value: unknown): number | null => (typeof value === "number" && Number.isFinite(value) ? value : null);
@@ -72,7 +73,7 @@ export function readCourtReading(value: unknown): CourtReading {
   const next = row.next && typeof row.next === "object" ? (row.next as { label?: unknown; daysAhead?: unknown }) : null;
   const noticed = row.noticed && typeof row.noticed === "object" ? (row.noticed as { fact?: unknown; next?: unknown }) : null;
   const condition = row.condition && typeof row.condition === "object" ? (row.condition as { state?: unknown }).state : null;
-  const partner = row.partner && typeof row.partner === "object" ? (row.partner as { fresh?: unknown; name?: unknown }) : null;
+  const partner = row.partner && typeof row.partner === "object" ? (row.partner as { fresh?: unknown; name?: unknown; walk?: unknown }) : null;
   const freshness = row.freshness === "stale" || row.freshness === "offline" ? row.freshness : "current";
   return {
     everyday: asCents(row.everyday),
@@ -84,7 +85,18 @@ export function readCourtReading(value: unknown): CourtReading {
     slip: Array.isArray(row.slip) ? row.slip.filter((line): line is string => typeof line === "string").slice(0, 3) : [],
     condition: typeof condition === "string" && (CONDITIONS as readonly string[]).includes(condition) ? { state: condition as HouseCondition["state"] } : null,
     freshness,
-    partner: partner ? { fresh: partner.fresh === true, ...(typeof partner.name === "string" ? { name: partner.name } : {}) } : null,
+    // The live feed is an object, not data: it is carried through untouched
+    // when it answers `pose`, and dropped otherwise, so a malformed reading can
+    // never make the Court draw a body.
+    partner: partner
+      ? {
+          fresh: partner.fresh === true,
+          ...(typeof partner.name === "string" ? { name: partner.name } : {}),
+          ...(partner.walk && typeof (partner.walk as PlaceWalkSource).pose === "function"
+            ? { walk: partner.walk as PlaceWalkSource }
+            : {}),
+        }
+      : null,
   };
 }
 
@@ -570,10 +582,53 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   const TAIL_REST = 0.1; tailPivot.rotation.y = TAIL_REST;
   contact(0, 0, 0.62, 0.7, hercules);
 
-  // ── Partner marker: a small figure pin at the gate ──────────────────────────
+  // ── The partner: a pin when they were here, a body when they are ───────────
+  //
+  // Two objects, and which one stands is a statement about the data, not about
+  // the connection. The **pin** is what the app has always had: a 46 cm figure
+  // at the gate, meaning "was here recently" — soft presence, minutes old, no
+  // claim about right now. The **walker** is new and means only one thing:
+  // this person is in the Court at this moment and that is where they are
+  // standing. It is drawn from `ledgerSync/worldPresence.ts` through the
+  // reading's `partner.walk` source, polled every animated frame rather than
+  // pushed through React.
+  //
+  // They are never both up. The moment the live feed stops being live —
+  // position sharing turned off, the tab backgrounded, the socket gone, a
+  // sample older than two and a half seconds — the walker fades out
+  // (`worldMotion.ts` parks it where it was last *actually* seen, never where
+  // it was guessed to be) and the pin comes back. A body is never drawn
+  // walking on stale data, and a body never freezes mid-stride waiting for a
+  // packet that is not coming.
   const partner = new THREE.Group(); partner.name = "partner"; partner.position.set(...COURT_LAYOUT.partner); partner.visible = false; group.add(partner);
   const figure = shadowed(new THREE.Mesh(track(new THREE.CylinderGeometry(0.075, 0.1, 0.36, 12)), mat(dressing.second, { roughness: 0.6 }))); figure.position.y = 0.18; partner.add(figure);
   const figureHead = shadowed(new THREE.Mesh(track(new THREE.SphereGeometry(0.1, 12, 10)), porcelain)); figureHead.position.y = 0.46; partner.add(figureHead);
+
+  // The body. `createWalker` is the seam (`presence/walker.ts`): a placeholder
+  // capsule today, the real character the moment its lane registers a factory.
+  const partnerWalker: Walker = createWalker({ tint: dressing.second, skin: dressing.porcelain, groundHeightAt, height: 0.46 });
+  partnerWalker.setOpacity(0);
+  group.add(partnerWalker.group);
+  track(partnerWalker);
+  let partnerWalk: PlaceWalkSource | null = null;
+  /** True while a live body is on screen: the Court keeps asking for frames for as long as it is. */
+  let partnerWalking = false;
+  /** The soft-presence answer for the pin, kept so the fade back to it needs no new reading. */
+  let lastPartnerFresh = false;
+
+  /** Poll the feed and place the body. Returns true when a live body is standing. */
+  function drawPartner(nowMs = Date.now()): boolean {
+    const pose = partnerWalk?.pose(nowMs) ?? null;
+    if (!pose || pose.opacity <= 0) {
+      partnerWalker.setMoving(false);
+      partnerWalker.setOpacity(0);
+      return false;
+    }
+    partnerWalker.setPose(pose.x, pose.z, pose.yaw);
+    partnerWalker.setMoving(pose.moving);
+    partnerWalker.setOpacity(pose.opacity);
+    return true;
+  }
 
   // ── Potted plants in the theme's prop set ───────────────────────────────────
   const propMaterials = {
@@ -737,7 +792,12 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     jointMaterial.color.copy(jointColor).lerp(mossColor, Math.min(1, coverage * 0.9));
     pads.count = Math.round(PADS * coverage);
     crack.visible = state === "weathered";
-    partner.visible = reading.partner?.fresh === true;
+    // The live source first: a body standing is the only thing that hides the pin.
+    partnerWalk = reading.partner?.walk ?? null;
+    lastPartnerFresh = reading.partner?.fresh === true;
+    partnerWalking = drawPartner();
+    partner.visible = !partnerWalking && reading.partner?.fresh === true;
+    if (partnerWalking) pendingRedraw = true;
     // The door signs: one plate per building, re-engraved only when the words change.
     signs = courtSigns(value as Parameters<typeof courtSigns>[0]);
     for (const { id, plate } of signPlates) {
@@ -754,9 +814,16 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     const phase = ((t % 9) + 9) % 9;
     const flicking = phase < 2.2;
     tailPivot.rotation.y = flicking ? TAIL_REST + Math.sin(phase * 2.6) * 0.32 * (1 - phase / 2.2) : TAIL_REST;
+    // The partner's body is polled here, at frame rate, from samples that
+    // arrive at 12.5 Hz — the interpolation in `worldMotion.ts` is what turns
+    // one into the other. While a body is up the Court keeps asking for frames.
+    const wasWalking = partnerWalking;
+    partnerWalking = drawPartner();
+    if (partnerWalking) partnerWalker.animate(t, _dt);
+    if (wasWalking !== partnerWalking) partner.visible = !partnerWalking && lastPartnerFresh;
     const redraw = pendingRedraw;
     pendingRedraw = false;
-    return flicking || redraw;
+    return flicking || redraw || partnerWalking || wasWalking;
   }
 
   return {

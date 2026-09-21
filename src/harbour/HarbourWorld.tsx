@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import type { DateKey } from "../core/calendar.ts";
 import type { Household, LedgerView } from "../core/types.ts";
 import type { FundPulseFreshness } from "../core/fundPulse.ts";
-import { isFreshPresence, type SoftPresenceDisplay } from "../softPresence.ts";
+import { isFreshPresence, memberDisplayName, type SoftPresenceDisplay } from "../softPresence.ts";
 import type { HouseRoute, HouseRoom, HouseLevel } from "../hearthside/houseRoutes.ts";
 import { readHouseReturn, saveHouseReturn, houseIdentity } from "../house/navigation.ts";
 import { houseCameraRoute, houseComposition, sameHouseCameraRoute } from "../house/returnCache.ts";
@@ -23,6 +23,7 @@ import type { QueenPlace } from "./court/queenPlace.ts";
 import type { CourtHandle } from "./court/CourtScene.ts";
 import type { HarbourRuntime, HarbourGesture, HarbourHit, ProjectedRect, ScrubControls } from "./scene/runtime.ts";
 import { PLACES, sceneDressingFrom, type PlaceReading, type Region } from "./scene/place.ts";
+import { usePartnerWalk } from "./presence/usePartnerWalk.ts";
 import { harbourCameraSlot } from "./scene/travel.ts";
 import { qualityTier, readQualityInput, type QualityTier, type RenderTier } from "./scene/quality.ts";
 import "./harbour.css";
@@ -114,11 +115,33 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const identityRef = useRef(identity); identityRef.current = identity;
 
   const { reading, statusLine } = useHarbourReading({ household, memberId, today, freshness: pulseFreshness(interpretationGate), interpretationGate });
+  const softPeer = useMemo(() => presence?.peers.find(p => p.memberId !== memberId) ?? null, [presence, memberId]);
+  /**
+   * The world-presence lane (`presence/usePartnerWalk.ts`): the partner's live
+   * position, when they have chosen to share it. `walk` is a stable feed the
+   * Court polls per frame; when it is null — sharing off, feed stale, socket
+   * gone — the reading carries only `fresh`, which is the pin the app has
+   * always had. State reflects the data outcome, never the sync outcome.
+   */
+  const partnerWalk = usePartnerWalk({
+    environment: household.environment,
+    householdId: household.householdId,
+    memberId,
+    linked: household.linked === true,
+    view: scope,
+    placeId: place,
+    pose: () => runtime.current?.pose() ?? null,
+    softPeer,
+    softPresenceOptedOut: presence?.optedOut === true,
+  });
   const partner = useMemo(() => {
-    const peer = presence?.peers.find(p => p.memberId !== memberId);
-    if (peer) return { fresh: presence?.visible === true && isFreshPresence(peer.seenAt, Date.now()), name: peer.name };
-    return partnerName ? { fresh: false, name: partnerName } : null;
-  }, [presence, memberId, partnerName]);
+    // The live body's name is the household's word for the member the *server*
+    // named, never a name that travelled on the lane.
+    const walkName = partnerWalk.memberId ? memberDisplayName(household.members, partnerWalk.memberId) : null;
+    if (softPeer) return { fresh: presence?.visible === true && isFreshPresence(softPeer.seenAt, Date.now()), name: softPeer.name, walk: partnerWalk.walk };
+    if (partnerWalk.walk && walkName) return { fresh: false, name: walkName, walk: partnerWalk.walk };
+    return partnerName ? { fresh: false, name: partnerName, walk: partnerWalk.walk } : null;
+  }, [presence, softPeer, partnerName, partnerWalk.walk, partnerWalk.memberId, household.members]);
   const placeReading: PlaceReading = useMemo(() => ({ ...reading, partner }), [reading, partner]);
 
   const currentEvidence = useMemo(() => livingEvidence(household, memberId, scope), [household.hearthside, household.personalLife, memberId, scope]); // eslint-disable-line react-hooks/exhaustive-deps

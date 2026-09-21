@@ -158,7 +158,10 @@ export function attachWorldPresence(input: WorldPresenceInput): WorldPresenceHan
     publishPeers();
     if (stopped) return;
     if (!input.canPublish() || !visible()) {
-      if (joined) { leave(); setState("withheld"); }
+      leave();
+      // "Withheld" is the honest word for it: the socket is fine, the person
+      // has simply not agreed to be followed around.
+      if (open()) setState("withheld");
       return;
     }
     if (!open()) return;
@@ -245,7 +248,7 @@ export function attachWorldPresence(input: WorldPresenceInput): WorldPresenceHan
       if (stopped || !joined) return;
       // The gate is asked again here, not only on the heartbeat: a setting
       // turned off mid-walk stops the very next frame.
-      if (!input.canPublish() || !visible()) { leave(); setState("withheld"); return; }
+      if (!input.canPublish() || !visible()) { leave(); if (open()) setState("withheld"); return; }
       const next = throttle.offer(sample, now());
       if (!next) return;
       send({ type: "world-step", version: 1, ...next });
