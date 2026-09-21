@@ -63,10 +63,10 @@ import { FundLedge } from "./FundLedge.tsx";
 import { isVisibleInView } from "./core/visibility.ts";
 import { useAppearanceBinding } from "./theme/ThemeProvider.tsx";
 import { AppearancePicker } from "./theme/AppearancePicker.tsx";
-import { Memorabilia } from "./theme/Memorabilia.tsx";
-import { PageWorld, WorldCharm } from "./theme/PageWorld.tsx";
+import { Memorabilia as MemorabiliaScene } from "./theme/Memorabilia.tsx";
+import { PageWorld as PageWorldScene, WorldCharm as WorldCharmScene } from "./theme/PageWorld.tsx";
 import { useAppearance } from "./theme/ThemeProvider.tsx";
-import { ThemeSceneHeading } from "./theme/SceneArtwork.tsx";
+import { ThemeSceneHeading as ThemeSceneHeadingScene } from "./theme/SceneArtwork.tsx";
 import { PlanStudio } from "./PlanStudio.tsx";
 import { tokenFresh } from "./google/tokens.ts";
 import { WorkspaceProjectCards } from "./workspace/ProjectCards.tsx";
@@ -85,7 +85,7 @@ import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
 import { captureExplicit } from './ledgerSync/capture.ts';
 import { LedgerSyncClient, LedgerCommandRejectedError } from "./ledgerSync/client.ts";
 import { ledgerSyncEnabled, localLedgerIdentity } from "./ledgerSync/mode.ts";
-import { Suspense, lazy, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, lazy, memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   JOINT,
   NeedsConfirmationError,
@@ -464,7 +464,7 @@ import {
   type CommandChromeResult,
 } from "./commandSurface.tsx";
 import { COMMAND_SURFACE_FIXTURES } from "./claude/commandContract.ts";
-import { CommandProgressStatus } from "./CommandProgressStatus.tsx";
+import { CommandProgressStatus as CommandProgressStatusLine } from "./CommandProgressStatus.tsx";
 import {
   buildCommandProgress,
   commandProgressPhaseAfterOutcome,
@@ -474,7 +474,7 @@ import {
 import { clearSyncAnchor, saveSyncAnchor } from "./syncAnchor.ts";
 import { SyncFreshnessStatus } from "./SyncFreshnessStatus.tsx";
 import { KitchenNotice } from "./KitchenNotice.tsx";
-import { SoftPresenceStatus } from "./SoftPresenceStatus.tsx";
+import { SoftPresenceStatus as SoftPresenceStatusLine } from "./SoftPresenceStatus.tsx";
 import {
   buildSoftPresenceDisplay,
   canAdvertiseSoftPresence,
@@ -498,7 +498,7 @@ import {
   restorePointsHeaderPill,
 } from "./recentChangesCopy.ts";
 import { useDialog } from "./useDialog.ts";
-import { LedgerPurposeBanner } from "./LedgerPurposeBanner.tsx";
+import { LedgerPurposeBanner as LedgerPurposeBannerLine } from "./LedgerPurposeBanner.tsx";
 import { HerculesPresence } from "./Hercules.tsx";
 import { HerculesProApproval, HerculesProPermissionsCard, herculesProAuthorizationRequest } from "./HerculesPro.tsx";
 import { AddSlideshow, type AddFormFields, type AddMode } from "./AddSlideshow.tsx";
@@ -591,6 +591,25 @@ import {
   type BooksReadiness,
   type BooksWriteGate,
 } from "./startup/booksReadiness.ts";
+
+/**
+ * Render fences (P3). `App()` holds one household snapshot and no memo
+ * boundary, so every state change — a keystroke in Add, a sync freshness tick,
+ * a toast — re-rendered the whole mounted tree. These children are shown the
+ * same thing on nearly all of those renders: they take value props only (no
+ * handlers), so `memo` here is an exact identity comparison and cannot change
+ * what any of them does. Children that receive a Hearth command keep their
+ * per-render handler identity on purpose: `enqueueScopedWrite` refuses a write
+ * issued by a render whose household, member or room has since changed, so a
+ * command handed to a child must stay the closure that render created.
+ */
+const PageWorld = memo(PageWorldScene);
+const WorldCharm = memo(WorldCharmScene);
+const ThemeSceneHeading = memo(ThemeSceneHeadingScene);
+const Memorabilia = memo(MemorabiliaScene);
+const SoftPresenceStatus = memo(SoftPresenceStatusLine);
+const CommandProgressStatus = memo(CommandProgressStatusLine);
+const LedgerPurposeBanner = memo(LedgerPurposeBannerLine);
 
 type Tab = AppTab;
 
@@ -3730,6 +3749,15 @@ export function App() {
       live: softPresenceLive,
     }),
     [household, session?.memberId, environment, softPresenceOptOut, softPresenceLive],
+  );
+  /**
+   * Hercules' Fund reading (P3). This runs the contribution register over the
+   * accepted books; it was recomputed inside the Hercules props on every single
+   * App render. Same projection, same inputs, once per change.
+   */
+  const discoveryFund = useMemo(
+    () => (household && session ? buildDiscoveryFund(household, session.memberId, view, today) : null),
+    [household, session, view, today],
   );
 
   function applySoftPresenceOptOut(nextOptOut: boolean) {
@@ -9112,7 +9140,7 @@ export function App() {
           setFocusedAccountId(null);
           goTab("ledger");
         }}
-        discoveryFund={buildDiscoveryFund(household, session.memberId, view, today)}
+        discoveryFund={discoveryFund}
         discoveryAccountId={focusedAccountId}
         onDiscoveryNavigate={(destination: DiscoveryDestination) => {
           if (adding || swipeOpen || confirm || commandOpen) return;
