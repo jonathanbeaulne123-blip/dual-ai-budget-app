@@ -45,13 +45,36 @@ export const BOATHOUSE_LAYOUT = {
   lanternY: 2.35,
   /** The shore door back to the Court, front-left on the deck. */
   door: [-2.2, 0, 2.75] as const,
+  /** The unlit lantern by the door: the one you take down to make a wish. */
+  wishLantern: [-2.2, 2.05, 2.35] as const,
 } as const;
+
+/** How far a lantern hangs below the rafter its cord is nailed to. */
+export const LANTERN_DROP = 0.63;
+
+/** How far the newest lantern swings, and how long one swing takes. Gentle: a draught, not a wind. */
+export const LANTERN_SWAY = { radians: 0.07, seconds: 4.2 } as const;
+
+/** The newest lantern's tilt `t` seconds in. A slow sine — the same clock the frame policy hands every place. */
+export function lanternSway(t: number): number {
+  return Math.sin((t * 2 * Math.PI) / LANTERN_SWAY.seconds) * LANTERN_SWAY.radians;
+}
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
 /** A count in words that never shames an empty room: "nothing yet" is a state, not a fault. */
 export function fewWords(count: number, one: string, many: string): string {
   return count === 0 ? `nothing yet` : `${count} ${count === 1 ? one : many}`;
+}
+
+/**
+ * What the lanterns say. Counts, never contents: how many ideas are in the
+ * light, and — when one has just gone up — that one has, and nothing of what
+ * it is.
+ */
+export function lanternWords(wishes: number, hung: number): string {
+  const lit = `The lanterns — ${fewWords(wishes, "idea in the light", "ideas in the light")}`;
+  return hung > 0 ? `${lit}; a new wish was hung this week` : lit;
 }
 
 // Stand on the deck's west corner looking down the slip: the water and the
@@ -265,14 +288,34 @@ export function createBoathouse(scene: THREE.Scene, options: BoathouseOptions): 
   lettersPlate.mesh.position.set(dkx - 0.42, 1.15, dkz);
   lettersPlate.mesh.rotation.y = Math.PI / 2; lettersPlate.mesh.userData.anchor = "letters"; group.add(lettersPlate.mesh);
 
+  // ── The unlit lantern by the door: the way a wish is made ────────────────
+  // It hangs cold beside the shore door and never lights of its own accord —
+  // it is a door onto the room where a wish is written, and the harbour writes
+  // nothing. It is built once and stands whatever the reading says.
+  const [wlx, wly, wlz] = BOATHOUSE_LAYOUT.wishLantern;
+  const wishLantern = new THREE.Group();
+  wishLantern.name = "boathouse-wish-lantern";
+  {
+    const shade = new THREE.Mesh(track(new THREE.SphereGeometry(0.12, 10, 8)), mat(dressing.lantern, { roughness: 0.9 }));
+    shade.scale.y = 1.25; wishLantern.add(shade);
+    const cord = new THREE.Mesh(track(new THREE.CylinderGeometry(0.008, 0.008, 0.42, 4)), mat(dressing.frame, { roughness: 0.9 }));
+    cord.position.y = 0.34; wishLantern.add(cord);
+    wishLantern.position.set(wlx, wly, wlz);
+    wishLantern.userData.anchor = "wish";
+    wishLantern.traverse((node) => { node.userData.anchor = "wish"; });
+    group.add(wishLantern);
+  }
+
   let lanternMeshes: THREE.Object3D[] = [];
+  /** The newest lantern, while the reading says one has just gone up. It sways; nothing else does. */
+  let newestLantern: THREE.Object3D | null = null;
   let frameMeshes: THREE.Object3D[] = [];
   let view: BoathouseReading = EMPTY_BOATHOUSE_READING;
   let partnerName: string | null = null;
 
   const clearStood = (): void => {
     for (const row of [...lanternMeshes, ...frameMeshes]) row.removeFromParent();
-    lanternMeshes = []; frameMeshes = [];
+    lanternMeshes = []; frameMeshes = []; newestLantern = null;
   };
 
   const layOut = (): void => {
@@ -280,20 +323,31 @@ export function createBoathouse(scene: THREE.Scene, options: BoathouseOptions): 
     // One lit lantern per idea in the light, up to six; an empty rafter keeps two unlit.
     const lit = Math.min(6, view.wishes);
     const hanging = Math.max(lit, 2);
+    // The first lantern is the newest wish: when one has just gone up it burns
+    // warmer than the rest — the same paper, the same colour, more light in it.
+    const newest = view.hung > 0 && lit > 0;
     for (let i = 0; i < hanging; i++) {
       const lantern = new THREE.Group();
       const isLit = i < lit;
+      const warm = newest && i === 0;
       const shade = new THREE.Mesh(track(new THREE.SphereGeometry(0.12, 10, 8)), isLit
-        ? track(new THREE.MeshStandardMaterial({ color: dressing.lanternGlow, emissive: new THREE.Color(dressing.lanternGlow), emissiveIntensity: 0.7, roughness: 0.6 }))
+        ? track(new THREE.MeshStandardMaterial({ color: dressing.lanternGlow, emissive: new THREE.Color(dressing.lanternGlow), emissiveIntensity: warm ? 1.15 : 0.7, roughness: 0.6 }))
         : mat(dressing.lantern, { roughness: 0.9 }));
       shade.scale.y = 1.25; lantern.add(shade);
       const cord = new THREE.Mesh(track(new THREE.CylinderGeometry(0.008, 0.008, 0.5, 4)), mat(dressing.frame, { roughness: 0.9 }));
       cord.position.y = 0.38; lantern.add(cord);
-      lantern.position.set(-2.4 + (i % 3) * 1.0, BOATHOUSE_LAYOUT.lanternY + (i % 2 ? 0.15 : 0), -1.9 + Math.floor(i / 3) * 1.1);
-      lantern.userData.anchor = "wishes";
-      lantern.traverse((node) => { node.userData.anchor = "wishes"; });
-      group.add(lantern);
-      lanternMeshes.push(lantern);
+      // A lantern hangs from the rafter, so it turns about the rafter and not
+      // about itself: the hanger stands where the cord is nailed and the lantern
+      // swings below it. The places are exactly where they were.
+      const hanger = new THREE.Group();
+      hanger.position.set(-2.4 + (i % 3) * 1.0, BOATHOUSE_LAYOUT.lanternY + (i % 2 ? 0.15 : 0) + LANTERN_DROP, -1.9 + Math.floor(i / 3) * 1.1);
+      lantern.position.set(0, -LANTERN_DROP, 0);
+      hanger.add(lantern);
+      hanger.userData.anchor = "wishes";
+      hanger.traverse((node) => { node.userData.anchor = "wishes"; });
+      group.add(hanger);
+      lanternMeshes.push(hanger);
+      if (warm) newestLantern = hanger;
     }
     // Framed compositions on the memory shelf, up to five.
     const kept = Math.min(5, view.memories);
@@ -310,13 +364,13 @@ export function createBoathouse(scene: THREE.Scene, options: BoathouseOptions): 
       group.add(frame);
       frameMeshes.push(frame);
     }
-    wishesPlate.set(`Lanterns — ${fewWords(view.wishes, "idea in the light", "ideas in the light")}`, finishNow());
+    wishesPlate.set(view.hung > 0 ? "Lanterns — a new wish was hung this week" : `Lanterns — ${fewWords(view.wishes, "idea in the light", "ideas in the light")}`, finishNow());
     memoriesPlate.set(`The shelf — ${fewWords(view.memories, "memory kept", "memories kept")}`, finishNow());
     lettersPlate.set(`The desk — ${fewWords(view.letters, "note placed", "notes placed")}`, finishNow());
   };
 
   const signatureOf = (reading: BoathouseReading, partner: string | null): string =>
-    [reading.wishes, reading.memories, reading.letters, reading.encounters, partner].join("§");
+    [reading.wishes, reading.memories, reading.letters, reading.encounters, reading.hung, partner].join("§");
   let signature = "";
 
   function update(value: unknown): void {
@@ -326,8 +380,22 @@ export function createBoathouse(scene: THREE.Scene, options: BoathouseOptions): 
     if (nextSignature === signature) return;
     view = reading; partnerName = next.partnerName; signature = nextSignature;
     layOut();
+    // Something in the room started moving that the runtime did not ask for.
+    // The frame policy owns the clock from here; reduced motion never animates.
+    if (newestLantern) options.onAnimate?.();
   }
   update(options.reading ?? null);
+
+  /**
+   * The newest lantern sways on the draught off the slip, on the runtime's own
+   * animated frames (`animate(t, dt)` — never a raw rAF). Nothing else in the
+   * room moves, and when no wish is newly hung nothing does at all.
+   */
+  function animate(t: number, _dt: number): boolean {
+    if (!newestLantern) return false;
+    newestLantern.rotation.z = lanternSway(t);
+    return true;
+  }
 
   scene.add(group);
 
@@ -337,7 +405,10 @@ export function createBoathouse(scene: THREE.Scene, options: BoathouseOptions): 
 
   const anchorList = (): Anchor[] => {
     const rows: Anchor[] = [
-      { id: "wishes", position: at(-1.6, BOATHOUSE_LAYOUT.lanternY - 0.2, -1.4), zone: "station", label: `The lanterns — ${fewWords(view.wishes, "idea in the light", "ideas in the light")}. Tend a wish.`, door: { target: "wishes" } },
+      { id: "wishes", position: at(-1.6, BOATHOUSE_LAYOUT.lanternY - 0.2, -1.4), zone: "station", label: `${lanternWords(view.wishes, view.hung)}. Tend a wish.`, door: { target: "wishes" } },
+      // The unlit lantern by the door: take it down and make a wish. A door onto
+      // the room where a wish is written — the harbour never writes one itself.
+      { id: "wish", position: at(wlx, wly, wlz), zone: "station", label: "The unlit lantern by the door — take it down and make a wish. Tend a wish.", door: { target: "wishes" } },
       { id: "projector", position: at(px, 0.8, pz), zone: "station", label: `The projector, aimed at the sail — choose three memories.`, door: { target: "projector" } },
       { id: "memories", position: at(BOATHOUSE_LAYOUT.shelfX - 0.2, BOATHOUSE_LAYOUT.shelfY + 0.1, -1.3), zone: "station", label: `The memory shelf — ${fewWords(view.memories, "memory kept", "memories kept")}. Open a memory.`, door: { target: "memories" } },
       { id: "pottery", position: at(bx, 1.0, bz), zone: "station", label: "The workbench — clay under the window. Enter the Pottery Studio.", door: { target: "pottery" } },
@@ -350,6 +421,7 @@ export function createBoathouse(scene: THREE.Scene, options: BoathouseOptions): 
 
   const regionList = (): Region[] => [
     { id: "wishes", group: "boathouse", label: "The lanterns", box: box(-2.7, BOATHOUSE_LAYOUT.lanternY - 0.4, -2.2, -0.2, BOATHOUSE_LAYOUT.lanternY + 0.5, -0.6) },
+    { id: "wish", group: "boathouse", label: "The unlit lantern by the door — make a wish", box: box(wlx - 0.26, wly - 0.26, wlz - 0.26, wlx + 0.26, wly + 0.5, wlz + 0.26) },
     { id: "projector", group: "boathouse", label: "The projector and the sail", box: box(px - 0.5, 0, pz - 0.5, px + 0.5, 1.1, pz + 0.5) },
     { id: "memories", group: "boathouse", label: "The memory shelf", box: box(BOATHOUSE_LAYOUT.shelfX - 0.5, BOATHOUSE_LAYOUT.shelfY - 0.2, -2.5, BOATHOUSE_LAYOUT.shelfX + 0.3, BOATHOUSE_LAYOUT.shelfY + 0.6, -0.1) },
     { id: "pottery", group: "boathouse", label: "The workbench", box: box(bx - 0.6, 0, bz - 1.1, bx + 0.6, 1.2, bz + 1.1) },
@@ -361,7 +433,7 @@ export function createBoathouse(scene: THREE.Scene, options: BoathouseOptions): 
   return {
     group,
     update,
-    animate: () => false,
+    animate,
     dispose() {
       scene.remove(group);
       clearStood();

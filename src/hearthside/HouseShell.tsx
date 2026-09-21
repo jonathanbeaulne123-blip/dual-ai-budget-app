@@ -7,6 +7,7 @@ const ROOM_LABELS: Record<HouseRoom, string> = {
   study: "Study",
   "kitchen-table": "Kitchen Table",
   together: "Together",
+  making: "Making",
 };
 
 const LEVEL_LABELS: Record<HouseRoom, Record<HouseLevel, { name: string; role: string }>> = {
@@ -29,6 +30,11 @@ const LEVEL_LABELS: Record<HouseRoom, Record<HouseLevel, { name: string; role: s
     above: { name: "Conservatory", role: "Hearthside possibilities and wishes" },
     middle: { name: "Common room", role: "Our shared life" },
     below: { name: "Studio & Theatre", role: "Making, keeping, and remembering" },
+  },
+  making: {
+    above: { name: "The Kiln", role: "Wheel, bench, and the fired shelf" },
+    middle: { name: "Hercules’s Cottage", role: "His wardrobe, his glass, his shelves" },
+    below: { name: "The cabinet of wonders", role: "What he keeps" },
   },
 };
 

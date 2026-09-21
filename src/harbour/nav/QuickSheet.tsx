@@ -37,7 +37,7 @@ export type QuickSheetGroup = { district: CompassDistrict; title: string; tools:
 
 const DISTRICT_TITLES: Record<CompassDistrict, string> = { home: "Home — the Court", study: "Study", kitchen: "Kitchen", making: "Making", together: "Together — the Boathouse" };
 const DISTRICT_ORDER: readonly CompassDistrict[] = ["home", "study", "kitchen", "making", "together"];
-const MAKING_TOOLS: ReadonlySet<string> = new Set(["pottery", "hercules"]);
+const MAKING_TOOLS: ReadonlySet<string> = new Set(["pottery", "hercules", "wardrobe"]);
 
 /** Pure: every `TARGET_NAMES` tool exactly once, grouped by the district that owns its room. */
 export function quickSheetGroups(): QuickSheetGroup[] {
@@ -46,7 +46,7 @@ export function quickSheetGroups(): QuickSheetGroup[] {
   for (const [id, name] of Object.entries(TARGET_NAMES)) {
     if (MAKING_TOOLS.has(id)) { groups.making.push({ id, name }); continue; }
     const room = houseTargetRoute(probe, id).room;
-    const district: CompassDistrict = room === "study" ? "study" : room === "kitchen-table" ? "kitchen" : room === "together" ? "together" : "home";
+    const district: CompassDistrict = room === "study" ? "study" : room === "kitchen-table" ? "kitchen" : room === "together" ? "together" : room === "making" ? "making" : "home";
     groups[district].push({ id, name });
   }
   return DISTRICT_ORDER.map((district) => ({ district, title: DISTRICT_TITLES[district], tools: groups[district] })).filter((group) => group.tools.length > 0);

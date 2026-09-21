@@ -1,0 +1,351 @@
+[
+  {
+    "tag": "classic-390",
+    "kiln": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "34",
+      "renderMs": "45.93",
+      "queen": null,
+      "camera": "[1.692,1.7377,2.5662]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "hercules",
+          "w": 184,
+          "h": 134,
+          "label": "Hercules, asleep where the bricks are warm, waiting for you and Jonathan. Talk with Hercules."
+        },
+        {
+          "id": "bench",
+          "w": 390,
+          "h": 768,
+          "label": "The workbench \u2014 the five glazes and the brushes. Paint a piece."
+        },
+        {
+          "id": "court-door",
+          "w": 390,
+          "h": 768,
+          "label": "The kiln door \u2014 back to the Court."
+        },
+        {
+          "id": "kiln",
+          "w": 380,
+          "h": 449,
+          "label": "The kiln, cold, nothing fired yet. Open the kiln in the Studio."
+        },
+        {
+          "id": "wheel",
+          "w": 322,
+          "h": 376,
+          "label": "The wheel, clay on its head \u2014 sit down and throw one."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "console": [],
+    "errors": []
+  },
+  {
+    "tag": "classic-1440",
+    "kiln": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "43",
+      "renderMs": "37.86",
+      "queen": null,
+      "camera": "[2.432,2.2502,2.515]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "hercules",
+          "w": 248,
+          "h": 189,
+          "label": "Hercules, asleep where the bricks are warm, waiting for you and Jonathan. Talk with Hercules."
+        },
+        {
+          "id": "shelf",
+          "w": 1278,
+          "h": 615,
+          "label": "The shelf \u2014 nothing yet. Open the Studio."
+        },
+        {
+          "id": "bench",
+          "w": 1440,
+          "h": 900,
+          "label": "The workbench \u2014 the five glazes and the brushes. Paint a piece."
+        },
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The kiln door \u2014 back to the Court."
+        },
+        {
+          "id": "kiln",
+          "w": 529,
+          "h": 590,
+          "label": "The kiln, cold, nothing fired yet. Open the kiln in the Studio."
+        },
+        {
+          "id": "wheel",
+          "w": 459,
+          "h": 504,
+          "label": "The wheel, clay on its head \u2014 sit down and throw one."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "console": [
+      "error: WebSocket is already in CLOSING or CLOSED state.",
+      "error: WebSocket is already in CLOSING or CLOSED state."
+    ],
+    "errors": []
+  },
+  {
+    "tag": "taylor-390",
+    "kiln": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "34",
+      "renderMs": "28.23",
+      "queen": null,
+      "camera": "[1.692,1.7377,2.5662]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "hercules",
+          "w": 184,
+          "h": 134,
+          "label": "Hercules, asleep where the bricks are warm, waiting for you and Jonathan. Talk with Hercules."
+        },
+        {
+          "id": "bench",
+          "w": 390,
+          "h": 768,
+          "label": "The workbench \u2014 the five glazes and the brushes. Paint a piece."
+        },
+        {
+          "id": "court-door",
+          "w": 390,
+          "h": 768,
+          "label": "The kiln door \u2014 back to the Court."
+        },
+        {
+          "id": "kiln",
+          "w": 380,
+          "h": 449,
+          "label": "The kiln, cold, nothing fired yet. Open the kiln in the Studio."
+        },
+        {
+          "id": "wheel",
+          "w": 322,
+          "h": 376,
+          "label": "The wheel, clay on its head \u2014 sit down and throw one."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "console": [],
+    "errors": []
+  },
+  {
+    "tag": "taylor-1440",
+    "kiln": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "43",
+      "renderMs": "28.89",
+      "queen": null,
+      "camera": "[2.432,2.2502,2.515]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "hercules",
+          "w": 248,
+          "h": 189,
+          "label": "Hercules, asleep where the bricks are warm, waiting for you and Jonathan. Talk with Hercules."
+        },
+        {
+          "id": "shelf",
+          "w": 1278,
+          "h": 615,
+          "label": "The shelf \u2014 nothing yet. Open the Studio."
+        },
+        {
+          "id": "bench",
+          "w": 1440,
+          "h": 900,
+          "label": "The workbench \u2014 the five glazes and the brushes. Paint a piece."
+        },
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The kiln door \u2014 back to the Court."
+        },
+        {
+          "id": "kiln",
+          "w": 529,
+          "h": 590,
+          "label": "The kiln, cold, nothing fired yet. Open the kiln in the Studio."
+        },
+        {
+          "id": "wheel",
+          "w": 459,
+          "h": 504,
+          "label": "The wheel, clay on its head \u2014 sit down and throw one."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 1192,
+      "innerHeight": 900
+    },
+    "console": [
+      "error: WebSocket is already in CLOSING or CLOSED state."
+    ],
+    "errors": []
+  },
+  {
+    "tag": "newfoundland-390",
+    "kiln": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "34",
+      "renderMs": "32.27",
+      "queen": null,
+      "camera": "[1.692,1.7377,2.5662]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "hercules",
+          "w": 184,
+          "h": 134,
+          "label": "Hercules, asleep where the bricks are warm, waiting for you and Jonathan. Talk with Hercules."
+        },
+        {
+          "id": "bench",
+          "w": 390,
+          "h": 768,
+          "label": "The workbench \u2014 the five glazes and the brushes. Paint a piece."
+        },
+        {
+          "id": "court-door",
+          "w": 390,
+          "h": 768,
+          "label": "The kiln door \u2014 back to the Court."
+        },
+        {
+          "id": "kiln",
+          "w": 380,
+          "h": 449,
+          "label": "The kiln, cold, nothing fired yet. Open the kiln in the Studio."
+        },
+        {
+          "id": "wheel",
+          "w": 322,
+          "h": 376,
+          "label": "The wheel, clay on its head \u2014 sit down and throw one."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "console": [],
+    "errors": []
+  },
+  {
+    "tag": "newfoundland-1440",
+    "kiln": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "43",
+      "renderMs": "26.29",
+      "queen": null,
+      "camera": "[2.432,2.2502,2.515]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "hercules",
+          "w": 248,
+          "h": 189,
+          "label": "Hercules, asleep where the bricks are warm, waiting for you and Jonathan. Talk with Hercules."
+        },
+        {
+          "id": "shelf",
+          "w": 1278,
+          "h": 615,
+          "label": "The shelf \u2014 nothing yet. Open the Studio."
+        },
+        {
+          "id": "bench",
+          "w": 1440,
+          "h": 900,
+          "label": "The workbench \u2014 the five glazes and the brushes. Paint a piece."
+        },
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The kiln door \u2014 back to the Court."
+        },
+        {
+          "id": "kiln",
+          "w": 529,
+          "h": 590,
+          "label": "The kiln, cold, nothing fired yet. Open the kiln in the Studio."
+        },
+        {
+          "id": "wheel",
+          "w": 459,
+          "h": 504,
+          "label": "The wheel, clay on its head \u2014 sit down and throw one."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 1192,
+      "innerHeight": 900
+    },
+    "console": [
+      "error: WebSocket is already in CLOSING or CLOSED state."
+    ],
+    "errors": []
+  }
+]

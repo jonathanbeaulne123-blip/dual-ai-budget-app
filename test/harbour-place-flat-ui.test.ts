@@ -121,6 +121,61 @@ describe("the Cellar, read", () => {
     expect(host.textContent).toContain("No bills on the rail yet");
   });
 
+});
+
+/**
+ * The Campfire, read. `motion: flat` must never gate the one ritual that needs
+ * two people, so the fire, each log and the path of months are all real
+ * buttons — and the page states the paired review in words, never a figure.
+ */
+describe("the Campfire, read", () => {
+  const fire: HarbourReading["campfire"] = {
+    month: "2026-09", title: "Make rent boring", close: "awaiting-partner",
+    seats: [{ memberId: "MEM-001", name: "Jonathan", seated: true }, { memberId: "MEM-002", name: "Bianca", seated: false }],
+    seated: 1, stones: 3, lit: true, lastClosedOn: "2026-08-30", sinceClose: 21, seal: 0, overdue: false,
+  };
+
+  it("names who has sat and who the fire is waiting for, and opens the Sitdown by a real button", async () => {
+    const opened: Array<[string, string | undefined]> = [];
+    await act(async () => root.render(createElement(HarbourFlat, { place: "campfire", reading: { ...reading, campfire: fire }, status: "flat", onOpen: (t: string, o?: string) => opened.push([t, o]) })));
+    const section = host.querySelector("[data-place-flat='campfire']")!;
+    expect(section.getAttribute("aria-label")).toBe("The Campfire, reading edition");
+    expect(section.textContent).toContain("You have sat down. The fire is waiting for Bianca.");
+    expect(section.textContent).toContain("Make rent boring");
+    expect(section.textContent).toContain("3 stones");
+    const logs = [...section.querySelectorAll(".place-flat__pots button")] as HTMLButtonElement[];
+    expect(logs.length).toBe(2);
+    expect(logs[0]!.textContent).toContain("has sat down");
+    expect(logs[1]!.textContent).toContain("still empty");
+    await act(async () => { logs[1]!.click(); });
+    expect(opened[0]).toEqual(["plan-studio", undefined]);
+    // The path of months is Journey's, and nothing on this page closes a Chapter.
+    const path = section.querySelector<HTMLButtonElement>(".place-flat__bench button")!;
+    await act(async () => { path.click(); });
+    expect(opened[1]).toEqual(["journey", undefined]);
+    expect(section.textContent).toContain("It closes when both of you sit down.");
+  });
+
+  it("says unlit kindling before the first Sitdown, and never a figure", async () => {
+    const never: HarbourReading["campfire"] = { ...fire, close: "none", seats: fire.seats.map((seat) => ({ ...seat, seated: false })), seated: 0, stones: 0, lit: false, lastClosedOn: null, sinceClose: null };
+    await act(async () => root.render(createElement(HarbourFlat, { place: "campfire", reading: { ...reading, campfire: never }, status: "flat" })));
+    expect(host.textContent).toContain("Unlit kindling");
+    expect(host.textContent).toContain("None yet");
+    expect(host.textContent).toContain("No Sitdown has closed a Chapter yet");
+    expect(host.textContent).not.toMatch(/\$\d/);
+  });
+
+  it("walks back up the footpath to the Court", async () => {
+    let walked = 0;
+    await act(async () => root.render(createElement(HarbourFlat, { place: "campfire", reading: { ...reading, campfire: fire }, status: "flat", onStair: () => { walked += 1; } })));
+    const stair = host.querySelector<HTMLButtonElement>(".place-flat__stair")!;
+    expect(stair.textContent).toContain("Up the footpath to the Court");
+    await act(async () => { stair.click(); });
+    expect(walked).toBe(1);
+  });
+});
+
+describe("the Cellar's stair", () => {
   it("offers the stair back to the Court, and the Court's own edition does not", async () => {
     let walked = 0;
     await act(async () => root.render(createElement(HarbourFlat, { place: "cellar", reading, status: "flat", onStair: () => { walked += 1; } })));

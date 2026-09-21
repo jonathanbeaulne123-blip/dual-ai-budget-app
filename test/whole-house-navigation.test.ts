@@ -10,7 +10,8 @@ describe("one scoped house navigator",()=>{
     expect(houseTargetRoute(origin,'wishes')).toMatchObject({room:'together',level:'above',surface:'wishes',object:undefined});
     expect(houseTargetRoute(origin,'memories','memory/MEMORY-one')).toMatchObject({room:'together',level:'below',surface:'memories',object:'memory/MEMORY-one'});
     expect(houseTargetRoute(origin,'personal-experience','experience/EXP-one')).toMatchObject({room:'together',level:'above',surface:'personal-experience',object:'experience/EXP-one'});
-    expect(houseTargetRoute(origin,'pottery')).toMatchObject({room:'together',level:'middle',surface:'pottery',object:origin.object});
+    // Pottery opens the Kiln, the Making room's own `above` — the building the Studio lives in.
+    expect(houseTargetRoute(origin,'pottery')).toMatchObject({room:'making',level:'above',surface:'pottery',object:origin.object});
     expect(origin.object).toBe('experience/EXP-one');
   });
   it("round trips object, focused surface, scope and time without a second address",()=>{

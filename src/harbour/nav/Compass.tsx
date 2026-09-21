@@ -45,11 +45,16 @@ const MAKING_SURFACES: ReadonlySet<string> = new Set(["pottery", "wardrobe", "he
 /** Pure: which district owns the current route. */
 export function compassDistrict(route: CompassProps["route"]): CompassDistrict {
   if (route.surface && MAKING_SURFACES.has(route.surface)) return "making";
+  // The Campfire is keyed at `making/below` for want of a free room×level slot,
+  // but it stands on the shore in front of the Boathouse and it is where the
+  // month closes: the compass files it under Together, where it belongs.
+  if (route.room === "making" && route.level === "below") return "together";
   switch (route.room) {
     case "home": return "home";
     case "study": return "study";
     case "kitchen-table": return "kitchen";
     case "together": return "together";
+    case "making": return "making";
     default: return "home";
   }
 }
