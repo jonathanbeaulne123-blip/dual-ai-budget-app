@@ -2,12 +2,15 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import {
-  CAMPFIRE_SEAL_DAYS, CAMPFIRE_STONE_CAP, EMPTY_BOATHOUSE_READING, EMPTY_CAMPFIRE_READING, EMPTY_COTTAGE_READING, EMPTY_KILN_READING,
-  EMPTY_KITCHEN_READING, buildBoathouseReading, buildCampfireReading, buildCottageReading,
+  CAMPFIRE_SEAL_DAYS, CAMPFIRE_STONE_CAP, EMPTY_ATLAS_READING, EMPTY_BOATHOUSE_READING, EMPTY_CAMPFIRE_READING, EMPTY_COTTAGE_READING,
+  EMPTY_KILN_READING, EMPTY_KITCHEN_READING, buildAtlasReading, buildBoathouseReading, buildCampfireReading, buildCottageReading,
   buildKilnReading, buildKitchenReading, KILN_SHELF_CAP, KILN_WARM_DAYS, KITCHEN_CARD_CAP,
 } from "../src/harbour/data/reading.ts";
 import { CAMPFIRE_DRESSING } from "../src/harbour/campfire/dressing.ts";
 import { campfireWords, campfirePoses, createCampfire, readCampfireReading, stonePin, stoneWords } from "../src/harbour/campfire/CampfireScene.ts";
+import { ATLAS_DRESSING } from "../src/harbour/atlas/dressing.ts";
+// Both rooms lay a ring of stones and both export a `stonePin`; they are different rings, so the Atlas's is aliased.
+import { ATLAS_GATE_LANTERNS, ATLAS_RING_STONES, atlasPoses, createAtlas, eraPlace, eraPlaqueWords, monthsWalked, nextIslandWords, readAtlasReading, stonePin as atlasStonePin } from "../src/harbour/atlas/AtlasScene.ts";
 import { COTTAGE_DRESSING } from "../src/harbour/cottage/dressing.ts";
 import { createCottage, cottagePoses, kept, readCottageReading, wearingWords } from "../src/harbour/cottage/CottageScene.ts";
 import { KILN_DRESSING } from "../src/harbour/kiln/dressing.ts";
@@ -275,6 +278,144 @@ describe("the Campfire reading (LITTLE_HARBOUR_v2 §6)", () => {
   });
 });
 
+// ── The Atlas (LITTLE_HARBOUR_v2 §4, the room up the kitchen stair) ─────────
+
+const eraSpec = (over: Record<string, unknown> = {}) => ({
+  order: 1, name: "The small flat", finishLine: "When the rent stops being the whole of it", from: "2026-03", by: null,
+  home: "flat", finish: { kind: "agree" }, plans: [], crossedOn: null, retired: false, ...over,
+});
+const eraRow = (id: string, active: Record<string, unknown> | null, over: Record<string, unknown> = {}) => ({
+  version: 1, id, kind: "era", updatedAt: "2026-09-01T00:00:00.000Z",
+  active, pending: null, pendingBy: null, pendingRevision: 0, agreedByMemberIds: [], ...over,
+});
+const members = [{ id: "MEM-001", name: "Jonathan", active: true }, { id: "MEM-002", name: "Bianca", active: true }];
+const journey = (rows: unknown[], over: Record<string, unknown> = {}) => ({
+  members, goals: [], accounts: [], pathWorld: rows, ...over,
+});
+
+describe("the Atlas reading (LITTLE_HARBOUR_v2 §4)", () => {
+  it("reads a household with no journey as a bare stand — a state, never a fault", () => {
+    expect(buildAtlasReading(journey([]) as never, "MEM-001", today)).toEqual(EMPTY_ATLAS_READING);
+    expect(buildAtlasReading({ members } as never, "MEM-001", today)).toEqual(EMPTY_ATLAS_READING);
+  });
+
+  it("stands the era we are in: its name, its place on the journey, the months walked, and the home it is lived in", () => {
+    const reading = buildAtlasReading(journey([
+      eraRow("PATH-ERA-A", eraSpec({ order: 1, name: "Two rooms", from: "2025-09", crossedOn: "2026-03" })),
+      eraRow("PATH-ERA-B", eraSpec({ order: 2, name: "The small flat", from: "2026-03", home: "furnished" })),
+    ]) as never, "MEM-001", today);
+    expect(reading.era).toMatchObject({ key: "era:PATH-ERA-B", name: "The small flat", index: 2, home: "furnished", homeLabel: "the flat, furnished" });
+    // March through September, inclusive: seven months of this era walked.
+    expect(reading.era!.months).toBe(7);
+    expect(reading.eras).toBe(2);
+    expect(reading.crossed).toBe(1);
+    // The stones of the whole path: the crossed era's six months and this era's seven.
+    expect(reading.stones).toBe(13);
+    // An "agree" gate is one lantern and it is already lit — you may cross whenever you both say so.
+    expect(reading.gate).toMatchObject({ kind: "agree", met: true, lit: 1, lanterns: 1, words: "Ready to cross" });
+    expect(reading.crossing).toBe(false);
+    expect(reading.next).toBeNull();
+    expect(reading.keptPrivate).toBe(0);
+  });
+
+  it("counts the gate's lanterns while they are still filling, and says so when they are all lit", () => {
+    const filling = buildAtlasReading(journey([
+      eraRow("PATH-ERA-B", eraSpec({ name: "Saving for the house", finish: { kind: "banks", goalIds: ["GOAL-1", "GOAL-2"] } })),
+    ], {
+      goals: [
+        { id: "GOAL-1", name: "Deposit", shared: true, ownerMemberId: null, targetCents: 100_000, savedCents: 0, status: "open", purchaseId: null },
+        { id: "GOAL-2", name: "Movers", shared: true, ownerMemberId: null, targetCents: 20_000, savedCents: 0, status: "open", purchaseId: "PUR-1" },
+      ],
+    }) as never, "MEM-001", today);
+    expect(filling.gate).toMatchObject({ kind: "banks", met: false, lit: 1, lanterns: 2, words: "1 of 2 lit" });
+    const met = buildAtlasReading(journey([
+      eraRow("PATH-ERA-B", eraSpec({ finish: { kind: "banks", goalIds: ["GOAL-2"] } })),
+    ], {
+      goals: [{ id: "GOAL-2", name: "Movers", shared: true, ownerMemberId: null, targetCents: 20_000, savedCents: 0, status: "open", purchaseId: "PUR-1" }],
+    }) as never, "MEM-001", today);
+    expect(met.gate).toMatchObject({ met: true, lit: 1, lanterns: 1, words: "Ready to cross" });
+    // The gate's words never carry a figure — an era cannot, and neither can its room.
+    expect(JSON.stringify(met)).not.toMatch(/\$|\d{4,}/);
+  });
+
+  it("names the island across the bridge, marks a merely suggested one, and says 'unplanned' when there is none", () => {
+    const planned = buildAtlasReading(journey([
+      eraRow("PATH-ERA-B", eraSpec({ order: 1, name: "The small flat" })),
+      eraRow("PATH-ERA-C", eraSpec({ order: 2, name: "The house with the porch", from: "2028-01", home: "porch" })),
+    ]) as never, "MEM-001", today);
+    expect(planned.next).toEqual({ key: "era:PATH-ERA-C", name: "The house with the porch", sketched: false });
+    expect(nextIslandWords(planned)).toBe("Across the bridge\n“The house with the porch”");
+    // One of you has suggested an era; nothing is agreed, so it reaches the room only as a sketch.
+    const suggested = buildAtlasReading(journey([
+      eraRow("PATH-ERA-B", eraSpec({ order: 1 })),
+      eraRow("PATH-ERA-C", null, { pending: eraSpec({ order: 2, name: "A cabin, eventually", from: "2029-01", home: "cabin" }), pendingBy: "MEM-002", agreedByMemberIds: ["MEM-002"] }),
+    ]) as never, "MEM-001", today);
+    expect(suggested.next).toEqual({ key: "era:PATH-ERA-C", name: "A cabin, eventually", sketched: true });
+    // A sketch is never counted among the agreed eras standing on the journey.
+    expect(suggested.eras).toBe(1);
+    expect(nextIslandWords(suggested)).toContain("suggested");
+    const alone = buildAtlasReading(journey([eraRow("PATH-ERA-B", eraSpec())]) as never, "MEM-001", today);
+    expect(alone.next).toBeNull();
+    expect(nextIslandWords(alone)).toBe("Across the bridge\nUnplanned");
+  });
+
+  it("holds a crossing that is waiting for both of you, without crossing anything", () => {
+    const waiting = buildAtlasReading(journey([
+      eraRow("PATH-ERA-B", eraSpec({ name: "The small flat" }), { pending: eraSpec({ name: "The small flat", crossedOn: "2026-10" }), pendingBy: "MEM-002", agreedByMemberIds: ["MEM-002"] }),
+    ]) as never, "MEM-001", today);
+    expect(waiting.crossing).toBe(true);
+    expect(waiting.gate?.words).toBe("Crossing · waiting for both of you");
+    // The era is still the one we are in: nothing has crossed.
+    expect(waiting.era).toMatchObject({ name: "The small flat", index: 1 });
+    expect(waiting.crossed).toBe(0);
+  });
+
+  it("counts a bank it may not see and never names it", () => {
+    const reading = buildAtlasReading(journey([
+      eraRow("PATH-ERA-B", eraSpec({
+        finish: { kind: "banks", goalIds: ["GOAL-1", "GOAL-HERS"] },
+        plans: [
+          { id: "PLAN-1", kind: "bank", label: "The deposit", goalId: "GOAL-1", month: null },
+          { id: "PLAN-2", kind: "bank", label: "Her own", goalId: "GOAL-HERS", month: null },
+          { id: "PLAN-3", kind: "trip", label: "A week in Gros Morne", goalId: null, month: "2027-07" },
+        ],
+      })),
+    ], {
+      goals: [
+        { id: "GOAL-1", name: "Deposit", shared: true, ownerMemberId: null, targetCents: 100_000, savedCents: 0, status: "open", purchaseId: null },
+        { id: "GOAL-HERS", name: "Her surprise", shared: false, ownerMemberId: "MEM-002", targetCents: 20_000, savedCents: 0, status: "open", purchaseId: null },
+      ],
+    }) as never, "MEM-001", today);
+    // Once on the finish line, once as a plan: two footpaths that are hers, counted and named nowhere.
+    expect(reading.keptPrivate).toBe(2);
+    expect(reading.era!.plans).toBe(3);
+    expect(JSON.stringify(reading)).not.toContain("Her surprise");
+    expect(JSON.stringify(reading)).not.toContain("GOAL-HERS");
+    // Her own member reads the same era and keeps nothing private of her own.
+    expect(buildAtlasReading(journey([
+      eraRow("PATH-ERA-B", eraSpec({ finish: { kind: "banks", goalIds: ["GOAL-HERS"] } })),
+    ], {
+      goals: [{ id: "GOAL-HERS", name: "Her surprise", shared: false, ownerMemberId: "MEM-002", targetCents: 20_000, savedCents: 0, status: "open", purchaseId: null }],
+    }) as never, "MEM-002", today).keptPrivate).toBe(0);
+  });
+
+  it("speaks the era in words, and lays the ring out from the gate", () => {
+    expect(monthsWalked(0)).toBe("not a month yet");
+    expect(monthsWalked(1)).toBe("1 month walked");
+    expect(monthsWalked(7)).toBe("7 months walked");
+    expect(eraPlace(1, 1)).toBe("the first era");
+    expect(eraPlace(2, 4)).toBe("the 2nd era of 4");
+    expect(eraPlace(3, 4)).toBe("the 3rd era of 4");
+    expect(eraPlace(11, 12)).toBe("the 11th era of 12");
+    expect(eraPlaqueWords(EMPTY_ATLAS_READING)).toContain("No era yet");
+    expect(eraPlaqueWords({ ...EMPTY_ATLAS_READING, era: { key: "era:X", name: "The small flat", index: 2, months: 7, home: "flat", homeLabel: "a small flat", finishLine: "", plans: 0 }, eras: 3, gate: { kind: "agree", met: true, lit: 1, lanterns: 1, words: "Ready to cross" } }))
+      .toBe("The small flat\nthe 2nd era of 3 · 7 months walked\nReady to cross");
+    // The ring runs clockwise from the gate, and never off the turf.
+    expect(atlasStonePin(0, 12).x).not.toBe(atlasStonePin(1, 12).x);
+    for (const index of [0, 6, 11]) expect(Math.hypot(atlasStonePin(index, 12).x, atlasStonePin(index, 12).z)).toBeCloseTo(0.78 * 0.62, 6);
+  });
+});
+
 describe("the three rooms as places", () => {
   const kitchenReading = { kitchen: buildKitchenReading(household([version([
     line({ id: "a", dueDate: "2026-10-08", responsibility: { kind: "joint" } }),
@@ -440,6 +581,60 @@ describe("the three rooms as places", () => {
     waiting.dispose();
   });
 
+  it("the Atlas: the island, the gate, the plaque and the next island are doors onto Journey — the room writes nothing", () => {
+    const scene = new THREE.Scene();
+    const atlas = buildAtlasReading(journey([
+      eraRow("PATH-ERA-B", eraSpec({ order: 1, name: "The small flat", from: "2026-03", finish: { kind: "banks", goalIds: ["GOAL-1", "GOAL-2"] } })),
+      eraRow("PATH-ERA-C", eraSpec({ order: 2, name: "The house with the porch", from: "2028-01", home: "porch" })),
+    ], {
+      goals: [
+        { id: "GOAL-1", name: "Deposit", shared: true, ownerMemberId: null, targetCents: 100_000, savedCents: 0, status: "open", purchaseId: null },
+        { id: "GOAL-2", name: "Movers", shared: true, ownerMemberId: null, targetCents: 20_000, savedCents: 0, status: "open", purchaseId: "PUR-1" },
+      ],
+    }) as never, "MEM-001", today);
+    const handle = PLACES.atlas!.build(scene, { theme: "classic" } as never, { atlas, partner: { name: "Bianca", fresh: true } } as never, "lite", { composition: "desktop", signal: new AbortController().signal, invalidate: () => {} });
+    const anchors = handle.anchors();
+    const doors = Object.fromEntries(anchors.filter((anchor) => anchor.door).map((anchor) => [anchor.id, `${anchor.door!.target}${anchor.door!.object ? `/${anchor.door!.object}` : ""}`]));
+    expect(doors).toEqual({
+      island: "journey/era:PATH-ERA-B",
+      gate: "journey/era:PATH-ERA-B",
+      plaque: "journey/era:PATH-ERA-B",
+      "next-island": "journey/era:PATH-ERA-C",
+      stones: "journey",
+    });
+    // Every door in this room opens the one world it is a map of, and nothing else.
+    for (const anchor of anchors) if (anchor.door) expect(anchor.door.target).toBe("journey");
+    expect(anchors.find((anchor) => anchor.id === "island")?.label).toContain("7 months walked");
+    expect(anchors.find((anchor) => anchor.id === "island")?.label).toContain("a small flat");
+    expect(anchors.find((anchor) => anchor.id === "gate")?.label).toContain("1 of 2 lit");
+    expect(anchors.find((anchor) => anchor.id === "next-island")?.label).toContain("The house with the porch");
+    expect(anchors.find((anchor) => anchor.id === "stones")?.label).toContain("7 stones laid");
+    // The stair goes back down into the Kitchen; the loft door back to the Court.
+    expect(anchors.find((anchor) => anchor.id === "kitchen-stair")?.zone).toBe("stair");
+    expect(anchors.find((anchor) => anchor.id === "court-door")?.zone).toBe("stair");
+    // The dormer is a view, not a door.
+    expect(anchors.find((anchor) => anchor.id === "dormer")?.door).toBeUndefined();
+    for (const region of handle.regions()) expect(region.box).toBeTruthy();
+    handle.dispose();
+    expect(scene.children.length).toBe(0);
+    expect(readAtlasReading(null)).toEqual({ atlas: null, partnerName: null });
+    expect(atlasPoses([])["door:phone"]).toBeTruthy();
+  });
+
+  it("the Atlas without a journey: a bare stand, no gate, and the fog still on the far table", () => {
+    const scene = new THREE.Scene();
+    const handle = PLACES.atlas!.build(scene, { theme: "classic" } as never, { atlas: EMPTY_ATLAS_READING } as never, "lite", { composition: "phone", signal: new AbortController().signal, invalidate: () => {} });
+    const anchors = handle.anchors();
+    expect(anchors.find((anchor) => anchor.id === "gate")).toBeUndefined();
+    expect(anchors.find((anchor) => anchor.id === "island")?.label).toContain("the journey has not begun");
+    expect(anchors.find((anchor) => anchor.id === "island")?.door).toMatchObject({ target: "journey", object: "era-home" });
+    expect(anchors.find((anchor) => anchor.id === "next-island")?.label).toContain("no next era planned");
+    expect(anchors.find((anchor) => anchor.id === "plaque")?.label).toBe("No era yet · The island is waiting to be named. Open this era in Journey.");
+    expect(handle.regions().find((region) => region.id === "next-island")?.label).toContain("unplanned");
+    handle.dispose();
+    expect(scene.children.length).toBe(0);
+  });
+
   it("draws each room inside the harbour's budget and keeps every pose inside its own hold", () => {
     for (const [id, build] of [
       ["kitchen", () => createKitchen(new THREE.Scene(), { dressing: KITCHEN_DRESSING.classic, reading: kitchenReading, quality: "lite" })],
@@ -448,6 +643,11 @@ describe("the three rooms as places", () => {
       ["cottage", () => createCottage(new THREE.Scene(), { dressing: COTTAGE_DRESSING.classic, reading: { cottage: { name: "Hercules", worn: 4, looks: 5, keepsakes: 4 } }, quality: "lite" })],
       ["kiln", () => createKiln(new THREE.Scene(), { dressing: KILN_DRESSING.classic, reading: { kiln: kilnReading }, quality: "lite" })],
       ["campfire", () => createCampfire(new THREE.Scene(), { dressing: CAMPFIRE_DRESSING.classic, reading: { campfire: { ...buildCampfireReading(fireHousehold(sealedChapters()), "MEM-001", today), stones: CAMPFIRE_STONE_CAP + 4 } }, quality: "lite" })],
+      ["atlas", () => createAtlas(new THREE.Scene(), { dressing: ATLAS_DRESSING.classic, quality: "lite", reading: { atlas: {
+        era: { key: "era:PATH-ERA-B", name: "The small flat", index: 2, months: ATLAS_RING_STONES + 6, home: "flat", homeLabel: "a small flat", finishLine: "When the rent stops being the whole of it", plans: 3 },
+        eras: 3, crossed: 1, gate: { kind: "banks", met: false, lit: 2, lanterns: ATLAS_GATE_LANTERNS + 4, words: "2 of 12 lit" },
+        crossing: false, next: { key: "era:PATH-ERA-C", name: "The house with the porch", sketched: false }, stones: 44, keptPrivate: 1,
+      } } })],
     ] as const) {
       const handle = build();
       let meshes = 0;

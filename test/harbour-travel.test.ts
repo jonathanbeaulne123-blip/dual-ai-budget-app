@@ -74,7 +74,7 @@ describe("travelPlan — the one shared motion", () => {
       if (from === to) { expect(plan.cut).toBe(true); expect(plan.ms).toBe(0); expect(plan.rise).toBe(0); }
     }
     // Level-to-level: the tower is above, the cellar below, the court between them.
-    expect(HARBOUR_PLACE_LEVELS).toEqual({ court: "middle", tower: "above", cellar: "below", glasshouse: "above", kitchen: "middle", boathouse: "middle", library: "middle", cottage: "middle", kiln: "above", campfire: "below" });
+    expect(HARBOUR_PLACE_LEVELS).toEqual({ court: "middle", tower: "above", cellar: "below", glasshouse: "above", kitchen: "middle", boathouse: "middle", library: "middle", cottage: "middle", kiln: "above", campfire: "below", atlas: "above" });
     expect(travelPlan("tower", "cellar", false).rise).toBe(-1);
     expect(travelPlan("cellar", "tower", false).rise).toBe(1);
   });

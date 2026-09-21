@@ -10,7 +10,7 @@ import type { LedgerView } from "../core/types.ts";
 export const HARBOUR_ENABLED = HOUSE_WORLD_ENABLED && import.meta.env.VITE_HEARTH_HARBOUR === "1";
 
 /** Slice 2: one room, three places — one per level (BUILD_PLAN_SLICE2 §0). */
-export type HarbourPlaceId = "court" | "tower" | "cellar" | "glasshouse" | "kitchen" | "boathouse" | "library" | "cottage" | "kiln" | "campfire";
+export type HarbourPlaceId = "court" | "tower" | "cellar" | "glasshouse" | "kitchen" | "boathouse" | "library" | "cottage" | "kiln" | "campfire" | "atlas";
 
 /**
  * Rooms the harbour owns, by house room **and level**. Slice 1 gave `home` one
@@ -27,9 +27,12 @@ export const HARBOUR_ROOMS: Readonly<Partial<Record<HouseRoom, Readonly<Partial<
   // so a room row may now leave a level out and the house keeps that level.
   study: Object.freeze({ above: "glasshouse", middle: "library", below: "glasshouse" }),
   // The Kitchen (LITTLE_HARBOUR_v2 §4): the conversation folio and the Plan
-  // Studio open onto one warm room. Journey (`above`) keeps the house's own
-  // atlas — stepping into it is its own world, not a room of this one.
-  "kitchen-table": Object.freeze({ middle: "kitchen", below: "kitchen" }),
+  // Studio open onto one warm room. Journey (`above`) is the Atlas up the
+  // kitchen stair — the map room the whole Journey is seen from. The world
+  // itself is not a room of this one: the island on the Atlas's stand is a
+  // **door** onto it (`onOpen("journey")`), which is the same route with its
+  // own surface in front, so stepping into Journey is still stepping out.
+  "kitchen-table": Object.freeze({ above: "atlas", middle: "kitchen", below: "kitchen" }),
   // The Boathouse (§5): the whole Together room, tucked into one small
   // building on the shore — Conservatory above, common room, Theatre below.
   together: Object.freeze({ above: "boathouse", middle: "boathouse", below: "boathouse" }),
@@ -52,19 +55,19 @@ export const HARBOUR_ROOMS: Readonly<Partial<Record<HouseRoom, Readonly<Partial<
 export const HARBOUR_PLACE_NAMES: Readonly<Record<HarbourPlaceId, string>> = Object.freeze({
   court: "the Court", tower: "the Tower", cellar: "the Cellar", glasshouse: "the Glasshouse",
   kitchen: "the Kitchen", boathouse: "the Boathouse", library: "the Library", cottage: "the Cottage", kiln: "the Kiln",
-  campfire: "the Campfire",
+  campfire: "the Campfire", atlas: "the Atlas",
 });
 
 /** Which level of its room a place stands on: the stair's destination, and the route a door tap navigates to. */
 export const HARBOUR_PLACE_LEVELS: Readonly<Record<HarbourPlaceId, HouseLevel>> = Object.freeze({
   court: "middle", tower: "above", cellar: "below", glasshouse: "above",
-  kitchen: "middle", boathouse: "middle", library: "middle", cottage: "middle", kiln: "above", campfire: "below",
+  kitchen: "middle", boathouse: "middle", library: "middle", cottage: "middle", kiln: "above", campfire: "below", atlas: "above",
 });
 
 /** Which room a place belongs to, so a way out of one room can name a place in another. */
 export const HARBOUR_PLACE_ROOMS: Readonly<Record<HarbourPlaceId, HouseRoom>> = Object.freeze({
   court: "home", tower: "home", cellar: "home", glasshouse: "study",
-  kitchen: "kitchen-table", boathouse: "together", library: "study", cottage: "making", kiln: "making", campfire: "making",
+  kitchen: "kitchen-table", boathouse: "together", library: "study", cottage: "making", kiln: "making", campfire: "making", atlas: "kitchen-table",
 });
 
 /**
@@ -86,7 +89,7 @@ export const HARBOUR_LANDMARKS: Readonly<Record<string, { room: HouseRoom; level
   campfire: { room: "making", level: "below" },
   /** The Library's own back door into the garden behind it. */
   "glasshouse-way": { room: "study", level: "above" },
-  /** The atlas up the kitchen stair: Journey keeps the house's own world. */
+  /** The atlas up the kitchen stair: the map room the Journey is entered from. */
   atlas: { room: "kitchen-table", level: "above" },
 });
 
@@ -123,6 +126,8 @@ export const HARBOUR_WAYS: Readonly<Record<string, HarbourPlaceId>> = Object.fre
   "cellar-stair": "cellar",
   hatch: "cellar",
   stair: "court",
+  /** The Atlas is the Kitchen's own loft: its stair goes back down into the Kitchen, not to the Court. */
+  "kitchen-stair": "kitchen",
 });
 
 /**

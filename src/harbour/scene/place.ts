@@ -150,6 +150,13 @@ export const PLACE_HOLDS: Readonly<Record<HarbourPlaceId, RoomHold | null>> = Ob
     target: { min: [-2.6, 0.1, -6.4] as Vec3, max: [2.6, 1.6, 3.8] as Vec3 },
     minR: 1.3, maxR: 7.4, minPhi: 0.82, maxPhi: 1.42,
   }),
+  // The Atlas is a loft under the cottage's roof: lower than the rooms below
+  // it, and the eye never rises past the rafters.
+  atlas: Object.freeze({
+    eye: { min: [-3.3, 0.35, -2.45] as Vec3, max: [3.3, 2.15, 2.45] as Vec3 },
+    target: { min: [-2.7, 0.2, -2.2] as Vec3, max: [2.7, 1.9, 1.9] as Vec3 },
+    minR: 1.2, maxR: 5.2, minPhi: 0.85, maxPhi: 1.38,
+  }),
 });
 
 /** The registry the runtime reads the active place from. `court/CourtScene.ts` registers itself on import. */

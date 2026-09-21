@@ -24,6 +24,9 @@ import { projectKittyNest, type KittyNest, type NestBank } from "../../core/kitt
 import type { NestCategory } from "../../core/kittyNestDesigns.ts";
 import { missingSubscriptions } from "../../core/missingSubscriptions.ts";
 import { bubbleNotice, type HerculesNotice } from "../../core/notices.ts";
+import { pathEras, type PathEraView } from "../../core/pathEras.ts";
+import { PATH_ERA_HOME_LABELS, type PathEraHome } from "../../core/pathWorld.ts";
+import { eraCrossingPending, gateSub, nextEraAfterCurrent } from "../../path/eras.ts";
 import { cellarDays, cellarJars, type CellarJar } from "../../core/queenCellar.ts";
 import { queenGlazeFor, queenShelf, queenShelfOrder, QUEEN_SHELF_BANK_KEY, type QueenGlaze, type QueenShelfItem } from "../../core/queenPresentation.ts";
 import { RACK_LIMITS, rackSettled, type QueenRackV1 } from "../../core/queenRack.ts";
@@ -87,7 +90,132 @@ export type HarbourReading = {
   kiln: KilnReading;
   /** The Campfire on the shore: the month's Chapter, who has sat, and the stones already laid. */
   campfire: CampfireReading;
+  /** The Atlas up the kitchen stair: the Journey as one model, in words and counts. */
+  atlas: AtlasReading;
 };
+
+/**
+ * The Atlas (LITTLE_HARBOUR_v2 §4, the room the kitchen stair goes up to) —
+ * the Journey of Life seen whole, as **words and counts only**.
+ *
+ * The Journey's own machinery already says everything this room needs:
+ * `core/pathEras.ts` gives the agreed eras, the months each has walked and the
+ * gate's lanterns; `path/eras.ts` gives the gate's small line and the era on
+ * the far side of the bridge. Nothing is recomputed here and nothing new is
+ * read — an era can never carry an amount (`pathWords` in `core/pathWorld.ts`
+ * sees to that), so neither can this reading.
+ *
+ * **Private footpaths are counts, never contents.** A finish-line bank or an
+ * era plan that points at a goal this member may not see is added to
+ * `keptPrivate` and nothing else — no name, no month, no figure.
+ */
+export type AtlasGateKind = "agree" | "survive" | "banks";
+export type AtlasEraView = {
+  /** `era:<id>` — the journey world's own pick id, the door's object and the twin's key. */
+  key: string;
+  name: string;
+  /** 1-based place among the journey's agreed eras. */
+  index: number;
+  /** Months walked inside this era. 0 is the first month, not a fault. */
+  months: number;
+  /** Where the era is lived, in the journey's own words ("a small flat"). */
+  home: PathEraHome;
+  homeLabel: string;
+  /** The couple's own finish line, in their words. Never an amount. */
+  finishLine: string;
+  /** Plans standing on this era: a count. What they are lives behind the door. */
+  plans: number;
+};
+export type AtlasGate = {
+  kind: AtlasGateKind;
+  met: boolean;
+  /** Lanterns lit, of how many. An `agree` gate is one lantern, lit. */
+  lit: number;
+  lanterns: number;
+  /** The gate's small line: "3 of 8 lit", "Ready to cross", "Crossing · waiting for both of you". */
+  words: string;
+};
+export type AtlasNextEra = {
+  key: string;
+  name: string;
+  /** Only one of you has suggested it so far — drawn in pencil, still in the fog. */
+  sketched: boolean;
+};
+export type AtlasReading = {
+  /** The era we are in, or null before the journey has one. */
+  era: AtlasEraView | null;
+  /** Agreed eras standing on the journey. */
+  eras: number;
+  /** Eras already crossed out of. */
+  crossed: number;
+  /** The gate at the end of this era's ring, in words. Null with no era. */
+  gate: AtlasGate | null;
+  /** A crossing one of you has suggested, waiting on the other. */
+  crossing: boolean;
+  /** The island across the bridge, or null when nothing is planned. */
+  next: AtlasNextEra | null;
+  /** Months walked on the whole journey — the stones of the path. */
+  stones: number;
+  /** Banks on this era that are somebody's own: a count, and nothing else. */
+  keptPrivate: number;
+};
+
+/** A room with no journey on the table yet: a bare stand, and the sea around it. */
+export const EMPTY_ATLAS_READING: AtlasReading = Object.freeze({
+  era: null, eras: 0, crossed: 0, gate: null, crossing: false, next: null, stones: 0, keptPrivate: 0,
+}) as AtlasReading;
+
+/**
+ * The Journey as one model. Pure and total: a household that has never opened
+ * the Journey reads as an empty stand, which is a state and not a fault. Every
+ * era the room names is one **both of you have agreed to**; a suggestion only
+ * one of you has made reaches this room as the fog on the next island and its
+ * `sketched` mark, never as a fact.
+ */
+export function buildAtlasReading(household: Household, memberId: string, today: DateKey): AtlasReading {
+  let views: PathEraView[];
+  try { views = pathEras(household, today); } catch { return EMPTY_ATLAS_READING; }
+  const agreed = views.filter((era) => era.state !== "sketched");
+  const index = agreed.findIndex((era) => era.state === "current");
+  const current = index < 0 ? null : agreed[index]!;
+  // A bank is this member's to see when the household shares it, or when it is their own.
+  const readable = new Set((household.goals ?? [])
+    .filter((goal) => goal.shared || (goal.ownerMemberId !== null && goal.ownerMemberId === memberId))
+    .map((goal) => goal.id));
+  const hidden = (goalId: string | null | undefined): boolean => typeof goalId === "string" && !readable.has(goalId);
+  const finish = current?.spec.finish ?? null;
+  const keptPrivate = current === null ? 0
+    : (finish?.kind === "banks" ? finish.goalIds.filter(hidden).length : 0)
+      + current.spec.plans.filter((plan) => plan.kind === "bank" && hidden(plan.goalId)).length;
+  const crossing = eraCrossingPending(current);
+  const sketched = views.find((era) => era.state === "sketched") ?? null;
+  const ahead = nextEraAfterCurrent(views) ?? sketched;
+  return {
+    era: current === null ? null : {
+      key: `era:${current.id}`,
+      name: current.spec.name,
+      index: index + 1,
+      months: current.months.length,
+      home: current.spec.home,
+      homeLabel: PATH_ERA_HOME_LABELS[current.spec.home] ?? "home",
+      finishLine: current.spec.finishLine,
+      plans: current.spec.plans.length,
+    },
+    eras: agreed.length,
+    crossed: agreed.filter((era) => era.state === "past").length,
+    gate: current === null ? null : {
+      kind: current.spec.finish.kind,
+      met: current.progress.met,
+      lit: current.progress.lanterns.filter((lantern) => lantern.lit).length,
+      lanterns: current.progress.lanterns.length,
+      words: gateSub(current.progress, crossing),
+    },
+    crossing,
+    next: ahead === null ? null : { key: `era:${ahead.id}`, name: ahead.spec.name, sketched: ahead.state === "sketched" },
+    stones: agreed.reduce((sum, era) => sum + era.months.length, 0),
+    keptPrivate,
+  };
+}
 
 /**
  * The Glasshouse (LITTLE_HARBOUR_v2 §3): a task is a plant in a pot with a
@@ -798,6 +926,7 @@ export function buildHarbourReading(household: Household, memberId: string, toda
     cottage: buildCottageReading(household),
     kiln: buildKilnReading(household, memberId, today),
     campfire: buildCampfireReading(household, memberId, today),
+    atlas: buildAtlasReading(household, memberId, today),
     tower: buildTowerReading(household, memberId, today, nest),
     cellar: buildCellarReading(household, memberId, today, nest, snapshot.prepare.amountCents),
     cistern: buildCisternReading({ cents: snapshot.protect.amountCents, target: snapshot.protect.targetCents }),
