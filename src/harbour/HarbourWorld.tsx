@@ -16,6 +16,8 @@ import { useHarbourReading } from "./data/useHarbourReading.ts";
 import { HarbourFlat } from "./flat/PlaceFlat.tsx";
 import { HarbourTwins } from "./court/CourtTwins.tsx";
 import { HARBOUR_LANDMARKS, HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, HARBOUR_PLACE_ROOMS, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
+import { HARBOUR_GO_EVENT } from "./nav/QuickSheet.tsx";
+import { HOUSE_LEVELS, HOUSE_ROOMS } from "../hearthside/houseRoutes.ts";
 import { classifyGesture, gestureAction, spark, type QueenAction, type QueenRegion, type QueenSpark } from "./court/queenTouch.ts";
 import type { QueenPlace } from "./court/queenPlace.ts";
 import type { CourtHandle } from "./court/CourtScene.ts";
@@ -178,6 +180,25 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     if (id === "slip" || id === "gate") { world?.go(id === "gate" ? "sky" : "object", id); return; }
     const region = id as QueenRegion; const action = gestureAction(region, "tap"); if (action) act(region, action);
   }
+
+  /**
+   * The quick sheet's place rows (W5 #2). The App owns the router; this shell
+   * is mounted for every household route, so it is the one place that can walk
+   * the sheet's row to a room × level without the App handing it a second
+   * navigator. The event carries a route and nothing else — never a write, and
+   * a route the house does not have is ignored rather than guessed at.
+   */
+  useEffect(() => {
+    const walkTo = (event: Event) => {
+      const detail = (event as CustomEvent<{ room?: unknown; level?: unknown }>).detail;
+      const room = detail?.room, level = detail?.level;
+      if (typeof room !== "string" || typeof level !== "string") return;
+      if (!(HOUSE_ROOMS as readonly string[]).includes(room) || !(HOUSE_LEVELS as readonly string[]).includes(level)) return;
+      onNavigateRef.current(room as HouseRoom, level as HouseLevel);
+    };
+    window.addEventListener(HARBOUR_GO_EVENT, walkTo);
+    return () => window.removeEventListener(HARBOUR_GO_EVENT, walkTo);
+  }, []);
 
   // The tier is decided once per mount and again when the reading edition is chosen or the stage crosses 720.
   useEffect(() => {
@@ -383,7 +404,17 @@ export default function HarbourWorld(props: HarbourWorldProps) {
 
   function onStageKey(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget) return;
-    const world = runtime.current; if (!world) return;
+    // Space opens the quick sheet wherever you are standing — including the
+    // reading edition and the fallback, where there is no world to drive.
+    // Everything the app can do has to be one key away even when the island
+    // could not be drawn at all.
+    if (event.key === " " && onQuickSheet) { onQuickSheet(); event.preventDefault(); return; }
+    const world = runtime.current;
+    if (!world) {
+      // The reading edition still steps back out of a place the same way.
+      if (event.key === "Escape" && placeRef.current !== "court") { onNavigateRef.current("home", "middle"); event.preventDefault(); }
+      return;
+    }
     const step = 40;
     const onRail = placeRef.current === "cellar" && rail.current !== null;
     if (onRail && (event.key === "Home" || event.key === "0")) walk("today");
@@ -403,7 +434,6 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     else if (event.key === "+" || event.key === "=") world.gesture({ kind: "zoom", delta: -0.2 });
     else if (event.key === "-" || event.key === "_") world.gesture({ kind: "zoom", delta: 0.2 });
     else if (event.key === "Escape") { if (placeRef.current === "court") world.go("court"); else onNavigateRef.current("home", "middle"); }
-    else if (event.key === " " && onQuickSheet) onQuickSheet();
     else return;
     event.preventDefault();
   }
