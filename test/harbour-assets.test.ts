@@ -16,7 +16,7 @@ import {
   suggestedScaleBesideQueen,
   type GlbAsset,
 } from "../src/harbour/assets/manifest.ts";
-import { BLOOM_MASTER_SHA256, BLOOM_MASTER_URL, BLOOM_QUEEN_SHA256, BLOOM_QUEEN_URL } from "../src/house/world/bloom.ts";
+import { BLOOM_MASTERS, BLOOM_MASTER_SHA256, BLOOM_MASTER_URL, BLOOM_QUEEN_SHA256, BLOOM_QUEEN_URL } from "../src/house/world/bloom.ts";
 import { acquireGlb, glbCached, glbHolds, preloadCourtAssets, readGlb } from "../src/harbour/assets/loadGlb.ts";
 
 const publicFile = (url: string) => resolve(process.cwd(), `public${url}`);
@@ -79,6 +79,11 @@ describe("Little Harbour · the Court's assets ship exactly as listed (BUILD_PLA
     expect(QUEEN_ASSETS.presence.sha256).toBe(BLOOM_QUEEN_SHA256);
     expect(queenAssetForTier("full")).toBe(QUEEN_ASSETS.presence);
     expect(queenAssetForTier("lite")).toBe(QUEEN_ASSETS.court);
+    // The tier table `bloom.ts` fetches from and the manifest are the same two
+    // files, and neither tier reaches for the raw master. That row is rollback.
+    expect(BLOOM_MASTERS.full).toBe(QUEEN_ASSETS.presence.url);
+    expect(BLOOM_MASTERS.lite).toBe(QUEEN_ASSETS.court.url);
+    expect(Object.values(BLOOM_MASTERS)).not.toContain(QUEEN_ASSETS.master.url);
     // The optimised file declares meshopt; `src/assets/gltf.ts` attaches the decoder for every parse.
     const bytes = readFileSync(publicFile(QUEEN_ASSETS.presence.url));
     const json = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString("utf8")) as { extensionsRequired?: string[] };

@@ -10,6 +10,13 @@ import type { QueenRoom, RoomLayout, RoomRect, RoomStats, RoomVessel, QueenRoomW
  * Detect and degrade silently: forced colours, a failed context, a lost context
  * or `world="flat"` leave the drawn room in place and this renders nothing.
  */
+/**
+ * How many still frames the layout follow keeps measuring before it sleeps.
+ * Long enough that a transition which pauses mid-flight is still followed,
+ * short enough that a settled room costs nothing.
+ */
+const FOLLOW_TAIL_FRAMES = 12;
+
 export function QueenRoomWorld({ room, root, vessels, ambient = false, mode = "auto", onLive }: {
   room: QueenRoom;
   /** The room's own element; the seats are found inside it. */
@@ -57,13 +64,19 @@ export function QueenRoomWorld({ room, root, vessels, ambient = false, mode = "a
   useEffect(() => { world.current?.setAmbient(ambient); }, [ambient, live]);
 
   // Follow the DOM: the sculptures sit exactly where their controls sit, through every scrub and every resize.
+  //
+  // Measuring costs a forced layout, so it is never done on a clock of its own.
+  // Something that can move a seat — a resize, a scroll, a scrub, the end of a
+  // transition — wakes a short follow on the room's own renderer lease, and the
+  // follow sleeps again a few still frames after the room comes to rest. Off
+  // the screen or behind a hidden tab it does not run at all.
   useLayoutEffect(() => {
     const rootElement = root.current, element = host.current;
     if (!live || !rootElement || !element || !world.current) return;
     const rect = (el: Element): RoomRect => { const r = el.getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; };
-    const measure = () => {
+    const measure = (): boolean => {
       const current = world.current;
-      if (!current) return;
+      if (!current) return false;
       const seats: RoomLayout["seats"] = {};
       for (const el of rootElement.querySelectorAll<HTMLElement>("[data-room-vessel]")) {
         // A control may be larger than what it draws (a small jar keeps a pressable button): the drawn seat inside it, when marked, is what the sculpture fills.
@@ -73,17 +86,60 @@ export function QueenRoomWorld({ room, root, vessels, ambient = false, mode = "a
       const shelves = [...rootElement.querySelectorAll<HTMLElement>("[data-room-shelf]")].map(rect).filter((r) => r.w > 4 && r.h > 4);
       const stageEl = rootElement.querySelector<HTMLElement>("[data-room-stage]");
       const stage = stageEl ? { ...rect(stageEl), floor: Number(stageEl.dataset.roomFloor ?? 0) } : null;
-      current.layout({ host: rect(element), seats, ...(shelves.length ? { shelves } : {}), ...(stage && stage.w > 4 && stage.h > 4 ? { stage } : {}) });
+      return current.layout({ host: rect(element), seats, ...(shelves.length ? { shelves } : {}), ...(stage && stage.w > 4 && stage.h > 4 ? { stage } : {}) });
     };
     measure();
-    const observer = new ResizeObserver(measure);
+
+    let frame = 0, still = FOLLOW_TAIL_FRAMES, onScreen = true;
+    const step = () => {
+      frame = 0;
+      const current = world.current;
+      if (!current || !onScreen || document.hidden) return;
+      still = measure() ? 0 : still + 1;
+      if (still < FOLLOW_TAIL_FRAMES) frame = current.requestFrame(step);
+    };
+    /** Something may have moved a seat: follow until the room is still again. */
+    const follow = () => {
+      const current = world.current;
+      if (!current || !onScreen || document.hidden) return;
+      still = 0;
+      if (!frame) frame = current.requestFrame(step);
+    };
+    const stop = () => { if (frame) world.current?.cancelFrame(frame); frame = 0; still = FOLLOW_TAIL_FRAMES; };
+
+    const observer = new ResizeObserver(follow);
     observer.observe(element);
     observer.observe(rootElement);
+    // A seat of its own can change size without the room changing size.
+    for (const el of rootElement.querySelectorAll("[data-room-vessel],[data-room-shelf],[data-room-stage]")) observer.observe(el);
     // The ribbon scrubs and the ledge reorders; both move seats without resizing anything.
-    let raf = 0;
-    const follow = () => { measure(); raf = requestAnimationFrame(follow); };
-    raf = requestAnimationFrame(follow);
-    return () => { observer.disconnect(); cancelAnimationFrame(raf); };
+    const intersection = typeof IntersectionObserver === "function"
+      ? new IntersectionObserver(([entry]) => { onScreen = entry?.isIntersecting ?? true; if (onScreen) follow(); else stop(); })
+      : null;
+    intersection?.observe(element);
+    const onHidden = () => { if (document.hidden) stop(); else follow(); };
+    document.addEventListener("visibilitychange", onHidden);
+    rootElement.addEventListener("scroll", follow, { capture: true, passive: true });
+    rootElement.addEventListener("transitionend", follow);
+    rootElement.addEventListener("animationend", follow);
+    rootElement.addEventListener("pointerdown", follow);
+    rootElement.addEventListener("pointermove", follow, { passive: true });
+    window.addEventListener("scroll", follow, { passive: true });
+    window.addEventListener("resize", follow);
+    follow();
+    return () => {
+      stop();
+      observer.disconnect();
+      intersection?.disconnect();
+      document.removeEventListener("visibilitychange", onHidden);
+      rootElement.removeEventListener("scroll", follow, { capture: true } as EventListenerOptions);
+      rootElement.removeEventListener("transitionend", follow);
+      rootElement.removeEventListener("animationend", follow);
+      rootElement.removeEventListener("pointerdown", follow);
+      rootElement.removeEventListener("pointermove", follow);
+      window.removeEventListener("scroll", follow);
+      window.removeEventListener("resize", follow);
+    };
   }, [live, root, vessels.length]);
 
   if (!wanted) return null;

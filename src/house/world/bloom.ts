@@ -10,30 +10,55 @@ export const BLOOM_MASTER_URL = "/models/mandevilla-living-presence.glb";
 export const BLOOM_QUEEN_URL = "/models/queen/mandevilla-living-presence.v2.glb";
 export const BLOOM_QUEEN_SHA256 = "d6b3e1549a6d111ca331412b13f39d07641300f101bf9a2a7074c79b3e4ec598";
 const hash = (text: string) => [...text].reduce((sum,c)=>Math.imul(sum ^ c.charCodeAt(0),16777619)>>>0,2166136261);
-let master:Promise<THREE.Group>|null=null,masterRoot:THREE.Group|null=null,users=0;
+/** Which tier of her the figure is cloned from. `lite` is the decimated court copy: same node names, a quarter of the bytes. */
+export type BloomTier = "full" | "lite";
 /**
- * Fetched through `readQueenModel`, which asks for the `.gz` transfer twin
- * first and falls back to the raw `.glb`, and parsed through the shared
- * loader, which carries the meshopt decoder. 1.74 MB over the wire where the
- * raw master was 12.32 MB — same 71 meshes, same 656 380 triangles, same 26
- * materials, same node names, bounds within 2.4e-6 units.
+ * Which file each tier is cloned from.
+ *
+ * `full` is the optimised presence (`QUEEN_ASSETS.presence`) — the same sculpt
+ * Jonathan supplied, run through `scripts/optimize-models.mjs`, 1.74 MB over
+ * the wire where the raw master was 12.32 MB, with the same 71 meshes, the
+ * same 656 380 triangles, the same 26 materials and the same node names.
+ * `lite` is the decimated court copy. **Neither tier fetches the 12.9 MB
+ * master**: that file is kept only as `QUEEN_ASSETS.master`, for rollback.
  */
-async function acquireMaster(){users++;try{master??=readQueenModel(undefined,BLOOM_QUEEN_URL).then(parseQueenModel).then(scene=>{masterRoot=scene;return scene;});return await master;}catch(error){users--;master=null;throw error;}}
-function releaseMaster(){users--;if(users===0&&masterRoot){disposeObject(masterRoot);masterRoot=null;master=null;}}
+export const BLOOM_MASTERS: Readonly<Record<BloomTier,string>> = Object.freeze({
+  full: BLOOM_QUEEN_URL,
+  lite: "/models/mandevilla-living-presence.court.glb",
+});
+type MasterHold = {model:Promise<THREE.Group>|null;root:THREE.Group|null;users:number};
+/** One hold per file, ref-counted: a page that shows her twice downloads her once. */
+const holds = new Map<string,MasterHold>();
+const holdFor = (url:string):MasterHold => { let hold=holds.get(url); if(!hold){hold={model:null,root:null,users:0};holds.set(url,hold);} return hold; };
+/**
+ * Every tier is fetched through `readQueenModel`, which asks for the `.gz`
+ * transfer twin first and falls back to the raw `.glb`, and parsed through the
+ * shared loader (`assets/gltf.ts`), which carries the meshopt decoder the
+ * optimised presence needs. Both tiers have a `.gz` twin beside them.
+ */
+async function acquireMaster(url:string){const hold=holdFor(url);hold.users++;try{hold.model??=readQueenModel(undefined,url).then(parseQueenModel).then(scene=>{hold.root=scene;return scene;});return await hold.model;}catch(error){hold.users--;hold.model=null;throw error;}}
+function releaseMaster(url:string){const hold=holds.get(url);if(!hold)return;hold.users--;if(hold.users===0&&hold.root){disposeObject(hold.root);hold.root=null;hold.model=null;}}
 /**
  * What is drawn around the master. The house keeps both (today's look); the
  * Court asks for `{decoration:false}` so nothing is drawn over her own pot —
  * no second pot, crown torus, trellis or eggs — while the growth stems stay.
+ * `tier` picks the file she is cloned from; it does not change what is drawn.
  */
-export type BloomQueenOptions = { decoration?: boolean; growth?: boolean };
+export type BloomQueenOptions = { decoration?: boolean; growth?: boolean; tier?: BloomTier };
 export const BLOOM_QUEEN_HEIGHT = 2.05;
 export async function createBloomQueen(style: QueenStyle, evidence: BloomEvidence[], options: BloomQueenOptions = {}): Promise<THREE.Group> {
-  const {decoration:withDecoration=true,growth:withGrowth=true}=options;
-  const loaded = await acquireMaster();
+  const {decoration:withDecoration=true,growth:withGrowth=true,tier="full"}=options;
+  // A lite tier that cannot find its court copy still gets her: the full tier's
+  // optimised presence is the fallback. Nothing here ever reaches for the raw
+  // 12.9 MB master — `QUEEN_ASSETS.master` is a rollback row, not a fallback.
+  let url = BLOOM_MASTERS[tier] ?? BLOOM_MASTERS.full;
+  let loaded: THREE.Group;
+  try { loaded = await acquireMaster(url); }
+  catch (error) { if (url === BLOOM_MASTERS.full) throw error; url = BLOOM_MASTERS.full; loaded = await acquireMaster(url); }
   const group = new THREE.Group(); group.name = "Bloom V2 · Living Presence";
   const sculpture = loaded.clone(true);
   sculpture.traverse(node=>{node.userData.bloomSharedResource=true;});
-  group.userData.releaseBloomMaster=releaseMaster;
+  group.userData.releaseBloomMaster=()=>releaseMaster(url);
   const box = new THREE.Box3().setFromObject(sculpture), size=box.getSize(new THREE.Vector3()), center=box.getCenter(new THREE.Vector3());
   sculpture.position.set(-center.x,-box.min.y,-center.z);
   const normal = new THREE.Group(); normal.name="Normalised master"; normal.add(sculpture); normal.scale.setScalar(BLOOM_QUEEN_HEIGHT / Math.max(size.y,.01)); group.add(normal);

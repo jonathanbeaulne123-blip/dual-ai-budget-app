@@ -80,11 +80,19 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
 
   const cleanup: Array<() => void> = [];
   const pmrem = new THREE.PMREMGenerator(renderer);
+  // The room the environment is baked from is scaffolding: it owns geometry,
+  // materials and per-instance buffers that outlive the bake unless they are
+  // let go here (the pattern `kitty/KittyStage.tsx` settled).
+  const environment = new RoomEnvironment();
   try {
-    const env = pmrem.fromScene(new RoomEnvironment(), 0.04);
+    const env = pmrem.fromScene(environment, 0.04);
     scene.environment = env.texture;
     cleanup.push(() => { env.dispose(); pmrem.dispose(); });
   } catch { pmrem.dispose(); }
+  finally {
+    environment.traverse((object) => { if (object instanceof THREE.InstancedMesh) object.dispose(); });
+    environment.dispose();
+  }
   // The rig: a sky, a key and a rim. The living light scales them within a floor and moves the key with the sun's height; it never touches a material.
   const sky = new THREE.HemisphereLight("#fff1d9", "#8a8276", 1.1);
   scene.add(sky);
@@ -164,6 +172,9 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
 
   let dead = false;
   let pending = 0;
+  let onScreen = true;
+  /** Frames are only worth asking for while she is on the page and the page is in front. */
+  const awake = () => onScreen && !(typeof document !== "undefined" && document.hidden);
   let unitsPerPx = VISIBLE_HEIGHT / Math.max(1, host.clientHeight);
   let lastLayoutKey = "";
   const stats: WorldStats = { frames: 0, lastFrameMs: 0, maxFrameMs: 0, sculptures: 1, breathing: false, scenery: "none", ambient: false, sceneryGeometries: 0, charms: 0, charmDrawCalls: 0, charmGeometries: 0, keyLight: 1.9, keyHeight: 7, keyColor: "#ffe9ca", rings: 0, tipped: false, model: "drawn" };
@@ -195,7 +206,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
   const running = () => stats.breathing || (stats.ambient && Boolean(scenery?.animated));
   const breathFrame = (t: number) => {
     breathRaf = 0;
-    if (dead || !running()) return;
+    if (dead || !running() || !awake()) return;
     if (!breathStart) breathStart = t;
     const elapsed = t - breathStart;
     if (stats.breathing) queen.setBreath(Math.sin((elapsed / BREATH_MS) * Math.PI * 2) * BREATH_PX * unitsPerPx);
@@ -203,7 +214,7 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     render();
     breathRaf = rendererLease.requestFrame(breathFrame);
   };
-  const pump = () => { if (!dead && running() && !breathRaf) { breathStart = 0; breathRaf = rendererLease.requestFrame(breathFrame); } };
+  const pump = () => { if (!dead && running() && awake() && !breathRaf) { breathStart = 0; breathRaf = rendererLease.requestFrame(breathFrame); } };
   const halt = () => { if (breathRaf) rendererLease.cancelFrame(breathRaf); breathRaf = 0; };
   suspendRenderer = () => { if (pending) rendererLease.cancelFrame(pending); pending = 0; halt(); };
   resumeRenderer = () => { if (hostRect.w && hostRect.h) { renderer.setSize(hostRect.w, hostRect.h, false); renderer.domElement.style.width = `${hostRect.w}px`; renderer.domElement.style.height = `${hostRect.h}px`; } invalidate(); pump(); };
@@ -214,9 +225,19 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
     if (next) pump();
     else { if (!running()) halt(); queen.setBreath(0); invalidate(); }
   };
-  const onHidden = () => { if (document.hidden) halt(); else pump(); };
+  const onHidden = () => { if (!awake()) halt(); else pump(); };
   document.addEventListener("visibilitychange", onHidden);
   cleanup.push(() => document.removeEventListener("visibilitychange", onHidden));
+  // Scrolled off the page she stops breathing and starts again where she left
+  // off: the same rule the tab's own visibility already carried.
+  if (typeof IntersectionObserver !== "undefined") {
+    const watcher = new IntersectionObserver(([entry]) => {
+      onScreen = entry?.isIntersecting ?? true;
+      if (awake()) pump(); else halt();
+    });
+    watcher.observe(host);
+    cleanup.push(() => watcher.disconnect());
+  }
 
   const lost = (event: Event) => { event.preventDefault(); options.onLost?.(); };
   cleanup.push(rendererLease.listenCanvas("webglcontextlost", lost));
@@ -335,12 +356,12 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
       invalidate();
     },
     /** Put her and the banks exactly where the DOM keeps their controls. */
-    layout(next: WorldLayout) {
-      if (!next.host.w || !next.host.h) return;
+    layout(next: WorldLayout): boolean {
+      if (!next.host.w || !next.host.h) return false;
       hostRect = next.host;
       // Measured often (through CSS transitions); rendered only when something actually moved.
       const key = JSON.stringify([hostRect, next.queen, next.banks, [...banks.keys()]]);
-      if (key === lastLayoutKey) return;
+      if (key === lastLayoutKey) return false;
       lastLayoutKey = key;
       unitsPerPx = VISIBLE_HEIGHT / hostRect.h;
       camera.aspect = hostRect.w / hostRect.h;
@@ -368,7 +389,15 @@ export function createQueenWorld(host: HTMLElement, options: { reducedMotion: bo
         bank.sculpture.group.scale.setScalar((rect.h * unitsPerPx) / bank.height);
       }
       invalidate();
+      return true;
     },
+    /**
+     * A frame on her own lease, for a caller that has to follow the DOM through
+     * a CSS transition. It rides the one shared clock and stops dead when the
+     * lease suspends.
+     */
+    requestFrame(callback: (time: number) => void): number { return dead ? 0 : rendererLease.requestFrame(callback); },
+    cancelFrame(id: number): void { rendererLease.cancelFrame(id); },
     dispose() {
       if (dead) return;
       dead = true;

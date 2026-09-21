@@ -15,6 +15,7 @@ import { useAppearance } from "../theme/ThemeProvider.tsx";
 import { HOUSE_PLACES, ROOM_NAMES } from "./navigation.ts";
 import { DEFAULT_QUEEN_STYLE, type QueenStyle } from "./queenStyle.ts";
 import type { HouseRuntime } from "./world/runtime.ts";
+import { renderTierFor } from "./world/tier.ts";
 import { livingEvidence } from "./interpretation.ts";
 import { interpretationSourceRevision, supportedAtFor, useSupportedHouseInterpretation, type InterpretationGate } from "./supportedInterpretation.ts";
 import { houseTargets } from "./houseTargets.ts";
@@ -27,6 +28,9 @@ export function HouseWorld({household,memberId,scope,today,route,ready,freshness
   const appearance=useAppearance(),theme=appearance.preview??appearance.saved.theme;
   const host=useRef<HTMLDivElement>(null),runtime=useRef<HouseRuntime|null>(null),buttons=useRef(new Map<string,HTMLElement>());
   const [status,setStatus]=useState<"loading"|"ready"|"fallback">("loading"),[overview,setOverview]=useState(false),[walking,setWalking]=useState(false),[preview,setPreview]=useState<QueenStyle|null>(null),[queenView,setQueenView]=useState<"front"|"back"|"roots"|"detail">("front");
+  // Where the world says each object's control stands. The world never writes
+  // to the controls itself: a write between two reads is a forced layout.
+  const [twins,setTwins]=useState<Record<string,{x:number;y:number}>>({});
   const targets=houseTargets(scope,route.room,route.level);
   const place=HOUSE_PLACES[route.room][route.level],zone=`${route.room}:${route.level}`;
   const nest=useMemo(()=>projectKittyNest(household,memberId,scope,today),[household,memberId,scope,today]);
@@ -50,7 +54,10 @@ export function HouseWorld({household,memberId,scope,today,route,ready,freshness
     const element=host.current;if(!element)return;let cancelled=false;setStatus("loading");
     void import("./world/runtime.ts").then(({mountHouseWorld})=>{
       if(cancelled)return;
-      try{const world=mountHouseWorld(element,theme,()=>buttons.current,()=>setStatus("ready"),()=>setStatus("fallback"),(room,level)=>navigationRef.current(room as HouseRoom,level as HouseLevel,true));runtime.current=world;world.go(currentDestination.current);world.setQueen(preview??appearance.saved.queen??DEFAULT_QUEEN_STYLE,evidence);world.setHome(homeObjects);world.setWalking(walking);}
+      // A phone or a small machine carries the 3.5 MB court copy of her, not
+      // the 12.9 MB master — the harbour's own routing, read the same way.
+      const tier=renderTierFor(element.getBoundingClientRect().width||window.innerWidth);
+      try{const world=mountHouseWorld(element,theme,()=>buttons.current,()=>setStatus("ready"),()=>setStatus("fallback"),(room,level)=>navigationRef.current(room as HouseRoom,level as HouseLevel,true),{tier,onProject:rows=>setTwins(Object.fromEntries(rows.map(row=>[row.id,{x:row.x,y:row.y}])))});runtime.current=world;world.go(currentDestination.current);world.setQueen(preview??appearance.saved.queen??DEFAULT_QUEEN_STYLE,evidence);world.setHome(homeObjects);world.setWalking(walking);}
       catch{setStatus("fallback");}
     }).catch(()=>setStatus("fallback"));
     return()=>{cancelled=true;runtime.current?.dispose();runtime.current=null;};
@@ -86,7 +93,7 @@ export function HouseWorld({household,memberId,scope,today,route,ready,freshness
       <div className="house-world__vignette" aria-hidden="true"/>
       <nav className="house-world__levels" aria-label={`${ROOM_NAMES[route.room]} levels`}>{HOUSE_LEVELS.map(level=><button key={level} onClick={()=>{setOverview(false);onNavigate(route.room,level);}} aria-current={route.level===level?"location":undefined} aria-label={`${HOUSE_PLACES[route.room][level].title}, ${level==="above"?"upstairs":level==="below"?"downstairs":"main floor"}`}><span aria-hidden="true">{level==="above"?"↑":level==="below"?"↓":"·"}</span>{HOUSE_PLACES[route.room][level].title}</button>)}</nav>
       {overview?<nav className="house-world__section-nav" aria-label="Enter a wing">{HOUSE_ROOMS.map(room=><button key={room} onClick={()=>{setOverview(false);onNavigate(room,"middle");}}><span>{ROOM_NAMES[room]}</span><small>{HOUSE_PLACES[room].above.title} / {HOUSE_PLACES[room].below.title}</small></button>)}</nav>:<>
-        <div className="house-world__anchors" aria-hidden={status!=="ready"}>{targets.map(({id,label})=><button key={id} id={`house-object-${id}`} ref={element=>{if(element)buttons.current.set(id,element);else buttons.current.delete(id);}} onClick={()=>choose(id)}><span className="house-world__pin" aria-hidden="true">✦</span><span>{label}</span></button>)}</div>
+        <div className="house-world__anchors" aria-hidden={status!=="ready"}>{targets.map(({id,label})=>{const at=twins[id];return <button key={id} id={`house-object-${id}`} data-projected="true" hidden={!at} style={at?{left:`${at.x}px`,top:`${at.y}px`}:undefined} ref={element=>{if(element)buttons.current.set(id,element);else buttons.current.delete(id);}} onClick={()=>choose(id)}><span className="house-world__pin" aria-hidden="true">✦</span><span>{label}</span></button>;})}</div>
         {!route.surface&&<div className="house-world__floor-scroll" ref={floorScroller} onScroll={floorScroll} aria-label="Scroll through this wing">{HOUSE_LEVELS.map(level=><section className="house-world__floor" key={level} data-house-level={level} inert={level!==route.level} aria-label={HOUSE_PLACES[route.room][level].title}><div className="house-world__invitation"><p className="kicker">{ROOM_NAMES[route.room]} · {level==="above"?"Upstairs":level==="below"?"Downstairs":"Come inside"}</p><h2>{HOUSE_PLACES[route.room][level].title}</h2><p>{scope==="personal"&&route.room==="together"&&level==="middle"?"A studio and a quiet place for your own words.":HOUSE_PLACES[route.room][level].subtitle}</p><details className="house-world__object-actions" open={status==="fallback"}><summary>Room actions</summary><div>{houseTargets(scope,route.room,level).map(({id,label})=><button id={`house-action-${route.room}-${level}-${id}`} key={id} onClick={()=>choose(id)}>{label} <span aria-hidden="true">↗</span></button>)}</div></details></div></section>)}</div>}
       </>}
       <div className="house-world__walk"><button aria-pressed={walking} onClick={()=>setWalking(!walking)}>{walking?"Finish exploring":"Walk around"}</button>{walking&&<><button aria-label="Walk left" onClick={()=>runtime.current?.walk("left")}>←</button><button aria-label="Walk right" onClick={()=>runtime.current?.walk("right")}>→</button><button aria-label="Walk upstairs" onClick={()=>runtime.current?.walk("up")}>↑</button><button aria-label="Walk downstairs" onClick={()=>runtime.current?.walk("down")}>↓</button><small>Furniture opens with one tap.</small></>}</div>
