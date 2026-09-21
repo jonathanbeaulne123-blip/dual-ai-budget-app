@@ -11,8 +11,8 @@
  * Nothing here posts, writes or moves money. Unknown cents stay `null` and
  * read "—" downstream; they are never shown as $0.
  */
-import { addDays, compareDateKeys, weekdaySunday0, type DateKey } from "../../core/calendar.ts";
-import { openChapterFor, type Ritual } from "../../core/chapters.ts";
+import { addDays, compareDateKeys, weekdaySunday0, type DateKey, type MonthKey } from "../../core/calendar.ts";
+import { chapterMonth, chapterReminder, openChapterFor, pendingChapterClosure, type Chapter, type Ritual } from "../../core/chapters.ts";
 import { currentPlanVersion, planAcknowledgementState, type PlanLens } from "../../core/planSystem.ts";
 import { shapeTasks, taskInView, type Task } from "../../core/tasks.ts";
 import { fundSnapshot, type FlowItem, type FundSnapshot } from "../../core/fundModel.ts";
@@ -85,6 +85,8 @@ export type HarbourReading = {
   cottage: CottageReading;
   /** The Kiln: the shelf of fired pieces, and how warm the kiln still is. */
   kiln: KilnReading;
+  /** The Campfire on the shore: the month's Chapter, who has sat, and the stones already laid. */
+  campfire: CampfireReading;
 };
 
 /**
@@ -452,6 +454,137 @@ function kilnCategoryOf(goal: Goal): NestCategory | null {
   return kind === "protect" || kind === "everyday" || kind === "prepare" || kind === "build" ? kind : null;
 }
 
+// ── The Campfire (LITTLE_HARBOUR_v2 §6): the monthly close ──────────────────
+
+/**
+ * The Campfire on the shore in front of the Boathouse — the one ritual that
+ * needs two people. The month's Chapter closes here, in the paired review
+ * `docs/DECISIONS.md` describes: the first agreement leaves it open, the final
+ * agreement closes it and opens the reviewed successor atomically. **Nothing
+ * closes on its own** — `chapterReminder` repeats until a Sitdown does it.
+ *
+ * This reading is names and counts only: whose seat is filled, how many stones
+ * are on the path, how long since the last one was laid. Not one cent of the
+ * month ever reaches the fire.
+ */
+
+/** Where the month's paired review stands, in the ring's own words. */
+export type CampfireClose =
+  /** Nothing proposed: the Chapter is open and the fire is only company. */
+  | "none"
+  /** A closure is on the table and this reader has not yet agreed to it. */
+  | "proposed"
+  /** This reader has agreed; the other seat is still empty. */
+  | "awaiting-partner"
+  /** A Chapter closed within the last few days: the fresh stone is still warm. */
+  | "sealed";
+
+/** One place at the fire: a member of the reviewed audience, and whether they have sat. */
+export type CampfireSeat = { memberId: string; name: string; seated: boolean };
+
+export type CampfireReading = {
+  /** The open Chapter's month, or null when no Chapter is open. */
+  month: MonthKey | null;
+  /** The open Chapter's title — the couple's own words, never a figure. */
+  title: string | null;
+  close: CampfireClose;
+  /** The ring, in the audience's own order. Two seats for two people. */
+  seats: CampfireSeat[];
+  /** How many of those seats are filled. */
+  seated: number;
+  /** Stones on the path of months: Chapters that have closed. */
+  stones: number;
+  /**
+   * The first Sitdown ever happened. Until it does the fire is unlit kindling;
+   * after it, the first campfire stays warm forever and never goes fully cold.
+   */
+  lit: boolean;
+  /** The day the last Chapter closed. */
+  lastClosedOn: DateKey | null;
+  /** Days since that close; 0 is today, null when nothing has ever closed. */
+  sinceClose: number | null;
+  /** The seal's own glow, 1 on the closing day fading to 0 over `CAMPFIRE_SEAL_DAYS`. */
+  seal: number;
+  /** The open Chapter's month has ended and no Sitdown has closed it yet. */
+  overdue: boolean;
+};
+
+/** The fresh stone keeps its glow about three days, and the embers rise with it. */
+export const CAMPFIRE_SEAL_DAYS = 3;
+/** The ring lays at most this many stones on the path; Journey holds every month. */
+export const CAMPFIRE_STONE_CAP = 12;
+/** A shore with nobody on it: unlit kindling, no stones, no Chapter open. */
+export const EMPTY_CAMPFIRE_READING: CampfireReading = Object.freeze({
+  month: null, title: null, close: "none", seats: [], seated: 0, stones: 0,
+  lit: false, lastClosedOn: null, sinceClose: null, seal: 0, overdue: false,
+}) as CampfireReading;
+
+/** What `buildCampfireReading` needs, and no more. */
+type CampfireSource = Pick<Household, "chapters"> & { members?: { id: string; name?: string; active?: boolean }[] };
+
+/**
+ * The fire, read. Pure and total: it reads the Chapters and the consent
+ * history already on them, writes nothing, and never opens or closes
+ * anything. A household that has never sat down reads as unlit kindling,
+ * which is a beginning and not a fault.
+ */
+export function buildCampfireReading(household: CampfireSource, memberId: string, today: DateKey): CampfireReading {
+  const chapters = household.chapters ?? [];
+  const members = household.members ?? [];
+  const nameOf = (id: string): string => members.find((row) => row.id === id)?.name?.trim() || "Someone";
+  const open = openChapterFor({ chapters } as never);
+  const closed = chapters.filter((row) => row.closedAt !== null);
+  const lastClosedOn = closed.reduce<DateKey | null>((latest, row) => laterDay(latest, firedDay(row.closedAt)), null);
+  const sinceClose = lastClosedOn === null ? null : Math.max(0, daysBetween(lastClosedOn, today));
+  const seal = sinceClose === null ? 0 : Math.max(0, Math.min(1, 1 - sinceClose / CAMPFIRE_SEAL_DAYS));
+
+  const ring = (audience: readonly string[], approvals: readonly { memberId: string }[]): CampfireSeat[] => {
+    const sat = new Set(approvals.map((row) => row.memberId));
+    return audience.map((id) => ({ memberId: id, name: nameOf(id), seated: sat.has(id) }));
+  };
+  const everyone = (seated: boolean): CampfireSeat[] => members
+    .filter((row) => row.active !== false)
+    .map((row) => ({ memberId: row.id, name: row.name?.trim() || "Someone", seated }));
+
+  let close: CampfireClose = "none";
+  let seats: CampfireSeat[] = everyone(false);
+  const pending = open ? pendingChapterClosure(open) : null;
+  if (pending) {
+    // The review is on the table. Whoever has agreed is sitting; the fire waits for the rest.
+    seats = ring(pending.audience, pending.approvals);
+    close = pending.approvals.some((row) => row.memberId === memberId) ? "awaiting-partner" : "proposed";
+  } else if (seal > 0) {
+    // A Chapter closed within the seal window: the final agreement is a fact,
+    // so the ring stands as the accepted review recorded it.
+    const sealed = closed.filter((row) => firedDay(row.closedAt) === lastClosedOn)
+      .sort((a, b) => (a.closedAt ?? "").localeCompare(b.closedAt ?? "")).at(-1) ?? null;
+    const accepted = acceptedClosure(sealed);
+    seats = accepted ? ring(accepted.audience, accepted.approvals) : everyone(true);
+    close = "sealed";
+  }
+
+  return {
+    month: open ? chapterMonth(open) : null,
+    title: open ? open.title || null : null,
+    close,
+    seats,
+    seated: seats.filter((seat) => seat.seated).length,
+    stones: closed.length,
+    lit: closed.length > 0,
+    lastClosedOn,
+    sinceClose,
+    seal,
+    overdue: chapterReminder({ chapters } as never, { today }) !== null,
+  };
+}
+
+/** The review both of them agreed to, when the Chapter carries one. */
+function acceptedClosure(chapter: Chapter | null) {
+  const consent = chapter?.closure;
+  if (!consent || !consent.acceptedProposalId) return null;
+  return consent.proposals.find((row) => row.id === consent.acceptedProposalId) ?? null;
+}
+
 export const HARBOUR_SLIP_LINES = 3;
 /** The cistern never reads bone dry: a well with nothing in it still shows a dark ring (BUILD_PLAN_SLICE2 §4). */
 export const CISTERN_FLOOR = 0.06;
@@ -664,6 +797,7 @@ export function buildHarbourReading(household: Household, memberId: string, toda
     boathouse: buildBoathouseReading(household),
     cottage: buildCottageReading(household),
     kiln: buildKilnReading(household, memberId, today),
+    campfire: buildCampfireReading(household, memberId, today),
     tower: buildTowerReading(household, memberId, today, nest),
     cellar: buildCellarReading(household, memberId, today, nest, snapshot.prepare.amountCents),
     cistern: buildCisternReading({ cents: snapshot.protect.amountCents, target: snapshot.protect.targetCents }),
