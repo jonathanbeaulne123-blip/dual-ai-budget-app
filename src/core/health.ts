@@ -4,6 +4,18 @@ import type { Household } from "./types.ts";
 
 export type Finding = { section: string; message: string; id?: string };
 
+/**
+ * Index rows by id keeping the FIRST occurrence, which is what `Array.find`
+ * returned before these lookups became maps. Duplicate ids are themselves a
+ * finding (see the `seen*` guards below), so the tie-break has to stay stable
+ * rather than letting a later row win.
+ */
+function firstById<T extends { id: string }>(rows: readonly T[]): Map<string, T> {
+  const index = new Map<string, T>();
+  for (const row of rows) if (!index.has(row.id)) index.set(row.id, row);
+  return index;
+}
+
 export function runHealthCheck(household: Household): Finding[] {
   const findings: Finding[] = [];
   const flag = (section: string, message: string, id?: string) => findings.push({ section, message, id });
@@ -15,9 +27,9 @@ export function runHealthCheck(household: Household): Finding[] {
 
   const memberIds = new Set(household.members.map((member) => member.id));
   const activeMembers = new Set(household.members.filter((member) => member.active).map((member) => member.id));
-  const accountIds = new Set(household.accounts.map((account) => account.id));
-  const categoryIds = new Set(household.categories.map((category) => category.id));
-  const txIds = new Set(household.transactions.map((tx) => tx.id));
+  const accountById = firstById(household.accounts);
+  const categoryById = firstById(household.categories);
+  const txById = firstById(household.transactions);
 
   const seenMembers = new Set<string>();
   for (const member of household.members) {
@@ -57,10 +69,10 @@ export function runHealthCheck(household: Household): Finding[] {
     if (seenCategories.has(category.id)) flag("Categories", `Duplicate category id ${category.id}.`, category.id);
     seenCategories.add(category.id);
     if (category.recordType === "category") {
-      if (!category.parentId || !categoryIds.has(category.parentId)) {
+      if (!category.parentId || !categoryById.has(category.parentId)) {
         flag("Categories", `${category.name} has an orphaned parent.`, category.id);
       } else {
-        const parent = household.categories.find((item) => item.id === category.parentId);
+        const parent = categoryById.get(category.parentId);
         if (parent?.recordType !== "group") flag("Categories", `${category.name} parent is not a group.`, category.id);
         if (parent && parent.transactionType !== category.transactionType) {
           flag("Categories", `${category.name} type does not match its group.`, category.id);
@@ -73,14 +85,14 @@ export function runHealthCheck(household: Household): Finding[] {
   for (const tx of household.transactions) {
     if (seenTx.has(tx.id)) flag("Transactions", `Duplicate transaction id ${tx.id}.`, tx.id);
     seenTx.add(tx.id);
-    if (!accountIds.has(tx.accountId)) flag("Transactions", `${tx.id} points at a missing account.`, tx.id);
+    if (!accountById.has(tx.accountId)) flag("Transactions", `${tx.id} points at a missing account.`, tx.id);
     if (tx.currency !== "CAD") flag("Transactions", `${tx.id} is ${tx.currency}, not CAD.`, tx.id);
-    const account = household.accounts.find((item) => item.id === tx.accountId);
+    const account = accountById.get(tx.accountId);
     if (account && tx.currency !== account.currency) {
       flag("Transactions", `${tx.id} currency does not match ${account.name}.`, tx.id);
     }
     if (tx.type === "expense" || tx.type === "income" || tx.type === "refund") {
-      if (!tx.subcategoryId || !categoryIds.has(tx.subcategoryId)) {
+      if (!tx.subcategoryId || !categoryById.has(tx.subcategoryId)) {
         flag("Transactions", `${tx.id} has a missing category.`, tx.id);
       }
     }
@@ -101,10 +113,10 @@ export function runHealthCheck(household: Household): Finding[] {
       }
     }
     if (tx.type === "transfer") {
-      if (!tx.transferPairId || !txIds.has(tx.transferPairId)) {
+      if (!tx.transferPairId || !txById.has(tx.transferPairId)) {
         flag("Transfers", `${tx.id} is missing its other account leg.`, tx.id);
       } else {
-        const pair = household.transactions.find((item) => item.id === tx.transferPairId);
+        const pair = txById.get(tx.transferPairId);
         if (!pair || pair.transferPairId !== tx.id) flag("Transfers", `${tx.id} is not paired symmetrically.`, tx.id);
         if (pair && pair.amountCents !== tx.amountCents) flag("Transfers", `${tx.id} pair amounts disagree.`, tx.id);
         if (pair && pair.accountId === tx.accountId) flag("Transfers", `${tx.id} moves money inside the same account.`, tx.id);
@@ -118,7 +130,7 @@ export function runHealthCheck(household: Household): Finding[] {
         }
       }
     }
-    if (tx.refundOfId && !txIds.has(tx.refundOfId)) flag("Refunds", `${tx.id} points at a missing original expense.`, tx.id);
+    if (tx.refundOfId && !txById.has(tx.refundOfId)) flag("Refunds", `${tx.id} points at a missing original expense.`, tx.id);
     const expectedKey = duplicateKey(tx);
     if (tx.duplicateKey !== expectedKey) flag("Duplicates", `${tx.id} fingerprint is stale.`, tx.id);
     if (tx.visibility !== "household" && tx.visibility !== "personal" && tx.visibility !== "both") {
@@ -138,7 +150,7 @@ export function runHealthCheck(household: Household): Finding[] {
 
   for (const shift of household.shifts) {
     if (shift.jobId && shift.transactionIds?.length) {
-      const rows = shift.transactionIds.map((id) => household.transactions.find((tx) => tx.id === id));
+      const rows = shift.transactionIds.map((id) => txById.get(id));
       if (rows.some((tx) => !tx)) {
         flag("Shifts", `${shift.id} is missing one or more component ledger rows.`, shift.id);
         continue;
@@ -159,8 +171,8 @@ export function runHealthCheck(household: Household): Finding[] {
       if (shift.createdBy && !memberIds.has(shift.createdBy)) flag("Shifts", `${shift.id} was created by a missing member.`, shift.id);
       continue;
     }
-    const wages = household.transactions.find((tx) => tx.id === shift.wagesTransactionId);
-    const tips = household.transactions.find((tx) => tx.id === shift.tipsTransactionId);
+    const wages = txById.get(shift.wagesTransactionId);
+    const tips = txById.get(shift.tipsTransactionId);
     if (!wages || !tips) {
       flag("Shifts", `${shift.id} is missing its wages/tips ledger rows.`, shift.id);
       continue;
@@ -176,17 +188,17 @@ export function runHealthCheck(household: Household): Finding[] {
   }
 
   for (const plan of household.budgetPlans) {
-    if (!categoryIds.has(plan.subcategoryId)) flag("Budget", `${plan.id} points at a missing category.`, plan.id);
+    if (!categoryById.has(plan.subcategoryId)) flag("Budget", `${plan.id} points at a missing category.`, plan.id);
   }
 
   for (const recurrence of household.recurrences) {
-    if (!accountIds.has(recurrence.accountId)) flag("Recurring", `${recurrence.id} points at a missing account.`, recurrence.id);
-    if (!categoryIds.has(recurrence.subcategoryId)) flag("Recurring", `${recurrence.id} points at a missing category.`, recurrence.id);
+    if (!accountById.has(recurrence.accountId)) flag("Recurring", `${recurrence.id} points at a missing account.`, recurrence.id);
+    if (!categoryById.has(recurrence.subcategoryId)) flag("Recurring", `${recurrence.id} points at a missing category.`, recurrence.id);
   }
 
   for (const preset of household.presets ?? []) {
-    if (!accountIds.has(preset.accountId)) flag("Presets", `${preset.note || preset.id} points at a missing account.`, preset.id);
-    if (!categoryIds.has(preset.subcategoryId)) flag("Presets", `${preset.note || preset.id} points at a missing category.`, preset.id);
+    if (!accountById.has(preset.accountId)) flag("Presets", `${preset.note || preset.id} points at a missing account.`, preset.id);
+    if (!categoryById.has(preset.subcategoryId)) flag("Presets", `${preset.note || preset.id} points at a missing category.`, preset.id);
     if (preset.amountCents < 0) flag("Presets", `${preset.note || preset.id} amount cannot be negative.`, preset.id);
     if (preset.amountCents > 0) {
       const splitTotal = preset.splits.reduce((sum, split) => sum + split.amountCents, 0);
@@ -197,8 +209,8 @@ export function runHealthCheck(household: Household): Finding[] {
   }
 
   for (const appointment of household.appointments ?? []) {
-    if (!accountIds.has(appointment.accountId)) flag("Appointments", `${appointment.title} points at a missing account.`, appointment.id);
-    if (!categoryIds.has(appointment.subcategoryId)) flag("Appointments", `${appointment.title} points at a missing category.`, appointment.id);
+    if (!accountById.has(appointment.accountId)) flag("Appointments", `${appointment.title} points at a missing account.`, appointment.id);
+    if (!categoryById.has(appointment.subcategoryId)) flag("Appointments", `${appointment.title} points at a missing category.`, appointment.id);
     if (appointment.memberId !== "joint" && appointment.memberId !== "companion" && !memberIds.has(appointment.memberId)) {
       flag("Appointments", `${appointment.title} points at a missing household member.`, appointment.id);
     }
@@ -208,13 +220,13 @@ export function runHealthCheck(household: Household): Finding[] {
   }
 
   for (const claim of household.claims ?? []) {
-    if (!accountIds.has(claim.receivableAccountId)) flag("Claims", `${claim.label} points at a missing receivable account.`, claim.id);
-    const receivable = household.accounts.find((account) => account.id === claim.receivableAccountId);
+    if (!accountById.has(claim.receivableAccountId)) flag("Claims", `${claim.label} points at a missing receivable account.`, claim.id);
+    const receivable = accountById.get(claim.receivableAccountId);
     if (receivable && receivable.kind !== "receivable") {
       flag("Claims", `${claim.label} is parked on ${receivable.name}, which is not an Owed-to-us account.`, claim.id);
     }
-    if (!txIds.has(claim.expenseTransactionId)) flag("Claims", `${claim.label} is missing its visit expense.`, claim.id);
-    if (claim.recoveryTransactionId && !txIds.has(claim.recoveryTransactionId)) {
+    if (!txById.has(claim.expenseTransactionId)) flag("Claims", `${claim.label} is missing its visit expense.`, claim.id);
+    if (claim.recoveryTransactionId && !txById.has(claim.recoveryTransactionId)) {
       flag("Claims", `${claim.label} is missing its expected-recovery refund.`, claim.id);
     }
     if (claim.receivedCents + claim.writtenOffCents > claim.expectedCents) {
@@ -222,7 +234,7 @@ export function runHealthCheck(household: Household): Finding[] {
     }
     if (claim.lines.length) {
       const sum = claim.lines.reduce((acc, line) => acc + line.amountCents, 0);
-      const expense = household.transactions.find((tx) => tx.id === claim.expenseTransactionId);
+      const expense = txById.get(claim.expenseTransactionId);
       if (expense && sum !== expense.amountCents) {
         flag("Claims", `${claim.label} itemized lines do not match the posted visit.`, claim.id);
       }

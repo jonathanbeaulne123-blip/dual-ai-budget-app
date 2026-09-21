@@ -5,6 +5,7 @@ import {
   pullSupabaseHousehold,
   pushSupabaseHousehold,
   bundledSupabaseConfig,
+  resetSupabaseProbeMemo,
 } from "../src/ledger/supabase.ts";
 import { catalogHousehold } from "../src/core/index.ts";
 
@@ -12,6 +13,7 @@ const config = { url: "https://tykhocwacaxwquhynkok.supabase.co", key: "sb_publi
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  resetSupabaseProbeMemo();
 });
 
 describe("Supabase hosted books", () => {

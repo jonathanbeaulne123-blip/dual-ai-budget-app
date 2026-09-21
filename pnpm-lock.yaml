@@ -38,6 +38,9 @@ importers:
       manifold-3d:
         specifier: 3.5.3
         version: 3.5.3(@gltf-transform/core@4.5.0)(@gltf-transform/extensions@4.5.0)(@gltf-transform/functions@4.5.0)(esbuild-wasm@0.27.7)
+      meshoptimizer:
+        specifier: ^1.2.0
+        version: 1.2.0
       pdfjs-dist:
         specifier: ^6.3.289
         version: 6.3.289
@@ -63,6 +66,15 @@ importers:
       '@cloudflare/workers-types':
         specifier: ^5.20260906.1
         version: 5.20260906.1
+      '@gltf-transform/core':
+        specifier: ^4.5.0
+        version: 4.5.0
+      '@gltf-transform/extensions':
+        specifier: ^4.5.0
+        version: 4.5.0
+      '@gltf-transform/functions':
+        specifier: ^4.5.0
+        version: 4.5.0
       '@playwright/test':
         specifier: ^1.62.1
         version: 1.62.1
@@ -2117,6 +2129,9 @@ packages:
 
   meshoptimizer@1.1.1:
     resolution: {integrity: sha512-oRFNWJRDA/WTrVj7NWvqa5HqE1t9MYDj2VaWirQCzCCrAd2GHrqR/sQezCxiWATPNlKTcRaPRHPJwIRoPBAp5g==}
+
+  meshoptimizer@1.2.0:
+    resolution: {integrity: sha512-davRZeIJbxJrE24cwQle7ZDsxjdk/OphNOV83oX+efQinyoHY9Jcyz3MHbaoG0qySZajldGztNZ1RN/T19PZsg==}
 
   mime-db@1.52.0:
     resolution: {integrity: sha512-sPU4uV7dYlvtWJxwwxHD0PuihVNiE7TyAbQ5SWxDCB9mUYvOgroQOwYQQOKPJ8CIbE+1ETVlOoK1UC2nU3gYvg==}
@@ -4468,6 +4483,8 @@ snapshots:
   merge-descriptors@2.0.0: {}
 
   meshoptimizer@1.1.1: {}
+
+  meshoptimizer@1.2.0: {}
 
   mime-db@1.52.0: {}
 

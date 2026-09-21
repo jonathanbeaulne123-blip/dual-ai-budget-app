@@ -1,5 +1,5 @@
 import * as T from 'three';
-import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {parseGlbScene} from '../assets/gltf.ts';
 import {FITTING_ITEMS} from './catalogue.ts';
 import {readWardrobeModel} from './modelAsset.ts';
 export async function readWardrobeAsset(url:string,signal:AbortSignal){
@@ -14,4 +14,4 @@ export function attachCollection(model:T.Group,asset:T.Group,url:string){
  for(const node of nodes){const parent=model.getObjectByName(node.parent!.name);if(!parent)throw new Error('Missing fitting anchor');node.visible=false;parent.add(node);node.traverse(n=>{if(n instanceof T.SkinnedMesh){n.bind(skeleton!,new T.Matrix4());n.frustumCulled=false;}});}
  temporary.forEach(s=>s.dispose());
 }
-export async function loadCollection(model:T.Group,url:string,signal:AbortSignal){const bytes=await readWardrobeAsset(url,signal),asset=(await new GLTFLoader().parseAsync(bytes,'')).scene;try{if(signal.aborted)throw new DOMException('Closed','AbortError');attachCollection(model,asset,url);}finally{disposeAsset(asset);}}
+export async function loadCollection(model:T.Group,url:string,signal:AbortSignal){const bytes=await readWardrobeAsset(url,signal),asset=await parseGlbScene(bytes);try{if(signal.aborted)throw new DOMException('Closed','AbortError');attachCollection(model,asset,url);}finally{disposeAsset(asset);}}

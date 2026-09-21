@@ -16,7 +16,7 @@ import {
   suggestedScaleBesideQueen,
   type GlbAsset,
 } from "../src/harbour/assets/manifest.ts";
-import { BLOOM_MASTER_SHA256 } from "../src/house/world/bloom.ts";
+import { BLOOM_MASTERS, BLOOM_MASTER_SHA256, BLOOM_MASTER_URL, BLOOM_QUEEN_SHA256, BLOOM_QUEEN_URL } from "../src/house/world/bloom.ts";
 import { acquireGlb, glbCached, glbHolds, preloadCourtAssets, readGlb } from "../src/harbour/assets/loadGlb.ts";
 
 const publicFile = (url: string) => resolve(process.cwd(), `public${url}`);
@@ -27,9 +27,9 @@ const rows = (table: Readonly<Record<string, GlbAsset>>) => Object.entries(table
 const isGlb = (bytes: Buffer) => bytes.subarray(0, 4).toString("latin1") === "glTF" && bytes.readUInt32LE(4) === 2;
 
 describe("Little Harbour · the Court's assets ship exactly as listed (BUILD_PLAN §3–4)", () => {
-  it("lists three pieces and two Queens, every url distinct and under /models/", () => {
+  it("lists three pieces and three Queens, every url distinct and under /models/", () => {
     expect(Object.keys(COURT_ASSETS).sort()).toEqual(["bishop", "knight", "rook"]);
-    expect(Object.keys(QUEEN_ASSETS).sort()).toEqual(["court", "presence"]);
+    expect(Object.keys(QUEEN_ASSETS).sort()).toEqual(["court", "master", "presence"]);
     const urls = ALL_COURT_ASSETS.map((asset) => asset.url);
     expect(new Set(urls).size).toBe(urls.length);
     for (const url of urls) expect(url).toMatch(/^\/models\/.+\.glb$/);
@@ -67,25 +67,40 @@ describe("Little Harbour · the Court's assets ship exactly as listed (BUILD_PLA
     expect(QUEEN_ASSETS.court.gz).not.toBeNull();
     expect(QUEEN_ASSETS.court.tier).toBe("lite");
     expect(QUEEN_ASSETS.presence.tier).toBe("full");
+    // The optimised presence is what the full tier actually fetches; it may not weigh more than the copy the lite tier takes.
+    expect(QUEEN_ASSETS.presence.bytes).toBeLessThanOrEqual(QUEEN_ASSETS.court.bytes);
+    expect(QUEEN_ASSETS.presence.gz).not.toBeNull();
   });
 
-  it("names the same Living Presence master the house draws", () => {
-    expect(QUEEN_ASSETS.presence.sha256).toBe(BLOOM_MASTER_SHA256);
-    expect(QUEEN_ASSETS.presence.url).toBe("/models/mandevilla-living-presence.glb");
+  it("draws the optimised twin of the sculpt the house names, and keeps the sculpt itself for rollback", () => {
+    expect(QUEEN_ASSETS.master.sha256).toBe(BLOOM_MASTER_SHA256);
+    expect(QUEEN_ASSETS.master.url).toBe(BLOOM_MASTER_URL);
+    expect(QUEEN_ASSETS.presence.url).toBe(BLOOM_QUEEN_URL);
+    expect(QUEEN_ASSETS.presence.sha256).toBe(BLOOM_QUEEN_SHA256);
     expect(queenAssetForTier("full")).toBe(QUEEN_ASSETS.presence);
     expect(queenAssetForTier("lite")).toBe(QUEEN_ASSETS.court);
+    // The tier table `bloom.ts` fetches from and the manifest are the same two
+    // files, and neither tier reaches for the raw master. That row is rollback.
+    expect(BLOOM_MASTERS.full).toBe(QUEEN_ASSETS.presence.url);
+    expect(BLOOM_MASTERS.lite).toBe(QUEEN_ASSETS.court.url);
+    expect(Object.values(BLOOM_MASTERS)).not.toContain(QUEEN_ASSETS.master.url);
+    // The optimised file declares meshopt; `src/assets/gltf.ts` attaches the decoder for every parse.
+    const bytes = readFileSync(publicFile(QUEEN_ASSETS.presence.url));
+    const json = JSON.parse(bytes.subarray(20, 20 + bytes.readUInt32LE(12)).toString("utf8")) as { extensionsRequired?: string[] };
+    expect(json.extensionsRequired ?? []).toContain("EXT_meshopt_compression");
   });
 
-  it("carries the same node names in the court Queen as in the master, so one region map serves both", () => {
+  it("carries the same node names in the court Queen and the optimised Queen as in the master, so one region map serves both", () => {
     const names = (url: string) => {
       const bytes = readFileSync(publicFile(url));
       const jsonLength = bytes.readUInt32LE(12);
       const json = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString("utf8")) as { nodes?: { name?: string }[] };
       return (json.nodes ?? []).map((node) => node.name ?? "").filter(Boolean).sort();
     };
-    const master = names(QUEEN_ASSETS.presence.url), court = names(QUEEN_ASSETS.court.url);
+    const master = names(QUEEN_ASSETS.master.url), court = names(QUEEN_ASSETS.court.url);
     expect(court.length).toBeGreaterThan(50);
     expect(court).toEqual(master);
+    expect(names(QUEEN_ASSETS.presence.url)).toEqual(master);
   });
 
   it("sizes the pieces beside a 2.05-unit Queen, all shorter than her", () => {

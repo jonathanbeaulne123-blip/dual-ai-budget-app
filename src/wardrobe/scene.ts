@@ -3,13 +3,15 @@ import type {PlayArea,PlayDecor} from '../core/playContracts.ts';
 import {loadCollection} from './collectionLoader.ts';
 import {readWardrobeModel} from './modelAsset.ts';
 import * as T from 'three';
-import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
+import {parseGltf} from '../assets/gltf.ts';
 import {Reflector} from 'three/addons/objects/Reflector.js';
 import type {LookV1} from '../core/herculesCompanionContracts.ts';
 import {FITTING_ITEMS,WARDROBE_ASSET,canPlayReaction,fittingColour,type FittingReaction} from './catalogue.ts';
 import {createRoom} from './room.ts';
 import type {RoomPalette} from './roomPalette.ts';
 import {acquireWorldRenderer} from '../house/world/rendererOwner.ts';
+import {renderTierFor} from '../house/world/tier.ts';
+import {wardrobeFramePolicy} from './framePolicy.ts';
 export type {RoomTheme} from './roomPalette.ts';
 export type WardrobeScene={setZone?:(zone:PlayArea|"room")=>void;setDisplays?:(items:DisplayImage[],decor:PlayDecor)=>void;perform?:(id:string,cue?:PlayPerformance)=>void;setLook:(look:LookV1)=>void;setCollection:(id:string)=>void;setKeepsake:(id:string|null)=>void;setPose:(pose:FittingReaction)=>void;setPaused:(paused:boolean)=>void;setCamera:(angle:number,zoom:number)=>void;setMirror:(show:boolean)=>void;setRoom:(palette:RoomPalette)=>void;dispose:()=>void};
 export async function createWardrobeScene(host:HTMLElement,options:{play?:boolean;onPlayPick?:(id:string)=>void;palette:RoomPalette;signal:AbortSignal;paused:boolean;onError:()=>void;onReady:()=>void;onPick:(id:string)=>void;onFittingState?:(state:'loading'|'ready'|'error')=>void;onCollectionState?:(state:'loading'|'ready'|'error')=>void}):Promise<WardrobeScene>{
@@ -24,6 +26,9 @@ export async function createWardrobeScene(host:HTMLElement,options:{play?:boolea
  function cylinder(r:number,h:number,x:number,y:number,z:number,mat:T.Material){const m=new T.Mesh(new T.CylinderGeometry(r,r,h,32),mat);m.position.set(x,y,z);scene.add(m);return m;}
  cylinder(.32,.045,0,-.008,.015,wood);cylinder(.3,.012,0,.02,.015,cloth);
  const mirror=new Reflector(new T.PlaneGeometry(.43,.67),{color:'#cbc9bb',textureWidth:512,textureHeight:512,clipBias:.004,multisample:0});mirror.position.set(.03,.35,-.56);scene.add(mirror);
+ // Taking a reflection draws the whole room a second time. The glass stays in
+ // place either way; this is only whether what it shows is taken again.
+ const reflect=mirror.onBeforeRender,holdReflection=()=>{};
  for(const x of [-.197,.257])box(.022,.71,.035,x,.35,-.552,trim);for(const y of [.006,.696])box(.474,.025,.035,.03,y,-.552,trim);
  // Left open rail and drawers. Right hat stand and lined accessory trays.
  for(const x of [-.67,-.29])box(.025,.71,.23,x,.32,-.43,wood);
@@ -40,11 +45,27 @@ export async function createWardrobeScene(host:HTMLElement,options:{play?:boolea
  function zoneCamera(){if(!options.play)return;const preset=PLAY_CAMERAS[zone];cameraDestination.set(...preset.position);targetDestination.set(...preset.target);if(camera.aspect<.8)cameraDestination.sub(targetDestination).multiplyScalar(zone==='room'?1.35:1.15).add(targetDestination);}
  let lookToken=0,shelfToken=0;const loaded=new Set([WARDROBE_ASSET]),loading=new Map<string,Promise<void>>();
  function ensure(url:string){if(loaded.has(url))return Promise.resolve();if(loading.has(url))return loading.get(url)!;const promise=loadCollection(model!,url,collectionAbort.signal).then(()=>{loaded.add(url);}).finally(()=>loading.delete(url));loading.set(url,promise);return promise;}
- let model:T.Group|undefined,mixer:T.AnimationMixer|undefined,clips:T.AnimationClip[]=[],look:LookV1|undefined,disposed=false,paused=options.paused,visible=true,frame=0,last=0,frames=0;
+ let model:T.Group|undefined,mixer:T.AnimationMixer|undefined,clips:T.AnimationClip[]=[],look:LookV1|undefined,disposed=false,paused=options.paused,visible=true,frame=0,last=0,frames=0,lastPaint=0,playing:T.AnimationAction|null=null,performedAt=0;
+ const tier=renderTierFor(Math.max(host.clientWidth,1));
+ /** A toy's performance settles after four seconds (`play/room.ts`); a little more, and the room is still again. */
+ const PERFORMANCE_S=4.5;
+ const moving=()=>Boolean(options.play)&&(camera.position.distanceToSquared(cameraDestination)>1e-7||cameraTarget.distanceToSquared(targetDestination)>1e-7);
+ const performing=()=>Boolean(options.play)&&performedAt>0&&Date.now()/1000-performedAt<PERFORMANCE_S;
+ const policy=()=>wardrobeFramePolicy({paused,hidden:!visible||document.hidden,moving:moving(),performing:performing(),breathing:Boolean(playing?.isRunning()),tier});
  const geometries=new Set<T.BufferGeometry>(),materials=new Set<T.Material>(),skeletons=new Set<T.Skeleton>();
- function render(){if(disposed)return;renderer.render(scene,camera);host.dataset.frames=String(++frames);host.dataset.drawCalls=String(renderer.info.render.calls);}
- function loop(now:number){frame=0;if(disposed||paused||!visible||document.hidden)return;mixer?.update(last?Math.min((now-last)/1000,.06):0);last=now;if(options.play){camera.position.lerp(cameraDestination,.13);cameraTarget.lerp(targetDestination,.13);camera.lookAt(cameraTarget);playRoom?.tick();}render();frame=rendererLease.requestFrame(loop);}
- function schedule(){rendererLease.cancelFrame(frame);frame=0;last=0;if(!disposed&&!paused&&visible&&!document.hidden)frame=rendererLease.requestFrame(loop);host.dataset.animating=String(Boolean(frame));}
+ /** `mirror:false` keeps the reflection the glass already holds instead of taking a new one. */
+ function render(frameOptions?:{mirror?:boolean}){if(disposed)return;mirror.onBeforeRender=frameOptions?.mirror===false?holdReflection:reflect;renderer.render(scene,camera);mirror.onBeforeRender=reflect;host.dataset.frames=String(++frames);host.dataset.drawCalls=String(renderer.info.render.calls);}
+ function loop(now:number){
+  frame=0;if(disposed)return;
+  const next=policy();
+  if(!next.schedule){last=0;host.dataset.animating='false';return;}
+  if(next.intervalMs>0&&now-lastPaint<next.intervalMs){frame=rendererLease.requestFrame(loop);return;}
+  mixer?.update(last?Math.min((now-last)/1000,.06):0);last=now;
+  if(options.play){camera.position.lerp(cameraDestination,.13);cameraTarget.lerp(targetDestination,.13);camera.lookAt(cameraTarget);playRoom?.tick();}
+  if(next.render){render({mirror:next.mirror});lastPaint=now;}
+  frame=rendererLease.requestFrame(loop);
+ }
+ function schedule(){rendererLease.cancelFrame(frame);frame=0;last=0;lastPaint=0;if(!disposed&&policy().schedule)frame=rendererLease.requestFrame(loop);host.dataset.animating=String(Boolean(frame));}
  suspendLoop=()=>{rendererLease.cancelFrame(frame);frame=0;last=0;host.dataset.animating='false';};resumeLoop=()=>{resize();schedule();};
  const visibility=()=>schedule();document.addEventListener('visibilitychange',visibility);
  const intersection=typeof IntersectionObserver==='undefined'?null:new IntersectionObserver(([entry])=>{visible=entry?.isIntersecting??true;schedule();});intersection?.observe(host);
@@ -56,17 +77,17 @@ export async function createWardrobeScene(host:HTMLElement,options:{play?:boolea
  options.signal.addEventListener('abort',dispose,{once:true});
  try{
   const {bytes:buffer,transferBytes}=await readWardrobeModel(WARDROBE_ASSET,options.signal);host.dataset.transferBytes=String(transferBytes);
-  if(disposed)throw new DOMException('Closed','AbortError');const gltf=await new GLTFLoader().parseAsync(buffer,'');model=gltf.scene;clips=gltf.animations;
+  if(disposed)throw new DOMException('Closed','AbortError');const gltf=await parseGltf(buffer);model=gltf.scene;clips=gltf.animations;
   if(disposed){const lateSkeletons=new Set<T.Skeleton>();model.traverse(n=>{if(n instanceof T.SkinnedMesh)lateSkeletons.add(n.skeleton);if(n instanceof T.Mesh){n.geometry.dispose();for(const m of Array.isArray(n.material)?n.material:[n.material])m.dispose();}});for(const skeleton of lateSkeletons)skeleton.dispose();throw new DOMException('Closed','AbortError');}
   model.position.y=.047;scene.add(model);mixer=new T.AnimationMixer(model);
-  mixer.addEventListener('finished',()=>{if(disposed||paused)return;const idle=clips.find(c=>c.name==='breathe-blink');if(idle){mixer!.stopAllAction();mixer!.clipAction(idle).reset().setLoop(T.LoopRepeat,Infinity).play();}});
+  mixer.addEventListener('finished',()=>{if(disposed||paused)return;const idle=clips.find(c=>c.name==='breathe-blink');if(idle){mixer!.stopAllAction();playing=mixer!.clipAction(idle).reset().setLoop(T.LoopRepeat,Infinity);playing.play();schedule();}});
   for(const item of FITTING_ITEMS){const node=model.getObjectByName(item.node);if(node)node.visible=false;}
   host.dataset.assetBytes=String(buffer.byteLength);host.dataset.state='ready';resize();schedule();options.onReady();
  }catch(error){dispose();throw error;}
  return {
-  setZone(next){zone=next;zoneCamera();if(paused){camera.position.copy(cameraDestination);cameraTarget.copy(targetDestination);camera.lookAt(cameraTarget);}render();},
+  setZone(next){zone=next;zoneCamera();if(paused){camera.position.copy(cameraDestination);cameraTarget.copy(targetDestination);camera.lookAt(cameraTarget);}render();schedule();},
   setDisplays(items,decor){playRoom?.style(decor);playRoom?.setDisplays(items);render();},
-  perform(id,cue){playRoom?.perform(id,paused,cue);render();},
+  perform(id,cue){playRoom?.perform(id,paused,cue);performedAt=Date.now()/1000;render();schedule();},
   setLook(next){look=next;const token=++lookToken;if(!model||disposed)return;const urls=[...new Set(Object.values(next.selections).map(s=>FITTING_ITEMS.find(p=>p.id===s.itemId)?.asset).filter((s):s is string=>Boolean(s)))];
    const apply=()=>{if(disposed||token!==lookToken||!model)return;const hidden=new Set<string>();
     for(const item of FITTING_ITEMS){const selection=next.selections[item.slot],node=model.getObjectByName(item.node);if(!node)continue;node.visible=selection?.itemId===item.id;if(node.visible)item.hiddenBodyRegions.forEach(r=>hidden.add(r));node.traverse(n=>{if(n instanceof T.Mesh)for(const mat of Array.isArray(n.material)?n.material:[n.material])if(mat instanceof T.MeshStandardMaterial&&selection&&(mat.name.startsWith('tint_')||item.asset===WARDROBE_ASSET))mat.color.set(fittingColour(selection.variantId,item.id));});}
@@ -75,7 +96,7 @@ export async function createWardrobeScene(host:HTMLElement,options:{play?:boolea
   },
   setCollection(id){const token=++shelfToken;shelves.clear();options.onCollectionState?.('loading');render();Promise.all([...new Set(FITTING_ITEMS.filter(i=>i.collection===id).map(i=>i.asset))].map(ensure)).then(()=>{if(disposed||token!==shelfToken||!model)return;shelves.clear();const items=FITTING_ITEMS.filter(i=>i.collection===id);let garments=0,hats=0,trinkets=0;items.forEach(item=>{const source=model!.getObjectByName(item.node);if(!source)return;const group=new T.Group();source.traverse(n=>{if(n instanceof T.Mesh){const m=new T.Mesh(n.geometry,n.material);m.userData.fittingItemId=item.id;group.add(m);}});const bounds=new T.Box3().setFromObject(group),centre=bounds.getCenter(new T.Vector3()),size=bounds.getSize(new T.Vector3());group.children.forEach(n=>n.position.sub(centre));const hanging=['body','outerwear'].includes(item.slot);group.scale.setScalar((hanging?.17:.09)/Math.max(size.x,size.y,size.z));if(hanging||item.slot==='neckwear'){const n=garments++;group.position.set(n%2?-.43:-.59,.50-Math.floor(n/2)*.19,-.35);}else if(item.slot==='head'){const n=hats++;group.position.set(.49+n*.115,.445+size.y*group.scale.y/2,-.34);}else{const n=trinkets++;group.position.set(.43+n*.08,.139+size.y*group.scale.y/2,-.27);}shelves.add(group);});options.onCollectionState?.('ready');render();}).catch(()=>{if(!disposed&&token===shelfToken)options.onCollectionState?.('error');});},
   setKeepsake(id){keepsake.visible=Boolean(id)&&id!=='patio';patio.visible=id==='patio';keepsake.scale.y=id==='townhouse'?1.5:1;render();},
-  setPose(id){if(!mixer||!model||!look||!canPlayReaction(id,look))return;const clip=clips.find(c=>c.name===id);if(!clip)return;mixer.stopAllAction();const action=mixer.clipAction(clip);action.reset().setLoop(id==='breathe-blink'?T.LoopRepeat:T.LoopOnce,id==='breathe-blink'?Infinity:1);action.clampWhenFinished=true;action.play();if(paused){mixer.update(clip.duration*.45);}host.dataset.pose=id;render();schedule();},
+  setPose(id){if(!mixer||!model||!look||!canPlayReaction(id,look))return;const clip=clips.find(c=>c.name===id);if(!clip)return;mixer.stopAllAction();const action=mixer.clipAction(clip);action.reset().setLoop(id==='breathe-blink'?T.LoopRepeat:T.LoopOnce,id==='breathe-blink'?Infinity:1);action.clampWhenFinished=true;action.play();playing=action;if(paused){mixer.update(clip.duration*.45);}host.dataset.pose=id;render();schedule();},
   setPaused(value){paused=value;schedule();render();},
   setCamera(angle,zoom){if(model)model.rotation.y=angle*Math.PI/180;camera.position.set(.66,.49,1.24).sub(new T.Vector3(0,.26,0)).multiplyScalar(zoom).add(new T.Vector3(0,.26,0));camera.lookAt(0,.26,0);render();},
   setMirror(show){mirror.visible=show;render();},
