@@ -229,7 +229,7 @@ describe("the Atlas reading (LITTLE_HARBOUR_v2 §4)", () => {
       eraRow("PATH-ERA-C", eraSpec({ order: 2, name: "The house with the porch", from: "2028-01", home: "porch" })),
     ]) as never, "MEM-001", today);
     expect(planned.next).toEqual({ key: "era:PATH-ERA-C", name: "The house with the porch", sketched: false });
-    expect(nextIslandWords(planned)).toBe("Across the bridge — “The house with the porch”");
+    expect(nextIslandWords(planned)).toBe("Across the bridge\n“The house with the porch”");
     // One of you has suggested an era; nothing is agreed, so it reaches the room only as a sketch.
     const suggested = buildAtlasReading(journey([
       eraRow("PATH-ERA-B", eraSpec({ order: 1 })),
@@ -241,7 +241,7 @@ describe("the Atlas reading (LITTLE_HARBOUR_v2 §4)", () => {
     expect(nextIslandWords(suggested)).toContain("suggested");
     const alone = buildAtlasReading(journey([eraRow("PATH-ERA-B", eraSpec())]) as never, "MEM-001", today);
     expect(alone.next).toBeNull();
-    expect(nextIslandWords(alone)).toBe("Across the bridge — unplanned");
+    expect(nextIslandWords(alone)).toBe("Across the bridge\nUnplanned");
   });
 
   it("holds a crossing that is waiting for both of you, without crossing anything", () => {
@@ -452,6 +452,7 @@ describe("the three rooms as places", () => {
     expect(anchors.find((anchor) => anchor.id === "island")?.label).toContain("the journey has not begun");
     expect(anchors.find((anchor) => anchor.id === "island")?.door).toMatchObject({ target: "journey", object: "era-home" });
     expect(anchors.find((anchor) => anchor.id === "next-island")?.label).toContain("no next era planned");
+    expect(anchors.find((anchor) => anchor.id === "plaque")?.label).toBe("No era yet · The island is waiting to be named. Open this era in Journey.");
     expect(handle.regions().find((region) => region.id === "next-island")?.label).toContain("unplanned");
     handle.dispose();
     expect(scene.children.length).toBe(0);

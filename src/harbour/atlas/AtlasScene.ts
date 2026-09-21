@@ -35,14 +35,14 @@ export const ATLAS_LAYOUT = {
   /** The atlas stand in the middle of the room, and the height of its top. */
   stand: { x: -0.25, z: -0.45, radius: 1.02, top: 0.86 },
   /** The island model's own radius on that top, and how high its turf stands. */
-  island: { radius: 0.78, turf: 0.17 },
+  island: { radius: 0.78, turf: 0.19 },
   /** The side table across the plank: the next era, in the fog. */
-  side: { x: 2.05, z: -0.95, radius: 0.54, top: 0.7 },
-  /** The era plaque on its brass easel, against the left wall. */
-  easel: [-2.4, 0, -0.55] as const,
+  side: { x: 1.92, z: -0.72, radius: 0.5, top: 0.7 },
+  /** The era plaque on its brass easel, in the back-left corner, turned to the door. */
+  easel: [-2.25, 0, -1.55] as const,
   /** The dormer in the back wall, and the lamp hanging over the stand. */
   window: [0.55, 1.42, -2.58] as const,
-  lamp: [-0.25, 1.78, -0.45] as const,
+  lamp: [-0.25, 1.96, -0.45] as const,
   /** The stair down into the Kitchen, and the door back to the Court. */
   stair: [-2.55, 0, 2.15] as const,
   door: [1.45, 0, 2.5] as const,
@@ -71,21 +71,25 @@ export function eraPlace(index: number, eras: number): string {
 /**
  * What the era plaque says, in the era's own words and never a figure: the
  * name, where it stands on the journey, the months walked, and the gate.
+ *
+ * Three short lines, never one long one: an engraved plate squeezes a line to
+ * fit its face (`ctx.fillText`'s own `maxWidth`), so a sentence that runs the
+ * width of the room comes out as slivers nobody can read.
  */
 export function eraPlaqueWords(atlas: AtlasReading): string {
   const era = atlas.era;
   if (!era) return atlas.crossed > 0
-    ? `${count(atlas.crossed, "era crossed", "eras crossed")} — the next one is yours to name`
-    : "No era yet — the island is waiting to be named";
+    ? `${count(atlas.crossed, "era crossed", "eras crossed")}\nThe next one is yours to name`
+    : "No era yet\nThe island is waiting to be named";
   return `${era.name}\n${eraPlace(era.index, atlas.eras)} · ${monthsWalked(era.months)}\n${atlas.gate?.words ?? "The gate is not set"}`;
 }
 
 /** The little card on the next island: its name, or the fog's own honest word. */
 export function nextIslandWords(atlas: AtlasReading): string {
-  if (!atlas.next) return "Across the bridge — unplanned";
+  if (!atlas.next) return "Across the bridge\nUnplanned";
   return atlas.next.sketched
-    ? `Across the bridge — “${atlas.next.name}”, suggested`
-    : `Across the bridge — “${atlas.next.name}”`;
+    ? `Across the bridge\n“${atlas.next.name}”, suggested`
+    : `Across the bridge\n“${atlas.next.name}”`;
 }
 
 /** Where the `index`th month stone stands on the ring, of `total` — clockwise from the gate. */
@@ -98,8 +102,8 @@ export function stonePin(index: number, total: number): { x: number; z: number }
 
 // Stand just inside the loft door: the stand in front with the island on it,
 // the easel on the left wall, the next island and the dormer beyond.
-const PHONE_ROOM: Pose = { target: [-0.42, 1.0, -0.5], r: 3.72, theta: 0.782, phi: 1.3 };
-const DESKTOP_ROOM: Pose = { target: [-0.18, 1.0, -0.48], r: 3.54, theta: 0.756, phi: 1.318 };
+const PHONE_ROOM: Pose = { target: [-0.3, 0.9, -0.5], r: 4.2, theta: 0.8, phi: 1.3 };
+const DESKTOP_ROOM: Pose = { target: [-0.15, 0.92, -0.48], r: 4.05, theta: 0.775, phi: 1.315 };
 
 export function atlasPoses(anchors: readonly Anchor[]): Record<string, Pose> {
   const poses: Record<string, Pose> = {
@@ -238,7 +242,7 @@ export function createAtlas(scene: THREE.Scene, options: AtlasOptions): PlaceHan
   const [lx, ly, lz] = ATLAS_LAYOUT.lamp;
   const lamp = merged([
     placed(new THREE.CylinderGeometry(0.02, 0.02, wallHeight + 0.5 - ly, 6), lx, ly + (wallHeight + 0.5 - ly) / 2, lz),
-    placed(new THREE.ConeGeometry(0.28, 0.2, 14, 1, true), lx, ly - 0.06, lz),
+    placed(new THREE.ConeGeometry(0.23, 0.18, 14, 1, true), lx, ly - 0.05, lz),
   ], mat(dressing.lampShade, { roughness: 0.55, metalness: 0.25, side: THREE.DoubleSide }));
   lamp.name = "atlas-lamp"; group.add(lamp);
   const bulb = new THREE.Mesh(track(new THREE.SphereGeometry(0.05, 10, 8)), track(new THREE.MeshBasicMaterial({ color: dressing.light.lamp })));
@@ -273,17 +277,19 @@ export function createAtlas(scene: THREE.Scene, options: AtlasOptions): PlaceHan
   // The sea it floats in: a ring of glass laid on the oak.
   const modelSea = new THREE.Mesh(track(new THREE.CylinderGeometry(island.radius + 0.14, island.radius + 0.14, 0.016, 36)), mat(dressing.modelSea, { roughness: 0.28, metalness: 0.1 }));
   modelSea.position.y = 0.008; modelSea.name = "atlas-model-sea"; model.add(modelSea);
-  // The land: sand at the waterline, cut earth below, turf on top.
+  // The land, cut the way the world cuts it: a sand collar at the waterline,
+  // the earth narrowing away under it, and the turf crowning the whole of it
+  // — narrower at the top than at its edge, so the island has a brow and not
+  // a lid.
+  const shore = new THREE.Mesh(track(new THREE.CylinderGeometry(island.radius, island.radius, 0.03, 32)), mat(dressing.shore, { roughness: 0.98 }));
+  shore.position.y = 0.02; shore.name = "atlas-model-shore"; model.add(shore);
   const landSides = merged([
-    placed(new THREE.CylinderGeometry(island.radius, island.radius - 0.04, 0.04, 32), 0, 0.03, 0),
-    placed(new THREE.CylinderGeometry(island.radius - 0.03, island.radius - 0.16, island.turf - 0.06, 32), 0, (island.turf - 0.06) / 2 + 0.05, 0),
+    placed(new THREE.CylinderGeometry(island.radius - 0.06, island.radius - 0.2, 0.11, 32), 0, 0.085, 0),
   ], mat(dressing.earth, { roughness: 0.95 }));
   shadowed(landSides, full, true); landSides.name = "atlas-model-earth"; model.add(landSides);
-  const shore = new THREE.Mesh(track(new THREE.CylinderGeometry(island.radius + 0.02, island.radius + 0.02, 0.022, 32)), mat(dressing.shore, { roughness: 0.98 }));
-  shore.position.y = 0.022; shore.name = "atlas-model-shore"; model.add(shore);
-  const turf = shadowed(new THREE.Mesh(track(new THREE.CylinderGeometry(island.radius - 0.04, island.radius - 0.04, 0.035, 32)), mat(dressing.land, { roughness: 0.94 })));
-  turf.position.y = island.turf; turf.name = "atlas-model-turf"; model.add(turf);
-  const turfTop = island.turf + 0.018;
+  const turf = shadowed(new THREE.Mesh(track(new THREE.CylinderGeometry(island.radius - 0.16, island.radius - 0.06, 0.05, 32)), mat(dressing.land, { roughness: 0.94 })));
+  turf.position.y = island.turf - 0.025; turf.name = "atlas-model-turf"; model.add(turf);
+  const turfTop = island.turf;
   // Three little trees on the turf, away from the path.
   const trees = new THREE.InstancedMesh(track(new THREE.ConeGeometry(0.045, 0.12, 6)), mat(dressing.tree, { roughness: 0.92 }), 5);
   trees.name = "atlas-model-trees";
@@ -292,7 +298,7 @@ export function createAtlas(scene: THREE.Scene, options: AtlasOptions): PlaceHan
     const quaternion = new THREE.Quaternion(); const scale = new THREE.Vector3();
     for (let i = 0; i < 5; i++) {
       const angle = 1.35 + i * 0.52;
-      position.set(Math.sin(angle) * island.radius * 0.42, turfTop + 0.06, Math.cos(angle) * island.radius * 0.42);
+      position.set(Math.sin(angle) * island.radius * 0.3, turfTop + 0.06, Math.cos(angle) * island.radius * 0.3);
       quaternion.identity();
       scale.setScalar(0.8 + ((i * 7) % 5) * 0.09);
       trees.setMatrixAt(i, matrix.compose(position, quaternion, scale));
@@ -404,26 +410,39 @@ export function createAtlas(scene: THREE.Scene, options: AtlasOptions): PlaceHan
   doorFrame.name = "atlas-door"; doorFrame.userData.anchor = "court-door"; group.add(doorFrame);
 
   // ── The plates: the era on its easel, the card on the next island ─────────
+  // The easel stands in the back-left corner and is turned to the door, so the
+  // plaque is read from where you come in rather than from the wall.
   const [ex, , ez] = ATLAS_LAYOUT.easel;
-  const easel = merged([
-    placed(new THREE.BoxGeometry(0.06, 1.28, 0.06), ex, 0.64, ez - 0.28),
-    placed(new THREE.BoxGeometry(0.06, 1.28, 0.06), ex, 0.64, ez + 0.28),
-    placed(new THREE.BoxGeometry(0.1, 0.06, 0.72), ex + 0.05, 0.94, ez),
-    placed(new THREE.BoxGeometry(0.06, 1.1, 0.06), ex - 0.24, 0.55, ez, [0, 0, -0.22]),
-  ], mat(dressing.brass, { roughness: 0.42, metalness: 0.5 }));
-  shadowed(easel, false, true); easel.name = "atlas-easel"; easel.userData.anchor = "plaque"; group.add(easel);
+  const EASEL_TURN = 0.62;
+  const easel = new THREE.Group();
+  easel.name = "atlas-easel";
+  easel.position.set(ex, 0, ez);
+  easel.rotation.y = EASEL_TURN;
+  easel.userData.anchor = "plaque";
+  {
+    const legs = merged([
+      placed(new THREE.BoxGeometry(0.05, 1.34, 0.05), -0.5, 0.67, 0.02, [0.06, 0, 0.09]),
+      placed(new THREE.BoxGeometry(0.05, 1.34, 0.05), 0.5, 0.67, 0.02, [0.06, 0, -0.09]),
+      placed(new THREE.BoxGeometry(0.05, 1.2, 0.05), 0, 0.6, -0.26, [-0.16, 0, 0]),
+      placed(new THREE.BoxGeometry(1.14, 0.05, 0.09), 0, 0.96, 0.06),
+      placed(new THREE.BoxGeometry(1.06, 0.04, 0.04), 0, 0.6, 0.04),
+    ], mat(dressing.brass, { roughness: 0.42, metalness: 0.5 }));
+    shadowed(legs, false, true);
+    legs.userData.anchor = "plaque";
+    easel.add(legs);
+  }
+  group.add(easel);
   contacts.disc(ex, ez, 0.4, 0.45, group);
 
   const finishNow = (): PlateFinish => plateFinish("current");
-  const eraPlate = track(new EngravedPlate({ stone: dressing.plate, highlight: dressing.plateHighlight, ink: dressing.ink, size: "small" }, 0.78, 0.46));
-  eraPlate.mesh.position.set(ex + 0.12, 1.28, ez);
-  eraPlate.mesh.rotation.y = Math.PI / 2;
-  eraPlate.mesh.rotation.x = -0.1;
+  const eraPlate = track(new EngravedPlate({ stone: dressing.plate, highlight: dressing.plateHighlight, ink: dressing.ink, size: "small" }, 1.2, 0.42));
+  eraPlate.mesh.position.set(0, 1.2, 0.09);
+  eraPlate.mesh.rotation.x = -0.14;
   eraPlate.mesh.userData.anchor = "plaque";
-  group.add(eraPlate.mesh);
+  easel.add(eraPlate.mesh);
 
-  const nextPlate = track(new EngravedPlate({ stone: dressing.plate, highlight: dressing.plateHighlight, ink: dressing.ink, paper: true, size: "small" }, 0.78, 0.16));
-  nextPlate.mesh.position.set(side.x, side.top + 0.012, side.z + 0.4);
+  const nextPlate = track(new EngravedPlate({ stone: dressing.plate, highlight: dressing.plateHighlight, ink: dressing.ink, paper: true, size: "small" }, 0.7, 0.26));
+  nextPlate.mesh.position.set(side.x, side.top + 0.012, side.z + 0.44);
   nextPlate.mesh.rotation.x = -Math.PI / 2.1;
   nextPlate.mesh.rotation.z = 0.26;
   nextPlate.mesh.userData.anchor = "next-island";
@@ -530,7 +549,7 @@ export function createAtlas(scene: THREE.Scene, options: AtlasOptions): PlaceHan
       door: { target: "journey", object: view.era?.key ?? "era-home" },
     });
     rows.push({
-      id: "plaque", position: at(ex + 0.2, 1.28, ez), zone: "station",
+      id: "plaque", position: at(ex + 0.06, 1.2, ez + 0.08), zone: "station",
       label: `${eraPlaqueWords(view).replace(/\n/g, " · ")}${view.crossing ? ` · waiting for ${partnerName ?? "the other of you"}` : ""}. Open this era in Journey.`,
       door: { target: "journey", object: view.era?.key ?? "era-home" },
     });
@@ -556,7 +575,7 @@ export function createAtlas(scene: THREE.Scene, options: AtlasOptions): PlaceHan
       id: "gate", group: "atlas", label: `The gate — ${view.gate.words}`,
       box: box(stand.x + gatePin.x - 0.16, modelTop - 0.02, stand.z + gatePin.z - 0.16, stand.x + gatePin.x + 0.16, modelTop + 0.24, stand.z + gatePin.z + 0.16),
     });
-    rows.push({ id: "plaque", group: "atlas", label: "The era plaque on its easel", box: box(ex - 0.1, 0.9, ez - 0.45, ex + 0.35, 1.6, ez + 0.45) });
+    rows.push({ id: "plaque", group: "atlas", label: "The era plaque on its easel", box: box(ex - 0.62, 0.88, ez - 0.55, ex + 0.62, 1.56, ez + 0.55) });
     rows.push({ id: "next-island", group: "atlas", label: view.next ? `The next island — ${view.next.name}` : "The next island — unplanned, still in the fog", box: box(side.x - 0.42, side.top - 0.12, side.z - 0.42, side.x + 0.42, side.top + 0.42, side.z + 0.42) });
     rows.push({ id: "dormer", group: "atlas", label: "The dormer over the harbour", box: box(wx - 0.7, wy - 0.7, wz - 0.1, wx + 0.7, wy + 0.7, wz + 0.35) });
     rows.push({ id: "kitchen-stair", group: "atlas", label: "The stair down into the Kitchen", box: box(sx - 0.5, 0, sz - 0.5, sx + 0.5, 1.0, sz + 0.5) });
