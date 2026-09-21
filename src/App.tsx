@@ -85,7 +85,7 @@ import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
 import { captureExplicit } from './ledgerSync/capture.ts';
 import { LedgerSyncClient, LedgerCommandRejectedError } from "./ledgerSync/client.ts";
 import { ledgerSyncEnabled, localLedgerIdentity } from "./ledgerSync/mode.ts";
-import { Suspense, lazy, memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, lazy, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   JOINT,
   NeedsConfirmationError,
@@ -807,7 +807,7 @@ export function App() {
   const swipeStripRef=useRef(swipeStrip);swipeStripRef.current=swipeStrip;
   const appMountedRef=useRef(true),toastTimersRef=useRef(new Set<number>());
   useEffect(()=>{appMountedRef.current=true;return()=>{appMountedRef.current=false;for(const id of toastTimersRef.current)window.clearTimeout(id);toastTimersRef.current.clear();};},[]);
-  function scheduleToastClear(tokenId:string,isCurrent?:()=>boolean){if(!appMountedRef.current)return;const id=window.setTimeout(()=>{toastTimersRef.current.delete(id);if(appMountedRef.current&&isCurrent?.()!==false)setToast(item=>item?.id===tokenId?null:item);},8000);toastTimersRef.current.add(id);}
+  const scheduleToastClear = useCallback((tokenId:string,isCurrent?:()=>boolean)=>{if(!appMountedRef.current)return;const id=window.setTimeout(()=>{toastTimersRef.current.delete(id);if(appMountedRef.current&&isCurrent?.()!==false)setToast(item=>item?.id===tokenId?null:item);},8000);toastTimersRef.current.add(id);},[]);
   const [addSlide, setAddSlide] = useState(0);
   const [fabOpen, setFabOpen] = useState(false);
   const [quickSheetOpen, setQuickSheetOpen] = useState(false);
@@ -1032,10 +1032,10 @@ export function App() {
   const [syncState, setSyncState] = useState<"idle" | "syncing" | "synced" | "error">("idle");
   const [, setCloudReplicaReadyKeyState] = useState<string | null>(null);
   const cloudReplicaReadyKeyRef = useRef<string | null>(null);
-  const setCloudReplicaReadyKey = (key: string | null) => {
+  const setCloudReplicaReadyKey = useCallback((key: string | null) => {
     cloudReplicaReadyKeyRef.current = key;
     setCloudReplicaReadyKeyState(key);
-  };
+  }, []);
   const [realtimeStatus, setRealtimeStatus] = useState<ContinuityRealtimeStatus | null>(null);
   const [lastReconcile, setLastReconcile] = useState<{
     at: string;
@@ -1135,34 +1135,34 @@ export function App() {
     return {key, generation: scenarioAuthRef.current.generation};
   }
 
-  function clearScenarioPairLease(): void {
+  const clearScenarioPairLease = useCallback((): void => {
     scenarioPairLeaseRef.current = null;
     setScenarioPairLease(null);
-  }
+  }, []);
 
   function invalidateScenarioPair(): void {
     scenarioPairEpochRef.current += 1;
     clearScenarioPairLease();
   }
 
-  function currentScenarioPairScope(): ScenarioPairScope | null {
+  const currentScenarioPairScope = useCallback((): ScenarioPairScope | null => {
     const current = householdRef.current, selected = sessionRef.current, auth = scenarioAuthRef.current;
     if (!current || !selected?.memberId || auth.environment !== environmentRef.current || current.environment !== environmentRef.current) return null;
     const subject = localLedgerIdentity(selected.memberId) ?? auth.subject;
     if (!subject) return null;
     return {environment: environmentRef.current, householdId: current.householdId, memberId: selected.memberId, subject,
       authIdentityKey: auth.key, authorityMode: ledgerSyncEnabled(environmentRef.current) ? "v2" : "legacy", pairEpoch: scenarioPairEpochRef.current};
-  }
+  }, []);
 
-  function stampCompleteScenarioPair(next: Household, expectedMemberId: string): void {
+  const stampCompleteScenarioPair = useCallback((next: Household, expectedMemberId: string): void => {
     const scope = currentScenarioPairScope();
     if (!scope || scope.memberId !== expectedMemberId || householdRef.current !== next || !booksGateRef.current.ready) return;
     const lease = acceptedScenarioPair(next, scope, ++scenarioAcceptanceEpochRef.current);
     scenarioPairLeaseRef.current = lease;
     setScenarioPairLease(lease);
-  }
+  }, [currentScenarioPairScope]);
 
-  function adoptAcceptedHousehold(next: Household, statusOverride?: BooksStatus): void {
+  const adoptAcceptedHousehold = useCallback((next: Household, statusOverride?: BooksStatus): void => {
     // General acceptance proves books, not that an own Personal envelope was supplied.
     clearScenarioPairLease();
     householdRef.current = next;
@@ -1177,17 +1177,17 @@ export function App() {
     booksReadinessRef.current = ready;
     booksGateRef.current = booksWriteGate(ready, next);
     setBooksReadiness(ready);
-  }
+  }, [clearScenarioPairLease]);
 
   /**
    * Carry a proven financial receipt across transport/presence/permission
    * metadata only. These callers must not change transactions, shifts, Fund
    * financial facts, or any other material included by financialAuditHash.
    */
-  function adoptKnownMetadataHousehold(
+  const adoptKnownMetadataHousehold = useCallback((
     next: Household,
     expectedCurrentRevision = next.revision,
-  ): boolean {
+  ): boolean => {
     const current = booksReadinessRef.current;
     const live = householdRef.current;
     if (
@@ -1204,7 +1204,7 @@ export function App() {
     adoptAcceptedHousehold(next, current.status);
     if (carryPair) stampCompleteScenarioPair(next, scope.memberId);
     return true;
-  }
+  }, [adoptAcceptedHousehold, currentScenarioPairScope, stampCompleteScenarioPair]);
 
   function householdOutboxFingerprint(targetEnvironment: Environment, householdId: string): string {
     return JSON.stringify(
@@ -1306,9 +1306,9 @@ export function App() {
     });
   }
 
-  async function persistKnownMetadataHousehold(
+  const persistKnownMetadataHousehold = useCallback(async (
     update: (current: Household) => Household | null,
-  ): Promise<Household | null> {
+  ): Promise<Household | null> => {
     return enqueueWrite(async () => {
       const current = householdRef.current;
       if (useLedgerSync || !current || !booksGateRef.current.ready) return null;
@@ -1321,9 +1321,9 @@ export function App() {
       });
       return adoptKnownMetadataHousehold(next, current.revision) ? next : null;
     });
-  }
+  }, [adoptKnownMetadataHousehold, enqueueWrite, session?.memberId, useLedgerSync]);
 
-  function assertMemberPersonalUpdate(current: Household, result: CommitResult): void {
+  const assertMemberPersonalUpdate = useCallback((current: Household, result: CommitResult): void => {
     const who = session?.memberId;
     if (
       result.persistenceScope !== "member-personal"
@@ -1401,7 +1401,7 @@ export function App() {
     }
     if (personalCalendarUpdateAllowed(current, result, who)) return;
     throw new ValidationError("That Personal change does not have a cloud-authority rule.");
-  }
+  }, [session?.memberId]);
 
   // Money model (D-269): release N+1 sorts the household, then this member's own rows, once per phone session.
   const fundModelBootTried = useRef(new Set<string>());
@@ -1547,12 +1547,12 @@ export function App() {
     setAdding(true,true); setError(''); setConfirm(null); return true;
   }
 
-  function rememberUndoHistory(next: UndoToken[]) {
+  const rememberUndoHistory = useCallback((next: UndoToken[]) => {
     setHistory(next);
     const hid = householdRef.current?.householdId;
     const mid = session?.memberId;
     if (hid && mid) saveUndoHistory(environment, hid, mid, next);
-  }
+  }, [environment, session?.memberId]);
 
   async function retryShareNow() {
     if (ledgerSyncRef.current) { ledgerSyncRef.current.retryPending(); return; }
@@ -4313,12 +4313,54 @@ export function App() {
     }
   }
 
-  async function commitHousehold(
+  // Declared above commitHousehold: its dependency array is evaluated during
+  // render, so the callback it names must already be initialised.
+  const traceSyncPilot = useCallback((
+    phase: SyncPilotTracePhase,
+    details?: {
+      household?: Household | null;
+      confirmationId?: string | null;
+      revision?: number | null;
+      pendingCount?: number | null;
+      transport?: SyncPilotTransport | null;
+      ledgerScope?: "shared" | "personal" | null;
+      painted?: boolean | null;
+      paintStatus?: "painted" | "hidden-fallback" | "visible-timeout" | "unavailable" | null;
+      sourceAcceptedAt?: string | null;
+      cloudAcceptedAt?: string | null;
+      receiverApplyMs?: number | null;
+      fallbackReason?: string | null;
+    },
+  ): void => {
+    const current = details?.household ?? householdRef.current;
+    const who = sessionRef.current?.memberId;
+    if (!current || !who || !syncPilotDiagnosticsEnabled(environment)) return;
+    void recordSyncPilotTrace({
+      environment,
+      phase,
+      householdId: current.householdId,
+      memberId: who,
+      deviceId: localDeviceId(),
+      confirmationId: details?.confirmationId,
+      revision: details?.revision ?? current.revision,
+      pendingCount: details?.pendingCount,
+      transport: details?.transport,
+      ledgerScope: details?.ledgerScope,
+      painted: details?.painted,
+      paintStatus: details?.paintStatus,
+      sourceAcceptedAt: details?.sourceAcceptedAt,
+      cloudAcceptedAt: details?.cloudAcceptedAt,
+      receiverApplyMs: details?.receiverApplyMs,
+      fallbackReason: details?.fallbackReason,
+    }).catch(() => undefined);
+  }, [environment]);
+
+  const commitHousehold = useCallback(async (
     next: Household,
     token?: UndoToken,
     actorId?: string,
     options?: CommitHouseholdOptions,
-  ): Promise<CommandOutcome | null> {
+  ): Promise<CommandOutcome | null> => {
     if (options?.isCurrent?.() === false) return null;
     const present = <A,>(write: (value: A) => void) => (value: A) => { if (options?.isCurrent?.() !== false) write(value); };
     const presentSetError = present(setError);
@@ -4801,9 +4843,9 @@ export function App() {
     } finally {
       setBusy(false);
     }
-  }
+  }, [adoptAcceptedHousehold, environment, offline, persistKnownMetadataHousehold, rememberUndoHistory, scheduleToastClear, session?.memberId, setCloudReplicaReadyKey, traceSyncPilot, useLedgerSync]);
 
-  function persist(next: Household, token?: UndoToken, actorId?: string, options?: CommitHouseholdOptions) {
+  const persist = useCallback((next: Household, token?: UndoToken, actorId?: string, options?: CommitHouseholdOptions) => {
     const expectedScopeGeneration = replicaScopeGenerationRef.current;
     const expectedHousehold = householdRef.current;
     return enqueueWrite(() => {
@@ -4818,7 +4860,7 @@ export function App() {
       }
       return commitHousehold(next, token, actorId, options);
     });
-  }
+  }, [commitHousehold, enqueueWrite, useLedgerSync]);
 
   function scheduleDemoAcceptance(): Promise<CommandOutcome | null> {
     if (pendingDemoAcceptanceRef.current) return pendingDemoAcceptanceRef.current;
@@ -4873,7 +4915,7 @@ export function App() {
     pendingDemoFramesRef.current = [];
   }, []);
 
-  function persistLedgerWrite(next: Household, token?: UndoToken, confirmationId?: string) {
+  const persistLedgerWrite = useCallback((next: Household, token?: UndoToken, confirmationId?: string) => {
     const accepted = householdRef.current;
     return persist(
       useLedgerSync ? next : accepted ? restoreAcceptedSnapshot(accepted, next) : next,
@@ -4881,7 +4923,7 @@ export function App() {
       undefined,
       confirmationId ? { confirmationId } : undefined,
     );
-  }
+  }, [persist, useLedgerSync]);
 
   async function gateWithGoogle(options?: { record?: boolean }) {
     const current = householdRef.current;
@@ -4964,18 +5006,30 @@ export function App() {
   }
 
   // A callback belongs to the desk that rendered it, including A→B→A changes.
-  const renderedWriteScope = {
+  // The snapshot is memoised on the scope it records, so a handler that closes
+  // over it keeps one identity while the desk is unchanged and is rebuilt the
+  // moment household, member, room or replica generation moves. Reuse never
+  // widens what a retained command may write: enqueueScopedWrite still compares
+  // this render’s recorded scope against the live one before anything is saved.
+  // replicaScopeGenerationRef.current is read during render today; keying on that
+  // value reproduces it exactly — a bump with no re-render changes nothing either
+  // way, and the first render after one rebuilds the snapshot.
+  const renderedWriteScope = useMemo(() => ({
     generation: replicaScopeGenerationRef.current, environment,
     householdId: household?.householdId ?? null,
     memberId: session?.memberId ?? null, view: session?.view ?? null,
-  };
-  const renderedWriteIsCurrent = () => appMountedRef.current && !openingHouseholdRef.current && sameWriteScope(renderedWriteScope, {
+  }), [replicaScopeGenerationRef.current, environment, household?.householdId, session?.memberId, session?.view]);
+  const renderedWriteIsCurrent = useCallback(() => appMountedRef.current && !openingHouseholdRef.current && sameWriteScope(renderedWriteScope, {
     generation: replicaScopeGenerationRef.current, environment: environmentRef.current,
     householdId: householdRef.current?.householdId ?? null,
     memberId: sessionRef.current?.memberId ?? null, view: sessionRef.current?.view ?? null,
-  });
+  }), [renderedWriteScope]);
 
-  function run(fn: (current: Household) => CommitResult, options?: {
+  // Named function expression, not an arrow: test/demo-suite-ui.test.ts reads
+  // the member-Personal command flow out of this file by slicing between the
+  // declarations of run and requestClearThisPhone, and that guard must keep
+  // finding this one.
+  const run = useCallback(function run(fn: (current: Household) => CommitResult, options?: {
     isCurrent?: () => boolean;
     scopeIsCurrent?: () => boolean;
     closeAdd?: boolean;
@@ -5101,16 +5155,16 @@ export function App() {
         postingRef.current = false;
       }
     });
-  }
+  }, [adding, assertMemberPersonalUpdate, comfort.haptics, comfort.sound, commitHousehold, enqueueWrite, focusedAccountId, form.amount, goTab, renderedWriteIsCurrent, session?.memberId, setAdding, tab, today, view]);
 
-  const reviewedKitchenScope = {
+  const reviewedKitchenScope = useMemo(() => ({
     generation: replicaScopeGenerationRef.current,
     environment,
     householdId: household?.householdId ?? null,
     memberId: session?.memberId ?? null,
     view: session?.view ?? null,
-  };
-  function runKitchen(fn: (current: Household) => CommitResult, options?: KitchenCommandOptions): Promise<CommandOutcome | null> {
+  }), [replicaScopeGenerationRef.current, environment, household?.householdId, session?.memberId, session?.view]);
+  const runKitchen = useCallback((fn: (current: Household) => CommitResult, options?: KitchenCommandOptions): Promise<CommandOutcome | null> => {
     return enqueueScopedWrite(enqueueWrite, reviewedKitchenScope, () => ({
       generation: replicaScopeGenerationRef.current,
       environment: environmentRef.current,
@@ -5158,7 +5212,7 @@ export function App() {
         return null;
       }
     }, () => setError("These books changed while this action was waiting. Review the current desk and try again."));
-  }
+  }, [assertMemberPersonalUpdate, commitHousehold, enqueueWrite, renderedWriteIsCurrent, reviewedKitchenScope]);
 
   function requestClearThisPhone() {
     setGuard({ kind: "clear-this-phone" });
@@ -5263,46 +5317,6 @@ export function App() {
       deviceId: localDeviceId(),
     });
     return `Copied authenticated proof clock · offset ${calibration.offsetMs} ms · uncertainty ${calibration.uncertaintyMs} ms.`;
-  }
-
-  function traceSyncPilot(
-    phase: SyncPilotTracePhase,
-    details?: {
-      household?: Household | null;
-      confirmationId?: string | null;
-      revision?: number | null;
-      pendingCount?: number | null;
-      transport?: SyncPilotTransport | null;
-      ledgerScope?: "shared" | "personal" | null;
-      painted?: boolean | null;
-      paintStatus?: "painted" | "hidden-fallback" | "visible-timeout" | "unavailable" | null;
-      sourceAcceptedAt?: string | null;
-      cloudAcceptedAt?: string | null;
-      receiverApplyMs?: number | null;
-      fallbackReason?: string | null;
-    },
-  ): void {
-    const current = details?.household ?? householdRef.current;
-    const who = sessionRef.current?.memberId;
-    if (!current || !who || !syncPilotDiagnosticsEnabled(environment)) return;
-    void recordSyncPilotTrace({
-      environment,
-      phase,
-      householdId: current.householdId,
-      memberId: who,
-      deviceId: localDeviceId(),
-      confirmationId: details?.confirmationId,
-      revision: details?.revision ?? current.revision,
-      pendingCount: details?.pendingCount,
-      transport: details?.transport,
-      ledgerScope: details?.ledgerScope,
-      painted: details?.painted,
-      paintStatus: details?.paintStatus,
-      sourceAcceptedAt: details?.sourceAcceptedAt,
-      cloudAcceptedAt: details?.cloudAcceptedAt,
-      receiverApplyMs: details?.receiverApplyMs,
-      fallbackReason: details?.fallbackReason,
-    }).catch(() => undefined);
   }
 
   async function signOutWelcomeGoogle() {
