@@ -681,7 +681,9 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   ];
 
   const stats: RoomStats = { frames: 0, lastFrameMs: 0, maxFrameMs: 0, vessels: 0, ambient: false, geometries: 0 };
-  let dead = false, pending = 0, raf = 0, started = 0;
+  let dead = false, pending = 0, raf = 0, started = 0, onScreen = true;
+  /** Frames are only worth asking for while the room is on the page and the page is in front. */
+  const awake = () => onScreen && !(typeof document !== "undefined" && document.hidden);
   const now = () => (typeof performance !== "undefined" ? performance.now() : Date.now());
   const render = () => {
     if (dead) return;
@@ -708,20 +710,30 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
   };
   const frame = (t: number) => {
     raf = 0;
-    if (dead || !stats.ambient) return;
+    if (dead || !stats.ambient || !awake()) return;
     if (!started) started = t;
     tick((t - started) / 1000);
     render();
     raf = rendererLease.requestFrame(frame);
   };
-  const pump = () => { if (!dead && stats.ambient && !raf) { started = 0; raf = rendererLease.requestFrame(frame); } };
+  const pump = () => { if (!dead && stats.ambient && awake() && !raf) { started = 0; raf = rendererLease.requestFrame(frame); } };
   const halt = () => { if (raf) rendererLease.cancelFrame(raf); raf = 0; };
   suspendRenderer = () => { halt(); if (pending) rendererLease.cancelFrame(pending); pending = 0; if (animRaf) rendererLease.cancelFrame(animRaf); animRaf = 0; };
   resumeRenderer = () => { if (hostRect.w && hostRect.h) { renderer.setSize(hostRect.w, hostRect.h, false); renderer.domElement.style.width = `${hostRect.w}px`; renderer.domElement.style.height = `${hostRect.h}px`; } invalidate(); animate(); pump(); };
-  const onHidden = () => { if (typeof document !== "undefined" && document.hidden) halt(); else pump(); };
+  const onHidden = () => { if (!awake()) halt(); else pump(); };
   if (typeof document !== "undefined") {
     document.addEventListener("visibilitychange", onHidden);
     cleanup.push(() => document.removeEventListener("visibilitychange", onHidden));
+  }
+  // A room scrolled off the page is a room asking for nothing: the dust stops
+  // where it stands and starts again where the reader left it.
+  if (typeof IntersectionObserver !== "undefined") {
+    const watcher = new IntersectionObserver(([entry]) => {
+      onScreen = entry?.isIntersecting ?? true;
+      if (awake()) pump(); else halt();
+    });
+    watcher.observe(host);
+    cleanup.push(() => watcher.disconnect());
   }
   const lost = (event: Event) => { event.preventDefault(); options.onLost?.(); };
   cleanup.push(rendererLease.listenCanvas("webglcontextlost", lost));
@@ -793,11 +805,15 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
       lastLayoutKey = "";
       invalidate();
     },
-    /** Put every vessel where the DOM keeps its control, and the room where the host is. */
-    layout(next: RoomLayout) {
-      if (dead || !next.host.w || !next.host.h) return;
+    /**
+     * Put every vessel where the DOM keeps its control, and the room where the
+     * host is. Returns whether anything actually moved, so the caller's follow
+     * can stop measuring once the room has come to rest.
+     */
+    layout(next: RoomLayout): boolean {
+      if (dead || !next.host.w || !next.host.h) return false;
       const key = JSON.stringify([next.host, next.seats, next.stage ?? null]);
-      if (key === lastLayoutKey) return;
+      if (key === lastLayoutKey) return false;
       lastLayoutKey = key;
       hostRect = next.host;
       unitsPerPx = VISIBLE_HEIGHT / hostRect.h;
@@ -874,7 +890,15 @@ export function createQueenRoomWorld(host: HTMLElement, options: { room: QueenRo
         board.scale.set(r.w * unitsPerPx + 2 * scale, scale, scale);
       });
       invalidate();
+      return true;
     },
+    /**
+     * A frame on this room's own lease, for a caller that has to follow the
+     * DOM (the seats move when the ribbon scrubs or the ledge reorders). It
+     * rides the one shared clock and it stops dead when the lease suspends.
+     */
+    requestFrame(callback: (time: number) => void): number { return dead ? 0 : rendererLease.requestFrame(callback); },
+    cancelFrame(id: number): void { rendererLease.cancelFrame(id); },
     /** Whether the room's dust moves. Off under reduced motion, a paused atmosphere or a hidden tab. */
     setAmbient(on: boolean) {
       const next = on && !options.reducedMotion;
