@@ -372,4 +372,3 @@ describe("a room's hold on the camera (holdPoseInRoom)", () => {
     }
   });
 });
-
