@@ -71,6 +71,13 @@ Banks now stand a step apart from the middle outward rather than stretched to th
 2. **Prepare's water is a great glass jar on a stone plinth**, not a slab across the back wall. The same glass as the bills on the rail, at the room's own scale — which is the actual argument for putting them in one room: you can see the buffer standing beside the bills it is there to cover. Brass rim, brass foot, a five-tick rule on a post, and a tide mark that rides with the level.
 3. The room is shallower and lower, the rail is shorter and higher, the eye stands inside it, the lamp is on the back wall where it lights the cistern, and the stair shows in the near corner. The phone looks **along** the rail instead of across it, because a portrait frame holds about 1.3 world units across at that distance and a straight-on view showed one jar.
 
+Three more things the full evidence run showed, all fixed:
+
+- **A place is its own chunk**, and the chunk is fetched before `enter` can move anything — so the first tap on the Rook was a beat of nothing and then the whole journey at once. The other places of the room are warmed on idle once this one is standing.
+- **The mantel.** With a tool open the stage becomes a strip; at 1440×300 a room six units across was an unrecognisable wide band with the stair looming. The strip is taller (34vh, capped) and the Tower and the Cellar step back to their own establishing pose while a tool is in front of them. The Court is wide enough to read from wherever you were standing, so it does not move.
+- **Taylor's Scrapbook has pale pink plaster**, and the cellar's lamp at 14 units and decay 1.6 blew a white hole in it. Decay 2, reach 6.5 — a warm pool again.
+- **The month's crest.** On the room's ruler a month's spending is a small part of a buffer, so the water moves only a little as you walk the rail — which read as the water not moving at all. A brass collar now sits at the month's highest level, so the little the surface drops is measured from something.
+
 `COURT_BOUNDS.minR` went 3 → **2**: a room six units across has to be able to bring one bank or one jar close. No Court pose changes.
 
 **The evidence script was also wrong**, and that is the finding with the longest reach: `wait_place` waited on `data-harbour-place`, which flips the moment a journey *starts*. Every "cellar" capture in the first run was actually a photograph of the Court, taken from a camera already aimed at the cellar's pose. It now waits for a twin only the arrived place has.
@@ -84,6 +91,10 @@ Banks now stand a step apart from the middle outward rather than stretched to th
 - Evidence: `docs/evidence/little-harbour-slice2/` — three themes × five widths (320, 390, 720, 1100, 1440), each with the Court, the Tower, a bank open, the Cellar, the rail walked back seven days, a jar open, both reading editions reached by their own buttons, and a frame caught part-way through each journey.
 
 **Known failure, unchanged from slice 1:** the serial browser lane breaches its five-minute budget on this container and three browser files fail — `hearthside-actual-app-browser` times out identically on `origin/main@10e05ed` here, and two others want `chromium_headless_shell-1234` where the box has 1194. That lane needs Jonathan's machine.
+
+## The one thing slice 2 does **not** fix
+
+**A door still opens by reflowing the page, not over the scene.** Tapping a jar shrinks the stage to a mantel and puts the Cellar's surface beneath it; tapping a bank leaves the room entirely for the Kitty Banks page. Both preserve every money path, which is the fence slice 2 was built inside — the jug, the gun, the rack's controls and every Confirm are the App's, and the harbour may not touch them. But it is the same page-reflow tool opening I marked against Codex's #507, and it is the first item on slice 3's list: the surface should arrive **over** the room, the room should stay lit behind it, and "← Put it back" should be the only chrome that changes.
 
 ## Uncertainty and open questions
 
