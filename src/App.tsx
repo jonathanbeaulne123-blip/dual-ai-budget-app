@@ -5025,7 +5025,11 @@ export function App() {
     memberId: sessionRef.current?.memberId ?? null, view: sessionRef.current?.view ?? null,
   }), [renderedWriteScope]);
 
-  const run = useCallback((fn: (current: Household) => CommitResult, options?: {
+  // Named function expression, not an arrow: test/demo-suite-ui.test.ts reads
+  // the member-Personal command flow out of this file by slicing between the
+  // declarations of run and requestClearThisPhone, and that guard must keep
+  // finding this one.
+  const run = useCallback(function run(fn: (current: Household) => CommitResult, options?: {
     isCurrent?: () => boolean;
     scopeIsCurrent?: () => boolean;
     closeAdd?: boolean;
@@ -5034,7 +5038,7 @@ export function App() {
     onAccepted?: (result: CommitResult) => void;
     onConfirm?: (error: NeedsConfirmationError) => boolean;
     onError?: (message: string) => void;
-  }) => {
+  }) {
     const callerOptions = options;
     options = {
       ...callerOptions,
