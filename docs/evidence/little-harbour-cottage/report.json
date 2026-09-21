@@ -1,0 +1,3080 @@
+[
+  {
+    "tag": "classic-390",
+    "court": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "298",
+      "renderMs": "48.15",
+      "queen": null,
+      "camera": "[0.554,6.1458,8.4245]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "crown",
+          "w": 70,
+          "h": 82,
+          "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
+        },
+        {
+          "id": "vines",
+          "w": 140,
+          "h": 173,
+          "label": "Her vines \u2014 up a week, down a week"
+        },
+        {
+          "id": "hands",
+          "w": 56,
+          "h": 107,
+          "label": "Her hands \u2014 what she holds for you"
+        },
+        {
+          "id": "face",
+          "w": 61,
+          "h": 55,
+          "label": "Her face \u2014 a portrait"
+        },
+        {
+          "id": "roots",
+          "w": 77,
+          "h": 80,
+          "label": "Her roots \u2014 what feeds her"
+        },
+        {
+          "id": "potRim",
+          "w": 77,
+          "h": 73,
+          "label": "The pot's rim \u2014 spin her, or come closer"
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44,
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
+        },
+        {
+          "id": "flagstone",
+          "w": 153,
+          "h": 71,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "bishop",
+          "w": 199,
+          "h": 343,
+          "label": "The Bishop \u2014 Prepare $0. Go down to the Cellar."
+        },
+        {
+          "id": "mailbox",
+          "w": 139,
+          "h": 190,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 116,
+          "h": 101,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
+          "id": "hercules",
+          "w": 137,
+          "h": 102,
+          "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 390,
+          "h": 207,
+          "label": "The court gate"
+        },
+        {
+          "id": "cellar-stair",
+          "w": 152,
+          "h": 136,
+          "label": "The cellar stairhead \u2014 go down to the Cellar"
+        },
+        {
+          "id": "library-hall",
+          "w": 160,
+          "h": 145,
+          "label": "The Library \u2014 the Standing Book's hall. Walk over and go in."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "tower": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "251",
+      "renderMs": "47.98",
+      "queen": null,
+      "camera": "[0.0529,1.2785,2.8952]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "bank:goal:GOAL-7e2d8d8d9b",
+          "w": 301,
+          "h": 373,
+          "label": "Kitchen renovation \u2014 $0 of $6,000. Open the Loft."
+        },
+        {
+          "id": "bank:goal:GOAL-fbe9267ec2",
+          "w": 346,
+          "h": 330,
+          "label": "A trip to the shore \u2014 $0 of $2,400. Open the Loft."
+        },
+        {
+          "id": "lamp",
+          "w": 390,
+          "h": 372,
+          "label": "The lamp on the landing"
+        },
+        {
+          "id": "window",
+          "w": 176,
+          "h": 228,
+          "label": "The window \u2014 the day coming in"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "cellar": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "44",
+      "renderMs": "35.03",
+      "queen": null,
+      "camera": "[1.1771,2.0309,0.6355]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 390,
+          "h": 768,
+          "label": "The stair up to the court"
+        },
+        {
+          "id": "rail",
+          "w": 390,
+          "h": 768,
+          "label": "The bill rail, pinned with brass \u2014 7 jars on Sep 21 \u00b7 today"
+        },
+        {
+          "id": "waterline",
+          "w": 382,
+          "h": 374,
+          "label": "Prepare's water \u2014 $7,411 on Sep 21 \u00b7 today"
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-401145377a:2026-09-10",
+          "w": 84,
+          "h": 69,
+          "label": "Gym \u2014 $44, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-893c238bb4:2026-09-18",
+          "w": 96,
+          "h": 122,
+          "label": "Transit pass \u2014 $128, paid. Open the jar."
+        },
+        {
+          "id": "date",
+          "w": 189,
+          "h": 109,
+          "label": "The day on the rail \u2014 Sep 21 \u00b7 today"
+        },
+        {
+          "id": "today",
+          "w": 248,
+          "h": 122,
+          "label": "Back to today on the rail"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "glasshouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "54",
+      "renderMs": "24.37",
+      "queen": null,
+      "camera": "[1.0938,1.7403,2.3157]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "beds",
+          "w": 377,
+          "h": 118,
+          "label": "The beds around the glasshouse \u2014 unfold the Calendar."
+        },
+        {
+          "id": "garden-door",
+          "w": 390,
+          "h": 768,
+          "label": "The garden door \u2014 back to the Court."
+        },
+        {
+          "id": "pot:task/TASK-2f878b9ee8d81a6728b414ac5a2236000a968c446a0f771e0d72f960ea7b2ad6",
+          "w": 87,
+          "h": 121,
+          "label": "Sign the Charter together and name who holds the Fund. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-569c20b0dce6467e4e74e49013f7e8f1a86d2cbeade608b4989cc0d9170457cd",
+          "w": 103,
+          "h": 118,
+          "label": "Choose which payday the pre-rent check belongs to. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-ed162b36000d393b220feb512ee0f535d80525ed7d00361e7d54df3f5ed99683",
+          "w": 95,
+          "h": 119,
+          "label": "Fictional: move the rent transfer to the payday before the 1st \u2014 a sprout, yours. Open the Master Planner."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "kitchen": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "37",
+      "renderMs": "24.97",
+      "queen": null,
+      "camera": "[2.2186,2.0002,2.482]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "court-door",
+          "w": 390,
+          "h": 768,
+          "label": "The kitchen door \u2014 back to the Court."
+        },
+        {
+          "id": "drawer",
+          "w": 229,
+          "h": 159,
+          "label": "The drawer \u2014 the seven tools, for whoever wants them. Pull out the Plan Studio."
+        },
+        {
+          "id": "empty-card",
+          "w": 231,
+          "h": 117,
+          "label": "The empty recipe card \u2014 sit down and make a plan: five questions, one card. Pull out the Plan Studio."
+        },
+        {
+          "id": "folio",
+          "w": 109,
+          "h": 66,
+          "label": "The folio \u2014 one intention, a private note, room to think. Open the conversation folio."
+        },
+        {
+          "id": "hercules-chair",
+          "w": 200,
+          "h": 271,
+          "label": "Hercules, across the table. He asks one question at a time. Pull out the Plan Studio."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "boathouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "26",
+      "renderMs": "20.60",
+      "queen": null,
+      "camera": "[-2.0373,1.7108,2.5649]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "boat",
+          "w": 390,
+          "h": 502,
+          "label": "The rowboat in the slip, two thwarts \u2014 room for you and Jonathan \u2014 nothing yet. Spend a moment together."
+        },
+        {
+          "id": "memories",
+          "w": 327,
+          "h": 130,
+          "label": "The memory shelf \u2014 nothing yet. Open a memory."
+        },
+        {
+          "id": "projector",
+          "w": 262,
+          "h": 262,
+          "label": "The projector, aimed at the sail \u2014 choose three memories."
+        },
+        {
+          "id": "shore-door",
+          "w": 390,
+          "h": 768,
+          "label": "The shore door \u2014 back to the Court."
+        },
+        {
+          "id": "wishes",
+          "w": 390,
+          "h": 567,
+          "label": "The lanterns \u2014 nothing yet. Tend a wish."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "library": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "40",
+      "renderMs": "21.84",
+      "queen": null,
+      "camera": "[2.395,2.5998,2.8022]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "balcony",
+          "w": 390,
+          "h": 172,
+          "label": "The reading balcony \u2014 the accounts as stickies on its rail. Open the Standing Book."
+        },
+        {
+          "id": "bindery",
+          "w": 390,
+          "h": 251,
+          "label": "The Bindery \u2014 Lantern Row, Low Water, Cut Bank, The Glasshouse pane, The Handoff bench. One machine per divider. Open the Standing Book."
+        },
+        {
+          "id": "book",
+          "w": 273,
+          "h": 291,
+          "label": "The Standing Book, open on its lectern \u2014 every figure has a source, every page a place. Open the Standing Book."
+        },
+        {
+          "id": "court-door",
+          "w": 390,
+          "h": 768,
+          "label": "The hall door \u2014 back to the Court."
+        },
+        {
+          "id": "glasshouse-way",
+          "w": 152,
+          "h": 235,
+          "label": "The garden door \u2014 through to the Glasshouse."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "cottage": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "38",
+      "renderMs": "15.42",
+      "queen": null,
+      "camera": "[1.7421,2.0008,1.9343]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "court-door",
+          "w": 390,
+          "h": 768,
+          "label": "The cottage door, with his own cut beside it \u2014 back to the Court."
+        },
+        {
+          "id": "mirror",
+          "w": 390,
+          "h": 580,
+          "label": "The cheval glass, swung to the window \u2014 see how a piece sits before he wears it. Open the dressing room at the glass."
+        },
+        {
+          "id": "wardrobe",
+          "w": 390,
+          "h": 483,
+          "label": "The armoire, its doors a hand open \u2014 Hercules\u2019s rail of pieces. Open the dressing room."
+        },
+        {
+          "id": "window-seat",
+          "w": 390,
+          "h": 257,
+          "label": "Hercules asleep on the window seat \u2014 Hercules is in his own fur today. Talk with Hercules."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "errors": []
+  },
+  {
+    "tag": "classic-1440",
+    "court": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "380",
+      "renderMs": "33.65",
+      "queen": null,
+      "camera": "[5.2548,6.7215,9.6036]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "crown",
+          "w": 96,
+          "h": 103,
+          "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
+        },
+        {
+          "id": "vines",
+          "w": 187,
+          "h": 227,
+          "label": "Her vines \u2014 up a week, down a week"
+        },
+        {
+          "id": "hands",
+          "w": 83,
+          "h": 135,
+          "label": "Her hands \u2014 what she holds for you"
+        },
+        {
+          "id": "face",
+          "w": 74,
+          "h": 74,
+          "label": "Her face \u2014 a portrait"
+        },
+        {
+          "id": "roots",
+          "w": 110,
+          "h": 107,
+          "label": "Her roots \u2014 what feeds her"
+        },
+        {
+          "id": "potRim",
+          "w": 117,
+          "h": 96,
+          "label": "The pot's rim \u2014 spin her, or come closer"
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44,
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
+        },
+        {
+          "id": "flagstone",
+          "w": 200,
+          "h": 109,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "rook",
+          "w": 178,
+          "h": 259,
+          "label": "The Rook \u2014 Build $0. Climb the Tower."
+        },
+        {
+          "id": "bishop",
+          "w": 279,
+          "h": 406,
+          "label": "The Bishop \u2014 Prepare $0. Go down to the Cellar."
+        },
+        {
+          "id": "knight",
+          "w": 133,
+          "h": 198,
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
+        },
+        {
+          "id": "cistern",
+          "w": 165,
+          "h": 145,
+          "label": "The cistern \u2014 Protect $853 of $12,243. Open Protect."
+        },
+        {
+          "id": "sundial",
+          "w": 275,
+          "h": 345,
+          "label": "The sundial \u2014 next: Toronto Hydro"
+        },
+        {
+          "id": "mailbox",
+          "w": 161,
+          "h": 224,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 126,
+          "h": 127,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
+          "id": "hercules",
+          "w": 188,
+          "h": 150,
+          "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 359,
+          "h": 358,
+          "label": "The court gate"
+        },
+        {
+          "id": "boathouse",
+          "w": 237,
+          "h": 199,
+          "label": "The Boathouse, down on the shore \u2014 the two of you. Go there when you want it."
+        },
+        {
+          "id": "cellar-stair",
+          "w": 199,
+          "h": 188,
+          "label": "The cellar stairhead \u2014 go down to the Cellar"
+        },
+        {
+          "id": "glasshouse-shed",
+          "w": 138,
+          "h": 124,
+          "label": "The Glasshouse, in the garden behind the Library \u2014 the planner's benches. Walk over and go in."
+        },
+        {
+          "id": "kitchen-cottage",
+          "w": 202,
+          "h": 182,
+          "label": "The Kitchen, smoke up \u2014 sit down and make a plan. Walk over and go in."
+        },
+        {
+          "id": "library-hall",
+          "w": 190,
+          "h": 180,
+          "label": "The Library \u2014 the Standing Book's hall. Walk over and go in."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "tower": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "265",
+      "renderMs": "23.93",
+      "queen": null,
+      "camera": "[0.3183,1.1323,3.422]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 1440,
+          "h": 900,
+          "label": "The stair \u2014 back down to the Court"
+        },
+        {
+          "id": "jug",
+          "w": 956,
+          "h": 794,
+          "label": "The jug \u2014 $6,746 safe to pour. Open the Loft."
+        },
+        {
+          "id": "gun",
+          "w": 740,
+          "h": 571,
+          "label": "The money gun \u2014 throw a bill at a bank. Open the Loft."
+        },
+        {
+          "id": "shelf:floor-1",
+          "w": 1440,
+          "h": 900,
+          "label": "An empty floor \u2014 nothing on the shelf yet"
+        },
+        {
+          "id": "shelf:shelf-1",
+          "w": 1375,
+          "h": 784,
+          "label": "The landing shelf \u2014 5 parts of 5, mark at 100%"
+        },
+        {
+          "id": "bank:goal:GOAL-7e2d8d8d9b",
+          "w": 377,
+          "h": 481,
+          "label": "Kitchen renovation \u2014 $0 of $6,000. Open the Loft."
+        },
+        {
+          "id": "bank:goal:GOAL-fbe9267ec2",
+          "w": 437,
+          "h": 378,
+          "label": "A trip to the shore \u2014 $0 of $2,400. Open the Loft."
+        },
+        {
+          "id": "lamp",
+          "w": 486,
+          "h": 461,
+          "label": "The lamp on the landing"
+        },
+        {
+          "id": "window",
+          "w": 238,
+          "h": 315,
+          "label": "The window \u2014 the day coming in"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "cellar": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "57",
+      "renderMs": "18.75",
+      "queen": null,
+      "camera": "[0.4193,1.9207,2.2793]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 1440,
+          "h": 900,
+          "label": "The stair up to the court"
+        },
+        {
+          "id": "rail",
+          "w": 1440,
+          "h": 193,
+          "label": "The bill rail, pinned with brass \u2014 7 jars on Sep 21 \u00b7 today"
+        },
+        {
+          "id": "waterline",
+          "w": 519,
+          "h": 450,
+          "label": "Prepare's water \u2014 $7,411 on Sep 21 \u00b7 today"
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2070622163:2026-09-26",
+          "w": 90,
+          "h": 112,
+          "label": "Toronto Hydro \u2014 $118, not its day yet. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2f4ddfd35f:2026-09-06",
+          "w": 103,
+          "h": 64,
+          "label": "Streaming \u2014 $16, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-37e9012419:2026-09-01",
+          "w": 223,
+          "h": 245,
+          "label": "Rent \u2014 $2,375, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-401145377a:2026-09-10",
+          "w": 90,
+          "h": 71,
+          "label": "Gym \u2014 $44, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-893c238bb4:2026-09-18",
+          "w": 77,
+          "h": 113,
+          "label": "Transit pass \u2014 $128, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-ed0e5b5f44:2026-09-30",
+          "w": 116,
+          "h": 106,
+          "label": "Freedom Mobile \u2014 $96, not its day yet. Open the jar."
+        },
+        {
+          "id": "date",
+          "w": 186,
+          "h": 98,
+          "label": "The day on the rail \u2014 Sep 21 \u00b7 today"
+        },
+        {
+          "id": "today",
+          "w": 225,
+          "h": 99,
+          "label": "Back to today on the rail"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "glasshouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "68",
+      "renderMs": "21.45",
+      "queen": null,
+      "camera": "[0.7012,1.9438,2.942]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "beds",
+          "w": 507,
+          "h": 154,
+          "label": "The beds around the glasshouse \u2014 unfold the Calendar."
+        },
+        {
+          "id": "garden-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The garden door \u2014 back to the Court."
+        },
+        {
+          "id": "harvest",
+          "w": 1440,
+          "h": 619,
+          "label": "The harvest shelf \u2014 1 harvested this week. Open the Master Planner."
+        },
+        {
+          "id": "perennials",
+          "w": 1440,
+          "h": 900,
+          "label": "The long bed \u2014 1 perennial. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-2f878b9ee8d81a6728b414ac5a2236000a968c446a0f771e0d72f960ea7b2ad6",
+          "w": 108,
+          "h": 161,
+          "label": "Sign the Charter together and name who holds the Fund. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-569c20b0dce6467e4e74e49013f7e8f1a86d2cbeade608b4989cc0d9170457cd",
+          "w": 127,
+          "h": 158,
+          "label": "Choose which payday the pre-rent check belongs to. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-ed162b36000d393b220feb512ee0f535d80525ed7d00361e7d54df3f5ed99683",
+          "w": 114,
+          "h": 159,
+          "label": "Fictional: move the rent transfer to the payday before the 1st \u2014 a sprout, yours. Open the Master Planner."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "kitchen": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "39",
+      "renderMs": "16.98",
+      "queen": null,
+      "camera": "[2.5995,1.8999,2.4015]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The kitchen door \u2014 back to the Court."
+        },
+        {
+          "id": "drawer",
+          "w": 305,
+          "h": 209,
+          "label": "The drawer \u2014 the seven tools, for whoever wants them. Pull out the Plan Studio."
+        },
+        {
+          "id": "empty-card",
+          "w": 328,
+          "h": 154,
+          "label": "The empty recipe card \u2014 sit down and make a plan: five questions, one card. Pull out the Plan Studio."
+        },
+        {
+          "id": "folio",
+          "w": 155,
+          "h": 90,
+          "label": "The folio \u2014 one intention, a private note, room to think. Open the conversation folio."
+        },
+        {
+          "id": "hercules-chair",
+          "w": 284,
+          "h": 385,
+          "label": "Hercules, across the table. He asks one question at a time. Pull out the Plan Studio."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "boathouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "30",
+      "renderMs": "11.61",
+      "queen": null,
+      "camera": "[-2.4942,1.7494,2.4974]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "boat",
+          "w": 747,
+          "h": 595,
+          "label": "The rowboat in the slip, two thwarts \u2014 room for you and Jonathan \u2014 nothing yet. Spend a moment together."
+        },
+        {
+          "id": "letters",
+          "w": 399,
+          "h": 301,
+          "label": "The writing desk \u2014 nothing yet. Open the writing desk."
+        },
+        {
+          "id": "memories",
+          "w": 446,
+          "h": 174,
+          "label": "The memory shelf \u2014 nothing yet. Open a memory."
+        },
+        {
+          "id": "projector",
+          "w": 383,
+          "h": 373,
+          "label": "The projector, aimed at the sail \u2014 choose three memories."
+        },
+        {
+          "id": "shore-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The shore door \u2014 back to the Court."
+        },
+        {
+          "id": "wishes",
+          "w": 1440,
+          "h": 898,
+          "label": "The lanterns \u2014 nothing yet. Tend a wish."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "library": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "48",
+      "renderMs": "13.34",
+      "queen": null,
+      "camera": "[2.6031,2.3973,2.7029]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "balcony",
+          "w": 1440,
+          "h": 304,
+          "label": "The reading balcony \u2014 the accounts as stickies on its rail. Open the Standing Book."
+        },
+        {
+          "id": "bindery",
+          "w": 763,
+          "h": 356,
+          "label": "The Bindery \u2014 Lantern Row, Low Water, Cut Bank, The Glasshouse pane, The Handoff bench. One machine per divider. Open the Standing Book."
+        },
+        {
+          "id": "book",
+          "w": 406,
+          "h": 421,
+          "label": "The Standing Book, open on its lectern \u2014 every figure has a source, every page a place. Open the Standing Book."
+        },
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The hall door \u2014 back to the Court."
+        },
+        {
+          "id": "glasshouse-way",
+          "w": 222,
+          "h": 345,
+          "label": "The garden door \u2014 through to the Glasshouse."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "cottage": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "48",
+      "renderMs": "10.51",
+      "queen": null,
+      "camera": "[1.9259,2.0183,2.1509]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The cottage door, with his own cut beside it \u2014 back to the Court."
+        },
+        {
+          "id": "mirror",
+          "w": 585,
+          "h": 788,
+          "label": "The cheval glass, swung to the window \u2014 see how a piece sits before he wears it. Open the dressing room at the glass."
+        },
+        {
+          "id": "wardrobe",
+          "w": 546,
+          "h": 669,
+          "label": "The armoire, its doors a hand open \u2014 Hercules\u2019s rail of pieces. Open the dressing room."
+        },
+        {
+          "id": "window-seat",
+          "w": 645,
+          "h": 350,
+          "label": "Hercules asleep on the window seat \u2014 Hercules is in his own fur today. Talk with Hercules."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "errors": []
+  },
+  {
+    "tag": "taylor-390",
+    "court": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "298",
+      "renderMs": "47.18",
+      "queen": null,
+      "camera": "[0.554,6.1458,8.4245]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "crown",
+          "w": 70,
+          "h": 82,
+          "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
+        },
+        {
+          "id": "vines",
+          "w": 140,
+          "h": 173,
+          "label": "Her vines \u2014 up a week, down a week"
+        },
+        {
+          "id": "hands",
+          "w": 56,
+          "h": 107,
+          "label": "Her hands \u2014 what she holds for you"
+        },
+        {
+          "id": "face",
+          "w": 61,
+          "h": 55,
+          "label": "Her face \u2014 a portrait"
+        },
+        {
+          "id": "roots",
+          "w": 77,
+          "h": 80,
+          "label": "Her roots \u2014 what feeds her"
+        },
+        {
+          "id": "potRim",
+          "w": 77,
+          "h": 73,
+          "label": "The pot's rim \u2014 spin her, or come closer"
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44,
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
+        },
+        {
+          "id": "flagstone",
+          "w": 153,
+          "h": 71,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "bishop",
+          "w": 199,
+          "h": 343,
+          "label": "The Bishop \u2014 Prepare $0. Go down to the Cellar."
+        },
+        {
+          "id": "mailbox",
+          "w": 139,
+          "h": 190,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 116,
+          "h": 101,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
+          "id": "hercules",
+          "w": 137,
+          "h": 102,
+          "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 390,
+          "h": 207,
+          "label": "The court gate"
+        },
+        {
+          "id": "cellar-stair",
+          "w": 152,
+          "h": 136,
+          "label": "The cellar stairhead \u2014 go down to the Cellar"
+        },
+        {
+          "id": "library-hall",
+          "w": 160,
+          "h": 145,
+          "label": "The Library \u2014 the Standing Book's hall. Walk over and go in."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "tower": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "251",
+      "renderMs": "50.03",
+      "queen": null,
+      "camera": "[0.0529,1.2785,2.8952]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "bank:goal:GOAL-7e2d8d8d9b",
+          "w": 301,
+          "h": 373,
+          "label": "Kitchen renovation \u2014 $0 of $6,000. Open the Loft."
+        },
+        {
+          "id": "bank:goal:GOAL-fbe9267ec2",
+          "w": 346,
+          "h": 330,
+          "label": "A trip to the shore \u2014 $0 of $2,400. Open the Loft."
+        },
+        {
+          "id": "lamp",
+          "w": 390,
+          "h": 372,
+          "label": "The lamp on the landing"
+        },
+        {
+          "id": "window",
+          "w": 176,
+          "h": 228,
+          "label": "The window \u2014 the day coming in"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "cellar": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "44",
+      "renderMs": "35.92",
+      "queen": null,
+      "camera": "[1.1771,2.0309,0.6355]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 390,
+          "h": 768,
+          "label": "The stair up to the court"
+        },
+        {
+          "id": "rail",
+          "w": 390,
+          "h": 768,
+          "label": "The bill rail, taped with washi \u2014 7 jars on Sep 21 \u00b7 today"
+        },
+        {
+          "id": "waterline",
+          "w": 382,
+          "h": 374,
+          "label": "Prepare's water \u2014 $7,411 on Sep 21 \u00b7 today"
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-401145377a:2026-09-10",
+          "w": 84,
+          "h": 69,
+          "label": "Gym \u2014 $44, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-893c238bb4:2026-09-18",
+          "w": 96,
+          "h": 122,
+          "label": "Transit pass \u2014 $128, paid. Open the jar."
+        },
+        {
+          "id": "date",
+          "w": 189,
+          "h": 109,
+          "label": "The day on the rail \u2014 Sep 21 \u00b7 today"
+        },
+        {
+          "id": "today",
+          "w": 248,
+          "h": 122,
+          "label": "Back to today on the rail"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "glasshouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "54",
+      "renderMs": "26.99",
+      "queen": null,
+      "camera": "[1.0938,1.7403,2.3157]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "beds",
+          "w": 377,
+          "h": 118,
+          "label": "The beds around the glasshouse \u2014 unfold the Calendar."
+        },
+        {
+          "id": "garden-door",
+          "w": 390,
+          "h": 768,
+          "label": "The garden door \u2014 back to the Court."
+        },
+        {
+          "id": "pot:task/TASK-2f878b9ee8d81a6728b414ac5a2236000a968c446a0f771e0d72f960ea7b2ad6",
+          "w": 87,
+          "h": 121,
+          "label": "Sign the Charter together and name who holds the Fund. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-569c20b0dce6467e4e74e49013f7e8f1a86d2cbeade608b4989cc0d9170457cd",
+          "w": 103,
+          "h": 118,
+          "label": "Choose which payday the pre-rent check belongs to. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-ed162b36000d393b220feb512ee0f535d80525ed7d00361e7d54df3f5ed99683",
+          "w": 95,
+          "h": 119,
+          "label": "Fictional: move the rent transfer to the payday before the 1st \u2014 a sprout, yours. Open the Master Planner."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "kitchen": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "37",
+      "renderMs": "21.95",
+      "queen": null,
+      "camera": "[2.2186,2.0002,2.482]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "court-door",
+          "w": 390,
+          "h": 768,
+          "label": "The kitchen door \u2014 back to the Court."
+        },
+        {
+          "id": "drawer",
+          "w": 229,
+          "h": 159,
+          "label": "The drawer \u2014 the seven tools, for whoever wants them. Pull out the Plan Studio."
+        },
+        {
+          "id": "empty-card",
+          "w": 231,
+          "h": 117,
+          "label": "The empty recipe card \u2014 sit down and make a plan: five questions, one card. Pull out the Plan Studio."
+        },
+        {
+          "id": "folio",
+          "w": 109,
+          "h": 66,
+          "label": "The folio \u2014 one intention, a private note, room to think. Open the conversation folio."
+        },
+        {
+          "id": "hercules-chair",
+          "w": 200,
+          "h": 271,
+          "label": "Hercules, across the table. He asks one question at a time. Pull out the Plan Studio."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "boathouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "26",
+      "renderMs": "19.21",
+      "queen": null,
+      "camera": "[-2.0373,1.7108,2.5649]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "boat",
+          "w": 390,
+          "h": 502,
+          "label": "The rowboat in the slip, two thwarts \u2014 room for you and Jonathan \u2014 nothing yet. Spend a moment together."
+        },
+        {
+          "id": "memories",
+          "w": 327,
+          "h": 130,
+          "label": "The memory shelf \u2014 nothing yet. Open a memory."
+        },
+        {
+          "id": "projector",
+          "w": 262,
+          "h": 262,
+          "label": "The projector, aimed at the sail \u2014 choose three memories."
+        },
+        {
+          "id": "shore-door",
+          "w": 390,
+          "h": 768,
+          "label": "The shore door \u2014 back to the Court."
+        },
+        {
+          "id": "wishes",
+          "w": 390,
+          "h": 567,
+          "label": "The lanterns \u2014 nothing yet. Tend a wish."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "library": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "40",
+      "renderMs": "19.42",
+      "queen": null,
+      "camera": "[2.395,2.5998,2.8022]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "balcony",
+          "w": 390,
+          "h": 172,
+          "label": "The reading balcony \u2014 the accounts as stickies on its rail. Open the Standing Book."
+        },
+        {
+          "id": "bindery",
+          "w": 390,
+          "h": 251,
+          "label": "The Bindery \u2014 Lantern Row, Low Water, Cut Bank, The Glasshouse pane, The Handoff bench. One machine per divider. Open the Standing Book."
+        },
+        {
+          "id": "book",
+          "w": 273,
+          "h": 291,
+          "label": "The Standing Book, open on its lectern \u2014 every figure has a source, every page a place. Open the Standing Book."
+        },
+        {
+          "id": "court-door",
+          "w": 390,
+          "h": 768,
+          "label": "The hall door \u2014 back to the Court."
+        },
+        {
+          "id": "glasshouse-way",
+          "w": 152,
+          "h": 235,
+          "label": "The garden door \u2014 through to the Glasshouse."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "cottage": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "38",
+      "renderMs": "14.09",
+      "queen": null,
+      "camera": "[1.7421,2.0008,1.9343]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "court-door",
+          "w": 390,
+          "h": 768,
+          "label": "The cottage door, with his own cut beside it \u2014 back to the Court."
+        },
+        {
+          "id": "mirror",
+          "w": 390,
+          "h": 580,
+          "label": "The cheval glass, swung to the window \u2014 see how a piece sits before he wears it. Open the dressing room at the glass."
+        },
+        {
+          "id": "wardrobe",
+          "w": 390,
+          "h": 483,
+          "label": "The armoire, its doors a hand open \u2014 Hercules\u2019s rail of pieces. Open the dressing room."
+        },
+        {
+          "id": "window-seat",
+          "w": 390,
+          "h": 257,
+          "label": "Hercules asleep on the window seat \u2014 Hercules is in his own fur today. Talk with Hercules."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "errors": []
+  },
+  {
+    "tag": "taylor-1440",
+    "court": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "380",
+      "renderMs": "33.35",
+      "queen": null,
+      "camera": "[5.2548,6.7215,9.6036]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "crown",
+          "w": 96,
+          "h": 103,
+          "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
+        },
+        {
+          "id": "vines",
+          "w": 187,
+          "h": 227,
+          "label": "Her vines \u2014 up a week, down a week"
+        },
+        {
+          "id": "hands",
+          "w": 83,
+          "h": 135,
+          "label": "Her hands \u2014 what she holds for you"
+        },
+        {
+          "id": "face",
+          "w": 74,
+          "h": 74,
+          "label": "Her face \u2014 a portrait"
+        },
+        {
+          "id": "roots",
+          "w": 110,
+          "h": 107,
+          "label": "Her roots \u2014 what feeds her"
+        },
+        {
+          "id": "potRim",
+          "w": 117,
+          "h": 96,
+          "label": "The pot's rim \u2014 spin her, or come closer"
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44,
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
+        },
+        {
+          "id": "flagstone",
+          "w": 200,
+          "h": 109,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "rook",
+          "w": 178,
+          "h": 259,
+          "label": "The Rook \u2014 Build $0. Climb the Tower."
+        },
+        {
+          "id": "bishop",
+          "w": 279,
+          "h": 406,
+          "label": "The Bishop \u2014 Prepare $0. Go down to the Cellar."
+        },
+        {
+          "id": "knight",
+          "w": 133,
+          "h": 198,
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
+        },
+        {
+          "id": "cistern",
+          "w": 165,
+          "h": 145,
+          "label": "The cistern \u2014 Protect $853 of $12,243. Open Protect."
+        },
+        {
+          "id": "sundial",
+          "w": 275,
+          "h": 345,
+          "label": "The sundial \u2014 next: Toronto Hydro"
+        },
+        {
+          "id": "mailbox",
+          "w": 161,
+          "h": 224,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 126,
+          "h": 127,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
+          "id": "hercules",
+          "w": 188,
+          "h": 150,
+          "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 359,
+          "h": 358,
+          "label": "The court gate"
+        },
+        {
+          "id": "boathouse",
+          "w": 237,
+          "h": 199,
+          "label": "The Boathouse, down on the shore \u2014 the two of you. Go there when you want it."
+        },
+        {
+          "id": "cellar-stair",
+          "w": 199,
+          "h": 188,
+          "label": "The cellar stairhead \u2014 go down to the Cellar"
+        },
+        {
+          "id": "glasshouse-shed",
+          "w": 138,
+          "h": 124,
+          "label": "The Glasshouse, in the garden behind the Library \u2014 the planner's benches. Walk over and go in."
+        },
+        {
+          "id": "kitchen-cottage",
+          "w": 202,
+          "h": 182,
+          "label": "The Kitchen, smoke up \u2014 sit down and make a plan. Walk over and go in."
+        },
+        {
+          "id": "library-hall",
+          "w": 190,
+          "h": 180,
+          "label": "The Library \u2014 the Standing Book's hall. Walk over and go in."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "tower": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "265",
+      "renderMs": "23.20",
+      "queen": null,
+      "camera": "[0.3183,1.1323,3.422]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 1440,
+          "h": 900,
+          "label": "The stair \u2014 back down to the Court"
+        },
+        {
+          "id": "jug",
+          "w": 956,
+          "h": 794,
+          "label": "The jug \u2014 $6,746 safe to pour. Open the Loft."
+        },
+        {
+          "id": "gun",
+          "w": 740,
+          "h": 571,
+          "label": "The money gun \u2014 throw a bill at a bank. Open the Loft."
+        },
+        {
+          "id": "shelf:floor-1",
+          "w": 1440,
+          "h": 900,
+          "label": "An empty floor \u2014 nothing on the shelf yet"
+        },
+        {
+          "id": "shelf:shelf-1",
+          "w": 1375,
+          "h": 784,
+          "label": "The landing shelf \u2014 5 parts of 5, mark at 100%"
+        },
+        {
+          "id": "bank:goal:GOAL-7e2d8d8d9b",
+          "w": 377,
+          "h": 481,
+          "label": "Kitchen renovation \u2014 $0 of $6,000. Open the Loft."
+        },
+        {
+          "id": "bank:goal:GOAL-fbe9267ec2",
+          "w": 437,
+          "h": 378,
+          "label": "A trip to the shore \u2014 $0 of $2,400. Open the Loft."
+        },
+        {
+          "id": "lamp",
+          "w": 486,
+          "h": 461,
+          "label": "The lamp on the landing"
+        },
+        {
+          "id": "window",
+          "w": 238,
+          "h": 315,
+          "label": "The window \u2014 the day coming in"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "cellar": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "57",
+      "renderMs": "17.79",
+      "queen": null,
+      "camera": "[0.4193,1.9207,2.2793]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 1440,
+          "h": 900,
+          "label": "The stair up to the court"
+        },
+        {
+          "id": "rail",
+          "w": 1440,
+          "h": 193,
+          "label": "The bill rail, taped with washi \u2014 7 jars on Sep 21 \u00b7 today"
+        },
+        {
+          "id": "waterline",
+          "w": 519,
+          "h": 450,
+          "label": "Prepare's water \u2014 $7,411 on Sep 21 \u00b7 today"
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2070622163:2026-09-26",
+          "w": 90,
+          "h": 112,
+          "label": "Toronto Hydro \u2014 $118, not its day yet. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2f4ddfd35f:2026-09-06",
+          "w": 103,
+          "h": 64,
+          "label": "Streaming \u2014 $16, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-37e9012419:2026-09-01",
+          "w": 223,
+          "h": 245,
+          "label": "Rent \u2014 $2,375, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-401145377a:2026-09-10",
+          "w": 90,
+          "h": 71,
+          "label": "Gym \u2014 $44, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-893c238bb4:2026-09-18",
+          "w": 77,
+          "h": 113,
+          "label": "Transit pass \u2014 $128, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-ed0e5b5f44:2026-09-30",
+          "w": 116,
+          "h": 106,
+          "label": "Freedom Mobile \u2014 $96, not its day yet. Open the jar."
+        },
+        {
+          "id": "date",
+          "w": 186,
+          "h": 98,
+          "label": "The day on the rail \u2014 Sep 21 \u00b7 today"
+        },
+        {
+          "id": "today",
+          "w": 225,
+          "h": 99,
+          "label": "Back to today on the rail"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "glasshouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "68",
+      "renderMs": "21.99",
+      "queen": null,
+      "camera": "[0.7012,1.9438,2.942]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "beds",
+          "w": 507,
+          "h": 154,
+          "label": "The beds around the glasshouse \u2014 unfold the Calendar."
+        },
+        {
+          "id": "garden-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The garden door \u2014 back to the Court."
+        },
+        {
+          "id": "harvest",
+          "w": 1440,
+          "h": 619,
+          "label": "The harvest shelf \u2014 1 harvested this week. Open the Master Planner."
+        },
+        {
+          "id": "perennials",
+          "w": 1440,
+          "h": 900,
+          "label": "The long bed \u2014 1 perennial. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-2f878b9ee8d81a6728b414ac5a2236000a968c446a0f771e0d72f960ea7b2ad6",
+          "w": 108,
+          "h": 161,
+          "label": "Sign the Charter together and name who holds the Fund. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-569c20b0dce6467e4e74e49013f7e8f1a86d2cbeade608b4989cc0d9170457cd",
+          "w": 127,
+          "h": 158,
+          "label": "Choose which payday the pre-rent check belongs to. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-ed162b36000d393b220feb512ee0f535d80525ed7d00361e7d54df3f5ed99683",
+          "w": 114,
+          "h": 159,
+          "label": "Fictional: move the rent transfer to the payday before the 1st \u2014 a sprout, yours. Open the Master Planner."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "kitchen": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "39",
+      "renderMs": "18.50",
+      "queen": null,
+      "camera": "[2.5995,1.8999,2.4015]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The kitchen door \u2014 back to the Court."
+        },
+        {
+          "id": "drawer",
+          "w": 305,
+          "h": 209,
+          "label": "The drawer \u2014 the seven tools, for whoever wants them. Pull out the Plan Studio."
+        },
+        {
+          "id": "empty-card",
+          "w": 328,
+          "h": 154,
+          "label": "The empty recipe card \u2014 sit down and make a plan: five questions, one card. Pull out the Plan Studio."
+        },
+        {
+          "id": "folio",
+          "w": 155,
+          "h": 90,
+          "label": "The folio \u2014 one intention, a private note, room to think. Open the conversation folio."
+        },
+        {
+          "id": "hercules-chair",
+          "w": 284,
+          "h": 385,
+          "label": "Hercules, across the table. He asks one question at a time. Pull out the Plan Studio."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "boathouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "30",
+      "renderMs": "13.92",
+      "queen": null,
+      "camera": "[-2.4942,1.7494,2.4974]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "boat",
+          "w": 747,
+          "h": 595,
+          "label": "The rowboat in the slip, two thwarts \u2014 room for you and Jonathan \u2014 nothing yet. Spend a moment together."
+        },
+        {
+          "id": "letters",
+          "w": 399,
+          "h": 301,
+          "label": "The writing desk \u2014 nothing yet. Open the writing desk."
+        },
+        {
+          "id": "memories",
+          "w": 446,
+          "h": 174,
+          "label": "The memory shelf \u2014 nothing yet. Open a memory."
+        },
+        {
+          "id": "projector",
+          "w": 383,
+          "h": 373,
+          "label": "The projector, aimed at the sail \u2014 choose three memories."
+        },
+        {
+          "id": "shore-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The shore door \u2014 back to the Court."
+        },
+        {
+          "id": "wishes",
+          "w": 1440,
+          "h": 898,
+          "label": "The lanterns \u2014 nothing yet. Tend a wish."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "library": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "48",
+      "renderMs": "15.88",
+      "queen": null,
+      "camera": "[2.6031,2.3973,2.7029]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "balcony",
+          "w": 1440,
+          "h": 304,
+          "label": "The reading balcony \u2014 the accounts as stickies on its rail. Open the Standing Book."
+        },
+        {
+          "id": "bindery",
+          "w": 763,
+          "h": 356,
+          "label": "The Bindery \u2014 Lantern Row, Low Water, Cut Bank, The Glasshouse pane, The Handoff bench. One machine per divider. Open the Standing Book."
+        },
+        {
+          "id": "book",
+          "w": 406,
+          "h": 421,
+          "label": "The Standing Book, open on its lectern \u2014 every figure has a source, every page a place. Open the Standing Book."
+        },
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The hall door \u2014 back to the Court."
+        },
+        {
+          "id": "glasshouse-way",
+          "w": 222,
+          "h": 345,
+          "label": "The garden door \u2014 through to the Glasshouse."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "cottage": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "48",
+      "renderMs": "9.53",
+      "queen": null,
+      "camera": "[1.9259,2.0183,2.1509]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The cottage door, with his own cut beside it \u2014 back to the Court."
+        },
+        {
+          "id": "mirror",
+          "w": 585,
+          "h": 788,
+          "label": "The cheval glass, swung to the window \u2014 see how a piece sits before he wears it. Open the dressing room at the glass."
+        },
+        {
+          "id": "wardrobe",
+          "w": 546,
+          "h": 669,
+          "label": "The armoire, its doors a hand open \u2014 Hercules\u2019s rail of pieces. Open the dressing room."
+        },
+        {
+          "id": "window-seat",
+          "w": 645,
+          "h": 350,
+          "label": "Hercules asleep on the window seat \u2014 Hercules is in his own fur today. Talk with Hercules."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "errors": []
+  },
+  {
+    "tag": "newfoundland-390",
+    "court": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "303",
+      "renderMs": "37.00",
+      "queen": null,
+      "camera": "[0.554,6.1458,8.4245]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "crown",
+          "w": 70,
+          "h": 82,
+          "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
+        },
+        {
+          "id": "vines",
+          "w": 140,
+          "h": 173,
+          "label": "Her vines \u2014 up a week, down a week"
+        },
+        {
+          "id": "hands",
+          "w": 56,
+          "h": 107,
+          "label": "Her hands \u2014 what she holds for you"
+        },
+        {
+          "id": "face",
+          "w": 61,
+          "h": 55,
+          "label": "Her face \u2014 a portrait"
+        },
+        {
+          "id": "roots",
+          "w": 77,
+          "h": 80,
+          "label": "Her roots \u2014 what feeds her"
+        },
+        {
+          "id": "potRim",
+          "w": 77,
+          "h": 73,
+          "label": "The pot's rim \u2014 spin her, or come closer"
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44,
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
+        },
+        {
+          "id": "flagstone",
+          "w": 153,
+          "h": 71,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "bishop",
+          "w": 199,
+          "h": 343,
+          "label": "The Bishop \u2014 Prepare $0. Go down to the Cellar."
+        },
+        {
+          "id": "mailbox",
+          "w": 139,
+          "h": 190,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 116,
+          "h": 101,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
+          "id": "hercules",
+          "w": 137,
+          "h": 102,
+          "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 390,
+          "h": 207,
+          "label": "The court gate"
+        },
+        {
+          "id": "cellar-stair",
+          "w": 152,
+          "h": 136,
+          "label": "The cellar stairhead \u2014 go down to the Cellar"
+        },
+        {
+          "id": "library-hall",
+          "w": 160,
+          "h": 145,
+          "label": "The Library \u2014 the Standing Book's hall. Walk over and go in."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "tower": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "251",
+      "renderMs": "41.82",
+      "queen": null,
+      "camera": "[0.0529,1.2785,2.8952]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "bank:goal:GOAL-7e2d8d8d9b",
+          "w": 301,
+          "h": 373,
+          "label": "Kitchen renovation \u2014 $0 of $6,000. Open the Loft."
+        },
+        {
+          "id": "bank:goal:GOAL-fbe9267ec2",
+          "w": 346,
+          "h": 330,
+          "label": "A trip to the shore \u2014 $0 of $2,400. Open the Loft."
+        },
+        {
+          "id": "lamp",
+          "w": 390,
+          "h": 372,
+          "label": "The lamp on the landing"
+        },
+        {
+          "id": "window",
+          "w": 176,
+          "h": 228,
+          "label": "The window \u2014 the day coming in"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "cellar": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "44",
+      "renderMs": "34.74",
+      "queen": null,
+      "camera": "[1.1771,2.0309,0.6355]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 390,
+          "h": 768,
+          "label": "The stair up to the court"
+        },
+        {
+          "id": "rail",
+          "w": 390,
+          "h": 768,
+          "label": "The bill rail, lashed with rope \u2014 7 jars on Sep 21 \u00b7 today"
+        },
+        {
+          "id": "waterline",
+          "w": 382,
+          "h": 374,
+          "label": "Prepare's water \u2014 $7,411 on Sep 21 \u00b7 today"
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-401145377a:2026-09-10",
+          "w": 84,
+          "h": 69,
+          "label": "Gym \u2014 $44, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-893c238bb4:2026-09-18",
+          "w": 96,
+          "h": 122,
+          "label": "Transit pass \u2014 $128, paid. Open the jar."
+        },
+        {
+          "id": "date",
+          "w": 189,
+          "h": 109,
+          "label": "The day on the rail \u2014 Sep 21 \u00b7 today"
+        },
+        {
+          "id": "today",
+          "w": 248,
+          "h": 122,
+          "label": "Back to today on the rail"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "glasshouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "54",
+      "renderMs": "27.50",
+      "queen": null,
+      "camera": "[1.0938,1.7403,2.3157]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "beds",
+          "w": 377,
+          "h": 118,
+          "label": "The beds around the glasshouse \u2014 unfold the Calendar."
+        },
+        {
+          "id": "garden-door",
+          "w": 390,
+          "h": 768,
+          "label": "The garden door \u2014 back to the Court."
+        },
+        {
+          "id": "pot:task/TASK-2f878b9ee8d81a6728b414ac5a2236000a968c446a0f771e0d72f960ea7b2ad6",
+          "w": 87,
+          "h": 121,
+          "label": "Sign the Charter together and name who holds the Fund. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-569c20b0dce6467e4e74e49013f7e8f1a86d2cbeade608b4989cc0d9170457cd",
+          "w": 103,
+          "h": 118,
+          "label": "Choose which payday the pre-rent check belongs to. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-ed162b36000d393b220feb512ee0f535d80525ed7d00361e7d54df3f5ed99683",
+          "w": 95,
+          "h": 119,
+          "label": "Fictional: move the rent transfer to the payday before the 1st \u2014 a sprout, yours. Open the Master Planner."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "kitchen": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "37",
+      "renderMs": "22.68",
+      "queen": null,
+      "camera": "[2.2186,2.0002,2.482]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "court-door",
+          "w": 390,
+          "h": 768,
+          "label": "The kitchen door \u2014 back to the Court."
+        },
+        {
+          "id": "drawer",
+          "w": 229,
+          "h": 159,
+          "label": "The drawer \u2014 the seven tools, for whoever wants them. Pull out the Plan Studio."
+        },
+        {
+          "id": "empty-card",
+          "w": 231,
+          "h": 117,
+          "label": "The empty recipe card \u2014 sit down and make a plan: five questions, one card. Pull out the Plan Studio."
+        },
+        {
+          "id": "folio",
+          "w": 109,
+          "h": 66,
+          "label": "The folio \u2014 one intention, a private note, room to think. Open the conversation folio."
+        },
+        {
+          "id": "hercules-chair",
+          "w": 200,
+          "h": 271,
+          "label": "Hercules, across the table. He asks one question at a time. Pull out the Plan Studio."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "boathouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "26",
+      "renderMs": "19.72",
+      "queen": null,
+      "camera": "[-2.0373,1.7108,2.5649]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "boat",
+          "w": 390,
+          "h": 502,
+          "label": "The rowboat in the slip, two thwarts \u2014 room for you and Jonathan \u2014 nothing yet. Spend a moment together."
+        },
+        {
+          "id": "memories",
+          "w": 327,
+          "h": 130,
+          "label": "The memory shelf \u2014 nothing yet. Open a memory."
+        },
+        {
+          "id": "projector",
+          "w": 262,
+          "h": 262,
+          "label": "The projector, aimed at the sail \u2014 choose three memories."
+        },
+        {
+          "id": "shore-door",
+          "w": 390,
+          "h": 768,
+          "label": "The shore door \u2014 back to the Court."
+        },
+        {
+          "id": "wishes",
+          "w": 390,
+          "h": 567,
+          "label": "The lanterns \u2014 nothing yet. Tend a wish."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "library": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "40",
+      "renderMs": "19.41",
+      "queen": null,
+      "camera": "[2.395,2.5998,2.8022]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "balcony",
+          "w": 390,
+          "h": 172,
+          "label": "The reading balcony \u2014 the accounts as stickies on its rail. Open the Standing Book."
+        },
+        {
+          "id": "bindery",
+          "w": 390,
+          "h": 251,
+          "label": "The Bindery \u2014 Lantern Row, Low Water, Cut Bank, The Glasshouse pane, The Handoff bench. One machine per divider. Open the Standing Book."
+        },
+        {
+          "id": "book",
+          "w": 273,
+          "h": 291,
+          "label": "The Standing Book, open on its lectern \u2014 every figure has a source, every page a place. Open the Standing Book."
+        },
+        {
+          "id": "court-door",
+          "w": 390,
+          "h": 768,
+          "label": "The hall door \u2014 back to the Court."
+        },
+        {
+          "id": "glasshouse-way",
+          "w": 152,
+          "h": 235,
+          "label": "The garden door \u2014 through to the Glasshouse."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "cottage": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "38",
+      "renderMs": "13.89",
+      "queen": null,
+      "camera": "[1.7421,2.0008,1.9343]",
+      "stage": {
+        "w": 390,
+        "h": 768
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "court-door",
+          "w": 390,
+          "h": 768,
+          "label": "The cottage door, with his own cut beside it \u2014 back to the Court."
+        },
+        {
+          "id": "mirror",
+          "w": 390,
+          "h": 580,
+          "label": "The cheval glass, swung to the window \u2014 see how a piece sits before he wears it. Open the dressing room at the glass."
+        },
+        {
+          "id": "wardrobe",
+          "w": 390,
+          "h": 483,
+          "label": "The armoire, its doors a hand open \u2014 Hercules\u2019s rail of pieces. Open the dressing room."
+        },
+        {
+          "id": "window-seat",
+          "w": 390,
+          "h": 257,
+          "label": "Hercules asleep on the window seat \u2014 Hercules is in his own fur today. Talk with Hercules."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 886,
+      "innerHeight": 844
+    },
+    "errors": []
+  },
+  {
+    "tag": "newfoundland-1440",
+    "court": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "385",
+      "renderMs": "41.57",
+      "queen": null,
+      "camera": "[5.2548,6.7215,9.6036]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "crown",
+          "w": 96,
+          "h": 103,
+          "label": "Her crown \u2014 tap for the growth lens, up or down for more or less garden"
+        },
+        {
+          "id": "vines",
+          "w": 187,
+          "h": 227,
+          "label": "Her vines \u2014 up a week, down a week"
+        },
+        {
+          "id": "hands",
+          "w": 83,
+          "h": 135,
+          "label": "Her hands \u2014 what she holds for you"
+        },
+        {
+          "id": "face",
+          "w": 74,
+          "h": 74,
+          "label": "Her face \u2014 a portrait"
+        },
+        {
+          "id": "roots",
+          "w": 110,
+          "h": 107,
+          "label": "Her roots \u2014 what feeds her"
+        },
+        {
+          "id": "potRim",
+          "w": 117,
+          "h": 96,
+          "label": "The pot's rim \u2014 spin her, or come closer"
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44,
+          "label": "The Queen \u2014 Everyday $6,746. Meet the Queen."
+        },
+        {
+          "id": "flagstone",
+          "w": 200,
+          "h": 109,
+          "label": "The Everyday flagstone \u2014 $6,746"
+        },
+        {
+          "id": "rook",
+          "w": 178,
+          "h": 259,
+          "label": "The Rook \u2014 Build $0. Climb the Tower."
+        },
+        {
+          "id": "bishop",
+          "w": 279,
+          "h": 406,
+          "label": "The Bishop \u2014 Prepare $0. Go down to the Cellar."
+        },
+        {
+          "id": "knight",
+          "w": 133,
+          "h": 198,
+          "label": "The Knight \u2014 Protect $853. Open the cistern."
+        },
+        {
+          "id": "cistern",
+          "w": 165,
+          "h": 145,
+          "label": "The cistern \u2014 Protect $853 of $12,243. Open Protect."
+        },
+        {
+          "id": "sundial",
+          "w": 275,
+          "h": 345,
+          "label": "The sundial \u2014 next: Toronto Hydro"
+        },
+        {
+          "id": "mailbox",
+          "w": 161,
+          "h": 224,
+          "label": "The mailbox, flag up \u2014 she noticed something"
+        },
+        {
+          "id": "slip",
+          "w": 126,
+          "h": 127,
+          "label": "Since you were here \u2014 nothing yet"
+        },
+        {
+          "id": "hercules",
+          "w": 188,
+          "h": 150,
+          "label": "Hercules, asleep"
+        },
+        {
+          "id": "gate",
+          "w": 359,
+          "h": 358,
+          "label": "The court gate"
+        },
+        {
+          "id": "boathouse",
+          "w": 237,
+          "h": 199,
+          "label": "The Boathouse, down on the shore \u2014 the two of you. Go there when you want it."
+        },
+        {
+          "id": "cellar-stair",
+          "w": 199,
+          "h": 188,
+          "label": "The cellar stairhead \u2014 go down to the Cellar"
+        },
+        {
+          "id": "glasshouse-shed",
+          "w": 138,
+          "h": 124,
+          "label": "The Glasshouse, in the garden behind the Library \u2014 the planner's benches. Walk over and go in."
+        },
+        {
+          "id": "kitchen-cottage",
+          "w": 202,
+          "h": 182,
+          "label": "The Kitchen, smoke up \u2014 sit down and make a plan. Walk over and go in."
+        },
+        {
+          "id": "library-hall",
+          "w": 190,
+          "h": 180,
+          "label": "The Library \u2014 the Standing Book's hall. Walk over and go in."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "tower": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "265",
+      "renderMs": "34.78",
+      "queen": null,
+      "camera": "[0.3183,1.1323,3.422]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 1440,
+          "h": 900,
+          "label": "The stair \u2014 back down to the Court"
+        },
+        {
+          "id": "jug",
+          "w": 956,
+          "h": 794,
+          "label": "The jug \u2014 $6,746 safe to pour. Open the Loft."
+        },
+        {
+          "id": "gun",
+          "w": 740,
+          "h": 571,
+          "label": "The money gun \u2014 throw a bill at a bank. Open the Loft."
+        },
+        {
+          "id": "shelf:floor-1",
+          "w": 1440,
+          "h": 900,
+          "label": "An empty floor \u2014 nothing on the shelf yet"
+        },
+        {
+          "id": "shelf:shelf-1",
+          "w": 1375,
+          "h": 784,
+          "label": "The landing shelf \u2014 5 parts of 5, mark at 100%"
+        },
+        {
+          "id": "bank:goal:GOAL-7e2d8d8d9b",
+          "w": 377,
+          "h": 481,
+          "label": "Kitchen renovation \u2014 $0 of $6,000. Open the Loft."
+        },
+        {
+          "id": "bank:goal:GOAL-fbe9267ec2",
+          "w": 437,
+          "h": 378,
+          "label": "A trip to the shore \u2014 $0 of $2,400. Open the Loft."
+        },
+        {
+          "id": "lamp",
+          "w": 486,
+          "h": 461,
+          "label": "The lamp on the landing"
+        },
+        {
+          "id": "window",
+          "w": 238,
+          "h": 315,
+          "label": "The window \u2014 the day coming in"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "cellar": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "57",
+      "renderMs": "19.80",
+      "queen": null,
+      "camera": "[0.4193,1.9207,2.2793]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "stair",
+          "w": 1440,
+          "h": 900,
+          "label": "The stair up to the court"
+        },
+        {
+          "id": "rail",
+          "w": 1440,
+          "h": 193,
+          "label": "The bill rail, lashed with rope \u2014 7 jars on Sep 21 \u00b7 today"
+        },
+        {
+          "id": "waterline",
+          "w": 519,
+          "h": 450,
+          "label": "Prepare's water \u2014 $7,411 on Sep 21 \u00b7 today"
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2070622163:2026-09-26",
+          "w": 90,
+          "h": 112,
+          "label": "Toronto Hydro \u2014 $118, not its day yet. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-2f4ddfd35f:2026-09-06",
+          "w": 103,
+          "h": 64,
+          "label": "Streaming \u2014 $16, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-37e9012419:2026-09-01",
+          "w": 223,
+          "h": 245,
+          "label": "Rent \u2014 $2,375, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-401145377a:2026-09-10",
+          "w": 90,
+          "h": 71,
+          "label": "Gym \u2014 $44, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-893c238bb4:2026-09-18",
+          "w": 77,
+          "h": 113,
+          "label": "Transit pass \u2014 $128, paid. Open the jar."
+        },
+        {
+          "id": "jar:cellar:recurrence:REC-ed0e5b5f44:2026-09-30",
+          "w": 116,
+          "h": 106,
+          "label": "Freedom Mobile \u2014 $96, not its day yet. Open the jar."
+        },
+        {
+          "id": "date",
+          "w": 186,
+          "h": 98,
+          "label": "The day on the rail \u2014 Sep 21 \u00b7 today"
+        },
+        {
+          "id": "today",
+          "w": 225,
+          "h": 99,
+          "label": "Back to today on the rail"
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "glasshouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "68",
+      "renderMs": "22.70",
+      "queen": null,
+      "camera": "[0.7012,1.9438,2.942]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "beds",
+          "w": 507,
+          "h": 154,
+          "label": "The beds around the glasshouse \u2014 unfold the Calendar."
+        },
+        {
+          "id": "garden-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The garden door \u2014 back to the Court."
+        },
+        {
+          "id": "harvest",
+          "w": 1440,
+          "h": 619,
+          "label": "The harvest shelf \u2014 1 harvested this week. Open the Master Planner."
+        },
+        {
+          "id": "perennials",
+          "w": 1440,
+          "h": 900,
+          "label": "The long bed \u2014 1 perennial. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-2f878b9ee8d81a6728b414ac5a2236000a968c446a0f771e0d72f960ea7b2ad6",
+          "w": 108,
+          "h": 161,
+          "label": "Sign the Charter together and name who holds the Fund. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-569c20b0dce6467e4e74e49013f7e8f1a86d2cbeade608b4989cc0d9170457cd",
+          "w": 127,
+          "h": 158,
+          "label": "Choose which payday the pre-rent check belongs to. \u2014 a seed, nobody's yet. Open the Master Planner."
+        },
+        {
+          "id": "pot:task/TASK-ed162b36000d393b220feb512ee0f535d80525ed7d00361e7d54df3f5ed99683",
+          "w": 114,
+          "h": 159,
+          "label": "Fictional: move the rent transfer to the payday before the 1st \u2014 a sprout, yours. Open the Master Planner."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "kitchen": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "39",
+      "renderMs": "18.35",
+      "queen": null,
+      "camera": "[2.5995,1.8999,2.4015]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The kitchen door \u2014 back to the Court."
+        },
+        {
+          "id": "drawer",
+          "w": 305,
+          "h": 209,
+          "label": "The drawer \u2014 the seven tools, for whoever wants them. Pull out the Plan Studio."
+        },
+        {
+          "id": "empty-card",
+          "w": 328,
+          "h": 154,
+          "label": "The empty recipe card \u2014 sit down and make a plan: five questions, one card. Pull out the Plan Studio."
+        },
+        {
+          "id": "folio",
+          "w": 155,
+          "h": 90,
+          "label": "The folio \u2014 one intention, a private note, room to think. Open the conversation folio."
+        },
+        {
+          "id": "hercules-chair",
+          "w": 284,
+          "h": 385,
+          "label": "Hercules, across the table. He asks one question at a time. Pull out the Plan Studio."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "boathouse": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "30",
+      "renderMs": "13.24",
+      "queen": null,
+      "camera": "[-2.4942,1.7494,2.4974]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "boat",
+          "w": 747,
+          "h": 595,
+          "label": "The rowboat in the slip, two thwarts \u2014 room for you and Jonathan \u2014 nothing yet. Spend a moment together."
+        },
+        {
+          "id": "letters",
+          "w": 399,
+          "h": 301,
+          "label": "The writing desk \u2014 nothing yet. Open the writing desk."
+        },
+        {
+          "id": "memories",
+          "w": 446,
+          "h": 174,
+          "label": "The memory shelf \u2014 nothing yet. Open a memory."
+        },
+        {
+          "id": "projector",
+          "w": 383,
+          "h": 373,
+          "label": "The projector, aimed at the sail \u2014 choose three memories."
+        },
+        {
+          "id": "shore-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The shore door \u2014 back to the Court."
+        },
+        {
+          "id": "wishes",
+          "w": 1440,
+          "h": 898,
+          "label": "The lanterns \u2014 nothing yet. Tend a wish."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "library": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "48",
+      "renderMs": "15.06",
+      "queen": null,
+      "camera": "[2.6031,2.3973,2.7029]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "balcony",
+          "w": 1440,
+          "h": 304,
+          "label": "The reading balcony \u2014 the accounts as stickies on its rail. Open the Standing Book."
+        },
+        {
+          "id": "bindery",
+          "w": 763,
+          "h": 356,
+          "label": "The Bindery \u2014 Lantern Row, Low Water, Cut Bank, The Glasshouse pane, The Handoff bench. One machine per divider. Open the Standing Book."
+        },
+        {
+          "id": "book",
+          "w": 406,
+          "h": 421,
+          "label": "The Standing Book, open on its lectern \u2014 every figure has a source, every page a place. Open the Standing Book."
+        },
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The hall door \u2014 back to the Court."
+        },
+        {
+          "id": "glasshouse-way",
+          "w": 222,
+          "h": 345,
+          "label": "The garden door \u2014 through to the Glasshouse."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "cottage": {
+      "status": "ready",
+      "tier": "lite",
+      "renderer": "active",
+      "drawCalls": "48",
+      "renderMs": "12.32",
+      "queen": null,
+      "camera": "[1.9259,2.0183,2.1509]",
+      "stage": {
+        "w": 1440,
+        "h": 900
+      },
+      "court": true,
+      "twins": [
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900,
+          "label": "The cottage door, with his own cut beside it \u2014 back to the Court."
+        },
+        {
+          "id": "mirror",
+          "w": 585,
+          "h": 788,
+          "label": "The cheval glass, swung to the window \u2014 see how a piece sits before he wears it. Open the dressing room at the glass."
+        },
+        {
+          "id": "wardrobe",
+          "w": 546,
+          "h": 669,
+          "label": "The armoire, its doors a hand open \u2014 Hercules\u2019s rail of pieces. Open the dressing room."
+        },
+        {
+          "id": "window-seat",
+          "w": 645,
+          "h": 350,
+          "label": "Hercules asleep on the window seat \u2014 Hercules is in his own fur today. Talk with Hercules."
+        }
+      ],
+      "phrase": "",
+      "scrollHeight": 928,
+      "innerHeight": 900
+    },
+    "errors": []
+  }
+]

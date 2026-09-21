@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Household, LedgerView } from "../core/types.ts";
 import { monthKeyFromDateKey, todayKey } from "../core/calendar.ts";
 import { formatCad } from "../core/money.ts";
@@ -11,15 +11,26 @@ import "./houseBooks.css";
 
 export const BOOK_DIVISIONS=["Today","Accounts","Spending","Bills","Goals","Contributions","Record"] as const;
 export type BookDivision=typeof BOOK_DIVISIONS[number];
-export function HouseBooks({household,memberId,view,children,onOpenBank}:{household:Household;memberId:string;view:LedgerView;children:(division:BookDivision)=>ReactNode;onOpenBank?:(id:string)=>void}){
+/**
+ * `openAt` is a presentation preselect: a door that named a division (the
+ * Library's Bindery machines) turns the book to it on arrival. It is the
+ * address the reader walked in on, nothing more — no new stored id, no schema.
+ */
+export function HouseBooks({household,memberId,view,children,onOpenBank,openAt}:{household:Household;memberId:string;view:LedgerView;children:(division:BookDivision)=>ReactNode;onOpenBank?:(id:string)=>void;openAt?:BookDivision|null}){
   const appearance=useAppearance(),identity=`${household.environment}:${household.householdId}:${memberId}:${view}`;
-  const [division,setDivision]=useState<BookDivision>(()=>{try{const saved=localStorage.getItem(`hearth:book:${identity}`);return BOOK_DIVISIONS.includes(saved as BookDivision)?saved as BookDivision:"Today";}catch{return "Today";}}),[flat,setFlat]=useState(false);
+  const [division,setDivision]=useState<BookDivision>(()=>{if(openAt&&BOOK_DIVISIONS.includes(openAt))return openAt;try{const saved=localStorage.getItem(`hearth:book:${identity}`);return BOOK_DIVISIONS.includes(saved as BookDivision)?saved as BookDivision:"Today";}catch{return "Today";}}),[flat,setFlat]=useState(false);
   const today=todayKey(),nest=useMemo(()=>projectKittyNest(household,memberId,view,today),[household,memberId,view,today]);
   const fund=useMemo(()=>view==="household"?projectHouseholdFund(household,today):null,[household,view,today]);
   const register=useMemo(()=>view==="household"?contributionRegister(household,monthKeyFromDateKey(today),today):null,[household,view,today]);
   const sharedOperatingCents=useMemo(()=>view==="household"?householdWallet(booksPresentationFloor(household,memberId,view),today).tiles.filter(tile=>tile.kind==="chequing"||tile.kind==="other").reduce((sum,tile)=>sum+tile.balanceCents,0):0,[household,memberId,view,today]);
   const banks=nest.categories.flatMap(category=>category.children).filter(bank=>bank.state==="open"),next=banks.filter(bank=>bank.date).sort((a,b)=>a.date!.localeCompare(b.date!))[0];
   function turn(next:BookDivision){setDivision(next);try{localStorage.setItem(`hearth:book:${identity}`,next);}catch{/* The book stays readable. */}}
+  // A door that named a division turns the book to it, and the book remembers the turn
+  // the way it remembers any other. An address that names none leaves the reader where they were.
+  useEffect(()=>{if(openAt&&BOOK_DIVISIONS.includes(openAt))turn(openAt);
+    // The address is the whole reason to turn; the identity is the key `turn` writes under.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[openAt,identity]);
   return <section className="house-book" data-book-theme={appearance.scene.theme} data-book-division={division}>
     <header className="house-book__cover"><div><p className="kicker">{view==="personal"?"My books":"Our household ledger"}</p><h2>The Standing Book</h2><p>Open on {today}. {view==="personal"?"Your books include shared household entries and your own Personal entries. Your partner’s private entries stay private.":"Figures stay in the books; the room gives them a place."}</p></div><span className="house-book__clasp" aria-hidden="true">H</span></header>
     <nav className="house-book__ribbons" aria-label="Book divisions">{BOOK_DIVISIONS.map((name,index)=><button key={name} aria-current={division===name?"page":undefined} onClick={()=>turn(name)}><small aria-hidden="true">{String(index+1).padStart(2,"0")}</small>{name}</button>)}</nav>

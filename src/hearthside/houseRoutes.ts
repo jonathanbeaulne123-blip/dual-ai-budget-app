@@ -1,6 +1,6 @@
 import { HEARTHSIDE_ROOMS, type HearthsideRoom } from "./contracts.ts";
 
-export const HOUSE_ROOMS = ["home", "study", "kitchen-table", "together"] as const;
+export const HOUSE_ROOMS = ["home", "study", "kitchen-table", "together", "making"] as const;
 export const HOUSE_LEVELS = ["above", "middle", "below"] as const;
 export type HouseRoom = typeof HOUSE_ROOMS[number];
 export type HouseLevel = typeof HOUSE_LEVELS[number];

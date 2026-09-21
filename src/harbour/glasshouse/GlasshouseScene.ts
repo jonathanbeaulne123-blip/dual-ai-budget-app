@@ -4,7 +4,7 @@ import { EngravedPlate, plateFinish, type PlateFinish } from "../court/engraved.
 import { createContactShadows } from "../scene/contact.ts";
 import { registerPlace, type Anchor, type Composition, type Place, type PlaceHandle, type Pose, type Region, type Vec3 } from "../scene/place.ts";
 import type { RenderTier } from "../scene/quality.ts";
-import type { GlassPot, GlasshouseReading } from "../data/reading.ts";
+import type { GlassPot, GlassPotState, GlasshouseReading, MinePots } from "../data/reading.ts";
 import { EMPTY_GLASSHOUSE_READING } from "../data/reading.ts";
 import { glasshouseDressingFrom, type GlasshouseDressing } from "./dressing.ts";
 
@@ -49,7 +49,12 @@ export const GLASSHOUSE_LAYOUT = {
   /** The garden door back to the Court, behind the eye. */
   door: [0.9, 0, 2.95] as const,
   can: [-1.15, 0, 1.35] as const,
+  /** The side bench: the member's own private pots, along the right wall in front of the harvest shelf. */
+  mine: { x: 3.4, z: 1.95, top: 0.86, length: 1.5, depth: 0.5 },
 } as const;
+
+/** The side bench stands at most this many pots per state; the count is in the plate's words either way. */
+export const GLASSHOUSE_MINE_CAP = 3;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -75,6 +80,26 @@ export function benchWords(name: string, count: number, dry: number): string {
   if (count === 0) return `${name} — a clear bench`;
   const pots = `${count} ${count === 1 ? "pot" : "pots"}`;
   return dry > 0 ? `${name} — ${pots}, ${dry} dry` : `${name} — ${pots}`;
+}
+
+/**
+ * The side bench's words: the member's own private pots, by state and only by
+ * state. Nothing a private task says ever reaches this string — three counts
+ * and the glasshouse's own three words for them.
+ */
+export function mineWords(mine: MinePots): string {
+  const parts = [
+    mine.seed > 0 ? `${mine.seed} ${mine.seed === 1 ? "seed" : "seeds"}` : null,
+    mine.sprout > 0 ? `${mine.sprout} ${mine.sprout === 1 ? "sprout" : "sprouts"}` : null,
+    mine.bloom > 0 ? `${mine.bloom} harvested this week` : null,
+  ].filter((part): part is string => part !== null);
+  return parts.length === 0 ? "Your own bench — clear" : `Your own bench — ${parts.join(", ")}`;
+}
+
+/** The pots the side bench stands: up to the cap per state, in the glasshouse's own order. Pure. */
+export function minePots(mine: MinePots, cap = GLASSHOUSE_MINE_CAP): GlassPotState[] {
+  return ([["seed", mine.seed], ["sprout", mine.sprout], ["bloom", mine.bloom]] as const)
+    .flatMap(([state, count]) => Array.from({ length: Math.min(cap, Math.max(0, count)) }, () => state));
 }
 
 const PHONE_ROOM: Pose = { target: [0.7, 0.88, -0.95], r: 3.4, theta: 0.12, phi: 1.315 };
@@ -105,8 +130,11 @@ export type GlasshouseSceneReading = { glasshouse: GlasshouseReading | null };
 /** Narrows whatever the shell hands over to the glasshouse's own rows. */
 export function readGlasshouseReading(value: unknown): GlasshouseSceneReading {
   if (!value || typeof value !== "object") return { glasshouse: null };
-  const source = value as { glasshouse?: GlasshouseReading };
-  return { glasshouse: source.glasshouse ?? null };
+  const source = value as { glasshouse?: Partial<GlasshouseReading> & GlasshouseReading };
+  const glasshouse = source.glasshouse ?? null;
+  if (!glasshouse) return { glasshouse: null };
+  // A reading from before the side bench existed stands an empty one, never a broken room.
+  return { glasshouse: glasshouse.mine ? glasshouse : { ...glasshouse, mine: EMPTY_GLASSHOUSE_READING.mine } };
 }
 
 export type GlasshouseOptions = {
@@ -241,6 +269,20 @@ export function createGlasshouse(scene: THREE.Scene, options: GlasshouseOptions)
   ], legMaterial);
   shelfBrackets.name = "harvest-brackets"; group.add(shelfBrackets);
 
+  // ── The side bench: the member's own private pots, under the near pane ────
+  // A small bench of its own, along the right wall in front of the harvest shelf.
+  // It stands counts, by state, and carries no word of what any of them is.
+  const mineBench = GLASSHOUSE_LAYOUT.mine;
+  const mineTop = shadowed(new THREE.Mesh(track(new THREE.BoxGeometry(mineBench.depth, 0.07, mineBench.length)), benchMaterial));
+  mineTop.position.set(mineBench.x, mineBench.top - 0.035, mineBench.z);
+  mineTop.name = "mine-bench"; mineTop.userData.anchor = "mine"; group.add(mineTop);
+  const mineLegs = merged([
+    placed(new THREE.BoxGeometry(0.08, mineBench.top - 0.07, 0.08), mineBench.x, (mineBench.top - 0.07) / 2, mineBench.z - mineBench.length / 2 + 0.16),
+    placed(new THREE.BoxGeometry(0.08, mineBench.top - 0.07, 0.08), mineBench.x, (mineBench.top - 0.07) / 2, mineBench.z + mineBench.length / 2 - 0.16),
+  ], legMaterial);
+  shadowed(mineLegs, false, true); mineLegs.name = "mine-bench-legs"; mineLegs.userData.anchor = "mine"; group.add(mineLegs);
+  contacts.disc(mineBench.x, mineBench.z, mineBench.length * 0.32, 0.5, group);
+
   // ── The watering can: out only while a pot is dry. Brass, kind, no badge. ──
   const can = new THREE.Group();
   can.name = "watering-can";
@@ -279,6 +321,12 @@ export function createGlasshouse(scene: THREE.Scene, options: GlasshouseOptions)
   harvestPlate.mesh.rotation.y = -Math.PI / 2;
   harvestPlate.mesh.userData.anchor = "harvest";
   group.add(harvestPlate.mesh);
+  const minePlate = track(new EngravedPlate({ stone: dressing.plate, highlight: dressing.plateHighlight, ink: dressing.ink, size: "small" }, 1.3, 0.2));
+  minePlate.mesh.position.set(mineBench.x - 0.28, mineBench.top - 0.1, mineBench.z);
+  minePlate.mesh.rotation.y = -Math.PI / 2;
+  minePlate.mesh.rotation.x = -0.3;
+  minePlate.mesh.userData.anchor = "mine";
+  group.add(minePlate.mesh);
   const bedsPlate = track(new EngravedPlate({ stone: dressing.plate, highlight: dressing.plateHighlight, ink: dressing.ink, size: "small" }, 1.6, 0.26));
   bedsPlate.mesh.position.set(0, 1.85, -halfDepth + 0.08);
   bedsPlate.mesh.userData.anchor = "beds";
@@ -290,6 +338,7 @@ export function createGlasshouse(scene: THREE.Scene, options: GlasshouseOptions)
   let standing: StandingPot[] = [];
   let perennialMeshes: { dispose(): void; mesh: THREE.Object3D }[] = [];
   let harvestMeshes: { dispose(): void; mesh: THREE.Object3D }[] = [];
+  let mineMeshes: { dispose(): void; mesh: THREE.Object3D }[] = [];
   let view: GlasshouseReading = EMPTY_GLASSHOUSE_READING;
 
   const buildPlant = (host: THREE.Group, state: "seed" | "sprout" | "bloom", dry: boolean, y: number): void => {
@@ -393,7 +442,8 @@ export function createGlasshouse(scene: THREE.Scene, options: GlasshouseOptions)
     for (const row of standing) row.dispose();
     for (const row of perennialMeshes) row.dispose();
     for (const row of harvestMeshes) row.dispose();
-    standing = []; perennialMeshes = []; harvestMeshes = [];
+    for (const row of mineMeshes) row.dispose();
+    standing = []; perennialMeshes = []; harvestMeshes = []; mineMeshes = [];
   };
 
   const layOut = (): void => {
@@ -418,6 +468,17 @@ export function createGlasshouse(scene: THREE.Scene, options: GlasshouseOptions)
       harvestMeshes.push({ mesh: built.group, dispose: built.dispose });
     }
     harvestPlate.set(view.harvested === 0 ? "The harvest shelf — nothing yet this week" : `Harvested — ${view.harvested} this week`, finishNow());
+    // The side bench: one pot per private task, to the cap, by state. `buildPotMesh(null, …)`
+    // stands a pot with no tag, no thread and no stake — there is nothing about it to say.
+    const ownPots = minePots(view.mine);
+    ownPots.forEach((state, index) => {
+      const z = mineBench.z + (index - (ownPots.length - 1) / 2) * Math.min(0.42, (mineBench.length - 0.4) / Math.max(1, ownPots.length - 1));
+      const built = buildPotMesh(null, [mineBench.x, mineBench.top, z], state, false);
+      built.group.userData.anchor = "mine";
+      built.group.traverse((node) => { node.userData.anchor = "mine"; });
+      mineMeshes.push({ mesh: built.group, dispose: built.dispose });
+    });
+    minePlate.set(mineWords(view.mine), finishNow());
     // Perennials in the long bed.
     view.perennials.slice(0, 6).forEach((perennial, index) => {
       const z = -2.2 + index * 0.75;
@@ -434,7 +495,7 @@ export function createGlasshouse(scene: THREE.Scene, options: GlasshouseOptions)
   };
 
   const signatureOf = (reading: GlasshouseReading): string =>
-    [reading.harvested, reading.dry, reading.overflow, reading.pots.map((pot) => `${pot.key}:${pot.state}:${pot.dry}:${pot.bench}:${pot.thread}:${pot.staked}:${pot.cat}`).join("|"), reading.perennials.map((p) => p.key).join("|")].join("§");
+    [reading.harvested, reading.dry, reading.overflow, reading.mine.seed, reading.mine.sprout, reading.mine.bloom, reading.pots.map((pot) => `${pot.key}:${pot.state}:${pot.dry}:${pot.bench}:${pot.thread}:${pot.staked}:${pot.cat}`).join("|"), reading.perennials.map((p) => p.key).join("|")].join("§");
   let signature = "";
 
   function update(value: unknown): void {
@@ -470,6 +531,8 @@ export function createGlasshouse(scene: THREE.Scene, options: GlasshouseOptions)
     rows.push({ id: "beds", position: at(0, 1.85, -halfDepth + 0.2), zone: "bed", label: "The beds around the glasshouse — unfold the Calendar.", door: { target: "calendar" } });
     rows.push({ id: "harvest", position: at(GLASSHOUSE_LAYOUT.shelfX, GLASSHOUSE_LAYOUT.shelfY + 0.2, -0.7), zone: "shelf", label: view.harvested === 0 ? "The harvest shelf — nothing yet this week. Open the Master Planner." : `The harvest shelf — ${view.harvested} harvested this week. Open the Master Planner.`, door: { target: "planner" } });
     if (view.perennials.length > 0) rows.push({ id: "perennials", position: at(GLASSHOUSE_LAYOUT.bedX, 0.6, -0.4), zone: "bed", label: `The long bed — ${view.perennials.length} ${view.perennials.length === 1 ? "perennial" : "perennials"}. Open the Master Planner.`, door: { target: "planner" } });
+    // Your own bench: counts, by state, and a door onto the planner. Never a title.
+    rows.push({ id: "mine", position: at(mineBench.x, mineBench.top + 0.28, mineBench.z), zone: "bench", label: `${mineWords(view.mine)}. Yours alone. Open the Master Planner.`, door: { target: "planner" } });
     rows.push({ id: "garden-door", position: at(GLASSHOUSE_LAYOUT.door[0], 1.0, GLASSHOUSE_LAYOUT.door[2] - 0.2), zone: "stair", label: "The garden door — back to the Court." });
     if (can.visible) rows.push({ id: "can", position: at(GLASSHOUSE_LAYOUT.can[0], 0.35, GLASSHOUSE_LAYOUT.can[2]), zone: "prop", label: `The watering can — ${view.dry} ${view.dry === 1 ? "pot is" : "pots are"} dry. Open the Master Planner.`, door: { target: "planner" } });
     return rows;
@@ -482,6 +545,7 @@ export function createGlasshouse(scene: THREE.Scene, options: GlasshouseOptions)
     }));
     rows.push({ id: "beds", group: "glasshouse", label: "The beds — unfold the Calendar", box: box(-1.2, 1.5, -halfDepth - 0.1, 1.2, 2.2, -halfDepth + 0.4) });
     rows.push({ id: "harvest", group: "glasshouse", label: "The harvest shelf", box: box(GLASSHOUSE_LAYOUT.shelfX - 0.5, GLASSHOUSE_LAYOUT.shelfY - 0.2, -2.4, GLASSHOUSE_LAYOUT.shelfX + 0.4, GLASSHOUSE_LAYOUT.shelfY + 0.7, 1.0) });
+    rows.push({ id: "mine", group: "glasshouse", label: "Your own bench — yours alone", box: box(mineBench.x - 0.35, mineBench.top - 0.2, mineBench.z - mineBench.length / 2 - 0.1, mineBench.x + 0.3, mineBench.top + 0.65, mineBench.z + mineBench.length / 2 + 0.1) });
     rows.push({ id: "garden-door", group: "glasshouse", label: "The garden door — back to the Court", box: box(GLASSHOUSE_LAYOUT.door[0] - 0.8, 0, GLASSHOUSE_LAYOUT.door[2] - 0.4, GLASSHOUSE_LAYOUT.door[0] + 0.8, 1.7, GLASSHOUSE_LAYOUT.door[2] + 0.3) });
     if (view.perennials.length > 0) rows.push({ id: "perennials", group: "glasshouse", label: "The long bed of perennials", box: box(GLASSHOUSE_LAYOUT.bedX - 0.5, 0, -2.6, GLASSHOUSE_LAYOUT.bedX + 0.5, 0.8, 1.8) });
     if (can.visible) rows.push({ id: "can", group: "glasshouse", label: "The watering can", box: box(GLASSHOUSE_LAYOUT.can[0] - 0.3, 0, GLASSHOUSE_LAYOUT.can[2] - 0.3, GLASSHOUSE_LAYOUT.can[0] + 0.3, 0.6, GLASSHOUSE_LAYOUT.can[2] + 0.3) });

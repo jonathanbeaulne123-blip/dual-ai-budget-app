@@ -22,6 +22,7 @@ import { PersonalTogether } from './house/PersonalTogether.tsx';
 import { interpretationGate } from './house/supportedInterpretation.ts';
 import { HOUSE_WORLD_ENABLED, HOUSE_PLACES, TARGET_NAMES, houseTargetRoute, houseLifeRoute, houseRouteFromLife, readHouseReturn, resolveHouseRouteScope, saveHouseReturn, type HouseIdentity, houseIdentity } from './house/navigation.ts';
 import { houseReturnSlot, needsHouseReturnCapture, houseComposition } from './house/returnCache.ts';
+import { binderyDivisionFor } from './house/bindery.ts';
 import { HOUSE_ROOMS, housePath, parseHouseRoute, togetherLevelForRoom, type HouseLevel, type HouseRoom, type HouseRoute } from './hearthside/houseRoutes.ts';
 import { deriveHouseCondition } from './core/houseCondition.ts';
 import {readHearthsideToolReturn,type HearthsideToolReturn} from './hearthside/focusedTool.ts';
@@ -7672,6 +7673,7 @@ export function App() {
           />
         ) : <DeferredBooksPage
           onOpenHouseBank={HOUSE_WORLD_ENABLED?(id)=>openHouseObject("loft-banks",`bank/${id}`):undefined}
+          openBookAt={HOUSE_WORLD_ENABLED&&activeHouseRoute.surface==="books"?binderyDivisionFor(activeHouseRoute.object):null}
           accountHistorySetup={<AccountHistorySetup household={household} memberId={session.memberId} authUserId={localLedgerIdentity(session.memberId) ?? loadSupabaseSession(environment)?.userId ?? session.memberId} view={view} today={today} busy={busy} onCommand={runKitchen} />}
           duplicateAuthorityGeneration={replicaScopeGenerationRef.current}
           onDuplicateCommand={runKitchen}

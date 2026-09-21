@@ -37,7 +37,12 @@ export function houseTargetRoute(route:HouseRoute,target:string,object?:string):
     queen:['home','middle'],'loft-banks':['home','above'],'cellar-bills':['home','below'],
     planner:['study','above'],books:['study','middle'],calendar:['study','below'],
     journey:['kitchen-table','above'],conversation:['kitchen-table','middle'],'plan-studio':['kitchen-table','below'],
-    wishes:['together','above'],'personal-experience':['together','above'],pottery:['together','middle'],letters:['together','middle'],encounters:['together','middle'],memories:['together','below'],projector:['together','below'],
+    wishes:['together','above'],'personal-experience':['together','above'],letters:['together','middle'],encounters:['together','middle'],memories:['together','below'],projector:['together','below'],
+    // Making: the Pottery Studio's own building is the Kiln (`making/above`,
+    // the slot `HOUSE_PLACES.making.above` has always named "The Kiln"), so the
+    // `pottery` target opens where the studio actually stands. Together keeps
+    // every one of its own levels; only pottery moved.
+    pottery:['making','above'],
   };
   const place=places[target];
   return {...route,...(place?{room:place[0],level:place[1]}:{}),surface:target,object:object??(['wishes','memories','projector'].includes(target)?undefined:route.object),studioSelection:target==='pottery'?route.studioSelection:undefined};
@@ -57,11 +62,12 @@ export function houseRouteFromLife(next: HearthsideRoute, scope: LedgerView): Ho
   return {householdId:next.householdId,scope,room:"together",level:next.surface==="studio"||next.surface==="wardrobe"?"middle":next.room==="conservatory"?"above":next.room==="theatre"?"below":"middle",surface,...(next.object?{object:[next.object.kind,next.object.id,...("designId" in next.object?[next.object.designId]:[])].join("/")}:{}) ,...(studioSelection?{studioSelection}:{})};
 }
 
-export const ROOM_NAMES = {home:"Home", study:"Study", "kitchen-table":"Kitchen Table", together:"Together"} as const;
+export const ROOM_NAMES = {home:"Home", study:"Study", "kitchen-table":"Kitchen Table", together:"Together", making:"Making"} as const;
 export const HOUSE_PLACES = {
   home: {above: {title:"Loft", subtitle:"Little banks, growing at their own pace", target:"loft-banks"}, middle: {title:"Queen’s Bay", subtitle:"A living presence at the heart of your home", target:"queen"}, below: {title:"Cellar", subtitle:"What is protected, what is due, what is paid", target:"cellar-bills"}},
   study: {above: {title:"Master Planner", subtitle:"A place to pick up where you left off", target:"planner"}, middle: {title:"The Standing Book", subtitle:"Every figure has a source. Every page has a place.", target:"books"}, below: {title:"Calendar", subtitle:"The same intentions, seen through time", target:"calendar"}},
   "kitchen-table": {above: {title:"Journey", subtitle:"Open the atlas. Step into the life you are making.", target:"journey"}, middle: {title:"One Conversation", subtitle:"One intention, a private note, room to think", target:"conversation"}, below: {title:"Plan Studio", subtitle:"Pull out a proposal. Read the exact agreement.", target:"plan-studio"}},
   together: {above: {title:"Conservatory", subtitle:"Give an idea a little light", target:"wishes"}, middle: {title:"Common room", subtitle:"Make something. Leave a letter. Be here together.", target:"pottery"}, below: {title:"Theatre", subtitle:"Keep the parts of life you choose to remember", target:"memories"}},
+  making: {above: {title:"The Kiln", subtitle:"Wheel, bench and a shelf of fired pieces", target:"pottery"}, middle: {title:"Hercules’s Cottage", subtitle:"Wardrobe, mirror, cabinet of wonders, and the bell by the door", target:"wardrobe"}, below: {title:"The cabinet of wonders", subtitle:"The looks and keepsakes he keeps on his shelves", target:"wardrobe"}},
 } as const;
-export const TARGET_NAMES: Record<string,string> = {queen:"Meet the Queen", "loft-banks":"Open Kitty Banks", "cellar-bills":"Read the bill jars", books:"Open the Standing Book", planner:"Open the Master Planner", calendar:"Unfold the Calendar", journey:"Step into Journey", conversation:"Open the conversation folio", "plan-studio":"Pull out the Plan Studio", wishes:"Tend a wish", pottery:"Enter the Pottery Studio", memories:"Open a memory", letters:"Open the writing desk", projector:"Choose three memories", hercules:"Talk with Hercules", encounters:"Spend a moment together"};
+export const TARGET_NAMES: Record<string,string> = {queen:"Meet the Queen", "loft-banks":"Open Kitty Banks", "cellar-bills":"Read the bill jars", books:"Open the Standing Book", planner:"Open the Master Planner", calendar:"Unfold the Calendar", journey:"Step into Journey", conversation:"Open the conversation folio", "plan-studio":"Pull out the Plan Studio", wishes:"Tend a wish", pottery:"Enter the Pottery Studio", memories:"Open a memory", letters:"Open the writing desk", projector:"Choose three memories", hercules:"Talk with Hercules", encounters:"Spend a moment together", wardrobe:"Open the dressing room"};
