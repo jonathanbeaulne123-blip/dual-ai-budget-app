@@ -16,9 +16,11 @@ describe("Development incremental PGlite release boundary", () => {
     expect(workflow).toContain('test "$VITE_PRODUCTION_CONTINUITY" = "0"');
   });
 
-  it("refuses the incremental writer in Production even when the build flag is on", () => {
-    vi.stubEnv("VITE_PGLITE_INCREMENTAL_DEV", "1");
+  it("runs the incremental writer in both environments unless the kill switch forces the full path", () => {
     expect(incrementalBooksEnabled("development")).toBe(true);
+    expect(incrementalBooksEnabled("production")).toBe(true);
+    vi.stubEnv("VITE_PGLITE_FULL_PROJECTION", "1");
+    expect(incrementalBooksEnabled("development")).toBe(false);
     expect(incrementalBooksEnabled("production")).toBe(false);
   });
 });
