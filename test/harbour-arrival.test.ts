@@ -21,7 +21,8 @@ describe("the flag", () => {
       study: { above: "glasshouse", middle: "library", below: "glasshouse" },
       // Journey (`kitchen-table`/above) keeps the house's own atlas.
       "kitchen-table": { middle: "kitchen", below: "kitchen" },
-      together: { above: "boathouse", middle: "boathouse", below: "boathouse" },
+      // The Kiln stands on the pottery route (`together/middle`); the Boathouse keeps the Conservatory and the Theatre.
+      together: { above: "boathouse", middle: "kiln", below: "boathouse" },
     });
     expect(harbourOwnsRoute({ room: "home", level: "middle" }, "household", true)).toBe(true);
     expect(harbourOwnsRoute({ room: "study", level: "above" }, "household", true)).toBe(true);
@@ -36,7 +37,8 @@ describe("the flag", () => {
     expect(harbourPlaceFor({ room: "home", level: "middle" }, "household", true)).toBe("court");
     expect(harbourPlaceFor({ room: "home", level: "above" }, "household", true)).toBe("tower");
     expect(harbourPlaceFor({ room: "home", level: "below" }, "household", true)).toBe("cellar");
-    expect(harbourPlaceFor({ room: "together", level: "middle" }, "household", true)).toBe("boathouse");
+    expect(harbourPlaceFor({ room: "together", level: "middle" }, "household", true)).toBe("kiln");
+    expect(harbourPlaceFor({ room: "together", level: "above" }, "household", true)).toBe("boathouse");
     expect(harbourPlaceFor({ room: "kitchen-table", level: "middle" }, "household", true)).toBe("kitchen");
     expect(harbourPlaceFor({ room: "kitchen-table", level: "above" }, "household", true)).toBeNull();
     expect(harbourPlaceFor({ room: "study", level: "above" }, "household", true)).toBe("glasshouse");
@@ -45,8 +47,8 @@ describe("the flag", () => {
     expect(harbourPlaceFor({ room: "home", level: "middle" }, "household")).toBeNull();
   });
   it("names each place and the level it stands on", () => {
-    expect(HARBOUR_PLACE_NAMES).toEqual({ court: "the Court", tower: "the Tower", cellar: "the Cellar", glasshouse: "the Glasshouse", kitchen: "the Kitchen", boathouse: "the Boathouse", library: "the Library" });
-    expect(HARBOUR_PLACE_LEVELS).toEqual({ court: "middle", tower: "above", cellar: "below", glasshouse: "above", kitchen: "middle", boathouse: "middle", library: "middle" });
+    expect(HARBOUR_PLACE_NAMES).toEqual({ court: "the Court", tower: "the Tower", cellar: "the Cellar", glasshouse: "the Glasshouse", kitchen: "the Kitchen", boathouse: "the Boathouse", library: "the Library", kiln: "the Kiln" });
+    expect(HARBOUR_PLACE_LEVELS).toEqual({ court: "middle", tower: "above", cellar: "below", glasshouse: "above", kitchen: "middle", boathouse: "above", library: "middle", kiln: "middle" });
   });
   it("names the Court as home/middle in the household scope", () => {
     expect(COURT_ROUTE("HH-one")).toEqual({ room: "home", level: "middle", householdId: "HH-one", scope: "household" });

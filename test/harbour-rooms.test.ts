@@ -2,8 +2,11 @@
 import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 import {
-  EMPTY_BOATHOUSE_READING, EMPTY_KITCHEN_READING, buildBoathouseReading, buildKitchenReading, KITCHEN_CARD_CAP,
+  EMPTY_BOATHOUSE_READING, EMPTY_KILN_READING, EMPTY_KITCHEN_READING, buildBoathouseReading, buildKilnReading, buildKitchenReading,
+  KILN_SHELF_CAP, KILN_WARM_DAYS, KITCHEN_CARD_CAP,
 } from "../src/harbour/data/reading.ts";
+import { KILN_DRESSING } from "../src/harbour/kiln/dressing.ts";
+import { createKiln, kilnHeatWords, kilnPoses, pieceScale, readKilnReading, shelfPin } from "../src/harbour/kiln/KilnScene.ts";
 import { KITCHEN_DRESSING } from "../src/harbour/kitchen/dressing.ts";
 import { cardDollars, cardPin, cardWords, createKitchen, kitchenPoses, readKitchenReading } from "../src/harbour/kitchen/KitchenScene.ts";
 import { BOATHOUSE_DRESSING } from "../src/harbour/boathouse/dressing.ts";
@@ -80,6 +83,82 @@ describe("the Kitchen reading (LITTLE_HARBOUR_v2 §4)", () => {
   });
 });
 
+// ── The Kiln (LITTLE_HARBOUR_v2 §2) ─────────────────────────────────────────
+
+const clay = (firedAt: string | null) => ({ id: `P-${firedAt ?? "wet"}`, createdAt: "2026-09-01T00:00:00.000Z", firedAt, sculpt: {}, paint: {} });
+const designRow = (over: Record<string, unknown>) => ({
+  version: 1, id: `NEST:${over.bankKey}`, bankKey: "plan:build", visibility: "household", createdBy: "MEM-001", revision: 1,
+  name: "The Build bank", glaze: "sea-glass", category: "build", archivedAt: null, setupCompletedAt: null,
+  createdAt: "2026-09-01T00:00:00.000Z", updatedAt: "2026-09-19T00:00:00.000Z", ...over,
+});
+const kilnHousehold = {
+  members: [{ id: "MEM-001", name: "Jonathan", active: true }, { id: "MEM-002", name: "Bianca", active: true }],
+  kittyNestDesigns: [
+    designRow({ bankKey: "plan:build", studio: { version: 1, draft: null, fired: [clay("2026-09-19T10:00:00.000Z"), clay("2026-09-12T10:00:00.000Z")] } }),
+    // Somebody else's own shelf: a count, and nothing else.
+    designRow({ bankKey: "plan:protect", visibility: "personal", createdBy: "MEM-002", name: "Her own bank", glaze: "midnight", category: "protect", studio: { version: 1, draft: null, fired: [clay("2026-09-18T10:00:00.000Z")] } }),
+    // Nothing fired yet, but something on the wheel.
+    designRow({ bankKey: "plan:prepare", name: "The Prepare bank", glaze: "cream", category: "prepare", studio: { version: 1, draft: clay(null), fired: [] } }),
+  ],
+  goals: [
+    { id: "GOAL-1", name: "Autumn getaway", shared: true, ownerMemberId: null, targetCents: 100_000, savedCents: 40_000, status: "open",
+      envelope: { version: 1, kind: "build", glaze: "rose", studio: { version: 1, draft: clay(null), fired: [clay("2026-09-20T09:00:00.000Z")] } } },
+    { id: "GOAL-2", name: "Her surprise", shared: false, ownerMemberId: "MEM-002", targetCents: 20_000, savedCents: 0, status: "open",
+      envelope: { version: 1, kind: "build", glaze: "cream", studio: { version: 1, draft: null, fired: [clay("2026-09-11T09:00:00.000Z")] } } },
+  ],
+};
+const kilnReading = buildKilnReading(kilnHousehold as never, "MEM-001", today);
+
+describe("the Kiln reading (LITTLE_HARBOUR_v2 §2)", () => {
+  it("stands one piece per fired bank, newest out of the kiln first, in its own glaze and at its own step", () => {
+    expect(kilnReading.pieces.map((piece) => piece.key)).toEqual(["goal/GOAL-1", "bank/plan:build"]);
+    expect(kilnReading.pieces[0]).toMatchObject({ name: "Autumn getaway", glaze: "rose", category: "build", firings: 1, firedOn: "2026-09-20" });
+    expect(kilnReading.pieces[1]).toMatchObject({ name: "The Build bank", glaze: "sea-glass", firings: 2, firedOn: "2026-09-19" });
+    for (const piece of kilnReading.pieces) expect(piece.step).toBeGreaterThanOrEqual(0);
+    // Counts, never contents: three fired pieces on the shelf, two kept privately and named nowhere.
+    expect(kilnReading.fired).toBe(3);
+    expect(kilnReading.keptPrivate).toBe(2);
+    expect(JSON.stringify(kilnReading)).not.toContain("Her own bank");
+    expect(JSON.stringify(kilnReading)).not.toContain("Her surprise");
+    // Two lumps still clay: one on a bank's wheel, one on the goal's.
+    expect(kilnReading.onTheWheel).toBe(2);
+  });
+
+  it("reads the heat from the last firing and lets it go cold, and a household with no studio work is a swept shelf", () => {
+    expect(kilnReading).toMatchObject({ lastFiredOn: "2026-09-20", sinceFiring: 0, warmth: 1 });
+    expect(kilnHeatWords(kilnReading)).toBe("still hot, fired today");
+    const later = buildKilnReading(kilnHousehold as never, "MEM-001", "2026-09-23");
+    expect(later.sinceFiring).toBe(3);
+    expect(later.warmth).toBeCloseTo(1 - 3 / KILN_WARM_DAYS, 6);
+    expect(kilnHeatWords(later)).toBe("warm, fired 3 days ago");
+    const cold = buildKilnReading(kilnHousehold as never, "MEM-001", "2026-10-20");
+    expect(cold.warmth).toBe(0);
+    expect(kilnHeatWords(cold)).toContain("cold");
+    expect(kilnHeatWords({ sinceFiring: null, warmth: 0 })).toBe("cold, nothing fired yet");
+    expect(buildKilnReading({ members: [] } as never, "MEM-001", today)).toEqual(EMPTY_KILN_READING);
+  });
+
+  it("caps the shelf and says the rest is in the Studio", () => {
+    const many = Array.from({ length: KILN_SHELF_CAP + 2 }, (_, i) => designRow({
+      bankKey: `recurrence:${i}`, name: `Bank ${i}`, category: null,
+      studio: { version: 1, draft: null, fired: [clay(`2026-09-0${(i % 9) + 1}T10:00:00.000Z`)] },
+    }));
+    const reading = buildKilnReading({ members: [], kittyNestDesigns: many } as never, "MEM-001", today);
+    expect(reading.pieces.length).toBe(KILN_SHELF_CAP);
+    expect(reading.overflow).toBe(2);
+    expect(reading.fired).toBe(KILN_SHELF_CAP + 2);
+  });
+
+  it("pins the shelf four to a board and sizes a piece by its bank's ten steps", () => {
+    expect(shelfPin(0).x).not.toBe(shelfPin(1).x);
+    expect(shelfPin(4).y).toBeLessThan(shelfPin(0).y);
+    expect(shelfPin(4).x).toBe(shelfPin(0).x);
+    expect(pieceScale(0)).toBeLessThan(pieceScale(10));
+    expect(pieceScale(10)).toBeCloseTo(1, 6);
+    expect(pieceScale(-4)).toBe(pieceScale(0));
+  });
+});
+
 describe("the three rooms as places", () => {
   const kitchenReading = { kitchen: buildKitchenReading(household([version([
     line({ id: "a", dueDate: "2026-10-08", responsibility: { kind: "joint" } }),
@@ -125,11 +204,32 @@ describe("the three rooms as places", () => {
     handle.dispose();
   });
 
+  it("the Kiln: the wheel, the bench, the kiln and every fired piece are doors onto the Studio", () => {
+    const scene = new THREE.Scene();
+    const handle = PLACES.kiln!.build(scene, { theme: "classic" } as never, { kiln: kilnReading, partner: null } as never, "lite", { composition: "desktop", signal: new AbortController().signal, invalidate: () => {} });
+    const anchors = handle.anchors();
+    const doors = Object.fromEntries(anchors.filter((anchor) => anchor.door).map((anchor) => [anchor.id, `${anchor.door!.target}${anchor.door!.object ? `/${anchor.door!.object}` : ""}`]));
+    expect(doors).toEqual({
+      wheel: "pottery/wheel", bench: "pottery/paint", kiln: "pottery/kiln", shelf: "pottery",
+      "piece:goal/GOAL-1": "pottery/goal/GOAL-1", "piece:bank/plan:build": "pottery/bank/plan:build",
+      hercules: "hercules",
+    });
+    // The shelf says what it holds and what it does not: counts, never contents.
+    expect(anchors.find((anchor) => anchor.id === "shelf")?.label).toContain("3 pieces fired");
+    expect(anchors.find((anchor) => anchor.id === "shelf")?.label).toContain("2 kept privately");
+    expect(anchors.find((anchor) => anchor.id === "kiln")?.label).toContain("still hot");
+    expect(anchors.find((anchor) => anchor.id === "court-door")?.zone).toBe("stair");
+    expect(anchors.find((anchor) => anchor.id === "boathouse")?.zone).toBe("landmark");
+    handle.dispose();
+    expect(scene.children.length).toBe(0);
+  });
+
   it("draws each room inside the harbour's budget and keeps every pose inside its own hold", () => {
     for (const [id, build] of [
       ["kitchen", () => createKitchen(new THREE.Scene(), { dressing: KITCHEN_DRESSING.classic, reading: kitchenReading, quality: "lite" })],
       ["boathouse", () => createBoathouse(new THREE.Scene(), { dressing: BOATHOUSE_DRESSING.classic, reading: { boathouse: { wishes: 4, memories: 3, letters: 2, encounters: 1 } }, quality: "lite" })],
       ["library", () => createLibrary(new THREE.Scene(), { dressing: LIBRARY_DRESSING.classic, quality: "lite" })],
+      ["kiln", () => createKiln(new THREE.Scene(), { dressing: KILN_DRESSING.classic, reading: { kiln: kilnReading }, quality: "lite" })],
     ] as const) {
       const handle = build();
       let meshes = 0;
@@ -146,6 +246,8 @@ describe("the three rooms as places", () => {
       }
       handle.dispose();
     }
+    expect(readKilnReading(null)).toEqual({ kiln: null, partnerName: null });
+    expect(kilnPoses([])["door:phone"]).toBeTruthy();
     expect(readKitchenReading(null)).toEqual({ kitchen: null, partnerName: null });
     expect(readBoathouseReading(null)).toEqual({ boathouse: null, partnerName: null });
     expect(kitchenPoses([])["door:desktop"]).toBeTruthy();
