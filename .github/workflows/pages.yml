@@ -68,6 +68,8 @@ jobs:
           VITE_HEARTH_HOUSE_WORLD: "1"
           VITE_HEARTH_HARBOUR: "1"
           VITE_QUEENS_NEST: ${{ vars.VITE_QUEENS_NEST || '1' }}
+          VITE_FUND_MODEL_V2: "1"
+          VITE_CELLAR_V3: "1"
           VITE_HERCULES_ACTIONS: ${{ inputs.hercules_actions || vars.VITE_HERCULES_ACTIONS || '1' }}
           VITE_HERCULES_WORKSPACE: "1"
           VITE_HERCULES_CHAT: ${{ inputs.hercules_chat || vars.VITE_HERCULES_CHAT || '1' }}
@@ -86,8 +88,13 @@ jobs:
           test "$VITE_PRODUCTION_CONTINUITY" = "0"
           test "$VITE_SYNC_PILOT_DIAGNOSTICS" = "1"
           case "$VITE_PLAN_SYSTEM_V2" in 0|1) ;; *) echo "::error::Invalid Plan System V2 presentation switch"; exit 1;; esac
+          test "$VITE_FUND_MODEL_V2" = "1"
+          test "$VITE_CELLAR_V3" = "1"
           echo "Development pilot boundary verified: Auth, Realtime, command log, online-required cloud-backed Personal and Shared writes, incremental PGlite, and privacy-safe diagnostics ON; Production continuity OFF."
           echo "Plan System V2 Development presentation=$VITE_PLAN_SYSTEM_V2 (set VITE_PLAN_SYSTEM_V2=0 for legacy rollback)."
+          if [ "$VITE_FUND_MODEL_V2" = "1" ]; then
+            echo "Money model v2 is ON for this build (VITE_FUND_MODEL_V2=1). The first active member to open it sorts the household once, one way; roll back by setting this to 0 and redeploying BEFORE anyone opens it."
+          fi
           if [ "$VITE_CONTINUITY_COMMAND_LOG" = "1" ]; then
             echo "Tier 2 command-log transport is ON for this kitchen build (VITE_CONTINUITY_COMMAND_LOG=1; requires Migration 013)."
           fi
