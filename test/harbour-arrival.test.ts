@@ -25,11 +25,14 @@ describe("the flag", () => {
       // Making: the compass's own district, given a room so its buildings can stand —
       // the Kiln above (the slot `HOUSE_PLACES.making.above` already called "The Kiln"),
       // Hercules's Cottage on the level. Together keeps all three Boathouse levels.
-      making: { above: "kiln", middle: "cottage" },
+      // The Campfire takes the one free room×level slot the harbour had left.
+      // It is an outdoor place on the shore, not a room of the Making lawn;
+      // `compassDistrict` files `making/below` under Together for that reason.
+      making: { above: "kiln", middle: "cottage", below: "campfire" },
     });
     expect(harbourOwnsRoute({ room: "making", level: "middle" }, "household", true)).toBe(true);
     expect(harbourOwnsRoute({ room: "making", level: "above" }, "household", true)).toBe(true);
-    expect(harbourOwnsRoute({ room: "making", level: "below" }, "household", true)).toBe(false);
+    expect(harbourOwnsRoute({ room: "making", level: "below" }, "household", true)).toBe(true);
     expect(harbourOwnsRoute({ room: "home", level: "middle" }, "household", true)).toBe(true);
     expect(harbourOwnsRoute({ room: "study", level: "above" }, "household", true)).toBe(true);
     expect(harbourOwnsRoute({ room: "study", level: "below" }, "household", true)).toBe(true);
@@ -51,13 +54,13 @@ describe("the flag", () => {
     expect(harbourPlaceFor({ room: "study", level: "middle" }, "household", true)).toBe("library");
     expect(harbourPlaceFor({ room: "making", level: "middle" }, "household", true)).toBe("cottage");
     expect(harbourPlaceFor({ room: "making", level: "above" }, "household", true)).toBe("kiln");
-    expect(harbourPlaceFor({ room: "making", level: "below" }, "household", true)).toBeNull();
+    expect(harbourPlaceFor({ room: "making", level: "below" }, "household", true)).toBe("campfire");
     expect(harbourPlaceFor({ room: "home", level: "middle" }, "personal", true)).toBeNull();
     expect(harbourPlaceFor({ room: "home", level: "middle" }, "household")).toBeNull();
   });
   it("names each place and the level it stands on", () => {
-    expect(HARBOUR_PLACE_NAMES).toEqual({ court: "the Court", tower: "the Tower", cellar: "the Cellar", glasshouse: "the Glasshouse", kitchen: "the Kitchen", boathouse: "the Boathouse", library: "the Library", cottage: "the Cottage", kiln: "the Kiln" });
-    expect(HARBOUR_PLACE_LEVELS).toEqual({ court: "middle", tower: "above", cellar: "below", glasshouse: "above", kitchen: "middle", boathouse: "middle", library: "middle", cottage: "middle", kiln: "above" });
+    expect(HARBOUR_PLACE_NAMES).toEqual({ court: "the Court", tower: "the Tower", cellar: "the Cellar", glasshouse: "the Glasshouse", kitchen: "the Kitchen", boathouse: "the Boathouse", library: "the Library", cottage: "the Cottage", kiln: "the Kiln", campfire: "the Campfire" });
+    expect(HARBOUR_PLACE_LEVELS).toEqual({ court: "middle", tower: "above", cellar: "below", glasshouse: "above", kitchen: "middle", boathouse: "middle", library: "middle", cottage: "middle", kiln: "above", campfire: "below" });
   });
   it("names the Court as home/middle in the household scope", () => {
     expect(COURT_ROUTE("HH-one")).toEqual({ room: "home", level: "middle", householdId: "HH-one", scope: "household" });

@@ -10,7 +10,7 @@ import type { LedgerView } from "../core/types.ts";
 export const HARBOUR_ENABLED = HOUSE_WORLD_ENABLED && import.meta.env.VITE_HEARTH_HARBOUR === "1";
 
 /** Slice 2: one room, three places — one per level (BUILD_PLAN_SLICE2 §0). */
-export type HarbourPlaceId = "court" | "tower" | "cellar" | "glasshouse" | "kitchen" | "boathouse" | "library" | "cottage" | "kiln";
+export type HarbourPlaceId = "court" | "tower" | "cellar" | "glasshouse" | "kitchen" | "boathouse" | "library" | "cottage" | "kiln" | "campfire";
 
 /**
  * Rooms the harbour owns, by house room **and level**. Slice 1 gave `home` one
@@ -40,25 +40,31 @@ export const HARBOUR_ROOMS: Readonly<Partial<Record<HouseRoom, Readonly<Partial<
   // `houseTargetRoute` sends the `pottery` target here, so the kitty studio's
   // own route stands the building the studio lives in. Together keeps all
   // three of the Boathouse's levels, exactly as it had them.
-  making: Object.freeze({ above: "kiln", middle: "cottage" }),
+  // The Campfire (§6) is an outdoor place, not a room of the Making lawn: it
+  // stands on the shore in front of the Boathouse. It is keyed at the one free
+  // room×level slot the harbour has left (`making/below`) so it can be a full
+  // place with its own chunk, its own hold and its own flat edition; the
+  // compass reads that slot as **Together**, which is where the fire belongs.
+  making: Object.freeze({ above: "kiln", middle: "cottage", below: "campfire" }),
 });
 
 /** The place's own name, as the door strip and the twins say it ("← Put it back in the Tower"). */
 export const HARBOUR_PLACE_NAMES: Readonly<Record<HarbourPlaceId, string>> = Object.freeze({
   court: "the Court", tower: "the Tower", cellar: "the Cellar", glasshouse: "the Glasshouse",
   kitchen: "the Kitchen", boathouse: "the Boathouse", library: "the Library", cottage: "the Cottage", kiln: "the Kiln",
+  campfire: "the Campfire",
 });
 
 /** Which level of its room a place stands on: the stair's destination, and the route a door tap navigates to. */
 export const HARBOUR_PLACE_LEVELS: Readonly<Record<HarbourPlaceId, HouseLevel>> = Object.freeze({
   court: "middle", tower: "above", cellar: "below", glasshouse: "above",
-  kitchen: "middle", boathouse: "middle", library: "middle", cottage: "middle", kiln: "above",
+  kitchen: "middle", boathouse: "middle", library: "middle", cottage: "middle", kiln: "above", campfire: "below",
 });
 
 /** Which room a place belongs to, so a way out of one room can name a place in another. */
 export const HARBOUR_PLACE_ROOMS: Readonly<Record<HarbourPlaceId, HouseRoom>> = Object.freeze({
   court: "home", tower: "home", cellar: "home", glasshouse: "study",
-  kitchen: "kitchen-table", boathouse: "together", library: "study", cottage: "making", kiln: "making",
+  kitchen: "kitchen-table", boathouse: "together", library: "study", cottage: "making", kiln: "making", campfire: "making",
 });
 
 /**
@@ -76,6 +82,8 @@ export const HARBOUR_LANDMARKS: Readonly<Record<string, { room: HouseRoom; level
   "hercules-cottage": { room: "making", level: "middle" },
   /** The Kiln on the Making lawn: the pottery studio's own building. */
   "kiln-house": { room: "making", level: "above" },
+  /** The Campfire on the shore in front of the Boathouse: where the month closes. */
+  campfire: { room: "making", level: "below" },
   /** The Library's own back door into the garden behind it. */
   "glasshouse-way": { room: "study", level: "above" },
   /** The atlas up the kitchen stair: Journey keeps the house's own world. */

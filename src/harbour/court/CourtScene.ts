@@ -455,6 +455,56 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     boathouse.rotation.y = Math.atan2(-BOATHOUSE[0], -BOATHOUSE[1]) + Math.PI;
     group.add(boathouse);
   }
+  // ── The Campfire (LITTLE_HARBOUR_v2 §6): the one ritual that needs two
+  //    people, down on the shore in front of the Boathouse. A ring of beach
+  //    stones, the fire in it, two split logs drawn up either side, and the
+  //    first stones of the path of months running away toward the water. The
+  //    fire is the only warm light on the island at this distance; tapping it
+  //    walks you down to the shore.
+  const CAMPFIRE: readonly [number, number] = [7.2, -9.4];
+  const campfireY = groundHeightAt(CAMPFIRE[0], CAMPFIRE[1]);
+  {
+    const fire = new THREE.Group();
+    fire.name = "campfire";
+    fire.userData.anchor = "campfire";
+    const ring = shadowed(mergedMesh(
+      Array.from({ length: 8 }, (_, i) => {
+        const a = (i / 8) * Math.PI * 2;
+        const stone = new THREE.DodecahedronGeometry(0.13, 0);
+        stone.scale(1, 0.7, 1);
+        return placed(stone, Math.cos(a) * 0.48, 0.06, Math.sin(a) * 0.48, [0, a, 0]);
+      }),
+      mat(dressing.plinth, { roughness: 0.95, flatShading: true }),
+    ));
+    track(ring.geometry); fire.add(ring);
+    const logs = shadowed(mergedMesh([
+      placed(new THREE.CylinderGeometry(0.11, 0.11, 0.72, 8), -0.88, 0.12, 0.2, [0, 0.28, Math.PI / 2]),
+      placed(new THREE.CylinderGeometry(0.11, 0.11, 0.72, 8), 0.88, 0.12, -0.2, [0, -0.28, Math.PI / 2]),
+    ], mat(dressing.timber, { roughness: 0.92 })));
+    track(logs.geometry); fire.add(logs);
+    // The flame: unlit is nothing to see, and the Court never claims a fire
+    // the books have not earned — the reading below turns it on.
+    const flame = new THREE.Mesh(track(new THREE.ConeGeometry(0.17, 0.46, 8)), track(new THREE.MeshBasicMaterial({ color: "#f2913c", transparent: true, opacity: 0.85, depthWrite: false })));
+    flame.position.set(0, 0.26, 0); flame.renderOrder = 3; fire.add(flame);
+    const tip = new THREE.Mesh(track(new THREE.ConeGeometry(0.08, 0.24, 7)), track(new THREE.MeshBasicMaterial({ color: "#ffd98e", transparent: true, opacity: 0.9, depthWrite: false })));
+    tip.position.set(0, 0.38, 0); tip.renderOrder = 4; fire.add(tip);
+    // The first stones of the path of months, laid away toward the water.
+    const stones = mergedMesh(
+      Array.from({ length: 4 }, (_, i) => {
+        const stone = new THREE.DodecahedronGeometry(0.1, 0);
+        stone.scale(1.25, 0.3, 1);
+        return placed(stone, -0.2 + Math.sin(i * 1.21) * 0.24, 0.02, -0.95 - i * 0.38, [0, i * 0.7, 0]);
+      }),
+      mat(dressing.gate.post, { roughness: 0.95, flatShading: true }),
+    );
+    track(stones.geometry); fire.add(stones);
+    fire.traverse((node) => { node.userData.anchor = "campfire"; });
+    fire.position.set(CAMPFIRE[0], campfireY, CAMPFIRE[1]);
+    // The path of months runs away from the Court, toward the Boathouse and the water.
+    fire.rotation.y = Math.atan2(-CAMPFIRE[0], -CAMPFIRE[1]) + Math.PI;
+    group.add(fire);
+  }
+
   const gateArch = shadowed(mergedMesh([
     placed(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 8), gx - 0.84, 0.32, gz), placed(new THREE.CylinderGeometry(0.035, 0.035, 0.12, 8), gx - 0.84, 0.72, gz),
     placed(new THREE.BoxGeometry(0.05, 0.05, 0.03), gx + 0.78, 0.55, gz + 0.03),
@@ -600,6 +650,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     { id: "kitchen-cottage", position: at(-11.2, groundHeightAt(-11.2, -3.4) + 0.9, -3.4), zone: "landmark", label: "The Kitchen, smoke up — sit down and make a plan. Walk over and go in." },
     { id: "hercules-cottage", position: at(9.8, groundHeightAt(9.8, 5.6) + 0.9, 5.6), zone: "landmark", label: "Hercules’s Cottage, lamp on — a door for you and a smaller one for him. Walk over and go in." },
     { id: "kiln-house", position: at(10.6, groundHeightAt(10.6, -4.4) + 1.0, -4.4), zone: "landmark", label: "The Kiln, the bottle stack smoking — the wheel, the bench and the shelf of fired pieces. Walk over and go in." },
+    { id: "campfire", position: at(7.2, groundHeightAt(7.2, -9.4) + 0.5, -9.4), zone: "landmark", label: "The campfire on the shore, in front of the Boathouse — where the month closes, the two of you. Walk down and sit." },
   ];
   let queenRegions: (() => Region[]) | null = null;
   const regionList = (): Region[] => [
@@ -619,6 +670,7 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     { id: "kitchen-cottage", group: "court", label: "The Kitchen's cottage", box: box(-12.2, groundHeightAt(-11.2, -3.4), -4.3, -10.2, groundHeightAt(-11.2, -3.4) + 2.3, -2.5) },
     { id: "hercules-cottage", group: "court", label: "Hercules’s Cottage on the east lawn", box: box(8.8, groundHeightAt(9.8, 5.6), 4.6, 10.8, groundHeightAt(9.8, 5.6) + 2.1, 6.6) },
     { id: "kiln-house", group: "court", label: "The Kiln on the Making lawn", box: box(9.5, groundHeightAt(10.6, -4.4), -5.3, 11.7, groundHeightAt(10.6, -4.4) + 2.5, -3.5) },
+    { id: "campfire", group: "court", label: "The campfire on the shore", box: box(6.0, groundHeightAt(7.2, -9.4), -10.6, 8.4, groundHeightAt(7.2, -9.4) + 0.9, -8.2) },
   ];
 
   // ── Reading → objects ───────────────────────────────────────────────────────

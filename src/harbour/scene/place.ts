@@ -142,6 +142,14 @@ export const PLACE_HOLDS: Readonly<Record<HarbourPlaceId, RoomHold | null>> = Ob
     target: { min: [-2.6, 0.15, -2.35] as Vec3, max: [2.6, 2.1, 2.0] as Vec3 },
     minR: 1.3, maxR: 5.4, minPhi: 0.85, maxPhi: 1.38,
   }),
+  // The Campfire has no walls — it is open shore and open sky. Its hold is not
+  // a room but a clearing: near enough that the ring always fills the frame,
+  // wide enough for the whole path of months and the Boathouse behind it.
+  campfire: Object.freeze({
+    eye: { min: [-7.2, 0.25, -7.6] as Vec3, max: [7.2, 5.4, 7.6] as Vec3 },
+    target: { min: [-2.6, 0.1, -6.4] as Vec3, max: [2.6, 1.6, 3.8] as Vec3 },
+    minR: 1.3, maxR: 7.4, minPhi: 0.82, maxPhi: 1.42,
+  }),
 });
 
 /** The registry the runtime reads the active place from. `court/CourtScene.ts` registers itself on import. */

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { HarbourPlaceId } from "../flag.ts";
-import type { BoathouseReading, CellarReadingView, CottageReading, GlasshouseReading, HarbourReading, KilnReading, KitchenReading, TowerReading } from "../data/reading.ts";
+import type { BoathouseReading, CampfireReading, CellarReadingView, CottageReading, GlasshouseReading, HarbourReading, KilnReading, KitchenReading, TowerReading } from "../data/reading.ts";
 import { CourtFlat, engravedCents, type CourtFlatProps, type CourtFlatStatus } from "./CourtFlat.tsx";
 import "../harbour.css";
 
@@ -36,6 +36,7 @@ export function HarbourFlat({ place, ...props }: PlaceFlatProps) {
   if (place === "library") return <LibraryFlat {...props} />;
   if (place === "cottage") return <CottageFlat {...props} />;
   if (place === "kiln") return <KilnFlat {...props} />;
+  if (place === "campfire") return <CampfireFlat {...props} />;
   const { reading, status, theme, partnerName, onOpen, onEnter, overlay } = props;
   return <CourtFlat reading={reading} status={status} theme={theme} partnerName={partnerName} onOpen={onOpen} onEnter={onEnter} overlay={overlay} />;
 }
@@ -326,6 +327,60 @@ export function KilnFlat({ reading, status = "loading", theme = "classic", onOpe
       </div>
       {(kiln?.overflow ?? 0) > 0 && <p className="place-flat__line">And {kiln?.overflow} more on the Studio's own shelf.</p>}
       {(kiln?.keptPrivate ?? 0) > 0 && <p className="place-flat__line">{kiln!.keptPrivate} {kiln!.keptPrivate === 1 ? "piece is" : "pieces are"} kept privately — counted here, never shown.</p>}
+    </div>
+  </section>;
+}
+
+/**
+ * The Campfire, read as paper — the same facts the shore stands, in words.
+ *
+ * The month's Chapter, where the paired review stands, who has sat and who
+ * has not, how many stones are on the path, and whether the first Sitdown has
+ * ever happened. Every door is a real button onto the surface that owns it;
+ * nothing on this page closes a Chapter, and not one figure appears.
+ */
+export function CampfireFlat({ reading, status = "loading", theme = "classic", onOpen, overlay = false, onStair }: Omit<PlaceFlatProps, "place">) {
+  const fire: CampfireReading | null = reading?.campfire ?? null;
+  const seats = fire?.seats ?? [];
+  const waiting = seats.filter((seat) => !seat.seated).map((seat) => seat.name);
+  const where = fire === null ? "The fire is being read"
+    : fire.close === "proposed" ? "A closing is on the table. Read it, and sit down when you are ready."
+      : fire.close === "awaiting-partner" ? `You have sat down. The fire is waiting for ${waiting.join(" and ") || "the other of you"}.`
+        : fire.close === "sealed" ? "The month is sealed. The newest stone is still warm."
+          : !fire.lit ? "Unlit kindling. The fire is lit at your first Sitdown, and after that it never goes fully cold."
+            : fire.overdue ? "The month has ended and this Chapter is still open. It closes at your next Sitdown, whenever that is."
+              : "Burning quietly. Nothing is on the table.";
+  return <section className={`court-flat place-flat place-flat--campfire court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="campfire" aria-label="The Campfire, reading edition" aria-busy={status === "loading" || undefined}>
+    <div className="court-flat__sheet">
+      <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Campfire")}</p>
+      {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Up the footpath to the Court</button>}
+      <div className="place-flat__doors">
+        <button type="button" onClick={() => onOpen?.("plan-studio")}>
+          Sit down at the fire{fire?.month ? ` — ${fire.month}` : ""}{fire?.title ? ` · “${fire.title}”` : ""}
+        </button>
+      </div>
+      <p className="place-flat__line">{where}</p>
+      {seats.length > 0 && <ul className="place-flat__pots" aria-label="The logs around the fire">
+        {seats.map((seat) => <li key={seat.memberId}>
+          <button type="button" onClick={() => onOpen?.("plan-studio")}>
+            <strong>{seat.name}’s log</strong>
+            <span>{seat.seated ? "has sat down" : "still empty"}</span>
+          </button>
+        </li>)}
+      </ul>}
+      <div className="place-flat__bench">
+        <h3>The path of months</h3>
+        <button type="button" className="court-flat__plate" onClick={() => onOpen?.("journey")}
+          aria-label={`The path of months. ${fire?.stones ?? 0} ${fire?.stones === 1 ? "stone laid" : "stones laid"}. Step into Journey.`}>
+          <small>One stone for every Chapter closed</small>
+          <strong>{fire ? (fire.stones === 0 ? "None yet" : `${fire.stones} ${fire.stones === 1 ? "stone" : "stones"}`) : "—"}</strong>
+          <span>{fire?.seal ? "The newest is still warm" : fire?.sinceClose === null || fire === null ? "No Sitdown has closed a Chapter yet" : `Last laid ${fire.sinceClose} ${fire.sinceClose === 1 ? "day" : "days"} ago`}</span>
+        </button>
+      </div>
+      <div className="place-flat__doors">
+        <button type="button" onClick={() => onOpen?.("hercules")}>Ask Hercules for the next question</button>
+      </div>
+      <p className="place-flat__line">A Chapter never closes on its own. It closes when both of you sit down. Nothing on this page moves money.</p>
     </div>
   </section>;
 }
