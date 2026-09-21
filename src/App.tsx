@@ -85,7 +85,7 @@ import { fetchLedgerSnapshot } from "./ledgerSync/discovery.ts";
 import { captureExplicit } from './ledgerSync/capture.ts';
 import { LedgerSyncClient, LedgerCommandRejectedError } from "./ledgerSync/client.ts";
 import { ledgerSyncEnabled, localLedgerIdentity } from "./ledgerSync/mode.ts";
-import { Suspense, lazy, memo, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Suspense, lazy, memo, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   JOINT,
   NeedsConfirmationError,
@@ -4873,7 +4873,7 @@ export function App() {
     pendingDemoFramesRef.current = [];
   }, []);
 
-  function persistLedgerWrite(next: Household, token?: UndoToken, confirmationId?: string) {
+  const persistLedgerWrite = useCallback((next: Household, token?: UndoToken, confirmationId?: string) => {
     const accepted = householdRef.current;
     return persist(
       useLedgerSync ? next : accepted ? restoreAcceptedSnapshot(accepted, next) : next,
@@ -4881,7 +4881,7 @@ export function App() {
       undefined,
       confirmationId ? { confirmationId } : undefined,
     );
-  }
+  }, [persist, useLedgerSync]);
 
   async function gateWithGoogle(options?: { record?: boolean }) {
     const current = householdRef.current;
@@ -4964,18 +4964,26 @@ export function App() {
   }
 
   // A callback belongs to the desk that rendered it, including A→B→A changes.
-  const renderedWriteScope = {
+  // The snapshot is memoised on the scope it records, so a handler that closes
+  // over it keeps one identity while the desk is unchanged and is rebuilt the
+  // moment household, member, room or replica generation moves. Reuse never
+  // widens what a retained command may write: enqueueScopedWrite still compares
+  // this render’s recorded scope against the live one before anything is saved.
+  // replicaScopeGenerationRef.current is read during render today; keying on that
+  // value reproduces it exactly — a bump with no re-render changes nothing either
+  // way, and the first render after one rebuilds the snapshot.
+  const renderedWriteScope = useMemo(() => ({
     generation: replicaScopeGenerationRef.current, environment,
     householdId: household?.householdId ?? null,
     memberId: session?.memberId ?? null, view: session?.view ?? null,
-  };
-  const renderedWriteIsCurrent = () => appMountedRef.current && !openingHouseholdRef.current && sameWriteScope(renderedWriteScope, {
+  }), [replicaScopeGenerationRef.current, environment, household?.householdId, session?.memberId, session?.view]);
+  const renderedWriteIsCurrent = useCallback(() => appMountedRef.current && !openingHouseholdRef.current && sameWriteScope(renderedWriteScope, {
     generation: replicaScopeGenerationRef.current, environment: environmentRef.current,
     householdId: householdRef.current?.householdId ?? null,
     memberId: sessionRef.current?.memberId ?? null, view: sessionRef.current?.view ?? null,
-  });
+  }), [renderedWriteScope]);
 
-  function run(fn: (current: Household) => CommitResult, options?: {
+  const run = useCallback((fn: (current: Household) => CommitResult, options?: {
     isCurrent?: () => boolean;
     scopeIsCurrent?: () => boolean;
     closeAdd?: boolean;
@@ -4984,7 +4992,7 @@ export function App() {
     onAccepted?: (result: CommitResult) => void;
     onConfirm?: (error: NeedsConfirmationError) => boolean;
     onError?: (message: string) => void;
-  }) {
+  }) => {
     const callerOptions = options;
     options = {
       ...callerOptions,
@@ -5101,16 +5109,16 @@ export function App() {
         postingRef.current = false;
       }
     });
-  }
+  }, [adding, assertMemberPersonalUpdate, comfort.haptics, comfort.sound, commitHousehold, enqueueWrite, focusedAccountId, form.amount, goTab, renderedWriteIsCurrent, session?.memberId, setAdding, tab, today, view]);
 
-  const reviewedKitchenScope = {
+  const reviewedKitchenScope = useMemo(() => ({
     generation: replicaScopeGenerationRef.current,
     environment,
     householdId: household?.householdId ?? null,
     memberId: session?.memberId ?? null,
     view: session?.view ?? null,
-  };
-  function runKitchen(fn: (current: Household) => CommitResult, options?: KitchenCommandOptions): Promise<CommandOutcome | null> {
+  }), [replicaScopeGenerationRef.current, environment, household?.householdId, session?.memberId, session?.view]);
+  const runKitchen = useCallback((fn: (current: Household) => CommitResult, options?: KitchenCommandOptions): Promise<CommandOutcome | null> => {
     return enqueueScopedWrite(enqueueWrite, reviewedKitchenScope, () => ({
       generation: replicaScopeGenerationRef.current,
       environment: environmentRef.current,
@@ -5158,7 +5166,7 @@ export function App() {
         return null;
       }
     }, () => setError("These books changed while this action was waiting. Review the current desk and try again."));
-  }
+  }, [assertMemberPersonalUpdate, commitHousehold, enqueueWrite, renderedWriteIsCurrent, reviewedKitchenScope]);
 
   function requestClearThisPhone() {
     setGuard({ kind: "clear-this-phone" });
