@@ -149,7 +149,17 @@ it("marks the tools that have no room of their own, and names no others", () => 
   for (const row of rooms) {
     expect(row.name.length).toBeGreaterThan(0);
     expect(row.words).toContain("·");
+    // Read aloud, a row says the room and the level, always.
+    expect(row.aria, row.key).toContain(row.name);
+    expect(row.aria, row.key).toContain(row.level);
   }
+  // Where the island renamed a slot, the row says so rather than leaving two
+  // names to be guessed between: the Campfire stands where the house said
+  // "the cabinet of wonders".
+  const fire = rooms.find((row) => row.place === "campfire")!;
+  expect(fire.aria).toContain("the house calls this place The cabinet of wonders");
+  const tower = rooms.find((row) => row.place === "tower")!;
+  expect(tower.words).toBe("Home · Loft");
 });
 
 it("marks the roomless tools in the sheet itself", async () => {

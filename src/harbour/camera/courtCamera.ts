@@ -136,7 +136,13 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
   let look: CourtLook | null = null;
   /** The close hold's pose while it is on, and the pose to return to when it is let go. */
   let held: CourtPose | null = null;
-  let before: { mode: CourtMode; anchor: CourtAnchor | undefined; look: CourtLook | null } | null = null;
+  /**
+   * Where the camera was when the close hold went on. The **pose** matters as
+   * much as the mode: a camera a hand has dragged, zoomed or restored from a
+   * return record has no named mode to go back to, and coming out of close
+   * mode into the room's establishing pose would quietly throw that view away.
+   */
+  let before: { mode: CourtMode; anchor: CourtAnchor | undefined; look: CourtLook | null; pose: CourtPose } | null = null;
   /** The standing room's hold on the camera; null in the open Court. */
   let hold: RoomHold | null = null;
   const legal = (pose: CourtPose): CourtPose => holdPoseInRoom(clampPose(clampCourtPose(pose)), hold);
@@ -185,11 +191,20 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
       if (next) {
         // Remember where we stood the first time in, so leaving puts it back
         // however many times the hold is re-aimed while it is on.
-        if (!held) before = { mode, anchor, look };
+        if (!held) before = { mode, anchor, look, pose: goal };
         held = next;
+      } else if (before) {
+        held = null;
+        mode = before.mode; anchor = before.anchor; look = before.look;
+        const pose = before.pose;
+        before = null;
+        // Back to the exact view, not merely the mode: a hand-held camera is
+        // a place too, and the same gesture that came close has to return it.
+        goal = legal(pose);
+        if (reduced) { current = goal; apply(); }
+        return;
       } else {
         held = null;
-        if (before) { mode = before.mode; anchor = before.anchor; look = before.look; before = null; }
       }
       retarget();
     },

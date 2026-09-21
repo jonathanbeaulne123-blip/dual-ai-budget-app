@@ -60,7 +60,7 @@ export type QuickSheetProps = {
 
 export type QuickSheetGroup = { district: CompassDistrict; title: string; tools: { id: string; name: string }[] };
 /** One room × level slot of the island: which place stands there, and what the house calls the slot. */
-export type QuickSheetPlace = { key: string; room: HouseRoom; level: HouseLevel; place: HarbourPlaceId | null; name: string; words: string };
+export type QuickSheetPlace = { key: string; room: HouseRoom; level: HouseLevel; place: HarbourPlaceId | null; name: string; words: string; aria: string };
 
 /**
  * The event a place row raises when the sheet was given no `onGo`. The App
@@ -84,13 +84,19 @@ export function quickSheetPlaces(): QuickSheetPlace[] {
     for (const level of LEVEL_ORDER) {
       const place = HARBOUR_ROOMS[room]?.[level] ?? null;
       const slot = HOUSE_PLACES[room][level];
+      const name = place ? titleCase(HARBOUR_PLACE_NAMES[place]) : slot.title;
       rows.push({
         key: `${room}:${level}`,
         room,
         level,
         place,
-        name: place ? titleCase(HARBOUR_PLACE_NAMES[place]) : slot.title,
+        name,
         words: `${ROOM_NAMES[room]} · ${slot.title}`,
+        // The island has renamed some of the house's slots — the Campfire
+        // stands where the house said "the cabinet of wonders" — so the row
+        // read aloud says the room, the level **and** the house's own name
+        // for it, and nobody has to guess which place they are walking to.
+        aria: `${name}. ${ROOM_NAMES[room]}, ${level}${slot.title === name ? "" : ` — the house calls this place ${slot.title}`}. Walk there.`,
       });
     }
   }
@@ -258,6 +264,7 @@ export function QuickSheet(props: QuickSheetProps) {
                   style={TARGET}
                   data-quick-sheet-place={row.key}
                   data-quick-sheet-place-id={row.place ?? undefined}
+                  aria-label={row.aria}
                   aria-current={here && here.room === row.room && here.level === row.level ? "true" : undefined}
                   onClick={() => { go(row); onClose(); }}
                 >

@@ -437,6 +437,16 @@ describe("the close hold — the third camera hold (W7 a)", () => {
     court.close(null);
     expect(court.closed()).toBe(false);
     expect(samePose(court.pose(), before, 1e-6)).toBe(true);
+
+    // And a camera a hand has moved — a drag, a zoom, a restored return record
+    // — has no named mode to go back to, so the pose itself is what is kept.
+    court.drag(60, -20);
+    court.zoom(-0.3);
+    const byHand = court.pose();
+    expect(samePose(byHand, before, 1e-6)).toBe(false);
+    court.close(closePose("court", "phone"));
+    court.close(null);
+    expect(samePose(court.pose(), byHand, 1e-6), "a hand-held view was thrown away by the close hold").toBe(true);
   });
 
   it("is dropped by any plain ask to be somewhere else", () => {

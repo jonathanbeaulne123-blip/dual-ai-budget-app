@@ -361,15 +361,106 @@ def slice2_pass(browser, theme: str, width: int, report: list) -> None:
             errors.append("no island or plaque twin in the atlas")
     except Exception as error:
         errors.append(f"atlas: {error}")
+    # ── W5 + W7: the door signs on the path, the quick sheet, close mode. ────
+    signs = None
+    close_mode = None
+    try:
+        route_to(page, "court")
+        wait_place(page, "court")
+        # The signs stand on the lawn in front of each building; the sky pose is
+        # where the whole island — and every one of them — is in frame at once.
+        gate = twin(page, "gate")
+        if gate:
+            gate.evaluate("b => b.click()")
+            page.wait_for_timeout(1200)
+        snap(page, f"{tag}-26-door-signs.png")
+        # What each sign actually says, from the twin that reads the plate.
+        signs = page.evaluate(
+            """() => Object.fromEntries([...document.querySelectorAll('[data-twin]')]
+                 .filter(b => ['library-hall','glasshouse-shed','kitchen-cottage','boathouse','hercules-cottage','kiln-house','campfire'].includes(b.dataset.twin))
+                 .map(b => [b.dataset.twin, b.getAttribute('aria-label')]))"""
+        )
+        if not signs:
+            errors.append("no landmark twins carrying a door sign")
+        route_to(page, "court")
+        wait_place(page, "court")
+        # And a walk up the path: a sign has to be readable where you stand in
+        # front of the building, not only counted from the sky.
+        page.focus(".harbour-world__stage")
+        for key in ["w"] * 7 + ["a"] * 3 + ["+"] * 5:
+            page.keyboard.press(key)
+            page.wait_for_timeout(90)
+        page.wait_for_timeout(1200)
+        snap(page, f"{tag}-26b-sign-on-the-path.png")
+    except Exception as error:
+        errors.append(f"door signs: {error}")
+
+    # The quick sheet, opened the way the keyboard opens it: Space on the stage.
+    try:
+        page.focus(".harbour-world__stage")
+        page.keyboard.press("Space")
+        page.wait_for_selector("[data-quick-sheet='open']", timeout=10000)
+        page.wait_for_timeout(700)
+        snap(page, f"{tag}-27-quick-sheet.png", full=True)
+        # The places live below the tools inside the panel's own scroller.
+        page.evaluate("() => document.querySelector('[data-quick-sheet-places]')?.scrollIntoView({ block: 'start' })")
+        page.wait_for_timeout(700)
+        snap(page, f"{tag}-27b-quick-sheet-places.png", full=True)
+        sheet = page.evaluate(
+            """() => ({
+              tools: [...document.querySelectorAll('[data-quick-sheet-tool]')].map(b => b.dataset.quickSheetTool),
+              places: [...document.querySelectorAll('[data-quick-sheet-place]')].map(b => b.dataset.quickSheetPlace),
+              roomless: [...document.querySelectorAll('[data-quick-sheet-roomless]')].map(b => b.dataset.quickSheetTool),
+            })"""
+        )
+        report_sheet = sheet
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(500)
+    except Exception as error:
+        report_sheet = None
+        errors.append(f"quick sheet: {error}")
+
+    # Close mode: the third hold, on and off with the same key.
+    try:
+        page.focus(".harbour-world__stage")
+        before = measure(page).get("camera")
+        page.keyboard.press("c")
+        page.wait_for_timeout(900)
+        close_mode = measure(page)
+        snap(page, f"{tag}-28-close-mode.png")
+        if close_mode.get("camera") == before:
+            errors.append("close mode did not move the camera")
+        page.keyboard.press("c")
+        page.wait_for_timeout(900)
+        if measure(page).get("camera") != before:
+            errors.append("close mode did not put the camera back")
+    except Exception as error:
+        errors.append(f"close mode: {error}")
+
     context.close()
+
+    # ── The Court's own reading edition, carrying its door sign. ─────────────
+    try:
+        reading_edition = browser.new_context(viewport={"width": width, "height": HEIGHT[width]}, reduced_motion="reduce", device_scale_factor=1)
+        reading_edition.set_default_timeout(45000)
+        reading_edition.add_init_script(init_script(theme, "flat"))
+        reader = reading_edition.new_page()
+        reader.goto(BASE, wait_until="domcontentloaded", timeout=45000)
+        reader.wait_for_selector("[data-place-sign='court']", timeout=45000)
+        reader.wait_for_timeout(700)
+        snap(reader, f"{tag}-29-flat-court.png", full=True)
+        reading_edition.close()
+    except Exception as error:
+        errors.append(f"flat court: {error}")
 
     # ── Mid-travel frames: full motion, caught part way through each journey. ─
     for name, place in (("09-travel-court-tower", "tower"), ("10-travel-court-cellar", "cellar")):
         moving = browser.new_context(viewport={"width": width, "height": HEIGHT[width]}, reduced_motion="no-preference", device_scale_factor=1)
+        moving.set_default_timeout(45000)
         moving.add_init_script(init_script(theme, None))
         mover = moving.new_page()
         try:
-            mover.goto(BASE, wait_until="domcontentloaded")
+            mover.goto(BASE, wait_until="domcontentloaded", timeout=45000)
             wait_court(mover)
             route_to(mover, place)
             # ~40% through the 900 ms lift, with the roof (or the lid) part way.
@@ -382,10 +473,11 @@ def slice2_pass(browser, theme: str, width: int, report: list) -> None:
     # ── Both reading editions, reached by their own real buttons. ────────────
     for name, place, nth in (("07-flat-tower", "tower", 1), ("08-flat-cellar", "cellar", 2)):
         flat = browser.new_context(viewport={"width": width, "height": HEIGHT[width]}, reduced_motion="reduce", device_scale_factor=1)
+        flat.set_default_timeout(45000)
         flat.add_init_script(init_script(theme, "flat"))
         reader = flat.new_page()
         try:
-            reader.goto(BASE, wait_until="domcontentloaded")
+            reader.goto(BASE, wait_until="domcontentloaded", timeout=45000)
             reader.wait_for_selector("[data-court-flat]", timeout=45000)
             reader.wait_for_timeout(900)
             reader.click(f".court-flat__plinths li:nth-child({nth}) button", timeout=15000)
@@ -411,7 +503,8 @@ def slice2_pass(browser, theme: str, width: int, report: list) -> None:
         flat.close()
 
     report.append({"tag": tag, "court": court, "tower": tower, "cellar": cellar, "glasshouse": glasshouse,
-                   "kitchen": kitchen, "boathouse": boathouse, "library": library, "cottage": cottage, "kiln": kiln, "campfire": campfire, "atlas": atlas, "errors": errors[:12]})
+                   "kitchen": kitchen, "boathouse": boathouse, "library": library, "cottage": cottage, "kiln": kiln, "campfire": campfire, "atlas": atlas,
+                   "doorSigns": signs, "quickSheet": report_sheet, "closeMode": close_mode, "errors": errors[:12]})
     print(tag, "court", court.get("drawCalls"), "tower", (tower or {}).get("drawCalls"), "cellar", (cellar or {}).get("drawCalls"),
           "kitchen", (kitchen or {}).get("drawCalls"), "boathouse", (boathouse or {}).get("drawCalls"), "library", (library or {}).get("drawCalls"),
           "cottage", (cottage or {}).get("drawCalls"), "kiln", (kiln or {}).get("drawCalls"), "campfire", (campfire or {}).get("drawCalls"),
