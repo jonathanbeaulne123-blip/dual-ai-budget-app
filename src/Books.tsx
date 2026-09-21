@@ -91,8 +91,9 @@ const SEAL_PANE_IDS = ["wallet", "register", "close"] as const;
 
 type Pane = (typeof PANES)[number]["id"] | "overview";
 
-export function BooksPage(props: ComponentProps<typeof BooksSession> & {onOpenHouseBank?:(id:string)=>void}) {
-  if(HOUSE_WORLD_ENABLED)return <HouseBooks key={JSON.stringify([props.booksHousehold.environment,props.booksHousehold.householdId,props.memberId,props.view,props.duplicateAuthorityGeneration??0])} household={props.booksHousehold} memberId={props.memberId} view={props.view} onOpenBank={props.onOpenHouseBank}>{division=>division==="Goals"?<KittyBanks household={props.household} booksHousehold={props.booksHousehold} view={props.view} createdBy={props.memberId} surface="home" onCommand={props.onCommand}/>:<BooksSession {...props} houseDivision={division}/>}</HouseBooks>;
+/** `openBookAt` is the division a door named on the way in (the Library's Bindery machines). Presentation only. */
+export function BooksPage(props: ComponentProps<typeof BooksSession> & {onOpenHouseBank?:(id:string)=>void;openBookAt?:BookDivision|null}) {
+  if(HOUSE_WORLD_ENABLED)return <HouseBooks key={JSON.stringify([props.booksHousehold.environment,props.booksHousehold.householdId,props.memberId,props.view,props.duplicateAuthorityGeneration??0])} household={props.booksHousehold} memberId={props.memberId} view={props.view} onOpenBank={props.onOpenHouseBank} openAt={props.openBookAt ?? null}>{division=>division==="Goals"?<KittyBanks household={props.household} booksHousehold={props.booksHousehold} view={props.view} createdBy={props.memberId} surface="home" onCommand={props.onCommand}/>:<BooksSession {...props} houseDivision={division}/>}</HouseBooks>;
   return <BooksSession key={JSON.stringify([props.booksHousehold.environment, props.booksHousehold.householdId, props.memberId, props.view, props.duplicateAuthorityGeneration ?? 0])} {...props} />;
 }
 

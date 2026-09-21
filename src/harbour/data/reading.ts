@@ -244,9 +244,20 @@ export type GlassPot = {
   /** The pot's own date, for the tag's words. */
   date: DateKey | null;
 };
+/**
+ * The member's own private tasks, in counts and in the glasshouse's own
+ * vocabulary: a seed nobody has taken up, a sprout somebody has, a bloom
+ * harvested this week. A private task's title is nobody's business but its
+ * owner's, so it never enters this reading — only how many stand at each
+ * state. The side bench mirrors these three numbers and says nothing else.
+ */
+export type MinePots = { seed: number; sprout: number; bloom: number };
+
 export type GlasshouseReading = {
   /** Standing pots, benches 0–2, dry ones included. Capped for the room; the paper holds the rest. */
   pots: GlassPot[];
+  /** The member's own private tasks, by state. Counts only — never a title. */
+  mine: MinePots;
   /** Blooms harvested in the last seven days — the harvest shelf. Nothing is deleted; it is harvested. */
   harvested: number;
   /** Rituals in the long bed: perennials, they come back on their own. */
@@ -263,8 +274,9 @@ export const GLASSHOUSE_POT_CAP = 18;
  * The benches, read from the tasks the member can see in this view. The bench
  * is the pot's `doDate` (or `dueDate`): this week, next week, or the month at
  * the back — an undated pot waits at the back too. Done pots from the last
- * seven days are the harvest shelf; older harvests rest. Pure; reads rows,
- * posts nothing.
+ * seven days are the harvest shelf; older harvests rest. Alongside them,
+ * `mine` counts this member's own private tasks by state for the side bench —
+ * counts only, never a title. Pure; reads rows, posts nothing.
  */
 export function buildGlasshouseReading(
   household: { tasks?: Task[]; rituals?: Ritual[]; members: { id: string }[] },
@@ -275,7 +287,23 @@ export function buildGlasshouseReading(
   const nextWeek = addDays(weekStart, 7);
   const monthEnd = addDays(weekStart, 28);
   const harvestSince = addDays(today, -7);
-  const rows = shapeTasks(household.tasks).filter((task) => !task.deleted && taskInView(task, memberId, "household"));
+  const shaped = shapeTasks(household.tasks).filter((task) => !task.deleted);
+  const rows = shaped.filter((task) => taskInView(task, memberId, "household"));
+  // The side bench: this member's own private tasks, counted by state and never
+  // named. `taskInView(..., "personal")` is the one gate — a task is mine only
+  // when I wrote it and kept it personal, so a partner's private row is invisible
+  // here exactly as it is everywhere else.
+  const mine: MinePots = { seed: 0, sprout: 0, bloom: 0 };
+  for (const task of shaped.filter((task) => taskInView(task, memberId, "personal"))) {
+    if (task.completedAt) {
+      // Harvested in the same seven-day window the shared shelf uses; older blooms rest.
+      if (compareDateKeys(task.completedAt.slice(0, 10), harvestSince) >= 0) mine.bloom++;
+      continue;
+    }
+    // Every open private task counts, dated or not: the bench is a count of what
+    // I am carrying, not a week's bench, so nothing falls off the end of a month.
+    if (task.acknowledgedBy.length > 0) mine.sprout++; else mine.seed++;
+  }
   let harvested = 0;
   const pots: GlassPot[] = [];
   let dry = 0;
@@ -308,7 +336,7 @@ export function buildGlasshouseReading(
   const standing = pots.slice(0, GLASSHOUSE_POT_CAP);
   const perennials = (household.rituals ?? []).filter((ritual) => ritual.state === "active").slice(0, 6)
     .map((ritual) => ({ key: `ritual/${ritual.id}`, title: ritual.title || "A ritual" }));
-  return { pots: standing, harvested, perennials, dry, overflow: pots.length - standing.length };
+  return { pots: standing, mine, harvested, perennials, dry, overflow: pots.length - standing.length };
 }
 
 /**
@@ -391,15 +419,52 @@ export type BoathouseReading = {
   letters: number;
   /** Moments spent together. */
   encounters: number;
+  /**
+   * Wishes hung in the last `BOATHOUSE_NEW_DAYS` days — a count, never a
+   * wish. The newest lantern glows warmer and sways while this is above zero.
+   *
+   * Read from a wish row's own timestamp, so nothing about the member's
+   * comings and goings is ever stored to work it out. Today a shared
+   * experience carries no creation stamp at all (`decodeExperience` does not
+   * admit the key), so this is `0` for every real household and no lantern
+   * glows falsely; the moment a wish record keeps a `createdAt`, the room
+   * lights up on its own.
+   */
+  hung: number;
 };
-export const EMPTY_BOATHOUSE_READING: BoathouseReading = Object.freeze({ wishes: 0, memories: 0, letters: 0, encounters: 0 });
 
-/** Counts from the shared Hearthside state. Pure, total: a household without one is an empty boathouse. */
-export function buildBoathouseReading(household: { hearthside?: { experiences?: unknown[]; memories?: unknown[]; notes?: unknown[]; encounters?: unknown[] } }): BoathouseReading {
+/** How long a wish stays "newly hung": three days, read off the wish's own stamp. */
+export const BOATHOUSE_NEW_DAYS = 3;
+export const EMPTY_BOATHOUSE_READING: BoathouseReading = Object.freeze({ wishes: 0, memories: 0, letters: 0, encounters: 0, hung: 0 });
+
+/**
+ * The day a row says it was made, or null where it says nothing. Only a row's
+ * own stamp counts — the room never guesses a date and never keeps one.
+ */
+function rowMadeOn(row: unknown): DateKey | null {
+  if (!row || typeof row !== "object") return null;
+  const stamp = (row as { createdAt?: unknown }).createdAt;
+  return typeof stamp === "string" && /^\d{4}-\d{2}-\d{2}/.test(stamp) ? stamp.slice(0, 10) : null;
+}
+
+/**
+ * Counts from the shared Hearthside state. Pure, total: a household without one
+ * is an empty boathouse. With a `today`, wishes stamped within the last three
+ * days are counted as newly hung — see `BoathouseReading.hung` for why that is
+ * zero until a wish record keeps a stamp.
+ */
+export function buildBoathouseReading(
+  household: { hearthside?: { experiences?: unknown[]; memories?: unknown[]; notes?: unknown[]; encounters?: unknown[] } },
+  today?: DateKey,
+): BoathouseReading {
   const state = household.hearthside;
   if (!state || typeof state !== "object") return EMPTY_BOATHOUSE_READING;
   const count = (rows: unknown): number => (Array.isArray(rows) ? rows.length : 0);
-  return { wishes: count(state.experiences), memories: count(state.memories), letters: count(state.notes), encounters: count(state.encounters) };
+  const since = today ? addDays(today, -BOATHOUSE_NEW_DAYS) : null;
+  const hung = since && Array.isArray(state.experiences)
+    ? state.experiences.filter((row) => { const made = rowMadeOn(row); return made !== null && compareDateKeys(made, since) >= 0; }).length
+    : 0;
+  return { wishes: count(state.experiences), memories: count(state.memories), letters: count(state.notes), encounters: count(state.encounters), hung };
 }
 
 /**
@@ -782,7 +847,7 @@ export const EMPTY_CELLAR_READING: CellarReadingView = Object.freeze({
 /** The empty cistern: nothing known, the stone dark to the old line. */
 export const EMPTY_CISTERN_READING: CisternReading = Object.freeze({ cents: null, target: 0, level: CISTERN_FLOOR }) as CisternReading;
 /** A glasshouse with clean benches: no pots, nothing harvested, no perennials yet. */
-export const EMPTY_GLASSHOUSE_READING: GlasshouseReading = Object.freeze({ pots: [], harvested: 0, perennials: [], dry: 0, overflow: 0 });
+export const EMPTY_GLASSHOUSE_READING: GlasshouseReading = Object.freeze({ pots: [], mine: Object.freeze({ seed: 0, sprout: 0, bloom: 0 }), harvested: 0, perennials: [], dry: 0, overflow: 0 });
 
 /**
  * The Rook's Tower: the rack as it stands (`rackSettled` over the loft's own
@@ -922,7 +987,7 @@ export function buildHarbourReading(household: Household, memberId: string, toda
     freshness,
     glasshouse: buildGlasshouseReading(household, memberId, today),
     kitchen: buildKitchenReading(household, memberId, today),
-    boathouse: buildBoathouseReading(household),
+    boathouse: buildBoathouseReading(household, today),
     cottage: buildCottageReading(household),
     kiln: buildKilnReading(household, memberId, today),
     campfire: buildCampfireReading(household, memberId, today),

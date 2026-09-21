@@ -5,6 +5,7 @@ import { createContactShadows } from "../scene/contact.ts";
 import { registerPlace, type Anchor, type Composition, type Place, type PlaceHandle, type Pose, type Region, type Vec3 } from "../scene/place.ts";
 import type { RenderTier } from "../scene/quality.ts";
 import { libraryDressingFrom, type LibraryDressing } from "./dressing.ts";
+import { BINDERY_MACHINES, binderyDoorObject } from "../../house/bindery.ts";
 
 /**
  * The Library (LITTLE_HARBOUR_v2 §2) — one great hall for the Standing Book.
@@ -19,7 +20,10 @@ import { libraryDressingFrom, type LibraryDressing } from "./dressing.ts";
  *
  * Every figure lives in the Book itself: the lectern, the machines and the
  * Time Machine are all doors onto the Standing Book (`onOpen("books")`), and
- * nothing in the hall reads or writes a ledger row.
+ * nothing in the hall reads or writes a ledger row. Each Bindery machine goes
+ * one step further and names its own division of the book
+ * (`onOpen("books", "bindery/<id>")`, `house/bindery.ts`), so the hall's own
+ * plate — "one machine per divider" — is true when you touch it.
  */
 
 export const LIBRARY_LAYOUT = {
@@ -40,8 +44,18 @@ export const LIBRARY_LAYOUT = {
   garden: [-2.6, 0, -3.15] as const,
 } as const;
 
-/** The five Bindery machines, in the vision's own order and words. */
-export const BINDERY_MACHINES = ["Lantern Row", "Low Water", "Cut Bank", "The Glasshouse pane", "The Handoff bench"] as const;
+/** The five Bindery machines, in the vision's own order and words, each with the division it opens. */
+export { BINDERY_MACHINES } from "../../house/bindery.ts";
+
+/** Where the `index`th machine stands along the Bindery bench. */
+export function machineSpot(index: number): number {
+  return LIBRARY_LAYOUT.bindery[2] - 1.4 + index * 0.7;
+}
+
+/** A machine's height above the bench top: three sizes, repeating down the row. */
+export function machineRise(index: number): number {
+  return (index % 3) * 0.07;
+}
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
@@ -250,21 +264,22 @@ export function createLibrary(scene: THREE.Scene, options: LibraryOptions): Plac
     placed(new THREE.BoxGeometry(0.09, 0.84, 0.09), bx + 0.28, 0.42, bz + 1.6),
   ], mat(dressing.binderyBench, { roughness: 0.85 }));
   shadowed(binderyBench, false, true); binderyBench.name = "library-bindery"; binderyBench.userData.anchor = "bindery"; group.add(binderyBench);
-  const machineBodies: THREE.BufferGeometry[] = [];
-  const machineBrass: THREE.BufferGeometry[] = [];
-  BINDERY_MACHINES.forEach((_, index) => {
-    const z = bz - 1.4 + index * 0.7;
-    machineBodies.push(placed(new THREE.BoxGeometry(0.34, 0.26 + (index % 3) * 0.07, 0.3), bx, 1.05 + ((index % 3) * 0.07) / 2, z));
-    machineBrass.push(
+  // One body and one brass fitting per machine, each its own mesh: a machine is
+  // its own door now, so a tap has to be able to land on one and not on the row.
+  const machineMaterial = mat(dressing.machine, { roughness: 0.6, metalness: 0.15 });
+  const machineBrassMaterial = mat(dressing.brass, { roughness: 0.4, metalness: 0.5 });
+  BINDERY_MACHINES.forEach((machine, index) => {
+    const z = machineSpot(index);
+    const rise = machineRise(index);
+    const body = merged([placed(new THREE.BoxGeometry(0.34, 0.26 + rise, 0.3), bx, 1.05 + rise / 2, z)], machineMaterial);
+    body.userData.anchor = `bindery:${machine.id}`; body.name = `library-machine-${machine.id}`; group.add(body);
+    const fitting = merged([
       index % 2 === 0
-        ? placed(new THREE.CylinderGeometry(0.06, 0.06, 0.05, 10), bx, 1.3 + (index % 3) * 0.07, z, [Math.PI / 2, 0, 0])
-        : placed(new THREE.CylinderGeometry(0.025, 0.025, 0.2, 6), bx + 0.12, 1.3 + (index % 3) * 0.07, z, [0, 0, 0.5]),
-    );
+        ? placed(new THREE.CylinderGeometry(0.06, 0.06, 0.05, 10), bx, 1.3 + rise, z, [Math.PI / 2, 0, 0])
+        : placed(new THREE.CylinderGeometry(0.025, 0.025, 0.2, 6), bx + 0.12, 1.3 + rise, z, [0, 0, 0.5]),
+    ], machineBrassMaterial);
+    fitting.userData.anchor = `bindery:${machine.id}`; fitting.name = `library-machine-fitting-${machine.id}`; group.add(fitting);
   });
-  const machines = merged(machineBodies, mat(dressing.machine, { roughness: 0.6, metalness: 0.15 }));
-  machines.userData.anchor = "bindery"; machines.name = "library-machines"; group.add(machines);
-  const machineFittings = merged(machineBrass, mat(dressing.brass, { roughness: 0.4, metalness: 0.5 }));
-  machineFittings.userData.anchor = "bindery"; machineFittings.name = "library-machine-fittings"; group.add(machineFittings);
   contacts.disc(bx, bz, 0.7, 0.5, group);
 
   // ── The Time Machine at its desk, thumbing back through the leaves ────────
@@ -336,7 +351,15 @@ export function createLibrary(scene: THREE.Scene, options: LibraryOptions): Plac
 
   const anchorList = (): Anchor[] => [
     { id: "book", position: at(lx, 1.25, lz), zone: "station", label: "The Standing Book, open on its lectern — every figure has a source, every page a place. Open the Standing Book.", door: { target: "books" } },
-    { id: "bindery", position: at(bx, 1.15, bz), zone: "station", label: `The Bindery — ${BINDERY_MACHINES.join(", ")}. One machine per divider. Open the Standing Book.`, door: { target: "books" } },
+    { id: "bindery", position: at(bx, 1.15, bz), zone: "station", label: `The Bindery — ${BINDERY_MACHINES.map((machine) => machine.name).join(", ")}. One machine per divider. Open the Standing Book.`, door: { target: "books" } },
+    // One machine, one divider: the door carries the machine and the book arrives at its division.
+    ...BINDERY_MACHINES.map((machine, index): Anchor => ({
+      id: `bindery:${machine.id}`,
+      position: at(bx, 1.2 + machineRise(index), machineSpot(index)),
+      zone: "machine",
+      label: `${machine.name} — ${machine.line}. Open the Standing Book at ${machine.division}.`,
+      door: { target: "books", object: binderyDoorObject(machine.id) },
+    })),
     { id: "time-machine", position: at(tx, 1.05, tz), zone: "station", label: "The Time Machine, thumbing back through the leaves. Open the Standing Book.", door: { target: "books" } },
     { id: "balcony", position: at(0, balcony + 0.45, -halfDepth + 0.6), zone: "prop", label: "The reading balcony — the accounts as stickies on its rail. Open the Standing Book.", door: { target: "books" } },
     { id: "glasshouse-way", position: at(gx, 1.0, gz + 0.2), zone: "landmark", label: "The garden door — through to the Glasshouse." },
@@ -345,7 +368,11 @@ export function createLibrary(scene: THREE.Scene, options: LibraryOptions): Plac
 
   const regionList = (): Region[] => [
     { id: "book", group: "library", label: "The Standing Book on its lectern", box: box(lx - 0.55, 0.4, lz - 0.5, lx + 0.55, 1.6, lz + 0.6) },
-    { id: "bindery", group: "library", label: "The Bindery bench", box: box(bx - 0.55, 0.4, bz - 1.9, bx + 0.6, 1.6, bz + 1.9) },
+    { id: "bindery", group: "library", label: "The Bindery bench", box: box(bx - 0.55, 0.4, bz - 1.9, bx + 0.6, 0.95, bz + 1.9) },
+    ...BINDERY_MACHINES.map((machine, index): Region => ({
+      id: `bindery:${machine.id}`, group: "library", label: `${machine.name} — the Standing Book at ${machine.division}`,
+      box: box(bx - 0.2, 0.95, machineSpot(index) - 0.17, bx + 0.22, 1.42 + machineRise(index), machineSpot(index) + 0.17),
+    })),
     { id: "time-machine", group: "library", label: "The Time Machine", box: box(tx - 0.55, 0.4, tz - 0.7, tx + 0.55, 1.5, tz + 0.7) },
     { id: "balcony", group: "library", label: "The reading balcony", box: box(-halfWidth + 0.6, balcony + 0.1, -halfDepth + 0.3, halfWidth - 0.6, balcony + 0.7, -halfDepth + 0.9) },
     { id: "glasshouse-way", group: "library", label: "The garden door to the Glasshouse", box: box(gx - 0.7, 0, gz - 0.2, gx + 0.7, 2.1, gz + 0.4) },
