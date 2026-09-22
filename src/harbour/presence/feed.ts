@@ -48,7 +48,8 @@ export type WorldFeed = {
 export type WorldFeedProvider = (request: WorldFeedRequest) => WorldFeed;
 
 const QUIET: WorldFeed = { walk: null, memberId: null };
-let provider: WorldFeedProvider = () => QUIET;
+const quiet: WorldFeedProvider = () => QUIET;
+let provider: WorldFeedProvider = quiet;
 
 /** Installed once at import time by whatever owns the socket. Returns the way back, for tests. */
 export function useWorldFeedProvider(next: WorldFeedProvider): () => void {
@@ -58,7 +59,7 @@ export function useWorldFeedProvider(next: WorldFeedProvider): () => void {
 }
 
 /** True while the harbour is on its own: no live lane, and the honest pin only. */
-export const worldFeedIsQuiet = (): boolean => provider() === QUIET;
+export const worldFeedIsQuiet = (): boolean => provider === quiet;
 
 /** A React hook: whatever the installed provider is, or nothing at all. */
 export function useWorldFeed(request: WorldFeedRequest): WorldFeed {

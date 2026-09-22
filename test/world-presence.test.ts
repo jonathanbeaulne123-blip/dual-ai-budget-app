@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import * as THREE from "three";
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
   WORLD_ABSURD,
   WORLD_BOUND,

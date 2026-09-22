@@ -115,7 +115,9 @@ export type WorldPresenceInput = {
 export function attachWorldPresence(input: WorldPresenceInput): WorldPresenceHandle {
   const now = input.now ?? (() => Date.now());
   const visible = input.visible ?? (() => typeof document === "undefined" || document.visibilityState === "visible");
-  const fetcher = input.fetcher ?? fetch;
+  // Bound, not aliased: a bare `fetch` reference called off the global is an
+  // illegal invocation in a browser, and the lane would never get a ticket.
+  const fetcher: typeof fetch = input.fetcher ?? ((...args) => globalThis.fetch(...args));
   const path = `/ledger-sync/v2/${input.environment}/${input.householdId}`;
   const peers = new Map<string, WorldPeer>();
   const throttle = createStepThrottle();
