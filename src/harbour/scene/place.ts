@@ -283,12 +283,14 @@ export const PLACEMENT_SILL = 0.06;
  *
  * The spot and yaw expressions are character-for-character the Court's
  * (`CourtScene.ts` §"the island walk" and §"Hercules's Cottage" / §"The Kiln").
+ * Every one of them is `atan2(-x, -z)` — the yaw that turns the building's +z
+ * face, the face its door is on, toward the Court.
  */
 export const PLACE_PLACEMENTS: Readonly<Partial<Record<HarbourPlaceId, PlacePlacement>>> = Object.freeze({
   library: Object.freeze({
     exterior: "library-hall",
     spot: [-4.7, -11.6] as const,
-    yaw: Math.atan2(4.7, 11.6) + Math.PI,
+    yaw: Math.atan2(4.7, 11.6),
     halfWidth: 4.4, halfDepth: 3.4,
     door: [1.8, 0, 3.15] as Vec3,
     doorRadius: 1.5,
@@ -304,7 +306,7 @@ export const PLACE_PLACEMENTS: Readonly<Partial<Record<HarbourPlaceId, PlacePlac
   kiln: Object.freeze({
     exterior: "kiln-house",
     spot: [10.6, -4.4] as const,
-    yaw: Math.atan2(-10.6, 4.4) + Math.PI,
+    yaw: Math.atan2(-10.6, 4.4),
     halfWidth: 3.8, halfDepth: 2.9,
     door: [1.95, 0, 2.82] as Vec3,
     doorRadius: 1.5,

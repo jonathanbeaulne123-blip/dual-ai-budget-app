@@ -15,7 +15,7 @@ import {
   type BodyState,
   type BodyWorld,
 } from "./bodyModel.ts";
-import { courtObstacles, type Obstacle } from "./obstacles.ts";
+import { courtObstacles, type Obstacle, type RoomBounds } from "./obstacles.ts";
 // The partner's body is this body: importing the character module registers it
 // with `presence/walker.ts` (see `body/characterWalker.ts`). The runtime imports
 // this file, so the real character is standing before any place is built.
@@ -40,6 +40,8 @@ export type WalkerOptions = {
   groundHeightAt: (x: number, z: number) => number;
   /** What it cannot walk through. Defaults to the Court's own table. */
   obstacles?: readonly Obstacle[];
+  /** The walls, where there are walls (`body/places.ts` `placeRoom`). The Court has none. */
+  room?: RoomBounds | null;
   tier?: "full" | "lite";
   colours?: Partial<FigureColours>;
   /** Where it stands when it arrives, and which way it faces. */
@@ -50,6 +52,14 @@ export type WalkerOptions = {
 
 export type Walker = {
   group: THREE.Group;
+  /**
+   * Stand this body in another place (walk-everywhere): its floor, what it
+   * cannot walk through, and its walls. The Court and the buildings standing
+   * on it are one island, so walking from the terrace into the Library
+   * re-points the world the same body is walking in rather than putting one
+   * body away and raising another.
+   */
+  setWorld(next: { groundHeightAt?: (x: number, z: number) => number; obstacles?: readonly Obstacle[]; room?: RoomBounds | null }): void;
   /** Where the body is and what it is doing. Plain data — safe to read every frame. */
   state(): BodyState;
   /** The point a follow camera looks at: the body's shoulders. */
@@ -85,6 +95,7 @@ export function createWalker(options: WalkerOptions): Walker {
   const world: BodyWorld = {
     groundHeightAt: options.groundHeightAt,
     obstacles: options.obstacles ?? courtObstacles(tier),
+    room: options.room ?? null,
   };
   const group = new THREE.Group();
   group.name = "Your body";
@@ -107,6 +118,14 @@ export function createWalker(options: WalkerOptions): Walker {
 
   return {
     group,
+    setWorld(next) {
+      if (next.groundHeightAt) world.groundHeightAt = next.groundHeightAt;
+      if (next.obstacles) world.obstacles = next.obstacles;
+      if (next.room !== undefined) world.room = next.room;
+      // Whatever it was doing was aimed at the place it was standing in.
+      state = { ...state, goal: null, stalled: 0, y: world.groundHeightAt(state.x, state.z) };
+      write();
+    },
     state: () => state,
     shoulders: () => [state.x, eyeHeight(state), state.z],
     setInput(next) { input = next; },

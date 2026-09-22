@@ -22,7 +22,7 @@ import { classifyGesture, gestureAction, spark, type QueenAction, type QueenRegi
 import type { QueenPlace } from "./court/queenPlace.ts";
 import type { CourtHandle } from "./court/CourtScene.ts";
 import type { HarbourRuntime, HarbourGesture, HarbourHit, ProjectedRect, ScrubControls } from "./scene/runtime.ts";
-import { PLACES, sceneDressingFrom, type PlaceReading, type Region } from "./scene/place.ts";
+import { PLACES, sceneDressingFrom, type Anchor, type PlaceReading, type Region } from "./scene/place.ts";
 import { publishLocalPose, useWorldFeed } from "./presence/feed.ts";
 import { WalkTogether } from "./presence/WalkTogether.tsx";
 import { readWorldPresenceShare, type WorldPresenceShare } from "../softPresenceWorld.ts";
@@ -215,6 +215,17 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     crossing.current = next;
     onNavigateRef.current(HARBOUR_PLACE_ROOMS[next], HARBOUR_PLACE_LEVELS[next]);
   }, []);
+  /**
+   * The body walked to this place's own way out (walk-everywhere): the Tower's
+   * stair, the Cellar's stair, the Glasshouse's garden door, the footpath up
+   * the shore. It goes straight through `activate` — the very function a
+   * **tap** on that anchor goes through — so walking out and tapping the door
+   * are one act, and there is no second table of ways to keep in step with
+   * `HARBOUR_WAYS`.
+   */
+  const onExit = useCallback((anchor: Anchor) => {
+    activate(anchor.id, anchor.door, anchor.zone);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   const onStick = useCallback((next: { x: number; y: number; dx: number; dy: number } | null) => {
     if (!next) { setStick(null); return; }
     setStick(current => (current && current.x === next.x && current.y === next.y ? current : { x: next.x, y: next.y }));
@@ -289,7 +300,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
         const world = mountHarbourWorld(element, theme, renderTier, {
           onReady: () => setStatus("ready"), onFailure: () => setStatus("fallback"),
           onProject: next => setRects(next), onTap, onGesture, onRailDrag: (x, width) => onRailDragRef.current(x, width),
-          onStick, onClose: setClosed, onThreshold,
+          onStick, onClose: setClosed, onThreshold, onExit,
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
         runtime.current = world;
@@ -501,9 +512,16 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     const strafe = (keys.has("d") || keys.has("arrowright") ? 1 : 0) - (keys.has("a") || keys.has("arrowleft") ? 1 : 0);
     body.input({ forward, strafe, run: keys.has("shift") });
   }, []);
-  /** A key that walks, where a body is standing to walk it. Arrows only when they are not already the rail's. */
+  /**
+   * A key that walks, wherever a body is standing to walk it (walk-everywhere).
+   *
+   * The one condition this used to carry — `place === "court"` — was the whole
+   * of why walking was Court-only: a body now stands in every place, so the
+   * only question left is whether one is standing at all. The arrows are the
+   * caller's to withhold where a surface already owns them (the Cellar's rail).
+   */
   const walksBody = useCallback((key: string): boolean => {
-    if (placeRef.current !== "court" || !runtime.current?.body()) return false;
+    if (!runtime.current?.body()) return false;
     const lower = key.toLowerCase();
     if (["w", "a", "s", "d"].includes(lower)) return true;
     return ["arrowup", "arrowdown", "arrowleft", "arrowright"].includes(lower);
@@ -537,12 +555,20 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       return;
     }
     const step = 40;
+    /**
+     * The Cellar's rail owns the left and right arrows (BUILD_PLAN_SLICE2 §3):
+     * they walk the month a day at a time, and a scrubbing rail is a real
+     * conflict, not a collision of convenience. **The body yields.** Down
+     * there W A S D walks and Shift runs exactly as everywhere else; the
+     * arrows stay the rail's, because there is no other way to scrub it with
+     * a keyboard and there is another way to walk.
+     */
     const onRail = placeRef.current === "cellar" && rail.current !== null;
-    // ── The body lane (world-body) ──
-    // The walk comes first. On the cellar's rail the arrows are still the
-    // rail's — there is no body down there — and every other key below is
-    // untouched, so nothing that worked yesterday moved.
-    if (!onRail && walksBody(event.key)) {
+    const railKey = onRail && ["ArrowLeft", "ArrowRight", "Home", "0"].includes(event.key);
+    // ── The body lane (world-body → walk-everywhere) ──
+    // The walk comes first, in every place. The rail's own keys are the one
+    // exception, and everything below is untouched.
+    if (!railKey && walksBody(event.key)) {
       held.current.add(event.key.toLowerCase());
       if (event.shiftKey) held.current.add("shift"); else held.current.delete("shift");
       pushBody();
@@ -552,17 +578,15 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     if (onRail && (event.key === "Home" || event.key === "0")) walk("today");
     else if (onRail && event.key === "ArrowLeft") walk(-1);
     else if (onRail && event.key === "ArrowRight") walk(1);
+    // The arrows orbit only where no body is standing to walk them — the
+    // reading edition's fallback, and a place whose body could not be raised.
     else if (event.key === "ArrowLeft") world.gesture({ kind: "orbit", dx: -step, dy: 0 });
     else if (event.key === "ArrowRight") world.gesture({ kind: "orbit", dx: step, dy: 0 });
     else if (event.key === "ArrowUp") world.gesture({ kind: "orbit", dx: 0, dy: -step });
     else if (event.key === "ArrowDown") world.gesture({ kind: "orbit", dx: 0, dy: step });
-    // WASD walks: forward is toward what you are looking at, held inside the room.
-    // `panDelta` speaks drag: a drag down (dy > 0) slides the ground toward you,
-    // which walks the target away — so W is a positive dy, and A drags right.
-    else if (event.key === "w" || event.key === "W") world.gesture({ kind: "pan", dx: 0, dy: 26 });
-    else if (event.key === "s" || event.key === "S") world.gesture({ kind: "pan", dx: 0, dy: -26 });
-    else if (event.key === "a" || event.key === "A") world.gesture({ kind: "pan", dx: 26, dy: 0 });
-    else if (event.key === "d" || event.key === "D") world.gesture({ kind: "pan", dx: -26, dy: 0 });
+    // W A S D used to be four `pan` gestures — a slide of the camera's look-at
+    // target, while the stage's own label said "W A S D walk". That path is
+    // **deleted**, not left as a fallback: the body walks, in every place.
     else if (event.key === "+" || event.key === "=") world.gesture({ kind: "zoom", delta: -0.2 });
     else if (event.key === "-" || event.key === "_") world.gesture({ kind: "zoom", delta: 0.2 });
     // The close hold (W7 a), on and off with the same key, like the gesture.
@@ -586,9 +610,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => props.onNavigate("home", "middle");
   return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : place === "cellar" ? "The Cellar" : place === "glasshouse" ? "The Glasshouse" : place === "kitchen" ? "The Kitchen" : place === "boathouse" ? "The Boathouse" : place === "cottage" ? "Hercules’s Cottage" : place === "kiln" ? "The Kiln" : place === "campfire" ? "The Campfire" : place === "atlas" ? "The Atlas" : "The Library"}>
-    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : place === "court"
-      ? `${placeName[0]!.toUpperCase()}${placeName.slice(1)}. W A S D and the arrow keys walk you around the island; Shift runs; tap the open ground to walk there; drag to look around you; plus and minus zoom; C ${closed ? "steps back from" : "comes close to"} what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet.`
-      : `${placeName[0]!.toUpperCase()}${placeName.slice(1)}. Arrow keys orbit, plus and minus zoom, C ${closed ? "steps back from" : "comes close to"} what this place is about, Space opens all tools, Escape steps back.`} onKeyDown={onStageKey} onKeyUp={onStageKeyUp}>
+    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => props.onNavigate("home", HARBOUR_PLACE_LEVELS[next])} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
@@ -604,6 +626,27 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     </div>
     {props.children}
   </section>;
+}
+
+/**
+ * What the stage says it does — and it has to be **true in every place**
+ * (walk-everywhere). It used to promise "W A S D walk" in the Court and offer
+ * the rooms nothing but an orbit; then the Court's own W A S D was a camera
+ * pan. Both are fixed, so the words are the same words everywhere, with only
+ * the ground under them changing: an island, a shore, a room.
+ *
+ * The Cellar is the one place that reads differently, because down there the
+ * left and right arrows are the bill rail's and the body yields them.
+ */
+export function stageWords(place: HarbourPlaceId, placeName: string, closed: boolean): string {
+  const here = `${placeName[0]!.toUpperCase()}${placeName.slice(1)}`;
+  const ground = place === "court" ? "the island" : place === "campfire" ? "the fire" : "the room";
+  const floor = place === "court" ? "the open ground" : place === "campfire" ? "the open sand" : "the open floor";
+  const keys = place === "cellar"
+    ? "W A S D walks you around the room; the left and right arrows walk the bill rail through the month"
+    : `W A S D and the arrow keys walk you around ${ground}`;
+  const close = closed ? "steps back from" : "comes close to";
+  return `${here}. ${keys}; Shift runs; tap ${floor} to walk there; drag to look around you; plus and minus zoom; C ${close} what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet.`;
 }
 
 /** Arrow keys on a Queen twin speak the stroke grammar: up/down on the vines are weeks, on the crown botanical presence; left/right on the rim spin her. */

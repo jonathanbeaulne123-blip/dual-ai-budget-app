@@ -7,8 +7,13 @@ import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/c
 // Everything this lane adds to the runtime is additive and marked like this
 // block. A sibling lane is restructuring this file; nothing above or below a
 // marked block was rewritten to make room for the body.
-import { createFollowCamera, type FollowCamera } from "../camera/followCamera.ts";
+import { createFollowCamera, followInRoom, type FollowCamera } from "../camera/followCamera.ts";
 import { createWalker, COURT_ARRIVAL, type Walker } from "../body/walker.ts";
+// ── walk-everywhere ──────────────────────────────────────────────────────────
+// Where a body may stand in each of the eleven places: the floor, the walls,
+// what is in the way, and where you come in. All of it derived from each
+// place's own numbers (`body/places.ts`).
+import { EXIT_REACH, exitAnchors, followHoldIn, placeArrival, placeGround, placeObstacles, placeRoom, roomReach, walksIndoors } from "../body/places.ts";
 import { NO_INPUT, eyeHeight, type BodyInput } from "../body/bodyModel.ts";
 import { CLOSE_HOLDS, COURT_ANCHOR_IDS, COURT_FOV, closePose, type CourtAnchor, type CourtMode, type CourtPose, type RoomHold } from "../camera/poses.ts";
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
@@ -65,6 +70,16 @@ export type HarbourCallbacks = {
    * the flat edition all stay exactly as correct as they were.
    */
   onThreshold?: (place: HarbourPlaceId) => void;
+  /**
+   * The body walked to a place's own way out (walk-everywhere): the Tower's
+   * stair, the Cellar's stair, the Glasshouse's garden door, the footpath up
+   * the shore. The shell runs it through **exactly the path a tap on that
+   * anchor runs through** — no new route concept, no second table of ways —
+   * so walking out and tapping the door are the same act. A placed building
+   * is not reported here: there you really do walk out through the doorway,
+   * and `onThreshold` above is the crossing.
+   */
+  onExit?: (anchor: Anchor) => void;
   /** Defaults: the registered court, the theme's scene dressing, no reading. */
   place?: Place;
   dressing?: PlaceDressing;
@@ -74,14 +89,23 @@ export type HarbourCallbacks = {
 
 /** A phone's portrait frame takes a wider field so the Queen and her flagstone fit at a friendly distance. */
 export const PHONE_FOV = 52;
+/**
+ * ── walk-everywhere ──
+ * How far out onto the lawn the body steps when it comes out of a building
+ * without walking — the "← Back to the Court" button, a quick-sheet row.
+ * Clear of the doorway's own arrival radius, so coming out is not immediately
+ * going back in.
+ */
+export const COURT_DOORSTEP = 2.2;
 export const fovFor = (composition: Composition): number => (composition === "phone" ? PHONE_FOV : COURT_FOV);
 const isCourtAnchor = (id: string | undefined): id is CourtAnchor => (COURT_ANCHOR_IDS as readonly string[]).includes(id ?? "");
 
 /**
- * ── The body lane (world-body) ──
- * Your character, and the camera that walks with it. `null` where there is no
- * body to drive: the rooms are six units across and a body belongs on the
- * island, so this is the Court's alone for now.
+ * ── The body lane (world-body → walk-everywhere) ──
+ * Your character, and the camera that walks with it. It stands in **every**
+ * place now: the island in the Court, the shore at the Campfire, and the floor
+ * of each of the nine rooms, each with its own floor height, its own walls and
+ * its own way out (`body/places.ts`).
  *
  * The Look camera is never taken away — `follow(false)` hands the view back to
  * it, and every named pose, every twin and every door work exactly as before.
@@ -114,8 +138,14 @@ export type HarbourRuntime = {
   setReading: (reading: PlaceReading | null) => void;
   /** A close look at any point (the Queen's roots, the slip). */
   look: (look: CourtLook) => void;
-  /** Keyboard: arrows orbit, +/− zoom, WASD walks (a screen-space pan of the target, held inside the room). */
-  gesture: (input: { kind: "orbit"; dx: number; dy: number } | { kind: "zoom"; delta: number } | { kind: "pan"; dx: number; dy: number }) => void;
+  /**
+   * Keyboard: the arrows orbit and +/− zoom. **There is no pan.** W A S D
+   * used to slide the camera's look-at target and call it walking; the body
+   * does the walking now, in every place, so the pan is gone rather than left
+   * as a fallback — a fallback is how the stage came to promise a walk and
+   * deliver a camera slide.
+   */
+  gesture: (input: { kind: "orbit"; dx: number; dy: number } | { kind: "zoom"; delta: number }) => void;
   /** A tool is open in front of the court: no breathing, the strip only redraws on demand. */
   setToolOpen: (open: boolean) => void;
   /** The place's idle animation (the Queen's breath). Off by default for an empty island. */
@@ -237,11 +267,12 @@ const TAP_PIXELS = 8, TAP_MS = 350, MIN_TWIN = 44;
 export const DOUBLE_TAP_MS = 320, DOUBLE_TAP_PIXELS = 28;
 /**
  * The thumb-stick (W7 b): how long the ground is held still before it becomes
- * a stick, how far the thumb may push it, and how much walking a full push is
- * worth per second — in the same pixels-of-drag `pan` already speaks, so the
- * stick and W A S D drive one input and not two.
+ * a stick, and how far the thumb may push it. A full push is a full push of
+ * the **body's** own input, the same input W A S D gives it, so there is no
+ * gain to convert between them any more — `STICK_GAIN` was the pixels-per-
+ * second the old camera pan needed, and the pan is gone.
  */
-export const STICK_MS = 380, STICK_RADIUS = 56, STICK_GAIN = 3.4;
+export const STICK_MS = 380, STICK_RADIUS = 56;
 /** Zones a drag walks rather than orbits: the cellar's rail and the water behind it. */
 const RAIL_ZONES = new Set(["rail", "water"]);
 const isRail = (hit: HarbourHit): boolean => hit.kind === "anchor" && RAIL_ZONES.has(hit.anchor.zone);
@@ -497,31 +528,94 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   court.setHold(holdFor(placeId));
   court.go("court");
 
-  // ── The body lane (world-body) ─────────────────────────────────────────────
-  // The body stands on the island from the first frame; the follow camera only
-  // takes over the moment you actually move. So the Court's first screen is the
-  // diorama it has always been, and the stage's promise — "W A S D walk" — is
-  // true the first time you press a key.
+  // ── The body lane (world-body → walk-everywhere) ───────────────────────────
+  // The body stands from the first frame, in whichever place is standing; the
+  // follow camera only takes over the moment you actually move. So each
+  // place's first screen is the composition it has always been, and the
+  // stage's promise — "W A S D walk" — is true the first time you press a key,
+  // wherever you are standing.
   let walker: Walker | null = null;
   let follow: FollowCamera | null = null;
   let following = false;
   let bodyInput: BodyInput = NO_INPUT;
   const bodySamples: number[] = [];
+  /**
+   * The floor under the body, for the place that is standing. A stable closure
+   * over a value the place changes, so the walker and the follow camera are
+   * both made once and both read the right floor after a walk into a building.
+   */
+  let bodyGround: (x: number, z: number) => number = placeGround(placeId);
+  /** This place's own ways out, when walking to one of them is how you leave (an unplaced room). */
+  let bodyExits: Anchor[] = [];
+  /**
+   * You arrive a step inside the door, so the door is not a place you are
+   * already standing — but a body nudged back against it by a wall would
+   * otherwise leave the moment it arrived. The way out is armed once the body
+   * has been a clear stride away from every one of them.
+   */
+  let exitArmed = false;
+  /**
+   * Point the body at the place that is standing: its floor, its walls, what
+   * is in the way, and how close the camera stands. Called when a body is
+   * raised and again whenever the place under it changes.
+   */
+  function standBody(): void {
+    const anchors = handle.anchors();
+    const room = placeRoom(placeId, anchors);
+    bodyGround = placeGround(placeId);
+    // A placed building is left by walking out of its doorway, which the
+    // threshold machinery already watches; everywhere else the way out is the
+    // room's own stair, and walking to it is tapping it.
+    bodyExits = placeId === "court" || placementOf(placeId) !== null ? [] : exitAnchors(anchors);
+    exitArmed = false;
+    walker?.setWorld({ obstacles: placeObstacles(placeId, handle.regions(), anchors, tier), room });
+    if (follow) {
+      follow.setHold(followHoldIn(holdFor(placeId), room));
+      const reach = walksIndoors(placeId) ? roomReach(room) : null;
+      follow.setPlan(reach === null ? null : followInRoom(reach, composition));
+    }
+  }
+  /**
+   * Where the body stands when it comes out of a building onto the island: on
+   * the lawn outside that building's own door, facing away from it, so
+   * stepping back out of the Library is the walk you would have taken. From
+   * anywhere that is not a building on the island, the Court's own way in.
+   */
+  function courtLanding(from: HarbourPlaceId): { x: number; z: number; yaw: number } {
+    const placement = placementOf(from);
+    if (!placement) return { x: COURT_ARRIVAL.x, z: COURT_ARRIVAL.z, yaw: COURT_ARRIVAL.yaw };
+    const [dx, , dz] = placement.door;
+    const out = Math.hypot(dx, dz) || 1;
+    const [wx, , wz] = placementToWorld(placement, [dx + (dx / out) * COURT_DOORSTEP, 0, dz + (dz / out) * COURT_DOORSTEP]);
+    return { x: wx, z: wz, yaw: Math.atan2(dx / out, dz / out) + placement.yaw };
+  }
   function raiseBody(): void {
-    if (walker || placeId !== "court") return;
-    walker = createWalker({ groundHeightAt: ground.groundHeightAt, tier, start: COURT_ARRIVAL });
+    if (walker) { standBody(); return; }
+    const anchors = handle.anchors();
+    const room = placeRoom(placeId, anchors);
+    const start = placeId === "court" ? COURT_ARRIVAL : placeArrival(placeId, anchors);
+    bodyGround = placeGround(placeId);
+    walker = createWalker({
+      groundHeightAt: (x, z) => bodyGround(x, z),
+      obstacles: placeObstacles(placeId, handle.regions(), anchors, tier),
+      room,
+      tier,
+      start,
+    });
     scene.add(walker.group);
-    follow = createFollowCamera({ camera, composition, reduced: reduced.matches, groundHeightAt: ground.groundHeightAt });
+    follow = createFollowCamera({ camera, composition, reduced: reduced.matches, groundHeightAt: (x, z) => bodyGround(x, z) });
     host.dataset.harbourBody = "standing";
+    standBody();
   }
   function dropBody(): void {
     if (following) { following = false; court.restore(camera.position.toArray() as Vec3); }
     walker?.dispose(); walker = null; follow = null; bodyInput = NO_INPUT;
+    bodyExits = []; exitArmed = false;
     delete host.dataset.harbourBody;
   }
   /** Take the follow camera, or hand the view back to the Look camera where it stands. */
   function setFollowing(on: boolean): void {
-    const wanted = on && walker !== null && follow !== null && placeId === "court" && !toolOpen;
+    const wanted = on && walker !== null && follow !== null && !toolOpen;
     if (wanted === following) return;
     following = wanted;
     host.dataset.harbourBody = wanted ? "following" : "standing";
@@ -744,20 +838,16 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         dirty = true;
       }
     }
-    // ── The body lane (world-body) ──
-    // The stick is repointed at the body: W7 b built it to pan the camera,
-    // and "the same input, not two" now means the same input the keys drive.
-    // Pushing it up walks away from the eye; pushing it to the ring runs.
-    // Where there is no body (a room), it pans the camera exactly as before.
+    // ── The body lane (world-body → walk-everywhere) ──
+    // The stick drives the body, everywhere. W7 b built it to pan the camera;
+    // "the same input, not two" now means the same input the keys drive, and
+    // the camera-pan fallback it used to have in a room is **deleted** rather
+    // than left standing — a body stands in every place, and a fallback that
+    // slides the camera is how the stage came to promise a walk it did not do.
     const push = stick ? Math.min(1, Math.hypot(stick.dx, stick.dy) / STICK_RADIUS) : 0;
     const stickInput: BodyInput | null = stick
       ? { forward: (-stick.dy / STICK_RADIUS) || 0, strafe: (stick.dx / STICK_RADIUS) || 0, run: push > 0.97 }
       : null;
-    if (stick && !walker && (stick.dx !== 0 || stick.dy !== 0) && dt > 0) {
-      const step = STICK_GAIN * Math.min(dt, 0.08);
-      court.pan(-stick.dx * step, -stick.dy * step);
-      dirty = true;
-    }
     // ── The body lane (world-body): one step of the walk ──
     // Inside the frame the renderer lease already owns. There is no
     // `requestAnimationFrame` in this lane; `createWorldFrameScheduler` and the
@@ -788,9 +878,29 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // frame a walker is alive, the island is streamed around its feet, so
       // walking out to a building loads that building and orbiting the camera
       // does not. `bodyDriven` is the flag world-space left for exactly this.
-      bodyDriven = true;
-      focus[0] = at.x; focus[1] = at.z;
+      // Only where the body is standing **on the island** is its position the
+      // island position: a room at the origin has its own coordinates, and
+      // handing those to the streamer would raise the Library because the
+      // Cellar's stair happens to be near where the Library stands.
+      if (onIsland(placeId)) { bodyDriven = true; focus[0] = at.x; focus[1] = at.z; }
       if (following && follow.tick(dt)) bodyMoving = true;
+      // ── walking out of a room (walk-everywhere) ──
+      // The way out of an unplaced room is its own stair or door, and reaching
+      // it fires the very route change tapping it fires.
+      if (bodyExits.length) {
+        let nearest: Anchor | null = null, least = Infinity;
+        for (const exit of bodyExits) {
+          const gap = Math.hypot(at.x - exit.position[0], at.z - exit.position[2]);
+          if (gap < least) { least = gap; nearest = exit; }
+        }
+        if (least > EXIT_REACH + 0.35) exitArmed = true;
+        else if (exitArmed && nearest && least <= EXIT_REACH) {
+          exitArmed = false;
+          walker.cancel();
+          bodyInput = NO_INPUT;
+          callbacks.onExit?.(nearest);
+        }
+      }
       if (bodyMoving) dirty = true;
       if (diagnostics) { bodySamples.push(performance.now() - began); if (bodySamples.length > 60) bodySamples.shift(); }
     }
@@ -990,7 +1100,6 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     gesture(input) {
       court.setReduced(reduced.matches);
       if (input.kind === "orbit") court.drag(input.dx, input.dy);
-      else if (input.kind === "pan") court.pan(input.dx, input.dy);
       else court.zoom(input.delta);
       moved();
     },
@@ -1057,12 +1166,34 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (!place) return plan;
       // The place being entered is raised first, so both stand for the length of the journey.
       handle = raise(place);
-      // ── The body lane (world-body) ── a room is six units across; the body
-      // stands on the island. It is put away on the way out and raised again
-      // on the way in, and the room's own camera is never disturbed.
-      if (next !== "court") dropBody();
+      // ── The body lane (world-body → walk-everywhere) ──
+      // The Court and the buildings standing on it are **one island**, so
+      // walking from the terrace into the Library is the same body in the same
+      // coordinates: the world under it is re-pointed and nothing is put away.
+      // Anywhere else is somewhere else — up a stair, under the floor, across
+      // the shore — so the body is put away and a fresh one is raised at that
+      // place's own way in.
+      const continuous = walker !== null && onIsland(placeId) && onIsland(next);
+      const leaving = placeId;
+      if (!continuous) dropBody();
       placeId = next;
-      if (next === "court") raiseBody();
+      // Either way there is a body when this returns: a re-pointed one where
+      // the island carried on, a fresh one at this place's own way in.
+      raiseBody();
+      /**
+       * A **journey** is not a walk. Tapping the Library from across the lawn,
+       * or picking its row in the quick sheet, flies the camera into the hall —
+       * and the body has to be where the camera lands, or you are looking at a
+       * room with nobody in it while your character stands out on the grass.
+       * A **crossing** is the other case: there you walked in, the body is
+       * already exactly right, and it is not touched.
+       */
+      if (continuous && !crossing && walker) {
+        const landing = placementOf(next) ? placeArrival(next, handle.anchors()) : courtLanding(leaving);
+        walker.place(landing.x, landing.z, landing.yaw);
+        bodyDriven = true;
+        focus[0] = landing.x; focus[1] = landing.z;
+      }
       // The place you arrive in declares its own idle motion; until it does, nothing moves.
       breathing = false;
       // A cut lands at once, so the destination's hold applies at once. A full

@@ -8,15 +8,44 @@
  * The volumes are *derived*, never invented: the Court's own layout constants
  * (`court/CourtScene.ts` `COURT_LAYOUT`, `STAIRHEAD`) say where the Queen, the
  * pieces, the sundial, the mailbox, the gate and the stairhead stand, the
- * place's `Region` boxes say how wide each building is, and `scene/ground.ts`
+ * place's `Region` boxes say how wide each building is, and `scene/planting.ts`
  * says where the tree ring was planted. A body is a circle of
  * `BODY_RADIUS`; a push-out is perpendicular, so walking into a wall slides
  * along it instead of stopping dead.
  */
 
+// The one import here, and the whole of this lane's change to this file: the
+// tree ring is no longer replanted below from a copy of `ground.ts`'s loop —
+// renderer and collision now read the same plan. `scene/planting.ts` imports
+// nothing itself, so this file stays free of three.js, the DOM and the clock.
+import { plantPlan, trunkRadius } from "../scene/planting.ts";
+
 export type Circle = { kind: "circle"; x: number; z: number; r: number; id: string };
 export type Box = { kind: "box"; minX: number; minZ: number; maxX: number; maxZ: number; id: string };
-export type Obstacle = Circle | Box;
+/**
+ * A box that does not stand square to the island (walk-everywhere).
+ *
+ * The island's own furniture is axis-aligned, so `Box` was enough for the
+ * Court. A **placed** room is not: the Library stands at the yaw the Court
+ * gave its shell, and its lectern is a box in the *room's* axes. Turning that
+ * box into an island-aligned one would fatten it by a third, so the room's
+ * yaw is carried instead and the push-out is done in the room's own frame —
+ * exact, and the same arithmetic as `Box` once the point is rotated in.
+ */
+export type OrientedBox = { kind: "obox"; id: string; x: number; z: number; halfX: number; halfZ: number; yaw: number };
+export type Obstacle = Circle | Box | OrientedBox;
+
+/** A point in a frame's own coordinates, read in the island's. Matches `scene/place.ts` `placementToWorld`. */
+const intoWorld = (frame: { x: number; z: number; yaw: number }, lx: number, lz: number): { x: number; z: number } => {
+  const cos = Math.cos(frame.yaw), sin = Math.sin(frame.yaw);
+  return { x: frame.x + lx * cos + lz * sin, z: frame.z + lz * cos - lx * sin };
+};
+/** A point on the island, read in a frame's own coordinates. The exact inverse of `intoWorld`. */
+const intoLocal = (frame: { x: number; z: number; yaw: number }, x: number, z: number): { x: number; z: number } => {
+  const cos = Math.cos(frame.yaw), sin = Math.sin(frame.yaw);
+  const dx = x - frame.x, dz = z - frame.z;
+  return { x: dx * cos - dz * sin, z: dz * cos + dx * sin };
+};
 
 /** A person in this model village: the Queen (a plant) is 2.05 tall, so a body is about 0.58. */
 export const BODY_HEIGHT = 0.58;
@@ -79,30 +108,21 @@ export const ISLAND_BUILDINGS: readonly Obstacle[] = Object.freeze([
 ] as const);
 
 /**
- * The tree ring, replanted from the same seed `scene/ground.ts` sows it with.
+ * The tree ring, **read** from the plan `scene/ground.ts` draws.
  *
- * `ground.ts` plants its trees and shrubs from a fixed LCG (`seed = 0x7a11`,
- * four draws per plant), so the trunks can be recovered here exactly rather
- * than guessed at — and `test/harbour-body-*.test.ts` proves it against the
- * real `InstancedMesh` matrices, so the day the ring moves the collision moves
- * with it instead of drifting quietly out of true.
+ * This used to be a second copy of `ground.ts`'s planting loop, kept in step
+ * by hand and by `test/harbour-body.test.ts` checking it against the real
+ * `InstancedMesh` matrices. It is now the same `plantPlan` the renderer calls
+ * — one seed, one keep-out list, one answer — so a tree cannot be drawn in a
+ * place you can walk through, or stand in your way while not being there. That
+ * test still checks the two against each other, and now it can only fail if
+ * one of them stops reading the plan.
  *
  * Only the trunks collide. A shrub is knee-high in this village and you walk
  * through the leaves, which is what walking past a shrub feels like.
  */
 export function treeRingObstacles(tier: "full" | "lite"): Obstacle[] {
-  const TREES = tier === "full" ? 18 : 14;
-  let seed = 0x7a11;
-  const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-  const trunks: Obstacle[] = [];
-  for (let i = 0; i < TREES; i += 1) {
-    const a = Math.PI * 0.62 + (i / TREES) * Math.PI * 1.76 + (rand() - 0.5) * 0.14;
-    const r = 13 + rand() * 2.4;
-    const size = 0.5 + rand() * 0.38;
-    rand(); // the instance's spin: drawn here too so the sequence stays in step
-    trunks.push(circle(`tree-${i}`, Math.cos(a) * r, Math.sin(a) * r, 0.16 * (0.8 + size)));
-  }
-  return trunks;
+  return plantPlan(tier).trees.map((tree, i) => circle(`tree-${i}`, tree.x, tree.z, trunkRadius(tree.size)));
 }
 
 /** Everything a body standing in the Court may bump into. */
@@ -118,13 +138,23 @@ export function courtObstacles(tier: "full" | "lite"): Obstacle[] {
 export function obstaclesFromRegions(
   regions: readonly { id: string; box?: { min: { x: number; z: number }; max: { x: number; z: number } } }[],
   solid: ReadonlySet<string>,
+  /**
+   * Where the place those regions belong to stands, when it stands somewhere
+   * (`scene/place.ts` `PLACE_PLACEMENTS`). A region's box is written in the
+   * place's own coordinates; with a frame it comes back as an oriented box on
+   * the island, and without one — every unplaced place, and the Court — it
+   * comes back byte-for-byte the axis-aligned box it always did.
+   */
+  frame?: { x: number; z: number; yaw: number } | null,
 ): Obstacle[] {
   const found: Obstacle[] = [];
   for (const region of regions) {
     if (!solid.has(region.id) || !region.box) continue;
     const { min, max } = region.box;
     if (!(max.x > min.x) || !(max.z > min.z)) continue;
-    found.push({ kind: "box", id: region.id, minX: min.x, minZ: min.z, maxX: max.x, maxZ: max.z });
+    if (!frame) { found.push({ kind: "box", id: region.id, minX: min.x, minZ: min.z, maxX: max.x, maxZ: max.z }); continue; }
+    const centre = intoWorld(frame, (min.x + max.x) / 2, (min.z + max.z) / 2);
+    found.push({ kind: "obox", id: region.id, x: centre.x, z: centre.z, halfX: (max.x - min.x) / 2, halfZ: (max.z - min.z) / 2, yaw: frame.yaw });
   }
   return found;
 }
@@ -155,6 +185,21 @@ export function pushOut(x: number, z: number, radius: number, obstacles: readonl
         // Dead centre: leave along +x rather than divide by zero.
         const nx = d > 1e-6 ? dx / d : 1, nz = d > 1e-6 ? dz / d : 0;
         px = obstacle.x + nx * reach; pz = obstacle.z + nz * reach;
+        hit = obstacle.id; moved = true;
+      } else if (obstacle.kind === "obox") {
+        // The same nearest-face push, done in the box's own frame.
+        const local = intoLocal(obstacle, px, pz);
+        const hx = obstacle.halfX + radius, hz = obstacle.halfZ + radius;
+        if (Math.abs(local.x) >= hx || Math.abs(local.z) >= hz) continue;
+        const left = local.x + hx, right = hx - local.x, back = local.z + hz, front = hz - local.z;
+        const least = Math.min(left, right, back, front);
+        let lx = local.x, lz = local.z;
+        if (least === left) lx = -hx;
+        else if (least === right) lx = hx;
+        else if (least === back) lz = -hz;
+        else lz = hz;
+        const out = intoWorld(obstacle, lx, lz);
+        px = out.x; pz = out.z;
         hit = obstacle.id; moved = true;
       } else {
         const minX = obstacle.minX - radius, maxX = obstacle.maxX + radius;
@@ -188,4 +233,74 @@ export function holdAshore(x: number, z: number, limit = SHORE_RADIUS): { x: num
   if (d <= limit || d <= 0) return { x, z, ashore: true };
   const k = limit / d;
   return { x: x * k, z: z * k, ashore: false };
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Walls (walk-everywhere)
+ *
+ * Outdoors the shore holds the body in: one radius, one clamp
+ * (`holdAshore`). Indoors it is a room that holds it, and a room is not a
+ * ring — it is four walls, about six units apart, with a doorway in one of
+ * them. At that scale the walls matter far more than anything on the island
+ * does: the body is 0.58 tall and 0.34 across, so half a stride of slop puts
+ * it outside the shell, looking back at a doll's box with the ceiling missing.
+ *
+ * So a room is held the way the shore is — a clamp, not an obstacle. Four
+ * wall boxes would work, but a clamp is exact at the corners, costs one
+ * rotation, and says the true thing: *inside is where you are*.
+ *
+ * The doorway is a **gap in the clamp**, not a hole in a wall: step into it
+ * and the wall on that side stops holding you, so you walk out. Once the
+ * body's centre is past the wall the room has let go of it entirely — which
+ * is what makes walking out of a placed building continuous, because the
+ * threshold machinery in `scene/runtime.ts` is watching that very crossing.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** A room's floor, in the room's own axes, standing at `x`,`z` on the island and turned by `yaw`. */
+export type RoomBounds = {
+  x: number;
+  z: number;
+  halfX: number;
+  halfZ: number;
+  /** 0 for a room built at the island's origin; the building's own yaw for a placed one. */
+  yaw: number;
+  /** The doorway, in the room's own coordinates: a gap `half` wide in the wall it is nearest. */
+  door?: { x: number; z: number; half: number } | null;
+};
+
+/** Which wall a doorway is in: the axis it is nearest, and which side of the room. */
+export function doorWall(room: RoomBounds): { axis: "x" | "z"; side: 1 | -1 } | null {
+  const door = room.door;
+  if (!door) return null;
+  const clearX = room.halfX - Math.abs(door.x), clearZ = room.halfZ - Math.abs(door.z);
+  if (clearZ <= clearX) return { axis: "z", side: door.z >= 0 ? 1 : -1 };
+  return { axis: "x", side: door.x >= 0 ? 1 : -1 };
+}
+
+/**
+ * Hold a body of `radius` inside a room.
+ *
+ * `inside` is false when the body's centre is already past the walls — it
+ * walked out through the doorway, and a room that grabbed it back would make
+ * leaving impossible. Nothing is moved in that case.
+ */
+export function holdInRoom(x: number, z: number, radius: number, room: RoomBounds): { x: number; z: number; inside: boolean; wall: string | null } {
+  const local = intoLocal(room, x, z);
+  if (Math.abs(local.x) > room.halfX || Math.abs(local.z) > room.halfZ) return { x, z, inside: false, wall: null };
+  const reachX = Math.max(0, room.halfX - radius), reachZ = Math.max(0, room.halfZ - radius);
+  const gap = doorWall(room);
+  const throughX = gap?.axis === "x" && room.door ? Math.abs(local.z - room.door.z) <= room.door.half && Math.sign(local.x) === gap.side : false;
+  const throughZ = gap?.axis === "z" && room.door ? Math.abs(local.x - room.door.x) <= room.door.half && Math.sign(local.z) === gap.side : false;
+  let lx = local.x, lz = local.z, wall: string | null = null;
+  if (!throughX && Math.abs(lx) > reachX) { lx = Math.sign(lx) * reachX; wall = lx > 0 ? "wall+x" : "wall-x"; }
+  if (!throughZ && Math.abs(lz) > reachZ) { lz = Math.sign(lz) * reachZ; wall = lz > 0 ? "wall+z" : "wall-z"; }
+  if (!wall) return { x, z, inside: true, wall: null };
+  const out = intoWorld(room, lx, lz);
+  return { x: out.x, z: out.z, inside: true, wall };
+}
+
+/** Is a point inside a room's walls? The rotation is the room's own. */
+export function inRoom(x: number, z: number, room: RoomBounds): boolean {
+  const local = intoLocal(room, x, z);
+  return Math.abs(local.x) <= room.halfX && Math.abs(local.z) <= room.halfZ;
 }
