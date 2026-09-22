@@ -1,0 +1,238 @@
+{
+  "desktop-1440": {
+    "court-alone": {
+      "drawCalls": 394,
+      "geometries": 232,
+      "renderMs": 250.45,
+      "camera": "[5.2548,6.7215,9.6036]",
+      "place": "court",
+      "resident": [],
+      "focus": [
+        0.5,
+        0.9
+      ],
+      "twins": 17,
+      "minTwin": 109
+    },
+    "court-sky": {
+      "drawCalls": 410,
+      "geometries": 242,
+      "renderMs": 189.91,
+      "camera": "[2.2885,18.3053,13.3763]",
+      "place": "court",
+      "resident": [],
+      "focus": [
+        0,
+        0.8
+      ],
+      "twins": 25,
+      "minTwin": 44
+    },
+    "one-interior": {
+      "drawCalls": 108,
+      "geometries": 208,
+      "renderMs": 141.72,
+      "camera": "[7.2557,1.0364,-0.04]",
+      "place": "kiln",
+      "resident": [
+        "kiln"
+      ],
+      "focus": [
+        10.6,
+        -4.4
+      ],
+      "twins": 1,
+      "minTwin": 900
+    },
+    "two-interiors": {
+      "drawCalls": 110,
+      "geometries": 208,
+      "renderMs": 122.09,
+      "camera": "[7.4099,1.7931,0.8075]",
+      "place": "court",
+      "resident": [
+        "cottage",
+        "kiln"
+      ],
+      "focus": [
+        10.2,
+        0.5999999999999996
+      ],
+      "twins": 1,
+      "minTwin": 900
+    },
+    "three-interiors": {
+      "drawCalls": 168,
+      "geometries": 238,
+      "renderMs": 109.07,
+      "camera": "[-0.1908,1.8072,-6.1572]",
+      "place": "court",
+      "resident": [
+        "cottage",
+        "kiln"
+      ],
+      "focus": [
+        10.2,
+        0.5999999999999996
+      ],
+      "twins": 1,
+      "minTwin": 900
+    },
+    "island-three": {
+      "drawCalls": 452,
+      "geometries": 376,
+      "renderMs": 76.6,
+      "camera": "[1.8883,19.3068,8.377]",
+      "place": "court",
+      "resident": [
+        "cottage",
+        "kiln"
+      ],
+      "focus": [
+        10.2,
+        0.5999999999999996
+      ],
+      "twins": 25,
+      "minTwin": 44
+    },
+    "inside-kiln": {
+      "drawCalls": 190,
+      "geometries": 376,
+      "renderMs": 57.42,
+      "camera": "[6.7261,1.9933,-2.9227]",
+      "place": "kiln",
+      "resident": [
+        "cottage",
+        "kiln"
+      ],
+      "focus": [
+        10.6,
+        -4.4
+      ],
+      "twins": 4,
+      "minTwin": 308
+    },
+    "errors": [
+      "error: WebSocket is already in CLOSING or CLOSED state."
+    ]
+  },
+  "phone-390": {
+    "court-alone": {
+      "drawCalls": 162,
+      "geometries": 122,
+      "renderMs": 72.72,
+      "camera": "[0.554,6.1458,8.4245]",
+      "place": "court",
+      "resident": [],
+      "focus": [
+        0.15,
+        1.7
+      ],
+      "twins": 9,
+      "minTwin": 71
+    },
+    "court-sky": {
+      "drawCalls": 385,
+      "geometries": 227,
+      "renderMs": 58.43,
+      "camera": "[1.3766,19.1555,12.2164]",
+      "place": "court",
+      "resident": [],
+      "focus": [
+        0,
+        0.8
+      ],
+      "twins": 21,
+      "minTwin": 44
+    },
+    "one-interior": {
+      "drawCalls": 383,
+      "geometries": 228,
+      "renderMs": 71.98,
+      "camera": "[1.3766,19.1555,12.2164]",
+      "place": "court",
+      "resident": [
+        "kiln"
+      ],
+      "focus": [
+        10.6,
+        -4.4
+      ],
+      "twins": 0,
+      "minTwin": Infinity
+    },
+    "two-interiors": {
+      "drawCalls": 104,
+      "geometries": 160,
+      "renderMs": 65.6,
+      "camera": "[7.3208,1.7931,0.821]",
+      "place": "court",
+      "resident": [
+        "cottage",
+        "kiln"
+      ],
+      "focus": [
+        10.2,
+        0.5999999999999996
+      ],
+      "twins": 1,
+      "minTwin": 390
+    },
+    "three-interiors": {
+      "drawCalls": 173,
+      "geometries": 232,
+      "renderMs": 82.59,
+      "camera": "[-0.2799,1.8072,-6.1437]",
+      "place": "library",
+      "resident": [
+        "library",
+        "cottage",
+        "kiln"
+      ],
+      "focus": [
+        10.2,
+        0.5999999999999996
+      ],
+      "twins": 1,
+      "minTwin": 390
+    },
+    "island-three": {
+      "drawCalls": 379,
+      "geometries": 232,
+      "renderMs": 90.08,
+      "camera": "[1.8883,19.3068,8.377]",
+      "place": "court",
+      "resident": [
+        "cottage",
+        "kiln"
+      ],
+      "focus": [
+        10.2,
+        0.5999999999999996
+      ],
+      "twins": 21,
+      "minTwin": 44
+    },
+    "inside-kiln": {
+      "drawCalls": 185,
+      "geometries": 324,
+      "renderMs": 67.72,
+      "camera": "[6.7261,1.9933,-2.9227]",
+      "place": "kiln",
+      "resident": [
+        "cottage",
+        "kiln"
+      ],
+      "focus": [
+        10.6,
+        -4.4
+      ],
+      "twins": 3,
+      "minTwin": 317
+    },
+    "errors": [
+      "error: WebSocket is already in CLOSING or CLOSED state.",
+      "error: WebSocket is already in CLOSING or CLOSED state."
+    ]
+  }
+}

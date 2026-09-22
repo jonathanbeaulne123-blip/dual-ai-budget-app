@@ -1,0 +1,257 @@
+{
+  "desktop-1440": {
+    "at-the-door": {
+      "draw": 398,
+      "place": "court",
+      "resident": [
+        "kiln"
+      ],
+      "camera": "[5.2548,6.7215,9.6036]",
+      "pose": {
+        "target": [
+          0.5,
+          0.9,
+          0.9
+        ],
+        "r": 11.5,
+        "theta": 0.5,
+        "phi": 1.04
+      },
+      "twins": [
+        {
+          "id": "crown",
+          "w": 96,
+          "h": 103
+        },
+        {
+          "id": "vines",
+          "w": 187,
+          "h": 227
+        },
+        {
+          "id": "hands",
+          "w": 83,
+          "h": 135
+        },
+        {
+          "id": "face",
+          "w": 74,
+          "h": 74
+        },
+        {
+          "id": "roots",
+          "w": 110,
+          "h": 107
+        },
+        {
+          "id": "potRim",
+          "w": 117,
+          "h": 96
+        },
+        {
+          "id": "queen",
+          "w": 44,
+          "h": 44
+        },
+        {
+          "id": "flagstone",
+          "w": 200,
+          "h": 109
+        },
+        {
+          "id": "rook",
+          "w": 178,
+          "h": 259
+        },
+        {
+          "id": "bishop",
+          "w": 279,
+          "h": 406
+        },
+        {
+          "id": "knight",
+          "w": 133,
+          "h": 198
+        },
+        {
+          "id": "cistern",
+          "w": 165,
+          "h": 145
+        },
+        {
+          "id": "sundial",
+          "w": 275,
+          "h": 345
+        },
+        {
+          "id": "mailbox",
+          "w": 161,
+          "h": 224
+        },
+        {
+          "id": "slip",
+          "w": 126,
+          "h": 127
+        },
+        {
+          "id": "hercules",
+          "w": 188,
+          "h": 150
+        },
+        {
+          "id": "gate",
+          "w": 359,
+          "h": 358
+        },
+        {
+          "id": "boathouse",
+          "w": 237,
+          "h": 199
+        },
+        {
+          "id": "campfire",
+          "w": 227,
+          "h": 144
+        },
+        {
+          "id": "cellar-stair",
+          "w": 199,
+          "h": 188
+        },
+        {
+          "id": "glasshouse-shed",
+          "w": 138,
+          "h": 124
+        },
+        {
+          "id": "kitchen-cottage",
+          "w": 202,
+          "h": 182
+        },
+        {
+          "id": "library-hall",
+          "w": 190,
+          "h": 180
+        }
+      ],
+      "strip": null,
+      "compass": [
+        "All tools",
+        "Home",
+        "Study",
+        "Kitchen",
+        "Record an expense",
+        "Add income",
+        "Move money",
+        "Add a shift"
+      ]
+    },
+    "looking-out": {
+      "draw": 123,
+      "place": "kiln",
+      "resident": [
+        "kiln"
+      ],
+      "camera": "[6.7261,1.9613,-2.9227]",
+      "pose": {
+        "target": [
+          7.770841426164108,
+          1.3,
+          -4.5402669006801535
+        ],
+        "r": 2.036005385471772,
+        "theta": -0.5734405261548293,
+        "phi": 1.24
+      },
+      "twins": [
+        {
+          "id": "shelf",
+          "w": 1440,
+          "h": 900
+        },
+        {
+          "id": "bench",
+          "w": 585,
+          "h": 464
+        },
+        {
+          "id": "court-door",
+          "w": 295,
+          "h": 430
+        },
+        {
+          "id": "kiln",
+          "w": 1440,
+          "h": 900
+        }
+      ],
+      "strip": null,
+      "compass": [
+        "All tools",
+        "Home",
+        "Study",
+        "Kitchen",
+        "Record an expense",
+        "Add income",
+        "Move money",
+        "Add a shift"
+      ]
+    },
+    "the-room": {
+      "draw": 250,
+      "place": "kiln",
+      "resident": [
+        "kiln"
+      ],
+      "camera": "[12.1727,3.2232,-5.0528]",
+      "pose": {
+        "target": [
+          8.312324971500157,
+          1.2,
+          -3.4503990447736506
+        ],
+        "r": 4.64363532767736,
+        "theta": 1.964246964723832,
+        "phi": 1.12
+      },
+      "twins": [
+        {
+          "id": "hercules",
+          "w": 436,
+          "h": 345
+        },
+        {
+          "id": "shelf",
+          "w": 1106,
+          "h": 473
+        },
+        {
+          "id": "bench",
+          "w": 1440,
+          "h": 900
+        },
+        {
+          "id": "court-door",
+          "w": 1440,
+          "h": 900
+        },
+        {
+          "id": "kiln",
+          "w": 1354,
+          "h": 900
+        }
+      ],
+      "strip": null,
+      "compass": [
+        "All tools",
+        "Home",
+        "Study",
+        "Kitchen",
+        "Record an expense",
+        "Add income",
+        "Move money",
+        "Add a shift"
+      ]
+    }
+  }
+}

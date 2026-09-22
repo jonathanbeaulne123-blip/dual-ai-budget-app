@@ -5,6 +5,7 @@ import type { HarbourPlaceId } from "../flag.ts";
 import type { HarbourReading } from "../data/reading.ts";
 import type { RenderTier } from "./quality.ts";
 import type { RoomHold } from "../camera/poses.ts";
+import { groundHeightAt } from "./ground.ts";
 
 /**
  * The contract between the harbour runtime and a place (BUILD_PLAN §2 #4).
@@ -211,4 +212,231 @@ export const SCENE_DRESSING: Readonly<Record<ThemeId, PlaceDressing>> = Object.f
  */
 export function poseFor(poses: Record<PoseKey, Pose>, key: PoseKey, composition: Composition): Pose | undefined {
   return poses[`${key}:${composition}`] ?? poses[`${key}@${composition}`] ?? poses[key];
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * Where a place **stands** (world-space, slice 1)
+ *
+ * Until now every interior built its root group at the scene origin, while the
+ * Court stood that building's *exterior* out on the island — so the Library's
+ * hall was at (−4.7, −11.6) and the Library's inside was a separate object
+ * sitting on the Court's terrace. Walking out of a door into the world was
+ * geometrically impossible, because the door led from one coordinate system to
+ * another one that happened to share an origin.
+ *
+ * A **placement** closes that gap: it is the transform a place's root group is
+ * given so the inside of a building is built *where the building stands*. It
+ * is data beside the registry, not a special case inside a scene module — a
+ * place that declares no placement keeps exactly today's behaviour (group at
+ * the origin, hold as written, disposed on navigate), which is how the eight
+ * unplaced places stay untouched.
+ *
+ * The numbers are the Court's own (`court/CourtScene.ts`): the spot and the
+ * yaw are copied from the expression that stands the exterior, and
+ * `test/harbour-world-space.test.ts` proves they still agree.
+ * ────────────────────────────────────────────────────────────────────────── */
+
+/** A place's spot on the island, and the room it stands in, in island units. */
+export type PlacePlacement = {
+  /**
+   * The name of the Court's exterior shell for this building
+   * (`THREE.Object3D.name` in `court/CourtScene.ts`). While the interior is
+   * resident the runtime hides the shell, so nothing is drawn twice.
+   */
+  exterior: string;
+  /** Island coordinates (x, z) — the Court's own spot for the exterior. */
+  spot: readonly [number, number];
+  /** Which way the building faces, in radians — the Court's own `rotation.y`. */
+  yaw: number;
+  /** Half the interior's footprint, in the place's own coordinates. */
+  halfWidth: number;
+  halfDepth: number;
+  /** The doorway, in the place's own coordinates: the threshold you cross. */
+  door: Vec3;
+  /** How near the doorway counts as "arrived", in island units. */
+  doorRadius: number;
+};
+
+/**
+ * How far a placed interior stands clear of the island under it. The island is
+ * a sloped analytic surface (`scene/ground.ts`) and an interior's floor is one
+ * flat plane, so the floor is lifted to the highest ground its footprint
+ * covers plus a doorstep — otherwise the uphill corner of a room sinks under
+ * the lawn and the floor z-fights the terrain along the line where they meet.
+ */
+export const PLACEMENT_SILL = 0.06;
+
+/**
+ * The three buildings this slice stands up. Everything else is absent from
+ * this table on purpose: an absent placement is today's behaviour.
+ *
+ * The spot and yaw expressions are character-for-character the Court's
+ * (`CourtScene.ts` §"the island walk" and §"Hercules's Cottage" / §"The Kiln").
+ */
+export const PLACE_PLACEMENTS: Readonly<Partial<Record<HarbourPlaceId, PlacePlacement>>> = Object.freeze({
+  library: Object.freeze({
+    exterior: "library-hall",
+    spot: [-4.7, -11.6] as const,
+    yaw: Math.atan2(4.7, 11.6) + Math.PI,
+    halfWidth: 4.4, halfDepth: 3.4,
+    door: [1.8, 0, 3.15] as Vec3,
+    doorRadius: 1.5,
+  }),
+  cottage: Object.freeze({
+    exterior: "hercules-cottage",
+    spot: [9.8, 5.6] as const,
+    yaw: Math.atan2(-9.8, -5.6),
+    halfWidth: 3.2, halfDepth: 2.6,
+    door: [1.75, 0, 2.45] as Vec3,
+    doorRadius: 1.4,
+  }),
+  kiln: Object.freeze({
+    exterior: "kiln-house",
+    spot: [10.6, -4.4] as const,
+    yaw: Math.atan2(-10.6, 4.4) + Math.PI,
+    halfWidth: 3.8, halfDepth: 2.9,
+    door: [1.95, 0, 2.82] as Vec3,
+    doorRadius: 1.5,
+  }),
+});
+
+/** Which places stand somewhere, in a stable order. */
+export const PLACED_PLACE_IDS: readonly HarbourPlaceId[] = Object.freeze(Object.keys(PLACE_PLACEMENTS) as HarbourPlaceId[]);
+
+/** The placement a place declares, or null when it keeps the origin. */
+export function placementOf(place: HarbourPlaceId | null | undefined): PlacePlacement | null {
+  return (place && PLACE_PLACEMENTS[place]) ?? null;
+}
+
+/** Half the diagonal of a placement's footprint: the radius the building itself fills. */
+export function placementReach(placement: PlacePlacement): number {
+  return Math.hypot(placement.halfWidth, placement.halfDepth);
+}
+
+/**
+ * Stream in when the viewer is this far past the building's own reach, and let
+ * go only this much further out again. The gap between the two is the
+ * hysteresis: walking back and forth across one threshold cannot thrash,
+ * because the threshold you leave by is two units beyond the one you came in
+ * by, and a building costs its whole build to raise.
+ *
+ * The release radius is deliberately **shorter than the building's distance
+ * from the Court's own centre**: standing in the Court, with the Queen in
+ * front of you, every interior has been let go, so the Court still costs
+ * exactly what the Court costs. A wider band would leave a room you visited
+ * once standing behind you for the rest of the session.
+ */
+export const STREAM_MARGIN = 4, STREAM_RELEASE = 2;
+
+/** How near the viewer must come before a placed interior is built. */
+export const streamInRadius = (placement: PlacePlacement): number => placementReach(placement) + STREAM_MARGIN;
+/** How far out the viewer must go before it is let go again. Always the larger. */
+export const streamOutRadius = (placement: PlacePlacement): number => streamInRadius(placement) + STREAM_RELEASE;
+
+/** A point turned from a placed place's own coordinates into the island's. */
+export function placementToWorld(placement: PlacePlacement, local: Vec3, lift = placementLift(placement)): Vec3 {
+  const cos = Math.cos(placement.yaw), sin = Math.sin(placement.yaw);
+  const [x, y, z] = local;
+  return [placement.spot[0] + x * cos + z * sin, y + lift, placement.spot[1] + z * cos - x * sin];
+}
+
+/**
+ * Where a placed interior's floor sits: the highest island height its
+ * footprint covers, plus the doorstep. Sampled at the footprint's corners, its
+ * edge midpoints and its centre — enough for a surface this smooth, and pure,
+ * so a test can read the same number the scene uses.
+ */
+export function placementLift(placement: PlacePlacement): number {
+  const { halfWidth: w, halfDepth: d, yaw, spot } = placement;
+  const cos = Math.cos(yaw), sin = Math.sin(yaw);
+  let highest = -Infinity;
+  for (const [lx, lz] of [[0, 0], [-w, -d], [w, -d], [-w, d], [w, d], [0, -d], [0, d], [-w, 0], [w, 0]] as const) {
+    const x = spot[0] + lx * cos + lz * sin, z = spot[1] + lz * cos - lx * sin;
+    const h = groundHeightAt(x, z);
+    if (h > highest) highest = h;
+  }
+  return highest + PLACEMENT_SILL;
+}
+
+/** The doorway of a placed building, in island coordinates: the threshold. */
+export function placementDoor(placement: PlacePlacement): Vec3 {
+  return placementToWorld(placement, placement.door);
+}
+
+/** Is a point on the island inside a placed building's doorway? */
+export function atThreshold(placement: PlacePlacement, x: number, z: number): boolean {
+  const door = placementDoor(placement);
+  return Math.hypot(x - door[0], z - door[2]) <= placement.doorRadius;
+}
+
+/** Is a point on the island inside a placed building's walls? */
+export function insidePlacement(placement: PlacePlacement, x: number, z: number): boolean {
+  const cos = Math.cos(placement.yaw), sin = Math.sin(placement.yaw);
+  const dx = x - placement.spot[0], dz = z - placement.spot[1];
+  const lx = dx * cos - dz * sin, lz = dz * cos + dx * sin;
+  return Math.abs(lx) <= placement.halfWidth && Math.abs(lz) <= placement.halfDepth;
+}
+
+/**
+ * A pose written in a place's own coordinates, read in the island's. Poses
+ * name a target and a heading; the target moves with the building and the
+ * heading turns with it.
+ */
+export function placedPose<P extends Pose>(pose: P, placement: PlacePlacement | null): P {
+  if (!placement) return pose;
+  return { ...pose, target: placementToWorld(placement, pose.target), theta: pose.theta + placement.yaw };
+}
+
+/**
+ * A room's hold, moved onto the island with its building (§4). The hold is
+ * written as an axis-aligned box in the room's own coordinates; turned by the
+ * building's yaw it stops being axis-aligned, so what comes back is the
+ * smallest axis-aligned volume that still contains the turned room — a **soft**
+ * volume rather than the hard box, which is the point: it holds the eye in the
+ * building without pretending the building is square to the island.
+ *
+ * `holdPoseInRoom` (`camera/poses.ts`) is untouched and still applies this the
+ * way it always has; an unplaced place passes `null` and gets its own box back
+ * identically, which is what keeps the other eight exactly as they were.
+ */
+export function placedHold(hold: RoomHold | null, placement: PlacePlacement | null): RoomHold | null {
+  if (!hold || !placement) return hold;
+  const lift = placementLift(placement);
+  const envelope = (box: { min: Vec3; max: Vec3 }): { min: Vec3; max: Vec3 } => {
+    let minX = Infinity, minZ = Infinity, maxX = -Infinity, maxZ = -Infinity;
+    for (const x of [box.min[0], box.max[0]]) for (const z of [box.min[2], box.max[2]]) {
+      const [wx, , wz] = placementToWorld(placement, [x, 0, z], 0);
+      minX = Math.min(minX, wx); maxX = Math.max(maxX, wx);
+      minZ = Math.min(minZ, wz); maxZ = Math.max(maxZ, wz);
+    }
+    return { min: [minX, box.min[1] + lift, minZ] as Vec3, max: [maxX, box.max[1] + lift, maxZ] as Vec3 };
+  };
+  return { ...hold, eye: envelope(hold.eye), target: envelope(hold.target) };
+}
+
+export type StreamStep = { id: HarbourPlaceId; action: "raise" | "release" };
+
+/**
+ * What the streamer should do, from where the viewer is standing. Pure, so the
+ * hysteresis is a thing a test can hold still and walk back and forth across.
+ *
+ * `resident` is what stands now; `keep` is what may never be let go however far
+ * away it is — the place the route says you are in, and the place a journey is
+ * still flying out of.
+ */
+export function streamPlaces(
+  focus: readonly [number, number],
+  resident: Iterable<HarbourPlaceId>,
+  keep: Iterable<HarbourPlaceId> = [],
+): StreamStep[] {
+  const standing = new Set(resident), held = new Set(keep);
+  const steps: StreamStep[] = [];
+  for (const id of PLACED_PLACE_IDS) {
+    const placement = PLACE_PLACEMENTS[id]!;
+    const distance = Math.hypot(focus[0] - placement.spot[0], focus[1] - placement.spot[1]);
+    const inside = standing.has(id);
+    if (!inside && distance <= streamInRadius(placement)) steps.push({ id, action: "raise" });
+    else if (inside && !held.has(id) && distance >= streamOutRadius(placement)) steps.push({ id, action: "release" });
+  }
+  return steps;
 }
