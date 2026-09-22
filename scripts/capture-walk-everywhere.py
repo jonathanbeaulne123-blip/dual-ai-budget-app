@@ -40,12 +40,19 @@ ARGS = ["--use-gl=swiftshader", "--enable-webgl", "--ignore-gpu-blocklist", "--e
 HEIGHT = {390: 844, 1440: 900}
 SHOT = 240000
 
-# (place id, the house route that stands it, what kind of ground it is)
+# (place id, the house route that stands it, which key to hold, what kind of ground it is)
+#
+# The key is the one with somewhere to go. W is "away from the eye" in every
+# place; at the Campfire that is straight into the fire, which the ring of
+# stones quite properly refuses, so the shore is walked **across** with D.
 PLAN = [
-    ("cellar", "home", "below", "an unplaced room — under the Court's own floor"),
-    ("library", "study", "middle", "a placed room — standing where the Court stood its hall"),
-    ("campfire", "making", "below", "outdoors — the shore in front of the Boathouse"),
+    ("cellar", "home", "below", "w", "an unplaced room — under the Court's own floor"),
+    ("library", "study", "middle", "w", "a placed room — standing where the Court stood its hall"),
+    ("campfire", "making", "below", "d", "outdoors — the shore in front of the Boathouse"),
 ]
+
+ONLY = [a.split("=", 1)[1] for a in sys.argv if a.startswith("--only=")]
+ONLY = ONLY[0].split(",") if ONLY else []
 
 os.makedirs(OUT, exist_ok=True)
 report = []
@@ -125,7 +132,7 @@ def go(page, place, room, level):
     return False
 
 
-def run(browser, width, place, room, level, kind):
+def run(browser, width, place, room, level, key, kind):
     context = browser.new_context(viewport={"width": width, "height": HEIGHT[width]}, device_scale_factor=1)
     context.add_init_script(init_script())
     page = context.new_page()
@@ -141,16 +148,16 @@ def run(browser, width, place, room, level, kind):
     shots = [shoot(page, f"{place}-{width}-00-standing-{spot(samples[0])}.png")]
     # Hold the walk key the stage promises. The body walks on underneath a
     # screenshot that takes the better part of a minute.
-    page.keyboard.down("w")
+    page.keyboard.down(key)
     for i in range(FRAMES):
         sample = numbers(page)
         samples.append(sample)
         shots.append(shoot(page, f"{place}-{width}-{i + 1:02d}-walking-{spot(sample)}.png"))
-    page.keyboard.up("w")
+    page.keyboard.up(key)
     page.wait_for_timeout(1200)
     samples.append(numbers(page))
     shots.append(shoot(page, f"{place}-{width}-{FRAMES + 1:02d}-stopped-{spot(samples[-1])}.png"))
-    row = {"place": place, "kind": kind, "route": f"{room}/{level}", "width": width, "arrived": arrived, "frames": shots, "samples": samples}
+    row = {"place": place, "kind": kind, "route": f"{room}/{level}", "key": key, "width": width, "arrived": arrived, "frames": shots, "samples": samples}
     report.append(row)
     first = next((s for s in samples if s and (s.get("live") or s.get("at"))), None)
     last = next((s for s in reversed(samples) if s and (s.get("live") or s.get("at"))), None)
@@ -165,10 +172,13 @@ def run(browser, width, place, room, level, kind):
 with sync_playwright() as p:
     browser = p.chromium.launch(args=ARGS)
     for width in (1440, 390):
-        for place, room, level, kind in PLAN:
-            run(browser, width, place, room, level, kind)
+        for place, room, level, key, kind in PLAN:
+            if ONLY and place not in ONLY:
+                continue
+            run(browser, width, place, room, level, key, kind)
     browser.close()
 
-with open(os.path.join(OUT, "walk-everywhere-report.json"), "w") as handle:
+name = "walk-everywhere-report.json" if not ONLY else f"walk-everywhere-report-{'-'.join(ONLY)}.json"
+with open(os.path.join(OUT, name), "w") as handle:
     json.dump(report, handle, indent=2)
-print("wrote", os.path.join(OUT, "walk-everywhere-report.json"))
+print("wrote", os.path.join(OUT, name))

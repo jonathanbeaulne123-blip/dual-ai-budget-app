@@ -1,0 +1,796 @@
+[
+  {
+    "place": "cellar",
+    "kind": "an unplaced room \u2014 under the Court's own floor",
+    "route": "home/below",
+    "width": 1440,
+    "arrived": true,
+    "frames": [
+      "cellar-1440-00-standing-x+1p2z+0p1.png",
+      "cellar-1440-01-walking-x+1p1z+0p0.png",
+      "cellar-1440-02-walking-x+1p1z-0p8.png",
+      "cellar-1440-03-stopped-x+1p0z-1p8.png"
+    ],
+    "samples": [
+      {
+        "place": "cellar",
+        "runtimePlace": "cellar",
+        "tier": "full",
+        "body": "standing",
+        "at": [
+          1.152,
+          0,
+          0.093,
+          -1.86,
+          0
+        ],
+        "live": {
+          "x": 1.1520178955171647,
+          "y": 0,
+          "z": 0.09315426674979371,
+          "yaw": -1.860299998756285,
+          "speed": 0
+        },
+        "renderMs": 38.43,
+        "bodyMs": 0.094,
+        "drawCalls": 114,
+        "camera": [
+          1.0529,
+          2.2517,
+          2.8048
+        ],
+        "label": "The Cellar. W A S D walks you around the room; the left and right arrows walk the bill rail through the month; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "cellar",
+        "runtimePlace": "cellar",
+        "tier": "full",
+        "body": "following",
+        "at": [
+          1.147,
+          0,
+          0.042,
+          -2.464,
+          0.643
+        ],
+        "live": {
+          "x": 1.1466489308313383,
+          "y": 0,
+          "z": 0.041980228195774454,
+          "yaw": -2.464269049407076,
+          "speed": 0.6431864042267776
+        },
+        "renderMs": 33.66,
+        "bodyMs": 0.087,
+        "drawCalls": 116,
+        "camera": [
+          0.3574,
+          2.0348,
+          2.3632
+        ],
+        "label": "The Cellar. W A S D walks you around the room; the left and right arrows walk the bill rail through the month; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "cellar",
+        "runtimePlace": "cellar",
+        "tier": "full",
+        "body": "following",
+        "at": [
+          1.056,
+          0,
+          -0.823,
+          -3.035,
+          1.49
+        ],
+        "live": {
+          "x": 1.0558993121964155,
+          "y": 0,
+          "z": -0.8229955640730662,
+          "yaw": -3.035254362362587,
+          "speed": 1.4902893775225659
+        },
+        "renderMs": 23.16,
+        "bodyMs": 0.093,
+        "drawCalls": 93,
+        "camera": [
+          0.4692,
+          1.8239,
+          1.0062
+        ],
+        "label": "The Cellar. W A S D walks you around the room; the left and right arrows walk the bill rail through the month; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "cellar",
+        "runtimePlace": "cellar",
+        "tier": "full",
+        "body": "following",
+        "at": [
+          0.956,
+          0,
+          -1.777,
+          -3.037,
+          0.857
+        ],
+        "live": {
+          "x": 0.9558367011665512,
+          "y": 0,
+          "z": -1.7767377125688657,
+          "yaw": -3.0370536008047826,
+          "speed": 0.8567507316472894
+        },
+        "renderMs": 22.74,
+        "bodyMs": 0.129,
+        "drawCalls": 96,
+        "camera": [
+          0.8794,
+          1.8171,
+          0.0689
+        ],
+        "label": "The Cellar. W A S D walks you around the room; the left and right arrows walk the bill rail through the month; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      }
+    ],
+    "walked": 1.88
+  },
+  {
+    "place": "library",
+    "kind": "a placed room \u2014 standing where the Court stood its hall",
+    "route": "study/middle",
+    "width": 1440,
+    "arrived": true,
+    "frames": [
+      "library-1440-00-standing-x-6p6z-13p1.png",
+      "library-1440-01-walking-x-6p5z-13p0.png",
+      "library-1440-02-walking-x-5p7z-12p7.png",
+      "library-1440-03-stopped-x-4p9z-12p2.png"
+    ],
+    "samples": [
+      {
+        "place": "library",
+        "runtimePlace": "library",
+        "tier": "full",
+        "body": "standing",
+        "at": [
+          -6.569,
+          0.287,
+          -13.071,
+          0.904,
+          0
+        ],
+        "live": {
+          "x": -6.568814001761289,
+          "y": 0.2872833589234863,
+          "z": -13.070542165320358,
+          "yaw": 0.9041035005406255,
+          "speed": 0
+        },
+        "renderMs": 24.81,
+        "bodyMs": 0.062,
+        "drawCalls": 146,
+        "camera": [
+          -4.0381,
+          2.1449,
+          -7.1916
+        ],
+        "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "library",
+        "runtimePlace": "library",
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -6.451,
+          0.287,
+          -13.011,
+          1.058,
+          1.011
+        ],
+        "live": {
+          "x": -6.450585469597519,
+          "y": 0.2872833589234863,
+          "z": -13.011164914205224,
+          "yaw": 1.0576849887629076,
+          "speed": 1.0105803080654407
+        },
+        "renderMs": 15.73,
+        "bodyMs": 0.073,
+        "drawCalls": 197,
+        "camera": [
+          -8.2446,
+          2.4406,
+          -13.0581
+        ],
+        "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "library",
+        "runtimePlace": "library",
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -5.746,
+          0.287,
+          -12.657,
+          1.105,
+          1.49
+        ],
+        "live": {
+          "x": -5.745620902487663,
+          "y": 0.2872833589234863,
+          "z": -12.657114522455705,
+          "yaw": 1.1050620926532955,
+          "speed": 1.4902893775225659
+        },
+        "renderMs": 15.6,
+        "bodyMs": 0.092,
+        "drawCalls": 149,
+        "camera": [
+          -7.4678,
+          2.0658,
+          -13.3702
+        ],
+        "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "library",
+        "runtimePlace": "library",
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -4.889,
+          0.287,
+          -12.227,
+          1.105,
+          0.489
+        ],
+        "live": {
+          "x": -4.8886497731878,
+          "y": 0.2872833589234863,
+          "z": -12.226722729446106,
+          "yaw": 1.1053698258175937,
+          "speed": 0.4893837833760354
+        },
+        "renderMs": 12.66,
+        "bodyMs": 0.108,
+        "drawCalls": 148,
+        "camera": [
+          -6.4712,
+          2.0529,
+          -12.9778
+        ],
+        "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      }
+    ],
+    "walked": 1.88
+  },
+  {
+    "place": "campfire",
+    "kind": "outdoors \u2014 the shore in front of the Boathouse",
+    "route": "making/below",
+    "key": "d",
+    "width": 1440,
+    "arrived": true,
+    "frames": [
+      "campfire-1440-00-standing-x+0p0z+1p7.png",
+      "campfire-1440-01-walking-x-0p1z+1p7.png",
+      "campfire-1440-02-walking-x-1p0z+1p9.png",
+      "campfire-1440-03-stopped-x-1p7z+2p0.png"
+    ],
+    "samples": [
+      {
+        "place": "campfire",
+        "runtimePlace": "campfire",
+        "tier": "full",
+        "body": "standing",
+        "at": [
+          0,
+          0,
+          1.7,
+          3.142,
+          0
+        ],
+        "live": {
+          "x": 0,
+          "y": 0,
+          "z": 1.7000000000000002,
+          "yaw": 3.141592653589793,
+          "speed": 0
+        },
+        "renderMs": 30.87,
+        "bodyMs": 0.045,
+        "drawCalls": 61,
+        "camera": [
+          1.1764,
+          2.777,
+          5.1213
+        ],
+        "label": "The Campfire. W A S D and the arrow keys walk you around the fire; Shift runs; tap the open sand to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "campfire",
+        "runtimePlace": "campfire",
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -0.051,
+          0,
+          1.708,
+          -2.253,
+          0.643
+        ],
+        "live": {
+          "x": -0.05079179291118021,
+          "y": 0,
+          "z": 1.7082341834199686,
+          "yaw": -2.2528967463325156,
+          "speed": 0.6431864042267776
+        },
+        "renderMs": 26.59,
+        "bodyMs": 0.054,
+        "drawCalls": 61,
+        "camera": [
+          2.1178,
+          2.4584,
+          4.5354
+        ],
+        "label": "The Campfire. W A S D and the arrow keys walk you around the fire; Shift runs; tap the open sand to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "campfire",
+        "runtimePlace": "campfire",
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -1.027,
+          0,
+          1.867,
+          -1.411,
+          1.494
+        ],
+        "live": {
+          "x": -1.0273221173351206,
+          "y": 0,
+          "z": 1.8665457795577394,
+          "yaw": -1.4113708848299105,
+          "speed": 1.4944532044252756
+        },
+        "renderMs": 17.7,
+        "bodyMs": 0.112,
+        "drawCalls": 49,
+        "camera": [
+          2.0189,
+          2.1208,
+          1.2966
+        ],
+        "label": "The Campfire. W A S D and the arrow keys walk you around the fire; Shift runs; tap the open sand to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "campfire",
+        "runtimePlace": "campfire",
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -1.737,
+          0,
+          1.982,
+          -1.41,
+          0.489
+        ],
+        "live": {
+          "x": -1.7374799561961556,
+          "y": 0,
+          "z": 1.981674023062273,
+          "yaw": -1.4100953537631202,
+          "speed": 0.4893568278086264
+        },
+        "renderMs": 17.63,
+        "bodyMs": 0.111,
+        "drawCalls": 45,
+        "camera": [
+          1.2073,
+          2.1147,
+          1.4445
+        ],
+        "label": "The Campfire. W A S D and the arrow keys walk you around the fire; Shift runs; tap the open sand to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      }
+    ],
+    "walked": 1.76
+  },
+  {
+    "place": "cellar",
+    "kind": "an unplaced room \u2014 under the Court's own floor",
+    "route": "home/below",
+    "width": 390,
+    "arrived": true,
+    "frames": [
+      "cellar-390-00-standing-x+1p2z+0p1.png",
+      "cellar-390-01-walking-x+1p1z+0p0.png",
+      "cellar-390-02-walking-x+0p7z-0p7.png",
+      "cellar-390-03-stopped-x+0p2z-1p5.png"
+    ],
+    "samples": [
+      {
+        "place": "cellar",
+        "runtimePlace": "cellar",
+        "tier": "lite",
+        "body": "standing",
+        "at": [
+          1.152,
+          0,
+          0.093,
+          -1.86,
+          0
+        ],
+        "live": {
+          "x": 1.1520178955171647,
+          "y": 0,
+          "z": 0.09315426674979371,
+          "yaw": -1.860299998756285,
+          "speed": 0
+        },
+        "renderMs": 26.38,
+        "bodyMs": 0.074,
+        "drawCalls": 50,
+        "camera": [
+          1.1093,
+          2.1458,
+          1.1382
+        ],
+        "label": "The Cellar. W A S D walks you around the room; the left and right arrows walk the bill rail through the month; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "cellar",
+        "runtimePlace": "cellar",
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          1.125,
+          0,
+          0.049,
+          -2.236,
+          0.643
+        ],
+        "live": {
+          "x": 1.1251684864541318,
+          "y": 0,
+          "z": 0.04925987944695252,
+          "yaw": -2.2361655176036397,
+          "speed": 0.6431864042267776
+        },
+        "renderMs": 22.86,
+        "bodyMs": 0.069,
+        "drawCalls": 53,
+        "camera": [
+          1.4738,
+          1.9604,
+          1.4312
+        ],
+        "label": "The Cellar. W A S D walks you around the room; the left and right arrows walk the bill rail through the month; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "cellar",
+        "runtimePlace": "cellar",
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          0.671,
+          0,
+          -0.693,
+          -2.592,
+          1.49
+        ],
+        "live": {
+          "x": 0.6713428840105846,
+          "y": 0,
+          "z": -0.692670667882273,
+          "yaw": -2.5915044057089003,
+          "speed": 1.4902893775225659
+        },
+        "renderMs": 14.98,
+        "bodyMs": 0.082,
+        "drawCalls": 48,
+        "camera": [
+          1.221,
+          1.8167,
+          1.1413
+        ],
+        "label": "The Cellar. W A S D walks you around the room; the left and right arrows walk the bill rail through the month; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "cellar",
+        "runtimePlace": "cellar",
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          0.171,
+          0,
+          -1.511,
+          -2.593,
+          0.052
+        ],
+        "live": {
+          "x": 0.1709443653635083,
+          "y": 0,
+          "z": -1.5107403070202317,
+          "yaw": -2.5926241182005874,
+          "speed": 0.05209906564567297
+        },
+        "renderMs": 11.47,
+        "bodyMs": 0.082,
+        "drawCalls": 51,
+        "camera": [
+          1.0129,
+          1.817,
+          0.073
+        ],
+        "label": "The Cellar. W A S D walks you around the room; the left and right arrows walk the bill rail through the month; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      }
+    ],
+    "walked": 1.88
+  },
+  {
+    "place": "library",
+    "kind": "a placed room \u2014 standing where the Court stood its hall",
+    "route": "study/middle",
+    "width": 390,
+    "arrived": true,
+    "frames": [
+      "library-390-00-standing-x-6p6z-13p1.png",
+      "library-390-01-walking-x-6p5z-13p0.png",
+      "library-390-02-walking-x-5p6z-12p6.png",
+      "library-390-03-stopped-x-4p8z-12p2.png"
+    ],
+    "samples": [
+      {
+        "place": "library",
+        "runtimePlace": "library",
+        "tier": "lite",
+        "body": "standing",
+        "at": [
+          -6.569,
+          0.287,
+          -13.071,
+          0.904,
+          0
+        ],
+        "live": {
+          "x": -6.568814001761289,
+          "y": 0.2872833589234863,
+          "z": -13.070542165320358,
+          "yaw": 0.9041035005406255,
+          "speed": 0
+        },
+        "renderMs": 23.51,
+        "bodyMs": 0.052,
+        "drawCalls": 113,
+        "camera": [
+          -1.768,
+          1.5159,
+          -7.1685
+        ],
+        "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "library",
+        "runtimePlace": "library",
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          -6.45,
+          0.287,
+          -13.013,
+          1.069,
+          1.011
+        ],
+        "live": {
+          "x": -6.449682854378245,
+          "y": 0.2872833589234863,
+          "z": -13.01299728291724,
+          "yaw": 1.0694662814213725,
+          "speed": 1.0105803080654407
+        },
+        "renderMs": 20.25,
+        "bodyMs": 0.062,
+        "drawCalls": 162,
+        "camera": [
+          -8.2282,
+          2.5011,
+          -13.0294
+        ],
+        "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "library",
+        "runtimePlace": "library",
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          -5.632,
+          0.287,
+          -12.618,
+          1.121,
+          1.494
+        ],
+        "live": {
+          "x": -5.631681438140612,
+          "y": 0.2872833589234863,
+          "z": -12.617871437686963,
+          "yaw": 1.1206482972559773,
+          "speed": 1.4944532044252756
+        },
+        "renderMs": 12.97,
+        "bodyMs": 0.08,
+        "drawCalls": 132,
+        "camera": [
+          -7.3545,
+          2.0619,
+          -13.3068
+        ],
+        "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "library",
+        "runtimePlace": "library",
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          -4.768,
+          0.287,
+          -12.201,
+          1.121,
+          0.091
+        ],
+        "live": {
+          "x": -4.7677727246069725,
+          "y": 0.2872833589234863,
+          "z": -12.200570619056577,
+          "yaw": 1.1208095774997053,
+          "speed": 0.09121127116639206
+        },
+        "renderMs": 11.98,
+        "bodyMs": 0.127,
+        "drawCalls": 131,
+        "camera": [
+          -6.3355,
+          2.0528,
+          -12.9265
+        ],
+        "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      }
+    ],
+    "walked": 2.0
+  },
+  {
+    "place": "campfire",
+    "kind": "outdoors \u2014 the shore in front of the Boathouse",
+    "route": "making/below",
+    "key": "d",
+    "width": 390,
+    "arrived": true,
+    "frames": [
+      "campfire-390-00-standing-x+0p0z+1p7.png",
+      "campfire-390-01-walking-x-0p1z+1p7.png",
+      "campfire-390-02-walking-x-1p0z+1p8.png",
+      "campfire-390-03-stopped-x-1p9z+1p9.png"
+    ],
+    "samples": [
+      {
+        "place": "campfire",
+        "runtimePlace": "campfire",
+        "tier": "lite",
+        "body": "standing",
+        "at": [
+          0,
+          0,
+          1.7,
+          3.142,
+          0
+        ],
+        "live": {
+          "x": 0,
+          "y": 0,
+          "z": 1.7000000000000002,
+          "yaw": 3.141592653589793,
+          "speed": 0
+        },
+        "renderMs": 23.41,
+        "bodyMs": 0.066,
+        "drawCalls": 52,
+        "camera": [
+          0.6164,
+          2.6254,
+          5.8383
+        ],
+        "label": "The Campfire. W A S D and the arrow keys walk you around the fire; Shift runs; tap the open sand to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "campfire",
+        "runtimePlace": "campfire",
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          -0.051,
+          0,
+          1.705,
+          -2.284,
+          0.643
+        ],
+        "live": {
+          "x": -0.05119828593674452,
+          "y": 0,
+          "z": 1.7051325939704258,
+          "yaw": -2.2841035724810093,
+          "speed": 0.6431864042267776
+        },
+        "renderMs": 20.33,
+        "bodyMs": 0.067,
+        "drawCalls": 49,
+        "camera": [
+          1.9201,
+          2.39,
+          4.9663
+        ],
+        "label": "The Campfire. W A S D and the arrow keys walk you around the fire; Shift runs; tap the open sand to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "campfire",
+        "runtimePlace": "campfire",
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          -1.036,
+          0,
+          1.804,
+          -1.472,
+          1.494
+        ],
+        "live": {
+          "x": -1.0355439038043428,
+          "y": 0,
+          "z": 1.8038125847287902,
+          "yaw": -1.4721281466729064,
+          "speed": 1.4944532044252756
+        },
+        "renderMs": 13.12,
+        "bodyMs": 0.076,
+        "drawCalls": 32,
+        "camera": [
+          1.6207,
+          1.8804,
+          1.5253
+        ],
+        "label": "The Campfire. W A S D and the arrow keys walk you around the fire; Shift runs; tap the open sand to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      },
+      {
+        "place": "campfire",
+        "runtimePlace": "campfire",
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          -1.871,
+          0,
+          1.888,
+          -1.471,
+          0.052
+        ],
+        "live": {
+          "x": -1.8707779751821592,
+          "y": 0,
+          "z": 1.8875442425414022,
+          "yaw": -1.470888891824619,
+          "speed": 0.05209906564567297
+        },
+        "renderMs": 9.61,
+        "bodyMs": 0.08,
+        "drawCalls": 29,
+        "camera": [
+          0.6458,
+          1.8701,
+          1.6145
+        ],
+        "label": "The Campfire. W A S D and the arrow keys walk you around the fire; Shift runs; tap the open sand to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
+      }
+    ],
+    "walked": 1.88
+  }
+]
