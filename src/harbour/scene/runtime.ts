@@ -267,11 +267,12 @@ const TAP_PIXELS = 8, TAP_MS = 350, MIN_TWIN = 44;
 export const DOUBLE_TAP_MS = 320, DOUBLE_TAP_PIXELS = 28;
 /**
  * The thumb-stick (W7 b): how long the ground is held still before it becomes
- * a stick, how far the thumb may push it, and how much walking a full push is
- * worth per second — in the same pixels-of-drag `pan` already speaks, so the
- * stick and W A S D drive one input and not two.
+ * a stick, and how far the thumb may push it. A full push is a full push of
+ * the **body's** own input, the same input W A S D gives it, so there is no
+ * gain to convert between them any more — `STICK_GAIN` was the pixels-per-
+ * second the old camera pan needed, and the pan is gone.
  */
-export const STICK_MS = 380, STICK_RADIUS = 56, STICK_GAIN = 3.4;
+export const STICK_MS = 380, STICK_RADIUS = 56;
 /** Zones a drag walks rather than orbits: the cellar's rail and the water behind it. */
 const RAIL_ZONES = new Set(["rail", "water"]);
 const isRail = (hit: HarbourHit): boolean => hit.kind === "anchor" && RAIL_ZONES.has(hit.anchor.zone);
