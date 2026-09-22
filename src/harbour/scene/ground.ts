@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { PlaceDressing } from "./place.ts";
+import { plantPlan } from "./planting.ts";
 import type { RenderTier } from "./quality.ts";
 
 /**
@@ -36,9 +37,20 @@ export function groundHeightAt(x: number, z: number): number {
   return SEA_LEVEL - 0.3;
 }
 
-/** Low-poly, flat-shaded trees and shrubs around the lawn's outer ring, in the island's palette; instanced (four draw calls). */
+/**
+ * Low-poly, flat-shaded trees and shrubs around the lawn's outer ring, in the
+ * island's palette; instanced (four draw calls).
+ *
+ * **Where** each plant stands is not decided here: `scene/planting.ts`
+ * `plantPlan` sows the ring — same LCG, same four draws per plant, now with
+ * the buildings' footprints and doorways kept clear — and `body/obstacles.ts`
+ * reads that same plan for the trunks a body bumps into. This function only
+ * draws what the plan says, so the island cannot grow a tree you can walk
+ * through, or one you bump into that is not there.
+ */
 function plantRing(group: THREE.Group, dressing: PlaceDressing, tier: RenderTier, track: <T extends { dispose(): void }>(item: T) => T): { canopies: THREE.InstancedMesh; trunks: THREE.InstancedMesh; shrubs: THREE.InstancedMesh; setColours(next: PlaceDressing): void } {
-  const TREES = tier === "full" ? 18 : 14, SHRUBS = 16;
+  const plan = plantPlan(tier);
+  const TREES = plan.trees.length, SHRUBS = plan.shrubs.length;
   const canopyGeometry = track(new THREE.ConeGeometry(1, 2.2, 6));
   const trunkGeometry = track(new THREE.CylinderGeometry(0.12, 0.16, 0.9, 5));
   const shrubGeometry = track(new THREE.IcosahedronGeometry(0.55, 0));
@@ -49,20 +61,23 @@ function plantRing(group: THREE.Group, dressing: PlaceDressing, tier: RenderTier
   canopies.name = "trees"; trunks.name = "trunks"; shrubs.name = "shrubs";
   canopies.castShadow = trunks.castShadow = shrubs.castShadow = true;
   const matrix = new THREE.Matrix4(), position = new THREE.Vector3(), quaternion = new THREE.Quaternion(), scale = new THREE.Vector3(), tone = new THREE.Color();
+  const up = new THREE.Vector3(0, 1, 0);
+  // The tints keep their own run of the same LCG, reset at the top of every
+  // dressing change exactly as before — the plan's draws are `planting.ts`'s
+  // now and no longer share this sequence, so no colour moves.
   let seed = 0x7a11;
   const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
   const paint = (mesh: THREE.InstancedMesh, base: string, count: number) => { for (let i = 0; i < count; i += 1) { tone.set(base).offsetHSL(0, 0, (rand() - 0.5) * 0.12); mesh.setColorAt(i, tone); } if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true; };
   for (let i = 0; i < TREES; i += 1) {
-    // Leave the gate side (+z, in front of the camera) open so the trees frame the court rather than hide it.
-    const a = Math.PI * 0.62 + (i / TREES) * Math.PI * 1.76 + (rand() - 0.5) * 0.14;
-    const r = 13 + rand() * 2.4, x = Math.cos(a) * r, z = Math.sin(a) * r, y = groundHeightAt(x, z), size = 0.5 + rand() * 0.38;
-    position.set(x, y + 0.55 + 1.1 * size, z); scale.set(size, size, size); quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rand() * Math.PI);
+    const { x, z, size, spin } = plan.trees[i]!;
+    const y = groundHeightAt(x, z);
+    position.set(x, y + 0.55 + 1.1 * size, z); scale.set(size, size, size); quaternion.setFromAxisAngle(up, spin);
     matrix.compose(position, quaternion, scale); canopies.setMatrixAt(i, matrix);
     position.set(x, y + 0.3, z); scale.set(0.8, 0.75, 0.8); matrix.compose(position, quaternion, scale); trunks.setMatrixAt(i, matrix);
   }
   for (let i = 0; i < SHRUBS; i += 1) {
-    const a = (i / SHRUBS) * Math.PI * 2 + rand() * 0.3, r = 10.6 + rand() * 1.8, x = Math.cos(a) * r, z = Math.sin(a) * r, size = 0.6 + rand() * 0.7;
-    position.set(x, groundHeightAt(x, z) + 0.3 * size, z); scale.set(size, size * 0.8, size); quaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rand() * Math.PI);
+    const { x, z, size, spin } = plan.shrubs[i]!;
+    position.set(x, groundHeightAt(x, z) + 0.3 * size, z); scale.set(size, size * 0.8, size); quaternion.setFromAxisAngle(up, spin);
     matrix.compose(position, quaternion, scale); shrubs.setMatrixAt(i, matrix);
   }
   canopies.instanceMatrix.needsUpdate = trunks.instanceMatrix.needsUpdate = shrubs.instanceMatrix.needsUpdate = true;
