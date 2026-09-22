@@ -565,6 +565,15 @@ export default function HarbourWorld(props: HarbourWorldProps) {
    * and at no other moment. It is never taken on a re-render, and never taken
    * from somebody.
    */
+  /**
+   * True only for the instant the stage is focusing *itself* — on arrival, or
+   * under a press on the ground. A focus ring is the answer to "where did my
+   * keyboard go?", and neither of those asked the question: a ring round the
+   * whole island on every load, or under every click, is a change to what the
+   * world looks like, and this is not that. Tab here and the ring is there in
+   * full, which is the case that needs it.
+   */
+  const arriving = useRef(false);
   const takeKeys = useCallback((): boolean => {
     const node = stage.current;
     if (!node || !node.isConnected) return false;
@@ -581,7 +590,9 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     if (active && active !== document.body && active !== document.documentElement && active !== node) return false;
     // `preventScroll` keeps the promise the door makes above: focusing must
     // never be the thing that throws the page down the document.
+    arriving.current = true;
     node.focus({ preventScroll: true });
+    arriving.current = false;
     return document.activeElement === node;
   }, []);
   useEffect(() => {
@@ -632,7 +643,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     if (toolOpen) return;
     const target = event.target;
     if (target instanceof Element && target.closest("button,a,input,select,textarea,[role=button]")) return;
+    // Quietly, like the arrival: a press is a pointer, and a pointer has never
+    // wanted a focus ring. Tab is still Tab, and Tab is still ringed.
+    arriving.current = true;
     stage.current?.focus({ preventScroll: true });
+    arriving.current = false;
   }
 
   function onStageKeyUp(event: ReactKeyboardEvent<HTMLDivElement>) {
@@ -722,7 +737,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => props.onNavigate("home", "middle");
   return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : place === "cellar" ? "The Cellar" : place === "glasshouse" ? "The Glasshouse" : place === "kitchen" ? "The Kitchen" : place === "boathouse" ? "The Boathouse" : place === "cottage" ? "Hercules’s Cottage" : place === "kiln" ? "The Kiln" : place === "campfire" ? "The Campfire" : place === "atlas" ? "The Atlas" : "The Library"}>
-    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target === event.currentTarget) setStageHasKeys(true); }} onBlur={event => { if (event.target === event.currentTarget) setStageHasKeys(false); }}>
+    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) setStageHasKeys(false); }}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => props.onNavigate("home", HARBOUR_PLACE_LEVELS[next])} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}

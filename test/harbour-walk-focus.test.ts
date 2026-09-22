@@ -150,15 +150,35 @@ describe("the stage takes the keyboard when the world is ready", () => {
   it("stays Tab-reachable, and keeps a focus ring that is really painted", async () => {
     const { stage } = await stand();
     expect(stage.getAttribute("tabindex")).toBe("0");
+    // The focus it gave itself on arrival is marked, so the ring is not a
+    // frame drawn round the whole island on every load. A focus from anywhere
+    // else — Tab, or a press on the ground — is not marked and is ringed.
+    expect(stage.hasAttribute("data-harbour-arrived")).toBe(true);
+    const elsewhere = document.createElement("button");
+    document.body.append(elsewhere);
+    await act(async () => { elsewhere.focus(); });
+    await act(async () => { stage.focus(); });
+    expect(stage.hasAttribute("data-harbour-arrived")).toBe(false);
     const css = readFileSync("src/harbour/harbour.css", "utf8");
     // The ring is turned inward — the app's world ring is an outline with an
     // outset halo, and a stage that fills the viewport draws both of those
     // past the edge of the screen. It is not the invitation's job to stand in
     // for it: a keyboard focus has to be visible on its own.
-    const ring = /\.harbour-world__stage:focus-visible \{([^}]*)\}/.exec(css);
+    const ring = /\.harbour-world__stage:focus-visible:not\(\[data-harbour-arrived\]\) \{([^}]*)\}/.exec(css);
     expect(ring, "a focus-visible rule for the stage").not.toBeNull();
-    expect(ring![1]).toMatch(/box-shadow: inset/);
+    expect(ring![1]).toMatch(/outline: 3px solid/);
+    // Turned inward: the app's world ring is an outline with an outset halo,
+    // and a stage that fills the viewport draws both past the edge of the
+    // screen.
+    expect(ring![1]).toMatch(/outline-offset: -/);
     expect(ring![1]).not.toMatch(/outline: none/);
+    // And drawn over the canvas, which composites above the stage's own
+    // outline — without this the ring is in the computed style and on no
+    // screen anywhere.
+    const over = /\.harbour-world__stage:focus-visible:not\(\[data-harbour-arrived\]\)::after \{([^}]*)\}/.exec(css);
+    expect(over, "a ring drawn over the canvas").not.toBeNull();
+    expect(over![1]).toMatch(/box-shadow: inset/);
+    expect(over![1]).toMatch(/pointer-events: none/);
   });
 });
 
@@ -180,6 +200,8 @@ describe("a press on the ground hands it the keyboard", () => {
     await pressOn(host.querySelector(".house-world__canvas")!);
     expect(document.activeElement).toBe(stage);
     expect(invite()).toBeNull();
+    // A pointer never wanted a focus ring; Tab still gets one.
+    expect(stage.hasAttribute("data-harbour-arrived")).toBe(true);
     // And now the keys walk, with that one press and nothing else.
     await press("w");
     expect(inputs).toEqual([{ forward: 1, strafe: 0, run: false }]);

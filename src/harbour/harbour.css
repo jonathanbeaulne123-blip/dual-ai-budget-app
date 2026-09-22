@@ -20,7 +20,29 @@
 .harbour-world__stage { position: relative; height: calc(100dvh - var(--harbour-nav, 76px)); min-height: 420px; overflow: hidden; background: #e8dcc4; touch-action: none; outline: none; }
 .harbour-world--taylor .harbour-world__stage { background: #f2e3ea; }
 .harbour-world--newfoundland .harbour-world__stage { background: #dfe9ec; }
-.harbour-world__stage:focus-visible { box-shadow: inset 0 0 0 3px #126fb1; }
+/* ── The focus ring (walk-focus) ─────────────────────────────────────────────
+      The stage is a routine place for the keyboard to be now, so the ring has
+      to be a ring you can actually see. The app's own world ring
+      (`theme/worlds.css`) is an outline with an outset halo, and it outranks a
+      single class — on a stage that fills the viewport both are drawn past the
+      edge of the screen, so tabbing here showed nothing at all. Same colour,
+      same weight, turned inward, where there is room for it. ── */
+:root[data-theme] .harbour-world .harbour-world__stage:focus-visible:not([data-harbour-arrived]),
+.harbour-world .harbour-world__stage:focus-visible:not([data-harbour-arrived]) {
+  outline: 3px solid var(--world-focus, #126fb1);
+  outline-offset: -3px;
+  border-radius: 0;
+}
+/* The place itself is a canvas laid over the whole stage, and it composites
+   above the stage's own outline and background — so the ring has to be drawn
+   as something that sits over the canvas, like every other thing on the stage
+   does. Painted for nobody to press: it is `pointer-events: none` and it adds
+   no node the twins have to share their order with. */
+:root[data-theme] .harbour-world .harbour-world__stage:focus-visible:not([data-harbour-arrived])::after,
+.harbour-world .harbour-world__stage:focus-visible:not([data-harbour-arrived])::after {
+  content: ""; position: absolute; inset: 0; z-index: 9; pointer-events: none;
+  box-shadow: inset 0 0 0 3px var(--world-focus, #126fb1), inset 0 0 0 7px var(--world-focus-halo, #126fb133);
+}
 .harbour-world__stage .house-world__canvas, .harbour-world__stage .house-world__canvas canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
 .harbour-world__stage .house-world__canvas canvas { display: block; }
 .harbour-world__stage .house-world__canvas { background-size: 100% 100%; }
@@ -118,8 +140,11 @@
   .harbour-world__supported { left: 24px; transform: none; bottom: 22px; }
   .harbour-world__checking { left: 24px; transform: none; bottom: 22px; }
   .harbour-world__supported + .harbour-world__checking { bottom: 54px; }
-  /* Her line and the sync words have gone left; the invitation takes the bottom centre they left. */
-  .harbour-world__invite { bottom: 22px; }
+  /* The compass is a wide bar along the bottom right on a desktop, and it
+     grows with the household's rooms — so the invitation keeps to the left
+     column with her line and the sync words, at the top of that stack, where
+     no width can bring the two together. */
+  .harbour-world__invite { left: 24px; transform: none; bottom: 100px; }
 }
 
 /* ── Phone ≤ 719: she fills the portrait; the compass is the bottom bar; the sync line is one thin strip. ── */
