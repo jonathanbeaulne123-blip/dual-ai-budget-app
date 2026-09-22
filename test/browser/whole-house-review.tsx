@@ -1,6 +1,8 @@
 import { StrictMode } from 'react';
 import {createRoot} from 'react-dom/client';
 import {App} from '../../src/App.tsx';
+import {installWorldPresence} from '../../src/ledgerSync/worldPresenceMount.tsx';
+installWorldPresence();
 import {ThemeProvider} from '../../src/theme/ThemeProvider.tsx';
 import {KitchenErrorBoundary} from '../../src/KitchenErrorBoundary.tsx';
 import {completedExistingBooksHousehold} from '../fixtures/existing-books-onboarding.ts';
