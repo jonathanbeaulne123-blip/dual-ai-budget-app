@@ -47,8 +47,14 @@ export type WalkTogetherProps = {
   hasPartner: boolean;
 };
 
+/**
+ * Where this stands is in `harbour.css`, not here: it is the top of the
+ * stage's own left-hand column (the sync words, her line, the walking
+ * invitation, then this), and that column's offsets differ between a phone,
+ * where the compass is a bar along the whole bottom edge, and a desktop,
+ * where it is a pill in the corner. An inline style cannot ask which.
+ */
 const wrap: CSSProperties = {
-  position: "absolute", left: 16, bottom: 16, zIndex: 4,
   display: "flex", flexDirection: "column", gap: 2,
   padding: "7px 11px", borderRadius: 12,
   background: "color-mix(in srgb, var(--surface, #fffaf0) 86%, transparent)",

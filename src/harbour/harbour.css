@@ -132,6 +132,11 @@
 .court-flat__slip { grid-column: 1 / -1; margin: 0; padding: 10px 14px; list-style: none; font-size: 13px; line-height: 1.5; background: #fff8e6aa; border-left: 3px solid #8f7d60; }
 .court-flat__partner, .court-flat__condition { grid-column: 1 / -1; margin: 0; font-size: 12px; opacity: .8; }
 
+/* Walk together: the consent switch for being seen walking. It stands at the
+   top of the stage's left-hand column, above the walking invitation, so no
+   width and no compass can cover it. */
+.harbour-walk-together { position: absolute; left: 16px; bottom: 148px; z-index: 4; }
+
 /* ── Desktop: the environment pill and the sync line sit in the top corners; the compass is the pill bottom-right (harbour-nav.css). ── */
 @media (min-width: 720px) {
   .app:is([data-harbour-court], [data-harbour-door]) .harbour-world__stage { height: 100dvh; }
@@ -145,6 +150,8 @@
      column with her line and the sync words, at the top of that stack, where
      no width can bring the two together. */
   .harbour-world__invite { left: 24px; transform: none; bottom: 100px; }
+  /* Walk together sits at the top of that same column, clear of the invitation. */
+  .harbour-walk-together { left: 24px; bottom: 152px; }
 }
 
 /* ── Phone ≤ 719: she fills the portrait; the compass is the bottom bar; the sync line is one thin strip. ── */
@@ -161,6 +168,12 @@
   .harbour-world__supported, .harbour-world__checking { bottom: 30px; }
   /* Above her line, above the sync strip, above the compass bar's handle. */
   .harbour-world__invite { bottom: 110px; font-size: 12px; }
+  /* The compass is a bar across the whole bottom edge here, so 16px put this
+     underneath it entirely — which is how it came to be invisible. */
+  /* Measured, not guessed: the stage runs on below the viewport here, so these
+     offsets are read against the stage's own foot, not the screen's. At 152 the
+     switch still sat across the compass bar; 228 is what actually clears it. */
+  .harbour-walk-together { left: 14px; bottom: 228px; max-width: calc(100vw - 28px); }
 }
 @media (max-width: 359px) { .app:is([data-harbour-court], [data-harbour-door]) .sync-freshness { max-width: calc(100vw - 130px); } }
 
