@@ -51,6 +51,8 @@ export type HarbourWorldProps = {
   onOpen: (target: string, object?: string) => void;
   onClose: () => void;
   presence?: SoftPresenceDisplay;
+  /** Undo the coarse soft-presence opt-out, offered where a person learns of it. */
+  onUnhide?: () => void;
   partnerName?: string | null;
   /** Space, or the compass handle: the App owns the quick sheet. */
   onQuickSheet?: () => void;
@@ -91,7 +93,7 @@ const TOUCH = "(pointer: coarse)";
 const pulseFreshness = (gate: InterpretationGate | undefined): FundPulseFreshness => (gate?.freshness === "stale" || gate?.freshness === "offline" ? gate.freshness : "current");
 
 export default function HarbourWorld(props: HarbourWorldProps) {
-  const { household, memberId, scope, today, route, ready, freshness, interpretationGate, onOpen, onClose, presence, partnerName = null, onQuickSheet } = props;
+  const { household, memberId, scope, today, route, ready, freshness, interpretationGate, onOpen, onClose, presence, onUnhide, partnerName = null, onQuickSheet } = props;
   const appearance = useAppearance(), theme: ThemeId = appearance.preview ?? appearance.saved.theme;
   const host = useRef<HTMLDivElement>(null), stage = useRef<HTMLDivElement>(null);
   const runtime = useRef<HarbourRuntime | null>(null), court = useRef<CourtHandle | null>(null), queen = useRef<QueenPlace | null>(null);
@@ -745,7 +747,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {stick && <div className="harbour-stick" data-harbour-stick="" aria-hidden="true" style={{ left: `${stick.x}px`, top: `${stick.y}px` }}><span className="harbour-stick__ring" /><span className="harbour-stick__knob" ref={knob as unknown as React.Ref<HTMLSpanElement>} /></div>}
       {sparkle && <div className="harbour-spark" aria-hidden="true" style={{ left: `${sparkle.x}px`, top: `${sparkle.y}px`, "--spark": sparkle.color } as CSSProperties}>{Array.from({ length: sparkle.petals }, (_, i) => <span key={i} style={{ "--i": i } as CSSProperties} />)}</div>}
       <p className="harbour-world__phrase" role="status" aria-live="polite">{phrase}</p>
-      {status === "ready" && !toolOpen && <WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />}
+      {status === "ready" && !toolOpen && <WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />}
       {statusLine && <small className="harbour-world__supported" role="status">{statusLine}</small>}
       {!ready && status === "ready" && <small className="harbour-world__checking" role="status">Checking the books · {freshness}</small>}
       {toolOpen && <button type="button" className="harbour-world__put-back" onClick={onClose}>← Put it back in {placeName}</button>}
