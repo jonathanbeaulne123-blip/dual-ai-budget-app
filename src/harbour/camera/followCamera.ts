@@ -1,4 +1,5 @@
 import type { PerspectiveCamera } from "three";
+import { runFraction } from "../body/bodyModel.ts";
 import { holdPoseInRoom, poseEye, type Composition, type CourtPose, type RoomHold, type Vec3 } from "./poses.ts";
 
 /**
@@ -30,8 +31,29 @@ import { holdPoseInRoom, poseEye, type Composition, type CourtPose, type RoomHol
  * - Wheel and pinch both move in log-radius, so a notch feels the same close
  *   in and far out — the Court's own rule, kept.
  *
- * Reduced motion: every easing becomes a cut. The body still walks (that is
- * the app); the camera stops swinging after it.
+ * ## Speed
+ *
+ * A camera that sits at the same distance whatever you are doing makes a
+ * sprint look like a walk played fast. So above a walk — and only above it,
+ * `runFraction` is zero at and below `WALK_SPEED` — three things happen
+ * together, all of them eased and all of them given back the moment you stop:
+ *
+ * - the eye **dollies out** by up to `FOLLOW_SPRINT_DOLLY`, so there is road
+ *   ahead of you rather than the back of your own head;
+ * - the lens **widens** by up to `FOLLOW_SPRINT_FOV` degrees, which is what
+ *   actually makes the island whip past the edges of the frame;
+ * - the look-at point **lags**, because its ease drops by
+ *   `FOLLOW_SPRINT_LAG`, so the body pulls slightly ahead of the frame's
+ *   centre instead of being nailed to it.
+ *
+ * Indoors none of it applies. A room is six units across and its own hold
+ * (`setHold`) is the last word on where the eye may be; a camera shoving
+ * itself against that clamp every time you jog across the Library is worse
+ * than a camera that simply stands still indoors.
+ *
+ * Reduced motion: every easing becomes a cut, and the speed dolly, the widen
+ * and the lag are all off. The body still walks (that is the app); the camera
+ * stops swinging after it.
  *
  * Nothing here reads the DOM, time or money.
  */
@@ -53,6 +75,16 @@ export const FOLLOW_MIN_R = 1.4, FOLLOW_MAX_R = 9;
 export const FOLLOW_PHI = 1.06, FOLLOW_MIN_PHI = 0.35, FOLLOW_MAX_PHI = 1.42;
 /** The eye never dips below this above the ground under it: a follow camera must not swim. */
 export const FOLLOW_MIN_LIFT = 0.22;
+
+/* ── Speed ─────────────────────────────────────────────────────────────── */
+/** How far the eye pulls back at a full run, in units, on top of wherever it was. */
+export const FOLLOW_SPRINT_DOLLY = 0.62;
+/** How much wider the lens opens at a full run, in degrees. */
+export const FOLLOW_SPRINT_FOV = 5.5;
+/** How much of the look-at ease a full run takes away: the lag that makes the world whip past. */
+export const FOLLOW_SPRINT_LAG = 3.6;
+/** How quickly the dolly opens out and comes back in (per second). Out eagerly, back unhurried. */
+export const SPRINT_OUT = 3.2, SPRINT_IN = 2.1;
 
 /* ── Indoors (walk-everywhere) ──────────────────────────────────────────────
  * A room is about six units across. Three and a half units of follow distance
@@ -93,6 +125,8 @@ export type FollowCameraOptions = {
   reduced: boolean;
   /** The island's height under a point, so the eye can be kept above the shore. */
   groundHeightAt?: (x: number, z: number) => number;
+  /** The lens this place is shot on, in degrees. The sprint widen is measured from it. */
+  fov?: number;
 };
 
 export type FollowCamera = {
@@ -110,6 +144,12 @@ export type FollowCamera = {
   setHold(hold: RoomHold | null): void;
   /** How far the eye stands back by default in the place that is standing, and how high. */
   setPlan(plan: { r: number; phi: number } | null): void;
+  /**
+   * The lens the place is shot on. The sprint widen is added to this and
+   * never replaces it, and handing the view back leaves the camera on exactly
+   * this number.
+   */
+  setFov(fov: number): void;
   /** Put the camera behind the body at once, with no easing — a cut. */
   snap(): void;
   /**
@@ -170,6 +210,12 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
   let phi = planPhi(), goalPhi = phi;
   /** The room the eye may not leave. */
   let hold: RoomHold | null = null;
+  /** The lens, and how far out of it the sprint has opened. */
+  let baseFov = options.fov ?? camera.fov;
+  /** How far the speed dolly has opened, in units, and the sprint it is chasing. */
+  let dolly = 0;
+  /** Nothing of the sprint applies indoors, where the room's own hold is the last word. */
+  const sprint = (): number => (hold || reduced ? 0 : runFraction(subject.speed));
   /** The heading the eye actually shows, eased toward `behind + offset`. */
   let theta = Math.PI;
   /** The heading a direction key is read against, and whether it is latched. */
@@ -178,10 +224,23 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
   const behind = () => wrap(subject.yaw + Math.PI + offset);
 
   function poseNow(): CourtPose {
-    return holdPoseInRoom({ target: [look[0], look[1], look[2]] as Vec3, r, theta, phi }, hold);
+    // The dolly is added before the hold, never after: the room still has the
+    // last word on where the eye may be, exactly as it always did.
+    const reach = clamp(r + dolly, FOLLOW_MIN_R, FOLLOW_MAX_R + FOLLOW_SPRINT_DOLLY);
+    return holdPoseInRoom({ target: [look[0], look[1], look[2]] as Vec3, r: reach, theta, phi }, hold);
+  }
+
+  /** Open the lens by however far the sprint has opened the dolly, and no further. */
+  function lens(): void {
+    const widen = FOLLOW_SPRINT_DOLLY > 0 ? (dolly / FOLLOW_SPRINT_DOLLY) * FOLLOW_SPRINT_FOV : 0;
+    const wanted = baseFov + widen;
+    if (Math.abs(camera.fov - wanted) < 1e-3) return;
+    camera.fov = wanted;
+    camera.updateProjectionMatrix();
   }
 
   function apply(): void {
+    lens();
     const shown = poseNow();
     let [ex, ey, ez] = poseEye(shown);
     // Never below the land: on the shore's slope, and inside the lawn's hump,
@@ -198,6 +257,7 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
     theta = behind();
     if (!steering) basis = theta;
     r = goalR; phi = goalPhi;
+    dolly = sprint() * FOLLOW_SPRINT_DOLLY;
     apply();
   }
 
@@ -205,7 +265,18 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
 
   return {
     setSubject(next) { subject = next; },
-    setHold(next) { hold = next; apply(); },
+    setHold(next) {
+      hold = next;
+      // Walking into a room with the sprint dolly out would shove the eye
+      // straight into the clamp: give it back on the threshold.
+      if (hold) dolly = 0;
+      apply();
+    },
+    setFov(next) {
+      if (!(next > 0) || !Number.isFinite(next) || Math.abs(next - baseFov) < 1e-4) return;
+      baseFov = next;
+      lens();
+    },
     setPlan(next) {
       const wasDefault = Math.abs(goalR - planR()) < 1e-6, wasLevel = Math.abs(goalPhi - planPhi()) < 1e-6;
       plan = next;
@@ -259,22 +330,31 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
         const give = Math.exp(-RECENTRE * step);
         offset = Math.abs(offset) < 1e-3 ? 0 : offset * give;
       }
-      const lookK = 1 - Math.exp(-LOOK_EASE * step);
+      // How far into a run the camera is opening out for: the dolly eases out
+      // eagerly and comes back in unhurried, so pulling up reads as a settle.
+      const want = sprint() * FOLLOW_SPRINT_DOLLY;
+      const sprintK = 1 - Math.exp(-(want > dolly ? SPRINT_OUT : SPRINT_IN) * step);
+      dolly += (want - dolly) * sprintK;
+      if (Math.abs(dolly - want) < 1e-4) dolly = want;
+      // The look-at point lags with speed: the body pulls a little ahead of
+      // the centre of the frame and the island whips past the edges.
+      const lookK = 1 - Math.exp(-Math.max(1, LOOK_EASE - FOLLOW_SPRINT_LAG * sprint()) * step);
       look = [
         look[0] + (subject.x - look[0]) * lookK,
         look[1] + (subject.y - look[1]) * lookK,
         look[2] + (subject.z - look[2]) * lookK,
       ];
       const k = 1 - Math.exp(-FOLLOW_EASE * step);
-      const want = behind();
-      theta = wrap(theta + wrap(want - theta) * k);
+      const heading = behind();
+      theta = wrap(theta + wrap(heading - theta) * k);
       // Latched while a direction is held; the camera's own heading otherwise.
       if (!steering) basis = theta;
       r += (goalR - r) * k;
       phi += (goalPhi - phi) * k;
       apply();
-      const settled = Math.abs(wrap(want - theta)) < 1e-3
+      const settled = Math.abs(wrap(heading - theta)) < 1e-3
         && Math.abs(goalR - r) < 1e-3 && Math.abs(goalPhi - phi) < 1e-3
+        && dolly === want
         && Math.hypot(subject.x - look[0], subject.y - look[1], subject.z - look[2]) < 1e-3;
       return !settled;
     },

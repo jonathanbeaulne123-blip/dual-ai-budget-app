@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import {
   BODY_HEIGHT, BODY_RADIUS, NO_INPUT, RUN_SPEED, STRIDE, WALK_SPEED,
-  cameraBasis, createBodyState, eyeHeight, stepBody, walkTo,
+  cameraBasis, createBodyState, eyeHeight, runFraction, stepBody, strideAt, walkTo,
   type BodyState, type BodyWorld,
 } from "../src/harbour/body/bodyModel.ts";
 import {
@@ -11,10 +11,12 @@ import {
 } from "../src/harbour/body/obstacles.ts";
 import { createBodyFigure } from "../src/harbour/body/figure.ts";
 import { createWalker, COURT_ARRIVAL } from "../src/harbour/body/walker.ts";
-import { createFootprints, FOOTPRINT_LIFE, FOOTPRINT_POOL } from "../src/harbour/body/footprints.ts";
+import { createFootprints, FOOTPRINT_LIFE, FOOTPRINT_POOL, FOOTPRINT_POOL_LITE } from "../src/harbour/body/footprints.ts";
+import { createDust, DUST_LIFE, DUST_POOL } from "../src/harbour/body/dust.ts";
 import {
-  FOLLOW_DISTANCE, FOLLOW_MAX_R, FOLLOW_MIN_R, createFollowCamera,
+  FOLLOW_DISTANCE, FOLLOW_MAX_R, FOLLOW_MIN_R, FOLLOW_SPRINT_DOLLY, FOLLOW_SPRINT_FOV, createFollowCamera,
 } from "../src/harbour/camera/followCamera.ts";
+import type { Vec3 } from "../src/harbour/camera/poses.ts";
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "../src/harbour/scene/framePolicy.ts";
 import { GROUND_RADIUS, LAWN_RADIUS, SEA_LEVEL, TERRACE_LEVEL, TERRACE_RADIUS, createGround, groundHeightAt } from "../src/harbour/scene/ground.ts";
 import { SCENE_DRESSING, type Place } from "../src/harbour/scene/place.ts";
@@ -65,14 +67,19 @@ describe("the body is a person in a model village", () => {
     expect(BODY_HEIGHT / 2.05).toBeLessThan(0.31);
   });
 
-  it("crosses the island in a believable number of seconds", () => {
-    // 48 units across at 1.5 units a second is about half a minute at a walk,
-    // and about eighteen seconds at a run. Long enough to be a journey.
+  it("crosses the island briskly, and a run is nearly twice a walk", () => {
+    // Honestly re-pinned. This used to want 24–40 seconds at a walk and 14–22
+    // at a run, which was 1.5 and 2.6 units a second: truthful numbers for a
+    // stroll, and a stroll is what it felt like. The walk is 2.1 now — the
+    // island in about 23 seconds — and the run is 4.0, about 12. The lower
+    // bounds are what keeps it a journey rather than a teleport; the ratio is
+    // what makes the run read as a run and not as a walk in a hurry.
     const across = GROUND_RADIUS * 2;
-    expect(across / WALK_SPEED).toBeGreaterThan(24);
-    expect(across / WALK_SPEED).toBeLessThan(40);
-    expect(across / RUN_SPEED).toBeGreaterThan(14);
-    expect(across / RUN_SPEED).toBeLessThan(22);
+    expect(across / WALK_SPEED).toBeGreaterThan(16);
+    expect(across / WALK_SPEED).toBeLessThan(28);
+    expect(across / RUN_SPEED).toBeGreaterThan(9);
+    expect(across / RUN_SPEED).toBeLessThan(16);
+    expect(RUN_SPEED / WALK_SPEED).toBeGreaterThan(1.7);
   });
 
   it("builds a figure of jointed parts, not a capsule, and takes its colours from the caller", () => {
@@ -311,6 +318,130 @@ describe("the walk reads as walking", () => {
   });
 });
 
+describe("the body has weight", () => {
+  /** Hold a heading until the body is up to speed, then hand back what it is doing. */
+  function upToSpeed(run: boolean, seconds = 2): BodyState {
+    let state = createBodyState(0, 6, 0, bare);
+    for (let i = 0; i < Math.round(seconds * 60); i += 1) {
+      state = stepBody(state, { forward: 1, strafe: 0, run }, TOWARD_Z, 1 / 60, bare).state;
+    }
+    return state;
+  }
+
+  it("shoves off the mark faster than it gives speed up — a start is not a stop played backwards", () => {
+    let state = createBodyState(0, 6, 0, bare);
+    for (let i = 0; i < 12; i += 1) state = stepBody(state, { forward: 1, strafe: 0 }, TOWARD_Z, 1 / 60, bare).state;
+    // A fifth of a second in and it is already most of the way to a walk.
+    const gathered = state.speed / WALK_SPEED;
+    expect(gathered).toBeGreaterThan(0.75);
+    // And the same fifth of a second of letting go leaves far more of it.
+    const top = upToSpeed(false);
+    let stopping = top;
+    for (let i = 0; i < 12; i += 1) stopping = stepBody(stopping, NO_INPUT, TOWARD_Z, 1 / 60, bare).state;
+    const kept = stopping.speed / top.speed;
+    // Symmetric braking would have left `1 - gathered`. It leaves far more.
+    expect(kept, "pulling up should be a settle, not a wall").toBeGreaterThan((1 - gathered) * 3);
+  });
+
+  it("pitches forward off the mark and back when it pulls up, and comes to rest at exactly nothing", () => {
+    let state = createBodyState(0, 6, 0, bare);
+    for (let i = 0; i < 6; i += 1) state = stepBody(state, { forward: 1, strafe: 0, run: true }, TOWARD_Z, 1 / 60, bare).state;
+    expect(state.lean, "a body taking off leans into it").toBeGreaterThan(0.3);
+    state = upToSpeed(true);
+    // At a steady run there is no acceleration left, so no extra pitch.
+    expect(Math.abs(state.lean)).toBeLessThan(0.12);
+    for (let i = 0; i < 6; i += 1) state = stepBody(state, NO_INPUT, TOWARD_Z, 1 / 60, bare).state;
+    expect(state.lean, "pulling up out of a run leans back").toBeLessThan(-0.3);
+    // And the signals reach rest, exactly, so the frame policy can too.
+    let frame = stepBody(state, NO_INPUT, TOWARD_Z, 1 / 60, bare);
+    for (let i = 0; i < 60 * 4; i += 1) frame = stepBody(frame.state, NO_INPUT, TOWARD_Z, 1 / 60, bare);
+    expect(frame.state.lean).toBe(0);
+    expect(frame.state.bank).toBe(0);
+    expect(frame.moving).toBe(false);
+  });
+
+  it("banks into the turn it has been asked for, before it has turned at all", () => {
+    const rolling = upToSpeed(false);
+    expect(Math.abs(rolling.bank)).toBeLessThan(0.05);
+    // Asked to go hard right, the very first frame already rolls that way —
+    // that is anticipation, not a report of a turn already made.
+    const turned = stepBody(rolling, { forward: 0, strafe: 1 }, TOWARD_Z, 1 / 60, bare);
+    expect(turned.state.bank).toBeGreaterThan(0.05);
+    const other = stepBody(rolling, { forward: 0, strafe: -1 }, TOWARD_Z, 1 / 60, bare);
+    expect(other.state.bank).toBeLessThan(-0.05);
+    // A body still standing barely rolls at all: bank is scaled by how much
+    // of a walk the feet are actually doing.
+    const still = stepBody(createBodyState(0, 6, 0, bare), { forward: 0, strafe: 1 }, TOWARD_Z, 1 / 60, bare);
+    expect(Math.abs(still.state.bank)).toBeLessThan(Math.abs(turned.state.bank) * 0.5);
+  });
+
+  it("reaches further at a run rather than only spinning its legs faster", () => {
+    expect(strideAt(WALK_SPEED)).toBeCloseTo(STRIDE, 12);
+    expect(strideAt(WALK_SPEED * 0.4)).toBeCloseTo(STRIDE, 12);
+    expect(strideAt(RUN_SPEED)).toBeGreaterThan(STRIDE * 1.3);
+    expect(runFraction(WALK_SPEED)).toBe(0);
+    expect(runFraction(RUN_SPEED)).toBe(1);
+    // Cadence still climbs — just not as fast as the speed does.
+    const walkCadence = WALK_SPEED / strideAt(WALK_SPEED), runCadence = RUN_SPEED / strideAt(RUN_SPEED);
+    expect(runCadence).toBeGreaterThan(walkCadence);
+    expect(runCadence / walkCadence).toBeLessThan(RUN_SPEED / WALK_SPEED);
+    // And a running foot lands harder, which is what the dust and the prints read.
+    let running = upToSpeed(true, 3);
+    let landed = 0;
+    for (let i = 0; i < 120; i += 1) {
+      const frame = stepBody(running, { forward: 1, strafe: 0, run: true }, TOWARD_Z, 1 / 60, bare);
+      running = frame.state;
+      if (frame.footfall) { expect(frame.footfall.force).toBeGreaterThan(0.9); landed += 1; }
+    }
+    expect(landed).toBeGreaterThan(2);
+  });
+
+  it("throws dust from a fixed pool and never allocates while walking", () => {
+    const dust = createDust("#cfc0a4");
+    expect(dust.group.children).toHaveLength(DUST_POOL);
+    for (let i = 0; i < DUST_POOL * 3; i += 1) dust.puff(i * 0.1, 0, 0, 0.8);
+    expect(dust.group.children).toHaveLength(DUST_POOL);
+    expect(dust.fade(0.05)).toBe(true);
+    expect(dust.fade(DUST_LIFE + 1)).toBe(false);
+    // Settled, it asks for nothing and draws nothing.
+    expect(dust.fade(1)).toBe(false);
+    for (const child of dust.group.children) expect(child.visible).toBe(false);
+    dust.dispose();
+  });
+
+  it("leaves a trail on a phone too, and clears it out once you stand still", () => {
+    const phone = createWalker({ groundHeightAt, tier: "lite" });
+    const trail = phone.group.getObjectByName("footprints");
+    expect(trail, "a phone gets a trail now, just a shorter one").not.toBeUndefined();
+    expect(trail!.children).toHaveLength(FOOTPRINT_POOL_LITE);
+    expect(phone.group.getObjectByName("dust")).not.toBeUndefined();
+    // Walk, stop, and the world is asleep again well inside the print's own
+    // life — a fading pixel is a frame the policy cannot refuse.
+    phone.setInput({ forward: 1, strafe: 0 });
+    for (let i = 0; i < 90; i += 1) phone.step(1 / 60, i / 60, TOWARD_Z);
+    phone.setInput(NO_INPUT);
+    let asking = true;
+    for (let i = 0; i < Math.round(FOOTPRINT_LIFE * 60) && asking; i += 1) asking = phone.step(1 / 60, i / 60, TOWARD_Z);
+    expect(asking, "the trail kept the island awake for its whole life").toBe(false);
+    phone.dispose();
+  });
+
+  it("drops every flourish under reduced motion and keeps the walk", () => {
+    const quiet = createWalker({ groundHeightAt, tier: "full", reduced: true });
+    expect(quiet.group.getObjectByName("dust")!.visible).toBe(false);
+    quiet.setInput({ forward: 1, strafe: 0, run: true });
+    for (let i = 0; i < 120; i += 1) quiet.step(1 / 60, i / 60, TOWARD_Z);
+    // The body still walks — that is the app.
+    expect(quiet.walking()).toBe(true);
+    expect(quiet.state().speed).toBeGreaterThan(WALK_SPEED);
+    // Nothing was thrown: every puff in the pool is still asleep.
+    for (const child of quiet.group.getObjectByName("dust")!.children) expect(child.visible).toBe(false);
+    quiet.setReduced(false);
+    expect(quiet.group.getObjectByName("dust")!.visible).toBe(true);
+    quiet.dispose();
+  });
+});
+
 describe("the follow camera", () => {
   const subjectAt = (x: number, z: number, yaw: number, speed = WALK_SPEED) => ({ x, y: 0.4, z, yaw, speed });
   function settle(follow: ReturnType<typeof createFollowCamera>, seconds = 4) {
@@ -395,6 +526,60 @@ describe("the follow camera", () => {
     for (let i = 0; i < 120; i += 1) follow.zoom(0.3);
     settle(follow);
     expect(follow.pose().r).toBeCloseTo(FOLLOW_MAX_R, 2);
+  });
+
+  it("opens out with speed and gives it back when you pull up", () => {
+    const follow = createFollowCamera({ camera: camera(), composition: "desktop", reduced: false, fov: 42 });
+    follow.setSubject(subjectAt(0, 0, 0, WALK_SPEED));
+    follow.snap();
+    settle(follow);
+    const walking = follow.pose().r;
+    // A walk is the baseline: the dolly is measured from above it, so this is
+    // exactly the distance the place asked for.
+    expect(walking).toBeCloseTo(FOLLOW_DISTANCE.desktop, 3);
+    follow.setSubject(subjectAt(0, 0, 0, RUN_SPEED));
+    settle(follow, 3);
+    expect(follow.pose().r - walking).toBeCloseTo(FOLLOW_SPRINT_DOLLY, 2);
+    // Pull up, and it all comes back.
+    follow.setSubject(subjectAt(0, 0, 0, 0));
+    settle(follow, 5);
+    expect(follow.pose().r).toBeCloseTo(walking, 3);
+  });
+
+  it("widens the lens as it opens out, and hands it back exactly as it found it", () => {
+    const lens = camera();
+    lens.fov = 42;
+    const follow = createFollowCamera({ camera: lens, composition: "desktop", reduced: false, fov: 42 });
+    follow.setSubject(subjectAt(0, 0, 0, WALK_SPEED)); follow.snap(); settle(follow);
+    expect(lens.fov).toBeCloseTo(42, 4);
+    follow.setSubject(subjectAt(0, 0, 0, RUN_SPEED)); settle(follow, 3);
+    expect(lens.fov - 42).toBeCloseTo(FOLLOW_SPRINT_FOV, 1);
+    follow.setSubject(subjectAt(0, 0, 0, 0)); settle(follow, 5);
+    expect(lens.fov).toBeCloseTo(42, 3);
+  });
+
+  it("stands the sprint down indoors, where the room's own hold is the last word", () => {
+    const hold = {
+      eye: { min: [-2.8, 0.2, -2.2] as Vec3, max: [2.8, 2.2, 2.2] as Vec3 },
+      target: { min: [-2.6, 0.1, -2] as Vec3, max: [2.6, 1.8, 2] as Vec3 },
+      minR: 1.2, maxR: 2.4, minPhi: 0.5, maxPhi: 1.3,
+    };
+    const inside = createFollowCamera({ camera: camera(), composition: "desktop", reduced: false, fov: 42 });
+    inside.setPlan({ r: 2, phi: 0.92 });
+    inside.setHold(hold);
+    inside.setSubject(subjectAt(0, 0, 0, RUN_SPEED));
+    inside.snap();
+    settle(inside, 3);
+    // Held by the room, and never shoved against its clamp by the speed: the
+    // pose comes back through `holdPoseInRoom` exactly as it always did.
+    const held = inside.pose(), eye = inside.eye();
+    for (const axis of [0, 1, 2]) {
+      expect(held.target[axis]).toBeGreaterThanOrEqual(hold.target.min[axis]! - 1e-6);
+      expect(held.target[axis]).toBeLessThanOrEqual(hold.target.max[axis]! + 1e-6);
+      expect(eye[axis]).toBeGreaterThanOrEqual(hold.eye.min[axis]! - 1e-6);
+      expect(eye[axis]).toBeLessThanOrEqual(hold.eye.max[axis]! + 1e-6);
+    }
+    expect(held.r).toBeLessThanOrEqual(hold.maxR + 1e-6);
   });
 
   it("cuts rather than swings under reduced motion, and never puts the eye under the ground", () => {

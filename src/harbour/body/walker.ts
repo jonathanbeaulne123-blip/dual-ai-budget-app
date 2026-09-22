@@ -1,14 +1,17 @@
 import * as THREE from "three";
-import { createBodyFigure, type BodyFigure, type FigureColours } from "./figure.ts";
-import { createFootprints, type Footprints } from "./footprints.ts";
+import { createBodyFigure, type BodyFigure, type BodyMotion, type FigureColours } from "./figure.ts";
+import { createFootprints, FOOTPRINT_POOL, FOOTPRINT_POOL_LITE, type Footprints } from "./footprints.ts";
+import { createDust, DUST_POOL, DUST_POOL_LITE, type Dust } from "./dust.ts";
 import {
   BODY_HEIGHT,
   BODY_RADIUS,
   NO_INPUT,
+  WALK_SPEED,
   createBodyState,
   eyeHeight,
   gaitOf,
   placeBody,
+  runFraction,
   stepBody,
   walkTo,
   type BodyInput,
@@ -46,8 +49,18 @@ export type WalkerOptions = {
   colours?: Partial<FigureColours>;
   /** Where it stands when it arrives, and which way it faces. */
   start?: { x: number; z: number; yaw?: number };
-  /** Prints in the grass. Off on the lite tier by default: a phone spends its frames on the walk itself. */
+  /**
+   * Prints in the grass. On everywhere now — a phone's pool is half the size
+   * (`FOOTPRINT_POOL_LITE`), which is one geometry and twelve matrix writes a
+   * walk, and a trail behind you is most of what tells you you moved.
+   */
   trail?: boolean;
+  /**
+   * Reduced motion. **The body still walks** — walking is the app — but the
+   * ground stops performing: no dust, no lean, no bank, no squash, no scuff.
+   * The plain gait and nothing else.
+   */
+  reduced?: boolean;
 };
 
 export type Walker = {
@@ -82,6 +95,8 @@ export type Walker = {
   /** Is it walking right now? */
   walking(): boolean;
   setColours(next: Partial<FigureColours>): void;
+  /** Turn the flourishes off (or back on) without raising a second body. */
+  setReduced(reduced: boolean): void;
   /** The body's bounds in world space, for a DOM twin. */
   bounds(target: THREE.Box3): THREE.Box3;
   dispose(): void;
@@ -101,8 +116,24 @@ export function createWalker(options: WalkerOptions): Walker {
   group.name = "Your body";
   const figure: BodyFigure = createBodyFigure(options.colours);
   group.add(figure.group);
-  const trail: Footprints | null = (options.trail ?? tier === "full") ? createFootprints("#6b5a44") : null;
+  const trail: Footprints | null = (options.trail ?? true)
+    ? createFootprints("#6b5a44", tier === "full" ? FOOTPRINT_POOL : FOOTPRINT_POOL_LITE)
+    : null;
   if (trail) group.add(trail.group);
+  // The dust lives beside the prints and under the same rule: a fixed pool,
+  // nothing allocated while walking, nothing drawn once it has settled.
+  const dust: Dust = createDust("#cfc0a4", tier === "full" ? DUST_POOL : DUST_POOL_LITE);
+  group.add(dust.group);
+  let reduced = options.reduced ?? false;
+  dust.group.visible = !reduced;
+  /** The weight handed to the figure each frame. One object, written in place. */
+  const motion: BodyMotion = { lean: 0, bank: 0, run: 0 };
+  /**
+   * A brake lasts a good handful of frames, and a burst on every one of them
+   * would empty the pool before the body had stopped. The skid fires on the
+   * *edge*: one scuff, one burst, and then the footfalls carry it.
+   */
+  let skidding = false;
 
   const start = options.start ?? COURT_ARRIVAL;
   let state = createBodyState(start.x, start.z, start.yaw ?? COURT_ARRIVAL.yaw, world);
@@ -131,15 +162,47 @@ export function createWalker(options: WalkerOptions): Walker {
     setInput(next) { input = next; },
     input: () => input,
     goTo(x, z) { state = walkTo(state, x, z, world); },
+    setReduced(next) {
+      if (next === reduced) return;
+      reduced = next;
+      dust.group.visible = !next;
+      if (next) { dust.clear(); motion.lean = 0; motion.bank = 0; motion.run = 0; }
+    },
     cancel() { state = { ...state, goal: null, stalled: 0 }; },
-    place(x, z, yaw) { state = placeBody(state, x, z, world, yaw ?? state.yaw); write(); trail?.clear(); },
+    place(x, z, yaw) { state = placeBody(state, x, z, world, yaw ?? state.yaw); write(); trail?.clear(); dust.clear(); },
     step(dt, t, theta) {
       const frame = stepBody(state, input, theta, dt, world);
       state = frame.state;
       write();
-      figure.pose(state.phase, gaitOf(state), t);
-      if (frame.footfall && trail) trail.drop(frame.footfall.x, frame.footfall.y, frame.footfall.z, frame.footfall.yaw, frame.footfall.left);
-      const fading = trail ? trail.fade(dt) : false;
+      // Reduced motion keeps the gait and drops the weight: the body walks,
+      // it just stops acting.
+      motion.run = reduced ? 0 : runFraction(state.speed);
+      motion.lean = reduced ? 0 : state.lean;
+      motion.bank = reduced ? 0 : state.bank;
+      figure.pose(state.phase, gaitOf(state), t, motion);
+      const foot = frame.footfall;
+      if (foot) {
+        trail?.drop(foot.x, foot.y, foot.z, foot.yaw, foot.left, foot.force);
+        // Every footfall of a run throws dust; a walk only scuffs, and only
+        // on the foot that is really carrying — one puff a stride, not two.
+        if (!reduced && (foot.force > 0.05 || foot.left)) {
+          dust.puff(foot.x, foot.y, foot.z, 0.18 + foot.force * 0.82);
+        }
+      }
+      // Pulling up hard out of a run: a burst under both feet, which is the
+      // whole read of a skid from behind.
+      if (frame.skid && !skidding && !reduced) {
+        dust.puff(state.x + Math.cos(state.yaw) * 0.05, state.y, state.z - Math.sin(state.yaw) * 0.05, 0.8);
+        dust.puff(state.x - Math.cos(state.yaw) * 0.05, state.y, state.z + Math.sin(state.yaw) * 0.05, 0.62);
+        trail?.drop(state.x, state.y, state.z, state.yaw, state.speed > WALK_SPEED, 1);
+      }
+      skidding = frame.skid;
+      // Both, every frame: `||` would leave the dust hanging in the air for as
+      // long as a print was still fading.
+      const still = state.speed <= 0.01;
+      const printsLeft = trail ? trail.fade(dt, still) : false;
+      const dustLeft = dust.fade(dt);
+      const fading = printsLeft || dustLeft;
       // A standing body still breathes, so a frame is worth painting while
       // the idle is running — but only while something is actually asking for
       // frames; a settled world is never woken by this.
@@ -157,6 +220,7 @@ export function createWalker(options: WalkerOptions): Walker {
     dispose() {
       figure.dispose();
       trail?.dispose();
+      dust.dispose();
       group.removeFromParent();
       box.makeEmpty();
     },

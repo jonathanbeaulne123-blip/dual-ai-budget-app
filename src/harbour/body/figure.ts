@@ -38,15 +38,33 @@ export const DEFAULT_FIGURE_COLOURS: Readonly<FigureColours> = Object.freeze({
   coat: "#5d7f8e", skin: "#e8c39b", trouser: "#4a4a52", shoe: "#2f2b2c", hair: "#43332a",
 });
 
+/**
+ * What the body is doing beyond simply going forward — the weight.
+ * `body/bodyModel.ts` computes all three and nothing else writes them; a
+ * caller with no opinion (the partner's body off the wire) leaves it out and
+ * gets the plain walk, which is exactly what it used to get.
+ */
+export type BodyMotion = {
+  /** Forward pitch, −1…1: taking off, or pulling up. */
+  lean: number;
+  /** Roll into the turn, −1…1, positive toward the body's right. */
+  bank: number;
+  /** How far into a run, 0…1: swing, cadence, bob and squash all grow with it. */
+  run: number;
+};
+
+export const AT_REST: Readonly<BodyMotion> = Object.freeze({ lean: 0, bank: 0, run: 0 });
+
 export type BodyFigure = {
   /** The whole body. Its position is the feet on the ground; its `rotation.y` is the facing. */
   group: THREE.Group;
   /**
    * Put the body in the pose its gait says. `phase` is the walk's phase in
    * radians (one step per π), `gait` is 0…1 of a full walk, `t` is seconds
-   * since mount for the idle breath.
+   * since mount for the idle breath, and `motion` is the weight — left out,
+   * the body walks exactly as it always did.
    */
-  pose(phase: number, gait: number, t: number): void;
+  pose(phase: number, gait: number, t: number, motion?: BodyMotion): void;
   /** The bounding box the twins would use, in the body's own space. */
   readonly height: number;
   setColours(next: Partial<FigureColours>): void;
@@ -55,8 +73,23 @@ export type BodyFigure = {
 
 /** How far the legs swing at a full walk, in radians, and how far the arms do. */
 const LEG_SWING = 0.82, ARM_SWING = 0.58;
+/** And how much further again at a full run: the legs reach, the arms drive. */
+const LEG_SWING_RUN = 0.34, ARM_SWING_RUN = 0.62;
 /** The bob on each footfall, the weight shift, and the lean into the walk. */
 const BOB = 0.016, ROLL = 0.045, LEAN = 0.10;
+/** The bob and the roll again at a full run, and how much further forward a run leans. */
+const BOB_RUN = 1.5, ROLL_RUN = 0.7, LEAN_RUN = 0.16;
+/**
+ * The squash on the footfall. The body is at its lowest exactly where a foot
+ * lands (`|sin phase|` is zero there), so `cos(phase)^8` is a short, sharp
+ * pulse on the landing and nothing at all in between: the knee taking the
+ * weight, which is the single cheapest thing that makes a walk look like one.
+ */
+const SQUASH = 0.055;
+/** How far the acceleration signal pitches the body, and the heading error rolls it, in radians. */
+const LEAN_GAIN = 0.20, BANK_GAIN = 0.28;
+/** How much of the carriage's pitch the head gives back, so the face keeps looking ahead. */
+const HEAD_LEVEL = 0.55;
 
 export function createBodyFigure(colours: Partial<FigureColours> = {}): BodyFigure {
   const palette: FigureColours = { ...DEFAULT_FIGURE_COLOURS, ...colours };
@@ -140,23 +173,38 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}): BodyFigu
   return {
     group,
     height: BODY_HEIGHT,
-    pose(phase, gait, t) {
+    pose(phase, gait, t, motion = AT_REST) {
       const g = Math.max(0, Math.min(1, gait));
+      const run = Math.max(0, Math.min(1, motion.run));
       const swing = Math.sin(phase);
       // Legs in opposition; a positive rotation about x swings the limb back,
-      // because the body looks along +z.
-      leftLeg.rotation.x = -swing * LEG_SWING * g;
-      rightLeg.rotation.x = swing * LEG_SWING * g;
-      // Arms opposite their own leg, and a little less far.
-      leftArm.rotation.x = swing * ARM_SWING * g;
-      rightArm.rotation.x = -swing * ARM_SWING * g;
-      leftArm.rotation.z = armRest[0] - swing * 0.05 * g;
-      rightArm.rotation.z = armRest[1] - swing * 0.05 * g;
+      // because the body looks along +z. A run reaches further than a walk.
+      const legSwing = (LEG_SWING + LEG_SWING_RUN * run) * g;
+      leftLeg.rotation.x = -swing * legSwing;
+      rightLeg.rotation.x = swing * legSwing;
+      // Arms opposite their own leg, and a little less far — but they gain
+      // more than the legs do at a run, which is what pumping looks like.
+      const armSwing = (ARM_SWING + ARM_SWING_RUN * run) * g;
+      leftArm.rotation.x = swing * armSwing;
+      rightArm.rotation.x = -swing * armSwing;
+      // And the elbows come away from the ribs as the pace picks up.
+      leftArm.rotation.z = armRest[0] - swing * 0.05 * g - run * g * 0.16;
+      rightArm.rotation.z = armRest[1] - swing * 0.05 * g + run * g * 0.16;
       // The body rises on each footfall (twice a stride), rolls into the
-      // stance leg, and leans a little further forward the faster it goes.
-      carriage.position.y = Math.abs(Math.sin(phase)) * BOB * g;
-      carriage.rotation.z = swing * ROLL * g;
-      carriage.rotation.x = -LEAN * g;
+      // stance leg, banks into the turn it has been asked for, and leans
+      // further forward the faster it goes and the harder it is pushing.
+      carriage.position.y = Math.abs(swing) * BOB * (1 + BOB_RUN * run) * g;
+      carriage.rotation.z = swing * ROLL * (1 + ROLL_RUN * run) * g + motion.bank * BANK_GAIN;
+      const pitch = (LEAN + LEAN_RUN * run) * g + motion.lean * LEAN_GAIN;
+      carriage.rotation.x = -pitch;
+      // The knee takes the weight on the landing: a short squash, gone again
+      // by mid-stride, and deeper the harder the foot came down.
+      const impact = Math.pow(Math.abs(Math.cos(phase)), 8);
+      const squash = SQUASH * (1 + run) * g * impact;
+      carriage.scale.set(1 + squash * 0.45, 1 - squash, 1 + squash * 0.45);
+      // Whatever the body does, the face keeps looking where it is going.
+      head.rotation.x = pitch * HEAD_LEVEL;
+      hair.rotation.x = -0.22 + pitch * HEAD_LEVEL;
       // Standing still, it breathes. The head keeps its height whatever the
       // chest does, so a resting body does not nod.
       const breath = (1 - g) * Math.sin(t * 1.5) * 0.012;

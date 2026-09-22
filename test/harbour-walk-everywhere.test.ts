@@ -174,8 +174,16 @@ describe("the walls hold the body in the room", () => {
         // Eight seconds of leaning on one heading: long enough to cross any of
         // these rooms twice over. The walk stops the moment the body is out of
         // the walls, which is the moment the runtime hands the place over.
-        for (let step = 0; step < 480 && inRoom(state.x, state.z, room!); step += 1) {
-          state = stepBody(state, { forward: 1, strafe: 0, run: true }, theta, 1 / 60, world).state;
+        //
+        // Sampled at 240 rather than 60, and that is not a fudge: the body is
+        // caught one frame *after* it left, so at sixty a run carries it a
+        // further 0.07 units past the threshold before anyone looks, and a
+        // heading that grazes the door jamb reads as a leak that isn't one.
+        // Four times the rate measures where it actually crossed. Nothing
+        // about the containment depends on the rate — `stepBody` integrates
+        // exactly — only this test's aim does.
+        for (let step = 0; step < 1920 && inRoom(state.x, state.z, room!); step += 1) {
+          state = stepBody(state, { forward: 1, strafe: 0, run: true }, theta, 1 / 240, world).state;
         }
         if (inRoom(state.x, state.z, room!)) continue;
         // The only way out is the doorway, and only a placed building has one.
@@ -527,7 +535,13 @@ describe("the runtime, standing in a room", () => {
       if (tap(x, y) === "ground") { floor = { x, y }; break; }
     }
     expect(floor, "no open floor in the Library answered to a tap").not.toBeNull();
-    run(25);
+    // Far enough across the floor for the view to have changed — a little
+    // over a unit, which is exactly the ground `run(25)` used to buy at the
+    // old walking speed of 1.5 units a second. Pinned to the distance covered
+    // rather than to a frame count, so tuning how fast a body walks cannot
+    // silently change which half of the room this test is looking at.
+    const from = body.at();
+    for (let i = 0; i < 40 && Math.hypot(body.at().x - from.x, body.at().z - from.z) < 1.05; i += 1) run(1);
     expect(body.walking(), "a tap on the open floor did not walk the body").toBe(true);
     expect(body.following(), "walking to a tap did not hand the camera to the body").toBe(true);
     // …and the twins still hold after the walk: a body crossing the room is a

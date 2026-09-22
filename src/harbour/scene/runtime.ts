@@ -601,14 +601,19 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       room,
       tier,
       start,
+      reduced: reduced.matches,
     });
     scene.add(walker.group);
-    follow = createFollowCamera({ camera, composition, reduced: reduced.matches, groundHeightAt: (x, z) => bodyGround(x, z) });
+    follow = createFollowCamera({ camera, composition, reduced: reduced.matches, fov: fovFor(composition), groundHeightAt: (x, z) => bodyGround(x, z) });
     host.dataset.harbourBody = "standing";
     standBody();
   }
   function dropBody(): void {
-    if (following) { following = false; court.restore(camera.position.toArray() as Vec3); }
+    if (following) {
+      following = false;
+      if (Math.abs(camera.fov - fovFor(composition)) > 1e-3) { camera.fov = fovFor(composition); camera.updateProjectionMatrix(); }
+      court.restore(camera.position.toArray() as Vec3);
+    }
     walker?.dispose(); walker = null; follow = null; bodyInput = NO_INPUT;
     bodyExits = []; exitArmed = false;
     delete host.dataset.harbourBody;
@@ -631,6 +636,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // pose that was just asked for.
       walker?.cancel();
       bodyInput = NO_INPUT;
+      // The follow camera may have been sprinting, and a sprint widens the
+      // lens. Hand it back on the place's own lens, never on a borrowed one.
+      if (Math.abs(camera.fov - fovFor(composition)) > 1e-3) { camera.fov = fovFor(composition); camera.updateProjectionMatrix(); }
       court.restore(camera.position.toArray() as Vec3);
     }
     dirty = true;
@@ -949,7 +957,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // The one place the stage is measured: every frame after this reads it from here.
     stageWidth = width; stageHeight = height;
     const next: Composition = width < 720 ? "phone" : "desktop";
-    if (next !== composition) { composition = next; camera.fov = fovFor(next); court.setFov(camera.fov); court.setComposition(next); follow?.setComposition(next); }
+    if (next !== composition) { composition = next; camera.fov = fovFor(next); court.setFov(camera.fov); court.setComposition(next); follow?.setComposition(next); follow?.setFov(fovFor(next)); }
     renderer.setSize(width, height, false);
     camera.aspect = width / height; camera.updateProjectionMatrix();
     court.setAspect(camera.aspect);
@@ -1043,7 +1051,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const visibility = () => { if (document.hidden) { lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
   // ── The body lane (world-body) ── reduced motion cuts the follow camera
   // rather than swinging it. The character still walks: that is the app.
-  const onReduced = () => { court.setReduced(reduced.matches); follow?.setReduced(reduced.matches); schedule(); };
+  const onReduced = () => { court.setReduced(reduced.matches); follow?.setReduced(reduced.matches); walker?.setReduced(reduced.matches); schedule(); };
   const removeLost = lease.listenCanvas("webglcontextlost", (event: Event) => { event.preventDefault(); lease.cancelFrame(frame); frame = 0; callbacks.onFailure(); });
   document.addEventListener("visibilitychange", visibility); reduced.addEventListener("change", onReduced);
   previous = performance.now();
