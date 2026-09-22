@@ -1,6 +1,6 @@
 # Hearth worksession — World rebase onto current main
 
-- **Status:** VERIFYING
+- **Status:** CONDITIONAL — final gate has one reproduced current-main Windows failure
 - **Opened:** 2026-09-21 (`America/Toronto`)
 - **Owner:** Jonathan
 - **Assignee or AI:** Codex
@@ -66,6 +66,8 @@ Bring the World-only interaction and presence work forward without changing fina
 - 2026-09-21: Rebased only the 17 World commits after `claude/wave3@8d11615e` onto `origin/main@31764ee2`; Wave 3 was already present as #517. The rebase's internal World-space and World-presence conflict resolutions use their verified original merge results; `App.tsx` remains the current #518 version.
 - 2026-09-21: Focused World suite passed: 8 files / 167 tests (`harbour-body`, world-space, presence/client+worker, wiring, wizard, and source fences). jsdom emitted its known no-canvas diagnostic while tests passed.
 - 2026-09-21: Removed four trailing spaces from the checked-in World-space evidence patch; final full gate pending.
+- 2026-09-21: Full `pnpm check` on the clean rebased head passed diff hygiene, AI-surface verification, TypeScript, and test discovery, then ran 88 fast test files / 817 tests. It stopped at `test/workspace-deployment.test.ts` because a POSIX expected image path is compared to Windows `path.join` output (`/review/...` versus `C:\\review\\...`). The same isolated test fails identically on clean `origin/main@31764ee2`; it is not a World regression.
+- 2026-09-21: Additional build proof passed: workspace TypeScript, Vite production build, Hercules Pro UI build, and the no-`dist/_redirects` assertion. Vite emitted existing browser-externalization and chunk-size warnings only.
 
 ## Decisions
 
@@ -73,8 +75,8 @@ Bring the World-only interaction and presence work forward without changing fina
 
 ## Remaining uncertainty
 
-- Full verification is pending the resolved rebased head.
+- The full local gate cannot be green on this Windows host until the current-main workspace deployment assertion is made platform-neutral. The rebased World-specific focused suite and production build are green.
 
 ## Handoff
 
-Next owner: Codex for local rebase and verification, then Jonathan for any later review, push, or merge decision. The current state is local-only and unpushed.
+Next owner: Jonathan for the baseline-test decision and any later review, push, or merge decision. The current state is local-only and unpushed; no Production, hosted data, schema, secret, or deployment action occurred.
