@@ -533,6 +533,55 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     return () => { window.removeEventListener("blur", drop); drop(); };
   }, [pushBody]);
 
+  /**
+   * ── The keyboard has to land somewhere (walk-focus) ──
+   *
+   * `onKeyDown` on a div only fires while that div — or something inside it —
+   * holds the keyboard, and nothing in this file ever asked for it. So the
+   * walk below was perfect and unreachable: on a fresh load W did nothing at
+   * all until you happened to click the world, and the stage never said so.
+   *
+   * The stage takes the keyboard when it comes to the front — the place is
+   * standing, or a tool has closed and the room is the whole screen again —
+   * and at no other moment. It is never taken on a re-render, and never taken
+   * from somebody.
+   */
+  const takeKeys = useCallback((): boolean => {
+    const node = stage.current;
+    if (!node || !node.isConnected) return false;
+    // Never in front of a tool: there the stage is a strip with no tabIndex at
+    // all, and the sheet is the thing that was asked for.
+    if (routeRef.current.surface) return false;
+    /**
+     * **Never a yank.** Focus a person put somewhere on purpose is theirs: a
+     * half-typed word in a field, a twin or the compass they tabbed to, a
+     * tool's own heading. The only keyboard the stage takes is a keyboard
+     * nobody is holding.
+     */
+    const active = document.activeElement;
+    if (active && active !== document.body && active !== document.documentElement && active !== node) return false;
+    // `preventScroll` keeps the promise the door makes above: focusing must
+    // never be the thing that throws the page down the document.
+    node.focus({ preventScroll: true });
+    return document.activeElement === node;
+  }, []);
+  useEffect(() => {
+    // The loading frame and the reading edition have no body to walk and their
+    // own buttons are the way through; there the stage asks for nothing.
+    if (status !== "ready" || toolOpen) return;
+    takeKeys();
+    /**
+     * Putting a tool back, the App restores the focus it saved when the door
+     * opened (`App.tsx` `putHouseObjectBack`), two frames later. Whoever is in
+     * front holds the keyboard: if it restored something, the second attempt
+     * finds that something holding focus and leaves it be; if it found nothing
+     * to restore — the harbour stands no `house-world-title` — the stage fills
+     * the vacuum instead of leaving the keys pointed at nowhere.
+     */
+    const settle = window.setTimeout(takeKeys, 220);
+    return () => window.clearTimeout(settle);
+  }, [status, toolOpen, takeKeys]);
+
   function onStageKeyUp(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget) return;
     const key = event.key.toLowerCase();
