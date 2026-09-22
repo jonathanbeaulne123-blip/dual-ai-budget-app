@@ -151,10 +151,51 @@ describe("the stage takes the keyboard when the world is ready", () => {
     const { stage } = await stand();
     expect(stage.getAttribute("tabindex")).toBe("0");
     const css = readFileSync("src/harbour/harbour.css", "utf8");
-    // The ring is an inset shadow rather than an outline, and it is not the
-    // invitation's job to replace it: focus must be visible on its own.
-    expect(css).toMatch(/\.harbour-world__stage:focus-visible \{[^}]*box-shadow:[^}]*\}/);
-    expect(css).not.toMatch(/\.harbour-world__stage:focus(-visible)? \{[^}]*outline: none/);
+    // The ring is turned inward — the app's world ring is an outline with an
+    // outset halo, and a stage that fills the viewport draws both of those
+    // past the edge of the screen. It is not the invitation's job to stand in
+    // for it: a keyboard focus has to be visible on its own.
+    const ring = /\.harbour-world__stage:focus-visible \{([^}]*)\}/.exec(css);
+    expect(ring, "a focus-visible rule for the stage").not.toBeNull();
+    expect(ring![1]).toMatch(/box-shadow: inset/);
+    expect(ring![1]).not.toMatch(/outline: none/);
+  });
+});
+
+describe("a press on the ground hands it the keyboard", () => {
+  /**
+   * The runtime cancels `pointerdown` so a drag never selects or scrolls, and
+   * a cancelled `pointerdown` cancels the focus the browser would have given
+   * the stage. Clicking the world never focused it either — the stage has to
+   * put that default back, or its own invitation would be a lie.
+   */
+  const pressOn = (node: Element) => act(async () => { node.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })); });
+
+  it("takes it back after Tab has carried it away", async () => {
+    const { stage } = await stand();
+    const elsewhere = document.createElement("button");
+    document.body.append(elsewhere);
+    await act(async () => { elsewhere.focus(); });
+    expect(invite()).not.toBeNull();
+    await pressOn(host.querySelector(".house-world__canvas")!);
+    expect(document.activeElement).toBe(stage);
+    expect(invite()).toBeNull();
+    // And now the keys walk, with that one press and nothing else.
+    await press("w");
+    expect(inputs).toEqual([{ forward: 1, strafe: 0, run: false }]);
+  });
+
+  it("leaves a real control inside the stage its own press", async () => {
+    const { stage } = await stand();
+    const elsewhere = document.createElement("button");
+    document.body.append(elsewhere);
+    await act(async () => { elsewhere.focus(); });
+    // "Back to the Court", the twins, "Put it back": pressing one of those is
+    // pressing it, not pressing the ground.
+    const control = document.createElement("button");
+    stage.append(control);
+    await pressOn(control);
+    expect(document.activeElement).not.toBe(stage);
   });
 });
 
