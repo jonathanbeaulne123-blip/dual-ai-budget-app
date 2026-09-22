@@ -89,6 +89,14 @@ export type HarbourCallbacks = {
 
 /** A phone's portrait frame takes a wider field so the Queen and her flagstone fit at a friendly distance. */
 export const PHONE_FOV = 52;
+/**
+ * ── walk-everywhere ──
+ * How far out onto the lawn the body steps when it comes out of a building
+ * without walking — the "← Back to the Court" button, a quick-sheet row.
+ * Clear of the doorway's own arrival radius, so coming out is not immediately
+ * going back in.
+ */
+export const COURT_DOORSTEP = 2.2;
 export const fovFor = (composition: Composition): number => (composition === "phone" ? PHONE_FOV : COURT_FOV);
 const isCourtAnchor = (id: string | undefined): id is CourtAnchor => (COURT_ANCHOR_IDS as readonly string[]).includes(id ?? "");
 
@@ -565,6 +573,20 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const reach = walksIndoors(placeId) ? roomReach(room) : null;
       follow.setPlan(reach === null ? null : followInRoom(reach, composition));
     }
+  }
+  /**
+   * Where the body stands when it comes out of a building onto the island: on
+   * the lawn outside that building's own door, facing away from it, so
+   * stepping back out of the Library is the walk you would have taken. From
+   * anywhere that is not a building on the island, the Court's own way in.
+   */
+  function courtLanding(from: HarbourPlaceId): { x: number; z: number; yaw: number } {
+    const placement = placementOf(from);
+    if (!placement) return { x: COURT_ARRIVAL.x, z: COURT_ARRIVAL.z, yaw: COURT_ARRIVAL.yaw };
+    const [dx, , dz] = placement.door;
+    const out = Math.hypot(dx, dz) || 1;
+    const [wx, , wz] = placementToWorld(placement, [dx + (dx / out) * COURT_DOORSTEP, 0, dz + (dz / out) * COURT_DOORSTEP]);
+    return { x: wx, z: wz, yaw: Math.atan2(dx / out, dz / out) + placement.yaw };
   }
   function raiseBody(): void {
     if (walker) { standBody(); return; }
@@ -1151,11 +1173,26 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // the shore — so the body is put away and a fresh one is raised at that
       // place's own way in.
       const continuous = walker !== null && onIsland(placeId) && onIsland(next);
+      const leaving = placeId;
       if (!continuous) dropBody();
       placeId = next;
       // Either way there is a body when this returns: a re-pointed one where
       // the island carried on, a fresh one at this place's own way in.
       raiseBody();
+      /**
+       * A **journey** is not a walk. Tapping the Library from across the lawn,
+       * or picking its row in the quick sheet, flies the camera into the hall —
+       * and the body has to be where the camera lands, or you are looking at a
+       * room with nobody in it while your character stands out on the grass.
+       * A **crossing** is the other case: there you walked in, the body is
+       * already exactly right, and it is not touched.
+       */
+      if (continuous && !crossing && walker) {
+        const landing = placementOf(next) ? placeArrival(next, handle.anchors()) : courtLanding(leaving);
+        walker.place(landing.x, landing.z, landing.yaw);
+        bodyDriven = true;
+        focus[0] = landing.x; focus[1] = landing.z;
+      }
       // The place you arrive in declares its own idle motion; until it does, nothing moves.
       breathing = false;
       // A cut lands at once, so the destination's hold applies at once. A full

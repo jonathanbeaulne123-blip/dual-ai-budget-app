@@ -457,6 +457,91 @@ describe("the runtime, standing in a room", () => {
     expect(stage.placeId()).toBe("glasshouse");
   });
 
+  it("taps the open floor indoors and walks there, and leaves every station's twin where it was", () => {
+    const taps: string[] = [];
+    let rects: { id: string; kind: string; x: number; y: number; w: number; h: number }[] = [];
+    const stage = mount("library", {
+      onTap: (hit: { kind: string; id?: string }) => taps.push(hit.kind === "anchor" ? hit.id! : hit.kind),
+      onProject: (next: { id: string; kind: string; x: number; y: number; w: number; h: number }[]) => { rects = next; },
+    });
+    const body = stage.body()!;
+    const tap = (x: number, y: number) => {
+      taps.length = 0;
+      for (const type of ["pointerdown", "pointerup"]) {
+        const event = new MouseEvent(type, { clientX: x, clientY: y, bubbles: true, cancelable: true });
+        Object.defineProperty(event, "pointerId", { value: 1 });
+        host.dispatchEvent(event);
+      }
+      return taps[0] ?? null;
+    };
+    run(20);
+    // A station indoors is opened by its **twin**, which is what it always
+    // was: a real DOM button, a thumb across, projected over the thing it
+    // opens. A body standing in the room changes none of that.
+    expect(rects.length, "the Library projected no twins with a body in it").toBeGreaterThan(3);
+    expect(rects.map((rect) => rect.id)).toContain("book");
+    for (const rect of rects) {
+      expect(rect.w, `${rect.id} twin width`).toBeGreaterThanOrEqual(44);
+      expect(rect.h, `${rect.id} twin height`).toBeGreaterThanOrEqual(44);
+    }
+    // A twin is a DOM button standing above the canvas, and a pointer that
+    // lands on a button never reaches the world at all — so a tap meant for a
+    // station cannot be swallowed by the walk, indoors or out.
+    const twin = document.createElement("button");
+    host.append(twin);
+    taps.length = 0;
+    for (const type of ["pointerdown", "pointerup"]) {
+      const event = new MouseEvent(type, { clientX: 400, clientY: 400, bubbles: true, cancelable: true });
+      Object.defineProperty(event, "pointerId", { value: 2 });
+      twin.dispatchEvent(event);
+    }
+    expect(taps, "a tap on a twin reached the world").toEqual([]);
+    twin.remove();
+    // And the floor is new: a tap on the open floor walks you there.
+    let floor: { x: number; y: number } | null = null;
+    for (let y = 720; y >= 380 && !floor; y -= 40) for (let x = 260; x < 1200; x += 120) {
+      if (tap(x, y) === "ground") { floor = { x, y }; break; }
+    }
+    expect(floor, "no open floor in the Library answered to a tap").not.toBeNull();
+    run(25);
+    expect(body.walking(), "a tap on the open floor did not walk the body").toBe(true);
+    expect(body.following(), "walking to a tap did not hand the camera to the body").toBe(true);
+  });
+
+  it("walks a tap only where the tap was the ground — a station's own hit never moves the body", () => {
+    // The one branch that turns a tap into a walk, read where it is written.
+    const runtime = readFileSync("src/harbour/scene/runtime.ts", "utf8");
+    const ground = runtime.indexOf('if (pointer.hit.kind === "ground")');
+    expect(ground).toBeGreaterThan(0);
+    const branch = runtime.slice(ground, runtime.indexOf("} else lastGroundTap = null;", ground));
+    expect(branch).toMatch(/walker\.goTo\(pointer\.hit\.point/);
+    // And nowhere else in the file does a tap walk the body.
+    expect(runtime.split("walker.goTo(pointer.hit.point").length - 1).toBe(1);
+  });
+
+  it("puts the body where a journey lands: inside the hall you tapped, out on the lawn when you come back", () => {
+    const stage = mount("court");
+    const body = stage.body()!;
+    // Tapping the Library from across the lawn: the camera flies in, and the
+    // body has to be in the hall, not still standing on the grass.
+    stage.enter("library", { from: "court", reduced: true });
+    const inside = stage.body()!.at();
+    const floor = placeRoom("library", stage.place().anchors())!;
+    expect(inRoom(inside.x, inside.z, floor), "the journey left the body outside the hall").toBe(true);
+    expect(inside.y).toBeCloseTo(placementLift(PLACE_PLACEMENTS.library!), 6);
+    // And back out: on the lawn outside the hall's own door, clear of it.
+    stage.enter("court", { from: "library", reduced: true });
+    const out = stage.body()!.at();
+    expect(inRoom(out.x, out.z, floor)).toBe(false);
+    const door = placementDoor(PLACE_PLACEMENTS.library!);
+    const gap = Math.hypot(out.x - door[0], out.z - door[2]);
+    expect(gap).toBeGreaterThan(PLACE_PLACEMENTS.library!.doorRadius);
+    expect(gap).toBeLessThan(4);
+    // It is the same body the whole way: the island never let go of it.
+    expect(stage.body()).not.toBeNull();
+    expect(body === stage.body()).toBe(false); // a fresh controls object, the same walker
+  });
+
   it("comes back to rest in a room: the body stops and the world stops asking for frames", () => {
     const stage = mount("library");
     stage.setBreathing(false);
