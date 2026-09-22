@@ -35,18 +35,30 @@ import type { Environment } from "../core/types.ts";
  */
 
 /**
- * Where the body is, read off the camera. Today the camera *is* the player:
- * the runtime's pose target is the spot on the ground the person is at, and
- * `theta` is the heading the eye orbits from — so the body faces `theta + π`,
- * which is the direction the person is looking. When the character lane lands,
- * this is the one function that changes.
+ * Where the body is.
+ *
+ * The character lane has landed, so this reads the **body** when one is
+ * standing: its feet and its own yaw, in the same convention the partner's
+ * walker renders with (yaw 0 looks along +z), which is what makes a yaw off
+ * the wire mean the same thing at both ends.
+ *
+ * The camera remains the fallback, and it is not dead code: an interior
+ * stands no walker, and there the runtime's pose target is still the spot on
+ * the ground the person is at, with `theta` the heading the eye orbits from —
+ * so the body faces `theta + π`, the direction the person is looking.
  */
-export function localBodyFromPose(pose: { target: readonly [number, number, number]; theta: number }): { x: number; z: number; yaw: number } {
+export function localBodyFromPose(pose: { target: readonly [number, number, number]; theta: number; body?: { x: number; z: number; yaw: number } | null }): { x: number; z: number; yaw: number } {
+  if (pose.body) return { x: pose.body.x, z: pose.body.z, yaw: wrapYaw(pose.body.yaw) };
+  return { x: pose.target[0], z: pose.target[2], yaw: wrapYaw(pose.theta + Math.PI) };
+}
+
+/** Into (-π, π], the range the wire validates against. */
+function wrapYaw(yaw: number): number {
   const TAU = Math.PI * 2;
-  let yaw = (pose.theta + Math.PI) % TAU;
-  if (yaw > Math.PI) yaw -= TAU;
-  if (yaw <= -Math.PI) yaw += TAU;
-  return { x: pose.target[0], z: pose.target[2], yaw };
+  let next = yaw % TAU;
+  if (next > Math.PI) next -= TAU;
+  if (next <= -Math.PI) next += TAU;
+  return next;
 }
 
 /** Enough movement between two ticks to call it walking rather than standing. */

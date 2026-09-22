@@ -74,7 +74,20 @@ export function useWorldFeed(request: WorldFeedRequest): WorldFeed {
  * as the provider above and for the same reason: the harbour never reaches
  * out, it only puts things on the shelf.
  */
-export type LocalPose = { target: readonly [number, number, number]; theta: number };
+/**
+ * Where this person is, for whoever owns a socket.
+ *
+ * `target`/`theta` are the camera, which is what the lane had to read from
+ * before a character existed. `body` is the character itself when one is
+ * standing — its feet and its facing, in the body model's own convention
+ * (yaw 0 looks along +z). A reader prefers `body` and falls back to the
+ * camera, so a place with no walker (an interior) still publishes a position.
+ */
+export type LocalPose = {
+  target: readonly [number, number, number];
+  theta: number;
+  body?: { x: number; z: number; yaw: number } | null;
+};
 export type LocalPoseReader = () => LocalPose | null;
 
 let localPose: LocalPoseReader = () => null;

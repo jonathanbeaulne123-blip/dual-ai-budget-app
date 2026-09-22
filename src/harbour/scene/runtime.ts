@@ -782,6 +782,14 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (walker.walking()) setFollowing(true);
       const at = walker.state();
       follow.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed });
+      // ── The three lanes together ── streaming follows the **character**, not
+      // the camera. `followCamera()` keeps the focus on the Look camera's
+      // target only until a body exists to stand somewhere; from the first
+      // frame a walker is alive, the island is streamed around its feet, so
+      // walking out to a building loads that building and orbiting the camera
+      // does not. `bodyDriven` is the flag world-space left for exactly this.
+      bodyDriven = true;
+      focus[0] = at.x; focus[1] = at.z;
       if (following && follow.tick(dt)) bodyMoving = true;
       if (bodyMoving) dirty = true;
       if (diagnostics) { bodySamples.push(performance.now() - began); if (bodySamples.length > 60) bodySamples.shift(); }

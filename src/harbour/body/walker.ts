@@ -16,6 +16,10 @@ import {
   type BodyWorld,
 } from "./bodyModel.ts";
 import { courtObstacles, type Obstacle } from "./obstacles.ts";
+// The partner's body is this body: importing the character module registers it
+// with `presence/walker.ts` (see `body/characterWalker.ts`). The runtime imports
+// this file, so the real character is standing before any place is built.
+import "./characterWalker.ts";
 
 /**
  * Little Harbour · a body standing on the island.

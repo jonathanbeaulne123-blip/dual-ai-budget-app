@@ -133,7 +133,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     const world = runtime.current;
     if (!world) return null;
     const pose = world.pose();
-    return { target: pose.target, theta: pose.theta };
+    // The character, when one is standing: the partner should see where you
+    // actually are, not where your camera is pointed. An interior has no
+    // walker, so there the camera stays the answer.
+    const at = world.body?.()?.at() ?? null;
+    return { target: pose.target, theta: pose.theta, body: at ? { x: at.x, z: at.z, yaw: at.yaw } : null };
   }), []);
   const partnerWalk = useWorldFeed({
     environment: household.environment,
