@@ -11,7 +11,7 @@ import { BODY_RADIUS, doorWall, holdInRoom, inRoom, pushOut, type Obstacle, type
 import { createBodyState, stepBody, type BodyWorld } from "../src/harbour/body/bodyModel.ts";
 import {
   EXIT_REACH, OPEN_AIR, PLACE_FLOOR, PLACE_HAZARDS, exitAnchors, followHoldIn,
-  placeArrival, placeGround, placeObstacles, placeRoom, roomReach, walksIndoors,
+  placeArrival, placeGround, placeObstacles, placeRoom, roomReach, solidRegionIds, walksIndoors,
 } from "../src/harbour/body/places.ts";
 import { groundHeightAt, TERRACE_LEVEL } from "../src/harbour/scene/ground.ts";
 import { harbourFramePolicy } from "../src/harbour/scene/framePolicy.ts";
@@ -223,6 +223,24 @@ describe("the walls hold the body in the room", () => {
     // And a point inside it is pushed out, perpendicular to the room's own wall.
     const inside = pushOut(centre[0], centre[2], 0.01, [solid!]);
     expect(inside.hit).toBe("lectern");
+  });
+
+  it("is solid where the body is: a lectern is walked around, a rail overhead is walked under", () => {
+    const floor = 0;
+    const region = (id: string, y0: number, y1: number) => ({ id, group: "x", label: id, box: new THREE.Box3(new THREE.Vector3(-0.5, y0, -0.5), new THREE.Vector3(0.5, y1, 0.5)) });
+    const solid = solidRegionIds("library", [
+      region("lectern", 0.4, 1.6),          // chest-high on a body 0.58 tall
+      region("floor-slab", 0, 0.05),        // flat: a step, not a wall
+      region("bill-rail", floor + 0.85, 1.35), // overhead: walked under
+      region("balcony", 2.1, 2.7),          // far overhead
+      region("plinth", 0, 0.9),             // reaches the floor and stands up
+    ] as never, []);
+    expect([...solid].sort()).toEqual(["lectern", "plinth"]);
+    // And the way out is never solid, however tall it is.
+    const withDoor = solidRegionIds("cellar", [region("stair", 0, 1.6)] as never, [
+      { id: "stair", position: [0, 0, 0], zone: "stair", label: "the stair" },
+    ] as never);
+    expect([...withDoor]).toEqual([]);
   });
 
   it("keeps the Boathouse's slip in step with the deck it is cut into", () => {

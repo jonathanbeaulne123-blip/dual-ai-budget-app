@@ -2,7 +2,7 @@ import type { HarbourPlaceId } from "../flag.ts";
 import type { RoomHold, Vec3 } from "../camera/poses.ts";
 import { groundHeightAt } from "../scene/ground.ts";
 import { PLACE_HOLDS, placementLift, placementOf, placementToWorld, type Anchor, type Region } from "../scene/place.ts";
-import { BODY_RADIUS, courtObstacles, obstaclesFromRegions, type Obstacle, type RoomBounds } from "./obstacles.ts";
+import { BODY_HEIGHT, BODY_RADIUS, courtObstacles, obstaclesFromRegions, type Obstacle, type RoomBounds } from "./obstacles.ts";
 
 /**
  * Little Harbour · **where a body may stand, in every place** (walk-everywhere).
@@ -155,9 +155,18 @@ export function placeRoom(place: HarbourPlaceId, anchors: readonly Anchor[] = []
   };
 }
 
-/** A thing has to reach the floor to be in the way — a shelf you walk under is not a wall. */
-export const SOLID_FOOT = 0.18;
-/** And it has to stand this far up off the floor: a laid stone is a path, not an obstacle. */
+/**
+ * A thing is in the way when it stands **where the body is**: its box has to
+ * reach down into the body's own height band (the floor to `BODY_HEIGHT`) and
+ * up past a shin. So the Library's lectern and the Boathouse's workbench are
+ * walked around, the bill rail and the jars on it and the reading balcony and
+ * the lanterns in the rafters are walked under, and a stone laid flat on the
+ * shore's path is still a step and not a wall.
+ *
+ * "Reaches the floor" was the first rule and it was wrong: a bench whose box
+ * starts at 0.4 floats clear of the floor and is still chest-high on a body
+ * 0.58 tall, so the body walked straight through it.
+ */
 export const SOLID_RISE = 0.22;
 
 /**
@@ -175,7 +184,9 @@ export function solidRegionIds(place: HarbourPlaceId, regions: readonly Region[]
   for (const region of regions) {
     if (!region.box || region.box.isEmpty?.() || ways.has(region.id)) continue;
     const { min, max } = region.box;
-    if (min.y > floor + SOLID_FOOT) continue;
+    // Above the body's own head: walked under.
+    if (min.y > floor + BODY_HEIGHT) continue;
+    // Below a shin: walked over.
     if (max.y < floor + SOLID_RISE) continue;
     solid.add(region.id);
   }
