@@ -18,7 +18,7 @@ the clock.
 | Frames | Place | Route | Kind of ground | Key held | Walked |
 | --- | --- | --- | --- | --- | --- |
 | `cellar-1440-*`, `cellar-390-*` | The Cellar | `home / below` | an **unplaced room** — under the Court's own floor, flat at y = 0 | W | 1.88 / 1.88 units |
-| `library-1440-*`, `library-390-*` | The Library | `study / middle` | a **placed room** — standing where the Court stood its hall, floor lifted to `placementLift` ≈ 0.287 | W | 1.88 / 2.00 units |
+| `library-1440-*`, `library-390-*` | The Library | `study / middle` | a **placed room** — standing where the Court stood its hall, floor lifted to `placementLift` ≈ 0.287 | W | 2.12 / 1.64 units |
 | `campfire-1440-*`, `campfire-390-*` | The Campfire | `making / below` | **outdoors** — the shore's swept apron over the island's own profile | D | 1.76 / 1.88 units |
 
 `00-standing` is the place as it has always opened, with a person standing in
@@ -41,11 +41,11 @@ every sample).
 | Sequence | Tier | Body step | Render | Draw calls |
 | --- | --- | --- | --- | --- |
 | cellar 1440 | full | 0.087–0.129 ms | 23–38 ms | 93–116 |
-| library 1440 | full | 0.062–0.108 ms | 16–25 ms | 146–197 |
-| campfire 1440 | full | 0.045–0.112 ms | 18–31 ms | 49–61 |
-| cellar 390 | lite | 0.069–0.082 ms | 15–26 ms | 48–53 |
-| library 390 | lite | 0.052–0.127 ms | 13–24 ms | 113–162 |
-| campfire 390 | lite | 0.066–0.080 ms | 13–23 ms | 32–52 |
+| library 1440 | full | 0.068–0.093 ms | 13–27 ms | 148–197 |
+| campfire 1440 | full | 0.045–0.112 ms | 18–31 ms | 45–61 |
+| cellar 390 | lite | 0.069–0.082 ms | 11–26 ms | 48–53 |
+| library 390 | lite | 0.066–0.135 ms | 15–27 ms | 133–174 |
+| campfire 390 | lite | 0.066–0.080 ms | 10–23 ms | 29–52 |
 
 One step of the walk costs about a tenth of a millisecond indoors — the same
 order as it costs on the island. The rooms did not get more expensive; they got

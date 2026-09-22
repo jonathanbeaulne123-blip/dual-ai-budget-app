@@ -135,13 +135,14 @@
     "place": "library",
     "kind": "a placed room \u2014 standing where the Court stood its hall",
     "route": "study/middle",
+    "key": "w",
     "width": 1440,
     "arrived": true,
     "frames": [
       "library-1440-00-standing-x-6p6z-13p1.png",
       "library-1440-01-walking-x-6p5z-13p0.png",
-      "library-1440-02-walking-x-5p7z-12p7.png",
-      "library-1440-03-stopped-x-4p9z-12p2.png"
+      "library-1440-02-walking-x-5p5z-12p6.png",
+      "library-1440-03-stopped-x-4p7z-12p1.png"
     ],
     "samples": [
       {
@@ -163,13 +164,13 @@
           "yaw": 0.9041035005406255,
           "speed": 0
         },
-        "renderMs": 24.81,
-        "bodyMs": 0.062,
-        "drawCalls": 146,
+        "renderMs": 27.03,
+        "bodyMs": 0.068,
+        "drawCalls": 175,
         "camera": [
-          -4.0381,
-          2.1449,
-          -7.1916
+          -5.7101,
+          2.4344,
+          -8.2051
         ],
         "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
       },
@@ -192,8 +193,8 @@
           "yaw": 1.0576849887629076,
           "speed": 1.0105803080654407
         },
-        "renderMs": 15.73,
-        "bodyMs": 0.073,
+        "renderMs": 23.78,
+        "bodyMs": 0.074,
         "drawCalls": 197,
         "camera": [
           -8.2446,
@@ -208,26 +209,26 @@
         "tier": "full",
         "body": "following",
         "at": [
-          -5.746,
+          -5.532,
           0.287,
-          -12.657,
+          -12.55,
           1.105,
-          1.49
+          1.497
         ],
         "live": {
-          "x": -5.745620902487663,
+          "x": -5.531772593982107,
           "y": 0.2872833589234863,
-          "z": -12.657114522455705,
-          "yaw": 1.1050620926532955,
-          "speed": 1.4902893775225659
+          "z": -12.549714688572188,
+          "yaw": 1.1052976575800775,
+          "speed": 1.496831620092401
         },
-        "renderMs": 15.6,
-        "bodyMs": 0.092,
+        "renderMs": 16.53,
+        "bodyMs": 0.088,
         "drawCalls": 149,
         "camera": [
-          -7.4678,
-          2.0658,
-          -13.3702
+          -7.2292,
+          2.0576,
+          -13.2834
         ],
         "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
       },
@@ -237,31 +238,31 @@
         "tier": "full",
         "body": "following",
         "at": [
-          -4.889,
+          -4.674,
           0.287,
-          -12.227,
+          -12.119,
           1.105,
           0.489
         ],
         "live": {
-          "x": -4.8886497731878,
+          "x": -4.674185474139109,
           "y": 0.2872833589234863,
-          "z": -12.226722729446106,
-          "yaw": 1.1053698258175937,
-          "speed": 0.4893837833760354
+          "z": -12.119013530094755,
+          "yaw": 1.1053705681089667,
+          "speed": 0.48940797569745886
         },
-        "renderMs": 12.66,
-        "bodyMs": 0.108,
+        "renderMs": 13.3,
+        "bodyMs": 0.093,
         "drawCalls": 148,
         "camera": [
-          -6.4712,
-          2.0529,
-          -12.9778
+          -6.2528,
+          2.0528,
+          -12.8779
         ],
         "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
       }
     ],
-    "walked": 1.88
+    "walked": 2.12
   },
   {
     "place": "campfire",
@@ -532,13 +533,14 @@
     "place": "library",
     "kind": "a placed room \u2014 standing where the Court stood its hall",
     "route": "study/middle",
+    "key": "w",
     "width": 390,
     "arrived": true,
     "frames": [
       "library-390-00-standing-x-6p6z-13p1.png",
       "library-390-01-walking-x-6p5z-13p0.png",
-      "library-390-02-walking-x-5p6z-12p6.png",
-      "library-390-03-stopped-x-4p8z-12p2.png"
+      "library-390-02-walking-x-5p7z-12p7.png",
+      "library-390-03-stopped-x-5p1z-12p3.png"
     ],
     "samples": [
       {
@@ -560,13 +562,13 @@
           "yaw": 0.9041035005406255,
           "speed": 0
         },
-        "renderMs": 23.51,
-        "bodyMs": 0.052,
-        "drawCalls": 113,
+        "renderMs": 26.91,
+        "bodyMs": 0.07,
+        "drawCalls": 140,
         "camera": [
-          -1.768,
-          1.5159,
-          -7.1685
+          -6.4531,
+          2.7785,
+          -9.3889
         ],
         "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
       },
@@ -576,26 +578,26 @@
         "tier": "lite",
         "body": "following",
         "at": [
-          -6.45,
+          -6.523,
           0.287,
-          -13.013,
-          1.069,
-          1.011
+          -13.047,
+          1.005,
+          0.643
         ],
         "live": {
-          "x": -6.449682854378245,
+          "x": -6.52292430676776,
           "y": 0.2872833589234863,
-          "z": -13.01299728291724,
-          "yaw": 1.0694662814213725,
-          "speed": 1.0105803080654407
+          "z": -13.047266772796775,
+          "yaw": 1.005366976844765,
+          "speed": 0.6431864042267776
         },
-        "renderMs": 20.25,
-        "bodyMs": 0.062,
-        "drawCalls": 162,
+        "renderMs": 22.97,
+        "bodyMs": 0.066,
+        "drawCalls": 174,
         "camera": [
-          -8.2282,
-          2.5011,
-          -13.0294
+          -7.984,
+          2.7228,
+          -12.4003
         ],
         "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
       },
@@ -605,26 +607,26 @@
         "tier": "lite",
         "body": "following",
         "at": [
-          -5.632,
+          -5.747,
           0.287,
-          -12.618,
-          1.121,
-          1.494
+          -12.654,
+          1.101,
+          1.49
         ],
         "live": {
-          "x": -5.631681438140612,
+          "x": -5.747267813639866,
           "y": 0.2872833589234863,
-          "z": -12.617871437686963,
-          "yaw": 1.1206482972559773,
-          "speed": 1.4944532044252756
+          "z": -12.653851446249844,
+          "yaw": 1.1011002890834958,
+          "speed": 1.4902893775225659
         },
-        "renderMs": 12.97,
-        "bodyMs": 0.08,
-        "drawCalls": 132,
+        "renderMs": 14.81,
+        "bodyMs": 0.135,
+        "drawCalls": 133,
         "camera": [
-          -7.3545,
-          2.0619,
-          -13.3068
+          -7.4666,
+          2.0682,
+          -13.3769
         ],
         "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
       },
@@ -634,31 +636,31 @@
         "tier": "lite",
         "body": "following",
         "at": [
-          -4.768,
+          -5.106,
           0.287,
-          -12.201,
-          1.121,
-          0.091
+          -12.329,
+          1.101,
+          0.16
         ],
         "live": {
-          "x": -4.7677727246069725,
+          "x": -5.1060318553856465,
           "y": 0.2872833589234863,
-          "z": -12.200570619056577,
-          "yaw": 1.1208095774997053,
-          "speed": 0.09121127116639206
+          "z": -12.328614622803796,
+          "yaw": 1.1013988842132947,
+          "speed": 0.15965184801035545
         },
-        "renderMs": 11.98,
-        "bodyMs": 0.127,
-        "drawCalls": 131,
+        "renderMs": 14.73,
+        "bodyMs": 0.131,
+        "drawCalls": 135,
         "camera": [
-          -6.3355,
-          2.0528,
-          -12.9265
+          -6.6676,
+          2.0529,
+          -13.0759
         ],
         "label": "The Library. W A S D and the arrow keys walk you around the room; Shift runs; tap the open floor to walk there; drag to look around you; plus and minus zoom; C comes close to what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet."
       }
     ],
-    "walked": 2.0
+    "walked": 1.64
   },
   {
     "place": "campfire",
