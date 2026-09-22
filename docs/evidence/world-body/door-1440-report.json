@@ -1,0 +1,210 @@
+[
+  {
+    "tier": "full",
+    "body": "standing",
+    "at": [
+      0.95,
+      -0.05,
+      5.1,
+      3.142,
+      0
+    ],
+    "renderMs": 20.57,
+    "projectMs": 0.53,
+    "bodyMs": 0.079,
+    "drawCalls": 290,
+    "twins": 16
+  },
+  {
+    "tier": "full",
+    "body": "following",
+    "at": [
+      0.721,
+      -0.05,
+      4.276,
+      -2.642,
+      1.49
+    ],
+    "renderMs": 25.96,
+    "projectMs": 0.58,
+    "bodyMs": 0.107,
+    "drawCalls": 319,
+    "twins": 13
+  },
+  {
+    "tier": "full",
+    "body": "following",
+    "at": [
+      0.146,
+      -0.05,
+      3.224,
+      -2.642,
+      1.5
+    ],
+    "renderMs": 18.34,
+    "projectMs": 0.54,
+    "bodyMs": 0.108,
+    "drawCalls": 322,
+    "twins": 11
+  },
+  {
+    "tier": "full",
+    "body": "following",
+    "at": [
+      -0.314,
+      -0.05,
+      2.381,
+      -2.642,
+      1.5
+    ],
+    "renderMs": 18.51,
+    "projectMs": 0.54,
+    "bodyMs": 0.108,
+    "drawCalls": 311,
+    "twins": 14
+  },
+  {
+    "tier": "full",
+    "body": "following",
+    "at": [
+      -1.351,
+      -0.05,
+      2.077,
+      -1.857,
+      1.5
+    ],
+    "renderMs": 14.91,
+    "projectMs": 0.28,
+    "bodyMs": 0.112,
+    "drawCalls": 268,
+    "twins": 15
+  },
+  {
+    "tier": "full",
+    "body": "following",
+    "at": [
+      -2.387,
+      -0.05,
+      1.773,
+      -1.856,
+      1.5
+    ],
+    "renderMs": 14.4,
+    "projectMs": 0.3,
+    "bodyMs": 0.12,
+    "drawCalls": 243,
+    "twins": 11
+  },
+  {
+    "tier": "full",
+    "body": "following",
+    "at": [
+      -3.423,
+      -0.05,
+      1.469,
+      -1.856,
+      1.5
+    ],
+    "renderMs": 6.95,
+    "projectMs": 0.19,
+    "bodyMs": 0.132,
+    "drawCalls": 226,
+    "twins": 12
+  },
+  {
+    "tier": "full",
+    "body": "following",
+    "at": [
+      -4.344,
+      -0.05,
+      1.199,
+      -1.856,
+      1.5
+    ],
+    "renderMs": 5.99,
+    "projectMs": 0.17,
+    "bodyMs": 0.185,
+    "drawCalls": 222,
+    "twins": 9
+  },
+  {
+    "tier": "full",
+    "body": "following",
+    "at": [
+      -5.496,
+      -0.05,
+      0.861,
+      -1.856,
+      1.5
+    ],
+    "renderMs": 4.73,
+    "projectMs": 0.16,
+    "bodyMs": 0.175,
+    "drawCalls": 221,
+    "twins": 3
+  },
+  {
+    "tier": "full",
+    "body": "following",
+    "at": [
+      -6.878,
+      -0.05,
+      0.456,
+      -1.856,
+      1.5
+    ],
+    "renderMs": 5,
+    "projectMs": 0.16,
+    "bodyMs": 0.183,
+    "drawCalls": 212,
+    "twins": 2
+  },
+  {
+    "tier": "full",
+    "body": "following",
+    "at": [
+      -7.799,
+      -0.05,
+      0.185,
+      -1.856,
+      1.5
+    ],
+    "renderMs": 5.57,
+    "projectMs": 0.2,
+    "bodyMs": 0.173,
+    "drawCalls": 208,
+    "twins": 2
+  },
+  {
+    "tier": "full",
+    "body": "following",
+    "at": [
+      -8.72,
+      -0.05,
+      -0.085,
+      -1.856,
+      1.5
+    ],
+    "renderMs": 5.71,
+    "projectMs": 0.18,
+    "bodyMs": 0.252,
+    "drawCalls": 205,
+    "twins": 3
+  },
+  {
+    "tier": "full",
+    "body": "following",
+    "at": [
+      -8.893,
+      -0.05,
+      -0.224,
+      -2.259,
+      0
+    ],
+    "renderMs": 5.4,
+    "projectMs": 0.17,
+    "bodyMs": 0.398,
+    "drawCalls": 206,
+    "twins": 2
+  }
+]

@@ -420,6 +420,44 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     return () => { window.removeEventListener("hearth:house-return", restore); window.removeEventListener("pagehide", remember); remember(); };
   }, [scope, memberId, household.householdId, status]);
 
+  /**
+   * ── The body lane (world-body) ──
+   * Which movement keys are down. W A S D and the arrows drive the **body**,
+   * not the camera, so the stage's own promise — "W A S D walk" — is the
+   * truth. A key is held, so this is a set and not an event: the runtime asks
+   * for the direction every frame and the body accelerates into it.
+   */
+  const held = useRef<Set<string>>(new Set());
+  const pushBody = useCallback(() => {
+    const keys = held.current, world = runtime.current;
+    const body = world?.body();
+    if (!body) return;
+    const forward = (keys.has("w") || keys.has("arrowup") ? 1 : 0) - (keys.has("s") || keys.has("arrowdown") ? 1 : 0);
+    const strafe = (keys.has("d") || keys.has("arrowright") ? 1 : 0) - (keys.has("a") || keys.has("arrowleft") ? 1 : 0);
+    body.input({ forward, strafe, run: keys.has("shift") });
+  }, []);
+  /** A key that walks, where a body is standing to walk it. Arrows only when they are not already the rail's. */
+  const walksBody = useCallback((key: string): boolean => {
+    if (placeRef.current !== "court" || !runtime.current?.body()) return false;
+    const lower = key.toLowerCase();
+    if (["w", "a", "s", "d"].includes(lower)) return true;
+    return ["arrowup", "arrowdown", "arrowleft", "arrowright"].includes(lower);
+  }, []);
+  // A key held when the stage loses focus would walk for ever; let it go.
+  useEffect(() => {
+    const drop = () => { if (held.current.size) { held.current.clear(); pushBody(); } };
+    window.addEventListener("blur", drop);
+    return () => { window.removeEventListener("blur", drop); drop(); };
+  }, [pushBody]);
+
+  function onStageKeyUp(event: ReactKeyboardEvent<HTMLDivElement>) {
+    if (event.target !== event.currentTarget) return;
+    const key = event.key.toLowerCase();
+    if (!held.current.delete(key)) return;
+    pushBody();
+    event.preventDefault();
+  }
+
   function onStageKey(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget) return;
     // Space opens the quick sheet wherever you are standing — including the
@@ -435,6 +473,17 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     }
     const step = 40;
     const onRail = placeRef.current === "cellar" && rail.current !== null;
+    // ── The body lane (world-body) ──
+    // The walk comes first. On the cellar's rail the arrows are still the
+    // rail's — there is no body down there — and every other key below is
+    // untouched, so nothing that worked yesterday moved.
+    if (!onRail && walksBody(event.key)) {
+      held.current.add(event.key.toLowerCase());
+      if (event.shiftKey) held.current.add("shift"); else held.current.delete("shift");
+      pushBody();
+      event.preventDefault();
+      return;
+    }
     if (onRail && (event.key === "Home" || event.key === "0")) walk("today");
     else if (onRail && event.key === "ArrowLeft") walk(-1);
     else if (onRail && event.key === "ArrowRight") walk(1);
@@ -456,7 +505,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     else if (event.key === "Escape") {
       // The hold comes off first: Escape is "out of this", and the thing you
       // are most immediately in is the close-up.
-      if (world.closed()) setClosed(world.toggleClose(false));
+      // ── The body lane (world-body) ── and before either of those, the
+      // follow camera: stepping out of walking is the most immediate "out".
+      const body = world.body();
+      if (body?.following()) { held.current.clear(); body.input({ forward: 0, strafe: 0 }); body.follow(false); }
+      else if (world.closed()) setClosed(world.toggleClose(false));
       else if (placeRef.current === "court") world.go("court");
       else onNavigateRef.current("home", "middle");
     }
@@ -468,7 +521,9 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => props.onNavigate("home", "middle");
   return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : place === "cellar" ? "The Cellar" : place === "glasshouse" ? "The Glasshouse" : place === "kitchen" ? "The Kitchen" : place === "boathouse" ? "The Boathouse" : place === "cottage" ? "Hercules’s Cottage" : place === "kiln" ? "The Kiln" : place === "campfire" ? "The Campfire" : place === "atlas" ? "The Atlas" : "The Library"}>
-    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : `${placeName[0]!.toUpperCase()}${placeName.slice(1)}. Arrow keys orbit, W A S D walk, plus and minus zoom, C ${closed ? "steps back from" : "comes close to"} what this place is about, Space opens all tools, Escape steps back.`} onKeyDown={onStageKey}>
+    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : place === "court"
+      ? `${placeName[0]!.toUpperCase()}${placeName.slice(1)}. W A S D and the arrow keys walk you around the island; Shift runs; tap the open ground to walk there; drag to look around you; plus and minus zoom; C ${closed ? "steps back from" : "comes close to"} what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet.`
+      : `${placeName[0]!.toUpperCase()}${placeName.slice(1)}. Arrow keys orbit, plus and minus zoom, C ${closed ? "steps back from" : "comes close to"} what this place is about, Space opens all tools, Escape steps back.`} onKeyDown={onStageKey} onKeyUp={onStageKeyUp}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => props.onNavigate("home", HARBOUR_PLACE_LEVELS[next])} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}

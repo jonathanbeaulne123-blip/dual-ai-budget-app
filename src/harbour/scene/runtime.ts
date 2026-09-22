@@ -3,6 +3,13 @@ import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import { worldDiagnostics } from "../../house/world/diagnostics.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
 import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/courtCamera.ts";
+// ── The body lane (world-body) ───────────────────────────────────────────────
+// Everything this lane adds to the runtime is additive and marked like this
+// block. A sibling lane is restructuring this file; nothing above or below a
+// marked block was rewritten to make room for the body.
+import { createFollowCamera, type FollowCamera } from "../camera/followCamera.ts";
+import { createWalker, COURT_ARRIVAL, type Walker } from "../body/walker.ts";
+import { NO_INPUT, eyeHeight, type BodyInput } from "../body/bodyModel.ts";
 import { CLOSE_HOLDS, COURT_ANCHOR_IDS, COURT_FOV, closePose, type CourtAnchor, type CourtMode, type CourtPose } from "../camera/poses.ts";
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
 import { createGround } from "./ground.ts";
@@ -62,6 +69,32 @@ export const PHONE_FOV = 52;
 export const fovFor = (composition: Composition): number => (composition === "phone" ? PHONE_FOV : COURT_FOV);
 const isCourtAnchor = (id: string | undefined): id is CourtAnchor => (COURT_ANCHOR_IDS as readonly string[]).includes(id ?? "");
 
+/**
+ * ── The body lane (world-body) ──
+ * Your character, and the camera that walks with it. `null` where there is no
+ * body to drive: the rooms are six units across and a body belongs on the
+ * island, so this is the Court's alone for now.
+ *
+ * The Look camera is never taken away — `follow(false)` hands the view back to
+ * it, and every named pose, every twin and every door work exactly as before.
+ */
+export type BodyControls = {
+  /** Is the follow camera driving? */
+  following: () => boolean;
+  /** Take the follow camera, or give it back. Giving it back returns to the room's own pose. */
+  follow: (on: boolean) => void;
+  /** What the keys are asking for, in camera space (+forward is away from the eye). */
+  input: (next: BodyInput) => void;
+  /** Walk to a point on the ground — a tap. A straight line that slides off what it meets. */
+  goTo: (x: number, z: number) => void;
+  /** Put the body somewhere at once. */
+  place: (x: number, z: number, yaw?: number) => void;
+  /** Where it stands. */
+  at: () => { x: number; y: number; z: number; yaw: number; speed: number };
+  /** Is it walking right now? */
+  walking: () => boolean;
+};
+
 export type HarbourRuntime = {
   /**
    * Fly to a mode; `anchor` is one of `poses.ts`'s named anchors or any anchor
@@ -111,6 +144,8 @@ export type HarbourRuntime = {
    */
   toggleClose: (on?: boolean) => boolean;
   closed: () => boolean;
+  /** ── The body lane (world-body) ── Your character, where there is one. */
+  body: () => BodyControls | null;
   dispose: () => void;
 };
 
@@ -289,6 +324,53 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   court.setHold(PLACE_HOLDS[placeId] ?? null);
   court.go("court");
 
+  // ── The body lane (world-body) ─────────────────────────────────────────────
+  // The body stands on the island from the first frame; the follow camera only
+  // takes over the moment you actually move. So the Court's first screen is the
+  // diorama it has always been, and the stage's promise — "W A S D walk" — is
+  // true the first time you press a key.
+  let walker: Walker | null = null;
+  let follow: FollowCamera | null = null;
+  let following = false;
+  let bodyInput: BodyInput = NO_INPUT;
+  const bodySamples: number[] = [];
+  function raiseBody(): void {
+    if (walker || placeId !== "court") return;
+    walker = createWalker({ groundHeightAt: ground.groundHeightAt, tier, start: COURT_ARRIVAL });
+    scene.add(walker.group);
+    follow = createFollowCamera({ camera, composition, reduced: reduced.matches, groundHeightAt: ground.groundHeightAt });
+    host.dataset.harbourBody = "standing";
+  }
+  function dropBody(): void {
+    if (following) { following = false; court.restore(camera.position.toArray() as Vec3); }
+    walker?.dispose(); walker = null; follow = null; bodyInput = NO_INPUT;
+    delete host.dataset.harbourBody;
+  }
+  /** Take the follow camera, or hand the view back to the Look camera where it stands. */
+  function setFollowing(on: boolean): void {
+    const wanted = on && walker !== null && follow !== null && placeId === "court" && !toolOpen;
+    if (wanted === following) return;
+    following = wanted;
+    host.dataset.harbourBody = wanted ? "following" : "standing";
+    if (wanted && walker && follow) {
+      const at = walker.state();
+      follow.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed });
+      // Start from where the Look camera stands, so this is a move, not a cut.
+      follow.seed(court.pose());
+    } else {
+      // Hand it back at the eye it is actually showing: no jump either way.
+      // Asking to be somewhere else also stops the walk — otherwise a body
+      // still crossing the lawn would take the camera straight back off the
+      // pose that was just asked for.
+      walker?.cancel();
+      bodyInput = NO_INPUT;
+      court.restore(camera.position.toArray() as Vec3);
+    }
+    dirty = true;
+    schedule();
+  }
+  raiseBody();
+
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2(), projected = new THREE.Vector3(), box = new THREE.Box3();
   const pointers = new Map<number, Pointer>();
@@ -330,6 +412,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     raycaster.setFromCamera(ndc, camera);
     const hits = raycaster.intersectObjects(scene.children, true);
     for (const hit of hits) {
+      // ── The body lane (world-body) ──
+      // Your own body is not a thing to tap: it stands between the eye and the
+      // island in follow mode, and a tap that landed on your coat is a tap
+      // meant for whatever is behind it.
+      if (walker) { let own: THREE.Object3D | null = hit.object; let mine = false; while (own) { if (own === walker.group) { mine = true; break; } own = own.parent; } if (mine) continue; }
       const point = hit.point.toArray() as [number, number, number];
       let node: THREE.Object3D | null = hit.object;
       while (node) {
@@ -433,6 +520,13 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     host.dataset.projectMs = (projectSamples.reduce((a, b) => a + b, 0) / projectSamples.length).toFixed(2);
     host.dataset.projectMs = (projectSamples.reduce((a, b) => a + b, 0) / projectSamples.length).toFixed(2);
     host.dataset.houseCamera = JSON.stringify(camera.position.toArray().map(n => Number(n.toFixed(4))));
+    // ── The body lane (world-body) ── what one step of the walk and the follow
+    // camera cost this frame, and where the body stands, for the evidence run.
+    if (walker) {
+      if (bodySamples.length) host.dataset.bodyMs = (bodySamples.reduce((a, b) => a + b, 0) / bodySamples.length).toFixed(3);
+      const at = walker.state();
+      host.dataset.bodyAt = JSON.stringify([at.x, at.y, at.z, at.yaw, at.speed].map(n => Number(n.toFixed(3))));
+    }
     host.dataset.drawCalls = String(renderer.info.render.calls); host.dataset.geometries = String(renderer.info.memory.geometries); host.dataset.textures = String(renderer.info.memory.textures);
   }
 
@@ -460,15 +554,50 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         dirty = true;
       }
     }
-    if (stick && (stick.dx !== 0 || stick.dy !== 0) && dt > 0) {
-      // The same walk W A S D does, and through the same `pan`: pushing the
-      // stick up walks forward, which is a drag downward. Held inside the
-      // room by the place's own hold, exactly as the keys are.
+    // ── The body lane (world-body) ──
+    // The stick is repointed at the body: W7 b built it to pan the camera,
+    // and "the same input, not two" now means the same input the keys drive.
+    // Pushing it up walks away from the eye; pushing it to the ring runs.
+    // Where there is no body (a room), it pans the camera exactly as before.
+    const push = stick ? Math.min(1, Math.hypot(stick.dx, stick.dy) / STICK_RADIUS) : 0;
+    const stickInput: BodyInput | null = stick
+      ? { forward: (-stick.dy / STICK_RADIUS) || 0, strafe: (stick.dx / STICK_RADIUS) || 0, run: push > 0.97 }
+      : null;
+    if (stick && !walker && (stick.dx !== 0 || stick.dy !== 0) && dt > 0) {
       const step = STICK_GAIN * Math.min(dt, 0.08);
       court.pan(-stick.dx * step, -stick.dy * step);
       dirty = true;
     }
-    const easing = court.tick(dt);
+    // ── The body lane (world-body): one step of the walk ──
+    // Inside the frame the renderer lease already owns. There is no
+    // `requestAnimationFrame` in this lane; `createWorldFrameScheduler` and the
+    // lease own the loop, and the body only ever asks for the next frame by
+    // saying it is still moving.
+    let bodyMoving = false;
+    if (walker && follow) {
+      const began = diagnostics ? performance.now() : 0;
+      const drive = stickInput ?? bodyInput;
+      // Asking for a direction is what turns the follow camera on: the Court's
+      // first screen stays the diorama until you actually move.
+      if (drive.forward !== 0 || drive.strafe !== 0) setFollowing(true);
+      walker.setInput(drive);
+      // A direction is being held: the follow camera latches the heading a key
+      // is read against, so holding W walks a straight line while the camera
+      // settles in behind you rather than curving you round in a circle.
+      follow.setSteering(drive.forward !== 0 || drive.strafe !== 0);
+      // Walk relative to what you can see: the follow camera's basis when it is
+      // driving, the Look camera's heading when it is not.
+      const heading = following ? follow.basis() : court.pose().theta;
+      bodyMoving = walker.step(dt, (now - mountedAt) / 1000, heading);
+      if (walker.walking()) setFollowing(true);
+      const at = walker.state();
+      follow.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed });
+      if (following && follow.tick(dt)) bodyMoving = true;
+      if (bodyMoving) dirty = true;
+      if (diagnostics) { bodySamples.push(performance.now() - began); if (bodySamples.length > 60) bodySamples.shift(); }
+    }
+    // ── The body lane (world-body) ── the Look camera stands still while the follow camera drives.
+    const easing = following ? false : court.tick(dt);
     // A journey is the camera moving: it keeps frames flowing at the camera's rate and ends by dropping the place it left.
     if (journey) {
       if (journey.startedAt === null) journey.startedAt = now;
@@ -487,7 +616,10 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // moment it asks. Without this the flag stays up for the life of the
     // world and the policy is asked a question it has already answered.
     if (settling && (reduced.matches || toolOpen)) settling = false;
-    const policy = harbourFramePolicy({ reduced: reduced.matches, moving, breathing: breathing || settling, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen });
+    // `walking` is the body lane's one word to the policy: while it is true the
+    // world runs at the camera's rate, and the moment the body stands still the
+    // policy falls back through its own branches to asking for nothing.
+    const policy = harbourFramePolicy({ reduced: reduced.matches, moving, breathing: breathing || settling, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen, walking: bodyMoving });
     intervalMs = policy.intervalMs;
     let animated = false;
     if (policy.animate && pointers.size === 0) {
@@ -509,7 +641,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // The one place the stage is measured: every frame after this reads it from here.
     stageWidth = width; stageHeight = height;
     const next: Composition = width < 720 ? "phone" : "desktop";
-    if (next !== composition) { composition = next; camera.fov = fovFor(next); court.setFov(camera.fov); court.setComposition(next); }
+    if (next !== composition) { composition = next; camera.fov = fovFor(next); court.setFov(camera.fov); court.setComposition(next); follow?.setComposition(next); }
     renderer.setSize(width, height, false);
     camera.aspect = width / height; camera.updateProjectionMatrix();
     court.setAspect(camera.aspect);
@@ -534,7 +666,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if (pointers.size >= 2) {
       const [a, b] = [...pointers.values()];
       const distance = a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
-      if (pinchDistance > 0 && distance > 0) { court.zoom(Math.log(pinchDistance / distance)); dirty = true; }
+      // ── The body lane (world-body) ── a pinch pulls the follow camera in and out.
+      if (pinchDistance > 0 && distance > 0) { const delta = Math.log(pinchDistance / distance); if (following && follow) follow.zoom(delta); else court.zoom(delta); dirty = true; }
       pinchDistance = distance;
     } else if (stick && stick.id === pointer.id) {
       // A thumb on the stick walks; it never orbits. The push is clamped to
@@ -547,6 +680,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       dirty = true;
     } else if (pointer.hit.kind === "queen") pointer.samples.push({ x, y, t: performance.now() - pointer.startedAt });
     else if (isRail(pointer.hit) && callbacks.onRailDrag) { callbacks.onRailDrag(x, stageWidth || host.getBoundingClientRect().width); dirty = true; }
+    // ── The body lane (world-body) ── a drag orbits around the character while
+    // the follow camera drives. Same pixels, same gain, desktop and phone.
+    else if (following && follow) { follow.drag(dx, dy); dirty = true; }
     else { court.drag(dx, dy); dirty = true; }
     schedule();
   }
@@ -566,8 +702,15 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (pointer.hit.kind === "ground") {
         const doubled = lastGroundTap !== null && at - lastGroundTap.at < DOUBLE_TAP_MS
           && Math.hypot(pointer.startX - lastGroundTap.x, pointer.startY - lastGroundTap.y) < DOUBLE_TAP_PIXELS;
-        if (doubled) { lastGroundTap = null; applyClose(!court.closed()); moved(); }
-        else lastGroundTap = { x: pointer.startX, y: pointer.startY, at };
+        // ── The body lane (world-body) ──
+        // Tap open ground and you walk there: the phone-friendly default, and
+        // the same tap-to-go the Court has always had. The second tap of a
+        // double-tap takes the walk back and does what it always did.
+        if (doubled) { lastGroundTap = null; walker?.cancel(); applyClose(!court.closed()); moved(); }
+        else {
+          lastGroundTap = { x: pointer.startX, y: pointer.startY, at };
+          if (walker) { walker.goTo(pointer.hit.point[0], pointer.hit.point[2]); setFollowing(true); }
+        }
       } else lastGroundTap = null;
     }
     else if (pointer.hit.kind === "queen") callbacks.onGesture?.({ region: pointer.hit.region, samples: pointer.samples });
@@ -576,7 +719,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   function onWheel(event: WheelEvent): void {
     if (disposed) return;
     event.preventDefault();
-    court.zoom(Math.max(-0.5, Math.min(0.5, event.deltaY * 0.0015)));
+    const delta = Math.max(-0.5, Math.min(0.5, event.deltaY * 0.0015));
+    // ── The body lane (world-body) ── the wheel pulls the follow camera in and out.
+    if (following && follow) follow.zoom(delta); else court.zoom(delta);
     moved();
   }
 
@@ -588,7 +733,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(resize) : null; observer?.observe(host);
   const intersection = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); if (visible) { previous = performance.now(); schedule(); } else { lease.cancelFrame(frame); frame = 0; } }) : null; intersection?.observe(host);
   const visibility = () => { if (document.hidden) { lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
-  const onReduced = () => { court.setReduced(reduced.matches); schedule(); };
+  // ── The body lane (world-body) ── reduced motion cuts the follow camera
+  // rather than swinging it. The character still walks: that is the app.
+  const onReduced = () => { court.setReduced(reduced.matches); follow?.setReduced(reduced.matches); schedule(); };
   const removeLost = lease.listenCanvas("webglcontextlost", (event: Event) => { event.preventDefault(); lease.cancelFrame(frame); frame = 0; callbacks.onFailure(); });
   document.addEventListener("visibilitychange", visibility); reduced.addEventListener("change", onReduced);
   previous = performance.now();
@@ -629,9 +776,12 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
 
   return {
-    go(mode, anchor) { aim(mode, anchor); moved(); },
+    // ── The body lane (world-body) ── an explicit destination hands the view
+    // back to the Look camera first, so the flight starts from the eye you can
+    // actually see and every named pose behaves exactly as it always has.
+    go(mode, anchor) { setFollowing(false); aim(mode, anchor); moved(); },
     setReading(next) { reading = next; for (const { handle: each } of live.values()) each.update(next); dirty = true; listsDirty = true; render(); schedule(); },
-    look(next) { court.setReduced(reduced.matches); court.goTo(next); moved(); },
+    look(next) { setFollowing(false); court.setReduced(reduced.matches); court.goTo(next); moved(); },
     gesture(input) {
       court.setReduced(reduced.matches);
       if (input.kind === "orbit") court.drag(input.dx, input.dy);
@@ -639,11 +789,13 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       else court.zoom(input.delta);
       moved();
     },
-    setToolOpen(open) { toolOpen = open; schedule(); },
+    // ── The body lane (world-body) ── a tool in front of the place turns the
+    // stage into a door strip: the follow camera gives the view back for it.
+    setToolOpen(open) { toolOpen = open; if (open) setFollowing(false); schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
     invalidate() { settling = true; dirty = true; previous = performance.now(); schedule(); },
     addAnimator(animate) { animators.add(animate); listsDirty = true; schedule(); return () => { animators.delete(animate); }; },
-    restore(position) { court.restore(position); dirty = true; render(); schedule(); },
+    restore(position) { setFollowing(false); court.restore(position); dirty = true; render(); schedule(); },
     camera: () => camera.position.toArray() as [number, number, number],
     pose: () => court.pose(),
     place: () => handle,
@@ -655,6 +807,20 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       return next;
     },
     closed: () => court.closed(),
+    // ── The body lane (world-body) ──
+    body() {
+      const one = walker;
+      if (!one) return null;
+      return {
+        following: () => following,
+        follow(on) { setFollowing(on); if (!on) { aim("court"); } moved(); },
+        input(next) { bodyInput = next; if (next.forward !== 0 || next.strafe !== 0) { setFollowing(true); } dirty = true; schedule(); },
+        goTo(x, z) { one.goTo(x, z); setFollowing(true); dirty = true; schedule(); },
+        place(x, z, yaw) { one.place(x, z, yaw); dirty = true; schedule(); },
+        at() { const at = one.state(); return { x: at.x, y: at.y, z: at.z, yaw: at.yaw, speed: at.speed }; },
+        walking: () => one.walking(),
+      };
+    },
     enter(next, options = {}) {
       const from = options.from ?? placeId;
       const cut = options.reduced ?? reduced.matches;
@@ -663,7 +829,12 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (!place) return plan;
       // The place being entered is raised first, so both stand for the length of the journey.
       handle = raise(place);
+      // ── The body lane (world-body) ── a room is six units across; the body
+      // stands on the island. It is put away on the way out and raised again
+      // on the way in, and the room's own camera is never disturbed.
+      if (next !== "court") dropBody();
       placeId = next;
+      if (next === "court") raiseBody();
       // The place you arrive in declares its own idle motion; until it does, nothing moves.
       breathing = false;
       // A cut lands at once, so the destination's hold applies at once. A full
@@ -695,10 +866,13 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       observer?.disconnect(); intersection?.disconnect();
       document.removeEventListener("visibilitychange", visibility); reduced.removeEventListener("change", onReduced); removeLost();
       for (const id of [...live.keys()]) pull(id);
+      // ── The body lane (world-body) ──
+      dropBody();
       ground.dispose(); rig.dispose();
       lease.release();
       host.style.backgroundImage = "";
       delete host.dataset.renderer; delete host.dataset.houseCamera;
+      delete host.dataset.bodyAt; delete host.dataset.bodyMs;
     },
   };
 }
