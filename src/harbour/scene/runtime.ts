@@ -13,8 +13,7 @@ import { createWalker, COURT_ARRIVAL, type Walker } from "../body/walker.ts";
 // Where a body may stand in each of the eleven places: the floor, the walls,
 // what is in the way, and where you come in. All of it derived from each
 // place's own numbers (`body/places.ts`).
-import { EXIT_REACH, exitAnchors, placeArrival, placeGround, placeObstacles, placeRoom, roomFloorBox, roomReach, walksIndoors } from "../body/places.ts";
-import type { RoomBounds } from "../body/obstacles.ts";
+import { EXIT_REACH, exitAnchors, followHoldIn, placeArrival, placeGround, placeObstacles, placeRoom, roomReach, walksIndoors } from "../body/places.ts";
 import { NO_INPUT, eyeHeight, type BodyInput } from "../body/bodyModel.ts";
 import { CLOSE_HOLDS, COURT_ANCHOR_IDS, COURT_FOV, closePose, type CourtAnchor, type CourtMode, type CourtPose, type RoomHold } from "../camera/poses.ts";
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
@@ -547,29 +546,6 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    */
   let exitArmed = false;
   /**
-   * The room the eye may not leave, for the follow camera: the place's own
-   * hold, with its **target** box grown to this room's floor.
-   *
-   * The eye box is the place's own, untouched — that is the hard rule the
-   * rooms were given and this lane does not soften it. The target box is a
-   * different promise: it exists so the look-at cannot wander onto the lawn,
-   * and when the thing being looked at is your own body standing on this
-   * room's floor, the floor is the honest bound. Without this the camera stops
-   * looking at you in the corners of every placed room.
-   */
-  function followHoldFor(id: HarbourPlaceId, room: RoomBounds | null): RoomHold | null {
-    const hold = holdFor(id);
-    if (!hold || !room) return hold;
-    const floor = roomFloorBox(room);
-    return {
-      ...hold,
-      target: {
-        min: [Math.min(hold.target.min[0], floor.minX), hold.target.min[1], Math.min(hold.target.min[2], floor.minZ)] as Vec3,
-        max: [Math.max(hold.target.max[0], floor.maxX), hold.target.max[1], Math.max(hold.target.max[2], floor.maxZ)] as Vec3,
-      },
-    };
-  }
-  /**
    * Point the body at the place that is standing: its floor, its walls, what
    * is in the way, and how close the camera stands. Called when a body is
    * raised and again whenever the place under it changes.
@@ -585,7 +561,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     exitArmed = false;
     walker?.setWorld({ obstacles: placeObstacles(placeId, handle.regions(), anchors, tier), room });
     if (follow) {
-      follow.setHold(followHoldFor(placeId, room));
+      follow.setHold(followHoldIn(holdFor(placeId), room));
       const reach = walksIndoors(placeId) ? roomReach(room) : null;
       follow.setPlan(reach === null ? null : followInRoom(reach, composition));
     }

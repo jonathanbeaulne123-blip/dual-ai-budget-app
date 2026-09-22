@@ -1,4 +1,5 @@
 import type { HarbourPlaceId } from "../flag.ts";
+import type { RoomHold, Vec3 } from "../camera/poses.ts";
 import { groundHeightAt } from "../scene/ground.ts";
 import { PLACE_HOLDS, placementLift, placementOf, placementToWorld, type Anchor, type Region } from "../scene/place.ts";
 import { BODY_RADIUS, courtObstacles, obstaclesFromRegions, type Obstacle, type RoomBounds } from "./obstacles.ts";
@@ -256,4 +257,27 @@ export function roomFloorBox(room: RoomBounds): { minX: number; maxX: number; mi
     minZ = Math.min(minZ, z); maxZ = Math.max(maxZ, z);
   }
   return { minX, maxX, minZ, maxZ };
+}
+
+/**
+ * The room the **follow camera's** eye may not leave: the place's own hold,
+ * with its `target` box grown to this room's floor.
+ *
+ * The eye box is the place's own, untouched — "a room may never be seen from
+ * the lawn" is the rule the rooms were given and this lane does not soften
+ * it. The target box is a different promise: it is there so the look-at
+ * cannot wander onto the lawn, and when the thing being looked at is your own
+ * body standing on this room's floor, the floor is the honest bound. Without
+ * it the camera stops looking at you in the corners of every placed room.
+ */
+export function followHoldIn(hold: RoomHold | null, room: RoomBounds | null): RoomHold | null {
+  if (!hold || !room) return hold;
+  const floor = roomFloorBox(room);
+  return {
+    ...hold,
+    target: {
+      min: [Math.min(hold.target.min[0], floor.minX), hold.target.min[1], Math.min(hold.target.min[2], floor.minZ)] as Vec3,
+      max: [Math.max(hold.target.max[0], floor.maxX), hold.target.max[1], Math.max(hold.target.max[2], floor.maxZ)] as Vec3,
+    },
+  };
 }

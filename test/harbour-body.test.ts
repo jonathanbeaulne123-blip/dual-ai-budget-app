@@ -626,7 +626,7 @@ describe("what a body may never do", () => {
   it("writes no money and reads no storage", () => {
     // The trust boundary is absolute, and a character does not move it.
     const sources = [
-      "body/bodyModel.ts", "body/obstacles.ts", "body/figure.ts", "body/footprints.ts", "body/walker.ts", "camera/followCamera.ts",
+      "body/bodyModel.ts", "body/obstacles.ts", "body/places.ts", "body/figure.ts", "body/footprints.ts", "body/walker.ts", "camera/followCamera.ts",
     ];
     for (const name of sources) {
       const source = readFileSync(`src/harbour/${name}`, "utf8");
