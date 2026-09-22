@@ -1,0 +1,222 @@
+[
+  {
+    "width": 1440,
+    "touch": false,
+    "shots": [
+      "1440-1-landed.png",
+      "1440-2-walked.png",
+      "1440-3-unfocused-hint.png",
+      "1440-4-tabbed-focus-ring.png",
+      "1440-5-pressed-no-hint.png"
+    ],
+    "steps": {
+      "landed": {
+        "activeElement": ".harbour-world__stage",
+        "stageHasKeys": true,
+        "place": "court",
+        "tier": "full",
+        "status": "ready",
+        "coarsePointer": false,
+        "invite": null,
+        "inviteKind": null,
+        "inviteAriaHidden": null,
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.95,
+          "y": -0.05,
+          "z": 5.1,
+          "yaw": 3.141592653589793,
+          "speed": 0
+        }
+      },
+      "walked": {
+        "activeElement": ".harbour-world__stage",
+        "stageHasKeys": true,
+        "place": "court",
+        "tier": "full",
+        "status": "ready",
+        "coarsePointer": false,
+        "invite": null,
+        "inviteKind": null,
+        "inviteAriaHidden": null,
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.6059788418532699,
+          "y": -0.05,
+          "z": 4.065941848391335,
+          "yaw": -2.6417743547530406,
+          "speed": 0.48838591358902006
+        }
+      },
+      "unfocused": {
+        "activeElement": "button.sync-freshness__details",
+        "stageHasKeys": false,
+        "place": "court",
+        "tier": "full",
+        "status": "ready",
+        "coarsePointer": false,
+        "invite": "Click the island \u00b7 then W A S D walks you around it",
+        "inviteKind": "keys",
+        "inviteAriaHidden": "true",
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.6059788418532699,
+          "y": -0.05,
+          "z": 4.065941848391335,
+          "yaw": -2.6417743547530406,
+          "speed": 0.05199283392058208
+        }
+      },
+      "tabbed": {
+        "activeElement": ".harbour-world__stage",
+        "stageHasKeys": true,
+        "place": "court",
+        "tier": "full",
+        "status": "ready",
+        "coarsePointer": false,
+        "invite": null,
+        "inviteKind": null,
+        "inviteAriaHidden": null,
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.6059788418532699,
+          "y": -0.05,
+          "z": 4.065941848391335,
+          "yaw": -2.6417743547530406,
+          "speed": 0
+        }
+      },
+      "focused": {
+        "activeElement": ".harbour-world__stage",
+        "stageHasKeys": true,
+        "place": "court",
+        "tier": "full",
+        "status": "ready",
+        "coarsePointer": false,
+        "invite": null,
+        "inviteKind": null,
+        "inviteAriaHidden": null,
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.6059788418532699,
+          "y": -0.05,
+          "z": 4.065941848391335,
+          "yaw": -2.6417743547530406,
+          "speed": 0
+        }
+      }
+    },
+    "walkedUnits": 1.09,
+    "walkedWithNoClick": true
+  },
+  {
+    "width": 390,
+    "touch": true,
+    "shots": [
+      "390-1-landed.png",
+      "390-2-walked.png",
+      "390-3-unfocused-hint.png",
+      "390-4-tabbed-focus-ring.png",
+      "390-5-pressed-no-hint.png"
+    ],
+    "steps": {
+      "landed": {
+        "activeElement": ".harbour-world__stage",
+        "stageHasKeys": true,
+        "place": "court",
+        "tier": "lite",
+        "status": "ready",
+        "coarsePointer": true,
+        "invite": null,
+        "inviteKind": null,
+        "inviteAriaHidden": null,
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.95,
+          "y": -0.05,
+          "z": 5.1,
+          "yaw": 3.141592653589793,
+          "speed": 0
+        }
+      },
+      "walked": {
+        "activeElement": ".harbour-world__stage",
+        "stageHasKeys": true,
+        "place": "court",
+        "tier": "lite",
+        "status": "ready",
+        "coarsePointer": true,
+        "invite": null,
+        "inviteKind": null,
+        "inviteAriaHidden": null,
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.8875933917162461,
+          "y": -0.05,
+          "z": 4.061138293757572,
+          "yaw": -3.0816374487382956,
+          "speed": 0.48760988461362215
+        }
+      },
+      "unfocused": {
+        "activeElement": "button.sync-freshness__details",
+        "stageHasKeys": false,
+        "place": "court",
+        "tier": "lite",
+        "status": "ready",
+        "coarsePointer": true,
+        "invite": "Tap the open ground to walk there \u00b7 drag to look around you",
+        "inviteKind": "touch",
+        "inviteAriaHidden": "true",
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.8875933917162461,
+          "y": -0.05,
+          "z": 4.061138293757572,
+          "yaw": -3.0816374487382956,
+          "speed": 0.01693725560606825
+        }
+      },
+      "tabbed": {
+        "activeElement": ".harbour-world__stage",
+        "stageHasKeys": true,
+        "place": "court",
+        "tier": "lite",
+        "status": "ready",
+        "coarsePointer": true,
+        "invite": null,
+        "inviteKind": null,
+        "inviteAriaHidden": null,
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.8875933917162461,
+          "y": -0.05,
+          "z": 4.061138293757572,
+          "yaw": -3.0816374487382956,
+          "speed": 0
+        }
+      },
+      "focused": {
+        "activeElement": ".harbour-world__stage",
+        "stageHasKeys": true,
+        "place": "court",
+        "tier": "lite",
+        "status": "ready",
+        "coarsePointer": true,
+        "invite": null,
+        "inviteKind": null,
+        "inviteAriaHidden": null,
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.9344185590191083,
+          "y": -0.05,
+          "z": 4.175571391854758,
+          "yaw": 1.0549172085518088,
+          "speed": 0.930454493368191
+        }
+      }
+    },
+    "walkedUnits": 1.041,
+    "walkedWithNoClick": true
+  }
+]
