@@ -62,6 +62,16 @@
 .harbour-world__fallback { position: absolute; top: 52px; left: 50%; transform: translateX(-50%); z-index: 8; margin: 0; background: var(--paper, #f7efdc); font-size: 11px; padding: 8px 12px; border-radius: 4px; }
 .harbour-world__supported, .harbour-world__checking { position: absolute; z-index: 8; left: 50%; transform: translateX(-50%); bottom: 14px; background: color-mix(in srgb, var(--paper, #f7efdc) 90%, transparent); color: var(--ink, #332d24); font-size: 11px; padding: 5px 10px; border-radius: 12px; white-space: nowrap; max-width: calc(100% - 32px); overflow: hidden; text-overflow: ellipsis; }
 .harbour-world__checking { bottom: 42px; }
+/* ── The invitation (walk-focus) ─────────────────────────────────────────────
+      The stage hears a key only while it holds the keyboard, so until it does,
+      it says so — one quiet Whisper line, low and centred, out of the corners
+      her line, the sync words and Walk together already own. Never a surface
+      to press: `pointer-events: none` means it can sit over a twin without
+      ever being in a twin's way, and it is gone the moment the stage is
+      focused. ── */
+.harbour-world__invite { position: absolute; z-index: 8; left: 50%; transform: translateX(-50%); bottom: 104px; max-width: calc(100% - 32px); pointer-events: none; padding: 6px 14px; border-radius: 14px; background: color-mix(in srgb, var(--paper, #f7efdc) 88%, transparent); box-shadow: 0 1px 4px #17241c26; }
+.harbour-world__invite .whisper-line { max-width: none; font-size: 12px; line-height: 1.3; color: var(--ink, #332d24); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 /* One line beneath her at most (the Still Queen's rule). Empty until she is touched. */
 .harbour-world__phrase { position: absolute; z-index: 8; left: 50%; transform: translateX(-50%); bottom: 68px; margin: 0; padding: 0 12px; font: italic 500 clamp(14px, 1.6vw, 18px)/1.3 var(--display, Georgia, serif); color: var(--ink, #332d24); text-shadow: 0 1px 0 #ffffff88; pointer-events: none; white-space: nowrap; }
 .harbour-world__phrase:empty { display: none; }
@@ -108,6 +118,8 @@
   .harbour-world__supported { left: 24px; transform: none; bottom: 22px; }
   .harbour-world__checking { left: 24px; transform: none; bottom: 22px; }
   .harbour-world__supported + .harbour-world__checking { bottom: 54px; }
+  /* Her line and the sync words have gone left; the invitation takes the bottom centre they left. */
+  .harbour-world__invite { bottom: 22px; }
 }
 
 /* ── Phone ≤ 719: she fills the portrait; the compass is the bottom bar; the sync line is one thin strip. ── */
@@ -122,6 +134,8 @@
   /* The compass handle rises 22px above the bar; her line sits well above it. */
   .harbour-world__phrase { bottom: 70px; font-size: 14px; }
   .harbour-world__supported, .harbour-world__checking { bottom: 30px; }
+  /* Above her line, above the sync strip, above the compass bar's handle. */
+  .harbour-world__invite { bottom: 110px; font-size: 12px; }
 }
 @media (max-width: 359px) { .app:is([data-harbour-court], [data-harbour-door]) .sync-freshness { max-width: calc(100vw - 130px); } }
 

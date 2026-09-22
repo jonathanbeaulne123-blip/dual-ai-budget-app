@@ -11,6 +11,7 @@ import { interpretationSourceRevision, supportedAtFor, useSupportedHouseInterpre
 import { DEFAULT_QUEEN_STYLE } from "../house/queenStyle.ts";
 import type { BloomEvidence } from "../house/world/bloom.ts";
 import { useAppearance } from "../theme/ThemeProvider.tsx";
+import { Whisper } from "../theme/Whisper.tsx";
 import type { ThemeId } from "../theme/scenes.ts";
 import { useHarbourReading } from "./data/useHarbourReading.ts";
 import { HarbourFlat } from "./flat/PlaceFlat.tsx";
@@ -80,6 +81,13 @@ const PLACE_MODULES: Readonly<Record<HarbourPlaceId, () => Promise<unknown>>> = 
 };
 
 const REDUCED = "(prefers-reduced-motion: reduce)";
+/**
+ * Whether the hand on this thing is a thumb. It decides one thing only — the
+ * words of the invitation below — because a phone has no W to press, and
+ * telling somebody holding a phone to press it is the sort of thing that made
+ * the keys unreachable in the first place.
+ */
+const TOUCH = "(pointer: coarse)";
 const pulseFreshness = (gate: InterpretationGate | undefined): FundPulseFreshness => (gate?.freshness === "stale" || gate?.freshness === "offline" ? gate.freshness : "current");
 
 export default function HarbourWorld(props: HarbourWorldProps) {
@@ -107,6 +115,17 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const knob = useRef<HTMLDivElement | null>(null);
   /** The place's close hold (W7 a), for the stage's own word for it. */
   const [closed, setClosed] = useState(false);
+  /**
+   * ── The invitation (walk-focus) ──
+   * Whether the stage itself is holding the keyboard, and whether there is a
+   * body here to walk. Between them they decide whether the stage has to say
+   * out loud how to start walking. `onFocus`/`onBlur` bubble, so both are
+   * narrowed to the stage's own node: a twin focused is the stage **not**
+   * focused, which is the truth — a key pressed on a twin does not walk.
+   */
+  const [stageHasKeys, setStageHasKeys] = useState(false);
+  const [standing, setStanding] = useState(false);
+  const [touch, setTouch] = useState(readTouch);
   const toolOpen = Boolean(route.surface);
   /** One room, three places: the route's level says which one stands (BUILD_PLAN_SLICE2 §0). */
   const place: HarbourPlaceId = harbourPlaceFor(route, scope, true) ?? "court";
@@ -581,6 +600,18 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     const settle = window.setTimeout(takeKeys, 220);
     return () => window.clearTimeout(settle);
   }, [status, toolOpen, takeKeys]);
+  // A body stands from the runtime's first frame, in whichever place is
+  // standing (`scene/runtime.ts` raises one before it hands the world back),
+  // so this is asked once the place is up and again when the place changes.
+  useEffect(() => { setStanding(status === "ready" && Boolean(runtime.current?.body())); }, [status, place]);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia(TOUCH);
+    const note = () => setTouch(query.matches);
+    note();
+    query.addEventListener?.("change", note);
+    return () => query.removeEventListener?.("change", note);
+  }, []);
 
   function onStageKeyUp(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget) return;
@@ -656,13 +687,24 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   }
 
   const showFlat = status === "flat" || status === "fallback" || (status === "loading" && tier === "flat");
+  /**
+   * Say it, quietly, to the person who has just landed. It is shown only while
+   * the stage is not holding the keyboard and there is a body here to walk,
+   * and it goes the moment the stage is focused — including the moment above,
+   * where the stage focuses itself. It is painted for nobody in particular:
+   * `aria-hidden`, because the stage's own `aria-label` already says all of
+   * this and more, and saying it twice is the over-explaining the Whisper was
+   * built to stop.
+   */
+  const invite = status === "ready" && !toolOpen && standing && !stageHasKeys;
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => props.onNavigate("home", "middle");
   return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : place === "cellar" ? "The Cellar" : place === "glasshouse" ? "The Glasshouse" : place === "kitchen" ? "The Kitchen" : place === "boathouse" ? "The Boathouse" : place === "cottage" ? "Hercules’s Cottage" : place === "kiln" ? "The Kiln" : place === "campfire" ? "The Campfire" : place === "atlas" ? "The Atlas" : "The Library"}>
-    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp}>
+    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onFocus={event => { if (event.target === event.currentTarget) setStageHasKeys(true); }} onBlur={event => { if (event.target === event.currentTarget) setStageHasKeys(false); }}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => props.onNavigate("home", HARBOUR_PLACE_LEVELS[next])} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
+      {invite && <div className="harbour-world__invite" data-harbour-invite={touch ? "touch" : "keys"} aria-hidden="true"><Whisper mode="line">{inviteWords(place, touch)}</Whisper></div>}
       {stick && <div className="harbour-stick" data-harbour-stick="" aria-hidden="true" style={{ left: `${stick.x}px`, top: `${stick.y}px` }}><span className="harbour-stick__ring" /><span className="harbour-stick__knob" ref={knob as unknown as React.Ref<HTMLSpanElement>} /></div>}
       {sparkle && <div className="harbour-spark" aria-hidden="true" style={{ left: `${sparkle.x}px`, top: `${sparkle.y}px`, "--spark": sparkle.color } as CSSProperties}>{Array.from({ length: sparkle.petals }, (_, i) => <span key={i} style={{ "--i": i } as CSSProperties} />)}</div>}
       <p className="harbour-world__phrase" role="status" aria-live="polite">{phrase}</p>
@@ -696,6 +738,29 @@ export function stageWords(place: HarbourPlaceId, placeName: string, closed: boo
     : `W A S D and the arrow keys walk you around ${ground}`;
   const close = closed ? "steps back from" : "comes close to";
   return `${here}. ${keys}; Shift runs; tap ${floor} to walk there; drag to look around you; plus and minus zoom; C ${close} what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet.`;
+}
+
+/**
+ * The one line the stage says when it is not holding the keyboard: how to
+ * start. It is `stageWords` shortened to its first move — the same ground,
+ * the same keys, the same voice — because a person who has just landed needs
+ * one thing, not the whole grammar.
+ *
+ * A thumb is told the truth for a thumb. There is no W on a phone, and the
+ * ground is already tappable there; so on a coarse pointer the line is about
+ * tapping and dragging, and the keys are not mentioned at all.
+ */
+export function inviteWords(place: HarbourPlaceId, touch: boolean): string {
+  const ground = place === "court" ? "the island" : place === "campfire" ? "the fire" : "the room";
+  const floor = place === "court" ? "the open ground" : place === "campfire" ? "the open sand" : "the open floor";
+  return touch
+    ? `Tap ${floor} to walk there · drag to look around you`
+    : `Click ${ground} · then W A S D walks you around it`;
+}
+
+/** A guarded read: a window with no `matchMedia` is a window with a keyboard. */
+function readTouch(): boolean {
+  try { return typeof window.matchMedia === "function" && window.matchMedia(TOUCH).matches; } catch { return false; }
 }
 
 /** Arrow keys on a Queen twin speak the stroke grammar: up/down on the vines are weeks, on the crown botanical presence; left/right on the rim spin her. */
