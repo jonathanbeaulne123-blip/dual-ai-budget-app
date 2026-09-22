@@ -22,7 +22,7 @@
  * sixtieth land in the same place. Never `v *= 0.9` per frame.
  */
 
-import { BODY_HEIGHT, BODY_RADIUS, SHORE_RADIUS, holdAshore, pushOut, type Obstacle } from "./obstacles.ts";
+import { BODY_HEIGHT, BODY_RADIUS, SHORE_RADIUS, holdAshore, holdInRoom, pushOut, type Obstacle, type RoomBounds } from "./obstacles.ts";
 
 export { BODY_HEIGHT, BODY_RADIUS, SHORE_RADIUS };
 
@@ -71,18 +71,37 @@ export type BodyState = {
 };
 
 export type BodyWorld = {
-  /** The island's height under a point (`scene/ground.ts` `groundHeightAt`). */
+  /**
+   * The height of the floor under a point. Outdoors this is the island's own
+   * profile (`scene/ground.ts` `groundHeightAt`); indoors it is the room's
+   * floor, which is one flat plane at the height that room was built at
+   * (`body/places.ts`).
+   */
   groundHeightAt: (x: number, z: number) => number;
   obstacles: readonly Obstacle[];
   /** How far out the shore lets you walk. */
   shore?: number;
+  /**
+   * The walls, where there are walls (walk-everywhere). A room holds the body
+   * inside itself the way the shore holds it outdoors, with a gap where the
+   * doorway is; `null` — the Court — is open sky and the shore alone.
+   */
+  room?: RoomBounds | null;
 };
+
+/** Hold a point where this world lets a body stand: inside the shore, and inside the walls. */
+function holdInWorld(x: number, z: number, world: BodyWorld): { x: number; z: number; contact: string | null } {
+  const ashore = holdAshore(x, z, world.shore ?? SHORE_RADIUS);
+  if (!world.room) return { x: ashore.x, z: ashore.z, contact: ashore.ashore ? null : "shore" };
+  const held = holdInRoom(ashore.x, ashore.z, BODY_RADIUS, world.room);
+  return { x: held.x, z: held.z, contact: held.wall ?? (ashore.ashore ? null : "shore") };
+}
 
 export const wrapAngle = (a: number): number => Math.atan2(Math.sin(a), Math.cos(a));
 
 /** A body standing at a point, facing the way it is put. */
 export function createBodyState(x: number, z: number, yaw: number, world: BodyWorld): BodyState {
-  const ashore = holdAshore(x, z, world.shore ?? SHORE_RADIUS);
+  const ashore = holdInWorld(x, z, world);
   const clear = pushOut(ashore.x, ashore.z, BODY_RADIUS, world.obstacles);
   return { x: clear.x, z: clear.z, y: world.groundHeightAt(clear.x, clear.z), yaw, speed: 0, phase: 0, goal: null, stalled: 0, contact: null };
 }
@@ -115,7 +134,6 @@ export type BodyStep = {
  */
 export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: number, world: BodyWorld): BodyStep {
   const step = Math.max(0, Math.min(dt, 0.08));
-  const shore = world.shore ?? SHORE_RADIUS;
   const { fx, fz, rx, rz } = cameraBasis(theta);
   let goal = state.goal;
 
@@ -149,10 +167,10 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
   let x = state.x, z = state.z, contact: string | null = null;
   const travel = speed * step;
   if (travel > 1e-6 && (wishX !== 0 || wishZ !== 0)) {
-    const ashore = holdAshore(state.x + wishX * travel, state.z + wishZ * travel, shore);
-    const clear = pushOut(ashore.x, ashore.z, BODY_RADIUS, world.obstacles);
+    const held = holdInWorld(state.x + wishX * travel, state.z + wishZ * travel, world);
+    const clear = pushOut(held.x, held.z, BODY_RADIUS, world.obstacles);
     x = clear.x; z = clear.z;
-    contact = clear.hit ?? (ashore.ashore ? null : "shore");
+    contact = clear.hit ?? held.contact;
   }
   const walked = Math.hypot(x - state.x, z - state.z);
 
@@ -198,7 +216,7 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
 
 /** Send the body to a point. The point is held ashore and out of anything solid first, so a tap on a wall walks to its foot. */
 export function walkTo(state: BodyState, x: number, z: number, world: BodyWorld): BodyState {
-  const ashore = holdAshore(x, z, world.shore ?? SHORE_RADIUS);
+  const ashore = holdInWorld(x, z, world);
   const clear = pushOut(ashore.x, ashore.z, BODY_RADIUS, world.obstacles);
   return { ...state, goal: { x: clear.x, z: clear.z }, stalled: 0 };
 }

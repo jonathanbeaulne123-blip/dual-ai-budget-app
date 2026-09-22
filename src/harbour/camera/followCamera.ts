@@ -1,5 +1,5 @@
 import type { PerspectiveCamera } from "three";
-import { poseEye, type Composition, type CourtPose, type Vec3 } from "./poses.ts";
+import { holdPoseInRoom, poseEye, type Composition, type CourtPose, type RoomHold, type Vec3 } from "./poses.ts";
 
 /**
  * Little Harbour · the camera that walks with you.
@@ -54,6 +54,36 @@ export const FOLLOW_PHI = 1.06, FOLLOW_MIN_PHI = 0.35, FOLLOW_MAX_PHI = 1.42;
 /** The eye never dips below this above the ground under it: a follow camera must not swim. */
 export const FOLLOW_MIN_LIFT = 0.22;
 
+/* ── Indoors (walk-everywhere) ──────────────────────────────────────────────
+ * A room is about six units across. Three and a half units of follow distance
+ * puts the eye a foot outside the shell, and the shell has one-sided walls and
+ * an open ceiling — so the view from there is a doll's box, not a room.
+ *
+ * Two things fix it together, and they are different jobs. **This** is the one
+ * that keeps the camera comfortable: indoors the eye stands closer and a
+ * little higher, so it clears the furniture and sees over the near wall
+ * without being shoved there. The other is the room's own hold
+ * (`setHold`), which is a hard containment and the last word — but a camera
+ * that is *always* against its clamp feels stuck, so the goal distance comes
+ * in to meet it rather than leaving the clamp to do all the work.
+ * ────────────────────────────────────────────────────────────────────────── */
+/** How much of the room's own smaller half-width the eye stands back by. */
+export const FOLLOW_ROOM_SHARE = 0.85;
+/** And never nearer than this, however small the room: closer and you are inside your own coat. */
+export const FOLLOW_ROOM_MIN_R = 1.6;
+/** Indoors the eye stands a little more above: `phi` is measured from vertical, so a smaller number looks down more. */
+export const FOLLOW_ROOM_PHI = 0.92;
+
+/**
+ * Where the eye stands in a room whose smaller half-width is `reach`. Pure,
+ * so a test can walk every place's own bounds through it.
+ */
+export function followInRoom(reach: number, composition: Composition): { r: number; phi: number } {
+  const open = FOLLOW_DISTANCE[composition];
+  const r = clamp(reach * FOLLOW_ROOM_SHARE, Math.min(FOLLOW_ROOM_MIN_R, open), open);
+  return { r, phi: FOLLOW_ROOM_PHI };
+}
+
 /** Where the camera is following: the body's shoulders, and which way it faces. */
 export type FollowSubject = { x: number; y: number; z: number; yaw: number; speed: number };
 
@@ -68,6 +98,18 @@ export type FollowCameraOptions = {
 export type FollowCamera = {
   /** Where the body is now. Called every frame the body moves. */
   setSubject(subject: FollowSubject): void;
+  /**
+   * The room the eye may not leave (walk-everywhere), through the very same
+   * `holdPoseInRoom` every named pose and every hand on the Look camera
+   * already passes through. `null` is the Court: open sky, held by nothing.
+   *
+   * It is applied to the pose the camera *shows*, not to the pose it is
+   * easing toward, so the eye is inside the walls on every frame of the ease
+   * and not only once it has settled.
+   */
+  setHold(hold: RoomHold | null): void;
+  /** How far the eye stands back by default in the place that is standing, and how high. */
+  setPlan(plan: { r: number; phi: number } | null): void;
   /** Put the camera behind the body at once, with no easing — a cut. */
   snap(): void;
   /**
@@ -121,8 +163,13 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
   let look: [number, number, number] = [0, 0, 0];
   /** How far the view is swung from behind the body, and where it is heading. */
   let offset = 0;
-  let r = FOLLOW_DISTANCE[composition], goalR = r;
-  let phi = FOLLOW_PHI, goalPhi = phi;
+  let plan: { r: number; phi: number } | null = null;
+  const planR = () => plan?.r ?? FOLLOW_DISTANCE[composition];
+  const planPhi = () => plan?.phi ?? FOLLOW_PHI;
+  let r = planR(), goalR = r;
+  let phi = planPhi(), goalPhi = phi;
+  /** The room the eye may not leave. */
+  let hold: RoomHold | null = null;
   /** The heading the eye actually shows, eased toward `behind + offset`. */
   let theta = Math.PI;
   /** The heading a direction key is read against, and whether it is latched. */
@@ -131,18 +178,19 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
   const behind = () => wrap(subject.yaw + Math.PI + offset);
 
   function poseNow(): CourtPose {
-    return { target: [look[0], look[1], look[2]] as Vec3, r, theta, phi };
+    return holdPoseInRoom({ target: [look[0], look[1], look[2]] as Vec3, r, theta, phi }, hold);
   }
 
   function apply(): void {
-    let [ex, ey, ez] = poseEye(poseNow());
+    const shown = poseNow();
+    let [ex, ey, ez] = poseEye(shown);
     // Never below the land: on the shore's slope, and inside the lawn's hump,
     // a low tilt would otherwise put the eye under the grass.
     const floor = ground(ex, ez) + FOLLOW_MIN_LIFT;
     if (Number.isFinite(floor) && ey < floor) ey = floor;
     camera.position.set(ex, ey, ez);
     camera.up.set(0, 1, 0);
-    camera.lookAt(look[0], look[1], look[2]);
+    camera.lookAt(shown.target[0], shown.target[1], shown.target[2]);
   }
 
   function cut(): void {
@@ -157,14 +205,22 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
 
   return {
     setSubject(next) { subject = next; },
+    setHold(next) { hold = next; apply(); },
+    setPlan(next) {
+      const wasDefault = Math.abs(goalR - planR()) < 1e-6, wasLevel = Math.abs(goalPhi - planPhi()) < 1e-6;
+      plan = next;
+      // Keep the person's own zoom and tilt; a camera still at the place's own default takes the new place's.
+      if (wasDefault) goalR = planR();
+      if (wasLevel) goalPhi = planPhi();
+    },
     snap() { offset = 0; cut(); },
     seed(pose) {
       look = [pose.target[0], pose.target[1], pose.target[2]];
       theta = wrap(pose.theta);
       r = clamp(pose.r, FOLLOW_MIN_R, FOLLOW_MAX_R);
       phi = clamp(pose.phi, FOLLOW_MIN_PHI, FOLLOW_MAX_PHI);
-      goalR = FOLLOW_DISTANCE[composition];
-      goalPhi = FOLLOW_PHI;
+      goalR = planR();
+      goalPhi = planPhi();
       // Where this heading stands relative to "behind the body", so the first
       // frame does not swing: walking is what brings it round.
       offset = wrap(theta - wrap(subject.yaw + Math.PI));
@@ -187,8 +243,9 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
     setComposition(next) {
       if (next === composition) return;
       // Keep the person's own zoom: only a camera still at the default distance takes the new one.
-      if (Math.abs(goalR - FOLLOW_DISTANCE[composition]) < 1e-6) goalR = FOLLOW_DISTANCE[next];
+      const wasDefault = Math.abs(goalR - planR()) < 1e-6;
       composition = next;
+      if (wasDefault) goalR = planR();
     },
     setReduced(next) {
       reduced = next;
