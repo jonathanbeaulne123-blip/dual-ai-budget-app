@@ -497,7 +497,13 @@ describe("the runtime, standing in a room", () => {
     // was: a real DOM button, a thumb across, projected over the thing it
     // opens. A body standing in the room changes none of that.
     expect(rects.length, "the Library projected no twins with a body in it").toBeGreaterThan(3);
-    expect(rects.map((rect) => rect.id)).toContain("book");
+    // *Which* stations are in frame is not fixed, and should not be: the hall
+    // stands with its door toward the Court, and the camera travels with the
+    // body, so crossing the room brings the far end into view and takes the
+    // near end out. What must hold is the contract — everything projected is
+    // one of this room's own stations, and it is a thumb across.
+    expect(rects.every((rect) => rect.kind === "anchor" || rect.kind === "region"),
+      "the Library projected a twin that was neither a station nor a region").toBe(true);
     for (const rect of rects) {
       expect(rect.w, `${rect.id} twin width`).toBeGreaterThanOrEqual(44);
       expect(rect.h, `${rect.id} twin height`).toBeGreaterThanOrEqual(44);
@@ -524,6 +530,14 @@ describe("the runtime, standing in a room", () => {
     run(25);
     expect(body.walking(), "a tap on the open floor did not walk the body").toBe(true);
     expect(body.following(), "walking to a tap did not hand the camera to the body").toBe(true);
+    // …and the twins still hold after the walk: a body crossing the room is a
+    // new way to get somewhere, never a change to what opens anything.
+    expect(rects.length, "walking left the room with no twins at all").toBeGreaterThan(3);
+    for (const rect of rects) {
+      expect(rect.kind === "anchor" || rect.kind === "region", `${rect.id} is not a station`).toBe(true);
+      expect(rect.w, `${rect.id} twin width after walking`).toBeGreaterThanOrEqual(44);
+      expect(rect.h, `${rect.id} twin height after walking`).toBeGreaterThanOrEqual(44);
+    }
   });
 
   it("walks a tap only where the tap was the ground — a station's own hit never moves the body", () => {
