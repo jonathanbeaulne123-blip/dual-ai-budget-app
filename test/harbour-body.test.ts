@@ -19,9 +19,9 @@ import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "../src/harbour/scene/fra
 import { GROUND_RADIUS, LAWN_RADIUS, SEA_LEVEL, TERRACE_LEVEL, TERRACE_RADIUS, createGround, groundHeightAt } from "../src/harbour/scene/ground.ts";
 import { SCENE_DRESSING, type Place } from "../src/harbour/scene/place.ts";
 import { mountHarbourWorld, type HarbourRuntime } from "../src/harbour/scene/runtime.ts";
-// Entering a place needs it registered; the body is put away in a room and raised again in the Court.
+// Entering a place needs it registered; a room off the island raises a body of its own.
 import "../src/harbour/court/CourtScene.ts";
-import "../src/harbour/tower/TowerScene.ts";
+import { TOWER_LAYOUT } from "../src/harbour/tower/TowerScene.ts";
 import { readFileSync } from "node:fs";
 
 const release = vi.fn();
@@ -580,14 +580,23 @@ describe("the keys drive the body, not the camera", () => {
     expect(host.dataset.harbourBody).toBe("standing");
   });
 
-  it("puts the body away in a room and raises it again in the Court", () => {
+  it("raises a fresh body in a room off the island, and puts you down at its own way in", () => {
     world = mountHarbourWorld(host, "classic", "lite", { onReady: vi.fn(), onFailure: vi.fn(), place: anchorPlace });
     expect(world.body()).not.toBeNull();
+    // The Tower is up a stair: somewhere else, so the Court's body is put away
+    // and the Tower raises one of its own on the landing.
     world.enter("tower", { from: "court", reduced: true });
-    expect(world.body()).toBeNull();
-    expect(host.dataset.harbourBody).toBeUndefined();
+    const upstairs = world.body();
+    expect(upstairs).not.toBeNull();
+    expect(host.dataset.harbourBody).toBe("standing");
+    const stood = upstairs!.at();
+    // On the landing (floor 0 at y = 0), a step inside the stair, not out on the island.
+    expect(stood.y).toBeCloseTo(0, 6);
+    expect(Math.hypot(stood.x, stood.z)).toBeLessThan(TOWER_LAYOUT.radius);
     world.enter("court", { from: "tower", reduced: true });
     expect(world.body()).not.toBeNull();
+    // Back on the island's own profile, not a room's flat floor.
+    expect(world.body()!.at().y).toBeCloseTo(TERRACE_LEVEL, 6);
   });
 
   it("never lets your own body swallow a tap meant for a door", () => {
