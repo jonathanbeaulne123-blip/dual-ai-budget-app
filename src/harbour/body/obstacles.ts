@@ -8,11 +8,17 @@
  * The volumes are *derived*, never invented: the Court's own layout constants
  * (`court/CourtScene.ts` `COURT_LAYOUT`, `STAIRHEAD`) say where the Queen, the
  * pieces, the sundial, the mailbox, the gate and the stairhead stand, the
- * place's `Region` boxes say how wide each building is, and `scene/ground.ts`
+ * place's `Region` boxes say how wide each building is, and `scene/planting.ts`
  * says where the tree ring was planted. A body is a circle of
  * `BODY_RADIUS`; a push-out is perpendicular, so walking into a wall slides
  * along it instead of stopping dead.
  */
+
+// The one import here, and the whole of this lane's change to this file: the
+// tree ring is no longer replanted below from a copy of `ground.ts`'s loop —
+// renderer and collision now read the same plan. `scene/planting.ts` imports
+// nothing itself, so this file stays free of three.js, the DOM and the clock.
+import { plantPlan, trunkRadius } from "../scene/planting.ts";
 
 export type Circle = { kind: "circle"; x: number; z: number; r: number; id: string };
 export type Box = { kind: "box"; minX: number; minZ: number; maxX: number; maxZ: number; id: string };
@@ -102,30 +108,21 @@ export const ISLAND_BUILDINGS: readonly Obstacle[] = Object.freeze([
 ] as const);
 
 /**
- * The tree ring, replanted from the same seed `scene/ground.ts` sows it with.
+ * The tree ring, **read** from the plan `scene/ground.ts` draws.
  *
- * `ground.ts` plants its trees and shrubs from a fixed LCG (`seed = 0x7a11`,
- * four draws per plant), so the trunks can be recovered here exactly rather
- * than guessed at — and `test/harbour-body-*.test.ts` proves it against the
- * real `InstancedMesh` matrices, so the day the ring moves the collision moves
- * with it instead of drifting quietly out of true.
+ * This used to be a second copy of `ground.ts`'s planting loop, kept in step
+ * by hand and by `test/harbour-body.test.ts` checking it against the real
+ * `InstancedMesh` matrices. It is now the same `plantPlan` the renderer calls
+ * — one seed, one keep-out list, one answer — so a tree cannot be drawn in a
+ * place you can walk through, or stand in your way while not being there. That
+ * test still checks the two against each other, and now it can only fail if
+ * one of them stops reading the plan.
  *
  * Only the trunks collide. A shrub is knee-high in this village and you walk
  * through the leaves, which is what walking past a shrub feels like.
  */
 export function treeRingObstacles(tier: "full" | "lite"): Obstacle[] {
-  const TREES = tier === "full" ? 18 : 14;
-  let seed = 0x7a11;
-  const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-  const trunks: Obstacle[] = [];
-  for (let i = 0; i < TREES; i += 1) {
-    const a = Math.PI * 0.62 + (i / TREES) * Math.PI * 1.76 + (rand() - 0.5) * 0.14;
-    const r = 13 + rand() * 2.4;
-    const size = 0.5 + rand() * 0.38;
-    rand(); // the instance's spin: drawn here too so the sequence stays in step
-    trunks.push(circle(`tree-${i}`, Math.cos(a) * r, Math.sin(a) * r, 0.16 * (0.8 + size)));
-  }
-  return trunks;
+  return plantPlan(tier).trees.map((tree, i) => circle(`tree-${i}`, tree.x, tree.z, trunkRadius(tree.size)));
 }
 
 /** Everything a body standing in the Court may bump into. */

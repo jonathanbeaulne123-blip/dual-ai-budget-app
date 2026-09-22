@@ -1,0 +1,256 @@
+[
+  {
+    "shot": "after-1440-00-island-above.png",
+    "width": 1440,
+    "aim": {
+      "resident": [],
+      "focus": [
+        -0.0,
+        -0.0
+      ],
+      "pose": {
+        "target": [
+          0,
+          0.4,
+          -6
+        ],
+        "r": 22,
+        "theta": -0.0,
+        "phi": 0.4
+      },
+      "drawCalls": 361
+    },
+    "console": [
+      "error: WebSocket is already in CLOSING or CLOSED state.",
+      "error: WebSocket is already in CLOSING or CLOSED state.",
+      "error: WebSocket is already in CLOSING or CLOSED state."
+    ]
+  },
+  {
+    "shot": "after-1440-01-kiln-shell.png",
+    "width": 1440,
+    "aim": {
+      "resident": [],
+      "focus": [
+        -0.0,
+        -0.0
+      ],
+      "pose": {
+        "target": [
+          7,
+          0.9,
+          -2.9
+        ],
+        "r": 6.5,
+        "theta": -1.178035661157575,
+        "phi": 1.02
+      },
+      "drawCalls": 221
+    },
+    "console": [
+      "error: WebSocket is already in CLOSING or CLOSED state.",
+      "error: WebSocket is already in CLOSING or CLOSED state.",
+      "error: WebSocket is already in CLOSING or CLOSED state."
+    ]
+  },
+  {
+    "shot": "after-1440-02-kiln-room.png",
+    "width": 1440,
+    "aim": {
+      "resident": [
+        "kiln"
+      ],
+      "focus": [
+        7,
+        -2.9
+      ],
+      "pose": {
+        "target": [
+          7,
+          0.9,
+          -2.9
+        ],
+        "r": 7.5,
+        "theta": -1.178035661157575,
+        "phi": 1.02
+      },
+      "drawCalls": 227
+    },
+    "console": [
+      "error: WebSocket is already in CLOSING or CLOSED state.",
+      "error: WebSocket is already in CLOSING or CLOSED state.",
+      "error: WebSocket is already in CLOSING or CLOSED state."
+    ]
+  },
+  {
+    "shot": "after-1440-03-south-lawn.png",
+    "width": 1440,
+    "aim": {
+      "resident": [],
+      "focus": [
+        -0.0,
+        -0.0
+      ],
+      "pose": {
+        "target": [
+          -1,
+          0.8,
+          -8
+        ],
+        "r": 9.5,
+        "theta": 0.12435499454676144,
+        "phi": 1.04
+      },
+      "drawCalls": 212
+    },
+    "console": [
+      "error: WebSocket is already in CLOSING or CLOSED state.",
+      "error: WebSocket is already in CLOSING or CLOSED state.",
+      "error: WebSocket is already in CLOSING or CLOSED state."
+    ]
+  },
+  {
+    "shot": "after-1440-04-kitchen-cottage.png",
+    "width": 1440,
+    "aim": {
+      "resident": [],
+      "focus": [
+        -0.0,
+        -0.0
+      ],
+      "pose": {
+        "target": [
+          -8,
+          0.8,
+          -2.4
+        ],
+        "r": 7.5,
+        "theta": 1.2793395323170296,
+        "phi": 1.04
+      },
+      "drawCalls": 227
+    },
+    "console": [
+      "error: WebSocket is already in CLOSING or CLOSED state.",
+      "error: WebSocket is already in CLOSING or CLOSED state.",
+      "error: WebSocket is already in CLOSING or CLOSED state."
+    ]
+  },
+  {
+    "shot": "after-390-00-island-above.png",
+    "width": 390,
+    "aim": {
+      "resident": [],
+      "focus": [
+        -0.0,
+        -0.0
+      ],
+      "pose": {
+        "target": [
+          0,
+          0.4,
+          -6
+        ],
+        "r": 22,
+        "theta": -0.0,
+        "phi": 0.4
+      },
+      "drawCalls": 351
+    },
+    "console": []
+  },
+  {
+    "shot": "after-390-01-kiln-shell.png",
+    "width": 390,
+    "aim": {
+      "resident": [],
+      "focus": [
+        -0.0,
+        -0.0
+      ],
+      "pose": {
+        "target": [
+          7,
+          0.9,
+          -2.9
+        ],
+        "r": 6.5,
+        "theta": -1.178035661157575,
+        "phi": 1.02
+      },
+      "drawCalls": 207
+    },
+    "console": []
+  },
+  {
+    "shot": "after-390-02-kiln-room.png",
+    "width": 390,
+    "aim": {
+      "resident": [
+        "kiln"
+      ],
+      "focus": [
+        7,
+        -2.9
+      ],
+      "pose": {
+        "target": [
+          7,
+          0.9,
+          -2.9
+        ],
+        "r": 7.5,
+        "theta": -1.178035661157575,
+        "phi": 1.02
+      },
+      "drawCalls": 209
+    },
+    "console": []
+  },
+  {
+    "shot": "after-390-03-south-lawn.png",
+    "width": 390,
+    "aim": {
+      "resident": [],
+      "focus": [
+        -0.0,
+        -0.0
+      ],
+      "pose": {
+        "target": [
+          -1,
+          0.8,
+          -8
+        ],
+        "r": 9.5,
+        "theta": 0.12435499454676144,
+        "phi": 1.04
+      },
+      "drawCalls": 184
+    },
+    "console": []
+  },
+  {
+    "shot": "after-390-04-kitchen-cottage.png",
+    "width": 390,
+    "aim": {
+      "resident": [],
+      "focus": [
+        -0.0,
+        -0.0
+      ],
+      "pose": {
+        "target": [
+          -8,
+          0.8,
+          -2.4
+        ],
+        "r": 7.5,
+        "theta": 1.2793395323170296,
+        "phi": 1.04
+      },
+      "drawCalls": 203
+    },
+    "console": []
+  }
+]
