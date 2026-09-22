@@ -262,6 +262,35 @@ describe("it never takes the keyboard from somebody", () => {
   });
 });
 
+describe("a tool, put back", () => {
+  const tool: Record<string, unknown> = { route: { ...route, surface: "cellar-bills" } };
+
+  it("fills the vacuum the App leaves when it has nothing to restore", async () => {
+    await stand(tool);
+    // The harbour stands no `house-world-title`, so `putHouseObjectBack`
+    // finds nothing to give the keyboard back to and leaves it on the body.
+    const { stage } = await stand();
+    expect(document.activeElement).toBe(stage);
+    await press("w");
+    expect(inputs).toEqual([{ forward: 1, strafe: 0, run: false }]);
+  });
+
+  it("leaves the focus the App does restore, two frames later", async () => {
+    await stand(tool);
+    const { stage } = await stand();
+    expect(document.activeElement).toBe(stage);
+    // Now the App's own restore lands — later than this, as it always is.
+    // Whoever is in front holds the keyboard, and that is the App's choice.
+    const restored = document.createElement("h1");
+    restored.tabIndex = -1;
+    document.body.append(restored);
+    await act(async () => { restored.focus(); });
+    await settle();
+    expect(document.activeElement).toBe(restored);
+    expect(invite()).not.toBeNull();
+  });
+});
+
 describe("the invitation", () => {
   it("is not there while the stage holds the keyboard", async () => {
     await stand();
