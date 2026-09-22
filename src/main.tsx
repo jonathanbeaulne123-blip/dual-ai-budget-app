@@ -3,6 +3,11 @@ import { createRoot } from "react-dom/client";
 import { hydrateNativeAuthentication } from "./hearthside/nativeBootstrap.ts";
 import { NativeAuthNotice } from "./hearthside/NativeAuthNotice.tsx";
 import { KitchenErrorBoundary } from "./KitchenErrorBoundary.tsx";
+// The walking-partner lane installs itself into the harbour's feed seam. It
+// has to happen at import time, before the first render, because the provider
+// it installs is a hook (`harbour/presence/feed.ts`).
+import { installWorldPresence } from "./ledgerSync/worldPresenceMount.tsx";
+installWorldPresence();
 import { ThemeProvider } from "./theme/ThemeProvider.tsx";
 import "./styles.css";
 import "./office.css";

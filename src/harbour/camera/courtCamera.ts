@@ -118,9 +118,13 @@ export const ROAM_COURT_BOUNDS: Readonly<RoamBounds> = Object.freeze({
 const toRoam = (pose: CourtPose): RoamCam => ({ tx: pose.target[0], tz: pose.target[2], r: pose.r, theta: pose.theta, phi: pose.phi });
 const fromRoam = (cam: RoamCam, ty: number): CourtPose => ({ target: [cam.tx, ty, cam.tz], r: cam.r, theta: cam.theta, phi: cam.phi });
 
-/** Hold a pose inside the Court's bounds through the island's own clamp. */
-export function clampPose(pose: CourtPose): CourtPose {
-  return fromRoam(clampRoamCam(toRoam(pose), ROAM_COURT_BOUNDS), pose.target[1]);
+/** Hold a pose inside the Court's bounds through the island's own clamp, measured from `centre`. */
+export function clampPose(pose: CourtPose, centre: Vec3 = [0, 0, 0]): CourtPose {
+  const local = toRoam(pose);
+  local.tx -= centre[0]; local.tz -= centre[2];
+  const held = clampRoamCam(local, ROAM_COURT_BOUNDS);
+  held.tx += centre[0]; held.tz += centre[2];
+  return fromRoam(held, pose.target[1]);
 }
 
 const defaultAspect = (composition: Composition) => (composition === "phone" ? 390 / 844 : 1440 / 900);
@@ -145,7 +149,15 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
   let before: { mode: CourtMode; anchor: CourtAnchor | undefined; look: CourtLook | null; pose: CourtPose } | null = null;
   /** The standing room's hold on the camera; null in the open Court. */
   let hold: RoomHold | null = null;
-  const legal = (pose: CourtPose): CourtPose => holdPoseInRoom(clampPose(clampCourtPose(pose)), hold);
+  /**
+   * Where the Court's own radius bounds are measured from: the origin in the
+   * open Court, the standing room's centre when the room stands out on the
+   * island (`scene/place.ts` placements).
+   */
+  const centre = (): Vec3 => (hold
+    ? [(hold.target.min[0] + hold.target.max[0]) / 2, 0, (hold.target.min[2] + hold.target.max[2]) / 2]
+    : [0, 0, 0]);
+  const legal = (pose: CourtPose): CourtPose => holdPoseInRoom(clampPose(clampCourtPose(pose, centre()), centre()), hold);
   let goal: CourtPose = legal(courtPose(mode, anchor, composition, aspect, fov));
   let current: CourtPose = goal;
 

@@ -1,0 +1,655 @@
+[
+  {
+    "label": "walk-full",
+    "width": 1440,
+    "status": "ready",
+    "reducedMotion": false,
+    "coresReported": 8,
+    "frames": [
+      "walk-full-1440-00-standing.png",
+      "walk-full-1440-01.png",
+      "walk-full-1440-02.png",
+      "walk-full-1440-03.png",
+      "walk-full-1440-04.png",
+      "walk-full-1440-05.png",
+      "walk-full-1440-06.png",
+      "walk-full-1440-07.png",
+      "walk-full-1440-08.png",
+      "walk-full-1440-09.png",
+      "walk-full-1440-10-arrived.png"
+    ],
+    "samples": [
+      {
+        "tier": "full",
+        "body": "standing",
+        "at": [
+          0.95,
+          -0.05,
+          5.1,
+          3.142,
+          0
+        ],
+        "renderMs": 51.29,
+        "projectMs": 0.3,
+        "bodyMs": 0.12,
+        "drawCalls": 416,
+        "camera": [
+          5.2699,
+          6.7166,
+          9.5917
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          0.606,
+          -0.05,
+          4.067,
+          -2.64,
+          1.497
+        ],
+        "renderMs": 44.86,
+        "projectMs": 0.39,
+        "bodyMs": 0.139,
+        "drawCalls": 319,
+        "camera": [
+          2.4711,
+          2.079,
+          6.5414
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          0.145,
+          -0.05,
+          3.226,
+          -2.64,
+          1.5
+        ],
+        "renderMs": 38.25,
+        "projectMs": 0.37,
+        "bodyMs": 0.149,
+        "drawCalls": 322,
+        "camera": [
+          1.7711,
+          2.0649,
+          5.8412
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -0.433,
+          -0.05,
+          2.174,
+          -2.64,
+          1.5
+        ],
+        "renderMs": 19.07,
+        "projectMs": 0.4,
+        "bodyMs": 0.163,
+        "drawCalls": 311,
+        "camera": [
+          1.0897,
+          2.0646,
+          4.8507
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -0.952,
+          -0.05,
+          1.227,
+          -2.64,
+          1.5
+        ],
+        "renderMs": 17.82,
+        "projectMs": 0.39,
+        "bodyMs": 0.195,
+        "drawCalls": 302,
+        "camera": [
+          0.5423,
+          2.0646,
+          3.9196
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -1.414,
+          -0.05,
+          0.385,
+          -2.64,
+          1.5
+        ],
+        "renderMs": 14.12,
+        "projectMs": 0.39,
+        "bodyMs": 0.192,
+        "drawCalls": 309,
+        "camera": [
+          0.0722,
+          2.0646,
+          3.0825
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -1.934,
+          -0.05,
+          -0.562,
+          -2.64,
+          1.5
+        ],
+        "renderMs": 7.85,
+        "projectMs": 0.37,
+        "bodyMs": 0.192,
+        "drawCalls": 282,
+        "camera": [
+          -0.4519,
+          2.0646,
+          2.1382
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -2.396,
+          -0.05,
+          -1.403,
+          -2.64,
+          1.5
+        ],
+        "renderMs": 5.98,
+        "projectMs": 0.35,
+        "bodyMs": 0.187,
+        "drawCalls": 257,
+        "camera": [
+          -0.9139,
+          2.0646,
+          1.2967
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -2.915,
+          -0.05,
+          -2.35,
+          -2.64,
+          1.5
+        ],
+        "renderMs": 5.83,
+        "projectMs": 0.29,
+        "bodyMs": 0.185,
+        "drawCalls": 239,
+        "camera": [
+          -1.4335,
+          2.0646,
+          0.3499
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -3.435,
+          -0.05,
+          -3.297,
+          -2.64,
+          1.5
+        ],
+        "renderMs": 6.45,
+        "projectMs": 0.28,
+        "bodyMs": 0.16,
+        "drawCalls": 234,
+        "camera": [
+          -1.9531,
+          2.0646,
+          -0.5969
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          -3.435,
+          -0.05,
+          -3.297,
+          -2.64,
+          0
+        ],
+        "renderMs": 6.85,
+        "projectMs": 0.26,
+        "bodyMs": 0.152,
+        "drawCalls": 234,
+        "camera": [
+          -2.0078,
+          2.0646,
+          -0.6965
+        ]
+      }
+    ]
+  },
+  {
+    "label": "walk-phone",
+    "width": 390,
+    "status": "ready",
+    "reducedMotion": false,
+    "coresReported": 8,
+    "frames": [
+      "walk-phone-390-00-standing.png",
+      "walk-phone-390-01.png",
+      "walk-phone-390-02.png",
+      "walk-phone-390-03.png",
+      "walk-phone-390-04.png",
+      "walk-phone-390-05.png",
+      "walk-phone-390-06.png",
+      "walk-phone-390-07.png",
+      "walk-phone-390-08-arrived.png"
+    ],
+    "samples": [
+      {
+        "tier": "lite",
+        "body": "standing",
+        "at": [
+          0.95,
+          -0.05,
+          5.1,
+          3.142,
+          0
+        ],
+        "renderMs": 53.82,
+        "projectMs": 0.46,
+        "bodyMs": 0.074,
+        "drawCalls": 277,
+        "camera": [
+          0,
+          1.4177,
+          -2.5298
+        ]
+      },
+      {
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          0.873,
+          -0.05,
+          3.822,
+          -3.082,
+          1.498
+        ],
+        "renderMs": 15.58,
+        "projectMs": 0.59,
+        "bodyMs": 0.091,
+        "drawCalls": 290,
+        "camera": [
+          1.0733,
+          1.8303,
+          6.472
+        ]
+      },
+      {
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          0.801,
+          -0.05,
+          2.624,
+          -3.082,
+          1.5
+        ],
+        "renderMs": 15.71,
+        "projectMs": 0.62,
+        "bodyMs": 0.096,
+        "drawCalls": 282,
+        "camera": [
+          0.9714,
+          1.8202,
+          5.2626
+        ]
+      },
+      {
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          0.737,
+          -0.05,
+          1.546,
+          -3.082,
+          1.5
+        ],
+        "renderMs": 8.77,
+        "projectMs": 0.47,
+        "bodyMs": 0.09,
+        "drawCalls": 275,
+        "camera": [
+          0.8987,
+          1.8201,
+          4.1849
+        ]
+      },
+      {
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          0.894,
+          -0.05,
+          0.675,
+          -3.082,
+          1.5
+        ],
+        "renderMs": 8.32,
+        "projectMs": 0.46,
+        "bodyMs": 0.09,
+        "drawCalls": 265,
+        "camera": [
+          0.9962,
+          1.8201,
+          3.2662
+        ]
+      },
+      {
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          1.119,
+          -0.05,
+          -0.058,
+          -3.082,
+          1.5
+        ],
+        "renderMs": 8.43,
+        "projectMs": 0.46,
+        "bodyMs": 0.098,
+        "drawCalls": 236,
+        "camera": [
+          1.2596,
+          1.8201,
+          2.5784
+        ]
+      },
+      {
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          1.039,
+          -0.05,
+          -1.375,
+          -3.082,
+          1.5
+        ],
+        "renderMs": 9.17,
+        "projectMs": 0.35,
+        "bodyMs": 0.112,
+        "drawCalls": 217,
+        "camera": [
+          1.1979,
+          1.8201,
+          1.2636
+        ]
+      },
+      {
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          0.982,
+          -0.05,
+          -2.334,
+          -3.082,
+          1.5
+        ],
+        "renderMs": 8.84,
+        "projectMs": 0.32,
+        "bodyMs": 0.112,
+        "drawCalls": 207,
+        "camera": [
+          1.1403,
+          1.8201,
+          0.3054
+        ]
+      },
+      {
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          0.982,
+          -0.05,
+          -2.334,
+          -3.082,
+          0
+        ],
+        "renderMs": 8.11,
+        "projectMs": 0.32,
+        "bodyMs": 6.132,
+        "drawCalls": 206,
+        "camera": [
+          1.1335,
+          1.8201,
+          0.1919
+        ]
+      }
+    ]
+  },
+  {
+    "label": "walk-lite",
+    "width": 1440,
+    "status": "ready",
+    "reducedMotion": false,
+    "coresReported": 2,
+    "frames": [
+      "walk-lite-1440-00-standing.png",
+      "walk-lite-1440-01.png",
+      "walk-lite-1440-02.png",
+      "walk-lite-1440-03.png",
+      "walk-lite-1440-04-arrived.png"
+    ],
+    "samples": [
+      {
+        "tier": "lite",
+        "body": "standing",
+        "at": [
+          0.95,
+          -0.05,
+          5.1,
+          3.142,
+          0
+        ],
+        "renderMs": 39.89,
+        "projectMs": 0.39,
+        "bodyMs": 0.113,
+        "drawCalls": 282,
+        "camera": [
+          0,
+          1.6622,
+          -2.966
+        ]
+      },
+      {
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          0.721,
+          -0.05,
+          4.276,
+          -2.642,
+          1.49
+        ],
+        "renderMs": 39.58,
+        "projectMs": 0.36,
+        "bodyMs": 0.388,
+        "drawCalls": 310,
+        "camera": [
+          2.6667,
+          2.1025,
+          6.7186
+        ]
+      },
+      {
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          0.146,
+          -0.05,
+          3.224,
+          -2.642,
+          1.5
+        ],
+        "renderMs": 32.97,
+        "projectMs": 0.33,
+        "bodyMs": 0.343,
+        "drawCalls": 311,
+        "camera": [
+          1.7669,
+          2.0649,
+          5.8429
+        ]
+      },
+      {
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          -0.372,
+          -0.05,
+          2.276,
+          -2.642,
+          1.5
+        ],
+        "renderMs": 21.53,
+        "projectMs": 0.24,
+        "bodyMs": 0.309,
+        "drawCalls": 299,
+        "camera": [
+          1.1508,
+          2.0646,
+          4.953
+        ]
+      },
+      {
+        "tier": "lite",
+        "body": "following",
+        "at": [
+          -0.429,
+          -0.05,
+          2.171,
+          -2.642,
+          0.017
+        ],
+        "renderMs": 21.32,
+        "projectMs": 0.26,
+        "bodyMs": 0.28,
+        "drawCalls": 292,
+        "camera": [
+          1.0149,
+          2.0646,
+          4.7617
+        ]
+      }
+    ]
+  },
+  {
+    "label": "walk-reduced",
+    "width": 1440,
+    "status": "ready",
+    "reducedMotion": true,
+    "coresReported": 8,
+    "frames": [
+      "walk-reduced-1440-00-standing.png",
+      "walk-reduced-1440-01.png",
+      "walk-reduced-1440-02.png",
+      "walk-reduced-1440-03-arrived.png"
+    ],
+    "samples": [
+      {
+        "tier": "full",
+        "body": "standing",
+        "at": [
+          0.95,
+          -0.05,
+          5.1,
+          3.142,
+          0
+        ],
+        "renderMs": 38.37,
+        "projectMs": 0.51,
+        "bodyMs": 0.211,
+        "drawCalls": 416,
+        "camera": [
+          5.2548,
+          6.7215,
+          9.6036
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          0.663,
+          -0.05,
+          4.171,
+          -2.642,
+          1.494
+        ],
+        "renderMs": 32.76,
+        "projectMs": 0.43,
+        "bodyMs": 0.221,
+        "drawCalls": 324,
+        "camera": [
+          3.1586,
+          2.0646,
+          5.7745
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          0.088,
+          -0.05,
+          3.118,
+          -2.642,
+          1.5
+        ],
+        "renderMs": 13.76,
+        "projectMs": 0.37,
+        "bodyMs": 0.197,
+        "drawCalls": 316,
+        "camera": [
+          2.5842,
+          2.0646,
+          4.721
+        ]
+      },
+      {
+        "tier": "full",
+        "body": "following",
+        "at": [
+          0.088,
+          -0.05,
+          3.118,
+          -2.642,
+          0
+        ],
+        "renderMs": 18.18,
+        "projectMs": 0.64,
+        "bodyMs": 0.202,
+        "drawCalls": 316,
+        "camera": [
+          2.5842,
+          2.0646,
+          4.721
+        ]
+      }
+    ]
+  }
+]

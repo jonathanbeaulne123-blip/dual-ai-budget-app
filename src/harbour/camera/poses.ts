@@ -253,13 +253,21 @@ export function holdPoseInRoom(pose: CourtPose, hold: RoomHold | null): CourtPos
   return { target, r, theta, phi };
 }
 
-/** Hold a pose inside the Court's bounds (the same rule `clampRoamCam` applies to the live camera). */
-export function clampCourtPose(pose: CourtPose): CourtPose {
+/**
+ * Hold a pose inside the Court's bounds (the same rule `clampRoamCam` applies
+ * to the live camera). `centre` is where those bounds are measured from: the
+ * world origin in the open Court, and the standing room's own centre when a
+ * place stands somewhere else on the island — without it the camera can never
+ * look at anything more than nine units from the Queen, which is every
+ * building on the island.
+ */
+export function clampCourtPose(pose: CourtPose, centre: Vec3 = [0, 0, 0]): CourtPose {
   const [tx, ty, tz] = pose.target;
-  const d = Math.hypot(tx, tz);
+  const ox = tx - centre[0], oz = tz - centre[2];
+  const d = Math.hypot(ox, oz);
   const k = d > COURT_BOUNDS.targetRadius && d > 0 ? COURT_BOUNDS.targetRadius / d : 1;
   return {
-    target: [tx * k, ty, tz * k],
+    target: [centre[0] + ox * k, ty, centre[2] + oz * k],
     r: clamp(pose.r, COURT_BOUNDS.minR, COURT_BOUNDS.maxR),
     theta: wrap(pose.theta),
     phi: clamp(pose.phi, COURT_BOUNDS.minPhi, COURT_BOUNDS.maxPhi),

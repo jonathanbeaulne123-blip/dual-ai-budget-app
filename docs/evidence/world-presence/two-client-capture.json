@@ -1,0 +1,480 @@
+{
+  "stills": [
+    {
+      "file": "01-sam-sees-alex-standing.png",
+      "sam": {
+        "draw": "393",
+        "steps": 13,
+        "age": 1,
+        "last": {
+          "x": 0.5,
+          "z": 0.9,
+          "yaw": -2.642,
+          "moving": false
+        },
+        "line": "Alex (fictional) was here recently"
+      }
+    },
+    {
+      "file": "02-sam-sees-alex-walked.png",
+      "sam": {
+        "draw": "395",
+        "steps": 26,
+        "age": 1,
+        "last": {
+          "x": 0.5,
+          "z": 0.9,
+          "yaw": -2.642,
+          "moving": false
+        },
+        "line": "Alex (fictional) was here recently"
+      }
+    },
+    {
+      "file": "03-sam-sees-alex-walked-again.png",
+      "sam": {
+        "draw": "393",
+        "steps": 28,
+        "age": 4,
+        "last": {
+          "x": 1.639,
+          "z": 2.984,
+          "yaw": -2.642,
+          "moving": false
+        },
+        "line": "Alex (fictional) was here recently"
+      }
+    },
+    {
+      "file": "04-sam-after-alex-stops-sharing.png",
+      "sam": {
+        "draw": "393",
+        "steps": 46,
+        "age": 5839,
+        "last": {
+          "x": 1.639,
+          "z": 2.984,
+          "yaw": -2.642,
+          "moving": false
+        },
+        "line": "Alex (fictional) was here recently"
+      }
+    }
+  ],
+  "samReceived": [
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 0.5,
+      "z": 0.9,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.069,
+      "z": 1.942,
+      "yaw": -2.642,
+      "moving": true
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    },
+    {
+      "memberId": "MEM-001",
+      "deviceId": "MEM-001:DEV-8DF68AC498132DA8",
+      "placeId": "court",
+      "x": 1.639,
+      "z": 2.984,
+      "yaw": -2.642,
+      "moving": false
+    }
+  ]
+}

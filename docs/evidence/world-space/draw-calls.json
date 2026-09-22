@@ -1,0 +1,116 @@
+{
+  "desktop-1440": {
+    "none": {
+      "draw": 408,
+      "geom": 241,
+      "tex": 16,
+      "renderMs": 194.92,
+      "place": "court",
+      "resident": [],
+      "camera": "[1.957,19.092,9.7548]"
+    },
+    "kiln": {
+      "draw": 437,
+      "geom": 282,
+      "tex": 20,
+      "renderMs": 253.22,
+      "place": "court",
+      "resident": [
+        "kiln"
+      ],
+      "camera": "[1.957,19.092,9.7548]"
+    },
+    "kiln+cottage": {
+      "draw": 458,
+      "geom": 311,
+      "tex": 22,
+      "renderMs": 297.39,
+      "place": "court",
+      "resident": [
+        "cottage",
+        "kiln"
+      ],
+      "camera": "[1.957,19.092,9.7548]"
+    },
+    "library": {
+      "draw": 447,
+      "geom": 284,
+      "tex": 20,
+      "renderMs": 315.48,
+      "place": "court",
+      "resident": [
+        "library"
+      ],
+      "camera": "[1.957,19.092,9.7548]"
+    },
+    "three": {
+      "draw": 458,
+      "geom": 311,
+      "tex": 22,
+      "renderMs": 258.91,
+      "place": "court",
+      "resident": [
+        "cottage",
+        "kiln"
+      ],
+      "camera": "[1.957,19.092,9.7548]"
+    }
+  },
+  "phone-390": {
+    "none": {
+      "draw": 382,
+      "geom": 224,
+      "tex": 12,
+      "renderMs": 100.98,
+      "place": "court",
+      "resident": [],
+      "camera": "[1.957,19.092,9.7548]"
+    },
+    "kiln": {
+      "draw": 380,
+      "geom": 225,
+      "tex": 12,
+      "renderMs": 140.3,
+      "place": "court",
+      "resident": [
+        "kiln"
+      ],
+      "camera": "[1.957,19.092,9.7548]"
+    },
+    "kiln+cottage": {
+      "draw": 381,
+      "geom": 229,
+      "tex": 12,
+      "renderMs": 164.33,
+      "place": "court",
+      "resident": [
+        "cottage",
+        "kiln"
+      ],
+      "camera": "[1.957,19.092,9.7548]"
+    },
+    "library": {
+      "draw": 436,
+      "geom": 283,
+      "tex": 16,
+      "renderMs": 149.22,
+      "place": "court",
+      "resident": [
+        "library"
+      ],
+      "camera": "[1.957,19.092,9.7548]"
+    },
+    "three": {
+      "draw": 381,
+      "geom": 229,
+      "tex": 12,
+      "renderMs": 118.91,
+      "place": "court",
+      "resident": [
+        "cottage",
+        "kiln"
+      ],
+      "camera": "[1.957,19.092,9.7548]"
+    }
+  }
+}
