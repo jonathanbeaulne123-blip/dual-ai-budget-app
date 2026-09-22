@@ -1,0 +1,102 @@
+[
+  {
+    "width": 1440,
+    "touch": false,
+    "shots": [
+      "1440-base-1-landed.png",
+      "1440-base-2-walked.png"
+    ],
+    "steps": {
+      "landed": {
+        "activeElement": "document.body",
+        "stageHasKeys": false,
+        "place": "court",
+        "tier": "full",
+        "status": "ready",
+        "coarsePointer": false,
+        "invite": null,
+        "inviteKind": null,
+        "inviteAriaHidden": null,
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.95,
+          "y": -0.05,
+          "z": 5.1,
+          "yaw": 3.141592653589793,
+          "speed": 0
+        }
+      },
+      "walked": {
+        "activeElement": "document.body",
+        "stageHasKeys": false,
+        "place": "court",
+        "tier": "full",
+        "status": "ready",
+        "coarsePointer": false,
+        "invite": null,
+        "inviteKind": null,
+        "inviteAriaHidden": null,
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.95,
+          "y": -0.05,
+          "z": 5.1,
+          "yaw": 3.141592653589793,
+          "speed": 0
+        }
+      }
+    },
+    "walkedUnits": 0.0,
+    "walkedWithNoClick": false
+  },
+  {
+    "width": 390,
+    "touch": true,
+    "shots": [
+      "390-base-1-landed.png",
+      "390-base-2-walked.png"
+    ],
+    "steps": {
+      "landed": {
+        "activeElement": "document.body",
+        "stageHasKeys": false,
+        "place": "court",
+        "tier": "lite",
+        "status": "ready",
+        "coarsePointer": true,
+        "invite": null,
+        "inviteKind": null,
+        "inviteAriaHidden": null,
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.95,
+          "y": -0.05,
+          "z": 5.1,
+          "yaw": 3.141592653589793,
+          "speed": 0
+        }
+      },
+      "walked": {
+        "activeElement": "document.body",
+        "stageHasKeys": false,
+        "place": "court",
+        "tier": "lite",
+        "status": "ready",
+        "coarsePointer": true,
+        "invite": null,
+        "inviteKind": null,
+        "inviteAriaHidden": null,
+        "stageTabIndex": "0",
+        "body": {
+          "x": 0.95,
+          "y": -0.05,
+          "z": 5.1,
+          "yaw": 3.141592653589793,
+          "speed": 0
+        }
+      }
+    },
+    "walkedUnits": 0.0,
+    "walkedWithNoClick": false
+  }
+]
