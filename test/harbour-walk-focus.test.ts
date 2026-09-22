@@ -341,3 +341,22 @@ describe("the invitation", () => {
     }
   });
 });
+
+describe("being hidden is not a dead end", () => {
+  it("offers a way back when the coarse opt-out is on, and never when it is off", () => {
+    const source = readFileSync("src/harbour/presence/WalkTogether.tsx", "utf8");
+    // The sentence that names the state, and the control that undoes it, sit together.
+    expect(source).toContain("You are hidden in this house, so nothing is shared.");
+    expect(source).toMatch(/softPresenceOptedOut && props\.onUnhide/);
+    expect(source).toContain("Stop hiding");
+    // The App owns the setting; the switch only asks. It is never called on its own.
+    expect(source).not.toMatch(/setSoftPresenceOptOut\(/);
+  });
+
+  it("is wired from the App through the world, so the button is not decorative", () => {
+    expect(readFileSync("src/App.tsx", "utf8")).toMatch(/onUnhide=\{\(\)=>applySoftPresenceOptOut\(false\)\}/);
+    const world = readFileSync("src/harbour/HarbourWorld.tsx", "utf8");
+    expect(world).toMatch(/onUnhide\?: \(\) => void/);
+    expect(world).toMatch(/onUnhide=\{onUnhide\}/);
+  });
+});

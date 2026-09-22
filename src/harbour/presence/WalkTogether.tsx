@@ -43,6 +43,13 @@ export type WalkTogetherProps = {
   placeName: string;
   /** The coarse opt-out from `softPresence.ts`. */
   softPresenceOptedOut: boolean;
+  /**
+   * Undo that coarse opt-out from here. Being hidden is a choice a person made
+   * in another room of the app, and the honest thing is to say so — but a
+   * sentence that names a setting and does not offer it is a dead end, and
+   * this switch is exactly where somebody finds out they are hidden.
+   */
+  onUnhide?: () => void;
   /** There is somebody to walk with. */
   hasPartner: boolean;
 };
@@ -62,6 +69,12 @@ const wrap: CSSProperties = {
   maxWidth: 240, pointerEvents: "auto",
 };
 const row: CSSProperties = { display: "flex", alignItems: "center", gap: 7, cursor: "pointer" };
+const unhide: CSSProperties = {
+  marginTop: 4, alignSelf: "flex-start", cursor: "pointer",
+  font: "inherit", fontWeight: 600, padding: "4px 10px", borderRadius: 8,
+  border: "1px solid color-mix(in srgb, currentColor 28%, transparent)",
+  background: "transparent", color: "inherit",
+};
 const note: CSSProperties = { opacity: 0.72 };
 
 export function WalkTogether(props: WalkTogetherProps) {
@@ -110,6 +123,11 @@ export function WalkTogether(props: WalkTogetherProps) {
           ? "Your place on the island is shared while this world is open."
           : "Your place on the island stays yours."}
     </span>
+    {softPresenceOptedOut && props.onUnhide && (
+      <button type="button" style={unhide} onClick={() => props.onUnhide?.()}>
+        Stop hiding
+      </button>
+    )}
     {line && <span data-walk-together-line="" style={note}>{line}</span>}
   </div>;
 }
