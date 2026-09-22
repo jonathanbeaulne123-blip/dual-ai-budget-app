@@ -323,7 +323,9 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     tall.position.set(0, 0.85, 0.88); hall.add(tall);
     hall.traverse((node) => { node.userData.anchor = "library-hall"; });
     hall.position.set(LIBRARY_SPOT[0], libraryY, LIBRARY_SPOT[1]);
-    hall.rotation.y = Math.atan2(-LIBRARY_SPOT[0], -LIBRARY_SPOT[1]) + Math.PI;
+    // The door is on the shell's +z face, and `atan2(-x, -z)` turns +z toward
+    // the Court — so this is the yaw that puts the door where you walk up to it.
+    hall.rotation.y = Math.atan2(-LIBRARY_SPOT[0], -LIBRARY_SPOT[1]);
     group.add(hall);
   }
   const SHED_SPOT: readonly [number, number] = [-8.2, -9.4];
@@ -365,7 +367,8 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     warmWindow.position.set(-0.3, 0.6, 0.68); cottage.add(warmWindow);
     cottage.traverse((node) => { node.userData.anchor = "kitchen-cottage"; });
     cottage.position.set(COTTAGE_SPOT[0], cottageY, COTTAGE_SPOT[1]);
-    cottage.rotation.y = Math.atan2(-COTTAGE_SPOT[0], -COTTAGE_SPOT[1]) + Math.PI;
+    // The lit window and the door are on +z: turn them toward the Court.
+    cottage.rotation.y = Math.atan2(-COTTAGE_SPOT[0], -COTTAGE_SPOT[1]);
     group.add(cottage);
   }
 
@@ -373,8 +376,8 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
   //    the island that is his and not ours. Small, crooked and charming: a
   //    settled body, a roof that sags off true, a chimney leaning with it, a
   //    lit window — and, beside the person's door, a cat-sized one of his own.
-  //    Unlike its older neighbours it is turned to *face* the Court, so the two
-  //    doors read from the terrace.
+  //    Like every other building on the island it is turned to *face* the
+  //    Court, so the two doors read from the terrace.
   const HERCULES_COTTAGE: readonly [number, number] = [9.8, 5.6];
   const herculesCottageY = groundHeightAt(HERCULES_COTTAGE[0], HERCULES_COTTAGE[1]);
   {
@@ -441,8 +444,9 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     glow.position.set(-0.36, 0.5, 0.74); shed.add(glow);
     shed.traverse((node) => { node.userData.anchor = "kiln-house"; });
     shed.position.set(KILN_SPOT[0], kilnY, KILN_SPOT[1]);
-    // Face the door toward the Court.
-    shed.rotation.y = Math.atan2(-KILN_SPOT[0], -KILN_SPOT[1]) + Math.PI;
+    // Face the door toward the Court: the door and the firemouth's glow are
+    // on +z, and `atan2(-x, -z)` is the yaw that turns +z toward the origin.
+    shed.rotation.y = Math.atan2(-KILN_SPOT[0], -KILN_SPOT[1]);
     group.add(shed);
   }
 
@@ -468,8 +472,8 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     porch.position.set(0, 0.06, 1.0); boathouse.add(porch);
     boathouse.traverse((node) => { node.userData.anchor = "boathouse"; });
     boathouse.position.set(BOATHOUSE[0], boathouseY, BOATHOUSE[1]);
-    // Face the door toward the court.
-    boathouse.rotation.y = Math.atan2(-BOATHOUSE[0], -BOATHOUSE[1]) + Math.PI;
+    // Face the door and its porch deck toward the Court.
+    boathouse.rotation.y = Math.atan2(-BOATHOUSE[0], -BOATHOUSE[1]);
     group.add(boathouse);
   }
   // ── The Campfire (LITTLE_HARBOUR_v2 §6): the one ritual that needs two

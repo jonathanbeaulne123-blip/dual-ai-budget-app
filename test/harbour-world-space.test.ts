@@ -56,9 +56,32 @@ describe("a place's placement is its exterior's spot", () => {
     expect(PLACE_PLACEMENTS.library!.spot).toEqual(spotIn("LIBRARY_SPOT"));
     expect(PLACE_PLACEMENTS.cottage!.spot).toEqual(spotIn("HERCULES_COTTAGE"));
     expect(PLACE_PLACEMENTS.kiln!.spot).toEqual(spotIn("KILN_SPOT"));
-    expect(PLACE_PLACEMENTS.library!.yaw).toBeCloseTo(yawIn("LIBRARY_SPOT", true), 12);
+    expect(PLACE_PLACEMENTS.library!.yaw).toBeCloseTo(yawIn("LIBRARY_SPOT", false), 12);
     expect(PLACE_PLACEMENTS.cottage!.yaw).toBeCloseTo(yawIn("HERCULES_COTTAGE", false), 12);
-    expect(PLACE_PLACEMENTS.kiln!.yaw).toBeCloseTo(yawIn("KILN_SPOT", true), 12);
+    expect(PLACE_PLACEMENTS.kiln!.yaw).toBeCloseTo(yawIn("KILN_SPOT", false), 12);
+  });
+
+  /**
+   * Every building's door faces the Court. A shell's door is modelled on its
+   * +z face, and a yaw of `atan2(-x, -z)` turns +z toward the origin — so the
+   * test is simply that the turned +z points back down the line to the Court,
+   * for every building the Court stands, not only the placed three. A `+ π`
+   * anywhere in that list points a door at the sea, which is what it used to do
+   * for the Library, the Kitchen's cottage, the Kiln and the Boathouse.
+   */
+  it("turns every building's door toward the Court", () => {
+    const shells: [string, string][] = [
+      ["LIBRARY_SPOT", "library-hall"], ["COTTAGE_SPOT", "kitchen-cottage"], ["HERCULES_COTTAGE", "hercules-cottage"],
+      ["KILN_SPOT", "kiln-house"], ["BOATHOUSE", "boathouse"],
+    ];
+    for (const [constant, name] of shells) {
+      const [x, z] = spotIn(constant);
+      const yaw = yawIn(constant, false);
+      // The door's own normal, the shell's +z turned by the yaw.
+      const normal = [Math.sin(yaw), Math.cos(yaw)] as const;
+      const toCourt = [-x / Math.hypot(x, z), -z / Math.hypot(x, z)] as const;
+      expect(normal[0] * toCourt[0] + normal[1] * toCourt[1], `${name}'s door faces the Court`).toBeCloseTo(1, 9);
+    }
   });
 
   it("names the exterior shell the Court builds, so the two can never be drawn at once", () => {
