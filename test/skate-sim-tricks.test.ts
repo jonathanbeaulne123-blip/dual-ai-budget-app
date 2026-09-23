@@ -4,6 +4,8 @@ import { block, blockEdge, kicker, makeField, quarterPipe, stairs } from '../src
 import { selectGrind, wantedContact } from '../src/harbour/skate/sim/grind.ts';
 import { SKATE_TUNING } from '../src/harbour/skate/sim/tuning.ts';
 import { all, first, GRINDS, intent, kick, kinds, makeSim, ride } from '../src/harbour/skate/sim/testKit.ts';
+import { createSkateSim } from '../src/harbour/skate/sim/index.ts';
+import { SKATE_FLIPS, SKATE_GRABS, SKATE_GRINDS } from '../src/harbour/skate/tricks/catalog.ts';
 import type { SkateIntent } from '../src/harbour/skate/contract.ts';
 
 const flat = makeField({});
@@ -140,6 +142,37 @@ describe('skate sim · flips are caught, not assumed', () => {
     expect(late.flipId).toBe('kickflip');
     expect(first(r.events, 'flip-caught')).toBeDefined();
     expect(first(r.events, 'bail')).toBeUndefined();
+  });
+
+  it('flick-it upgrades: a double read after the pop keeps flipping from where the kickflip got to', () => {
+    const real = { flips: SKATE_FLIPS, grinds: SKATE_GRINDS, grabs: SKATE_GRABS };
+    // Off a 2.4 drop so there is air for a double.
+    const field = makeField({ pieces: [block({ id: 'ledge', x: 0, z: -4, yaw: 0, halfX: 2, halfZ: 4, h: 2.4 })] });
+    const run = (lateAt: number, lateId: string) => {
+      const sim = createSkateSim(field, real, { x: 0, z: -1, yaw: 0, stance: 'regular' });
+      kick(sim, { vz: 5, y: 2.4 });
+      let u = -1;
+      const r = ride(sim, 1.6, (t, p) => {
+        if (Math.abs(t - lateAt) < 1e-9) u = p.trick?.u ?? -1;
+        return intent({ pop: t === 0 ? { from: 'tail', flipId: 'kickflip', strength: 0.8 } : null, lateFlip: Math.abs(t - lateAt) < 1e-9 ? lateId : null, crouch: t > 0.5 ? 1 : 0 });
+      }, 60, true);
+      return { r, u };
+    };
+    const up = run(0.25, 'double-kickflip');
+    const after = up.r.frames.find((f) => f.t > 0.25 + 1e-9 && f.p.trick)!;
+    expect(after.p.trick!.flipId).toBe('double-kickflip');
+    // Same board turns: half of a double where the kickflip had got to (plus a frame of flipping).
+    expect(after.p.trick!.u).toBeGreaterThan(up.u / 2);
+    expect(after.p.trick!.u).toBeLessThan(up.u / 2 + 0.05);
+    expect(kinds(up.r.events).filter((k) => k === 'flip-caught')).toEqual(['flip-caught']);
+    expect(all(up.r.events, 'flip-caught')[0]!.flipId).toBe('double-kickflip');
+    expect(first(up.r.events, 'bail')).toBeUndefined();
+    // Not a continuation, after the catch: a late flip of its own.
+    const late = run(0.45, 'heelflip');
+    expect(all(late.r.events, 'flip-caught').map((e) => e.flipId)).toEqual(['kickflip', 'heelflip']);
+    // …unless it lands within FLIP_CORRECT_TIME (a corner corrected a beat late): replaced.
+    const fix = run(0.1, 'heelflip');
+    expect(all(fix.r.events, 'flip-caught').map((e) => e.flipId)).toEqual(['heelflip']);
   });
 
   it('a grab eases in, emits start/end, and slows the spin', () => {

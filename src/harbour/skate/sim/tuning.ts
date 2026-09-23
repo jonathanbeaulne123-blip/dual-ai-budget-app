@@ -122,6 +122,12 @@ export const SKATE_TUNING = {
   /** Flip speed = (FLIP_RATE_BASE + FLIP_RATE_STRENGTH·strength)/duration. */
   FLIP_RATE_BASE: 0.85,
   FLIP_RATE_STRENGTH: 0.3,
+  /**
+   * Flick-it pops when the flick lands, not on release; a flip that lands within this of the
+   * pop replaces the popped one (a corner corrected a beat late). A flip whose gesture carries
+   * on from the popped one (double, triple) replaces it any time before the catch. Feel pass.
+   */
+  FLIP_CORRECT_TIME: 0.15,
   /** Late catch window in u (scaled by 1 − .6·difficulty). */
   CATCH_WINDOW: 0.12,
   GRAB_IN: 7,

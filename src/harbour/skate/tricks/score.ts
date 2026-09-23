@@ -7,7 +7,8 @@
  * Names compose the way a skater says them:
  *   [Switch] [Fakie] [Nollie] [Frontside|Backside 180|360|540…] <Flip> [<Grab> (1.2s)] [Late <Flip>] [Revert]
  *   "Nollie Backside 180 Heelflip", "Fakie Frontside 360", "Switch Varial Kickflip", "Indy (1.2s)",
- *   "Kickflip to Manual", "Backside Smith Grind", "50-50 to Nosegrind", "Rock to Fakie", "Gap".
+ *   "Kickflip to Manual", "Backside Smith Grind", "Ollie to 50-50", "Kickflip to Frontside Boardslide",
+ *   "50-50 to Nosegrind", "Rock to Fakie", "Gap".
  * Stance prefixes come straight from the sim's pop event: `from:'nose'` = Nollie
  * (the up-then-down flick), `fakie` / `switch` flags = Fakie / Switch.
  * Grind Frontside/Backside needs an optional `frontside:boolean` on the
@@ -22,6 +23,8 @@
 import type {ScoreLine,ScoreOutcome,ScoredTrick,SkateSimEvent,Stance} from '../contract.ts';
 import {OLLIE_POINTS,skateCatalogs,type SkateCatalogs} from './catalog.ts';
 
+const OLLIE_GESTURE=['tail','nose'] as const;
+
 export const SCORE_TUNING={
   keepAliveS:1.5,maxMultiplier:10,repeatDecay:.5,repeatFloor:.1,
   /** Grabs held at least this long show their time: "Indy (1.2s)". */
@@ -30,10 +33,12 @@ export const SCORE_TUNING={
   /** Land → manual within this = "X to Manual"; land → revert within revertLinkS = "X Revert"; grind transfer window. */
   linkS:.3,revertLinkS:.45,transferS:.8,
   airOnlyMinS:.55,powerslideMinS:.4,
+  /** A late flip this soon after the pop is the pop's own flip, read a beat late (matches the sim's FLIP_CORRECT_TIME). */
+  upgradeS:.15,
 } as const;
 
 type Ev<K extends SkateSimEvent['kind']>=Extract<SkateSimEvent,{kind:K}>;
-type Air={from:'tail'|'nose'|null;switch:boolean;fakie:boolean;flipId:string|null;height:number;late:string[];caught:Map<string,number>;grabs:{id:string;seconds:number}[];open:string|null};
+type Air={from:'tail'|'nose'|null;switch:boolean;fakie:boolean;flipId:string|null;height:number;late:string[];caught:Map<string,number>;grabs:{id:string;seconds:number}[];open:string|null;popT:number};
 type Raw={label:string;raw:number};
 type Grind={chain:string[];raw:number};
 
@@ -121,7 +126,18 @@ export function createSkateScore(o:{stance?:Stance;catalogs?:SkateCatalogs}={}):
   const mainGrab=(a:Air)=>a.grabs.reduce<{id:string;seconds:number}|null>((b,g)=>!b||g.seconds>b.seconds?g:b,null);
   const labelOf=(a:Air,spinDeg:number)=>airLabel({prefix:stancePrefix(a),spinDeg,flipId:a.flipId,late:a.late,grab:mainGrab(a)},cat);
   const notable=(a:Air,spinDeg:number,airTime:number)=>a.from!==null||a.flipId!==null||a.late.length>0||a.grabs.length>0||Math.abs(spinDeg)>=150||airTime>=T.airOnlyMinS;
-  const openAir=(e:{switch?:boolean;fakie?:boolean}={}):Air=>({from:null,switch:Boolean(e.switch),fakie:Boolean(e.fakie),flipId:null,height:0,late:[],caught:new Map(),grabs:[],open:null});
+  const openAir=(e:{switch?:boolean;fakie?:boolean}={}):Air=>({from:null,switch:Boolean(e.switch),fakie:Boolean(e.fakie),flipId:null,height:0,late:[],caught:new Map(),grabs:[],open:null,popT:NaN});
+  /**
+   * Keyboard flick-it pops when the flick lands; if the gesture goes on, the sim sends the longer
+   * reading as a late flip. It is the POPPED trick (not "Late …") when it lands within upgradeS of
+   * the last reading while still turning, or when its gesture carries on from it (kickflip → double).
+   */
+  const isUpgrade=(a:Air,e:Ev<'late-flip'>)=>{
+    if(a.from===null||a.late.length||a.grabs.length||a.open)return false;
+    if(e.t-a.popT<=T.upgradeS&&!(a.flipId&&a.caught.has(a.flipId)))return true;
+    const g0=a.flipId?cat.flips.get(a.flipId)?.gesture:OLLIE_GESTURE,g1=cat.flips.get(e.flipId)?.gesture;
+    return !!g0&&!!g1&&g0.length<g1.length&&g0.every((d,i)=>g1[i]===d);
+  };
 
   function onLand(e:Ev<'land'>){
     const a=air??openAir(e);air=null;
@@ -141,21 +157,23 @@ export function createSkateScore(o:{stance?:Stance;catalogs?:SkateCatalogs}={}):
     clock=Math.max(clock,e.t);
     switch(e.kind){
       case 'pop':{
-        air=openAir(e);air.from=e.from;air.flipId=e.flipId;air.height=e.height;
+        air=openAir(e);air.from=e.from;air.flipId=e.flipId;air.height=e.height;air.popT=e.t;
         break;
       }
-      case 'late-flip':(air??=openAir()).late.push(e.flipId);break;
+      case 'late-flip':{const a=air??=openAir();if(isUpgrade(a,e)){a.flipId=e.flipId;a.popT=e.t;}else a.late.push(e.flipId);break;}
       case 'flip-caught':(air??=openAir()).caught.set(e.flipId,Math.max(0,Math.min(1,e.quality)));break;
       case 'grab-start':(air??=openAir()).open=e.grabId;break;
       case 'grab-end':{const a=air??=openAir();a.grabs.push({id:e.grabId,seconds:e.seconds});if(a.open===e.grabId)a.open=null;break;}
       case 'land':onLand(e);break;
       case 'grind-start':{
-        if(air&&(air.flipId||air.late.length||air.grabs.length))add(labelOf(air,0),airPoints(air,null),e.t);
+        // Popped onto it: the air is the way in, one trick — "Ollie to 50-50", "Kickflip to Boardslide".
+        const into=air&&(air.from!==null||air.flipId||air.late.length||air.grabs.length)?air:null;
         air=null;
         const def=cat.grinds.get(e.grindId),name=def?.name??e.grindId,side=(e as {frontside?:boolean}).frontside;
         const chained=pendingChain&&e.t-pendingChain.at<=T.transferS?pendingChain.chain:null;pendingChain=null;
-        const label=chained?name:join(stancePrefix({switch:e.switch,fakie:e.fakie}),side===undefined?'':side?'Frontside':'Backside',name);
-        grind=chained??{chain:[],raw:0};grind.chain.push(label);
+        let label=chained?name:join(stancePrefix({switch:e.switch,fakie:e.fakie}),side===undefined?'':side?'Frontside':'Backside',name);
+        if(into&&!chained)label=`${labelOf(into,0)} to ${label}`;
+        grind=chained??{chain:[],raw:into?airPoints(into,null):0};grind.chain.push(label);
         break;
       }
       case 'grind-end':{

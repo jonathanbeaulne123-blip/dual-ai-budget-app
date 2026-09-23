@@ -80,7 +80,7 @@ export type SkateSim = {
 
 type Mode = 'ground' | 'air' | 'grind' | 'bail' | 'recover';
 type PopReq = { from: 'tail' | 'nose'; flipId: string | null; strength: number; age: number };
-type TrickS = { flipId: string; u: number; rate: number; caught: boolean; difficulty: number; yawTurns: number };
+type TrickS = { flipId: string; u: number; rate: number; caught: boolean; difficulty: number; yawTurns: number; at: number };
 type GrabS = { grabId: string; weight: number; seconds: number; on: boolean };
 type GrindS = {
   li: number; s: number; dir: 1 | -1; speed: number; defId: string; gid: string; seconds: number; distance: number;
@@ -334,9 +334,22 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     if (!def || !(def.duration > 0)) return false;
     S.trick = {
       flipId, u: 0, rate: (T.FLIP_RATE_BASE + T.FLIP_RATE_STRENGTH * clamp(strength, 0, 1)) / def.duration,
-      caught: false, difficulty: clamp(fin(def.difficulty), 0, 1), yawTurns: Math.round(fin(def.yaw)),
+      caught: false, difficulty: clamp(fin(def.difficulty), 0, 1), yawTurns: Math.round(fin(def.yaw)), at: S.airTime,
     };
     return true;
+  }
+
+  /**
+   * A late flip that is really the popped flip read further on: its gesture carries on from the
+   * popped one (kickflip → double kickflip → triple, even just after the catch), or it lands
+   * within FLIP_CORRECT_TIME of the last reading while still turning (a sloppy corner
+   * corrected). Keyboard flick-it pops on the flick, not on the release.
+   */
+  function upgrades(tr: TrickS, toId: string): boolean {
+    if (tr.flipId === toId) return false;
+    if (!tr.caught && S.airTime - fin(tr.at, -9) <= T.FLIP_CORRECT_TIME) return true;
+    const a = flips.get(tr.flipId)?.gesture, b = flips.get(toId)?.gesture;
+    return !!a && !!b && a.length < b.length && a.every((d, i) => b[i] === d);
   }
 
   /** Apply a flip's board-yaw half turns to the rest frame when it is caught. */
@@ -804,7 +817,17 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       doPop(p, 0, 1, 0, false);
       if (keepVert) { S.vert = true; S.lipYaw = lipYaw; S.lipY = lipY; }
     }
-    if (S.pendLate && (!S.trick || S.trick.caught) && !(S.grab && S.grab.on)) {
+    if (S.pendLate && S.trick && !(S.grab && S.grab.on) && upgrades(S.trick, S.pendLate.id)) {
+      // The flick went on after it popped (a double, a corner corrected a beat late): the board
+      // keeps flipping as the longer trick from where it has got to (same turns so far).
+      const tr = S.trick, from = flips.get(tr.flipId), id = S.pendLate.id; S.pendLate = null;
+      const u = tr.caught ? 1 : tr.u;
+      if (startTrick(id, 0.7)) {
+        const to = flips.get(id)!, rf = Math.abs(fin(from?.roll)), rt = Math.abs(fin(to.roll));
+        S.trick!.u = rf > 0 && rt > 0 ? clamp(u * rf / rt, 0, 0.95) : S.airTime <= T.FLIP_CORRECT_TIME ? u : 0;
+        emit({ t: S.t, kind: 'late-flip', flipId: id });
+      }
+    } else if (S.pendLate && (!S.trick || S.trick.caught) && !(S.grab && S.grab.on)) {
       const id = S.pendLate.id; S.pendLate = null;
       if (startTrick(id, 0.7)) emit({ t: S.t, kind: 'late-flip', flipId: id });
     }

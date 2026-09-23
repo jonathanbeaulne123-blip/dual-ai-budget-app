@@ -27,6 +27,7 @@ export const FLICK_DIRS:readonly FlickDir[]=['nose','nose-toe','toe','tail-toe',
 const DIR_INDEX:Readonly<Record<FlickDir,number>>={nose:0,'nose-toe':1,toe:2,'tail-toe':3,tail:4,'tail-heel':5,heel:6,'nose-heel':7};
 const TAIL=4,NOSE=0,EIGHTH=Math.PI/4;
 const isTerminal=(k:number)=>k===NOSE||k===1||k===7;
+const isTailDiag=(k:number)=>k===TAIL-1||k===TAIL+1;
 const mirrorY=(k:number)=>(12-k)%8;
 const wrapSteps=(d:number)=>((d%8)+12)%8-4; // −4..3
 
@@ -39,6 +40,12 @@ export type FlickTiming={
   settleMs:number;
   /** Holding still on a nose-side sector this long completes the gesture. */
   dwellMs:number;
+  /**
+   * Pop the moment a flick lands on a whole trick instead of on the release (keys: a key is held
+   * for however long a finger likes, so waiting for its release made the pop late by 60–260 ms).
+   * Further readings (a double, a corrected corner) follow as flip upgrades.
+   */
+  popOnFlick?:boolean;
   /** Stick seen back in the centre this long (across samples, or after an explicit release) = released: the gesture completes. */
   restMs:number;
   /** With no new samples arriving, wait this much longer before trusting a lone centre sample (a fast flick can cross the centre between two 60 Hz samples). */
@@ -49,13 +56,13 @@ export type FlickTiming={
 };
 
 export const FLICK_TUNING={
-  rimIn:.78,rimOut:.64,rest:.22,shortFlick:.6,
+  rimIn:.78,rimOut:.64,rest:.22,restStill:.07,shortFlick:.6,sweepOut:.4,
   loadIn:.7,loadOut:.56,loadCone:38*Math.PI/180,
   manualMin:.2,manualMax:.6,manualExitMin:.12,manualExitMax:.68,manualCone:42*Math.PI/180,manualMs:110,manualCarryMs:200,
   sectorHysteresis:6*Math.PI/180,
-  analog:{flickMs:190,stepMs:140,settleMs:70,dwellMs:90,restMs:24,restGraceMs:40,rearmMs:240,maxGestureMs:1300} satisfies FlickTiming,
+  analog:{flickMs:190,stepMs:140,settleMs:70,dwellMs:180,restMs:24,restGraceMs:40,rearmMs:240,maxGestureMs:1300} satisfies FlickTiming,
   /** Keyboard/d-pad: positions jump, so windows are looser (see keyboard.ts for chord + latch). */
-  digital:{flickMs:260,stepMs:240,settleMs:90,dwellMs:140,restMs:12,restGraceMs:0,rearmMs:340,maxGestureMs:2200} satisfies FlickTiming,
+  digital:{popOnFlick:true,flickMs:260,stepMs:240,settleMs:90,dwellMs:220,restMs:12,restGraceMs:0,rearmMs:340,maxGestureMs:2200} satisfies FlickTiming,
 } as const;
 
 /* -------------------------------------------------------------- the table */
@@ -146,7 +153,9 @@ export function gestureSamples(flipId:string|null,o:{stance?:Stance;facing?:1|-1
 }
 
 /* ------------------------------------------------------------ recogniser */
-export type FlickCompletion={flipId:string|null;from:'tail'|'nose';strength:number;at:number;path:readonly FlickDir[]};
+export type FlickCompletion={flipId:string|null;from:'tail'|'nose';strength:number;at:number;path:readonly FlickDir[];
+  /** A longer reading of a gesture that has already popped (a double, a corrected corner): a flip upgrade, never a second pop. */
+  upgrade?:boolean};
 export type FlickHeld={crouch:number;crouchEnd:'tail'|'nose'|null;manual:'manual'|'nose-manual'|null};
 export type FlickView={x:number;y:number;mode:'idle'|'loaded'|'gesture'|'spent';origin:'tail'|'nose'|null;path:readonly FlickDir[]};
 
@@ -166,10 +175,59 @@ export interface FlickRecogniser {
 
 type Mode=FlickView['mode'];
 
+/**
+ * A curved flick that hugs the rim reads as a short sweep: tail → tail-heel →
+ * heel → nose-heel instead of tail ⟶ nose-heel. When a whole path is not a
+ * trick, straighten such runs (2–3 rim steps from the tail to a nose-side
+ * sector, or from a nose-side sector back to the tail) into the flicks they
+ * were — the fewest possible, latest first — and return the first reading that
+ * `accept`s. Only used when the exact path means nothing, so real sweeps keep
+ * their names (a nightmare flip's varial sweep stays a sweep).
+ */
+export function repairFlicks(path:readonly number[],accept:(p:readonly number[])=>boolean):number[]|null {
+  type Run={i:number;j:number};
+  const runs:Run[]=[];
+  const adj=(k:number)=>Math.abs(wrapSteps(path[k]!-path[k-1]!))===1;
+  const step=(k:number)=>wrapSteps(path[k]!-path[k-1]!);
+  for(let i=1;i<path.length;i++){
+    // A run leaves an anchor (the tail or a nose-side sector) round the rim one way and stops at
+    // the tail, where the path stops stepping or turns back, or at its end.
+    const from=path[i-1]!;
+    if(from!==TAIL&&!isTerminal(from))continue;
+    if(!adj(i))continue;
+    const dir=step(i);
+    let j=i;while(j<path.length&&adj(j)&&step(j)===dir){j++;if(path[j-1]===TAIL)break;}
+    const end=path[j-1]!,n=j-i;
+    const stops=j===path.length||end===TAIL||!adj(j)||step(j)!==dir;
+    if(stops&&n>=2&&n<=3&&((from===TAIL&&isTerminal(end))||(isTerminal(from)&&end===TAIL))&&!runs.some(r=>r.j>i))runs.push({i,j});
+  }
+  if(!runs.length||runs.length>4)return null;
+  const subsets:number[]=[];for(let m=1;m<1<<runs.length;m++)subsets.push(m);
+  const bits=(m:number)=>{let c=0;for(let x=m;x;x&=x-1)c++;return c;};
+  // Fewest straightened runs first; among equals, the later runs first.
+  subsets.sort((a,b)=>bits(a)-bits(b)||b-a);
+  for(const m of subsets){
+    const out:number[]=[];let i=0;
+    for(let r=0;r<runs.length;r++){
+      const run=runs[r]!;
+      if(!(m&(1<<r)))continue;
+      while(i<run.i)out.push(path[i++]!);
+      out.push(path[run.j-1]!);i=run.j;
+    }
+    while(i<path.length)out.push(path[i++]!);
+    if(accept(out))return out;
+  }
+  return null;
+}
+
 export function createFlickRecogniser(o:{digital?:boolean;table?:FlickTable;timing?:Partial<FlickTiming>}={}):FlickRecogniser {
   const T=FLICK_TUNING,W:FlickTiming={...(o.digital?T.digital:T.analog),...o.timing},table=o.table??DEFAULT_TABLE,digital=Boolean(o.digital);
+  /** How far out a move off a load or a flick end must be to count as the start of a sweep round the rim. */
+  const rimIn=T.rimIn;
   let facing:1|-1=1,latched:1|-1=1,mode:Mode='idle',origin:'tail'|'nose'='tail';
-  let x=0,y=0,mag=0,lastT=-Infinity,path:number[]=[],rim=-1,rimRun=0;
+  let x=0,y=0,mag=0,lastT=-Infinity,path:number[]=[],rim=-1,rimRun=0,nick=0;
+  /** What this gesture has already popped (undefined = nothing yet; null = an ollie). */
+  let emitted:string|null|undefined=undefined;
   let inCentre=false,leftAt=0,restSince=NaN,restSettled=false,peakMag=0,peakSector=-1,arrivedAt=0,arrival:'centre'|'rim'='rim',lastStepAt=0,gestureAt=0,loadAt=0,depth=0,segMs=0,segKind:'centre'|'rim'='centre';
   let manualEnd:'tail'|'nose'|null=null,manualSince=NaN,manualOn=false,manualCarry:'tail'|'nose'|null=null;
   const done:FlickCompletion[]=[];
@@ -184,7 +242,7 @@ export function createFlickRecogniser(o:{digital?:boolean;table?:FlickTable;timi
   const loadEnd=():'tail'|'nose'|null=>mag>=T.loadIn?(angleTo(TAIL)<=T.loadCone?'tail':angleTo(NOSE)<=T.loadCone?'nose':null):null;
 
   function enterLoaded(t:number,end:'tail'|'nose'){
-    mode='loaded';origin=end;latched=facing;path=[TAIL];rim=end==='tail'?TAIL:NOSE;rimRun=0;
+    mode='loaded';origin=end;latched=facing;path=[TAIL];rim=end==='tail'?TAIL:NOSE;rimRun=0;nick=0;emitted=undefined;
     inCentre=false;restSince=NaN;loadAt=t;depth=mag;arrivedAt=t;lastStepAt=t;arrival='rim';
     // Loading out of an established manual keeps it (you pop out of manuals); a slow pull through the zone does not.
     if(manualOn&&t-manualSince>=T.manualMs+T.manualCarryMs)manualCarry=manualEnd;manualOn=false;manualSince=NaN;
@@ -201,12 +259,13 @@ export function createFlickRecogniser(o:{digital?:boolean;table?:FlickTable;timi
     return Math.round(Math.max(.35,Math.min(1,s))*1000)/1000;
   }
   function complete(t:number,upto=path.length){
-    // Longest prefix that is a trick and ends on a nose-side sector (a thumb that overshoots keeps what it made).
-    for(let n=upto;n>=2;n--){
-      if(n<upto&&!isTerminal(path[n-1]!))continue;
-      const dirs=path.slice(0,n).map(k=>FLICK_DIRS[k]!),id=table.get(key(dirs));
-      if(id!==undefined){done.push({flipId:id,from:origin,strength:strength(),at:t,path:Object.freeze(dirs)});break;}
-    }
+    const hit=(p:readonly number[])=>{const dirs=p.map(k=>FLICK_DIRS[k]!),id=table.get(key(dirs));return id===undefined?null:{id,dirs};};
+    // 1. The whole path. 2. The whole path with its curved flicks straightened (repairFlicks).
+    // 3. The longest prefix that is a trick and ends on a nose-side sector (a thumb that overshoots keeps what it made).
+    let got=hit(path.slice(0,upto));
+    if(!got){const fixed=repairFlicks(path.slice(0,upto),p=>hit(p)!==null);if(fixed)got=hit(fixed);}
+    for(let n=upto-1;!got&&n>=2;n--)if(isTerminal(path[n-1]!))got=hit(path.slice(0,n));
+    if(got&&got.id!==emitted&&!(emitted!==undefined&&got.id===null))done.push({flipId:got.id,from:origin,strength:strength(),at:t,path:Object.freeze(got.dirs),...(emitted!==undefined?{upgrade:true}:{})});
     spend(t);
   }
   function abort(t:number){
@@ -247,7 +306,7 @@ export function createFlickRecogniser(o:{digital?:boolean;table?:FlickTable;timi
     if(!Number.isFinite(t))return;
     if(t<lastT)t=lastT;
     tick(t);
-    const f=mode==='idle'?facing:latched;
+    const f=mode==='idle'?facing:latched,px=x,py=y;
     x=Math.max(-1,Math.min(1,Number.isFinite(rx)?rx:0))*f;y=Math.max(-1,Math.min(1,Number.isFinite(ry)?ry:0));
     mag=Math.min(1,Math.hypot(x,y));restSettled=settled&&mag<T.rest;
     const prevT=lastT;lastT=t;
@@ -257,11 +316,13 @@ export function createFlickRecogniser(o:{digital?:boolean;table?:FlickTable;timi
       case 'loaded':{
         depth=Math.max(depth,mag);
         const home=origin==='tail'?TAIL:NOSE;
-        if(mag>=T.rimOut&&angleTo(home)>T.loadCone){
+        if(mag>=rimIn&&angleTo(home)>T.loadCone){
           // Off the load but still on the rim: a sweep (≤ 90°) or, with no sample in between, a jump flick.
           const s=sectorFrom(-1),o=toOrigin(s),d=wrapSteps(o-TAIL);
-          mode='gesture';gestureAt=t;path=[TAIL];rim=s;inCentre=false;rimRun=0;
-          if(Math.abs(d)<=2)appendRim(d,t,Math.max(1,t-prevT)/Math.abs(d));
+          mode='gesture';gestureAt=t;path=[TAIL];rim=s;inCentre=false;rimRun=0;nick=0;emitted=undefined;
+          // Keys: a roll off the load goes through its diagonal (↓, ↙, ←); jumping straight to a side
+          // (↓ let go, ← pressed) is a flick that fell short of the corner.
+          if(Math.abs(d)===1||(Math.abs(d)===2&&!digital))appendRim(d,t,Math.max(1,t-prevT)/Math.abs(d));
           else arriveCentre(o,t,Math.max(0,t-prevT));
           return;
         }
@@ -278,23 +339,41 @@ export function createFlickRecogniser(o:{digital?:boolean;table?:FlickTable;timi
             arriveCentre(o,t,travel);
             return;
           }
-          if(mag<T.rest){if(Number.isNaN(restSince))restSince=t;}else restSince=NaN;
+          // Resting means still: a slow flick sweeping through the middle is not a release.
+          if(mag<T.rest){if(Number.isNaN(restSince)||(!settled&&Math.hypot(x-px,y-py)>T.restStill))restSince=t;}else restSince=NaN;
           if(mag>peakMag&&t-leftAt<=W.flickMs){const o=toOrigin(sectorFrom(-1));if(isTerminal(o)){peakMag=mag;peakSector=o;}}
           return;
         }
         if(mag<T.rimOut){
-          // A lone 45° nick on the way into a flick (a curved thumb) is not a sweep.
-          if(rimRun===1&&path.length>=2)path.pop();
+          // An established sweep let go just as it reached its next sector still gets that sector.
+          if(rimRun>=2&&mag>=T.sweepOut&&path.length>=2){
+            const o=toOrigin(sectorFrom(-1)),last=path[path.length-1]!,dir=wrapSteps(last-path[path.length-2]!);
+            if(Math.abs(dir)===1&&wrapSteps(o-last)===dir&&t-lastStepAt<=W.stepMs)appendRim(dir,t,t-lastStepAt);
+          }
+          // A short nick (≤ 90°) along the rim on the way into a flick (a curved thumb) is
+          // not a sweep: no gesture has a rim run that short before a centre flick.
+          if(nick>0&&nick<=2&&path.length>nick)path.length-=nick;nick=0;
           rimRun=0;inCentre=true;leftAt=t;restSince=mag<T.rest?t:NaN;peakMag=0;peakSector=-1;return;
         }
+        // Between rimOut and rimIn the thumb is on its way in or out: it holds its sector,
+        // unless it is already sweeping (two steps or more), when a sagging thumb still counts.
+        if(mag<rimIn&&rimRun<2)return;
         const s=sectorFrom(rim);if(s===rim)return;
         const o=toOrigin(s),last=path[path.length-1]!,d=wrapSteps(o-last);rim=s;
-        if(arrival==='centre'&&Math.abs(d)===1&&t-arrivedAt<=W.settleMs&&path.length>=2&&last!==TAIL&&isTerminal(o)){
-          // Correcting a flick that landed a sector off (or a key chord landing in two frames).
-          path[path.length-1]=o;return;
+        if(d===0)return; // still on the sector a sloppy arrival was read as
+        if(arrival==='centre'&&Math.abs(d)===1&&t-arrivedAt<=W.settleMs&&path.length>=2&&last!==TAIL&&(isTerminal(o)||o===TAIL)&&path[path.length-2]!==o){
+          // Correcting a flick that landed a sector off (or a key chord landing in two frames),
+          // including a snap back that landed beside the tail on the way into a double.
+          path[path.length-1]=o;commitEarly(t);return;
         }
+        // Keys never skip a sector when they roll (one key changes at a time), so a two-sector jump
+        // off the tail or a tail diagonal is a flick: ↓ held, ← then ↑ pressed a beat apart publishes
+        // ↙ then ↖ (a kickflip, the ↙ nick is dropped); … ↘ ⟶ ↖ ends a circle and flicks.
+        if(digital&&Math.abs(d)===2&&(last===TAIL||isTailDiag(last))){arriveCentre(o,t,Math.max(0,t-prevT));return;}
         if(Math.abs(d)<=2){
-          if(t-lastStepAt>W.stepMs*Math.abs(d)){abort(t);return;}
+          // Re-armed on the tail after a snap back: leaving it is the next move, not a slow sweep.
+          const rearmed=last===TAIL&&path.length>1;
+          if(rearmed?t-arrivedAt>W.rearmMs:t-lastStepAt>W.stepMs*Math.abs(d)){abort(t);return;}
           appendRim(d,t,(t-lastStepAt)/Math.abs(d));return;
         }
         // A big jump with no sample in between: treat as a flick through the centre.
@@ -309,12 +388,38 @@ export function createFlickRecogniser(o:{digital?:boolean;table?:FlickTable;timi
     peakMag=0;peakSector=-1;
   }
   function arriveCentre(o:number,t:number,travel:number){
+    // A flick never starts on a tail diagonal: cutting the corner at the end of a circle
+    // (… ↘ ⟶ ↖) left from the tail.
+    if(path.length>=2&&isTailDiag(path[path.length-1]!)&&!isTailDiag(o)&&o!==TAIL){
+      // A single nick off the tail is dropped; the end of a longer run (a circle) is completed.
+      if(path[path.length-2]===TAIL)path.pop();else path.push(TAIL);
+    }
+    // Nor does one land on a tail diagonal or a side: a snap back that lands beside the tail is
+    // the tail, and a flick off the tail that falls short on the heel/toe side meant that
+    // side's nose corner (the kick).
+    const last=path[path.length-1]!;
+    if(path.length>=2&&isTailDiag(o))o=TAIL;
+    else if(last===TAIL&&(o===2||o===6))o=o===2?1:7;
     if(o!==path[path.length-1])path.push(o);
-    rimRun=0;arrival='centre';arrivedAt=t;lastStepAt=t;segMs=travel;segKind='centre';
+    rimRun=0;nick=0;arrival='centre';arrivedAt=t;lastStepAt=t;segMs=travel;segKind='centre';
+    commitEarly(t);
+  }
+  /**
+   * A flick that lands on a nose-side sector and spells a whole trick pops NOW (the pop is the
+   * flick reaching the top, as in Skate), without waiting for the release. If the gesture goes
+   * on (a double, an impossible, a sloppy corner corrected a beat later), its longer reading is
+   * emitted again when it lands: airborne by then, it reaches the sim as a flip upgrade.
+   */
+  function commitEarly(t:number){
+    if(!W.popOnFlick||!isTerminal(path[path.length-1]!))return;
+    const dirs=path.map(k=>FLICK_DIRS[k]!),id=table.get(key(dirs));
+    // Once something has popped, a reading can only add flip (a correction or a longer trick), never take it back to an ollie.
+    if(id===undefined||id===emitted||(emitted!==undefined&&id===null))return;
+    done.push({flipId:id,from:origin,strength:strength(),at:t,path:Object.freeze(dirs),...(emitted!==undefined?{upgrade:true}:{})});emitted=id;
   }
   function appendRim(d:number,t:number,perStep:number){
     const dir=Math.sign(d);let k=path[path.length-1]!;
-    for(let i=0;i<Math.abs(d);i++){k=(k+dir+8)%8;path.push(k);}
+    for(let i=0;i<Math.abs(d);i++){k=(k+dir+8)%8;path.push(k);nick=k===TAIL||isTerminal(k)?0:nick+1;}
     rimRun+=Math.abs(d);arrival='rim';arrivedAt=t;lastStepAt=t;segMs=perStep;segKind='rim';
   }
 
@@ -330,7 +435,7 @@ export function createFlickRecogniser(o:{digital?:boolean;table?:FlickTable;timi
       return {crouch,crouchEnd:loaded&&crouch>0?origin:null,manual:end===null?null:end==='tail'?'manual':'nose-manual'};
     },
     setFacing(f){facing=f===-1?-1:1;},
-    reset(){mode='idle';path=[];x=y=mag=0;rim=-1;rimRun=0;inCentre=false;restSince=NaN;manualOn=false;manualSince=NaN;manualCarry=null;manualEnd=null;done.length=0;lastT=-Infinity;depth=0;},
+    reset(){mode='idle';path=[];emitted=undefined;x=y=mag=0;rim=-1;rimRun=0;inCentre=false;restSince=NaN;manualOn=false;manualSince=NaN;manualCarry=null;manualEnd=null;done.length=0;lastT=-Infinity;depth=0;},
     view:()=>({x:x*(mode==='idle'?facing:latched),y,mode,origin:mode==='loaded'||mode==='gesture'?origin:null,path:path.map(k=>FLICK_DIRS[k]!)}),
   };
 }

@@ -9,7 +9,8 @@
  *    is still a flick and not load → release → nothing;
  *  - release chord: letting go of ↑+← within KEY_RELEASE_CHORD_MS is one
  *    release (the stick does not slide through ← on the way home);
- *  - opposite keys: the most recently pressed wins (hold ↓, tap ↑ = ↑).
+ *  - opposite keys: the most recently pressed wins (hold ↓, tap ↑ = ↑), and a
+ *    side key held from before that flick drops out of it (↖, then ↓ = ↓);
  * Rolls across neighbouring keys (↓ → ↓+← → ← → ←+↑ → ↑) are rim sweeps.
  */
 
@@ -18,6 +19,10 @@ export const KEY_CHORD_MS=30;
 export const KEY_LATCH_MS=55;
 /** Keys of a chord released within this of each other count as released together. */
 export const KEY_RELEASE_CHORD_MS=25;
+/** A side key pressed more than this before a ↑/↓ flick over the opposite key is left out of the flick. */
+export const KEY_STALE_MS=60;
+/** ↓ pressed this soon after ↑ came up (or while it is still down) is a flick back, not a roll. */
+export const KEY_FLICK_GAP_MS=35;
 
 export interface DigitalStick {
   press(dir:ArrowDir,t:number):void;
@@ -29,13 +34,21 @@ export interface DigitalStick {
   reset():void;
 }
 
-export function createDigitalStick(o:{chordMs?:number;latchMs?:number;releaseMs?:number}={}):DigitalStick {
-  const chordMs=o.chordMs??KEY_CHORD_MS,latchMs=o.latchMs??KEY_LATCH_MS,releaseMs=o.releaseMs??KEY_RELEASE_CHORD_MS;
+export function createDigitalStick(o:{chordMs?:number;latchMs?:number;releaseMs?:number;staleMs?:number}={}):DigitalStick {
+  const chordMs=o.chordMs??KEY_CHORD_MS,latchMs=o.latchMs??KEY_LATCH_MS,releaseMs=o.releaseMs??KEY_RELEASE_CHORD_MS,staleMs=o.staleMs??KEY_STALE_MS,flickGapMs=KEY_FLICK_GAP_MS;
   const held=new Map<ArrowDir,number>(),chord=new Set<ArrowDir>();
   let x=0,y=0,pending:null|{at:number;kind:'press'|'release'}=null,latchUntil=NaN;
+  /** When the vertical direction last reversed as a flick, and when each key last came up. */
+  let flickAt=NaN;const upAt=new Map<ArrowDir,number>();
   const vec=(dirs:Iterable<ArrowDir>)=>{
     let up=-1,down=-1,left=-1,right=-1;
     for(const d of dirs){const at=held.get(d)??Infinity;if(d==='up')up=at;else if(d==='down')down=at;else if(d==='left')left=at;else right=at;}
+    // ↑ after ↓ (or ↓ after ↑) is a flick: a side key held from before it belongs to the last
+    // move (↖ … then ↓ to snap back is ↓, not ↙) unless it was pressed with the flick.
+    if(Number.isFinite(flickAt)){
+      const stale=(at:number)=>at>=0&&at<flickAt-staleMs;
+      if(stale(left))left=-1;if(stale(right))right=-1;
+    }
     const vy=up<0&&down<0?0:up>=down?1:-1,vx=left<0&&right<0?0:right>=left?1:-1;
     const n=vx&&vy?Math.SQRT1_2:1;return {x:vx*n,y:vy*n};
   };
@@ -51,11 +64,18 @@ export function createDigitalStick(o:{chordMs?:number;latchMs?:number;releaseMs?
   return {
     press(dir,t){
       if(held.has(dir))return;
+      if(dir==='up'||dir==='down'){
+        // A reversal while the other end is still down (or only just let go) is a flick; a roll
+        // lets go of it well before (↙, ←, then ↖).
+        const other=dir==='up'?'down':'up';
+        if(held.has(other)||t-(upAt.get(other)??-Infinity)<=flickGapMs)flickAt=t;
+      }
       held.set(dir,t);chord.add(dir);latchUntil=NaN;
       if(!pending||pending.kind==='release')pending={at:t+chordMs,kind:'press'};
     },
     release(dir,t){
       if(!held.delete(dir))return;
+      upAt.set(dir,t);
       if(pending?.kind==='press')return; // the pending chord publishes what was pressed (taps included)
       if(held.size===0){pending=null;latchUntil=t+latchMs;return;} // letting go of a whole chord keeps its direction for the latch
       // Rolling off one key of a chord: move shortly (this is how rim sweeps are played) unless the rest follow at once.
@@ -64,7 +84,7 @@ export function createDigitalStick(o:{chordMs?:number;latchMs?:number;releaseMs?
     advance,
     value:()=>({x,y}),
     active:()=>held.size>0||pending!==null||!Number.isNaN(latchUntil)||x!==0||y!==0,
-    reset(){held.clear();chord.clear();x=0;y=0;pending=null;latchUntil=NaN;},
+    reset(){held.clear();chord.clear();x=0;y=0;pending=null;latchUntil=NaN;flickAt=NaN;upAt.clear();},
   };
 }
 
