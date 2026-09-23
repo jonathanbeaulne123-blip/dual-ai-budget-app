@@ -1,0 +1,40 @@
+import { activeMembers } from '../../core/catalog.ts';
+import type { Household } from '../../core/types.ts';
+import { choice, identifier, list, memoryKeptByEveryone, object, revisionValue, type HearthsideState } from '../../hearthside/contracts.ts';
+
+export const VILLAGE_ROOMS = ['kitchen', 'loft', 'cellar', 'atlas', 'bank', 'library', 'glasshouse', 'studio', 'cottage', 'boathouse'] as const;
+export type VillageRoom = typeof VILLAGE_ROOMS[number];
+export type VillageDisplay = { kind: 'piece'; id: string; designId: string; revision: number } | { kind: 'memory'; id: string; revision: number };
+export type VillageRoomConfig = { room: VillageRoom; layout: 'gather' | 'open'; plant: 'fern' | 'flowers'; light: 'warm' | 'daylight'; displays: VillageDisplay[] };
+export type VillageArrangementSnapshot = { revision: number; rooms: VillageRoomConfig[] };
+export type VillageArrangement = { version: 1; revision: number; rooms: VillageRoomConfig[]; previous?: VillageArrangementSnapshot };
+const INVALID = 'VILLAGE_ARRANGEMENT_INVALID';
+
+export function defaultVillageRoomConfig(room: VillageRoom): VillageRoomConfig { return { room, layout: 'gather', plant: 'fern', light: 'warm', displays: [] }; }
+export function villageRoomConfig(arrangement: VillageArrangement | undefined, room: VillageRoom): VillageRoomConfig { const current = arrangement?.rooms.find(row => row.room === room); return current ? cloneRoom(current) : defaultVillageRoomConfig(room); }
+function cloneDisplay(display: VillageDisplay): VillageDisplay { return { ...display }; }
+function cloneRoom(room: VillageRoomConfig): VillageRoomConfig { return { ...room, displays: room.displays.map(cloneDisplay) }; }
+function cloneSnapshot(snapshot: VillageArrangementSnapshot): VillageArrangementSnapshot { return { revision: snapshot.revision, rooms: snapshot.rooms.map(cloneRoom) }; }
+function sameDisplay(left: VillageDisplay, right: VillageDisplay): boolean { return left.kind === right.kind && left.id === right.id && left.revision === right.revision && (left.kind === 'piece' ? right.kind === 'piece' && left.designId === right.designId : true); }
+function sameRoom(left: VillageRoomConfig, right: VillageRoomConfig): boolean { return left.room === right.room && left.layout === right.layout && left.plant === right.plant && left.light === right.light && left.displays.length === right.displays.length && left.displays.every((display, index) => sameDisplay(display, right.displays[index]!)); }
+function decodeDisplay(raw: unknown): VillageDisplay { const value = object(raw, ['kind', 'id', 'revision', 'designId']); const kind = choice(value.kind, ['piece', 'memory'] as const); if (kind === 'piece') return { kind, id: identifier(value.id), designId: identifier(value.designId), revision: revisionValue(value.revision, 1) }; if (value.designId !== undefined) throw Error(INVALID); return { kind, id: identifier(value.id), revision: revisionValue(value.revision, 1) }; }
+function decodeRoom(raw: unknown): VillageRoomConfig { const value = object(raw, ['room', 'layout', 'plant', 'light', 'displays']); const displays = list(value.displays, decodeDisplay, 2); if (new Set(displays.map(display => `${display.kind}:${display.kind === 'piece' ? display.designId : ''}:${display.id}`)).size !== displays.length) throw Error(INVALID); return { room: choice(value.room, VILLAGE_ROOMS), layout: choice(value.layout, ['gather', 'open'] as const), plant: choice(value.plant, ['fern', 'flowers'] as const), light: choice(value.light, ['warm', 'daylight'] as const), displays }; }
+function decodeRooms(raw: unknown): VillageRoomConfig[] { const rooms = list(raw, decodeRoom, VILLAGE_ROOMS.length); if (rooms.length !== VILLAGE_ROOMS.length || new Set(rooms.map(room => room.room)).size !== VILLAGE_ROOMS.length || !VILLAGE_ROOMS.every(room => rooms.some(row => row.room === room))) throw Error(INVALID); return rooms; }
+function decodeSnapshot(raw: unknown): VillageArrangementSnapshot { const value = object(raw, ['revision', 'rooms']); return { revision: revisionValue(value.revision), rooms: decodeRooms(value.rooms) }; }
+export function decodeVillageArrangementCandidate(raw: unknown): Omit<VillageArrangement, 'previous'> { const value = object(raw, ['version', 'revision', 'rooms']); if (value.version !== 1) throw Error(INVALID); return { version: 1, revision: revisionValue(value.revision, 1), rooms: decodeRooms(value.rooms) }; }
+export function decodeVillageArrangement(raw: unknown): VillageArrangement { const value = object(raw, ['version', 'revision', 'rooms', 'previous']); if (value.version !== 1) throw Error(INVALID); const current: VillageArrangementSnapshot = { revision: revisionValue(value.revision, 1), rooms: decodeRooms(value.rooms) }; const previous = value.previous === undefined ? undefined : decodeSnapshot(value.previous); if (previous && previous.revision >= current.revision) throw Error(INVALID); return { version: 1, ...current, ...(previous ? { previous } : {}) }; }
+/** The renderer must call this again when it restores or reverts a persisted display. */
+export function villageDisplaysEligible(household: Household, state: Pick<HearthsideState, 'designs' | 'memories'>, displays: readonly VillageDisplay[]): boolean { const memberIds = activeMembers(household).map(member => member.id); return displays.every(display => display.kind === 'piece' ? state.designs.some(design => design.designId === display.designId && design.revision === display.revision && design.pieceIds.includes(display.id)) : state.memories.some(memory => memory.id === display.id && memory.revision === display.revision && memoryKeptByEveryone(memory, memberIds))); }
+export function eligibleVillageDisplays(household: Household, state: Pick<HearthsideState, 'designs' | 'memories'>): VillageDisplay[] { const memberIds = activeMembers(household).map(member => member.id); return [...state.designs.flatMap(design => design.pieceIds.map(id => ({ kind: 'piece' as const, id, designId: design.designId, revision: design.revision }))), ...state.memories.filter(memory => memoryKeptByEveryone(memory, memberIds)).map(memory => ({ kind: 'memory' as const, id: memory.id, revision: memory.revision }))]; }
+export function saveVillageArrangement(household: Household, state: Pick<HearthsideState, 'designs' | 'memories'>, current: VillageArrangement | undefined, expectedRevision: number, raw: unknown): VillageArrangement {
+  revisionValue(expectedRevision);
+  if ((current?.revision ?? 0) !== expectedRevision) throw Error('VILLAGE_ARRANGEMENT_CHANGED');
+  if (expectedRevision >= Number.MAX_SAFE_INTEGER) throw Error(INVALID);
+  const candidate = decodeVillageArrangementCandidate(raw);
+  const changedRooms = candidate.rooms.filter(room => !current || !sameRoom(room, current.rooms.find(existing => existing.room === room.room)!));
+  // An unchanged room can retain a hidden historical reference. Editing one room
+  // must not require rewriting another; changed rooms may contain only eligible displays.
+  if (candidate.revision !== expectedRevision + 1 || (current && changedRooms.length !== 1) || !changedRooms.every(room => villageDisplaysEligible(household, state, room.displays))) throw Error(INVALID);
+  return { ...candidate, previous: cloneSnapshot(current ?? { revision: 0, rooms: VILLAGE_ROOMS.map(defaultVillageRoomConfig) }) };
+}
+export function revertVillageArrangement(household: Household, state: Pick<HearthsideState, 'designs' | 'memories'>, current: VillageArrangement | undefined, expectedRevision: number): VillageArrangement { revisionValue(expectedRevision); if (!current?.previous || current.revision !== expectedRevision) throw Error('VILLAGE_ARRANGEMENT_CHANGED'); if (current.revision >= Number.MAX_SAFE_INTEGER) throw Error(INVALID); if (!current.previous.rooms.every(room => villageDisplaysEligible(household, state, room.displays))) throw Error('VILLAGE_DISPLAY_UNAVAILABLE'); return { version: 1, revision: current.revision + 1, rooms: current.previous.rooms.map(cloneRoom), previous: cloneSnapshot(current) }; }

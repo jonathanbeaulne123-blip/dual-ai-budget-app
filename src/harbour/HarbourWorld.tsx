@@ -1,10 +1,13 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import {useDesignClient} from '../hearthside/DesignProvider.tsx';
+import {snapshotKittyDesignRevision} from '../hearthside/design.ts';
+import type {VillageDisplayContent} from './village/displays.ts';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import type { DateKey } from "../core/calendar.ts";
 import type { Household, LedgerView } from "../core/types.ts";
 import type { FundPulseFreshness } from "../core/fundPulse.ts";
 import { isFreshPresence, memberDisplayName, type SoftPresenceDisplay } from "../softPresence.ts";
 import type { HouseRoute, HouseRoom, HouseLevel } from "../hearthside/houseRoutes.ts";
-import { readHouseReturn, saveHouseReturn, houseIdentity } from "../house/navigation.ts";
+import { readHouseReturn, saveHouseReturn, houseIdentity, validHouseBody } from "../house/navigation.ts";
 import { houseCameraRoute, houseComposition, sameHouseCameraRoute } from "../house/returnCache.ts";
 import { livingEvidence } from "../house/interpretation.ts";
 import { interpretationSourceRevision, supportedAtFor, useSupportedHouseInterpretation, type InterpretationGate } from "../house/supportedInterpretation.ts";
@@ -16,14 +19,21 @@ import type { ThemeId } from "../theme/scenes.ts";
 import { useHarbourReading } from "./data/useHarbourReading.ts";
 import { HarbourFlat } from "./flat/PlaceFlat.tsx";
 import { HarbourTwins } from "./court/CourtTwins.tsx";
-import { HARBOUR_LANDMARKS, HARBOUR_PLACE_LEVELS, HARBOUR_PLACE_NAMES, HARBOUR_PLACE_ROOMS, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
+import { HARBOUR_LANDMARKS, HARBOUR_PLACE_NAMES, harbourPlaceFor, harbourWayFor, type HarbourPlaceId } from "./flag.ts";
 import { HARBOUR_GO_EVENT } from "./nav/QuickSheet.tsx";
 import { HOUSE_LEVELS, HOUSE_ROOMS } from "../hearthside/houseRoutes.ts";
 import { classifyGesture, gestureAction, spark, type QueenAction, type QueenRegion, type QueenSpark } from "./court/queenTouch.ts";
 import type { QueenPlace } from "./court/queenPlace.ts";
-import type { CourtHandle } from "./court/CourtScene.ts";
+import type { QueenHost } from "./village/BankScene.ts";
+import { prepareVillageInterior, type VillageInterior } from './village/interior.ts';
+import { VILLAGE_ADDRESS, ROOM_PORTALS } from './village/layout.ts';
+import { VillageHUD } from './village/VillageHUD.tsx';
+import { VillageDecorator, type VillageDecoratorCommit } from './village/VillageDecorator.tsx';
+import { villageRoomConfig, villageDisplaysEligible, type VillageRoom } from './village/villageArrangement.ts';
+import { decodeHearthside } from '../hearthside/contracts.ts';
+import './village/village.css';
 import type { HarbourRuntime, HarbourGesture, HarbourHit, ProjectedRect, ScrubControls } from "./scene/runtime.ts";
-import { PLACES, sceneDressingFrom, type Anchor, type PlaceReading, type Region } from "./scene/place.ts";
+import { PLACES, sceneDressingFrom, type Anchor, placementOf, placementToWorld, type PlaceReading, type Region } from "./scene/place.ts";
 import { publishLocalPose, useWorldFeed } from "./presence/feed.ts";
 import { EMOTE_IDS, type EmoteId } from "./body/bodyModel.ts";
 import { WalkTogether } from "./presence/WalkTogether.tsx";
@@ -50,6 +60,8 @@ export type HarbourWorldProps = {
   freshness: string;
   interpretationGate?: InterpretationGate;
   onNavigate: (room: HouseRoom, level: HouseLevel, replace?: boolean) => void;
+  onNavigateLocation?: (route:HouseRoute) => void;
+  onArrange?: (operation:VillageDecoratorCommit)=>Promise<void>;
   onOpen: (target: string, object?: string) => void;
   onClose: () => void;
   presence?: SoftPresenceDisplay;
@@ -61,7 +73,7 @@ export type HarbourWorldProps = {
   children?: ReactNode;
 };
 
-const InteriorDesk=lazy(()=>import("./interiors/InteriorDesk.tsx"));
+
 
 type Status = "loading" | "ready" | "fallback" | "flat";
 type Lens = "living" | "growth" | "shape";
@@ -73,8 +85,9 @@ export { HARBOUR_CAMERA_SLOT_PREFIX, harbourCameraSlot } from "./scene/travel.ts
  * `Place` under its id (`scene/place.ts`).
  */
 const PLACE_MODULES: Readonly<Record<HarbourPlaceId, () => Promise<unknown>>> = {
-  court: () => import("./court/CourtScene.ts"),
-  tower: () => import("./tower/TowerScene.ts"),
+  court: () => import("./village/VillageCourt.ts"),
+  bank: () => import("./village/BankScene.ts"),
+  tower: () => import("./village/LoftScene.ts"),
   cellar: () => import("./cellar/CellarScene.ts"),
   glasshouse: () => import("./glasshouse/GlasshouseScene.ts"),
   kitchen: () => import("./kitchen/KitchenScene.ts"),
@@ -86,6 +99,7 @@ const PLACE_MODULES: Readonly<Record<HarbourPlaceId, () => Promise<unknown>>> = 
   atlas: () => import("./atlas/AtlasScene.ts"),
 };
 
+async function loadPlace(id:HarbourPlaceId){await PLACE_MODULES[id]();if(id!=='court'&&id!=='campfire')prepareVillageInterior(id);}
 const REDUCED = "(prefers-reduced-motion: reduce)";
 /**
  * Whether the hand on this thing is a thumb. It decides one thing only — the
@@ -108,7 +122,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const { household, memberId, scope, today, route, ready, freshness, interpretationGate, onOpen, onClose, presence, onUnhide, partnerName = null, onQuickSheet } = props;
   const appearance = useAppearance(), theme: ThemeId = appearance.preview ?? appearance.saved.theme;
   const host = useRef<HTMLDivElement>(null), stage = useRef<HTMLDivElement>(null);
-  const runtime = useRef<HarbourRuntime | null>(null), court = useRef<CourtHandle | null>(null), queen = useRef<QueenPlace | null>(null);
+  const runtime = useRef<HarbourRuntime | null>(null), court = useRef<QueenHost | null>(null), queen = useRef<QueenPlace | null>(null);
+  const queenAnimation=useRef<(()=>void)|null>(null);
+  const [arranging,setArranging]=useState(false);
+  const [previewLook,setPreviewLook]=useState<ReturnType<typeof villageRoomConfig>|null>(null);
+  const [travelTo,setTravelTo]=useState<HarbourPlaceId|null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [tier, setTier] = useState<QualityTier>(() => decideTier(host.current?.getBoundingClientRect().width || window.innerWidth));
   const [rects, setRects] = useState<ProjectedRect[]>([]);
@@ -211,6 +229,22 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const readingRef = useRef(placeReading); readingRef.current = placeReading;
   const onOpenRef = useRef(onOpen); onOpenRef.current = onOpen;
   const onNavigateRef = useRef(props.onNavigate); onNavigateRef.current = props.onNavigate;
+  const onLocationRef=useRef(props.onNavigateLocation);onLocationRef.current=props.onNavigateLocation;
+  function navigatePlace(next:HarbourPlaceId){
+    const address=VILLAGE_ADDRESS[next];
+    if(onLocationRef.current)onLocationRef.current({householdId:identityRef.current.householdId,scope:identityRef.current.scope,...address});
+    else onNavigateRef.current(address.room,address.level);
+    setArranging(false);setTravelTo(null);
+  }
+  function visit(next:HarbourPlaceId,instant=false){
+    const world=runtime.current, placement=placementOf(next);
+    if(!instant&&placeRef.current==='court'&&placement&&world?.body()){
+      void loadPlace(next).then(()=>world.restream());
+      const [x,,z]=placementToWorld(placement,[placement.door[0],0,placement.halfDepth-.6]);
+      world.body()?.goTo(x,z);setTravelTo(next);setPhrase(`Walking to ${HARBOUR_PLACE_NAMES[next]}.`);return;
+    }
+    navigatePlace(next);
+  }
   const onRailDragRef = useRef<(x: number, width: number) => void>(() => undefined);
   /**
    * The route change that is in flight because a doorway was **crossed**
@@ -226,7 +260,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const say = useCallback((next: QueenSpark | null, at?: { x: number; y: number }) => {
     if (!next) return;
     setPhrase(next.phrase);
-    if (!window.matchMedia(REDUCED).matches && at) setSparkle({ ...next, ...at, at: Date.now() });
+    if (!(window.matchMedia(REDUCED).matches || document.documentElement.dataset.motion === "reduced") && at) setSparkle({ ...next, ...at, at: Date.now() });
   }, []);
   useEffect(() => { if (!sparkle) return; const timer = setTimeout(() => setSparkle(null), sparkle.durationMs); return () => clearTimeout(timer); }, [sparkle]);
 
@@ -241,7 +275,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       case "held-item": { const noticed = readingRef.current.noticed; if (noticed) onOpenRef.current(noticed.target); else setPhrase("Her hands are empty today."); break; }
       case "turn-held-item": if (her) { her.group.rotation.y += Math.PI; world?.setReading(readingRef.current); } break;
       case "portrait": world?.go(world.pose().r < 5.5 && Math.abs(world.pose().target[1] - 0.95) < 0.2 ? "court" : "object", "queen"); break;
-      case "roots-view": if (her && world) { const pose = her.poses().roots; world.look({ target: pose.target, r: pose.r, theta: pose.theta, phi: pose.phi }); } break;
+      case "roots-view": if (her && world) { const pose = her.poses().roots, placement=placementOf("bank"); const target=placement?placementToWorld(placement,[pose.target[0],pose.target[1]+.16,pose.target[2]+.8]):pose.target; world.look({ target, r: pose.r, theta: pose.theta+(placement?.yaw??0), phi: pose.phi }); } break;
       case "spin": if (her) { her.group.rotation.y += (detail.dx ?? 0) * 0.01; world?.setReading(readingRef.current); } break;
       case "distance": world?.gesture({ kind: "zoom", delta: (detail.dy ?? 0) * 0.004 }); break;
     }
@@ -250,14 +284,14 @@ export default function HarbourWorld(props: HarbourWorldProps) {
 
   const onTap = useCallback((hit: HarbourHit, at: { x: number; y: number }) => {
     // She stands in the Court; her touch grammar travels nowhere else.
-    if (hit.kind === "queen") { if (placeRef.current !== "court") return; const region = hit.region as QueenRegion; const action = gestureAction(region, "tap"); if (action) act(region, action, { at }); return; }
+    if (hit.kind === "queen") { if (placeRef.current !== "bank") return; const region = hit.region as QueenRegion; const action = gestureAction(region, "tap"); if (action) act(region, action, { at }); return; }
     if (hit.kind !== "anchor") return;
     activate(hit.id, hit.anchor.door, hit.anchor.zone);
   }, [act]); // eslint-disable-line react-hooks/exhaustive-deps
   const onThreshold = useCallback((next: HarbourPlaceId) => {
     if (placeRef.current === next) return;
     crossing.current = next;
-    onNavigateRef.current(HARBOUR_PLACE_ROOMS[next], HARBOUR_PLACE_LEVELS[next]);
+    navigatePlace(next);
   }, []);
   /**
    * The body walked to this place's own way out (walk-everywhere): the Tower's
@@ -278,7 +312,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   }, []);
 
   const onGesture = useCallback((gesture: HarbourGesture) => {
-    if (placeRef.current !== "court") return;
+    if (placeRef.current !== "bank") return;
     const kind = classifyGesture(gesture.samples); if (!kind) return;
     const region = gesture.region as QueenRegion; const action = gestureAction(region, kind); if (!action) return;
     const first = gesture.samples[0]!, last = gesture.samples[gesture.samples.length - 1]!;
@@ -287,10 +321,16 @@ export default function HarbourWorld(props: HarbourWorldProps) {
 
   function activate(id: string, door?: { target: string; object?: string }, zone?: string) {
     const world = runtime.current, current = readingRef.current;
+    if(id.startsWith('visit:')){const target=id.slice(6) as HarbourPlaceId;if(target in VILLAGE_ADDRESS)visit(target);return;}
+    const portal=ROOM_PORTALS[placeRef.current]?.find(p=>p.id===id);
+    if(portal){navigatePlace(portal.to);return;}
+    if(id==='village-exit'){navigatePlace('court');return;}
+    const playful=(world?.place() as VillageInterior|undefined)?.play?.(id);
+    if(playful){if(id==='village-dance')world?.body()?.emote('dance');if(id==='village-bench')world?.body()?.emote('sit');setPhrase(playful);world?.invalidate();return;}
     // Enter, then Open. A way walks you to another level of this room; only
     // then does a door open an HTML surface in front of the place.
     const way = harbourWayFor(id, zone);
-    if (way) { onNavigateRef.current(HARBOUR_PLACE_ROOMS[way], HARBOUR_PLACE_LEVELS[way]); return; }
+    if (way) { navigatePlace(way==='court'?'court':way); return; }
     // A landmark on the island is a whole room's door: tapping it walks there.
     const landmark = HARBOUR_LANDMARKS[id];
     if (landmark) { onNavigateRef.current(landmark.room, landmark.level); return; }
@@ -315,7 +355,10 @@ export default function HarbourWorld(props: HarbourWorldProps) {
    */
   useEffect(() => {
     const walkTo = (event: Event) => {
-      const detail = (event as CustomEvent<{ room?: unknown; level?: unknown }>).detail;
+      const detail = (event as CustomEvent<{ room?: unknown; level?: unknown; place?: unknown }>).detail;
+      if (typeof detail?.place === 'string' && Object.hasOwn(VILLAGE_ADDRESS, detail.place)) {
+        navigatePlace(detail.place as HarbourPlaceId); return;
+      }
       const room = detail?.room, level = detail?.level;
       if (typeof room !== "string" || typeof level !== "string") return;
       if (!(HOUSE_ROOMS as readonly string[]).includes(room) || !(HOUSE_LEVELS as readonly string[]).includes(level)) return;
@@ -338,7 +381,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     let cancelled = false; const abort = new AbortController(); setStatus("loading"); setRects([]);
     const renderTier: RenderTier = tier;
     const first = placeRef.current;
-    void Promise.all([import("./scene/runtime.ts"), PLACE_MODULES[first](), import("./court/dressing.ts")]).then(([{ mountHarbourWorld }, , { COURT_DRESSING }]) => {
+    void Promise.all([import("./scene/runtime.ts"), loadPlace(first), import("./court/dressing.ts"), loadPlace("court")]).then(([{ mountHarbourWorld }, , { COURT_DRESSING }]) => {
       if (cancelled) return;
       try {
         const world = mountHarbourWorld(element, theme, renderTier, {
@@ -347,24 +390,24 @@ export default function HarbourWorld(props: HarbourWorldProps) {
           onStick, onClose: setClosed, onThreshold, onExit,
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
-        runtime.current = world;
-        court.current = first === "court" ? world.place() as CourtHandle : null;
+        runtime.current = world;world.go("court");
+        court.current = first === "bank" ? world.place() as QueenHost : null;
         world.setToolOpen(Boolean(routeRef.current.surface));
         void holdRail(world);
         world.invalidate();
         const saved = readHouseReturn(localStorage, identityRef.current, harbourCameraSlot(houseComposition(element.getBoundingClientRect().width || window.innerWidth), first));
         if (saved?.camera && sameHouseCameraRoute(saved.route, routeRef.current)) world.restore(saved.camera);
-        if (first !== "court") return;
+        if (first !== "bank") return;
         void import("./court/queenPlace.ts").then(({ loadQueenPlace }) => loadQueenPlace(renderTier, appearance.saved.queen ?? DEFAULT_QUEEN_STYLE, evidenceRef.current, abort.signal)).then(her => {
           if (cancelled || !runtime.current) { her.dispose(); return; }
           queen.current = her;
           court.current?.attachQueen(her.group, () => queenRegions(her));
           world.setReading(readingRef.current);
-          if (!window.matchMedia(REDUCED).matches) { world.addAnimator(t => her.breathe(t)); world.setBreathing(true); }
+          if (!(window.matchMedia(REDUCED).matches || document.documentElement.dataset.motion === "reduced")) { queenAnimation.current?.();queenAnimation.current=world.addAnimator(t => her.breathe(t)); world.setBreathing(true); }
         }).catch(() => { element.dataset.queen = "unavailable"; });
       } catch { setStatus("fallback"); }
     }).catch(() => setStatus("fallback"));
-    return () => { cancelled = true; abort.abort(); queen.current?.dispose(); queen.current = null; court.current = null; runtime.current?.dispose(); runtime.current = null; };
+    return () => { cancelled = true; abort.abort(); queenAnimation.current?.();queenAnimation.current=null;queen.current?.dispose(); queen.current = null; court.current = null; runtime.current?.dispose(); runtime.current = null; };
     // Theme and tier rebuild the scene; everything else flows through setReading / go.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, tier]);
@@ -382,7 +425,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       if (cancelled) return;
       const pending = (Object.keys(PLACE_MODULES) as HarbourPlaceId[])
         .filter((id) => id !== placeRef.current)
-        .map((id) => PLACE_MODULES[id]().catch(() => undefined));
+        .map((id) => loadPlace(id).catch(() => undefined));
       // A placed interior can only be streamed in once its chunk has landed;
       // asking the runtime again here saves it waiting for the next move.
       void Promise.all(pending).then(() => {
@@ -417,9 +460,9 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // The band above the sheet is a frieze, and each place declares its own
     // (`door` in its pose table): the rack close and level, the rail at eye
     // height, her portrait in the Court.
-    if (!toolOpen) { world.go("court"); return; }
+    if (!toolOpen) return;
     setRects([]);
-    world.go("door");
+    // Keep the room and the person at their chosen desk.
     // The App focuses the tool it opened, and the browser scrolls the focus
     // into view — which can throw the sheet to the top and the room's band
     // off the screen. The door's promise is the room staying the sky, so the
@@ -442,26 +485,26 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     const abort = new AbortController();
     const from = world.placeId();
     setRects([]); setPhrase(""); setScrub(null); setStick(null);
-    void PLACE_MODULES[place]().then(() => {
+    void loadPlace(place).then(() => {
       if (cancelled || runtime.current !== world) return;
       // The Court's group may survive the journey now (walking into a building
       // on the island keeps the island standing), so she is taken out of her
       // slot before she is disposed — a disposed geometry left in a standing
       // scene is a black hole where the Queen was.
-      if (from === "court") { court.current?.detachQueen(); queen.current?.dispose(); queen.current = null; court.current = null; world.setBreathing(false); }
+      if (from === "bank") { court.current?.detachQueen(); queenAnimation.current?.();queenAnimation.current=null;queen.current?.dispose(); queen.current = null; court.current = null; world.setBreathing(false); }
       const walked = crossing.current === place;
       crossing.current = null;
-      world.enter(place, { from, ...(walked ? { threshold: true } : {}) });
+      world.enter(place, { from, reduced:true, ...(walked ? { threshold: true } : {}) });
       world.invalidate();
-      court.current = place === "court" ? world.place() as CourtHandle : null;
+      court.current = place === "bank" ? world.place() as QueenHost : null;
       void holdRail(world);
-      if (place !== "court" || tier === "flat") return;
+      if (place !== "bank" || tier === "flat") return;
       void import("./court/queenPlace.ts").then(({ loadQueenPlace }) => loadQueenPlace(tier as RenderTier, appearance.saved.queen ?? DEFAULT_QUEEN_STYLE, evidenceRef.current, abort.signal)).then(her => {
-        if (cancelled || runtime.current !== world || placeRef.current !== "court") { her.dispose(); return; }
+        if (cancelled || runtime.current !== world || placeRef.current !== "bank") { her.dispose(); return; }
         queen.current = her;
         court.current?.attachQueen(her.group, () => queenRegions(her));
         world.setReading(readingRef.current);
-        if (!window.matchMedia(REDUCED).matches) { world.addAnimator(t => her.breathe(t)); world.setBreathing(true); }
+        if (!(window.matchMedia(REDUCED).matches || document.documentElement.dataset.motion === "reduced")) { queenAnimation.current?.();queenAnimation.current=world.addAnimator(t => her.breathe(t)); world.setBreathing(true); }
       }).catch(() => undefined);
     });
     return () => { cancelled = true; abort.abort(); };
@@ -530,11 +573,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
 
   // Return records: the App's `hearth:house-return` event, and the camera per composition on pagehide.
   useEffect(() => {
-    const restore = (event: Event) => { const detail = (event as CustomEvent).detail; if (detail?.identity === houseIdentity(identityRef.current) && Array.isArray(detail.camera) && detail.camera.length === 3 && detail.camera.every(Number.isFinite)) runtime.current?.restore(detail.camera); };
+    const restore = (event: Event) => { const detail = (event as CustomEvent).detail; if (detail?.identity === houseIdentity(identityRef.current) && Array.isArray(detail.camera) && detail.camera.length === 3 && detail.camera.every(Number.isFinite)) {runtime.current?.restore(detail.camera);if(validHouseBody(detail.body)&&detail.body.place===runtime.current?.placeId())runtime.current?.body()?.place(detail.body.x,detail.body.z,detail.body.yaw);} };
     const remember = () => {
       const current = routeRef.current, world = runtime.current; if (!world || current.surface) return;
       const composition = houseComposition(host.current?.getBoundingClientRect().width || window.innerWidth);
-      saveHouseReturn(localStorage, identityRef.current, houseCameraRoute(current), { camera: [...world.camera()] as [number, number, number], cameraComposition: composition }, harbourCameraSlot(composition, world.placeId()));
+      saveHouseReturn(localStorage, identityRef.current, houseCameraRoute(current), { camera: [...world.camera()] as [number, number, number], cameraComposition: composition, body:world.body()?{place:world.placeId(),x:world.body()!.at().x,z:world.body()!.at().z,yaw:world.body()!.at().yaw}:undefined }, harbourCameraSlot(composition, world.placeId()));
     };
     window.addEventListener("hearth:house-return", restore); window.addEventListener("pagehide", remember);
     return () => { window.removeEventListener("hearth:house-return", restore); window.removeEventListener("pagehide", remember); remember(); };
@@ -786,6 +829,28 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     event.preventDefault();
   }
 
+  const designClient=useDesignClient();
+  const hearthside=useMemo(()=>decodeHearthside(household.hearthside),[household.hearthside]);
+  const arrangement=hearthside.villageArrangement;
+  const decorRoom:VillageRoom|null=place==='court'||place==='campfire'?null:place==='tower'?'loft':place==='kiln'?'studio':place;
+  const savedRoomLook=decorRoom?villageRoomConfig(arrangement,decorRoom):null;
+  const roomLook=previewLook?.room===decorRoom?{...previewLook,displays:[...previewLook.displays]}:savedRoomLook;
+  if(roomLook&&!villageDisplaysEligible(household,hearthside,roomLook.displays))roomLook.displays=[];
+  useEffect(()=>{(runtime.current?.place() as VillageInterior|undefined)?.decorate?.(roomLook);runtime.current?.invalidate();},[place,status,arrangement,household.hearthside,previewLook]);
+  const displayKey=JSON.stringify(roomLook?.displays??[]);
+  useEffect(()=>{
+    const target=runtime.current?.place() as VillageInterior|undefined;target?.display?.([]);
+    const refs=roomLook?.displays??[];let cancelled=false;
+    void Promise.all(refs.slice(0,2).map(async (ref):Promise<VillageDisplayContent|null>=>{
+      if(ref.kind==='memory'){const memory=hearthside.memories.find(m=>m.id===ref.id&&m.revision===ref.revision);return memory?{kind:'memory' as const,id:memory.id,title:memory.title}:null;}
+      try{const document=await designClient?.load(ref.designId,ref.revision);
+        if(!document||document.scope.ownerMemberId!==null||document.scope.environment!==household.environment||document.scope.householdId!==household.householdId)return null;
+        const snapshot=snapshotKittyDesignRevision(document,ref.id,ref.revision);
+        return {kind:'piece' as const,id:ref.id,designId:ref.designId,piece:snapshot.piece,appearance:snapshot.appearance};
+      }catch{return null;}
+    })).then(items=>{if(!cancelled&&runtime.current?.place()===target){target?.display?.(items.filter((x):x is VillageDisplayContent=>x!==null));runtime.current?.invalidate();}});
+    return ()=>{cancelled=true;target?.display?.([]);};
+  },[place,status,displayKey,household.environment,household.householdId,hearthside,designClient]);
   const showFlat = status === "flat" || status === "fallback" || (status === "loading" && tier === "flat");
   /**
    * Say it, quietly, to the person who has just landed. It is shown only while
@@ -798,13 +863,14 @@ export default function HarbourWorld(props: HarbourWorldProps) {
    */
   const invite = status === "ready" && !toolOpen && standing && !stageHasKeys;
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
-  const stair = () => props.onNavigate("home", "middle");
-  return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={place === "court" ? "The Queen's Court" : place === "tower" ? "The Rook's Tower" : place === "cellar" ? "The Cellar" : place === "glasshouse" ? "The Glasshouse" : place === "kitchen" ? "The Kitchen" : place === "boathouse" ? "The Boathouse" : place === "cottage" ? "Hercules’s Cottage" : place === "kiln" ? "The Kiln" : place === "campfire" ? "The Campfire" : place === "atlas" ? "The Atlas" : "The Library"}>
-    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) setStageHasKeys(false); }}>
+  const stair = () => navigatePlace("court");
+  return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={placeName}>
+    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : showFlat ? `${placeName}. Reading edition. Every destination is a button.` : stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) setStageHasKeys(false); }}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
-      {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => props.onNavigate("home", HARBOUR_PLACE_LEVELS[next])} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
+      {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => navigatePlace(next)} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
-      {!toolOpen&&(place==='library'||place==='kiln')&&<Suspense fallback={null}><InteriorDesk place={place} household={household} memberId={memberId} scope={scope} onOpen={onOpen} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('court');}}/></Suspense>}
+      {status==="ready"&&!toolOpen&&<VillageHUD place={place} travelling={travelTo} onVisit={visit} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('court');}}/>}
+      {arranging&&!showFlat&&decorRoom&&props.onArrange&&<VillageDecorator key={decorRoom} household={household} memberId={memberId} room={decorRoom} arrangement={arrangement} onCommit={props.onArrange} onPreview={setPreviewLook} onClose={()=>{setArranging(false);stage.current?.querySelector<HTMLButtonElement>('[aria-label="Arrange room"]')?.focus();}}/>}
       {invite && <div className="harbour-world__invite" data-harbour-invite={touch ? "touch" : "keys"} aria-hidden="true"><Whisper mode="line">{inviteWords(place, touch)}</Whisper></div>}
       {status === "ready" && !toolOpen && standing && <div className="harbour-moves" data-harbour-moves={emotesOpen ? "open" : "shut"}>
         {emotesOpen && <div className="harbour-moves__emotes" role="group" aria-label="Emotes">
@@ -825,7 +891,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {statusLine && <small className="harbour-world__supported" role="status">{statusLine}</small>}
       {!ready && status === "ready" && <small className="harbour-world__checking" role="status">Checking the books · {freshness}</small>}
       {toolOpen && <button type="button" className="harbour-world__put-back" onClick={onClose}>← Put it back in {placeName}</button>}
-      {!toolOpen && status === "ready" && place !== "court" && <button type="button" className="harbour-world__stair" onClick={stair}>← Back to the Court</button>}
+      {!toolOpen && status === "ready" && place !== "court" && <button type="button" className="harbour-world__stair" onClick={stair}>← Village square</button>}
       {status === "fallback" && <p className="harbour-world__fallback" role="status">Reading edition · {placeName} could not be drawn; every door is a button.</p>}
     </div>
     {props.children}

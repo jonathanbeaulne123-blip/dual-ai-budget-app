@@ -1,5 +1,6 @@
 import {adoptWinMemory,requireStableWinProvenance,type AdoptWinMemoryOperation} from './winMemory.ts';
 import {applyFurnitureMove,type FurnitureMove} from './roomFurniture.ts';
+import {revertVillageArrangement,saveVillageArrangement} from '../harbour/village/villageArrangement.ts';
 import {applyEncounterTransition} from './encounterService.ts';
 import {decodeEncounterCommand,type EncounterCommand} from './encounterContracts.ts';
 import {ENCOUNTER_WARDROBE} from './encounterWardrobe.ts';
@@ -14,6 +15,8 @@ import { decodeHearthside, decodeExperience, decodeNote, decodeMemory, decodeOcc
 
 export type HearthsideOperation = EncounterCommand | AdoptWinMemoryOperation
   | {kind:'furniture.save';value:FurnitureMove}
+  | {kind:'village-arrangement.save';expectedRevision:number;value:unknown}
+  | {kind:'village-arrangement.revert-latest';expectedRevision:number}
   | {kind:'room.capture';expectedRevision:0;value:RecordedRoom}
   | {kind:'room.keep'|'room.withdraw';expectedRevision:number;id:string}
   | {kind:'studio.handoff';expectedRevision:number;value:StudioHandoff}
@@ -99,7 +102,7 @@ export const commitHearthside = captureCommand('commitHearthside', (h: Household
     return {household:{...h,hearthside:decodeHearthside(s)},postedIds:[],warnings:[],undo:{id:input.id,label:'Review an earlier Win as a memory',snapshot:h,postedIds:[],actorMemberId:actor,commandKind:'hearthside'}};
   }
   object(op, ['kind', 'expectedRevision', 'id', 'livedOn', 'value', 'year', 'experience','task','event']);
-  object(op, op.kind==='furniture.save'?['kind','value']:op.kind==='experience.add-task'?['kind','expectedRevision','id','task']:op.kind==='experience.schedule'?['kind','expectedRevision','id','event']:op.kind==='experience.mark-lived'?['kind','expectedRevision','id','livedOn']:op.kind==='occasion.prepare'?['kind','expectedRevision','id','year','experience']:['memory.keep','memory.withdraw','room.keep','room.withdraw'].includes(op.kind) ? ['kind', 'expectedRevision', 'id'] : ['kind', 'expectedRevision', 'value']);
+  object(op, op.kind==='furniture.save'?['kind','value']:op.kind==='village-arrangement.save'?['kind','expectedRevision','value']:op.kind==='village-arrangement.revert-latest'?['kind','expectedRevision']:op.kind==='experience.add-task'?['kind','expectedRevision','id','task']:op.kind==='experience.schedule'?['kind','expectedRevision','id','event']:op.kind==='experience.mark-lived'?['kind','expectedRevision','id','livedOn']:op.kind==='occasion.prepare'?['kind','expectedRevision','id','year','experience']:['memory.keep','memory.withdraw','room.keep','room.withdraw'].includes(op.kind) ? ['kind', 'expectedRevision', 'id'] : ['kind', 'expectedRevision', 'value']);
   const experienceExists = (id: string | null) => { if (id !== null && !s.experiences.some(e => e.id === id)) throw Error('HEARTHSIDE_EXPERIENCE_MISSING'); };
   if(op.kind==='experience.add-task'||op.kind==='experience.schedule'){
     const experience=s.experiences.find(e=>e.id===identifier(op.id));if(!experience||experience.state==='archived')throw Error('HEARTHSIDE_EXPERIENCE_MISSING');
@@ -189,6 +192,10 @@ export const commitHearthside = captureCommand('commitHearthside', (h: Household
     occasion.occurrences=[...occasion.occurrences.filter(o=>o.id!==id),{id,year:op.year,date:old?.date??date,experienceId:experience.id,memoryIds:old?.memoryIds??[]}];occasion.revision++;
   } else if(op.kind==='furniture.save'){
     s.furniture=applyFurnitureMove(s.furniture??[],op.value);
+  } else if(op.kind==='village-arrangement.save'){
+    s.villageArrangement=saveVillageArrangement(h,s,s.villageArrangement,op.expectedRevision,op.value);
+  } else if(op.kind==='village-arrangement.revert-latest'){
+    s.villageArrangement=revertVillageArrangement(h,s,s.villageArrangement,op.expectedRevision);
   } else if (op.kind === 'placement.save') {
     const value = decodePlacement(op.value), old = s.placements.find(p => p.id === value.id);
     expectRevision(old?.revision ?? 0, op.expectedRevision, value.revision);

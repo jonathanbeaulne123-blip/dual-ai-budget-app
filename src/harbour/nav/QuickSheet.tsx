@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
-import { HOUSE_PLACES, ROOM_NAMES, TARGET_NAMES, houseTargetRoute } from "../../house/navigation.ts";
-import { HOUSE_LEVELS, HOUSE_ROOMS, type HouseLevel, type HouseRoom } from "../../hearthside/houseRoutes.ts";
-import { HARBOUR_PLACE_NAMES, HARBOUR_ROOMS, type HarbourPlaceId } from "../flag.ts";
+import { TARGET_NAMES, houseTargetRoute } from "../../house/navigation.ts";
+import { type HouseLevel, type HouseRoom } from "../../hearthside/houseRoutes.ts";
+import { HARBOUR_PLACE_NAMES, type HarbourPlaceId } from "../flag.ts";
+import { VILLAGE_ADDRESS } from "../village/layout.ts";
 import type { CompassDistrict } from "./Compass.tsx";
 import "./harbour-nav.css";
 
@@ -12,10 +13,9 @@ import "./harbour-nav.css";
  * - **Every tool** — all of `TARGET_NAMES`, grouped by the district that owns
  *   its room. A tool whose surface belongs to no room of its own (Hercules,
  *   the dressing room) is marked, because it opens wherever you are standing.
- * - **Every place** — all fifteen room × level slots of the island, each named
- *   by the place that stands there (the Tower, the Glasshouse, the Campfire…)
- *   and by the house's own name for the slot. Every landmark on the lawn is one
- *   of these slots, so nothing on the island is more than one tap away.
+ * - **Every place** — twelve distinct village destinations, including the
+ *   four rooms of our home and the separate Fund Bank. Every destination has
+ *   one clear name and remains one tap away.
  * - The space switch and the household switcher as slotted nodes, Status and
  *   Hercules, and the "Illustrated / Reading edition" toggle.
  *
@@ -41,7 +41,7 @@ export type QuickSheetProps = {
    * `HARBOUR_GO_EVENT` instead and the harbour shell — mounted for every
    * household route — does the walking, so the App needs no second navigator.
    */
-  onGo?: (room: HouseRoom, level: HouseLevel) => void;
+  onGo?: (room: HouseRoom, level: HouseLevel, place?: HarbourPlaceId) => void;
   /** The place standing right now, so its row reads as current. */
   currentPlace?: { room: HouseRoom; level: HouseLevel } | null;
   onStatus: () => void;
@@ -59,7 +59,7 @@ export type QuickSheetProps = {
 };
 
 export type QuickSheetGroup = { district: CompassDistrict; title: string; tools: { id: string; name: string }[] };
-/** One room × level slot of the island: which place stands there, and what the house calls the slot. */
+/** One physical village destination and its compatible house address. */
 export type QuickSheetPlace = { key: string; room: HouseRoom; level: HouseLevel; place: HarbourPlaceId | null; name: string; words: string; aria: string };
 
 /**
@@ -70,37 +70,25 @@ export type QuickSheetPlace = { key: string; room: HouseRoom; level: HouseLevel;
  */
 export const HARBOUR_GO_EVENT = "hearth:harbour-go";
 
-const LEVEL_ORDER: readonly HouseLevel[] = HOUSE_LEVELS;
 const titleCase = (words: string) => `${words[0]!.toUpperCase()}${words.slice(1)}`;
 
 /**
- * Pure: every room × level slot of the house, in reading order, named by the
- * place that stands there. A slot the harbour does not own keeps the house's
- * own name for it, so the list is total whatever the island has built so far.
+ * Pure: every physical village destination, once, in reading order.
  */
 export function quickSheetPlaces(): QuickSheetPlace[] {
-  const rows: QuickSheetPlace[] = [];
-  for (const room of HOUSE_ROOMS) {
-    for (const level of LEVEL_ORDER) {
-      const place = HARBOUR_ROOMS[room]?.[level] ?? null;
-      const slot = HOUSE_PLACES[room][level];
-      const name = place ? titleCase(HARBOUR_PLACE_NAMES[place]) : slot.title;
-      rows.push({
-        key: `${room}:${level}`,
-        room,
-        level,
-        place,
-        name,
-        words: `${ROOM_NAMES[room]} · ${slot.title}`,
-        // The island has renamed some of the house's slots — the Campfire
-        // stands where the house said "the cabinet of wonders" — so the row
-        // read aloud says the room, the level **and** the house's own name
-        // for it, and nobody has to guess which place they are walking to.
-        aria: `${name}. ${ROOM_NAMES[room]}, ${level}${slot.title === name ? "" : ` — the house calls this place ${slot.title}`}. Walk there.`,
-      });
-    }
-  }
-  return rows;
+  const words: Record<HarbourPlaceId, string> = {
+    court: 'Village · Paths, gardens and neighbours', bank: 'Fund Bank · Queen, vault and books',
+    kitchen: 'Our home · Kitchen', tower: 'Our home · Kitty Banks upstairs',
+    cellar: 'Our home · Bill jars downstairs', atlas: 'Our home · Atlas nook',
+    library: 'Library · The Standing Book', glasshouse: 'Glasshouse · Plans and days ahead',
+    kiln: 'Pottery Studio · Shape, paint and fire', cottage: 'Hercules’s cottage · Play and rest',
+    boathouse: 'Boathouse · Letters and kept memories', campfire: 'Waterfront · A moment by the fire',
+  };
+  return (Object.entries(VILLAGE_ADDRESS) as [HarbourPlaceId, typeof VILLAGE_ADDRESS[HarbourPlaceId]][]).map(([place,address])=>({
+    key: place, room: address.room, level: address.level, place,
+    name: titleCase(HARBOUR_PLACE_NAMES[place]), words: words[place],
+    aria: `${titleCase(HARBOUR_PLACE_NAMES[place])}. ${words[place]}. Go there.`,
+  }));
 }
 
 /**
@@ -117,7 +105,7 @@ export function quickSheetRoomless(): string[] {
   });
 }
 
-const DISTRICT_TITLES: Record<CompassDistrict, string> = { home: "Home — the Court", study: "Study", kitchen: "Kitchen", making: "Making", together: "Together — the Boathouse" };
+const DISTRICT_TITLES: Record<CompassDistrict, string> = { home: "Home — the village", study: "Study", kitchen: "Kitchen", making: "Making", together: "Together — the Boathouse" };
 const DISTRICT_ORDER: readonly CompassDistrict[] = ["home", "study", "kitchen", "making", "together"];
 const MAKING_TOOLS: ReadonlySet<string> = new Set(["pottery", "hercules", "wardrobe"]);
 
@@ -196,8 +184,9 @@ export function QuickSheet(props: QuickSheetProps) {
 
   /** Walk to a place: the App's own navigator when it gave one, else the shell's event. */
   function go(row: QuickSheetPlace) {
-    if (props.onGo) { props.onGo(row.room, row.level); return; }
-    try { window.dispatchEvent(new CustomEvent(HARBOUR_GO_EVENT, { detail: { room: row.room, level: row.level } })); }
+    const place = row.place ?? undefined;
+    if (props.onGo) { props.onGo(row.room, row.level, place); return; }
+    try { window.dispatchEvent(new CustomEvent(HARBOUR_GO_EVENT, { detail: { room: row.room, level: row.level, ...(place ? { place } : {}) } })); }
     catch { /* jsdom without CustomEvent still closes the sheet. */ }
   }
 
@@ -254,7 +243,7 @@ export function QuickSheet(props: QuickSheetProps) {
           </section>
         ))}
         <section className="quick-sheet__group quick-sheet__group--places" data-quick-sheet-places="" aria-labelledby={`${titleId}-places`}>
-          <h3 id={`${titleId}-places`}>Every place on the island</h3>
+          <h3 id={`${titleId}-places`}>Every place in the village</h3>
           <ul className="quick-sheet__tools">
             {places.map((row) => (
               <li key={row.key}>
@@ -265,7 +254,7 @@ export function QuickSheet(props: QuickSheetProps) {
                   data-quick-sheet-place={row.key}
                   data-quick-sheet-place-id={row.place ?? undefined}
                   aria-label={row.aria}
-                  aria-current={here && here.room === row.room && here.level === row.level ? "true" : undefined}
+                  aria-current={row.place !== 'bank' && here && here.room === row.room && here.level === row.level ? "true" : undefined}
                   onClick={() => { go(row); onClose(); }}
                 >
                   <span>{row.name}</span>

@@ -48,7 +48,7 @@ describe("the Tower, read", () => {
     const opened: Array<[string, string | undefined]> = [];
     await act(async () => root.render(createElement(HarbourFlat, { place: "tower", reading: custodianReading, status: "flat", onOpen: (t: string, o?: string) => opened.push([t, o]) })));
     const section = host.querySelector("[data-place-flat='tower']")!;
-    expect(section.getAttribute("aria-label")).toBe("The Rook's Tower, reading edition");
+    expect(section.getAttribute("aria-label")).toBe("The Home Loft, reading edition");
     const shelves = section.querySelectorAll(".place-flat__shelves > li");
     expect(shelves.length).toBe(custodianReading.tower.shelves.length);
     const banks = [...section.querySelectorAll(".place-flat__banks button")] as HTMLButtonElement[];
@@ -189,6 +189,6 @@ describe("the Cellar's stair", () => {
     expect(walked).toBe(1);
     await act(async () => root.render(createElement(HarbourFlat, { place: "court", reading, status: "flat", onStair: () => { walked += 1; } })));
     expect(host.querySelector(".place-flat__stair")).toBeNull();
-    expect(host.querySelector("[data-court-flat]")!.getAttribute("aria-label")).toBe("The Queen's Court, reading edition");
+    expect(host.querySelector("[data-court-flat]")!.getAttribute("aria-label")).toBe("Little Harbour village, reading edition");
   });
 });

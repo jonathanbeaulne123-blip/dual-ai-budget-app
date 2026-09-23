@@ -44,8 +44,8 @@ export const CAMPFIRE_LAYOUT = {
   hercules: [1.18, 0, 1.16] as const,
   /** The footpath up the shore: the way back to the Court. */
   door: [0, 0, 3.45] as const,
-  /** The Boathouse, standing behind the fire with its back to the water. */
-  boathouse: [1.75, 0, -5.6] as const,
+  /** A wayfinding sign toward the real Boathouse across the village. */
+  boathouse: [-2.9, 0, 2.7] as const,
 } as const;
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -250,16 +250,16 @@ export function createCampfire(scene: THREE.Scene, options: CampfireOptions): Pl
     contacts.disc(sx, sz, 0.8, 0.45, group);
   });
 
-  // ── The Boathouse behind the fire, small and far, with its back to the water ─
+  // ── A signpost to the real Boathouse; never a second toy building ─
   {
     const [bx, , bz] = boathouseSpot;
     const shell = shadowed(merged([
-      placed(new THREE.BoxGeometry(1.9, 1.1, 1.4), bx, 0.55, bz),
+      placed(new THREE.BoxGeometry(.09, 1.35, .09), bx, .68, bz),
+      placed(new THREE.BoxGeometry(1.15, .28, .09), bx, 1.24, bz),
     ], mat(dressing.log, { roughness: 0.9 })));
     shell.name = "campfire-boathouse"; owned(shell, "boathouse"); group.add(shell);
-    const roof = shadowed(new THREE.Mesh(track(new THREE.CylinderGeometry(0.02, 1.25, 0.85, 4, 1)), mat(dressing.bark, { roughness: 0.88, flatShading: true })));
-    roof.rotation.y = Math.PI / 4; roof.scale.set(1.05, 1, 0.78); roof.position.set(bx, 1.5, bz);
-    roof.name = "campfire-boathouse-roof"; owned(roof, "boathouse"); group.add(roof);
+    const sign = track(new EngravedPlate({ stone: dressing.plate, ink: dressing.ink, size: 'small', fit: true }, 1.1, .25));
+    sign.set('Boathouse →'); sign.mesh.position.set(bx, 1.24, bz + .06); owned(sign.mesh, 'boathouse'); group.add(sign.mesh);
   }
 
   // ── Hercules, between the logs, where the heat reaches ────────────────────
@@ -478,7 +478,7 @@ export function createCampfire(scene: THREE.Scene, options: CampfireOptions): Pl
       rows.push({ id: `seat:${index}`, position: at(spot[0], 0.55, spot[2]), zone: "station", label: seatLabel(index), door: { target: "plan-studio" } });
     });
     rows.push({ id: "hercules", position: at(herculesSpot[0], 0.4, herculesSpot[2]), zone: "prop", label: `Hercules by the fire — he asks one question at a time${partnerName ? `, and waits for ${partnerName}` : ""}. Talk with Hercules.`, door: { target: "hercules" } });
-    rows.push({ id: "boathouse", position: at(boathouseSpot[0], 1.2, boathouseSpot[2] + 1.0), zone: "landmark", label: "The Boathouse, up the shore behind the fire — the two of you." });
+    rows.push({ id: "boathouse", position: at(boathouseSpot[0], 1.24, boathouseSpot[2]), zone: "landmark", label: "The Boathouse — follow the path across the village." });
     rows.push({ id: "court-door", position: at(doorSpot[0], 0.35, doorSpot[2] - 0.5), zone: "stair", label: "The footpath up the shore — back to the Court." });
     return rows;
   };
@@ -488,7 +488,7 @@ export function createCampfire(scene: THREE.Scene, options: CampfireOptions): Pl
       { id: "fire", group: "campfire", label: "The fire", box: box(-1.25, 0, -1.25, 1.25, 1.3, 1.25) },
       { id: "stones", group: "campfire", label: "The path of months", box: box(CAMPFIRE_LAYOUT.path.x - 0.9, 0, CAMPFIRE_LAYOUT.path.z + 7 * CAMPFIRE_LAYOUT.path.stepZ, CAMPFIRE_LAYOUT.path.x + 0.9, 0.3, CAMPFIRE_LAYOUT.path.z + 0.4) },
       { id: "hercules", group: "campfire", label: "Hercules by the fire", box: box(herculesSpot[0] - 0.4, 0, herculesSpot[2] - 0.4, herculesSpot[0] + 0.4, 0.5, herculesSpot[2] + 0.4) },
-      { id: "boathouse", group: "campfire", label: "The Boathouse, up the shore", box: box(boathouseSpot[0] - 1.1, 0, boathouseSpot[2] - 1.0, boathouseSpot[0] + 1.1, 2.1, boathouseSpot[2] + 1.0) },
+      { id: "boathouse", group: "campfire", label: "The Boathouse signpost", box: box(boathouseSpot[0] - .6, 0, boathouseSpot[2] - .1, boathouseSpot[0] + .6, 1.5, boathouseSpot[2] + .1) },
       { id: "court-door", group: "campfire", label: "The footpath — back to the Court", box: box(doorSpot[0] - 0.7, 0, doorSpot[2] - 1.1, doorSpot[0] + 0.7, 0.4, doorSpot[2] + 0.2) },
     ];
     seats.forEach((spot, index) => {

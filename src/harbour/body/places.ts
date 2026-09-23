@@ -41,7 +41,8 @@ import { BODY_HEIGHT, BODY_RADIUS, courtObstacles, obstaclesFromRegions, type Ob
 export const PLACE_FLOOR: Readonly<Record<HarbourPlaceId, number | null>> = Object.freeze({
   /** The Court is the island: a sloped analytic surface, never a plane. */
   court: null,
-  tower: 0,
+  bank: 0.06,
+  tower: 0.07,
   cellar: 0,
   glasshouse: 0,
   kitchen: 0,
@@ -77,6 +78,10 @@ export function placeGround(place: HarbourPlaceId): (x: number, z: number) => nu
   if (placement) {
     // A placed room's floor is one plane, lifted clear of the island under it.
     const level = placementLift(placement) + floor;
+    if (placement.outdoor) return (x, z) => {
+      const terrain = groundHeightAt(x, z);
+      return Math.hypot(x - placement.spot[0], z - placement.spot[1]) <= 4.2 ? Math.max(terrain, level) : terrain;
+    };
     return () => level;
   }
   if (OPEN_AIR.has(place)) return (x, z) => Math.max(groundHeightAt(x, z), floor);
@@ -104,7 +109,7 @@ export const ARRIVAL_STEP = 1.25;
 
 /** The anchors that are a way out of a place: the stair, the door, the footpath up the shore. */
 export function exitAnchors(anchors: readonly Anchor[]): Anchor[] {
-  return anchors.filter((anchor) => anchor.zone === "stair");
+  return anchors.filter((anchor) => anchor.zone === "stair" || anchor.zone === "portal");
 }
 
 /**
@@ -120,18 +125,18 @@ export function exitAnchors(anchors: readonly Anchor[]): Anchor[] {
  */
 export function placeRoom(place: HarbourPlaceId, anchors: readonly Anchor[] = []): RoomBounds | null {
   const placement = placementOf(place);
+  if (placement?.outdoor) return null;
   const hold = PLACE_HOLDS[place];
   if (placement) {
     // The footprint, held inside the room's own shell (its hold, written in
     // the room's own coordinates) and then inside that by a hand's breadth.
-    const shellX = hold ? Math.min(hold.eye.max[0], -hold.eye.min[0]) : Infinity;
-    const shellZ = hold ? Math.min(hold.eye.max[2], -hold.eye.min[2]) : Infinity;
+
     return {
       x: placement.spot[0], z: placement.spot[1],
-      halfX: Math.max(BODY_RADIUS * 2, Math.min(placement.halfWidth, shellX) - ROOM_INSET),
-      halfZ: Math.max(BODY_RADIUS * 2, Math.min(placement.halfDepth, shellZ) - ROOM_INSET),
+      halfX: Math.max(BODY_RADIUS * 2, placement.halfWidth - .2),
+      halfZ: Math.max(BODY_RADIUS * 2, placement.halfDepth - .2),
       yaw: placement.yaw,
-      door: { x: placement.door[0], z: placement.door[2], half: Math.max(DOOR_HALF_MIN, placement.doorRadius * 0.4) },
+      door: placement.internal ? null : { x: placement.door[0], z: placement.door[2], half: .55 },
     };
   }
   if (!hold) return null;
@@ -232,6 +237,12 @@ function boxRegion(hazard: Obstacle): { id: string; box: { min: { x: number; y: 
 export function placeArrival(place: HarbourPlaceId, anchors: readonly Anchor[] = []): { x: number; z: number; yaw: number } {
   const placement = placementOf(place);
   const room = placeRoom(place, anchors);
+  if(placement?.internal){
+    const portal=anchors.find(a=>a.zone==='portal');
+    const [dx,,dz]=portal?.position??[0,0,1.5];const length=Math.hypot(dx,dz)||1;
+    const [x,,z]=placementToWorld(placement,[dx-dx/length*ARRIVAL_STEP,0,dz-dz/length*ARRIVAL_STEP]);
+    return {x,z,yaw:Math.atan2(-dx,-dz)+placement.yaw};
+  }
   if (placement) {
     const [dx, , dz] = placement.door;
     const inward = Math.hypot(dx, dz) || 1;

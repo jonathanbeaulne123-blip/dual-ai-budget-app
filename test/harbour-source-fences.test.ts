@@ -39,14 +39,15 @@ describe("src/harbour source fences", () => {
     for (const expected of ["flag.ts", "HarbourWorld.tsx", "nav/arrival.ts", "nav/Compass.tsx", "nav/QuickSheet.tsx", "scene/place.ts", "scene/runtime.ts", "court/CourtScene.ts", "court/CourtTwins.tsx", "flat/CourtFlat.tsx", "data/reading.ts"]) expect(names).toContain(expected);
   });
 
-  it("has slice 2's three places, each its own directory and its own chunk", () => {
+  it("loads the Bank, Loft and Cellar in their own chunks", () => {
     const names = files.map((f) => relative(harbour, f).replace(/\\/g, "/"));
-    for (const expected of ["scene/travel.ts", "tower/TowerScene.ts", "cellar/CellarScene.ts", "flat/PlaceFlat.tsx"]) expect(names).toContain(expected);
+    for (const expected of ["scene/travel.ts", "village/BankScene.ts", "village/LoftScene.ts", "cellar/CellarScene.ts", "flat/PlaceFlat.tsx"]) expect(names).toContain(expected);
     const shell = readFileSync(join(harbour, "HarbourWorld.tsx"), "utf8");
     // Lazy, one import each: standing in the Court downloads neither the tower nor the cellar.
-    expect(shell).toMatch(/import\("\.\/tower\/TowerScene\.ts"\)/);
+    expect(shell).toMatch(/import\("\.\/village\/LoftScene\.ts"\)/);
+    expect(shell).toMatch(/import\("\.\/village\/BankScene\.ts"\)/);
     expect(shell).toMatch(/import\("\.\/cellar\/CellarScene\.ts"\)/);
-    expect(shell).not.toMatch(/^import .*(tower|cellar)\/.*Scene\.ts/m);
+    expect(shell).not.toMatch(/^import (?!type ).*(village|cellar)\/.*Scene\.ts/m);
   });
 
   it("keeps every place's directory inside the same fences", () => {
@@ -54,7 +55,7 @@ describe("src/harbour source fences", () => {
     // body and the seam the live-position lane installs itself into. Like every
     // other directory here, neither reaches anything outside the harbour, which
     // the import fence below is what proves.
-    const dirs = ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "body", "presence", "interiors"];
+    const dirs = ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "body", "presence", "interiors", "village"];
     const seen = new Set(files.map((f) => relative(harbour, f).replace(/\\/g, "/").split("/")[0]).filter((part) => part && !part.endsWith(".ts") && !part.endsWith(".tsx")));
     for (const dir of ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat"]) expect([...seen]).toContain(dir);
     for (const name of [...seen]) expect(dirs).toContain(name);

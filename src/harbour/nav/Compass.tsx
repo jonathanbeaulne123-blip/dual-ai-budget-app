@@ -60,7 +60,7 @@ export function compassDistrict(route: CompassProps["route"]): CompassDistrict {
 }
 
 export const COMPASS_DISTRICTS: readonly { id: CompassDistrict; label: string; aria: string }[] = [
-  { id: "home", label: "Home", aria: "Home — the Queen's Court" },
+  { id: "home", label: "Home", aria: "Home — the village square and Fund bank" },
   { id: "study", label: "Study", aria: "Study — the Library and Glasshouse" },
   { id: "kitchen", label: "Kitchen", aria: "Kitchen — make a plan" },
   { id: "making", label: "Making", aria: "Making — the Kiln and Hercules's cottage" },

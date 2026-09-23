@@ -33,7 +33,7 @@
  * drift.
  */
 export const WORLD_PLACE_IDS = [
-  "court", "tower", "cellar", "glasshouse", "kitchen",
+  "court", "bank", "tower", "cellar", "glasshouse", "kitchen",
   "boathouse", "library", "cottage", "kiln", "campfire", "atlas",
 ] as const;
 export type WorldPlaceId = (typeof WORLD_PLACE_IDS)[number];

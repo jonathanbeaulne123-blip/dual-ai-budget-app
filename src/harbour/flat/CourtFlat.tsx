@@ -1,4 +1,5 @@
 import { formatCad } from "../../core/money.ts";
+import type { HarbourPlaceId } from "../flag.ts";
 import type { HarbourReading } from "../data/reading.ts";
 import { DoorSign } from "./DoorSign.tsx";
 import "../harbour.css";
@@ -18,7 +19,7 @@ export type CourtFlatProps = {
    * into the Tower and the Cellar, not doors onto HTML. Without this the
    * buttons fall back to the surfaces, so the App's Suspense frame still works.
    */
-  onEnter?: (place: "tower" | "cellar") => void;
+  onEnter?: (place: HarbourPlaceId) => void;
   /** Laid over a stage that is still being built, rather than standing on its own. */
   overlay?: boolean;
 };

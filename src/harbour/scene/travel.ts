@@ -15,8 +15,8 @@ import { HARBOUR_PLACE_LEVELS, type HarbourPlaceId } from "../flag.ts";
  *   and the camera rises into the tower's own pose.
  * - **court → cellar** — the court's floor lifts away as a lid (0 → 1 over
  *   900 ms) and the camera descends through it.
- * - **back** — the reverse, in 700 ms, framing the piece you came from: the
- *   Rook for the tower, the Bishop for the cellar.
+ * - **back** — the reverse, in 700 ms, settling into the destination
+ *   village room's authored camera pose.
  * - **reduced motion** — a cut: no duration, roof and lid already at their end
  *   states, so the roof is simply absent or present.
  */
@@ -46,9 +46,6 @@ export const roofFor = (place: HarbourPlaceId): number => (place === "tower" ? 1
 /** Where the court's floor rests: lifted away as a lid only while you are down in the cellar. */
 export const lidFor = (place: HarbourPlaceId): number => (place === "cellar" ? 1 : 0);
 
-/** The piece on its plinth that a place's door stands beside, so coming back up frames the thing you tapped. */
-const CAME_FROM: Readonly<Partial<Record<HarbourPlaceId, string>>> = Object.freeze({ tower: "rook", cellar: "bishop" });
-
 /** Levels run above → middle → below; travelling toward a lower level descends. */
 const HEIGHT: Readonly<Record<string, number>> = Object.freeze({ above: 1, middle: 0, below: -1 });
 const riseBetween = (from: HarbourPlaceId, to: HarbourPlaceId): -1 | 0 | 1 => {
@@ -58,14 +55,12 @@ const riseBetween = (from: HarbourPlaceId, to: HarbourPlaceId): -1 | 0 | 1 => {
 
 /**
  * The journey from one place to another. Leaving the court takes 900 ms;
- * coming back takes 700 ms and frames the piece you came from. Reduced motion
+ * coming back takes 700 ms and frames the destination. Reduced motion
  * (and standing still) is a cut with the roof and the lid already where they
  * belong.
  */
 export function travelPlan(from: HarbourPlaceId, to: HarbourPlaceId, reduced: boolean): TravelPlan {
-  const camera: TravelCamera = to === "court" && CAME_FROM[from]
-    ? { mode: "object", anchor: CAME_FROM[from] ?? null }
-    : { mode: "court", anchor: null };
+  const camera: TravelCamera = { mode: "court", anchor: null };
   const rise = riseBetween(from, to);
   const still = from === to || reduced;
   const ms = still ? 0 : to === "court" ? TRAVEL_BACK_MS : TRAVEL_UP_MS;
@@ -90,7 +85,7 @@ export function travelAt(plan: TravelPlan, elapsed: number): TravelFrame {
   return { k, roof: lerp(plan.roof), lid: lerp(plan.lid), done: raw >= 1 };
 }
 
-export const HARBOUR_CAMERA_SLOT_PREFIX = "camera:v3:harbour";
+export const HARBOUR_CAMERA_SLOT_PREFIX = "camera:v4:village";
 
 /** A return record's camera slot, one per composition **and** per place: the tower keeps its own eye. */
 export const harbourCameraSlot = (composition: "phone" | "desktop", place: HarbourPlaceId): string =>
