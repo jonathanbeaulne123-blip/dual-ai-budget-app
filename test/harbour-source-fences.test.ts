@@ -102,5 +102,6 @@ describe("src/harbour source fences", () => {
     expect(app).toMatch(/harbourArrivalRoute\(\{saved:saved\?\.route,scope:session\.view/);
     expect(app).toMatch(/const HarbourWorld = lazy\(\(\) => import\("\.\/harbour\/HarbourWorld\.tsx"\)\)/);
     expect(app).toMatch(/onJourney=\{\(\)=>goTab\("plan",undefined,\{route:\{householdId:household\.householdId,scope:"household",room:"kitchen-table",level:"above",surface:"journey",object:"harbour-return",time:harbourJourneyAnchor\(household,today\)\.date\}/);
+    expect(app).toMatch(/onExitJourney=\{\(\) => navigateHouseSurface\(\{householdId:household\.householdId,scope:"household",room:"home",level:"middle",village:\{place:"court"\}\}\)\}/);
   });
 });
