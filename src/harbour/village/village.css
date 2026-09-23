@@ -8,3 +8,10 @@
 .harbour-world__stair{bottom:104px!important;min-height:44px}.harbour-world__invite{bottom:165px!important}.harbour-world__phrase{bottom:215px!important}
 .village-decorator{overscroll-behavior:contain}.village-tools{box-sizing:border-box}
 @media(max-width:719px){.harbour-walk-together{left:14px!important;right:auto;top:auto;bottom:218px!important;max-width:190px!important}.harbour-world__stair{bottom:158px!important}.harbour-world__invite{display:none}.harbour-world__phrase{bottom:300px!important}.village-address{max-width:calc(100% - 32px);box-sizing:border-box}.village-decorator{box-sizing:border-box}.village-map{box-sizing:border-box}}
+
+/* Comfortable thumb targets, with room for the complete quick-travel label. */
+.village-tools button{min-width:44px}.village-tools select{width:168px}
+@media(max-width:719px){.village-tools select{width:146px;max-width:146px}.village-decorator{top:auto;bottom:170px;max-height:46%}.harbour-walk-together{font-size:11px!important}.harbour-walk-together label{min-height:32px}}
+.village-decorator-head{position:sticky;top:-22px;display:flex;align-items:center;gap:8px;background:#fff9ed;z-index:1;padding:6px 0}.village-decorator-head h3{flex:1}.village-decorator-head button{border:0;background:transparent;color:inherit;font-size:24px;min-width:44px;min-height:44px}
+
+@media(max-width:719px){.harbour-walk-together{padding:6px 10px!important;max-width:175px!important}.harbour-walk-together>span{font-size:10px!important;line-height:1.3!important}}

@@ -1,4 +1,4 @@
-import { VILLAGE_SITES } from "../village/layout.ts";
+import { VILLAGE_SITES, VILLAGE_WATERFRONT } from "../village/layout.ts";
 /**
  * Little Harbour · where the island's plants stand.
  *
@@ -65,10 +65,11 @@ const doorway = (id: string, x: number, z: number, yaw: number, door: readonly [
  *
  * Plus a doorway for each, because a door you cannot walk up to is not a door.
  */
-export const ISLAND_KEEP_OUTS: readonly KeepOut[] = Object.freeze(Object.values(VILLAGE_SITES).flatMap(site=>{
+export const ISLAND_KEEP_OUTS: readonly KeepOut[] = Object.freeze([...Object.values(VILLAGE_SITES).flatMap(site=>{
   const [x,z]=site.spot,yaw=courtFacing(x,z);
   return [rect(site.entry,x,z,site.half[0]+.25,site.half[1]+.25,yaw),doorway(`${site.entry}-door`,x,z,yaw,site.door,1.7)];
-}));
+}), rect('campfire', ...VILLAGE_WATERFRONT.spot, VILLAGE_WATERFRONT.half[0] + .25, VILLAGE_WATERFRONT.half[1] + .25, VILLAGE_WATERFRONT.yaw),
+doorway('campfire-door', ...VILLAGE_WATERFRONT.spot, VILLAGE_WATERFRONT.yaw, VILLAGE_WATERFRONT.door, 1.7)]);
 
 /**
  * Which keep-out a plant of `clearance` radius standing at (`x`,`z`) is in, or
@@ -111,7 +112,7 @@ export const SHRUB_COUNT = 16;
  * ground. A rejected plant therefore slides out of the clearing rather than
  * being re-rolled somewhere else, which is why the ring still reads as a ring.
  */
-export const PLANT_ATTEMPTS = 32;
+export const PLANT_ATTEMPTS = 64;
 const SLOT_STEP = 0.16;
 
 /** 0, +0.16, −0.16, +0.32, −0.32, … — deterministic, and 0 on the first try. */

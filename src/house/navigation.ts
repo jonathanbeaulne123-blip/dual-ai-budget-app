@@ -1,5 +1,6 @@
 import { housePath, parseHouseRoute, type HouseRoute } from "../hearthside/houseRoutes.ts";
-import type { Environment, LedgerView, AppTab } from "../core/types.ts";
+import type { Environment, LedgerView } from "../core/types.ts";
+import type { AppTab } from "../core/ledgerExperience.ts";
 import type { HearthsideRoute } from "../hearthside/routes.ts";
 
 export const HOUSE_WORLD_ENABLED = import.meta.env.VITE_HEARTH_HOUSE_WORLD === "1";

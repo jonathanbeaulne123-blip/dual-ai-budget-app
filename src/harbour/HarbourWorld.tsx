@@ -260,7 +260,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const say = useCallback((next: QueenSpark | null, at?: { x: number; y: number }) => {
     if (!next) return;
     setPhrase(next.phrase);
-    if (!window.matchMedia(REDUCED).matches && at) setSparkle({ ...next, ...at, at: Date.now() });
+    if (!(window.matchMedia(REDUCED).matches || document.documentElement.dataset.motion === "reduced") && at) setSparkle({ ...next, ...at, at: Date.now() });
   }, []);
   useEffect(() => { if (!sparkle) return; const timer = setTimeout(() => setSparkle(null), sparkle.durationMs); return () => clearTimeout(timer); }, [sparkle]);
 
@@ -355,7 +355,10 @@ export default function HarbourWorld(props: HarbourWorldProps) {
    */
   useEffect(() => {
     const walkTo = (event: Event) => {
-      const detail = (event as CustomEvent<{ room?: unknown; level?: unknown }>).detail;
+      const detail = (event as CustomEvent<{ room?: unknown; level?: unknown; place?: unknown }>).detail;
+      if (typeof detail?.place === 'string' && Object.hasOwn(VILLAGE_ADDRESS, detail.place)) {
+        navigatePlace(detail.place as HarbourPlaceId); return;
+      }
       const room = detail?.room, level = detail?.level;
       if (typeof room !== "string" || typeof level !== "string") return;
       if (!(HOUSE_ROOMS as readonly string[]).includes(room) || !(HOUSE_LEVELS as readonly string[]).includes(level)) return;
@@ -400,7 +403,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
           queen.current = her;
           court.current?.attachQueen(her.group, () => queenRegions(her));
           world.setReading(readingRef.current);
-          if (!window.matchMedia(REDUCED).matches) { queenAnimation.current?.();queenAnimation.current=world.addAnimator(t => her.breathe(t)); world.setBreathing(true); }
+          if (!(window.matchMedia(REDUCED).matches || document.documentElement.dataset.motion === "reduced")) { queenAnimation.current?.();queenAnimation.current=world.addAnimator(t => her.breathe(t)); world.setBreathing(true); }
         }).catch(() => { element.dataset.queen = "unavailable"; });
       } catch { setStatus("fallback"); }
     }).catch(() => setStatus("fallback"));
@@ -501,7 +504,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
         queen.current = her;
         court.current?.attachQueen(her.group, () => queenRegions(her));
         world.setReading(readingRef.current);
-        if (!window.matchMedia(REDUCED).matches) { queenAnimation.current?.();queenAnimation.current=world.addAnimator(t => her.breathe(t)); world.setBreathing(true); }
+        if (!(window.matchMedia(REDUCED).matches || document.documentElement.dataset.motion === "reduced")) { queenAnimation.current?.();queenAnimation.current=world.addAnimator(t => her.breathe(t)); world.setBreathing(true); }
       }).catch(() => undefined);
     });
     return () => { cancelled = true; abort.abort(); };
@@ -862,12 +865,12 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => navigatePlace("court");
   return <section className={`harbour-world harbour-world--${theme}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={placeName}>
-    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) setStageHasKeys(false); }}>
+    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : showFlat ? `${placeName}. Reading edition. Every destination is a button.` : stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) setStageHasKeys(false); }}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => navigatePlace(next)} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
-      {!toolOpen&&<VillageHUD place={place} travelling={travelTo} onVisit={visit} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('court');}}/>}
-      {arranging&&decorRoom&&props.onArrange&&<VillageDecorator key={decorRoom} household={household} memberId={memberId} room={decorRoom} arrangement={arrangement} onCommit={props.onArrange} onPreview={setPreviewLook} onClose={()=>setArranging(false)}/>}
+      {status==="ready"&&!toolOpen&&<VillageHUD place={place} travelling={travelTo} onVisit={visit} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('court');}}/>}
+      {arranging&&!showFlat&&decorRoom&&props.onArrange&&<VillageDecorator key={decorRoom} household={household} memberId={memberId} room={decorRoom} arrangement={arrangement} onCommit={props.onArrange} onPreview={setPreviewLook} onClose={()=>{setArranging(false);stage.current?.querySelector<HTMLButtonElement>('[aria-label="Arrange room"]')?.focus();}}/>}
       {invite && <div className="harbour-world__invite" data-harbour-invite={touch ? "touch" : "keys"} aria-hidden="true"><Whisper mode="line">{inviteWords(place, touch)}</Whisper></div>}
       {status === "ready" && !toolOpen && standing && <div className="harbour-moves" data-harbour-moves={emotesOpen ? "open" : "shut"}>
         {emotesOpen && <div className="harbour-moves__emotes" role="group" aria-label="Emotes">

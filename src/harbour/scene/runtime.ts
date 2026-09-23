@@ -306,6 +306,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const mountedAt = performance.now();
   const diagnostics = worldDiagnostics();
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const reducedMotion = () => reduced.matches || document.documentElement.dataset.motion === "reduced";
   const dressing = callbacks.dressing ?? SCENE_DRESSING[theme];
   const abort = new AbortController();
   let composition: Composition = callbacks.composition ?? (host.getBoundingClientRect().width < 720 ? "phone" : "desktop");
@@ -396,6 +397,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const active = placementOf(placeId);
     for (const [id, resident] of live) if(id !== 'court') resident.handle.group.visible = id === placeId;
     court.handle.group.traverse((node) => {
+      if (node.name === 'village-waterfront') node.visible = placeId !== 'campfire';
       if(node.name.startsWith('sign-')) node.visible=placeId==='court';
       if(node.userData.villageShell) {
         const open=node.name===active?.exterior;
@@ -552,11 +554,14 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       lidOf(each)?.(lid);
     }
   }
-  const court: CourtCamera = createCourtCamera({ camera, composition, reduced: reduced.matches, fov: fovFor(composition) });
+  const court: CourtCamera = createCourtCamera({ camera, composition, reduced: reducedMotion(), fov: fovFor(composition) });
   // The standing room holds the camera from the first frame: a stale return
   // slot or a wild zoom can never show a room from the lawn.
   court.setHold(holdFor(placeId));
-  court.go("court");
+  aim("court");
+  // First paint belongs to this room, even when it is far from the square.
+  court.setReduced(true);
+  court.setReduced(reducedMotion());
 
   // ── The body lane (world-body → walk-everywhere) ───────────────────────────
   // The body stands from the first frame, in whichever place is standing; the
@@ -634,12 +639,14 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       room,
       tier,
       start,
-      reduced: reduced.matches,
+      reduced: reducedMotion(),
     });
     scene.add(walker.group);
-    follow = createFollowCamera({ camera, composition, reduced: reduced.matches, fov: fovFor(composition), groundHeightAt: (x, z) => bodyGround(x, z) });
+    const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
+    follow = createFollowCamera({ camera, composition, reduced: reducedMotion(), fov: fovFor(composition), groundHeightAt: (x, z) => bodyGround(x, z) });
     host.dataset.harbourBody = "standing";
     standBody();
+    camera.position.copy(eye);camera.quaternion.copy(orientation);camera.fov=fov;camera.updateProjectionMatrix();
   }
   function dropBody(): void {
     if (following) {
@@ -706,7 +713,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const corners = [0, 1, 2, 3, 4, 5, 6, 7].map(() => new THREE.Vector3());
   const single = [new THREE.Vector3()];
   /** The camera was asked to move: paint at least one frame even if it cut there under reduced motion. */
-  const moved = () => { dirty = true; court.setReduced(reduced.matches); previous = performance.now(); schedule(); };
+  const moved = () => { dirty = true; court.setReduced(reducedMotion()); previous = performance.now(); schedule(); };
 
   function stagePoint(event: { clientX: number; clientY: number }): { x: number; y: number; bounds: DOMRect } {
     const bounds = host.getBoundingClientRect();
@@ -865,7 +872,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if (disposed || !visible || document.hidden || !lease.active) return;
     if (intervalMs > 0 && now - lastPaint < intervalMs) { schedule(); return; }
     const dt = Math.min((now - previous) / 1000, 0.08); previous = now;
-    court.setReduced(reduced.matches);
+    court.setReduced(reducedMotion());
     // ── The continuous world (§2, §3) ──────────────────────────────────────
     // Where the viewer stands decides which placed interiors are built and
     // whether a doorway has just been crossed. Three distances and three
@@ -976,11 +983,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // frame will ever run, so a place that asked to settle is settled the
     // moment it asks. Without this the flag stays up for the life of the
     // world and the policy is asked a question it has already answered.
-    if (settling && (reduced.matches || toolOpen)) settling = false;
+    if (settling && (reducedMotion() || toolOpen)) settling = false;
     // `walking` is the body lane's one word to the policy: while it is true the
     // world runs at the camera's rate, and the moment the body stands still the
     // policy falls back through its own branches to asking for nothing.
-    const policy = harbourFramePolicy({ reduced: reduced.matches, moving, breathing: breathing || settling, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen, walking: bodyMoving });
+    const policy = harbourFramePolicy({ reduced: reducedMotion(), moving, breathing: breathing || settling, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen, walking: bodyMoving });
     intervalMs = tier==='full'&&(bodyMoving||moving)?1000/60:policy.intervalMs;
     let animated = false;
     if (policy.animate && pointers.size === 0) {
@@ -1096,7 +1103,15 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const visibility = () => { if (document.hidden) { lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
   // ── The body lane (world-body) ── reduced motion cuts the follow camera
   // rather than swinging it. The character still walks: that is the app.
-  const onReduced = () => { court.setReduced(reduced.matches); follow?.setReduced(reduced.matches); walker?.setReduced(reduced.matches); schedule(); };
+  const onReduced = () => {
+    court.setReduced(reducedMotion());
+    const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
+    follow?.setReduced(reducedMotion());
+    if(!following){camera.position.copy(eye);camera.quaternion.copy(orientation);camera.fov=fov;camera.updateProjectionMatrix();}
+    walker?.setReduced(reducedMotion()); schedule();
+  };
+  const comfortObserver = typeof MutationObserver !== "undefined" ? new MutationObserver(onReduced) : null;
+  comfortObserver?.observe(document.documentElement,{attributes:true,attributeFilter:["data-motion"]});
   const removeLost = lease.listenCanvas("webglcontextlost", (event: Event) => { event.preventDefault(); lease.cancelFrame(frame); frame = 0; callbacks.onFailure(); });
   document.addEventListener("visibilitychange", visibility); reduced.addEventListener("change", onReduced);
   previous = performance.now();
@@ -1126,7 +1141,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
 
   function aim(mode: CourtMode | "door", anchor?: string): void {
-    court.setReduced(reduced.matches);
+    court.setReduced(reducedMotion());
     {
       const key = mode === "court" ? placeId : mode === "object" && anchor ? `object:${anchor}` : mode;
       const written = poseFor(handle.poses(), key, composition) ?? (mode === "court" ? poseFor(handle.poses(), "court", composition) : undefined) ?? (mode === "door" ? poseFor(handle.poses(), "sky", composition) : undefined);
@@ -1149,9 +1164,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // actually see and every named pose behaves exactly as it always has.
     go(mode, anchor) { setFollowing(false); aim(mode, anchor); moved(); },
     setReading(next) { reading = next; for (const { handle: each } of live.values()) each.update(next); dirty = true; listsDirty = true; render(); schedule(); },
-    look(next) { setFollowing(false); court.setReduced(reduced.matches); court.goTo(next); moved(); },
+    look(next) { setFollowing(false); court.setReduced(reducedMotion()); court.goTo(next); moved(); },
     gesture(input) {
-      court.setReduced(reduced.matches);
+      court.setReduced(reducedMotion());
       if (input.kind === "orbit") court.drag(input.dx, input.dy);
       else court.zoom(input.delta);
       moved();
@@ -1215,7 +1230,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     },
     enter(next, options = {}) {
       const from = options.from ?? placeId;
-      const cut = options.reduced ?? reduced.matches;
+      const cut = options.reduced ?? reducedMotion();
       /**
        * You walked here (§3). There is no journey to fly and no camera to
        * re-aim: the interior is already standing and the eye is already in the
@@ -1261,7 +1276,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         focus[0] = landing.x; focus[1] = landing.z;
       }
       // The place you arrive in declares its own idle motion; until it does, nothing moves.
-      breathing = !reduced.matches;
+      breathing = !reducedMotion();
       previousDoorPoint = null; pendingDoor=null;
       // A cut lands at once, so the destination's hold applies at once. A full
       // journey flies through the open air between the rooms: the hold is
@@ -1287,11 +1302,12 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       return plan;
     },
     dispose() {
+      if (disposed) return;
       disposed = true; abort.abort();
       if (stick) { stick = null; callbacks.onStick?.(null); }
       lease.cancelFrame(frame);
       host.removeEventListener("pointerdown", onPointerDown); host.removeEventListener("pointermove", onPointerMove); host.removeEventListener("pointerup", onPointerEnd); host.removeEventListener("pointercancel", onPointerEnd); host.removeEventListener("wheel", onWheel);
-      observer?.disconnect(); intersection?.disconnect();
+      observer?.disconnect(); intersection?.disconnect(); comfortObserver?.disconnect();
       document.removeEventListener("visibilitychange", visibility); reduced.removeEventListener("change", onReduced); removeLost();
       for (const id of [...live.keys()]) pull(id);
       // ── The body lane (world-body) ──

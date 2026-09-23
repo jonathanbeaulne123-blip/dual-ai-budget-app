@@ -59,8 +59,8 @@ describe("the flag", () => {
     expect(harbourPlaceFor({ room: "home", level: "middle" }, "household")).toBeNull();
   });
   it("names each place and the level it stands on", () => {
-    expect(HARBOUR_PLACE_NAMES).toEqual({ court: "the Court", tower: "the Tower", cellar: "the Cellar", glasshouse: "the Glasshouse", kitchen: "the Kitchen", boathouse: "the Boathouse", library: "the Library", cottage: "the Cottage", kiln: "the Kiln", campfire: "the Campfire", atlas: "the Atlas" });
-    expect(HARBOUR_PLACE_LEVELS).toEqual({ court: "middle", tower: "above", cellar: "below", glasshouse: "above", kitchen: "middle", boathouse: "middle", library: "middle", cottage: "middle", kiln: "above", campfire: "below", atlas: "above" });
+    expect(HARBOUR_PLACE_NAMES).toEqual({ court: "the Village Square", bank: "the Fund Bank", tower: "the Loft", cellar: "the Cellar", glasshouse: "the Glasshouse", kitchen: "the Kitchen", boathouse: "the Boathouse", library: "the Library", cottage: "the Cottage", kiln: "the Kiln", campfire: "the Campfire", atlas: "the Atlas" });
+    expect(HARBOUR_PLACE_LEVELS).toEqual({ court: "middle", bank: "middle", tower: "above", cellar: "below", glasshouse: "above", kitchen: "middle", boathouse: "middle", library: "middle", cottage: "middle", kiln: "above", campfire: "below", atlas: "above" });
   });
   it("names the Court as home/middle in the household scope", () => {
     expect(COURT_ROUTE("HH-one")).toEqual({ room: "home", level: "middle", householdId: "HH-one", scope: "household" });

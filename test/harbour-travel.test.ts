@@ -21,6 +21,7 @@ describe("village travel", () => {
     for (const from of places) for (const to of places) {
       const plan = travelPlan(from, to, false);
       expect(Number.isFinite(plan.ms)).toBe(true);
+      expect(plan.camera).toEqual({mode:"court",anchor:null});
       expect([-1, 0, 1]).toContain(plan.rise);
       const reduced = travelPlan(from, to, true);
       expect(reduced.cut).toBe(true);

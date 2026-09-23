@@ -16,5 +16,6 @@ export async function commitVillageArrangement(run: KitchenCommand, memberId: st
     }
   }, { confirmationId: id });
   if (commandError) throw commandError;
-  if (!outcome?.ok) throw Error('Shared arrangement was not saved.');
+  if (outcome?.errorClass === 'conflict-detected' || outcome?.kind === 'conflict-needs-attention') throw Error('VILLAGE_ARRANGEMENT_CHANGED');
+  if (!outcome?.ok) throw Error(outcome?.userMessage ?? 'Shared arrangement was not saved.');
 }

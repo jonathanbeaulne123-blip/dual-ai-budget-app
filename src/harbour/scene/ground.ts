@@ -172,7 +172,7 @@ export function createGround(scene: THREE.Scene, dressing: PlaceDressing, tier: 
   const applyAir = (next: PlaceDressing) => {
     const sky = new THREE.Color(next.sky);
     scene.background = sky;
-    scene.fog = new THREE.Fog(new THREE.Color(next.fog), next.fogNear, next.fogFar);
+    scene.fog = new THREE.Fog(new THREE.Color(next.fog), Math.max(55, next.fogNear), Math.max(110, next.fogFar));
   };
   applyAir(dressing);
 

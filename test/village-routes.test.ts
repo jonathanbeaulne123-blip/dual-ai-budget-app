@@ -31,6 +31,17 @@ describe('Little Harbour physical addresses', () => {
     expect(() => housePath({ householdId, scope: 'household', room: 'study', level: 'middle', village: { place: 'fund-bank', room: 'banking-hall' } })).toThrow('HOUSE_INVALID_VILLAGE_LOCATION');
   });
 
+  it('requires an explicit household scope for every village location before personal scope can be inferred', () => {
+    for (const address of VILLAGE_HOUSE_ADDRESSES) {
+      const path = housePath({ householdId, scope: 'household', ...address });
+      expect(parseHouseRoute(path.replace('&scope=household', ''), householdId)).toBeNull();
+      expect(parseHouseRoute(path.replace('scope=household', 'scope=personal'), householdId)).toBeNull();
+      expect(() => housePath({ householdId, ...address })).toThrow('HOUSE_INVALID_VILLAGE_LOCATION');
+      expect(() => housePath({ householdId, scope: 'personal', ...address })).toThrow('HOUSE_INVALID_VILLAGE_LOCATION');
+    }
+    expect(parseHouseRoute(`/house/home/above?household=${householdId}`, householdId)).toEqual({ householdId, room: 'home', level: 'above' });
+  });
+
   it('keeps the physical Bank origin through a tool and restores only finite body state for its identity', () => {
     const bank: HouseRoute = { householdId, scope: 'household', room: 'home', level: 'middle', village: { place: 'fund-bank', room: 'banking-hall' } };
     const books = houseTargetRoute(bank, 'books');

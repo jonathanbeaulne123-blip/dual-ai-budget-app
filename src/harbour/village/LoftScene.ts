@@ -42,7 +42,9 @@ export function createLoft(scene: THREE.Scene, dressing: { timber: string; metal
   add([2.35, .09, .1], [0, 2.31, -3.32], "loft-back-window-top", brass);add([.09, 1.15, .1], [-1.13, 1.75, -3.32], "loft-back-window-left", brass);add([.09, 1.15, .1], [1.13, 1.75, -3.32], "loft-back-window-right", brass);add([.055, 1.0, .1], [0, 1.75, -3.29], "loft-window-mullion", brass);
   add([2.62, .16, .62], [0, .67, -2.82], "loft-window-seat");
   add([2.38, .09, .52], [0, .79, -2.72], "loft-window-seat-cushion", cushion);
-  for (const side of [-1,1]) for(const x of [-3.4,0,3.4]) add([3.15,.11,.12],[x,2.88,-.5],"loft-sloped-rafter",wood,[0,0,-side*.28]);
+  // Keep the pitched timber frame against the far wall: the open roof must not
+  // put crossing rafters between the camera and the household's banks.
+  for (const side of [-1, 1]) add([4.5, .14, .16], [side * 2.13, 3.28, -3.22], "loft-sloped-rafter", wood, [0, 0, -side * .28]);
   // The portals occupy the front corners; furniture deliberately leaves both clear.
   add([.86, .11, 1.25], [-2, .07, 1.7], "loft-kitchen-stair-clear");
   add([.86, .11, 1.25], [2, .07, -1.5], "loft-atlas-stair-clear");
@@ -61,7 +63,7 @@ export function createLoft(scene: THREE.Scene, dressing: { timber: string; metal
     const finish = plateFinish("current");
     for (let index = 0; index < banks.length; index++) {
       const bank = banks[index]!, row = Math.floor(index / LOFT_LAYOUT.columns), column = index % LOFT_LAYOUT.columns;
-      const y = rowY[row]!, x = -2.75 + column * 1.1, z = -2.52;
+      const y = rowY[row]!, x = (column - (Math.min(LOFT_LAYOUT.columns, banks.length - row * LOFT_LAYOUT.columns) - 1) / 2) * 1.1, z = -2.52;
       const sculpture = createBankSculpture(bank, { brass: dressing.metal, wood: dressing.timber });
       sculpture.setScale(bankHeight(bank.targetCents, next.smallestTargetCents, next.largestTargetCents));
       sculpture.setFill(bank.step, false); sculpture.group.position.set(x, y + .07, z); sculpture.group.userData.anchor = `bank:${bank.key}`;
@@ -80,8 +82,8 @@ export function createLoft(scene: THREE.Scene, dressing: { timber: string; metal
     ...slots.map(slot => ({ id: `bank:${slot.bank.key}`, position: slot.position, zone: "bank", label: bankWords(slot.bank), door: { target: "loft-banks", object: `bank/plan:${slot.bank.goalId ?? slot.bank.key}` } })),
   ];
   const poses = (): Record<string, Pose> => ({
-    "tower:desktop": { target: [0, 1.25, -1.7], r: 4.6, theta: 0, phi: 1.14 },
-    "tower:phone": { target: [0, 1.3, -1.85], r: 3.6, theta: 0, phi: 1.18 },
+    "tower:desktop": { target: [0, 1.15, -.7], r: 9.2, theta: .06, phi: .95 },
+    "tower:phone": { target: [0, 1.3, -1.2], r: 11.5, theta: .03, phi: .85 },
     "object:loft-banks:desktop": { target: [0, 1.2, -2.35], r: 3.2, theta: 0, phi: 1.2 },
     "object:loft-banks:phone": { target: [0, 1.2, -2.35], r: 2.8, theta: 0, phi: 1.2 },
   });

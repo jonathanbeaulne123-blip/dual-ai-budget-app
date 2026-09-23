@@ -6,7 +6,7 @@ import { catalogHousehold } from '../src/core/index.ts';
 import { financialAuditHash } from '../src/core/commandIdentity.ts';
 import { commitHearthside, type HearthsideOperation } from '../src/hearthside/commands.ts';
 import { emptyHearthside, type MemoryComposition } from '../src/hearthside/contracts.ts';
-import { VillageDecorator } from '../src/harbour/village/VillageDecorator.tsx';
+import { VillageDecorator, type VillageDecoratorCommit } from '../src/harbour/village/VillageDecorator.tsx';
 import { decodeVillageArrangement, defaultVillageRoomConfig, VILLAGE_ROOMS, type VillageArrangement, type VillageRoomConfig } from '../src/harbour/village/villageArrangement.ts';
 
 function rooms(change: Partial<VillageRoomConfig> = {}, room = 'kitchen'): VillageRoomConfig[] {
@@ -17,6 +17,14 @@ function run(h: ReturnType<typeof catalogHousehold>, operation: HearthsideOperat
 function saved(h: ReturnType<typeof catalogHousehold>, revision: number, change: Partial<VillageRoomConfig> = {}, room = 'kitchen') { const current = h.hearthside?.villageArrangement; const value = current ? { version: 1 as const, revision, rooms: current.rooms.map(config => config.room === room ? { ...config, ...change } : config) } : candidate(revision, change, room); return run(h, { kind: 'village-arrangement.save', expectedRevision: revision - 1, value }).household; }
 
 describe('shared village arrangements', () => {
+  it('can revert the very first saved room to its furnished defaults without changing money', async () => {
+    const start = catalogHousehold();
+    const first = saved(start, 1, { layout: 'open', plant: 'flowers' }, 'bank');
+    expect(first.hearthside!.villageArrangement!.previous).toMatchObject({ revision: 0 });
+    const restored = run(first, { kind: 'village-arrangement.revert-latest', expectedRevision: 1 }).household;
+    expect(restored.hearthside!.villageArrangement!.rooms).toEqual(rooms());
+    expect(await financialAuditHash(restored)).toBe(await financialAuditHash(start));
+  });
   it('strictly decodes complete room metadata and round-trips persisted previous snapshots', () => {
     const initial = candidate(1, { layout: 'open' }, 'library');
     const savedValue: VillageArrangement = { ...initial, previous: { revision: 0, rooms: rooms() } };
@@ -52,6 +60,58 @@ describe('shared village arrangements', () => {
     expect(reverted.revision).toBe(3);
     expect(reverted.rooms.find(room => room.room === 'kitchen')!.displays.some(display => display.kind === 'piece' && display.revision === 2)).toBe(true);
     expect(reverted.previous).toMatchObject({ revision: 2 });
+  });
+
+  it('lets another room change while a withdrawn display remains hidden, but rejects reuse or relocation', () => {
+    const h = catalogHousehold();
+    h.hearthside = { ...emptyHearthside(), memories: [{ version: 1, id: 'MEM-PRIVATE', revision: 1, title: 'Withdrawn title', date: null, experienceId: null, media: [], designs: [], recollections: [], hideAmounts: true, approvals: [{ memberId: 'MEM-001', revision: 1 }, { memberId: 'MEM-002', revision: 1 }], withdrawn: false }] };
+    const display = { kind: 'memory' as const, id: 'MEM-PRIVATE', revision: 1 };
+    const first = saved(h, 1, { displays: [display] }, 'library');
+    first.hearthside!.memories[0]!.withdrawn = true;
+    const second = saved(first, 2, { plant: 'flowers' }, 'bank');
+    expect(second.hearthside!.villageArrangement!.rooms.find(room => room.room === 'library')!.displays).toEqual([display]);
+    expect(() => saved(second, 3, { displays: [display] }, 'bank')).toThrow('VILLAGE_ARRANGEMENT_INVALID');
+    expect(() => saved(second, 3, { plant: 'flowers' }, 'library')).toThrow('VILLAGE_ARRANGEMENT_INVALID');
+    const removed = saved(second, 3, { displays: [] }, 'library');
+    expect(removed.hearthside!.villageArrangement!.rooms.find(room => room.room === 'library')!.displays).toEqual([]);
+  });
+
+  it.each(['withdrawn', 'unapproved'] as const)('hides a persisted memory immediately when %s, then explicitly removes only this room’s reference', async reason => {
+    document.body.innerHTML = '<div id="root"></div>';
+    Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', { configurable: true, value: true });
+    const household = catalogHousehold();
+    const memory: MemoryComposition = { version: 1, id: 'MEM-HIDDEN', revision: 1, title: 'Private anniversary title', date: null, experienceId: null, media: [], designs: [], recollections: [], hideAmounts: true, approvals: [{ memberId: 'MEM-001', revision: 1 }, { memberId: 'MEM-002', revision: 1 }], withdrawn: false };
+    household.hearthside = { ...emptyHearthside(), memories: [memory] };
+    const display = { kind: 'memory' as const, id: memory.id, revision: 1 };
+    const arrangement = { ...candidate(1, { displays: [display] }), rooms: rooms({ displays: [display] }).map(config => config.room === 'library' ? { ...config, displays: [display] } : config) };
+    const commits: VillageDecoratorCommit[] = [];
+    let root: Root | undefined;
+    const render = (h: typeof household) => root!.render(createElement(VillageDecorator, { household: h, memberId: 'MEM-001', room: 'kitchen', arrangement, onCommit: async operation => { commits.push(operation); }, onPreview: () => undefined }));
+    try {
+      await act(async () => { root = createRoot(document.getElementById('root')!); render(household); });
+      expect(document.body.textContent).toContain(memory.title);
+      const changed = structuredClone(household);
+      if (reason === 'withdrawn') changed.hearthside!.memories[0]!.withdrawn = true;
+      else changed.hearthside!.memories[0]!.approvals = [{ memberId: 'MEM-001', revision: 1 }];
+      await act(async () => { render(changed); });
+      expect(document.body.textContent).not.toContain(memory.title);
+      expect(document.body.textContent).toContain('Some displays are no longer shared');
+      expect(commits).toHaveLength(0);
+      await act(async () => { Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Remove unavailable displays')!.click(); });
+      expect(commits).toHaveLength(0);
+      await act(async () => { Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Save shared arrangement')!.click(); });
+      expect(commits).toHaveLength(1);
+      const commit = commits[0]!;
+      expect(commit.kind).toBe('village-arrangement.save');
+      if (commit.kind === 'village-arrangement.save') {
+        expect(commit.value.rooms.find(config => config.room === 'kitchen')!.displays).toEqual([]);
+        expect(commit.value.rooms.find(config => config.room === 'library')!.displays).toEqual([display]);
+      }
+    } finally {
+      await act(async () => root?.unmount());
+      document.body.innerHTML = '';
+      delete (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT;
+    }
   });
 
   it('previews locally, cancels, waits for save acknowledgement, and exposes a deliberate conflict reload', async () => {

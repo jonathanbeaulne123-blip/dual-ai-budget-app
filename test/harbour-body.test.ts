@@ -23,7 +23,6 @@ import { SCENE_DRESSING, type Place } from "../src/harbour/scene/place.ts";
 import { mountHarbourWorld, type HarbourRuntime } from "../src/harbour/scene/runtime.ts";
 // Entering a place needs it registered; a room off the island raises a body of its own.
 import "../src/harbour/court/CourtScene.ts";
-import { TOWER_LAYOUT } from "../src/harbour/tower/TowerScene.ts";
 import { readFileSync } from "node:fs";
 
 const release = vi.fn();

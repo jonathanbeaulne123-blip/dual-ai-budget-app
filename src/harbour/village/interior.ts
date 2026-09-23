@@ -6,6 +6,7 @@ import {ROOM_PORTALS} from './layout.ts';
 import {buildHomeFittings} from './architecture.ts';
 import {buildRoomPlaything,type PlaythingRoom} from './playthings.ts';
 import {buildRoomDressing,type RoomLook} from './roomDressing.ts';
+import {buildCellarDetails} from './cellarDetails.ts';
 
 export type VillageInterior=PlaceHandle & {play?:(id:string)=>string|null;decorate?:(look:RoomLook|null)=>void;display?:(contents:VillageDisplayContent[])=>void};
 const prepared=new WeakSet<object>();
@@ -22,10 +23,16 @@ export function prepareVillageInterior(id:HarbourPlaceId):void{
     const add=(parent:THREE.Object3D,geometry:THREE.BufferGeometry,material:THREE.Material,x:number,y:number,z:number,name:string)=>{owned.push(geometry);const mesh=new THREE.Mesh(geometry,material);mesh.position.set(x,y,z);mesh.name=name;mesh.castShadow=tier==='full';mesh.receiveShadow=true;parent.add(mesh);return mesh;};
     if(id==='cellar'){
       // Open the existing vaulted room as a house cutaway, retaining its real jar rail.
-      for(const name of ['cellar-walls','cellar-soffit','cellar-vault','cellar-stair','cellar-handrail']){const part=base.group.getObjectByName(name);if(part)part.visible=false;}
+      for(const name of ['cellar-walls','cellar-mortar','cellar-soffit','cellar-vault','cellar-ribs','cellar-stair','cellar-handrail']){const part=base.group.getObjectByName(name);if(part)part.visible=false;}
       const stone=new THREE.MeshStandardMaterial({color:dressing.stone,roughness:.95});owned.push(stone);
       add(fixtures,new THREE.BoxGeometry(9,2.15,.18),stone,0,1.075,-3.4,'cellar-cutaway-back');
       for(const x of [-4.4,4.4])add(fixtures,new THREE.BoxGeometry(.18,2.15,6.8),stone,x,1.075,0,'cellar-cutaway-side');
+      const details=buildCellarDetails(dressing,tier);fixtures.add(details.group);owned.push(details);
+      details.group.children.forEach((part,index)=>{
+        if(!(part instanceof THREE.Mesh)||!part.name.startsWith('cellar-side-'))return;
+        part.updateMatrix();part.geometry.computeBoundingBox();
+        if(part.geometry.boundingBox)regions.push({id:`cellar-store-${index}`,group:'furniture',label:'Cellar stores',box:part.geometry.boundingBox.clone().applyMatrix4(part.matrix)});
+      });
     }
     let fittings:ReturnType<typeof buildHomeFittings>|null=null;
     if(id==='kitchen'){fittings=buildHomeFittings(id,dressing,tier);fixtures.add(fittings.group);}
@@ -60,7 +67,7 @@ export function prepareVillageInterior(id:HarbourPlaceId):void{
     const allAnchors=()=>[...originalAnchors().filter(a=>!(portals.length&&(a.zone==='stair'||a.zone==='portal'))), ...anchors,...plaything.anchors(),...display.anchors()];
     return Object.assign(base,{
       anchors:allAnchors,regions:()=>[...originalRegions().filter(r=>!oldWays.has(r.id)),...regions,...plaything.regions(),...display.regions(),...furnitureRegions()],
-      poses:()=>({...originalPoses(),...(id==='cellar'?{'cellar:desktop':{target:[0,1,-.6] as const,r:10.2,theta:.08,phi:.86},'cellar:phone':{target:[0,1,-.8] as const,r:11.8,theta:.08,phi:.68}}:{})}),
+      poses:()=>({...originalPoses(),...(id==='cellar'?{'cellar:desktop':{target:[0,1,-.6] as const,r:10.2,theta:.08,phi:.86},'cellar:phone':{target:[0,1,-.8] as const,r:11.8,theta:.08,phi:.68}}:id==='glasshouse'?{'glasshouse:desktop':{target:[0,.8,-.55] as const,r:8.1,theta:.08,phi:.95},'glasshouse:phone':{target:[0,1,-.55] as const,r:10.5,theta:.03,phi:.9}}:{})}),
       update(next:PlaceReading|null){originalUpdate(next);},
       display(contents:VillageDisplayContent[]){display.show(contents);context.invalidate();},
       play:plaything.interact,

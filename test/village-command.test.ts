@@ -18,4 +18,16 @@ describe('village save acknowledgement', () => {
     await expect(commitVillageArrangement(async () => null, 'MEM-001', operation)).rejects.toThrow('was not saved');
     await expect(commitVillageArrangement(async () => ({ ok: false }) as never, 'MEM-001', operation)).rejects.toThrow('was not saved');
   });
+  it.each([
+    { ok: false, errorClass: 'conflict-detected' },
+    { ok: true, kind: 'conflict-needs-attention' },
+  ])('requires a deliberate reload after a remote conflict: %j', async outcome => {
+    const h = catalogHousehold();
+    const remoteConflict: KitchenCommand = async fn => { fn(h); return outcome as never; };
+    await expect(commitVillageArrangement(remoteConflict, 'MEM-001', operation)).rejects.toThrow('VILLAGE_ARRANGEMENT_CHANGED');
+  });
+  it('preserves a failed boundary result message', async () => {
+    const rejected: KitchenCommand = async () => ({ ok: false, userMessage: 'Sharing is unavailable.' }) as never;
+    await expect(commitVillageArrangement(rejected, 'MEM-001', operation)).rejects.toThrow('Sharing is unavailable.');
+  });
 });

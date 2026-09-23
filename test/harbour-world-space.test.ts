@@ -13,15 +13,16 @@ const places = Object.keys(HARBOUR_PLACE_NAMES) as HarbourPlaceId[];
 
 describe("village world space", () => {
   it("places every village room on its authored exterior site", () => {
-    expect(PLACED_PLACE_IDS).toHaveLength(10);
-    for (const id of PLACED_PLACE_IDS) {
+    expect(PLACED_PLACE_IDS).toHaveLength(11);
+    for (const id of PLACED_PLACE_IDS.filter(id => !PLACE_PLACEMENTS[id]!.outdoor)) {
       const placement = PLACE_PLACEMENTS[id]!;
-      const site = VILLAGE_SITES[placement.building];
+      const site = VILLAGE_SITES[placement.building! as keyof typeof VILLAGE_SITES];
       expect(placement.spot).toEqual(site.spot);
       expect(placement.exterior).toBe(site.exterior);
       expect(placementLift(placement)).toBeGreaterThan(-3);
       expect(insidePlacement(placement, placement.spot[0], placement.spot[1])).toBe(true);
     }
+    expect(PLACE_PLACEMENTS.campfire).toMatchObject({ spot: [0, 17.5], outdoor: true, yaw: Math.PI });
   });
 
   it("turns doors and local points into the same physical village coordinates", () => {

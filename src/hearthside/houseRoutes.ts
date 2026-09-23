@@ -30,7 +30,7 @@ export function housePath(route: HouseRoute): string {
   if (route.scope) query.set("scope", route.scope);
   if (route.village) {
     const location = villageLocation(route.village.place, route.village.room);
-    if (!location || route.scope === 'personal' || !villageMatchesHouseAddress(location, route.room, route.level)) throw new Error('HOUSE_INVALID_VILLAGE_LOCATION');
+    if (!location || route.scope !== 'household' || !villageMatchesHouseAddress(location, route.room, route.level)) throw new Error('HOUSE_INVALID_VILLAGE_LOCATION');
     query.set('place', location.place);
     if (location.room) query.set('villageRoom', location.room);
   }
@@ -65,7 +65,7 @@ export function parseHouseRoute(url: string, householdId: string): HouseRoute | 
     if (scope !== null && scope !== "personal" && scope !== "household") return null;
     const place = parsed.searchParams.get('place'), villageRoom = parsed.searchParams.get('villageRoom');
     const village = place === null ? null : villageLocation(place, villageRoom ?? undefined);
-    if (place !== null && (!village || scope === 'personal' || !villageMatchesHouseAddress(village, room, level)) || place === null && villageRoom !== null) return null;
+    if (place !== null && (!village || scope !== 'household' || !villageMatchesHouseAddress(village, room, level)) || place === null && villageRoom !== null) return null;
     const bounded = (key: string) => { const value = parsed.searchParams.get(key); return value && value.length <= 180 && !/[\u0000-\u001f]/.test(value) ? value : undefined; };
     const object = bounded("object"), surface = bounded("surface"), designId = bounded("design"), pieceId = bounded("piece");
     const hasDesign = parsed.searchParams.has("design"), hasPiece = parsed.searchParams.has("piece");

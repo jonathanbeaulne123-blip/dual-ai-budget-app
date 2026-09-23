@@ -1,3 +1,14 @@
+## 2026-09-22 — Little Harbour becomes a connected seven-building village
+
+Jonathan approved a substantial village overhaul: a coastal Home with Kitchen, timber Loft, stone Cellar and Atlas nook; a separate brick-and-brass Fund Bank; and distinct Library, Glasshouse, Pottery Studio, Hercules Cottage and Boathouse. The outdoor square and waterfront remain places to explore. This supersedes the Queen-at-the-square and separate tower geography in D-287, preserving her underlying readings and touch grammar in the Bank.
+
+- A shared site/room model defines buildings, real door gaps, floor heights, internal stairs, camera holds and scoped physical addresses. Tap-to-walk uses bounded obstacle-avoiding routes; keyboard/phone steering and immediate quick travel remain available. Active rooms open their roof/front; the Cellar cuts into the terrain.
+- A tool surface selects its existing functional content independently of its physical origin. Opening Books at the Bank retains the Bank address and the exact body/camera return. Legacy addresses still resolve; incompatible physical addresses fail closed.
+- Authored furnishings, a local roaming Hercules, gulls, a boat, a bell, a dance spot and one tactile play object per room animate only within the existing scene lifecycle. No invented partner presence or pretend audio is introduced. Reduced-motion and readable fallback navigation retain every destination and task.
+- Shared decoration offers two arrangements, plants, lighting and two exact-revision shared display stands per principal room. Preview is local; explicit save/revert uses the normal Hearthside command and CAS revision. Rejected writes keep the draft. Current membership, audience and shared-reference eligibility stay authoritative.
+
+Risk Medium-High. Budget delta (5): clearer access to existing books and unchanged financial authority. Engagement delta (3): connected exploration, distinct rooms, tactile play and shared decoration. Implementation is local to `codex/harbour-village-overhaul`; verification and remaining device limits are recorded in [the worksession](worksessions/2026-09-22-harbour-village-overhaul.md). No push, merge or deployment is implied.
+
 ## 2026-09-22 — Give the Library and Pottery Studio their own working interiors
 
 Jonathan requested 1–3 complete interiors rather than another broad shell. This scoped implementation authors two rooms inside the current Harbour renderer: a fitted Library whose books open the existing ledger divisions, and a Pottery Studio whose wheel, glaze bench and kiln open the existing canonical creative workspace.

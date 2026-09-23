@@ -78,6 +78,10 @@ export function placeGround(place: HarbourPlaceId): (x: number, z: number) => nu
   if (placement) {
     // A placed room's floor is one plane, lifted clear of the island under it.
     const level = placementLift(placement) + floor;
+    if (placement.outdoor) return (x, z) => {
+      const terrain = groundHeightAt(x, z);
+      return Math.hypot(x - placement.spot[0], z - placement.spot[1]) <= 4.2 ? Math.max(terrain, level) : terrain;
+    };
     return () => level;
   }
   if (OPEN_AIR.has(place)) return (x, z) => Math.max(groundHeightAt(x, z), floor);
@@ -121,6 +125,7 @@ export function exitAnchors(anchors: readonly Anchor[]): Anchor[] {
  */
 export function placeRoom(place: HarbourPlaceId, anchors: readonly Anchor[] = []): RoomBounds | null {
   const placement = placementOf(place);
+  if (placement?.outdoor) return null;
   const hold = PLACE_HOLDS[place];
   if (placement) {
     // The footprint, held inside the room's own shell (its hold, written in

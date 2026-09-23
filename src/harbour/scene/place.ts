@@ -1,4 +1,4 @@
-import { VILLAGE_SITES, SITE_FOR_PLACE, FLOOR_HEIGHT } from '../village/layout.ts';
+import { VILLAGE_SITES, SITE_FOR_PLACE, FLOOR_HEIGHT, VILLAGE_WATERFRONT } from '../village/layout.ts';
 import * as THREE from "three";
 import type { ThemeId } from "../../theme/scenes.ts";
 import { COURT_DRESSING, type CourtDressing } from "../court/dressing.ts";
@@ -261,6 +261,7 @@ export type PlacePlacement = {
   building?: string;
   floorY?: number;
   internal?: boolean;
+  outdoor?: boolean;
   /** Island coordinates (x, z) — the Court's own spot for the exterior. */
   spot: readonly [number, number];
   /** Which way the building faces, in radians — the Court's own `rotation.y`. */
@@ -283,23 +284,18 @@ export type PlacePlacement = {
  */
 export const PLACEMENT_SILL = 0.06;
 
-/**
- * The three buildings this slice stands up. Everything else is absent from
- * this table on purpose: an absent placement is today's behaviour.
- *
- * The spot and yaw expressions are character-for-character the Court's
- * (`CourtScene.ts` §"the island walk" and §"Hercules's Cottage" / §"The Kiln").
- * Every one of them is `atan2(-x, -z)` — the yaw that turns the building's +z
- * face, the face its door is on, toward the Court.
- */
-export const PLACE_PLACEMENTS: Readonly<Partial<Record<HarbourPlaceId, PlacePlacement>>> = Object.freeze(
-  Object.fromEntries(Object.entries(SITE_FOR_PLACE).map(([id, building]) => {
+/** Every village room shares its building's world footprint; the campfire has
+ * its own open shore clearing. A building's +z doorway faces the square. */
+export const PLACE_PLACEMENTS: Readonly<Partial<Record<HarbourPlaceId, PlacePlacement>>> = Object.freeze({
+  ...Object.fromEntries(Object.entries(SITE_FOR_PLACE).map(([id, building]) => {
     const site = VILLAGE_SITES[building!];
     return [id, Object.freeze({exterior:site.exterior,building,spot:site.spot,yaw:Math.atan2(-site.spot[0],-site.spot[1]),
       halfWidth:site.half[0],halfDepth:site.half[1],door:[site.door[0],0,site.door[1]] as Vec3,doorRadius:0.65,
       floorY:FLOOR_HEIGHT[id as HarbourPlaceId]??0,internal:id!==site.entry})];
   })) as Partial<Record<HarbourPlaceId,PlacePlacement>>,
-);
+  campfire: Object.freeze({ exterior: 'village-waterfront', outdoor: true, spot: VILLAGE_WATERFRONT.spot, yaw: VILLAGE_WATERFRONT.yaw,
+    halfWidth: VILLAGE_WATERFRONT.half[0], halfDepth: VILLAGE_WATERFRONT.half[1], door: [VILLAGE_WATERFRONT.door[0], 0, VILLAGE_WATERFRONT.door[1]] as Vec3, doorRadius: .7 }),
+});
 
 /** Which places stand somewhere, in a stable order. */
 export const PLACED_PLACE_IDS: readonly HarbourPlaceId[] = Object.freeze(Object.keys(PLACE_PLACEMENTS) as HarbourPlaceId[]);
@@ -453,7 +449,7 @@ export function streamPlaces(
     const placement = PLACE_PLACEMENTS[id]!;
     const distance = Math.hypot(focus[0] - placement.spot[0], focus[1] - placement.spot[1]);
     const inside = standing.has(id);
-    if (placement.internal && !held.has(id)) { if (inside) steps.push({id,action:"release"}); continue; }
+    if ((placement.internal || placement.outdoor) && !held.has(id)) { if (inside) steps.push({id,action:"release"}); continue; }
     if (!inside && distance <= streamInRadius(placement)) steps.push({ id, action: "raise" });
     else if (inside && !held.has(id) && distance >= streamOutRadius(placement)) steps.push({ id, action: "release" });
   }

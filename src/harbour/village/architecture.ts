@@ -86,8 +86,32 @@ function gable(kit: Kit, parent: THREE.Group, halfX: number, halfZ: number, y: n
     const x = side * (halfX * .12 + i * halfX * .15);
     // Every rib sits on the actual gable plane: lower as it travels from ridge to eave.
     const yy = y + ridge * (1 - Math.abs(x) / (halfX + .12)) + .035;
-    kit.box(parent, [halfX * .29, .07, halfZ * 2 + .34], [x, yy, 0], i % 2 ? p.roofAlt : p.roof, `${name}-shingle-${side}-${i}`, [0, 0, -side * slope]);
+    kit.box(parent, [halfX * .145 / Math.cos(slope), .07, halfZ * 2 + .34], [x, yy, 0], i % 2 ? p.roofAlt : p.roof, `${name}-shingle-${side}-${i}`, [0, 0, -side * slope]);
   }
+}
+
+function pediment(kit: Kit, parent: THREE.Group, width: number, rise: number, depth: number, at: readonly [number, number, number], colour: string, name: string) {
+  const shape = new THREE.Shape(); shape.moveTo(-width / 2, 0); shape.lineTo(width / 2, 0); shape.lineTo(0, rise); shape.closePath();
+  kit.mesh(parent, new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false }), colour, at, name);
+}
+
+function dormer(kit: Kit, parent: THREE.Group, at: readonly [number, number, number], p: Palette, name: string, width = 1.45) {
+  const [x, y, z] = at;
+  kit.box(parent, [width, .96, 1.15], [x, y + .4, z - .48], p.plaster, `${name}-cheeks`);
+  windowBay(kit, parent, x, y + .42, z + .12, p, name, width * .62);
+  pediment(kit, parent, width + .3, .55, 1.4, [x, y + .96, z - 1.12], p.roof, `${name}-gable`);
+}
+
+/** Glazing is an actual open-framed canopy; no opaque wedge fills the conservatory. */
+function conservatoryRoof(kit: Kit, roof: THREE.Group, hx: number, hz: number, y: number, p: Palette) {
+  const ridge = 1.35, slope = Math.atan2(ridge, hx), panelWidth = Math.hypot(hx, ridge);
+  for (const side of [-1, 1]) {
+    kit.mesh(roof, new THREE.BoxGeometry(panelWidth, .055, hz * 2 + .3), p.glass, [side * hx / 2, y + ridge / 2, 0], `glasshouse-glass-roof-${side}`, [0, 0, -side * slope], { transparent: true, opacity: .36, metalness: .12, roughness: .18, depthWrite: false });
+    for (let z = -hz; z <= hz + .01; z += 1) kit.box(roof, [panelWidth + .16, .1, .08], [side * hx / 2, y + ridge / 2 + .065, z], p.timber, 'glasshouse-slender-rafter', [0, 0, -side * slope]);
+    for (let n = 0; n < 3; n++) { const x = side * hx * n / 2; kit.box(roof, [.075, .08, hz * 2 + .3], [x, y + ridge * (1 - Math.abs(x) / hx) + .07, 0], p.timber, 'glasshouse-roof-rail'); }
+  }
+  kit.box(roof, [.14, .16, hz * 2 + .6], [0, y + ridge + .12, 0], p.trim, 'glasshouse-ridge-cap');
+  for (const z of [-hz - .15, hz + .15]) kit.sphere(roof, .14, [0, y + ridge + .36, z], p.brass, 'glasshouse-ridge-finial');
 }
 
 function windowBay(kit: Kit, parent: THREE.Object3D, x: number, y: number, z: number, p: Palette, name: string, wide = 1.05) {
@@ -114,7 +138,7 @@ function wallWithDoor(kit: Kit, parent: THREE.Object3D, halfX: number, halfZ: nu
   const left = doorX - doorW / 2 + halfX, right = halfX - (doorX + doorW / 2);
   kit.box(parent, [left, wallH, .22], [-halfX + left / 2, wallY, halfZ], p.plaster, `${name}-front-wall-left`);
   kit.box(parent, [right, wallH, .22], [halfX - right / 2, wallY, halfZ], p.plaster, `${name}-front-wall-right`);
-  kit.box(parent, [halfX * 2, wallH - 2.1, .22], [0, wallY + (wallH + 2.1) / 2, halfZ], p.plaster, `${name}-front-wall-over-door`);
+  kit.box(parent, [halfX * 2, wallH - 2.1, .22], [0, wallY + 1.05, halfZ], p.plaster, `${name}-front-wall-over-door`);
   doorFrame(kit, parent, [doorX, wallY - wallH / 2, halfZ + .03], p, name, doorW);
 }
 
@@ -140,9 +164,11 @@ function exterior(kind: VillageBuildingKind, dressing: PlaceDressing, quality: R
     // Three real levels: the cellar has its own stone skirt, kitchen below the loft.
     shellSidesBack(kit, root, hx, hz, 1.48, 2.2, p.plaster, "home-kitchen-shell");
     // The whole upper story belongs with the removable roof, not the room volume.
-    shellSidesBack(kit, roof, hx, hz, 4.0, 2.7, p.plaster, "home-timber-loft-shell");
+    shellSidesBack(kit, roof, hx, hz, 4.65, 3.1, p.plaster, "home-timber-loft-shell");
+    kit.box(roof, [hx * 2, 3.1, .22], [0, 4.65, hz], p.plaster, 'home-loft-front-wall');
     wallWithDoor(kit, front, hx, hz, 1.48, 2.2, p, "home", 1.34, 1.6);
     kit.box(front, [hx * 2, .34, 1.15], [0, .5, hz + .52], p.timber, "home-shingled-veranda");
+    kit.box(front, [hx * 2 + .3, .14, 1.5], [0, 2.76, hz + .55], p.roof, 'home-veranda-canopy', [.1, 0, 0]);
     for (const x of [-1.85, 1.85]) { kit.cyl(front, .11, 2.2, [x, 1.58, hz + .96], p.trim, "home-porch-post"); kit.box(front, [.26, .15, .9], [x, 2.58, hz + .57], p.trim, "home-porch-bracket"); }
     windowBay(kit, front, -2.35, 1.72, hz + .13, p, "home-kitchen", 1.1); windowBay(kit, front, 2.45, 4.45, hz + .13, p, "home-loft", 1.0);
     // A projecting bay on the coastal side, with three leaded panes.
@@ -152,14 +178,28 @@ function exterior(kind: VillageBuildingKind, dressing: PlaceDressing, quality: R
     for (let y = .65; y < 5.6; y += .42) kit.box(root, [.84, .045, .98], [hx - .7, y, -hz + .55], p.stone, `home-chimney-course-${y}`);
     shellSidesBack(kit, root, hx + .16, hz + .12, -.68, 1.38, p.stone, "home-stone-cellar");
     gable(kit, roof, hx, hz, 6.2, p, "home", 1.38);
+    dormer(kit, roof, [-1.75, 6.85, hz - .25], p, 'home-seaward-dormer', 1.9);
+    dormer(kit, roof, [1.55, 6.85, hz - .25], p, 'home-loft-dormer', 1.55);
+    // Exposed timbers and a real upper facade make the two-storey home legible.
+    for (const x of [-hx + .1, 0, hx - .1]) kit.box(roof, [.14, 3.1, .14], [x, 4.65, hz + .15], p.timber, 'home-loft-facade-timber');
+    kit.box(roof, [hx * 2, .52, .18], [0, 2.85, hz + .14], p.timber, 'home-loft-floor-beam');
   } else if (kind === "bank") {
     shellSidesBack(kit, root, hx, hz, wallH / 2, wallH, p.brick, "bank-warm-brick-shell");
     wallWithDoor(kit, front, hx, hz, wallH / 2, wallH, { ...p, plaster: p.brick, timber: p.brass }, "bank", 1.6, 0);
     for (const x of [-2.75, 2.75]) { kit.cyl(front, .24, 2.65, [x, 1.75, hz + .28], p.stone, "bank-stone-column"); kit.cyl(front, .3, .16, [x, 3.08, hz + .28], p.trim, "bank-column-cap"); }
     windowBay(kit, front, -2.25, 1.95, hz + .13, p, "bank-left", 1.0); windowBay(kit, front, 2.25, 1.95, hz + .13, p, "bank-right", 1.0);
-    kit.box(front, [3.3, .32, .4], [0, 3.35, hz + .31], p.stone, "bank-queen-hall-pediment");
-    // Bank slate and brick cues stay distinct from the colourful village roofs.
-    gable(kit, roof, hx, hz, wallH, { ...p, roof: p.stone, roofAlt: p.brick }, "bank", 1.05);
+    kit.box(front, [6.25, .3, 1.05], [0, 3.25, hz + .35], p.trim, "bank-portico-entablature");
+    pediment(kit, front, 6.3, 1.1, .48, [0, 3.4, hz + .12], p.stone, 'bank-queen-hall-pediment');
+    kit.cyl(front, .3, .08, [0, 3.78, hz + .65], p.brass, 'bank-queen-seal', [Math.PI / 2, 0, 0]);
+    // A civic parapet and lantern crown give the bank its own silhouette.
+    kit.box(roof, [hx * 2 + .35, .28, hz * 2 + .35], [0, 3.62, 0], p.stone, 'bank-flat-slate-roof');
+    for (const x of [-hx, hx]) kit.box(roof, [.2, .62, hz * 2 + .2], [x, 3.95, 0], p.trim, 'bank-side-parapet');
+    for (const z of [-hz, hz]) kit.box(roof, [hx * 2 + .2, .62, .2], [0, 3.95, z], p.trim, 'bank-end-parapet');
+    kit.cyl(roof, .88, .18, [0, 3.94, -1.1], p.trim, 'bank-lantern-plinth');
+    kit.cyl(roof, .64, .94, [0, 4.46, -1.1], p.glass, 'bank-lantern-glass');
+    for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3; kit.cyl(roof, .07, 1.05, [Math.cos(a) * .67, 4.49, -1.1 + Math.sin(a) * .67], p.brass, 'bank-lantern-column'); }
+    kit.mesh(roof, new THREE.ConeGeometry(.96, .8, 6), p.roof, [0, 5.27, -1.1], 'bank-copper-crown');
+    kit.sphere(roof, .14, [0, 5.77, -1.1], p.brass, 'bank-crown-finial');
   } else if (kind === "glasshouse") {
     // Glass stays visibly separate from its green iron frame.
     for (const x of [-hx, -hx / 2, hx / 2, hx]) kit.box(root, [.12, 3.0, .12], [x, 1.85, 0], p.timber, "glasshouse-upright");
@@ -168,7 +208,7 @@ function exterior(kind: VillageBuildingKind, dressing: PlaceDressing, quality: R
     kit.box(root, [.055, 2.75, hz * 2], [-hx, 1.78, 0], p.glass, "glasshouse-left-glazing");
     kit.box(root, [.055, 2.75, hz * 2], [hx, 1.78, 0], p.glass, "glasshouse-right-glazing");
     wallWithDoor(kit, front, hx, hz, 1.78, 2.75, { ...p, plaster: p.glass }, "glasshouse", 1.1, 1.7);
-    gable(kit, roof, hx, hz, 3.25, { ...p, roof: p.glass, roofAlt: p.timber }, "glasshouse", .92);
+    conservatoryRoof(kit, roof, hx, hz, 3.25, p);
     for (let x = -2.8; x <= 2.8; x += 1.4) { kit.box(root, [1.0, .68, .52], [x, .78, -.82], p.timber, "glasshouse-growing-bench"); kit.sphere(root, .23, [x, 1.26, -.82], p.roofAlt, "glasshouse-plant"); }
   } else {
     const base = kind === "studio" ? p.brick : kind === "boathouse" ? p.timber : kind === "library" ? p.plaster : p.plaster;
@@ -177,10 +217,35 @@ function exterior(kind: VillageBuildingKind, dressing: PlaceDressing, quality: R
     wallWithDoor(kit, front, hx, hz, wallH / 2, wallH, { ...p, plaster: base }, kind, kind === "boathouse" ? 1.45 : 1.16, doorX);
     for (const x of [-hx + .72, hx - .72]) windowBay(kit, front, x, 1.88, hz + .13, p, kind, .82);
     gable(kit, roof, hx, hz, wallH, p, kind, kind === "library" ? 1.2 : .9);
-    if (kind === "library") { kit.box(root, [hx * 2 + .22, .32, .55], [0, 3.82, -hz], p.timber, "library-cornice"); for (const x of [-2.8, 0, 2.8]) kit.box(root, [.35, 2.2, .48], [x, 1.52, -hz + .22], p.timber, "library-reading-bay"); }
-    if (kind === "studio") { kit.box(root, [1.55, 2.45, .2], [-hx + .13, 1.85, -.35], p.glass, "studio-north-light"); kit.cyl(root, .58, 1.2, [hx - .7, 1.0, -hz + .7], p.brick, "studio-kiln-chimney"); }
-    if (kind === "cottage") { kit.box(root, [1.9, .18, 1.0], [0, .62, hz + .5], p.timber, "cottage-cat-veranda"); kit.box(root, [.66, .75, .18], [-1.15, .72, hz + .11], p.trim, "cottage-cat-door"); }
-    if (kind === "boathouse") { for (const x of [-2.45, 2.45]) kit.cyl(root, .15, 3.1, [x, 1.9, -hz + .18], p.stone, "boathouse-piling"); kit.box(root, [hx * 2 + .55, .18, 1.0], [0, .42, -hz - .45], p.timber, "boathouse-dock"); }
+    if (kind === "library") {
+      kit.box(root, [hx * 2 + .22, .32, .55], [0, 3.82, -hz], p.timber, "library-cornice");
+      for (const x of [-2.8, 0, 2.8]) kit.box(root, [.35, 2.2, .48], [x, 1.52, -hz + .22], p.timber, "library-reading-bay");
+      kit.cyl(front, .86, 4.35, [-2.85, 2.18, hz - .23], p.plaster, 'library-reading-turret');
+      windowBay(kit, front, -2.85, 2.95, hz + .64, p, 'library-turret-window', .78);
+      kit.cyl(roof, .96, .15, [-2.85, 4.42, hz - .23], p.trim, 'library-turret-cornice');
+      kit.mesh(roof, new THREE.ConeGeometry(1.16, 1.6, 8), p.roof, [-2.85, 5.25, hz - .23], 'library-turret-spire');
+      kit.sphere(roof, .13, [-2.85, 6.15, hz - .23], p.brass, 'library-turret-finial');
+    }
+    if (kind === "studio") {
+      kit.box(root, [1.55, 2.45, .2], [-hx + .13, 1.85, -.35], p.glass, "studio-north-light");
+      kit.box(roof, [1.02, 2.5, 1.0], [hx - 1, 4.0, -hz + .85], p.brick, "studio-kiln-chimney");
+      kit.box(roof, [1.3, .17, 1.28], [hx - 1, 5.28, -hz + .85], p.stone, 'studio-chimney-cap');
+      for (const x of [hx - 1.22, hx - .76]) kit.cyl(roof, .15, .38, [x, 5.54, -hz + .85], p.brick, 'studio-chimney-pot');
+      kit.box(roof, [2.35, .16, 2.4], [-1.75, 3.65, 0], p.trim, 'studio-skylight-frame', [0, 0, .22]);
+      kit.box(roof, [2.15, .1, 2.15], [-1.75, 3.78, 0], p.glass, 'studio-skylight', [0, 0, .22]);
+    }
+    if (kind === "cottage") {
+      kit.box(root, [1.9, .18, 1.0], [0, .62, hz + .5], p.timber, "cottage-cat-veranda"); kit.box(root, [.66, .75, .18], [-1.15, .72, hz + .11], p.trim, "cottage-cat-door");
+      dormer(kit, roof, [0, 3.6, hz - .18], { ...p, plaster: p.trim }, 'cottage-sleepy-dormer', 1.25);
+      kit.box(front, [2.5, .16, 1.25], [.8, 2.7, hz + .5], p.roofAlt, 'cottage-porch-canopy', [.15, 0, 0]);
+    }
+    if (kind === "boathouse") {
+      for (const x of [-2.45, 2.45]) kit.cyl(root, .15, 3.1, [x, 1.9, -hz + .18], p.stone, "boathouse-piling"); kit.box(root, [hx * 2 + .55, .18, 1.0], [0, .42, -hz - .45], p.timber, "boathouse-dock");
+      for (let x = -hx + .3; x < hx; x += .42) kit.box(root, [.035, 2.9, .06], [x, 1.5, -hz - .13], p.trim, 'boathouse-weatherboard');
+      kit.box(roof, [1.7, .8, 1.25], [0, 4.0, -.75], p.timber, 'boathouse-roof-vent');
+      for (let y = 3.75; y < 4.3; y += .15) kit.box(roof, [1.62, .055, .1], [0, y, -.07], p.trim, 'boathouse-vent-louver');
+      pediment(kit, roof, 2.05, .5, 1.6, [0, 4.4, -1.55], p.roof, 'boathouse-vent-cap');
+    }
   }
   const lantern = new THREE.PointLight(p.warm, quality === "full" ? .55 : .32, 5); lantern.position.set(0, 2.35, hz + .72); lantern.name = `${kind}-porch-lantern`; root.add(lantern);
   kit.finish();

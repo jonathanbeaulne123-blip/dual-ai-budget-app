@@ -133,9 +133,10 @@ describe("a body stands in every place, on that place's own floor", () => {
       // One plane: the same height in every corner of the room.
       expect(placeGround(id)(placement.spot[0] + 3, placement.spot[1] - 2)).toBeCloseTo(placementLift(placement), 9);
     }
-    // The shore's swept apron is over the island, never under it: on the
-    // terrace the apron wins, and out on the lawn's hump the island does.
-    expect(placeGround("campfire")(0, 0)).toBeCloseTo(0, 9);
+    // The swept apron belongs to the shore clearing, never the central square.
+    const shore = PLACE_PLACEMENTS.campfire!;
+    expect(placeGround("campfire")(...shore.spot)).toBeCloseTo(placementLift(shore), 9);
+    expect(placeGround("campfire")(0, 0)).toBeCloseTo(groundHeightAt(0, 0), 9);
     expect(groundHeightAt(0, 0)).toBeCloseTo(TERRACE_LEVEL, 9);
     expect(placeGround("campfire")(0, 12)).toBeCloseTo(groundHeightAt(0, 12), 9);
     expect(OPEN_AIR.has("campfire")).toBe(true);
@@ -163,8 +164,7 @@ describe("a body stands in every place, on that place's own floor", () => {
 });
 
 describe("the walls hold the body in the room", () => {
-  for (const id of PLACE_IDS) {
-    if (id === "court") continue;
+  for (const id of PLACE_IDS.filter(walksIndoors)) {
     it(`${id}: walking hard at every wall never puts you outside it`, () => {
       const { world, room, anchors } = worldFor(id);
       expect(room, `${id} has no floor`).not.toBeNull();
@@ -267,8 +267,7 @@ describe("the walls hold the body in the room", () => {
 });
 
 describe("the camera stays in the room, with the body anywhere on its floor", () => {
-  for (const id of PLACE_IDS) {
-    if (id === "court") continue;
+  for (const id of PLACE_IDS.filter(walksIndoors)) {
     for (const composition of ["desktop", "phone"] as Composition[]) {
       it(`${id} on ${composition}: every pose the follow camera can show is inside the hold`, () => {
         const hold = holdOf(id)!;
@@ -321,8 +320,8 @@ describe("the camera stays in the room, with the body anywhere on its floor", ()
     expect(placeRoom("court")).toBeNull();
     expect(followHoldIn(null, null)).toBeNull();
     expect(walksIndoors("campfire")).toBe(false);
-    // The shore's own clearing still holds the body, but the camera keeps its distance.
-    expect(placeRoom("campfire", built("campfire").handle.anchors())).not.toBeNull();
+    // The waterfront shares the island's shore boundary; it has no invisible room walls.
+    expect(placeRoom("campfire", built("campfire").handle.anchors())).toBeNull();
   });
 
   it("never moves `holdPoseInRoom` itself: an unheld pose comes back identical", () => {
@@ -619,9 +618,8 @@ describe("the runtime, standing in a room", () => {
   });
 
   it("streams the island from the body's feet only where the body is on the island", () => {
-    // Standing in the Tower — up a stair, off the island — the Tower's own
-    // stair happens to sit where nothing of the island's is, and the streamer
-    // must not read a room's coordinates as island coordinates.
+    // The Loft shares the Home footprint. Its hidden sibling and distant
+    // outdoor clearing are not all built just because this floor is active.
     const stage = mount("tower");
     const body = stage.body()!;
     body.input({ forward: 1, strafe: 1 });

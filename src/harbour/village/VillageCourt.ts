@@ -2,7 +2,7 @@ import {buildVillageLife} from "./life.ts";
 import * as THREE from 'three';
 import {registerPlace,placementOf,placementLift,placementToWorld,type Anchor,type PlaceHandle,type Region,type Pose} from '../scene/place.ts';
 import {buildVillageBuilding,type VillageBuildingKind} from './architecture.ts';
-import {VILLAGE_SITES} from './layout.ts';
+import {VILLAGE_SITES,VILLAGE_WATERFRONT} from './layout.ts';
 import {groundHeightAt} from '../scene/ground.ts';
 import {EngravedPlate} from '../court/engraved.ts';
 
@@ -52,9 +52,11 @@ export const villageCourt = registerPlace({id:'court',build(scene,dressing,_read
   const paverMatrix=new THREE.Matrix4(),paverPosition=new THREE.Vector3(),paverRotation=new THREE.Quaternion(),paverScale=new THREE.Vector3(1,1,1);
   pavers.forEach((paver,index)=>{paverPosition.set(paver.x,paver.y,paver.z);paverRotation.setFromEuler(new THREE.Euler(0,paver.yaw,0));lanes.setMatrixAt(index,paverMatrix.compose(paverPosition,paverRotation,paverScale));});lanes.instanceMatrix.needsUpdate=true;group.add(lanes);
   // Social spaces stay outdoors, with their existing destinations.
-  anchors.push({id:'visit:campfire',position:[0,.5,17.5],zone:'landmark',label:'The Campfire. Walk to the waterfront.'});
-  const camp=add(new THREE.TorusGeometry(.9,.12,6,20),stone,0,groundHeightAt(0,17.5)+.12,17.5,'outdoor-fire-ring');camp.rotation.x=Math.PI/2;camp.userData.anchor='visit:campfire';
-  for(const x of [-1.8,1.8]){const bench=add(new THREE.BoxGeometry(.48,.23,1.8),wood,x,.33,16.8,'waterfront-bench');bench.userData.anchor='visit:campfire';}
+  const [shoreX,shoreZ]=VILLAGE_WATERFRONT.spot;
+  const waterfront=new THREE.Group();waterfront.name='village-waterfront';group.add(waterfront);
+  anchors.push({id:'visit:campfire',position:[shoreX,.5,shoreZ],zone:'landmark',label:'The Campfire. Walk to the waterfront.'});
+  const camp=add(new THREE.TorusGeometry(.9,.12,6,20),stone,shoreX,groundHeightAt(shoreX,shoreZ)+.12,shoreZ,'outdoor-fire-ring');camp.rotation.x=Math.PI/2;camp.userData.anchor='visit:campfire';waterfront.add(camp);
+  for(const x of [-1.8,1.8]){const bench=add(new THREE.BoxGeometry(.48,.23,1.8),wood,shoreX+x,.33,shoreZ-.7,'waterfront-bench');bench.userData.anchor='visit:campfire';waterfront.add(bench);}
   regions.push({id:'visit:campfire',group:'court',label:'Waterfront campfire',objects:[camp]});
   const poses:Record<string,Pose>={court:{target:[0,.7,0],r:43,theta:.28,phi:.65},'court:phone':{target:[0,.5,0],r:48,theta:.25,phi:.45},sky:{target:[0,0,0],r:37,theta:.1,phi:.36}};
   group.updateMatrixWorld(true);scene.add(group);

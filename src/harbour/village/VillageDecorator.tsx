@@ -42,6 +42,9 @@ export function VillageDecorator({ household, memberId, room, arrangement, onCom
   const preview = useRef(onPreview);
   const state = useMemo(() => decodeHearthside(household.hearthside), [household.hearthside]);
   const displays = useMemo(() => eligibleVillageDisplays(household, state), [household, state]);
+  const eligibleConfig = (config: VillageRoomConfig): VillageRoomConfig => ({ ...config, displays: config.displays.filter(selected => displays.some(display => sameDisplay(selected, display))) });
+  const selected = eligibleConfig(draft).displays;
+  const unavailable = selected.length !== draft.displays.length;
 
   useEffect(() => { preview.current = onPreview; }, [onPreview]);
   useEffect(() => () => { preview.current(null); }, [room]);
@@ -53,10 +56,11 @@ export function VillageDecorator({ household, memberId, room, arrangement, onCom
   }, [dirty, external, externalRevision]);
 
   const update = (next: VillageRoomConfig) => {
-    setDraft(next);
+    const safe = eligibleConfig(next);
+    setDraft(safe);
     setDirty(true);
     setMessage('Previewing this room locally. Save when you are ready to share it.');
-    preview.current(next);
+    preview.current(safe);
   };
   const reset = () => {
     setDraft(external);
@@ -69,7 +73,7 @@ export function VillageDecorator({ household, memberId, room, arrangement, onCom
   const candidate = (): Omit<VillageArrangement, 'previous'> => ({
     version: 1,
     revision: baseRevision + 1,
-    rooms: VILLAGE_ROOMS.map(candidateRoom => candidateRoom === room ? draft : villageRoomConfig(arrangement, candidateRoom)),
+    rooms: VILLAGE_ROOMS.map(candidateRoom => candidateRoom === room ? eligibleConfig(draft) : villageRoomConfig(arrangement, candidateRoom)),
   });
   const save = async () => {
     setBusy(true);
@@ -106,18 +110,18 @@ export function VillageDecorator({ household, memberId, room, arrangement, onCom
     }
   };
   const close = () => { reset(); onClose?.(); };
-  const available = displays.filter(display => !draft.displays.some(selected => sameDisplay(selected, display)));
+  const available = displays.filter(display => !selected.some(current => sameDisplay(current, display)));
 
-  return <aside className="village-decorator" aria-label={`Arrange the shared ${roomLabel(room)} room`}>
-    <h3>Arrange the shared {roomLabel(room)}</h3>
-    <p>Preview together, then choose Save to share this room with the household.</p>
+  return <aside className="village-decorator" aria-label={`Arrange the shared ${roomLabel(room)} room`} onKeyDown={event=>{if(event.key==='Escape'&&!busy){event.stopPropagation();close();}}}>
+    <header className="village-decorator-head"><h3>Arrange the shared {roomLabel(room)}</h3>{onClose&&<button type="button" aria-label="Close arrangement" disabled={busy} onClick={close}>×</button>}</header>
+    <p>Try an arrangement, then choose Save to share this room with the household.</p>
     <p className="village-decorator-member">Editing as {household.members.find(member => member.id === memberId)?.name || 'a household member'}.</p>
     <label htmlFor="village-layout">Layout<select id="village-layout" value={draft.layout} disabled={busy} onChange={event => update({ ...draft, layout: event.target.value as VillageRoomConfig['layout'] })}><option value="gather">Gathered</option><option value="open">Open</option></select></label>
     <label htmlFor="village-plants">Plants<select id="village-plants" value={draft.plant} disabled={busy} onChange={event => update({ ...draft, plant: event.target.value as VillageRoomConfig['plant'] })}><option value="fern">Ferns</option><option value="flowers">Flowers</option></select></label>
     <label htmlFor="village-light">Light<select id="village-light" value={draft.light} disabled={busy} onChange={event => update({ ...draft, light: event.target.value as VillageRoomConfig['light'] })}><option value="warm">Warm</option><option value="daylight">Daylight</option></select></label>
-    <fieldset><legend>Two shared display stands</legend>{available.length === 0 && draft.displays.length === 0 ? <p>No mutually shared artwork or memories are available yet.</p> : <>
-      {draft.displays.map(display => <label className="village-decorator-display" key={displayKey(display)}><input type="checkbox" checked disabled={busy} onChange={() => update({ ...draft, displays: draft.displays.filter(selected => !sameDisplay(selected, display)) })}/>{displayLabel(display, household, state)}</label>)}
-      {available.map(display => <label className="village-decorator-display" key={displayKey(display)}><input type="checkbox" checked={false} disabled={busy || draft.displays.length >= 2} onChange={() => update({ ...draft, displays: [...draft.displays, display] })}/>{displayLabel(display, household, state)}</label>)}
+    <fieldset><legend>Two shared display stands</legend>{unavailable && <p>Some displays are no longer shared. <button type="button" disabled={busy} onClick={() => update(draft)}>Remove unavailable displays</button></p>}{available.length === 0 && selected.length === 0 ? <p>No mutually shared artwork or memories are available yet.</p> : <>
+      {selected.map(display => <label className="village-decorator-display" key={displayKey(display)}><input type="checkbox" checked disabled={busy} onChange={() => update({ ...draft, displays: selected.filter(current => !sameDisplay(current, display)) })}/>{displayLabel(display, household, state)}</label>)}
+      {available.map(display => <label className="village-decorator-display" key={displayKey(display)}><input type="checkbox" checked={false} disabled={busy || selected.length >= 2} onChange={() => update({ ...draft, displays: [...selected, display] })}/>{displayLabel(display, household, state)}</label>)}
     </>}</fieldset>
     <div className="village-decorator-actions"><button type="button" disabled={busy || !dirty || conflict} onClick={() => void save()}>{busy ? 'Saving…' : 'Save shared arrangement'}</button><button type="button" disabled={busy || !dirty} onClick={reset}>Cancel preview</button>{arrangement?.previous && <button type="button" disabled={busy || dirty || conflict} onClick={() => void revert()}>Revert latest</button>}{conflict && <button type="button" disabled={busy} onClick={reset}>Load latest room</button>}{onClose && <button type="button" disabled={busy} onClick={close}>Close</button>}</div>
     <p role="status" aria-live="polite">{message}</p>

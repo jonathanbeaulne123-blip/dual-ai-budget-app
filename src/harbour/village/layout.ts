@@ -12,6 +12,8 @@ export const VILLAGE_SITES = {
   boathouse: {spot:[10,-13], half:[3.6,3], door:[1.5,2.8], name:'The Boathouse', exterior:'village-boathouse', entry:'boathouse'},
 } as const;
 export type VillageBuilding = keyof typeof VILLAGE_SITES;
+/** One physical shore clearing shared by its distant landmark and live scene. */
+export const VILLAGE_WATERFRONT = { spot: [0, 17.5], half: [3.8, 3.6], door: [0, 3.45], yaw: Math.PI } as const;
 export const SITE_FOR_PLACE: Partial<Record<HarbourPlaceId,VillageBuilding>> = {
   kitchen:'home',tower:'home',cellar:'home',atlas:'home',bank:'bank',library:'library',
   glasshouse:'glasshouse',kiln:'studio',cottage:'cottage',boathouse:'boathouse',

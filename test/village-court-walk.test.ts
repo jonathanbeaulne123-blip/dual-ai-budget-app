@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import { COURT_ARRIVAL, createWalker } from "../src/harbour/body/walker.ts";
-import { courtObstacles } from "../src/harbour/body/obstacles.ts";
+import { courtObstacles, SHORE_RADIUS } from "../src/harbour/body/obstacles.ts";
+import { placeArrival, placeGround, placeRoom } from "../src/harbour/body/places.ts";
 import { groundHeightAt } from "../src/harbour/scene/ground.ts";
 import { VILLAGE_SITES } from "../src/harbour/village/layout.ts";
 import { crossedVillageDoor } from "../src/harbour/village/topology.ts";
@@ -13,6 +14,37 @@ function toWorld(site: typeof VILLAGE_SITES[keyof typeof VILLAGE_SITES], x: numb
 }
 
 describe("court tap routes reach every authored village door", () => {
+  it('walks to the waterfront and back without an origin jump, invisible walls, or invalid ground', () => {
+    const walker = createWalker({ groundHeightAt, obstacles: courtObstacles('lite'), tier: 'lite', trail: false, reduced: true, start: COURT_ARRIVAL });
+    walker.goTo(0, 14.5);
+    let previous = walker.state(), entries = 0;
+    for (let frame = 0; frame < 1200; frame++) {
+      walker.step(1 / 60, frame / 60, 0);
+      const next = walker.state();
+      if (crossedVillageDoor([previous.x, previous.z], [next.x, next.z], 'court') === 'campfire') entries++;
+      previous = next;
+    }
+    expect(entries).toBe(1); walker.dispose();
+    expect(placeRoom('campfire')).toBeNull();
+    const start = placeArrival('campfire');
+    expect(start.z).toBeGreaterThan(14);
+    const beach = createWalker({ groundHeightAt: placeGround('campfire'), obstacles: [], tier: 'lite', trail: false, reduced: true, start });
+    beach.goTo(0, 12.5);
+    previous = beach.state(); let exits = 0;
+    for (let frame = 0; frame < 360; frame++) {
+      beach.step(1 / 60, frame / 60, 0);
+      const next = beach.state();
+      expect(Number.isFinite(next.y)).toBe(true);
+      if (crossedVillageDoor([previous.x, previous.z], [next.x, next.z], 'campfire') === 'court') exits++;
+      previous = next;
+    }
+    expect(exits).toBe(1);
+    expect(placeGround('campfire')(0, 12.5)).toBe(groundHeightAt(0, 12.5));
+    beach.goTo(0, 100);
+    for (let frame = 0; frame < 600; frame++) beach.step(1 / 60, frame / 60, 0);
+    expect(Math.hypot(beach.state().x, beach.state().z)).toBeLessThanOrEqual(SHORE_RADIUS + 1e-8);
+    expect(Number.isFinite(beach.state().y)).toBe(true); beach.dispose();
+  });
   for (const [building, site] of Object.entries(VILLAGE_SITES)) {
     it(`${building}: routes from Court through its physical doorway`, () => {
       const walker = createWalker({ groundHeightAt, obstacles: courtObstacles("lite"), tier: "lite", trail: false, reduced: true, start: COURT_ARRIVAL });

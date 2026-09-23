@@ -1,5 +1,5 @@
 import type { HarbourPlaceId } from "../flag.ts";
-import { ROOM_PORTALS, SITE_FOR_PLACE, VILLAGE_SITES } from "./layout.ts";
+import { ROOM_PORTALS, SITE_FOR_PLACE, VILLAGE_SITES, VILLAGE_WATERFRONT } from "./layout.ts";
 
 type Point2 = readonly [number, number];
 type Portal = { id: string; to: HarbourPlaceId; at: readonly [number, number, number]; label: string };
@@ -36,6 +36,10 @@ function crossedDoor(from: Point2, to: Point2, site: typeof VILLAGE_SITES[keyof 
  */
 export function crossedVillageDoor(from: Point2, to: Point2, active: HarbourPlaceId): HarbourPlaceId | null {
   if (!finitePoint(from) || !finitePoint(to) || active === "court" && from[0] === to[0] && from[1] === to[1]) return null;
+  const shore = VILLAGE_WATERFRONT.spot;
+  const before = Math.hypot(from[0] - shore[0], from[1] - shore[1]), after = Math.hypot(to[0] - shore[0], to[1] - shore[1]);
+  if (active === 'court' && before > 3.6 && after <= 3.6) return 'campfire';
+  if (active === 'campfire' && before <= 4.2 && after > 4.2) return 'court';
   for (const site of Object.values(VILLAGE_SITES)) {
     const entry = site.entry as HarbourPlaceId;
     const isEntry = active === entry;
