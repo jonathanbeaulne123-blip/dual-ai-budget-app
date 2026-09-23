@@ -122,6 +122,7 @@ export function SkateHUD(p: SkateHUDProps) {
   // a desktop reads it in the lower-left corner, beside the rider, never on them.
   const band = narrow || touch;
   const ticker = <LineTicker line={m.line} outcome={m.outcome} where={band ? 'band' : 'corner'}/>;
+  const notice = <NoticeSlip notice={m.notice} saveFailed={p.saveFailed}/>;
   const route = m.run && <RouteCard run={m.run} onEnd={() => { p.onRoute(null); p.onFocus(); }}/>;
   return <div ref={hudRef} className="skate-hud" data-skate-phase={m.phase} data-skate-device={touch ? 'touch' : m.inputDevice} data-skate-layout={narrow ? 'narrow' : 'wide'} data-skate-reduced={reduced || undefined} data-skate-open={open || undefined} onPointerDown={e => e.stopPropagation()}>
     <div className="skate-hud__play" inert={open ? true : undefined} aria-hidden={open ? true : undefined}>
@@ -140,11 +141,11 @@ export function SkateHUD(p: SkateHUDProps) {
         {route}
         {band && ticker}
         <SpotBanner card={m.spotCard}/>
-        <NoticeSlip notice={m.notice} saveFailed={p.saveFailed}/>
+        {band && notice}
       </div>
       {!narrow && <Radar model={m} partnerName={p.partnerName}/>}
       {m.balance && <BalanceMeter balance={m.balance}/>}
-      {!band && ticker}
+      {!band && <div className="skate-corner">{notice}{ticker}</div>}
       {!touch && !narrow && <Hints hints={m.hints}/>}
       {touch && <TouchLayout onZone={zone}/>}
       <div className="skate-sr" aria-live="polite" aria-atomic="true">{live}</div>
