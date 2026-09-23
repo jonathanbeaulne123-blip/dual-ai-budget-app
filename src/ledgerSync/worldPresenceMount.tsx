@@ -3,7 +3,7 @@ import { localDeviceId } from "../core/devices.ts";
 import { ensureSupabaseSession, loadSupabaseSession } from "../auth/supabaseSession.ts";
 import { ledgerSyncEnabled, localLedgerIdentity } from "./mode.ts";
 import { attachWorldPresence, type WorldPeer, type WorldPresenceHandle } from "./worldPresence.ts";
-import { WORLD_STEP_MS, isWorldPlaceId, type WorldPlaceId } from "./worldPresenceWire.ts";
+import { WORLD_ACTS, WORLD_STEP_MS, isWorldPlaceId, type WorldAct, type WorldPlaceId } from "./worldPresenceWire.ts";
 import { worldPresenceGate } from "../softPresenceWorld.ts";
 import { readLocalPose, useWorldFeedProvider, type WorldFeed, type WorldFeedRequest } from "../harbour/presence/feed.ts";
 import type { PlaceWalkSource } from "../harbour/scene/place.ts";
@@ -47,9 +47,23 @@ import type { Environment } from "../core/types.ts";
  * the ground the person is at, with `theta` the heading the eye orbits from —
  * so the body faces `theta + π`, the direction the person is looking.
  */
-export function localBodyFromPose(pose: { target: readonly [number, number, number]; theta: number; body?: { x: number; z: number; yaw: number } | null }): { x: number; z: number; yaw: number } {
-  if (pose.body) return { x: pose.body.x, z: pose.body.z, yaw: wrapYaw(pose.body.yaw) };
+export function localBodyFromPose(pose: { target: readonly [number, number, number]; theta: number; body?: { x: number; z: number; yaw: number; act?: string | null; p?: number } | null }): { x: number; z: number; yaw: number; act?: WorldAct; p?: number } {
+  if (pose.body) {
+    const act = isWorldAct(pose.body.act) ? pose.body.act : null;
+    return {
+      x: pose.body.x, z: pose.body.z, yaw: wrapYaw(pose.body.yaw),
+      // Narrowed here, before it is offered: the lane's own decoder would
+      // reject an act it does not know and close the socket, and a body doing
+      // something the wire has no word for should simply walk.
+      ...(act ? { act, p: Math.max(0, Math.min(1, pose.body.p ?? 0)) } : {}),
+    };
+  }
   return { x: pose.target[0], z: pose.target[2], yaw: wrapYaw(pose.theta + Math.PI) };
+}
+
+/** Is this one of the eight the wire knows? Asked on the way out, not only on the way in. */
+export function isWorldAct(value: unknown): value is WorldAct {
+  return typeof value === "string" && (WORLD_ACTS as readonly string[]).includes(value);
 }
 
 /** Into (-π, π], the range the wire validates against. */
@@ -119,7 +133,10 @@ export function useWorldPresenceFeed(request: WorldFeedRequest): WorldFeed {
       const body = localBodyFromPose(pose);
       const moving = last !== null && Math.hypot(body.x - last.x, body.z - last.z) > MOVING_EPSILON;
       last = { x: body.x, z: body.z };
-      lane.step({ ...body, moving });
+      // A body in the air is moving whatever the ground distance says: a jump
+      // straight up covers no ground at all, and a partner should see the
+      // stride stop rather than a body standing still in mid-air.
+      lane.step({ ...body, moving: moving || body.act === "jump" || body.act === "slide" });
     }, WORLD_STEP_MS);
 
     const onVisibility = () => lane.refresh();

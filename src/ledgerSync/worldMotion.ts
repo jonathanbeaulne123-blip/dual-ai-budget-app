@@ -41,7 +41,13 @@ export const WORLD_EXPIRE_MS = 8000;
 /** How many samples a track keeps. Two would do; a few make late packets survivable. */
 export const WORLD_TRACK_DEPTH = 8;
 
-export type WorldSample = { x: number; z: number; yaw: number; moving: boolean; at: number };
+export type WorldSample = {
+  x: number; z: number; yaw: number; moving: boolean; at: number;
+  /** What the body is doing on top of walking, off the wire. Null is the plain walk. */
+  act?: string | null;
+  /** How far through it, 0…1. */
+  p?: number;
+};
 export type WorldMotionState = "walking" | "parked" | "gone";
 export type WorldPose = {
   x: number;
@@ -54,6 +60,10 @@ export type WorldPose = {
   state: WorldMotionState;
   /** Age of the newest sample, in ms — what the honest UI reads. */
   ageMs: number;
+  /** The act being played, or null. Never carried into `parked`: a stale body stands. */
+  act: string | null;
+  /** How far through it, 0…1. */
+  p: number;
 };
 
 export type WorldTrackOptions = {
@@ -124,13 +134,17 @@ export function createWorldTrack(options: WorldTrackOptions = {}): WorldTrack {
         opacity: faded,
         state: faded > 0 ? "parked" : "gone",
         ageMs: age,
+        // A body nobody has heard from is standing, not dancing. The act is
+        // dropped the moment the feed stops being live, for the same reason
+        // the stride is: a held pose on stale data is a claim we cannot make.
+        act: null, p: 0,
       };
     }
 
     const renderAt = nowMs - renderDelayMs;
     const oldest = buffer[0]!;
     if (renderAt <= oldest.at) {
-      return { x: oldest.x, z: oldest.z, yaw: oldest.yaw, moving: oldest.moving, opacity: 1, state: "walking", ageMs: age };
+      return { x: oldest.x, z: oldest.z, yaw: oldest.yaw, moving: oldest.moving, opacity: 1, state: "walking", ageMs: age, act: oldest.act ?? null, p: oldest.p ?? 0 };
     }
 
     if (renderAt <= newest.at) {
@@ -141,6 +155,12 @@ export function createWorldTrack(options: WorldTrackOptions = {}): WorldTrack {
       }
       const span = Math.max(1, b.at - a.at);
       const k = Math.max(0, Math.min(1, (renderAt - a.at) / span));
+      // The act is a name, so it does not interpolate — it is taken from
+      // whichever sample the render time is nearer. Its *progress* does, but
+      // only while the name is the same on both sides; across a change there
+      // is nothing between "waving at 0.9" and "jumping at 0.0" to be halfway to.
+      const near = k < 0.5 ? a : b;
+      const sameAct = (a.act ?? null) === (b.act ?? null);
       return {
         x: a.x + (b.x - a.x) * k,
         z: a.z + (b.z - a.z) * k,
@@ -149,6 +169,8 @@ export function createWorldTrack(options: WorldTrackOptions = {}): WorldTrack {
         opacity: 1,
         state: "walking",
         ageMs: age,
+        act: near.act ?? null,
+        p: sameAct ? (a.p ?? 0) + ((b.p ?? 0) - (a.p ?? 0)) * k : (near.p ?? 0),
       };
     }
 
@@ -157,7 +179,7 @@ export function createWorldTrack(options: WorldTrackOptions = {}): WorldTrack {
     const over = renderAt - newest.at;
     const reckon = Math.min(over, reckonMs);
     if (!previous || !newest.moving || reckon <= 0) {
-      return { x: newest.x, z: newest.z, yaw: newest.yaw, moving: false, opacity: 1, state: "walking", ageMs: age };
+      return { x: newest.x, z: newest.z, yaw: newest.yaw, moving: false, opacity: 1, state: "walking", ageMs: age, act: newest.act ?? null, p: newest.p ?? 0 };
     }
     const span = Math.max(1, newest.at - previous.at);
     let vx = (newest.x - previous.x) / span, vz = (newest.z - previous.z) / span;
@@ -172,6 +194,8 @@ export function createWorldTrack(options: WorldTrackOptions = {}): WorldTrack {
       opacity: 1,
       state: "walking",
       ageMs: age,
+      act: newest.act ?? null,
+      p: newest.p ?? 0,
     };
   };
 

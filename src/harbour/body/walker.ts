@@ -5,18 +5,25 @@ import { createDust, DUST_POOL, DUST_POOL_LITE, type Dust } from "./dust.ts";
 import {
   BODY_HEIGHT,
   BODY_RADIUS,
+  JUMP_SPEED,
   NO_INPUT,
+  SLIDE_SECONDS,
   WALK_SPEED,
+  actionOf,
   createBodyState,
   eyeHeight,
   gaitOf,
   placeBody,
+  requestEmote,
+  requestJump,
+  requestSlide,
   runFraction,
   stepBody,
   walkTo,
   type BodyInput,
   type BodyState,
   type BodyWorld,
+  type EmoteId,
 } from "./bodyModel.ts";
 import { courtObstacles, type Obstacle, type RoomBounds } from "./obstacles.ts";
 // The partner's body is this body: importing the character module registers it
@@ -94,6 +101,17 @@ export type Walker = {
   step(dt: number, t: number, theta: number): boolean;
   /** Is it walking right now? */
   walking(): boolean;
+  /**
+   * Ask for a jump. One-shot and edge-safe: a press between two frames is
+   * taken on the next one, exactly once. In the air it is the second jump.
+   */
+  jump(): void;
+  /** Ask for a slide. Taken only from a run, on the ground. */
+  slideNow(): void;
+  /** Play an emote, or stop it (`null`). Asking for the one playing stops it. */
+  emote(id: EmoteId | null): void;
+  /** What the body is doing beyond walking, for the wire: `{act, p}` or null. */
+  action(): { act: string; p: number } | null;
   setColours(next: Partial<FigureColours>): void;
   /** Turn the flourishes off (or back on) without raising a second body. */
   setReduced(reduced: boolean): void;
@@ -101,6 +119,9 @@ export type Walker = {
   bounds(target: THREE.Box3): THREE.Box3;
   dispose(): void;
 };
+
+/** How often a slide lays a mark and throws a puff, in seconds. */
+const SLIDE_MARK_SECONDS = 0.085;
 
 /** Where a body arrives in the Court: on the paving just inside the gate, facing the Queen. */
 export const COURT_ARRIVAL = Object.freeze({ x: 0.95, z: 5.1, yaw: Math.PI });
@@ -127,7 +148,13 @@ export function createWalker(options: WalkerOptions): Walker {
   let reduced = options.reduced ?? false;
   dust.group.visible = !reduced;
   /** The weight handed to the figure each frame. One object, written in place. */
-  const motion: BodyMotion = { lean: 0, bank: 0, run: 0 };
+  const motion: BodyMotion = { lean: 0, bank: 0, run: 0, air: 0, rise: 0, crouch: 0, slide: 0, emote: null, emoteAt: 0, flourish: 1 };
+  /**
+   * A slide lays a mark and a plume, and it does it on a *clock* rather than
+   * every frame: at sixty frames a second a mark a frame would wipe the whole
+   * pool in a fifth of a second and cost nothing but flicker.
+   */
+  let plume = 0;
   /**
    * A brake lasts a good handful of frames, and a burst on every one of them
    * would empty the pool before the body had stopped. The skid fires on the
@@ -162,11 +189,16 @@ export function createWalker(options: WalkerOptions): Walker {
     setInput(next) { input = next; },
     input: () => input,
     goTo(x, z) { state = walkTo(state, x, z, world); },
+    jump() { state = requestJump(state); },
+    slideNow() { state = requestSlide(state); },
+    emote(id) { state = requestEmote(state, id); },
+    action: () => actionOf(state),
     setReduced(next) {
       if (next === reduced) return;
       reduced = next;
       dust.group.visible = !next;
-      if (next) { dust.clear(); motion.lean = 0; motion.bank = 0; motion.run = 0; }
+      if (next) { dust.clear(); motion.lean = 0; motion.bank = 0; motion.run = 0; motion.flourish = 0; }
+      else motion.flourish = 1;
     },
     cancel() { state = { ...state, goal: null, stalled: 0 }; },
     place(x, z, yaw) { state = placeBody(state, x, z, world, yaw ?? state.yaw); write(); trail?.clear(); dust.clear(); },
@@ -179,6 +211,16 @@ export function createWalker(options: WalkerOptions): Walker {
       motion.run = reduced ? 0 : runFraction(state.speed);
       motion.lean = reduced ? 0 : state.lean;
       motion.bank = reduced ? 0 : state.bank;
+      // The moves themselves are never withheld — a jump is how you get over
+      // a thing, and an emote is something you said. Reduced motion turns the
+      // *performance* off (`flourish`), not the move.
+      motion.air = state.air;
+      motion.rise = Math.max(-1, Math.min(1, state.vy / JUMP_SPEED));
+      motion.crouch = state.crouch;
+      motion.slide = state.slide > 0 ? Math.min(1, state.slide / SLIDE_SECONDS) : 0;
+      motion.emote = state.emote;
+      motion.emoteAt = state.emoteAt;
+      motion.flourish = reduced ? 0 : 1;
       figure.pose(state.phase, gaitOf(state), t, motion);
       const foot = frame.footfall;
       if (foot) {
@@ -189,6 +231,26 @@ export function createWalker(options: WalkerOptions): Walker {
           dust.puff(foot.x, foot.y, foot.z, 0.18 + foot.force * 0.82);
         }
       }
+      // ── The moves on the ground ──────────────────────────────────────────
+      // A take-off scuffs under the feet; a landing throws a ring outward,
+      // which is what tells you the ground was hit rather than touched.
+      if (frame.jumped && !reduced) {
+        dust.puff(frame.jumped.x, frame.jumped.y, frame.jumped.z, 0.3 + frame.jumped.force * 0.5);
+        if (frame.jumped.second) dust.ring(frame.jumped.x, frame.jumped.y, frame.jumped.z, 0.42);
+      }
+      if (frame.landing) {
+        if (!reduced) dust.ring(frame.landing.x, frame.landing.y, frame.landing.z, 0.35 + frame.landing.force * 0.65);
+        trail?.drop(frame.landing.x, frame.landing.y, frame.landing.z, state.yaw, true, frame.landing.force);
+      }
+      // A slide lays a continuous mark and trails a plume behind it.
+      if (frame.sliding) {
+        plume -= dt;
+        if (plume <= 0) {
+          plume = SLIDE_MARK_SECONDS;
+          trail?.drop(state.x, state.y - state.air, state.z, state.yaw, state.slide > SLIDE_SECONDS * 0.5, 1);
+          if (!reduced) dust.puff(state.x - Math.sin(state.yaw) * 0.09, state.y - state.air, state.z - Math.cos(state.yaw) * 0.09, 0.85);
+        }
+      } else plume = 0;
       // Pulling up hard out of a run: a burst under both feet, which is the
       // whole read of a skid from behind.
       if (frame.skid && !skidding && !reduced) {

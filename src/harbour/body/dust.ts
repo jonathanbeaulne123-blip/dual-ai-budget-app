@@ -28,6 +28,13 @@ export type Dust = {
    * throws a proper cloud. Costs one matrix write and one number.
    */
   puff(x: number, y: number, z: number, force: number): void;
+  /**
+   * A ring of puffs thrown outward from a point — what a landing does. Costs
+   * `RING_PUFFS` of the same pool and allocates nothing: it is `puff` in a
+   * circle, which is the cheapest thing that reads as an impact rather than
+   * as a smudge.
+   */
+  ring(x: number, y: number, z: number, force: number): void;
   /** Age them by `dt` seconds. True while any puff is still showing. */
   fade(dt: number): boolean;
   clear(): void;
@@ -36,6 +43,8 @@ export type Dust = {
 
 /** How far a puff drifts up over its life, and how wide it opens, at full force. */
 const RISE = 0.075, WIDE = 0.105, NARROW = 0.018;
+/** How many puffs a landing ring throws, and how far out it throws them at full force. */
+export const RING_PUFFS = 6, RING_RADIUS = 0.115;
 
 export function createDust(colour: string, pool: number = DUST_POOL): Dust {
   const group = new THREE.Group();
@@ -72,17 +81,27 @@ export function createDust(colour: string, pool: number = DUST_POOL): Dust {
     materials[i]!.opacity = 0.42 * force * (1 - life) * (1 - life);
   }
 
+  function puffAt(x: number, y: number, z: number, force: number): void {
+    const strength = force < 0.08 ? 0.08 : force > 1 ? 1 : force;
+    if (ages[next]! >= DUST_LIFE) live += 1;
+    forces[next] = strength;
+    base[next * 3] = x; base[next * 3 + 1] = y + 0.012; base[next * 3 + 2] = z;
+    ages[next] = 0;
+    meshes[next]!.visible = true;
+    write(next, 0);
+    next = (next + 1) % pool;
+  }
+
   return {
     group,
-    puff(x, y, z, force) {
+    puff: puffAt,
+    ring(x, y, z, force) {
       const strength = force < 0.08 ? 0.08 : force > 1 ? 1 : force;
-      if (ages[next]! >= DUST_LIFE) live += 1;
-      forces[next] = strength;
-      base[next * 3] = x; base[next * 3 + 1] = y + 0.012; base[next * 3 + 2] = z;
-      ages[next] = 0;
-      meshes[next]!.visible = true;
-      write(next, 0);
-      next = (next + 1) % pool;
+      const spread = RING_RADIUS * (0.45 + strength * 0.55);
+      for (let i = 0; i < RING_PUFFS; i += 1) {
+        const a = (i / RING_PUFFS) * Math.PI * 2;
+        puffAt(x + Math.cos(a) * spread, y, z + Math.sin(a) * spread, strength * 0.75);
+      }
     },
     fade(dt) {
       if (!live) return false;

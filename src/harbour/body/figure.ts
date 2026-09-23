@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { BODY_HEIGHT } from "./obstacles.ts";
+import { EMOTE_SECONDS, type EmoteId } from "./bodyModel.ts";
 
 /**
  * Little Harbour · the body you walk around as.
@@ -51,6 +52,25 @@ export type BodyMotion = {
   bank: number;
   /** How far into a run, 0…1: swing, cadence, bob and squash all grow with it. */
   run: number;
+
+  /* ── The moves ─────────────────────────────────────────────────────────── */
+  /** Height above the ground, in units. Anything above nothing is a body in flight. */
+  air?: number;
+  /** Vertical speed, −1…1 of a full jump: +1 is the push off, −1 is the drop. */
+  rise?: number;
+  /** 0…1 — the dip before a jump and the squash after a landing. */
+  crouch?: number;
+  /** 0…1 — how deep into a slide. */
+  slide?: number;
+  /** The emote playing, and how many seconds into it. */
+  emote?: EmoteId | null;
+  emoteAt?: number;
+  /**
+   * How much of the *performance* to play, 0…1. Reduced motion sets it to
+   * zero: the pose still reads — an arm is still up to wave — it simply stops
+   * oscillating. The move itself is never withheld; the flourish on it is.
+   */
+  flourish?: number;
 };
 
 export const AT_REST: Readonly<BodyMotion> = Object.freeze({ lean: 0, bank: 0, run: 0 });
@@ -90,6 +110,10 @@ const SQUASH = 0.055;
 const LEAN_GAIN = 0.20, BANK_GAIN = 0.28;
 /** How much of the carriage's pitch the head gives back, so the face keeps looking ahead. */
 const HEAD_LEVEL = 0.55;
+/** How far the body dips into a crouch, and how much it squashes doing it. */
+const CROUCH_DIP = 0.072, CROUCH_SQUASH = 0.2;
+/** How low a slide rides, how far back it leans, and how wide the arms go for balance. */
+const SLIDE_DIP = 0.15, SLIDE_LEAN = 0.34, SLIDE_ARMS = 0.85;
 
 export function createBodyFigure(colours: Partial<FigureColours> = {}): BodyFigure {
   const palette: FigureColours = { ...DEFAULT_FIGURE_COLOURS, ...colours };
@@ -170,6 +194,82 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}): BodyFigu
   const [leftArm, rightArm] = arms as [THREE.Group, THREE.Group];
   const armRest = [leftArm.rotation.z, rightArm.rotation.z] as const;
 
+  /**
+   * The six. Each is a pose first and a performance second: the arm is up
+   * whether or not it is waving, which is what lets reduced motion turn
+   * `flourish` down to nothing and still have the body say the thing.
+   */
+  function playEmote(id: EmoteId, at: number, f: number): void {
+    // Loops come round; the rest hold their last frame rather than snapping.
+    const e = at % Math.max(EMOTE_SECONDS[id], 0.001);
+    carriage.position.y = 0;
+    carriage.rotation.x = 0;
+    carriage.rotation.z = 0;
+    carriage.scale.set(1, 1, 1);
+    leftLeg.rotation.x = 0; rightLeg.rotation.x = 0;
+    leftArm.rotation.x = 0; rightArm.rotation.x = 0;
+    leftArm.rotation.z = armRest[0]; rightArm.rotation.z = armRest[1];
+    switch (id) {
+      case "wave": {
+        rightArm.rotation.x = -2.45;
+        rightArm.rotation.z = armRest[1] + 0.42 + Math.sin(e * 9.5) * 0.46 * f;
+        carriage.rotation.z = -0.06 - Math.sin(e * 9.5) * 0.03 * f;
+        break;
+      }
+      case "dance": {
+        const beat = e * 6.4;
+        carriage.position.y = Math.abs(Math.sin(beat)) * 0.034 * f;
+        carriage.rotation.z = Math.sin(beat * 0.5) * 0.24 * f;
+        carriage.rotation.y = Math.sin(beat * 0.5) * 0.34 * f;
+        carriage.rotation.x = -0.05;
+        leftArm.rotation.x = -1.15 + Math.sin(beat) * 0.72 * f;
+        rightArm.rotation.x = -1.15 - Math.sin(beat) * 0.72 * f;
+        leftArm.rotation.z = armRest[0] - 0.42; rightArm.rotation.z = armRest[1] + 0.42;
+        leftLeg.rotation.x = Math.sin(beat) * 0.3 * f;
+        rightLeg.rotation.x = -Math.sin(beat) * 0.3 * f;
+        break;
+      }
+      case "sit": {
+        // Knees up, weight back, hands behind: a body at rest on the grass.
+        carriage.position.y = -0.135;
+        carriage.rotation.x = 0.16;
+        leftLeg.rotation.x = -1.42; rightLeg.rotation.x = -1.3;
+        leftArm.rotation.x = 0.62; rightArm.rotation.x = 0.62;
+        leftArm.rotation.z = armRest[0] - 0.2; rightArm.rotation.z = armRest[1] + 0.2;
+        // The slow breath of somebody who has stopped.
+        carriage.position.y += Math.sin(e * 1.6) * 0.006 * f;
+        break;
+      }
+      case "cheer": {
+        leftArm.rotation.x = -2.62; rightArm.rotation.x = -2.62;
+        leftArm.rotation.z = armRest[0] - 0.3; rightArm.rotation.z = armRest[1] + 0.3;
+        const hop = Math.abs(Math.sin(e * 7.5));
+        carriage.position.y = hop * 0.05 * f;
+        carriage.rotation.x = -0.12 - hop * 0.06 * f;
+        leftLeg.rotation.x = -hop * 0.2 * f; rightLeg.rotation.x = -hop * 0.2 * f;
+        break;
+      }
+      case "laugh": {
+        // Thrown back, hands to the ribs, shaking.
+        carriage.rotation.x = 0.3 + Math.sin(e * 12) * 0.075 * f;
+        leftArm.rotation.x = 0.48; rightArm.rotation.x = 0.48;
+        leftArm.rotation.z = armRest[0] - 0.62; rightArm.rotation.z = armRest[1] + 0.62;
+        carriage.position.y = -0.012 + Math.abs(Math.sin(e * 12)) * 0.008 * f;
+        break;
+      }
+      case "point": {
+        // Straight out along the heading, which is the direction the body
+        // faces — so pointing at a thing is walking toward it and stopping.
+        rightArm.rotation.x = -1.56;
+        rightArm.rotation.z = armRest[1] + 0.02;
+        leftArm.rotation.x = 0.12;
+        carriage.rotation.x = -0.15;
+        carriage.rotation.y = -0.1;
+        break;
+      }
+    }
+  }
+
   return {
     group,
     height: BODY_HEIGHT,
@@ -202,9 +302,64 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}): BodyFigu
       const impact = Math.pow(Math.abs(Math.cos(phase)), 8);
       const squash = SQUASH * (1 + run) * g * impact;
       carriage.scale.set(1 + squash * 0.45, 1 - squash, 1 + squash * 0.45);
+      // ── The moves ──────────────────────────────────────────────────────
+      // Everything above is the walk. Everything below is played *over* it,
+      // in the order a body would: the flight wins over the gait, the slide
+      // wins over the flight, and an emote is only ever reached by a body
+      // that is doing none of the three.
+      const f = Math.max(0, Math.min(1, motion.flourish ?? 1));
+      const crouched = Math.max(0, Math.min(1, motion.crouch ?? 0));
+      const sliding = Math.max(0, Math.min(1, motion.slide ?? 0));
+      const flying = (motion.air ?? 0) > 1e-4;
+      carriage.rotation.y = 0;
+
+      if (flying) {
+        // In the air. The lead knee comes up on the way out and reaches for
+        // the ground on the way down; the arms go with it.
+        const rise = Math.max(-1, Math.min(1, motion.rise ?? 0));
+        leftLeg.rotation.x = -0.52 - 0.5 * rise;
+        rightLeg.rotation.x = 0.3 - 0.26 * rise;
+        leftArm.rotation.x = -0.5 - 0.85 * rise;
+        rightArm.rotation.x = -0.5 - 0.85 * rise;
+        leftArm.rotation.z = armRest[0] - 0.34;
+        rightArm.rotation.z = armRest[1] + 0.34;
+        carriage.rotation.x = -(0.08 + 0.2 * rise);
+        carriage.rotation.z = motion.bank * BANK_GAIN * 0.5;
+        carriage.position.y = 0;
+        // A body stretches on the way up and gathers on the way down.
+        const stretch = 0.045 * rise;
+        carriage.scale.set(1 - stretch * 0.6, 1 + stretch, 1 - stretch * 0.6);
+      } else if (sliding > 0) {
+        // Down into the crouch, weight back, one leg out in front of the
+        // other and both arms out for balance: a skid, read from behind.
+        leftLeg.rotation.x = -1.02;
+        rightLeg.rotation.x = 0.5;
+        leftArm.rotation.x = 0.28; rightArm.rotation.x = 0.28;
+        leftArm.rotation.z = armRest[0] - SLIDE_ARMS;
+        rightArm.rotation.z = armRest[1] + SLIDE_ARMS;
+        carriage.rotation.x = SLIDE_LEAN;
+        carriage.rotation.z = motion.bank * BANK_GAIN;
+        carriage.position.y = -SLIDE_DIP;
+        carriage.scale.set(1.1, 0.9, 1.1);
+      } else if (motion.emote) {
+        playEmote(motion.emote, motion.emoteAt ?? 0, f);
+      }
+
+      // The crouch rides on top of whatever the body is otherwise doing: it is
+      // the dip before a take-off and the squash after a landing, and both
+      // want to be seen through the pose, not instead of it.
+      if (crouched > 0 && !flying) {
+        carriage.position.y -= CROUCH_DIP * crouched;
+        const squash = CROUCH_SQUASH * crouched;
+        carriage.scale.set(carriage.scale.x * (1 + squash * 0.5), carriage.scale.y * (1 - squash), carriage.scale.z * (1 + squash * 0.5));
+        leftLeg.rotation.x -= 0.3 * crouched;
+        rightLeg.rotation.x += 0.3 * crouched;
+      }
+
       // Whatever the body does, the face keeps looking where it is going.
-      head.rotation.x = pitch * HEAD_LEVEL;
-      hair.rotation.x = -0.22 + pitch * HEAD_LEVEL;
+      head.rotation.x = carriage.rotation.x * -HEAD_LEVEL;
+      hair.rotation.x = -0.22 + carriage.rotation.x * -HEAD_LEVEL;
+
       // Standing still, it breathes. The head keeps its height whatever the
       // chest does, so a resting body does not nod.
       const breath = (1 - g) * Math.sin(t * 1.5) * 0.012;

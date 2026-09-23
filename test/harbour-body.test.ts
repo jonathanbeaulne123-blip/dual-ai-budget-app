@@ -2,8 +2,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as THREE from "three";
 import {
-  BODY_HEIGHT, BODY_RADIUS, NO_INPUT, RUN_SPEED, STRIDE, WALK_SPEED,
-  cameraBasis, createBodyState, eyeHeight, runFraction, stepBody, strideAt, walkTo,
+  BODY_HEIGHT, BODY_RADIUS, EMOTE_IDS, JUMP_COUNT, NO_INPUT, RUN_SPEED, SLIDE_MIN_SPEED, SLIDE_SECONDS, STRIDE, WALK_SPEED,
+  actionOf, cameraBasis, createBodyState, eyeHeight, requestEmote, requestJump, requestSlide, runFraction, stepBody, strideAt, walkTo,
   type BodyState, type BodyWorld,
 } from "../src/harbour/body/bodyModel.ts";
 import {
@@ -439,6 +439,224 @@ describe("the body has weight", () => {
     quiet.setReduced(false);
     expect(quiet.group.getObjectByName("dust")!.visible).toBe(true);
     quiet.dispose();
+  });
+});
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * The moves (walk-moves): a jump, a slide and six things to say.
+ * ────────────────────────────────────────────────────────────────────────── */
+describe("the body jumps", () => {
+  /** Run a body until it is up to `run` speed, then hand it back standing on the flat. */
+  function ready(run: boolean, seconds = 2, world: BodyWorld = bare): BodyState {
+    let state = createBodyState(0, 6, 0, world);
+    for (let i = 0; i < Math.round(seconds * 60); i += 1) {
+      state = stepBody(state, { forward: 1, strafe: 0, run }, TOWARD_Z, 1 / 60, world).state;
+    }
+    return state;
+  }
+  /** Step a body through a whole jump and hand back everything that happened. */
+  function arc(state: BodyState, seconds: number, input = NO_INPUT, world: BodyWorld = bare) {
+    const path: BodyState[] = [];
+    let landing: { force: number } | null = null, jumped = 0;
+    for (let i = 0; i < Math.round(seconds * 60); i += 1) {
+      const frame = stepBody(state, input, TOWARD_Z, 1 / 60, world);
+      state = frame.state;
+      if (frame.jumped) jumped += 1;
+      if (frame.landing) landing = frame.landing;
+      path.push(state);
+    }
+    return { state, path, landing, jumped, apex: Math.max(...path.map(p => p.air)) };
+  }
+
+  it("crouches before it leaves the ground, and really is that late about it", () => {
+    const standing = createBodyState(0, 6, 0, bare);
+    const { path } = arc(requestJump(standing), 0.4);
+    // The first frames are the anticipation: down, not up.
+    expect(path[0]!.air).toBe(0);
+    expect(path[0]!.crouch).toBeGreaterThan(0.9);
+    expect(path[3]!.air, "still gathering, five frames in").toBe(0);
+    // And then it goes.
+    expect(path.some(p => p.air > 0.2)).toBe(true);
+  });
+
+  it("arcs: up, over, down — and comes back to exactly the ground it left", () => {
+    const standing = createBodyState(0, 6, 0, bare);
+    const { path, apex, landing, state } = arc(requestJump(standing), 1.2);
+    expect(apex).toBeGreaterThan(0.24);
+    // It rises then falls: the apex is in the middle, not at either end.
+    const top = path.findIndex(p => p.air === apex);
+    expect(top).toBeGreaterThan(4);
+    expect(top).toBeLessThan(path.length - 4);
+    expect(landing, "it lands").not.toBeNull();
+    expect(landing!.force).toBeGreaterThan(0.3);
+    expect(state.air).toBe(0);
+    expect(state.y).toBeCloseTo(groundHeightAt(state.x, state.z), 6);
+  });
+
+  it("goes further out of a run than off the mark", () => {
+    const still = arc(requestJump(createBodyState(0, 6, 0, bare)), 1.2).apex;
+    const running = arc(requestJump(ready(true)), 1.2, { forward: 1, strafe: 0, run: true }).apex;
+    expect(running, "a running hop clears more than a standing one").toBeGreaterThan(still * 1.5);
+  });
+
+  it("follows the ground it comes down on rather than the one it left", () => {
+    // Off the terrace and out over the lawn, which is lower: the landing is
+    // taken at the ground under the *new* feet, not the old ones.
+    let state = createBodyState(0, TERRACE_RADIUS - 0.4, 0, island);
+    const left = state.y;
+    state = requestJump(state);
+    let landing: { y: number } | null = null;
+    for (let i = 0; i < 120; i += 1) {
+      const frame = stepBody(state, { forward: 1, strafe: 0, run: true }, TOWARD_Z, 1 / 60, island);
+      state = frame.state;
+      if (frame.landing) { landing = frame.landing; break; }
+    }
+    expect(landing).not.toBeNull();
+    expect(landing!.y).toBeCloseTo(groundHeightAt(state.x, state.z), 6);
+    expect(landing!.y).not.toBeCloseTo(left, 3);
+    expect(state.y).toBeCloseTo(landing!.y, 6);
+  });
+
+  it("has a second jump in the air and no third", () => {
+    let state = requestJump(createBodyState(0, 6, 0, bare));
+    let jumps = 0;
+    for (let i = 0; i < 90; i += 1) {
+      // Ask on every single frame: the limit has to be the body's, not the hand's.
+      const frame = stepBody(requestJump(state), NO_INPUT, TOWARD_Z, 1 / 60, bare);
+      state = frame.state;
+      if (frame.jumped) jumps += 1;
+      if (state.air === 0 && jumps > 0 && i > 20) break;
+    }
+    expect(jumps).toBe(JUMP_COUNT);
+  });
+
+  it("keeps its momentum in the air: you cannot change your mind mid-flight", () => {
+    const running = requestJump(ready(true));
+    const { state } = arc(running, 0.55, NO_INPUT);
+    // Letting go of everything in mid-air barely slows it: `AIR_CONTROL`.
+    expect(state.speed).toBeGreaterThan(RUN_SPEED * 0.6);
+  });
+
+  it("takes no strides while its feet are off the ground", () => {
+    const running = requestJump(ready(true));
+    const { path } = arc(running, 0.5, { forward: 1, strafe: 0, run: true });
+    const flying = path.filter(p => p.air > 0);
+    expect(flying.length).toBeGreaterThan(10);
+    // The gait freezes and picks up again where it left off.
+    expect(new Set(flying.map(p => p.phase.toFixed(6))).size).toBe(1);
+  });
+});
+
+describe("the body slides", () => {
+  function running(): BodyState {
+    let state = createBodyState(0, 6, 0, bare);
+    for (let i = 0; i < 120; i += 1) state = stepBody(state, { forward: 1, strafe: 0, run: true }, TOWARD_Z, 1 / 60, bare).state;
+    return state;
+  }
+
+  it("is the reward for sprinting: a walk cannot start one", () => {
+    let walking = createBodyState(0, 6, 0, bare);
+    for (let i = 0; i < 120; i += 1) walking = stepBody(walking, { forward: 1, strafe: 0 }, TOWARD_Z, 1 / 60, bare).state;
+    expect(walking.speed).toBeLessThan(SLIDE_MIN_SPEED);
+    expect(stepBody(requestSlide(walking), { forward: 1, strafe: 0 }, TOWARD_Z, 1 / 60, bare).state.slide).toBe(0);
+    expect(stepBody(requestSlide(running()), { forward: 1, strafe: 0, run: true }, TOWARD_Z, 1 / 60, bare).state.slide).toBeGreaterThan(0);
+  });
+
+  it("keeps the momentum it came in with, and carries further than letting go would", () => {
+    const top = running();
+    let slid = requestSlide(top), stopped = top;
+    let slidTravel = 0, stoppedTravel = 0;
+    for (let i = 0; i < Math.round(SLIDE_SECONDS * 60); i += 1) {
+      const a = stepBody(slid, NO_INPUT, TOWARD_Z, 1 / 60, bare);
+      slidTravel += Math.hypot(a.state.x - slid.x, a.state.z - slid.z); slid = a.state;
+      const b = stepBody(stopped, NO_INPUT, TOWARD_Z, 1 / 60, bare);
+      stoppedTravel += Math.hypot(b.state.x - stopped.x, b.state.z - stopped.z); stopped = b.state;
+    }
+    expect(slidTravel).toBeGreaterThan(stoppedTravel);
+  });
+
+  it("stands up by itself, and lays a mark while it is down", () => {
+    let state = requestSlide(running());
+    let sliding = 0;
+    for (let i = 0; i < 180; i += 1) {
+      const frame = stepBody(state, NO_INPUT, TOWARD_Z, 1 / 60, bare);
+      state = frame.state;
+      if (frame.sliding) sliding += 1;
+    }
+    expect(sliding).toBeGreaterThan(6);
+    expect(state.slide, "nobody slides for ever").toBe(0);
+  });
+
+  it("goes where the body is pointed, not where the stick is", () => {
+    let state = requestSlide(running());
+    const from = { x: state.x, z: state.z };
+    // Hard left the whole way down: it leans, it does not turn round.
+    for (let i = 0; i < Math.round(SLIDE_SECONDS * 60); i += 1) {
+      state = stepBody(state, { forward: 0, strafe: -1 }, TOWARD_Z, 1 / 60, bare).state;
+    }
+    // It started walking toward +z and it is still going that way.
+    expect(state.z - from.z).toBeGreaterThan(Math.abs(state.x - from.x));
+  });
+});
+
+describe("the body says things", () => {
+  it("plays one of six, and stops the moment you move", () => {
+    const standing = createBodyState(0, 6, 0, bare);
+    expect(EMOTE_IDS).toHaveLength(6);
+    let state = requestEmote(standing, "wave");
+    for (let i = 0; i < 20; i += 1) state = stepBody(state, NO_INPUT, TOWARD_Z, 1 / 60, bare).state;
+    expect(state.emote).toBe("wave");
+    expect(state.emoteAt).toBeGreaterThan(0.2);
+    // A hand on the keys ends it on the very next frame, and the walk is not
+    // held up for a single one of them.
+    const walking = stepBody(state, { forward: 1, strafe: 0 }, TOWARD_Z, 1 / 60, bare);
+    expect(walking.state.emote).toBeNull();
+    expect(walking.state.speed).toBeGreaterThan(0);
+  });
+
+  it("lets go by itself rather than holding a pose for ever", () => {
+    let state = requestEmote(createBodyState(0, 6, 0, bare), "wave");
+    for (let i = 0; i < 60 * 3; i += 1) state = stepBody(state, NO_INPUT, TOWARD_Z, 1 / 60, bare).state;
+    expect(state.emote).toBeNull();
+    // Even the ones that loop: twelve seconds and the body is a body again.
+    let held = requestEmote(createBodyState(0, 6, 0, bare), "dance");
+    for (let i = 0; i < 60 * 14; i += 1) held = stepBody(held, NO_INPUT, TOWARD_Z, 1 / 60, bare).state;
+    expect(held.emote).toBeNull();
+  });
+
+  it("asking for the one already playing puts it away", () => {
+    const waving = requestEmote(createBodyState(0, 6, 0, bare), "wave");
+    expect(requestEmote(waving, "wave").emote).toBeNull();
+    expect(requestEmote(waving, "dance").emote).toBe("dance");
+    expect(requestEmote(waving, null).emote).toBeNull();
+  });
+
+  it("names what it is doing, and how far through, for the wire", () => {
+    expect(actionOf(createBodyState(0, 6, 0, bare))).toBeNull();
+    const waving = actionOf(requestEmote(createBodyState(0, 6, 0, bare), "cheer"));
+    expect(waving).toEqual({ act: "cheer", p: 0 });
+    let jumping = requestJump(createBodyState(0, 6, 0, bare));
+    const seen: number[] = [];
+    for (let i = 0; i < 50; i += 1) {
+      jumping = stepBody(jumping, NO_INPUT, TOWARD_Z, 1 / 60, bare).state;
+      const doing = actionOf(jumping);
+      if (doing?.act === "jump") seen.push(doing.p);
+    }
+    expect(seen.length).toBeGreaterThan(20);
+    // Progress only ever goes forward, and stays on 0…1.
+    expect(seen.every((p, i) => p >= 0 && p <= 1 && (i === 0 || p >= seen[i - 1]!))).toBe(true);
+  });
+
+  it("comes back to rest: a body that has jumped, slid and waved asks for nothing in the end", () => {
+    let state = requestEmote(requestJump(createBodyState(0, 6, 0, bare)), "laugh");
+    let moving = true;
+    for (let i = 0; i < 60 * 20; i += 1) {
+      const frame = stepBody(state, NO_INPUT, TOWARD_Z, 1 / 60, bare);
+      state = frame.state; moving = frame.moving;
+    }
+    expect(moving, "the frame policy has to be able to reach rest").toBe(false);
+    expect(state.air).toBe(0); expect(state.vy).toBe(0); expect(state.crouch).toBe(0);
+    expect(state.slide).toBe(0); expect(state.emote).toBeNull(); expect(state.charge).toBe(0);
   });
 });
 

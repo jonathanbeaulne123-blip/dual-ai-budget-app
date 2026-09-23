@@ -83,6 +83,13 @@ export const FOLLOW_SPRINT_DOLLY = 0.62;
 export const FOLLOW_SPRINT_FOV = 5.5;
 /** How much of the look-at ease a full run takes away: the lag that makes the world whip past. */
 export const FOLLOW_SPRINT_LAG = 3.6;
+/**
+ * How much slower the look-at point climbs than it follows along the ground,
+ * while the body is in the air. A camera that tracked a jump one-for-one
+ * would show a body that never left the middle of the screen; at a third of
+ * the rate the body rises in frame and settles back as it lands.
+ */
+export const FOLLOW_AIR_LAG = 0.33;
 /** How quickly the dolly opens out and comes back in (per second). Out eagerly, back unhurried. */
 export const SPRINT_OUT = 3.2, SPRINT_IN = 2.1;
 
@@ -117,7 +124,16 @@ export function followInRoom(reach: number, composition: Composition): { r: numb
 }
 
 /** Where the camera is following: the body's shoulders, and which way it faces. */
-export type FollowSubject = { x: number; y: number; z: number; yaw: number; speed: number };
+export type FollowSubject = {
+  x: number; y: number; z: number; yaw: number; speed: number;
+  /**
+   * How far off the ground the body is, in units. The eye keeps its own
+   * height and lets the body rise *within* the frame rather than riding up
+   * with it — which is the difference between watching a jump and being
+   * carried by one. Left out, it is nothing, and the camera is what it was.
+   */
+  air?: number;
+};
 
 export type FollowCameraOptions = {
   camera: PerspectiveCamera;
@@ -339,9 +355,14 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
       // The look-at point lags with speed: the body pulls a little ahead of
       // the centre of the frame and the island whips past the edges.
       const lookK = 1 - Math.exp(-Math.max(1, LOOK_EASE - FOLLOW_SPRINT_LAG * sprint()) * step);
+      // The vertical is eased separately, and only while the body is off the
+      // ground: on the ground the two are the same number and the camera is
+      // exactly the camera that was here before.
+      const airborne = (subject.air ?? 0) > 1e-4;
+      const liftK = airborne && !reduced ? 1 - Math.exp(-Math.max(1, LOOK_EASE * FOLLOW_AIR_LAG) * step) : lookK;
       look = [
         look[0] + (subject.x - look[0]) * lookK,
-        look[1] + (subject.y - look[1]) * lookK,
+        look[1] + (subject.y - look[1]) * liftK,
         look[2] + (subject.z - look[2]) * lookK,
       ];
       const k = 1 - Math.exp(-FOLLOW_EASE * step);

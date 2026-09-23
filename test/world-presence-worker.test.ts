@@ -184,6 +184,41 @@ it("clamps a coordinate off the island instead of broadcasting it", async () => 
     .toMatchObject({ x: WORLD_BOUND, z: -WORLD_BOUND, placeId: "court" });
 }, 60_000);
 
+/* ── The moves, carried to the other side (walk-moves) ──────────────────── */
+
+it("carries a jump and an emote to the partner, rebuilt server-side like everything else", async () => {
+  const a = await connect("MEM-001", "presence");
+  const b = await connect("MEM-002", "presence");
+  joinCourt(a, "DEVICE-act-a");
+  joinCourt(b, "DEVICE-act-b");
+  await b.next("world-peer", (m) => m.deviceId === "MEM-001:DEVICE-act-a");
+  const mine = (m: Record<string, unknown>) => m.deviceId === "MEM-001:DEVICE-act-a";
+  // A jump, halfway through its arc.
+  a.ws.send(JSON.stringify({ type: "world-step", version: 1, x: 1, z: 1, yaw: 0, moving: true, act: "jump", p: 0.5 }));
+  expect(await b.next("world-peer", (m) => mine(m) && m.act === "jump")).toMatchObject({ act: "jump", p: 0.5, x: 1, z: 1 });
+  await new Promise((r) => setTimeout(r, 70));
+  // And a wave, standing still.
+  a.ws.send(JSON.stringify({ type: "world-step", version: 1, x: 1, z: 1.2, yaw: 0, moving: false, act: "wave", p: 0.25 }));
+  expect(await b.next("world-peer", (m) => mine(m) && m.act === "wave")).toMatchObject({ act: "wave", p: 0.25, moving: false });
+}, 60_000);
+
+it("bounds a move the way it bounds a coordinate: an unknown one closes the socket, a wild phase is pulled in", async () => {
+  const a = await connect("MEM-001", "presence");
+  const b = await connect("MEM-002", "presence");
+  joinCourt(a, "DEVICE-actb-a");
+  joinCourt(b, "DEVICE-actb-b");
+  await b.next("world-peer", (m) => m.deviceId === "MEM-001:DEVICE-actb-a");
+  a.ws.send(JSON.stringify({ type: "world-step", version: 1, x: 0, z: 0, yaw: 0, moving: true, act: "dance", p: 99 }));
+  expect(await b.next("world-peer", (m) => m.deviceId === "MEM-001:DEVICE-actb-a" && m.act === "dance"))
+    .toMatchObject({ act: "dance", p: 1 });
+  // A word the lane does not have is not a move; it is a bad frame.
+  const bad = await connect("MEM-001", "presence");
+  joinCourt(bad, "DEVICE-actb-bad");
+  await b.next("world-peer", (m) => m.deviceId === "MEM-001:DEVICE-actb-bad");
+  bad.ws.send(JSON.stringify({ type: "world-step", version: 1, x: 0, z: 0, yaw: 0, moving: true, act: "withdraw", p: 0 }));
+  expect(await bad.closed()).toMatchObject({ code: 4000, reason: "INVALID_WORLD_PRESENCE" });
+}, 60_000);
+
 it("rejects an absurd coordinate outright, and broadcasts nothing", async () => {
   const a = await connect("MEM-001", "presence");
   const b = await connect("MEM-002", "presence");
