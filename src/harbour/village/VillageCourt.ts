@@ -25,6 +25,7 @@ export const villageCourt = registerPlace({id:'court',build(scene,dressing,_read
   const water=add(new THREE.CircleGeometry(.78,32),waterMaterial,0,.21,0,'fountain-water');water.rotation.x=-Math.PI/2;
   add(new THREE.CylinderGeometry(.16,.24,.75,10),stone,0,.43,0,'fountain-stem');
   add(new THREE.SphereGeometry(.2,12,8),brass,0,.9,0,'fountain-finial');
+  const pavers:{x:number;y:number;z:number;yaw:number}[]=[];
   for(const [kind,site] of Object.entries(VILLAGE_SITES)){
     const placement=placementOf(site.entry)!;
     const shell=buildVillageBuilding(kind as VillageBuildingKind,dressing,quality);
@@ -42,10 +43,14 @@ export const villageCourt = registerPlace({id:'court',build(scene,dressing,_read
     for(let n=0;n<Math.ceil(distance/.65);n++){
       const k=n/(Math.ceil(distance/.65));const x=roadEnd[0]*k,z=roadEnd[2]*k;
       if(Math.hypot(x,z)<3.4)continue;
-      const paving=add(new THREE.BoxGeometry(1.35,.035,.57),stone,x,groundHeightAt(x,z)+.035,z,`${kind}-lane-${n}`);
-      paving.rotation.y=Math.atan2(roadEnd[0],roadEnd[2]);paving.userData.ground=true;
+      pavers.push({x,y:groundHeightAt(x,z)+.035,z,yaw:Math.atan2(roadEnd[0],roadEnd[2])});
     }
   }
+  // All paths share one geometry/material draw while preserving the ground tag used by walking.
+  const paverGeometry=new THREE.BoxGeometry(1.35,.035,.57);owned.push(paverGeometry);
+  const lanes=new THREE.InstancedMesh(paverGeometry,stone,pavers.length);lanes.name='village-lanes';lanes.userData.ground=true;lanes.receiveShadow=true;
+  const paverMatrix=new THREE.Matrix4(),paverPosition=new THREE.Vector3(),paverRotation=new THREE.Quaternion(),paverScale=new THREE.Vector3(1,1,1);
+  pavers.forEach((paver,index)=>{paverPosition.set(paver.x,paver.y,paver.z);paverRotation.setFromEuler(new THREE.Euler(0,paver.yaw,0));lanes.setMatrixAt(index,paverMatrix.compose(paverPosition,paverRotation,paverScale));});lanes.instanceMatrix.needsUpdate=true;group.add(lanes);
   // Social spaces stay outdoors, with their existing destinations.
   anchors.push({id:'visit:campfire',position:[0,.5,17.5],zone:'landmark',label:'The Campfire. Walk to the waterfront.'});
   const camp=add(new THREE.TorusGeometry(.9,.12,6,20),stone,0,groundHeightAt(0,17.5)+.12,17.5,'outdoor-fire-ring');camp.rotation.x=Math.PI/2;camp.userData.anchor='visit:campfire';

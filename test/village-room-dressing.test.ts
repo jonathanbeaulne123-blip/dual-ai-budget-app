@@ -10,9 +10,9 @@ describe("village room dressing", () => {
     for (const room of rooms) { const made = buildRoomDressing(room, dressing, "lite"); expect(new THREE.Box3().setFromObject(made.group).isEmpty()).toBe(false); expect(made.group.getObjectByName(`${room}-side-table`)).toBeTruthy(); made.dispose(); made.dispose(); }
   });
   it("rearranges real furniture, replaces live plant geometry and changes its light", () => {
-    const made = buildRoomDressing("kitchen", dressing, "full"), chair = made.group.getObjectByName("kitchen-chair-a-seat")!, lamp = made.group.getObjectByName("kitchen-dressing-lamp") as THREE.PointLight;
-    const gather = chair.position.clone(); made.apply({ layout: "open", plant: "flowers", light: "daylight", displays: [{ kind: "memory", id: "unread", revision: 4 }] });
-    expect(chair.position.equals(gather)).toBe(false); expect(made.group.getObjectByName("kitchen-flower-bloom-0")).toBeTruthy(); expect(made.group.getObjectByName("kitchen-fern-frond-0")).toBeFalsy(); expect(lamp.color.getHexString()).toBe(new THREE.Color("#d8ecff").getHexString());
+    const made = buildRoomDressing("kitchen", dressing, "full"), chair = made.group.getObjectByName("kitchen-chair-a-group")!, table = made.group.getObjectByName("kitchen-side-table-group")!, lamp = made.group.getObjectByName("kitchen-dressing-lamp") as THREE.PointLight;
+    const gather = chair.position.clone(), tableGather = table.position.clone(); made.apply({ layout: "open", plant: "flowers", light: "daylight", displays: [{ kind: "memory", id: "unread", revision: 4 }] });
+    expect(chair.position.distanceTo(gather)).toBeGreaterThanOrEqual(.5); expect(table.position.distanceTo(tableGather)).toBeGreaterThanOrEqual(.5); expect(chair.getObjectByName("kitchen-chair-a-leg")).toBeTruthy(); expect(chair.getObjectByName("kitchen-chair-a-back")).toBeTruthy(); expect(made.group.getObjectByName("kitchen-table-lamp-shade")).toBeTruthy(); expect(made.group.getObjectByName("kitchen-flower-bloom-0")).toBeTruthy(); expect(made.group.getObjectByName("kitchen-fern-frond-0")).toBeFalsy(); expect(lamp.color.getHexString()).toBe(new THREE.Color("#d8ecff").getHexString());
     made.apply({ layout: "gather", plant: "fern", light: "warm" }); expect(made.group.getObjectByName("kitchen-fern-frond-0")).toBeTruthy(); expect(made.group.getObjectByName("kitchen-frame")).toBeFalsy(); made.dispose();
   });
 });

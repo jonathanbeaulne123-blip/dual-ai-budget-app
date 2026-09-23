@@ -90,7 +90,8 @@ describe("authored village architecture", () => {
   it("adds only cosmetic, interactive harbour life and disposes it safely", () => {
     const life = buildVillageLife(dressing, "lite");
     expect(life.anchors().map(anchor => anchor.id)).toEqual(["village-bell", "village-bench", "village-dance", "hercules"]);
-    expect(life.interact("village-bell")).toContain("chime"); expect(life.interact("unknown")).toBeNull(); expect(life.animate(2, .016)).toBe(true);
+    expect(life.interact("village-bell")).toContain("rocks"); expect(life.interact("unknown")).toBeNull(); expect(life.animate(2, .016)).toBe(true);
+    for (const part of ["hercules-cosmetic-tufted-ear", "hercules-cosmetic-eye", "hercules-cosmetic-muzzle", "hercules-cosmetic-ruff", "hercules-cosmetic-walking-paw"]) expect(life.group.getObjectByName(part)).toBeTruthy();
     expect(life.regions()).toHaveLength(4); life.dispose(); life.dispose(); expect(life.group.parent).toBeNull();
   });
 });
