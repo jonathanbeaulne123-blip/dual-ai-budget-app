@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import type { Anchor, PlaceDressing, Region } from "../scene/place.ts";
 import type { RenderTier } from "../scene/quality.ts";
 
@@ -37,6 +38,7 @@ class Kit {
   readonly group = new THREE.Group();
   private readonly owned = new Set<{ dispose(): void }>();
   private readonly materials = new Map<string, THREE.Material>();
+  private readonly batches = new Map<string, { parent: THREE.Object3D; material: THREE.Material; parts: THREE.BufferGeometry[] }>();
   private dead = false;
   constructor(readonly quality: RenderTier) {}
   material(colour: string, opt: Partial<THREE.MeshStandardMaterialParameters> = {}): THREE.Material {
@@ -45,14 +47,33 @@ class Kit {
     const material = new THREE.MeshStandardMaterial({ color: colour, roughness: .8, ...opt });
     this.materials.set(key, material); this.owned.add(material); return material;
   }
-  mesh(parent: THREE.Object3D, geometry: THREE.BufferGeometry, colour: string, at: readonly [number, number, number], name: string, rotation: readonly [number, number, number] = [0, 0, 0], opt: Partial<THREE.MeshStandardMaterialParameters> = {}): THREE.Mesh {
-    this.owned.add(geometry); const mesh = new THREE.Mesh(geometry, this.material(colour, opt));
-    mesh.position.set(...at); mesh.rotation.set(...rotation); mesh.name = name; mesh.castShadow = this.quality === "full"; mesh.receiveShadow = true; parent.add(mesh); return mesh;
+  mesh(parent: THREE.Object3D, geometry: THREE.BufferGeometry, colour: string, at: readonly [number, number, number], name: string, rotation: readonly [number, number, number] = [0, 0, 0], opt: Partial<THREE.MeshStandardMaterialParameters> = {}): THREE.Object3D {
+    // Keep semantic names for tests, accessibility tooling and cutaway inspection;
+    // their triangles join a single material batch below rather than each becoming a draw.
+    const marker = new THREE.Object3D(); marker.name = name; marker.userData.staticArchitecture = true; marker.position.set(...at); marker.rotation.set(...rotation); parent.add(marker);
+    const material = this.material(colour, opt), key = `${parent.uuid}/${material.uuid}`;
+    let batch = this.batches.get(key); if (!batch) { batch = { parent, material, parts: [] }; this.batches.set(key, batch); }
+    const source = geometry.index ? geometry.toNonIndexed() : geometry;
+    if (source !== geometry) geometry.dispose();
+    const rotation3 = new THREE.Euler(rotation[0], rotation[1], rotation[2]);
+    source.applyMatrix4(new THREE.Matrix4().compose(new THREE.Vector3(...at), new THREE.Quaternion().setFromEuler(rotation3), new THREE.Vector3(1, 1, 1)));
+    batch.parts.push(source); return marker;
   }
   box(parent: THREE.Object3D, s: readonly [number, number, number], at: readonly [number, number, number], colour: string, name: string, rot?: readonly [number, number, number]) { return this.mesh(parent, new THREE.BoxGeometry(...s), colour, at, name, rot); }
   cyl(parent: THREE.Object3D, r: number, h: number, at: readonly [number, number, number], colour: string, name: string, rot?: readonly [number, number, number]) { return this.mesh(parent, new THREE.CylinderGeometry(r, r, h, this.quality === "full" ? 12 : 8), colour, at, name, rot); }
   sphere(parent: THREE.Object3D, r: number, at: readonly [number, number, number], colour: string, name: string) { return this.mesh(parent, new THREE.SphereGeometry(r, this.quality === "full" ? 12 : 8, 8), colour, at, name); }
-  dispose() { if (this.dead) return; this.dead = true; this.group.removeFromParent(); for (const item of this.owned) item.dispose(); this.owned.clear(); this.materials.clear(); this.group.clear(); }
+  finish() {
+    for (const batch of this.batches.values()) {
+      const merged = mergeGeometries(batch.parts, false);
+      for (const part of batch.parts) part.dispose();
+      if (!merged) continue;
+      this.owned.add(merged);
+      const mesh = new THREE.Mesh(merged, batch.material); mesh.name = "village-static-batch";
+      mesh.castShadow = this.quality === "full"; mesh.receiveShadow = true; mesh.userData.staticArchitecture = true; batch.parent.add(mesh);
+    }
+    this.batches.clear();
+  }
+  dispose() { if (this.dead) return; this.dead = true; this.group.removeFromParent(); for (const batch of this.batches.values()) for (const part of batch.parts) part.dispose(); this.batches.clear(); for (const item of this.owned) item.dispose(); this.owned.clear(); this.materials.clear(); this.group.clear(); }
 }
 
 function gable(kit: Kit, parent: THREE.Group, halfX: number, halfZ: number, y: number, p: Palette, name: string, ridge = .95) {
@@ -149,6 +170,7 @@ function exterior(kind: VillageBuildingKind, dressing: PlaceDressing, quality: R
     if (kind === "boathouse") { for (const x of [-2.45, 2.45]) kit.cyl(root, .15, 3.1, [x, 1.9, -hz + .18], p.stone, "boathouse-piling"); kit.box(root, [hx * 2 + .55, .18, 1.0], [0, .42, -hz - .45], p.timber, "boathouse-dock"); }
   }
   const lantern = new THREE.PointLight(p.warm, quality === "full" ? .55 : .32, 5); lantern.position.set(0, 2.35, hz + .72); lantern.name = `${kind}-porch-lantern`; root.add(lantern);
+  kit.finish();
   return { group: root, roof, front, animate: (t) => { lantern.intensity = (quality === "full" ? .5 : .28) + Math.sin(t * 2.1) * .035; return quality === "full"; }, dispose: () => kit.dispose() };
 }
 
@@ -178,6 +200,7 @@ export function buildBankHall(dressing: PlaceDressing, quality: RenderTier): Vil
     { id: "vault", position: [2.42, .62, 1.45], zone: "vault", label: "The brass vault door — open the books", door: { target: "books" } },
     { id: "consultation", position: [-2.25, 1.08, 1.3], zone: "desk", label: "The consultation desk — open the books", door: { target: "books" } },
   ];
+  kit.finish();
   return { group, anchors, regions: () => anchors().map(a => ({ id: a.id, group: "bank", label: a.label, box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(...a.position), new THREE.Vector3(1.1, 1.3, .9)) })), animate: t => { lamp.intensity = (quality === "full" ? .92 : .5) + Math.sin(t * 2) * .04; return quality === "full"; }, dispose: () => kit.dispose() };
 }
 
@@ -199,5 +222,6 @@ export function buildHomeFittings(room: "kitchen" | "tower" | "cellar" | "atlas"
     kit.box(group, [2.35, .13, 1.38], [0, .72, .45], p.timber, "home-atlas-map-table"); kit.box(group, [2.12, .025, 1.16], [0, .8, .45], p.plaster, "home-atlas-chart");
     kit.cyl(group, .24, .5, [-1.62, .31, .45], p.timber, "home-atlas-table-leg"); kit.cyl(group, .24, .5, [1.62, .31, .45], p.timber, "home-atlas-table-leg"); anchors.push({ id: "atlas-books", position: [0, .95, .45], zone: "atlas", label: "The Atlas map nook — open the books", door: { target: "books" } });
   }
+  kit.finish();
   return { group, anchors: () => anchors, regions: () => anchors.map(a => ({ id: a.id, group: room, label: a.label, box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(...a.position), new THREE.Vector3(1.15, .8, .9)) })), animate: () => false, dispose: () => kit.dispose() };
 }
