@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { FlipTrickDef, SkatePresent, SkateSimEvent } from '../contract.ts';
-import { BOARD, DECK_TOP } from './boardGeometry.ts';
+import { BOARD, DECK_TOP, deckHalfWidth, kickRise } from './boardGeometry.ts';
 import { grabPose, grindStyle, type LookDefs } from './catalogs.ts';
 import { createSpringBank, type SpringBank } from './spring.ts';
 
@@ -31,11 +31,21 @@ export const RIG = Object.freeze({
   /** Board centre of mass, the pivot of rolls and shove-its. */
   centreY: BOARD.deckBottom + BOARD.thickness / 2,
   snapAngle: .42, snapIn: .05, snapOut: .17,
-  liftMax: .09, liftIn: .2, liftClearance: .28,
+  /** The board rises with the pop to meet the tucked feet: up by `liftMax` from `liftAt` over `liftIn` s, down again on the drop. */
+  liftMax: .11, liftAt: .03, liftIn: .13, liftClearance: .3,
+  /** Flip rotation runs over this window of trick time (the flick before, the catch after). */
+  flipFrom: .1, flipTo: .88,
+  /** How far the soles stay above the spinning board's highest point. */
+  flipMargin: .02,
   manualPitch: .19,
   compress: .014,
   gravity: 15,
-  recoverSeconds: .95,
+  /**
+   * The look's own get-up after a bail. The sim's recover phase is short (and
+   * may respawn the rider at a safe spot), so the look keeps playing the get-up
+   * through the idle/roll that follows, and hurries it if the rider pushes off.
+   */
+  recoverSeconds: .9,
 });
 
 export type FootOffset = { x: number; z: number; lift: number };
@@ -62,6 +72,8 @@ export type BoardRigPose = {
   slideYaw: number;
   /** Grind yaw overlay (rad). */
   grindYaw: number;
+  /** 0..1 through the get-up after a bail (−1 when not getting up). */
+  getUp: number;
 };
 
 // Spring channels.
@@ -88,9 +100,13 @@ export type BoardRigState = {
   lastYaw: number | null;
   trick: { id: string; def: FlipTrickDef | null; u: number; yaw: number } | null;
   manualPivot: number; grindPivot: number;
+  /** Seconds the current grab has been held. */
+  grabT: number;
   wheelAngle: number; wheelRate: number;
   // Loose board.
   bailT: number; recoverT: number; freeWeight: number;
+  /** Getting up (the look's clock, `recoverT`), and whether the sim respawned the rider away from the heap (a cut). */
+  getUp: boolean; cut: boolean; heap: THREE.Vector3;
   pos: THREE.Vector3; vel: THREE.Vector3; quat: THREE.Quaternion; spin: THREE.Vector3; floorY: number;
   landedPos: THREE.Vector3; landedQuat: THREE.Quaternion; wasFree: boolean;
   lastLocal: THREE.Matrix4;
@@ -101,14 +117,14 @@ export function createBoardRigState(): BoardRigState {
   return {
     springs: createSpringBank(STIFF), target: new Float64Array(C_COUNT),
     lastPhase: null, popped: false, popT: -1, popFrom: 'tail', eventDriven: false, popThisStep: false,
-    yawFlip: 0, lastYaw: null, trick: null, manualPivot: -BOARD.truckZ, grindPivot: 0, wheelAngle: 0, wheelRate: 0,
-    bailT: 0, recoverT: 0, freeWeight: 0,
+    yawFlip: 0, lastYaw: null, trick: null, grabT: 0, manualPivot: -BOARD.truckZ, grindPivot: 0, wheelAngle: 0, wheelRate: 0,
+    bailT: 0, recoverT: 0, freeWeight: 0, getUp: false, cut: false, heap: new THREE.Vector3(),
     pos: new THREE.Vector3(), vel: new THREE.Vector3(), quat: new THREE.Quaternion(), spin: new THREE.Vector3(), floorY: 0,
     landedPos: new THREE.Vector3(), landedQuat: new THREE.Quaternion(), wasFree: false,
     lastLocal: new THREE.Matrix4(),
     pose: {
       carrier: new THREE.Matrix4(), board: new THREE.Matrix4(), free: false, freeWeight: 0, freeWorld: new THREE.Matrix4(),
-      deckRoll: 0, steer: 0, wheelAngle: 0, front: { x: 0, z: 0, lift: 0 }, back: { x: 0, z: 0, lift: 0 }, flip: 0, popT: -1, popFrom: 'tail', slideYaw: 0, grindYaw: 0,
+      deckRoll: 0, steer: 0, wheelAngle: 0, front: { x: 0, z: 0, lift: 0 }, back: { x: 0, z: 0, lift: 0 }, flip: 0, popT: -1, popFrom: 'tail', slideYaw: 0, grindYaw: 0, getUp: -1,
     },
   };
 }
@@ -127,11 +143,17 @@ const smooth = (t: number) => { const k = t <= 0 ? 0 : t >= 1 ? 1 : t; return k 
 const clamp01 = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t);
 const wrap = (a: number) => Math.atan2(Math.sin(a), Math.cos(a));
 
-/** Flip easing: quick off the flick, slowing into the catch. */
-export function flipEase(u: number): number { const k = clamp01(u); return 1 - (1 - k) * (1 - k); }
+/**
+ * Flip easing: nothing until the flick, then the board turns fastest mid-air
+ * (near the apex of a flat-ground pop) and settles square into the catch.
+ */
+export function flipEase(u: number): number {
+  const k = clamp01((u - RIG.flipFrom) / (RIG.flipTo - RIG.flipFrom));
+  return k * k * (3 - 2 * k);
+}
 
-const _m = new THREE.Matrix4(), _n = new THREE.Matrix4(), _q = new THREE.Quaternion(), _v = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1);
-const _axis = new THREE.Vector3();
+const _m = new THREE.Matrix4(), _n = new THREE.Matrix4(), _q = new THREE.Quaternion(), _q2 = new THREE.Quaternion(), _v = new THREE.Vector3(), _s = new THREE.Vector3(1, 1, 1);
+const _axis = new THREE.Vector3(), _Y = new THREE.Vector3(0, 1, 0);
 
 function about(out: THREE.Matrix4, rot: THREE.Matrix4, px: number, py: number, pz: number): THREE.Matrix4 {
   // out = out · T(p) · rot · T(−p)
@@ -161,8 +183,47 @@ export function flipMatrix(def: FlipTrickDef | null, u: number, toeSign: number,
   return out;
 }
 
-/** How far the feet stay clear of a flipping board over u: up at once off the flick, down onto the bolts for the catch. */
-export function flipClearance(u: number): number { return smooth(u / .1) * (1 - smooth((u - .74) / .26)); }
+/** How far the feet stay clear of a flipping board over u: up at once off the flick, down onto the bolts as the rotation squares up (the catch). */
+export function flipClearance(u: number): number { return smooth((u - .01) / .1) * (1 - smooth((u - (RIG.flipTo - .08)) / .12)); }
+
+/**
+ * Where the rider's shoes stand on the board, in rider terms (centred on the
+ * board's line, z toward the nose; angle from straight across toward the
+ * nose), and their footprint (the biggest avatar's shoe, a hair over): the flip clearance keeps the board out of exactly these.
+ * `riderPose.ts` STANCE places the feet from the same numbers.
+ */
+export const SHOE = Object.freeze({ frontZ: .2, backZ: -.205, frontAngle: .66, backAngle: .14, halfLength: .12, halfWidth: .082 });
+/** The whole board as a handful of points: deck edges and centre line along its length, and the trucks and wheels. */
+const SECTION: readonly THREE.Vector3[] = (() => {
+  const pts: THREE.Vector3[] = [];
+  for (let k = -10; k <= 10; k += 1) {
+    const z = k / 10 * BOARD.halfLength * .94, hw = deckHalfWidth(z), rise = kickRise(z);
+    for (const sx of [-1, -.5, 0, .5, 1]) pts.push(new THREE.Vector3(sx * hw, DECK_TOP + BOARD.concave * sx * sx + rise, z), new THREE.Vector3(sx * hw, BOARD.deckBottom + rise, z));
+  }
+  for (const tz of [-BOARD.truckZ, BOARD.truckZ]) {
+    for (const sx of [-1, 1]) pts.push(new THREE.Vector3(sx * BOARD.wheelX, 0, tz), new THREE.Vector3(sx * (BOARD.wheelX - BOARD.wheelWidth / 2), BOARD.axleY * .3, tz));
+    for (const sx of [-1, 0, 1]) pts.push(new THREE.Vector3(sx * .09, BOARD.axleY - .012, tz), new THREE.Vector3(sx * .03, BOARD.deckBottom - .012, tz));
+  }
+  return pts;
+})();
+const _pt = new THREE.Vector3();
+/**
+ * How high above the resting grip (DECK_TOP) the flip `m` (board space) carries
+ * any part of the board that passes under a shoe at `z`. A shoe stands across
+ * the board and reaches further toward the toes than the heels.
+ */
+export function clearAbove(m: THREE.Matrix4, x: number, z: number, angle: number, toeSign: number): number {
+  let top = -Infinity;
+  const ca = Math.cos(angle), sa = Math.sin(angle);
+  for (const s of SECTION) {
+    _pt.copy(s).applyMatrix4(m);
+    // Only what passes under the shoe counts (a shove-it swings the nose away from it).
+    const dx = _pt.x * toeSign - x, dz = _pt.z - z;
+    const along = dx * ca + dz * sa, across = -dx * sa + dz * ca;
+    if (Math.abs(along) < SHOE.halfLength && Math.abs(across) < SHOE.halfWidth) top = Math.max(top, _pt.y);
+  }
+  return top === -Infinity ? 0 : Math.max(0, top - DECK_TOP);
+}
 
 /** The tail (or nose) snap of a pop, 0..1 over the first quarter second. */
 export function snapCurve(t: number): number {
@@ -179,6 +240,18 @@ export function snapCurve(t: number): number {
 export function solveBoardRig(p: SkatePresent, defs: LookDefs, state: BoardRigState, dt: number, toeSign: number, rideWorld?: THREE.Matrix4, reduced = false, pull?: THREE.Vector3): BoardRigPose {
   const out = state.pose, T = state.target, sp = state.springs;
   const phase = p.phase, air = phase === 'air';
+  // ── The get-up clock (see RIG.recoverSeconds).
+  if (phase === 'bail') { state.getUp = false; state.heap.set(p.x, p.y, p.z); }
+  else if (phase === 'recover' && state.lastPhase === 'bail') {
+    state.getUp = true; state.recoverT = 0;
+    state.cut = Math.hypot(p.x - state.heap.x, p.z - state.heap.z) > .4;
+  }
+  if (state.getUp) {
+    if (air || phase === 'grind' || phase === 'manual' || state.recoverT >= RIG.recoverSeconds) state.getUp = false;
+    else state.recoverT += dt * (phase === 'recover' || phase === 'idle' || phase === 'roll' ? 1 : 3);
+  }
+  const rec = state.getUp;
+  out.getUp = rec ? Math.min(1, state.recoverT / RIG.recoverSeconds) : -1;
   const wasAir = state.lastPhase === 'air';
   if (air && !wasAir && !state.popThisStep) {
     // A take-off. With an event stream, only a real pop snaps the tail; without one (a partner off the wire) every take-off is a pop.
@@ -195,7 +268,7 @@ export function solveBoardRig(p: SkatePresent, defs: LookDefs, state: BoardRigSt
   // catch), cancel the jump: the physical board did not move.
   const trick = p.trick;
   if (state.trick && (!trick || trick.flipId !== state.trick.id)) {
-    if (phase !== 'bail' && phase !== 'recover') state.yawFlip = wrap(state.yawFlip + state.trick.yaw);
+    if (phase !== 'bail' && !rec) state.yawFlip = wrap(state.yawFlip + state.trick.yaw);
     state.trick = null;
   }
   if (Number.isFinite(p.boardYaw)) {
@@ -212,10 +285,12 @@ export function solveBoardRig(p: SkatePresent, defs: LookDefs, state: BoardRigSt
     state.trick.yaw = d && d.yaw ? toeSign * d.yaw * Math.PI * flipEase(clamp01(trick.u)) : 0;
   }
 
+  state.grabT = p.grab && air ? state.grabT + dt : 0;
+
   // ── Targets.
   T.fill(0);
   const carve = Math.max(-1, Math.min(1, p.carve || 0));
-  if (!air && phase !== 'grind' && phase !== 'bail' && phase !== 'recover') {
+  if (!air && phase !== 'grind' && phase !== 'bail' && !rec) {
     T[C_ROLL] = -toeSign * .11 * carve;
     T[C_STEER] = toeSign * .2 * carve;
   }
@@ -223,7 +298,9 @@ export function solveBoardRig(p: SkatePresent, defs: LookDefs, state: BoardRigSt
     const g = defs.grab(p.grab.grabId);
     if (g) {
       const w = clamp01(p.grab.weight), gp = grabPose(g, toeSign, BOARD.halfWidth, BOARD.halfLength);
-      T[C_GRAB_ROLL] = gp.boardRoll * w; T[C_GRAB_PITCH] = gp.boardPitch * w; T[C_GRAB_X] = gp.boardX * w; T[C_GRAB_LIFT] = gp.lift * w;
+      // Held longer, the tweak grows: the grabbed edge is pulled further round.
+      const tweak = reduced ? 0 : smooth((state.grabT - .3) / .45);
+      T[C_GRAB_ROLL] = gp.boardRoll * w * (1 + .7 * tweak); T[C_GRAB_PITCH] = gp.boardPitch * w; T[C_GRAB_X] = gp.boardX * w; T[C_GRAB_LIFT] = gp.lift * w;
     }
   }
   if (p.manual || phase === 'manual') {
@@ -265,7 +342,11 @@ export function solveBoardRig(p: SkatePresent, defs: LookDefs, state: BoardRigSt
   // ── Carrier.
   const c = out.carrier.identity();
   let lift = 0;
-  if (state.popped && air) lift = RIG.liftMax * smooth(state.popT / RIG.liftIn) * clamp01(p.clearance / RIG.liftClearance);
+  if (state.popped && air) {
+    // Up with the pop (the front foot drags it up to meet the tuck), and back down onto the ride frame as the ground arrives.
+    const down = (p.vy || 0) > 0 ? 1 : clamp01(p.clearance / RIG.liftClearance);
+    lift = RIG.liftMax * smooth((state.popT - RIG.liftAt) / RIG.liftIn) * down;
+  }
   lift += X[C_GRAB_LIFT]! * clamp01(p.clearance / .2 + .3);
   const compress = RIG.compress * clamp01(p.impact || 0);
   c.makeTranslation(X[C_GRAB_X]! + (pull?.x ?? 0), lift + X[C_GRIND_SEAT]! - compress + (pull?.y ?? 0), pull?.z ?? 0);
@@ -294,29 +375,32 @@ export function solveBoardRig(p: SkatePresent, defs: LookDefs, state: BoardRigSt
   // ── Feet clearance and flick.
   const f = out.front, b = out.back;
   f.x = f.z = f.lift = b.x = b.z = b.lift = 0; out.flip = 0;
-  if (def && state.trick && air) {
-    const bump = flipClearance(u);
-    const rollAmt = Math.min(1, Math.abs(def.roll)), yawAmt = Math.min(1, Math.abs(def.yaw)), pitchAmt = Math.min(1, Math.abs(def.pitch));
-    f.lift = bump * Math.max(.17 * rollAmt, .05 * yawAmt, .24 * pitchAmt);
-    b.lift = bump * Math.max(.17 * rollAmt, .05 * yawAmt, .05 * pitchAmt);
-    const flick = u < .32 ? Math.sin(Math.PI * u / .32) : 0;
-    if (def.roll > 0) { f.x += toeSign * .11 * flick; f.z += .05 * flick; }
-    if (def.roll < 0) { f.x -= toeSign * .09 * flick; f.z += .05 * flick; }
-    if (def.yaw) { b.x += (def.yaw > 0 ? -toeSign : toeSign) * .09 * flick; b.z -= .03 * flick; }
-    if (def.pitch) { b.z += .06 * flick; b.lift += .03 * flick; }
-    out.flip = bump;
-  }
   if (state.popped && air && state.popT < .3) {
     // The front foot drags up the grip toward the nose (the back foot for a nollie).
     const drag = Math.sin(Math.PI * clamp01(state.popT / .3));
     if (state.popFrom === 'nose') b.z -= .05 * drag; else f.z += .05 * drag;
+  }
+  if (def && state.trick && air) {
+    const bump = flipClearance(u);
+    // The flick: the front foot kicks off the toe-side corner of the nose (kickflip) or out past the nose with the heel (heelflip);
+    // the back foot scoops a shove-it round and pops an impossible up.
+    const flick = u < .24 ? Math.sin(Math.PI * u / .24) : 0;
+    if (def.roll > 0) { f.x += toeSign * .12 * flick; f.z += .06 * flick; f.lift += .04 * flick; }
+    if (def.roll < 0) { f.x += toeSign * .05 * flick; f.z += .1 * flick; f.lift += .05 * flick; }
+    if (def.yaw) { b.x += (def.yaw > 0 ? -toeSign : toeSign) * .09 * flick; b.z -= .03 * flick; }
+    if (def.pitch) { b.z += .06 * flick; b.lift += .03 * flick; }
+    // Just clear of the spinning board: each sole rides the highest point of the board passing under its footprint.
+    _n.copy(c).invert().multiply(out.board);
+    f.lift += bump * Math.min(.3, clearAbove(_n, f.x * toeSign, SHOE.frontZ + f.z, SHOE.frontAngle, toeSign) + RIG.flipMargin);
+    b.lift += bump * Math.min(.3, clearAbove(_n, b.x * toeSign, SHOE.backZ + b.z, SHOE.backAngle, toeSign) + RIG.flipMargin);
+    out.flip = bump;
   }
   out.popT = state.popped ? state.popT : -1; out.popFrom = state.popFrom;
   out.deckRoll = X[C_ROLL]!; out.steer = X[C_STEER]!;
   out.slideYaw = X[C_SLIDE_YAW]!; out.grindYaw = X[C_GRIND_YAW]!;
 
   // ── Wheels.
-  const grounded = !air && phase !== 'bail' && phase !== 'recover';
+  const grounded = !air && phase !== 'bail' && !rec;
   if (phase === 'grind' && !(p.manual)) state.wheelRate *= Math.exp(-8 * dt);
   else if (grounded) state.wheelRate = (p.fakie ? -1 : 1) * (p.speed || 0) / BOARD.wheelRadius;
   else state.wheelRate *= Math.exp(-1.2 * dt);
@@ -324,16 +408,22 @@ export function solveBoardRig(p: SkatePresent, defs: LookDefs, state: BoardRigSt
   out.wheelAngle = state.wheelAngle;
 
   // ── The loose board.
-  stepLooseBoard(p, state, dt, rideWorld);
+  stepLooseBoard(p, state, dt, toeSign, rideWorld);
   out.free = state.freeWeight > 0; out.freeWeight = state.freeWeight;
   if (!out.free) state.lastLocal.copy(out.board);
   state.lastPhase = phase;
   return out;
 }
 
-function stepLooseBoard(p: SkatePresent, state: BoardRigState, dt: number, rideWorld?: THREE.Matrix4): void {
+function stepLooseBoard(p: SkatePresent, state: BoardRigState, dt: number, toeSign: number, rideWorld?: THREE.Matrix4): void {
   const out = state.pose;
-  const bailing = p.phase === 'bail', recovering = p.phase === 'recover';
+  const bailing = p.phase === 'bail', recovering = state.getUp;
+  if (recovering && state.cut && state.recoverT <= dt + 1e-9 && rideWorld) {
+    // The sim respawned the rider at a safe spot (a camera cut): the board lies grip-up beside them there, not back at the heap.
+    rideWorld.decompose(_v, _q, _s);
+    state.landedPos.set(toeSign * .36, 0, .06).applyQuaternion(_q).add(_v);
+    state.landedQuat.copy(_q).multiply(_q2.setFromAxisAngle(_Y, .5));
+  }
   if (bailing && !state.wasFree) {
     // Launch: from where the board was drawn last frame, thrown along the bail with a flip of its own.
     _m.copy(rideWorld ?? _n.identity()).multiply(state.lastLocal);
@@ -369,13 +459,12 @@ function stepLooseBoard(p: SkatePresent, state: BoardRigState, dt: number, rideW
       state.landedPos.copy(state.pos); state.landedQuat.copy(state.quat);
       state.recoverT = 0;
     } else {
-      state.recoverT += dt;
       const r = state.recoverT / RIG.recoverSeconds;
       // Lies there while the rider gets up, then the stamp: the board hops back upright to the feet.
-      const k = smooth((r - .42) / .38);
+      const k = smooth((r - .46) / .3);
       if (rideWorld) {
         rideWorld.decompose(_v, _q, _s);
-        const hop = Math.sin(Math.PI * k) * .22;
+        const hop = Math.sin(Math.PI * k) * .2;
         state.pos.lerpVectors(state.landedPos, _v, k); state.pos.y += hop;
         state.quat.copy(state.landedQuat).slerp(_q, k);
       }

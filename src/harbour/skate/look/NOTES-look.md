@@ -46,11 +46,30 @@ look.dispose();   // also releases
 
 ## Tuning (all in one place)
 
-- `riderPose.ts` `STANCE` (feet on bolts ±0.165, hip height 0.95 of the straight leg, crouch 0.6, tuck 0.86)
-  and `STIFF` (spring ω per channel: feet 30+, hips 13–16, arms 10).
-- `boardRig.ts` `RIG` (tail snap 0.42 rad over 0.05 s + 0.17 s level-out, lift 0.09, manual 0.19 rad,
-  recover 0.95 s), `flipClearance` (feet up off the flick, down for the catch).
+- `riderPose.ts` `STANCE` (feet from `boardRig.ts` `SHOE`: front z 0.2 angled 0.66 rad up the board, back z −0.205
+  across the tail at 0.14; hips 0.855 of the straight leg and opened 0.62 rad toward the nose; knees turned in
+  0.5 / 0.62; crouch 0.6, tuck 0.86), `PUSH` (plant at 0.12 of `pushPhase`, lift at 0.58, sweep z 0.12 → −0.34
+  beside the toe edge, hips 0.8 → 0.62), and `STIFF` (spring ω per channel).
+- `boardRig.ts` `RIG` (tail snap 0.42 rad; lift 0.11 from 0.03 s over 0.13 s, back down in the last 0.3 of
+  clearance; flip turns over u 0.1..0.88 as a smoothstep, so it is fastest mid-air and square before the catch;
+  soles ride `flipMargin` 0.02 above the highest part of the spinning board inside each shoe's footprint;
+  get-up 0.9 s).
 - `fx.ts` `FX_BUDGET` / `FX_PALETTE`.
+
+## Wave 3 conventions (rider polish, 2026-09-23)
+
+- **Board size**: 0.66 × 0.31, trucks at ±0.218 and wide (wheels to the rails). Heights unchanged: DECK_TOP 0.11,
+  so every seat and the sim contract hold. Nothing outside `look/` reads `BOARD`.
+- **Ankle yaw**: `SkateLimbPose.footYaw` (figure.ts skate hook only; walking/emotes still zero every ankle). The
+  ankle is solved as a full orientation, so the shoe sits where the stance says while the knee points elsewhere.
+- **Authored heads**: the playable avatars' faces are baked into the coat mesh, so `body-head` never showed.
+  `headTwist.ts` gives the adopted surface its own material copy with a neck twist driven by the pose's head
+  yaw/pitch; `release()` hands the original materials back (the walker and the partner never see the patch).
+- **Get-up clock**: the sim's recover is 0.35 s and may respawn the rider at a safe spot ≥ 0.8 away. The board
+  rig runs its own 0.9 s get-up (`BoardRigPose.getUp`) through the idle/roll that follows (×3 if they push off);
+  on a respawn the board is laid grip-up beside the rider at the new spot, then stamped up onto the feet.
+- **Grabs**: the chest stays up and the board is pulled to the hand (pull up to 0.24 up, 0.18 across, 0.2 along)
+  so short arms (Bianca) still reach; the style tweak grows after 0.3 s of holding.
 
 ## Tiers
 
@@ -62,6 +81,6 @@ look.dispose();   // also releases
 
 ## Wants a browser eye
 
-Bail heap and get-up, the impossible's wrap (fake: board swings out to the toe side), smith/feeble roll
-direction vs the ledge face, push stroke timing against SIM's `pushPhase`, and whether the grab "pull"
-(board brought up to a short-armed avatar's hand) reads as a tweak rather than a float.
+The impossible's wrap (fake: board swings out to the toe side), smith/feeble roll direction vs the ledge face.
+Judged in the Skate Lab in wave 3: stance, flips, push, grabs, bail/get-up, grinds (`test/skate-look-craft.test.ts`
+pins the numbers).

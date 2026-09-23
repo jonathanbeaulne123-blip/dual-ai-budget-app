@@ -3,33 +3,37 @@ import * as THREE from 'three';
 /**
  * Tideline Skate Club v2 · the board's shape, in island units.
  *
- * One skateboard at model-village scale: a person is 1.25 tall, so the deck is
- * 0.58 tip to tip and 0.30 wide (a touch chunkier than life so it reads from
- * the chase camera). Board space: nose +z, up +y, width along x, origin on the
+ * One skateboard at model-village scale. The island's people are chunky
+ * carved figures 1.25 tall, so a true-to-life deck (~0.57) read as a toy under
+ * their feet; this one is stylised up to 0.66 tip to tip and 0.31 wide, with
+ * the trucks set wide and out toward the kicks, so it sits under a rider the
+ * way a real board sits under a real skater (about half their height). The
+ * heights are unchanged: soles still stand DECK_TOP (0.11) above the ride
+ * frame, so the sim contract and every grind seat hold. Board space: nose +z, up +y, width along x, origin on the
  * ground midway between the wheel contacts. Everything the rider and the rig
  * need to know about the board comes from this table, never from the meshes.
  */
 export const BOARD = Object.freeze({
-  halfLength: .29,
-  halfWidth: .15,
+  halfLength: .33,
+  halfWidth: .155,
   /** Underside of the deck at the centre line, and its thickness. */
   deckBottom: .088,
   thickness: .022,
   /** Edge rise of the concave (the rails are this much higher than the centre line). */
   concave: .007,
   /** Where the kicks start and how high the tips rise above the flat. */
-  kickStart: .205,
-  kickRise: .036,
+  kickStart: .235,
+  kickRise: .044,
   /** Superellipse exponent of the rounded nose/tail outline (2 = ellipse, higher = squarer). */
   outline: 2.5,
   /** Where the rounding of the outline begins. */
-  roundStart: .16,
+  roundStart: .19,
   /** Truck centres along z, axle height, wheel radius and width, and wheel centre x. */
-  truckZ: .19,
+  truckZ: .218,
   axleY: .045,
   wheelRadius: .045,
   wheelWidth: .042,
-  wheelX: .128,
+  wheelX: .134,
   /** The hanger's own pivot height: the deck rolls about this line so the wheels stay down. */
   pivotY: .058,
 });
@@ -139,8 +143,8 @@ export function createDeckGeometries(tier: BoardTier): { top: THREE.BufferGeomet
 /** The hanger: a tapered cast body seen from the front, extruded along z. */
 export function createHangerGeometry(): THREE.BufferGeometry {
   const s = new THREE.Shape();
-  s.moveTo(-.1, -.012); s.lineTo(.1, -.012); s.lineTo(.1, .004); s.lineTo(.035, .016);
-  s.lineTo(.02, .03); s.lineTo(-.02, .03); s.lineTo(-.035, .016); s.lineTo(-.1, .004); s.closePath();
+  s.moveTo(-.108, -.012); s.lineTo(.108, -.012); s.lineTo(.108, .004); s.lineTo(.035, .016);
+  s.lineTo(.02, .03); s.lineTo(-.02, .03); s.lineTo(-.035, .016); s.lineTo(-.108, .004); s.closePath();
   const g = new THREE.ExtrudeGeometry(s, { depth: .028, bevelEnabled: false, curveSegments: 1 });
   g.translate(0, 0, -.014);
   return g;

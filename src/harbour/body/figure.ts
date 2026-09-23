@@ -90,8 +90,12 @@ export type BodyMotion = {
   flourish?: number;
 };
 
-/** Hip (or shoulder) Euler XYZ plus the hinge below it, radians. */
-export type SkateLimbPose = { x: number; y: number; z: number; bend: number; foot?: number; footRoll?: number };
+/**
+ * Hip (or shoulder) Euler XYZ plus the hinge below it, radians. `foot`,
+ * `footYaw` and `footRoll` are the ankle's Euler XYZ (pitch, turn, roll), so a
+ * skater's shoe can sit across the board while the knee points elsewhere.
+ */
+export type SkateLimbPose = { x: number; y: number; z: number; bend: number; foot?: number; footYaw?: number; footRoll?: number };
 /**
  * A skate pose in the figure's own rig units and joint frames. Index 0 of
  * `legs`/`arms` is the limb at −x (`body-leg-left`, `body-arm-left`). A knee's
@@ -366,7 +370,7 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}, anatomy?:
       // Every hinge straight and every twist square, unless a skate pose says otherwise.
       for (let i = 0; i < 2; i += 1) {
         legs[i]!.rotation.y = 0; legs[i]!.rotation.z = 0; arms[i]!.rotation.y = 0;
-        knees[i]!.rotation.x = 0; ankles[i]!.rotation.x = 0; ankles[i]!.rotation.z = 0; elbows[i]!.rotation.x = 0;
+        knees[i]!.rotation.x = 0; ankles[i]!.rotation.set(0, 0, 0); elbows[i]!.rotation.x = 0;
       }
       carriage.position.x = 0; carriage.position.z = 0; head.rotation.y = 0; hair.rotation.y = 0;
       const g = Math.max(0, Math.min(1, gait));
@@ -477,7 +481,7 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}, anatomy?:
           const leg = sp.legs[i]!, arm = sp.arms[i]!;
           legs[i]!.rotation.set(leg.x, leg.y, leg.z);
           knees[i]!.rotation.x = leg.bend;
-          ankles[i]!.rotation.x = leg.foot ?? 0; ankles[i]!.rotation.z = leg.footRoll ?? 0;
+          ankles[i]!.rotation.set(leg.foot ?? 0, leg.footYaw ?? 0, leg.footRoll ?? 0);
           arms[i]!.rotation.set(arm.x, arm.y, arm.z);
           elbows[i]!.rotation.x = -arm.bend;
         }
