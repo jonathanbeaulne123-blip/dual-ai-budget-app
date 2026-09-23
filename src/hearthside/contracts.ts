@@ -1,6 +1,7 @@
 import {decodeSharedLifeRestoreReviews,type SharedLifeRestoreReview} from './sharedLifeRestoreContracts.ts';
 import {decodeWinProvenance,type LegacyWinProvenance} from './winMemoryProvenance.ts';
 import {decodeFurniturePlacements,type FurniturePlacement} from './roomFurniture.ts';
+import {decodeVillageArrangement,type VillageArrangement} from '../harbour/village/villageArrangement.ts';
 import {decodeSharedEncounter,type SharedEncounter} from './encounterContracts.ts';
 import {decodeArtifactPublication,type ArtifactPublication} from './workspacePublication.ts';
 import {decodeRecordedRoom,type RecordedRoom} from './roomHistory.ts';
@@ -60,6 +61,7 @@ export type HearthsideState = {
   handoffs?:StudioHandoff[];
   roomHistory?:RecordedRoom[];
   furniture?:FurniturePlacement[];
+  villageArrangement?:VillageArrangement;
   artifactPublications?:ArtifactPublication[];
   placements: RoomPlacement[]; publications: PublicationReference[]; designs: HearthsideDesignIndex[];
 };
@@ -173,8 +175,9 @@ export function decodeDesignIndex(value:unknown):HearthsideDesignIndex {
 }
 export function decodeHearthside(value: unknown): HearthsideState {
   if (value === undefined) return emptyHearthside();
-  const r = object(value, ['version', 'experiences', 'notes', 'memories', 'occasions', 'placements', 'publications', 'designs','handoffs','roomHistory','artifactPublications','encounters','furniture','restoreReviews']);
+  const r = object(value, ['version', 'experiences', 'notes', 'memories', 'occasions', 'placements', 'publications', 'designs','handoffs','roomHistory','artifactPublications','encounters','furniture','villageArrangement','restoreReviews']);
   const decoded = { ...(r.restoreReviews!==undefined?{restoreReviews:decodeSharedLifeRestoreReviews(r.restoreReviews)}:{}),...(r.furniture!==undefined?{furniture:decodeFurniturePlacements(r.furniture)}:{}),...(r.encounters!==undefined?{encounters:unique(list(r.encounters,decodeSharedEncounter,400),r=>r.id)}:{}),...(r.artifactPublications!==undefined?{artifactPublications:unique(list(r.artifactPublications,decodeArtifactPublication,4000),r=>r.id)}:{}),...(r.roomHistory!==undefined?{roomHistory:unique(list(r.roomHistory,decodeRecordedRoom,120),r=>r.id)}:{}),...(r.handoffs!==undefined?{handoffs:unique(list(r.handoffs,decodeStudioHandoff,2000),r=>r.id)}:{}),version: version(r.version), experiences: unique(list(r.experiences, decodeExperience), r => r.id), notes: unique(list(r.notes, decodeNote, 4000), r => r.id), memories: unique(list(r.memories, decodeMemory, 4000), r => r.id), occasions: unique(list(r.occasions, decodeOccasion, 300), r => r.id), placements: unique(list(r.placements, decodePlacement, 160), r => r.id), publications: unique(list(r.publications, decodePublication, 4000), r => r.id), designs:unique(list(r.designs ?? [],decodeDesignIndex,1000),r=>r.designId) };
+  if(r.villageArrangement!==undefined)(decoded as HearthsideState).villageArrangement=decodeVillageArrangement(r.villageArrangement);
   if (new TextEncoder().encode(JSON.stringify(decoded)).length > HEARTHSIDE_METADATA_BYTES) throw Error('HEARTHSIDE_METADATA_LIMIT: Shared story storage is full. Your new draft has not been saved.');
   return decoded;
 }

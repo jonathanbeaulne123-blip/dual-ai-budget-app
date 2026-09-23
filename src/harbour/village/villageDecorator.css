@@ -1,0 +1,1 @@
+.village-decorator{display:grid;gap:.7rem;padding:1rem;border:1px solid color-mix(in srgb,currentColor 25%,transparent);border-radius:1rem;background:#fff9ed;color:#34281d}.village-decorator label{display:grid;gap:.25rem;font-weight:700}.village-decorator select,.village-decorator button{min-height:44px}.village-decorator div{display:flex;flex-wrap:wrap;gap:.5rem}
