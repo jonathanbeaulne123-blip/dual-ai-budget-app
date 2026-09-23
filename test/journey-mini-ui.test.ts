@@ -111,7 +111,7 @@ describe("JourneyMini — the journey's simple view", () => {
     expect(api.focus).toMatchObject({ level: "week", source: "mini" });
     expect($(".journey-mini__sub").textContent).toContain("Week of Sep 13–19");
     await click(button("Month"));
-    expect($("h2").textContent).toBe("September · Make Rent Boring");
+    expect($("h2").textContent).toBe("September"); // The still-open Chapter belongs to July.
     expect(visibleLabels().find((b) => b.dataset.place === "chapter")?.textContent).toContain("September 2026");
     await click(button("Zoom out"));
     expect(pressed()).toBe("Era");
@@ -135,6 +135,7 @@ describe("JourneyMini — the journey's simple view", () => {
     await mount({ onEnterHarbour: (anchor: unknown) => harbour.push(anchor) });
     await act(async () => api.set({ level: "month", date: "2026-07-15" }, "world"));
     await settle(150);
+    expect($("h2").textContent).toBe("July · Make Rent Boring");
     expect(visibleLabels().find((b) => b.textContent?.includes("Little Harbour"))?.textContent).toContain("current household chapter");
     await click(button("Day"));
     await click(button("Enter Harbour by zooming in"));

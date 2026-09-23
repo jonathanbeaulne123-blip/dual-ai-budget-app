@@ -48,8 +48,7 @@ export function prepareVillageInterior(id:HarbourPlaceId):void{
     const plaything=buildRoomPlaything(id as PlaythingRoom,dressing,tier);fixtures.add(plaything.group);
     const display=buildVillageDisplays(dressing);fixtures.add(display.group);
     const furniture=buildRoomDressing(id as PlaythingRoom,dressing,tier);fixtures.add(furniture.group);
-    // Keep secondary furnishings away from the cellar stair and existing workstations.
-    if(id==='cellar')furniture.group.position.set(-1.3,0,-.2);
+    // Keep secondary furnishings away from the existing workstations.
     if(id==='bank')furniture.group.position.set(4.8,0,-.5);
     if(id==='cottage'||id==='kiln'||id==='library'){furniture.group.scale.setScalar(.72);furniture.group.position.z=-.4;}
     let disposed=false;

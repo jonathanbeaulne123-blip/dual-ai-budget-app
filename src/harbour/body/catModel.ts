@@ -11,9 +11,9 @@ import { RUN_SPEED, WALK_SPEED, wrapAngle, type BodyWorld, type EmoteId } from "
  *
  * ## Scale
  *
- * The person is 0.58 units tall (`BODY_HEIGHT`), so a Maine Coon at the knee
- * is **0.28** — a big cat in a model village. He is built out of the same
- * cheap primitives the person is, for the same reason: there is a rigged cat
+ * The travelling cat is **0.28** units tall beside a 1.25-unit playable
+ * person. His compact procedural figure shares the movement runtime:
+ * there is a rigged cat
  * in `models/hercules.source.glb` and it belongs in the Cottage, where you
  * look at him. Out here he is one of forty things on screen at fifty metres
  * and a downloaded skeleton would buy nothing you could see.
@@ -37,7 +37,7 @@ import { RUN_SPEED, WALK_SPEED, wrapAngle, type BodyWorld, type EmoteId } from "
  * it. `test/harbour-hercules.test.ts` is the promise that this is kept.
  */
 
-/** Knee-high on a 0.58 person. */
+/** Compact travelling scale beside the playable person. */
 export const CAT_HEIGHT = 0.28;
 /** What he cannot be pushed inside of. A cat threads gaps a person does not. */
 export const CAT_RADIUS = 0.1;
@@ -72,8 +72,8 @@ export const CATCH_UP = 1.55;
 export const COME_CLOSE = 0.36, COME_SECONDS = 3.2;
 
 /**
- * He refuses the water. The person may walk to `SHORE_RADIUS` (20.2), where
- * the sand goes dark; he stops at the last of the grass and watches you do it.
+ * The small-scene fallback. The island supplies its larger dry shoreline
+ * through BodyWorld.shore so he follows across the whole landscape.
  */
 export const CAT_SHORE = 18.4;
 
@@ -84,6 +84,8 @@ export const CAT_SHORE = 18.4;
  * threshold machinery already says you are at a door, and not a step further.
  */
 export const DOOR_REACH = 0.34, ERRAND_MET = 1.45;
+/** Offer a nearby door; a distant task must not pull him away from an exploring person. */
+export const GUIDE_REACH = 12;
 
 /** How long you must stand still before he stops being a dog about it and settles. */
 export const MOOD_AFTER = 0.9;
@@ -330,6 +332,21 @@ function idleAt(x: number, z: number): CatMood {
   return which === 0 ? "groom" : which === 1 ? "watch" : which === 2 ? "flop" : "sit";
 }
 
+/** Navigation and animation agree on the same held destination, including an
+ * answered errand, a wave, and a warm perch. A larger world keeps guidance local. */
+export function catDestination(state: CatState, subject: CatSubject, world: BodyWorld, options: CatOptions = {}) {
+  const errand = options.errand ?? null, perch = options.perch ?? null;
+  const coming = state.come > 0 || (subject.emote === "wave" && subject.emote !== state.answered);
+  const distance = errand ? Math.hypot(subject.x - errand.x, subject.z - errand.z) : Infinity;
+  const leading = errand !== null && errand.key !== state.shownKey && distance > ERRAND_MET
+    && distance <= GUIDE_REACH && (state.roused || youMovedNow(subject)) && !coming;
+  const heel = coming ? heelPoint(subject, COME_CLOSE, 0) : heelPoint(subject);
+  const perching = !leading && !coming && perch !== null && !youMovedNow(subject)
+    && state.still >= MOOD_AFTER * .5 && Math.hypot(perch.x - heel.x, perch.z - heel.z) <= PERCH_REACH;
+  const asked = leading ? errand! : perching ? perch! : heel;
+  return { point: holdForCat(asked.x, asked.z, world), leading };
+}
+
 /**
  * One frame of the cat.
  *
@@ -362,19 +379,9 @@ export function stepCat(state: CatState, subject: CatSubject, dt: number, world:
   errand = asked;
   if (youMovedNow(subject)) roused = true;
   if (errand && Math.hypot(subject.x - errand.x, subject.z - errand.z) <= ERRAND_MET) shownKey = errand.key;
-  const leading = errand !== null && errand.key !== shownKey && roused && come <= 0;
+  const { point: finalWant, leading } = catDestination({ ...state, come, roused, shownKey, answered }, subject, world, { ...options, errand });
   if (leading && mood !== "trot" && state.speed <= 0.02 && MOOD_SEATED[mood] > 0) { mood = "trot"; moodAt = 0; }
 
-  // ── Where he wants to be ─────────────────────────────────────────────────
-  const heel = come > 0 ? heelPoint(subject, COME_CLOSE, 0) : heelPoint(subject);
-  // The warm stone, if you have stopped beside one. He takes it over your heel
-  // — which is the whole of what a cat thinks about a warm stone — and gives
-  // it up the moment you walk on.
-  const perch = options.perch ?? null;
-  const perching = !leading && come <= 0 && perch !== null && !youMovedNow(subject)
-    && state.still >= MOOD_AFTER * 0.5
-    && Math.hypot(perch.x - heel.x, perch.z - heel.z) <= PERCH_REACH;
-  const asked_ = leading ? { x: errand!.x, z: errand!.z } : perching ? perch! : heel;
   /**
    * And the point is **held where a cat may stand** before it is walked to,
    * exactly as `walkTo` holds a tap: in a small room your heel point is often
@@ -383,8 +390,7 @@ export function stepCat(state: CatState, subject: CatSubject, dt: number, world:
    * heel is the nearest legal spot to your heel, and standing on it is being
    * at it.
    */
-  const finalWant = holdForCat(asked_.x, asked_.z, world);
-  const steer = options.steer ?? asked_;
+  const steer = options.steer ?? finalWant;
   const want = holdForCat(steer.x, steer.z, world);
   const dx = want.x - state.x, dz = want.z - state.z;
   const gap = Math.hypot(dx, dz);

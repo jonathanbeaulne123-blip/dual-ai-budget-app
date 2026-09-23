@@ -3,7 +3,7 @@ import { createCatFigure, type CatColours, type CatFigure, type CatMotion } from
 import { createFootprints, FOOTPRINT_POOL_LITE, PAW_SIZE, type Footprints } from "./footprints.ts";
 import {
   CAT_HEIGHT, CAT_RADIUS,
-  catGaitOf, createCatState, heelPoint, heelStand, placeCat, stepCat,
+  catGaitOf, catDestination, createCatState, heelStand, placeCat, stepCat,
   type CatErrand, type CatState, type CatSubject,
 } from "./catModel.ts";
 import type { Obstacle, RoomBounds } from "./obstacles.ts";
@@ -116,7 +116,7 @@ export function createCat(options: CatOptions): Cat {
     figure.group.rotation.y = state.yaw;
   }
   const clearRoute = () => { route = []; routeGoal = null; nextRouteAt = 0; };
-  const routeTarget = (subject: CatSubject): { x: number; z: number } => errand ?? heelPoint(subject);
+  const routeTarget = (subject: CatSubject): { x: number; z: number } => catDestination(state, subject, world, { errand, perch }).point;
   function planRoute(subject: CatSubject, t: number): void {
     const goal = routeTarget(subject);
     const planned = findPath(
@@ -169,7 +169,8 @@ export function createCat(options: CatOptions): Cat {
       const goal = routeTarget(subject);
       const goalShifted = routeGoal === null || Math.hypot(goal.x - routeGoal.x, goal.z - routeGoal.z) > NAV_GOAL_SHIFT;
       const far = Math.hypot(goal.x - state.x, goal.z - state.z) > NAV_REACH;
-      if (far && (route.length === 0 || goalShifted || t >= nextRouteAt || state.gaveUp !== null)) planRoute(subject, t);
+      if (goalShifted) route = [];
+      if (far && t >= nextRouteAt && (route.length === 0 || goalShifted || state.gaveUp !== null)) planRoute(subject, t);
       const frame = stepCat(state, subject, dt, world, { reduced, errand, perch, steer: route[0] ?? null });
       state = frame.state;
       while (route.length && Math.hypot(route[0]!.x - state.x, route[0]!.z - state.z) <= NAV_REACH) route.shift();

@@ -83,7 +83,7 @@ describe("Little Harbour · the Court's poses (BUILD_PLAN #18)", () => {
         }
         // Pieces and props are framed at 3.2; only the Queen's portrait stands back for her height.
         for (const anchor of ["rook", "bishop", "knight", "sundial", "mailbox"] as const) expect(courtPose("object", anchor, composition, aspect).r).toBeCloseTo(3.2, 6);
-        expect(sky.r).toBeCloseTo(48, 6);
+        expect(sky.r).toBeCloseTo(160, 6);
       }
     }
   });
@@ -147,17 +147,17 @@ describe("Little Harbour · the Court's poses (BUILD_PLAN #18)", () => {
         }
       }
     }
-    expect(COURT_BOUNDS).toEqual({ minR: 2, maxR: 48, minPhi: 0.25, maxPhi: 1.38, targetRadius: 24 });
-    const wild: CourtPose = { target: [30, 0.5, -40], r: 80, theta: 9, phi: -2 };
+    expect(COURT_BOUNDS).toEqual({ minR: 2, maxR: 160, minPhi: 0.25, maxPhi: 1.38, targetRadius: 76 });
+    const wild: CourtPose = { target: [300, 0.5, -400], r: 800, theta: 9, phi: -2 };
     const held = clampCourtPose(wild);
-    expect(held.r).toBe(48);
+    expect(held.r).toBe(160);
     expect(held.phi).toBe(0.25);
     expect(Math.abs(held.theta)).toBeLessThanOrEqual(Math.PI);
-    expect(Math.hypot(held.target[0], held.target[2])).toBeCloseTo(24, 9);
+    expect(Math.hypot(held.target[0], held.target[2])).toBeCloseTo(76, 9);
     expect(held.target[1]).toBe(0.5);
     expect(clampCourtPose({ ...wild, r: 0.1, phi: 5 })).toMatchObject({ r: COURT_BOUNDS.minR, phi: COURT_BOUNDS.maxPhi });
     // clampPose is the island's clampRoamCam with the Court's bounds: same answer on every axis it knows.
-    const roam = clampRoamCam({ tx: 30, tz: -40, r: 80, theta: 9, phi: -2 }, ROAM_COURT_BOUNDS);
+    const roam = clampRoamCam({ tx: 300, tz: -400, r: 800, theta: 9, phi: -2 }, ROAM_COURT_BOUNDS);
     expect(clampPose(wild)).toEqual({ target: [roam.tx, 0.5, roam.tz], r: roam.r, theta: roam.theta, phi: roam.phi });
   });
 

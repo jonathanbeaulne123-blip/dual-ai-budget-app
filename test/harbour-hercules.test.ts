@@ -275,9 +275,9 @@ describe("Hercules leads you to what needs attention", () => {
   it("walks to the door, waits there, and lays a trail of paws that leads to it", () => {
     const door = attentionDoor("campfire");
     const errand = { key: "chapter:2026-08:proposed:open", ...door };
-    // You are standing on the Court's paving; he leaves your heel for the fire.
+    // A nearby task is worth pointing out without abandoning an island walk.
     const deliveryWorld={...island,obstacles:[]};
-    const you = standing(1.2, 2.4, 0, 0);
+    const you = standing(door.x, door.z - 8, 0, 0);
     let cat = createCatState(you.x, you.z - 0.7, 0, deliveryWorld);
     // But not while you are still standing in the gate: he gets up when you
     // do, which is what lets a place be at rest on its very first frame.
@@ -337,7 +337,7 @@ describe("what Hercules is made of", () => {
     figure.group.traverse((node) => { if ((node as THREE.Mesh).isMesh) meshes += 1; });
     expect(meshes, "a cat is not a room").toBeLessThanOrEqual(16);
     expect(figure.height).toBe(CAT_HEIGHT);
-    // Knee-high on a 0.58 person, and the box the twins would use says so.
+    // The compact travelling cat stays within his declared geometry budget.
     const box = new THREE.Box3().setFromObject(figure.group);
     expect(box.max.y).toBeLessThan(CAT_HEIGHT);
     figure.dispose();
@@ -399,6 +399,30 @@ describe("what Hercules is made of", () => {
     const heel = { x: you.x - 0.62, z: you.z - 0.52 };
     expect(Math.hypot(cat.state().x - heel.x, cat.state().z - heel.z)).toBeLessThan(0.8);
     cat.dispose();
+  });
+
+  it("stays with a person exploring the orchard instead of repeatedly leaving for a distant task",()=>{
+    const cat=createCat({groundHeightAt,obstacles:courtObstacles('full'),shore:SHORE_RADIUS,start:{x:-42.7,z:23.4},trail:false});
+    const you=standing(-46.8,24.9,-1.17);
+    const door=attentionDoor('stairhead');
+    cat.setErrand({key:'distant-bill',...door});
+    cat.step(DT,0,{...you,speed:WALK_SPEED});
+    let moving=true;
+    for(let t=DT;t<20;t+=DT){moving=cat.step(DT,t,you);expect(Math.hypot(cat.state().x-you.x,cat.state().z-you.z)).toBeLessThan(9);}
+    const heel=heelPoint(you);
+    expect(Math.hypot(cat.state().x-heel.x,cat.state().z-heel.z)).toBeLessThan(.8);
+    expect(moving).toBe(false);cat.dispose();
+  });
+
+  it("leaves an already-shown door and settles beside the person again",()=>{
+    const cat=createCat({groundHeightAt:()=>0,start:{x:5,z:0},trail:false});
+    cat.setErrand({key:'shown-door',x:5,z:0,yaw:0});
+    cat.step(DT,0,standing(5,0,0,WALK_SPEED));
+    const you=standing(11,2),heel=heelPoint(you);
+    let moving=true;
+    for(let t=DT;t<20;t+=DT)moving=cat.step(DT,t,you);
+    expect(Math.hypot(cat.state().x-heel.x,cat.state().z-heel.z)).toBeLessThan(.8);
+    expect(moving).toBe(false);cat.dispose();
   });
 
   it("leaves a paw print, not a footprint", () => {
