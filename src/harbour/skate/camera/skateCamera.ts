@@ -320,10 +320,13 @@ export function createSkateCamera(options: SkateCameraOptions = {}): SkateCamera
       const aspect = fin(env.aspect, 1.6) > 0 ? fin(env.aspect, 1.6) : 1.6;
       const dt = clamp(fin(dtIn), 0, 0.1);
       lastReduced = reduced; lastAspect = aspect;
-      // The sim moved the rider somewhere velocity cannot explain (bail recovery, a reset): cut, don't chase.
+      // The sim moved the rider somewhere velocity cannot explain (a reset), or says a bail recovery relocated
+      // them (\`recovered.moved\`): cut, don't chase. Getting up where you fell is not a cut.
       const jumped = started && Math.hypot(fin(p.x) - seenX, fin(p.z) - seenZ) > 1 + Math.hypot(fin(p.vx), fin(p.vz)) * dt * 3;
+      let relocated = false;
+      for (const e of events) if (e.kind === 'recovered' && e.moved === true) relocated = true;
       last = p; seenX = fin(p.x); seenZ = fin(p.z);
-      if (!started || jumped) cut(p, reduced, aspect);
+      if (!started || jumped || relocated) cut(p, reduced, aspect);
       for (const e of events) {
         if (e.kind === 'land') impactKick = Math.max(impactKick, clamp(0.35 + fin(e.airTime) * 0.6, 0, 1));
         else if (e.kind === 'bail') enterMode('bail', p);

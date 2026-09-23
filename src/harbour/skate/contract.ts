@@ -181,7 +181,7 @@ export type SkateSimEvent =
   | { t: number; kind: 'lip-trick'; id: 'rock-to-fakie' | 'axle-stall' | 'disaster' }
   | { t: number; kind: 'wallride'; seconds: number }
   | { t: number; kind: 'bail'; reason: 'flip-not-caught' | 'bad-angle' | 'hard-impact' | 'balance' | 'wall' | 'water' }
-  | { t: number; kind: 'recovered' };
+  | { t: number; kind: 'recovered'; /** True when the sim relocated the rider to a safe pose (the bail spot was not safe to stand on): cameras cut. */ moved?: boolean };
 
 /**
  * Everything the look/camera/presence layers need to draw one frame. Pure data.

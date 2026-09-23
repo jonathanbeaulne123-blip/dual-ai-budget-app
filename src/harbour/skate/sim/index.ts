@@ -1319,9 +1319,51 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     if (b.t >= T.BAIL_TIME) recover();
   }
 
+  /**
+   * Can the rider get up right here? The board's footprint must be flat ground
+   * (no lip, no transition, no step or stair edge under it), clear of solids
+   * and island obstacles, clear of any rail/ledge/coping line standing over
+   * it, and ashore.
+   */
+  function safeToStand(x: number, z: number, y: number): boolean {
+    const c = sample(x, z, SX, y);
+    if (c.lip || c.ny < T.GET_UP_MIN_NY) return false;
+    const cy = c.y, R = T.RADIUS;
+    for (let k = 0; k < 4; k++) {
+      const ox = k === 0 ? R : k === 1 ? -R : 0, oz = k === 2 ? R : k === 3 ? -R : 0;
+      const s = sample(x + ox, z + oz, SX, cy);
+      if (s.lip || s.ny < T.GET_UP_MIN_NY || Math.abs(s.y - cy) > T.GET_UP_STEP) return false;
+    }
+    pushOutAll(x, z, cy, R + 0.05, island, solids, H);
+    if (H.id) return false;
+    for (let li = 0; li < lines.length; li++) {
+      const L = lines[li]!;
+      if (x < L.minX - R || x > L.maxX + R || z < L.minZ - R || z > L.maxZ + R) continue;
+      nearestXZ(L, x, z, LQ);
+      if (LQ.d2 < R * R && LQ.y > cy + T.GET_UP_STEP) return false;
+    }
+    if (shore) {
+      let s: { ashore: boolean } | null = null;
+      try { s = shore(x, z); } catch { s = null; }
+      if (s && !s.ashore) return false;
+    }
+    return true;
+  }
+
   function recover(): void {
     const b = S.bail;
     const bx = S.x, bz = S.z;
+    // Get up where you fell when that spot is safe; relocate only when it is not.
+    if (b && b.reason !== 'water' && safeToStand(bx, bz, S.y)) {
+      // The board keeps the heading it fell with (the look's heap and get-up are drawn in that frame); off a wall, turn away from it.
+      const yaw = b.reason === 'wall' ? wrap(S.boardYaw + Math.PI) : S.boardYaw;
+      placeAt(bx, bz, yaw);
+      S.mode = 'recover';
+      S.recoverT = T.RECOVER_TIME;
+      S.safe = [{ x: bx, z: bz, yaw }];
+      emit({ t: S.t, kind: 'recovered', moved: false });
+      return;
+    }
     let pick: Pose | null = null;
     for (let i = S.safe.length - 1; i >= 0; i--) {
       const p = S.safe[i]!;
@@ -1337,7 +1379,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     S.mode = 'recover';
     S.recoverT = T.RECOVER_TIME;
     S.safe = [{ x: pick.x, z: pick.z, yaw }];
-    emit({ t: S.t, kind: 'recovered' });
+    emit({ t: S.t, kind: 'recovered', moved: Math.hypot(pick.x - bx, pick.z - bz) > 0.05 });
   }
 
   function placeAt(x: number, z: number, yaw: number): void {

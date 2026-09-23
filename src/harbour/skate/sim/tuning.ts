@@ -260,7 +260,16 @@ export const SKATE_TUNING = {
   /* ── bails / world edges ───────────────────────────────────────────── */
   /** Feel pass 1.1/.35 → .8/.25: back on the board a little over a second after a slam. */
   BAIL_TIME: 0.8,
-  RECOVER_TIME: 0.25,
+  /**
+   * Integration (wave 3) .25 → .48: the get-up. Control comes back as the look's
+   * get-up (look/boardRig.ts RIG.recoverSeconds .6) stamps the board under the
+   * feet, so a rider never rolls away while still lying on the ground.
+   */
+  RECOVER_TIME: 0.48,
+  /** Getting up in place (integration): the board's footprint must be this flat (normal y) … */
+  GET_UP_MIN_NY: 0.93,
+  /** … with no step, stair edge or rail higher than this under it; otherwise relocate to a safe pose. */
+  GET_UP_STEP: 0.06,
   /** Speed into a solid (normal component) that bails instead of stopping. */
   WALL_BAIL_SPEED: 4.2,
   WATER_BAIL_SPEED: 3.2,

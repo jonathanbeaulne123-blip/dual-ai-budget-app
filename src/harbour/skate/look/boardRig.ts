@@ -41,14 +41,34 @@ export const RIG = Object.freeze({
   compress: .014,
   gravity: 15,
   /**
-   * The look's own get-up after a bail. The sim's recover phase is short (and
-   * may respawn the rider at a safe spot), so the look keeps playing the get-up
-   * through the idle/roll that follows, and hurries it if the rider pushes off.
+   * The look's get-up after a bail, from the sim's `recovered`. The sim gets the
+   * rider up where they fell when that spot is safe (and relocates, with
+   * `recovered.moved`, only when it is not); its recover phase (sim tuning
+   * RECOVER_TIME .48) hands control back at 0.8 of this, as the board is stamped
+   * under the feet. The last beat plays through the idle/roll that follows, and
+   * is hurried if the rider pushes off (integration, wave 3: was .9).
    */
-  recoverSeconds: .9,
+  recoverSeconds: .6,
 });
 
 export type FootOffset = { x: number; z: number; lift: number };
+/**
+ * What the board had already turned when the sim switched the flip mid-air
+ * (kickflip read on as a double: \`present.trick.flipId\` changes and \`u\` is
+ * rescaled). In the def's own units (roll/pitch in full turns, yaw in half
+ * turns, x = the impossible's swing-out before toeSign): the drawn flip is the
+ * new trick plus this carry × w, where w = (1 − ease(u)) / (1 − ease(u0)) runs
+ * 1 → 0 as the new trick turns, so the board neither pops at the switch nor
+ * ends anywhere but the new trick's catch (integration, wave 3).
+ */
+export type FlipCarry = { roll: number; yaw: number; pitch: number; x: number; e0: number };
+/** How much of a carry is left at trick time u (1 at the switch, 0 at the catch). */
+export function carryWeight(c: FlipCarry | null | undefined, u: number): number {
+  if (!c || c.e0 >= .98) return 0;
+  return Math.max(0, (1 - flipEase(u)) / (1 - c.e0));
+}
+/** Reduce a whole-turn angle (turns) to the nearest equivalent in (−½, ½]. */
+const nearTurn = (t: number) => t - Math.round(t);
 export type BoardRigPose = {
   carrier: THREE.Matrix4;
   board: THREE.Matrix4;
@@ -98,7 +118,7 @@ export type BoardRigState = {
   yawFlip: number;
   /** `present.boardYaw` last frame (relabel detection). */
   lastYaw: number | null;
-  trick: { id: string; def: FlipTrickDef | null; u: number; yaw: number } | null;
+  trick: { id: string; def: FlipTrickDef | null; u: number; du: number; yaw: number; carry: FlipCarry | null } | null;
   manualPivot: number; grindPivot: number;
   /** Seconds the current grab has been held. */
   grabT: number;
@@ -107,6 +127,8 @@ export type BoardRigState = {
   bailT: number; recoverT: number; freeWeight: number;
   /** Getting up (the look's clock, `recoverT`), and whether the sim respawned the rider away from the heap (a cut). */
   getUp: boolean; cut: boolean; heap: THREE.Vector3;
+  /** `recovered.moved` from the event stream this step (null = no event: a partner off the wire guesses from the distance). */
+  moved: boolean | null;
   pos: THREE.Vector3; vel: THREE.Vector3; quat: THREE.Quaternion; spin: THREE.Vector3; floorY: number;
   landedPos: THREE.Vector3; landedQuat: THREE.Quaternion; wasFree: boolean;
   lastLocal: THREE.Matrix4;
@@ -118,7 +140,7 @@ export function createBoardRigState(): BoardRigState {
     springs: createSpringBank(STIFF), target: new Float64Array(C_COUNT),
     lastPhase: null, popped: false, popT: -1, popFrom: 'tail', eventDriven: false, popThisStep: false,
     yawFlip: 0, lastYaw: null, trick: null, grabT: 0, manualPivot: -BOARD.truckZ, grindPivot: 0, wheelAngle: 0, wheelRate: 0,
-    bailT: 0, recoverT: 0, freeWeight: 0, getUp: false, cut: false, heap: new THREE.Vector3(),
+    bailT: 0, recoverT: 0, freeWeight: 0, getUp: false, cut: false, heap: new THREE.Vector3(), moved: null,
     pos: new THREE.Vector3(), vel: new THREE.Vector3(), quat: new THREE.Quaternion(), spin: new THREE.Vector3(), floorY: 0,
     landedPos: new THREE.Vector3(), landedQuat: new THREE.Quaternion(), wasFree: false,
     lastLocal: new THREE.Matrix4(),
@@ -131,11 +153,12 @@ export function createBoardRigState(): BoardRigState {
 
 /** Feed the sim's events for this step (null = no event stream: infer pops from take-offs). */
 export function noteRigEvents(state: BoardRigState, events: readonly SkateSimEvent[] | null): void {
-  state.popThisStep = false;
+  state.popThisStep = false; state.moved = null;
   if (!events) return;
   for (const e of events) {
     state.eventDriven = true;
     if (e.kind === 'pop') { state.popped = true; state.popT = 0; state.popFrom = e.from; state.popThisStep = true; }
+    else if (e.kind === 'recovered') state.moved = e.moved === true;
   }
 }
 
@@ -167,19 +190,28 @@ function about(out: THREE.Matrix4, rot: THREE.Matrix4, px: number, py: number, p
  * kickflip); yaw + = tail swings to the heel side (backside shove-it);
  * pitch + = the tail scoops up and over the back foot (impossible).
  */
-export function flipMatrix(def: FlipTrickDef | null, u: number, toeSign: number, out: THREE.Matrix4, backFootZ = -BOARD.truckZ): THREE.Matrix4 {
+export function flipMatrix(def: FlipTrickDef | null, u: number, toeSign: number, out: THREE.Matrix4, backFootZ = -BOARD.truckZ, carry: FlipCarry | null = null): THREE.Matrix4 {
   out.identity();
   if (!def) return out;
-  const e = flipEase(u);
-  const roll = -toeSign * def.roll * Math.PI * 2 * e, yaw = toeSign * def.yaw * Math.PI * e, pitch = def.pitch * Math.PI * 2 * e;
+  const a = flipAngles(def, u, carry, _angles);
+  const roll = -toeSign * a.roll * Math.PI * 2, yaw = toeSign * a.yaw * Math.PI, pitch = a.pitch * Math.PI * 2;
   if (yaw) about(out, _m.makeRotationY(yaw), 0, RIG.centreY, 0);
-  if (pitch) {
-    // An impossible wraps around the toe end of the back foot, out in front of the shins.
-    const out2 = toeSign * .3 * Math.sin(Math.PI * clamp01(u));
-    if (out2) { _m.makeTranslation(out2, 0, 0); out.multiply(_m); }
-    about(out, _m.makeRotationX(pitch), 0, DECK_TOP + .03, backFootZ);
-  }
+  // An impossible wraps around the toe end of the back foot, out in front of the shins.
+  const out2 = toeSign * a.x;
+  if (out2) { _m.makeTranslation(out2, 0, 0); out.multiply(_m); }
+  if (pitch) about(out, _m.makeRotationX(pitch), 0, DECK_TOP + .03, backFootZ);
   if (roll) about(out, _m.makeRotationZ(roll), 0, RIG.centreY, 0);
+  return out;
+}
+
+type FlipAngles = { roll: number; yaw: number; pitch: number; x: number };
+const _angles: FlipAngles = { roll: 0, yaw: 0, pitch: 0, x: 0 }, _was: FlipAngles = { roll: 0, yaw: 0, pitch: 0, x: 0 };
+/** The flip's turns so far (def units, before toeSign), carry included. */
+export function flipAngles(def: FlipTrickDef | null, u: number, carry: FlipCarry | null, out: FlipAngles): FlipAngles {
+  const e = def ? flipEase(u) : 0, w = carryWeight(carry, u);
+  out.roll = (def?.roll ?? 0) * e; out.yaw = (def?.yaw ?? 0) * e; out.pitch = (def?.pitch ?? 0) * e;
+  out.x = def?.pitch ? .3 * Math.sin(Math.PI * clamp01(u)) : 0;
+  if (carry && w > 0) { out.roll += carry.roll * w; out.yaw += carry.yaw * w; out.pitch += carry.pitch * w; out.x += carry.x * w; }
   return out;
 }
 
@@ -244,7 +276,8 @@ export function solveBoardRig(p: SkatePresent, defs: LookDefs, state: BoardRigSt
   if (phase === 'bail') { state.getUp = false; state.heap.set(p.x, p.y, p.z); }
   else if (phase === 'recover' && state.lastPhase === 'bail') {
     state.getUp = true; state.recoverT = 0;
-    state.cut = Math.hypot(p.x - state.heap.x, p.z - state.heap.z) > .4;
+    // A relocation (the sim says so; off the wire, a jump from the heap) lays the board at the new spot; otherwise the rider gets up where they fell.
+    state.cut = state.moved ?? Math.hypot(p.x - state.heap.x, p.z - state.heap.z) > .4;
   }
   if (state.getUp) {
     if (air || phase === 'grind' || phase === 'manual' || state.recoverT >= RIG.recoverSeconds) state.getUp = false;
@@ -267,8 +300,12 @@ export function solveBoardRig(p: SkatePresent, defs: LookDefs, state: BoardRigSt
   // relabels nose/tail (boardYaw jumps by exactly π, e.g. at a shove-it's
   // catch), cancel the jump: the physical board did not move.
   const trick = p.trick;
+  // Mid-air, a different flip id with the board still going is the same flip read further on (the sim's
+  // upgrade: kickflip → double, a corner corrected): carry what the board has turned instead of ending it.
+  let from: { def: FlipTrickDef | null; u: number; carry: FlipCarry | null } | null = null;
   if (state.trick && (!trick || trick.flipId !== state.trick.id)) {
-    if (phase !== 'bail' && !rec) state.yawFlip = wrap(state.yawFlip + state.trick.yaw);
+    if (air && trick) from = { def: state.trick.def, u: clamp01(state.trick.u + state.trick.du), carry: state.trick.carry }; // one frame on: it keeps its pace
+    else if (phase !== 'bail' && !rec) state.yawFlip = wrap(state.yawFlip + state.trick.yaw);
     state.trick = null;
   }
   if (Number.isFinite(p.boardYaw)) {
@@ -279,10 +316,20 @@ export function solveBoardRig(p: SkatePresent, defs: LookDefs, state: BoardRigSt
     state.lastYaw = p.boardYaw;
   }
   if (trick) {
-    if (!state.trick) state.trick = { id: trick.flipId, def: defs.flip(trick.flipId), u: trick.u, yaw: 0 };
-    state.trick.u = trick.u;
-    const d = state.trick.def;
-    state.trick.yaw = d && d.yaw ? toeSign * d.yaw * Math.PI * flipEase(clamp01(trick.u)) : 0;
+    if (!state.trick) {
+      const def = defs.flip(trick.flipId), u0 = clamp01(trick.u);
+      state.trick = { id: trick.flipId, def, u: trick.u, du: 0, yaw: 0, carry: null };
+      // Starting part-way through (an upgrade, or one picked up after a catch): begin from what is drawn now.
+      if (air && def && (from || u0 > .02)) {
+        const was = from ? flipAngles(from.def, from.u, from.carry, _was) : (_was.roll = _was.yaw = _was.pitch = _was.x = 0, _was);
+        const now = flipAngles(def, u0, null, _angles);
+        const carry: FlipCarry = { roll: nearTurn(was.roll - now.roll), yaw: was.yaw - now.yaw, pitch: nearTurn(was.pitch - now.pitch), x: was.x - now.x, e0: flipEase(u0) };
+        if (Math.abs(carry.roll) + Math.abs(carry.yaw) + Math.abs(carry.pitch) + Math.abs(carry.x) > 1e-6) state.trick.carry = carry;
+      }
+    }
+    state.trick.du = Math.max(0, Math.min(.2, trick.u - state.trick.u)); state.trick.u = trick.u;
+    const d = state.trick.def, c = state.trick.carry;
+    state.trick.yaw = d ? toeSign * ((d.yaw || 0) * flipEase(clamp01(trick.u)) + (c ? c.yaw * carryWeight(c, clamp01(trick.u)) : 0)) * Math.PI : 0;
   }
 
   state.grabT = p.grab && air ? state.grabT + dt : 0;
@@ -368,7 +415,7 @@ export function solveBoardRig(p: SkatePresent, defs: LookDefs, state: BoardRigSt
 
   // ── Flip on top.
   const def = state.trick?.def ?? null, u = state.trick ? clamp01(state.trick.u) : 0;
-  flipMatrix(def, u, toeSign, out.board);
+  flipMatrix(def, u, toeSign, out.board, -BOARD.truckZ, state.trick?.carry ?? null);
   out.board.premultiply(c);
   if (state.yawFlip) { _m.makeRotationY(state.yawFlip); about(out.board, _m, 0, 0, 0); }
 

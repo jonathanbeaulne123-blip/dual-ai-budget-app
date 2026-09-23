@@ -50,7 +50,7 @@ The events of one step come in sim order:
 
 - **Pop out of a grind:** `grind-end(exit: 'ollie')`, then `pop`.
 - **Touchdown:** `grab-end`, then `flip-caught` if the flip was caught late, then `land`, then `revert` (a buffered revert), then `manual-start` (if manual is held).
-- **Bail:** `grind-end('bail')`, `manual-end`, `powerslide` and `grab-end` come first, then `bail`. About 1.1 s later comes `recovered`.
+- **Bail:** `grind-end('bail')`, `manual-end`, `powerslide` and `grab-end` come first, then `bail`. `BAIL_TIME` (0.8 s) later comes `recovered`; `RECOVER_TIME` (0.48 s) after that the rider is back in control.
 - **Powerslide:** the `powerslide` event is emitted on **exit**, with `seconds`. If the board came round past about 110°, `revert` follows.
 - **Grindables joined end to end:** `grind-end('transfer')`, then `grind-start`, with the same def. Popping from one rail onto another reads as `grind-end('ollie')` followed by a `grind-start` while still airborne.
 - **Leaving a manual pad:** `manual-end`, then (air), then `land`, then `manual-start` again if manual is still held.
@@ -77,7 +77,8 @@ These values set the feel. At the current settings (feel pass, wave 3 — every 
 - **Catches:** late window `CATCH_WINDOW` 0.2 × (1 − 0.7·difficulty): a kickflip may touch down at 84 % of its flip, a triple needs 92 %.
 - **Landing thresholds:** clean up to 25°, sketchy to 50°, and a hard impact at 7.6 u/s along the normal (11.5 when crouched).
 - **Balance:** manuals tip faster the longer you hold (`MANUAL_TIP_GROWTH`); grinds drift gently when easy and fast when hard (`GRIND_TIP`/`_DIFF`/`_GROWTH`). A person reacting in ~0.2 s holds a manual 5–10 s and a 50-50 to the end of a long rail.
-- **Bails:** 0.8 s down, 0.25 s to get up.
+- **Bails:** 0.8 s down (tumble, then lie briefly), 0.48 s to get up (integration: agrees with the look's 0.6 s get-up, control returns as the board is stamped under the feet).
+- **Get up where you fell (integration, wave 3).** `recover()` first tries the bail spot: the board's footprint (centre and four points at `RADIUS`) must be flat (`GET_UP_MIN_NY` 0.93, no lip, no step over `GET_UP_STEP` 0.06), clear of solids and island obstacles (`RADIUS + 0.05`), not under/inside a rail, ledge or coping line standing more than 0.06 over it, and ashore (and a water bail never stays). If so the rider gets up there, keeping the board's heading (turned away after a wall bail), and `recovered.moved` is `false`. Otherwise the rider goes to the newest safe pose ≥ 0.8 away (then marker, then spawn) and `recovered.moved` is `true`: the camera cuts and the look lays the board at the new spot only then.
 
 ## Integration changes (2026-09-23)
 
