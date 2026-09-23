@@ -70,9 +70,15 @@ async function build(spec) {
     const material = materials[spec.material(node.getName())];
     for (const primitive of mesh.listPrimitives()) {
       const sourceFactor = primitive.getMaterial()?.getBaseColorFactor() ?? colours[spec.material(node.getName())];
+      const sourceColours = primitive.getAttribute("COLOR_0");
       const count = primitive.getAttribute("POSITION")?.getCount() ?? 0;
       const vertexColours = new Float32Array(count * 4);
-      for (let i = 0; i < count; i += 1) vertexColours.set(sourceFactor, i * 4);
+      // A white material can carry a painted face. glTF multiplies the
+      // normalized vertex colour by the factor; replacing it loses the skin.
+      for (let i = 0; i < count; i += 1) {
+        const painted = sourceColours?.getElement(i, []) ?? [1, 1, 1, 1];
+        for (let channel = 0; channel < 4; channel += 1) vertexColours[i * 4 + channel] = (painted[channel] ?? 1) * sourceFactor[channel];
+      }
       primitive.setAttribute("COLOR_0", doc.createAccessor().setType("VEC4").setArray(vertexColours));
       primitive.setMaterial(material);
     }

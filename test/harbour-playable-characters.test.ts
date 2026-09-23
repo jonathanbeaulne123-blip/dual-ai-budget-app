@@ -5,8 +5,10 @@ import { describe, expect, it } from "vitest";
 import { NodeIO } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import { MeshoptDecoder } from "meshoptimizer";
+import * as THREE from "three";
 import { PLAYABLE_AVATARS } from "../src/harbour/body/avatarDefinition.ts";
 import { createPlayableFigure } from "../src/harbour/body/playableFigure.ts";
+import { createBodyFigure } from "../src/harbour/body/figure.ts";
 
 const root = resolve(process.cwd(), "public/models/players");
 const hash = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
@@ -20,6 +22,7 @@ describe("Little Harbour playable character derivatives", () => {
       expect(existsSync(file)).toBe(true);
       expect(readFileSync(file).byteLength).toBe(row.bytes);
       expect(hash(readFileSync(file))).toBe(row.sha256);
+      expect(PLAYABLE_AVATARS[row.avatar as keyof typeof PLAYABLE_AVATARS].sha256).toBe(row.sha256);
       expect(row.triangles).toBeLessThanOrEqual(10_000);
       expect(row.drawPrimitives).toBeLessThanOrEqual(4);
       expect(row.source.sha256).toMatch(/^[a-f0-9]{64}$/);
@@ -55,9 +58,38 @@ describe("Little Harbour playable character derivatives", () => {
       expect(primitives).toHaveLength(1);
       const colour = primitives[0]?.getAttribute("COLOR_0");
       expect(colour).toBeDefined();
-      const swatches = new Set<string>();
-      for (let index = 0; index < (colour?.getCount() ?? 0); index += 1) swatches.add(colour!.getElement(index, [] as number[]).slice(0, 3).map((component) => component.toFixed(3)).join(","));
+      const swatches = new Set<string>(), paintedSkin = new Set<string>();
+      for (let index = 0; index < (colour?.getCount() ?? 0); index += 1) {
+        const rgb = colour!.getElement(index, [] as number[]).slice(0, 3);
+        const key = rgb.map(component => component.toFixed(3)).join(",");
+        swatches.add(key);
+        const [r, g, b] = rgb as [number, number, number];
+        if (r > .6 && g > .2 && g < .65 && b < g * .75 && g < r * .7) paintedSkin.add(key);
+      }
       expect(swatches.size).toBeGreaterThan(6);
+      // The originals have a painted peach face under a white material.
+      // A flat material-factor bake loses these gradients and turns it white.
+      expect(paintedSkin.size, `${avatar} lost the painted face`).toBeGreaterThan(10);
+    }
+  });
+
+  it("fits moving limbs to the authored shoulders and keeps the long coat free of a blue waist patch", () => {
+    for (const avatar of ["bianca", "jonathan"] as const) {
+      const definition = PLAYABLE_AVATARS[avatar];
+      const figure = createBodyFigure(definition.colours, definition.anatomy);
+      const arm = figure.group.getObjectByName("body-arm-left")!;
+      const leg = figure.group.getObjectByName("body-leg-left")!;
+      expect(arm.position.y).toBeGreaterThan(.45);
+      const sleeve = arm.children[0] as THREE.Mesh;
+      sleeve.geometry.computeBoundingBox();
+      expect(sleeve.geometry.boundingBox!.max.x - sleeve.geometry.boundingBox!.min.x).toBeLessThan(.06);
+      expect(Math.abs(leg.position.x)).toBeLessThan(.03);
+      expect(figure.group.getObjectByName("body-pelvis")!.visible).toBe(avatar === "bianca");
+      const hipPosition = leg.position.clone();
+      figure.pose(.8, 1, .2, { lean: 0, bank: 0, run: 0 });
+      expect(arm.rotation.x * leg.rotation.x).toBeLessThan(0);
+      expect(leg.position.equals(hipPosition)).toBe(true);
+      figure.dispose();
     }
   });
 });
