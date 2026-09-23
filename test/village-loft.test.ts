@@ -12,13 +12,21 @@ const reading = (banks: number): PlaceReading => ({ tower: { shelves: [{ id: "sh
 const dressing = { timber: "#704a37", metal: "#b58b45", stone: "#d9c8a6" };
 
 describe("village loft", () => {
-  it("keeps every bank through the established shelf bound and routes it to the functional Loft", () => {
-    const scene = new THREE.Scene(), loft = createLoft(scene, dressing, reading(LOFT_LAYOUT.maxBanks + 3), "lite");
+  it("keeps every Kitty Bank beyond the original eighteen-slot rack and routes it to the functional Loft", () => {
+    const scene = new THREE.Scene(), loft = createLoft(scene, dressing, reading(LOFT_LAYOUT.columns * 4 + 3), "lite");
     const anchors = loft.anchors();
-    expect(anchors.filter(anchor => anchor.zone === "bank")).toHaveLength(LOFT_LAYOUT.maxBanks);
+    expect(anchors.filter(anchor => anchor.zone === "bank")).toHaveLength(LOFT_LAYOUT.columns * 4 + 3);
     expect(anchors.find(anchor => anchor.id === "loft-banks")?.door).toEqual({ target: "loft-banks" });
     expect(anchors.find(anchor => anchor.id === "bank:bank-0")?.door?.object).toBe("bank/plan:bank-0");
     loft.dispose();
+  });
+
+  it("does not rebuild the standing banks when unrelated reading identity changes", () => {
+    const scene = new THREE.Scene(), loft = createLoft(scene, dressing, reading(2), "lite");
+    const first = loft.group.children.find(node => node.userData.anchor === "bank:bank-0")!;
+    loft.update({ ...reading(2), partner: { fresh: true, name: "Bianca" } });
+    expect(loft.group.children.find(node => node.userData.anchor === "bank:bank-0")).toBe(first);
+    expect(loft.group.getObjectByName("loft-back-window-glass")).toBeTruthy(); expect(loft.group.getObjectByName("loft-window-seat-cushion")).toBeTruthy(); loft.dispose();
   });
 
   it("leaves both authored stair portals clear and retains local region boxes", () => {
