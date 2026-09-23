@@ -6,8 +6,9 @@ import { HARBOUR_PLACE_NAMES, harbourWayFor, type HarbourPlaceId } from "../src/
 import { mountHarbourWorld, type HarbourRuntime } from "../src/harbour/scene/runtime.ts";
 import { PLACES, PLACE_HOLDS, PLACE_PLACEMENTS, SCENE_DRESSING, placedFootprintHold, placementDoor, placementLift, placementOf, placementToWorld, type Anchor, type Place } from "../src/harbour/scene/place.ts";
 import { holdPoseInRoom, poseEye, type Composition, type RoomHold } from "../src/harbour/camera/poses.ts";
+import { createCourtCamera } from "../src/harbour/camera/courtCamera.ts";
 import { createFollowCamera, followInRoom, FOLLOW_DISTANCE } from "../src/harbour/camera/followCamera.ts";
-import { BODY_RADIUS, doorWall, holdInRoom, inRoom, pushOut, type Obstacle, type RoomBounds } from "../src/harbour/body/obstacles.ts";
+import { BODY_RADIUS, doorWall, holdInRoom, inRoom, pushOut, stepInRoom, type Obstacle, type RoomBounds } from "../src/harbour/body/obstacles.ts";
 import { createBodyState, stepBody, type BodyWorld } from "../src/harbour/body/bodyModel.ts";
 import { findPath } from "../src/harbour/body/pathfinder.ts";
 import {
@@ -165,6 +166,16 @@ describe("a body stands in every place, on that place's own floor", () => {
 });
 
 describe("the walls hold the body in the room", () => {
+  it("catches a full-speed step across a wall and only clears the doorway between its jambs", () => {
+    const room: RoomBounds = { x: 0, z: 0, halfX: 3, halfZ: 2, yaw: 0, door: { x: 0, z: 2, half: 0.6 } };
+    const side = stepInRoom(2.76, 0, 3.2, 0, BODY_RADIUS, room);
+    expect(side.x).toBeCloseTo(3 - BODY_RADIUS, 9);
+    const jamb = stepInRoom(0.55, 1.76, 0.55, 2.2, BODY_RADIUS, room);
+    expect(jamb.z).toBeCloseTo(2 - BODY_RADIUS, 9);
+    const door = stepInRoom(0.3, 1.76, 0.3, 2.2, BODY_RADIUS, room);
+    expect(door.z).toBeGreaterThan(2);
+  });
+
   for (const id of PLACE_IDS.filter(walksIndoors)) {
     it(`${id}: walking hard at every wall never puts you outside it`, () => {
       const { world, room, anchors } = worldFor(id);
@@ -268,6 +279,33 @@ describe("the walls hold the body in the room", () => {
   });
 });
 
+it("keeps every frame of a Look-camera turn inside a rotated room", () => {
+  const placement = PLACE_PLACEMENTS.library!;
+  const hold = holdOf("library")!;
+  const camera = new THREE.PerspectiveCamera(42, 1.6, 0.1, 220);
+  const look = createCourtCamera({ camera, composition: "desktop", reduced: true });
+  look.setHold(hold);
+  for (const [from, to] of [
+    [[-3, 0, -2], [3, 0, 2]],
+    [[3, 0, -2], [-3, 0, 2]],
+  ] as const) {
+    look.setReduced(true);
+    look.goTo({ target: placementToWorld(placement, from), r: 5, theta: placement.yaw - 1.3 });
+    look.setReduced(false);
+    look.goTo({ target: placementToWorld(placement, to), r: 5, theta: placement.yaw + 1.3 });
+    for (let frame = 0; frame < 90; frame += 1) {
+      look.tick(1 / 60);
+      const dx = camera.position.x - hold.local!.x, dz = camera.position.z - hold.local!.z;
+      const lx = dx * Math.cos(hold.local!.yaw) - dz * Math.sin(hold.local!.yaw);
+      const lz = dz * Math.cos(hold.local!.yaw) + dx * Math.sin(hold.local!.yaw);
+      expect(lx).toBeGreaterThanOrEqual(hold.local!.eye.min[0] - 1e-6);
+      expect(lx).toBeLessThanOrEqual(hold.local!.eye.max[0] + 1e-6);
+      expect(lz).toBeGreaterThanOrEqual(hold.local!.eye.min[2] - 1e-6);
+      expect(lz).toBeLessThanOrEqual(hold.local!.eye.max[2] + 1e-6);
+    }
+  }
+});
+
 describe("the camera stays in the room, with the body anywhere on its floor", () => {
   for (const id of PLACE_IDS.filter(walksIndoors)) {
     for (const composition of ["desktop", "phone"] as Composition[]) {
@@ -294,6 +332,16 @@ describe("the camera stays in the room, with the body anywhere on its floor", ()
               follow.drag(dx, dy); follow.zoom(zoom);
               for (let i = 0; i < 90; i += 1) follow.tick(1 / 60);
               const eye = follow.eye();
+              if (hold.local) {
+                const { x: ox, z: oz, yaw, eye: exact } = hold.local;
+                const dx = eye[0] - ox, dz = eye[2] - oz;
+                const lx = dx * Math.cos(yaw) - dz * Math.sin(yaw);
+                const lz = dz * Math.cos(yaw) + dx * Math.sin(yaw);
+                expect(lx, `${id} ${composition} crossed its rotated x wall`).toBeGreaterThanOrEqual(exact.min[0] - 1e-6);
+                expect(lx, `${id} ${composition} crossed its rotated x wall`).toBeLessThanOrEqual(exact.max[0] + 1e-6);
+                expect(lz, `${id} ${composition} crossed its rotated z wall`).toBeGreaterThanOrEqual(exact.min[2] - 1e-6);
+                expect(lz, `${id} ${composition} crossed its rotated z wall`).toBeLessThanOrEqual(exact.max[2] + 1e-6);
+              }
               for (let axis = 0; axis < 3; axis += 1) {
                 expect(eye[axis]!, `${id} ${composition} eye[${axis}] at (${x.toFixed(2)},${z.toFixed(2)})`).toBeGreaterThanOrEqual(hold.eye.min[axis]! - 1e-6);
                 expect(eye[axis]!, `${id} ${composition} eye[${axis}] at (${x.toFixed(2)},${z.toFixed(2)})`).toBeLessThanOrEqual(hold.eye.max[axis]! + 1e-6);
@@ -579,15 +627,24 @@ describe("the runtime, standing in a room", () => {
   it("puts the body where a journey lands: inside the hall you tapped, out on the lawn when you come back", () => {
     const stage = mount("court");
     const body = stage.body()!;
-    // Tapping the Library from across the lawn: the camera flies in, and the
-    // body has to be in the hall, not still standing on the grass.
-    stage.enter("library", { from: "court", reduced: true });
+    // Selecting the Library cuts to its arrival view; no camera flight passes
+    // through the wall, and the body lands in the hall.
+    expect(stage.enter("library", { from: "court" }).cut).toBe(true);
     const inside = stage.body()!.at();
     const floor = placeRoom("library", stage.place().anchors())!;
     expect(inRoom(inside.x, inside.z, floor), "the journey left the body outside the hall").toBe(true);
     expect(inside.y).toBeCloseTo(placementLift(PLACE_PLACEMENTS.library!), 6);
+    const hold = holdOf("library")!.local!;
+    const eye = stage.camera();
+    const dx = eye[0] - hold.x, dz = eye[2] - hold.z;
+    const localX = dx * Math.cos(hold.yaw) - dz * Math.sin(hold.yaw);
+    const localZ = dz * Math.cos(hold.yaw) + dx * Math.sin(hold.yaw);
+    expect(localX).toBeGreaterThanOrEqual(hold.eye.min[0] - 1e-6);
+    expect(localX).toBeLessThanOrEqual(hold.eye.max[0] + 1e-6);
+    expect(localZ).toBeGreaterThanOrEqual(hold.eye.min[2] - 1e-6);
+    expect(localZ).toBeLessThanOrEqual(hold.eye.max[2] + 1e-6);
     // And back out: on the lawn outside the hall's own door, clear of it.
-    stage.enter("court", { from: "library", reduced: true });
+    expect(stage.enter("court", { from: "library" }).cut).toBe(true);
     const out = stage.body()!.at();
     expect(inRoom(out.x, out.z, floor)).toBe(false);
     const door = placementDoor(PLACE_PLACEMENTS.library!);

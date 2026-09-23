@@ -1,3 +1,9 @@
+## 2026-09-23 — Building doors and indoor camera stay inside their walls
+
+Jonathan asked for better camera work on entering, standing in and leaving a building, with neither the character nor camera clipping through walls. A placed room now keeps the character inside its rotated walls even on a fast frame; its doorway is the only shoulder-clear exit. The Court keeps the village's existing exterior walls and open doorways. The existing doorway route returns to the Court on crossing back out. Both Look and follow cameras use the room's rotated bounds with clearance for the camera's near plane; the follow camera releases its indoor hold at the exit. A selected doorway cuts to its interior arrival view instead of flying through masonry; walking through the doorway keeps the continuous follow view.
+
+Risk Medium. Budget (5): +0; books, scope, commands and Final Confirm are untouched. Engagement (3): +2; walking and looking through a door now agree with the building on screen. The three themes share the same world geometry and keep their authored materials. This is a local interaction change, not a deployment or a claim of physical-device acceptance.
+
 ## 2026-09-23 — A roomy Harbour is the current stepping stone on Journey
 
 Jonathan chose the current household chapter as Harbour's place on Journey, and a mix of comfortable village walks with a larger landscape to explore. Inside and outside scales may differ. This extends the seven-building village without making budgeting depend on walking.

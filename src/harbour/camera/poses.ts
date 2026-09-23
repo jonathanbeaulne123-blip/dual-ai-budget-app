@@ -217,6 +217,8 @@ export type RoomHold = {
   maxR: number;
   minPhi: number;
   maxPhi: number;
+  /** A placed room's real, rotated walls. The world boxes above remain useful for broad framing. */
+  local?: { x: number; y: number; z: number; yaw: number; eye: RoomHold["eye"]; target: RoomHold["target"] };
 };
 
 const held = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
@@ -229,6 +231,18 @@ const held = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi :
  */
 export function holdPoseInRoom(pose: CourtPose, hold: RoomHold | null): CourtPose {
   if (!hold) return pose;
+  if (hold.local) {
+    const { x, y, z, yaw, eye, target } = hold.local;
+    const cos = Math.cos(yaw), sin = Math.sin(yaw);
+    const dx = pose.target[0] - x, dz = pose.target[2] - z;
+    const local = holdPoseInRoom({
+      ...pose,
+      target: [dx * cos - dz * sin, pose.target[1] - y, dz * cos + dx * sin],
+      theta: pose.theta - yaw,
+    }, { ...hold, eye, target, local: undefined });
+    const [lx, ly, lz] = local.target;
+    return { ...local, target: [x + lx * cos + lz * sin, y + ly, z + lz * cos - lx * sin], theta: local.theta + yaw };
+  }
   const target: [number, number, number] = [
     held(pose.target[0], hold.target.min[0], hold.target.max[0]),
     held(pose.target[1], hold.target.min[1], hold.target.max[1]),
@@ -249,7 +263,7 @@ export function holdPoseInRoom(pose: CourtPose, hold: RoomHold | null): CourtPos
     const limit = ((d > 0 ? hold.eye.max[axis]! : hold.eye.min[axis]!) - target[axis]!) / d;
     if (limit < room) room = limit;
   }
-  r = Math.min(r, Math.max(0.2, room));
+  r = Math.min(r, Math.max(0, room));
   return { target, r, theta, phi };
 }
 
