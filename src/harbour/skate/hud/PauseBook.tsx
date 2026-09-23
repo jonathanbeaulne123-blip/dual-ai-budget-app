@@ -34,7 +34,13 @@ type Props = {
 
 export function PauseBook(p: Props) {
   const id = useId(), ref = useRef<HTMLElement>(null), closeRef = useRef<HTMLButtonElement>(null);
-  useEffect(() => { closeRef.current?.focus({preventScroll: true}); }, []);
+  useEffect(() => {
+    // Paused because another dialog took the keyboard (Space → All tools, a Hearth surface): that dialog keeps it and
+    // the book waits behind it. Otherwise (P, the Book button, a hidden tab coming back) the book takes the focus.
+    const held = document.activeElement;
+    if (held instanceof Element && !ref.current?.contains(held) && held.closest('[role=dialog],[aria-modal=true]')) return;
+    closeRef.current?.focus({preventScroll: true});
+  }, []);
   const m = p.model, meta = BOOK_TABS.find(t => t.id === p.tab)!;
   function onKeyDown(e: ReactKeyboardEvent<HTMLElement>) {
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); p.onClose(); return; }

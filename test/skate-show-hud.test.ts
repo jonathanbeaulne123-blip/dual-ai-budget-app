@@ -177,6 +177,23 @@ describe('SkateHUD component', () => {
     expect(document.activeElement === book || (p.onFocus as ReturnType<typeof vi.fn>).mock.calls.length > 0).toBe(true);
   });
 
+  it('paused by another dialog (Space → All tools), the book waits behind it and leaves that dialog the keyboard', () => {
+    const sheet = document.createElement('div'); sheet.setAttribute('role', 'dialog'); sheet.innerHTML = '<button type="button">Close all tools</button>';
+    document.body.append(sheet);
+    const close = sheet.querySelector('button')!; close.focus();
+    render(props({model: model()}));
+    render(props({model: model({paused: true})})); // the ride paused because the stage lost the keyboard
+    expect(host.querySelector('[role=dialog]')).not.toBeNull(); // the pause book is open…
+    expect(document.activeElement).toBe(close); // …but All tools keeps the focus
+    sheet.remove();
+    // Paused with the keyboard on the stage (P): the book takes it.
+    act(() => root.render(createElement('div')));
+    const stage = document.createElement('div'); stage.tabIndex = 0; document.body.append(stage); stage.focus();
+    render(props({model: model({paused: true})}));
+    expect(document.activeElement?.textContent).toBe('Back to the ride');
+    stage.remove();
+  });
+
   it('changes settings and picks routes from the book', () => {
     const p = props({model: model()});
     render(p);
