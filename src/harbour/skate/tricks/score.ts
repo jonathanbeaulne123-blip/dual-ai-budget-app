@@ -185,7 +185,8 @@ export function createSkateScore(o:{stance?:Stance;catalogs?:SkateCatalogs}={}):
         lastActive=Math.max(lastActive,e.t);
         break;
       }
-      case 'manual-start':manual={linked:lastAirIndex>=0&&lastAirIndex===tricks.length-1&&e.t-lastLand<=T.linkS};break;
+      // Landed into it: "Kickflip to Manual" (a Gap scored on that landing does not break the link).
+      case 'manual-start':manual={linked:lastAirIndex>=0&&raws.slice(lastAirIndex+1).every(r=>r.label==='Gap')&&e.t-lastLand<=T.linkS};break;
       case 'manual-end':{
         const name=e.manual==='nose-manual'?'Nose Manual':'Manual',pts=50+e.seconds*70+e.distance*8,m=manual;manual=null;
         if(e.seconds<.2&&!m?.linked){lastActive=Math.max(lastActive,e.t);break;}
