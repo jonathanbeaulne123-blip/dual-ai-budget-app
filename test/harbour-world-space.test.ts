@@ -16,7 +16,8 @@ import "../src/harbour/court/CourtScene.ts";
 import "../src/harbour/kiln/KilnScene.ts";
 import "../src/harbour/cottage/CottageScene.ts";
 import "../src/harbour/library/LibraryScene.ts";
-import "../src/harbour/tower/TowerScene.ts";
+import "../src/harbour/village/LoftScene.ts";
+import "../src/harbour/village/BankScene.ts";
 
 vi.mock("../src/house/world/rendererOwner.ts", () => ({
   acquireWorldRenderer: () => ({

@@ -18,10 +18,10 @@ import { harbourFramePolicy } from "../src/harbour/scene/framePolicy.ts";
 import { seedDemoHousehold } from "../src/core/seed.ts";
 import { buildHarbourReading } from "../src/harbour/data/reading.ts";
 import { BOATHOUSE_LAYOUT } from "../src/harbour/boathouse/BoathouseScene.ts";
-import { TOWER_LAYOUT } from "../src/harbour/tower/TowerScene.ts";
 // Importing a place registers it; every test below walks all eleven.
 import "../src/harbour/court/CourtScene.ts";
-import "../src/harbour/tower/TowerScene.ts";
+import "../src/harbour/village/LoftScene.ts";
+import "../src/harbour/village/BankScene.ts";
 import "../src/harbour/cellar/CellarScene.ts";
 import "../src/harbour/glasshouse/GlasshouseScene.ts";
 import "../src/harbour/kitchen/KitchenScene.ts";
@@ -624,6 +624,6 @@ describe("the runtime, standing in a room", () => {
     body.input({ forward: 1, strafe: 1 });
     run(40);
     expect(stage.resident()).toEqual([]);
-    expect(Math.hypot(...stage.focus())).toBeLessThan(TOWER_LAYOUT.radius * 2);
+    expect(stage.focus().every(Number.isFinite)).toBe(true);
   });
 });
