@@ -510,18 +510,11 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       return;
     }
 
-    // Lips. Vert: launch as soon as we are on the strip moving out — straight up and back in.
-    // Kicker/bank/table edge: launch along the tangent as we leave the strip (riding the
-    // strip itself keeps its curve, so the ramp's last few cm still add height).
+    // Lips: ride the lip strip to its outer edge (so the strip's width never costs height),
+    // then launch as you leave it moving out. Vert: straight up and back in. Kicker/bank/
+    // table edge: along the tangent.
     const lipNow = S1.lip, lipPrev = S0lip;
-    const outward = (l: NonNullable<SurfaceSample['lip']>) => vx * Math.sin(l.lipYaw) + vz * Math.cos(l.lipYaw) > 0.05;
-    if (vy > 0 && lipNow && lipNow.vert && outward(lipNow)) {
-      S.x = x1; S.z = z1; S.y = S1.y;
-      S.vx = vx; S.vy = vy; S.vz = vz;
-      launchLip(lipNow.lipYaw, true, S1.y);
-      return;
-    }
-    if (vy > 0 && lipPrev && !lipNow && outward(lipPrev)) {
+    if (vy > 0 && lipPrev && !lipNow && vx * Math.sin(lipPrev.lipYaw) + vz * Math.cos(lipPrev.lipYaw) > 0.02) {
       S.x = x1; S.z = z1;
       if (lipPrev.vert) { S.y = Math.max(S1.y, y0 + vby * dt); S.vx = vx; S.vy = vy; S.vz = vz; launchLip(lipPrev.lipYaw, true, y0); }
       else { S.y = Math.max(S1.y, y0 + vby * dt); S.vx = vbx; S.vy = vby; S.vz = vbz; launchLip(lipPrev.lipYaw, false, y0); }
@@ -600,7 +593,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       const m2 = S.manual;
       m2.seconds += dt; m2.distance += Math.hypot(dx, dz);
       const tip = T.MANUAL_TIP * (reduced ? 1.25 : 1);
-      const wob = T.MANUAL_WOBBLE * (Math.sin(m2.seconds * 2.3 + m2.seed) + 0.5 * Math.sin(m2.seconds * 5.7 + 2 * m2.seed));
+      const wob = T.MANUAL_WOBBLE * (driftSign(m2.seed) + Math.sin(m2.seconds * 2.3 + m2.seed) + 0.5 * Math.sin(m2.seconds * 5.7 + 2 * m2.seed));
       const sign = m2.kind === 'manual' ? 1 : -1;
       // balance > 0 = rotating out the back of the manual; weight toward the other end pulls it back.
       S.balance += (tip * S.balance + wob - T.MANUAL_CONTROL * S.lean * sign) * dt;
@@ -611,6 +604,9 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     orientToSurface(S.gnx, S.gny, S.gnz, dt, 22);
     recordSafe(dt);
   }
+
+  /** Each grind/manual leans one way (by its seed) so an uncorrected balance always goes somewhere. */
+  const driftSign = (seed: number): number => (Math.sin(seed * 7.13) >= 0 ? 1 : -1);
 
   function startManual(kind: 'manual' | 'nose-manual'): void {
     S.seq++;
@@ -961,7 +957,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
 
     // Balance: drifts away from centre; the stick pulls it back (balance>0 leans right → steer left).
     const tip = (T.GRIND_TIP + T.GRIND_TIP_DIFF * g.difficulty) * (reduced ? 1.25 : 1);
-    const wob = T.GRIND_WOBBLE * (1 + g.difficulty) * (Math.sin(g.seconds * 2.7 + g.seed) + 0.5 * Math.sin(g.seconds * 6.3 + 2 * g.seed));
+    const wob = T.GRIND_WOBBLE * (1 + g.difficulty) * (driftSign(g.seed) + Math.sin(g.seconds * 2.7 + g.seed) + 0.5 * Math.sin(g.seconds * 6.3 + 2 * g.seed));
     S.balance += (tip * S.balance + wob + I.steer * T.GRIND_CONTROL) * dt;
     if (Math.abs(S.balance) > 1) {
       S.vx = tx * g.speed; S.vy = ty * g.speed; S.vz = tz * g.speed;

@@ -312,9 +312,10 @@ describe('skate sim · walls, water, respawn', () => {
     expect(sim.setMarker()).toBe(false);
     ride(sim, 2, intent({ brake: true }));
     expect(sim.setMarker()).toBe(true);
-    const at = sim.present();
+    const at = { ...sim.present() };
     kick(sim, { vz: 5 });
     ride(sim, 1, intent({ steer: 0.5 }));
+    expect(Math.hypot(sim.present().x - at.x, sim.present().z - at.z)).toBeGreaterThan(2);
     ride(sim, 1 / 60, intent({ respawn: true }));
     expect(sim.present().x).toBeCloseTo(at.x, 5);
     expect(sim.present().z).toBeCloseTo(at.z, 5);

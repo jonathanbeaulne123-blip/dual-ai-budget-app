@@ -48,6 +48,7 @@ function contactCost(want: Contact, have: Contact): number {
   return fam + end;
 }
 
+const PARALLEL = 0.2;
 const NEGATIVE_NAMES = /lip|smith|overcrook|over-crook|noseslide|nose-slide/i;
 
 /** Pick the nearest def; null only when the catalog is empty. */
@@ -57,13 +58,15 @@ export function selectGrind(defs: ReadonlyMap<string, GrindDef> | Iterable<Grind
   if (!list.length) return null;
   const signed = list.some((d) => d.deckYaw < -1e-6);
   const want = wantedContact(a);
-  const desired = a.axis * a.over;
+  // Within ~11° of the line counts as parallel (the board squares up on lock);
+  // both sides of the comparison go through the same dead zone.
+  const dz = (y: number) => Math.sign(y) * Math.max(0, Math.abs(y) - PARALLEL);
+  const desired = dz(a.axis) * a.over;
   const wantPitch = Math.max(-1, Math.min(1, a.lean)) * 0.3;
   let best: GrindDef | null = null, bestCost = Infinity;
   for (const d of list) {
-    const eff = signed ? d.deckYaw : (NEGATIVE_NAMES.test(d.id) ? -Math.abs(d.deckYaw) : Math.abs(d.deckYaw));
-    // Near-parallel approaches carry no reliable side: compare magnitudes only.
-    const yawCost = a.axis < 0.15 ? Math.abs(Math.abs(eff) - a.axis) : Math.abs(eff - desired);
+    const eff = dz(signed ? d.deckYaw : (NEGATIVE_NAMES.test(d.id) ? -Math.abs(d.deckYaw) : Math.abs(d.deckYaw)));
+    const yawCost = Math.abs(eff - desired);
     const cost = 1.5 * contactCost(want, d.contact) + 1.2 * yawCost + 0.8 * Math.abs((d.deckPitch || 0) - wantPitch);
     if (cost < bestCost - 1e-9) { best = d; bestCost = cost; }
   }

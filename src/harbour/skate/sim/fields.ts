@@ -3,8 +3,9 @@
  *
  * Analytic little parks for the sim's tests (and a worked reference for the
  * PARK track of what the sim expects from `SkateField`): exact normals, lip
- * strips on the last 0.1 of every transition that ends at coping or a kicker
- * lip, coping grindables with `faceYaw` pointing into the transition.
+ * strips on the last 0.1 (of surface) of every transition that ends at coping
+ * or a kicker lip, coping grindables with `faceYaw` pointing into the
+ * transition. The sim rides the strip to its outer edge and launches there.
  *
  * Local frames: a piece at (x, z, yaw) has local +lz along the yaw heading
  * (sin yaw, cos yaw) and local +lx 90° clockwise from it seen from above
@@ -33,6 +34,15 @@ function sampleOf(yaw: number, y: number, nlx: number, ny: number, nlz: number, 
   return { y, nx, ny: ny / l, nz, kind, feature, lip };
 }
 
+/**
+ * The lip strip is the last LIP_STRIP of the transition's SURFACE (arc length),
+ * not of its horizontal extent: on an 84° wall 0.1 horizontal would be most of
+ * the top half-metre.
+ */
+function onLip(u: number, R: number, top: number): boolean {
+  return R * (top - Math.asin(Math.min(1, u / R))) <= LIP_STRIP;
+}
+
 /** Circular transition: height and slope at distance u from its start, radius R. */
 function tranny(u: number, R: number): { y: number; slope: number } {
   const q = Math.sqrt(Math.max(1e-9, R * R - u * u));
@@ -51,7 +61,7 @@ export function quarterPipe(q: QuarterPipe): { piece: Piece; coping: Grindable; 
     if (Math.abs(lx) > q.width / 2 || lz < 0 || lz > uMax + deck) return null;
     if (lz > uMax) return sampleOf(q.yaw, H, 0, 1, 0, kind, q.id, null);
     const t = tranny(lz, q.radius);
-    return sampleOf(q.yaw, t.y, 0, 1, -t.slope, kind, q.id, lz >= uMax - LIP_STRIP ? { lipYaw: q.yaw, vert } : null);
+    return sampleOf(q.yaw, t.y, 0, 1, -t.slope, kind, q.id, onLip(lz, q.radius, top) ? { lipYaw: q.yaw, vert } : null);
   };
   const a = world(q.x, q.z, q.yaw, -q.width / 2, uMax), b = world(q.x, q.z, q.yaw, q.width / 2, uMax);
   const coping: Grindable = { id: `${q.id}-coping`, name: 'Coping', kind: 'coping', points: [[a[0], H, a[1]], [b[0], H, b[1]]], faceYaw: q.yaw + Math.PI };
@@ -96,7 +106,7 @@ export function bowl(b: { id: string; x: number; z: number; r0: number; radius: 
     const u = r - b.r0, ox = dx / r, oz = dz / r, yaw = Math.atan2(ox, oz);
     if (u > uMax) return { y: H, nx: 0, ny: 1, nz: 0, kind, feature: b.id, lip: null };
     const t = tranny(u, b.radius), l = Math.hypot(t.slope, 1);
-    return { y: t.y, nx: (-t.slope * ox) / l, ny: 1 / l, nz: (-t.slope * oz) / l, kind, feature: b.id, lip: u >= uMax - LIP_STRIP ? { lipYaw: yaw, vert } : null };
+    return { y: t.y, nx: (-t.slope * ox) / l, ny: 1 / l, nz: (-t.slope * oz) / l, kind, feature: b.id, lip: onLip(u, b.radius, top) ? { lipYaw: yaw, vert } : null };
   };
   const n = b.copingSegments ?? 48, rr = b.r0 + uMax, pts: [number, number, number][] = [];
   for (let i = 0; i <= n; i++) { const a = (i / n) * Math.PI * 2; pts.push([b.x + Math.sin(a) * rr, H, b.z + Math.cos(a) * rr]); }

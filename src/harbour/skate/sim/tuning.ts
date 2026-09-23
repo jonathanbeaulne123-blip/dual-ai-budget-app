@@ -70,7 +70,7 @@ export const SKATE_TUNING = {
    * up to speed but a fast one can't pump to orbit (per-wall gain levels off
    * around CROUCH_DROP·κ·VREF²).
    */
-  PUMP_VREF: 4.5,
+  PUMP_VREF: 4,
 
   /* ── pop ───────────────────────────────────────────────────────────── */
   /** Rise of the pop at quality 0 and 1 (quality = .6·strength + .4·crouch). */

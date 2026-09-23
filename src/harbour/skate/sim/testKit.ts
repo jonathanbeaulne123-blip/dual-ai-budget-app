@@ -64,11 +64,13 @@ export function ride(sim: SkateSim, seconds: number, drive: SkateIntent | ((t: n
 }
 
 export const kinds = (events: readonly SkateSimEvent[]): string[] => events.map((e) => e.kind);
-export function first<K extends SkateSimEvent['kind']>(events: readonly SkateSimEvent[], kind: K): Extract<SkateSimEvent, { kind: K }> | undefined {
-  return events.find((e) => e.kind === kind) as Extract<SkateSimEvent, { kind: K }> | undefined;
+/** The event variant(s) whose `kind` can be K (some variants share a member between two kinds). */
+type EventOf<E, K> = E extends { kind: infer KK } ? (K extends KK ? E : never) : never;
+export function first<K extends SkateSimEvent['kind']>(events: readonly SkateSimEvent[], kind: K): EventOf<SkateSimEvent, K> | undefined {
+  return events.find((e) => e.kind === kind) as EventOf<SkateSimEvent, K> | undefined;
 }
-export function all<K extends SkateSimEvent['kind']>(events: readonly SkateSimEvent[], kind: K): Extract<SkateSimEvent, { kind: K }>[] {
-  return events.filter((e) => e.kind === kind) as Extract<SkateSimEvent, { kind: K }>[];
+export function all<K extends SkateSimEvent['kind']>(events: readonly SkateSimEvent[], kind: K): EventOf<SkateSimEvent, K>[] {
+  return events.filter((e) => e.kind === kind) as EventOf<SkateSimEvent, K>[];
 }
 
 /** Deterministic LCG for fuzzing (no Math.random in sim tests either). */
