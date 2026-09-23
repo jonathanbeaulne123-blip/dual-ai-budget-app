@@ -63,7 +63,7 @@ describe('skate sim · pop', () => {
     expect(first(r.events, 'land')).toBeDefined();
   });
 
-  it('pops off a bank along its normal (blended with up)', () => {
+  it('pops off a bank along its normal (blended with up), adding its height to the rise', () => {
     const qp = quarterPipe({ id: 'bank', x: 0, z: 1, yaw: 0, radius: 3, topDeg: 40, width: 4, vert: false });
     const sim = makeSim(makeField({ pieces: [qp.piece] }));
     kick(sim, { vz: 6 });
@@ -75,7 +75,11 @@ describe('skate sim · pop', () => {
     expect(r.present.phase).toBe('air');
     // The bank's normal leans back toward −z: popping off it bleeds some forward speed into lift.
     expect(r.present.vz).toBeLessThan(before.vz);
-    expect(r.present.vy).toBeGreaterThan(before.vy + 2);
+    // Already rising: the pop adds its height (energy), not its velocity (feel pass).
+    const added = (r.present.vy ** 2 - before.vy ** 2) / (2 * G);
+    expect(added).toBeGreaterThan(0.2);
+    expect(added).toBeLessThan(0.6);
+    expect(r.present.vy).toBeLessThan(before.vy + 2);
   });
 });
 

@@ -67,13 +67,13 @@ export const SKATE_TUNING = {
    * v²·κ·dh·PUMP_GAIN of specific kinetic energy (crouching there removes the
    * same; crouch on the flat or in the air, where κ≈0, is free). 1 = textbook.
    */
-  PUMP_GAIN: 1.5,
+  PUMP_GAIN: 2.2,
   /**
    * Pumping saturates: v² is read as v²/(1 + v²/VREF²), so a slow rider can pump
    * up to speed but a fast one can't pump to orbit (per-wall gain levels off
    * around CROUCH_DROP·κ·VREF²).
    */
-  PUMP_VREF: 4,
+  PUMP_VREF: 2.8,
 
   /* ── pop ───────────────────────────────────────────────────────────── */
   /** Rise of the pop at quality 0 and 1 (quality = .6·strength + .4·crouch). */
@@ -81,6 +81,13 @@ export const SKATE_TUNING = {
   POP_H_MAX: 0.56,
   /** On a transition the pop goes along normal·blend + up·(1−blend). */
   POP_NORMAL_BLEND: 0.45,
+  /**
+   * A pop while already rising (kicker/bank lip, coyote after a launch) adds
+   * this × its own height to the launch height (energy add) instead of adding
+   * velocities. New in the feel pass: kicker airs are ≈ 0.8–1.3 above the lip
+   * at 7–9 u/s instead of 2–2.5, so flips off the Hatch are landable.
+   */
+  POP_ON_RISE: 1.15,
   /** Coyote time after rolling off an edge during which a pop still counts. */
   POP_COYOTE: 0.09,
   /** A pop pressed this long before touching down fires on touchdown. */
@@ -89,6 +96,12 @@ export const SKATE_TUNING = {
   /* ── lips ──────────────────────────────────────────────────────────── */
   /** Horizontal drift back into the ramp over a whole vert air (units). */
   VERT_REENTRY: 0.07,
+  /**
+   * Fraction of the along-coping velocity a vert air keeps when you are not
+   * carving (carving into the lip keeps all of it). Feel pass 2026-09-23: 1 → .1
+   * so un-steered airs come straight back in, as in Skate.
+   */
+  VERT_CARRY: 0.1,
   /** Extra inward pull when a vert air drifts over the deck. */
   VERT_DECK_PULL: 1.1,
   /** Upward step while grounded (beyond what the slope predicts) that counts as a wall. */
@@ -132,6 +145,14 @@ export const SKATE_TUNING = {
   /* ── grinds ────────────────────────────────────────────────────────── */
   /** Wheel grip: below this speed along the board (u/s) the wheels hold you to it (no sideways velocity), so a transition's peak never swings the board across. Integration 2026-09-23. */
   WHEEL_GRIP_SPEED: 2.2,
+  /**
+   * Sideways slip the wheels cancel at any speed (u/s²); the cancelling fades
+   * out by twice this. New in the feel pass: ≈ 6° of cross-slope, so a pad's
+   * drainage fall (1.4°, ≈0.35 u/s²) no longer walks you off the Breadbin
+   * (0.35 → 0.002 per wall), while a genuine angle up a wall (≥ 3 u/s²
+   * sideways) turns you exactly as before.
+   */
+  LATERAL_GRIP: 1.5,
   GRIND_REACH: 0.26,
   GRIND_REACH_ASSIST: 0.42,
   GRIND_ABOVE: 0.2,

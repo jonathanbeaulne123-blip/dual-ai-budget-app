@@ -359,7 +359,12 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       dx = nx * b; dy = ny * b + (1 - b); dz = nz * b;
       const l = Math.hypot(dx, dy, dz) || 1; dx /= l; dy /= l; dz /= l;
     }
-    S.vx += dx * vp; S.vy += dy * vp; S.vz += dz * vp;
+    // Already rising (a kicker lip, a bank, a vert launch in coyote time): the pop
+    // adds its HEIGHT to the launch's instead of stacking velocities, so a flip
+    // popped at the Hatch lip is ≈1 above it at 8 u/s, not 2.5 (feel pass).
+    const pvy = dy * vp;
+    S.vx += dx * vp; S.vz += dz * vp;
+    S.vy = S.vy > 0 && pvy > 0 ? Math.sqrt(S.vy * S.vy + T.POP_ON_RISE * pvy * pvy) : S.vy + pvy;
     clampSpeed();
     endManual();
     const fromFeature = S.feature;
@@ -626,6 +631,23 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     // Board follows travel (above the grip speed); which end leads can flip when
     // you roll back down a wall.
     let held = false;
+    if (grip && T.LATERAL_GRIP > 0) {
+      // Tyre grip (feel pass 2026-09-23): the wheels resist sideways slip up to
+      // LATERAL_GRIP u/s² before the board lets go and follows travel. A pad's
+      // drainage fall (~1.4°, ≈0.35 u/s² sideways) no longer walks a rider off
+      // the side of a mini in ten walls; a real angle on a steep wall (a carve,
+      // a line across a bank) is far above the budget and still turns you.
+      const bx = Math.sin(S.boardYaw), bz = Math.cos(S.boardYaw);
+      lift(bx, bz, S.gnx, S.gny, S.gnz, V3);
+      // Lateral axis in the tangent plane: n × board.
+      const lx = S.gny * V3.z - S.gnz * V3.y, ly = S.gnz * V3.x - S.gnx * V3.z, lz = S.gnx * V3.y - S.gny * V3.x;
+      const lat = S.vx * lx + S.vy * ly + S.vz * lz;
+      // Below the budget the slip is cancelled; it fades out by twice the budget,
+      // so a genuine angle up a wall turns you exactly as before.
+      const r = Math.abs(lat) / (T.LATERAL_GRIP * dt);
+      const cut = lat * clamp(2 - r, 0, 1);
+      if (cut !== 0) { S.vx -= lx * cut; S.vy -= ly * cut; S.vz -= lz * cut; }
+    }
     if (grip) {
       // Re-seat the axis on the new surface. Slow along it (climbing to a wall's
       // peak, a stall) the wheels hold you to it completely; at speed the board
@@ -721,7 +743,20 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
         S.boardYaw = wrap(flatHeading(V3.x, V3.y, V3.z, S.gnx, S.gny, S.gnz));
       }
       const out = S.vx * ox + S.vz * oz;
-      const ax = S.vx - out * ox, az = S.vz - out * oz;
+      // Along the coping: a square-on air comes straight back in (feel pass:
+      // un-steered airs used to walk ~0.3 per wall); a line you aimed across the
+      // wall (> ~12° off square) or are carving keeps its sideways speed.
+      const ax0 = S.vx - out * ox, az0 = S.vz - out * oz;
+      const skew = Math.atan2(Math.hypot(ax0, az0), Math.max(1e-6, Math.hypot(Math.max(0, S.vy), Math.max(0, out))));
+      const aim = Math.max(clamp((skew - 0.12) / 0.2, 0, 1), clamp(Math.abs(S.carve) / 0.5, 0, 1));
+      const carry = T.VERT_CARRY + (1 - T.VERT_CARRY) * aim;
+      const ax = ax0 * carry, az = az0 * carry;
+      // …and a square-on air squares the board up to the wall, so the next wall
+      // starts on the same line instead of compounding a fraction of a degree.
+      if (aim < 1) {
+        const sq = Math.abs(wrap(S.boardYaw - lipYaw)) < Math.PI / 2 ? lipYaw : wrap(lipYaw + Math.PI);
+        S.boardYaw = wrap(S.boardYaw + wrap(sq - S.boardYaw) * (1 - aim));
+      }
       const up = Math.sqrt(Math.max(0, S.vy) ** 2 + Math.max(0, out) ** 2);
       // Slow at the coping: a lip trick instead of a tiny air.
       if (up < 1.6 && (I.grindAssist || S.lean > 0.45 || I.lean > 0.45)) { startStall(lipYaw, I.grindAssist ? 'axle-stall' : 'rock-to-fakie', lipY); return; }
