@@ -207,7 +207,8 @@
 .skate-gesture__missing{font:italic 700 .7px var(--skate-display);fill:var(--skate-pencil)}
 @keyframes skate-draw{to{stroke-dashoffset:0}}
 .skate-book__names{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
-.skate-book__names li{background:var(--skate-card);padding:6px 10px;font-size:12px}.skate-book__names small{display:block;font-size:10px;opacity:.75}
+.skate-book__names li{background:var(--skate-card);padding:6px 10px;font-size:12px;max-width:100%;box-sizing:border-box}
+.skate-book__how{font-size:12px!important;margin:0 0 8px!important}.skate-book__names small{display:block;font-size:10px;opacity:.75}
 .skate-book__decks{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
 .skate-hud .skate-book__decks button{display:flex;align-items:center;flex-direction:column;gap:5px;background:var(--skate-card);padding:14px 10px}
 .skate-hud .skate-book__decks button[aria-pressed=true]{outline:3px solid var(--skate-ink);outline-offset:-3px}

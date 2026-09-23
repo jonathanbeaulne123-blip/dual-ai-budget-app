@@ -41,6 +41,8 @@ The follow camera stays alive for walking; while skating on the Court the skate 
 `{present, line: ScoreLine|null, outcome: {outcome, seq}|null, session, paused, inputDevice: 'keyboard'|'pointer'|'touch'|'gamepad', grindName?, hints?, tables?}`.
 Publish with `createHudThrottle(100).offer(model, now)` — non-null means `setState`. Urgent changes (new trick label, outcome, phase, spot card, pause, device) bypass the interval.
 
+**Grind picking (integration, wave 3):** `skateHints()` (driver.ts) adds an air hint `grind-pick` on every device (W A S D / the left stick as you land on the rail picks the grind), and `SKATE_TRICK_BOOK.grinds[].detail` says how to pick each of the 15 (`SKATE_GRIND_HOW`, from NOTES-tricks.md "Grinds") under a `grindsNote` in the Trick book.
+
 `<SkateHUD>` props (v2): `model` (null = entry button), `onStart`, `onWalk`, `onPause(on)`, `onRoute(id|null)`, `onSpot(id)`, `onDeck(id)`, `onSettings(patch)`, `onCommand('respawn'|'marker')`, `onZonePointer(zone, reactPointerEvent)`, `gesturePath(flipId, stance) → SVG path | null` (viewBox "-1 -1 2 2", y down toward the tail; start point gets a dot), `trickBook {flips, grinds?, grabs?}` (names/points from the TRICKS catalogs), `onFocus`, `partnerName`, `saveFailed`, `presence`.
 `model` is required (`null` = entry button); the v1 snapshot path and `hud/legacy.ts` were removed with `skateModel.ts` (integration 2026-09-23). HarbourWorld owns the audio: it creates it inside the sound-on click (or the Skate-the-island click when sound was saved on) and hands it to the driver.
 

@@ -160,6 +160,10 @@ describe('SkateHUD component', () => {
     act(() => tab.click());
     expect(dialog.querySelectorAll('.skate-gesture__stroke')).toHaveLength(1);
     expect(dialog.querySelectorAll('.skate-gesture__missing').length).toBeGreaterThan(0);
+    // With the real book (integration): how each grind is picked, and the note above the list.
+    act(() => root.render(createElement(SkateHUD, {...p, trickBook: {flips: [{id: 'ollie', name: 'Ollie'}], grinds: [{id: 'smith', name: 'Smith Grind', detail: 'Along the rail, stick away from it.'}], grindsNote: 'Pick a grind with the left stick.'}})));
+    expect(dialog.querySelector('.skate-book__how')?.textContent).toBe('Pick a grind with the left stick.');
+    expect(dialog.querySelector('.skate-book__names li small')?.textContent).toMatch(/stick away/);
     // Focus trap: Tab from the last control wraps to the first.
     const focusables = [...dialog.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled)')].filter(e => e.tabIndex >= 0);
     act(() => focusables.at(-1)!.focus());

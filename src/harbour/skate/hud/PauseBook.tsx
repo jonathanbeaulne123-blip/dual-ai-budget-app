@@ -14,7 +14,7 @@ export const BOOK_TABS: readonly {id: BookTab; label: string; short: string; tit
   {id: 'settings', label: 'Settings', short: 'Settings', title: 'Ride your way'},
 ];
 export type TrickBookEntry = {id: string; name: string; points?: number; detail?: string};
-export type TrickBook = {flips: readonly TrickBookEntry[]; grinds?: readonly TrickBookEntry[]; grabs?: readonly TrickBookEntry[]};
+export type TrickBook = {flips: readonly TrickBookEntry[]; grinds?: readonly TrickBookEntry[]; grabs?: readonly TrickBookEntry[]; /** How grinds are picked (shown above the list). */ grindsNote?: string};
 /** Shown until the TRICKS catalogs are passed in. Names only, original wording. */
 export const FALLBACK_TRICK_BOOK: TrickBook = {
   flips: [{id: 'ollie', name: 'Ollie'}, {id: 'kickflip', name: 'Kickflip'}, {id: 'heelflip', name: 'Heelflip'}, {id: 'pop-shuvit', name: 'Pop shove-it'}, {id: 'varial-kickflip', name: 'Varial kickflip'}, {id: 'tre-flip', name: '360 flip'}],
@@ -109,7 +109,7 @@ export function PauseBook(p: Props) {
         <div className="skate-book__tricks">{book.flips.map(f => <div key={f.id} className="skate-trick">
           <GesturePath d={p.gesturePath?.(f.id, stance) ?? null} label={f.name}/><b>{f.name}</b>{f.points ? <small>{formatPoints(f.points)} pts</small> : f.detail ? <small>{f.detail}</small> : null}
         </div>)}</div>
-        {book.grinds && book.grinds.length > 0 && <><h3>Grinds and slides</h3><ul className="skate-book__names">{book.grinds.map(g => <li key={g.id}><b>{g.name}</b>{g.detail && <small>{g.detail}</small>}</li>)}</ul></>}
+        {book.grinds && book.grinds.length > 0 && <><h3>Grinds and slides</h3>{book.grindsNote && <p className="skate-book__how">{book.grindsNote}</p>}<ul className="skate-book__names">{book.grinds.map(g => <li key={g.id}><b>{g.name}</b>{g.detail && <small>{g.detail}</small>}</li>)}</ul></>}
         {book.grabs && book.grabs.length > 0 && <><h3>Grabs</h3><ul className="skate-book__names">{book.grabs.map(g => <li key={g.id}><b>{g.name}</b>{g.detail && <small>{g.detail}</small>}</li>)}</ul></>}
       </>}
       {p.tab === 'decks' && <>

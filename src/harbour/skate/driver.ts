@@ -98,21 +98,21 @@ export function skateHints(mode:SkateSettings['controls']):ControlHintSet {
   return {
     keyboard:{
       ride:[hint('push','Push',key('W')),hint('carve','Carve',key('A'),key('D')),...pop,hint('manual','Manual',key('M')),hint('slide','Powerslide',key('C'))],
-      air:[hint('grab','Grab',key('Q'),key('E')),hint('spin','Spin',key('A'),key('D')),hint('grind','Lock onto a rail',key('G')),hint('revert','Revert',key('X'))],
+      air:[hint('grab','Grab',key('Q'),key('E')),hint('spin','Spin',key('A'),key('D')),hint('grind-pick','Rail ahead: W A S D as you land on it picks the grind',key('W'),key('A'),key('S'),key('D')),hint('grind','Lock onto a rail',key('G')),hint('revert','Revert',key('X'))],
       grind:[hint('balance','Balance',key('A'),key('D')),hint('out','Pop out',key('↓'),key('↑'))],
       manual:[hint('balance','Balance',key('W'),key('S')),hint('out','Pop out',key('↓'),key('↑'))],
       bail:[hint('reset','Back to your marker',key('R'))],
     },
     pointer:{
       ride:[hint('push','Push',key('W')),hint('carve','Carve',key('A'),key('D')),hint('pop','Hold and drag down, flick up',{kind:'mouse',motion:'flick'}),hint('flip','Flick to a corner: flip',{kind:'mouse',motion:'drag'})],
-      air:[hint('grab','Right button: grab',{kind:'mouse',motion:'click'}),hint('spin','Spin',key('A'),key('D'))],
+      air:[hint('grab','Right button: grab',{kind:'mouse',motion:'click'}),hint('spin','Spin',key('A'),key('D')),hint('grind-pick','Rail ahead: W A S D as you land on it picks the grind',key('W'),key('A'),key('S'),key('D'))],
       grind:[hint('balance','Balance',key('A'),key('D')),hint('out','Pop out',{kind:'mouse',motion:'flick'})],
       manual:[hint('balance','Balance',key('W'),key('S'))],
       bail:[hint('reset','Back to your marker',key('R'))],
     },
     gamepad:{
       ride:[hint('push','Push',{kind:'pad',button:'south'}),hint('carve','Carve',{kind:'stick',side:'left',motion:'side'}),hint('pop','Pop',{kind:'stick',side:'right',motion:'down-up'}),hint('flip','Flip',{kind:'stick',side:'right',motion:'down-side'})],
-      air:[hint('grab','Grab',{kind:'pad',button:'lb'},{kind:'pad',button:'rb'}),hint('spin','Spin',{kind:'stick',side:'left',motion:'side'}),hint('grind','Lock on',{kind:'pad',button:'rt'})],
+      air:[hint('grab','Grab',{kind:'pad',button:'lb'},{kind:'pad',button:'rb'}),hint('spin','Spin',{kind:'stick',side:'left',motion:'side'}),hint('grind-pick','Rail ahead: the left stick as you land on it picks the grind',{kind:'stick',side:'left',motion:'any'}),hint('grind','Lock on',{kind:'pad',button:'rt'})],
       grind:[hint('balance','Balance',{kind:'stick',side:'left',motion:'side'}),hint('out','Pop out',{kind:'stick',side:'right',motion:'down-up'})],
       manual:[hint('balance','Balance',{kind:'stick',side:'left',motion:'any'})],
       bail:[hint('reset','Back to your marker',{kind:'pad',button:'north'})],
@@ -125,9 +125,32 @@ export function skateGesturePath(flipId:string,stance:Stance):string|null {
   if(!pts.length)return null;
   return pts.map((p,i)=>`${i?'L':'M'}${(p.x*.8).toFixed(3)} ${(-p.y*.8).toFixed(3)}`).join(' ');
 }
+/**
+ * How a person picks each grind (TRICKS input/NOTES-tricks.md "Grinds", the feel pass): the board's angle at
+ * contact picks the family (along the line = a truck grind, swung across = a slide) and the left stick at contact
+ * picks the grind in it. "Toward" = toward the rail or ledge, "forward/back" = the nose/tail end (W/S on keys).
+ */
+export const SKATE_GRIND_HOW:Readonly<Record<string,string>>=Object.freeze({
+  '50-50':'Along the rail, stick centred.',
+  '5-0':'Along the rail, stick back (S).',
+  'nosegrind':'Along the rail, stick forward (W).',
+  'feeble':'Along the rail, stick toward it.',
+  'smith':'Along the rail, stick away from it.',
+  'overcrook':'Along the rail, stick toward it and forward.',
+  'salad':'Along the rail, stick toward it and back.',
+  'crooked':'Along the rail, stick away and forward.',
+  'suski':'Along the rail, stick away and back.',
+  'boardslide':'Across: hold toward it through contact (front end over).',
+  'lipslide':'Across: hold away through contact (tail over).',
+  'noseslide':'Across, stick forward at contact.',
+  'tailslide':'Across, stick back at contact.',
+  'noseblunt':'Across, stick toward it and forward: push it over.',
+  'bluntslide':'Across, stick toward it and back: push it over.',
+});
 export const SKATE_TRICK_BOOK:TrickBook={
   flips:[{id:'ollie',name:'Ollie',points:60},...[...SKATE_FLIPS.values()].map(f=>({id:f.id,name:f.name,points:f.points}))],
-  grinds:[...SKATE_GRINDS.values()].map(g=>({id:g.id,name:g.name,points:g.points})),
+  grinds:[...SKATE_GRINDS.values()].map(g=>({id:g.id,name:g.name,points:g.points,...(SKATE_GRIND_HOW[g.id]?{detail:SKATE_GRIND_HOW[g.id]}:{})})),
+  grindsNote:'Pick a grind with the left stick (W A S D on keys) as you touch the rail. Board along the rail: a grind. Swing it across in the air (hold the side key about a quarter second): a slide.',
   grabs:[...SKATE_GRABS.values()].map(g=>({id:g.id,name:g.name,points:g.points})),
 };
 

@@ -11,7 +11,7 @@ import {createSkateSession,decodeSkateProgress,freshSkateProgress,observeSkate,s
 import {ISLAND_BUILDINGS,isClear,courtObstacles} from '../src/harbour/body/obstacles.ts';
 import {plantPlan} from '../src/harbour/scene/planting.ts';
 import {pathSegmentClear} from '../src/harbour/body/pathfinder.ts';
-import {createSkateDriver,skateAct,skateField,skateGesturePath,SKATE_TRICK_BOOK} from '../src/harbour/skate/driver.ts';
+import {createSkateDriver,skateAct,skateField,skateGesturePath,skateHints,SKATE_TRICK_BOOK} from '../src/harbour/skate/driver.ts';
 import {blankPresent} from '../src/harbour/skate/look/legacy.ts';
 import {groundHeightAt} from '../src/harbour/scene/ground.ts';
 import type {SkatePresent} from '../src/harbour/skate/contract.ts';
@@ -101,6 +101,16 @@ describe('skate v2 driver · riding',()=>{
     expect(m.hints.map(h=>h.id)).toContain('manual');
     expect(skateGesturePath('kickflip','regular')).toMatch(/^M/);
     expect(SKATE_TRICK_BOOK.grinds!.length).toBe(15);
+  });
+  it('teaches grind picking: every grind in the book says how, and the air hints say the stick picks it (every device)',()=>{
+    for(const g of SKATE_TRICK_BOOK.grinds!)expect(g.detail,`${g.id}`).toMatch(/stick|hold/i);
+    expect(SKATE_TRICK_BOOK.grindsNote).toMatch(/left stick/);
+    for(const mode of ['flick','easy'] as const){
+      const h=skateHints(mode);
+      for(const dev of ['keyboard','pointer','gamepad'] as const)expect(h[dev]!.air!.map(x=>x.id),`${mode} ${dev}`).toContain('grind-pick');
+    }
+    // The keys named in the hint are the ones the grind picker reads (W/S nose/tail, A/D toward/away).
+    expect(skateHints('flick').keyboard!.air!.find(x=>x.id==='grind-pick')!.glyphs.map(g=>g.kind==='key'?g.label:'')).toEqual(['W','A','S','D']);
   });
   it('uses one park field for the ride and for the walk',()=>{
     expect(skateField()).toBe(skateField());
