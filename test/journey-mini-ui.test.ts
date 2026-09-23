@@ -39,7 +39,8 @@ const TODAY = "2026-09-15";
 let host: HTMLDivElement, root: Root;
 let api: JourneyFocusApi;
 let opened = 0;
-beforeEach(() => { Object.assign(renderer, { mode: "throw", created: 0, worlds: [], options: [], pickId: null }); opened = 0; host = document.createElement("div"); document.body.append(host); root = createRoot(host); });
+let harbour: unknown[] = [];
+beforeEach(() => { Object.assign(renderer, { mode: "throw", created: 0, worlds: [], options: [], pickId: null }); opened = 0; harbour = []; host = document.createElement("div"); document.body.append(host); root = createRoot(host); });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); });
 
 function task(patch: Partial<TaskInput["task"]>): TaskInput["task"] {
@@ -110,7 +111,7 @@ describe("JourneyMini — the journey's simple view", () => {
     expect(api.focus).toMatchObject({ level: "week", source: "mini" });
     expect($(".journey-mini__sub").textContent).toContain("Week of Sep 13–19");
     await click(button("Month"));
-    expect($("h2").textContent).toBe("September · Make Rent Boring");
+    expect($("h2").textContent).toBe("September"); // The still-open Chapter belongs to July.
     expect(visibleLabels().find((b) => b.dataset.place === "chapter")?.textContent).toContain("September 2026");
     await click(button("Zoom out"));
     expect(pressed()).toBe("Era");
@@ -128,6 +129,21 @@ describe("JourneyMini — the journey's simple view", () => {
     await key(stage, "h");
     expect(pressed()).toBe("Day");
     expect(api.focus).toMatchObject({ level: "day", date: TODAY, selected: null });
+  });
+
+  it("marks the current Chapter and only enters Harbour after an intentional extra closest zoom", async () => {
+    await mount({ onEnterHarbour: (anchor: unknown) => harbour.push(anchor) });
+    await act(async () => api.set({ level: "month", date: "2026-07-15" }, "world"));
+    await settle(150);
+    expect($("h2").textContent).toBe("July · Make Rent Boring");
+    expect(visibleLabels().find((b) => b.textContent?.includes("Little Harbour"))?.textContent).toContain("current household chapter");
+    await click(button("Day"));
+    await click(button("Enter Harbour by zooming in"));
+    expect(harbour).toEqual([expect.objectContaining({ month: "2026-07", source: "open-chapter" })]);
+    await act(async () => api.set({ date: "2026-10-01" }, "world"));
+    await settle(150);
+    expect(button("Zoom in").disabled).toBe(true);
+    expect(harbour).toHaveLength(1);
   });
 
   it("slides through time with the arrows and the scrubber, and says where it is", async () => {

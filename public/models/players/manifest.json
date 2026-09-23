@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "generatedBy": "scripts/harbour/build-playable-characters.mjs",
+  "characters": [
+    {
+      "avatar": "bianca",
+      "source": {
+        "archive": "Woman_Cap_06_Complete.zip",
+        "path": "Woman_Cap_06/Woman_Cap_06.glb",
+        "sha256": "7c79410eeea65a27b55346b0914a7e97392117ec49bc5ec08cddf046371bb94e",
+        "bytes": 9915932
+      },
+      "authoredSurface": "face, hair/headwear, and torso only; static crossed legs and pocket arms replaced by the procedural playable biped",
+      "sourceFullBounds": {
+        "min": [
+          -0.26401659846305847,
+          0,
+          -0.21413737535476685
+        ],
+        "max": [
+          0.26809465885162354,
+          1.7362035512924194,
+          0.23273426294326782
+        ]
+      },
+      "url": "/models/players/bianca.v1.glb",
+      "gz": "/models/players/bianca.v1.glb.gz",
+      "bytes": 143220,
+      "gzBytes": 109531,
+      "sha256": "9217914f8f6869f20bba6cb78fdabf2b0f02654863b73d3bca20644750bed64b",
+      "triangles": 7430,
+      "drawPrimitives": 1,
+      "retainedNodes": 48
+    },
+    {
+      "avatar": "jonathan",
+      "source": {
+        "archive": "Man_Surface_05_Complete.zip",
+        "path": "Man_Surface_05/Man_Surface_05.glb",
+        "sha256": "ef639ebc34f93c03eff3140efe2b61b6334b14311b9a841e89064ace483e41b1",
+        "bytes": 4132160
+      },
+      "authoredSurface": "face, hair/headwear, and torso only; static crossed legs and pocket arms replaced by the procedural playable biped",
+      "sourceFullBounds": {
+        "min": [
+          -0.26456907391548157,
+          0,
+          -0.1791873723268509
+        ],
+        "max": [
+          0.29409822821617126,
+          1.8975625038146973,
+          0.36035895347595215
+        ]
+      },
+      "url": "/models/players/jonathan.v1.glb",
+      "gz": "/models/players/jonathan.v1.glb.gz",
+      "bytes": 162968,
+      "gzBytes": 120496,
+      "sha256": "20c9a22b0ee3bf5b5354bdbb98a479c6c64496d4be0e9f63ee32e5ba5ce5027f",
+      "triangles": 9168,
+      "drawPrimitives": 1,
+      "retainedNodes": 31
+    }
+  ]
+}

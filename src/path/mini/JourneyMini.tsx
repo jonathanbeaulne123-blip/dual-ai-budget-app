@@ -4,6 +4,7 @@ import type { Household, LedgerView } from "../../core/types.ts";
 import { useAppearance } from "../../theme/ThemeProvider.tsx";
 import type { ThemeId } from "../../theme/scenes.ts";
 import { JOURNEY_LEVELS, JOURNEY_LEVEL_LABEL, type JourneyFocusApi, type JourneyLevel } from "../journeyFocus.ts";
+import { entersHarbourFromJourneyZoom, harbourJourneyAnchor, type HarbourJourneyAnchor } from "../harbourJourney.ts";
 import { flatLayout } from "./MiniFlat.tsx";
 import { useMiniJourneyLoad } from "./miniJourneyLoader.ts";
 import {
@@ -38,6 +39,8 @@ export type JourneyMiniProps = {
   today: DateKey;
   focus: JourneyFocusApi;
   onOpenWorld: () => void;
+  /** Intentional closest-zoom doorway for the current household Chapter only. */
+  onEnterHarbour?: (anchor: HarbourJourneyAnchor) => void;
   /** A small corner minimap (inside game mode): no card chrome, tiny scale, still interactive. */
   compact?: boolean;
   /** Proof pages only; the app follows the signed-in person's appearance. */
@@ -116,6 +119,7 @@ function skeletonMonth(head: MiniMonthSummary, today: DateKey): MiniMonth {
 
 export function JourneyMini(props: JourneyMiniProps) {
   const { household, memberId, today, focus, onOpenWorld, compact = false, view = "household" } = props;
+  const harbourAnchor = useMemo(() => harbourJourneyAnchor(household, today), [household, today]);
   const appearance = useAppearance();
   const theme: ThemeId = props.theme ?? appearance.scene.theme;
   const [reduced] = useState(readReduced);
@@ -174,6 +178,11 @@ export function JourneyMini(props: JourneyMiniProps) {
     setDateState(next);
     if (!opts.silent) share({ date: next });
   }, [share]);
+  const enterHarbour = useCallback((direction = -1): boolean => {
+    if (compact || !props.onEnterHarbour || !entersHarbourFromJourneyZoom(levelRef.current, direction, harbourAnchor, dateRef.current)) return false;
+    props.onEnterHarbour(harbourAnchor);
+    return true;
+  }, [compact, props.onEnterHarbour, harbourAnchor]);
 
   // The world (or the page) moved: follow it.
   useEffect(() => {
@@ -204,6 +213,7 @@ export function JourneyMini(props: JourneyMiniProps) {
     const weeks = m.weeks.map((w) => ({ ...w, tasks: days.filter((d) => d.date >= w.start && d.date <= w.end).reduce((n, d) => n + d.items.filter((i) => i.kind === "task").length, 0) }));
     return { ...m, days, weeks, tasks: m.tasks - hidden };
   }, [cachedMonth, skeleton, privateShown]);
+  const canEnterHarbour = !compact && Boolean(props.onEnterHarbour) && month.key === harbourAnchor.month;
   const monthLoading = Boolean(journey && !cachedMonth);
   const requestMonth = load.request;
   useEffect(() => {
@@ -608,11 +618,20 @@ export function JourneyMini(props: JourneyMiniProps) {
     if (now - lastStep.current < 220) return;
     lastStep.current = now;
     if (snapTimer.current) clearTimeout(snapTimer.current);
+    if (enterHarbour(dir)) return;
     const next = Math.max(0, Math.min(4, levelRef.current + Math.sign(dir)));
     zTarget.current = next;
     if (next !== levelRef.current) { setLevel(next); setCard(null); }
-  }, [setLevel]);
+  }, [setLevel, enterHarbour]);
+  const harbourZoom = useRef(0);
   const zoomBy = useCallback((delta: number) => {
+    if (levelRef.current === 0 && delta < 0) {
+      harbourZoom.current += -delta;
+      // Trackpad/pinch only crosses the door after a deliberate continuation beyond Day.
+      if (harbourZoom.current >= 0.42) { harbourZoom.current = 0; enterHarbour(-1); }
+      return;
+    }
+    harbourZoom.current = 0;
     if (flat || listOpen) {
       zTarget.current += delta;
       if (Math.abs(zTarget.current - levelRef.current) < 0.3) return;
@@ -623,7 +642,7 @@ export function JourneyMini(props: JourneyMiniProps) {
     zTarget.current = Math.max(0, Math.min(4, zTarget.current + delta));
     world.current?.nudge({ z: zTarget.current });
     scheduleSnap();
-  }, [flat, listOpen, stepLevel, scheduleSnap]);
+  }, [flat, listOpen, stepLevel, scheduleSnap, enterHarbour]);
   const settleRef = useRef((_z: number, _day: number) => {});
   settleRef.current = () => { /* snapping is timer-driven; nothing else to do */ };
 
@@ -731,7 +750,7 @@ export function JourneyMini(props: JourneyMiniProps) {
     if (target.closest("input, .journey-mini__list") && event.key !== "Escape") return;
     const onStage = target === stage.current;
     let used = true;
-    if (event.key === "+" || event.key === "=" || (event.key === "ArrowUp" && onStage)) { setLevel(levelRef.current - 1); setCard(null); }
+    if (event.key === "+" || event.key === "=" || (event.key === "ArrowUp" && onStage)) { if (!enterHarbour(-1)) { setLevel(levelRef.current - 1); setCard(null); } }
     else if (event.key === "-" || event.key === "_" || (event.key === "ArrowDown" && onStage)) { setLevel(levelRef.current + 1); setCard(null); }
     else if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && (onStage || target.closest(".journey-mini__labels"))) step(event.key === "ArrowLeft" ? -1 : 1);
     else if ((event.key === "h" || event.key === "H" || event.key === "Home") && !target.closest("input")) toToday();
@@ -808,6 +827,11 @@ export function JourneyMini(props: JourneyMiniProps) {
         {month.fundReady && <span><span className="is-in">In {miniCad(month.inCents)}</span> · <span className="is-bill">bills {miniCad(-month.billCents)}</span></span>}
         <span className={`journey-mini__status journey-mini__status--${month.status}`}>{monthWords(month)}</span></>,
     });
+    if (month.key === harbourAnchor.month) out.push({
+      id: "harbour-anchor", anchor: "chapter", pick: "chapter", levels: [2], priority: 0.9, className: "journey-mini__tag journey-mini__tag--today",
+      aria: `Little Harbour, current household Chapter${harbourAnchor.chapterId ? ". Zoom in once more or use Enter Harbour." : ". This month's map anchor."}`,
+      content: <><b>Little Harbour</b><span>current household chapter</span></>,
+    });
     out.push({
       id: "gate", anchor: "gate", pick: "gate", levels: [0, 2], priority: 2.5, className: "journey-mini__tag", near: { day: month.days.length + 0.5, within: 2.6 },
       aria: `Sitdown gate, ${month.label}`,
@@ -848,7 +872,7 @@ export function JourneyMini(props: JourneyMiniProps) {
       });
     });
     return out;
-  }, [journey, month, fund, fundPending, focusEra, eras, currentEraIndex, viewDay, compact]);
+  }, [journey, month, fund, fundPending, focusEra, eras, currentEraIndex, viewDay, compact, harbourAnchor]);
   labelDefs.current = labels;
   useEffect(() => { world.current?.refresh(); }, [labels, live]);
 
@@ -943,7 +967,7 @@ export function JourneyMini(props: JourneyMiniProps) {
 
   const zoomScale = (
     <div className={`journey-mini__scale${compact ? " is-compact" : ""}`} role="group" aria-label="Zoom level">
-      <button type="button" className="journey-mini__zoom" aria-label="Zoom in" disabled={level === 0} onClick={() => { setLevel(level - 1); setCard(null); }}>+</button>
+      <button type="button" className="journey-mini__zoom" aria-label={level === 0 && canEnterHarbour ? "Enter Harbour by zooming in" : "Zoom in"} disabled={level === 0 && !canEnterHarbour} onClick={() => { if (!enterHarbour(-1)) { setLevel(level - 1); setCard(null); } }}>+</button>
       <div className="journey-mini__levels">
         {JOURNEY_LEVELS.map((lv, i) => (
           <button key={lv} type="button" aria-pressed={level === i} aria-label={compact ? JOURNEY_LEVEL_LABEL[lv] : undefined} onClick={() => { setLevel(i); setCard(null); }}>
@@ -1022,6 +1046,9 @@ export function JourneyMini(props: JourneyMiniProps) {
             aria-label={`Move through time, one ${levelName.toLowerCase()} at a time`} aria-valuetext={scrub.text}
             onChange={(e) => onScrub(Number(e.currentTarget.value))} />
         </label>
+        {canEnterHarbour && <button type="button" className="journey-mini__open" onClick={() => props.onEnterHarbour?.(harbourAnchor)}>
+          <span aria-hidden="true" className="journey-mini__open-icon" />Enter Harbour
+        </button>}
         <button type="button" className="journey-mini__open" onClick={() => { share({ level, date: focusDate }); onOpenWorld(); }}>
           <span aria-hidden="true" className="journey-mini__open-icon" />Open the world
         </button>

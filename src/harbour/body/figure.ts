@@ -34,6 +34,13 @@ export type FigureColours = {
   hair: string;
 };
 
+/** Neutral joint positions measured from an authored playable surface. */
+export type FigureAnatomy = {
+  shoulderX: number; shoulderY: number; sleeveRadius: number; sleeveLength: number;
+  hipX: number; hipY: number; legRadius: number; legLength: number;
+  waist?: { centre: readonly [number, number, number]; size: readonly [number, number, number] };
+};
+
 /** The house's own body, in the Court's palette. A second body passes its own. */
 export const DEFAULT_FIGURE_COLOURS: Readonly<FigureColours> = Object.freeze({
   coat: "#5d7f8e", skin: "#e8c39b", trouser: "#4a4a52", shoe: "#2f2b2c", hair: "#43332a",
@@ -75,6 +82,9 @@ export type BodyMotion = {
 
 export const AT_REST: Readonly<BodyMotion> = Object.freeze({ lean: 0, bank: 0, run: 0 });
 
+/** The authored biped coordinate system; the group is scaled to world height. */
+export const FIGURE_RIG_HEIGHT = 0.58;
+
 export type BodyFigure = {
   /** The whole body. Its position is the feet on the ground; its `rotation.y` is the facing. */
   group: THREE.Group;
@@ -115,7 +125,7 @@ const CROUCH_DIP = 0.072, CROUCH_SQUASH = 0.2;
 /** How low a slide rides, how far back it leans, and how wide the arms go for balance. */
 const SLIDE_DIP = 0.15, SLIDE_LEAN = 0.34, SLIDE_ARMS = 0.85;
 
-export function createBodyFigure(colours: Partial<FigureColours> = {}): BodyFigure {
+export function createBodyFigure(colours: Partial<FigureColours> = {}, anatomy?: FigureAnatomy): BodyFigure {
   const palette: FigureColours = { ...DEFAULT_FIGURE_COLOURS, ...colours };
   const disposables: { dispose(): void }[] = [];
   const track = <T extends { dispose(): void }>(item: T): T => { disposables.push(item); return item; };
@@ -130,36 +140,45 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}): BodyFigu
 
   const group = new THREE.Group();
   group.name = "body";
+  // Keep every existing gait/emote authored in its compact model-space units.
+  // The root remains at the feet, while world scale follows BODY_HEIGHT.
+  group.scale.setScalar(BODY_HEIGHT / FIGURE_RIG_HEIGHT);
   // Everything below the root so the root's position stays the feet on the
   // ground: the bob, the roll and the lean move the body, not its footing.
   const carriage = new THREE.Group();
   carriage.name = "body-carriage";
   group.add(carriage);
 
-  const torsoGeometry = track(new THREE.CapsuleGeometry(0.082, 0.12, 4, 10));
+  const torsoGeometry = track(new THREE.CapsuleGeometry(anatomy ? .048 : .082, anatomy ? anatomy.shoulderY - anatomy.hipY - .096 : .12, 4, 10));
   const torso = new THREE.Mesh(torsoGeometry, coatMaterial);
   torso.name = "body-torso";
-  torso.position.y = 0.30;
+  torso.position.y = anatomy ? (anatomy.shoulderY + anatomy.hipY) / 2 : .30;
   torso.castShadow = true;
   carriage.add(torso);
 
-  const headGeometry = track(new THREE.SphereGeometry(0.068, 14, 10));
+  const headY = anatomy ? .511 : .494;
+  const headGeometry = track(new THREE.SphereGeometry(anatomy ? .056 : .068, 14, 10));
   const head = new THREE.Mesh(headGeometry, skinMaterial);
   head.name = "body-head";
-  head.position.y = 0.494;
+  head.position.y = headY;
   head.castShadow = true;
   carriage.add(head);
   // A cap of hair, so the head has a front and the facing reads from behind.
-  const hairGeometry = track(new THREE.SphereGeometry(0.0715, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.62));
+  const hairGeometry = track(new THREE.SphereGeometry(anatomy ? .059 : .0715, 14, 10, 0, Math.PI * 2, 0, Math.PI * 0.62));
   const hair = new THREE.Mesh(hairGeometry, hairMaterial);
-  hair.position.y = 0.494;
+  hair.name = "body-hair";
+  hair.position.y = headY;
   hair.rotation.x = -0.22;
   carriage.add(hair);
 
-  const legGeometry = track(new THREE.CapsuleGeometry(0.042, 0.145, 4, 8));
-  const shoeGeometry = track(new THREE.BoxGeometry(0.072, 0.034, 0.108));
-  const armGeometry = track(new THREE.CapsuleGeometry(0.031, 0.118, 4, 8));
-  const handGeometry = track(new THREE.SphereGeometry(0.034, 10, 8));
+  const legRadius = anatomy?.legRadius ?? .042, legLength = anatomy?.legLength ?? .145;
+  const sleeveRadius = anatomy?.sleeveRadius ?? .031, sleeveLength = anatomy?.sleeveLength ?? .118;
+  const legHeight = legLength + legRadius * 2, sleeveHeight = sleeveLength + sleeveRadius * 2;
+  const legGeometry = track(new THREE.CapsuleGeometry(legRadius, legLength, 4, 8));
+  const pelvisGeometry = track(anatomy?.waist ? new THREE.BoxGeometry(...anatomy.waist.size) : new THREE.CapsuleGeometry(.061, .052, 4, 8));
+  const shoeGeometry = track(new THREE.BoxGeometry(anatomy ? .064 : .072, .034, anatomy ? .094 : .108));
+  const armGeometry = track(new THREE.CapsuleGeometry(sleeveRadius, sleeveLength, 4, 8));
+  const handGeometry = track(new THREE.SphereGeometry(anatomy ? .027 : .034, 10, 8));
 
   /** Hips and shoulders are pivots: the limb hangs below them and swings about x. */
   const legs: THREE.Group[] = [];
@@ -167,28 +186,37 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}): BodyFigu
   for (const side of [-1, 1] as const) {
     const hip = new THREE.Group();
     hip.name = side < 0 ? "body-leg-left" : "body-leg-right";
-    hip.position.set(side * 0.048, 0.235, 0);
+    hip.position.set(side * (anatomy?.hipX ?? .048), anatomy?.hipY ?? .235, 0);
     const leg = new THREE.Mesh(legGeometry, trouserMaterial);
-    leg.position.y = -0.1145;
+    leg.position.y = -legHeight / 2;
     leg.castShadow = true;
     const shoe = new THREE.Mesh(shoeGeometry, shoeMaterial);
-    shoe.position.set(0, -0.212, 0.018);
+    shoe.position.set(0, anatomy ? -anatomy.hipY + .017 : -.212, .018);
     hip.add(leg, shoe);
     carriage.add(hip);
     legs.push(hip);
 
     const shoulder = new THREE.Group();
     shoulder.name = side < 0 ? "body-arm-left" : "body-arm-right";
-    shoulder.position.set(side * 0.092, 0.402, 0);
+    shoulder.position.set(side * (anatomy?.shoulderX ?? .092), anatomy?.shoulderY ?? .402, 0);
     const arm = new THREE.Mesh(armGeometry, coatMaterial);
-    arm.position.y = -0.09;
+    arm.position.y = -sleeveHeight / 2;
     const hand = new THREE.Mesh(handGeometry, skinMaterial);
-    hand.position.y = -0.172;
+    hand.position.y = anatomy ? -sleeveHeight : -.172;
     shoulder.add(arm, hand);
     shoulder.rotation.z = side * 0.09;
     carriage.add(shoulder);
     arms.push(shoulder);
   }
+
+  // The generic biped needs a bridge. Authored garments supply their own
+  // measured waist, or conceal the joint beneath a long coat.
+  const pelvis = new THREE.Mesh(pelvisGeometry, trouserMaterial);
+  pelvis.name = "body-pelvis";
+  pelvis.position.set(...(anatomy?.waist?.centre ?? [0, .258, 0] as const));
+  pelvis.visible = !anatomy || Boolean(anatomy.waist);
+  pelvis.castShadow = true;
+  carriage.add(pelvis);
 
   const [leftLeg, rightLeg] = legs as [THREE.Group, THREE.Group];
   const [leftArm, rightArm] = arms as [THREE.Group, THREE.Group];
@@ -364,7 +392,7 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}): BodyFigu
       // chest does, so a resting body does not nod.
       const breath = (1 - g) * Math.sin(t * 1.5) * 0.012;
       torso.scale.set(1 + breath * 0.5, 1 + breath, 1 + breath * 0.5);
-      head.position.y = 0.494 + breath * 0.06;
+      head.position.y = headY + breath * .06;
       hair.position.y = head.position.y;
     },
     setColours(next) {

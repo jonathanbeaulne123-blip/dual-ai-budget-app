@@ -1,4 +1,5 @@
 import { addDays, daysInMonthKey, monthKeyFromDateKey, shiftMonthKey, weekdaySunday0, type DateKey } from "../../core/calendar.ts";
+import { chapterMonth } from "../../core/chapters.ts";
 import { clientFundModelVersion } from "../../ledgerSync/fundModelStamp.ts";
 import { fundModelMode } from "../../core/fundRules.ts";
 import { divisionFor } from "../../core/fundModel.ts";
@@ -239,7 +240,7 @@ type Context = {
 
 function chapterFor(household: Household, key: string): MiniChapter | null {
   const rows = (household.chapters ?? [])
-    .filter((row) => row.openedAt.slice(0, 7) <= key && (!row.closedAt || row.closedAt.slice(0, 7) >= key))
+    .filter((row) => chapterMonth(row) === key)
     .sort((a, b) => b.openedAt.localeCompare(a.openedAt));
   const row = rows[0];
   return row ? { id: row.id, title: row.title, state: row.state } : null;
@@ -251,12 +252,14 @@ function summary(ctx: Context, key: string): MiniMonthSummary {
   const sitdown = pathSitdownFor(ctx.household, key, key, ctx.today);
   const booksClosed = Boolean(ctx.land[key]?.closed);
   const current = key === ctx.nowMonth;
-  const status: MiniMonthStatus = key > ctx.nowMonth ? "ahead" : !current && (sitdown === "closed" || booksClosed) ? "closed" : "open";
+  const chapter = chapterFor(ctx.household, key);
+  // A late Sitdown never moves a Chapter into another month or closes it automatically.
+  const status: MiniMonthStatus = key > ctx.nowMonth ? "ahead" : chapter?.state === "open" ? "open" : !current && (sitdown === "closed" || booksClosed) ? "closed" : "open";
   return {
     key, label: miniMonthLabel(key), shortLabel: miniMonthLabel(key, false), worldIndex,
     // The world's main island draws its months as `month:<index>`; another era's month is found on that era's island.
     worldId: worldIndex !== null ? `month:${worldIndex}` : era ? (era.id === ctx.currentEraId ? "era-home" : `era:${era.id}`) : null,
-    eraId: era?.id ?? null, lap: era?.lap ?? 0, status, sitdown, booksClosed, current, chapter: chapterFor(ctx.household, key),
+    eraId: era?.id ?? null, lap: era?.lap ?? 0, status, sitdown, booksClosed, current, chapter,
   };
 }
 

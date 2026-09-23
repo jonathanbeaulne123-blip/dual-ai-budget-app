@@ -139,7 +139,8 @@ function obstacleCorners(obstacle: Obstacle): PathPoint[] {
   const r = BODY_RADIUS + PATH_CLEARANCE + CORNER_NUDGE;
   if (obstacle.kind === "circle") return Array.from({ length: 8 }, (_, index) => {
     const angle = index * Math.PI / 4;
-    return { x: obstacle.x + Math.cos(angle) * (obstacle.r + r), z: obstacle.z + Math.sin(angle) * (obstacle.r + r) };
+    const orbit=(obstacle.r+BODY_RADIUS+PATH_CLEARANCE)/Math.cos(Math.PI/8)+CORNER_NUDGE;
+    return { x: obstacle.x + Math.cos(angle) * orbit, z: obstacle.z + Math.sin(angle) * orbit };
   });
   const halfX = (obstacle.kind === "box" ? (obstacle.maxX - obstacle.minX) / 2 : obstacle.halfX) + r;
   const halfZ = (obstacle.kind === "box" ? (obstacle.maxZ - obstacle.minZ) / 2 : obstacle.halfZ) + r;
@@ -161,7 +162,17 @@ export function findPath(from: PathPoint, destination: PathPoint, worldState: Pa
 
   const roomOnly = Boolean(worldState.room && inRoom(start, worldState.room) && inRoom(target, worldState.room));
   const nodes: PathPoint[] = [start, target];
-  for (const obstacle of worldState.obstacles) {
+  // Spend the bounded graph on this journey's corridor, not on whichever
+  // distant building happened to appear first in the island registry.
+  const dx=target.x-start.x,dz=target.z-start.z,length2=dx*dx+dz*dz;
+  const priority=(obstacle:Obstacle)=>{
+    const x=obstacle.kind==='box'?(obstacle.minX+obstacle.maxX)/2:obstacle.x;
+    const z=obstacle.kind==='box'?(obstacle.minZ+obstacle.maxZ)/2:obstacle.z;
+    const radius=obstacle.kind==='circle'?obstacle.r:obstacle.kind==='box'?Math.hypot(obstacle.maxX-obstacle.minX,obstacle.maxZ-obstacle.minZ)/2:Math.hypot(obstacle.halfX,obstacle.halfZ);
+    const t=length2?Math.max(0,Math.min(1,((x-start.x)*dx+(z-start.z)*dz)/length2)):0;
+    return Math.max(0,Math.hypot(x-start.x-dx*t,z-start.z-dz*t)-radius)+Math.hypot(x-start.x,z-start.z)*.002;
+  };
+  for (const obstacle of [...worldState.obstacles].sort((a,b)=>priority(a)-priority(b))) {
     for (const corner of obstacleCorners(obstacle)) addNode(nodes, corner, worldState, roomOnly);
     if (nodes.length >= PATH_MAX_NODES) break;
   }

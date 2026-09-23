@@ -242,11 +242,13 @@ describe("Both views say the same thing (D-284 + D-285)", () => {
     expect(grown.at(-1)!.current).toBe(true);
     expect(marks.get(`month:${grown.length - 1}`)).toMatch(/^We are here/);
 
-    // The Chapter: the same title, open on both sides.
-    const chapter = model.month.chapter!;
+    // The open Chapter can span an earlier intended month; it does not spread
+    // into every later month merely because its next Sitdown has not happened.
+    const chapterMonth = model.months.find((month) => month.chapter?.state === "open")!;
+    const chapter = chapterMonth.chapter!;
     const fire = [...marks].find(([id]) => id.startsWith("fire:"))!;
     expect(fire[1]).toMatch(new RegExp(`^${chapter.title}, this Chapter`));
-    expect(model.month.status).toBe("open");
+    expect(chapterMonth.status).toBe("open");
     expect(chapter.state).toBe("open");
 
     // The Fund's lanes: the world's caption shows the simple view's numbers, read by the same selector.

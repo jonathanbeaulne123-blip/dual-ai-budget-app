@@ -5,12 +5,16 @@ import {buildVillageBuilding,type VillageBuildingKind} from './architecture.ts';
 import {VILLAGE_SITES,VILLAGE_WATERFRONT} from './layout.ts';
 import {groundHeightAt} from '../scene/ground.ts';
 import {EngravedPlate} from '../court/engraved.ts';
+import {HARBOUR_LAND,HARBOUR_WANDERS} from './world.ts';
+import {buildHarbourLandscape} from './landscape.ts';
+import {buildHarbourLanes} from './lanes.ts';
 
 /** The square and its seven room-sized buildings share the runtime's island. */
 export const villageCourt = registerPlace({id:'court',build(scene,dressing,_reading,quality){
   const group=new THREE.Group();group.name='Little Harbour village';
   const owned:{dispose():void}[]=[], shells:ReturnType<typeof buildVillageBuilding>[]=[];
   const life=buildVillageLife(dressing,quality);group.add(life.group);
+  const landscape=buildHarbourLandscape(dressing);group.add(landscape.group);
   const anchors:Anchor[]=[],regions:Region[]=[];
   const stone=new THREE.MeshStandardMaterial({color:'#b7ac92',roughness:.95});
   const wood=new THREE.MeshStandardMaterial({color:dressing.timber,roughness:.87});
@@ -25,7 +29,6 @@ export const villageCourt = registerPlace({id:'court',build(scene,dressing,_read
   const water=add(new THREE.CircleGeometry(.78,32),waterMaterial,0,.21,0,'fountain-water');water.rotation.x=-Math.PI/2;
   add(new THREE.CylinderGeometry(.16,.24,.75,10),stone,0,.43,0,'fountain-stem');
   add(new THREE.SphereGeometry(.2,12,8),brass,0,.9,0,'fountain-finial');
-  const pavers:{x:number;y:number;z:number;yaw:number}[]=[];
   for(const [kind,site] of Object.entries(VILLAGE_SITES)){
     const placement=placementOf(site.entry)!;
     const shell=buildVillageBuilding(kind as VillageBuildingKind,dressing,quality);
@@ -38,29 +41,18 @@ export const villageCourt = registerPlace({id:'court',build(scene,dressing,_read
     const sign=new EngravedPlate({stone:'#f0e1c2',highlight:'#fff7df',ink:'#3e463e',size:'small',width:640,fit:true},2.3,.56);
     sign.mesh.name=`sign-${kind}`;sign.set(site.name);sign.mesh.position.set(doorstep[0],doorstep[1]+.85,doorstep[2]);sign.mesh.rotation.y=placement.yaw;sign.mesh.userData.anchor=`visit:${site.entry}`;group.add(sign.mesh);owned.push(sign);
     regions.push({id:`visit:${site.entry}`,group:'court',label:site.name,objects:[sign.mesh]});
-    const roadEnd=placementToWorld(placement,[site.door[0],0,site.door[1]+1.1]);
-    const distance=Math.hypot(roadEnd[0],roadEnd[2]);
-    for(let n=0;n<Math.ceil(distance/.65);n++){
-      const k=n/(Math.ceil(distance/.65));const x=roadEnd[0]*k,z=roadEnd[2]*k;
-      if(Math.hypot(x,z)<3.4)continue;
-      pavers.push({x,y:groundHeightAt(x,z)+.035,z,yaw:Math.atan2(roadEnd[0],roadEnd[2])});
-    }
   }
-  // All paths share one geometry/material draw while preserving the ground tag used by walking.
-  const paverGeometry=new THREE.BoxGeometry(1.35,.035,.57);owned.push(paverGeometry);
-  const lanes=new THREE.InstancedMesh(paverGeometry,stone,pavers.length);lanes.name='village-lanes';lanes.userData.ground=true;lanes.receiveShadow=true;
-  const paverMatrix=new THREE.Matrix4(),paverPosition=new THREE.Vector3(),paverRotation=new THREE.Quaternion(),paverScale=new THREE.Vector3(1,1,1);
-  pavers.forEach((paver,index)=>{paverPosition.set(paver.x,paver.y,paver.z);paverRotation.setFromEuler(new THREE.Euler(0,paver.yaw,0));lanes.setMatrixAt(index,paverMatrix.compose(paverPosition,paverRotation,paverScale));});lanes.instanceMatrix.needsUpdate=true;group.add(lanes);
+  const lanes=buildHarbourLanes(stone);owned.push(lanes.geometry);group.add(lanes);
   // Social spaces stay outdoors, with their existing destinations.
   const [shoreX,shoreZ]=VILLAGE_WATERFRONT.spot;
   const waterfront=new THREE.Group();waterfront.name='village-waterfront';group.add(waterfront);
   anchors.push({id:'visit:campfire',position:[shoreX,.5,shoreZ],zone:'landmark',label:'The Campfire. Walk to the waterfront.'});
   const camp=add(new THREE.TorusGeometry(.9,.12,6,20),stone,shoreX,groundHeightAt(shoreX,shoreZ)+.12,shoreZ,'outdoor-fire-ring');camp.rotation.x=Math.PI/2;camp.userData.anchor='visit:campfire';waterfront.add(camp);
-  for(const x of [-1.8,1.8]){const bench=add(new THREE.BoxGeometry(.48,.23,1.8),wood,shoreX+x,.33,shoreZ-.7,'waterfront-bench');bench.userData.anchor='visit:campfire';waterfront.add(bench);}
+  for(const x of [-1.8,1.8]){const bench=add(new THREE.BoxGeometry(.48,.23,1.8),wood,shoreX+x,groundHeightAt(shoreX+x,shoreZ-.7)+.33,shoreZ-.7,'waterfront-bench');bench.userData.anchor='visit:campfire';waterfront.add(bench);}
   regions.push({id:'visit:campfire',group:'court',label:'Waterfront campfire',objects:[camp]});
-  const poses:Record<string,Pose>={court:{target:[0,.7,0],r:43,theta:.28,phi:.65},'court:phone':{target:[0,.5,0],r:48,theta:.25,phi:.45},sky:{target:[0,0,0],r:37,theta:.1,phi:.36}};
+  const poses:Record<string,Pose>={court:{target:[.95,.85,5.1],r:9,theta:.15,phi:1.22},'court:phone':{target:[.95,.8,5.1],r:11,theta:.15,phi:1.17},sky:{target:[0,0,0],r:HARBOUR_LAND.overview,theta:.1,phi:.36}};
   group.updateMatrixWorld(true);scene.add(group);
   let disposed=false;
-  const handle:PlaceHandle & {play(id:string):string|null}={group,anchors:()=>[...anchors,...life.anchors()],regions:()=>[...regions,...life.regions()],poses:()=>poses,update(){},play:life.interact,animate(t,dt){life.animate(t,dt);for(const shell of shells)shell.animate(t,dt);water.scale.setScalar(1+Math.sin(t*1.8)*.018);return true;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();life.dispose();shells.forEach(s=>s.dispose());owned.forEach(x=>x.dispose());group.clear();}};
+  const handle:PlaceHandle & {play(id:string):string|null}={group,anchors:()=>[...anchors,...life.anchors(),...landscape.anchors],regions:()=>[...regions,...life.regions()],poses:()=>poses,update(){},play:id=>HARBOUR_WANDERS.find(w=>`wander:${w.id}`===id)?.words??life.interact(id),animate(t,dt){life.animate(t,dt);for(const shell of shells)shell.animate(t,dt);water.scale.setScalar(1+Math.sin(t*1.8)*.018);return true;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();life.dispose();landscape.dispose();shells.forEach(s=>s.dispose());owned.forEach(x=>x.dispose());group.clear();}};
   return handle;
 }});

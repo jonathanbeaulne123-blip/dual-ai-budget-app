@@ -53,7 +53,7 @@ export function buildCellarDetails(dressing: PlaceDressing, tier: RenderTier): C
     mesh(new THREE.TorusGeometry(.4, .025, 6, 12), brass, "cellar-barrel-hoop", [x, .28, z], [Math.PI / 2, 0, 0]);
     mesh(new THREE.TorusGeometry(.4, .025, 6, 12), brass, "cellar-barrel-hoop", [x, .49, z], [Math.PI / 2, 0, 0]);
   }
-  for (const [x, z, yaw] of [[-3.68, .96, .1], [3.72, -2.72, -.12]] as const) {
+  for (const [x, z, yaw] of [[-3.68, -2.72, .1], [3.72, -2.72, -.12]] as const) {
     mesh(new THREE.BoxGeometry(.78, .5, .7), timber, "cellar-side-crate", [x, .3, z], [0, yaw, 0]);
     mesh(new THREE.BoxGeometry(.1, .54, .74), brass, "cellar-crate-band", [x, .31, z], [0, yaw, 0]);
   }

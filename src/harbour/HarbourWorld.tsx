@@ -28,6 +28,9 @@ import type { QueenHost } from "./village/BankScene.ts";
 import { prepareVillageInterior, type VillageInterior } from './village/interior.ts';
 import { VILLAGE_ADDRESS, ROOM_PORTALS } from './village/layout.ts';
 import { VillageHUD } from './village/VillageHUD.tsx';
+import {HARBOUR_WANDERS,type HarbourWanderId} from './village/world.ts';
+import {avatarPreferenceKey,readAvatar,saveAvatar} from './body/avatarPreference.ts';
+import type {PlayableAvatar} from './body/avatarDefinition.ts';
 import { VillageDecorator, type VillageDecoratorCommit } from './village/VillageDecorator.tsx';
 import { villageRoomConfig, villageDisplaysEligible, type VillageRoom } from './village/villageArrangement.ts';
 import { decodeHearthside } from '../hearthside/contracts.ts';
@@ -64,6 +67,7 @@ export type HarbourWorldProps = {
   onArrange?: (operation:VillageDecoratorCommit)=>Promise<void>;
   onOpen: (target: string, object?: string) => void;
   onClose: () => void;
+  onJourney?:()=>void;
   presence?: SoftPresenceDisplay;
   /** Undo the coarse soft-presence opt-out, offered where a person learns of it. */
   onUnhide?: () => void;
@@ -171,6 +175,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const place: HarbourPlaceId = harbourPlaceFor(route, scope, true) ?? "court";
   const placeName = HARBOUR_PLACE_NAMES[place];
   const identity = { environment: household.environment, householdId: household.householdId, memberId, scope };
+  const avatarKey=avatarPreferenceKey(household.environment,household.householdId,memberId);
+  const [avatar,setAvatar]=useState<PlayableAvatar|null>(()=>readAvatar(localStorage,avatarKey));
+  const avatarRef=useRef(avatar);avatarRef.current=avatar;
+  useEffect(()=>{const selected=readAvatar(localStorage,avatarKey);setAvatar(selected);runtime.current?.setAvatar(selected);},[avatarKey]);
+  function chooseAvatar(next:PlayableAvatar){setAvatar(next);saveAvatar(localStorage,avatarKey,next);runtime.current?.setAvatar(next);}
   const routeRef = useRef(route); routeRef.current = route;
   const placeRef = useRef(place); placeRef.current = place;
   const identityRef = useRef(identity); identityRef.current = identity;
@@ -230,6 +239,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const onOpenRef = useRef(onOpen); onOpenRef.current = onOpen;
   const onNavigateRef = useRef(props.onNavigate); onNavigateRef.current = props.onNavigate;
   const onLocationRef=useRef(props.onNavigateLocation);onLocationRef.current=props.onNavigateLocation;
+  const onJourneyRef=useRef(props.onJourney);onJourneyRef.current=props.onJourney;
+  function openJourney(){window.dispatchEvent(new Event('hearth:house-return'));onJourneyRef.current?.();}
   function navigatePlace(next:HarbourPlaceId){
     const address=VILLAGE_ADDRESS[next];
     if(onLocationRef.current)onLocationRef.current({householdId:identityRef.current.householdId,scope:identityRef.current.scope,...address});
@@ -241,9 +252,17 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     if(!instant&&placeRef.current==='court'&&placement&&world?.body()){
       void loadPlace(next).then(()=>world.restream());
       const [x,,z]=placementToWorld(placement,[placement.door[0],0,placement.halfDepth-.6]);
-      world.body()?.goTo(x,z);setTravelTo(next);setPhrase(`Walking to ${HARBOUR_PLACE_NAMES[next]}.`);return;
+      if(world.body()?.goTo(x,z)){setTravelTo(next);setPhrase(`Walking to ${HARBOUR_PLACE_NAMES[next]}.`);}
+      else{setTravelTo(null);setPhrase('That path is blocked. Pick a spot nearby or use Quick travel.');}return;
     }
     navigatePlace(next);
+  }
+  function wanderTo(id:HarbourWanderId){
+    const destination=HARBOUR_WANDERS.find(w=>w.id===id);if(!destination)return;
+    if(placeRef.current!=='court'){navigatePlace('court');setPhrase('The countryside paths start in the village square.');return;}
+    setTravelTo(null);
+    if(runtime.current?.body()?.goTo(destination.at[0],destination.at[1]))setPhrase(`${destination.name}. ${destination.words}`);
+    else setPhrase('Pick a nearby point to find a way around, or take the village path.');
   }
   const onRailDragRef = useRef<(x: number, width: number) => void>(() => undefined);
   /**
@@ -322,6 +341,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   function activate(id: string, door?: { target: string; object?: string }, zone?: string) {
     const world = runtime.current, current = readingRef.current;
     if(id.startsWith('visit:')){const target=id.slice(6) as HarbourPlaceId;if(target in VILLAGE_ADDRESS)visit(target);return;}
+    if(id.startsWith('wander:')){wanderTo(id.slice(7) as HarbourWanderId);return;}
+    if(id==='hercules'){runtime.current?.body()?.emote('wave');setPhrase('Hercules is right here with you.');return;}
     const portal=ROOM_PORTALS[placeRef.current]?.find(p=>p.id===id);
     if(portal){navigatePlace(portal.to);return;}
     if(id==='village-exit'){navigatePlace('court');return;}
@@ -388,6 +409,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
           onReady: () => setStatus("ready"), onFailure: () => setStatus("fallback"),
           onProject: next => setRects(next), onTap, onGesture, onRailDrag: (x, width) => onRailDragRef.current(x, width),
           onStick, onClose: setClosed, onThreshold, onExit,
+          avatar:avatarRef.current,onJourney:()=>openJourney(),
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
         runtime.current = world;world.go("court");
@@ -397,6 +419,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
         world.invalidate();
         const saved = readHouseReturn(localStorage, identityRef.current, harbourCameraSlot(houseComposition(element.getBoundingClientRect().width || window.innerWidth), first));
         if (saved?.camera && sameHouseCameraRoute(saved.route, routeRef.current)) world.restore(saved.camera);
+        if(saved&&sameHouseCameraRoute(saved.route,routeRef.current)&&validHouseBody(saved.body)&&saved.body.place===first)world.body()?.place(saved.body.x,saved.body.z,saved.body.yaw);
         if (first !== "bank") return;
         void import("./court/queenPlace.ts").then(({ loadQueenPlace }) => loadQueenPlace(renderTier, appearance.saved.queen ?? DEFAULT_QUEEN_STYLE, evidenceRef.current, abort.signal)).then(her => {
           if (cancelled || !runtime.current) { her.dispose(); return; }
@@ -869,7 +892,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => navigatePlace(next)} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
-      {status==="ready"&&!toolOpen&&<VillageHUD place={place} travelling={travelTo} onVisit={visit} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('court');}}/>}
+      {(status==="ready"||showFlat)&&!toolOpen&&<VillageHUD place={place} travelling={travelTo} onVisit={visit} onWander={showFlat?undefined:wanderTo} avatar={avatar} onAvatar={chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
+        presence={status==="ready"?<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />:undefined}/>}
       {arranging&&!showFlat&&decorRoom&&props.onArrange&&<VillageDecorator key={decorRoom} household={household} memberId={memberId} room={decorRoom} arrangement={arrangement} onCommit={props.onArrange} onPreview={setPreviewLook} onClose={()=>{setArranging(false);stage.current?.querySelector<HTMLButtonElement>('[aria-label="Arrange room"]')?.focus();}}/>}
       {invite && <div className="harbour-world__invite" data-harbour-invite={touch ? "touch" : "keys"} aria-hidden="true"><Whisper mode="line">{inviteWords(place, touch)}</Whisper></div>}
       {status === "ready" && !toolOpen && standing && <div className="harbour-moves" data-harbour-moves={emotesOpen ? "open" : "shut"}>
@@ -887,7 +911,6 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {stick && <div className="harbour-stick" data-harbour-stick="" aria-hidden="true" style={{ left: `${stick.x}px`, top: `${stick.y}px` }}><span className="harbour-stick__ring" /><span className="harbour-stick__knob" ref={knob as unknown as React.Ref<HTMLSpanElement>} /></div>}
       {sparkle && <div className="harbour-spark" aria-hidden="true" style={{ left: `${sparkle.x}px`, top: `${sparkle.y}px`, "--spark": sparkle.color } as CSSProperties}>{Array.from({ length: sparkle.petals }, (_, i) => <span key={i} style={{ "--i": i } as CSSProperties} />)}</div>}
       <p className="harbour-world__phrase" role="status" aria-live="polite">{phrase}</p>
-      {status === "ready" && !toolOpen && <WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />}
       {statusLine && <small className="harbour-world__supported" role="status">{statusLine}</small>}
       {!ready && status === "ready" && <small className="harbour-world__checking" role="status">Checking the books · {freshness}</small>}
       {toolOpen && <button type="button" className="harbour-world__put-back" onClick={onClose}>← Put it back in {placeName}</button>}

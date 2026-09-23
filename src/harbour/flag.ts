@@ -101,8 +101,10 @@ export const HARBOUR_LANDMARKS: Readonly<Record<string, { room: HouseRoom; level
  * Unchanged in meaning from slice 1: still room-keyed, still household-only.
  * `enabled` is a test seam; production reads the flag.
  */
-export function harbourOwnsRoute(route: Pick<HouseRoute, "room" | "level"> | null | undefined, view: LedgerView, enabled: boolean = HARBOUR_ENABLED): boolean {
+export function harbourOwnsRoute(route: Pick<HouseRoute, "room" | "level" | "surface"> | null | undefined, view: LedgerView, enabled: boolean = HARBOUR_ENABLED): boolean {
   if (!enabled || !route || view !== "household") return false;
+  // Journey is a full Path surface reached through the Atlas, not the Atlas room itself.
+  if (route.surface === "journey") return false;
   // By room **and level** since the Glasshouse: a room row may leave a level to
   // the house (the Study's Standing Book keeps Codex's presentation for now).
   return HARBOUR_ROOMS[route.room]?.[route.level] !== undefined;

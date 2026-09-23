@@ -18,7 +18,8 @@
 // tree ring is no longer replanted below from a copy of `ground.ts`'s loop —
 // renderer and collision now read the same plan. `scene/planting.ts` imports
 // nothing itself, so this file stays free of three.js, the DOM and the clock.
-import { VILLAGE_SITES } from "../village/layout.ts";
+import { VILLAGE_SITES, VILLAGE_WATERFRONT } from "../village/layout.ts";
+import { HARBOUR_LAND,HARBOUR_LANDMARK_SOLIDS } from '../village/world.ts';
 import { plantPlan, trunkRadius } from "../scene/planting.ts";
 
 export type Circle = { kind: "circle"; x: number; z: number; r: number; id: string };
@@ -48,10 +49,10 @@ const intoLocal = (frame: { x: number; z: number; yaw: number }, x: number, z: n
   return { x: dx * cos - dz * sin, z: dz * cos + dx * sin };
 };
 
-/** A person in this model village: the Queen (a plant) is 2.05 tall, so a body is about 0.58. */
-export const BODY_HEIGHT = 0.58;
+/** A readable playable person, still shorter than the 2.05-unit Queen and every doorway. */
+export const BODY_HEIGHT = 1.25;
 /** How wide the body is on the ground — a shoulder's worth, so doorways and the gap between plinths stay walkable. */
-export const BODY_RADIUS = 0.17;
+export const BODY_RADIUS = 0.24;
 
 /**
  * How far out a body may walk. `scene/ground.ts` falls quadratically from the
@@ -60,7 +61,7 @@ export const BODY_RADIUS = 0.17;
  * it, so the shore itself is the edge: you stand where the sand goes dark and
  * the sea stops you, rather than hitting an invisible fence in the grass.
  */
-export const SHORE_RADIUS = 20.2;
+export const SHORE_RADIUS = HARBOUR_LAND.shore;
 
 const circle = (id: string, x: number, z: number, r: number): Circle => ({ kind: "circle", id, x, z, r });
 const box = (id: string, x: number, z: number, halfX: number, halfZ: number): Box =>
@@ -73,8 +74,11 @@ const box = (id: string, x: number, z: number, halfX: number, halfZ: number): Bo
  */
 export const COURT_FURNITURE: readonly Obstacle[] = Object.freeze([
   circle("fountain", 0, 0, 1.05),
-  box("waterfront-bench-left", -1.8, 16.8, .24, .9),
-  box("waterfront-bench-right", 1.8, 16.8, .24, .9),
+  circle('village-bell',-1,4.6,.13),
+  box('village-bench',4.8,4.2,.9,.25),
+  circle('waterfront-fire',...VILLAGE_WATERFRONT.spot,1.03),
+  box("waterfront-bench-left", VILLAGE_WATERFRONT.spot[0]-1.8, VILLAGE_WATERFRONT.spot[1]-.7, .24, .9),
+  box("waterfront-bench-right", VILLAGE_WATERFRONT.spot[0]+1.8, VILLAGE_WATERFRONT.spot[1]-.7, .24, .9),
 ]);
 
 /**
@@ -114,7 +118,7 @@ export function treeRingObstacles(tier: "full" | "lite"): Obstacle[] {
 
 /** Everything a body standing in the Court may bump into. */
 export function courtObstacles(tier: "full" | "lite"): Obstacle[] {
-  return [...COURT_FURNITURE, ...ISLAND_BUILDINGS, ...treeRingObstacles(tier)];
+  return [...COURT_FURNITURE, ...ISLAND_BUILDINGS, ...HARBOUR_LANDMARK_SOLIDS, ...treeRingObstacles(tier)];
 }
 
 /**
@@ -215,7 +219,7 @@ export function isClear(x: number, z: number, radius: number, obstacles: readonl
 }
 
 /** Hold a point inside the shore ring. Returns the point unchanged when it is already ashore. */
-export function holdAshore(x: number, z: number, limit = SHORE_RADIUS): { x: number; z: number; ashore: boolean } {
+export function holdAshore(x: number, z: number, limit:number = SHORE_RADIUS): { x: number; z: number; ashore: boolean } {
   const d = Math.hypot(x, z);
   if (d <= limit || d <= 0) return { x, z, ashore: true };
   const k = limit / d;

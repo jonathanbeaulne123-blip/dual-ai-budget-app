@@ -9,6 +9,7 @@ import { holdPoseInRoom, poseEye, type Composition, type RoomHold } from "../src
 import { createFollowCamera, followInRoom, FOLLOW_DISTANCE } from "../src/harbour/camera/followCamera.ts";
 import { BODY_RADIUS, doorWall, holdInRoom, inRoom, pushOut, type Obstacle, type RoomBounds } from "../src/harbour/body/obstacles.ts";
 import { createBodyState, stepBody, type BodyWorld } from "../src/harbour/body/bodyModel.ts";
+import { findPath } from "../src/harbour/body/pathfinder.ts";
 import {
   EXIT_REACH, OPEN_AIR, PLACE_FLOOR, PLACE_HAZARDS, exitAnchors, followHoldIn,
   placeArrival, placeGround, placeObstacles, placeRoom, roomReach, solidRegionIds, walksIndoors,
@@ -239,13 +240,14 @@ describe("the walls hold the body in the room", () => {
     const floor = 0;
     const region = (id: string, y0: number, y1: number) => ({ id, group: "x", label: id, box: new THREE.Box3(new THREE.Vector3(-0.5, y0, -0.5), new THREE.Vector3(0.5, y1, 0.5)) });
     const solid = solidRegionIds("library", [
-      region("lectern", 0.4, 1.6),          // chest-high on a body 0.58 tall
+      region("lectern", 0.4, 1.6),          // intersects the playable body's height
       region("floor-slab", 0, 0.05),        // flat: a step, not a wall
-      region("bill-rail", floor + 0.85, 1.35), // overhead: walked under
+      region("bill-rail", floor + 1.5, 1.8), // above the 1.25-unit body: walked under
+      region("low-rail", floor + 0.85, 1.35), // cannot put the character's head through it
       region("balcony", 2.1, 2.7),          // far overhead
       region("plinth", 0, 0.9),             // reaches the floor and stands up
     ] as never, []);
-    expect([...solid].sort()).toEqual(["lectern", "plinth"]);
+    expect([...solid].sort()).toEqual(["lectern", "low-rail", "plinth"]);
     // And the way out is never solid, however tall it is.
     const withDoor = solidRegionIds("cellar", [region("stair", 0, 1.6)] as never, [
       { id: "stair", position: [0, 0, 0], zone: "stair", label: "the stair" },
@@ -457,8 +459,13 @@ describe("the runtime, standing in a room", () => {
     const body = stage.body()!;
     run(2);
     const stair = exitAnchors(stage.place().anchors())[0]!;
+    expect(stair).toMatchObject({id:"home-up",zone:"portal"});
     const portalPoint = placementOf("cellar") ? placementToWorld(placementOf("cellar")!, stair.position) : stair.position;
-    body.goTo(portalPoint[0], portalPoint[2]);
+    const {world}=worldFor("cellar");
+    const arrival=placeArrival("cellar",stage.place().anchors());
+    expect(pushOut(arrival.x,arrival.z,BODY_RADIUS,world.obstacles).hit).toBeNull();
+    expect(findPath(arrival,{x:portalPoint[0],z:portalPoint[2]},world)).not.toBeNull();
+    expect(body.goTo(portalPoint[0], portalPoint[2])).toBe(true);
     run(360);
     expect(exits.map((anchor) => anchor.id)).toEqual(["home-up"]);
     // The route a tap on that anchor takes — the same table, the same answer.
@@ -602,7 +609,8 @@ describe("the runtime, standing in a room", () => {
     expect(frames.size).toBeGreaterThan(0);
     expect(harbourFramePolicy({ reduced: false, moving: false, breathing: false, touched: false, projectionChanged: false, hidden: false, toolOpen: false, walking: true }).schedule).toBe(true);
     body.input({ forward: 0, strafe: 0 });
-    run(90);
+    // The companion gets time to settle and finish its brief idle gesture.
+    for(let i=0;i<300&&frames.size;i++)run(1);
     expect(body.walking()).toBe(false);
     expect(frames.size).toBe(0);
   });
