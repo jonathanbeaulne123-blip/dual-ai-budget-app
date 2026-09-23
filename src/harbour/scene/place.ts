@@ -415,6 +415,23 @@ export function placedHold(hold: RoomHold | null, placement: PlacePlacement | nu
   return { ...hold, eye: envelope(hold.eye), target: envelope(hold.target) };
 }
 
+/**
+ * The camera envelope for a placed building.  A scene's authored hold may be
+ * smaller than its exterior footprint; once the room stands on the island the
+ * camera needs the whole floor plus the open doorway, in world coordinates.
+ * This is pure so runtime and navigation tests use the same transform.
+ */
+export function placedFootprintHold(hold: RoomHold | null, placement: PlacePlacement | null): RoomHold | null {
+  if (!hold || !placement) return hold;
+  const hx = placement.halfWidth, hz = placement.halfDepth;
+  return placedHold({
+    ...hold,
+    eye: { min: [-hx - .3, .25, -hz - .3], max: [hx + .3, 7, hz + 6] },
+    target: { min: [-hx + .2, .2, -hz + .2], max: [hx - .2, 3, hz - .2] },
+    maxR: 12,
+    minPhi: .5,
+  }, placement);
+}
 export type StreamStep = { id: HarbourPlaceId; action: "raise" | "release" };
 
 /**
