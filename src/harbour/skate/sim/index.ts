@@ -55,9 +55,11 @@ export type SkateCatalogs = {
  *    it locked (popped over it): blunts;
  *  - `faceSide` always 0 here — the sign of `deckYawToLine` is already measured
  *    against the approach side;
- *  - `frontside` the rider's chest faced the grindable on the way in.
+ *  - `frontside` the rider's chest faced the grindable on the way in;
+ *  - `push` the left stick sideways at contact, + = swinging the front-foot end over the line
+ *    (toward the far side), − = back toward the approach side (feel pass: the stick picks the grind).
  */
-export type GrindLockApproach = { deckYawToLine: number; lean: number; overLine: boolean; faceSide: -1 | 0 | 1; frontside: boolean };
+export type GrindLockApproach = { deckYawToLine: number; lean: number; overLine: boolean; faceSide: -1 | 0 | 1; frontside: boolean; push: number };
 export type SkateSimOptions = {
   x: number; z: number; yaw: number; stance: Stance; reducedAssist?: boolean;
   /** Island obstacles (buildings/trees) in body-obstacle form; injected by integration. */
@@ -105,6 +107,8 @@ type SimState = {
   pushPhase: number; stroke: boolean;
   gnx: number; gny: number; gnz: number; kind: SurfaceKind; feature: string | null; kappa: number; clearance: number;
   airTime: number; spin: number; spinRate: number; toX: number; toZ: number; toY: number; footSign: 1 | -1;
+  /** +1 when the front-foot end led at take-off (the stick's "toward the rail" is read in its terms). */
+  airFF: 1 | -1;
   vert: boolean; lipYaw: number; lipY: number; coyote: number; airFromPop: boolean; airLaunch: boolean;
   trick: TrickS | null; grab: GrabS | null;
   pendPop: PopReq | null; pendLate: { id: string; age: number } | null; pendRevert: number;
@@ -173,7 +177,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       lead: 1, feetSwapped: false, stance: stance === 'goofy' ? 'goofy' : 'regular',
       crouch: 0, crouchPeak: 0, lean: 0, carve: 0, turnRate: 0, pushPhase: 0, stroke: false,
       gnx: S0.nx, gny: S0.ny, gnz: S0.nz, kind: S0.kind, feature: S0.feature, kappa: 0, clearance: 0,
-      airTime: 0, spin: 0, spinRate: 0, toX: x, toZ: z, toY: S0.y, footSign: 1, vert: false, lipYaw: 0, lipY: 0, coyote: 0, airFromPop: false, airLaunch: false,
+      airTime: 0, spin: 0, spinRate: 0, toX: x, toZ: z, toY: S0.y, footSign: 1, airFF: 1, vert: false, lipYaw: 0, lipY: 0, coyote: 0, airFromPop: false, airLaunch: false,
       trick: null, grab: null, pendPop: null, pendLate: null, pendRevert: -1,
       grind: null, stall: null, wall: null, cooldownLine: -1, cooldown: 0, balance: 0,
       manual: null, manualResume: false, slide: null,
@@ -320,6 +324,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     S.airTime = 0; S.spin = 0;
     S.toX = S.x; S.toZ = S.z; S.toY = S.y;
     S.footSign = footSign();
+    S.airFF = naturalLeads() ? 1 : -1;
     S.airFromPop = fromPop; S.airLaunch = launch;
     S.coyote = fromPop ? 0 : T.POP_COYOTE;
     S.vert = false;
@@ -1065,7 +1070,10 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     let def: GrindDef | null = null;
     if (resolve) {
       try {
-        def = grinds.get(resolve({ deckYawToLine: axis * over, lean: S.lean, overLine: crossed < -0.06, faceSide: 0, frontside })) ?? null;
+        // Steering right swings the end that led at take-off to the right; `push` is the stick
+        // toward the far side in the front-foot end's terms (+ = over: feeble, boardslide, blunts).
+        const push = clamp(I.steer * (S.airFF || 1) * -near, -1, 1);
+        def = grinds.get(resolve({ deckYawToLine: axis * over, lean: Math.abs(I.lean) > Math.abs(S.lean) ? I.lean : S.lean, overLine: crossed < -0.06, faceSide: 0, frontside, push })) ?? null;
       } catch { def = null; }
     }
     def = def ?? selectGrind(grinds, { axis, over, lean: S.lean, kind: L.kind }) ?? FALLBACK_GRIND;

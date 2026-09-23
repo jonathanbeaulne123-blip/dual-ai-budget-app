@@ -211,11 +211,32 @@ Grabs (hand + left-stick direction, stance-normalised; neutral in brackets):
 − = back to the **near**/approach side; π/2 = slides. `deckPitch` + = nose down. Pairs:
 crooked (−) / overcrook (+), smith (−, nose dips down the near side) / feeble (+, front truck over the far
 side), suski (−) / salad (+) (both nose up, deep tail lean), lipslide (−π/2, tail went over) /
-boardslide (+π/2, nose went over). `resolveGrind` rules: |yaw| < 0.2 → 50-50 / 5-0 (lean ≤ −0.3) /
-nosegrind (lean ≥ 0.3); |yaw| ≥ 1.0 → nose/tail slide by lean (±0.45), blunt when `overLine`, else
-board/lip by side; between → crooked/overcrook (nose lean), suski/salad (lean ≤ −0.7), else
-smith/feeble. Side comes from `faceSide` when non-zero (+1 = leading end points at the ledge/coping face
-= near), otherwise from the sign of `deckYawToLine` (a nose angle beyond ±90° is folded onto the tail).
+boardslide (+π/2, nose went over).
+
+**How a person picks one (feel pass, wave 3 — as in Skate).** The board's angle at contact picks the
+family: under 45° a truck grind, over 45° a slide. The **left stick at contact** picks the grind in it:
+
+| stick at contact | truck grind (board along the line) | slide (board across) |
+|---|---|---|
+| centred | 50-50 | boardslide (front end over) / lipslide (tail over) — by the board |
+| up / down (nose / tail) | nosegrind / 5-0 | noseslide / tailslide |
+| toward the obstacle (over) | feeble | boardslide |
+| away (back to your side) | smith | lipslide |
+| toward + up / down | overcrook / salad | noseblunt / bluntslide (push it over) |
+| away + up / down | crooked / suski | noseslide / tailslide |
+
+Keys: W/S = up/down, A/D = toward/away (whichever points at the rail). A slide = hold the key ~0.25 s in
+the air to swing the board round; keep holding it through contact for a board/lipslide (or, with W/S, a
+blunt), let go before contact for a nose/tailslide. A tap just before contact is enough for the angled
+truck grinds; the board snaps to the grind's angle on lock. A measured angle of 15°+ also names the side
+when the stick is centred; popping past the line still gives a blunt. `test/skate-int-grinds-human.test.ts`
+plays all 15 with keys at jittered human timing on the Rolling Pin and the Breadboard ledge.
+
+`resolveGrind` (`GRIND_RESOLVE`): slide at |yaw| ≥ π/4; lean ±0.45 → nose/tail slides, blunt when
+`overLine` or `push` ≥ 0.5; else board/lip by side. Truck: side from `push` (|push| ≥ 0.35), the ledge
+face, or |yaw| ≥ 0.26; unsided → 50-50 / 5-0 (lean ≤ −0.3) / nosegrind (≥ 0.3); sided → crooked/overcrook
+(lean ≥ 0.3), suski/salad (≤ −0.65), else smith/feeble. `push` is the stick sideways in the front-foot
+end's terms, read against the end that led at take-off (a board spun past 90° keeps its side).
 
 ## Naming and scoring (`score.ts`)
 
