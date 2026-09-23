@@ -26,6 +26,16 @@ describe("authored village architecture", () => {
     expect(names).not.toContain("home-front-wall"); home.dispose();
   });
 
+  it("keeps every exterior centre as usable room volume with floors clear of the plinth", () => {
+    for (const kind of kinds) {
+      const made = buildVillageBuilding(kind, dressing, "lite");
+      const ray = new THREE.Raycaster(new THREE.Vector3(0, .08, 0), new THREE.Vector3(0, 1, 0), 0, 1.7);
+      expect(ray.intersectObject(made.group, true), kind).toHaveLength(0);
+      const foundation = made.group.getObjectByName(`${kind}-stone-foundation`)!;
+      expect(foundation.position.y).toBeLessThanOrEqual(.02); made.dispose();
+    }
+  });
+
   it("keeps the exact integration entrance centres open in each front cutaway", () => {
     const entrances: Record<VillageBuildingKind, number> = { home: 1.6, bank: 0, library: 1.8, glasshouse: 1.7, studio: 1.95, cottage: 1.75, boathouse: 1.5 };
     for (const kind of kinds) {
@@ -35,6 +45,18 @@ describe("authored village architecture", () => {
       // The opening is framed by two separate wall segments, never painted onto a full wall.
       expect(made.front.getObjectByName(`${kind}-front-wall-left`)).toBeTruthy(); expect(made.front.getObjectByName(`${kind}-front-wall-right`)).toBeTruthy(); made.dispose();
     }
+  });
+
+  it("sets every roof rib on a descending gable plane instead of floating teeth", () => {
+    const home = buildVillageBuilding("home", dressing, "lite");
+    const ribs: THREE.Object3D[] = []; home.roof.traverse(node => { if (node.name.startsWith("home-shingle-")) ribs.push(node); });
+    expect(ribs).toHaveLength(12);
+    for (const rib of ribs) {
+      const expected = 6.2 + 1.38 * (1 - Math.abs(rib.position.x) / (4.5 + .12)) + .035;
+      expect(rib.position.y).toBeCloseTo(expected, 6);
+      expect(Math.abs(rib.rotation.z)).toBeCloseTo(Math.atan2(1.38, 4.62), 6);
+    }
+    home.dispose();
   });
 
   it("keeps full and lite building budgets bounded while retaining complete shells", () => {
@@ -54,7 +76,8 @@ describe("authored village architecture", () => {
 
   it("gives the bank its Queen and books doors, regions, and an owned hall root", () => {
     const hall = buildBankHall(dressing, "lite"), byId = Object.fromEntries(hall.anchors().map(a => [a.id, a]));
-    expect(hall.group.name).toBe("bank-hall"); expect(byId.queen?.door?.target).toBe("queen"); expect(byId.books?.door?.target).toBe("books"); expect(byId.vault?.door?.target).toBe("books");
+    expect(hall.group.name).toBe("bank-hall"); expect(byId.queen?.door?.target).toBe("queen"); expect(byId.queen?.position).toEqual([0, .78, .8]); expect(byId.books?.door?.target).toBe("books"); expect(byId.vault?.door?.target).toBe("books");
+    expect(hall.group.getObjectByName("bank-queen-plinth")).toBeTruthy(); expect(hall.group.getObjectByName("bank-vault-round-door")?.position.z).toBeCloseTo(-3);
     expect(hall.regions()).toHaveLength(4); hall.dispose(); hall.dispose();
   });
 
