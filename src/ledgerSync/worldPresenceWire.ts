@@ -56,6 +56,20 @@ export const WORLD_JOIN_MS = 4000;
 /** A joined target older than this is not a participant any more (server side). */
 export const WORLD_TARGET_MS = 12000;
 
+/**
+ * What a body can be *doing* beyond walking, mirrored from `harbour/body/
+ * bodyModel.ts`'s `EmoteId` plus the two moves. Copied rather than imported
+ * for the same reason the place ids are — the worker must not pull in a
+ * harbour module — and fenced together by `test/world-presence.test.ts` so
+ * the two lists cannot drift.
+ *
+ * It is a closed list of eight short words. There is no field here a cent
+ * could travel in, and an act that is not one of these is a rejection rather
+ * than a pass-through.
+ */
+export const WORLD_ACTS = ["jump", "slide", "wave", "dance", "sit", "cheer", "laugh", "point"] as const;
+export type WorldAct = (typeof WORLD_ACTS)[number];
+
 export type WorldTarget = { placeId: WorldPlaceId; deviceId: string };
 
 export type WorldStep = {
@@ -67,6 +81,19 @@ export type WorldStep = {
   yaw: number;
   /** Whether the body was walking when the sample was taken (drives the stride, never the position). */
   moving: boolean;
+  /**
+   * What the body is doing on top of walking — a jump, a slide, one of the
+   * six emotes — or absent, which is the plain walk this lane has always
+   * carried. **Ephemeral**: it is never stored, never rebuilt from a
+   * record, and a peer that drops it simply sees the walk.
+   */
+  act?: WorldAct;
+  /**
+   * How far through that act, 0…1. The receiver replays the arc from this
+   * rather than from a height on the wire, so twelve samples a second is
+   * enough for a jump that lasts half of one.
+   */
+  p?: number;
 };
 
 export type WorldPresenceMessage =
@@ -89,7 +116,7 @@ export class WorldPresenceError extends Error {}
 
 const KNOWN_KEYS: Readonly<Record<string, readonly string[]>> = {
   "world-join": ["type", "version", "target"],
-  "world-step": ["type", "version", "x", "z", "yaw", "moving"],
+  "world-step": ["type", "version", "x", "z", "yaw", "moving", "act", "p"],
   "world-leave": ["type", "version"],
 };
 
@@ -118,6 +145,18 @@ export function worldCoordinate(value: unknown, bound = WORLD_BOUND): number {
   if (Math.abs(value) > WORLD_ABSURD) throw new WorldPresenceError("WORLD_PRESENCE_ABSURD");
   const clamped = Math.max(-bound, Math.min(bound, value));
   return Number(clamped.toFixed(WORLD_PRECISION));
+}
+
+/** An act is one of eight words or it is not an act. Never a free string on the wire. */
+export function worldAct(value: unknown): WorldAct {
+  if (typeof value !== "string" || !(WORLD_ACTS as readonly string[]).includes(value)) throw new WorldPresenceError("WORLD_PRESENCE_ACT");
+  return value as WorldAct;
+}
+
+/** How far through an act: a finite number, pulled onto 0…1 and rounded like a coordinate. */
+export function worldPhase(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) throw new WorldPresenceError("WORLD_PRESENCE_PHASE");
+  return Number(Math.max(0, Math.min(1, value)).toFixed(WORLD_PRECISION));
 }
 
 /** Headings wrap; anything else about them is a lie. */
@@ -150,6 +189,10 @@ export function decodeWorldPresence(value: unknown): WorldPresenceMessage {
     return { type: "world-join", version: 1, target: { placeId: target.placeId, deviceId: worldId(target.deviceId) } };
   }
   if (typeof row.moving !== "boolean") throw new WorldPresenceError("WORLD_PRESENCE_MOVING");
+  // The act is optional, and its progress only means anything beside it: a
+  // step that carries neither is exactly the step this lane always carried,
+  // which is what keeps an older client walking rather than disconnected.
+  const act = row.act === undefined || row.act === null ? null : worldAct(row.act);
   return {
     type: "world-step",
     version: 1,
@@ -157,6 +200,7 @@ export function decodeWorldPresence(value: unknown): WorldPresenceMessage {
     z: worldCoordinate(row.z),
     yaw: worldYaw(row.yaw),
     moving: row.moving,
+    ...(act ? { act, p: worldPhase(row.p ?? 0) } : {}),
   };
 }
 

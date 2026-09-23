@@ -25,6 +25,7 @@ import type { CourtHandle } from "./court/CourtScene.ts";
 import type { HarbourRuntime, HarbourGesture, HarbourHit, ProjectedRect, ScrubControls } from "./scene/runtime.ts";
 import { PLACES, sceneDressingFrom, type Anchor, type PlaceReading, type Region } from "./scene/place.ts";
 import { publishLocalPose, useWorldFeed } from "./presence/feed.ts";
+import { EMOTE_IDS, type EmoteId } from "./body/bodyModel.ts";
 import { WalkTogether } from "./presence/WalkTogether.tsx";
 import { readWorldPresenceShare, type WorldPresenceShare } from "../softPresenceWorld.ts";
 import { harbourCameraSlot } from "./scene/travel.ts";
@@ -93,6 +94,14 @@ const REDUCED = "(prefers-reduced-motion: reduce)";
  * the keys unreachable in the first place.
  */
 const TOUCH = "(pointer: coarse)";
+/**
+ * A face for each emote, for the row of six. They are the *label*, not the
+ * pose — the pose is carved (`body/figure.ts`) — and each button carries its
+ * number too, so the row teaches the keys it is standing in for.
+ */
+const EMOTE_FACES: Readonly<Record<EmoteId, string>> = Object.freeze({
+  wave: "👋", dance: "💃", sit: "🪑", cheer: "🙌", laugh: "😂", point: "👉",
+});
 const pulseFreshness = (gate: InterpretationGate | undefined): FundPulseFreshness => (gate?.freshness === "stale" || gate?.freshness === "offline" ? gate.freshness : "current");
 
 export default function HarbourWorld(props: HarbourWorldProps) {
@@ -118,6 +127,14 @@ export default function HarbourWorld(props: HarbourWorldProps) {
    */
   const [stick, setStick] = useState<{ x: number; y: number } | null>(null);
   const knob = useRef<HTMLDivElement | null>(null);
+  /**
+   * ── The moves (walk-moves) ──
+   * Whether the emote row is showing. It is one row of six on both a phone
+   * and a desktop — `E` opens it with the keys, a thumb button opens it with
+   * a thumb — because six emotes is a set you *pick from*, and a set you pick
+   * from should look the same wherever you are picking it.
+   */
+  const [emotesOpen, setEmotesOpen] = useState(false);
   /** The place's close hold (W7 a), for the stage's own word for it. */
   const [closed, setClosed] = useState(false);
   /**
@@ -161,7 +178,10 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // actually are, not where your camera is pointed. An interior has no
     // walker, so there the camera stays the answer.
     const at = world.body?.()?.at() ?? null;
-    return { target: pose.target, theta: pose.theta, body: at ? { x: at.x, z: at.z, yaw: at.yaw } : null };
+    // `act` and `p` travel with the position: a jump, a slide or an emote is
+    // something a partner should *see*, and it is ephemeral — nothing here is
+    // written down anywhere, at either end.
+    return { target: pose.target, theta: pose.theta, body: at ? { x: at.x, z: at.z, yaw: at.yaw, act: at.act, p: at.p } : null };
   }), []);
   const partnerWalk = useWorldFeed({
     environment: household.environment,
@@ -537,6 +557,30 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     body.input({ forward, strafe, run: keys.has("shift") });
   }, []);
   /**
+   * ── The moves (walk-moves) ──
+   * Jump, slide and emote, each a single call into the body. They are
+   * deliberately *not* held keys: a move is an event, and a set of held keys
+   * is how a walk is described, not a hop.
+   *
+   * **Space is not one of them.** Space opens the quick sheet, everywhere,
+   * including here — that is the one key the whole app can be reached by and
+   * it is not for sale. Jump is `J`, the slide beside it is `K`, and the
+   * emotes are `1`…`6` with `E` for the row of them.
+   */
+  const doMove = useCallback((move: "jump" | "slide") => {
+    const body = runtime.current?.body();
+    if (!body) return false;
+    if (move === "jump") body.jump(); else body.slide();
+    setEmotesOpen(false);
+    return true;
+  }, []);
+  const doEmote = useCallback((id: EmoteId | null) => {
+    const body = runtime.current?.body();
+    if (!body) return false;
+    body.emote(id);
+    return true;
+  }, []);
+  /**
    * A key that walks, wherever a body is standing to walk it (walk-everywhere).
    *
    * The one condition this used to carry — `place === "court"` — was the whole
@@ -687,6 +731,17 @@ export default function HarbourWorld(props: HarbourWorldProps) {
      */
     const onRail = placeRef.current === "cellar" && rail.current !== null;
     const railKey = onRail && ["ArrowLeft", "ArrowRight", "Home", "0"].includes(event.key);
+    // ── The moves (walk-moves) ──
+    // Above the walk, because a jump asked for while W is held is still a
+    // jump, and below the rail, which keeps its own keys down in the Cellar.
+    const lower = event.key.toLowerCase();
+    if (!railKey && runtime.current?.body()) {
+      if (lower === "j" && doMove("jump")) { event.preventDefault(); return; }
+      if (lower === "k" && doMove("slide")) { event.preventDefault(); return; }
+      if (lower === "e") { setEmotesOpen(open => !open); event.preventDefault(); return; }
+      const slot = EMOTE_IDS[Number(event.key) - 1];
+      if (slot && doEmote(slot)) { setEmotesOpen(false); event.preventDefault(); return; }
+    }
     // ── The body lane (world-body → walk-everywhere) ──
     // The walk comes first, in every place. The rail's own keys are the one
     // exception, and everything below is untouched.
@@ -719,7 +774,10 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       // ── The body lane (world-body) ── and before either of those, the
       // follow camera: stepping out of walking is the most immediate "out".
       const body = world.body();
-      if (body?.following()) { held.current.clear(); body.input({ forward: 0, strafe: 0 }); body.follow(false); }
+      // The emote row is the most immediate "out" of all: it is a thing that
+      // is open, in front of you, waiting to be picked from.
+      if (emotesOpen) { setEmotesOpen(false); doEmote(null); }
+      else if (body?.following()) { held.current.clear(); body.input({ forward: 0, strafe: 0 }); body.follow(false); }
       else if (world.closed()) setClosed(world.toggleClose(false));
       else if (placeRef.current === "court") world.go("court");
       else onNavigateRef.current("home", "middle");
@@ -748,6 +806,18 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
       {!toolOpen&&(place==='library'||place==='kiln')&&<Suspense fallback={null}><InteriorDesk place={place} household={household} memberId={memberId} scope={scope} onOpen={onOpen} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('court');}}/></Suspense>}
       {invite && <div className="harbour-world__invite" data-harbour-invite={touch ? "touch" : "keys"} aria-hidden="true"><Whisper mode="line">{inviteWords(place, touch)}</Whisper></div>}
+      {status === "ready" && !toolOpen && standing && <div className="harbour-moves" data-harbour-moves={emotesOpen ? "open" : "shut"}>
+        {emotesOpen && <div className="harbour-moves__emotes" role="group" aria-label="Emotes">
+          {EMOTE_IDS.map((id, i) => <button key={id} type="button" className="harbour-moves__emote" data-emote={id}
+            onPointerDown={event => event.stopPropagation()}
+            onClick={() => { doEmote(id); setEmotesOpen(false); }}>{EMOTE_FACES[id]}<small>{i + 1}</small></button>)}
+        </div>}
+        {touch && <div className="harbour-moves__row">
+          <button type="button" className="harbour-moves__key" onPointerDown={event => event.stopPropagation()} onClick={() => doMove("jump")}>Jump</button>
+          <button type="button" className="harbour-moves__key" onPointerDown={event => event.stopPropagation()} onClick={() => doMove("slide")}>Slide</button>
+          <button type="button" className="harbour-moves__key" aria-pressed={emotesOpen} onPointerDown={event => event.stopPropagation()} onClick={() => setEmotesOpen(open => !open)}>Emote</button>
+        </div>}
+      </div>}
       {stick && <div className="harbour-stick" data-harbour-stick="" aria-hidden="true" style={{ left: `${stick.x}px`, top: `${stick.y}px` }}><span className="harbour-stick__ring" /><span className="harbour-stick__knob" ref={knob as unknown as React.Ref<HTMLSpanElement>} /></div>}
       {sparkle && <div className="harbour-spark" aria-hidden="true" style={{ left: `${sparkle.x}px`, top: `${sparkle.y}px`, "--spark": sparkle.color } as CSSProperties}>{Array.from({ length: sparkle.petals }, (_, i) => <span key={i} style={{ "--i": i } as CSSProperties} />)}</div>}
       <p className="harbour-world__phrase" role="status" aria-live="polite">{phrase}</p>
@@ -780,7 +850,7 @@ export function stageWords(place: HarbourPlaceId, placeName: string, closed: boo
     ? "W A S D walks you around the room; the left and right arrows walk the bill rail through the month"
     : `W A S D and the arrow keys walk you around ${ground}`;
   const close = closed ? "steps back from" : "comes close to";
-  return `${here}. ${keys}; Shift runs; tap ${floor} to walk there; drag to look around you; plus and minus zoom; C ${close} what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet.`;
+  return `${here}. ${keys}; Shift runs; J jumps and K slides out of a run; E opens the emotes and 1 to 6 play them; tap ${floor} to walk there; drag to look around you; plus and minus zoom; C ${close} what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet.`;
 }
 
 /**

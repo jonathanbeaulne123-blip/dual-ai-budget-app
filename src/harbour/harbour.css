@@ -187,6 +187,20 @@
 /* The phone's thumb-stick (W7 b): it appears where the ground was pressed and
    goes away when the thumb comes off. Drawn, never tapped — the walking is the
    runtime's, and the knob's transform is written straight to the node. */
+/* ── The moves (walk-moves): jump, slide and the row of six ───────────────
+   A thumb cluster on a coarse pointer, and the emote row on both — because
+   six emotes is a set you pick from, and it should look the same whether the
+   picking is done with a thumb or with `E`. It sits above the stick's ring
+   and never over the stage's own controls. */
+.harbour-moves { position: absolute; right: 16px; bottom: 20px; z-index: 4; display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.harbour-moves__row { display: flex; gap: 8px; }
+.harbour-moves__key { min-width: 62px; min-height: 44px; padding: 0 12px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .5); background: rgba(20, 18, 16, .42); color: #fff; font: inherit; font-size: .82rem; letter-spacing: .01em; backdrop-filter: blur(3px); }
+.harbour-moves__key[aria-pressed="true"] { background: rgba(255, 255, 255, .82); color: #1b1917; }
+.harbour-moves__emotes { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; max-width: min(320px, 78vw); }
+.harbour-moves__emote { position: relative; width: 48px; height: 48px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, .5); background: rgba(20, 18, 16, .42); font-size: 1.15rem; line-height: 1; backdrop-filter: blur(3px); }
+.harbour-moves__emote small { position: absolute; right: 4px; bottom: 2px; font-size: .58rem; color: rgba(255, 255, 255, .72); }
+@media (prefers-reduced-motion: reduce) { .harbour-moves__key, .harbour-moves__emote { transition: none; } }
+
 .harbour-stick { position: absolute; width: 0; height: 0; pointer-events: none; z-index: 3; }
 .harbour-stick__ring { position: absolute; left: -56px; top: -56px; width: 112px; height: 112px; border-radius: 50%; border: 2px solid rgba(255, 255, 255, .55); background: rgba(20, 18, 16, .18); box-shadow: 0 2px 14px rgba(0, 0, 0, .22); }
 .harbour-stick__knob { position: absolute; left: -22px; top: -22px; width: 44px; height: 44px; border-radius: 50%; background: rgba(255, 255, 255, .82); box-shadow: 0 2px 8px rgba(0, 0, 0, .3); }

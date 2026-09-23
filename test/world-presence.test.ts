@@ -5,13 +5,16 @@ import {
   WORLD_ABSURD,
   WORLD_BOUND,
   WORLD_IDLE_MS,
+  WORLD_ACTS,
   WORLD_PLACE_IDS,
   WORLD_STEP_MS,
   decodeWorldPresence,
   isWorldPlaceId,
+  worldAct,
   worldCoordinate,
   worldId,
   worldPeerKey,
+  worldPhase,
   worldYaw,
   WorldPresenceError,
 } from "../src/ledgerSync/worldPresenceWire.ts";
@@ -35,6 +38,7 @@ import {
   worldPresenceShareKey,
 } from "../src/softPresenceWorld.ts";
 import { HARBOUR_PLACE_NAMES } from "../src/harbour/flag.ts";
+import { EMOTE_IDS } from "../src/harbour/body/bodyModel.ts";
 import { createPlaceholderWalker, createWalker, useWalkerFactory, walkerFactoryIsPlaceholder, type Walker } from "../src/harbour/presence/walker.ts";
 import { localBodyFromPose } from "../src/ledgerSync/worldPresenceMount.tsx";
 import * as feed from "../src/harbour/presence/feed.ts";
@@ -110,6 +114,41 @@ describe("the world-presence wire", () => {
 
   it("keys a peer by the authenticated member and their device", () => {
     expect(worldPeerKey("MEM-001", "DEV-a")).toBe("MEM-001:DEV-a");
+  });
+
+  /* ── The moves on the wire (walk-moves) ─────────────────────────────── */
+
+  it("names exactly the moves the body has, so the worker's copy cannot drift either", () => {
+    expect([...WORLD_ACTS].sort()).toEqual(["jump", "slide", ...EMOTE_IDS].sort());
+  });
+
+  it("carries a move and how far through it, and leaves a plain walk exactly as it was", () => {
+    // The step this lane has always carried is untouched: no act, no phase.
+    expect(decodeWorldPresence(step())).toEqual({ type: "world-step", version: 1, x: 1, z: 2, yaw: 0.5, moving: true });
+    expect(decodeWorldPresence(step({ act: "jump", p: 0.5 })))
+      .toEqual({ type: "world-step", version: 1, x: 1, z: 2, yaw: 0.5, moving: true, act: "jump", p: 0.5 });
+    // An act with no progress is the start of one, not a rejection.
+    expect(decodeWorldPresence(step({ act: "wave" }))).toMatchObject({ act: "wave", p: 0 });
+  });
+
+  it("bounds a move exactly as it bounds a coordinate: a closed list, and a phase pulled onto 0…1", () => {
+    for (const act of WORLD_ACTS) expect(worldAct(act)).toBe(act);
+    // Not one of the eight is not an act — it is a rejection, so nothing is broadcast.
+    for (const bad of ["fly", "", "JUMP", "jump ", 1 as unknown, null as unknown, {} as unknown]) {
+      expect(() => worldAct(bad)).toThrow(WorldPresenceError);
+    }
+    expect(() => decodeWorldPresence(step({ act: "pay", p: 0 }))).toThrow(/ACT/);
+    // A phase is clamped, never trusted, and never a way to smuggle a number.
+    expect(worldPhase(0.5)).toBe(0.5);
+    expect(worldPhase(9)).toBe(1);
+    expect(worldPhase(-9)).toBe(0);
+    expect(worldPhase(1 / 3)).toBe(0.333);
+    expect(decodeWorldPresence(step({ act: "dance", p: 1200 }))).toMatchObject({ act: "dance", p: 1 });
+    for (const bad of [Number.NaN, Number.POSITIVE_INFINITY, "1" as unknown, null as unknown]) {
+      expect(() => worldPhase(bad)).toThrow(WorldPresenceError);
+    }
+    // And there is still no field a cent could travel in.
+    expect(() => decodeWorldPresence({ ...step({ act: "jump", p: 0 }), cents: 1 })).toThrow(WorldPresenceError);
   });
 });
 
@@ -212,6 +251,33 @@ describe("smoothing 12.5 Hz into motion", () => {
     track.push({ x: 5, z: 0, yaw: 0, moving: true, at: 1100 });
     track.push({ x: -99, z: 0, yaw: 0, moving: true, at: 1050 });
     expect(track.samples().map((s) => s.x)).toEqual([0, 5]);
+  });
+
+  it("carries the move through the smoothing, and drops it the moment the feed parks", () => {
+    const track = createWorldTrack();
+    track.push({ x: 0, z: 0, yaw: 0, moving: true, at: 1000, act: "jump", p: 0.2 });
+    track.push({ x: 1, z: 0, yaw: 0, moving: true, at: 1100, act: "jump", p: 0.6 });
+    // Halfway between two samples of the same act, the progress is halfway too.
+    const mid = track.pose(1050 + WORLD_RENDER_DELAY_MS)!;
+    expect(mid.act).toBe("jump");
+    expect(mid.p).toBeCloseTo(0.4, 2);
+    // A body nobody has heard from is standing, not still jumping.
+    const parked = track.pose(1100 + WORLD_LIVE_MS + 10)!;
+    expect(parked.state).toBe("parked");
+    expect(parked.act).toBeNull();
+    expect(parked.p).toBe(0);
+  });
+
+  it("does not interpolate across a change of act: there is nothing between a wave and a jump", () => {
+    const track = createWorldTrack();
+    track.push({ x: 0, z: 0, yaw: 0, moving: false, at: 1000, act: "wave", p: 0.9 });
+    track.push({ x: 0, z: 0, yaw: 0, moving: false, at: 1100, act: "jump", p: 0.1 });
+    const early = track.pose(1020 + WORLD_RENDER_DELAY_MS)!;
+    expect(early.act).toBe("wave");
+    expect(early.p).toBeCloseTo(0.9, 2);
+    const late = track.pose(1080 + WORLD_RENDER_DELAY_MS)!;
+    expect(late.act).toBe("jump");
+    expect(late.p).toBeCloseTo(0.1, 2);
   });
 
   it("has nothing to say before the first sample", () => {

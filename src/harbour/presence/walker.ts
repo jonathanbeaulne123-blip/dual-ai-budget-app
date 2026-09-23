@@ -32,6 +32,17 @@ export type Walker = {
   setPose(x: number, z: number, yaw: number): void;
   /** Whether to play the stride. Never derived from position inside the walker: the lane decides. */
   setMoving(moving: boolean): void;
+  /**
+   * What the body is doing on top of walking — `"jump"`, `"slide"` or one of
+   * the six emotes — and how far through it, 0…1. Both come off the wire; the
+   * walker replays the *arc* from the progress rather than being told a
+   * height, which is what makes twelve samples a second enough for a jump
+   * that lasts half of one.
+   *
+   * Optional, and asked for with `?.`: a walker that cannot act is a walker
+   * that walks, which is exactly what it was before this existed.
+   */
+  setAction?(act: string | null, p: number): void;
   /** 0..1. The honest fade when a peer's feed goes quiet; 0 hides the body. */
   setOpacity(opacity: number): void;
   /** `t` seconds since mount, `dt` since the last animated frame. */
@@ -82,8 +93,13 @@ export function createPlaceholderWalker(options: WalkerOptions): Walker {
   pivot.add(body, head, nose);
 
   let moving = false, phase = 0, baseY = 0, opacity = 1;
+  /** The stand-in's whole vocabulary of moves: up for a jump, down for a slide. */
+  let lift = 0, squat = 0;
 
-  const apply = () => { pivot.position.y = baseY + (moving ? Math.abs(Math.sin(phase)) * height * 0.055 : 0); };
+  const apply = () => {
+    pivot.position.y = baseY + lift + (moving ? Math.abs(Math.sin(phase)) * height * 0.055 : 0);
+    pivot.scale.set(1 + squat * 0.12, 1 - squat * 0.3, 1 + squat * 0.12);
+  };
 
   return {
     group,
@@ -95,6 +111,15 @@ export function createPlaceholderWalker(options: WalkerOptions): Walker {
       apply();
     },
     setMoving(next) { if (moving === next) return; moving = next; if (!next) phase = 0; apply(); },
+    setAction(act, p) {
+      // A parabola through the progress: nothing at either end, everything in
+      // the middle. The placeholder has no limbs to pose, so an emote reads
+      // as a body standing where it is — honest, and never a mime.
+      const k = Math.max(0, Math.min(1, p));
+      lift = act === "jump" ? 4 * k * (1 - k) * height * 0.62 : 0;
+      squat = act === "slide" ? 1 : 0;
+      apply();
+    },
     setOpacity(next) {
       const clamped = Math.max(0, Math.min(1, Number.isFinite(next) ? next : 0));
       if (clamped === opacity) return;

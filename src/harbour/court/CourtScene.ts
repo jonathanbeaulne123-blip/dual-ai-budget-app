@@ -625,9 +625,13 @@ export function createCourt(scene: THREE.Scene, options: CourtOptions): CourtHan
     const pose = partnerWalk?.pose(nowMs) ?? null;
     if (!pose || pose.opacity <= 0) {
       partnerWalker.setMoving(false);
+      partnerWalker.setAction?.(null, 0);
       partnerWalker.setOpacity(0);
       return false;
     }
+    // The act before the pose: `setPose` draws the body at the height the act
+    // says it is, so the act has to be the newer of the two.
+    partnerWalker.setAction?.(pose.act ?? null, pose.p ?? 0);
     partnerWalker.setPose(pose.x, pose.z, pose.yaw);
     partnerWalker.setMoving(pose.moving);
     partnerWalker.setOpacity(pose.opacity);

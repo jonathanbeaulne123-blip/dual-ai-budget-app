@@ -86,7 +86,13 @@ export function useWorldFeed(request: WorldFeedRequest): WorldFeed {
 export type LocalPose = {
   target: readonly [number, number, number];
   theta: number;
-  body?: { x: number; z: number; yaw: number } | null;
+  /**
+   * The body, when one is standing. `act` and `p` are what it is doing beyond
+   * walking and how far through it — the two the lane puts on the wire so a
+   * partner sees a jump, a slide or an emote rather than a body that
+   * teleported half a metre up and back.
+   */
+  body?: { x: number; z: number; yaw: number; act?: string | null; p?: number } | null;
 };
 export type LocalPoseReader = () => LocalPose | null;
 

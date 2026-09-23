@@ -9,6 +9,7 @@ import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/c
 // marked block was rewritten to make room for the body.
 import { createFollowCamera, followInRoom, type FollowCamera } from "../camera/followCamera.ts";
 import { createWalker, COURT_ARRIVAL, type Walker } from "../body/walker.ts";
+import type { EmoteId } from "../body/bodyModel.ts";
 // ── walk-everywhere ──────────────────────────────────────────────────────────
 // Where a body may stand in each of the eleven places: the floor, the walls,
 // what is in the way, and where you come in. All of it derived from each
@@ -121,10 +122,25 @@ export type BodyControls = {
   goTo: (x: number, z: number) => void;
   /** Put the body somewhere at once. */
   place: (x: number, z: number, yaw?: number) => void;
-  /** Where it stands. */
-  at: () => { x: number; y: number; z: number; yaw: number; speed: number };
+  /**
+   * Where it stands, and what it is doing beyond standing. `act` is the move
+   * or emote playing and `p` is how far through it, 0…1 — the two the
+   * world-presence lane carries so a partner sees it too.
+   */
+  at: () => { x: number; y: number; z: number; yaw: number; speed: number; act: string | null; p: number };
   /** Is it walking right now? */
   walking: () => boolean;
+  /* ── The moves (walk-moves) ─────────────────────────────────────────────
+   * Three verbs, each one-shot: a press is taken on the next frame, exactly
+   * once. None of them can be refused by the camera or a tool — a jump asked
+   * for while a sheet is open simply never reaches here.
+   */
+  /** Jump; in the air, the second jump. */
+  jump: () => void;
+  /** Drop into a slide. Only from a run, and only on the ground. */
+  slide: () => void;
+  /** Play an emote, or stop the one playing. Asking for the one playing stops it. */
+  emote: (id: EmoteId | null) => void;
 };
 
 export type HarbourRuntime = {
@@ -604,14 +620,19 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       room,
       tier,
       start,
+      reduced: reduced.matches,
     });
     scene.add(walker.group);
-    follow = createFollowCamera({ camera, composition, reduced: reduced.matches, groundHeightAt: (x, z) => bodyGround(x, z) });
+    follow = createFollowCamera({ camera, composition, reduced: reduced.matches, fov: fovFor(composition), groundHeightAt: (x, z) => bodyGround(x, z) });
     host.dataset.harbourBody = "standing";
     standBody();
   }
   function dropBody(): void {
-    if (following) { following = false; court.restore(camera.position.toArray() as Vec3); }
+    if (following) {
+      following = false;
+      if (Math.abs(camera.fov - fovFor(composition)) > 1e-3) { camera.fov = fovFor(composition); camera.updateProjectionMatrix(); }
+      court.restore(camera.position.toArray() as Vec3);
+    }
     walker?.dispose(); walker = null; follow = null; bodyInput = NO_INPUT;
     bodyExits = []; exitArmed = false;
     delete host.dataset.harbourBody;
@@ -624,7 +645,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     host.dataset.harbourBody = wanted ? "following" : "standing";
     if (wanted && walker && follow) {
       const at = walker.state();
-      follow.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed });
+      follow.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed, air: at.air });
       // Start from where the Look camera stands, so this is a move, not a cut.
       follow.seed(court.pose());
     } else {
@@ -634,6 +655,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // pose that was just asked for.
       walker?.cancel();
       bodyInput = NO_INPUT;
+      // The follow camera may have been sprinting, and a sprint widens the
+      // lens. Hand it back on the place's own lens, never on a borrowed one.
+      if (Math.abs(camera.fov - fovFor(composition)) > 1e-3) { camera.fov = fovFor(composition); camera.updateProjectionMatrix(); }
       court.restore(camera.position.toArray() as Vec3);
     }
     dirty = true;
@@ -874,7 +898,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       bodyMoving = walker.step(dt, (now - mountedAt) / 1000, heading);
       if (walker.walking()) setFollowing(true);
       const at = walker.state();
-      follow.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed });
+      follow.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed, air: at.air });
       // ── The three lanes together ── streaming follows the **character**, not
       // the camera. `followCamera()` keeps the focus on the Look camera's
       // target only until a body exists to stand somewhere; from the first
@@ -952,7 +976,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // The one place the stage is measured: every frame after this reads it from here.
     stageWidth = width; stageHeight = height;
     const next: Composition = width < 720 ? "phone" : "desktop";
-    if (next !== composition) { composition = next; camera.fov = fovFor(next); court.setFov(camera.fov); court.setComposition(next); follow?.setComposition(next); }
+    if (next !== composition) { composition = next; camera.fov = fovFor(next); court.setFov(camera.fov); court.setComposition(next); follow?.setComposition(next); follow?.setFov(fovFor(next)); }
     renderer.setSize(width, height, false);
     camera.aspect = width / height; camera.updateProjectionMatrix();
     court.setAspect(camera.aspect);
@@ -1046,7 +1070,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const visibility = () => { if (document.hidden) { lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
   // ── The body lane (world-body) ── reduced motion cuts the follow camera
   // rather than swinging it. The character still walks: that is the app.
-  const onReduced = () => { court.setReduced(reduced.matches); follow?.setReduced(reduced.matches); schedule(); };
+  const onReduced = () => { court.setReduced(reduced.matches); follow?.setReduced(reduced.matches); walker?.setReduced(reduced.matches); schedule(); };
   const removeLost = lease.listenCanvas("webglcontextlost", (event: Event) => { event.preventDefault(); lease.cancelFrame(frame); frame = 0; callbacks.onFailure(); });
   document.addEventListener("visibilitychange", visibility); reduced.addEventListener("change", onReduced);
   previous = performance.now();
@@ -1150,8 +1174,17 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         input(next) { bodyInput = next; if (next.forward !== 0 || next.strafe !== 0) { setFollowing(true); } dirty = true; schedule(); },
         goTo(x, z) { one.goTo(x, z); setFollowing(true); dirty = true; schedule(); },
         place(x, z, yaw) { one.place(x, z, yaw); dirty = true; schedule(); },
-        at() { const at = one.state(); return { x: at.x, y: at.y, z: at.z, yaw: at.yaw, speed: at.speed }; },
+        at() {
+          const at = one.state(), doing = one.action();
+          return { x: at.x, y: at.y, z: at.z, yaw: at.yaw, speed: at.speed, act: doing?.act ?? null, p: doing?.p ?? 0 };
+        },
         walking: () => one.walking(),
+        // ── The moves (walk-moves) ── each is one-shot and edge-safe: the
+        // body takes it on the next frame, exactly once, and the frame is
+        // asked for here because a key press is not otherwise a reason to paint.
+        jump() { one.jump(); setFollowing(true); dirty = true; schedule(); },
+        slide() { one.slideNow(); setFollowing(true); dirty = true; schedule(); },
+        emote(id) { one.emote(id); dirty = true; schedule(); },
       };
     },
     enter(next, options = {}) {
