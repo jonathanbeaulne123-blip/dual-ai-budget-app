@@ -20,5 +20,8 @@ The preference is explicit and device-local for the environment, household and m
 ## Verification and limits
 
 - Local fictional demo preview: both choices changed the visible 3D character in the Village Square; first-use chooser was visible without opening the map.
-- Focused walking, skating, character, choice and presence suites passed before final integration. TypeScript and the required Medium-High quick gate are being run on the candidate.
+- Focused walking, skating, character, choice and presence suites passed before final integration.
+- On clean source commit `3f6c635c6d9dd1786360d46cd8d609368ceaa8fe`, the required Medium-High quick gate passed: diff and AI-surface checks, TypeScript, 82 fast test files and 6 serial test files (117 serial tests). It took 492.8 seconds against a 300-second target, so the time budget was breached; this is not a within-budget gate result.
+- Workspace TypeScript and the feature-enabled Vite production build passed on the same source. The build retained its existing dependency externalization and large-chunk advisories.
+- The docs-only evidence update after that run does not change the source tested by the gate.
 - A local preview cannot prove an authenticated two-device Walk Together session, real-phone touch feel, or a hosted Worker deployment. This PR is for review; no hosted release is included.
