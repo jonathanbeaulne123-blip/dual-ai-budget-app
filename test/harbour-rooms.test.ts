@@ -513,7 +513,8 @@ describe("the three rooms as places", () => {
     // The shelf says what it holds and what it does not: counts, never contents.
     expect(anchors.find((anchor) => anchor.id === "shelf")?.label).toContain("3 pieces fired");
     expect(anchors.find((anchor) => anchor.id === "shelf")?.label).toContain("2 kept privately");
-    expect(anchors.find((anchor) => anchor.id === "kiln")?.label).toContain("still hot");
+    // The door opens the exact creative revision; legacy bank heat does not describe every free piece.
+    expect(anchors.find((anchor) => anchor.id === "kiln")?.label).toContain("Review the selected piece");
     expect(anchors.find((anchor) => anchor.id === "court-door")?.zone).toBe("stair");
     expect(anchors.find((anchor) => anchor.id === "boathouse")?.zone).toBe("landmark");
     handle.dispose();

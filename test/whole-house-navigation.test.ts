@@ -27,18 +27,18 @@ describe("one scoped house navigator",()=>{
     expect(parseHouseRoute(housePath(first),identity.householdId)).toEqual(first);
     const life=houseLifeRoute(first);
     expect(life).toMatchObject({room:"studio",surface:"studio",object:{kind:"experience",id:"EXP-1"},studioSelection:{designId:"DESIGN-A",pieceId:"PIECE-A"}});
-    expect(houseRouteFromLife(life,"personal")).toEqual(first);
+    expect(houseRouteFromLife(life,"personal")).toEqual({...first,room:"making",level:"above"});
     saveHouseReturn(local,identity,origin,{},houseReturnSlot(first));
     expect(needsHouseReturnCapture(first,replacement)).toBe(false);
     expect(readHouseReturn(local,identity,houseReturnSlot(replacement))?.route).toEqual(origin);
     expect(parseHouseRoute("/house/together/middle?household=HH-house&scope=personal&surface=pottery&design=DESIGN-A",identity.householdId)).toBeNull();
     expect(parseHouseRoute("/house/together/middle?household=HH-house&scope=personal&surface=life&design=DESIGN-A&piece=PIECE-A",identity.householdId)).toBeNull();
   });
-  it("places Theatre below and the adjoining Pottery Studio at the common floor",()=>{
+  it("places Theatre below and Pottery in its Making building",()=>{
     const theatre={room:"together" as const,level:"below" as const,householdId:identity.householdId,scope:"personal" as const,surface:"memories"};
     expect(housePath(theatre)).toContain("room=theatre");
     expect(houseLifeRoute(theatre).room).toBe("theatre");
-    expect(houseRouteFromLife({version:1,householdId:identity.householdId,room:"studio",mode:"present",surface:"studio"},"personal")).toMatchObject({level:"middle",surface:"pottery"});
+    expect(houseRouteFromLife({version:1,householdId:identity.householdId,room:"studio",mode:"present",surface:"studio"},"personal")).toMatchObject({room:"making",level:"above",surface:"pottery"});
     expect(parseHouseRoute("/house/together/below?household=HH-house&room=studio",identity.householdId)).toMatchObject({level:"below"});
   });
   it("restores only the originating environment, household, member, scope and object",()=>{

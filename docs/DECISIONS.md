@@ -1,3 +1,12 @@
+## 2026-09-22 — Give the Library and Pottery Studio their own working interiors
+
+Jonathan requested 1–3 complete interiors rather than another broad shell. This scoped implementation authors two rooms inside the current Harbour renderer: a fitted Library whose books open the existing ledger divisions, and a Pottery Studio whose wheel, glaze bench and kiln open the existing canonical creative workspace.
+
+- Scene geometry is original and local, with Classic, Taylor and Newfoundland furniture/material treatments. React retains readable controls and forms; no extra renderer or financial calculation is introduced.
+- Studio station is additive route state (`bench`), separate from object identity. Selected pieces, station changes and return paths use the current navigation contracts. Making opens its room before selecting a tool.
+- The cabinet displays accepted canonical artwork only after audience/owner/environment/household and revision checks. Room interaction cannot silently join, fire or post money. The legacy 3D bank rack remains separately labelled; exact free-piece sculpture on that rack is an explicit follow-up.
+- Risk Medium-High. Budget (5): reachable exact existing figures, no formula change. Engagement (3): useful furnished interiors and a same-piece making journey. Local review only; full visual matrix, performance and required startup acceptance remain open in the review packet.
+
 ## 2026-09-20 — Little Harbour, slice 1: the Queen's Court is the first screen (D-287)
 
 Jonathan (LITTLE_HARBOUR_v2, 2026-09-20): "You log in and you are standing at the gate of the Queen's Court… full screen, no chrome but the compass. This is the wow, so it gets the most care of anything in the app." The island is the app; each tool gets the building it deserves; the Court is slice 1.
