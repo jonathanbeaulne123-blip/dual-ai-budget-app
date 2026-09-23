@@ -18,6 +18,7 @@
 // tree ring is no longer replanted below from a copy of `ground.ts`'s loop —
 // renderer and collision now read the same plan. `scene/planting.ts` imports
 // nothing itself, so this file stays free of three.js, the DOM and the clock.
+import { VILLAGE_SITES } from "../village/layout.ts";
 import { plantPlan, trunkRadius } from "../scene/planting.ts";
 
 export type Circle = { kind: "circle"; x: number; z: number; r: number; id: string };
@@ -71,25 +72,9 @@ const box = (id: string, x: number, z: number, halfX: number, halfZ: number): Bo
  * past it, so a body walks around her rather than through her skirts.
  */
 export const COURT_FURNITURE: readonly Obstacle[] = Object.freeze([
-  circle("queen", 0, 0, 0.95),
-  circle("rook", 4.2, -3.0, 0.62),
-  circle("knight", -4.2, -3.0, 0.62),
-  circle("bishop", 0, 4.6, 0.62),
-  circle("sundial", 4.0, 3.2, 0.5),
-  circle("mailbox", -1.2, 5.4, 0.34),
-  circle("cistern", -5.2, -1.6, 0.8),
-  // The gate is a pair of posts with a low rail between them: a wall two units
-  // wide with a gap on either side, not a ring.
-  box("gate", 0, 6.2, 1.25, 0.16),
-  // The way down to the Cellar. A hole in the paving is a thing to walk round,
-  // and tapping it is still how you go down.
-  box("cellar-stair", 1.75, 4.15, 0.62, 0.52),
-  // The props around the terrace edge (`COURT_LAYOUT.props`): pots and lanterns.
-  circle("prop-0", -4.6, 2.6, 0.42),
-  circle("prop-1", 4.9, 0.6, 0.42),
-  circle("prop-2", -5.0, -0.4, 0.42),
-  circle("prop-3", 2.6, -4.8, 0.42),
-  circle("prop-4", -2.4, -4.9, 0.42),
+  circle("fountain", 0, 0, 1.05),
+  box("waterfront-bench-left", -1.8, 16.8, .24, .9),
+  box("waterfront-bench-right", 1.8, 16.8, .24, .9),
 ]);
 
 /**
@@ -98,14 +83,16 @@ export const COURT_FURNITURE: readonly Obstacle[] = Object.freeze([
  * given a hand's breadth of eaves. Each one keeps its region's id, so a
  * push-out can be traced back to the thing that did it.
  */
-export const ISLAND_BUILDINGS: readonly Obstacle[] = Object.freeze([
-  { kind: "box", id: "boathouse", minX: 4.3, maxX: 6.9, minZ: -12.1, maxZ: -9.7 },
-  { kind: "box", id: "library-hall", minX: -6.2, maxX: -3.2, minZ: -12.6, maxZ: -10.6 },
-  { kind: "box", id: "glasshouse-shed", minX: -9.2, maxX: -7.2, minZ: -10.2, maxZ: -8.6 },
-  { kind: "box", id: "kitchen-cottage", minX: -12.2, maxX: -10.2, minZ: -4.3, maxZ: -2.5 },
-  { kind: "box", id: "hercules-cottage", minX: 8.8, maxX: 10.8, minZ: 4.6, maxZ: 6.6 },
-  { kind: "box", id: "kiln-house", minX: 9.5, maxX: 11.7, minZ: -5.3, maxZ: -3.5 },
-] as const);
+/** Exterior walls have an actual shoulder-wide opening at the authored door. */
+export const ISLAND_BUILDINGS: readonly Obstacle[] = Object.freeze(Object.values(VILLAGE_SITES).flatMap(site => {
+  const yaw = Math.atan2(-site.spot[0], -site.spot[1]);
+  const frame = { x:site.spot[0], z:site.spot[1], yaw };
+  const [hx,hz]=site.half, gap=.72, dx=site.door[0];
+  const wall=(id:string,lx:number,lz:number,halfX:number,halfZ:number):OrientedBox=>({kind:'obox',id:`${site.exterior}-${id}`,...intoWorld(frame,lx,lz),halfX,halfZ,yaw});
+  const left=dx-gap+hx,right=hx-dx-gap;
+  return [wall('back',0,-hz,hx,.12),wall('left',-hx,0,.12,hz),wall('right',hx,0,.12,hz),
+    wall('front-left',-hx+left/2,hz,left/2,.12),wall('front-right',dx+gap+right/2,hz,right/2,.12)];
+}));
 
 /**
  * The tree ring, **read** from the plan `scene/ground.ts` draws.

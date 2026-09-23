@@ -188,6 +188,7 @@ export function placeSigns(reading: HarbourReading): Record<HarbourPlaceId, Door
   };
 
   return {
+    bank: {line:"Your shared Fund",aria:"The Fund bank. Meet the Queen and review your household Fund."},
     court: {
       line: `${everyday} everyday · ${state}`,
       aria: reading.everyday === null
@@ -247,6 +248,7 @@ export function courtSigns(reading: HarbourReading | null | undefined): Record<s
 
 /** The name carved above each sign line — the building's own, as short as the plate allows. */
 export const SIGN_TITLES: Readonly<Record<HarbourPlaceId, string>> = Object.freeze({
+  bank:"Fund Bank",
   court: "The Court", tower: "The Tower", cellar: "The Cellar", library: "The Library",
   glasshouse: "The Glasshouse", kitchen: "The Kitchen", boathouse: "The Boathouse",
   cottage: "The Cottage", kiln: "The Kiln", campfire: "The Campfire", atlas: "The Atlas",

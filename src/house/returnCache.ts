@@ -22,7 +22,7 @@ export const houseComposition = (width: number): "phone" | "desktop" => width < 
 
 export function houseCameraSlot(route: HouseRoute, composition: "phone" | "desktop" = "desktop"): string {
   const camera = houseCameraRoute(route);
-  return `camera:v2:${composition}:${camera.room}:${camera.level}:${camera.time ?? ""}`;
+  return `camera:v2:${composition}:${camera.room}:${camera.level}:${camera.time ?? ""}:${camera.village?.place??""}:${camera.village?.room??""}`;
 }
 
 export function sameHouseCameraRoute(left: HouseRoute, right: HouseRoute): boolean {
@@ -31,7 +31,8 @@ export function sameHouseCameraRoute(left: HouseRoute, right: HouseRoute): boole
     && leftCamera.scope === rightCamera.scope
     && leftCamera.room === rightCamera.room
     && leftCamera.level === rightCamera.level
-    && leftCamera.time === rightCamera.time;
+    && leftCamera.time === rightCamera.time
+    && leftCamera.village?.place===rightCamera.village?.place && leftCamera.village?.room===rightCamera.village?.room;
 }
 
 /** Avoid replacing a saved origin when navigation stayed on the exact address. */

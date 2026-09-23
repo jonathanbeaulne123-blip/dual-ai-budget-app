@@ -90,7 +90,7 @@ export function travelAt(plan: TravelPlan, elapsed: number): TravelFrame {
   return { k, roof: lerp(plan.roof), lid: lerp(plan.lid), done: raw >= 1 };
 }
 
-export const HARBOUR_CAMERA_SLOT_PREFIX = "camera:v3:harbour";
+export const HARBOUR_CAMERA_SLOT_PREFIX = "camera:v4:village";
 
 /** A return record's camera slot, one per composition **and** per place: the tower keeps its own eye. */
 export const harbourCameraSlot = (composition: "phone" | "desktop", place: HarbourPlaceId): string =>

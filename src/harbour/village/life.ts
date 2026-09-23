@@ -50,14 +50,15 @@ export function buildVillageLife(dressing: PlaceDressing, tier: RenderTier): Vil
     { id: "village-bell", position: [-1, 1.78, 4.6], zone: "village", label: "The harbour bell — ring the chimes" },
     { id: "village-bench", position: [4.8, .7, 4.2], zone: "village", label: "The harbour bench — take a quiet pause" },
     { id: "village-dance", position: [-4.4, .16, 4.1], zone: "village", label: "The chalk dance spot — take a turn around the square" },
-    { id: "hercules", position: [6.3, .55, 5.6], zone: "village", label: "Hercules roaming the harbour" },
+    { id: "hercules", position: [cat.position.x, .55, 5.6], zone: "village", label: "Hercules roaming the harbour" },
   ];
-  let dead = false;
+  let dead = false, bellUntil=0, now=0;
+  bell.traverse(n=>{n.userData.anchor="village-bell";});bench.traverse(n=>{n.userData.anchor="village-bench";});cat.traverse(n=>{n.userData.anchor="hercules";});dance.userData.anchor="village-dance";
   return {
     group, anchors,
     regions: () => anchors().map(anchor => ({ id: anchor.id, group: "village-life", label: anchor.label, box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(...anchor.position), new THREE.Vector3(1.2, 1.3, 1.2)) })),
-    animate: (t) => { gulls.position.x = Math.sin(t * .22) * 2.2; gulls.rotation.z = Math.sin(t * .8) * .04; boat.rotation.z = Math.sin(t * .65) * .045; cat.position.x = 6.3 + Math.sin(t * .42) * .75; cat.rotation.y = Math.sin(t * .42) > 0 ? 0 : Math.PI; return true; },
-    interact: id => id === "village-bell" ? "The harbour bell gives one warm chime." : id === "village-bench" ? "A quiet place to sit together." : id === "village-dance" ? "A small turn around the square." : id === "hercules" ? "Hercules pads along the harbour path." : null,
+    animate: (t) => { now=t;bellBody.rotation.z=t<bellUntil?Math.sin(t*15)*.24:0; gulls.position.x = Math.sin(t * .22) * 2.2; gulls.rotation.z = Math.sin(t * .8) * .04; boat.rotation.z = Math.sin(t * .65) * .045; cat.position.x = 6.3 + Math.sin(t * .42) * .75; cat.rotation.y = Math.sin(t * .42) > 0 ? 0 : Math.PI; return true; },
+    interact: id => id === "village-bell" ? (bellUntil=now+2.5,"The little brass bell rocks in the sea breeze.") : id === "village-bench" ? "A quiet place to sit together." : id === "village-dance" ? "A small turn around the square." : id === "hercules" ? "Hercules pads along the harbour path." : null,
     dispose: () => { if (dead) return; dead = true; group.removeFromParent(); for (const item of owned) item.dispose(); owned.clear(); group.clear(); },
   };
 }

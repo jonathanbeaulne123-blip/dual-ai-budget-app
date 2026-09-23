@@ -1,3 +1,5 @@
+import {validHouseBody} from "./house/navigation.ts";
+import {commitHearthside} from "./hearthside/commands.ts";
 import {kittyUsesLedgerReceipts} from './hearthside/legacyBankAcceptance.ts';
 import { useVisibleClock } from "./useVisibleClock.ts";
 import { nativeAuthController, nativeWidgetController } from "./hearthside/nativeBootstrap.ts";
@@ -6529,16 +6531,17 @@ export function App() {
   }
 
   function navigateHouseSurface(route:HouseRoute,replace=false){
-    if(household&&session&&route.surface&&needsHouseReturnCapture(activeHouseRoute,route)){saveHouseReturn(localStorage,{environment,householdId:household.householdId,memberId:session.memberId,scope:view},activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera(),cameraComposition:readHouseComposition()},houseReturnSlot(route));}
+    if(household&&session&&route.surface&&needsHouseReturnCapture(activeHouseRoute,route)){saveHouseReturn(localStorage,{environment,householdId:household.householdId,memberId:session.memberId,scope:view},activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera(),cameraComposition:readHouseComposition(),body:readHouseBody()},houseReturnSlot(route));}
     goTab(tabForHouseRoute(route),undefined,{route,history:replace?"replace":"push"});
   }
   function readHouseComposition(){return houseComposition(document.querySelector<HTMLElement>(".house-world__canvas")?.getBoundingClientRect().width||window.innerWidth);}
+  function readHouseBody(){try{const value:unknown=JSON.parse(document.querySelector<HTMLElement>('.house-world__canvas')?.dataset.houseBody??'null');return validHouseBody(value)?value:undefined;}catch{return undefined;}}
   function readHouseCamera():[number,number,number]|undefined{if(document.querySelector(".house-world.is-overview,.house-world__stage[aria-label]"))return undefined;try{const camera=JSON.parse(document.querySelector<HTMLElement>(".house-world__canvas")?.dataset.houseCamera??"null");return Array.isArray(camera)&&camera.length===3&&camera.every(Number.isFinite)?camera as [number,number,number]:undefined;}catch{return undefined;}}
   function openHouseObject(target:string,object?:string){
     if(!household||!session)return;
     const identity:HouseIdentity={environment,householdId:household.householdId,memberId:session.memberId,scope:view};
     const route=houseTargetRoute({...activeHouseRoute,scope:view},target,object);
-    saveHouseReturn(localStorage,identity,activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera(),cameraComposition:readHouseComposition()},houseReturnSlot(route));
+    saveHouseReturn(localStorage,identity,activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera(),cameraComposition:readHouseComposition(),body:readHouseBody()},houseReturnSlot(route));
     goTab(tabForHouseRoute(route),undefined,{route,history:"push"});
     if(target==="hercules") {setWorkspaceCompact(false);if(!workspaceEnabled)openLegacyHercules();}
     requestAnimationFrame(()=>requestAnimationFrame(()=>{const heading=document.getElementById(target==="queen"?"house-queen-title":"house-tool-title");if(target!=="hercules")heading?.focus({preventScroll:true});heading?.scrollIntoView({block:"start",behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"});}));
@@ -6549,7 +6552,7 @@ export function App() {
     const {surface:_surface,studioTab:_studioTab,studioSelection:_studioSelection,...rest}=activeHouseRoute;
     const route=back?.route??rest;
     goTab(tabForHouseRoute(route),undefined,{route,history:"push"});setWorkspaceCompact(false);
-    requestAnimationFrame(()=>requestAnimationFrame(()=>{(document.getElementById(back?.focus||"house-world-title")??document.getElementById("house-world-title"))?.focus({preventScroll:true});window.scrollTo({top:back?.scroll??0,behavior:"instant"});if(back?.camera&&back.cameraComposition===readHouseComposition())window.dispatchEvent(new CustomEvent("hearth:house-return",{detail:{identity:houseIdentity({environment,householdId:household.householdId,memberId:session.memberId,scope:view}),camera:back.camera}}));}));
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{(document.getElementById(back?.focus||"house-world-title")??document.getElementById("house-world-title"))?.focus({preventScroll:true});window.scrollTo({top:back?.scroll??0,behavior:"instant"});if(back?.camera&&back.cameraComposition===readHouseComposition())window.dispatchEvent(new CustomEvent("hearth:house-return",{detail:{identity:houseIdentity({environment,householdId:household.householdId,memberId:session.memberId,scope:view}),camera:back.camera,body:back.body}}));}));
   }
   function syncKitchenTent(open: boolean) {
     if (HOUSE_WORLD_ENABLED || !household || !HEARTHSIDE_FLAGS.presentation || activeHouseRoute.room !== "kitchen-table" || activeHouseRoute.level === "middle") return;
@@ -7207,7 +7210,7 @@ export function App() {
       {!harbourOwnsRoute(activeHouseRoute,view)&&householdSwitcherNode}
       {!harbourOwnsRoute(activeHouseRoute,view)&&spaceSwitchNode}
       {!HOUSE_WORLD_ENABLED&&HEARTHSIDE_FLAGS.presentation&&view==="household"&&<HouseShell route={activeHouseRoute} onNavigate={goHouse} condition={houseCondition}/>}
-      {HOUSE_WORLD_ENABLED&&(harbourOwnsRoute(activeHouseRoute,view)?<Suspense fallback={<HarbourFlat place={harbourPlaceFor(activeHouseRoute,view,true)??"court"} reading={null} status="loading"/>}><HarbourWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack} presence={softPresenceDisplay} onUnhide={()=>applySoftPresenceOptOut(false)} partnerName={household.members.find(member=>member.id!==session.memberId)?.name??null} onQuickSheet={()=>setQuickSheetOpen(true)}/></Suspense>:<HouseWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack}/>)}
+      {HOUSE_WORLD_ENABLED&&(harbourOwnsRoute(activeHouseRoute,view)?<Suspense fallback={<HarbourFlat place={harbourPlaceFor(activeHouseRoute,view,true)??"court"} reading={null} status="loading"/>}><HarbourWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onNavigateLocation={navigateHouseSurface} onArrange={async operation=>{const id=crypto.randomUUID();const outcome=await runKitchen(current=>commitHearthside(current,{version:1,id,scope:{environment:current.environment,householdId:current.householdId,memberId:actorId},operation}),{confirmationId:id});if(!outcome?.ok)throw Error('Shared arrangement was not saved.');}} onOpen={openHouseObject} onClose={putHouseObjectBack} presence={softPresenceDisplay} onUnhide={()=>applySoftPresenceOptOut(false)} partnerName={household.members.find(member=>member.id!==session.memberId)?.name??null} onQuickSheet={()=>setQuickSheetOpen(true)}/></Suspense>:<HouseWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack}/>)}
       <div data-app-page="true" data-house-resting={HOUSE_WORLD_ENABLED&&!houseToolsVisible&&!adding&&!swipeOpen&&!confirm&&!guard&&!commandOpen||undefined}>
         {HOUSE_WORLD_ENABLED&&houseToolsVisible&&<header className="house-tool-heading"><h2 tabIndex={-1} id="house-tool-title">{TARGET_NAMES[activeHouseRoute.surface??""]??HOUSE_PLACES[activeHouseRoute.room][activeHouseRoute.level].title}</h2><button onClick={putHouseObjectBack}>Put it back</button></header>}
         <div className={hearthsideOpen ? "hearthside-page" : "world-page"}>

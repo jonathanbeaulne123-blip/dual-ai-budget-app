@@ -1,3 +1,4 @@
+import { VILLAGE_SITES, SITE_FOR_PLACE, FLOOR_HEIGHT } from '../village/layout.ts';
 import * as THREE from "three";
 import type { ThemeId } from "../../theme/scenes.ts";
 import { COURT_DRESSING, type CourtDressing } from "../court/dressing.ts";
@@ -114,6 +115,7 @@ export interface Place {
  */
 export const PLACE_HOLDS: Readonly<Record<HarbourPlaceId, RoomHold | null>> = Object.freeze({
   court: null,
+  bank: {eye:{min:[-4.5,0.3,-3.5],max:[4.5,5.5,6.2]},target:{min:[-4,0.2,-3],max:[4,3.5,3]},minR:1.4,maxR:10,minPhi:0.5,maxPhi:1.42},
   tower: Object.freeze({
     eye: { min: [-2.85, 0.3, -2.85] as Vec3, max: [2.85, 3.4, 4.6] as Vec3 },
     target: { min: [-2.2, 0.2, -2.2] as Vec3, max: [2.2, 3.0, 2.2] as Vec3 },
@@ -255,6 +257,10 @@ export type PlacePlacement = {
    * resident the runtime hides the shell, so nothing is drawn twice.
    */
   exterior: string;
+  /** Shared shell, one active floor. Interior stairs never count as street entrances. */
+  building?: string;
+  floorY?: number;
+  internal?: boolean;
   /** Island coordinates (x, z) — the Court's own spot for the exterior. */
   spot: readonly [number, number];
   /** Which way the building faces, in radians — the Court's own `rotation.y`. */
@@ -286,32 +292,14 @@ export const PLACEMENT_SILL = 0.06;
  * Every one of them is `atan2(-x, -z)` — the yaw that turns the building's +z
  * face, the face its door is on, toward the Court.
  */
-export const PLACE_PLACEMENTS: Readonly<Partial<Record<HarbourPlaceId, PlacePlacement>>> = Object.freeze({
-  library: Object.freeze({
-    exterior: "library-hall",
-    spot: [-4.7, -11.6] as const,
-    yaw: Math.atan2(4.7, 11.6),
-    halfWidth: 4.4, halfDepth: 3.4,
-    door: [1.8, 0, 3.15] as Vec3,
-    doorRadius: 1.5,
-  }),
-  cottage: Object.freeze({
-    exterior: "hercules-cottage",
-    spot: [9.8, 5.6] as const,
-    yaw: Math.atan2(-9.8, -5.6),
-    halfWidth: 3.2, halfDepth: 2.6,
-    door: [1.75, 0, 2.45] as Vec3,
-    doorRadius: 1.4,
-  }),
-  kiln: Object.freeze({
-    exterior: "kiln-house",
-    spot: [10.6, -4.4] as const,
-    yaw: Math.atan2(-10.6, 4.4),
-    halfWidth: 3.8, halfDepth: 2.9,
-    door: [1.95, 0, 2.82] as Vec3,
-    doorRadius: 1.5,
-  }),
-});
+export const PLACE_PLACEMENTS: Readonly<Partial<Record<HarbourPlaceId, PlacePlacement>>> = Object.freeze(
+  Object.fromEntries(Object.entries(SITE_FOR_PLACE).map(([id, building]) => {
+    const site = VILLAGE_SITES[building!];
+    return [id, Object.freeze({exterior:site.exterior,building,spot:site.spot,yaw:Math.atan2(-site.spot[0],-site.spot[1]),
+      halfWidth:site.half[0],halfDepth:site.half[1],door:[site.door[0],0,site.door[1]] as Vec3,doorRadius:0.65,
+      floorY:FLOOR_HEIGHT[id as HarbourPlaceId]??0,internal:id!==site.entry})];
+  })) as Partial<Record<HarbourPlaceId,PlacePlacement>>,
+);
 
 /** Which places stand somewhere, in a stable order. */
 export const PLACED_PLACE_IDS: readonly HarbourPlaceId[] = Object.freeze(Object.keys(PLACE_PLACEMENTS) as HarbourPlaceId[]);
@@ -368,7 +356,7 @@ export function placementLift(placement: PlacePlacement): number {
     const h = groundHeightAt(x, z);
     if (h > highest) highest = h;
   }
-  return highest + PLACEMENT_SILL;
+  return highest + PLACEMENT_SILL + (placement.floorY ?? 0);
 }
 
 /** The doorway of a placed building, in island coordinates: the threshold. */
@@ -448,6 +436,7 @@ export function streamPlaces(
     const placement = PLACE_PLACEMENTS[id]!;
     const distance = Math.hypot(focus[0] - placement.spot[0], focus[1] - placement.spot[1]);
     const inside = standing.has(id);
+    if (placement.internal && !held.has(id)) { if (inside) steps.push({id,action:"release"}); continue; }
     if (!inside && distance <= streamInRadius(placement)) steps.push({ id, action: "raise" });
     else if (inside && !held.has(id) && distance >= streamOutRadius(placement)) steps.push({ id, action: "release" });
   }

@@ -20,7 +20,7 @@ function local(point: Point2, spot: readonly [number, number], yaw: number): [nu
 
 function crossedDoor(from: Point2, to: Point2, site: typeof VILLAGE_SITES[keyof typeof VILLAGE_SITES], entering: boolean): boolean {
   const yaw = yawForSite(site.spot), a = local(from, site.spot, yaw), b = local(to, site.spot, yaw);
-  const plane = site.door[1], dz = b[1] - a[1];
+  const plane = site.half[1], dz = b[1] - a[1];
   if (!Number.isFinite(dz) || Math.abs(dz) < 1e-9) return false;
   if (entering ? !(a[1] > plane && b[1] <= plane) : !(a[1] <= plane && b[1] > plane)) return false;
   const t = (plane - a[1]) / dz;

@@ -1,10 +1,11 @@
 import { HEARTHSIDE_ROOMS, type HearthsideRoom } from "./contracts.ts";
+import { villageLocation, type VillageLocation } from '../house/villageLocation.ts';
 
 export const HOUSE_ROOMS = ["home", "study", "kitchen-table", "together", "making"] as const;
 export const HOUSE_LEVELS = ["above", "middle", "below"] as const;
 export type HouseRoom = typeof HOUSE_ROOMS[number];
 export type HouseLevel = typeof HOUSE_LEVELS[number];
-export type HouseRoute = { room: HouseRoom; level: HouseLevel; householdId: string; scope?: "personal" | "household"; object?: string; surface?: string; studioSelection?: { designId: string; pieceId: string }; studioTab?: "shape" | "paint" | "kiln"; time?: string };
+export type HouseRoute = { room: HouseRoom; level: HouseLevel; householdId: string; scope?: "personal" | "household"; object?: string; surface?: string; studioSelection?: { designId: string; pieceId: string }; studioTab?: "shape" | "paint" | "kiln"; time?: string; village?: VillageLocation };
 
 const TOGETHER_ROOM: Record<HouseLevel, HearthsideRoom> = {
   above: "conservatory",
@@ -27,6 +28,12 @@ export function housePath(route: HouseRoute): string {
   const query = new URLSearchParams({ household: route.householdId });
   if (route.room === "together") query.set("room", route.scope&&route.level==="below"?"theatre":togetherRoomForLevel(route.level));
   if (route.scope) query.set("scope", route.scope);
+  if (route.village) {
+    const location = villageLocation(route.village.place, route.village.room);
+    if (!location || route.scope === 'personal') throw new Error('HOUSE_INVALID_VILLAGE_LOCATION');
+    query.set('place', location.place);
+    if (location.room) query.set('villageRoom', location.room);
+  }
   if (route.object) query.set("object", route.object);
   if (route.surface) query.set("surface", route.surface);
   if (route.studioSelection) {
@@ -56,13 +63,16 @@ export function parseHouseRoute(url: string, householdId: string): HouseRoute | 
     if (!addressedHousehold || addressedHousehold !== householdId) return null;
     const scope = parsed.searchParams.get("scope");
     if (scope !== null && scope !== "personal" && scope !== "household") return null;
+    const place = parsed.searchParams.get('place'), villageRoom = parsed.searchParams.get('villageRoom');
+    const village = place === null ? null : villageLocation(place, villageRoom ?? undefined);
+    if (place !== null && (!village || scope === 'personal') || place === null && villageRoom !== null) return null;
     const bounded = (key: string) => { const value = parsed.searchParams.get(key); return value && value.length <= 180 && !/[\u0000-\u001f]/.test(value) ? value : undefined; };
     const object = bounded("object"), surface = bounded("surface"), designId = bounded("design"), pieceId = bounded("piece");
     const hasDesign = parsed.searchParams.has("design"), hasPiece = parsed.searchParams.has("piece");
     if (hasDesign !== hasPiece || hasDesign && (!designId || !pieceId || !["pottery", "wardrobe"].includes(surface ?? ""))) return null;
     const bench = parsed.searchParams.get("bench");
     if (bench !== null && (surface !== "pottery" || !["shape", "paint", "kiln"].includes(bench))) return null;
-    return { room, level, householdId, ...(bench ? {studioTab: bench as NonNullable<HouseRoute["studioTab"]>} : {}), ...(scope ? {scope} : {}), ...(object ? {object} : {}), ...(surface ? {surface} : {}), ...(designId && pieceId ? {studioSelection: {designId, pieceId}} : {}), ...(bounded("time") ? {time: bounded("time")} : {}) };
+    return { room, level, householdId, ...(village ? {village} : {}), ...(bench ? {studioTab: bench as NonNullable<HouseRoute["studioTab"]>} : {}), ...(scope ? {scope} : {}), ...(object ? {object} : {}), ...(surface ? {surface} : {}), ...(designId && pieceId ? {studioSelection: {designId, pieceId}} : {}), ...(bounded("time") ? {time: bounded("time")} : {}) };
   } catch {
     return null;
   }

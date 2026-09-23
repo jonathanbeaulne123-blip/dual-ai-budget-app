@@ -1,3 +1,4 @@
+import {crossedVillageDoor,villagePortalArrival} from "../village/topology.ts";
 import * as THREE from "three";
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import { worldDiagnostics } from "../../house/world/diagnostics.ts";
@@ -20,7 +21,7 @@ import { CLOSE_HOLDS, COURT_ANCHOR_IDS, COURT_FOV, closePose, type CourtAnchor, 
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
 import { createGround } from "./ground.ts";
 import { configureHarbourRenderer, createLightRig } from "./lightRig.ts";
-import { EMPTY_PLACE, PLACES, PLACED_PLACE_IDS, PLACE_HOLDS, PLACE_PLACEMENTS, SCENE_DRESSING, atThreshold, insidePlacement, placedHold, placedPose, placementLift, placementToWorld, placementOf, poseFor, streamPlaces, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlacePlacement, type PlaceReading, type Pose, type Region, type Vec3 } from "./place.ts";
+import { EMPTY_PLACE, PLACES, PLACED_PLACE_IDS, PLACE_HOLDS, SCENE_DRESSING,  placedHold, placedPose, placementLift, placementToWorld, placementOf, poseFor, streamPlaces, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlacePlacement, type PlaceReading, type Pose, type Region, type Vec3 } from "./place.ts";
 import { travelAt, travelPlan, type TravelPlan } from "./travel.ts";
 import type { HarbourPlaceId } from "../flag.ts";
 import type { RenderTier } from "./quality.ts";
@@ -362,7 +363,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    */
   let focus: [number, number] = [0, 0];
   /** Which placed buildings the focus is inside, so a crossing is an event and not a state read every frame. */
-  const crossed = new Set<HarbourPlaceId>();
+
 
   /**
    * A placed interior stands where its building stands. The transform is the
@@ -392,14 +393,31 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   function showExteriors(): void {
     const court = live.get("court");
     if (!court) return;
-    const wanted = new Map<string, boolean>();
-    for (const id of PLACED_PLACE_IDS) wanted.set(PLACE_PLACEMENTS[id]!.exterior, !live.has(id));
+    const active = placementOf(placeId);
+    for (const [id, resident] of live) if(id !== 'court') resident.handle.group.visible = id === placeId;
     court.handle.group.traverse((node) => {
-      // Lawn signs stand inside the larger room footprint. Keep them outdoors;
-      // the active room owns its own readable furniture labels.
-      if(node.name.startsWith('sign-'))node.visible=placeId==='court';
-      const show = wanted.get(node.name);
-      if (show !== undefined) node.visible = show;
+      if(node.name.startsWith('sign-')) node.visible=placeId==='court';
+      if(node.userData.villageShell) {
+        const open=node.name===active?.exterior;
+        node.visible=!(open && placeId==='cellar');
+        for(const child of node.children) {
+          if(child.name.endsWith('-roof-cutaway')||child.name.endsWith('-front-cutaway')) child.visible=!open;
+        }
+      }
+    });
+    renderer.localClippingEnabled = true;
+    const hole = placeId==='cellar' ? active : null;
+    const planes:THREE.Plane[]=[];
+    if(hole){
+      for(const [lx,lz,half] of [[1,0,hole.halfWidth],[-1,0,hole.halfWidth],[0,1,hole.halfDepth],[0,-1,hole.halfDepth]]){
+        const normal=new THREE.Vector3(lx!*Math.cos(hole.yaw)+lz!*Math.sin(hole.yaw),0,lz!*Math.cos(hole.yaw)-lx!*Math.sin(hole.yaw));
+        planes.push(new THREE.Plane(normal,-normal.x*hole.spot[0]-normal.z*hole.spot[1]-half!));
+      }
+    }
+    ground.group.traverse(node=>{
+      if(node instanceof THREE.Mesh && ['Island ground','Sea','Shallows'].includes(node.name)){
+        for(const material of Array.isArray(node.material)?node.material:[node.material]) {material.clippingPlanes=planes;material.clipIntersection=true;material.needsUpdate=true;}
+      }
     });
   }
 
@@ -451,7 +469,12 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
 
   /** The standing place's hold, moved onto the island with its building (§4). */
-  const holdFor = (id: HarbourPlaceId): RoomHold | null => placedHold(PLACE_HOLDS[id] ?? null, placementOf(id));
+  const holdFor = (id: HarbourPlaceId): RoomHold | null => {
+    const placement=placementOf(id), old=PLACE_HOLDS[id];
+    if(!placement||!old)return old??null;
+    const hx=placement.halfWidth,hz=placement.halfDepth;
+    return placedHold({...old,eye:{min:[-hx-.3,.25,-hz-.3],max:[hx+.3,7,hz+6]},target:{min:[-hx+.2,.2,-hz+.2],max:[hx-.2,3,hz-.2]},maxR:12,minPhi:.5},placement);
+  };
 
   /**
    * The streamer (§2). Distance-based, with hysteresis: a placed interior is
@@ -489,21 +512,14 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * a tap on the building from across the lawn makes, so nothing downstream
    * can tell the two apart. Tapping from a distance is untouched.
    */
+  let previousDoorPoint: [number,number] | null = null;
+  let pendingDoor:HarbourPlaceId|null=null;
   function thresholds(): void {
-    for (const id of PLACED_PLACE_IDS) {
-      const placement = PLACE_PLACEMENTS[id]!;
-      const at = insidePlacement(placement, focus[0], focus[1]) || atThreshold(placement, focus[0], focus[1]);
-      if (at === crossed.has(id)) continue;
-      if (at) {
-        crossed.add(id);
-        if (placeId !== id) callbacks.onThreshold?.(id);
-      } else {
-        crossed.delete(id);
-        // Out through the door: the room's hold lets go of the camera rather
-        // than clamping it back through its own wall while you walk away.
-        if (placeId === id) { court.setHold(null); callbacks.onThreshold?.("court"); }
-      }
-    }
+    if(!bodyDriven) return;
+    const before=previousDoorPoint; previousDoorPoint=[...focus];
+    if(!before || pendingDoor || Math.hypot(focus[0]-before[0],focus[1]-before[1])>1.5) return;
+    const next=crossedVillageDoor(before,focus,placeId);
+    if(next){pendingDoor=next;callbacks.onThreshold?.(next);}
   }
 
   /** Has the character lane taken the focus? Until it does, the camera's target is where you are. */
@@ -585,7 +601,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // A placed building is left by walking out of its doorway, which the
     // threshold machinery already watches; everywhere else the way out is the
     // room's own stair, and walking to it is tapping it.
-    bodyExits = placeId === "court" || placementOf(placeId) !== null ? [] : exitAnchors(anchors);
+    bodyExits = (placeId==='court'?[]:placementOf(placeId)?anchors.filter(a=>a.zone==='portal'):exitAnchors(anchors)).map(a=>({...a,position:localToWorld(a.position)}));
     exitArmed = false;
     walker?.setWorld({ obstacles: placeObstacles(placeId, handle.regions(), anchors, tier), room });
     if (follow) {
@@ -645,6 +661,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     host.dataset.harbourBody = wanted ? "following" : "standing";
     if (wanted && walker && follow) {
       const at = walker.state();
+      host.dataset.houseBody=JSON.stringify({place:placeId,x:at.x,z:at.z,yaw:at.yaw});
       follow.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed, air: at.air });
       // Start from where the Look camera stands, so this is a move, not a cut.
       follow.seed(court.pose());
@@ -706,6 +723,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     raycaster.setFromCamera(ndc, camera);
     const hits = raycaster.intersectObjects(scene.children, true);
     for (const hit of hits) {
+      let visibleNode:THREE.Object3D|null=hit.object,shown=true;
+      while(visibleNode){if(!visibleNode.visible){shown=false;break;}visibleNode=visibleNode.parent;}
+      if(!shown)continue;
       // ── The body lane (world-body) ──
       // Your own body is not a thing to tap: it stands between the eye and the
       // island in follow mode, and a tap that landed on your coat is a tap
@@ -774,7 +794,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (box.isEmpty()) continue;
       for (let i = 0; i < 8; i += 1) {
         corners[i]!.set(i & 1 ? box.max.x : box.min.x, i & 2 ? box.max.y : box.min.y, i & 4 ? box.max.z : box.min.z);
-        if (frame) corners[i]!.applyMatrix4(frame);
+        if (frame && region.box) corners[i]!.applyMatrix4(frame);
       }
       const rect = rectOf(corners, 8, stageWidth, stageHeight);
       if (!rect) continue;
@@ -898,6 +918,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       bodyMoving = walker.step(dt, (now - mountedAt) / 1000, heading);
       if (walker.walking()) setFollowing(true);
       const at = walker.state();
+      host.dataset.houseBody=JSON.stringify({place:placeId,x:at.x,z:at.z,yaw:at.yaw});
       follow.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed, air: at.air });
       // ── The three lanes together ── streaming follows the **character**, not
       // the camera. `followCamera()` keeps the focus on the Look camera's
@@ -909,7 +930,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // island position: a room at the origin has its own coordinates, and
       // handing those to the streamer would raise the Library because the
       // Cellar's stair happens to be near where the Library stands.
-      if (onIsland(placeId)) { bodyDriven = true; focus[0] = at.x; focus[1] = at.z; }
+      if (onIsland(placeId)) { bodyDriven = true; focus[0] = at.x; focus[1] = at.z; thresholds(); }
       if (following && follow.tick(dt)) bodyMoving = true;
       // ── walking out of a room (walk-everywhere) ──
       // The way out of an unplaced room is its own stair or door, and reaching
@@ -955,7 +976,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // world runs at the camera's rate, and the moment the body stands still the
     // policy falls back through its own branches to asking for nothing.
     const policy = harbourFramePolicy({ reduced: reduced.matches, moving, breathing: breathing || settling, touched: pointers.size > 0, projectionChanged: dirty, hidden: document.hidden || !visible, toolOpen, walking: bodyMoving });
-    intervalMs = policy.intervalMs;
+    intervalMs = tier==='full'&&(bodyMoving||moving)?1000/60:policy.intervalMs;
     let animated = false;
     if (policy.animate && pointers.size === 0) {
       const t = (now - mountedAt) / 1000, adt = lastAnimated ? Math.min((now - lastAnimated) / 1000, 0.1) : 0;
@@ -1101,9 +1122,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
 
   function aim(mode: CourtMode | "door", anchor?: string): void {
     court.setReduced(reduced.matches);
-    if (placeId !== "court") {
+    {
       const key = mode === "court" ? placeId : mode === "object" && anchor ? `object:${anchor}` : mode;
-      const written = poseFor(handle.poses(), key, composition) ?? (mode === "door" ? poseFor(handle.poses(), "sky", composition) : undefined);
+      const written = poseFor(handle.poses(), key, composition) ?? (mode === "court" ? poseFor(handle.poses(), "court", composition) : undefined) ?? (mode === "door" ? poseFor(handle.poses(), "sky", composition) : undefined);
       const pose: Pose | undefined = written ? placedPose(written, standingPlacement()) : undefined;
       if (pose) { court.goTo({ target: pose.target, r: pose.r, theta: pose.theta, phi: pose.phi }); return; }
     }
@@ -1173,7 +1194,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         follow(on) { setFollowing(on); if (!on) { aim("court"); } moved(); },
         input(next) { bodyInput = next; if (next.forward !== 0 || next.strafe !== 0) { setFollowing(true); } dirty = true; schedule(); },
         goTo(x, z) { one.goTo(x, z); setFollowing(true); dirty = true; schedule(); },
-        place(x, z, yaw) { one.place(x, z, yaw); dirty = true; schedule(); },
+        place(x, z, yaw) { one.place(x, z, yaw); focus=[x,z]; previousDoorPoint=null; dirty = true; schedule(); },
         at() {
           const at = one.state(), doing = one.action();
           return { x: at.x, y: at.y, z: at.z, yaw: at.yaw, speed: at.speed, act: doing?.act ?? null, p: doing?.p ?? 0 };
@@ -1226,13 +1247,16 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
        * already exactly right, and it is not touched.
        */
       if (continuous && !crossing && walker) {
-        const landing = placementOf(next) ? placeArrival(next, handle.anchors()) : courtLanding(leaving);
+        const portal=villagePortalArrival(leaving,next), placement=placementOf(next);
+        const point=portal&&placement?placementToWorld(placement,portal.local):null;
+        const landing = point&&portal&&placement?{x:point[0],z:point[2],yaw:portal.yaw+placement.yaw}:placement ? placeArrival(next, handle.anchors()) : courtLanding(leaving);
         walker.place(landing.x, landing.z, landing.yaw);
         bodyDriven = true;
         focus[0] = landing.x; focus[1] = landing.z;
       }
       // The place you arrive in declares its own idle motion; until it does, nothing moves.
-      breathing = false;
+      breathing = !reduced.matches;
+      previousDoorPoint = null; pendingDoor=null;
       // A cut lands at once, so the destination's hold applies at once. A full
       // journey flies through the open air between the rooms: the hold is
       // lifted for the flight and the destination's takes over when it lands
@@ -1269,7 +1293,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       ground.dispose(); rig.dispose();
       lease.release();
       host.style.backgroundImage = "";
-      delete host.dataset.renderer; delete host.dataset.houseCamera;
+      delete host.dataset.renderer; delete host.dataset.houseCamera; delete host.dataset.houseBody;
       delete host.dataset.bodyAt; delete host.dataset.bodyMs;
       delete (host as HTMLElement & { __harbour?: HarbourRuntime }).__harbour;
     },

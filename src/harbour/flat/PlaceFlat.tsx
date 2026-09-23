@@ -29,6 +29,7 @@ export type PlaceFlatProps = Omit<CourtFlatProps, "reading"> & {
 
 /** The place's flat edition. The Court's is slice 1's, unchanged. */
 export function HarbourFlat({ place, ...props }: PlaceFlatProps) {
+  if(place==='bank') return <section className="court-flat place-flat" aria-label="Fund Bank, reading edition"><div className="court-flat__sheet"><h1>The Fund Bank</h1><p>A warm place to understand the household books.</p><div className="place-flat__doors"><button onClick={()=>props.onOpen?.('queen')}>Meet the Queen</button><button onClick={()=>props.onOpen?.('books')}>Open the books</button><button onClick={props.onStair}>Village square</button></div></div></section>;
   if (place === "tower") return <TowerFlat {...props} />;
   if (place === "cellar") return <CellarFlat {...props} />;
   if (place === "glasshouse") return <GlasshouseFlat {...props} />;

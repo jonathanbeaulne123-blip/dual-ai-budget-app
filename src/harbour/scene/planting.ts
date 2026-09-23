@@ -1,3 +1,4 @@
+import { VILLAGE_SITES } from "../village/layout.ts";
 /**
  * Little Harbour · where the island's plants stand.
  *
@@ -48,11 +49,6 @@ const doorway = (id: string, x: number, z: number, yaw: number, door: readonly [
  * from the building on its Court-facing side, which is the side every door is
  * on. Derived from the spot alone, so it cannot disagree with the yaw.
  */
-const doorstep = (id: string, x: number, z: number, out: number, r: number): KeepOutCircle => {
-  const length = Math.hypot(x, z), k = length > 0 ? (length - out) / length : 0;
-  return { kind: "circle", id, x: x * k, z: z * k, r };
-};
-
 /**
  * Where a plant may not be planted.
  *
@@ -69,24 +65,10 @@ const doorstep = (id: string, x: number, z: number, out: number, r: number): Kee
  *
  * Plus a doorway for each, because a door you cannot walk up to is not a door.
  */
-export const ISLAND_KEEP_OUTS: readonly KeepOut[] = Object.freeze([
-  // The three shells with no interior placed in them yet: centre and
-  // half-extents of `ISLAND_BUILDINGS`, which is `CourtScene.ts`'s region box.
-  rect("glasshouse-shed", -8.2, -9.4, 1.0, 0.8, 0),
-  rect("kitchen-cottage", -11.2, -3.4, 1.0, 0.9, 0),
-  rect("boathouse", 5.6, -10.9, 1.3, 1.2, 0),
-  doorstep("glasshouse-shed-door", -8.2, -9.4, 1.7, 1.1),
-  doorstep("kitchen-cottage-door", -11.2, -3.4, 1.7, 1.1),
-  doorstep("boathouse-door", 5.6, -10.9, 1.9, 1.2),
-  // The three placed interiors. The footprint is the interior's, which
-  // contains its own shell's box whole; the doorway is the room's own door.
-  rect("library", -4.7, -11.6, 4.4, 3.4, courtFacing(-4.7, -11.6)),
-  rect("cottage", 9.8, 5.6, 3.2, 2.6, courtFacing(9.8, 5.6)),
-  rect("kiln", 10.6, -4.4, 3.8, 2.9, courtFacing(10.6, -4.4)),
-  doorway("library-door", -4.7, -11.6, courtFacing(-4.7, -11.6), [1.8, 3.15], 1.5),
-  doorway("cottage-door", 9.8, 5.6, courtFacing(9.8, 5.6), [1.75, 2.45], 1.4),
-  doorway("kiln-door", 10.6, -4.4, courtFacing(10.6, -4.4), [1.95, 2.82], 1.5),
-]);
+export const ISLAND_KEEP_OUTS: readonly KeepOut[] = Object.freeze(Object.values(VILLAGE_SITES).flatMap(site=>{
+  const [x,z]=site.spot,yaw=courtFacing(x,z);
+  return [rect(site.entry,x,z,site.half[0]+.25,site.half[1]+.25,yaw),doorway(`${site.entry}-door`,x,z,yaw,site.door,1.7)];
+}));
 
 /**
  * Which keep-out a plant of `clearance` radius standing at (`x`,`z`) is in, or

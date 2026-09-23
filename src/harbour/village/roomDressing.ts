@@ -19,7 +19,7 @@ export function buildRoomDressing(room: RoomDressingRoom, dressing: PlaceDressin
   const add = (geometry: THREE.BufferGeometry, mat: THREE.Material, name: string, at: readonly [number, number, number]) => { owned.add(geometry); const mesh = new THREE.Mesh(geometry, mat); mesh.name = `${room}-${name}`; mesh.position.set(...at); mesh.castShadow = tier === "full"; mesh.receiveShadow = true; group.add(mesh); return mesh; };
   // Stay in a side corner: inherited room centre, doors and stair routes remain clear.
   const base = room === "cellar" ? [3.7, .02, 1.75] as const : room === "atlas" ? [2.45, .02, 1.45] as const : room === "tower" ? [-1.9, .02, -1.85] as const : [-2.45, .02, 1.72] as const;
-  const furniture = new THREE.Group(); furniture.name = `${room}-side-furniture`; furniture.position.set(...base); group.add(furniture);
+  const furniture = new THREE.Group(); furniture.name = `${room}-side-furniture`; furniture.position.set(base[0],base[1],base[2]); group.add(furniture);
   const plantGroup = new THREE.Group(); plantGroup.name = `${room}-living-plant`; plantGroup.position.set(base[0] + .65, .02, base[2] - .4); group.add(plantGroup);
   const place = (geometry: THREE.BufferGeometry, mat: THREE.Material, name: string, at: readonly [number, number, number]) => { owned.add(geometry); const mesh = new THREE.Mesh(geometry, mat); mesh.name = `${room}-${name}`; mesh.position.set(...at); mesh.castShadow = tier === "full"; mesh.receiveShadow = true; furniture.add(mesh); return mesh; };
   place(new THREE.BoxGeometry(1.7, .035, 1.16), rug, "side-rug", [0, .025, 0]);
