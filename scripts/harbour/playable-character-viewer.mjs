@@ -2,7 +2,9 @@ import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { MeshoptDecoder } from "meshoptimizer";
 
-const manifest = await fetch("./manifest.json").then((response) => response.json());
+// Replaced at bundle time. The offline reviewer has no fetches: its two
+// compact game GLBs are data URLs in this viewer-only configuration.
+const manifest = __HEARTH_PLAYERS__;
 const canvas = document.querySelector("canvas");
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -25,7 +27,7 @@ function limbs(avatar) {
   for (const side of [-1, 1]) { const hip = new THREE.Group(); hip.position.set(side * .048, .235, 0); const leg = new THREE.Mesh(new THREE.CapsuleGeometry(.042, .145, 4, 8), trouser); leg.position.y = -.1145; const foot = new THREE.Mesh(new THREE.BoxGeometry(.072, .034, .108), shoe); foot.position.set(0, -.212, .018); hip.add(leg, foot); g.add(hip); const shoulder = new THREE.Group(); shoulder.position.set(side * palette.shoulder, .402, 0); const arm = new THREE.Mesh(new THREE.CapsuleGeometry(.031, .118, 4, 8), coat); arm.position.y = -.09; shoulder.add(arm); g.add(shoulder); }
   return g;
 }
-async function select(avatar) { figure?.removeFromParent(); const row = manifest.characters.find((item) => item.avatar === avatar); const gltf = await loader.loadAsync(row.url); const g = new THREE.Group(), shell = gltf.scene; shell.scale.setScalar(.58 / row.sourceFullBounds.max[1]); shell.position.y = -.58 * row.sourceFullBounds.min[1] / row.sourceFullBounds.max[1]; g.scale.setScalar(1.25 / .58); g.add(limbs(avatar), shell); scene.add(g); figure = g; }
+async function select(avatar) { figure?.removeFromParent(); const row = manifest.characters.find((item) => item.avatar === avatar); const gltf = await loader.loadAsync(row.dataUrl); const g = new THREE.Group(), shell = gltf.scene; shell.scale.setScalar(.58 / row.sourceFullBounds.max[1]); shell.position.y = -.58 * row.sourceFullBounds.min[1] / row.sourceFullBounds.max[1]; g.scale.setScalar(1.25 / .58); g.add(limbs(avatar), shell); scene.add(g); figure = g; }
 for (const button of document.querySelectorAll("[data-avatar]")) button.onclick = () => select(button.dataset.avatar);
 for (const button of document.querySelectorAll("[data-move]")) button.onclick = () => { move = button.dataset.move; jumping = move === "jump" ? .55 : 0; };
 for (const button of document.querySelectorAll("[data-view]")) button.onclick = () => { rear = button.dataset.view === "rear"; frameCamera(); };

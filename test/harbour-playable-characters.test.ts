@@ -28,9 +28,13 @@ describe("Little Harbour playable character derivatives", () => {
 
   it("ships a self-contained local reviewer with no remote dependency", () => {
     const html = readFileSync(resolve(root, "viewer.html"), "utf8");
-    expect(html).toContain("viewer.js");
-    expect(html).not.toMatch(/https?:\/\//);
-    expect(existsSync(resolve(root, "viewer.js"))).toBe(true);
+    expect(html).toContain("data:model/gltf-binary;base64,");
+    expect(html).toContain("<script type=\"module\">");
+    expect(html).not.toContain('src="./viewer.js"');
+    expect(existsSync(resolve(root, "viewer.js"))).toBe(false);
+    const viewerSource = readFileSync(resolve(process.cwd(), "scripts/harbour/playable-character-viewer.mjs"), "utf8");
+    expect(viewerSource).not.toContain("fetch(");
+    expect(viewerSource).toContain("row.dataUrl");
   });
 
   it("returns an immediately poseable procedural biped for either explicit avatar", () => {
