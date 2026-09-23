@@ -110,6 +110,8 @@ type SimState = {
   /** +1 when the front-foot end led at take-off (the stick's "toward the rail" is read in its terms). */
   airFF: 1 | -1;
   vert: boolean; lipYaw: number; lipY: number; coyote: number; airFromPop: boolean; airLaunch: boolean;
+  /** Heading of the line a vert air comes back down (NaN: square-on, nothing to turn). */
+  vertAlign: number;
   trick: TrickS | null; grab: GrabS | null;
   pendPop: PopReq | null; pendLate: { id: string; age: number } | null; pendRevert: number;
   grind: GrindS | null; stall: StallS | null; wall: WallS | null; cooldownLine: number; cooldown: number; balance: number;
@@ -177,7 +179,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       lead: 1, feetSwapped: false, stance: stance === 'goofy' ? 'goofy' : 'regular',
       crouch: 0, crouchPeak: 0, lean: 0, carve: 0, turnRate: 0, pushPhase: 0, stroke: false,
       gnx: S0.nx, gny: S0.ny, gnz: S0.nz, kind: S0.kind, feature: S0.feature, kappa: 0, clearance: 0,
-      airTime: 0, spin: 0, spinRate: 0, toX: x, toZ: z, toY: S0.y, footSign: 1, airFF: 1, vert: false, lipYaw: 0, lipY: 0, coyote: 0, airFromPop: false, airLaunch: false,
+      airTime: 0, spin: 0, spinRate: 0, toX: x, toZ: z, toY: S0.y, footSign: 1, airFF: 1, vert: false, vertAlign: NaN, lipYaw: 0, lipY: 0, coyote: 0, airFromPop: false, airLaunch: false,
       trick: null, grab: null, pendPop: null, pendLate: null, pendRevert: -1,
       grind: null, stall: null, wall: null, cooldownLine: -1, cooldown: 0, balance: 0,
       manual: null, manualResume: false, slide: null,
@@ -529,12 +531,9 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     }
     let vx = tx * mag, vy = ty * mag, vz = tz * mag;
 
-    // Wheel grip (integration 2026-09-23): the board's rolling axis is a tangent
-    // vector that turns with the carve (same rotation as the velocity). Below
-    // WHEEL_GRIP_SPEED along it the velocity is held to it at the end of the
-    // step, so the sideways drift at a wall's peak (a stall) can no longer swing
-    // the board 90° and send you off the side of a mini. Faster, the board
-    // follows travel. Not while powersliding/reverting (slideAngle ≠ 0).
+    // The board's rolling axis: a tangent vector that turns with the carve (same
+    // rotation as the velocity); the wheels hold travel to it at the end of the
+    // step (see "Wheels" below). Not while powersliding/reverting (slideAngle ≠ 0).
     const grip = !S.slide && Math.abs(S.slideAngle) < 1e-3;
     {
       const by = S.boardYaw;
@@ -646,42 +645,43 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     S.gnx = S1.nx; S.gny = S1.ny; S.gnz = S1.nz; S.kind = S1.kind; S.feature = S1.feature; S.clearance = 0;
     S0lip = S1.lip;
 
-    // Board follows travel (above the grip speed); which end leads can flip when
-    // you roll back down a wall.
+    // Wheels (feel pass 2026-09-23). The board rolls along its axis (GA: turned with the carve,
+    // re-seated on the new surface). What gravity or a wall adds sideways does not slide it:
+    //  - a little of it (≤ LATERAL_GRIP, fading out by twice that) is simply held by the tyres,
+    //    so a pad's drainage fall no longer walks a rider off the side of a mini;
+    //  - the rest steers the board toward the fall line, as a tilted deck's trucks do
+    //    (turn rate = sideways accel ÷ speed), but never tighter than SELF_STEER_RADIUS, so at a
+    //    wall's peak or in a slow stall the board keeps its line and rolls back fakie, while at
+    //    speed an angled line up a wall carves round exactly as before. One model at every speed
+    //    (was: full grip below 2.2 u/s, free follow-travel above).
+    // Powersliding and reverting (slideAngle ≠ 0) the board just follows travel.
     let held = false;
-    if (grip && T.LATERAL_GRIP > 0) {
-      // Tyre grip (feel pass 2026-09-23): the wheels resist sideways slip up to
-      // LATERAL_GRIP u/s² before the board lets go and follows travel. A pad's
-      // drainage fall (~1.4°, ≈0.35 u/s² sideways) no longer walks a rider off
-      // the side of a mini in ten walls; a real angle on a steep wall (a carve,
-      // a line across a bank) is far above the budget and still turns you.
-      const bx = Math.sin(S.boardYaw), bz = Math.cos(S.boardYaw);
-      lift(bx, bz, S.gnx, S.gny, S.gnz, V3);
-      // Lateral axis in the tangent plane: n × board.
-      const lx = S.gny * V3.z - S.gnz * V3.y, ly = S.gnz * V3.x - S.gnx * V3.z, lz = S.gnx * V3.y - S.gny * V3.x;
-      const lat = S.vx * lx + S.vy * ly + S.vz * lz;
-      // Below the budget the slip is cancelled; it fades out by twice the budget,
-      // so a genuine angle up a wall turns you exactly as before.
-      const r = Math.abs(lat) / (T.LATERAL_GRIP * dt);
-      const cut = lat * clamp(2 - r, 0, 1);
-      if (cut !== 0) { S.vx -= lx * cut; S.vy -= ly * cut; S.vz -= lz * cut; }
-    }
     if (grip) {
-      // Re-seat the axis on the new surface. Slow along it (climbing to a wall's
-      // peak, a stall) the wheels hold you to it completely; at speed the board
-      // follows travel (momentum across a transition is kept, as before).
-      const dn = GA.x * S.gnx + GA.y * S.gny + GA.z * S.gnz;
-      let ax = GA.x - dn * S.gnx, ay = GA.y - dn * S.gny, az = GA.z - dn * S.gnz;
+      // Re-seat the axis on the new surface: keeping its heading in plan where the ground is
+      // gentle (a sheared pad must not bend a straight line), by 3D projection on steep faces
+      // (a heading in plan is meaningless on a near-vert wall).
+      let ax: number, ay: number, az: number;
+      if (S.gny >= 0.5 && Math.hypot(GA.x, GA.z) > 1e-3) { lift(GA.x, GA.z, S.gnx, S.gny, S.gnz, V3); ax = V3.x; ay = V3.y; az = V3.z; }
+      else { const dn = GA.x * S.gnx + GA.y * S.gny + GA.z * S.gnz; ax = GA.x - dn * S.gnx; ay = GA.y - dn * S.gny; az = GA.z - dn * S.gnz; }
       const al = Math.hypot(ax, ay, az);
       if (al > 1e-6 && Math.hypot(ax, az) > 1e-4) {
         ax /= al; ay /= al; az /= al;
+        held = true;
+        // Lateral axis in the tangent plane: n × a.
+        const lx = S.gny * az - S.gnz * ay, ly = S.gnz * ax - S.gnx * az, lz = S.gnx * ay - S.gny * ax;
         const along = S.vx * ax + S.vy * ay + S.vz * az;
-        if (Math.abs(along) < T.WHEEL_GRIP_SPEED) {
-          held = true;
-          S.vx = ax * along; S.vy = ay * along; S.vz = az * along;
-          S.boardYaw = wrap(Math.atan2(ax, az));
-          if (Math.abs(along) > 0.05) { S.lead = along >= 0 ? 1 : -1; canonical(); }
-        }
+        let lat = S.vx * lx + S.vy * ly + S.vz * lz;
+        lat -= lat * clamp(2 - Math.abs(lat) / (T.LATERAL_GRIP * dt), 0, 1);
+        const full = Math.atan2(lat, Math.abs(along));
+        const cap = (Math.max(Math.abs(along), 0.25) / T.SELF_STEER_RADIUS) * dt;
+        const ta = clamp(full, -cap, cap) * (along >= 0 ? 1 : -1);
+        const c = Math.cos(ta), sn = Math.sin(ta);
+        const bx = ax * c + lx * sn, by = ay * c + ly * sn, bz = az * c + lz * sn;
+        // Within the turn the speed carries round; past it the sideways part is scrubbed.
+        const nv = Math.abs(full) <= cap ? Math.hypot(along, lat) * (along >= 0 ? 1 : -1) : S.vx * bx + S.vy * by + S.vz * bz;
+        S.vx = bx * nv; S.vy = by * nv; S.vz = bz * nv;
+        if (Math.hypot(bx, bz) > 1e-4) S.boardYaw = wrap(Math.atan2(bx, bz));
+        if (Math.abs(nv) > 0.05) { S.lead = nv >= 0 ? 1 : -1; canonical(); }
       }
     }
     const sp = speed3();
@@ -781,8 +781,17 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       const airT = Math.max(0.3, (2 * up) / G);
       const bias = T.VERT_REENTRY / airT;
       S.vx = ax - ox * bias; S.vz = az - oz * bias; S.vy = up;
+      // Where this air comes back down the wall (the same line, mirrored), in the wall's
+      // unrolled frame: an un-steered angled air turns the board to meet it and lands fakie.
+      const nh = Math.hypot(S.gnx, S.gnz);
+      let align = NaN;
+      if (nh > 1e-3 && aim > 0) {
+        const ux = -S.gnx / nh, uz = -S.gnz / nh;
+        const upc = -(S.vx * S.gnx + S.vz * S.gnz) / nh * S.gny + S.vy * nh, across = S.vx * -uz + S.vz * ux;
+        align = Math.atan2(-upc * ux - across * uz, -upc * uz + across * ux);
+      }
       enterAir(false, true);
-      S.vert = true; S.lipYaw = lipYaw; S.lipY = lipY;
+      S.vert = true; S.lipYaw = lipYaw; S.lipY = lipY; S.vertAlign = align;
     } else enterAir(false, true);
   }
 
@@ -845,6 +854,11 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     } else S.spinRate *= Math.exp(-T.SPIN_DAMP * dt);
     S.boardYaw = wrap(S.boardYaw + S.spinRate * dt);
     S.spin += S.spinRate * dt;
+    // An angled vert air with the stick centred turns to come back down its own line (not a spin).
+    if (S.vert && Number.isFinite(S.vertAlign) && Math.abs(I.steer) < 0.2 && Math.abs(S.spinRate) < 1) {
+      const d0 = wrap(S.vertAlign - S.boardYaw), d = Math.abs(d0) > Math.PI / 2 ? wrap(d0 - Math.PI * Math.sign(d0)) : d0;
+      S.boardYaw = wrap(S.boardYaw + clamp(d, -T.VERT_ALIGN_RATE * dt, T.VERT_ALIGN_RATE * dt));
+    }
     S.bodyTwist += (S.spinRate * 0.07 - S.bodyTwist) * ease(10, dt);
 
     // Flip.

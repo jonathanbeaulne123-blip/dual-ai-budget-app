@@ -102,6 +102,11 @@ export const SKATE_TUNING = {
    * so un-steered airs come straight back in, as in Skate.
    */
   VERT_CARRY: 0.1,
+  /**
+   * An angled vert air with the stick centred turns the board (rad/s, not counted as spin) to
+   * meet the line it comes back down, so it lands fakie instead of 40–80° across. Feel pass.
+   */
+  VERT_ALIGN_RATE: 4,
   /** Extra inward pull when a vert air drifts over the deck. */
   VERT_DECK_PULL: 1.1,
   /** Upward step while grounded (beyond what the slope predicts) that counts as a wall. */
@@ -149,8 +154,13 @@ export const SKATE_TUNING = {
   IMPACT_DECAY: 6,
 
   /* ── grinds ────────────────────────────────────────────────────────── */
-  /** Wheel grip: below this speed along the board (u/s) the wheels hold you to it (no sideways velocity), so a transition's peak never swings the board across. Integration 2026-09-23. */
-  WHEEL_GRIP_SPEED: 2.2,
+  /**
+   * The tightest turn gravity can steer a rolling board through (sideways force on a tilted deck
+   * turns the trucks toward the fall line). Feel pass, replacing WHEEL_GRIP_SPEED (full grip
+   * below 2.2 u/s, none above — a jump in behaviour at 2.2): slow at a wall's peak the board keeps
+   * its line and rolls back fakie; at speed an angled line carves round as before.
+   */
+  SELF_STEER_RADIUS: 0.9,
   /**
    * Sideways slip the wheels cancel at any speed (u/s²); the cancelling fades
    * out by twice this. New in the feel pass: ≈ 6° of cross-slope, so a pad's
