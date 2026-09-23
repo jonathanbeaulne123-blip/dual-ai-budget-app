@@ -1,6 +1,6 @@
+// @vitest-environment jsdom
 import { act, createElement } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { JSDOM } from 'jsdom';
 import { describe, expect, it } from 'vitest';
 import { catalogHousehold } from '../src/core/index.ts';
 import { financialAuditHash } from '../src/core/commandIdentity.ts';
@@ -55,13 +55,10 @@ describe('shared village arrangements', () => {
   });
 
   it('previews locally, cancels, waits for save acknowledgement, and exposes a deliberate conflict reload', async () => {
-    const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>');
-    const descriptors = ['window', 'document', 'navigator', 'IS_REACT_ACT_ENVIRONMENT'].map(key => [key, Object.getOwnPropertyDescriptor(globalThis, key)] as const);
-    Object.defineProperty(globalThis, 'window', { configurable: true, value: dom.window });
-    Object.defineProperty(globalThis, 'document', { configurable: true, value: dom.window.document });
-    Object.defineProperty(globalThis, 'navigator', { configurable: true, value: dom.window.navigator });
+    document.body.innerHTML = '<div id="root"></div>';
     Object.defineProperty(globalThis, 'IS_REACT_ACT_ENVIRONMENT', { configurable: true, value: true });
     const household = catalogHousehold();
+    household.hearthside = { ...emptyHearthside(), designs: [{ version: 1, designId: 'DESIGN-UI', revision: 1, displayPieceId: 'PIECE-UI', bankId: null, pieceIds: ['PIECE-UI'] }], memories: [{ version: 1, id: 'MEM-UI', revision: 1, title: 'A shared evening', date: null, experienceId: null, media: [], designs: [], recollections: [], hideAmounts: true, approvals: [{ memberId: 'MEM-001', revision: 1 }, { memberId: 'MEM-002', revision: 1 }], withdrawn: false }] };
     const previews: Array<VillageRoomConfig | null> = [];
     let resolveSave: (() => void) | undefined;
     const commits: unknown[] = [];
@@ -69,8 +66,11 @@ describe('shared village arrangements', () => {
     let root: Root | undefined;
     try {
       await act(async () => { root = createRoot(document.getElementById('root')!); root.render(createElement(VillageDecorator, { household, memberId: 'MEM-001', room: 'kitchen', onCommit: commit as never, onPreview: (value: VillageRoomConfig | null) => previews.push(value) })); });
+      expect(document.body.textContent).toContain(household.members.find(member => member.id === 'MEM-001')!.name);
+      expect(document.body.textContent).toContain('Our Studio piece · piece 1');
+      expect(document.body.textContent).toContain('A shared evening');
       const select = document.getElementById('village-layout') as HTMLSelectElement;
-      await act(async () => { select.value = 'open'; select.dispatchEvent(new dom.window.Event('change', { bubbles: true })); });
+      await act(async () => { select.value = 'open'; select.dispatchEvent(new Event('change', { bubbles: true })); });
       expect(previews.at(-1)).toMatchObject({ room: 'kitchen', layout: 'open' });
       const remote = candidate(1, { light: 'daylight' });
       await act(async () => { root!.render(createElement(VillageDecorator, { household, memberId: 'MEM-001', room: 'kitchen', arrangement: remote, onCommit: commit as never, onPreview: (value: VillageRoomConfig | null) => previews.push(value) })); });
@@ -78,22 +78,30 @@ describe('shared village arrangements', () => {
       await act(async () => { (Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Cancel preview') as HTMLButtonElement).click(); });
       expect(previews.at(-1)).toBeNull();
       const latest = document.getElementById('village-layout') as HTMLSelectElement;
-      await act(async () => { latest.value = 'open'; latest.dispatchEvent(new dom.window.Event('change', { bubbles: true })); });
+      await act(async () => { latest.value = 'open'; latest.dispatchEvent(new Event('change', { bubbles: true })); });
       await act(async () => { (Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Save shared arrangement') as HTMLButtonElement).click(); });
       expect(document.body.textContent).toContain('Saving shared arrangement');
       expect(commits).toHaveLength(1);
       await act(async () => { resolveSave?.(); });
       expect(previews.at(-1)).toBeNull();
-      const reject = async () => { throw Error('changed'); };
+      const reject = async () => { throw Error('connection is unavailable'); };
       await act(async () => { root!.render(createElement(VillageDecorator, { household, memberId: 'MEM-001', room: 'kitchen', arrangement: remote, onCommit: reject as never, onPreview: (value: VillageRoomConfig | null) => previews.push(value) })); });
       const second = document.getElementById('village-layout') as HTMLSelectElement;
-      await act(async () => { second.value = 'gather'; second.dispatchEvent(new dom.window.Event('change', { bubbles: true })); });
+      await act(async () => { second.value = 'gather'; second.dispatchEvent(new Event('change', { bubbles: true })); });
+      await act(async () => { (Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Save shared arrangement') as HTMLButtonElement).click(); });
+      expect(document.body.textContent).toContain('was not saved');
+      expect((Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Save shared arrangement') as HTMLButtonElement).disabled).toBe(false);
+      const conflict = async () => { throw Error('VILLAGE_ARRANGEMENT_CHANGED'); };
+      await act(async () => { root!.render(createElement(VillageDecorator, { household, memberId: 'MEM-001', room: 'kitchen', arrangement: remote, onCommit: conflict as never, onPreview: (value: VillageRoomConfig | null) => previews.push(value) })); });
       await act(async () => { (Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Save shared arrangement') as HTMLButtonElement).click(); });
       expect(document.body.textContent).toContain('Load latest room');
+      expect((Array.from(document.querySelectorAll('button')).find(button => button.textContent === 'Save shared arrangement') as HTMLButtonElement).disabled).toBe(true);
+      await act(async () => { root!.render(createElement(VillageDecorator, { household, memberId: 'MEM-001', room: 'loft', arrangement: remote, onCommit: conflict as never, onPreview: (value: VillageRoomConfig | null) => previews.push(value) })); });
+      expect(previews.at(-1)).toBeNull();
     } finally {
       await act(async () => root?.unmount());
-      for (const [key, descriptor] of descriptors) { if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete (globalThis as Record<string, unknown>)[key]; }
-      dom.window.close();
+      document.body.innerHTML = '';
+      delete (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT;
     }
   });
 });
