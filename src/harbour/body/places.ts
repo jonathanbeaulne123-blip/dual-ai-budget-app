@@ -1,5 +1,6 @@
 import type { HarbourPlaceId } from "../flag.ts";
 import type { RoomHold, Vec3 } from "../camera/poses.ts";
+import {skateSurface} from '../skate/park.ts';
 import { groundHeightAt } from "../scene/ground.ts";
 import { PLACE_HOLDS, placementLift, placementOf, placementToWorld, type Anchor, type Region } from "../scene/place.ts";
 import { BODY_HEIGHT, BODY_RADIUS, courtObstacles, obstaclesFromRegions, type Obstacle, type RoomBounds } from "./obstacles.ts";
@@ -73,7 +74,7 @@ export const walksIndoors = (place: HarbourPlaceId): boolean => place !== "court
 /** The floor under a point, for the place that is standing. Pure and total. */
 export function placeGround(place: HarbourPlaceId): (x: number, z: number) => number {
   const floor = PLACE_FLOOR[place];
-  if (floor === null) return groundHeightAt;
+  if (floor === null) return (x,z)=>skateSurface(x,z,groundHeightAt).y;
   const placement = placementOf(place);
   if (placement) {
     // A placed room's floor is one plane, lifted clear of the island under it.

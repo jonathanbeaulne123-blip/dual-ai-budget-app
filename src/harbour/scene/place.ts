@@ -30,7 +30,7 @@ export type Composition = "phone" | "desktop";
  * the place must fall back to its honest "was here recently" treatment.
  */
 export type PlaceWalkSource = {
-  pose(nowMs: number): { x: number; z: number; yaw: number; moving: boolean; opacity: number; act?: string | null; p?: number } | null;
+  pose(nowMs: number): { y?:number; x: number; z: number; yaw: number; moving: boolean; opacity: number; act?: string | null; p?: number } | null;
 };
 
 /** The partner's presence, from the App's soft-presence display (never from the books). */

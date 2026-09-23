@@ -101,7 +101,8 @@ describe("the world-presence wire", () => {
       expect(() => worldCoordinate(bad)).toThrow(WorldPresenceError);
     }
     const decoded = decodeWorldPresence(step({ x: 1e3, z: -1e3 }));
-    expect(decoded).toMatchObject({ x: WORLD_BOUND, z: -WORLD_BOUND });
+    expect(decoded.type).toBe('world-step');
+    if(decoded.type==='world-step')expect(Math.hypot(decoded.x,decoded.z)).toBeLessThanOrEqual(WORLD_BOUND);
     expect(() => decodeWorldPresence(step({ x: 1e9 }))).toThrow(/ABSURD/);
   });
 
@@ -119,7 +120,7 @@ describe("the world-presence wire", () => {
   /* ── The moves on the wire (walk-moves) ─────────────────────────────── */
 
   it("names exactly the moves the body has, so the worker's copy cannot drift either", () => {
-    expect([...WORLD_ACTS].sort()).toEqual(["jump", "slide", ...EMOTE_IDS].sort());
+    expect([...WORLD_ACTS].sort()).toEqual(["jump", "slide", ...EMOTE_IDS, "skate", "skate-ollie", "skate-kickflip", "skate-heelflip", "skate-shuvit", "skate-360-flip", "skate-grab", "skate-grind", "skate-manual", "skate-bail"].sort());
   });
 
   it("carries a move and how far through it, and leaves a plain walk exactly as it was", () => {

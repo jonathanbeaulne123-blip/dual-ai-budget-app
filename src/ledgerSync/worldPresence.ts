@@ -73,7 +73,9 @@ export function createStepThrottle(
         || sample.moving !== last.moving
         // An act is an event, not a drift: a wave asked for between two ticks
         // goes on the very next one rather than waiting for the body to move.
-        || sample.act !== last.act;
+        || sample.act !== last.act
+        || Math.abs((sample.y??0)-(last.y??0))>WORLD_STEP_EPSILON
+        || Math.abs((sample.p??0)-(last.p??0))>.015;
       if (!changed && last && nowMs - lastAt < idleMs) return null;
       last = { ...sample };
       lastAt = nowMs;
@@ -205,11 +207,10 @@ export function attachWorldPresence(input: WorldPresenceInput): WorldPresenceHan
     }
     peer.seenAt = at;
     if (typeof value.x === "number" && typeof value.z === "number" && typeof value.yaw === "number") {
-      peer.track.push({
-        x: value.x, z: value.z, yaw: value.yaw, moving: value.moving === true, at,
-        act: typeof value.act === "string" ? value.act : null,
-        p: typeof value.p === "number" ? value.p : 0,
-      });
+      try{
+        const step=decodeWorldPresence({type:'world-step',version:1,x:value.x,z:value.z,yaw:value.yaw,moving:value.moving===true,...(value.act?{act:value.act,p:value.p??0}:{}),...(value.y!==undefined?{y:value.y}:{})});
+        if(step.type==='world-step')peer.track.push({...step,at});
+      }catch{/* malformed poses never reach a renderer */}
     }
   }
 

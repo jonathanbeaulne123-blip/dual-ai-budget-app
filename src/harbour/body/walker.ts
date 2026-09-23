@@ -1,4 +1,7 @@
 import * as THREE from "three";
+import {createSkateDriver,type SkateControls} from '../skate/rider.ts';
+import {createSkateboard} from '../skate/board.ts';
+import {skateActionPose} from '../skate/skateModel.ts';
 import { createBodyFigure, type BodyFigure, type BodyMotion, type FigureColours } from "./figure.ts";
 import { createFootprints, FOOTPRINT_POOL, FOOTPRINT_POOL_LITE, type Footprints } from "./footprints.ts";
 import { createDust, DUST_POOL, DUST_POOL_LITE, type Dust } from "./dust.ts";
@@ -77,6 +80,7 @@ export type WalkerOptions = {
 
 export type Walker = {
   group: THREE.Group;
+  skate: SkateControls;
   /**
    * Stand this body in another place (walk-everywhere): its floor, what it
    * cannot walk through, and its walls. The Court and the buildings standing
@@ -174,6 +178,20 @@ export function createWalker(options: WalkerOptions): Walker {
   let route: PathPoint[] | null = null;
   let routeIndex = 0;
   const box = new THREE.Box3();
+  const skater=createSkateDriver(world),board=createSkateboard();
+  const boardRoot=new THREE.Group();boardRoot.add(board.group);boardRoot.visible=false;group.add(boardRoot);
+  function syncSkate(){
+    const s=skater.state();if(!s)return;
+    state={...state,x:s.x,y:s.y+.13,z:s.z,yaw:s.yaw,speed:s.speed,air:s.mode==='air'?Math.max(.01,s.y-skater.world.surface(s.x,s.z).y):0,vy:s.vy,goal:null,emote:null};
+  }
+  const skate:SkateControls={...skater,
+    restore(checkpoint){if(world.room)return;clearRoute();skater.restore(checkpoint);syncSkate();boardRoot.visible=true;trail?.clear();dust.clear();write();},
+    enable(on,progress){
+      if(on){if(world.room)return false;clearRoute();skater.mount(state.x,state.z,state.yaw,progress);trail?.clear();dust.clear();boardRoot.visible=true;}
+      else{const s=skater.unmount();if(s)state=placeBody(state,s.x,s.z,world,s.yaw);boardRoot.visible=false;motion.skate=undefined;figure.pose(0,0,0);write();}
+      return true;
+    },
+  };
 
   function clearRoute(): void { route = null; routeIndex = 0; }
 
@@ -195,8 +213,9 @@ export function createWalker(options: WalkerOptions): Walker {
   figure.pose(0, 0, 0);
 
   return {
-    group,
+    group,skate,
     setWorld(next) {
+      if(next.room)skate.enable(false);
       if (next.groundHeightAt) world.groundHeightAt = next.groundHeightAt;
       if (next.obstacles) world.obstacles = next.obstacles;
       if (next.room !== undefined) world.room = next.room;
@@ -210,6 +229,7 @@ export function createWalker(options: WalkerOptions): Walker {
     setInput(next) { input = next; if (next.forward !== 0 || next.strafe !== 0) clearRoute(); },
     input: () => input,
     goTo(x, z) {
+      if(skater.active())skate.enable(false);
       const planned = findPath({ x: state.x, z: state.z }, { x, z }, world);
       clearRoute();
       if (!planned?.length) { state = { ...state, goal: null, stalled: 0 }; return false; }
@@ -222,10 +242,10 @@ export function createWalker(options: WalkerOptions): Walker {
       figure=avatar?createPlayableFigure(avatar,tier,{invalidate:options.invalidate}):createBodyFigure(options.colours);
       group.add(figure.group);write();figure.pose(state.phase,gaitOf(state),0,motion);
     },
-    jump() { state = requestJump(state); },
-    slideNow() { state = requestSlide(state); },
-    emote(id) { state = requestEmote(state, id); },
-    action: () => actionOf(state),
+    jump() { if(skater.active())skater.action("ollie");else state = requestJump(state); },
+    slideNow() { if(skater.active())skater.action("brake");else state = requestSlide(state); },
+    emote(id) { if(skater.active())skate.enable(false);state = requestEmote(state, id); },
+    action: () => skater.state()?skateActionPose(skater.state()!):actionOf(state),
     setReduced(next) {
       if (next === reduced) return;
       reduced = next;
@@ -233,9 +253,20 @@ export function createWalker(options: WalkerOptions): Walker {
       if (next) { dust.clear(); motion.lean = 0; motion.bank = 0; motion.run = 0; motion.flourish = 0; }
       else motion.flourish = 1;
     },
-    cancel() { clearRoute(); state = { ...state, goal: null, stalled: 0 }; },
-    place(x, z, yaw) { clearRoute(); state = placeBody(state, x, z, world, yaw ?? state.yaw); write(); trail?.clear(); dust.clear(); },
+    cancel() { skater.stop(); clearRoute(); state = { ...state, goal: null, stalled: 0 }; },
+    place(x, z, yaw) { if(skater.active())skate.enable(false);clearRoute(); state = placeBody(state, x, z, world, yaw ?? state.yaw); write(); trail?.clear(); dust.clear(); },
     step(dt, t, theta) {
+      if(skater.active()){
+        const moving=skater.step(input,dt);syncSkate();write();
+        const s=skater.state()!,action=skateActionPose(s);
+        motion.run=0;motion.lean=0;motion.bank=reduced?0:s.bank;motion.air=state.air;motion.rise=s.vy/7;motion.crouch=s.crouch;motion.slide=0;motion.emote=null;
+        motion.skate={push:s.pushEffort>0&&s.mode==='ride'?Math.max(0,Math.sin(s.pushPhase)):0,balance:s.mode==='grind'||s.manualTime>0?s.balance:0,bail:s.mode==='bail'};
+        figure.pose(0,0,t,motion);
+        boardRoot.position.set(s.x,s.y,s.z);boardRoot.rotation.y=s.yaw;
+        board.setDeck(skater.deckId());board.pose(s.speed,dt,action.act,action.p,s.pitch,reduced?0:s.bank);
+        return moving;
+      }
+      motion.skate=undefined;
       if (input.forward !== 0 || input.strafe !== 0) clearRoute();
       const frame = stepBody(state, input, theta, dt, world);
       state = frame.state;
@@ -316,6 +347,7 @@ export function createWalker(options: WalkerOptions): Walker {
     },
     dispose() {
       figure.dispose();
+      board.dispose();
       trail?.dispose();
       dust.dispose();
       group.removeFromParent();

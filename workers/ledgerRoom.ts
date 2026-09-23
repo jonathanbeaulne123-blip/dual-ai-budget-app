@@ -1354,7 +1354,7 @@ export class LedgerRoom extends DurableObject<Env> {
               // the act is one of eight validated words and `p` has been pulled
               // onto 0…1, exactly as the coordinates are clamped onto the island.
               ...(input.type==='world-step'?{x:input.x,z:input.z,yaw:input.yaw,moving:input.moving,
-                ...(input.act?{act:input.act,p:input.p??0}:{})}:{})};
+                ...(input.act?{act:input.act,p:input.p??0}:{}),...(input.y!==undefined?{y:input.y}:{})}:{})};
           const frame=JSON.stringify(payload);
           for(const peer of this.ctx.getWebSockets()){
             const p=peer.deserializeAttachment() as Attachment;

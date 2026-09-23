@@ -1,3 +1,4 @@
+import {SKATE_SPOTS} from '../skate/park.ts';
 import { VILLAGE_SITES, VILLAGE_WATERFRONT } from '../village/layout.ts';
 import { HARBOUR_LANES, HARBOUR_WANDERS, distanceToTrail } from '../village/world.ts';
 
@@ -10,6 +11,7 @@ const doorway=(id:string,x:number,z:number,yaw:number,door:readonly[number,numbe
   kind:'circle',id,x:x+door[0]*Math.cos(yaw)+door[1]*Math.sin(yaw),z:z+door[1]*Math.cos(yaw)-door[0]*Math.sin(yaw),r:1.7,
 });
 export const ISLAND_KEEP_OUTS:readonly KeepOut[]=Object.freeze([
+  ...SKATE_SPOTS.map(s=>rect(`skate-${s.id}`,s.x,s.z,s.halfWidth+1.5,s.halfDepth+1.5,0)),
   ...Object.values(VILLAGE_SITES).flatMap(site=>{
     const [x,z]=site.spot,yaw=Math.atan2(-x,-z);
     return [rect(site.entry,x,z,site.half[0]+.25,site.half[1]+.25,yaw),doorway(`${site.entry}-door`,x,z,yaw,site.door)];
