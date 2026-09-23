@@ -3,6 +3,7 @@ import {holdAshore,type Obstacle} from '../body/obstacles.ts';
 import {type ScoreLine,type ScoreOutcome,type SkateIntent,type SkatePresent,type SkateSimEvent,type Stance} from './contract.ts';
 import {createSkateSim,type SkateSim,type SkateSimOptions} from './sim/index.ts';
 import {createSkateInput,gesturePath as flickPath,type SkateInput} from './input/index.ts';
+import type {GetPads} from './input/gamepad.ts';
 import {createSkateScore,type SkateScore} from './tricks/score.ts';
 import {resolveGrind,SKATE_FLIPS,SKATE_GRABS,SKATE_GRINDS,skateCatalogs} from './tricks/catalog.ts';
 import {SKATE_DECKS,SKATE_ROUTES,SKATE_SPOTS,skateFieldFor,type SkateDeckId,type SkateRouteId,type SkateSpotId} from './park.ts';
@@ -133,7 +134,15 @@ export const SKATE_TRICK_BOOK:TrickBook={
 /* ------------------------------------------------------------------ the driver */
 const EMPTY_LINE:ScoreLine={active:false,tricks:[],base:0,multiplier:1,keepAlive:0,latest:null};
 
-export function createSkateDriver(world:SkateDriverWorld,options:{now?:()=>number}={}){
+export type SkateDriverOptions={
+  /** The clock (ms) `sample()` reads; event timeStamps must share it. Default `performance.now()`. */
+  now?:()=>number;
+  /** Gamepad source for the input (default `navigator.getGamepads`). The Skate Lab injects a virtual pad. */
+  getGamepads?:GetPads|null;
+  /** Dev/test hook (Skate Lab): an intent that replaces the input's sample for this step when non-null. */
+  intent?:()=>SkateIntent|null;
+};
+export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOptions={}){
   const now=options.now??(()=>typeof performance!=='undefined'?performance.now():Date.now());
   const field=skateField();
   useRealSkateTables();
@@ -152,7 +161,7 @@ export function createSkateDriver(world:SkateDriverWorld,options:{now?:()=>numbe
     session=createSkateSession(progress?cloneSkateProgress(progress):undefined);
     const s=settings();
     sim=createSkateSim(field,SKATE_CATALOGS,{x,z,yaw,stance:s.stance,...skateSimOptions(world.obstacles)});
-    input=createSkateInput({stance:s.stance,mode:s.controls});
+    input=createSkateInput({stance:s.stance,mode:s.controls,...(options.getGamepads!==undefined?{getGamepads:options.getGamepads}:{})});
     score=createSkateScore({stance:s.stance,catalogs:SKATE_CATALOGS});
     paused=false;cut=true;simTime=0;outcome=null;frame.length=0;
     syncInput(sim.present());
@@ -206,7 +215,7 @@ export function createSkateDriver(world:SkateDriverWorld,options:{now?:()=>numbe
       syncInput(before);
       const airborne=before.phase==='air';
       const rolling=before.speed>.15&&before.phase!=='bail'&&before.phase!=='recover';
-      const intent:SkateIntent=input.sample(now(),airborne,rolling,{landingSoon:airborne&&before.clearance<.15&&before.vy<0});
+      const intent:SkateIntent=options.intent?.()??input.sample(now(),airborne,rolling,{landingSoon:airborne&&before.clearance<.15&&before.vy<0});
       const waiting=(session.run?.countdown??0)>0;
       let banked=0;
       if(!waiting){

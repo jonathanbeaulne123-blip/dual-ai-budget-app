@@ -70,3 +70,36 @@ Merged sim → tricks → park → look → show (no conflicts), then made them 
 | Presence | Wire act mapped from the v2 present onto the existing `skate-*` acts (no wire/worker change); partner drawn by the v2 look. | `test/harbour-skate-presence.test.ts` |
 
 v1 (`rider.ts`, `skateModel.ts`, `hud/legacy.ts`, park ramp shims) is deleted; `skate/driver.ts` replaces it. Browser smoke (headless SwiftShader, ~1–3 fps): board down, push, ollie and kickflip (easy keys — the flick timing can't survive 1 fps event delivery), Tideline via the book, pause/resume, walk away, Taylor and Newfoundland: `docs/evidence/skate-v2/`. No console errors.
+
+## Skate Lab
+
+A deterministic, frame-stepped rig for looking at and tuning the ride. Dev only: served at `/__skate-lab` by `scripts/skate-lab.mjs` (its own loopback Vite server) and by the `__review` preview. Nothing under `src/` imports it, and it is not in the build (`test/skate-lab.test.ts` fences both, including a scan of `dist/` when one exists).
+
+- **Parts** (all real): `buildSkatePark` on the one field, the island ground and light rig, the theme's dressing (classic, taylor or newfoundland; full or lite tier), `createSkaterLook` on the Jonathan or Bianca playable figure (or `default`), the real skate chase camera, and optionally the real `SkateHUD`. The ride is the real driver (sim, flick-it input, scorer, session). Time only moves when you step it, and the page renders only in `snap()`, so SwiftShader is fine at 480×300.
+- **Files:**
+  - `test/browser/skateLabCore.ts`: the headless core (timeline, virtual gamepad, trace).
+  - `test/browser/skateLab.ts`: the page and `window.skateLab`.
+  - `test/browser/skateLabScenarios.ts`: the named scenarios and still cameras.
+  - `scripts/skate-lab.mjs`: the CLI.
+- **`window.skateLab`:**
+  - `await load({spot | x,z,yaw | local:[lx,lz,deg], speed, theme, tier, avatar, stance, controls, hud, width, height})`
+  - `script([...])`. Each entry is at frame `at` after the call. Entry kinds:
+    - `intent` (a raw `SkateIntent` for `for` frames; one-shots fire on the first frame only);
+    - `key`/`down`, or `tap` (keyboard through the real input);
+    - `pad` (virtual gamepad: sticks and standard buttons);
+    - `flick: id|null` (plays a flick-it gesture on the right stick through the real recogniser);
+    - `auto: 'grind'|'manual'|'nose'` (a scripted thumb that balances);
+    - `place: {…sim fields}` (test shortcut, e.g. `boardYaw:'@+90'`);
+    - `command`.
+  - `step(frames, dt=1/60)` and `advanceTo(frame)`.
+  - `await snap()` returns a PNG data URL of the canvas. With `hud`, the CLI screenshots the stage instead.
+  - `present()`, `events()`, `trace()` and `kinds()`.
+  - `camera('chase'|'side'|'orbit'|'fixed', params)`: `side` locks the view heading when set; `orbit` takes `{yawDeg, pitchDeg, dist, target?}`.
+  - `pose(partialPresent, settle=45)` freezes any `SkatePresent` for pose inspection.
+  - `begin(name, overrides)`, `still(theme, tier, i)` and `compose(images, labels, cols, title)`.
+- **CLI**
+  - `node scripts/skate-lab.mjs list`
+  - `node scripts/skate-lab.mjs all stills --out /home/claude/lab-out/run1` writes a filmstrip `<name>.png` (12 frames, 4 across, each frame labelled with its phase and speed) and a trace `<name>.json` (present and events for every frame) per scenario, plus `stills.png`. Stills are theme × tier × three fixed cameras.
+  - Options: `--size 480x300`, `--cols 4`, `--theme`, `--tier`, `--avatar jonathan|bianca|default`, `--stance goofy`, `--hud` (use `--size 960x600` to judge the HUD), `--port`, `--chromium <path>` (or `SKATE_LAB_CHROMIUM`; defaults to the preinstalled headless shell). A full run takes about 1 minute.
+- **Scenarios**, each with an event expectation checked headless by `test/skate-lab.test.ts`: push-away, ollie, kickflip, heelflip, pop-shuvit (the flip tricks are driven by flick-it on the virtual stick), 360-flip (off the Hatch, with a crouched landing), fs-180, indy-kicker, grind-5050 / grind-boardslide (Rolling Pin), grind-smith (Breadboard ledge), manual, bowl (Kettle drop-in), vert-air (Chimney), powerslide (round to fakie), bail (and get up), and line (50-50, roll out, kickflip, manual).
+- **Tuning loop:** change a constant, then run `pnpm exec vitest run test/skate-lab.test.ts` (seconds; tells you whether the tricks still happen), then run the CLI for the affected scenarios and compare the filmstrips with the baseline. Same inputs, same frames: filmstrips are directly comparable across runs.
