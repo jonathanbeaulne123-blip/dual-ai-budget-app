@@ -24,8 +24,10 @@ export function buildRoomPlaything(room: PlaythingRoom, dressing: PlaceDressing,
   const m = maker(room, tier), dark = dressing.timber, brass = dressing.metal, paper = "#e7d9b6", warm = dressing.theme === "newfoundland" ? "#efa85c" : "#e8b35e";
   const anchor: Anchor = { id: `${room}-plaything`, position: [-2, .9, .8], zone: "plaything", label: "" };
   // A single stable table makes the neutral coordinate useful in every inherited room.
+  if(room!=='bank'){
   box(m, [1.5, .12, 1.08], dark, "play-tabletop", [-2, .64, .8]);
   for (const x of [-2.58, -1.42]) for (const z of [.4, 1.2]) cyl(m, .045, .62, dark, "play-table-leg", [x, .31, z]);
+  }
   let motion = (_t: number) => {}, reset = () => {};
   let activeFor = 0;
   let words = "";
@@ -53,6 +55,7 @@ export function buildRoomPlaything(room: PlaythingRoom, dressing: PlaceDressing,
     box(m, [.62, .12, .48], dark, "projector-base", [-2, .82, .8]); cyl(m, .19, .35, brass, "projector-lens", [-1.7, .92, .8], [0, 0, Math.PI / 2]); const reel = cyl(m, .18, .05, dark, "projector-reel", [-2.22, 1.1, .8], [Math.PI / 2, 0, 0]); const beam = m.add(new THREE.ConeGeometry(.42, 1.25, 10, 1, true), "#eadcad", "projector-visible-cone", [-1.06, .92, .8], [0, 0, -Math.PI / 2]); beam.visible = false; motion = t => { reel.rotation.y = t * 3.2; beam.visible = true; }; reset = () => { reel.rotation.y = 0; beam.visible = false; }; words = "A soft visible cone opens from the projector lens.";
   }
   const action = ({ kitchen: "Kettle", tower: "Music box", cellar: "Lantern", atlas: "Globe", bank: "Bell", library: "Book", glasshouse: "Watering can", kiln: "Pottery wheel", cottage: "Feather toy", boathouse: "Projector" } as const)[room];
+  if(room==='bank'){m.group.position.set(-.25,.3,.5);anchor.position=[anchor.position[0]-.25,anchor.position[1]+.3,anchor.position[2]+.5];}
   anchor.label = `${action} — play for a moment`;
   m.group.traverse(node => { if ((node as THREE.Mesh).isMesh) node.userData.anchor = anchor.id; });
   return { group: m.group, anchors: () => [anchor], regions: () => [{ id: anchor.id, group: room, label: anchor.label, box: new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(...anchor.position), new THREE.Vector3(1.15, 1.0, 1.0)) }], interact: id => { if (id !== anchor.id) return null; activeFor = 2.5; return words; }, animate: (t, dt) => { if (activeFor <= 0) return false; activeFor = Math.max(0, activeFor - Math.max(0, dt)); motion(t); if (activeFor === 0) reset(); return true; }, dispose: () => m.dispose() };

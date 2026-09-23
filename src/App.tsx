@@ -22,7 +22,7 @@ import { HarbourFlat } from './harbour/flat/PlaceFlat.tsx';
 import { PersonalJourney } from './house/PersonalJourney.tsx';
 import { PersonalTogether } from './house/PersonalTogether.tsx';
 import { interpretationGate } from './house/supportedInterpretation.ts';
-import { HOUSE_WORLD_ENABLED, HOUSE_PLACES, TARGET_NAMES, houseTargetRoute, houseLifeRoute, houseRouteFromLife, readHouseReturn, resolveHouseRouteScope, saveHouseReturn, type HouseIdentity, houseIdentity } from './house/navigation.ts';
+import { HOUSE_WORLD_ENABLED, HOUSE_PLACES, TARGET_NAMES, houseTargetRoute, houseToolPlace, houseTabForRoute, houseLifeRoute, houseRouteFromLife, readHouseReturn, resolveHouseRouteScope, saveHouseReturn, type HouseIdentity, houseIdentity } from './house/navigation.ts';
 import { houseReturnSlot, needsHouseReturnCapture, houseComposition } from './house/returnCache.ts';
 import { binderyDivisionFor } from './house/bindery.ts';
 import { HOUSE_ROOMS, housePath, parseHouseRoute, togetherLevelForRoom, type HouseLevel, type HouseRoom, type HouseRoute } from './hearthside/houseRoutes.ts';
@@ -623,14 +623,7 @@ function houseRouteForTab(tab: Tab, householdId: string): HouseRoute | null {
   return null;
 }
 
-function tabForHouseRoute(route: HouseRoute): Tab {
-  if (route.surface === "conversation" || route.surface === "hercules") return "hercules";
-  if (route.surface === "more" || route.surface === "status") return "more";
-  if (route.room === "home") return "home";
-  if (route.room === "study") return route.level === "above" ? "planner" : route.level === "middle" ? "ledger" : "calendar";
-  if (route.room === "kitchen-table") return "plan";
-  return "play";
-}
+function tabForHouseRoute(route: HouseRoute): Tab { return houseTabForRoute(route); }
 
 function presenceTab(tab: Tab): Exclude<Tab, "till" | "together" | "planner" | "timeMachine" | "hercules" | "play"> {
   if (tab === "planner" || tab === "till" || tab === "hercules") return "home";
@@ -6943,6 +6936,7 @@ export function App() {
   const hearthsideOpen = (HEARTHSIDE_FLAGS.presentation || HOUSE_WORLD_ENABLED) && view === "household" && tab === "play";
   const houseNavigationActive = HOUSE_WORLD_ENABLED || HEARTHSIDE_FLAGS.presentation && view === "household";
   const activeHouseRoute=(HOUSE_WORLD_ENABLED&&houseRoute?.scope!==view?null:houseRoute)??houseRouteForTab(tab,household.householdId)??{room:"home",level:"middle",householdId:household.householdId};
+  const activeHouseTool=houseToolPlace(activeHouseRoute);
   const houseToolsVisible = !HOUSE_WORLD_ENABLED || Boolean(activeHouseRoute.surface && activeHouseRoute.surface!=="queen");
   // Due reminders are an inline list until one occurrence's review sheet opens.
   // They must not silently disable the companion's ordinary help entry.
@@ -7242,7 +7236,7 @@ export function App() {
         />
       ) : null}
 
-      {HOUSE_WORLD_ENABLED&&activeHouseRoute.surface==="conversation"&&<KitchenFolio key={`${ledgerRenderScopeKey}:${view}`} identity={`${ledgerRenderScopeKey}:${view}`} household={household} memberId={actorId} view={view} today={today} route={activeHouseRoute} onCommand={runKitchen} onNavigate={navigateHouseSurface} onOpenPlan={()=>{}} onOpenCalendar={()=>goTab("calendar",undefined,{route:{...activeHouseRoute,room:"study",level:"below",surface:"calendar"},history:"push"})} onOpenHercules={()=>openLegacyHercules()}/>}
+      {HOUSE_WORLD_ENABLED&&activeHouseRoute.surface==="conversation"&&<KitchenFolio key={`${ledgerRenderScopeKey}:${view}`} identity={`${ledgerRenderScopeKey}:${view}`} household={household} memberId={actorId} view={view} today={today} route={activeHouseRoute} onCommand={runKitchen} onNavigate={navigateHouseSurface} onOpenPlan={()=>{}} onOpenCalendar={()=>goTab("calendar",undefined,{route:houseTargetRoute(activeHouseRoute,"calendar"),history:"push"})} onOpenHercules={()=>openLegacyHercules()}/>}
       {workspaceEnabled && <HerculesWorkspaceRoom
         hearthside={selectedExperienceWorkspace()} onExperienceOpened={id=>{if(household.hearthside?.experiences.some(e=>e.id===id&&e.state!=="archived"))setWorkspaceExperienceSelection({scope:workspaceUiScopeKey,id});}}
         getReportContext={captureReportContext} reporterName={household.members.find(m => m.id === actorId)?.name}
@@ -7265,7 +7259,7 @@ export function App() {
       />}
       {(HEARTHSIDE_FLAGS.presentation||HOUSE_WORLD_ENABLED)&&hearthsideToolReturn?.scope===ledgerRenderScopeKey&&hearthsideToolReturn.audience===view&&hearthsideToolReturn.tab===tab&&<aside className="hearthside-tool-return"><span>{hearthsideToolReturn.label}</span><button onClick={()=>{const back=readHearthsideToolReturn(hearthsideToolReturn,ledgerRenderScopeKey,household.householdId,view);if(!back)return;if(HOUSE_WORLD_ENABLED)putHouseObjectBack();else returnToSharedLife(back.path,back.focusId);}}>Return to {view==="personal"?"my folio":HEARTHSIDE_LABEL}</button></aside>}
       {(HEARTHSIDE_FLAGS.presentation || HOUSE_WORLD_ENABLED) && (tab === "play" || tab === "together") && view === "household" && <PlayBoundary onExit={() => goTab("home")} exitLabel="Return Home"><Suspense fallback={<p>Opening our shared home…</p>}><Hearthside
-        controlledRoute={HOUSE_WORLD_ENABLED?houseLifeRoute(activeHouseRoute):undefined} onReturnToOrigin={HOUSE_WORLD_ENABLED?putHouseObjectBack:undefined} onNavigate={HOUSE_WORLD_ENABLED?(next,replace)=>{const route=houseRouteFromLife(next,view);navigateHouseSurface(route,replace);}:undefined}
+        controlledRoute={HOUSE_WORLD_ENABLED?houseLifeRoute(activeHouseRoute):undefined} onReturnToOrigin={HOUSE_WORLD_ENABLED?putHouseObjectBack:undefined} onNavigate={HOUSE_WORLD_ENABLED?(next,replace)=>{const toolRoute=houseRouteFromLife(next,view);const route=activeHouseRoute.village?{...toolRoute,room:activeHouseRoute.room,level:activeHouseRoute.level,village:activeHouseRoute.village}:toolRoute;navigateHouseSurface(route,replace);}:undefined}
         key={ledgerRenderScopeKey} identity={ledgerRenderScopeKey} household={household} memberId={actorId} busy={busy} vaultSource={()=>ledgerSyncRef.current}
         connected={useLedgerSync && realtimeStatus === "SUBSCRIBED"} onCommand={runKitchen}
         initialRoom={playInitialArea === "dressing" ? "studio" : undefined}
@@ -7303,7 +7297,7 @@ export function App() {
           composition={HOUSE_WORLD_ENABLED?"queen":HEARTHSIDE_FLAGS.presentation ? "queen" : undefined}
           world={HOUSE_WORLD_ENABLED?"flat":activeBooksGate.ready ? "auto" : "flat"}
           initialBankId={HOUSE_WORLD_ENABLED&&activeHouseRoute.object?.startsWith("bank/")?activeHouseRoute.object.slice(5):undefined}
-          housePlace={(HEARTHSIDE_FLAGS.presentation||HOUSE_WORLD_ENABLED)&&activeHouseRoute.room==="home"?(activeHouseRoute.level==="above"?"loft":activeHouseRoute.level==="below"?"cellar":"home"):undefined}
+          housePlace={(HEARTHSIDE_FLAGS.presentation||HOUSE_WORLD_ENABLED)&&activeHouseTool.room==="home"?(activeHouseTool.level==="above"?"loft":activeHouseTool.level==="below"?"cellar":"home"):undefined}
           onHousePlace={HEARTHSIDE_FLAGS.presentation ? place => goTab("home", undefined, {route:{room:"home",level:place==="loft"?"above":place==="cellar"?"below":"middle",householdId:household.householdId},history:"push"}) : undefined}
           onGo={(next) => goTab(next)}
           onOpenMemory={id=>returnToSharedLife(hearthsidePath({version:1,householdId:household.householdId,room:'theatre',mode:'remember',object:{kind:'memory',id}}),'hearthside-focus-title')}
@@ -7508,7 +7502,7 @@ export function App() {
               return view === "household" ? (
                 <HouseholdBoardMedia household={household} memberId={actorId}>{(boardMedia) => (
                 <OurPathWorld key={ledgerRenderScopeKey} household={household} memberId={actorId} today={today} interpretationGate={sceneInterpretationGate} busy={busy} onCommand={runKitchen} onOpenFund={() => goTab("ledger")}
-                  houseSurface={(HEARTHSIDE_FLAGS.presentation||HOUSE_WORLD_ENABLED) && activeHouseRoute.room==="kitchen-table" ? activeHouseRoute.level==="below" ? "studio" : activeHouseRoute.level==="middle" ? "work" : "journey" : undefined}
+                  houseSurface={(HEARTHSIDE_FLAGS.presentation||HOUSE_WORLD_ENABLED) && activeHouseTool.room==="kitchen-table" ? activeHouseTool.level==="below" ? "studio" : activeHouseTool.level==="middle" ? "work" : "journey" : undefined}
                   houseWorkCentre={<section className="kitchen-work-centre"><p className="kicker">Kitchen Table</p><h2>Work centre</h2><p>Bring a question to Hercules, or continue the shared Sitdown. The agreement stays downstairs in the Plan Studio.</p><div className="kitchen-work-centre__actions"><button type="button" onClick={() => openLegacyHercules()}>Open Hercules conversation</button><button type="button" onClick={() => goTab("together", "practical")}>Open our shared Sitdown</button></div><p className="muted" role="status">{workspaceEnabled ? "The expanded workspace is available when you choose to open it." : "The expanded workspace is not activated. Opening a conversation here does not start a provider run."}</p></section>}
                   boardMedia={boardMedia}
                   onOpenTimeMachine={monthKey => { setTimeMachineRequest({ monthKey }); goTab("timeMachine"); }}

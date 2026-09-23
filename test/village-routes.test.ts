@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { housePath, parseHouseRoute, type HouseRoute } from '../src/hearthside/houseRoutes.ts';
-import { houseTargetRoute, readHouseReturn, saveHouseReturn, type HouseIdentity } from '../src/house/navigation.ts';
+import { houseTargetRoute, houseTabForRoute, houseToolPlace, houseLifeRoute, readHouseReturn, saveHouseReturn, type HouseIdentity } from '../src/house/navigation.ts';
 import { houseReturnSlot } from '../src/house/returnCache.ts';
 import { VILLAGE_HOUSE_ADDRESSES, villageHouseAddress } from '../src/house/villageLocation.ts';
 
@@ -43,4 +43,15 @@ describe('Little Harbour physical addresses', () => {
     expect(readHouseReturn(local, identity, 'invalid-body')?.body).toBeUndefined();
     expect(readHouseReturn(local, { ...identity, memberId: 'MEM-two' }, houseReturnSlot(books))).toBeNull();
   });
+});
+
+
+it('opens the requested tool from every physical room without changing its origin',()=>{
+  const routes=[['books','ledger','study','middle'],['planner','planner','study','above'],['calendar','calendar','study','below'],['loft-banks','home','home','above'],['cellar-bills','home','home','below'],['plan-studio','plan','kitchen-table','below'],['pottery','play','making','above'],['memories','play','together','below']] as const;
+  for(const origin of VILLAGE_HOUSE_ADDRESSES)for(const [surface,tab,room,level] of routes){
+    const route=houseTargetRoute({...origin,householdId:'HH-1',scope:'household'},surface);
+    expect(houseTabForRoute(route)).toBe(tab);expect(houseToolPlace(route)).toEqual({room,level});
+    expect(route.village).toEqual(origin.village);expect(route.room).toBe(origin.room);
+    if(surface==='memories')expect(houseLifeRoute(route).room).toBe('theatre');
+  }
 });

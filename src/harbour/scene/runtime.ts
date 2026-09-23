@@ -409,7 +409,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const hole = placeId==='cellar' ? active : null;
     const planes:THREE.Plane[]=[];
     if(hole){
-      for(const [lx,lz,half] of [[1,0,hole.halfWidth],[-1,0,hole.halfWidth],[0,1,hole.halfDepth],[0,-1,hole.halfDepth]]){
+      for(const [lx,lz,half] of [[1,0,hole.halfWidth],[-1,0,hole.halfWidth],[0,1,hole.halfDepth+8],[0,-1,hole.halfDepth]]){
         const normal=new THREE.Vector3(lx!*Math.cos(hole.yaw)+lz!*Math.sin(hole.yaw),0,lz!*Math.cos(hole.yaw)-lx!*Math.sin(hole.yaw));
         planes.push(new THREE.Plane(normal,-normal.x*hole.spot[0]-normal.z*hole.spot[1]-half!));
       }
@@ -600,9 +600,12 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     exitArmed = false;
     walker?.setWorld({ obstacles: placeObstacles(placeId, handle.regions(), anchors, tier), room });
     if (follow) {
+      const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
       follow.setHold(followHoldIn(holdFor(placeId), room));
       const reach = walksIndoors(placeId) ? roomReach(room) : null;
       follow.setPlan(reach === null ? null : followInRoom(reach, composition));
+      // Configuring the inactive walking rig must not take over the room view.
+      if(!following){camera.position.copy(eye);camera.quaternion.copy(orientation);camera.fov=fov;camera.updateProjectionMatrix();}
     }
   }
   /**
@@ -740,6 +743,13 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         if (node.userData.ground === true) return { kind: "ground", point };
         node = node.parent;
       }
+      // Material-batched architecture still has authored interaction volumes.
+      // Test the actual ray hit in the room frame, never a screen-wide overlay.
+      lists();
+      const localPoint=hit.point.clone(),placement=live.get(placeId)?.matrix;
+      if(placement)localPoint.applyMatrix4(placement.clone().invert());
+      const found=regionList.find(region=>region.group!=="furniture"&&region.box?.containsPoint(localPoint)&&anchorById.has(region.id));
+      if(found){const anchor=anchorById.get(found.id)!;return {kind:"anchor",id:found.id,anchor,point};}
       // Untagged scenery behaves as ground: dragging it orbits.
       return { kind: "ground", point };
     }
@@ -784,6 +794,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // An unplaced place has none and every number below is what it always was.
     const frame = live.get(placeId)?.matrix ?? null;
     for (const region of regionList) {
+      if (region.group === "furniture") continue;
       if (region.box) box.copy(region.box);
       else { box.makeEmpty(); for (const object of region.objects ?? []) box.expandByObject(object); }
       if (box.isEmpty()) continue;
@@ -833,11 +844,10 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     }
     // Development, the review server and a page asked for them keep the
     // numbers; a shipped frame writes nothing to the DOM at all.
+    host.dataset.houseCamera = JSON.stringify(camera.position.toArray().map(n => Number(n.toFixed(4))));
     if (!diagnostics) return;
     host.dataset.renderMs = (paintSamples.reduce((a, b) => a + b, 0) / paintSamples.length).toFixed(2);
     host.dataset.projectMs = (projectSamples.reduce((a, b) => a + b, 0) / projectSamples.length).toFixed(2);
-    host.dataset.projectMs = (projectSamples.reduce((a, b) => a + b, 0) / projectSamples.length).toFixed(2);
-    host.dataset.houseCamera = JSON.stringify(camera.position.toArray().map(n => Number(n.toFixed(4))));
     // ── The body lane (world-body) ── what one step of the walk and the follow
     // camera cost this frame, and where the body stands, for the evidence run.
     if (walker) {
@@ -1213,6 +1223,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
        * and, with it, the hold. Every other way in keeps the choreography.
        */
       const crossing = options.threshold === true;
+      if(!crossing)setFollowing(false);
       const plan = travelPlan(from, next, cut || crossing);
       const place = PLACES[next];
       if (!place) return plan;

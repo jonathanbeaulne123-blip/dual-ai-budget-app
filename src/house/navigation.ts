@@ -1,5 +1,5 @@
 import { housePath, parseHouseRoute, type HouseRoute } from "../hearthside/houseRoutes.ts";
-import type { Environment, LedgerView } from "../core/types.ts";
+import type { Environment, LedgerView, AppTab } from "../core/types.ts";
 import type { HearthsideRoute } from "../hearthside/routes.ts";
 
 export const HOUSE_WORLD_ENABLED = import.meta.env.VITE_HEARTH_HOUSE_WORLD === "1";
@@ -33,9 +33,7 @@ export function readHouseReturn(storage: Store, identity: HouseIdentity, object 
 export function houseSurfaceRoute(route: HouseRoute, surface: string, object?: string): HouseRoute {
   return {...route, surface, ...(object ? {object} : {}), ...(!["pottery", "wardrobe"].includes(surface) ? {studioSelection: undefined} : {}), ...(surface !== "pottery" ? {studioTab: undefined} : {})};
 }
-/** Furniture has one address; collections are browsable even while carrying a folio. */
-export function houseTargetRoute(route:HouseRoute,target:string,object?:string):HouseRoute {
-  const places:Record<string,[HouseRoute['room'],HouseRoute['level']]>= {
+const HOUSE_TARGET_PLACES:Record<string,[HouseRoute['room'],HouseRoute['level']]>= {
     queen:['home','middle'],'loft-banks':['home','above'],'cellar-bills':['home','below'],
     planner:['study','above'],books:['study','middle'],calendar:['study','below'],
     journey:['kitchen-table','above'],conversation:['kitchen-table','middle'],'plan-studio':['kitchen-table','below'],
@@ -44,9 +42,26 @@ export function houseTargetRoute(route:HouseRoute,target:string,object?:string):
     // the slot `HOUSE_PLACES.making.above` has always named "The Kiln"), so the
     // `pottery` target opens where the studio actually stands. Together keeps
     // every one of its own levels; only pottery moved.
-    pottery:['making','above'],
-  };
-  const place=places[target];
+    pottery:['making','above'],wardrobe:['making','middle'],life:['together','middle'],together:['together','middle'],practical:['together','middle'],history:['together','middle'],occasions:['together','middle'],worktable:['together','middle'],guests:['together','middle'],restore:['together','middle'],
+};
+/** Tools select content independently of the physical room that opened them. */
+export function houseToolPlace(route: HouseRoute): Pick<HouseRoute,'room'|'level'> {
+  const target=HOUSE_TARGET_PLACES[route.surface??''];
+  return target?{room:target[0],level:target[1]}:{room:route.room,level:route.level};
+}
+export function houseTabForRoute(route: HouseRoute): AppTab {
+  if(route.surface==='conversation'||route.surface==='hercules')return 'hercules';
+  if(route.surface==='more'||route.surface==='status')return 'more';
+  const {room,level}=houseToolPlace(route);
+  if(room==='home')return 'home';
+  if(room==='study')return level==='above'?'planner':level==='middle'?'ledger':'calendar';
+  if(room==='kitchen-table')return 'plan';
+  return 'play';
+}
+/** Furniture has one address; collections are browsable even while carrying a folio. */
+export function houseTargetRoute(route:HouseRoute,target:string,object?:string):HouseRoute {
+
+  const place=HOUSE_TARGET_PLACES[target];
   // A Village address names the room the person is actually standing in. A
   // tool selects its surface without teleporting that origin to the tool's
   // older furniture address, so its return record remains physical and exact.
@@ -57,7 +72,8 @@ export function houseTargetRoute(route:HouseRoute,target:string,object?:string):
 }
 export function houseRoomRoute(route: HouseRoute): HouseRoute { const {surface: _surface, studioSelection: _studioSelection, studioTab: _studioTab, ...room} = route; return room; }
 export function houseLifeRoute(route: HouseRoute): HearthsideRoute {
-  const room=route.surface==="pottery"||route.surface==="wardrobe"?"studio":route.level==="above"?"conservatory":route.level==="below"?"theatre":"common";
+  const tool=houseToolPlace(route);
+  const room=route.surface==="pottery"||route.surface==="wardrobe"?"studio":tool.level==="above"?"conservatory":tool.level==="below"?"theatre":"common";
   const surface=route.surface==="pottery"?"studio":(["letters","projector","encounters","wardrobe","practical","history","occasions","worktable","guests","restore"].includes(route.surface??"")?route.surface:undefined) as HearthsideRoute["surface"];
   const [kind,id,designId]=route.object?.split("/")??[];
   const object=(kind==="experience"||kind==="memory"||kind==="note"||kind==="encounter")&&id?{kind,id}:kind==="piece"&&id&&designId?{kind,id,designId}:undefined;

@@ -275,7 +275,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       case "held-item": { const noticed = readingRef.current.noticed; if (noticed) onOpenRef.current(noticed.target); else setPhrase("Her hands are empty today."); break; }
       case "turn-held-item": if (her) { her.group.rotation.y += Math.PI; world?.setReading(readingRef.current); } break;
       case "portrait": world?.go(world.pose().r < 5.5 && Math.abs(world.pose().target[1] - 0.95) < 0.2 ? "court" : "object", "queen"); break;
-      case "roots-view": if (her && world) { const pose = her.poses().roots; world.look({ target: pose.target, r: pose.r, theta: pose.theta, phi: pose.phi }); } break;
+      case "roots-view": if (her && world) { const pose = her.poses().roots, placement=placementOf("bank"); const target=placement?placementToWorld(placement,[pose.target[0],pose.target[1]+.16,pose.target[2]+.8]):pose.target; world.look({ target, r: pose.r, theta: pose.theta+(placement?.yaw??0), phi: pose.phi }); } break;
       case "spin": if (her) { her.group.rotation.y += (detail.dx ?? 0) * 0.01; world?.setReading(readingRef.current); } break;
       case "distance": world?.gesture({ kind: "zoom", delta: (detail.dy ?? 0) * 0.004 }); break;
     }

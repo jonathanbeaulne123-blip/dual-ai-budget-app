@@ -205,12 +205,11 @@ export function buildBankHall(dressing: PlaceDressing, quality: RenderTier): Vil
   kit.box(group, [5.38, .14, .9], [0, 1.17, -2.0], p.trim, "bank-teller-countertop");
   for (const x of [-2.15, 2.15]) kit.cyl(group, .12, 1.05, [x, .55, -2.0], p.brass, "bank-counter-leg");
   kit.box(group, [1.8, .9, 1.02], [-2.25, .48, 1.3], p.timber, "bank-consultation-desk"); kit.box(group, [2.02, .12, 1.2], [-2.25, .98, 1.3], p.trim, "bank-consultation-top");
-  for (const x of [-3.05, -1.45]) { kit.box(group, [.6, .82, .62], [x, .43, 2.25], p.timber, "bank-queen-bench"); kit.box(group, [.74, .12, .76], [x, .9, 2.25], p.trim, "bank-bench-seat"); }
   kit.cyl(group, 1.08, .15, [2.42, 1.2, -3.0], p.brass, "bank-vault-round-door", [Math.PI / 2, 0, 0]); kit.cyl(group, .18, .1, [2.42, 1.2, -2.89], p.stone, "bank-vault-wheel", [Math.PI / 2, 0, 0]);
   for (let i = 0; i < 6; i++) kit.box(group, [.06, .58, .06], [2.42, 1.2, -2.84], p.brass, `bank-vault-spoke-${i}`, [0, 0, i * Math.PI / 3]);
   const lamp = new THREE.PointLight(p.warm, quality === "full" ? .95 : .55, 5); lamp.position.set(0, 2.55, .3); group.add(lamp);
   const anchors = (): Anchor[] => [
-    { id: "queen", position: [0, .78, .8], zone: "queen", label: "The Queen's central plinth — return to the Court", door: { target: "queen" } },
+    { id: "queen", position: [0, .78, .8], zone: "queen", label: "The Queen — at the heart of the household Fund", door: { target: "queen" } },
     { id: "books", position: [0, 1.2, -1.6], zone: "teller", label: "The rear teller counter — open the books", door: { target: "books" } },
     { id: "vault", position: [2.42, 1.2, -2.82], zone: "vault", label: "The upright brass vault door — open the books", door: { target: "books" } },
     { id: "consultation", position: [-2.25, 1.08, 1.3], zone: "desk", label: "The consultation desk — open the books", door: { target: "books" } },
