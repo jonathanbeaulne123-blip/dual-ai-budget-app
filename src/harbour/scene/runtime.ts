@@ -52,6 +52,7 @@ export type ProjectedRect = { id: string; kind: "region" | "anchor"; group: stri
 export type HarbourCallbacks = {
   onJourney?:()=>void;
   avatar?:PlayableAvatar|null;
+  onAvatarStatus?:(avatar:PlayableAvatar,status:"ready"|"error")=>void;
   onSkate?: (snapshot:SkateSnapshot|null)=>void;
   onReady: () => void;
   onFailure: () => void;
@@ -668,7 +669,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       tier,
       start,
       reduced: reducedMotion(),
-      avatar:selectedAvatar,invalidate,
+      avatar:selectedAvatar,invalidate,onAvatarStatus:callbacks.onAvatarStatus,
     });
     scene.add(walker.group);
     const stood=walker.state();

@@ -296,8 +296,9 @@ export function createBodyState(x: number, z: number, yaw: number, world: BodyWo
  */
 export function cameraBasis(theta: number): { fx: number; fz: number; rx: number; rz: number } {
   const fx = -Math.sin(theta), fz = -Math.cos(theta);
-  // right = forward turned a quarter clockwise: (+z) → (+x).
-  return { fx, fz, rx: fz, rz: -fx };
+  // Screen right is forward crossed with world up. At the gate-side camera
+  // (theta 0), W is -z and D must be +x.
+  return { fx, fz, rx: -fz, rz: fx };
 }
 
 export type BodyStep = {

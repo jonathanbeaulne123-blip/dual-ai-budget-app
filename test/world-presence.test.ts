@@ -73,6 +73,13 @@ describe("the world-presence wire", () => {
     expect(decodeWorldPresence({ type: "world-leave", version: 1 })).toEqual({ type: "world-leave", version: 1 });
   });
 
+  it("carries only an explicitly selected character on the opt-in live step", () => {
+    expect(decodeWorldPresence(step({avatar:"bianca"}))).toMatchObject({avatar:"bianca"});
+    expect(decodeWorldPresence(step({avatar:"jonathan"}))).toMatchObject({avatar:"jonathan"});
+    expect(() => decodeWorldPresence(step({avatar:"someone-else"}))).toThrow(/AVATAR/);
+    expect(() => decodeWorldPresence(step({avatar:{name:"Bianca"}}))).toThrow(/AVATAR/);
+  });
+
   it("rejects anything that is not a position: money, identity, extra keys, wrong versions", () => {
     // The law of the lane: there is no field a cent could travel in.
     expect(() => decodeWorldPresence({ ...step(), cents: 1200 })).toThrow(WorldPresenceError);
@@ -154,6 +161,12 @@ describe("the world-presence wire", () => {
 });
 
 describe("the send throttle", () => {
+  it("sends a character change even when the body stands still", () => {
+    const throttle=createStepThrottle();
+    const still={x:0,z:0,yaw:0,moving:false} as const;
+    expect(throttle.offer({...still,avatar:"bianca"},0)).toMatchObject({avatar:"bianca"});
+    expect(throttle.offer({...still,avatar:"jonathan"},WORLD_STEP_MS)).toMatchObject({avatar:"jonathan"});
+  });
   it("holds a step to 12.5 Hz and only sends when the body actually moved", () => {
     const throttle = createStepThrottle();
     expect(throttle.offer({ x: 0, z: 0, yaw: 0, moving: false }, 0)).not.toBeNull();
@@ -175,6 +188,13 @@ describe("the send throttle", () => {
 });
 
 describe("smoothing 12.5 Hz into motion", () => {
+  it("keeps the peer's selected model through interpolation and a quiet fade", () => {
+    const track=createWorldTrack();
+    track.push({x:0,z:0,yaw:0,moving:true,avatar:"bianca",at:1000});
+    track.push({x:1,z:0,yaw:0,moving:true,avatar:"jonathan",at:1100});
+    expect(track.pose(1190)?.avatar).toBe("jonathan");
+    expect(track.pose(1100+WORLD_LIVE_MS+10)?.avatar).toBe("jonathan");
+  });
   const walk = (track: ReturnType<typeof createWorldTrack>, count: number, from = 0) => {
     for (let i = 0; i < count; i++) track.push({ x: i * 0.5, z: 0, yaw: 0, moving: true, at: from + i * WORLD_STEP_MS });
   };

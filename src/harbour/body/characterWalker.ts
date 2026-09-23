@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import {createSkateboard} from '../skate/board.ts';
 import { createBodyFigure, DEFAULT_FIGURE_COLOURS, type BodyMotion } from "./figure.ts";
+import {createPlayableFigure,type PlayableAvatar} from './playableFigure.ts';
 import {
   EMOTE_SECONDS, GRAVITY, JUMP_RUN_BONUS, JUMP_SPEED, isEmoteId, type EmoteId,
 } from "./bodyModel.ts";
@@ -34,12 +35,13 @@ import { useWalkerFactory, type Walker, type WalkerOptions } from "../presence/w
 const DEFAULT_WALKER_HEIGHT = 0.46;
 
 export function createCharacterWalker(options: WalkerOptions): Walker {
-  const figure = createBodyFigure({
+  const generic = () => createBodyFigure({
     // The place's dressing decides the two colours a body is told apart by;
     // everything else stays the house's own palette.
     coat: options.tint || DEFAULT_FIGURE_COLOURS.coat,
     skin: options.skin || DEFAULT_FIGURE_COLOURS.skin,
   });
+  let figure = generic();
   const group = new THREE.Group();group.name='Live partner';group.add(figure.group);
   const board=createSkateboard('afterglow');board.group.visible=false;group.add(board.group);
   // The figure is authored at the reader's own height; a place may want its
@@ -50,17 +52,21 @@ export function createCharacterWalker(options: WalkerOptions): Walker {
 
   // Every material on this figure belongs to this figure (`createBodyFigure`
   // builds its own), so fading one body never fades the other.
-  const materials: THREE.MeshStandardMaterial[] = [];
-  group.traverse((node) => {
-    const mesh = node as THREE.Mesh;
-    if (!mesh.isMesh) return;
-    for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
-      const standard = material as THREE.MeshStandardMaterial;
-      if (standard && !materials.includes(standard)) materials.push(standard);
-    }
-  });
-
-  let moving = false, phase = 0, opacity = 1;
+  let materials: THREE.MeshStandardMaterial[] = [];
+  let moving = false, phase = 0, opacity = 1, selectedAvatar:PlayableAvatar|null=null;
+  const refreshMaterials = () => {
+    materials = [];
+    group.traverse((node) => {
+      const mesh = node as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        const standard = material as THREE.MeshStandardMaterial;
+        if (standard && !materials.includes(standard)) materials.push(standard);
+      }
+    });
+    for (const material of materials) {material.transparent=opacity<1;material.opacity=opacity;material.needsUpdate=true;}
+  };
+  refreshMaterials();
   /**
    * What the partner is doing, off the wire, and how far through it.
    *
@@ -101,12 +107,22 @@ export function createCharacterWalker(options: WalkerOptions): Walker {
       act = next;if(!act?.startsWith("skate"))altitude=null;
       progress = Math.max(0, Math.min(1, Number.isFinite(p) ? p : 0));
     },
+    setAvatar(next) {
+      if(next===selectedAvatar)return;
+      selectedAvatar=next;
+      figure.group.removeFromParent();figure.dispose();
+      figure=next?createPlayableFigure(next,'lite',{onStatus:(_,status)=>{if(status==='ready')refreshMaterials();}}):generic();
+      figure.group.scale.multiplyScalar(scale);
+      group.add(figure.group);
+      figure.pose(phase,moving?1:0,0,motion);
+      refreshMaterials();
+    },
     setOpacity(next) {
       const clamped = Math.max(0, Math.min(1, Number.isFinite(next) ? next : 0));
       if (clamped === opacity) return;
       opacity = clamped;
       const shown = clamped > 0.01;
-      for (const material of materials) { material.transparent = clamped < 1; material.opacity = clamped; }
+      for (const material of materials) { material.transparent = clamped < 1; material.opacity = clamped; material.needsUpdate=true; }
       group.visible = shown;
     },
     animate(t, dt) {

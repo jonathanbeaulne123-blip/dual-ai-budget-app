@@ -44,6 +44,8 @@ export type Walker = {
    * that walks, which is exactly what it was before this existed.
    */
   setAction?(act: string | null, p: number): void;
+  /** The peer's explicit character choice, when the opt-in live feed carries it. */
+  setAvatar?(avatar:"bianca"|"jonathan"|null):void;
   /** 0..1. The honest fade when a peer's feed goes quiet; 0 hides the body. */
   setOpacity(opacity: number): void;
   /** `t` seconds since mount, `dt` since the last animated frame. */

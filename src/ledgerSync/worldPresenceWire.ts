@@ -69,6 +69,9 @@ export const WORLD_TARGET_MS = 12000;
  */
 export const WORLD_ACTS = ["jump", "slide", "wave", "dance", "sit", "cheer", "laugh", "point", "skate", "skate-ollie", "skate-kickflip", "skate-heelflip", "skate-shuvit", "skate-360-flip", "skate-grab", "skate-grind", "skate-manual", "skate-bail"] as const;
 export type WorldAct = (typeof WORLD_ACTS)[number];
+/** Optional, explicit character choice. It is sent only inside the opt-in live lane. */
+export const WORLD_AVATARS = ["bianca", "jonathan"] as const;
+export type WorldAvatar = (typeof WORLD_AVATARS)[number];
 
 export type WorldTarget = { placeId: WorldPlaceId; deviceId: string };
 
@@ -96,6 +99,7 @@ export type WorldStep = {
   p?: number;
   /** Optional board-foot altitude; bounded to -8..16 metres, ephemeral only. */
   y?: number;
+  avatar?: WorldAvatar;
 };
 
 export type WorldPresenceMessage =
@@ -118,7 +122,7 @@ export class WorldPresenceError extends Error {}
 
 const KNOWN_KEYS: Readonly<Record<string, readonly string[]>> = {
   "world-join": ["type", "version", "target"],
-  "world-step": ["type", "version", "x", "z", "yaw", "moving", "act", "p", "y"],
+  "world-step": ["type", "version", "x", "z", "yaw", "moving", "act", "p", "y", "avatar"],
   "world-leave": ["type", "version"],
 };
 
@@ -153,6 +157,11 @@ export function worldCoordinate(value: unknown, bound = WORLD_BOUND): number {
 export function worldAct(value: unknown): WorldAct {
   if (typeof value !== "string" || !(WORLD_ACTS as readonly string[]).includes(value)) throw new WorldPresenceError("WORLD_PRESENCE_ACT");
   return value as WorldAct;
+}
+
+export function worldAvatar(value: unknown): WorldAvatar {
+  if (typeof value !== "string" || !(WORLD_AVATARS as readonly string[]).includes(value)) throw new WorldPresenceError("WORLD_PRESENCE_AVATAR");
+  return value as WorldAvatar;
 }
 
 /** How far through an act: a finite number, pulled onto 0…1 and rounded like a coordinate. */
@@ -202,6 +211,7 @@ export function decodeWorldPresence(value: unknown): WorldPresenceMessage {
     ...point,
     yaw: worldYaw(row.yaw),
     moving: row.moving,
+    ...(row.avatar === undefined || row.avatar === null ? {} : { avatar: worldAvatar(row.avatar) }),
     ...(act ? { act, p: worldPhase(row.p ?? 0) } : {}),
     ...(act?.startsWith('skate')&&row.y!==undefined?{y:Math.max(-8,worldCoordinate(row.y,16))}:{}),
   };

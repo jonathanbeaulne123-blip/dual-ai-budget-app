@@ -9,6 +9,7 @@ import * as THREE from "three";
 import { PLAYABLE_AVATARS } from "../src/harbour/body/avatarDefinition.ts";
 import { createPlayableFigure } from "../src/harbour/body/playableFigure.ts";
 import { createBodyFigure } from "../src/harbour/body/figure.ts";
+import {createCharacterWalker} from "../src/harbour/body/characterWalker.ts";
 import * as glbAssets from "../src/harbour/assets/loadGlb.ts";
 
 const root = resolve(process.cwd(), "public/models/players");
@@ -49,6 +50,41 @@ describe("Little Harbour playable character derivatives", () => {
       expect(figure.group.position.y).toBe(0);
       figure.dispose();
     }
+  });
+
+  it("shows the selected authored surface when its asset loads", async () => {
+    const root = new THREE.Group();
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(.2, 1, .1), new THREE.MeshStandardMaterial());
+    root.add(mesh);
+    const acquire = vi.spyOn(glbAssets, "acquireGlb").mockImplementation(async (asset) => ({root, asset, release: () => undefined}));
+    try {
+      for (const avatar of ["bianca", "jonathan"] as const) {
+        const statuses: string[] = [];
+        const figure = createPlayableFigure(avatar, "lite", {onStatus: (_, status) => statuses.push(status)});
+        await vi.waitFor(() => expect(statuses).toEqual(["ready"]));
+        expect(figure.group.getObjectByName(`playable-${avatar}-lite`)).toBeTruthy();
+        expect(figure.group.getObjectByName("body-torso")!.visible).toBe(false);
+        figure.dispose();
+      }
+    } finally { acquire.mockRestore(); mesh.geometry.dispose(); (mesh.material as THREE.Material).dispose(); }
+  });
+
+  it("shows a live partner's selected model without sharing its fade material", async () => {
+    const root=new THREE.Group();root.add(new THREE.Mesh(new THREE.BoxGeometry(.2,1,.1),new THREE.MeshStandardMaterial()));
+    const acquire=vi.spyOn(glbAssets,"acquireGlb").mockImplementation(async asset=>({root,asset,release:()=>undefined}));
+    const local=createPlayableFigure("bianca","lite");
+    const partner=createCharacterWalker({tint:"#ffffff",skin:"#ffffff",height:.58});
+    try {
+      partner.setAvatar?.("bianca");
+      await vi.waitFor(()=>expect(partner.group.getObjectByName("playable-bianca-lite")).toBeTruthy());
+      await vi.waitFor(()=>expect(local.group.getObjectByName("playable-bianca-lite")).toBeTruthy());
+      const localMesh=local.group.getObjectByName("playable-bianca-lite")!.children[0] as THREE.Mesh;
+      const peerMesh=partner.group.getObjectByName("playable-bianca-lite")!.children[0] as THREE.Mesh;
+      expect(peerMesh.material).not.toBe(localMesh.material);
+      partner.setOpacity(.4);
+      expect((peerMesh.material as THREE.MeshStandardMaterial).opacity).toBeCloseTo(.4);
+      expect((localMesh.material as THREE.MeshStandardMaterial).opacity).toBe(1);
+    } finally {partner.dispose();local.dispose();acquire.mockRestore();root.traverse(node=>{const mesh=node as THREE.Mesh;if(mesh.isMesh){mesh.geometry.dispose();(mesh.material as THREE.Material).dispose();}});}
   });
 
   it("keeps authored feature colours in one real draw primitive per surface", async () => {

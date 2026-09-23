@@ -22,3 +22,20 @@
    leaving room entrances and workstations clear. There is only one control. */
 .village-map__presence .harbour-walk-together{position:static!important;inset:auto!important;max-width:none!important;margin:8px 0 16px}
 @media(max-width:719px){.village-presence-outside{display:none}}
+
+/* The two authored people are an explicit choice at the point of play. */
+.village-character{position:absolute;right:28px;bottom:170px;pointer-events:auto;--character-paper:#fff9ed;--character-ink:#31493d;--character-edge:#c9b78f;--character-selected:#345d4a;color:var(--character-ink)}
+.village-character__trigger{display:flex;align-items:center;gap:8px;padding:5px 13px;border:1px solid var(--character-edge);border-radius:999px;background:var(--character-paper);color:var(--character-ink);box-shadow:0 6px 22px #173a302a;text-transform:capitalize;font-size:13px}
+.village-character__trigger:first-letter{font-weight:700}
+.village-character__choices{position:absolute;right:0;bottom:calc(100% + 9px);box-sizing:border-box;width:min(320px,calc(100vw - 24px));padding:16px;background:var(--character-paper);border:1px solid var(--character-edge);border-radius:16px;box-shadow:0 14px 36px #132b3340;white-space:normal}
+.village-character__heading{display:flex;align-items:center;justify-content:space-between;gap:12px;font:20px Georgia,serif}
+.village-character__heading button{min-width:44px;border:0;background:transparent;color:inherit;font-size:24px}
+.village-character__choices p{margin:5px 0 13px;font-size:12px;line-height:1.4}
+.village-character__options{display:flex;gap:8px}
+.village-character__options button{flex:1;min-width:0;border:1px solid var(--character-edge);border-radius:11px;background:transparent;color:inherit;font-size:14px}
+.village-character__options button[aria-pressed="true"]{background:var(--character-selected);border-color:var(--character-selected);color:#fff}
+.village-character__choices small{display:block;margin-top:12px;font-size:11px;line-height:1.4}
+.harbour-world--taylor .village-character{--character-paper:#fff4f7;--character-ink:#633b56;--character-edge:#d5a7bf;--character-selected:#925475}
+.harbour-world--newfoundland .village-character{--character-paper:#f1f7f5;--character-ink:#224756;--character-edge:#8eafba;--character-selected:#326b80}
+.village-character :is(button):focus-visible{outline:3px solid #1978a0;outline-offset:3px}
+@media(max-width:719px){.village-character{right:14px;bottom:173px}.village-character__trigger{padding:5px 10px}.village-character__trigger span{max-width:120px;overflow:hidden;text-overflow:ellipsis}}

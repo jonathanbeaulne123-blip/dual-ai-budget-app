@@ -137,7 +137,7 @@ export function useWorldPresenceFeed(request: WorldFeedRequest): WorldFeed {
       // A body in the air is moving whatever the ground distance says: a jump
       // straight up covers no ground at all, and a partner should see the
       // stride stop rather than a body standing still in mid-air.
-      lane.step({ ...body, moving: moving || body.act === "jump" || body.act === "slide" });
+      lane.step({ ...body, moving: moving || body.act === "jump" || body.act === "slide", ...(pose.avatar ? { avatar: pose.avatar } : {}) });
     }, WORLD_STEP_MS);
 
     const onVisibility = () => lane.refresh();

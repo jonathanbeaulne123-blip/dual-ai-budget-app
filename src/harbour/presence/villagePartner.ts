@@ -12,6 +12,6 @@ export function createVillagePartner(dressing:PlaceDressing,reading:PlaceReading
     animate(t:number,dt:number,now=Date.now()){
       const pose=source?.pose(now);
       if(!pose||pose.opacity<=0){walker.setOpacity(0);walker.setMoving(false);walker.setAction?.(null,0);walker.setHeight?.(null);return false;}
-      walker.setAction?.(pose.act??null,pose.p??0);walker.setHeight?.(pose.y??null);walker.setPose(pose.x,pose.z,pose.yaw);walker.setMoving(pose.moving);walker.setOpacity(pose.opacity);walker.animate(t,dt);return true;
+      walker.setAvatar?.(pose.avatar??null);walker.setAction?.(pose.act??null,pose.p??0);walker.setHeight?.(pose.y??null);walker.setPose(pose.x,pose.z,pose.yaw);walker.setMoving(pose.moving);walker.setOpacity(pose.opacity);walker.animate(t,dt);return true;
     },dispose(){walker.dispose();}};
 }

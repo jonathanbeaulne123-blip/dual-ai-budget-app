@@ -1,4 +1,4 @@
-import {useState,type ReactNode} from 'react';
+import {useEffect,useState,type ReactNode} from 'react';
 import {HARBOUR_PLACE_NAMES,type HarbourPlaceId} from '../flag.ts';
 import {ROOM_PORTALS} from './layout.ts';
 import {VILLAGE_SITES} from './layout.ts';
@@ -14,8 +14,11 @@ const STOPS:{id:HarbourPlaceId;icon:string;title:string;detail:string}[]=[
 {id:'boathouse',icon:'⚓',title:'Boathouse',detail:'Letters & kept memories'},
 {id:'campfire',icon:'☼',title:'Waterfront',detail:'A moment by the fire'},
 ];
-export function VillageHUD({place,travelling,onVisit,onArrange,onView,onWander,onJourney,avatar,onAvatar,presence}:{place:HarbourPlaceId;travelling:HarbourPlaceId|null;onVisit:(id:HarbourPlaceId,instant?:boolean)=>void;onArrange?:()=>void;onView:()=>void;onWander?:(id:HarbourWanderId)=>void;onJourney?:()=>void;avatar?:PlayableAvatar|null;onAvatar?:(avatar:PlayableAvatar)=>void;presence?:ReactNode}){
+export function VillageHUD({place,travelling,onVisit,onArrange,onView,onWander,onJourney,avatar,avatarStatus,onAvatar,presence}:{place:HarbourPlaceId;travelling:HarbourPlaceId|null;onVisit:(id:HarbourPlaceId,instant?:boolean)=>void;onArrange?:()=>void;onView:()=>void;onWander?:(id:HarbourWanderId)=>void;onJourney?:()=>void;avatar?:PlayableAvatar|null;avatarStatus?:'idle'|'loading'|'ready'|'error';onAvatar?:(avatar:PlayableAvatar)=>void;presence?:ReactNode}){
  const [map,setMap]=useState(false);
+ const [characterOpen,setCharacterOpen]=useState(avatar==null);
+ useEffect(()=>{if(avatar==null)setCharacterOpen(true);},[avatar]);
+ useEffect(()=>{if(avatarStatus==='error')setCharacterOpen(true);},[avatarStatus]);
  return <div className="village-hud" onPointerDown={e=>e.stopPropagation()}>
   {!map&&<div className="village-presence-outside">{presence}</div>}
   <header className="village-address"><span className="village-address__seal">h</span><div><small>LITTLE HARBOUR</small><h1>{HARBOUR_PLACE_NAMES[place]}</h1><p>{travelling?`On our way to ${HARBOUR_PLACE_NAMES[travelling]}`:place==='court'?'A little world to come home to.':'Settle in. There’s room to make it yours.'}</p></div></header>
@@ -23,10 +26,13 @@ export function VillageHUD({place,travelling,onVisit,onArrange,onView,onWander,o
   {(ROOM_PORTALS[place]?.length??0)>0&&<nav className="village-floors" aria-label="Rooms in our home">{[{id:'kitchen',name:'Kitchen'},{id:'tower',name:'Loft'},{id:'cellar',name:'Cellar'},{id:'atlas',name:'Atlas nook'}].map(room=><button key={room.id} type="button" aria-current={place===room.id?'location':undefined} onClick={()=>onVisit(room.id as HarbourPlaceId,true)}>{room.name}</button>)}</nav>}
   {map&&<section className="village-map" aria-label="Village destinations"><header><div><small>TAKE THE SCENIC WAY</small><h2>Where shall we wander?</h2></div><button type="button" aria-label="Close village map" onClick={()=>setMap(false)}>×</button></header>
     <svg className="village-map__island" viewBox="-90 -80 180 160" aria-hidden="true"><circle r="77" fill="#c0d8ce"/><circle r="72" fill="#e6d6ae"/><circle r="62" fill="#c2cc9c"/>{HARBOUR_LANES.map(lane=><polyline key={lane.id} points={lane.points.map(p=>p.join(',')).join(' ')} fill="none" stroke="#f9f0d7" strokeWidth="2"/>)}{Object.entries(VILLAGE_SITES).map(([id,site])=><g key={id} transform={`translate(${site.spot.join(' ')})`}><rect x="-4" y="-3" width="8" height="6" rx="1" fill={place===site.entry?'#b15d3f':'#567766'}/><path d="M-5 -3L0 -7L5 -3" fill="#ab7955"/></g>)}<circle cy="4" r="2.4" fill="#cc9a4d"/>{HARBOUR_WANDERS.map(w=><circle key={w.id} cx={w.at[0]} cy={w.at[1]} r="2" fill="#7d9466"/>)}</svg>
-    {onAvatar&&<label className="village-map__character">Your character <select aria-label="Your character" value={avatar??''} onChange={e=>{if(e.target.value)onAvatar(e.target.value as PlayableAvatar);}}><option value="" disabled>Choose your character…</option><option value="bianca">Bianca</option><option value="jonathan">Jonathan</option></select></label>}
     <div className="village-map__presence">{presence}</div>
     <div className="village-map__places">{STOPS.map(s=><button key={s.id} type="button" onClick={()=>{onVisit(s.id);setMap(false);}}><b aria-hidden="true">{s.icon}</b><span><strong>{s.title}</strong><small>{s.detail}</small></span><i aria-hidden="true">↗</i></button>)}</div>
     {onWander&&place==='court'&&<><h3>Beyond the village</h3><div className="village-map__places">{HARBOUR_WANDERS.map(w=><button type="button" key={w.id} onClick={()=>{onWander(w.id);setMap(false);}}><span><strong>{w.name}</strong><small>A path with room to breathe</small></span><i aria-hidden="true">↗</i></button>)}</div></>}
     <p>Choose a building to walk there. Quick travel and your budgeting tools are always nearby. Pull all the way back to return to Journey.</p></section>}
+  {onAvatar&&<div className="village-character" data-selected={avatar??'none'}>
+    <button type="button" className="village-character__trigger" aria-label={avatar?`Your character: ${avatar}. Change character`:'Choose your character'} aria-expanded={characterOpen} onClick={()=>setCharacterOpen(open=>!open)}>{avatar==='bianca'?'B':avatar==='jonathan'?'J':'?'} <span>{avatar??'Choose character'}</span></button>
+    {characterOpen&&<section className="village-character__choices" aria-label="Choose your character"><div className="village-character__heading"><strong>Your character</strong><button type="button" aria-label="Close character choices" onClick={()=>setCharacterOpen(false)}>×</button></div><p>Choose the model you walk around as.</p><div className="village-character__options">{(['bianca','jonathan'] as const).map(id=><button type="button" key={id} aria-pressed={avatar===id} onClick={()=>{onAvatar(id);setCharacterOpen(false);}}>{id==='bianca'?'Bianca':'Jonathan'}</button>)}</div>{avatarStatus==='loading'&&<small role="status">Loading your character…</small>}{avatarStatus==='error'&&<small role="status">The model could not load. Choose it again to retry.</small>}</section>}
+  </div>}
  </div>;
 }

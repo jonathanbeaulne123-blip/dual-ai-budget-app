@@ -181,6 +181,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const identity = { environment: household.environment, householdId: household.householdId, memberId, scope };
   const avatarKey=avatarPreferenceKey(household.environment,household.householdId,memberId);
   const [avatar,setAvatar]=useState<PlayableAvatar|null>(()=>readAvatar(localStorage,avatarKey));
+  const [avatarStatus,setAvatarStatus]=useState<"idle"|"loading"|"ready"|"error">(avatar?"loading":"idle");
   const avatarRef=useRef(avatar);avatarRef.current=avatar;
   const [skating,setSkating]=useState<SkateSnapshot|null>(null),[skateSaveFailed,setSkateSaveFailed]=useState(false);
   const skateKey=skateProgressKey(household.environment,household.householdId,memberId);
@@ -195,8 +196,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   useEffect(()=>{skateOwner.current=null;skateRebuild.current=null;runtime.current?.body()?.skate?.enable(false);setSkating(null);skateSaved.current='';setSkateSaveFailed(false);},[skateKey]);
   const startSkating=()=>{skateOwner.current=skateKey;held.current.clear();pushBody();runtime.current?.body()?.skate.enable(true,readSkateProgress(localStorage,skateKey));setEmotesOpen(false);};
   const leaveSkating=()=>{skateOwner.current=null;held.current.clear();pushBody();runtime.current?.body()?.skate.enable(false);setSkating(null);};
-  useEffect(()=>{const selected=readAvatar(localStorage,avatarKey);setAvatar(selected);runtime.current?.setAvatar(selected);},[avatarKey]);
-  function chooseAvatar(next:PlayableAvatar){setAvatar(next);saveAvatar(localStorage,avatarKey,next);runtime.current?.setAvatar(next);}
+  useEffect(()=>{const selected=readAvatar(localStorage,avatarKey);avatarRef.current=selected;setAvatar(selected);setAvatarStatus(selected?"loading":"idle");runtime.current?.setAvatar(selected);},[avatarKey]);
+  function chooseAvatar(next:PlayableAvatar){avatarRef.current=next;setAvatar(next);setAvatarStatus("loading");saveAvatar(localStorage,avatarKey,next);runtime.current?.setAvatar(next);}
   const routeRef = useRef(route); routeRef.current = route;
   const placeRef = useRef(place); placeRef.current = place;
   const identityRef = useRef(identity); identityRef.current = identity;
@@ -225,7 +226,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // `act` and `p` travel with the position: a jump, a slide or an emote is
     // something a partner should *see*, and it is ephemeral — nothing here is
     // written down anywhere, at either end.
-    return { target: pose.target, theta: pose.theta, body: at ? { x: at.x, z: at.z, yaw: at.yaw, act: at.act, p: at.p, ...(at.act?.startsWith("skate")?{y:at.y}: {}) } : null };
+    return { target: pose.target, theta: pose.theta, avatar: avatarRef.current, body: at ? { x: at.x, z: at.z, yaw: at.yaw, act: at.act, p: at.p, ...(at.act?.startsWith("skate")?{y:at.y}: {}) } : null };
   }), []);
   const partnerWalk = useWorldFeed({
     environment: household.environment,
@@ -429,6 +430,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
           onReady: () => setStatus("ready"), onFailure: () => setStatus("fallback"),
           onProject: next => setRects(next), onTap, onGesture, onRailDrag: (x, width) => onRailDragRef.current(x, width),
           onStick, onClose: setClosed, onThreshold, onExit,
+          onAvatarStatus:(loaded,status)=>{if(avatarRef.current===loaded)setAvatarStatus(status);},
           avatar:avatarRef.current,onJourney:()=>openJourney(),
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
@@ -935,7 +937,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => navigatePlace(next)} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
-      {(status==="ready"||showFlat)&&!toolOpen&&<VillageHUD place={place} travelling={travelTo} onVisit={visit} onWander={showFlat?undefined:wanderTo} avatar={avatar} onAvatar={chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
+      {(status==="ready"||showFlat)&&!toolOpen&&<VillageHUD place={place} travelling={travelTo} onVisit={visit} onWander={showFlat?undefined:wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={showFlat?undefined:chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
         presence={status==="ready"?<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />:undefined}/>}
       {status==='ready'&&!toolOpen&&place==='court'&&standing&&<SkateHUD snapshot={skating} onStart={startSkating} onWalk={leaveSkating}
         onAction={action=>runtime.current?.body()?.skate.action(action)} onHold={input=>runtime.current?.body()?.skate.hold(input)}
