@@ -1,0 +1,56 @@
+# Tideline Skate Club v2 — from "a board you can stand on" to a real skate game
+
+- **Opened:** 2026-09-23 · **Owner:** Jonathan · **Orchestrator:** Claude (subagents build)
+- **Base:** main @ 4ffe88fb (#528 Tideline Skate Club v1, Codex) · **Branch:** `claude/skate-v2`
+- **Budget delta:** 0 — recreational, device-local progress only; no ledger, no hosted writes, no money semantics.
+
+## The brief (Jonathan's words)
+
+> Take what Codex did with the skateboard update and turn it into something incredible. Movement/jumping/tricks all need to be fully fleshed out. Take it from a bad Roblox game to a proper Skate 3 game with our art style.
+
+## Why v1 reads as "bad Roblox"
+
+- Tricks are single key presses; the board spins rigidly about one axis and snaps back. No pop, no flick, no catch.
+- The board is stacked boxes; the rider has no knees, a fixed sideways carriage and no weight.
+- Physics is a heightfield with a scalar speed: no real transitions, no vert, no pumping, no powerslide, one grind (50-50), landing = "is the yaw within 0.75 rad".
+- Three ramp shapes on flat pads; no stairs, handrails, ledges, bowls, gaps.
+- Camera is the walking follow cam with a longer radius.
+
+## What "Skate 3 with our art style" means here
+
+**Feel (the Skate 3 part)** — analogue **flick-it**: left stick rides (carve, lean), right stick does the board (pull back to crouch, flick to pop, the path of the flick picks the trick). Momentum you can feel: pushing, pumping transitions, carving, powersliding, rolling fakie up a quarterpipe and back in. Airs where the board visibly leaves the feet, flips under you and gets **caught**. Grinds and slides chosen by **how you approach** (angle, lean, which truck). Bails that look like bails. A low, wide chase camera that sells speed.
+
+**Look (the Hearth part)** — the island is a *model village on a kitchen table*, cut paper and painted wood under raking light (see `claude/POPUP-BEACONS-AND-RULE.md` beacons: Lantern Row, Year in the Round). The park is a *crafted object*: painted-card concrete, pencil-line coping, stacked shadows, each theme (Classic / Taylor / Newfoundland) authored. No generic grey concrete, no downloaded assets, no copyrighted game content — an original game with its own names.
+
+## Architecture
+
+`src/harbour/skate/contract.ts` is the only thing tracks share. Dependency injection everywhere so tracks build and test in isolation:
+
+```
+input/  (gestures → SkateIntent)      tricks/ (catalogs, naming, scoring)
+            \                             /  (FlipTrickDef/GrindDef/GrabDef maps injected)
+             →  sim/ (SkateIntent + SkateField → SkatePresent + SkateSimEvent[])
+                         ↑                         ↓
+                  world/ (SkateField, park meshes)  look/ (board, rider pose, FX)  camera/  hud/ audio/ session
+```
+
+## Tracks and file ownership (wave 1, parallel)
+
+| Track | Owns (create/modify only these) | Delivers |
+|---|---|---|
+| **SIM** | `src/harbour/skate/sim/**`, `test/skate-sim*.test.ts` | `createSkateSim(field, catalogs, opts)` with `step(intent, dt) → {present, events}`; transitions/vert/pump/carve/powerslide/stance/switch/fakie/nollie, catch-window landings, 3D grind/slide/stall engine, manuals, reverts, wallride (stretch), bails + recover |
+| **TRICKS** | `src/harbour/skate/tricks/**`, `src/harbour/skate/input/**`, `test/skate-tricks*.test.ts`, `test/skate-input*.test.ts` | Flip/grab/grind catalogs; flick-it gesture recogniser; keyboard, pointer-drag, touch pads, Gamepad API sources → `SkateIntent`; trick-name composer ("Switch Backside 180 Kickflip"); combo/scoring engine over `SkateSimEvent` |
+| **PARK** | `src/harbour/skate/world/**`, `src/harbour/skate/park.ts`, `src/harbour/skate/parkScene.ts`, `test/skate-world*.test.ts` | `createSkateField(ground)` (analytic surfaces with normals + lips), grindables, solids, spots/routes; the rebuilt Tideline park + street spots; themed meshes built from the same profiles |
+| **LOOK** | `src/harbour/skate/look/**`, `src/harbour/skate/board.ts`, `src/harbour/body/figure.ts` (skate pose hook + knees only), `test/skate-look*.test.ts` | New board model; rider pose solver from `SkatePresent` (knees, crouch, pop, flick-foot, catch, grabs, grind stances, manual, powerslide, bail tumble, landing compression); flip-overlay from `FlipTrickDef`; FX (grind sparks, wheel chalk, landing puff, paper confetti on big banks, speed streaks) |
+| **SHOW** | `src/harbour/skate/camera/**`, `src/harbour/skate/hud/**`, `src/harbour/skate/SkateHUD.tsx`, `src/harbour/skate/skate.css`, `src/harbour/skate/audio.ts`, `src/harbour/skate/session.ts`, `test/skate-show*.test.ts` | Skate chase camera module; HUD redesign (ticker, combo, balance, touch pads layout slots, controller glyphs, trick book); synthesized audio v2; challenges (Own the Spot per spot, S.K.A.T.E. letters, line goals), progress v2 with v1 migration |
+
+Nobody in wave 1 touches `rider.ts`, `skateModel.ts`, `walker.ts`, `runtime.ts`, `HarbourWorld.tsx`, presence or workers — that is wave 2 (INTEGRATE).
+
+## Rules for every track
+
+- Node/pnpm are installed; each track works in its own git worktree off `claude/skate-v2`, commits on its own branch `claude/skate-v2-<track>`.
+- The machine has 2 CPUs and 7 GB RAM shared by five tracks: **do not** run `pnpm typecheck`, `pnpm build`, the quick gate, or a browser in wave 1. Run your own vitest files (`pnpm exec vitest run test/skate-<track>*.test.ts --maxWorkers=1`) and a scoped `tsc --noEmit` over your folder.
+- Pure, deterministic, allocation-light hot paths (this runs on phones at 60 fps inside the shared leased renderer). No `Math.random` in sim/scoring; seeded RNG where needed.
+- Existing repo style: dense TypeScript, `.ts` import extensions, THREE from `three`, dispose everything you create.
+- Accessibility: reduced motion is honoured (camera shake/FOV kick/confetti quiet down; riding still works); every control reachable by keyboard; touch targets ≥ 44 px.
+- Write a short `NOTES-<track>.md` in `src/harbour/skate/<your folder>/` listing the API, tuning constants and anything integration must know.
