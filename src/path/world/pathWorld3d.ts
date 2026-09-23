@@ -86,6 +86,8 @@ export type PathWorldInput = {
    * `open`: every lantern lit. `crossing`: one of us has agreed to cross (planks half down). Anchored as `era-gate`.
    */
   gate?: { lanterns: boolean[]; open: boolean; crossing: boolean } | null;
+  /** A read-only miniature of Little Harbour, pinned to the active Chapter's intended month. */
+  harbour?: { month: number } | null;
 };
 /**
  * One floating era island (D-268). Anchors: `era:<id>` for the island, `era:<id>:plan:<planId>` for each plan.
@@ -841,6 +843,26 @@ export function createPathWorld(host: HTMLElement, options: {
     return { x, z };
   }
 
+  /** One low-poly stepping stone, not a second renderer: seven coloured house silhouettes around a dock. */
+  function buildHarbourIslet(island: GrownIsland, month: number) {
+    if (!Number.isInteger(month) || month < 0 || month > island.cur) return;
+    const spot = island.spot(month), y = heightAt(island, spot.x, spot.z);
+    const g = new THREE.Group(); g.position.set(spot.x, y + 0.08, spot.z);
+    const coast = part(G.cyl, "#6ca9ad", 3.1, 0.16, 3.1, 0, -0.08, 0); coast.castShadow = false; g.add(coast);
+    const land = part(G.cyl, tint(palette.sand, palette.dry, 0.25), 2.65, 0.22, 2.65, 0, 0.05, 0); land.castShadow = false; g.add(land);
+    const dock = part(G.box, "#9a7148", 1.2, 0.12, 2.2, 0, 0.16, 2.5); dock.castShadow = false; g.add(dock);
+    const colours = ["#d98773", "#e7bd63", "#7ba99a", "#7699c5", "#b487ad", "#d99c62", "#8ba36d"];
+    for (let i = 0; i < 7; i++) {
+      const a = i / 7 * Math.PI * 2 + 0.22, r = 1.45, x = Math.cos(a) * r, z = Math.sin(a) * r;
+      const house = new THREE.Group(); house.position.set(x, 0.18, z); house.rotation.y = -a;
+      house.add(part(G.box, colours[i]!, 0.52, 0.62 + (i % 2) * 0.14, 0.48, 0, 0.32 + (i % 2) * 0.07, 0));
+      const roof = part(G.roof, palette.roofs[i % palette.roofs.length]!, 0.62, 0.38, 0.58, 0, 0.8 + (i % 2) * 0.14, 0); roof.rotation.y = Math.PI / 4; house.add(roof);
+      g.add(house);
+    }
+    anchor("harbour", g, 2.3);
+    dynamic.add(g);
+  }
+
   function buildScene(input: PathWorldInput, animate: boolean) {
     const { island } = input;
     applyTheme(input.theme);
@@ -1253,6 +1275,7 @@ export function createPathWorld(host: HTMLElement, options: {
 
     // The Journey of Life: the other eras float around this one (nothing is drawn without a journey).
     buildJourney(input, island, reserved);
+    if (input.harbour) buildHarbourIslet(island, input.harbour.month);
     placeFoliage(island, monthSeason, reserved);
     for (const obj of appearing) { obj.userData.pop = options.reducedMotion || !animate ? 1 : 0; obj.scale.setScalar(obj.userData.pop ? 1 : 0.01); }
     sun.intensity = monthSeason === "winter" ? 1.8 : 2.2;

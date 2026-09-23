@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { DateKey } from "../core/calendar.ts";
 import { monthKeyFromDateKey } from "../core/calendar.ts";
-import { memories, movesForChapter, nextMove, openChapterFor, ourRhythm } from "../core/chapters.ts";
+import { chapterMonth, memories, movesForChapter, nextMove, openChapterFor, ourRhythm } from "../core/chapters.ts";
 import { ChapterMoveActions } from "../ChapterTaskControls.tsx";
 import { kittyBankBackingStep, kittyBanksInView } from "../core/kittyBanks.ts";
 import { displayedKittyPiece } from "../core/kittyStudio.ts";
@@ -782,6 +782,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     crossing: sceneCrossing,
   } : null), [sceneCurrentEra, sceneCrossing]);
   const eraHome = sceneCurrentEra?.spec.home ?? null;
+  const harbourMonth = chapter ? months.findIndex((month) => month.key === chapterMonth(chapter)) : -1;
 
   const worldInput = useMemo<PathWorldInput>(() => ({
     island,
@@ -821,8 +822,9 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     unknown: unknown.map((row) => ({ id: row.id, month: row.month })),
     name: islandName,
     layers,
+    harbour: harbourMonth >= 0 && harbourMonth <= shown ? { month: harbourMonth } : null,
     ...(sceneEras.length ? { eras: eraIslands, home: eraHome, gate } : {}),
-  }), [sceneEras.length, eraIslands, eraHome, gate, fireMonth, placedMonth, shownFootpaths, shownBridges, island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, sceneFireSitdown, sceneLand, sceneSitdownClosed, presentMembers, sceneCharterView, sceneCharterShown, shownForks, photoUrls, keptPhotos, canPlay]);
+  }), [sceneEras.length, eraIslands, eraHome, gate, fireMonth, placedMonth, shownFootpaths, shownBridges, island, theme, characters, household, months, atNow, moves, activeMembers.length, next, landmarks, kiln, rhythm, kept, shown, bills, sunrises, mist, weather, today, shownStones, unknown, islandName, layers, sceneFireSitdown, sceneLand, sceneSitdownClosed, presentMembers, sceneCharterView, sceneCharterShown, shownForks, photoUrls, keptPhotos, canPlay, harbourMonth]);
 
   // ------------------------------------------------------------ marks: the real buttons over the canvas
   const marks = useMemo(() => {
@@ -838,6 +840,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
       const base = row.state === "open" ? "this Chapter" : row.state.replace("-", " ");
       list.push({ id: `fire:${row.id}`, label: row.title, sub: sitdown === "open" ? `${base} · Sitdown open` : sitdown === "closed" ? `${base} · Sitdown closed` : base, kind: "fire", minLevel: 1, lantern: 0 });
     }
+    if (harbourMonth >= 0 && harbourMonth <= shown) list.push({ id: "harbour", label: "Little Harbour", sub: "current household Chapter", kind: "home", minLevel: 2, lantern: 0 });
     if (sceneCharterView && sceneCharterShown) list.push({ id: "charter", label: "Our Charter", sub: sceneCharterView.sub, kind: "charter", minLevel: 1, lantern: 0 });
     for (const fork of shownForks) list.push({ id: `fork:${fork.line.id}`, label: fork.label, sub: forkWho(fork.line.responsibility), kind: "fork", minLevel: 2, lantern: 0 });
     for (const row of moves) list.push({ id: `move:${row.id}`, label: row.text, sub: row.state === "done" ? `done · ${nameOf(row.completedByMemberId)}` : nameOf(row.ownerMemberId), kind: "move", minLevel: 3, lantern: 0 });
@@ -880,7 +883,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
       }
     }
     return list;
-  }, [sceneEras, sceneCurrentEra, sceneNextEra, sceneCrossing, offsets, focusedEra, placedMonth, fireMonth, months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, sunrises, mist, shownStones, shownFootpaths, shownBridges, lantern, unknown, chapter, islandName, sceneFireSitdown, sceneCharterView, sceneCharterShown, shownForks, canPlay]);
+  }, [sceneEras, sceneCurrentEra, sceneNextEra, sceneCrossing, offsets, focusedEra, placedMonth, fireMonth, months, shown, atNow, characters, household, moves, landmarks, kiln, island, rhythm, kept, bills, sunrises, mist, shownStones, shownFootpaths, shownBridges, lantern, unknown, chapter, islandName, sceneFireSitdown, sceneCharterView, sceneCharterShown, shownForks, canPlay, harbourMonth]);
 
   // ------------------------------------------------------------ the shared focus (D-284/D-285)
   // One focus for the simple view and the open world. The world reports its level and picks as "world"; the page's
@@ -1280,6 +1283,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   const cardRef = useRef<HTMLElement>(null);
   const select = useCallback((id: string, from?: JourneyFocusSource) => {
     if (id === "tent") { openTent(true); return; }
+    if (id === "harbour") { enterHarbour(); return; }
     const active = typeof document === "undefined" ? null : document.activeElement;
     if (active instanceof HTMLElement && active !== document.body && !active.closest(".path-world__card")) {
       opener.current = active;
@@ -1298,7 +1302,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     if (fullRef.current && world.current) { guardTrip(hint); world.current.focus(id, hint); }
     journeyRef.current.set(focusChangeFor(id), from ?? (fullRef.current ? "world" : "page"));
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openTent, guardTrip, focusChangeFor]);
+  }, [openTent, enterHarbour, guardTrip, focusChangeFor]);
   selectRef.current = select;
 
   // ------------------------------------------------------------ details (the card grows with the lantern)
