@@ -144,7 +144,7 @@ function obstacleCorners(obstacle: Obstacle): PathPoint[] {
   const halfX = (obstacle.kind === "box" ? (obstacle.maxX - obstacle.minX) / 2 : obstacle.halfX) + r;
   const halfZ = (obstacle.kind === "box" ? (obstacle.maxZ - obstacle.minZ) / 2 : obstacle.halfZ) + r;
   const centre = obstacle.kind === "box" ? { x: (obstacle.minX + obstacle.maxX) / 2, z: (obstacle.minZ + obstacle.maxZ) / 2, yaw: 0 } : obstacle;
-  return [[-halfX, -halfZ], [-halfX, halfZ], [halfX, -halfZ], [halfX, halfZ]].map(([x, z]) => world(centre, x, z));
+  return ([[-halfX, -halfZ], [-halfX, halfZ], [halfX, -halfZ], [halfX, halfZ]] as const).map(([x, z]) => world(centre, x, z));
 }
 
 /**
