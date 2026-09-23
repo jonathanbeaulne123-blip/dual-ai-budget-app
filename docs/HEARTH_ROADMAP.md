@@ -1,6 +1,6 @@
-## 2026-09-23 — Tideline Skate Club, local implementation
+## 2026-09-23 — Tideline Skate Club v2, local integration (D-296)
 
-The Harbour now has an original skateboard mode: momentum and tricks, ramps and rails at six island spots, five optional routes, cosmetic deck discoveries, keyboard/touch controls and opt-in live partner skate poses. Progress is device-local recreational data; books and Journey retain their meaning. Local browser and automated evidence, with physical-device/live-service acceptance still open, are recorded in the [worksession](worksessions/2026-09-23-harbour-skateboarding.md). Not pushed, merged or deployed.
+v2 replaces the v1 skate model (#528) with a real skate game in the Harbour's art style: flick-it controls on keys, mouse, touch and gamepad; a deterministic sim with transitions, vert, 15 grinds/slides, manuals and bails; a rebuilt Tideline park and six street spots; a new rider/board look, chase camera, HUD and pause book; and a dev-only Skate Lab. Progress stays device-local recreational data (lossless v1 migration); books and Journey keep their meaning. Local branch `claude/skate-v2-int` only — not pushed, merged or deployed. Human feel playtests, real phones/controllers and a two-device presence ride remain open; see the [worksession](worksessions/2026-09-23-skate-v2-plan.md).
 
 ## Current Hearthside scope — web integration (2026-09-19)
 

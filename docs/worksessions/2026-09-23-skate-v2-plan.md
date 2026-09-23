@@ -1,8 +1,11 @@
 # Tideline Skate Club v2 — from "a board you can stand on" to a real skate game
 
 - **Opened:** 2026-09-23 · **Owner:** Jonathan · **Orchestrator:** Claude (subagents build)
-- **Base:** main @ 4ffe88fb (#528 Tideline Skate Club v1, Codex) · **Branch:** `claude/skate-v2`
-- **Budget delta:** 0 — recreational, device-local progress only; no ledger, no hosted writes, no money semantics.
+- **Base:** main @ 4ffe88fb (#528 Tideline Skate Club v1, Codex) · **Plan branch:** `claude/skate-v2` (506ae8b3) · **Integration branch:** `claude/skate-v2-int`
+- **Status:** integrated and verified **locally** on `claude/skate-v2-int` (waves 1–3 merged, cross-track follow-ups closed). Not pushed, no PR, not merged, not deployed, not live verified. Decision: [D-296](../DECISIONS.md).
+- **Budget delta (5):** 0 — recreational, device-local progress only; no ledger, no hosted writes, no money semantics.
+- **Engagement delta (3):** +3 intended — a skate game worth opening between sit-downs, shared with Bianca through the existing presence lane. Not yet played by humans (see limits).
+- **Risk:** Medium-High (shared renderer lease and walker frame, key routing next to the Hearth tools, presence mapping, device storage migration). No money meaning, calculation, writer, schema, sync, Auth/RLS or Hercules payload change.
 
 ## The brief (Jonathan's words)
 
@@ -70,6 +73,47 @@ Merged sim → tricks → park → look → show (no conflicts), then made them 
 | Presence | Wire act mapped from the v2 present onto the existing `skate-*` acts (no wire/worker change); partner drawn by the v2 look. | `test/harbour-skate-presence.test.ts` |
 
 v1 (`rider.ts`, `skateModel.ts`, `hud/legacy.ts`, park ramp shims) is deleted; `skate/driver.ts` replaces it. Browser smoke (headless SwiftShader, ~1–3 fps): board down, push, ollie and kickflip (easy keys — the flick timing can't survive 1 fps event delivery), Tideline via the book, pause/resume, walk away, Taylor and Newfoundland: `docs/evidence/skate-v2/`. No console errors.
+
+## Wave 3 — polish tracks (2026-09-23, four branches from 275e6fdb)
+
+Four tracks on disjoint files, each judged in the Skate Lab; merged into `claude/skate-v2-int` without conflicts (rider → feel → parkart → hud).
+
+| Track (branch) | What it built |
+|---|---|
+| **RIDER** (`claude/skate-v2-w3-rider`, look) | A skater's stance (deeper knees, ankle yaw so the shoe sits on the bolts while the knee points elsewhere), a bigger board (0.66 × 0.31, wide trucks), tight flips that wrap the real shoe, a head that turns with the line, grab reach for shorter avatars, a readable bail and get-up, brighter grind sparks. `test/skate-look-craft.test.ts` pins the numbers. |
+| **FEEL** (`claude/skate-v2-w3-feel`, sim + input) | Flick-it at human speed, tuned against a seeded human model (keys 70 % → 99.9 % intended trick, gamepad 78 % → 99.4 %, mouse 67 % → 98 %); pop on the flick; flip upgrades mid-air (kickflip → double keeps its turns); grinds picked by the board's angle and the left stick at contact, as in Skate; one wheel model at every speed with tyre grip on cross-slopes; punchy pushes, fast paths and cobbles, controllable spins, fairer catches, livelier manuals and grinds, quicker get-ups; feel tests on the real park. |
+| **PARKART** (`claude/skate-v2-w3-parkart`, world) | Poured slabs, pencil joints, contact shade and edge dressing (hedges, picket flats, bleachers, lanterns, masts, pots, crate, rope posts) in all three themes; a lighter lite tier; dressing footprints (`SkatePark.dressing`) for integration. |
+| **HUD** (`claude/skate-v2-w3-hud`, show) | Nothing on the rider: ride card, hints column, radar and a lower-left ticker on wide stages, one top band on phones, thumb clusters above the app bar on touch; a Skate-feel chase camera (low, 2.5 back, swings side-on up walls, occlusion crane); audio mix; the pause book on phones; focus hand-back; the cat at the park edge. |
+
+### Cross-track follow-ups closed in integration
+
+| Follow-up | What changed | Proof |
+|---|---|---|
+| Mid-air flip upgrade (FEEL rescales `u` when `present.trick.flipId` changes) | Look: `FlipCarry` carries the turns the board has made into the new trick and decays with its ease, instead of ending the trick; a flip read after a catch starts square. | `test/skate-int-look.test.ts` (kickflip → double continuity, no pop) |
+| Bail / get-up agreement | Sim `recover()` gets up **at the heap** when its footprint is flat, clear, off rails/ledges/coping and ashore; it relocates (newest safe pose ≥ 0.8 away) only otherwise, and says so with `recovered.moved`. Look get-up 0.9 → 0.6 s and sim `RECOVER_TIME` 0.25 → 0.48 so control returns as the board is stamped under the feet; the look lays the board at a new spot and the camera cuts **only** on `moved`. A bail reads: tumble (0.8 s, lie briefly) → get up where you fell. | `test/skate-int-bail.test.ts` (in place on flat; rail, step edge, ramp face relocate; camera cut only on relocation); lab `bail` (`recovered moved:false`) |
+| Grind-picking hints | `skateHints()` adds an air hint on every device (W A S D / the left stick as you land on the rail picks the grind); `SKATE_GRIND_HOW` gives each of the 15 grinds its pick in the Trick book, under a `grindsNote`. | `test/harbour-skate-model.test.ts`, `test/skate-show-hud.test.ts`; smoke still `final-03` |
+| Dressing colliders | `world/dressingSolids.ts` turns the 121 dressing pieces (same in every theme and tier) into height-aware sim solids; `buildSkatePark` registers them for its field and `skateSimOptions` hands them to the sim (`extraSolids`); `ensureSkateDressing` for tests and the headless lab. They are **soft**: bump and stop, never a wall bail or a wallride (the lab `line` rolls off Tideline's end into the Northlight-end hedge at ~4.3 u/s; as a hard solid that was a bail). | `test/skate-int-dressing.test.ts` (starts, route checkpoints and segments clear; a rider stops at a hedge it would otherwise cross; soft vs hard); lab `line` passes with them |
+| Drainage tilt | Documented, geometry unchanged: pads follow the island's fall and features are sheared onto them; the sim compensates (tyre grip, unrolled vert launch/landing). A truly level transition would be a pad with `maxSlope: 0`. | NOTES-park "Drainage tilt" |
+| Found by the whole-app smoke | Space while skating opened All tools, the stage blur paused the ride and the HUD's pause book took the keyboard out of the sheet. The book now takes focus only when no other dialog holds it. | `test/skate-show-hud.test.ts` (fails without the fix); smoke `space-opens-tools-and-pauses` |
+
+## Controls (flick-it; `input/NOTES-tricks.md` is the full table)
+
+| Action | Keyboard | Mouse | Touch | Gamepad |
+|---|---|---|---|---|
+| Board down / walk | B | "Skate the island" · book "Put the board away" | same | — |
+| Ride: carve / lean | A D / W S | — | left floating stick | left stick |
+| Push (tap = one stroke) · sprint | W · Shift | — | Push | A · R3 |
+| Brake / powerslide | S / C | — | Brake | B / LT |
+| Board stick: crouch, pop, flips | ← ↑ → ↓ or J I L K (↓ then ↑ = ollie; ↓ then ↖ = kickflip in regular) | hold left button + drag | Flick pad | right stick |
+| Grab front / back | Q / E | right button | Grab ◂ / ▸ | LB / RB |
+| Pick a grind | W A S D as you land on it (board along = grind, swung across = slide) | keys | left stick | left stick |
+| Grind assist (hold) | G | — | — | RT |
+| Manual / nose manual | M / N | gentle drag | gentle tilt | gentle tilt, D-pad |
+| Revert · retry · marker | X · R · T | — | Retry | X · Y · Back |
+| Pause (the book) | P / Esc | Book | Book | Start |
+| All Hearth tools | Space (pauses the ride) | Compass | Compass | — |
+
+**Easy keys** (Settings → Controls, accessibility): J ollie, O nollie, F kickflip, H heelflip, V pop shove-it, Y varial kickflip, U 360 flip — hold to crouch, release to pop. The Trick book draws every flick for the rider's stance.
 
 ## Skate Lab
 

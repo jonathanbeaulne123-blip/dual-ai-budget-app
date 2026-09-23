@@ -123,9 +123,106 @@ def chord_flick(page, keys_up, hold_ms=260):
     page.keyboard.up("ArrowDown")
 
 
+REACH_JS = """() => {
+      const sheet = document.querySelector('.quick-sheet__panel');
+      const buttons = [...document.querySelectorAll('.quick-sheet__panel button, .quick-sheet__panel [role=switch], .quick-sheet__panel a')];
+      const blocked = [];
+      for (const el of buttons) {
+        el.scrollIntoView({block: 'center'});
+        const r = el.getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + r.height / 2;
+        const top = document.elementFromPoint(x, y);
+        if (el.disabled || el.closest('[inert]') || !(top === el || el.contains(top))) blocked.push((el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40) + ' <- ' + (top ? (top.className || top.tagName) : 'none'));
+      }
+      const active = document.activeElement;
+      return { count: buttons.length, blocked, focusInSheet: Boolean(sheet && sheet.contains(active)), bookOpen: Boolean(document.querySelector('.skate-hud[data-skate-open]')),
+               bookDialog: Boolean(document.querySelector('.skate-hud [role=dialog]')) };
+    }"""
+
+
+# A frame-locked thumb for the grind: a 1–3 fps SwiftShader frame carries ~0.3 u of travel, so a
+# position polled from Python arrives frames late. This rAF loop reads the runtime's `data-skate`
+# each frame and presses the real stage's keys (the same handler as a keyboard) at the right distance:
+# W to 1.0 u, then ↓ with G held at 2.45 u, ↑ on the next frame (an ollie). Nobody balances the
+# grind, so it may end in a bail. Bookends' start rolls straight down its long ledge.
+GRIND_JS = """() => new Promise(resolve => {
+  const host = document.querySelector('.house-world__canvas'), el = document.querySelector('.harbour-world__stage');
+  const read = () => host.dataset.skate ? JSON.parse(host.dataset.skate) : null;
+  const key = (type, k) => el.dispatchEvent(new KeyboardEvent(type, {key: k, code: k, bubbles: true, cancelable: true}));
+  const s0 = read(); if (!s0) return resolve({error: 'not skating'});
+  let step = 0, frames = 0, seen = [], grindFrames = 0, lastZ = s0.z;
+  key('keydown', 'w');
+  const tick = () => {
+    const s = read(); frames++;
+    if (s) { const d = Math.hypot(s.x - s0.x, s.z - s0.z); seen.push(s.phase);
+      if (step === 0 && d >= 1.0) { key('keyup', 'w'); step = 1; }
+      else if (step === 1 && d >= 2.45) { key('keydown', 'g'); key('keydown', 'ArrowDown'); step = 2; }
+      else if (step === 2) { key('keydown', 'ArrowUp'); step = 3; }
+      else if (step === 3) { key('keyup', 'ArrowDown'); key('keyup', 'ArrowUp'); step = 4; }
+      else if (step === 4 && s.phase === 'grind') { grindFrames++; }
+    }
+    if (frames > 400 || (step === 4 && grindFrames > 0 && s && s.phase !== 'grind')) { key('keyup', 'g'); return resolve({frames, grindFrames, phases: [...new Set(seen)], last: s}); }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+})"""
+
+
+def grind_run(page):
+    """50-50 on Bookends' ledge (the spot is discovered by the migrated v1 save). Up to three tries from the marker."""
+    for attempt in range(3):
+        wait_until(page, lambda s: s["s"] and s["s"]["speed"] < .05 and s["s"]["phase"] in ("idle", "roll"), 30)
+        page.evaluate(f"() => {{ window.__grind = ({GRIND_JS})(); }}")
+        # Screenshot the moment the ride is on the ledge (a frame or two in).
+        try:
+            page.wait_for_function("() => { const h = document.querySelector('.house-world__canvas'); return h?.dataset.skate && JSON.parse(h.dataset.skate).phase === 'grind'; }", timeout=90000, polling="raf")
+            shot(page, "final-04-grind-bookends-1100.png")
+        except Exception:
+            pass
+        result = page.evaluate("() => window.__grind")
+        ev = skate(page)["ev"]
+        ok = result.get("grindFrames", 0) > 0 and "grind:" in ev
+        log("grind" if ok or attempt == 2 else "grind-attempt", ok, attempt=attempt, result=result, ev=ev[-80:])
+        if ok:
+            return True
+        page.keyboard.press("r")
+        page.wait_for_timeout(4000)
+    return False
+
+
+def grind_only(browser):
+    ctx, page = new_page(browser, 1100, "classic", "grind-1100-classic")
+    key = "hearth.harbour.skate.v2:development:HH-WHOLE-HOUSE-HABITAT-REVIEW:MEM-001"
+    blob = json.dumps({"version": 1, "deck": "tideline", "discovered": ["tideline", "bookends"], "bestLine": 0, "routeBest": {}, "stamps": []})
+    page.add_init_script(f"if (!localStorage.getItem({json.dumps(key)})) localStorage.setItem({json.dumps(key.replace('.v2:', '.v1:'))}, {json.dumps(blob)});")
+    wait_court(page)
+    focus_stage(page)
+    page.keyboard.press("b")
+    page.wait_for_selector(".skate-hud", timeout=120000)
+    page.keyboard.press("p")
+    page.wait_for_selector(".skate-hud[data-skate-open]", timeout=60000)
+    page.locator(".skate-hud [role=tab]").nth(0).click()
+    page.wait_for_timeout(500)
+    page.locator(".skate-hud .skate-book__grid button", has_text="Bookends").first.click()
+    page.wait_for_timeout(2500)
+    focus_stage(page)
+    grind_run(page)
+    ctx.close()
+
+
 def main_pass(browser):
     ctx, page = new_page(browser, 1100, "classic", "main-1100-classic")
     wait_court(page)
+    focus_stage(page)
+
+    # ── Baseline: All tools while walking (what "every tool reachable" is compared against).
+    page.keyboard.press(" ")
+    page.wait_for_selector("[data-quick-sheet='open']", timeout=60000)
+    page.wait_for_timeout(1500)
+    walking_reach = page.evaluate(REACH_JS)
+    log("space-while-walking-baseline", walking_reach["focusInSheet"], reach=walking_reach)
+    page.keyboard.press("Escape")
+    page.wait_for_selector("[data-quick-sheet='open']", state="detached", timeout=60000)
+    page.wait_for_timeout(800)
     focus_stage(page)
 
     # ── v1 → v2 migration, in the real app: learn this person's key, stand a v1 save there, reload.
@@ -204,29 +301,7 @@ def main_pass(browser):
         page.keyboard.press("Escape")
     page.wait_for_timeout(1500)
     focus_stage(page)
-    grind = None
-    for attempt in range(4):
-        wait_until(page, lambda s: s["s"] and s["s"]["speed"] < .05 and s["s"]["phase"] in ("idle", "roll"), 30)
-        s0 = skate(page)["s"]
-        dist = lambda s: math.hypot(s["s"]["x"] - s0["x"], s["s"]["z"] - s0["z"]) if s["s"] else 0
-        page.keyboard.down("w")
-        wait_until(page, lambda s: dist(s) >= 1.4, 60, every=.05)
-        page.keyboard.up("w")
-        wait_until(page, lambda s: dist(s) >= 2.2, 60, every=.05)
-        page.keyboard.down("g")
-        flick(page, ["ArrowUp"], hold_ms=200)
-        grind = wait_until(page, lambda s: s["s"] and s["s"]["phase"] == "grind", 25, every=.05)
-        if grind:
-            shot(page, "final-04-grind-bookends-1100.png")
-            page.keyboard.up("g")
-            ok = wait_until(page, lambda s: "grind:" in s["ev"], 20)
-            log("grind", True, attempt=attempt, ev=ok and ok["ev"], at=grind["s"])
-            break
-        page.keyboard.up("g")
-        page.keyboard.press("r")
-        page.wait_for_timeout(2500)
-    if not grind:
-        log("grind", False, ev=skate(page)["ev"])
+    grind_run(page)
     wait_until(page, lambda s: s["s"] and s["s"]["phase"] not in ("grind", "air"), 60)
 
     # ── Settings: stance goofy (saved to this person's device progress).
@@ -254,23 +329,11 @@ def main_pass(browser):
     a = skate(page)
     page.wait_for_timeout(3000)
     b = skate(page)
-    reach = page.evaluate("""() => {
-      const sheet = document.querySelector('.quick-sheet__panel');
-      const buttons = [...document.querySelectorAll('.quick-sheet__panel button, .quick-sheet__panel [role=switch], .quick-sheet__panel a')];
-      const blocked = [];
-      for (const el of buttons) {
-        el.scrollIntoView({block: 'center'});
-        const r = el.getBoundingClientRect(); const x = r.left + r.width / 2, y = r.top + r.height / 2;
-        const top = document.elementFromPoint(x, y);
-        if (el.disabled || el.closest('[inert]') || !(top === el || el.contains(top))) blocked.push((el.getAttribute('aria-label') || el.textContent || '').trim().slice(0, 40));
-      }
-      const active = document.activeElement;
-      return { count: buttons.length, blocked, focusInSheet: Boolean(sheet && sheet.contains(active)), bookOpen: Boolean(document.querySelector('.skate-hud[data-skate-open]')),
-               bookDialog: Boolean(document.querySelector('.skate-hud [role=dialog]')) };
-    }""")
+    reach = page.evaluate(REACH_JS)
     shot(page, "final-06-space-tools-while-skating-1100.png")
     still = a["s"] and b["s"] and abs(a["s"]["x"] - b["s"]["x"]) < 1e-6 and abs(a["s"]["z"] - b["s"]["z"]) < 1e-6
-    log("space-opens-tools-and-pauses", still and not reach["blocked"] and reach["count"] > 5 and reach["focusInSheet"], reach=reach, moving_before=a["s"], after=b["s"])
+    newly_blocked = [x for x in reach["blocked"] if x.split(" <- ")[0] not in [y.split(" <- ")[0] for y in walking_reach["blocked"]]]
+    log("space-opens-tools-and-pauses", still and not newly_blocked and reach["count"] >= walking_reach["count"] and reach["focusInSheet"], reach=reach, newly_blocked=newly_blocked, moving_before=a["s"], after=b["s"])
     # One tool actually opens from the sheet, then back.
     first_tool = page.locator(".quick-sheet__tool button, button.quick-sheet__tool").first
     label = first_tool.text_content()
@@ -278,20 +341,25 @@ def main_pass(browser):
     page.wait_for_timeout(4000)
     opened = page.evaluate("() => ({ sheet: Boolean(document.querySelector('[data-quick-sheet=open]')), url: location.href, dialogs: document.querySelectorAll('[role=dialog]').length })")
     log("tool-opens-from-sheet", not opened["sheet"], tool=(label or "").strip()[:40], after=opened)
-    page.keyboard.press("Escape")
+    # Close the tool the app's own way (Escape) and come back to the island: the ride is restored where it was, paused.
+    for _ in range(4):
+        if "surface=" not in page.url and not page.locator("[role=dialog]:not(.skate-book)").count():
+            break
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(4000)
+    page.wait_for_selector(".harbour-world[data-world-status='ready']", timeout=180000)
     page.wait_for_timeout(3000)
-    page.go_back()
-    page.wait_for_timeout(3000)
+    restored = page.locator(".skate-hud").count() > 0
+    log("tool-closes-back-to-ride", restored, url=page.url, restored_hud=restored, book_open=page.locator(".skate-hud[data-skate-open]").count() > 0)
+    focus_stage(page)
+    if not restored:
+        page.keyboard.press("b")
+        page.wait_for_selector(".skate-hud", timeout=120000)
 
     # ── Hidden tab: the ride pauses.
-    wait_court(page) if not page.locator(".harbour-world[data-world-status='ready']").count() else None
-    focus_stage(page)
-    if not page.locator(".skate-hud").count():
-        page.keyboard.press("b")
-        page.wait_for_selector(".skate-hud", timeout=60000)
     if page.locator(".skate-hud[data-skate-open]").count():
         page.keyboard.press("Escape")
-        page.wait_for_timeout(1000)
+        page.wait_for_timeout(1500)
     focus_stage(page)
     page.keyboard.down("w")
     wait_until(page, lambda s: s["s"] and s["s"]["speed"] > 2, 60)
@@ -359,9 +427,11 @@ def grid_pass(browser):
 with sync_playwright() as pw:
     browser = pw.chromium.launch(args=ARGS)
     try:
-        if "--grid-only" not in sys.argv:
+        if "--grind-only" in sys.argv:
+            grind_only(browser)
+        elif "--grid-only" not in sys.argv:
             main_pass(browser)
-        if "--no-grid" not in sys.argv:
+        if "--no-grid" not in sys.argv and "--grind-only" not in sys.argv:
             grid_pass(browser)
     finally:
         with open(os.path.join(OUT, "report.json"), "w") as f:
