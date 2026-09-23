@@ -79,7 +79,7 @@ describe("Little Harbour playable character derivatives", () => {
     const controller = new AbortController(); controller.abort();
     try {
       const figure = createPlayableFigure("bianca", "lite", { signal: controller.signal });
-      expect(acquire.mock.calls[0]![1].aborted).toBe(true);
+      expect(acquire.mock.calls[0]?.[1]?.aborted).toBe(true);
       figure.dispose();
     } finally { acquire.mockRestore(); }
   });

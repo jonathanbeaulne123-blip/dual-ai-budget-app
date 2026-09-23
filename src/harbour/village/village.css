@@ -18,5 +18,7 @@
 .village-map__island{width:100%;height:180px;display:block;margin:-8px 0 12px;background:#d6e5df;border-radius:14px}.village-map__character{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:13px;margin:8px 0 18px}.village-map__character select{max-width:230px;min-height:44px;border:1px solid #ceba95;background:#f5edd9;border-radius:10px;padding:6px 12px;color:#344e3e}.village-map h3{font:20px Georgia,serif;margin:20px 0 12px}
 @media(max-width:600px){.village-tools{max-width:calc(100% - 16px);gap:1px;padding:5px}.village-tools button{padding:6px 10px}.village-tools button span{display:none}.village-tools select{width:156px;max-width:156px}.village-map__character{flex-wrap:wrap}.village-map__character select{max-width:100%;flex:1}}
 @media(max-width:360px){.village-tools{flex-wrap:wrap;justify-content:center;width:250px}.village-quick{order:-1;flex-basis:100%}.village-tools select{width:100%;max-width:none}}
-/* Keep presence out of the character's feet and the room's working surfaces. */
-@media(max-width:719px){.harbour-walk-together{left:auto!important;right:14px!important;top:108px!important;bottom:auto!important;max-width:150px!important}}
+/* On phones, the map holds the complete sharing control and its explanation,
+   leaving room entrances and workstations clear. There is only one control. */
+.village-map__presence .harbour-walk-together{position:static!important;inset:auto!important;max-width:none!important;margin:8px 0 16px}
+@media(max-width:719px){.village-presence-outside{display:none}}
