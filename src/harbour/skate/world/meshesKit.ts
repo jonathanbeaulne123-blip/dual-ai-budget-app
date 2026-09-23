@@ -20,7 +20,12 @@ export type LineBucket = { positions: number[]; colors: number[] };
 export type ShadeBucket = { positions: number[]; colors: number[] };
 export type RenderCheck = { id: string; x: number; y: number; z: number };
 /** A non-colliding dressing footprint (world), for tests and for integration's collider list. */
-export type DressingFootprint = { id: string; spot: string; x: number; z: number; r: number; top: number };
+export type DressingFootprint = {
+  id: string; spot: string; x: number; z: number;
+  /** Bounding radius; `box` (when given) is the tighter oriented footprint, in the frameToWorld yaw convention. */
+  r: number; top: number;
+  box?: { yaw: number; hx: number; hz: number };
+};
 export type ParkMeshData = {
   /** Pads and aprons: receive shadows only. */
   pad: Bucket;

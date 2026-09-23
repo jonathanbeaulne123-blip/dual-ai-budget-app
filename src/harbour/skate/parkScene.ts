@@ -5,7 +5,7 @@ import {groundHeightAt} from '../scene/ground.ts';
 import {EngravedPlate} from '../court/engraved.ts';
 import {SKATE_ROUTES} from './park.ts';
 import {createSkateField,type SkateWorldField} from './world/field.ts';
-import {buildParkMeshData,type Bucket} from './world/meshes.ts';
+import {buildParkMeshData,type Bucket,type DressingFootprint} from './world/meshes.ts';
 import {ATLAS_GRID,ICON} from './world/meshesKit.ts';
 import {skatePalette,type SkatePalette} from './world/palette.ts';
 
@@ -27,6 +27,12 @@ export type SkatePark={
   /** The field the park was built from; integration may hand this same instance to the sim. */
   field:SkateWorldField;
   checkpoint:THREE.Mesh;
+  /**
+   * The decorative pieces standing round the spots (hedges, fence flats, lamps, bleachers,
+   * masts, pots…). None of them is in `field.solids`; integration may merge these into the
+   * sim's obstacles if riders should bump into them on the grass.
+   */
+  dressing:readonly DressingFootprint[];
   update(snapshot:SkateParkRunLike):void;
   dispose():void;
 };
@@ -171,7 +177,7 @@ export function buildSkatePark(dressing:PlaceDressing,opts:{tier?:RenderTier;fie
   const checkpoint:THREE.Mesh<THREE.BufferGeometry,THREE.Material>=new THREE.Mesh(own(new THREE.TorusGeometry(2.4,.065,6,40)),ringMaterial);checkpoint.name='skate-next-checkpoint';checkpoint.visible=false;group.add(checkpoint);
   const beam=new THREE.Mesh(own(new THREE.ConeGeometry(.28,.65,4)),ringMaterial);beam.name='skate-checkpoint-arrow';beam.visible=false;beam.rotation.z=Math.PI;group.add(beam);
   let gateKey='';
-  return {group,field,checkpoint,
+  return {group,field,checkpoint,dressing:data.dressing,
     update(s){
       const run=s?.run,route=run?SKATE_ROUTES.find(r=>r.id===run.id):null,at=run&&!run.finished?route?.points[run.checkpoint]:null;
       checkpoint.visible=beam.visible=Boolean(at);

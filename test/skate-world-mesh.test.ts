@@ -64,6 +64,7 @@ describe('skate world · render == physics',()=>{
       const geometries=new Set<THREE.BufferGeometry>(),materials=new Set<THREE.Material>();
       park.group.traverse(o=>{const m=o as THREE.Mesh;if(m.geometry)geometries.add(m.geometry);if(m.material)(Array.isArray(m.material)?m.material:[m.material]).forEach(x=>materials.add(x));});
       geometries.forEach(count);materials.forEach(count);
+      expect(park.dressing.length).toBeGreaterThan(40);expect(park.dressing.every(d=>Number.isFinite(d.x)&&Number.isFinite(d.top))).toBe(true);
       park.update({run:{id:'first-line',checkpoint:1,finished:false}});expect(park.checkpoint.visible).toBe(true);
       park.update({run:{id:'first-line',checkpoint:2,finished:false}});
       park.update(null);expect(park.checkpoint.visible).toBe(false);
@@ -126,6 +127,12 @@ describe('skate world · the look',()=>{
         expect(Math.hypot(d.x,d.z)).toBeLessThan(HARBOUR_LAND.shore-1);
         for(const lane of HARBOUR_LANES)expect(distanceToTrail(d.x,d.z,lane.points),`${d.id} off ${lane.id}`).toBeGreaterThan(LANE_HALF_WIDTH+.2);
         for(const r of ROUTES)for(let i=1;i<r.points.length;i++)expect(segDist(d.x,d.z,r.points[i-1]!,r.points[i]!),`${d.id} off route ${r.id}`).toBeGreaterThan(1);
+        // Oriented pieces (hedges, fence flats, bleachers): every corner is off the pads and the lanes too.
+        if(d.box&&tier==='full'){const c=Math.cos(d.box.yaw),sn=Math.sin(d.box.yaw);for(const [u,v] of [[-1,-1],[1,-1],[1,1],[-1,1]] as const){
+          const x=d.x+u*d.box.hx*c+v*d.box.hz*sn,z=d.z+v*d.box.hz*c-u*d.box.hx*sn;
+          expect(field.heightAt(x,z),`${d.id} corner off the apron`).toBeCloseTo(field.ground(x,z),4);
+          for(const lane of HARBOUR_LANES)expect(distanceToTrail(x,z,lane.points),`${d.id} corner off ${lane.id}`).toBeGreaterThan(LANE_HALF_WIDTH);
+        }}
       }
     }
   });
@@ -134,7 +141,7 @@ describe('skate world · the look',()=>{
     const full=buildParkMeshData(field,SKATE_PALETTES.taylor,'full'),lite=buildParkMeshData(field,SKATE_PALETTES.taylor,'lite');
     expect(lite.ink.positions.length).toBeLessThan(full.ink.positions.length*.85);
     expect(lite.shade.positions.length).toBeLessThan(full.shade.positions.length);
-    expect(lite.decals.positions.length).toBeLessThanOrEqual(full.decals.positions.length);
+    expect(lite.decals.positions.length).toBeLessThan(full.decals.positions.length);
     expect(lite.card.positions.length+lite.pad.positions.length).toBeLessThan((full.card.positions.length+full.pad.positions.length)*.85);
     // Everything that is drawn is finite, and every colour is a colour.
     for(const b of [full.pad,full.card,full.paint,full.decals])for(const v of b.positions)expect(Number.isFinite(v)).toBe(true);

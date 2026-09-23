@@ -86,7 +86,7 @@ export function dressPark(ctx: DressContext): void {
     const yaw = p.frame.yaw + (side === '+x' || side === '-x' ? Math.PI / 2 : 0);
     return { x, z, y: field.ground(x, z), e, yaw, ox, oz };
   };
-  const note = (id: string, spot: string, x: number, z: number, r: number, top: number) => out.dressing.push({ id, spot, x, z, r, top });
+  const note = (id: string, spot: string, x: number, z: number, r: number, top: number, box?: { yaw: number; hx: number; hz: number }) => out.dressing.push(box ? { id, spot, x, z, r, top, box } : { id, spot, x, z, r, top });
   const along = (p: PadRuntime, side: Side, t0: number, t1: number, step: number, fn: (t: number, i: number) => void) => {
     const [hx, hz] = p.half, lim = (side === '+z' || side === '-z' ? hx : hz) - p.corner;
     const a = Math.max(t0, -lim), b = Math.min(t1, lim), n = Math.max(1, Math.floor((b - a) / step));
@@ -111,7 +111,7 @@ export function dressPark(ctx: DressContext): void {
         for (let q = 0; q < 3; q++) { const a0 = q * 2.094 + k, a1 = a0 + 2.094; K.tri(out.card, [bx + Math.cos(a0) * r, by, bz + Math.sin(a0) * r], [bx + Math.cos(a1) * r, by, bz + Math.sin(a1) * r], tip, (i + k) % 2 ? C.bloom : mix(C.bloom, C.chalk, 0.4)); }
       }
       K.shadeQuad(...ground4(s.x, s.z, p.frame.yaw, alongX ? 0.55 : 0.36, alongX ? 0.36 : 0.55), C.shadow, 0.22, 0.22);
-      note(`${p.id}-hedge-${side}-${i}`, p.id, s.x, s.z, 0.42, s.y + h);
+      note(`${p.id}-hedge-${side}-${i}`, p.id, s.x, s.z, 0.42, s.y + h, { yaw: p.frame.yaw, hx: alongX ? 0.41 : 0.24, hz: alongX ? 0.24 : 0.41 });
     });
   }
   /** Picket flats: a cut-paper fence, a panel per piece, inked round its silhouette. */
@@ -139,7 +139,7 @@ export function dressPark(ctx: DressContext): void {
       K.flat(out.card, outlineAll, [a.x, a.y - 0.04, a.z], [b.x, b.y - 0.04, b.z], colour, inkSoft(colour, 0.25));
       // Its rail, a darker board across the pickets' backs.
       K.shadeQuad([a.x, a.y + 0.004, a.z], [b.x, b.y + 0.004, b.z], [b.x + (m.ox * Math.cos(p.frame.yaw) + m.oz * Math.sin(p.frame.yaw)) * 0.35, b.y + 0.004, b.z + (m.oz * Math.cos(p.frame.yaw) - m.ox * Math.sin(p.frame.yaw)) * 0.35], [a.x + (m.ox * Math.cos(p.frame.yaw) + m.oz * Math.sin(p.frame.yaw)) * 0.35, a.y + 0.004, a.z + (m.oz * Math.cos(p.frame.yaw) - m.ox * Math.sin(p.frame.yaw)) * 0.35], C.shadow, 0.2, 0);
-      note(`${p.id}-fence-${side}-${i}`, p.id, m.x, m.z, L / 2, m.y + 0.72);
+      note(`${p.id}-fence-${side}-${i}`, p.id, m.x, m.z, L / 2, m.y + 0.72, { yaw: p.frame.yaw, hx: tx ? L / 2 : 0.03, hz: tx ? 0.03 : L / 2 });
     });
   }
   function lamp(p: PadRuntime, side: Side, t: number, extra = 0.35): void {
@@ -161,7 +161,7 @@ export function dressPark(ctx: DressContext): void {
       K.box(out.card, x, z, yaw, alongX ? length / 2 : 0.21, alongX ? 0.21 : length / 2, base, h, k % 2 ? C.woodAlt : C.wood, C.woodSide, inkSoft(C.woodSide, 0.2), 0.7);
       if (full) { const q = (u: number): V3 => { const lx = alongX ? u : 0, lz = alongX ? 0 : u; return [x + lx * c + lz * sn, h + INK_LIFT, z + lz * c - lx * sn]; }; K.line(q(-length / 2), q(length / 2), inkSoft(C.wood, 0.5)); }
     }
-    note(`${p.id}-bleachers`, p.id, s.x + oxw * 0.6, s.z + ozw * 0.6, length / 2, base + 0.9);
+    note(`${p.id}-bleachers`, p.id, s.x + oxw * 0.6, s.z + ozw * 0.6, length / 2, base + 0.9, { yaw, hx: alongX ? length / 2 : 0.62, hz: alongX ? 0.62 : length / 2 });
   }
   /** Paper flags on a string between world points (sagging), colours cycling. */
   function bunting(points: V3[], sag = 0.3): void {
@@ -244,7 +244,7 @@ export function dressPark(ctx: DressContext): void {
       K.strip(out.paint, tide.frame, tide.plane, [-1.6 + Math.cos(a) * r0, 0.4 + Math.sin(a) * r0], [-1.6 + Math.cos(a) * r1, 0.4 + Math.sin(a) * r1], 0, m % 3 === 0 ? 0.07 : 0.045, C.paint);
     }
     // A trail of kitty paws out of the ring (the cat has been skating too).
-    for (let i = 0; i < 6; i++) stencil(tide, -0.4 + i * 0.55, 4.6 + (i % 2) * 0.22, 0.11, ICON.paw, C.stencil, -Math.PI / 2);
+    for (let i = 0; i < (full ? 6 : 3); i++) stencil(tide, -0.4 + i * (full ? 0.55 : 1.1), 4.6 + (i % 2) * 0.22, 0.11, ICON.paw, C.stencil, -Math.PI / 2);
     // The runway to the Chimney and the long lane under the Lantern Steps are ridden smooth.
     if (full) {
       polish(tide, [-2.4, -6.5], [10.3, -6.5], 1.3, 0.16);
@@ -256,9 +256,11 @@ export function dressPark(ctx: DressContext): void {
       tally(tide, 4.6, 4.3, 7);
     }
     // Chalk arrows for the lines: toward the Chimney, and round to the Hatch.
-    stencil(tide, 0.6, -5.1, 0.34, ICON.arrow, mix(C.chalk, C.pad, 0.15), 0);
-    stencil(tide, 10.2, 2.6, 0.3, ICON.arrow, mix(C.chalk, C.pad, 0.15), Math.PI);
-    stencil(tide, -0.2, 8.4, 0.3, ICON.star, C.stencil, 0.3);
+    if (full) {
+      stencil(tide, 0.6, -5.1, 0.34, ICON.arrow, mix(C.chalk, C.pad, 0.15), 0);
+      stencil(tide, 10.2, 2.6, 0.3, ICON.arrow, mix(C.chalk, C.pad, 0.15), Math.PI);
+      stencil(tide, -0.2, 8.4, 0.3, ICON.star, C.stencil, 0.3);
+    }
 
     // Round the edge: fence flats and a hedge along the shore side with bleachers between,
     // a hedge on the Northlight end, fence on the village side either side of the gate.
@@ -309,8 +311,7 @@ export function dressPark(ctx: DressContext): void {
     const v0 = P(-half - 0.2, top - 0.44, -0.1), v1 = P(half + 0.2, top - 0.44, -0.1);
     K.flat(out.card, sc, v0, v1, C.fenceAlt, inkSoft(C.fenceAlt, 0.25), true);
     for (const u of [-half, half]) { const [px, , pz] = P(u, 0); K.shadeQuad(...ground4(px, pz, yaw, 0.25, 0.25), C.shadow, 0.28, 0.28); }
-    const [gx, , gz] = P(0, 0);
-    note('tideline-gateway', 'tideline', gx, gz, half + 0.3, y + top + 0.42);
+    for (const u of [-half, half]) { const [px, , pz] = P(u, 0); note(`tideline-gate-post-${u < 0 ? 'l' : 'r'}`, 'tideline', px, pz, 0.06, y + top + 0.42); }
     return [-half, half].map(u => { const q = P(u, top + 0.3); return q; });
   }
 
@@ -340,7 +341,7 @@ export function dressPark(ctx: DressContext): void {
   const fund = pads.get('fundsteps');
   if (fund) {
     // Coins stamped in the counting-house landing, six chalk tallies at the foot of the Six.
-    for (const [lx, lz] of [[3.2, -1.1], [3.8, 0.3], [2.6, 1.2]] as const) stencil(fund, lx, lz, 0.26, ICON.coin, C.curb, lx, 0.72);
+    for (const [lx, lz] of ([[3.2, -1.1], [3.8, 0.3], [2.6, 1.2]] as const).slice(0, full ? 3 : 1)) stencil(fund, lx, lz, 0.26, ICON.coin, C.curb, lx, 0.72);
     tally(fund, -1.6, -0.6, 6);
     if (full) scuffs(fund, -1.2, 0.3, 0.7, 6, Math.PI, 57);
     hedge(fund, '+x', -3.6, 3.6, 0.35);
@@ -350,7 +351,7 @@ export function dressPark(ctx: DressContext): void {
   const dock = pads.get('drydock');
   if (dock) {
     stencil(dock, 0, -6.2, 0.4, ICON.wave, C.stencil);
-    stencil(dock, -1.6, 2.5, 0.22, ICON.shell, C.stencil, 0.6);
+    if (full) stencil(dock, -1.6, 2.5, 0.22, ICON.shell, C.stencil, 0.6);
     // Lobster pots and a stack of buoys on the shore beside the pier.
     for (const [t, k] of [[3.0, 0], [4.1, 1]] as const) {
       const s = spotAt(dock, '-x', t, 0.5, 0.35); if (!s) continue;
@@ -401,7 +402,7 @@ export function dressPark(ctx: DressContext): void {
   }
   const pools = pads.get('tidepools');
   if (pools) {
-    for (const [lx, lz, r] of [[0.1, -3.6, 0.2], [-0.4, 3.9, 0.17], [0.6, 1.7, 0.14], [-0.2, -1.6, 0.15]] as const) stencil(pools, lx, lz, r, ICON.shell, C.stencil, lx * 5);
+    for (const [lx, lz, r] of ([[0.1, -3.6, 0.2], [-0.4, 3.9, 0.17], [0.6, 1.7, 0.14], [-0.2, -1.6, 0.15]] as const).slice(0, full ? 4 : 2)) stencil(pools, lx, lz, r, ICON.shell, C.stencil, lx * 5);
     stencil(pools, 0.1, 4.6, 0.3, ICON.wave, C.stencil);
     // A rope-and-post edge on the sea side.
     const posts: V3[] = [];

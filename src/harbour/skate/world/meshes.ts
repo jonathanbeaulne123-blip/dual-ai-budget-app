@@ -112,7 +112,7 @@ export function buildParkMeshData(field: SkateWorldField, palette: SkatePalette,
    */
   function skirt(frame: Frame, plane: Plane, a: readonly [number, number], b: readonly [number, number], ox: number, oz: number, width: number, alpha: number): void {
     const p = curPad; if (!p) return;
-    const len = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.round(len / 0.5));
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]), n = Math.max(1, Math.round(len / (full ? 0.5 : 1.1)));
     for (let i = 0; i < n; i++) {
       const t0 = i / n, t1 = (i + 1) / n;
       const ax = a[0] + (b[0] - a[0]) * t0, az = a[1] + (b[1] - a[1]) * t0, bx = a[0] + (b[0] - a[0]) * t1, bz = a[1] + (b[1] - a[1]) * t1;
@@ -257,7 +257,7 @@ export function buildParkMeshData(field: SkateWorldField, palette: SkatePalette,
     // Apron: a kerb band at the pad's edge, then setts falling to the lawn and fading into the verge.
     if (p.reach > 0.06) {
       const KERB = 0.16;
-      const steps = [KERB, 0.34, 0.6, 0.9, 1.25, 1.65, 2.1, 2.6, 3.2, 4.0].filter(e => e <= p.reach + 0.6);
+      const steps = (full ? [KERB, 0.34, 0.6, 0.9, 1.25, 1.65, 2.1, 2.6, 3.2, 4.0] : [KERB, 0.6, 1.25, 2.1, 3.2]).filter(e => e <= p.reach + 0.6);
       if (steps[steps.length - 1]! < p.reach) steps.push(p.reach);
       let inner = loop.map(([lx, lz]) => W(f, pl, lx, lz, 0)), innerE = 0;
       const span = Math.max(0.6, p.reach);
@@ -519,7 +519,7 @@ export function buildParkMeshData(field: SkateWorldField, palette: SkatePalette,
         const a = r.points[i - 1]!, b = r.points[i]!;
         line([a[0], a[1] + 0.002, a[2]], [b[0], b[1] + 0.002, b[2]], glint);
         const dx = b[0] - a[0], dz = b[2] - a[2], l = Math.hypot(dx, dz) || 1, nx = -dz / l * 0.07, nz = dx / l * 0.07;
-        const n = Math.max(1, Math.round(l / 0.5));
+        const n = Math.max(1, Math.round(l / (full ? 0.5 : 1.2)));
         for (let k = 0; k < n; k++) {
           const t0 = k / n, t1 = (k + 1) / n;
           const P = (t: number, o: number): V3 => { const x = a[0] + dx * t + nx * o, z = a[2] + dz * t + nz * o; return [x, field.heightAt(x, z) + 0.007, z]; };
