@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { NodeIO } from "@gltf-transform/core";
 import { ALL_EXTENSIONS } from "@gltf-transform/extensions";
 import { MeshoptDecoder } from "meshoptimizer";
@@ -9,6 +9,7 @@ import * as THREE from "three";
 import { PLAYABLE_AVATARS } from "../src/harbour/body/avatarDefinition.ts";
 import { createPlayableFigure } from "../src/harbour/body/playableFigure.ts";
 import { createBodyFigure } from "../src/harbour/body/figure.ts";
+import * as glbAssets from "../src/harbour/assets/loadGlb.ts";
 
 const root = resolve(process.cwd(), "public/models/players");
 const hash = (bytes: Buffer) => createHash("sha256").update(bytes).digest("hex");
@@ -71,6 +72,16 @@ describe("Little Harbour playable character derivatives", () => {
       // A flat material-factor bake loses these gradients and turns it white.
       expect(paintedSkin.size, `${avatar} lost the painted face`).toBeGreaterThan(10);
     }
+  });
+
+  it("passes an already-cancelled caller signal through before requesting an asset", () => {
+    const acquire = vi.spyOn(glbAssets, "acquireGlb").mockRejectedValue(new DOMException("Cancelled", "AbortError"));
+    const controller = new AbortController(); controller.abort();
+    try {
+      const figure = createPlayableFigure("bianca", "lite", { signal: controller.signal });
+      expect(acquire.mock.calls[0]![1].aborted).toBe(true);
+      figure.dispose();
+    } finally { acquire.mockRestore(); }
   });
 
   it("fits moving limbs to the authored shoulders and keeps the long coat free of a blue waist patch", () => {

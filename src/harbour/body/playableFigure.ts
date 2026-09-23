@@ -18,7 +18,8 @@ export function createPlayableFigure(avatar: PlayableAvatar, tier: "full" | "lit
   const fallback = createBodyFigure(definition.colours, definition.anatomy);
   const controller = new AbortController();
   const abort = () => controller.abort();
-  options.signal?.addEventListener("abort", abort, { once: true });
+  if (options.signal?.aborted) controller.abort();
+  else options.signal?.addEventListener("abort", abort, { once: true });
   let disposed = false;
   let release: (() => void) | null = null;
   let visual: THREE.Group | null = null;
