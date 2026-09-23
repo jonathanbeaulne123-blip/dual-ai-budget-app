@@ -89,6 +89,24 @@ describe('skate v2 integration · dressing colliders',()=>{
     expect(Math.min(withIt[1]!,withIt[3]!)).toBeGreaterThan(-.02); // never inside the box
   });
 
+  it('dressing is soft: a hedge hit at speed stops the rider but never bails (a hard solid would)',()=>{
+    const hedge=solids.find(s=>s.kind==='obox'&&s.id.includes('-hedge-'))! as Extract<SkateSolid,{kind:'obox'}>;
+    const c=Math.cos(hedge.yaw),n=Math.sin(hedge.yaw),[ax,az]=hedge.halfZ<hedge.halfX?[n,c]:[c,-n];
+    const hitAt=(f:typeof field,extra:readonly SkateSolid[])=>{
+      const yaw=Math.atan2(-ax,-az),speed=SKATE_TUNING.WALL_BAIL_SPEED+1.5;
+      const sim=createSkateSim(f,SKATE_CATALOGS,{x:hedge.x+ax*2,z:hedge.z+az*2,yaw,stance:'regular',...skateSimOptions([],field),extraSolids:extra});
+      const s=sim.save() as Record<string,unknown>;s.vx=Math.sin(yaw)*speed;s.vz=Math.cos(yaw)*speed;sim.load(s);
+      const ev:SkateSimEvent[]=[];for(let i=0;i<60;i++)ev.push(...sim.step(SKATE_NO_INTENT,1/60).events);
+      return {bailed:ev.some(e=>e.kind==='bail'),p:sim.present()};
+    };
+    const soft=hitAt(field,solids);
+    expect(soft.bailed).toBe(false);
+    expect(clearance(hedge,soft.p.x,soft.p.z)).toBeGreaterThan(-.02);
+    // The same box as a hard park solid bails at this speed: the soft rule is what differs.
+    const hardField=Object.assign(Object.create(field) as typeof field,{solids:[...field.solids,{...hedge,id:'hard-hedge'}]});
+    expect(hitAt(hardField,[]).bailed).toBe(true);
+  });
+
   it('an air clears a low piece: the collider has a top',()=>{
     const crate=solids.find(s=>s.id.includes('orchard-crate'))!;
     expect(crate.top-field.ground(crate.x,crate.z)).toBeLessThan(.5);

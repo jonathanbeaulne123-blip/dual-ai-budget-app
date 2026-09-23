@@ -5,7 +5,7 @@ The sim is pure and deterministic. It reads `SkateIntent` and a `SkateField`, ru
 ## API (`sim/index.ts`)
 
 ```ts
-createSkateSim(field, { flips, grinds, grabs }, { x, z, yaw, stance, reducedAssist?, islandObstacles?, shore? }) → {
+createSkateSim(field, { flips, grinds, grabs }, { x, z, yaw, stance, reducedAssist?, islandObstacles?, extraSolids?, shore? }) → {
   step(intent, dt) → { present, events }   // dt is clamped to at most 0.1 s; NaN or ≤0 simulates nothing
   present(); reset(x, z, yaw); setStance(s); save(); load(saved); setMarker(); toMarker();
 }
@@ -14,7 +14,7 @@ createSkateSim(field, { flips, grinds, grabs }, { x, z, yaw, stance, reducedAssi
 - **Live objects:** `present` and the `events` array are reused on every step, so copy them if you need to keep a frame. The event objects themselves are new.
 - **One-shots** (`pop`, `lateFlip`, `revert`) fire on the first substep of the `step()` call. When a frame above 120 fps runs no substep, they wait for the next one. `respawn` and `marker` apply immediately. A pop pressed in the air is held for 0.1 s and fires on touchdown. A pop up to 0.09 s after rolling off an edge or a lip still counts.
 - **Checkpoints:** `save()` is a `structuredClone` of plain data, and it includes pending one-shots. `load()` ignores garbage and restores the ride exactly, as the tests check.
-- **Wiring:** integration passes `islandObstacles` (for example `courtObstacles(tier)`) and `shore` (for example `holdAshore`). `sim/fields.ts` holds analytic reference fields for tests and for PARK. `sim/testKit.ts` holds the reference catalog, the `ride()` driver and a seeded RNG.
+- **Wiring:** integration passes `islandObstacles` (for example `courtObstacles(tier)`), `extraSolids` (the park's dressing, `world/dressingSolids.ts`) and `shore` (for example `holdAshore`). `extraSolids` are height-aware like `field.solids` but **soft**: running into one absorbs the speed into it and keeps `SOFT_BUMP_KEEP` (0.8) of the rest, never a wall bail and never a wallride (a hedge at the end of a line stops you; a planter or a building at > `WALL_BAIL_SPEED` still bails). `sim/fields.ts` holds analytic reference fields for tests and for PARK. `sim/testKit.ts` holds the reference catalog, the `ride()` driver and a seeded RNG.
 
 ## Conventions
 

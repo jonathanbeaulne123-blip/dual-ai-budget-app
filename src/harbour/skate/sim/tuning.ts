@@ -272,6 +272,8 @@ export const SKATE_TUNING = {
   GET_UP_STEP: 0.06,
   /** Speed into a solid (normal component) that bails instead of stopping. */
   WALL_BAIL_SPEED: 4.2,
+  /** Soft solids (the park's dressing, \`extraSolids\`) never bail: the speed into one is absorbed and this share of the rest is kept. */
+  SOFT_BUMP_KEEP: 0.8,
   WATER_BAIL_SPEED: 3.2,
   SAFE_EVERY: 0.3,
   /** Practice marker only when rolling slower than this on the ground. */

@@ -64,7 +64,10 @@ export type SkateSimOptions = {
   x: number; z: number; yaw: number; stance: Stance; reducedAssist?: boolean;
   /** Island obstacles (buildings/trees) in body-obstacle form; injected by integration. */
   islandObstacles?: readonly Obstacle[];
-  /** More never-rideable solids (height-aware like \`field.solids\`), e.g. the park's dressing; injected by integration. */
+  /**
+   * More never-rideable solids (height-aware like \`field.solids\`), e.g. the park's dressing; injected by integration.
+   * They are SOFT: running into one bumps and stops the rider (the speed into it is absorbed) but never bails.
+   */
   extraSolids?: readonly SkateSolid[];
   /** Shoreline clamp (e.g. body/obstacles.ts holdAshore); injected by integration. */
   shore?: (x: number, z: number) => { x: number; z: number; ashore: boolean };
@@ -137,6 +140,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   const lines: GrindLine[] = buildLines(field.grindables ?? []);
   const island: readonly Obstacle[] = opts.islandObstacles ?? [];
   const solids: readonly SkateSolid[] = opts.extraSolids?.length ? [...(field.solids ?? []), ...opts.extraSolids] : field.solids ?? [];
+  const soft: ReadonlySet<string> = new Set((opts.extraSolids ?? []).map(o => o.id));
   const shore = opts.shore ?? null;
   const reduced = opts.reducedAssist === true;
   const flips = catalogs.flips, grinds = catalogs.grinds, grabs = catalogs.grabs, resolve = catalogs.resolveGrind ?? null;
@@ -442,6 +446,11 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       if (hSpeed() > T.WATER_BAIL_SPEED && into > 1) { bail('water'); return true; }
       if (into > 0) { S.vx += into * nx; S.vz += into * nz; }
       S.vx *= 0.9; S.vz *= 0.9;
+      return false;
+    }
+    if (kind === 'solid' && H.id !== null && soft.has(H.id)) {
+      // Dressing (a hedge, a fence flat, a lamp): bump and stop against it, never a bail.
+      if (into > 0) { S.vx += into * nx; S.vz += into * nz; S.vx *= T.SOFT_BUMP_KEEP; S.vz *= T.SOFT_BUMP_KEEP; }
       return false;
     }
     if (into > T.WALL_BAIL_SPEED) { bail('wall'); return true; }
@@ -915,7 +924,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     const y1 = y0 + S.vy * dt;
     const w = sweepXZ(x0, z0, x1, z1, y1);
     if (w !== 'clear') {
-      if (w === 'solid' && H.top - y1 > T.WALLRIDE_MIN_HEIGHT && tryWallride(H.id ?? 'wall', H.nx, H.nz, H.x, H.z, y1, false)) return;
+      if (w === 'solid' && !(H.id !== null && soft.has(H.id)) && H.top - y1 > T.WALLRIDE_MIN_HEIGHT && tryWallride(H.id ?? 'wall', H.nx, H.nz, H.x, H.z, y1, false)) return;
       if (hitWall(H.nx, H.nz, w)) return;
       x1 = H.x; z1 = H.z;
     }
