@@ -46,6 +46,14 @@ describe('skate v2 driver · riding',()=>{
     key('ArrowDown',true);watch(8);key('ArrowDown',false);key('ArrowUp',true);key('ArrowLeft',true);watch(3);key('ArrowUp',false);key('ArrowLeft',false);watch(80);
     expect(seen).toContain('pop:kickflip');
   });
+  it('keeps a flick that finished inside a long frame (a slow device) instead of dropping it as stale',()=>{
+    const {d,frames,key,advance}=rig();
+    key('w',true);frames(60);key('w',false);
+    const seen:string[]=[];
+    key('ArrowDown',true);advance(160);key('ArrowDown',false);key('ArrowUp',true);advance(60);key('ArrowUp',false);
+    for(let i=0;i<6;i++){frames(1,2);for(const e of d.events())seen.push(e.kind);}
+    expect(seen).toContain('pop');
+  });
   it('freezes an airborne ride while paused, clears held input, and resumes',()=>{
     const {d,frames,key}=rig();
     key('w',true);frames(60);

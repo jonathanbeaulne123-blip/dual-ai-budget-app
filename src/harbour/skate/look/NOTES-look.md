@@ -31,8 +31,13 @@ look.dispose();   // also releases
 - Ride frame = `Ry(boardYaw)·Rx(boardPitch)·Rz(boardRoll)` in three.js signs (rotation.x > 0 tips the nose
   down; v1 and `GrindDef.deckPitch` use the same sign). In bail/recover only `boardYaw` is used.
 - Flip signs: `roll +` dips the toe edge first (kickflip), `yaw +` swings the tail to the heel side
-  (backside shove-it), `pitch +` scoops the tail up over the back foot (impossible). Odd half-turn yaws fold
-  into a persistent `yawFlip` (the board is symmetric), so `boardYaw` need not change on the catch.
+  (backside shove-it), `pitch +` scoops the tail up over the back foot (impossible).
+- `yawFlip` (integration 2026-09-23) is the physical board's yaw minus the sim's labelled `boardYaw`: when a
+  trick ends it absorbs exactly what the overlay was showing, and every exact-π jump of `present.boardYaw`
+  (the sim relabels nose/tail at a shove-it's catch and again when it canonicalises on landing) is cancelled.
+  The drawn board turns once, continuously, and never snaps (`test/skate-int-look.test.ts`).
+- Verified against the sim: `present.y` is the ground/rail-top origin, soles stand DECK_TOP above it (the walker
+  no longer adds v1's +0.13); `'YXZ'` with pitch > 0 = nose down and roll > 0 = +x rail up agree.
 - Grinds: the look overlays `GrindDef.deckYaw` relative to `heading` **only if** `boardYaw` has not already been
   turned that way (it picks the nearest of ±deckYaw, +π); it always overlays `deckPitch` about the contact
   truck, and lowers the board so the contact sits on `present.y`. `boardPitch` should be the rail's slope only.

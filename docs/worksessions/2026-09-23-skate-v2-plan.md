@@ -54,3 +54,19 @@ Nobody in wave 1 touches `rider.ts`, `skateModel.ts`, `walker.ts`, `runtime.ts`,
 - Existing repo style: dense TypeScript, `.ts` import extensions, THREE from `three`, dispose everything you create.
 - Accessibility: reduced motion is honoured (camera shake/FOV kick/confetti quiet down; riding still works); every control reachable by keyboard; touch targets ≥ 44 px.
 - Write a short `NOTES-<track>.md` in `src/harbour/skate/<your folder>/` listing the API, tuning constants and anything integration must know.
+
+## Wave 2 — integration (2026-09-23, branch `claude/skate-v2-int`)
+
+Merged sim → tricks → park → look → show (no conflicts), then made them agree, each seam proven by a test:
+
+| Seam | What changed | Proof |
+|---|---|---|
+| Grind naming | Contract: optional `frontside` on `grind-start` (sim sets it: chest faces the grindable). Sim takes TRICKS' `resolveGrind` injected in its catalogs; `overLine` = popped past the line. TRICKS catalog is authoritative for side (crooked −, overcrook +). | `test/skate-int-grinds.test.ts`: all 15 ids on a real rail and a real ledge; frontside mirrored for goofy; "Backside Smith Grind" |
+| Lips / vert | Park: every coping lip is `vert`. Sim: no auto-lock from vert airs; vert launch carries the unrolled heading; landings judged in the unrolled plane; wheel grip below 2.2 u/s so a wall's peak can't swing the board. | `test/skate-int-park.test.ts`: Chimney air > 0.8 over coping, lands back in clean & fakie; Hatch kicker; Kettle drop-in; Breadbin pumping climbs into airs; stall keeps the line |
+| Solids / shore | `skateSimOptions(obstacles)` merges the island obstacles and `holdAshore`. | same file: buildings, sea |
+| Shove-it render | Look: `yawFlip` absorbs the overlay at trick end and cancels the sim's exact-π relabels. | `test/skate-int-look.test.ts`: pop/fs shove-it, 360 flip, varial, kickflip continuous in both stances; heights; pitch/roll signs |
+| Input | Driver syncs stance/switch/fakie each frame, `landingSoon`, `performance.now()`, reset on pause/blur/tool; keys/mouse drag/touch zones/gamepad/Start routed; context menu suppressed while skating; long frames don't make gestures stale. | `test/harbour-skate-model.test.ts` |
+| Show | Skate chase camera drives the camera on skate frames (no orbit while skating: mouse drag is the board stick); HUD model built ≤ 20 Hz and throttled; real hints and trick book; audio created in the gesture; confetti on banked lines. | browser smoke |
+| Presence | Wire act mapped from the v2 present onto the existing `skate-*` acts (no wire/worker change); partner drawn by the v2 look. | `test/harbour-skate-presence.test.ts` |
+
+v1 (`rider.ts`, `skateModel.ts`, `hud/legacy.ts`, park ramp shims) is deleted; `skate/driver.ts` replaces it. Browser smoke (headless SwiftShader, ~1–3 fps): board down, push, ollie and kickflip (easy keys — the flick timing can't survive 1 fps event delivery), Tideline via the book, pause/resume, walk away, Taylor and Newfoundland: `docs/evidence/skate-v2/`. No console errors.

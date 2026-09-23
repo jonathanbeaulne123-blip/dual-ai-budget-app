@@ -37,10 +37,12 @@ The rider's approach is measured in the **rider's frame**, where "nose" means th
 
 - **Truck grinds:** the deck is within about 40° of the line. With lean at 0 the contact is `both-trucks`. Leaning on the tail (below −.35) gives `back-truck`, and leaning on the nose (above +.35) gives `front-truck`.
 - **Slides:** beyond about 40° the contact is `deck`, `tail` or `nose`, chosen by the same lean thresholds.
-- **Signed `deckYaw`:** a positive value means the nose is on the far side, away from where the rider came from. Examples are boardslide (+π/2), tailslide (+π/2), feeble (about +.45) and crooked (about +.3). A negative value means the nose is on the near side. Examples are lipslide (−π/2), noseslide (−π/2), smith (about −.45) and overcrook (about −.3).
+- **Signed `deckYaw`:** a positive value means the nose is on the far side, away from where the rider came from; negative, the near side. The TRICKS catalog is authoritative for which trick is which side (integration 2026-09-23): boardslide +π/2 / lipslide −π/2, feeble +.38 / smith −.38, overcrook +.38 / crooked −.38 (a crooked grind's nose pinches down the near edge), salad +.3 / suski −.3.
 - **Dead zone:** angles within about 11° of the line count as parallel.
 - **Unsigned catalogs:** if the catalog has no negative `deckYaw`, ids matching `lip|smith|overcrook|noseslide` are read as negative.
 - **Where it lives:** the pure `selectGrind()` is exported for scoring previews.
+- **Integration (2026-09-23):** the game injects TRICKS' `resolveGrind` as `catalogs.resolveGrind`; the sim hands it `{deckYawToLine: axis·over, lean, overLine, faceSide: 0, frontside}` and uses the id it returns (falls back to `selectGrind` when absent or unknown). `overLine` = the board's centre had already crossed the line by > 6 cm on the substep it locked (popped over it) → noseblunt/bluntslide. All 15 catalog grinds are reachable on real park rails and ledges (`test/skate-int-grinds.test.ts`).
+- **`grind-start.frontside`** (approved contract amendment): the rider's chest faced the grindable on the way in. The chest looks to the right of travel when `footSign()` is +1 (regular, natural foot leading); the grindable lies on the far side (−near). Transfers keep the first lock's value.
 
 ## Event ordering
 
@@ -74,6 +76,12 @@ These values set the feel. At the current settings:
 - **Pumping:** `PUMP_GAIN` 1.5 and `PUMP_VREF` 4. On a 1.24-high mini-ramp this plateaus about 1.5 above the coping after about 20 walls. Riding without pumping loses about 0.05 per wall.
 - **Landing thresholds:** clean up to 25°, sketchy to 50°, and a hard impact at 7.6 u/s along the normal (11.5 when crouched).
 - **Balance and pop direction:** grind tip, wobble and control, and `POP_NORMAL_BLEND`.
+
+## Integration changes (2026-09-23)
+
+- **Wheel grip.** The board's rolling axis is a tangent vector that turns with the carve. Below `WHEEL_GRIP_SPEED` (2.2 u/s) along it, the velocity is held to it (no sideways component) and the board keeps its line; faster, the board follows travel as before. Without it, the cross-fall drift at a wall's peak swung the board up to 90° (riders left the Breadbin sideways after one wall). A truck self-steer term was tried and made straight vert lines unstable, so it is not in.
+- **Vert.** No auto-lock onto anything from a vert air unless grind assist is held (the Chimney used to catch its own coping on re-entry). A vert launch carries the board's UNROLLED heading (its Euler yaw on a near-vert face amplifies a few degrees off the fall line into tens), and the landing is judged in the unrolled landing plane. Result on the real park: Chimney air ~1.2 above the coping, back into the transition clean, fakie.
+- **testKit `kick()`** now turns the board with a kicked velocity (keeping which end leads), since the wheels only roll along the board.
 
 ## Known gaps
 

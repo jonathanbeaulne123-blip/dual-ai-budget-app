@@ -153,6 +153,8 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
   return {
     sample(now,airborne,rolling,opts={}){
       if(!Number.isFinite(now))now=lastNow;
+      // A long frame (a slow device, a hitch) must not make a gesture that finished inside it stale.
+      const gap=lastNow>0?Math.max(0,now-lastNow):0;
       lastNow=Math.max(lastNow,now);now=lastNow;
       const f=facing();for(const r of Object.values(rec))r.setFacing(f);
       // Gamepad (polled here, once per step).
@@ -173,7 +175,8 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
       let pop:SkateIntent['pop']=null,lateFlip:string|null=null;
       if(easy&&airborne&&!easy.fired&&easy.flipId!==null&&!opts.landingSoon){lateFlip=easy.flipId;easy.fired=true;last={flipId:easy.flipId,from:easy.from,strength:1,at:now,path:[]};}
       queue.sort((a,b)=>a.at-b.at);
-      while(queue.length&&now-queue[0]!.at>INPUT_TUNING.staleMs)queue.shift();
+      const staleMs=Math.max(INPUT_TUNING.staleMs,gap*1.5);
+      while(queue.length&&now-queue[0]!.at>staleMs)queue.shift();
       const c=lateFlip?null:queue.shift()??null;
       if(c){
         const flick={from:c.from,flipId:c.flipId,strength:c.strength};

@@ -109,6 +109,9 @@ or an explicit button/finger/key release), a **dwell** of 90 ms on a nose-side s
 so a longer gesture is never pre-empted by its own prefix while you are still moving. A thumb that
 overshoots keeps the longest trick it already made (flick ↖ then drift to ← = kickflip).
 
+Integration 2026-09-23: a completed gesture is stale after `max(staleMs, 1.5 × the last frame gap)`, so a flick
+that finished inside a long frame (a slow phone, a hitch) still pops instead of vanishing.
+
 ### Timing and thresholds (`FLICK_TUNING`)
 
 | | analogue | digital (keys) |

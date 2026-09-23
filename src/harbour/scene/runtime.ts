@@ -379,6 +379,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const skatePark=buildSkatePark(dressing,{tier,field:skateField()});scene.add(skatePark.group);
   const skateThrottle=createHudThrottle(100);
   let skateBuiltAt=-Infinity,hadSkate=false;
+  const skateLog:string[]=[];
   /**
    * Hand the shell the HUD model: built at most every 50 ms (or at once on a
    * sim event), published through the throttle (urgent changes at once), and
@@ -388,6 +389,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const one=walker?.skate;
     if(!one?.active()){
       if(hadSkate){hadSkate=false;skateThrottle.reset();skatePark.update(null);callbacks.onSkate?.(null);}
+      if(diagnostics){delete host.dataset.skate;delete host.dataset.skateEvents;skateLog.length=0;}
       return;
     }
     if(!force&&now-skateBuiltAt<50&&!one.events().length)return;
@@ -1044,6 +1046,13 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         // A controller's Start is read inside the step; the book follows at once.
         const wasPaused=walker.skate.paused();
         publishSkate(now,false);
+        // Evidence captures read the ride the way they read the cat (dev/diagnostics only).
+        if(diagnostics){
+          const p=walker.skate.present();
+          if(p){host.dataset.skate=JSON.stringify({phase:p.phase,speed:+p.speed.toFixed(2),y:+p.y.toFixed(2),x:+p.x.toFixed(2),z:+p.z.toFixed(2)});
+            const seen=walker.skate.events();if(seen.length){skateLog.push(...seen.map(e=>e.kind==='pop'?`pop:${e.flipId??'ollie'}`:e.kind==='grind-start'?`grind:${e.grindId}`:e.kind));skateLog.splice(0,Math.max(0,skateLog.length-16));host.dataset.skateEvents=skateLog.join(' ');}}
+          else delete host.dataset.skate;
+        }
         if(walker.skate.paused()!==wasPaused)publishSkate(now,true);
       }
       if (walker.walking()) setFollowing(true);
@@ -1064,7 +1073,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         camera.lookAt(f.target[0], f.target[1], f.target[2]);
         if (f.roll) camera.rotateZ(f.roll);
         if (Math.abs(camera.fov - f.fov) > 1e-3) { camera.fov = f.fov; camera.updateProjectionMatrix(); }
-        bodyMoving = true;
+        // Paused (the book is open) the ride and its camera hold still: no frames are asked for.
+        if (!walker.skate.paused()) bodyMoving = true;
       }
       // ── The three lanes together ── streaming follows the **character**, not
       // the camera. `followCamera()` keeps the focus on the Look camera's
