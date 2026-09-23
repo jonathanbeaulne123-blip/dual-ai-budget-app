@@ -2,6 +2,7 @@ import type { Environment, LedgerView } from "../../core/types.ts";
 import type { WorldPresenceShare } from "../../softPresenceWorld.ts";
 import type { PlaceWalkSource } from "../scene/place.ts";
 import type { HarbourPlaceId } from "../flag.ts";
+import type { PlayableAvatar } from "../body/avatarDefinition.ts";
 
 /**
  * How a live partner reaches the harbour without the harbour reaching the
@@ -86,6 +87,7 @@ export function useWorldFeed(request: WorldFeedRequest): WorldFeed {
 export type LocalPose = {
   target: readonly [number, number, number];
   theta: number;
+  avatar?: PlayableAvatar | null;
   /**
    * The body, when one is standing. `act` and `p` are what it is doing beyond
    * walking and how far through it — the two the lane puts on the wire so a

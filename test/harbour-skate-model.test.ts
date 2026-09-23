@@ -11,6 +11,18 @@ const input=(extra:Partial<SkateInput>={}):SkateInput=>({...SKATE_IDLE,...extra}
 function ride(s:SkateState,seconds:number,drive=input(),world=flat,hz=60){for(let i=0;i<Math.round(seconds*hz);i++)s=stepSkate(s,drive,1/hz,world);return s;}
 
 describe('real board physics',()=>{
+  it('steers right with D and left with A, including an airborne spin',()=>{
+    const right=createSkateState(0,0,0,flat);right.speed=4;
+    const left=createSkateState(0,0,0,flat);left.speed=4;
+    const turnedRight=ride(right,.4,input({steer:1}));
+    const turnedLeft=ride(left,.4,input({steer:-1}));
+    expect(turnedRight.yaw).toBeGreaterThan(0);
+    expect(turnedRight.x).toBeGreaterThan(0);
+    expect(turnedLeft.yaw).toBeLessThan(0);
+    expect(turnedLeft.x).toBeLessThan(0);
+    const airborne=createSkateState(0,0,0,flat);airborne.mode='air';airborne.y=1;airborne.vy=3;airborne.speed=4;
+    expect(ride(airborne,.1,input({steer:1})).spin).toBeGreaterThan(0);
+  });
   it('pushes, coasts with rolling resistance and brakes without reversing',()=>{
     const start=createSkateState(0,0,0,flat),moving=ride(start,2,input({push:1})),coasting=ride(moving,.5),braked=ride(moving,2,input({brake:true}));
     expect(moving.speed).toBeGreaterThan(6);expect(moving.z).toBeGreaterThan(5);expect(coasting.speed).toBeLessThan(moving.speed);expect(coasting.z).toBeGreaterThan(moving.z);expect(braked.speed).toBe(0);expect(start.speed).toBe(0);

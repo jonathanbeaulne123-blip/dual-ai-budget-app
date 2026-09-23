@@ -5,7 +5,7 @@ import { PLAYABLE_AVATARS, type PlayableAvatar } from "./avatarDefinition.ts";
 import { attachPlayableSurface } from "./playableSurface.ts";
 
 export type { PlayableAvatar } from "./avatarDefinition.ts";
-export type PlayableFigureOptions = { invalidate?: () => void; signal?: AbortSignal };
+export type PlayableFigureOptions = { invalidate?: () => void; signal?: AbortSignal; onStatus?: (avatar: PlayableAvatar, status: "ready" | "error") => void };
 
 /**
  * Gives the walker a usable biped immediately, then layers the supplied
@@ -23,14 +23,28 @@ export function createPlayableFigure(avatar: PlayableAvatar, tier: "full" | "lit
   let disposed = false;
   let release: (() => void) | null = null;
   let visual: THREE.Group | null = null;
+  const ownMaterials: THREE.Material[] = [];
   void acquireGlb(definition, controller.signal).then((handle) => {
     if (disposed || controller.signal.aborted) { handle.release(); return; }
     release = handle.release;
-    visual = attachPlayableSurface(fallback, avatar, handle.root.clone(true));
+    const surface = handle.root.clone(true);
+    // Cached geometry can be shared, but a live partner fades independently
+    // from the local player. Its materials must belong to this one figure.
+    surface.traverse((node) => {
+      const mesh = node as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      const copy = (material: THREE.Material) => { const next = material.clone(); ownMaterials.push(next); return next; };
+      mesh.material = Array.isArray(mesh.material) ? mesh.material.map(copy) : copy(mesh.material);
+    });
+    visual = attachPlayableSurface(fallback, avatar, surface);
     visual.name = `playable-${avatar}-${tier}`;
+    options.onStatus?.(avatar, "ready");
     options.invalidate?.();
   }).catch((error: unknown) => {
-    if (!(error instanceof DOMException && error.name === "AbortError")) options.invalidate?.();
+    if (!disposed && !(error instanceof DOMException && error.name === "AbortError")) {
+      options.onStatus?.(avatar, "error");
+      options.invalidate?.();
+    }
   });
 
   return {
@@ -43,6 +57,7 @@ export function createPlayableFigure(avatar: PlayableAvatar, tier: "full" | "lit
       controller.abort();
       options.signal?.removeEventListener("abort", abort);
       visual?.removeFromParent();
+      for (const material of ownMaterials) material.dispose();
       release?.(); release = null;
       fallback.dispose();
     },

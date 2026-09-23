@@ -118,9 +118,9 @@ function tick(s:SkateState,i:SkateInput,world:SkateWorld){
     const nextSpeed=s.speed+acceleration*dt;
     if(nextSpeed<0&&slope>.08&&!i.brake&&i.push<=0){s.fakie=!s.fakie;s.speed=Math.min(SKATE_MAX_SPEED,-nextSpeed);}
     else s.speed=clamp(nextSpeed,0,SKATE_MAX_SPEED);
-    s.yaw=skateAngle(s.yaw-steer*(.9+2.1/(1+s.speed*.2))*dt*(s.speed>.1?1:.65));
+    s.yaw=skateAngle(s.yaw+steer*(.9+2.1/(1+s.speed*.2))*dt*(s.speed>.1?1:.65));
     s.pitch+=(-Math.atan(clamp(slope,-1.4,1.4))*(s.fakie?-1:1)-s.pitch)*Math.min(1,dt*14);
-    s.bank+=(-steer*Math.min(1,s.speed/6)-s.bank)*Math.min(1,dt*12);
+    s.bank+=(steer*Math.min(1,s.speed/6)-s.bank)*Math.min(1,dt*12);
     s.pushPhase+=i.push>0&&s.speed<11?dt*8:0;
     if(i.manual&&s.speed>1.3){
       s.manualTime+=dt;s.balance+=((Math.sin(s.clock*2)*.38+s.balance*.65)-steer*1.25)*dt;
@@ -129,7 +129,7 @@ function tick(s:SkateState,i:SkateInput,world:SkateWorld){
       s.combo+=s.speed*dt*8;s.comboAge=0;s.pitch=-.15;
     }else{s.manualTime=0;s.balance=0;}
   }else{
-    s.airTime+=dt;s.spin-=steer*4.1*dt;s.yaw=skateAngle(s.takeoffFacing+s.spin);
+    s.airTime+=dt;s.spin+=steer*4.1*dt;s.yaw=skateAngle(s.takeoffFacing+s.spin);
     s.vy-=SKATE_GRAVITY*dt;s.y+=s.vy*dt;s.airDistance+=s.speed*dt;
     s.pitch+=(0-s.pitch)*dt*5;s.bank*=Math.exp(-dt*5);
   }

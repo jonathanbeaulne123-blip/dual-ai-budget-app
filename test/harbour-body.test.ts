@@ -237,10 +237,10 @@ describe("the body collides", () => {
 describe("the walk reads as walking", () => {
   it("turns to face where it is going, smoothly", () => {
     let state = createBodyState(0, 8.4, 0, bare);
-    // Sent off along +x: the facing swings round to it rather than snapping.
+    // The gate-side view faces -z; D is screen-right (+x).
     const turns: number[] = [];
     for (let i = 0; i < 40; i += 1) {
-      state = stepBody(state, { forward: 0, strafe: 1 }, TOWARD_Z, 1 / 60, bare).state;
+      state = stepBody(state, { forward: 0, strafe: 1 }, AWAY_FROM_Z, 1 / 60, bare).state;
       turns.push(state.yaw);
     }
     // The heading that points along +x, in three.js's `rotation.y` sense.
@@ -273,13 +273,20 @@ describe("the walk reads as walking", () => {
       const basis = cameraBasis(theta);
       expect(basis.fx).toBeCloseTo(-Math.sin(theta), 12);
       expect(basis.fz).toBeCloseTo(-Math.cos(theta), 12);
-      // Right is forward turned a quarter clockwise, and a unit long.
+    // Right is perpendicular to forward, and a unit long.
       expect(Math.hypot(basis.rx, basis.rz)).toBeCloseTo(1, 12);
       expect(basis.fx * basis.rx + basis.fz * basis.rz).toBeCloseTo(0, 12);
+      // D is always to the right of the picture, never its mirror.
+      expect(basis.rx).toBeCloseTo(Math.cos(theta), 12);
+      expect(basis.rz).toBeCloseTo(-Math.sin(theta), 12);
     }
     // W with the camera on the gate side walks away from the eye.
     const away = stepBody(createBodyState(0, 8.4, 0, bare), { forward: 1, strafe: 0 }, 0, 0.5, bare).state;
     expect(away.z).toBeLessThan(8.4);
+    const gateRight = stepBody(createBodyState(0, 8.4, 0, bare), { forward: 0, strafe: 1 }, 0, 0.5, bare).state;
+    const farRight = stepBody(createBodyState(0, 8.4, 0, bare), { forward: 0, strafe: 1 }, Math.PI, 0.5, bare).state;
+    expect(gateRight.x).toBeGreaterThan(0);
+    expect(farRight.x).toBeLessThan(0);
   });
 
   it("leaves prints from a fixed pool and never allocates while walking", () => {
@@ -340,12 +347,12 @@ describe("the body has weight", () => {
   it("banks into the turn it has been asked for, before it has turned at all", () => {
     const rolling = upToSpeed(false);
     expect(Math.abs(rolling.bank)).toBeLessThan(0.05);
-    // Asked to go hard right, the very first frame already rolls that way —
-    // that is anticipation, not a report of a turn already made.
+    // The camera behind this +z-moving body reads D as screen-right (-x).
+    // That is a turn to the body's left, so the bank is negative.
     const turned = stepBody(rolling, { forward: 0, strafe: 1 }, TOWARD_Z, 1 / 60, bare);
-    expect(turned.state.bank).toBeGreaterThan(0.05);
+    expect(turned.state.bank).toBeLessThan(-0.05);
     const other = stepBody(rolling, { forward: 0, strafe: -1 }, TOWARD_Z, 1 / 60, bare);
-    expect(other.state.bank).toBeLessThan(-0.05);
+    expect(other.state.bank).toBeGreaterThan(0.05);
     // A body still standing barely rolls at all: bank is scaled by how much
     // of a walk the feet are actually doing.
     const still = stepBody(createBodyState(0, 6, 0, bare), { forward: 0, strafe: 1 }, TOWARD_Z, 1 / 60, bare);

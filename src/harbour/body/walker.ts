@@ -62,6 +62,7 @@ export type WalkerOptions = {
   colours?: Partial<FigureColours>;
   avatar?: PlayableAvatar|null;
   invalidate?:()=>void;
+  onAvatarStatus?:(avatar:PlayableAvatar,status:"ready"|"error")=>void;
   /** Where it stands when it arrives, and which way it faces. */
   start?: { x: number; z: number; yaw?: number };
   /**
@@ -145,7 +146,7 @@ export function createWalker(options: WalkerOptions): Walker {
   };
   const group = new THREE.Group();
   group.name = "Your body";
-  let figure: BodyFigure = options.avatar?createPlayableFigure(options.avatar,tier,{invalidate:options.invalidate}):createBodyFigure(options.colours);
+  let figure: BodyFigure = options.avatar?createPlayableFigure(options.avatar,tier,{invalidate:options.invalidate,onStatus:options.onAvatarStatus}):createBodyFigure(options.colours);
   group.add(figure.group);
   const trail: Footprints | null = (options.trail ?? true)
     ? createFootprints("#6b5a44", tier === "full" ? FOOTPRINT_POOL : FOOTPRINT_POOL_LITE)
@@ -239,7 +240,7 @@ export function createWalker(options: WalkerOptions): Walker {
     },
     setAvatar(avatar){
       figure.group.removeFromParent();figure.dispose();
-      figure=avatar?createPlayableFigure(avatar,tier,{invalidate:options.invalidate}):createBodyFigure(options.colours);
+      figure=avatar?createPlayableFigure(avatar,tier,{invalidate:options.invalidate,onStatus:options.onAvatarStatus}):createBodyFigure(options.colours);
       group.add(figure.group);write();figure.pose(state.phase,gaitOf(state),0,motion);
     },
     jump() { if(skater.active())skater.action("ollie");else state = requestJump(state); },
