@@ -145,7 +145,7 @@ describe('SkateHUD component', () => {
     expect(onZonePointer.mock.calls.map(c => [c[0], c[1].type])).toEqual([['push', 'pointerdown'], ['push', 'pointerup']]);
   });
 
-  it('opens the pause book as a trapped dialog and closes on Escape', () => {
+  it('opens the pause book as a trapped dialog and closes on Escape, handing focus back', async () => {
     const p = props({model: model(), gesturePath: (id: string) => id === 'kickflip' ? 'M0 0.8L0 -0.2L-0.7 -0.6' : null});
     render(p);
     const book = [...host.querySelectorAll<HTMLButtonElement>('.skate-top__nav button')].find(b => b.textContent!.includes('Book'))!;
@@ -156,7 +156,7 @@ describe('SkateHUD component', () => {
     expect(document.activeElement?.textContent).toBe('Back to the ride');
     expect(host.querySelector('.skate-hud__play')!.hasAttribute('inert')).toBe(true);
     // Trick book: drawn gesture for kickflip, placeholder for the rest.
-    const tab = [...dialog.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(t => t.textContent === 'Trick book')!;
+    const tab = [...dialog.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(t => t.getAttribute('aria-label') === 'Trick book')!;
     act(() => tab.click());
     expect(dialog.querySelectorAll('.skate-gesture__stroke')).toHaveLength(1);
     expect(dialog.querySelectorAll('.skate-gesture__missing').length).toBeGreaterThan(0);
@@ -168,13 +168,16 @@ describe('SkateHUD component', () => {
     act(() => { dialog.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); });
     expect(p.onPause).toHaveBeenLastCalledWith(false);
     expect(host.querySelector('[role=dialog]')).toBeNull();
+    await act(async () => { await new Promise(r => setTimeout(r, 40)); });
+    // Back on the button that opened it, or (when that cannot take focus) the stage.
+    expect(document.activeElement === book || (p.onFocus as ReturnType<typeof vi.fn>).mock.calls.length > 0).toBe(true);
   });
 
   it('changes settings and picks routes from the book', () => {
     const p = props({model: model()});
     render(p);
     act(() => [...host.querySelectorAll<HTMLButtonElement>('.skate-top__nav button')].find(b => b.textContent!.includes('Book'))!.click());
-    const settings = [...host.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(t => t.textContent === 'Settings')!;
+    const settings = [...host.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(t => t.getAttribute('aria-label') === 'Settings')!;
     act(() => settings.click());
     const goofy = [...host.querySelectorAll<HTMLInputElement>('input[type=radio]')].find(i => i.value === 'goofy')!;
     act(() => goofy.click());
@@ -182,7 +185,7 @@ describe('SkateHUD component', () => {
     const far = [...host.querySelectorAll<HTMLInputElement>('input[type=radio]')].find(i => i.value === 'far')!;
     act(() => far.click());
     expect(p.onSettings).toHaveBeenCalledWith({camera: 'far'});
-    act(() => [...host.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(t => t.textContent === 'Explore')!.click());
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(t => t.getAttribute('aria-label') === 'Explore')!.click());
     const route = host.querySelector<HTMLButtonElement>('.skate-book__list button')!;
     act(() => route.click());
     expect(p.onRoute).toHaveBeenCalledWith(DEFAULT_SKATE_TABLES.routes[0]!.id);

@@ -12,6 +12,12 @@
  *    impact, grind clack, bail thud.
  *  - Beds: metal grind scrape vs ledge wax slide, powerslide screech, wind
  *    in long airs.
+ *
+ * Mix (OfflineAudioContext render in Chromium, 2026-09-23; peaks dBFS):
+ * ollie pop ≈ −21 (kickflip with its scrape ≈ −14), land ≈ −19…−20 with the
+ * heaviest body, bail ≈ −15, grind clack ≈ −21; beds (RMS) roll concrete ≈ −36,
+ * grind ≈ −37, wood ≈ −40, cobble ≈ −42, whole line peak ≈ −14. Landings sit just above pops; the grind bed sits over the
+ * roll it replaces; nothing is a raw square/saw without a filter above 1.5 kHz.
  */
 import type {GrindableKind, SkatePresent, SkateSimEvent, SurfaceKind} from './contract.ts';
 
@@ -28,14 +34,15 @@ export type SkateAudio = {
   readonly disposed: boolean;
 };
 
-export const SKATE_AUDIO_CEILING = 0.42;
+/** Master ceiling. A soft compressor sits after it (when the context has one), so stacked one-shots never spike. */
+export const SKATE_AUDIO_CEILING = 0.34;
 type SurfaceVoice = {type: BiquadFilterType; freq: number; q: number; gain: number; body: number; bodyFreq: number; rattle: number; rattleRate: number};
 export const SURFACE_VOICE: Record<SurfaceKind, SurfaceVoice> = {
   concrete: {type: 'highpass', freq: 900, q: 0.5, gain: 0.07, body: 0, bodyFreq: 160, rattle: 0, rattleRate: 0},
-  path: {type: 'bandpass', freq: 1300, q: 0.6, gain: 0.06, body: 0, bodyFreq: 160, rattle: 0.15, rattleRate: 18},
-  wood: {type: 'lowpass', freq: 700, q: 1.2, gain: 0.08, body: 7, bodyFreq: 190, rattle: 0.08, rattleRate: 9},
-  metal: {type: 'bandpass', freq: 2300, q: 2.5, gain: 0.05, body: 4, bodyFreq: 820, rattle: 0, rattleRate: 0},
-  cobble: {type: 'bandpass', freq: 800, q: 0.8, gain: 0.08, body: 3, bodyFreq: 120, rattle: 0.65, rattleRate: 22},
+  path: {type: 'bandpass', freq: 1300, q: 0.6, gain: 0.07, body: 0, bodyFreq: 160, rattle: 0.15, rattleRate: 18},
+  wood: {type: 'lowpass', freq: 700, q: 1.2, gain: 0.12, body: 7, bodyFreq: 190, rattle: 0.08, rattleRate: 9},
+  metal: {type: 'bandpass', freq: 2300, q: 2.5, gain: 0.06, body: 4, bodyFreq: 820, rattle: 0, rattleRate: 0},
+  cobble: {type: 'bandpass', freq: 800, q: 0.8, gain: 0.11, body: 3, bodyFreq: 120, rattle: 0.65, rattleRate: 22},
   sand: {type: 'lowpass', freq: 380, q: 0.4, gain: 0.03, body: 0, bodyFreq: 120, rattle: 0.1, rattleRate: 6},
   grass: {type: 'lowpass', freq: 260, q: 0.3, gain: 0.018, body: 0, bodyFreq: 100, rattle: 0.05, rattleRate: 5},
 };
@@ -50,7 +57,11 @@ export function createSkateAudio(options: SkateAudioOptions = {}): SkateAudio | 
   const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : Number.isFinite(v) ? v : lo);
   let volume = clamp(options.volume ?? 1, 0, 1);
 
-  const master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
+  const master = ctx.createGain(); master.gain.value = 0;
+  // Glue and a safety net: a gentle compressor between the mix and the speakers.
+  const glue = typeof ctx.createDynamicsCompressor === 'function' ? ctx.createDynamicsCompressor() : null;
+  if (glue) { glue.threshold.value = -20; glue.knee.value = 10; glue.ratio.value = 3.5; glue.attack.value = 0.003; glue.release.value = 0.2; master.connect(glue); glue.connect(ctx.destination); }
+  else master.connect(ctx.destination);
   // Seeded noise (1 s) shared by every voice.
   const noise = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate)), ctx.sampleRate), data = noise.getChannelData(0);
   let seed = 31; for (let i = 0; i < data.length; i++) { seed = (seed * 16807) % 2147483647; data[i] = (seed / 2147483647) * 2 - 1; }
@@ -65,7 +76,9 @@ export function createSkateAudio(options: SkateAudioOptions = {}): SkateAudio | 
   rattleLfo.connect(rattleDepth); rattleDepth.connect(rattleGain.gain);
   // Grind: saw + band noise (metal) or low wax noise (ledge).
   const grindGain = bed(), grindSaw = ctx.createOscillator(), grindSawGain = ctx.createGain(), grindNoise = loop(), grindFilter = ctx.createBiquadFilter();
-  grindSaw.type = 'sawtooth'; grindSaw.frequency.value = 190; grindSawGain.gain.value = 0; grindSaw.connect(grindSawGain); grindSawGain.connect(grindGain);
+  // The saw is the rail's ring; a lowpass takes its fizz off so a long grind never grates.
+  const grindTone = ctx.createBiquadFilter(); grindTone.type = 'lowpass'; grindTone.frequency.value = 1500; grindTone.Q.value = 0.7;
+  grindSaw.type = 'sawtooth'; grindSaw.frequency.value = 190; grindSawGain.gain.value = 0; grindSaw.connect(grindTone); grindTone.connect(grindSawGain); grindSawGain.connect(grindGain);
   grindFilter.type = 'bandpass'; grindFilter.Q.value = 3; grindNoise.connect(grindFilter); grindFilter.connect(grindGain);
   // Powerslide screech: resonant band noise with a wobble.
   const slideGain = bed(), slideFilter = ctx.createBiquadFilter(), slideSrc = loop();
@@ -105,8 +118,8 @@ export function createSkateAudio(options: SkateAudioOptions = {}): SkateAudio | 
     pop: (h: number) => {
       // Sharp wooden snap: a bright click, a hollow knock and a tail scrape.
       const k = clamp(0.7 + h * 0.4, 0.6, 1.2);
-      shot({gain: 0.2 * k, decay: 0.035, filter: 'highpass', freq: 2200, q: 0.7});
-      shot({gain: 0.13 * k, decay: 0.07, tone: 'triangle', toneFreq: 420, toneTo: 180});
+      shot({gain: 0.12 * k, decay: 0.035, filter: 'highpass', freq: 2200, q: 0.7});
+      shot({gain: 0.15 * k, decay: 0.07, tone: 'triangle', toneFreq: 420, toneTo: 180});
       shot({gain: 0.05, decay: 0.08, filter: 'bandpass', freq: 3000, freqTo: 1500, q: 1.5, delay: 0.01});
     },
     flick: () => shot({gain: 0.05, attack: 0.01, decay: 0.12, filter: 'bandpass', freq: 3400, freqTo: 1400, q: 2.2}),
@@ -116,8 +129,8 @@ export function createSkateAudio(options: SkateAudioOptions = {}): SkateAudio | 
     },
     land: (impact: number) => {
       const k = clamp(impact, 0.15, 1);
-      shot({gain: 0.2 * k, decay: 0.12 + 0.1 * k, tone: 'sine', toneFreq: 95, toneTo: 48});
-      shot({gain: 0.12 * k, decay: 0.09, filter: 'lowpass', freq: 900, q: 0.5});
+      shot({gain: 0.27 * k, decay: 0.12 + 0.1 * k, tone: 'sine', toneFreq: 95, toneTo: 48});
+      shot({gain: 0.16 * k, decay: 0.09, filter: 'lowpass', freq: 900, q: 0.5});
       shot({gain: 0.06 * k, decay: 0.05, filter: 'highpass', freq: 2600, delay: 0.012});
     },
     clack: () => shot({gain: 0.09, decay: 0.05, tone: 'square', toneFreq: 1150, toneTo: 700}),
@@ -152,8 +165,8 @@ export function createSkateAudio(options: SkateAudioOptions = {}): SkateAudio | 
       rollSrc.playbackRate.setTargetAtTime(0.55 + speed * 1.2, now(), 0.1);
       // Grind bed.
       const grinding = phase === 'grind';
-      set(grindGain.gain, grinding ? 0.05 + speed * 0.03 : 0, grinding ? 0.02 : 0.05);
-      set(grindSawGain.gain, grinding && grindMetal ? 0.1 : 0, 0.03);
+      set(grindGain.gain, grinding ? 0.1 + speed * 0.05 : 0, grinding ? 0.02 : 0.05);
+      set(grindSawGain.gain, grinding && grindMetal ? 0.16 : 0, 0.03);
       set(grindFilter.frequency, grindMetal ? 2400 + speed * 900 : 700 + speed * 300, 0.05);
       set(grindSaw.frequency, 150 + speed * 160 + (p.balance || 0) * 30, 0.05);
       // Powerslide screech with a wobble.
@@ -187,6 +200,7 @@ export function createSkateAudio(options: SkateAudioOptions = {}): SkateAudio | 
       disposed = true;
       for (const s of started) { try { s.stop(); s.disconnect(); } catch { /* not started or already stopped */ } }
       try { master.disconnect(); } catch { /* ignore */ }
+      try { glue?.disconnect(); } catch { /* ignore */ }
       void ctx.close?.().catch(() => {});
     },
     get disposed() { return disposed; },

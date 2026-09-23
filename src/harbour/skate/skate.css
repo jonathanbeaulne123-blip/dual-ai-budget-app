@@ -154,9 +154,10 @@
 
 /* ---------------------------------------------------------------- pause book */
 .skate-book-shade{position:absolute;inset:0;background:color-mix(in srgb,var(--skate-ink) 34%,transparent);backdrop-filter:blur(2px);pointer-events:auto;z-index:4}
-.skate-book{position:absolute;z-index:5;top:112px;bottom:104px;left:50%;transform:translateX(-50%);width:min(780px,calc(100% - 40px));box-sizing:border-box;display:grid;grid-template-rows:auto auto 1fr auto;pointer-events:auto;background:var(--skate-paper);color:var(--skate-ink);box-shadow:6px 7px 0 var(--skate-ink),0 22px 70px var(--skate-shadow);border-radius:3px 10px 10px 3px;border-left:12px solid var(--skate-ink);animation:skate-book-open .32s cubic-bezier(.2,1.2,.4,1) both;transform-origin:left center}
+.skate-book{position:absolute;z-index:5;top:112px;bottom:112px;left:50%;transform:translateX(-50%);width:min(780px,calc(100% - 40px));box-sizing:border-box;display:grid;grid-template-rows:auto auto 1fr auto;pointer-events:auto;background:var(--skate-paper);color:var(--skate-ink);box-shadow:6px 7px 0 var(--skate-ink),0 22px 70px var(--skate-shadow);border-radius:3px 10px 10px 3px;border-left:12px solid var(--skate-ink);animation:skate-book-open .32s cubic-bezier(.2,1.2,.4,1) both;transform-origin:left center}
 @keyframes skate-book-open{from{transform:translateX(-50%) perspective(900px) rotateY(-24deg);opacity:0}to{transform:translateX(-50%);opacity:1}}
 .skate-book__head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:20px 26px 8px}
+.skate-tab__short{display:none}
 .skate-book__eyebrow{font:800 10px system-ui;letter-spacing:.2em;text-transform:uppercase;color:var(--skate-stamp)}
 .skate-book h2{font:italic 700 clamp(24px,3vw,34px)/1.05 var(--skate-display);margin:6px 0 0}
 .skate-hud .skate-book__resume,.skate-hud .skate-book__go{background:var(--skate-accent);color:var(--skate-accent-ink);font-weight:750}
@@ -265,7 +266,8 @@ body:has(.harbour-world.is-skating) :is(.nav.compass,.herc-litter,.sync-freshnes
   .skate-result__points{font-size:24px}.skate-stamp{font-size:14px}
   .skate-balance{width:92px;top:clamp(200px,var(--rider-hy,40%),70%)}
   .skate-book{top:96px;bottom:92px;width:calc(100% - 16px);border-left-width:8px}
-  .skate-book__head{padding:14px 14px 6px}.skate-book__tabs{padding:6px 12px 0}.skate-book__page{padding:12px 14px 14px}.skate-book__foot{padding:8px 14px 12px}
+  .skate-book__head{padding:14px 14px 6px;align-items:center}.skate-book__club{display:none}.skate-hud .skate-book__resume{padding:6px 12px;font-size:13px}
+  .skate-book__tabs{padding:6px 10px 0;gap:3px}.skate-hud .skate-book__tabs [role=tab]{padding:8px 9px;font-size:12px;flex:1 0 auto}.skate-tab__long{display:none}.skate-tab__short{display:inline}.skate-book__page{padding:12px 14px 14px}.skate-book__foot{padding:8px 14px 12px}
   .skate-book__grid,.skate-book__spots{grid-template-columns:1fr 1fr}.skate-book__stats{grid-template-columns:1fr 1fr}.skate-book__stamps{grid-template-columns:1fr 1fr}
   .skate-book__decks{gap:7px}
 }

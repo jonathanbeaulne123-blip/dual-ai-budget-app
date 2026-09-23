@@ -83,7 +83,13 @@ export function SkateHUD(p: SkateHUDProps) {
   useEffect(() => { if (!model) setBookOpen(false); }, [Boolean(model)]);
   const open = bookOpen || paused;
   function openBook(which: BookTab = tab) { origin.current = document.activeElement as HTMLElement | null; setTab(which); setBookOpen(true); p.onPause(true); }
-  function closeBook() { setBookOpen(false); p.onPause(false); const back = origin.current; origin.current = null; if (back && back.isConnected && back !== document.body) back.focus({preventScroll: true}); else p.onFocus(); }
+  function closeBook() {
+    setBookOpen(false); p.onPause(false);
+    const back = origin.current; origin.current = null;
+    // The play layer is inert until React re-renders, so hand focus back on the next frame; if it cannot land, the stage takes it (keys ride from there).
+    const land = () => { const ok = Boolean(back && back.isConnected && back !== document.body); if (ok) back!.focus({preventScroll: true}); if (!ok || document.activeElement !== back) p.onFocus(); };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(land); else land();
+  }
 
   // Polite live region, at most one announcement a second.
   const announcer = useMemo(() => createLiveAnnouncer(1000), []);
