@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import {describe,it,expect} from 'vitest';
-import {HARBOUR_LAND,HARBOUR_WANDERS,HARBOUR_LANDMARK_SOLIDS} from '../src/harbour/village/world.ts';
+import {HARBOUR_LAND,HARBOUR_WANDERS,HARBOUR_LANDMARK_SOLIDS,HARBOUR_LANES} from '../src/harbour/village/world.ts';
 import {VILLAGE_SITES} from '../src/harbour/village/layout.ts';
 import {courtObstacles,SHORE_RADIUS} from '../src/harbour/body/obstacles.ts';
 import {findPath,pathSegmentClear} from '../src/harbour/body/pathfinder.ts';
@@ -17,6 +17,14 @@ const destinations=[...Object.values(VILLAGE_SITES).map(site=>{
 }),{id:'campfire',x:0,z:65.5},...HARBOUR_WANDERS.map(w=>({id:w.id,x:w.at[0],z:w.at[1]}))];
 
 describe('a roomy, connected island',()=>{
+  it('keeps each visible path clear of walls, trees and landmark posts',()=>{
+    const world={obstacles:courtObstacles('full'),shore:SHORE_RADIUS};
+    for(const lane of HARBOUR_LANES)for(let i=1;i<lane.points.length;i++){
+      const [x,z]=lane.points[i-1]!,[nx,nz]=lane.points[i]!;
+      if(Math.hypot(x,z)<4)continue; // The fountain owns the middle of the square.
+      expect(pathSegmentClear({x,z},{x:nx,z:nz},world),`${lane.id}, segment ${i}`).toBe(true);
+    }
+  });
   for(const tier of ['full','lite'] as const)it(`connects every destination pair without crossing a solid (${tier})`,()=>{
     const world={obstacles:courtObstacles(tier),shore:SHORE_RADIUS};
     for(const from of destinations)for(const to of destinations){

@@ -18,22 +18,36 @@ export const HARBOUR_LANDMARK_SOLIDS=[
   ...HARBOUR_WANDERS.map(w=>({kind:'circle' as const,id:`${w.id}-waymarker`,x:w.at[0]+1.5,z:w.at[1],r:.1})),
 ];
 
-/** Curved approaches leave the square open and give each destination its own lane. */
-export function harbourLane(end:readonly[number,number], steps=48): readonly (readonly[number,number])[] {
-  const eastWest=Math.abs(end[0])>Math.abs(end[1]),gate:readonly[number,number]=eastWest?[Math.sign(end[0])*8,0]:[0,Math.sign(end[1])*8];
-  const control:readonly[number,number]=[gate[0]+end[0]*.32,gate[1]+end[1]*.32];
-  const trunk=Array.from({length:9},(_,i)=>[gate[0]*i/8,gate[1]*i/8] as const);
-  return [...trunk,...Array.from({length:steps},(_,i)=>{const t=(i+1)/steps;return [(1-t)*(1-t)*gate[0]+2*(1-t)*t*control[0]+t*t*end[0],(1-t)*(1-t)*gate[1]+2*(1-t)*t*control[1]+t*t*end[1]] as const;})];
-}
+type Point=readonly[number,number];
+const curve=(from:Point,control:Point,to:Point):Point[]=>Array.from({length:19},(_,i)=>{
+  const t=i/18;return [(1-t)*(1-t)*from[0]+2*(1-t)*t*control[0]+t*t*to[0],(1-t)*(1-t)*from[1]+2*(1-t)*t*control[1]+t*t*to[1]];
+});
+const join=(first:Point[],second:Point[]):Point[]=>[...first,...second.slice(1)];
+const north:Point=[0,-18],south:Point=[0,20],east:Point=[23,-4],west:Point=[-25,4];
+const northEnd:Point=[-3,-43],southEnd:Point=[0,44],eastEnd:Point=[31,-17],westEnd:Point=[-35,14];
+const approaches:Record<keyof typeof VILLAGE_SITES,readonly[Point,Point]>={
+  home:[south,[-12,13]],bank:[north,[3,-17]],library:[north,[-12,-8]],
+  glasshouse:[west,[-32,-2]],studio:[east,[22,7]],cottage:[south,[12,21]],boathouse:[eastEnd,[30,-29]],
+};
 
-/** Rendering and planting use the same road centre lines. */
+/** Four shared village roads branch into quieter paths. Rendering, map and tree
+ * clearances read this same graph; the final points still belong to real doors. */
 export const HARBOUR_LANES = [
-  ...Object.values(VILLAGE_SITES).map(site=>{
+  {id:'north-road',points:join(curve([0,0],[1,-7],north),curve(north,[-1,-28],northEnd))},
+  {id:'south-road',points:join(curve([0,0],[-1,8],south),curve(south,[3,31],southEnd))},
+  {id:'east-road',points:join(curve([0,0],[11,-1],east),curve(east,[29,-6],eastEnd))},
+  {id:'west-road',points:join(curve([0,0],[-11,0],west),curve(west,[-32,6],westEnd))},
+  ...Object.entries(VILLAGE_SITES).map(([id,site])=>{
     const [x,z]=site.spot,yaw=Math.atan2(-x,-z),c=Math.cos(yaw),s=Math.sin(yaw);
-    return {id:site.entry,points:harbourLane([x+site.door[0]*c+(site.door[1]+1.1)*s,z+(site.door[1]+1.1)*c-site.door[0]*s])};
+    const end:Point=[x+site.door[0]*c+(site.door[1]+1.1)*s,z+(site.door[1]+1.1)*c-site.door[0]*s];
+    const [from,control]=approaches[id as keyof typeof VILLAGE_SITES];
+    return {id:site.entry,points:curve(from,control,end)};
   }),
-  {id:'campfire',points:harbourLane(VILLAGE_WATERFRONT.spot)},
-  ...HARBOUR_WANDERS.map(wander=>({id:wander.id,points:harbourLane(wander.at)})),
+  {id:'campfire',points:curve(southEnd,[2,59],[VILLAGE_WATERFRONT.spot[0],VILLAGE_WATERFRONT.spot[1]-VILLAGE_WATERFRONT.door[1]-1.1])},
+  {id:'orchard',points:join(curve(westEnd,[-35,32],[-47,31]),curve([-47,31],[-47,28],HARBOUR_WANDERS[0].at))},
+  {id:'lookout',points:curve(northEnd,[-7,-54],HARBOUR_WANDERS[1].at)},
+  {id:'tidepools',points:join(curve(east,[44,-5],[45,20]),curve([45,20],[57,31],HARBOUR_WANDERS[2].at))},
+  {id:'meadow',points:curve(southEnd,[-10,42],HARBOUR_WANDERS[3].at)},
 ];
 
 export function distanceToTrail(x:number,z:number,points:readonly(readonly[number,number])[]):number{
