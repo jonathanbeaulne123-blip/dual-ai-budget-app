@@ -4,6 +4,7 @@ import {
   placedFootprintHold, placementDoor, placementLift, placementOf, placementToWorld,
   streamInRadius, streamOutRadius, streamPlaces,
 } from "../src/harbour/scene/place.ts";
+import { groundHeightAt } from "../src/harbour/scene/ground.ts";
 import { HARBOUR_PLACE_NAMES, type HarbourPlaceId } from "../src/harbour/flag.ts";
 import { VILLAGE_SITES } from "../src/harbour/village/layout.ts";
 import { crossedVillageDoor, villageExteriorCutaway } from "../src/harbour/village/topology.ts";
@@ -67,4 +68,15 @@ describe("village world space", () => {
     }
     expect(places).toContain("bank");
   });
-});
+
+  it("raises and releases at hysteresis boundaries without oscillation", () => {
+    const p = PLACE_PLACEMENTS.library!, inside = [p.spot[0] + streamInRadius(p) - .01, p.spot[1]] as const, outside = [p.spot[0] + streamOutRadius(p) + .01, p.spot[1]] as const;
+    expect(streamPlaces(inside, [], []).some(step => step.id === "library" && step.action === "raise")).toBe(true);
+    expect(streamPlaces(inside, ["library"], []).some(step => step.id === "library" && step.action === "release")).toBe(false);
+    expect(streamPlaces(outside, ["library"], []).some(step => step.id === "library" && step.action === "release")).toBe(true);
+    expect(streamPlaces(outside, ["library"], ["library"]).some(step => step.id === "library" && step.action === "release")).toBe(false);
+  });
+
+  it("lifts footprint corners clear of the terrain", () => {
+    for (const id of PLACED_PLACE_IDS) { const p = PLACE_PLACEMENTS[id]!, lift = placementLift(p); for (const [x,z] of [[0,0],[-p.halfWidth,-p.halfDepth],[p.halfWidth,p.halfDepth]] as const) { const point=placementToWorld(p,[x,0,z],0); if ((p.floorY ?? 0) < 0) expect(lift).toBeLessThan(groundHeightAt(point[0],point[2])); else expect(lift-groundHeightAt(point[0],point[2]),id).toBeGreaterThanOrEqual(.06-1e-8); } }
+  });});

@@ -38,4 +38,7 @@ describe("village travel", () => {
     expect(travelAt(up, 0).roof).toBe(0);
     expect(travelAt(up, up.ms).roof).toBe(1);
   });
-});
+
+  it("keeps animated midpoint frames bounded and monotonic", () => {
+    for (const [from,to] of [["court","tower"],["tower","court"],["court","cellar"],["cellar","court"]] as const) { const plan=travelPlan(from,to,false), frames=[0,.25,.5,.75,1].map(k=>travelAt(plan,plan.ms*k)), values=frames.map(f=>from==="tower"||to==="tower"?f.roof:f.lid), direction=values.at(-1)!-values[0]!; expect(frames[0]!.done).toBe(false); expect(frames.at(-1)!.done).toBe(true); for(let i=1;i<values.length;i+=1)expect((values[i]!-values[i-1]!)*direction).toBeGreaterThanOrEqual(-1e-9); }
+  });});
