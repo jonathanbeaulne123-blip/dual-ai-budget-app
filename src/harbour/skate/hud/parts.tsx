@@ -2,6 +2,7 @@
 import {useEffect, useRef, useState, type PointerEvent as ReactPointerEvent} from 'react';
 import type {SkateSpotCard, SkateNotice} from '../session.ts';
 import {GlyphIcon} from './glyphs.tsx';
+import {bindRiderAnchor} from '../camera/anchor.ts';
 import {formatPoints, type ControlHint, type SkateHudModel, type TouchZone} from './model.ts';
 
 /** Keep something on screen for `ms` after its key changes; returns [value, leaving]. */
@@ -18,53 +19,69 @@ function useTimedShow<T extends {seq: number}>(item: T | null, ms: number): [T |
 }
 
 /* ------------------------------------------------------------------ line ticker */
-export function LineTicker({line, outcome}: {line: SkateHudModel['line']; outcome: SkateHudModel['outcome']}) {
-  const [result, leaving] = useTimedShow(outcome, 1500);
+/** How long a BANKED stamp or LOST tear holds before it slips away (ms). Short: the next line is already rolling. */
+export const RESULT_HOLD_MS = 1150;
+/**
+ * The line as a cut-card ticket: the newest trick big, the tricks before it
+ * small, then base × multiplier = total on an ink strip, and a burning fuse
+ * for the keep-alive. A banked line is stamped; a lost one tears in two.
+ */
+export function LineTicker({line, outcome, where}: {line: SkateHudModel['line']; outcome: SkateHudModel['outcome']; where: 'corner' | 'band'}) {
+  const [result, leaving] = useTimedShow(outcome, RESULT_HOLD_MS);
   const showLine = line.active && line.latest;
-  return <div className="skate-ticker" data-state={result ? result.kind : showLine ? 'live' : 'idle'}>
-    {showLine && !result && <div className="skate-ticker__stack">
-      <div className="skate-ticket-wrap"><div className="skate-ticket skate-ticket--latest" key={line.latest + String(line.chain.length + line.hidden)}>
-        <span className="skate-ticket__label">{line.latest}</span>
-      </div></div>
-      <div className="skate-chain" aria-hidden="true">
+  // The chain is the tricks before the newest one (the newest is the big label).
+  const before = line.chain.at(-1) === line.latest ? line.chain.slice(0, -1) : line.chain;
+  return <div className={`skate-ticker skate-ticker--${where}`} data-state={result ? result.kind : showLine ? 'live' : 'idle'}>
+    {showLine && !result && <div className="skate-ticket-wrap"><div className="skate-ticket" key={line.latest + String(line.chain.length + line.hidden)}>
+      {(before.length > 0 || line.hidden > 0) && <div className="skate-chain" aria-hidden="true">
         {line.hidden > 0 && <span className="skate-chain__more">+{line.hidden}</span>}
-        {line.chain.map((t, i) => <span key={`${i}-${t}`} className="skate-chain__chip">{t}</span>)}
-      </div>
+        {before.map((t, i) => <span key={`${i}-${t}`} className="skate-chain__chip">{t}</span>)}
+      </div>}
+      <span className="skate-ticket__label">{line.latest}</span>
       <div className="skate-ticker__score">
-        <b>{formatPoints(line.base)}</b><span className="skate-ticker__x">×</span><b className="skate-ticker__mult">{line.multiplier}</b>
-        <span className="skate-ticker__eq">= {formatPoints(line.total)}</span>
+        <b>{formatPoints(line.base)}</b><span className="skate-ticker__x" aria-hidden="true">×</span><b className="skate-ticker__mult">{line.multiplier}</b>
+        <span className="skate-ticker__eq">= <b>{formatPoints(line.total)}</b></span>
       </div>
       <div className="skate-fuse" aria-hidden="true"><i style={{transform: `scaleX(${line.keepAlive})`}}/><em style={{left: `${line.keepAlive * 100}%`}}/></div>
-    </div>}
+    </div></div>}
     {result && <div className={`skate-result skate-result--${result.kind}${leaving ? ' is-leaving' : ''}`} key={result.seq}>
       {result.kind === 'banked'
-        ? <><div className="skate-stamp"><span>BANKED</span></div><b className="skate-result__points">{result.text}</b></>
+        ? <div className="skate-banked"><b className="skate-result__points">{result.text}</b><div className="skate-stamp"><span>BANKED</span></div></div>
         : <div className="skate-tear"><span className="skate-tear__half skate-tear__half--a">LOST</span><span className="skate-tear__half skate-tear__half--b">{result.text}</span></div>}
     </div>}
   </div>;
 }
 
-/* ------------------------------------------------------------------ balance arc */
-export function BalanceArc({balance}: {balance: NonNullable<SkateHudModel['balance']>}) {
-  const deg = balance.value * 68;
-  const arc = (a0: number, a1: number) => { const r = 44, p = (a: number) => [Math.sin(a * Math.PI / 180) * r, -Math.cos(a * Math.PI / 180) * r]; const [x0, y0] = p(a0), [x1, y1] = p(a1); return `M${x0!.toFixed(2)} ${y0!.toFixed(2)}A${r} ${r} 0 0 1 ${x1!.toFixed(2)} ${y1!.toFixed(2)}`; };
-  return <div className={`skate-balance skate-balance--${balance.which}`} role="meter" aria-label={`${balance.label} balance`} aria-valuemin={-100} aria-valuemax={100} aria-valuenow={Math.round(balance.value * 100)}>
-    <svg viewBox="-52 -52 104 60" aria-hidden="true">
-      <path d={arc(-70, -40)} className="skate-balance__zone skate-balance__zone--edge"/>
-      <path d={arc(-40, -14)} className="skate-balance__zone skate-balance__zone--warm"/>
-      <path d={arc(-14, 14)} className="skate-balance__zone skate-balance__zone--sweet"/>
-      <path d={arc(14, 40)} className="skate-balance__zone skate-balance__zone--warm"/>
-      <path d={arc(40, 70)} className="skate-balance__zone skate-balance__zone--edge"/>
-      <g style={{transform: `rotate(${deg}deg)`}} className="skate-balance__needle"><path d="M0 4L-2.2 -2L0 -47L2.2 -2Z"/></g>
-      <circle r="4.5" className="skate-balance__hub"/>
+/* ------------------------------------------------------------------ balance meter */
+/**
+ * A thin arc that hangs just above the rider's head (the chase camera
+ * publishes where the head is on screen), so the eye never leaves the board.
+ * Sweet spot in the middle; the bead slides toward the side you are falling.
+ */
+export function BalanceMeter({balance}: {balance: NonNullable<SkateHudModel['balance']>}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => { const el = ref.current; return el ? bindRiderAnchor(el) : undefined; }, []);
+  const R = 40, span = 62; // arc radius, half-angle in degrees
+  const pt = (deg: number) => { const a = deg * Math.PI / 180; return [Math.sin(a) * R, -Math.cos(a) * R] as const; };
+  const arc = (a0: number, a1: number) => { const [x0, y0] = pt(a0), [x1, y1] = pt(a1); return `M${x0.toFixed(2)} ${y0.toFixed(2)}A${R} ${R} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)}`; };
+  const [bx, by] = pt(Math.max(-1, Math.min(1, balance.value)) * span);
+  const danger = Math.abs(balance.value) > 0.62;
+  return <div ref={ref} className={`skate-balance skate-balance--${balance.which}`} data-danger={danger || undefined} role="meter" aria-label={`${balance.label} balance`} aria-valuemin={-100} aria-valuemax={100} aria-valuenow={Math.round(balance.value * 100)}>
+    <svg viewBox="-48 -47 96 35" aria-hidden="true">
+      <path d={arc(-span, span)} className="skate-balance__track"/>
+      <path d={arc(-span, -38)} className="skate-balance__zone skate-balance__zone--edge"/>
+      <path d={arc(38, span)} className="skate-balance__zone skate-balance__zone--edge"/>
+      <path d={arc(-13, 13)} className="skate-balance__zone skate-balance__zone--sweet"/>
+      <circle cx={bx.toFixed(2)} cy={by.toFixed(2)} r="5" className="skate-balance__bead"/>
     </svg>
-    <span>{balance.label}</span>
   </div>;
 }
+/** v1 name, kept for callers that still import it. */
+export const BalanceArc = BalanceMeter;
 
 /* ------------------------------------------------------------------ speed + stance */
 export function RideBadge({speed, stance}: {speed: SkateHudModel['speed']; stance: SkateHudModel['stance']}) {
-  return <div className="skate-ride" aria-label={`${speed.value} kilometres an hour, ${stance.stance}${stance.rideLabel ? `, ${stance.rideLabel.toLowerCase()}` : ''}`}>
+  return <div className="skate-ride" role="img" aria-label={`${speed.value} kilometres an hour, ${stance.stance}${stance.rideLabel ? `, ${stance.rideLabel.toLowerCase()}` : ''}`}>
     <div className="skate-speed"><b>{speed.value}</b><small>km/h</small><i aria-hidden="true" style={{transform: `scaleX(${speed.frac})`}}/></div>
     <div className="skate-stance" aria-hidden="true"><span>{stance.label}</span>{stance.rideLabel && <em data-ride={stance.ride}>{stance.rideLabel}</em>}</div>
   </div>;
@@ -129,17 +146,19 @@ export function Hints({hints}: {hints: readonly ControlHint[]}) {
 
 /* ------------------------------------------------------------------ touch */
 export type ZonePointer = (zone: TouchZone, event: ReactPointerEvent<HTMLElement>) => void;
-const ZONES: {zone: TouchZone; label: string; className: string}[] = [
-  {zone: 'left', label: 'Steer and lean: drag', className: 'skate-zone skate-zone--stick skate-zone--left'},
-  {zone: 'right', label: 'Board: pull down, flick to pop and flip', className: 'skate-zone skate-zone--stick skate-zone--right'},
-  {zone: 'push', label: 'Push', className: 'skate-zone skate-zone--pad skate-zone--push'},
-  {zone: 'brake', label: 'Brake, or powerslide while steering', className: 'skate-zone skate-zone--pad skate-zone--brake'},
-  {zone: 'grab-front', label: 'Front hand grab', className: 'skate-zone skate-zone--pad skate-zone--grab-front'},
-  {zone: 'grab-back', label: 'Back hand grab', className: 'skate-zone skate-zone--pad skate-zone--grab-back'},
-];
-const SHORT: Record<TouchZone, string> = {left: 'Ride', right: 'Board', push: 'Push', brake: 'Brake', 'grab-front': 'Grab', 'grab-back': 'Grab'};
-/** Touch slots only. Raw pointer events go up to the input track's handlers via `onZone`. */
-export function TouchLayout({onZone, onPause, onRetry}: {onZone: ZonePointer; onPause(): void; onRetry(): void}) {
+const ZONE_LABEL: Record<TouchZone, string> = {
+  left: 'Steer and lean: drag', right: 'Board: pull down, flick to pop and flip', push: 'Push', brake: 'Brake, or powerslide while steering',
+  'grab-front': 'Front hand grab', 'grab-back': 'Back hand grab',
+};
+const SHORT: Record<TouchZone, string> = {left: 'Steer', right: 'Flick', push: 'Push', brake: 'Brake', 'grab-front': '◂ Grab', 'grab-back': 'Grab ▸'};
+/**
+ * Touch slots in two thumb clusters that keep to the bottom corners, clear of
+ * the rider and above the app's bottom bar: left thumb steers (push and brake
+ * just above it), right thumb flicks the board (the two grabs just above it,
+ * where the thumb goes after a pop). Raw pointer events go up to the input
+ * track's handlers via `onZone`. Pause and retry live in the top strip.
+ */
+export function TouchLayout({onZone}: {onZone: ZonePointer}) {
   const active = useRef(new Map<number, TouchZone>());
   const [held, setHeld] = useState<ReadonlySet<TouchZone>>(new Set());
   const mark = () => setHeld(new Set(active.current.values()));
@@ -151,14 +170,21 @@ export function TouchLayout({onZone, onPause, onRetry}: {onZone: ZonePointer; on
     onLostPointerCapture: (e: ReactPointerEvent<HTMLElement>) => { if (active.current.delete(e.pointerId)) { mark(); onZone(zone, e); } },
     onContextMenu: (e: {preventDefault(): void}) => e.preventDefault(),
   });
+  const slot = (zone: TouchZone) => {
+    const stick = zone === 'left' || zone === 'right';
+    return <div key={zone} className={`skate-zone skate-zone--${stick ? 'stick' : 'pad'} skate-zone--${zone}`} data-skate-zone={zone} data-held={held.has(zone) || undefined} aria-label={ZONE_LABEL[zone]} role="group" {...handlers(zone)}>
+      {stick && <span className="skate-zone__ring" aria-hidden="true"><i/></span>}
+      <span className="skate-zone__label" aria-hidden="true">{SHORT[zone]}</span>
+    </div>;
+  };
   return <div className="skate-touch" aria-label="Touch controls">
-    {ZONES.map(z => <div key={z.zone} className={z.className} data-skate-zone={z.zone} data-held={held.has(z.zone) || undefined} aria-label={z.label} role="group" {...handlers(z.zone)}>
-      {z.zone === 'left' || z.zone === 'right' ? <span className="skate-zone__ring" aria-hidden="true"><i/></span> : null}
-      <span className="skate-zone__label" aria-hidden="true">{SHORT[z.zone]}{z.zone === 'grab-front' ? ' ◂' : z.zone === 'grab-back' ? ' ▸' : ''}</span>
-    </div>)}
-    <div className="skate-touch__corner">
-      <button type="button" className="skate-touch__retry" onClick={onRetry} aria-label="Back to your marker">↺</button>
-      <button type="button" className="skate-touch__pause" onClick={onPause} aria-label="Pause and open the skate book">❚❚</button>
+    <div className="skate-touch__cluster skate-touch__cluster--left">
+      <div className="skate-touch__row">{slot('push')}{slot('brake')}</div>
+      {slot('left')}
+    </div>
+    <div className="skate-touch__cluster skate-touch__cluster--right">
+      <div className="skate-touch__row">{slot('grab-front')}{slot('grab-back')}</div>
+      {slot('right')}
     </div>
   </div>;
 }

@@ -114,7 +114,7 @@ describe('SkateHUD component', () => {
   it('renders the live line ticker, balance meter and device hints', () => {
     render(props({model: model({line: line(['Ollie', 'Nollie Backside 180 Heelflip']), present: present({phase: 'manual', manual: 'manual', balance: -0.4})})}));
     expect(host.querySelector('.skate-ticket__label')!.textContent).toBe('Nollie Backside 180 Heelflip');
-    expect(host.querySelectorAll('.skate-chain__chip')).toHaveLength(2);
+    expect([...host.querySelectorAll('.skate-chain__chip')].map(c => c.textContent)).toEqual(['Ollie']); // the tricks before the newest
     const meter = host.querySelector('[role=meter]')!;
     expect(meter.getAttribute('aria-valuenow')).toBe('-40');
     expect(host.querySelector('.skate-hints')).not.toBeNull();
@@ -133,7 +133,7 @@ describe('SkateHUD component', () => {
     const onZonePointer = vi.fn();
     render(props({model: model({inputDevice: 'touch'}), onZonePointer}));
     const zones = [...host.querySelectorAll<HTMLElement>('[data-skate-zone]')].map(z => z.dataset.skateZone);
-    expect(zones).toEqual(['left', 'right', 'push', 'brake', 'grab-front', 'grab-back']);
+    expect(zones).toEqual(['push', 'brake', 'left', 'grab-front', 'grab-back', 'right']); // left thumb cluster, right thumb cluster
     expect(host.querySelector('.skate-hints')).toBeNull();
     const push = host.querySelector<HTMLElement>('[data-skate-zone=push]')!;
     // jsdom has no PointerEvent: a MouseEvent with a pointer type and id is what React reads.
@@ -145,7 +145,7 @@ describe('SkateHUD component', () => {
     expect(onZonePointer.mock.calls.map(c => [c[0], c[1].type])).toEqual([['push', 'pointerdown'], ['push', 'pointerup']]);
   });
 
-  it('opens the pause book as a trapped dialog and closes on Escape', () => {
+  it('opens the pause book as a trapped dialog and closes on Escape, handing focus back', async () => {
     const p = props({model: model(), gesturePath: (id: string) => id === 'kickflip' ? 'M0 0.8L0 -0.2L-0.7 -0.6' : null});
     render(p);
     const book = [...host.querySelectorAll<HTMLButtonElement>('.skate-top__nav button')].find(b => b.textContent!.includes('Book'))!;
@@ -156,7 +156,7 @@ describe('SkateHUD component', () => {
     expect(document.activeElement?.textContent).toBe('Back to the ride');
     expect(host.querySelector('.skate-hud__play')!.hasAttribute('inert')).toBe(true);
     // Trick book: drawn gesture for kickflip, placeholder for the rest.
-    const tab = [...dialog.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(t => t.textContent === 'Trick book')!;
+    const tab = [...dialog.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(t => t.getAttribute('aria-label') === 'Trick book')!;
     act(() => tab.click());
     expect(dialog.querySelectorAll('.skate-gesture__stroke')).toHaveLength(1);
     expect(dialog.querySelectorAll('.skate-gesture__missing').length).toBeGreaterThan(0);
@@ -168,13 +168,16 @@ describe('SkateHUD component', () => {
     act(() => { dialog.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true})); });
     expect(p.onPause).toHaveBeenLastCalledWith(false);
     expect(host.querySelector('[role=dialog]')).toBeNull();
+    await act(async () => { await new Promise(r => setTimeout(r, 40)); });
+    // Back on the button that opened it, or (when that cannot take focus) the stage.
+    expect(document.activeElement === book || (p.onFocus as ReturnType<typeof vi.fn>).mock.calls.length > 0).toBe(true);
   });
 
   it('changes settings and picks routes from the book', () => {
     const p = props({model: model()});
     render(p);
     act(() => [...host.querySelectorAll<HTMLButtonElement>('.skate-top__nav button')].find(b => b.textContent!.includes('Book'))!.click());
-    const settings = [...host.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(t => t.textContent === 'Settings')!;
+    const settings = [...host.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(t => t.getAttribute('aria-label') === 'Settings')!;
     act(() => settings.click());
     const goofy = [...host.querySelectorAll<HTMLInputElement>('input[type=radio]')].find(i => i.value === 'goofy')!;
     act(() => goofy.click());
@@ -182,7 +185,7 @@ describe('SkateHUD component', () => {
     const far = [...host.querySelectorAll<HTMLInputElement>('input[type=radio]')].find(i => i.value === 'far')!;
     act(() => far.click());
     expect(p.onSettings).toHaveBeenCalledWith({camera: 'far'});
-    act(() => [...host.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(t => t.textContent === 'Explore')!.click());
+    act(() => [...host.querySelectorAll<HTMLButtonElement>('[role=tab]')].find(t => t.getAttribute('aria-label') === 'Explore')!.click());
     const route = host.querySelector<HTMLButtonElement>('.skate-book__list button')!;
     act(() => route.click());
     expect(p.onRoute).toHaveBeenCalledWith(DEFAULT_SKATE_TABLES.routes[0]!.id);
