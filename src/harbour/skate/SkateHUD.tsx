@@ -11,7 +11,7 @@ import type {Stance} from './contract.ts';
 import type {SkateDeckId, SkateRouteId, SkateSpotId} from './park.ts';
 import type {SkateSettings} from './session.ts';
 import {createLiveAnnouncer, formatPoints, type SkateHudModel, type TouchZone} from './hud/model.ts';
-import {BalanceArc, Hints, LineTicker, NoticeSlip, Radar, RideBadge, RouteCard, SpotBanner, TouchLayout} from './hud/parts.tsx';
+import {BalanceMeter, Hints, LineTicker, NoticeSlip, Radar, RideBadge, RouteCard, SpotBanner, TouchLayout} from './hud/parts.tsx';
 import {PauseBook, type BookTab, type TrickBook} from './hud/PauseBook.tsx';
 import './skate.css';
 
@@ -42,6 +42,35 @@ export type SkateHUDProps = {
 
 function prefersReduced(): boolean {
   try { return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
+}
+function coarsePointer(): boolean {
+  try { return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches; } catch { return false; }
+}
+/** Below 720 px of stage the HUD is the phone HUD (Hearth's glance branch): one top band, no radar. */
+export const SKATE_NARROW = 720;
+function useStageWidth(ref: {current: HTMLElement | null}, live: boolean): number {
+  const [w, setW] = useState(() => (typeof window === 'undefined' ? 1200 : window.innerWidth || 1200));
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([e]) => { const next = Math.round(e?.contentRect.width ?? 0); if (next > 0) setW(next); });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [live]);
+  return w;
+}
+/** Touch controls show for a touch device before its first touch (a phone never sends a key), and stop once a key is pressed. */
+function useTouchFirst(device: string | undefined): boolean {
+  const [keys, setKeys] = useState(false);
+  useEffect(() => {
+    if (keys) return;
+    const on = (e: KeyboardEvent) => { if (!e.isComposing) setKeys(true); };
+    window.addEventListener('keydown', on, true);
+    return () => window.removeEventListener('keydown', on, true);
+  }, [keys]);
+  if (device === 'touch') return true;
+  if (device === 'gamepad' || device === 'pointer') return false;
+  return !keys && coarsePointer();
 }
 
 export function SkateHUD(p: SkateHUDProps) {
@@ -75,30 +104,43 @@ export function SkateHUD(p: SkateHUDProps) {
   function command(c: 'respawn' | 'marker') { p.onCommand(c); p.onFocus(); }
   function zone(z: TouchZone, e: ReactPointerEvent<HTMLElement>) { p.onZonePointer?.(z, e); }
 
+  const hudRef = useRef<HTMLDivElement>(null);
+  const width = useStageWidth(hudRef, Boolean(model));
+  const touchFirst = useTouchFirst(model?.inputDevice);
   const reduced = prefersReduced() || Boolean(model?.settings.reducedEffects);
   if (!model) return <button className="skate-entry" type="button" onPointerDown={e => e.stopPropagation()} onClick={() => { p.onStart(); p.onFocus(); }}>
     <span className="skate-entry__deck" aria-hidden="true"/><span><b>Skate the island</b><small>Your next line starts here · B</small></span><span aria-hidden="true">↗</span>
   </button>;
-  const m = model, touch = m.inputDevice === 'touch';
-  return <div className="skate-hud" data-skate-phase={m.phase} data-skate-device={m.inputDevice} data-skate-reduced={reduced || undefined} data-skate-open={open || undefined} onPointerDown={e => e.stopPropagation()}>
+  const m = model, touch = touchFirst, narrow = width < SKATE_NARROW;
+  // Phones and touch screens read the line in the top band (the thumbs own the bottom corners);
+  // a desktop reads it in the lower-left corner, beside the rider, never on them.
+  const band = narrow || touch;
+  const ticker = <LineTicker line={m.line} outcome={m.outcome} where={band ? 'band' : 'corner'}/>;
+  const route = m.run && <RouteCard run={m.run} onEnd={() => { p.onRoute(null); p.onFocus(); }}/>;
+  return <div ref={hudRef} className="skate-hud" data-skate-phase={m.phase} data-skate-device={touch ? 'touch' : m.inputDevice} data-skate-layout={narrow ? 'narrow' : 'wide'} data-skate-reduced={reduced || undefined} data-skate-open={open || undefined} onPointerDown={e => e.stopPropagation()}>
     <div className="skate-hud__play" inert={open ? true : undefined} aria-hidden={open ? true : undefined}>
       <header className="skate-top">
-        <div className="skate-wordmark" aria-label="Tideline Skate Club"><span>Little Harbour</span><b>TIDELINE<span> SKATE CLUB</span></b></div>
-        <RideBadge speed={m.speed} stance={m.stance}/>
+        <div className="skate-top__ride">
+          <span className="skate-wordmark" aria-label="Tideline Skate Club">Tideline Skate Club</span>
+          <RideBadge speed={m.speed} stance={m.stance}/>
+        </div>
         <nav className="skate-top__nav" aria-label="Skate session">
           <button type="button" onClick={() => command('respawn')} aria-label="Back to your marker"><span aria-hidden="true">↺</span><span className="skate-top__word">Retry</span></button>
-          <button type="button" onClick={() => openBook('challenges')}><span aria-hidden="true">◇</span><span className="skate-top__word">Goals</span><span className="skate-sr"> {m.challenges.done} of {m.challenges.total}</span></button>
+          <button type="button" onClick={() => openBook('challenges')} aria-label={`Goals, ${m.challenges.done} of ${m.challenges.total}`}><span aria-hidden="true">◇</span><span className="skate-top__word">Goals</span><span className="skate-top__count" aria-hidden="true">{m.challenges.done}/{m.challenges.total}</span></button>
           <button type="button" onClick={() => openBook()} aria-label="Pause and open the skate book"><span aria-hidden="true">❚❚</span><span className="skate-top__word">Book</span></button>
         </nav>
       </header>
-      <SpotBanner card={m.spotCard}/>
-      <NoticeSlip notice={m.notice} saveFailed={p.saveFailed}/>
-      {m.run && <RouteCard run={m.run} onEnd={() => { p.onRoute(null); p.onFocus(); }}/>}
-      <Radar model={m} partnerName={p.partnerName}/>
-      {m.balance && <BalanceArc balance={m.balance}/>}
-      <LineTicker line={m.line} outcome={m.outcome}/>
-      {!touch && <Hints hints={m.hints}/>}
-      {touch && <TouchLayout onZone={zone} onPause={() => openBook()} onRetry={() => command('respawn')}/>}
+      <div className="skate-band">
+        {route}
+        {band && ticker}
+        <SpotBanner card={m.spotCard}/>
+        <NoticeSlip notice={m.notice} saveFailed={p.saveFailed}/>
+      </div>
+      {!narrow && <Radar model={m} partnerName={p.partnerName}/>}
+      {m.balance && <BalanceMeter balance={m.balance}/>}
+      {!band && ticker}
+      {!touch && !narrow && <Hints hints={m.hints}/>}
+      {touch && <TouchLayout onZone={zone}/>}
       <div className="skate-sr" aria-live="polite" aria-atomic="true">{live}</div>
     </div>
     {open && <>

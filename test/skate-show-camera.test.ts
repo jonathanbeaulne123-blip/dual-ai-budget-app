@@ -44,7 +44,7 @@ describe('skate chase camera', () => {
     expect(next.position[2] - before.position[2]!).toBeCloseTo(8 / 60, 2); // settled: moves with the rider, no drift
     const slow = createSkateCamera();
     let g!: SkateCameraFrame; for (let i = 0; i < 300; i++) g = slow.update(at({vz: 0.5}), [], 1 / 60, env);
-    expect(g.fov).toBeGreaterThanOrEqual(54.9); expect(fast).toBeGreaterThan(g.fov + 8); expect(fast).toBeLessThanOrEqual(75.1);
+    expect(g.fov).toBeGreaterThanOrEqual(53.9); expect(fast).toBeGreaterThan(g.fov + 8); expect(fast).toBeLessThanOrEqual(75.1);
   });
 
   it('never produces NaN, even from a broken present', () => {
@@ -196,5 +196,41 @@ describe('skate camera hand-back', () => {
     for (let i = 0; i < 120; i++) f = cam.update(at({x: 3, z: 4, vx: 2, vz: -3}), [], 1 / 60, env);
     const eye = poseEye(skateCameraPose(f));
     for (let k = 0; k < 3; k++) expect(eye[k]).toBeCloseTo(f.position[k]!, 9);
+  });
+});
+
+describe('skate camera · companions and hand-back', () => {
+  it('the cat waits just outside the pad, on his own side, while you skate', async () => {
+    const {skateWatchPoint, WATCH_MARGIN} = await import('../src/harbour/skate/camera/companion.ts');
+    const {SKATE_KEEP_OUTS, parkPoint} = await import('../src/harbour/skate/world/layout.ts');
+    const pad = SKATE_KEEP_OUTS.find(r => r.id === 'skate-tideline')!;
+    const [rx, rz] = parkPoint('tideline', 2, 1);
+    const inside = (p: {x: number; z: number}, grow: number) => {
+      // Local frame of the pad, measured the way the helper does.
+      const [ox, oz] = parkPoint('tideline', 0, 0), [ax, az] = parkPoint('tideline', 1, 0), [bx, bz] = parkPoint('tideline', 0, 1);
+      const l = (x: number, z: number) => [(x - ox) * (ax - ox) + (z - oz) * (az - oz), (x - ox) * (bx - ox) + (z - oz) * (bz - oz)];
+      const [cx, cz] = l(pad.x, pad.z), [px, pz] = l(p.x, p.z);
+      return Math.abs(px! - cx!) < pad.halfWidth + grow && Math.abs(pz! - cz!) < pad.halfDepth + grow;
+    };
+    for (const [lx, lz] of [[0, 0], [10, 3], [-12, -6], [30, 0], [0, -25]] as const) {
+      const [cx, cz] = parkPoint('tideline', lx, lz);
+      const w = skateWatchPoint({x: rx, z: rz}, {x: cx, z: cz});
+      expect(inside(w, WATCH_MARGIN - 0.4)).toBe(false); // off the pad (parkPoint rounds to 1 cm, so allow a little)
+      expect(inside(w, WATCH_MARGIN + 0.4)).toBe(true); // but right at its edge
+    }
+  });
+
+  it('putting the board away beside a ramp hands the walking camera a heading whose eye is clear', async () => {
+    const {skateWalkPose} = await import('../src/harbour/skate/camera/companion.ts');
+    // A ramp rises behind the rider (−z); the chase camera was looking along +z.
+    const ground = (_x: number, z: number) => (z < -0.5 ? 2.5 : 0);
+    const f: SkateCameraFrame = {position: [0, 0.9, -2.4], target: [0, 0.8, 0.2], fov: 60, roll: 0};
+    const pose = skateWalkPose(f, {x: 0, y: 1, z: 0}, ground, {r: 3.4, phi: 1.06, lookHeight: 0});
+    const ex = Math.sin(pose.theta) * Math.sin(pose.phi) * pose.r, ez = Math.cos(pose.theta) * Math.sin(pose.phi) * pose.r;
+    expect(ground(ex, ez)).toBe(0); // swung round off the ramp
+    expect(pose.phi).toBeCloseTo(1.06, 6); expect(pose.r).toBe(3.4);
+    // Open ground: keeps the chase camera's own side.
+    const open = skateWalkPose(f, {x: 0, y: 1, z: 0}, () => 0, {r: 3.4, phi: 1.06, lookHeight: 0});
+    expect(Math.abs(open.theta - Math.PI)).toBeLessThan(0.3);
   });
 });

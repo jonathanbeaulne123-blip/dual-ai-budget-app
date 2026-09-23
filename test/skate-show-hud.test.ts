@@ -114,7 +114,7 @@ describe('SkateHUD component', () => {
   it('renders the live line ticker, balance meter and device hints', () => {
     render(props({model: model({line: line(['Ollie', 'Nollie Backside 180 Heelflip']), present: present({phase: 'manual', manual: 'manual', balance: -0.4})})}));
     expect(host.querySelector('.skate-ticket__label')!.textContent).toBe('Nollie Backside 180 Heelflip');
-    expect(host.querySelectorAll('.skate-chain__chip')).toHaveLength(2);
+    expect([...host.querySelectorAll('.skate-chain__chip')].map(c => c.textContent)).toEqual(['Ollie']); // the tricks before the newest
     const meter = host.querySelector('[role=meter]')!;
     expect(meter.getAttribute('aria-valuenow')).toBe('-40');
     expect(host.querySelector('.skate-hints')).not.toBeNull();
@@ -133,7 +133,7 @@ describe('SkateHUD component', () => {
     const onZonePointer = vi.fn();
     render(props({model: model({inputDevice: 'touch'}), onZonePointer}));
     const zones = [...host.querySelectorAll<HTMLElement>('[data-skate-zone]')].map(z => z.dataset.skateZone);
-    expect(zones).toEqual(['left', 'right', 'push', 'brake', 'grab-front', 'grab-back']);
+    expect(zones).toEqual(['push', 'brake', 'left', 'grab-front', 'grab-back', 'right']); // left thumb cluster, right thumb cluster
     expect(host.querySelector('.skate-hints')).toBeNull();
     const push = host.querySelector<HTMLElement>('[data-skate-zone=push]')!;
     // jsdom has no PointerEvent: a MouseEvent with a pointer type and id is what React reads.

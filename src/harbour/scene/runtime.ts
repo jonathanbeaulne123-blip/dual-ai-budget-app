@@ -4,7 +4,8 @@ import {buildSkatePark} from '../skate/parkScene.ts';
 import {skateField,type SkateControls} from '../skate/driver.ts';
 import type {SkateProgress} from '../skate/session.ts';
 import {createHudThrottle,type SkateHudModel} from '../skate/hud/model.ts';
-import {createSkateCamera,skateCameraPose,type SkateCamera} from '../skate/camera/skateCamera.ts';
+import {createSkateCamera,type SkateCamera} from '../skate/camera/skateCamera.ts';
+import {skateWalkPose,skateWatchPoint} from '../skate/camera/companion.ts';
 import {ISLAND_BUILDINGS} from '../body/obstacles.ts';
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import { worldDiagnostics } from "../../house/world/diagnostics.ts";
@@ -14,7 +15,7 @@ import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/c
 // Everything this lane adds to the runtime is additive and marked like this
 // block. A sibling lane is restructuring this file; nothing above or below a
 // marked block was rewritten to make room for the body.
-import { createFollowCamera, FOLLOW_MAX_R, followInRoom, type FollowCamera } from "../camera/followCamera.ts";
+import { createFollowCamera, FOLLOW_DISTANCE, FOLLOW_MAX_R, FOLLOW_PHI, followInRoom, type FollowCamera } from "../camera/followCamera.ts";
 import { createWalker, COURT_ARRIVAL, type Walker } from "../body/walker.ts";
 import type { EmoteId } from "../body/bodyModel.ts";
 import type {PlayableAvatar} from '../body/avatarDefinition.ts';
@@ -641,7 +642,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   let skateCam: SkateCamera | null = null;
   let skateCamera = false;
   let selectedAvatar=callbacks.avatar??null;
-  let cat:Cat|null=null,errand:CatErrand|null=null,errandKey:string|null=null;
+  let cat:Cat|null=null,errand:CatErrand|null=null,errandKey:string|null=null,catWatch:{x:number;z:number}|null=null;
   let catCatchUpAt=0,zoomOverscroll=0,journeyRequested=false;
   let bodyInput: BodyInput = NO_INPUT;
   const bodySamples: number[] = [];
@@ -1024,8 +1025,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if (walker && follow) {
       const skating = walker.skate.active() && placeId === 'court';
       if(skating!==skateCamera){
-        // The board went away: the walking camera picks up exactly where the chase camera was.
-        if(!skating&&skateCam&&following){follow.seed(skateCameraPose(skateCam.frame()));if(Math.abs(camera.fov-fovFor(composition))>1e-3){camera.fov=fovFor(composition);camera.updateProjectionMatrix();}}
+        // The board went away: the walking camera picks up from the chase camera's side of the rider, on a heading whose standing eye is clear of the ramps.
+        if(!skating&&skateCam&&following){const on=walker.state();follow.seed(skateWalkPose(skateCam.frame(),{x:on.x,y:eyeHeight(on),z:on.z},(x,z)=>bodyGround(x,z),{r:FOLLOW_DISTANCE[composition],phi:FOLLOW_PHI,lookHeight:0}));if(Math.abs(camera.fov-fovFor(composition))>1e-3){camera.fov=fovFor(composition);camera.updateProjectionMatrix();}}
         skateCamera=skating;
       }
       const began = diagnostics ? performance.now() : 0;
@@ -1107,9 +1108,12 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       }
       if(cat){
         const doing=walker.action(),emote=doing&&doing.act!=='jump'&&doing.act!=='slide'&&!doing.act.startsWith('skate')?doing.act as EmoteId:null;
-        if(cat.step(dt,(now-mountedAt)/1000,{...at,emote}))bodyMoving=true;
+        // Skating, he waits at the edge of the pad and watches (out of the lines and out of the shot).
+        if(skating){if(!catWatch){const him0=cat.state();catWatch=skateWatchPoint(at,him0);}}else catWatch=null;
+        const heeled=catWatch?{x:catWatch.x,z:catWatch.z,yaw:Math.atan2(at.x-catWatch.x,at.z-catWatch.z),speed:0,air:0,emote:null}:{...at,emote};
+        if(cat.step(dt,(now-mountedAt)/1000,heeled))bodyMoving=true;
         const him=cat.state();
-        if(now>=catCatchUpAt&&(Math.hypot(him.x-at.x,him.z-at.z)>14||him.gaveUp!==null)){
+        if(!catWatch&&now>=catCatchUpAt&&(Math.hypot(him.x-at.x,him.z-at.z)>14||him.gaveUp!==null)){
           catCatchUpAt=now+1500;if(cat.catchUp({...at,emote}))bodyMoving=true;
         }
         if(diagnostics){host.dataset.catAt=JSON.stringify([him.x,him.y,him.z,him.yaw,him.speed]);host.dataset.catMood=cat.waiting()?`wait:${him.mood}`:him.mood;}

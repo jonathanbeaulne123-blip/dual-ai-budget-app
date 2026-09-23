@@ -1,10 +1,13 @@
 /* Tideline Skate Club v2 HUD — cut card, stamped labels, pencil lines on a kitchen-table island.
-   Three authored themes: Classic (tideline teal on cream), Taylor (plum on blush), Newfoundland (harbour navy on ochre). */
+   Three authored themes: Classic (tideline teal on cream), Taylor (plum on blush), Newfoundland (harbour navy on ochre).
+   Layout rule: nothing sits on the rider. Desktop reads the line in the lower-left corner; phones and touch screens
+   read it in one top band (thumbs own the bottom corners). The balance meter hangs over the rider's head, placed by
+   the chase camera (camera/anchor.ts). Breakpoints are container queries on the stage, not the window. */
 
 /* ---------------------------------------------------------------- tokens */
-.skate-hud,.skate-entry{--skate-ink:#173c37;--skate-ink-2:#2b5a52;--skate-paper:#fff8e6;--skate-card:#f4ead0;--skate-accent:#3fb49c;--skate-accent-ink:#0f322d;--skate-stamp:#c2473b;--skate-pencil:#5c5445;--skate-shadow:#10302b38;--skate-hi:#ffd66b;--skate-display:Georgia,'Iowan Old Style',serif}
-.harbour-world--taylor :is(.skate-hud,.skate-entry){--skate-ink:#55314b;--skate-ink-2:#7a4a6c;--skate-paper:#fff3f1;--skate-card:#f7dfe3;--skate-accent:#e48bb5;--skate-accent-ink:#3d1932;--skate-stamp:#b0304f;--skate-pencil:#6b4a5d;--skate-shadow:#3a152f3a;--skate-hi:#ffc7a3}
-.harbour-world--newfoundland :is(.skate-hud,.skate-entry){--skate-ink:#163c50;--skate-ink-2:#2c5a70;--skate-paper:#f7f0dc;--skate-card:#eadcb4;--skate-accent:#e3a54a;--skate-accent-ink:#2a1c05;--skate-stamp:#b23a2e;--skate-pencil:#4c4a3d;--skate-shadow:#0c26333d;--skate-hi:#f4d27a}
+.skate-hud,.skate-entry{--skate-ink:#173c37;--skate-ink-2:#2b5a52;--skate-paper:#fff8e6;--skate-card:#f4ead0;--skate-accent:#3fb49c;--skate-accent-ink:#0f322d;--skate-stamp:#b93a2f;--skate-pencil:#5c5445;--skate-shadow:#10302b38;--skate-hi:#ffd66b;--skate-display:Georgia,'Iowan Old Style',serif;--skate-gutter:28px}
+.harbour-world--taylor :is(.skate-hud,.skate-entry){--skate-ink:#55314b;--skate-ink-2:#7a4a6c;--skate-paper:#fff3f1;--skate-card:#f7dfe3;--skate-accent:#e48bb5;--skate-accent-ink:#3d1932;--skate-stamp:#a82a4a;--skate-pencil:#6b4a5d;--skate-shadow:#3a152f3a;--skate-hi:#ffc7a3}
+.harbour-world--newfoundland :is(.skate-hud,.skate-entry){--skate-ink:#163c50;--skate-ink-2:#2c5a70;--skate-paper:#f7f0dc;--skate-card:#eadcb4;--skate-accent:#e3a54a;--skate-accent-ink:#2a1c05;--skate-stamp:#a8362b;--skate-pencil:#4c4a3d;--skate-shadow:#0c26333d;--skate-hi:#f4d27a}
 
 /* ---------------------------------------------------------------- entry */
 .skate-entry{position:absolute;z-index:8;top:174px;left:28px;display:flex;align-items:center;gap:14px;min-height:56px;background:var(--skate-paper);color:var(--skate-ink);border:0;border-radius:4px;padding:11px 18px 11px 14px;box-shadow:3px 4px 0 var(--skate-ink),0 10px 26px var(--skate-shadow);text-align:left;cursor:pointer;transform:rotate(-1deg);font-family:system-ui,sans-serif}
@@ -13,7 +16,7 @@
 .skate-entry:hover{transform:rotate(0) translateY(-1px)}.skate-entry:focus-visible{outline:3px solid var(--skate-accent);outline-offset:4px}
 
 /* ---------------------------------------------------------------- frame */
-.skate-hud{position:absolute;inset:0;z-index:9;pointer-events:none;color:var(--skate-ink);font-family:system-ui,sans-serif;-webkit-tap-highlight-color:transparent}
+.skate-hud{position:absolute;inset:0;z-index:9;pointer-events:none;color:var(--skate-ink);font-family:system-ui,sans-serif;-webkit-tap-highlight-color:transparent;container:skatehud/size}
 .skate-hud__play{position:absolute;inset:0}
 .skate-hud button{font:inherit;min-height:44px;min-width:44px;color:inherit;cursor:pointer;border:0;background:var(--skate-paper);border-radius:3px;padding:8px 13px;box-shadow:2px 3px 0 var(--skate-ink);pointer-events:auto}
 .skate-hud button:hover:not(:disabled){transform:translateY(-1px)}.skate-hud button:active:not(:disabled){transform:translate(1px,2px);box-shadow:1px 1px 0 var(--skate-ink)}
@@ -21,34 +24,35 @@
 .skate-hud :is(button,input,[role=group]):focus-visible{outline:3px solid var(--skate-accent);outline-offset:3px}
 .skate-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
-/* ---------------------------------------------------------------- top strip */
-.skate-top{position:absolute;top:62px;left:28px;right:28px;display:flex;align-items:center;gap:14px}
-.skate-wordmark{background:var(--skate-ink);color:var(--skate-paper);padding:9px 16px 10px;border-radius:2px;box-shadow:3px 3px 0 var(--skate-accent)}
-.skate-wordmark>span{display:block;font:italic 12px var(--skate-display);opacity:.8;margin-bottom:1px}.skate-wordmark>b{font-size:17px;letter-spacing:.16em}.skate-wordmark>b>span{font-size:9px;letter-spacing:.12em}
+/* ---------------------------------------------------------------- top strip: ride card left, session buttons right */
+.skate-top{position:absolute;top:62px;left:var(--skate-gutter);right:var(--skate-gutter);display:flex;align-items:flex-start;gap:12px}
+.skate-top__ride{display:grid;gap:4px;justify-items:start}
+.skate-wordmark{font:800 9px/1 system-ui;letter-spacing:.2em;text-transform:uppercase;color:var(--skate-paper);background:var(--skate-ink);padding:4px 7px 3px;box-shadow:2px 2px 0 var(--skate-accent)}
 .skate-ride{display:flex;align-items:stretch;gap:6px}
-.skate-speed{position:relative;background:var(--skate-paper);padding:5px 12px 8px;border-radius:2px;box-shadow:2px 3px 0 var(--skate-ink);display:flex;align-items:baseline;gap:4px;min-width:74px;overflow:hidden}
-.skate-speed b{font:800 26px/1 system-ui;font-variant-numeric:tabular-nums;letter-spacing:-.04em}.skate-speed small{font-size:10px;font-weight:600;opacity:.7}
+.skate-speed{position:relative;background:var(--skate-paper);padding:4px 11px 7px;border-radius:2px;box-shadow:2px 3px 0 var(--skate-ink);display:flex;align-items:baseline;gap:4px;min-width:68px;overflow:hidden}
+.skate-speed b{font:800 24px/1 system-ui;font-variant-numeric:tabular-nums;letter-spacing:-.04em}.skate-speed small{font-size:10px;font-weight:650;opacity:.72}
 .skate-speed i{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--skate-accent);transform-origin:left;transition:transform .15s linear}
 .skate-stance{display:flex;flex-direction:column;justify-content:center;gap:3px}
 .skate-stance span,.skate-stance em{font:800 10px/1 system-ui;letter-spacing:.14em;padding:4px 7px 3px;border:1.5px solid var(--skate-ink);border-radius:2px;background:var(--skate-paper);font-style:normal;text-align:center}
 .skate-stance em{background:var(--skate-ink);color:var(--skate-paper)}.skate-stance em[data-ride=fakie]{background:var(--skate-stamp);border-color:var(--skate-stamp)}
 .skate-top__nav{margin-left:auto;display:flex;gap:7px}
 .skate-top__nav button{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:650;letter-spacing:.02em}
+.skate-top__count{font:800 11px system-ui;font-variant-numeric:tabular-nums;opacity:.75}
 
-/* ---------------------------------------------------------------- spot banner: a paper strip that unfolds */
-.skate-banner{position:absolute;top:128px;left:50%;transform:translateX(-50%);perspective:700px;max-width:min(460px,calc(100% - 380px));width:max-content;text-align:center}
-.skate-banner__paper{position:relative;display:grid;gap:3px;padding:14px 34px 16px;background:linear-gradient(180deg,var(--skate-paper) 0 48%,var(--skate-card) 52% 100%);color:var(--skate-ink);box-shadow:0 12px 24px var(--skate-shadow),3px 4px 0 var(--skate-ink);transform-origin:top center;animation:skate-unfold .62s cubic-bezier(.2,1.3,.4,1) both;clip-path:polygon(0 0,100% 0,100% 100%,50% 88%,0 100%)}
+/* ---------------------------------------------------------------- the top band: route, spot banner, notices (and on phones the line) */
+.skate-band{position:absolute;top:58px;left:50%;transform:translateX(-50%);width:clamp(260px,calc(100% - 680px),440px);display:grid;justify-items:center;gap:8px;text-align:center}
+.skate-banner{perspective:700px;max-width:100%;width:max-content}
+.skate-banner__paper{position:relative;display:grid;gap:2px;padding:11px 30px 15px;background:linear-gradient(180deg,var(--skate-paper) 0 48%,var(--skate-card) 52% 100%);color:var(--skate-ink);box-shadow:0 10px 22px var(--skate-shadow),3px 4px 0 var(--skate-ink);transform-origin:top center;animation:skate-unfold .58s cubic-bezier(.2,1.3,.4,1) both;clip-path:polygon(0 0,100% 0,100% 100%,50% 88%,0 100%)}
 .skate-banner__paper::after{content:'';position:absolute;left:8px;right:8px;top:50%;border-top:1px dashed color-mix(in srgb,var(--skate-pencil) 45%,transparent)}
-.skate-banner.is-fresh .skate-banner__paper{box-shadow:0 12px 24px var(--skate-shadow),3px 4px 0 var(--skate-stamp)}
-.skate-banner.is-leaving .skate-banner__paper{animation:skate-fold .4s ease-in both}
+.skate-banner.is-fresh .skate-banner__paper{box-shadow:0 10px 22px var(--skate-shadow),3px 4px 0 var(--skate-stamp)}
+.skate-banner.is-leaving .skate-banner__paper{animation:skate-fold .36s ease-in both}
 .skate-banner__eyebrow{font:800 10px system-ui;letter-spacing:.2em;text-transform:uppercase;color:var(--skate-stamp)}
-.skate-banner__name{font:italic 700 clamp(22px,3vw,34px)/1.08 var(--skate-display)}
-.skate-banner__words{font:italic 14px/1.4 var(--skate-display);opacity:.85;padding-bottom:6px}
+.skate-banner__name{font:italic 700 clamp(22px,3vw,32px)/1.08 var(--skate-display)}
+.skate-banner__words{font:italic 13px/1.4 var(--skate-display);opacity:.85;padding-bottom:5px}
 @keyframes skate-unfold{0%{transform:rotateX(-94deg);opacity:0}55%{opacity:1}75%{transform:rotateX(9deg)}100%{transform:rotateX(0)}}
 @keyframes skate-fold{to{transform:rotateX(-94deg);opacity:0}}
-
-/* ---------------------------------------------------------------- notices */
-.skate-notice-rail{position:absolute;top:252px;left:50%;transform:translateX(-50%);display:grid;gap:6px;justify-items:center;width:max-content;max-width:min(420px,80%)}
+.skate-notice-rail{display:grid;gap:6px;justify-items:center;max-width:100%}
+.skate-notice-rail:empty{display:none}
 .skate-notice{display:block;background:var(--skate-paper);border:2px solid var(--skate-ink);padding:6px 12px;font:800 11px/1.3 system-ui;letter-spacing:.1em;text-transform:uppercase;transform:rotate(-1.5deg);box-shadow:2px 2px 0 var(--skate-shadow);animation:skate-slip .35s ease-out both;text-align:center}
 .skate-notice--stamp,.skate-notice--goal{border-color:var(--skate-stamp);color:var(--skate-stamp)}.skate-notice--deck{background:var(--skate-accent);color:var(--skate-accent-ink)}
 .skate-notice--warn{font:italic 11px/1.4 var(--skate-display);text-transform:none;letter-spacing:0;border-style:dashed}
@@ -57,12 +61,12 @@
 @keyframes skate-slip-out{to{transform:translateY(-8px) rotate(2deg);opacity:0}}
 
 /* ---------------------------------------------------------------- route */
-.skate-route-live{position:absolute;top:130px;left:28px;padding:11px 48px 11px 15px;background:var(--skate-paper);box-shadow:3px 3px 0 var(--skate-ink);display:grid;gap:3px;max-width:260px;border-left:5px solid var(--skate-hi)}
-.skate-route-live b{font:italic 700 14px var(--skate-display)}.skate-route-live span{font:800 22px/1.1 system-ui;font-variant-numeric:tabular-nums}.skate-route-live small{font-size:11px;opacity:.8}
-.skate-route-live button{position:absolute;right:4px;top:4px;box-shadow:none;background:transparent;font-size:22px;padding:0}
+.skate-route-live{position:relative;padding:9px 46px 9px 13px;background:var(--skate-paper);box-shadow:3px 3px 0 var(--skate-ink);display:grid;gap:2px;max-width:260px;border-left:5px solid var(--skate-hi);text-align:left;pointer-events:auto}
+.skate-route-live b{font:italic 700 14px var(--skate-display)}.skate-route-live span{font:800 20px/1.1 system-ui;font-variant-numeric:tabular-nums}.skate-route-live small{font-size:11px;opacity:.8}
+.skate-route-live button{position:absolute;right:0;top:0;box-shadow:none;background:transparent;font-size:22px;padding:0}
 
-/* ---------------------------------------------------------------- radar */
-.skate-radar{position:absolute;top:130px;right:28px;width:178px;padding:8px;background:var(--skate-paper);box-shadow:3px 4px 0 var(--skate-ink);transform:rotate(1deg)}
+/* ---------------------------------------------------------------- radar (wide stages only) */
+.skate-radar{position:absolute;top:120px;right:var(--skate-gutter);width:156px;padding:7px;background:var(--skate-paper);box-shadow:3px 4px 0 var(--skate-ink);transform:rotate(1deg)}
 .skate-radar svg{display:block;width:100%;height:auto;aspect-ratio:1}
 .skate-radar__paper{fill:var(--skate-card);stroke:var(--skate-pencil);stroke-opacity:.35;stroke-width:.6}
 .skate-radar__route{fill:none;stroke:var(--skate-ink);stroke-opacity:.55;stroke-linecap:round}
@@ -76,45 +80,52 @@
 .skate-radar__goals i{position:absolute;left:16px;right:0;bottom:0;height:2px;background:var(--skate-accent);transform-origin:left}
 @keyframes skate-pulse{from{transform:scale(.8);opacity:.6}to{transform:scale(1.15);opacity:1}}
 
-/* ---------------------------------------------------------------- balance arc */
-.skate-balance{position:absolute;top:56%;left:50%;transform:translate(-50%,-50%);width:170px;text-align:center;filter:drop-shadow(2px 3px 0 var(--skate-shadow))}
+/* ---------------------------------------------------------------- balance meter: a thin arc over the rider's head */
+.skate-balance{position:absolute;left:clamp(64px,var(--rider-hx,50%),calc(100% - 64px));top:clamp(150px,var(--rider-hy,34%),78%);width:112px;transform:translate(-50%,calc(-100% - 12px));filter:drop-shadow(1px 2px 0 var(--skate-shadow))}
 .skate-balance svg{display:block;width:100%;overflow:visible}
-.skate-balance__zone{fill:none;stroke-width:9;stroke-linecap:butt}.skate-balance__zone--edge{stroke:var(--skate-stamp)}.skate-balance__zone--warm{stroke:var(--skate-hi)}.skate-balance__zone--sweet{stroke:var(--skate-accent)}
-.skate-balance__needle{transition:transform .08s linear}.skate-balance__needle path{fill:var(--skate-ink);stroke:var(--skate-paper);stroke-width:1}
-.skate-balance__hub{fill:var(--skate-paper);stroke:var(--skate-ink);stroke-width:2}
-.skate-balance span{display:inline-block;margin-top:2px;padding:3px 9px;background:var(--skate-ink);color:var(--skate-paper);font:800 10px/1.3 system-ui;letter-spacing:.14em;text-transform:uppercase}
+.skate-balance__track{fill:none;stroke:var(--skate-paper);stroke-width:9;stroke-linecap:round}
+.skate-balance__zone{fill:none;stroke-width:5;stroke-linecap:round}.skate-balance__zone--edge{stroke:var(--skate-stamp)}.skate-balance__zone--sweet{stroke:var(--skate-accent)}
+.skate-balance__bead{fill:var(--skate-ink);stroke:var(--skate-paper);stroke-width:2;transition:cx .06s linear,cy .06s linear}
+.skate-balance[data-danger] .skate-balance__bead{fill:var(--skate-stamp);animation:skate-wobble .22s ease-in-out infinite alternate}
+@keyframes skate-wobble{from{transform:translateY(-.8px)}to{transform:translateY(.8px)}}
 
-/* ---------------------------------------------------------------- line ticker */
-.skate-ticker{position:absolute;left:50%;bottom:128px;transform:translateX(-50%);width:min(560px,calc(100% - 56px));display:grid;justify-items:center;text-align:center}
-.skate-ticker__stack{display:grid;justify-items:center;gap:6px;width:100%}
-.skate-ticket-wrap{filter:drop-shadow(3px 4px 0 var(--skate-ink)) drop-shadow(0 8px 18px var(--skate-shadow));max-width:100%}
-.skate-ticket{background:repeating-linear-gradient(90deg,transparent 0 22px,color-mix(in srgb,var(--skate-pencil) 8%,transparent) 22px 23px),var(--skate-paper);padding:10px 30px 12px;clip-path:polygon(0 0,100% 0,100% 36%,calc(100% - 9px) 50%,100% 64%,100% 100%,0 100%,0 64%,9px 50%,0 36%);animation:skate-deal .28s cubic-bezier(.2,1.5,.5,1) both}
-.skate-ticket__label{display:block;font:italic 800 clamp(20px,3.1vw,34px)/1.1 var(--skate-display);letter-spacing:-.01em;overflow-wrap:anywhere}
-.skate-chain{display:flex;flex-wrap:wrap;justify-content:center;gap:4px;max-width:100%}
-.skate-chain__chip,.skate-chain__more{font:700 10px/1 system-ui;letter-spacing:.06em;text-transform:uppercase;background:var(--skate-card);color:var(--skate-ink);padding:4px 7px;border-radius:2px;box-shadow:1px 1px 0 var(--skate-ink)}
-.skate-chain__chip+.skate-chain__chip::before{content:'+ ';opacity:.5}
-.skate-chain__more{background:var(--skate-ink);color:var(--skate-paper)}
-.skate-ticker__score{display:flex;align-items:baseline;gap:6px;background:var(--skate-ink);color:var(--skate-paper);padding:5px 12px 6px;font-variant-numeric:tabular-nums;box-shadow:2px 2px 0 var(--skate-accent)}
-.skate-ticker__score b{font:800 22px/1 system-ui;letter-spacing:-.03em}.skate-ticker__x{font-size:14px;opacity:.7}.skate-ticker__mult{color:var(--skate-hi)}.skate-ticker__eq{font-size:12px;opacity:.75}
-.skate-fuse{position:relative;width:min(300px,80%);height:4px;background:color-mix(in srgb,var(--skate-pencil) 30%,transparent);border-radius:2px}
+/* ---------------------------------------------------------------- line ticker: a cut-card ticket */
+.skate-ticker{pointer-events:none}
+.skate-ticker--corner{position:absolute;left:var(--skate-gutter);bottom:100px;width:min(380px,36%);display:grid;justify-items:start;text-align:left}
+.skate-ticker--band{width:100%;display:grid;justify-items:center;text-align:center}
+.skate-ticket-wrap{filter:drop-shadow(3px 4px 0 var(--skate-ink)) drop-shadow(0 8px 16px var(--skate-shadow));max-width:100%}
+.skate-ticket{display:grid;gap:5px;justify-items:inherit;background:repeating-linear-gradient(90deg,transparent 0 22px,color-mix(in srgb,var(--skate-pencil) 7%,transparent) 22px 23px),var(--skate-paper);padding:9px 22px 12px 20px;clip-path:polygon(0 0,100% 0,100% 38%,calc(100% - 8px) 50%,100% 62%,100% 100%,0 100%,0 62%,8px 50%,0 38%);animation:skate-deal .24s cubic-bezier(.2,1.5,.5,1) both;transform:rotate(-.8deg)}
+.skate-ticker--corner .skate-ticket{justify-items:start}
+.skate-ticket__label{display:block;font:italic 800 clamp(22px,2.6vw,32px)/1.05 var(--skate-display);letter-spacing:-.01em;overflow-wrap:anywhere}
+.skate-chain{display:flex;flex-wrap:wrap;gap:3px 4px;max-width:100%;max-height:34px;overflow:hidden}
+.skate-ticker--band .skate-chain{justify-content:center}
+.skate-chain__chip,.skate-chain__more{font:750 10px/1 system-ui;letter-spacing:.06em;text-transform:uppercase;color:var(--skate-ink-2);padding:3px 0}
+.skate-chain__chip::after{content:' +';opacity:.55}
+.skate-chain__more{background:var(--skate-ink);color:var(--skate-paper);padding:3px 5px;border-radius:2px}
+.skate-ticker__score{display:flex;align-items:baseline;gap:6px;background:var(--skate-ink);color:var(--skate-paper);padding:4px 10px 5px;font-variant-numeric:tabular-nums;margin-top:2px}
+.skate-ticker__score b{font:800 18px/1 system-ui;letter-spacing:-.02em}.skate-ticker__x{font-size:13px;opacity:.7}.skate-ticker__mult{color:var(--skate-hi)}
+.skate-ticker__eq{font-size:12px;opacity:.9}.skate-ticker__eq b{font-size:15px}
+.skate-fuse{position:relative;width:100%;min-width:120px;height:3px;background:color-mix(in srgb,var(--skate-pencil) 25%,transparent);border-radius:2px}
 .skate-fuse i{position:absolute;inset:0;background:var(--skate-ink);transform-origin:left;transition:transform .1s linear;border-radius:2px}
 .skate-fuse em{position:absolute;top:50%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:radial-gradient(circle,#fff6c9 0 30%,var(--skate-hi) 45%,var(--skate-stamp) 75%);animation:skate-spark .16s steps(2) infinite}
-@keyframes skate-deal{from{transform:translateY(10px) rotate(-3deg) scale(.94);opacity:0}to{transform:none;opacity:1}}
+@keyframes skate-deal{from{transform:translateY(8px) rotate(-3deg) scale(.95);opacity:0}to{transform:rotate(-.8deg);opacity:1}}
 @keyframes skate-spark{50%{transform:scale(1.35) rotate(40deg)}}
-.skate-result{display:grid;justify-items:center;gap:4px}
-.skate-result.is-leaving{animation:skate-slip-out .4s ease-in both}
-.skate-stamp{border:4px double var(--skate-stamp);color:var(--skate-stamp);padding:6px 18px 4px;font:900 clamp(26px,4vw,40px)/1 system-ui;letter-spacing:.14em;background:color-mix(in srgb,var(--skate-paper) 82%,transparent);transform:rotate(-8deg);animation:skate-stamp .42s cubic-bezier(.2,1.6,.4,1) both;mix-blend-mode:multiply}
-.skate-result__points{font:800 28px/1 system-ui;font-variant-numeric:tabular-nums;background:var(--skate-paper);padding:4px 12px;box-shadow:2px 3px 0 var(--skate-ink)}
-@keyframes skate-stamp{0%{transform:scale(2.3) rotate(-20deg);opacity:0}60%{transform:scale(.92) rotate(-7deg);opacity:1}100%{transform:scale(1) rotate(-8deg)}}
+.skate-result{display:grid;justify-items:inherit}
+.skate-result.is-leaving{animation:skate-slip-out .34s ease-in both}
+.skate-banked{position:relative;display:grid;justify-items:start;padding:14px 0 0 6px}
+.skate-ticker--band .skate-banked{justify-items:center;padding-left:0}
+.skate-result__points{font:800 30px/1 system-ui;font-variant-numeric:tabular-nums;background:var(--skate-paper);padding:8px 16px 7px;box-shadow:3px 4px 0 var(--skate-ink);letter-spacing:-.02em}
+.skate-stamp{position:absolute;top:0;right:-18px;border:3px double var(--skate-stamp);color:var(--skate-stamp);padding:5px 10px 3px;font:900 17px/1 system-ui;letter-spacing:.16em;background:color-mix(in srgb,var(--skate-paper) 86%,transparent);transform:rotate(-9deg);animation:skate-stamp .36s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes skate-stamp{0%{transform:scale(2.2) rotate(-22deg);opacity:0}60%{transform:scale(.94) rotate(-8deg);opacity:1}100%{transform:scale(1) rotate(-9deg)}}
 .skate-tear{display:flex;gap:2px}
-.skate-tear__half{background:var(--skate-paper);padding:10px 16px;font:italic 800 clamp(18px,2.6vw,26px)/1 var(--skate-display);box-shadow:2px 3px 0 var(--skate-ink)}
-.skate-tear__half--a{color:var(--skate-stamp);clip-path:polygon(0 0,100% 0,94% 18%,100% 36%,93% 55%,100% 74%,94% 88%,100% 100%,0 100%);animation:skate-tear-a .6s cubic-bezier(.3,.7,.3,1) both;letter-spacing:.14em;font-style:normal;font-family:system-ui}
-.skate-tear__half--b{clip-path:polygon(6% 0,100% 0,100% 100%,6% 100%,0 88%,6% 74%,0 55%,7% 36%,0 18%);animation:skate-tear-b .6s cubic-bezier(.3,.7,.3,1) both}
-@keyframes skate-tear-a{0%{transform:translateX(12px)}35%{transform:translateX(0)}100%{transform:translate(-10px,6px) rotate(-7deg)}}
-@keyframes skate-tear-b{0%{transform:translateX(-12px)}35%{transform:translateX(0)}100%{transform:translate(10px,9px) rotate(6deg)}}
+.skate-tear__half{background:var(--skate-paper);padding:9px 14px;font:italic 800 clamp(17px,2.2vw,22px)/1 var(--skate-display);box-shadow:2px 3px 0 var(--skate-ink)}
+.skate-tear__half--a{color:var(--skate-stamp);clip-path:polygon(0 0,100% 0,94% 18%,100% 36%,93% 55%,100% 74%,94% 88%,100% 100%,0 100%);animation:skate-tear-a .5s cubic-bezier(.3,.7,.3,1) both;letter-spacing:.14em;font-style:normal;font-family:system-ui}
+.skate-tear__half--b{clip-path:polygon(6% 0,100% 0,100% 100%,6% 100%,0 88%,6% 74%,0 55%,7% 36%,0 18%);animation:skate-tear-b .5s cubic-bezier(.3,.7,.3,1) both}
+@keyframes skate-tear-a{0%{transform:translateX(10px)}35%{transform:translateX(0)}100%{transform:translate(-8px,5px) rotate(-6deg)}}
+@keyframes skate-tear-b{0%{transform:translateX(-10px)}35%{transform:translateX(0)}100%{transform:translate(8px,8px) rotate(5deg)}}
 
-/* ---------------------------------------------------------------- hints */
-.skate-hints{position:absolute;left:28px;bottom:124px;margin:0;padding:10px 12px;list-style:none;display:grid;gap:6px;background:color-mix(in srgb,var(--skate-paper) 88%,transparent);box-shadow:2px 3px 0 var(--skate-ink);max-width:240px}
+/* ---------------------------------------------------------------- hints (wide stages, left column) */
+.skate-hints{position:absolute;left:var(--skate-gutter);top:150px;margin:0;padding:9px 11px;list-style:none;display:grid;gap:6px;background:color-mix(in srgb,var(--skate-paper) 86%,transparent);box-shadow:2px 3px 0 var(--skate-ink);max-width:228px}
 .skate-hints li{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600}
 .skate-hints__glyphs{display:flex;gap:3px;min-width:52px}
 .skate-glyph{display:block;flex:none;overflow:visible}
@@ -123,23 +134,23 @@
 .skate-glyph__fill{fill:var(--skate-ink)}.skate-glyph__ring{fill:var(--skate-card);stroke:var(--skate-ink);stroke-width:1.4}
 .skate-glyph__line{fill:none;stroke:var(--skate-ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 
-/* ---------------------------------------------------------------- touch slots */
-.skate-touch{position:absolute;left:10px;right:10px;bottom:104px;height:230px;pointer-events:none}
-.skate-zone{position:absolute;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}
-.skate-zone--stick{bottom:0;width:41%;height:170px;border-radius:14px;background:color-mix(in srgb,var(--skate-paper) 14%,transparent);border:1.5px dashed color-mix(in srgb,var(--skate-paper) 55%,transparent)}
-.skate-zone--left{left:0}.skate-zone--right{right:0}
-.skate-zone__ring{width:92px;height:92px;border-radius:50%;border:2px solid color-mix(in srgb,var(--skate-paper) 70%,transparent);display:grid;place-items:center}
-.skate-zone__ring i{width:36px;height:36px;border-radius:50%;background:color-mix(in srgb,var(--skate-paper) 75%,transparent);box-shadow:2px 2px 0 var(--skate-ink)}
-.skate-zone--stick .skate-zone__label{position:absolute;left:10px;bottom:8px;color:var(--skate-paper);text-shadow:0 1px 2px #0008}
-.skate-zone__label{font:800 11px system-ui;letter-spacing:.12em;text-transform:uppercase}
-.skate-zone--pad{background:var(--skate-paper);box-shadow:2px 3px 0 var(--skate-ink);border-radius:3px}
-.skate-zone--push{left:42.5%;right:42.5%;bottom:0;height:78px;background:var(--skate-accent);color:var(--skate-accent-ink)}
-.skate-zone--brake{left:42.5%;right:42.5%;bottom:88px;height:56px}
-.skate-zone--grab-front,.skate-zone--grab-back{top:0;width:calc(20.5% - 3px);height:50px}.skate-zone--grab-front{right:20.5%}.skate-zone--grab-back{right:0}
-.skate-zone[data-held]{transform:translate(1px,2px);box-shadow:0 0 0 var(--skate-ink);filter:brightness(.94)}
-.skate-zone--stick[data-held]{background:color-mix(in srgb,var(--skate-paper) 26%,transparent);box-shadow:none;transform:none}
-.skate-touch__corner{position:absolute;left:0;top:0;display:flex;gap:6px;pointer-events:auto}
-.skate-hud .skate-touch__corner button{padding:0;width:48px;height:48px;font-size:17px}
+/* ---------------------------------------------------------------- touch: two thumb clusters in the bottom corners, above the app bar */
+.skate-touch{position:absolute;left:12px;right:12px;bottom:90px;height:0;pointer-events:none}
+.skate-touch__cluster{position:absolute;bottom:0;display:grid;gap:8px;width:clamp(112px,34%,200px)}
+.skate-touch__cluster--left{left:0}.skate-touch__cluster--right{right:0}
+.skate-touch__row{display:flex;gap:6px}
+.skate-zone{position:relative;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}
+.skate-zone--stick{height:clamp(120px,19cqh,176px);border-radius:16px;background:color-mix(in srgb,var(--skate-ink) 16%,transparent);border:1.5px dashed color-mix(in srgb,var(--skate-paper) 70%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--skate-ink) 25%,transparent)}
+.skate-zone__ring{width:clamp(64px,62%,96px);aspect-ratio:1;border-radius:50%;border:2px solid color-mix(in srgb,var(--skate-paper) 80%,transparent);display:grid;place-items:center;background:color-mix(in srgb,var(--skate-ink) 10%,transparent)}
+.skate-zone__ring i{width:40%;aspect-ratio:1;border-radius:50%;background:var(--skate-paper);box-shadow:2px 2px 0 var(--skate-ink)}
+.skate-zone--right .skate-zone__ring i{background:var(--skate-accent)}
+.skate-zone--stick .skate-zone__label{position:absolute;left:8px;top:6px;color:var(--skate-paper);text-shadow:0 1px 2px #000a}
+.skate-zone--right .skate-zone__label{left:auto;right:8px}
+.skate-zone__label{font:800 11px system-ui;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.skate-zone--pad{flex:1;height:48px;background:var(--skate-paper);box-shadow:2px 3px 0 var(--skate-ink);border-radius:4px}
+.skate-zone--push{flex:1.6;background:var(--skate-accent);color:var(--skate-accent-ink)}
+.skate-zone[data-held]{transform:translate(1px,2px);box-shadow:0 0 0 var(--skate-ink);filter:brightness(.92)}
+.skate-zone--stick[data-held]{background:color-mix(in srgb,var(--skate-ink) 28%,transparent);box-shadow:none;transform:none}
 
 /* ---------------------------------------------------------------- pause book */
 .skate-book-shade{position:absolute;inset:0;background:color-mix(in srgb,var(--skate-ink) 34%,transparent);backdrop-filter:blur(2px);pointer-events:auto;z-index:4}
@@ -213,56 +224,82 @@
 .skate-sharing{border:1px dashed color-mix(in srgb,var(--skate-pencil) 60%,transparent);padding:12px;margin-top:16px}
 .skate-book .skate-sharing .harbour-walk-together{position:static!important;transform:none;display:flex;margin-top:4px;color:inherit}
 
-/* ---------------------------------------------------------------- island chrome while skating (inherited from v1) */
+
+/* ---------------------------------------------------------------- Hearth chrome while riding: dimmed, never removed (Space still opens every tool) */
 .is-skating .village-address,.is-skating .harbour-world__invite,.is-skating .harbour-moves,.is-skating .village-presence-outside,.is-skating .village-hud,.is-skating .harbour-twins{display:none}
 .is-skating .village-tools{bottom:57px}.is-skating .village-map{z-index:16}
+body:has(.harbour-world.is-skating .skate-hud:not([data-skate-open])) :is(.nav.compass,.herc-litter,.sync-freshness){opacity:.5;transition:opacity .2s}
+body:has(.harbour-world.is-skating) :is(.nav.compass,.herc-litter,.sync-freshness):is(:hover,:focus-within){opacity:1}
 
-/* ---------------------------------------------------------------- phone (< 720px) */
-@media(max-width:719px){
-  .skate-entry{top:150px;left:16px;padding:8px 12px;gap:10px}
-  .skate-top{top:53px;left:10px;right:10px;gap:6px}
-  .skate-wordmark{padding:6px 10px 7px}.skate-wordmark>span{display:none}.skate-wordmark>b{font-size:12px;letter-spacing:.12em}.skate-wordmark>b>span{display:none}
-  .skate-speed{min-width:56px;padding:4px 8px 7px}.skate-speed b{font-size:20px}.skate-speed small{font-size:9px}
+/* ---------------------------------------------------------------- between 720 and 1000: no hints, no wordmark */
+@container skatehud (max-width:1000px){
+  .skate-wordmark{display:none}
+  .skate-hints{display:none}
+  .skate-top__word{display:none}.skate-top__nav button{padding:0 11px}
+}
+@container skatehud (max-height:640px) and (min-width:720px){
+  .skate-hints,.skate-radar__goals{display:none}
+  .skate-ticker--corner{bottom:92px}
+}
+
+/* ---------------------------------------------------------------- touch on a wide stage (tablet): same clusters, a little larger */
+@container skatehud (min-width:720px){
+  .skate-touch{left:20px;right:20px;bottom:96px}
+  .skate-touch__cluster{width:200px}
+}
+
+/* ---------------------------------------------------------------- phone (< 720px stage) */
+@container skatehud (max-width:719px){
+  .skate-hud{--skate-gutter:10px}
+  .skate-top{top:53px;gap:6px;align-items:center}
+  .skate-speed{min-width:54px;padding:4px 8px 7px}.skate-speed b{font-size:20px}.skate-speed small{font-size:9px}
   .skate-stance span,.skate-stance em{font-size:9px;padding:3px 5px 2px}
-  .skate-top__nav{gap:5px}.skate-top__word{display:none}.skate-top__nav button{padding:0 10px}
-  .skate-radar{top:108px;right:10px;width:96px;padding:5px}.skate-radar__goals{display:none}.skate-radar__caption{font-size:9px;padding-top:3px}
-  .skate-banner{top:112px;left:10px;right:116px;transform:none;max-width:none;width:auto}
-  .skate-banner__paper{padding:10px 16px 14px}.skate-banner__words{font-size:12px}
-  .skate-notice-rail{top:auto;bottom:352px;max-width:calc(100% - 20px)}
-  .skate-route-live{top:auto;bottom:352px;left:10px;max-width:180px;padding:8px 44px 8px 11px}.skate-route-live span{font-size:17px}
-  .skate-ticker{bottom:128px;width:calc(100% - 20px)}
-  .skate-hud[data-skate-device=touch] .skate-ticker{bottom:344px}
-  .skate-hud[data-skate-device=touch] .skate-balance{top:44%}
-  .skate-ticket{padding:8px 22px 9px}
-  .skate-ticker__score b{font-size:18px}
-  .skate-hints{left:10px;right:10px;max-width:none;bottom:118px;grid-template-columns:1fr 1fr;padding:8px}
-  .skate-hints li{font-size:11px}
-  .skate-balance{width:140px}
-  .skate-book{top:96px;bottom:96px;width:calc(100% - 16px);border-left-width:8px}
+  .skate-top__nav{gap:5px}.skate-top__word{display:none}.skate-top__nav button{padding:0 10px;gap:5px}
+  .skate-band{top:106px;left:var(--skate-gutter);right:var(--skate-gutter);width:auto;transform:none;gap:6px}
+  .skate-banner{width:100%}
+  .skate-banner__paper{padding:8px 16px 12px}.skate-banner__name{font-size:22px}.skate-banner__words{display:none}
+  .skate-ticket{padding:7px 18px 9px;gap:4px}
+  .skate-ticket__label{font-size:22px}
+  .skate-chain{max-height:15px}
+  .skate-ticker__score{padding:3px 9px 4px}.skate-ticker__score b{font-size:15px}.skate-ticker__eq b{font-size:13px}
+  .skate-result__points{font-size:24px}.skate-stamp{font-size:14px}
+  .skate-balance{width:92px;top:clamp(200px,var(--rider-hy,40%),70%)}
+  .skate-book{top:96px;bottom:92px;width:calc(100% - 16px);border-left-width:8px}
   .skate-book__head{padding:14px 14px 6px}.skate-book__tabs{padding:6px 12px 0}.skate-book__page{padding:12px 14px 14px}.skate-book__foot{padding:8px 14px 12px}
   .skate-book__grid,.skate-book__spots{grid-template-columns:1fr 1fr}.skate-book__stats{grid-template-columns:1fr 1fr}.skate-book__stamps{grid-template-columns:1fr 1fr}
   .skate-book__decks{gap:7px}
-  .is-skating .village-tools{bottom:62px;flex-wrap:nowrap;width:auto}.is-skating .village-quick{flex-basis:auto;order:0}.is-skating .village-tools select{width:120px;max-width:120px}.is-skating .village-tools button{padding:6px 7px}.is-skating .village-tools button[title="View the island"]{display:none}
 }
-@media(max-width:400px){
-  .skate-wordmark{display:none}
+@container skatehud (max-width:400px){
   .skate-book__grid,.skate-book__spots{grid-template-columns:1fr}
   .skate-book__decks{grid-template-columns:1fr 1fr}
   .skate-hud .skate-book__head button{padding:6px 10px;font-size:12px}
-  .skate-zone--stick{width:40%}.skate-zone--push,.skate-zone--brake{left:41%;right:41%}
-  .skate-zone__ring{width:74px;height:74px}
+  .skate-touch{left:8px;right:8px}
+  .skate-touch__row{gap:5px}
+  .skate-zone__label{font-size:10px;letter-spacing:.06em}
 }
-@media(max-width:719px) and (max-height:640px){.skate-touch{height:196px}.skate-zone--stick{height:140px}.skate-zone--brake{bottom:84px;height:48px}.skate-zone--push{height:74px}.skate-zone--grab-front,.skate-zone--grab-back{height:46px}.skate-hud[data-skate-device=touch] .skate-ticker{bottom:306px}.skate-ticket__label{font-size:18px}.skate-chain{display:none}.skate-banner__words{display:none}}
-@media(max-height:700px) and (min-width:720px){.skate-hints{display:none}.skate-radar__goals{display:none}.skate-banner{top:118px}}
-@media(min-width:720px) and (max-width:1000px){.skate-banner{max-width:calc(100% - 460px)}.skate-hints{display:none}.skate-wordmark>span{display:none}}
+@container skatehud (max-width:719px) and (max-height:700px){
+  .skate-band{top:100px}
+  .skate-chain{display:none}
+  .skate-ticket__label{font-size:19px}
+  .skate-zone--stick{height:112px}
+  .skate-zone--pad{height:44px}
+  .skate-touch{bottom:84px}
+}
+/* The island's own tools bar while skating on a phone. */
+@media(max-width:719px){
+  .skate-entry{top:150px;left:16px;padding:8px 12px;gap:10px}
+  .is-skating .village-tools{bottom:62px;flex-wrap:nowrap;width:auto}.is-skating .village-quick{flex-basis:auto;order:0}.is-skating .village-tools select{width:120px;max-width:120px}.is-skating .village-tools button{padding:6px 7px}.is-skating .village-tools button[title="View the island"]{display:none}
+}
 
 /* ---------------------------------------------------------------- motion + contrast */
 @media(prefers-reduced-motion:reduce){.skate-hud *,.skate-hud *::before,.skate-hud *::after,.skate-entry{animation:none!important;transition:none!important}.skate-gesture__stroke{stroke-dashoffset:0}}
 .skate-hud[data-skate-reduced] *,.skate-hud[data-skate-reduced] *::before,.skate-hud[data-skate-reduced] *::after{animation:none!important;transition:none!important}
 .skate-hud[data-skate-reduced] .skate-gesture__stroke{stroke-dashoffset:0}
-.skate-hud[data-skate-reduced] .skate-stamp{transform:rotate(-8deg)}
+.skate-hud[data-skate-reduced] .skate-stamp{transform:rotate(-9deg)}
+.skate-hud[data-skate-reduced] .skate-ticket{transform:rotate(-.8deg)}
 @media(forced-colors:active){
   .skate-hud button,.skate-entry,.skate-book,.skate-ticket,.skate-wordmark,.skate-radar,.skate-speed,.skate-zone,.skate-choice label{border:1px solid ButtonText;forced-color-adjust:auto}
-  .skate-fuse i,.skate-speed i,.skate-balance__needle path{background:Highlight;fill:Highlight}
+  .skate-fuse i,.skate-speed i{background:Highlight}
+  .skate-balance__bead{fill:Highlight}
   .skate-stamp,.skate-tear__half{border:2px solid CanvasText}
 }
