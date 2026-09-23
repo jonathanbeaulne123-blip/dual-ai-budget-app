@@ -14,8 +14,8 @@ export type PlayableFigureOptions = { invalidate?: () => void; signal?: AbortSig
  * mistaken for an animation rig.
  */
 export function createPlayableFigure(avatar: PlayableAvatar, tier: "full" | "lite", options: PlayableFigureOptions = {}): BodyFigure {
-  const fallback = createBodyFigure();
   const definition = PLAYABLE_AVATARS[avatar];
+  const fallback = createBodyFigure(definition.colours);
   const controller = new AbortController();
   const abort = () => controller.abort();
   options.signal?.addEventListener("abort", abort, { once: true });
@@ -23,6 +23,12 @@ export function createPlayableFigure(avatar: PlayableAvatar, tier: "full" | "lit
   let release: (() => void) | null = null;
   let visual: THREE.Group | null = null;
   const carriage = fallback.group.getObjectByName("body-carriage") as THREE.Group | undefined;
+  for (const side of ["left", "right"]) {
+    const arm = fallback.group.getObjectByName(`body-arm-${side}`) as THREE.Group | undefined;
+    if (!arm) continue;
+    arm.position.x = Math.sign(arm.position.x) * definition.shoulderX;
+    arm.scale.setScalar(definition.armScale);
+  }
 
   void acquireGlb(definition, controller.signal).then((handle) => {
     if (disposed || controller.signal.aborted) { handle.release(); return; }

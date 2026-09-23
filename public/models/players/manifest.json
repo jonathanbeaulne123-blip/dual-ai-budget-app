@@ -25,11 +25,11 @@
       },
       "url": "/models/players/bianca.v1.glb",
       "gz": "/models/players/bianca.v1.glb.gz",
-      "bytes": 179476,
-      "gzBytes": 113411,
-      "sha256": "ee99eadf935a8b13b51766886085d0d7d576d72a63fd2144db4346fa0fbdbf52",
+      "bytes": 138876,
+      "gzBytes": 106220,
+      "sha256": "100782b0ca12af4a12c63d72897d0b333c272c99d389a5baabfa8e84f2ab448e",
       "triangles": 7430,
-      "drawMaterials": 4,
+      "drawPrimitives": 1,
       "retainedNodes": 48
     },
     {
@@ -55,11 +55,11 @@
       },
       "url": "/models/players/jonathan.v1.glb",
       "gz": "/models/players/jonathan.v1.glb.gz",
-      "bytes": 180008,
-      "gzBytes": 123335,
-      "sha256": "abf0545868724744bd0e58f89da768ae62cd919f3ae147d56d1b769babd438f1",
+      "bytes": 158460,
+      "gzBytes": 116835,
+      "sha256": "5c3a572da9f7264636a6726a39b16e88616ed323595f458f477b8973c4c61e7f",
       "triangles": 9168,
-      "drawMaterials": 4,
+      "drawPrimitives": 1,
       "retainedNodes": 31
     }
   ]

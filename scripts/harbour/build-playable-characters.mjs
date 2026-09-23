@@ -10,18 +10,20 @@
  */
 import { createHash } from "node:crypto";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { unzipSync } from "fflate";
+import { build as bundle } from "esbuild";
 import { NodeIO, getBounds } from "@gltf-transform/core";
 import { ALL_EXTENSIONS, EXTMeshoptCompression } from "@gltf-transform/extensions";
-import { dedup, normals, prune, quantize, simplify, weld } from "@gltf-transform/functions";
+import { dedup, flatten, join, normals, prune, quantize, simplify, weld } from "@gltf-transform/functions";
 import { MeshoptEncoder, MeshoptSimplifier } from "meshoptimizer";
 
 const root = new URL("../../", import.meta.url);
 const output = new URL("../../public/models/players/", import.meta.url);
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const triangles = (doc) => doc.getRoot().listMeshes().flatMap((mesh) => mesh.listPrimitives()).reduce((total, primitive) => total + Math.floor((primitive.getIndices()?.getCount() ?? primitive.getAttribute("POSITION")?.getCount() ?? 0) / 3), 0);
-const countDrawMaterials = (doc) => new Set(doc.getRoot().listMeshes().flatMap((mesh) => mesh.listPrimitives()).map((primitive) => primitive.getMaterial()).filter(Boolean)).size;
+const drawPrimitives = (doc) => doc.getRoot().listMeshes().flatMap((mesh) => mesh.listPrimitives()).length;
 
 const supplied = [
   {
@@ -55,7 +57,10 @@ async function build(spec) {
   const io = new NodeIO().registerExtensions(ALL_EXTENSIONS).registerDependencies({ "meshopt.encoder": MeshoptEncoder, "meshopt.simplifier": MeshoptSimplifier });
   const doc = await io.readBinary(source);
   const fullBounds = getBounds(doc.getRoot().getDefaultScene() ?? doc.getRoot().listScenes()[0]);
-  const materials = Object.fromEntries(Object.entries(colours).map(([id, factor]) => [id, doc.createMaterial(`harbour-${id}`).setBaseColorFactor(factor).setRoughnessFactor(0.9).setMetallicFactor(0)]));
+  // One material per semantic batch. The supplied base factor is copied onto
+  // every retained vertex below, so small authored features (eyes, brows,
+  // smile, nose, cap panels) retain their distinct palette after batching.
+  const materials = Object.fromEntries(Object.keys(colours).map((id) => [id, doc.createMaterial(`harbour-${id}`).setBaseColorFactor([1, 1, 1, 1]).setRoughnessFactor(0.9).setMetallicFactor(0)]));
   let retained = 0;
   for (const node of doc.getRoot().listNodes()) {
     const mesh = node.getMesh();
@@ -63,16 +68,23 @@ async function build(spec) {
     if (!spec.keep.test(node.getName())) { node.setMesh(null); continue; }
     retained += 1;
     const material = materials[spec.material(node.getName())];
-    for (const primitive of mesh.listPrimitives()) primitive.setMaterial(material);
+    for (const primitive of mesh.listPrimitives()) {
+      const sourceFactor = primitive.getMaterial()?.getBaseColorFactor() ?? colours[spec.material(node.getName())];
+      const count = primitive.getAttribute("POSITION")?.getCount() ?? 0;
+      const vertexColours = new Float32Array(count * 4);
+      for (let i = 0; i < count; i += 1) vertexColours.set(sourceFactor, i * 4);
+      primitive.setAttribute("COLOR_0", doc.createAccessor().setType("VEC4").setArray(vertexColours));
+      primitive.setMaterial(material);
+    }
   }
   if (!retained) throw new Error(`${spec.avatar}: selector retained no authored surface`);
   // The deliveries are textured high-poly display sculpts. This game surface
   // uses four flat colour batches, so UVs/tangents and their split vertices
   // would only prevent useful simplification. Rebuild smooth normals after.
   for (const mesh of doc.getRoot().listMeshes()) for (const primitive of mesh.listPrimitives()) {
-    for (const semantic of primitive.listSemantics()) if (semantic !== "POSITION") primitive.setAttribute(semantic, null);
+    for (const semantic of primitive.listSemantics()) if (semantic !== "POSITION" && semantic !== "COLOR_0") primitive.setAttribute(semantic, null);
   }
-  await doc.transform(dedup(), prune(), weld(), simplify({ simplifier: MeshoptSimplifier, ratio: 0.055, error: 1, lockBorder: false }), normals(), quantize({ quantizationVolume: "scene", quantizePosition: 14, quantizeNormal: 10, quantizeColor: 8 }));
+  await doc.transform(dedup(), prune(), weld(), simplify({ simplifier: MeshoptSimplifier, ratio: 0.055, error: 1, lockBorder: false }), normals(), flatten(), join(), quantize({ quantizationVolume: "scene", quantizePosition: 14, quantizeNormal: 10, quantizeColor: 8 }));
   doc.createExtension(EXTMeshoptCompression).setRequired(true).setEncoderOptions({ method: EXTMeshoptCompression.EncoderMethod.FILTER });
   const glb = Buffer.from(await io.writeBinary(doc));
   const gz = gzipSync(glb, { level: 9 });
@@ -82,7 +94,7 @@ async function build(spec) {
     avatar: spec.avatar, source: { archive: spec.zip.split("/").at(-1), path: spec.glb, sha256: spec.sha256, bytes: source.byteLength },
     authoredSurface: "face, hair/headwear, and torso only; static crossed legs and pocket arms replaced by the procedural playable biped",
     sourceFullBounds: fullBounds, url: `/models/players/${spec.avatar}.v1.glb`, gz: `/models/players/${spec.avatar}.v1.glb.gz`,
-    bytes: glb.byteLength, gzBytes: gz.byteLength, sha256: sha256(glb), triangles: triangles(doc), drawMaterials: countDrawMaterials(doc), retainedNodes: retained,
+    bytes: glb.byteLength, gzBytes: gz.byteLength, sha256: sha256(glb), triangles: triangles(doc), drawPrimitives: drawPrimitives(doc), retainedNodes: retained,
   };
 }
 
@@ -90,9 +102,10 @@ await mkdir(output, { recursive: true });
 const characters = await Promise.all(supplied.map(build));
 for (const character of characters) {
   if (character.triangles > 10_000) throw new Error(`${character.avatar}: phone surface exceeds 10k triangles (${character.triangles})`);
-  if (character.drawMaterials > 4) throw new Error(`${character.avatar}: exceeds four draw materials`);
+  if (character.drawPrimitives > 4) throw new Error(`${character.avatar}: exceeds four actual draw primitives (${character.drawPrimitives})`);
 }
 const manifest = { version: 1, generatedBy: "scripts/harbour/build-playable-characters.mjs", characters };
 await writeFile(new URL("manifest.json", output), `${JSON.stringify(manifest, null, 2)}\n`);
 await writeFile(new URL("PROVENANCE.md", output), `# Playable character derivatives\n\nGenerated reproducibly from the two user-supplied ZIP deliveries by \`scripts/harbour/build-playable-characters.mjs\`. The source archives, original GLBs, previews, viewers and scripts are deliberately not copied here. Each derivative preserves its named supplied GLB hash in \`manifest.json\`, retains selected authored face/hair/headwear/torso surfaces, and excludes the static crossed legs and bent pocket arms so Hearth's neutral procedural biped can animate walk, run, jump, slide and emotes.\n\nNo household data, money, network request, or external service is used.\n`);
+await bundle({ entryPoints: [fileURLToPath(new URL("playable-character-viewer.mjs", import.meta.url))], outfile: fileURLToPath(new URL("viewer.js", output)), bundle: true, format: "esm", platform: "browser", minify: true, legalComments: "none" });
 console.log(JSON.stringify(manifest, null, 2));
