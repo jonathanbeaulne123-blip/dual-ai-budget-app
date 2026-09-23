@@ -7,6 +7,11 @@ import {SKATE_PALETTES} from '../src/harbour/skate/world/palette.ts';
 import {buildSkatePark} from '../src/harbour/skate/parkScene.ts';
 import {SCENE_DRESSING} from '../src/harbour/scene/place.ts';
 import {SKATE_SPOTS,SKATE_ROUTES,SKATE_RAILS,skateSurface,skateFieldFor,railPoint} from '../src/harbour/skate/park.ts';
+import {LANE_HALF_WIDTH} from '../src/harbour/skate/world/field.ts';
+import {ROUTES} from '../src/harbour/skate/world/layout.ts';
+import {HARBOUR_LAND,HARBOUR_LANES,distanceToTrail} from '../src/harbour/village/world.ts';
+import {ISLAND_KEEP_OUTS,keepOutHit} from '../src/harbour/scene/planting.ts';
+import {courtObstacles,isClear} from '../src/harbour/body/obstacles.ts';
 
 const field=createSkateField(groundHeightAt);
 
@@ -48,6 +53,10 @@ describe('skate world · render == physics',()=>{
       expect((byName['skate-pads'] as THREE.Mesh).castShadow).toBe(false);expect((byName['skate-pads'] as THREE.Mesh).receiveShadow).toBe(true);
       expect((byName['skate-features'] as THREE.Mesh).castShadow).toBe(true);
       expect(byName['skate-ink']).toBeTruthy();expect(byName['skate-steel']).toBeTruthy();
+      // Ink, pencil and chalk share one draw with a colour per vertex; contact shade carries alpha per vertex.
+      expect((byName['skate-ink'] as THREE.LineSegments).geometry.getAttribute('color').itemSize).toBe(3);
+      expect((byName['skate-shade'] as THREE.Mesh).geometry.getAttribute('color').itemSize).toBe(4);
+      expect((byName['skate-shade'] as THREE.Mesh).castShadow).toBe(false);
       // Colours differ by theme.
       const colour=((byName['skate-pads'] as THREE.Mesh).geometry.getAttribute('color') as THREE.BufferAttribute).getX(0);
       expect(colour).toBeGreaterThan(0);
@@ -55,6 +64,7 @@ describe('skate world · render == physics',()=>{
       const geometries=new Set<THREE.BufferGeometry>(),materials=new Set<THREE.Material>();
       park.group.traverse(o=>{const m=o as THREE.Mesh;if(m.geometry)geometries.add(m.geometry);if(m.material)(Array.isArray(m.material)?m.material:[m.material]).forEach(x=>materials.add(x));});
       geometries.forEach(count);materials.forEach(count);
+      expect(park.dressing.length).toBeGreaterThan(40);expect(park.dressing.every(d=>Number.isFinite(d.x)&&Number.isFinite(d.top))).toBe(true);
       park.update({run:{id:'first-line',checkpoint:1,finished:false}});expect(park.checkpoint.visible).toBe(true);
       park.update({run:{id:'first-line',checkpoint:2,finished:false}});
       park.update(null);expect(park.checkpoint.visible).toBe(false);
@@ -75,5 +85,66 @@ describe('skate world · the island-facing names',()=>{
     expect(skateFieldFor(groundHeightAt)).toBe(skateFieldFor(groundHeightAt));
     expect(SKATE_RAILS.length).toBeGreaterThan(3);
     const flat=()=>0;for(const r of SKATE_RAILS){const mid=railPoint(r,.5,flat),top=skateFieldFor(flat).grindables.find(g=>g.id===r.id)!;expect(mid.y).toBeCloseTo(top.points[0]![1],6);}
+  });
+});
+
+/** WCAG relative luminance and contrast ratio of two hex colours. */
+const lum=(hex:string)=>{const n=parseInt(hex.slice(1),16);const [r,g,b]=[(n>>16)&255,(n>>8)&255,n&255].map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});return .2126*r!+.7152*g!+.0722*b!;};
+const contrast=(a:string,b:string)=>{const x=lum(a),y=lum(b);return (Math.max(x,y)+.05)/(Math.min(x,y)+.05);};
+
+describe('skate world · the look',()=>{
+  it('keeps one value ladder in every theme, so surfaces, faces, lips and rails read without hue',()=>{
+    for(const [theme,p] of Object.entries(SKATE_PALETTES)){
+      const at=(what:string,a:string,b:string,min:number)=>expect(contrast(a,b),`${theme}: ${what}`).toBeGreaterThanOrEqual(min);
+      at('pad vs cut sides',p.pad,p.wall,1.8);
+      at('pad vs feature tops',p.pad,p.concrete,1.15);
+      at('pad vs the street pour',p.pad,p.padAlt,1.3);
+      at('pad vs the transition pour',p.pad,p.padWarm,1.15);
+      at('pad vs its kerb',p.pad,p.kerb,2);
+      at('pad vs rails',p.pad,p.rail,2.5);
+      at('coping vs pad',p.coping,p.pad,1.25);
+      at('coping vs its lip band',p.coping,p.paint,1.8);
+      at('ramp ply vs its cut sides',p.wood,p.woodSide,2.5);
+      at('second ply vs its cut sides',p.woodAlt,p.woodSide,2.5);
+      at('bowl vs its block',p.bowl,p.wall,1.7);
+      // Taylor was pink on pink: its pad, pours and ply must differ in VALUE, not just hue.
+      expect(lum(p.concrete)).toBeGreaterThan(lum(p.pad));expect(lum(p.pad)).toBeGreaterThan(lum(p.wall));
+    }
+  });
+
+  it('dresses the edges without standing on a pad, a lane, a route, a building or a tree',()=>{
+    const data=buildParkMeshData(field,SKATE_PALETTES.classic,'full');
+    expect(data.dressing.length).toBeGreaterThan(40);
+    const spots=new Set(data.dressing.map(d=>d.spot));for(const id of SKATE_SPOTS.map(s=>s.id))expect(spots.has(id),`${id} is dressed`).toBe(true);
+    const buildings=ISLAND_KEEP_OUTS.filter(k=>!k.id.startsWith('skate-'));
+    const segDist=(x:number,z:number,a:readonly number[],b:readonly number[])=>{const dx=b[0]!-a[0]!,dz=b[1]!-a[1]!,l=dx*dx+dz*dz;let t=l?((x-a[0]!)*dx+(z-a[1]!)*dz)/l:0;t=Math.max(0,Math.min(1,t));return Math.hypot(x-a[0]!-t*dx,z-a[1]!-t*dz);};
+    for(const tier of ['full','lite'] as const){
+      const obstacles=courtObstacles(tier);
+      for(const d of data.dressing){
+        expect(field.heightAt(d.x,d.z),`${d.id} stands off every pad and apron`).toBeCloseTo(field.ground(d.x,d.z),4);
+        expect(isClear(d.x,d.z,.2,obstacles),`${d.id} (${tier}) clear of trees and landmarks`).toBe(true);
+        expect(keepOutHit(d.x,d.z,0,buildings),`${d.id} off buildings`).toBeNull();
+        expect(Math.hypot(d.x,d.z)).toBeLessThan(HARBOUR_LAND.shore-1);
+        for(const lane of HARBOUR_LANES)expect(distanceToTrail(d.x,d.z,lane.points),`${d.id} off ${lane.id}`).toBeGreaterThan(LANE_HALF_WIDTH+.2);
+        for(const r of ROUTES)for(let i=1;i<r.points.length;i++)expect(segDist(d.x,d.z,r.points[i-1]!,r.points[i]!),`${d.id} off route ${r.id}`).toBeGreaterThan(1);
+        // Oriented pieces (hedges, fence flats, bleachers): every corner is off the pads and the lanes too.
+        if(d.box&&tier==='full'){const c=Math.cos(d.box.yaw),sn=Math.sin(d.box.yaw);for(const [u,v] of [[-1,-1],[1,-1],[1,1],[-1,1]] as const){
+          const x=d.x+u*d.box.hx*c+v*d.box.hz*sn,z=d.z+v*d.box.hz*c-u*d.box.hx*sn;
+          expect(field.heightAt(x,z),`${d.id} corner off the apron`).toBeCloseTo(field.ground(x,z),4);
+          for(const lane of HARBOUR_LANES)expect(distanceToTrail(x,z,lane.points),`${d.id} corner off ${lane.id}`).toBeGreaterThan(LANE_HALF_WIDTH);
+        }}
+      }
+    }
+  });
+
+  it('draws the lite tier with fewer lines, marks and dressing',()=>{
+    const full=buildParkMeshData(field,SKATE_PALETTES.taylor,'full'),lite=buildParkMeshData(field,SKATE_PALETTES.taylor,'lite');
+    expect(lite.ink.positions.length).toBeLessThan(full.ink.positions.length*.85);
+    expect(lite.shade.positions.length).toBeLessThan(full.shade.positions.length);
+    expect(lite.decals.positions.length).toBeLessThan(full.decals.positions.length);
+    expect(lite.card.positions.length+lite.pad.positions.length).toBeLessThan((full.card.positions.length+full.pad.positions.length)*.85);
+    // Everything that is drawn is finite, and every colour is a colour.
+    for(const b of [full.pad,full.card,full.paint,full.decals])for(const v of b.positions)expect(Number.isFinite(v)).toBe(true);
+    for(const v of full.shade.colors)expect(v>=0&&v<=1).toBe(true);
   });
 });

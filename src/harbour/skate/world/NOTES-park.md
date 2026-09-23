@@ -68,17 +68,20 @@ Ids are unchanged. `first-line` is now a seven-gate lap of the new Tideline. The
 
 ## Render
 
-`parkScene.ts` builds one merged mesh per material:
-- pads (receive shadows only, `polygonOffset` pushed back so coplanar floors win);
-- card features (cast and receive; flat-shaded strips so a transition reads as folded card);
-- steel (coping, rails, feet, bollard caps);
-- paint (stair nosings);
-- wax (full tier only);
-- stencils (a 2×2 CanvasTexture atlas: lantern, hearth, kitty paw, wave);
+`parkScene.ts` builds one merged mesh per material from `buildParkMeshData` (`world/meshes.ts` for pads and features, `world/meshesDressing.ts` for marks and dressing, `world/meshesKit.ts` for the primitives):
+- pads (receive shadows only, `polygonOffset` pushed back so coplanar floors win): poured in slabs (2.5 at Tideline, 1.25 on the street spots), each slab its own tone; separate pours per spot (`PAD_ZONES`: Tideline's transition court and Lantern Steps corner, Bookends' rug, the Steps' forecourt, the slipway's wet end, the culvert channel, Northlight's runway lane, the sand-warm promenade); a kerb band at the edge, then an apron of setts fading toward the verge;
+- card (cast and receive): every feature body plus all dressing. Cut sides darken to their foot; transition toes sit in a little shadow; each lip band is a darker tide mark under a narrow painted stripe (`STRIPE` 0.06); ledges, manual pads, hubbas and the funbox ledge get a painted arris;
+- steel: bright coping, dark painted rails (`palette.coping` / `palette.rail`), metalness 0.25 so the paint holds under the bright rig;
+- paint (stripes, nosings, the start ring with its twelve month ticks, Northlight's runway dashes, Bookends' book spines); wax smears (full tier only); stencils from a 3×3 CanvasTexture atlas (lantern, hearth, paw, wave, coin, shell, star, arrow, apple);
+- shade (new): one unlit mesh with RGBA vertex colours for contact shade round raised sides, under benches, posts and rails, and polish on ridden lines;
 - paper lanterns (unlit);
-- one ink `LineSegments` for every cut edge.
+- one `LineSegments` with a colour per vertex: ink on cut edges, pencil slab joints (doubled at every third, the expansion joints), pencil feet where sides meet the pad, chalk glints on coping and rails, chalk scuffs and tallies.
 
-That is 8 draws, plus one engraved plate per spot (7; their posts are in the card mesh) and the checkpoint ring and arrow. Paper grain and pencil hatching come from a runtime CanvasTexture. Palettes are authored per theme in `world/palette.ts`: Newfoundland's ramps are jellybean teal and mustard with red decks. The lite tier halves the arc and corner segments, uses 6-sided tubes and drops wax. Canvas-dependent pieces (textures, plates) are skipped when `document` is absent (tests).
+That is 9 draws (8 without a canvas), plus one engraved plate per spot (7) and the checkpoint ring and arrow. Lite halves arcs and corners, uses 6-sided tubes, draws every other joint without doubles, fewer apron rings and coarser shade, no wax, polish, scuffs, tallies or foot lines, and fewer stencils and blooms. Palettes (`world/palette.ts`) keep one value ladder per theme (pad vs cut sides ≥ 1.8:1, pad vs rails ≥ 2.5:1, coping vs its stripe ≥ 1.8:1, pours ≥ 1.15:1 …), tested in `test/skate-world-mesh.test.ts`.
+
+**Marks** lie on the pads (paint, chalk, polish, stencils) and never cover a lip or an edge. **Dressing** stands off the pads: past the foot of each apron, at most 3.2 past the pad edge, off lanes, routes and the sea (checked at build), and off buildings, landmarks and both tiers' trees (checked in the test). Tideline: picket flats and hedges on the shore side with timber bleachers between, a hedge on the Northlight end, flats on the village side, lanterns, and the gateway: the sign's posts rise into a proscenium beam with a scalloped cut-paper valance and lantern finials, with bunting out to two masts at 3.1 (well above a chase camera). Street spots: Bookends' book spines and hedges, the Steps' stamped coins, six chalk tallies, hedge and flats, Drydock's lobster pots and buoys, the Orchard's grass-stained berms, apple crate and windfalls, Northlight's runway and picket flats on the island's edge, the Promenade's shells and rope-and-post edge.
+
+None of the dressing collides. `SkatePark.dressing` (and `ParkMeshData.dressing`) lists every upright piece with a bounding radius, its top and, for hedges, fence flats and bleachers, an oriented `box`, so integration can add colliders if riders on the grass should bump into them.
 
 ## Integration must
 
@@ -90,7 +93,7 @@ That is 8 draws, plus one engraved plate per spot (7; their posts are in the car
 
 ## Honest gaps
 
-- No browser or GPU verification. Geometry was checked by tests, and the look by a throwaway software rasterizer (not committed).
+- The look is checked in the Skate Lab (SwiftShader stills, chase filmstrips and street-spot orbits); geometry by tests.
 - The island ground mesh is coarse (1.3 × 2.6), so the line where an apron meets the lawn is a zig-zag at the island mesh's resolution.
 - Rails are straight polylines over a gently sloped pad. Their clearance is tested (≥ 0.12), but a rail's height above the surface varies by a few mm along a fillet.
 - The contract's `SurfaceKind` has no `water`. Bowl coping uses per-point `faceYaws`, an addition to the contract.
