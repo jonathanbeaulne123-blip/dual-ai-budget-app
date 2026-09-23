@@ -9,6 +9,7 @@ import { resolveCatalogs, type LookDefs, type SkateLookCatalogs } from './catalo
 import type { CanvasFactory } from './deckArt.ts';
 import { createSkateFx, type FxContact, type LookTheme, type SkateFx } from './fx.ts';
 import { measureFigureRig } from './ik.ts';
+import { createHeadTwist, type HeadTwist } from './headTwist.ts';
 import { createRiderPoseState, solveRiderPose, stanceSides, type RiderPoseState } from './riderPose.ts';
 
 export { poseFromLegacyAct } from './legacy.ts';
@@ -79,6 +80,7 @@ export function createSkaterLook(opts: SkaterLookOptions): SkaterLook {
   let figure = opts.figure;
   let home: { parent: THREE.Object3D | null; position: THREE.Vector3; quaternion: THREE.Quaternion; scale: THREE.Vector3 } | null = null;
   let rider: RiderPoseState | null = null;
+  let twist: HeadTwist | null = null;
   const rigState: BoardRigState = createBoardRigState();
   const motion: BodyMotion = { lean: 0, bank: 0, run: 0, air: 0, rise: 0, crouch: 0, slide: 0, emote: null, emoteAt: 0, flourish: 1 };
   let clock = 0;
@@ -90,6 +92,8 @@ export function createSkaterLook(opts: SkaterLookOptions): SkaterLook {
     g.scale.divideScalar(scale);
     ride.add(g);
     rider = createRiderPoseState(measureFigureRig(g, g.scale.x));
+    const carriage = g.getObjectByName('body-carriage');
+    twist = carriage ? createHeadTwist(carriage, rider.rig.shoulders[0].y + .012) : null;
     return rider;
   }
   function release(): void {
@@ -98,6 +102,7 @@ export function createSkaterLook(opts: SkaterLookOptions): SkaterLook {
     if (home.parent) home.parent.add(g); else g.removeFromParent();
     g.position.copy(home.position); g.quaternion.copy(home.quaternion); g.scale.copy(home.scale);
     home = null; rider = null;
+    twist?.release(); twist = null;
     motion.skatePose = undefined;
     figure.pose(0, 0, clock, motion);
   }
@@ -137,6 +142,8 @@ export function createSkaterLook(opts: SkaterLookOptions): SkaterLook {
       motion.flourish = reduced ? 0 : 1;
       figure.group.position.copy(st.root.position); figure.group.quaternion.copy(st.root.quaternion);
       figure.pose(0, 0, clock, motion);
+      // An authored face is baked into the coat: turn it with the head (the plain figure turns its own head).
+      if (twist) { twist.sync(); twist.set(motion.skatePose.head.y, motion.skatePose.head.x * .6); }
       // FX contacts, in root space.
       board.group.updateMatrix();
       _m.multiplyMatrices(ride.matrix, board.group.matrix);

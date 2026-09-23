@@ -154,14 +154,15 @@ describe("skate look · the board rig", () => {
     const m = new THREE.Matrix4();
     for (const toe of [-1, 1]) {
       const toeEdge = new THREE.Vector3(toe * BOARD.halfWidth, RIG.centreY, 0), heelEdge = new THREE.Vector3(-toe * BOARD.halfWidth, RIG.centreY, 0);
-      const kf = flipMatrix(FALLBACK_FLIPS.kickflip!, .05, toe, m);
+      // (u = 0.2: the rotation starts after the flick, RIG.flipFrom.)
+      const kf = flipMatrix(FALLBACK_FLIPS.kickflip!, .2, toe, m);
       expect(toeEdge.clone().applyMatrix4(kf).y).toBeLessThan(toeEdge.y - .01);
       expect(heelEdge.clone().applyMatrix4(kf).y).toBeGreaterThan(heelEdge.y + .01);
-      const hf = flipMatrix(FALLBACK_FLIPS.heelflip!, .05, toe, m);
+      const hf = flipMatrix(FALLBACK_FLIPS.heelflip!, .2, toe, m);
       expect(toeEdge.clone().applyMatrix4(hf).y).toBeGreaterThan(toeEdge.y + .01);
       // A backside shove-it (+yaw) swings the tail to the heel side.
       const tail = new THREE.Vector3(0, RIG.centreY, -BOARD.halfLength);
-      const sv = flipMatrix(FALLBACK_FLIPS.shuvit!, .2, toe, m);
+      const sv = flipMatrix(FALLBACK_FLIPS.shuvit!, .3, toe, m);
       expect(Math.sign(tail.clone().applyMatrix4(sv).x)).toBe(-toe);
     }
   });

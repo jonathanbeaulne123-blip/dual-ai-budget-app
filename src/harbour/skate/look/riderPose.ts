@@ -28,21 +28,38 @@ const HIP_X = 0, HIP_Y = 1, HIP_Z = 2, PITCH = 3, ROLL = 4, YAW = 5, HEAD_Y = 6,
   F_X = 8, F_Z = 9, F_LIFT = 10, F_ANG = 11, B_X = 12, B_Z = 13, B_LIFT = 14, B_ANG = 15,
   G_W = 16, G_X = 17, G_Z = 18, G_LIFT = 19,
   AF_OUT = 20, AF_FWD = 21, AF_BEND = 22, AB_OUT = 23, AB_FWD = 24, AB_BEND = 25,
-  GRAB_F = 26, GRAB_B = 27, AIR = 28, N = 29;
+  GRAB_F = 26, GRAB_B = 27, AIR = 28, K_F = 29, K_B = 30, N = 31;
 const STIFF = [
   13, 16, 13, 12, 11, 9, 8, 8,
   32, 32, 34, 22, 32, 32, 34, 22,
   20, 30, 30, 34,
   10, 10, 10, 10, 10, 10,
-  16, 16, 12,
+  16, 16, 12, 14, 14,
 ];
 
-/** The standing pose, in world units and radians (rider terms). */
+/**
+ * The riding stance, in world units and radians (rider terms). A skater, not a
+ * bench squat: front foot angled up the board over the front bolts, back foot
+ * across the tail bolts, knees soft and turned in toward the nose, hips and
+ * shoulders opened toward the nose, the head looking down the line.
+ */
 export const STANCE = Object.freeze({
-  frontZ: .165, backZ: -.165, frontAngle: .46, backAngle: -.08,
-  hipX: -.012, pitch: .14, yaw: .42, headPitch: .12,
+  frontZ: .2, backZ: -.205, frontAngle: .66, backAngle: .14,
+  hipX: -.012, hipZ: -.012, pitch: .16, yaw: .62, headPitch: .16,
   /** Hip height above the deck as a fraction of the straight leg (hip pivot to sole). */
-  hip: .95, crouch: .6, tuck: .86,
+  hip: .87, crouch: .6, tuck: .86,
+  /** Where each knee points (rad from straight across toward the nose): the back knee turns in. */
+  frontKnee: .5, backKnee: .62,
+});
+
+/** The push stroke over `pushPhase` (the sim's kick runs 0.12..0.55 of the period). */
+export const PUSH = Object.freeze({
+  /** Foot down at `plant`, off the ground at `lift`. */
+  plant: .12, lift: .58,
+  /** Rider-terms z where the foot plants and where the sweep ends, its x beside the board, the swing's arc. */
+  front: .12, back: -.34, side: .23, arc: .09,
+  /** Hip height (fraction of the straight leg) with the foot up and down. */
+  hipUp: .8, hipDown: .66,
 });
 
 export type RiderPoseState = {
@@ -53,6 +70,8 @@ export type RiderPoseState = {
   /** The figure root (figure.group) in the ride frame. Its scale is `rig.scale`. */
   root: { position: THREE.Vector3; quaternion: THREE.Quaternion };
   clock: number; bailT: number; recoverT: number; lastPhase: SkatePresent['phase'] | null;
+  /** Seconds the current grab has been held (style tweak). */
+  grabT: number;
   bailDir: THREE.Vector3;
   started: boolean;
   /**
@@ -69,7 +88,7 @@ export function createRiderPoseState(rig: FigureRig): RiderPoseState {
     rig, springs: createSpringBank(STIFF), target: new Float64Array(N),
     pose: { carriage: { x: 0, y: 0, z: 0, rx: 0, ry: 0, rz: 0 }, head: { x: 0, y: 0 }, legs: [limb(), limb()], arms: [limb(), limb()] },
     root: { position: new THREE.Vector3(0, DECK_TOP, 0), quaternion: new THREE.Quaternion() },
-    clock: 0, bailT: 0, recoverT: 0, lastPhase: null, bailDir: new THREE.Vector3(0, 0, 1), started: false, grabPull: new THREE.Vector3(),
+    clock: 0, bailT: 0, recoverT: 0, grabT: 0, lastPhase: null, bailDir: new THREE.Vector3(0, 0, 1), started: false, grabPull: new THREE.Vector3(),
   };
 }
 
@@ -125,39 +144,57 @@ export function solveRiderPose(p: SkatePresent, defs: LookDefs, state: RiderPose
     state.recoverT += dt;
   }
 
+  state.grabT = p.grab && air ? state.grabT + dt : 0;
+
   // ── Targets, in rider terms.
-  T[HIP_X] = STANCE.hipX; T[HIP_Y] = STANCE.hip * legLen; T[HIP_Z] = 0;
-  T[PITCH] = STANCE.pitch; T[ROLL] = 0; T[YAW] = p.fakie ? .2 : STANCE.yaw;
+  T[HIP_X] = STANCE.hipX; T[HIP_Y] = STANCE.hip * legLen; T[HIP_Z] = STANCE.hipZ;
+  T[PITCH] = STANCE.pitch; T[ROLL] = 0; T[YAW] = p.fakie ? .3 : STANCE.yaw;
   T[HEAD_Y] = 0; T[HEAD_X] = STANCE.headPitch;
   T[F_X] = 0; T[F_Z] = STANCE.frontZ; T[F_LIFT] = 0; T[F_ANG] = STANCE.frontAngle;
   T[B_X] = 0; T[B_Z] = STANCE.backZ; T[B_LIFT] = 0; T[B_ANG] = STANCE.backAngle;
-  T[G_W] = 0; T[G_X] = .19; T[G_Z] = -.05; T[G_LIFT] = .06;
-  T[AF_OUT] = .5; T[AF_FWD] = .12; T[AF_BEND] = .35; T[AB_OUT] = .45; T[AB_FWD] = -.12; T[AB_BEND] = .3;
+  T[K_F] = STANCE.frontKnee; T[K_B] = STANCE.backKnee;
+  T[G_W] = 0; T[G_X] = .21; T[G_Z] = -.05; T[G_LIFT] = .06;
+  // Loose, uneven arms: the lead arm a little forward and out, the back arm hanging back.
+  T[AF_OUT] = .34; T[AF_FWD] = .2; T[AF_BEND] = .5; T[AB_OUT] = .26; T[AB_FWD] = -.24; T[AB_BEND] = .28;
   T[GRAB_F] = 0; T[GRAB_B] = 0; T[AIR] = air ? 1 : 0;
 
   const carve = clamp(p.carve || 0, -1, 1), bal = clamp(p.balance || 0, -1, 1);
   const breath = Math.sin(state.clock * 1.7) * .006 * flourish;
-  if (phase === 'idle') { T[HIP_Y] += breath; T[YAW] = .3; T[AF_OUT] = .3; T[AB_OUT] = .3; T[AF_BEND] = .25; }
+  if (phase === 'idle') {
+    // Standing on it, taller and quieter; arms hang.
+    T[HIP_Y] = (STANCE.hip + .04) * legLen + breath; T[YAW] = .5; T[PITCH] = .1;
+    T[AF_OUT] = .16; T[AB_OUT] = .18; T[AF_FWD] = .08; T[AB_FWD] = -.1; T[AF_BEND] = .3; T[AB_BEND] = .22;
+  }
 
   if (!air && phase !== 'grind' && phase !== 'bail' && phase !== 'recover') {
     // Carve: lean into the edge, hips drop, arms go with the chest.
     T[HIP_X] += .07 * carve; T[HIP_Y] -= .05 * Math.abs(carve) * legLen; T[PITCH] += .22 * carve;
     T[AF_FWD] += .25 * carve; T[AB_FWD] += .2 * carve; T[AF_OUT] += .15 * Math.abs(carve);
+    // Toe-side carve opens the shoulders toward the turn; heel-side closes them.
+    T[YAW] += .12 * carve;
   }
 
   if (phase === 'push') {
-    // Front foot pivots over the front bolts, body turns to face the nose, back foot strokes the ground.
+    // Front foot turns up the board over the front bolts, the body faces the nose, and the back foot
+    // steps off, plants beside the board ahead of the tail, sweeps back along the ground, and swings forward again.
     const pp = ((p.pushPhase % 1) + 1) % 1;
-    T[YAW] = 1.2; T[F_ANG] = 1.2; T[F_Z] = .15; T[F_X] = 0;
-    T[HIP_Z] = .1; T[HIP_X] = .02; T[PITCH] = .24;
-    const plant = pp < .12 ? 0 : pp < .62 ? 1 : 0;
-    const gz = pp < .12 ? lerp(-.12, .1, pp / .12) : pp < .62 ? lerp(.1, -.26, (pp - .12) / .5) : lerp(-.26, -.12, (pp - .62) / .38);
-    const glift = pp < .12 ? .05 * Math.sin(Math.PI * pp / .12) : pp < .62 ? 0 : .07 * Math.sin(Math.PI * (pp - .62) / .38);
-    T[G_W] = 1; T[G_X] = .2; T[G_Z] = gz; T[G_LIFT] = glift;
-    T[HIP_Y] = (STANCE.hip - .2 - .12 * plant) * legLen;
-    // Arms swing against the stroke.
-    const sw = Math.sin(pp * Math.PI * 2) * .5 * flourish;
-    T[AF_FWD] = .2 + sw; T[AB_FWD] = .1 - sw; T[AF_OUT] = .2; T[AB_OUT] = .25; T[AF_BEND] = .5; T[AB_BEND] = .45;
+    const K0 = PUSH.plant, K1 = PUSH.lift;
+    T[YAW] = 1.28; T[F_ANG] = 1.25; T[F_Z] = .17; T[F_X] = 0; T[K_F] = 1.2;
+    T[PITCH] = .3; T[HEAD_X] = .1;
+    // One loop: down at `plant` (front of the stroke), sweep back to `lift`, then up and forward again.
+    let gz: number, glift: number, plant: number, sw: number;
+    if (pp >= K0 && pp < K1) { const k = (pp - K0) / (K1 - K0); gz = lerp(PUSH.front, PUSH.back, k); glift = 0; plant = 1; sw = -Math.cos(Math.PI * k); }
+    else {
+      const k = ((pp - K1 + 1) % 1) / (1 - K1 + K0);
+      gz = lerp(PUSH.back, PUSH.front, smooth(k)); glift = PUSH.arc * Math.sin(Math.PI * k); plant = 1 - Math.sin(Math.PI * Math.min(1, k * 1.15)); sw = Math.cos(Math.PI * k);
+    }
+    T[G_W] = 1; T[G_X] = PUSH.side; T[G_Z] = gz; T[G_LIFT] = glift;
+    // The standing knee takes the drop so the stroke can reach the ground; hips ride over the front foot and follow the stroke back.
+    T[HIP_Y] = (PUSH.hipUp - (PUSH.hipUp - PUSH.hipDown) * plant) * legLen;
+    T[HIP_Z] = lerp(.07, -.01, clamp01((gz - PUSH.front) / (PUSH.back - PUSH.front))); T[HIP_X] = .035;
+    // Arms swing against the stroke: the back arm forward as the foot sweeps back.
+    sw *= flourish;
+    T[AF_FWD] = .1 - .35 * sw; T[AB_FWD] = .1 + .55 * sw; T[AF_OUT] = .22; T[AB_OUT] = .2; T[AF_BEND] = .55; T[AB_BEND] = .5;
   }
 
   const crouch = clamp01(p.crouch || 0);
@@ -186,14 +223,21 @@ export function solveRiderPose(p: SkatePresent, defs: LookDefs, state: RiderPose
       const g = defs.grab(p.grab.grabId);
       if (g) {
         const w = clamp01(p.grab.weight), gp = grabPose(g, toeSign, BOARD.halfWidth, BOARD.halfLength);
+        // Held longer, the grab gets its style: the tweak grows (board rig) and the body arches with it.
+        const tweak = smooth((state.grabT - .3) / .45) * flourish;
+        const tip = g.edge === 'nose' || g.edge === 'tail';
         if (g.hand === 'front') T[GRAB_F] = w; else T[GRAB_B] = w;
-        T[HIP_Y] -= .12 * w * legLen;
-        T[PITCH] += (gp.lean + .3) * w;
-        T[ROLL] += (g.hand === 'front' ? .28 : -.28) * w * (g.edge === 'nose' || g.edge === 'tail' ? 1.4 : 1);
+        // Knees up and the board pulled to the hips; the chest stays up and reaches down to the edge rather than folding over it.
+        T[HIP_Y] -= .1 * w * legLen;
+        T[PITCH] = lerp(T[PITCH]!, g.edge === 'toe' ? .34 : g.edge === 'heel' ? -.02 : .22, w) + gp.lean * .2 * tweak;
+        // Reach: drop the grabbing shoulder toward its edge (heel grabs reach behind, so the chest opens instead).
+        T[ROLL] += (g.hand === 'front' ? .16 : -.16) * w * (tip ? 1.5 : 1);
+        T[YAW] += (g.edge === 'heel' ? -.2 : g.edge === 'toe' ? .12 : g.edge === 'nose' ? .25 : -.1) * w + (g.edge === 'heel' ? -.18 : .1) * tweak;
         T[HIP_X] += (g.edge === 'heel' ? -.03 : .02) * w;
-        // The other arm balances.
-        if (g.hand === 'front') { T[AB_OUT] = lerp(T[AB_OUT]!, 1.1, w); T[AB_FWD] = lerp(T[AB_FWD]!, -.2, w); }
-        else { T[AF_OUT] = lerp(T[AF_OUT]!, 1.1, w); T[AF_FWD] = lerp(T[AF_FWD]!, .1, w); }
+        T[HEAD_X] = lerp(T[HEAD_X]!, .45, w);
+        // The other arm is thrown out for balance and style.
+        if (g.hand === 'front') { T[AB_OUT] = lerp(T[AB_OUT]!, 1.05 + .25 * tweak, w); T[AB_FWD] = lerp(T[AB_FWD]!, -.35, w); T[AB_BEND] = lerp(T[AB_BEND]!, .75 - .3 * tweak, w); }
+        else { T[AF_OUT] = lerp(T[AF_OUT]!, 1.05 + .25 * tweak, w); T[AF_FWD] = lerp(T[AF_FWD]!, .4, w); T[AF_BEND] = lerp(T[AF_BEND]!, .75 - .3 * tweak, w); }
       }
     }
   }
@@ -320,16 +364,19 @@ export function solveRiderPose(p: SkatePresent, defs: LookDefs, state: RiderPose
       .applyMatrix4(carrier);
     _up.set(0, 1, 0).transformDirection(carrier);
     _fwd.transformDirection(carrier);
+    // The knee points across the board toward the toes, turned in toward the nose (the back knee more).
+    const ka = X[isFront ? K_F : K_B]!;
+    _pole.set(toeSign * Math.cos(ka), .12, Math.sin(ka)).transformDirection(carrier);
     if (!isFront && X[G_W]! > 1e-3) {
       // The push foot on the ground beside the board, toe side, pointing down the line.
       const gw = clamp01(X[G_W]!);
       _w.set(0, 0, 1);
       _ang.set(toeSign * X[G_X]!, X[G_LIFT]! + rig.soleDrop * fs, X[G_Z]!).addScaledVector(_w, -rig.toeOffset * fs);
       _anc.lerp(_ang, gw); _fwd.lerp(_w, gw).normalize(); _up.lerp(_Y, gw).normalize();
+      _pole.lerp(_v.set(toeSign * .35, .1, 1).normalize(), gw).normalize();
     }
     _anc.applyMatrix4(_carInv);
-    _fwd.transformDirection(_carInv); _up.transformDirection(_carInv);
-    _pole.copy(_fwd).addScaledVector(_up, .15);
+    _fwd.transformDirection(_carInv); _up.transformDirection(_carInv); _pole.transformDirection(_carInv);
     solveTwoBone(rig.hips[i], _anc, _pole, rig.thigh, rig.shin, 1, _sol);
     let lx = _sol.x, ly = _sol.y, lz = _sol.z, bend = _sol.bend;
     // Flatten the sole to the deck: pitch then roll at the ankle.
@@ -381,7 +428,7 @@ export function solveRiderPose(p: SkatePresent, defs: LookDefs, state: RiderPose
         _v.multiplyScalar(dist > 1e-6 ? -short / dist : 0).transformDirection(_car).multiplyScalar(short * fs);
         pulled = true;
         state.grabPull.addScaledVector(_v, gw * (1 - Math.exp(-14 * dt)));
-        state.grabPull.y = clamp(state.grabPull.y, -.05, .24);
+        state.grabPull.y = clamp(state.grabPull.y, -.05, .2);
         state.grabPull.x = clamp(state.grabPull.x, -.14, .14); state.grabPull.z = clamp(state.grabPull.z, -.14, .14);
       }
     }

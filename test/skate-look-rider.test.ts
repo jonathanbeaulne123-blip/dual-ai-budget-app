@@ -118,10 +118,12 @@ describe("skate look · the rider stands on the board", () => {
     for (const n of names) {
       const ra = part(a.figure, n).applyMatrix4(new THREE.Matrix4().copy(a.look.ride.matrixWorld).invert());
       const rb = part(b.figure, mirror[n]!).applyMatrix4(new THREE.Matrix4().copy(b.look.ride.matrixWorld).invert());
-      expect(ra.x).toBeCloseTo(-rb.x, 5); expect(ra.y).toBeCloseTo(rb.y, 5); expect(ra.z).toBeCloseTo(rb.z, 5);
+      expect(ra.x, n).toBeCloseTo(-rb.x, 5); expect(ra.y, n).toBeCloseTo(rb.y, 5); expect(ra.z, n).toBeCloseTo(rb.z, 5);
     }
     // And the board flipped the mirrored way.
-    const qa = a.look.board.group.quaternion, qb = b.look.board.group.quaternion;
+    // (q and −q are the same rotation: compare with w ≥ 0.)
+    const canon = (q: THREE.Quaternion) => (q.w < 0 ? new THREE.Quaternion(-q.x, -q.y, -q.z, -q.w) : q.clone());
+    const qa = canon(a.look.board.group.quaternion), qb = canon(b.look.board.group.quaternion);
     expect(qa.z).toBeCloseTo(-qb.z, 5); expect(qa.x).toBeCloseTo(qb.x, 5);
     for (const r of [a, b]) { r.figure.dispose(); r.look.dispose(); }
   });
