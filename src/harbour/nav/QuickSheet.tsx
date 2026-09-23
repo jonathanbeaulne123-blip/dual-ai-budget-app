@@ -117,7 +117,7 @@ export function quickSheetRoomless(): string[] {
   });
 }
 
-const DISTRICT_TITLES: Record<CompassDistrict, string> = { home: "Home — the Court", study: "Study", kitchen: "Kitchen", making: "Making", together: "Together — the Boathouse" };
+const DISTRICT_TITLES: Record<CompassDistrict, string> = { home: "Home — the village", study: "Study", kitchen: "Kitchen", making: "Making", together: "Together — the Boathouse" };
 const DISTRICT_ORDER: readonly CompassDistrict[] = ["home", "study", "kitchen", "making", "together"];
 const MAKING_TOOLS: ReadonlySet<string> = new Set(["pottery", "hercules", "wardrobe"]);
 

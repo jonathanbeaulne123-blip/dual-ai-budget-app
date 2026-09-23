@@ -21,7 +21,7 @@ import { CLOSE_HOLDS, COURT_ANCHOR_IDS, COURT_FOV, closePose, type CourtAnchor, 
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
 import { createGround } from "./ground.ts";
 import { configureHarbourRenderer, createLightRig } from "./lightRig.ts";
-import { EMPTY_PLACE, PLACES, PLACED_PLACE_IDS, PLACE_HOLDS, SCENE_DRESSING,  placedHold, placedPose, placementLift, placementToWorld, placementOf, poseFor, streamPlaces, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlacePlacement, type PlaceReading, type Pose, type Region, type Vec3 } from "./place.ts";
+import { EMPTY_PLACE, PLACES, PLACED_PLACE_IDS, PLACE_HOLDS, SCENE_DRESSING,  placedFootprintHold, placedPose, placementLift, placementToWorld, placementOf, poseFor, streamPlaces, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlacePlacement, type PlaceReading, type Pose, type Region, type Vec3 } from "./place.ts";
 import { travelAt, travelPlan, type TravelPlan } from "./travel.ts";
 import type { HarbourPlaceId } from "../flag.ts";
 import type { RenderTier } from "./quality.ts";
@@ -469,12 +469,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
 
   /** The standing place's hold, moved onto the island with its building (§4). */
-  const holdFor = (id: HarbourPlaceId): RoomHold | null => {
-    const placement=placementOf(id), old=PLACE_HOLDS[id];
-    if(!placement||!old)return old??null;
-    const hx=placement.halfWidth,hz=placement.halfDepth;
-    return placedHold({...old,eye:{min:[-hx-.3,.25,-hz-.3],max:[hx+.3,7,hz+6]},target:{min:[-hx+.2,.2,-hz+.2],max:[hx-.2,3,hz-.2]},maxR:12,minPhi:.5},placement);
-  };
+  const holdFor = (id: HarbourPlaceId): RoomHold | null => placedFootprintHold(PLACE_HOLDS[id] ?? null, placementOf(id));
 
   /**
    * The streamer (§2). Distance-based, with hysteresis: a placed interior is
@@ -1155,7 +1150,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // stage into a door strip: the follow camera gives the view back for it.
     setToolOpen(open) { toolOpen = open; if (open) setFollowing(false); schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
-    invalidate() { settling = true; dirty = true; previous = performance.now(); schedule(); },
+    invalidate() { settling = true; dirty = true; listsDirty = true; if(walker)standBody(); previous = performance.now(); schedule(); },
     addAnimator(animate) { animators.add(animate); listsDirty = true; schedule(); return () => { animators.delete(animate); }; },
     restore(position) { setFollowing(false); court.restore(position); dirty = true; render(); schedule(); },
     camera: () => camera.position.toArray() as [number, number, number],

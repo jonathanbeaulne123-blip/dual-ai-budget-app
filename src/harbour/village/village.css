@@ -2,3 +2,9 @@
 
 .village-address{top:65px}.village-tools{bottom:100px}.village-map{bottom:180px}.village-floors{top:180px}.harbour-world__stair{bottom:168px!important}.harbour-world__invite{bottom:220px!important}.harbour-world__phrase{bottom:270px!important}.harbour-walk-together{bottom:175px!important}.village-decorator{top:65px;max-height:calc(100% - 180px)}
 @media(max-width:719px){.village-address{top:60px}.village-tools{bottom:96px}.village-map{bottom:170px}.village-floors{top:145px}.harbour-world__stair{bottom:160px!important}.harbour-walk-together{bottom:218px!important}.village-decorator{top:60px}}
+
+/* Keep the scene centre and all navigation clear at both sizes. */
+.harbour-walk-together{left:auto!important;right:28px;top:65px;bottom:auto!important;max-width:200px!important}
+.harbour-world__stair{bottom:104px!important;min-height:44px}.harbour-world__invite{bottom:165px!important}.harbour-world__phrase{bottom:215px!important}
+.village-decorator{overscroll-behavior:contain}.village-tools{box-sizing:border-box}
+@media(max-width:719px){.harbour-walk-together{left:14px!important;right:auto;top:auto;bottom:218px!important;max-width:190px!important}.harbour-world__stair{bottom:158px!important}.harbour-world__invite{display:none}.harbour-world__phrase{bottom:300px!important}.village-address{max-width:calc(100% - 32px);box-sizing:border-box}.village-decorator{box-sizing:border-box}.village-map{box-sizing:border-box}}

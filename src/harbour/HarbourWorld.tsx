@@ -125,6 +125,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const runtime = useRef<HarbourRuntime | null>(null), court = useRef<QueenHost | null>(null), queen = useRef<QueenPlace | null>(null);
   const queenAnimation=useRef<(()=>void)|null>(null);
   const [arranging,setArranging]=useState(false);
+  const [previewLook,setPreviewLook]=useState<ReturnType<typeof villageRoomConfig>|null>(null);
   const [travelTo,setTravelTo]=useState<HarbourPlaceId|null>(null);
   const [status, setStatus] = useState<Status>("loading");
   const [tier, setTier] = useState<QualityTier>(() => decideTier(host.current?.getBoundingClientRect().width || window.innerWidth));
@@ -829,9 +830,10 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const hearthside=useMemo(()=>decodeHearthside(household.hearthside),[household.hearthside]);
   const arrangement=hearthside.villageArrangement;
   const decorRoom:VillageRoom|null=place==='court'||place==='campfire'?null:place==='tower'?'loft':place==='kiln'?'studio':place;
-  const roomLook=decorRoom?villageRoomConfig(arrangement,decorRoom):null;
+  const savedRoomLook=decorRoom?villageRoomConfig(arrangement,decorRoom):null;
+  const roomLook=previewLook?.room===decorRoom?{...previewLook,displays:[...previewLook.displays]}:savedRoomLook;
   if(roomLook&&!villageDisplaysEligible(household,hearthside,roomLook.displays))roomLook.displays=[];
-  useEffect(()=>{(runtime.current?.place() as VillageInterior|undefined)?.decorate?.(roomLook);runtime.current?.invalidate();},[place,status,arrangement,household.hearthside]);
+  useEffect(()=>{(runtime.current?.place() as VillageInterior|undefined)?.decorate?.(roomLook);runtime.current?.invalidate();},[place,status,arrangement,household.hearthside,previewLook]);
   const displayKey=JSON.stringify(roomLook?.displays??[]);
   useEffect(()=>{
     const target=runtime.current?.place() as VillageInterior|undefined;target?.display?.([]);
@@ -843,7 +845,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
         const snapshot=snapshotKittyDesignRevision(document,ref.id,ref.revision);
         return {kind:'piece' as const,id:ref.id,designId:ref.designId,piece:snapshot.piece,appearance:snapshot.appearance};
       }catch{return null;}
-    })).then(items=>{if(!cancelled&&runtime.current?.place()===target)target?.display?.(items.filter((x):x is VillageDisplayContent=>x!==null));});
+    })).then(items=>{if(!cancelled&&runtime.current?.place()===target){target?.display?.(items.filter((x):x is VillageDisplayContent=>x!==null));runtime.current?.invalidate();}});
     return ()=>{cancelled=true;target?.display?.([]);};
   },[place,status,displayKey,household.environment,household.householdId,hearthside,designClient]);
   const showFlat = status === "flat" || status === "fallback" || (status === "loading" && tier === "flat");
@@ -865,7 +867,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => navigatePlace(next)} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
       {!toolOpen&&<VillageHUD place={place} travelling={travelTo} onVisit={visit} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('court');}}/>}
-      {arranging&&decorRoom&&props.onArrange&&<VillageDecorator key={decorRoom} household={household} memberId={memberId} room={decorRoom} arrangement={arrangement} onCommit={props.onArrange} onPreview={next=>{(runtime.current?.place() as VillageInterior|undefined)?.decorate?.(next??roomLook);runtime.current?.invalidate();}} onClose={()=>setArranging(false)}/>}
+      {arranging&&decorRoom&&props.onArrange&&<VillageDecorator key={decorRoom} household={household} memberId={memberId} room={decorRoom} arrangement={arrangement} onCommit={props.onArrange} onPreview={setPreviewLook} onClose={()=>setArranging(false)}/>}
       {invite && <div className="harbour-world__invite" data-harbour-invite={touch ? "touch" : "keys"} aria-hidden="true"><Whisper mode="line">{inviteWords(place, touch)}</Whisper></div>}
       {status === "ready" && !toolOpen && standing && <div className="harbour-moves" data-harbour-moves={emotesOpen ? "open" : "shut"}>
         {emotesOpen && <div className="harbour-moves__emotes" role="group" aria-label="Emotes">

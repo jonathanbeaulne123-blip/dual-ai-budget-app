@@ -41,8 +41,8 @@ import { BODY_HEIGHT, BODY_RADIUS, courtObstacles, obstaclesFromRegions, type Ob
 export const PLACE_FLOOR: Readonly<Record<HarbourPlaceId, number | null>> = Object.freeze({
   /** The Court is the island: a sloped analytic surface, never a plane. */
   court: null,
-  bank: 0,
-  tower: 0,
+  bank: 0.06,
+  tower: 0.07,
   cellar: 0,
   glasshouse: 0,
   kitchen: 0,
