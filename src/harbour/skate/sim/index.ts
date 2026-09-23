@@ -26,7 +26,7 @@
  *  - `present` and the `events` array are LIVE objects reused every step (no per-frame
  *    allocation); copy them if you need to keep a frame.
  */
-import { SKATE_DT, type FlipTrickDef, type GrabDef, type GrindDef, type SkateField, type SkateIntent, type SkatePresent, type SkateSimEvent, type Stance, type SurfaceKind, type SurfaceSample } from '../contract.ts';
+import { SKATE_DT, type FlipTrickDef, type GrabDef, type GrindDef, type SkateField, type SkateIntent, type SkatePresent, type SkateSimEvent, type SkateSolid, type Stance, type SurfaceKind, type SurfaceSample } from '../contract.ts';
 import type { Obstacle } from '../../body/obstacles.ts';
 import { SKATE_TUNING as T } from './tuning.ts';
 import { approach, buildLines, clamp, ease, fin, hit, linePoint, nearestXZ, pointAt, pushOutAll, wrap, type GrindLine } from './geometry.ts';
@@ -64,6 +64,8 @@ export type SkateSimOptions = {
   x: number; z: number; yaw: number; stance: Stance; reducedAssist?: boolean;
   /** Island obstacles (buildings/trees) in body-obstacle form; injected by integration. */
   islandObstacles?: readonly Obstacle[];
+  /** More never-rideable solids (height-aware like \`field.solids\`), e.g. the park's dressing; injected by integration. */
+  extraSolids?: readonly SkateSolid[];
   /** Shoreline clamp (e.g. body/obstacles.ts holdAshore); injected by integration. */
   shore?: (x: number, z: number) => { x: number; z: number; ashore: boolean };
 };
@@ -134,7 +136,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   const G = T.GRAVITY, DT = SKATE_DT;
   const lines: GrindLine[] = buildLines(field.grindables ?? []);
   const island: readonly Obstacle[] = opts.islandObstacles ?? [];
-  const solids = field.solids ?? [];
+  const solids: readonly SkateSolid[] = opts.extraSolids?.length ? [...(field.solids ?? []), ...opts.extraSolids] : field.solids ?? [];
   const shore = opts.shore ?? null;
   const reduced = opts.reducedAssist === true;
   const flips = catalogs.flips, grinds = catalogs.grinds, grabs = catalogs.grabs, resolve = catalogs.resolveGrind ?? null;

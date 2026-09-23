@@ -81,7 +81,7 @@ That is 9 draws (8 without a canvas), plus one engraved plate per spot (7) and t
 
 **Marks** lie on the pads (paint, chalk, polish, stencils) and never cover a lip or an edge. **Dressing** stands off the pads: past the foot of each apron, at most 3.2 past the pad edge, off lanes, routes and the sea (checked at build), and off buildings, landmarks and both tiers' trees (checked in the test). Tideline: picket flats and hedges on the shore side with timber bleachers between, a hedge on the Northlight end, flats on the village side, lanterns, and the gateway: the sign's posts rise into a proscenium beam with a scalloped cut-paper valance and lantern finials, with bunting out to two masts at 3.1 (well above a chase camera). Street spots: Bookends' book spines and hedges, the Steps' stamped coins, six chalk tallies, hedge and flats, Drydock's lobster pots and buoys, the Orchard's grass-stained berms, apple crate and windfalls, Northlight's runway and picket flats on the island's edge, the Promenade's shells and rope-and-post edge.
 
-None of the dressing collides. `SkatePark.dressing` (and `ParkMeshData.dressing`) lists every upright piece with a bounding radius, its top and, for hedges, fence flats and bleachers, an oriented `box`, so integration can add colliders if riders on the grass should bump into them.
+None of the dressing is in `field.solids`. `SkatePark.dressing` (and `ParkMeshData.dressing`) lists every upright piece (121, the same positions in every theme and tier) with a bounding radius, its top and, for hedges, fence flats and bleachers, an oriented `box`. **Integrated (wave 3):** `world/dressingSolids.ts` turns them into height-aware sim solids (`obox` when there is a box, else the footprint circle; ids `dressing:<id>`); `buildSkatePark` registers them for its field and `skateSimOptions` hands them to the sim as `extraSolids`, so a rider on the grass bumps into a hedge and an air over a low crate still clears it. Without a park scene (tests, the headless Skate Lab) call `ensureSkateDressing(field)` (`world/dressingBuild.ts`). Spot starts, route checkpoints and route segments stay clear (`test/skate-int-dressing.test.ts`).
 
 ## Integration must
 
@@ -90,6 +90,10 @@ None of the dressing collides. `SkatePark.dressing` (and `ParkMeshData.dressing`
 - `body/places.ts`: nothing required. `skateSurface` is v2, so walkers follow pads, ramps and ledges.
 - Sim: merge `courtObstacles(tier)` with `field.solids`.
 - Integrated 2026-09-23: `skate/driver.ts` rides `skateFieldFor(groundHeightAt)` and `runtime.ts` builds `buildSkatePark(dressing,{tier,field})` from the same instance; island obstacles + `holdAshore` are merged in by `skateSimOptions`. The v1 ramp shims and `SkateSpotEntry.yaw` are gone (use `startYaw`).
+
+## Drainage tilt (documented, not changed)
+
+Pads are least-squares planes that follow the island's fall (Tideline ≤ 1.4°, street pads up to 0.06–0.09), and every feature — including each transition — is **sheared onto its pad plane**, so a quarterpipe's lip points a little down the drainage fall and a mini-ramp's two walls differ by twice the tilt. The geometry is left as is (the art reads right and the walkers follow it). The SIM compensates: tyre grip cancels the sideways slip a drainage fall produces (`LATERAL_GRIP`, NOTES-sim "Wheel grip"), vert launches carry the unrolled heading, and landings are judged in the unrolled plane, so a pumping rider no longer walks off the Breadbin and a straight vert air comes back down its line. If a future spot needs a truly level transition, give its pad `maxSlope: 0` (`layout.ts` `PadDef`) rather than un-shearing features.
 
 ## Honest gaps
 

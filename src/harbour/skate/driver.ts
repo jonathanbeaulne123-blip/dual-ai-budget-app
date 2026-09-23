@@ -8,6 +8,7 @@ import {createSkateScore,type SkateScore} from './tricks/score.ts';
 import {resolveGrind,SKATE_FLIPS,SKATE_GRABS,SKATE_GRINDS,skateCatalogs} from './tricks/catalog.ts';
 import {SKATE_DECKS,SKATE_ROUTES,SKATE_SPOTS,skateFieldFor,type SkateDeckId,type SkateRouteId,type SkateSpotId} from './park.ts';
 import type {SkateWorldField} from './world/field.ts';
+import {skateDressingSolids} from './world/dressingSolids.ts';
 import {
   chooseSkateDeck,cloneSkateProgress,createSkateSession,observeSkate,setSkateSettings,setSkateTables,skateTables,startSkateRoute,
   type SkateProgress,type SkateSession,type SkateSettings,
@@ -68,8 +69,8 @@ export type SkateControls={
 export type SkateDriverWorld={obstacles:readonly Obstacle[]};
 
 /** Sim options for the island (integration seam: island obstacles merged with the park, shoreline held). */
-export function skateSimOptions(obstacles:readonly Obstacle[]):Pick<SkateSimOptions,'islandObstacles'|'shore'> {
-  return {islandObstacles:obstacles,shore:holdAshore};
+export function skateSimOptions(obstacles:readonly Obstacle[],field:SkateWorldField=skateField()):Pick<SkateSimOptions,'islandObstacles'|'shore'|'extraSolids'> {
+  return {islandObstacles:obstacles,shore:holdAshore,extraSolids:skateDressingSolids(field)};
 }
 
 /** The catalogs every part of the ride uses, with TRICKS' grind namer injected into the sim. */
@@ -183,7 +184,7 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
   function mount(x:number,z:number,yaw:number,progress?:SkateProgress){
     session=createSkateSession(progress?cloneSkateProgress(progress):undefined);
     const s=settings();
-    sim=createSkateSim(field,SKATE_CATALOGS,{x,z,yaw,stance:s.stance,...skateSimOptions(world.obstacles)});
+    sim=createSkateSim(field,SKATE_CATALOGS,{x,z,yaw,stance:s.stance,...skateSimOptions(world.obstacles,field)});
     input=createSkateInput({stance:s.stance,mode:s.controls,...(options.getGamepads!==undefined?{getGamepads:options.getGamepads}:{})});
     score=createSkateScore({stance:s.stance,catalogs:SKATE_CATALOGS});
     paused=false;cut=true;simTime=0;outcome=null;frame.length=0;

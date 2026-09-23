@@ -13,7 +13,8 @@
  * under `src/` imports this (fenced by that test).
  */
 import {SKATE_NO_INTENT,type SkateIntent,type SkatePresent,type SkateSimEvent,type Stance} from '../../src/harbour/skate/contract.ts';
-import {createSkateDriver,type SkateDriver} from '../../src/harbour/skate/driver.ts';
+import {createSkateDriver,skateField,type SkateDriver} from '../../src/harbour/skate/driver.ts';
+import {ensureSkateDressing} from '../../src/harbour/skate/world/dressingBuild.ts';
 import {SKATE_SPOTS,type SkateSpotId} from '../../src/harbour/skate/park.ts';
 import {parkPoint} from '../../src/harbour/skate/world/layout.ts';
 import {courtObstacles} from '../../src/harbour/body/obstacles.ts';
@@ -136,6 +137,7 @@ export function createLabCore(){
         l.x!==undefined&&l.z!==undefined?{x:l.x,z:l.z,yaw:l.yaw??0}:
         (()=>{const s=SKATE_SPOTS.find(s=>s.id===(l.spot??'tideline'))!;return {x:s.start[0],z:s.start[1],yaw:s.startYaw};})();
       clock=1000;frame=0;entries=[];pad=null;last=[];trace.length=0;
+      ensureSkateDressing(skateField()); // the dressing colliders the app registers from its park scene
       driver=createSkateDriver({obstacles:courtObstacles(l.tier??'lite')},{now:()=>clock,getGamepads:()=>{const p=padObj();return p?[p]:[];},intent:rawIntent});
       const progress=freshSkateProgress();progress.settings={...progress.settings,stance,controls:l.controls??'flick'};
       driver.mount(pose.x,pose.z,pose.yaw,progress);driver.takeCut();

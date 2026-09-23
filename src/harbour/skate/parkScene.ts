@@ -7,6 +7,7 @@ import {SKATE_ROUTES} from './park.ts';
 import {createSkateField,type SkateWorldField} from './world/field.ts';
 import {buildParkMeshData,type Bucket,type DressingFootprint} from './world/meshes.ts';
 import {ATLAS_GRID,ICON} from './world/meshesKit.ts';
+import {rememberDressing} from './world/dressingSolids.ts';
 import {skatePalette,type SkatePalette} from './world/palette.ts';
 
 /**
@@ -29,8 +30,8 @@ export type SkatePark={
   checkpoint:THREE.Mesh;
   /**
    * The decorative pieces standing round the spots (hedges, fence flats, lamps, bleachers,
-   * masts, pots…). None of them is in `field.solids`; integration may merge these into the
-   * sim's obstacles if riders should bump into them on the grass.
+   * masts, pots…). None of them is in `field.solids`; the ride merges them in as sim solids
+   * (`world/dressingSolids.ts`, handed over here so they are not built twice).
    */
   dressing:readonly DressingFootprint[];
   update(snapshot:SkateParkRunLike):void;
@@ -124,6 +125,7 @@ export function buildSkatePark(dressing:PlaceDressing,opts:{tier?:RenderTier;fie
   const field=opts.field??createSkateField(groundHeightAt,{tier});
   const palette:SkatePalette=skatePalette(dressing.theme);
   const data=buildParkMeshData(field,palette,tier);
+  rememberDressing(field,data.dressing);
   const group=new THREE.Group();group.name='Harbour skate spots';
   const owned:{dispose():void}[]=[];
   const own=<T extends {dispose():void}>(o:T):T=>{owned.push(o);return o;};
