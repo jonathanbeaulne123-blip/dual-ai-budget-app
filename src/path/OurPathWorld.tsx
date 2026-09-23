@@ -86,6 +86,8 @@ export type JourneyMiniSlotArgs = {
   /** Opens the open world (game mode). In the compact corner copy the world is already open, so it does nothing. */
   onOpenWorld: () => void;
   onEnterHarbour?: (anchor: HarbourJourneyAnchor) => void;
+  /** A route-return focus; it is view state, never a chapter edit. */
+  journeyFocusDate?: DateKey;
   /** True for the corner minimap inside the open world. */
   compact: boolean;
   theme: ThemeId;
@@ -225,7 +227,7 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, onEnterHarbour, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini }: {
+export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, onEnterHarbour, journeyFocusDate, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini }: {
   household: Household;
   memberId: string;
   today: DateKey;
@@ -251,6 +253,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   onOpenPlay?: () => void;
   /** Current Chapter only: a view transition to Little Harbour, never a write. */
   onEnterHarbour?: (anchor: HarbourJourneyAnchor) => void;
+  journeyFocusDate?: DateKey;
   /** Household board photos for the memory flags. Reads only; nothing is uploaded from the island. */
   boardMedia?: BoardMediaClient | null;
   /** 1 = just me; 2 or more = the other member is live too. Nothing is stored. */
@@ -884,12 +887,15 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   // own controls (Replay, Where we are, the outline) as "page"; the simple view as "mini". Each side applies a change
   // only when someone else made it.
   const journey = useJourneyFocus(today);
+  useEffect(() => { if (journeyFocusDate) journey.set({ date: journeyFocusDate, level: "month", selected: null }, "page"); }, [journeyFocusDate, journey.set]);
   const harbourAnchor = useMemo(() => harbourJourneyAnchor(household, today), [household, today]);
   const enterHarbour = useCallback(() => {
     if (!onEnterHarbour || !isHarbourJourneyMonth(harbourAnchor, journey.focus.date)) return false;
     leaveThen.current(() => onEnterHarbour(harbourAnchor));
     return true;
   }, [onEnterHarbour, harbourAnchor, journey.focus.date]);
+  const enterHarbourRef = useRef(enterHarbour);
+  enterHarbourRef.current = enterHarbour;
   const focus = journey.focus;
   const focusRef = useRef(focus);
   focusRef.current = focus;
@@ -1100,6 +1106,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
             onLost: () => { created?.dispose(); world.current = null; if (!dead) { setLive(false); setWorldEpoch((n) => n + 1); } },
             onAnchors: applyAnchors,
             onLevel: (lv) => { if (dead) return; setLevel(lv); worldLevel.current = lv; reportLevel(lv); },
+            onClosestZoom: () => !dead && enterHarbourRef.current(),
             onPick: (id) => selectRef.current(id, "world"),
             onView: (v) => { if (!dead) viewRef.current(v); },
             onRoam: (on) => { if (!dead) roamChanged.current(on); },

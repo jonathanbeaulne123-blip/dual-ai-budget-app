@@ -305,6 +305,8 @@ export function createPathWorld(host: HTMLElement, options: {
   onLost?: () => void;
   onAnchors?: (anchors: PathAnchor[]) => void;
   onLevel?: (level: PathLevel) => void;
+  /** A deliberate continued zoom beyond the closest camera band. The page decides whether that doorway is available. */
+  onClosestZoom?: () => boolean;
   onPick?: (id: string) => void;
   /** Game mode (D-285): the person moved the camera themselves and it came to rest; the grown month nearest its aim. */
   onView?: (view: { level: PathLevel; month: number | null }) => void;
@@ -2333,6 +2335,17 @@ export function createPathWorld(host: HTMLElement, options: {
     const ring = roamRing();
     return Math.max(ring.minR, Math.min(ring.maxR, r));
   }
+  // The closest band is still a useful ordinary camera distance. A doorway only opens after a continued inward
+  // wheel/pinch/rail gesture, and only once until the person backs the camera away.
+  let closestZoom = 0, closestZoomEntered = false;
+  function applyZoom(factor: number) {
+    const raw = cam.r * factor;
+    if (factor < 1 && !roaming && raw < 14.5 && !closestZoomEntered) {
+      closestZoom += Math.max(0, Math.log(14.5 / Math.max(0.01, raw)));
+      if (closestZoom >= 0.42 && options.onClosestZoom?.()) { closestZoomEntered = true; return; }
+    } else if (factor > 1 || raw > 16) { closestZoom = 0; closestZoomEntered = false; }
+    cam.r = clampRadius(raw);
+  }
   function roamViewNow(): PathRoamView {
     const ring = roamRing();
     const facing = roamFacing(cam, aspectNow());
@@ -2396,7 +2409,7 @@ export function createPathWorld(host: HTMLElement, options: {
       const [a, b] = [...pointers.values()] as [{ x: number; y: number }, { x: number; y: number }];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
       const angle = Math.atan2(b.y - a.y, b.x - a.x);
-      if (pinch) cam.r = clampRadius(cam.r * pinch / d);
+      if (pinch) applyZoom(pinch / d);
       // Free roam: two fingers twisting turn the island under you.
       if (roaming && twist !== null) cam.theta = wrapAngle(cam.theta + wrapAngle(angle - twist));
       pinch = d; twist = angle;
@@ -2458,7 +2471,7 @@ export function createPathWorld(host: HTMLElement, options: {
   };
   const onWheel = (e: WheelEvent) => {
     e.preventDefault(); fly = null;
-    cam.r = clampRadius(cam.r * Math.exp(e.deltaY * 0.001));
+    applyZoom(Math.exp(e.deltaY * 0.001));
     if (roaming) { roamRested = false; reportRoam(); }
     invalidate(); gestured();
   };
@@ -2739,7 +2752,7 @@ export function createPathWorld(host: HTMLElement, options: {
       if (next === 0 && hasJourney()) { const f = skyFrame(); flyTo(f.tx, f.tz, f.r, eraSkyTheta(aspectNow())); return; }
       flyTo(next === 0 ? 0 : cam.tx, next === 0 ? 0 : cam.tz, PATH_LEVEL_RADIUS[next]!);
     },
-    zoom(factor: number) { fly = null; cam.r = clampRadius(cam.r * factor); if (roaming) reportRoam(true); invalidate(); },
+    zoom(factor: number) { fly = null; applyZoom(factor); if (roaming) reportRoam(true); invalidate(); },
     turn(delta: number) { cam.theta = wrapAngle(cam.theta + delta); if (roaming) reportRoam(true); invalidate(); },
     /**
      * Free roam (D-286). `true` unlatches the camera from the two of you, keeping the exact view it has; `false`
