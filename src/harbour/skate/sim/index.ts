@@ -712,7 +712,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     if (S.manual) {
       const m2 = S.manual;
       m2.seconds += dt; m2.distance += Math.hypot(dx, dz);
-      const tip = T.MANUAL_TIP * (reduced ? 1.25 : 1);
+      const tip = T.MANUAL_TIP * (1 + T.MANUAL_TIP_GROWTH * m2.seconds) * (reduced ? 1.25 : 1);
       const wob = T.MANUAL_WOBBLE * (driftSign(m2.seed) + Math.sin(m2.seconds * 2.3 + m2.seed) + 0.5 * Math.sin(m2.seconds * 5.7 + 2 * m2.seed));
       const sign = m2.kind === 'manual' ? 1 : -1;
       // balance > 0 = rotating out the back of the manual; weight toward the other end pulls it back.
@@ -851,7 +851,19 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     if (Math.abs(I.steer) > 0.05) {
       const target = -I.steer * T.SPIN_MAX * (grabbing ? T.GRAB_SPIN : 1);
       S.spinRate += (target - S.spinRate) * ease(T.SPIN_RESPONSE, dt);
-    } else S.spinRate *= Math.exp(-T.SPIN_DAMP * dt);
+    } else {
+      S.spinRate *= Math.exp(-T.SPIN_DAMP * dt);
+      // Square up to land after a spin: near a board line (0°/180° to travel) it settles onto it.
+      const hs = Math.hypot(S.vx, S.vz);
+      if (!S.vert && hs > 0.5 && Math.abs(S.spin) > 0.35 && (!S.trick || S.trick.caught)) {
+        const rel = wrap(S.boardYaw - Math.atan2(S.vx, S.vz)), e = wrap(rel - Math.round(rel / Math.PI) * Math.PI);
+        if (Math.abs(e) < T.SPIN_SETTLE_WINDOW / 2 + 0.2) {
+          const want = -e * T.SPIN_SETTLE_GAIN;
+          // Only ever slows or reverses a spin that would overshoot; never adds a new one.
+          if (Math.abs(want) < Math.abs(S.spinRate) || Math.sign(want) !== Math.sign(S.spinRate) || Math.abs(S.spinRate) < 0.3) S.spinRate += (want - S.spinRate) * ease(10, dt);
+        }
+      }
+    }
     S.boardYaw = wrap(S.boardYaw + S.spinRate * dt);
     S.spin += S.spinRate * dt;
     // An angled vert air with the stick centred turns to come back down its own line (not a spin).
@@ -950,7 +962,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     // Flip must be caught.
     const tr = S.trick;
     if (tr && !tr.caught) {
-      const window = T.CATCH_WINDOW * (1 - 0.6 * tr.difficulty) * (reduced ? 0.7 : 1);
+      const window = T.CATCH_WINDOW * (1 - T.CATCH_DIFFICULTY * tr.difficulty) * (reduced ? 0.7 : 1);
       if (tr.u >= 1 - window) catchTrick(0.3 * (1 - (1 - tr.u) / Math.max(1e-6, window)));
       else { toGround(); bail('flip-not-caught'); return; }
     }
@@ -1052,7 +1064,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     // Flip must be (nearly) caught to lock on.
     const tr = S.trick;
     if (tr && !tr.caught) {
-      const window = T.CATCH_WINDOW * (1 - 0.6 * tr.difficulty) * (reduced ? 0.7 : 1);
+      const window = T.CATCH_WINDOW * (1 - T.CATCH_DIFFICULTY * tr.difficulty) * (reduced ? 0.7 : 1);
       if (tr.u >= 1 - window) catchTrick(0.3 * (1 - (1 - tr.u) / Math.max(1e-6, window)));
       else return false;
     }
@@ -1148,7 +1160,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     g.seconds += dt; g.distance += g.speed * dt;
 
     // Balance: drifts away from centre; the stick pulls it back (balance>0 leans right → steer left).
-    const tip = (T.GRIND_TIP + T.GRIND_TIP_DIFF * g.difficulty) * (reduced ? 1.25 : 1);
+    const tip = (T.GRIND_TIP + T.GRIND_TIP_DIFF * g.difficulty) * (1 + T.GRIND_TIP_GROWTH * g.seconds) * (reduced ? 1.25 : 1);
     const wob = T.GRIND_WOBBLE * (1 + g.difficulty) * (driftSign(g.seed) + Math.sin(g.seconds * 2.7 + g.seed) + 0.5 * Math.sin(g.seconds * 6.3 + 2 * g.seed));
     S.balance += (tip * S.balance + wob + I.steer * T.GRIND_CONTROL) * dt;
     if (Math.abs(S.balance) > 1) {
