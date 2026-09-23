@@ -38,6 +38,10 @@ describe("the flag", () => {
     expect(harbourOwnsRoute({ room: "study", level: "below" }, "household", true)).toBe(true);
     expect(harbourOwnsRoute({ room: "study", level: "middle" }, "household", true)).toBe(true);
     expect(harbourOwnsRoute({ room: "kitchen-table", level: "above" }, "household", true)).toBe(true);
+    // The Atlas is a Harbour room; the Journey reached through it is the Path
+    // surface and must mount the map instead of re-opening the Atlas.
+    expect(harbourOwnsRoute({ room: "kitchen-table", level: "above", surface: "journey" }, "household", true)).toBe(false);
+    expect(harbourPlaceFor({ room: "kitchen-table", level: "above", surface: "journey" }, "household", true)).toBeNull();
     expect(harbourOwnsRoute({ room: "together", level: "middle" }, "household", true)).toBe(true);
     expect(harbourOwnsRoute({ room: "home", level: "middle" }, "personal", true)).toBe(false);
     expect(harbourOwnsRoute(null, "household", true)).toBe(false);
