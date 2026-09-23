@@ -1,6 +1,6 @@
 # Hearth worksession — the harbour within our journey
 
-- **Status:** OPEN
+- **Status:** CLOSED — local implementation verified; publication remains separate
 - **Opened:** 2026-09-23 (`America/Toronto`)
 - **Owner / decision owner:** Jonathan
 - **Assignee:** Codex integration; bounded Journey, character and companion implementers in separate worktrees, plus read-only audits
@@ -49,19 +49,33 @@ Jonathan chose an island anchored to the **current household chapter**, with pas
 - Current chapter resolution uses intended month, with Toronto current-month fallback. Journey contains a physical Harbour miniature; extra zoom and accessible controls cross scales. Browser verification caught the old Atlas route reclaiming Journey; the route now explicitly selects the Journey surface.
 - Local fictional preview: `http://127.0.0.1:4192/__review?member=MEM-001&seed=demo`. It uses a loopback authority and no hosted household. Previous preview on 4190 remains available.
 
-## Verification in progress
+## Verification
 
-TypeScript passed after correcting integration type mismatches. Focused route, motion, asset, companion, collision and rendering checks have been run while implementing; final quick-gate/build evidence will identify the consolidated source commit. Older village verification is not counted as proof for this follow-up.
+- **Consolidated source:** `b244c57dcd54a6a94e42529adbb7e26f39f76c36`, clean when the final gate started, against baseline `e2891196184b4a3bfa2ca636251f24f53a2015fc`. The closing handoff only adds documentation/evidence after this source commit.
+- **Required `pnpm test`: passed.** The affected-path quick gate selected 89 files: 885 tests in the fast lane plus 128 in the serial lane, **1,013 total**. Diff/AI surface checks and main TypeScript passed. Duration 351.3 seconds exceeded the advisory 300-second budget; the serial lane took 198.7 seconds. This is a passing gate with a disclosed time-budget breach, not an exhaustive full-suite run.
+- **Build: passed.** Workspace TypeScript, Vite production build (21.05 seconds), Hercules Pro UI build, generated player/viewer presence and the `dist/_redirects` absence check passed. Vite retains its large-chunk advisory; no threshold was raised. Windows-safe underlying build stages were used in place of the shell-specific cleanup wrapper.
+- **Focused regression proof:** all destination pairs in both render tiers; every visible road segment; actual wrapped Cellar arrival-to-stair traversal; shared companion navigation/animation targets and settling after distant errands; chapter intended-month handling; bidirectional Journey routes and scope; source paint preservation, avatar fit and already-aborted loads. Earlier failing small-world assumptions were updated; actual Cellar obstruction, companion loops and model conversion defects were corrected.
+- **Independent review:** separate read-only reviewers inspected the world/Journey/companion integration and the character conversion/geometry. Their findings led to the intended-month fix, painted-face preservation, measured anatomy and pre-cancelled-load cleanup. Final incremental review at `b244c57d` found no further blocker, including the single sharing-control mount. Reviewers' source inspection is distinct from root-run tests and browser proof.
+- **Browser:** fictional local app at 1440×900 and 390×844, with Classic, Taylor and Newfoundland checks, reduced motion, keyboard operation, readable fallback, quick travel and book return. Phone closest Journey zoom enters Harbour at the open household chapter; additional outward Harbour zoom returns to that chapter. Explicit controls and Journey close return correctly. Scope and saved position survive the crossing. Bank → All tools → Standing Book shows exact supported figures and returns to the Bank. Escape stops an active walking route. The repaired Cellar entrance is clear. The phone map retains the full sharing explanation/toggle without covering room controls; sharing remained off.
+- **Character/browser proof:** Jonathan idle/wave and Bianca walking inspected in the self-contained viewer, which now uses the real game pose implementation. Bianca completed the orchard-to-meadow route in the app; Hercules settled beside her. Final browser error log was empty. Character selection persisted across reload. Appearance restored to Classic / device motion / illustrated; temporary viewport override reset.
+- **Observed rendering, not a benchmark:** a resting full-tier meadow frame reported 42 draw calls, body 0.138 ms and renderer 1.19 ms. The island overview reported 352 draws, body 0.107 ms and renderer 2.30 ms. These are individual desktop-browser observations, not real-phone frame-rate guarantees. The two static player surfaces remain one primitive each and under 10,000 triangles.
+- **Source hygiene:** no new environment file, credential, workbook, chat, source archive or reference photo is tracked. Original checkout and old preview remain untouched. No push, PR, merge, deployment or hosted data operation was performed for this follow-up.
+
+Machine-readable gate/build/browser summary: [verification evidence](../evidence/harbour-open-world/verification.json).
 
 ## Acceptance
 
-- [ ] Roomy functional settlement and explorable terrain; routes/collision/shore heights agree.
-- [ ] Movement, companion and playable models work without obstructing budgeting or confusing real partner presence.
-- [ ] Journey current-chapter island and bidirectional zoom preserve scope, route and return position.
-- [ ] Quick tools and readable fallback remain complete.
-- [ ] Browser verification at phone/wide sizes, themes, keyboard/reduced motion and navigation cancellation.
-- [ ] Meaningful focused tests, current quick gate, build, independent review and performance/asset measurements.
+- [x] Roomy functional settlement and explorable terrain; routes/collision/shore heights agree.
+- [x] Movement, companion and playable models work without obstructing budgeting or confusing real partner presence.
+- [x] Journey current-chapter island and bidirectional zoom preserve scope, route and return position.
+- [x] Quick tools and readable fallback remain complete.
+- [x] Browser verification at phone/wide sizes, themes, keyboard/reduced motion and navigation cancellation.
+- [x] Meaningful focused tests, current quick gate, build, independent review and performance/asset measurements.
 
 ## Remaining uncertainty
 
-Implementation in progress. Model geometry/rig practicality and the current Journey navigation seam are under independent review. Real-device/two-device acceptance will be reported separately from local browser proof.
+Real-phone touch feel, thermal/battery behavior and two-device shared walking have not been accepted on physical devices. Supplied models are static authored surfaces on a procedural biped, not newly authored skeletal animation clips. Wider weather/season simulation and more spending-driven world evolution remain future work; no invented financial progression was added. Vite's bundle advisory and the quick-gate timing breach remain visible.
+
+## Next recommended action
+
+Jonathan's play-through of the new local preview, especially the short village routes and longer orchard/meadow paths, followed by a separately authorized follow-up PR. Keep financial meaning and immediate tools intact while refining the next world behaviors.

@@ -1,0 +1,209 @@
+{
+  "sourceSha": "b244c57dcd54a6a94e42529adbb7e26f39f76c36",
+  "environment": "fictional local Development preview; no hosted services",
+  "gate": {
+    "baseSha": "e2891196184b4a3bfa2ca636251f24f53a2015fc",
+    "changeFingerprint": "4ff01c1007b17d9412b100efd893dcffb9b97ab917dff22adb033e049b793da3",
+    "workingTreeClean": true,
+    "breachPhase": "vitest-serial",
+    "budgetMs": 300000,
+    "elapsedMs": 351341,
+    "slowestPhase": "vitest-serial",
+    "timeBudgetBreached": true,
+    "classification": "quick-gate-passed; time-budget-breached",
+    "focusReason": "Final expanded island, scoped Journey, intended-month Chapters, painted playable assets and fitted body, companion lifecycle, phone controls and budgeting authority",
+    "headSha": "b244c57dcd54a6a94e42529adbb7e26f39f76c36",
+    "phases": [
+      {
+        "elapsedMs": 139,
+        "name": "diff-check",
+        "status": "passed"
+      },
+      {
+        "elapsedMs": 687,
+        "name": "ai-surface",
+        "status": "passed"
+      },
+      {
+        "elapsedMs": 36892,
+        "name": "typescript",
+        "status": "passed"
+      },
+      {
+        "elapsedMs": 15774,
+        "name": "test-discovery",
+        "status": "passed"
+      },
+      {
+        "elapsedMs": 98876,
+        "name": "vitest-fast",
+        "status": "passed"
+      },
+      {
+        "elapsedMs": 198685,
+        "name": "vitest-serial",
+        "status": "passed"
+      }
+    ],
+    "risk": "medium-high",
+    "selectedTests": [
+      "test/app-startup-p1.test.ts",
+      "test/command-contract.test.ts",
+      "test/command-runtime.test.ts",
+      "test/fund-model-selectors.test.ts",
+      "test/harbour-arrival.test.ts",
+      "test/harbour-assets.test.ts",
+      "test/harbour-body.test.ts",
+      "test/harbour-camera-poses.test.ts",
+      "test/harbour-compass-ui.test.ts",
+      "test/harbour-door-signs.test.ts",
+      "test/harbour-dressing.test.ts",
+      "test/harbour-hercules.test.ts",
+      "test/harbour-island-dressing.test.ts",
+      "test/harbour-journey.test.ts",
+      "test/harbour-open-world.test.ts",
+      "test/harbour-pathfinder.test.ts",
+      "test/harbour-place-flat-ui.test.ts",
+      "test/harbour-playable-characters.test.ts",
+      "test/harbour-queen-touch.test.ts",
+      "test/harbour-quick-sheet-ui.test.ts",
+      "test/harbour-reading.test.ts",
+      "test/harbour-source-fences.test.ts",
+      "test/harbour-travel.test.ts",
+      "test/harbour-walk-everywhere.test.ts",
+      "test/harbour-world-frame.test.ts",
+      "test/hearthside-actual-app-browser.test.ts",
+      "test/hearthside-actual-app-v2-browser.test.ts",
+      "test/hearthside-bank-ack-recovery.test.ts",
+      "test/hearthside-bank-journey-runtime.test.ts",
+      "test/hearthside-bank-journey-ui.test.ts",
+      "test/hearthside-bank-journey.test.ts",
+      "test/hearthside-bank-legacy-ui.test.ts",
+      "test/hearthside-collaboration.test.ts",
+      "test/hearthside-contracts.test.ts",
+      "test/hearthside-journeys.test.ts",
+      "test/hearthside-workspace-authority.test.ts",
+      "test/hearthside-workspace-browser.test.ts",
+      "test/hearthside-workspace-runtime.test.ts",
+      "test/hearthside-workspace.test.ts",
+      "test/hercules-play.test.ts",
+      "test/home-feedback-ui.test.ts",
+      "test/house-routes.test.ts",
+      "test/house-shell-ui.test.ts",
+      "test/house-world-camera.test.ts",
+      "test/journey-focus.test.ts",
+      "test/journey-fullscreen-ui.test.ts",
+      "test/journey-game-mode-ui.test.ts",
+      "test/journey-integrated-ui.test.ts",
+      "test/journey-loader-recovery.test.ts",
+      "test/journey-mini-model.test.ts",
+      "test/journey-mini-story.test.ts",
+      "test/journey-mini-ui.test.ts",
+      "test/kitty-banks.test.ts",
+      "test/kitty-envelope-ui.test.ts",
+      "test/kitty-envelope.test.ts",
+      "test/kitty-studio-ui.test.ts",
+      "test/kitty-studio.test.ts",
+      "test/ledger-sync-authority.test.ts",
+      "test/ledger-sync-backup.test.ts",
+      "test/month-rehearsal-mainline.test.ts",
+      "test/our-path-world-ui.test.ts",
+      "test/our-path-world.test.ts",
+      "test/path-bridges.test.ts",
+      "test/path-footpaths.test.ts",
+      "test/path-minimap.test.ts",
+      "test/path-stones.test.ts",
+      "test/path-weather.test.ts",
+      "test/plan-life-contract.test.ts",
+      "test/plan-life-ui.test.ts",
+      "test/plan-system.test.ts",
+      "test/plan-v3-fund-model.test.ts",
+      "test/proof-matrix.test.ts",
+      "test/queens-nest-ui.test.ts",
+      "test/renderer-owner.test.ts",
+      "test/time-machine-ui.test.ts",
+      "test/village-court-paving.test.ts",
+      "test/village-court-walk.test.ts",
+      "test/village-runtime-camera.test.ts",
+      "test/vision-v2-chapters.test.ts",
+      "test/workspace-action-options-authority.test.ts",
+      "test/workspace-action-options.test.ts",
+      "test/workspace-command-authority.test.ts",
+      "test/workspace-contracts.test.ts",
+      "test/workspace-links.test.ts",
+      "test/workspace-merge-review-browser.test.ts",
+      "test/workspace-merge-review-client.test.ts",
+      "test/workspace-merge-review-runtime.test.ts",
+      "test/workspace-trust.test.ts",
+      "test/workspace-ui.test.ts"
+    ],
+    "uiProofRequired": true
+  },
+  "tests": {
+    "exhaustiveFullSuite": false,
+    "total": 1013,
+    "files": 89,
+    "fast": 885,
+    "serial": 128
+  },
+  "build": {
+    "playerAssetsAndOfflineViewerPresent": true,
+    "redirectsAbsent": true,
+    "workspaceTypeScript": "passed",
+    "mainTypeScript": "passed in gate",
+    "vite": "passed",
+    "herculesProUi": "passed",
+    "largeChunkAdvisory": true,
+    "viteSeconds": 21.05
+  },
+  "browser": {
+    "themes": [
+      "classic",
+      "taylor",
+      "newfoundland"
+    ],
+    "viewportRestored": true,
+    "sizes": [
+      "1440x900",
+      "390x844"
+    ],
+    "appearanceRestored": true,
+    "preview": "http://127.0.0.1:4192/__review?member=MEM-001&seed=demo",
+    "checks": [
+      "chapter-anchored bidirectional zoom",
+      "explicit Journey entry and close",
+      "saved route and position return",
+      "Bank quick tools and exact Standing Book figures",
+      "reading edition destinations",
+      "keyboard and Escape cancellation",
+      "reduced motion",
+      "Cellar entrance clearance",
+      "phone map sharing control stays off",
+      "source-colored fitted characters",
+      "orchard-to-meadow walk and companion settling"
+    ],
+    "finalErrorCount": 0
+  },
+  "rendererObservations": [
+    {
+      "view": "resting meadow, full tier",
+      "drawCalls": 42,
+      "renderMs": 1.19,
+      "bodyMs": 0.138
+    },
+    {
+      "view": "island overview, full tier",
+      "drawCalls": 352,
+      "renderMs": 2.3,
+      "bodyMs": 0.107
+    }
+  ],
+  "limitations": [
+    "Individual desktop frame observations are not a real-phone benchmark.",
+    "Physical-phone touch and thermal behavior not accepted.",
+    "Two-device shared walking not accepted.",
+    "Broader weather and seasonal simulation remains future work.",
+    "Quick gate exceeded its advisory five-minute budget.",
+    "No follow-up push, PR, merge or deployment."
+  ]
+}
