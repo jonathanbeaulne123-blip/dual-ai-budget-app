@@ -180,12 +180,12 @@ export function createSkateFx(opts: { tier?: FxTier; theme?: LookTheme; seed?: n
       // Grinding: sparks off metal, wax dust off ledges and benches.
       if (p.phase === 'grind' && scale > 0) {
         const metal = grindKind ? METAL.has(grindKind) : p.surface === 'metal';
-        sparkDebt += dt * (metal ? 42 : 16) * Math.min(1.5, .4 + (p.speed || 0) / 6) * (tier === 'full' ? 1 : .5);
+        sparkDebt += dt * (metal ? 56 : 16) * Math.min(1.5, .4 + (p.speed || 0) / 6) * (tier === 'full' ? 1 : .5);
         const back = -Math.sin(p.heading), backZ = -Math.cos(p.heading);
         while (sparkDebt >= 1) {
           sparkDebt -= 1;
           const s = 1 + rand() * 2.2;
-          if (metal) emit(sparks, at.grind.x, at.grind.y, at.grind.z, back * s + (rand() - .5) * 1.6, .6 + rand() * 1.6, backZ * s + (rand() - .5) * 1.6, .22 + rand() * .2, .011 + rand() * .008, P.spark[Math.floor(rand() * P.spark.length)]!, Math.atan2(back, backZ));
+          if (metal) emit(sparks, at.grind.x, at.grind.y, at.grind.z, back * s + (rand() - .5) * 1.6, .6 + rand() * 1.6, backZ * s + (rand() - .5) * 1.6, .24 + rand() * .2, .016 + rand() * .01, P.spark[Math.floor(rand() * P.spark.length)]!, Math.atan2(back, backZ));
           else emit(flecks, at.grind.x, at.grind.y, at.grind.z, back * s * .4 + (rand() - .5) * .5, .3 + rand() * .5, backZ * s * .4 + (rand() - .5) * .5, .45, .018 + rand() * .01, P.wax);
         }
       } else sparkDebt = 0;

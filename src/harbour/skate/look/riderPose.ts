@@ -47,7 +47,7 @@ export const STANCE = Object.freeze({
   frontZ: SHOE.frontZ, backZ: SHOE.backZ, frontAngle: SHOE.frontAngle, backAngle: SHOE.backAngle,
   hipX: -.012, hipZ: -.012, pitch: .16, yaw: .62, headPitch: .16,
   /** Hip height above the deck as a fraction of the straight leg (hip pivot to sole). */
-  hip: .87, crouch: .6, tuck: .86,
+  hip: .855, crouch: .6, tuck: .86,
   /** Where each knee points (rad from straight across toward the nose): the back knee turns in. */
   frontKnee: .5, backKnee: .62,
 });
