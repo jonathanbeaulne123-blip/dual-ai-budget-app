@@ -1,8 +1,11 @@
 import {crossedVillageDoor,villagePortalArrival} from "../village/topology.ts";
 import * as THREE from "three";
 import {buildSkatePark} from '../skate/parkScene.ts';
-import type {SkateControls} from '../skate/rider.ts';
-import type {SkateSnapshot} from '../skate/session.ts';
+import {skateField,type SkateControls} from '../skate/driver.ts';
+import type {SkateProgress} from '../skate/session.ts';
+import {createHudThrottle,type SkateHudModel} from '../skate/hud/model.ts';
+import {createSkateCamera,skateCameraPose,type SkateCamera} from '../skate/camera/skateCamera.ts';
+import {ISLAND_BUILDINGS} from '../body/obstacles.ts';
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import { worldDiagnostics } from "../../house/world/diagnostics.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
@@ -49,10 +52,24 @@ export type HarbourGesture = { region: string; samples: GestureSample[] };
 /** A DOM twin's place on the stage, in stage pixels, already clamped inside it and grown to 44 px. */
 export type ProjectedRect = { id: string; kind: "region" | "anchor"; group: string; label: string; x: number; y: number; w: number; h: number; visible: boolean; door?: Anchor["door"] };
 
+/** What the runtime publishes to the shell while skating (`onSkate`). */
+export type SkateFrame = { model: SkateHudModel; progress: SkateProgress; revision: number };
+
+/** Is (x, z) inside a building footprint (for the skate camera's eye probe)? */
+function insideBuilding(x: number, z: number): boolean {
+  for (const o of ISLAND_BUILDINGS) {
+    if (o.kind === "circle") { if (Math.hypot(x - o.x, z - o.z) < o.r) return true; }
+    else if (o.kind === "box") { if (x > o.minX && x < o.maxX && z > o.minZ && z < o.maxZ) return true; }
+    else { const c = Math.cos(o.yaw), s = Math.sin(o.yaw), dx = x - o.x, dz = z - o.z, lx = dx * c - dz * s, lz = dx * s + dz * c; if (Math.abs(lx) < o.halfX && Math.abs(lz) < o.halfZ) return true; }
+  }
+  return false;
+}
+
 export type HarbourCallbacks = {
   onJourney?:()=>void;
   avatar?:PlayableAvatar|null;
-  onSkate?: (snapshot:SkateSnapshot|null)=>void;
+  /** Tideline Skate Club: the HUD model (throttled) and the progress to save, or null when the board is put away. */
+  onSkate?: (frame:SkateFrame|null)=>void;
   onReady: () => void;
   onFailure: () => void;
   onProject?: (rects: ProjectedRect[]) => void;
@@ -358,8 +375,31 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const animators = new Set<(t: number, dt: number) => void>();
   const rig = createLightRig(scene, dressing.light, tier);
   const ground = createGround(scene, dressing, tier);
-  const skatePark=buildSkatePark(dressing);scene.add(skatePark.group);
-  let skatePublishedAt=0,hadSkate=false;
+  // ── Tideline Skate Club v2 ── one field: the park you see is the park you ride.
+  const skatePark=buildSkatePark(dressing,{tier,field:skateField()});scene.add(skatePark.group);
+  const skateThrottle=createHudThrottle(100);
+  let skateBuiltAt=-Infinity,hadSkate=false;
+  /**
+   * Hand the shell the HUD model: built at most every 50 ms (or at once on a
+   * sim event), published through the throttle (urgent changes at once), and
+   * `force` for pause/enable/route changes the shell must see immediately.
+   */
+  function publishSkate(now:number,force=false):void{
+    const one=walker?.skate;
+    if(!one?.active()){
+      if(hadSkate){hadSkate=false;skateThrottle.reset();skatePark.update(null);callbacks.onSkate?.(null);}
+      return;
+    }
+    if(!force&&now-skateBuiltAt<50&&!one.events().length)return;
+    skateBuiltAt=now;
+    const model=one.hud();if(!model)return;
+    const out=force?(skateThrottle.reset(),skateThrottle.offer(model,now)):skateThrottle.offer(model,now);
+    if(!out)return;
+    hadSkate=true;
+    skatePark.update(out.run?{run:{id:out.run.id,checkpoint:out.run.gate,finished:out.run.finished}}:null);
+    const progress=one.progress();
+    if(progress)callbacks.onSkate?.({model:out,progress,revision:one.revision()});
+  }
   // A place says something in it changed: the twins' tables are read again.
   const invalidate = () => { if (!disposed) { dirty = true; listsDirty = true; schedule(); } };
   let reading: PlaceReading | null = callbacks.reading ?? null;
@@ -589,7 +629,15 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   let walker: Walker | null = null;
   let follow: FollowCamera | null = null;
   let following = false;
-  let skateCamera = false, skateCameraReset = false;
+  /**
+   * The skate chase camera (SHOW `camera/skateCamera.ts`). It writes the
+   * PerspectiveCamera on skate frames; the follow camera keeps its subject so
+   * the hand-back when the board goes away is seamless. Mouse drag is the
+   * board stick while skating, so the chase camera has no orbit (decision
+   * 2026-09-23): it frames the line itself.
+   */
+  let skateCam: SkateCamera | null = null;
+  let skateCamera = false;
   let selectedAvatar=callbacks.avatar??null;
   let cat:Cat|null=null,errand:CatErrand|null=null,errandKey:string|null=null;
   let catCatchUpAt=0,zoomOverscroll=0,journeyRequested=false;
@@ -632,7 +680,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
       follow.setHold(followHoldIn(holdFor(placeId), room));
       const reach = walksIndoors(placeId) ? roomReach(room) : null;
-      follow.setPlan(reach === null ? walker?.skate.active()?{r:6.2,phi:1.22}:null : followInRoom(reach, composition));
+      follow.setPlan(reach === null ? null : followInRoom(reach, composition));
       // Configuring the inactive walking rig must not take over the room view.
       if(!following){camera.position.copy(eye);camera.quaternion.copy(orientation);camera.fov=fov;camera.updateProjectionMatrix();}
     }
@@ -664,7 +712,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       tier,
       start,
       reduced: reducedMotion(),
-      avatar:selectedAvatar,invalidate,
+      avatar:selectedAvatar,invalidate,theme,
     });
     scene.add(walker.group);
     const stood=walker.state();
@@ -672,6 +720,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     scene.add(cat.group);errandKey=null;
     const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
     follow = createFollowCamera({ camera, composition, reduced: reducedMotion(), fov: fovFor(composition), groundHeightAt: (x, z) => bodyGround(x, z) });
+    skateCam = createSkateCamera({ ground: (x, z) => bodyGround(x, z) });
     host.dataset.harbourBody = "standing";
     standBody();
     refreshErrand();
@@ -693,7 +742,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (Math.abs(camera.fov - fovFor(composition)) > 1e-3) { camera.fov = fovFor(composition); camera.updateProjectionMatrix(); }
       court.restore(camera.position.toArray() as Vec3);
     }
-    walker?.dispose(); walker = null; follow = null; bodyInput = NO_INPUT;
+    if(hadSkate){hadSkate=false;skateThrottle.reset();callbacks.onSkate?.(null);}
+    walker?.dispose(); walker = null; follow = null; skateCam = null; skateCamera = false; bodyInput = NO_INPUT;
     cat?.dispose();cat=null;
     bodyExits = []; exitArmed = false;
     delete host.dataset.harbourBody;
@@ -707,7 +757,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if (wanted && walker && follow) {
       const at = walker.state();
       host.dataset.houseBody=JSON.stringify({place:placeId,x:at.x,z:at.z,yaw:at.yaw});
-      follow.setSubject({ x: at.x, y: walker.skate.active()?at.y+.15:eyeHeight(at), z: at.z, yaw: walker.skate.heading()??at.yaw, speed: at.speed, air: at.air });
+      follow.setSubject({ x: at.x, y: walker.skate.active()?at.y+.28:eyeHeight(at), z: at.z, yaw: walker.skate.heading()??at.yaw, speed: at.speed, air: at.air });
       // Start from where the Look camera stands, so this is a move, not a cut.
       follow.seed(court.pose());
     } else {
@@ -970,9 +1020,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // saying it is still moving.
     let bodyMoving = false;
     if (walker && follow) {
-      if(walker.skate.active()!==skateCamera){
-        skateCamera=walker.skate.active();
-        if(placeId==='court')follow.setPlan(skateCamera?{r:6.2,phi:1.22}:null);
+      const skating = walker.skate.active() && placeId === 'court';
+      if(skating!==skateCamera){
+        // The board went away: the walking camera picks up exactly where the chase camera was.
+        if(!skating&&skateCam&&following){follow.seed(skateCameraPose(skateCam.frame()));if(Math.abs(camera.fov-fovFor(composition))>1e-3){camera.fov=fovFor(composition);camera.updateProjectionMatrix();}}
+        skateCamera=skating;
       }
       const began = diagnostics ? performance.now() : 0;
       const drive = stickInput ?? bodyInput;
@@ -989,15 +1041,31 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const heading = following ? follow.basis() : court.pose().theta;
       bodyMoving = walker.step(dt, (now - mountedAt) / 1000, heading);
       if(walker.skate.active()||hadSkate){
-        if(now-skatePublishedAt>=100||!walker.skate.active()){
-          const snapshot=walker.skate.snapshot();skatePark.update(snapshot);callbacks.onSkate?.(snapshot);skatePublishedAt=now;hadSkate=Boolean(snapshot);
-        }
+        // A controller's Start is read inside the step; the book follows at once.
+        const wasPaused=walker.skate.paused();
+        publishSkate(now,false);
+        if(walker.skate.paused()!==wasPaused)publishSkate(now,true);
       }
       if (walker.walking()) setFollowing(true);
       const at = walker.state();
       host.dataset.houseBody=JSON.stringify({place:placeId,x:at.x,z:at.z,yaw:at.yaw});
-      follow.setSubject({ x: at.x, y: walker.skate.active()?at.y+.15:eyeHeight(at), z: at.z, yaw: walker.skate.heading()??at.yaw, speed: at.speed, air: at.air });
-      if(skateCameraReset){follow.snap();skateCameraReset=false;}
+      follow.setSubject({ x: at.x, y: walker.skate.active()?at.y+.28:eyeHeight(at), z: at.z, yaw: walker.skate.heading()??at.yaw, speed: at.speed, air: at.air });
+      // ── The skate chase camera ── writes the camera on skate frames.
+      const ridden = skating && following && skateCam ? walker.skate.present() : null;
+      if (ridden && skateCam) {
+        if (walker.skate.takeCut()) skateCam.snap(ridden);
+        skateCam.setDistance(walker.skate.current()?.camera === 'far' ? 'far' : 'near');
+        const f = skateCam.update(ridden, walker.skate.events(), dt, {
+          aspect: camera.aspect, reducedMotion: reducedMotion() || walker.skate.current()?.reducedEffects === true,
+          blocked: (x, y, z) => y < skatePark.field.heightAt(x, z) + .05 || (y < 6 && insideBuilding(x, z)),
+        });
+        camera.position.set(f.position[0], f.position[1], f.position[2]);
+        camera.up.set(0, 1, 0);
+        camera.lookAt(f.target[0], f.target[1], f.target[2]);
+        if (f.roll) camera.rotateZ(f.roll);
+        if (Math.abs(camera.fov - f.fov) > 1e-3) { camera.fov = f.fov; camera.updateProjectionMatrix(); }
+        bodyMoving = true;
+      }
       // ── The three lanes together ── streaming follows the **character**, not
       // the camera. `followCamera()` keeps the focus on the Look camera's
       // target only until a body exists to stand somewhere; from the first
@@ -1009,7 +1077,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // handing those to the streamer would raise the Library because the
       // Cellar's stair happens to be near where the Library stands.
       if (onIsland(placeId)) { bodyDriven = true; focus[0] = at.x; focus[1] = at.z; thresholds(); }
-      if (following && follow.tick(dt)) bodyMoving = true;
+      if (following && !ridden && follow.tick(dt)) bodyMoving = true;
       // ── walking out of a room (walk-everywhere) ──
       // The way out of an unplaced room is its own stair or door, and reaching
       // it fires the very route change tapping it fires.
@@ -1092,8 +1160,24 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     render(); schedule();
   }
 
+  /**
+   * ── Tideline Skate Club v2 ── while the board is down a mouse/pen drag on
+   * the stage IS the board stick (flick-it) and the right button the back-hand
+   * grab: the input track reads them; nothing orbits and nothing walks. Touch
+   * rides through the HUD's own zones instead.
+   */
+  function skatePointer(event: PointerEvent, phase: "down" | "move" | "up" | "cancel"): boolean {
+    const input = walker?.skate.active() && placeId === "court" && !toolOpen ? walker.skate.input() : null;
+    if (!input || event.pointerType === "touch") return false;
+    if (phase === "down") { if (!input.pointerDown(event)) return false; try { host.setPointerCapture(event.pointerId); } catch { /* jsdom */ } event.preventDefault(); setFollowing(true); schedule(); return true; }
+    const used = phase === "move" ? input.pointerMove(event) : phase === "up" ? input.pointerUp(event) : input.pointerCancel(event);
+    if (used && phase !== "move") { try { host.releasePointerCapture(event.pointerId); } catch { /* jsdom */ } }
+    return used;
+  }
+  function onContextMenu(event: MouseEvent): void { if (walker?.skate.active()) event.preventDefault(); }
   function onPointerDown(event: PointerEvent): void {
     if (disposed || (event.target instanceof Element && event.target.closest("button,a,input,select,textarea,[role=button]"))) return;
+    if (skatePointer(event, "down")) return;
     const { x, y, bounds } = stagePoint(event);
     const hit = pointers.size === 0 ? resolveHit(x, y, bounds) : { kind: "none" as const };
     pointers.set(event.pointerId, { id: event.pointerId, x, y, startX: x, startY: y, startedAt: performance.now(), hit, samples: [{ x, y, t: 0 }] });
@@ -1103,6 +1187,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     moved();
   }
   function onPointerMove(event: PointerEvent): void {
+    if (skatePointer(event, "move")) return;
     const pointer = pointers.get(event.pointerId); if (!pointer) return;
     const { x, y } = stagePoint(event);
     const dx = x - pointer.x, dy = y - pointer.y; pointer.x = x; pointer.y = y;
@@ -1130,6 +1215,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     schedule();
   }
   function onPointerEnd(event: PointerEvent): void {
+    if (skatePointer(event, event.type === "pointercancel" ? "cancel" : "up")) return;
     const pointer = pointers.get(event.pointerId); if (!pointer) return;
     pointers.delete(event.pointerId); pinchDistance = 0;
     try { host.releasePointerCapture(event.pointerId); } catch { /* jsdom */ }
@@ -1173,9 +1259,10 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   host.addEventListener("pointerup", onPointerEnd);
   host.addEventListener("pointercancel", onPointerEnd);
   host.addEventListener("wheel", onWheel, { passive: false });
+  host.addEventListener("contextmenu", onContextMenu);
   const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(resize) : null; observer?.observe(host);
-  const intersection = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); if (visible) { previous = performance.now(); schedule(); } else { walker?.skate.pause(true);bodyInput=NO_INPUT;callbacks.onSkate?.(walker?.skate.snapshot()??null);lease.cancelFrame(frame); frame = 0; } }) : null; intersection?.observe(host);
-  const visibility = () => { if (document.hidden) { walker?.skate.pause(true);bodyInput=NO_INPUT;callbacks.onSkate?.(walker?.skate.snapshot()??null);lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
+  const intersection = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); if (visible) { previous = performance.now(); schedule(); } else { walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } }) : null; intersection?.observe(host);
+  const visibility = () => { if (document.hidden) { walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
   // ── The body lane (world-body) ── reduced motion cuts the follow camera
   // rather than swinging it. The character still walks: that is the app.
   const onReduced = () => {
@@ -1249,7 +1336,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     },
     // ── The body lane (world-body) ── a tool in front of the place turns the
     // stage into a door strip: the follow camera gives the view back for it.
-    setToolOpen(open) { toolOpen = open; if (open) {walker?.skate.pause(true);setFollowing(false);} schedule(); },
+    setToolOpen(open) { toolOpen = open; if (open) {walker?.skate.pause(true);publishSkate(performance.now(),true);setFollowing(false);} schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
     invalidate() { settling = true; dirty = true; listsDirty = true; if(walker)standBody(); previous = performance.now(); schedule(); },
     addAnimator(animate) { animators.add(animate); listsDirty = true; schedule(); return () => { animators.delete(animate); }; },
@@ -1288,14 +1375,14 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       return {
         skate: {
           ...one.skate,
-          restore(checkpoint){if(placeId!=='court')return;one.skate.restore(checkpoint);setFollowing(true);skateCameraReset=true;callbacks.onSkate?.(one.skate.snapshot());moved();},
-          enable(on,progress){if(on&&placeId!=='court')return false;const result=one.skate.enable(on,progress);if(on){setFollowing(true);skateCameraReset=true;}callbacks.onSkate?.(one.skate.snapshot());moved();return result;},
-          action(action){one.skate.action(action);if(action==='respawn')skateCameraReset=true;moved();},
-          hold(input){one.skate.hold(input);if(input.push||input.steer)setFollowing(true);moved();},
-          pause(on){one.skate.pause(on);callbacks.onSkate?.(one.skate.snapshot());moved();},
-          route(id){one.skate.route(id);setFollowing(true);skateCameraReset=true;previousDoorPoint=null;callbacks.onSkate?.(one.skate.snapshot());moved();},
-          spot(id){one.skate.spot(id);setFollowing(true);skateCameraReset=true;previousDoorPoint=null;callbacks.onSkate?.(one.skate.snapshot());moved();},
-          deck(id){one.skate.deck(id);callbacks.onSkate?.(one.skate.snapshot());moved();},
+          restore(checkpoint){if(placeId!=='court')return;one.skate.restore(checkpoint);setFollowing(true);publishSkate(performance.now(),true);moved();},
+          enable(on,progress){if(on&&placeId!=='court')return false;const result=one.skate.enable(on,progress);if(on)setFollowing(true);publishSkate(performance.now(),true);moved();return result;},
+          pause(on){one.skate.pause(on);publishSkate(performance.now(),true);moved();},
+          route(id){one.skate.route(id);setFollowing(true);previousDoorPoint=null;publishSkate(performance.now(),true);moved();},
+          spot(id){one.skate.spot(id);setFollowing(true);previousDoorPoint=null;publishSkate(performance.now(),true);moved();},
+          deck(id){one.skate.deck(id);publishSkate(performance.now(),true);moved();},
+          settings(patch){one.skate.settings(patch);publishSkate(performance.now(),true);moved();},
+          command(c){one.skate.command(c);setFollowing(true);publishSkate(performance.now(),true);moved();},
         },
         following: () => following,
         follow(on) { setFollowing(on); if (!on) { aim("court"); } moved(); },
@@ -1395,7 +1482,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       disposed = true; abort.abort();
       if (stick) { stick = null; callbacks.onStick?.(null); }
       lease.cancelFrame(frame);
-      host.removeEventListener("pointerdown", onPointerDown); host.removeEventListener("pointermove", onPointerMove); host.removeEventListener("pointerup", onPointerEnd); host.removeEventListener("pointercancel", onPointerEnd); host.removeEventListener("wheel", onWheel);
+      host.removeEventListener("pointerdown", onPointerDown); host.removeEventListener("pointermove", onPointerMove); host.removeEventListener("pointerup", onPointerEnd); host.removeEventListener("pointercancel", onPointerEnd); host.removeEventListener("wheel", onWheel); host.removeEventListener("contextmenu", onContextMenu);
       observer?.disconnect(); intersection?.disconnect(); comfortObserver?.disconnect();
       document.removeEventListener("visibilitychange", visibility); reduced.removeEventListener("change", onReduced); removeLost();
       for (const id of [...live.keys()]) pull(id);

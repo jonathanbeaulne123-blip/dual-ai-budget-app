@@ -1,29 +1,23 @@
 /**
  * Tideline Skate Club v2 HUD — a crafted paper object that reads like a skate game.
  *
- * v2 props: pass `model` (from `buildHudModel`, throttled by
- * `createHudThrottle`) plus the callbacks. Until integration swaps the sim,
- * HarbourWorld's v1 props still work: with no `model`, the HUD adapts the v1
- * `snapshot` itself (hud/legacy.ts) and drives v1 audio from it.
- * See hud/NOTES-show.md for the full contract.
+ * Pass `model` (from `buildHudModel`, throttled by `createHudThrottle` in the
+ * runtime) plus the callbacks; `null` shows the entry button. Sound is the
+ * shell's: `onSettings({sound})` arrives inside the click so it can create the
+ * AudioContext there. See hud/NOTES-show.md for the full contract.
  */
 import {useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode} from 'react';
 import type {Stance} from './contract.ts';
 import type {SkateDeckId, SkateRouteId, SkateSpotId} from './park.ts';
-import type {SkateSettings, SkateSnapshot} from './session.ts';
-import type {SkateAction, SkateInput} from './skateModel.ts';
-import {createSkateAudio, type SkateAudio} from './audio.ts';
-import {buildHudModel, createLiveAnnouncer, deviceFromEvent, formatPoints, type ControlHintSet, type InputDevice, type SkateHudModel, type TouchZone} from './hud/model.ts';
-import {createLegacyHudAdapter} from './hud/legacy.ts';
+import type {SkateSettings} from './session.ts';
+import {createLiveAnnouncer, formatPoints, type SkateHudModel, type TouchZone} from './hud/model.ts';
 import {BalanceArc, Hints, LineTicker, NoticeSlip, Radar, RideBadge, RouteCard, SpotBanner, TouchLayout} from './hud/parts.tsx';
 import {PauseBook, type BookTab, type TrickBook} from './hud/PauseBook.tsx';
 import './skate.css';
 
 export type SkateHUDProps = {
-  /** v2: the HUD model. `null` = not skating (shows the entry button). Leave undefined to use the v1 `snapshot`. */
-  model?: SkateHudModel | null;
-  /** v1 compatibility (HarbourWorld today). Ignored when `model` is provided. */
-  snapshot?: SkateSnapshot | null;
+  /** The HUD model. `null` = not skating (shows the entry button). */
+  model: SkateHudModel | null;
   onStart(): void;
   onWalk(): void;
   /** Pause the ride. The HUD opens its book while paused and calls onPause(false) when closed. */
@@ -32,63 +26,26 @@ export type SkateHUDProps = {
   onSpot(id: SkateSpotId): void;
   onDeck(id: SkateDeckId): void;
   /** Settings changed in the book. Turning sound on arrives inside the click: create the AudioContext synchronously there. */
-  onSettings?(patch: Partial<SkateSettings>): void;
+  onSettings(patch: Partial<SkateSettings>): void;
   /** Retry (back to marker) and set marker. */
-  onCommand?(command: 'respawn' | 'marker'): void;
+  onCommand(command: 'respawn' | 'marker'): void;
   /** Raw pointer events from touch slots (down/move/up/cancel); the input track interprets them. */
   onZonePointer?(zone: TouchZone, event: ReactPointerEvent<HTMLElement>): void;
   /** SVG path ("-1 -1 2 2" box, y down toward the tail) of a flip's gesture, per stance. */
   gesturePath?(flipId: string, stance: Stance): string | null;
   trickBook?: TrickBook;
-  /** Device-specific hint overrides from the input track. Only used in v1 mode (v2 bakes them into the model). */
-  hints?: ControlHintSet;
   onFocus(): void;
   partnerName?: string | null;
   saveFailed?: boolean;
   presence?: ReactNode;
-  /** v1 only. */
-  onAction?(action: SkateAction): void;
-  onHold?(input: Partial<SkateInput>): void;
 };
 
-function initialDevice(): InputDevice {
-  try { return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches ? 'touch' : 'keyboard'; } catch { return 'keyboard'; }
-}
 function prefersReduced(): boolean {
   try { return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
 }
 
 export function SkateHUD(p: SkateHUDProps) {
-  const legacyMode = p.model === undefined;
-  const [device, setDevice] = useState<InputDevice>(initialDevice);
-  const [legacySettings, setLegacySettings] = useState<Partial<SkateSettings>>({});
-  const adapter = useMemo(() => createLegacyHudAdapter(), []);
-  const audio = useRef<SkateAudio | null>(null);
-  const lastFrameAt = useRef(0);
-
-  // v1 → v2: adapt the snapshot, and run v1 audio from it.
-  const legacy = useMemo(() => legacyMode ? adapter.frame(p.snapshot ?? null, device) : null, [legacyMode, adapter, p.snapshot, device]);
-  const model: SkateHudModel | null = useMemo(() => {
-    if (!legacyMode) return p.model ?? null;
-    if (!legacy) return null;
-    const src = legacy.source;
-    const settings = {...src.session.progress.settings, ...legacySettings};
-    return buildHudModel({...src, hints: p.hints, session: {...src.session, progress: {...src.session.progress, settings}}});
-  }, [legacyMode, p.model, legacy, legacySettings, p.hints]);
-  useEffect(() => {
-    if (!legacyMode || !legacy) return;
-    const now = performance.now(), dt = Math.min(0.25, (now - (lastFrameAt.current || now)) / 1000); lastFrameAt.current = now;
-    audio.current?.update(legacy.present, legacy.events, dt, {paused: legacy.source.paused});
-  }, [legacyMode, legacy]);
-  useEffect(() => () => { audio.current?.dispose(); audio.current = null; }, []);
-
-  // Which device is in use (v1 mode only; v2 gets it from the input track through the model).
-  useEffect(() => {
-    if (!legacyMode) return;
-    const seen = (e: Event) => { const d = deviceFromEvent(e as Event & {pointerType?: string}); if (d) setDevice(prev => prev === d ? prev : d); };
-    window.addEventListener('keydown', seen, true); window.addEventListener('pointerdown', seen, true);
-    return () => { window.removeEventListener('keydown', seen, true); window.removeEventListener('pointerdown', seen, true); };
-  }, [legacyMode]);
+  const model = p.model;
 
   // The book: open while paused. `tab` remembers where you were.
   const [tab, setTab] = useState<BookTab>('explore'), [bookOpen, setBookOpen] = useState(false);
@@ -115,30 +72,8 @@ export function SkateHUD(p: SkateHUDProps) {
     return () => window.clearInterval(timer);
   }, [announcer]);
 
-  function settings(patch: Partial<SkateSettings>) {
-    if (p.onSettings) p.onSettings(patch);
-    else {
-      setLegacySettings(prev => ({...prev, ...patch}));
-      if (patch.sound === true && !audio.current) { try { audio.current = createSkateAudio(); } catch { audio.current = null; } }
-      if (patch.sound === false) { audio.current?.dispose(); audio.current = null; }
-    }
-  }
-  function command(c: 'respawn' | 'marker') { if (p.onCommand) p.onCommand(c); else p.onAction?.(c); p.onFocus(); }
-  // v1 fallback for the touch slots (the v2 input track provides onZonePointer).
-  const zoneFallback = useRef<{steerId: number | null; x0: number}>({steerId: null, x0: 0});
-  function zone(z: TouchZone, e: ReactPointerEvent<HTMLElement>) {
-    if (p.onZonePointer) { p.onZonePointer(z, e); return; }
-    const down = e.type === 'pointerdown', up = e.type === 'pointerup' || e.type === 'pointercancel' || e.type === 'lostpointercapture';
-    const f = zoneFallback.current;
-    if (z === 'push') p.onHold?.(down ? {push: 1} : up ? {push: 0} : {});
-    else if (z === 'brake') p.onHold?.(down ? {brake: true} : up ? {brake: false} : {});
-    else if (z === 'left') {
-      if (down) { f.steerId = e.pointerId; f.x0 = e.clientX; }
-      if (f.steerId === e.pointerId) p.onHold?.({steer: up ? 0 : Math.max(-1, Math.min(1, (e.clientX - f.x0) / 50))});
-      if (up && f.steerId === e.pointerId) f.steerId = null;
-    } else if (z === 'right' && up) p.onAction?.('ollie');
-    else if ((z === 'grab-front' || z === 'grab-back') && down) p.onAction?.('grab');
-  }
+  function command(c: 'respawn' | 'marker') { p.onCommand(c); p.onFocus(); }
+  function zone(z: TouchZone, e: ReactPointerEvent<HTMLElement>) { p.onZonePointer?.(z, e); }
 
   const reduced = prefersReduced() || Boolean(model?.settings.reducedEffects);
   if (!model) return <button className="skate-entry" type="button" onPointerDown={e => e.stopPropagation()} onClick={() => { p.onStart(); p.onFocus(); }}>
@@ -171,9 +106,8 @@ export function SkateHUD(p: SkateHUDProps) {
       <PauseBook model={m} tab={tab} onTab={setTab} onClose={closeBook} onWalk={() => { setBookOpen(false); p.onWalk(); }}
         onRoute={id => { setBookOpen(false); p.onPause(false); p.onRoute(id as SkateRouteId); p.onFocus(); }}
         onSpot={id => { setBookOpen(false); p.onPause(false); p.onSpot(id as SkateSpotId); p.onFocus(); }}
-        onDeck={id => p.onDeck(id as SkateDeckId)} onSettings={settings} onCommand={p.onCommand || p.onAction ? command : undefined}
-        trickBook={p.trickBook} gesturePath={p.gesturePath} presence={p.presence}
-        settingsNote={!p.onSettings ? 'Stance, controls and camera take effect with the new board. Sound works now.' : null}/>
+        onDeck={id => p.onDeck(id as SkateDeckId)} onSettings={p.onSettings} onCommand={command}
+        trickBook={p.trickBook} gesturePath={p.gesturePath} presence={p.presence} settingsNote={null}/>
     </>}
   </div>;
 }

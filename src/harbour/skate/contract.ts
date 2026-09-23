@@ -167,7 +167,13 @@ export type SkateSimEvent =
   | { t: number; kind: 'flip-caught'; flipId: string; quality: number /* 0..1 how close to ideal catch */ }
   | { t: number; kind: 'grab-start' | 'grab-end'; grabId: string; seconds: number }
   | { t: number; kind: 'land'; spinDeg: number /* signed body rotation, frontside +, backside − */; boardClean: number /* 0..1 */; fakie: boolean; switch: boolean; airTime: number; gap: number /* xz distance travelled in air */; onFeature: string | null; revert: boolean }
-  | { t: number; kind: 'grind-start'; grindId: string; grindableId: string; kind2: GrindableKind; switch: boolean; fakie: boolean }
+  /**
+   * `frontside` (optional, SIM-owned; approved amendment 2026-09-23): the
+   * rider's chest faced the grindable on the way in (regular rolling forward:
+   * the grindable on the right of travel). Scoring names "Frontside/Backside
+   * Smith Grind" from it; absent = no side word.
+   */
+  | { t: number; kind: 'grind-start'; grindId: string; grindableId: string; kind2: GrindableKind; switch: boolean; fakie: boolean; frontside?: boolean }
   | { t: number; kind: 'grind-end'; grindId: string; grindableId: string; distance: number; seconds: number; exit: 'ollie' | 'roll' | 'bail' | 'transfer' }
   | { t: number; kind: 'manual-start' | 'manual-end'; manual: 'manual' | 'nose-manual'; distance: number; seconds: number }
   | { t: number; kind: 'powerslide'; seconds: number }

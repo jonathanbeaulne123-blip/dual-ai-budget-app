@@ -1,7 +1,9 @@
 import {SkateHUD} from './skate/SkateHUD.tsx';
-import {readSkateProgress,saveSkateProgress,skateProgressKey,type SkateSnapshot} from './skate/session.ts';
-import type {SkateAction} from './skate/skateModel.ts';
-import type {SkateCheckpoint} from './skate/rider.ts';
+import {readSkateProgress,saveSkateProgress,skateProgressKey,type SkateSettings} from './skate/session.ts';
+import {SKATE_TRICK_BOOK,skateGesturePath,type SkateCheckpoint} from './skate/driver.ts';
+import {createSkateAudio,type SkateAudio} from './skate/audio.ts';
+import type {SkateHudModel,TouchZone} from './skate/hud/model.ts';
+import type {SkateFrame} from './scene/runtime.ts';
 import {useDesignClient} from '../hearthside/DesignProvider.tsx';
 import {snapshotKittyDesignRevision} from '../hearthside/design.ts';
 import type {VillageDisplayContent} from './village/displays.ts';
@@ -116,6 +118,8 @@ const REDUCED = "(prefers-reduced-motion: reduce)";
  * the keys unreachable in the first place.
  */
 const TOUCH = "(pointer: coarse)";
+/** Keys that ride while a skate HUD button holds the focus (input/NOTES-tricks.md; B walks, P/Escape pause). */
+const SKATE_KEYS: ReadonlySet<string> = new Set(['w','a','s','d','shift','arrowup','arrowdown','arrowleft','arrowright','i','j','k','l','q','e','c','x','g','m','n','o','u','y','t','r','f','h','v','p','b','escape']);
 /**
  * A face for each emote, for the row of six. They are the *label*, not the
  * pose — the pose is carved (`body/figure.ts`) — and each button carries its
@@ -182,19 +186,45 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const avatarKey=avatarPreferenceKey(household.environment,household.householdId,memberId);
   const [avatar,setAvatar]=useState<PlayableAvatar|null>(()=>readAvatar(localStorage,avatarKey));
   const avatarRef=useRef(avatar);avatarRef.current=avatar;
-  const [skating,setSkating]=useState<SkateSnapshot|null>(null),[skateSaveFailed,setSkateSaveFailed]=useState(false);
+  const [skating,setSkating]=useState<SkateHudModel|null>(null),[skateSaveFailed,setSkateSaveFailed]=useState(false);
+  /** Synthesized skate sound: created inside the click/key that asked for it (autoplay policy), owned here. */
+  const skateAudio=useRef<SkateAudio|null>(null);
   const skateKey=skateProgressKey(household.environment,household.householdId,memberId);
   const skateKeyRef=useRef(skateKey);skateKeyRef.current=skateKey;
   const skateSaved=useRef(''),skateOwner=useRef<string|null>(null);
   const skateRebuild=useRef<{owner:string;checkpoint:SkateCheckpoint}|null>(null);
-  const onSkate=useCallback((next:SkateSnapshot|null)=>{
+  const onSkate=useCallback((next:SkateFrame|null)=>{
     if(next&&skateOwner.current!==skateKeyRef.current){setSkating(null);return;}
-    setSkating(next);
+    setSkating(next?.model??null);
+    // Device-local progress, per environment/household/member: written only when it changed.
     if(next){const serialized=JSON.stringify(next.progress);if(serialized!==skateSaved.current){skateSaved.current=serialized;setSkateSaveFailed(!saveSkateProgress(localStorage,skateKeyRef.current,next.progress));}}
   },[]);
-  useEffect(()=>{skateOwner.current=null;skateRebuild.current=null;runtime.current?.body()?.skate?.enable(false);setSkating(null);skateSaved.current='';setSkateSaveFailed(false);},[skateKey]);
-  const startSkating=()=>{skateOwner.current=skateKey;held.current.clear();pushBody();runtime.current?.body()?.skate.enable(true,readSkateProgress(localStorage,skateKey));setEmotesOpen(false);};
-  const leaveSkating=()=>{skateOwner.current=null;held.current.clear();pushBody();runtime.current?.body()?.skate.enable(false);setSkating(null);};
+  const dropSkateAudio=()=>{runtime.current?.body()?.skate?.setAudio(null);skateAudio.current?.dispose();skateAudio.current=null;};
+  /** Only ever called inside a user gesture (click / key): an AudioContext needs one. */
+  const wantSkateAudio=(on:boolean)=>{
+    if(!on){dropSkateAudio();return;}
+    if(!skateAudio.current){try{skateAudio.current=createSkateAudio();}catch{skateAudio.current=null;}}
+    runtime.current?.body()?.skate?.setAudio(skateAudio.current);
+  };
+  useEffect(()=>{skateOwner.current=null;skateRebuild.current=null;runtime.current?.body()?.skate?.enable(false);dropSkateAudio();setSkating(null);skateSaved.current='';setSkateSaveFailed(false);},[skateKey]);
+  useEffect(()=>()=>{skateAudio.current?.dispose();skateAudio.current=null;},[]);
+  const startSkating=()=>{
+    skateOwner.current=skateKey;held.current.clear();pushBody();
+    const progress=readSkateProgress(localStorage,skateKey);
+    if(runtime.current?.body()?.skate?.enable(true,progress)&&progress.settings.sound)wantSkateAudio(true);
+    setEmotesOpen(false);
+  };
+  const leaveSkating=()=>{skateOwner.current=null;held.current.clear();pushBody();dropSkateAudio();runtime.current?.body()?.skate?.enable(false);setSkating(null);};
+  const skateSettings=(patch:Partial<SkateSettings>)=>{runtime.current?.body()?.skate?.settings(patch);if(patch.sound!==undefined)wantSkateAudio(patch.sound);};
+  /** HUD touch slots → the skate input's touch handlers (pointer capture is the HUD's). */
+  const skateZone=(zone:TouchZone,event:React.PointerEvent<HTMLElement>)=>{
+    const input=runtime.current?.body()?.skate?.input();if(!input)return;
+    const e=event.nativeEvent;
+    if(event.type==='pointerdown')input.touchStart(zone,e);
+    else if(event.type==='pointermove')input.touchMove(e);
+    else if(event.type==='pointerup')input.touchEnd(e);
+    else input.touchCancel(e);
+  };
   useEffect(()=>{const selected=readAvatar(localStorage,avatarKey);setAvatar(selected);runtime.current?.setAvatar(selected);},[avatarKey]);
   function chooseAvatar(next:PlayableAvatar){setAvatar(next);saveAvatar(localStorage,avatarKey,next);runtime.current?.setAvatar(next);}
   const routeRef = useRef(route); routeRef.current = route;
@@ -441,7 +471,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
         if (saved?.camera && sameHouseCameraRoute(saved.route, routeRef.current)) world.restore(saved.camera);
         if(saved&&sameHouseCameraRoute(saved.route,routeRef.current)&&validHouseBody(saved.body)&&saved.body.place===first)world.body()?.place(saved.body.x,saved.body.z,saved.body.yaw);
         const resume=skateRebuild.current;skateRebuild.current=null;
-        if(resume&&resume.owner===skateKeyRef.current&&first==='court'&&!routeRef.current.surface){skateOwner.current=resume.owner;world.body()?.skate.restore(resume.checkpoint);}
+        if(resume&&resume.owner===skateKeyRef.current&&first==='court'&&!routeRef.current.surface){skateOwner.current=resume.owner;world.body()?.skate?.restore(resume.checkpoint);world.body()?.skate?.setAudio(skateAudio.current);}
         if (first !== "bank") return;
         void import("./court/queenPlace.ts").then(({ loadQueenPlace }) => loadQueenPlace(renderTier, appearance.saved.queen ?? DEFAULT_QUEEN_STYLE, evidenceRef.current, abort.signal)).then(her => {
           if (cancelled || !runtime.current) { her.dispose(); return; }
@@ -452,7 +482,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
         }).catch(() => { element.dataset.queen = "unavailable"; });
       } catch { setStatus("fallback"); }
     }).catch(() => setStatus("fallback"));
-    return () => { const checkpoint=runtime.current?.body()?.skate.checkpoint();if(checkpoint&&skateOwner.current)skateRebuild.current={owner:skateOwner.current,checkpoint};cancelled = true; abort.abort(); queenAnimation.current?.();queenAnimation.current=null;queen.current?.dispose(); queen.current = null; court.current = null; runtime.current?.dispose(); runtime.current = null; };
+    return () => { const checkpoint=runtime.current?.body()?.skate?.checkpoint();if(checkpoint&&skateOwner.current)skateRebuild.current={owner:skateOwner.current,checkpoint};cancelled = true; abort.abort(); queenAnimation.current?.();queenAnimation.current=null;queen.current?.dispose(); queen.current = null; court.current = null; runtime.current?.dispose(); runtime.current = null; };
     // Theme and tier rebuild the scene; everything else flows through setReading / go.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, tier]);
@@ -787,10 +817,15 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     arriving.current = false;
   }
 
+  /**
+   * Skate keys pressed while a HUD button holds the focus still ride. Space is
+   * never taken (it activates the button, and opens the Hearth tools on the
+   * stage); dialogs and fields keep all their keys.
+   */
   function acceptsSkateKey(event:ReactKeyboardEvent<HTMLDivElement>){
-    return runtime.current?.body()?.skate.active()&&event.target instanceof Element
+    return runtime.current?.body()?.skate?.active()&&event.target instanceof Element
       &&Boolean(event.target.closest('.skate-hud'))&&!event.target.closest('input,select,textarea,[role=dialog]')
-      &&['w','a','s','d','shift','j','f','h','v','t','l','g','m','k','r','p','b','escape'].includes(event.key.toLowerCase());
+      &&SKATE_KEYS.has(event.key.toLowerCase());
   }
 
   function onStageKeyUp(event: ReactKeyboardEvent<HTMLDivElement>) {
@@ -798,8 +833,9 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     const key = event.key.toLowerCase();
     const skate=runtime.current?.body()?.skate;
     if(skate?.active()){
-      if(key==='g')skate.hold({grind:false});if(key==='m')skate.hold({manual:false});if(key==='k')skate.hold({brake:false});
-      if(['g','m','k'].includes(key)){event.preventDefault();return;}
+      if(skate.input()?.keyUp(event.nativeEvent))event.preventDefault();
+      held.current.delete(key);
+      return;
     }
     if (!held.current.delete(key)) return;
     pushBody();
@@ -834,11 +870,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     const skateKey=event.key.toLowerCase();
     if(skateKey==='b'&&placeRef.current==='court'&&!event.repeat){skate?.active()?leaveSkating():startSkating();event.preventDefault();return;}
     if(skate?.active()){
-      const tricks:Record<string,SkateAction>={j:'ollie',f:'kickflip',h:'heelflip',v:'shuvit',t:'360-flip',l:'grab',r:'respawn'};
-      if(tricks[skateKey]){if(!event.repeat)skate.action(tricks[skateKey]!);event.preventDefault();return;}
-      if(skateKey==='g'||skateKey==='m'||skateKey==='k'){skate.hold(skateKey==='g'?{grind:true}:skateKey==='m'?{manual:true}:{brake:true});event.preventDefault();return;}
+      // P / Escape pause (the book opens); everything else a skater presses goes to the flick-it input.
       if(skateKey==='p'||skateKey==='escape'){if(!event.repeat){held.current.clear();pushBody();skate.pause(!skate.paused());}event.preventDefault();return;}
-      if(skateKey==='e'||/^[1-6]$/.test(skateKey)){event.preventDefault();return;}
+      if(skate.input()?.keyDown(event.nativeEvent)){event.preventDefault();return;}
+      // Emotes are for walking: 1–6 do nothing on the board.
+      if(/^[1-6]$/.test(skateKey)){event.preventDefault();return;}
     }
     // ── The moves (walk-moves) ──
     // Above the walk, because a jump asked for while W is held is still a
@@ -931,16 +967,17 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => navigatePlace("court");
   return <section className={`harbour-world harbour-world--${theme}${skating?" is-skating":""}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={placeName}>
-    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : showFlat ? `${placeName}. Reading edition. Every destination is a button.` : skating?"Skate the Harbour. W pushes, A and D steer, S brakes. J ollies, F flips, G grinds, M manuals, R resets, P pauses, B walks. Space opens all tools.":stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) {setStageHasKeys(false);held.current.clear();pushBody();if(!event.currentTarget.contains(event.relatedTarget as Node))runtime.current?.body()?.skate?.pause(true);} }}>
+    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : showFlat ? `${placeName}. Reading edition. Every destination is a button.` : skating?"Skate the Harbour. W pushes, A and D carve, S brakes. Hold the down arrow and flick up to ollie, flick to a corner to flip. Q and E grab, G locks onto rails, M manuals, R returns to your marker, P pauses, B walks. Space opens all tools.":stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) {setStageHasKeys(false);if(held.current.size){held.current.clear();pushBody();}if(!event.currentTarget.contains(event.relatedTarget as Node))runtime.current?.body()?.skate?.pause(true);} }}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => navigatePlace(next)} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
       {(status==="ready"||showFlat)&&!toolOpen&&<VillageHUD place={place} travelling={travelTo} onVisit={visit} onWander={showFlat?undefined:wanderTo} avatar={avatar} onAvatar={chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
         presence={status==="ready"?<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />:undefined}/>}
-      {status==='ready'&&!toolOpen&&place==='court'&&standing&&<SkateHUD snapshot={skating} onStart={startSkating} onWalk={leaveSkating}
-        onAction={action=>runtime.current?.body()?.skate.action(action)} onHold={input=>runtime.current?.body()?.skate.hold(input)}
-        onPause={on=>{held.current.clear();pushBody();runtime.current?.body()?.skate.pause(on);}} onRoute={id=>runtime.current?.body()?.skate.route(id)}
-        onSpot={id=>runtime.current?.body()?.skate.spot(id)} onDeck={id=>runtime.current?.body()?.skate.deck(id)}
+      {status==='ready'&&!toolOpen&&place==='court'&&standing&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating}
+        onSettings={skateSettings} onCommand={command=>runtime.current?.body()?.skate?.command(command)} onZonePointer={skateZone}
+        gesturePath={skateGesturePath} trickBook={SKATE_TRICK_BOOK}
+        onPause={on=>{held.current.clear();pushBody();runtime.current?.body()?.skate?.pause(on);}} onRoute={id=>runtime.current?.body()?.skate?.route(id)}
+        onSpot={id=>runtime.current?.body()?.skate?.spot(id)} onDeck={id=>runtime.current?.body()?.skate?.deck(id)}
         presence={<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk?partner.name:null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut===true} onUnhide={onUnhide} hasPartner={Boolean(softPeer||partnerName||partnerWalk.memberId)}/>}
         onFocus={()=>stage.current?.focus({preventScroll:true})} partnerName={partnerWalk.walk?.pose(Date.now())?.act?.startsWith('skate')?partner?.name:null} saveFailed={skateSaveFailed}/>}
       {arranging&&!showFlat&&decorRoom&&props.onArrange&&<VillageDecorator key={decorRoom} household={household} memberId={memberId} room={decorRoom} arrangement={arrangement} onCommit={props.onArrange} onPreview={setPreviewLook} onClose={()=>{setArranging(false);stage.current?.querySelector<HTMLButtonElement>('[aria-label="Arrange room"]')?.focus();}}/>}

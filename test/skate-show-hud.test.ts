@@ -7,9 +7,7 @@ import {SkateHUD, type SkateHUDProps} from '../src/harbour/skate/SkateHUD.tsx';
 import {
   DEFAULT_HINTS, buildHudModel, controlHints, createHudThrottle, createLiveAnnouncer, deviceFromEvent, formatPoints, type HudSource, type SkateHudModel,
 } from '../src/harbour/skate/hud/model.ts';
-import {createLegacyHudAdapter} from '../src/harbour/skate/hud/legacy.ts';
-import {DEFAULT_SKATE_TABLES, createSkateSession, skateSnapshot} from '../src/harbour/skate/session.ts';
-import {createSkateState} from '../src/harbour/skate/skateModel.ts';
+import {DEFAULT_SKATE_TABLES, createSkateSession} from '../src/harbour/skate/session.ts';
 
 (globalThis as {IS_REACT_ACT_ENVIRONMENT?: boolean}).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -94,21 +92,6 @@ describe('HUD model', () => {
     expect(a.offer(null, 1001)).toBe('Heelflip');
     expect(a.offer('Heelflip', 2500)).toBeNull(); // no repeats
   });
-
-  it('adapts the v1 snapshot into a HUD source and audio events', () => {
-    const adapter = createLegacyHudAdapter(), session = createSkateSession();
-    const state = createSkateState(25, -13, 0, {ground: () => 0, surface: () => ({y: 0, ramp: null}), obstacles: []});
-    state.speed = 4; state.combo = 300; state.multiplier = 2; state.comboTricks = ['Kickflip'];
-    const first = adapter.frame(skateSnapshot(state, session), 'touch')!;
-    expect(first.present!.phase).toBe('roll'); expect(first.source.line!.latest).toBe('Kickflip');
-    state.mode = 'air';
-    expect(adapter.frame(skateSnapshot(state, session), 'touch')!.events.map(e => e.kind)).toEqual(['pop']);
-    state.mode = 'ride'; state.combo = 0; state.event = {id: state.event.id + 1, kind: 'bank', text: 'Line landed', points: 600};
-    const banked = adapter.frame(skateSnapshot(state, session), 'touch')!;
-    expect(banked.events.map(e => e.kind)).toEqual(['land']);
-    expect(banked.source.outcome!.outcome).toMatchObject({kind: 'banked', points: 600});
-    expect(adapter.frame(null, 'touch')).toBeNull();
-  });
 });
 
 describe('SkateHUD component', () => {
@@ -116,7 +99,7 @@ describe('SkateHUD component', () => {
   beforeEach(() => { host = document.createElement('div'); document.body.append(host); root = createRoot(host); });
   afterEach(() => { act(() => root.unmount()); host.remove(); });
   const props = (o: Partial<SkateHUDProps> = {}): SkateHUDProps => ({
-    onStart: vi.fn(), onWalk: vi.fn(), onPause: vi.fn(), onRoute: vi.fn(), onSpot: vi.fn(), onDeck: vi.fn(), onFocus: vi.fn(), onSettings: vi.fn(), onCommand: vi.fn(), ...o,
+    model: null, onStart: vi.fn(), onWalk: vi.fn(), onPause: vi.fn(), onRoute: vi.fn(), onSpot: vi.fn(), onDeck: vi.fn(), onFocus: vi.fn(), onSettings: vi.fn(), onCommand: vi.fn(), ...o,
   });
   const render = (p: SkateHUDProps) => act(() => root.render(createElement(SkateHUD, p)));
   const model = (o: Partial<HudSource> = {}): SkateHudModel => buildHudModel(source(o));
@@ -206,15 +189,4 @@ describe('SkateHUD component', () => {
     expect(host.querySelector('[role=dialog]')).toBeNull();
   });
 
-  it('still runs from the v1 snapshot HarbourWorld passes today', () => {
-    const session = createSkateSession();
-    const state = createSkateState(25, -13, 0, {ground: () => 0, surface: () => ({y: 0, ramp: null}), obstacles: []});
-    state.speed = 3; state.combo = 250; state.multiplier = 2; state.comboTricks = ['Ollie', 'Kickflip'];
-    const onAction = vi.fn();
-    render({...props({onSettings: undefined, onCommand: undefined}), snapshot: skateSnapshot(state, session), onAction});
-    expect(host.querySelector('.skate-ticket__label')!.textContent).toBe('Kickflip');
-    const retry = host.querySelector<HTMLButtonElement>('.skate-top__nav button')!;
-    act(() => retry.click());
-    expect(onAction).toHaveBeenCalledWith('respawn');
-  });
 });

@@ -1,5 +1,6 @@
 import * as THREE from "three";
-import {createSkateboard} from '../skate/board.ts';
+import {createSkaterLook,poseFromLegacyAct,type SkaterLook} from '../skate/look/index.ts';
+import {blankPresent} from '../skate/look/legacy.ts';
 import { createBodyFigure, DEFAULT_FIGURE_COLOURS, type BodyMotion } from "./figure.ts";
 import {
   EMOTE_SECONDS, GRAVITY, JUMP_RUN_BONUS, JUMP_SPEED, isEmoteId, type EmoteId,
@@ -41,12 +42,19 @@ export function createCharacterWalker(options: WalkerOptions): Walker {
     skin: options.skin || DEFAULT_FIGURE_COLOURS.skin,
   });
   const group = new THREE.Group();group.name='Live partner';group.add(figure.group);
-  const board=createSkateboard('afterglow');board.group.visible=false;group.add(board.group);
   // The figure is authored at the reader's own height; a place may want its
   // people smaller. Scaling the group keeps the feet at the origin.
   const height = options.height ?? DEFAULT_WALKER_HEIGHT;
   const scale = figure.height > 0 ? height / figure.height : 1;
-  figure.group.scale.multiplyScalar(scale);board.group.scale.setScalar(scale);
+  figure.group.scale.multiplyScalar(scale);
+  /**
+   * Their board: the same v2 look your own rider uses, drawn from the coarse
+   * act + progress the lane carries (`poseFromLegacyAct`), in the group's own
+   * frame (the group already stands where they are and faces their yaw).
+   * Built on the first skate act; the figure is handed back when they walk.
+   */
+  let look:SkaterLook|null=null;
+  const ride=blankPresent();
 
   // Every material on this figure belongs to this figure (`createBodyFigure`
   // builds its own), so fading one body never fades the other.
@@ -135,17 +143,30 @@ export function createCharacterWalker(options: WalkerOptions): Walker {
       }
       // The body rides its own jump: the group's origin is the feet, so the
       // feet are the ground plus whatever of the arc is left.
-      group.position.y = skating&&altitude!==null?altitude-.13*scale:groundY + (motion.air ?? 0);
-      board.group.visible=skating;figure.group.position.y=skating ? .13*scale : 0;
-      motion.skate=skating?{push:act==='skate'&&moving?progress:0,balance:act==='skate-grind'||act==='skate-manual'?progress*2-1:0,bail:act==='skate-bail'}:undefined;
-      if(skating)board.pose(moving?5:0,dt,act!,progress);
+      // A skater's altitude on the wire is the board's origin (the ground or the
+      // rail's top line under it): the group stands there.
+      group.position.y = skating&&altitude!==null?altitude:groundY + (motion.air ?? 0);
+      if(skating){
+        if(!look){
+          look=createSkaterLook({figure,deckId:'afterglow',tier:'lite',scale});group.add(look.root);
+          // The board fades with the body (stale feed): its materials join the list.
+          look.board.group.traverse(node=>{const mesh=node as THREE.Mesh;if(!mesh.isMesh)return;
+            for(const material of Array.isArray(mesh.material)?mesh.material:[mesh.material]){const m=material as THREE.MeshStandardMaterial;if(m&&!materials.includes(m)){materials.push(m);m.transparent=opacity<1;m.opacity=opacity;}}});
+        }
+        look.root.visible=true;
+        poseFromLegacyAct(act,progress,ride,moving);
+        ride.x=0;ride.y=0;ride.z=0;ride.heading=0;ride.boardYaw=0;
+        look.update(ride,null,dt,false);
+        return;
+      }
+      if(look?.root.visible){look.release();look.root.visible=false;figure.group.position.set(0,0,0);figure.group.rotation.set(0,0,0);}
       // The idle breath runs whether or not the feet do, so a standing partner
       // is alive rather than a statue.
       figure.pose(phase, moving && !busy ? 1 : 0, t, motion);
     },
     dispose() {
       group.removeFromParent();
-      board.dispose();figure.dispose();
+      look?.dispose();figure.dispose();
     },
   };
 }

@@ -76,8 +76,17 @@ export type BoardRigState = {
   popped: boolean; popT: number; popFrom: 'tail' | 'nose';
   /** Set once a real event stream has been seen; before that, pops are inferred from take-offs. */
   eventDriven: boolean; popThisStep: boolean;
+  /**
+   * The board's physical yaw minus the sim's labelled `boardYaw` (inside the
+   * ride frame). It absorbs what the flip overlay was showing when a trick
+   * ends, and cancels every exact-π relabel of `boardYaw` (the sim swaps nose
+   * and tail at a shove-it's catch and back at canonicalisation on landing),
+   * so the drawn board never snaps (integration 2026-09-23).
+   */
   yawFlip: number;
-  trick: { id: string; def: FlipTrickDef | null; u: number } | null;
+  /** `present.boardYaw` last frame (relabel detection). */
+  lastYaw: number | null;
+  trick: { id: string; def: FlipTrickDef | null; u: number; yaw: number } | null;
   manualPivot: number; grindPivot: number;
   wheelAngle: number; wheelRate: number;
   // Loose board.
@@ -92,7 +101,7 @@ export function createBoardRigState(): BoardRigState {
   return {
     springs: createSpringBank(STIFF), target: new Float64Array(C_COUNT),
     lastPhase: null, popped: false, popT: -1, popFrom: 'tail', eventDriven: false, popThisStep: false,
-    yawFlip: 0, trick: null, manualPivot: -BOARD.truckZ, grindPivot: 0, wheelAngle: 0, wheelRate: 0,
+    yawFlip: 0, lastYaw: null, trick: null, manualPivot: -BOARD.truckZ, grindPivot: 0, wheelAngle: 0, wheelRate: 0,
     bailT: 0, recoverT: 0, freeWeight: 0,
     pos: new THREE.Vector3(), vel: new THREE.Vector3(), quat: new THREE.Quaternion(), spin: new THREE.Vector3(), floorY: 0,
     landedPos: new THREE.Vector3(), landedQuat: new THREE.Quaternion(), wasFree: false,
@@ -180,16 +189,27 @@ export function solveBoardRig(p: SkatePresent, defs: LookDefs, state: BoardRigSt
   if (state.popped && !state.popThisStep) state.popT += dt;
   if (state.popThisStep) state.popT = 0;
 
-  // ── Flip bookkeeping: fold a finished odd half-turn shove-it into yawFlip.
+  // ── Flip bookkeeping. When a trick ends, keep the board where the overlay
+  // last drew it (fold the shove-it's turn into yawFlip). When the sim
+  // relabels nose/tail (boardYaw jumps by exactly π, e.g. at a shove-it's
+  // catch), cancel the jump: the physical board did not move.
   const trick = p.trick;
   if (state.trick && (!trick || trick.flipId !== state.trick.id)) {
-    const d = state.trick.def;
-    if (d && d.yaw && state.trick.u >= .75 && phase !== 'bail') state.yawFlip = wrap(state.yawFlip + toeSign * d.yaw * Math.PI);
+    if (phase !== 'bail' && phase !== 'recover') state.yawFlip = wrap(state.yawFlip + state.trick.yaw);
     state.trick = null;
   }
+  if (Number.isFinite(p.boardYaw)) {
+    if (state.lastYaw !== null) {
+      const jump = wrap(p.boardYaw - state.lastYaw);
+      if (Math.abs(Math.abs(jump) - Math.PI) < .02) state.yawFlip = wrap(state.yawFlip - jump);
+    }
+    state.lastYaw = p.boardYaw;
+  }
   if (trick) {
-    if (!state.trick) state.trick = { id: trick.flipId, def: defs.flip(trick.flipId), u: trick.u };
+    if (!state.trick) state.trick = { id: trick.flipId, def: defs.flip(trick.flipId), u: trick.u, yaw: 0 };
     state.trick.u = trick.u;
+    const d = state.trick.def;
+    state.trick.yaw = d && d.yaw ? toeSign * d.yaw * Math.PI * flipEase(clamp01(trick.u)) : 0;
   }
 
   // ── Targets.

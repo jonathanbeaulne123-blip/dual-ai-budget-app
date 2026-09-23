@@ -1,7 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {groundHeightAt} from '../src/harbour/scene/ground.ts';
 import {createSkateField,LANE_HALF_WIDTH,copingRuns,type SkateWorldField} from '../src/harbour/skate/world/field.ts';
-import {BowlShape,COPE_TOP,LIP_BAND,MiniShape,QuarterShape,KickerShape,RAIL_RADIUS,StairsShape,VERT_DEG,planeAt,newHit} from '../src/harbour/skate/world/features.ts';
+import {BowlShape,COPE_TOP,LIP_BAND,MiniShape,QuarterShape,KickerShape,RAIL_RADIUS,StairsShape,planeAt,newHit} from '../src/harbour/skate/world/features.ts';
 import {SPOT_LAYOUTS,SPOTS,ROUTES,SKATE_KEEP_OUTS} from '../src/harbour/skate/world/layout.ts';
 import {frameToWorld,worldToFrame,sdRoundRect,arcFor,DEG} from '../src/harbour/skate/world/profiles.ts';
 import {HARBOUR_LAND,HARBOUR_LANES,distanceToTrail} from '../src/harbour/village/world.ts';
@@ -48,12 +48,12 @@ describe('skate world · the field',()=>{
     expect(worst*180/Math.PI).toBeLessThan(0.25);
   });
 
-  it('flags lips along every coping, facing uphill, and vert only on steep transitions',()=>{
+  it('flags lips along every coping, facing uphill, and vert on every coping (kickers are not)',()=>{
     const copings=field.grindables.filter(g=>g.kind==='coping');
     expect(copings.length).toBeGreaterThanOrEqual(9);
     for(const g of copings){
       const shape=field.pads.flatMap(p=>p.shapes).find(s=>s.id===g.featureId)!;
-      const angle=(shape as QuarterShape|MiniShape|BowlShape).def.angle,vert=angle>=VERT_DEG;
+      const vert=true,angle=(shape as QuarterShape|MiniShape|BowlShape).def.angle; // every coping lip is vert (integration decision: airs off transitions come back in)
       for(let i=0;i<g.points.length;i++){
         const face=g.faceYaws?.[i]??g.faceYaw!,[fx,fz]=dirOf(face),a=g.faceYaws?g.points[i]!:inset(g.points,i,.02);
         const at=field.sample(a[0]+fx*.05,a[2]+fz*.05);

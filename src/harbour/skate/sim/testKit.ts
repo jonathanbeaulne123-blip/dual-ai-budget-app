@@ -39,6 +39,16 @@ export function kick(sim: SkateSim, v: { vx?: number; vy?: number; vz?: number; 
   if (v.vy !== undefined) s.vy = v.vy;
   if (v.vz !== undefined) s.vz = v.vz;
   if (v.yaw !== undefined) s.boardYaw = v.yaw;
+  else if (v.vx !== undefined || v.vz !== undefined) {
+    // The wheels only roll along the board (wheel grip): a kicked velocity
+    // takes the board with it, keeping whichever end already led (fakie stays fakie).
+    const vx = s.vx as number, vz = s.vz as number;
+    if (Math.hypot(vx, vz) > 0.05) {
+      const h = Math.atan2(vx, vz), cur = s.boardYaw as number;
+      const d = Math.atan2(Math.sin(cur - h), Math.cos(cur - h));
+      s.boardYaw = Math.abs(d) > Math.PI / 2 ? h + Math.PI : h;
+    }
+  }
   if (v.y !== undefined) s.y = v.y;
   sim.load(s);
 }

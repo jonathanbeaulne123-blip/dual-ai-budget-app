@@ -198,16 +198,13 @@ function spotRect(l: SpotLayout): { x: number; z: number; halfWidth: number; hal
   return { x: r((minX + maxX) / 2), z: r((minZ + maxZ) / 2), halfWidth: r((maxX - minX) / 2 + APRON_ALLOWANCE), halfDepth: r((maxZ - minZ) / 2 + APRON_ALLOWANCE) };
 }
 
-export type SkateSpotEntry = SkateSpot & {
-  /** v1 name for `startYaw`, kept for `rider.ts`/`SkateHUD.tsx` until integration. */
-  yaw: number;
-};
+export type SkateSpotEntry = SkateSpot;
 
 export const SPOTS: readonly SkateSpotEntry[] = SPOT_LAYOUTS.map(l => {
   const rect = spotRect(l), start = frameToWorld(l.frame, l.start[0], l.start[1]);
   const startYaw = Math.atan2(Math.sin(l.frame.yaw + l.startYaw), Math.cos(l.frame.yaw + l.startYaw));
   const round = (n: number) => Math.round(n * 1000) / 1000;
-  return { id: l.id, name: l.name, words: l.words, ...rect, start: [round(start[0]), round(start[1])] as const, startYaw: round(startYaw), yaw: round(startYaw) };
+  return { id: l.id, name: l.name, words: l.words, ...rect, start: [round(start[0]), round(start[1])] as const, startYaw: round(startYaw) };
 });
 
 /**

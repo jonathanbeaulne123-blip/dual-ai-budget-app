@@ -65,10 +65,10 @@ describe('skate world · render == physics',()=>{
   });
 });
 
-describe('skate world · the v1 names still work',()=>{
+describe('skate world · the island-facing names',()=>{
   it('keeps the island-facing table in shape for planting, walking, session and HUD',()=>{
     expect(SKATE_SPOTS[0]!.id).toBe('tideline');
-    for(const s of SKATE_SPOTS){expect(s.yaw).toBe(s.startYaw);expect(s.halfWidth).toBeGreaterThan(2);expect(s.start).toHaveLength(2);}
+    for(const s of SKATE_SPOTS){expect(Number.isFinite(s.startYaw)).toBe(true);expect(s.halfWidth).toBeGreaterThan(2);expect(s.start).toHaveLength(2);}
     expect(SKATE_ROUTES.map(r=>r.id)).toEqual(['first-line','north-run','coast-run','orchard-run','meadow-run']);
     const at=SKATE_SPOTS[0]!.start;
     expect(skateSurface(at[0],at[1],groundHeightAt).y).toBeCloseTo(skateFieldFor(groundHeightAt).heightAt(at[0],at[1]),12);

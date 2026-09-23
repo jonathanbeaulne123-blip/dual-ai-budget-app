@@ -54,12 +54,12 @@ describe('the real village partner',()=>{
     const reading={partner:{fresh:true,name:'Test partner',walk:track}} as unknown as PlaceReading;
     const partner=createVillagePartner(SCENE_DRESSING.classic,reading);
     expect(partner.group.visible).toBe(false);
-    track.push({x:15,z:-8,y:3.13,yaw:1,moving:true,act:'skate-kickflip',p:.5,at:1000});
+    track.push({x:15,z:-8,y:3,yaw:1,moving:true,act:'skate-kickflip',p:.5,at:1000});
     partner.animate(1,1/60,1000+WORLD_RENDER_DELAY_MS);
     expect(partner.group.visible).toBe(true);expect(partner.group.position.y).toBeCloseTo(3,5);
-    expect(partner.group.getObjectByName('Harbour skateboard')!.visible).toBe(true);
+    expect(partner.group.getObjectByName('Harbour skateboard')!.visible).toBe(true);expect(partner.group.getObjectByName('skater-look')!.visible).toBe(true);
     track.push({x:15,z:-8,yaw:1,moving:false,at:1200});partner.animate(1.2,1/60,1200+WORLD_RENDER_DELAY_MS);
-    expect(partner.group.getObjectByName('Harbour skateboard')!.visible).toBe(false);
+    expect(partner.group.getObjectByName('skater-look')!.visible).toBe(false); // the v2 look is put away
     expect(partner.group.position.y).toBeCloseTo(placeGround('court')(15,-8),5);
     partner.animate(5,1/60,1200+WORLD_LIVE_MS+WORLD_FADE_MS+1);expect(partner.group.visible).toBe(false);
     partner.update(null);expect(partner.animate(6,1/60,6000)).toBe(false);partner.dispose();

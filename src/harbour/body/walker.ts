@@ -1,7 +1,7 @@
 import * as THREE from "three";
-import {createSkateDriver,type SkateControls} from '../skate/rider.ts';
-import {createSkateboard} from '../skate/board.ts';
-import {skateActionPose} from '../skate/skateModel.ts';
+import {createSkateDriver,skateAct,SKATE_CATALOGS,type SkateControls} from '../skate/driver.ts';
+import {createSkaterLook,type LookTheme,type SkaterLook} from '../skate/look/index.ts';
+import type {SkateDeckId} from '../skate/park.ts';
 import { createBodyFigure, type BodyFigure, type BodyMotion, type FigureColours } from "./figure.ts";
 import { createFootprints, FOOTPRINT_POOL, FOOTPRINT_POOL_LITE, type Footprints } from "./footprints.ts";
 import { createDust, DUST_POOL, DUST_POOL_LITE, type Dust } from "./dust.ts";
@@ -76,6 +76,8 @@ export type WalkerOptions = {
    * The plain gait and nothing else.
    */
   reduced?: boolean;
+  /** The theme the skate look's FX are painted in. */
+  theme?: LookTheme;
 };
 
 export type Walker = {
@@ -178,17 +180,48 @@ export function createWalker(options: WalkerOptions): Walker {
   let route: PathPoint[] | null = null;
   let routeIndex = 0;
   const box = new THREE.Box3();
-  const skater=createSkateDriver(world),board=createSkateboard();
-  const boardRoot=new THREE.Group();boardRoot.add(board.group);boardRoot.visible=false;group.add(boardRoot);
-  function syncSkate(){
-    const s=skater.state();if(!s)return;
-    state={...state,x:s.x,y:s.y+.13,z:s.z,yaw:s.yaw,speed:s.speed,air:s.mode==='air'?Math.max(.01,s.y-skater.world.surface(s.x,s.z).y):0,vy:s.vy,goal:null,emote:null};
+  // ── Tideline Skate Club v2 ── the driver (sim, input, score, session) and the
+  // look (board, rider pose, FX). While the board is down the look owns the
+  // figure's transform and pose; the walker only mirrors the ride into `state`
+  // so the camera, the doors and the partner lane read one position.
+  const skater=createSkateDriver(world);
+  let look:SkaterLook|null=null,lookDeck:SkateDeckId|null=null;
+  const skateReduced=()=>reduced||skater.current()?.reducedEffects===true;
+  function ensureLook():SkaterLook{
+    if(!look){look=createSkaterLook({figure,deckId:skater.deckId(),tier,catalogs:SKATE_CATALOGS,theme:options.theme});group.add(look.root);lookDeck=skater.deckId();}
+    look.root.visible=true;
+    return look;
   }
-  const skate:SkateControls={...skater,
-    restore(checkpoint){if(world.room)return;clearRoute();skater.restore(checkpoint);syncSkate();boardRoot.visible=true;trail?.clear();dust.clear();write();},
+  function drawSkate(dt:number):void{
+    const p=skater.present();if(!p)return;
+    const l=ensureLook();
+    if(lookDeck!==skater.deckId()){lookDeck=skater.deckId();l.setDeck(lookDeck);}
+    l.setStance(null);
+    l.update(p,skater.paused()?null:skater.events(),skater.paused()?0:dt,skateReduced());
+  }
+  function syncSkate(){
+    const p=skater.present();if(!p)return;
+    // The board's origin is the ground (or the rail's top line) under it: that
+    // is the body's y now. The look stands the soles DECK_TOP above it.
+    state={...state,x:p.x,y:p.y,z:p.z,yaw:p.boardYaw,speed:p.speed,air:p.phase==='air'?Math.max(.01,p.clearance):0,vy:p.vy,goal:null,emote:null};
+  }
+  const skate:SkateControls={
+    active:skater.active,heading:skater.heading,paused:skater.paused,hud:skater.hud,progress:skater.progress,revision:skater.revision,
+    route:skater.route,spot:skater.spot,deck:skater.deck,settings:skater.settings,current:skater.current,command:skater.command,
+    checkpoint:skater.checkpoint,input:skater.input,present:skater.present,events:skater.events,takeCut:skater.takeCut,setAudio:skater.setAudio,
+    pause(on){skater.pause(on);},
+    restore(checkpoint){if(world.room)return;clearRoute();skater.restore(checkpoint);syncSkate();trail?.clear();dust.clear();drawSkate(0);},
     enable(on,progress){
-      if(on){if(world.room)return false;clearRoute();skater.mount(state.x,state.z,state.yaw,progress);trail?.clear();dust.clear();boardRoot.visible=true;}
-      else{const s=skater.unmount();if(s)state=placeBody(state,s.x,s.z,world,s.yaw);boardRoot.visible=false;motion.skate=undefined;figure.pose(0,0,0);write();}
+      if(on){
+        if(world.room)return false;
+        if(skater.active())return true;
+        clearRoute();skater.mount(state.x,state.z,state.yaw,progress);syncSkate();trail?.clear();dust.clear();drawSkate(0);
+      }else{
+        const s=skater.unmount();
+        if(look){look.release();look.root.visible=false;}
+        if(s)state=placeBody(state,s.x,s.z,world,s.yaw);
+        motion.skatePose=undefined;figure.pose(0,0,0,motion);write();
+      }
       return true;
     },
   };
@@ -206,6 +239,8 @@ export function createWalker(options: WalkerOptions): Walker {
   }
 
   function write(): void {
+    // On the board the look owns the figure's transform.
+    if (skater.active()) return;
     figure.group.position.set(state.x, state.y, state.z);
     figure.group.rotation.y = state.yaw;
   }
@@ -238,14 +273,19 @@ export function createWalker(options: WalkerOptions): Walker {
       return true;
     },
     setAvatar(avatar){
+      look?.release();
       figure.group.removeFromParent();figure.dispose();
       figure=avatar?createPlayableFigure(avatar,tier,{invalidate:options.invalidate}):createBodyFigure(options.colours);
       group.add(figure.group);write();figure.pose(state.phase,gaitOf(state),0,motion);
+      look?.setFigure(figure);
+      if(skater.active())drawSkate(0);
     },
-    jump() { if(skater.active())skater.action("ollie");else state = requestJump(state); },
-    slideNow() { if(skater.active())skater.action("brake");else state = requestSlide(state); },
+    // On the board the keys go to the skate input (HarbourWorld routes them);
+    // the walking moves do nothing there, and an emote steps off the board.
+    jump() { if(!skater.active())state = requestJump(state); },
+    slideNow() { if(!skater.active())state = requestSlide(state); },
     emote(id) { if(skater.active())skate.enable(false);state = requestEmote(state, id); },
-    action: () => skater.state()?skateActionPose(skater.state()!):actionOf(state),
+    action: () => skater.active()?skateAct(skater.present(),true):actionOf(state),
     setReduced(next) {
       if (next === reduced) return;
       reduced = next;
@@ -253,20 +293,14 @@ export function createWalker(options: WalkerOptions): Walker {
       if (next) { dust.clear(); motion.lean = 0; motion.bank = 0; motion.run = 0; motion.flourish = 0; }
       else motion.flourish = 1;
     },
-    cancel() { skater.stop(); clearRoute(); state = { ...state, goal: null, stalled: 0 }; },
+    cancel() { skater.input()?.reset(); clearRoute(); state = { ...state, goal: null, stalled: 0 }; },
     place(x, z, yaw) { if(skater.active())skate.enable(false);clearRoute(); state = placeBody(state, x, z, world, yaw ?? state.yaw); write(); trail?.clear(); dust.clear(); },
     step(dt, t, theta) {
       if(skater.active()){
-        const moving=skater.step(input,dt);syncSkate();write();
-        const s=skater.state()!,action=skateActionPose(s);
-        motion.run=0;motion.lean=0;motion.bank=reduced?0:s.bank;motion.air=state.air;motion.rise=s.vy/7;motion.crouch=s.crouch;motion.slide=0;motion.emote=null;
-        motion.skate={push:s.pushEffort>0&&s.mode==='ride'?Math.max(0,Math.sin(s.pushPhase)):0,balance:s.mode==='grind'||s.manualTime>0?s.balance:0,bail:s.mode==='bail'};
-        figure.pose(0,0,t,motion);
-        boardRoot.position.set(s.x,s.y,s.z);boardRoot.rotation.y=s.yaw;
-        board.setDeck(skater.deckId());board.pose(s.speed,dt,action.act,action.p,s.pitch,reduced?0:s.bank);
-        return moving;
+        const ride=skater.step(dt);syncSkate();drawSkate(dt);
+        if(ride.banked>0&&!skateReduced())look?.celebrate(Math.min(1,.25+ride.banked/6000));
+        return ride.moving;
       }
-      motion.skate=undefined;
       if (input.forward !== 0 || input.strafe !== 0) clearRoute();
       const frame = stepBody(state, input, theta, dt, world);
       state = frame.state;
@@ -346,8 +380,8 @@ export function createWalker(options: WalkerOptions): Walker {
       return target;
     },
     dispose() {
+      skater.unmount();look?.dispose();look=null;
       figure.dispose();
-      board.dispose();
       trail?.dispose();
       dust.dispose();
       group.removeFromParent();

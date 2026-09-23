@@ -9,16 +9,13 @@
  * stats, expanded milestones, deck unlocks by discoveries OR goals, and
  * rider settings. v1 saves migrate losslessly (see `decodeSkateProgress`).
  *
- * Two drivers share one session:
- *  - `observeSkate(session, present, events, outcome, dt)` — v2: the sim's
- *    `SkatePresent` + `SkateSimEvent[]` and the scorer's `ScoreOutcome`.
- *  - `stepSkateSession(session, v1State, dt)` — the v1 adapter the current
- *    rider.ts still calls; kept so the v1 game and its tests run unchanged
- *    until integration swaps the sim. Delete it with skateModel.ts.
+ * The driver (`skate/driver.ts`) feeds it once a frame:
+ * `observeSkate(session, present, events, outcome, dt)` — the sim's
+ * `SkatePresent` + `SkateSimEvent[]` and the scorer's `ScoreOutcome` — and
+ * hands it the real park and catalogs through `setSkateTables`.
  */
-import {SKATE_DECKS, SKATE_RAILS, SKATE_RAMPS, SKATE_ROUTES, SKATE_SPOTS, type SkateDeckId} from './park.ts';
+import {SKATE_DECKS, SKATE_RAILS, SKATE_ROUTES, SKATE_SPOTS, type SkateDeckId} from './park.ts';
 import type {Grindable, ScoreOutcome, SkatePresent, SkateSimEvent, Stance} from './contract.ts';
-import type {SkateState} from './skateModel.ts';
 
 /* ------------------------------------------------------------------ tables */
 /** The minimum the session needs from the park's tables. PARK may add fields and change ids freely. */
@@ -37,19 +34,13 @@ export type SkateTables = {
   flips?: readonly NamedLike[];
   grinds?: readonly NamedLike[];
 };
-const v1Grindables = (): Pick<Grindable, 'id' | 'name' | 'points'>[] => (SKATE_RAILS ?? []).map(r => ({id: r.id, name: r.name, points: [[r.a[0], r.height, r.a[1]], [r.b[0], r.height, r.b[1]]] as const}));
-const v1Features = (): FeatureLike[] => (SKATE_RAMPS ?? []).map(r => ({id: r.id, x: r.x, z: r.z, name: featureName(r.id)}));
+const railGrindables = (): Pick<Grindable, 'id' | 'name' | 'points'>[] => (SKATE_RAILS ?? []).map(r => ({id: r.id, name: r.name, points: [[r.a[0], r.height, r.a[1]], [r.b[0], r.height, r.b[1]]] as const}));
 /** The park's own tables. Integration may pass a richer set (field.grindables, catalogs) to `setSkateTables`. */
-export const DEFAULT_SKATE_TABLES: SkateTables = {spots: SKATE_SPOTS, routes: SKATE_ROUTES, decks: SKATE_DECKS, grindables: v1Grindables(), features: v1Features()};
+export const DEFAULT_SKATE_TABLES: SkateTables = {spots: SKATE_SPOTS, routes: SKATE_ROUTES, decks: SKATE_DECKS, grindables: railGrindables(), features: []};
 let tables: SkateTables = DEFAULT_SKATE_TABLES;
 /** Swap the tables the session reads (integration: the v2 field's spots/grindables and the trick catalogs). */
 export function setSkateTables(next: Partial<SkateTables>): void { tables = {...DEFAULT_SKATE_TABLES, ...next}; goalCache.clear(); }
 export const skateTables = (): SkateTables => tables;
-function featureName(id: string): string {
-  const tail = id.split('-').slice(1).join(' ') || id;
-  const words: Record<string, string> = {halfpipe: 'the halfpipe', launch: 'the launch ramp', funbox: 'the funbox', bank: 'the bank', kicker: 'the kicker', hip: 'the hip'};
-  return words[tail] ?? `the ${tail}`;
-}
 
 /* ------------------------------------------------------------------ progress */
 export type SkateSettings = {
@@ -444,34 +435,4 @@ export function observeSkate(session: SkateSession, present: SkatePresent, event
   if (before !== JSON.stringify(p)) session.revision++;
 }
 
-/* ------------------------------------------------------------------ v1 adapter */
-/** v1 driver (rider.ts / skateModel.ts). Kept until integration replaces the v1 sim. */
-export function stepSkateSession(session: SkateSession, s: SkateState, dt: number): void {
-  const before = JSON.stringify(session.progress), p = session.progress;
-  visit(session, s.x, s.z);
-  if (s.event.id !== session.lastEvent) {
-    session.lastEvent = s.event.id;
-    if (s.event.kind === 'trick' || s.event.kind === 'grind') session.lineTags = [...new Set([...session.lineTags, s.event.text])];
-    if (s.event.kind === 'bail') { session.lineTags = []; p.stats.bails++; }
-    if (s.event.kind === 'bank') {
-      if (s.landings > 0) award(session, 'first-landing');
-      if (session.lineTags.some(t => /flip/i.test(t))) award(session, 'flip');
-      if (session.lineTags.some(t => /grind|flatbar|rail|ledge/i.test(t))) award(session, 'grind');
-      if (session.lineTags.includes('Manual')) award(session, 'manual');
-      if (s.event.points >= 2000) award(session, 'line');
-      p.stats.linesBanked++; p.stats.tricksLanded += session.lineTags.length; p.stats.biggestLine = Math.max(p.stats.biggestLine, s.event.points);
-      session.lineTags = [];
-    }
-  }
-  // Model combo tags cover multiple physics events occurring inside one visual frame.
-  if (s.comboTricks.length) session.lineTags = [...new Set([...session.lineTags, ...s.comboTricks])];
-  p.bestLine = Math.max(p.bestLine, s.best);
-  stepRun(session, s.x, s.z, s.mode === 'bail', dt);
-  if (before !== JSON.stringify(p)) session.revision++;
-}
-export type SkateSnapshot = {active: boolean; paused: boolean; speed: number; mode: SkateState['mode']; combo: number; multiplier: number; comboTime: number; score: number; best: number; balance: number; balancing: boolean; tricks: string[]; event: string; eventId: number; eventKind: string; x: number; z: number; yaw: number; progress: SkateProgress; run: SkateRun | null; message: string; revision: number; spotCard: SkateSpotCard | null; spotId: string | null; goalProgress: Record<string, number>};
 export const cloneSkateProgress = (p: SkateProgress): SkateProgress => ({...p, discovered: [...p.discovered], stamps: [...p.stamps], goals: [...p.goals], routeBest: {...p.routeBest}, stats: {...p.stats}, settings: {...p.settings}});
-export function skateSnapshot(s: SkateState, session: SkateSession, paused = false): SkateSnapshot {
-  return {active: true, paused, speed: s.speed, mode: s.mode, combo: Math.round(s.combo), multiplier: s.multiplier, comboTime: Math.max(0, 1 - s.comboAge / 2.4), score: s.score, best: s.best, balance: s.balance, balancing: s.mode === 'grind' || s.manualTime > 0, tricks: s.comboTricks, event: s.event.text, eventId: s.event.id, eventKind: s.event.kind, x: s.x, z: s.z, yaw: s.yaw,
-    progress: cloneSkateProgress(session.progress), run: session.run ? {...session.run} : null, message: session.message, revision: session.revision, spotCard: session.spotCard, spotId: session.spotId, goalProgress: {...session.goalProgress}};
-}

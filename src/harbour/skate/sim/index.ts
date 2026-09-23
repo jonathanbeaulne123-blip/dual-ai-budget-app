@@ -39,7 +39,25 @@ export type SkateCatalogs = {
   flips: ReadonlyMap<string, FlipTrickDef>;
   grinds: ReadonlyMap<string, GrindDef>;
   grabs: ReadonlyMap<string, GrabDef>;
+  /**
+   * Optional grind namer (integration injects TRICKS' `resolveGrind`). Given the
+   * approach measured at lock it returns a def id from `grinds`; when absent, or
+   * when it names an id the catalog lacks, the sim falls back to `selectGrind`.
+   */
+  resolveGrind?: (a: GrindLockApproach) => string;
 };
+/**
+ * The approach at the moment of lock, in the rider's frame (see NOTES-sim.md):
+ *  - `deckYawToLine` signed angle of the front-foot end to the line, |·| ≤ π/2,
+ *    + = that end is on the FAR side (away from where the rider came from);
+ *  - `lean` −1 tail … +1 nose (front foot);
+ *  - `overLine` the board's centre had already crossed the line by > 6 cm when
+ *    it locked (popped over it): blunts;
+ *  - `faceSide` always 0 here — the sign of `deckYawToLine` is already measured
+ *    against the approach side;
+ *  - `frontside` the rider's chest faced the grindable on the way in.
+ */
+export type GrindLockApproach = { deckYawToLine: number; lean: number; overLine: boolean; faceSide: -1 | 0 | 1; frontside: boolean };
 export type SkateSimOptions = {
   x: number; z: number; yaw: number; stance: Stance; reducedAssist?: boolean;
   /** Island obstacles (buildings/trees) in body-obstacle form; injected by integration. */
@@ -67,6 +85,8 @@ type GrabS = { grabId: string; weight: number; seconds: number; on: boolean };
 type GrindS = {
   li: number; s: number; dir: 1 | -1; speed: number; defId: string; gid: string; seconds: number; distance: number;
   faceSign: 1 | -1; yawOff: number; pitch: number; slide: boolean; difficulty: number; coping: boolean; inX: number; inZ: number; seed: number;
+  /** The rider's chest faced the grindable on the way in (grind-start `frontside`). */
+  fs: boolean;
 };
 type StallS = { id: 'rock-to-fakie' | 'axle-stall'; t: number; inX: number; inZ: number; feature: string };
 /** On a wall: outward normal (nx,nz) of the face, which side of the rider it is on, what it is. */
@@ -111,7 +131,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   const solids = field.solids ?? [];
   const shore = opts.shore ?? null;
   const reduced = opts.reducedAssist === true;
-  const flips = catalogs.flips, grinds = catalogs.grinds, grabs = catalogs.grabs;
+  const flips = catalogs.flips, grinds = catalogs.grinds, grabs = catalogs.grabs, resolve = catalogs.resolveGrind ?? null;
 
   // Scratch (no per-step allocation).
   const S0 = sampleScratch(), S1 = sampleScratch(), SX = sampleScratch();
@@ -193,6 +213,27 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     out.x = dx / l; out.y = dy / l; out.z = dz / l;
   }
   const V3 = { x: 0, y: 0, z: 0 };
+  /**
+   * Heading of a tangent velocity with the surface unrolled flat: the uphill
+   * component points along the fall line's xz direction, the across component
+   * along the level line. On flat ground this is atan2(vx, vz); on a vert wall
+   * going straight up it is the direction the wall faces away from (not
+   * whatever tiny sideways drift the xz velocity happens to have). Writes the
+   * unrolled speed to FH.m.
+   */
+  const FH = { m: 0 };
+  /** Wheel-grip axis scratch (see stepGround). */
+  const GA = { x: 0, y: 0, z: 1 };
+  function flatHeading(vx: number, vy: number, vz: number, nx: number, ny: number, nz: number): number {
+    const s = Math.hypot(nx, nz);
+    if (s < 1e-3) { FH.m = Math.hypot(vx, vz); return Math.atan2(vx, vz); }
+    const ux = -nx / s, uz = -nz / s;               // uphill, horizontal
+    const up = -(vx * nx + vz * nz) / s * ny + vy * s; // v · (fall-line tangent, uphill)
+    const across = vx * -uz + vz * ux;              // v · (level line)
+    const fx = up * ux - across * uz, fz = up * uz + across * ux;
+    FH.m = Math.hypot(fx, fz);
+    return Math.atan2(fx, fz);
+  }
 
   function orientToSurface(nx: number, ny: number, nz: number, dt: number, rate: number): void {
     const by = S.boardYaw, fx = Math.sin(by), fz = Math.cos(by), lx = Math.cos(by), lz = -Math.sin(by);
@@ -465,6 +506,18 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     }
     let vx = tx * mag, vy = ty * mag, vz = tz * mag;
 
+    // Wheel grip (integration 2026-09-23): the board's rolling axis is a tangent
+    // vector that turns with the carve (same rotation as the velocity). Below
+    // WHEEL_GRIP_SPEED along it the velocity is held to it at the end of the
+    // step, so the sideways drift at a wall's peak (a stall) can no longer swing
+    // the board 90° and send you off the side of a mini. Faster, the board
+    // follows travel. Not while powersliding/reverting (slideAngle ≠ 0).
+    const grip = !S.slide && Math.abs(S.slideAngle) < 1e-3;
+    {
+      const by = S.boardYaw;
+      lift(Math.sin(by), Math.cos(by), n0x, n0y, n0z, V3);
+      GA.x = V3.x; GA.y = V3.y; GA.z = V3.z;
+    }
     // Steering: carve about the surface normal; pivot when (nearly) stopped.
     const steer = S.carve;
     let omega = 0;
@@ -481,6 +534,10 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       // v ⊥ n: rotate about n (Rodrigues without the parallel term).
       const cx = n0y * vz - n0z * vy, cy = n0z * vx - n0x * vz, cz = n0x * vy - n0y * vx;
       vx = vx * c + cx * s; vy = vy * c + cy * s; vz = vz * c + cz * s;
+      if (grip) {
+        const gx = n0y * GA.z - n0z * GA.y, gy = n0z * GA.x - n0x * GA.z, gz = n0x * GA.y - n0y * GA.x;
+        GA.x = GA.x * c + gx * s; GA.y = GA.y * c + gy * s; GA.z = GA.z * c + gz * s;
+      }
       if (mag < 0.25) S.boardYaw = wrap(S.boardYaw + a);
     }
     const ke = 0.5 * (vx * vx + vy * vy + vz * vz);
@@ -566,9 +623,29 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     S.gnx = S1.nx; S.gny = S1.ny; S.gnz = S1.nz; S.kind = S1.kind; S.feature = S1.feature; S.clearance = 0;
     S0lip = S1.lip;
 
-    // Board follows travel; which end leads can flip when you roll back down a wall.
+    // Board follows travel (above the grip speed); which end leads can flip when
+    // you roll back down a wall.
+    let held = false;
+    if (grip) {
+      // Re-seat the axis on the new surface. Slow along it (climbing to a wall's
+      // peak, a stall) the wheels hold you to it completely; at speed the board
+      // follows travel (momentum across a transition is kept, as before).
+      const dn = GA.x * S.gnx + GA.y * S.gny + GA.z * S.gnz;
+      let ax = GA.x - dn * S.gnx, ay = GA.y - dn * S.gny, az = GA.z - dn * S.gnz;
+      const al = Math.hypot(ax, ay, az);
+      if (al > 1e-6 && Math.hypot(ax, az) > 1e-4) {
+        ax /= al; ay /= al; az /= al;
+        const along = S.vx * ax + S.vy * ay + S.vz * az;
+        if (Math.abs(along) < T.WHEEL_GRIP_SPEED) {
+          held = true;
+          S.vx = ax * along; S.vy = ay * along; S.vz = az * along;
+          S.boardYaw = wrap(Math.atan2(ax, az));
+          if (Math.abs(along) > 0.05) { S.lead = along >= 0 ? 1 : -1; canonical(); }
+        }
+      }
+    }
     const sp = speed3();
-    if (sp > 0.25) {
+    if (!held && sp > 0.25) {
       const hd = Math.atan2(S.vx, S.vz);
       if (hSpeed() > 0.03) {
         const base = wrap(S.boardYaw - S.slideAngle);
@@ -635,6 +712,14 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     endManual();
     S.manualResume = hadManual;
     if (vert) {
+      // The board's Euler yaw on a near-vert face is its xz projection, which
+      // amplifies a few degrees off the fall line into tens; in the air the deck
+      // levels out, so carry the UNROLLED heading (what it really was) instead.
+      {
+        const by = S.boardYaw;
+        lift(Math.sin(by), Math.cos(by), S.gnx, S.gny, S.gnz, V3);
+        S.boardYaw = wrap(flatHeading(V3.x, V3.y, V3.z, S.gnx, S.gny, S.gnz));
+      }
       const out = S.vx * ox + S.vz * oz;
       const ax = S.vx - out * ox, az = S.vz - out * oz;
       const up = Math.sqrt(Math.max(0, S.vy) ** 2 + Math.max(0, out) ** 2);
@@ -793,10 +878,12 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       else { toGround(); bail('flip-not-caught'); return; }
     }
 
-    // Board vs travel.
+    // Board vs travel (travel read in the unrolled landing surface, see flatHeading).
     const th = Math.hypot(vtx, vtz);
-    const trav = th > 0.3 ? Math.atan2(vtx, vtz) : wrap(S.boardYaw + (S.lead < 0 ? Math.PI : 0));
-    const a = wrap(S.boardYaw - trav);
+    lift(Math.sin(S.boardYaw), Math.cos(S.boardYaw), nx, ny, nz, V3);
+    const boardU = flatHeading(V3.x, V3.y, V3.z, nx, ny, nz);
+    const travU = flatHeading(vtx, vty, vtz, nx, ny, nz);
+    const a = FH.m > 0.3 ? wrap(boardU - travU) : (S.lead < 0 ? Math.PI : 0);
     const k = Math.round(a / Math.PI);
     const dev = Math.abs(a - k * Math.PI) * 180 / Math.PI;
     if (dev > T.LAND_SKETCHY_DEG) { toGround(); bail('bad-angle'); return; }
@@ -852,6 +939,10 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
 
   function tryLock(y0: number, x1: number, y1: number, z1: number): boolean {
     if (!lines.length || S.vy > 0.6) return false;
+    // A vert air comes straight back down past its own coping: that is a
+    // re-entry, not a grind. Coping grinds off vert need the assist held
+    // (lip tricks have their own stall path at launch).
+    if (S.vert && !I.grindAssist) return false;
     const reach = (I.grindAssist ? T.GRIND_REACH_ASSIST : T.GRIND_REACH) * (reduced ? 0.75 : 1);
     const need = I.grindAssist ? T.GRIND_ALIGN_ASSIST : T.GRIND_ALIGN;
     const hs = Math.hypot(S.vx, S.vz);
@@ -874,9 +965,12 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     if (best < 0) return false;
     const L = lines[best]!;
     nearestXZ(L, x1, z1, LP);
+    lockX = x1; lockZ = z1;
     return lockOn(best, L);
   }
 
+  /** Where the board was (xz) on the substep it locked, before it is put on the line. */
+  let lockX = NaN, lockZ = NaN;
   function lockOn(li: number, L: GrindLine): boolean {
     // Flip must be (nearly) caught to lock on.
     const tr = S.trick;
@@ -904,7 +998,19 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     const along = bfx * Math.sin(psi) + bfz * Math.cos(psi), latb = bfx * rx + bfz * rz;
     const axis = Math.atan2(Math.abs(latb), Math.abs(along));
     const over: 1 | -1 = Math.sign(latb) === -near ? 1 : -1;
-    const def = selectGrind(grinds, { axis, over, lean: S.lean, kind: L.kind }) ?? FALLBACK_GRIND;
+    // Frontside: the chest faces the grindable. The chest looks to the right of
+    // travel when footSign() is +1 (regular, natural foot leading); the
+    // grindable lies on the far side, −near.
+    const frontside = footSign() === -near;
+    const crossed = Number.isFinite(lockX) ? ((lockX - LP.x) * rx + (lockZ - LP.z) * rz) * near : 0;
+    lockX = NaN; lockZ = NaN;
+    let def: GrindDef | null = null;
+    if (resolve) {
+      try {
+        def = grinds.get(resolve({ deckYawToLine: axis * over, lean: S.lean, overLine: crossed < -0.06, faceSide: 0, frontside })) ?? null;
+      } catch { def = null; }
+    }
+    def = def ?? selectGrind(grinds, { axis, over, lean: S.lean, kind: L.kind }) ?? FALLBACK_GRIND;
     // Board settles at the def's angle on the side it arrived.
     const rel = wrap(S.boardYaw - psi);
     const kk = Math.round(rel / Math.PI);
@@ -923,7 +1029,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     S.grind = {
       li, s: LP.s, dir, speed: Math.max(sp, 0.5), defId: def.id, gid: L.id, seconds: 0, distance: 0, faceSign: near,
       yawOff: wrap(yawOff), pitch: fin(def.deckPitch) * (S.feetSwapped ? -1 : 1), slide: isSlide(def), difficulty: clamp(fin(def.difficulty), 0, 1),
-      coping, inX, inZ, seed: (S.seq * 2.399) % 6.283,
+      coping, inX, inZ, seed: (S.seq * 2.399) % 6.283, fs: frontside,
     };
     // A sloppy approach starts you off-balance.
     S.balance = clamp((Math.abs(axis) - Math.min(Math.PI / 2, Math.abs(fin(def.deckYaw)))) * 0.6 * (S.seq % 2 ? 1 : -1), -0.4, 0.4);
@@ -931,7 +1037,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     S.x = LP.x; S.y = LP.y; S.z = LP.z;
     S.spinRate = 0; S.vert = false;
     S.boardYaw = wrap(S.boardYaw);
-    emit({ t: S.t, kind: 'grind-start', grindId: def.id, grindableId: L.id, kind2: L.kind, switch: isSwitch(), fakie: isFakie() });
+    emit({ t: S.t, kind: 'grind-start', grindId: def.id, grindableId: L.id, kind2: L.kind, switch: isSwitch(), fakie: isFakie(), frontside });
     return true;
   }
 
@@ -1002,7 +1108,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
         S.cooldown = 0;
         S.seq++;
         S.grind = { ...g, li: mi, s: end === 0 ? 0 : M.total, dir, gid: M.id, seconds: 0, distance: 0, seed: (S.seq * 2.399) % 6.283, coping: M.kind === 'coping' };
-        emit({ t: S.t, kind: 'grind-start', grindId: def, grindableId: M.id, kind2: M.kind, switch: isSwitch(), fakie: isFakie() });
+        emit({ t: S.t, kind: 'grind-start', grindId: def, grindableId: M.id, kind2: M.kind, switch: isSwitch(), fakie: isFakie(), frontside: g.fs });
         return true;
       }
     }

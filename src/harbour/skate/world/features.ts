@@ -13,7 +13,13 @@ import { arcFor, arcHeight, arcSlope, bankFor, bankHeight, bankSlope, sdRoundRec
 
 /** Width of the strip at the top of a transition that carries `lip` (world units). Wider than one 1/120 s step at 13 u/s. */
 export const LIP_BAND = 0.15;
-/** Lips at or above this angle are `vert` (straight up and back in). */
+/**
+ * Authored "true vert" angle (the Chimney, the Kettle). Every COPING lip —
+ * quarterpipe, mini and bowl — is flagged `vert` whatever its angle (integration
+ * decision 2026-09-23, per the sim's contract: airs off a transition go straight
+ * up and come back in, as in a skate game); only kicker lips launch along the
+ * tangent. Kept for the kicker arc clamp and for tests.
+ */
 export const VERT_DEG = 80;
 /** Coping pipe top above the lip line, and its radius. */
 export const COPE_TOP = 0.03;
@@ -85,7 +91,7 @@ export class QuarterShape implements SurfaceShape {
   readonly id: string; readonly arc: Arc; readonly minX: number; readonly maxX: number; readonly minZ = 0; readonly maxZ: number; readonly vert: boolean; private readonly kind: SurfaceKind;
   constructor(readonly def: QuarterDef, readonly frame: Frame, readonly plane: Plane) {
     this.id = def.id; this.arc = arcFor(def.height, def.angle); this.minX = -def.width / 2; this.maxX = def.width / 2; this.maxZ = this.arc.T + def.deck;
-    this.vert = def.angle >= VERT_DEG; this.kind = kindOf(def);
+    this.vert = true; this.kind = kindOf(def);
   }
   evalLocal(lx: number, lz: number, o: Hit): boolean {
     if (lx < this.minX || lx > this.maxX || lz < 0 || lz > this.maxZ) return false;
@@ -100,7 +106,7 @@ export class MiniShape implements SurfaceShape {
   readonly id: string; readonly arc: Arc; readonly minX: number; readonly maxX: number; readonly minZ: number; readonly maxZ: number; readonly vert: boolean; private readonly kind: SurfaceKind; readonly half: number;
   constructor(readonly def: MiniDef, readonly frame: Frame, readonly plane: Plane) {
     this.id = def.id; this.arc = arcFor(def.height, def.angle); this.minX = -def.width / 2; this.maxX = def.width / 2;
-    this.half = def.flat / 2 + this.arc.T + def.deck; this.minZ = -this.half; this.maxZ = this.half; this.vert = def.angle >= VERT_DEG; this.kind = kindOf(def);
+    this.half = def.flat / 2 + this.arc.T + def.deck; this.minZ = -this.half; this.maxZ = this.half; this.vert = true; this.kind = kindOf(def);
   }
   evalLocal(lx: number, lz: number, o: Hit): boolean {
     if (lx < this.minX || lx > this.maxX || lz < this.minZ || lz > this.maxZ) return false;
@@ -117,7 +123,7 @@ export class BowlShape implements SurfaceShape {
   private readonly sd = new Float64Array(3);
   constructor(readonly def: BowlDef, readonly frame: Frame, readonly plane: Plane) {
     this.id = def.id; this.arc = arcFor(def.depth, def.angle);
-    this.minX = -def.block[0]; this.maxX = def.block[0]; this.minZ = -def.block[1]; this.maxZ = def.block[1]; this.vert = def.angle >= VERT_DEG; this.kind = kindOf(def);
+    this.minX = -def.block[0]; this.maxX = def.block[0]; this.minZ = -def.block[1]; this.maxZ = def.block[1]; this.vert = true; this.kind = kindOf(def);
     if (def.floor[0] + this.arc.T > def.block[0] - 0.2 || def.floor[1] + this.arc.T > def.block[1] - 0.2) throw new Error(`bowl ${def.id}: deck too narrow`);
   }
   evalLocal(lx: number, lz: number, o: Hit): boolean {

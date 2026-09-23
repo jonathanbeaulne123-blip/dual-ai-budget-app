@@ -130,6 +130,8 @@ export const SKATE_TUNING = {
   IMPACT_DECAY: 6,
 
   /* ── grinds ────────────────────────────────────────────────────────── */
+  /** Wheel grip: below this speed along the board (u/s) the wheels hold you to it (no sideways velocity), so a transition's peak never swings the board across. Integration 2026-09-23. */
+  WHEEL_GRIP_SPEED: 2.2,
   GRIND_REACH: 0.26,
   GRIND_REACH_ASSIST: 0.42,
   GRIND_ABOVE: 0.2,
