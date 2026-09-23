@@ -139,29 +139,44 @@ export type GrindApproach={
   faceSide:-1|0|1;
   /** Rider's chest faces the obstacle. Naming only (score.ts); does not change the id. */
   frontside:boolean;
+  /**
+   * The left stick at contact, sideways, in the grind's frame: + = pushing the front-foot end over
+   * the line (toward the far side), − = back toward the approach side. Picks the side (and blunts).
+   */
+  push?:number;
 };
 
-/** Angle thresholds (rad) of the resolver. */
-export const GRIND_RESOLVE={aligned:.2,slide:1,noseLean:.3,tailLean:-.3,deepTail:-.7,slideLean:.45} as const;
-
 /**
- * Pick the grind/slide from how the board met the line. The sim may call this
- * instead of nearest-def matching. Fed each def's own deckYaw (and a lean that
- * matches its contact: nose/front +, tail/back −, deep tail for suski/salad),
- * it returns that def — see test/skate-tricks.test.ts.
+ * Resolver thresholds (rad / stick units). Feel pass (wave 3): the board's angle picks the family
+ * (truck grind under 45°, slide over), the stick at contact picks the grind inside it, as in Skate:
+ * up/down = nose/tail, toward/away from the obstacle = over (feeble, overcrook, salad, boardslide,
+ * blunts) / back (smith, crooked, suski, lipslide). A measured angle of 15°+ also names the side.
+ */
+export const GRIND_RESOLVE={aligned:.26,slide:Math.PI/4,noseLean:.3,tailLean:-.3,deepTail:-.65,slideLean:.45,push:.35,blunt:.5} as const;
+/**
+ * Pick the grind/slide from how the board met the line and what the stick says. The sim may call
+ * this instead of nearest-def matching. Fed each def's own deckYaw (and a lean that matches its
+ * contact: nose/front +, tail/back −, deep tail for suski/salad), it returns that def — see
+ * test/skate-tricks.test.ts; test/skate-int-grinds.test.ts plays all 15 with keys and a stick.
  */
 export function resolveGrind(a:GrindApproach):GrindDef['id'] {
   let yaw=Number.isFinite(a.deckYawToLine)?Math.atan2(Math.sin(a.deckYawToLine),Math.cos(a.deckYawToLine)):0;
   // Given the NOSE angle while riding the board backwards (> 90°), the tail leads: measure from it.
   if(Math.abs(yaw)>HALF_PI)yaw=yaw>0?yaw-Math.PI:yaw+Math.PI;
   const across=Math.abs(yaw),lean=Number.isFinite(a.lean)?Math.max(-1,Math.min(1,a.lean)):0;
-  const far=a.faceSide!==0?a.faceSide<0:yaw>=0;
+  const push=Number.isFinite(a.push)?Math.max(-1,Math.min(1,a.push!)):0;
+  // Which side the front-foot end goes: the stick when it is pushed, else the ledge face, else the angle.
+  const pushed=Math.abs(push)>=GRIND_RESOLVE.push;
+  const far=pushed?push>0:a.faceSide!==0?a.faceSide<0:yaw>=0;
+  const sided=pushed||across>=GRIND_RESOLVE.aligned;
   if(across>=GRIND_RESOLVE.slide){
-    if(lean>=GRIND_RESOLVE.slideLean)return a.overLine?'noseblunt':'noseslide';
-    if(lean<=-GRIND_RESOLVE.slideLean)return a.overLine?'bluntslide':'tailslide';
+    // Blunts: popped past the line, or pushed over it with the weight on an end.
+    const blunt=a.overLine||push>=GRIND_RESOLVE.blunt;
+    if(lean>=GRIND_RESOLVE.slideLean)return blunt?'noseblunt':'noseslide';
+    if(lean<=-GRIND_RESOLVE.slideLean)return blunt?'bluntslide':'tailslide';
     return far?'boardslide':'lipslide';
   }
-  if(across<GRIND_RESOLVE.aligned){
+  if(!sided){
     if(lean>=GRIND_RESOLVE.noseLean)return 'nosegrind';
     if(lean<=GRIND_RESOLVE.tailLean)return '5-0';
     return '50-50';
@@ -170,7 +185,6 @@ export function resolveGrind(a:GrindApproach):GrindDef['id'] {
   if(lean<=GRIND_RESOLVE.deepTail)return far?'salad':'suski';
   return far?'feeble':'smith';
 }
-
 /** Ollie label pieces used by the scorer and HUD. */
 export const OLLIE_POINTS=60;
 export const flipName=(id:string|null):string=>id===null?'Ollie':SKATE_FLIPS.get(id)?.name??id;

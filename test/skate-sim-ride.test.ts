@@ -37,18 +37,31 @@ describe('skate sim · pushing, rolling, carving', () => {
     expect(all(rb.events, 'push').length).toBeGreaterThan(all(ra.events, 'push').length);
   });
 
-  it('grass and sand bog you down; wood and concrete roll', () => {
-    const coast = (kind: 'grass' | 'sand' | 'cobble' | 'wood' | 'concrete') => {
+  it('grass and sand bog you down; wood, concrete and paths roll; cobbles are felt, not punishing', () => {
+    const coast = (kind: 'grass' | 'sand' | 'cobble' | 'wood' | 'concrete' | 'path') => {
       const sim = makeSim(makeField({ ground: kind }));
       kick(sim, { vz: 6 });
       return ride(sim, 1.5, intent()).present.speed;
     };
-    const wood = coast('wood'), concrete = coast('concrete'), cobble = coast('cobble'), grass = coast('grass'), sand = coast('sand');
+    const push = (kind: 'cobble' | 'concrete' | 'path' | 'grass') => {
+      const r = ride(makeSim(makeField({ ground: kind })), 6, intent({ push: true }), 60, true);
+      return { cruise: r.present.speed, to5: r.frames.find((f) => f.p.speed >= 5)?.t ?? Infinity };
+    };
+    const wood = coast('wood'), concrete = coast('concrete'), path = coast('path'), cobble = coast('cobble'), grass = coast('grass'), sand = coast('sand');
     expect(wood).toBeGreaterThan(5.2);
     expect(concrete).toBeGreaterThan(5.2);
-    expect(cobble).toBeLessThan(concrete - 1);
-    expect(grass).toBeLessThan(3);
+    expect(path).toBeGreaterThan(concrete - 0.1);
+    expect(cobble).toBeLessThan(concrete - 0.3);
+    expect(cobble).toBeGreaterThan(concrete - 0.8);
+    expect(grass).toBeLessThan(3.5);
     expect(sand).toBeLessThan(grass);
+    // Pushing: paths as fast as concrete, cobbles a little slower, grass a crawl you can still get out on.
+    const c = push('concrete'), p = push('path'), cb = push('cobble'), g = push('grass');
+    expect(p.cruise).toBeGreaterThan(c.cruise - 0.1);
+    expect(cb.cruise).toBeGreaterThan(c.cruise - 0.6);
+    expect(cb.to5).toBeLessThan(c.to5 + 0.8);
+    expect(g.cruise).toBeGreaterThan(1.2);
+    expect(g.cruise).toBeLessThan(3);
   });
 
   it('carves with a speed-dependent radius and exposes the toe/heel edge', () => {

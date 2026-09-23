@@ -35,6 +35,8 @@ export const INPUT_TUNING={
   /** Completions older than this when sampled are dropped (e.g. tab stalls). */
   staleMs:300,
   pointerRadiusPx:90,touchStickRadiusPx:56,touchFlickRadiusPx:64,
+  /** A mouse gesture ends when the button comes up; holding still on the rim only completes it after this (drags overshoot the rim and linger there on the way back for a double). */
+  pointerDwellMs:260,
   /** Left-stick magnitude below which a grab takes the hand's default. */
   grabNeutral:.35,
 } as const;
@@ -99,7 +101,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
   let stance:Stance=o.stance??'regular',riding={switch:false,fakie:false},mode:SkateInputMode=o.mode??'flick',device:SkateDevice='keyboard';
   const defaultPads:GetPads|null=typeof navigator!=='undefined'&&typeof navigator.getGamepads==='function'?()=>navigator.getGamepads():null;
   const pad=createGamepadSource(o.getGamepads===undefined?defaultPads:o.getGamepads);
-  const rec:Record<SkateDevice,FlickRecogniser>={keyboard:createFlickRecogniser({digital:true}),pointer:createFlickRecogniser(),touch:createFlickRecogniser(),gamepad:createFlickRecogniser()};
+  const rec:Record<SkateDevice,FlickRecogniser>={keyboard:createFlickRecogniser({digital:true}),pointer:createFlickRecogniser({timing:{dwellMs:INPUT_TUNING.pointerDwellMs}}),touch:createFlickRecogniser(),gamepad:createFlickRecogniser({timing:{popOnFlick:true}})};
   const kbStick=createDigitalStick();
   const keys=new Set<string>(),grabs=new Map<string,GrabDef['hand']>(),touches=new Map<number,Touch>(),queue:Queued[]=[];
   let grab:null|{id:GrabDef['id'];source:string}=null,revert=0,respawn=0,marker=0,pause=false,pushUntil=-Infinity,lastNow=0;
@@ -177,7 +179,9 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
       queue.sort((a,b)=>a.at-b.at);
       const staleMs=Math.max(INPUT_TUNING.staleMs,gap*1.5);
       while(queue.length&&now-queue[0]!.at>staleMs)queue.shift();
-      const c=lateFlip?null:queue.shift()??null;
+      let c=lateFlip?null:queue.shift()??null;
+      // An upgrade belongs to the pop it follows: a flip in the air, and nothing once back down.
+      if(c?.upgrade){if(airborne&&c.flipId!==null){lateFlip=c.flipId;last=c;}c=null;}
       if(c){
         const flick={from:c.from,flipId:c.flipId,strength:c.strength};
         if(!airborne){pop=flick;buffered=null;}

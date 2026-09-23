@@ -104,23 +104,67 @@ come from the sim's pop event flags.
 | daydream-flip        | Daydream Flip          | ↓ ~↘ ~→ ~↗ ⟶ ↓ ⟶ ↗                              |
 
 Unambiguous by construction: every transition is either a 45° rim step or a ≥ 135° flick (tested), no
-two paths are equal, and a gesture completes only on **release** (stick back in the centre for 24 ms,
-or an explicit button/finger/key release), a **dwell** of 90 ms on a nose-side sector, or a timeout —
-so a longer gesture is never pre-empted by its own prefix while you are still moving. A thumb that
+two paths are equal, and a gesture completes on **release** (stick back in the centre and still for
+24 ms, or an explicit button/finger/key release), a **dwell** on a nose-side sector, or a timeout — so a
+longer gesture is never pre-empted by its own prefix while you are still moving. A thumb that
 overshoots keeps the longest trick it already made (flick ↖ then drift to ← = kickflip).
 
 Integration 2026-09-23: a completed gesture is stale after `max(staleMs, 1.5 × the last frame gap)`, so a flick
 that finished inside a long frame (a slow phone, a hitch) still pops instead of vanishing.
 
+### Feel pass (wave 3, 2026-09-23): flick-it at human speed
+
+Tuned against a seeded human model (`test/skate-input-human-model.ts`, held by
+`test/skate-input-human.test.ts`): 60 Hz frames with jitter and the odd 33 ms frame, both stances,
+tail and nose loads; keys that overlap −30…+60 ms and chord up to 45 ms apart, rolls 40–110 ms a
+step; thumbs that curve (bow ±0.25), aim ±12° (triangular), overshoot to the gate and sag to 0.82
+on the rim, 60–200 ms flicks; mouse drags that run 1.1–1.8× past the rim, aim ±20°.
+
+| intended / wrong (80 tries × 23 tricks) | before | after |
+|---|---|---|
+| keyboard | 70 % / 30 % | 99.9 % / 0.1 % |
+| gamepad stick | 78 % / 21 % | 99.4 % / 0.3 % |
+| mouse drag | 67 % / 31 % | 98 % / 1.8 % |
+
+What changed, and why:
+- **Pop on the flick (keys and gamepad).** A flick that lands on a nose-side sector and spells a whole
+  trick pops *now* (`popOnFlick`), not on the release: keys were popping 180 ms after ↑ (however long the
+  finger stayed down); now ≈ 35 ms (the chord window). If the gesture goes on (a double, an impossible,
+  a corner corrected a beat late) its longer reading is emitted again; airborne by then, it reaches the sim
+  as a `lateFlip` that the sim and the scorer treat as the **popped trick read further on** (sim
+  `upgrades()`, scorer `isUpgrade`): within `FLIP_CORRECT_TIME` (0.15 s) of the last reading while still
+  turning, or whenever its gesture carries on from the popped one (kickflip → double → triple; ollie →
+  impossible/dolphin). The board keeps its turns (u rescaled by roll). Mouse and touch still pop on release
+  (a drag's first touch of the rim is too often off by a sector).
+- **Sweeps need the rim.** A move off a load or a flick end counts as a rim step only at ≥ `rimIn` (0.78);
+  between rimOut and rimIn the thumb holds its sector (an established sweep of ≥ 2 steps may sag to rimOut,
+  and its last sector still counts if it is let go at ≥ 0.4). A curved flick no longer reads as a varial.
+- **Nicks and corners.** A 1–2 step nick along the rim before a centre flick is dropped (was 1). A flick
+  never lands on a tail diagonal (→ the tail) or, off the tail, on a side (→ that side's nose corner); one
+  from a tail diagonal after a circle completes the circle first. `repairFlicks()`: when a whole path means
+  nothing, 2–3-step rim runs from the tail to a nose corner (or back) are straightened into the flicks they
+  were, fewest first, latest first.
+- **Rest means still.** A slow flick sweeping through the middle is not a release: the rest timer restarts
+  while the stick moves more than 0.07 a sample.
+- **Snap backs.** Re-armed on the tail (a double's snap back, by flick or round the rim), leaving it has
+  the re-arm window, not the sweep step limit; a snap back that lands beside the tail is corrected to it.
+- **Keys** (`keyboard.ts`): ↑ after ↓ (or ↓ after ↑, while it is still down or within 35 ms of letting go)
+  is a flick, and a side key held from more than 60 ms before it drops out (↖ then ↓ is ↓, not ↙). A roll
+  never skips a sector (one key at a time), so a two-sector jump off the tail or a tail diagonal is a flick
+  (↓ held, ← then ↑ a beat apart = kickflip, not varial). On keys a varial is ↓, ↓←, ←, ←↑.
+- **Dwell** 90 → 180 ms (sticks), 140 → 220 ms (keys), 260 ms (mouse): pops no longer wait on it, and
+  doubles need the time. **Easy keys** are unchanged: one press, hold = crouch, release = pop.
+
 ### Timing and thresholds (`FLICK_TUNING`)
 
 | | analogue | digital (keys) |
 |---|---|---|
+| pop on the flick (`popOnFlick`) | gamepad yes · mouse/touch no | yes |
 | flick: leave load → rim | ≤ 190 ms | ≤ 260 ms |
 | rim step (45°) | ≤ 140 ms (slower = wandering, dropped) | ≤ 240 ms |
-| dwell to complete on the rim | 90 ms | 140 ms |
-| rest to complete (release) | 24 ms seen (+40 ms grace if no samples) | 12 ms |
-| settle a sloppy landing (±45°, nose side only) | 70 ms | 90 ms |
+| dwell to complete on the rim | 180 ms (mouse 260) | 220 ms |
+| rest to complete (release) | 24 ms still (+40 ms grace if no samples) | 12 ms |
+| settle a sloppy landing (±45°, nose side or back to the tail) | 70 ms | 90 ms |
 | re-arm after snapping back to the tail | 240 ms | 340 ms |
 
 Rim in/out 0.78/0.64 · load in/out 0.70/0.56 · short flick (sprang back before a poll saw the rim) ≥ 0.6 ·
@@ -167,11 +211,32 @@ Grabs (hand + left-stick direction, stance-normalised; neutral in brackets):
 − = back to the **near**/approach side; π/2 = slides. `deckPitch` + = nose down. Pairs:
 crooked (−) / overcrook (+), smith (−, nose dips down the near side) / feeble (+, front truck over the far
 side), suski (−) / salad (+) (both nose up, deep tail lean), lipslide (−π/2, tail went over) /
-boardslide (+π/2, nose went over). `resolveGrind` rules: |yaw| < 0.2 → 50-50 / 5-0 (lean ≤ −0.3) /
-nosegrind (lean ≥ 0.3); |yaw| ≥ 1.0 → nose/tail slide by lean (±0.45), blunt when `overLine`, else
-board/lip by side; between → crooked/overcrook (nose lean), suski/salad (lean ≤ −0.7), else
-smith/feeble. Side comes from `faceSide` when non-zero (+1 = leading end points at the ledge/coping face
-= near), otherwise from the sign of `deckYawToLine` (a nose angle beyond ±90° is folded onto the tail).
+boardslide (+π/2, nose went over).
+
+**How a person picks one (feel pass, wave 3 — as in Skate).** The board's angle at contact picks the
+family: under 45° a truck grind, over 45° a slide. The **left stick at contact** picks the grind in it:
+
+| stick at contact | truck grind (board along the line) | slide (board across) |
+|---|---|---|
+| centred | 50-50 | boardslide (front end over) / lipslide (tail over) — by the board |
+| up / down (nose / tail) | nosegrind / 5-0 | noseslide / tailslide |
+| toward the obstacle (over) | feeble | boardslide |
+| away (back to your side) | smith | lipslide |
+| toward + up / down | overcrook / salad | noseblunt / bluntslide (push it over) |
+| away + up / down | crooked / suski | noseslide / tailslide |
+
+Keys: W/S = up/down, A/D = toward/away (whichever points at the rail). A slide = hold the key ~0.25 s in
+the air to swing the board round; keep holding it through contact for a board/lipslide (or, with W/S, a
+blunt), let go before contact for a nose/tailslide. A tap just before contact is enough for the angled
+truck grinds; the board snaps to the grind's angle on lock. A measured angle of 15°+ also names the side
+when the stick is centred; popping past the line still gives a blunt. `test/skate-int-grinds-human.test.ts`
+plays all 15 with keys at jittered human timing on the Rolling Pin and the Breadboard ledge.
+
+`resolveGrind` (`GRIND_RESOLVE`): slide at |yaw| ≥ π/4; lean ±0.45 → nose/tail slides, blunt when
+`overLine` or `push` ≥ 0.5; else board/lip by side. Truck: side from `push` (|push| ≥ 0.35), the ledge
+face, or |yaw| ≥ 0.26; unsided → 50-50 / 5-0 (lean ≤ −0.3) / nosegrind (≥ 0.3); sided → crooked/overcrook
+(lean ≥ 0.3), suski/salad (≤ −0.65), else smith/feeble. `push` is the stick sideways in the front-foot
+end's terms, read against the end that led at take-off (a board spun past 90° keeps its side).
 
 ## Naming and scoring (`score.ts`)
 

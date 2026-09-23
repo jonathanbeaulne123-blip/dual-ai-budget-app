@@ -125,6 +125,24 @@ function run(input:SkateInput,from:number,to:number,o:{airborne?:boolean|((t:num
   return out;
 }
 const pops=(r:{i:SkateIntent}[])=>r.flatMap(x=>x.i.pop?[x.i.pop]:[]);
+/**
+ * Keyboard and gamepad flick-it pop the moment a flick lands; a gesture that goes on (a double,
+ * an impossible, a corner corrected a beat late) arrives in the air as a late flip that the sim
+ * and scorer treat as the popped trick read further on. `ride()` flies the rider for half a
+ * second after each pop; `tricks()` folds those upgrades into the pop they belong to.
+ */
+function ride(input:SkateInput,from:number,to:number,each?:(t:number)=>void){
+  const out:{t:number;i:SkateIntent}[]=[];let airUntil=-Infinity;
+  for(let t=from;t<=to;t+=1000/120){each?.(t);const i=input.sample(t,t<airUntil,true);out.push({t,i});if(i.pop)airUntil=t+500;}
+  return out;
+}
+const tricks=(r:{i:SkateIntent}[])=>{
+  const out:{flipId:string|null;from:'tail'|'nose'}[]=[];
+  for(const x of r){if(x.i.pop)out.push({flipId:x.i.pop.flipId,from:x.i.pop.from});else if(x.i.lateFlip&&out.length)out[out.length-1]!.flipId=x.i.lateFlip;}
+  return out;
+};
+/** The recogniser's completions for one gesture: early pops then upgrades; the last one is the trick. */
+const finalOf=(out:readonly FlickCompletion[])=>out.length?[out[out.length-1]!.flipId]:[];
 
 /** Drive a gamepad right stick through a gesture's samples. */
 function padGesture(id:string|null,o:{origin?:'tail'|'nose';facing?:1|-1;t0?:number}={}){
@@ -138,8 +156,10 @@ describe('skate input: gamepad',()=>{
   it('right-stick flicks pop every trick exactly once; pads report as the active device',()=>{
     for(const id of ALL){
       const {input,each,end}=padGesture(id);
-      const r=run(input,1000,end+400,{each});
-      expect(pops(r),String(id)).toEqual([{from:'tail',flipId:id,strength:expect.any(Number)}]);
+      const r=ride(input,1000,end+400,each);
+      expect(tricks(r),String(id)).toEqual([{from:'tail',flipId:id}]);
+      // Exactly one pop (on the first flick); the rest of a longer gesture arrives in the air.
+      expect(pops(r).map(p=>p.from),String(id)).toEqual(['tail']);
       expect(input.activeDevice()).toBe('gamepad');
     }
   });
@@ -205,10 +225,10 @@ describe('skate input: gamepad',()=>{
 type KeyStep=[t:number,kind:'down'|'up',code:string];
 function keys(steps:KeyStep[],o:{mode?:'flick'|'easy';stance?:'regular'|'goofy';airborne?:boolean}={}){
   const input=createSkateInput({getGamepads:null,mode:o.mode,stance:o.stance});
-  const r:{t:number;i:SkateIntent}[]=[];let k=0;const end=(steps.at(-1)?.[0]??0)+600;
+  const r:{t:number;i:SkateIntent}[]=[];let k=0,airUntil=-Infinity;const end=(steps.at(-1)?.[0]??0)+600;
   for(let t=1000;t<=1000+end;t+=1000/120){
     while(k<steps.length&&1000+steps[k]![0]<=t){const [at,kind,code]=steps[k]!;const e={key:code.startsWith('Key')?code.slice(3).toLowerCase():code,code,timeStamp:1000+at};if(kind==='down')input.keyDown(e);else input.keyUp(e);k++;}
-    r.push({t,i:input.sample(t,Boolean(o.airborne),true)});
+    const i=input.sample(t,Boolean(o.airborne)||t<airUntil,true);r.push({t,i});if(i.pop)airUntil=t+500;
   }
   return {input,r};
 }
@@ -234,7 +254,7 @@ describe('skate input: keyboard',()=>{
     ];
     for(const [id,steps] of cases){
       const {r,input}=keys(steps);
-      expect(pops(r).map(p=>[p.flipId,p.from]),String(id)).toEqual([[id,'tail']]);
+      expect(tricks(r).map(p=>[p.flipId,p.from]),String(id)).toEqual([[id,'tail']]);
       expect(input.activeDevice()).toBe('keyboard');
     }
     // Nollie: ↑ loads the nose, ↓ pops.
@@ -260,7 +280,7 @@ describe('skate input: keyboard',()=>{
         held=want;t+=d==='tail'?150:90;stick.advance(t,emit);
       }
       for(const k of held)stick.release(k,t);stick.advance(t+500,emit);r.tick(t+600);for(let c=r.take();c;c=r.take())out.push(c);
-      expect(out.map(c=>c.flipId),String(id)).toEqual([id]);
+      expect(finalOf(out),String(id)).toEqual([id]);
     }
   });
   it('WASD rides with stroke semantics, Shift sprints, C powerslides, G grind assist, M/N manuals, X/R/T one-shots',()=>{

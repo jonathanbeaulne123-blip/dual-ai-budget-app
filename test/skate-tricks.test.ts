@@ -88,12 +88,12 @@ describe('scoring',()=>{
     s.step([{t:at(.6),kind:'grind-end',grindId:'nosegrind',grindableId:'ledge-b',distance:2,seconds:.6,exit:'ollie'}],T);
     at(.5);s.step([pop(),land({gap:3.2,airTime:.5})],T);
     const line=s.line();
-    expect(line.tricks.map(k=>k.label)).toEqual(['Nollie Backside 180 Heelflip to Manual','Kickflip','Backside Smith Grind to Nosegrind','Ollie','Gap']);
-    expect(line.multiplier).toBe(5);expect(line.base).toBe(line.tricks.reduce((a,k)=>a+k.points,0));
+    expect(line.tricks.map(k=>k.label)).toEqual(['Nollie Backside 180 Heelflip to Manual','Kickflip to Backside Smith Grind to Nosegrind','Ollie','Gap']);
+    expect(line.multiplier).toBe(4);expect(line.base).toBe(line.tricks.reduce((a,k)=>a+k.points,0));
     expect(line.keepAlive).toBe(1);
     expect(s.step([],at(.75))).toEqual([]);expect(s.line().keepAlive).toBeCloseTo(.5,6);
     const out=s.step([],at(.8));
-    expect(out).toEqual([{kind:'banked',points:line.base*5,tricks:line.tricks.map(k=>k.label)}]);
+    expect(out).toEqual([{kind:'banked',points:line.base*4,tricks:line.tricks.map(k=>k.label)}]);
     expect(s.line()).toMatchObject({active:false,tricks:[],base:0,multiplier:1,latest:null});
   });
   it('names the examples: Fakie Frontside 360, Switch Varial Kickflip, Frontside Boardslide, 50-50 to Nosegrind, Indy (1.2s), Rock to Fakie, Revert',()=>{
@@ -106,7 +106,31 @@ describe('scoring',()=>{
     s.step([pop(),{t:at(.1),kind:'grab-start',grabId:'indy',seconds:0},{t:at(1.2),kind:'grab-end',grabId:'indy',seconds:1.2},land({airTime:1.4})],T);
     s.step([{t:at(.3),kind:'lip-trick',id:'rock-to-fakie'},{t:at(.1),kind:'revert'}],T);
     s.step([pop({flipId:'kickflip'}),caught('kickflip'),land({revert:true})],at(.3));
-    expect(labels()).toEqual(['Fakie Frontside 360','Switch Varial Kickflip','Frontside Boardslide','50-50 to Nosegrind','Indy (1.2s)','Rock to Fakie Revert','Kickflip Revert']);
+    expect(labels()).toEqual(['Fakie Frontside 360','Switch Varial Kickflip','Ollie to Frontside Boardslide','50-50 to Nosegrind','Indy (1.2s)','Rock to Fakie Revert','Kickflip Revert']);
+  });
+  it('names the way onto a grind: Ollie to 50-50, Kickflip to Boardslide (one trick, worth both)',()=>{
+    T=0;const s=createSkateScore();const labels=()=>s.line().tricks.map(k=>k.label);
+    const on=(id:string,extra:Partial<Record<string,unknown>>={})=>({t:at(.3),kind:'grind-start',grindId:id,grindableId:'r',kind2:'round-rail',switch:false,fakie:false,...extra}) as SkateSimEvent;
+    const off=(id:string)=>({t:at(.6),kind:'grind-end',grindId:id,grindableId:'r',distance:2,seconds:.6,exit:'roll'}) as SkateSimEvent;
+    s.step([pop(),on('50-50')],T);s.step([off('50-50')],T);
+    s.step([pop({flipId:'kickflip'}),caught('kickflip'),on('boardslide',{frontside:false})],T);s.step([off('boardslide')],T);
+    // Rolling onto a ledge without a pop is just the grind.
+    s.step([on('5-0')],T);s.step([off('5-0')],T);
+    expect(labels()).toEqual(['Ollie to 50-50','Kickflip to Backside Boardslide','5-0 Grind']);
+    const [a,b,c]=s.line().tricks.map(k=>k.points);
+    expect(b!).toBeGreaterThan(a!);expect(a!).toBeGreaterThan(c!*.9);
+  });
+  it('flick-it upgrades: a flip read further on after the pop is the popped trick, not a late one',()=>{
+    T=0;const s=createSkateScore();const labels=()=>s.line().tricks.map(k=>k.label);
+    // Keys pop on the first flick; the rest of a double lands in the air as its upgrade.
+    s.step([pop({flipId:'kickflip'})],T);s.step([{t:at(.25),kind:'late-flip',flipId:'double-kickflip'},caught('double-kickflip')],T);at(.4);s.step([land()],T);
+    // A corner corrected a beat late (ollie read, then kickflip) — within upgradeS.
+    at(.5);s.step([pop()],T);s.step([{t:at(.08),kind:'late-flip',flipId:'kickflip'},caught('kickflip')],T);at(.4);s.step([land()],T);
+    // Ollie → impossible (the up-down-up carries on from the ollie's up).
+    at(.5);s.step([pop()],T);s.step([{t:at(.3),kind:'late-flip',flipId:'impossible'},caught('impossible')],T);at(.3);s.step([land()],T);
+    // A real late flip: later, and not a continuation.
+    at(.5);s.step([pop()],T);s.step([{t:at(.3),kind:'late-flip',flipId:'heelflip'},caught('heelflip')],T);at(.3);s.step([land()],T);
+    expect(labels()).toEqual(['Double Kickflip','Kickflip','Impossible','Late Heelflip']);
   });
   it('style counts: clean catches, spins and switch score more than sloppy plain ones',()=>{
     const one=(events:SkateSimEvent[])=>{T=0;const s=createSkateScore();s.step(events,at(.5));return s.line().tricks[0]!.points;};
