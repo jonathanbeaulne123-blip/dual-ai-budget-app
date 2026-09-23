@@ -1,0 +1,11 @@
+.village-flat__intro h1,.village-flat__district h2,.village-flat__waterfront h2{margin:.2rem 0;color:var(--ink,#332d24)}
+.village-flat__intro p{margin:.25rem 0 1rem;max-width:44rem}
+.village-flat__district,.village-flat__waterfront{margin:1rem 0}
+.village-flat__doors{display:grid;grid-template-columns:repeat(auto-fit,minmax(10.5rem,1fr));gap:.55rem}
+.village-flat__doors--rooms{grid-template-columns:repeat(auto-fit,minmax(9rem,1fr))}
+.village-flat__door{display:grid;gap:.18rem;min-height:4.9rem;padding:.7rem;text-align:left;border:2px solid color-mix(in srgb,var(--court-ink,#47373e) 45%,transparent);border-radius:.65rem;background:color-mix(in srgb,var(--court-plate,#fff8e6) 84%,transparent);color:inherit;cursor:pointer}
+.village-flat__door:hover,.village-flat__door:focus-visible{outline:3px solid var(--court-metal,#caa252);outline-offset:2px;background:var(--court-plate,#fff8e6)}
+.village-flat__door strong{font-size:1rem}.village-flat__door span{font-size:.82rem;line-height:1.25}
+.village-flat__fund{display:grid;grid-template-columns:repeat(2,minmax(8rem,1fr));gap:.5rem;margin:1rem 0}.village-flat__fund div{padding:.55rem;border-left:4px solid var(--court-metal,#caa252);background:color-mix(in srgb,var(--court-plate,#fff8e6) 76%,transparent)}
+.village-flat__fund dt{font-size:.8rem}.village-flat__fund dd{margin:.12rem 0 0;font-weight:700}
+@media (max-width:420px){.village-flat__doors,.village-flat__doors--rooms,.village-flat__fund{grid-template-columns:1fr}.village-flat__door{min-height:4.5rem}}

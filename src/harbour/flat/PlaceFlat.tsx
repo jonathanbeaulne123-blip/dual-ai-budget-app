@@ -3,6 +3,7 @@ import type { HarbourPlaceId } from "../flag.ts";
 import type { AtlasReading, BoathouseReading, CampfireReading, CellarReadingView, CottageReading, GlasshouseReading, HarbourReading, KilnReading, KitchenReading, TowerReading } from "../data/reading.ts";
 import { CourtFlat, engravedCents, type CourtFlatProps, type CourtFlatStatus } from "./CourtFlat.tsx";
 import { DoorSign } from "./DoorSign.tsx";
+import { BankFlat, VillageFlat } from "./VillageFlat.tsx";
 import "../harbour.css";
 
 /**
@@ -27,9 +28,10 @@ export type PlaceFlatProps = Omit<CourtFlatProps, "reading"> & {
   onStair?: () => void;
 };
 
-/** The place's flat edition. The Court's is slice 1's, unchanged. */
+/** The place's flat edition. The square has its own village wayfinding page. */
 export function HarbourFlat({ place, ...props }: PlaceFlatProps) {
-  if(place==='bank') return <section className="court-flat place-flat" aria-label="Fund Bank, reading edition"><div className="court-flat__sheet"><h1>The Fund Bank</h1><p>A warm place to understand the household books.</p><div className="place-flat__doors"><button onClick={()=>props.onOpen?.('queen')}>Meet the Queen</button><button onClick={()=>props.onOpen?.('books')}>Open the books</button><button onClick={props.onStair}>Village square</button></div></div></section>;
+  if (place === "court") return <VillageFlat {...props} />;
+  if (place === "bank") return <BankFlat {...props} />;
   if (place === "tower") return <TowerFlat {...props} />;
   if (place === "cellar") return <CellarFlat {...props} />;
   if (place === "glasshouse") return <GlasshouseFlat {...props} />;
@@ -60,9 +62,9 @@ export function TowerFlat({ reading, status = "loading", theme = "classic", onOp
   const tower: TowerReading | null = reading?.tower ?? null;
   const shelves = tower?.shelves ?? [];
   const banks = shelves.flatMap((shelf) => shelf.banks);
-  return <section className={`court-flat place-flat place-flat--tower court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="tower" aria-label="The Rook's Tower, reading edition" aria-busy={status === "loading" || undefined}>
+  return <section className={`court-flat place-flat place-flat--tower court-flat--${theme}${overlay ? " court-flat--overlay" : ""}`} data-court-flat={status} data-place-flat="tower" aria-label="The Home Loft, reading edition" aria-busy={status === "loading" || undefined}>
     <div className="court-flat__sheet">
-      <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Tower")}</p>
+      <p className="court-flat__status" role="status">{STATUS_WORDS(status, "The Home Loft")}</p>
       <DoorSign place="tower" reading={reading} />
       {onStair && <button type="button" className="place-flat__stair" onClick={onStair}>← Down the stair to the Court</button>}
       {/* The room's own door, always: a rack that has not been read yet is a
