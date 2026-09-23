@@ -59,6 +59,8 @@ export type BodyMotion = {
   bank: number;
   /** How far into a run, 0…1: swing, cadence, bob and squash all grow with it. */
   run: number;
+  /** A board rider holds a sideways stance instead of taking walking strides. */
+  skate?: {push:number;balance:number;bail:boolean};
 
   /* ── The moves ─────────────────────────────────────────────────────────── */
   /** Height above the ground, in units. Anything above nothing is a body in flight. */
@@ -384,6 +386,19 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}, anatomy?:
         rightLeg.rotation.x += 0.3 * crouched;
       }
 
+      if (motion.skate) {
+        const {push,balance,bail}=motion.skate;
+        carriage.rotation.y=Math.PI*.4;
+        carriage.rotation.z=motion.bank*.2*f;
+        carriage.rotation.x=bail?.85:-.08;
+        carriage.position.y=bail?-.2:-.035-crouched*.055;
+        carriage.scale.set(1,1-crouched*.12,1);
+        leftLeg.rotation.x=-.25-crouched*.5;
+        rightLeg.rotation.x=.23+push*.65*f;
+        leftArm.rotation.x=-.38;rightArm.rotation.x=.25;
+        leftArm.rotation.z=armRest[0]-.3-balance*.35;
+        rightArm.rotation.z=armRest[1]+.4+balance*.35;
+      }
       // Whatever the body does, the face keeps looking where it is going.
       head.rotation.x = carriage.rotation.x * -HEAD_LEVEL;
       hair.rotation.x = -0.22 + carriage.rotation.x * -HEAD_LEVEL;

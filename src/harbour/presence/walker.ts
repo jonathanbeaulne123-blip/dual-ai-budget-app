@@ -32,6 +32,7 @@ export type Walker = {
   setPose(x: number, z: number, yaw: number): void;
   /** Whether to play the stride. Never derived from position inside the walker: the lane decides. */
   setMoving(moving: boolean): void;
+  setHeight?(y:number|null):void;
   /**
    * What the body is doing on top of walking — `"jump"`, `"slide"` or one of
    * the six emotes — and how far through it, 0…1. Both come off the wire; the

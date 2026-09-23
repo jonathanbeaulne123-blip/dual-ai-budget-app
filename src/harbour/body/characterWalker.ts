@@ -1,4 +1,5 @@
-import type * as THREE from "three";
+import * as THREE from "three";
+import {createSkateboard} from '../skate/board.ts';
 import { createBodyFigure, DEFAULT_FIGURE_COLOURS, type BodyMotion } from "./figure.ts";
 import {
   EMOTE_SECONDS, GRAVITY, JUMP_RUN_BONUS, JUMP_SPEED, isEmoteId, type EmoteId,
@@ -39,12 +40,13 @@ export function createCharacterWalker(options: WalkerOptions): Walker {
     coat: options.tint || DEFAULT_FIGURE_COLOURS.coat,
     skin: options.skin || DEFAULT_FIGURE_COLOURS.skin,
   });
-  const group = figure.group;
+  const group = new THREE.Group();group.name='Live partner';group.add(figure.group);
+  const board=createSkateboard('afterglow');board.group.visible=false;group.add(board.group);
   // The figure is authored at the reader's own height; a place may want its
   // people smaller. Scaling the group keeps the feet at the origin.
   const height = options.height ?? DEFAULT_WALKER_HEIGHT;
   const scale = figure.height > 0 ? height / figure.height : 1;
-  group.scale.setScalar(scale);
+  figure.group.scale.multiplyScalar(scale);board.group.scale.setScalar(scale);
 
   // Every material on this figure belongs to this figure (`createBodyFigure`
   // builds its own), so fading one body never fades the other.
@@ -68,7 +70,7 @@ export function createCharacterWalker(options: WalkerOptions): Walker {
    * constants both ends is a parabola. It is the same trick the stride has
    * always used here — the lane says *what*, the body draws *how*.
    */
-  let act: string | null = null, progress = 0, groundY = 0;
+  let act: string | null = null, progress = 0, groundY = 0, altitude:number|null=null;
   /** The pose handed to the figure. One object, written in place, exactly as your own body does it. */
   const motion: BodyMotion = { lean: 0, bank: 0, run: 0, air: 0, rise: 0, crouch: 0, slide: 0, emote: null, emoteAt: 0, flourish: 1 };
   /** How high the biggest hop there is goes at its top: what `p` is drawn against. */
@@ -89,13 +91,14 @@ export function createCharacterWalker(options: WalkerOptions): Walker {
       group.position.set(x, groundY + (motion.air ?? 0), z);
       group.rotation.y = yaw;
     },
+    setHeight(y){altitude=typeof y==='number'&&Number.isFinite(y)?y:null;},
     setMoving(next) {
       if (moving === next) return;
       moving = next;
       if (!next) phase = 0;
     },
     setAction(next, p) {
-      act = next;
+      act = next;if(!act?.startsWith("skate"))altitude=null;
       progress = Math.max(0, Math.min(1, Number.isFinite(p) ? p : 0));
     },
     setOpacity(next) {
@@ -109,7 +112,8 @@ export function createCharacterWalker(options: WalkerOptions): Walker {
     animate(t, dt) {
       // A body in the air or on its side is not taking strides, which is the
       // same rule your own body obeys (`bodyModel.ts`).
-      const busy = act === "jump" || act === "slide";
+      const skating=act?.startsWith("skate")===true;
+      const busy = skating || act === "jump" || act === "slide";
       if (moving && !busy) phase += dt * STEP_RATE;
       motion.air = 0; motion.rise = 0; motion.crouch = 0; motion.slide = 0; motion.emote = null; motion.emoteAt = 0;
       if (act === "jump") {
@@ -131,14 +135,17 @@ export function createCharacterWalker(options: WalkerOptions): Walker {
       }
       // The body rides its own jump: the group's origin is the feet, so the
       // feet are the ground plus whatever of the arc is left.
-      group.position.y = groundY + (motion.air ?? 0);
+      group.position.y = skating&&altitude!==null?altitude-.13*scale:groundY + (motion.air ?? 0);
+      board.group.visible=skating;figure.group.position.y=skating ? .13*scale : 0;
+      motion.skate=skating?{push:act==='skate'&&moving?progress:0,balance:act==='skate-grind'||act==='skate-manual'?progress*2-1:0,bail:act==='skate-bail'}:undefined;
+      if(skating)board.pose(moving?5:0,dt,act!,progress);
       // The idle breath runs whether or not the feet do, so a standing partner
       // is alive rather than a statue.
       figure.pose(phase, moving && !busy ? 1 : 0, t, motion);
     },
     dispose() {
       group.removeFromParent();
-      figure.dispose();
+      board.dispose();figure.dispose();
     },
   };
 }

@@ -133,3 +133,10 @@ Sheets-era architecture (museum): [reference/sheets-era/ARCHITECTURE.md](referen
 ## Hercules Workspace (D-249)
 
 The separately gated Hercules workspace adds member-scoped Agent SQLite, Workflows and R2 alongside the existing LedgerRoom and Supabase control plane. Read tools query current accepted scope without Plan activation. Projects and artifacts do not enter financial digests. Private action proposals bridge to the existing reviewed command and receipt authority; sharing creates an exact reviewed copy in a separate namespace. See [the runtime, data and release contract](HERCULES_WORKSPACE.md). Hosted resources and migration 022 are prepared, not applied.
+
+
+## Harbour skate mode (local, 2026-09-23)
+
+`harbour/skate/park.ts` defines authored spots, ramps, rails and route gates. The same analytic surface feeds the mesh builder and contact model; planting keeps these pads clear. `skateModel.ts` advances bounded 120 Hz substeps inside the existing walker frame, using the existing building/tree/shore collisions. `rider.ts` owns transient controls and a recoverable session; it owns neither storage nor a frame loop. `session.ts` validates cosmetic progress. `HarbourWorld` persists only changed progress under an environment/household/member key and rejects callbacks belonging to a prior identity. The HUD is a projection with explicit keyboard/touch actions. Audio is gesture-created and local; no sampled media or provider is used.
+
+Remote riding uses the existing consent-gated `worldPresence` lane. `worldPresenceWire` permits an explicit action allowlist and skate-only bounded altitude; circular shore limits apply to wire positions and dead reckoning. `VillageCourt` polls its injected live `PlaceWalkSource` through `villagePartner`, so Harbour still imports no networking or financial writer. Stale samples discard the action/altitude, fade and disappear. No new persistence collection, ledger command, schema or hosted service is introduced. See the [skate worksession](worksessions/2026-09-23-harbour-skateboarding.md).

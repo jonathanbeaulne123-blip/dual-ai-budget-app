@@ -38,8 +38,8 @@ export const WORLD_PLACE_IDS = [
 ] as const;
 export type WorldPlaceId = (typeof WORLD_PLACE_IDS)[number];
 
-/** Half-width of the island, in metres. A body outside this is clamped back onto it. */
-export const WORLD_BOUND = 64;
+/** Playable shore radius, mirrored without importing the rendering layer. */
+export const WORLD_BOUND = 73.2;
 /** Beyond this a coordinate is not a mistake, it is a lie: the message is rejected. */
 export const WORLD_ABSURD = 1e4;
 /** Coordinates are rounded to the millimetre before they go on the wire. */
@@ -67,7 +67,7 @@ export const WORLD_TARGET_MS = 12000;
  * could travel in, and an act that is not one of these is a rejection rather
  * than a pass-through.
  */
-export const WORLD_ACTS = ["jump", "slide", "wave", "dance", "sit", "cheer", "laugh", "point"] as const;
+export const WORLD_ACTS = ["jump", "slide", "wave", "dance", "sit", "cheer", "laugh", "point", "skate", "skate-ollie", "skate-kickflip", "skate-heelflip", "skate-shuvit", "skate-360-flip", "skate-grab", "skate-grind", "skate-manual", "skate-bail"] as const;
 export type WorldAct = (typeof WORLD_ACTS)[number];
 
 export type WorldTarget = { placeId: WorldPlaceId; deviceId: string };
@@ -94,6 +94,8 @@ export type WorldStep = {
    * enough for a jump that lasts half of one.
    */
   p?: number;
+  /** Optional board-foot altitude; bounded to -8..16 metres, ephemeral only. */
+  y?: number;
 };
 
 export type WorldPresenceMessage =
@@ -116,7 +118,7 @@ export class WorldPresenceError extends Error {}
 
 const KNOWN_KEYS: Readonly<Record<string, readonly string[]>> = {
   "world-join": ["type", "version", "target"],
-  "world-step": ["type", "version", "x", "z", "yaw", "moving", "act", "p"],
+  "world-step": ["type", "version", "x", "z", "yaw", "moving", "act", "p", "y"],
   "world-leave": ["type", "version"],
 };
 
@@ -147,7 +149,7 @@ export function worldCoordinate(value: unknown, bound = WORLD_BOUND): number {
   return Number(clamped.toFixed(WORLD_PRECISION));
 }
 
-/** An act is one of eight words or it is not an act. Never a free string on the wire. */
+/** Acts are an explicit allowlist, never a free string on the wire. */
 export function worldAct(value: unknown): WorldAct {
   if (typeof value !== "string" || !(WORLD_ACTS as readonly string[]).includes(value)) throw new WorldPresenceError("WORLD_PRESENCE_ACT");
   return value as WorldAct;
@@ -193,15 +195,23 @@ export function decodeWorldPresence(value: unknown): WorldPresenceMessage {
   // step that carries neither is exactly the step this lane always carried,
   // which is what keeps an older client walking rather than disconnected.
   const act = row.act === undefined || row.act === null ? null : worldAct(row.act);
+  const point = worldPoint(row.x, row.z);
   return {
     type: "world-step",
     version: 1,
-    x: worldCoordinate(row.x),
-    z: worldCoordinate(row.z),
+    ...point,
     yaw: worldYaw(row.yaw),
     moving: row.moving,
     ...(act ? { act, p: worldPhase(row.p ?? 0) } : {}),
+    ...(act?.startsWith('skate')&&row.y!==undefined?{y:Math.max(-8,worldCoordinate(row.y,16))}:{}),
   };
+}
+
+/** Clamp the complete point; square corners lie outside the circular island. */
+export function worldPoint(x:unknown,z:unknown):{x:number;z:number} {
+  const a=worldCoordinate(x),b=worldCoordinate(z),r=Math.hypot(a,b);
+  const scale=r>WORLD_BOUND?(WORLD_BOUND-.001)/r:1;
+  return {x:Number((a*scale).toFixed(WORLD_PRECISION)),z:Number((b*scale).toFixed(WORLD_PRECISION))};
 }
 
 /** The peer key the server stamps on every frame: the authenticated member plus their device. */

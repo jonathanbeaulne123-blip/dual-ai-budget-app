@@ -27,6 +27,8 @@
  */
 
 /** Draw the peer this far in the past, so there is nearly always a sample on each side. */
+import {worldPoint} from './worldPresenceWire.ts';
+
 export const WORLD_RENDER_DELAY_MS = 140;
 /** How long the track may guess past its newest sample. */
 export const WORLD_RECKON_MS = 320;
@@ -42,7 +44,7 @@ export const WORLD_EXPIRE_MS = 8000;
 export const WORLD_TRACK_DEPTH = 8;
 
 export type WorldSample = {
-  x: number; z: number; yaw: number; moving: boolean; at: number;
+  x: number; z: number; yaw: number; moving: boolean; at: number; y?:number;
   /** What the body is doing on top of walking, off the wire. Null is the plain walk. */
   act?: string | null;
   /** How far through it, 0…1. */
@@ -50,6 +52,7 @@ export type WorldSample = {
 };
 export type WorldMotionState = "walking" | "parked" | "gone";
 export type WorldPose = {
+  y?:number;
   x: number;
   z: number;
   yaw: number;
@@ -144,7 +147,7 @@ export function createWorldTrack(options: WorldTrackOptions = {}): WorldTrack {
     const renderAt = nowMs - renderDelayMs;
     const oldest = buffer[0]!;
     if (renderAt <= oldest.at) {
-      return { x: oldest.x, z: oldest.z, yaw: oldest.yaw, moving: oldest.moving, opacity: 1, state: "walking", ageMs: age, act: oldest.act ?? null, p: oldest.p ?? 0 };
+      return { x: oldest.x, z: oldest.z, yaw: oldest.yaw, ...(oldest.y!==undefined?{y:oldest.y}:{}), moving: oldest.moving, opacity: 1, state: "walking", ageMs: age, act: oldest.act ?? null, p: oldest.p ?? 0 };
     }
 
     if (renderAt <= newest.at) {
@@ -162,6 +165,7 @@ export function createWorldTrack(options: WorldTrackOptions = {}): WorldTrack {
       const near = k < 0.5 ? a : b;
       const sameAct = (a.act ?? null) === (b.act ?? null);
       return {
+        ...(a.y!==undefined&&b.y!==undefined?{y:a.y+(b.y-a.y)*k}:near.y!==undefined?{y:near.y}:{}),
         x: a.x + (b.x - a.x) * k,
         z: a.z + (b.z - a.z) * k,
         yaw: lerpYaw(a.yaw, b.yaw, k),
@@ -179,15 +183,16 @@ export function createWorldTrack(options: WorldTrackOptions = {}): WorldTrack {
     const over = renderAt - newest.at;
     const reckon = Math.min(over, reckonMs);
     if (!previous || !newest.moving || reckon <= 0) {
-      return { x: newest.x, z: newest.z, yaw: newest.yaw, moving: false, opacity: 1, state: "walking", ageMs: age, act: newest.act ?? null, p: newest.p ?? 0 };
+      return { x: newest.x, z: newest.z, yaw: newest.yaw, ...(newest.y!==undefined?{y:newest.y}:{}), moving: false, opacity: 1, state: "walking", ageMs: age, act: newest.act ?? null, p: newest.p ?? 0 };
     }
     const span = Math.max(1, newest.at - previous.at);
     let vx = (newest.x - previous.x) / span, vz = (newest.z - previous.z) / span;
     const speed = Math.hypot(vx, vz) * 1000;
-    if (speed > maxSpeed) { const k = maxSpeed / speed; vx *= k; vz *= k; }
+    const cap=newest.act?.startsWith("skate")?Math.max(maxSpeed,13):maxSpeed;
+    if (speed > cap) { const k = cap / speed; vx *= k; vz *= k; }
     return {
-      x: newest.x + vx * reckon,
-      z: newest.z + vz * reckon,
+      ...(newest.y!==undefined?{y:newest.y}:{}),
+      ...worldPoint(newest.x + vx * reckon,newest.z + vz * reckon),
       yaw: newest.yaw,
       // The guess has run out: stand still rather than mime a walk on no data.
       moving: over <= reckonMs,

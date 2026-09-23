@@ -1,3 +1,4 @@
+import {createVillagePartner} from '../presence/villagePartner.ts';
 import {buildVillageLife} from "./life.ts";
 import * as THREE from 'three';
 import {registerPlace,placementOf,placementLift,placementToWorld,type Anchor,type PlaceHandle,type Region,type Pose} from '../scene/place.ts';
@@ -13,6 +14,7 @@ import {buildHarbourLanes} from './lanes.ts';
 export const villageCourt = registerPlace({id:'court',build(scene,dressing,_reading,quality){
   const group=new THREE.Group();group.name='Little Harbour village';
   const owned:{dispose():void}[]=[], shells:ReturnType<typeof buildVillageBuilding>[]=[];
+  const partner=createVillagePartner(dressing,_reading);group.add(partner.group);
   const life=buildVillageLife(dressing,quality);group.add(life.group);
   const landscape=buildHarbourLandscape(dressing);group.add(landscape.group);
   const anchors:Anchor[]=[],regions:Region[]=[];
@@ -53,6 +55,6 @@ export const villageCourt = registerPlace({id:'court',build(scene,dressing,_read
   const poses:Record<string,Pose>={court:{target:[.95,.85,5.1],r:9,theta:.15,phi:1.22},'court:phone':{target:[.95,.8,5.1],r:11,theta:.15,phi:1.17},sky:{target:[0,0,0],r:HARBOUR_LAND.overview,theta:.1,phi:.36}};
   group.updateMatrixWorld(true);scene.add(group);
   let disposed=false;
-  const handle:PlaceHandle & {play(id:string):string|null}={group,anchors:()=>[...anchors,...life.anchors(),...landscape.anchors],regions:()=>[...regions,...life.regions()],poses:()=>poses,update(){},play:id=>HARBOUR_WANDERS.find(w=>`wander:${w.id}`===id)?.words??life.interact(id),animate(t,dt){life.animate(t,dt);for(const shell of shells)shell.animate(t,dt);water.scale.setScalar(1+Math.sin(t*1.8)*.018);return true;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();life.dispose();landscape.dispose();shells.forEach(s=>s.dispose());owned.forEach(x=>x.dispose());group.clear();}};
+  const handle:PlaceHandle & {play(id:string):string|null}={group,anchors:()=>[...anchors,...life.anchors(),...landscape.anchors],regions:()=>[...regions,...life.regions()],poses:()=>poses,update(reading){partner.update(reading);},play:id=>HARBOUR_WANDERS.find(w=>`wander:${w.id}`===id)?.words??life.interact(id),animate(t,dt){partner.animate(t,dt);life.animate(t,dt);for(const shell of shells)shell.animate(t,dt);water.scale.setScalar(1+Math.sin(t*1.8)*.018);return true;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();life.dispose();partner.dispose();landscape.dispose();shells.forEach(s=>s.dispose());owned.forEach(x=>x.dispose());group.clear();}};
   return handle;
 }});

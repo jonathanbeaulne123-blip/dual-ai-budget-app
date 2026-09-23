@@ -1,3 +1,7 @@
+## 2026-09-23 — Tideline Skate Club, local implementation
+
+The Harbour now has an original skateboard mode: momentum and tricks, ramps and rails at six island spots, five optional routes, cosmetic deck discoveries, keyboard/touch controls and opt-in live partner skate poses. Progress is device-local recreational data; books and Journey retain their meaning. Local browser and automated evidence, with physical-device/live-service acceptance still open, are recorded in the [worksession](worksessions/2026-09-23-harbour-skateboarding.md). Not pushed, merged or deployed.
+
 ## Current Hearthside scope — web integration (2026-09-19)
 
 Jonathan narrowed the immediate delivery to web; native SDKs, AR/widgets and distribution are deferred. The current-main integration, exact verification and package-by-package remaining acceptance are recorded in the [web handoff](briefs/HEARTHSIDE_WEB_HANDOFF_2026-09-19.md) and [worksession](worksessions/2026-09-19-hearthside-web-integration.md). Local implementation does not close hosted continuity, physical/browser/product acceptance or release authorization.

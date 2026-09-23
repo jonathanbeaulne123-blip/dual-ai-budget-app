@@ -180,11 +180,27 @@ it("clamps a coordinate off the island instead of broadcasting it", async () => 
   await a.next("world-peer");
   walkStep(a, 5_000, -5_000, 0.2);
   // Sockets from earlier tests are still joined, so name the one that matters.
-  expect(await b.next("world-peer", (m) => m.deviceId === "MEM-001:DEVICE-clamp-a" && "x" in m))
-    .toMatchObject({ x: WORLD_BOUND, z: -WORLD_BOUND, placeId: "court" });
+  const frame=await b.next("world-peer", (m) => m.deviceId === "MEM-001:DEVICE-clamp-a" && "x" in m);
+  expect(frame.placeId).toBe('court');expect(Math.hypot(frame.x,frame.z)).toBeLessThanOrEqual(WORLD_BOUND);
+  expect(frame.x).toBeGreaterThan(0);expect(frame.z).toBeLessThan(0);
 }, 60_000);
 
 /* ── The moves, carried to the other side (walk-moves) ──────────────────── */
+
+it('carries bounded skate altitude to the authenticated partner and drops it for walking',async()=>{
+  const a=await connect('MEM-001','presence'),b=await connect('MEM-002','presence');
+  joinCourt(a,'DEVICE-skate-a');joinCourt(b,'DEVICE-skate-b');
+  const mine=(m:Record<string,unknown>)=>m.deviceId==='MEM-001:DEVICE-skate-a';
+  await b.next('world-peer',mine);
+  a.ws.send(JSON.stringify({type:'world-step',version:1,x:84,z:84,y:30,yaw:0,moving:true,act:'skate-kickflip',p:.5}));
+  const frame=await b.next('world-peer',m=>mine(m)&&m.act==='skate-kickflip');
+  expect(frame).toMatchObject({memberId:'MEM-001',y:16,p:.5});expect(Math.hypot(frame.x,frame.z)).toBeLessThanOrEqual(WORLD_BOUND);
+  await new Promise(r=>setTimeout(r,WORLD_MIN_GAP_MS+20));
+  a.ws.send(JSON.stringify({type:'world-step',version:1,x:1,z:2,y:30,yaw:0,moving:false}));
+  const walking=await b.next('world-peer',m=>mine(m)&&m.x===1);expect(walking).not.toHaveProperty('y');
+  a.ws.send(JSON.stringify({type:'world-leave',version:1}));
+  expect(await b.next('world-left',m=>m.deviceId==='MEM-001:DEVICE-skate-a')).toMatchObject({deviceId:'MEM-001:DEVICE-skate-a'});
+},60_000);
 
 it("carries a jump and an emote to the partner, rebuilt server-side like everything else", async () => {
   const a = await connect("MEM-001", "presence");

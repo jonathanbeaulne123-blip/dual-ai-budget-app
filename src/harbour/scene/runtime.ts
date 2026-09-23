@@ -1,5 +1,8 @@
 import {crossedVillageDoor,villagePortalArrival} from "../village/topology.ts";
 import * as THREE from "three";
+import {buildSkatePark} from '../skate/parkScene.ts';
+import type {SkateControls} from '../skate/rider.ts';
+import type {SkateSnapshot} from '../skate/session.ts';
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import { worldDiagnostics } from "../../house/world/diagnostics.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
@@ -49,6 +52,7 @@ export type ProjectedRect = { id: string; kind: "region" | "anchor"; group: stri
 export type HarbourCallbacks = {
   onJourney?:()=>void;
   avatar?:PlayableAvatar|null;
+  onSkate?: (snapshot:SkateSnapshot|null)=>void;
   onReady: () => void;
   onFailure: () => void;
   onProject?: (rects: ProjectedRect[]) => void;
@@ -121,6 +125,7 @@ const isCourtAnchor = (id: string | undefined): id is CourtAnchor => (COURT_ANCH
  * it, and every named pose, every twin and every door work exactly as before.
  */
 export type BodyControls = {
+  skate: SkateControls;
   /** Is the follow camera driving? */
   following: () => boolean;
   /** Take the follow camera, or give it back. Giving it back returns to the room's own pose. */
@@ -353,6 +358,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const animators = new Set<(t: number, dt: number) => void>();
   const rig = createLightRig(scene, dressing.light, tier);
   const ground = createGround(scene, dressing, tier);
+  const skatePark=buildSkatePark(dressing);scene.add(skatePark.group);
+  let skatePublishedAt=0,hadSkate=false;
   // A place says something in it changed: the twins' tables are read again.
   const invalidate = () => { if (!disposed) { dirty = true; listsDirty = true; schedule(); } };
   let reading: PlaceReading | null = callbacks.reading ?? null;
@@ -522,6 +529,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   let pendingDoor:HarbourPlaceId|null=null;
   function thresholds(): void {
     if(!bodyDriven) return;
+    if(walker?.skate.active()&&(walker.state().air>0||walker.action()?.act==='skate-grind')){previousDoorPoint=[...focus];return;}
     const before=previousDoorPoint; previousDoorPoint=[...focus];
     if(!before || pendingDoor || Math.hypot(focus[0]-before[0],focus[1]-before[1])>1.5) return;
     const next=crossedVillageDoor(before,focus,placeId);
@@ -581,6 +589,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   let walker: Walker | null = null;
   let follow: FollowCamera | null = null;
   let following = false;
+  let skateCamera = false, skateCameraReset = false;
   let selectedAvatar=callbacks.avatar??null;
   let cat:Cat|null=null,errand:CatErrand|null=null,errandKey:string|null=null;
   let catCatchUpAt=0,zoomOverscroll=0,journeyRequested=false;
@@ -607,6 +616,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * raised and again whenever the place under it changes.
    */
   function standBody(): void {
+    skatePark.group.visible=placeId==='court';
     const anchors = handle.anchors();
     const room = placeRoom(placeId, anchors);
     bodyGround = placeGround(placeId);
@@ -622,7 +632,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
       follow.setHold(followHoldIn(holdFor(placeId), room));
       const reach = walksIndoors(placeId) ? roomReach(room) : null;
-      follow.setPlan(reach === null ? null : followInRoom(reach, composition));
+      follow.setPlan(reach === null ? walker?.skate.active()?{r:6.2,phi:1.22}:null : followInRoom(reach, composition));
       // Configuring the inactive walking rig must not take over the room view.
       if(!following){camera.position.copy(eye);camera.quaternion.copy(orientation);camera.fov=fov;camera.updateProjectionMatrix();}
     }
@@ -697,7 +707,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if (wanted && walker && follow) {
       const at = walker.state();
       host.dataset.houseBody=JSON.stringify({place:placeId,x:at.x,z:at.z,yaw:at.yaw});
-      follow.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed, air: at.air });
+      follow.setSubject({ x: at.x, y: walker.skate.active()?at.y+.15:eyeHeight(at), z: at.z, yaw: walker.skate.heading()??at.yaw, speed: at.speed, air: at.air });
       // Start from where the Look camera stands, so this is a move, not a cut.
       follow.seed(court.pose());
     } else {
@@ -960,6 +970,10 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // saying it is still moving.
     let bodyMoving = false;
     if (walker && follow) {
+      if(walker.skate.active()!==skateCamera){
+        skateCamera=walker.skate.active();
+        if(placeId==='court')follow.setPlan(skateCamera?{r:6.2,phi:1.22}:null);
+      }
       const began = diagnostics ? performance.now() : 0;
       const drive = stickInput ?? bodyInput;
       // Asking for a direction is what turns the follow camera on: the Court's
@@ -974,10 +988,16 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // driving, the Look camera's heading when it is not.
       const heading = following ? follow.basis() : court.pose().theta;
       bodyMoving = walker.step(dt, (now - mountedAt) / 1000, heading);
+      if(walker.skate.active()||hadSkate){
+        if(now-skatePublishedAt>=100||!walker.skate.active()){
+          const snapshot=walker.skate.snapshot();skatePark.update(snapshot);callbacks.onSkate?.(snapshot);skatePublishedAt=now;hadSkate=Boolean(snapshot);
+        }
+      }
       if (walker.walking()) setFollowing(true);
       const at = walker.state();
       host.dataset.houseBody=JSON.stringify({place:placeId,x:at.x,z:at.z,yaw:at.yaw});
-      follow.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed, air: at.air });
+      follow.setSubject({ x: at.x, y: walker.skate.active()?at.y+.15:eyeHeight(at), z: at.z, yaw: walker.skate.heading()??at.yaw, speed: at.speed, air: at.air });
+      if(skateCameraReset){follow.snap();skateCameraReset=false;}
       // ── The three lanes together ── streaming follows the **character**, not
       // the camera. `followCamera()` keeps the focus on the Look camera's
       // target only until a body exists to stand somewhere; from the first
@@ -1008,7 +1028,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         }
       }
       if(cat){
-        const doing=walker.action(),emote=doing&&doing.act!=='jump'&&doing.act!=='slide'?doing.act as EmoteId:null;
+        const doing=walker.action(),emote=doing&&doing.act!=='jump'&&doing.act!=='slide'&&!doing.act.startsWith('skate')?doing.act as EmoteId:null;
         if(cat.step(dt,(now-mountedAt)/1000,{...at,emote}))bodyMoving=true;
         const him=cat.state();
         if(now>=catCatchUpAt&&(Math.hypot(him.x-at.x,him.z-at.z)>14||him.gaveUp!==null)){
@@ -1132,7 +1152,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         if (doubled) { lastGroundTap = null; walker?.cancel(); applyClose(!court.closed()); moved(); }
         else {
           lastGroundTap = { x: pointer.startX, y: pointer.startY, at };
-          if (walker) { walker.goTo(pointer.hit.point[0], pointer.hit.point[2]); setFollowing(true); }
+          if (walker&&!walker.skate.active()) { walker.goTo(pointer.hit.point[0], pointer.hit.point[2]); setFollowing(true); }
         }
       } else lastGroundTap = null;
     }
@@ -1154,8 +1174,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   host.addEventListener("pointercancel", onPointerEnd);
   host.addEventListener("wheel", onWheel, { passive: false });
   const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(resize) : null; observer?.observe(host);
-  const intersection = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); if (visible) { previous = performance.now(); schedule(); } else { lease.cancelFrame(frame); frame = 0; } }) : null; intersection?.observe(host);
-  const visibility = () => { if (document.hidden) { lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
+  const intersection = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); if (visible) { previous = performance.now(); schedule(); } else { walker?.skate.pause(true);bodyInput=NO_INPUT;callbacks.onSkate?.(walker?.skate.snapshot()??null);lease.cancelFrame(frame); frame = 0; } }) : null; intersection?.observe(host);
+  const visibility = () => { if (document.hidden) { walker?.skate.pause(true);bodyInput=NO_INPUT;callbacks.onSkate?.(walker?.skate.snapshot()??null);lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
   // ── The body lane (world-body) ── reduced motion cuts the follow camera
   // rather than swinging it. The character still walks: that is the app.
   const onReduced = () => {
@@ -1229,7 +1249,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     },
     // ── The body lane (world-body) ── a tool in front of the place turns the
     // stage into a door strip: the follow camera gives the view back for it.
-    setToolOpen(open) { toolOpen = open; if (open) setFollowing(false); schedule(); },
+    setToolOpen(open) { toolOpen = open; if (open) {walker?.skate.pause(true);setFollowing(false);} schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
     invalidate() { settling = true; dirty = true; listsDirty = true; if(walker)standBody(); previous = performance.now(); schedule(); },
     addAnimator(animate) { animators.add(animate); listsDirty = true; schedule(); return () => { animators.delete(animate); }; },
@@ -1266,6 +1286,17 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const one = walker;
       if (!one) return null;
       return {
+        skate: {
+          ...one.skate,
+          restore(checkpoint){if(placeId!=='court')return;one.skate.restore(checkpoint);setFollowing(true);skateCameraReset=true;callbacks.onSkate?.(one.skate.snapshot());moved();},
+          enable(on,progress){if(on&&placeId!=='court')return false;const result=one.skate.enable(on,progress);if(on){setFollowing(true);skateCameraReset=true;}callbacks.onSkate?.(one.skate.snapshot());moved();return result;},
+          action(action){one.skate.action(action);if(action==='respawn')skateCameraReset=true;moved();},
+          hold(input){one.skate.hold(input);if(input.push||input.steer)setFollowing(true);moved();},
+          pause(on){one.skate.pause(on);callbacks.onSkate?.(one.skate.snapshot());moved();},
+          route(id){one.skate.route(id);setFollowing(true);skateCameraReset=true;previousDoorPoint=null;callbacks.onSkate?.(one.skate.snapshot());moved();},
+          spot(id){one.skate.spot(id);setFollowing(true);skateCameraReset=true;previousDoorPoint=null;callbacks.onSkate?.(one.skate.snapshot());moved();},
+          deck(id){one.skate.deck(id);callbacks.onSkate?.(one.skate.snapshot());moved();},
+        },
         following: () => following,
         follow(on) { setFollowing(on); if (!on) { aim("court"); } moved(); },
         input(next) { bodyInput = next; if (next.forward !== 0 || next.strafe !== 0) { setFollowing(true); } dirty = true; schedule(); },
@@ -1370,7 +1401,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       for (const id of [...live.keys()]) pull(id);
       // ── The body lane (world-body) ──
       dropBody();
-      ground.dispose(); rig.dispose();
+      skatePark.dispose();ground.dispose(); rig.dispose();
       lease.release();
       host.style.backgroundImage = "";
       delete host.dataset.renderer; delete host.dataset.houseCamera; delete host.dataset.houseBody;
