@@ -1,7 +1,6 @@
 import * as THREE from "three";
 import { acquireGlb } from "../assets/loadGlb.ts";
-import { BODY_HEIGHT } from "./obstacles.ts";
-import { createBodyFigure, type BodyFigure, type BodyMotion, type FigureColours } from "./figure.ts";
+import { createBodyFigure, FIGURE_RIG_HEIGHT, type BodyFigure, type BodyMotion, type FigureColours } from "./figure.ts";
 import { PLAYABLE_AVATARS, type PlayableAvatar } from "./avatarDefinition.ts";
 
 export type { PlayableAvatar } from "./avatarDefinition.ts";
@@ -36,7 +35,10 @@ export function createPlayableFigure(avatar: PlayableAvatar, tier: "full" | "lit
     visual = handle.root.clone(true);
     // The source full-height bounds, captured by the build manifest, let a
     // torso-only surface sit in the same foot-root coordinate system as limbs.
-    const scale = BODY_HEIGHT / definition.sourceHeight;
+    // `createBodyFigure` scales its root to BODY_HEIGHT. Keep the loaded
+    // delivery in the same compact .58 rig space to avoid double-scaling its
+    // torso above the procedural hips and legs.
+    const scale = FIGURE_RIG_HEIGHT / definition.sourceHeight;
     visual.scale.setScalar(scale);
     visual.position.y = -definition.sourceMinY * scale;
     visual.name = `playable-${avatar}-${tier}`;

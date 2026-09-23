@@ -3,7 +3,7 @@ import { createCatFigure, type CatColours, type CatFigure, type CatMotion } from
 import { createFootprints, FOOTPRINT_POOL_LITE, PAW_SIZE, type Footprints } from "./footprints.ts";
 import {
   CAT_HEIGHT, CAT_RADIUS,
-  catGaitOf, createCatState, heelStand, placeCat, stepCat,
+  catGaitOf, createCatState, heelPoint, heelStand, placeCat, stepCat,
   type CatErrand, type CatState, type CatSubject,
 } from "./catModel.ts";
 import type { Obstacle, RoomBounds } from "./obstacles.ts";
@@ -29,6 +29,7 @@ export type CatOptions = {
   groundHeightAt: (x: number, z: number) => number;
   obstacles?: readonly Obstacle[];
   room?: RoomBounds | null;
+  shore?: number;
   tier?: "full" | "lite";
   colours?: Partial<CatColours>;
   start?: { x: number; z: number; yaw?: number };
@@ -41,7 +42,7 @@ export type CatOptions = {
 
 export type Cat = {
   group: THREE.Group;
-  setWorld(next: { groundHeightAt?: (x: number, z: number) => number; obstacles?: readonly Obstacle[]; room?: RoomBounds | null }): void;
+  setWorld(next: { groundHeightAt?: (x: number, z: number) => number; obstacles?: readonly Obstacle[]; room?: RoomBounds | null; shore?: number }): void;
   state(): CatState;
   /** Where something wants a person, or null. He walks there and waits by the door. */
   setErrand(errand: CatErrand | null): void;
@@ -79,6 +80,8 @@ export const CAT_ARRIVAL = Object.freeze({ x: 1.25, z: 5.84, yaw: Math.atan2(-0.
 
 /** His prints are the same pool and the same fade as a person's, at `PAW_SIZE` of the size. */
 export const PAW_POOL = 16, PAW_POOL_LITE = FOOTPRINT_POOL_LITE;
+/** A small route is enough for a companion; planning stays below the frame budget. */
+const NAV_REPLAN_SECONDS = 0.35, NAV_GOAL_SHIFT = 1.25, NAV_REACH = 0.34;
 
 export function createCat(options: CatOptions): Cat {
   const tier = options.tier ?? "full";
@@ -86,6 +89,7 @@ export function createCat(options: CatOptions): Cat {
     groundHeightAt: options.groundHeightAt,
     obstacles: options.obstacles ?? [],
     room: options.room ?? null,
+    shore: options.shore,
   };
   const group = new THREE.Group();
   group.name = "Hercules";
@@ -99,6 +103,9 @@ export function createCat(options: CatOptions): Cat {
   let errand: CatErrand | null = null;
   let perch: { x: number; z: number } | null = null;
   let waiting = false;
+  let route: { x: number; z: number }[] = [];
+  let routeGoal: { x: number; z: number } | null = null;
+  let nextRouteAt = 0;
   const motion: CatMotion = { mood: "sit", moodAt: 0, seated: 1, life: 0, bound: 0, ears: 0.5 };
 
   const start = options.start ?? CAT_ARRIVAL;
@@ -107,6 +114,18 @@ export function createCat(options: CatOptions): Cat {
   function write(): void {
     figure.group.position.set(state.x, state.y, state.z);
     figure.group.rotation.y = state.yaw;
+  }
+  const clearRoute = () => { route = []; routeGoal = null; nextRouteAt = 0; };
+  const routeTarget = (subject: CatSubject): { x: number; z: number } => errand ?? heelPoint(subject);
+  function planRoute(subject: CatSubject, t: number): void {
+    const goal = routeTarget(subject);
+    const planned = findPath(
+      { x: state.x, z: state.z }, goal,
+      { obstacles: world.obstacles, room: world.room, shore: world.shore },
+    );
+    route = planned ?? [];
+    routeGoal = goal;
+    nextRouteAt = t + NAV_REPLAN_SECONDS;
   }
   write();
   figure.pose(0, 0, 0, motion);
@@ -117,13 +136,15 @@ export function createCat(options: CatOptions): Cat {
       if (next.groundHeightAt) world.groundHeightAt = next.groundHeightAt;
       if (next.obstacles) world.obstacles = next.obstacles;
       if (next.room !== undefined) world.room = next.room;
+      if (next.shore !== undefined) world.shore = next.shore;
+      clearRoute();
       state = { ...state, y: world.groundHeightAt(state.x, state.z) };
       write();
     },
     state: () => state,
-    setErrand(next) { errand = next; },
-    setPerch(next) { perch = next; },
-    place(x, z, yaw, look) { state = placeCat(state, x, z, world, yaw ?? state.yaw, look ?? undefined); write(); trail?.clear(); },
+    setErrand(next) { if (next?.key !== errand?.key) clearRoute(); errand = next; },
+    setPerch(next) { perch = next; clearRoute(); },
+    place(x, z, yaw, look) { state = placeCat(state, x, z, world, yaw ?? state.yaw, look ?? undefined); clearRoute(); write(); trail?.clear(); },
     catchUp(subject) {
       // `placeCat` is also the one owner of shore, wall and collision holds.
       // Read the held destination back before asking the bounded pathfinder;
@@ -139,13 +160,19 @@ export function createCat(options: CatOptions): Cat {
       if (!route) return false;
       state = destination;
       waiting = false;
+      clearRoute();
       trail?.clear();
       write();
       return true;
     },
     step(dt, t, subject) {
-      const frame = stepCat(state, subject, dt, world, { reduced, errand, perch });
+      const goal = routeTarget(subject);
+      const goalShifted = routeGoal === null || Math.hypot(goal.x - routeGoal.x, goal.z - routeGoal.z) > NAV_GOAL_SHIFT;
+      const far = Math.hypot(goal.x - state.x, goal.z - state.z) > NAV_REACH;
+      if (far && (route.length === 0 || goalShifted || t >= nextRouteAt || state.gaveUp !== null)) planRoute(subject, t);
+      const frame = stepCat(state, subject, dt, world, { reduced, errand, perch, steer: route[0] ?? null });
       state = frame.state;
+      while (route.length && Math.hypot(route[0]!.x - state.x, route[0]!.z - state.z) <= NAV_REACH) route.shift();
       waiting = frame.waiting;
       write();
       motion.mood = state.mood;

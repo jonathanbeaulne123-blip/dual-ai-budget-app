@@ -52,7 +52,7 @@ describe("Little Harbour playable character derivatives", () => {
       const colour = primitives[0]?.getAttribute("COLOR_0");
       expect(colour).toBeDefined();
       const swatches = new Set<string>();
-      for (let index = 0; index < (colour?.getCount() ?? 0); index += 1) swatches.add(colour!.getElement(index, []).slice(0, 3).map((component) => component.toFixed(3)).join(","));
+      for (let index = 0; index < (colour?.getCount() ?? 0); index += 1) swatches.add(colour!.getElement(index, [] as number[]).slice(0, 3).map((component) => component.toFixed(3)).join(","));
       expect(swatches.size).toBeGreaterThan(6);
     }
   });

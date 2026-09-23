@@ -1,3 +1,4 @@
+import {HARBOUR_LANES,distanceToTrail} from "../src/harbour/village/world.ts";
 // @vitest-environment jsdom
 import { describe, expect, it } from "vitest";
 import * as THREE from "three";
@@ -115,83 +116,34 @@ describe("the tree ring keeps out of the buildings", () => {
     });
   }
 
-  it("is the fix for a ring that used to grow through the Kiln and the Library", () => {
-    // The loop as it stood before the clearings existed, character for
-    // character. It is here so the defect stays described rather than
-    // remembered: these are plants that stood inside a building.
-    const before = (tier: "full" | "lite"): Plant[] => {
-      const TREES = tier === "full" ? 18 : 14;
-      let seed = 0x7a11;
-      const rand = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-      const trees: Plant[] = [];
-      for (let i = 0; i < TREES; i += 1) {
-        const angle = Math.PI * 0.62 + (i / TREES) * Math.PI * 1.76 + (rand() - 0.5) * 0.14;
-        const r = 13 + rand() * 2.4, size = 0.5 + rand() * 0.38, spin = rand() * Math.PI;
-        trees.push({ x: Math.cos(angle) * r, z: Math.sin(angle) * r, r, angle, size, spin });
-      }
-      return trees;
-    };
-    const blocked = before("full").map((t) => keepOutHit(t.x, t.z, treeClearance(t.size))).filter(Boolean);
-    expect(blocked).toContain("kiln");
-    expect(blocked).toContain("library");
-    expect(blocked.length).toBeGreaterThanOrEqual(4);
-    // And the same draws, run through the plan, keep none of them.
-    expect(plantPlan("full").trees.filter((t) => keepOutHit(t.x, t.z, treeClearance(t.size)))).toEqual([]);
-  });
 });
 
-/* ── 3. The island is not left bare, and still reads as a ring ─────────────── */
-
-describe("the ring's density", () => {
-  for (const tier of TIERS) {
-    it(`keeps every plant the island used to have (${tier})`, () => {
-      const plan = plantPlan(tier);
-      // The counts before the clearings: 18 trees at full, 14 at lite, 16
-      // shrubs either way. A plant in a building is re-placed, never dropped,
-      // so the band is not a band — it is the same number.
-      expect(plan.trees.length).toBeGreaterThanOrEqual(tier === "full" ? 13 : 11);
-      expect(plan.shrubs.length).toBeGreaterThanOrEqual(15);
-      expect(TREE_COUNT[tier]).toBe(tier === "full" ? 18 : 14);
-      expect(SHRUB_COUNT).toBe(16);
-      // Even if a future keep-out did strand a plant, the island may not go bare.
-      expect(plan.trees.length).toBeGreaterThanOrEqual(tier === "full" ? 13 : 11);
-    });
-
-    it(`still reads as a ring: the same radii, the same open gate side (${tier})`, () => {
-      const plan = plantPlan(tier);
-      for (const tree of plan.trees) {
-        expect(tree.r).toBeGreaterThanOrEqual(13);
-        expect(tree.r).toBeLessThanOrEqual(15.4);
-        // The gate's gap (+z, ahead of the camera) stays empty: the sector is
-        // [0.62π, 2.38π] and a plant may only step a jitter's width past it.
-        expect(tree.angle).toBeGreaterThanOrEqual(Math.PI * 0.62 - 0.07);
-        expect(tree.angle).toBeLessThanOrEqual(Math.PI * 2.38 + 0.07);
+describe("open-world grove density",()=>{
+  for(const tier of TIERS){
+    it(`fills the countryside while keeping paths clear (${tier})`,()=>{
+      const plan=plantPlan(tier);
+      expect(plan.trees).toHaveLength(TREE_COUNT[tier]);
+      expect(plan.shrubs).toHaveLength(SHRUB_COUNT);
+      expect(plan.trees.filter(tree=>tree.r>40).length).toBeGreaterThan(20);
+      for(const tree of plan.trees){
+        expect(tree.r).toBeGreaterThanOrEqual(14);
+        expect(tree.r).toBeLessThanOrEqual(62);
+        for(const lane of HARBOUR_LANES)expect(distanceToTrail(tree.x,tree.z,lane.points)).toBeGreaterThanOrEqual(1.25+treeClearance(tree.size));
       }
-      for (const shrub of plan.shrubs) {
-        expect(shrub.r).toBeGreaterThanOrEqual(10.6);
-        expect(shrub.r).toBeLessThanOrEqual(12.4);
-      }
-      // No two canopies grow through each other, however far a plant slid.
-      const apart = (plants: Plant[], spread: (size: number) => number) => {
-        for (let i = 0; i < plants.length; i += 1) {
-          for (let j = i + 1; j < plants.length; j += 1) {
-            const a = plants[i]!, b = plants[j]!;
-            expect(Math.hypot(a.x - b.x, a.z - b.z)).toBeGreaterThanOrEqual(spread(a.size) + spread(b.size) - 1e-9);
-          }
+      const apart=(plants:Plant[],spread:(size:number)=>number)=>{
+        for(let i=0;i<plants.length;i++)for(let j=i+1;j<plants.length;j++){
+          const a=plants[i]!,b=plants[j]!;
+          expect(Math.hypot(a.x-b.x,a.z-b.z)).toBeGreaterThanOrEqual(spread(a.size)+spread(b.size)-1e-9);
         }
       };
-      apart(plan.trees, treeClearance);
-      apart(plan.shrubs, shrubClearance);
+      apart(plan.trees,treeClearance);apart(plan.shrubs,shrubClearance);
     });
   }
-
-  it("is deterministic: the same island every time, and a bounded search", () => {
-    for (const tier of TIERS) expect(plantPlan(tier)).toEqual(plantPlan(tier));
-    expect(PLANT_ATTEMPTS).toBeGreaterThan(1);
-    expect(Number.isFinite(PLANT_ATTEMPTS)).toBe(true);
+  it('is deterministic and bounded',()=>{
+    for(const tier of TIERS)expect(plantPlan(tier)).toEqual(plantPlan(tier));
+    expect(PLANT_ATTEMPTS).toBeGreaterThan(1);expect(PLANT_ATTEMPTS).toBeLessThanOrEqual(64);
   });
 });
-
 /* ── 4. One plan: what is drawn is what you bump into ──────────────────────── */
 
 describe("the collision table and the drawn instances", () => {

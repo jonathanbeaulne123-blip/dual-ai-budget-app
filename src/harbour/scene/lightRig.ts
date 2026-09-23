@@ -13,6 +13,7 @@ export type LightRig = {
   sun: THREE.DirectionalLight;
   fill: THREE.DirectionalLight;
   setLight(light: PlaceLight): void;
+  focus(x:number,y:number,z:number,radius?:number):void;
   dispose(): void;
 };
 
@@ -44,6 +45,14 @@ export function createLightRig(scene: THREE.Scene, light: PlaceLight, tier: Rend
   scene.add(hemi, sun, sun.target, fill);
   return {
     hemi, sun, fill,
+    focus(x,y,z,radius=SUN_SHADOW_EXTENT){
+      // Keep useful shadow resolution around the walker; widen only for an overview.
+      const extent=Math.max(SUN_SHADOW_EXTENT,Math.min(100,radius)),reach=Math.max(1,extent/20);
+      const cx=Math.round(x*2)/2,cz=Math.round(z*2)/2;
+      sun.target.position.set(cx,y,cz);sun.position.set(cx-11*reach,y+17*reach,cz+13*reach);
+      const camera=sun.shadow.camera;
+      if(camera.right!==extent){camera.left=-extent;camera.right=extent;camera.top=extent;camera.bottom=-extent;camera.far=60*reach;camera.updateProjectionMatrix();}
+    },
     setLight(next) {
       hemi.color.set(next.hemiSky); hemi.groundColor.set(next.hemiGround); hemi.intensity = next.intensity;
       sun.color.set(next.sun); sun.intensity = next.intensity * 1.3;

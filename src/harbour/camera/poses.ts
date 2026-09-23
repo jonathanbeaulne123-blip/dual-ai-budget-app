@@ -76,7 +76,7 @@ export const FLAGSTONE = Object.freeze({ x: 0, z: 1.6, size: 0.9 });
  * three was already most of the way to the far wall. Every Court pose is
  * unchanged; the bounds only say how far a hand may take the camera.
  */
-export const COURT_BOUNDS = Object.freeze({ minR: 2, maxR: 48, minPhi: 0.25, maxPhi: 1.38, targetRadius: 24 });
+export const COURT_BOUNDS = Object.freeze({ minR: 2, maxR: 160, minPhi: 0.25, maxPhi: 1.38, targetRadius: 76 });
 
 /** How high on each anchor the "object" pose looks (about mid-height of what stands there). */
 const ANCHOR_LOOK_HEIGHT: Readonly<Record<CourtAnchor, number>> = Object.freeze({

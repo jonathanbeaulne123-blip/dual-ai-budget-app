@@ -1,6 +1,6 @@
-import { monthKeyFromDateKey, type DateKey } from "../core/calendar.ts";
+import { monthKeyFromDateKey, type DateKey, type MonthKey } from "../core/calendar.ts";
 import { chapterMonth, openChapterFor } from "../core/chapters.ts";
-import type { Household, MonthKey } from "../core/types.ts";
+import type { Household } from "../core/types.ts";
 
 /**
  * The one non-financial doorway between Our Path and Little Harbour.  It is

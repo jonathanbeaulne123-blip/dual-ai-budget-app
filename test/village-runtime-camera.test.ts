@@ -29,4 +29,14 @@ describe("runtime camera ownership",()=>{
   expect(cut).not.toEqual(before);run(1);expect(stage.camera()).toEqual(cut);
  });
  it("fails closed for a missing destination and releases its lease once",()=>{const stage=mount("court")!, before=stage.placeId(); const saved=PLACES.tower; delete PLACES.tower; stage.enter("tower",{reduced:true}); expect(stage.placeId()).toBe(before); PLACES.tower=saved; release.mockClear(); stage.dispose(); stage.dispose(); expect(release).toHaveBeenCalledTimes(1);});
+ it('hands a deliberate further zoom to Journey once, and never from an interior or tool',()=>{
+  const onJourney=vi.fn();
+  world=mountHarbourWorld(host,'classic','lite',{onReady:vi.fn(),onFailure:vi.fn(),onJourney,place:PLACES.court,reading,dressing:SCENE_DRESSING.classic});
+  world.go('sky');run(200);expect(onJourney).not.toHaveBeenCalled();
+  world.setToolOpen(true);host.dispatchEvent(new WheelEvent('wheel',{deltaY:400}));expect(onJourney).not.toHaveBeenCalled();
+  world.setToolOpen(false);world.enter('tower',{reduced:true});host.dispatchEvent(new WheelEvent('wheel',{deltaY:400}));expect(onJourney).not.toHaveBeenCalled();
+  world.enter('court',{reduced:true});world.go('sky');run(200);
+  host.dispatchEvent(new WheelEvent('wheel',{deltaY:140}));expect(onJourney).not.toHaveBeenCalled();
+  host.dispatchEvent(new WheelEvent('wheel',{deltaY:140}));host.dispatchEvent(new WheelEvent('wheel',{deltaY:400}));expect(onJourney).toHaveBeenCalledTimes(1);
+ });
 });

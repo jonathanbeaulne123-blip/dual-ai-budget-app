@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { PlaceDressing } from "./place.ts";
 import { plantPlan } from "./planting.ts";
 import type { RenderTier } from "./quality.ts";
+import { HARBOUR_LAND } from '../village/world.ts';
 
 /**
  * The court's island patch (BUILD_PLAN §2 #8): a 60-unit vertex-coloured,
@@ -9,16 +10,16 @@ import type { RenderTier } from "./quality.ts";
  * terrain) — a level terrace, a lawn ring that rises a little, a shore that
  * falls to the sea — plus the sea plane and the theme's fog.
  */
-export const GROUND_RADIUS = 24;
+export const GROUND_RADIUS = HARBOUR_LAND.radius;
 /** The court's own terrace and lawn ring (`COURT_LAYOUT`) reach 9.5; the island's apron sits just under them. */
-export const TERRACE_RADIUS = 9.6;
+export const TERRACE_RADIUS = HARBOUR_LAND.terrace;
 /** The lawn ends in a sandy shore that falls to the sea; the island's edge is a real edge. */
-export const LAWN_RADIUS = 16;
+export const LAWN_RADIUS = HARBOUR_LAND.lawn;
 export const SEA_LEVEL = -0.45;
 /** The apron is a hair below the court's paving so the tiles, not the island, are the surface you see. */
 export const TERRACE_LEVEL = -0.05;
 
-const RINGS = 26;
+const RINGS = 64;
 const SECTORS = 96;
 
 /** Height of the island at a point. Pure; the terrace is level so every plinth and paving stone sits at 0. */
@@ -28,7 +29,7 @@ export function groundHeightAt(x: number, z: number): number {
   if (r <= LAWN_RADIUS) {
     const t = (r - TERRACE_RADIUS) / (LAWN_RADIUS - TERRACE_RADIUS);
     // A gentle hump peaking mid-lawn, back to the terrace level at the shore's edge.
-    return TERRACE_LEVEL + Math.sin(t * Math.PI) * 0.28;
+    return TERRACE_LEVEL + Math.sin(t * Math.PI) * (1.25 + .35*Math.sin(x*.065)*Math.cos(z*.075));
   }
   if (r <= GROUND_RADIUS) {
     const t = (r - LAWN_RADIUS) / (GROUND_RADIUS - LAWN_RADIUS);
@@ -172,7 +173,7 @@ export function createGround(scene: THREE.Scene, dressing: PlaceDressing, tier: 
   const applyAir = (next: PlaceDressing) => {
     const sky = new THREE.Color(next.sky);
     scene.background = sky;
-    scene.fog = new THREE.Fog(new THREE.Color(next.fog), Math.max(55, next.fogNear), Math.max(110, next.fogFar));
+    scene.fog = new THREE.Fog(new THREE.Color(next.fog), Math.max(105, next.fogNear), Math.max(290, next.fogFar));
   };
   applyAir(dressing);
 

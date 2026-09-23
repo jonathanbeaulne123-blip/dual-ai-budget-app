@@ -4,7 +4,7 @@ import { COURT_ARRIVAL, createWalker } from "../src/harbour/body/walker.ts";
 import { courtObstacles, SHORE_RADIUS } from "../src/harbour/body/obstacles.ts";
 import { placeArrival, placeGround, placeRoom } from "../src/harbour/body/places.ts";
 import { groundHeightAt } from "../src/harbour/scene/ground.ts";
-import { VILLAGE_SITES } from "../src/harbour/village/layout.ts";
+import { VILLAGE_SITES,VILLAGE_WATERFRONT } from "../src/harbour/village/layout.ts";
 import { crossedVillageDoor } from "../src/harbour/village/topology.ts";
 
 function toWorld(site: typeof VILLAGE_SITES[keyof typeof VILLAGE_SITES], x: number, z: number): [number, number] {
@@ -16,9 +16,10 @@ function toWorld(site: typeof VILLAGE_SITES[keyof typeof VILLAGE_SITES], x: numb
 describe("court tap routes reach every authored village door", () => {
   it('walks to the waterfront and back without an origin jump, invisible walls, or invalid ground', () => {
     const walker = createWalker({ groundHeightAt, obstacles: courtObstacles('lite'), tier: 'lite', trail: false, reduced: true, start: COURT_ARRIVAL });
-    walker.goTo(0, 14.5);
+    const shoreZ=VILLAGE_WATERFRONT.spot[1];
+    walker.goTo(0, shoreZ-3);
     let previous = walker.state(), entries = 0;
-    for (let frame = 0; frame < 1200; frame++) {
+    for (let frame = 0; frame < 2400; frame++) {
       walker.step(1 / 60, frame / 60, 0);
       const next = walker.state();
       if (crossedVillageDoor([previous.x, previous.z], [next.x, next.z], 'court') === 'campfire') entries++;
@@ -27,9 +28,9 @@ describe("court tap routes reach every authored village door", () => {
     expect(entries).toBe(1); walker.dispose();
     expect(placeRoom('campfire')).toBeNull();
     const start = placeArrival('campfire');
-    expect(start.z).toBeGreaterThan(14);
+    expect(start.z).toBeGreaterThan(shoreZ-4);
     const beach = createWalker({ groundHeightAt: placeGround('campfire'), obstacles: [], tier: 'lite', trail: false, reduced: true, start });
-    beach.goTo(0, 12.5);
+    beach.goTo(0, shoreZ-5);
     previous = beach.state(); let exits = 0;
     for (let frame = 0; frame < 360; frame++) {
       beach.step(1 / 60, frame / 60, 0);

@@ -19,7 +19,7 @@ import { SHORE_RADIUS, courtObstacles } from "../src/harbour/body/obstacles.ts";
 import { groundHeightAt } from "../src/harbour/scene/ground.ts";
 
 const flat: BodyWorld = { groundHeightAt: () => 0, obstacles: [], room: null };
-const island: BodyWorld = { groundHeightAt, obstacles: courtObstacles("lite"), room: null };
+const island: BodyWorld = { groundHeightAt, obstacles: courtObstacles("lite"), room: null, shore:SHORE_RADIUS };
 
 const DT = 1 / 60;
 const standing = (x: number, z: number, yaw = 0, speed = 0): CatSubject => ({ x, z, yaw, speed, air: 0, emote: null });
@@ -89,7 +89,8 @@ describe("Hercules follows", () => {
     const you = standing(0, SHORE_RADIUS, 0, 0);
     const step = run(cat, () => you, 10, island);
     const out = Math.hypot(step.state.x, step.state.z);
-    expect(out, "a cat in the sea").toBeLessThanOrEqual(CAT_SHORE + 1e-6);
+    expect(out, "a cat in the sea").toBeLessThanOrEqual(SHORE_RADIUS + 1e-6);
+    expect(groundHeightAt(step.state.x,step.state.z)).toBeGreaterThan(-.45);
     expect(out).toBeLessThan(SHORE_RADIUS);
   });
 });
@@ -260,8 +261,7 @@ describe("Hercules leads you to what needs attention", () => {
   it("stands his door in front of the building, on the island and out of the sea", () => {
     for (const name of Object.keys(ATTENTION_SPOTS) as (keyof typeof ATTENTION_SPOTS)[]) {
       const door = attentionDoor(name);
-      const [bx, bz] = ATTENTION_SPOTS[name];
-      expect(Math.hypot(door.x, door.z)).toBeLessThan(CAT_SHORE);
+      expect(Math.hypot(door.x, door.z)).toBeLessThan(73.2);
       // And he faces the thing he brought you to.
       const target = name === "stairhead" || name === "kitchen-cottage" ? placementDoor(PLACE_PLACEMENTS.kitchen!)
         : name === "campfire" ? placementDoor(PLACE_PLACEMENTS.campfire!)
@@ -276,21 +276,22 @@ describe("Hercules leads you to what needs attention", () => {
     const door = attentionDoor("campfire");
     const errand = { key: "chapter:2026-08:proposed:open", ...door };
     // You are standing on the Court's paving; he leaves your heel for the fire.
+    const deliveryWorld={...island,obstacles:[]};
     const you = standing(1.2, 2.4, 0, 0);
-    let cat = createCatState(you.x, you.z - 0.7, 0, island);
+    let cat = createCatState(you.x, you.z - 0.7, 0, deliveryWorld);
     // But not while you are still standing in the gate: he gets up when you
     // do, which is what lets a place be at rest on its very first frame.
-    const asleep = stepCat(cat, you, DT, island, { errand });
+    const asleep = stepCat(cat, you, DT, deliveryWorld, { errand });
     expect(asleep.waiting).toBe(false);
     expect(asleep.state.roused).toBe(false);
     expect(Math.hypot(asleep.state.x - cat.x, asleep.state.z - cat.z), "he set off before you moved").toBeLessThan(1e-6);
     // One step of yours and he is away.
-    cat = stepCat(cat, { ...you, speed: WALK_SPEED }, DT, island, { errand }).state;
+    cat = stepCat(cat, { ...you, speed: WALK_SPEED }, DT, deliveryWorld, { errand }).state;
     expect(cat.roused).toBe(true);
     const prints: { x: number; z: number }[] = [];
-    let step = stepCat(cat, you, DT, island, { errand });
+    let step = stepCat(cat, you, DT, deliveryWorld, { errand });
     for (let t = DT; t < 30; t += DT) {
-      step = stepCat(step.state, you, DT, island, { errand });
+      step = stepCat(step.state, you, DT, deliveryWorld, { errand });
       if (step.pawfall) prints.push({ x: step.pawfall.x, z: step.pawfall.z });
     }
     expect(Math.hypot(step.state.x - door.x, step.state.z - door.z), "he never got to the door").toBeLessThanOrEqual(DOOR_REACH + 1e-6);
@@ -304,18 +305,18 @@ describe("Hercules leads you to what needs attention", () => {
 
     // And when you come to the door, the errand has been shown and he comes back to your heel.
     const arrived = { ...standing(door.x, door.z, 0, 0) };
-    let back = stepCat(step.state, arrived, DT, island, { errand });
+    let back = stepCat(step.state, arrived, DT, deliveryWorld, { errand });
     expect(back.state.shownKey).toBe(errand.key);
-    for (let t = DT; t < 8; t += DT) back = stepCat(back.state, arrived, DT, island, { errand });
+    for (let t = DT; t < 8; t += DT) back = stepCat(back.state, arrived, DT, deliveryWorld, { errand });
     expect(Math.hypot(back.state.x - arrived.x, back.state.z - arrived.z)).toBeLessThan(1.1);
     expect(back.moving, "and then the island may sleep again").toBe(false);
 
     // Stepping into a building and out again is not a second errand: the same
     // bill is not walked to twice.
-    let again = stepCat(back.state, arrived, DT, island, { errand: null });
-    again = stepCat(again.state, arrived, DT, island, { errand });
+    let again = stepCat(back.state, arrived, DT, deliveryWorld, { errand: null });
+    again = stepCat(again.state, arrived, DT, deliveryWorld, { errand });
     expect(again.waiting).toBe(false);
-    for (let t = 0; t < 4; t += DT) again = stepCat(again.state, arrived, DT, island, { errand });
+    for (let t = 0; t < 4; t += DT) again = stepCat(again.state, arrived, DT, deliveryWorld, { errand });
     expect(Math.hypot(again.state.x - arrived.x, again.state.z - arrived.z), "he led you to it a second time").toBeLessThan(1.1);
   });
 
@@ -375,6 +376,31 @@ describe("what Hercules is made of", () => {
     cat.dispose();
   });
 
+  it("walks bounded pathfinder waypoints around a building and tree to a far errand", () => {
+    const building = { kind: "box" as const, id: "building", minX: -1, minZ: -4, maxX: 1, maxZ: 4 };
+    const tree = { kind: "circle" as const, id: "tree", x: 2.4, z: 4.8, r: 0.65 };
+    const cat = createCat({ groundHeightAt: () => 0, obstacles: [building, tree], start: { x: -5, z: 0 }, trail: false, shore: 20 });
+    const errand = { key: "far-door", x: 5, z: 0, yaw: 0 };
+    cat.setErrand(errand);
+    cat.step(DT, 0, standing(0, 0, 0, WALK_SPEED));
+    for (let t = DT; t < 35 && !cat.waiting(); t += DT) cat.step(DT, t, standing(0, 0, 0, 0));
+    expect(cat.waiting()).toBe(true);
+    expect(Math.hypot(cat.state().x - errand.x, cat.state().z - errand.z)).toBeLessThanOrEqual(DOOR_REACH + 1e-6);
+    cat.dispose();
+  });
+
+  it("uses bounded waypoints to regain a heel point behind the same barrier", () => {
+    const building = { kind: "box" as const, id: "building", minX: -1, minZ: -4, maxX: 1, maxZ: 4 };
+    const tree = { kind: "circle" as const, id: "tree", x: 2.4, z: 4.8, r: 0.65 };
+    const cat = createCat({ groundHeightAt: () => 0, obstacles: [building, tree], start: { x: -5, z: 0 }, trail: false, shore: 20 });
+    const you = standing(5, 0, 0, 0);
+    cat.step(DT, 0, { ...you, speed: WALK_SPEED });
+    for (let t = DT; t < 35; t += DT) cat.step(DT, t, you);
+    const heel = { x: you.x - 0.62, z: you.z - 0.52 };
+    expect(Math.hypot(cat.state().x - heel.x, cat.state().z - heel.z)).toBeLessThan(0.8);
+    cat.dispose();
+  });
+
   it("leaves a paw print, not a footprint", () => {
     const paws = createFootprints("#6b5a44", 8, PAW_SIZE);
     paws.drop(0, 0, 0, 0, true, 0);
@@ -416,5 +442,5 @@ describe("what a cat may never do", () => {
 
 /** Every spot he waits at is a real place on the island, inside the lawn and out of the water. */
 function spotless(spots: Readonly<Record<string, readonly [number, number]>>): boolean {
-  return Object.values(spots).every(([x, z]) => Math.hypot(x, z) < CAT_SHORE);
+  return Object.values(spots).every(([x, z]) => Math.hypot(x, z) < SHORE_RADIUS);
 }

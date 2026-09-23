@@ -58,12 +58,12 @@ function walk(state: BodyState, theta: number, seconds: number, world: BodyWorld
 const TOWARD_Z = Math.PI, AWAY_FROM_Z = 0;
 
 describe("the body is a person in a model village", () => {
-  it("is about 0.58 units tall, a bit over a quarter of the Queen", () => {
+  it("is readable beside the buildings, while shorter than the Queen", () => {
     // The Queen is 2.05 (camera/poses.ts). A person beside her must read as a person.
-    expect(BODY_HEIGHT).toBeGreaterThan(0.5);
-    expect(BODY_HEIGHT).toBeLessThan(0.65);
-    expect(BODY_HEIGHT / 2.05).toBeGreaterThan(0.25);
-    expect(BODY_HEIGHT / 2.05).toBeLessThan(0.31);
+    expect(BODY_HEIGHT).toBeGreaterThan(1);
+    expect(BODY_HEIGHT).toBeLessThan(1.5);
+    expect(BODY_HEIGHT / 2.05).toBeGreaterThan(0.5);
+    expect(BODY_HEIGHT / 2.05).toBeLessThan(0.7);
   });
 
   it("crosses the island briskly, and a run is nearly twice a walk", () => {
@@ -74,10 +74,10 @@ describe("the body is a person in a model village", () => {
     // bounds are what keeps it a journey rather than a teleport; the ratio is
     // what makes the run read as a run and not as a walk in a hurry.
     const across = GROUND_RADIUS * 2;
-    expect(across / WALK_SPEED).toBeGreaterThan(16);
-    expect(across / WALK_SPEED).toBeLessThan(28);
-    expect(across / RUN_SPEED).toBeGreaterThan(9);
-    expect(across / RUN_SPEED).toBeLessThan(16);
+    expect(across / WALK_SPEED).toBeGreaterThan(60);
+    expect(across / WALK_SPEED).toBeLessThan(90);
+    expect(across / RUN_SPEED).toBeGreaterThan(35);
+    expect(across / RUN_SPEED).toBeLessThan(48);
     expect(RUN_SPEED / WALK_SPEED).toBeGreaterThan(1.7);
   });
 
@@ -123,7 +123,7 @@ describe("the body follows the ground", () => {
   it("walks up the lawn's hump and down toward the shore", () => {
     // The terrace is level to r 9.6, the lawn humps to +0.28 at its middle,
     // and the shore falls away quadratically to the sea.
-    const path = walk(createBodyState(3, 0, 0, bare), TOWARD_Z, 20, bare);
+    const path = walk(createBodyState(3, 0, 0, bare), TOWARD_Z, SHORE_RADIUS/WALK_SPEED+2, bare);
     const heights = new Map<string, number>();
     for (const at of path) heights.set(Math.hypot(at.x, at.z).toFixed(1), at.y);
     const onTerrace = path.find((at) => Math.hypot(at.x, at.z) < TERRACE_RADIUS - 1)!;
@@ -143,7 +143,7 @@ describe("the body follows the ground", () => {
     // Standing on sand, not in water: the shore's own height is still above the sea.
     expect(last.y).toBeGreaterThan(SEA_LEVEL);
     for (const at of path) expect(Math.hypot(at.x, at.z)).toBeLessThanOrEqual(SHORE_RADIUS + 1e-9);
-    expect(holdAshore(40, 0).x).toBeCloseTo(SHORE_RADIUS, 10);
+    expect(holdAshore(SHORE_RADIUS+20, 0).x).toBeCloseTo(SHORE_RADIUS, 10);
     expect(holdAshore(1, 1).ashore).toBe(true);
   });
 
@@ -940,9 +940,9 @@ describe("the keys drive the body, not the camera", () => {
     expect(body.walking()).toBe(true);
     expect(frames.size).toBeGreaterThan(0);
     body.input({ forward: 0, strafe: 0 });
-    run(80);
+    run(300);
     expect(body.walking()).toBe(false);
-    // Nothing is moving, so nothing is queued: the island sleeps again.
+    // The walker and his companion have both settled; no more frames remain.
     expect(frames.size).toBe(0);
   });
 

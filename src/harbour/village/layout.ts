@@ -3,17 +3,17 @@ import type { HouseLevel, HouseRoom } from '../../hearthside/houseRoutes.ts';
 import type { VillageLocation } from '../../house/villageLocation.ts';
 
 export const VILLAGE_SITES = {
-  home: {spot:[-7,10], half:[4.5,3.5], door:[1.6,3.15], name:'Our home', exterior:'village-home', entry:'kitchen'},
-  bank: {spot:[1,-10], half:[4.6,3.6], door:[0,3.35], name:'The Fund bank', exterior:'village-bank', entry:'bank'},
-  library: {spot:[-10,-10], half:[4.4,3.4], door:[1.8,3.15], name:'The Library', exterior:'village-library', entry:'library'},
-  glasshouse: {spot:[-15,-1], half:[4,3], door:[1.7,2.8], name:'The Glasshouse', exterior:'village-glasshouse', entry:'glasshouse'},
-  studio: {spot:[13,-1], half:[3.8,2.9], door:[1.95,2.82], name:'The Pottery Studio', exterior:'village-studio', entry:'kiln'},
-  cottage: {spot:[8,10], half:[3.2,2.6], door:[1.75,2.45], name:'Hercules’s cottage', exterior:'village-cottage', entry:'cottage'},
-  boathouse: {spot:[10,-13], half:[3.6,3], door:[1.5,2.8], name:'The Boathouse', exterior:'village-boathouse', entry:'boathouse'},
+  home: {spot:[-24,26], half:[4.5,3.5], door:[1.6,3.15], name:'Our home', exterior:'village-home', entry:'kitchen'},
+  bank: {spot:[8,-26], half:[4.6,3.6], door:[0,3.35], name:'The Fund bank', exterior:'village-bank', entry:'bank'},
+  library: {spot:[-28,-18], half:[4.4,3.4], door:[1.8,3.15], name:'The Library', exterior:'village-library', entry:'library'},
+  glasshouse: {spot:[-43,6], half:[4,3], door:[1.7,2.8], name:'The Glasshouse', exterior:'village-glasshouse', entry:'glasshouse'},
+  studio: {spot:[33,10], half:[3.8,2.9], door:[1.95,2.82], name:'The Pottery Studio', exterior:'village-studio', entry:'kiln'},
+  cottage: {spot:[17,35], half:[3.2,2.6], door:[1.75,2.45], name:'Hercules’s cottage', exterior:'village-cottage', entry:'cottage'},
+  boathouse: {spot:[42,-41], half:[3.6,3], door:[1.5,2.8], name:'The Boathouse', exterior:'village-boathouse', entry:'boathouse'},
 } as const;
 export type VillageBuilding = keyof typeof VILLAGE_SITES;
 /** One physical shore clearing shared by its distant landmark and live scene. */
-export const VILLAGE_WATERFRONT = { spot: [0, 17.5], half: [3.8, 3.6], door: [0, 3.45], yaw: Math.PI } as const;
+export const VILLAGE_WATERFRONT = { spot: [0, 69], half: [3.8, 3.6], door: [0, 3.45], yaw: Math.PI } as const;
 export const SITE_FOR_PLACE: Partial<Record<HarbourPlaceId,VillageBuilding>> = {
   kitchen:'home',tower:'home',cellar:'home',atlas:'home',bank:'bank',library:'library',
   glasshouse:'glasshouse',kiln:'studio',cottage:'cottage',boathouse:'boathouse',

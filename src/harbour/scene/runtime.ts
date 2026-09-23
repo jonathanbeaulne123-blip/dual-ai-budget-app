@@ -8,9 +8,15 @@ import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/c
 // Everything this lane adds to the runtime is additive and marked like this
 // block. A sibling lane is restructuring this file; nothing above or below a
 // marked block was rewritten to make room for the body.
-import { createFollowCamera, followInRoom, type FollowCamera } from "../camera/followCamera.ts";
+import { createFollowCamera, FOLLOW_MAX_R, followInRoom, type FollowCamera } from "../camera/followCamera.ts";
 import { createWalker, COURT_ARRIVAL, type Walker } from "../body/walker.ts";
 import type { EmoteId } from "../body/bodyModel.ts";
+import type {PlayableAvatar} from '../body/avatarDefinition.ts';
+import {createCat,type Cat} from '../body/cat.ts';
+import {heelStand,type CatErrand} from '../body/catModel.ts';
+import {attentionDoor,attentionOf} from '../data/attention.ts';
+import {HARBOUR_LAND} from '../village/world.ts';
+import {harbourZoomExit} from '../camera/worldZoom.ts';
 // ── walk-everywhere ──────────────────────────────────────────────────────────
 // Where a body may stand in each of the eleven places: the floor, the walls,
 // what is in the way, and where you come in. All of it derived from each
@@ -41,6 +47,8 @@ export type HarbourGesture = { region: string; samples: GestureSample[] };
 export type ProjectedRect = { id: string; kind: "region" | "anchor"; group: string; label: string; x: number; y: number; w: number; h: number; visible: boolean; door?: Anchor["door"] };
 
 export type HarbourCallbacks = {
+  onJourney?:()=>void;
+  avatar?:PlayableAvatar|null;
   onReady: () => void;
   onFailure: () => void;
   onProject?: (rects: ProjectedRect[]) => void;
@@ -120,7 +128,7 @@ export type BodyControls = {
   /** What the keys are asking for, in camera space (+forward is away from the eye). */
   input: (next: BodyInput) => void;
   /** Walk to a point on the ground — a tap. A straight line that slides off what it meets. */
-  goTo: (x: number, z: number) => void;
+  goTo: (x: number, z: number) => boolean;
   /** Put the body somewhere at once. */
   place: (x: number, z: number, yaw?: number) => void;
   /**
@@ -145,6 +153,7 @@ export type BodyControls = {
 };
 
 export type HarbourRuntime = {
+  setAvatar:(avatar:PlayableAvatar|null)=>void;
   /**
    * Fly to a mode; `anchor` is one of `poses.ts`'s named anchors or any anchor
    * the place exposes. `"door"` is the frieze a place shows in the band above
@@ -340,7 +349,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   host.dataset.renderer = lease.active ? "active" : "suspended";
   host.dataset.harbourTier = tier;
 
-  const camera = new THREE.PerspectiveCamera(fovFor(composition), 1, 0.1, 220);
+  const camera = new THREE.PerspectiveCamera(fovFor(composition), 1, 0.1, 480);
   const animators = new Set<(t: number, dt: number) => void>();
   const rig = createLightRig(scene, dressing.light, tier);
   const ground = createGround(scene, dressing, tier);
@@ -572,6 +581,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   let walker: Walker | null = null;
   let follow: FollowCamera | null = null;
   let following = false;
+  let selectedAvatar=callbacks.avatar??null;
+  let cat:Cat|null=null,errand:CatErrand|null=null,errandKey:string|null=null;
+  let catCatchUpAt=0,zoomOverscroll=0,journeyRequested=false;
   let bodyInput: BodyInput = NO_INPUT;
   const bodySamples: number[] = [];
   /**
@@ -604,6 +616,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     bodyExits = (placeId==='court'?[]:placementOf(placeId)?anchors.filter(a=>a.zone==='portal'):exitAnchors(anchors)).map(a=>({...a,position:localToWorld(a.position)}));
     exitArmed = false;
     walker?.setWorld({ obstacles: placeObstacles(placeId, handle.regions(), anchors, tier), room });
+    cat?.setWorld({groundHeightAt:(x,z)=>bodyGround(x,z),obstacles:placeObstacles(placeId,handle.regions(),anchors,tier),room,shore:HARBOUR_LAND.shore});
+    cat?.setPerch(placeId==='court'?{x:2.2,z:1.6}:null);
     if (follow) {
       const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
       follow.setHold(followHoldIn(holdFor(placeId), room));
@@ -640,13 +654,28 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       tier,
       start,
       reduced: reducedMotion(),
+      avatar:selectedAvatar,invalidate,
     });
     scene.add(walker.group);
+    const stood=walker.state();
+    cat=createCat({groundHeightAt:(x,z)=>bodyGround(x,z),obstacles:placeObstacles(placeId,handle.regions(),anchors,tier),room,shore:HARBOUR_LAND.shore,tier,start:heelStand(stood),look:stood,reduced:reducedMotion()});
+    scene.add(cat.group);errandKey=null;
     const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
     follow = createFollowCamera({ camera, composition, reduced: reducedMotion(), fov: fovFor(composition), groundHeightAt: (x, z) => bodyGround(x, z) });
     host.dataset.harbourBody = "standing";
     standBody();
+    refreshErrand();
     camera.position.copy(eye);camera.quaternion.copy(orientation);camera.fov=fov;camera.updateProjectionMatrix();
+  }
+  function refreshErrand():void{
+    const want=placeId==='court'?attentionOf(reading):null,key=want?.key??null;
+    if(key===errandKey)return;
+    errandKey=key;errand=want?{key:want.key,...attentionDoor(want.spot)}:null;cat?.setErrand(errand);
+    if(diagnostics){if(want)host.dataset.harbourErrand=`${want.spot}: ${want.why}`;else delete host.dataset.harbourErrand;}
+  }
+  function bringCat():void{
+    if(!cat||!walker)return;
+    const at=walker.state(),heel=heelStand(at);cat.place(heel.x,heel.z,heel.yaw,at);
   }
   function dropBody(): void {
     if (following) {
@@ -655,6 +684,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       court.restore(camera.position.toArray() as Vec3);
     }
     walker?.dispose(); walker = null; follow = null; bodyInput = NO_INPUT;
+    cat?.dispose();cat=null;
     bodyExits = []; exitArmed = false;
     delete host.dataset.harbourBody;
   }
@@ -686,6 +716,20 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     schedule();
   }
   raiseBody();
+
+  function zoomWorld(delta:number):void{
+    if(!Number.isFinite(delta)||toolOpen||journeyRequested)return;
+    if(following&&follow){
+      if(placeId==='court'&&delta>0&&follow.pose().r>=FOLLOW_MAX_R-.2){
+        const pose=follow.pose();setFollowing(false);court.goTo(pose);
+      }else{follow.zoom(delta);return;}
+    }
+    if(placeId==='court'&&callbacks.onJourney){
+      const result=harbourZoomExit(court.goal().r,delta,zoomOverscroll);zoomOverscroll=result.overscroll;
+      if(result.exit){journeyRequested=true;callbacks.onJourney();return;}
+    }else zoomOverscroll=0;
+    court.zoom(delta);
+  }
 
   const raycaster = new THREE.Raycaster();
   const ndc = new THREE.Vector2(), projected = new THREE.Vector3(), box = new THREE.Box3();
@@ -839,6 +883,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // GPU-bound when most of it was main-thread work. They are measured apart
     // now; `projectMs` is published beside it rather than hidden inside it.
     const began = performance.now();
+    const lightAt=following&&walker?[walker.state().x,walker.state().y,walker.state().z] as const:court.pose().target;
+    rig.focus(...lightAt,following?14:court.pose().r*.65);
     renderer.render(scene, camera);
     const rendered = performance.now();
     project();
@@ -961,6 +1007,15 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
           callbacks.onExit?.(nearest);
         }
       }
+      if(cat){
+        const doing=walker.action(),emote=doing&&doing.act!=='jump'&&doing.act!=='slide'?doing.act as EmoteId:null;
+        if(cat.step(dt,(now-mountedAt)/1000,{...at,emote}))bodyMoving=true;
+        const him=cat.state();
+        if(now>=catCatchUpAt&&(Math.hypot(him.x-at.x,him.z-at.z)>14||him.gaveUp!==null)){
+          catCatchUpAt=now+1500;if(cat.catchUp({...at,emote}))bodyMoving=true;
+        }
+        if(diagnostics){host.dataset.catAt=JSON.stringify([him.x,him.y,him.z,him.yaw,him.speed]);host.dataset.catMood=cat.waiting()?`wait:${him.mood}`:him.mood;}
+      }
       if (bodyMoving) dirty = true;
       if (diagnostics) { bodySamples.push(performance.now() - began); if (bodySamples.length > 60) bodySamples.shift(); }
     }
@@ -1035,7 +1090,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const [a, b] = [...pointers.values()];
       const distance = a && b ? Math.hypot(a.x - b.x, a.y - b.y) : 0;
       // ── The body lane (world-body) ── a pinch pulls the follow camera in and out.
-      if (pinchDistance > 0 && distance > 0) { const delta = Math.log(pinchDistance / distance); if (following && follow) follow.zoom(delta); else court.zoom(delta); dirty = true; }
+      if (pinchDistance > 0 && distance > 0) { const delta = Math.log(pinchDistance / distance); zoomWorld(delta); dirty = true; }
       pinchDistance = distance;
     } else if (stick && stick.id === pointer.id) {
       // A thumb on the stick walks; it never orbits. The push is clamped to
@@ -1089,7 +1144,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     event.preventDefault();
     const delta = Math.max(-0.5, Math.min(0.5, event.deltaY * 0.0015));
     // ── The body lane (world-body) ── the wheel pulls the follow camera in and out.
-    if (following && follow) follow.zoom(delta); else court.zoom(delta);
+    zoomWorld(delta);
     moved();
   }
 
@@ -1108,7 +1163,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
     follow?.setReduced(reducedMotion());
     if(!following){camera.position.copy(eye);camera.quaternion.copy(orientation);camera.fov=fov;camera.updateProjectionMatrix();}
-    walker?.setReduced(reducedMotion()); schedule();
+    walker?.setReduced(reducedMotion());cat?.setReduced(reducedMotion()); schedule();
   };
   const comfortObserver = typeof MutationObserver !== "undefined" ? new MutationObserver(onReduced) : null;
   comfortObserver?.observe(document.documentElement,{attributes:true,attributeFilter:["data-motion"]});
@@ -1159,16 +1214,17 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
 
   const api: HarbourRuntime = {
+    setAvatar(avatar){selectedAvatar=avatar;walker?.setAvatar(avatar);dirty=true;schedule();},
     // ── The body lane (world-body) ── an explicit destination hands the view
     // back to the Look camera first, so the flight starts from the eye you can
     // actually see and every named pose behaves exactly as it always has.
     go(mode, anchor) { setFollowing(false); aim(mode, anchor); moved(); },
-    setReading(next) { reading = next; for (const { handle: each } of live.values()) each.update(next); dirty = true; listsDirty = true; render(); schedule(); },
+    setReading(next) { reading = next; for (const { handle: each } of live.values()) each.update(next); refreshErrand();dirty = true; listsDirty = true; render(); schedule(); },
     look(next) { setFollowing(false); court.setReduced(reducedMotion()); court.goTo(next); moved(); },
     gesture(input) {
       court.setReduced(reducedMotion());
       if (input.kind === "orbit") court.drag(input.dx, input.dy);
-      else court.zoom(input.delta);
+      else zoomWorld(input.delta);
       moved();
     },
     // ── The body lane (world-body) ── a tool in front of the place turns the
@@ -1213,8 +1269,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         following: () => following,
         follow(on) { setFollowing(on); if (!on) { aim("court"); } moved(); },
         input(next) { bodyInput = next; if (next.forward !== 0 || next.strafe !== 0) { setFollowing(true); } dirty = true; schedule(); },
-        goTo(x, z) { one.goTo(x, z); setFollowing(true); dirty = true; schedule(); },
-        place(x, z, yaw) { one.place(x, z, yaw); focus=[x,z]; previousDoorPoint=null; dirty = true; schedule(); },
+        goTo(x, z) { const planned=one.goTo(x, z);if(planned)setFollowing(true); dirty = true; schedule();return planned; },
+        place(x, z, yaw) { one.place(x, z, yaw);bringCat(); focus=[x,z]; previousDoorPoint=null; dirty = true; schedule(); },
         at() {
           const at = one.state(), doing = one.action();
           return { x: at.x, y: at.y, z: at.z, yaw: at.yaw, speed: at.speed, act: doing?.act ?? null, p: doing?.p ?? 0 };
@@ -1272,10 +1328,12 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         const point=portal&&placement?placementToWorld(placement,portal.local):null;
         const landing = point&&portal&&placement?{x:point[0],z:point[2],yaw:portal.yaw+placement.yaw}:placement ? placeArrival(next, handle.anchors()) : courtLanding(leaving);
         walker.place(landing.x, landing.z, landing.yaw);
+        bringCat();
         bodyDriven = true;
         focus[0] = landing.x; focus[1] = landing.z;
       }
       // The place you arrive in declares its own idle motion; until it does, nothing moves.
+      refreshErrand();zoomOverscroll=0;
       breathing = !reducedMotion();
       previousDoorPoint = null; pendingDoor=null;
       // A cut lands at once, so the destination's hold applies at once. A full
@@ -1317,6 +1375,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       host.style.backgroundImage = "";
       delete host.dataset.renderer; delete host.dataset.houseCamera; delete host.dataset.houseBody;
       delete host.dataset.bodyAt; delete host.dataset.bodyMs;
+      delete host.dataset.catAt;delete host.dataset.catMood;delete host.dataset.harbourErrand;
       delete (host as HTMLElement & { __harbour?: HarbourRuntime }).__harbour;
     },
   };

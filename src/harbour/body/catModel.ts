@@ -233,6 +233,12 @@ export type CatOptions = {
   errand?: CatErrand | null;
   /** The warm stone of this place, if it has one. He takes it when you stop within `PERCH_REACH` of it. */
   perch?: { x: number; z: number } | null;
+  /**
+   * A temporary, already-safe waypoint chosen by the wrapper's bounded
+   * pathfinder. It changes only where his feet steer; errand completion and
+   * every mood still read the final heel or door below.
+   */
+  steer?: { x: number; z: number } | null;
 };
 
 const clamp = (v: number, lo: number, hi: number): number => (v < lo ? lo : v > hi ? hi : v);
@@ -377,9 +383,12 @@ export function stepCat(state: CatState, subject: CatSubject, dt: number, world:
    * heel is the nearest legal spot to your heel, and standing on it is being
    * at it.
    */
-  const want = holdForCat(asked_.x, asked_.z, world);
+  const finalWant = holdForCat(asked_.x, asked_.z, world);
+  const steer = options.steer ?? asked_;
+  const want = holdForCat(steer.x, steer.z, world);
   const dx = want.x - state.x, dz = want.z - state.z;
   const gap = Math.hypot(dx, dz);
+  const finalGap = Math.hypot(finalWant.x - state.x, finalWant.z - state.z);
   /**
    * Once he has settled the heel gets a wider band, so a cat sitting a hand's
    * breadth off his spot stays sitting instead of creeping into it. Hysteresis,
@@ -390,7 +399,7 @@ export function stepCat(state: CatState, subject: CatSubject, dt: number, world:
   const reach = leading ? DOOR_REACH : settledIdle ? HEEL_CLOSE * 3 : HEEL_CLOSE;
   /** He is in the middle of saying something and you have not moved: he says it where he is. */
   const rooted = saying > 0 && !youMovedNow(subject) && come <= 0;
-  const atPlace = rooted || gap <= reach;
+  const atPlace = rooted || finalGap <= reach;
 
   // ── How fast ─────────────────────────────────────────────────────────────
   // The top speed he is allowed is read off *yours*: he matches a walk with a
@@ -529,7 +538,7 @@ export function stepCat(state: CatState, subject: CatSubject, dt: number, world:
     || pending;
   // Standing **at the door**, not merely standing: `atPlace` is true while he
   // is rooted saying something, and a cat mid-sentence is not a cat waiting.
-  return { state: next, moving, pawfall, waiting: leading && gap <= reach };
+  return { state: next, moving, pawfall, waiting: leading && finalGap <= reach };
 }
 
 /** Put him somewhere at once — you took a stair, or a journey flew you across the island. */

@@ -28,6 +28,7 @@ import {
 } from "./bodyModel.ts";
 import { courtObstacles, type Obstacle, type RoomBounds } from "./obstacles.ts";
 import { findPath, type PathPoint } from "./pathfinder.ts";
+import {createPlayableFigure,type PlayableAvatar} from './playableFigure.ts';
 // The partner's body is this body: importing the character module registers it
 // with `presence/walker.ts` (see `body/characterWalker.ts`). The runtime imports
 // this file, so the real character is standing before any place is built.
@@ -56,6 +57,8 @@ export type WalkerOptions = {
   room?: RoomBounds | null;
   tier?: "full" | "lite";
   colours?: Partial<FigureColours>;
+  avatar?: PlayableAvatar|null;
+  invalidate?:()=>void;
   /** Where it stands when it arrives, and which way it faces. */
   start?: { x: number; z: number; yaw?: number };
   /**
@@ -90,7 +93,8 @@ export type Walker = {
   setInput(input: BodyInput): void;
   input(): BodyInput;
   /** Walk to a point on the ground — a tap. A clear line is direct; a blocked one follows bounded waypoints. */
-  goTo(x: number, z: number): void;
+  goTo(x: number, z: number): boolean;
+  setAvatar(avatar:PlayableAvatar|null):void;
   /** Stop walking there (a second tap that meant something else). */
   cancel(): void;
   /** Put it somewhere at once. */
@@ -137,7 +141,7 @@ export function createWalker(options: WalkerOptions): Walker {
   };
   const group = new THREE.Group();
   group.name = "Your body";
-  const figure: BodyFigure = createBodyFigure(options.colours);
+  let figure: BodyFigure = options.avatar?createPlayableFigure(options.avatar,tier,{invalidate:options.invalidate}):createBodyFigure(options.colours);
   group.add(figure.group);
   const trail: Footprints | null = (options.trail ?? true)
     ? createFootprints("#6b5a44", tier === "full" ? FOOTPRINT_POOL : FOOTPRINT_POOL_LITE)
@@ -208,9 +212,15 @@ export function createWalker(options: WalkerOptions): Walker {
     goTo(x, z) {
       const planned = findPath({ x: state.x, z: state.z }, { x, z }, world);
       clearRoute();
-      if (!planned?.length) { state = { ...state, goal: null, stalled: 0 }; return; }
+      if (!planned?.length) { state = { ...state, goal: null, stalled: 0 }; return false; }
       route = planned;
       state = walkTo(state, planned[0]!.x, planned[0]!.z, world);
+      return true;
+    },
+    setAvatar(avatar){
+      figure.group.removeFromParent();figure.dispose();
+      figure=avatar?createPlayableFigure(avatar,tier,{invalidate:options.invalidate}):createBodyFigure(options.colours);
+      group.add(figure.group);write();figure.pose(state.phase,gaitOf(state),0,motion);
     },
     jump() { state = requestJump(state); },
     slideNow() { state = requestSlide(state); },

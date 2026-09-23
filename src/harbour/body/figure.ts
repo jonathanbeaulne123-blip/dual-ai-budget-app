@@ -75,6 +75,9 @@ export type BodyMotion = {
 
 export const AT_REST: Readonly<BodyMotion> = Object.freeze({ lean: 0, bank: 0, run: 0 });
 
+/** The authored biped coordinate system; the group is scaled to world height. */
+export const FIGURE_RIG_HEIGHT = 0.58;
+
 export type BodyFigure = {
   /** The whole body. Its position is the feet on the ground; its `rotation.y` is the facing. */
   group: THREE.Group;
@@ -130,6 +133,9 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}): BodyFigu
 
   const group = new THREE.Group();
   group.name = "body";
+  // Keep every existing gait/emote authored in its compact model-space units.
+  // The root remains at the feet, while world scale follows BODY_HEIGHT.
+  group.scale.setScalar(BODY_HEIGHT / FIGURE_RIG_HEIGHT);
   // Everything below the root so the root's position stays the feet on the
   // ground: the bob, the roll and the lean move the body, not its footing.
   const carriage = new THREE.Group();
@@ -157,6 +163,7 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}): BodyFigu
   carriage.add(hair);
 
   const legGeometry = track(new THREE.CapsuleGeometry(0.042, 0.145, 4, 8));
+  const pelvisGeometry = track(new THREE.CapsuleGeometry(0.061, 0.052, 4, 8));
   const shoeGeometry = track(new THREE.BoxGeometry(0.072, 0.034, 0.108));
   const armGeometry = track(new THREE.CapsuleGeometry(0.031, 0.118, 4, 8));
   const handGeometry = track(new THREE.SphereGeometry(0.034, 10, 8));
@@ -189,6 +196,14 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}): BodyFigu
     carriage.add(shoulder);
     arms.push(shoulder);
   }
+
+  // A true hips-to-hem bridge. It overlaps both the coat hem and the leg
+  // tops, so an authored torso surface cannot reveal a floating seam.
+  const pelvis = new THREE.Mesh(pelvisGeometry, trouserMaterial);
+  pelvis.name = "body-pelvis";
+  pelvis.position.y = 0.258;
+  pelvis.castShadow = true;
+  carriage.add(pelvis);
 
   const [leftLeg, rightLeg] = legs as [THREE.Group, THREE.Group];
   const [leftArm, rightArm] = arms as [THREE.Group, THREE.Group];
