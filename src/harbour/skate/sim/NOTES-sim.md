@@ -68,14 +68,16 @@ The events of one step come in sim order:
 
 ## Tuning (`sim/tuning.ts`, one commented table)
 
-These values set the feel. At the current settings:
+These values set the feel. At the current settings (feel pass, wave 3 — every changed constant carries its reason in `tuning.ts`):
 
-- **Speed:** gravity is 14. Pushing tops out around 6.3 u/s, sprinting around 7.8 u/s, and the hard cap is 15.
-- **Ollies:** 0.16–0.56 high. A standard pop reaches about 0.39.
-- **Spins:** a 180 is easy off a flat ollie. A 360 needs a big air, and a 540 needs a vert air of about 1.2 s.
-- **Pumping:** `PUMP_GAIN` 1.5 and `PUMP_VREF` 4. On a 1.24-high mini-ramp this plateaus about 1.5 above the coping after about 20 walls. Riding without pumping loses about 0.05 per wall.
+- **Speed:** gravity is 14. Pushing tops out around 6.5 u/s (0→5 in 2 s; each stroke a surge of ~1.6 u/s), sprinting around 8, and the hard cap is 15. Paths ride like concrete; cobbles are felt (cruise 6.2, 0→5 in 2.5 s); grass and sand are a crawl you can escape.
+- **Ollies:** 0.16–0.56 high. A standard pop reaches about 0.39. A pop while already rising adds its height to the launch's (`POP_ON_RISE`): Hatch airs 0.9–1.4 above the lip at 7–9 u/s.
+- **Spins:** held stick spins, a centred stick stops them (`SPIN_DAMP` 5) and, after a spin, squares the board up to the nearest landing line (`SPIN_SETTLE_*`). A 180 lands from a 0.17–0.37 s hold off a flat ollie; a 360 off the Hatch at 8–9 u/s; a 540 needs a vert air.
+- **Pumping:** `PUMP_GAIN` 2.2 and `PUMP_VREF` 2.8. On the Breadbin (0.85) a good pumper clears the coping by the 3rd wall and levels off ~1.1 above it; a sloppy one (~170 ms late, 70 % depth) ~0.6. It stays centred (0.003 per wall) for as long as you like.
+- **Catches:** late window `CATCH_WINDOW` 0.2 × (1 − 0.7·difficulty): a kickflip may touch down at 84 % of its flip, a triple needs 92 %.
 - **Landing thresholds:** clean up to 25°, sketchy to 50°, and a hard impact at 7.6 u/s along the normal (11.5 when crouched).
-- **Balance and pop direction:** grind tip, wobble and control, and `POP_NORMAL_BLEND`.
+- **Balance:** manuals tip faster the longer you hold (`MANUAL_TIP_GROWTH`); grinds drift gently when easy and fast when hard (`GRIND_TIP`/`_DIFF`/`_GROWTH`). A person reacting in ~0.2 s holds a manual 5–10 s and a 50-50 to the end of a long rail.
+- **Bails:** 0.8 s down, 0.25 s to get up.
 
 ## Integration changes (2026-09-23)
 

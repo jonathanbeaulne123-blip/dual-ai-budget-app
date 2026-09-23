@@ -5,14 +5,15 @@
  * file. Units are island units (a person is 1.25 tall, the deck ~0.55 long),
  * seconds and radians. Speeds are u/s, accelerations u/s².
  *
- * Reference points at these values (checked by test/skate-sim*.test.ts):
- *  - push cruise ≈ 6.2 u/s after ~4 s of strokes; sprint cruises ~1 u/s faster
+ * Reference points at these values (checked by test/skate-sim*.test.ts and, on the real
+ * park, test/skate-int-feel.test.ts; feel pass wave 3 2026-09-23 — each changed constant says why):
+ *  - push cruise ≈ 6.5 u/s (0→5 in 2 s); sprint ~8; cobbles 6.2 (0→5 in 2.5 s)
  *  - standard ollie (strength .5, crouch .7) rises ≈ 0.39, max pop ≈ 0.56
- *  - ollie air ≈ 0.5 s → a 180 is comfortable, a 360 is out of reach on flat
+ *  - ollie air ≈ 0.5 s → a 180 is comfortable, a 360 is out of reach on flat; a 360 lands off
+ *    the Hatch at 8–9 u/s (0.9–1.4 above the lip)
  *  - 1.97-tall vert quarterpipe entered at 10 / 11.5 u/s → ≈ 1.0 / 1.2 s of air
- *    (360 lands from ~10, 540 from ~11); you pump or drop in to get there
- *  - 1.24-tall mini-ramp: pumping gains ~0.07–0.1 per wall and plateaus ~1.5
- *    above coping; not pumping loses ~0.05 per wall
+ *  - the Breadbin (0.85 mini): a good pumper clears the coping by wall 3 and levels off ~1.1
+ *    above it, centred for as long as you pump
  */
 export const SKATE_TUNING = {
   /* ── world ─────────────────────────────────────────────────────────── */
