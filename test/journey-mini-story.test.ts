@@ -54,8 +54,10 @@ describe("the simple view on Our Story", () => {
     expect(current.banks.filter((b) => b.full).map((b) => b.name).sort()).toEqual(["Plant corner", "The sofa"]);
     expect(current.banks.find((b) => b.name === "The sofa")).toMatchObject({ bought: true, fill: 1 });
     expect(current.banks.every((b) => b.step !== null && b.step >= 0 && b.step <= 10)).toBe(true);
-    // Twelve Chapters behind us in this era closed at their Sitdowns, this month open, the rest ahead.
-    expect(current.months.filter((m) => m.status === "closed")).toHaveLength(12);
+    // August's Chapter is still open; its intended month stays open until its own
+    // closing Sitdown, even though the August books already have a closed Sitdown.
+    expect(current.months.filter((m) => m.status === "closed")).toHaveLength(11);
+    expect(current.months.find((m) => m.key === "2026-08")).toMatchObject({ status: "open", chapter: { title: "Make Room for Joy", state: "open" } });
     expect(current.months.find((m) => m.current)).toMatchObject({ key: "2026-09", status: "open", worldId: "month:12", lap: 12 });
     expect(current.months.filter((m) => m.status === "ahead")).toHaveLength(11);
     expect(alex.eras[0]!.months).toHaveLength(12);
@@ -65,9 +67,10 @@ describe("the simple view on Our Story", () => {
     expect(alex.eras[2]!.plans.some((p) => p.label === "Adopt a dog")).toBe(true);
   }, LONG);
 
-  it("opens September inside Make Room for Joy with the Fund's own bills and contributions", async () => {
+  it("reads September's Fund while the open Chapter stays in its intended August", async () => {
     const { alex } = await ready;
-    expect(alex.month.chapter?.title).toBe("Make Room for Joy");
+    expect(alex.month.chapter).toBeNull();
+    expect(alex.months.find((m) => m.key === "2026-08")?.chapter?.title).toBe("Make Room for Joy");
     expect(alex.month.fundReady).toBe(true);
     const rent = alex.month.days[0]!.items.find((i) => i.kind === "bill" && i.label === "Rent");
     expect(rent).toMatchObject({ amountCents: 215000, posted: true });

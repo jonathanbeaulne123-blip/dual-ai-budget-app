@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import * as THREE from "three";
 import { readFileSync } from "node:fs";
 import {
-  CATCH_UP, CAT_HEIGHT, CAT_RUN, CAT_SHORE, CAT_TROT, DOOR_REACH, ERRAND_MET, HEEL_CLOSE, MOOD_AFTER,
+  CATCH_UP, CAT_HEIGHT, CAT_RUN, CAT_TROT, DOOR_REACH, ERRAND_MET, HEEL_CLOSE, MOOD_AFTER,
   MOOD_AFTER_SECONDS, MOOD_FALLS_TO, PERCH_REACH, answerTo, createCatState, heelPoint, stepCat,
   type CatMood, type CatState, type CatSubject,
 } from "../src/harbour/body/catModel.ts";

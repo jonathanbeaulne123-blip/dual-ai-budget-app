@@ -172,11 +172,44 @@ describe("miniJourney — the simple view as data (D-284)", () => {
     for (const [index, key] of world.entries()) expect(j.months.find((m) => m.key === key)).toMatchObject({ worldIndex: index, worldId: `month:${index}` });
     const now = j.months.find((m) => m.key === "2026-09")!;
     expect(now).toMatchObject({ current: true, status: "open" });
-    expect(now.chapter?.title).toBeTruthy();
+    expect(now.chapter).toBeNull();
+    expect(j.months.find((m) => m.key === "2026-07")?.chapter?.title).toBeTruthy();
     expect(j.months.find((m) => m.key === "2026-12")).toMatchObject({ status: "ahead", worldId: null });
     // Without a journey the model has no eras and travels a year either side.
     expect(j.eras).toEqual([]);
     expect(j.span).toEqual({ from: "2025-09-01", to: "2027-09-30" });
+  });
+
+  it("keeps an open Chapter at its intended month when its Sitdown happens later", () => {
+    const h = household();
+    const chapter = h.chapters![0]!;
+    chapter.intendedMonth = "2026-08";
+    chapter.openedAt = "2026-09-02T12:00:00.000Z";
+    h.sitDownSessions = [{ id: "SITDOWN-MINI-AUG", monthKey: "2026-08", targetMonth: "2026-09", act: 3,
+      leftoverCents: 0, cashLikeCents: 0, billsNext30Cents: 0, minPaymentsCents: 0, slices: [], transferIds: [], contributionIds: [],
+      budgetPosted: false, closedMonth: true, driveFileId: null, status: "closed", createdBy: "MEM-001",
+      createdAt: "2026-09-01T12:00:00.000Z", updatedAt: "2026-09-01T12:00:00.000Z" }];
+    const j = miniJourney(h, { memberId: "MEM-001", today: TODAY });
+    expect(j.months.find((m) => m.key === "2026-08")).toMatchObject({ status: "open", chapter: { id: chapter.id, state: "open" } });
+    expect(j.months.find((m) => m.key === "2026-09")?.chapter).toBeNull();
+    expect(j.months.find((m) => m.key === "2026-10")?.chapter).toBeNull();
+
+    chapter.state = "closed";
+    chapter.closedAt = "2026-09-03T12:00:00.000Z";
+    const closed = miniJourney(h, { memberId: "MEM-001", today: TODAY });
+    expect(closed.months.find((m) => m.key === "2026-08")).toMatchObject({ status: "closed", chapter: { id: chapter.id, state: "closed" } });
+    expect(closed.months.find((m) => m.key === "2026-09")?.chapter).toBeNull();
+
+    // Legacy Chapters belong only to their opening month, even while still open.
+    chapter.state = "open";
+    chapter.closedAt = null;
+    delete chapter.intendedMonth;
+    const legacy = miniJourney(h, { memberId: "MEM-001", today: TODAY });
+    expect(legacy.months.find((m) => m.key === "2026-08")?.chapter).toBeNull();
+    expect(legacy.months.find((m) => m.key === "2026-09")?.chapter?.id).toBe(chapter.id);
+    expect(legacy.months.find((m) => m.key === "2026-10")?.chapter).toBeNull();
+    chapter.intendedMonth = "2026-10";
+    expect(miniMonth(h, "2026-10", { memberId: "MEM-001", today: TODAY }).status).toBe("ahead");
   });
 
   it("keeps a month ahead honest: planned bills, no invented money in", () => {
