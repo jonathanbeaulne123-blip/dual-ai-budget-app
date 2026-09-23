@@ -253,7 +253,7 @@ export function createSkateCamera(options: SkateCameraOptions = {}): SkateCamera
     }
     let ty = fy.x + C.lookUp + aim + lead[1].x + lift.x * 0.5 + vb * 0.3;
     // The rider's middle: where the eye must always have a clear line to.
-    const cx = fx.x, cy0 = fy.x + C.lookUp, cz = fz.x;
+    const cx = last ? fin(last.x, fx.x) : fx.x, cy0 = (last ? fin(last.y, fy.x) : fy.x) + C.lookUp * 0.8, cz = last ? fin(last.z, fz.x) : fz.x;
     // Look-ahead must not aim into a ramp face: shorten it until the aim point is in open air.
     if (env?.blocked) for (let k = 0; k < 4 && env.blocked(tx, ty, tz); k++) { tx = cx + (tx - cx) * 0.5; ty = cy0 + (ty - cy0) * 0.5; tz = cz + (tz - cz) * 0.5; }
     const r = (dist.x + vb * C.vertDist) * pull.x;
@@ -269,9 +269,10 @@ export function createSkateCamera(options: SkateCameraOptions = {}): SkateCamera
       const lineClear = (lift0: number): number => {
         const py0 = ey + lift0;
         if (solid(ex, py0 - 0.12, ez)) return 0;
-        for (let i = 1; i <= 6; i++) {
-          const t = i / 6;
-          if (solid(cx + (ex - cx) * t, cy0 + (py0 - cy0) * t, cz + (ez - cz) * t)) return (i - 1) / 6;
+        // Fine enough to catch a bowl's coping between the rider and the eye.
+        for (let i = 1; i <= 14; i++) {
+          const t = i / 14;
+          if (solid(cx + (ex - cx) * t, cy0 + (py0 - cy0) * t, cz + (ez - cz) * t)) return (i - 1) / 14;
         }
         return 1;
       };

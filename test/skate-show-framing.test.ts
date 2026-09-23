@@ -14,7 +14,7 @@ import {createSkateCamera, projectToView, type SkateCameraFrame} from '../src/ha
 const field = skateField();
 const blocked = (x: number, y: number, z: number) => y < field.heightAt(x, z) + 0.05;
 
-type Shot = {frame: number; phase: string; mode: string; head: [number, number] | null; board: [number, number] | null; eyeClear: number; dist: number; fov: number};
+type Shot = {frame: number; phase: string; mode: string; hidden: boolean; head: [number, number] | null; board: [number, number] | null; eyeClear: number; dist: number; fov: number};
 
 function film(name: string, aspect: number): Shot[] {
   const sc = LAB_SCENARIOS.find(s => s.name === name)!;
@@ -29,7 +29,10 @@ function film(name: string, aspect: number): Shot[] {
     if (lab.driver()?.takeCut()) cam.snap(p);
     f = cam.update(p, lab.events(), 1 / 60, {aspect, blocked});
     const head = projectToView(f, [p.x, p.y + 1.15, p.z], aspect), board = projectToView(f, [p.x, p.y + 0.05, p.z], aspect);
-    shots.push({frame: i + 1, phase: p.phase, mode: cam.mode(), head, board, eyeClear: f.position[1] - field.heightAt(f.position[0], f.position[2]),
+    // Is the rider's chest hidden behind the park (a coping, a ramp) from the eye?
+    let hidden = false;
+    for (let k = 1; k < 20 && !hidden; k++) { const t = k / 20; hidden = blocked(f.position[0] + (p.x - f.position[0]) * t, f.position[1] + (p.y + 0.7 - f.position[1]) * t, f.position[2] + (p.z - f.position[2]) * t); }
+    shots.push({frame: i + 1, phase: p.phase, mode: cam.mode(), hidden, head, board, eyeClear: f.position[1] - field.heightAt(f.position[0], f.position[2]),
       dist: Math.hypot(f.position[0] - p.x, f.position[1] - p.y - 0.6, f.position[2] - p.z), fov: f.fov});
   }
   return shots;
@@ -47,6 +50,8 @@ describe('skate chase camera · every lab scenario', () => {
       expect(bad.length, `${sc.name}: out of frame at ${bad.slice(0, 8).map(s => `#${s.frame} ${s.phase}`).join(', ')}`).toBeLessThanOrEqual(allowed);
       const buried = shots.filter(s => s.eyeClear < 0.12);
       expect(buried.map(s => `#${s.frame}`), `${sc.name}: eye inside the park`).toEqual([]);
+      const hidden = shots.filter(s => s.hidden);
+      expect(hidden.length, `${sc.name}: rider hidden behind the park at ${hidden.slice(0, 8).map(s => `#${s.frame}`).join(', ')}`).toBeLessThanOrEqual(3);
       const jammed = shots.filter(s => s.dist < 1.1 || s.dist > 7.5);
       expect(jammed.map(s => `#${s.frame} ${s.dist.toFixed(2)}`), `${sc.name}: eye too close/far`).toEqual([]);
     });
