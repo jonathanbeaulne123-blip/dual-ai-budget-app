@@ -66,6 +66,7 @@ import { allowsLiveJourneyDerivedScene, journeyDerivedSceneForSupport, quietJour
 import { useMiniJourneyLoad } from "./mini/miniJourneyLoader.ts";
 import { miniCad } from "./mini/miniJourneyModel.ts";
 import { JOURNEY_LEVEL_FOR_WORLD, JOURNEY_LEVEL_LABEL, WORLD_LEVEL_FOR, useJourneyFocus, type JourneyFocus, type JourneyFocusApi, type JourneyFocusSource } from "./journeyFocus.ts";
+import { harbourJourneyAnchor, isHarbourJourneyMonth, type HarbourJourneyAnchor } from "./harbourJourney.ts";
 import { PathRoamRadar, type PathRoamRadarHandle } from "./PathRoamRadar.tsx";
 import type { ThemeId } from "../theme/scenes.ts";
 import type { PathAnchor, PathCharacter, PathEraIslandInput, PathLevel, PathQuality, PathWorld, PathWorldInput } from "./world/pathWorld3d.ts";
@@ -84,6 +85,7 @@ export type JourneyMiniSlotArgs = {
   focus: JourneyFocusApi;
   /** Opens the open world (game mode). In the compact corner copy the world is already open, so it does nothing. */
   onOpenWorld: () => void;
+  onEnterHarbour?: (anchor: HarbourJourneyAnchor) => void;
   /** True for the corner minimap inside the open world. */
   compact: boolean;
   theme: ThemeId;
@@ -223,7 +225,7 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini }: {
+export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, onEnterHarbour, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini }: {
   household: Household;
   memberId: string;
   today: DateKey;
@@ -247,6 +249,8 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   onOpenTimeMachine?: (monthKey: string) => void;
   /** Hercules's cottage is Play, his room. Without it there is no cottage. */
   onOpenPlay?: () => void;
+  /** Current Chapter only: a view transition to Little Harbour, never a write. */
+  onEnterHarbour?: (anchor: HarbourJourneyAnchor) => void;
   /** Household board photos for the memory flags. Reads only; nothing is uploaded from the island. */
   boardMedia?: BoardMediaClient | null;
   /** 1 = just me; 2 or more = the other member is live too. Nothing is stored. */
@@ -880,6 +884,12 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   // own controls (Replay, Where we are, the outline) as "page"; the simple view as "mini". Each side applies a change
   // only when someone else made it.
   const journey = useJourneyFocus(today);
+  const harbourAnchor = useMemo(() => harbourJourneyAnchor(household, today), [household, today]);
+  const enterHarbour = useCallback(() => {
+    if (!onEnterHarbour || !isHarbourJourneyMonth(harbourAnchor, journey.focus.date)) return false;
+    leaveThen.current(() => onEnterHarbour(harbourAnchor));
+    return true;
+  }, [onEnterHarbour, harbourAnchor, journey.focus.date]);
   const focus = journey.focus;
   const focusRef = useRef(focus);
   focusRef.current = focus;
@@ -1770,11 +1780,12 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     });
   })();
   const mini = renderMini === undefined
-    ? (args: JourneyMiniSlotArgs) => <JourneyMini {...args} view="household" onOpenFund={onOpenFund ? () => links.current.onOpenFund?.() : undefined} onOpenPlanner={onOpenPlanner ? () => links.current.onOpenPlanner?.() : undefined} />
+    ? (args: JourneyMiniSlotArgs) => <JourneyMini {...args} view="household" onEnterHarbour={onEnterHarbour ? () => enterHarbour() : undefined} onOpenFund={onOpenFund ? () => links.current.onOpenFund?.() : undefined} onOpenPlanner={onOpenPlanner ? () => links.current.onOpenPlanner?.() : undefined} />
     : renderMini;
   const miniArgs = (compact: boolean): JourneyMiniSlotArgs => ({
     household, memberId, today, focus: journey, compact, theme, quality, worldOpen: full, privateShown,
     onOpenWorld: compact ? () => {} : enterWorld,
+    onEnterHarbour: compact ? undefined : onEnterHarbour ? () => enterHarbour() : undefined,
   });
   const flatMap = (
     <PathMiniMap household={household} today={today} shown={shown} theme={theme} interpretation={supported.value} liveDerivedScene={liveDerivedScene}
@@ -2008,7 +2019,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
               <div className="path-hud__dock">
                 <div className="path-world__rail" role="group" aria-label="Distance">
                   {LEVELS.map((l) => <button key={l.level} type="button" aria-pressed={level === l.level} onClick={() => { guardTrip(l.level, true); world.current?.setLevel(l.level); }} disabled={!live}>{l.label}</button>)}
-                  <button type="button" aria-label="Move closer" onClick={() => { dropGuard(); world.current?.zoom(0.72); }} disabled={!live}>+</button>
+                  <button type="button" aria-label={level === 3 && onEnterHarbour ? "Enter Harbour by moving closer" : "Move closer"} onClick={() => { if (level === 3 && enterHarbour()) return; dropGuard(); world.current?.zoom(0.72); }} disabled={!live}>+</button>
                   <button type="button" aria-label="Move away" onClick={() => { dropGuard(); world.current?.zoom(1.38); }} disabled={!live}>−</button>
                 </div>
                 <div className="path-world__now">
@@ -2016,6 +2027,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
                     <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="10" r="7" /><path d="M12.8 7.2 11 11l-3.8 1.8L9 9z" /></svg>
                     Where we are
                   </button>
+                  {onEnterHarbour && isHarbourJourneyMonth(harbourAnchor, journey.focus.date) && <button type="button" className="path-world__compass" onClick={enterHarbour}>Enter Harbour</button>}
                   {flat && <PathHercules pose={herculesPose} size={narrow ? 48 : 64} flat />}
                   <button ref={tentButton} type="button" className="primary path-world__tent" aria-label="Open the Plan Studio tent" onClick={() => openTent(true)}>
                     <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3 2.5 16.5h15z" /><path d="M10 3v13.5M10 16.5 7.5 11" /></svg>
