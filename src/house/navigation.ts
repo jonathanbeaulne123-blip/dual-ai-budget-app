@@ -47,9 +47,13 @@ export function houseTargetRoute(route:HouseRoute,target:string,object?:string):
     pottery:['making','above'],
   };
   const place=places[target];
+  // A Village address names the room the person is actually standing in. A
+  // tool selects its surface without teleporting that origin to the tool's
+  // older furniture address, so its return record remains physical and exact.
+  const targetPlace=route.village?undefined:place;
   const station=target==='pottery'&&['wheel','paint','kiln'].includes(object??'');
   const carried=route.object&&!['wheel','paint','kiln'].includes(route.object)?route.object:undefined;
-  return {...route,...(place?{room:place[0],level:place[1]}:{}),surface:target,object:station?carried:object??(['wishes','memories','projector'].includes(target)?undefined:route.object),studioSelection:target==='pottery'&&!object?.startsWith('piece/')?route.studioSelection:undefined,studioTab:target==='pottery'?(object==='wheel'?'shape':object==='paint'?'paint':object==='kiln'?'kiln':route.studioTab):undefined};
+  return {...route,...(targetPlace?{room:targetPlace[0],level:targetPlace[1]}:{}),surface:target,object:station?carried:object??(['wishes','memories','projector'].includes(target)?undefined:route.object),studioSelection:target==='pottery'&&!object?.startsWith('piece/')?route.studioSelection:undefined,studioTab:target==='pottery'?(object==='wheel'?'shape':object==='paint'?'paint':object==='kiln'?'kiln':route.studioTab):undefined};
 }
 export function houseRoomRoute(route: HouseRoute): HouseRoute { const {surface: _surface, studioSelection: _studioSelection, studioTab: _studioTab, ...room} = route; return room; }
 export function houseLifeRoute(route: HouseRoute): HearthsideRoute {
