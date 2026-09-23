@@ -31,6 +31,13 @@ const FAINT = 0.34, HARD = 0.5;
  * you stand still. The island sleeps; the walk still leaves a mark.
  */
 export const FOOTPRINT_SETTLE = 4;
+/**
+ * How big a paw print is beside a footprint. Hercules is 0.28 to a person's
+ * 0.58 and a cat's foot is small even for a cat, so his mark is a bit over a
+ * third of yours — big enough to read as a trail across the lawn, small
+ * enough that you can tell at a glance whose feet went that way.
+ */
+export const PAW_SIZE = 0.38;
 
 export type Footprints = {
   group: THREE.Group;
@@ -49,7 +56,13 @@ export type Footprints = {
   dispose(): void;
 };
 
-export function createFootprints(colour: string, pool: number = FOOTPRINT_POOL): Footprints {
+/**
+ * `size` scales the mark and how far to the side of the heading it is laid —
+ * one geometry, one material and the same pool whatever it is. `PAW_SIZE`
+ * makes the same trail a cat's.
+ */
+export function createFootprints(colour: string, pool: number = FOOTPRINT_POOL, size = 1): Footprints {
+  const wide = 0.035 * size, long = 0.052 * size, sideStep = 0.048 * size;
   const group = new THREE.Group();
   group.name = "footprints";
   const geometry = new THREE.CircleGeometry(1, 8);
@@ -63,7 +76,7 @@ export function createFootprints(colour: string, pool: number = FOOTPRINT_POOL):
     const mesh = new THREE.Mesh(geometry, material);
     mesh.rotation.order = "YXZ";
     mesh.rotation.x = -Math.PI / 2;
-    mesh.scale.set(0.035, 0.052, 1);
+    mesh.scale.set(wide, long, 1);
     mesh.visible = false;
     mesh.renderOrder = -1;
     group.add(mesh);
@@ -77,11 +90,11 @@ export function createFootprints(colour: string, pool: number = FOOTPRINT_POOL):
       if (ages[next]! >= FOOTPRINT_LIFE) live += 1;
       const hard = force < 0 ? 0 : force > 1 ? 1 : force;
       // A print sits under the foot that landed, a half-width to its side.
-      const side = left ? -0.048 : 0.048;
+      const side = left ? -sideStep : sideStep;
       mesh.position.set(x + Math.cos(yaw) * side, y + 0.012, z - Math.sin(yaw) * side);
       mesh.rotation.y = yaw;
       // A running foot scrapes: longer along the heading, and darker.
-      mesh.scale.set(0.035 * (1 + hard * 0.25), 0.052 * (1 + hard * 0.9), 1);
+      mesh.scale.set(wide * (1 + hard * 0.25), long * (1 + hard * 0.9), 1);
       mesh.visible = true;
       const depth = FAINT + (HARD - FAINT) * hard;
       depths[next] = depth;
