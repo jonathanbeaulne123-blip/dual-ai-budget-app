@@ -5,6 +5,7 @@ import { createDust, DUST_POOL, DUST_POOL_LITE, type Dust } from "./dust.ts";
 import {
   BODY_HEIGHT,
   BODY_RADIUS,
+  ARRIVAL,
   JUMP_SPEED,
   NO_INPUT,
   SLIDE_SECONDS,
@@ -26,6 +27,7 @@ import {
   type EmoteId,
 } from "./bodyModel.ts";
 import { courtObstacles, type Obstacle, type RoomBounds } from "./obstacles.ts";
+import { findPath, type PathPoint } from "./pathfinder.ts";
 // The partner's body is this body: importing the character module registers it
 // with `presence/walker.ts` (see `body/characterWalker.ts`). The runtime imports
 // this file, so the real character is standing before any place is built.
@@ -87,7 +89,7 @@ export type Walker = {
   /** What the keys or the stick are asking for, in camera space. */
   setInput(input: BodyInput): void;
   input(): BodyInput;
-  /** Walk to a point on the ground — a tap. Straight line, sliding off whatever it meets. */
+  /** Walk to a point on the ground — a tap. A clear line is direct; a blocked one follows bounded waypoints. */
   goTo(x: number, z: number): void;
   /** Stop walking there (a second tap that meant something else). */
   cancel(): void;
@@ -165,7 +167,21 @@ export function createWalker(options: WalkerOptions): Walker {
   const start = options.start ?? COURT_ARRIVAL;
   let state = createBodyState(start.x, start.z, start.yaw ?? COURT_ARRIVAL.yaw, world);
   let input: BodyInput = NO_INPUT;
+  let route: PathPoint[] | null = null;
+  let routeIndex = 0;
   const box = new THREE.Box3();
+
+  function clearRoute(): void { route = null; routeIndex = 0; }
+
+  function advanceRoute(): void {
+    if (!route || state.goal) return;
+    const reached = route[routeIndex];
+    if (!reached || Math.hypot(state.x - reached.x, state.z - reached.z) > ARRIVAL + 0.36) { clearRoute(); return; }
+    routeIndex += 1;
+    const next = route[routeIndex];
+    if (!next) { clearRoute(); return; }
+    state = walkTo(state, next.x, next.z, world);
+  }
 
   function write(): void {
     figure.group.position.set(state.x, state.y, state.z);
@@ -180,15 +196,22 @@ export function createWalker(options: WalkerOptions): Walker {
       if (next.groundHeightAt) world.groundHeightAt = next.groundHeightAt;
       if (next.obstacles) world.obstacles = next.obstacles;
       if (next.room !== undefined) world.room = next.room;
+      clearRoute();
       // Whatever it was doing was aimed at the place it was standing in.
       state = { ...state, goal: null, stalled: 0, y: world.groundHeightAt(state.x, state.z) };
       write();
     },
     state: () => state,
     shoulders: () => [state.x, eyeHeight(state), state.z],
-    setInput(next) { input = next; },
+    setInput(next) { input = next; if (next.forward !== 0 || next.strafe !== 0) clearRoute(); },
     input: () => input,
-    goTo(x, z) { state = walkTo(state, x, z, world); },
+    goTo(x, z) {
+      const planned = findPath({ x: state.x, z: state.z }, { x, z }, world);
+      clearRoute();
+      if (!planned?.length) { state = { ...state, goal: null, stalled: 0 }; return; }
+      route = planned;
+      state = walkTo(state, planned[0]!.x, planned[0]!.z, world);
+    },
     jump() { state = requestJump(state); },
     slideNow() { state = requestSlide(state); },
     emote(id) { state = requestEmote(state, id); },
@@ -200,11 +223,13 @@ export function createWalker(options: WalkerOptions): Walker {
       if (next) { dust.clear(); motion.lean = 0; motion.bank = 0; motion.run = 0; motion.flourish = 0; }
       else motion.flourish = 1;
     },
-    cancel() { state = { ...state, goal: null, stalled: 0 }; },
-    place(x, z, yaw) { state = placeBody(state, x, z, world, yaw ?? state.yaw); write(); trail?.clear(); dust.clear(); },
+    cancel() { clearRoute(); state = { ...state, goal: null, stalled: 0 }; },
+    place(x, z, yaw) { clearRoute(); state = placeBody(state, x, z, world, yaw ?? state.yaw); write(); trail?.clear(); dust.clear(); },
     step(dt, t, theta) {
+      if (input.forward !== 0 || input.strafe !== 0) clearRoute();
       const frame = stepBody(state, input, theta, dt, world);
       state = frame.state;
+      advanceRoute();
       write();
       // Reduced motion keeps the gait and drops the weight: the body walks,
       // it just stops acting.
