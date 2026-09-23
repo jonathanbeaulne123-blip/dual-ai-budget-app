@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import type { DateKey } from "../core/calendar.ts";
 import type { Household, LedgerView } from "../core/types.ts";
 import type { FundPulseFreshness } from "../core/fundPulse.ts";
@@ -30,6 +30,7 @@ import { readWorldPresenceShare, type WorldPresenceShare } from "../softPresence
 import { harbourCameraSlot } from "./scene/travel.ts";
 import { qualityTier, readQualityInput, type QualityTier, type RenderTier } from "./scene/quality.ts";
 import "./harbour.css";
+import "./interiors/interiors.css";
 
 /**
  * The Court's React shell (BUILD_PLAN #2). Props are `HouseWorld`'s plus the
@@ -58,6 +59,8 @@ export type HarbourWorldProps = {
   onQuickSheet?: () => void;
   children?: ReactNode;
 };
+
+const InteriorDesk=lazy(()=>import("./interiors/InteriorDesk.tsx"));
 
 type Status = "loading" | "ready" | "fallback" | "flat";
 type Lens = "living" | "growth" | "shape";
@@ -743,6 +746,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => props.onNavigate("home", HARBOUR_PLACE_LEVELS[next])} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
+      {!toolOpen&&(place==='library'||place==='kiln')&&<Suspense fallback={null}><InteriorDesk place={place} household={household} memberId={memberId} scope={scope} onOpen={onOpen} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('court');}}/></Suspense>}
       {invite && <div className="harbour-world__invite" data-harbour-invite={touch ? "touch" : "keys"} aria-hidden="true"><Whisper mode="line">{inviteWords(place, touch)}</Whisper></div>}
       {stick && <div className="harbour-stick" data-harbour-stick="" aria-hidden="true" style={{ left: `${stick.x}px`, top: `${stick.y}px` }}><span className="harbour-stick__ring" /><span className="harbour-stick__knob" ref={knob as unknown as React.Ref<HTMLSpanElement>} /></div>}
       {sparkle && <div className="harbour-spark" aria-hidden="true" style={{ left: `${sparkle.x}px`, top: `${sparkle.y}px`, "--spark": sparkle.color } as CSSProperties}>{Array.from({ length: sparkle.petals }, (_, i) => <span key={i} style={{ "--i": i } as CSSProperties} />)}</div>}

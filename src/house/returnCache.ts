@@ -8,13 +8,13 @@ import type { HouseRoute } from "../hearthside/houseRoutes.ts";
 export function houseReturnSlot(route: Pick<HouseRoute, "surface" | "object">): string {
   const surface = route.surface?.trim();
   if (!surface) return "arrival";
-  const object = route.object?.trim();
+  const object = surface === "pottery" && ["wheel", "paint", "kiln"].includes(route.object ?? "") ? undefined : route.object?.trim();
   return object ? `${surface}:${object}` : surface;
 }
 
 /** Camera state belongs to the room/time view, while the arrival record keeps its full route. */
 export function houseCameraRoute(route: HouseRoute): HouseRoute {
-  const { surface: _surface, object: _object, studioSelection: _studioSelection, ...camera } = route;
+  const { surface: _surface, object: _object, studioSelection: _studioSelection, studioTab: _studioTab, ...camera } = route;
   return camera;
 }
 

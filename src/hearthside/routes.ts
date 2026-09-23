@@ -6,6 +6,7 @@ export type HearthsideRoute = {
   object?: { kind: 'experience' | 'memory' | 'occasion' | 'note' | 'encounter'; id: string } | {kind:'piece';id:string;designId:string};
   mode: 'present' | 'remember' | 'imagine';
   surface?:'practical'|'studio'|'letters'|'occasions'|'projector'|'history'|'worktable'|'guests'|'encounters'|'wardrobe'|'restore';
+  studioTab?: 'shape'|'paint'|'kiln';
   studioSelection?: {designId:string;pieceId:string};
   returnContext?: { path: string; focusId: string };
 };
@@ -34,6 +35,7 @@ export function hearthsidePath(route: HearthsideRoute): string {
     if(!['studio','wardrobe'].includes(route.surface??'')||route.object?.kind==='piece')throw Error('HEARTHSIDE_INVALID_STUDIO_SELECTION');
     query.set('design',identifier(route.studioSelection.designId));query.set('piece',identifier(route.studioSelection.pieceId));
   }
+  if(route.studioTab){if(route.surface!=='studio')throw Error('HEARTHSIDE_INVALID_STUDIO_BENCH');query.set('bench',choice(route.studioTab,['shape','paint','kiln']));}
   if (route.returnContext) { const back=returnContext(route.returnContext.path,route.returnContext.focusId,route.householdId);query.set('from',back.path);query.set('focus',back.focusId); }
   return `/hearthside${path}?${query}`;
 }
@@ -56,11 +58,13 @@ export function parseHearthsideRoute(url: string, selectedHouseholdId: string): 
     const surface=u.searchParams.has('surface')?{surface:choice(u.searchParams.get('surface'),['practical','studio','letters','occasions','projector','history','worktable','guests','encounters','wardrobe','restore'] as const)}:{};
     const selection=u.searchParams.has('piece')||u.searchParams.has('design')&&parts[1]!=='pieces'?{studioSelection:{designId:identifier(u.searchParams.get('design')),pieceId:identifier(u.searchParams.get('piece'))}}:{};
     if(selection.studioSelection&&(!['studio','wardrobe'].includes(surface.surface??'')||parts[1]==='pieces'))return null;
+    const bench=u.searchParams.has('bench')?{studioTab:choice(u.searchParams.get('bench'),['shape','paint','kiln'] as const)}:{};
+    if(bench.studioTab&&surface.surface!=='studio')return null;
     const back=u.searchParams.has('from')||u.searchParams.has('focus')?{returnContext:returnContext(u.searchParams.get('from'),u.searchParams.get('focus'),householdId)}:{};
-    if (parts.length === 1 || parts.length === 3 && parts[1] === 'rooms' && HEARTHSIDE_ROOMS.includes(parts[2] as HearthsideRoom)) return { version: 1, householdId, room, mode,...surface,...selection,...back };
+    if (parts.length === 1 || parts.length === 3 && parts[1] === 'rooms' && HEARTHSIDE_ROOMS.includes(parts[2] as HearthsideRoom)) return { version: 1, householdId, room, mode,...surface,...selection,...bench,...back };
     const kind = Object.entries(collections).find(([, name]) => name === parts[1])?.[0] as keyof typeof collections | undefined;
     if (parts.length !== 3 || !kind) return null;
-    return { version: 1, householdId, room, mode,...surface,...selection, object: kind==='piece'?{kind,id:identifier(decodeURIComponent(parts[2]!)),designId:identifier(u.searchParams.get('design'))}:{kind,id:identifier(decodeURIComponent(parts[2]!))},...back };
+    return { version: 1, householdId, room, mode,...surface,...selection,...bench, object: kind==='piece'?{kind,id:identifier(decodeURIComponent(parts[2]!)),designId:identifier(u.searchParams.get('design'))}:{kind,id:identifier(decodeURIComponent(parts[2]!))},...back };
   } catch { return null; }
 }
 export function legacyHearthsideRoom(entrance: string): HearthsideRoom {

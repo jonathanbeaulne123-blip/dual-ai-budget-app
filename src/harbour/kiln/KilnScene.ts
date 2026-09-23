@@ -1,3 +1,4 @@
+import { studioInterior } from "../interiors/studioInterior.ts";
 import * as THREE from "three";
 import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import { EngravedPlate, plateFinish, type PlateFinish } from "../court/engraved.ts";
@@ -79,8 +80,8 @@ export function pieceScale(step: number): number {
 // width at this distance, so its pose takes the two the room is for — the
 // wheel in the foreground, the kiln standing behind it — and the shelf and the
 // bench are one swipe to the right. Desktop holds the whole shed in one look.
-const PHONE_ROOM: Pose = { target: [-1.4, 0.9, -0.15], r: 4.2, theta: 0.85, phi: 1.37 };
-const DESKTOP_ROOM: Pose = { target: [-0.3, 1.1, -0.6], r: 4.3, theta: 0.72, phi: 1.3 };
+const PHONE_ROOM: Pose = { target: [-1.05, 1.1, -0.35], r: 3.85, theta: 0.25, phi: 1.32 };
+const DESKTOP_ROOM: Pose = { target: [0, 1.3, -.7], r: 4.75, theta: -0.18, phi: 1.27 };
 
 export function kilnPoses(anchors: readonly Anchor[]): Record<string, Pose> {
   const poses: Record<string, Pose> = {
@@ -151,70 +152,9 @@ export function createKiln(scene: THREE.Scene, options: KilnOptions): PlaceHandl
   };
 
   const contacts = track(createContactShadows({ ink: dressing.ink }));
-  const { halfWidth, halfDepth, wallHeight } = KILN_LAYOUT;
+  const { halfWidth, halfDepth } = KILN_LAYOUT;
 
-  // ── The shed: a tiled floor, brick walls with their mortar courses ────────
-  const floor = shadowed(new THREE.Mesh(track(new THREE.PlaneGeometry(halfWidth * 2, halfDepth * 2)), mat(dressing.floor, { roughness: 0.97 })), false, true);
-  floor.rotation.x = -Math.PI / 2; floor.name = "kiln-floor"; group.add(floor);
-  // The tile grid: one thin instanced line per course, dust in the joints.
-  const tileGeometry = track(new THREE.PlaneGeometry(halfWidth * 2, 0.015));
-  const tiles = new THREE.InstancedMesh(tileGeometry, mat(dressing.mortar, { roughness: 1 }), 8);
-  tiles.rotation.x = -Math.PI / 2; tiles.position.y = 0.004; tiles.name = "kiln-tile-joints";
-  {
-    const matrix = new THREE.Matrix4();
-    for (let i = 0; i < 8; i++) { matrix.makeTranslation(0, -halfDepth + ((i + 0.5) / 8) * halfDepth * 2, 0); tiles.setMatrixAt(i, matrix); }
-    tiles.instanceMatrix.needsUpdate = true;
-  }
-  group.add(tiles);
-
-  const walls = merged([
-    placed(new THREE.BoxGeometry(halfWidth * 2, wallHeight, 0.22), 0, wallHeight / 2, -halfDepth),
-    placed(new THREE.BoxGeometry(halfWidth * 2, wallHeight, 0.22), 0, wallHeight / 2, halfDepth),
-    placed(new THREE.BoxGeometry(0.22, wallHeight, halfDepth * 2), -halfWidth, wallHeight / 2, 0),
-    placed(new THREE.BoxGeometry(0.22, wallHeight, halfDepth * 2), halfWidth, wallHeight / 2, 0),
-  ], mat(dressing.brick, { roughness: 0.96 }));
-  shadowed(walls, false, true); walls.name = "kiln-walls"; group.add(walls);
-  // Mortar courses: a pale line every half metre, so brick reads as brick and not as a painted box.
-  const courses = merged(
-    [0.45, 0.95, 1.45, 1.95, 2.45].flatMap((y) => [
-      placed(new THREE.BoxGeometry(halfWidth * 2, 0.022, 0.016), 0, y, -halfDepth + 0.108),
-      placed(new THREE.BoxGeometry(0.016, 0.022, halfDepth * 2), -halfWidth + 0.108, y, 0),
-      placed(new THREE.BoxGeometry(0.016, 0.022, halfDepth * 2), halfWidth - 0.108, y, 0),
-    ]),
-    mat(dressing.mortar, { roughness: 0.95 }),
-  );
-  courses.name = "kiln-courses"; group.add(courses);
-
-  // The open roof: rafters and a ridge, the kiln's throat passing between them.
-  const rafters: THREE.BufferGeometry[] = [];
-  const ridge = 3.4;
-  const rafterLength = Math.hypot(halfWidth, ridge - wallHeight);
-  const pitch = Math.atan2(halfWidth, ridge - wallHeight);
-  for (let i = 0; i < 4; i++) {
-    const z = -halfDepth + 0.6 + (i / 3) * (halfDepth * 2 - 1.2);
-    for (const side of [-1, 1] as const) {
-      rafters.push(placed(new THREE.BoxGeometry(0.09, rafterLength, 0.09), (side * halfWidth) / 2, (wallHeight + ridge) / 2, z, [0, 0, side * pitch]));
-    }
-  }
-  rafters.push(placed(new THREE.BoxGeometry(0.11, 0.13, halfDepth * 2), 0, ridge, 0));
-  const roof = merged(rafters, mat(dressing.beam, { roughness: 0.88 }));
-  roof.name = "kiln-rafters"; group.add(roof);
-
-  const hemi = new THREE.HemisphereLight(new THREE.Color(dressing.light.hemiSky), new THREE.Color(dressing.light.hemiGround), 0.5);
-  group.add(hemi);
-
-  // ── The window on the right wall: the raking light the clay is read by ────
-  const [wx, wy, wz] = KILN_LAYOUT.window;
-  const windowFrame = merged([
-    placed(new THREE.BoxGeometry(0.1, 0.09, 1.2), wx - 0.13, wy + 0.56, wz),
-    placed(new THREE.BoxGeometry(0.1, 0.09, 1.2), wx - 0.13, wy - 0.56, wz),
-    placed(new THREE.BoxGeometry(0.1, 1.2, 0.09), wx - 0.13, wy, wz - 0.55),
-    placed(new THREE.BoxGeometry(0.1, 1.2, 0.09), wx - 0.13, wy, wz + 0.55),
-    placed(new THREE.BoxGeometry(0.08, 1.1, 0.05), wx - 0.13, wy, wz),
-  ], mat(dressing.beam, { roughness: 0.78 }));
-  windowFrame.name = "kiln-window"; group.add(windowFrame);
-  const day = new THREE.Mesh(track(new THREE.PlaneGeometry(1.05, 1.1)), track(new THREE.MeshBasicMaterial({ color: dressing.light.hemiSky })));
-  day.rotation.y = -Math.PI / 2; day.position.set(wx - 0.12, wy, wz); day.name = "kiln-day"; group.add(day);
+  track(studioInterior(group, dressing));
 
   // ── The kiln itself: a bottle kiln, iron-banded, its throat up through the
   //    rafters. The fire door is where the reading lands — the glow is the
@@ -256,27 +196,6 @@ export function createKiln(scene: THREE.Scene, options: KilnOptions): PlaceHandl
 
   // ── The wheel: a stone head on a painted frame, clay standing on it ───────
   const [whx, , whz] = KILN_LAYOUT.wheel;
-  const wheelFrame = merged([
-    placed(new THREE.BoxGeometry(0.62, 0.08, 0.62), whx, 0.66, whz),
-    placed(new THREE.BoxGeometry(0.09, 0.66, 0.09), whx - 0.24, 0.33, whz - 0.24),
-    placed(new THREE.BoxGeometry(0.09, 0.66, 0.09), whx + 0.24, 0.33, whz - 0.24),
-    placed(new THREE.BoxGeometry(0.09, 0.66, 0.09), whx - 0.24, 0.33, whz + 0.24),
-    placed(new THREE.BoxGeometry(0.09, 0.66, 0.09), whx + 0.24, 0.33, whz + 0.24),
-    // The kick bar, low and worn.
-    placed(new THREE.BoxGeometry(0.62, 0.07, 0.1), whx, 0.16, whz + 0.24),
-  ], mat(dressing.wheelFrame, { roughness: 0.86 }));
-  shadowed(wheelFrame, false, true); wheelFrame.name = "kiln-wheel-frame"; tagged(wheelFrame, "wheel"); group.add(wheelFrame);
-  const wheelHead = merged([
-    placed(new THREE.CylinderGeometry(0.33, 0.33, 0.05, 20), whx, 0.73, whz),
-    placed(new THREE.CylinderGeometry(0.08, 0.08, 0.28, 10), whx, 0.56, whz),
-    placed(new THREE.CylinderGeometry(0.26, 0.26, 0.04, 16), whx, 0.2, whz),
-  ], mat(dressing.wheelHead, { roughness: 0.68 }));
-  shadowed(wheelHead, full, true); wheelHead.name = "kiln-wheel-head"; tagged(wheelHead, "wheel"); group.add(wheelHead);
-  const thrown = merged([
-    placed(new THREE.CylinderGeometry(0.11, 0.15, 0.2, 12), whx, 0.85, whz),
-    placed(new THREE.TorusGeometry(0.11, 0.018, 6, 12), whx, 0.95, whz, [Math.PI / 2, 0, 0]),
-  ], mat(dressing.clay, { roughness: 0.95 }));
-  thrown.name = "kiln-thrown"; tagged(thrown, "wheel"); group.add(thrown);
   // The stool you sit on, and the bucket of slip beside it.
   const stool = merged([
     placed(new THREE.CylinderGeometry(0.19, 0.19, 0.05, 12), whx + 0.02, 0.44, whz + 0.82),
@@ -295,17 +214,6 @@ export function createKiln(scene: THREE.Scene, options: KilnOptions): PlaceHandl
 
   // ── The workbench: slate top, glaze jars, brushes in a pot ───────────────
   const [bx, , bz] = KILN_LAYOUT.bench;
-  const bench = merged([
-    placed(new THREE.BoxGeometry(0.85, 0.08, 2.4), bx, 0.84, bz),
-    placed(new THREE.BoxGeometry(0.1, 0.8, 0.1), bx - 0.3, 0.4, bz - 1.05),
-    placed(new THREE.BoxGeometry(0.1, 0.8, 0.1), bx + 0.3, 0.4, bz - 1.05),
-    placed(new THREE.BoxGeometry(0.1, 0.8, 0.1), bx - 0.3, 0.4, bz + 1.05),
-    placed(new THREE.BoxGeometry(0.1, 0.8, 0.1), bx + 0.3, 0.4, bz + 1.05),
-    placed(new THREE.BoxGeometry(0.78, 0.05, 2.3), bx, 0.32, bz),
-  ], mat(dressing.bench, { roughness: 0.87 }));
-  shadowed(bench, false, true); bench.name = "kiln-bench"; tagged(bench, "bench"); group.add(bench);
-  const slate = shadowed(new THREE.Mesh(track(new THREE.BoxGeometry(0.8, 0.03, 2.3)), mat(dressing.benchTop, { roughness: 0.6 })), false, true);
-  slate.position.set(bx, 0.895, bz); slate.name = "kiln-bench-top"; tagged(slate, "bench"); group.add(slate);
   // The five glaze jars, one per name in the studio's palette, each in its own glaze.
   const jarGeometry = track(new THREE.CylinderGeometry(0.075, 0.085, 0.16, 10));
   const jars = new THREE.InstancedMesh(jarGeometry, mat(dressing.jar, { roughness: 0.55 }), 5);
@@ -397,7 +305,7 @@ export function createKiln(scene: THREE.Scene, options: KilnOptions): PlaceHandl
   const kilnPlate = plateFor(1.15, 0.2);
   kilnPlate.mesh.position.set(kx + 0.1, 1.08, kz + 0.93); tagged(kilnPlate.mesh, "kiln"); group.add(kilnPlate.mesh);
   const shelfPlate = plateFor(1.5, 0.2);
-  shelfPlate.mesh.position.set(boardCentre, shelf.y0 + 0.28, shelf.z + 0.13); tagged(shelfPlate.mesh, "shelf"); group.add(shelfPlate.mesh);
+  shelfPlate.mesh.position.set(boardCentre, shelf.y0 + 0.28, shelf.z + 0.13); tagged(shelfPlate.mesh, "shelf"); group.add(shelfPlate.mesh); shelfPlate.mesh.scale.setScalar(.75);
   const wheelPlate = plateFor(1.0, 0.18);
   wheelPlate.mesh.position.set(whx, 0.12, whz - 0.55); wheelPlate.mesh.rotation.x = -Math.PI / 2;
   tagged(wheelPlate.mesh, "wheel"); group.add(wheelPlate.mesh);
@@ -451,10 +359,10 @@ export function createKiln(scene: THREE.Scene, options: KilnOptions): PlaceHandl
     hazeMaterial.opacity = 0.09 * view.warmth;
     fire.intensity = dressing.light.fireIntensity * view.warmth;
 
-    kilnPlate.set(`The kiln — ${kilnHeatWords(view)}`, finishNow());
+    kilnPlate.set("The kiln · review your piece", finishNow());
     const privately = view.keptPrivate > 0 ? ` · ${view.keptPrivate} kept privately` : "";
     const more = view.overflow > 0 ? ` · ${view.overflow} more in the Studio` : "";
-    shelfPlate.set(`The shelf — ${firedWords(view.fired, "piece fired", "pieces fired")}${privately}${more}`, finishNow());
+    shelfPlate.set(`Bank pottery — ${firedWords(view.fired, "piece fired", "pieces fired")}${privately}${more}`, finishNow());
     wheelPlate.set(view.onTheWheel > 0 ? `The wheel — ${firedWords(view.onTheWheel, "piece still clay", "pieces still clay")}` : "The wheel — sit down and throw one", finishNow());
   };
 
@@ -490,8 +398,8 @@ export function createKiln(scene: THREE.Scene, options: KilnOptions): PlaceHandl
     const rows: Anchor[] = [
       { id: "wheel", position: at(whx, 0.95, whz), zone: "station", label: view.onTheWheel > 0 ? `The wheel — ${firedWords(view.onTheWheel, "piece still clay", "pieces still clay")}. Sit down and throw one.` : "The wheel, clay on its head — sit down and throw one.", door: { target: "pottery", object: "wheel" } },
       { id: "bench", position: at(bx - 0.3, 1.0, bz), zone: "station", label: "The workbench — the five glazes and the brushes. Paint a piece.", door: { target: "pottery", object: "paint" } },
-      { id: "kiln", position: at(kx + 0.2, 0.8, kz + 1.0), zone: "station", label: `The kiln, ${kilnHeatWords(view)}. Open the kiln in the Studio.`, door: { target: "pottery", object: "kiln" } },
-      { id: "shelf", position: at(boardCentre, shelf.y0 + 0.24, shelf.z + 0.4), zone: "station", label: `The shelf — ${firedWords(view.fired, "piece fired", "pieces fired")}${view.keptPrivate > 0 ? `, and ${view.keptPrivate} kept privately` : ""}. Open the Studio.`, door: { target: "pottery" } },
+      { id: "kiln", position: at(kx + 0.2, 0.8, kz + 1.0), zone: "station", label: "The kiln. Review the selected piece in the Studio.", door: { target: "pottery", object: "kiln" } },
+      { id: "shelf", position: at(boardCentre, shelf.y0 + 0.24, shelf.z + 0.4), zone: "station", label: `Bank pottery — ${firedWords(view.fired, "piece fired", "pieces fired")}${view.keptPrivate > 0 ? `, and ${view.keptPrivate} kept privately` : ""}. Open the Studio.`, door: { target: "pottery" } },
     ];
     view.pieces.slice(0, KILN_SHELF_CAP).forEach((piece, index) => {
       const pin = shelfPin(index);
@@ -505,7 +413,7 @@ export function createKiln(scene: THREE.Scene, options: KilnOptions): PlaceHandl
 
   const regionList = (): Region[] => {
     const rows: Region[] = [
-      { id: "wheel", group: "kiln", label: "The wheel", box: box(whx - 0.45, 0, whz - 0.45, whx + 0.45, 1.05, whz + 0.45) },
+      { id: "wheel", group: "kiln", label: "The wheel", box: box(whx - 0.69, 0, whz - 0.46, whx + 0.69, 1.08, whz + 0.46) },
       { id: "bench", group: "kiln", label: "The workbench", box: box(bx - 0.55, 0, bz - 1.2, bx + 0.5, 1.25, bz + 1.2) },
       { id: "kiln", group: "kiln", label: "The kiln", box: box(kx - 0.95, 0, kz - 0.95, kx + 0.95, 2.6, kz + 1.0) },
       { id: "shelf", group: "kiln", label: "The shelf of fired pieces", box: box(boardCentre - boardSpan / 2 - 0.2, shelf.y0 + shelf.stepY * 2 - 0.25, shelf.z, boardCentre + boardSpan / 2 + 0.2, shelf.y0 + 0.4, shelf.z + 0.5) },

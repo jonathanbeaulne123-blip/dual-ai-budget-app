@@ -1,3 +1,14 @@
+## 2026-09-22 — Authored Library and Pottery Studio, local review candidate
+
+Branch `codex/authored-interiors`, isolated checkout `.codex-work/authored-interiors`, refreshed baseline `origin/main@aaf7867d882c5dcfe94f993b9faed0f3e7174e93`. Jonathan requested depth in 1–3 interiors; this slice builds two. No deployment, merge or hosted activation.
+
+- Household outcome: Study is an original fitted Library with seven working Books divisions; Making enters an original Pottery Studio with working wheel, glaze and kiln, plus a cabinet showing accepted canonical pieces.
+- Risk: **Medium-High** (route/creative-selection continuity). Budget (5): clearer access to existing figures, unchanged arithmetic and Final Confirm. Engagement (3): two authored rooms with three material/furniture treatments and phone/desktop compositions.
+- Browser proof: fictional local create → sea-glass dip → pear body → review revision 3 → acknowledged fired revision 4 → cabinet → same piece, with deliberate editing participation preserved. Library Today and return also exercised.
+- Mechanics/privacy review: route, furniture bounds and phone drawer findings fixed; no automatic write or new audience leak found. Source review is not hosted/two-device proof.
+- Validation and open gates: see [review packet](briefs/AUTHORED_INTERIORS_REVIEW_2026-09-22.md) and [worksession](worksessions/2026-09-22-authored-interiors.md). The quick gate breached its time budget; required App startup attempt is incomplete. Do not infer release approval from focused tests or the local preview.
+- Next: Jonathan's visual review, then resolve the packet's device/performance/App-startup gaps before merge consideration. Keep the exterior and canonical financial/creative authorities; do not restart a whole-house rewrite.
+
 ## PR #507 reconciled with main: the whole house meets free roam (2026-09-20)
 
 Branch `codex/whole-house-app`, merge commit on top of `47d8100e` (Codex's handoff head) and `de2a49dd` (main, which had advanced past the #507 baseline by one squash: free roam, D-286, #505). Local only: not pushed, no PR update, not merged, not deployed, not live verified. **Risk: Medium** — a presentation-layer merge only. No money meaning, calculation, writer, schema, sync, Auth/RLS or Hercules payload change; nothing posts. Fictional Development data throughout.

@@ -29,7 +29,7 @@ export function readHouseReturn(storage: Store, identity: HouseIdentity, object 
   } catch { return null; }
 }
 export function houseSurfaceRoute(route: HouseRoute, surface: string, object?: string): HouseRoute {
-  return {...route, surface, ...(object ? {object} : {}), ...(!["pottery", "wardrobe"].includes(surface) ? {studioSelection: undefined} : {})};
+  return {...route, surface, ...(object ? {object} : {}), ...(!["pottery", "wardrobe"].includes(surface) ? {studioSelection: undefined} : {}), ...(surface !== "pottery" ? {studioTab: undefined} : {})};
 }
 /** Furniture has one address; collections are browsable even while carrying a folio. */
 export function houseTargetRoute(route:HouseRoute,target:string,object?:string):HouseRoute {
@@ -45,21 +45,24 @@ export function houseTargetRoute(route:HouseRoute,target:string,object?:string):
     pottery:['making','above'],
   };
   const place=places[target];
-  return {...route,...(place?{room:place[0],level:place[1]}:{}),surface:target,object:object??(['wishes','memories','projector'].includes(target)?undefined:route.object),studioSelection:target==='pottery'?route.studioSelection:undefined};
+  const station=target==='pottery'&&['wheel','paint','kiln'].includes(object??'');
+  const carried=route.object&&!['wheel','paint','kiln'].includes(route.object)?route.object:undefined;
+  return {...route,...(place?{room:place[0],level:place[1]}:{}),surface:target,object:station?carried:object??(['wishes','memories','projector'].includes(target)?undefined:route.object),studioSelection:target==='pottery'&&!object?.startsWith('piece/')?route.studioSelection:undefined,studioTab:target==='pottery'?(object==='wheel'?'shape':object==='paint'?'paint':object==='kiln'?'kiln':route.studioTab):undefined};
 }
-export function houseRoomRoute(route: HouseRoute): HouseRoute { const {surface: _surface, studioSelection: _studioSelection, ...room} = route; return room; }
+export function houseRoomRoute(route: HouseRoute): HouseRoute { const {surface: _surface, studioSelection: _studioSelection, studioTab: _studioTab, ...room} = route; return room; }
 export function houseLifeRoute(route: HouseRoute): HearthsideRoute {
   const room=route.surface==="pottery"||route.surface==="wardrobe"?"studio":route.level==="above"?"conservatory":route.level==="below"?"theatre":"common";
   const surface=route.surface==="pottery"?"studio":(["letters","projector","encounters","wardrobe","practical","history","occasions","worktable","guests","restore"].includes(route.surface??"")?route.surface:undefined) as HearthsideRoute["surface"];
   const [kind,id,designId]=route.object?.split("/")??[];
   const object=(kind==="experience"||kind==="memory"||kind==="note"||kind==="encounter")&&id?{kind,id}:kind==="piece"&&id&&designId?{kind,id,designId}:undefined;
-  const studioSelection=route.studioSelection&&(surface==="studio"||surface==="wardrobe")?route.studioSelection:undefined;
-  return {version:1,householdId:route.householdId,room,mode:room==="conservatory"?"imagine":room==="theatre"?"remember":"present",...(surface?{surface}:{}),...(object?{object:object as HearthsideRoute["object"]}:{}),...(studioSelection?{studioSelection}: {})};
+  const studioSelection=object?.kind!=="piece"&&route.studioSelection&&(surface==="studio"||surface==="wardrobe")?route.studioSelection:undefined;
+  const studioTab=surface==='studio'?(route.studioTab??(route.object==='paint'?'paint':route.object==='kiln'?'kiln':route.object==='wheel'?'shape':undefined)):undefined;
+  return {version:1,...(studioTab?{studioTab}:{}),householdId:route.householdId,room,mode:room==="conservatory"?"imagine":room==="theatre"?"remember":"present",...(surface?{surface}:{}),...(object?{object:object as HearthsideRoute["object"]}:{}),...(studioSelection?{studioSelection}: {})};
 }
 export function houseRouteFromLife(next: HearthsideRoute, scope: LedgerView): HouseRoute {
   const surface=next.surface==="studio"?"pottery":next.surface??(next.room==="theatre"?"memories":next.room==="conservatory"?"wishes":"life");
   const studioSelection=next.studioSelection&&(next.surface==="studio"||next.surface==="wardrobe")?next.studioSelection:undefined;
-  return {householdId:next.householdId,scope,room:"together",level:next.surface==="studio"||next.surface==="wardrobe"?"middle":next.room==="conservatory"?"above":next.room==="theatre"?"below":"middle",surface,...(next.object?{object:[next.object.kind,next.object.id,...("designId" in next.object?[next.object.designId]:[])].join("/")}:{}) ,...(studioSelection?{studioSelection}:{})};
+  return {householdId:next.householdId,scope,room:next.surface==="studio"?"making":"together",level:next.surface==="studio"?"above":next.surface==="wardrobe"?"middle":next.room==="conservatory"?"above":next.room==="theatre"?"below":"middle",surface,...(next.surface==="studio"&&next.studioTab?{studioTab:next.studioTab}:{}),...(next.object?{object:[next.object.kind,next.object.id,...("designId" in next.object?[next.object.designId]:[])].join("/")}:{}) ,...(studioSelection?{studioSelection}:{})};
 }
 
 export const ROOM_NAMES = {home:"Home", study:"Study", "kitchen-table":"Kitchen Table", together:"Together", making:"Making"} as const;

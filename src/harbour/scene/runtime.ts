@@ -379,6 +379,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const wanted = new Map<string, boolean>();
     for (const id of PLACED_PLACE_IDS) wanted.set(PLACE_PLACEMENTS[id]!.exterior, !live.has(id));
     court.handle.group.traverse((node) => {
+      // Lawn signs stand inside the larger room footprint. Keep them outdoors;
+      // the active room owns its own readable furniture labels.
+      if(node.name.startsWith('sign-'))node.visible=placeId==='court';
       const show = wanted.get(node.name);
       if (show !== undefined) node.visible = show;
     });
@@ -1177,6 +1180,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const leaving = placeId;
       if (!continuous) dropBody();
       placeId = next;
+      showExteriors();
       // Either way there is a body when this returns: a re-pointed one where
       // the island carried on, a fresh one at this place's own way in.
       raiseBody();

@@ -4,7 +4,7 @@ export const HOUSE_ROOMS = ["home", "study", "kitchen-table", "together", "makin
 export const HOUSE_LEVELS = ["above", "middle", "below"] as const;
 export type HouseRoom = typeof HOUSE_ROOMS[number];
 export type HouseLevel = typeof HOUSE_LEVELS[number];
-export type HouseRoute = { room: HouseRoom; level: HouseLevel; householdId: string; scope?: "personal" | "household"; object?: string; surface?: string; studioSelection?: { designId: string; pieceId: string }; time?: string };
+export type HouseRoute = { room: HouseRoom; level: HouseLevel; householdId: string; scope?: "personal" | "household"; object?: string; surface?: string; studioSelection?: { designId: string; pieceId: string }; studioTab?: "shape" | "paint" | "kiln"; time?: string };
 
 const TOGETHER_ROOM: Record<HouseLevel, HearthsideRoom> = {
   above: "conservatory",
@@ -34,6 +34,10 @@ export function housePath(route: HouseRoute): string {
     if (!["pottery", "wardrobe"].includes(route.surface ?? "") || !designId.trim() || !pieceId.trim() || designId.length > 180 || pieceId.length > 180 || /[\u0000-\u001f]/.test(designId) || /[\u0000-\u001f]/.test(pieceId)) throw new Error("HOUSE_INVALID_STUDIO_SELECTION");
     query.set("design", designId); query.set("piece", pieceId);
   }
+  if (route.studioTab) {
+    if (route.surface !== "pottery" || !["shape", "paint", "kiln"].includes(route.studioTab)) throw new Error("HOUSE_INVALID_STUDIO_BENCH");
+    query.set("bench", route.studioTab);
+  }
   if (route.time) query.set("time", route.time);
   return `/house/${route.room}/${route.level}?${query}`;
 }
@@ -56,7 +60,9 @@ export function parseHouseRoute(url: string, householdId: string): HouseRoute | 
     const object = bounded("object"), surface = bounded("surface"), designId = bounded("design"), pieceId = bounded("piece");
     const hasDesign = parsed.searchParams.has("design"), hasPiece = parsed.searchParams.has("piece");
     if (hasDesign !== hasPiece || hasDesign && (!designId || !pieceId || !["pottery", "wardrobe"].includes(surface ?? ""))) return null;
-    return { room, level, householdId, ...(scope ? {scope} : {}), ...(object ? {object} : {}), ...(surface ? {surface} : {}), ...(designId && pieceId ? {studioSelection: {designId, pieceId}} : {}), ...(bounded("time") ? {time: bounded("time")} : {}) };
+    const bench = parsed.searchParams.get("bench");
+    if (bench !== null && (surface !== "pottery" || !["shape", "paint", "kiln"].includes(bench))) return null;
+    return { room, level, householdId, ...(bench ? {studioTab: bench as NonNullable<HouseRoute["studioTab"]>} : {}), ...(scope ? {scope} : {}), ...(object ? {object} : {}), ...(surface ? {surface} : {}), ...(designId && pieceId ? {studioSelection: {designId, pieceId}} : {}), ...(bounded("time") ? {time: bounded("time")} : {}) };
   } catch {
     return null;
   }
