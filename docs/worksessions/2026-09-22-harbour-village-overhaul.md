@@ -9,7 +9,7 @@
 - **Branch:** `codex/harbour-village-overhaul`
 - **Baseline / initial HEAD:** `05b812eece5d119d6781dedb3503efdceebcce55`, verified GitHub main
 - **Verified implementation HEAD:** `651161f241755975a8dddd355c099ec0c6de4e14`; the subsequent handoff commit changes this document only
-- **PR:** none
+- **PR:** [#526 — Rebuild Little Harbour as a connected seven-building village](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/526), draft for owner visual/device acceptance
 - **Risk:** Medium-High — spatial routing, interaction and shared cosmetic metadata
 - **Environment:** local fictional Development preview only
 
@@ -110,10 +110,12 @@ Bounded agents contributed architecture, interior/travel reference checks, cosme
 - Jonathan's subjective visual/play acceptance remains open.
 - Real phone GPU/frame pacing, long sessions, offline transitions and the complete room/theme/viewport cross-product have not been accepted on physical devices.
 - Shared command conflict behavior is covered locally; live two-device presence, reconnect and concurrent shared-decoration acceptance remain release checks. No hosted or Production experiment occurred.
-- CI, push, merge and deployment have not been run for this branch. The existing large-chunk advisory remains.
+- Exact-head CI and release acceptance remain separate from the passing local evidence. The branch is published as draft PR #526; no merge or deployment occurred. The existing large-chunk advisory remains.
 
 ## Handoff
 
 **Outcome:** the local overhaul and its selected verification are complete. Budget delta (5): clearer access to unchanged household tools and financial meaning. Engagement delta (3): seven distinctive buildings, connected rooms, more pleasant travel, tactile play and shared room decoration.
 
-**Next recommended action:** Jonathan explores the complete fictional Development preview, especially the Home rooms, Bank and outdoor walk between buildings. Address his visual/play feedback before a separately authorized publication and release-device acceptance. No push, PR, merge, deployment, secrets, schema or Production change occurred. The original dirty OneDrive checkout is preserved.
+**Next recommended action:** Jonathan explores the complete fictional Development preview, especially the Home rooms, Bank and outdoor walk between buildings. Address his visual/play feedback and the named device/continuity gaps before a separately authorized merge and deployment. The original dirty OneDrive checkout is preserved.
+
+**PR publication — 2026-09-23:** Jonathan explicitly requested creation of the PR. Current GitHub main was reverified at the original baseline above, with no rebase required. All 29 outgoing commits were checked for sensitive paths and credential-like additions; none were found. The branch was pushed and draft PR #526 opened against main. The local preview stderr log remains untracked and was not sent. This follow-up updates handoff documentation only; implementation remains the tested `651161f2`. No merge, deployment, secrets, hosted schema or Production change occurred.
