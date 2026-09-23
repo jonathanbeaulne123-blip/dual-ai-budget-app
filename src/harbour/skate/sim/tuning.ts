@@ -5,11 +5,14 @@
  * file. Units are island units (a person is 1.25 tall, the deck ~0.55 long),
  * seconds and radians. Speeds are u/s, accelerations u/s².
  *
- * Reference points at these values (flat concrete):
- *  - push cruise ≈ 6.3 u/s after ~3 s of strokes, sprint ≈ 7.8 u/s
+ * Reference points at these values (checked by test/skate-sim*.test.ts):
+ *  - push cruise ≈ 6.2 u/s after ~4 s of strokes; sprint cruises ~1 u/s faster
  *  - standard ollie (strength .5, crouch .7) rises ≈ 0.39, max pop ≈ 0.56
- *  - ollie air time ≈ 0.47 s → a 180 is comfortable, a 360 needs a kicker
- *  - a 1.97-tall vert quarterpipe hit at ≈ 10 u/s airs ≈ 1.1 above coping
+ *  - ollie air ≈ 0.5 s → a 180 is comfortable, a 360 is out of reach on flat
+ *  - 1.97-tall vert quarterpipe entered at 10 / 11.5 u/s → ≈ 1.0 / 1.2 s of air
+ *    (360 lands from ~10, 540 from ~11); you pump or drop in to get there
+ *  - 1.24-tall mini-ramp: pumping gains ~0.07–0.1 per wall and plateaus ~1.5
+ *    above coping; not pumping loses ~0.05 per wall
  */
 export const SKATE_TUNING = {
   /* ── world ─────────────────────────────────────────────────────────── */
@@ -168,6 +171,18 @@ export const SKATE_TUNING = {
   REVERT_WINDOW: 0.3,
   REVERT_MAX_SPEED: 4,
   REVERT_KEEP: 0.92,
+
+  /* ── wallride ──────────────────────────────────────────────────────── */
+  /** Popped into a tall face travelling along it at least this fast (and within WALLRIDE_ANGLE of it). */
+  WALLRIDE_MIN_SPEED: 3.5,
+  WALLRIDE_ANGLE: 0.7,
+  /** Face must stand this far above the board. */
+  WALLRIDE_MIN_HEIGHT: 0.6,
+  /** Gravity fraction while on the wall, max time, speed lost per second. */
+  WALLRIDE_GRAVITY: 0.35,
+  WALLRIDE_MAX_TIME: 0.8,
+  WALLRIDE_FRICTION: 1.2,
+  WALLRIDE_EXIT_PUSH: 1.4,
 
   /* ── bails / world edges ───────────────────────────────────────────── */
   BAIL_TIME: 1.1,

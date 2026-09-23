@@ -104,8 +104,9 @@ export function pointAt(L: GrindLine, s: number, out: LinePoint): LinePoint {
 
 /* ────────────────────────────────────────────────────────── collision */
 
-export type Hit = { x: number; z: number; nx: number; nz: number; id: string | null };
-export const hit = (): Hit => ({ x: 0, z: 0, nx: 0, nz: 0, id: null });
+/** `top` is the height of what was hit (Infinity for island obstacles, which have no top). */
+export type Hit = { x: number; z: number; nx: number; nz: number; id: string | null; top: number };
+export const hit = (): Hit => ({ x: 0, z: 0, nx: 0, nz: 0, id: null, top: Infinity });
 
 function intoLocal(fx: number, fz: number, yaw: number, x: number, z: number, out: { lx: number; lz: number }): void {
   const c = Math.cos(yaw), s = Math.sin(yaw), dx = x - fx, dz = z - fz;
@@ -121,17 +122,18 @@ const LOCAL = { lx: 0, lz: 0 };
  */
 export function pushOutAll(x: number, z: number, y: number, r: number, obstacles: readonly Obstacle[], solids: readonly SkateSolid[], out: Hit): Hit {
   let px = x, pz = z;
-  out.id = null;
+  out.id = null; out.top = Infinity;
   for (let pass = 0; pass < 2; pass++) {
     let moved = false;
     for (let k = 0; k < obstacles.length + solids.length; k++) {
       const o = (k < obstacles.length ? obstacles[k] : solids[k - obstacles.length])!;
-      if (k >= obstacles.length && 'top' in o && y >= (o as SkateSolid).top - 0.03) continue;
+      const top = k >= obstacles.length ? (o as SkateSolid).top : Infinity;
+      if (y >= top - 0.03) continue;
       if (o.kind === 'circle') {
         const dx = px - o.x, dz = pz - o.z, reach = o.r + r, d = Math.hypot(dx, dz);
         if (d >= reach) continue;
         const nx = d > 1e-6 ? dx / d : 1, nz = d > 1e-6 ? dz / d : 0;
-        px = o.x + nx * reach; pz = o.z + nz * reach; out.id = o.id; moved = true;
+        px = o.x + nx * reach; pz = o.z + nz * reach; out.id = o.id; out.top = top; moved = true;
       } else if (o.kind === 'obox') {
         intoLocal(o.x, o.z, o.yaw, px, pz, LOCAL);
         const hx = o.halfX + r, hz = o.halfZ + r;
@@ -141,14 +143,14 @@ export function pushOutAll(x: number, z: number, y: number, r: number, obstacles
         let lx = LOCAL.lx, lz = LOCAL.lz;
         if (least === left) lx = -hx; else if (least === right) lx = hx; else if (least === back) lz = -hz; else lz = hz;
         const c = Math.cos(o.yaw), s = Math.sin(o.yaw);
-        px = o.x + lx * c + lz * s; pz = o.z + lz * c - lx * s; out.id = o.id; moved = true;
+        px = o.x + lx * c + lz * s; pz = o.z + lz * c - lx * s; out.id = o.id; out.top = top; moved = true;
       } else {
         const minX = o.minX - r, maxX = o.maxX + r, minZ = o.minZ - r, maxZ = o.maxZ + r;
         if (px <= minX || px >= maxX || pz <= minZ || pz >= maxZ) continue;
         const left = px - minX, right = maxX - px, back = pz - minZ, front = maxZ - pz;
         const least = Math.min(left, right, back, front);
         if (least === left) px = minX; else if (least === right) px = maxX; else if (least === back) pz = minZ; else pz = maxZ;
-        out.id = o.id; moved = true;
+        out.id = o.id; out.top = top; moved = true;
       }
     }
     if (!moved) break;

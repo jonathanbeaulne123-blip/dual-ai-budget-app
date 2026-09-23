@@ -117,6 +117,13 @@ describe('skate sim · flips are caught, not assumed', () => {
   it('a pop shove-it turns the board under the feet and still rolls away regular', () => {
     const r = popTrial({ crouch: 0.8, strength: 0.6, flipId: 'pop-shuvit' });
     expect(first(r.events, 'flip-caught')).toBeDefined();
+    // What the look track draws (rest yaw + overlay from trick.u) never jumps at the catch.
+    const drawn = r.frames.map((f) => f.p.boardYaw + (f.p.trick ? Math.PI * f.p.trick.u : 0));
+    for (let i = 1; i < drawn.length; i++) {
+      const d = Math.atan2(Math.sin(drawn[i]! - drawn[i - 1]!), Math.cos(drawn[i]! - drawn[i - 1]!));
+      // A nose/tail relabel (exactly π) is allowed; anything else must be smooth.
+      expect(Math.min(Math.abs(d), Math.abs(Math.abs(d) - Math.PI))).toBeLessThan(0.3);
+    }
     const land = first(r.events, 'land')!;
     expect(land.fakie).toBe(false);
     expect(land.switch).toBe(false);
@@ -525,6 +532,38 @@ describe('skate sim · more stance, stairs and stalls', () => {
     expect(first(r.events, 'bail')).toBeUndefined();
     expect(r.present.vz).toBeLessThan(-1);
     expect(r.present.fakie).toBe(false);
+  });
+});
+
+describe('skate sim · wallride', () => {
+  const wall = { kind: 'box' as const, id: 'boathouse', minX: 1, maxX: 1.3, minZ: 0, maxZ: 12 };
+  function wallTrial(vx: number, pop: boolean) {
+    const sim = makeSim(flat, { x: 0.3, z: 0.5, islandObstacles: [wall] });
+    kick(sim, { vz: 6.5, vx, yaw: Math.atan2(vx, 6.5) });
+    ride(sim, 0.1, intent({ crouch: 1 }));
+    return ride(sim, 2, (t) => intent({ pop: pop && t === 0 ? { from: 'tail', flipId: null, strength: 0.8 } : null }), 60, true);
+  }
+
+  it('pop into a tall face while travelling along it: ride the wall, then drop off and roll away', () => {
+    const r = wallTrial(1.4, true);
+    const on = r.frames.filter((f) => f.p.grind?.grindId === 'wallride');
+    expect(on.length).toBeGreaterThan(10);
+    expect(on[0]!.p.phase).toBe('grind');
+    expect(on[0]!.p.grind!.grindableId).toBe('boathouse');
+    // Wall on the rider's left (travelling +z, wall at +x): faceSign −1, deck up on its edge.
+    expect(on[0]!.p.grind!.faceSign).toBe(-1);
+    expect(Math.abs(on.at(-1)!.p.boardRoll)).toBeGreaterThan(1);
+    const wr = first(r.events, 'wallride')!;
+    expect(wr.seconds).toBeGreaterThan(0.2);
+    expect(first(r.events, 'land')).toBeDefined();
+    expect(first(r.events, 'bail')).toBeUndefined();
+    expect(Math.max(...r.frames.map((f) => f.p.x))).toBeLessThan(1 - SKATE_TUNING.RADIUS + 0.01);
+  });
+
+  it('rolling into the same face without a pop just slides along it', () => {
+    const r = wallTrial(1.4, false);
+    expect(first(r.events, 'wallride')).toBeUndefined();
+    expect(first(r.events, 'bail')).toBeUndefined();
   });
 });
 

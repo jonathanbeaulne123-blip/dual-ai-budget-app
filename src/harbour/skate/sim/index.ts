@@ -69,6 +69,8 @@ type GrindS = {
   faceSign: 1 | -1; yawOff: number; pitch: number; slide: boolean; difficulty: number; coping: boolean; inX: number; inZ: number; seed: number;
 };
 type StallS = { id: 'rock-to-fakie' | 'axle-stall'; t: number; inX: number; inZ: number; feature: string };
+/** On a wall: outward normal (nx,nz) of the face, which side of the rider it is on, what it is. */
+type WallS = { id: string; nx: number; nz: number; side: 1 | -1; t: number; field: boolean };
 type ManualS = { kind: 'manual' | 'nose-manual'; seconds: number; distance: number; seed: number };
 type SlideS = { side: 1 | -1; over: number; seconds: number };
 type Pose = { x: number; z: number; yaw: number };
@@ -86,7 +88,7 @@ type SimState = {
   vert: boolean; lipYaw: number; lipY: number; coyote: number; airFromPop: boolean; airLaunch: boolean;
   trick: TrickS | null; grab: GrabS | null;
   pendPop: PopReq | null; pendLate: { id: string; age: number } | null; pendRevert: number;
-  grind: GrindS | null; stall: StallS | null; cooldownLine: number; cooldown: number; balance: number;
+  grind: GrindS | null; stall: StallS | null; wall: WallS | null; cooldownLine: number; cooldown: number; balance: number;
   manual: ManualS | null; manualResume: boolean;
   slide: SlideS | null;
   landTimer: number; sinceLand: number; impact: number;
@@ -153,7 +155,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       gnx: S0.nx, gny: S0.ny, gnz: S0.nz, kind: S0.kind, feature: S0.feature, kappa: 0, clearance: 0,
       airTime: 0, spin: 0, spinRate: 0, toX: x, toZ: z, toY: S0.y, footSign: 1, vert: false, lipYaw: 0, lipY: 0, coyote: 0, airFromPop: false, airLaunch: false,
       trick: null, grab: null, pendPop: null, pendLate: null, pendRevert: -1,
-      grind: null, stall: null, cooldownLine: -1, cooldown: 0, balance: 0,
+      grind: null, stall: null, wall: null, cooldownLine: -1, cooldown: 0, balance: 0,
       manual: null, manualResume: false, slide: null,
       landTimer: 0, sinceLand: 9, impact: 0, bail: null, recoverT: 0,
       safe: [{ x, z, yaw }], safeT: 0, marker: null, spawn: { x, z, yaw },
@@ -257,6 +259,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   function bail(reason: 'flip-not-caught' | 'bad-angle' | 'hard-impact' | 'balance' | 'wall' | 'water'): void {
     if (S.grind) endGrind('bail');
     if (S.stall) S.stall = null;
+    if (S.wall) endWall();
     endManual();
     if (S.slide) { emit({ t: S.t, kind: 'powerslide', seconds: S.slide.seconds }); S.slide = null; }
     endGrab();
@@ -736,6 +739,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     const y1 = y0 + S.vy * dt;
     const w = sweepXZ(x0, z0, x1, z1, y1);
     if (w !== 'clear') {
+      if (w === 'solid' && H.top - y1 > T.WALLRIDE_MIN_HEIGHT && tryWallride(H.id ?? 'wall', H.nx, H.nz, H.x, H.z, y1, false)) return;
       if (hitWall(H.nx, H.nz, w)) return;
       x1 = H.x; z1 = H.z;
     }
@@ -758,6 +762,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       }
       // Flew into the side of something taller.
       stepNormal(x0, z0, x1, z1, N2);
+      if (pen > T.WALLRIDE_MIN_HEIGHT && tryWallride(S1.feature ?? 'wall', N2.x, N2.z, x0, z0, y1, true)) return;
       if (hitWall(N2.x, N2.z, 'step')) return;
       S.y = y1;
       return;
@@ -932,6 +937,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
 
   function stepGrind(dt: number): void {
     if (S.stall) { stepStall(dt); return; }
+    if (S.wall) { stepWall(dt); return; }
     const g = S.grind!;
     const L = lines[g.li]!;
     pointAt(L, g.s, LP);
@@ -1035,6 +1041,66 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     else { enterAir(false, false); S.coyote = T.POP_COYOTE; }
   }
 
+  /* ─────────────────────────────── wallride */
+
+  /** Popped into a tall face while travelling along it: ride it. */
+  function tryWallride(id: string, nx: number, nz: number, x: number, z: number, y: number, field: boolean): boolean {
+    if (!S.airFromPop || S.airTime > 0.9 || (S.trick && !S.trick.caught)) return false;
+    const into = -(S.vx * nx + S.vz * nz);
+    const ax = S.vx + into * nx, az = S.vz + into * nz, along = Math.hypot(ax, az);
+    if (along < T.WALLRIDE_MIN_SPEED || Math.atan2(Math.max(0, into), along) > T.WALLRIDE_ANGLE) return false;
+    endGrab();
+    const hd = Math.atan2(ax, az), rx = -Math.cos(hd), rz = Math.sin(hd);
+    // Wall is on the rider's right when its outward normal points left.
+    const side: 1 | -1 = -(nx * rx + nz * rz) >= 0 ? 1 : -1;
+    S.mode = 'grind';
+    S.wall = { id, nx, nz, side, t: 0, field };
+    S.x = x; S.z = z; S.y = y;
+    S.vx = ax; S.vz = az; S.vy = Math.max(S.vy, 1);
+    const rel = wrap(S.boardYaw - hd), kk = Math.round(rel / Math.PI);
+    S.boardYaw = wrap(hd + kk * Math.PI);
+    S.lead = kk % 2 === 0 ? 1 : -1;
+    canonical();
+    S.spinRate = 0;
+    return true;
+  }
+
+  function wallStillThere(W: WallS, x: number, z: number, y: number): boolean {
+    const px = x - W.nx * (T.RADIUS + 0.06), pz = z - W.nz * (T.RADIUS + 0.06);
+    if (W.field) return sample(px, pz, SX, y).y > y + 0.3;
+    pushOutAll(px, pz, y, 0.02, island, solids, H);
+    return H.id !== null;
+  }
+
+  function endWall(): void {
+    if (!S.wall) return;
+    emit({ t: S.t, kind: 'wallride', seconds: S.wall.t });
+    S.wall = null;
+  }
+
+  function stepWall(dt: number): void {
+    const W = S.wall!;
+    W.t += dt;
+    const h = Math.hypot(S.vx, S.vz);
+    const k = h > 1e-6 ? Math.max(0, h - T.WALLRIDE_FRICTION * dt) / h : 0;
+    S.vx *= k; S.vz *= k;
+    S.vy -= G * T.WALLRIDE_GRAVITY * dt;
+    const x1 = S.x + S.vx * dt, z1 = S.z + S.vz * dt, y1 = S.y + S.vy * dt;
+    const pop = S.pendPop;
+    const off = pop !== null || W.t > T.WALLRIDE_MAX_TIME || h < 2 || !wallStillThere(W, x1, z1, y1);
+    sample(x1, z1, S1, y1);
+    if (y1 <= S1.y) { S.x = x1; S.z = z1; S.y = S1.y; endWall(); S.mode = 'air'; land(); return; }
+    S.x = x1; S.y = y1; S.z = z1;
+    S.boardRoll += (W.side * (Math.PI / 2 - 0.25) * (S.lead < 0 ? -1 : 1) - S.boardRoll) * ease(14, dt);
+    S.boardPitch += (0 - S.boardPitch) * ease(10, dt);
+    if (!off) return;
+    endWall();
+    S.vx += W.nx * T.WALLRIDE_EXIT_PUSH * (pop ? 1 : 0.5); S.vz += W.nz * T.WALLRIDE_EXIT_PUSH * (pop ? 1 : 0.5);
+    S.x += W.nx * 0.03; S.z += W.nz * 0.03;
+    if (pop) { S.pendPop = null; doPop(pop, 0, 1, 0, false); }
+    else { enterAir(false, false); S.coyote = T.POP_COYOTE; }
+  }
+
   /* ─────────────────────────────── bail / recover */
 
   function stepBail(dt: number): void {
@@ -1084,7 +1150,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     S0lip = S1.lip;
     S.boardYaw = wrap(yaw); S.boardPitch = 0; S.boardRoll = 0; S.bodyTwist = 0; S.slideAngle = 0;
     S.lead = 1; S.feetSwapped = false;
-    S.mode = 'ground'; S.bail = null; S.grind = null; S.stall = null; S.manual = null; S.slide = null; S.trick = null; S.grab = null;
+    S.mode = 'ground'; S.bail = null; S.grind = null; S.stall = null; S.wall = null; S.manual = null; S.slide = null; S.trick = null; S.grab = null;
     S.pendPop = null; S.pendLate = null; S.pendRevert = -1; S.balance = 0; S.impact = 0; S.landTimer = 0; S.sinceLand = 9;
     S.stroke = false; S.pushPhase = 0; S.crouch = 0; S.crouchPeak = 0; S.spinRate = 0; S.spin = 0; S.airTime = 0; S.clearance = 0;
     S.kappa = 0; S.turnRate = 0; S.vert = false; S.cooldown = 0; S.cooldownLine = -1; S.manualResume = false;
@@ -1147,10 +1213,12 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     P.pushPhase = S.stroke ? S.pushPhase : 0;
     P.airTime = S.mode === 'air' ? S.airTime : 0;
     P.clearance = S.mode === 'air' ? S.clearance : 0;
-    if (S.trick) { pTrick.flipId = S.trick.flipId; pTrick.u = S.trick.u; P.trick = pTrick; } else P.trick = null;
+    // Only while the board is flipping: once caught, its yaw half-turns are already in boardYaw.
+    if (S.trick && !S.trick.caught) { pTrick.flipId = S.trick.flipId; pTrick.u = S.trick.u; P.trick = pTrick; } else P.trick = null;
     if (S.grab) { pGrab.grabId = S.grab.grabId; pGrab.weight = S.grab.weight; P.grab = pGrab; } else P.grab = null;
     if (S.grind) { pGrind.grindId = S.grind.defId; pGrind.grindableId = S.grind.gid; pGrind.faceSign = S.grind.faceSign; P.grind = pGrind; }
     else if (S.stall) { pGrind.grindId = S.stall.id; pGrind.grindableId = S.stall.feature; pGrind.faceSign = 1; P.grind = pGrind; }
+    else if (S.wall) { pGrind.grindId = 'wallride'; pGrind.grindableId = S.wall.id; pGrind.faceSign = S.wall.side; P.grind = pGrind; }
     else P.grind = null;
     P.manual = S.manual ? S.manual.kind : null;
     if (S.bail) { pBail.t = S.bail.t; pBail.reason = S.bail.reason; pBail.dirX = S.bail.dirX; pBail.dirZ = S.bail.dirZ; P.bail = pBail; } else P.bail = null;
@@ -1234,7 +1302,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       const nums = ['t', 'acc', 'x', 'y', 'z', 'vx', 'vy', 'vz', 'boardYaw', 'boardPitch', 'boardRoll'] as const;
       if (!nums.every((k) => Number.isFinite(o[k]))) return;
       if (!o.mode || !['ground', 'air', 'grind', 'bail', 'recover'].includes(o.mode)) return;
-      if (o.mode === 'grind' && !o.stall && (!o.grind || !lines[o.grind.li])) return;
+      if (o.mode === 'grind' && !o.stall && !o.wall && (!o.grind || !lines[o.grind.li])) return;
       const copy = structuredClone(o) as SimState & { s0lip?: SurfaceSample['lip']; pumpPrevCrouch?: number };
       S0lip = copy.s0lip ?? null;
       pumpPrevCrouch = fin(copy.pumpPrevCrouch);
