@@ -227,7 +227,7 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, onEnterHarbour, journeyFocusDate, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini }: {
+export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, onEnterHarbour, journeyFocusDate, openWorldOnJourneySurface = false, onExitJourney, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini }: {
   household: Household;
   memberId: string;
   today: DateKey;
@@ -254,6 +254,10 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   /** Current Chapter only: a view transition to Little Harbour, never a write. */
   onEnterHarbour?: (anchor: HarbourJourneyAnchor) => void;
   journeyFocusDate?: DateKey;
+  /** Only the explicit Harbour-to-Journey route starts directly in the world. */
+  openWorldOnJourneySurface?: boolean;
+  /** Returns a Harbour-origin Journey to its Atlas after the world closes. */
+  onExitJourney?: () => void;
   /** Household board photos for the memory flags. Reads only; nothing is uploaded from the island. */
   boardMedia?: BoardMediaClient | null;
   /** 1 = just me; 2 or more = the other member is live too. Nothing is stored. */
@@ -416,8 +420,9 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     setBanner((n) => n + 1);
   }, []);
   /** Minimize: a short iris back toward the button that opened the world (reduced motion: a cut). */
-  const exitWorld = useCallback((instant = false) => {
+  const exitWorld = useCallback((instant = false, returnToJourney = openWorldOnJourneySurface) => {
     if (!fullRef.current) return;
+    if (returnToJourney && onExitJourney && !afterWorldExit.current) afterWorldExit.current = onExitJourney;
     setDrawer(false);
     const stage = stageRef.current;
     const cut = () => { leaving$.current = null; setLeaving(false); setFull(false); };
@@ -430,7 +435,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     animation.onfinish = () => { if (leaving$.current === animation) { cut(); animation.cancel(); } };
   // `reduced` is read at render; a change re-creates the callback.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reduced]);
+  }, [reduced, openWorldOnJourneySurface, onExitJourney]);
   const exitRef = useRef(exitWorld);
   exitRef.current = exitWorld;
   // House destinations have canonical URLs. Consume the temporary game entry before an outbound link
@@ -439,10 +444,10 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     if (!fullRef.current && !historyExitPending.current) { fn(); return; }
     const pending = afterWorldExit.current;
     afterWorldExit.current = () => { pending?.(); fn(); };
-    exitWorld(true);
+    exitWorld(true, false);
   };
   useEffect(() => {
-    if (houseSurface && houseSurface !== "journey") exitRef.current(true);
+    if (houseSurface && houseSurface !== "journey") exitRef.current(true, false);
   }, [houseSurface]);
   // The iris opens from the button that was pressed (reduced motion: a cut).
   useLayoutEffect(() => {
@@ -546,7 +551,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   const tentOpenRef = useRef(tentOpen);
   tentOpenRef.current = tentOpen;
   const plannerOpenRef = useRef(false);
-  useEffect(() => { if (tentOpen) exitRef.current(true); }, [tentOpen]);
+  useEffect(() => { if (tentOpen) exitRef.current(true, false); }, [tentOpen]);
   const tentChange = useRef(onTentChange);
   tentChange.current = onTentChange;
   const tentReported = useRef(false);
@@ -891,6 +896,10 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   // only when someone else made it.
   const journey = useJourneyFocus(today);
   useEffect(() => { if (journeyFocusDate) journey.set({ date: journeyFocusDate, level: "month", selected: null }, "page"); }, [journeyFocusDate, journey.set]);
+  // Harbour exits land directly in the existing Journey world after the
+  // intended Chapter focus has been applied. The regular Plan page retains
+  // its light map until someone explicitly opens the world.
+  useEffect(() => { if (openWorldOnJourneySurface) enterWorld(); }, [openWorldOnJourneySurface, enterWorld]);
   const harbourAnchor = useMemo(() => harbourJourneyAnchor(household, today), [household, today]);
   const enterHarbour = useCallback(() => {
     if (!onEnterHarbour || !isHarbourJourneyMonth(harbourAnchor, journey.focus.date)) return false;
@@ -1317,7 +1326,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     plannerOpener.current = active instanceof HTMLElement && active !== document.body ? active : null;
     // From the tent or the open world: back onto the island page, where the planner opens (it takes focus itself).
     if (tentOpen) { tentMoved.current = false; setTentOpen(false); }
-    if (fullRef.current) { plannerOpenRef.current = true; exitWorld(true); }
+    if (fullRef.current) { plannerOpenRef.current = true; exitWorld(true, false); }
     setPlanner({ eraId });
   };
   const closePlanner = () => {

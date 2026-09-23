@@ -124,6 +124,7 @@ describe("Our Path page leads with the simple view (D-285)", () => {
     expect($(".path-world__room").hidden).toBe(true);
     await mount({ ...props, houseSurface: "journey" }, h);
     expect($(".path-world__island").hidden).toBe(false);
+    expect(stage().hidden).toBe(true);
     await mount({ ...props, houseSurface: "studio" }, h);
     expect($("#edit-studio").textContent).toBe("Draft 1");
     await click($("#leave-studio"));
@@ -147,6 +148,20 @@ describe("Our Path page leads with the simple view (D-285)", () => {
 });
 
 describe("Game mode: the open world, full screen (D-285)", () => {
+  it("takes the explicit Harbour Journey route straight into the current full world, then returns to the Atlas", async () => {
+    const returnToAtlas = vi.fn();
+    await mount({ houseSurface: "journey", journeyFocusDate: "2026-08-01", openWorldOnJourneySurface: true, onExitJourney: returnToAtlas });
+    expect(stage().hidden).toBe(false);
+    expect($<HTMLElement>(".path-world").dataset.game).toBe("open");
+    expect(lastMini(false).focus.focus).toMatchObject({ date: "2026-08-01", level: "month" });
+    await click($<HTMLButtonElement>(".path-hud__min"));
+    await act(async () => { await new Promise((r) => setTimeout(r, 30)); });
+    expect(returnToAtlas).toHaveBeenCalledOnce();
+    // This dedicated route owns a history entry; do not leak it into the
+    // following browser-history test.
+    window.history.replaceState({}, "", "/");
+  });
+
   it("enters full screen with the app hidden and inert, a history entry, and focus in the HUD", async () => {
     await mount();
     await openWorld();
