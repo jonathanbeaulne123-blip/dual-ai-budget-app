@@ -63,7 +63,7 @@
  * sixtieth land in the same place. Never `v *= 0.9` per frame.
  */
 
-import { BODY_HEIGHT, BODY_RADIUS, SHORE_RADIUS, holdAshore, holdInRoom, pushOut, type Obstacle, type RoomBounds } from "./obstacles.ts";
+import { BODY_HEIGHT, BODY_RADIUS, SHORE_RADIUS, holdAshore, holdInRoom, pushOut, stepInRoom, type Obstacle, type RoomBounds } from "./obstacles.ts";
 
 export { BODY_HEIGHT, BODY_RADIUS, SHORE_RADIUS };
 
@@ -446,9 +446,12 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
   const travel = speed * step;
   if (travel > 1e-6 && (moveX !== 0 || moveZ !== 0)) {
     const held = holdInWorld(state.x + moveX * travel, state.z + moveZ * travel, world);
-    const clear = pushOut(held.x, held.z, BODY_RADIUS, world.obstacles);
-    x = clear.x; z = clear.z;
-    contact = clear.hit ?? held.contact;
+    const wall = world.room ? stepInRoom(state.x, state.z, held.x, held.z, BODY_RADIUS, world.room) : { x: held.x, z: held.z, hit: null };
+    const clear = pushOut(wall.x, wall.z, BODY_RADIUS, world.obstacles);
+    // Furniture may push a body toward a wall. The wall has the last word.
+    const final = world.room ? stepInRoom(state.x, state.z, clear.x, clear.z, BODY_RADIUS, world.room) : clear;
+    x = final.x; z = final.z;
+    contact = final.hit ?? clear.hit ?? wall.hit ?? held.contact;
   }
   const walked = Math.hypot(x - state.x, z - state.z);
 

@@ -387,14 +387,10 @@ export function placedPose<P extends Pose>(pose: P, placement: PlacePlacement | 
 /**
  * A room's hold, moved onto the island with its building (§4). The hold is
  * written as an axis-aligned box in the room's own coordinates; turned by the
- * building's yaw it stops being axis-aligned, so what comes back is the
- * smallest axis-aligned volume that still contains the turned room — a **soft**
- * volume rather than the hard box, which is the point: it holds the eye in the
- * building without pretending the building is square to the island.
- *
- * `holdPoseInRoom` (`camera/poses.ts`) is untouched and still applies this the
- * way it always has; an unplaced place passes `null` and gets its own box back
- * identically, which is what keeps the other eight exactly as they were.
+ * building's yaw it stops being axis-aligned. The broad world envelope remains
+ * available for framing, while `local` keeps the actual rotated eye limits.
+ * `holdPoseInRoom` applies those limits to every shown camera pose. An
+ * unplaced place passes `null` and keeps its original box.
  */
 export function placedHold(hold: RoomHold | null, placement: PlacePlacement | null): RoomHold | null {
   if (!hold || !placement) return hold;
@@ -408,7 +404,17 @@ export function placedHold(hold: RoomHold | null, placement: PlacePlacement | nu
     }
     return { min: [minX, box.min[1] + lift, minZ] as Vec3, max: [maxX, box.max[1] + lift, maxZ] as Vec3 };
   };
-  return { ...hold, eye: envelope(hold.eye), target: envelope(hold.target) };
+  // The envelope is useful for broad framing, but the actual eye is held in
+  // the room's own axes. Its edge stays inside the wall with near-plane space.
+  const wallInset = 0.18;
+  const localEye = {
+    min: [Math.max(hold.eye.min[0], -placement.halfWidth + wallInset), hold.eye.min[1], Math.max(hold.eye.min[2], -placement.halfDepth + wallInset)] as Vec3,
+    max: [Math.min(hold.eye.max[0], placement.halfWidth - wallInset), hold.eye.max[1], Math.min(hold.eye.max[2], placement.halfDepth - wallInset)] as Vec3,
+  };
+  return {
+    ...hold, eye: envelope(hold.eye), target: envelope(hold.target),
+    local: { x: placement.spot[0], y: lift, z: placement.spot[1], yaw: placement.yaw, eye: localEye, target: hold.target },
+  };
 }
 
 /**

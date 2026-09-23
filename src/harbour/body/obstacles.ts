@@ -290,6 +290,38 @@ export function holdInRoom(x: number, z: number, radius: number, room: RoomBound
   return { x: out.x, z: out.z, inside: true, wall };
 }
 
+/** Resolve a step from inside the room, including one whose end skips past a wall.
+ * Only a step through the doorway's shoulder-clear opening may leave it.
+ */
+export function stepInRoom(fromX: number, fromZ: number, toX: number, toZ: number, radius: number, room: RoomBounds): PushOut {
+  const from = intoLocal(room, fromX, fromZ);
+  const to = intoLocal(room, toX, toZ);
+  if (Math.abs(from.x) > room.halfX || Math.abs(from.z) > room.halfZ) return { x: toX, z: toZ, hit: null };
+  const limitX = Math.max(0, room.halfX - radius);
+  const limitZ = Math.max(0, room.halfZ - radius);
+  const gap = doorWall(room);
+  const door = room.door;
+  const clearHalf = door ? Math.max(0, door.half - radius) : 0;
+  const crossing = (axis: "x" | "z", side: 1 | -1): boolean => {
+    if (!gap || !door || gap.axis !== axis || gap.side !== side) return false;
+    const before = axis === "x" ? from.x : from.z;
+    const after = axis === "x" ? to.x : to.z;
+    const plane = side * (axis === "x" ? room.halfX : room.halfZ);
+    if (side * after <= (axis === "x" ? limitX : limitZ)) return false;
+    const t = Math.max(0, Math.min(1, (plane - before) / (after - before || 1)));
+    const lateral = axis === "x" ? from.z + (to.z - from.z) * t : from.x + (to.x - from.x) * t;
+    const centre = axis === "x" ? door.z : door.x;
+    return Math.abs(lateral - centre) <= clearHalf;
+  };
+  let x = to.x, z = to.z, hit: string | null = null;
+  if (x > limitX && !crossing("x", 1)) { x = limitX; hit = "wall+x"; }
+  if (x < -limitX && !crossing("x", -1)) { x = -limitX; hit = "wall-x"; }
+  if (z > limitZ && !crossing("z", 1)) { z = limitZ; hit = "wall+z"; }
+  if (z < -limitZ && !crossing("z", -1)) { z = -limitZ; hit = "wall-z"; }
+  const point = intoWorld(room, x, z);
+  return { ...point, hit };
+}
+
 /** Is a point inside a room's walls? The rotation is the room's own. */
 export function inRoom(x: number, z: number, room: RoomBounds): boolean {
   const local = intoLocal(room, x, z);

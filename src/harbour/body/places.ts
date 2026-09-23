@@ -302,5 +302,12 @@ export function followHoldIn(hold: RoomHold | null, room: RoomBounds | null): Ro
       min: [Math.min(hold.target.min[0], floor.minX), hold.target.min[1], Math.min(hold.target.min[2], floor.minZ)] as Vec3,
       max: [Math.max(hold.target.max[0], floor.maxX), hold.target.max[1], Math.max(hold.target.max[2], floor.maxZ)] as Vec3,
     },
+    local: hold.local ? {
+      ...hold.local,
+      target: {
+        min: [Math.max(hold.local.eye.min[0], Math.min(hold.local.target.min[0], -room.halfX)), hold.local.target.min[1], Math.max(hold.local.eye.min[2], Math.min(hold.local.target.min[2], -room.halfZ))] as Vec3,
+        max: [Math.min(hold.local.eye.max[0], Math.max(hold.local.target.max[0], room.halfX)), hold.local.target.max[1], Math.min(hold.local.eye.max[2], Math.max(hold.local.target.max[2], room.halfZ))] as Vec3,
+      },
+    } : undefined,
   };
 }

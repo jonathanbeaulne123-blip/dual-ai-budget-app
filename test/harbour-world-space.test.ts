@@ -6,7 +6,7 @@ import {
 } from "../src/harbour/scene/place.ts";
 import { groundHeightAt } from "../src/harbour/scene/ground.ts";
 import { HARBOUR_PLACE_NAMES, type HarbourPlaceId } from "../src/harbour/flag.ts";
-import { VILLAGE_SITES } from "../src/harbour/village/layout.ts";
+import { VILLAGE_SITES, VILLAGE_WATERFRONT } from "../src/harbour/village/layout.ts";
 import { crossedVillageDoor, villageExteriorCutaway } from "../src/harbour/village/topology.ts";
 
 const places = Object.keys(HARBOUR_PLACE_NAMES) as HarbourPlaceId[];
@@ -22,7 +22,7 @@ describe("village world space", () => {
       expect(placementLift(placement)).toBeGreaterThan(-3);
       expect(insidePlacement(placement, placement.spot[0], placement.spot[1])).toBe(true);
     }
-    expect(PLACE_PLACEMENTS.campfire).toMatchObject({ spot: [0, 17.5], outdoor: true, yaw: Math.PI });
+    expect(PLACE_PLACEMENTS.campfire).toMatchObject({ spot: VILLAGE_WATERFRONT.spot, outdoor: true, yaw: VILLAGE_WATERFRONT.yaw });
   });
 
   it("turns doors and local points into the same physical village coordinates", () => {

@@ -533,7 +533,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const before=previousDoorPoint; previousDoorPoint=[...focus];
     if(!before || pendingDoor || Math.hypot(focus[0]-before[0],focus[1]-before[1])>1.5) return;
     const next=crossedVillageDoor(before,focus,placeId);
-    if(next){pendingDoor=next;callbacks.onThreshold?.(next);}
+    if(next){
+      pendingDoor=next;
+      if(next==='court'){court.setHold(null);follow?.setHold(null);}
+      callbacks.onThreshold?.(next);
+    }
   }
 
   /** Has the character lane taken the focus? Until it does, the camera's target is where you are. */
@@ -1215,8 +1219,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     return wanted;
   }
 
-  function aim(mode: CourtMode | "door", anchor?: string): void {
-    court.setReduced(reducedMotion());
+  function aim(mode: CourtMode | "door", anchor?: string, instant = false): void {
+    court.setReduced(instant || reducedMotion());
     {
       const key = mode === "court" ? placeId : mode === "object" && anchor ? `object:${anchor}` : mode;
       const written = poseFor(handle.poses(), key, composition) ?? (mode === "court" ? poseFor(handle.poses(), "court", composition) : undefined) ?? (mode === "door" ? poseFor(handle.poses(), "sky", composition) : undefined);
@@ -1326,7 +1330,10 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
        */
       const crossing = options.threshold === true;
       if(!crossing)setFollowing(false);
-      const plan = travelPlan(from, next, cut || crossing);
+      // A selected placed building is a change of viewpoint, not a camera
+      // flight through its masonry. A walked doorway remains continuous.
+      const portalCut = !crossing && (placementOf(from) !== null || placementOf(next) !== null);
+      const plan = travelPlan(from, next, cut || crossing || portalCut);
       const place = PLACES[next];
       if (!place) return plan;
       // The place being entered is raised first, so both stand for the length of the journey.
@@ -1360,6 +1367,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         const landing = point&&portal&&placement?{x:point[0],z:point[2],yaw:portal.yaw+placement.yaw}:placement ? placeArrival(next, handle.anchors()) : courtLanding(leaving);
         walker.place(landing.x, landing.z, landing.yaw);
         bringCat();
+        const at = walker.state();
+        follow?.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed });
+        follow?.snap();
         bodyDriven = true;
         focus[0] = landing.x; focus[1] = landing.z;
       }
@@ -1372,7 +1382,10 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // lifted for the flight and the destination's takes over when it lands
       // (the `frame.done` branch of the loop).
       court.setHold(plan.cut ? holdFor(next) : null);
-      if (!crossing) aim(plan.camera.mode, plan.camera.anchor ?? undefined);
+      if (!crossing) {
+        aim(plan.camera.mode, plan.camera.anchor ?? undefined, plan.cut);
+        if (plan.cut) court.setReduced(reducedMotion());
+      }
       // The room you are walking into opens the way you left it: its close
       // hold, if it had one on, goes straight back on. Walking in through the
       // door with no hold remembered leaves the camera exactly where the walk

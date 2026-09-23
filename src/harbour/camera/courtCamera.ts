@@ -293,7 +293,9 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
         Math.abs(goal.phi - next.phi),
         Math.hypot(goal.target[0] - next.target[0], goal.target[1] - next.target[1], goal.target[2] - next.target[2]),
       );
-      current = remaining < REST ? goal : next;
+      // Two legal orbit endpoints do not guarantee that their spherical ease
+      // stays inside a rotated room. Contain every visible intermediate pose.
+      current = remaining < REST ? goal : legal(next);
       apply();
       return current !== goal;
     },
