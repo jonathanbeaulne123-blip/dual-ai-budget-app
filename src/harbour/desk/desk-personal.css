@@ -1,0 +1,102 @@
+/* ── The Desk, personal scope (SIMPLE_VIEW_DESK S5) ─────────────────────────
+   Same paper as desk.css (its tokens, its cards, its seals); this sheet only
+   lays out my folio's front page, dresses the space switch in the Desk's
+   header, and seats the Desk in the App's ordinary shell for personal scope,
+   which has no harbour stage to stand in. Colours are theme tokens only. ── */
+
+/* The App mounts the personal Desk in the page flow, under the ordinary top
+   bar: the Desk scrolls with the page instead of filling a harbour stage. */
+.desk-personal-stage { position: relative; }
+.desk-personal-stage > .desk { position: relative; inset: auto; z-index: auto; overflow: visible; min-height: calc(100dvh - var(--nav, 76px) - 96px); border-radius: var(--radius, 16px); }
+.desk-personal-stage > .desk > .desk__page { padding-bottom: 24px; }
+
+/* ── The space switch in the Desk header: the App's own control, on paper. ── */
+.desk__space { min-width: 0; }
+.desk .desk__space .view-switch { display: flex; gap: 4px; margin: 0; padding: 3px; border: 1px solid color-mix(in srgb, var(--desk-line) 80%, var(--desk-ink)); border-radius: 999px; background: color-mix(in srgb, var(--desk-card) 80%, transparent); }
+/* The harbour hides the top bar's switch while the Court stands; the Desk's own copy is the one to keep. */
+.app:is([data-harbour-court], [data-harbour-door]) .desk .desk__space .view-switch { display: flex; }
+.desk .desk__space .view-switch button { flex: 0 1 auto; min-height: 40px; min-width: 44px; padding: 0 12px; border: 0; border-radius: 999px; background: transparent; color: var(--desk-ink); font: 600 13px/1.1 var(--font, system-ui, sans-serif); white-space: nowrap; cursor: pointer; }
+.desk .desk__space .view-switch button.active,
+.desk .desk__space .view-switch button[aria-pressed="true"] { background: var(--desk-ink); color: var(--desk-card); }
+@media (max-width: 479px) {
+  /* Title, flip and switch on one row would crush the title; the switch takes its own row. */
+  .desk__header:has(.desk__space:not(:empty)) { grid-template-columns: auto minmax(0, 1fr); }
+  .desk__header:has(.desk__space:not(:empty)) .desk__space { grid-column: 1 / -1; }
+  .desk .desk__space .view-switch { width: 100%; }
+  .desk .desk__space .view-switch button { flex: 1 1 0; min-height: 44px; overflow: hidden; text-overflow: ellipsis; }
+}
+
+/* ── My folio's Today ── */
+.desk-today.desk-today--personal { grid-template-areas: "seals" "plates" "level" "hercules"; }
+.desk-today--personal .desk-plates { grid-area: plates; display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.desk-today--personal .desk-plates > li { display: flex; min-width: 0; }
+.desk-today--personal .desk-plates--unknown { display: grid; gap: 4px; }
+
+.desk-seal__sub { max-width: 13ch; font-size: 11px; line-height: 1.25; text-align: center; color: var(--desk-muted); }
+
+/* A plate on paper: the Office's question, its glance, its drawing, its footing, its door. */
+.desk-plate-card { display: grid; gap: 6px; align-content: start; min-width: 0; min-height: 44px; text-align: left; cursor: pointer; }
+.desk-plate-card.desk-card { padding-top: 16px; transition: transform .15s ease, box-shadow .15s ease; }
+.desk-plate-card.desk-card:hover { transform: translateY(-1px); }
+.desk-plate-card.desk-card:active { transform: translateY(1px); box-shadow: 0 1px 0 color-mix(in srgb, var(--desk-ink) 12%, transparent); }
+.desk-plate-card--inset { width: 100%; margin: 0; padding: 0; border: 0; border-radius: 8px; background: none; color: inherit; font: inherit; }
+/* The cut-paper tab, as on the pots: ink at rest, copper when the plate wants a look, pine while it is live. */
+.desk-plate-card.desk-card::before { content: ""; position: absolute; top: -1px; left: 14px; width: 34px; height: 5px; border-radius: 0 0 3px 3px; background: var(--desk-plate-tab, color-mix(in srgb, var(--desk-ink) 70%, var(--desk-card))); }
+.desk-plate-card[data-plate-edge="attention"] { --desk-plate-tab: var(--desk-copper); }
+.desk-plate-card[data-plate-edge="live"] { --desk-plate-tab: var(--desk-pine); }
+.desk-plate-card[data-plate-edge="clear"] { --desk-plate-tab: var(--desk-gold); }
+.desk-plate-card__glance { display: block; font: 600 clamp(17px, 4.6vw, 21px)/1.2 var(--display, Georgia, serif); font-variant-numeric: tabular-nums lining-nums; color: var(--desk-ink); overflow-wrap: anywhere; }
+.desk-plate-card__glance.is-copper { color: color-mix(in srgb, var(--desk-copper) 82%, var(--desk-ink)); }
+.desk-plate-card__figure { display: block; padding: 6px 6px 2px; border: 1px solid color-mix(in srgb, var(--desk-line) 85%, transparent); border-radius: 6px; background-color: color-mix(in srgb, var(--desk-card) 82%, var(--desk-paper)); }
+.desk-plate-card__figure .desk-plate-svg { display: block; width: 100%; height: auto; }
+.desk-plate-card__figure :is(.desk-plate-mark, .desk-plate-spark, .desk-plate-fill, .desk-plate-pair-up) { fill: var(--desk-pine); }
+.desk-plate-card__figure :is(.desk-plate-pair-down, .desk-plate-spark.is-down, .desk-plate-fill.is-over) { fill: var(--desk-copper); }
+.desk-plate-card__figure :is(.desk-plate-rail, .desk-plate-tick) { stroke: color-mix(in srgb, var(--desk-ink) 30%, transparent); }
+.desk-plate-card__figure .desk-plate-tally { stroke: var(--desk-ink); }
+.desk-plate-card__figure .desk-plate-caption { fill: var(--desk-muted); }
+.desk-plate-card__empty { font-style: italic; }
+.desk-plate-card__foot { display: block; font-size: 12px; line-height: 1.35; color: var(--desk-muted); }
+.desk-plate-card__door { justify-self: start; font-size: 13px; font-weight: 650; color: color-mix(in srgb, var(--desk-pine) 70%, var(--desk-ink)); }
+
+/* The Level's slot: the month's running net, on graph paper, a little taller. */
+.desk-level--personal .desk-plate-card__figure {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--desk-pine) 12%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--desk-pine) 12%, transparent) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+.desk-level--personal .desk-plate-card__figure .desk-plate-svg { min-height: 72px; }
+
+@media (min-width: 480px) {
+  .desk-today--personal .desk-plates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 720px) {
+  .desk-today.desk-today--personal {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "seals level" "plates plates" "hercules hercules";
+  }
+  .desk-today--personal .desk-plates { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); }
+  .desk-today--personal .desk-seals, .desk-today--personal .desk-card--level { align-self: stretch; }
+}
+@media (min-width: 1000px) {
+  .desk-today.desk-today--personal {
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-areas: "seals level" "plates hercules";
+  }
+  .desk-today--personal .desk-plates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .desk-today--personal .desk-hercules { align-self: start; }
+}
+
+/* ── The three editions ── */
+.desk--taylor .desk-plate-card.desk-card::before { width: 42px; height: 9px; top: -4px; border-radius: 1px; transform: rotate(-3deg); opacity: .85; }
+.desk--taylor .desk-seal__sub { font-style: italic; }
+.desk--newfoundland .desk-plate-card.desk-card::before { left: 0; width: 100%; height: 3px; top: -3px; border-radius: 0; }
+.desk--newfoundland .desk-plate-card__glance { font-family: var(--font, system-ui, sans-serif); letter-spacing: .01em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-plate-card, .desk-plate-card:hover, .desk-plate-card:active { transition: none !important; transform: none !important; }
+}
+@media (forced-colors: active) {
+  .desk-plate-card.desk-card { border: 2px solid CanvasText; }
+  .desk-plate-card__figure :is(.desk-plate-mark, .desk-plate-spark, .desk-plate-fill, .desk-plate-pair-up, .desk-plate-pair-down) { fill: CanvasText; }
+}

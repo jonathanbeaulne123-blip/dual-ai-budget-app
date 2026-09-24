@@ -1,5 +1,6 @@
 import { useId, useMemo } from "react";
 import { DeskLevel } from "./DeskLevel.tsx";
+import { DeskPersonalToday } from "./DeskPersonalToday.tsx";
 import { engravedCents, sundialAngle } from "./engraved.ts";
 import { deskPots, readHercules, readNext, readSeals, readSnapshot, readWalk, type DeskNext, type DeskPot } from "./todayModel.ts";
 import { shortDate } from "../nav/doorSigns.ts";
@@ -12,7 +13,12 @@ import type { DeskPageProps } from "./types.ts";
  * is a selector's figure, every card is a door onto the surface that owns it,
  * and nothing on this page moves money.
  */
-export function DeskToday({ household, memberId, scope, today, onOpen, onTalk }: DeskPageProps) {
+export function DeskToday(props: DeskPageProps) {
+  // Personal scope has no Fund to lead with: its front page is my folio's own instruments (S5).
+  return props.scope === "personal" ? <DeskPersonalToday {...props} /> : <DeskHouseholdToday {...props} />;
+}
+
+function DeskHouseholdToday({ household, memberId, scope, today, onOpen, onTalk }: DeskPageProps) {
   const snapshot = useMemo(() => readSnapshot(household, memberId, scope, today), [household, memberId, scope, today]);
   const pots = useMemo(() => deskPots(snapshot ?? EMPTY_SNAPSHOT, engravedCents), [snapshot]);
   const { seals, monthLabel } = useMemo(() => readSeals(household, memberId, scope, today), [household, memberId, scope, today]);

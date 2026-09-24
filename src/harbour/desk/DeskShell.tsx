@@ -6,6 +6,7 @@ import type { HarbourReading } from "../data/reading.ts";
 import { DESK_PAGES } from "./pages.ts";
 import { flipToHarbour } from "./flip.ts";
 import "./desk.css";
+import "./desk-personal.css";
 
 /**
  * The Desk (SIMPLE_VIEW_DESK S2) — the app's 2D world, the Harbourmaster's
@@ -32,14 +33,30 @@ export type DeskShellProps = {
   onTalk?: () => void;
   /** Called after the flip is written; the harbour shell hears the `hearth:motion` event itself. */
   onFlip?: () => void;
-  /** Room in the header for the space switch (a later slice fills it). */
+  /** Room in the header for the space switch: the App's own household ↔ personal control (S5). */
   spaceSlot?: ReactNode;
   initialPage?: string;
+  /**
+   * The heading's id. The App's personal mount passes the house's own
+   * `house-world-title`, so "Put it back" returns focus to the Desk the way it
+   * returns it to the illustrated house.
+   */
+  titleId?: string;
 };
+
+/**
+ * The header's words. Personal scope has no harbour (S5): its illustrated
+ * world is my own house, and the Desk is my folio's.
+ */
+export function deskHeaderWords(scope: LedgerView): { kicker: string; title: string; flip: string; flipAria: string } {
+  return scope === "personal"
+    ? { kicker: "My folio · simple view", title: "My Desk", flip: "My house", flipAria: "My house — flip back to the illustrated house" }
+    : { kicker: "Little Harbour · simple view", title: "The Desk", flip: "Harbour", flipAria: "Harbour — flip back to the illustrated Harbour" };
+}
 
 const SWIPE_MIN = 56;
 
-export function DeskShell({ household, memberId, scope, today, reading, theme = "classic", status = "flat", onOpen, onQuickSheet, onTalk, onFlip, spaceSlot, initialPage }: DeskShellProps) {
+export function DeskShell({ household, memberId, scope, today, reading, theme = "classic", status = "flat", onOpen, onQuickSheet, onTalk, onFlip, spaceSlot, initialPage, titleId }: DeskShellProps) {
   const [pageId, setPageId] = useState(() => DESK_PAGES.some(page => page.id === initialPage) ? initialPage! : DESK_PAGES[0]!.id);
   const base = useId();
   const tabs = useRef<HTMLDivElement>(null);
@@ -50,6 +67,8 @@ export function DeskShell({ household, memberId, scope, today, reading, theme = 
   const panelId = `${base}-panel`;
   const talk = onTalk ?? (() => onOpen("hercules"));
   const harbourDrawable = status !== "fallback";
+  const words = deskHeaderWords(scope);
+  const headingId = titleId ?? `${base}-title`;
 
   function select(next: number, focus: boolean) {
     const at = (next + DESK_PAGES.length) % DESK_PAGES.length;
@@ -86,17 +105,17 @@ export function DeskShell({ household, memberId, scope, today, reading, theme = 
   }
 
   const Page = page.Page;
-  return <section className={`desk desk--${theme}`} data-desk="" data-desk-page={page.id} data-desk-status={status} aria-labelledby={`${base}-title`}
+  return <section className={`desk desk--${theme}`} data-desk="" data-desk-scope={scope} data-desk-page={page.id} data-desk-status={status} aria-labelledby={headingId}
     onPointerDown={event => event.stopPropagation()}>
     <header className="desk__header">
       <button type="button" className="desk__flip" data-desk-flip="" onClick={flip} aria-disabled={harbourDrawable ? undefined : true}
         aria-describedby={harbourDrawable ? undefined : `${base}-undrawn`}
-        aria-label={harbourDrawable ? "Harbour — flip back to the illustrated Harbour" : "Harbour — cannot be drawn on this device"}>
-        <span className="desk__flip-mark" aria-hidden="true">⚓</span><span>Harbour</span>
+        aria-label={harbourDrawable ? words.flipAria : `${words.flip} — cannot be drawn on this device`}>
+        <span className="desk__flip-mark" aria-hidden="true">{scope === "personal" ? "⌂" : "⚓"}</span><span>{words.flip}</span>
       </button>
       <div className="desk__title">
-        <small>Little Harbour · simple view</small>
-        <h1 id={`${base}-title`}>The Desk</h1>
+        <small>{words.kicker}</small>
+        <h1 id={headingId} tabIndex={titleId ? -1 : undefined}>{words.title}</h1>
       </div>
       <div className="desk__space" data-desk-slot="space">{spaceSlot}</div>
       {!harbourDrawable && <p className="desk__undrawn" id={`${base}-undrawn`} role="status">The Harbour could not be drawn here. Everything is on the Desk.</p>}
