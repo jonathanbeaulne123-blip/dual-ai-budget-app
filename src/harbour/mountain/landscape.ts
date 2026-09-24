@@ -5,7 +5,7 @@ import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import type {PlaceDressing,PlaceReading,Anchor,Region} from '../scene/place.ts';
 import type {RenderTier} from '../scene/quality.ts';
 import {EngravedPlate} from '../court/engraved.ts';
-import {BASIN,DISTRICTS,RESERVED_PLOTS,RIVER,FUNICULAR_STOPS,GONDOLA_STOPS,MOUNTAIN_ROAD,nearestOnRoute,mountainBaseHeight,transportPoint,type Point3,type TransportKind} from './definition.ts';
+import {BASIN,DISTRICTS,RESERVED_PLOTS,RIVER,FUNICULAR_STOPS,GONDOLA_STOPS,MONORAIL_STOPS,MOUNTAIN_ROAD,nearestOnRoute,mountainBaseHeight,transportPoint,type Point3,type TransportKind} from './definition.ts';
 import {WORLD_SURFACES,WORLD_SOLIDS} from './surfaces.ts';
 import {MOUNTAIN_GATES} from './race.ts';
 import {basinMoney,createBasinView} from './basin.ts';
@@ -100,8 +100,8 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   instanced(new THREE.CylinderGeometry(.14,.22,1.4,5),wood,trunks,'Mountain trunks');
   instanced(dressing.theme==='taylor'?new THREE.IcosahedronGeometry(1.3,0):new THREE.ConeGeometry(1.1,dressing.theme==='newfoundland'?2.2:2.8,6),leaf,trees,'Mountain woodland');
   const blossoms=instanced(new THREE.IcosahedronGeometry(1,0),mat('#ffffff'),flowers,'Flower meadows');flowerColors.forEach((c,i)=>blossoms.setColorAt(i,c));if(blossoms.instanceColor)blossoms.instanceColor.needsUpdate=true;blossoms.count=Math.round(flowers.length*.4);
-  for(const [kind,stops] of [['funicular',FUNICULAR_STOPS],['gondola',GONDOLA_STOPS]] as const){
-    for(const stop of stops){sign(`${stop.name} · ${kind}`,[stop.at[0],stop.at[1]+3,stop.at[2]+2.45],`mountain:transport:${kind}`,5.5);}
+  for(const [kind,stops] of [['funicular',FUNICULAR_STOPS],['gondola',GONDOLA_STOPS],['monorail',MONORAIL_STOPS]] as const){
+    for(const stop of stops){sign(`${stop.name} · ${kind}`,[stop.at[0],stop.at[1]+3,stop.at[2]+2.45],`mountain:transport:${kind}:${stop.id}`,5.5);}
     for(let i=1;i<stops.length;i++)for(let k=1;k<=48;k++){
       const a=transportPoint(kind,i-1,i,(k-1)/48),b=transportPoint(kind,i-1,i,k/48),lift=kind==='gondola'?3:.1;
       for(const side of kind==='gondola'?[0]:[-.8,.8])beam([a[0]+side,a[1]+lift,a[2]],[b[0]+side,b[1]+lift,b[2]],kind==='gondola'?.06:.09,metal);
@@ -109,8 +109,17 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
     }
   }
   const architecture=buildMountainArchitecture(dressing,tier);group.add(architecture.group);owned.push(architecture);
-  const cabins={funicular:buildMountainCabin(dressing,tier,'funicular'),gondola:buildMountainCabin(dressing,tier,'gondola')};
+  const cabins={funicular:buildMountainCabin(dressing,tier,'funicular'),gondola:buildMountainCabin(dressing,tier,'gondola'),monorail:buildMountainCabin(dressing,tier,'monorail')};
   for(const art of Object.values(cabins)){group.add(art.group);art.group.visible=false;owned.push(art);}
+  const companionFigure=new THREE.Group();companionFigure.name='Bianca story seat';cabins.monorail.group.add(companionFigure);
+  const doors=[-1,1].map(side=>{const panel=mesh(new THREE.BoxGeometry(.07,1.55,.7),metal,[1.31,.12,side*.38],'Monorail sliding door');cabins.monorail.group.add(panel);return panel;});
+  const companionCoat=mat(dressing.theme==='taylor'?'#a56e86':dressing.theme==='newfoundland'?'#567887':'#9b806d');
+  const companionHead=mat('#d7aa87');
+  const companionPart=(geometry:THREE.BufferGeometry,material:THREE.Material,at:Point3)=>{const part=new THREE.Mesh(track(geometry),material);part.position.set(...at);companionFigure.add(part);};
+  companionPart(new THREE.SphereGeometry(.22,8,6),companionHead,[.7,.42,-.55]);
+  companionPart(new THREE.CylinderGeometry(.24,.28,.55,8),companionCoat,[.7,-.02,-.55]);
+  companionPart(new THREE.CylinderGeometry(.18,.15,.5,8),companionCoat,[.7,-.5,-.28]);
+  companionFigure.visible=false;
   // Three architectural grind routes are real deck surfaces above terrain.
   for(const [name,x,z] of [['Outfitters',-15,16],['Potter’s Supply',34,25]] as const){box([x,1.6,z],[5,3.2,4],paper,name);const r=mesh(new THREE.ConeGeometry(4,2,4),roof,[x,4.1,z],`${name} roof`);r.rotation.y=Math.PI/4;sign(name,[x,2,z+2.1],name==='Outfitters'?'mountain:outfitters':'mountain:pottery',4.5);}
   for(let i=1;i<MOUNTAIN_GATES.length;i++){const g=MOUNTAIN_GATES[i]!;if(i%3!==0&&i!==MOUNTAIN_GATES.length-1)continue;for(const side of [-1,1]){const x=g.at[0]+g.normal[1]*5*side,z=g.at[2]-g.normal[0]*5*side;beam([x,g.at[1],z],[x,g.at[1]+1.7,z],.08,metal);}}
@@ -170,7 +179,7 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
     for(const o of batch){o.removeFromParent();o.geometry.dispose();owned.splice(owned.indexOf(o.geometry),1);}
   }
   update(reading);current=target;
-  return {group,anchors,regions,update,setVisitor,setRecovery(value:MountainRecoveryView){recovery=value;update(last);},setInteraction(value:MountainInteractionState){life.setInteraction(value);},setCalm(value:boolean){calm=value;update(last);},setTransit(at:Point3|null,kind:TransportKind='gondola'){for(const [id,art] of Object.entries(cabins)){art.group.visible=at!==null&&id===kind;if(at&&id===kind)art.group.position.set(at[0],at[1]+1,at[2]);}},
+  return {group,anchors,regions,update,setVisitor,setRecovery(value:MountainRecoveryView){recovery=value;update(last);},setInteraction(value:MountainInteractionState){life.setInteraction(value);},setCalm(value:boolean){calm=value;update(last);},setTransit(at:Point3|null,kind:TransportKind='gondola',yaw=0,companion=false,doorGap=0){companionFigure.visible=at!==null&&kind==='monorail'&&companion;doors.forEach((panel,i)=>{panel.position.z=(i===0?-1:1)*(.38+.7*Math.max(0,Math.min(1,doorGap)));});for(const [id,art] of Object.entries(cabins)){art.group.visible=at!==null&&id===kind;if(at&&id===kind){art.group.position.set(at[0],at[1]+1,at[2]);art.group.rotation.y=yaw;}}},
     animate(t:number,dt:number){const quiet=isQuiet();if(quiet!==renderedQuiet)update(last);const step=Math.max(0,Math.min(.1,dt));life.setQuiet(quiet);if(quiet){current=target;reserveCurrent=reserveTarget;remaining=0;pulse.visible=false;blossoms.rotation.z=0;}else{current+=(target-current)*Math.min(1,step*3);reserveCurrent+=(reserveTarget-reserveCurrent)*Math.min(1,step*3);}const depth=Math.max(.03,current*(BASIN.top-BASIN.bottom));reservoir.scale.y=depth;reservoir.position.y=BASIN.bottom+depth/2;reserve.scale.y=Math.max(.03,reserveCurrent*12);reserve.position.y=BASIN.bottom+reserve.scale.y/2;
       remaining=Math.max(0,remaining-step);pulse.visible=remaining>0&&!quiet;if(pulse.visible){phase+=step/3;const n=Math.min(flowPath.length-2,Math.floor(phase*(flowPath.length-1))),a=flowPath[n]!,b=flowPath[n+1]!,u=Math.min(1,phase)*(flowPath.length-1)-n;pulse.position.set(a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u+.5,a[2]+(b[2]-a[2])*u);}
       if(!quiet)blossoms.rotation.z=Math.sin(t*.7)*.00012;

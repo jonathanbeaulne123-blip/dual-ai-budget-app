@@ -79,14 +79,26 @@ export function buildMountainArchitecture(d:PlaceDressing,tier:RenderTier){
 
 /** Open carriage sides preserve the third-person view; both models share ride authority. */
 export function buildMountainCabin(d:PlaceDressing,tier:RenderTier,kind:TransportKind){
-  const kit=new MountainArtKit(tier,kind==='gondola'?'Summit gondola carriage':'Mountain funicular carriage'),p=mountainPalette(d);
-  kit.box([0,-.94,0],[2.8,.16,2],p.wood);kit.box([0,-.8,0],[2.65,.06,1.85],p.light);
-  kit.box([0,1.55,0],[3,.15,2.25],p.roof);
-  for(const x of [-1.3,1.3])for(const z of [-.9,.9])kit.box([x,.25,z],[.07,2.5,.07],p.metal);
-  for(const x of [-1.3,1.3]){kit.box([x,-.16,0],[.08,.08,1.8],p.trim);kit.box([x,-.66,0],[.12,.28,1.8],p.roof);}
+  const kit=new MountainArtKit(tier,kind==='monorail'?'Island monorail carriage':kind==='gondola'?'Summit gondola carriage':'Mountain funicular carriage'),p=mountainPalette(d);
+  const long=kind==='monorail',depth=long?5:2;
+  kit.box([0,-.94,0],[2.8,.16,depth],p.wood);kit.box([0,-.8,0],[2.65,.06,depth-.15],p.light);
+  kit.box([0,1.55,0],[3,.15,depth+.25],p.roof);
+  for(const x of [-1.3,1.3])for(const z of long?[-2.35,0,2.35]:[-.9,.9])kit.box([x,.25,z],[.07,2.5,.07],p.metal);
+  for(const x of [-1.3,1.3]){kit.box([x,-.16,0],[.08,.08,long?4.5:1.8],p.trim);kit.box([x,-.66,0],[.12,.28,long?4.5:1.8],p.roof);}
   if(kind==='gondola'){
     kit.beam([0,1.65,0],[0,1.97,0],.07,p.metal);kit.box([0,1.95,0],[.2,.12,1],p.metal);
     for(const z of [-.35,.35])kit.part(new THREE.CylinderGeometry(.14,.14,.16,8),p.metal,[0,2,z],[1,1,1],[0,0,Math.PI/2]);
+  }else if(kind==='monorail'){
+    // Two real passenger seats, a forward cab and open panoramic window bays.
+    for(const x of [-.7,.7]){
+      kit.box([x,-.43,-.55],[.85,.13,.82],p.trim);
+      kit.box([x,-.04,-.96],[.85,.72,.13],p.roof);
+      for(const z of [-.82,-.28])kit.box([x-.31,-.7,z],[.08,.5,.08],p.metal);
+    }
+    kit.box([0,-.32,1.8],[1.35,.72,.18],p.wood);
+    kit.box([0,.09,1.7],[1.3,.12,.52],p.metal);
+    for(const z of [-1.9,-.2,1.5])for(const x of [-1.32,1.32])kit.box([x,.16,z],[.045,1.3,.055],p.trim);
+    for(const z of [-1.9,1.5])kit.box([0,-1.08,z],[2.4,.18,.28],p.metal);
   }else{
     for(const x of [-.8,.8])for(const z of [-.65,.65])kit.part(new THREE.CylinderGeometry(.22,.22,.12,8),p.metal,[x,-1.08,z],[1,1,1],[0,0,Math.PI/2]);
     for(let z=-.6;z<.8;z+=.4)kit.box([0,-.76,z],[2.3,.012,.045],p.trim);
