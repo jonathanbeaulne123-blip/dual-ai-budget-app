@@ -17,10 +17,9 @@ export const mountainRecoveryKey = (scope:MountainRecoveryScope) =>
 const dateKey = (value:unknown):value is string => typeof value==='string' && /^\d{4}-\d{2}-\d{2}$/.test(value) && Number.isFinite(Date.parse(value)) && new Date(value).toISOString().slice(0,10)===value;
 const wearValue = (value:unknown):value is MountainWear => value===0 || value===.35 || value===1;
 const careValue = (value:unknown):value is number|null => value===null || (Number.isSafeInteger(value) && Number(value)>=0);
-function browserStorage():RecoveryStorage|null {try{return typeof window==='undefined'?null:window.localStorage;}catch{return null;}}
 
 /** Observations, not reconstructed history. There is no timer, ledger write or new condition rule. */
-export function createMountainRecovery(scope:MountainRecoveryScope,storage:RecoveryStorage|null=browserStorage()) {
+export function createMountainRecovery(scope:MountainRecoveryScope,storage:RecoveryStorage|null=null) {
   const key=mountainRecoveryKey(scope),prefix=`${scope.environment}:${scope.householdId}:`;
   let saved:Observation|null=null;
   try {
@@ -43,7 +42,7 @@ export function createMountainRecovery(scope:MountainRecoveryScope,storage:Recov
     snapshot:()=>view(true),
     observe(reading:Reading|null|undefined):MountainRecoveryView {
       const b=reading?.basin,c=reading?.condition;
-      if(!reading || reading.freshness!=='current' || !b?.known || !b.identity.startsWith(prefix) ||
+      if(!reading || reading.freshness!=='current' || !b?.known || b.motion===false || !b.identity.startsWith(prefix) ||
         !Number.isSafeInteger(b.revision) || b.revision<0 || !dateKey(b.asOf) || !c || c.state==='checking') return view(true);
       // These are the existing selector's bands. Cents, activity and visitor motion are never inputs here.
       if(!['settled','growing','wilting','weathered'].includes(c.state))return view(true);

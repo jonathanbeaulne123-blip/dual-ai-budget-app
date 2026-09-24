@@ -34,9 +34,10 @@ describe('observed mountain recovery',()=>{
   });
   it('freezes backwards revisions, dates, conflicting same-cursor facts and unknown backing',()=>{
     const history=createMountainRecovery(scope,storage());history.observe(reading('weathered',5));
+    const cached=reading('settled',6);cached.basin!.motion=false;
     const stale=reading('settled',4),conflict=reading('settled',5),backwards=reading('settled',6),unknown=reading('settled',6);
     backwards.basin!.asOf='2026-09-23';unknown.basin!.known=false;
-    for(const r of [stale,conflict,backwards,unknown,reading('settled',6,{freshness:'stale'})])expect(history.observe(r)).toMatchObject({wear:1,repairs:0,frozen:true});
+    for(const r of [cached,stale,conflict,backwards,unknown,reading('settled',6,{freshness:'stale'})])expect(history.observe(r)).toMatchObject({wear:1,repairs:0,frozen:true});
   });
   it('isolates households, environments and replacement Funds',()=>{
     const store=storage(),first=createMountainRecovery(scope,store);first.observe(reading('weathered'));first.observe(reading('settled',2));
