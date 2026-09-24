@@ -1231,7 +1231,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         // quay and the Fund bank's door), each blended over the chase frame.
         const run=walker.skate.run(),race=run?.id==='mountain-descent'?run:null,still=reducedMotion()||walker.skate.current()?.reducedEffects===true;
         const startW=race?startShotWeight(race.countdown,still):0,finishW=finishShot.update(Boolean(race?.finished),dt,still);
-        const shown=finishW>0?blendShot(startW>0?blendShot(f,raceStartShot(),startW):f,raceFinishShot(),finishW):startW>0?blendShot(f,raceStartShot(),startW):f;
+        const shotAspect=camera.aspect||1.6,started=startW>0?blendShot(f,raceStartShot(undefined,shotAspect),startW):f;
+        const shown=finishW>0?blendShot(started,raceFinishShot(shotAspect),finishW):started;
         if(startW>0||finishW>0)bodyMoving=true;
         camera.position.set(shown.position[0], shown.position[1], shown.position[2]);
         camera.up.set(0, 1, 0);

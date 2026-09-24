@@ -222,6 +222,8 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
       const share = pull.update(clearFraction(look, eye, land.blocked, Math.max(0.25, current.r / 40)), dt, reduced);
       if (share < 1) eye = [look[0] + (eye[0] - look[0]) * share, look[1] + (eye[1] - look[1]) * share, look[2] + (eye[2] - look[2]) * share];
     } else pull.reset();
+    // Whatever the line did (a target inside the land pulls it in to nothing), the eye stands over the land.
+    if (land) { const floor = land.ground(eye[0], eye[2]) + 0.3; if (eye[1] < floor) eye = [eye[0], floor, eye[2]]; }
     drawnEye = eye; drawnLook = look;
     camera.position.set(eye[0], eye[1], eye[2]);
     camera.up.set(0, 1, 0);
@@ -358,7 +360,8 @@ export function createCourtCamera(options: CourtCameraOptions): CourtCamera {
     tick(dt) {
       if (settled()) {
         // Still settled, but the slow push-out of an obstruction may be giving the eye back.
-        if (open()?.blocked && pull.value() < 1 && dt > 0) { apply(dt); return true; }
+        // (Only while it is actually moving: an eye held in front of a wall is at rest too.)
+        if (open()?.blocked && pull.value() < 1 && dt > 0) { const before = pull.value(); apply(dt); return Math.abs(pull.value() - before) > 1e-4; }
         return false;
       }
       if (reduced || !(dt > 0)) {

@@ -16,6 +16,7 @@
  */
 import { FUND_DOOR, QUAY, RACE_LINE, cameraGround, type V3 } from "../../camera/worldAdapter.ts";
 import type { SkateCameraFrame } from "./skateCamera.ts";
+import { portraitFov } from "../../camera/mountainPoses.ts";
 
 export const RACE_SHOT = Object.freeze({
   /** The countdown is 3 s: the start shot holds until 1.5 s remain, then hands over by 0.7. */
@@ -38,25 +39,25 @@ const along = (line: readonly V3[], distance: number): V3 => {
 };
 
 /** The start shot: above and behind the gate, looking down the first bends. */
-export function raceStartShot(line: readonly V3[] = RACE_LINE): { eye: V3; look: V3; fov: number } {
+export function raceStartShot(line: readonly V3[] = RACE_LINE, aspect = 1.6): { eye: V3; look: V3; fov: number } {
   const start = line[0] ?? [0, 0, 0], near = along(line, 12), far = along(line, RACE_SHOT.startLook);
   let dx = near[0] - start[0], dz = near[2] - start[2];
   const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
   const ex = start[0] - dx * 7 + dz * 2.5, ez = start[2] - dz * 7 - dx * 2.5;
   const eye: V3 = [ex, Math.max(start[1] + 5.5, cameraGround(ex, ez) + 3), ez];
   const look: V3 = [(near[0] + far[0] * 2) / 3, (near[1] + far[1] * 2) / 3, (near[2] + far[2] * 2) / 3];
-  return { eye, look, fov: RACE_SHOT.startFov };
+  return { eye, look, fov: portraitFov(aspect, RACE_SHOT.startFov) };
 }
 
 /** The finish shot: the quay's run-out in the foreground, the Fund bank's door beyond it. */
-export function raceFinishShot(): { eye: V3; look: V3; fov: number } {
+export function raceFinishShot(aspect = 1.6): { eye: V3; look: V3; fov: number } {
   let dx = FUND_DOOR[0] - QUAY[0], dz = FUND_DOOR[2] - QUAY[2];
   const l = Math.hypot(dx, dz) || 1; dx /= l; dz /= l;
-  // Out over the water behind the quay, a little to the side, looking up the town toward the door.
-  const ex = QUAY[0] - dx * 16 + dz * 6, ez = QUAY[2] - dz * 16 - dx * 6;
-  const eye: V3 = [ex, Math.max(QUAY[1] + 6.5, cameraGround(ex, ez) + 3), ez];
-  const look: V3 = [QUAY[0] + dx * l * 0.45, 1.6, QUAY[2] + dz * l * 0.45];
-  return { eye, look, fov: RACE_SHOT.finishFov };
+  // Out over the water behind the quay, a touch to the side and up, looking up the town toward the door.
+  const ex = QUAY[0] - dx * 22 + dz * 2, ez = QUAY[2] - dz * 22 - dx * 2;
+  const eye: V3 = [ex, Math.max(QUAY[1] + 9, cameraGround(ex, ez) + 3), ez];
+  const look: V3 = [QUAY[0] + dx * l * 0.4, 1.4, QUAY[2] + dz * l * 0.4];
+  return { eye, look, fov: portraitFov(aspect, RACE_SHOT.finishFov) };
 }
 
 const smooth = (a: number, b: number, v: number) => { const t = Math.max(0, Math.min(1, (v - a) / (b - a))); return t * t * (3 - 2 * t); };

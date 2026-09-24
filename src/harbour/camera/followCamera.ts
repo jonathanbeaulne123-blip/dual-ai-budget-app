@@ -303,6 +303,8 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
       const share = pull.update(open, dt, reduced);
       if (share < 1) { ex = look[0] + (ex - look[0]) * share; ey = look[1] + (ey - look[1]) * share; ez = look[2] + (ez - look[2]) * share; }
     } else pull.reset();
+    // Pulled in over a slope or not, the eye is never under the land.
+    { const floor = ground(ex, ez) + FOLLOW_MIN_LIFT * 0.5; if (Number.isFinite(floor) && ey < floor) ey = floor; }
     drawnEye = [ex, ey, ez]; drawnLook = look;
     camera.position.set(ex, ey, ez);
     camera.up.set(0, 1, 0);
@@ -458,10 +460,12 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
       basis = theta;
       r += (goalR - r) * k;
       phi += (goalPhi - phi) * k;
+      const pulled = pull.value();
       apply(step);
+      // A pull-in still giving the eye back is motion; an eye held in front of a wall is at rest.
       const settled = (!followingPath || Math.abs(wrap(heading - theta)) < 1e-3)
         && Math.abs(goalR - r) < 1e-3 && Math.abs(goalPhi - phi) < 1e-3
-        && dolly === want && baseFov === goalFov && pull.value() >= 1 - 1e-4
+        && dolly === want && baseFov === goalFov && Math.abs(pull.value() - pulled) < 1e-4
         && Math.hypot(subject.x - look[0], subject.y - look[1], subject.z - look[2]) < 1e-3;
       return !settled;
     },

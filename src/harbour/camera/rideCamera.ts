@@ -51,8 +51,15 @@ export type RideCameraOptions = { ground?: (x: number, z: number) => number; blo
 export const RIDE = Object.freeze({
   /** Along: how far behind, above and aside of the cabin the eye rides, and how far ahead it looks. */
   back: 9, rise: 3.6, aside: 2.2, ahead: 16,
-  /** Reveal: beside the cabin on the view's side, a little behind and above. */
-  revealAside: 8.5, revealRise: 3.2, revealBack: 2,
+  /**
+   * Reveal: on the far side of the cabin from the view, a little behind, and
+   * raised in proportion to how far below the view lies (`revealRise` of the
+   * drop, between `revealRiseMin` and `revealRiseMax`) — so looking down over
+   * the gorge to the town still keeps the cabin and its rider in the frame.
+   */
+  revealAside: 7, revealBack: 2, revealRise: 0.12, revealRiseMin: 3, revealRiseMax: 9,
+  /** Where along the gorge→town line the reveal looks (0 = the gorge crossing, 1 = the square). */
+  revealToward: 0.85,
   /** When the reveal eases in and out (share of the ride). */
   revealIn: [0.18, 0.4] as const, revealOut: [0.7, 0.88] as const,
   /** Spring stiffness (rad/s) for eye and look-at. */
@@ -86,12 +93,13 @@ export function rideKeyframe(input: RideInput): { eye: Vec3; look: Vec3; reveal:
   };
   const w = revealWeight(input.kind, input.u);
   if (w <= 0) return { ...along, reveal: 0 };
-  // The view: across the gorge to the town. The eye goes to the cabin's far side from it.
-  const view = lerp3(GORGE_REVEAL, TOWN_SQUARE, 0.45);
+  // The view: out over the gorge to the town. The eye goes to the cabin's far side from it, above.
+  const view = lerp3(GORGE_REVEAL, TOWN_SQUARE, RIDE.revealToward);
   let vx = view[0] - cabin[0], vz = view[2] - cabin[2];
   const vl = Math.hypot(vx, vz) || 1; vx /= vl; vz /= vl;
+  const rise = Math.max(RIDE.revealRiseMin, Math.min(RIDE.revealRiseMax, (cabin[1] - view[1]) * RIDE.revealRise));
   const reveal = {
-    eye: [cabin[0] - vx * RIDE.revealAside - hx * RIDE.revealBack, cabin[1] + RIDE.revealRise, cabin[2] - vz * RIDE.revealAside - hz * RIDE.revealBack] as Vec3,
+    eye: [cabin[0] - vx * RIDE.revealAside - hx * RIDE.revealBack, cabin[1] + rise, cabin[2] - vz * RIDE.revealAside - hz * RIDE.revealBack] as Vec3,
     look: view,
   };
   return { eye: lerp3(along.eye, reveal.eye, w), look: lerp3(along.look, reveal.look, w), reveal: w };
@@ -133,7 +141,8 @@ export function createRideCamera(options: RideCameraOptions = {}): RideCamera {
   function finish(input: RideInput, e: Vec3, l: Vec3, reveal: number): RideShot {
     let ex = e[0], ey = e[1], ez = e[2];
     // Over the land.
-    if (options.ground) { const floor = options.ground(ex, ez) + 1.2; if (Number.isFinite(floor) && ey < floor) ey = floor; }
+    const floorAt = (x: number, z: number) => (options.ground ? options.ground(x, z) + 1.2 : Number.NEGATIVE_INFINITY);
+    { const floor = floorAt(ex, ez); if (Number.isFinite(floor) && ey < floor) ey = floor; }
     // Out of solids between the rider and the eye (the rider's own cabin is not in the way).
     if (options.blocked) {
       const from = input.rider, span = Math.hypot(ex - from[0], ey - from[1], ez - from[2]);
@@ -142,6 +151,9 @@ export function createRideCamera(options: RideCameraOptions = {}): RideCamera {
       const start: Vec3 = lerp3(from, [ex, ey, ez], skip);
       const open = clearFraction(start, [ex, ey, ez], options.blocked, 0.3, 32);
       if (open < 1) { const k = skip + (1 - skip) * open; ex = from[0] + (ex - from[0]) * k; ey = from[1] + (ey - from[1]) * k; ez = from[2] + (ez - from[2]) * k; }
+      // Pulled in over a slope, the eye still never goes under it.
+      const floor = floorAt(ex, ez) - 0.9;
+      if (Number.isFinite(floor) && ey < floor) ey = floor;
     }
     const drawn: Vec3 = [ex, ey, ez];
     const fov = input.fov + RIDE.revealFov * reveal;
