@@ -1,6 +1,6 @@
 import type {WorldAmbience} from '../mountain/audio.ts';
 import {mountainFoliageAt} from '../mountain/planting.ts';
-import {worldCollisionAt} from '../mountain/surfaces.ts';
+import {worldCeilingAt,worldCollisionAt} from '../mountain/surfaces.ts';
 import {MOUNTAIN_VERSION,transportPoint,TRANSPORT_STOPS,type Point3,type TransportKind} from '../mountain/definition.ts';
 import {crossedVillageDoor,villagePortalArrival} from "../village/topology.ts";
 import * as THREE from "three";
@@ -1091,6 +1091,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         skateCam.setDistance(walker.skate.current()?.camera === 'far' ? 'far' : 'near');
         const f = skateCam.update(ridden, walker.skate.events(), dt, {
           aspect: camera.aspect, reducedMotion: reducedMotion() || walker.skate.current()?.reducedEffects === true,
+          ceilingAt:worldCeilingAt,
           blocked: (x, y, z) => y < groundHeightAt(x, z) + .05 || worldCollisionAt(x,y,z,.12) || mountainFoliageAt(x,y,z,tier) || insideVillageBuilding(x, z, .12,y),
         });
         camera.position.set(f.position[0], f.position[1], f.position[2]);

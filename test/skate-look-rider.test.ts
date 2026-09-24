@@ -55,6 +55,18 @@ const knee = (f: BodyFigure, s: "left" | "right") => f.group.getObjectByName(`bo
 const popEvent = (flipId: string | null = null, from: "tail" | "nose" = "tail"): SkateSimEvent => ({ t: 0, kind: "pop", from, switch: false, fakie: false, height: .6, flipId, fromFeature: null });
 
 describe("skate look · the rider stands on the board", () => {
+  it("faces the travel direction when rolling forward and fakie", () => {
+    const r=rider();
+    r.run(.5,p=>{p.phase='roll';p.speed=4;p.heading=0;p.boardYaw=0;});
+    const carriage=r.figure.group.getObjectByName('body-carriage')!;
+    let fwd=new THREE.Vector3(0,0,1).applyQuaternion(carriage.getWorldQuaternion(new THREE.Quaternion()));
+    expect(fwd.z).toBeGreaterThan(.9);
+    r.run(.5,p=>{p.heading=Math.PI;p.boardYaw=0;p.fakie=true;});
+    fwd=new THREE.Vector3(0,0,1).applyQuaternion(carriage.getWorldQuaternion(new THREE.Quaternion()));
+    expect(fwd.z).toBeLessThan(-.9);
+    expectFeetOnDeck(r);
+    r.figure.dispose();r.look.dispose();
+  });
   it("keeps both soles on the grip through roll, carve, crouch, the pop, the catch and the landing", () => {
     for (const who of WHO) for (const stance of ["regular", "goofy"] as const) {
       const r = rider(who, stance);
@@ -220,9 +232,9 @@ describe("skate look · the rider's moves", () => {
   it("leads an air spin with the shoulders", () => {
     const r = rider();
     r.run(.4, (p) => { p.phase = "air"; p.clearance = .5; p.bodyTwist = 0; });
-    const still = r.figure.group.getObjectByName("body-carriage")!.rotation.y;
+    const still = r.figure.group.getObjectByName("body-carriage")!.quaternion.clone();
     r.run(.2, (p) => { p.bodyTwist = .9; });
-    expect(r.figure.group.getObjectByName("body-carriage")!.rotation.y - still).toBeGreaterThan(.5);
+    expect(still.angleTo(r.figure.group.getObjectByName("body-carriage")!.quaternion)).toBeGreaterThan(.5);
     r.figure.dispose(); r.look.dispose();
   });
 });

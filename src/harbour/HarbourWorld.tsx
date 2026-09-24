@@ -720,10 +720,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
    * deliberately *not* held keys: a move is an event, and a set of held keys
    * is how a walk is described, not a hop.
    *
-   * **Space is not one of them.** Space opens the quick sheet, everywhere,
-   * including here — that is the one key the whole app can be reached by and
-   * it is not for sale. Jump is `J`, the slide beside it is `K`, and the
-   * emotes are `1`…`6` with `E` for the row of them.
+   * Space and J jump; K slides. The UI keeps the tool sheet available, while
+   * the keyboard uses Space consistently on foot and on the board.
    */
   const doMove = useCallback((move: "jump" | "slide") => {
     const body = runtime.current?.body();
@@ -882,14 +880,16 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   }
 
   function onStageKey(event: ReactKeyboardEvent<HTMLDivElement>) {
-    const skateHudSpace = event.key === " " && runtime.current?.body()?.skate?.active()
-      && event.target instanceof Element && Boolean(event.target.closest('.skate-hud,.harbour-moves'))
-      && !event.target.closest('input,select,textarea,[role=dialog]');
-    if (event.target !== event.currentTarget&&!acceptsSkateKey(event)&&!skateHudSpace) return;
-    // Space opens the quick sheet wherever you are standing — including the
-    // reading edition and the fallback, where there is no world to drive.
-    // Everything the app can do has to be one key away even when the island
-    // could not be drawn at all.
+    if (event.target !== event.currentTarget&&!acceptsSkateKey(event)) return;
+    if(event.key===" "&&event.target!==event.currentTarget)return;
+    if (event.key === " " && runtime.current?.body()) {
+      if (!event.repeat) {
+        const body = runtime.current.body()!;
+        if (body.skate.active()) body.skate.input()?.keyDown(event.nativeEvent);
+        else body.jump();
+      }
+      event.preventDefault(); return;
+    }
     if (event.key === " " && onQuickSheet) { onQuickSheet(); event.preventDefault(); return; }
     const world = runtime.current;
     if (!world) {
@@ -1012,7 +1012,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => navigatePlace("court");
   return <section className={`harbour-world harbour-world--${theme}${skating?" is-skating":""}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={placeName}>
-    <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : showFlat ? `${placeName}. Reading edition. Every destination is a button.` : skating?"Skate the Harbour. W pushes, A turns left, D turns right, S brakes. Keys 1 to 6 emote while riding. Hold the down arrow and flick up to ollie, flick to a corner to flip. Q and E grab, G locks onto rails, M manuals, R returns to your marker, P pauses, B walks. Space opens all tools.":stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) {setStageHasKeys(false);if(held.current.size){held.current.clear();pushBody();}if(!event.currentTarget.contains(event.relatedTarget as Node))runtime.current?.body()?.skate?.pause(true);} }}>
+      <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : showFlat ? `${placeName}. Reading edition. Every destination is a button.` : skating?"Skate the Harbour. W pushes, A turns left, D turns right, S brakes. Space jumps. Keys 1 to 6 emote while riding. Hold the down arrow and flick up to ollie, flick to a corner to flip. Q and E grab, G locks onto rails, M manuals, R returns to your marker, P pauses, B walks.":stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) {setStageHasKeys(false);if(held.current.size){held.current.clear();pushBody();}if(!event.currentTarget.contains(event.relatedTarget as Node))runtime.current?.body()?.skate?.pause(true);} }}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => navigatePlace(next)} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
@@ -1071,7 +1071,7 @@ export function stageWords(place: HarbourPlaceId, placeName: string, closed: boo
     ? "W A S D walks you around the room; the left and right arrows walk the bill rail through the month"
     : `W A S D and the arrow keys walk you around ${ground}`;
   const close = closed ? "steps back from" : "comes close to";
-  return `${here}. ${keys}; Shift runs; J jumps and K slides out of a run; E opens the emotes and 1 to 6 play them; tap ${floor} to walk there; drag to look around you; plus and minus zoom; C ${close} what this place is about; Space opens all tools; Escape stops walking, then steps back. Every door here is also a button in the quick sheet.`;
+  return `${here}. ${keys}; Shift runs; Space or J jumps and K slides out of a run; E opens the emotes and 1 to 6 play them; tap ${floor} to walk there; drag to look around you; plus and minus zoom; C ${close} what this place is about; Escape stops walking, then steps back. Every door here is also a button in the quick sheet.`;
 }
 
 /**

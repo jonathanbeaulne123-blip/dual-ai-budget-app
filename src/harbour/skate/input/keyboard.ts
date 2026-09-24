@@ -90,6 +90,7 @@ export function createDigitalStick(o:{chordMs?:number;latchMs?:number;releaseMs?
 
 /* ------------------------------------------------------------- key map */
 export type SkateKeyAction=
+  | {kind:'jump'}
   | {kind:'stick';dir:ArrowDir}                       // arrows / I J K L (IJKL off in easy mode)
   | {kind:'ride';dir:'push'|'brake'|'left'|'right'}   // W S A D
   | {kind:'hold';what:'sprint'|'powerslide'|'grind'|'manual'|'nose-manual'}
@@ -107,6 +108,7 @@ export const EASY_KEYS:Readonly<Record<string,{flipId:string|null;from:'tail'|'n
 /** Normalise a KeyboardEvent-like to a lowercase name that ignores layout for letters when `code` is present. */
 export function keyName(e:{key:string;code?:string}):string {
   const c=e.code??'';
+  if(c==='Space'||e.key===' ')return 'space';
   if(/^Key[A-Z]$/.test(c))return c.slice(3).toLowerCase();
   if(c.startsWith('Arrow'))return c.toLowerCase();
   if(c==='ShiftLeft'||c==='ShiftRight')return 'shift';
@@ -115,6 +117,7 @@ export function keyName(e:{key:string;code?:string}):string {
 
 export function skateKeyAction(name:string,mode:'flick'|'easy'):SkateKeyAction|null {
   switch(name){
+    case 'space':return {kind:'jump'};
     case 'arrowup':return {kind:'stick',dir:'up'};
     case 'arrowdown':return {kind:'stick',dir:'down'};
     case 'arrowleft':return {kind:'stick',dir:'left'};

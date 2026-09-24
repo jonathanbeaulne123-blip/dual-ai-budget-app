@@ -1,4 +1,4 @@
-import {TOWN_RACE_ROAD,nearestOnRoute} from '../../mountain/definition.ts';
+import {SKILL_BRANCHES,TOWN_RACE_ROAD,nearestOnRoute} from '../../mountain/definition.ts';
 import {queryWorldSurface,worldCeilingAt,WORLD_SURFACES} from '../../mountain/surfaces.ts';
 /**
  * Tideline Skate Club v2 · world — the SkateField the sim rides on.
@@ -85,6 +85,8 @@ export type SkateWorldField = Omit<SkateField, 'grindables'> & {
   readonly ground: (x: number, z: number) => number;
   readonly pads: readonly PadRuntime[];
   readonly grindables: readonly SkateGrindable[];
+  /** Invisible authored areas where the full ramp, gravity and landing model applies. */
+  trickZoneAt(x:number,z:number):boolean;
   /** Height only (no normal): the cheapest query. */
   heightAt(x: number, z: number): number;
   /** Zero-allocation variant of `sample` (a `lip` object is allocated only on lips). */
@@ -372,6 +374,13 @@ export function createSkateField(ground: (x: number, z: number) => number, opts:
   return {
     ceilingAt:(x,z,feet)=>z<-40?worldCeilingAt(x,z,feet):Infinity,
     tier, ground, pads, grindables, solids, spots,
+    trickZoneAt(x,z) {
+      for(const pad of pads){
+        const dx=x-pad.frame.x,dz=z-pad.frame.z,c=Math.cos(pad.frame.yaw),s=Math.sin(pad.frame.yaw);
+        if(Math.abs(dx*c-dz*s)<=pad.half[0]+pad.reach+2&&Math.abs(dz*c+dx*s)<=pad.half[1]+pad.reach+2)return true;
+      }
+      return SKILL_BRANCHES.some(branch=>nearestOnRoute(x,z,branch.points).distance<branch.halfWidth+2);
+    },
     sample(x, z, y, supportId) { if(z<-40||nearestOnRoute(x,z,TOWN_RACE_ROAD).distance<3.5){const s=queryWorldSurface({x,z,y,supportId},ground);return {y:s.y,nx:s.nx,ny:s.ny,nz:s.nz,kind:s.material,feature:s.id,lip:null};}core(x, z, true); return write({ y: 0, nx: 0, ny: 1, nz: 0, kind: 'grass', feature: null, lip: null }); },
     sampleInto(x, z, out) { if(z<-40||nearestOnRoute(x,z,TOWN_RACE_ROAD).distance<3.5){const s=queryWorldSurface({x,z},ground);return Object.assign(out,{y:s.y,nx:s.nx,ny:s.ny,nz:s.nz,kind:s.material,feature:s.id,lip:null});}core(x, z, true); return write(out); },
     heightAt,

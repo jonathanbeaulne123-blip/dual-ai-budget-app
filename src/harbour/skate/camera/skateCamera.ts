@@ -24,6 +24,8 @@ export type SkateCameraEnv = {
   reducedMotion?: boolean;
   /** Optional solid-geometry probe: true when (x,y,z) is inside something the eye must not enter. */
   blocked?: (x: number, y: number, z: number) => boolean;
+  /** Underside of an overhead route at the rider's level, if one is above the camera. */
+  ceilingAt?: (x:number,z:number,feet:number)=>number;
 };
 export type SkateCameraOptions = {
   distance?: SkateCameraDistance;
@@ -262,6 +264,12 @@ export function createSkateCamera(options: SkateCameraOptions = {}): SkateCamera
     let ex = fx.x - sy * r + cy * side.x, ez = fz.x - cy * r - sy * side.x;
     let ey = fy.x + C.lookUp * 0.35 + h - (reduced ? 0 : impactKick * C.impactDip);
     if (ground) { const g0 = fin(ground(ex, ez), -Infinity) + C.minLift; if (ey < g0) ey = g0; }
+    const feet=last?fin(last.y,fy.x):fy.x;
+    const riderCeiling=env?.ceilingAt?.(cx,cz,feet)??Infinity;
+    const eyeCeiling=env?.ceilingAt?.(ex,ez,feet)??Infinity;
+    const underRoad=Number.isFinite(riderCeiling);
+    const roof=Math.min(riderCeiling,eyeCeiling);
+    if(underRoad)ey=Math.min(ey,roof-.22);
     // Something between the rider and the eye (a ramp behind, a bowl lip): crane up first, then pull in.
     // The crane goes up at once and eases back down; the pull-in keeps a floor so the board stays in shot.
     const solid = env?.blocked;
@@ -277,10 +285,11 @@ export function createSkateCamera(options: SkateCameraOptions = {}): SkateCamera
         return 1;
       };
       let rise = 0, clear = lineClear(0);
-      for (const up of [0.3, 0.6, 0.9, 1.2]) { if (clear >= 1) break; const c = lineClear(up); if (c >= 1 || c > clear + 0.3) { rise = up; clear = c; } }
+      if(!underRoad)for (const up of [0.3, 0.6, 0.9, 1.2]) { if (clear >= 1) break; const c = lineClear(up); if (c >= 1 || c > clear + 0.3) { rise = up; clear = c; } }
       if (rise > floor.x) { floor.x = rise; floor.v = 0; }
       floorGoal = rise;
       ey += floor.x;
+      if(underRoad)ey=Math.min(ey,roof-.22);
       if (clear < 1) {
         const span = Math.hypot(ex - cx, ey - cy0, ez - cz), hard = Math.max(0.05, clear - 0.04), soft = Math.max(hard, Math.min(1, 1.7 / Math.max(span, 1e-3)));
         const k = soft > hard && !solid(cx + (ex - cx) * soft, cy0 + (ey - cy0) * soft - 0.12, cz + (ez - cz) * soft) ? soft : hard;
@@ -294,7 +303,7 @@ export function createSkateCamera(options: SkateCameraOptions = {}): SkateCamera
     // When a wall forces the eye closer, widen the lens so the rider's head
     // and board still fit. The ordinary open-air chase keeps its authored FOV.
     const compressed = solid ? clamp(1 - Math.hypot(ex - cx, ez - cz) / Math.max(1.5, dist.x + vb * C.vertDist), 0, 1) : 0;
-    out.fov = Math.min(90, fov.x + compressed * 38 + (reduced ? 0 : impactKick * C.impactFov));
+    out.fov = Math.min(90, fov.x + compressed * (underRoad?14:38) + (reduced ? 0 : impactKick * C.impactFov));
     out.roll = reduced ? 0 : roll.x;
     if (last) {
       const px = fin(last.x), py = fin(last.y), pz = fin(last.z);

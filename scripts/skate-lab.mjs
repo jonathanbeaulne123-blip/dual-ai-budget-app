@@ -9,7 +9,7 @@
  *   node scripts/skate-lab.mjs kickflip vert-air --out /tmp/lab    # some
  *   node scripts/skate-lab.mjs stills --out /tmp/lab               # theme × tier park overviews
  *   node scripts/skate-lab.mjs list                                # names
- * Options: --size 480x300  --cols 4  --samples 12  --theme classic|taylor|newfoundland
+ * Options: --size 480x300  --cols 4  --samples 12  --touch  --theme classic|taylor|newfoundland
  *          --tier full|lite  --avatar jonathan|bianca|default  --stance regular|goofy  --hud
  *          --port 4197  --chromium /path/to/chrome (or SKATE_LAB_CHROMIUM)
  */
@@ -34,10 +34,10 @@ await server.listen();
 const fallback='/opt/pw-browsers/chromium_headless_shell-1194/chrome-linux/headless_shell';
 const executablePath=opt.chromium??process.env.SKATE_LAB_CHROMIUM??(existsSync(fallback)?fallback:undefined);
 const browser=await chromium.launch({...(executablePath?{executablePath}:{}),args:['--use-gl=swiftshader','--enable-webgl','--ignore-gpu-blocklist']});
-const page=await browser.newPage({viewport:{width:Math.max(W,640),height:Math.max(H,480)}});
+const page=await browser.newPage({viewport:{width:Math.max(W,640),height:Math.max(H,480)},hasTouch:Boolean(opt.touch)});
 const errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('console',m=>{if(m.type()==='error')errors.push(m.text());});
 try{
-  await page.goto(`http://127.0.0.1:${port}/__skate-lab?w=${W}&h=${H}`,{waitUntil:'load'});
+  await page.goto(`http://127.0.0.1:${port}/__skate-lab?w=${W}&h=${H}`,{waitUntil:'load',timeout:120000});
   await page.waitForFunction(()=>document.body.dataset.skateLab==='ready',null,{timeout:180000});
   const all=await page.evaluate(()=>window.skateLab.scenarios());
   if(names[0]==='list'){for(const s of all)console.log(`${s.name.padEnd(18)} ${s.title}`);}
@@ -50,7 +50,8 @@ try{
       const t0=Date.now();
       const meta=await page.evaluate(([n,o])=>window.skateLab.begin(n,o),[name,over]);
       const images=[],labels=[];
-      for(const f of meta.samples){
+      const samples=opt.samples?Array.from({length:Math.max(1,Number(opt.samples))},(_,k)=>Math.max(1,Math.round((k+1)*meta.frames/Number(opt.samples)))):meta.samples;
+      for(const f of samples){
         await page.evaluate(fr=>window.skateLab.advanceTo(fr),f);
         if(meta.hud)await page.evaluate(()=>window.skateLab.snap());
         images.push(await shot(meta.hud));
@@ -58,7 +59,7 @@ try{
         labels.push(`#${f} ${p.phase} ${p.speed.toFixed(1)}u/s${p.trick?' '+p.trick.flipId:''}${p.grind?' '+p.grind.grindId:''}`);
       }
       const kinds=await page.evaluate(()=>window.skateLab.kinds());
-      const strip=await page.evaluate(([i,l,c,t])=>window.skateLab.compose(i,l,c,t),[images,labels,cols,`${meta.name} · ${meta.title} · ${kinds.join(' ')}`]);
+      const strip=await page.evaluate(([i,l,c,t])=>window.skateLab.compose(i,l,c,t),[images,labels,Math.min(cols,images.length),`${meta.name} · ${meta.title} · ${kinds.join(' ')}`]);
       save(`${name}.png`,strip);
       const trace=await page.evaluate(()=>window.skateLab.trace());
       writeFileSync(join(out,`${name}.json`),JSON.stringify({name,title:meta.title,expect:meta.expect,kinds,frames:trace},null,0));

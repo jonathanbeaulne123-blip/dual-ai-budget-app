@@ -148,7 +148,9 @@ export function solveRiderPose(p: SkatePresent, defs: LookDefs, state: RiderPose
 
   // ── Targets, in rider terms.
   T[HIP_X] = STANCE.hipX; T[HIP_Y] = STANCE.hip * legLen; T[HIP_Z] = STANCE.hipZ;
-  T[PITCH] = STANCE.pitch; T[ROLL] = 0; T[YAW] = p.fakie ? .3 : STANCE.yaw;
+  const travelTurn=Math.atan2(Math.sin(p.heading-p.boardYaw),Math.cos(p.heading-p.boardYaw));
+  const faceTravel=Math.atan2(Math.sin(1.25-toeSign*travelTurn),Math.cos(1.25-toeSign*travelTurn));
+  T[PITCH] = STANCE.pitch; T[ROLL] = 0; T[YAW] = faceTravel;
   T[HEAD_Y] = 0; T[HEAD_X] = STANCE.headPitch;
   T[F_X] = 0; T[F_Z] = STANCE.frontZ; T[F_LIFT] = 0; T[F_ANG] = STANCE.frontAngle;
   T[B_X] = 0; T[B_Z] = STANCE.backZ; T[B_LIFT] = 0; T[B_ANG] = STANCE.backAngle;
@@ -162,7 +164,7 @@ export function solveRiderPose(p: SkatePresent, defs: LookDefs, state: RiderPose
   const breath = Math.sin(state.clock * 1.7) * .006 * flourish;
   if (phase === 'idle') {
     // Standing on it, taller and quieter; arms hang.
-    T[HIP_Y] = (STANCE.hip + .04) * legLen + breath; T[YAW] = .5; T[PITCH] = .1;
+    T[HIP_Y] = (STANCE.hip + .04) * legLen + breath; T[PITCH] = .1;
     T[AF_OUT] = .16; T[AB_OUT] = .18; T[AF_FWD] = .08; T[AB_FWD] = -.1; T[AF_BEND] = .3; T[AB_BEND] = .22;
   }
 
@@ -179,7 +181,7 @@ export function solveRiderPose(p: SkatePresent, defs: LookDefs, state: RiderPose
     // steps off, plants beside the board ahead of the tail, sweeps back along the ground, and swings forward again.
     const pp = ((p.pushPhase % 1) + 1) % 1;
     const K0 = PUSH.plant, K1 = PUSH.lift;
-    T[YAW] = 1.28; T[F_ANG] = 1.25; T[F_Z] = .17; T[F_X] = 0; T[K_F] = 1.2;
+    T[F_ANG] = 1.25; T[F_Z] = .17; T[F_X] = 0; T[K_F] = 1.2;
     T[PITCH] = .3; T[HEAD_X] = .1;
     // One loop: down at `plant` (front of the stroke), sweep back to `lift`, then up and forward again.
     let gz: number, glift: number, plant: number, sw: number;
@@ -278,6 +280,7 @@ export function solveRiderPose(p: SkatePresent, defs: LookDefs, state: RiderPose
   const X = state.springs.x;
 
   // ── The root: the figure in the ride frame (turned with the board's own yaw overlays; tumbling in a bail).
+  // Keep the feet planted sideways on the deck; the carriage turns the rider toward travel.
   const theta = toeSign * Math.PI / 2;
   const root = state.root;
   let ikW = 1;

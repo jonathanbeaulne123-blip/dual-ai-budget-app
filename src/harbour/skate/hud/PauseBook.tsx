@@ -110,7 +110,7 @@ export function PauseBook(p: Props) {
         <div className="skate-book__stamps">{m.stamps.map(t => <div key={t.id} data-earned={t.earned}><span aria-hidden="true">{t.earned ? '✦' : '◇'}</span><b>{t.name}</b><small>{t.hint}</small><span className="skate-sr">{t.earned ? 'Earned' : 'Not yet'}</span></div>)}</div>
       </>}
       {p.tab === 'tricks' && <>
-        <p>Pull the board stick back to crouch, then flick: the path you draw picks the trick. The board stick is the right stick on a controller, a mouse drag, the arrow keys, or the Flick pad on a phone. Drawn for {stance === 'goofy' ? 'goofy' : 'regular'} stance; the dot is where you start.</p>
+        <p>Pull the board stick back to crouch, then flick: the path you draw picks the trick. The board stick is the right stick on a controller, a mouse drag, the arrow keys, or the right circle on a phone. On a phone, hold that circle to either side in the air to grab. Drawn for {stance === 'goofy' ? 'goofy' : 'regular'} stance; the dot is where you start.</p>
         <h3>Flips</h3>
         <div className="skate-book__tricks">{book.flips.map(f => <div key={f.id} className="skate-trick">
           <GesturePath d={p.gesturePath?.(f.id, stance) ?? null} label={f.name}/><b>{f.name}</b>{f.points ? <small>{formatPoints(f.points)} pts</small> : f.detail ? <small>{f.detail}</small> : null}

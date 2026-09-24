@@ -147,10 +147,10 @@ export function Hints({hints}: {hints: readonly ControlHint[]}) {
 /* ------------------------------------------------------------------ touch */
 export type ZonePointer = (zone: TouchZone, event: ReactPointerEvent<HTMLElement>) => void;
 const ZONE_LABEL: Record<TouchZone, string> = {
-  left: 'Steer and lean: drag', right: 'Board: pull down, flick to pop and flip', push: 'Push', brake: 'Brake, or powerslide while steering',
+  left: 'Ride: up to accelerate, down to slow, left and right to steer', right: 'Board: flick to jump or flip; hold left or right in the air to grab', push: 'Push', brake: 'Brake, or powerslide while steering',
   'grab-front': 'Front hand grab', 'grab-back': 'Back hand grab',
 };
-const SHORT: Record<TouchZone, string> = {left: 'Steer', right: 'Flick', push: 'Push', brake: 'Brake', 'grab-front': '◂ Grab', 'grab-back': 'Grab ▸'};
+const SHORT: Record<TouchZone, string> = {left: 'Ride', right: 'Tricks', push: 'Push', brake: 'Brake', 'grab-front': '◂ Grab', 'grab-back': 'Grab ▸'};
 /**
  * Touch slots in two thumb clusters that keep to the bottom corners, clear of
  * the rider and above the app's bottom bar: left thumb steers (push and brake
@@ -160,14 +160,23 @@ const SHORT: Record<TouchZone, string> = {left: 'Steer', right: 'Flick', push: '
  */
 export function TouchLayout({onZone}: {onZone: ZonePointer}) {
   const active = useRef(new Map<number, TouchZone>());
+  const origins = useRef(new Map<number,{x:number;y:number}>());
   const [held, setHeld] = useState<ReadonlySet<TouchZone>>(new Set());
   const mark = () => setHeld(new Set(active.current.values()));
+  const moveThumb=(e:ReactPointerEvent<HTMLElement>,reset=false)=>{
+    const thumb=e.currentTarget.querySelector<HTMLElement>('.skate-zone__ring i');
+    const origin=origins.current.get(e.pointerId);
+    if(!thumb||!origin)return;
+    const dx=reset?0:e.clientX-origin.x,dy=reset?0:e.clientY-origin.y;
+    const length=Math.hypot(dx,dy),limit=Math.min(35,e.currentTarget.clientWidth*.22),scale=length>limit?limit/length:1;
+    thumb.style.transform=`translate(${(dx*scale).toFixed(1)}px,${(dy*scale).toFixed(1)}px)`;
+  };
   const handlers = (zone: TouchZone) => ({
-    onPointerDown: (e: ReactPointerEvent<HTMLElement>) => { e.stopPropagation(); try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* synthetic */ } active.current.set(e.pointerId, zone); mark(); onZone(zone, e); },
-    onPointerMove: (e: ReactPointerEvent<HTMLElement>) => { if (active.current.get(e.pointerId) === zone) onZone(zone, e); },
-    onPointerUp: (e: ReactPointerEvent<HTMLElement>) => { active.current.delete(e.pointerId); mark(); onZone(zone, e); },
-    onPointerCancel: (e: ReactPointerEvent<HTMLElement>) => { active.current.delete(e.pointerId); mark(); onZone(zone, e); },
-    onLostPointerCapture: (e: ReactPointerEvent<HTMLElement>) => { if (active.current.delete(e.pointerId)) { mark(); onZone(zone, e); } },
+    onPointerDown: (e: ReactPointerEvent<HTMLElement>) => { e.stopPropagation(); try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* synthetic */ } active.current.set(e.pointerId, zone);origins.current.set(e.pointerId,{x:e.clientX,y:e.clientY}); mark(); onZone(zone, e); },
+    onPointerMove: (e: ReactPointerEvent<HTMLElement>) => { if (active.current.get(e.pointerId) === zone){moveThumb(e);onZone(zone, e);} },
+    onPointerUp: (e: ReactPointerEvent<HTMLElement>) => { moveThumb(e,true);origins.current.delete(e.pointerId);active.current.delete(e.pointerId); mark(); onZone(zone, e); },
+    onPointerCancel: (e: ReactPointerEvent<HTMLElement>) => { moveThumb(e,true);origins.current.delete(e.pointerId);active.current.delete(e.pointerId); mark(); onZone(zone, e); },
+    onLostPointerCapture: (e: ReactPointerEvent<HTMLElement>) => { if (active.current.delete(e.pointerId)) { moveThumb(e,true);origins.current.delete(e.pointerId);mark(); onZone(zone, e); } },
     onContextMenu: (e: {preventDefault(): void}) => e.preventDefault(),
   });
   const slot = (zone: TouchZone) => {
@@ -175,15 +184,14 @@ export function TouchLayout({onZone}: {onZone: ZonePointer}) {
     return <div key={zone} className={`skate-zone skate-zone--${stick ? 'stick' : 'pad'} skate-zone--${zone}`} data-skate-zone={zone} data-held={held.has(zone) || undefined} aria-label={ZONE_LABEL[zone]} role="group" {...handlers(zone)}>
       {stick && <span className="skate-zone__ring" aria-hidden="true"><i/></span>}
       <span className="skate-zone__label" aria-hidden="true">{SHORT[zone]}</span>
+      {stick&&<span className="skate-zone__help" aria-hidden="true">{zone==='left'?'↑ Go · ↓ Slow':'Flick · Grab'}</span>}
     </div>;
   };
   return <div className="skate-touch" aria-label="Touch controls">
     <div className="skate-touch__cluster skate-touch__cluster--left">
-      <div className="skate-touch__row">{slot('push')}{slot('brake')}</div>
       {slot('left')}
     </div>
     <div className="skate-touch__cluster skate-touch__cluster--right">
-      <div className="skate-touch__row">{slot('grab-front')}{slot('grab-back')}</div>
       {slot('right')}
     </div>
   </div>;
