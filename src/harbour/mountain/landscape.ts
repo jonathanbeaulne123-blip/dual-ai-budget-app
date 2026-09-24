@@ -9,11 +9,15 @@ import {BASIN,DISTRICTS,RESERVED_PLOTS,RIVER,FUNICULAR_STOPS,GONDOLA_STOPS,MOUNT
 import {WORLD_SURFACES,WORLD_SOLIDS} from './surfaces.ts';
 import {MOUNTAIN_GATES} from './race.ts';
 import {basinMoney,createBasinView} from './basin.ts';
+import {buildMountainLife} from './lifeScene.ts';
+import type {MountainInteractionState} from './life.ts';
+import type {MountainRecoveryView} from './recovery.ts';
 
 /** A single authored scene. Batched plants and bounded effects share Harbour's frame owner. */
 export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,reading:PlaceReading|null){
   const group=new THREE.Group();group.name='Hearth Mountain';
   const owned:{dispose():void}[]=[],anchors:Anchor[]=[],regions:Region[]=[];
+  const life=buildMountainLife(dressing);group.add(life.group);anchors.push(...life.anchors);regions.push(...life.regions);
   const track=<T extends {dispose():void}>(v:T)=>{owned.push(v);return v;};
   const mat=(color:string,extra:THREE.MeshStandardMaterialParameters={})=>track(new THREE.MeshStandardMaterial({color,roughness:.86,flatShading:true,...extra}));
   const stone=mat(dressing.stone),wood=mat(dressing.timber),leaf=mat(dressing.lawn),water=mat(dressing.sea,{roughness:.21,metalness:.22}),metal=mat(dressing.metal,{metalness:.35,roughness:.5});
@@ -59,7 +63,9 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   sign('Where the Fund flows',[-8,2,-14],'mountain:basin',5);
   let flowPath:readonly Point3[]=RIVER;let phase=0,remaining=0,target=0,current=0,reserveTarget=0,reserveCurrent=0,calm=false;
   const readBasin=createBasinView();let last:PlaceReading|null=null;
-  const sheltered:THREE.Object3D[]=[],goalDetails:THREE.Object3D[]=[];let repaired=false,previousWear=0;
+  const sheltered:THREE.Object3D[]=[],mends:THREE.Object3D[]=[],goalDetails:THREE.Object3D[]=[];
+  let recovery:MountainRecoveryView|null=null,observedWear=0,renderedQuiet=false;
+  const isQuiet=()=>calm||(typeof window!=='undefined'&&window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true);
   const details=new THREE.Group();details.name='Accepted backing details';group.add(details);
   for(const d of DISTRICTS){
     sign(d.name,[d.at[0]-9,d.at[1]+2,d.at[2]+8],`mountain:district:${d.id}`,8);
@@ -93,7 +99,7 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   function instanced(g:THREE.BufferGeometry,m:THREE.Material,matrices:THREE.Matrix4[],name:string){const o=new THREE.InstancedMesh(track(g),m,matrices.length);matrices.forEach((v,i)=>o.setMatrixAt(i,v));o.name=name;o.instanceMatrix.needsUpdate=true;group.add(o);owned.push(o);return o;}
   instanced(new THREE.CylinderGeometry(.14,.22,1.4,5),wood,trunks,'Mountain trunks');
   instanced(dressing.theme==='taylor'?new THREE.IcosahedronGeometry(1.3,0):new THREE.ConeGeometry(1.1,dressing.theme==='newfoundland'?2.2:2.8,6),leaf,trees,'Mountain woodland');
-  const blossoms=instanced(new THREE.IcosahedronGeometry(1,0),mat('#ffffff'),flowers,'Flower meadows');flowerColors.forEach((c,i)=>blossoms.setColorAt(i,c));if(blossoms.instanceColor)blossoms.instanceColor.needsUpdate=true;
+  const blossoms=instanced(new THREE.IcosahedronGeometry(1,0),mat('#ffffff'),flowers,'Flower meadows');flowerColors.forEach((c,i)=>blossoms.setColorAt(i,c));if(blossoms.instanceColor)blossoms.instanceColor.needsUpdate=true;blossoms.count=Math.round(flowers.length*.4);
   for(const [kind,stops] of [['funicular',FUNICULAR_STOPS],['gondola',GONDOLA_STOPS]] as const){
     for(const stop of stops){sign(`${stop.name} · ${kind}`,[stop.at[0],stop.at[1]+3,stop.at[2]+2.45],`mountain:transport:${kind}`,5.5);}
     for(let i=1;i<stops.length;i++)for(let k=1;k<=48;k++){
@@ -111,7 +117,7 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   sign('Summit to sea · start',[5,112,-280],'mountain:race',8);
   sign('Summit to sea · finish',[31,2,61],'mountain:race',7);
   // Bounded weathering only on non-colliding peripheral stones and timber.
-  for(let i=0;i<20;i++){const p=MOUNTAIN_ROAD[Math.floor(i/20*(MOUNTAIN_ROAD.length-1))]!;sheltered.push(box([p[0]+8,p[1]+.3,p[2]],[.5,.6,1.5],wood,'Weathered edge timber'));}
+  for(let i=0;i<20;i++){const p=MOUNTAIN_ROAD[Math.floor(i/20*(MOUNTAIN_ROAD.length-1))]!;sheltered.push(box([p[0]+8,p[1]+.3,p[2]],[.5,.6,1.5],wood,'Weathered edge timber'));if(i%5===0){const mend=box([p[0]+8,p[1]+.62,p[2]],[.52,.06,.18],metal,'Observed repair binding');mend.visible=false;mends.push(mend);}}
   // Themes author different non-colliding details over the same routes.
   for(const d of DISTRICTS){
     for(let i=0;i<5;i++){
@@ -121,7 +127,7 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
       else {box([at[0],d.at[1]+.4,at[2]],[.6,.8,.6],stone,'Herb planter');}
     }
   }
-  function update(next:PlaceReading|null){const initial=last===null,quiet=calm||(typeof window!=='undefined'&&window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);last=next;const b=readBasin(next?.basin);target=b.level??0;reserveTarget=b.reserveLevel??0;reservoir.visible=b.level!==null;reserve.visible=b.reserveLevel!==null;
+  function update(next:PlaceReading|null){const initial=last===null,quiet=isQuiet();renderedQuiet=quiet;life.setQuiet(quiet);last=next;const b=readBasin(next?.basin);target=b.level??0;reserveTarget=b.reserveLevel??0;reservoir.visible=b.level!==null;reserve.visible=b.reserveLevel!==null;
     const basinLabel=`Household Fund · ${basinMoney(next?.basin?.balanceCents)} CAD`;const basinAnchor=anchors.find(a=>a.id===gauge.mesh.userData.anchor);if(basinAnchor)basinAnchor.label=basinLabel;
     gauge.set(`Fund ${basinMoney(next?.basin?.balanceCents)} CAD`);
     scaleGauge.set(`Scale ${basinMoney(b.scaleCents)} CAD${b.scaleChanged?' · expanded':''}`);
@@ -133,19 +139,24 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
     }
     // Updates also paint at rest: reduced-motion clients need no animation loop.
     if(initial||quiet){current=target;reserveCurrent=reserveTarget;}const depth=Math.max(.03,current*(BASIN.top-BASIN.bottom));reservoir.scale.y=depth;reservoir.position.y=BASIN.bottom+depth/2;reserve.scale.y=Math.max(.03,reserveCurrent*12);reserve.position.y=BASIN.bottom+reserve.scale.y/2;
-    const condition=next?.condition?.state,wear=calm?0:(condition==='weathered'?1:condition==='wilting'?.35:0);
-    if(!calm&&next?.condition.state!=='checking'){if(previousWear>0&&wear===0)repaired=true;previousWear=wear;}
-    sheltered.forEach((o,i)=>{o.rotation.z=wear*(i%2?-.18:.13);o.scale.y=1-wear*.25;if(repaired&&i%5===0)o.rotation.y=.12;});
-    if(next?.mountainCareDays!==undefined)blossoms.count=Math.min(flowers.length,Math.round(flowers.length*(.4+.6*Math.min(1,next.mountainCareDays/12))));
+    const condition=next?.condition?.state;
+    if(recovery)observedWear=recovery.wear;
+    else if(next?.freshness==='current'&&condition&&condition!=='checking')observedWear=condition==='weathered'?1:condition==='wilting'?.35:0;
+    const wear=quiet?0:observedWear;
+    sheltered.forEach((o,i)=>{o.rotation.z=wear*(i%2?-.18:.13);o.scale.y=1-wear*.25;});
+    mends.forEach((o,i)=>{o.visible=Boolean(recovery&&i<recovery.repairs);});
+    const careDays=recovery?recovery.careDays:next?.freshness==='current'?next.mountainCareDays:undefined;
+    if(careDays!=null)blossoms.count=Math.min(flowers.length,Math.round(flowers.length*(.4+.6*Math.min(1,careDays/12))));
+    if(quiet){pulse.visible=false;remaining=0;blossoms.rotation.z=0;flowers.forEach((matrix,i)=>blossoms.setMatrixAt(i,matrix));blossoms.instanceMatrix.needsUpdate=true;lastVisitor=null;}
     const goals=next?.tower.shelves.flatMap(s=>s.banks).filter(b=>b.goalId),step=goals?.length?Math.max(...goals.map(b=>b.step)):0;
     goalDetails.forEach((o,i)=>{o.visible=i<step;});
   }
   let lastVisitor:Point3|null=null;
   function setVisitor(at:Point3){
-    if(calm||lastVisitor&&Math.hypot(at[0]-lastVisitor[0],at[2]-lastVisitor[2])<.2)return;
+    if(isQuiet()||lastVisitor&&Math.hypot(at[0]-lastVisitor[0],at[2]-lastVisitor[2])<.2)return;
     const old=lastVisitor;lastVisitor=at;
-    for(let i=0;i<flowers.length;i++){const base=flowers[i]!,px=base.elements[12]!,pz=base.elements[14]!;
-      const distance=Math.hypot(px-at[0],pz-at[2]);if(distance>2.5&&(!old||Math.hypot(px-old[0],pz-old[2])>2.5))continue;
+    for(let i=0;i<flowers.length;i++){const base=flowers[i]!,px=base.elements[12]!,py=base.elements[13]!,pz=base.elements[14]!;
+      const distance=Math.hypot(px-at[0],py-at[1],pz-at[2]);if(distance>2.5&&(!old||Math.hypot(px-old[0],py-old[1],pz-old[2])>2.5))continue;
       base.decompose(dummy.position,dummy.quaternion,dummy.scale);dummy.rotation.z=distance<2.5?(1-distance/2.5)*.45*Math.sign(px-at[0]):0;dummy.updateMatrix();blossoms.setMatrixAt(i,dummy.matrix);
     }blossoms.instanceMatrix.needsUpdate=true;
   }
@@ -159,10 +170,10 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
     for(const o of batch){o.removeFromParent();o.geometry.dispose();owned.splice(owned.indexOf(o.geometry),1);}
   }
   update(reading);current=target;
-  return {group,anchors,regions,update,setVisitor,setCalm(value:boolean){calm=value;update(last);},setTransit(at:Point3|null,kind:TransportKind='gondola'){for(const [id,art] of Object.entries(cabins)){art.group.visible=at!==null&&id===kind;if(at&&id===kind)art.group.position.set(at[0],at[1]+1,at[2]);}},
-    animate(t:number,dt:number){const step=Math.min(.1,dt);current+=(target-current)*Math.min(1,step*3);reserveCurrent+=(reserveTarget-reserveCurrent)*Math.min(1,step*3);const depth=Math.max(.03,current*(BASIN.top-BASIN.bottom));reservoir.scale.y=depth;reservoir.position.y=BASIN.bottom+depth/2;reserve.scale.y=Math.max(.03,reserveCurrent*12);reserve.position.y=BASIN.bottom+reserve.scale.y/2;
-      remaining=Math.max(0,remaining-step);pulse.visible=remaining>0&&!calm;if(pulse.visible){phase+=step/3;const n=Math.min(flowPath.length-2,Math.floor(phase*(flowPath.length-1))),a=flowPath[n]!,b=flowPath[n+1]!,u=Math.min(1,phase)*(flowPath.length-1)-n;pulse.position.set(a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u+.5,a[2]+(b[2]-a[2])*u);}
-      if(!calm)blossoms.rotation.z=Math.sin(t*.7)*.00012;
-      return Math.abs(current-target)>.001||Math.abs(reserveCurrent-reserveTarget)>.001||remaining>0;
-    },dispose(){group.removeFromParent();owned.forEach(o=>o.dispose());group.clear();}};
+  return {group,anchors,regions,update,setVisitor,setRecovery(value:MountainRecoveryView){recovery=value;update(last);},setInteraction(value:MountainInteractionState){life.setInteraction(value);},setCalm(value:boolean){calm=value;update(last);},setTransit(at:Point3|null,kind:TransportKind='gondola'){for(const [id,art] of Object.entries(cabins)){art.group.visible=at!==null&&id===kind;if(at&&id===kind)art.group.position.set(at[0],at[1]+1,at[2]);}},
+    animate(t:number,dt:number){const quiet=isQuiet();if(quiet!==renderedQuiet)update(last);const step=Math.max(0,Math.min(.1,dt));life.setQuiet(quiet);if(quiet){current=target;reserveCurrent=reserveTarget;remaining=0;pulse.visible=false;blossoms.rotation.z=0;}else{current+=(target-current)*Math.min(1,step*3);reserveCurrent+=(reserveTarget-reserveCurrent)*Math.min(1,step*3);}const depth=Math.max(.03,current*(BASIN.top-BASIN.bottom));reservoir.scale.y=depth;reservoir.position.y=BASIN.bottom+depth/2;reserve.scale.y=Math.max(.03,reserveCurrent*12);reserve.position.y=BASIN.bottom+reserve.scale.y/2;
+      remaining=Math.max(0,remaining-step);pulse.visible=remaining>0&&!quiet;if(pulse.visible){phase+=step/3;const n=Math.min(flowPath.length-2,Math.floor(phase*(flowPath.length-1))),a=flowPath[n]!,b=flowPath[n+1]!,u=Math.min(1,phase)*(flowPath.length-1)-n;pulse.position.set(a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u+.5,a[2]+(b[2]-a[2])*u);}
+      if(!quiet)blossoms.rotation.z=Math.sin(t*.7)*.00012;
+      return life.animate(t,step)||Math.abs(current-target)>.001||Math.abs(reserveCurrent-reserveTarget)>.001||remaining>0;
+    },dispose(){group.removeFromParent();life.dispose();owned.forEach(o=>o.dispose());group.clear();}};
 }
