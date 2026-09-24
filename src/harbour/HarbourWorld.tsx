@@ -34,6 +34,7 @@ import type { QueenHost } from "./village/BankScene.ts";
 import { prepareVillageInterior, type VillageInterior } from './village/interior.ts';
 import { VILLAGE_ADDRESS, ROOM_PORTALS } from './village/layout.ts';
 import { VillageHUD } from './village/VillageHUD.tsx';
+import type { CompassFab } from './nav/Compass.tsx';
 import {HARBOUR_WANDERS,type HarbourWanderId} from './village/world.ts';
 import {avatarPreferenceKey,readAvatar,saveAvatar} from './body/avatarPreference.ts';
 import type {PlayableAvatar} from './body/avatarDefinition.ts';
@@ -80,6 +81,8 @@ export type HarbourWorldProps = {
   partnerName?: string | null;
   /** Space, or the compass handle: the App owns the quick sheet. */
   onQuickSheet?: () => void;
+  /** The App's + (FabSpeedDial) wiring for the one bar (S1); absent, the bar has no +. */
+  fab?: CompassFab;
   children?: ReactNode;
 };
 
@@ -978,7 +981,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => navigatePlace(next)} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
-      {(status==="ready"||showFlat)&&!toolOpen&&<VillageHUD place={place} travelling={travelTo} onVisit={visit} onWander={showFlat?undefined:wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={showFlat?undefined:chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
+      {(status==="ready"||showFlat)&&!toolOpen&&<VillageHUD fab={props.fab} onQuickSheet={onQuickSheet} place={place} travelling={travelTo} onVisit={visit} onWander={showFlat?undefined:wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={showFlat?undefined:chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
         presence={status==="ready"?<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />:undefined}/>}
       {status==='ready'&&!toolOpen&&place==='court'&&standing&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating}
         onSettings={skateSettings} onCommand={command=>runtime.current?.body()?.skate?.command(command)} onZonePointer={skateZone}

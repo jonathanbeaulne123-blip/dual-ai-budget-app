@@ -1,15 +1,29 @@
-import { useRef, type CSSProperties, type TouchEvent as ReactTouchEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type TouchEvent as ReactTouchEvent } from "react";
 import { FabSpeedDial } from "../../FabSpeedDial.tsx";
 import type { FabAction, FabAddMode } from "../../core/fabActions.ts";
-import type { HouseRoute } from "../../hearthside/houseRoutes.ts";
+import { MOTION_KEY, chooseMotionEdition, readMotionEdition, type MotionEdition } from "./QuickSheet.tsx";
 import "./harbour-nav.css";
 
 /**
- * The compass — the bottom nav of Little Harbour: Home · Study · Kitchen · Making
- * · Together, with the same `FabSpeedDial` as the classic nav in the centre so
- * the four money verbs are byte-identical. Phone: a 3 | + | 2 grid with the +
- * exactly centred (styles.css:690-700); desktop ≥ 720: a fixed pill bottom-right
- * (houseWorld.css:64). Swipe up, or the "All tools" handle, opens the quick sheet.
+ * The one bar (Simple View Desk S1). The Compass's district row (Home · Study ·
+ * Kitchen · Making · Together and the big All-tools handle) retired from the
+ * harbour: the island's quick-travel bar (`village/VillageHUD.tsx`) is the one
+ * bar now —
+ *
+ *   [Simple view] [⌖ Village map] [Quick travel…] [↗ Look around] [◇ Journey] [+] [All tools]
+ *
+ * District travel survives through Quick travel, the Village map and All tools.
+ *
+ * This file keeps the pieces that bar shares with the App:
+ * - the **edition flip** (`EditionFlip`, `flipMotionEdition`, `useMotionEdition`)
+ *   — the same `hearth:motion` switch the quick sheet has always had;
+ * - the **backtick key** (`useEditionFlipKey`), never Tab;
+ * - `Compass` itself, cut down to the bar's door edition — [Simple view] [+]
+ *   [All tools]. The App mounts it for every household harbour route and it
+ *   steps aside while the island's own bar stands (`useIslandBar`), so it only
+ *   shows with a tool open in front (the door strip), on the Journey surface,
+ *   or while the harbour is still arriving. The + is never more than two
+ *   presses away, and there is only ever one bar.
  */
 export type CompassDistrict = "home" | "study" | "kitchen" | "making" | "together";
 
@@ -24,57 +38,167 @@ export type CompassFab = {
 };
 
 export type CompassProps = {
-  route: Pick<HouseRoute, "room" | "level"> & Partial<Pick<HouseRoute, "surface">>;
-  onHome: () => void;
-  onStudy: () => void;
-  onKitchen: () => void;
-  onMaking: () => void;
-  onTogether: () => void;
   fab: CompassFab;
-  onStatus: () => void;
-  onHercules: () => void;
   onQuickSheet: () => void;
   /** App's `fabOpen`, for the `is-fab-open` class the scrim styles key on. */
   fabOpen?: boolean;
-  hidden?: boolean;
 };
-
-/** Making-district surfaces: the Kiln (pottery), the wardrobe, and Hercules's cottage. */
-const MAKING_SURFACES: ReadonlySet<string> = new Set(["pottery", "wardrobe", "hercules"]);
-
-/** Pure: which district owns the current route. */
-export function compassDistrict(route: CompassProps["route"]): CompassDistrict {
-  if (route.surface && MAKING_SURFACES.has(route.surface)) return "making";
-  // The Campfire is keyed at `making/below` for want of a free room×level slot,
-  // but it stands on the shore in front of the Boathouse and it is where the
-  // month closes: the compass files it under Together, where it belongs.
-  if (route.room === "making" && route.level === "below") return "together";
-  switch (route.room) {
-    case "home": return "home";
-    case "study": return "study";
-    case "kitchen-table": return "kitchen";
-    case "together": return "together";
-    case "making": return "making";
-    default: return "home";
-  }
-}
-
-export const COMPASS_DISTRICTS: readonly { id: CompassDistrict; label: string; aria: string }[] = [
-  { id: "home", label: "Home", aria: "Home — the village square and Fund bank" },
-  { id: "study", label: "Study", aria: "Study — the Library and Glasshouse" },
-  { id: "kitchen", label: "Kitchen", aria: "Kitchen — make a plan" },
-  { id: "making", label: "Making", aria: "Making — the Kiln and Hercules's cottage" },
-  { id: "together", label: "Together", aria: "Together — the Boathouse" },
-];
 
 const TARGET: CSSProperties = { minHeight: 44, minWidth: 44 };
 const SWIPE_UP_PX = 40;
 
+/**
+ * Whether the island's bar is standing. VillageHUD announces itself while it is
+ * mounted with the App's + wired in; the door edition reads it and steps aside.
+ * A count, not a flag, so a remount that overlaps an unmount never strands it.
+ */
+let islandBars = 0;
+const islandListeners = new Set<() => void>();
+function announceIslandBars(): void { for (const listener of islandListeners) listener(); }
+function subscribeIslandBars(listener: () => void): () => void { islandListeners.add(listener); return () => { islandListeners.delete(listener); }; }
+const islandBarStanding = (): boolean => islandBars > 0;
+const noIslandBar = (): boolean => false;
+
+/** VillageHUD: "the one bar is standing here" while `active`. Layout effect, so the door edition never paints beside it. */
+export function useIslandBar(active: boolean): void {
+  useLayoutEffect(() => {
+    if (!active) return;
+    islandBars += 1; announceIslandBars();
+    return () => { islandBars -= 1; announceIslandBars(); };
+  }, [active]);
+}
+
+/** The door edition: is the island's bar standing? */
+export function useIslandBarStanding(): boolean {
+  return useSyncExternalStore(subscribeIslandBars, islandBarStanding, noIslandBar);
+}
+
+/** The key that flips between the two worlds. Never Tab: Tab is focus navigation. */
+export const EDITION_FLIP_KEY = "`";
+
+/** Flip to the other edition and tell the harbour. Returns the edition now chosen. */
+export function flipMotionEdition(storage?: Pick<Storage, "getItem" | "setItem">): MotionEdition {
+  const next: MotionEdition = readMotionEdition(storage) === "flat" ? "illustrated" : "flat";
+  chooseMotionEdition(next, storage);
+  return next;
+}
+
+/** The chosen edition, kept current by the `hearth:motion` event whoever raised it. */
+export function useMotionEdition(storage?: Pick<Storage, "getItem">): MotionEdition {
+  const [edition, setEdition] = useState<MotionEdition>(() => readMotionEdition(storage));
+  useEffect(() => {
+    const sync = (event: Event) => {
+      const detail = (event as CustomEvent<unknown>).detail;
+      setEdition(detail === "flat" || detail === "illustrated" ? detail : readMotionEdition(storage));
+    };
+    window.addEventListener(MOTION_KEY, sync);
+    return () => window.removeEventListener(MOTION_KEY, sync);
+  }, [storage]);
+  return edition;
+}
+
+/** The words on the flip for each edition: Jonathan's "Simple view" out, the Harbour back. */
+export function editionFlipWords(edition: MotionEdition): { label: string; aria: string } {
+  return edition === "flat"
+    ? { label: "Harbour", aria: "Switch to the illustrated harbour" }
+    : { label: "Simple view", aria: "Switch to the simple view" };
+}
+
+/**
+ * The flip button: the bar's left end in both worlds. It is a plain button
+ * whose name says where it goes (not a pressed-state toggle), so a screen
+ * reader hears "Switch to the simple view" and then "Switch to the illustrated
+ * harbour" — never a state it has to translate.
+ */
+export function EditionFlip({ className, storage }: { className?: string; storage?: Pick<Storage, "getItem" | "setItem"> }) {
+  const edition = useMotionEdition(storage);
+  const words = editionFlipWords(edition);
+  return (
+    <button
+      type="button"
+      className={`edition-flip${className ? ` ${className}` : ""}`}
+      style={TARGET}
+      data-edition-flip={edition}
+      aria-label={words.aria}
+      title={`${words.label} (\`)`}
+      onClick={() => flipMotionEdition(storage)}
+    >
+      <b aria-hidden="true">{edition === "flat" ? "≋" : "▤"}</b> <span>{words.label}</span>
+    </button>
+  );
+}
+
+/** Pure: would a key typed here be typing? Inputs, textareas, selects, contenteditable, textboxes. */
+export function isTypingTarget(target: EventTarget | null): boolean {
+  if (!target || typeof (target as Element).closest !== "function") return false;
+  const element = target as HTMLElement;
+  if (element.isContentEditable) return true;
+  return element.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"]), [role="textbox"], [role="combobox"], [role="searchbox"]') !== null;
+}
+
+/**
+ * Pure: should this keydown flip the edition? Only the backtick, with no
+ * modifier (Shift is allowed: some layouts need it), never a repeat or an IME
+ * composition, never while typing, and never inside a modal dialog — a dialog
+ * that traps focus owns its keys, and the world must not turn under it.
+ */
+export function editionKeyShouldFlip(event: Pick<KeyboardEvent, "key" | "ctrlKey" | "metaKey" | "altKey" | "repeat" | "isComposing" | "defaultPrevented" | "target">): boolean {
+  if (event.key !== EDITION_FLIP_KEY) return false;
+  if (event.ctrlKey || event.metaKey || event.altKey || event.repeat || event.isComposing || event.defaultPrevented) return false;
+  const targets = [event.target, typeof document === "undefined" ? null : document.activeElement];
+  for (const target of targets) {
+    if (isTypingTarget(target)) return false;
+    if (target && typeof (target as Element).closest === "function" && (target as Element).closest('[aria-modal="true"], dialog[open]')) return false;
+  }
+  return true;
+}
+
+/** Listen for the backtick while `enabled`. The App owns this so it works over the island and on every door. */
+export function useEditionFlipKey(enabled: boolean, storage?: Pick<Storage, "getItem" | "setItem">): void {
+  useEffect(() => {
+    if (!enabled) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (!editionKeyShouldFlip(event)) return;
+      event.preventDefault();
+      flipMotionEdition(storage);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [enabled, storage]);
+}
+
+/**
+ * The bar's + : the App's own FabSpeedDial, byte-identical verbs. Whichever
+ * edition of the bar carries it, a + that leaves while open tells the App it
+ * shut, so the App's `fabOpen` (which hides the fund ledge) is never stranded.
+ */
+export function BarFab({ fab }: { fab: CompassFab }) {
+  const onOpenChange = useRef(fab.onOpenChange); onOpenChange.current = fab.onOpenChange;
+  const open = useRef(false);
+  const change = useCallback((next: boolean) => { open.current = next; onOpenChange.current(next); }, []);
+  useEffect(() => () => { if (open.current) onOpenChange.current(false); }, []);
+  return (
+    <FabSpeedDial
+      closed={fab.closed}
+      actions={fab.actions}
+      closedLabel={fab.closedLabel}
+      onOpenChange={change}
+      onPick={fab.onPick}
+      onGo={fab.onGo}
+    />
+  );
+}
+
+/**
+ * The bar's door edition: [Simple view] [+] [All tools]. It renders nothing
+ * while the island's own bar is standing, and stands in for it otherwise (a
+ * tool open in front, the Journey surface, the harbour still arriving). Swipe
+ * up, or All tools, opens the quick sheet — every place and every tool.
+ */
 export function Compass(props: CompassProps) {
-  const { route, fab, onQuickSheet, fabOpen = false, hidden = false } = props;
-  const current = compassDistrict(route);
+  const { fab, onQuickSheet, fabOpen = false } = props;
   const touchStart = useRef<{ x: number; y: number } | null>(null);
-  const go: Record<CompassDistrict, () => void> = { home: props.onHome, study: props.onStudy, kitchen: props.onKitchen, making: props.onMaking, together: props.onTogether };
+  const islandBar = useIslandBarStanding();
 
   function onTouchStart(event: ReactTouchEvent) {
     const touch = event.touches[0];
@@ -88,52 +212,28 @@ export function Compass(props: CompassProps) {
     if (dy <= -SWIPE_UP_PX && Math.abs(dx) < Math.abs(dy)) onQuickSheet();
   }
 
-  const button = (district: CompassDistrict, label: string, aria: string) => (
-    <button
-      key={district}
-      type="button"
-      className={`compass__district compass__district--${district}${current === district ? " active" : ""}`}
-      style={TARGET}
-      data-compass-district={district}
-      aria-label={aria}
-      aria-current={current === district ? "page" : undefined}
-      onClick={go[district]}
-    >
-      {label}
-    </button>
-  );
-
+  if (islandBar) return null;
   return (
     <nav
-      className={`nav compass${fabOpen ? " is-fab-open" : ""}`}
+      className={`nav compass harbour-bar${fabOpen ? " is-fab-open" : ""}`}
       data-ledger-nav="shared"
-      data-compass={current}
-      aria-label="Compass"
-      hidden={hidden || undefined}
+      data-harbour-bar="door"
+      aria-label="Harbour bar"
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
     >
+      <EditionFlip className="harbour-bar__flip" />
+      <BarFab fab={fab} />
       <button
         type="button"
-        className="compass__handle"
+        className="harbour-bar__tools"
         style={TARGET}
         aria-label="All tools"
         title="All tools (swipe up or press Space)"
         onClick={onQuickSheet}
       >
-        <span aria-hidden="true" className="compass__handle-bar" />
-        <span className="compass__handle-text">All tools</span>
+        <b aria-hidden="true">☰</b> <span>All tools</span>
       </button>
-      {COMPASS_DISTRICTS.slice(0, 3).map(({ id, label, aria }) => button(id, label, aria))}
-      <FabSpeedDial
-        closed={fab.closed}
-        actions={fab.actions}
-        closedLabel={fab.closedLabel}
-        onOpenChange={fab.onOpenChange}
-        onPick={fab.onPick}
-        onGo={fab.onGo}
-      />
-      {COMPASS_DISTRICTS.slice(3).map(({ id, label, aria }) => button(id, label, aria))}
     </nav>
   );
 }

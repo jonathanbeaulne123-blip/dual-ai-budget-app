@@ -16,7 +16,7 @@ import { KitchenFolio } from "./house/KitchenFolio.tsx";
 import { HouseWorld } from './house/HouseWorld.tsx';
 import { HARBOUR_ENABLED, harbourOwnsRoute, harbourPlaceFor } from './harbour/flag.ts';
 import { harbourArrivalRoute, tabSession } from './harbour/nav/arrival.ts';
-import { Compass } from './harbour/nav/Compass.tsx';
+import { Compass, useEditionFlipKey, type CompassFab } from './harbour/nav/Compass.tsx';
 import { QuickSheet } from './harbour/nav/QuickSheet.tsx';
 import { HarbourFlat } from './harbour/flat/PlaceFlat.tsx';
 import { PersonalJourney } from './house/PersonalJourney.tsx';
@@ -3544,6 +3544,8 @@ export function App() {
   const memberId = session?.memberId ?? household?.members.find((member) => member.active)?.id ?? "";
 
   const view: LedgerView = session?.view ?? "household";
+  // The backtick flips between the two worlds (Simple View Desk S1); never Tab, never while typing.
+  useEditionFlipKey(HARBOUR_ENABLED && view === "household" && Boolean(household && session));
   const workspaceCapabilityEnabled = import.meta.env.VITE_HERCULES_WORKSPACE === "1";
   const appearance = useAppearance();
   useAppearanceBinding(environment, household && session ? sceneTabFor(tab) : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
@@ -7014,6 +7016,8 @@ export function App() {
         ))}
       </div>
   );
+  /** The one bar's + (S1): the same FabSpeedDial wiring on the island's bar and on its door edition. */
+  const harbourBarFab: CompassFab = {closed:adding,actions:fabActionsFor(view,tab),closedLabel:fabClosedLabel(view),onOpenChange:setFabOpen,onPick:(nextMode)=>openAddFor(null,nextMode),onGo:(nextTab)=>goTab(nextTab)};
 
   return (
     <HearthsideDesignProvider key={ledgerRenderScopeKey} household={household} memberId={session.memberId} identity={ledgerRenderScopeKey} source={()=>ledgerSyncRef.current}><WornLookContext.Provider value={import.meta.env.VITE_HERCULES_DRESSING_ROOM==='1'&&household.companionProfile?.scope.memberId===session.memberId?household.companionProfile.wornLook.value:null}><div className="app" data-house-world={HOUSE_WORLD_ENABLED||undefined} data-harbour-court={harbourOwnsRoute(activeHouseRoute,view)&&!activeHouseRoute.surface||undefined} data-harbour-door={harbourOwnsRoute(activeHouseRoute,view)&&Boolean(activeHouseRoute.surface)||undefined} data-ledger-mode={view} data-ledger-tab={tab} data-world-home={queenWorldHome ? "true" : undefined} data-books-readiness={booksReadiness.phase} data-ledger-live={useLedgerSync && realtimeStatus === "SUBSCRIBED"} data-ledger-transaction-count={household.transactions.length}>
@@ -7205,7 +7209,7 @@ export function App() {
       {!harbourOwnsRoute(activeHouseRoute,view)&&householdSwitcherNode}
       {!harbourOwnsRoute(activeHouseRoute,view)&&spaceSwitchNode}
       {!HOUSE_WORLD_ENABLED&&HEARTHSIDE_FLAGS.presentation&&view==="household"&&<HouseShell route={activeHouseRoute} onNavigate={goHouse} condition={houseCondition}/>}
-      {HOUSE_WORLD_ENABLED&&(harbourOwnsRoute(activeHouseRoute,view)?<Suspense fallback={<HarbourFlat place={harbourPlaceFor(activeHouseRoute,view,true)??"court"} reading={null} status="loading"/>}><HarbourWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onNavigateLocation={navigateHouseSurface} onJourney={()=>goTab("plan",undefined,{route:{householdId:household.householdId,scope:"household",room:"kitchen-table",level:"above",surface:"journey",object:"harbour-return",time:harbourJourneyAnchor(household,today).date},history:"push"})} onArrange={operation=>commitVillageArrangement(runKitchen,actorId,operation)} onOpen={openHouseObject} onClose={putHouseObjectBack} presence={softPresenceDisplay} onUnhide={()=>applySoftPresenceOptOut(false)} partnerName={household.members.find(member=>member.id!==session.memberId)?.name??null} onQuickSheet={()=>setQuickSheetOpen(true)}/></Suspense>:<HouseWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack}/>)}
+      {HOUSE_WORLD_ENABLED&&(harbourOwnsRoute(activeHouseRoute,view)?<Suspense fallback={<HarbourFlat place={harbourPlaceFor(activeHouseRoute,view,true)??"court"} reading={null} status="loading"/>}><HarbourWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onNavigateLocation={navigateHouseSurface} onJourney={()=>goTab("plan",undefined,{route:{householdId:household.householdId,scope:"household",room:"kitchen-table",level:"above",surface:"journey",object:"harbour-return",time:harbourJourneyAnchor(household,today).date},history:"push"})} onArrange={operation=>commitVillageArrangement(runKitchen,actorId,operation)} onOpen={openHouseObject} onClose={putHouseObjectBack} presence={softPresenceDisplay} onUnhide={()=>applySoftPresenceOptOut(false)} partnerName={household.members.find(member=>member.id!==session.memberId)?.name??null} onQuickSheet={()=>setQuickSheetOpen(true)} fab={charterTakeoverVisible?undefined:harbourBarFab}/></Suspense>:<HouseWorld household={household} memberId={actorId} scope={view} today={today} route={activeHouseRoute} ready={activeBooksGate.ready} freshness={syncFreshnessDisplay.statusSummary} interpretationGate={sceneInterpretationGate} onNavigate={goHouse} onOpen={openHouseObject} onClose={putHouseObjectBack}/>)}
       <div data-app-page="true" data-house-resting={HOUSE_WORLD_ENABLED&&!houseToolsVisible&&!adding&&!swipeOpen&&!confirm&&!guard&&!commandOpen||undefined}>
         {HOUSE_WORLD_ENABLED&&houseToolsVisible&&<header className="house-tool-heading"><h2 tabIndex={-1} id="house-tool-title">{TARGET_NAMES[activeHouseRoute.surface??""]??HOUSE_PLACES[activeHouseRoute.room][activeHouseRoute.level].title}</h2><button onClick={putHouseObjectBack}>Put it back</button></header>}
         <div className={hearthsideOpen ? "hearthside-page" : "world-page"}>
@@ -9187,7 +9191,7 @@ export function App() {
       ) : null}
 
       {!charterTakeoverVisible ? (
-      HARBOUR_ENABLED&&view==="household"?<><Compass route={activeHouseRoute} onHome={()=>goHouse("home","middle")} onStudy={()=>goHouse("study","middle")} onKitchen={()=>goHouse("kitchen-table","middle")} onMaking={()=>goHouse("making","above")} onTogether={()=>goHouse("together","middle")} fab={{closed:adding,actions:fabActionsFor(view,tab),closedLabel:fabClosedLabel(view),onOpenChange:setFabOpen,onPick:(nextMode)=>openAddFor(null,nextMode),onGo:(nextTab)=>goTab(nextTab)}} fabOpen={fabOpen} onStatus={()=>goTab("more")} onHercules={()=>openLegacyHercules()} onQuickSheet={()=>setQuickSheetOpen(true)}/><QuickSheet open={quickSheetOpen} onClose={()=>setQuickSheetOpen(false)} onOpen={(id)=>{setQuickSheetOpen(false);openHouseObject(id);}} onStatus={()=>{setQuickSheetOpen(false);goTab("more");}} onHercules={()=>{setQuickSheetOpen(false);openLegacyHercules();}} spaceSwitch={spaceSwitchNode} householdSwitcher={householdSwitcherNode} current={activeHouseRoute.surface??null}/></>:
+      HARBOUR_ENABLED&&view==="household"?<><Compass fab={harbourBarFab} fabOpen={fabOpen} onQuickSheet={()=>setQuickSheetOpen(true)}/><QuickSheet open={quickSheetOpen} onClose={()=>setQuickSheetOpen(false)} onOpen={(id)=>{setQuickSheetOpen(false);openHouseObject(id);}} onStatus={()=>{setQuickSheetOpen(false);goTab("more");}} onHercules={()=>{setQuickSheetOpen(false);openLegacyHercules();}} spaceSwitch={spaceSwitchNode} householdSwitcher={householdSwitcherNode} current={activeHouseRoute.surface??null}/></>:
       <nav className={`nav${fabOpen ? " is-fab-open" : ""}`} data-ledger-nav={view === "household" ? "shared" : "personal"} data-house-navigation={houseNavigationActive || undefined} aria-label={houseNavigationActive ? "Hearth utilities" : "Hearth"}>
         {HOUSE_WORLD_ENABLED&&<button className="house-companion-door" onClick={()=>openLegacyHercules()}>Hercules</button>}
         {houseNavigationActive && HOUSE_ROOMS.map(room => <button key={room} type="button" className={`house-nav-phone house-nav-phone--${room}`} aria-label={room === "kitchen-table" ? "Kitchen Table" : room === "together" ? "Together" : room[0]!.toUpperCase() + room.slice(1)} aria-current={activeHouseRoute.room === room ? "page" : undefined} onClick={() => goHouse(room, activeHouseRoute.room === room ? activeHouseRoute.level : "middle")}>{room === "kitchen-table" ? "Kitchen" : room === "together" ? "Together" : room[0]!.toUpperCase() + room.slice(1)}</button>)}
