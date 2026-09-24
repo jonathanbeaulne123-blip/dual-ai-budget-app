@@ -53,6 +53,8 @@ export function houseToolPlace(route: HouseRoute): Pick<HouseRoute,'room'|'level
 export function houseTabForRoute(route: HouseRoute): AppTab {
   if(route.surface==='conversation'||route.surface==='hercules')return 'hercules';
   if(route.surface==='more'||route.surface==='status')return 'more';
+  // Shifts is not a house object: it opens the Shifts page wherever you stand (the personal Desk's plates and the quick sheet).
+  if(route.surface==='shift')return 'shift';
   const {room,level}=houseToolPlace(route);
   if(room==='home')return 'home';
   if(room==='study')return level==='above'?'planner':level==='middle'?'ledger':'calendar';
@@ -96,4 +98,4 @@ export const HOUSE_PLACES = {
   together: {above: {title:"Conservatory", subtitle:"Give an idea a little light", target:"wishes"}, middle: {title:"Common room", subtitle:"Make something. Leave a letter. Be here together.", target:"pottery"}, below: {title:"Theatre", subtitle:"Keep the parts of life you choose to remember", target:"memories"}},
   making: {above: {title:"The Kiln", subtitle:"Wheel, bench and a shelf of fired pieces", target:"pottery"}, middle: {title:"Hercules’s Cottage", subtitle:"Wardrobe, mirror, cabinet of wonders, and the bell by the door", target:"wardrobe"}, below: {title:"The cabinet of wonders", subtitle:"The looks and keepsakes he keeps on his shelves", target:"wardrobe"}},
 } as const;
-export const TARGET_NAMES: Record<string,string> = {queen:"Meet the Queen", "loft-banks":"Open Kitty Banks", "cellar-bills":"Read the bill jars", books:"Open the Standing Book", planner:"Open the Master Planner", calendar:"Unfold the Calendar", journey:"Step into Journey", conversation:"Open the conversation folio", "plan-studio":"Pull out the Plan Studio", wishes:"Tend a wish", pottery:"Enter the Pottery Studio", memories:"Open a memory", letters:"Open the writing desk", projector:"Choose three memories", hercules:"Talk with Hercules", encounters:"Spend a moment together", wardrobe:"Open the dressing room"};
+export const TARGET_NAMES: Record<string,string> = {queen:"Meet the Queen", "loft-banks":"Open Kitty Banks", "cellar-bills":"Read the bill jars", books:"Open the Standing Book", planner:"Open the Master Planner", calendar:"Unfold the Calendar", journey:"Step into Journey", conversation:"Open the conversation folio", "plan-studio":"Pull out the Plan Studio", wishes:"Tend a wish", pottery:"Enter the Pottery Studio", memories:"Open a memory", letters:"Open the writing desk", projector:"Choose three memories", hercules:"Talk with Hercules", encounters:"Spend a moment together", wardrobe:"Open the dressing room", shift:"Open Shifts"};

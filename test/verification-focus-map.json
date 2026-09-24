@@ -1386,7 +1386,7 @@
         "src/harbour/data/reading.ts",
         "src/harbour/data/useHarbourReading.ts",
         "src/harbour/flag.ts",
-        "src/harbour/flat/CourtFlat.tsx",
+        "src/harbour/flat/DoorSign.tsx",
         "src/harbour/flat/PlaceFlat.tsx",
         "src/harbour/harbour.css",
         "src/harbour/nav/Compass.tsx",
@@ -1402,6 +1402,8 @@
         "src/harbour/scene/runtime.ts",
         "src/harbour/scene/travel.ts",
         "src/harbour/tower/TowerScene.ts",
+        "src/harbour/village/VillageHUD.tsx",
+        "src/harbour/village/village.css",
         "src/house/world/rendererOwner.ts"
       ],
       "tests": [
@@ -1413,7 +1415,8 @@
         "test/harbour-compass-ui.test.ts",
         "test/harbour-door-signs.test.ts",
         "test/harbour-dressing.test.ts",
-        "test/harbour-place-flat-ui.test.ts",
+        "test/harbour-one-bar.test.ts",
+        "test/harbour-flat-parity.test.ts",
         "test/harbour-queen-touch.test.ts",
         "test/harbour-quick-sheet-ui.test.ts",
         "test/harbour-reading.test.ts",

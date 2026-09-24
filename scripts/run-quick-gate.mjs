@@ -225,6 +225,7 @@ export async function main(argv = process.argv.slice(2)) {
     }
     const plan = planQuickTests({
       changedFiles: files,
+      deletedFiles: files.filter((path) => !existsSync(resolve(root, path))),
       explicitFocus: focus,
       focusReason: options.focusReason,
       mappedTests: mapped.tests,

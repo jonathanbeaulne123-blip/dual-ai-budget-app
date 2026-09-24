@@ -109,28 +109,17 @@
 .harbour-spark span { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 50% 50% 50% 0; background: var(--spark, #e39bae); opacity: 0; transform: rotate(calc(var(--i) * 60deg)) translateY(-6px); animation: harbour-petal 600ms ease-out forwards; }
 @keyframes harbour-petal { 0% { opacity: .95; transform: rotate(calc(var(--i) * 60deg)) translateY(-4px) scale(.6); } 100% { opacity: 0; transform: rotate(calc(var(--i) * 60deg + 40deg)) translateY(-34px) scale(1); } }
 
-/* ── The reading edition: the same objects, as buttons. ── */
+/* ── The light flat frame (SIMPLE_VIEW_DESK S6): the Suspense / loading frame and
+   the band behind an open tool. At rest the Desk is the flat world (desk/desk.css). ── */
 .court-flat { position: relative; min-height: calc(100dvh - var(--harbour-nav, 76px)); background: #e8dcc4; color: #332d24; }
 .court-flat--taylor { background: #f2e3ea; color: #47373e; }
 .court-flat--newfoundland { background: #dfe9ec; color: #243e45; }
 .court-flat--overlay { position: absolute; inset: 0; z-index: 5; min-height: 0; }
-.court-flat__scene { display: block; width: 100%; height: clamp(220px, 38dvh, 360px); }
-.court-flat--overlay .court-flat__scene { height: 100%; position: absolute; inset: 0; }
 .court-flat--overlay .court-flat__sheet { position: absolute; inset: auto 0 0 0; max-height: 62%; overflow: auto; background: linear-gradient(180deg, transparent, color-mix(in srgb, var(--paper, #f7efdc) 92%, transparent) 26px); }
-.court-flat__sheet { display: grid; gap: 12px; padding: 12px clamp(14px, 3vw, 40px) 24px; max-width: 1100px; margin: 0 auto; }
+.court-flat__sheet { display: grid; gap: 14px; padding: 12px clamp(14px, 3vw, 40px) 24px; max-width: 1100px; margin: 0 auto; }
 .court-flat__status { margin: 0; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; opacity: .7; }
-.court-flat__plate, .court-flat__sundial, .court-flat__mailbox { display: grid; gap: 2px; width: 100%; min-height: 56px; padding: 10px 14px; text-align: left; font: inherit; color: inherit; background: #fff8e6cc; border: 1px solid #8f7d6055; border-radius: 6px; cursor: pointer; }
-.court-flat button:focus-visible { outline: 3px solid #126fb1; outline-offset: 3px; }
 .court-flat small { font-size: 11px; letter-spacing: .04em; opacity: .8; }
 .court-flat strong { font: 500 clamp(20px, 2.4vw, 30px)/1.1 var(--display, Georgia, serif); font-variant-numeric: tabular-nums; }
-.court-flat span { font-size: 12px; }
-.court-flat__stone--everyday .court-flat__plate { background: #fff8e6ee; border-width: 2px; }
-.court-flat__stone--everyday .court-flat__plate strong { font-size: clamp(32px, 4.6vw, 48px); }
-.court-flat__plinths { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 0; padding: 0; list-style: none; }
-.court-flat__gate { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: start; }
-.court-flat__mailbox[data-flag="up"] { border-color: #c9503c; box-shadow: inset 4px 0 0 #c9503c; }
-.court-flat__slip { grid-column: 1 / -1; margin: 0; padding: 10px 14px; list-style: none; font-size: 13px; line-height: 1.5; background: #fff8e6aa; border-left: 3px solid #8f7d60; }
-.court-flat__partner, .court-flat__condition { grid-column: 1 / -1; margin: 0; font-size: 12px; opacity: .8; }
 
 /* Walk together: the consent switch for being seen walking. It stands at the
    top of the stage's left-hand column, above the walking invitation, so no
@@ -160,8 +149,6 @@
   .app:is([data-harbour-court], [data-harbour-door]) .topbar .pill { font-size: 11px; padding: 5px 10px; }
   .app:is([data-harbour-court], [data-harbour-door]) .sync-freshness { left: 10px; top: 8px; max-width: calc(100vw - 150px); font-size: 0.68rem; min-height: 30px; padding: 3px 8px; }
   .court-flat__sheet { padding-inline: 12px; }
-  .court-flat__plinths { grid-template-columns: 1fr; }
-  .court-flat__gate { grid-template-columns: 1fr; }
   .harbour-world__put-back { left: 14px; bottom: 14px; font-size: 12px; }
   /* The compass handle rises 22px above the bar; her line sits well above it. */
   .harbour-world__phrase { bottom: 70px; font-size: 14px; }
@@ -178,7 +165,7 @@
 @media (max-width: 359px) { .app:is([data-harbour-court], [data-harbour-door]) .sync-freshness { max-width: calc(100vw - 130px); } }
 
 /* ── Reduced motion: cuts, no breathing, no spark, no easing anywhere in the shell. ── */
-/* The door sign in the reading edition (W5 #3): the same words the plate on
+/* The door sign on the light flat frame (W5 #3): the same words the plate on
    the path is engraved with, so the page and the island never disagree. */
 .place-flat__sign { display: flex; flex-direction: column; gap: 1px; margin: 0 0 10px; padding: 8px 12px; border-radius: 8px; background: rgba(0, 0, 0, .05); border: 1px solid rgba(0, 0, 0, .08); }
 .place-flat__sign > small { font-size: .74em; letter-spacing: .04em; text-transform: uppercase; opacity: .62; }
@@ -210,38 +197,6 @@
   .harbour-spark { display: none; }
 }
 
-/* ---- the tower and the cellar, read (BUILD_PLAN_SLICE2 §5) --------------- */
-.place-flat .court-flat__sheet { gap: 14px; }
-.place-flat__stair, .place-flat__today { justify-self: start; min-height: 44px; font: inherit; font-size: 13px; padding: 8px 18px; background: #fff8e6cc; color: inherit; border: 1px solid #8f7d6055; border-radius: 30px; cursor: pointer; }
-.place-flat__today:disabled { opacity: .55; cursor: default; }
-.place-flat__landing { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
-.place-flat__landing .court-flat__plate:disabled { opacity: .7; cursor: default; }
-.place-flat__shelves, .place-flat__banks, .place-flat__jars { margin: 0; padding: 0; list-style: none; }
-.place-flat__shelves { display: grid; gap: 14px; }
-.place-flat__shelf-mark { margin: 0 0 6px; font-size: 11px; letter-spacing: .04em; text-transform: uppercase; opacity: .75; }
-.place-flat__banks, .place-flat__jars { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
-.place-flat__empty { margin: 0; padding: 12px 14px; font-size: 13px; background: #fff8e6aa; border-left: 3px solid #8f7d60; }
-.place-flat__water { display: grid; gap: 8px; padding: 12px 14px; background: #fff8e6aa; border: 1px solid #8f7d6055; border-radius: 6px; }
-.place-flat__waterline { display: grid; gap: 2px; margin: 0; }
-.place-flat__scrub-label { font-size: 11px; letter-spacing: .04em; text-transform: uppercase; opacity: .8; }
-/* The Glasshouse read as paper: three benches, each pot a real button. */
-.place-flat__bench h3 { margin: 10px 0 6px; font: 600 15px/1.3 var(--display, Georgia, serif); }
-.place-flat__pots { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-.place-flat__pots button { display: grid; gap: 2px; width: 100%; min-height: 44px; text-align: left; font: inherit; font-size: 13px; padding: 9px 12px; background: #fff8e6cc; color: inherit; border: 1px solid #8f7d6055; border-radius: 8px; cursor: pointer; }
-.place-flat__pots button span { font-size: 11.5px; opacity: .78; }
-.place-flat__line { margin: 10px 0 0; padding: 10px 12px; font-size: 13px; background: #fff8e6aa; border-left: 3px solid #8f7d60; }
-.place-flat__doors { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
-.place-flat__doors button { min-height: 44px; font: inherit; font-size: 13px; padding: 9px 18px; background: #fff8e6cc; color: inherit; border: 1px solid #8f7d6055; border-radius: 30px; cursor: pointer; }
-.place-flat__scrub { width: 100%; min-height: 44px; accent-color: #4f98aa; }
-.place-flat__scrub:focus-visible { outline: 3px solid #126fb1; outline-offset: 3px; }
-.place-flat__jars .court-flat__plate[data-jar-state="paid"] { opacity: .68; }
-.place-flat__jars .court-flat__plate[data-jar-state="set-aside"] { border-color: #6d7f4f; box-shadow: inset 4px 0 0 #6d7f4f; }
-.place-flat__jars .court-flat__plate[data-jar-state="short"] { border-color: #c9503c; box-shadow: inset 4px 0 0 #c9503c; }
-
-@media (max-width: 719px) {
-  .place-flat__banks, .place-flat__jars, .place-flat__landing { grid-template-columns: 1fr; }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .place-flat *, .harbour-world__stair { transition: none !important; animation: none !important; }
+  .harbour-world__stair { transition: none !important; animation: none !important; }
 }

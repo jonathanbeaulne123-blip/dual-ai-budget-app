@@ -1,76 +1,38 @@
-/* Little Harbour · compass + quick sheet. Colours come from theme tokens only. */
+/* Little Harbour · the bar's door edition + quick sheet. Colours come from theme tokens only. */
 
-/* ── Compass (phone): 3 | + | 2 with the + exactly centred, like the personal nav. ── */
-.nav.compass {
-  grid-template-columns: 1fr 1fr 1fr 56px 1.5fr 1.5fr;
+/* ── The one bar (Simple View Desk S1). The Compass's district row retired; the
+      island's quick-travel bar (village/village.css) is the one bar. What is
+      left here is the bar's door edition — [Simple view] [+] [All tools] —
+      which stands in only while the island's bar cannot: a tool open in front,
+      the Journey, or the harbour still arriving. Phone: flip | + | All tools
+      with the + exactly centred; desktop ≥ 720: the pill bottom-right. ── */
+.nav.compass.harbour-bar {
+  grid-template-columns: 1fr 56px 1fr;
   grid-template-rows: auto;
-  align-items: end;
+  align-items: center;
   background: color-mix(in srgb, var(--paper) 90%, transparent);
   border-top: 1px solid var(--line);
   padding-top: 4px;
 }
-.nav.compass .compass__district {
+.nav.compass.harbour-bar > .edition-flip { grid-column: 1; }
+.nav.compass.harbour-bar > .fab-dial { grid-column: 2; grid-row: 1; }
+.nav.compass.harbour-bar > .harbour-bar__tools { grid-column: 3; }
+.nav.compass.harbour-bar > :is(.edition-flip, .harbour-bar__tools) {
   grid-row: 1;
   justify-content: center;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.1;
-  padding: 0 2px;
+  padding: 0 4px;
   border-radius: 12px;
-  color: var(--muted);
+  color: var(--ink);
 }
-.nav.compass .compass__district.active,
-.nav.compass .compass__district[aria-current="page"] { color: var(--ink); }
-.nav.compass .compass__district[aria-current="page"]::after {
-  content: "";
-  display: block;
-  width: 18px;
-  height: 3px;
-  margin-top: 1px;
-  border-radius: 3px;
-  background: var(--theme-accent, var(--pine));
-}
-.nav.compass .compass__district--home { grid-column: 1; }
-.nav.compass .compass__district--study { grid-column: 2; }
-.nav.compass .compass__district--kitchen { grid-column: 3; }
-.nav.compass > .fab-dial { grid-column: 4; grid-row: 1; }
-.nav.compass .compass__district--making { grid-column: 5; }
-.nav.compass .compass__district--together { grid-column: 6; }
+.nav.compass.harbour-bar b { font-size: 18px; font-weight: 500; line-height: 1; }
 
-/* The quick-sheet handle: a 44px target that sits on the top edge, drawn as a slim bar. */
-.nav.compass .compass__handle {
-  position: absolute;
-  top: -22px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 96px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--muted);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 2px;
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  z-index: 3;
-}
-.nav.compass .compass__handle-bar {
-  display: block;
-  width: 36px;
-  height: 4px;
-  border-radius: 4px;
-  background: color-mix(in srgb, var(--ink) 35%, var(--paper));
-}
-.nav.compass .compass__handle-text { padding-bottom: 2px; }
-.nav.compass .compass__handle:focus-visible { outline: 2px solid var(--pine); outline-offset: 2px; border-radius: 10px; }
+/* While the island's bar stands the harbour stage runs to the foot of the screen. */
+:root .app[data-harbour-court] { --harbour-nav: 0px; }
 
-/* ── Compass (desktop ≥ 720): a fixed pill bottom-right, like houseWorld.css:64. ── */
 @media (min-width: 720px) {
-  .nav.compass {
+  .nav.compass.harbour-bar {
     position: fixed;
     left: auto;
     right: 20px;
@@ -86,21 +48,10 @@
     background: var(--card);
     box-shadow: var(--shadow);
   }
-  .nav.compass .compass__district { font-size: 11px; padding: 0 6px; }
-  .nav.compass .fab { margin-top: 0; width: 46px; height: 46px; }
-  .nav.compass .compass__handle {
-    position: static;
-    transform: none;
-    width: auto;
-    order: 9;
-    flex-direction: row;
-    gap: 6px;
-    padding: 0 6px;
-    border-left: 1px solid var(--line);
-    border-radius: 0;
-  }
-  .nav.compass .compass__handle-bar { width: 14px; height: 14px; border-radius: 4px; border: 2px solid currentColor; background: none; box-sizing: border-box; }
-  .nav.compass .compass__handle-text { padding: 0; }
+  .nav.compass.harbour-bar > :is(.edition-flip, .harbour-bar__tools) { flex-direction: row; gap: 6px; font-size: 12px; padding: 0 8px; }
+  .nav.compass.harbour-bar > .edition-flip { order: -1; }
+  .nav.compass.harbour-bar > .harbour-bar__tools { order: 9; border-left: 1px solid var(--line); border-radius: 0; padding-left: 14px; }
+  .nav.compass.harbour-bar .fab { margin-top: 0; width: 46px; height: 46px; }
 }
 
 /* ── Quick sheet ── */
@@ -180,5 +131,93 @@
 .quick-sheet__place[aria-current="true"] { outline: 2px solid currentColor; outline-offset: -2px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .quick-sheet__panel, .nav.compass { transition: none; animation: none; }
+  .quick-sheet__panel, .nav.compass, .edition-flip { transition: none; animation: none; }
 }
+
+/* ── Personal scope's flip (Simple View Desk S5). Personal has no harbour, so
+      its bar is the house's room bar with the same Simple-view flip at its left
+      end. While the Desk stands its chips are the rooms, and the bar is
+      flip · Hercules · + · Status — the + still two presses from any money verb.
+      Over the illustrated house on a phone the seven room slots are full, so
+      the flip rides just above the bar's left end rather than squeezing every
+      target under 44px. ── */
+.nav[data-edition-nav] > .house-nav-flip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; min-width: 44px; padding: 0 6px; border-radius: 12px; color: var(--ink); font-size: 10px; line-height: 1.1; }
+.nav[data-edition-nav] > .house-nav-flip b { font-size: 16px; font-weight: 500; line-height: 1; }
+.app[data-house-world] .nav[data-house-navigation][data-edition-nav] > button.house-nav-flip.edition-flip { grid-column: 1; grid-row: 1; }
+.app[data-house-world] .nav[data-house-navigation][data-edition-nav="desk"] { grid-template-columns: repeat(2, minmax(44px, 1fr)) 56px repeat(2, minmax(44px, 1fr)); }
+.app[data-house-world] .nav[data-house-navigation][data-edition-nav="desk"] > .house-companion-door { display: flex; grid-column: 2; grid-row: 1; }
+.app[data-house-world] .nav[data-house-navigation][data-edition-nav="desk"] > .fab-dial { grid-column: 3; grid-row: 1; }
+.app[data-house-world] .nav[data-house-navigation][data-edition-nav="desk"] > button:not(.house-nav-flip):not(.house-companion-door) { grid-column: 4 / span 2; grid-row: 1; }
+@media (max-width: 719px) {
+  .app[data-house-world] .nav[data-house-navigation][data-edition-nav="house"] > button.house-nav-flip.edition-flip {
+    position: absolute; left: 8px; bottom: calc(100% + 8px);
+    flex-direction: row; gap: 6px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--card); box-shadow: var(--shadow, 0 4px 14px rgb(0 0 0 / .14)); font-size: 12px; font-weight: 600;
+  }
+  .app[data-house-world] .nav.is-fab-open[data-edition-nav="house"] > :is(.house-nav-flip, .house-companion-door) { visibility: hidden; }
+  /* Five rooms, the +, Hercules and Status are eight targets for seven 44px slots: Making used to fall
+     into an implicit eighth column and push the bar past a 320px screen (S7). Hercules rides above the
+     bar's right end, as the flip rides above its left, and Making takes the sixth slot. */
+  .app[data-house-world] .nav[data-house-navigation][data-edition-nav="house"] > .house-companion-door {
+    position: absolute; right: 8px; bottom: calc(100% + 8px); grid-column: auto; grid-row: auto; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 14px;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); box-shadow: var(--shadow, 0 4px 14px rgb(0 0 0 / .14)); font-size: 12px; font-weight: 600;
+  }
+}
+@media (min-width: 720px) {
+  .app[data-house-world] .nav[data-house-navigation][data-edition-nav] { display: flex; align-items: center; gap: 12px; height: 64px; padding: 5px 16px 5px 12px; }
+  .app[data-house-world] .nav[data-house-navigation][data-edition-nav] > .house-nav-flip { flex-direction: row; gap: 6px; padding: 0 10px; font-size: 12px; }
+  .app[data-house-world] .nav[data-house-navigation][data-edition-nav] .fab { margin-top: 0; width: 46px; height: 46px; }
+}
+
+/* ── The bar's little things (Simple View Desk S7) ──────────────────────────
+   The Simple-view flip wears the household's Everyday "Now", compact; All
+   tools wears a pawprint while Hercules has a fresh suggestion. Both are
+   supplementary: the buttons keep their names and their 44px. ── */
+.edition-flip__figure {
+  display: inline-block; padding: 1px 6px; border-radius: 999px;
+  font: 700 11px/1.3 var(--font, system-ui, sans-serif); font-variant-numeric: tabular-nums lining-nums; letter-spacing: 0;
+  background: color-mix(in srgb, var(--ink, #273b33) 9%, transparent); color: var(--ink, #273b33); white-space: nowrap;
+}
+.nav.compass.harbour-bar > .edition-flip .edition-flip__figure { font-size: 10px; padding: 0 5px; }
+.village-tools .village-tools__flip .edition-flip__figure { margin-left: 6px; background: color-mix(in srgb, currentColor 12%, transparent); color: inherit; }
+@media (max-width: 600px) {
+  /* The island's phone bar is icons only: the figure stands under the flip's icon, inside its 44px. */
+  .village-tools .village-tools__flip:has(.edition-flip__figure) { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0 3px; line-height: 1; }
+  .village-tools .village-tools__flip .edition-flip__figure { margin: 0; padding: 0 3px; font-size: 9.5px; line-height: 1.2; }
+}
+:is(.harbour-bar__tools, .village-tools__all):has(.bar-pawprint) { position: relative; }
+/* Beside the ☰ on a phone (the buttons there are icon-first and fill their slot); at the button's corner on a wide bar. */
+.bar-pawprint { position: absolute; top: 4px; left: calc(50% + 7px); display: block; width: 15px; height: 15px; color: var(--copper, #9d452f); pointer-events: none; }
+.bar-pawprint svg { display: block; width: 100%; height: 100%; fill: currentColor; filter: drop-shadow(0 0 1.5px var(--card, #fffaf0)); }
+@media (min-width: 601px) { .village-tools .village-tools__all .bar-pawprint { top: 1px; left: auto; right: 1px; } }
+@media (min-width: 720px) { .nav.compass.harbour-bar > .harbour-bar__tools .bar-pawprint { top: 2px; left: auto; right: -2px; } }
+
+/* ── The page-turn (S7): one leaf of paper turns away as the worlds swap.
+      Going to the Desk it turns to the left, the ledger opening; going back
+      it turns to the right, the book closing on the harbour. Under 600ms,
+      no pointer events, no focus, and never made under reduced motion
+      (nav/pageTurn.ts); the rule below is only a belt. ── */
+.page-turn { position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; perspective: 1800px; }
+.page-turn__leaf { position: absolute; inset: 0; transform-origin: 0 50%; backface-visibility: hidden; will-change: transform; animation: page-turn-left 500ms cubic-bezier(.35, .05, .55, .95) both; }
+.page-turn--to-world .page-turn__leaf { transform-origin: 100% 50%; animation-name: page-turn-right; }
+.page-turn__face {
+  position: absolute; inset: 0;
+  background-color: var(--paper, #f5eee2);
+  background-image:
+    linear-gradient(90deg, transparent 0 46px, color-mix(in srgb, var(--copper, #9d452f) 45%, transparent) 46px 47px, transparent 47px),
+    repeating-linear-gradient(180deg, transparent 0 31px, color-mix(in srgb, var(--pine, #356c55) 14%, transparent) 31px 32px),
+    radial-gradient(120% 80% at 0% 0%, rgb(255 255 255 / .35), transparent 60%);
+}
+/* The leaf darkens as it lifts away from the light. */
+.page-turn__face::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 30%, color-mix(in srgb, var(--ink, #30251f) 30%, transparent)); opacity: 0; animation: page-turn-dim 500ms ease-in both; }
+.page-turn--to-world .page-turn__face::after { background: linear-gradient(270deg, transparent 30%, color-mix(in srgb, var(--ink, #30251f) 30%, transparent)); }
+/* The shadow the turning leaf casts on the page coming into view. */
+.page-turn__shade { position: absolute; inset: 0; background: linear-gradient(90deg, color-mix(in srgb, var(--ink, #30251f) 26%, transparent), transparent 70%); animation: page-turn-shade 500ms ease-out both; }
+.page-turn--to-world .page-turn__shade { background: linear-gradient(270deg, color-mix(in srgb, var(--ink, #30251f) 26%, transparent), transparent 70%); }
+:root[data-theme="taylor"] .page-turn__face { background-image: radial-gradient(color-mix(in srgb, var(--ink) 16%, transparent) 1px, transparent 1.5px), radial-gradient(60% 40% at 88% 8%, color-mix(in srgb, var(--theme-accent, var(--copper)) 14%, transparent), transparent 70%); background-size: 18px 18px, auto; }
+:root[data-theme="newfoundland"] .page-turn__face { background-color: color-mix(in srgb, var(--paper) 90%, var(--gold)); background-image: repeating-linear-gradient(180deg, transparent 0 29px, color-mix(in srgb, var(--ink) 10%, transparent) 29px 30px), radial-gradient(36% 20% at 80% 14%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 70%); }
+@keyframes page-turn-left { from { transform: rotateY(0deg); } to { transform: rotateY(-100deg); } }
+@keyframes page-turn-right { from { transform: rotateY(0deg); } to { transform: rotateY(100deg); } }
+@keyframes page-turn-dim { to { opacity: 1; } }
+@keyframes page-turn-shade { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .page-turn { display: none; } }

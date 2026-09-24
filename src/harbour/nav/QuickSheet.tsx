@@ -129,6 +129,22 @@ function writeStorage(storage: Pick<Storage, "setItem"> | undefined, edition: Mo
   try { (storage ?? window.localStorage).setItem(MOTION_KEY, edition === "flat" ? "flat" : ""); } catch { /* Preferences are a convenience; the sheet still works without storage. */ }
 }
 
+/** The edition the reader has chosen ("flat" is the simple view). Storage-guarded: no storage reads as illustrated. */
+export function readMotionEdition(storage?: Pick<Storage, "getItem">): MotionEdition {
+  return readStorage(storage);
+}
+
+/**
+ * Choose an edition: write `MOTION_KEY` and raise the `hearth:motion` event the
+ * harbour re-decides its tier on. The one writer — this sheet's switch, the
+ * bar's Simple-view flip and the backtick key all come through here, so the
+ * three can never disagree about what "flat" is written as.
+ */
+export function chooseMotionEdition(next: MotionEdition, storage?: Pick<Storage, "setItem">): void {
+  writeStorage(storage, next);
+  try { window.dispatchEvent(new CustomEvent(MOTION_KEY, { detail: next })); } catch { /* jsdom without CustomEvent is still fine. */ }
+}
+
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 const TARGET: CSSProperties = { minHeight: 44 };
 
@@ -193,9 +209,8 @@ export function QuickSheet(props: QuickSheetProps) {
   function toggleEdition() {
     const next: MotionEdition = edition === "flat" ? "illustrated" : "flat";
     setEdition(next);
-    writeStorage(props.storage, next);
+    chooseMotionEdition(next, props.storage);
     props.onEditionChange?.(next);
-    try { window.dispatchEvent(new CustomEvent("hearth:motion", { detail: next })); } catch { /* jsdom without CustomEvent is still fine. */ }
   }
 
   return (

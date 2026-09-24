@@ -1,0 +1,390 @@
+/* ── The Desk's three dressings (SIMPLE_VIEW_DESK S7) ───────────────────────
+   One markup, three papers. The data, the order and every word are the same
+   in all three; only the paper changes.
+
+   · Classic Hearth — the ledger: ruled blotter, a copper double margin, a
+     stack of sheets under every card, embossed wax in a wax spill, the Level
+     on an engineering pad.
+   · Taylor's Scrapbook — the scrapbook page: dotted journal paper, scraps
+     taped and pinned at a tilt, a second scrap peeking out beneath, a washi-
+     tape chip rail, the theme's own hand (Caveat) for headings, stickers in
+     place of wax.
+   · Newfoundland — the fisherman's log: a weathered, foxed log page, stitched
+     margins, typewritten (Plex Mono) log headings, a rope and knot under the
+     chip rail, a tide table for the day rail, brass portholes for the seals.
+
+   Colours are the scene's tokens (theme/scenes.ts), mixed only with other
+   tokens behind any text, so every dark scene (reputation, George Street)
+   reads too. Nothing here moves, so reduced motion needs nothing more than
+   desk.css already does; focus stays desk.css's 3px ring (no clip-path on
+   anything that can take focus). ── */
+
+/* ═══════════ Classic Hearth · the ledger ═══════════ */
+.desk--classic {
+  --ledger-rule: color-mix(in srgb, var(--desk-pine) 12%, transparent);
+  --ledger-margin: color-mix(in srgb, var(--desk-copper) 48%, transparent);
+  --desk-sheet-shadow:
+    0 1px 0 color-mix(in srgb, var(--desk-ink) 8%, transparent),
+    3px 3px 0 -1px color-mix(in srgb, var(--desk-card) 90%, var(--desk-ink)),
+    3px 3px 0 0 color-mix(in srgb, var(--desk-ink) 13%, transparent),
+    6px 6px 0 -1px color-mix(in srgb, var(--desk-card) 84%, var(--desk-ink)),
+    6px 6px 0 0 color-mix(in srgb, var(--desk-ink) 9%, transparent),
+    0 18px 28px -20px color-mix(in srgb, var(--desk-ink) 55%, transparent);
+  background-image:
+    radial-gradient(120% 80% at 0% 0%, rgb(255 255 255 / .3), transparent 60%),
+    repeating-linear-gradient(180deg, transparent 0 31px, var(--ledger-rule) 31px 32px),
+    linear-gradient(180deg, transparent, color-mix(in srgb, var(--desk-paper) 86%, var(--desk-ink)) 140%);
+  background-attachment: local;
+}
+/* The ledger's heading: a double rule under the title, as a ledger page opens. */
+.desk--classic .desk__header { padding-bottom: 12px; border-bottom: 3px double color-mix(in srgb, var(--desk-ink) 38%, transparent); }
+/* The copper double margin down the page. */
+.desk--classic .desk__page { position: relative; }
+.desk--classic .desk__page::before {
+  content: ""; position: absolute; top: -8px; bottom: 0; left: max(3px, calc(var(--desk-gutter) - 11px)); width: 4px; pointer-events: none;
+  border-inline: 1px solid var(--ledger-margin);
+}
+/* Chips: ledger thumb-index tabs. */
+.desk--classic .desk__chip:not([aria-selected="true"]) {
+  border-radius: 10px 10px 4px 4px;
+  background: linear-gradient(180deg, var(--desk-card), color-mix(in srgb, var(--desk-card) 82%, var(--desk-paper)));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--desk-ink) 12%, transparent);
+}
+.desk--classic .desk__chip[aria-selected="true"] { border-radius: 10px 10px 4px 4px; }
+/* Embossed wax, pressed into a spill of wax. */
+.desk--classic .desk-seal { position: relative; }
+.desk--classic .desk-seal::before {
+  content: ""; position: absolute; z-index: 0; top: -5px; left: 50%; width: calc(min(100%, 112px) + 6px); aspect-ratio: 1; translate: -50% 0; rotate: 14deg;
+  border-radius: 44% 56% 40% 60% / 57% 43% 57% 43%;
+  background: color-mix(in srgb, color-mix(in srgb, var(--wax-tone) 60%, var(--desk-ink)) 82%, #000);
+  opacity: .8; pointer-events: none;
+}
+.desk--classic .desk-seal__wax { z-index: 1; }
+.desk--classic .desk-seal__wax::after {
+  content: ""; position: absolute; inset: 14%; border-radius: 50%; pointer-events: none;
+  border: 1px dotted color-mix(in srgb, var(--wax) 55%, #fff);
+  box-shadow: inset 1.5px 1.5px 1px color-mix(in srgb, var(--wax) 65%, #000), inset -1px -1px 1px color-mix(in srgb, var(--wax) 62%, #fff);
+}
+/* The crack: a dark fissure with a lit edge. */
+.desk--classic .desk-seal__crack { stroke: color-mix(in srgb, var(--wax) 35%, #000); stroke-width: 2.2; filter: drop-shadow(.8px .8px 0 color-mix(in srgb, var(--wax) 45%, #fff)); }
+/* The Level on an engineering pad: fine rules every 12px, heavier every 60px. */
+.desk--classic :is(.desk-level__paper, .desk-rail__bars),
+.desk--classic .desk-level--personal .desk-plate-card__figure {
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--desk-pine) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--desk-pine) 22%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in srgb, var(--desk-pine) 10%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--desk-pine) 10%, transparent) 1px, transparent 1px);
+  background-size: 60px 60px, 60px 60px, 12px 12px, 12px 12px;
+}
+.desk--classic .desk-dogear__fold::after {
+  background: linear-gradient(45deg, color-mix(in srgb, var(--fold-back) 92%, var(--desk-card)) 0 30%, var(--fold-back) 48.4%, var(--desk-copper) 48.5% 50%, transparent 50%);
+}
+
+/* ═══════════ Taylor’s Scrapbook · the scrapbook page ═══════════ */
+.desk--taylor {
+  --desk-radius: 12px 5px 12px 5px;
+  --scrap-accent: var(--theme-accent, var(--desk-copper));
+  --scrap-second: var(--theme-second, var(--desk-pine));
+  --scrap-hand: var(--theme-hand, "Caveat", cursive);
+  --tape-a: color-mix(in srgb, var(--scrap-accent) 36%, var(--desk-card));
+  --tape-b: color-mix(in srgb, var(--scrap-second) 36%, var(--desk-card));
+  --tape-c: color-mix(in srgb, var(--desk-gold) 38%, var(--desk-card));
+  /* A second scrap of another paper peeks out under each card. */
+  --desk-sheet-shadow:
+    -5px 6px 0 -2px color-mix(in srgb, var(--scrap-second) 24%, var(--desk-card)),
+    -5px 6px 0 -1px color-mix(in srgb, var(--desk-ink) 9%, transparent),
+    0 1px 1px color-mix(in srgb, var(--desk-ink) 14%, transparent),
+    0 14px 22px -16px color-mix(in srgb, var(--desk-ink) 48%, transparent);
+  background-image:
+    radial-gradient(60% 40% at 90% 4%, color-mix(in srgb, var(--scrap-accent) 13%, transparent), transparent 70%),
+    radial-gradient(52% 36% at 4% 58%, color-mix(in srgb, var(--scrap-second) 11%, transparent), transparent 70%),
+    radial-gradient(color-mix(in srgb, var(--desk-ink) 17%, transparent) 1px, transparent 1.5px);
+  background-size: auto, auto, 18px 18px;
+  background-attachment: local;
+}
+/* The title in the theme's own hand; the kicker punched on label-maker tape. */
+.desk--taylor .desk__title h1 { font: 600 clamp(32px, 6vw, 42px)/.95 var(--scrap-hand); letter-spacing: 0; }
+.desk--taylor .desk__title small {
+  display: block; width: max-content; max-width: 100%; margin: 0 0 4px; padding: 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border-radius: 2px; background: var(--desk-ink); color: var(--desk-card); letter-spacing: .18em; rotate: -1.5deg;
+  box-shadow: 0 1px 1px color-mix(in srgb, var(--desk-ink) 30%, transparent);
+}
+.desk--taylor .desk__flip { rotate: -1.5deg; }
+.desk--taylor .desk__sign { font: 600 19px/1.2 var(--scrap-hand); font-style: normal; color: color-mix(in srgb, var(--desk-muted) 40%, var(--desk-ink)); }
+.desk--taylor .desk-card__kicker { font: 600 20px/1.05 var(--scrap-hand); letter-spacing: 0; text-transform: none; color: color-mix(in srgb, var(--scrap-accent) 55%, var(--desk-ink)); }
+
+/* The chip rail as washi tape: torn ends, a printed stripe, a little askew. */
+.desk--taylor .desk__chip {
+  --tape: var(--tape-b);
+  border: 0; border-radius: 0; padding: 0 18px; color: var(--desk-ink); box-shadow: none; rotate: -.8deg;
+  background:
+    repeating-linear-gradient(-45deg, color-mix(in srgb, var(--desk-card) 32%, transparent) 0 4px, transparent 4px 10px) 5px 0 / calc(100% - 10px) 100% no-repeat,
+    linear-gradient(var(--tape), var(--tape)) 5px 0 / calc(100% - 10px) 100% no-repeat,
+    linear-gradient(to bottom right, transparent 50%, var(--tape) 50%) left top / 5px 6px repeat-y,
+    linear-gradient(to bottom left, transparent 50%, var(--tape) 50%) right top / 5px 6px repeat-y;
+  filter: drop-shadow(0 1px 1px color-mix(in srgb, var(--desk-ink) 22%, transparent));
+}
+.desk--taylor .desk__chip:nth-child(even) { rotate: .7deg; }
+.desk--taylor .desk__chip:hover { --tape: var(--tape-a); }
+.desk--taylor .desk__chip[aria-selected="true"] { --tape: color-mix(in srgb, var(--scrap-accent) 80%, var(--desk-ink)); color: var(--desk-card); box-shadow: none; }
+.desk--taylor .desk__chip--drawer { --tape: var(--tape-c); border: 0; }
+
+/* Scraps: every card a little askew, taped at the top. */
+.desk--taylor .desk-card { rotate: var(--scrap-tilt, 0deg); border: 1px solid color-mix(in srgb, var(--desk-line) 70%, transparent); }
+.desk--taylor .desk-now { --scrap-tilt: -.6deg; }
+.desk--taylor .desk-seals { --scrap-tilt: .5deg; }
+.desk--taylor .desk-card--level { --scrap-tilt: -.35deg; }
+.desk--taylor .desk-sundial { --scrap-tilt: .55deg; }
+.desk--taylor .desk-hercules { --scrap-tilt: -.45deg; }
+.desk--taylor .desk-pots > li:nth-child(1) > .desk-card { --scrap-tilt: .45deg; }
+.desk--taylor .desk-pots > li:nth-child(2) > .desk-card { --scrap-tilt: -.5deg; }
+.desk--taylor .desk-pots > li:nth-child(3) > .desk-card { --scrap-tilt: .35deg; }
+.desk--taylor :is(.desk-leaving__col, .desk-calendar, .desk-books) > .desk-card:nth-child(odd),
+.desk--taylor :is(.desk-accounts__tiles, .desk-plates) > li:nth-child(odd) > .desk-card { --scrap-tilt: -.35deg; }
+.desk--taylor :is(.desk-leaving__col, .desk-calendar, .desk-books) > .desk-card:nth-child(even),
+.desk--taylor :is(.desk-accounts__tiles, .desk-plates) > li:nth-child(even) > .desk-card { --scrap-tilt: .3deg; }
+/* A folded corner lies flat: the card under the dog-ear stays square to it. */
+.desk--taylor .desk-today[data-desk-sitdown] :is(.desk-now, .desk-seals) { --scrap-tilt: 0deg; }
+.desk--taylor .desk-today[data-desk-sitdown] .desk-now::before { left: 22px; right: auto; }
+.desk--taylor .desk-card::before {
+  content: ""; position: absolute; z-index: 1; top: -9px; left: 22px; right: auto; width: 62px; height: 18px; border-radius: 1px;
+  background: repeating-linear-gradient(-45deg, color-mix(in srgb, var(--desk-card) 30%, transparent) 0 4px, transparent 4px 9px), var(--tape, var(--tape-a));
+  opacity: .92; rotate: -4deg; transform: none; box-shadow: none; pointer-events: none;
+  clip-path: polygon(0 0, 100% 0, 96% 17%, 100% 33%, 96% 50%, 100% 67%, 96% 83%, 100% 100%, 0 100%, 4% 83%, 0 67%, 4% 50%, 0 33%, 4% 17%);
+}
+.desk--taylor .desk-card:nth-child(3n+2)::before { --tape: var(--tape-b); rotate: 3deg; left: auto; right: 26px; }
+.desk--taylor .desk-card:nth-child(3n)::before { --tape: var(--tape-c); rotate: -2deg; }
+.desk--taylor .desk-card[data-desk-pot="prepare"]::before { --tape: var(--tape-a); }
+.desk--taylor .desk-card[data-desk-pot="protect"]::before { --tape: var(--tape-b); }
+.desk--taylor .desk-card[data-desk-pot="build"]::before { --tape: var(--tape-c); }
+.desk--taylor .desk-card[data-plate-edge="attention"]::before { --tape: var(--tape-a); }
+.desk--taylor .desk-card[data-plate-edge="live"]::before { --tape: var(--tape-b); }
+.desk--taylor .desk-account::before { top: 3px; }
+.desk--taylor :is(.desk-accounts__tiles, .desk-plates) > li:nth-child(3n+2) > .desk-card::before { --tape: var(--tape-b); rotate: 3deg; }
+.desk--taylor :is(.desk-accounts__tiles, .desk-plates) > li:nth-child(3n) > .desk-card::before { --tape: var(--tape-c); rotate: -2deg; }
+/* The Books' divider tabs stand at the right; their tape stays at the left. */
+.desk--taylor .desk-books .desk-card::before { left: 22px; right: auto; }
+/* …and the ones that are pinned instead. */
+.desk--taylor :is(.desk-seals, .desk-hercules, .desk-sundial)::before { content: none; }
+.desk--taylor :is(.desk-seals, .desk-hercules, .desk-sundial)::after {
+  content: ""; position: absolute; z-index: 2; top: -7px; left: 50%; width: 15px; height: 15px; margin-left: -7px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, var(--scrap-accent) 35%, #fff) 0 18%, var(--scrap-accent) 55%, color-mix(in srgb, var(--scrap-accent) 70%, #000) 100%);
+  box-shadow: 1px 4px 3px -1px color-mix(in srgb, var(--desk-ink) 45%, transparent);
+}
+
+/* Stickers, not seals: the same three figures on die-cut stickers. */
+.desk--taylor .desk-seal { --sticker-tilt: -4deg; }
+.desk--taylor .desk-seal[data-desk-seal="in"] { --wax-tone: var(--scrap-second); }
+.desk--taylor .desk-seal[data-desk-seal="out"] { --wax-tone: var(--scrap-accent); --sticker-tilt: 3deg; }
+.desk--taylor .desk-seal[data-desk-seal="leftover"] { --sticker-tilt: -1.5deg; }
+.desk--taylor .desk-seal[data-seal-cracked] { --wax-tone: var(--desk-danger); }
+.desk--taylor .desk-seal__wax {
+  --wax: color-mix(in srgb, var(--wax-tone) 62%, var(--desk-ink));
+  width: calc(100% - 12px); max-width: 100px; margin-top: 6px; border-radius: 50%; rotate: var(--sticker-tilt);
+  background:
+    radial-gradient(ellipse 40% 26% at 34% 24%, rgb(255 255 255 / .34), transparent 70%),
+    radial-gradient(circle, transparent 0 60%, color-mix(in srgb, var(--wax) 80%, var(--desk-card)) 61% 62.5%, transparent 63.5%),
+    var(--wax);
+  box-shadow:
+    0 0 0 5px var(--desk-card),
+    0 0 0 6px color-mix(in srgb, var(--desk-line) 85%, transparent),
+    1px 7px 9px -3px color-mix(in srgb, var(--desk-ink) 42%, transparent);
+}
+.desk--taylor .desk-seal__figure { text-shadow: none; }
+.desk--taylor .desk-seal__label { font: 600 17px/1.1 var(--scrap-hand); }
+.desk--taylor .desk-seal__sub { font-style: italic; }
+/* The crack: a creased sticker whose corner has lifted. */
+.desk--taylor .desk-seal__crack { stroke: color-mix(in srgb, var(--desk-card) 88%, transparent); stroke-width: 1.6; stroke-dasharray: 3 2; }
+.desk--taylor .desk-seal[data-seal-cracked] .desk-seal__wax::after {
+  content: ""; position: absolute; top: -3%; right: -3%; width: 36%; height: 36%; pointer-events: none;
+  background: linear-gradient(225deg, var(--desk-card) 0 50%, color-mix(in srgb, var(--desk-card) 84%, var(--desk-ink)) 50%);
+  border-radius: 0 0 0 40%; box-shadow: -2px 3px 3px -1px color-mix(in srgb, var(--desk-ink) 35%, transparent);
+}
+/* Dot-grid journal paper for the Level, the rail and the running month. */
+.desk--taylor :is(.desk-level__paper, .desk-rail__bars),
+.desk--taylor .desk-level--personal .desk-plate-card__figure {
+  background-image: radial-gradient(color-mix(in srgb, var(--scrap-accent) 36%, transparent) 1px, transparent 1.6px);
+  background-size: 12px 12px; border-style: dashed;
+}
+.desk--taylor .desk-hercules__card { border-left: 3px dotted var(--scrap-accent); }
+.desk--taylor .desk-hercules__title, .desk--taylor .desk-sundial__label { font: 600 21px/1.1 var(--scrap-hand); }
+.desk--taylor .desk-dogear__word { font: 600 14px/1 var(--scrap-hand); letter-spacing: 0; top: 29px; }
+/* The pages' own paper bits (carried over from S3–S5, now the scrapbook's). */
+.desk--taylor .desk-jar { border-style: dashed; border-radius: 12px 4px 12px 4px; }
+.desk--taylor .desk-rail__slip { border-radius: 10px 3px 10px 3px; }
+.desk--taylor .desk-account__register:not([hidden]) { border-top-style: dotted; }
+.desk--taylor .desk-account__badge { border-radius: 8px 3px 8px 3px; }
+.desk--taylor .desk-calendar .desk-week-chip { border-radius: 8px 3px 8px 3px; }
+.desk--taylor .desk-calendar .desk-week__day { border-style: dashed; border-radius: 10px 3px 10px 3px; }
+.desk--taylor .desk-calendar .desk-month__detail { border-radius: 12px 4px 12px 4px; }
+.desk--taylor .desk-books .desk-book__tab { border-radius: 9px 3px 0 0; }
+.desk--taylor .desk-books :is(.desk-shape__track, .desk-goals__bar) { border-style: dashed; }
+.desk--taylor .desk-books .desk-book__headline { font: 600 clamp(21px, 5vw, 25px)/1.1 var(--scrap-hand); }
+
+/* ═══════════ Newfoundland · the fisherman’s log ═══════════ */
+.desk--newfoundland {
+  --desk-radius: 3px;
+  --log-sea: var(--desk-ink);
+  --log-kelp: color-mix(in srgb, var(--theme-second, var(--desk-pine)) 78%, var(--desk-ink));
+  --log-brass: color-mix(in srgb, var(--desk-gold) 86%, var(--desk-card));
+  --log-brass-dark: color-mix(in srgb, var(--desk-gold) 62%, #000);
+  --log-rope-a: color-mix(in srgb, var(--desk-gold) 42%, var(--desk-card));
+  --log-rope-b: color-mix(in srgb, var(--desk-gold) 72%, var(--desk-ink));
+  --log-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --log-page: color-mix(in srgb, var(--desk-card) 93%, var(--desk-gold));
+  --log-rope:
+    radial-gradient(ellipse 10px 5px at calc(50% - 6px) 50%, var(--log-rope-b) 0 68%, transparent 74%),
+    radial-gradient(ellipse 10px 5px at calc(50% + 6px) 50%, var(--log-rope-b) 0 68%, transparent 74%),
+    radial-gradient(circle 5px at 50% 50%, var(--log-rope-a) 0 64%, var(--log-rope-b) 66% 96%, transparent 100%),
+    repeating-linear-gradient(118deg, var(--log-rope-a) 0 3px, var(--log-rope-b) 3px 5px) 0 2px / 100% 6px no-repeat;
+  --desk-sheet-shadow:
+    0 1px 0 color-mix(in srgb, var(--log-sea) 12%, transparent),
+    2px 3px 0 -1px color-mix(in srgb, var(--desk-card) 86%, var(--log-sea)),
+    2px 3px 0 0 color-mix(in srgb, var(--log-sea) 16%, transparent),
+    0 14px 22px -18px color-mix(in srgb, var(--log-sea) 60%, transparent);
+  --desk-behind: color-mix(in srgb, var(--desk-paper) 90%, var(--desk-gold));
+  background-color: var(--desk-behind);
+  /* Foxing, a salt stain and the log's own blue rules. */
+  background-image:
+    radial-gradient(36% 20% at 84% 12%, color-mix(in srgb, var(--desk-gold) 16%, transparent), transparent 70%),
+    radial-gradient(24% 14% at 10% 46%, color-mix(in srgb, var(--desk-gold) 12%, transparent), transparent 72%),
+    radial-gradient(30% 18% at 70% 80%, color-mix(in srgb, var(--log-kelp) 10%, transparent), transparent 70%),
+    repeating-linear-gradient(180deg, transparent 0 29px, color-mix(in srgb, var(--log-sea) 9%, transparent) 29px 30px),
+    linear-gradient(180deg, transparent 70%, color-mix(in srgb, var(--log-sea) 10%, transparent));
+  background-attachment: local;
+}
+/* The foxed desk is a shade darker than the scene's paper: words straight on it take a deeper ink. */
+.desk--newfoundland :is(.desk__title small, .desk__sign, .desk__undrawn) { color: color-mix(in srgb, var(--desk-muted) 55%, var(--desk-ink)); }
+.desk--newfoundland .desk__title small { font: 500 10.5px/1.3 var(--log-mono); letter-spacing: .12em; }
+.desk--newfoundland .desk__flip { border-radius: 4px; box-shadow: inset 0 -3px 0 var(--log-brass); }
+.desk--newfoundland .desk__sign { font: 500 13px/1.4 var(--log-mono); font-style: normal; }
+/* A rope, with its knot, under the chip rail. */
+.desk--newfoundland .desk__rail::after { content: ""; grid-column: 1 / -1; height: 10px; margin-top: 6px; background: var(--log-rope); pointer-events: none; }
+.desk--newfoundland .desk__chip { border-radius: 3px; border-color: color-mix(in srgb, var(--log-sea) 35%, transparent); background: color-mix(in srgb, var(--desk-card) 86%, transparent); }
+.desk--newfoundland .desk__chip[aria-selected="true"] { background: var(--log-sea); color: var(--desk-card); border-color: var(--log-sea); box-shadow: inset 0 -3px 0 var(--log-brass); }
+.desk--newfoundland .desk__chip--drawer { border-style: dashed; }
+/* Log pages: squared, stitched down the margin, weathered at the foot. */
+.desk--newfoundland .desk-card {
+  border: 1px solid color-mix(in srgb, var(--log-sea) 22%, transparent);
+  border-top: 3px solid var(--log-kelp);
+  background:
+    var(--desk-raking),
+    linear-gradient(180deg, transparent 70%, color-mix(in srgb, var(--log-sea) 6%, transparent)),
+    repeating-linear-gradient(180deg, color-mix(in srgb, var(--log-sea) 30%, transparent) 0 5px, transparent 5px 10px) 6px 4px / 1.5px calc(100% - 8px) no-repeat,
+    var(--log-page);
+}
+.desk--newfoundland .desk-card__kicker { font: 500 11px/1.35 var(--log-mono); letter-spacing: .1em; color: color-mix(in srgb, var(--log-kelp) 50%, var(--desk-muted)); }
+.desk--newfoundland .desk-now {
+  background:
+    var(--desk-raking),
+    linear-gradient(90deg, transparent 0 28px, color-mix(in srgb, var(--log-kelp) 55%, transparent) 28px 29px, transparent 29px),
+    repeating-linear-gradient(180deg, transparent 0 27px, color-mix(in srgb, var(--log-sea) 13%, transparent) 27px 28px),
+    var(--log-page);
+}
+@media (min-width: 720px) {
+  .desk--newfoundland .desk-now {
+    background:
+      var(--desk-raking),
+      linear-gradient(90deg, transparent 0 34px, color-mix(in srgb, var(--log-kelp) 55%, transparent) 34px 35px, transparent 35px),
+      repeating-linear-gradient(180deg, transparent 0 27px, color-mix(in srgb, var(--log-sea) 13%, transparent) 27px 28px),
+      var(--log-page);
+  }
+}
+.desk--newfoundland :is(.desk-pot, .desk-now)::before { border-radius: 0; }
+.desk--newfoundland .desk-seals > .desk-card__kicker::after { content: ""; display: block; height: 10px; margin-top: 8px; background: var(--log-rope); }
+/* Brass portholes: a bolted brass rim, deep glass tinted by the seal's own tone. */
+.desk--newfoundland .desk-seal__wax {
+  --glass: color-mix(in srgb, var(--wax-tone) 48%, var(--log-sea));
+  border-radius: 50%;
+  background:
+    linear-gradient(128deg, transparent 30%, rgb(255 255 255 / .2) 38%, transparent 46%, transparent 56%, rgb(255 255 255 / .08) 60%, transparent 64%),
+    radial-gradient(circle closest-side, var(--glass) 0 74%, color-mix(in srgb, var(--glass) 62%, #000) 75% 78%, transparent 79%),
+    conic-gradient(from 20deg, var(--log-brass), var(--log-brass-dark) 25%, var(--log-brass) 50%, color-mix(in srgb, var(--log-brass) 70%, #fff) 62%, var(--log-brass-dark) 80%, var(--log-brass));
+  box-shadow:
+    inset 0 0 0 1.5px var(--log-brass-dark),
+    0 2px 0 color-mix(in srgb, var(--log-sea) 25%, transparent),
+    0 10px 16px -10px color-mix(in srgb, var(--log-sea) 60%, transparent);
+}
+.desk--newfoundland .desk-seal__wax::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  --bolt: var(--log-brass-dark) 0 1.6px, color-mix(in srgb, var(--log-brass) 55%, #fff) 1.8px 2.2px, transparent 2.7px;
+  background:
+    radial-gradient(circle 3px at 50% 5.5%, var(--bolt)), radial-gradient(circle 3px at 50% 94.5%, var(--bolt)),
+    radial-gradient(circle 3px at 5.5% 50%, var(--bolt)), radial-gradient(circle 3px at 94.5% 50%, var(--bolt)),
+    radial-gradient(circle 3px at 18.6% 18.6%, var(--bolt)), radial-gradient(circle 3px at 81.4% 18.6%, var(--bolt)),
+    radial-gradient(circle 3px at 18.6% 81.4%, var(--bolt)), radial-gradient(circle 3px at 81.4% 81.4%, var(--bolt));
+}
+.desk--newfoundland .desk-seal__figure { padding: 0 2px; max-width: 78%; font-size: clamp(10.5px, 3vw, 15px); text-shadow: 0 1px 0 color-mix(in srgb, var(--glass) 60%, #000); }
+.desk--newfoundland .desk-seal__label { font: 500 11px/1.3 var(--log-mono); letter-spacing: .06em; text-transform: uppercase; }
+/* The crack: the porthole's glass starred from one blow. */
+.desk--newfoundland .desk-seal__crack { inset: 20%; width: 60%; height: 60%; stroke: color-mix(in srgb, var(--desk-card) 85%, transparent); stroke-width: 1.1; }
+.desk--newfoundland .desk-seal[data-seal-cracked] .desk-seal__wax::after {
+  content: ""; position: absolute; inset: 11%; border-radius: 50%; pointer-events: none;
+  background: repeating-conic-gradient(from 8deg at 34% 30%, color-mix(in srgb, var(--desk-card) 60%, transparent) 0 1.2deg, transparent 1.2deg 38deg);
+  -webkit-mask: radial-gradient(circle at 34% 30%, #000 0 22%, transparent 38%); mask: radial-gradient(circle at 34% 30%, #000 0 22%, transparent 38%);
+}
+/* A sounding chart for the Level and the running month. */
+.desk--newfoundland .desk-level__paper,
+.desk--newfoundland .desk-level--personal .desk-plate-card__figure {
+  border-radius: 2px;
+  background-color: color-mix(in srgb, var(--desk-card) 90%, var(--log-kelp));
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--log-sea) 18%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--log-sea) 18%, transparent) 1px, transparent 1px),
+    linear-gradient(color-mix(in srgb, var(--log-sea) 7%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--log-sea) 7%, transparent) 1px, transparent 1px);
+  background-size: 48px 48px, 48px 48px, 12px 12px, 12px 12px;
+}
+.desk--newfoundland .desk-level__days, .desk--newfoundland .desk-rail__axis { font-family: var(--log-mono); }
+/* The day rail as a tide table: depth lines, the water rising at the foot, a scalloped tide line. */
+.desk--newfoundland .desk-rail__bars {
+  border-radius: 2px;
+  background-color: color-mix(in srgb, var(--desk-card) 92%, var(--log-kelp));
+  background-image:
+    radial-gradient(circle at 50% 0, transparent 4px, color-mix(in srgb, var(--log-kelp) 55%, transparent) 4px 5px, transparent 5.5px),
+    linear-gradient(0deg, color-mix(in srgb, var(--log-kelp) 20%, transparent), transparent 60%),
+    repeating-linear-gradient(0deg, transparent 0 15px, color-mix(in srgb, var(--log-sea) 12%, transparent) 15px 16px);
+  background-size: 12px 8px, auto, auto;
+  background-position: 0 100%, 0 0, 0 100%;
+  background-repeat: repeat-x, no-repeat, repeat;
+}
+.desk--newfoundland .desk-rail__slip { border-radius: 2px; border-style: solid; border-left: 3px solid var(--log-kelp); }
+.desk--newfoundland .desk-rail__slip-date { font: 500 14px/1.3 var(--log-mono); }
+.desk--newfoundland .desk-rail__today-tag { border-radius: 2px; background: var(--log-kelp); }
+.desk--newfoundland .desk-calendar .desk-week__days { gap: 0; border-block: 2px solid color-mix(in srgb, var(--log-sea) 70%, transparent); }
+.desk--newfoundland .desk-calendar .desk-week__day { border: 0; border-bottom: 1px solid color-mix(in srgb, var(--log-sea) 16%, transparent); border-radius: 0; background: transparent; }
+.desk--newfoundland .desk-calendar .desk-week__day:nth-child(even) { background: color-mix(in srgb, var(--log-kelp) 7%, transparent); }
+.desk--newfoundland .desk-calendar .desk-week__day[data-today] { background: color-mix(in srgb, var(--log-brass) 18%, var(--desk-card)); box-shadow: inset 3px 0 0 var(--log-kelp); }
+.desk--newfoundland .desk-calendar :is(.desk-week__weekday, .desk-week__number) { font-family: var(--log-mono); }
+.desk--newfoundland .desk-calendar .desk-week__number { font-size: 16px; font-weight: 500; }
+@media (min-width: 1000px) { .desk--newfoundland .desk-calendar .desk-week__day { border-bottom: 0; border-right: 1px solid color-mix(in srgb, var(--log-sea) 16%, transparent); } }
+.desk--newfoundland .desk-calendar .desk-month__day { border-radius: 2px; }
+.desk--newfoundland .desk-calendar .desk-month__num { font-family: var(--log-mono); font-weight: 500; font-size: 13px; }
+.desk--newfoundland .desk-jar { border-radius: 2px; border-left: 3px solid var(--log-kelp); }
+.desk--newfoundland :is(.desk-leaving__out th, .desk-account__caption, .desk-account__rows th) { font-family: var(--log-mono); letter-spacing: .06em; }
+.desk--newfoundland .desk-books .desk-book__tab { border-radius: 1px 1px 0 0; font-family: var(--log-mono); letter-spacing: .08em; }
+.desk--newfoundland .desk-books .desk-book { padding-top: 20px; }
+.desk--newfoundland .desk-hercules__card { border-left-color: var(--log-brass); }
+.desk--newfoundland .desk-plate-card.desk-card::before { left: 0; width: 100%; height: 3px; top: -3px; border-radius: 0; }
+.desk--newfoundland .desk-plate-card__glance { font-family: var(--font, system-ui, sans-serif); letter-spacing: .01em; }
+.desk--newfoundland .desk-dogear__word { font: 500 9px/1 var(--log-mono); letter-spacing: .02em; text-transform: uppercase; font-style: normal; }
+.desk--newfoundland .desk-dogear__fold::after {
+  background: linear-gradient(45deg, color-mix(in srgb, var(--fold-back) 92%, var(--desk-card)) 0 30%, var(--fold-back) 48.4%, var(--log-kelp) 48.5% 50%, transparent 50%);
+}
+
+/* ═══════════ The post (S8) in each dressing ═══════════ */
+/* Classic: the slip is a ledger stub, a copper double rule across its head. */
+.desk--classic .desk-slip__head { padding-bottom: 3px; border-bottom: 3px double color-mix(in srgb, var(--desk-copper) 45%, transparent); }
+/* Taylor: the notice is a taped scrap at a tilt; the slip is written in her hand. */
+.desk--taylor .desk-notice { --scrap-tilt: -.5deg; }
+.desk--taylor .desk-slip { rotate: 1deg; border-style: dashed; border-radius: 3px 3px 12px 4px; }
+.desk--taylor .desk-slip__head { font: 600 18px/1.1 var(--scrap-hand); letter-spacing: 0; text-transform: none; color: color-mix(in srgb, var(--scrap-accent) 55%, var(--desk-ink)); }
+.desk--taylor .desk-notice__fact { font: 600 20px/1.15 var(--scrap-hand); }
+.desk--taylor .desk-notice__pennant { fill: var(--scrap-accent); stroke: color-mix(in srgb, var(--scrap-accent) 70%, var(--desk-ink)); }
+/* Newfoundland: a log entry and a tally slip, typewritten, the flag in kelp and brass. */
+.desk--newfoundland .desk-slip { rotate: 0deg; border-radius: 0 0 2px 2px; border-left: 3px solid var(--log-kelp); background-color: var(--log-page); }
+.desk--newfoundland .desk-slip:only-child { border-radius: 2px; }
+.desk--newfoundland .desk-slip__head { font: 500 10.5px/1.3 var(--log-mono); letter-spacing: .1em; color: color-mix(in srgb, var(--log-kelp) 50%, var(--desk-muted)); }
+.desk--newfoundland .desk-slip__lines > li { font: 500 13px/22px var(--log-mono); font-style: normal; }
+.desk--newfoundland .desk-notice__pennant { fill: var(--log-kelp); stroke: var(--log-brass-dark); }
