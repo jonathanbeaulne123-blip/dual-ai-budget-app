@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import type {PlaceDressing} from '../scene/place.ts';
 import type {RenderTier} from '../scene/quality.ts';
 import {groundHeightAt} from '../scene/ground.ts';
-import {RESERVED_PLOTS,TRANSPORT_STOPS,RIVER,SKILL_BRANCHES,nearestOnRoute,mountainBaseHeight,type Point3,type TransportKind} from './definition.ts';
+import {RESERVED_PLOTS,TRANSPORT_STOPS,RIVER,SKILL_BRANCHES,mountainBaseHeight,type Point3,type TransportKind} from './definition.ts';
 import {STATION_SOLIDS,SUMMIT_ART_SOLIDS,SUMMIT_OBSERVATORY} from './artGeometry.ts';
 import {MountainArtKit} from './artKit.ts';
 
@@ -67,8 +67,12 @@ export function buildMountainArchitecture(d:PlaceDressing,tier:RenderTier){
     if(cx!==0&&i%8===0)kit.box([cx+Math.cos(a)*1.1,groundHeightAt(cx+Math.cos(a)*1.1,cz+Math.sin(a)*1.1)+.06,cz+Math.sin(a)*1.1],[1.2,.025,.12],p.light,[0,-a,0]);
   }
   // Water remains the existing shared channel. Low bank tesserae reveal its town course.
-  for(let z=-32;z<44;z+=1.6){const q=nearestOnRoute(-8,z,RIVER);if(q.point[2]>46)continue;
-    for(const side of [-1,1]){const x=q.point[0]+side*2.5,h=groundHeightAt(x,z);kit.box([x,h+.045,z],[.5,.025,.9],p.stone);}
+  for(let i=1;i<RIVER.length;i++){
+    const a=RIVER[i-1]!,b=RIVER[i]!,dx=b[0]-a[0],dz=b[2]-a[2],length=Math.hypot(dx,dz),steps=Math.ceil(length/1.6);
+    for(let n=0;n<steps;n++)for(const side of [-1,1]){
+      const t=n/steps,x=a[0]+dx*t-dz/length*2.6*side,z=a[2]+dz*t+dx/length*2.6*side;if(z < -34||z>46)continue;
+      kit.box([x,groundHeightAt(x,z)+.045,z],[.5,.025,.9],p.stone,[0,Math.atan2(dx,dz),0]);
+    }
   }
   return kit.finish();
 }

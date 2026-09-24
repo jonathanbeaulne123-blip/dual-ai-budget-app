@@ -1,3 +1,4 @@
+import {townChannelHeight} from '../mountain/townChannel.ts';
 import {mountainBaseHeight,WORLD_BOUNDS,nearestOnRoute,districtAt} from '../mountain/definition.ts';
 import * as THREE from "three";
 import type { PlaceDressing } from "./place.ts";
@@ -23,7 +24,7 @@ export const TERRACE_LEVEL = -0.05;
 
 /** Height of the island at a point. Pure; the terrace is level so every plinth and paving stone sits at 0. */
 export function groundHeightAt(x: number, z: number): number {
-  const base=z < -48?Math.max(islandHeight(x,z),mountainBaseHeight(x,z)):islandHeight(x,z);
+  const base=townChannelHeight(x,z,z < -48?Math.max(islandHeight(x,z),mountainBaseHeight(x,z)):islandHeight(x,z));
   if(z < -40){const road=nearestOnRoute(x,z);if(road.distance<5.2)return Math.min(base,road.point[1]-.1);}
   return base;
 }

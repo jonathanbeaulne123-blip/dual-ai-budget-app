@@ -97,3 +97,26 @@ This slice preserves geography and only marks its banks; a shared terrain/channe
 belongs to the integrator. Human visual/play-feel acceptance, reduced-motion/screen-reader
 walkthroughs, sustained physical-phone performance, and two-device elevated agreement
 remain open. The silhouette integration and actual ride-kind hook require parent wiring.
+
+## Follow-up: Court integration and shared town channel
+
+The separate follow-up commit completes both Court hooks above. `VillageCourt` now
+owns the authored distant silhouettes through its existing disposal collection and
+retains anchor traversal, close-exterior streaming and cutaways. Its transport handle
+accepts the optional actual ride kind; runtime forwarding remains the integrator's hook.
+
+The previously buried town river is now cut into the **shared** `groundHeightAt` result.
+The cut reads the same RIVER centreline and height as the water. Unsupported Harbour
+lane strips stay dry causeways, and town room foundations/rotated entrance aprons stay
+at their original heights. Existing elevated race and station surfaces remain authoritative,
+including the finish. This adds no supported surface, route or landmark. Bank mosaics
+now follow the actual segment tangent and normal, rather than projecting a fixed x.
+
+A coordinated single-worker run passed **25 tests / 3 files in 14.07 seconds**, comprising
+the existing 16 mountain tests, 5 art tests and 4 new channel tests. The channel tests
+raycast the **actual full and lite rendered terrain triangles** at six open-water reaches,
+including both sides and centre; verify untouched village lane widths and town building/
+door aprons; and verify race, finish and every station support height. The ordinary descent
+remains **74.4667 seconds, zero bails, 22/22 gates**. No broad gate or TypeScript/build
+was run in this child checkout. Manual visual review of the shallow cut, causeways,
+station entries and performance remains with the parent integration pass.
