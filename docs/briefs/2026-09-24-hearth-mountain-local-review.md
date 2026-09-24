@@ -4,6 +4,12 @@ Jonathan's approved plan is the authority for this programme. This checkout star
 `87f6027098f07cb39482f5f7e13cc652df166c81` on `codex/hearth-mountain`.
 The implementation is local and is not a Development deployment or an investor-ready release.
 
+**Current verification status:** the parallel continuation is not fully green.
+TypeScript and targeted repairs passed, but the broad quick gate exceeded its budget;
+two legacy actual-App browser journeys still timed out in the subsequent serial run.
+See the [current worksession](../worksessions/2026-09-24-hearth-mountain.md) for exact
+results. The earlier foundation evidence below does not close these later gaps.
+
 ## What is available
 
 The mountain is connected to the existing harbour. Six districts, three reserved plots,
@@ -28,7 +34,11 @@ older geographic positions are discarded while room and creative references surv
 ## Review the fictional local household
 
 Run `HEARTH_REVIEW_PORT=4192 node scripts/serve-whole-house-review.mjs`, then visit
-`http://127.0.0.1:4192/__review?member=MEM-001&seed=demo`.
+`http://127.0.0.1:4192/__review?seed=mountain&story=growing&run=first&member=MEM-001`.
+The **Fictional rehearsal guide** opens fixed views, existing contribution review, the
+Library, a separately labelled dated-strain chapter, and manual frame measurements.
+Use **Start a new fictional rehearsal** for another isolated fixture; previous ones remain.
+The URL is Mac-local only. iPhone access needs a separately authorized test host.
 This uses the existing loopback review harness, not hosted services or real household data.
 
 1. Open **Look around**, then **Mountain & town → Places**. Visit each district and
@@ -42,6 +52,9 @@ This uses the existing loopback review harness, not hosted services or real hous
 5. Use the reading edition to verify that essential destinations remain available without WebGL.
 
 ## Evidence and limits
+
+The following describes the foundation before the parallel continuation. The later
+implementation, browser review and check results are in the mountain worksession.
 
 The measured ordinary input-driven simulation completed in 74.47 seconds, with zero
 bails and all 22 ordered gates. This used unmodified v2 speed/steering physics, actual
@@ -66,32 +79,29 @@ five-minute budget. Exact source fingerprints, failed attempts and build results
 recorded in the worksession. These results establish local regression evidence, not
 completion of the investor release.
 
-## Remaining programme acceptance
+## Remaining programme acceptance after parallel continuation
 
-- The environment is a playable blockout with authored theme materials and details.
-  Final architecture, biome composition, town-square landscaping, the signature investor
-  camera sequence and architectural shortcut art still need a dedicated art pass.
-- Rails and supports are spatially batched and plants are instanced. Close district
-  planting and authored building exteriors now load before arrival, release beyond a
-  hysteresis band and stay pinned for race countdown/run. Cheap terrain, routes and
-  distant building silhouettes remain visible. Lifecycle tests cover repeated visits;
-  GPU memory and physical-device frame-time measurements remain open.
-- The existing condition bands govern peripheral wear, and qualifying shared task days
-  govern additional flowers. Opt-in wind/water/leaf ambience and material-sensitive footsteps use the shared frame
-  owner and existing device Sound preference. Historical repair persistence, a broader
-  interaction set, audio listening/mix acceptance and authored wildlife remain programme work.
-- Transport paths, board/skip controls and elevated arrivals exist. Cabin staging,
-  station presentation and manual boarding/arrival comfort need playtesting.
-- The race has ordered gates, countdown, timing, recovery and existing local bests.
-  Human runs on keyboard, touch and controller, every optional line, and a replay/ghost
-  presentation are not claimed complete.
-- Three-theme browser spot checks are complete; full visual acceptance, reduced-motion
-  and screen-reader walkthroughs,
-  physical-phone sustained 30 fps/frame-time percentiles, and two opted-in devices
-  agreeing on elevated positions remain open.
-- The existing fictional household supports local review. A repeatable guided investor
-  demonstration showing confirmed synthetic contribution, strain and recovery at fixed
-  viewpoints remains to be packaged after the above acceptance.
+- An authored art pass now supplies district biomes, destination silhouettes, station and
+  cabin details, town bank mosaics, shortcut fascia and the summit dome. Final composition,
+  architecture quality, lighting and the signature investor camera still require visual
+  acceptance. The environment remains a review candidate.
+- Detail streaming, instanced planting and batched supports remain. A shared terrain cut
+  exposes the town channel while preserving roads, doors and arrivals. Tests inspect actual
+  full/lite terrain triangles. Physical-phone 30fps and GPU-byte stability remain unproved.
+- Supported observations now persist bounded repair history. Benches, gates, bell,
+  overlooks and resting wildlife have ordinary readable controls. Missing/cached evidence
+  freezes recovery. Audio listening/mix and full comfort acceptance remain open.
+- The two transport craft and station details are implemented. Mac browser boarding/skip
+  reached y=110 at the summit; manual boarding and arrival comfort still need playtesting.
+- Bounded device-local race recording, ghost and replay presentation are implemented,
+  with ordered gates, recovery and course-revision validation. Human keyboard/touch runs,
+  all optional lines, a completed ghost walkthrough and controller feel remain open.
+- The fictional rehearsal is packaged locally. Its ordinary synthetic $250 confirmation
+  advanced revision 0→1 and both Fund and dam from $7,600→$7,850 in browser review.
+  Tests cover dated strain and accepted recovery; the full investor sequence is not signed off.
+- Reading-edition destination access and its Calm control were exercised. Full three-theme
+  visual acceptance, VoiceOver/reduced-motion walkthroughs and two opted-in devices agreeing
+  at elevation remain open. See the [iPhone/Mac checklist](../reviews/2026-09-24-mountain-iphone-mac.md).
 
 Risk remains **High**. Budget benefit (5): understandable Fund evidence and immediate
 tool access. Engagement benefit (3): coherent exploration and recreation. Jonathan

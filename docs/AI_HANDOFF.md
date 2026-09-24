@@ -1,3 +1,11 @@
+## 2026-09-24 — Hearth Mountain parallel continuation, local review
+
+`codex/hearth-mountain` integrates isolated art, living-world and race work from `a81e43ad`. Root owns integration, fictional rehearsal and measured evidence. See [worksession](worksessions/2026-09-24-hearth-mountain.md), [parallel packet](briefs/2026-09-24-hearth-mountain-parallel.md), and [iPhone/Mac acceptance](reviews/2026-09-24-mountain-iphone-mac.md).
+
+Authored themes/biomes/silhouettes, stations/cabins, shared town channel, observed recovery, nonfinancial interactions/wildlife, bounded local replay and guide/capture controls are implemented locally. This is a review candidate, not investor visual acceptance or physical-device proof. The source preserves existing room IDs, creative state and financial command authority. Rehearsal is loopback-only, no hosted services; the iPhone cannot access this URL. No push, merge, deployment, schema change or October security replacement is authorized by this work.
+
+Verification is not fully green: TypeScript passed; the broad High gate exceeded its budget and failed two timing-sensitive tests, subsequently repaired/isolated. Targeted repair checks passed 28 tests. The remaining serial suite passed 207 tests but both legacy actual-App browser journeys timed out; their cause remains unresolved. See the worksession for exact attempts, source scope, browser evidence and final bundle results. Do not reuse the earlier foundation's passing gate as acceptance of this continuation.
+
 ## 2026-09-22 — Authored Library and Pottery Studio, local review candidate
 
 Branch `codex/authored-interiors`, isolated checkout `.codex-work/authored-interiors`, refreshed baseline `origin/main@aaf7867d882c5dcfe94f993b9faed0f3e7174e93`. Jonathan requested depth in 1–3 interiors; this slice builds two. No deployment, merge or hosted activation.

@@ -6533,6 +6533,7 @@ export function App() {
   function readHouseCamera():[number,number,number]|undefined{if(document.querySelector(".house-world.is-overview,.house-world__stage[aria-label]"))return undefined;try{const camera=JSON.parse(document.querySelector<HTMLElement>(".house-world__canvas")?.dataset.houseCamera??"null");return Array.isArray(camera)&&camera.length===3&&camera.every(Number.isFinite)?camera as [number,number,number]:undefined;}catch{return undefined;}}
   function openHouseObject(target:string,object?:string){
     if(!household||!session)return;
+    if(target==="fund"){target="books";object="bindery/handoff-bench";setBooksPaneRequest("fund");}
     const identity:HouseIdentity={environment,householdId:household.householdId,memberId:session.memberId,scope:view};
     const route=houseTargetRoute({...activeHouseRoute,scope:view},target,object);
     saveHouseReturn(localStorage,identity,activeHouseRoute,{focus:document.activeElement instanceof HTMLElement?document.activeElement.id||"house-world-title":"house-world-title",scroll:window.scrollY,camera:readHouseCamera(),cameraComposition:readHouseComposition(),body:readHouseBody()},houseReturnSlot(route));

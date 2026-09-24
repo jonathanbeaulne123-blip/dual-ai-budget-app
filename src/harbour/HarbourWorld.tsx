@@ -1,3 +1,6 @@
+import {createMountainRecovery} from './mountain/recovery.ts';
+import {activateMountainInteraction,initialMountainInteractionState} from './mountain/life.ts';
+import {MOUNTAIN_TOUR} from './mountain/tour.ts';
 import {MountainPanel,type MountainAction} from './mountain/MountainPanel.tsx';
 import {MOUNTAIN_VERSION,TRANSPORT_STOPS} from './mountain/definition.ts';
 import {SkateHUD} from './skate/SkateHUD.tsx';
@@ -245,6 +248,13 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const identityRef = useRef(identity); identityRef.current = identity;
 
   const { reading, statusLine } = useHarbourReading({ household, memberId, today, freshness: pulseFreshness(interpretationGate), interpretationGate });
+  const recovery=useMemo(()=>{let store:Storage|null=null;try{store=localStorage;}catch{/* Restricted storage keeps observations in this session. */}return createMountainRecovery({environment:household.environment,householdId:household.householdId},store);},[household.environment,household.householdId]);
+  const [recoveryView,setRecoveryView]=useState(()=>recovery.snapshot());
+  const recoveryRef=useRef(recoveryView);
+  const [mountainLife,setMountainLife]=useState(initialMountainInteractionState);
+  const lifeRef=useRef(mountainLife);lifeRef.current=mountainLife;
+  useEffect(()=>{const view=recovery.observe(reading);if(JSON.stringify(recoveryRef.current)!==JSON.stringify(view)){recoveryRef.current=view;setRecoveryView(view);runtime.current?.setMountainRecovery(view);}},[recovery,reading]);
+  useEffect(()=>{const state=initialMountainInteractionState();lifeRef.current=state;setMountainLife(state);runtime.current?.setMountainInteraction(state);},[household.environment,household.householdId]);
   const softPeer = useMemo(() => presence?.peers.find(p => p.memberId !== memberId) ?? null, [presence, memberId]);
   /**
    * The world-presence lane (`presence/usePartnerWalk.ts`): the partner's live
@@ -366,18 +376,34 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const [mountainInspect,setMountainInspect]=useState<{section:'map'|'water'|'travel';seq:number}>();
   const pendingMountain=useRef<MountainAction|null>(null);
   const mountainAction=(action:MountainAction)=>{
-    const w=runtime.current;if(!w)return;
+    const w=runtime.current;
+    if(action.kind==='life'){
+      if(w&&w.placeId()!=='court'){pendingMountain.current=action;navigatePlace('court');return;}
+      const quiet=calmRef.current||window.matchMedia(REDUCED).matches||document.documentElement.dataset.motion==='reduced';
+      const result=activateMountainInteraction(action.id,lifeRef.current,theme,quiet);if(!result)return;
+      held.current.clear();pushBody();lifeRef.current=result.state;setMountainLife(result.state);w?.setMountainInteraction(result.state);setPhrase(result.words);
+      if(result.cue==='bell'&&comfort.sound)w?.mountainBell();
+      if(w){if(result.kind==='bench'&&result.state.seated){leaveSkating();w.mountainTravel([result.at[0],result.at[1],result.at[2]+2]);}w.look({target:[result.at[0],result.at[1]+1,result.at[2]],r:result.kind==='overlook'?36:12,theta:0,phi:1.12});}
+      return;
+    }
+    if(action.kind==='calm'){setMountainCalm(action.on);w?.mountainCalm(action.on||comfort.quiet);return;}
+    if(!w)return;
     if(action.kind==='sound'){updateComfort({sound:action.on});setWorldSound(action.on);worldAudio.current?.dispose();worldAudio.current=null;if(action.on){try{worldAudio.current=createWorldAmbience();}catch{worldAudio.current=null;}}w.setWorldAmbience(worldAudio.current);return;}
-    if(action.kind==='calm'){setMountainCalm(action.on);w.mountainCalm(action.on||comfort.quiet);return;}
     if(action.kind==='skip'){w.mountainSkip();return;}
     if(w.placeId()!=='court'){pendingMountain.current=action;navigatePlace('court');return;}
     held.current.clear();pushBody();
+    if(action.kind==='tour'){const shot=MOUNTAIN_TOUR.find(s=>s.id===action.id);if(shot)w.look(shot.pose);return;}
     if(action.kind==='view'){w.look({target:[25,80,-239],r:60,theta:0,phi:1.3});return;}
     if(action.kind==='go')w.mountainTravel(action.at);
     if(action.kind==='ride')w.mountainTravel(TRANSPORT_STOPS[action.transport][action.to]!.at,{kind:action.transport,from:action.from,to:action.to});
     if(action.kind==='race'){startSkating();w.body()?.skate.route('mountain-descent');}
     stage.current?.focus({preventScroll:true});
   };
+  const mountainActionRef=useRef(mountainAction);mountainActionRef.current=mountainAction;
+  // The loopback rehearsal can request public views/tools, never a financial command.
+  const tourRequest=useRef<(id:string)=>void>(()=>{});
+  tourRequest.current=id=>{if(id==='fund')onOpen('fund');else if(id==='enter-library')navigatePlace('library');else {const shot=MOUNTAIN_TOUR.find(s=>s.id===id);if(shot)mountainAction({kind:'tour',id:shot.id});}};
+  useEffect(()=>{if(document.documentElement.dataset.mountainRehearsal!=='true')return;const handler=(event:Event)=>{const id=(event as CustomEvent<unknown>).detail;if(typeof id==='string')tourRequest.current(id);};window.addEventListener('hearth:mountain-tour',handler);return()=>window.removeEventListener('hearth:mountain-tour',handler);},[]);
   const onTap = useCallback((hit: HarbourHit, at: { x: number; y: number }) => {
     // She stands in the Court; her touch grammar travels nowhere else.
     if (hit.kind === "queen") { if (placeRef.current !== "bank") return; const region = hit.region as QueenRegion; const action = gestureAction(region, "tap"); if (action) act(region, action, { at }); return; }
@@ -419,6 +445,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     const world = runtime.current, current = readingRef.current;
     if(id.startsWith('mountain:')){
       id=id.split('@')[0]!;
+      if(id.startsWith('mountain:life:')){mountainActionRef.current({kind:'life',id});return;}
       if(id==='mountain:journey'){openJourney();return;}
       if(id==='mountain:goals'){onOpen('loft-banks');return;}
       if(id==='mountain:pottery'){onOpen('pottery');return;}
@@ -501,7 +528,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
           avatar:avatarRef.current,onJourney:()=>openJourney(),onMountainTravel:setMountainRiding,
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
-        runtime.current = world;world.setWorldAmbience(worldAudio.current);world.mountainCalm(calmRef.current);world.go("court");
+        runtime.current = world;world.setMountainRecovery(recoveryRef.current);world.setMountainInteraction(lifeRef.current);world.setWorldAmbience(worldAudio.current);world.mountainCalm(calmRef.current);world.go("court");
         court.current = first === "bank" ? world.place() as QueenHost : null;
         world.setToolOpen(Boolean(routeRef.current.surface));
         void holdRail(world);
@@ -1018,9 +1045,9 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
       {(status==="ready"||showFlat)&&!toolOpen&&<VillageHUD appearanceRequest={appearanceRequest} place={place} travelling={travelTo} onVisit={visit} onWander={showFlat?undefined:wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={showFlat?undefined:chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
         presence={status==="ready"?<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />:undefined}/>}
-      {(status==='ready'||showFlat)&&!toolOpen&&<MountainPanel calmOn={mountainCalm||comfort.quiet} soundOn={worldSound&&comfort.sound} riding={mountainRiding} conditionWords={reading.condition.words} reading={reading.basin} statusLine={statusLine} onAction={mountainAction} onOpen={target=>{if(target==='kitchen'||target==='cottage'||target==='library'||target==='glasshouse')navigatePlace(target);else onOpen(target);}} flat={showFlat} inspect={mountainInspect}/>}
+      {(status==='ready'||showFlat)&&!toolOpen&&<MountainPanel life={mountainLife} recoveryWords={recoveryView.words} calmOn={mountainCalm||comfort.quiet} soundOn={worldSound&&comfort.sound} riding={mountainRiding} conditionWords={reading.condition.words} reading={reading.basin} statusLine={statusLine} onAction={mountainAction} onOpen={target=>{if(target==='kitchen'||target==='cottage'||target==='library'||target==='glasshouse')navigatePlace(target);else onOpen(target);}} flat={showFlat} inspect={mountainInspect}/>}
       {status==='ready'&&!toolOpen&&place==='court'&&standing&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating}
-        onSettings={skateSettings} onCommand={command=>runtime.current?.body()?.skate?.command(command)} onZonePointer={skateZone}
+        onReplay={action=>runtime.current?.body()?.skate?.replay(action)} onSettings={skateSettings} onCommand={command=>runtime.current?.body()?.skate?.command(command)} onZonePointer={skateZone}
         gesturePath={skateGesturePath} trickBook={SKATE_TRICK_BOOK}
         onPause={on=>{held.current.clear();pushBody();runtime.current?.body()?.skate?.pause(on);}} onRoute={id=>runtime.current?.body()?.skate?.route(id)}
         onSpot={id=>runtime.current?.body()?.skate?.spot(id)} onDeck={id=>runtime.current?.body()?.skate?.deck(id)}
