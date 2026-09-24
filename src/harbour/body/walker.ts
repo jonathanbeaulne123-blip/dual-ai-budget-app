@@ -81,6 +81,8 @@ export type WalkerOptions = {
    * The plain gait and nothing else.
    */
   reduced?: boolean;
+  /** Runtime motion policy for the decorative local replay (calm/tool state included). */
+  skateReducedMotion?:()=>boolean;
   /** The theme the skate look's FX are painted in. */
   theme?: LookTheme;
 };
@@ -189,7 +191,7 @@ export function createWalker(options: WalkerOptions): Walker {
   // look (board, rider pose, FX). While the board is down the look owns the
   // figure's transform and pose; the walker only mirrors the ride into `state`
   // so the camera, the doors and the partner lane read one position.
-  const skater=createSkateDriver(world);
+  const skater=createSkateDriver(world,{reducedMotion:()=>reduced||Boolean(options.skateReducedMotion?.())});
   let look:SkaterLook|null=null,lookDeck:SkateDeckId|null=null;
   let boardEmote:EmoteId|null=null,boardEmoteAt=0;
   const skateReduced=()=>reduced||skater.current()?.reducedEffects===true;
@@ -214,6 +216,7 @@ export function createWalker(options: WalkerOptions): Walker {
   }
   const skate:SkateControls={
     active:skater.active,heading:skater.heading,paused:skater.paused,hud:skater.hud,progress:skater.progress,revision:skater.revision,
+    ghost:skater.ghost,replay:skater.replay,
     run:skater.run,route:skater.route,spot:skater.spot,deck:skater.deck,settings:skater.settings,current:skater.current,command:skater.command,
     checkpoint:skater.checkpoint,input:skater.input,present:skater.present,events:skater.events,takeCut:skater.takeCut,setAudio:skater.setAudio,
     pause(on){skater.pause(on);},
