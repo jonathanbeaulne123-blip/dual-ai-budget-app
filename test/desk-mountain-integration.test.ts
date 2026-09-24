@@ -4,7 +4,7 @@ import {createRoot,type Root} from 'react-dom/client';
 import {beforeEach,afterEach,it,expect,vi} from 'vitest';
 import {seedDemoHousehold} from '../src/core/seed.ts';
 import {DeskShell,type DeskShellProps} from '../src/harbour/desk/DeskShell.tsx';
-import {DeskPlace} from '../src/harbour/desk/DeskPlace.tsx';
+import {DeskPlace,deskOutdoorDistrict} from '../src/harbour/desk/DeskPlace.tsx';
 import {publishEditionAvailability} from '../src/harbour/nav/editionAvailability.ts';
 import {chooseMotionEdition} from '../src/harbour/nav/QuickSheet.tsx';
 import {flipMotionEdition} from '../src/harbour/nav/Compass.tsx';
@@ -38,4 +38,11 @@ it('offers town and mountain doors without WebGL, closes for financial tools, an
  expect(document.activeElement).toBe(host.querySelector('[role=dialog]'));expect(host.textContent).toContain('Pottery Studio');expect(host.textContent).toContain('Library Woods');
  await act(async()=>[...host.querySelectorAll('button')].find(x=>x.textContent==='The glass dam')!.click());await act(async()=>[...host.querySelectorAll('button')].find(x=>x.textContent==='Open the Fund')!.click());expect(onOpen).toHaveBeenCalledWith('fund');
  await act(async()=>root.unmount());expect(document.activeElement).not.toBe(trigger);root=createRoot(host);trigger.remove();
+});
+
+it('names the summit from height-aware geography, without treating the road below as that plateau',async()=>{
+ expect(deskOutdoorDistrict([-7.315,110,-277])?.id).toBe('summit');expect(deskOutdoorDistrict([5,0,-284])).toBeUndefined();
+ const onOpen=vi.fn();await act(async()=>root.render(createElement(DeskPlace,{place:'court',outdoorAt:[-7.315,110,-277],onOpen,onVisit:vi.fn(),onGuide:vi.fn()})));
+ expect(host.textContent).toContain('Summit Commons');expect(host.textContent).not.toContain('Town square · at the waterfront');
+ await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Open Journey')!.click());expect(onOpen).toHaveBeenCalledWith('journey');
 });
