@@ -15,10 +15,9 @@
  */
 import type { HarbourPlaceId } from "../flag.ts";
 import { groundHeightAt } from "../scene/ground.ts";
-import { worldCollisionAt, WORLD_SOLIDS } from "../mountain/surfaces.ts";
+import { WORLD_SOLIDS, WORLD_SURFACES } from "../mountain/surfaces.ts";
 import { mountainFoliageAt } from "../mountain/planting.ts";
-import { insideVillageBuilding } from "../body/obstacles.ts";
-import { BASIN, DISTRICTS, GONDOLA_STOPS, FUNICULAR_STOPS, RESERVED_PLOTS, RIVER, TRANSPORT_STOPS, nearestOnRoute, transportPoint, type Point3, type TransportKind } from "../mountain/definition.ts";
+import { BASIN, DISTRICTS, WORLD_BOUNDS, GONDOLA_STOPS, FUNICULAR_STOPS, RESERVED_PLOTS, RIVER, TRANSPORT_STOPS, nearestOnRoute, transportPoint, type Point3, type TransportKind } from "../mountain/definition.ts";
 import { SUMMIT_OBSERVATORY } from "../mountain/artGeometry.ts";
 import { MOUNTAIN_INTERACTIONS } from "../mountain/life.ts";
 import { VILLAGE_SITES, VILLAGE_WATERFRONT } from "../village/layout.ts";
@@ -35,6 +34,29 @@ export type CameraOverlook = { id: string; at: V3; look: V3; kind: string };
 /* ── Terrain ───────────────────────────────────────────────────────────── */
 /** ADAPTER: geography's shared height query (terrain only; decks are solids). */
 export const cameraGround = (x: number, z: number): number => groundHeightAt(x, z);
+/**
+ * The same land, read from a lazily filled 1-unit grid (bilinear) for the
+ * line tests that sample it dozens of times a frame. Each cell is asked of
+ * the exact query once. The eye's own floor always uses `cameraGround`.
+ */
+const GRID = 1, GX0 = WORLD_BOUNDS.minX - 4, GZ0 = WORLD_BOUNDS.minZ - 4;
+const GW = Math.ceil((WORLD_BOUNDS.maxX + 4 - GX0) / GRID) + 2, GD = Math.ceil((WORLD_BOUNDS.maxZ + 90 - GZ0) / GRID) + 2;
+let grid: Float32Array | null = null;
+const cell = (i: number, j: number): number => {
+  grid ??= new Float32Array(GW * GD).fill(Number.NaN);
+  const k = j * GW + i;
+  let v = grid[k]!;
+  if (Number.isNaN(v)) { v = groundHeightAt(GX0 + i * GRID, GZ0 + j * GRID); grid[k] = v; }
+  return v;
+};
+export function cameraGroundFast(x: number, z: number): number {
+  const fx = (x - GX0) / GRID, fz = (z - GZ0) / GRID;
+  const i = Math.floor(fx), j = Math.floor(fz);
+  if (!(i >= 0 && j >= 0 && i < GW - 1 && j < GD - 1)) return groundHeightAt(x, z);
+  const u = fx - i, v = fz - j;
+  const a = cell(i, j), b = cell(i + 1, j), c = cell(i, j + 1), d = cell(i + 1, j + 1);
+  return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
+}
 
 /* ── Landmarks ─────────────────────────────────────────────────────────── */
 /** ADAPTER: the town square's centre (the fountain) and paving height. */
@@ -169,6 +191,39 @@ function inDamGlass(x: number, y: number, z: number, r: number): boolean {
   const a = Math.atan2(dx, dz);
   return Math.abs(a) <= BASIN.angle / 2 + 0.05;
 }
+/** The village buildings, each read once: centre, frame and ground (the fast twin of `insideVillageBuilding`). */
+const BUILDINGS = Object.values(VILLAGE_SITES).map((site) => {
+  const yaw = siteYaw(site.spot);
+  return { x: site.spot[0], z: site.spot[1], c: Math.cos(yaw), s: Math.sin(yaw), hx: site.half[0], hz: site.half[1], base: groundHeightAt(site.spot[0], site.spot[1]) };
+});
+function inBuilding(x: number, y: number, z: number, margin: number): boolean {
+  for (const b of BUILDINGS) {
+    if (y < b.base || y > b.base + 6) continue;
+    const dx = x - b.x, dz = z - b.z;
+    if (Math.abs(dx * b.c - dz * b.s) < b.hx + margin && Math.abs(dx * b.s + dz * b.c) < b.hz + margin) return true;
+  }
+  return false;
+}
+/** Every walkable deck (roads, paths, platforms, branches) with its bounds, so a far one is skipped without a search. */
+const DECKS = WORLD_SURFACES.map((surface) => {
+  let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const p of surface.points) { minX = Math.min(minX, p[0]); maxX = Math.max(maxX, p[0]); minY = Math.min(minY, p[1]); maxY = Math.max(maxY, p[1]); minZ = Math.min(minZ, p[2]); maxZ = Math.max(maxZ, p[2]); }
+  return { surface, minX, maxX, minZ, maxZ, minY, maxY };
+});
+/** A deck's slab (from 0.28 under its surface to 0.08 over it), as `worldCollisionAt` has it. */
+function inDeck(x: number, y: number, z: number, r: number): boolean {
+  for (const d of DECKS) {
+    const w = d.surface.halfWidth + r;
+    if (x < d.minX - w || x > d.maxX + w || z < d.minZ - w || z > d.maxZ + w || y < d.minY - 0.3 || y > d.maxY + 0.1) continue;
+    const p = nearestOnRoute(x, z, d.surface.points);
+    if (p.distance < w && y > p.point[1] - 0.28 && y < p.point[1] + 0.08) return true;
+  }
+  return false;
+}
+function inBoxes(boxes: readonly CameraSolid[] | readonly { min: readonly number[]; max: readonly number[] }[], x: number, y: number, z: number, r: number): boolean {
+  for (const s of boxes) if (x > s.min[0]! - r && x < s.max[0]! + r && y > s.min[1]! - r && y < s.max[1]! + r && z > s.min[2]! - r && z < s.max[2]! + r) return true;
+  return false;
+}
 /** A moving cabin (funicular or gondola) the eye must stay out of. */
 export type MovingSolid = { at: V3; half: V3 };
 /**
@@ -177,12 +232,13 @@ export type MovingSolid = { at: V3; half: V3 };
  * `tier` picks the foliage density ('lite' skips the tree test).
  */
 export function cameraBlocked(x: number, y: number, z: number, radius = 0.12, tier: "full" | "lite" = "lite", moving: MovingSolid | null = null): boolean {
-  if (y < cameraGround(x, z) + 0.05) return true;
+  // Cheapest first: boxes, the dam, the buildings, then the land and the decks.
   if (moving && Math.abs(x - moving.at[0]) < moving.half[0] + radius && Math.abs(y - moving.at[1]) < moving.half[1] + radius && Math.abs(z - moving.at[2]) < moving.half[2] + radius) return true;
-  for (const s of CAMERA_SOLIDS) if (x > s.min[0] - radius && x < s.max[0] + radius && y > s.min[1] - radius && y < s.max[1] + radius && z > s.min[2] - radius && z < s.max[2] + radius) return true;
+  if (inBoxes(CAMERA_SOLIDS, x, y, z, radius) || inBoxes(WORLD_SOLIDS, x, y, z, radius)) return true;
   if (inDamGlass(x, y, z, radius)) return true;
-  if (worldCollisionAt(x, y, z, radius)) return true;
-  if (insideVillageBuilding(x, z, radius, y)) return true;
+  if (inBuilding(x, y, z, radius)) return true;
+  if (y < cameraGroundFast(x, z) + 0.05) return true;
+  if (inDeck(x, y, z, radius)) return true;
   return tier === "full" ? mountainFoliageAt(x, y, z, tier) : false;
 }
 /** How many solids the adapter carries (a test reads it: none of the named kinds may go missing). */
