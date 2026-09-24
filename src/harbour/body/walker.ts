@@ -1,3 +1,4 @@
+import {mountainWalkRoute} from '../mountain/surfaces.ts';
 import * as THREE from "three";
 import {createSkateDriver,skateAct,SKATE_CATALOGS,type SkateControls} from '../skate/driver.ts';
 import {createSkaterLook,type LookTheme,type SkaterLook} from '../skate/look/index.ts';
@@ -108,7 +109,7 @@ export type Walker = {
   /** Stop walking there (a second tap that meant something else). */
   cancel(): void;
   /** Put it somewhere at once. */
-  place(x: number, z: number, yaw?: number): void;
+  place(x: number, z: number, yaw?: number, y?:number): void;
   /**
    * One frame. `theta` is where the camera stands, so a push of the stick is
    * read the way the screen looks. Returns true while anything of the body's
@@ -213,7 +214,7 @@ export function createWalker(options: WalkerOptions): Walker {
   }
   const skate:SkateControls={
     active:skater.active,heading:skater.heading,paused:skater.paused,hud:skater.hud,progress:skater.progress,revision:skater.revision,
-    route:skater.route,spot:skater.spot,deck:skater.deck,settings:skater.settings,current:skater.current,command:skater.command,
+    run:skater.run,route:skater.route,spot:skater.spot,deck:skater.deck,settings:skater.settings,current:skater.current,command:skater.command,
     checkpoint:skater.checkpoint,input:skater.input,present:skater.present,events:skater.events,takeCut:skater.takeCut,setAudio:skater.setAudio,
     pause(on){skater.pause(on);},
     restore(checkpoint){if(world.room)return;clearRoute();skater.restore(checkpoint);syncSkate();trail?.clear();dust.clear();drawSkate(0);},
@@ -221,12 +222,12 @@ export function createWalker(options: WalkerOptions): Walker {
       if(on){
         if(world.room)return false;
         if(skater.active())return true;
-        clearRoute();skater.mount(state.x,state.z,state.yaw,progress);syncSkate();trail?.clear();dust.clear();drawSkate(0);
+        clearRoute();skater.mount(state.x,state.z,state.yaw,progress,{y:state.y,vy:state.vy,supportId:state.supportId});syncSkate();trail?.clear();dust.clear();drawSkate(0);
       }else{
         boardEmote=null;boardEmoteAt=0;
         const s=skater.unmount();
         if(look){look.release();look.root.visible=false;}
-        if(s)state=placeBody(state,s.x,s.z,world,s.yaw);
+        if(s)state={...placeBody(state,s.x,s.z,world,s.yaw),y:s.y,vy:s.vy,air:Math.max(0,s.clearance),supportId:undefined};
         motion.skatePose=undefined;figure.pose(0,0,0,motion);write();
       }
       return true;
@@ -263,7 +264,8 @@ export function createWalker(options: WalkerOptions): Walker {
       if (next.room !== undefined) world.room = next.room;
       clearRoute();
       // Whatever it was doing was aimed at the place it was standing in.
-      state = { ...state, goal: null, stalled: 0, y: world.groundHeightAt(state.x, state.z) };
+      // Geometry refreshes must preserve the current deck/underpass and airborne height.
+      state = { ...state, goal: null, stalled: 0 };
       write();
     },
     state: () => state,
@@ -272,7 +274,12 @@ export function createWalker(options: WalkerOptions): Walker {
     input: () => input,
     goTo(x, z) {
       if(skater.active())skate.enable(false);
-      const planned = findPath({ x: state.x, z: state.z }, { x, z }, world);
+      const mountain = !world.room?mountainWalkRoute(state,{x,z}):null;
+      let planned:PathPoint[]|null;
+      if(mountain&&mountain.length>1){
+        const first=findPath(state,mountain[0]!,world),last=findPath(mountain[mountain.length-2]!,{x,z},world);
+        planned=first&&last?[...first,...mountain.slice(1,-1),...last]:null;
+      }else planned=findPath({ x: state.x, z: state.z }, { x, z }, world);
       clearRoute();
       if (!planned?.length) { state = { ...state, goal: null, stalled: 0 }; return false; }
       route = planned;
@@ -304,7 +311,7 @@ export function createWalker(options: WalkerOptions): Walker {
       else motion.flourish = 1;
     },
     cancel() { skater.input()?.reset(); clearRoute(); state = { ...state, goal: null, stalled: 0 }; },
-    place(x, z, yaw) { if(skater.active())skate.enable(false);clearRoute(); state = placeBody(state, x, z, world, yaw ?? state.yaw); write(); trail?.clear(); dust.clear(); },
+    place(x, z, yaw, y) { if(skater.active())skate.enable(false);clearRoute(); state = placeBody(state, x, z, world, yaw ?? state.yaw); if(y!==undefined&&Number.isFinite(y))state={...state,y};write(); trail?.clear(); dust.clear(); },
     step(dt, t, theta) {
       if(skater.active()){
         if(boardEmote&&!skater.paused()){

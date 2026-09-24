@@ -1,3 +1,5 @@
+import {queryWorldSurface,worldCeilingAt} from '../mountain/surfaces.ts';
+import {groundHeightAt as mountainGround} from '../scene/ground.ts';
 /**
  * Little Harbour · how a body moves over the island.
  *
@@ -179,6 +181,7 @@ export const NO_INPUT: Readonly<BodyInput> = Object.freeze({ forward: 0, strafe:
 
 /** Where a body is and what it is doing. Plain data: a second body is a second one of these. */
 export type BodyState = {
+  supportId?:string;
   x: number;
   z: number;
   /** The ground under the feet, from `groundHeightAt`. */
@@ -448,7 +451,7 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
   if (travel > 1e-6 && (moveX !== 0 || moveZ !== 0)) {
     const held = holdInWorld(state.x + moveX * travel, state.z + moveZ * travel, world);
     const wall = world.room ? stepInRoom(state.x, state.z, held.x, held.z, BODY_RADIUS, world.room) : { x: held.x, z: held.z, hit: null };
-    const clear = pushOut(wall.x, wall.z, BODY_RADIUS, world.obstacles);
+    const clear = pushOut(wall.x, wall.z, BODY_RADIUS, world.obstacles,state.y);
     // Furniture may push a body toward a wall. The wall has the last word.
     const final = world.room ? stepInRoom(state.x, state.z, clear.x, clear.z, BODY_RADIUS, world.room) : clear;
     x = final.x; z = final.z;
@@ -502,11 +505,16 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
   // whole of why a jump follows a slope: the ground is re-read every frame of
   // the flight, so coming down on the hump lands on the hump and coming down
   // off a step lands a little later.
-  const ground = world.groundHeightAt(x, z);
+  const surface=!world.room&&z < -40?queryWorldSurface({x,z,y:state.y,supportId:state.supportId},mountainGround):null;
+  let ground = surface?.y ?? world.groundHeightAt(x, z);
+  let ceiling=!world.room&&z<-40?worldCeilingAt(x,z,state.y,BODY_RADIUS):Infinity;
+  if(ceiling<state.y+BODY_HEIGHT){x=state.x;z=state.z;ground=state.y-state.air;speed=0;ceiling=worldCeilingAt(x,z,state.y,BODY_RADIUS);}
+  if(surface&&ground-state.y>.5&&air===0){x=state.x;z=state.z;ground=state.y;speed=0;}
   let landing: BodyStep["landing"] = null;
-  if (vy !== 0 || air > 0) {
+  if (vy !== 0 || air > 0 || state.y-ground>.48) {
     vy -= GRAVITY * step;
-    air += vy * step;
+    air = state.y + vy * step - ground;
+    if(vy>0&&ground+air+BODY_HEIGHT>ceiling){air=Math.max(0,ceiling-BODY_HEIGHT-ground);vy=0;}
     if (air <= 0) {
       const hit = clamp(-vy / LANDING_REFERENCE, 0, 1);
       air = 0; vy = 0; jumps = 0; crouch = 1;
@@ -530,6 +538,7 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
   } else stalled = 0;
 
   const next: BodyState = {
+    ...(surface?{supportId:surface.id}:{}),
     x, z,
     // The feet, which is the ground plus whatever of the jump is left.
     y: ground + air,

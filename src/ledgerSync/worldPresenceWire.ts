@@ -76,6 +76,7 @@ export type WorldAvatar = (typeof WORLD_AVATARS)[number];
 export type WorldTarget = { placeId: WorldPlaceId; deviceId: string };
 
 export type WorldStep = {
+  world?: "hearth-mountain-1";
   /** Metres east of the island's origin. */
   x: number;
   /** Metres south. */
@@ -122,7 +123,7 @@ export class WorldPresenceError extends Error {}
 
 const KNOWN_KEYS: Readonly<Record<string, readonly string[]>> = {
   "world-join": ["type", "version", "target"],
-  "world-step": ["type", "version", "x", "z", "yaw", "moving", "act", "p", "y", "avatar"],
+  "world-step": ["type", "version", "x", "z", "yaw", "moving", "act", "p", "y", "avatar", "world"],
   "world-leave": ["type", "version"],
 };
 
@@ -204,7 +205,9 @@ export function decodeWorldPresence(value: unknown): WorldPresenceMessage {
   // step that carries neither is exactly the step this lane always carried,
   // which is what keeps an older client walking rather than disconnected.
   const act = row.act === undefined || row.act === null ? null : worldAct(row.act);
-  const point = worldPoint(row.x, row.z);
+  if(row.world!==undefined&&row.world!=="hearth-mountain-1")throw new WorldPresenceError("WORLD_PRESENCE_VERSION");
+  const mountain=row.world==="hearth-mountain-1";
+  const point = mountain?{x:worldCoordinate(row.x,180),z:Math.max(-310,Math.min(84,worldCoordinate(row.z,310)))}:worldPoint(row.x, row.z);
   return {
     type: "world-step",
     version: 1,
@@ -213,7 +216,8 @@ export function decodeWorldPresence(value: unknown): WorldPresenceMessage {
     moving: row.moving,
     ...(row.avatar === undefined || row.avatar === null ? {} : { avatar: worldAvatar(row.avatar) }),
     ...(act ? { act, p: worldPhase(row.p ?? 0) } : {}),
-    ...(act?.startsWith('skate')&&row.y!==undefined?{y:Math.max(-8,worldCoordinate(row.y,16))}:{}),
+    ...(mountain?{world:'hearth-mountain-1' as const}:{}),
+    ...((mountain||act?.startsWith('skate'))&&row.y!==undefined?{y:Math.max(-8,worldCoordinate(row.y,mountain?150:16))}:{}),
   };
 }
 

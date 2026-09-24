@@ -140,6 +140,7 @@ export type FollowCameraOptions = {
   reduced: boolean;
   /** The island's height under a point, so the eye can be kept above the shore. */
   groundHeightAt?: (x: number, z: number) => number;
+  blocked?: (x:number,y:number,z:number)=>boolean;
   /** The lens this place is shot on, in degrees. The sprint widen is measured from it. */
   fov?: number;
 };
@@ -250,6 +251,10 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
     // a low tilt would otherwise put the eye under the grass.
     const floor = ground(ex, ez) + FOLLOW_MIN_LIFT;
     if (Number.isFinite(floor) && ey < floor) ey = floor;
+    if(options.blocked&&!hold){
+      const [tx,ty,tz]=shown.target,distance=Math.hypot(ex-tx,ey-ty,ez-tz),steps=Math.max(1,Math.ceil(distance/.2));
+      for(let i=2;i<=steps;i++){const t=i/steps;if(options.blocked(tx+(ex-tx)*t,ty+(ey-ty)*t,tz+(ez-tz)*t)){const safe=Math.max(.1,(i-1)/steps);ex=tx+(ex-tx)*safe;ey=ty+(ey-ty)*safe;ez=tz+(ez-tz)*safe;break;}}
+    }
     camera.position.set(ex, ey, ez);
     camera.up.set(0, 1, 0);
     camera.lookAt(shown.target[0], shown.target[1], shown.target[2]);

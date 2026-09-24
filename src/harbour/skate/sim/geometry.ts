@@ -127,7 +127,8 @@ export function pushOutAll(x: number, z: number, y: number, r: number, obstacles
     let moved = false;
     for (let k = 0; k < obstacles.length + solids.length; k++) {
       const o = (k < obstacles.length ? obstacles[k] : solids[k - obstacles.length])!;
-      const top = k >= obstacles.length ? (o as SkateSolid).top : Infinity;
+      const top = o.top ?? Infinity;
+      if(o.bottom!==undefined&&y+1.25<=o.bottom)continue;
       if (y >= top - 0.03) continue;
       if (o.kind === 'circle') {
         const dx = px - o.x, dz = pz - o.z, reach = o.r + r, d = Math.hypot(dx, dz);

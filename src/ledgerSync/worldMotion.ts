@@ -44,6 +44,7 @@ export const WORLD_EXPIRE_MS = 8000;
 export const WORLD_TRACK_DEPTH = 8;
 
 export type WorldSample = {
+  world?: "hearth-mountain-1";
   x: number; z: number; yaw: number; moving: boolean; at: number; y?:number;
   avatar?: WorldAvatar;
   /** What the body is doing on top of walking, off the wire. Null is the plain walk. */
@@ -134,7 +135,7 @@ export function createWorldTrack(options: WorldTrackOptions = {}): WorldTrack {
     if (age > liveMs) {
       const faded = Math.max(0, 1 - (age - liveMs) / Math.max(1, fadeMs));
       return {
-        x: newest.x, z: newest.z, yaw: newest.yaw,
+        x: newest.x, z: newest.z, yaw: newest.yaw, ...(newest.y!==undefined?{y:newest.y}:{}),
         ...(newest.avatar ? {avatar:newest.avatar} : {}),
         moving: false,
         opacity: faded,
@@ -197,7 +198,7 @@ export function createWorldTrack(options: WorldTrackOptions = {}): WorldTrack {
     return {
       ...(newest.y!==undefined?{y:newest.y}:{}),
       ...(newest.avatar?{avatar:newest.avatar}:{}),
-      ...worldPoint(newest.x + vx * reckon,newest.z + vz * reckon),
+      ...(newest.world==='hearth-mountain-1'?{x:Math.max(-180,Math.min(180,newest.x+vx*reckon)),z:Math.max(-310,Math.min(84,newest.z+vz*reckon))}:worldPoint(newest.x + vx * reckon,newest.z + vz * reckon)),
       yaw: newest.yaw,
       // The guess has run out: stand still rather than mime a walk on no data.
       moving: over <= reckonMs,

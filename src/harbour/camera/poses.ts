@@ -76,7 +76,7 @@ export const FLAGSTONE = Object.freeze({ x: 0, z: 1.6, size: 0.9 });
  * three was already most of the way to the far wall. Every Court pose is
  * unchanged; the bounds only say how far a hand may take the camera.
  */
-export const COURT_BOUNDS = Object.freeze({ minR: 2, maxR: 160, minPhi: 0.25, maxPhi: 1.38, targetRadius: 76 });
+export const COURT_BOUNDS = Object.freeze({ minR: 2, maxR: 440, minPhi: 0.25, maxPhi: 1.38, targetRadius: 345 });
 
 /** How high on each anchor the "object" pose looks (about mid-height of what stands there). */
 const ANCHOR_LOOK_HEIGHT: Readonly<Record<CourtAnchor, number>> = Object.freeze({
@@ -264,6 +264,14 @@ export function holdPoseInRoom(pose: CourtPose, hold: RoomHold | null): CourtPos
     if (limit < room) room = limit;
   }
   r = Math.min(r, Math.max(0, room));
+  // A migrated target can lie outside both the room and the eye volume. When
+  // shortening reaches zero, move that invalid target into their intersection.
+  if(target.some((v,i)=>v+r*direction[i]!<hold.eye.min[i]!-1e-9||v+r*direction[i]!>hold.eye.max[i]!+1e-9)){
+    for(let axis=0;axis<3;axis++)target[axis]=held(target[axis]!,Math.max(hold.target.min[axis]!,hold.eye.min[axis]!),Math.min(hold.target.max[axis]!,hold.eye.max[axis]!));
+    room=Infinity;
+    for(let axis=0;axis<3;axis++){const d=direction[axis]!;if(Math.abs(d)>1e-9)room=Math.min(room,((d>0?hold.eye.max[axis]!:hold.eye.min[axis]!)-target[axis]!)/d);}
+    r=Math.min(r,Math.max(0,room));
+  }
   return { target, r, theta, phi };
 }
 

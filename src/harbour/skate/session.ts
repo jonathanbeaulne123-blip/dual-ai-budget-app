@@ -1,3 +1,5 @@
+import {crossesRaceGate,type RaceGate} from '../mountain/race.ts';
+import type {Point3} from '../mountain/definition.ts';
 /**
  * Tideline Skate Club — device-local progress, challenges and island stats (v2).
  *
@@ -20,7 +22,7 @@ import type {Grindable, ScoreOutcome, SkatePresent, SkateSimEvent, Stance} from 
 /* ------------------------------------------------------------------ tables */
 /** The minimum the session needs from the park's tables. PARK may add fields and change ids freely. */
 export type SpotLike = {readonly id: string; readonly name: string; readonly words: string; readonly x: number; readonly z: number; readonly halfWidth: number; readonly halfDepth: number};
-export type RouteLike = {readonly id: string; readonly name: string; readonly detail?: string; readonly seconds: readonly number[]; readonly points: readonly (readonly [number, number])[]};
+export type RouteLike = {readonly id: string; readonly name: string; readonly detail?: string; readonly seconds: readonly number[]; readonly points: readonly (readonly [number, number])[];readonly gates?:readonly RaceGate[]};
 export type DeckLike = {readonly id: string; readonly name: string; readonly colour: string; readonly ink: string; readonly discoveries?: number};
 export type FeatureLike = {readonly id: string; readonly name?: string; readonly x: number; readonly z: number};
 export type NamedLike = {readonly id: string; readonly name: string; readonly difficulty?: number};
@@ -311,16 +313,18 @@ function visit(session: SkateSession, x: number, z: number): void {
   }
   if (!session.spotCard || session.spotCard.id !== spot.id || fresh) session.spotCard = {id: spot.id, name: spot.name, words: spot.words, fresh, seq: ++cardSeq};
 }
-function stepRun(session: SkateSession, x: number, z: number, bailing: boolean, dt: number): void {
+const racePrevious=new WeakMap<object,Point3>();
+function stepRun(session: SkateSession, x: number, z: number, bailing: boolean, dt: number,y=0): void {
   const run = session.run, p = session.progress;
   if (!run || run.finished) return;
+  const previous=racePrevious.get(run);racePrevious.set(run,[x,y,z]);
   const step = Math.min(.1, Math.max(0, Number.isFinite(dt) ? dt : 0));
   if (run.countdown > 0) { run.countdown = Math.max(0, run.countdown - step); if (run.countdown === 0) session.message = 'Go · find the first gold ring'; return; }
   run.elapsed += step;
   const route = tables.routes.find(r => r.id === run.id);
   if (!route) { session.run = null; return; }
   const target = route.points[run.checkpoint];
-  if (target && !bailing && Math.hypot(x - target[0], z - target[1]) < 2.8) {
+  if (target && !bailing && (route.gates ? Boolean(previous&&crossesRaceGate(previous,[x,y,z],route.gates[run.checkpoint]!)) : Math.hypot(x - target[0], z - target[1]) < 2.8)) {
     run.checkpoint++;
     if (run.checkpoint >= route.points.length) {
       run.finished = true; run.medal = skateMedal(run.id, run.elapsed);
@@ -431,7 +435,7 @@ export function observeSkate(session: SkateSession, present: SkatePresent, event
     }
     session.line = freshLine();
   }
-  stepRun(session, x, z, present.phase === 'bail', dt);
+  stepRun(session, x, z, present.phase === 'bail', dt,present.y);
   if (before !== JSON.stringify(p)) session.revision++;
 }
 

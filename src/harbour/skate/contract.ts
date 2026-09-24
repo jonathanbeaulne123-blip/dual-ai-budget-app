@@ -52,8 +52,8 @@ export type Grindable = {
 
 /** Solid things you can't ride through (ramp backs, stair risers, planters). Same shape as body obstacles. */
 export type SkateSolid =
-  | { kind: 'circle'; id: string; x: number; z: number; r: number; top: number }
-  | { kind: 'obox'; id: string; x: number; z: number; halfX: number; halfZ: number; yaw: number; top: number };
+  | { kind: 'circle'; id: string; x: number; z: number; r: number; top: number; bottom?:number }
+  | { kind: 'obox'; id: string; x: number; z: number; halfX: number; halfZ: number; yaw: number; top: number; bottom?:number };
 
 export type SkateSpot = {
   id: string; name: string; words: string;
@@ -63,7 +63,9 @@ export type SkateSpot = {
 
 /** What the sim rides on. The park track implements it; the sim track only consumes it (tests use synthetic fields). */
 export interface SkateField {
-  sample(x: number, z: number): SurfaceSample;
+  /** Lowest overhead deck underside above these feet; Infinity means open air. */
+  ceilingAt?(x:number,z:number,feet:number):number;
+  sample(x: number, z: number, y?:number,supportId?:string|null): SurfaceSample;
   readonly grindables: readonly Grindable[];
   /** Park solids. The island's own obstacles (buildings, trees, shoreline) are merged in by integration. */
   readonly solids: readonly SkateSolid[];

@@ -1358,3 +1358,33 @@ Risk **Medium-High**. Budget delta (5): **0**. Engagement delta (3): **+3 intend
 ### 2026-09-24 — D-297: Skate v2 joins the current Harbour walker
 
 Jonathan's supplied skate v2 bundle is integrated onto the current Harbour mainline with the playable Bianca and Jonathan avatar loader preserved. While walking with manual keys, the camera follows the person without rotating away from the heading those keys use; selected tap routes may recenter behind travel. Shift changes speed when pressed after movement begins. While skating, A/D remain left/right, and keys 1–6 play visible rider emotes without dismounting. E stays a grab. The rider keeps its planted skate pose under each expression. Recreational progress remains device-local and has no financial effect. Risk Medium-High. Budget (5): 0; Engagement (3): +3 intended. [Integration worksession](worksessions/2026-09-24-skate-v2-walking-integration.md).
+
+### 2026-09-24 — Hearth Mountain shared geography and accepted water
+
+Jonathan approved the mountain neighbourhood programme above the existing harbour town.
+One versioned world definition now supplies districts, reserved plots, roads, branches,
+transport alignments and basin geography. Walking, skating and camera obstruction share
+altitude-aware supports and bounded obstacles; race gates require directional crossings
+at their actual height. Existing room IDs, creative objects and financial entry points
+remain authoritative at their new addresses. Legacy geographic positions migrate safely;
+incompatible peer positions are unavailable rather than incorrectly projected into town.
+
+The main basin reads the accepted Household Fund operating projection. Internal Kitty
+movements use the reserve chamber; pending amounts never fill accepted water. Natural
+river flow is atmospheric, accepted movements use bounded pulses, and initial/reconnected
+evidence primes the view without replaying income. The display has no write authority.
+Existing seven-day/thirty-day condition bands govern peripheral wear; navigation and
+race collision never degrade. Risk High. Budget delta (5): clearer Fund evidence and
+direct tool access. Engagement delta (3): connected exploration, transport and recreation.
+The [worksession](worksessions/2026-09-24-hearth-mountain.md) records the tested local
+foundation and outstanding programme acceptance. No deployment or October security
+milestone is implied by this implementation.
+
+Mountain detail now has explicit residency: close district planting and authored building
+exteriors load around the traveller, release beyond a hysteresis band, and remain pinned
+during the descent. Shared terrain, routes, collision and cheap silhouettes remain present.
+Immutable terrain lattices are reused per render tier; scene GPU resources retain their
+own lifetime. Optional original ambience follows the existing device Sound preference,
+requires a user gesture, and falls quiet for tools, hidden/suspended rendering and calm
+scenery. Calm also survives indoor travel and renderer/theme rebuilds. Physical-device
+frame-time, GPU-memory and audio-mix acceptance remain open in the same worksession.

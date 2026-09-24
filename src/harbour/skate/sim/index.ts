@@ -62,6 +62,7 @@ export type SkateCatalogs = {
 export type GrindLockApproach = { deckYawToLine: number; lean: number; overLine: boolean; faceSide: -1 | 0 | 1; frontside: boolean; push: number };
 export type SkateSimOptions = {
   x: number; z: number; yaw: number; stance: Stance; reducedAssist?: boolean;
+  y?:number; vy?:number; supportId?:string;
   /** Island obstacles (buildings/trees) in body-obstacle form; injected by integration. */
   islandObstacles?: readonly Obstacle[];
   /**
@@ -100,7 +101,7 @@ type StallS = { id: 'rock-to-fakie' | 'axle-stall'; t: number; inX: number; inZ:
 type WallS = { id: string; nx: number; nz: number; side: 1 | -1; t: number; field: boolean };
 type ManualS = { kind: 'manual' | 'nose-manual'; seconds: number; distance: number; seed: number };
 type SlideS = { side: 1 | -1; over: number; seconds: number };
-type Pose = { x: number; z: number; yaw: number };
+type Pose = { x: number; z: number; yaw: number; y?:number; supportId?:string|null };
 
 type SimState = {
   ver: 2; t: number; acc: number; seq: number;
@@ -160,9 +161,10 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   const pGrind: { grindId: string; grindableId: string; faceSign: -1 | 1 } = { grindId: '', grindableId: '', faceSign: 1 };
   const pBail = { t: 0, reason: '', dirX: 0, dirZ: 1 };
 
-  function sample(x: number, z: number, out: Sample, fallbackY: number): Sample {
+  let stateReady=false;
+  function sample(x: number, z: number, out: Sample, fallbackY: number, spawn = false, supportId?:string|null): Sample {
     let s: SurfaceSample | null = null;
-    try { s = field.sample(x, z); } catch { s = null; }
+    try { s = field.sample(x, z, spawn?undefined:fallbackY,supportId??(!spawn&&stateReady?S.feature:null)); } catch { s = null; }
     const y = s && Number.isFinite(s.y) ? s.y : fallbackY;
     let nx = fin(s?.nx), ny = fin(s?.ny, 1), nz = fin(s?.nz);
     if (ny < 0.08) ny = 0.08;
@@ -175,12 +177,13 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     return out;
   }
 
-  function freshState(x: number, z: number, yaw: number, stance: Stance): SimState {
+  function freshState(x: number, z: number, yaw: number, stance: Stance, y?:number, vy=0, supportId?:string): SimState {
     x = fin(x); z = fin(z); yaw = wrap(fin(yaw));
-    sample(x, z, S0, 0);
+    sample(x, z, S0, y??0, y===undefined, supportId);
+    const height=y===undefined?S0.y:Math.max(y,S0.y),air=height-S0.y>.08;
     return {
-      ver: 2, t: 0, acc: 0, seq: 0, mode: 'ground',
-      x, y: S0.y, z, vx: 0, vy: 0, vz: 0,
+      ver: 2, t: 0, acc: 0, seq: 0, mode: air?'air':'ground',
+      x, y: height, z, vx: 0, vy:air?vy:0, vz: 0,
       boardYaw: yaw, boardPitch: 0, boardRoll: 0, bodyTwist: 0, slideAngle: 0,
       lead: 1, feetSwapped: false, stance: stance === 'goofy' ? 'goofy' : 'regular',
       crouch: 0, crouchPeak: 0, lean: 0, carve: 0, turnRate: 0, pushPhase: 0, stroke: false,
@@ -190,11 +193,11 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       grind: null, stall: null, wall: null, cooldownLine: -1, cooldown: 0, balance: 0,
       manual: null, manualResume: false, slide: null,
       landTimer: 0, sinceLand: 9, impact: 0, bail: null, recoverT: 0,
-      safe: [{ x, z, yaw }], safeT: 0, marker: null, spawn: { x, z, yaw },
+      safe: [{ x, z, yaw, y:S0.y,supportId:S0.feature }], safeT: 0, marker: null, spawn: { x, z, yaw, y:S0.y,supportId:S0.feature },
     };
   }
 
-  let S = freshState(opts.x, opts.z, opts.yaw, opts.stance);
+  let S = freshState(opts.x, opts.z, opts.yaw, opts.stance,opts.y,opts.vy,opts.supportId);stateReady=true;
   /** Crouch before this substep's filter update (pump reads the change). */
   let pumpPrevCrouch = 0;
   /** Lip flag of the last grounded sample (so a thin lip strip is not stepped over). */
@@ -269,7 +272,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     if (SX.lip) return;
     pushOutAll(S.x, S.z, S.y, T.RADIUS + 0.15, island, solids, H);
     if (H.id) return;
-    const pose: Pose = { x: S.x, z: S.z, yaw: travelYaw() };
+    const pose: Pose = { x: S.x, z: S.z, yaw: travelYaw(),y:S.y,supportId:S.feature };
     S.safe.push(pose);
     if (S.safe.length > 5) S.safe.shift();
   }
@@ -461,8 +464,8 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   /** Outward normal of an upward step at (x,z), from the height gradient. */
   function stepNormal(x0: number, z0: number, x1: number, z1: number, out: { x: number; z: number }): void {
     const e = 0.06;
-    const hx = sample(x1 + e, z1, SX, 0).y - sample(x1 - e, z1, SX, 0).y;
-    const hz = sample(x1, z1 + e, SX, 0).y - sample(x1, z1 - e, SX, 0).y;
+    const hx = sample(x1 + e, z1, SX, S.y).y - sample(x1 - e, z1, SX, S.y).y;
+    const hz = sample(x1, z1 + e, SX, S.y).y - sample(x1, z1 - e, SX, S.y).y;
     let nx = -hx, nz = -hz, l = Math.hypot(nx, nz);
     if (l < 1e-6) { nx = x0 - x1; nz = z0 - z1; l = Math.hypot(nx, nz); }
     if (l < 1e-9) { nx = -Math.sin(S.boardYaw); nz = -Math.cos(S.boardYaw); l = 1; }
@@ -1379,22 +1382,22 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     for (let i = S.safe.length - 1; i >= 0; i--) {
       const p = S.safe[i]!;
       if (Math.hypot(p.x - bx, p.z - bz) < 0.8 && i > 0) continue;
-      pushOutAll(p.x, p.z, sample(p.x, p.z, SX, S.y).y, T.RADIUS, island, solids, H);
+      pushOutAll(p.x, p.z, sample(p.x, p.z, SX, p.y??S.y,false,p.supportId).y, T.RADIUS, island, solids, H);
       if (H.id || SX.lip || SX.ny < 0.9) continue;
       pick = p; break;
     }
     if (!pick) pick = S.marker ?? S.spawn;
     const hazard = b && (b.reason === 'wall' || b.reason === 'water');
     const yaw = hazard ? wrap(pick.yaw + Math.PI) : pick.yaw;
-    placeAt(pick.x, pick.z, yaw);
+    placeAt(pick.x, pick.z, yaw,pick.y,pick.supportId);
     S.mode = 'recover';
     S.recoverT = T.RECOVER_TIME;
-    S.safe = [{ x: pick.x, z: pick.z, yaw }];
+    S.safe = [{ ...pick, yaw }];
     emit({ t: S.t, kind: 'recovered', moved: Math.hypot(pick.x - bx, pick.z - bz) > 0.05 });
   }
 
-  function placeAt(x: number, z: number, yaw: number): void {
-    sample(x, z, S1, S.y);
+  function placeAt(x: number, z: number, yaw: number,y?:number,supportId?:string|null): void {
+    sample(x, z, S1, y??S.y,false,supportId);
     S.x = x; S.z = z; S.y = S1.y;
     S.vx = 0; S.vy = 0; S.vz = 0;
     S.gnx = S1.nx; S.gny = S1.ny; S.gnz = S1.nz; S.kind = S1.kind; S.feature = S1.feature;
@@ -1411,6 +1414,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
 
   function substep(): void {
     const dt = DT;
+    const beforeX=S.x,beforeY=S.y,beforeZ=S.z;
     S.t += dt;
     S.cooldown = Math.max(0, S.cooldown - dt);
     S.impact *= Math.exp(-T.IMPACT_DECAY * dt);
@@ -1437,6 +1441,12 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
         break;
     }
 
+    // A jump cannot pass up through a bridge; a low passage stops horizontal travel.
+    if(field.ceilingAt&&S.mode!=='grind'){
+      const height=1.55,ceiling=field.ceilingAt(S.x,S.z,Math.min(beforeY,S.y));
+      if(ceiling<beforeY+height){S.x=beforeX;S.z=beforeZ;S.vx=0;S.vz=0;}
+      else if(S.vy>0&&S.y+height>ceiling){S.y=ceiling-height;S.vy=0;}
+    }
     // Age the one-shot buffers.
     if (S.pendPop) { S.pendPop.age += dt; if (S.pendPop.age > T.POP_BUFFER) S.pendPop = null; }
     if (S.pendLate) { S.pendLate.age += dt; if (S.pendLate.age > T.POP_BUFFER) S.pendLate = null; }
@@ -1446,7 +1456,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     if (!(Number.isFinite(S.x) && Number.isFinite(S.y) && Number.isFinite(S.z) && Number.isFinite(S.vx) && Number.isFinite(S.vy) && Number.isFinite(S.vz) &&
       Number.isFinite(S.boardYaw) && Number.isFinite(S.boardPitch) && Number.isFinite(S.boardRoll) && Number.isFinite(S.balance))) {
       const p = S.safe[S.safe.length - 1] ?? S.spawn;
-      placeAt(p.x, p.z, p.yaw);
+      placeAt(p.x, p.z, p.yaw,p.y,p.supportId);
     }
   }
 
@@ -1566,13 +1576,13 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       if (S.mode !== 'ground' || S.recoverT > 0 || speed3() > T.MARKER_MAX_SPEED || S.gny < 0.9) return false;
       sample(S.x, S.z, SX, S.y);
       if (SX.lip) return false;
-      S.marker = { x: S.x, z: S.z, yaw: wrap(S.boardYaw - S.slideAngle + (S.lead < 0 ? Math.PI : 0)) };
+      S.marker = { x: S.x, z: S.z,y:S.y,supportId:S.feature, yaw: wrap(S.boardYaw - S.slideAngle + (S.lead < 0 ? Math.PI : 0)) };
       return true;
     },
     toMarker() {
       const p = S.marker ?? S.spawn;
-      placeAt(p.x, p.z, p.yaw);
-      S.safe = [{ x: p.x, z: p.z, yaw: p.yaw }];
+      placeAt(p.x, p.z, p.yaw,p.y,p.supportId);
+      S.safe = [{ ...p }];
       writePresent();
     },
   };
