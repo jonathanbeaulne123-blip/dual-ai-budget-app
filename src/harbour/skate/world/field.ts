@@ -1,5 +1,6 @@
 import {SKILL_BRANCHES,TOWN_RACE_ROAD,nearestOnRoute} from '../../mountain/definition.ts';
-import {queryWorldSurface,worldCeilingAt,WORLD_SURFACES} from '../../mountain/surfaces.ts';
+import {queryWorldSurface,WORLD_SURFACES} from '../../mountain/surfaces.ts';
+import {overheadAt} from '../../body/overhead.ts';
 /**
  * Tideline Skate Club v2 · world — the SkateField the sim rides on.
  *
@@ -372,7 +373,8 @@ export function createSkateField(ground: (x: number, z: number) => number, opts:
 
   for(const s of WORLD_SURFACES.filter(s=>!s.id.startsWith('path:')&&!s.id.startsWith('station:')&&s.id!=='mountain-road'&&s.id!=='town-race-road'))grindables.push({id:s.id,name:s.id.replaceAll('-',' '),kind:'round-rail',featureId:s.id,points:s.points.map(p=>[p[0],p[1]+.6,p[2]]),faceYaw:null});
   return {
-    ceilingAt:(x,z,feet)=>z<-40?worldCeilingAt(x,z,feet):Infinity,
+    // The same overhead the walker reads: a ramp or path mouth rising off the road is never a roof.
+    ceilingAt:(x,z,feet)=>z<-40?overheadAt(x,z,feet):Infinity,
     tier, ground, pads, grindables, solids, spots,
     trickZoneAt(x,z) {
       for(const pad of pads){

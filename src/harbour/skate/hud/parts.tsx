@@ -125,14 +125,22 @@ export function Radar({model, partnerName}: {model: SkateHudModel; partnerName?:
     </svg>
     {spot ? <ol className="skate-radar__goals" aria-label={`${spot.name} goals`}>
       {spot.goals.map(g => <li key={g.key} data-done={g.done}><span aria-hidden="true">{g.done ? '✦' : '◇'}</span>{g.title}{!g.done && g.progress > 0 && <i style={{transform: `scaleX(${g.progress})`}} aria-hidden="true"/>}</li>)}
-    </ol> : <span className="skate-radar__caption">{partnerName ? `Riding with ${partnerName}` : `${model.discovered}/${model.spotTotal} spots · ${model.challenges.done}/${model.challenges.total} goals`}</span>}
+    </ol> : <span className="skate-radar__caption">{partnerName ? `Riding with ${partnerName}` : model.run?.raced ? `${model.run.name} · ${model.run.gate}/${model.run.gates} gates` : `${model.discovered}/${model.spotTotal} spots · ${model.challenges.done}/${model.challenges.total} goals`}</span>}
   </div>;
 }
 
-export function RouteCard({run, onEnd, onRetry}: {run: NonNullable<SkateHudModel['run']>; onEnd(): void; onRetry?():void}) {
-  return <div className="skate-route-live">
-    <b>{run.name}</b><span>{run.label}</span>{run.distance !== null && <small>{run.distance} m to the gold ring</small>}
-    {onRetry && <button className="skate-route-restart" type="button" onClick={onRetry}>Restart race</button>}
+/**
+ * The live race card. During a raced course it counts gates passed out of the
+ * gates there are; at the finish it offers the tool the race ends beside —
+ * "Open the Fund" (the demo's last step) — and a clean restart.
+ */
+export function RouteCard({run, onEnd, onRetry, onOpenFund}: {run: NonNullable<SkateHudModel['run']>; onEnd(): void; onRetry?():void; onOpenFund?():void}) {
+  const finished = run.finished && run.raced;
+  return <div className="skate-route-live" data-route-finished={finished || undefined}>
+    <b>{run.name}</b><span role={finished ? 'status' : undefined}>{run.label}</span>
+    {!run.finished && run.distance !== null && <small>{run.distance} m to {run.gate + 1 >= run.gates ? 'the finish' : `gate ${run.gate + 1}`}</small>}
+    {finished && onOpenFund && <button className="skate-route-fund" type="button" onClick={onOpenFund}>Open the Fund</button>}
+    {onRetry && <button className="skate-route-restart" type="button" onClick={onRetry}>{run.finished ? 'Race again' : 'Restart race'}</button>}
     <button type="button" aria-label="End route and free skate" onClick={onEnd}>×</button>
   </div>;
 }

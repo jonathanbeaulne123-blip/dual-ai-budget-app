@@ -1,6 +1,7 @@
 import {courseSignature,replayPose,type GhostPose,type ReplayAction} from './replay.ts';
 import {groundHeightAt} from '../scene/ground.ts';
 import {holdAshore,type Obstacle} from '../body/obstacles.ts';
+import {raceCorridorAt} from '../body/geography.ts';
 import {type ScoreLine,type ScoreOutcome,type SkateIntent,type SkatePresent,type SkateSimEvent,type Stance} from './contract.ts';
 import {createSkateSim,type SkateSim,type SkateSimOptions} from './sim/index.ts';
 import {createSkateInput,gesturePath as flickPath,type SkateInput} from './input/index.ts';
@@ -11,7 +12,7 @@ import {SKATE_DECKS,SKATE_ROUTES,SKATE_SPOTS,skateFieldFor,type SkateDeckId,type
 import type {SkateWorldField} from './world/field.ts';
 import {skateDressingSolids} from './world/dressingSolids.ts';
 import {
-  chooseSkateDeck,cloneSkateProgress,createSkateSession,observeSkate,setSkateSettings,setSkateTables,skateTables,startSkateRoute,
+  chooseSkateDeck,cloneSkateProgress,createSkateSession,observeSkate,retrySkateRoute,setSkateSettings,setSkateTables,skateTables,startSkateRoute,
   type SkateProgress,type SkateSession,type SkateSettings,type SkateRun,
 } from './session.ts';
 import {buildHudModel,type ControlHint,type ControlHintSet,type Glyph,type SkateHudModel} from './hud/model.ts';
@@ -57,7 +58,12 @@ export type SkateControls={
   /** Ghost is decorative, never a player/presence body. Null while paused, inactive or reduced effects. */
   ghost():GhostPose|null;
   replay(action:ReplayAction):void;
-  command(command:'respawn'|'marker'):void;
+  /**
+   * `retry` during a race: back to the last gate passed, the run (and its
+   * clock) kept; outside a race it is `respawn`. `respawn`: back to your marker
+   * (a race in progress is retried, never cancelled).
+   */
+  command(command:'respawn'|'marker'|'retry'):void;
   checkpoint():SkateCheckpoint|null;
   restore(checkpoint:SkateCheckpoint):void;
   /** The input to route keys, pointers, touch zones into (present only while riding). */
@@ -73,10 +79,16 @@ export type SkateControls={
 /** What the driver needs from where it rides. Island obstacles are read when the board is put down. */
 export type SkateDriverWorld={obstacles:readonly Obstacle[]};
 
-/** Sim options for the island (integration seam: island obstacles merged with the park, shoreline held). */
-export function skateSimOptions(obstacles:readonly Obstacle[],field:SkateWorldField=skateField()):Pick<SkateSimOptions,'islandObstacles'|'shore'|'extraSolids'|'complexPhysicsAt'> {
-  return {islandObstacles:obstacles,shore:holdAshore,extraSolids:skateDressingSolids(field),complexPhysicsAt:field.trickZoneAt};
+/**
+ * Sim options for the island (integration seam: island obstacles merged with
+ * the park, shoreline held). Travel assist everywhere outside trick zones, but
+ * the real slope on the race corridor: the mountain road is a descent.
+ */
+export function skateSimOptions(obstacles:readonly Obstacle[],field:SkateWorldField=skateField()):Pick<SkateSimOptions,'islandObstacles'|'shore'|'extraSolids'|'complexPhysicsAt'|'slopeGravityAt'> {
+  return {islandObstacles:obstacles,shore:holdAshore,extraSolids:skateDressingSolids(field),complexPhysicsAt:field.trickZoneAt,slopeGravityAt:raceCorridorAt};
 }
+/** The run-out after the finish lasts until the board has stopped, or this long at most (seconds). */
+export const RUNOUT_SECONDS=9;
 
 /** The catalogs every part of the ride uses, with TRICKS' grind namer injected into the sim. */
 export const SKATE_CATALOGS=Object.freeze({...skateCatalogs(),resolveGrind});
@@ -181,6 +193,8 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
   let outcome:{outcome:ScoreOutcome;seq:number}|null=null,outcomeSeq=0;
   const frame:SkateSimEvent[]=[];
   let ghostEnabled=false,replayTime:number|null=null;
+  /** Seconds of finish run-out left (0: none). */
+  let runoutLeft=0,runoutFor:object|null=null;
   const savedReplay=()=>{const r=session.progress.raceReplay,course=r&&skateTables().routes.find(c=>c.id===r.course);return r&&course&&r.signature===courseSignature(course)?r:null;};
   const quiet=()=>Boolean(settings().reducedEffects||(options.reducedMotion?.()??(typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches)));
   const settings=()=>session.progress.settings;
@@ -197,13 +211,23 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
     sim=createSkateSim(field,SKATE_CATALOGS,{x,z,yaw,...position,stance:s.stance,...skateSimOptions(world.obstacles,field)});
     input=createSkateInput({stance:s.stance,mode:s.controls,...(options.getGamepads!==undefined?{getGamepads:options.getGamepads}:{})});
     score=createSkateScore({stance:s.stance,catalogs:SKATE_CATALOGS});
-    paused=false;cut=true;simTime=0;outcome=null;frame.length=0;
+    paused=false;cut=true;simTime=0;outcome=null;frame.length=0;runoutLeft=0;runoutFor=null;
     syncInput(sim.present());
   }
   function restart(x:number,z:number,yaw:number){
     if(!sim)return;
     replayTime=null;
-    sim.reset(x,z,yaw);score?.reset();input?.reset();frame.length=0;cut=true;paused=false;
+    sim.reset(x,z,yaw);score?.reset();input?.reset();frame.length=0;cut=true;paused=false;runoutLeft=0;sim.setRunout(false);
+  }
+  /** Back to the last gate passed, facing through it; the run and its clock carry on. */
+  function retryRace():boolean{
+    const run=session.run;if(!sim||!run||run.finished||run.countdown>0)return false;
+    const route=skateTables().routes.find(r=>r.id===run.id),gate=route?.gates?.[Math.max(0,run.checkpoint-1)];
+    if(!route||!gate)return false;
+    const [nx,nz]=gate.normal;
+    sim.placeAt(gate.at[0]+nx*1.2,gate.at[2]+nz*1.2,Math.atan2(nx,nz),gate.at[1]);
+    retrySkateRoute(session);score?.reset();input?.reset();frame.length=0;cut=true;replayTime=null;
+    return true;
   }
   function note(outs:readonly ScoreOutcome[]):number{
     let banked=0;
@@ -263,8 +287,10 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
       const waiting=(session.run?.countdown??0)>0;
       let banked=0;
       if(!waiting){
-        if(intent.respawn){const outs=score.drop('respawn');banked=note(outs);session.run=null;cut=true;}
-        const r=sim.step(intent,step);
+        // R in a race is Retry: the last gate, the run kept (it used to cancel the race).
+        const retried=intent.respawn&&retryRace();
+        if(intent.respawn&&!retried){const outs=score.drop('respawn');banked=note(outs);session.run=null;cut=true;}
+        const r=sim.step(retried?{...intent,respawn:false}:intent,step);
         simTime+=step;
         for(const e of r.events)frame.push(e);
         if(frame.length)simTime=Math.max(simTime,frame[frame.length-1]!.t);
@@ -274,6 +300,12 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
         observeSkate(session,p,frame,outs[0]??null,step);
         for(let i=1;i<outs.length;i++)observeSkate(session,p,[],outs[i]!,0);
         syncInput(p);
+        // The finish run-out: from the line until the board has stopped, braked, and the shore is a bumper.
+        const run=session.run;
+        if(run?.finished&&runoutFor!==run){runoutFor=run;runoutLeft=RUNOUT_SECONDS;}
+        if(runoutLeft>0){runoutLeft=Math.max(0,runoutLeft-step);if(p.speed<.3&&p.phase!=='air')runoutLeft=0;}
+        if(!run?.finished)runoutLeft=0;
+        sim.setRunout(runoutLeft>0);
       }else{
         observeSkate(session,sim.present(),[],null,step);
         if(intent.respawn)cut=true;
@@ -297,6 +329,7 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
     },
     route(id:SkateRouteId|null){
       if(!sim)return;
+      runoutLeft=0;sim.setRunout(false);
       if(!id){replayTime=null;session.run=null;session.revision++;return;}
       const route=SKATE_ROUTES.find(r=>r.id===id);if(!route)return;
       const a=route.points[0]!,b=route.points[1]!;
@@ -312,7 +345,8 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
     settings(patch:Partial<SkateSettings>){setSkateSettings(session,patch);applySettings();},
     command(c:'respawn'|'marker'){
       if(!sim)return;
-      if(c==='respawn'){replayTime=null;sim.toMarker();const outs=score?.drop('respawn')??[];note(outs);session.run=null;input?.reset();cut=true;}
+      if((c==='retry'||c==='respawn')&&retryRace())return;
+      if(c==='respawn'||c==='retry'){replayTime=null;sim.toMarker();const outs=score?.drop('respawn')??[];note(outs);session.run=null;input?.reset();cut=true;}
       else if(!sim.setMarker())session.message='Stop on flat ground to set your marker';
       else session.message='Marker set · R brings you back';
     },
@@ -338,6 +372,8 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
       if(!savedReplay()||quiet()||(session.run&&!session.run.finished))return;
       replayTime=0;paused=false;input?.reset();frame.length=0;audio?.update(null,[],0,{paused:true});
     },
+    /** The finish run-out is braking the board right now. */
+    runout:()=>runoutLeft>0,
     deckId:():SkateDeckId=>session.progress.deck,
     stance:():Stance=>settings().stance,
     run:()=>session.run,

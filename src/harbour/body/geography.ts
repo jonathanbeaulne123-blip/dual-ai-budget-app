@@ -8,7 +8,7 @@
  * calls it changing. Pure: no three.js, no DOM, no clock.
  */
 import {DISTRICTS,FOOTPATHS,MOUNTAIN_ROAD,RESERVED_PLOTS,TRANSPORT_STOPS,WORLD_BOUNDS,mountainBaseHeight,nearestOnRoute,transportPoint,type Point3,type TransportKind} from '../mountain/definition.ts';
-import {SKILL_BRANCHES,WORLD_SOLIDS,queryWorldSurface,worldCeilingAt,type WorldSolid,type WorldSurfaceHit} from '../mountain/surfaces.ts';
+import {SKILL_BRANCHES,WORLD_SOLIDS,queryWorldSurface,type WorldSolid,type WorldSurfaceHit} from '../mountain/surfaces.ts';
 import {MOUNTAIN_COURSE_POINTS,MOUNTAIN_GATES,type RaceGate} from '../mountain/race.ts';
 import {groundHeightAt} from '../scene/ground.ts';
 import {HARBOUR_LAND,HARBOUR_LANES} from '../village/world.ts';
@@ -34,23 +34,8 @@ export function supportAt(x:number,z:number,y:number|undefined,supportId:string|
   return queryWorldSurface({x,z,...(y===undefined?{}:{y}),supportId:supportId??null,stepHeight},terrain);
 }
 
-/**
- * The underside of whatever stands over the feet, for BOTH the walker and the
- * skater. A deck lower than `OVERHEAD_MIN` above the feet is not somewhere a
- * body can pass beneath — it is a ramp mouth or a ledge's side — so it is
- * never a ceiling (the dead-stop the race met at every branch and footpath
- * mouth). A real overhead passage returns its underside.
- * CONTRACT: `worldCeilingAt` (mountain/surfaces.ts).
- */
-export const OVERHEAD_MIN = 1.7;
-export function overheadAt(x:number,z:number,feet:number,radius=.2):number{
-  let ceiling=worldCeilingAt(x,z,feet,radius);
-  // Undersides are deck − 0.28: a deck within OVERHEAD_MIN of the feet is a mouth, not a roof.
-  for(let guard=0;guard<4&&Number.isFinite(ceiling)&&ceiling+.28<feet+OVERHEAD_MIN;guard++){
-    ceiling=worldCeilingAt(x,z,ceiling+.29,radius);
-  }
-  return ceiling;
-}
+/** Overhead clearance (see `overhead.ts`, kept apart to avoid an import cycle with the skate field). */
+export {OVERHEAD_MIN,overheadAt} from './overhead.ts';
 
 /* ───────────────────────────────────────────────────────────── edges */
 
