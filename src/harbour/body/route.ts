@@ -8,7 +8,7 @@
  * lanes, stations), entering and leaving it by short obstacle-aware walks.
  * Pure: no three.js, no DOM, no clock.
  */
-import {findPath,type PathPoint,type PathWorld} from './pathfinder.ts';
+import {findPath,pathSegmentClear,type PathPoint,type PathWorld} from './pathfinder.ts';
 import {nearestWalkNodes,walkGraphRoute,type WalkNode} from './geography.ts';
 
 export type RoutePoint={x:number;z:number;y?:number};
@@ -45,13 +45,27 @@ export function planWalk(from:RoutePoint,to:RoutePoint,world:PathWorld):WalkPlan
   if(straight<12&&sameLevel){const l=local();if(l)return {...l,length:polylineLength(l.points)};}
   const start=access(from,world,from.y,true),end=access(to,world,to.y,false);
   if(!start||!end)return null;
-  const nodes=start.node.id===end.node.id?[start.node]:walkGraphRoute(start.node.id,end.node.id);
+  let nodes=start.node.id===end.node.id?[start.node]:walkGraphRoute(start.node.id,end.node.id);
   if(!nodes)return null;
+  // The network is drawn without the buildings on it: a path may end at a building's centre. The walk
+  // follows the network only while it is clear, and leaves it for the destination from the last node
+  // that an obstacle-aware walk reaches — a doorway, not a wall.
+  let exit:PathPoint[]=end.walk;
+  // Only the approach is checked: along the way a body slides round what it meets (a fountain on a lane).
+  const near=(n:{x:number;z:number})=>Math.hypot(n.x-to.x,n.z-to.z)<25;
+  const blocked=nodes.findIndex((n,i)=>i>0&&near(n)&&!pathSegmentClear(nodes![i-1]!,n,world));
+  if(blocked>0||!pathSegmentClear(nodes[nodes.length-1]!,{x:end.walk[0]?.x??to.x,z:end.walk[0]?.z??to.z},world)){
+    const upTo=blocked>0?blocked:nodes.length;
+    let found=-1;
+    for(let k=upTo-1;k>=Math.max(0,upTo-16);k--){const walk=findPath(nodes[k]!,{x:to.x,z:to.z},world);if(walk){found=k;exit=walk;break;}}
+    if(found<0)return null;
+    nodes=nodes.slice(0,found+1);
+  }
   const points:RoutePoint[]=[{x:from.x,z:from.z,...(from.y===undefined?{}:{y:from.y})}];
   const push=(p:RoutePoint)=>{const last=points[points.length-1]!;if(Math.hypot(p.x-last.x,p.z-last.z)>.05)points.push(p);};
   for(const p of start.walk)push(p);
   for(const n of nodes)push({x:n.x,z:n.z,y:n.y});
-  for(const p of end.walk)push(p);
+  for(const p of exit)push(p);
   push({x:to.x,z:to.z,...(to.y===undefined?{}:{y:to.y})});
   return {points,length:polylineLength(points),viaNetwork:true};
 }
