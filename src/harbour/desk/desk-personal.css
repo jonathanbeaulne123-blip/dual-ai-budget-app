@@ -87,14 +87,10 @@
   .desk-today--personal .desk-hercules { align-self: start; }
 }
 
-/* ── The three editions ── */
-.desk--taylor .desk-plate-card.desk-card::before { width: 42px; height: 9px; top: -4px; border-radius: 1px; transform: rotate(-3deg); opacity: .85; }
-.desk--taylor .desk-seal__sub { font-style: italic; }
-.desk--newfoundland .desk-plate-card.desk-card::before { left: 0; width: 100%; height: 3px; top: -3px; border-radius: 0; }
-.desk--newfoundland .desk-plate-card__glance { font-family: var(--font, system-ui, sans-serif); letter-spacing: .01em; }
+/* ── The three dressings live in desk-dressings.css (S7). ── */
 
 @media (prefers-reduced-motion: reduce) {
-  .desk-plate-card, .desk-plate-card:hover, .desk-plate-card:active { transition: none !important; transform: none !important; }
+  .desk-plate-card, .desk-plate-card:hover, .desk-plate-card:active { transition: none !important; animation: none !important; transform: none !important; }
 }
 @media (forced-colors: active) {
   .desk-plate-card.desk-card { border: 2px solid CanvasText; }

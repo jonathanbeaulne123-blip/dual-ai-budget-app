@@ -2,7 +2,7 @@ import { useId, useMemo } from "react";
 import { DeskLevel } from "./DeskLevel.tsx";
 import { DeskPersonalToday } from "./DeskPersonalToday.tsx";
 import { engravedCents, sundialAngle } from "./engraved.ts";
-import { deskPots, readHercules, readNext, readSeals, readSnapshot, readWalk, type DeskNext, type DeskPot } from "./todayModel.ts";
+import { deskPots, readHercules, readNext, readSeals, readSitdown, readSnapshot, readWalk, type DeskNext, type DeskPot, type DeskSitdown } from "./todayModel.ts";
 import { shortDate } from "../nav/doorSigns.ts";
 import type { DeskPageProps } from "./types.ts";
 
@@ -18,16 +18,18 @@ export function DeskToday(props: DeskPageProps) {
   return props.scope === "personal" ? <DeskPersonalToday {...props} /> : <DeskHouseholdToday {...props} />;
 }
 
-function DeskHouseholdToday({ household, memberId, scope, today, onOpen, onTalk }: DeskPageProps) {
+function DeskHouseholdToday({ household, memberId, scope, today, reading, onOpen, onTalk }: DeskPageProps) {
   const snapshot = useMemo(() => readSnapshot(household, memberId, scope, today), [household, memberId, scope, today]);
   const pots = useMemo(() => deskPots(snapshot ?? EMPTY_SNAPSHOT, engravedCents), [snapshot]);
   const { seals, monthLabel } = useMemo(() => readSeals(household, memberId, scope, today), [household, memberId, scope, today]);
   const walk = useMemo(() => readWalk(household, scope, today), [household, scope, today]);
   const next = useMemo(() => readNext(walk, today), [walk, today]);
   const hercules = useMemo(() => readHercules(household, memberId, scope, today), [household, memberId, scope, today]);
+  const sitdown = useMemo(() => readSitdown(reading, household, memberId, scope, today), [reading, household, memberId, scope, today]);
   const leftover = seals?.leftoverCents ?? null;
   const ids = useId();
-  return <div className="desk-today">
+  return <div className="desk-today" data-desk-sitdown={sitdown?.why}>
+    {sitdown && <DogEar sitdown={sitdown} onOpen={onOpen} />}
     <button type="button" className="desk-card desk-now" data-desk-pot="everyday" onClick={() => onOpen(pots.everyday.target)}
       aria-label={`Everyday, now: ${engravedCents(pots.everyday.cents)}. ${pots.everyday.line}. Meet the Queen.`}>
       <span className="desk-card__kicker">Everyday · now</span>
@@ -83,6 +85,19 @@ function Pot({ pot, onOpen }: { pot: DeskPot; onOpen: (target: string, object?: 
     <span className="desk-card__kicker">{pot.name}</span>
     <strong className="desk-figure">{engravedCents(pot.cents)}</strong>
     <span className="desk-card__line">{pot.line}</span>
+  </button>;
+}
+
+/**
+ * The dog-ear (S7): the page's corner folded down while the month's Sitdown
+ * waits. A real button — the fold, with "Sitdown" pencilled on its back — that opens
+ * the Plan Studio, where the Campfire's door goes.
+ */
+function DogEar({ sitdown, onOpen }: { sitdown: DeskSitdown; onOpen: (target: string, object?: string) => void }) {
+  return <button type="button" className="desk-dogear" data-desk-dogear={sitdown.why} onClick={() => onOpen("plan-studio")}
+    aria-label={`The month’s Sitdown is waiting. ${sitdown.words}. Pull out the Plan Studio.`}>
+    <span className="desk-dogear__word" aria-hidden="true">Sitdown</span>
+    <span className="desk-dogear__fold" aria-hidden="true" />
   </button>;
 }
 

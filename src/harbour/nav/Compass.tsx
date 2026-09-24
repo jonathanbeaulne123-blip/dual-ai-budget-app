@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type TouchEvent as ReactTouchEvent } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode, type TouchEvent as ReactTouchEvent } from "react";
 import { FabSpeedDial } from "../../FabSpeedDial.tsx";
 import type { FabAction, FabAddMode } from "../../core/fabActions.ts";
+import { engravedCents } from "../desk/engraved.ts";
+import { compactCents, useBarBadges } from "./barBadges.ts";
+import { usePageTurn } from "./pageTurn.ts";
 import { MOTION_KEY, chooseMotionEdition, readMotionEdition, type MotionEdition } from "./QuickSheet.tsx";
 import "./harbour-nav.css";
 
@@ -116,23 +119,49 @@ export function editionFlipWords(edition: MotionEdition, world: EditionWorld = "
  * whose name says where it goes (not a pressed-state toggle), so a screen
  * reader hears "Switch to the simple view" and then "Switch to the illustrated
  * harbour" — never a state it has to translate.
+ *
+ * At rest on the way to the Desk it wears the household's Everyday "Now"
+ * (S7), compact, so the button previews the page it opens. The figure is
+ * supplementary: the name stays the same, and the full figure is the button's
+ * description. Personal scope, and a bar the App has not dressed, wear none.
  */
 export function EditionFlip({ className, storage, world = "harbour" }: { className?: string; storage?: Pick<Storage, "getItem" | "setItem">; world?: EditionWorld }) {
   const edition = useMotionEdition(storage);
   const words = editionFlipWords(edition, world);
+  const badges = useBarBadges();
+  const figureId = useId();
+  const wearsFigure = edition !== "flat" && world === "harbour" && badges.scope === "household";
   return (
     <button
       type="button"
       className={`edition-flip${className ? ` ${className}` : ""}`}
       style={TARGET}
       data-edition-flip={edition}
+      data-edition-figure={wearsFigure ? (badges.everydayCents === null ? "unknown" : "known") : undefined}
       aria-label={words.aria}
+      aria-describedby={wearsFigure ? figureId : undefined}
       title={`${words.label} (\`)`}
       onClick={() => flipMotionEdition(storage)}
     >
       <b aria-hidden="true">{edition === "flat" ? "≋" : "▤"}</b> <span>{words.label}</span>
+      {wearsFigure && <small className="edition-flip__figure" aria-hidden="true">{compactCents(badges.everydayCents)}</small>}
+      {wearsFigure && <i className="edition-flip__description" id={figureId} hidden>{`Everyday, now: ${engravedCents(badges.everydayCents)}`}</i>}
     </button>
   );
+}
+
+/**
+ * The pawprint on All tools (S7): Hercules has a fresh suggestion. A marker
+ * with its own words, read as the button's description; the button's name
+ * stays "All tools". Returns the description id (or undefined) and the mark.
+ */
+export function useToolsPawprint(): [string | undefined, ReactNode] {
+  const { suggestion } = useBarBadges();
+  const id = useId();
+  if (!suggestion) return [undefined, null];
+  return [id, <i key="pawprint" className="bar-pawprint" data-bar-pawprint="" id={id} role="img" aria-label="Hercules has a suggestion">
+    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><ellipse cx="10" cy="13.4" rx="4.6" ry="3.9" /><ellipse cx="4.3" cy="8.6" rx="1.9" ry="2.4" /><ellipse cx="8" cy="5.2" rx="1.9" ry="2.5" /><ellipse cx="12" cy="5.2" rx="1.9" ry="2.5" /><ellipse cx="15.7" cy="8.6" rx="1.9" ry="2.4" /></svg>
+  </i>];
 }
 
 /** Pure: would a key typed here be typing? Inputs, textareas, selects, contenteditable, textboxes. */
@@ -160,8 +189,14 @@ export function editionKeyShouldFlip(event: Pick<KeyboardEvent, "key" | "ctrlKey
   return true;
 }
 
-/** Listen for the backtick while `enabled`. The App owns this so it works over the island and on every door. */
+/**
+ * Listen for the backtick while `enabled`. The App owns this so it works over
+ * the island and on every door — and with it the page turn (S7), which plays
+ * whoever wrote the edition.
+ */
 export function useEditionFlipKey(enabled: boolean, storage?: Pick<Storage, "getItem" | "setItem">): void {
+  // The page turn (S7) is heard wherever the edition is written, so it rides with the key.
+  usePageTurn(enabled, storage);
   useEffect(() => {
     if (!enabled) return;
     const onKey = (event: KeyboardEvent) => {
@@ -206,6 +241,7 @@ export function Compass(props: CompassProps) {
   const { fab, onQuickSheet, fabOpen = false } = props;
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const islandBar = useIslandBarStanding();
+  const [pawprint, paw] = useToolsPawprint();
 
   function onTouchStart(event: ReactTouchEvent) {
     const touch = event.touches[0];
@@ -236,10 +272,11 @@ export function Compass(props: CompassProps) {
         className="harbour-bar__tools"
         style={TARGET}
         aria-label="All tools"
+        aria-describedby={pawprint}
         title="All tools (swipe up or press Space)"
         onClick={onQuickSheet}
       >
-        <b aria-hidden="true">☰</b> <span>All tools</span>
+        <b aria-hidden="true">☰</b> <span>All tools</span>{paw}
       </button>
     </nav>
   );

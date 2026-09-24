@@ -31,10 +31,18 @@ function sign(place: "court" | "cellar" | "library", fallback: string) {
 }
 const calendarSign = ({ reading }: DeskSignContext) => reading?.next ? `Next · ${reading.next.label} ${shortDate(reading.next.date)}` : "Nothing dated";
 
+/**
+ * The household reads the harbour's door signs; personal scope has no harbour
+ * (and no Fund), so my folio's chips say what its own pages hold (S7).
+ */
+function scoped(household: (context: DeskSignContext) => string, personal: string) {
+  return (context: DeskSignContext) => context.scope === "personal" ? personal : household(context);
+}
+
 export const DESK_PAGES: readonly DeskPage[] = [
-  { id: "today", chip: "Today", subtitle: sign("court", "The Fund, this month"), Page: DeskToday },
-  { id: "leaving", chip: "Leaving", subtitle: sign("cellar", "What leaves next"), Page: DeskLeaving },
-  { id: "accounts", chip: "Accounts", subtitle: () => "Every account, as the books hold it", Page: DeskAccounts },
-  { id: "calendar", chip: "Calendar", subtitle: calendarSign, Page: DeskCalendar },
-  { id: "books", chip: "Books", subtitle: sign("library", "The standing books"), Page: DeskBooks },
+  { id: "today", chip: "Today", subtitle: scoped(sign("court", "The Fund, this month"), "My folio, this month"), Page: DeskToday },
+  { id: "leaving", chip: "Leaving", subtitle: scoped(sign("cellar", "What leaves next"), "What leaves next, from my Calendar"), Page: DeskLeaving },
+  { id: "accounts", chip: "Accounts", subtitle: scoped(() => "Every account, as the books hold it", "My own accounts, as Personal Books hold them"), Page: DeskAccounts },
+  { id: "calendar", chip: "Calendar", subtitle: scoped(calendarSign, "My days, this week and this month"), Page: DeskCalendar },
+  { id: "books", chip: "Books", subtitle: scoped(sign("library", "The standing books"), "My books, as Personal Books keep them"), Page: DeskBooks },
 ];

@@ -17,6 +17,7 @@ import { HouseWorld } from './house/HouseWorld.tsx';
 import { HARBOUR_ENABLED, harbourOwnsRoute, harbourPlaceFor } from './harbour/flag.ts';
 import { harbourArrivalRoute, tabSession } from './harbour/nav/arrival.ts';
 import { Compass, EditionFlip, useEditionFlipKey, useMotionEdition, type CompassFab } from './harbour/nav/Compass.tsx';
+import { usePublishBarBadges } from './harbour/nav/barBadges.ts';
 import { QuickSheet } from './harbour/nav/QuickSheet.tsx';
 import { HarbourFlat } from './harbour/flat/PlaceFlat.tsx';
 import { PersonalJourney } from './house/PersonalJourney.tsx';
@@ -3548,6 +3549,8 @@ export function App() {
   const view: LedgerView = session?.view ?? "household";
   // The backtick flips between the two worlds (Simple View Desk S1) in both spaces (S5); never Tab, never while typing, never under a modal.
   useEditionFlipKey(HARBOUR_ENABLED && Boolean(household && session));
+  // The bar's little things (S7): the flip wears Everyday "Now"; All tools wears a pawprint when Hercules has a fresh suggestion.
+  usePublishBarBadges(HARBOUR_ENABLED && household && session ? { household, memberId: session.memberId, scope: view, today } : null);
   /** The chosen edition: flat is the simple view. Personal scope reads it to stand the Desk in place of the illustrated house (S5). */
   const motionEdition = useMotionEdition();
   const workspaceCapabilityEnabled = import.meta.env.VITE_HERCULES_WORKSPACE === "1";

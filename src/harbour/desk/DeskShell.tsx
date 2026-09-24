@@ -7,6 +7,7 @@ import { DESK_PAGES } from "./pages.ts";
 import { flipToHarbour } from "./flip.ts";
 import "./desk.css";
 import "./desk-personal.css";
+import "./desk-dressings.css";
 
 /**
  * The Desk (SIMPLE_VIEW_DESK S2) — the app's 2D world, the Harbourmaster's

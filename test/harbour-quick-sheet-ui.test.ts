@@ -126,9 +126,10 @@ it("carries the physical destination through the shell event", async () => {
 });
 
 it("marks the tools that have no room of their own, and names no others", () => {
-  // Hercules opens wherever you are standing; the dressing room lives in the Cottage. Every other
-  // tool has a room, and walking to it is what opens it.
-  expect(quickSheetRoomless().sort()).toEqual(["hercules"]);
+  // Hercules opens wherever you are standing; the dressing room lives in the Cottage. Shifts (S7)
+  // is the Shifts page, not a house object, so it too opens wherever you are. Every other tool has
+  // a room, and walking to it is what opens it.
+  expect(quickSheetRoomless().sort()).toEqual(["hercules", "shift"]);
   const rooms = quickSheetPlaces();
   expect(rooms).toHaveLength(12);
   for (const row of rooms) {
@@ -150,7 +151,7 @@ it("marks the tools that have no room of their own, and names no others", () => 
 it("marks the roomless tools in the sheet itself", async () => {
   await act(async () => root.render(createElement(QuickSheet, props())));
   const marked = [...host.querySelectorAll<HTMLButtonElement>("[data-quick-sheet-roomless]")].map((b) => b.dataset.quickSheetTool);
-  expect(marked.sort()).toEqual(["hercules"]);
+  expect(marked.sort()).toEqual(["hercules", "shift"]);
 });
 
 it("roves with the arrow keys and jumps to the ends, so a thumb is not the only way in", async () => {
