@@ -55,7 +55,7 @@ describe("src/harbour source fences", () => {
     // body and the seam the live-position lane installs itself into. Like every
     // other directory here, neither reaches anything outside the harbour, which
     // the import fence below is what proves.
-    const dirs = ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "body", "presence", "interiors", "village", "skate"];
+    const dirs = ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "body", "presence", "interiors", "village", "skate", "desk"];
     const seen = new Set(files.map((f) => relative(harbour, f).replace(/\\/g, "/").split("/")[0]).filter((part) => part && !part.endsWith(".ts") && !part.endsWith(".tsx")));
     for (const dir of ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat"]) expect([...seen]).toContain(dir);
     for (const name of [...seen]) expect(dirs).toContain(name);
@@ -77,7 +77,8 @@ describe("src/harbour source fences", () => {
   });
 
   it("never touches fetch, localStorage or the books outside the loaders and the shell's return records", () => {
-    const allowed = new Set(["assets/loadGlb.ts", "court/queenPlace.ts", "scene/quality.ts", "nav/QuickSheet.tsx", "nav/arrival.ts", "HarbourWorld.tsx"]);
+    // `desk/flip.ts` writes the same `hearth:motion` preference the quick sheet's edition switch writes (SIMPLE_VIEW_DESK).
+    const allowed = new Set(["assets/loadGlb.ts", "court/queenPlace.ts", "scene/quality.ts", "nav/QuickSheet.tsx", "nav/arrival.ts", "HarbourWorld.tsx", "desk/flip.ts"]);
     const offences: string[] = [];
     for (const file of files) {
       const name = relative(harbour, file).replace(/\\/g, "/");
