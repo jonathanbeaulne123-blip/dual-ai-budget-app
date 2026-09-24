@@ -31,7 +31,8 @@ type ContractPathNode={id:string;kind:string;at:Point3;district?:string};
 type ContractTransportFrame={s:number;at:Point3;tangent:Point3};
 type ContractTransportLine={length:number;cruise:number;stations:readonly {id:string;s:number;at:Point3}[];at(s:number):ContractTransportFrame};
 export type GeographyContract={
-  MOUNTAIN_ROAD_LINE?:{samples:readonly ContractRoadSample[]};
+  MOUNTAIN_ROAD_LINE?:{id:string;samples:readonly ContractRoadSample[]};
+  ORCHARD_LANE_LINE?:{id:string;samples:readonly ContractRoadSample[]};
   EDGE_SOLIDS?:readonly {id:string;a:readonly [number,number];b:readonly [number,number];bottom:number;top:number;thickness:number}[];
   MOUNTAIN_PATH_GRAPH?:{nodes:readonly ContractPathNode[];edges:readonly ContractPathEdge[]};
   transportSpline?:(kind:TransportKind)=>ContractTransportLine;
@@ -75,12 +76,13 @@ export const HARD_EDGES:ReadonlySet<EdgeKind>=new Set(['parapet','wall','bridge'
  * CONTRACT: geography's per-sample road edge kinds (`roadEdgeKindAt(x,z)` /
  * `ROAD_SAMPLES[i].edges`), keyed by the support id.
  */
-let roadSamplePoints:Point3[]|null=null;
+const samplePoints=new Map<string,Point3[]>();
 export function edgeKindAt(supportId:string|null|undefined,x:number,z:number):EdgeKind{
-  const line=contract.MOUNTAIN_ROAD_LINE;
-  if(!line?.samples.length||supportId!=='mountain-road')return 'open';
-  roadSamplePoints??=line.samples.map(s=>s.at);
-  const q=nearestOnRoute(x,z,roadSamplePoints),sample=line.samples[Math.min(line.samples.length-1,q.index+(q.t>.5?1:0))]!;
+  // The support id names the line (`mountain-road`, `orchard-lane`, …); anything unclassified is open.
+  const line=[contract.MOUNTAIN_ROAD_LINE,contract.ORCHARD_LANE_LINE].find(l=>l&&l.samples.length&&(l.id===supportId||(supportId==='mountain-road'&&l===contract.MOUNTAIN_ROAD_LINE)));
+  if(!line||!supportId)return 'open';
+  let points=samplePoints.get(line.id);if(!points){points=line.samples.map(s=>s.at);samplePoints.set(line.id,points);}
+  const q=nearestOnRoute(x,z,points),sample=line.samples[Math.min(line.samples.length-1,q.index+(q.t>.5?1:0))]!;
   // `normal` points to the LEFT of uphill travel.
   const left=(x-sample.at[0])*sample.normal[0]+(z-sample.at[2])*sample.normal[2]>=0;
   return left?sample.left:sample.right;
