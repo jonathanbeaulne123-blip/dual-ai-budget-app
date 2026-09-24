@@ -52,7 +52,9 @@ const serialFixtureTests = [
 // but completes below its original 15-second limit in the serial UI lane.
 // The wardrobe recovery suite likewise passes alone but exceeds its unchanged
 // 15-second per-test limit under concurrent host pressure.
-const serialTimingTests = ["continuity-two-browser-proof.test.ts", "hercules-private-chat-ui.test.ts", "hercules-wardrobe-ui.test.ts"];
+// The integrated park field and room runtime also exceed 15 seconds under
+// four concurrent workers; all 123 tests pass together in the serial lane.
+const serialTimingTests = ["continuity-two-browser-proof.test.ts", "hercules-private-chat-ui.test.ts", "hercules-wardrobe-ui.test.ts", "harbour-walk-everywhere.test.ts", "skate-sim-ride.test.ts", "skate-world.test.ts"];
 
 const rpcIsolatedFixtureTests = [
   "demo-shift-statistics.test.ts",
