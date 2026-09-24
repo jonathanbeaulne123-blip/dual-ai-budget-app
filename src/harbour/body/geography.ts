@@ -132,11 +132,15 @@ export function worldBoundary():Polygon{
   if(boundary)return boundary;
   const cx=0,cz=-185,rays=144,out:[number,number][]=[];
   for(let i=0;i<rays;i++){
+    // Marched in from the far end: the first land met is the outline (inland water stays inside).
     const a=i/rays*Math.PI*2,dx=Math.sin(a),dz=Math.cos(a);let last=0;
-    for(let r=0;r<=270;r+=2){
+    let far=270;
+    for(const [lo,hi,d] of [[WORLD_BOUNDS.minX,WORLD_BOUNDS.maxX,dx],[WORLD_BOUNDS.minZ,-40,dz]] as const){
+      const c=d===dx?cx:cz;if(d>1e-9)far=Math.min(far,(hi-c)/d);else if(d<-1e-9)far=Math.min(far,(lo-c)/d);
+    }
+    for(let r=Math.floor(far);r>0;r-=2){
       const x=cx+dx*r,z=cz+dz*r;
-      if(x<WORLD_BOUNDS.minX||x>WORLD_BOUNDS.maxX||z<WORLD_BOUNDS.minZ||z>-40)break;
-      if(mountainBaseHeight(x,z)>-.3||nearestOnRoute(x,z).distance<5)last=r;
+      if(mountainBaseHeight(x,z)>-.3||nearestOnRoute(x,z).distance<5){last=r;break;}
     }
     out.push([cx+dx*Math.max(0,last-.6),cz+dz*Math.max(0,last-.6)]);
   }

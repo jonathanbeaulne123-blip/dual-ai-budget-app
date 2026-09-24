@@ -406,7 +406,7 @@ export type BodyStep = {
 
 const tan = (deg: number): number => Math.tan((deg * Math.PI) / 180);
 /** What the ground ahead says about walking one way from where the feet are. */
-type Ahead = { up: boolean; lip: boolean; kerb: boolean; hard: boolean; grade: number; ux: number; uz: number };
+export type Ahead = { up: boolean; lip: boolean; kerb: boolean; hard: boolean; grade: number; ux: number; uz: number };
 
 /**
  * Read the ground ahead over two FIXED baselines. Nothing here depends on how

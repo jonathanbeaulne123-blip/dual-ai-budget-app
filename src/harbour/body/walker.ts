@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import {followRoute,planWalk,steer,type RouteFollow,type WalkPlan} from './route.ts';
+import {RUN_ROUTE_LENGTH,followRoute,planWalk,steer,type RouteFollow,type WalkPlan} from './route.ts';
 import {createSkateDriver,skateAct,SKATE_CATALOGS,type SkateControls} from '../skate/driver.ts';
 import {createSkaterLook,type LookTheme,type SkaterLook} from '../skate/look/index.ts';
 import type {SkateDeckId} from '../skate/park.ts';
@@ -316,24 +316,26 @@ export function createWalker(options: WalkerOptions): Walker {
       const planned = planWalk({ x: state.x, z: state.z, y: state.y - state.air }, { x, z, ...(y === undefined || !Number.isFinite(y) ? {} : { y }) }, world);
       lastPlan = planned;
       if (!planned || planned.points.length < 2) { state = { ...state, goal: null, stalled: 0 }; return false; }
-      route = followRoute(planned);
       const end = planned.points[planned.points.length - 1]!;
       // The destination is held out of anything solid first, so a tap on a wall walks to its foot.
       state = walkTo(state, end.x, end.z, world);
-      state = { ...state, goal: { ...state.goal!, pass: true, run: route.run } };
+      const held = state.goal!;
+      route = followRoute({ ...planned, points: [...planned.points.slice(0, -1), { ...end, x: held.x, z: held.z }] }, planned.length > RUN_ROUTE_LENGTH);
+      state = { ...state, goal: { ...held, pass: true, run: route.run } };
       steerRoute();
       return true;
     },
     plan: () => lastPlan,
     attach(pose) {
       if (pose) {
+        const boarded = ride !== null;
         if (skater.active()) skate.enable(false);
         clearRoute();
         ride = pose;
         state = { ...state, x: pose.x, y: pose.y, z: pose.z, yaw: pose.yaw, speed: 0, air: 0, vy: 0, goal: null, stalled: 0, slide: 0, charge: 0, emote: null, returning: null, peak: pose.y };
         setFade(1);
         write();
-        trail?.clear(); dust.clear();
+        if (!boarded) { trail?.clear(); dust.clear(); }
       } else ride = null;
     },
     riding: () => ride !== null,

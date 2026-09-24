@@ -78,7 +78,7 @@ export function planWalk(from:RoutePoint,to:RoutePoint,world:PathWorld):WalkPlan
 export type RouteFollow={points:readonly RoutePoint[];cum:readonly number[];length:number;s:number;run:boolean};
 export function followRoute(plan:WalkPlan,run=plan.length>RUN_ROUTE_LENGTH):RouteFollow{
   const cum=[0];for(let i=1;i<plan.points.length;i++)cum.push(cum[i-1]!+Math.hypot(plan.points[i]!.x-plan.points[i-1]!.x,plan.points[i]!.z-plan.points[i-1]!.z));
-  return {points:plan.points,cum,length:plan.length,s:0,run};
+  return {points:plan.points,cum,length:cum[cum.length-1]!,s:0,run};
 }
 export function pointAlong(f:RouteFollow,s:number):RoutePoint{
   const at=Math.max(0,Math.min(f.length,s));let i=1;
