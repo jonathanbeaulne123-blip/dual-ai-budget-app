@@ -1,3 +1,4 @@
+import {courseSignature,createRaceRecorder,decodeRaceReplay,type RaceRecorder,type RaceReplay,type ReplaySample} from './replay.ts';
 import {crossesRaceGate,type RaceGate} from '../mountain/race.ts';
 import type {Point3} from '../mountain/definition.ts';
 /**
@@ -22,7 +23,7 @@ import type {Grindable, ScoreOutcome, SkatePresent, SkateSimEvent, Stance} from 
 /* ------------------------------------------------------------------ tables */
 /** The minimum the session needs from the park's tables. PARK may add fields and change ids freely. */
 export type SpotLike = {readonly id: string; readonly name: string; readonly words: string; readonly x: number; readonly z: number; readonly halfWidth: number; readonly halfDepth: number};
-export type RouteLike = {readonly id: string; readonly name: string; readonly detail?: string; readonly seconds: readonly number[]; readonly points: readonly (readonly [number, number])[];readonly gates?:readonly RaceGate[]};
+export type RouteLike = {readonly id: string; readonly name: string; readonly revision?:string|number; readonly detail?: string; readonly seconds: readonly number[]; readonly points: readonly (readonly [number, number])[];readonly gates?:readonly RaceGate[]};
 export type DeckLike = {readonly id: string; readonly name: string; readonly colour: string; readonly ink: string; readonly discoveries?: number};
 export type FeatureLike = {readonly id: string; readonly name?: string; readonly x: number; readonly z: number};
 export type NamedLike = {readonly id: string; readonly name: string; readonly difficulty?: number};
@@ -72,6 +73,9 @@ export type SkateProgress = {
   discovered: string[];
   bestLine: number;
   routeBest: Partial<Record<string, number>>;
+  /** A single bounded best mountain run, scoped by the existing progress storage key. */
+  raceReplay?: RaceReplay | null;
+  routeSignatures?: Record<string,string>;
   stamps: string[];
   /** Completed Own the Spot goals, `${spotId}:${goalKind}`. */
   goals: string[];
@@ -121,7 +125,7 @@ export function deckRequirement(deck: DeckLike): string {
 
 /* ------------------------------------------------------------------ storage */
 const KEY_V1 = 'hearth.harbour.skate.v1:', KEY_V2 = 'hearth.harbour.skate.v2:';
-export const SKATE_PROGRESS_MAX_CHARS = 32_000;
+export const SKATE_PROGRESS_MAX_CHARS = 256_000;
 /** Device-local key for one person in one household in one environment (v2). */
 export function skateProgressKey(environment: string, householdId: string, memberId: string): string {
   return `${KEY_V2}${[environment, householdId, memberId].map(encodeURIComponent).join(':')}`;
@@ -148,7 +152,9 @@ export function decodeSkateProgress(raw: string | null): SkateProgress {
     const stamps = new Set(strings(p.stamps));
     fresh.stamps = SKATE_STAMPS.filter(s => stamps.has(s.id)).map(s => s.id);
     fresh.bestLine = Number.isSafeInteger(p.bestLine) ? num(p.bestLine, 0, 1e9) : 0;
-    for (const r of tables.routes) { const v = p.routeBest?.[r.id]; if (typeof v === 'number' && Number.isFinite(v) && v >= 1 && v <= 3600) fresh.routeBest[r.id] = v; }
+    for (const r of tables.routes) { const v = p.routeBest?.[r.id]; if ((!r.gates || p.routeSignatures?.[r.id]===courseSignature(r)) && typeof v === 'number' && Number.isFinite(v) && v >= 1 && v <= 3600) { fresh.routeBest[r.id] = v; if(r.gates)fresh.routeSignatures={...fresh.routeSignatures,[r.id]:courseSignature(r)}; } }
+    const replayCourse=tables.routes.find(r=>r.id===p.raceReplay?.course);
+    fresh.raceReplay=replayCourse?decodeRaceReplay(p.raceReplay,replayCourse):null;
     if (p.version === 2) {
       fresh.goals = [...new Set(strings(p.goals).filter(k => { const [spot, kind] = k.split(':'); return spotIds.has(spot!) && GOAL_KINDS.has(kind!); }))];
       const st = p.stats ?? {};
@@ -180,7 +186,7 @@ export function readSkateProgress(store: Pick<Storage, 'getItem'>, key: string):
   } catch { return freshSkateProgress(); }
 }
 export function saveSkateProgress(store: Pick<Storage, 'setItem'>, key: string, progress: SkateProgress): boolean {
-  try { store.setItem(key, JSON.stringify(progress)); return true; } catch { return false; }
+  try { const raw=JSON.stringify(progress);if(raw.length>SKATE_PROGRESS_MAX_CHARS)return false;store.setItem(key, raw); return true; } catch { return false; }
 }
 
 /* ------------------------------------------------------------------ Own the Spot */
@@ -314,25 +320,33 @@ function visit(session: SkateSession, x: number, z: number): void {
   if (!session.spotCard || session.spotCard.id !== spot.id || fresh) session.spotCard = {id: spot.id, name: spot.name, words: spot.words, fresh, seq: ++cardSeq};
 }
 const racePrevious=new WeakMap<object,Point3>();
-function stepRun(session: SkateSession, x: number, z: number, bailing: boolean, dt: number,y=0): void {
+const raceRecorders=new WeakMap<object,RaceRecorder>();
+function stepRun(session: SkateSession, x: number, z: number, bailing: boolean, dt: number,y=0,yaw=0): void {
   const run = session.run, p = session.progress;
   if (!run || run.finished) return;
+  yaw=Math.atan2(Math.sin(yaw),Math.cos(yaw));
   const previous=racePrevious.get(run);racePrevious.set(run,[x,y,z]);
   const step = Math.min(.1, Math.max(0, Number.isFinite(dt) ? dt : 0));
-  if (run.countdown > 0) { run.countdown = Math.max(0, run.countdown - step); if (run.countdown === 0) session.message = 'Go · find the first gold ring'; return; }
+  if (run.countdown > 0) { run.countdown = Math.max(0, run.countdown - step); if (run.countdown === 0) { session.message = 'Go · find the first gold ring';const course=tables.routes.find(r=>r.id===run.id);if(course?.gates){const recorder=createRaceRecorder(course);recorder.sample([0,x,y,z,yaw]);raceRecorders.set(run,recorder);} } return; }
   run.elapsed += step;
   const route = tables.routes.find(r => r.id === run.id);
   if (!route) { session.run = null; return; }
+  const recorder=raceRecorders.get(run);if(bailing)recorder?.invalidate();
+  const checkpoint=run.checkpoint;
   const target = route.points[run.checkpoint];
   if (target && !bailing && (route.gates ? Boolean(previous&&crossesRaceGate(previous,[x,y,z],route.gates[run.checkpoint]!)) : Math.hypot(x - target[0], z - target[1]) < 2.8)) {
     run.checkpoint++;
     if (run.checkpoint >= route.points.length) {
       run.finished = true; run.medal = skateMedal(run.id, run.elapsed);
-      p.routeBest = {...p.routeBest, [run.id]: Math.min(p.routeBest[run.id] ?? Infinity, run.elapsed)};
+      const signature=courseSignature(route),previousBest=route.gates&&p.routeSignatures?.[run.id]!==signature?Infinity:p.routeBest[run.id]??Infinity;
+      p.routeBest = {...p.routeBest, [run.id]: Math.min(previousBest, run.elapsed)};
+      if(route.gates)p.routeSignatures={...p.routeSignatures,[run.id]:signature};
       if (run.medal === 'Gold') award(session, 'gold');
       notify(session, 'route', `${route.name} · ${run.medal} · ${run.elapsed.toFixed(1)}s`);
     } else session.message = `Checkpoint ${run.checkpoint} / ${route.points.length - 1}`;
   }
+  if(step>0)recorder?.sample([run.elapsed,x,y,z,yaw],run.checkpoint!==checkpoint);
+  if(run.finished){const replay=recorder?.finish(run.elapsed);if(replay&&(!p.raceReplay||p.raceReplay.signature!==replay.signature||replay.seconds<p.raceReplay.seconds))p.raceReplay=replay;raceRecorders.delete(run);}
 }
 function completeGoal(session: SkateSession, goal: SpotGoal): void {
   const p = session.progress;
@@ -435,8 +449,8 @@ export function observeSkate(session: SkateSession, present: SkatePresent, event
     }
     session.line = freshLine();
   }
-  stepRun(session, x, z, present.phase === 'bail', dt,present.y);
+  stepRun(session, x, z, present.phase === 'bail'||present.phase === 'recover', dt,present.y,present.boardYaw);
   if (before !== JSON.stringify(p)) session.revision++;
 }
 
-export const cloneSkateProgress = (p: SkateProgress): SkateProgress => ({...p, discovered: [...p.discovered], stamps: [...p.stamps], goals: [...p.goals], routeBest: {...p.routeBest}, stats: {...p.stats}, settings: {...p.settings}});
+export const cloneSkateProgress = (p: SkateProgress): SkateProgress => ({...p, discovered: [...p.discovered], stamps: [...p.stamps], goals: [...p.goals], routeBest: {...p.routeBest}, routeSignatures:{...p.routeSignatures}, raceReplay:p.raceReplay?{...p.raceReplay,samples:p.raceReplay.samples.map(s=>[...s] as ReplaySample)}:null, stats: {...p.stats}, settings: {...p.settings}});

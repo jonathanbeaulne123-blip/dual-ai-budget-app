@@ -1,3 +1,5 @@
+import {createMountainDemo,mountainDemoIdentity} from '../fixtures/mountainDemo.ts';
+import {MountainRehearsal} from './MountainRehearsal.tsx';
 import { StrictMode } from 'react';
 import {createRoot} from 'react-dom/client';
 import {App} from '../../src/App.tsx';
@@ -33,10 +35,18 @@ import '../../src/theme/page-plan.css';
 import '../../src/theme/page-more.css';
 import '../../src/theme/page-books.css';
 // `?seed=demo` (Development-only, like everything here) loads the Demo Suite's synthetic "doing well" habitat instead of the small fictional house, so populated stones and plinths can be captured.
-const seed=new URLSearchParams(location.search).get('seed')==='demo';
-const householdId=seed?'HH-WHOLE-HOUSE-HABITAT-REVIEW':'HH-WHOLE-HOUSE-FICTIONAL-REVIEW',memberId=new URLSearchParams(location.search).get('member')==='MEM-002'?'MEM-002':'MEM-001';
+const params=new URLSearchParams(location.search), mountain=params.get('seed')==='mountain', story=params.get('story')==='weathered'?'weathered':'growing', run=params.get('run')??'first';
+const seed=params.get('seed')==='demo';
+if(mountain)document.documentElement.dataset.mountainRehearsal='true';
+const householdId=mountain?mountainDemoIdentity(story,run):seed?'HH-WHOLE-HOUSE-HABITAT-REVIEW':'HH-WHOLE-HOUSE-FICTIONAL-REVIEW',memberId=new URLSearchParams(location.search).get('member')==='MEM-002'?'MEM-002':'MEM-001';
 const endpoint=`/ledger-sync/v2/development/${householdId}`,headers={Authorization:`Bearer local:${memberId}`,'Content-Type':'application/json'};
 let response=await fetch(endpoint+'/snapshot',{headers});
+if(!response.ok&&mountain){
+  const {household}=await createMountainDemo(todayKey(),story,run);
+  household.booksAcceptedHash=await financialAuditHash(household);
+  const imported=await fetch(endpoint+'/import',{method:'POST',headers,body:JSON.stringify(household)});if(!imported.ok)throw Error(await imported.text());
+  response=await fetch(endpoint+'/snapshot',{headers});
+}
 if(!response.ok&&seed){
   const generated=await generateDemoSuite({today:todayKey(),profile:'habitat-well',seed:4242,buildSha:'whole-house-review'});
   const household={...generated.household,householdId,linked:true,commandReceipts:[]};
@@ -60,4 +70,4 @@ const replica=await response.json();
 const household=assembleHousehold(replica.shared,replica.personal,{linked:true});
 saveSession('development',{householdId,memberId,view:'household'});
 await saveHousehold(household,{operatingEnvironment:'development',memberId,activate:true});
-createRoot(document.getElementById('root')!).render(<StrictMode><ThemeProvider><KitchenErrorBoundary><App/></KitchenErrorBoundary></ThemeProvider></StrictMode>);
+createRoot(document.getElementById('root')!).render(<StrictMode><ThemeProvider><KitchenErrorBoundary><App/>{mountain&&<MountainRehearsal story={story} run={run}/>}</KitchenErrorBoundary></ThemeProvider></StrictMode>);

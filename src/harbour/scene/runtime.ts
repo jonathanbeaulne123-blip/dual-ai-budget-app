@@ -1,4 +1,7 @@
 import type {WorldAmbience} from '../mountain/audio.ts';
+import {createFrameStudy,type FrameStudy} from '../mountain/performance.ts';
+import type {MountainRecoveryView} from '../mountain/recovery.ts';
+import type {MountainInteractionState} from '../mountain/life.ts';
 import {mountainFoliageAt} from '../mountain/planting.ts';
 import {worldCeilingAt,worldCollisionAt} from '../mountain/surfaces.ts';
 import {MOUNTAIN_VERSION,transportPoint,TRANSPORT_STOPS,type Point3,type TransportKind} from '../mountain/definition.ts';
@@ -148,6 +151,8 @@ export type BodyControls = {
   input: (next: BodyInput) => void;
   /** Walk to a point on the ground — a tap. A straight line that slides off what it meets. */
   goTo: (x: number, z: number) => boolean;
+  /** Stop a clicked walking route when a navigation panel takes focus. */
+  cancel: () => void;
   /** Put the body somewhere at once. */
   place: (x: number, z: number, yaw?: number, y?:number) => void;
   /**
@@ -172,9 +177,14 @@ export type BodyControls = {
 };
 
 export type HarbourRuntime = {
+  measure:(action:'start'|'stop'|'read',label?:string)=>FrameStudy;
   mountainTravel:(at:Point3,trip?:{kind:TransportKind;from:number;to:number})=>void;
   mountainSkip:()=>void;
   mountainCalm:(on:boolean)=>void;
+  setMountainRecovery:(view:MountainRecoveryView)=>void;
+  setMountainInteraction:(state:MountainInteractionState)=>void;
+  /** Nonfinancial sound cue; never enables Sound or creates an audio context. */
+  mountainBell:()=>void;
   setWorldAmbience:(audio:WorldAmbience|null)=>void;
   setAvatar:(avatar:PlayableAvatar|null)=>void;
   /**
@@ -311,6 +321,14 @@ export function scrubControls(handle: PlaceHandle, todayIndex = 0): ScrubControl
   };
 }
 
+type MountainPresentationHandle = PlaceHandle & {
+  setVisitor?:(at:Point3)=>void;
+  setTransit?:(at:Point3|null,kind?:TransportKind)=>void;
+  setCalm?:(on:boolean)=>void;
+  setRecovery?:(view:MountainRecoveryView)=>void;
+  setInteraction?:(state:MountainInteractionState)=>void;
+};
+
 const TAP_PIXELS = 8, TAP_MS = 350, MIN_TWIN = 44;
 /** A second tap this soon after the first, and this near it, is one deliberate gesture. */
 export const DOUBLE_TAP_MS = 320, DOUBLE_TAP_PIXELS = 28;
@@ -336,6 +354,7 @@ type Pointer = { id: number; x: number; y: number; startX: number; startY: numbe
 export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: RenderTier, callbacks: HarbourCallbacks): HarbourRuntime {
   let disposed = false, frame = 0, previous = 0, lastPaint = 0, lastAnimated = 0, visible = true, toolOpen = false, breathing = false, settling = false, intervalMs = CAMERA_INTERVAL_MS;
   let worldAmbience:WorldAmbience|null=null;
+  const frameStudy=createFrameStudy();
   const mountedAt = performance.now();
   const diagnostics = worldDiagnostics();
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -363,6 +382,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     parameters: { antialias: true, alpha: false, powerPreference: "low-power" },
     configure(renderer) { configureHarbourRenderer(renderer, tier, window.devicePixelRatio || 1); },
     onSuspend() {
+      frameStudy.interrupt();
       worldAmbience?.pause();
       lease.cancelFrame(frame); frame = 0;
       if (!disposed) { try { host.style.backgroundImage = `url(${renderer.domElement.toDataURL("image/webp", 0.75)})`; host.style.backgroundSize = "100% 100%"; } catch { /* The reading edition remains. */ } }
@@ -380,6 +400,20 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const ground = createGround(scene, dressing, tier);
   // ── Tideline Skate Club v2 ── one field: the park you see is the park you ride.
   const skatePark=buildSkatePark(dressing,{tier,field:skateField()});scene.add(skatePark.group);
+  // A local recording is a separate decorative silhouette: never a body, collider or presence source.
+  const raceGhost=new THREE.Group();raceGhost.name='device-local-race-ghost';raceGhost.visible=false;
+  const ghostMaterial=new THREE.MeshBasicMaterial({color:theme==='taylor'?'#e48bb5':theme==='newfoundland'?'#e3a54a':'#3fb49c',transparent:true,opacity:.38,depthWrite:false});
+  const ghostGeometries=[new THREE.BoxGeometry(.36,.06,.72),new THREE.CylinderGeometry(.16,.19,.7,6),new THREE.SphereGeometry(.16,8,6)];
+  for(let i=0;i<ghostGeometries.length;i++){
+    const mesh=new THREE.Mesh(ghostGeometries[i]!,ghostMaterial);mesh.position.y=[.08,.67,1.2][i]!;
+    mesh.raycast=()=>{};raceGhost.add(mesh);
+  }
+  scene.add(raceGhost);
+  function updateRaceGhost():void {
+    const pose=!toolOpen&&!calmWorld&&!reducedMotion()&&placeId==='court'?walker?.skate.ghost():null;
+    raceGhost.visible=Boolean(pose);
+    if(pose){raceGhost.position.set(pose.x,pose.y,pose.z);raceGhost.rotation.y=pose.yaw;}
+  }
   const skateThrottle=createHudThrottle(100);
   let skateBuiltAt=-Infinity,hadSkate=false;
   const skateLog:string[]=[];
@@ -418,6 +452,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * path below is byte-for-byte what it always was — for an unplaced place.
    */
   let calmWorld=false;
+  let mountainRecovery:MountainRecoveryView|null=null;
+  let mountainInteraction:MountainInteractionState|null=null;
   const live = new Map<HarbourPlaceId, { handle: PlaceHandle; abort: AbortController; placement: PlacePlacement | null; matrix: THREE.Matrix4 | null }>();
   /**
    * Where the viewer stands on the island (§2). The body lane drives it; until
@@ -494,7 +530,13 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     let placement = placementOf(place.id);
     try { built = place.build(scene, dressing, reading, tier, { composition, signal: control.signal, invalidate }); }
     catch { built = EMPTY_PLACE.build(scene, dressing, null, tier, { composition, signal: control.signal, invalidate }); placement = null; }
-    if(place.id==='court')(built as PlaceHandle & {setCalm?:(on:boolean)=>void}).setCalm?.(calmWorld);
+    if(place.id==='court'){
+      const mountain=built as MountainPresentationHandle;
+      mountain.setCalm?.(calmWorld);
+      if(mountainRecovery)mountain.setRecovery?.(mountainRecovery);
+      // Priming the current state restores props without replaying an earlier bell ring.
+      if(mountainInteraction)mountain.setInteraction?.(mountainInteraction);
+    }
     live.set(place.id, { handle: built, abort: control, placement, matrix: stand(built, placement) });
     showExteriors();
     listsDirty = true;
@@ -665,7 +707,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * both made once and both read the right floor after a walk into a building.
    */
   let mountainTrip:{kind:TransportKind;from:number;to:number;elapsed:number;duration:number}|null=null;
-  const mountainHandle=()=>(live.get('court')?.handle??handle) as PlaceHandle & {setVisitor?:(at:Point3)=>void;setTransit?:(at:Point3|null)=>void;setCalm?:(on:boolean)=>void};
+  const mountainHandle=()=>(live.get('court')?.handle??handle) as MountainPresentationHandle;
   let bodyGround: (x: number, z: number) => number = placeGround(placeId);
   /** This place's own ways out, when walking to one of them is how you leave (an unplaced room). */
   let bodyExits: Anchor[] = [];
@@ -730,6 +772,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       tier,
       start,
       reduced: reducedMotion(),
+      skateReducedMotion:()=>reducedMotion()||calmWorld||toolOpen,
       avatar:selectedAvatar,invalidate,onAvatarStatus:callbacks.onAvatarStatus,theme,
     });
     scene.add(walker.group);
@@ -755,6 +798,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const at=walker.state(),heel=heelStand(at);cat.place(heel.x,heel.z,heel.yaw,at);
   }
   function dropBody(): void {
+    raceGhost.visible=false;
     if (following) {
       following = false;
       if (Math.abs(camera.fov - fovFor(composition)) > 1e-3) { camera.fov = fovFor(composition); camera.updateProjectionMatrix(); }
@@ -969,6 +1013,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const rendered = performance.now();
     project();
     const projected = performance.now();
+    if(!toolOpen&&visible&&!document.hidden)frameStudy.frame(projected,projected-began,{calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures});
     // `renderMs` is what the GPU was asked for. Projecting the twins is CPU
     // work on this side of the frame and is measured separately in diagnostics.
     if (diagnostics) {
@@ -1062,7 +1107,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         bodyInput=NO_INPUT;walker.setInput(NO_INPUT);
         mountainTrip.elapsed=Math.min(mountainTrip.duration,mountainTrip.elapsed+(toolOpen?0:Math.min(.1,dt)));
         const p=transportPoint(mountainTrip.kind,mountainTrip.from,mountainTrip.to,(mountainTrip.duration?mountainTrip.elapsed/mountainTrip.duration:1));
-        walker.place(p[0],p[2],walker.state().yaw,p[1]);mountainHandle().setTransit?.(p);previousDoorPoint=null;
+        walker.place(p[0],p[2],walker.state().yaw,p[1]);mountainHandle().setTransit?.(p,mountainTrip.kind);previousDoorPoint=null;
         bodyMoving=true;
         if(mountainTrip.elapsed>=mountainTrip.duration){mountainTrip=null;mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(false);bringCat();}
       }else bodyMoving = walker.step(dt, (now - mountedAt) / 1000, heading);
@@ -1160,6 +1205,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         court.setHold(holdFor(placeId));
       }
     }
+    updateRaceGhost();
     if(worldAmbience){const at=walker?.state();if(at&&walker){
       worldAmbience.update(at.x,at.y,at.z,at.speed,Boolean(at.supportId&&at.supportId!=='terrain'&&at.supportId!=='mountain-road'&&at.supportId!=='town-race-road'),!walker.skate.active()&&!mountainTrip,calmWorld||toolOpen||placeId!=='court');
     }else worldAmbience.pause();}
@@ -1303,11 +1349,12 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   host.addEventListener("wheel", onWheel, { passive: false });
   host.addEventListener("contextmenu", onContextMenu);
   const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(resize) : null; observer?.observe(host);
-  const intersection = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); if (visible) { previous = performance.now(); schedule(); } else { worldAmbience?.pause();walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } }) : null; intersection?.observe(host);
-  const visibility = () => { if (document.hidden) { walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
+  const intersection = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); if (visible) { previous = performance.now(); schedule(); } else { frameStudy.interrupt();worldAmbience?.pause();walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } }) : null; intersection?.observe(host);
+  const visibility = () => { if (document.hidden) { frameStudy.interrupt();worldAmbience?.pause();walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
   // ── The body lane (world-body) ── reduced motion cuts the follow camera
   // rather than swinging it. The character still walks: that is the app.
   const onReduced = () => {
+    raceGhost.visible=false;
     court.setReduced(reducedMotion());
     const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
     follow?.setReduced(reducedMotion());
@@ -1363,13 +1410,17 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
 
   const api: HarbourRuntime = {
+    measure(action,label){if(action==='start')return frameStudy.start(label??'Mountain traversal');if(action==='stop')return frameStudy.stop();return frameStudy.snapshot();},
+    setMountainRecovery(view){if(disposed)return;mountainRecovery=view;mountainHandle().setRecovery?.(view);dirty=true;schedule();},
+    setMountainInteraction(state){if(disposed)return;mountainInteraction=state;mountainHandle().setInteraction?.(state);dirty=true;schedule();},
+    mountainBell(){if(!disposed&&visible&&lease.active&&!toolOpen&&!calmWorld&&!reducedMotion()&&placeId==='court')worldAmbience?.bell();},
     setWorldAmbience(audio){worldAmbience=audio;dirty=true;schedule();},
-    mountainCalm(on){calmWorld=on;if(on)worldAmbience?.pause();mountainHandle().setCalm?.(on);dirty=true;schedule();},
+    mountainCalm(on){calmWorld=on;if(on){worldAmbience?.pause();raceGhost.visible=false;walker?.skate.replay('stop');}publishSkate(performance.now(),true);mountainHandle().setCalm?.(on);dirty=true;schedule();},
     mountainSkip(){if(mountainTrip){mountainTrip.elapsed=mountainTrip.duration;dirty=true;schedule();}},
     mountainTravel(at,trip){
       if(placeId!=='court')return;
       raiseBody();if(!walker)return;
-      mountainTrip=null;callbacks.onMountainTravel?.(Boolean(trip));bodyInput=NO_INPUT;walker.cancel();walker.setInput(NO_INPUT);
+      mountainTrip=null;mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(Boolean(trip));bodyInput=NO_INPUT;walker.cancel();walker.setInput(NO_INPUT);
       const p=trip?TRANSPORT_STOPS[trip.kind][trip.from]!.at:at;
       walker.place(p[0],p[2],0,p[1]);bringCat();previousDoorPoint=null;pendingDoor=null;focus=[p[0],p[2]];
       setFollowing(false);setFollowing(true);follow?.snap();stream();
@@ -1391,7 +1442,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     },
     // ── The body lane (world-body) ── a tool in front of the place turns the
     // stage into a door strip: the follow camera gives the view back for it.
-    setToolOpen(open) { toolOpen = open; if (open) {worldAmbience?.pause();walker?.skate.pause(true);publishSkate(performance.now(),true);setFollowing(false);} schedule(); },
+    setToolOpen(open) { toolOpen = open; if (open) {frameStudy.interrupt();raceGhost.visible=false;worldAmbience?.pause();walker?.skate.pause(true);publishSkate(performance.now(),true);setFollowing(false);} schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
     invalidate() { settling = true; dirty = true; listsDirty = true; if(walker)standBody(); previous = performance.now(); schedule(); },
     addAnimator(animate) { animators.add(animate); listsDirty = true; schedule(); return () => { animators.delete(animate); }; },
@@ -1428,8 +1479,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const one = walker;
       if (!one) return null;
       return {
+        cancel(){bodyInput=NO_INPUT;one.setInput(NO_INPUT);one.cancel();},
         skate: {
           ...one.skate,
+          ghost(){return !toolOpen&&!calmWorld&&!reducedMotion()&&placeId==='court'?one.skate.ghost():null;},
+          replay(action){if(placeId!=='court')return;one.skate.replay(action);updateRaceGhost();publishSkate(performance.now(),true);moved();},
           restore(checkpoint){if(placeId!=='court')return;one.skate.restore(checkpoint);setFollowing(true);publishSkate(performance.now(),true);moved();},
           enable(on,progress){if(on&&placeId!=='court')return false;const result=one.skate.enable(on,progress);if(on)setFollowing(true);publishSkate(performance.now(),true);moved();return result;},
           pause(on){one.skate.pause(on);publishSkate(performance.now(),true);moved();},
@@ -1543,6 +1597,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       return plan;
     },
     dispose() {
+      frameStudy.interrupt();
+      frameStudy.stop();
       worldAmbience?.pause();worldAmbience=null;
       if (disposed) return;
       disposed = true; abort.abort();
@@ -1554,6 +1610,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       for (const id of [...live.keys()]) pull(id);
       // ── The body lane (world-body) ──
       dropBody();
+      scene.remove(raceGhost);for(const geometry of ghostGeometries)geometry.dispose();ghostMaterial.dispose();
       skatePark.dispose();ground.dispose(); rig.dispose();
       lease.release();
       host.style.backgroundImage = "";

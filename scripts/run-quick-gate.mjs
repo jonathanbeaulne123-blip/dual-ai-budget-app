@@ -109,6 +109,7 @@ function serialTests(packageJson) {
 }
 
 const rpcIsolatedSerialTests = new Set([
+  "test/mountain-demo.test.ts", // Full synthetic ledger generation; never compete with UI workers.
   "test/demo-suite.test.ts",
   "test/demo-shift-statistics.test.ts",
   "test/stress-seed.test.ts",
@@ -224,6 +225,7 @@ export async function main(argv = process.argv.slice(2)) {
     }
     const plan = planQuickTests({
       changedFiles: files,
+      deletedFiles: files.filter((path) => !existsSync(resolve(root, path))),
       explicitFocus: focus,
       focusReason: options.focusReason,
       mappedTests: mapped.tests,

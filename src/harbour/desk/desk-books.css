@@ -1,0 +1,141 @@
+/* ── The Desk · Books (SIMPLE_VIEW_DESK S4 §5) ─────────────────────────────
+   The Standing Book's divisions as cut-paper index cards: each card wears its
+   division's tab at the top edge like a binder divider, the figures are set
+   in ink with tabular numerals, and copper marks only what is above its own
+   band. Every card is one button and one door. Tokens only. ── */
+
+.desk-books {
+  display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: "today" "spending" "goals" "contributions" "record";
+  padding-top: 8px;
+}
+.desk-books .desk-book--today { grid-area: today; }
+.desk-books .desk-book--spending { grid-area: spending; }
+.desk-books .desk-book--goals { grid-area: goals; }
+.desk-books .desk-book--contributions { grid-area: contributions; }
+.desk-books .desk-book--record { grid-area: record; }
+
+.desk-books .desk-book { align-content: start; gap: 8px; padding-top: 18px; }
+/* The divider tab: a paper tongue standing proud of the card's top edge. */
+.desk-books .desk-book__tab {
+  position: absolute; top: -11px; right: 14px; max-width: calc(100% - 28px);
+  padding: 2px 10px 3px; border-radius: 5px 5px 0 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 700 10px/1.4 var(--font, system-ui, sans-serif); letter-spacing: .12em; text-transform: uppercase;
+  background: var(--desk-book-tab, var(--desk-ink)); color: var(--desk-card);
+  box-shadow: 0 -1px 0 color-mix(in srgb, var(--desk-ink) 12%, transparent);
+}
+.desk-books .desk-book--today { --desk-book-tab: var(--desk-ink); }
+.desk-books .desk-book--spending { --desk-book-tab: color-mix(in srgb, var(--desk-copper) 75%, var(--desk-ink)); }
+.desk-books .desk-book--goals { --desk-book-tab: color-mix(in srgb, var(--desk-gold) 60%, var(--desk-ink)); }
+.desk-books .desk-book--contributions { --desk-book-tab: color-mix(in srgb, var(--desk-pine) 80%, var(--desk-ink)); }
+.desk-books .desk-book--record { --desk-book-tab: color-mix(in srgb, var(--desk-muted) 70%, var(--desk-ink)); }
+
+.desk-books .desk-book__headline { display: block; font: 600 clamp(18px, 4.6vw, 22px)/1.2 var(--display, Georgia, serif); font-variant-numeric: tabular-nums lining-nums; overflow-wrap: anywhere; }
+.desk-books .desk-book__door {
+  display: inline-flex; align-items: center; gap: 6px; justify-self: start; margin-top: 2px;
+  font-size: 13px; font-weight: 650; color: color-mix(in srgb, var(--desk-ink) 82%, var(--desk-card));
+  border-bottom: 1px solid color-mix(in srgb, var(--desk-ink) 30%, transparent);
+}
+.desk-books .desk-book__arrow { transition: transform .15s ease; }
+.desk-books .desk-book:hover .desk-book__arrow, .desk-books .desk-book:focus-visible .desk-book__arrow { transform: translateX(3px); }
+
+/* Today: the waterline as a ruled ledger block — the lead big, three stamps beneath. */
+.desk-books .desk-book--today {
+  background-image:
+    var(--desk-raking),
+    repeating-linear-gradient(180deg, transparent 0 27px, color-mix(in srgb, var(--desk-line) 55%, transparent) 27px 28px);
+}
+.desk-books .desk-book__lead { display: grid; gap: 2px; }
+.desk-books .desk-book__lead-label { font-size: 13px; color: var(--desk-muted); overflow-wrap: anywhere; }
+.desk-books .desk-book__figure { font-size: clamp(30px, 8.6vw, 46px); font-weight: 650; letter-spacing: -.02em; }
+.desk-books .desk-book__pairs { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; border-top: 1px solid color-mix(in srgb, var(--desk-ink) 22%, transparent); }
+.desk-books .desk-book__pair {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 6px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--desk-line) 70%, transparent);
+}
+.desk-books .desk-book__pair-key { font-size: 13px; color: color-mix(in srgb, var(--desk-ink) 78%, var(--desk-card)); }
+.desk-books .desk-book__pair-value { font-weight: 700; font-size: 15px; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+
+/* Spending: small multiples — each category's own band, this month a dot on it. */
+.desk-books .desk-shape { display: grid; gap: 6px; }
+.desk-books .desk-shape__row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name figure" "track word"; align-items: center; column-gap: 10px; row-gap: 3px;
+}
+.desk-books .desk-shape__name { grid-area: name; font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desk-books .desk-shape__figure { grid-area: figure; font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+.desk-books .desk-shape__track {
+  grid-area: track; position: relative; display: block; height: 12px; border-radius: 6px;
+  background: color-mix(in srgb, var(--desk-line) 45%, var(--desk-card));
+  border: 1px solid color-mix(in srgb, var(--desk-line) 80%, transparent);
+}
+.desk-books .desk-shape__band { position: absolute; top: 2px; bottom: 2px; min-width: 2px; border-radius: 3px; background: color-mix(in srgb, var(--desk-ink) 22%, transparent); }
+.desk-books .desk-shape__dot {
+  position: absolute; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%;
+  background: var(--desk-ink); box-shadow: 0 0 0 2px var(--desk-card);
+}
+.desk-books .desk-shape__word { grid-area: word; font-size: 12px; font-weight: 650; text-align: right; white-space: nowrap; color: var(--desk-muted); }
+.desk-books [data-desk-shape="above"] .desk-shape__dot, .desk-books [data-desk-shape="over-plan"] .desk-shape__dot { background: var(--desk-copper); }
+.desk-books [data-desk-shape="above"] .desk-shape__word, .desk-books [data-desk-shape="over-plan"] .desk-shape__word { color: color-mix(in srgb, var(--desk-copper) 75%, var(--desk-ink)); }
+.desk-books [data-desk-shape="unknown"] .desk-shape__dot, .desk-books [data-desk-shape="one-off"] .desk-shape__dot, .desk-books [data-desk-shape="no-plan"] .desk-shape__dot { background: transparent; border: 2px dashed var(--desk-muted); box-shadow: none; }
+
+/* Goals: each bank a short inked bar against its own target. */
+.desk-books .desk-goals { display: grid; gap: 8px; }
+.desk-books .desk-goals__row { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name figure" "bar bar"; column-gap: 10px; row-gap: 4px; align-items: baseline; }
+.desk-books .desk-goals__name { grid-area: name; font-size: 13.5px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desk-books .desk-goals__figure { grid-area: figure; font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+.desk-books .desk-goals__figure small { font-weight: 500; font-size: 12px; color: var(--desk-muted); }
+.desk-books .desk-goals__bar { grid-area: bar; display: block; height: 8px; border-radius: 4px; overflow: hidden; background: color-mix(in srgb, var(--desk-line) 55%, var(--desk-card)); border: 1px solid color-mix(in srgb, var(--desk-line) 85%, transparent); }
+.desk-books .desk-goals__bar i { display: block; height: 100%; min-width: 0; background: color-mix(in srgb, var(--desk-gold) 55%, var(--desk-ink)); }
+
+/* Contributions: each member's own line — no bars, nothing to line up against each other. */
+.desk-books .desk-streams { display: grid; gap: 0; border-top: 1px solid color-mix(in srgb, var(--desk-ink) 18%, transparent); }
+.desk-books .desk-streams__row {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "name figure" "rhythm rhythm"; column-gap: 10px; row-gap: 1px;
+  padding: 6px 0; border-bottom: 1px solid color-mix(in srgb, var(--desk-line) 70%, transparent);
+}
+.desk-books .desk-streams__name { grid-area: name; font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.desk-books .desk-streams__figure { grid-area: figure; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums lining-nums; white-space: nowrap; }
+.desk-books .desk-streams__rhythm { grid-area: rhythm; font-size: 12px; color: var(--desk-muted); }
+
+.desk-books .desk-book__last-words { font-weight: 600; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* ── Widths ── */
+@media (max-width: 359px) {
+  .desk-books .desk-book__pair { flex-wrap: wrap; gap: 2px 8px; }
+  .desk-books .desk-book__pair-value { white-space: normal; }
+}
+
+@media (min-width: 560px) {
+  .desk-books .desk-book__pairs { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: 14px; border-top: 0; }
+  .desk-books .desk-book__pair { display: grid; gap: 2px; justify-content: stretch; border-bottom: 0; border-top: 1px solid color-mix(in srgb, var(--desk-ink) 22%, transparent); }
+  .desk-books .desk-book__pair-value { white-space: normal; overflow-wrap: anywhere; }
+}
+
+@media (min-width: 720px) {
+  .desk-books {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas: "today today" "spending goals" "contributions record";
+    align-items: stretch;
+  }
+  .desk-books .desk-book--today { grid-template-columns: minmax(0, 2fr) minmax(0, 3fr); column-gap: 24px; align-items: end; }
+  .desk-books .desk-book--today > .desk-card__kicker, .desk-books .desk-book--today > .desk-card__line, .desk-books .desk-book--today > .desk-book__door { grid-column: 1 / -1; }
+}
+
+@media (min-width: 1000px) {
+  .desk-books {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-areas: "today today spending" "goals contributions record";
+  }
+  /* The waterline spans two columns beside Spending: the stamps stand as a ruled column, not a row. */
+  .desk-books .desk-book--today { align-content: space-between; }
+  .desk-books .desk-book__pairs { grid-template-columns: minmax(0, 1fr); border-top: 1px solid color-mix(in srgb, var(--desk-ink) 22%, transparent); }
+  .desk-books .desk-book__pair { display: flex; justify-content: space-between; gap: 12px; border-top: 0; border-bottom: 1px solid color-mix(in srgb, var(--desk-line) 70%, transparent); }
+  .desk-books .desk-book__pair-value { white-space: nowrap; }
+}
+
+/* ── The three dressings live in desk-dressings.css (S7). ── */
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-books .desk-book__arrow { transition: none; animation: none; }
+  .desk-books .desk-book:hover .desk-book__arrow, .desk-books .desk-book:focus-visible .desk-book__arrow { transform: none; }
+}

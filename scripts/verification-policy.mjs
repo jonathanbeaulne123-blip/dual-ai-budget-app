@@ -130,6 +130,7 @@ export function domainCanaries(changedFiles) {
  *   relatedTests?: string[],
  *   serialTests?: string[],
  *   maxRelatedTests?: number,
+ *   deletedFiles?: string[],
  * }} input
  */
 export function planQuickTests({
@@ -140,9 +141,12 @@ export function planQuickTests({
   relatedTests = [],
   serialTests = [],
   maxRelatedTests = MAX_RELATED_TESTS,
+  deletedFiles = [],
 }) {
   const normalizedChanged = changedFiles.map((path) => path.replaceAll("\\", "/"));
-  const changedTests = normalizedChanged.filter(isTestFile);
+  // A test the change deletes cannot run and proves nothing; it stays a changed file for canaries.
+  const deleted = new Set(deletedFiles.map((path) => path.replaceAll("\\", "/")));
+  const changedTests = normalizedChanged.filter((path) => isTestFile(path) && !deleted.has(path));
   const explicit = [...new Set(explicitFocus.map((path) => path.replaceAll("\\", "/")))];
   const mapped = [...new Set(mappedTests.map((path) => path.replaceAll("\\", "/")))];
   const focus = [...new Set([...explicit, ...mapped, ...changedTests])];

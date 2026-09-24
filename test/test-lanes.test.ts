@@ -36,6 +36,7 @@ function directBrowserRuntimeTests() {
 }
 
 const serialFixtureTests = [
+  "mountain-demo.test.ts",
   "ledger-sync-cutover.test.ts",
   "demo-shift-statistics.test.ts",
   "demo-suite.test.ts",
@@ -57,6 +58,7 @@ const serialFixtureTests = [
 const serialTimingTests = ["continuity-two-browser-proof.test.ts", "hercules-private-chat-ui.test.ts", "hercules-wardrobe-ui.test.ts", "harbour-walk-everywhere.test.ts", "skate-sim-ride.test.ts", "skate-world.test.ts"];
 
 const rpcIsolatedFixtureTests = [
+  "mountain-demo.test.ts",
   "demo-shift-statistics.test.ts",
   // D-282: the Our Story household and the demo seeds under the money model.
   "fund-model-demo-seeds.test.ts",

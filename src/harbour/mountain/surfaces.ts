@@ -1,3 +1,4 @@
+import {STATION_SOLIDS,DISTRICT_ART_SOLIDS,SUMMIT_ART_SOLIDS} from './artGeometry.ts';
 import {mountainBaseHeight,SKILL_BRANCHES,FOOTPATHS,MOUNTAIN_ROAD,TOWN_RACE_ROAD,TRANSPORT_STOPS,ROAD_HALF_WIDTH,nearestOnRoute,type Point3} from './definition.ts';
 export {SKILL_BRANCHES} from './definition.ts';
 export type WorldSurface={id:string;points:readonly Point3[];halfWidth:number;material:'path'|'wood'|'metal';walkable:boolean};
@@ -35,13 +36,13 @@ export function worldCeilingAt(x:number,z:number,feet:number,radius=.2,surfaces:
   }
   return ceiling;
 }
-export const WORLD_SOLIDS:readonly WorldSolid[]=SKILL_BRANCHES.flatMap(s=>s.points.flatMap((p,i)=>{
+export const WORLD_SOLIDS:readonly WorldSolid[]=[...STATION_SOLIDS,...DISTRICT_ART_SOLIDS,...SUMMIT_ART_SOLIDS,...SKILL_BRANCHES.flatMap(s=>s.points.flatMap((p,i)=>{
   if(i%8!==0)return [];const a=s.points[Math.max(0,i-1)]!,b=s.points[Math.min(s.points.length-1,i+1)]!,dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1;
   return [-1,1].flatMap(side=>{const x=p[0]+dz/l*(s.halfWidth+.4)*side,z=p[2]-dx/l*(s.halfWidth+.4)*side,y=mountainBaseHeight(x,z);
     if(nearestOnRoute(x,z).distance<ROAD_HALF_WIDTH+1||p[1]-y<1)return [];
     return [{id:`${s.id}:support:${i}:${side}`,min:[x-.12,y,z-.12] as Point3,max:[x+.12,p[1]-.25,z+.12] as Point3}];
   });
-}));
+}))];
 export function worldCollisionAt(x:number,y:number,z:number,radius=.2):boolean{return WORLD_SURFACES.some(s=>{const p=nearestOnRoute(x,z,s.points);return p.distance<s.halfWidth+radius&&y>p.point[1]-.28&&y<p.point[1]+.08;})||WORLD_SOLIDS.some(s=>x>s.min[0]-radius&&x<s.max[0]+radius&&z>s.min[2]-radius&&z<s.max[2]+radius&&y>s.min[1]&&y<s.max[1]);}
 /** Follow the authored road; never draw a straight tap route through the gorge. */
 export function mountainWalkRoute(from:{x:number;z:number},to:{x:number;z:number}):{x:number;z:number}[]|null{

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import HarbourWorld from "../src/harbour/HarbourWorld.tsx";
 import { readFileSync } from "node:fs";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -24,10 +25,19 @@ import type { HouseRoute } from "../src/hearthside/houseRoutes.ts";
 type Input = { forward: number; strafe: number; run?: boolean };
 let inputs: Input[] = [];
 let ready: (() => void) | null = null;
+let panelOwnsWorld=false;
+let travelWasBlocked:boolean[]=[];
+const cancelWalk=vi.fn();
+const jump=vi.fn(),skateKeyDown=vi.fn();
+let riding=false;
 
 const body = {
+  cancel: cancelWalk,
+  jump,
+  skate:{active:()=>riding,input:()=>({keyDown:skateKeyDown}),pause:()=>undefined,checkpoint:()=>null,setAudio:()=>undefined,enable:()=>false},
+  place: () => undefined,
   input: (next: Input) => { inputs.push(next); },
-  at: () => ({ x: 0, z: 0, yaw: 0 }),
+  at: () => ({ x: 0, y:1.31, z: 0, yaw: 0 }),
   follow: () => undefined,
   following: () => false,
 };
@@ -37,7 +47,12 @@ function fakeWorld() {
   return {
     place: () => ({ anchors: () => [], regions: () => ({}), words: () => null }),
     placeId: () => "court" as const,
-    setToolOpen: () => undefined,
+    setToolOpen: (open:boolean) => {panelOwnsWorld=open;},
+    mountainTravel: () => {travelWasBlocked.push(panelOwnsWorld);},
+    setMountainRecovery: () => undefined,
+    setMountainInteraction: () => undefined,
+    setWorldAmbience: () => undefined,
+    mountainCalm: () => undefined,
     setReading: () => undefined,
     setBreathing: () => undefined,
     addAnimator: () => undefined,
@@ -82,7 +97,6 @@ let getContext: typeof HTMLCanvasElement.prototype.getContext;
 
 /** The Court, standing, exactly as the App mounts it. */
 async function stand(props: Record<string, unknown> = {}) {
-  const { default: HarbourWorld } = await import("../src/harbour/HarbourWorld.tsx");
   await act(async () => root.render(createElement(HarbourWorld as never, {
     household, memberId, scope: "household", today, route, ready: true, freshness: "current",
     onNavigate: () => undefined, onOpen: () => undefined, onClose: () => undefined,
@@ -111,7 +125,7 @@ const press = (key: string) => act(async () => {
 const settle = () => act(async () => { await new Promise((done) => setTimeout(done, 300)); });
 
 beforeEach(() => {
-  inputs = []; ready = null; coarse = false;
+  inputs = []; ready = null; coarse = false;panelOwnsWorld=false;travelWasBlocked=[];cancelWalk.mockClear();jump.mockClear();skateKeyDown.mockClear();riding=false;localStorage.clear();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query === "(pointer: coarse)" ? coarse : false,
@@ -359,4 +373,32 @@ describe("being hidden is not a dead end", () => {
     expect(world).toMatch(/onUnhide\?: \(\) => void/);
     expect(world).toMatch(/onUnhide=\{onUnhide\}/);
   });
+});
+
+
+it("pauses clicked walking for the guide and releases the follow camera before scenic travel",async()=>{
+ const {stage}=await stand();
+ await act(async()=>host.querySelector<HTMLButtonElement>('#world-guide-trigger')!.click());
+ expect(cancelWalk).toHaveBeenCalled();expect(panelOwnsWorld).toBe(true);
+ await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Travel & race')!.click());
+ await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Board and ride')!.click());
+ expect(travelWasBlocked).toEqual([false]);expect(panelOwnsWorld).toBe(false);
+ expect(document.activeElement).toBe(stage);
+ expect(host.querySelector('[role="dialog"][aria-label="Mountain and town guide"]')).toBeNull();
+});
+
+it("keeps main's Space jump on the world and leaves focused controls their keyboard",async()=>{
+ const quick=vi.fn();const {stage}=await stand({onQuickSheet:quick});
+ await press(' ');expect(jump).toHaveBeenCalledTimes(1);expect(quick).not.toHaveBeenCalled();
+ riding=true;await press(' ');expect(skateKeyDown).toHaveBeenCalledTimes(1);
+ const control=host.querySelector<HTMLButtonElement>('#world-guide-trigger')!;
+ control.focus();await press(' ');
+ expect(skateKeyDown).toHaveBeenCalledTimes(1);expect(jump).toHaveBeenCalledTimes(1);
+ expect(stage.contains(control)).toBe(true);
+});
+
+it("keeps Space as direct tool access when the flat Desk has no world body",async()=>{
+ localStorage.setItem('hearth:motion','flat');const quick=vi.fn();
+ const {stage}=await stand({onQuickSheet:quick});stage.focus();await press(' ');
+ expect(quick).toHaveBeenCalledTimes(1);expect(jump).not.toHaveBeenCalled();
 });

@@ -1,3 +1,4 @@
+import type {ReplayAction} from './replay.ts';
 /**
  * Tideline Skate Club v2 HUD — a crafted paper object that reads like a skate game.
  *
@@ -19,6 +20,7 @@ export type SkateHUDProps = {
   /** The HUD model. `null` = not skating (shows the entry button). */
   model: SkateHudModel | null;
   onStart(): void;
+  onReplay?(action:ReplayAction):void;
   onWalk(): void;
   /** Pause the ride. The HUD opens its book while paused and calls onPause(false) when closed. */
   onPause(on: boolean): void;
@@ -123,7 +125,7 @@ export function SkateHUD(p: SkateHUDProps) {
   const band = narrow || touch;
   const ticker = <LineTicker line={m.line} outcome={m.outcome} where={band ? 'band' : 'corner'}/>;
   const notice = <NoticeSlip notice={m.notice} saveFailed={p.saveFailed}/>;
-  const route = m.run && <RouteCard run={m.run} onEnd={() => { p.onRoute(null); p.onFocus(); }}/>;
+  const route = m.run && <RouteCard run={m.run} onEnd={() => { p.onRoute(null); p.onFocus(); }} onRetry={()=>{p.onRoute(m.run!.id as SkateRouteId);p.onFocus();}}/>;
   return <div ref={hudRef} className="skate-hud" data-skate-phase={m.phase} data-skate-device={touch ? 'touch' : m.inputDevice} data-skate-layout={narrow ? 'narrow' : 'wide'} data-skate-reduced={reduced || undefined} data-skate-open={open || undefined} onPointerDown={e => e.stopPropagation()}>
     <div className="skate-hud__play" inert={open ? true : undefined} aria-hidden={open ? true : undefined}>
       <header className="skate-top">
@@ -139,6 +141,13 @@ export function SkateHUD(p: SkateHUDProps) {
       </header>
       <div className="skate-band">
         {route}
+        {m.replay?.available && p.onReplay && <div className="skate-replay" aria-label="Your device-local best run">
+          <span><b>Your best run</b> {m.replay.seconds.toFixed(1)}s <small>On this device only</small></span>
+          {m.replay.playing ? <button type="button" onClick={()=>{p.onReplay?.('stop');p.onFocus();}}>Close replay</button> : <button type="button" disabled={reduced||m.replay.reduced||Boolean(m.run&&!m.run.finished)} onClick={()=>{p.onReplay?.('play');p.onFocus();}}>Watch replay</button>}
+          <button type="button" aria-pressed={m.replay.ghostEnabled} disabled={reduced||m.replay.reduced} onClick={()=>{p.onReplay?.('toggle-ghost');p.onFocus();}}>{m.replay.ghostEnabled?'Hide ghost':'Race your ghost'}</button>
+          {(reduced||m.replay.reduced) && <small>Moving replay and ghost are off with reduced motion.</small>}
+          {m.replay.playing && <><small role="timer">Replay · {m.replay.time.toFixed(1)} / {m.replay.seconds.toFixed(1)}s</small><ReplayMap path={m.replay.path} pose={m.replay.pose}/></>}
+        </div>}
         {band && ticker}
         <SpotBanner card={m.spotCard}/>
         {band && notice}
@@ -159,4 +168,11 @@ export function SkateHUD(p: SkateHUDProps) {
         trickBook={p.trickBook} gesturePath={p.gesturePath} presence={p.presence} settingsNote={null}/>
     </>}
   </div>;
+}
+
+/** Small, phone-readable course overview; replay motion comes from the shared world frame. */
+function ReplayMap({path,pose}:{path:readonly (readonly [number,number])[];pose:import('./replay.ts').GhostPose|null}){
+  if(!path.length)return null;
+  const xs=path.map(p=>p[0]),zs=path.map(p=>p[1]),x=Math.min(...xs)-8,z=Math.min(...zs)-8,w=Math.max(...xs)-x+8,h=Math.max(...zs)-z+8,r=Math.max(w,h)/65;
+  return <svg className="skate-replay__map" viewBox={`${x} ${z} ${w} ${h}`} role="img" aria-label="Replay of your best completed route"><polyline points={path.map(p=>p.join(',')).join(' ')} fill="none" stroke="currentColor" strokeWidth={r}/>{pose&&<circle cx={pose.x} cy={pose.z} r={r*2.2} fill="currentColor"/>}</svg>;
 }

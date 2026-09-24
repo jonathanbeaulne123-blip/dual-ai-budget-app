@@ -1,0 +1,807 @@
+[
+  {
+    "file": "loading-frame-390.png",
+    "frame": "loading"
+  },
+  {
+    "file": "probe",
+    "world": {
+      "status": "ready",
+      "tier": "lite"
+    }
+  },
+  {
+    "file": "bar-over-world-390.png",
+    "scope": null,
+    "deskPage": null,
+    "status": null,
+    "world": {
+      "status": "ready",
+      "tier": "lite"
+    },
+    "bar": [
+      "island"
+    ],
+    "flip": "illustrated",
+    "figure": "known",
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "bar-island-closeup-390.png",
+    "box": {
+      "x": 36,
+      "y": 790,
+      "width": 318,
+      "height": 54
+    }
+  },
+  {
+    "file": "bar-over-world-1100.png",
+    "scope": null,
+    "deskPage": null,
+    "status": null,
+    "world": {
+      "status": "ready",
+      "tier": "lite"
+    },
+    "bar": [
+      "island"
+    ],
+    "flip": "illustrated",
+    "figure": "known",
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "bar-island-closeup-1100.png",
+    "box": {
+      "x": 145,
+      "y": 728,
+      "width": 810,
+      "height": 60
+    }
+  },
+  {
+    "file": "flip-button-everyday-figure-1100.png",
+    "figure": "known",
+    "text": "\u25a4 Simple view$0",
+    "aria": "Switch to the simple view"
+  },
+  {
+    "file": "flip-before-backtick-1100.png",
+    "scope": null,
+    "deskPage": null,
+    "status": null,
+    "world": {
+      "status": "ready",
+      "tier": "lite"
+    },
+    "bar": [
+      "island"
+    ],
+    "flip": "illustrated",
+    "figure": "known",
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "flip-mid-transition-1100.png",
+    "turnStanding": false
+  },
+  {
+    "file": "flip-after-backtick-1100.png",
+    "turns": [
+      "to-desk"
+    ],
+    "scope": "household",
+    "deskPage": "today",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": "pulse",
+    "slip": true,
+    "dogear": false,
+    "cracked": true,
+    "overflowX": false
+  },
+  {
+    "file": "reduced-motion-flip",
+    "turnsUnderReduce": []
+  },
+  {
+    "file": "desk-today-320.png",
+    "windowScrollBefore": 38,
+    "scope": "household",
+    "deskPage": "today",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": "pulse",
+    "slip": true,
+    "dogear": false,
+    "cracked": true,
+    "overflowX": false
+  },
+  {
+    "file": "desk-today-320-end.png",
+    "scrolled": 1111
+  },
+  {
+    "file": "desk-leaving-320.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "leaving",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-leaving-320-end.png",
+    "scrolled": 1663
+  },
+  {
+    "file": "desk-accounts-320.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "accounts",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-accounts-320-end.png",
+    "scrolled": 1970
+  },
+  {
+    "file": "desk-accounts-expanded-320.png",
+    "expanded": "Benefits owing\nOWED TO US\n$180.00\nbook balance\nFold away"
+  },
+  {
+    "file": "desk-calendar-320.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "calendar",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-calendar-320-end.png",
+    "scrolled": 802
+  },
+  {
+    "file": "desk-books-320.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "books",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-books-320-end.png",
+    "scrolled": 1121
+  },
+  {
+    "file": "desk-today-390.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "today",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": "pulse",
+    "slip": true,
+    "dogear": false,
+    "cracked": true,
+    "overflowX": false
+  },
+  {
+    "file": "desk-today-390-end.png",
+    "scrolled": 898
+  },
+  {
+    "file": "desk-leaving-390.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "leaving",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-leaving-390-end.png",
+    "scrolled": 1235
+  },
+  {
+    "file": "desk-accounts-390.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "accounts",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-accounts-390-end.png",
+    "scrolled": 1722
+  },
+  {
+    "file": "desk-accounts-expanded-390.png",
+    "expanded": "Benefits owing\nOWED TO US\n$180.00\nbook balance\nFold away"
+  },
+  {
+    "file": "desk-calendar-390.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "calendar",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-calendar-390-end.png",
+    "scrolled": 531
+  },
+  {
+    "file": "desk-books-390.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "books",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-books-390-end.png",
+    "scrolled": 856
+  },
+  {
+    "file": "bar-door-closeup-390.png",
+    "box": {
+      "x": 0,
+      "y": 768,
+      "width": 390,
+      "height": 76
+    }
+  },
+  {
+    "file": "desk-today-720.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "today",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": "pulse",
+    "slip": true,
+    "dogear": false,
+    "cracked": true,
+    "overflowX": false
+  },
+  {
+    "file": "desk-today-720-end.png",
+    "scrolled": 174
+  },
+  {
+    "file": "desk-leaving-720.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "leaving",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-leaving-720-end.png",
+    "scrolled": 410
+  },
+  {
+    "file": "desk-accounts-720.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "accounts",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-accounts-720-end.png",
+    "scrolled": 832
+  },
+  {
+    "file": "desk-accounts-expanded-720.png",
+    "expanded": "Benefits owing\nOWED TO US\n$180.00\nbook balance\nFold away"
+  },
+  {
+    "file": "desk-calendar-720.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "calendar",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-calendar-720-end.png",
+    "scrolled": 203
+  },
+  {
+    "file": "desk-books-720.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "books",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-books-720-end.png",
+    "scrolled": 150
+  },
+  {
+    "file": "desk-today-1100.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "today",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": "pulse",
+    "slip": true,
+    "dogear": false,
+    "cracked": true,
+    "overflowX": false
+  },
+  {
+    "file": "desk-today-1100-end.png",
+    "scrolled": 305
+  },
+  {
+    "file": "desk-leaving-1100.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "leaving",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-leaving-1100-end.png",
+    "scrolled": 597
+  },
+  {
+    "file": "desk-accounts-1100.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "accounts",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-accounts-1100-end.png",
+    "scrolled": 722
+  },
+  {
+    "file": "desk-accounts-expanded-1100.png",
+    "expanded": "Benefits owing\nOWED TO US\n$180.00\nbook balance\nFold away"
+  },
+  {
+    "file": "desk-calendar-1100.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "calendar",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-calendar-1100-end.png",
+    "scrolled": 197
+  },
+  {
+    "file": "desk-books-1100.png",
+    "windowScrollBefore": 0,
+    "scope": "household",
+    "deskPage": "books",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": true,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "desk-books-1100-end.png",
+    "scrolled": 195
+  },
+  {
+    "file": "bar-door-closeup-1100.png",
+    "box": {
+      "x": 795,
+      "y": 720,
+      "width": 285,
+      "height": 64
+    }
+  },
+  {
+    "file": "focus-chip-rail-390.png",
+    "focused": "leaving",
+    "outline": "solid 2px"
+  },
+  {
+    "file": "drawer-open-390.png",
+    "dialog": true
+  },
+  {
+    "file": "dressing-classic-today-390.png",
+    "windowScrollBefore": 0,
+    "theme": "desk desk--classic"
+  },
+  {
+    "file": "dressing-classic-today-390-end.png",
+    "scrolled": 898
+  },
+  {
+    "file": "dressing-taylor-today-390.png",
+    "windowScrollBefore": 0,
+    "theme": "desk desk--taylor"
+  },
+  {
+    "file": "dressing-taylor-today-390-end.png",
+    "scrolled": 925
+  },
+  {
+    "file": "dressing-newfoundland-today-390.png",
+    "windowScrollBefore": 0,
+    "theme": "desk desk--newfoundland"
+  },
+  {
+    "file": "dressing-newfoundland-today-390-end.png",
+    "scrolled": 911
+  },
+  {
+    "file": "personal-desk-today-320.png",
+    "windowScrollBefore": 0,
+    "scope": "personal",
+    "deskPage": "today",
+    "status": "flat",
+    "world": null,
+    "bar": [],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": false,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "personal-desk-today-390.png",
+    "windowScrollBefore": 0,
+    "scope": "personal",
+    "deskPage": "today",
+    "status": "flat",
+    "world": null,
+    "bar": [],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": false,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "personal-desk-today-1100.png",
+    "windowScrollBefore": 0,
+    "scope": "personal",
+    "deskPage": "today",
+    "status": "flat",
+    "world": null,
+    "bar": [],
+    "flip": "flat",
+    "figure": null,
+    "pawprint": false,
+    "notice": null,
+    "slip": false,
+    "dogear": false,
+    "cracked": false,
+    "overflowX": false
+  },
+  {
+    "file": "personal-desk-taylor-1100.png",
+    "windowScrollBefore": 0
+  },
+  {
+    "file": "personal-desk-newfoundland-1100.png",
+    "windowScrollBefore": 0
+  },
+  {
+    "file": "console",
+    "errors": []
+  },
+  {
+    "file": "no-webgl-lands-on-desk-390.png",
+    "scope": "household",
+    "deskPage": "today",
+    "status": "flat",
+    "world": {
+      "status": "flat",
+      "tier": "flat"
+    },
+    "bar": [
+      "door"
+    ],
+    "flip": "illustrated",
+    "figure": "known",
+    "pawprint": true,
+    "notice": "pulse",
+    "slip": true,
+    "dogear": false,
+    "cracked": true,
+    "overflowX": false,
+    "undrawn": null
+  }
+]

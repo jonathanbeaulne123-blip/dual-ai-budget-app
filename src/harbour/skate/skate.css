@@ -317,3 +317,9 @@ body:has(.harbour-world.is-skating) :is(.nav.compass,.herc-litter,.sync-freshnes
   .skate-balance__bead{fill:Highlight}
   .skate-stamp,.skate-tear__half{border:2px solid CanvasText}
 }
+
+/* Device-local race card inherits the club's authored paper/ink in all three themes. */
+.skate-replay{pointer-events:auto;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;max-width:430px;padding:10px 12px;background:var(--skate-paper);color:var(--skate-ink);border:1px solid currentColor;border-radius:12px;box-shadow:0 3px 10px #0002;font-size:12px}
+.skate-replay span{flex:1 1 100%}.skate-replay small{display:block;font-size:11px}.skate-replay button{min-height:44px;padding:6px 10px;border:1px solid currentColor;border-radius:7px;background:transparent;color:inherit;font:inherit;cursor:pointer}.skate-replay button:disabled{opacity:.55;cursor:default}.skate-replay button:focus-visible{outline:3px solid currentColor;outline-offset:3px}.skate-replay__map{display:block;width:100%;height:160px;border-top:1px dashed currentColor}
+[data-skate-layout="narrow"] .skate-replay{max-width:min(100%,320px);padding:7px 9px}.skate-hud[data-skate-reduced] .skate-replay *{animation:none;transition:none}
+.skate-route-live button.skate-route-restart{position:static;justify-self:start;margin-top:4px;padding:6px 10px;font-size:12px;border:1px solid var(--skate-ink)}

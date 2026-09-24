@@ -1,3 +1,4 @@
+import {editionAvailability,useEditionAvailability,editionUnavailableWords} from "./editionAvailability.ts";
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { TARGET_NAMES, houseTargetRoute } from "../../house/navigation.ts";
 import { type HouseLevel, type HouseRoom } from "../../hearthside/houseRoutes.ts";
@@ -129,10 +130,28 @@ function writeStorage(storage: Pick<Storage, "setItem"> | undefined, edition: Mo
   try { (storage ?? window.localStorage).setItem(MOTION_KEY, edition === "flat" ? "flat" : ""); } catch { /* Preferences are a convenience; the sheet still works without storage. */ }
 }
 
+/** The edition the reader has chosen ("flat" is the simple view). Storage-guarded: no storage reads as illustrated. */
+export function readMotionEdition(storage?: Pick<Storage, "getItem">): MotionEdition {
+  return readStorage(storage);
+}
+
+/**
+ * Choose an edition: write `MOTION_KEY` and raise the `hearth:motion` event the
+ * harbour re-decides its tier on. The one writer — this sheet's switch, the
+ * bar's Simple-view flip and the backtick key all come through here, so the
+ * three can never disagree about what "flat" is written as.
+ */
+export function chooseMotionEdition(next: MotionEdition, storage?: Pick<Storage, "setItem">): void {
+  if(next === "illustrated" && editionAvailability().reason) return;
+  writeStorage(storage, next);
+  try { window.dispatchEvent(new CustomEvent(MOTION_KEY, { detail: next })); } catch { /* jsdom without CustomEvent is still fine. */ }
+}
+
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 const TARGET: CSSProperties = { minHeight: 44 };
 
 export function QuickSheet(props: QuickSheetProps) {
+  const availability=useEditionAvailability();
   const { open, onClose, onOpen, current = null } = props;
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
@@ -191,11 +210,11 @@ export function QuickSheet(props: QuickSheetProps) {
   }
 
   function toggleEdition() {
+    if(availability.reason) return;
     const next: MotionEdition = edition === "flat" ? "illustrated" : "flat";
     setEdition(next);
-    writeStorage(props.storage, next);
+    chooseMotionEdition(next, props.storage);
     props.onEditionChange?.(next);
-    try { window.dispatchEvent(new CustomEvent("hearth:motion", { detail: next })); } catch { /* jsdom without CustomEvent is still fine. */ }
   }
 
   return (
@@ -272,11 +291,13 @@ export function QuickSheet(props: QuickSheetProps) {
             role="switch"
             className="quick-sheet__edition"
             style={TARGET}
-            aria-checked={edition === "flat"}
+            aria-checked={availability.flat || edition === "flat"}
+            disabled={Boolean(availability.reason)}
+            title={editionUnavailableWords(availability.reason) ?? undefined}
             data-quick-sheet-edition={edition}
             onClick={toggleEdition}
           >
-            <span>{edition === "flat" ? "Reading edition" : "Illustrated"}</span>
+            <span>{availability.flat || edition === "flat" ? "Reading edition" : "Illustrated"}</span>
             <small>{edition === "flat" ? "Every place as readable HTML" : "Tap for the reading edition"}</small>
           </button>
         </div>
