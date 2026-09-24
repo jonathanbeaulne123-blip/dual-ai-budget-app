@@ -1,0 +1,104 @@
+/* ── The Desk · Accounts (SIMPLE_VIEW_DESK S3 §3) ────────────────────────────
+   One paper tile per account, like index cards in a tray: a coloured tab by
+   kind, the figure tabular in ink, a card's utilization as a ruled gauge. A
+   tile unfolds in place (it takes the whole row) to show its latest register
+   rows. Tokens are desk.css's (set on .desk). 44px targets; focus is
+   desk.css's; reduced motion is honoured at the bottom. ── */
+
+.desk-accounts { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+.desk-accounts .desk-card { min-width: 0; }
+
+/* The glance pick leads: a ruled chit with an ink tab. */
+.desk-accounts__glance { display: grid; gap: 4px; padding-top: 18px; }
+.desk-accounts__glance::before {
+  content: ""; position: absolute; top: -1px; left: 14px; width: 34px; height: 5px; border-radius: 0 0 3px 3px; background: var(--desk-gold);
+}
+.desk-accounts__glance-name { font: 600 clamp(18px, 4.6vw, 22px)/1.2 var(--display, Georgia, serif); overflow-wrap: anywhere; }
+.desk-accounts__glance .desk-figure { font-size: clamp(28px, 8vw, 40px); }
+.desk-accounts__label { font: 500 12px/1.3 var(--font, system-ui, sans-serif); letter-spacing: 0; color: var(--desk-muted); }
+.desk-accounts__glance .desk-accounts__label { font-size: 13px; }
+
+/* The tray. */
+.desk-accounts__tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0; padding: 0; list-style: none; }
+.desk-accounts__tiles > li { display: flex; min-width: 0; }
+.desk-accounts__tiles > li.is-open { grid-column: 1 / -1; }
+
+.desk-account { display: grid; gap: 0; padding: 0; overflow: hidden; --account-tab: var(--desk-ink); }
+.desk-account::before { content: ""; position: absolute; top: -1px; left: 14px; width: 34px; height: 5px; border-radius: 0 0 3px 3px; background: var(--account-tab); z-index: 1; }
+.desk-account[data-account-kind="credit"] { --account-tab: var(--desk-copper); }
+.desk-account[data-account-kind="savings"] { --account-tab: var(--desk-pine); }
+.desk-account[data-account-kind="investment"] { --account-tab: var(--desk-gold); }
+.desk-account[data-account-kind="receivable"] { --account-tab: color-mix(in srgb, var(--desk-pine) 45%, var(--desk-muted)); }
+
+.desk-account__press {
+  display: grid; gap: 8px; width: 100%; min-height: 44px; margin: 0; padding: 18px 16px 12px; border: 0; border-radius: inherit;
+  background: none; color: inherit; text-align: left; cursor: pointer;
+}
+.desk-account__press:focus-visible { outline-offset: -3px; }
+.desk-account__head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 10px; min-width: 0; }
+.desk-account__name { display: grid; min-width: 0; font: 600 16px/1.25 var(--display, Georgia, serif); overflow-wrap: anywhere; }
+.desk-account__name small { font: 500 12px/1.3 var(--font, system-ui, sans-serif); color: var(--desk-muted); }
+.desk-account__kind { font: 700 10px/1.3 var(--font, system-ui, sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--desk-muted); }
+.desk-account__badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.desk-account__badge {
+  padding: 1px 8px; border-radius: 999px; font: 700 10px/1.7 var(--font, system-ui, sans-serif); letter-spacing: .08em; text-transform: uppercase;
+  border: 1px solid color-mix(in srgb, var(--desk-ink) 40%, transparent); color: var(--desk-ink);
+}
+.desk-account__badge--glance { background: var(--desk-ink); color: var(--desk-card); border-color: var(--desk-ink); }
+.desk-account__balance { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.desk-account__balance .desk-figure { font-size: clamp(22px, 5.6vw, 26px); }
+.desk-account__gauge-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.desk-account__gauge {
+  position: relative; display: block; height: 8px; overflow: hidden; border-radius: 2px;
+  background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--desk-card) 70%, var(--desk-paper)) 0 9px, color-mix(in srgb, var(--desk-line) 80%, transparent) 9px 10px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--desk-line) 80%, var(--desk-ink));
+}
+.desk-account__gauge > span { position: absolute; inset: 0 auto 0 0; display: block; background: var(--desk-ink); }
+.desk-account__gauge.is-hot > span { background: var(--desk-copper); }
+.desk-account__util { font-size: 12px; color: var(--desk-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.desk-account__fold { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 650; color: var(--desk-muted); }
+.desk-account__fold i { width: 7px; height: 7px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(45deg) translateY(-2px); transition: transform .15s ease; }
+[data-expanded] .desk-account__fold i { transform: rotate(-135deg) translateY(-1px); }
+.desk-account__press:hover .desk-account__fold { color: var(--desk-ink); }
+
+/* The register slip: ruled rows under a dashed tear. */
+.desk-account__register:not([hidden]) {
+  display: block; padding: 10px 16px 14px;
+  border-top: 1px dashed color-mix(in srgb, var(--desk-line) 60%, var(--desk-ink));
+  background-color: color-mix(in srgb, var(--desk-card) 70%, var(--desk-paper));
+}
+.desk-account__rows { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums lining-nums; }
+.desk-account__caption { caption-side: top; padding-bottom: 6px; text-align: left; font: 700 10px/1.3 var(--font, system-ui, sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--desk-muted); }
+.desk-account__rows th { padding: 0 6px 6px; text-align: left; font: 700 10px/1.3 var(--font, system-ui, sans-serif); letter-spacing: .1em; text-transform: uppercase; color: var(--desk-muted); border-bottom: 1.5px solid color-mix(in srgb, var(--desk-ink) 50%, transparent); }
+.desk-account__rows td { padding: 8px 6px; vertical-align: top; border-bottom: 1px solid color-mix(in srgb, var(--desk-line) 70%, transparent); }
+.desk-account__rows tr > :first-child { padding-left: 0; }
+.desk-account__rows tr > :last-child { padding-right: 0; }
+.desk-account__rows .is-num { text-align: right; white-space: nowrap; }
+.desk-account__rows .is-date { white-space: nowrap; color: var(--desk-muted); }
+.desk-account__rows .is-label { overflow-wrap: anywhere; }
+.desk-account__rows .is-label small { display: block; font-size: 11px; color: var(--desk-muted); }
+.desk-account__none, .desk-account__more { margin-top: 6px; color: var(--desk-muted); }
+
+.desk-accounts__doors { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ── Widths ── */
+@media (max-width: 379px) {
+  .desk-account__press { padding: 16px 12px 10px; }
+  .desk-account__register:not([hidden]) { padding: 10px 12px 12px; }
+  .desk-account__rows { font-size: 13px; }
+}
+@media (min-width: 560px) {
+  .desk-accounts__tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1000px) {
+  .desk-accounts__tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+/* ── The three editions ── */
+.desk--taylor .desk-account__register:not([hidden]) { border-top-style: dotted; }
+.desk--taylor .desk-account__badge { border-radius: 8px 3px 8px 3px; }
+.desk--newfoundland .desk-account__caption, .desk--newfoundland .desk-account__rows th { font-family: var(--display, Georgia, serif); letter-spacing: .05em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-accounts *, .desk-accounts *::before, .desk-accounts *::after { transition: none !important; animation: none !important; }
+}

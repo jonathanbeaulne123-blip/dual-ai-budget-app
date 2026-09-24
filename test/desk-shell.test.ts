@@ -144,7 +144,7 @@ describe("the Desk shell", () => {
   it("says the door-sign sentence under the chips, and later pages keep their own door", async () => {
     const { opened } = await mount({ initialPage: "leaving" });
     expect(q("[data-desk-sign]").textContent).toMatch(/bill/);
-    const door = q<HTMLButtonElement>("[data-desk-coming] button");
+    const door = q<HTMLButtonElement>('[data-desk-door="cellar-bills"]');
     await act(async () => door.click());
     expect(opened).toEqual([["cellar-bills", undefined]]);
   });

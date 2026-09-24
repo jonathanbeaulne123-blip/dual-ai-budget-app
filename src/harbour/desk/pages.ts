@@ -8,7 +8,9 @@
  */
 import type { ComponentType } from "react";
 import { placeSigns, shortDate } from "../nav/doorSigns.ts";
+import { DeskAccounts } from "./DeskAccounts.tsx";
 import { deskComing } from "./DeskComing.tsx";
+import { DeskLeaving } from "./DeskLeaving.tsx";
 import { DeskToday } from "./DeskToday.tsx";
 import type { DeskPageProps, DeskSignContext } from "./types.ts";
 
@@ -30,8 +32,8 @@ const calendarSign = ({ reading }: DeskSignContext) => reading?.next ? `Next · 
 
 export const DESK_PAGES: readonly DeskPage[] = [
   { id: "today", chip: "Today", subtitle: sign("court", "The Fund, this month"), Page: DeskToday },
-  { id: "leaving", chip: "Leaving", subtitle: sign("cellar", "What leaves next"), Page: deskComing("Leaving", { target: "cellar-bills", words: "Read the bill jars" }) },
-  { id: "accounts", chip: "Accounts", subtitle: () => "Every account, as the books hold it", Page: deskComing("Accounts", { target: "books", words: "Open the books" }) },
+  { id: "leaving", chip: "Leaving", subtitle: sign("cellar", "What leaves next"), Page: DeskLeaving },
+  { id: "accounts", chip: "Accounts", subtitle: () => "Every account, as the books hold it", Page: DeskAccounts },
   { id: "calendar", chip: "Calendar", subtitle: calendarSign, Page: deskComing("Calendar", { target: "calendar", words: "Unfold the Calendar" }) },
   { id: "books", chip: "Books", subtitle: sign("library", "The standing books"), Page: deskComing("Books", { target: "books", words: "Open the books" }) },
 ];

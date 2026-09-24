@@ -1,0 +1,187 @@
+/* ── The Desk · Leaving (SIMPLE_VIEW_DESK S3 §2) ─────────────────────────────
+   What leaves the Fund, and when. The same cut-paper ledger as desk.css and
+   the same tokens (--desk-ink, --desk-copper…, set on .desk), so Classic,
+   Taylor and Newfoundland all read. The calendar-weight palette is the page's
+   own: ink is posted, copper is scheduled. Figures are tabular. Targets are
+   44px; focus is desk.css's; reduced motion is honoured at the bottom. ── */
+
+.desk-leaving { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); }
+/* The reading column (next, spoken for, the table) and the rail column (the rail, the jars): one stack on a phone. */
+.desk-leaving__col { display: grid; gap: 14px; grid-template-columns: minmax(0, 1fr); align-content: start; min-width: 0; }
+.desk-leaving .desk-card { min-width: 0; }
+.desk-leaving h2.desk-card__kicker { margin-bottom: 8px; }
+
+/* ── The next outflow: a torn-off chit with a copper tab ── */
+.desk-leaving__next { display: grid; gap: 4px; padding-top: 18px; }
+.desk-leaving__next::before, .desk-leaving__spoken::before {
+  content: ""; position: absolute; top: -1px; left: 14px; width: 34px; height: 5px; border-radius: 0 0 3px 3px; background: var(--desk-copper);
+}
+.desk-leaving__spoken::before { background: var(--desk-ink); }
+.desk-leaving__next-label { font: 600 clamp(18px, 4.6vw, 22px)/1.2 var(--display, Georgia, serif); overflow-wrap: anywhere; }
+.desk-leaving__next-figure { font-size: clamp(30px, 8.6vw, 44px); letter-spacing: -.02em; }
+.desk-leaving__warning { display: block; margin: 6px 0 0; font-size: 13px; font-weight: 650; color: var(--desk-danger); }
+
+/* ── Spoken for: the claimed-vs-pool bar is a strip of ruled paper filling with ink ── */
+.desk-leaving__spoken { display: grid; gap: 6px; padding-top: 18px; }
+.desk-leaving__bar {
+  position: relative; display: block; height: 14px; margin-top: 4px; overflow: hidden; border-radius: 3px;
+  background-color: color-mix(in srgb, var(--desk-card) 70%, var(--desk-paper));
+  background-image: repeating-linear-gradient(90deg, transparent 0 11px, color-mix(in srgb, var(--desk-line) 80%, transparent) 11px 12px);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--desk-line) 90%, var(--desk-ink)), inset 0 1px 2px color-mix(in srgb, var(--desk-ink) 12%, transparent);
+}
+.desk-leaving__bar-fill { position: absolute; inset: 0 auto 0 0; display: block; background: var(--desk-ink); transition: width .3s ease; }
+.desk-leaving__bar.is-over .desk-leaving__bar-fill { background: repeating-linear-gradient(135deg, var(--desk-copper) 0 6px, color-mix(in srgb, var(--desk-copper) 70%, var(--desk-danger)) 6px 12px); }
+.desk-leaving__bar-ends { display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--desk-muted); font-variant-numeric: tabular-nums; }
+[data-desk-spoken="over"] > .desk-figure { color: color-mix(in srgb, var(--desk-danger) 70%, var(--desk-ink)); }
+
+/* ── The next-out table: a ledger page, ruled, figures right ── */
+.desk-leaving__out { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums lining-nums; table-layout: auto; }
+.desk-leaving__out th { padding: 0 6px 6px; text-align: left; font: 700 10px/1.3 var(--font, system-ui, sans-serif); letter-spacing: .12em; text-transform: uppercase; color: var(--desk-muted); border-bottom: 1.5px solid color-mix(in srgb, var(--desk-ink) 55%, transparent); }
+.desk-leaving__out td { padding: 9px 6px; vertical-align: top; border-bottom: 1px solid color-mix(in srgb, var(--desk-line) 75%, transparent); }
+.desk-leaving__out .is-num { text-align: right; white-space: nowrap; }
+.desk-leaving__out .is-date { white-space: nowrap; color: var(--desk-muted); }
+.desk-leaving__out .is-label { overflow-wrap: anywhere; }
+.desk-leaving__out tr > :first-child { padding-left: 0; }
+.desk-leaving__out tr > :last-child { padding-right: 0; }
+.desk-leaving__out tr.is-under td { color: color-mix(in srgb, var(--desk-copper) 72%, var(--desk-ink)); }
+.desk-leaving__out tr.is-break td { color: var(--desk-danger); font-weight: 650; }
+.desk-leaving__out tfoot th, .desk-leaving__out tfoot td { padding-top: 9px; border: 0; border-top: 3px double color-mix(in srgb, var(--desk-ink) 55%, transparent); font-size: 13px; letter-spacing: 0; text-transform: none; color: var(--desk-ink); font-weight: 650; }
+.desk-leaving__foot { margin-top: 8px; color: var(--desk-muted); }
+.desk-leaving__empty { color: var(--desk-muted); }
+
+/* ── The rail: one bar per day on graph paper ── */
+.desk-rail { display: grid; gap: 8px; }
+.desk-rail__stage { position: relative; height: 96px; }
+.desk-rail__bars {
+  position: absolute; inset: 0; display: grid; align-items: end; gap: 0 2px; padding: 6px 4px 0;
+  border-bottom: 1.5px solid color-mix(in srgb, var(--desk-ink) 50%, transparent); border-radius: 4px 4px 0 0;
+  background-color: color-mix(in srgb, var(--desk-card) 82%, var(--desk-paper));
+  background-image:
+    linear-gradient(color-mix(in srgb, var(--desk-pine) 11%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in srgb, var(--desk-pine) 8%, transparent) 1px, transparent 1px);
+  background-size: 12px 12px;
+}
+.desk-rail__day { position: relative; display: flex; align-items: flex-end; justify-content: center; height: 100%; min-width: 0; }
+.desk-rail__day.is-picked { background: color-mix(in srgb, var(--desk-gold) 20%, transparent); border-radius: 3px 3px 0 0; }
+.desk-rail__day.is-picked::after { content: ""; position: absolute; left: 50%; top: 0; bottom: -6px; width: 0; border-left: 1.5px solid var(--desk-ink); }
+.desk-rail__day.is-today::before { content: ""; position: absolute; left: 50%; bottom: -8px; width: 5px; height: 5px; margin-left: -2.5px; border-radius: 50%; background: var(--desk-copper); }
+.desk-rail__stack { display: flex; flex-direction: column; justify-content: flex-end; width: 100%; max-width: 14px; height: 100%; }
+.desk-rail__seg { display: block; width: 100%; min-height: 2px; }
+.desk-rail__seg--posted { background: var(--desk-ink); }
+.desk-rail__seg--scheduled {
+  background: repeating-linear-gradient(0deg, var(--desk-copper) 0 3px, color-mix(in srgb, var(--desk-copper) 72%, var(--desk-card)) 3px 4px);
+  border-radius: 2px 2px 0 0;
+}
+.desk-rail__seg--posted:first-child { border-radius: 2px 2px 0 0; }
+/* The rail is the control (role="slider"): a press picks a day, a horizontal drag walks the month, a vertical drag still scrolls. */
+.desk-rail__stage { cursor: pointer; touch-action: pan-y; border-radius: 4px; -webkit-user-select: none; user-select: none; }
+.desk-rail__axis { display: flex; justify-content: space-between; gap: 8px; margin-top: 4px; font-size: 11px; color: var(--desk-muted); font-variant-numeric: tabular-nums; }
+.desk-rail__controls { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 8px; }
+.desk-rail__step {
+  width: 44px; height: 44px; border-radius: 50%; cursor: pointer; font-size: 22px; line-height: 1;
+  border: 1px solid color-mix(in srgb, var(--desk-ink) 30%, transparent); background: var(--desk-card); color: var(--desk-ink);
+  box-shadow: 0 2px 0 color-mix(in srgb, var(--desk-ink) 14%, transparent);
+}
+.desk-rail__step:disabled { opacity: .4; cursor: default; box-shadow: none; }
+.desk-rail__legend { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin: 0; font-size: 12px; color: var(--desk-muted); }
+.desk-rail__legend > span { display: inline-flex; align-items: center; gap: 6px; }
+.desk-rail__key { display: inline-block; width: 10px; height: 12px; border-radius: 2px 2px 0 0; }
+.desk-rail__key--posted { background: var(--desk-ink); }
+.desk-rail__key--scheduled { background: var(--desk-copper); }
+
+/* The day's slip: a small receipt pinned under the rail. */
+.desk-rail__slip {
+  display: grid; gap: 4px; padding: 12px 14px; border-radius: 6px;
+  background: color-mix(in srgb, var(--desk-card) 60%, var(--desk-paper));
+  border: 1px dashed color-mix(in srgb, var(--desk-line) 60%, var(--desk-ink));
+}
+.desk-rail__slip p { margin: 0; }
+.desk-rail__slip-date { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font: 600 15px/1.3 var(--display, Georgia, serif); }
+.desk-rail__today-tag { padding: 1px 8px; border-radius: 999px; font: 700 10px/1.6 var(--font, system-ui, sans-serif); letter-spacing: .1em; text-transform: uppercase; background: var(--desk-copper); color: var(--desk-card); }
+.desk-rail__slip-figure { font-size: 15px; font-variant-numeric: tabular-nums; }
+.desk-rail__word { font-variant-numeric: tabular-nums; }
+.desk-rail__word--posted { font-weight: 650; color: var(--desk-ink); }
+.desk-rail__word--scheduled { font-weight: 650; color: color-mix(in srgb, var(--desk-copper) 75%, var(--desk-ink)); }
+.desk-rail__items { display: grid; gap: 6px; margin: 6px 0 0; padding: 0; list-style: none; }
+.desk-rail__item {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 10px; padding: 6px 0 6px 10px;
+  border-left: 3px solid color-mix(in srgb, var(--desk-line) 80%, var(--desk-ink));
+}
+.desk-rail__item.is-posted-out { border-left-color: var(--desk-ink); }
+.desk-rail__item.is-scheduled-out { border-left-color: var(--desk-copper); }
+.desk-rail__item.is-posted-in { border-left-color: var(--desk-pine); }
+.desk-rail__item-title { font-size: 14px; font-weight: 600; overflow-wrap: anywhere; }
+.desk-rail__item-cents { font-size: 14px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.desk-rail__item-note { grid-column: 1 / -1; font-size: 12px; color: var(--desk-muted); }
+.desk-rail__none, .desk-rail__quiet, .desk-rail__through { color: var(--desk-muted); }
+
+/* ── The bill jars: little labelled jars on a shelf, state in words and glass ── */
+.desk-jars { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.desk-jars > li { display: flex; min-width: 0; }
+.desk-jar {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; grid-template-areas: "glass words cents" "glass words state" "glass missing missing";
+  align-items: center; gap: 2px 12px; width: 100%; min-height: 56px; padding: 10px 12px; text-align: left; cursor: pointer;
+  border: 1px solid color-mix(in srgb, var(--desk-line) 85%, transparent); border-radius: 8px;
+  background: color-mix(in srgb, var(--desk-card) 84%, var(--desk-paper));
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--desk-ink) 10%, transparent), 2px 2px 0 -1px color-mix(in srgb, var(--desk-ink) 10%, transparent);
+  transition: transform .15s ease;
+}
+.desk-jar:hover { transform: translateY(-1px); }
+.desk-jar__glass {
+  grid-area: glass; position: relative; width: 22px; height: 30px; border-radius: 5px 5px 7px 7px;
+  border: 1.5px solid color-mix(in srgb, var(--desk-ink) 60%, transparent); border-top-width: 4px;
+  background: linear-gradient(to top, var(--jar-fill, transparent) 0 var(--jar-level, 0%), transparent var(--jar-level, 0%));
+}
+.desk-jar__words { grid-area: words; display: grid; gap: 2px; min-width: 0; }
+.desk-jar__label { font: 600 15px/1.25 var(--display, Georgia, serif); overflow-wrap: anywhere; }
+.desk-jar__due { font-size: 12px; color: var(--desk-muted); }
+.desk-jar__cents { grid-area: cents; font-size: 15px; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.desk-jar__state {
+  grid-area: state; justify-self: end; padding: 1px 8px; border-radius: 999px; white-space: nowrap;
+  font: 700 10px/1.7 var(--font, system-ui, sans-serif); letter-spacing: .08em; text-transform: uppercase;
+  border: 1px solid currentColor; color: var(--desk-muted);
+}
+.desk-jar__missing { grid-area: missing; font-size: 12px; font-weight: 650; color: var(--desk-danger); }
+/* Frosted = planned, solid = set aside, shattered = paid, cracked = short (the Cellar's own words). */
+.desk-jar[data-jar-state="planned"] { --jar-fill: color-mix(in srgb, var(--desk-line) 70%, transparent); --jar-level: 35%; }
+.desk-jar[data-jar-state="set-aside"] { --jar-fill: color-mix(in srgb, var(--desk-pine) 70%, var(--desk-ink)); --jar-level: 100%; }
+.desk-jar[data-jar-state="set-aside"] .desk-jar__state { color: color-mix(in srgb, var(--desk-pine) 80%, var(--desk-ink)); }
+.desk-jar[data-jar-state="paid"] { --jar-fill: transparent; }
+.desk-jar[data-jar-state="paid"] .desk-jar__glass { border-style: dashed; opacity: .6; }
+.desk-jar[data-jar-state="paid"] .desk-jar__cents { text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--desk-ink) 45%, transparent); color: var(--desk-muted); }
+.desk-jar[data-jar-state="short"] { --jar-fill: var(--desk-copper); --jar-level: 45%; border-color: color-mix(in srgb, var(--desk-danger) 45%, var(--desk-line)); }
+.desk-jar[data-jar-state="short"] .desk-jar__state { color: var(--desk-danger); }
+.desk-jar[data-jar-state="short"] .desk-jar__glass::after {
+  content: ""; position: absolute; top: 3px; left: 5px; width: 8px; height: 14px;
+  border-left: 1.5px solid var(--desk-danger); transform: skewX(-18deg);
+}
+.desk-jar[data-jar-missing] .desk-jar__glass { outline: 2px dotted var(--desk-danger); outline-offset: 2px; }
+
+.desk-leaving__doors { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ── Widths ── */
+@media (max-width: 379px) {
+  .desk-leaving__out { font-size: 13px; }
+  .desk-leaving__out td { padding: 8px 4px; }
+  .desk-rail__legend { font-size: 11px; gap: 2px 10px; }
+  .desk-jar { gap: 2px 10px; padding: 10px; }
+}
+@media (min-width: 720px) {
+  .desk-leaving { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+  .desk-leaving__doors { grid-column: 1 / -1; }
+}
+@media (min-width: 1000px) {
+  .desk-leaving { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+  .desk-rail__stage { height: 132px; }
+}
+
+/* ── The three editions: the tokens carry colour; these carry the paper. ── */
+.desk--taylor .desk-jar { border-style: dashed; border-radius: 12px 4px 12px 4px; }
+.desk--taylor .desk-rail__slip { border-radius: 10px 3px 10px 3px; }
+.desk--newfoundland .desk-jar { border-radius: 2px; border-left: 3px solid color-mix(in srgb, var(--desk-pine) 55%, var(--desk-ink)); }
+.desk--newfoundland .desk-leaving__out th { font-family: var(--display, Georgia, serif); letter-spacing: .06em; }
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-leaving *, .desk-leaving *::before, .desk-leaving *::after { transition: none !important; animation: none !important; }
+  .desk-jar:hover { transform: none; }
+}
