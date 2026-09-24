@@ -1,109 +1,150 @@
+/**
+ * Tideline Skate Club v2 · the driver on the island: what v1 guaranteed,
+ * kept (pause freezes the ride, rebuild checkpoints, device-local progress per
+ * person/household/environment, discoveries and routes only by riding there,
+ * the park and routes clear of buildings, trees and the sea), plus the v2
+ * seams the driver owns (keys → flick-it → sim, stance, respawn, the wire act).
+ */
 import {describe,it,expect} from 'vitest';
-import {createSkateState,stepSkate,SKATE_IDLE,SKATE_MAX_SPEED,requestSkateTrick,resetSkate,setSkateMarker,stopSkate,bankSkateCombo,type SkateState,type SkateWorld,type SkateInput} from '../src/harbour/skate/skateModel.ts';
-import {SKATE_RAMPS,SKATE_ROUTES,SKATE_SPOTS,SKATE_RAILS,rampWorld,rampRise,skateSurface} from '../src/harbour/skate/park.ts';
-import {createSkateSession,decodeSkateProgress,freshSkateProgress,skateProgressKey,saveSkateProgress,readSkateProgress,startSkateRoute,stepSkateSession} from '../src/harbour/skate/session.ts';
+import {SKATE_ROUTES,SKATE_SPOTS,SKATE_RAILS,skateSurface} from '../src/harbour/skate/park.ts';
+import {createSkateSession,decodeSkateProgress,freshSkateProgress,observeSkate,skateProgressKey,saveSkateProgress,readSkateProgress,startSkateRoute} from '../src/harbour/skate/session.ts';
 import {ISLAND_BUILDINGS,isClear,courtObstacles} from '../src/harbour/body/obstacles.ts';
 import {plantPlan} from '../src/harbour/scene/planting.ts';
 import {pathSegmentClear} from '../src/harbour/body/pathfinder.ts';
-import {createSkateDriver} from '../src/harbour/skate/rider.ts';
-const flat:SkateWorld={surface:()=>({y:0,ramp:null}),ground:()=>0,obstacles:[],rails:[]};
-const input=(extra:Partial<SkateInput>={}):SkateInput=>({...SKATE_IDLE,...extra});
-function ride(s:SkateState,seconds:number,drive=input(),world=flat,hz=60){for(let i=0;i<Math.round(seconds*hz);i++)s=stepSkate(s,drive,1/hz,world);return s;}
+import {createSkateDriver,skateAct,skateField,skateGesturePath,skateHints,SKATE_TRICK_BOOK} from '../src/harbour/skate/driver.ts';
+import {blankPresent} from '../src/harbour/skate/look/legacy.ts';
+import {groundHeightAt} from '../src/harbour/scene/ground.ts';
+import type {SkatePresent} from '../src/harbour/skate/contract.ts';
 
-describe('real board physics',()=>{
-  it('steers right with D and left with A, including an airborne spin',()=>{
-    const right=createSkateState(0,0,0,flat);right.speed=4;
-    const left=createSkateState(0,0,0,flat);left.speed=4;
-    const turnedRight=ride(right,.4,input({steer:1}));
-    const turnedLeft=ride(left,.4,input({steer:-1}));
-    expect(turnedRight.yaw).toBeGreaterThan(0);
-    expect(turnedRight.x).toBeGreaterThan(0);
-    expect(turnedLeft.yaw).toBeLessThan(0);
-    expect(turnedLeft.x).toBeLessThan(0);
-    const airborne=createSkateState(0,0,0,flat);airborne.mode='air';airborne.y=1;airborne.vy=3;airborne.speed=4;
-    expect(ride(airborne,.1,input({steer:1})).spin).toBeGreaterThan(0);
+/** A driver on the real island with a fake clock (ms) the key events share. */
+function rig(){
+  let t=1000;
+  const d=createSkateDriver({obstacles:courtObstacles('full')},{now:()=>t});
+  const tideline=SKATE_SPOTS.find(s=>s.id==='tideline')!;
+  d.mount(tideline.start[0],tideline.start[1],tideline.startYaw,freshSkateProgress());
+  const frames=(n:number,hz=60)=>{for(let i=0;i<n;i++){t+=1000/hz;d.step(1/hz);}};
+  const key=(k:string,down:boolean)=>{const e={key:k,timeStamp:t};return down?d.input()!.keyDown(e):d.input()!.keyUp(e);};
+  return {d,frames,key,advance:(ms:number)=>{t+=ms;},now:()=>t};
+}
+
+describe('skate v2 driver · riding',()=>{
+  it('pushes along the board with W and rolls away from the spot start',()=>{
+    const {d,frames,key}=rig();const start={...d.present()!};
+    expect(key('w',true)).toBe(true);frames(90);key('w',false);
+    const p=d.present()!;
+    expect(p.speed).toBeGreaterThan(2);
+    expect(Math.hypot(p.x-start.x,p.z-start.z)).toBeGreaterThan(1.5);
+    expect(d.events()).toBeDefined();
   });
-  it('pushes, coasts with rolling resistance and brakes without reversing',()=>{
-    const start=createSkateState(0,0,0,flat),moving=ride(start,2,input({push:1})),coasting=ride(moving,.5),braked=ride(moving,2,input({brake:true}));
-    expect(moving.speed).toBeGreaterThan(6);expect(moving.z).toBeGreaterThan(5);expect(coasting.speed).toBeLessThan(moving.speed);expect(coasting.z).toBeGreaterThan(moving.z);expect(braked.speed).toBe(0);expect(start.speed).toBe(0);
+  it('ollies from the arrow keys (pull back, flick up) and a kickflip from ↓ then ↑+←',()=>{
+    const {d,frames,key}=rig();
+    key('w',true);frames(60);key('w',false);
+    const seen:string[]=[];const watch=(n:number)=>{for(let i=0;i<n;i++){frames(1);for(const e of d.events())seen.push(e.kind==='pop'?`pop:${e.flipId}`:e.kind);}};
+    key('ArrowDown',true);watch(8);key('ArrowDown',false);key('ArrowUp',true);watch(3);key('ArrowUp',false);watch(70);
+    expect(seen).toContain('pop:null');expect(seen).toContain('land');
+    seen.length=0;
+    key('ArrowDown',true);watch(8);key('ArrowDown',false);key('ArrowUp',true);key('ArrowLeft',true);watch(3);key('ArrowUp',false);key('ArrowLeft',false);watch(80);
+    expect(seen).toContain('pop:kickflip');
   });
-  it('runs the same fixed simulation at 30, 60 and 120 fps',()=>{
-    const at=(hz:number)=>ride(createSkateState(0,0,Math.PI,flat),3,input({push:1,steer:.3}),flat,hz);
-    const a=at(30),b=at(60),c=at(120);for(const k of ['x','y','z','speed','yaw'] as const){expect(a[k]).toBeCloseTo(b[k],7);expect(c[k]).toBeCloseTo(b[k],7);}
+  it('keeps a flick that finished inside a long frame (a slow device) instead of dropping it as stale',()=>{
+    const {d,frames,key,advance}=rig();
+    key('w',true);frames(60);key('w',false);
+    const seen:string[]=[];
+    key('ArrowDown',true);advance(160);key('ArrowDown',false);key('ArrowUp',true);advance(60);key('ArrowUp',false);
+    for(let i=0;i<6;i++){frames(1,2);for(const e of d.events())seen.push(e.kind);}
+    expect(seen).toContain('pop');
   });
-  it('bounds speed and a stalled frame without teleporting',()=>{
-    let s=createSkateState(0,0,0,flat);s.speed=SKATE_MAX_SPEED;s=stepSkate(s,input({push:1}),1000,flat);expect(s.z).toBeLessThanOrEqual(1.31);expect(s.speed).toBeLessThanOrEqual(SKATE_MAX_SPEED);
-    const before=s;expect(stepSkate(s,input(),NaN,flat).z).toBe(before.z);
+  it('freezes an airborne ride while paused, clears held input, and resumes',()=>{
+    const {d,frames,key}=rig();
+    key('w',true);frames(60);
+    key('ArrowDown',true);frames(8);key('ArrowDown',false);key('ArrowUp',true);frames(3);key('ArrowUp',false);
+    for(let i=0;i<30&&d.present()!.phase!=='air';i++)frames(1);
+    const air=d.present()!;expect(air.phase).toBe('air');
+    const at={...air};
+    d.pause(true);frames(60);
+    expect(d.present()).toMatchObject({x:at.x,y:at.y,z:at.z,phase:'air'});expect(d.paused()).toBe(true);
+    d.pause(false);frames(120);
+    // W was held when paused: pause reset the input, so the rider coasts (no pushes) and has landed.
+    expect(d.present()!.phase).not.toBe('air');
+    expect(d.events().some(e=>e.kind==='push')).toBe(false);
   });
-  it('lands a kickflip, keeps provisional points and banks only a clean line',()=>{
-    let s=createSkateState(0,0,0,flat);s.speed=5;requestSkateTrick(s,'kickflip');s=ride(s,1);expect(s.mode).toBe('ride');expect(s.landings).toBe(1);expect(s.combo).toBeGreaterThanOrEqual(300);expect(s.score).toBe(0);
-    s=ride(s,2.5);expect(s.score).toBeGreaterThanOrEqual(300);expect(s.combo).toBe(0);expect(s.best).toBe(s.score);
+  it('restores a route and the board after a renderer rebuild, safely paused',()=>{
+    const {d,frames,key}=rig();
+    d.route('coast-run');key('w',true);frames(260);
+    const checkpoint=d.checkpoint()!;
+    const again=createSkateDriver({obstacles:courtObstacles('full')});
+    again.restore(checkpoint);
+    expect(again.paused()).toBe(true);expect(again.present()!.x).toBe(d.present()!.x);expect(again.run()).toEqual(d.run());
+    const elapsed=again.run()!.elapsed;again.step(1);expect(again.run()!.elapsed).toBe(elapsed);
+    again.pause(false);again.step(.1);expect(again.run()!.elapsed).toBeGreaterThan(elapsed);
+    expect(again.takeCut()).toBe(true);expect(again.takeCut()).toBe(false);
   });
-  it('rejects repeated pop presses while a flip is incomplete',()=>{
-    let s=createSkateState(0,0,0,flat);requestSkateTrick(s,'kickflip');s=ride(s,.2);const vy=s.vy;requestSkateTrick(s,'ollie');s=ride(s,.1);expect(s.vy).toBeLessThan(vy);expect(s.trick).toBe('kickflip');
+  it('respawn returns to the marker, drops the open line and cuts the camera',()=>{
+    const {d,frames,key}=rig();d.takeCut();
+    const marker={...d.present()!};
+    key('w',true);frames(90);key('w',false);
+    d.command('respawn');
+    expect(Math.hypot(d.present()!.x-marker.x,d.present()!.z-marker.z)).toBeLessThan(.01);
+    expect(d.takeCut()).toBe(true);
   });
-  it('bails unfinished tricks without scoring and recovers without losing saved scores',()=>{
-    let s=createSkateState(0,0,0,flat);s.score=900;requestSkateTrick(s,'ollie');s=ride(s,.6);requestSkateTrick(s,'360-flip');s=ride(s,.15);expect(s.mode).toBe('bail');expect(s.score).toBe(900);expect(s.combo).toBe(0);s=ride(s,1);expect(s.mode).toBe('ride');
+  it('stance flows from settings to the sim, the input and the scorer',()=>{
+    const {d,frames}=rig();
+    d.settings({stance:'goofy'});frames(2);
+    expect(d.present()!.stance).toBe('goofy');expect(d.current()!.stance).toBe('goofy');
+    expect(d.progress()!.settings.stance).toBe('goofy');
+    d.settings({controls:'easy'});expect(d.input()!.mode()).toBe('easy');
   });
-  it('keeps air trajectory while allowing rider spin; a sideways landing bails',()=>{
-    let s=createSkateState(0,0,0,flat);s.speed=6;requestSkateTrick(s,'ollie');s=ride(s,.37,input({steer:1}));expect(Math.abs(s.x)).toBeLessThan(.01);expect(s.z).toBeGreaterThan(2);expect(Math.abs(s.yaw)).toBeGreaterThan(1);s=ride(s,.5);expect(s.mode).toBe('bail');
+  it('builds a HUD model with the real hints and the seven spots',()=>{
+    const {d,frames}=rig();frames(2);
+    const m=d.hud()!;
+    expect(m.spotTotal).toBe(7);
+    expect(m.hints.map(h=>h.id)).toContain('manual');
+    expect(skateGesturePath('kickflip','regular')).toMatch(/^M/);
+    expect(SKATE_TRICK_BOOK.grinds!.length).toBe(15);
   });
-  it('sweeps thin walls in substeps at top speed',()=>{
-    const w:SkateWorld={...flat,obstacles:[{kind:'box',id:'wall',minX:-5,maxX:5,minZ:1,maxZ:1.06}]};let s=createSkateState(0,0,0,w);s.speed=SKATE_MAX_SPEED;s=ride(s,.2,input({push:1}),w);expect(s.z).toBeLessThan(1);expect(s.mode).toBe('bail');
+  it('teaches grind picking: every grind in the book says how, and the air hints say the stick picks it (every device)',()=>{
+    for(const g of SKATE_TRICK_BOOK.grinds!)expect(g.detail,`${g.id}`).toMatch(/stick|hold/i);
+    expect(SKATE_TRICK_BOOK.grindsNote).toMatch(/left stick/);
+    for(const mode of ['flick','easy'] as const){
+      const h=skateHints(mode);
+      for(const dev of ['keyboard','pointer','gamepad'] as const)expect(h[dev]!.air!.map(x=>x.id),`${mode} ${dev}`).toContain('grind-pick');
+    }
+    // The keys named in the hint are the ones the grind picker reads (W/S nose/tail, A/D toward/away).
+    expect(skateHints('flick').keyboard!.air!.find(x=>x.id==='grind-pick')!.glyphs.map(g=>g.kind==='key'?g.label:'')).toEqual(['W','A','S','D']);
   });
-  it('keeps the original momentum after landing a 180 fakie',()=>{
-    let s=createSkateState(0,0,0,flat);s.speed=6;requestSkateTrick(s,'ollie');
-    s=ride(s,.72,input({steer:1}));s=ride(s,.2);expect(s.mode).toBe('ride');expect(s.fakie).toBe(true);
-    const z=s.z;s=ride(s,.3);expect(s.z).toBeGreaterThan(z);expect(Math.abs(s.x)).toBeLessThan(.05);
+  it('uses one park field for the ride and for the walk',()=>{
+    expect(skateField()).toBe(skateField());
+    const at=SKATE_SPOTS[0]!.start;
+    expect(skateSurface(at[0],at[1],groundHeightAt).y).toBeCloseTo(skateField().sample(at[0],at[1]).y,9);
   });
-  it('rolls back down a transition when uphill momentum runs out',()=>{
-    const hill:SkateWorld={...flat,surface:(_x,z)=>({y:z*.5,ramp:'slope'})};
-    let s=createSkateState(0,2,0,hill);s.speed=.3;s=ride(s,.8,input(),hill);
-    expect(s.fakie).toBe(true);expect(s.z).toBeLessThan(2);expect(s.speed).toBeGreaterThan(1);
-  });
-  it('respects the island edge and never enters the sea',()=>{
-    let s=createSkateState(0,72,0,flat);s.speed=12;s=ride(s,.5,input({push:1}));expect(Math.hypot(s.x,s.z)).toBeLessThanOrEqual(73.2);expect(s.mode).toBe('bail');
-  });
-  it('rides the physical ramp profile and launches from its lip',()=>{
-    const ramp=SKATE_RAMPS.find(r=>r.kind==='kicker')!,start=rampWorld(ramp,0,-ramp.length/2-.2);
-    const w:SkateWorld={...flat,surface:(x,z)=>skateSurface(x,z,()=>0)};let s=createSkateState(...start,ramp.yaw,w);s.speed=8;let peak=0,launched=false;
-    for(let n=0;n<90;n++){s=stepSkate(s,input({push:1}),1/120,w);peak=Math.max(peak,s.y);launched ||=s.mode==='air';}
-    expect(peak).toBeGreaterThan(ramp.height);expect(launched).toBe(true);
-  });
-  it('captures an aligned airborne board only with held grind intent',()=>{
-    const w:SkateWorld={...flat,rails:[{id:'rail',a:[0,-3],b:[0,3],height:.5,name:'Test rail'}]};
-    const s=createSkateState(.1,0,0,w);s.mode='air';s.y=.7;s.vy=-1;s.speed=4;
-    expect(ride(s,.12,input(),w).mode).not.toBe('grind');const grinding=ride(s,.12,input({grind:true}),w);expect(grinding.mode).toBe('grind');expect(grinding.x).toBe(0);expect(grinding.rail).toBe('rail');expect(grinding.grinds).toBe(1);
-    const exit=ride(grinding,.05,input(),w);expect(exit.mode).toBe('air');expect(exit.rail).toBeNull();
-  });
-  it('will not vacuum a perpendicular or grounded board onto a rail',()=>{
-    const w:SkateWorld={...flat,rails:[{id:'rail',a:[0,-3],b:[0,3],height:.5,name:'Test rail'}]};
-    const s=createSkateState(.1,0,Math.PI/2,w);s.mode='air';s.y=.7;s.vy=-1;s.speed=4;s.takeoffYaw=s.yaw;
-    expect(ride(s,.12,input({grind:true}),w).mode).not.toBe('grind');const grounded=createSkateState(0,0,0,w);grounded.speed=4;expect(ride(grounded,.2,input({grind:true}),w).mode).toBe('ride');
-  });
-  it('manuals extend a combo but eventually punish an uncorrected balance',()=>{
-    let s=createSkateState(0,0,0,flat);s.speed=6;s=ride(s,.6,input({manual:true}));expect(s.comboTricks).toContain('Manual');expect(s.score).toBe(0);
-    s.balance=.99;s=ride(s,.1,input({manual:true,steer:-1}));expect(s.mode).toBe('bail');expect(s.combo).toBe(0);
-  });
-  it('session markers require a grounded stop and reset provisional tricks',()=>{
-    let s=createSkateState(0,0,0,flat);s.speed=2;expect(setSkateMarker(s)).toBe(false);s.speed=0;s.x=2;expect(setSkateMarker(s)).toBe(true);s.x=10;s.combo=800;s.score=400;s=resetSkate(s,flat);expect(s.x).toBe(2);expect(s.score).toBe(400);expect(s.combo).toBe(0);
-  });
-  it('focus suspension does not cash an unlanded trick or retain pending input',()=>{
-    const s=createSkateState(0,0,0,flat);s.mode='air';s.y=2;s.combo=800;s.vy=-1;s.pending='kickflip';stopSkate(s,flat);expect(s.combo).toBe(0);expect(s.score).toBe(0);expect(s.y).toBe(0);expect(s.pending).toBeNull();expect(s.speed).toBe(0);
+});
+
+describe('skate v2 · what a partner sees on the wire',()=>{
+  const p=(o:Partial<SkatePresent>):SkatePresent=>({...blankPresent(),...o});
+  it('maps the present to a bounded, coarse skate act',()=>{
+    expect(skateAct(null)).toBeNull();
+    expect(skateAct(p({phase:'roll'}))).toEqual({act:'skate',p:0});
+    expect(skateAct(p({phase:'push',pushPhase:.4}))).toEqual({act:'skate',p:.4});
+    expect(skateAct(p({phase:'air',trick:{flipId:'kickflip',u:.5}}))).toEqual({act:'skate-kickflip',p:.5});
+    expect(skateAct(p({phase:'air',trick:{flipId:'varial-heelflip',u:.2}}))!.act).toBe('skate-heelflip');
+    expect(skateAct(p({phase:'air',trick:{flipId:'360-flip',u:.2}}))!.act).toBe('skate-360-flip');
+    expect(skateAct(p({phase:'air',trick:{flipId:'pop-shove-it',u:.2}}))!.act).toBe('skate-shuvit');
+    expect(skateAct(p({phase:'air',trick:{flipId:'impossible',u:.2}}))!.act).toBe('skate-ollie');
+    expect(skateAct(p({phase:'air',grab:{grabId:'indy',weight:1},airTime:.45}))).toEqual({act:'skate-grab',p:.5});
+    expect(skateAct(p({phase:'grind',balance:1}))).toEqual({act:'skate-grind',p:1});
+    expect(skateAct(p({phase:'manual',manual:'manual',balance:-1}))).toEqual({act:'skate-manual',p:0});
+    expect(skateAct(p({phase:'bail',bail:{t:2,reason:'wall',dirX:0,dirZ:1}}))).toEqual({act:'skate-bail',p:1});
   });
 });
 
 describe('island topology and recreational progress',()=>{
-  it('uses one surface profile for every ramp and stays clear of buildings',()=>{
-    for(const r of SKATE_RAMPS){for(const t of [0,.25,.5,.75,1]){const at=rampWorld(r,0,(t-.5)*r.length);expect(skateSurface(...at,()=>0).y).toBeCloseTo(rampRise(r,(t-.5)*r.length)+.035,5);expect(isClear(...at,.5,ISLAND_BUILDINGS)).toBe(true);}}
-  });
   it('keeps all spot starts, rails and checkpoints on the island and out of walls',()=>{
-    for(const p of [...SKATE_SPOTS.map(s=>s.start),...SKATE_ROUTES.flatMap(r=>[...r.points]),...SKATE_RAILS.flatMap(r=>[r.a,r.b])]){expect(Math.hypot(...p)).toBeLessThan(73.2);expect(isClear(...p,.26,ISLAND_BUILDINGS),JSON.stringify(p)).toBe(true);}
+    for(const p of [...SKATE_SPOTS.map(s=>s.start),...SKATE_ROUTES.flatMap(r=>[...r.points]),...SKATE_RAILS.flatMap(r=>[r.a,r.b])]){expect(Math.hypot(...p)).toBeLessThan(73.2);expect(isClear(p[0],p[1],.26,ISLAND_BUILDINGS),JSON.stringify(p)).toBe(true);}
   });
   it('plants no trees inside the skate pads in either render tier',()=>{
     for(const tier of ['full','lite'] as const)for(const tree of plantPlan(tier).trees)for(const s of SKATE_SPOTS)expect(Math.abs(tree.x-s.x)>s.halfWidth||Math.abs(tree.z-s.z)>s.halfDepth).toBe(true);
   });
-  it('preserves collision-free practice starts',()=>{for(const s of SKATE_SPOTS)expect(isClear(...s.start,.24,courtObstacles('full')),s.id).toBe(true);});
+  it('preserves collision-free practice starts',()=>{for(const s of SKATE_SPOTS)expect(isClear(s.start[0],s.start[1],.24,courtObstacles('full')),s.id).toBe(true);});
   it('keeps every timed route segment clear in full and lite planting',()=>{
     const blocked:string[]=[];
     for(const tier of ['full','lite'] as const)for(const route of SKATE_ROUTES)for(let n=1;n<route.points.length;n++){
@@ -111,32 +152,16 @@ describe('island topology and recreational progress',()=>{
     }
     expect(blocked).toEqual([]);
   });
-  it('freezes an airborne line while paused and clears held inputs on resume',()=>{
-    const driver=createSkateDriver({groundHeightAt:()=>0,obstacles:[]});driver.mount(0,0,0);driver.hold({push:1});driver.action('kickflip');
-    driver.step({forward:0,strafe:0},.1);const at={...driver.state()!};driver.pause(true);driver.step({forward:1,strafe:0},1);
-    expect(driver.state()).toMatchObject({x:at.x,y:at.y,z:at.z,mode:at.mode,speed:at.speed});expect(driver.paused()).toBe(true);
-    driver.pause(false);for(let n=0;n<300;n++)driver.step({forward:0,strafe:0},1/60);
-    expect(driver.snapshot()!.score).toBeGreaterThan(0);expect(driver.snapshot()!.speed).toBe(0);
+  it('discovers only spots visited and earns the explorer milestone after all seven',()=>{
+    const session=createSkateSession(),at=(x:number,z:number)=>({...blankPresent(),x,z});
+    observeSkate(session,at(0,0),[],null,.016);expect(session.progress.discovered).toEqual([]);
+    for(const spot of SKATE_SPOTS)observeSkate(session,at(spot.x,spot.z),[],null,.016);
+    expect(session.progress.discovered).toHaveLength(7);expect(session.progress.stamps).toContain('explorer');
   });
-  it('restores a route and its board after a rendering rebuild, safely paused',()=>{
-    const world={groundHeightAt:()=>0,obstacles:[]};const driver=createSkateDriver(world);driver.mount(0,0,0);driver.route('coast-run');
-    for(let n=0;n<210;n++)driver.step({forward:1,strafe:0},1/60);
-    const checkpoint=driver.checkpoint()!,restored=createSkateDriver(world);restored.restore(checkpoint);
-    expect(restored.snapshot()!.run).toEqual(driver.snapshot()!.run);expect(restored.state()!.x).toBe(driver.state()!.x);expect(restored.paused()).toBe(true);
-    restored.step({forward:1,strafe:0},1);expect(restored.snapshot()!.run!.elapsed).toBe(checkpoint.session.run!.elapsed);
-    restored.pause(false);restored.step({forward:0,strafe:0},.1);expect(restored.snapshot()!.run!.elapsed).toBeGreaterThan(checkpoint.session.run!.elapsed);
-  });
-  it('discovers only spots visited and earns cosmetic milestones',()=>{
-    const session=createSkateSession(),s=createSkateState(0,0,0,flat);stepSkateSession(session,s,.016);expect(session.progress.discovered).toEqual([]);
-    for(const spot of SKATE_SPOTS){s.x=spot.x;s.z=spot.z;stepSkateSession(session,s,.016);}expect(session.progress.discovered).toHaveLength(6);expect(session.progress.stamps).toContain('explorer');
-  });
-  it('requires sequential physical checkpoints, respects countdown and records a finish',()=>{
-    const session=createSkateSession(),r=SKATE_ROUTES[1],s=createSkateState(0,0,0,flat);startSkateRoute(session,r.id);
-    const last=r.points.at(-1)!;s.x=last[0];s.z=last[1];for(let i=0;i<50;i++)stepSkateSession(session,s,.1);expect(session.run!.checkpoint).toBe(1);expect(session.progress.routeBest[r.id]).toBeUndefined();
-    for(const at of r.points.slice(1)){s.x=at[0];s.z=at[1];stepSkateSession(session,s,.1);}expect(session.run!.finished).toBe(true);expect(session.progress.routeBest[r.id]).toBeGreaterThan(0);
-  });
-  it('banks trick milestones only after a landed combo',()=>{
-    const session=createSkateSession(),s=createSkateState(0,0,0,flat);s.comboTricks=['Kickflip','Manual'];s.combo=900;s.multiplier=3;s.landings=1;stepSkateSession(session,s,.01);expect(session.progress.stamps).toEqual([]);bankSkateCombo(s);stepSkateSession(session,s,.01);expect(session.progress.stamps).toEqual(expect.arrayContaining(['flip','manual','line','first-landing']));
+  it('requires sequential physical checkpoints, respects the countdown and records a finish',()=>{
+    const session=createSkateSession(),r=SKATE_ROUTES[1]!,at=(p:readonly [number,number])=>({...blankPresent(),x:p[0],z:p[1]});startSkateRoute(session,r.id);
+    for(let i=0;i<50;i++)observeSkate(session,at(r.points.at(-1)!),[],null,.1);expect(session.run!.checkpoint).toBe(1);expect(session.progress.routeBest[r.id]).toBeUndefined();
+    for(const p of r.points.slice(1))observeSkate(session,at(p),[],null,.1);expect(session.run!.finished).toBe(true);expect(session.progress.routeBest[r.id]).toBeGreaterThan(0);
   });
   it('bounds corrupt saves and keys each person, household and environment separately',()=>{
     expect(decodeSkateProgress('{broken')).toEqual(freshSkateProgress());const p=decodeSkateProgress(JSON.stringify({version:1,deck:'islander',bestLine:Infinity,discovered:['alien','tideline','tideline'],routeBest:{'first-line':-3},stamps:['secret']}));expect(p.deck).toBe('tideline');expect(p.discovered).toEqual(['tideline']);expect(p.routeBest).toEqual({});expect(p.stamps).toEqual([]);

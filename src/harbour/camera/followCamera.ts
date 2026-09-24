@@ -22,10 +22,9 @@ import { holdPoseInRoom, poseEye, type Composition, type CourtPose, type RoomHol
  * - **Behind** means `bodyYaw + π`: the body looks along `(sin yaw, cos yaw)`,
  *   the eye sits at `target + r·(sin θ, …, cos θ)`, so the eye is behind the
  *   body when `θ = yaw + π`.
- * - A drag turns `offset`, which is added to that. Let go and, *while you are
- *   walking*, the offset decays back to zero, so the camera settles behind you
- *   again; stand still and it stays exactly where you put it. That is the
- *   difference between a camera that fights you and one that follows you.
+ * - A drag turns the view. Manual W A S D keeps that view fixed while the
+ *   character faces any of the eight directions; a selected walking route
+ *   may still settle the camera behind its travel.
  * - A desktop drag is exactly a phone swipe: the same `ORBIT_GAIN` per pixel
  *   in both, no modifier, no second gesture. A standing product rule.
  * - Wheel and pinch both move in log-radius, so a notch feels the same close
@@ -188,22 +187,10 @@ export type FollowCamera = {
   eye(): Vec3;
   /** How far the view has been swung from directly behind the body, in radians. */
   offset(): number;
-  /**
-   * **The heading a direction key is read against**, which is not always the
-   * heading the camera shows.
-   *
-   * Reading W against a camera that is itself swinging round to behind the
-   * body is a feedback loop: the body turns to face its travel, the camera
-   * turns to face the body, "forward" turns with it, and you walk in a slow
-   * circle. So while a direction is held the basis is *latched* — you walk a
-   * straight line while the camera settles in behind you — and the moment the
-   * key comes up it is the camera's heading again, so the next press is
-   * relative to what you can actually see. A drag moves both: steering is
-   * exactly what a drag is for.
-   */
+  /** The visible camera heading used for manual WASD movement. */
   basis(): number;
-  /** Whether a direction is being held right now. Latches the basis above. */
-  setSteering(on: boolean): void;
+  /** Manual keys keep the view fixed; a selected walking route may follow the body's heading. */
+  setSteering(on: boolean, followingPath?: boolean): void;
 };
 
 const clamp = (v: number, lo: number, hi: number) => (v < lo ? lo : v > hi ? hi : v);
@@ -235,7 +222,7 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
   /** The heading the eye actually shows, eased toward `behind + offset`. */
   let theta = Math.PI;
   /** The heading a direction key is read against, and whether it is latched. */
-  let basis = theta, steering = false;
+  let basis = theta, followingPath = false;
 
   const behind = () => wrap(subject.yaw + Math.PI + offset);
 
@@ -268,16 +255,17 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
     camera.lookAt(shown.target[0], shown.target[1], shown.target[2]);
   }
 
-  function cut(): void {
+  function cut(resetHeading = false): void {
     look = [subject.x, subject.y, subject.z];
-    theta = behind();
-    if (!steering) basis = theta;
+    if (resetHeading || followingPath) theta = behind();
+    else offset = wrap(theta - wrap(subject.yaw + Math.PI));
+    basis = theta;
     r = goalR; phi = goalPhi;
     dolly = sprint() * FOLLOW_SPRINT_DOLLY;
     apply();
   }
 
-  cut();
+  cut(true);
 
   return {
     setSubject(next) { subject = next; },
@@ -300,7 +288,7 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
       if (wasDefault) goalR = planR();
       if (wasLevel) goalPhi = planPhi();
     },
-    snap() { offset = 0; cut(); },
+    snap() { offset = 0; cut(true); },
     seed(pose) {
       look = [pose.target[0], pose.target[1], pose.target[2]];
       theta = wrap(pose.theta);
@@ -316,11 +304,13 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
     },
     drag(dx, dy) {
       if (!dx && !dy) return;
-      // A drag steers: it turns the view and what "forward" means together.
-      basis = wrap(basis - dx * FOLLOW_ORBIT_GAIN);
-      offset = wrap(offset - dx * FOLLOW_ORBIT_GAIN);
+      // A drag steers: the visible view and the WASD basis turn together.
+      theta = wrap(theta - dx * FOLLOW_ORBIT_GAIN);
+      basis = theta;
+      offset = wrap(theta - wrap(subject.yaw + Math.PI));
       goalPhi = clamp(goalPhi - dy * FOLLOW_TILT_GAIN, FOLLOW_MIN_PHI, FOLLOW_MAX_PHI);
-      if (reduced) { phi = goalPhi; theta = behind(); apply(); }
+      if (reduced) { phi = goalPhi; apply(); }
+      else apply();
     },
     zoom(delta) {
       if (!delta || !Number.isFinite(delta)) return;
@@ -341,8 +331,9 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
     tick(dt) {
       const step = Math.max(0, Math.min(dt, 0.25));
       if (reduced || !(step > 0)) { cut(); return false; }
-      // While walking, a drag's offset gives itself back and the camera settles behind you again.
-      if (offset !== 0 && subject.speed > RECENTRE_SPEED) {
+      // A route may choose its camera heading. Manual keys and the idle view
+      // keep what the person can see aligned with the direction the keys use.
+      if (followingPath && offset !== 0 && subject.speed > RECENTRE_SPEED) {
         const give = Math.exp(-RECENTRE * step);
         offset = Math.abs(offset) < 1e-3 ? 0 : offset * give;
       }
@@ -367,19 +358,19 @@ export function createFollowCamera(options: FollowCameraOptions): FollowCamera {
       ];
       const k = 1 - Math.exp(-FOLLOW_EASE * step);
       const heading = behind();
-      theta = wrap(theta + wrap(heading - theta) * k);
-      // Latched while a direction is held; the camera's own heading otherwise.
-      if (!steering) basis = theta;
+      if (followingPath) theta = wrap(theta + wrap(heading - theta) * k);
+      else offset = wrap(theta - wrap(subject.yaw + Math.PI));
+      basis = theta;
       r += (goalR - r) * k;
       phi += (goalPhi - phi) * k;
       apply();
-      const settled = Math.abs(wrap(heading - theta)) < 1e-3
+      const settled = (!followingPath || Math.abs(wrap(heading - theta)) < 1e-3)
         && Math.abs(goalR - r) < 1e-3 && Math.abs(goalPhi - phi) < 1e-3
         && dolly === want
         && Math.hypot(subject.x - look[0], subject.y - look[1], subject.z - look[2]) < 1e-3;
       return !settled;
     },
-    setSteering(on) { steering = on; if (!on) basis = theta; },
+    setSteering(on, path = false) { followingPath = !on && path; basis = theta; },
     pose: poseNow,
     eye: () => poseEye(poseNow()),
     offset: () => offset,

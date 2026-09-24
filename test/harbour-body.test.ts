@@ -58,6 +58,19 @@ function walk(state: BodyState, theta: number, seconds: number, world: BodyWorld
 const TOWARD_Z = Math.PI, AWAY_FROM_Z = 0;
 
 describe("the body is a person in a model village", () => {
+  it("plays all six emotes without putting the skateboard away", () => {
+    const rider = createWalker({ groundHeightAt, tier: "lite" });
+    expect(rider.skate.enable(true)).toBe(true);
+    for (const id of EMOTE_IDS) {
+      rider.emote(id);
+      rider.step(1 / 60, 0, Math.PI);
+      expect(rider.skate.active()).toBe(true);
+      expect(rider.skate.present()).not.toBeNull();
+      expect(rider.action()?.act.startsWith("skate")).toBe(true);
+    }
+    rider.skate.enable(false);
+    rider.dispose();
+  });
   it("is readable beside the buildings, while shorter than the Queen", () => {
     // The Queen is 2.05 (camera/poses.ts). A person beside her must read as a person.
     expect(BODY_HEIGHT).toBeGreaterThan(1);
@@ -683,7 +696,7 @@ describe("the follow camera", () => {
     expect(follow.pose().target[2]).toBeCloseTo(4, 3);
   });
 
-  it("orbits with a drag — the same pixels on a desktop and a phone — and settles back behind you as you walk", () => {
+  it("orbits with a drag — the same pixels on a desktop and a phone — and keeps the chosen view for manual walking", () => {
     const desktop = createFollowCamera({ camera: camera(), composition: "desktop", reduced: false });
     const phone = createFollowCamera({ camera: camera(), composition: "phone", reduced: false });
     for (const follow of [desktop, phone]) { follow.setSubject(subjectAt(0, 0, 0)); follow.snap(); follow.drag(120, 0); }
@@ -694,16 +707,15 @@ describe("the follow camera", () => {
     desktop.setSubject(subjectAt(0, 0, 0, 0));
     settle(desktop, 3);
     expect(Math.abs(desktop.offset())).toBeGreaterThan(0.4);
-    // Walking, it gives itself back and the camera settles behind you again.
+    // A/D and diagonal walking must stay relative to what remains on screen.
     desktop.setSubject(subjectAt(0, 0, 0, WALK_SPEED));
+    desktop.setSteering(true);
     settle(desktop, 10);
-    expect(Math.abs(desktop.offset())).toBeLessThan(0.08);
+    expect(Math.abs(desktop.offset())).toBeGreaterThan(0.4);
+    expect(desktop.basis()).toBeCloseTo(desktop.pose().theta, 12);
   });
 
-  it("latches the heading a key is read against while a direction is held", () => {
-    // The loop this prevents: the body turns to face its travel, the camera
-    // turns to face the body, "forward" turns with it — and you walk in a slow
-    // circle. While a key is held the basis does not move; the camera does.
+  it("keeps the key heading aligned with the visible camera through lateral and diagonal turns", () => {
     const follow = createFollowCamera({ camera: camera(), composition: "desktop", reduced: false });
     follow.setSubject(subjectAt(0, 0, 0, WALK_SPEED));
     follow.snap();
@@ -711,12 +723,27 @@ describe("the follow camera", () => {
     follow.setSteering(true);
     const latched = follow.basis();
     settle(follow, 3);
-    // The camera swung round behind the body; the basis stayed exactly put.
+    follow.setSubject(subjectAt(0, 0, Math.PI / 2, WALK_SPEED));
+    settle(follow, 3);
     expect(follow.basis()).toBeCloseTo(latched, 12);
-    expect(Math.abs(follow.pose().theta - latched)).toBeGreaterThan(0.2);
-    // The key comes up and the basis is what you can see again.
+    expect(follow.pose().theta).toBeCloseTo(latched, 12);
     follow.setSteering(false);
     expect(follow.basis()).toBeCloseTo(follow.pose().theta, 12);
+    // A tap route can turn the camera because the route doesn't use WASD.
+    follow.setSteering(false, true);
+    settle(follow, 5);
+    expect(Math.abs(follow.pose().theta - latched)).toBeGreaterThan(0.2);
+  });
+
+  it("keeps that heading with reduced motion too", () => {
+    const follow = createFollowCamera({ camera: camera(), composition: "phone", reduced: true });
+    follow.setSubject(subjectAt(0, 0, 0, WALK_SPEED)); follow.snap();
+    follow.setSteering(true);
+    const chosen = follow.pose().theta;
+    follow.setSubject(subjectAt(0, 0, Math.PI / 2, WALK_SPEED));
+    follow.tick(1 / 60);
+    expect(follow.pose().theta).toBeCloseTo(chosen, 12);
+    expect(follow.basis()).toBeCloseTo(chosen, 12);
   });
 
   it("pinches and wheels in log-radius, and is held between a shoulder and the sky", () => {

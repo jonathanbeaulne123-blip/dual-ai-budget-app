@@ -59,8 +59,16 @@ export type BodyMotion = {
   bank: number;
   /** How far into a run, 0…1: swing, cadence, bob and squash all grow with it. */
   run: number;
-  /** A board rider holds a sideways stance instead of taking walking strides. */
+  /** A board rider holds a sideways stance instead of taking walking strides. (v1; superseded by `skatePose`.) */
   skate?: {push:number;balance:number;bail:boolean};
+  /**
+   * A complete joint pose for a board rider, solved by `skate/look/riderPose.ts`.
+   * When present it wins over everything above: the carriage, both legs with
+   * their knees and ankles, both arms with their elbows, and the head are set
+   * straight from it. Absent, every hinge is straight and the body is exactly
+   * the walker it always was.
+   */
+  skatePose?: SkateJointPose;
 
   /* ── The moves ─────────────────────────────────────────────────────────── */
   /** Height above the ground, in units. Anything above nothing is a body in flight. */
@@ -80,6 +88,25 @@ export type BodyMotion = {
    * oscillating. The move itself is never withheld; the flourish on it is.
    */
   flourish?: number;
+};
+
+/**
+ * Hip (or shoulder) Euler XYZ plus the hinge below it, radians. `foot`,
+ * `footYaw` and `footRoll` are the ankle's Euler XYZ (pitch, turn, roll), so a
+ * skater's shoe can sit across the board while the knee points elsewhere.
+ */
+export type SkateLimbPose = { x: number; y: number; z: number; bend: number; foot?: number; footYaw?: number; footRoll?: number };
+/**
+ * A skate pose in the figure's own rig units and joint frames. Index 0 of
+ * `legs`/`arms` is the limb at −x (`body-leg-left`, `body-arm-left`). A knee's
+ * `bend` is positive as the shin folds back; an elbow's as the forearm folds
+ * forward. The carriage rotation is Euler XYZ about the feet origin.
+ */
+export type SkateJointPose = {
+  carriage: { x: number; y: number; z: number; rx: number; ry: number; rz: number };
+  head: { x: number; y: number };
+  legs: readonly [SkateLimbPose, SkateLimbPose];
+  arms: readonly [SkateLimbPose, SkateLimbPose];
 };
 
 export const AT_REST: Readonly<BodyMotion> = Object.freeze({ lean: 0, bank: 0, run: 0 });
@@ -176,39 +203,75 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}, anatomy?:
   const legRadius = anatomy?.legRadius ?? .042, legLength = anatomy?.legLength ?? .145;
   const sleeveRadius = anatomy?.sleeveRadius ?? .031, sleeveLength = anatomy?.sleeveLength ?? .118;
   const legHeight = legLength + legRadius * 2, sleeveHeight = sleeveLength + sleeveRadius * 2;
-  const legGeometry = track(new THREE.CapsuleGeometry(legRadius, legLength, 4, 8));
   const pelvisGeometry = track(anatomy?.waist ? new THREE.BoxGeometry(...anatomy.waist.size) : new THREE.CapsuleGeometry(.061, .052, 4, 8));
   const shoeGeometry = track(new THREE.BoxGeometry(anatomy ? .064 : .072, .034, anatomy ? .094 : .108));
-  const armGeometry = track(new THREE.CapsuleGeometry(sleeveRadius, sleeveLength, 4, 8));
   const handGeometry = track(new THREE.SphereGeometry(anatomy ? .027 : .034, 10, 8));
 
-  /** Hips and shoulders are pivots: the limb hangs below them and swings about x. */
+  /**
+   * Hips and shoulders are pivots: the limb hangs below them and swings about x.
+   * Each limb is two capsules on a hinge — thigh/shin, upper arm/forearm —
+   * whose rounded ends share the knee (elbow) centre, so with the hinge at
+   * zero their union is exactly the one capsule a walk always drew. Nothing
+   * but a skate pose ever bends them.
+   */
   const legs: THREE.Group[] = [];
   const arms: THREE.Group[] = [];
+  const knees: THREE.Group[] = [];
+  const ankles: THREE.Group[] = [];
+  const elbows: THREE.Group[] = [];
+  const kneeDrop = legHeight / 2, elbowDrop = sleeveHeight / 2;
+  const thighGeometry = track(new THREE.CapsuleGeometry(legRadius, kneeDrop - legRadius, 4, 8));
+  const upperArmGeometry = track(new THREE.CapsuleGeometry(sleeveRadius, elbowDrop - sleeveRadius, 4, 8));
+  const shoeY = anatomy ? -anatomy.hipY + .017 : -.212, handY = anatomy ? -sleeveHeight : -.172;
   for (const side of [-1, 1] as const) {
+    const suffix = side < 0 ? "left" : "right";
     const hip = new THREE.Group();
-    hip.name = side < 0 ? "body-leg-left" : "body-leg-right";
+    hip.name = `body-leg-${suffix}`;
     hip.position.set(side * (anatomy?.hipX ?? .048), anatomy?.hipY ?? .235, 0);
-    const leg = new THREE.Mesh(legGeometry, trouserMaterial);
-    leg.position.y = -legHeight / 2;
-    leg.castShadow = true;
+    const thigh = new THREE.Mesh(thighGeometry, trouserMaterial);
+    thigh.name = `body-thigh-${suffix}`;
+    thigh.position.y = -(kneeDrop + legRadius) / 2;
+    thigh.castShadow = true;
+    const knee = new THREE.Group();
+    knee.name = `body-knee-${suffix}`;
+    knee.position.y = -kneeDrop;
+    const shin = new THREE.Mesh(thighGeometry, trouserMaterial);
+    shin.name = `body-shin-${suffix}`;
+    shin.position.y = -(kneeDrop - legRadius) / 2;
+    shin.castShadow = true;
+    // The ankle sits on top of the shoe, so a flexed foot pivots where a foot does.
+    const ankle = new THREE.Group();
+    ankle.name = `body-ankle-${suffix}`;
+    ankle.position.y = shoeY + kneeDrop + .017;
     const shoe = new THREE.Mesh(shoeGeometry, shoeMaterial);
-    shoe.position.set(0, anatomy ? -anatomy.hipY + .017 : -.212, .018);
-    hip.add(leg, shoe);
+    shoe.name = `body-shoe-${suffix}`;
+    shoe.position.set(0, -.017, .018);
+    ankle.add(shoe);
+    knee.add(shin, ankle);
+    hip.add(thigh, knee);
     carriage.add(hip);
-    legs.push(hip);
+    legs.push(hip); knees.push(knee); ankles.push(ankle);
 
     const shoulder = new THREE.Group();
-    shoulder.name = side < 0 ? "body-arm-left" : "body-arm-right";
+    shoulder.name = `body-arm-${suffix}`;
     shoulder.position.set(side * (anatomy?.shoulderX ?? .092), anatomy?.shoulderY ?? .402, 0);
-    const arm = new THREE.Mesh(armGeometry, coatMaterial);
-    arm.position.y = -sleeveHeight / 2;
+    const upper = new THREE.Mesh(upperArmGeometry, coatMaterial);
+    upper.name = `body-upper-arm-${suffix}`;
+    upper.position.y = -(elbowDrop + sleeveRadius) / 2;
+    const elbow = new THREE.Group();
+    elbow.name = `body-elbow-${suffix}`;
+    elbow.position.y = -elbowDrop;
+    const forearm = new THREE.Mesh(upperArmGeometry, coatMaterial);
+    forearm.name = `body-forearm-${suffix}`;
+    forearm.position.y = -(elbowDrop - sleeveRadius) / 2;
     const hand = new THREE.Mesh(handGeometry, skinMaterial);
-    hand.position.y = anatomy ? -sleeveHeight : -.172;
-    shoulder.add(arm, hand);
+    hand.name = `body-hand-${suffix}`;
+    hand.position.y = handY + elbowDrop;
+    elbow.add(forearm, hand);
+    shoulder.add(upper, elbow);
     shoulder.rotation.z = side * 0.09;
     carriage.add(shoulder);
-    arms.push(shoulder);
+    arms.push(shoulder); elbows.push(elbow);
   }
 
   // The generic biped needs a bridge. Authored garments supply their own
@@ -304,6 +367,12 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}, anatomy?:
     group,
     height: BODY_HEIGHT,
     pose(phase, gait, t, motion = AT_REST) {
+      // Every hinge straight and every twist square, unless a skate pose says otherwise.
+      for (let i = 0; i < 2; i += 1) {
+        legs[i]!.rotation.y = 0; legs[i]!.rotation.z = 0; arms[i]!.rotation.y = 0;
+        knees[i]!.rotation.x = 0; ankles[i]!.rotation.set(0, 0, 0); elbows[i]!.rotation.x = 0;
+      }
+      carriage.position.x = 0; carriage.position.z = 0; head.rotation.y = 0; hair.rotation.y = 0;
       const g = Math.max(0, Math.min(1, gait));
       const run = Math.max(0, Math.min(1, motion.run));
       const swing = Math.sin(phase);
@@ -402,6 +471,36 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}, anatomy?:
       // Whatever the body does, the face keeps looking where it is going.
       head.rotation.x = carriage.rotation.x * -HEAD_LEVEL;
       hair.rotation.x = -0.22 + carriage.rotation.x * -HEAD_LEVEL;
+
+      const sp = motion.skatePose;
+      if (sp) {
+        carriage.position.set(sp.carriage.x, sp.carriage.y, sp.carriage.z);
+        carriage.rotation.set(sp.carriage.rx, sp.carriage.ry, sp.carriage.rz);
+        carriage.scale.set(1, 1, 1);
+        for (let i = 0; i < 2; i += 1) {
+          const leg = sp.legs[i]!, arm = sp.arms[i]!;
+          legs[i]!.rotation.set(leg.x, leg.y, leg.z);
+          knees[i]!.rotation.x = leg.bend;
+          ankles[i]!.rotation.set(leg.foot ?? 0, leg.footYaw ?? 0, leg.footRoll ?? 0);
+          arms[i]!.rotation.set(arm.x, arm.y, arm.z);
+          elbows[i]!.rotation.x = -arm.bend;
+        }
+        head.rotation.x = sp.head.x; head.rotation.y = sp.head.y;
+        hair.rotation.x = -0.22 + sp.head.x; hair.rotation.y = sp.head.y;
+        // Keep the feet planted on the deck. Board emotes use the shoulders,
+        // arms and face, so carving and landing remain readable underneath.
+        if (motion.emote) {
+          const beat = Math.sin((motion.emoteAt ?? 0) * 8);
+          switch (motion.emote) {
+            case 'wave': rightArm.rotation.x = -1.5; rightArm.rotation.z = -0.8 + beat * 0.24; break;
+            case 'dance': leftArm.rotation.x = -0.9 + beat * 0.22; rightArm.rotation.x = -0.9 - beat * 0.22; carriage.rotation.y += beat * 0.12; break;
+            case 'sit': carriage.position.y -= 0.045; carriage.rotation.x += 0.18; leftArm.rotation.x = -0.45; rightArm.rotation.x = -0.45; break;
+            case 'cheer': leftArm.rotation.x = -2.3; rightArm.rotation.x = -2.3; break;
+            case 'laugh': leftArm.rotation.x = -0.65; rightArm.rotation.x = -0.65; head.rotation.x += beat * 0.07; break;
+            case 'point': rightArm.rotation.x = -1.25; rightArm.rotation.z = -0.18; head.rotation.y += 0.24; break;
+          }
+        }
+      }
 
       // Standing still, it breathes. The head keeps its height whatever the
       // chest does, so a resting body does not nod.
