@@ -31,7 +31,7 @@ import type {SkateAudio} from './audio.ts';
 
 export type SkateCheckpoint={version:2;sim:unknown;session:SkateSession;simTime:number};
 export type SkateStep={
-  /** Anything still moving (the frame policy asks this). */
+  /** Keep the shared frame alive for motion or a connected controller waiting to resume. */
   moving:boolean;
   /** Points of a line banked this frame (0 if none): the look celebrates it. */
   banked:number;
@@ -245,14 +245,15 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
       frame.length=0;
       if(!sim||!input||!score)return {moving:false,banked:0};
       const step=Math.min(.1,Math.max(0,Number.isFinite(dt)?dt:0));
-      if(input.pausePressed()){api.pause(!paused);}
-      if(paused){audio?.update(sim.present(),[],step,{paused:true});return {moving:false,banked:0};}
+      const controls=paused||replayTime!==null?input.pollControls():null;
+      if(controls?.pause??input.pausePressed()){api.pause(!paused);}
+      if(paused){audio?.update(sim.present(),[],step,{paused:true});return {moving:(controls??input.pollControls()).connected,banked:0};}
       if(replayTime!==null){
         const replay=savedReplay();
         if(!replay||quiet()){replayTime=null;return {moving:false,banked:0};}
         replayTime=Math.min(replay.seconds,replayTime+step);
         audio?.update(null,[],0,{paused:true});
-        return {moving:replayTime<replay.seconds,banked:0};
+        return {moving:replayTime<replay.seconds||Boolean(controls?.connected),banked:0};
       }
       const before=sim.present();
       syncInput(before);
