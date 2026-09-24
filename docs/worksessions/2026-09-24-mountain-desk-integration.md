@@ -128,3 +128,17 @@ Draft PR: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/537
   advanced to `611fcf26` (PR #538, easier island skating). No build pass is
   claimed for this interrupted attempt. The incoming movement changes are
   reconciled before final validation.
+
+### Current-main reconciliation
+
+Main advanced to `611fcf26` while this PR was being checked. Merge `6ff630d7`
+retains its assisted skating, touch pads, rider/camera behavior and Space jump.
+In the flat Desk, Space still opens the quick sheet when the stage owns focus.
+Focused controls keep their native Space behavior. The new regression exercises
+both world modes and a focused guide button.
+
+The eight-file reconciliation run passed **117/117 tests in 31.23s**, including
+Desk routing/integration, walking focus, skating input, assisted travel, rider
+pose, camera and HUD. Earlier PR CI failures on `134e3fab` were the same obsolete
+source/heading/dialog assertions corrected in `ab3670c6`; its final status must
+be read on the latest head. No deployment command was run.
