@@ -820,9 +820,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   }
 
   /**
-   * Skate keys pressed while a HUD button holds the focus still ride. Space is
-   * never taken (it activates the button, and opens the Hearth tools on the
-   * stage); dialogs and fields keep all their keys.
+   * Skate keys pressed while a HUD button holds the focus still ride. Dialogs
+   * and fields keep all their keys.
    */
   function acceptsSkateKey(event:ReactKeyboardEvent<HTMLDivElement>){
     return runtime.current?.body()?.skate?.active()&&event.target instanceof Element
@@ -845,7 +844,10 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   }
 
   function onStageKey(event: ReactKeyboardEvent<HTMLDivElement>) {
-    if (event.target !== event.currentTarget&&!acceptsSkateKey(event)) return;
+    const skateHudSpace = event.key === " " && runtime.current?.body()?.skate?.active()
+      && event.target instanceof Element && Boolean(event.target.closest('.skate-hud,.harbour-moves'))
+      && !event.target.closest('input,select,textarea,[role=dialog]');
+    if (event.target !== event.currentTarget&&!acceptsSkateKey(event)&&!skateHudSpace) return;
     // Space opens the quick sheet wherever you are standing — including the
     // reading edition and the fallback, where there is no world to drive.
     // Everything the app can do has to be one key away even when the island

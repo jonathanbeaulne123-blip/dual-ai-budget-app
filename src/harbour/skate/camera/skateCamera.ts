@@ -291,7 +291,10 @@ export function createSkateCamera(options: SkateCameraOptions = {}): SkateCamera
     } else { pullGoal = 1; floorGoal = 0; ey += floor.x; }
     out.position[0] = ex; out.position[1] = ey; out.position[2] = ez;
     out.target[0] = tx; out.target[1] = ty; out.target[2] = tz;
-    out.fov = fov.x + (reduced ? 0 : impactKick * C.impactFov);
+    // When a wall forces the eye closer, widen the lens so the rider's head
+    // and board still fit. The ordinary open-air chase keeps its authored FOV.
+    const compressed = solid ? clamp(1 - Math.hypot(ex - cx, ez - cz) / Math.max(1.5, dist.x + vb * C.vertDist), 0, 1) : 0;
+    out.fov = Math.min(90, fov.x + compressed * 38 + (reduced ? 0 : impactKick * C.impactFov));
     out.roll = reduced ? 0 : roll.x;
     if (last) {
       const px = fin(last.x), py = fin(last.y), pz = fin(last.z);

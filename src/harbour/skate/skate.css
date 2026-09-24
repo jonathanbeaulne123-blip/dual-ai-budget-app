@@ -277,6 +277,8 @@ body:has(.harbour-world.is-skating) :is(.nav.compass,.herc-litter,.sync-freshnes
   .skate-book__decks{gap:7px}
 }
 @container skatehud (max-width:400px){
+  /* The household status card wraps at this width; leave its controls clear. */
+  .skate-top{top:66px}
   .skate-book__grid,.skate-book__spots{grid-template-columns:1fr}
   .skate-book__decks{grid-template-columns:1fr 1fr}
   .skate-hud .skate-book__head button{padding:6px 10px;font-size:12px}
@@ -284,6 +286,7 @@ body:has(.harbour-world.is-skating) :is(.nav.compass,.herc-litter,.sync-freshnes
   .skate-touch__row{gap:5px}
   .skate-zone__label{font-size:10px;letter-spacing:.06em}
 }
+@media(max-width:400px){body:has(.harbour-world.is-skating) .sync-freshness__updated{display:none}}
 @container skatehud (max-width:719px) and (max-height:700px){
   .skate-band{top:98px;gap:4px}
   .skate-chain{display:none}
@@ -295,6 +298,7 @@ body:has(.harbour-world.is-skating) :is(.nav.compass,.herc-litter,.sync-freshnes
   .skate-zone--pad{height:44px}
   .skate-touch{bottom:84px}
 }
+@container skatehud (max-width:400px){.skate-band{top:122px}}
 /* The island's own tools bar while skating on a phone. */
 @media(max-width:719px){
   .skate-entry{top:150px;left:16px;padding:8px 12px;gap:10px}

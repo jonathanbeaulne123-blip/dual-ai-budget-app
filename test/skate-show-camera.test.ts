@@ -1,5 +1,6 @@
 import {describe, expect, it} from 'vitest';
-import {createSkateCamera, type SkateCameraFrame} from '../src/harbour/skate/camera/skateCamera.ts';
+import {createSkateCamera, projectToView, type SkateCameraFrame} from '../src/harbour/skate/camera/skateCamera.ts';
+import {insideVillageBuilding} from '../src/harbour/body/obstacles.ts';
 import type {SkatePresent, SkateSimEvent} from '../src/harbour/skate/contract.ts';
 
 const base: SkatePresent = {
@@ -30,6 +31,23 @@ function inView(f: SkateCameraFrame, P: readonly number[], aspect = env.aspect):
 }
 
 describe('skate chase camera', () => {
+  it('keeps the chase eye outside a building when a ride starts beside its wall', () => {
+    const rider = at({x: -21.96, y: 1.01, z: -17.3, heading: 1.52, phase: 'idle'});
+    expect(insideVillageBuilding(rider.x, rider.z, .12)).toBe(false);
+    expect(insideVillageBuilding(-24.69, -17.44, .12)).toBe(true);
+    const cam = createSkateCamera();
+    cam.snap(rider);
+    const envAtWall = {
+      aspect: 390 / 768,
+      blocked: (x: number, y: number, z: number) => y < 6 && insideVillageBuilding(x, z, .12),
+    };
+    let frame!: SkateCameraFrame;
+    for (let i = 0; i < 120; i++) frame = cam.update(rider, [], 1 / 60, envAtWall);
+    expect(insideVillageBuilding(frame.position[0], frame.position[2], .12)).toBe(false);
+    expect(frame.fov).toBeGreaterThan(70); // the wall pulled the eye in; keep the full rider framed
+    expect(inView(frame, [rider.x, rider.y + 0.7, rider.z], 390 / 768)).toBe(true);
+    expect(projectToView(frame, [rider.x, rider.y + 1.18, rider.z], 390 / 768)![1]).toBeGreaterThan(.14);
+  });
   it('settles low behind the direction of travel, widening with speed', () => {
     const cam = createSkateCamera();
     let f!: SkateCameraFrame, z = 0;

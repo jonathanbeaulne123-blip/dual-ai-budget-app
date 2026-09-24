@@ -6,7 +6,7 @@ import type {SkateProgress} from '../skate/session.ts';
 import {createHudThrottle,type SkateHudModel} from '../skate/hud/model.ts';
 import {createSkateCamera,type SkateCamera} from '../skate/camera/skateCamera.ts';
 import {skateWalkPose,skateWatchPoint} from '../skate/camera/companion.ts';
-import {ISLAND_BUILDINGS} from '../body/obstacles.ts';
+import {insideVillageBuilding} from '../body/obstacles.ts';
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import { worldDiagnostics } from "../../house/world/diagnostics.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
@@ -55,16 +55,6 @@ export type ProjectedRect = { id: string; kind: "region" | "anchor"; group: stri
 
 /** What the runtime publishes to the shell while skating (`onSkate`). */
 export type SkateFrame = { model: SkateHudModel; progress: SkateProgress; revision: number };
-
-/** Is (x, z) inside a building footprint (for the skate camera's eye probe)? */
-function insideBuilding(x: number, z: number): boolean {
-  for (const o of ISLAND_BUILDINGS) {
-    if (o.kind === "circle") { if (Math.hypot(x - o.x, z - o.z) < o.r) return true; }
-    else if (o.kind === "box") { if (x > o.minX && x < o.maxX && z > o.minZ && z < o.maxZ) return true; }
-    else { const c = Math.cos(o.yaw), s = Math.sin(o.yaw), dx = x - o.x, dz = z - o.z, lx = dx * c - dz * s, lz = dx * s + dz * c; if (Math.abs(lx) < o.halfX && Math.abs(lz) < o.halfZ) return true; }
-  }
-  return false;
-}
 
 export type HarbourCallbacks = {
   onJourney?:()=>void;
@@ -1071,7 +1061,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         skateCam.setDistance(walker.skate.current()?.camera === 'far' ? 'far' : 'near');
         const f = skateCam.update(ridden, walker.skate.events(), dt, {
           aspect: camera.aspect, reducedMotion: reducedMotion() || walker.skate.current()?.reducedEffects === true,
-          blocked: (x, y, z) => y < skatePark.field.heightAt(x, z) + .05 || (y < 6 && insideBuilding(x, z)),
+          blocked: (x, y, z) => y < skatePark.field.heightAt(x, z) + .05 || (y < 6 && insideVillageBuilding(x, z, .12)),
         });
         camera.position.set(f.position[0], f.position[1], f.position[2]);
         camera.up.set(0, 1, 0);
