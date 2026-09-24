@@ -96,7 +96,7 @@ export interface SkateInput {
 }
 
 type Easy={flipId:string|null;from:'tail'|'nose';since:number;fired:boolean;key:string|null};
-type Touch={zone:TouchZone;ox:number;oy:number;x:number;y:number};
+type Touch={zone:TouchZone;ox:number;oy:number;x:number;y:number;since:number};
 type Queued=FlickCompletion&{device:SkateDevice};
 
 export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamepads?:GetPads|null}={}):SkateInput {
@@ -106,7 +106,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
   const rec:Record<SkateDevice,FlickRecogniser>={keyboard:createFlickRecogniser({digital:true}),pointer:createFlickRecogniser({timing:{dwellMs:INPUT_TUNING.pointerDwellMs}}),touch:createFlickRecogniser(),gamepad:createFlickRecogniser({timing:{popOnFlick:true}})};
   const kbStick=createDigitalStick();
   const keys=new Set<string>(),grabs=new Map<string,GrabDef['hand']>(),touches=new Map<number,Touch>(),queue:Queued[]=[];
-  let grab:null|{id:GrabDef['id'];source:string}=null,revert=0,respawn=0,marker=0,pause=false,pushUntil=-Infinity,lastNow=0;
+  let grab:null|{id:GrabDef['id'];source:string}=null,revert=0,respawn=0,marker=0,jumps=0,pause=false,pushUntil=-Infinity,lastNow=0;
   let drag:null|{id:number;ox:number;oy:number}=null,easy:Easy|null=null,buffered:null|{pop:NonNullable<SkateIntent['pop']>;until:number}=null,last:FlickCompletion|null=null;
   let padLeft={x:0,y:0},padHeld={push:false,brake:false,powerslide:false,grind:false,sprint:false,manual:false,noseManual:false};
 
@@ -130,7 +130,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
   function reset(){
     for(const r of Object.values(rec))r.reset();
     kbStick.reset();keys.clear();grabs.clear();touches.clear();queue.length=0;
-    grab=null;revert=respawn=marker=0;pause=false;pushUntil=-Infinity;drag=null;easy=null;buffered=null;
+    grab=null;revert=respawn=marker=jumps=0;pause=false;pushUntil=-Infinity;drag=null;easy=null;buffered=null;
     padLeft={x:0,y:0};padHeld={push:false,brake:false,powerslide:false,grind:false,sprint:false,manual:false,noseManual:false};
     pad.resync();
   }
@@ -192,6 +192,12 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
         last=c;
       }
       if(!pop&&!airborne&&buffered&&now<=buffered.until){pop=buffered.pop;buffered=null;}
+      if(jumps>0){
+        const jump={from:'tail' as const,flipId:null,strength:0.7};
+        if(!airborne)pop=jump;
+        else buffered={pop:jump,until:now+INPUT_TUNING.popBufferMs};
+        jumps=0;
+      }
       if(buffered&&now>buffered.until)buffered=null;
       // Held state.
       let crouch=0,crouchEnd:SkateIntent['crouchEnd']=null,manual:SkateIntent['manual']=null;
@@ -200,12 +206,16 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
       if(keys.has('m')||padHeld.manual)manual='manual';else if(keys.has('n')||padHeld.noseManual)manual='nose-manual';
       if(!rolling&&!airborne)manual=null;
       const l=leftStick(),touchZone=(z:TouchZone)=>{for(const t of touches.values())if(t.zone===z)return true;return false;};
+      let touchGrab:GrabDef['id']|null=null;
+      if(airborne)for(const t of touches.values())if(t.zone==='right'&&now-t.since>180&&Math.abs(t.x)>.65&&Math.abs(t.y)<.45){
+        touchGrab=pickGrab(t.x<0?'front':'back',l.x,l.y,f);break;
+      }
       const intent:SkateIntent={
         steer:Math.max(-1,Math.min(1,l.x)),lean:Math.max(-1,Math.min(1,l.y)),
-        push:keys.has('w')||padHeld.push||touchZone('push')||now<pushUntil,
-        brake:keys.has('s')||padHeld.brake||touchZone('brake'),
+        push:keys.has('w')||padHeld.push||touchZone('push')||touchLeft().y>0.32||now<pushUntil,
+        brake:keys.has('s')||padHeld.brake||touchZone('brake')||touchLeft().y<-.38,
         powerslide:keys.has('c')||padHeld.powerslide,
-        crouch,crouchEnd,pop,lateFlip,grab:grab?.id??null,manual,
+        crouch,crouchEnd,pop,lateFlip,grab:grab?.id??touchGrab,manual,
         revert:revert>0,grindAssist:keys.has('g')||padHeld.grind,
         respawn:respawn>0,marker:marker>0,sprint:keys.has('shift')||padHeld.sprint,
       };
@@ -229,6 +239,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
       if(e.repeat)return true;
       kbStick.advance(t,feedKb);
       switch(action.kind){
+        case 'jump':jumps++;break;
         case 'stick':kbStick.press(action.dir,t);break;
         case 'ride':keys.add(name);if(action.dir==='push')pushUntil=Math.max(pushUntil,t+INPUT_TUNING.pushStrokeMs);break;
         case 'hold':keys.add(action.what==='sprint'?'shift':name);break;
@@ -242,6 +253,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
       const name=keyName(e),action=skateKeyAction(name,mode);if(!action)return false;
       const t=ts(e);kbStick.advance(t,feedKb);
       switch(action.kind){
+        case 'jump':break;
         case 'stick':kbStick.release(action.dir as ArrowDir,t);break;
         case 'ride':keys.delete(name);break;
         case 'hold':keys.delete(action.what==='sprint'?'shift':name);break;
@@ -276,7 +288,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
     touchStart(zone,e){
       const t=ts(e);device='touch';
       if(touches.has(e.pointerId))return true;
-      touches.set(e.pointerId,{zone,ox:e.clientX,oy:e.clientY,x:0,y:0});
+      touches.set(e.pointerId,{zone,ox:e.clientX,oy:e.clientY,x:0,y:0,since:t});
       if(zone==='right')rec.touch.feed(t,0,0);
       else if(zone==='push')pushUntil=Math.max(pushUntil,t+INPUT_TUNING.pushStrokeMs);
       else if(zone==='grab-front'||zone==='grab-back')grabDown(`touch:${e.pointerId}`,zone==='grab-front'?'front':'back');

@@ -1,6 +1,7 @@
 import {describe, expect, it} from 'vitest';
 import {createSkateCamera, projectToView, type SkateCameraFrame} from '../src/harbour/skate/camera/skateCamera.ts';
 import {insideVillageBuilding} from '../src/harbour/body/obstacles.ts';
+import {VILLAGE_SITES} from '../src/harbour/village/layout.ts';
 import type {SkatePresent, SkateSimEvent} from '../src/harbour/skate/contract.ts';
 
 const base: SkatePresent = {
@@ -32,9 +33,10 @@ function inView(f: SkateCameraFrame, P: readonly number[], aspect = env.aspect):
 
 describe('skate chase camera', () => {
   it('keeps the chase eye outside a building when a ride starts beside its wall', () => {
-    const rider = at({x: -21.96, y: 1.01, z: -17.3, heading: 1.52, phase: 'idle'});
+    const [bankX,bankZ]=VILLAGE_SITES.bank.spot;
+    const rider = at({x: bankX+6.5, y: 1.01, z: bankZ, heading: 1.52, phase: 'idle'});
     expect(insideVillageBuilding(rider.x, rider.z, .12)).toBe(false);
-    expect(insideVillageBuilding(-24.69, -17.44, .12)).toBe(true);
+    expect(insideVillageBuilding(bankX, bankZ, .12)).toBe(true);
     const cam = createSkateCamera();
     cam.snap(rider);
     const envAtWall = {

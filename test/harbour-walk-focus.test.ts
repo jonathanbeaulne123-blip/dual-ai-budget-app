@@ -28,9 +28,13 @@ let ready: (() => void) | null = null;
 let panelOwnsWorld=false;
 let travelWasBlocked:boolean[]=[];
 const cancelWalk=vi.fn();
+const jump=vi.fn(),skateKeyDown=vi.fn();
+let riding=false;
 
 const body = {
   cancel: cancelWalk,
+  jump,
+  skate:{active:()=>riding,input:()=>({keyDown:skateKeyDown}),pause:()=>undefined,checkpoint:()=>null,setAudio:()=>undefined,enable:()=>false},
   place: () => undefined,
   input: (next: Input) => { inputs.push(next); },
   at: () => ({ x: 0, y:1.31, z: 0, yaw: 0 }),
@@ -121,7 +125,7 @@ const press = (key: string) => act(async () => {
 const settle = () => act(async () => { await new Promise((done) => setTimeout(done, 300)); });
 
 beforeEach(() => {
-  inputs = []; ready = null; coarse = false;panelOwnsWorld=false;travelWasBlocked=[];cancelWalk.mockClear();localStorage.clear();
+  inputs = []; ready = null; coarse = false;panelOwnsWorld=false;travelWasBlocked=[];cancelWalk.mockClear();jump.mockClear();skateKeyDown.mockClear();riding=false;localStorage.clear();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query === "(pointer: coarse)" ? coarse : false,
@@ -381,4 +385,20 @@ it("pauses clicked walking for the guide and releases the follow camera before s
  expect(travelWasBlocked).toEqual([false]);expect(panelOwnsWorld).toBe(false);
  expect(document.activeElement).toBe(stage);
  expect(host.querySelector('[role="dialog"][aria-label="Mountain and town guide"]')).toBeNull();
+});
+
+it("keeps main's Space jump on the world and leaves focused controls their keyboard",async()=>{
+ const quick=vi.fn();const {stage}=await stand({onQuickSheet:quick});
+ await press(' ');expect(jump).toHaveBeenCalledTimes(1);expect(quick).not.toHaveBeenCalled();
+ riding=true;await press(' ');expect(skateKeyDown).toHaveBeenCalledTimes(1);
+ const control=host.querySelector<HTMLButtonElement>('#world-guide-trigger')!;
+ control.focus();await press(' ');
+ expect(skateKeyDown).toHaveBeenCalledTimes(1);expect(jump).toHaveBeenCalledTimes(1);
+ expect(stage.contains(control)).toBe(true);
+});
+
+it("keeps Space as direct tool access when the flat Desk has no world body",async()=>{
+ localStorage.setItem('hearth:motion','flat');const quick=vi.fn();
+ const {stage}=await stand({onQuickSheet:quick});stage.focus();await press(' ');
+ expect(quick).toHaveBeenCalledTimes(1);expect(jump).not.toHaveBeenCalled();
 });

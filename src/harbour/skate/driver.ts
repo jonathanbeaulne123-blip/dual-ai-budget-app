@@ -74,8 +74,8 @@ export type SkateControls={
 export type SkateDriverWorld={obstacles:readonly Obstacle[]};
 
 /** Sim options for the island (integration seam: island obstacles merged with the park, shoreline held). */
-export function skateSimOptions(obstacles:readonly Obstacle[],field:SkateWorldField=skateField()):Pick<SkateSimOptions,'islandObstacles'|'shore'|'extraSolids'> {
-  return {islandObstacles:obstacles,shore:holdAshore,extraSolids:skateDressingSolids(field)};
+export function skateSimOptions(obstacles:readonly Obstacle[],field:SkateWorldField=skateField()):Pick<SkateSimOptions,'islandObstacles'|'shore'|'extraSolids'|'complexPhysicsAt'> {
+  return {islandObstacles:obstacles,shore:holdAshore,extraSolids:skateDressingSolids(field),complexPhysicsAt:field.trickZoneAt};
 }
 
 /** The catalogs every part of the ride uses, with TRICKS' grind namer injected into the sim. */
@@ -103,7 +103,7 @@ export function skateHints(mode:SkateSettings['controls']):ControlHintSet {
   const pop=easy?[hint('pop','Ollie',key('J')),hint('flip','Kickflip · heelflip',key('F'),key('H'))]:[hint('pop','Pull back, flick up: ollie',key('↓'),key('↑')),hint('flip','Flick to a corner: flip',key('↓'),key('←'),key('→'))];
   return {
     keyboard:{
-      ride:[hint('push','Push',key('W')),hint('carve','Carve',key('A'),key('D')),...pop,hint('manual','Manual',key('M')),hint('slide','Powerslide',key('C'))],
+      ride:[hint('push','Push',key('W')),hint('carve','Carve',key('A'),key('D')),hint('jump','Jump',key('Space')),...pop,hint('manual','Manual',key('M')),hint('slide','Powerslide',key('C'))],
       air:[hint('grab','Grab',key('Q'),key('E')),hint('spin','Spin',key('A'),key('D')),hint('grind-pick','Rail ahead: W A S D as you land on it picks the grind',key('W'),key('A'),key('S'),key('D')),hint('grind','Lock onto a rail',key('G')),hint('revert','Revert',key('X'))],
       grind:[hint('balance','Balance',key('A'),key('D')),hint('out','Pop out',key('↓'),key('↑'))],
       manual:[hint('balance','Balance',key('W'),key('S')),hint('out','Pop out',key('↓'),key('↑'))],

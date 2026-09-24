@@ -63,6 +63,8 @@ export type GrindLockApproach = { deckYawToLine: number; lean: number; overLine:
 export type SkateSimOptions = {
   x: number; z: number; yaw: number; stance: Stance; reducedAssist?: boolean;
   y?:number; vy?:number; supportId?:string;
+  /** Outside authored trick areas, climbing and everyday travel use assisted propulsion. */
+  complexPhysicsAt?: (x:number,z:number)=>boolean;
   /** Island obstacles (buildings/trees) in body-obstacle form; injected by integration. */
   islandObstacles?: readonly Obstacle[];
   /**
@@ -477,6 +479,8 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
 
   function stepGround(dt: number): void {
     const n0x = S.gnx, n0y = S.gny, n0z = S.gnz, y0 = S.y, x0 = S.x, z0 = S.z;
+    const travel = opts.complexPhysicsAt?.(x0,z0) === false;
+    const travelGravity = travel ? 0.16 : 1;
     S.sinceLand += dt;
     S.landTimer = Math.max(0, S.landTimer - dt);
     if (S.recoverT > 0) return;
@@ -494,6 +498,12 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     else {
       const fy = S.boardYaw - S.slideAngle + (S.lead < 0 ? Math.PI : 0);
       lift(Math.sin(fy), Math.cos(fy), n0x, n0y, n0z, V3); tx = V3.x; ty = V3.y; tz = V3.z;
+    }
+    // A rider beginning an uphill trip should push in the board's chosen direction,
+    // even if gravity nudged the first few stationary frames downhill.
+    if(travel&&I.push&&speed<1.5){
+      lift(Math.sin(S.boardYaw),Math.cos(S.boardYaw),n0x,n0y,n0z,V3);
+      if(tx*V3.x+ty*V3.y+tz*V3.z<0.5){tx=V3.x;ty=V3.y;tz=V3.z;speed=0;S.vx=S.vy=S.vz=0;}
     }
 
     // Manual.
@@ -517,7 +527,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
 
     // Push strokes.
     let pushAcc = 0;
-    const canPush = !S.manual && !S.slide && S.crouch < 0.5 && !I.brake && n0y > 0.9;
+    const canPush = !S.manual && !S.slide && S.crouch < 0.5 && !I.brake && n0y > (travel ? 0.35 : 0.9);
     if (S.stroke) {
       const period = I.sprint ? T.SPRINT_PERIOD : T.PUSH_PERIOD;
       S.pushPhase += dt / period;
@@ -527,10 +537,15 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       }
     } else if (I.push && canPush) { S.stroke = true; S.pushPhase = 0; emit({ t: S.t, kind: 'push' }); }
     if (S.stroke && I.push && canPush && S.pushPhase >= T.PUSH_KICK_FROM && S.pushPhase <= T.PUSH_KICK_TO) {
-      const cap = I.sprint ? T.SPRINT_CAP : T.PUSH_CAP, acc = I.sprint ? T.SPRINT_ACCEL : T.PUSH_ACCEL;
+      const cap = travel ? (I.sprint ? 14 : 11) : (I.sprint ? T.SPRINT_CAP : T.PUSH_CAP);
+      const acc = travel ? (I.sprint ? 21 : 18) : (I.sprint ? T.SPRINT_ACCEL : T.PUSH_ACCEL);
       const w = (S.pushPhase - T.PUSH_KICK_FROM) / (T.PUSH_KICK_TO - T.PUSH_KICK_FROM);
       const fade = Math.pow(Math.max(0, 1 - speed / cap), 0.8);
       pushAcc = acc * (T.PUSH_GRIP[S.kind] ?? 1) * fade * Math.sin(Math.PI * w) * 1.57;
+    }
+    if(travel&&I.push&&canPush){
+      const cap=I.sprint?14:11;
+      pushAcc=Math.max(pushAcc,(I.sprint?7:5.5)*Math.max(0,1-speed/cap));
     }
     if (!S.stroke) S.pushPhase = 0;
 
@@ -579,7 +594,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     const ke = 0.5 * (vx * vx + vy * vy + vz * vz);
 
     // Gravity, tangential part.
-    const gx = G * n0y * n0x, gy = G * (n0y * n0y - 1), gz = G * n0y * n0z;
+    const gx = G * travelGravity * n0y * n0x, gy = G * travelGravity * (n0y * n0y - 1), gz = G * travelGravity * n0y * n0z;
     const vbx = vx, vby = vy, vbz = vz;
     vx += gx * dt; vy += gy * dt; vz += gz * dt;
 
@@ -641,7 +656,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     const vn = vx * S1.nx + vy * S1.ny + vz * S1.nz;
     vx -= vn * S1.nx; vy -= vn * S1.ny; vz -= vn * S1.nz;
     const m = Math.hypot(vx, vy, vz);
-    const target2 = 2 * ke - 2 * G * (S1.y - y0);
+    const target2 = 2 * ke - 2 * G * travelGravity * (S1.y - y0);
     if (target2 > 0 && m > 0.2) {
       const k = clamp(Math.sqrt(target2) / m, 0.5, 2);
       vx *= k; vy *= k; vz *= k;
@@ -972,6 +987,19 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     const airTime = S.airTime, gap = Math.hypot(S.x - S.toX, S.z - S.toZ);
     const grabWeight = S.grab ? S.grab.weight : 0;
     endGrab();
+    if(opts.complexPhysicsAt?.(S.x,S.z)===false){
+      // Travel jumps stay useful on the island: absorb the impact and square the
+      // board to the direction of travel, without a trick catch or angle bail.
+      S.vx=vtx*.94;S.vy=vty*.94;S.vz=vtz*.94;
+      if(Math.hypot(vtx,vtz)>.2)S.boardYaw=wrap(Math.atan2(vtx,vtz));
+      S.lead=1;S.feetSwapped=false;
+      toGround();
+      S.landTimer=T.LAND_PHASE;S.sinceLand=0;
+      S.impact=Math.max(S.impact,clamp(impact/12,0,.7));
+      if(S.airFromPop||S.airLaunch||airTime>=.15)emit({t:S.t,kind:'land',spinDeg:S.footSign*S.spin*180/Math.PI,boardClean:.9,fakie:false,switch:false,airTime,gap,onFeature:S1.feature,revert:false});
+      S.trick=null;S.manualResume=false;S.pendRevert=-1;
+      return;
+    }
 
     // Flip must be caught.
     const tr = S.trick;

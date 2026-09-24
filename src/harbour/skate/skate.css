@@ -138,17 +138,17 @@
 
 /* ---------------------------------------------------------------- touch: two thumb clusters in the bottom corners, above the app bar */
 .skate-touch{position:absolute;left:12px;right:12px;bottom:90px;height:0;pointer-events:none}
-.skate-touch__cluster{position:absolute;bottom:0;display:grid;gap:8px;width:clamp(112px,34%,200px)}
+.skate-touch__cluster{position:absolute;bottom:0;width:clamp(112px,29%,164px)}
 .skate-touch__cluster--left{left:0}.skate-touch__cluster--right{right:0}
 .skate-touch__row{display:flex;gap:6px}
 .skate-zone{position:relative;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}
-.skate-zone--stick{height:clamp(120px,19cqh,176px);border-radius:16px;background:color-mix(in srgb,var(--skate-ink) 16%,transparent);border:1.5px dashed color-mix(in srgb,var(--skate-paper) 70%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--skate-ink) 25%,transparent)}
-.skate-zone__ring{width:clamp(64px,62%,96px);aspect-ratio:1;border-radius:50%;border:2px solid color-mix(in srgb,var(--skate-paper) 80%,transparent);display:grid;place-items:center;background:color-mix(in srgb,var(--skate-ink) 10%,transparent)}
-.skate-zone__ring i{width:40%;aspect-ratio:1;border-radius:50%;background:var(--skate-paper);box-shadow:2px 2px 0 var(--skate-ink)}
+.skate-zone--stick{width:100%;aspect-ratio:1;border-radius:50%;background:color-mix(in srgb,var(--skate-ink) 16%,transparent);border:2px solid color-mix(in srgb,var(--skate-paper) 85%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--skate-ink) 25%,transparent)}
+.skate-zone__ring{width:70%;aspect-ratio:1;border-radius:50%;border:2px solid color-mix(in srgb,var(--skate-paper) 80%,transparent);display:grid;place-items:center;background:color-mix(in srgb,var(--skate-ink) 10%,transparent)}
+.skate-zone__ring i{width:40%;aspect-ratio:1;border-radius:50%;background:var(--skate-paper);box-shadow:2px 2px 0 var(--skate-ink);transition:transform .06s linear}
 .skate-zone--right .skate-zone__ring i{background:var(--skate-accent)}
-.skate-zone--stick .skate-zone__label{position:absolute;left:8px;top:6px;color:var(--skate-paper);text-shadow:0 1px 2px #000a}
-.skate-zone--right .skate-zone__label{left:auto;right:8px}
+.skate-zone--stick .skate-zone__label{position:absolute;left:50%;top:-23px;transform:translateX(-50%);color:var(--skate-paper);text-shadow:0 1px 2px #000a}
 .skate-zone__label{font:800 11px system-ui;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.skate-zone__help{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);font:700 10px system-ui;color:var(--skate-paper);text-shadow:0 1px 2px #000a;white-space:nowrap}
 .skate-zone--pad{flex:1;height:48px;background:var(--skate-paper);box-shadow:2px 3px 0 var(--skate-ink);border-radius:4px}
 .skate-zone--push{flex:1.6;background:var(--skate-accent);color:var(--skate-accent-ink)}
 .skate-zone[data-held]{transform:translate(1px,2px);box-shadow:0 0 0 var(--skate-ink);filter:brightness(.92)}
@@ -229,7 +229,7 @@
 .skate-book .skate-sharing .harbour-walk-together{position:static!important;transform:none;display:flex;margin-top:4px;color:inherit}
 
 
-/* ---------------------------------------------------------------- Hearth chrome while riding: dimmed, never removed (Space still opens every tool) */
+/* ---------------------------------------------------------------- Hearth chrome while riding: dimmed, with the tool sheet still in the UI */
 .is-skating .village-address,.is-skating .harbour-world__invite,.is-skating .village-presence-outside,.is-skating .village-hud,.is-skating .harbour-twins{display:none}
 .is-skating .harbour-moves{z-index:10;right:12px;top:72px;bottom:auto}
 .is-skating .village-tools{bottom:57px}.is-skating .village-map{z-index:16}
@@ -250,7 +250,7 @@ body:has(.harbour-world.is-skating) :is(.nav.compass,.herc-litter,.sync-freshnes
 /* ---------------------------------------------------------------- touch on a wide stage (tablet): same clusters, a little larger */
 @container skatehud (min-width:720px){
   .skate-touch{left:20px;right:20px;bottom:96px}
-  .skate-touch__cluster{width:200px}
+  .skate-touch__cluster{width:164px}
 }
 
 /* ---------------------------------------------------------------- phone (< 720px stage) */
