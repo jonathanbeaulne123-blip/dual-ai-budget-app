@@ -1,13 +1,14 @@
+import {buildDestinationSilhouette} from '../mountain/architecture.ts';
 import {createDetailStream} from '../mountain/streaming.ts';
 import {buildDistrictArt} from '../mountain/districtArt.ts';
 import {DISTRICTS} from '../mountain/definition.ts';
 import {buildMountainLandscape} from '../mountain/landscape.ts';
-import type {Point3} from '../mountain/definition.ts';
+import type {Point3,TransportKind} from '../mountain/definition.ts';
 import {createVillagePartner} from '../presence/villagePartner.ts';
 import {buildVillageLife} from "./life.ts";
 import * as THREE from 'three';
 import {registerPlace,placementOf,placementLift,placementToWorld,type Anchor,type PlaceHandle,type Region,type Pose} from '../scene/place.ts';
-import {buildVillageBuilding,VILLAGE_FOOTPRINTS,type VillageBuildingKind} from './architecture.ts';
+import {buildVillageBuilding,type VillageBuildingKind} from './architecture.ts';
 import {VILLAGE_SITES,VILLAGE_WATERFRONT} from './layout.ts';
 import {groundHeightAt} from '../scene/ground.ts';
 import {EngravedPlate} from '../court/engraved.ts';
@@ -42,11 +43,10 @@ export const villageCourt = registerPlace({id:'court',build(scene,dressing,_read
   for(const [kind,site] of Object.entries(VILLAGE_SITES)){
     const placement=placementOf(site.entry)!;
     // A cheap permanent silhouette stands behind the streamed authored exterior.
-    const kindKey=kind as VillageBuildingKind,[halfX,halfZ]=VILLAGE_FOOTPRINTS[kindKey];
+    const kindKey=kind as VillageBuildingKind;
     const root=new THREE.Group(),far=new THREE.Group();root.name=site.exterior;root.userData.villageShell=true;root.userData.building=kind;
     root.position.set(site.spot[0],placementLift(placement),site.spot[1]);root.rotation.y=placement.yaw;group.add(root);root.add(far);
-    const wall=add(new THREE.BoxGeometry(halfX*2,3,halfZ*2),stone,0,1.5,0,`distant-${kind}`);far.add(wall);
-    const cap=add(new THREE.ConeGeometry(Math.max(halfX,halfZ)*1.5,2,4),wood,0,4,0,`distant-${kind}-roof`);cap.rotation.y=Math.PI/4;far.add(cap);
+    const silhouette=buildDestinationSilhouette(kindKey,dressing,quality);far.add(silhouette.group);owned.push(silhouette);
     far.traverse(n=>{n.userData.anchor=`visit:${site.entry}`;});exteriorRoots.set(kind,{root,far});
     const doorstep=placementToWorld(placement,[site.door[0],.3,site.door[1]+1]);
     anchors.push({id:`visit:${site.entry}`,position:doorstep,zone:'landmark',label:`${site.name}. Walk to the door.`});
@@ -73,6 +73,6 @@ export const villageCourt = registerPlace({id:'court',build(scene,dressing,_read
   const poses:Record<string,Pose>={court:{target:[.95,.85,5.1],r:9,theta:.15,phi:1.22},'court:phone':{target:[.95,.8,5.1],r:11,theta:.15,phi:1.17},sky:{target:[0,42,-122],r:390,theta:.18,phi:1.08}};
   group.updateMatrixWorld(true);scene.add(group);
   let disposed=false,calm=false;
-  const handle:PlaceHandle & {play(id:string):string|null;setTransit(at:Point3|null):void;setCalm(on:boolean):void;setVisitor(at:Point3):void;streamDetails(x:number,z:number,race:boolean):boolean}={group,streamDetails,setTransit:mountain.setTransit,setVisitor:mountain.setVisitor,setCalm(on){calm=on;mountain.setCalm(on);},anchors:()=>[...mountain.anchors,...anchors,...life.anchors(),...landscape.anchors],regions:()=>[...mountain.regions,...regions,...life.regions()],poses:()=>poses,update(reading){partner.update(reading);mountain.update(reading);},play:id=>HARBOUR_WANDERS.find(w=>`wander:${w.id}`===id)?.words??life.interact(id),animate(t,dt){mountain.animate(t,dt);partner.animate(t,dt);if(!calm){life.animate(t,dt);for(const {shell} of exteriors.live.values())shell.animate(t,dt);water.scale.setScalar(1+Math.sin(t*1.8)*.018);}return true;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();mountain.dispose();life.dispose();partner.dispose();landscape.dispose();districtDetails.dispose();exteriors.dispose();owned.forEach(x=>x.dispose());group.clear();}};
+  const handle:PlaceHandle & {play(id:string):string|null;setTransit(at:Point3|null,kind?:TransportKind):void;setCalm(on:boolean):void;setVisitor(at:Point3):void;streamDetails(x:number,z:number,race:boolean):boolean}={group,streamDetails,setTransit:mountain.setTransit,setVisitor:mountain.setVisitor,setCalm(on){calm=on;mountain.setCalm(on);},anchors:()=>[...mountain.anchors,...anchors,...life.anchors(),...landscape.anchors],regions:()=>[...mountain.regions,...regions,...life.regions()],poses:()=>poses,update(reading){partner.update(reading);mountain.update(reading);},play:id=>HARBOUR_WANDERS.find(w=>`wander:${w.id}`===id)?.words??life.interact(id),animate(t,dt){mountain.animate(t,dt);partner.animate(t,dt);if(!calm){life.animate(t,dt);for(const {shell} of exteriors.live.values())shell.animate(t,dt);water.scale.setScalar(1+Math.sin(t*1.8)*.018);}return true;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();mountain.dispose();life.dispose();partner.dispose();landscape.dispose();districtDetails.dispose();exteriors.dispose();owned.forEach(x=>x.dispose());group.clear();}};
   return handle;
 }});

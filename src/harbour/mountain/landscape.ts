@@ -1,10 +1,11 @@
+import {buildMountainArchitecture,buildMountainCabin} from './architecture.ts';
 import * as THREE from 'three';
 import {mountainTrees} from './planting.ts';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import type {PlaceDressing,PlaceReading,Anchor,Region} from '../scene/place.ts';
 import type {RenderTier} from '../scene/quality.ts';
 import {EngravedPlate} from '../court/engraved.ts';
-import {BASIN,DISTRICTS,RESERVED_PLOTS,RIVER,FUNICULAR_STOPS,GONDOLA_STOPS,MOUNTAIN_ROAD,nearestOnRoute,mountainBaseHeight,transportPoint,type Point3} from './definition.ts';
+import {BASIN,DISTRICTS,RESERVED_PLOTS,RIVER,FUNICULAR_STOPS,GONDOLA_STOPS,MOUNTAIN_ROAD,nearestOnRoute,mountainBaseHeight,transportPoint,type Point3,type TransportKind} from './definition.ts';
 import {WORLD_SURFACES,WORLD_SOLIDS} from './surfaces.ts';
 import {MOUNTAIN_GATES} from './race.ts';
 import {basinMoney,createBasinView} from './basin.ts';
@@ -38,9 +39,8 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
     if(s.id==='mountain-road')for(let i=0;i<s.points.length;i+=6){const p=s.points[i]!;if(p[1]-mountainBaseHeight(p[0],p[2])<2)continue;const n=s.points[Math.min(i+1,s.points.length-1)]!,dx=n[0]-p[0],dz=n[2]-p[2],l=Math.hypot(dx,dz)||1;
       for(const side of [-1,1]){const x=p[0]+dz/l*4.7*side,z=p[2]-dx/l*4.7*side,base=mountainBaseHeight(x,z);beam([x,base,z],[x,p[1]+1,z],.19,stone);}
     }
-    if(s.id!=='mountain-road'&&s.id!=='town-race-road'&&!s.id.startsWith('path:')&&!s.id.startsWith('station:'))for(let i=1;i<s.points.length;i++){const a=s.points[i-1]!,b=s.points[i]!;beam([a[0],a[1]+.6,a[2]],[b[0],b[1]+.6,b[2]],.075,metal);}
   }
-  for(const solid of WORLD_SOLIDS){const x=(solid.min[0]+solid.max[0])/2,z=(solid.min[2]+solid.max[2])/2;beam([x,solid.min[1],z],[x,solid.max[1],z],.12,stone);}
+  for(const solid of WORLD_SOLIDS.filter(s=>!s.id.startsWith('station-art:')&&!s.id.startsWith('district-art:')&&!s.id.startsWith('summit-art:'))){const x=(solid.min[0]+solid.max[0])/2,z=(solid.min[2]+solid.max[2])/2;beam([x,solid.min[1],z],[x,solid.max[1],z],.12,stone);}
   ribbon(RIVER,2.2,water,'River to the town square',.08);
   // Curved transparent retaining face and its water volume share the authored basin radius.
   const arc=mesh(new THREE.CylinderGeometry(BASIN.radius,BASIN.radius,BASIN.top-BASIN.bottom,48,1,true,-BASIN.angle/2,BASIN.angle),glass,[BASIN.x,(BASIN.top+BASIN.bottom)/2,BASIN.z],'Glass Fund dam');arc.userData.anchor='mountain:basin';
@@ -67,8 +67,8 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
     box([d.at[0]-6,d.at[1]+.25,d.at[2]+9],[.2,.5,.65],stone);
     if(d.id==='reservoir'||d.id==='summit'){
       const cx=d.at[0]-(d.id==='reservoir'?24:0),cz=d.at[2]+(d.id==='reservoir'?0:8);
-      for(const dx of [-3,3])for(const dz of [-2.5,2.5])box([cx+dx,d.at[1]+2,cz+dz],[.22,4,.22],wood,'Pavilion column');
-      const cap=mesh(new THREE.ConeGeometry(5,2.3,4),roof,[cx,d.at[1]+5,cz],d.id==='summit'?'Observatory roof':'Goal pavilion roof');cap.rotation.y=Math.PI/4;
+      if(d.id==='reservoir')for(const dx of [-3,3])for(const dz of [-2.5,2.5])box([cx+dx,d.at[1]+2,cz+dz],[.22,4,.22],wood,'Pavilion column');
+      if(d.id==='reservoir'){const cap=mesh(new THREE.ConeGeometry(5,2.3,4),roof,[cx,d.at[1]+5,cz],'Goal pavilion roof');cap.rotation.y=Math.PI/4;}
       if(d.id==='reservoir')for(let i=0;i<10;i++){const o=box([cx-2.5+i*.55,d.at[1]+1,cz],[.35,2,.35],stone,'Goal backing column');details.add(o);goalDetails.push(o);}
       sign(d.id==='summit'?'Our journey':'A place in the making',[cx,d.at[1]+1.6,cz+2.6],d.id==='summit'?'mountain:journey':'mountain:goals',5);
     }
@@ -94,26 +94,17 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   instanced(new THREE.CylinderGeometry(.14,.22,1.4,5),wood,trunks,'Mountain trunks');
   instanced(dressing.theme==='taylor'?new THREE.IcosahedronGeometry(1.3,0):new THREE.ConeGeometry(1.1,dressing.theme==='newfoundland'?2.2:2.8,6),leaf,trees,'Mountain woodland');
   const blossoms=instanced(new THREE.IcosahedronGeometry(1,0),mat('#ffffff'),flowers,'Flower meadows');flowerColors.forEach((c,i)=>blossoms.setColorAt(i,c));if(blossoms.instanceColor)blossoms.instanceColor.needsUpdate=true;
-  // Plateau-specific silhouettes and details, retaining Harbour's existing materials.
-  for(const d of DISTRICTS){
-    if(d.biome==='orchard')for(let i=0;i<9;i++)mesh(new THREE.IcosahedronGeometry(1.7,1),leaf,[d.at[0]+Math.cos(i*2.4)*15,d.at[1]+3,d.at[2]+Math.sin(i*2.4)*14],'Orchard crown');
-    if(d.biome==='summit')for(let i=0;i<8;i++)mesh(new THREE.IcosahedronGeometry(1.5,0),paper,[d.at[0]-15+i*3,d.at[1]+.2,d.at[2]-8],'Sheltered snow');
-    if(d.biome==='garden')for(let i=0;i<4;i++)box([d.at[0]-9,d.at[1]+.3,d.at[2]-4+i*2],[3,.5,.8],wood,'Kitchen garden bed');
-  }
   for(const [kind,stops] of [['funicular',FUNICULAR_STOPS],['gondola',GONDOLA_STOPS]] as const){
-    for(const stop of stops){sign(`${stop.name} · ${kind}`,[stop.at[0],stop.at[1]+2.5,stop.at[2]],`mountain:transport:${kind}`,7);box([stop.at[0],stop.at[1]+.1,stop.at[2]],[6,.2,4],stone,'Station platform');}
+    for(const stop of stops){sign(`${stop.name} · ${kind}`,[stop.at[0],stop.at[1]+3,stop.at[2]+2.45],`mountain:transport:${kind}`,5.5);}
     for(let i=1;i<stops.length;i++)for(let k=1;k<=48;k++){
       const a=transportPoint(kind,i-1,i,(k-1)/48),b=transportPoint(kind,i-1,i,k/48),lift=kind==='gondola'?3:.1;
       for(const side of kind==='gondola'?[0]:[-.8,.8])beam([a[0]+side,a[1]+lift,a[2]],[b[0]+side,b[1]+lift,b[2]],kind==='gondola'?.06:.09,metal);
       if(k%8===0){const y=mountainBaseHeight(b[0],b[2]);if(b[1]>y+1)beam([b[0],Math.max(0,y),b[2]],[b[0],b[1]+lift,b[2]],.3,stone);}
     }
   }
-  const cabin=new THREE.Group();cabin.name='Mountain transit cabin';group.add(cabin);cabin.visible=false;
-  // Open sides keep the third-person view clear throughout the ride.
-  cabin.add(box([0,-.95,0],[2.8,.18,2],wood,'Transit floor'));
-  cabin.add(box([0,1.55,0],[3,.15,2.2],roof,'Transit canopy'));
-  for(const x of [-1.3,1.3])for(const z of [-.9,.9])cabin.add(box([x,.25,z],[.08,2.5,.08],metal,'Transit frame'));
-  for(const x of [-1.3,1.3])cabin.add(box([x,-.15,0],[.06,.08,1.8],metal,'Transit handrail'));
+  const architecture=buildMountainArchitecture(dressing,tier);group.add(architecture.group);owned.push(architecture);
+  const cabins={funicular:buildMountainCabin(dressing,tier,'funicular'),gondola:buildMountainCabin(dressing,tier,'gondola')};
+  for(const art of Object.values(cabins)){group.add(art.group);art.group.visible=false;owned.push(art);}
   // Three architectural grind routes are real deck surfaces above terrain.
   for(const [name,x,z] of [['Outfitters',-15,16],['Potter’s Supply',34,25]] as const){box([x,1.6,z],[5,3.2,4],paper,name);const r=mesh(new THREE.ConeGeometry(4,2,4),roof,[x,4.1,z],`${name} roof`);r.rotation.y=Math.PI/4;sign(name,[x,2,z+2.1],name==='Outfitters'?'mountain:outfitters':'mountain:pottery',4.5);}
   for(let i=1;i<MOUNTAIN_GATES.length;i++){const g=MOUNTAIN_GATES[i]!;if(i%3!==0&&i!==MOUNTAIN_GATES.length-1)continue;for(const side of [-1,1]){const x=g.at[0]+g.normal[1]*5*side,z=g.at[2]-g.normal[0]*5*side;beam([x,g.at[1],z],[x,g.at[1]+1.7,z],.08,metal);}}
@@ -168,7 +159,7 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
     for(const o of batch){o.removeFromParent();o.geometry.dispose();owned.splice(owned.indexOf(o.geometry),1);}
   }
   update(reading);current=target;
-  return {group,anchors,regions,update,setVisitor,setCalm(value:boolean){calm=value;update(last);},setTransit(at:Point3|null){cabin.visible=at!==null;if(at)cabin.position.set(at[0],at[1]+1,at[2]);},
+  return {group,anchors,regions,update,setVisitor,setCalm(value:boolean){calm=value;update(last);},setTransit(at:Point3|null,kind:TransportKind='gondola'){for(const [id,art] of Object.entries(cabins)){art.group.visible=at!==null&&id===kind;if(at&&id===kind)art.group.position.set(at[0],at[1]+1,at[2]);}},
     animate(t:number,dt:number){const step=Math.min(.1,dt);current+=(target-current)*Math.min(1,step*3);reserveCurrent+=(reserveTarget-reserveCurrent)*Math.min(1,step*3);const depth=Math.max(.03,current*(BASIN.top-BASIN.bottom));reservoir.scale.y=depth;reservoir.position.y=BASIN.bottom+depth/2;reserve.scale.y=Math.max(.03,reserveCurrent*12);reserve.position.y=BASIN.bottom+reserve.scale.y/2;
       remaining=Math.max(0,remaining-step);pulse.visible=remaining>0&&!calm;if(pulse.visible){phase+=step/3;const n=Math.min(flowPath.length-2,Math.floor(phase*(flowPath.length-1))),a=flowPath[n]!,b=flowPath[n+1]!,u=Math.min(1,phase)*(flowPath.length-1)-n;pulse.position.set(a[0]+(b[0]-a[0])*u,a[1]+(b[1]-a[1])*u+.5,a[2]+(b[2]-a[2])*u);}
       if(!calm)blossoms.rotation.z=Math.sin(t*.7)*.00012;
