@@ -356,7 +356,8 @@ export function createWalker(options: WalkerOptions): Walker {
       if(skater.active()) {boardEmote=boardEmote===id?null:id;boardEmoteAt=0;drawSkate(0);return;}
       state = requestEmote(state, id);
     },
-    action: () => skater.active()?skateAct(skater.present(),true):actionOf(state),
+    // Riding a gondola reads as seated to a partner too; a funicular rider simply stands.
+    action: () => skater.active()?skateAct(skater.present(),true):ride?(ride.seated?{act:'sit',p:.5}:null):actionOf(state),
     setReduced(next) {
       if (next === reduced) return;
       reduced = next;

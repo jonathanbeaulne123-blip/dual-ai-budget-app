@@ -12,7 +12,7 @@ import {districtArrival,raceCorridorAt} from '../src/harbour/body/geography.ts';
 import {createRide,farOffer,nearestStation,platformOffer} from '../src/harbour/body/ride.ts';
 import {groundHeightAt} from '../src/harbour/scene/ground.ts';
 import {DISTRICTS,TRANSPORT_STOPS} from '../src/harbour/mountain/definition.ts';
-import {MOUNTAIN_COURSE_POINTS,MOUNTAIN_GATES} from '../src/harbour/mountain/race.ts';
+import {MOUNTAIN_COURSE_POINTS,MOUNTAIN_GATES,crossesRaceGate} from '../src/harbour/mountain/race.ts';
 import {createSkateSim} from '../src/harbour/skate/sim/index.ts';
 import {createSkateDriver,skateField,skateSimOptions,SKATE_CATALOGS} from '../src/harbour/skate/driver.ts';
 import {kick,intent} from '../src/harbour/skate/sim/testKit.ts';
@@ -199,7 +199,7 @@ describe('race physics on the shipped options',()=>{
       for(let i=0;i<5*60;i++){sim.step(intent(),1/60);peak=Math.max(peak,sim.present().speed);}
       return {pushed,peak};
     };
-    const real=run(options),{slopeGravityAt:_,...assisted}=options,flat=run(assisted);
+    const real=run(options),flat=run({...options,slopeGravityAt:undefined});
     expect(real.peak).toBeGreaterThan(real.pushed+2);
     expect(real.peak).toBeGreaterThan(flat.peak+2);
   });
@@ -213,6 +213,25 @@ describe('race physics on the shipped options',()=>{
       expect(down.present().speed,`at course point ${i}`).toBeGreaterThan(up.present().speed+1);
     }
   });
+  it('the whole descent on the shipped options: gravity carries a rider who only pushes when slow',()=>{
+    const route=MOUNTAIN_COURSE_POINTS,start=route[0]!,next=route[1]!;
+    for(const always of [true,false]){
+      const sim=createSkateSim(field,SKATE_CATALOGS,{x:start[0],z:start[2],y:start[1],yaw:Math.atan2(next[0]-start[0],next[2]-start[2]),stance:'regular',...options});
+      let index=0,seconds=0,bails=0,gate=1;
+      for(let tick=0;tick<150*60;tick++){
+        const p=sim.present();let nearest=index,dist=Infinity;
+        for(let i=index;i<Math.min(route.length,index+12);i++){const q=route[i]!,d=Math.hypot(p.x-q[0],p.z-q[2]);if(d<dist){nearest=i;dist=d;}}
+        index=nearest;if(gate===MOUNTAIN_GATES.length){seconds=tick/60;break;}
+        let aim=index,ahead=0;while(aim<route.length-1&&ahead<Math.max(3,p.speed*.65)){const a=route[aim]!,b=route[++aim]!;ahead+=Math.hypot(b[0]-a[0],b[2]-a[2]);}
+        const target=route[aim]!,error=Math.atan2(Math.sin(Math.atan2(target[0]-p.x,target[2]-p.z)-p.boardYaw),Math.cos(Math.atan2(target[0]-p.x,target[2]-p.z)-p.boardYaw));
+        const before=[p.x,p.y,p.z] as const,r=sim.step(intent({push:always||p.speed<3,brake:p.speed>12&&Math.abs(error)>.5,steer:Math.max(-1,Math.min(1,-error*2.2))}),1/60);
+        if(MOUNTAIN_GATES[gate]&&crossesRaceGate(before,[r.present.x,r.present.y,r.present.z],MOUNTAIN_GATES[gate]!))gate++;
+        bails+=r.events.filter(e=>e.kind==='bail').length;
+      }
+      expect({always,gate,bails}).toEqual({always,gate:MOUNTAIN_GATES.length,bails:0});
+      expect(seconds).toBeGreaterThanOrEqual(60);expect(seconds).toBeLessThanOrEqual(120);
+    }
+  },60000);
   it('no invisible dead stop anywhere on the main line, two units either side',()=>{
     const frozen:unknown[]=[];
     for(let i=0;i<MOUNTAIN_COURSE_POINTS.length-2;i+=2)for(const side of [-2,0,2]){
