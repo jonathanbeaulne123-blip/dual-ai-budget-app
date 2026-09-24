@@ -1,4 +1,4 @@
-import {HARD_EDGES,OVERHEAD_MIN,edgeKindAt,overheadAt,safeReturnPoint,supportAt} from './geography.ts';
+import {HARD_EDGES,OVERHEAD_MIN,edgeKindAt,isStairSurface,overheadAt,safeReturnPoint,supportAt,type EdgeKind} from './geography.ts';
 /**
  * Little Harbour · how a body moves over the island.
  *
@@ -315,6 +315,8 @@ export type BodyWorld = {
   support?: (x: number, z: number, y: number | undefined, supportId: string | null | undefined, stepHeight: number) => Support;
   /** Where a body that fell too far lands again (default: the nearest walk-graph node). */
   safeReturn?: (x: number, y: number, z: number) => { x: number; y: number; z: number; supportId: string };
+  /** What stands at the side of a support (default: the geography's per-sample road edges). */
+  edge?: (supportId: string | null | undefined, x: number, z: number) => EdgeKind;
 };
 
 /** A supporting surface: its height, its id and its upward normal. */
@@ -419,13 +421,15 @@ export function readAhead(world: BodyWorld, x: number, z: number, feet: number, 
   const near = supportIn(world, x + dx * SLOPE_PROBE, z + dz * SLOPE_PROBE, feet, supportId, STEP_UP);
   const far = supportIn(world, x + dx * SLOPE_REACH, z + dz * SLOPE_REACH, feet, supportId, STEP_UP);
   const rise = near.y - feet, reach = far.y - feet;
-  const up = rise > STEP_UP || reach > SLOPE_REACH * tan(WALKABLE_DEG);
+  // Stairs are walked as ramps whatever their pitch; everything else by its angle.
+  const stair = isStairSurface(near.id) || isStairSurface(far.id);
+  const up = !stair && (rise > STEP_UP || reach > SLOPE_REACH * tan(WALKABLE_DEG));
   let lip = false, kerb = false, hard = false;
-  if (feet - near.y > SLOPE_PROBE * tan(BLOCKED_DEG) || feet - far.y > LIP_DROP) {
+  if (feet - near.y > SLOPE_PROBE * tan(BLOCKED_DEG)) {
     const deep = supportIn(world, x + dx * LIP_REACH, z + dz * LIP_REACH, feet, supportId, 0.48);
     if (feet - deep.y > LIP_DROP) {
       lip = true;
-      const edge = edgeKindAt(supportId, x, z);
+      const edge = (world.edge ?? edgeKindAt)(supportId, x, z);
       kerb = edge === "kerb"; hard = HARD_EDGES.has(edge);
     }
   }
@@ -548,6 +552,8 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
   let moveZ = carried ? Math.cos(state.yaw) : wishZ;
   const feet = state.y - state.air;
   let pace = 1, press = 0, blockedAhead = false, grade = 0;
+  // A jump being gathered or taken is a deliberate way over an edge: the lip does not hold it back.
+  const jumping = charge > 0 || launched !== null;
   if (outdoors && !airborne && (moveX !== 0 || moveZ !== 0)) {
     // Try the asked-for direction; if the ground ahead refuses it (too steep,
     // too tall, or an edge over a drop), slide along whatever refused it —
@@ -555,8 +561,10 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
     const deliberate = wish > 0.5;
     let ahead = readAhead(world, state.x, state.z, feet, state.supportId, moveX, moveZ);
     const kerbStep = (a: Ahead) => a.lip && a.kerb && !a.hard && deliberate && (state.press ?? 0) + step >= KERB_PRESS;
-    if ((ahead.up || ahead.lip) && !kerbStep(ahead)) {
-      if (ahead.lip && ahead.kerb && deliberate) press = (state.press ?? 0) + step;
+    // Pushing into a kerb is counted for as long as it lasts: the step off is taken, and kept.
+    if (ahead.lip && ahead.kerb && deliberate) press = (state.press ?? 0) + step;
+    const overEdge = (a: Ahead) => a.lip && (kerbStep(a) || (jumping && !a.hard));
+    if ((ahead.up || ahead.lip) && !overEdge(ahead)) {
       const into = moveX * ahead.ux + moveZ * ahead.uz;
       let sx = moveX - Math.max(0, into) * ahead.ux, sz = moveZ - Math.max(0, into) * ahead.uz;
       const along = Math.hypot(sx, sz);
@@ -564,7 +572,7 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
       if (along > 0.08) {
         sx /= along; sz /= along;
         const aside = readAhead(world, state.x, state.z, feet, state.supportId, sx, sz);
-        if (!aside.up && !aside.lip) { moveX = sx * along; moveZ = sz * along; ahead = aside; blockedAhead = false; }
+        if (!aside.up && (!aside.lip || overEdge(aside))) { moveX = sx * along; moveZ = sz * along; ahead = aside; blockedAhead = false; }
         else { moveX = 0; moveZ = 0; }
       } else { moveX = 0; moveZ = 0; }
     }

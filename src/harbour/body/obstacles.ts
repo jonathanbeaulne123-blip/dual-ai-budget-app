@@ -1,5 +1,5 @@
 import {mountainTrees} from '../mountain/planting.ts';
-import {holdInsideWorld,worldSolids} from './geography.ts';
+import {edgeObstacles,holdInsideWorld,worldSolids} from './geography.ts';
 import {groundHeightAt} from '../scene/ground.ts';
 /**
  * Little Harbour · what a body cannot walk through.
@@ -134,7 +134,7 @@ export function treeRingObstacles(tier: "full" | "lite"): Obstacle[] {
 
 /** Everything a body standing in the Court may bump into. */
 export function courtObstacles(tier: "full" | "lite"): Obstacle[] {
-  return [...COURT_FURNITURE, ...ISLAND_BUILDINGS, ...HARBOUR_LANDMARK_SOLIDS, ...worldSolids().map(s=>({kind:'box' as const,id:s.id,minX:s.min[0],minZ:s.min[2],maxX:s.max[0],maxZ:s.max[2],bottom:s.min[1],top:s.max[1]})), ...treeRingObstacles(tier), ...mountainTrees(tier).map((t,i)=>({...circle(`mountain-tree-${i}`,t.x,t.z,.22*t.size),bottom:t.y,top:t.y+1.5*t.size}))];
+  return [...COURT_FURNITURE, ...ISLAND_BUILDINGS, ...HARBOUR_LANDMARK_SOLIDS, ...worldSolids().map(s=>({kind:'box' as const,id:s.id,minX:s.min[0],minZ:s.min[2],maxX:s.max[0],maxZ:s.max[2],bottom:s.min[1],top:s.max[1]})), ...edgeObstacles(), ...treeRingObstacles(tier), ...mountainTrees(tier).map((t,i)=>({...circle(`mountain-tree-${i}`,t.x,t.z,.22*t.size),bottom:t.y,top:t.y+1.5*t.size}))];
 }
 
 /**

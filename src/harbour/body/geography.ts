@@ -7,6 +7,7 @@
  * exports (see the `CONTRACT` notes on each) without the movement code that
  * calls it changing. Pure: no three.js, no DOM, no clock.
  */
+import * as definition from '../mountain/definition.ts';
 import {DISTRICTS,FOOTPATHS,MOUNTAIN_ROAD,RESERVED_PLOTS,TRANSPORT_STOPS,WORLD_BOUNDS,mountainBaseHeight,nearestOnRoute,transportPoint,type Point3,type TransportKind} from '../mountain/definition.ts';
 import {SKILL_BRANCHES,WORLD_SOLIDS,queryWorldSurface,type WorldSolid,type WorldSurfaceHit} from '../mountain/surfaces.ts';
 import {MOUNTAIN_COURSE_POINTS,MOUNTAIN_GATES,type RaceGate} from '../mountain/race.ts';
@@ -14,6 +15,30 @@ import {groundHeightAt} from '../scene/ground.ts';
 import {HARBOUR_LAND,HARBOUR_LANES} from '../village/world.ts';
 
 export type {Point3,TransportKind};
+
+/* ───────────────────────────────────────────────────────────── the geography contract */
+/**
+ * The Hearth Mountain v2 geography contract (`mountain/CONTRACT.md`), as far
+ * as movement reads it. Every member is optional: the adapters below use a
+ * member when the facade (`mountain/definition.ts`) exports it and fall back
+ * to today's data when it does not, so pointing movement at the new
+ * geography is a merge, not a rewrite.
+ */
+type ContractEdgeKind='open'|'kerb'|'parapet'|'wall'|'bridge';
+type ContractRoadSample={s:number;at:Point3;tangent:Point3;normal:Point3;halfWidth:number;left:ContractEdgeKind;right:ContractEdgeKind};
+type ContractPathEdge={id:string;kind:'road'|'path'|'stair'|'bridge'|'promenade';from:string;to:string;halfWidth:number;points:readonly Point3[];length:number};
+type ContractPathNode={id:string;kind:string;at:Point3;district?:string};
+type ContractTransportFrame={s:number;at:Point3;tangent:Point3};
+type ContractTransportLine={length:number;cruise:number;stations:readonly {id:string;s:number;at:Point3}[];at(s:number):ContractTransportFrame};
+export type GeographyContract={
+  MOUNTAIN_ROAD_LINE?:{samples:readonly ContractRoadSample[]};
+  EDGE_SOLIDS?:readonly {id:string;a:readonly [number,number];b:readonly [number,number];bottom:number;top:number;thickness:number}[];
+  MOUNTAIN_PATH_GRAPH?:{nodes:readonly ContractPathNode[];edges:readonly ContractPathEdge[]};
+  transportSpline?:(kind:TransportKind)=>ContractTransportLine;
+  RACE_FINISH?:{at:Point3;heading:readonly [number,number];runout:number};
+};
+/** What the geography facade exports today, read through the contract's names. */
+export const contract=definition as unknown as GeographyContract;
 
 /* ───────────────────────────────────────────────────────────── ground */
 
@@ -50,8 +75,26 @@ export const HARD_EDGES:ReadonlySet<EdgeKind>=new Set(['parapet','wall','bridge'
  * CONTRACT: geography's per-sample road edge kinds (`roadEdgeKindAt(x,z)` /
  * `ROAD_SAMPLES[i].edges`), keyed by the support id.
  */
-export function edgeKindAt(supportId:string|null|undefined,_x:number,_z:number):EdgeKind{
-  void supportId;return 'open';
+let roadSamplePoints:Point3[]|null=null;
+export function edgeKindAt(supportId:string|null|undefined,x:number,z:number):EdgeKind{
+  const line=contract.MOUNTAIN_ROAD_LINE;
+  if(!line?.samples.length||supportId!=='mountain-road')return 'open';
+  roadSamplePoints??=line.samples.map(s=>s.at);
+  const q=nearestOnRoute(x,z,roadSamplePoints),sample=line.samples[Math.min(line.samples.length-1,q.index+(q.t>.5?1:0))]!;
+  // `normal` points to the LEFT of uphill travel.
+  const left=(x-sample.at[0])*sample.normal[0]+(z-sample.at[2])*sample.normal[2]>=0;
+  return left?sample.left:sample.right;
+}
+/**
+ * Stairs are walked as ramps whatever their pitch: a support that is a stair
+ * edge of the path graph is never refused as "too steep".
+ * CONTRACT: `MOUNTAIN_PATH_GRAPH` edges of kind `stair` (surface id = edge id or `path:<edge id>`).
+ */
+let stairs:Set<string>|null=null;
+export function isStairSurface(id:string|null|undefined):boolean{
+  if(!id)return false;
+  stairs??=new Set((contract.MOUNTAIN_PATH_GRAPH?.edges??[]).filter(e=>e.kind==='stair').flatMap(e=>[e.id,`path:${e.id}`]));
+  return stairs.has(id);
 }
 
 /* ───────────────────────────────────────────────────────────── solids and bounds */
@@ -62,6 +105,19 @@ export function edgeKindAt(supportId:string|null|undefined,_x:number,_z:number):
  * CONTRACT: `WORLD_SOLIDS` (mountain/surfaces.ts).
  */
 export const worldSolids=():readonly WorldSolid[]=>WORLD_SOLIDS;
+/**
+ * Parapets, walls and bridge rails as oriented, height-bounded boxes in the
+ * body-obstacle shape (`kind:'obox'`, see `body/obstacles.ts`).
+ * CONTRACT: `EDGE_SOLIDS` (oriented segments; not in `WORLD_SOLIDS`).
+ */
+export type EdgeObstacle={kind:'obox';id:string;x:number;z:number;halfX:number;halfZ:number;yaw:number;bottom:number;top:number};
+export function edgeObstacles():EdgeObstacle[]{
+  return (contract.EDGE_SOLIDS??[]).flatMap(e=>{
+    const dx=e.b[0]-e.a[0],dz=e.b[1]-e.a[1],l=Math.hypot(dx,dz);if(!(l>1e-6))return [];
+    // An obox's local x axis is (cos yaw, −sin yaw) in the world.
+    return [{kind:'obox' as const,id:e.id,x:(e.a[0]+e.b[0])/2,z:(e.a[1]+e.b[1])/2,halfX:l/2,halfZ:Math.max(.05,e.thickness/2),yaw:Math.atan2(-dz/l,dx/l),bottom:e.bottom,top:e.top}];
+  });
+}
 
 /** A closed polygon in the ground plane, [x, z] pairs. */
 export type Polygon=readonly (readonly [number,number])[];
@@ -147,8 +203,23 @@ export function walkGraph():WalkGraph{
     for(let i=1;i<ids.length;i++)link(ids[i-1]!,ids[i]!);
     lines.push(ids);return ids;
   };
-  polyline(MOUNTAIN_ROAD,'mountain-road','road',6);
-  for(const p of FOOTPATHS)polyline(p.points,`path:${p.id}`,'path');
+  const authored=contract.MOUNTAIN_PATH_GRAPH;
+  if(authored?.edges.length){
+    // The authored network: road, paths, stairs, bridges and promenades, joined at their named nodes.
+    const at=new Map<string,number>();
+    for(const n of authored.nodes)at.set(n.id,add(n.at[0],n.at[1],n.at[2],'terrain',n.kind==='station'?'station':'path'));
+    for(const e of authored.edges){
+      const kind:WalkNode['kind']=e.kind==='road'?'road':e.kind==='stair'?'stairs':'path',support=e.kind==='road'?'mountain-road':`path:${e.id}`;
+      const ids=polyline(e.points.length>=2?e.points:[],support,kind,3);
+      const a=at.get(e.from),b=at.get(e.to);
+      if(ids.length){if(a!==undefined)link(a,ids[0]!);if(b!==undefined)link(ids[ids.length-1]!,b);}
+      else if(a!==undefined&&b!==undefined)link(a,b);
+    }
+    lines.push([...at.values()]);
+  }else{
+    polyline(MOUNTAIN_ROAD,'mountain-road','road',6);
+    for(const p of FOOTPATHS)polyline(p.points,`path:${p.id}`,'path');
+  }
   for(const lane of HARBOUR_LANES)polyline(lane.points.map(([x,z])=>[x,groundHeightAt(x,z),z] as const),'terrain','lane',3);
   for(const [kind,stops] of Object.entries(TRANSPORT_STOPS))for(const s of stops)lines.push([add(s.at[0],s.at[1],s.at[2],`station:${kind}:${s.id}`,'station')]);
   // Junctions: a line's ends meet the nearest node of any other line; crossings meet where they touch.
@@ -190,6 +261,8 @@ export function safeReturnPoint(x:number,y:number,z:number):{x:number;y:number;z
 }
 /** Where arriving at a district means arriving: its apron, a few units in from its footpath. */
 export function districtArrival(id:string):Point3|null{
+  const node=contract.MOUNTAIN_PATH_GRAPH?.nodes.find(n=>n.kind==='district'&&n.district===id)??contract.MOUNTAIN_PATH_GRAPH?.nodes.find(n=>n.kind==='plot-gate'&&n.id.includes(id));
+  if(node)return node.at;
   const d=[...DISTRICTS,...RESERVED_PLOTS].find(d=>d.id===id),path=FOOTPATHS.find(p=>p.id===id);if(!d||!path)return null;
   const a=path.points[0]!,b=path.points[1]!,l=Math.hypot(b[0]-a[0],b[2]-a[2])||1,t=Math.max(0,1-6/l);
   return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t,a[2]+(b[2]-a[2])*t];
@@ -210,6 +283,15 @@ export const TRANSPORT_CRUISE:Readonly<Record<TransportKind,number>>={funicular:
  */
 export function transportCurve(kind:TransportKind,from:number,to:number):TransportCurve{
   const key=`${kind}:${from}:${to}`,cached=curves.get(key);if(cached)return cached;
+  const spline=contract.transportSpline?.(kind),a=spline?.stations[from],b=spline?.stations[to];
+  if(spline&&a&&b){
+    const dir=b.s>=a.s?1:-1,length=Math.abs(b.s-a.s);
+    const curve:TransportCurve={kind,from,to,length,cruise:spline.cruise,frame(s){
+      const f=spline.at(a.s+dir*Math.max(0,Math.min(length,s))),tx=f.tangent[0]*dir,ty=f.tangent[1]*dir,tz=f.tangent[2]*dir;
+      return {at:f.at,yaw:Math.atan2(tx,tz),pitch:Math.atan2(ty,Math.hypot(tx,tz)||1)};
+    }};
+    curves.set(key,curve);return curve;
+  }
   const N=720,pts:Point3[]=[],cum:number[]=[0];
   // transportPoint eases its own parameter; invert smoothstep so samples are spread evenly along the line.
   const unsmooth=(u:number)=>{let t=u;for(let i=0;i<8;i++){const f=t*t*(3-2*t)-u,df=6*t*(1-t);if(df<1e-6)break;t=Math.max(0,Math.min(1,t-f/df));}return t;};
@@ -245,6 +327,6 @@ export function raceCorridorAt(x:number,z:number):boolean{
   return nearestOnRoute(x,z,MOUNTAIN_COURSE_POINTS).distance<=6;
 }
 /** Units of braking room the finish owns past its line. CONTRACT: the `runout` race segment's length. */
-export const RUNOUT_LENGTH=24;
+export const RUNOUT_LENGTH=contract.RACE_FINISH?.runout??24;
 /** The ordered 3D gates. CONTRACT: `MOUNTAIN_GATES` (race.ts) — per named segment. */
 export const raceGates=():readonly RaceGate[]=>MOUNTAIN_GATES;
