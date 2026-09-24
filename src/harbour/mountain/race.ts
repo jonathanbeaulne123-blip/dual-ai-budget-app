@@ -14,4 +14,8 @@ export function crossesRaceGate(from:Point3,to:Point3,gate:RaceGate):boolean{
   const t=-a/(b-a),x=from[0]+(to[0]-from[0])*t-gate.at[0],z=from[2]+(to[2]-from[2])*t-gate.at[2],y=from[1]+(to[1]-from[1])*t;
   return Math.abs(x*nz-z*nx)<=gate.halfWidth&&Math.abs(y-gate.at[1])<=gate.halfHeight;
 }
-export const MOUNTAIN_RACE={id:'mountain-descent',name:'Summit to sea',detail:'The long descent through the neighbourhood · aim for 60–120 seconds',revision:MOUNTAIN_VERSION,seconds:[75,95,120] as const,points:MOUNTAIN_GATES.map(g=>[g.at[0],g.at[2]] as const),gates:MOUNTAIN_GATES};
+// Road and shortcut geometry participate even when a gate itself did not move.
+const courseGeometry=JSON.stringify([MOUNTAIN_VERSION,MOUNTAIN_COURSE_POINTS,SKILL_BRANCHES.map(b=>[b.id,b.entry,b.exit,b.halfWidth,b.points])]);
+let courseHash=2166136261;for(let i=0;i<courseGeometry.length;i++)courseHash=Math.imul(courseHash^courseGeometry.charCodeAt(i),16777619);
+export const MOUNTAIN_RACE_REVISION=`${MOUNTAIN_VERSION}-${(courseHash>>>0).toString(16)}`;
+export const MOUNTAIN_RACE={id:'mountain-descent',name:'Summit to sea',detail:'The long descent through the neighbourhood · aim for 60–120 seconds',revision:MOUNTAIN_RACE_REVISION,seconds:[75,95,120] as const,points:MOUNTAIN_GATES.map(g=>[g.at[0],g.at[2]] as const),gates:MOUNTAIN_GATES};

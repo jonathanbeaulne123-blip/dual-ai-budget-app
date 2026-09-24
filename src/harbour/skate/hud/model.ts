@@ -1,3 +1,4 @@
+import type {GhostPose} from '../replay.ts';
 /**
  * The skate HUD's whole world, as plain data.
  *
@@ -53,6 +54,7 @@ export type SkateHudModel = {
   routes: {id: string; name: string; detail: string; best: number | null; gold: number}[];
   bestLine: number; discovered: number; spotTotal: number;
   inputDevice: InputDevice; hints: readonly ControlHint[]; settings: SkateSettings;
+  replay?:{available:boolean;seconds:number;playing:boolean;time:number;ghostEnabled:boolean;reduced:boolean;pose:GhostPose|null;path:readonly (readonly [number,number])[]};
   message: string;
 };
 
