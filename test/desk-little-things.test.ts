@@ -128,7 +128,7 @@ describe("the flip wears the Everyday figure at rest", () => {
 
   it("is published by the App from the household it already holds", () => {
     const app = readFileSync("src/App.tsx", "utf8");
-    expect(app).toMatch(/usePublishBarBadges\(HARBOUR_ENABLED && household && session \? \{ household, memberId: session\.memberId, scope: view, today \} : null\)/);
+    expect(app).toMatch(/usePublishBarBadges\(HARBOUR_ENABLED && sceneInterpretationGate\.current && activeBooksGate\.ready && household && session \? \{ household, memberId: session\.memberId, scope: view, today \} : null\)/);
   });
 });
 

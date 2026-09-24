@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import HarbourWorld from "../src/harbour/HarbourWorld.tsx";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -56,7 +57,6 @@ afterEach(async () => {
 });
 
 async function stand(route: HouseRoute, props: Record<string, unknown> = {}) {
-  const { default: HarbourWorld } = await import("../src/harbour/HarbourWorld.tsx");
   await act(async () => root.render(createElement(HarbourWorld as never, {
     household, memberId, scope: "household", today, route, ready: true, freshness: "current",
     onNavigate: () => undefined, onOpen: () => undefined, onClose: () => undefined, ...props,

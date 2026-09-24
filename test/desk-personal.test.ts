@@ -125,11 +125,11 @@ describe("Today in personal scope", () => {
     expect(window.localStorage.getItem("hearth:motion")).toBe("");
   });
 
-  it("keeps the household header exactly as it was", async () => {
+  it("keeps the household identity and a focusable return heading", async () => {
     await mount({ scope: "household" });
     expect(q("[data-desk-flip]").getAttribute("aria-label")).toBe("Harbour — flip back to the illustrated Harbour");
     expect(q(".desk__title h1").textContent).toBe("The Desk");
-    expect(q(".desk__title h1").hasAttribute("tabindex")).toBe(false);
+    expect(q(".desk__title h1").getAttribute("tabindex")).toBe("-1");
     expect(host.querySelector("[data-desk-pot='everyday']")).not.toBeNull();
     expect(host.querySelector("[data-desk-plate]")).toBeNull();
   });
@@ -155,7 +155,7 @@ describe("the App's personal Desk wiring (source)", () => {
   it("stands the Desk for personal only in the flat edition at rest, and keeps the illustrated house otherwise", () => {
     expect(app).toMatch(/const personalFlat = HARBOUR_ENABLED && view === "personal" && motionEdition === "flat";/);
     expect(app).toMatch(/const personalDesk = personalFlat && !houseToolsVisible;/);
-    expect(app).toMatch(/:personalFlat\?\(personalDesk&&<Suspense[^]*?<DeskShell household=\{personalSource\?\?household\}[^]*?scope="personal"[^]*?titleId="house-world-title"[^]*?spaceSlot=\{spaceSwitchNode\}\/><\/div><\/Suspense>\):<HouseWorld /);
+    expect(app).toMatch(/:personalFlat\?\(<Suspense[^]*?hidden=\{!personalDesk\}><DeskShell[^]*?ready=\{activeBooksGate.ready\} interpretationGate=\{sceneInterpretationGate\} household=\{personalSource\?\?household\}[^]*?scope="personal"[^]*?titleId="house-world-title"[^]*?spaceSlot=\{spaceSwitchNode\}\/><\/div><\/Suspense>\):<HouseWorld /);
   });
 
   it("threads the space switch through the harbour into the household Desk's header, one prop", () => {

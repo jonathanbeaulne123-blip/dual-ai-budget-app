@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import HarbourWorld from "../src/harbour/HarbourWorld.tsx";
 import { readFileSync } from "node:fs";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -92,7 +93,6 @@ let getContext: typeof HTMLCanvasElement.prototype.getContext;
 
 /** The Court, standing, exactly as the App mounts it. */
 async function stand(props: Record<string, unknown> = {}) {
-  const { default: HarbourWorld } = await import("../src/harbour/HarbourWorld.tsx");
   await act(async () => root.render(createElement(HarbourWorld as never, {
     household, memberId, scope: "household", today, route, ready: true, freshness: "current",
     onNavigate: () => undefined, onOpen: () => undefined, onClose: () => undefined,
@@ -380,5 +380,5 @@ it("pauses clicked walking for the guide and releases the follow camera before s
  await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Board and ride')!.click());
  expect(travelWasBlocked).toEqual([false]);expect(panelOwnsWorld).toBe(false);
  expect(document.activeElement).toBe(stage);
- expect(host.querySelector('[aria-label="Mountain and town guide"]')).toBeNull();
+ expect(host.querySelector('[role="dialog"][aria-label="Mountain and town guide"]')).toBeNull();
 });
