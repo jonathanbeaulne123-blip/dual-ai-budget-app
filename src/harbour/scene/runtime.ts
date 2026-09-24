@@ -1,4 +1,5 @@
 import type {WorldAmbience} from '../mountain/audio.ts';
+import {createFrameStudy,type FrameStudy} from '../mountain/performance.ts';
 import type {MountainRecoveryView} from '../mountain/recovery.ts';
 import type {MountainInteractionState} from '../mountain/life.ts';
 import {mountainFoliageAt} from '../mountain/planting.ts';
@@ -174,6 +175,7 @@ export type BodyControls = {
 };
 
 export type HarbourRuntime = {
+  measure:(action:'start'|'stop'|'read',label?:string)=>FrameStudy;
   mountainTravel:(at:Point3,trip?:{kind:TransportKind;from:number;to:number})=>void;
   mountainSkip:()=>void;
   mountainCalm:(on:boolean)=>void;
@@ -350,6 +352,7 @@ type Pointer = { id: number; x: number; y: number; startX: number; startY: numbe
 export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: RenderTier, callbacks: HarbourCallbacks): HarbourRuntime {
   let disposed = false, frame = 0, previous = 0, lastPaint = 0, lastAnimated = 0, visible = true, toolOpen = false, breathing = false, settling = false, intervalMs = CAMERA_INTERVAL_MS;
   let worldAmbience:WorldAmbience|null=null;
+  const frameStudy=createFrameStudy();
   const mountedAt = performance.now();
   const diagnostics = worldDiagnostics();
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -377,6 +380,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     parameters: { antialias: true, alpha: false, powerPreference: "low-power" },
     configure(renderer) { configureHarbourRenderer(renderer, tier, window.devicePixelRatio || 1); },
     onSuspend() {
+      frameStudy.interrupt();
       worldAmbience?.pause();
       lease.cancelFrame(frame); frame = 0;
       if (!disposed) { try { host.style.backgroundImage = `url(${renderer.domElement.toDataURL("image/webp", 0.75)})`; host.style.backgroundSize = "100% 100%"; } catch { /* The reading edition remains. */ } }
@@ -1007,6 +1011,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const rendered = performance.now();
     project();
     const projected = performance.now();
+    if(!toolOpen&&visible&&!document.hidden)frameStudy.frame(projected,projected-began,{calls:renderer.info.render.calls,geometries:renderer.info.memory.geometries,textures:renderer.info.memory.textures});
     // `renderMs` is what the GPU was asked for. Projecting the twins is CPU
     // work on this side of the frame and is measured separately in diagnostics.
     if (diagnostics) {
@@ -1341,8 +1346,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   host.addEventListener("wheel", onWheel, { passive: false });
   host.addEventListener("contextmenu", onContextMenu);
   const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(resize) : null; observer?.observe(host);
-  const intersection = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); if (visible) { previous = performance.now(); schedule(); } else { worldAmbience?.pause();walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } }) : null; intersection?.observe(host);
-  const visibility = () => { if (document.hidden) { walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
+  const intersection = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); if (visible) { previous = performance.now(); schedule(); } else { frameStudy.interrupt();worldAmbience?.pause();walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } }) : null; intersection?.observe(host);
+  const visibility = () => { if (document.hidden) { frameStudy.interrupt();worldAmbience?.pause();walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
   // ── The body lane (world-body) ── reduced motion cuts the follow camera
   // rather than swinging it. The character still walks: that is the app.
   const onReduced = () => {
@@ -1402,6 +1407,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
 
   const api: HarbourRuntime = {
+    measure(action,label){if(action==='start')return frameStudy.start(label??'Mountain traversal');if(action==='stop')return frameStudy.stop();return frameStudy.snapshot();},
     setMountainRecovery(view){if(disposed)return;mountainRecovery=view;mountainHandle().setRecovery?.(view);dirty=true;schedule();},
     setMountainInteraction(state){if(disposed)return;mountainInteraction=state;mountainHandle().setInteraction?.(state);dirty=true;schedule();},
     mountainBell(){if(!disposed&&visible&&lease.active&&!toolOpen&&!calmWorld&&!reducedMotion()&&placeId==='court')worldAmbience?.bell();},
@@ -1411,7 +1417,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     mountainTravel(at,trip){
       if(placeId!=='court')return;
       raiseBody();if(!walker)return;
-      mountainTrip=null;callbacks.onMountainTravel?.(Boolean(trip));bodyInput=NO_INPUT;walker.cancel();walker.setInput(NO_INPUT);
+      mountainTrip=null;mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(Boolean(trip));bodyInput=NO_INPUT;walker.cancel();walker.setInput(NO_INPUT);
       const p=trip?TRANSPORT_STOPS[trip.kind][trip.from]!.at:at;
       walker.place(p[0],p[2],0,p[1]);bringCat();previousDoorPoint=null;pendingDoor=null;focus=[p[0],p[2]];
       setFollowing(false);setFollowing(true);follow?.snap();stream();
@@ -1433,7 +1439,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     },
     // ── The body lane (world-body) ── a tool in front of the place turns the
     // stage into a door strip: the follow camera gives the view back for it.
-    setToolOpen(open) { toolOpen = open; if (open) {raceGhost.visible=false;worldAmbience?.pause();walker?.skate.pause(true);publishSkate(performance.now(),true);setFollowing(false);} schedule(); },
+    setToolOpen(open) { toolOpen = open; if (open) {frameStudy.interrupt();raceGhost.visible=false;worldAmbience?.pause();walker?.skate.pause(true);publishSkate(performance.now(),true);setFollowing(false);} schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
     invalidate() { settling = true; dirty = true; listsDirty = true; if(walker)standBody(); previous = performance.now(); schedule(); },
     addAnimator(animate) { animators.add(animate); listsDirty = true; schedule(); return () => { animators.delete(animate); }; },
@@ -1587,6 +1593,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       return plan;
     },
     dispose() {
+      frameStudy.interrupt();
+      frameStudy.stop();
       worldAmbience?.pause();worldAmbience=null;
       if (disposed) return;
       disposed = true; abort.abort();

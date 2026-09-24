@@ -7,6 +7,14 @@
 - Budget delta (5): clearer existing Fund interpretation and destination access, unchanged posting authority.
 - Engagement delta (3): a connected mountain neighbourhood, transport and timed descent.
 
+## Parallel continuation
+
+Jonathan requested parallel completion after the initial local handoff. Three isolated
+implementation worktrees start at `a81e43ad034bdec64ebbf6b834add234a68fd64e`; root integrates
+and owns demo/acceptance tooling. See [parallel packet](../briefs/2026-09-24-hearth-mountain-parallel.md).
+Heavy checks remain sequential because of observed host memory pressure. Physical
+acceptance hardware: iPhone plus this Mac; controller availability is not established.
+
 ## Authorized outcome
 
 Implement the approved Hearth Mountain plan: six inhabited districts, three reserved plots, town square, winding road and footpaths, funicular and gondola, glass Fund basin, living scenery and Summit to Sea race in all three themes. Preserve canonical rooms, creative selections, commands, accepted books and Final Confirm. No schema, household-data mutation, merge or deployment.
@@ -213,3 +221,85 @@ an exact fingerprint of these later presentation constants.
 The final bundle, Hercules UI build and redirect assertion all passed (exit 0). Vite
 reported **5 minutes** under host resource pressure, with the same existing dependency
 and large-chunk notices. No further application source changes followed this build.
+
+## Parallel implementation and integrated review, 2026-09-24
+
+Three isolated implementation branches were integrated, followed by read-only cross-review.
+The slices added authored district art and distant silhouettes, stations and distinct cabins,
+shared town-channel terrain, observed recovery and repair persistence, garden/bench/bell/
+overlook/wildlife interactions, local race recording and ghost/replay, controller pause polling,
+a manual neighbourhood tour, and a loopback fictional rehearsal with frame measurements.
+Room IDs, saved creative selections, accepted financial authority and deployment scope remain unchanged.
+
+Integration review found and repaired a recovery render loop, cached-reading freshness handling,
+stale anchor closures, stranded cabin cancellation, controller replay pause/resume, a storage
+boundary violation, and Fund links opening the Queen scene instead of the existing contribution
+review. The Fund shortcut now opens the existing Standing Book Contributions division.
+
+Browser evidence on the Mac's Codex browser, fictional loopback household
+`HH-MOUNTAIN-GROWING-review-sept24`:
+
+- Existing receipt review and Confirm received accepted a synthetic $250 contribution:
+  shared revision 0 → 1; operating $7,600 → $7,850; the dam independently displayed $7,850.
+- Open/close Kitchen garden gate updated the readable action and feedback.
+- Gondola boarding and skip completed; world return diagnostics showed y=110 near summit.
+- Summit race showed countdown, Restart race, ordered-gate HUD and pause book; this was
+  not a clean human timed run and did not create a completed ghost recording.
+- Reading edition retained every destination and reserved-plot explanation. Calm checkbox
+  toggled without a renderer. This is an accessibility smoke, not a VoiceOver walkthrough.
+- Manual capture start/stop produced percentile and resource fields. A stationary smoke
+  during concurrent build load measured 12.2 painted fps, p50/p95/p99 54.2/110.4/1141.8ms,
+  362→362 geometries and 36→36 textures. It is explicitly NOT traversal/device acceptance;
+  it neither establishes 30fps nor GPU-byte stability. The selector was corrected to the
+  actual canvas host after the first click correctly refused a missing runtime.
+
+Initial integrated quick gate at `bfd784b4` failed: 321/324 tests passed, one source storage
+fence failure and two 30s demo-fixture timeouts; TypeScript passed in 182.4s. Total 308.600s,
+so the five-minute budget was breached. Fixed storage by injecting it from the existing shell.
+Full ledger fixture assertions get 60s each; the overall gate budget stays unchanged.
+Focused repair validation: 4 files / 27 tests passed in 54.45s, including both demo chapters,
+storage fences, frozen recovery and controller-only pause polling. The demo test explicitly
+models the authority's accepted revision after the ordinary contribution command.
+
+The second broad High gate at `2f8c0b48` also failed: TypeScript passed in 260.089s;
+test discovery took 134.080s; the fast phase passed 59 files / 596 tests and failed
+two tests (598 total). Total time was 609.150s, a five-minute budget breach. The
+weathered demo fixture exceeded 60s while competing with four workers, although
+both chapters had passed in the isolated repair run. The fixture now runs in the
+existing isolated serial lane, with no further timeout increase. The older bank
+acknowledgement test reloaded after submission but before its fixture had accepted
+the receipt, incorrectly simulating an unaccepted command as a lost acceptance.
+It now waits for the accepted receipt before each reload; production authority is
+unchanged. This is not represented as a passing broad gate. Logs:
+`/tmp/hearth-mountain-parallel-final-gate.log` and
+`/tmp/hearth-mountain-integration-fixes.log`.
+
+The remaining selected serial suite completed: **8 files / 207 tests passed;
+1 file / 2 tests failed**, 682.41s total. Startup (83), walking (81), actual App v2
+shared-authority browser (1), acknowledgement recovery (6), workspace browser (6),
+Plan (19), financial proof matrix (7) and workspace merge review (4) passed.
+Both tests in `hearthside-actual-app-browser.test.ts` timed out at their existing
+180s/120s limits. The current stage marker reached `legacy-deep-links`, but no
+current failure capture identified a cause. Its other browser artifacts were stale
+and belong to another checkout; they are not evidence for this run. These failures
+remain unresolved, not classified as a confirmed infrastructure issue. Log:
+`/tmp/hearth-mountain-parallel-serial.log`.
+
+After the receipt-wait and isolated-lane changes, **3 files / 28 tests passed in
+16.52s**: bank journey (9), verification policy (18) and test-lane routing (1).
+Log: `/tmp/hearth-mountain-final-repairs.log`. The broad gate has not been reclassified
+or silently replaced by these targeted passes.
+
+Final bundle verification passed (exit 0): `pnpm typecheck:workspace`,
+`pnpm exec vite build`, `pnpm build:hercules-pro-ui`, and `test ! -e dist/_redirects`.
+Vite transformed 1,382 modules and completed in **2m 10s**. Existing dependency
+browser-external/eval, mixed static/dynamic import and large-chunk notices remain.
+Application TypeScript is the successful 260.089s pass above; later executable edits
+are the tested runner/test changes and the browser-verified capture-host selector.
+This was the component build sequence, not a fresh `pnpm build` or passing broad gate.
+No production source changed after this bundle. Terminal execution session: 55731.
+Phone, human race/shortcuts, two-device presence, final art/lighting/camera direction,
+audio mix, full VoiceOver and real GPU memory remain open in the
+[iPhone/Mac checklist](../reviews/2026-09-24-mountain-iphone-mac.md). The local URL is loopback
+only; no test-host exposure, push, merge, deployment, schema application or October security
+acceptance has occurred.
