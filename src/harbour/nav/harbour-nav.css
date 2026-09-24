@@ -154,10 +154,70 @@
     flex-direction: row; gap: 6px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px;
     background: var(--card); box-shadow: var(--shadow, 0 4px 14px rgb(0 0 0 / .14)); font-size: 12px; font-weight: 600;
   }
-  .app[data-house-world] .nav.is-fab-open[data-edition-nav="house"] > .house-nav-flip { visibility: hidden; }
+  .app[data-house-world] .nav.is-fab-open[data-edition-nav="house"] > :is(.house-nav-flip, .house-companion-door) { visibility: hidden; }
+  /* Five rooms, the +, Hercules and Status are eight targets for seven 44px slots: Making used to fall
+     into an implicit eighth column and push the bar past a 320px screen (S7). Hercules rides above the
+     bar's right end, as the flip rides above its left, and Making takes the sixth slot. */
+  .app[data-house-world] .nav[data-house-navigation][data-edition-nav="house"] > .house-companion-door {
+    position: absolute; right: 8px; bottom: calc(100% + 8px); grid-column: auto; grid-row: auto; justify-content: center; min-height: 44px; min-width: 44px; padding: 0 14px;
+    border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--ink); box-shadow: var(--shadow, 0 4px 14px rgb(0 0 0 / .14)); font-size: 12px; font-weight: 600;
+  }
 }
 @media (min-width: 720px) {
   .app[data-house-world] .nav[data-house-navigation][data-edition-nav] { display: flex; align-items: center; gap: 12px; height: 64px; padding: 5px 16px 5px 12px; }
   .app[data-house-world] .nav[data-house-navigation][data-edition-nav] > .house-nav-flip { flex-direction: row; gap: 6px; padding: 0 10px; font-size: 12px; }
   .app[data-house-world] .nav[data-house-navigation][data-edition-nav] .fab { margin-top: 0; width: 46px; height: 46px; }
 }
+
+/* ── The bar's little things (Simple View Desk S7) ──────────────────────────
+   The Simple-view flip wears the household's Everyday "Now", compact; All
+   tools wears a pawprint while Hercules has a fresh suggestion. Both are
+   supplementary: the buttons keep their names and their 44px. ── */
+.edition-flip__figure {
+  display: inline-block; padding: 1px 6px; border-radius: 999px;
+  font: 700 11px/1.3 var(--font, system-ui, sans-serif); font-variant-numeric: tabular-nums lining-nums; letter-spacing: 0;
+  background: color-mix(in srgb, var(--ink, #273b33) 9%, transparent); color: var(--ink, #273b33); white-space: nowrap;
+}
+.nav.compass.harbour-bar > .edition-flip .edition-flip__figure { font-size: 10px; padding: 0 5px; }
+.village-tools .village-tools__flip .edition-flip__figure { margin-left: 6px; background: color-mix(in srgb, currentColor 12%, transparent); color: inherit; }
+@media (max-width: 600px) {
+  /* The island's phone bar is icons only: the figure stands under the flip's icon, inside its 44px. */
+  .village-tools .village-tools__flip:has(.edition-flip__figure) { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; padding: 0 3px; line-height: 1; }
+  .village-tools .village-tools__flip .edition-flip__figure { margin: 0; padding: 0 3px; font-size: 9.5px; line-height: 1.2; }
+}
+:is(.harbour-bar__tools, .village-tools__all):has(.bar-pawprint) { position: relative; }
+/* Beside the ☰ on a phone (the buttons there are icon-first and fill their slot); at the button's corner on a wide bar. */
+.bar-pawprint { position: absolute; top: 4px; left: calc(50% + 7px); display: block; width: 15px; height: 15px; color: var(--copper, #9d452f); pointer-events: none; }
+.bar-pawprint svg { display: block; width: 100%; height: 100%; fill: currentColor; filter: drop-shadow(0 0 1.5px var(--card, #fffaf0)); }
+@media (min-width: 601px) { .village-tools .village-tools__all .bar-pawprint { top: 1px; left: auto; right: 1px; } }
+@media (min-width: 720px) { .nav.compass.harbour-bar > .harbour-bar__tools .bar-pawprint { top: 2px; left: auto; right: -2px; } }
+
+/* ── The page-turn (S7): one leaf of paper turns away as the worlds swap.
+      Going to the Desk it turns to the left, the ledger opening; going back
+      it turns to the right, the book closing on the harbour. Under 600ms,
+      no pointer events, no focus, and never made under reduced motion
+      (nav/pageTurn.ts); the rule below is only a belt. ── */
+.page-turn { position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; perspective: 1800px; }
+.page-turn__leaf { position: absolute; inset: 0; transform-origin: 0 50%; backface-visibility: hidden; will-change: transform; animation: page-turn-left 500ms cubic-bezier(.35, .05, .55, .95) both; }
+.page-turn--to-world .page-turn__leaf { transform-origin: 100% 50%; animation-name: page-turn-right; }
+.page-turn__face {
+  position: absolute; inset: 0;
+  background-color: var(--paper, #f5eee2);
+  background-image:
+    linear-gradient(90deg, transparent 0 46px, color-mix(in srgb, var(--copper, #9d452f) 45%, transparent) 46px 47px, transparent 47px),
+    repeating-linear-gradient(180deg, transparent 0 31px, color-mix(in srgb, var(--pine, #356c55) 14%, transparent) 31px 32px),
+    radial-gradient(120% 80% at 0% 0%, rgb(255 255 255 / .35), transparent 60%);
+}
+/* The leaf darkens as it lifts away from the light. */
+.page-turn__face::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, transparent 30%, color-mix(in srgb, var(--ink, #30251f) 30%, transparent)); opacity: 0; animation: page-turn-dim 500ms ease-in both; }
+.page-turn--to-world .page-turn__face::after { background: linear-gradient(270deg, transparent 30%, color-mix(in srgb, var(--ink, #30251f) 30%, transparent)); }
+/* The shadow the turning leaf casts on the page coming into view. */
+.page-turn__shade { position: absolute; inset: 0; background: linear-gradient(90deg, color-mix(in srgb, var(--ink, #30251f) 26%, transparent), transparent 70%); animation: page-turn-shade 500ms ease-out both; }
+.page-turn--to-world .page-turn__shade { background: linear-gradient(270deg, color-mix(in srgb, var(--ink, #30251f) 26%, transparent), transparent 70%); }
+:root[data-theme="taylor"] .page-turn__face { background-image: radial-gradient(color-mix(in srgb, var(--ink) 16%, transparent) 1px, transparent 1.5px), radial-gradient(60% 40% at 88% 8%, color-mix(in srgb, var(--theme-accent, var(--copper)) 14%, transparent), transparent 70%); background-size: 18px 18px, auto; }
+:root[data-theme="newfoundland"] .page-turn__face { background-color: color-mix(in srgb, var(--paper) 90%, var(--gold)); background-image: repeating-linear-gradient(180deg, transparent 0 29px, color-mix(in srgb, var(--ink) 10%, transparent) 29px 30px), radial-gradient(36% 20% at 80% 14%, color-mix(in srgb, var(--gold) 16%, transparent), transparent 70%); }
+@keyframes page-turn-left { from { transform: rotateY(0deg); } to { transform: rotateY(-100deg); } }
+@keyframes page-turn-right { from { transform: rotateY(0deg); } to { transform: rotateY(100deg); } }
+@keyframes page-turn-dim { to { opacity: 1; } }
+@keyframes page-turn-shade { from { opacity: 1; } to { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .page-turn { display: none; } }

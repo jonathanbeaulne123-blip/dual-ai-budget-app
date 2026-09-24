@@ -175,11 +175,7 @@
   .desk-rail__stage { height: 132px; }
 }
 
-/* ── The three editions: the tokens carry colour; these carry the paper. ── */
-.desk--taylor .desk-jar { border-style: dashed; border-radius: 12px 4px 12px 4px; }
-.desk--taylor .desk-rail__slip { border-radius: 10px 3px 10px 3px; }
-.desk--newfoundland .desk-jar { border-radius: 2px; border-left: 3px solid color-mix(in srgb, var(--desk-pine) 55%, var(--desk-ink)); }
-.desk--newfoundland .desk-leaving__out th { font-family: var(--display, Georgia, serif); letter-spacing: .06em; }
+/* ── The three dressings live in desk-dressings.css (S7). ── */
 
 @media (prefers-reduced-motion: reduce) {
   .desk-leaving *, .desk-leaving *::before, .desk-leaving *::after { transition: none !important; animation: none !important; }

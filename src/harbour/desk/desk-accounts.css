@@ -94,10 +94,7 @@
   .desk-accounts__tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-/* ── The three editions ── */
-.desk--taylor .desk-account__register:not([hidden]) { border-top-style: dotted; }
-.desk--taylor .desk-account__badge { border-radius: 8px 3px 8px 3px; }
-.desk--newfoundland .desk-account__caption, .desk--newfoundland .desk-account__rows th { font-family: var(--display, Georgia, serif); letter-spacing: .05em; }
+/* ── The three dressings live in desk-dressings.css (S7). ── */
 
 @media (prefers-reduced-motion: reduce) {
   .desk-accounts *, .desk-accounts *::before, .desk-accounts *::after { transition: none !important; animation: none !important; }

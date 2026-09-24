@@ -71,7 +71,7 @@
 
 /* ── The chip rail ── */
 .desk__rail { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; padding-block: 12px 4px; }
-.desk__chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 4px; margin: -4px; scroll-padding-inline: 4px; }
+.desk__chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 7px; margin: -7px; scroll-padding-inline: 7px; }
 .desk__chips::-webkit-scrollbar { display: none; }
 /* A soft paper edge where the row runs on, so a clipped chip reads as "more this way". */
 @media (max-width: 719px) { .desk__chips { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 22px), transparent); } }
@@ -226,6 +226,34 @@ button.desk-card:active { transform: translateY(1px); box-shadow: 0 1px 0 color-
 .desk-hercules__why { margin: 0; font-size: 13px; line-height: 1.4; color: color-mix(in srgb, var(--desk-ink) 80%, var(--desk-card)); }
 .desk-hercules__doors { display: flex; flex-wrap: wrap; gap: 8px; }
 
+/* The dog-ear (S7): Today's top corner folds down while the month's Sitdown
+   waits. It shares the top-right card's grid cell (Everyday on a phone, the
+   seals from 720 up), so it folds that card's corner without covering its
+   figure; "Sitdown" is pencilled on the back of the fold. A real 44px+
+   button. The cut shows the desk beneath; the flap is the paper's back. */
+.desk-dogear {
+  --fold: 54px;
+  --fold-back: color-mix(in srgb, var(--desk-card) 84%, var(--desk-ink));
+  grid-area: now; justify-self: end; align-self: start; position: relative; z-index: 2;
+  display: block; width: var(--fold); height: var(--fold); margin: 0; padding: 0; border: 0; border-radius: 0;
+  background: none; color: var(--desk-ink); cursor: pointer;
+}
+.desk-dogear__fold { position: absolute; inset: -1px -1px 0 0; pointer-events: none; }
+.desk-dogear__fold::before { content: ""; position: absolute; inset: 0; background: linear-gradient(225deg, var(--desk-behind, var(--desk-paper)) 0 50%, transparent 50%); }
+.desk-dogear__fold::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(45deg, color-mix(in srgb, var(--fold-back) 92%, var(--desk-card)) 0 30%, var(--fold-back) 49.5%, transparent 50%);
+  filter: drop-shadow(-2px 3px 2px color-mix(in srgb, var(--desk-ink) 28%, transparent));
+}
+.desk-dogear__word {
+  position: absolute; z-index: 1; left: -2px; top: 30px; width: 40px; text-align: center; transform: rotate(45deg); transform-origin: 50% 50%;
+  font: italic 600 11px/1 var(--display, Georgia, serif); letter-spacing: .01em; color: var(--desk-ink); white-space: nowrap;
+}
+.desk-dogear:hover .desk-dogear__fold::after { filter: drop-shadow(-3px 4px 3px color-mix(in srgb, var(--desk-ink) 34%, transparent)); }
+.desk-dogear:focus-visible { outline-offset: 2px; }
+/* The card under the fold keeps its words clear of it. */
+.desk-today[data-desk-sitdown] .desk-now { padding-right: 58px; }
+
 /* A page still to come. */
 .desk-coming { display: grid; gap: 10px; justify-items: start; padding: 20px; }
 
@@ -249,6 +277,10 @@ button.desk-card:active { transform: translateY(1px); box-shadow: 0 1px 0 color-
     align-items: start;
   }
   .desk-now { align-self: stretch; align-content: center; padding-left: 52px; }
+  .desk-dogear { grid-area: seals; }
+  .desk-today[data-desk-sitdown] .desk-now { padding-right: 18px; }
+  .desk-today[data-desk-sitdown] .desk-seals { padding-top: 26px; }
+  .desk-today[data-desk-sitdown] .desk-seals > .desk-card__kicker { padding-right: 48px; }
   .desk-now::before { left: 52px; }
   .desk-now { background-image: var(--desk-raking), linear-gradient(90deg, transparent 0 34px, color-mix(in srgb, var(--desk-copper) 45%, transparent) 34px 35px, transparent 35px), repeating-linear-gradient(180deg, transparent 0 27px, color-mix(in srgb, var(--desk-line) 60%, transparent) 27px 28px); }
 }
@@ -260,11 +292,8 @@ button.desk-card:active { transform: translateY(1px); box-shadow: 0 1px 0 color-
   .desk-sundial, .desk-hercules { align-self: stretch; }
 }
 
-/* ── The three editions: tokens carry the colour; these carry the paper. ── */
-.desk--taylor { --desk-radius: 14px 6px 14px 6px; }
-.desk--taylor .desk-card { border-style: dashed; border-color: color-mix(in srgb, var(--desk-line) 70%, var(--desk-ink)); }
-.desk--newfoundland { --desk-radius: 3px; }
-.desk--newfoundland .desk-card { border-top: 3px solid color-mix(in srgb, var(--desk-pine) 55%, var(--desk-ink)); }
+/* ── The three dressings (S7) live in desk-dressings.css: Classic's ledger,
+      Taylor's scrapbook page, Newfoundland's fisherman's log. ── */
 
 @media (prefers-reduced-motion: reduce) {
   .desk *, .desk *::before, .desk *::after { animation: none !important; transition: none !important; }

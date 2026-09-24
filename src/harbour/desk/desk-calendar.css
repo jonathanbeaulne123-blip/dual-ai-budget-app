@@ -144,13 +144,9 @@
   .desk-calendar .desk-month__day { min-height: 56px; }
 }
 
-/* ── The three editions ── */
-.desk--taylor .desk-calendar .desk-week-chip { border-radius: 8px 3px 8px 3px; }
-.desk--taylor .desk-calendar .desk-month__detail { border-radius: 12px 4px 12px 4px; }
-.desk--newfoundland .desk-calendar .desk-week__day { border-radius: 2px; }
-.desk--newfoundland .desk-calendar .desk-month__day { border-radius: 2px; }
+/* ── The three dressings live in desk-dressings.css (S7). ── */
 
 @media (prefers-reduced-motion: reduce) {
-  .desk-calendar .desk-month__day { transition: none; }
+  .desk-calendar .desk-month__day { transition: none; animation: none; }
   .desk-calendar .desk-month__day[aria-pressed="true"] { transform: none; }
 }

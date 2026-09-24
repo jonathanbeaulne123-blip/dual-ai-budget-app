@@ -10,7 +10,8 @@
  *   the Office's seals are one figure;
  * - the Level and the sundial: `fundWalk` and `nextOut` over it;
  * - the Hercules corner: the top of `discoverySelection` (which ranks
- *   `discoveryCandidates` and honours "Not now" / "Don't suggest this").
+ *   `discoveryCandidates` and honours "Not now" / "Don't suggest this");
+ * - the dog-ear: the Campfire's own "a fire with an empty seat" (S7).
  *
  * Unknown amounts stay `null` and read "—" downstream.
  */
@@ -24,6 +25,7 @@ import { projectLedgerExperience } from "../../core/ledgerExperience.ts";
 import { nextOut, type NextOutRow } from "../../core/nextOut.ts";
 import { deskMonthSeals, type DeskMonthSeals } from "../../core/officeWide.ts";
 import type { Household, LedgerView } from "../../core/types.ts";
+import { buildCampfireReading, type CampfireReading, type HarbourReading } from "../data/reading.ts";
 import { shortDate } from "../nav/doorSigns.ts";
 
 export type DeskPotId = "everyday" | "prepare" | "protect" | "build";
@@ -146,4 +148,26 @@ export function readHercules(household: Household, memberId: string, scope: Ledg
   } catch {
     return null;
   }
+}
+
+/**
+ * The dog-ear (S7): Today's corner folds down while the month's Sitdown is
+ * waiting. The same condition the Campfire raises its nudge on
+ * (`data/attention.ts`): the open Chapter has run past its month and no
+ * Sitdown has closed it (`overdue`, `chapterReminder`), or a close is on the
+ * table and this reader has not yet agreed (`proposed`). Nothing closes on its
+ * own; the fold points at the Plan Studio, where the Campfire's own door goes.
+ * Household only: a Chapter is the couple's.
+ */
+export type DeskSitdown = { why: "overdue" | "proposed"; month: string | null; words: string };
+
+export function readSitdown(reading: HarbourReading | null, household: Household, memberId: string, scope: LedgerView, today: DateKey): DeskSitdown | null {
+  if (scope !== "household") return null;
+  let fire: CampfireReading;
+  try { fire = reading?.campfire ?? buildCampfireReading(household, memberId, today); } catch { return null; }
+  if (!fire.overdue && fire.close !== "proposed") return null;
+  const month = fire.month ? formatMonthLabel(fire.month).replace(/\s\d{4}$/, "") : null;
+  return fire.close === "proposed"
+    ? { why: "proposed", month, words: `A close is on the table${month ? ` for ${month}` : ""} and your seat at the Sitdown is empty` }
+    : { why: "overdue", month, words: `${month ? `${month}’s Chapter` : "The Chapter"} is still open past its month; the Sitdown is waiting` };
 }

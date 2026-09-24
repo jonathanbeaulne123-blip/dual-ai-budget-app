@@ -133,13 +133,9 @@
   .desk-books .desk-book__pair-value { white-space: nowrap; }
 }
 
-/* ── The three editions ── */
-.desk--taylor .desk-books .desk-book__tab { border-radius: 9px 3px 0 0; }
-.desk--taylor .desk-books .desk-shape__track, .desk--taylor .desk-books .desk-goals__bar { border-style: dashed; }
-.desk--newfoundland .desk-books .desk-book__tab { border-radius: 1px 1px 0 0; }
-.desk--newfoundland .desk-books .desk-book { padding-top: 20px; }
+/* ── The three dressings live in desk-dressings.css (S7). ── */
 
 @media (prefers-reduced-motion: reduce) {
-  .desk-books .desk-book__arrow { transition: none; }
+  .desk-books .desk-book__arrow { transition: none; animation: none; }
   .desk-books .desk-book:hover .desk-book__arrow, .desk-books .desk-book:focus-visible .desk-book__arrow { transform: none; }
 }
