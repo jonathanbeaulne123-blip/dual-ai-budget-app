@@ -1379,3 +1379,12 @@ direct tool access. Engagement delta (3): connected exploration, transport and r
 The [worksession](worksessions/2026-09-24-hearth-mountain.md) records the tested local
 foundation and outstanding programme acceptance. No deployment or October security
 milestone is implied by this implementation.
+
+Mountain detail now has explicit residency: close district planting and authored building
+exteriors load around the traveller, release beyond a hysteresis band, and remain pinned
+during the descent. Shared terrain, routes, collision and cheap silhouettes remain present.
+Immutable terrain lattices are reused per render tier; scene GPU resources retain their
+own lifetime. Optional original ambience follows the existing device Sound preference,
+requires a user gesture, and falls quiet for tools, hidden/suspended rendering and calm
+scenery. Calm also survives indoor travel and renderer/theme rebuilds. Physical-device
+frame-time, GPU-memory and audio-mix acceptance remain open in the same worksession.

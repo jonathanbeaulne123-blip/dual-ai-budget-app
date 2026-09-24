@@ -1,3 +1,5 @@
+import type {WorldAmbience} from '../mountain/audio.ts';
+import {mountainFoliageAt} from '../mountain/planting.ts';
 import {worldCollisionAt} from '../mountain/surfaces.ts';
 import {MOUNTAIN_VERSION,transportPoint,TRANSPORT_STOPS,type Point3,type TransportKind} from '../mountain/definition.ts';
 import {crossedVillageDoor,villagePortalArrival} from "../village/topology.ts";
@@ -173,6 +175,7 @@ export type HarbourRuntime = {
   mountainTravel:(at:Point3,trip?:{kind:TransportKind;from:number;to:number})=>void;
   mountainSkip:()=>void;
   mountainCalm:(on:boolean)=>void;
+  setWorldAmbience:(audio:WorldAmbience|null)=>void;
   setAvatar:(avatar:PlayableAvatar|null)=>void;
   /**
    * Fly to a mode; `anchor` is one of `poses.ts`'s named anchors or any anchor
@@ -332,6 +335,7 @@ type Pointer = { id: number; x: number; y: number; startX: number; startY: numbe
  */
 export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: RenderTier, callbacks: HarbourCallbacks): HarbourRuntime {
   let disposed = false, frame = 0, previous = 0, lastPaint = 0, lastAnimated = 0, visible = true, toolOpen = false, breathing = false, settling = false, intervalMs = CAMERA_INTERVAL_MS;
+  let worldAmbience:WorldAmbience|null=null;
   const mountedAt = performance.now();
   const diagnostics = worldDiagnostics();
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -359,6 +363,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     parameters: { antialias: true, alpha: false, powerPreference: "low-power" },
     configure(renderer) { configureHarbourRenderer(renderer, tier, window.devicePixelRatio || 1); },
     onSuspend() {
+      worldAmbience?.pause();
       lease.cancelFrame(frame); frame = 0;
       if (!disposed) { try { host.style.backgroundImage = `url(${renderer.domElement.toDataURL("image/webp", 0.75)})`; host.style.backgroundSize = "100% 100%"; } catch { /* The reading edition remains. */ } }
       host.dataset.renderer = "suspended";
@@ -412,6 +417,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * coordinates without walking the scene graph again; it is null — and every
    * path below is byte-for-byte what it always was — for an unplaced place.
    */
+  let calmWorld=false;
   const live = new Map<HarbourPlaceId, { handle: PlaceHandle; abort: AbortController; placement: PlacePlacement | null; matrix: THREE.Matrix4 | null }>();
   /**
    * Where the viewer stands on the island (§2). The body lane drives it; until
@@ -458,9 +464,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if(node.userData.villageShell) {
         const open=node.name===active?.exterior;
         node.visible=!(open && placeId==='cellar');
-        for(const child of node.children) {
+        node.traverse(child=>{
           if(child.name.endsWith('-roof-cutaway')||child.name.endsWith('-front-cutaway')) child.visible=!open;
-        }
+        });
       }
     });
     renderer.localClippingEnabled = true;
@@ -488,6 +494,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     let placement = placementOf(place.id);
     try { built = place.build(scene, dressing, reading, tier, { composition, signal: control.signal, invalidate }); }
     catch { built = EMPTY_PLACE.build(scene, dressing, null, tier, { composition, signal: control.signal, invalidate }); placement = null; }
+    if(place.id==='court')(built as PlaceHandle & {setCalm?:(on:boolean)=>void}).setCalm?.(calmWorld);
     live.set(place.id, { handle: built, abort: control, placement, matrix: stand(built, placement) });
     showExteriors();
     listsDirty = true;
@@ -554,6 +561,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // as long as one of them — or the route — is on the island.
     const wantsIsland = (placeId !== "court" && onIsland(placeId)) || PLACED_PLACE_IDS.some((id) => live.has(id));
     if (wantsIsland && !live.has("court") && PLACES.court) { raise(PLACES.court); changed = true; }
+    const detailCourt=live.get('court')?.handle as (PlaceHandle & {streamDetails?:(x:number,z:number,race:boolean)=>boolean})|undefined;
+    const run=walker?.skate.active()?walker.skate.run():null;
+    if(detailCourt?.streamDetails?.(focus[0],focus[1],run?.id==='mountain-descent'&&!run.finished)){
+      changed=true;showExteriors();
+    }
     return changed;
   }
 
@@ -653,7 +665,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * both made once and both read the right floor after a walk into a building.
    */
   let mountainTrip:{kind:TransportKind;from:number;to:number;elapsed:number;duration:number}|null=null;
-  const mountainHandle=()=>handle as PlaceHandle & {setVisitor?:(at:Point3)=>void;setTransit?:(at:Point3|null)=>void;setCalm?:(on:boolean)=>void};
+  const mountainHandle=()=>(live.get('court')?.handle??handle) as PlaceHandle & {setVisitor?:(at:Point3)=>void;setTransit?:(at:Point3|null)=>void;setCalm?:(on:boolean)=>void};
   let bodyGround: (x: number, z: number) => number = placeGround(placeId);
   /** This place's own ways out, when walking to one of them is how you leave (an unplaced room). */
   let bodyExits: Anchor[] = [];
@@ -725,7 +737,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     cat=createCat({groundHeightAt:(x,z)=>bodyGround(x,z),obstacles:placeObstacles(placeId,handle.regions(),anchors,tier),room,shore:HARBOUR_LAND.shore,tier,start:heelStand(stood),look:stood,reduced:reducedMotion()});
     scene.add(cat.group);errandKey=null;
     const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
-    follow = createFollowCamera({ camera, composition, reduced: reducedMotion(), fov: fovFor(composition), groundHeightAt: (x, z) => placeId==='court'?groundHeightAt(x,z):bodyGround(x, z), blocked:(x,y,z)=>placeId==='court'&&(worldCollisionAt(x,y,z,.12)||insideVillageBuilding(x,z,.12,y)) });
+    follow = createFollowCamera({ camera, composition, reduced: reducedMotion(), fov: fovFor(composition), groundHeightAt: (x, z) => placeId==='court'?groundHeightAt(x,z):bodyGround(x, z), blocked:(x,y,z)=>placeId==='court'&&(worldCollisionAt(x,y,z,.12)||mountainFoliageAt(x,y,z,tier)||insideVillageBuilding(x,z,.12,y)) });
     skateCam = createSkateCamera({ ground: (x, z) => bodyGround(x, z) });
     host.dataset.harbourBody = "standing";
     standBody();
@@ -1079,7 +1091,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         skateCam.setDistance(walker.skate.current()?.camera === 'far' ? 'far' : 'near');
         const f = skateCam.update(ridden, walker.skate.events(), dt, {
           aspect: camera.aspect, reducedMotion: reducedMotion() || walker.skate.current()?.reducedEffects === true,
-          blocked: (x, y, z) => y < groundHeightAt(x, z) + .05 || worldCollisionAt(x,y,z,.12) || insideVillageBuilding(x, z, .12,y),
+          blocked: (x, y, z) => y < groundHeightAt(x, z) + .05 || worldCollisionAt(x,y,z,.12) || mountainFoliageAt(x,y,z,tier) || insideVillageBuilding(x, z, .12,y),
         });
         camera.position.set(f.position[0], f.position[1], f.position[2]);
         camera.up.set(0, 1, 0);
@@ -1147,6 +1159,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         court.setHold(holdFor(placeId));
       }
     }
+    if(worldAmbience){const at=walker?.state();if(at&&walker){
+      worldAmbience.update(at.x,at.y,at.z,at.speed,Boolean(at.supportId&&at.supportId!=='terrain'&&at.supportId!=='mountain-road'&&at.supportId!=='town-race-road'),!walker.skate.active()&&!mountainTrip,calmWorld||toolOpen||placeId!=='court');
+    }else worldAmbience.pause();}
     const moving = easing || journey !== null;
     // Reduced motion (and a tool standing in front of the place): no animated
     // frame will ever run, so a place that asked to settle is settled the
@@ -1287,7 +1302,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   host.addEventListener("wheel", onWheel, { passive: false });
   host.addEventListener("contextmenu", onContextMenu);
   const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(resize) : null; observer?.observe(host);
-  const intersection = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); if (visible) { previous = performance.now(); schedule(); } else { walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } }) : null; intersection?.observe(host);
+  const intersection = typeof IntersectionObserver !== "undefined" ? new IntersectionObserver(([entry]) => { visible = Boolean(entry?.isIntersecting); if (visible) { previous = performance.now(); schedule(); } else { worldAmbience?.pause();walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } }) : null; intersection?.observe(host);
   const visibility = () => { if (document.hidden) { walker?.skate.pause(true);bodyInput=NO_INPUT;publishSkate(performance.now(),true);lease.cancelFrame(frame); frame = 0; } else { previous = performance.now(); schedule(); } };
   // ── The body lane (world-body) ── reduced motion cuts the follow camera
   // rather than swinging it. The character still walks: that is the app.
@@ -1300,7 +1315,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   };
   const comfortObserver = typeof MutationObserver !== "undefined" ? new MutationObserver(onReduced) : null;
   comfortObserver?.observe(document.documentElement,{attributes:true,attributeFilter:["data-motion"]});
-  const removeLost = lease.listenCanvas("webglcontextlost", (event: Event) => { event.preventDefault(); lease.cancelFrame(frame); frame = 0; callbacks.onFailure(); });
+  const removeLost = lease.listenCanvas("webglcontextlost", (event: Event) => { event.preventDefault(); worldAmbience?.pause();lease.cancelFrame(frame); frame = 0; callbacks.onFailure(); });
   document.addEventListener("visibilitychange", visibility); reduced.addEventListener("change", onReduced);
   previous = performance.now();
   resize(); callbacks.onReady();
@@ -1347,7 +1362,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
 
   const api: HarbourRuntime = {
-    mountainCalm(on){mountainHandle().setCalm?.(on);dirty=true;schedule();},
+    setWorldAmbience(audio){worldAmbience=audio;dirty=true;schedule();},
+    mountainCalm(on){calmWorld=on;if(on)worldAmbience?.pause();mountainHandle().setCalm?.(on);dirty=true;schedule();},
     mountainSkip(){if(mountainTrip){mountainTrip.elapsed=mountainTrip.duration;dirty=true;schedule();}},
     mountainTravel(at,trip){
       if(placeId!=='court')return;
@@ -1374,7 +1390,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     },
     // ── The body lane (world-body) ── a tool in front of the place turns the
     // stage into a door strip: the follow camera gives the view back for it.
-    setToolOpen(open) { toolOpen = open; if (open) {walker?.skate.pause(true);publishSkate(performance.now(),true);setFollowing(false);} schedule(); },
+    setToolOpen(open) { toolOpen = open; if (open) {worldAmbience?.pause();walker?.skate.pause(true);publishSkate(performance.now(),true);setFollowing(false);} schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
     invalidate() { settling = true; dirty = true; listsDirty = true; if(walker)standBody(); previous = performance.now(); schedule(); },
     addAnimator(animate) { animators.add(animate); listsDirty = true; schedule(); return () => { animators.delete(animate); }; },
@@ -1526,6 +1542,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       return plan;
     },
     dispose() {
+      worldAmbience?.pause();worldAmbience=null;
       if (disposed) return;
       disposed = true; abort.abort();
       if (stick) { stick = null; callbacks.onStick?.(null); }

@@ -11,7 +11,7 @@ import type {SkateWorldField} from './world/field.ts';
 import {skateDressingSolids} from './world/dressingSolids.ts';
 import {
   chooseSkateDeck,cloneSkateProgress,createSkateSession,observeSkate,setSkateSettings,setSkateTables,skateTables,startSkateRoute,
-  type SkateProgress,type SkateSession,type SkateSettings,
+  type SkateProgress,type SkateSession,type SkateSettings,type SkateRun,
 } from './session.ts';
 import {buildHudModel,type ControlHint,type ControlHintSet,type Glyph,type SkateHudModel} from './hud/model.ts';
 import type {TrickBook} from './hud/PauseBook.tsx';
@@ -52,6 +52,7 @@ export type SkateControls={
   deck(id:SkateDeckId):void;
   settings(patch:Partial<SkateSettings>):void;
   current():SkateSettings|null;
+  run():SkateRun|null;
   command(command:'respawn'|'marker'):void;
   checkpoint():SkateCheckpoint|null;
   restore(checkpoint:SkateCheckpoint):void;

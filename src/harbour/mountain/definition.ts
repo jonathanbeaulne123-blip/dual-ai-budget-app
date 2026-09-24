@@ -54,10 +54,13 @@ function routeIndex(points:readonly Point3[]):RouteIndex{
 export function nearestOnRoute(x:number,z:number,points:readonly Point3[]=MOUNTAIN_ROAD):RouteProjection{
   let bestD=Infinity,bestI=1,bestT=0;
   const check=(i:number)=>{const a=points[i-1]!,b=points[i]!,dx=b[0]-a[0],dz=b[2]-a[2],l=dx*dx+dz*dz,t=clamp(((x-a[0])*dx+(z-a[2])*dz)/(l||1)),ex=x-a[0]-dx*t,ez=z-a[2]-dz*t,d=ex*ex+ez*ez;if(d<bestD){bestD=d;bestI=i;bestT=t;}};
-  if(points.length<24){for(let i=1;i<points.length;i++)check(i);}
+  if(points.length<200){for(let i=1;i<points.length;i++)check(i);}
   else{
     const index=routeIndex(points),cx=Math.floor(x/CELL),cz=Math.floor(z/CELL),limit=Math.max(Math.abs(cx-index.minX),Math.abs(cx-index.maxX),Math.abs(cz-index.minZ),Math.abs(cz-index.maxZ));
-    for(let r=0;r<=limit;r++){
+    // Far landscape vertices must not expand hundreds of empty grid cells.
+    const outside=Math.max(index.minX-cx,cx-index.maxX,index.minZ-cz,cz-index.maxZ);
+    if(outside>2){for(let i=1;i<points.length;i++)check(i);}
+    else for(let r=0;r<=limit;r++){
       for(let ix=cx-r;ix<=cx+r;ix++)for(let iz=cz-r;iz<=cz+r;iz++){if(r&&ix!==cx-r&&ix!==cx+r&&iz!==cz-r&&iz!==cz+r)continue;for(const i of index.cells.get(`${ix}:${iz}`)??[])check(i);}
       const border=Math.min(x-(cx-r)*CELL,(cx+r+1)*CELL-x,z-(cz-r)*CELL,(cz+r+1)*CELL-z);if(bestD<border*border)break;
     }

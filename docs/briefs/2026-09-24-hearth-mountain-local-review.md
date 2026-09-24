@@ -49,7 +49,9 @@ building obstacles and the shoreline clamp. It is deterministic simulation evide
 not human keyboard, touch or controller acceptance.
 
 Browser checks have shown the overview, elevated district arrival, the accepted Fund
-inspector, dam view, and a gondola arrival at the summit. Independent full-width probes
+inspector, dam view, and a gondola arrival at the summit. Classic, Taylor and Newfoundland
+were rendered in the actual app; Classic was restored. A 390 × 844 review verified the
+guide, reading edition, mid-ride room entry and exact elevated return from Standing Book. Independent full-width probes
 found and corrected buried shortcut segments and the support-selection problem at a
 road rejoin. Read-only review also identified and led to fixes for mid-ride room travel,
 tool-return world tags and walk/skate transitions under a bridge.
@@ -58,25 +60,33 @@ The first broad gate failed after 1,705 seconds, including a 1,694-second TypeSc
 phase and a five-minute budget breach. Its stale source snapshot found the cabin
 `window` variable shadowing the browser window; the cabin was subsequently replaced
 with an open frame. Earlier interrupted checks and RPC timeouts are not passes.
-The final integrated gate and build results are recorded in the worksession.
+After terrain reuse and route-query improvements, the final integrated High gate passed
+88 files / 942 tests, including TypeScript. It took 630.548 seconds and exceeded the
+five-minute budget. Exact source fingerprints, failed attempts and build results are
+recorded in the worksession. These results establish local regression evidence, not
+completion of the investor release.
 
 ## Remaining programme acceptance
 
 - The environment is a playable blockout with authored theme materials and details.
   Final architecture, biome composition, town-square landscaping, the signature investor
   camera sequence and architectural shortcut art still need a dedicated art pass.
-- Rails and supports are spatially batched and plants are instanced. Detailed landscape
-  and exterior streaming, corridor prewarming and repeated-lap memory measurements
-  are not established by those optimizations.
+- Rails and supports are spatially batched and plants are instanced. Close district
+  planting and authored building exteriors now load before arrival, release beyond a
+  hysteresis band and stay pinned for race countdown/run. Cheap terrain, routes and
+  distant building silhouettes remain visible. Lifecycle tests cover repeated visits;
+  GPU memory and physical-device frame-time measurements remain open.
 - The existing condition bands govern peripheral wear, and qualifying shared task days
-  govern additional flowers. Historical repair persistence, a broader interaction set,
-  footsteps, ambient sound transitions and authored wildlife remain programme work.
+  govern additional flowers. Opt-in wind/water/leaf ambience and material-sensitive footsteps use the shared frame
+  owner and existing device Sound preference. Historical repair persistence, a broader
+  interaction set, audio listening/mix acceptance and authored wildlife remain programme work.
 - Transport paths, board/skip controls and elevated arrivals exist. Cabin staging,
   station presentation and manual boarding/arrival comfort need playtesting.
 - The race has ordered gates, countdown, timing, recovery and existing local bests.
   Human runs on keyboard, touch and controller, every optional line, and a replay/ghost
   presentation are not claimed complete.
-- Three-theme visual acceptance, reduced-motion and screen-reader walkthroughs,
+- Three-theme browser spot checks are complete; full visual acceptance, reduced-motion
+  and screen-reader walkthroughs,
   physical-phone sustained 30 fps/frame-time percentiles, and two opted-in devices
   agreeing on elevated positions remain open.
 - The existing fictional household supports local review. A repeatable guided investor

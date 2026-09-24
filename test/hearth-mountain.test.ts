@@ -5,6 +5,26 @@ import {crossesRaceGate,MOUNTAIN_GATES} from '../src/harbour/mountain/race.ts';
 import {createBasinView,type BasinReading} from '../src/harbour/mountain/basin.ts';
 import {createSkateField} from '../src/harbour/skate/world/field.ts';
 import {groundHeightAt} from '../src/harbour/scene/ground.ts';
+import {createDetailStream} from '../src/harbour/mountain/streaming.ts';
+
+describe('mountain detail lifetime',()=>{
+ it('loads before arrival, holds through the release band and releases every departed resource',()=>{
+  let builds=0,releases=0;
+  const stream=createDetailStream([{id:'woods',at:[0,0],radius:75}],()=>{builds++;return {dispose(){releases++;}};});
+  stream.update(74,0);expect(builds).toBe(1);
+  for(const x of [76,74,98,76])stream.update(x,0);
+  expect(builds).toBe(1);expect(releases).toBe(0);
+  stream.update(100,0);expect(releases).toBe(1);expect(stream.live.size).toBe(0);
+  for(let lap=0;lap<10;lap++){stream.update(0,0);stream.update(120,0);}
+  expect(builds).toBe(releases);stream.dispose();stream.update(0,0);expect(builds).toBe(releases);
+ });
+ it('prepares the full race corridor before countdown and releases it after the run',()=>{
+  const sites=DISTRICTS.map(d=>({id:d.id,at:[d.at[0],d.at[2]] as const,radius:75}));
+  const stream=createDetailStream(sites,()=>({dispose(){}}));
+  stream.update(0,0,true);expect(stream.live.size).toBe(6);
+  stream.update(0,0,false);expect(stream.live.size).toBe(0);stream.dispose();
+ });
+});
 
 describe('Hearth Mountain spatial contract',()=>{
  it('supports an underpass, a deck and a roof at the same horizontal location',()=>{

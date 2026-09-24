@@ -3,6 +3,8 @@ import {MOUNTAIN_VERSION,TRANSPORT_STOPS} from './mountain/definition.ts';
 import {SkateHUD} from './skate/SkateHUD.tsx';
 import {readSkateProgress,saveSkateProgress,skateProgressKey,type SkateSettings} from './skate/session.ts';
 import {SKATE_TRICK_BOOK,skateGesturePath,type SkateCheckpoint} from './skate/driver.ts';
+import {useComfort} from '../theme/comfort.ts';
+import {createWorldAmbience,type WorldAmbience} from './mountain/audio.ts';
 import {createSkateAudio,type SkateAudio} from './skate/audio.ts';
 import type {SkateHudModel,TouchZone} from './skate/hud/model.ts';
 import type {SkateFrame} from './scene/runtime.ts';
@@ -192,7 +194,15 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const [skating,setSkating]=useState<SkateHudModel|null>(null),[skateSaveFailed,setSkateSaveFailed]=useState(false);
   /** Synthesized skate sound: created inside the click/key that asked for it (autoplay policy), owned here. */
   const skateAudio=useRef<SkateAudio|null>(null);
+  const worldAudio=useRef<WorldAmbience|null>(null);
+  const [comfort,updateComfort]=useComfort(household.environment);
+  const [worldSound,setWorldSound]=useState(false);
+  const [mountainCalm,setMountainCalm]=useState(false);
+  const calmRef=useRef(false);calmRef.current=mountainCalm||comfort.quiet;
+  useEffect(()=>{runtime.current?.mountainCalm(mountainCalm||comfort.quiet);},[mountainCalm,comfort.quiet]);
+  useEffect(()=>{if(!comfort.sound){worldAudio.current?.dispose();worldAudio.current=null;runtime.current?.setWorldAmbience(null);setWorldSound(false);}},[comfort.sound]);
   const skateKey=skateProgressKey(household.environment,household.householdId,memberId);
+  useEffect(()=>{setWorldSound(false);runtime.current?.setWorldAmbience(null);return ()=>{worldAudio.current?.dispose();worldAudio.current=null;};},[skateKey]);
   const skateKeyRef=useRef(skateKey);skateKeyRef.current=skateKey;
   const skateSaved=useRef(''),skateOwner=useRef<string|null>(null);
   const skateRebuild=useRef<{owner:string;checkpoint:SkateCheckpoint}|null>(null);
@@ -357,7 +367,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const pendingMountain=useRef<MountainAction|null>(null);
   const mountainAction=(action:MountainAction)=>{
     const w=runtime.current;if(!w)return;
-    if(action.kind==='calm'){w.mountainCalm(action.on);return;}
+    if(action.kind==='sound'){updateComfort({sound:action.on});setWorldSound(action.on);worldAudio.current?.dispose();worldAudio.current=null;if(action.on){try{worldAudio.current=createWorldAmbience();}catch{worldAudio.current=null;}}w.setWorldAmbience(worldAudio.current);return;}
+    if(action.kind==='calm'){setMountainCalm(action.on);w.mountainCalm(action.on||comfort.quiet);return;}
     if(action.kind==='skip'){w.mountainSkip();return;}
     if(w.placeId()!=='court'){pendingMountain.current=action;navigatePlace('court');return;}
     held.current.clear();pushBody();
@@ -490,7 +501,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
           avatar:avatarRef.current,onJourney:()=>openJourney(),onMountainTravel:setMountainRiding,
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
-        runtime.current = world;world.go("court");
+        runtime.current = world;world.setWorldAmbience(worldAudio.current);world.mountainCalm(calmRef.current);world.go("court");
         court.current = first === "bank" ? world.place() as QueenHost : null;
         world.setToolOpen(Boolean(routeRef.current.surface));
         void holdRail(world);
@@ -1007,7 +1018,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
       {(status==="ready"||showFlat)&&!toolOpen&&<VillageHUD appearanceRequest={appearanceRequest} place={place} travelling={travelTo} onVisit={visit} onWander={showFlat?undefined:wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={showFlat?undefined:chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
         presence={status==="ready"?<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />:undefined}/>}
-      {(status==='ready'||showFlat)&&!toolOpen&&<MountainPanel riding={mountainRiding} conditionWords={reading.condition.words} reading={reading.basin} statusLine={statusLine} onAction={mountainAction} onOpen={target=>{if(target==='kitchen'||target==='cottage'||target==='library'||target==='glasshouse')navigatePlace(target);else onOpen(target);}} flat={showFlat} inspect={mountainInspect}/>}
+      {(status==='ready'||showFlat)&&!toolOpen&&<MountainPanel calmOn={mountainCalm||comfort.quiet} soundOn={worldSound&&comfort.sound} riding={mountainRiding} conditionWords={reading.condition.words} reading={reading.basin} statusLine={statusLine} onAction={mountainAction} onOpen={target=>{if(target==='kitchen'||target==='cottage'||target==='library'||target==='glasshouse')navigatePlace(target);else onOpen(target);}} flat={showFlat} inspect={mountainInspect}/>}
       {status==='ready'&&!toolOpen&&place==='court'&&standing&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating}
         onSettings={skateSettings} onCommand={command=>runtime.current?.body()?.skate?.command(command)} onZonePointer={skateZone}
         gesturePath={skateGesturePath} trickBook={SKATE_TRICK_BOOK}

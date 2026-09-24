@@ -41,8 +41,9 @@ Initial source audit verified current remote main and clean predecessor checkout
   expanded overview bounds, safe room camera containment and ride cancellation on entry.
 - Persistence/presence: versioned elevated return records, deliberate legacy migration,
   matching Worker forwarding, and incompatible positions withheld without hiding peer membership.
-- Rendering: instanced plants and spatially batched rails/supports. These are optimizations,
-  not proof of the planned landscape/exterior streaming or physical-phone performance.
+- Rendering: instanced plants, spatially batched rails/supports, releasable close district
+  detail and building exteriors, retained distant silhouettes and reusable terrain lattices.
+  These are not proof of physical-phone performance.
 
 ## Verification history
 
@@ -90,7 +91,7 @@ Current run logs: `/tmp/hearth-mountain-release-check.log` and `/tmp/hearth-moun
 [Local review guide](../briefs/2026-09-24-hearth-mountain-local-review.md) records the
 fictional preview, programme gaps and acceptance boundaries. Status remains OPEN for
 the overall approved programme. The playable foundation does not mean final art,
-streaming, ambient audio, investor rehearsal, physical-device accessibility/performance,
+full visual acceptance, investor rehearsal, physical-device accessibility/performance,
 controller timing, or live two-device acceptance is complete. Jonathan owns play-feel
 and visual acceptance; Codex retains integration and evidence ownership. No merge,
 deployment, schema application or hosted household mutation is authorized or performed.
@@ -108,3 +109,107 @@ funicular ride cleared the ride; opening Standing Book and returning preserved e
 elevated body coordinates. The reading edition exposed all six working destinations
 and three reserved-place explanations without requiring WebGL. Desktop overview and
 fictional CAD 7,600 Fund inspector rendered. Viewport overrides were restored.
+
+## District detail and sound increment
+
+- Added releasable district detail and authored exterior ownership with a 24-unit release
+  band. Base landscape and cheap building silhouettes remain resident. The race pins
+  the complete detail corridor during countdown and the run; ending/dismounting releases it.
+- Added orchard/birch clusters, flower islands, beds, benches, lanterns and summit telescope.
+  Cliff colouring now reads slope and district. A shared seeded forest plan supplies
+  rendered trees, trunk obstacles and camera foliage volumes; arrivals and paths stay clear.
+- Added gesture-enabled original wind/water/leaves and footstep synthesis. Device Sound
+  can mute/dispose it; tools, hidden pages and calm scenery silence it. No audio downloads.
+- Calm presentation survives renderer/theme rebuilds and honours Quiet expression.
+  The accepted CAD reading and scale have separate dam labels for legibility.
+
+Verification: the expanded High gate passed in **249.516 seconds**, without a budget
+breach: 81 fast files / 744 tests and 7 serial files / 198 tests (**942 total**).
+TypeScript took 67.391 seconds. Gate source fingerprint:
+`7e90c2603bfdce6fcc6864b5a471543912370ba43d8b1d8b6cb2cf7e7c44efc2`.
+The subsequent presentation-only calm retention and dam-label adjustment are included
+in the final build and its TypeScript run, with follow-up UI verification recorded below.
+
+A direct `pnpm exec tsc --noEmit` attempt exhausted Node's default 2 GB heap; it did not
+use the repository's 6 GB typecheck script and is not a pass. A simultaneous focused
+run had 100 passing tests but one test-runner RPC timeout and exited 1; also not a pass.
+The normal gate subsequently passed. Browser control timeouts during host load were
+resolved by inspecting actual state and using the accessibility interface.
+
+Three-theme checks showed Taylor's guide and glass dam, Newfoundland's full mountain,
+and Classic's orchard close view. The original Classic preference was restored. These
+are targeted browser observations, not complete visual or physical-device acceptance.
+
+## Final review fixes and browser follow-up
+
+A bounded read-only review of the detail increment found three lifecycle defects. Calm
+now applies to the resident Court even when selected indoors, and every newly raised
+Court inherits it. Audio pauses when the shared renderer is suspended or its context
+is lost. Changing household/member detaches the old audio and resets its control.
+No concrete exterior ownership/cutaway defect was found in that review.
+
+In the final browser follow-up, enabling calm in Library and returning to its outdoor
+plateau retained the checked control. World sounds toggled on and back off; audio mix
+quality was not auditioned. Starting Summit to Sea displayed the actual countdown and
+next gate; B returned to walking cleanly. The captured browser error list was empty.
+Classic, Sound off and normal scenery were restored. This is not a completed manual race.
+
+The post-review gate (`/tmp/hearth-mountain-reviewed-gate.log`) failed in **723.199 seconds**:
+TypeScript passed in 514.141 seconds, but two scene-mount checks exceeded their 15-second
+timeouts and the runner reported two RPC errors. That run is failed and time-budget-breached;
+the earlier passing run does not replace it. Its chained build did not run.
+
+## Terrain reuse and final integrated source
+
+The timeout investigation removed repeated immutable terrain generation across scene/theme
+rebuilds and expensive empty-cell expansion for distant route queries. Geometry, physics
+and course lengths are unchanged. Cached positions are read-only, bounded by render tier;
+GPU geometry and disposal remain scene-owned. A bounded independent source review found
+no actionable correctness or ownership regression in these two optimisations.
+
+Focused verification (`/tmp/hearth-mountain-terrain-cache.log`) passed **103 tests** across
+mountain, body and world-frame files in 20.35 seconds. The two previously timed-out checks
+took 801 ms and 817 ms. Descent remained **74.4667 seconds, 0 bails, 22/22 gates**.
+
+Final High gate (`/tmp/hearth-mountain-cached-gate.log`) passed every assertion: **88 files,
+942 tests** (744 fast and 198 serial), with TypeScript 164.227 seconds. Total **630.548 seconds**;
+classification **quick-gate-passed; time-budget-breached**. This is not a within-budget pass.
+Source fingerprint `7aeb343d29e861f0c40c52933b8aa6821e29931b15caf4c0e42bd61c46b38927`.
+The ordinary build wrapper (`/tmp/hearth-mountain-cached-build.log`) was deliberately
+interrupted during its duplicate application type-check after that same source had
+passed the High gate. This interrupted invocation is not a build pass. To avoid repeating
+the identical expensive check under host memory pressure, the remaining build components
+were run separately with unchanged application source:
+
+```sh
+pnpm typecheck:workspace
+pnpm exec vite build
+pnpm build:hercules-pro-ui
+test ! -e dist/_redirects
+```
+
+Their combined log is `/tmp/hearth-mountain-bundle.log`. The application type-check evidence
+for this build is the final High gate above; documentation was the only later edit.
+
+All remaining build components passed (exit 0); Vite completed in **1 minute 35 seconds**.
+Existing dependency browser-external/eval notices and the large-chunk advisory remain.
+No physical-device performance claim follows from this build.
+
+## Final visual correction
+
+The post-build browser review showed that wide dam plaques were too shallow: fixed
+texture padding reduced their letters to the minimum size. The final source change
+gives wide mountain signs a 4:1 aspect and separates the two dam labels vertically.
+Browser inspection then read **Fund $7,600.00 CAD** and **Scale $13,400.00 CAD** on the
+dam face. The guide also showed the supported balance, reserves, free amount and date;
+the overview remained complete and the captured browser error list was empty.
+
+This small presentation change follows the 942-test gate. The focused mountain suite
+passed again: **16 tests**, 18.49 seconds, unchanged 74.4667-second descent. Its log is
+`/tmp/hearth-mountain-label-test.log`. The bundle is rebuilt after the sign correction
+in `/tmp/hearth-mountain-label-bundle.log`; the prior broad gate is not represented as
+an exact fingerprint of these later presentation constants.
+
+The final bundle, Hercules UI build and redirect assertion all passed (exit 0). Vite
+reported **5 minutes** under host resource pressure, with the same existing dependency
+and large-chunk notices. No further application source changes followed this build.

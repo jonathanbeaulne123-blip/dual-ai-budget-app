@@ -214,7 +214,7 @@ export function createWalker(options: WalkerOptions): Walker {
   }
   const skate:SkateControls={
     active:skater.active,heading:skater.heading,paused:skater.paused,hud:skater.hud,progress:skater.progress,revision:skater.revision,
-    route:skater.route,spot:skater.spot,deck:skater.deck,settings:skater.settings,current:skater.current,command:skater.command,
+    run:skater.run,route:skater.route,spot:skater.spot,deck:skater.deck,settings:skater.settings,current:skater.current,command:skater.command,
     checkpoint:skater.checkpoint,input:skater.input,present:skater.present,events:skater.events,takeCut:skater.takeCut,setAudio:skater.setAudio,
     pause(on){skater.pause(on);},
     restore(checkpoint){if(world.room)return;clearRoute();skater.restore(checkpoint);syncSkate();trail?.clear();dust.clear();drawSkate(0);},

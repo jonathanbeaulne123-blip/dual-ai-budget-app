@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import {mountainTrees} from './planting.ts';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 import type {PlaceDressing,PlaceReading,Anchor,Region} from '../scene/place.ts';
 import type {RenderTier} from '../scene/quality.ts';
@@ -22,7 +23,7 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   function beam(a:Point3,b:Point3,r=.1,m=wood){const va=new THREE.Vector3(...a),vb=new THREE.Vector3(...b),o=mesh(new THREE.CylinderGeometry(r,r,va.distanceTo(vb),6),m,[(a[0]+b[0])/2,(a[1]+b[1])/2,(a[2]+b[2])/2],'beam');o.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),vb.sub(va).normalize());beams.push(o);return o;}
   const sign=(text:string,at:Point3,id:string,width=6)=>{
     id=`${id}@${at.join(',')}`;
-    const s=track(new EngravedPlate({stone:dressing.plinth,highlight:'#fff6d7',ink:dressing.joint,size:'small',width:768,fit:true},width,1.35));s.set(text);s.mesh.position.set(...at);s.mesh.userData.anchor=id;group.add(s.mesh);
+    const s=track(new EngravedPlate({stone:dressing.plinth,highlight:'#fff6d7',ink:dressing.joint,size:'small',width:768,fit:true},width,Math.max(1.35,width/4)));s.set(text);s.mesh.position.set(...at);s.mesh.userData.anchor=id;group.add(s.mesh);
     anchors.push({id,position:at,zone:'landmark',label:text});regions.push({id,group:'court',label:text,objects:[s.mesh]});return s;
   };
   function ribbon(points:readonly Point3[],width:number,m:THREE.Material,name:string,offset=.04){
@@ -49,7 +50,8 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   mesh(new THREE.CylinderGeometry(4.2,4.2,12,20,1,true),glass,[BASIN.x+22,BASIN.bottom+6,BASIN.z],'Reserve glass');
   for(let i=0;i<=12;i++){const a=-BASIN.angle/2+i/12*BASIN.angle,x=BASIN.x+Math.sin(a)*BASIN.radius,z=BASIN.z+Math.cos(a)*BASIN.radius;beam([x,BASIN.bottom-1,z],[x,BASIN.top+.4,z],i===0||i===12?.8:.11,i===0||i===12?stone:metal);}
   for(const side of [-1,1]){const a=side*BASIN.angle/2;box([BASIN.x+Math.sin(a)*BASIN.radius,80,BASIN.z+Math.cos(a)*BASIN.radius],[3.5,19,4],stone,'Dam stone abutment');}
-  const gauge=sign('Household Fund · checking',[25,90,-221],'mountain:basin',11);
+  const gauge=sign('Household Fund · checking',[25,94,-221],'mountain:basin',11);
+  const scaleGauge=sign('CAD scale',[25,90.8,-220.8],'mountain:basin',11);
   sign('Kitty reserves',[49,85,-234],'mountain:basin',5);
   // Source cave is scenery; only discrete accepted events light the financial channel.
   mesh(new THREE.IcosahedronGeometry(6,0),stone,[25,84,-258],'Reservoir source rock');
@@ -78,13 +80,9 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   // Deterministic planting. Road, doors, reserved envelopes and the basin remain clear.
   let seed=84731;const rand=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
   const trees:THREE.Matrix4[]=[],flowers:THREE.Matrix4[]=[],trunks:THREE.Matrix4[]=[],flowerColors:THREE.Color[]=[];
-  const dummy=new THREE.Object3D(),count=tier==='full'?1100:550;
-  for(let i=0;i<count;i++){
-    const x=(rand()-.5)*292,z=-65-rand()*228,h=mountainBaseHeight(x,z),road=nearestOnRoute(x,z);
-    if(h<1||h>86||road.distance<7||nearestOnRoute(x,z,RIVER).distance<9||(z>BASIN.z&&z<BASIN.z+48&&Math.abs(x-BASIN.x)<25)||Math.hypot(x-BASIN.x,z-BASIN.z)<BASIN.radius+5)continue;
-    if(DISTRICTS.some(d=>Math.hypot(x-d.at[0],z-d.at[2])<9)||RESERVED_PLOTS.some(p=>Math.abs(x-p.at[0])<p.half[0]+3&&Math.abs(z-p.at[2])<p.half[1]+3))continue;
-    if(Math.abs(h-mountainBaseHeight(x+.5,z))>1.2)continue;
-    const sc=.65+rand()*1.3;dummy.position.set(x,h+.7*sc,z);dummy.scale.set(sc,sc,sc);dummy.rotation.set(0,rand()*6.28,0);dummy.updateMatrix();trunks.push(dummy.matrix.clone());
+  const dummy=new THREE.Object3D();
+  for(const tree of mountainTrees(tier)){
+    const {x,y:h,z,size:sc,spin}=tree;dummy.position.set(x,h+.7*sc,z);dummy.scale.set(sc,sc,sc);dummy.rotation.set(0,spin,0);dummy.updateMatrix();trunks.push(dummy.matrix.clone());
     dummy.position.y=h+2.6*sc;dummy.scale.set(sc*1.8,sc*1.8,sc*1.8);dummy.updateMatrix();trees.push(dummy.matrix.clone());
   }
   for(const d of DISTRICTS)for(let i=0;i<(tier==='full'?110:55);i++){
@@ -134,7 +132,8 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   }
   function update(next:PlaceReading|null){const initial=last===null,quiet=calm||(typeof window!=='undefined'&&window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);last=next;const b=readBasin(next?.basin);target=b.level??0;reserveTarget=b.reserveLevel??0;reservoir.visible=b.level!==null;reserve.visible=b.reserveLevel!==null;
     const basinLabel=`Household Fund · ${basinMoney(next?.basin?.balanceCents)} CAD`;const basinAnchor=anchors.find(a=>a.id===gauge.mesh.userData.anchor);if(basinAnchor)basinAnchor.label=basinLabel;
-    gauge.set(`Fund CAD ${basinMoney(next?.basin?.balanceCents)} · scale ${basinMoney(b.scaleCents)}${b.scaleChanged?' · scale expanded':''}`);
+    gauge.set(`Fund ${basinMoney(next?.basin?.balanceCents)} CAD`);
+    scaleGauge.set(`Scale ${basinMoney(b.scaleCents)} CAD${b.scaleChanged?' · expanded':''}`);
     if(b.newFlows.length){
       const flow=b.newFlows[b.newFlows.length-1]!;
       const chambers:readonly Point3[]=[[BASIN.x,85,BASIN.z],[BASIN.x+22,85,BASIN.z]];

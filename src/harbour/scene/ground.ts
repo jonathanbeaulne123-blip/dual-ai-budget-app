@@ -1,4 +1,4 @@
-import {mountainBaseHeight,WORLD_BOUNDS,nearestOnRoute} from '../mountain/definition.ts';
+import {mountainBaseHeight,WORLD_BOUNDS,nearestOnRoute,districtAt} from '../mountain/definition.ts';
 import * as THREE from "three";
 import type { PlaceDressing } from "./place.ts";
 import { plantPlan } from "./planting.ts";
@@ -109,7 +109,15 @@ function paintVertices(colors: Float32Array, positions: Float32Array, dressing: 
     const x = positions[i * 3] ?? 0, z = positions[i * 3 + 2] ?? 0, r = Math.hypot(x, z);
     // A quiet, deterministic variation so flat shading reads as stone, not plastic.
     const grain = 0.94 + 0.06 * (0.5 + 0.5 * Math.sin(x * 1.7 + z * 2.3) * Math.cos(x * 0.9 - z * 1.1));
-    if(z < -55 && positions[i*3+1]! > 0) {const h=positions[i*3+1]!; c.copy(moss).lerp(stone,Math.max(0,(h-60)/75)); if(h>102)c.lerp(new THREE.Color("#e6ece6"),.35);}
+    if(z < -55 && positions[i*3+1]! > 0) {
+      const h=positions[i*3+1]!,d=districtAt(x,z),j=i+1;
+      const slope=j<positions.length/3&&Math.abs(positions[j*3]!-x)<4?Math.abs(positions[j*3+1]!-h)/Math.max(.1,Math.abs(positions[j*3]!-x)):0;
+      c.copy(moss);
+      if(d?.biome==='woods')c.lerp(new THREE.Color(dressing.moss),.38);
+      if(d?.biome==='meadow'||d?.biome==='orchard')c.lerp(new THREE.Color(dressing.plinth),.12);
+      c.lerp(stone,Math.max(Math.min(.8,Math.max(0,slope-.35)*.65),Math.max(0,(h-66)/62)));
+      if(h>103)c.lerp(new THREE.Color('#e6ece6'),.22);
+    }
     else if (r <= TERRACE_RADIUS) c.copy(stone).lerp(joint, r > TERRACE_RADIUS - 0.6 ? 0.55 : 0.08);
     else if (r <= LAWN_RADIUS) c.copy(moss).lerp(sand, Math.max(0, (r - TERRACE_RADIUS) / (LAWN_RADIUS - TERRACE_RADIUS) - 0.8) * 2.5);
     else { const t = (r - LAWN_RADIUS) / (GROUND_RADIUS - LAWN_RADIUS); c.copy(sand).lerp(sea.clone().multiplyScalar(0.7), Math.min(1,Math.max(0, t - 0.5) * 1.6)); }
@@ -118,18 +126,27 @@ function paintVertices(colors: Float32Array, positions: Float32Array, dressing: 
   }
 }
 
-export function createGround(scene: THREE.Scene, dressing: PlaceDressing, tier: RenderTier): Ground {
-  const group = new THREE.Group();
-  group.name = "Harbour island";
-  const disposables: { dispose(): void }[] = [];
-  const track = <T extends { dispose(): void }>(item: T): T => { disposables.push(item); return item; };
+// Immutable geography is reused through theme changes and renderer rebuilds.
+// Each scene still owns its GPU geometry, normals and colour buffers.
+const lattices=new Map<RenderTier,{positions:Float32Array;indices:number[]}>();
+function terrainLattice(tier:RenderTier){
+  const cached=lattices.get(tier);if(cached)return cached;
   const cols = tier==='full'?180:120, rows=tier==='full'?198:132;
-  const vertexCount=(cols+1)*(rows+1), positions=new Float32Array(vertexCount*3), colors=new Float32Array(vertexCount*3), indices:number[]=[];
+  const vertexCount=(cols+1)*(rows+1), positions=new Float32Array(vertexCount*3), indices:number[]=[];
   for(let iz=0;iz<=rows;iz++)for(let ix=0;ix<=cols;ix++){
     const x=WORLD_BOUNDS.minX+ix/cols*(WORLD_BOUNDS.maxX-WORLD_BOUNDS.minX),z=WORLD_BOUNDS.minZ+iz/rows*(WORLD_BOUNDS.maxZ-WORLD_BOUNDS.minZ),i=iz*(cols+1)+ix;
     positions[i*3]=x;positions[i*3+1]=groundHeightAt(x,z);positions[i*3+2]=z;
     if(ix<cols&&iz<rows){const a=i,b=i+1,c=i+cols+1,d=c+1;indices.push(a,c,b,b,c,d);}
   }
+  const result={positions,indices};lattices.set(tier,result);return result;
+}
+
+export function createGround(scene: THREE.Scene, dressing: PlaceDressing, tier: RenderTier): Ground {
+  const group = new THREE.Group();
+  group.name = "Harbour island";
+  const disposables: { dispose(): void }[] = [];
+  const track = <T extends { dispose(): void }>(item: T): T => { disposables.push(item); return item; };
+  const {positions,indices}=terrainLattice(tier),colors=new Float32Array(positions.length);
   paintVertices(colors, positions, dressing);
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
