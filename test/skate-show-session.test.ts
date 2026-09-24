@@ -63,7 +63,7 @@ describe('skate progress v2 storage', () => {
   it('starts fresh on corrupt, oversized, wrong-version or hostile input', () => {
     const fresh = freshSkateProgress();
     for (const raw of [null, '', '{broken', '[]', 'null', '42', JSON.stringify({version: 3}), JSON.stringify({version: '2'}), 'x'.repeat(SKATE_PROGRESS_MAX_CHARS + 1)]) expect(decodeSkateProgress(raw)).toEqual(fresh);
-    const big = JSON.stringify({version: 2, discovered: Array(4000).fill('tideline')});
+    const big = JSON.stringify({version: 2, discovered: Array(Math.ceil(SKATE_PROGRESS_MAX_CHARS/10)).fill('tideline')});
     expect(big.length).toBeGreaterThan(SKATE_PROGRESS_MAX_CHARS);
     expect(decodeSkateProgress(big)).toEqual(fresh);
     const hostile = decodeSkateProgress(JSON.stringify({version: 2, deck: 'islander', discovered: 'tideline', goals: ['tideline:line', 'tideline:hack', 'nowhere:line', 7, 'tideline:line'], bestLine: 1.5,

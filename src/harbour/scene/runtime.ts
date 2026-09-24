@@ -394,6 +394,20 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const ground = createGround(scene, dressing, tier);
   // ── Tideline Skate Club v2 ── one field: the park you see is the park you ride.
   const skatePark=buildSkatePark(dressing,{tier,field:skateField()});scene.add(skatePark.group);
+  // A local recording is a separate decorative silhouette: never a body, collider or presence source.
+  const raceGhost=new THREE.Group();raceGhost.name='device-local-race-ghost';raceGhost.visible=false;
+  const ghostMaterial=new THREE.MeshBasicMaterial({color:theme==='taylor'?'#e48bb5':theme==='newfoundland'?'#e3a54a':'#3fb49c',transparent:true,opacity:.38,depthWrite:false});
+  const ghostGeometries=[new THREE.BoxGeometry(.36,.06,.72),new THREE.CylinderGeometry(.16,.19,.7,6),new THREE.SphereGeometry(.16,8,6)];
+  for(let i=0;i<ghostGeometries.length;i++){
+    const mesh=new THREE.Mesh(ghostGeometries[i]!,ghostMaterial);mesh.position.y=[.08,.67,1.2][i]!;
+    mesh.raycast=()=>{};raceGhost.add(mesh);
+  }
+  scene.add(raceGhost);
+  function updateRaceGhost():void {
+    const pose=!toolOpen&&!calmWorld&&!reducedMotion()&&placeId==='court'?walker?.skate.ghost():null;
+    raceGhost.visible=Boolean(pose);
+    if(pose){raceGhost.position.set(pose.x,pose.y,pose.z);raceGhost.rotation.y=pose.yaw;}
+  }
   const skateThrottle=createHudThrottle(100);
   let skateBuiltAt=-Infinity,hadSkate=false;
   const skateLog:string[]=[];
@@ -752,6 +766,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       tier,
       start,
       reduced: reducedMotion(),
+      skateReducedMotion:()=>reducedMotion()||calmWorld||toolOpen,
       avatar:selectedAvatar,invalidate,onAvatarStatus:callbacks.onAvatarStatus,theme,
     });
     scene.add(walker.group);
@@ -777,6 +792,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const at=walker.state(),heel=heelStand(at);cat.place(heel.x,heel.z,heel.yaw,at);
   }
   function dropBody(): void {
+    raceGhost.visible=false;
     if (following) {
       following = false;
       if (Math.abs(camera.fov - fovFor(composition)) > 1e-3) { camera.fov = fovFor(composition); camera.updateProjectionMatrix(); }
@@ -1181,6 +1197,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         court.setHold(holdFor(placeId));
       }
     }
+    updateRaceGhost();
     if(worldAmbience){const at=walker?.state();if(at&&walker){
       worldAmbience.update(at.x,at.y,at.z,at.speed,Boolean(at.supportId&&at.supportId!=='terrain'&&at.supportId!=='mountain-road'&&at.supportId!=='town-race-road'),!walker.skate.active()&&!mountainTrip,calmWorld||toolOpen||placeId!=='court');
     }else worldAmbience.pause();}
@@ -1329,6 +1346,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   // ── The body lane (world-body) ── reduced motion cuts the follow camera
   // rather than swinging it. The character still walks: that is the app.
   const onReduced = () => {
+    raceGhost.visible=false;
     court.setReduced(reducedMotion());
     const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
     follow?.setReduced(reducedMotion());
@@ -1388,7 +1406,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     setMountainInteraction(state){if(disposed)return;mountainInteraction=state;mountainHandle().setInteraction?.(state);dirty=true;schedule();},
     mountainBell(){if(!disposed&&visible&&lease.active&&!toolOpen&&!calmWorld&&!reducedMotion()&&placeId==='court')worldAmbience?.bell();},
     setWorldAmbience(audio){worldAmbience=audio;dirty=true;schedule();},
-    mountainCalm(on){calmWorld=on;if(on)worldAmbience?.pause();mountainHandle().setCalm?.(on);dirty=true;schedule();},
+    mountainCalm(on){calmWorld=on;if(on){worldAmbience?.pause();raceGhost.visible=false;walker?.skate.replay('stop');}publishSkate(performance.now(),true);mountainHandle().setCalm?.(on);dirty=true;schedule();},
     mountainSkip(){if(mountainTrip){mountainTrip.elapsed=mountainTrip.duration;dirty=true;schedule();}},
     mountainTravel(at,trip){
       if(placeId!=='court')return;
@@ -1415,7 +1433,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     },
     // ── The body lane (world-body) ── a tool in front of the place turns the
     // stage into a door strip: the follow camera gives the view back for it.
-    setToolOpen(open) { toolOpen = open; if (open) {worldAmbience?.pause();walker?.skate.pause(true);publishSkate(performance.now(),true);setFollowing(false);} schedule(); },
+    setToolOpen(open) { toolOpen = open; if (open) {raceGhost.visible=false;worldAmbience?.pause();walker?.skate.pause(true);publishSkate(performance.now(),true);setFollowing(false);} schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
     invalidate() { settling = true; dirty = true; listsDirty = true; if(walker)standBody(); previous = performance.now(); schedule(); },
     addAnimator(animate) { animators.add(animate); listsDirty = true; schedule(); return () => { animators.delete(animate); }; },
@@ -1454,6 +1472,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       return {
         skate: {
           ...one.skate,
+          ghost(){return !toolOpen&&!calmWorld&&!reducedMotion()&&placeId==='court'?one.skate.ghost():null;},
+          replay(action){if(placeId!=='court')return;one.skate.replay(action);updateRaceGhost();publishSkate(performance.now(),true);moved();},
           restore(checkpoint){if(placeId!=='court')return;one.skate.restore(checkpoint);setFollowing(true);publishSkate(performance.now(),true);moved();},
           enable(on,progress){if(on&&placeId!=='court')return false;const result=one.skate.enable(on,progress);if(on)setFollowing(true);publishSkate(performance.now(),true);moved();return result;},
           pause(on){one.skate.pause(on);publishSkate(performance.now(),true);moved();},
@@ -1578,6 +1598,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       for (const id of [...live.keys()]) pull(id);
       // ── The body lane (world-body) ──
       dropBody();
+      scene.remove(raceGhost);for(const geometry of ghostGeometries)geometry.dispose();ghostMaterial.dispose();
       skatePark.dispose();ground.dispose(); rig.dispose();
       lease.release();
       host.style.backgroundImage = "";

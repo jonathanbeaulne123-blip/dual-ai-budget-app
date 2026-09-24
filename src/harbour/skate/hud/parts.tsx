@@ -129,9 +129,10 @@ export function Radar({model, partnerName}: {model: SkateHudModel; partnerName?:
   </div>;
 }
 
-export function RouteCard({run, onEnd}: {run: NonNullable<SkateHudModel['run']>; onEnd(): void}) {
+export function RouteCard({run, onEnd, onRetry}: {run: NonNullable<SkateHudModel['run']>; onEnd(): void; onRetry?():void}) {
   return <div className="skate-route-live">
     <b>{run.name}</b><span>{run.label}</span>{run.distance !== null && <small>{run.distance} m to the gold ring</small>}
+    {onRetry && <button className="skate-route-restart" type="button" onClick={onRetry}>Restart race</button>}
     <button type="button" aria-label="End route and free skate" onClick={onEnd}>×</button>
   </div>;
 }
