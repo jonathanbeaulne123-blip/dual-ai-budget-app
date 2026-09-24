@@ -11,7 +11,7 @@ import { COURT_BOUNDS, poseEye, realizePose, type CourtPose, type Vec3 } from ".
 import { createCourtCamera } from "../src/harbour/camera/courtCamera.ts";
 import { createFollowCamera, FOLLOW_DISTANCE, FOLLOW_LOOK_HEIGHT, FOLLOW_PHI, followInRoom, SEED_REACH } from "../src/harbour/camera/followCamera.ts";
 import {
-  CLOSE_LANDMARKS, DESKTOP_ASPECT, OVERVIEW_POINTS, PHONE_ASPECT, arrivalPose, closeLandmark, damViewPose, doorExitPose, momentPose,
+  CLOSE_LANDMARKS, DESKTOP_ASPECT, OVERVIEW_POINTS, PHONE_ASPECT, arrivalAt, arrivalPose, closeLandmark, damViewPose, doorExitPose, momentPose,
   openWorldFov, overviewPose, poseSees, projectView, summitViewPose, townArrivalPose,
 } from "../src/harbour/camera/mountainPoses.ts";
 import {
@@ -247,6 +247,14 @@ describe("arrivals, exits and small moments (C3, C7)", () => {
     }
     const dam = arrivalPose("reservoir")!, [x, z] = unit(DAM_CREST[0] - dam.at[0], DAM_CREST[2] - dam.at[2]);
     expect(Math.sin(dam.yaw) * x + Math.cos(dam.yaw) * z).toBeGreaterThan(0.7);
+    // The guide's own "Visit" points resolve to these arrivals, and a moved one still faces the door.
+    for (const [district, place] of Object.entries(DISTRICT_DOOR)) {
+      const exact = arrivalPose(district)!;
+      expect(arrivalAt(exact.at)!.yaw).toBeCloseTo(exact.yaw, 9);
+      const moved = arrivalAt([exact.at[0] + 3, exact.at[1], exact.at[2] - 4])!, door = CAMERA_DOORS[place]!.at;
+      const [dx, dz] = unit(door[0] - moved.at[0], door[2] - moved.at[2]);
+      expect(Math.sin(moved.yaw) * dx + Math.cos(moved.yaw) * dz, `${district} moved`).toBeGreaterThan(0.99);
+    }
   });
   it("faces away from the door on the way out", () => {
     const door = CAMERA_DOORS.library!, landing = { x: door.at[0] + door.out[0] * 2.2, y: door.at[1], z: door.at[2] + door.out[1] * 2.2, yaw: 0 };

@@ -203,11 +203,17 @@ export function arrivalPose(id: string, composition: Composition = "desktop"): A
 }
 /** The arrival a "Visit" at this exact point belongs to, if any (the guide passes points, not ids). */
 export function arrivalAt(point: readonly number[], composition: Composition = "desktop"): Arrival | null {
+  const x = point[0] ?? NaN, y = point[1] ?? NaN, z = point[2] ?? NaN;
+  if (![x, y, z].every(Number.isFinite)) return null;
   for (const id of [...CAMERA_DISTRICTS.map((d) => d.id), ...CAMERA_PLOTS.map((p) => p.id)]) {
     const v = visitPoint(id);
-    if (v && Math.hypot(v[0] - (point[0] ?? NaN), v[2] - (point[2] ?? NaN)) < 1.5) return arrivalPose(id, composition);
+    if (v && Math.hypot(v[0] - x, v[2] - z) < 1.5) return arrivalPose(id, composition);
   }
-  return null;
+  // A "Visit" point the guide moved (geography re-authors them): still face the nearest district's door from where you stand.
+  const near = CAMERA_DISTRICTS.find((d) => Math.hypot(d.at[0] - x, d.at[2] - z) <= d.radius + 15);
+  if (!near) return null;
+  const at: V3 = [x, y, z], faces = arrivalFaces(near.id), [fx, fz] = flat(at, faces), yaw = Math.atan2(fx, fz);
+  return { id: near.id, at, yaw, faces, pose: walkPoseBehind(at, yaw, composition) };
 }
 /**
  * Coming out of a building: the body stands on its apron facing *away* from
