@@ -43,6 +43,12 @@ export type SkateCamera = {
   /** Cut: put every spring on its goal at once (respawn, spot jump, route start). Uses the last present seen. */
   snap(present?: SkatePresent): void;
   setDistance(distance: SkateCameraDistance): void;
+  /**
+   * The lens the previous camera was showing. The chase camera's first cut
+   * starts its FOV spring there, so taking over from the walking camera (or
+   * handing back) blends the field of view instead of cutting it.
+   */
+  lensFrom(fov: number): void;
   /** A drag look-around in pixels; it springs back behind the rider while rolling. */
   orbit(dx: number, dy: number): void;
   /** The camera's current heading (xz yaw it looks along). Useful as a walking basis on exit. */
@@ -65,7 +71,12 @@ export const SKATE_CAM = Object.freeze({
   portraitDist: 0.1, portraitAim: -0.34, portraitFov: 10,
   /** Look-ahead along velocity: seconds of travel, capped in units. */
   leadTime: 0.16, leadMax: 1.1,
-  fovRest: 54, fovFast: 72, fastSpeed: 11,
+  /**
+   * Hearth Mountain v2: a downhill run averages about 12 u/s and tops out at
+   * 15, so the widest lens sits at 15 — the FOV keeps breathing across the
+   * whole race instead of pinning at 72° from the first bend (was 11).
+   */
+  fovRest: 54, fovFast: 72, fastSpeed: 15,
   /** Spring angular frequencies (rad/s); ≈ settle time 4.6/ω. */
   wFocus: 11, wFocusY: 7, wYaw: 4.2, wFrame: 3.2, wFov: 3, wRoll: 5,
   /** Yaw only chases the travel heading above this horizontal speed. */
@@ -134,6 +145,8 @@ export function createSkateCamera(options: SkateCameraOptions = {}): SkateCamera
   let wallYaw = 0, onWall = false;
   let seenX = 0, seenZ = 0, floorGoal = 0, pullGoal = 1, lastReduced = false, lastAspect = 1.6, landX = 0, landZ = 0, landDirX = 0, landDirZ = 0;
   let bailClock = 0, bailYaw = 0, impactKick = 0, userYaw = 0, userPitch = 0;
+  /** A lens handed over by the previous camera, taken by the next cut. */
+  let pendingLens: number | null = null;
   const out: SkateCameraFrame = {position: [0, 0, 0], target: [0, 0, 0], fov: fovRest, roll: 0};
 
   const hSpeed = (p: SkatePresent) => Math.hypot(fin(p.vx), fin(p.vz));
@@ -320,7 +333,8 @@ export function createSkateCamera(options: SkateCameraOptions = {}): SkateCamera
     computeGoals(p, reduced, aspect);
     const set = (s: Spring, v: number) => { s.x = v; s.v = 0; };
     set(fx, goal.fx); set(fy, goal.fy); set(fz, goal.fz); set(dist, goal.dist); set(height, goal.height);
-    set(side, goal.side); set(fov, goal.fov); set(roll, goal.roll); set(lift, goal.lift); set(pull, 1); set(floor, 0);
+    set(side, goal.side); set(fov, pendingLens !== null && !reduced ? pendingLens : goal.fov); set(roll, goal.roll); set(lift, goal.lift); set(pull, 1); set(floor, 0);
+    pendingLens = null;
     set(lead[0], goal.lx); set(lead[1], goal.ly); set(lead[2], goal.lz); set(vertBlend, goal.vert);
     set(orbitYaw, 0); set(orbitPitch, 0); userYaw = userPitch = 0; impactKick = 0; aim = goal.aim;
     started = true;
@@ -380,6 +394,7 @@ export function createSkateCamera(options: SkateCameraOptions = {}): SkateCamera
       cut(q, lastReduced, lastAspect); place(lastReduced, null);
     },
     setDistance(d) { distance = d === 'far' ? 'far' : 'near'; },
+    lensFrom(f) { if (Number.isFinite(f) && f > 0) { if (started) { fov.x = f; fov.v = 0; } else pendingLens = f; } },
     orbit(dx, dy) {
       userYaw = clamp(userYaw - fin(dx) * 0.006, -1.4, 1.4);
       userPitch = clamp(userPitch + fin(dy) * 0.004, -0.4, 1.2);

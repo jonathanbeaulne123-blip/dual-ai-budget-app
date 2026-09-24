@@ -1,12 +1,12 @@
 // @vitest-environment jsdom
 import {describe,it,expect} from 'vitest';
-import {HARBOUR_LAND,HARBOUR_WANDERS,HARBOUR_LANDMARK_SOLIDS,HARBOUR_LANES} from '../src/harbour/village/world.ts';
+import {HARBOUR_WANDERS,HARBOUR_LANDMARK_SOLIDS,HARBOUR_LANES} from '../src/harbour/village/world.ts';
 import {VILLAGE_SITES} from '../src/harbour/village/layout.ts';
 import {courtObstacles,SHORE_RADIUS} from '../src/harbour/body/obstacles.ts';
 import {findPath,pathSegmentClear} from '../src/harbour/body/pathfinder.ts';
 import {placementOf,placementToWorld} from '../src/harbour/scene/place.ts';
 import {groundHeightAt,SEA_LEVEL} from '../src/harbour/scene/ground.ts';
-import {harbourZoomExit} from '../src/harbour/camera/worldZoom.ts';
+import {harbourZoomExit,ZOOM_EXIT,ZOOM_REST} from '../src/harbour/camera/worldZoom.ts';
 import {avatarPreferenceKey,readAvatar,saveAvatar} from '../src/harbour/body/avatarPreference.ts';
 import {createWalker} from '../src/harbour/body/walker.ts';
 import {WALK_SPEED} from '../src/harbour/body/bodyModel.ts';
@@ -55,11 +55,15 @@ describe('a roomy, connected island',()=>{
 });
 
 describe('world scale doorway',()=>{
-  it('requires extra outward intent at the overview and resets when zooming in',()=>{
-    expect(harbourZoomExit(HARBOUR_LAND.overview-10,.5,.3).exit).toBe(false);
-    const first=harbourZoomExit(HARBOUR_LAND.overview,.2,0);expect(first.exit).toBe(false);
-    expect(harbourZoomExit(HARBOUR_LAND.overview,.2,first.overscroll).exit).toBe(true);
-    expect(harbourZoomExit(HARBOUR_LAND.overview,-.1,.3)).toEqual({overscroll:0,exit:false});
+  it('requires extra outward intent at the far limit and resets when zooming in',()=>{
+    // Hearth Mountain v2 (C5): only pulls made *at* the Look camera's far limit count; the first arms the
+    // "pull once more" affordance, and only a later, separate pull opens the Journey.
+    const limit=ZOOM_EXIT.limit;
+    expect(harbourZoomExit(limit*.8,.5,ZOOM_REST,0)).toEqual(ZOOM_REST);
+    const armed=harbourZoomExit(limit,.2,ZOOM_REST,0);expect(armed.exit).toBe(false);expect(armed.armedAt).toBe(0);
+    expect(harbourZoomExit(limit,.5,armed,100).exit).toBe(false);
+    expect(harbourZoomExit(limit,.2,armed,ZOOM_EXIT.wait+10).exit).toBe(true);
+    expect(harbourZoomExit(limit,-.1,armed,ZOOM_EXIT.wait+10)).toEqual(ZOOM_REST);
   });
   it('binds explicit avatar choices to the environment, household and member',()=>{
     const key=avatarPreferenceKey('development','house','one');localStorage.clear();

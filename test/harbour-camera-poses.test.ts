@@ -13,6 +13,7 @@ import {
   flagstoneVisible,
   CLOSE_HOLDS,
   CLOSE_PLACES,
+  LOOK_UP,
   closePose,
   poseEye,
   projectPoint,
@@ -83,7 +84,7 @@ describe("Little Harbour · the Court's poses (BUILD_PLAN #18)", () => {
         }
         // Pieces and props are framed at 3.2; only the Queen's portrait stands back for her height.
         for (const anchor of ["rook", "bishop", "knight", "sundial", "mailbox"] as const) expect(courtPose("object", anchor, composition, aspect).r).toBeCloseTo(3.2, 6);
-        expect(sky.r).toBeCloseTo(440, 6);
+        expect(sky.r).toBeCloseTo(COURT_BOUNDS.maxR, 6);
       }
     }
   });
@@ -147,10 +148,12 @@ describe("Little Harbour · the Court's poses (BUILD_PLAN #18)", () => {
         }
       }
     }
-    expect(COURT_BOUNDS).toEqual({ minR: 2, maxR: 440, minPhi: 0.25, maxPhi: 1.38, targetRadius: 345 });
+    // Hearth Mountain v2 (C1, C5): the far limit stands beyond the mountain overview, and the tilt may pass the
+    // horizon by LOOK_UP (~25°) so Look can look up at the dam; `lookPhiLimit` narrows it with distance and height.
+    expect(COURT_BOUNDS).toEqual({ minR: 2, maxR: 520, minPhi: 0.25, maxPhi: Math.PI / 2 + LOOK_UP, targetRadius: 345 });
     const wild: CourtPose = { target: [300, 0.5, -400], r: 800, theta: 9, phi: -2 };
     const held = clampCourtPose(wild);
-    expect(held.r).toBe(440);
+    expect(held.r).toBe(520);
     expect(held.phi).toBe(0.25);
     expect(Math.abs(held.theta)).toBeLessThanOrEqual(Math.PI);
     expect(Math.hypot(held.target[0], held.target[2])).toBeCloseTo(345, 9);
@@ -378,9 +381,12 @@ describe("a room's hold on the camera (holdPoseInRoom)", () => {
 });
 
 describe("the close hold — the third camera hold (W7 a)", () => {
-  it("is only where a place has earned it: the Court, the lectern, the wheel", () => {
-    expect([...CLOSE_PLACES].sort()).toEqual(["court", "kiln", "library"]);
-    expect(CLOSE_HOLDS.court!.anchor).toBe("queen");
+  it("is only where a place has earned it: the open world, the Queen, the lectern, the wheel", () => {
+    // Hearth Mountain v2: the Queen stands in the banking hall now; the open world's own entry is the fountain,
+    // and the live Court picks the nearest landmark to the body (`mountainPoses.CLOSE_LANDMARKS`).
+    expect([...CLOSE_PLACES].sort()).toEqual(["bank", "court", "kiln", "library"]);
+    expect(CLOSE_HOLDS.court!.anchor).toBe("fountain");
+    expect(CLOSE_HOLDS.bank!.anchor).toBe("queen");
     expect(CLOSE_HOLDS.library!.anchor).toBe("book");
     expect(CLOSE_HOLDS.kiln!.anchor).toBe("wheel");
     for (const place of Object.keys(HARBOUR_PLACE_NAMES)) {

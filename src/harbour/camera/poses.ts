@@ -76,7 +76,55 @@ export const FLAGSTONE = Object.freeze({ x: 0, z: 1.6, size: 0.9 });
  * three was already most of the way to the far wall. Every Court pose is
  * unchanged; the bounds only say how far a hand may take the camera.
  */
-export const COURT_BOUNDS = Object.freeze({ minR: 2, maxR: 440, minPhi: 0.25, maxPhi: 1.38, targetRadius: 345 });
+/**
+ * Hearth Mountain v2 (C1): the tilt limit is **horizon-aware**. `maxPhi` may
+ * now pass the horizon (π/2) by `LOOK_UP` — about 25° — so the Look camera in
+ * town can look *up* at the slope and the dam. Past the horizon the eye would
+ * sink below its own target; `realizePose` lifts eye and target together over
+ * the terrain (the direction is kept), which is what a camera drawn down onto
+ * the grass and tilted up looks like. `lookPhiLimit` narrows the allowance
+ * back to the horizon as the camera pulls away or its target rises, so an
+ * overview never turns into a picture of the sky. Rooms keep their own
+ * `RoomHold.maxPhi` (all below 1.45), which is applied after this.
+ */
+export const LOOK_UP = 0.44;
+export const COURT_BOUNDS = Object.freeze({ minR: 2, maxR: 520, minPhi: 0.25, maxPhi: Math.PI / 2 + LOOK_UP, targetRadius: 345 });
+
+const unit = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
+/**
+ * The horizon-aware tilt limit for a Look pose: the full `LOOK_UP` above the
+ * horizon when the camera is near (r ≤ 60) and its target is on the ground
+ * (≤ 4 above it), tapering to just under the horizon by r = 260 or a target
+ * 34 units up. `lift` is the target's height above the ground under it.
+ */
+export function lookPhiLimit(r: number, lift: number): number {
+  const near = unit(1 - (r - 60) / 200), low = unit(1 - (lift - 4) / 30);
+  return Math.PI / 2 - 0.03 + (LOOK_UP + 0.03) * near * low;
+}
+
+/** The eye and look-at point a pose is actually drawn from. */
+export type Realized = { eye: Vec3; look: Vec3; lifted: number };
+/**
+ * Draw a pose over terrain: when the eye would stand under `ground + clear`,
+ * eye and look-at are lifted together by the same amount, so the direction
+ * (and with it every tilt the hand chose, above or below the horizon) is kept.
+ * Pure; `ground` may be omitted (open sky, or a room).
+ */
+export function realizePose(pose: CourtPose, ground?: (x: number, z: number) => number, clear = 0.6): Realized {
+  const eye = poseEye(pose);
+  if (!ground) return { eye, look: pose.target, lifted: 0 };
+  const floor = ground(eye[0], eye[2]) + clear;
+  const lifted = Number.isFinite(floor) && eye[1] < floor ? floor - eye[1] : 0;
+  if (!lifted) return { eye, look: pose.target, lifted: 0 };
+  return { eye: [eye[0], eye[1] + lifted, eye[2]], look: [pose.target[0], pose.target[1] + lifted, pose.target[2]], lifted };
+}
+
+/** A pose from an eye and the point it looks at (the orbit pivot). */
+export function poseFrom(eye: Vec3, look: Vec3): CourtPose {
+  const dx = eye[0] - look[0], dy = eye[1] - look[1], dz = eye[2] - look[2];
+  const r = Math.max(1e-6, Math.hypot(dx, dy, dz));
+  return { target: [look[0], look[1], look[2]], r, theta: Math.atan2(dx, dz), phi: Math.acos(Math.max(-1, Math.min(1, dy / r))) };
+}
 
 /** How high on each anchor the "object" pose looks (about mid-height of what stands there). */
 const ANCHOR_LOOK_HEIGHT: Readonly<Record<CourtAnchor, number>> = Object.freeze({
@@ -337,8 +385,14 @@ export type CloseHold = {
  * module; `scene/runtime.ts` reads it with a `HarbourPlaceId`.
  */
 export const CLOSE_HOLDS: Readonly<Record<string, CloseHold>> = Object.freeze({
-  /** The Queen herself, close enough to read her face and her flagstone at once. */
-  court: Object.freeze({ anchor: "queen", target: [0, 1.02, 0] as Vec3, r: { phone: 2.9, desktop: 3.1 }, theta: 0.12, phi: 1.04 }),
+  /**
+   * The open world's own hold when no nearer landmark answers: the town
+   * fountain. The live Court picks the nearest landmark to the body
+   * (`camera/mountainPoses.ts` `CLOSE_LANDMARKS`); this is its town entry.
+   */
+  court: Object.freeze({ anchor: "fountain", target: [0, 0.75, 0] as Vec3, r: { phone: 4.4, desktop: 4.8 }, theta: 0.42, phi: 1.12 }),
+  /** The Queen herself, in the banking hall, close enough to read her face and her flagstone at once. */
+  bank: Object.freeze({ anchor: "queen", target: [0, 1.18, 0.8] as Vec3, r: { phone: 2.9, desktop: 3.1 }, theta: 0.12, phi: 1.04 }),
   /** The Standing Book, open on its lectern — close enough that a page is a page. */
   library: Object.freeze({ anchor: "book", target: [0, 1.22, -0.9] as Vec3, r: { phone: 1.9, desktop: 2.1 }, theta: 0.06, phi: 1.12 }),
   /** The wheel, from the side the potter sits on, the clay standing on its head. */
