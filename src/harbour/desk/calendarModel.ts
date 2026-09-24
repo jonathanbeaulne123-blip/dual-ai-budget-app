@@ -118,7 +118,7 @@ export function readWeek(household: Household, memberId: string, scope: LedgerVi
           chips: day.entries.map((entry): DeskWeekChip => {
             if (entry.kind === "shift") return { kind: "shift", text: `${nameOf(household, entry.memberId)} · shift`, amountCents: null };
             if (entry.kind === "sitdown") return { kind: "sitdown", text: "Sit down", amountCents: null };
-            if (entry.kind === "payday") return { kind: "payday", text: `${nameOf(household, entry.memberId)} paid`, amountCents: entry.amountCents };
+            if (entry.kind === "payday") return { kind: "payday", text: `${nameOf(household, entry.memberId)} · ${entry.amountCents === null ? "expected payday" : "confirmed Fund contribution"}`, amountCents: entry.amountCents };
             return { kind: entry.kind, text: entry.label, amountCents: entry.amountCents };
           }),
         })),

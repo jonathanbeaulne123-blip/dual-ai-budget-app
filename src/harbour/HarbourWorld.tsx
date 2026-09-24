@@ -1,3 +1,5 @@
+import {DeskPlace} from "./desk/DeskPlace.tsx";
+import {usePublishEditionAvailability,type EditionAvailability} from "./nav/editionAvailability.ts";
 import {createMountainRecovery} from './mountain/recovery.ts';
 import {activateMountainInteraction,initialMountainInteractionState} from './mountain/life.ts';
 import {MOUNTAIN_TOUR} from './mountain/tour.ts';
@@ -154,7 +156,12 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const [previewLook,setPreviewLook]=useState<ReturnType<typeof villageRoomConfig>|null>(null);
   const [travelTo,setTravelTo]=useState<HarbourPlaceId|null>(null);
   const [status, setStatus] = useState<Status>("loading");
-  const [tier, setTier] = useState<QualityTier>(() => decideTier(host.current?.getBoundingClientRect().width || window.innerWidth));
+  const [quality, setQuality] = useState(() => decideQuality(host.current?.getBoundingClientRect().width || window.innerWidth));
+  const tier=quality.tier;
+  usePublishEditionAvailability({flat:tier === "flat" || status === "fallback",reason:status === "fallback" ? "failed" : quality.reason});
+  const [guideOpen,setGuideOpen]=useState(false);
+  const [deskVisited,setDeskVisited]=useState(false);
+  useEffect(()=>{if(status === "flat" || status === "fallback")setDeskVisited(true);},[status]);
   const [rects, setRects] = useState<ProjectedRect[]>([]);
   const [phrase, setPhrase] = useState<string>("");
   const [sparkle, setSparkle] = useState<(QueenSpark & { x: number; y: number; at: number }) | null>(null);
@@ -401,6 +408,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     if(!w)return;
     if(action.kind==='sound'){updateComfort({sound:action.on});setWorldSound(action.on);worldAudio.current?.dispose();worldAudio.current=null;if(action.on){try{worldAudio.current=createWorldAmbience();}catch{worldAudio.current=null;}}w.setWorldAmbience(worldAudio.current);return;}
     if(action.kind==='skip'){w.mountainSkip();return;}
+    // Release the guide synchronously so travel can acquire its follow camera.
+    if((action.kind==='go'||action.kind==='ride'||action.kind==='race')&&!routeRef.current.surface)w.setToolOpen(false);
     if(w.placeId()!=='court'){pendingMountain.current=action;navigatePlace('court');return;}
     held.current.clear();pushBody();
     if(action.kind==='tour'){const shot=MOUNTAIN_TOUR.find(s=>s.id===action.id);if(shot)w.look(shot.pose);return;}
@@ -515,7 +524,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
 
   // The tier is decided once per mount and again when the reading edition is chosen or the stage crosses 720.
   useEffect(() => {
-    const decide = () => setTier(decideTier(host.current?.getBoundingClientRect().width || window.innerWidth));
+    const decide = () => setQuality(decideQuality(host.current?.getBoundingClientRect().width || window.innerWidth));
     window.addEventListener("hearth:motion", decide); window.addEventListener("resize", decide);
     return () => { window.removeEventListener("hearth:motion", decide); window.removeEventListener("resize", decide); };
   }, []);
@@ -559,7 +568,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
         }).catch(() => { element.dataset.queen = "unavailable"; });
       } catch { setStatus("fallback"); }
     }).catch(() => setStatus("fallback"));
-    return () => { const checkpoint=runtime.current?.body()?.skate?.checkpoint();if(checkpoint&&skateOwner.current)skateRebuild.current={owner:skateOwner.current,checkpoint};cancelled = true; abort.abort(); queenAnimation.current?.();queenAnimation.current=null;queen.current?.dispose(); queen.current = null; court.current = null; runtime.current?.dispose(); runtime.current = null; };
+    return () => { rememberWorld(); held.current.clear(); pushBody(); runtime.current?.body()?.skate?.pause(true); const checkpoint=runtime.current?.body()?.skate?.checkpoint();if(checkpoint&&skateOwner.current)skateRebuild.current={owner:skateOwner.current,checkpoint};cancelled = true; abort.abort(); queenAnimation.current?.();queenAnimation.current=null;queen.current?.dispose(); queen.current = null; court.current = null; runtime.current?.dispose(); runtime.current = null; };
     // Theme and tier rebuild the scene; everything else flows through setReading / go.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [theme, tier]);
@@ -606,9 +615,10 @@ export default function HarbourWorld(props: HarbourWorldProps) {
    * walks back into the room.
    */
   useEffect(() => {
+    if(toolOpen){setGuideOpen(false);setMountainInspect(undefined);}
     const world = runtime.current;
     if (!world) return;
-    world.setToolOpen(toolOpen);
+    world.setToolOpen(toolOpen || guideOpen);
     // The band above the sheet is a frieze, and each place declares its own
     // (`door` in its pose table): the rack close and level, the rail at eye
     // height, her portrait in the Court.
@@ -621,7 +631,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // page comes back to the top once the focus has landed.
     const settle = window.setTimeout(() => window.scrollTo({ top: 0 }), 160);
     return () => window.clearTimeout(settle);
-  }, [toolOpen]);
+  }, [toolOpen, guideOpen, status]);
 
   /**
    * The journey between the places of this room (BUILD_PLAN_SLICE2 §1): the
@@ -724,14 +734,17 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weeks, evidenceSignature]);
 
+  function rememberWorld() {
+      const current = routeRef.current, world = runtime.current; if (!world || current.surface) return;
+      const camera=world.camera();if(!Array.isArray(camera)||camera.length!==3||!camera.every(Number.isFinite))return;
+      const composition = houseComposition(host.current?.getBoundingClientRect().width || window.innerWidth);
+      saveHouseReturn(localStorage, identityRef.current, houseCameraRoute(current), { camera: [...camera] as [number, number, number], cameraComposition: composition, body:world.body()?{world:MOUNTAIN_VERSION,y:world.body()!.at().y,place:world.placeId(),x:world.body()!.at().x,z:world.body()!.at().z,yaw:world.body()!.at().yaw}:undefined }, harbourCameraSlot(composition, world.placeId()));
+  }
+
   // Return records: the App's `hearth:house-return` event, and the camera per composition on pagehide.
   useEffect(() => {
     const restore = (event: Event) => { const detail = (event as CustomEvent).detail; if (detail?.identity === houseIdentity(identityRef.current) && Array.isArray(detail.camera) && detail.camera.length === 3 && detail.camera.every(Number.isFinite)) {runtime.current?.restore(detail.camera);if(validHouseBody(detail.body)&&detail.body.world===MOUNTAIN_VERSION&&detail.body.place===runtime.current?.placeId())runtime.current?.body()?.place(detail.body.x,detail.body.z,detail.body.yaw,detail.body.y);} };
-    const remember = () => {
-      const current = routeRef.current, world = runtime.current; if (!world || current.surface) return;
-      const composition = houseComposition(host.current?.getBoundingClientRect().width || window.innerWidth);
-      saveHouseReturn(localStorage, identityRef.current, houseCameraRoute(current), { camera: [...world.camera()] as [number, number, number], cameraComposition: composition, body:world.body()?{world:MOUNTAIN_VERSION,y:world.body()!.at().y,place:world.placeId(),x:world.body()!.at().x,z:world.body()!.at().z,yaw:world.body()!.at().yaw}:undefined }, harbourCameraSlot(composition, world.placeId()));
-    };
+    const remember = rememberWorld;
     window.addEventListener("hearth:house-return", restore); window.addEventListener("pagehide", remember);
     return () => { window.removeEventListener("hearth:house-return", restore); window.removeEventListener("pagehide", remember); remember(); };
   }, [scope, memberId, household.householdId, status]);
@@ -744,6 +757,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
    * for the direction every frame and the body accelerates into it.
    */
   const held = useRef<Set<string>>(new Set());
+  useEffect(()=>{if(guideOpen){held.current.clear();runtime.current?.body()?.cancel();runtime.current?.body()?.input({forward:0,strafe:0,run:false});runtime.current?.body()?.skate?.pause(true);}},[guideOpen]);
   const pushBody = useCallback(() => {
     const keys = held.current, world = runtime.current;
     const body = world?.body();
@@ -1058,11 +1072,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : showFlat ? `${placeName}. Reading edition. Every destination is a button.` : skating?"Skate the Harbour. W pushes, A turns left, D turns right, S brakes. Keys 1 to 6 emote while riding. Hold the down arrow and flick up to ollie, flick to a corner to flip. Q and E grab, G locks onto rails, M manuals, R returns to your marker, P pauses, B walks. Space opens all tools.":stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) {setStageHasKeys(false);if(held.current.size){held.current.clear();pushBody();}if(!event.currentTarget.contains(event.relatedTarget as Node))runtime.current?.body()?.skate?.pause(true);} }}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {((showFlat && !desk) || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} overlay={status === "loading" && tier !== "flat"} />}
-      {desk && <DeskShell household={household} memberId={memberId} scope={scope} today={today} reading={reading} theme={theme} status={status === "fallback" ? "fallback" : "flat"} onOpen={onOpen} onQuickSheet={onQuickSheet} spaceSlot={props.spaceSlot} />}
+      {(deskVisited || desk) && <DeskShell key={`${household.environment}:${household.householdId}:${memberId}:${scope}`} hidden={!desk} ready={ready} interpretationGate={interpretationGate} titleId={desk?"house-world-title":undefined} context={<DeskPlace reading={reading} place={place} onOpen={onOpen} onVisit={navigatePlace} onGuide={()=>setGuideOpen(true)}/>} household={household} memberId={memberId} scope={scope} today={today} reading={reading} theme={theme} status={status === "fallback" ? "fallback" : "flat"} onOpen={onOpen} onQuickSheet={onQuickSheet} spaceSlot={props.spaceSlot} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
-      {status==="ready"&&!toolOpen&&<VillageHUD appearanceRequest={appearanceRequest} fab={props.fab} onQuickSheet={onQuickSheet} place={place} travelling={travelTo} onVisit={visit} onWander={wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
+      {(status==="ready"||desk)&&!toolOpen&&<VillageHUD flat={desk} onGuide={()=>{setGuideOpen(open=>!open);setMountainInspect(undefined);}} guideOpen={guideOpen} appearanceRequest={appearanceRequest} fab={props.fab} onQuickSheet={onQuickSheet} place={place} travelling={travelTo} onVisit={visit} onWander={wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={desk?undefined:chooseAvatar} onJourney={!desk&&props.onJourney?openJourney:undefined} onArrange={!desk&&props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
         presence={<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />}/>}
-      {(status==='ready'||showFlat)&&!toolOpen&&<MountainPanel life={mountainLife} recoveryWords={recoveryView.words} calmOn={mountainCalm||comfort.quiet} soundOn={worldSound&&comfort.sound} riding={mountainRiding} conditionWords={reading.condition.words} reading={reading.basin} statusLine={statusLine} onAction={mountainAction} onOpen={target=>{if(target==='kitchen'||target==='cottage'||target==='library'||target==='glasshouse')navigatePlace(target);else onOpen(target);}} flat={showFlat} inspect={mountainInspect}/>}
+      {(status==='ready'||showFlat)&&!toolOpen&&<MountainPanel open={guideOpen} onOpenChange={open=>{setGuideOpen(open);if(!open)setMountainInspect(undefined);}} hideTrigger life={mountainLife} recoveryWords={recoveryView.words} calmOn={mountainCalm||comfort.quiet} soundOn={worldSound&&comfort.sound} riding={mountainRiding} conditionWords={reading.condition.words} reading={reading.basin} statusLine={statusLine} onAction={mountainAction} onOpen={target=>{if(Object.hasOwn(VILLAGE_ADDRESS,target))navigatePlace(target as HarbourPlaceId);else onOpen(target);}} flat={showFlat} inspect={mountainInspect}/>}
       {status==='ready'&&!toolOpen&&place==='court'&&standing&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating}
         onReplay={action=>runtime.current?.body()?.skate?.replay(action)} onSettings={skateSettings} onCommand={command=>runtime.current?.body()?.skate?.command(command)} onZonePointer={skateZone}
         gesturePath={skateGesturePath} trickBook={SKATE_TRICK_BOOK}
@@ -1149,8 +1163,9 @@ function keyAction(region: QueenRegion, key: "ArrowUp" | "ArrowDown" | "ArrowLef
   return null;
 }
 
-function decideTier(width: number): QualityTier {
-  try { return qualityTier(readQualityInput(window, width)); } catch { return "flat"; }
+function decideQuality(width:number):{tier:QualityTier;reason:EditionAvailability["reason"]} {
+  try {const input=readQualityInput(window,width);return {tier:qualityTier(input),reason:!input.webgl?"no-webgl":input.saveData?"save-data":null};}
+  catch {return {tier:"flat",reason:"no-webgl"};}
 }
 
 /** Her regions as the twins see them: one box per touchable part, labelled in words. */

@@ -19,7 +19,7 @@ export function DeskLeaving({ household, memberId, scope, today, reading, onOpen
   return <div className="desk-leaving" data-desk-leaving={leaving.fund ? "fund" : "calendar"}>
     {/* Two columns on a wide desk (the reading column, the rail column); on a phone they dissolve into one ordered stack. */}
     <div className="desk-leaving__col desk-leaving__col--read">
-    <NextCard next={leaving.next} fund={leaving.fund} personal={personal} />
+    <NextCard known={leaving.table.available} next={leaving.next} fund={leaving.fund} personal={personal} />
     <SpokenCard spoken={leaving.spoken} personal={personal} />
 
     <section className="desk-card desk-leaving__table" aria-labelledby={`${ids}-table`}>
@@ -51,11 +51,11 @@ function when(daysAhead: number) {
   return daysAhead === 0 ? "today" : daysAhead === 1 ? "tomorrow" : `in ${daysAhead} days`;
 }
 
-function NextCard({ next, fund, personal }: { next: LeavingNext | null; fund: boolean; personal: boolean }) {
+function NextCard({ known, next, fund, personal }: { known:boolean; next: LeavingNext | null; fund: boolean; personal: boolean }) {
   const kicker = fund ? "Next to leave the Fund" : personal ? "Next to leave · your Calendar" : "Next to leave · the Calendar";
   const warning = next?.breaks ? "The Fund runs short here." : next?.underBuffer ? "It leaves the Fund under its buffer." : null;
-  return <section className="desk-card desk-leaving__next" data-desk-next={next ? "dated" : "clear"}
-    aria-label={next ? `${kicker}: ${next.label}, ${engravedCents(next.amountCents)}, ${shortDate(next.date)}, ${when(next.daysAhead)}.${warning ? ` ${warning}` : ""}` : `${kicker}: nothing dated for the rest of the month.`}>
+  return <section className="desk-card desk-leaving__next" data-desk-next={!known ? "unknown" : next ? "dated" : "clear"}
+    aria-label={next ? `${kicker}: ${next.label}, ${engravedCents(next.amountCents)}, ${shortDate(next.date)}, ${when(next.daysAhead)}.${warning ? ` ${warning}` : ""}` : !known ? `${kicker}: checking the books.` : `${kicker}: nothing dated for the rest of the month.`}>
     <p className="desk-card__kicker">{kicker}</p>
     {next ? <>
       <strong className="desk-leaving__next-label">{next.label}</strong>
@@ -63,8 +63,8 @@ function NextCard({ next, fund, personal }: { next: LeavingNext | null; fund: bo
       <span className="desk-card__line"><time dateTime={next.date}>{shortDate(next.date)}</time> · {when(next.daysAhead)}</span>
       {warning && <span className="desk-leaving__warning">{warning}</span>}
     </> : <>
-      <strong className="desk-leaving__next-label">Nothing dated</strong>
-      <span className="desk-card__line">{fund ? "Nothing else leaves the Fund this month." : "Nothing scheduled leaves for the rest of the month."}</span>
+      <strong className="desk-leaving__next-label">{known ? "Nothing dated" : "Checking next payments"}</strong>
+      <span className="desk-card__line">{!known ? "The next payment cannot be read yet. Open Calendar to review." : fund ? "Nothing else leaves the Fund this month." : "Nothing scheduled leaves for the rest of the month."}</span>
     </>}
   </section>;
 }
@@ -83,7 +83,7 @@ function SpokenCard({ spoken, personal }: { spoken: LeavingSpoken | null; person
       <strong className="desk-figure" aria-hidden="true">—</strong>
       <span className="desk-card__line">{personal
         ? "Spoken for reads the shared Fund’s pool. Your own ledger has no pool to claim against — switch to Shared to read it."
-        : "The shared Fund has no walk of the month yet, so nothing is spoken for."}</span>
+        : "The shared Fund’s month is not available yet. Open the Fund to review its setup and records."}</span>
     </section>;
   }
   const over = spoken.overCents > 0;
@@ -102,6 +102,7 @@ function SpokenCard({ spoken, personal }: { spoken: LeavingSpoken | null; person
 }
 
 function OutTable({ table, personal }: { table: LeavingTable; personal: boolean }) {
+  if (!table.available) return <p className="desk-card__line">The scheduled payments are not available yet. Open Calendar to review.</p>;
   if (table.rows.length === 0) {
     return <p className="desk-card__line desk-leaving__empty">{table.source === "fund" ? "Nothing owed for the rest of the month." : personal ? "Your Calendar has nothing scheduled to leave for the rest of the month." : "Nothing scheduled to leave for the rest of the month."}</p>;
   }
@@ -225,7 +226,8 @@ function jarWords(jar: LeavingJar) {
   return `${JAR_STATE_WORDS[jar.state]}${jar.missing ? " · missing a payment" : ""}`;
 }
 
-function Jars({ jars, onOpen }: { jars: LeavingJar[] | null; onOpen: (target: string, object?: string) => void }) {
+function Jars({ jars, onOpen }: { jars: LeavingJar[] | null | undefined; onOpen: (target: string, object?: string) => void }) {
+  if (jars === undefined) return <p className="desk-card__line">The bill jars are not available yet. Open the Cellar to review.</p>;
   if (jars === null) return <p className="desk-card__line desk-leaving__empty">The bill jars stand in the shared Fund’s cellar. Switch to Shared to read them.</p>;
   if (jars.length === 0) return <p className="desk-card__line desk-leaving__empty">No bills on the rail yet.</p>;
   return <ul className="desk-jars">

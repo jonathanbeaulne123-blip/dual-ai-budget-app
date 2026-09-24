@@ -1,3 +1,4 @@
+import {editionAvailability,useEditionAvailability,editionUnavailableWords} from "./editionAvailability.ts";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode, type TouchEvent as ReactTouchEvent } from "react";
 import { FabSpeedDial } from "../../FabSpeedDial.tsx";
 import type { FabAction, FabAddMode } from "../../core/fabActions.ts";
@@ -81,6 +82,7 @@ export const EDITION_FLIP_KEY = "`";
 
 /** Flip to the other edition and tell the harbour. Returns the edition now chosen. */
 export function flipMotionEdition(storage?: Pick<Storage, "getItem" | "setItem">): MotionEdition {
+  if(editionAvailability().reason) return "flat";
   const next: MotionEdition = readMotionEdition(storage) === "flat" ? "illustrated" : "flat";
   chooseMotionEdition(next, storage);
   return next;
@@ -126,7 +128,9 @@ export function editionFlipWords(edition: MotionEdition, world: EditionWorld = "
  * description. Personal scope, and a bar the App has not dressed, wear none.
  */
 export function EditionFlip({ className, storage, world = "harbour" }: { className?: string; storage?: Pick<Storage, "getItem" | "setItem">; world?: EditionWorld }) {
-  const edition = useMotionEdition(storage);
+  const preference = useMotionEdition(storage);
+  const availability = useEditionAvailability();
+  const edition = availability.flat ? "flat" : preference;
   const words = editionFlipWords(edition, world);
   const badges = useBarBadges();
   const figureId = useId();
@@ -139,8 +143,9 @@ export function EditionFlip({ className, storage, world = "harbour" }: { classNa
       data-edition-flip={edition}
       data-edition-figure={wearsFigure ? (badges.everydayCents === null ? "unknown" : "known") : undefined}
       aria-label={words.aria}
+      disabled={Boolean(availability.reason)}
       aria-describedby={wearsFigure ? figureId : undefined}
-      title={`${words.label} (\`)`}
+      title={editionUnavailableWords(availability.reason) ?? `${words.label} (\`)`}
       onClick={() => flipMotionEdition(storage)}
     >
       <b aria-hidden="true">{edition === "flat" ? "≋" : "▤"}</b> <span>{words.label}</span>

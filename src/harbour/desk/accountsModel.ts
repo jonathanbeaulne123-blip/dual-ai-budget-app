@@ -47,6 +47,7 @@ export type DeskAccountTile = {
 };
 
 export type DeskAccounts = {
+  available:boolean;
   scope: LedgerView;
   /** "shared": `accountRows`, unchanged. "personal": this member's own rooms, as the Wallet reads them. */
   source: "shared" | "personal";
@@ -58,7 +59,7 @@ const finite = (cents: number | null | undefined): number | null => (typeof cent
 
 /** The page's tiles for this scope. Never throws: an unreadable ledger is an empty page, never a crash. */
 export function readAccounts(household: Household, memberId: string, scope: LedgerView, today: DateKey): DeskAccounts {
-  if (scope === "personal") return { scope, source: "personal", tiles: readPersonalTiles(household, memberId, today), glance: null };
+  if (scope === "personal") {const tiles=readPersonalTiles(household,memberId,today);return {available:tiles!==null,scope,source:"personal",tiles:tiles??[],glance:null};}
   try {
     const chosen = chosenAccount(household, memberId, today);
     const tiles = accountRows(household, memberId, today).map((row): DeskAccountTile => ({
@@ -74,9 +75,9 @@ export function readAccounts(household: Household, memberId: string, scope: Ledg
       glance: chosen?.accountId === row.accountId,
       fundCard: row.isFundCard,
     }));
-    return { scope, source: "shared", tiles, glance: tiles.find(tile => tile.glance) ?? null };
+    return { available:true, scope, source: "shared", tiles, glance: tiles.find(tile => tile.glance) ?? null };
   } catch {
-    return { scope, source: "shared", tiles: [], glance: null };
+    return { available:false, scope, source: "shared", tiles: [], glance: null };
   }
 }
 
@@ -86,7 +87,7 @@ export function readAccounts(household: Household, memberId: string, scope: Ledg
  * the Books Wallet pane makes): a card's balance owed, every other kind's
  * display balance.
  */
-function readPersonalTiles(household: Household, memberId: string, today: DateKey): DeskAccountTile[] {
+function readPersonalTiles(household: Household, memberId: string, today: DateKey): DeskAccountTile[] | null {
   try {
     const own = household.accounts
       .filter(account => account.active && account.scope === "personal" && account.ownerMemberId === memberId)
@@ -112,7 +113,7 @@ function readPersonalTiles(household: Household, memberId: string, today: DateKe
       };
     });
   } catch {
-    return [];
+    return null;
   }
 }
 
@@ -126,7 +127,7 @@ export type DeskActivityRow = {
   word: string;
 };
 
-export type DeskActivity = { rows: DeskActivityRow[]; total: number };
+export type DeskActivity = { available:boolean; rows: DeskActivityRow[]; total: number };
 
 /** The Wallet room's own words for a row: the note, the place, the category, or the type. */
 function rowLabel(household: Household, tx: Transaction): string {
@@ -150,7 +151,7 @@ export function readActivity(household: Household, memberId: string, scope: Ledg
     const floor = booksPresentationFloor(household, memberId, scope);
     const all = accountActivity(floor, accountId);
     return {
-      total: all.length,
+      available:true, total: all.length,
       rows: all.slice(0, limit).map(tx => ({
         id: tx.id,
         date: tx.date,
@@ -160,6 +161,6 @@ export function readActivity(household: Household, memberId: string, scope: Ledg
       })),
     };
   } catch {
-    return { rows: [], total: 0 };
+    return { available:false, rows: [], total: 0 };
   }
 }

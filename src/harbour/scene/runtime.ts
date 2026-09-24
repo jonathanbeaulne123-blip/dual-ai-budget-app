@@ -151,6 +151,8 @@ export type BodyControls = {
   input: (next: BodyInput) => void;
   /** Walk to a point on the ground — a tap. A straight line that slides off what it meets. */
   goTo: (x: number, z: number) => boolean;
+  /** Stop a clicked walking route when a navigation panel takes focus. */
+  cancel: () => void;
   /** Put the body somewhere at once. */
   place: (x: number, z: number, yaw?: number, y?:number) => void;
   /**
@@ -1476,6 +1478,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const one = walker;
       if (!one) return null;
       return {
+        cancel(){bodyInput=NO_INPUT;one.setInput(NO_INPUT);one.cancel();},
         skate: {
           ...one.skate,
           ghost(){return !toolOpen&&!calmWorld&&!reducedMotion()&&placeId==='court'?one.skate.ghost():null;},

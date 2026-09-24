@@ -29,7 +29,7 @@ function sign(place: "court" | "cellar" | "library", fallback: string) {
     try { return placeSigns(reading)[place].line; } catch { return fallback; }
   };
 }
-const calendarSign = ({ reading }: DeskSignContext) => reading?.next ? `Next · ${reading.next.label} ${shortDate(reading.next.date)}` : "Nothing dated";
+const calendarSign = ({ reading }: DeskSignContext) => !reading ? "Checking the calendar" : reading.next ? `Next · ${reading.next.label} ${shortDate(reading.next.date)}` : "Nothing dated";
 
 /**
  * The household reads the harbour's door signs; personal scope has no harbour

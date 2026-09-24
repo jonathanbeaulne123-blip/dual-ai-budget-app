@@ -42,11 +42,12 @@ export type LeavingRow = {
 };
 
 export type LeavingTable = {
+  available: boolean;
   /** "fund": `nextOut` over the Fund walk. "calendar": the rail's scheduled cash out, from today on. */
   source: "fund" | "calendar";
   rows: LeavingRow[];
   breakRow: LeavingRow | null;
-  totalCents: number;
+  totalCents: number | null;
 };
 
 export type LeavingNext = LeavingRow & { daysAhead: number };
@@ -199,7 +200,7 @@ export function readLeavingTable(walk: FundWalk | null, rail: LeavingRail | null
         leavesCents: row.leavesCents, underBuffer: row.underBuffer, breaks: row.breaks,
       }));
       const breakRow = table.breakRow ? rows.find(row => row.id === table.breakRow!.id) ?? null : null;
-      return { source: "fund", rows, breakRow, totalCents: table.totalCents };
+      return { available:true, source: "fund", rows, breakRow, totalCents: table.totalCents };
     } catch { /* fall through to the Calendar's rail */ }
   }
   const rows: LeavingRow[] = (rail?.days ?? [])
@@ -208,7 +209,7 @@ export function readLeavingTable(walk: FundWalk | null, rail: LeavingRail | null
       .filter(item => item.kind === "scheduled-out")
       .map((item): LeavingRow => ({ id: item.id, label: item.title, date: day.date, amountCents: item.cents, leavesCents: null, underBuffer: false, breaks: false })));
   const scheduledCents = (rail?.days ?? []).filter(day => day.date >= today).reduce((sum, day) => sum + day.outstandingOutCents, 0);
-  return { source: "calendar", rows, breakRow: null, totalCents: scheduledCents };
+  return { available:rail !== null, source: "calendar", rows, breakRow: null, totalCents: rail ? scheduledCents : null };
 }
 
 /** The headline: the table's first row, with how many days away it is. */
@@ -223,7 +224,7 @@ export function readLeavingNext(table: LeavingTable, today: DateKey): LeavingNex
  * the Desk asks `buildCellarReading` itself, the same function. Personal
  * scope has no cellar: null, and the page says so.
  */
-export function readJars(household: Household, memberId: string, scope: LedgerView, today: DateKey, reading: HarbourReading | null): LeavingJar[] | null {
+export function readJars(household: Household, memberId: string, scope: LedgerView, today: DateKey, reading: HarbourReading | null): LeavingJar[] | null | undefined {
   if (scope !== "household") return null;
   let jars: CellarJarReading[];
   if (reading?.cellar) jars = reading.cellar.jars;
@@ -231,7 +232,7 @@ export function readJars(household: Household, memberId: string, scope: LedgerVi
     try {
       jars = buildCellarReading(household, memberId, today, projectKittyNest(household, memberId, "household", today), null).jars;
     } catch {
-      return [];
+      return undefined;
     }
   }
   return jars.map(jar => ({
@@ -253,7 +254,7 @@ export type DeskLeaving = {
   spoken: LeavingSpoken | null;
   rail: LeavingRail | null;
   /** Null: no cellar in this scope. */
-  jars: LeavingJar[] | null;
+  jars: LeavingJar[] | null | undefined;
 };
 
 /** The whole page's read, once. */

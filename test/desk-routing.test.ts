@@ -78,9 +78,10 @@ describe("the flat world is the Desk, in every place", () => {
     const world = await stand(square, { onQuickSheet });
     expect(world.dataset.worldStatus).toBe("flat");
     expect(world.querySelector("[data-desk]")).toBeTruthy();
+    expect(world.querySelectorAll("[data-harbour-bar]")).toHaveLength(1);
     expect(world.querySelector("[data-place-flat]")).toBeNull();
-    // The Desk's header carries the flip and All tools; the 3D bar does not sit over it.
-    expect(world.querySelector(".village-hud")).toBeNull();
+    // Both editions share one bar; the 3D address and directory stay out of the Desk.
+    expect(world.querySelector(".village-address")).toBeNull();
     await act(async () => world.querySelector<HTMLButtonElement>("[data-desk-drawer]")!.click());
     expect(onQuickSheet).toHaveBeenCalledTimes(1);
   });
@@ -92,10 +93,10 @@ describe("the flat world is the Desk, in every place", () => {
       expect(world.dataset.worldStatus).toBe("flat");
       expect(world.querySelector("[data-desk]")).toBeTruthy();
       expect(world.querySelector("[data-place-flat]")).toBeNull();
-      expect(world.querySelector(".village-hud")).toBeNull();
+      expect(world.querySelector(".village-address")).toBeNull();
       // The Leaving page carries what the Cellar's rail used to; the Desk opens on Today.
       expect(world.querySelector("[data-desk-chip='leaving']")).toBeTruthy();
-      expect(world.querySelector("[data-desk-flip]")!.getAttribute("aria-disabled")).toBeNull();
+      expect(world.querySelector("[data-desk-flip]")!.getAttribute("aria-disabled")).toBe("true");
     });
   }
 
@@ -118,19 +119,19 @@ describe("the flat world is the Desk, in every place", () => {
 
   it("keeps the light flat frame while a tool is open in front", async () => {
     const world = await stand({ ...square, surface: "books" });
-    expect(world.querySelector("[data-desk]")).toBeNull();
+    expect(world.querySelector("[data-desk]:not([hidden])")).toBeNull();
     const frame = world.querySelector<HTMLElement>("[data-place-flat='court']");
     expect(frame).toBeTruthy();
     expect(frame!.dataset.courtFlat).toBe("flat");
     // The frame is a frame: every door is the tool's, or the Desk's once the tool is put back.
     expect(frame!.querySelector("button, input, form")).toBeNull();
     expect(world.querySelector(".harbour-world__put-back")).toBeTruthy();
-    expect(world.querySelector(".village-hud")).toBeNull();
+    expect(world.querySelector(".village-address")).toBeNull();
   });
 
   it("keeps the same light frame behind a tool opened in the Tower", async () => {
     const world = await stand({ ...tower, surface: "loft-banks" });
-    expect(world.querySelector("[data-desk]")).toBeNull();
+    expect(world.querySelector("[data-desk]:not([hidden])")).toBeNull();
     expect(world.querySelector("[data-place-flat='tower']")).toBeTruthy();
   });
 
@@ -149,7 +150,7 @@ describe("the loading path stays light", () => {
     const world = await stand(tower);
     expect(world.dataset.harbourTier).not.toBe("flat");
     expect(world.dataset.worldStatus).toBe("loading");
-    expect(world.querySelector("[data-desk]")).toBeNull();
+    expect(world.querySelector("[data-desk]:not([hidden])")).toBeNull();
     const frame = world.querySelector<HTMLElement>("[data-place-flat='tower']");
     expect(frame).toBeTruthy();
     expect(frame!.dataset.courtFlat).toBe("loading");
@@ -158,7 +159,7 @@ describe("the loading path stays light", () => {
     // Hold it a little longer: a world that never says it is ready never becomes the Desk.
     await act(async () => { await new Promise((done) => setTimeout(done, 200)); });
     expect(world.dataset.worldStatus).toBe("loading");
-    expect(world.querySelector("[data-desk]")).toBeNull();
+    expect(world.querySelector("[data-desk]:not([hidden])")).toBeNull();
   });
 });
 
@@ -176,7 +177,7 @@ describe("a draw that failed is said honestly, in every place", () => {
       expect(world.querySelector("[data-desk-flip]")!.getAttribute("aria-disabled")).toBe("true");
       expect(world.querySelector(".desk__undrawn")!.textContent).toMatch(/could not be drawn/);
       expect(world.querySelector("[data-place-flat]")).toBeNull();
-      expect(world.querySelector(".village-hud")).toBeNull();
+      expect(world.querySelector(".village-address")).toBeNull();
     });
   }
 });

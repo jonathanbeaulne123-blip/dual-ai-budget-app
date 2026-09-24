@@ -198,6 +198,6 @@ describe("the seams that carry the bar", () => {
     expect(app).not.toMatch(/<Compass[^>]*(?:onHome|onStudy|onKitchen|onMaking|onTogether)=/);
     // S5: the backtick flips in personal scope too (its Desk), still behind the harbour gate.
     expect(app).toMatch(/useEditionFlipKey\(HARBOUR_ENABLED && Boolean\(household && session\)\)/);
-    expect(shell).toMatch(/<VillageHUD fab=\{props\.fab\} onQuickSheet=\{onQuickSheet\}/);
+    expect(shell).toMatch(/<VillageHUD[^\n]*fab=\{props\.fab\} onQuickSheet=\{onQuickSheet\}/);
   });
 });

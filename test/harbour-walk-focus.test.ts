@@ -24,10 +24,15 @@ import type { HouseRoute } from "../src/hearthside/houseRoutes.ts";
 type Input = { forward: number; strafe: number; run?: boolean };
 let inputs: Input[] = [];
 let ready: (() => void) | null = null;
+let panelOwnsWorld=false;
+let travelWasBlocked:boolean[]=[];
+const cancelWalk=vi.fn();
 
 const body = {
+  cancel: cancelWalk,
+  place: () => undefined,
   input: (next: Input) => { inputs.push(next); },
-  at: () => ({ x: 0, z: 0, yaw: 0 }),
+  at: () => ({ x: 0, y:1.31, z: 0, yaw: 0 }),
   follow: () => undefined,
   following: () => false,
 };
@@ -37,7 +42,12 @@ function fakeWorld() {
   return {
     place: () => ({ anchors: () => [], regions: () => ({}), words: () => null }),
     placeId: () => "court" as const,
-    setToolOpen: () => undefined,
+    setToolOpen: (open:boolean) => {panelOwnsWorld=open;},
+    mountainTravel: () => {travelWasBlocked.push(panelOwnsWorld);},
+    setMountainRecovery: () => undefined,
+    setMountainInteraction: () => undefined,
+    setWorldAmbience: () => undefined,
+    mountainCalm: () => undefined,
     setReading: () => undefined,
     setBreathing: () => undefined,
     addAnimator: () => undefined,
@@ -111,7 +121,7 @@ const press = (key: string) => act(async () => {
 const settle = () => act(async () => { await new Promise((done) => setTimeout(done, 300)); });
 
 beforeEach(() => {
-  inputs = []; ready = null; coarse = false;
+  inputs = []; ready = null; coarse = false;panelOwnsWorld=false;travelWasBlocked=[];cancelWalk.mockClear();localStorage.clear();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query === "(pointer: coarse)" ? coarse : false,
@@ -359,4 +369,16 @@ describe("being hidden is not a dead end", () => {
     expect(world).toMatch(/onUnhide\?: \(\) => void/);
     expect(world).toMatch(/onUnhide=\{onUnhide\}/);
   });
+});
+
+
+it("pauses clicked walking for the guide and releases the follow camera before scenic travel",async()=>{
+ const {stage}=await stand();
+ await act(async()=>host.querySelector<HTMLButtonElement>('#world-guide-trigger')!.click());
+ expect(cancelWalk).toHaveBeenCalled();expect(panelOwnsWorld).toBe(true);
+ await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Travel & race')!.click());
+ await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Board and ride')!.click());
+ expect(travelWasBlocked).toEqual([false]);expect(panelOwnsWorld).toBe(false);
+ expect(document.activeElement).toBe(stage);
+ expect(host.querySelector('[aria-label="Mountain and town guide"]')).toBeNull();
 });

@@ -149,7 +149,7 @@ describe("the personal Desk, mounted by the App", () => {
 
     await act(async () => desk.querySelector<HTMLButtonElement>('[data-desk-plate="mine-saving"]')!.click());
     await settle();
-    expect(container.querySelector('[data-desk][data-desk-scope="personal"]')).toBeNull();
+    expect(container.querySelector<HTMLDivElement>(".desk-personal-stage")?.hidden).toBe(true);
     const heading = await waitFor(() => container.querySelector<HTMLElement>(".house-tool-heading"), "the tool heading");
     expect(heading.querySelector("h2")!.textContent).toBe("Open Kitty Banks");
     expect(container.querySelector(".house-world")).toBeNull();

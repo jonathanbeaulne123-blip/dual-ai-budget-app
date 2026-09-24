@@ -1,3 +1,9 @@
+## 2026-09-24 — Claude Desk integrated with the complete mountain
+
+`codex/mountain-desk-integration`, isolated checkout `.codex-work/hearth-mountain-desk`, combines current main `dd5635c4`, completed mountain `448aade3`, and verified Claude bundle `0ec53106`. The completed task stack was not all present in main despite the PRs showing merged; merge `9a6721cd` restores the exact completed mountain tree, then `9fe576cb` joins the Desk. No main checkout was overwritten.
+
+Place-aware Desk doors, one shared guide/bar, preserved household Desk state, guarded financial readings, truthful unknown/expected-payday wording, capability-aware edition controls and pre-disposal elevated position capture are the integration improvements. All financial actions still use the ordinary tools and Final Confirm. See [worksession](worksessions/2026-09-24-mountain-desk-integration.md) for current verification; earlier bundle screenshots/checks are historical evidence, not this integration's acceptance. No merge, deployment, Production or hosted household change.
+
 ## 2026-09-24 — Hearth Mountain parallel continuation, local review
 
 `codex/hearth-mountain` integrates isolated art, living-world and race work from `a81e43ad`. Root owns integration, fictional rehearsal and measured evidence. See [worksession](worksessions/2026-09-24-hearth-mountain.md), [parallel packet](briefs/2026-09-24-hearth-mountain-parallel.md), and [iPhone/Mac acceptance](reviews/2026-09-24-mountain-iphone-mac.md).

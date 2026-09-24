@@ -28,13 +28,14 @@ export function DeskAccounts({ household, memberId, scope, today, onOpen }: Desk
           <strong className="desk-figure">{engravedCents(accounts.glance.balanceCents)} <small className="desk-accounts__label">{accounts.glance.balanceLabel}</small></strong>
           <span className="desk-card__line">Shown at a glance. {accounts.tiles.length === 1 ? "One shared account" : `${accounts.tiles.length} shared accounts`} below — balances are never added together.</span>
         </>
-        : <span className="desk-card__line">{personal
+        : <span className="desk-card__line">{!accounts.available ? "Accounts are not available yet. Open the Wallet to review the books." : personal
           ? accounts.tiles.length
             ? `${accounts.tiles.length === 1 ? "One personal account" : `${accounts.tiles.length} personal accounts`}, as Personal Books’ Wallet reads them. Shared accounts are read in Shared. Balances are never added together.`
             : "No personal accounts yet. Shared accounts are read in Shared; your own rooms appear here once they are opened in Personal Books."
           : "No shared accounts on this floor yet."}</span>}
     </section>
 
+    {!personal && <p className="desk-card__line">Balances follow the Fund’s account summary. Recent rows come from Books; they are a separate reading, not a balance calculation.</p>}
     {accounts.tiles.length > 0 && <ul className="desk-accounts__tiles" aria-label={personal ? "Your personal accounts" : "Shared accounts"}>
       {accounts.tiles.map(tile => <li key={tile.accountId} className={open === tile.accountId ? "is-open" : undefined}>
         <AccountTile tile={tile} open={open === tile.accountId} onToggle={() => setOpen(current => current === tile.accountId ? null : tile.accountId)}
@@ -88,6 +89,7 @@ function registerDate(date: string, today: string) {
 
 function Register({ household, memberId, scope, today, accountId }: Pick<DeskPageProps, "household" | "memberId" | "scope" | "today"> & { accountId: string }) {
   const activity = useMemo(() => readActivity(household, memberId, scope, accountId), [household, memberId, scope, accountId]);
+  if (!activity.available) return <p className="desk-card__line">Recent rows are not available yet. Open the Wallet to review.</p>;
   if (activity.rows.length === 0) return <p className="desk-card__line desk-account__none">Nothing posted to this account yet.</p>;
   return <>
     <table className="desk-account__rows">

@@ -336,3 +336,17 @@ button.desk-card:active { transform: translateY(1px); box-shadow: 0 1px 0 color-
   .desk *, .desk *::before, .desk *::after { animation: none !important; transition: none !important; }
   .desk button:hover, .desk button:active { transform: none !important; }
 }
+
+/* The same neighbourhood, rendered as ink and paper when 3D is absent. */
+.desk[hidden],.desk-personal-stage[hidden]{display:none!important}
+.desk__support{padding-block:12px;border-block:1px solid var(--desk-line);font-size:13px}
+.desk-place{display:flex;align-items:center;gap:20px;margin-block:20px;padding-block:18px;border-block:1px solid var(--desk-line);background:color-mix(in srgb,var(--desk-pine) 5%,var(--desk-paper))}
+.desk-place__scene{width:180px;flex-shrink:0;transform:rotate(-3deg)}
+.desk-place__ridge{fill:color-mix(in srgb,var(--desk-pine) 35%,var(--desk-paper))}.desk-place__water{fill:var(--desk-pine)}.desk-place__dam{fill:var(--desk-card);stroke:var(--desk-pine)}.desk-place__houses{fill:var(--desk-copper)}
+.desk-place__words{flex:1;min-width:0}.desk-place small{color:var(--desk-muted);font-size:12px}.desk-place h2{font:600 22px/1.2 var(--font-heading,Georgia,serif);margin:5px 0 8px}.desk-place nav{display:flex;gap:8px;flex-wrap:wrap}.desk-place button{min-height:44px;border:1px solid var(--desk-line);border-radius:8px;background:var(--desk-card);padding:8px 12px;cursor:pointer}.desk-place nav+nav{margin-top:8px}.desk-place [aria-current=location]{border-color:var(--desk-pine);font-weight:700}.desk-place__guide{max-width:150px;text-align:left;font-size:13px!important}
+.desk--taylor .desk-place{border-block-style:dashed;background:color-mix(in srgb,var(--desk-copper) 8%,var(--desk-paper))}.desk--taylor .desk-place__scene{filter:drop-shadow(2px 3px 0 var(--desk-line));transform:rotate(3deg)}
+.desk--newfoundland .desk-place{border-block:3px double var(--desk-pine);background:color-mix(in srgb,var(--desk-pine) 9%,var(--desk-paper))}.desk--newfoundland .desk-place__scene{transform:none}.desk--newfoundland .desk-place button{border-radius:2px}
+@media(max-width:719px){.desk-place{gap:12px;flex-wrap:wrap;margin-block:12px}.desk-place__scene{width:70px;align-self:flex-start}.desk-place h2{font-size:19px}.desk-place__guide{max-width:none;width:100%}.desk-place nav{gap:5px}.desk-place button{font-size:12px;padding:7px 9px}}
+/* Keep the shared bar inside the visible viewport, including a local review banner. */
+.harbour-world:is([data-world-status=flat],[data-world-status=fallback]) .village-tools{position:fixed}
+@media(max-width:719px){.harbour-world .desk__header{padding-top:76px}.harbour-world .desk__page{padding-bottom:140px}}
