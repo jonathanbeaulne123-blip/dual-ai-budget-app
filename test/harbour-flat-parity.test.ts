@@ -9,16 +9,13 @@ import { placeSigns } from "../src/harbour/nav/doorSigns.ts";
 import { HarbourFlat } from "../src/harbour/flat/PlaceFlat.tsx";
 
 /**
- * Flat-edition parity (W5 #3).
+ * The light flat frame (W5 #3, narrowed by SIMPLE_VIEW_DESK S6).
  *
- * The product law: **a broken bridge never gates a money task.** The reading
- * edition is what stands while the books are being read, on the flat tier by
- * choice, and when WebGL fails outright — so every place of the island must
- * have one, every one must carry the same facts its own reading carries, and
- * the sign the building wears on the path must say the same thing on the page.
- *
- * This is the test that says "every", by name, so a twelfth place cannot be
- * added to the island with no page behind it.
+ * The per-place reading editions retired: at rest with no WebGL world the Desk
+ * stands in every place and carries every money task (`desk-routing.test.ts`).
+ * What is left is the light frame the App's Suspense fallback, the loading
+ * overlay and the band behind an open tool stand — and it must still stand in
+ * every place, name itself, and say the same words the sign on the path says.
  */
 const today = "2026-09-20";
 const household = seedDemoHousehold({ today });
@@ -31,36 +28,39 @@ let host: HTMLDivElement, root: Root;
 beforeEach(() => { vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true); host = document.createElement("div"); document.body.append(host); root = createRoot(host); });
 afterEach(async () => { await act(async () => root.unmount()); host.remove(); vi.unstubAllGlobals(); });
 
-async function render(place: HarbourPlaceId, next: HarbourReading | null = reading, onOpen?: (target: string, object?: string) => void) {
-  await act(async () => root.render(createElement(HarbourFlat, { place, reading: next, status: "flat" as const, onOpen })));
+async function render(place: HarbourPlaceId, next: HarbourReading | null = reading, status: "loading" | "flat" | "fallback" = "flat") {
+  await act(async () => root.render(createElement(HarbourFlat, { place, reading: next, status })));
 }
 
-describe("every place has a reading edition", () => {
-  it("covers the whole island — no place is only illustrated", () => {
-    // The island is eleven places today; when it is twelve this test fails
-    // until the twelfth has a page, which is the point of it.
+describe("every place has a light frame", () => {
+  it("covers the whole island", () => {
     expect(PLACES.length).toBeGreaterThanOrEqual(11);
   });
 
   for (const place of PLACES) {
-    it(`${place}: stands, names itself, and every door is a real button`, async () => {
-      const opened: string[] = [];
-      await render(place, reading, (target) => opened.push(target));
+    it(`${place}: stands and names itself, with nothing on it that could write`, async () => {
+      await render(place);
       const section = host.querySelector<HTMLElement>(`[data-place-flat="${place}"]`);
-      expect(section, `${place} has no flat edition`).not.toBeNull();
+      expect(section, `${place} has no frame`).not.toBeNull();
       expect(section!.getAttribute("aria-label")).toMatch(/reading edition/i);
-      const buttons = [...section!.querySelectorAll("button")].filter((button) => !button.disabled);
-      expect(buttons.length, `${place} has no doors`).toBeGreaterThan(0);
-      // Nothing on the page posts money: every control is a button or an input
-      // that reads. A form would be a second way to write, and there is none.
-      expect(section!.querySelector("form")).toBeNull();
-      await act(async () => buttons.find((b) => b.className.includes("court-flat__plate") || b.closest("ul") !== null)?.click());
-      expect(opened.length + buttons.length).toBeGreaterThan(0);
+      expect(section!.querySelector("form, input, button")).toBeNull();
     });
   }
+
+  it("says it is being built while loading, and says so honestly when the draw failed", async () => {
+    await render("tower", null, "loading");
+    const loading = host.querySelector<HTMLElement>("[data-place-flat='tower']")!;
+    expect(loading.dataset.courtFlat).toBe("loading");
+    expect(loading.getAttribute("aria-busy")).toBe("true");
+    expect(loading.textContent).toContain("The Loft is being built");
+    await render("cellar", reading, "fallback");
+    const fallback = host.querySelector<HTMLElement>("[data-place-flat='cellar']")!;
+    expect(fallback.getAttribute("aria-busy")).toBeNull();
+    expect(fallback.textContent).toContain("Reading edition · The Cellar could not be drawn");
+  });
 });
 
-describe("the page and the path say the same thing", () => {
+describe("the frame and the path say the same thing", () => {
   for (const place of PLACES) {
     it(`${place}: carries its door sign, word for word`, async () => {
       await render(place);
@@ -72,7 +72,7 @@ describe("the page and the path say the same thing", () => {
     });
   }
 
-  it("moves with the reading: change the room and the page's sign changes with it", async () => {
+  it("moves with the reading: change the room and the frame's sign changes with it", async () => {
     const warm: HarbourReading = { ...reading, kiln: { ...reading.kiln, fired: 9, onTheWheel: 2, sinceFiring: 0, warmth: 1 } };
     await render("kiln", warm);
     expect(host.querySelector('[data-place-sign="kiln"]')?.textContent).toContain("9 pieces fired · still hot");
@@ -81,60 +81,14 @@ describe("the page and the path say the same thing", () => {
   });
 });
 
-describe("the facts of each room reach its page", () => {
-  it("the Glasshouse counts the member's own pots without naming one", async () => {
-    await render("glasshouse", { ...reading, glasshouse: { ...reading.glasshouse, mine: { seed: 2, sprout: 1, bloom: 3 } } });
-    const own = host.querySelector('[data-place-fact="mine"]');
-    expect(own?.textContent).toContain("2 seeds");
-    expect(own?.textContent).toContain("1 sprout");
-    expect(own?.textContent).toContain("3 in bloom");
-    expect(own?.textContent).toMatch(/never named/i);
-  });
-
-  it("the Kitchen says where the plan on the wall stands", async () => {
-    for (const [state, words] of [["active", /living/i], ["scheduled", /its own date/i], ["proposed", /nothing is agreed/i]] as const) {
-      await render("kitchen", { ...reading, kitchen: { ...reading.kitchen, state, monthKey: "2026-09" } });
-      expect(host.querySelector('[data-place-fact="state"]')?.textContent, state).toMatch(words);
-    }
-  });
-
-  it("the Boathouse says when a lantern is still warm, and nothing about the wish", async () => {
-    await render("boathouse", { ...reading, boathouse: { ...reading.boathouse, wishes: 4, hung: 2 } });
-    expect(host.querySelector('[data-place-fact="hung"]')?.textContent).toContain("2 wishes were hung");
-  });
-
-  it("the Campfire counts the logs taken", async () => {
-    await render("campfire", { ...reading, campfire: { ...reading.campfire, seated: 1, seats: [{ memberId: "a", name: "Jonathan", seated: true }, { memberId: "b", name: "Bianca", seated: false }] } });
-    expect(host.querySelector('[data-place-fact="seated"]')?.textContent).toContain("1 of 2 logs taken");
-  });
-
-  it("the Library says how the books stand, which is the one fact it had lost", async () => {
-    for (const [freshness, words] of [["current", /current/i], ["stale", /not just been checked/i], ["offline", /offline/i]] as const) {
-      await render("library", { ...reading, freshness });
-      expect(host.querySelector('[data-place-fact="books"]')?.textContent, freshness).toMatch(words);
-    }
-  });
-
-  it("the Atlas counts the plans standing on this era", async () => {
-    const era = reading.atlas.era;
-    if (!era) { expect(host).toBeTruthy(); return; }
-    await render("atlas", { ...reading, atlas: { ...reading.atlas, era: { ...era, plans: 3 } } });
-    expect(host.querySelector('[data-place-flat="atlas"]')?.textContent).toContain("3 plans standing");
-  });
-});
-
-describe("a bridge that is out never gates a money task", () => {
+describe("a frame with no reading yet (the Suspense fallback)", () => {
   for (const place of PLACES) {
-    it(`${place}: stands with no reading at all`, async () => {
-      await render(place, null);
+    it(`${place}: stands with no reading at all, and invents no sign`, async () => {
+      await render(place, null, "loading");
       const section = host.querySelector<HTMLElement>(`[data-place-flat="${place}"]`);
       expect(section, `${place} falls over without a reading`).not.toBeNull();
-      // No sign when there is nothing to sign — never a number invented to fill it.
       expect(host.querySelector(`[data-place-sign="${place}"]`)).toBeNull();
-      expect(section!.textContent).not.toMatch(/undefined|NaN|\[object/);
-      // A door that is disabled is not a door: every page keeps at least one
-      // real way into the room whose money task it carries.
-      expect([...section!.querySelectorAll("button")].filter((button) => !button.disabled).length, `${place} has no usable door without a reading`).toBeGreaterThan(0);
+      expect(section!.textContent).not.toMatch(/undefined|NaN|\[object|\$0/);
     });
   }
 });

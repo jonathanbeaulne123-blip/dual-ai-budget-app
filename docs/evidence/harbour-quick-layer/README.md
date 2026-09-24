@@ -17,8 +17,8 @@ Two widths: **390** (a phone) and **1440** (a desktop), classic theme.
 | `*-27-quick-sheet.png` | The quick sheet, opened with **Space** on the stage: every tool, grouped by district. |
 | `*-27b-quick-sheet-places.png` | The same sheet, scrolled to "Every place on the island" — all fifteen room × level slots, each named by the place standing there. |
 | `*-28-close-mode.png` | The Court's **close hold**: the Queen framed, entered with `c` (or two taps on the open ground) and left the same way. |
-| `*-29-flat-court.png` | The reading edition of the Court, carrying **the same door sign** the path carries. |
-| `classic-390-07-flat-tower.png`, `classic-390-08-flat-cellar.png` | The reading editions of the Tower and the Cellar, each with its own sign and its room's own door. |
+| `*-29-flat-court.png` | The reading edition of the Court, carrying **the same door sign** the path carries. (Retired 2026-09-24 by Simple View Desk S6: the flat tier now stands the Desk.) |
+| `classic-390-07-flat-tower.png`, `classic-390-08-flat-cellar.png` | The reading editions of the Tower and the Cellar, each with its own sign and its room's own door. (Retired with the Court's edition; the Desk stands in every place.) |
 
 The rest are the slice-2 island walk, unchanged in kind: each place, each door open over it, the
 rail's walk through the month, and a mid-travel frame of each journey.

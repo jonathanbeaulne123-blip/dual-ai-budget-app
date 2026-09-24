@@ -57,9 +57,10 @@ import "./interiors/interiors.css";
 /**
  * The Court's React shell (BUILD_PLAN #2). Props are `HouseWorld`'s plus the
  * presence and the two quick-sheet nodes; the App keeps no new state for the
- * scene. The stage is full-bleed above the compass; the reading edition is
- * the loading frame, the `flat` tier and the WebGL fallback; a tool in front
- * collapses the stage to a door strip.
+ * scene. The stage is full-bleed above the compass; the Desk is the `flat`
+ * tier and the WebGL fallback in every place (SIMPLE_VIEW_DESK S6), the light
+ * `HarbourFlat` frame is the loading frame; a tool in front collapses the
+ * stage to a door strip.
  */
 export type HarbourWorldProps = {
   household: Household;
@@ -153,8 +154,12 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const [lens, setLens] = useState<Lens>("living");
   const [presenceScale, setPresenceScale] = useState(1);
   const [weeks, setWeeks] = useState<number | null>(null);
-  /** The cellar's rail, scrubbed to a day. `null` is today. */
-  const [scrub, setScrub] = useState<number | null>(null);
+  /**
+   * The cellar's rail, scrubbed to a day (`null` is today). The flat Cellar
+   * that read it back retired with the per-place editions (SIMPLE_VIEW_DESK
+   * S6); the index is still set so a scrub re-renders the stage as it did.
+   */
+  const [, setScrub] = useState<number | null>(null);
   /**
    * The phone's thumb-stick (W7 b): where it was pressed, while a thumb is on
    * it. The knob itself is written straight to the DOM through `knob` so a
@@ -323,7 +328,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
    * The route change that is in flight because a doorway was **crossed**
    * (`scene/runtime.ts` §3) rather than because a building was tapped from
    * across the lawn. Both make the same route change — which is the point, so
-   * the compass, the quick sheet and the reading edition cannot tell them
+   * the compass and the quick sheet cannot tell them
    * apart — but a crossing must not then fly the camera anywhere: you already
    * walked in.
    */
@@ -771,8 +776,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     return document.activeElement === node;
   }, []);
   useEffect(() => {
-    // The loading frame and the reading edition have no body to walk and their
-    // own buttons are the way through; there the stage asks for nothing.
+    // The loading frame and the Desk have no body to walk and their own
+    // buttons are the way through; there the stage asks for nothing.
     if (status !== "ready" || toolOpen) return;
     takeKeys();
     /**
@@ -855,16 +860,14 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       && !event.target.closest('input,select,textarea,[role=dialog]');
     if (event.target !== event.currentTarget&&!acceptsSkateKey(event)&&!skateHudSpace) return;
     // Space opens the quick sheet wherever you are standing — including the
-    // reading edition and the fallback, where there is no world to drive.
+    // Desk on the flat tier and the fallback, where there is no world to drive.
     // Everything the app can do has to be one key away even when the island
     // could not be drawn at all.
     if (event.key === " " && onQuickSheet) { onQuickSheet(); event.preventDefault(); return; }
     const world = runtime.current;
-    if (!world) {
-      // The reading edition still steps back out of a place the same way.
-      if (event.key === "Escape" && placeRef.current !== "court") { onNavigateRef.current("home", "middle"); event.preventDefault(); }
-      return;
-    }
+    // With no world standing, the Desk is the whole flat world in every place
+    // (SIMPLE_VIEW_DESK S6): there is no place to step back out of.
+    if (!world) return;
     const step = 40;
     /**
      * The Cellar's rail owns the left and right arrows (BUILD_PLAN_SLICE2 §3):
@@ -913,8 +916,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     if (onRail && (event.key === "Home" || event.key === "0")) walk("today");
     else if (onRail && event.key === "ArrowLeft") walk(-1);
     else if (onRail && event.key === "ArrowRight") walk(1);
-    // The arrows orbit only where no body is standing to walk them — the
-    // reading edition's fallback, and a place whose body could not be raised.
+    // The arrows orbit only where no body is standing to walk them — a place
+    // whose body could not be raised.
     else if (event.key === "ArrowLeft") world.gesture({ kind: "orbit", dx: -step, dy: 0 });
     else if (event.key === "ArrowRight") world.gesture({ kind: "orbit", dx: step, dy: 0 });
     else if (event.key === "ArrowUp") world.gesture({ kind: "orbit", dx: 0, dy: -step });
@@ -967,8 +970,13 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     return ()=>{cancelled=true;target?.display?.([]);};
   },[place,status,displayKey,household.environment,household.householdId,hearthside,designClient]);
   const showFlat = status === "flat" || status === "fallback" || (status === "loading" && tier === "flat");
-  /** At rest in the square with no WebGL world standing, the Desk is the 2D world (SIMPLE_VIEW_DESK S2); rooms keep their flats until S6. */
-  const desk = (status === "flat" || status === "fallback") && !toolOpen && place === "court";
+  /**
+   * At rest with no WebGL world standing — the `flat` tier or a failed draw —
+   * the Desk is the whole 2D world, in every place (SIMPLE_VIEW_DESK S6). The
+   * light `HarbourFlat` frame is left only for the loading overlay and the band
+   * behind an open tool; the Desk never stands in the loading path.
+   */
+  const desk = (status === "flat" || status === "fallback") && !toolOpen;
   /**
    * Say it, quietly, to the person who has just landed. It is shown only while
    * the stage is not holding the keyboard and there is a body here to walk,
@@ -984,11 +992,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   return <section className={`harbour-world harbour-world--${theme}${skating?" is-skating":""}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={placeName}>
     <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : showFlat ? `${placeName}. Reading edition. Every destination is a button.` : skating?"Skate the Harbour. W pushes, A turns left, D turns right, S brakes. Keys 1 to 6 emote while riding. Hold the down arrow and flick up to ollie, flick to a corner to flip. Q and E grab, G locks onto rails, M manuals, R returns to your marker, P pauses, B walks. Space opens all tools.":stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) {setStageHasKeys(false);if(held.current.size){held.current.clear();pushBody();}if(!event.currentTarget.contains(event.relatedTarget as Node))runtime.current?.body()?.skate?.pause(true);} }}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
-      {((showFlat && !desk) || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => navigatePlace(next)} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
+      {((showFlat && !desk) || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} overlay={status === "loading" && tier !== "flat"} />}
       {desk && <DeskShell household={household} memberId={memberId} scope={scope} today={today} reading={reading} theme={theme} status={status === "fallback" ? "fallback" : "flat"} onOpen={onOpen} onQuickSheet={onQuickSheet} spaceSlot={props.spaceSlot} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
-      {(status==="ready"||(showFlat&&!desk))&&!toolOpen&&<VillageHUD fab={props.fab} onQuickSheet={onQuickSheet} place={place} travelling={travelTo} onVisit={visit} onWander={showFlat?undefined:wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={showFlat?undefined:chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
-        presence={status==="ready"?<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />:undefined}/>}
+      {status==="ready"&&!toolOpen&&<VillageHUD fab={props.fab} onQuickSheet={onQuickSheet} place={place} travelling={travelTo} onVisit={visit} onWander={wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
+        presence={<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />}/>}
       {status==='ready'&&!toolOpen&&place==='court'&&standing&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating}
         onSettings={skateSettings} onCommand={command=>runtime.current?.body()?.skate?.command(command)} onZonePointer={skateZone}
         gesturePath={skateGesturePath} trickBook={SKATE_TRICK_BOOK}
