@@ -1,3 +1,4 @@
+import {MOUNTAIN_ROAD,TOWN_RACE_ROAD,nearestOnRoute} from '../mountain/definition.ts';
 import {SKATE_SPOTS} from '../skate/park.ts';
 import { VILLAGE_SITES, VILLAGE_WATERFRONT } from '../village/layout.ts';
 import { HARBOUR_LANES, HARBOUR_WANDERS, distanceToTrail } from '../village/world.ts';
@@ -54,6 +55,7 @@ export function plantPlan(tier:'full'|'lite',keepOuts:readonly KeepOut[]=ISLAND_
         const size=isTree?1.1+rand()*1.2:.75+rand()*.9,spin=rand()*Math.PI;
         const x=Math.cos(angle)*r,z=Math.sin(angle)*r,clearance=spread(size);
         if(keepOutHit(x,z,clearance,keepOuts))continue;
+        if(nearestOnRoute(x,z,MOUNTAIN_ROAD).distance<5.8+clearance||nearestOnRoute(x,z,TOWN_RACE_ROAD).distance<4.5+clearance)continue;
         if(HARBOUR_LANES.some(lane=>distanceToTrail(x,z,lane.points)<1.25+clearance))continue;
         if(plants.some(p=>Math.hypot(x-p.x,z-p.z)<clearance+spread(p.size)))continue;
         plants.push({x,z,r,angle,size,spin});break;

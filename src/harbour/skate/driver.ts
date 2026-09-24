@@ -181,10 +181,10 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
     sim?.setStance(s.stance);score?.setStance(s.stance);input?.setMode(s.controls);
   }
   function syncInput(p:SkatePresent){input?.setStance(p.stance,{switch:p.switch,fakie:p.fakie});}
-  function mount(x:number,z:number,yaw:number,progress?:SkateProgress){
+  function mount(x:number,z:number,yaw:number,progress?:SkateProgress,position?:{y:number;vy?:number;supportId?:string}){
     session=createSkateSession(progress?cloneSkateProgress(progress):undefined);
     const s=settings();
-    sim=createSkateSim(field,SKATE_CATALOGS,{x,z,yaw,stance:s.stance,...skateSimOptions(world.obstacles,field)});
+    sim=createSkateSim(field,SKATE_CATALOGS,{x,z,yaw,...position,stance:s.stance,...skateSimOptions(world.obstacles,field)});
     input=createSkateInput({stance:s.stance,mode:s.controls,...(options.getGamepads!==undefined?{getGamepads:options.getGamepads}:{})});
     score=createSkateScore({stance:s.stance,catalogs:SKATE_CATALOGS});
     paused=false;cut=true;simTime=0;outcome=null;frame.length=0;
@@ -221,7 +221,7 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
       if(score&&sim){const outs=score.drop('walk');if(outs.length)observeSkate(session,sim.present(),[],outs[0]!,0);}
       sim=null;input?.reset();input=null;score=null;paused=false;frame.length=0;outcome=null;
       audio?.update(null,[],0,{paused:true});
-      return p?{x:p.x,y:p.y,z:p.z,yaw:p.boardYaw,heading:p.heading}:null;
+      return p?{x:p.x,y:p.y,z:p.z,yaw:p.boardYaw,heading:p.heading,vy:p.vy,clearance:p.clearance}:null;
     },
     pause(on:boolean){
       if(!sim)return;

@@ -1,3 +1,5 @@
+import {MountainPanel,type MountainAction} from './mountain/MountainPanel.tsx';
+import {MOUNTAIN_VERSION,TRANSPORT_STOPS} from './mountain/definition.ts';
 import {SkateHUD} from './skate/SkateHUD.tsx';
 import {readSkateProgress,saveSkateProgress,skateProgressKey,type SkateSettings} from './skate/session.ts';
 import {SKATE_TRICK_BOOK,skateGesturePath,type SkateCheckpoint} from './skate/driver.ts';
@@ -256,7 +258,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // `act` and `p` travel with the position: a jump, a slide or an emote is
     // something a partner should *see*, and it is ephemeral — nothing here is
     // written down anywhere, at either end.
-    return { target: pose.target, theta: pose.theta, avatar: avatarRef.current, body: at ? { x: at.x, z: at.z, yaw: at.yaw, act: at.act, p: at.p, ...(at.act?.startsWith("skate")?{y:at.y}: {}) } : null };
+    return { target: pose.target, theta: pose.theta, avatar: avatarRef.current, body: at ? { x: at.x, z: at.z, yaw: at.yaw, act: at.act, p: at.p, y:at.y,world:MOUNTAIN_VERSION } : null };
   }), []);
   const partnerWalk = useWorldFeed({
     environment: household.environment,
@@ -349,6 +351,22 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     say(spark(region), detail.at);
   }, [evidence.length, say]);
 
+  const [mountainRiding,setMountainRiding]=useState(false);
+  const [appearanceRequest,setAppearanceRequest]=useState(0);
+  const [mountainInspect,setMountainInspect]=useState<{section:'map'|'water'|'travel';seq:number}>();
+  const pendingMountain=useRef<MountainAction|null>(null);
+  const mountainAction=(action:MountainAction)=>{
+    const w=runtime.current;if(!w)return;
+    if(action.kind==='calm'){w.mountainCalm(action.on);return;}
+    if(action.kind==='skip'){w.mountainSkip();return;}
+    if(w.placeId()!=='court'){pendingMountain.current=action;navigatePlace('court');return;}
+    held.current.clear();pushBody();
+    if(action.kind==='view'){w.look({target:[25,80,-239],r:60,theta:0,phi:1.3});return;}
+    if(action.kind==='go')w.mountainTravel(action.at);
+    if(action.kind==='ride')w.mountainTravel(TRANSPORT_STOPS[action.transport][action.to]!.at,{kind:action.transport,from:action.from,to:action.to});
+    if(action.kind==='race'){startSkating();w.body()?.skate.route('mountain-descent');}
+    stage.current?.focus({preventScroll:true});
+  };
   const onTap = useCallback((hit: HarbourHit, at: { x: number; y: number }) => {
     // She stands in the Court; her touch grammar travels nowhere else.
     if (hit.kind === "queen") { if (placeRef.current !== "bank") return; const region = hit.region as QueenRegion; const action = gestureAction(region, "tap"); if (action) act(region, action, { at }); return; }
@@ -388,6 +406,14 @@ export default function HarbourWorld(props: HarbourWorldProps) {
 
   function activate(id: string, door?: { target: string; object?: string }, zone?: string) {
     const world = runtime.current, current = readingRef.current;
+    if(id.startsWith('mountain:')){
+      id=id.split('@')[0]!;
+      if(id==='mountain:journey'){openJourney();return;}
+      if(id==='mountain:goals'){onOpen('loft-banks');return;}
+      if(id==='mountain:pottery'){onOpen('pottery');return;}
+      if(id==='mountain:outfitters'){setAppearanceRequest(n=>n+1);return;}
+      setMountainInspect({section:id==='mountain:basin'?'water':id.includes('transport')||id==='mountain:race'?'travel':'map',seq:Date.now()});return;
+    }
     if(id.startsWith('visit:')){const target=id.slice(6) as HarbourPlaceId;if(target in VILLAGE_ADDRESS)visit(target);return;}
     if(id.startsWith('wander:')){wanderTo(id.slice(7) as HarbourWanderId);return;}
     if(id.startsWith('skate:')){startSkating();setPhrase('Board ready. Open Explore to find a line.');return;}
@@ -461,7 +487,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
           onProject: next => setRects(next), onTap, onGesture, onRailDrag: (x, width) => onRailDragRef.current(x, width),
           onStick, onClose: setClosed, onThreshold, onExit,
           onAvatarStatus:(loaded,status)=>{if(avatarRef.current===loaded)setAvatarStatus(status);},
-          avatar:avatarRef.current,onJourney:()=>openJourney(),
+          avatar:avatarRef.current,onJourney:()=>openJourney(),onMountainTravel:setMountainRiding,
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
         runtime.current = world;world.go("court");
@@ -471,7 +497,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
         world.invalidate();
         const saved = readHouseReturn(localStorage, identityRef.current, harbourCameraSlot(houseComposition(element.getBoundingClientRect().width || window.innerWidth), first));
         if (saved?.camera && sameHouseCameraRoute(saved.route, routeRef.current)) world.restore(saved.camera);
-        if(saved&&sameHouseCameraRoute(saved.route,routeRef.current)&&validHouseBody(saved.body)&&saved.body.place===first)world.body()?.place(saved.body.x,saved.body.z,saved.body.yaw);
+        if(saved&&sameHouseCameraRoute(saved.route,routeRef.current)&&validHouseBody(saved.body)&&saved.body.place===first)world.body()?.place(saved.body.x,saved.body.z,saved.body.yaw,saved.body.y);
         const resume=skateRebuild.current;skateRebuild.current=null;
         if(resume&&resume.owner===skateKeyRef.current&&first==='court'&&!routeRef.current.surface){skateOwner.current=resume.owner;world.body()?.skate?.restore(resume.checkpoint);world.body()?.skate?.setAudio(skateAudio.current);}
         if (first !== "bank") return;
@@ -573,6 +599,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       crossing.current = null;
       world.enter(place, { from, reduced:true, ...(walked ? { threshold: true } : {}) });
       world.invalidate();
+      if(place==='court'&&pendingMountain.current){const action=pendingMountain.current;pendingMountain.current=null;mountainAction(action);}
       court.current = place === "bank" ? world.place() as QueenHost : null;
       void holdRail(world);
       if (place !== "bank" || tier === "flat") return;
@@ -650,11 +677,11 @@ export default function HarbourWorld(props: HarbourWorldProps) {
 
   // Return records: the App's `hearth:house-return` event, and the camera per composition on pagehide.
   useEffect(() => {
-    const restore = (event: Event) => { const detail = (event as CustomEvent).detail; if (detail?.identity === houseIdentity(identityRef.current) && Array.isArray(detail.camera) && detail.camera.length === 3 && detail.camera.every(Number.isFinite)) {runtime.current?.restore(detail.camera);if(validHouseBody(detail.body)&&detail.body.place===runtime.current?.placeId())runtime.current?.body()?.place(detail.body.x,detail.body.z,detail.body.yaw);} };
+    const restore = (event: Event) => { const detail = (event as CustomEvent).detail; if (detail?.identity === houseIdentity(identityRef.current) && Array.isArray(detail.camera) && detail.camera.length === 3 && detail.camera.every(Number.isFinite)) {runtime.current?.restore(detail.camera);if(validHouseBody(detail.body)&&detail.body.world===MOUNTAIN_VERSION&&detail.body.place===runtime.current?.placeId())runtime.current?.body()?.place(detail.body.x,detail.body.z,detail.body.yaw,detail.body.y);} };
     const remember = () => {
       const current = routeRef.current, world = runtime.current; if (!world || current.surface) return;
       const composition = houseComposition(host.current?.getBoundingClientRect().width || window.innerWidth);
-      saveHouseReturn(localStorage, identityRef.current, houseCameraRoute(current), { camera: [...world.camera()] as [number, number, number], cameraComposition: composition, body:world.body()?{place:world.placeId(),x:world.body()!.at().x,z:world.body()!.at().z,yaw:world.body()!.at().yaw}:undefined }, harbourCameraSlot(composition, world.placeId()));
+      saveHouseReturn(localStorage, identityRef.current, houseCameraRoute(current), { camera: [...world.camera()] as [number, number, number], cameraComposition: composition, body:world.body()?{world:MOUNTAIN_VERSION,y:world.body()!.at().y,place:world.placeId(),x:world.body()!.at().x,z:world.body()!.at().z,yaw:world.body()!.at().yaw}:undefined }, harbourCameraSlot(composition, world.placeId()));
     };
     window.addEventListener("hearth:house-return", restore); window.addEventListener("pagehide", remember);
     return () => { window.removeEventListener("hearth:house-return", restore); window.removeEventListener("pagehide", remember); remember(); };
@@ -978,8 +1005,9 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {(showFlat || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} partnerName={partner?.name ?? null} onOpen={onOpen} onEnter={next => navigatePlace(next)} overlay={status === "loading" && tier !== "flat"} scrub={scrub ?? undefined} onScrub={index => walk({ to: index })} onStair={place === "court" ? undefined : stair} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
-      {(status==="ready"||showFlat)&&!toolOpen&&<VillageHUD place={place} travelling={travelTo} onVisit={visit} onWander={showFlat?undefined:wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={showFlat?undefined:chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
+      {(status==="ready"||showFlat)&&!toolOpen&&<VillageHUD appearanceRequest={appearanceRequest} place={place} travelling={travelTo} onVisit={visit} onWander={showFlat?undefined:wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={showFlat?undefined:chooseAvatar} onJourney={props.onJourney?openJourney:undefined} onArrange={props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
         presence={status==="ready"?<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />:undefined}/>}
+      {(status==='ready'||showFlat)&&!toolOpen&&<MountainPanel riding={mountainRiding} conditionWords={reading.condition.words} reading={reading.basin} statusLine={statusLine} onAction={mountainAction} onOpen={target=>{if(target==='kitchen'||target==='cottage'||target==='library'||target==='glasshouse')navigatePlace(target);else onOpen(target);}} flat={showFlat} inspect={mountainInspect}/>}
       {status==='ready'&&!toolOpen&&place==='court'&&standing&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating}
         onSettings={skateSettings} onCommand={command=>runtime.current?.body()?.skate?.command(command)} onZonePointer={skateZone}
         gesturePath={skateGesturePath} trickBook={SKATE_TRICK_BOOK}

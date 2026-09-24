@@ -1,3 +1,4 @@
+import {MOUNTAIN_RACE} from '../mountain/race.ts';
 /**
  * Harbour skate spots — the island-facing table (v2).
  *
@@ -23,7 +24,7 @@ export type SkateRail = { id: string; a: SkatePoint; b: SkatePoint; height: numb
 export type SkateSpotId = 'tideline' | 'bookends' | 'fundsteps' | 'drydock' | 'orchard' | 'northlight' | 'tidepools';
 export const SKATE_SPOTS = SPOTS as readonly (SkateSpotEntry & { id: SkateSpotId })[];
 
-export const SKATE_ROUTES = ROUTES;
+export const SKATE_ROUTES = [...ROUTES,MOUNTAIN_RACE] as const;
 export type SkateRouteId = typeof SKATE_ROUTES[number]['id'];
 
 export const SKATE_DECKS = [

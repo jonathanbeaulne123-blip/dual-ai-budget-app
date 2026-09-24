@@ -1,3 +1,5 @@
+import {worldCollisionAt} from '../mountain/surfaces.ts';
+import {MOUNTAIN_VERSION,transportPoint,TRANSPORT_STOPS,type Point3,type TransportKind} from '../mountain/definition.ts';
 import {crossedVillageDoor,villagePortalArrival} from "../village/topology.ts";
 import * as THREE from "three";
 import {buildSkatePark} from '../skate/parkScene.ts';
@@ -32,7 +34,7 @@ import { EXIT_REACH, exitAnchors, followHoldIn, placeArrival, placeGround, place
 import { NO_INPUT, eyeHeight, type BodyInput } from "../body/bodyModel.ts";
 import { CLOSE_HOLDS, COURT_ANCHOR_IDS, COURT_FOV, closePose, type CourtAnchor, type CourtMode, type CourtPose, type RoomHold } from "../camera/poses.ts";
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "./framePolicy.ts";
-import { createGround } from "./ground.ts";
+import { createGround,groundHeightAt } from "./ground.ts";
 import { configureHarbourRenderer, createLightRig } from "./lightRig.ts";
 import { EMPTY_PLACE, PLACES, PLACED_PLACE_IDS, PLACE_HOLDS, SCENE_DRESSING,  placedFootprintHold, placedPose, placementLift, placementToWorld, placementOf, poseFor, streamPlaces, type Anchor, type Composition, type Place, type PlaceDressing, type PlaceHandle, type PlacePlacement, type PlaceReading, type Pose, type Region, type Vec3 } from "./place.ts";
 import { travelAt, travelPlan, type TravelPlan } from "./travel.ts";
@@ -93,6 +95,7 @@ export type HarbourCallbacks = {
    * the flat edition all stay exactly as correct as they were.
    */
   onThreshold?: (place: HarbourPlaceId) => void;
+  onMountainTravel?:(travelling:boolean)=>void;
   /**
    * The body walked to a place's own way out (walk-everywhere): the Tower's
    * stair, the Cellar's stair, the Glasshouse's garden door, the footpath up
@@ -144,7 +147,7 @@ export type BodyControls = {
   /** Walk to a point on the ground — a tap. A straight line that slides off what it meets. */
   goTo: (x: number, z: number) => boolean;
   /** Put the body somewhere at once. */
-  place: (x: number, z: number, yaw?: number) => void;
+  place: (x: number, z: number, yaw?: number, y?:number) => void;
   /**
    * Where it stands, and what it is doing beyond standing. `act` is the move
    * or emote playing and `p` is how far through it, 0…1 — the two the
@@ -167,6 +170,9 @@ export type BodyControls = {
 };
 
 export type HarbourRuntime = {
+  mountainTravel:(at:Point3,trip?:{kind:TransportKind;from:number;to:number})=>void;
+  mountainSkip:()=>void;
+  mountainCalm:(on:boolean)=>void;
   setAvatar:(avatar:PlayableAvatar|null)=>void;
   /**
    * Fly to a mode; `anchor` is one of `poses.ts`'s named anchors or any anchor
@@ -363,7 +369,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   host.dataset.renderer = lease.active ? "active" : "suspended";
   host.dataset.harbourTier = tier;
 
-  const camera = new THREE.PerspectiveCamera(fovFor(composition), 1, 0.1, 480);
+  const camera = new THREE.PerspectiveCamera(fovFor(composition), 1, 0.1, 1100);
   const animators = new Set<(t: number, dt: number) => void>();
   const rig = createLightRig(scene, dressing.light, tier);
   const ground = createGround(scene, dressing, tier);
@@ -566,7 +572,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if(walker?.skate.active()&&(walker.state().air>0||walker.action()?.act==='skate-grind')){previousDoorPoint=[...focus];return;}
     const before=previousDoorPoint; previousDoorPoint=[...focus];
     if(!before || pendingDoor || Math.hypot(focus[0]-before[0],focus[1]-before[1])>1.5) return;
-    const next=crossedVillageDoor(before,focus,placeId);
+    const next=crossedVillageDoor(before,focus,placeId,walker?.state().y);
     if(next){
       pendingDoor=next;
       if(next==='court'){court.setHold(null);follow?.setHold(null);}
@@ -646,6 +652,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * over a value the place changes, so the walker and the follow camera are
    * both made once and both read the right floor after a walk into a building.
    */
+  let mountainTrip:{kind:TransportKind;from:number;to:number;elapsed:number;duration:number}|null=null;
+  const mountainHandle=()=>handle as PlaceHandle & {setVisitor?:(at:Point3)=>void;setTransit?:(at:Point3|null)=>void;setCalm?:(on:boolean)=>void};
   let bodyGround: (x: number, z: number) => number = placeGround(placeId);
   /** This place's own ways out, when walking to one of them is how you leave (an unplaced room). */
   let bodyExits: Anchor[] = [];
@@ -717,7 +725,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     cat=createCat({groundHeightAt:(x,z)=>bodyGround(x,z),obstacles:placeObstacles(placeId,handle.regions(),anchors,tier),room,shore:HARBOUR_LAND.shore,tier,start:heelStand(stood),look:stood,reduced:reducedMotion()});
     scene.add(cat.group);errandKey=null;
     const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
-    follow = createFollowCamera({ camera, composition, reduced: reducedMotion(), fov: fovFor(composition), groundHeightAt: (x, z) => bodyGround(x, z) });
+    follow = createFollowCamera({ camera, composition, reduced: reducedMotion(), fov: fovFor(composition), groundHeightAt: (x, z) => placeId==='court'?groundHeightAt(x,z):bodyGround(x, z), blocked:(x,y,z)=>placeId==='court'&&(worldCollisionAt(x,y,z,.12)||insideVillageBuilding(x,z,.12,y)) });
     skateCam = createSkateCamera({ ground: (x, z) => bodyGround(x, z) });
     host.dataset.harbourBody = "standing";
     standBody();
@@ -754,7 +762,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     host.dataset.harbourBody = wanted ? "following" : "standing";
     if (wanted && walker && follow) {
       const at = walker.state();
-      host.dataset.houseBody=JSON.stringify({place:placeId,x:at.x,z:at.z,yaw:at.yaw});
+      if(placeId==='court'&&!reducedMotion())mountainHandle().setVisitor?.([at.x,at.y,at.z]);
+      host.dataset.houseBody=JSON.stringify({world:MOUNTAIN_VERSION,place:placeId,x:at.x,z:at.z,y:at.y,yaw:at.yaw});
       follow.setSubject({ x: at.x, y: walker.skate.active()?at.y+.28:eyeHeight(at), z: at.z, yaw: walker.skate.heading()??at.yaw, speed: at.speed, air: at.air });
       // Start from where the Look camera stands, so this is a move, not a cut.
       follow.seed(court.pose());
@@ -879,7 +888,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
     const x = Math.max(0, Math.min(width - w, cx - w / 2)), y = Math.max(0, Math.min(height - h, cy - h / 2));
     const visible = maxX > 0 && minX < width && maxY > 0 && minY < height;
-    return { x, y, w, h, visible };
+    return {
+ x, y, w, h, visible };
   }
 
   /**
@@ -1036,7 +1046,14 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // Walk relative to what you can see: the follow camera's basis when it is
       // driving, the Look camera's heading when it is not.
       const heading = following ? follow.basis() : court.pose().theta;
-      bodyMoving = walker.step(dt, (now - mountedAt) / 1000, heading);
+      if(mountainTrip){
+        bodyInput=NO_INPUT;walker.setInput(NO_INPUT);
+        mountainTrip.elapsed=Math.min(mountainTrip.duration,mountainTrip.elapsed+(toolOpen?0:Math.min(.1,dt)));
+        const p=transportPoint(mountainTrip.kind,mountainTrip.from,mountainTrip.to,(mountainTrip.duration?mountainTrip.elapsed/mountainTrip.duration:1));
+        walker.place(p[0],p[2],walker.state().yaw,p[1]);mountainHandle().setTransit?.(p);previousDoorPoint=null;
+        bodyMoving=true;
+        if(mountainTrip.elapsed>=mountainTrip.duration){mountainTrip=null;mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(false);bringCat();}
+      }else bodyMoving = walker.step(dt, (now - mountedAt) / 1000, heading);
       if(walker.skate.active()||hadSkate){
         // A controller's Start is read inside the step; the book follows at once.
         const wasPaused=walker.skate.paused();
@@ -1052,7 +1069,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       }
       if (walker.walking()) setFollowing(true);
       const at = walker.state();
-      host.dataset.houseBody=JSON.stringify({place:placeId,x:at.x,z:at.z,yaw:at.yaw});
+      if(placeId==='court'&&!reducedMotion())mountainHandle().setVisitor?.([at.x,at.y,at.z]);
+      host.dataset.houseBody=JSON.stringify({world:MOUNTAIN_VERSION,place:placeId,x:at.x,z:at.z,y:at.y,yaw:at.yaw});
       follow.setSubject({ x: at.x, y: walker.skate.active()?at.y+.28:eyeHeight(at), z: at.z, yaw: walker.skate.heading()??at.yaw, speed: at.speed, air: at.air });
       // ── The skate chase camera ── writes the camera on skate frames.
       const ridden = skating && following && skateCam ? walker.skate.present() : null;
@@ -1061,7 +1079,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         skateCam.setDistance(walker.skate.current()?.camera === 'far' ? 'far' : 'near');
         const f = skateCam.update(ridden, walker.skate.events(), dt, {
           aspect: camera.aspect, reducedMotion: reducedMotion() || walker.skate.current()?.reducedEffects === true,
-          blocked: (x, y, z) => y < skatePark.field.heightAt(x, z) + .05 || (y < 6 && insideVillageBuilding(x, z, .12)),
+          blocked: (x, y, z) => y < groundHeightAt(x, z) + .05 || worldCollisionAt(x,y,z,.12) || insideVillageBuilding(x, z, .12,y),
         });
         camera.position.set(f.position[0], f.position[1], f.position[2]);
         camera.up.set(0, 1, 0);
@@ -1329,6 +1347,18 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
 
   const api: HarbourRuntime = {
+    mountainCalm(on){mountainHandle().setCalm?.(on);dirty=true;schedule();},
+    mountainSkip(){if(mountainTrip){mountainTrip.elapsed=mountainTrip.duration;dirty=true;schedule();}},
+    mountainTravel(at,trip){
+      if(placeId!=='court')return;
+      raiseBody();if(!walker)return;
+      mountainTrip=null;callbacks.onMountainTravel?.(Boolean(trip));bodyInput=NO_INPUT;walker.cancel();walker.setInput(NO_INPUT);
+      const p=trip?TRANSPORT_STOPS[trip.kind][trip.from]!.at:at;
+      walker.place(p[0],p[2],0,p[1]);bringCat();previousDoorPoint=null;pendingDoor=null;focus=[p[0],p[2]];
+      setFollowing(false);setFollowing(true);follow?.snap();stream();
+      if(trip){const b=TRANSPORT_STOPS[trip.kind][trip.to]!.at;mountainTrip={...trip,elapsed:0,duration:reducedMotion()?0:Math.max(8,Math.hypot(b[0]-p[0],b[1]-p[1],b[2]-p[2])/14)};}
+      dirty=true;schedule();
+    },
     setAvatar(avatar){selectedAvatar=avatar;walker?.setAvatar(avatar);dirty=true;schedule();},
     // ── The body lane (world-body) ── an explicit destination hands the view
     // back to the Look camera first, so the flight starts from the eye you can
@@ -1396,7 +1426,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         follow(on) { setFollowing(on); if (!on) { aim("court"); } moved(); },
         input(next) { bodyInput = next; if (next.forward !== 0 || next.strafe !== 0) { setFollowing(true); } dirty = true; schedule(); },
         goTo(x, z) { const planned=one.goTo(x, z);if(planned)setFollowing(true); dirty = true; schedule();return planned; },
-        place(x, z, yaw) { one.place(x, z, yaw);bringCat(); focus=[x,z]; previousDoorPoint=null; dirty = true; schedule(); },
+        place(x, z, yaw, y) { one.place(x, z, yaw, y);bringCat(); focus=[x,z]; previousDoorPoint=null; dirty = true; schedule(); },
         at() {
           const at = one.state(), doing = one.action();
           return { x: at.x, y: at.y, z: at.z, yaw: at.yaw, speed: at.speed, act: doing?.act ?? null, p: doing?.p ?? 0 };
@@ -1411,6 +1441,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       };
     },
     enter(next, options = {}) {
+      if(mountainTrip){mountainTrip=null;mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(false);}
       const from = options.from ?? placeId;
       const cut = options.reduced ?? reducedMotion();
       /**

@@ -94,7 +94,7 @@ export type LocalPose = {
    * partner sees a jump, a slide or an emote rather than a body that
    * teleported half a metre up and back.
    */
-  body?: { y?:number; x: number; z: number; yaw: number; act?: string | null; p?: number } | null;
+  body?: { world?:string;y?:number; x: number; z: number; yaw: number; act?: string | null; p?: number } | null;
 };
 export type LocalPoseReader = () => LocalPose | null;
 

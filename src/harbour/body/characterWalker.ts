@@ -161,7 +161,7 @@ export function createCharacterWalker(options: WalkerOptions): Walker {
       // feet are the ground plus whatever of the arc is left.
       // A skater's altitude on the wire is the board's origin (the ground or the
       // rail's top line under it): the group stands there.
-      group.position.y = skating&&altitude!==null?altitude:groundY + (motion.air ?? 0);
+      group.position.y = altitude!==null?altitude:groundY + (motion.air ?? 0);
       if(skating){
         if(!look){
           look=createSkaterLook({figure,deckId:'afterglow',tier:'lite',scale});group.add(look.root);

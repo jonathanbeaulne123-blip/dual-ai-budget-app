@@ -37,7 +37,7 @@ export const HARBOUR_LANES = [
   {id:'south-road',points:join(curve([0,0],[-1,8],south),curve(south,[3,31],southEnd))},
   {id:'east-road',points:join(curve([0,0],[11,-1],east),curve(east,[29,-6],eastEnd))},
   {id:'west-road',points:join(curve([0,0],[-11,0],west),curve(west,[-32,6],westEnd))},
-  ...Object.entries(VILLAGE_SITES).map(([id,site])=>{
+  ...Object.entries(VILLAGE_SITES).filter(([,site])=>site.spot[1]>-70).map(([id,site])=>{
     const [x,z]=site.spot,yaw=Math.atan2(-x,-z),c=Math.cos(yaw),s=Math.sin(yaw);
     const end:Point=[x+site.door[0]*c+(site.door[1]+1.1)*s,z+(site.door[1]+1.1)*c-site.door[0]*s];
     const [from,control]=approaches[id as keyof typeof VILLAGE_SITES];

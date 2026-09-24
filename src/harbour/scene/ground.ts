@@ -1,3 +1,4 @@
+import {mountainBaseHeight,WORLD_BOUNDS,nearestOnRoute} from '../mountain/definition.ts';
 import * as THREE from "three";
 import type { PlaceDressing } from "./place.ts";
 import { plantPlan } from "./planting.ts";
@@ -19,11 +20,14 @@ export const SEA_LEVEL = -0.45;
 /** The apron is a hair below the court's paving so the tiles, not the island, are the surface you see. */
 export const TERRACE_LEVEL = -0.05;
 
-const RINGS = 64;
-const SECTORS = 96;
 
 /** Height of the island at a point. Pure; the terrace is level so every plinth and paving stone sits at 0. */
 export function groundHeightAt(x: number, z: number): number {
+  const base=z < -48?Math.max(islandHeight(x,z),mountainBaseHeight(x,z)):islandHeight(x,z);
+  if(z < -40){const road=nearestOnRoute(x,z);if(road.distance<5.2)return Math.min(base,road.point[1]-.1);}
+  return base;
+}
+function islandHeight(x:number,z:number):number {
   const r = Math.hypot(x, z);
   if (r <= TERRACE_RADIUS) return TERRACE_LEVEL;
   if (r <= LAWN_RADIUS) {
@@ -105,9 +109,10 @@ function paintVertices(colors: Float32Array, positions: Float32Array, dressing: 
     const x = positions[i * 3] ?? 0, z = positions[i * 3 + 2] ?? 0, r = Math.hypot(x, z);
     // A quiet, deterministic variation so flat shading reads as stone, not plastic.
     const grain = 0.94 + 0.06 * (0.5 + 0.5 * Math.sin(x * 1.7 + z * 2.3) * Math.cos(x * 0.9 - z * 1.1));
-    if (r <= TERRACE_RADIUS) c.copy(stone).lerp(joint, r > TERRACE_RADIUS - 0.6 ? 0.55 : 0.08);
+    if(z < -55 && positions[i*3+1]! > 0) {const h=positions[i*3+1]!; c.copy(moss).lerp(stone,Math.max(0,(h-60)/75)); if(h>102)c.lerp(new THREE.Color("#e6ece6"),.35);}
+    else if (r <= TERRACE_RADIUS) c.copy(stone).lerp(joint, r > TERRACE_RADIUS - 0.6 ? 0.55 : 0.08);
     else if (r <= LAWN_RADIUS) c.copy(moss).lerp(sand, Math.max(0, (r - TERRACE_RADIUS) / (LAWN_RADIUS - TERRACE_RADIUS) - 0.8) * 2.5);
-    else { const t = (r - LAWN_RADIUS) / (GROUND_RADIUS - LAWN_RADIUS); c.copy(sand).lerp(sea.clone().multiplyScalar(0.7), Math.max(0, t - 0.5) * 1.6); }
+    else { const t = (r - LAWN_RADIUS) / (GROUND_RADIUS - LAWN_RADIUS); c.copy(sand).lerp(sea.clone().multiplyScalar(0.7), Math.min(1,Math.max(0, t - 0.5) * 1.6)); }
     c.multiplyScalar(grain);
     colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
   }
@@ -118,27 +123,12 @@ export function createGround(scene: THREE.Scene, dressing: PlaceDressing, tier: 
   group.name = "Harbour island";
   const disposables: { dispose(): void }[] = [];
   const track = <T extends { dispose(): void }>(item: T): T => { disposables.push(item); return item; };
-  const vertexCount = 1 + RINGS * SECTORS;
-  const positions = new Float32Array(vertexCount * 3);
-  const colors = new Float32Array(vertexCount * 3);
-  const indices: number[] = [];
-  positions[0] = 0; positions[1] = 0; positions[2] = 0;
-  for (let ring = 1; ring <= RINGS; ring += 1) {
-    const r = (ring / RINGS) * GROUND_RADIUS;
-    for (let s = 0; s < SECTORS; s += 1) {
-      const a = (s / SECTORS) * Math.PI * 2;
-      const x = Math.cos(a) * r, z = Math.sin(a) * r;
-      const i = 1 + (ring - 1) * SECTORS + s;
-      positions[i * 3] = x; positions[i * 3 + 1] = groundHeightAt(x, z); positions[i * 3 + 2] = z;
-    }
-  }
-  for (let s = 0; s < SECTORS; s += 1) indices.push(0, 1 + ((s + 1) % SECTORS), 1 + s);
-  for (let ring = 1; ring < RINGS; ring += 1) {
-    for (let s = 0; s < SECTORS; s += 1) {
-      const a = 1 + (ring - 1) * SECTORS + s, b = 1 + (ring - 1) * SECTORS + ((s + 1) % SECTORS);
-      const c = a + SECTORS, d = b + SECTORS;
-      indices.push(a, d, c, a, b, d);
-    }
+  const cols = tier==='full'?180:120, rows=tier==='full'?198:132;
+  const vertexCount=(cols+1)*(rows+1), positions=new Float32Array(vertexCount*3), colors=new Float32Array(vertexCount*3), indices:number[]=[];
+  for(let iz=0;iz<=rows;iz++)for(let ix=0;ix<=cols;ix++){
+    const x=WORLD_BOUNDS.minX+ix/cols*(WORLD_BOUNDS.maxX-WORLD_BOUNDS.minX),z=WORLD_BOUNDS.minZ+iz/rows*(WORLD_BOUNDS.maxZ-WORLD_BOUNDS.minZ),i=iz*(cols+1)+ix;
+    positions[i*3]=x;positions[i*3+1]=groundHeightAt(x,z);positions[i*3+2]=z;
+    if(ix<cols&&iz<rows){const a=i,b=i+1,c=i+cols+1,d=c+1;indices.push(a,c,b,b,c,d);}
   }
   paintVertices(colors, positions, dressing);
   const geometry = new THREE.BufferGeometry();
@@ -173,7 +163,7 @@ export function createGround(scene: THREE.Scene, dressing: PlaceDressing, tier: 
   const applyAir = (next: PlaceDressing) => {
     const sky = new THREE.Color(next.sky);
     scene.background = sky;
-    scene.fog = new THREE.Fog(new THREE.Color(next.fog), Math.max(105, next.fogNear), Math.max(290, next.fogFar));
+    scene.fog = new THREE.Fog(new THREE.Color(next.fog), Math.max(310, next.fogNear), Math.max(850, next.fogFar));
   };
   applyAir(dressing);
 

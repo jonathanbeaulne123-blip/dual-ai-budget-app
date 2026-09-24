@@ -59,6 +59,15 @@ function harness(options: { canPublish: () => boolean; visible?: () => boolean }
 
 afterEach(() => { vi.restoreAllMocks(); });
 
+it('withholds an incompatible peer position while keeping its presence available',async()=>{
+ const h=harness({canPublish:()=>true}),socket=await h.ready();
+ const peer={type:'world-peer',memberId:'MEM-002',deviceId:'MEM-002:DEVICE-b',placeId:'court',seenAt:h.now()};
+ socket.deliver(peer);socket.deliver({...peer,x:1,z:2,yaw:0,moving:true});
+ expect(h.lane.peers()).toHaveLength(1);expect(h.lane.peers()[0]!.track.samples()).toHaveLength(0);
+ socket.deliver({...peer,world:'hearth-mountain-1',x:99,y:51,z:-174,yaw:0,moving:true});
+ socket.deliver(peer);expect(h.lane.peers()[0]!.track.samples()).toHaveLength(1);h.lane.close();
+});
+
 describe("the world-presence lane in the browser", () => {
   it("publishes nothing at all when live position is off", async () => {
     const h = harness({ canPublish: () => false });
@@ -109,9 +118,9 @@ describe("the world-presence lane in the browser", () => {
     const h = harness({ canPublish: () => true });
     const socket = await h.ready();
     socket.deliver({ type: "world-peer", memberId: "MEM-002", deviceId: "MEM-002:DEVICE-b", placeId: "court", seenAt: h.now() });
-    socket.deliver({ type: "world-peer", memberId: "MEM-002", deviceId: "MEM-002:DEVICE-b", placeId: "court", seenAt: h.now(), x: 1, z: 2, yaw: 0.4, moving: true });
+    socket.deliver({ type: "world-peer", memberId: "MEM-002", deviceId: "MEM-002:DEVICE-b", placeId: "court", seenAt: h.now(), world:"hearth-mountain-1", y:51, x: 1, z: 2, yaw: 0.4, moving: true });
     h.tick(WORLD_STEP_MS);
-    socket.deliver({ type: "world-peer", memberId: "MEM-002", deviceId: "MEM-002:DEVICE-b", placeId: "court", seenAt: h.now(), x: 2, z: 2, yaw: 0.4, moving: true });
+    socket.deliver({ type: "world-peer", memberId: "MEM-002", deviceId: "MEM-002:DEVICE-b", placeId: "court", seenAt: h.now(), world:"hearth-mountain-1", y:51, x: 2, z: 2, yaw: 0.4, moving: true });
     const peer = h.lane.peers()[0]!;
     expect(peer).toMatchObject({ memberId: "MEM-002", placeId: "court" });
     expect(peer.track.samples()).toHaveLength(2);

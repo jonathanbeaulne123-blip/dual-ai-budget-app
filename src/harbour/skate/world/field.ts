@@ -1,3 +1,5 @@
+import {TOWN_RACE_ROAD,nearestOnRoute} from '../../mountain/definition.ts';
+import {queryWorldSurface,worldCeilingAt,WORLD_SURFACES} from '../../mountain/surfaces.ts';
 /**
  * Tideline Skate Club v2 · world — the SkateField the sim rides on.
  *
@@ -337,7 +339,7 @@ export function createSkateField(ground: (x: number, z: number) => number, opts:
   }
 
   /* ---- solids: planters, posts, rail posts */
-  const heightAt = (x: number, z: number): number => { core(x, z, false); return wy; };
+  const heightAt = (x: number, z: number): number => { if(z<-40||nearestOnRoute(x,z,TOWN_RACE_ROAD).distance<3.5)return queryWorldSurface({x,z},ground).y; core(x, z, false); return wy; };
   for (const pad of pads) {
     for (const p of pad.planters) {
       // The pad may fall a little across a planter: its top is the highest rim corner.
@@ -366,10 +368,12 @@ export function createSkateField(ground: (x: number, z: number) => number, opts:
 
   const spots: readonly SkateSpot[] = SPOTS;
 
+  for(const s of WORLD_SURFACES.filter(s=>!s.id.startsWith('path:')&&!s.id.startsWith('station:')&&s.id!=='mountain-road'&&s.id!=='town-race-road'))grindables.push({id:s.id,name:s.id.replaceAll('-',' '),kind:'round-rail',featureId:s.id,points:s.points.map(p=>[p[0],p[1]+.6,p[2]]),faceYaw:null});
   return {
+    ceilingAt:(x,z,feet)=>z<-40?worldCeilingAt(x,z,feet):Infinity,
     tier, ground, pads, grindables, solids, spots,
-    sample(x, z) { core(x, z, true); return write({ y: 0, nx: 0, ny: 1, nz: 0, kind: 'grass', feature: null, lip: null }); },
-    sampleInto(x, z, out) { core(x, z, true); return write(out); },
+    sample(x, z, y, supportId) { if(z<-40||nearestOnRoute(x,z,TOWN_RACE_ROAD).distance<3.5){const s=queryWorldSurface({x,z,y,supportId},ground);return {y:s.y,nx:s.nx,ny:s.ny,nz:s.nz,kind:s.material,feature:s.id,lip:null};}core(x, z, true); return write({ y: 0, nx: 0, ny: 1, nz: 0, kind: 'grass', feature: null, lip: null }); },
+    sampleInto(x, z, out) { if(z<-40||nearestOnRoute(x,z,TOWN_RACE_ROAD).distance<3.5){const s=queryWorldSurface({x,z},ground);return Object.assign(out,{y:s.y,nx:s.nx,ny:s.ny,nz:s.nz,kind:s.material,feature:s.id,lip:null});}core(x, z, true); return write(out); },
     heightAt,
   };
 }

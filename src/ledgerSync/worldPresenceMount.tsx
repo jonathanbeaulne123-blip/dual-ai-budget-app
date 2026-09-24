@@ -47,12 +47,13 @@ import type { Environment } from "../core/types.ts";
  * the ground the person is at, with `theta` the heading the eye orbits from —
  * so the body faces `theta + π`, the direction the person is looking.
  */
-export function localBodyFromPose(pose: { target: readonly [number, number, number]; theta: number; body?: { y?:number; x: number; z: number; yaw: number; act?: string | null; p?: number } | null }): { y?:number; x: number; z: number; yaw: number; act?: WorldAct; p?: number } {
+export function localBodyFromPose(pose: { target: readonly [number, number, number]; theta: number; body?: { world?:string;y?:number; x: number; z: number; yaw: number; act?: string | null; p?: number } | null }): { world?:"hearth-mountain-1";y?:number; x: number; z: number; yaw: number; act?: WorldAct; p?: number } {
   if (pose.body) {
     const act = isWorldAct(pose.body.act) ? pose.body.act : null;
     return {
       x: pose.body.x, z: pose.body.z, yaw: wrapYaw(pose.body.yaw),
-      ...(act?.startsWith("skate")&&Number.isFinite(pose.body.y)?{y:pose.body.y}:{}),
+      ...(pose.body.world==="hearth-mountain-1"?{world:"hearth-mountain-1" as const}:{}),
+      ...((pose.body.world==="hearth-mountain-1"||act?.startsWith("skate"))&&Number.isFinite(pose.body.y)?{y:pose.body.y}:{}),
       // Narrowed here, before it is offered: the lane's own decoder would
       // reject an act it does not know and close the socket, and a body doing
       // something the wire has no word for should simply walk.

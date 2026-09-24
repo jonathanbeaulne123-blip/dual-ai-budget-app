@@ -1,3 +1,4 @@
+import {buildBasinReading,type BasinReading} from '../mountain/basin.ts';
 /**
  * Little Harbour · the Court's one read-model (BUILD_PLAN §5).
  *
@@ -53,6 +54,9 @@ export type CellarReadingView = { jars: CellarJarReading[]; days: { date: DateKe
 export type CisternReading = { cents: number | null; target: number; level: number };
 
 export type HarbourReading = {
+  basin?: BasinReading;
+  /** Distinct supported days of completed shared tasks; never a spending score. */
+  mountainCareDays?:number;
   /** `fundSnapshot.now` — the Everyday remainder carved at her feet. `null` = unknown, never 0. */
   everyday: number | null;
   prepare: { cents: number | null; target: number; coveredThrough: DateKey | null; shortOn?: { date: DateKey; label: string; shortCents: number } };
@@ -967,6 +971,8 @@ export function buildHarbourReading(household: Household, memberId: string, toda
   const jars = cellarJars(nest, household, today).length;
   const mode: 1 | 2 = (nest.mode ?? snapshot.mode) === 2 ? 2 : 1;
   return {
+    basin: buildBasinReading(household,today,freshness),
+    mountainCareDays:freshness==='current'?new Set(shapeTasks(household.tasks).filter(t=>!t.deleted&&taskInView(t,memberId,'household')&&t.completedAt&&t.completedAt.slice(0,10)<=today).map(t=>t.completedAt!.slice(0,10))).size:undefined,
     everyday: snapshot.now,
     prepare: {
       cents: snapshot.prepare.amountCents,

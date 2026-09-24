@@ -1,0 +1,35 @@
+import {useEffect,useState} from 'react';
+import {BASIN,DISTRICTS,RESERVED_PLOTS,MOUNTAIN_ROAD,RIVER,TRANSPORT_STOPS,type Point3,type TransportKind} from './definition.ts';
+import type {BasinReading} from './basin.ts';
+import {basinMoney} from './basin.ts';
+import './mountain.css';
+export type MountainAction={kind:'go';at:Point3}|{kind:'ride';transport:TransportKind;from:number;to:number}|{kind:'view';view:'dam'|'world'}|{kind:'race'}|{kind:'skip'}|{kind:'calm';on:boolean};
+export function MountainPanel({reading,statusLine,onAction,onOpen,flat=false,inspect,conditionWords,riding=false}:{riding?:boolean;conditionWords?:string;inspect?:{section:'map'|'water'|'travel';seq:number};reading?:BasinReading;statusLine:string|null;onAction:(action:MountainAction)=>void;onOpen:(target:string)=>void;flat?:boolean}){
+  const [open,setOpen]=useState(false),[tab,setTab]=useState<'map'|'water'|'travel'>('map'),[transport,setTransport]=useState<TransportKind>('funicular'),[from,setFrom]=useState(0),[to,setTo]=useState(1),[calm,setCalm]=useState(false);
+  useEffect(()=>{if(inspect){setTab(inspect.section);setOpen(true);}},[inspect]);
+  const stops=TRANSPORT_STOPS[transport];
+  return <aside className="mountain-tools" onPointerDown={e=>e.stopPropagation()} onKeyDown={e=>e.stopPropagation()}>
+    <button className="mountain-trigger" aria-expanded={open} onClick={()=>setOpen(!open)}>⌁ <span>Mountain & town</span></button>
+    {open&&<section className="mountain-panel" aria-label="Mountain and town guide">
+      <header><div><small>HEARTH MOUNTAIN</small><h2>A life above the harbour</h2></div><button aria-label="Close mountain guide" onClick={()=>setOpen(false)}>×</button></header>
+      <nav aria-label="Mountain guide"><button aria-pressed={tab==='map'} onClick={()=>setTab('map')}>Places</button><button aria-pressed={tab==='water'} onClick={()=>setTab('water')}>The glass dam</button><button aria-pressed={tab==='travel'} onClick={()=>setTab('travel')}>Travel & race</button></nav>
+      {tab==='map'&&<>
+        <svg className="mountain-map" viewBox="-180 -312 360 402" role="img" aria-label="The mountain road winds through six plateaus above the waterfront town.">
+          <path d="M-61 58 Q-104-15-130-126 Q-172-208-77-289 Q8-328 93-296 Q179-222 135-126 Q106-14 58 60Z" fill="var(--mountain-land)"/>
+          {DISTRICTS.map(d=><ellipse key={d.id} cx={d.at[0]} cy={d.at[2]} rx={d.radius} ry={d.radius*.65} fill="var(--mountain-plateau)"/>)}
+          <polyline points={RIVER.map(p=>`${p[0]},${p[2]}`).join(' ')} stroke="#4b9fba" strokeWidth="5" fill="none"/>
+          <polyline points={MOUNTAIN_ROAD.map(p=>`${p[0]},${p[2]}`).join(' ')} stroke="#fff0cc" strokeWidth="4" fill="none"/>
+          <circle cx={BASIN.x} cy={BASIN.z} r="16" fill="#56abbc"/>
+          {RESERVED_PLOTS.map(p=><rect key={p.id} x={p.at[0]-7} y={p.at[2]-5} width="14" height="10" fill="none" stroke="currentColor" strokeDasharray="3 2"/>)}
+          {DISTRICTS.map(d=><g key={d.id}><circle cx={d.at[0]} cy={d.at[2]} r="4" fill="currentColor"/><text x={d.at[0]+7} y={d.at[2]+3} fontSize="7" fill="currentColor">{d.name}</text></g>)}<text x="-26" y="34" fontSize="10">Town square</text>
+        </svg>
+        <div className="mountain-destinations">{DISTRICTS.map(d=><div key={d.id}><strong>{d.name}</strong><small>{d.words}</small><div><button onClick={()=>{onOpen(d.destination);setOpen(false);}}>Open {d.id==='hearth'?'home':d.id==='summit'?'Journey':d.id==='reservoir'?'goals':d.id==='orchard'?'cottage':d.id}</button>{!flat&&<button aria-label={`Visit ${d.name}`} onClick={()=>{onAction({kind:'go',at:d.id==='reservoir'?[25,88,-220]:[d.at[0]-7,d.at[1],d.at[2]+6]});setOpen(false);}}>Visit plateau</button>}</div></div>)}</div>
+        <h3>Room for tomorrow</h3>{RESERVED_PLOTS.map(p=><p key={p.id}><strong>{p.name}</strong> — {p.words}{!flat&&<button onClick={()=>{onAction({kind:'go',at:p.at});setOpen(false);}}>Visit</button>}</p>)}
+      </>}
+      {tab==='water'&&<div className="mountain-water-reading"><small>HOUSEHOLD FUND · ACCEPTED BALANCE</small><strong className="mountain-balance">{basinMoney(reading?.balanceCents)}</strong><p>The main basin holds the Fund’s operating balance. The adjoining chamber holds Kitty reserves.</p><dl><dt>Kitty reserves</dt><dd>{basinMoney(reading?.kittyCents)}</dd><dt>Free to spend</dt><dd>{basinMoney(reading?.freeCents)}</dd><dt>Pending contributions</dt><dd>{reading?.known?basinMoney(reading.pendingCents):'Checking'}</dd></dl><p>{statusLine??(reading?.known?`Supported as of ${reading.asOf}`:'Waiting for a supported shared Fund reading.')}</p><p>Pending amounts do not fill the basin. Moving money into Kitty changes chambers; it does not leave the household. The natural river keeps flowing independently.</p>{!flat&&<button onClick={()=>{onAction({kind:'view',view:'dam'});setOpen(false);}}>View the glass dam</button>}<h3>Recorded movements</h3><ol>{reading?.flows.slice(-4).reverse().map(e=><li key={e.id}>{e.label} · {basinMoney(e.cents)}</li>)}</ol><button onClick={()=>onOpen('queen')}>Open the Fund</button><button onClick={()=>onOpen('books')}>See supporting records</button></div>}
+      {tab==='travel'&&<><h3>Take the scenic way</h3><label>Transport<select value={transport} onChange={e=>{setTransport(e.target.value as TransportKind);setFrom(0);setTo(1);}}><option value="funicular">Hillside funicular</option><option value="gondola">Summit gondola</option></select></label><label>From<select value={from} onChange={e=>setFrom(Number(e.target.value))}>{stops.map((s,i)=><option key={s.id} value={i}>{s.name}</option>)}</select></label><label>To<select value={to} onChange={e=>setTo(Number(e.target.value))}>{stops.map((s,i)=><option key={s.id} value={i}>{s.name}</option>)}</select></label>{!flat?<><button disabled={from===to} onClick={()=>{onAction({kind:'ride',transport,from,to});setOpen(false);}}>Board and ride</button></>:<p>Scenic rides require the 3D view. Every destination remains available in Places.</p>}<h3>Summit to sea</h3><p>One winding descent through the neighbourhood. Aim for 60–120 seconds. The road is the clear main line; balcony, awning and dam rails offer optional detours.</p>{!flat&&<button onClick={()=>{onAction({kind:'race'});setOpen(false);}}>Start downhill race</button>}<p>Race times and skating progress stay on this device.</p></>}
+      {conditionWords&&<p className="mountain-condition">{conditionWords}</p>}<label className="mountain-calm"><input type="checkbox" checked={calm} onChange={e=>{setCalm(e.target.checked);onAction({kind:'calm',on:e.target.checked});}}/> Calm scenery</label>
+    </section>}
+    {riding&&<button className="mountain-skip" onClick={()=>{onAction({kind:'skip'});}}>Finish scenic ride</button>}
+  </aside>;
+}

@@ -44,12 +44,13 @@ export function useHarbourReading({ household, memberId, today, freshness, inter
   const gate = interpretationGate ?? harbourGateFor(freshness);
   const identity = interpretationIdentity({ environment: household.environment, householdId: household.householdId, memberId, scope: "household" });
   const current = useMemo(() => buildHarbourReading(household, memberId, today, "current"), [household, memberId, today]);
-  const fallback = useMemo(() => freshness === "current" ? current : buildHarbourReading(household, memberId, today, freshness), [household, memberId, today, freshness, current]);
+  const fallbackFreshness=gate.current?freshness:freshness==="current"?"stale":freshness;
+  const fallback = useMemo(() => fallbackFreshness === "current" ? current : buildHarbourReading(household, memberId, today, fallbackFreshness), [household, memberId, today, fallbackFreshness, current]);
   const supportedAt = supportedAtFor(household, today);
   const resolved = useMemo(
     () => resolveSupportedInterpretation({ gate, current, fallback, cached: captures.get(identity), sourceRevision: household.revision, supportedAt }),
     [gate.current, gate.detail, current, fallback, identity, household.revision, supportedAt], // eslint-disable-line react-hooks/exhaustive-deps
   );
   useEffect(() => { if (resolved.capture) captures.set(identity, resolved.capture); }, [identity, resolved.capture]);
-  return { reading: resolved.result.value, statusLine: resolved.result.statusLine };
+  return { reading: {...resolved.result.value,basin:resolved.result.value.basin?{...resolved.result.value.basin,motion:gate.current}:undefined}, statusLine: resolved.result.statusLine };
 }

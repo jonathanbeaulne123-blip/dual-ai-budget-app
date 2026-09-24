@@ -1,6 +1,15 @@
 import {describe,expect,it} from "vitest";
 import {housePath,parseHouseRoute} from "../src/hearthside/houseRoutes.ts";
 import {houseLifeRoute,houseRouteFromLife,houseTargetRoute,readHouseReturn,resolveHouseRouteScope,saveHouseReturn,type HouseIdentity} from "../src/house/navigation.ts";
+
+it('retains elevated body returns and migrates legacy positions to safe arrivals',()=>{
+ const local=storage(),route={room:'home' as const,level:'middle' as const,householdId:identity.householdId,scope:'personal' as const};
+ const body={world:'hearth-mountain-1',place:'court',x:99,z:-174,y:51,yaw:0};
+ saveHouseReturn(local,identity,route,{body});expect(readHouseReturn(local,identity)?.body).toEqual(body);
+ const {world:oldWorld,...legacy}=body;expect(oldWorld).toBeTruthy();
+ saveHouseReturn(local,identity,route,{body:legacy});expect(readHouseReturn(local,identity)?.body).toBeUndefined();
+ expect(readHouseReturn(local,identity)?.route).toMatchObject(route);
+});
 import {houseCameraRoute,houseCameraSlot,houseReturnSlot,needsHouseReturnCapture} from "../src/house/returnCache.ts";
 const identity:HouseIdentity={environment:"development",householdId:"HH-house",memberId:"MEM-one",scope:"personal"};
 const storage=()=>{const rows=new Map<string,string>();return {getItem:(key:string)=>rows.get(key)??null,setItem:(key:string,value:string)=>{rows.set(key,value);},removeItem:(key:string)=>{rows.delete(key);}};};

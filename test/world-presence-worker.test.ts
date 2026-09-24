@@ -202,6 +202,16 @@ it('carries bounded skate altitude to the authenticated partner and drops it for
   expect(await b.next('world-left',m=>m.deviceId==='MEM-001:DEVICE-skate-a')).toMatchObject({deviceId:'MEM-001:DEVICE-skate-a'});
 },60_000);
 
+it('carries versioned mountain walking altitude beyond the legacy island bounds',async()=>{
+  const a=await connect('MEM-001','presence'),b=await connect('MEM-002','presence');
+  joinCourt(a,'DEVICE-mountain-a');joinCourt(b,'DEVICE-mountain-b');
+  const mine=(m:Record<string,any>)=>m.deviceId==='MEM-001:DEVICE-mountain-a';
+  await b.next('world-peer',mine);
+  a.ws.send(JSON.stringify({type:'world-step',version:1,world:'hearth-mountain-1',x:99,z:-174,y:51,yaw:0,moving:true}));
+  expect(await b.next('world-peer',m=>mine(m)&&m.x===99)).toMatchObject({world:'hearth-mountain-1',x:99,z:-174,y:51,memberId:'MEM-001'});
+  a.ws.close();b.ws.close();
+});
+
 it("carries a jump and an emote to the partner, rebuilt server-side like everything else", async () => {
   const a = await connect("MEM-001", "presence");
   const b = await connect("MEM-002", "presence");
