@@ -142,25 +142,27 @@ REACH_JS = """() => {
 # A frame-locked thumb for the grind: a 1–3 fps SwiftShader frame carries ~0.3 u of travel, so a
 # position polled from Python arrives frames late. This rAF loop reads the runtime's `data-skate`
 # each frame and presses the real stage's keys (the same handler as a keyboard) at the right distance:
-# W to 1.0 u, then ↓ with G held at 2.45 u, ↑ on the next frame (an ollie). Nobody balances the
+# W to 1.0 u, ↓ (crouch) with G held at 1.8 u, ↑ (the pop) at `popAt`, one new ride sample at a time. Nobody balances the
 # grind, so it may end in a bail. Bookends' start rolls straight down its long ledge.
-GRIND_JS = """() => new Promise(resolve => {
+GRIND_JS = """(popAt) => new Promise(resolve => {
   const host = document.querySelector('.house-world__canvas'), el = document.querySelector('.harbour-world__stage');
-  const read = () => host.dataset.skate ? JSON.parse(host.dataset.skate) : null;
   const key = (type, k) => el.dispatchEvent(new KeyboardEvent(type, {key: k, code: k, bubbles: true, cancelable: true}));
-  const s0 = read(); if (!s0) return resolve({error: 'not skating'});
-  let step = 0, frames = 0, seen = [], grindFrames = 0, lastZ = s0.z;
+  const s0 = host.dataset.skate ? JSON.parse(host.dataset.skate) : null; if (!s0) return resolve({error: 'not skating'});
+  let step = 0, frames = 0, samples = 0, last = '', seen = [], grindFrames = 0, s = s0, since = 0;
   key('keydown', 'w');
   const tick = () => {
-    const s = read(); frames++;
-    if (s) { const d = Math.hypot(s.x - s0.x, s.z - s0.z); seen.push(s.phase);
+    frames++;
+    const raw = host.dataset.skate || '';
+    if (raw && raw !== last) { last = raw; samples++; since++; s = JSON.parse(raw); seen.push(s.phase);
+      const d = Math.hypot(s.x - s0.x, s.z - s0.z);
+      // Act only on a new ride sample (the runtime's frame), never twice on the same one.
       if (step === 0 && d >= 1.0) { key('keyup', 'w'); step = 1; }
-      else if (step === 1 && d >= 2.45) { key('keydown', 'g'); key('keydown', 'ArrowDown'); step = 2; }
-      else if (step === 2) { key('keydown', 'ArrowUp'); step = 3; }
+      else if (step === 1 && d >= 1.8) { key('keydown', 'g'); key('keydown', 'ArrowDown'); step = 2; since = 0; }
+      else if (step === 2 && since >= 2 && d >= popAt) { key('keydown', 'ArrowUp'); step = 3; }
       else if (step === 3) { key('keyup', 'ArrowDown'); key('keyup', 'ArrowUp'); step = 4; }
-      else if (step === 4 && s.phase === 'grind') { grindFrames++; }
+      else if (step === 4 && s.phase === 'grind') { grindFrames++; if (grindFrames === 1) resolve({frames, samples, grindFrames, phases: [...new Set(seen)], last: s}); }
     }
-    if (frames > 400 || (step === 4 && grindFrames > 0 && s && s.phase !== 'grind')) { key('keyup', 'g'); return resolve({frames, grindFrames, phases: [...new Set(seen)], last: s}); }
+    if (frames > 600 || samples > 90 || (step === 4 && grindFrames > 0 && s.phase !== 'grind')) { key('keyup', 'g'); return resolve({frames, samples, grindFrames, phases: [...new Set(seen)], last: s}); }
     requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -168,20 +170,18 @@ GRIND_JS = """() => new Promise(resolve => {
 
 
 def grind_run(page):
-    """50-50 on Bookends' ledge (the spot is discovered by the migrated v1 save). Up to three tries from the marker."""
-    for attempt in range(3):
+    """50-50 on Bookends' ledge (the spot is discovered by the migrated v1 save). Up to five tries from the marker."""
+    for attempt, pop_at in enumerate((2.6, 2.9, 2.45, 2.75, 3.0)):
         wait_until(page, lambda s: s["s"] and s["s"]["speed"] < .05 and s["s"]["phase"] in ("idle", "roll"), 30)
-        page.evaluate(f"() => {{ window.__grind = ({GRIND_JS})(); }}")
-        # Screenshot the moment the ride is on the ledge (a frame or two in).
-        try:
-            page.wait_for_function("() => { const h = document.querySelector('.house-world__canvas'); return h?.dataset.skate && JSON.parse(h.dataset.skate).phase === 'grind'; }", timeout=90000, polling="raf")
+        # The page loop answers the moment the ride reports `grind` (and keeps holding G until it ends),
+        # so the still is taken on the ledge without Python polling the page during the approach.
+        result = page.evaluate(f"(p) => ({GRIND_JS})(p)", pop_at)
+        if result.get("grindFrames", 0) > 0:
             shot(page, "final-04-grind-bookends-1100.png")
-        except Exception:
-            pass
-        result = page.evaluate("() => window.__grind")
+            page.wait_for_timeout(6000)
         ev = skate(page)["ev"]
         ok = result.get("grindFrames", 0) > 0 and "grind:" in ev
-        log("grind" if ok or attempt == 2 else "grind-attempt", ok, attempt=attempt, result=result, ev=ev[-80:])
+        log("grind" if ok or attempt == 4 else "grind-attempt", ok, attempt=attempt, pop_at=pop_at, result=result, ev=ev[-80:])
         if ok:
             return True
         page.keyboard.press("r")
@@ -203,7 +203,11 @@ def grind_only(browser):
     page.locator(".skate-hud [role=tab]").nth(0).click()
     page.wait_for_timeout(500)
     page.locator(".skate-hud .skate-book__grid button", has_text="Bookends").first.click()
-    page.wait_for_timeout(2500)
+    at = wait_until(page, lambda s: s["s"] and math.hypot(s["s"]["x"] + 18, s["s"]["z"] + 4.1) < .5, 90)
+    log("spot-jump-bookends", at is not None, at=at and at["s"])
+    if page.locator(".skate-hud[data-skate-open]").count():
+        page.keyboard.press("Escape")
+        page.wait_for_timeout(1500)
     focus_stage(page)
     grind_run(page)
     ctx.close()
@@ -292,17 +296,11 @@ def main_pass(browser):
             grind_text = page.evaluate("() => document.querySelector('.skate-hud .skate-book__names')?.textContent || ''")
     log("pause-book-pages", len(tabs) >= 5 and "Along the rail" in grind_text, tabs=tabs, grind_hint=grind_text[:120])
 
-    # ── Explore → Bookends (discovered by the migrated save) and a 50-50 on its ledge, closed-loop on distance.
-    page.locator(".skate-hud [role=tab]").nth(0).click()
-    page.wait_for_timeout(500)
-    page.locator(".skate-hud .skate-book__grid button", has_text="Bookends").first.click()
-    page.wait_for_timeout(1500)
-    if page.locator(".skate-hud[data-skate-open]").count():
-        page.keyboard.press("Escape")
-    page.wait_for_timeout(1500)
+    # (The grind is its own pass: `--grind-only`, from Bookends, frame-locked.)
+    page.keyboard.press("Escape")
+    page.wait_for_selector(".skate-hud[data-skate-open]", state="detached", timeout=60000)
+    page.wait_for_timeout(800)
     focus_stage(page)
-    grind_run(page)
-    wait_until(page, lambda s: s["s"] and s["s"]["phase"] not in ("grind", "air"), 60)
 
     # ── Settings: stance goofy (saved to this person's device progress).
     page.keyboard.press("p")
@@ -341,12 +339,16 @@ def main_pass(browser):
     page.wait_for_timeout(4000)
     opened = page.evaluate("() => ({ sheet: Boolean(document.querySelector('[data-quick-sheet=open]')), url: location.href, dialogs: document.querySelectorAll('[role=dialog]').length })")
     log("tool-opens-from-sheet", not opened["sheet"], tool=(label or "").strip()[:40], after=opened)
-    # Close the tool the app's own way (Escape) and come back to the island: the ride is restored where it was, paused.
-    for _ in range(4):
-        if "surface=" not in page.url and not page.locator("[role=dialog]:not(.skate-book)").count():
+    # Close the tool the app's own way ("Put it back") and come back to the island: the ride is restored where it was, paused.
+    for _ in range(3):
+        if "surface=" not in page.url:
             break
-        page.keyboard.press("Escape")
-        page.wait_for_timeout(4000)
+        back = page.get_by_role("button", name="Put it back")
+        if back.count():
+            back.first.click()
+        else:
+            page.keyboard.press("Escape")
+        page.wait_for_timeout(5000)
     page.wait_for_selector(".harbour-world[data-world-status='ready']", timeout=180000)
     page.wait_for_timeout(3000)
     restored = page.locator(".skate-hud").count() > 0
