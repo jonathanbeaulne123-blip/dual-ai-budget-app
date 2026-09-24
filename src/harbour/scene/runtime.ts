@@ -709,7 +709,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const lookLens = (): number => (placeId === 'court' ? openWorldFov(composition, camera.aspect || (composition === 'phone' ? 390 / 844 : 1.6)) : fovFor(composition));
   const walkLens = lookLens;
   const eyeBlocked = (x: number, y: number, z: number): boolean => cameraBlocked(x, y, z, .12, tier === 'full' ? 'full' : 'lite', cabinSolid);
-  const lookTerrain = () => (placeId === 'court' ? { ground: cameraGround, blocked: (x: number, y: number, z: number) => cameraBlocked(x, y, z, .15, 'lite', cabinSolid) } : null);
+  // (Look's own line starts at what it looks at, which on a ride is the rider in the cabin: the cabin is not in its way.)
+  const lookTerrain = () => (placeId === 'court' ? { ground: cameraGround, blocked: (x: number, y: number, z: number) => cameraBlocked(x, y, z, .15, 'lite') } : null);
   /** Ease the drawn lens toward `goal` (a change of mode blends, C10 minor); reduced motion cuts. True while easing. */
   function easeLens(goal: number, dt: number): boolean {
     if (Math.abs(camera.fov - goal) < 1e-2) { if (camera.fov !== goal) { camera.fov = goal; camera.updateProjectionMatrix(); } return false; }
@@ -1262,9 +1263,10 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (trip && rideCam && !toolOpen) {
         if (!following) setFollowing(true);
         const u = trip.duration ? trip.elapsed / trip.duration : 1;
-        const along = rideFrame(trip.kind, trip.from, trip.to, u);
-        cabinSolid = { at: [along.at[0], along.at[1] + 1.1, along.at[2]], half: [1.3, 1.5, 1.3] };
-        const input = { kind: trip.kind, u, cabin: along.at, dir: along.dir, rider: [at.x, at.y + 1.1, at.z] as Vec3, aspect: camera.aspect || 1.6, fov: walkLens() };
+        // The travel direction from the transport's own frame; the cabin is wherever the rider really is.
+        const along = rideFrame(trip.kind, trip.from, trip.to, u), cabin: Vec3 = [at.x, at.y, at.z];
+        cabinSolid = { at: [at.x, at.y + 1.1, at.z], half: [1.3, 1.5, 1.3] };
+        const input = { kind: trip.kind, u, cabin, dir: along.dir, rider: [at.x, at.y + 1.1, at.z] as Vec3, aspect: camera.aspect || 1.6, fov: walkLens() };
         const shot = rideOn ? rideCam.update(input, dt, reducedMotion()) : rideCam.start(input);
         rideOn = { kind: trip.kind, to: trip.to };
         camera.position.set(shot.eye[0], shot.eye[1], shot.eye[2]);

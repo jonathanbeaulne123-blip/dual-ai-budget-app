@@ -18,6 +18,7 @@ import { groundHeightAt } from "../scene/ground.ts";
 import { WORLD_SOLIDS, WORLD_SURFACES } from "../mountain/surfaces.ts";
 import { mountainFoliageAt } from "../mountain/planting.ts";
 import { BASIN, DISTRICTS, WORLD_BOUNDS, GONDOLA_STOPS, FUNICULAR_STOPS, RESERVED_PLOTS, RIVER, TRANSPORT_STOPS, nearestOnRoute, transportPoint, type Point3, type TransportKind } from "../mountain/definition.ts";
+import * as definition from "../mountain/definition.ts";
 import { SUMMIT_OBSERVATORY } from "../mountain/artGeometry.ts";
 import { MOUNTAIN_INTERACTIONS } from "../mountain/life.ts";
 import { VILLAGE_SITES, VILLAGE_WATERFRONT } from "../village/layout.ts";
@@ -30,6 +31,26 @@ export type CameraSolid = { id: string; min: V3; max: V3 };
 export type CameraDoor = { place: string; at: V3; out: readonly [number, number] };
 /** An authored place to stand and look from: where, and at what. */
 export type CameraOverlook = { id: string; at: V3; look: V3; kind: string };
+
+/* ── The geography contract (v2), read when it is there ───────────────────
+ * The geography track's contract (`mountain/CONTRACT.md`) adds these
+ * exports to `definition.ts`. Each is read *if present*, so at integration
+ * the camera picks up the new dam, overlooks, door aprons, edge solids,
+ * transport splines and race finish with no code change here; until then
+ * every value below falls back to today's data.
+ * ────────────────────────────────────────────────────────────────────────── */
+type ContractV2 = {
+  DAM: { centre: Point3; crest: number; foot: number; arc: readonly Point3[]; face: readonly [number, number]; abutments: readonly { at: Point3; size: Point3 }[] };
+  OVERLOOKS: readonly { id: string; name?: string; at: Point3; facing: number; look: Point3 }[];
+  DOOR_APRONS: readonly { site: string; door: Point3; facing: number; apron: { at: Point3; half: readonly [number, number] } }[];
+  EDGE_SOLIDS: readonly { id: string; a: readonly [number, number]; b: readonly [number, number]; bottom: number; top: number; thickness: number }[];
+  SUMMIT_OBSERVATORY_SITE: { at: Point3 };
+  GORGE: { points: readonly Point3[] };
+  RACE_FINISH: { at: Point3; heading: readonly [number, number] };
+  transportSpline: (kind: TransportKind) => { at(s: number): { at: Point3; tangent: Point3 }; stations: readonly { s: number }[] };
+};
+const contract = definition as typeof definition & Partial<ContractV2>;
+const finite = (p: readonly number[] | undefined): p is Point3 => Array.isArray(p) && p.length >= 3 && p.every(Number.isFinite);
 
 /* ── Terrain ───────────────────────────────────────────────────────────── */
 /** ADAPTER: geography's shared height query (terrain only; decks are solids). */
@@ -66,15 +87,26 @@ export const TOWN_SQUARE: V3 = Object.freeze([0, 0.4, 0]) as V3;
  * face that looks at town. Today the arc is centred on +z of the basin
  * (`landscape.ts` CylinderGeometry from −angle/2 to +angle/2).
  */
-export const DAM_CREST: V3 = Object.freeze([BASIN.x, BASIN.top, BASIN.z + BASIN.radius]) as V3;
+export const DAM_CREST: V3 = Object.freeze((() => {
+  const dam = contract.DAM;
+  if (dam && dam.arc?.length && Number.isFinite(dam.crest)) { const mid = dam.arc[Math.floor(dam.arc.length / 2)]!; if (finite(mid)) return [mid[0], dam.crest, mid[2]]; }
+  return [BASIN.x, BASIN.top, BASIN.z + BASIN.radius];
+})()) as V3;
 /** ADAPTER: the dam's outward face normal (horizontal), toward town. */
-export const DAM_FACE: readonly [number, number] = Object.freeze([0, 1]) as readonly [number, number];
+export const DAM_FACE: readonly [number, number] = Object.freeze((() => {
+  const face = contract.DAM?.face;
+  if (face && Number.isFinite(face[0]) && Number.isFinite(face[1]) && Math.hypot(face[0], face[1]) > 1e-6) { const l = Math.hypot(face[0], face[1]); return [face[0] / l, face[1] / l]; }
+  return [0, 1];
+})()) as readonly [number, number];
 /** ADAPTER: the middle of the Fund basin's water. */
 export const BASIN_CENTRE: V3 = Object.freeze([BASIN.x, (BASIN.bottom + BASIN.top) / 2, BASIN.z]) as V3;
 /** ADAPTER: the summit telescope/observatory. */
-export const SUMMIT_TELESCOPE: V3 = Object.freeze([SUMMIT_OBSERVATORY.at[0], SUMMIT_OBSERVATORY.at[1] + 1.4, SUMMIT_OBSERVATORY.at[2]]) as V3;
+export const SUMMIT_TELESCOPE: V3 = Object.freeze((() => {
+  const at = finite(contract.SUMMIT_OBSERVATORY_SITE?.at) ? contract.SUMMIT_OBSERVATORY_SITE!.at : SUMMIT_OBSERVATORY.at;
+  return [at[0], at[1] + 1.4, at[2]];
+})()) as V3;
 /** ADAPTER: the quay (race finish run-out). */
-export const QUAY: V3 = Object.freeze([VILLAGE_WATERFRONT.spot[0], 0.6, VILLAGE_WATERFRONT.spot[1] - 6]) as V3;
+export const QUAY: V3 = Object.freeze(finite(contract.RACE_FINISH?.at) ? [contract.RACE_FINISH!.at[0], contract.RACE_FINISH!.at[1] + 0.2, contract.RACE_FINISH!.at[2]] : [VILLAGE_WATERFRONT.spot[0], 0.6, VILLAGE_WATERFRONT.spot[1] - 6]) as V3;
 /** ADAPTER: the district centres, in uphill order. */
 export const CAMERA_DISTRICTS: readonly { id: string; name: string; at: V3; radius: number; destination: string }[] =
   Object.freeze(DISTRICTS.map((d) => ({ id: d.id, name: d.name, at: d.at as V3, radius: d.radius, destination: d.destination })));
@@ -100,6 +132,15 @@ export const CAMERA_DOORS: Readonly<Record<string, CameraDoor>> = Object.freeze(
     const at: V3 = [x + dz * Math.sin(yaw), groundHeightAt(x, z), z + dz * Math.cos(yaw)];
     return { place: "campfire", at, out: [Math.sin(yaw), Math.cos(yaw)] as const };
   })()],
+  // The contract's door aprons, where they are authored: the way out is from the door to its apron.
+  ...(contract.DOOR_APRONS ?? []).flatMap((apron) => {
+    const site = (VILLAGE_SITES as Record<string, { entry: string } | undefined>)[apron.site];
+    if (!site || !finite(apron.door) || !finite(apron.apron?.at)) return [];
+    let ox = apron.apron.at[0] - apron.door[0], oz = apron.apron.at[2] - apron.door[2];
+    if (Math.hypot(ox, oz) < 1e-3) { ox = Math.sin(apron.facing); oz = Math.cos(apron.facing); }
+    const l = Math.hypot(ox, oz) || 1;
+    return [[site.entry, { place: site.entry, at: apron.door as V3, out: [ox / l, oz / l] as const }]];
+  }),
 ]));
 /** Which building door a mountain district's "Visit" arrives at (its destination), when it has one. */
 export const DISTRICT_DOOR: Readonly<Record<string, string>> = Object.freeze({ hearth: "kitchen", orchard: "cottage", library: "library", glasshouse: "glasshouse" });
@@ -110,11 +151,15 @@ export const DISTRICT_DOOR: Readonly<Record<string, string>> = Object.freeze({ h
  * the current small moments stand in: an overlook or a bench looks at town
  * (the dam overlook at the dam), everything else looks at itself.
  */
-export const CAMERA_MOMENTS: readonly CameraOverlook[] = Object.freeze(MOUNTAIN_INTERACTIONS.map((m) => {
-  const at = m.at as V3;
-  const look: V3 = m.id.endsWith("dam-view") ? DAM_CREST : m.kind === "overlook" || m.kind === "bench" ? TOWN_SQUARE : at;
-  return { id: m.id, at, look, kind: m.kind };
-}));
+export const CAMERA_MOMENTS: readonly CameraOverlook[] = Object.freeze([
+  ...MOUNTAIN_INTERACTIONS.map((m) => {
+    const at = m.at as V3;
+    const look: V3 = m.id.endsWith("dam-view") ? DAM_CREST : m.kind === "overlook" || m.kind === "bench" ? TOWN_SQUARE : at;
+    return { id: m.id, at, look, kind: m.kind };
+  }),
+  // The contract's authored overlooks, each with its own look target.
+  ...(contract.OVERLOOKS ?? []).filter((o) => finite(o.at) && finite(o.look)).map((o) => ({ id: o.id, at: o.at as V3, look: o.look as V3, kind: "overlook" })),
+]);
 
 /* ── Transport ─────────────────────────────────────────────────────────── */
 export type RideFrame = { at: V3; dir: V3 };
@@ -124,6 +169,14 @@ export type RideFrame = { at: V3; dir: V3 };
  */
 export function rideFrame(kind: TransportKind, from: number, to: number, u: number): RideFrame {
   const t = Math.max(0, Math.min(1, u)), e = 0.004;
+  // The contract's arc-length spline (constant cruise), when it is there.
+  const spline = contract.transportSpline?.(kind);
+  const s0 = spline?.stations?.[from]?.s, s1 = spline?.stations?.[to]?.s;
+  if (spline && Number.isFinite(s0) && Number.isFinite(s1)) {
+    const f = spline.at(s0! + (s1! - s0!) * t), dir = s1! >= s0! ? 1 : -1;
+    const n = Math.hypot(f.tangent[0], f.tangent[1], f.tangent[2]) || 1;
+    if (finite(f.at)) return { at: f.at as V3, dir: [f.tangent[0] / n * dir, f.tangent[1] / n * dir, f.tangent[2] / n * dir] };
+  }
   const at = transportPoint(kind, from, to, t);
   const a = transportPoint(kind, from, to, Math.max(0, t - e)), b = transportPoint(kind, from, to, Math.min(1, t + e));
   let dx = b[0] - a[0], dy = b[1] - a[1], dz = b[2] - a[2];
@@ -144,10 +197,11 @@ export const stopAt = (kind: TransportKind, index: number): V3 => (TRANSPORT_STO
  */
 export const GORGE_REVEAL: V3 = (() => {
   const a = GONDOLA_STOPS[0]!.at, b = GONDOLA_STOPS[1]!.at;
+  const river = contract.GORGE?.points?.length ? contract.GORGE.points : RIVER;
   let best: V3 = [0, 20, -100], gap = Infinity;
   for (let i = 0; i <= 24; i++) {
     const t = 0.3 + (i / 24) * 0.4, x = a[0] + (b[0] - a[0]) * t, z = a[2] + (b[2] - a[2]) * t;
-    const p = nearestOnRoute(x, z, RIVER);
+    const p = nearestOnRoute(x, z, river);
     if (p.distance < gap) { gap = p.distance; best = p.point as V3; }
   }
   return best;
@@ -170,10 +224,12 @@ const box = (id: string, c: V3, size: V3): CameraSolid => ({ id, min: [c[0] - si
 export const CAMERA_SOLIDS: readonly CameraSolid[] = Object.freeze([
   box("storefront:outfitters", [-15, 2.55, 16], [5.2, 5.1, 4.2]),
   box("storefront:potters-supply", [34, 2.55, 25], [5.2, 5.1, 4.2]),
-  ...[-1, 1].map((side) => {
-    const a = side * BASIN.angle / 2;
-    return box(`dam:abutment:${side}`, [BASIN.x + Math.sin(a) * BASIN.radius, 80, BASIN.z + Math.cos(a) * BASIN.radius], [3.9, 19.4, 4.4]);
-  }),
+  ...(contract.DAM?.abutments?.length
+    ? contract.DAM.abutments.map((a, i) => box(`dam:abutment:${i}`, a.at as V3, [a.size[0] + 0.4, a.size[1] + 0.4, a.size[2] + 0.4]))
+    : [-1, 1].map((side) => {
+      const a = side * BASIN.angle / 2;
+      return box(`dam:abutment:${side}`, [BASIN.x + Math.sin(a) * BASIN.radius, 80, BASIN.z + Math.cos(a) * BASIN.radius], [3.9, 19.4, 4.4]);
+    })),
   ...(["funicular", "gondola"] as const).flatMap((kind) => {
     const stops = TRANSPORT_STOPS[kind], out: CameraSolid[] = [];
     for (let i = 1; i < stops.length; i++) for (let k = 8; k <= 48; k += 8) {
@@ -224,6 +280,18 @@ function inBoxes(boxes: readonly CameraSolid[] | readonly { min: readonly number
   for (const s of boxes) if (x > s.min[0]! - r && x < s.max[0]! + r && y > s.min[1]! - r && y < s.max[1]! + r && z > s.min[2]! - r && z < s.max[2]! + r) return true;
   return false;
 }
+/** The contract's parapets, walls and bridge rails (oriented segments), when they are there. */
+const EDGES = (contract.EDGE_SOLIDS ?? []).map((e) => ({ ...e, minX: Math.min(e.a[0], e.b[0]), maxX: Math.max(e.a[0], e.b[0]), minZ: Math.min(e.a[1], e.b[1]), maxZ: Math.max(e.a[1], e.b[1]) }));
+function inEdge(x: number, y: number, z: number, r: number): boolean {
+  for (const e of EDGES) {
+    const w = e.thickness / 2 + r;
+    if (y < e.bottom - r || y > e.top + r || x < e.minX - w || x > e.maxX + w || z < e.minZ - w || z > e.maxZ + w) continue;
+    const dx = e.b[0] - e.a[0], dz = e.b[1] - e.a[1], l = dx * dx + dz * dz;
+    const t = l > 0 ? Math.max(0, Math.min(1, ((x - e.a[0]) * dx + (z - e.a[1]) * dz) / l)) : 0;
+    if (Math.hypot(x - e.a[0] - dx * t, z - e.a[1] - dz * t) < w) return true;
+  }
+  return false;
+}
 /** A moving cabin (funicular or gondola) the eye must stay out of. */
 export type MovingSolid = { at: V3; half: V3 };
 /**
@@ -239,6 +307,7 @@ export function cameraBlocked(x: number, y: number, z: number, radius = 0.12, ti
   if (inBuilding(x, y, z, radius)) return true;
   if (y < cameraGroundFast(x, z) + 0.05) return true;
   if (inDeck(x, y, z, radius)) return true;
+  if (inEdge(x, y, z, radius)) return true;
   return tier === "full" ? mountainFoliageAt(x, y, z, tier) : false;
 }
 /** How many solids the adapter carries (a test reads it: none of the named kinds may go missing). */
