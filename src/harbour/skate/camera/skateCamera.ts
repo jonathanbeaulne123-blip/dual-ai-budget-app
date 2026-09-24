@@ -49,6 +49,8 @@ export type SkateCamera = {
    * handing back) blends the field of view instead of cutting it.
    */
   lensFrom(fov: number): void;
+  /** The speed at which the lens and dolly reach their widest (the race course sets `raceFastSpeed`). */
+  setFastSpeed(speed: number): void;
   /** A drag look-around in pixels; it springs back behind the rider while rolling. */
   orbit(dx: number, dy: number): void;
   /** The camera's current heading (xz yaw it looks along). Useful as a walking basis on exit. */
@@ -71,12 +73,14 @@ export const SKATE_CAM = Object.freeze({
   portraitDist: 0.1, portraitAim: -0.34, portraitFov: 10,
   /** Look-ahead along velocity: seconds of travel, capped in units. */
   leadTime: 0.16, leadMax: 1.1,
+  fovRest: 54, fovFast: 72, fastSpeed: 11,
   /**
-   * Hearth Mountain v2: a downhill run averages about 12 u/s and tops out at
-   * 15, so the widest lens sits at 15 — the FOV keeps breathing across the
-   * whole race instead of pinning at 72° from the first bend (was 11).
+   * Hearth Mountain v2: the downhill race averages about 12 u/s and tops out
+   * near 15, so on the mountain course the widest lens sits at 15 — the FOV
+   * keeps breathing across the whole race instead of pinning at 72° from the
+   * first bend. The island park keeps 11 (its tricks are tuned to it).
    */
-  fovRest: 54, fovFast: 72, fastSpeed: 15,
+  raceFastSpeed: 15,
   /** Spring angular frequencies (rad/s); ≈ settle time 4.6/ω. */
   wFocus: 11, wFocusY: 7, wYaw: 4.2, wFrame: 3.2, wFov: 3, wRoll: 5,
   /** Yaw only chases the travel heading above this horizontal speed. */
@@ -126,7 +130,7 @@ const PHASE_MODE: Record<SkatePhase, SkateCameraMode> = {
 export function createSkateCamera(options: SkateCameraOptions = {}): SkateCamera {
   const C = SKATE_CAM;
   const fovRest = options.fovRest ?? C.fovRest, fovFast = options.fovFast ?? C.fovFast;
-  const fastSpeed = options.fastSpeed ?? C.fastSpeed;
+  let fastSpeed = options.fastSpeed ?? C.fastSpeed;
   const ground = options.ground;
   let distance: SkateCameraDistance = options.distance ?? 'near';
   let gravity = options.gravity ?? 14;
@@ -394,6 +398,7 @@ export function createSkateCamera(options: SkateCameraOptions = {}): SkateCamera
       cut(q, lastReduced, lastAspect); place(lastReduced, null);
     },
     setDistance(d) { distance = d === 'far' ? 'far' : 'near'; },
+    setFastSpeed(v) { if (Number.isFinite(v) && v > 1) fastSpeed = v; },
     lensFrom(f) { if (Number.isFinite(f) && f > 0) { if (started) { fov.x = f; fov.v = 0; } else pendingLens = f; } },
     orbit(dx, dy) {
       userYaw = clamp(userYaw - fin(dx) * 0.006, -1.4, 1.4);

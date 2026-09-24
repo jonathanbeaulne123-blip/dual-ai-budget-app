@@ -11,7 +11,7 @@ import {buildSkatePark} from '../skate/parkScene.ts';
 import {skateField,type SkateControls} from '../skate/driver.ts';
 import type {SkateProgress} from '../skate/session.ts';
 import {createHudThrottle,type SkateHudModel} from '../skate/hud/model.ts';
-import {createSkateCamera,type SkateCamera} from '../skate/camera/skateCamera.ts';
+import {createSkateCamera,SKATE_CAM,type SkateCamera} from '../skate/camera/skateCamera.ts';
 import {skateWalkPose,skateWatchPoint} from '../skate/camera/companion.ts';
 import {insideVillageBuilding} from '../body/obstacles.ts';
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
@@ -1220,6 +1220,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (ridden && skateCam) {
         if (walker.skate.takeCut()) skateCam.snap(ridden);
         skateCam.setDistance(walker.skate.current()?.camera === 'far' ? 'far' : 'near');
+        skateCam.setFastSpeed(walker.skate.run()?.id === 'mountain-descent' ? SKATE_CAM.raceFastSpeed : SKATE_CAM.fastSpeed);
         const f = skateCam.update(ridden, walker.skate.events(), dt, {
           aspect: camera.aspect, reducedMotion: reducedMotion() || walker.skate.current()?.reducedEffects === true,
           ceilingAt:worldCeilingAt,

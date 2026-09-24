@@ -36,7 +36,12 @@ describe("runtime camera ownership",()=>{
   world.setToolOpen(true);host.dispatchEvent(new WheelEvent('wheel',{deltaY:400}));expect(onJourney).not.toHaveBeenCalled();
   world.setToolOpen(false);world.enter('tower',{reduced:true});host.dispatchEvent(new WheelEvent('wheel',{deltaY:400}));expect(onJourney).not.toHaveBeenCalled();
   world.enter('court',{reduced:true});world.go('sky');run(200);
-  host.dispatchEvent(new WheelEvent('wheel',{deltaY:140}));expect(onJourney).not.toHaveBeenCalled();
+  // Hearth Mountain v2 (C5): the overview stands inside the far limit — the first pulls only reach it.
+  host.dispatchEvent(new WheelEvent('wheel',{deltaY:400}));expect(onJourney).not.toHaveBeenCalled();
+  // At the limit, a pull arms "Pull once more"; the same flick cannot open it…
+  host.dispatchEvent(new WheelEvent('wheel',{deltaY:140}));host.dispatchEvent(new WheelEvent('wheel',{deltaY:400}));expect(onJourney).not.toHaveBeenCalled();
+  // …a separate pull, once the affordance has been on screen, does — exactly once.
+  run(20);
   host.dispatchEvent(new WheelEvent('wheel',{deltaY:140}));host.dispatchEvent(new WheelEvent('wheel',{deltaY:400}));expect(onJourney).toHaveBeenCalledTimes(1);
  });
 });
