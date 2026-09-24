@@ -1,5 +1,5 @@
-import {mountainWalkRoute} from '../mountain/surfaces.ts';
 import * as THREE from "three";
+import {followRoute,planWalk,steer,type RouteFollow,type WalkPlan} from './route.ts';
 import {createSkateDriver,skateAct,SKATE_CATALOGS,type SkateControls} from '../skate/driver.ts';
 import {createSkaterLook,type LookTheme,type SkaterLook} from '../skate/look/index.ts';
 import type {SkateDeckId} from '../skate/park.ts';
@@ -12,7 +12,6 @@ import {
   EMOTE_LOOPS,
   EMOTE_MAX_SECONDS,
   EMOTE_SECONDS,
-  ARRIVAL,
   JUMP_SPEED,
   NO_INPUT,
   SLIDE_SECONDS,
@@ -34,7 +33,6 @@ import {
   type EmoteId,
 } from "./bodyModel.ts";
 import { courtObstacles, type Obstacle, type RoomBounds } from "./obstacles.ts";
-import { findPath, type PathPoint } from "./pathfinder.ts";
 import {createPlayableFigure,type PlayableAvatar} from './playableFigure.ts';
 // The partner's body is this body: importing the character module registers it
 // with `presence/walker.ts` (see `body/characterWalker.ts`). The runtime imports
@@ -105,8 +103,25 @@ export type Walker = {
   /** What the keys or the stick are asking for, in camera space. */
   setInput(input: BodyInput): void;
   input(): BodyInput;
-  /** Walk to a point on the ground — a tap. A clear line is direct; a blocked one follows bounded waypoints. */
-  goTo(x: number, z: number): boolean;
+  /**
+   * Walk to a point — a tap. `y` is the tapped height, so a deck and the
+   * ground under it are different destinations. Near at hand a clear line is
+   * direct and a blocked one follows bounded waypoints; further, the walk
+   * follows the pedestrian network as one smooth line, at a run when long.
+   */
+  goTo(x: number, z: number, y?: number): boolean;
+  /** The walk the last `goTo` planned (its length decides a run and a "Ride there?"), or null. */
+  plan(): WalkPlan | null;
+  /**
+   * Ride: the body is carried by a cabin, attached to its transform — no
+   * ground, shore or obstacle resolution while it rides. `null` lets go (the
+   * caller then stands it on the platform with `place`).
+   */
+  attach(pose: { x: number; y: number; z: number; yaw: number; seated: boolean } | null): void;
+  /** Is the body riding a cabin? */
+  riding(): boolean;
+  /** Walk at a run without holding Shift (the run toggle). */
+  runLock(on?: boolean): boolean;
   setAvatar(avatar:PlayableAvatar|null):void;
   /** Stop walking there (a second tap that meant something else). */
   cancel(): void;
@@ -184,8 +199,25 @@ export function createWalker(options: WalkerOptions): Walker {
   const start = options.start ?? COURT_ARRIVAL;
   let state = createBodyState(start.x, start.z, start.yaw ?? COURT_ARRIVAL.yaw, world);
   let input: BodyInput = NO_INPUT;
-  let route: PathPoint[] | null = null;
-  let routeIndex = 0;
+  let route: RouteFollow | null = null, lastPlan: WalkPlan | null = null;
+  let ride: { x: number; y: number; z: number; yaw: number; seated: boolean } | null = null;
+  let runLocked = false, fade = 1;
+  /** A safe return fades the figure; every material on it is its own (`createBodyFigure`). */
+  function setFade(alpha: number): void {
+    if (Math.abs(alpha - fade) < 1e-3) return;
+    fade = alpha;
+    figure.group.visible = alpha > 0.02;
+    figure.group.traverse(node => {
+      const mesh = node as THREE.Mesh;
+      if (!mesh.isMesh) return;
+      for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) {
+        const m = material as THREE.Material & { opacity: number; transparent: boolean; userData: Record<string, unknown> };
+        if (m.userData.bodyOpaque === undefined) m.userData.bodyOpaque = { opacity: m.opacity, transparent: m.transparent };
+        const base = m.userData.bodyOpaque as { opacity: number; transparent: boolean };
+        m.transparent = alpha < 1 ? true : base.transparent; m.opacity = base.opacity * alpha; m.needsUpdate = true;
+      }
+    });
+  }
   const box = new THREE.Box3();
   // ── Tideline Skate Club v2 ── the driver (sim, input, score, session) and the
   // look (board, rider pose, FX). While the board is down the look owns the
@@ -237,16 +269,18 @@ export function createWalker(options: WalkerOptions): Walker {
     },
   };
 
-  function clearRoute(): void { route = null; routeIndex = 0; }
+  function clearRoute(): void { route = null; }
 
-  function advanceRoute(): void {
-    if (!route || state.goal) return;
-    const reached = route[routeIndex];
-    if (!reached || Math.hypot(state.x - reached.x, state.z - reached.z) > ARRIVAL + 0.36) { clearRoute(); return; }
-    routeIndex += 1;
-    const next = route[routeIndex];
-    if (!next) { clearRoute(); return; }
-    state = walkTo(state, next.x, next.z, world);
+  /**
+   * Steer along the planned route: one smooth line through its corners, never
+   * an arrival-and-stop at each waypoint. The body's own give-up (walking and
+   * getting nowhere) ends the route too.
+   */
+  function steerRoute(): void {
+    if (!route) return;
+    if (!state.goal) { clearRoute(); return; }
+    const aim = steer(route, state.x, state.z);
+    state = { ...state, goal: aim.final ? { x: aim.target.x, z: aim.target.z, run: route.run } : { x: aim.target.x, z: aim.target.z, pass: true, run: route.run } };
   }
 
   function write(): void {
@@ -275,20 +309,35 @@ export function createWalker(options: WalkerOptions): Walker {
     shoulders: () => [state.x, eyeHeight(state), state.z],
     setInput(next) { input = next; if (next.forward !== 0 || next.strafe !== 0) clearRoute(); },
     input: () => input,
-    goTo(x, z) {
+    goTo(x, z, y) {
       if(skater.active())skate.enable(false);
-      const mountain = !world.room?mountainWalkRoute(state,{x,z}):null;
-      let planned:PathPoint[]|null;
-      if(mountain&&mountain.length>1){
-        const first=findPath(state,mountain[0]!,world),last=findPath(mountain[mountain.length-2]!,{x,z},world);
-        planned=first&&last?[...first,...mountain.slice(1,-1),...last]:null;
-      }else planned=findPath({ x: state.x, z: state.z }, { x, z }, world);
+      if(ride)return false;
       clearRoute();
-      if (!planned?.length) { state = { ...state, goal: null, stalled: 0 }; return false; }
-      route = planned;
-      state = walkTo(state, planned[0]!.x, planned[0]!.z, world);
+      const planned = planWalk({ x: state.x, z: state.z, y: state.y - state.air }, { x, z, ...(y === undefined || !Number.isFinite(y) ? {} : { y }) }, world);
+      lastPlan = planned;
+      if (!planned || planned.points.length < 2) { state = { ...state, goal: null, stalled: 0 }; return false; }
+      route = followRoute(planned);
+      const end = planned.points[planned.points.length - 1]!;
+      // The destination is held out of anything solid first, so a tap on a wall walks to its foot.
+      state = walkTo(state, end.x, end.z, world);
+      state = { ...state, goal: { ...state.goal!, pass: true, run: route.run } };
+      steerRoute();
       return true;
     },
+    plan: () => lastPlan,
+    attach(pose) {
+      if (pose) {
+        if (skater.active()) skate.enable(false);
+        clearRoute();
+        ride = pose;
+        state = { ...state, x: pose.x, y: pose.y, z: pose.z, yaw: pose.yaw, speed: 0, air: 0, vy: 0, goal: null, stalled: 0, slide: 0, charge: 0, emote: null, returning: null, peak: pose.y };
+        setFade(1);
+        write();
+        trail?.clear(); dust.clear();
+      } else ride = null;
+    },
+    riding: () => ride !== null,
+    runLock(on) { if (on !== undefined) runLocked = on; return runLocked; },
     setAvatar(avatar){
       look?.release();
       figure.group.removeFromParent();figure.dispose();
@@ -313,8 +362,8 @@ export function createWalker(options: WalkerOptions): Walker {
       if (next) { dust.clear(); motion.lean = 0; motion.bank = 0; motion.run = 0; motion.flourish = 0; }
       else motion.flourish = 1;
     },
-    cancel() { skater.input()?.reset(); clearRoute(); state = { ...state, goal: null, stalled: 0 }; },
-    place(x, z, yaw, y) { if(skater.active())skate.enable(false);clearRoute(); state = placeBody(state, x, z, world, yaw ?? state.yaw); if(y!==undefined&&Number.isFinite(y))state={...state,y};write(); trail?.clear(); dust.clear(); },
+    cancel() { skater.input()?.reset(); clearRoute(); lastPlan = null; state = { ...state, goal: null, stalled: 0 }; },
+    place(x, z, yaw, y) { if(skater.active())skate.enable(false);clearRoute();ride=null; state = placeBody(state, x, z, world, yaw ?? state.yaw, y!==undefined&&Number.isFinite(y)?y:undefined); if(y!==undefined&&Number.isFinite(y))state={...state,y};setFade(1);write(); trail?.clear(); dust.clear(); },
     step(dt, t, theta) {
       if(skater.active()){
         if(boardEmote&&!skater.paused()){
@@ -325,16 +374,28 @@ export function createWalker(options: WalkerOptions): Walker {
         if(ride.banked>0&&!skateReduced())look?.celebrate(Math.min(1,.25+ride.banked/6000));
         return ride.moving;
       }
+      if (ride) {
+        // Carried: the cabin's transform is the body's. It holds a ride pose — seated in a gondola, standing in a funicular.
+        write();
+        motion.run = 0; motion.lean = 0; motion.bank = 0; motion.air = 0; motion.rise = 0; motion.crouch = 0; motion.slide = 0; motion.incline = 0;
+        motion.emote = ride.seated ? "sit" : null; motion.emoteAt = ride.seated ? 1 : 0; motion.flourish = reduced ? 0 : 1;
+        figure.pose(state.phase, 0, t, motion);
+        return true;
+      }
       if (input.forward !== 0 || input.strafe !== 0) clearRoute();
-      const frame = stepBody(state, input, theta, dt, world);
+      steerRoute();
+      const frame = stepBody(state, runLocked && !input.run ? { ...input, run: true } : input, theta, dt, world);
       state = frame.state;
-      advanceRoute();
+      if (route && !state.goal) clearRoute();
+      setFade(frame.fade);
+      if (frame.returned) { trail?.clear(); dust.clear(); }
       write();
       // Reduced motion keeps the gait and drops the weight: the body walks,
       // it just stops acting.
       motion.run = reduced ? 0 : runFraction(state.speed);
       motion.lean = reduced ? 0 : state.lean;
       motion.bank = reduced ? 0 : state.bank;
+      motion.incline = reduced ? 0 : state.incline ?? 0;
       // The moves themselves are never withheld — a jump is how you get over
       // a thing, and an emote is something you said. Reduced motion turns the
       // *performance* off (`flourish`), not the move.

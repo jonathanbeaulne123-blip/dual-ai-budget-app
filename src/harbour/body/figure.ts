@@ -59,6 +59,12 @@ export type BodyMotion = {
   bank: number;
   /** How far into a run, 0…1: swing, cadence, bob and squash all grow with it. */
   run: number;
+  /**
+   * The slope underfoot along the way the body is going, −1…1 (sine of the
+   * grade; + is uphill). A climb leans the carriage into the hill and
+   * shortens the stride's lift; a descent sits the body back.
+   */
+  incline?: number;
   /** A board rider holds a sideways stance instead of taking walking strides. (v1; superseded by `skatePose`.) */
   skate?: {push:number;balance:number;bail:boolean};
   /**
@@ -147,6 +153,8 @@ const BOB_RUN = 1.5, ROLL_RUN = 0.7, LEAN_RUN = 0.16;
 const SQUASH = 0.055;
 /** How far the acceleration signal pitches the body, and the heading error rolls it, in radians. */
 const LEAN_GAIN = 0.20, BANK_GAIN = 0.28;
+/** How far the carriage pitches into a full (sine 1) slope: a hill is leaned into, a descent sat back from. */
+const INCLINE_GAIN = 0.32;
 /** How much of the carriage's pitch the head gives back, so the face keeps looking ahead. */
 const HEAD_LEVEL = 0.55;
 /** How far the body dips into a crouch, and how much it squashes doing it. */
@@ -394,7 +402,7 @@ export function createBodyFigure(colours: Partial<FigureColours> = {}, anatomy?:
       // further forward the faster it goes and the harder it is pushing.
       carriage.position.y = Math.abs(swing) * BOB * (1 + BOB_RUN * run) * g;
       carriage.rotation.z = swing * ROLL * (1 + ROLL_RUN * run) * g + motion.bank * BANK_GAIN;
-      const pitch = (LEAN + LEAN_RUN * run) * g + motion.lean * LEAN_GAIN;
+      const pitch = (LEAN + LEAN_RUN * run) * g + motion.lean * LEAN_GAIN + Math.max(-1, Math.min(1, motion.incline ?? 0)) * INCLINE_GAIN;
       carriage.rotation.x = -pitch;
       // The knee takes the weight on the landing: a short squash, gone again
       // by mid-stride, and deeper the harder the foot came down.
