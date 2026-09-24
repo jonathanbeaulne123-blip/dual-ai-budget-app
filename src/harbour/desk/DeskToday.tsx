@@ -2,14 +2,15 @@ import { useId, useMemo } from "react";
 import { DeskLevel } from "./DeskLevel.tsx";
 import { DeskPersonalToday } from "./DeskPersonalToday.tsx";
 import { engravedCents, sundialAngle } from "./engraved.ts";
-import { deskPots, readHercules, readNext, readSeals, readSitdown, readSnapshot, readWalk, type DeskNext, type DeskPot, type DeskSitdown } from "./todayModel.ts";
+import { deskPots, readHercules, readNext, readPost, readSeals, readSitdown, readSnapshot, readWalk, type DeskNext, type DeskPost, type DeskPot, type DeskSitdown } from "./todayModel.ts";
 import { shortDate } from "../nav/doorSigns.ts";
 import type { DeskPageProps } from "./types.ts";
 
 /**
  * Today — the Desk's front page (SIMPLE_VIEW_DESK S2 §1). Everyday "Now"
  * leads big; Prepare, Protect and Build stand beneath; the month's three wax
- * seals; the Level, small; the sundial; and Hercules's corner. Every figure
+ * seals; the Level, small; the sundial; the mailbox's notice and the "since
+ * you were here" slip (S8); and Hercules's corner. Every figure
  * is a selector's figure, every card is a door onto the surface that owns it,
  * and nothing on this page moves money.
  */
@@ -26,9 +27,10 @@ function DeskHouseholdToday({ household, memberId, scope, today, reading, onOpen
   const next = useMemo(() => readNext(walk, today), [walk, today]);
   const hercules = useMemo(() => readHercules(household, memberId, scope, today), [household, memberId, scope, today]);
   const sitdown = useMemo(() => readSitdown(reading, household, memberId, scope, today), [reading, household, memberId, scope, today]);
+  const post = useMemo(() => readPost(reading, scope), [reading, scope]);
   const leftover = seals?.leftoverCents ?? null;
   const ids = useId();
-  return <div className="desk-today" data-desk-sitdown={sitdown?.why}>
+  return <div className="desk-today" data-desk-sitdown={sitdown?.why} data-desk-post={post ? "" : undefined}>
     {sitdown && <DogEar sitdown={sitdown} onOpen={onOpen} />}
     <button type="button" className="desk-card desk-now" data-desk-pot="everyday" onClick={() => onOpen(pots.everyday.target)}
       aria-label={`Everyday, now: ${engravedCents(pots.everyday.cents)}. ${pots.everyday.line}. Meet the Queen.`}>
@@ -55,6 +57,8 @@ function DeskHouseholdToday({ household, memberId, scope, today, reading, onOpen
     </section>
 
     <Sundial next={next} onOpen={onOpen} />
+
+    {post && <Post post={post} onOpen={onOpen} onTalk={onTalk} />}
 
     <section className="desk-card desk-hercules" aria-labelledby={`${ids}-hercules`}>
       <h2 className="desk-card__kicker" id={`${ids}-hercules`}>Hercules’s corner</h2>
@@ -99,6 +103,36 @@ function DogEar({ sitdown, onOpen }: { sitdown: DeskSitdown; onOpen: (target: st
     <span className="desk-dogear__word" aria-hidden="true">Sitdown</span>
     <span className="desk-dogear__fold" aria-hidden="true" />
   </button>;
+}
+
+/**
+ * The post (S8), harvested from the Court's mailbox: her notice as a small
+ * paper notice with its flag up — a button to the same door the mailbox opens —
+ * and the "since you were here" slip tucked in beneath it. Either may be
+ * absent; with neither, there is no post at all.
+ */
+function Post({ post, onOpen, onTalk }: { post: DeskPost; onOpen: (target: string, object?: string) => void; onTalk: () => void }) {
+  const { notice, slip } = post;
+  const slipId = useId();
+  const open = () => { if (!notice) return; if (notice.target === "hercules") onTalk(); else onOpen(notice.target); };
+  return <div className="desk-post" data-desk-post-has={[notice && "notice", slip.length > 0 && "slip"].filter(Boolean).join(" ")}>
+    {notice && <button type="button" className="desk-card desk-notice" data-desk-notice={notice.source} onClick={open}
+      aria-label={`Mailbox, flag up. ${notice.fact} ${notice.next}`}>
+      <svg className="desk-notice__flag" viewBox="0 0 20 28" aria-hidden="true" focusable="false">
+        <path className="desk-notice__staff" d="M4 27 V3" />
+        <path className="desk-notice__pennant" d="M4 3 H16 V11 H4 Z" />
+      </svg>
+      <span className="desk-notice__words">
+        <span className="desk-card__kicker">Mailbox · flag up</span>
+        <strong className="desk-notice__fact">{notice.fact}</strong>
+        <span className="desk-card__line desk-notice__next">{notice.next}</span>
+      </span>
+    </button>}
+    {slip.length > 0 && <section className="desk-slip" data-desk-slip="" aria-labelledby={slipId}>
+      <h2 className="desk-slip__head" id={slipId}>Since you were here</h2>
+      <ul className="desk-slip__lines">{slip.map((line, i) => <li key={i}>{line}</li>)}</ul>
+    </section>}
+  </div>;
 }
 
 /** An embossed wax seal: the figure pressed into the wax, the words beneath it. */

@@ -372,3 +372,19 @@
 .desk--newfoundland .desk-dogear__fold::after {
   background: linear-gradient(45deg, color-mix(in srgb, var(--fold-back) 92%, var(--desk-card)) 0 30%, var(--fold-back) 48.4%, var(--log-kelp) 48.5% 50%, transparent 50%);
 }
+
+/* ═══════════ The post (S8) in each dressing ═══════════ */
+/* Classic: the slip is a ledger stub, a copper double rule across its head. */
+.desk--classic .desk-slip__head { padding-bottom: 3px; border-bottom: 3px double color-mix(in srgb, var(--desk-copper) 45%, transparent); }
+/* Taylor: the notice is a taped scrap at a tilt; the slip is written in her hand. */
+.desk--taylor .desk-notice { --scrap-tilt: -.5deg; }
+.desk--taylor .desk-slip { rotate: 1deg; border-style: dashed; border-radius: 3px 3px 12px 4px; }
+.desk--taylor .desk-slip__head { font: 600 18px/1.1 var(--scrap-hand); letter-spacing: 0; text-transform: none; color: color-mix(in srgb, var(--scrap-accent) 55%, var(--desk-ink)); }
+.desk--taylor .desk-notice__fact { font: 600 20px/1.15 var(--scrap-hand); }
+.desk--taylor .desk-notice__pennant { fill: var(--scrap-accent); stroke: color-mix(in srgb, var(--scrap-accent) 70%, var(--desk-ink)); }
+/* Newfoundland: a log entry and a tally slip, typewritten, the flag in kelp and brass. */
+.desk--newfoundland .desk-slip { rotate: 0deg; border-radius: 0 0 2px 2px; border-left: 3px solid var(--log-kelp); background-color: var(--log-page); }
+.desk--newfoundland .desk-slip:only-child { border-radius: 2px; }
+.desk--newfoundland .desk-slip__head { font: 500 10.5px/1.3 var(--log-mono); letter-spacing: .1em; color: color-mix(in srgb, var(--log-kelp) 50%, var(--desk-muted)); }
+.desk--newfoundland .desk-slip__lines > li { font: 500 13px/22px var(--log-mono); font-style: normal; }
+.desk--newfoundland .desk-notice__pennant { fill: var(--log-kelp); stroke: var(--log-brass-dark); }

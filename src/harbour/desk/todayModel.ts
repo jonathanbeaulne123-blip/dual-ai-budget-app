@@ -171,3 +171,36 @@ export function readSitdown(reading: HarbourReading | null, household: Household
     ? { why: "proposed", month, words: `A close is on the table${month ? ` for ${month}` : ""} and your seat at the Sitdown is empty` }
     : { why: "overdue", month, words: `${month ? `${month}’s Chapter` : "The Chapter"} is still open past its month; the Sitdown is waiting` };
 }
+
+/**
+ * The post (S8): the last two things harvested from the Court's retired
+ * reading edition (`CourtFlat`), read straight off the harbour's own reading
+ * so the Desk and the Court's mailbox say the same words.
+ *
+ * - `notice` is `HarbourReading.noticed` — the mailbox's one fact and one next
+ *   step (`noticedItem`: a Fund pulse need outranks Hercules's `bubbleNotice`),
+ *   with the door the Court's mailbox opens (`noticed.target`).
+ * - `slip` is `HarbourReading.slip` — "since you were here", the household's
+ *   `presenceLines` (at most three), tidied the way the Court's slip plate
+ *   tidies them (whitespace folded, blanks dropped).
+ *
+ * Both need the harbour's reading (the notice carries the sync freshness only
+ * the App knows), so a Desk handed no reading — the personal Desk, or the
+ * frame before the books answer — has no post, and nothing is guessed.
+ * Household only: the mailbox and the slip are the couple's.
+ */
+export type DeskNotice = NonNullable<HarbourReading["noticed"]>;
+export type DeskPost = { notice: DeskNotice | null; slip: string[] };
+
+export const DESK_SLIP_LINES = 3;
+
+export function readPost(reading: HarbourReading | null, scope: LedgerView): DeskPost | null {
+  if (scope !== "household" || !reading) return null;
+  const noticed = reading.noticed;
+  const notice = noticed && noticed.fact.trim() ? noticed : null;
+  const slip = (Array.isArray(reading.slip) ? reading.slip : [])
+    .map(line => String(line).replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .slice(0, DESK_SLIP_LINES);
+  return notice || slip.length > 0 ? { notice, slip } : null;
+}
