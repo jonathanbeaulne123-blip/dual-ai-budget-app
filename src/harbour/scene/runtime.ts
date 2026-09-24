@@ -713,8 +713,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const lookTerrain = () => (placeId === 'court' ? { ground: cameraGround, blocked: (x: number, y: number, z: number) => cameraBlocked(x, y, z, .15, 'lite') } : null);
   /** Ease the drawn lens toward `goal` (a change of mode blends, C10 minor); reduced motion cuts. True while easing. */
   function easeLens(goal: number, dt: number): boolean {
-    if (Math.abs(camera.fov - goal) < 1e-2) { if (camera.fov !== goal) { camera.fov = goal; camera.updateProjectionMatrix(); } return false; }
-    camera.fov = reducedMotion() || !(dt > 0) ? goal : camera.fov + (goal - camera.fov) * (1 - Math.exp(-4 * Math.min(dt, .1)));
+    if (Math.abs(camera.fov - goal) < 1e-2 || reducedMotion() || !(dt > 0)) { if (camera.fov !== goal) { camera.fov = goal; camera.updateProjectionMatrix(); } return false; }
+    camera.fov += (goal - camera.fov) * (1 - Math.exp(-4 * Math.min(dt, .1)));
     camera.updateProjectionMatrix();
     return true;
   }
@@ -1274,7 +1274,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         camera.lookAt(shot.look[0], shot.look[1], shot.look[2]);
         easeLens(shot.fov, dt);
         bodyMoving = true;
-      } else if (rideOn) {
+      } else if (rideOn && !trip) {
         const heading = rideExitHeading(rideOn.kind, rideOn.to);
         rideOn = null; cabinSolid = null;
         follow.setSubject(walkSubject(at));
