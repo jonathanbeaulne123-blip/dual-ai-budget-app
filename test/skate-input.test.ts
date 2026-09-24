@@ -317,13 +317,37 @@ describe('skate input: keyboard',()=>{
     input.reset();
     const i=input.sample(400,false,true);expect(i.push).toBe(false);expect(i.crouch).toBe(0);
     expect(input.keyDown({key:'p',code:'KeyP',timeStamp:500})).toBe(false); // pause is the world's key
-    expect(input.keyDown({key:' ',code:'Space',timeStamp:500})).toBe(false);
+    expect(input.keyDown({key:' ',code:'Space',timeStamp:500})).toBe(true);
+    expect(input.sample(500,false,false).pop).toEqual({from:'tail',flipId:null,strength:.7});
+    expect(input.sample(516,false,false).pop).toBeNull();
     expect(input.keyDown({key:'b',code:'KeyB',timeStamp:500})).toBe(false);
   });
 });
 
 /* ---------------------------------------------------------------- pointer + touch */
 describe('skate input: pointer and touch',()=>{
+  it('rides, steers and brakes from the left circular pad alone',()=>{
+    const input=createSkateInput({getGamepads:null});
+    const ev=(t:number,x:number,y:number)=>({pointerId:1,clientX:x,clientY:y,timeStamp:t});
+    input.touchStart('left',ev(1000,100,100));
+    input.touchMove(ev(1010,140,50));
+    expect(input.sample(1020,false,true)).toMatchObject({push:true,brake:false});
+    expect(input.sample(1020,false,true).steer).toBeGreaterThan(.4);
+    input.touchMove(ev(1030,100,145));
+    expect(input.sample(1040,false,true)).toMatchObject({push:false,brake:true});
+    input.touchEnd(ev(1050,100,145));
+    expect(input.sample(1060,false,true)).toMatchObject({push:false,brake:false,steer:0});
+  });
+  it('holds a side of the right pad for a grab in the air without an extra button',()=>{
+    const input=createSkateInput({getGamepads:null});
+    const ev=(t:number,x:number,y:number)=>({pointerId:2,clientX:x,clientY:y,timeStamp:t});
+    input.touchStart('right',ev(1000,200,200));
+    input.touchMove(ev(1010,145,200));
+    expect(input.sample(1100,true,true).grab).toBeNull();
+    expect(input.sample(1200,true,true).grab).toBe('melon');
+    input.touchEnd(ev(1210,145,200));
+    expect(input.sample(1220,true,true).grab).toBeNull();
+  });
   it('mouse drag is the board stick (90 px radius from the press point); right button grabs',()=>{
     const input=createSkateInput({getGamepads:null});
     const ev=(t:number,x:number,y:number,button=0)=>({pointerId:1,clientX:x,clientY:y,button,timeStamp:t,pointerType:'mouse'});

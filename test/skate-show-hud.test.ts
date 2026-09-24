@@ -133,16 +133,16 @@ describe('SkateHUD component', () => {
     const onZonePointer = vi.fn();
     render(props({model: model({inputDevice: 'touch'}), onZonePointer}));
     const zones = [...host.querySelectorAll<HTMLElement>('[data-skate-zone]')].map(z => z.dataset.skateZone);
-    expect(zones).toEqual(['push', 'brake', 'left', 'grab-front', 'grab-back', 'right']); // left thumb cluster, right thumb cluster
+    expect(zones).toEqual(['left', 'right']);
     expect(host.querySelector('.skate-hints')).toBeNull();
-    const push = host.querySelector<HTMLElement>('[data-skate-zone=push]')!;
+    const push = host.querySelector<HTMLElement>('[data-skate-zone=left]')!;
     // jsdom has no PointerEvent: a MouseEvent with a pointer type and id is what React reads.
     const pointer = (type: string) => Object.assign(new MouseEvent(type, {bubbles: true}), {pointerId: 3, pointerType: 'touch'});
     act(() => { push.dispatchEvent(pointer('pointerdown')); });
     expect(push.hasAttribute('data-held')).toBe(true);
     act(() => { push.dispatchEvent(pointer('pointerup')); });
     expect(push.hasAttribute('data-held')).toBe(false);
-    expect(onZonePointer.mock.calls.map(c => [c[0], c[1].type])).toEqual([['push', 'pointerdown'], ['push', 'pointerup']]);
+    expect(onZonePointer.mock.calls.map(c => [c[0], c[1].type])).toEqual([['left', 'pointerdown'], ['left', 'pointerup']]);
   });
 
   it('opens the pause book as a trapped dialog and closes on Escape, handing focus back', async () => {
