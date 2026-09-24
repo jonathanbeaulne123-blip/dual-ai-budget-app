@@ -4,6 +4,8 @@ import {buildDistrictArt} from '../mountain/districtArt.ts';
 import {DISTRICTS} from '../mountain/definition.ts';
 import {buildMountainLandscape} from '../mountain/landscape.ts';
 import type {Point3,TransportKind} from '../mountain/definition.ts';
+import type {MountainRecoveryView} from '../mountain/recovery.ts';
+import type {MountainInteractionState} from '../mountain/life.ts';
 import {createVillagePartner} from '../presence/villagePartner.ts';
 import {buildVillageLife} from "./life.ts";
 import * as THREE from 'three';
@@ -73,6 +75,6 @@ export const villageCourt = registerPlace({id:'court',build(scene,dressing,_read
   const poses:Record<string,Pose>={court:{target:[.95,.85,5.1],r:9,theta:.15,phi:1.22},'court:phone':{target:[.95,.8,5.1],r:11,theta:.15,phi:1.17},sky:{target:[0,42,-122],r:390,theta:.18,phi:1.08}};
   group.updateMatrixWorld(true);scene.add(group);
   let disposed=false,calm=false;
-  const handle:PlaceHandle & {play(id:string):string|null;setTransit(at:Point3|null,kind?:TransportKind):void;setCalm(on:boolean):void;setVisitor(at:Point3):void;streamDetails(x:number,z:number,race:boolean):boolean}={group,streamDetails,setTransit:mountain.setTransit,setVisitor:mountain.setVisitor,setCalm(on){calm=on;mountain.setCalm(on);},anchors:()=>[...mountain.anchors,...anchors,...life.anchors(),...landscape.anchors],regions:()=>[...mountain.regions,...regions,...life.regions()],poses:()=>poses,update(reading){partner.update(reading);mountain.update(reading);},play:id=>HARBOUR_WANDERS.find(w=>`wander:${w.id}`===id)?.words??life.interact(id),animate(t,dt){mountain.animate(t,dt);partner.animate(t,dt);if(!calm){life.animate(t,dt);for(const {shell} of exteriors.live.values())shell.animate(t,dt);water.scale.setScalar(1+Math.sin(t*1.8)*.018);}return true;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();mountain.dispose();life.dispose();partner.dispose();landscape.dispose();districtDetails.dispose();exteriors.dispose();owned.forEach(x=>x.dispose());group.clear();}};
+  const handle:PlaceHandle & {play(id:string):string|null;setTransit(at:Point3|null,kind?:TransportKind):void;setRecovery(view:MountainRecoveryView):void;setInteraction(state:MountainInteractionState):void;setCalm(on:boolean):void;setVisitor(at:Point3):void;streamDetails(x:number,z:number,race:boolean):boolean}={group,streamDetails,setRecovery:mountain.setRecovery,setInteraction:mountain.setInteraction,setTransit:mountain.setTransit,setVisitor:mountain.setVisitor,setCalm(on){calm=on;mountain.setCalm(on);},anchors:()=>[...mountain.anchors,...anchors,...life.anchors(),...landscape.anchors],regions:()=>[...mountain.regions,...regions,...life.regions()],poses:()=>poses,update(reading){partner.update(reading);mountain.update(reading);},play:id=>HARBOUR_WANDERS.find(w=>`wander:${w.id}`===id)?.words??life.interact(id),animate(t,dt){mountain.animate(t,dt);partner.animate(t,dt);if(!calm){life.animate(t,dt);for(const {shell} of exteriors.live.values())shell.animate(t,dt);water.scale.setScalar(1+Math.sin(t*1.8)*.018);}return true;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();mountain.dispose();life.dispose();partner.dispose();landscape.dispose();districtDetails.dispose();exteriors.dispose();owned.forEach(x=>x.dispose());group.clear();}};
   return handle;
 }});

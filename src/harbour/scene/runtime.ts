@@ -1,4 +1,6 @@
 import type {WorldAmbience} from '../mountain/audio.ts';
+import type {MountainRecoveryView} from '../mountain/recovery.ts';
+import type {MountainInteractionState} from '../mountain/life.ts';
 import {mountainFoliageAt} from '../mountain/planting.ts';
 import {worldCollisionAt} from '../mountain/surfaces.ts';
 import {MOUNTAIN_VERSION,transportPoint,TRANSPORT_STOPS,type Point3,type TransportKind} from '../mountain/definition.ts';
@@ -175,6 +177,10 @@ export type HarbourRuntime = {
   mountainTravel:(at:Point3,trip?:{kind:TransportKind;from:number;to:number})=>void;
   mountainSkip:()=>void;
   mountainCalm:(on:boolean)=>void;
+  setMountainRecovery:(view:MountainRecoveryView)=>void;
+  setMountainInteraction:(state:MountainInteractionState)=>void;
+  /** Nonfinancial sound cue; never enables Sound or creates an audio context. */
+  mountainBell:()=>void;
   setWorldAmbience:(audio:WorldAmbience|null)=>void;
   setAvatar:(avatar:PlayableAvatar|null)=>void;
   /**
@@ -311,6 +317,14 @@ export function scrubControls(handle: PlaceHandle, todayIndex = 0): ScrubControl
   };
 }
 
+type MountainPresentationHandle = PlaceHandle & {
+  setVisitor?:(at:Point3)=>void;
+  setTransit?:(at:Point3|null,kind?:TransportKind)=>void;
+  setCalm?:(on:boolean)=>void;
+  setRecovery?:(view:MountainRecoveryView)=>void;
+  setInteraction?:(state:MountainInteractionState)=>void;
+};
+
 const TAP_PIXELS = 8, TAP_MS = 350, MIN_TWIN = 44;
 /** A second tap this soon after the first, and this near it, is one deliberate gesture. */
 export const DOUBLE_TAP_MS = 320, DOUBLE_TAP_PIXELS = 28;
@@ -418,6 +432,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * path below is byte-for-byte what it always was — for an unplaced place.
    */
   let calmWorld=false;
+  let mountainRecovery:MountainRecoveryView|null=null;
+  let mountainInteraction:MountainInteractionState|null=null;
   const live = new Map<HarbourPlaceId, { handle: PlaceHandle; abort: AbortController; placement: PlacePlacement | null; matrix: THREE.Matrix4 | null }>();
   /**
    * Where the viewer stands on the island (§2). The body lane drives it; until
@@ -494,7 +510,13 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     let placement = placementOf(place.id);
     try { built = place.build(scene, dressing, reading, tier, { composition, signal: control.signal, invalidate }); }
     catch { built = EMPTY_PLACE.build(scene, dressing, null, tier, { composition, signal: control.signal, invalidate }); placement = null; }
-    if(place.id==='court')(built as PlaceHandle & {setCalm?:(on:boolean)=>void}).setCalm?.(calmWorld);
+    if(place.id==='court'){
+      const mountain=built as MountainPresentationHandle;
+      mountain.setCalm?.(calmWorld);
+      if(mountainRecovery)mountain.setRecovery?.(mountainRecovery);
+      // Priming the current state restores props without replaying an earlier bell ring.
+      if(mountainInteraction)mountain.setInteraction?.(mountainInteraction);
+    }
     live.set(place.id, { handle: built, abort: control, placement, matrix: stand(built, placement) });
     showExteriors();
     listsDirty = true;
@@ -665,7 +687,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * both made once and both read the right floor after a walk into a building.
    */
   let mountainTrip:{kind:TransportKind;from:number;to:number;elapsed:number;duration:number}|null=null;
-  const mountainHandle=()=>(live.get('court')?.handle??handle) as PlaceHandle & {setVisitor?:(at:Point3)=>void;setTransit?:(at:Point3|null)=>void;setCalm?:(on:boolean)=>void};
+  const mountainHandle=()=>(live.get('court')?.handle??handle) as MountainPresentationHandle;
   let bodyGround: (x: number, z: number) => number = placeGround(placeId);
   /** This place's own ways out, when walking to one of them is how you leave (an unplaced room). */
   let bodyExits: Anchor[] = [];
@@ -1062,7 +1084,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         bodyInput=NO_INPUT;walker.setInput(NO_INPUT);
         mountainTrip.elapsed=Math.min(mountainTrip.duration,mountainTrip.elapsed+(toolOpen?0:Math.min(.1,dt)));
         const p=transportPoint(mountainTrip.kind,mountainTrip.from,mountainTrip.to,(mountainTrip.duration?mountainTrip.elapsed/mountainTrip.duration:1));
-        walker.place(p[0],p[2],walker.state().yaw,p[1]);mountainHandle().setTransit?.(p);previousDoorPoint=null;
+        walker.place(p[0],p[2],walker.state().yaw,p[1]);mountainHandle().setTransit?.(p,mountainTrip.kind);previousDoorPoint=null;
         bodyMoving=true;
         if(mountainTrip.elapsed>=mountainTrip.duration){mountainTrip=null;mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(false);bringCat();}
       }else bodyMoving = walker.step(dt, (now - mountedAt) / 1000, heading);
@@ -1362,6 +1384,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
 
   const api: HarbourRuntime = {
+    setMountainRecovery(view){if(disposed)return;mountainRecovery=view;mountainHandle().setRecovery?.(view);dirty=true;schedule();},
+    setMountainInteraction(state){if(disposed)return;mountainInteraction=state;mountainHandle().setInteraction?.(state);dirty=true;schedule();},
+    mountainBell(){if(!disposed&&visible&&lease.active&&!toolOpen&&!calmWorld&&!reducedMotion()&&placeId==='court')worldAmbience?.bell();},
     setWorldAmbience(audio){worldAmbience=audio;dirty=true;schedule();},
     mountainCalm(on){calmWorld=on;if(on)worldAmbience?.pause();mountainHandle().setCalm?.(on);dirty=true;schedule();},
     mountainSkip(){if(mountainTrip){mountainTrip.elapsed=mountainTrip.duration;dirty=true;schedule();}},

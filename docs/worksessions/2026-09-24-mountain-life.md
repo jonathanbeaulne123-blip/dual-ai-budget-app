@@ -82,3 +82,21 @@ claimed here. The check covers the changed source included in this scoped commit
 Next owner: parent Codex for Court/runtime/React integration, central decision-log
 entry and coordinated current-source verification. No hosted mutation, network
 disclosure, secret access, push, deployment or schema operation was performed.
+
+## Follow-up: runtime adapters
+
+The narrow follow-up forwards both setters through VillageCourt and exposes
+`HarbourRuntime.setMountainRecovery(view)`, `setMountainInteraction(state)` and
+`mountainBell()`. Runtime caches the latest views and reapplies them when Court
+is rebuilt. The first interaction assignment is left for the shell to prime;
+this avoids replaying an old bell count when a full theme runtime is mounted.
+The shell must provide its current interaction/recovery state after each mount.
+
+The runtime bell cue uses the existing audio object only, with visibility,
+renderer activity, disposal, tool-open, Court location and quiet/reduced-motion
+guards. It cannot enable Sound. Transit frames now forward their transport kind
+through the typed Court adapter to the integrated art implementation.
+
+Follow-up verification: `git diff --check` passed; source forwarding and first
+assignment/rebuild ordering inspected. No new test, broad gate, typecheck or build
+was run for these narrow adapters, per the integration task's memory constraint.
