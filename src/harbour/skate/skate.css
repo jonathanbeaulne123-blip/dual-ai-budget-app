@@ -1,21 +1,319 @@
-.skate-entry{position:absolute;z-index:8;top:174px;left:28px;display:flex;align-items:center;gap:14px;min-height:56px;background:#173e3bea;color:#fff7de;border:1px solid #8fb9a2;border-radius:14px;padding:11px 16px;box-shadow:0 7px 25px #133c3530;text-align:left}.skate-entry b,.skate-entry small{display:block}.skate-entry b{font:600 15px/1.5 system-ui}.skate-entry small{font:10px/1.5 system-ui;color:#ccddd4}.skate-entry>span:first-child{font-size:30px}.skate-entry>span:last-child{font-size:22px}
-.skate-hud{--skate-ink:#173c37;--skate-paper:#fff9e9;--skate-accent:#8be1c7;position:absolute;inset:0;z-index:9;pointer-events:none;color:var(--skate-paper);font-family:system-ui,sans-serif}.harbour-world--taylor .skate-hud{--skate-ink:#55314b;--skate-paper:#fff1f0;--skate-accent:#f3b4d3}.harbour-world--newfoundland .skate-hud{--skate-ink:#163c50;--skate-paper:#f5efdb;--skate-accent:#f0c076}.skate-hud button,.skate-hud select{font:inherit;min-height:44px;min-width:44px;color:inherit;cursor:pointer;border:1px solid #fff4d84a;background:var(--skate-ink);border-radius:11px;padding:8px 13px}.skate-hud button:disabled{cursor:default;opacity:.5}.skate-hud :is(button,select):focus-visible,.skate-entry:focus-visible{outline:3px solid var(--skate-accent,#69acdb);outline-offset:4px}.skate-top{position:absolute;top:62px;left:28px;right:28px;display:flex;justify-content:space-between;align-items:center;gap:16px;pointer-events:auto}.skate-wordmark{background:var(--skate-ink);padding:13px 18px;border-left:4px solid var(--skate-accent);border-radius:2px 12px 12px 2px;box-shadow:0 8px 25px #173e3522}.skate-wordmark>span{display:block;font:italic 13px Georgia,serif;opacity:.85;margin-bottom:3px}.skate-wordmark>b{font-size:19px;letter-spacing:.14em}.skate-wordmark>b>span{font-size:10px;letter-spacing:.1em}.skate-top nav{display:flex;gap:5px}.skate-score{position:absolute;top:159px;left:28px;width:236px;background:var(--skate-ink);border-radius:14px;padding:15px 18px;box-shadow:0 8px 25px #133c3520}.skate-score__eyebrow{font-size:9px;letter-spacing:.15em;display:flex;justify-content:space-between;gap:8px;color:var(--skate-accent)}.skate-score__eyebrow>span{font-size:14px;letter-spacing:0;font-variant-numeric:tabular-nums}.skate-score__eyebrow small{font-size:9px}.skate-score__number{font-size:48px;font-weight:800;letter-spacing:-.055em;line-height:1.15;font-variant-numeric:tabular-nums;display:flex;justify-content:space-between;align-items:baseline;margin:4px 0}.skate-score__number>span{font-size:24px;color:var(--skate-accent);letter-spacing:-.03em}.skate-score__trick{font-size:12px;line-height:1.35;min-height:18px}.skate-score>small{display:block;font-size:10px;margin-top:12px;opacity:.8}.skate-chain{font-size:10px;color:var(--skate-accent);margin-top:6px}.skate-combo-meter{height:3px;background:#ffffff25;border-radius:3px;margin-top:9px;overflow:hidden}.skate-combo-meter i{display:block;height:100%;background:var(--skate-accent);transform-origin:left;transition:transform .1s linear}.skate-balance{position:absolute;top:42%;left:50%;transform:translateX(-50%);width:180px;text-align:center;background:var(--skate-ink);padding:10px 15px;border-radius:12px;font-size:11px}.skate-balance>div{position:relative;height:8px;background:linear-gradient(90deg,#bd6863,#d4b378 23%,#8ce2ba 45%,#8ce2ba 55%,#d4b378 77%,#bd6863);border-radius:4px;margin-top:10px}.skate-balance i{position:absolute;top:-4px;height:16px;width:4px;background:white;border-radius:2px;transform:translateX(-50%)}
-.skate-radar{position:absolute;top:134px;right:30px;width:135px;color:var(--skate-accent);text-align:center;background:var(--skate-ink);border-radius:18px;padding:9px}.skate-radar svg{width:100%;display:block}.skate-radar__spot{fill:var(--skate-accent)}.skate-radar__you{fill:#fff}.skate-radar span{display:block;font-size:9px;line-height:1.4;color:var(--skate-paper);padding:0 4px 4px}.skate-route-live{position:absolute;top:150px;left:50%;transform:translateX(-50%);padding:12px 45px 12px 18px;background:var(--skate-ink);border-radius:13px;display:grid;gap:4px;max-width:270px}.skate-route-live b{font-size:13px}.skate-route-live span{font:22px/1.1 system-ui;font-variant-numeric:tabular-nums;color:var(--skate-accent)}.skate-route-live small{font-size:11px}.skate-route-live button{position:absolute;right:0;top:0;background:transparent;border:0;font-size:22px}.skate-discovery{position:absolute;left:50%;bottom:271px;transform:translateX(-50%);padding:8px 14px;background:var(--skate-ink);border-radius:22px;font:italic 13px/1.4 Georgia,serif;max-width:60%;text-align:center}.skate-discovery small{display:block;font:10px/1.4 system-ui}.skate-inputs{position:absolute;bottom:165px;left:28px;right:28px;display:flex;justify-content:space-between;gap:12px;pointer-events:auto;align-items:flex-end}.skate-steering{display:grid;grid-template-columns:48px 68px 48px;gap:5px;touch-action:none}.skate-steering>button{font-size:19px}.skate-steering .skate-push{font-size:13px;background:var(--skate-accent);color:var(--skate-ink);font-weight:750}.skate-steering .skate-brake{grid-column:2;font-size:11px}.skate-tricks{display:grid;grid-template-columns:88px 88px;gap:6px;touch-action:none}.skate-tricks button{font-size:12px}.skate-tricks .skate-ollie{background:var(--skate-accent);color:var(--skate-ink);font-weight:750}.skate-hud kbd{font:9px system-ui;opacity:.65;margin-left:5px}.skate-bottom{position:absolute;bottom:112px;left:28px;right:28px;display:flex;justify-content:flex-end;gap:6px;align-items:center;pointer-events:auto}.skate-bottom>span{font-size:10px;letter-spacing:.025em;margin-right:auto;background:var(--skate-ink);border-radius:12px;padding:10px;max-width:55%}.skate-bottom button{font-size:11px}.skate-pause{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:#152d2b66;backdrop-filter:blur(3px);pointer-events:auto}.skate-pause>b{font:italic 40px Georgia}.skate-pause>span{font-size:13px}.skate-pause>button{margin-top:8px}
-.skate-panel{position:absolute;top:120px;bottom:110px;left:50%;transform:translateX(-50%);width:min(740px,calc(100% - 40px));box-sizing:border-box;overflow:auto;overscroll-behavior:contain;pointer-events:auto;background:var(--skate-paper);color:var(--skate-ink);border:1px solid #baab8d;border-radius:23px;box-shadow:0 15px 80px #122d3160;padding:26px 30px;z-index:5}.skate-panel>header{display:flex;justify-content:space-between;gap:15px;align-items:flex-start}.skate-panel>header span{font-size:9px;font-weight:700;letter-spacing:.2em}.skate-panel h2{font:32px/1.1 Georgia,serif;margin:9px 0}.skate-panel>header button{border:1px solid #918776;background:transparent;color:inherit;font-size:25px;border-radius:50%}.skate-panel p{font-size:13px;line-height:1.65}.skate-panel h3{font:23px Georgia;margin:24px 0 14px}.skate-route-list{display:grid;gap:8px;margin-top:20px}.skate-route-list button{display:flex;text-align:left;align-items:center;gap:14px;padding:14px;color:var(--skate-ink);background:transparent;border:1px solid #bba98770;border-radius:12px}.skate-route-mark{font:28px Georgia}.skate-route-list b,.skate-spots b{display:block;font-size:13px}.skate-route-list small,.skate-spots small{display:block;font-size:11px;line-height:1.4;margin-top:4px}.skate-route-list button>span:last-child{margin-left:auto;white-space:nowrap;font-size:11px;font-weight:600}.skate-spots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.skate-spots button{color:var(--skate-ink);background:#8277440b;border:1px solid #b9ac8b;padding:12px;text-align:left}.skate-panel .skate-note{font-size:11px;border-top:1px solid #91877644;padding-top:14px;margin-top:22px}.skate-decks{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:24px}.skate-decks button{display:flex;align-items:center;flex-direction:column;gap:5px;background:#9187760b;color:var(--skate-ink);border:1px solid #b9ac8b;padding:15px 10px}.skate-decks button[aria-pressed=true]{border:2px solid var(--skate-ink);background:#91877615}.skate-decks small{font-size:10px}.skate-deck-art{display:flex;align-items:center;justify-content:center;flex-direction:column;width:45px;height:133px;border-radius:25px;box-shadow:3px 4px 0 #554736;transform:rotate(-12deg);margin:10px 0 14px;border:3px solid #e9ce99}.skate-deck-art i{font:32px Georgia;border-top:2px solid;border-bottom:2px solid;width:100%;text-align:center}.skate-deck-art em{font:6px system-ui;letter-spacing:1px;margin-top:8px}.skate-stamps{display:grid;grid-template-columns:repeat(3,1fr);gap:15px}.skate-stamps>div{display:grid;gap:4px;padding:10px 0;opacity:.6}.skate-stamps>div[data-earned=true]{opacity:1}.skate-stamps span{font-size:24px}.skate-stamps b{font-size:11px}.skate-stamps small{font-size:10px;line-height:1.5}.skate-lessons{padding-left:20px}.skate-lessons li{padding-left:6px;margin:18px 0}.skate-lessons b{font:19px Georgia;display:block;margin-bottom:5px}.skate-lessons span{font-size:12px;line-height:1.7;display:block}.skate-trick-select{display:flex;gap:12px;align-items:center;font-size:12px}.skate-trick-select select{background:transparent;color:var(--skate-ink);border-color:#918776}.is-skating .village-address,.is-skating .harbour-world__invite,.is-skating .harbour-moves,.is-skating .village-presence-outside{display:none}.is-skating .village-tools{bottom:57px}.is-skating .village-map{z-index:16}.is-skating .harbour-twins{pointer-events:none}
-@media(max-width:719px){.skate-entry{top:150px;left:16px;padding:8px 12px;gap:10px}.skate-top{top:53px;left:12px;right:12px;gap:6px;align-items:center}.skate-wordmark{padding:8px 10px;min-width:0}.skate-wordmark>span{font-size:10px}.skate-wordmark>b{font-size:13px;letter-spacing:.12em}.skate-wordmark>b>span{display:none}.skate-top nav{gap:3px}.skate-top button{padding:6px 8px;font-size:11px;min-width:39px}.skate-score{top:119px;left:12px;width:153px;padding:11px 13px;box-sizing:border-box}.skate-score__eyebrow{font-size:7px;letter-spacing:.08em}.skate-score__eyebrow>span{font-size:11px}.skate-score__number{font-size:34px}.skate-score__number>span{font-size:20px}.skate-score__trick{font-size:10px}.skate-score>small{font-size:8px;margin-top:8px}.skate-chain{font-size:8px}.skate-radar{top:118px;right:12px;width:82px;border-radius:13px;padding:5px}.skate-radar span{font-size:8px}.skate-route-live{top:274px;left:12px;transform:none;max-width:190px;padding:9px 35px 9px 12px}.skate-route-live b{font-size:10px}.skate-route-live span{font-size:18px}.skate-route-live small{font-size:9px}.skate-inputs{bottom:181px;left:12px;right:12px;gap:10px}.skate-steering{grid-template-columns:40px 53px 40px;gap:3px}.skate-steering>button{min-width:40px;padding:6px}.skate-tricks{grid-template-columns:62px 62px;gap:4px}.skate-tricks button{font-size:10px;padding:7px 4px}.skate-hud kbd{display:none}.skate-bottom{bottom:125px;left:12px;right:12px;justify-content:center}.skate-bottom>span{display:none}.skate-bottom button{font-size:11px;flex:1;padding:7px}.skate-discovery{bottom:291px;max-width:80%;width:max-content;box-sizing:border-box;font-size:11px;padding:6px 12px}.skate-panel{top:107px;bottom:112px;width:calc(100% - 20px);padding:19px 17px;border-radius:18px}.skate-panel h2{font-size:26px}.skate-panel p{font-size:12px}.skate-route-list button{gap:8px;padding:11px 8px}.skate-route-list b{font-size:12px}.skate-route-list small{font-size:10px}.skate-route-mark{display:none}.skate-route-list button>span:last-child{font-size:10px}.skate-spots{grid-template-columns:1fr 1fr}.skate-decks{gap:7px}.skate-decks b{font-size:11px}.skate-decks small{font-size:8px}.skate-stamps{grid-template-columns:1fr 1fr}.is-skating .village-tools{bottom:62px;flex-wrap:nowrap;width:auto}.is-skating .village-quick{flex-basis:auto;order:0}.is-skating .village-tools select{width:120px;max-width:120px}.is-skating .village-tools button{padding:6px 7px}.is-skating .village-tools button[title="View the island"]{display:none}}
-@media(max-height:700px){.skate-discovery{display:none}.skate-score>small{display:none}.skate-radar{width:70px}.skate-route-live{top:239px}.skate-score{padding-top:9px;padding-bottom:9px}.skate-score__number{font-size:30px}}
-@media(prefers-reduced-motion:reduce){.skate-hud *{transition:none!important;animation:none!important}}
-@media(forced-colors:active){.skate-hud button,.skate-entry,.skate-panel,.skate-score,.skate-wordmark{border:1px solid ButtonText}.skate-combo-meter i,.skate-balance i{background:Highlight}.skate-deck-art{border:2px solid ButtonText}}
+/* Tideline Skate Club v2 HUD — cut card, stamped labels, pencil lines on a kitchen-table island.
+   Three authored themes: Classic (tideline teal on cream), Taylor (plum on blush), Newfoundland (harbour navy on ochre).
+   Layout rule: nothing sits on the rider. Desktop reads the line in the lower-left corner; phones and touch screens
+   read it in one top band (thumbs own the bottom corners). The balance meter hangs over the rider's head, placed by
+   the chase camera (camera/anchor.ts). Breakpoints are container queries on the stage, not the window. */
 
-.is-skating .village-hud{display:none}.skate-panel .skate-sharing .harbour-walk-together{position:static!important;transform:none;display:flex;margin-top:20px;color:inherit}.skate-sharing{border:1px solid #91877655;border-radius:12px;padding:12px;margin-top:18px}
+/* ---------------------------------------------------------------- tokens */
+.skate-hud,.skate-entry{--skate-ink:#173c37;--skate-ink-2:#2b5a52;--skate-paper:#fff8e6;--skate-card:#f4ead0;--skate-accent:#3fb49c;--skate-accent-ink:#0f322d;--skate-stamp:#b93a2f;--skate-pencil:#5c5445;--skate-shadow:#10302b38;--skate-hi:#ffd66b;--skate-display:Georgia,'Iowan Old Style',serif;--skate-gutter:28px}
+.harbour-world--taylor :is(.skate-hud,.skate-entry){--skate-ink:#55314b;--skate-ink-2:#7a4a6c;--skate-paper:#fff3f1;--skate-card:#f7dfe3;--skate-accent:#e48bb5;--skate-accent-ink:#3d1932;--skate-stamp:#a82a4a;--skate-pencil:#6b4a5d;--skate-shadow:#3a152f3a;--skate-hi:#ffc7a3}
+.harbour-world--newfoundland :is(.skate-hud,.skate-entry){--skate-ink:#163c50;--skate-ink-2:#2c5a70;--skate-paper:#f7f0dc;--skate-card:#eadcb4;--skate-accent:#e3a54a;--skate-accent-ink:#2a1c05;--skate-stamp:#a8362b;--skate-pencil:#4c4a3d;--skate-shadow:#0c26333d;--skate-hi:#f4d27a}
 
-.skate-panel-shade{position:absolute;inset:0;background:#112e3433;pointer-events:auto;z-index:4}.skate-route-live button{pointer-events:auto}
+/* ---------------------------------------------------------------- entry */
+.skate-entry{position:absolute;z-index:8;top:174px;left:28px;display:flex;align-items:center;gap:14px;min-height:56px;background:var(--skate-paper);color:var(--skate-ink);border:0;border-radius:4px;padding:11px 18px 11px 14px;box-shadow:3px 4px 0 var(--skate-ink),0 10px 26px var(--skate-shadow);text-align:left;cursor:pointer;transform:rotate(-1deg);font-family:system-ui,sans-serif}
+.skate-entry b,.skate-entry small{display:block}.skate-entry b{font:italic 700 17px/1.3 var(--skate-display)}.skate-entry small{font:11px/1.5 system-ui;opacity:.75}.skate-entry>span:last-child{font-size:22px}
+.skate-entry__deck{width:14px;height:40px;border-radius:7px;background:var(--skate-accent);box-shadow:inset 0 0 0 2px var(--skate-ink);transform:rotate(-22deg)}
+.skate-entry:hover{transform:rotate(0) translateY(-1px)}.skate-entry:focus-visible{outline:3px solid var(--skate-accent);outline-offset:4px}
 
-.skate-discovery.is-quiet{visibility:hidden}
+/* ---------------------------------------------------------------- frame */
+.skate-hud{position:absolute;inset:0;z-index:9;pointer-events:none;color:var(--skate-ink);font-family:system-ui,sans-serif;-webkit-tap-highlight-color:transparent;container:skatehud/size}
+.skate-hud__play{position:absolute;inset:0}
+.skate-hud button{font:inherit;min-height:44px;min-width:44px;color:inherit;cursor:pointer;border:0;background:var(--skate-paper);border-radius:3px;padding:8px 13px;box-shadow:2px 3px 0 var(--skate-ink);pointer-events:auto}
+.skate-hud button:hover:not(:disabled){transform:translateY(-1px)}.skate-hud button:active:not(:disabled){transform:translate(1px,2px);box-shadow:1px 1px 0 var(--skate-ink)}
+.skate-hud button:disabled{cursor:default;opacity:.5}
+.skate-hud :is(button,input,[role=group]):focus-visible{outline:3px solid var(--skate-accent);outline-offset:3px}
+.skate-sr{position:absolute!important;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
-.is-skating .harbour-twins{display:none}
-@media(max-width:719px){.skate-top button{min-width:44px;padding:6px 5px}.skate-steering{grid-template-columns:44px 49px 44px}.skate-steering>button{min-width:44px}}
-@media(max-width:360px){.skate-top{top:90px}.skate-wordmark{padding:8px 7px}.skate-wordmark>span{font-size:9px}.skate-wordmark>b{font-size:12px;letter-spacing:.1em}.skate-score{top:155px}.skate-radar{top:155px}.skate-route-live{top:263px;max-width:150px}.skate-tricks{grid-template-columns:60px 60px}}
+/* ---------------------------------------------------------------- top strip: ride card left, session buttons right */
+.skate-top{position:absolute;top:62px;left:var(--skate-gutter);right:var(--skate-gutter);display:flex;align-items:flex-start;gap:12px}
+.skate-top__ride{display:grid;gap:4px;justify-items:start}
+.skate-wordmark{font:800 9px/1 system-ui;letter-spacing:.2em;text-transform:uppercase;color:var(--skate-paper);background:var(--skate-ink);padding:4px 7px 3px;box-shadow:2px 2px 0 var(--skate-accent)}
+.skate-ride{display:flex;align-items:stretch;gap:6px}
+.skate-speed{position:relative;background:var(--skate-paper);padding:4px 11px 7px;border-radius:2px;box-shadow:2px 3px 0 var(--skate-ink);display:flex;align-items:baseline;gap:4px;min-width:68px;overflow:hidden}
+.skate-speed b{font:800 24px/1 system-ui;font-variant-numeric:tabular-nums;letter-spacing:-.04em}.skate-speed small{font-size:10px;font-weight:650;opacity:.72}
+.skate-speed i{position:absolute;left:0;right:0;bottom:0;height:4px;background:var(--skate-accent);transform-origin:left;transition:transform .15s linear}
+.skate-stance{display:flex;flex-direction:column;justify-content:center;gap:3px}
+.skate-stance span,.skate-stance em{font:800 10px/1 system-ui;letter-spacing:.14em;padding:4px 7px 3px;border:1.5px solid var(--skate-ink);border-radius:2px;background:var(--skate-paper);font-style:normal;text-align:center}
+.skate-stance em{background:var(--skate-ink);color:var(--skate-paper)}.skate-stance em[data-ride=fakie]{background:var(--skate-stamp);border-color:var(--skate-stamp)}
+.skate-top__nav{margin-left:auto;display:flex;gap:7px}
+.skate-top__nav button{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:650;letter-spacing:.02em}
+.skate-top__count{font:800 11px system-ui;font-variant-numeric:tabular-nums;opacity:.75}
 
-@media(min-width:720px) and (max-width:960px){.skate-route-live{top:330px;left:28px;transform:none;max-width:205px}}
-@media(max-width:360px){.skate-score{width:117px}.skate-score__number{font-size:24px}.skate-score__number>span{font-size:16px}}
+/* ---------------------------------------------------------------- the top band: route, spot banner, notices (and on phones the line) */
+.skate-band{position:absolute;top:58px;left:50%;transform:translateX(-50%);width:clamp(260px,calc(100% - 680px),440px);display:grid;justify-items:center;gap:8px;text-align:center}
+.skate-banner{perspective:700px;max-width:100%;width:max-content}
+.skate-banner__paper{position:relative;display:grid;gap:2px;padding:11px 30px 15px;background:linear-gradient(180deg,var(--skate-paper) 0 48%,var(--skate-card) 52% 100%);color:var(--skate-ink);box-shadow:0 10px 22px var(--skate-shadow),3px 4px 0 var(--skate-ink);transform-origin:top center;animation:skate-unfold .58s cubic-bezier(.2,1.3,.4,1) both;clip-path:polygon(0 0,100% 0,100% 100%,50% 88%,0 100%)}
+.skate-banner__paper::after{content:'';position:absolute;left:8px;right:8px;top:50%;border-top:1px dashed color-mix(in srgb,var(--skate-pencil) 45%,transparent)}
+.skate-banner.is-fresh .skate-banner__paper{box-shadow:0 10px 22px var(--skate-shadow),3px 4px 0 var(--skate-stamp)}
+.skate-banner.is-leaving .skate-banner__paper{animation:skate-fold .36s ease-in both}
+.skate-banner__eyebrow{font:800 10px system-ui;letter-spacing:.2em;text-transform:uppercase;color:var(--skate-stamp)}
+.skate-banner__name{font:italic 700 clamp(22px,3vw,32px)/1.08 var(--skate-display)}
+.skate-banner__words{font:italic 13px/1.4 var(--skate-display);opacity:.85;padding-bottom:5px}
+@keyframes skate-unfold{0%{transform:rotateX(-94deg);opacity:0}55%{opacity:1}75%{transform:rotateX(9deg)}100%{transform:rotateX(0)}}
+@keyframes skate-fold{to{transform:rotateX(-94deg);opacity:0}}
+.skate-notice-rail{display:grid;gap:6px;justify-items:center;max-width:100%}
+.skate-notice-rail:empty{display:none}
+.skate-notice{display:block;background:var(--skate-paper);border:2px solid var(--skate-ink);padding:6px 12px;font:800 11px/1.3 system-ui;letter-spacing:.1em;text-transform:uppercase;transform:rotate(-1.5deg);box-shadow:2px 2px 0 var(--skate-shadow);animation:skate-slip .35s ease-out both;text-align:center}
+.skate-notice--stamp,.skate-notice--goal{border-color:var(--skate-stamp);color:var(--skate-stamp)}.skate-notice--deck{background:var(--skate-accent);color:var(--skate-accent-ink)}
+.skate-notice--warn{font:italic 11px/1.4 var(--skate-display);text-transform:none;letter-spacing:0;border-style:dashed}
+.skate-notice.is-leaving{animation:skate-slip-out .38s ease-in both}
+@keyframes skate-slip{from{transform:translateY(-10px) rotate(-6deg);opacity:0}to{transform:rotate(-1.5deg);opacity:1}}
+@keyframes skate-slip-out{to{transform:translateY(-8px) rotate(2deg);opacity:0}}
+
+/* ---------------------------------------------------------------- route */
+.skate-route-live{position:relative;padding:9px 46px 9px 13px;background:var(--skate-paper);box-shadow:3px 3px 0 var(--skate-ink);display:grid;gap:2px;max-width:260px;border-left:5px solid var(--skate-hi);text-align:left;pointer-events:auto}
+.skate-route-live b{font:italic 700 14px var(--skate-display)}.skate-route-live span{font:800 20px/1.1 system-ui;font-variant-numeric:tabular-nums}.skate-route-live small{font-size:11px;opacity:.8}
+.skate-route-live button{position:absolute;right:0;top:0;box-shadow:none;background:transparent;font-size:22px;padding:0}
+
+/* ---------------------------------------------------------------- radar (wide stages only) */
+.skate-radar{position:absolute;top:120px;right:var(--skate-gutter);width:156px;padding:7px;background:var(--skate-paper);box-shadow:3px 4px 0 var(--skate-ink);transform:rotate(1deg)}
+.skate-radar svg{display:block;width:100%;height:auto;aspect-ratio:1}
+.skate-radar__paper{fill:var(--skate-card);stroke:var(--skate-pencil);stroke-opacity:.35;stroke-width:.6}
+.skate-radar__route{fill:none;stroke:var(--skate-ink);stroke-opacity:.55;stroke-linecap:round}
+.skate-radar__spot{fill:var(--skate-pencil);fill-opacity:.35}.skate-radar__spot.is-found{fill:var(--skate-ink);fill-opacity:1}.skate-radar__spot.is-owned{fill:var(--skate-stamp)}
+.skate-radar__here{fill:var(--skate-accent);fill-opacity:.35}
+.skate-radar__target{fill:none;stroke:var(--skate-stamp);animation:skate-pulse 1.2s ease-in-out infinite alternate;transform-box:fill-box;transform-origin:center}
+.skate-radar__you{fill:var(--skate-stamp);stroke:var(--skate-paper);stroke-width:.8}
+.skate-radar__caption{display:block;font:italic 11px/1.35 var(--skate-display);text-align:center;padding:5px 2px 1px}
+.skate-radar__goals{list-style:none;margin:6px 0 0;padding:6px 0 0;border-top:1px dashed color-mix(in srgb,var(--skate-pencil) 50%,transparent);display:grid;gap:4px}
+.skate-radar__goals li{position:relative;display:flex;gap:5px;font-size:11px;line-height:1.3;padding-bottom:3px}.skate-radar__goals li[data-done=true]{color:var(--skate-stamp);text-decoration:line-through;text-decoration-thickness:1.5px}
+.skate-radar__goals i{position:absolute;left:16px;right:0;bottom:0;height:2px;background:var(--skate-accent);transform-origin:left}
+@keyframes skate-pulse{from{transform:scale(.8);opacity:.6}to{transform:scale(1.15);opacity:1}}
+
+/* ---------------------------------------------------------------- balance meter: a thin arc over the rider's head */
+.skate-balance{position:absolute;left:clamp(64px,var(--rider-hx,50%),calc(100% - 64px));top:clamp(150px,var(--rider-hy,34%),78%);width:112px;transform:translate(-50%,calc(-100% - 12px));filter:drop-shadow(1px 2px 0 var(--skate-shadow))}
+.skate-balance svg{display:block;width:100%;overflow:visible}
+.skate-balance__track{fill:none;stroke:var(--skate-paper);stroke-width:9;stroke-linecap:round}
+.skate-balance__zone{fill:none;stroke-width:5;stroke-linecap:round}.skate-balance__zone--edge{stroke:var(--skate-stamp)}.skate-balance__zone--sweet{stroke:var(--skate-accent)}
+.skate-balance__bead{fill:var(--skate-ink);stroke:var(--skate-paper);stroke-width:2;transition:cx .06s linear,cy .06s linear}
+.skate-balance[data-danger] .skate-balance__bead{fill:var(--skate-stamp);animation:skate-wobble .22s ease-in-out infinite alternate}
+@keyframes skate-wobble{from{transform:translateY(-.8px)}to{transform:translateY(.8px)}}
+
+/* ---------------------------------------------------------------- line ticker: a cut-card ticket */
+.skate-ticker{pointer-events:none}
+.skate-corner{position:absolute;left:var(--skate-gutter);bottom:100px;width:min(380px,36%);display:grid;justify-items:start;gap:10px}
+.skate-corner .skate-notice-rail{justify-items:start}
+.skate-ticker--corner{display:grid;justify-items:start;text-align:left;width:100%}
+.skate-ticker--band{width:100%;display:grid;justify-items:center;text-align:center}
+.skate-ticket-wrap{filter:drop-shadow(3px 4px 0 var(--skate-ink)) drop-shadow(0 8px 16px var(--skate-shadow));max-width:100%}
+.skate-ticket{display:grid;gap:5px;justify-items:inherit;background:repeating-linear-gradient(90deg,transparent 0 22px,color-mix(in srgb,var(--skate-pencil) 7%,transparent) 22px 23px),var(--skate-paper);padding:9px 22px 12px 20px;clip-path:polygon(0 0,100% 0,100% 38%,calc(100% - 8px) 50%,100% 62%,100% 100%,0 100%,0 62%,8px 50%,0 38%);animation:skate-deal .24s cubic-bezier(.2,1.5,.5,1) both;transform:rotate(-.8deg)}
+.skate-ticker--corner .skate-ticket{justify-items:start}
+.skate-ticket__label{display:block;font:italic 800 clamp(22px,2.6vw,32px)/1.05 var(--skate-display);letter-spacing:-.01em;overflow-wrap:anywhere}
+.skate-chain{display:flex;flex-wrap:wrap;gap:3px 4px;max-width:100%;max-height:34px;overflow:hidden}
+.skate-ticker--band .skate-chain{justify-content:center}
+.skate-chain__chip,.skate-chain__more{font:750 10px/1 system-ui;letter-spacing:.06em;text-transform:uppercase;color:var(--skate-ink-2);padding:3px 0}
+.skate-chain__chip::after{content:' +';opacity:.55}
+.skate-chain__more{background:var(--skate-ink);color:var(--skate-paper);padding:3px 5px;border-radius:2px}
+.skate-ticker__score{display:flex;align-items:baseline;gap:6px;background:var(--skate-ink);color:var(--skate-paper);padding:4px 10px 5px;font-variant-numeric:tabular-nums;margin-top:2px}
+.skate-ticker__score b{font:800 18px/1 system-ui;letter-spacing:-.02em}.skate-ticker__x{font-size:13px;opacity:.7}.skate-ticker__mult{color:var(--skate-hi)}
+.skate-ticker__eq{font-size:12px;opacity:.9}.skate-ticker__eq b{font-size:15px}
+.skate-fuse{position:relative;width:100%;min-width:120px;height:3px;background:color-mix(in srgb,var(--skate-pencil) 25%,transparent);border-radius:2px}
+.skate-fuse i{position:absolute;inset:0;background:var(--skate-ink);transform-origin:left;transition:transform .1s linear;border-radius:2px}
+.skate-fuse em{position:absolute;top:50%;width:9px;height:9px;margin:-4.5px 0 0 -4.5px;border-radius:50%;background:radial-gradient(circle,#fff6c9 0 30%,var(--skate-hi) 45%,var(--skate-stamp) 75%);animation:skate-spark .16s steps(2) infinite}
+@keyframes skate-deal{from{transform:translateY(8px) rotate(-3deg) scale(.95);opacity:0}to{transform:rotate(-.8deg);opacity:1}}
+@keyframes skate-spark{50%{transform:scale(1.35) rotate(40deg)}}
+.skate-result{display:grid;justify-items:inherit}
+.skate-result.is-leaving{animation:skate-slip-out .34s ease-in both}
+.skate-banked{display:flex;align-items:center;gap:12px;padding:4px 0}
+.skate-ticker--band .skate-banked{justify-content:center}
+.skate-result__points{font:800 30px/1 system-ui;font-variant-numeric:tabular-nums;background:var(--skate-paper);padding:8px 16px 7px;box-shadow:3px 4px 0 var(--skate-ink);letter-spacing:-.02em}
+.skate-stamp{border:3px double var(--skate-stamp);color:var(--skate-stamp);padding:5px 10px 3px;font:900 17px/1 system-ui;letter-spacing:.16em;background:color-mix(in srgb,var(--skate-paper) 86%,transparent);transform:rotate(-9deg);animation:skate-stamp .36s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes skate-stamp{0%{transform:scale(2.2) rotate(-22deg);opacity:0}60%{transform:scale(.94) rotate(-8deg);opacity:1}100%{transform:scale(1) rotate(-9deg)}}
+.skate-tear{display:flex;gap:2px}
+.skate-tear__half{background:var(--skate-paper);padding:9px 14px;font:italic 800 clamp(17px,2.2vw,22px)/1 var(--skate-display);box-shadow:2px 3px 0 var(--skate-ink)}
+.skate-tear__half--a{color:var(--skate-stamp);clip-path:polygon(0 0,100% 0,94% 18%,100% 36%,93% 55%,100% 74%,94% 88%,100% 100%,0 100%);animation:skate-tear-a .5s cubic-bezier(.3,.7,.3,1) both;letter-spacing:.14em;font-style:normal;font-family:system-ui}
+.skate-tear__half--b{clip-path:polygon(6% 0,100% 0,100% 100%,6% 100%,0 88%,6% 74%,0 55%,7% 36%,0 18%);animation:skate-tear-b .5s cubic-bezier(.3,.7,.3,1) both}
+@keyframes skate-tear-a{0%{transform:translateX(10px)}35%{transform:translateX(0)}100%{transform:translate(-8px,5px) rotate(-6deg)}}
+@keyframes skate-tear-b{0%{transform:translateX(-10px)}35%{transform:translateX(0)}100%{transform:translate(8px,8px) rotate(5deg)}}
+
+/* ---------------------------------------------------------------- hints (wide stages, left column) */
+.skate-hints{position:absolute;left:var(--skate-gutter);top:150px;margin:0;padding:9px 11px;list-style:none;display:grid;gap:6px;background:color-mix(in srgb,var(--skate-paper) 86%,transparent);box-shadow:2px 3px 0 var(--skate-ink);max-width:228px}
+.skate-hints li{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600}
+.skate-hints__glyphs{display:flex;gap:3px;min-width:52px}
+.skate-glyph{display:block;flex:none;overflow:visible}
+.skate-glyph text{font:800 10px system-ui;fill:var(--skate-ink)}.skate-glyph .skate-glyph__tiny{font-size:7px}
+.skate-glyph__cap{fill:var(--skate-card);stroke:var(--skate-ink);stroke-width:1.4}.skate-glyph__face{fill:var(--skate-paper)}
+.skate-glyph__fill{fill:var(--skate-ink)}.skate-glyph__ring{fill:var(--skate-card);stroke:var(--skate-ink);stroke-width:1.4}
+.skate-glyph__line{fill:none;stroke:var(--skate-ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------------------------------------------------------------- touch: two thumb clusters in the bottom corners, above the app bar */
+.skate-touch{position:absolute;left:12px;right:12px;bottom:90px;height:0;pointer-events:none}
+.skate-touch__cluster{position:absolute;bottom:0;display:grid;gap:8px;width:clamp(112px,34%,200px)}
+.skate-touch__cluster--left{left:0}.skate-touch__cluster--right{right:0}
+.skate-touch__row{display:flex;gap:6px}
+.skate-zone{position:relative;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none;display:flex;align-items:center;justify-content:center;min-width:44px;min-height:44px}
+.skate-zone--stick{height:clamp(120px,19cqh,176px);border-radius:16px;background:color-mix(in srgb,var(--skate-ink) 16%,transparent);border:1.5px dashed color-mix(in srgb,var(--skate-paper) 70%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--skate-ink) 25%,transparent)}
+.skate-zone__ring{width:clamp(64px,62%,96px);aspect-ratio:1;border-radius:50%;border:2px solid color-mix(in srgb,var(--skate-paper) 80%,transparent);display:grid;place-items:center;background:color-mix(in srgb,var(--skate-ink) 10%,transparent)}
+.skate-zone__ring i{width:40%;aspect-ratio:1;border-radius:50%;background:var(--skate-paper);box-shadow:2px 2px 0 var(--skate-ink)}
+.skate-zone--right .skate-zone__ring i{background:var(--skate-accent)}
+.skate-zone--stick .skate-zone__label{position:absolute;left:8px;top:6px;color:var(--skate-paper);text-shadow:0 1px 2px #000a}
+.skate-zone--right .skate-zone__label{left:auto;right:8px}
+.skate-zone__label{font:800 11px system-ui;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
+.skate-zone--pad{flex:1;height:48px;background:var(--skate-paper);box-shadow:2px 3px 0 var(--skate-ink);border-radius:4px}
+.skate-zone--push{flex:1.6;background:var(--skate-accent);color:var(--skate-accent-ink)}
+.skate-zone[data-held]{transform:translate(1px,2px);box-shadow:0 0 0 var(--skate-ink);filter:brightness(.92)}
+.skate-zone--stick[data-held]{background:color-mix(in srgb,var(--skate-ink) 28%,transparent);box-shadow:none;transform:none}
+
+/* ---------------------------------------------------------------- pause book */
+.skate-book-shade{position:absolute;inset:0;background:color-mix(in srgb,var(--skate-ink) 34%,transparent);backdrop-filter:blur(2px);pointer-events:auto;z-index:4}
+.skate-book{position:absolute;z-index:5;top:112px;bottom:112px;left:50%;transform:translateX(-50%);width:min(780px,calc(100% - 40px));box-sizing:border-box;display:grid;grid-template-rows:auto auto 1fr auto;pointer-events:auto;background:var(--skate-paper);color:var(--skate-ink);box-shadow:6px 7px 0 var(--skate-ink),0 22px 70px var(--skate-shadow);border-radius:3px 10px 10px 3px;border-left:12px solid var(--skate-ink);animation:skate-book-open .32s cubic-bezier(.2,1.2,.4,1) both;transform-origin:left center}
+@keyframes skate-book-open{from{transform:translateX(-50%) perspective(900px) rotateY(-24deg);opacity:0}to{transform:translateX(-50%);opacity:1}}
+.skate-book__head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:20px 26px 8px}
+.skate-tab__short{display:none}
+.skate-book__eyebrow{font:800 10px system-ui;letter-spacing:.2em;text-transform:uppercase;color:var(--skate-stamp)}
+.skate-book h2{font:italic 700 clamp(24px,3vw,34px)/1.05 var(--skate-display);margin:6px 0 0}
+.skate-hud .skate-book__resume,.skate-hud .skate-book__go{background:var(--skate-accent);color:var(--skate-accent-ink);font-weight:750}
+.skate-book__tabs{display:flex;gap:4px;padding:6px 26px 0;border-bottom:2px solid var(--skate-ink);overflow-x:auto;scrollbar-width:none}
+.skate-hud .skate-book__tabs [role=tab]{box-shadow:none;background:var(--skate-card);border-radius:6px 6px 0 0;font-size:13px;font-weight:700;white-space:nowrap;transform:translateY(2px);border:2px solid transparent;border-bottom:0}
+.skate-hud .skate-book__tabs [role=tab][aria-selected=true]{background:var(--skate-paper);border-color:var(--skate-ink);border-bottom:2px solid var(--skate-paper);transform:translateY(2px)}
+.skate-book__page{overflow:auto;overscroll-behavior:contain;padding:14px 26px 18px;background-image:repeating-linear-gradient(180deg,transparent 0 27px,color-mix(in srgb,var(--skate-accent) 14%,transparent) 27px 28px)}
+.skate-book__page p{font-size:13px;line-height:1.6;margin:4px 0 10px;max-width:60ch}
+.skate-book h3{font:italic 700 21px var(--skate-display);margin:20px 0 10px}
+.skate-book__list{display:grid;gap:7px}
+.skate-hud .skate-book__list button{display:flex;align-items:center;gap:12px;text-align:left;padding:11px 14px;background:var(--skate-paper)}
+.skate-book__list b,.skate-book__grid b{display:block;font-size:13px}.skate-book__list small,.skate-book__grid small{display:block;font-size:11px;line-height:1.4;margin-top:3px;opacity:.8}
+.skate-book__aside{margin-left:auto;white-space:nowrap;font:700 11px system-ui;font-variant-numeric:tabular-nums}
+.skate-book__grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.skate-hud .skate-book__grid button{text-align:left;padding:11px 12px;background:var(--skate-card)}
+.skate-book__row{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+.skate-book__note{font-size:11px!important;opacity:.85;border-top:1px dashed color-mix(in srgb,var(--skate-pencil) 50%,transparent);padding-top:10px;margin-top:18px!important}
+.skate-book__tally{font-size:14px!important}.skate-book__tally b{font:800 20px system-ui}
+.skate-book__spots{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.skate-goal-card{background:var(--skate-card);padding:10px 12px;box-shadow:2px 2px 0 var(--skate-ink)}
+.skate-goal-card[data-found=false]{opacity:.72}
+.skate-goal-card h4{margin:0 0 6px;font:italic 700 15px var(--skate-display);display:flex;gap:8px;align-items:center}
+.skate-goal-card__seal{font:900 9px system-ui;letter-spacing:.16em;color:var(--skate-stamp);border:2px solid var(--skate-stamp);padding:2px 5px;transform:rotate(-6deg)}
+.skate-goal-card ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.skate-goal-card li{display:grid;grid-template-columns:16px 1fr;gap:6px;font-size:12px}
+.skate-goal-card li>span:nth-child(2){position:relative;padding-bottom:3px}
+.skate-goal-card li b{display:block;font-size:12px}.skate-goal-card li small{display:block;font-size:11px;opacity:.75;line-height:1.35}
+.skate-goal-card li[data-done=true]{color:var(--skate-stamp)}
+.skate-goal-card__bar{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--skate-accent);transform-origin:left}
+.skate-book__stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:0}
+.skate-book__stats>div{background:var(--skate-paper);border:1.5px solid var(--skate-ink);padding:8px 10px}
+.skate-book__stats dt{font:700 10px system-ui;letter-spacing:.12em;text-transform:uppercase;opacity:.75}.skate-book__stats dd{margin:3px 0 0;font:800 20px system-ui;font-variant-numeric:tabular-nums}
+.skate-book__stamps{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.skate-book__stamps>div{display:grid;gap:3px;padding:8px;border:1.5px dashed color-mix(in srgb,var(--skate-pencil) 60%,transparent);opacity:.62}
+.skate-book__stamps>div[data-earned=true]{opacity:1;border-style:solid;border-color:var(--skate-stamp);transform:rotate(-1deg)}
+.skate-book__stamps span[aria-hidden]{font-size:20px;color:var(--skate-stamp)}.skate-book__stamps b{font-size:11px}.skate-book__stamps small{font-size:10px;line-height:1.4}
+.skate-book__tricks{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:10px}
+.skate-trick{display:grid;justify-items:center;gap:4px;padding:10px 6px;background:var(--skate-card);text-align:center}
+.skate-trick b{font-size:12px}.skate-trick small{font-size:10px;opacity:.75}
+.skate-gesture{width:64px;height:64px;overflow:visible}
+.skate-gesture__gate{fill:var(--skate-paper);stroke:var(--skate-ink);stroke-width:.05}
+.skate-gesture__cross{stroke:var(--skate-pencil);stroke-opacity:.3;stroke-width:.03}
+.skate-gesture__stroke{fill:none;stroke:var(--skate-stamp);stroke-width:.13;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:skate-draw 1.1s .15s ease-out forwards}
+.skate-gesture__start{fill:var(--skate-ink)}
+.skate-gesture__missing{font:italic 700 .7px var(--skate-display);fill:var(--skate-pencil)}
+@keyframes skate-draw{to{stroke-dashoffset:0}}
+.skate-book__names{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+.skate-book__names li{background:var(--skate-card);padding:6px 10px;font-size:12px;max-width:100%;box-sizing:border-box}
+.skate-book__how{font-size:12px!important;margin:0 0 8px!important}.skate-book__names small{display:block;font-size:10px;opacity:.75}
+.skate-book__decks{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px}
+.skate-hud .skate-book__decks button{display:flex;align-items:center;flex-direction:column;gap:5px;background:var(--skate-card);padding:14px 10px}
+.skate-hud .skate-book__decks button[aria-pressed=true]{outline:3px solid var(--skate-ink);outline-offset:-3px}
+.skate-book__decks small{font-size:10px;text-align:center}
+.skate-deck-art{display:flex;align-items:center;justify-content:center;flex-direction:column;width:42px;height:124px;border-radius:21px;box-shadow:3px 4px 0 var(--skate-ink);transform:rotate(-12deg);margin:8px 0 12px;border:3px solid var(--skate-paper)}
+.skate-deck-art i{font:30px var(--skate-display);border-top:2px solid;border-bottom:2px solid;width:100%;text-align:center}.skate-deck-art em{font:6px system-ui;letter-spacing:1px;margin-top:8px}
+.skate-book__settings{display:grid;gap:12px}
+.skate-choice{border:0;margin:0;padding:10px 12px;background:var(--skate-card);display:grid;gap:6px}
+.skate-choice legend{float:left;font:700 13px system-ui;padding:0;margin-bottom:2px}
+.skate-choice__opts{display:flex;flex-wrap:wrap;gap:6px;clear:both}
+.skate-choice label{position:relative;display:flex;align-items:center;min-height:44px;min-width:84px;padding:0 14px;background:var(--skate-paper);box-shadow:2px 2px 0 var(--skate-ink);cursor:pointer;pointer-events:auto;font-size:13px;font-weight:650}
+.skate-choice label[data-checked=true]{background:var(--skate-ink);color:var(--skate-paper)}
+.skate-choice input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer}
+.skate-choice label:has(input:focus-visible){outline:3px solid var(--skate-accent);outline-offset:3px}
+.skate-choice small{font-size:11px;opacity:.8;line-height:1.4}
+.skate-book__foot{display:flex;justify-content:space-between;gap:10px;padding:10px 26px 16px;border-top:2px solid var(--skate-ink)}
+.skate-sharing{border:1px dashed color-mix(in srgb,var(--skate-pencil) 60%,transparent);padding:12px;margin-top:16px}
+.skate-book .skate-sharing .harbour-walk-together{position:static!important;transform:none;display:flex;margin-top:4px;color:inherit}
+
+
+/* ---------------------------------------------------------------- Hearth chrome while riding: dimmed, never removed (Space still opens every tool) */
+.is-skating .village-address,.is-skating .harbour-world__invite,.is-skating .village-presence-outside,.is-skating .village-hud,.is-skating .harbour-twins{display:none}
+.is-skating .harbour-moves{z-index:10;right:12px;top:72px;bottom:auto}
+.is-skating .village-tools{bottom:57px}.is-skating .village-map{z-index:16}
+body:has(.harbour-world.is-skating .skate-hud:not([data-skate-open])) :is(.nav.compass,.herc-litter,.sync-freshness){opacity:.5;transition:opacity .2s}
+body:has(.harbour-world.is-skating) :is(.nav.compass,.herc-litter,.sync-freshness):is(:hover,:focus-within){opacity:1}
+
+/* ---------------------------------------------------------------- between 720 and 1000: no hints, no wordmark */
+@container skatehud (max-width:1000px){
+  .skate-wordmark{display:none}
+  .skate-hints{display:none}
+  .skate-top__word{display:none}.skate-top__nav button{padding:0 11px}
+}
+@container skatehud (max-height:640px) and (min-width:720px){
+  .skate-hints,.skate-radar__goals{display:none}
+  .skate-corner{bottom:92px}
+}
+
+/* ---------------------------------------------------------------- touch on a wide stage (tablet): same clusters, a little larger */
+@container skatehud (min-width:720px){
+  .skate-touch{left:20px;right:20px;bottom:96px}
+  .skate-touch__cluster{width:200px}
+}
+
+/* ---------------------------------------------------------------- phone (< 720px stage) */
+@container skatehud (max-width:719px){
+  .skate-hud{--skate-gutter:10px}
+  .skate-top{top:53px;gap:6px;align-items:center}
+  .skate-speed{min-width:54px;padding:4px 8px 7px}.skate-speed b{font-size:20px}.skate-speed small{font-size:9px}
+  .skate-stance span,.skate-stance em{font-size:9px;padding:3px 5px 2px}
+  .skate-top__nav{gap:5px}.skate-top__word{display:none}.skate-top__nav button{padding:0 10px;gap:5px}
+  .skate-band{top:106px;left:var(--skate-gutter);right:var(--skate-gutter);width:auto;transform:none;gap:6px}
+  .skate-banner{width:100%}
+  .skate-notice-rail{order:-1}.skate-notice{font-size:10px;padding:3px 9px;border-width:1.5px;transform:rotate(-1deg)}
+  .skate-banner__paper{padding:8px 16px 12px}.skate-banner__name{font-size:22px}.skate-banner__words{display:none}
+  .skate-ticket{padding:7px 18px 9px;gap:4px}
+  .skate-ticket__label{font-size:22px}
+  .skate-chain{max-height:15px}
+  .skate-ticker__score{padding:3px 9px 4px}.skate-ticker__score b{font-size:15px}.skate-ticker__eq b{font-size:13px}
+  .skate-result__points{font-size:24px}.skate-stamp{font-size:14px}
+  .skate-balance{width:92px;top:clamp(200px,var(--rider-hy,40%),70%)}
+  .skate-book{top:96px;bottom:92px;width:calc(100% - 16px);border-left-width:8px}
+  .skate-book__head{padding:14px 14px 6px;align-items:center}.skate-book__club{display:none}.skate-hud .skate-book__resume{padding:6px 12px;font-size:13px}
+  .skate-book__tabs{padding:6px 10px 0;gap:3px}.skate-hud .skate-book__tabs [role=tab]{padding:8px 9px;font-size:12px;flex:1 0 auto}.skate-tab__long{display:none}.skate-tab__short{display:inline}.skate-book__page{padding:12px 14px 14px}.skate-book__foot{padding:8px 14px 12px}
+  .skate-book__grid,.skate-book__spots{grid-template-columns:1fr 1fr}.skate-book__stats{grid-template-columns:1fr 1fr}.skate-book__stamps{grid-template-columns:1fr 1fr}
+  .skate-book__decks{gap:7px}
+}
+@container skatehud (max-width:400px){
+  /* The household status card wraps at this width; leave its controls clear. */
+  .skate-top{top:66px}
+  .skate-book__grid,.skate-book__spots{grid-template-columns:1fr}
+  .skate-book__decks{grid-template-columns:1fr 1fr}
+  .skate-hud .skate-book__head button{padding:6px 10px;font-size:12px}
+  .skate-touch{left:8px;right:8px}
+  .skate-touch__row{gap:5px}
+  .skate-zone__label{font-size:10px;letter-spacing:.06em}
+}
+@media(max-width:400px){body:has(.harbour-world.is-skating) .sync-freshness__updated{display:none}}
+@container skatehud (max-width:719px) and (max-height:700px){
+  .skate-band{top:98px;gap:4px}
+  .skate-chain{display:none}
+  .skate-ticket{padding:5px 16px 7px;gap:3px}
+  .skate-ticket__label{font-size:18px}
+  /* A short phone has no room for both: while a line is live the milestone slip waits (the book keeps it). */
+  .skate-band:has(.skate-ticker[data-state=live]) .skate-notice-rail{display:none}
+  .skate-zone--stick{height:112px}
+  .skate-zone--pad{height:44px}
+  .skate-touch{bottom:84px}
+}
+@container skatehud (max-width:400px){.skate-band{top:122px}}
+/* The island's own tools bar while skating on a phone. */
+@media(max-width:719px){
+  .skate-entry{top:150px;left:16px;padding:8px 12px;gap:10px}
+  .is-skating .village-tools{bottom:62px;flex-wrap:nowrap;width:auto}.is-skating .village-quick{flex-basis:auto;order:0}.is-skating .village-tools select{width:120px;max-width:120px}.is-skating .village-tools button{padding:6px 7px}.is-skating .village-tools button[title="View the island"]{display:none}
+}
+
+/* ---------------------------------------------------------------- motion + contrast */
+@media(prefers-reduced-motion:reduce){.skate-hud *,.skate-hud *::before,.skate-hud *::after,.skate-entry{animation:none!important;transition:none!important}.skate-gesture__stroke{stroke-dashoffset:0}}
+.skate-hud[data-skate-reduced] *,.skate-hud[data-skate-reduced] *::before,.skate-hud[data-skate-reduced] *::after{animation:none!important;transition:none!important}
+.skate-hud[data-skate-reduced] .skate-gesture__stroke{stroke-dashoffset:0}
+.skate-hud[data-skate-reduced] .skate-stamp{transform:rotate(-9deg)}
+.skate-hud[data-skate-reduced] .skate-ticket{transform:rotate(-.8deg)}
+@media(forced-colors:active){
+  .skate-hud button,.skate-entry,.skate-book,.skate-ticket,.skate-wordmark,.skate-radar,.skate-speed,.skate-zone,.skate-choice label{border:1px solid ButtonText;forced-color-adjust:auto}
+  .skate-fuse i,.skate-speed i{background:Highlight}
+  .skate-balance__bead{fill:Highlight}
+  .skate-stamp,.skate-tear__half{border:2px solid CanvasText}
+}

@@ -1,68 +1,162 @@
-import {useEffect,useRef,useState,type ReactNode,type PointerEvent as ReactPointerEvent} from 'react';
-import {SKATE_DECKS,SKATE_ROUTES,SKATE_SPOTS,type SkateDeckId,type SkateRouteId,type SkateSpotId} from './park.ts';
-import {SKATE_STAMPS,type SkateSnapshot} from './session.ts';
-import type {SkateAction,SkateInput,SkateTrick} from './skateModel.ts';
+/**
+ * Tideline Skate Club v2 HUD — a crafted paper object that reads like a skate game.
+ *
+ * Pass `model` (from `buildHudModel`, throttled by `createHudThrottle` in the
+ * runtime) plus the callbacks; `null` shows the entry button. Sound is the
+ * shell's: `onSettings({sound})` arrives inside the click so it can create the
+ * AudioContext there. See hud/NOTES-show.md for the full contract.
+ */
+import {useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode} from 'react';
+import type {Stance} from './contract.ts';
+import type {SkateDeckId, SkateRouteId, SkateSpotId} from './park.ts';
+import type {SkateSettings} from './session.ts';
+import {createLiveAnnouncer, formatPoints, type SkateHudModel, type TouchZone} from './hud/model.ts';
+import {BalanceMeter, Hints, LineTicker, NoticeSlip, Radar, RideBadge, RouteCard, SpotBanner, TouchLayout} from './hud/parts.tsx';
+import {PauseBook, type BookTab, type TrickBook} from './hud/PauseBook.tsx';
 import './skate.css';
-import {createSkateAudio} from './audio.ts';
 
-type Props={snapshot:SkateSnapshot|null;onStart():void;onWalk():void;onAction(action:SkateAction):void;onHold(input:Partial<SkateInput>):void;onPause(on:boolean):void;onRoute(id:SkateRouteId|null):void;onSpot(id:SkateSpotId):void;onDeck(id:SkateDeckId):void;onFocus():void;partnerName?:string|null;saveFailed?:boolean;presence?:ReactNode};
-const compactScore=new Intl.NumberFormat('en-CA',{notation:'compact',maximumFractionDigits:1});
-const format=(n:number)=>n>=10000?compactScore.format(n):Math.round(n).toLocaleString('en-CA');
-export function SkateHUD(p:Props){
-  const s=p.snapshot;
-  const [panel,setPanel]=useState<'routes'|'decks'|'guide'|null>(null),[trick,setTrick]=useState<SkateTrick>('kickflip');
-  const closeRef=useRef<HTMLButtonElement>(null),panelOrigin=useRef<HTMLElement|null>(null);
-  const audio=useRef<ReturnType<typeof createSkateAudio>>(null);
-  const [sound,setSound]=useState(false),[notice,setNotice]=useState('');
-  useEffect(()=>{setNotice(s?.message??'');const timer=window.setTimeout(()=>setNotice(''),5000);return()=>window.clearTimeout(timer);},[s?.message]);
-  useEffect(()=>{audio.current?.update(s);},[s]);
-  useEffect(()=>()=>{audio.current?.dispose();audio.current=null;},[]);
-  function toggleSound(){
-    if(audio.current){audio.current.dispose();audio.current=null;setSound(false);}
-    else try{audio.current=createSkateAudio();audio.current?.update(s);setSound(Boolean(audio.current));}catch{setSound(false);}
-    p.onFocus();
+export type SkateHUDProps = {
+  /** The HUD model. `null` = not skating (shows the entry button). */
+  model: SkateHudModel | null;
+  onStart(): void;
+  onWalk(): void;
+  /** Pause the ride. The HUD opens its book while paused and calls onPause(false) when closed. */
+  onPause(on: boolean): void;
+  onRoute(id: SkateRouteId | null): void;
+  onSpot(id: SkateSpotId): void;
+  onDeck(id: SkateDeckId): void;
+  /** Settings changed in the book. Turning sound on arrives inside the click: create the AudioContext synchronously there. */
+  onSettings(patch: Partial<SkateSettings>): void;
+  /** Retry (back to marker) and set marker. */
+  onCommand(command: 'respawn' | 'marker'): void;
+  /** Raw pointer events from touch slots (down/move/up/cancel); the input track interprets them. */
+  onZonePointer?(zone: TouchZone, event: ReactPointerEvent<HTMLElement>): void;
+  /** SVG path ("-1 -1 2 2" box, y down toward the tail) of a flip's gesture, per stance. */
+  gesturePath?(flipId: string, stance: Stance): string | null;
+  trickBook?: TrickBook;
+  onFocus(): void;
+  partnerName?: string | null;
+  saveFailed?: boolean;
+  presence?: ReactNode;
+};
+
+function prefersReduced(): boolean {
+  try { return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; }
+}
+function coarsePointer(): boolean {
+  try { return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches; } catch { return false; }
+}
+/** Below 720 px of stage the HUD is the phone HUD (Hearth's glance branch): one top band, no radar. */
+export const SKATE_NARROW = 720;
+function useStageWidth(ref: {current: HTMLElement | null}, live: boolean): number {
+  const [w, setW] = useState(() => (typeof window === 'undefined' ? 1200 : window.innerWidth || 1200));
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(([e]) => { const next = Math.round(e?.contentRect.width ?? 0); if (next > 0) setW(next); });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [live]);
+  return w;
+}
+/** Touch controls show for a touch device before its first touch (a phone never sends a key), and stop once a key is pressed. */
+function useTouchFirst(device: string | undefined): boolean {
+  const [keys, setKeys] = useState(false);
+  useEffect(() => {
+    if (keys) return;
+    const on = (e: KeyboardEvent) => { if (!e.isComposing) setKeys(true); };
+    window.addEventListener('keydown', on, true);
+    return () => window.removeEventListener('keydown', on, true);
+  }, [keys]);
+  if (device === 'touch') return true;
+  if (device === 'gamepad' || device === 'pointer') return false;
+  return !keys && coarsePointer();
+}
+
+export function SkateHUD(p: SkateHUDProps) {
+  const model = p.model;
+
+  // The book: open while paused. `tab` remembers where you were.
+  const [tab, setTab] = useState<BookTab>('explore'), [bookOpen, setBookOpen] = useState(false);
+  const origin = useRef<HTMLElement | null>(null);
+  const paused = Boolean(model?.paused);
+  useEffect(() => { if (!model) setBookOpen(false); }, [Boolean(model)]);
+  const open = bookOpen || paused;
+  function openBook(which: BookTab = tab) { origin.current = document.activeElement as HTMLElement | null; setTab(which); setBookOpen(true); p.onPause(true); }
+  function closeBook() {
+    setBookOpen(false); p.onPause(false);
+    const back = origin.current; origin.current = null;
+    // The play layer is inert until React re-renders, so hand focus back on the next frame; if it cannot land, the stage takes it (keys ride from there).
+    const land = () => { const ok = Boolean(back && back.isConnected && back !== document.body); if (ok) back!.focus({preventScroll: true}); if (!ok || document.activeElement !== back) p.onFocus(); };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(land); else land();
   }
-  function show(which:typeof panel){panelOrigin.current=document.activeElement as HTMLElement;p.onPause(Boolean(which));setPanel(which);}
-  function close(){setPanel(null);p.onPause(false);panelOrigin.current?.focus();}
-  useEffect(()=>{if(panel)closeRef.current?.focus();},[panel]);
-  useEffect(()=>{if(!s)setPanel(null);},[Boolean(s)]);
-  const capture=(e:ReactPointerEvent<HTMLElement>)=>{e.preventDefault();e.stopPropagation();e.currentTarget.setPointerCapture(e.pointerId);};
-  const hold=(input:Partial<SkateInput>,off:Partial<SkateInput>)=>({
-    onPointerDown:(e:ReactPointerEvent<HTMLButtonElement>)=>{capture(e);p.onHold(input);},
-    onPointerUp:()=>{p.onHold(off);p.onFocus();},onPointerCancel:()=>p.onHold(off),onLostPointerCapture:()=>p.onHold(off),
-    onKeyDown:(e:React.KeyboardEvent<HTMLButtonElement>)=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();p.onHold(input);}},
-    onKeyUp:(e:React.KeyboardEvent<HTMLButtonElement>)=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();p.onHold(off);}},onBlur:()=>p.onHold(off),
-  });
-  function action(a:SkateAction){p.onAction(a);p.onFocus();}
-  if(!s)return <button className="skate-entry" type="button" onPointerDown={e=>e.stopPropagation()} onClick={()=>{p.onStart();p.onFocus();}}><span aria-hidden="true">◒</span><span><b>Skate the island</b><small>Your next line starts here · B</small></span><span aria-hidden="true">↗</span></button>;
-  const route=s.run?SKATE_ROUTES.find(r=>r.id===s.run!.id):null,target=s.run&&!s.run.finished?route?.points[s.run.checkpoint]:null;
-  return <div className="skate-hud" data-skate-mode={s.mode} onPointerDown={e=>e.stopPropagation()}>
-    <div inert={panel?true:undefined} aria-hidden={panel?true:undefined}>
-    <header className="skate-top"><div className="skate-wordmark"><span>Little Harbour</span><b>TIDELINE<span> SKATE CLUB</span></b></div><nav aria-label="Skate session"><button type="button" onClick={()=>show('routes')}>Explore</button><button type="button" onClick={()=>show('decks')}>Decks</button><button type="button" aria-label="Skate controls and trick guide" onClick={()=>show('guide')}>?</button><button type="button" onClick={p.onWalk}>Walk</button></nav></header>
-    <div className="skate-score" aria-label={`Current combo ${s.combo} times ${s.multiplier}. Session score ${s.score}`}>
-      <div className="skate-score__eyebrow">{s.combo?'KEEP THE LINE ALIVE':'FREE SKATE'}<span>{(s.speed*3.6).toFixed(0)} <small>km/h</small></span></div>
-      <div className="skate-score__number">{format(s.combo||s.score)}<span>×{s.multiplier}</span></div>
-      <div className="skate-score__trick" role="status">{s.event}</div>
-      {s.combo>0&&<><div className="skate-chain">{s.tricks.slice(-3).join(' + ')}</div><div className="skate-combo-meter" aria-hidden="true"><i style={{transform:`scaleX(${s.comboTime})`}}/></div></>}
-      <small>Best line {format(Math.max(s.best,s.progress.bestLine))} · {s.progress.discovered.length}/6 spots</small>
+
+  // Polite live region, at most one announcement a second.
+  const announcer = useMemo(() => createLiveAnnouncer(1000), []);
+  const [live, setLive] = useState(''), seenOutcome = useRef(-1), pending = useRef<string | null>(null);
+  useEffect(() => {
+    if (!model) return;
+    let text: string | null = null;
+    if (model.outcome && model.outcome.seq !== seenOutcome.current) { seenOutcome.current = model.outcome.seq; text = model.outcome.kind === 'banked' ? `Banked ${formatPoints(model.outcome.points)} points` : `Line lost. ${model.outcome.text}`; }
+    else if (model.line.active && model.line.latest) text = `${model.line.latest}. ${formatPoints(model.line.total)}, times ${model.line.multiplier}`;
+    const now = performance.now(), out = announcer.offer(text, now);
+    if (out) setLive(out); else if (text) pending.current = text;
+  }, [model?.outcome?.seq, model?.line.latest, model?.line.active]);
+  useEffect(() => {
+    const timer = window.setInterval(() => { if (pending.current) { const out = announcer.offer(pending.current, performance.now()); if (out) { setLive(out); pending.current = null; } } }, 500);
+    return () => window.clearInterval(timer);
+  }, [announcer]);
+
+  function command(c: 'respawn' | 'marker') { p.onCommand(c); p.onFocus(); }
+  function zone(z: TouchZone, e: ReactPointerEvent<HTMLElement>) { p.onZonePointer?.(z, e); }
+
+  const hudRef = useRef<HTMLDivElement>(null);
+  const width = useStageWidth(hudRef, Boolean(model));
+  const touchFirst = useTouchFirst(model?.inputDevice);
+  const reduced = prefersReduced() || Boolean(model?.settings.reducedEffects);
+  if (!model) return <button className="skate-entry" type="button" onPointerDown={e => e.stopPropagation()} onClick={() => { p.onStart(); p.onFocus(); }}>
+    <span className="skate-entry__deck" aria-hidden="true"/><span><b>Skate the island</b><small>Your next line starts here · B</small></span><span aria-hidden="true">↗</span>
+  </button>;
+  const m = model, touch = touchFirst, narrow = width < SKATE_NARROW;
+  // Phones and touch screens read the line in the top band (the thumbs own the bottom corners);
+  // a desktop reads it in the lower-left corner, beside the rider, never on them.
+  const band = narrow || touch;
+  const ticker = <LineTicker line={m.line} outcome={m.outcome} where={band ? 'band' : 'corner'}/>;
+  const notice = <NoticeSlip notice={m.notice} saveFailed={p.saveFailed}/>;
+  const route = m.run && <RouteCard run={m.run} onEnd={() => { p.onRoute(null); p.onFocus(); }}/>;
+  return <div ref={hudRef} className="skate-hud" data-skate-phase={m.phase} data-skate-device={touch ? 'touch' : m.inputDevice} data-skate-layout={narrow ? 'narrow' : 'wide'} data-skate-reduced={reduced || undefined} data-skate-open={open || undefined} onPointerDown={e => e.stopPropagation()}>
+    <div className="skate-hud__play" inert={open ? true : undefined} aria-hidden={open ? true : undefined}>
+      <header className="skate-top">
+        <div className="skate-top__ride">
+          <span className="skate-wordmark" aria-label="Tideline Skate Club">Tideline Skate Club</span>
+          <RideBadge speed={m.speed} stance={m.stance}/>
+        </div>
+        <nav className="skate-top__nav" aria-label="Skate session">
+          <button type="button" onClick={() => command('respawn')} aria-label="Back to your marker"><span aria-hidden="true">↺</span><span className="skate-top__word">Retry</span></button>
+          <button type="button" onClick={() => openBook('challenges')} aria-label={`Goals, ${m.challenges.done} of ${m.challenges.total}`}><span aria-hidden="true">◇</span><span className="skate-top__word">Goals</span><span className="skate-top__count" aria-hidden="true">{m.challenges.done}/{m.challenges.total}</span></button>
+          <button type="button" onClick={() => openBook()} aria-label="Pause and open the skate book"><span aria-hidden="true">❚❚</span><span className="skate-top__word">Book</span></button>
+        </nav>
+      </header>
+      <div className="skate-band">
+        {route}
+        {band && ticker}
+        <SpotBanner card={m.spotCard}/>
+        {band && notice}
+      </div>
+      {!narrow && <Radar model={m} partnerName={p.partnerName}/>}
+      {m.balance && <BalanceMeter balance={m.balance}/>}
+      {!band && <div className="skate-corner">{notice}{ticker}</div>}
+      {!touch && !narrow && <Hints hints={m.hints}/>}
+      {touch && <TouchLayout onZone={zone}/>}
+      <div className="skate-sr" aria-live="polite" aria-atomic="true">{live}</div>
     </div>
-    {s.balancing&&<div className="skate-balance" role="meter" aria-label="Board balance" aria-valuemin={-100} aria-valuemax={100} aria-valuenow={Math.round(s.balance*100)}><span>Balance · steer gently</span><div><i style={{left:`${50+s.balance*45}%`}}/></div></div>}
-    {route&&s.run&&<div className="skate-route-live"><b>{route.name}</b><span>{s.run.finished?`${s.run.medal} · ${s.run.elapsed.toFixed(1)}s`:s.run.countdown>0?`Ready · ${Math.ceil(s.run.countdown)}`:`${s.run.elapsed.toFixed(1)}s · Gate ${s.run.checkpoint}/${route.points.length-1}`}</span>{target&&<small>{Math.round(Math.hypot(s.x-target[0],s.z-target[1]))} m to the gold ring</small>}<button type="button" aria-label="End route and free skate" onClick={()=>p.onRoute(null)}>×</button></div>}
-    <div className="skate-radar" aria-label={target?'Map to your next checkpoint':'Skate spot map'}><svg viewBox="-78 -78 156 156" role="img" aria-label="Harbour skate map"><circle r="72" fill="currentColor" opacity=".1"/>{SKATE_SPOTS.map(spot=><circle key={spot.id} cx={spot.x} cy={spot.z} r={s.progress.discovered.includes(spot.id)?3.5:2} className="skate-radar__spot"/>)}{route&&<polyline points={route.points.map(a=>a.join(',')).join(' ')} fill="none" stroke="currentColor" opacity=".5" strokeDasharray="3 3"/>}{target&&<circle cx={target[0]} cy={target[1]} r="5" fill="none" stroke="currentColor" strokeWidth="2"/>}<path d="M0 5 L-3 -3 L3 -3Z" transform={`translate(${s.x} ${s.z}) rotate(${-s.yaw*180/Math.PI})`} className="skate-radar__you"/></svg><span>{p.partnerName?`Riding with ${p.partnerName}`:'Make yourself at home'}</span></div>
-    <div className={`skate-discovery${notice||p.saveFailed?'':' is-quiet'}`} role="status">{notice}{p.saveFailed&&<small>Progress is only in this session; device saving is unavailable.</small>}</div>
-    <div className="skate-inputs" aria-label="Skate controls">
-      <div className="skate-steering" role="group" aria-label="Steer and push"><button type="button" aria-label="Steer left" {...hold({steer:-1},{steer:0})}>↶</button><button className="skate-push" type="button" {...hold({push:1},{push:0})}>Push</button><button type="button" aria-label="Steer right" {...hold({steer:1},{steer:0})}>↷</button><button className="skate-brake" type="button" {...hold({brake:true},{brake:false})}>Brake</button></div>
-      <div className="skate-tricks" role="group" aria-label="Tricks"><button type="button" className="skate-ollie" onClick={()=>action('ollie')}>Ollie <kbd>J</kbd></button><button type="button" onClick={()=>action(trick)}>Flip <kbd>F</kbd></button><button type="button" {...hold({grind:true},{grind:false})}>Grind <kbd>G</kbd></button><button type="button" {...hold({manual:true},{manual:false})}>Manual <kbd>M</kbd></button></div>
-    </div>
-    <div className="skate-bottom"><span>W push · A/D carve · S brake · J ollie · F flip · G grind · M manual · R reset</span><button type="button" onClick={toggleSound} aria-pressed={sound} aria-label={sound?'Turn skate sound off':'Turn skate sound on'}>{sound?'Sound on':'Sound off'}</button><button type="button" onClick={()=>action('marker')}>Marker</button><button type="button" onClick={()=>action('respawn')}>Retry</button><button type="button" onClick={()=>{p.onPause(!s.paused);p.onFocus();}}>{s.paused?'Resume':'Pause'}</button></div>
-    {s.paused&&!panel&&<div className="skate-pause"><b>Take a breath.</b><span>Your session is paused.</span><button type="button" onClick={()=>{p.onPause(false);p.onFocus();}}>Back to the ride</button></div>}
-    </div>
-    {panel&&<div className="skate-panel-shade" aria-hidden="true" onClick={close}/>}
-    {panel&&<section className="skate-panel" role="dialog" aria-modal="true" aria-labelledby="skate-panel-title" onKeyDown={e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();close();}if(e.key==='Tab'){const buttons=Array.from(e.currentTarget.querySelectorAll<HTMLElement>('button:not(:disabled),select,input:not(:disabled)'));const first=buttons[0],last=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last?.focus();}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first?.focus();}}}}>
-      <header><div><span>THE ISLAND IS YOURS</span><h2 id="skate-panel-title">{panel==='routes'?'Find your next line':panel==='decks'?'A board of your own':'A little practice. A lot of freedom.'}</h2></div><button type="button" aria-label="Close skate panel" ref={closeRef} onClick={close}>×</button></header>
-      {panel==='routes'&&<><p>Follow the roads, find all six spots, or chase a gold ring. Ride at your own pace; every route is optional.</p><div className="skate-route-list">{SKATE_ROUTES.map(r=><button type="button" key={r.id} onClick={()=>{setPanel(null);p.onRoute(r.id);p.onFocus();}}><span className="skate-route-mark" aria-hidden="true">↗</span><span><b>{r.name}</b><small>{r.detail}</small></span><span>{s.progress.routeBest[r.id]?`${s.progress.routeBest[r.id]!.toFixed(1)}s`:`${r.seconds[0]}s gold`} →</span></button>)}</div><h3>The spot book</h3><div className="skate-spots">{SKATE_SPOTS.map(spot=>{const discovered=s.progress.discovered.includes(spot.id);return <button type="button" key={spot.id} disabled={!discovered&&spot.id!=='tideline'} onClick={()=>{setPanel(null);p.onSpot(spot.id);p.onFocus();}}><b>{spot.name}</b><small>{discovered?'Discovered · session here':spot.id==='tideline'?'Start at the park':`${spot.x<0?'West':'East'} island · find it on your board`}</small></button>;})}</div>{p.presence&&<div className="skate-sharing">{p.presence}</div>}<p className="skate-note">Explore with Bianca by both turning on Walk together. Her live rider appears while she is sharing this island.</p></>}
-      {panel==='decks'&&<><p>Every deck rides the same. Find quiet corners of the island to collect the rest.</p><div className="skate-decks">{SKATE_DECKS.map(d=><button type="button" key={d.id} disabled={s.progress.discovered.length<d.discoveries} aria-pressed={s.progress.deck===d.id} onClick={()=>p.onDeck(d.id)}><span className="skate-deck-art" style={{background:d.colour,color:d.ink}} aria-hidden="true"><i>H</i><em>HARBOUR</em></span><b>{d.name}</b><small>{d.discoveries>s.progress.discovered.length?`Find ${d.discoveries} spots`:s.progress.deck===d.id?'Under your feet':'Ready to ride'}</small></button>)}</div><h3>Little milestones</h3><div className="skate-stamps">{SKATE_STAMPS.map(t=><div key={t.id} data-earned={s.progress.stamps.includes(t.id)}><span aria-hidden="true">{s.progress.stamps.includes(t.id)?'✦':'◇'}</span><b>{t.name}</b><small>{t.hint}</small></div>)}</div></>}
-      {panel==='guide'&&<><p>Push to gather speed, then let go and coast. Carve with left and right. Your board keeps its momentum in the air.</p><ol className="skate-lessons"><li><b>Start a line</b><span>W / ↑ pushes. A / D carves. S / ↓ brakes. Shift pushes harder. B puts the board away. The large buttons do the same on a phone.</span></li><li><b>Pop, flip, catch</b><span>J ollies. F kickflips, H heelflips, V shuvits, T 360-flips, and L grabs. Tricks pop from the ground or follow a finished air trick. Steer in the air for a 180 or 360; face along your travel when you land.</span></li><li><b>Find the rail</b><span>Ollie towards a rail along its length, then hold G / Grind as you come down. Steer gently against the balance needle. Release to ride off, or ollie out.</span></li><li><b>Keep it alive</b><span>Hold M / Manual on flat ground to connect tricks. New tricks grow the multiplier; repeating one is worth less. Ride cleanly for 2.4 seconds to bank the combo.</span></li><li><b>Make it yours</b><span>Stop and Set marker to save a practice start. R / Retry takes you back and ends an active route. P pauses. Space still opens all Hearth tools.</span></li></ol><label className="skate-trick-select">Phone flip button<select value={trick} onChange={e=>setTrick(e.target.value as SkateTrick)}><option value="kickflip">Kickflip</option><option value="heelflip">Heelflip</option><option value="shuvit">Pop shuvit</option><option value="360-flip">360 flip</option><option value="grab">Melon grab</option></select></label><p className="skate-note">Scores and discoveries belong to this person on this device. They never move money or change your household’s Journey. Reduced motion keeps the riding and quiets the extra motion.</p></>}
-    </section>}
+    {open && <>
+      <div className="skate-book-shade" aria-hidden="true" onClick={closeBook}/>
+      <PauseBook model={m} tab={tab} onTab={setTab} onClose={closeBook} onWalk={() => { setBookOpen(false); p.onWalk(); }}
+        onRoute={id => { setBookOpen(false); p.onPause(false); p.onRoute(id as SkateRouteId); p.onFocus(); }}
+        onSpot={id => { setBookOpen(false); p.onPause(false); p.onSpot(id as SkateSpotId); p.onFocus(); }}
+        onDeck={id => p.onDeck(id as SkateDeckId)} onSettings={p.onSettings} onCommand={command}
+        trickBook={p.trickBook} gesturePath={p.gesturePath} presence={p.presence} settingsNote={null}/>
+    </>}
   </div>;
 }

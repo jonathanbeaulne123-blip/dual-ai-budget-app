@@ -98,6 +98,18 @@ export const ISLAND_BUILDINGS: readonly Obstacle[] = Object.freeze(Object.values
     wall('front-left',-hx+left/2,hz,left/2,.12),wall('front-right',dx+gap+right/2,hz,right/2,.12)];
 }));
 
+/** The chase camera stays outside the whole exterior, including the open doorway. */
+export function insideVillageBuilding(x: number, z: number, margin = 0): boolean {
+  for (const site of Object.values(VILLAGE_SITES)) {
+    const yaw = Math.atan2(-site.spot[0], -site.spot[1]);
+    const c = Math.cos(yaw), s = Math.sin(yaw);
+    const dx = x - site.spot[0], dz = z - site.spot[1];
+    const lx = dx * c - dz * s, lz = dx * s + dz * c;
+    if (Math.abs(lx) < site.half[0] + margin && Math.abs(lz) < site.half[1] + margin) return true;
+  }
+  return false;
+}
+
 /**
  * The tree ring, **read** from the plan `scene/ground.ts` draws.
  *
