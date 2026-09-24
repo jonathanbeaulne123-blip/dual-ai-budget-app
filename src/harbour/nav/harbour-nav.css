@@ -133,3 +133,31 @@
 @media (prefers-reduced-motion: reduce) {
   .quick-sheet__panel, .nav.compass, .edition-flip { transition: none; animation: none; }
 }
+
+/* ── Personal scope's flip (Simple View Desk S5). Personal has no harbour, so
+      its bar is the house's room bar with the same Simple-view flip at its left
+      end. While the Desk stands its chips are the rooms, and the bar is
+      flip · Hercules · + · Status — the + still two presses from any money verb.
+      Over the illustrated house on a phone the seven room slots are full, so
+      the flip rides just above the bar's left end rather than squeezing every
+      target under 44px. ── */
+.nav[data-edition-nav] > .house-nav-flip { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 44px; min-width: 44px; padding: 0 6px; border-radius: 12px; color: var(--ink); font-size: 10px; line-height: 1.1; }
+.nav[data-edition-nav] > .house-nav-flip b { font-size: 16px; font-weight: 500; line-height: 1; }
+.app[data-house-world] .nav[data-house-navigation][data-edition-nav] > button.house-nav-flip.edition-flip { grid-column: 1; grid-row: 1; }
+.app[data-house-world] .nav[data-house-navigation][data-edition-nav="desk"] { grid-template-columns: repeat(2, minmax(44px, 1fr)) 56px repeat(2, minmax(44px, 1fr)); }
+.app[data-house-world] .nav[data-house-navigation][data-edition-nav="desk"] > .house-companion-door { display: flex; grid-column: 2; grid-row: 1; }
+.app[data-house-world] .nav[data-house-navigation][data-edition-nav="desk"] > .fab-dial { grid-column: 3; grid-row: 1; }
+.app[data-house-world] .nav[data-house-navigation][data-edition-nav="desk"] > button:not(.house-nav-flip):not(.house-companion-door) { grid-column: 4 / span 2; grid-row: 1; }
+@media (max-width: 719px) {
+  .app[data-house-world] .nav[data-house-navigation][data-edition-nav="house"] > button.house-nav-flip.edition-flip {
+    position: absolute; left: 8px; bottom: calc(100% + 8px);
+    flex-direction: row; gap: 6px; padding: 0 14px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--card); box-shadow: var(--shadow, 0 4px 14px rgb(0 0 0 / .14)); font-size: 12px; font-weight: 600;
+  }
+  .app[data-house-world] .nav.is-fab-open[data-edition-nav="house"] > .house-nav-flip { visibility: hidden; }
+}
+@media (min-width: 720px) {
+  .app[data-house-world] .nav[data-house-navigation][data-edition-nav] { display: flex; align-items: center; gap: 12px; height: 64px; padding: 5px 16px 5px 12px; }
+  .app[data-house-world] .nav[data-house-navigation][data-edition-nav] > .house-nav-flip { flex-direction: row; gap: 6px; padding: 0 10px; font-size: 12px; }
+  .app[data-house-world] .nav[data-house-navigation][data-edition-nav] .fab { margin-top: 0; width: 46px; height: 46px; }
+}

@@ -196,7 +196,8 @@ describe("the seams that carry the bar", () => {
     expect(app).toMatch(/HARBOUR_ENABLED&&view==="household"\?<><Compass fab=\{harbourBarFab\}/);
     // The district row is gone from the App.
     expect(app).not.toMatch(/<Compass[^>]*(?:onHome|onStudy|onKitchen|onMaking|onTogether)=/);
-    expect(app).toMatch(/useEditionFlipKey\(HARBOUR_ENABLED && view === "household"/);
+    // S5: the backtick flips in personal scope too (its Desk), still behind the harbour gate.
+    expect(app).toMatch(/useEditionFlipKey\(HARBOUR_ENABLED && Boolean\(household && session\)\)/);
     expect(shell).toMatch(/<VillageHUD fab=\{props\.fab\} onQuickSheet=\{onQuickSheet\}/);
   });
 });

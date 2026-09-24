@@ -97,11 +97,18 @@ export function useMotionEdition(storage?: Pick<Storage, "getItem">): MotionEdit
   return edition;
 }
 
-/** The words on the flip for each edition: Jonathan's "Simple view" out, the Harbour back. */
-export function editionFlipWords(edition: MotionEdition): { label: string; aria: string } {
-  return edition === "flat"
-    ? { label: "Harbour", aria: "Switch to the illustrated harbour" }
-    : { label: "Simple view", aria: "Switch to the simple view" };
+/**
+ * Which illustrated world the flip goes back to: the household's Harbour, or
+ * (personal scope, which has no harbour — Simple View Desk S5) my own house.
+ */
+export type EditionWorld = "harbour" | "house";
+
+/** The words on the flip for each edition: Jonathan's "Simple view" out, the illustrated world back. */
+export function editionFlipWords(edition: MotionEdition, world: EditionWorld = "harbour"): { label: string; aria: string } {
+  if (edition !== "flat") return { label: "Simple view", aria: "Switch to the simple view" };
+  return world === "house"
+    ? { label: "My house", aria: "Switch to the illustrated house" }
+    : { label: "Harbour", aria: "Switch to the illustrated harbour" };
 }
 
 /**
@@ -110,9 +117,9 @@ export function editionFlipWords(edition: MotionEdition): { label: string; aria:
  * reader hears "Switch to the simple view" and then "Switch to the illustrated
  * harbour" — never a state it has to translate.
  */
-export function EditionFlip({ className, storage }: { className?: string; storage?: Pick<Storage, "getItem" | "setItem"> }) {
+export function EditionFlip({ className, storage, world = "harbour" }: { className?: string; storage?: Pick<Storage, "getItem" | "setItem">; world?: EditionWorld }) {
   const edition = useMotionEdition(storage);
-  const words = editionFlipWords(edition);
+  const words = editionFlipWords(edition, world);
   return (
     <button
       type="button"
