@@ -50,6 +50,10 @@
 
 /* ── The header: the flip back, the title, the space slot ── */
 .desk__header { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px; padding-top: 14px; }
+/* Inside the harbour stage the App's status strip and topbar pills float over the top edge
+   (harbour.css, absolute at top 10px); clear them the way the village address does, so the
+   flip back is never under the Status Centre. The personal mount sits below the chrome. */
+.harbour-world .desk__header { padding-top: 64px; }
 .desk__flip {
   display: inline-flex; align-items: center; gap: 8px; min-height: 44px; min-width: 44px; padding: 0 16px;
   border: 1px solid var(--desk-ink); border-radius: 999px; cursor: pointer;
