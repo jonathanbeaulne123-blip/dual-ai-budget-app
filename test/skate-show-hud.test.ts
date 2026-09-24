@@ -111,6 +111,15 @@ describe('SkateHUD component', () => {
     expect(p.onStart).toHaveBeenCalled();
   });
 
+  it('offers explicit device-local replay controls and refuses motion when reduced',()=>{
+    const onReplay=vi.fn(),m=model();m.replay={available:true,seconds:74.2,playing:false,time:0,ghostEnabled:false,reduced:false,pose:null,path:[[0,0],[0,10]]};
+    render(props({model:m,onReplay}));
+    const button=(label:string)=>Array.from(host.querySelectorAll('button')).find(b=>b.textContent===label)!;
+    expect(host.textContent).toContain('On this device only');act(()=>button('Watch replay').click());expect(onReplay).toHaveBeenCalledWith('play');act(()=>button('Race your ghost').click());expect(onReplay).toHaveBeenCalledWith('toggle-ghost');
+    m.replay={...m.replay,reduced:true};render(props({model:m,onReplay}));expect(button('Watch replay').disabled).toBe(true);expect(button('Race your ghost').disabled).toBe(true);
+    m.replay={...m.replay,reduced:false,playing:true,time:1,pose:{x:0,y:0,z:5,yaw:0,mode:'replay'}};render(props({model:m,onReplay}));expect(host.querySelector('[aria-label="Replay of your best completed route"]')).not.toBeNull();act(()=>button('Close replay').click());expect(onReplay).toHaveBeenCalledWith('stop');
+  });
+
   it('renders the live line ticker, balance meter and device hints', () => {
     render(props({model: model({line: line(['Ollie', 'Nollie Backside 180 Heelflip']), present: present({phase: 'manual', manual: 'manual', balance: -0.4})})}));
     expect(host.querySelector('.skate-ticket__label')!.textContent).toBe('Nollie Backside 180 Heelflip');

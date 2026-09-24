@@ -72,6 +72,8 @@ export interface SkateInput {
   activeDevice():SkateDevice;
   /** Start pressed on a gamepad since the last call. */
   pausePressed():boolean;
+  /** Poll only controller menu edges while gameplay is suspended; never enqueue gameplay intent. */
+  pollControls():{pause:boolean;connected:boolean};
   /** Returns true when the key belongs to skating (caller may preventDefault). */
   keyDown(e:KeyLike):boolean;
   keyUp(e:KeyLike):boolean;
@@ -216,6 +218,11 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
     reset,
     activeDevice:()=>device,
     pausePressed(){const p=pause;pause=false;return p;},
+    pollControls(){
+      const p=pad.poll(),pressed=pause||p.pause;pause=false;
+      if(p.touched)device='gamepad';
+      return {pause:pressed,connected:p.connected};
+    },
     keyDown(e){
       const name=keyName(e),action=skateKeyAction(name,mode);if(!action)return false;
       const t=ts(e);device='keyboard';
