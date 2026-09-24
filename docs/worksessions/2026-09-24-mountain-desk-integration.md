@@ -90,3 +90,41 @@ empty/paid copy, focus/return/guide interactions and travel-camera ordering. Roo
 was the only writer. Final visual approval belongs to Jonathan; physical iPhone/Mac
 presence, sustained frame rate, complete accessibility and investor rehearsal remain
 open. No hosted mutation, merge, deployment or Production claim.
+
+### Final integration follow-through
+
+Draft PR: https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/537
+
+- Integration improvements: `134e3fab`. Outdoor Desk place labels now use the
+  retained body coordinates and elevation (`f2028ffd`), rather than calling the
+  entire outdoor mountain the town square. A different-height plateau does not
+  supply its nearby door.
+- Local reduced-motion gondola arrival reached Summit Commons at y=110; the
+  follow camera reached y=112.6372. The illustrated/Desk round trip retained that
+  elevated arrival. The rendered Desk named Summit Commons and offered Journey,
+  Household Fund and Supporting records. This was observed in the actual local
+  fictional browser, not inferred from a unit test.
+- Second High quick-gate attempt: diff, AI surface and TypeScript passed
+  (TypeScript 251.638s). Discovery took 67.438s and breached the five-minute
+  budget. The fast lane finished with 70/76 files and 761/782 tests passing; six
+  files failed and one worker-report timeout occurred. Total 884.122s. The
+  selected serial lane was not reached. This is a failed gate, not release proof.
+- Failures included obsolete source/heading assertions, a guide assertion that
+  also matched the still-present guide opener, and first-import/hook/runtime
+  timeouts under concurrent workers. Assertions now verify retained state,
+  supported evidence, programmatic focus and actual dialog closure. Renderer
+  imports moved to module setup so first-test timing measures behavior rather
+  than compilation. A one-worker rerun covers every failed file plus the new
+  seven-test integration suite; results follow below.
+
+- Final focused repair rerun: **7 files / 72 tests passed**, 158.30s, one worker.
+  Includes every failed file from the broad attempt and all seven mountain/Desk
+  integration cases. The previously timed-out Workspace runtime passed in
+  16.158s and all four personal-App cases passed. No timeout allowance was
+  increased. Test-only corrections are `ab3670c6`. Required App startup (83) and
+  mainline rehearsal (1) passed in the earlier recorded focused run.
+
+- Final build started at `ab3670c6` but was stopped during TypeScript when main
+  advanced to `611fcf26` (PR #538, easier island skating). No build pass is
+  claimed for this interrupted attempt. The incoming movement changes are
+  reconciled before final validation.
