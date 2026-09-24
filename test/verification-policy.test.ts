@@ -109,6 +109,23 @@ describe("five-minute verification policy", () => {
     expect(plan.errors.join(" ")).toContain("Executable source changed");
   });
 
+  it("never selects a test the change deletes, and never lets it count as proof", () => {
+    const plan = planQuickTests({
+      changedFiles: ["src/retired-flat.ts", "test/retired-flat.test.ts", "test/kept.test.ts"],
+      deletedFiles: ["test/retired-flat.test.ts"],
+      relatedTests: ["test/kept.test.ts"],
+    });
+    expect(plan.errors).toEqual([]);
+    expect(plan.selectedTests).toEqual(["test/kept.test.ts"]);
+
+    const unproved = planQuickTests({
+      changedFiles: ["src/retired-flat.ts", "test/retired-flat.test.ts"],
+      deletedFiles: ["test/retired-flat.test.ts"],
+    });
+    expect(unproved.selectedTests).toEqual([]);
+    expect(unproved.errors.join(" ")).toContain("Executable source changed");
+  });
+
   it("uses checked-in source-to-test mappings as focused proof", () => {
     const mapped = mappedTestsForChanges(["scripts/run-quick-gate.mjs"], focusMap.mappings);
     const plan = planQuickTests({
