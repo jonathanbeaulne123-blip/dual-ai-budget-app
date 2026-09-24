@@ -56,9 +56,9 @@ describe("src/harbour/desk money-safety fence", () => {
     expect(offences).toEqual([]);
   });
 
-  it("touches storage only to write the edition switch, in one file", () => {
+  it("never touches storage or the network directly — the edition write goes through the nav's one writer", () => {
     const readers = files.filter((file) => /localStorage|sessionStorage|indexedDB|\bfetch\(/.test(readFileSync(file, "utf8"))).map(name);
-    expect(readers).toEqual(["flip.ts"]);
+    expect(readers).toEqual([]);
   });
 
   it("never says money was saved", () => {
