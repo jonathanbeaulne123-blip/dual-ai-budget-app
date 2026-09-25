@@ -153,6 +153,7 @@ describe("Game mode: the open world, full screen (D-285)", () => {
     await mount({ houseSurface: "journey", journeyFocusDate: "2026-08-01", openWorldOnJourneySurface: true, onExitJourney: returnToAtlas });
     expect(stage().hidden).toBe(false);
     expect($<HTMLElement>(".path-world").dataset.game).toBe("open");
+    expect(document.activeElement).toBe($<HTMLButtonElement>(".path-hud__min"));
     expect(lastMini(false).focus.focus).toMatchObject({ date: "2026-08-01", level: "month" });
     await click($<HTMLButtonElement>(".path-hud__min"));
     await act(async () => { await new Promise((r) => setTimeout(r, 30)); });

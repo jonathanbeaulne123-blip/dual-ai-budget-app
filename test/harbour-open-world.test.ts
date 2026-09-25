@@ -6,7 +6,7 @@ import {courtObstacles,SHORE_RADIUS} from '../src/harbour/body/obstacles.ts';
 import {findPath,pathSegmentClear} from '../src/harbour/body/pathfinder.ts';
 import {placementOf,placementToWorld} from '../src/harbour/scene/place.ts';
 import {groundHeightAt,SEA_LEVEL} from '../src/harbour/scene/ground.ts';
-import {harbourZoomExit,ZOOM_EXIT,ZOOM_REST} from '../src/harbour/camera/worldZoom.ts';
+import {entersJourneyFromZoom,JOURNEY_ZOOM_LIMIT} from '../src/harbour/camera/worldZoom.ts';
 import {avatarPreferenceKey,readAvatar,saveAvatar} from '../src/harbour/body/avatarPreference.ts';
 import {createWalker} from '../src/harbour/body/walker.ts';
 import {WALK_SPEED} from '../src/harbour/body/bodyModel.ts';
@@ -55,15 +55,13 @@ describe('a roomy, connected island',()=>{
 });
 
 describe('world scale doorway',()=>{
-  it('requires extra outward intent at the far limit and resets when zooming in',()=>{
-    // Hearth Mountain v2 (C5): only pulls made *at* the Look camera's far limit count; the first arms the
-    // "pull once more" affordance, and only a later, separate pull opens the Journey.
-    const limit=ZOOM_EXIT.limit;
-    expect(harbourZoomExit(limit*.8,.5,ZOOM_REST,0)).toEqual(ZOOM_REST);
-    const armed=harbourZoomExit(limit,.2,ZOOM_REST,0);expect(armed.exit).toBe(false);expect(armed.armedAt).toBe(0);
-    expect(harbourZoomExit(limit,.5,armed,100).exit).toBe(false);
-    expect(harbourZoomExit(limit,.2,armed,ZOOM_EXIT.wait+10).exit).toBe(true);
-    expect(harbourZoomExit(limit,-.1,armed,ZOOM_EXIT.wait+10)).toEqual(ZOOM_REST);
+  it('opens the Journey on the outward gesture that crosses the far edge',()=>{
+    const limit=JOURNEY_ZOOM_LIMIT;
+    expect(entersJourneyFromZoom(limit*.8,.05)).toBe(false);
+    expect(entersJourneyFromZoom(limit*.8,.5)).toBe(true);
+    expect(entersJourneyFromZoom(limit*.985,.05)).toBe(true);
+    expect(entersJourneyFromZoom(limit,.005)).toBe(false);
+    expect(entersJourneyFromZoom(limit,-.1)).toBe(false);
   });
   it('binds explicit avatar choices to the environment, household and member',()=>{
     const key=avatarPreferenceKey('development','house','one');localStorage.clear();

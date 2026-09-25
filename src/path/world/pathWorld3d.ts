@@ -2358,15 +2358,15 @@ export function createPathWorld(host: HTMLElement, options: {
     const ring = roamRing();
     return Math.max(ring.minR, Math.min(ring.maxR, r));
   }
-  // The closest band is still a useful ordinary camera distance. A doorway only opens after a continued inward
-  // wheel/pinch/rail gesture, and only once until the person backs the camera away.
-  let closestZoom = 0, closestZoomEntered = false;
+  // The current Chapter opens on the same inward gesture that reaches the camera's closest band.
+  let closestZoomEntered = false;
   function applyZoom(factor: number) {
     const raw = cam.r * factor;
-    if (factor < 1 && !roaming && raw < 14.5 && !closestZoomEntered) {
-      closestZoom += Math.max(0, Math.log(14.5 / Math.max(0.01, raw)));
-      if (closestZoom >= 0.42 && options.onClosestZoom?.()) { closestZoomEntered = true; return; }
-    } else if (factor > 1 || raw > 16) { closestZoom = 0; closestZoomEntered = false; }
+    if (factor < 1 && !roaming && raw < 13.65 && !closestZoomEntered && options.onClosestZoom?.()) {
+      closestZoomEntered = true;
+      return;
+    }
+    if (factor > 1 || raw > 16) closestZoomEntered = false;
     cam.r = clampRadius(raw);
   }
   function roamViewNow(): PathRoamView {

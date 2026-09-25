@@ -1,0 +1,20 @@
+.journey-cloud-passage { position: fixed; inset: 0; z-index: 4000; pointer-events: auto; touch-action: none; overscroll-behavior: none; overflow: hidden; opacity: 1; background: #e6eff1; transition: opacity 480ms ease; }
+.journey-cloud-passage[data-phase="cover"] { animation: journey-cloud-cover 520ms ease both; }
+.journey-cloud-passage[data-phase="hold"], .journey-cloud-passage[data-phase="reveal"] { opacity: 1; }
+.journey-cloud-passage[data-phase="reveal"] { opacity: 0; pointer-events: none; transition-duration: 620ms; }
+.journey-cloud-passage i { position: absolute; display: block; width: 130vw; height: 92vh; border-radius: 50%; filter: blur(28px); background: radial-gradient(ellipse at 45% 50%, #fffdf7 0 24%, #f5f8f8 40%, #d3e1e5 66%, transparent 72%); transform: translate3d(-24vw, 38vh, 0) scale(.72); transition: transform 650ms cubic-bezier(.2,.7,.2,1); }
+.journey-cloud-passage i:nth-child(2) { left: 34%; top: -25%; background: radial-gradient(ellipse at 40% 55%, #fff 0 25%, #edf2f6 47%, #c5d8e0 67%, transparent 73%); transform: translate3d(25vw, -32vh, 0) scale(.75); transition-delay: 45ms; }
+.journey-cloud-passage i:nth-child(3) { left: -18%; top: -12%; background: radial-gradient(ellipse at 60% 50%, #fffefa 0 20%, #f3f4ef 42%, #d9e5e6 65%, transparent 74%); transform: translate3d(-28vw, -20vh, 0) scale(.7); transition-delay: 90ms; }
+.journey-cloud-passage[data-phase="hold"] i, .journey-cloud-passage[data-phase="reveal"] i { transform: translate3d(-8vw, 3vh, 0) scale(1.5); }
+.journey-cloud-passage[data-phase="reveal"] i:first-child { transform: translate3d(-35vw, 54vh, 0) scale(1.8); }
+.journey-cloud-passage[data-phase="reveal"] i:nth-child(2) { transform: translate3d(32vw, -38vh, 0) scale(1.8); }
+.journey-cloud-passage[data-phase="reveal"] i:nth-child(3) { transform: translate3d(-40vw, -40vh, 0) scale(1.8); }
+:root[data-theme="classic"] .journey-cloud-passage { background: #eae5d8; }
+:root[data-theme="classic"] .journey-cloud-passage i { filter: blur(22px) sepia(.12); }
+:root[data-theme="taylor"] .journey-cloud-passage { background: #efe5ef; }
+:root[data-theme="taylor"] .journey-cloud-passage i:nth-child(2) { filter: blur(30px) hue-rotate(18deg); }
+:root[data-theme="newfoundland"] .journey-cloud-passage { background: #d9e8e9; }
+:root[data-theme="newfoundland"] .journey-cloud-passage i { filter: blur(38px); }
+@keyframes journey-cloud-cover { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .journey-cloud-passage, .journey-cloud-passage i { animation: none !important; transition: none !important; } }
+:root[data-motion="reduced"] .journey-cloud-passage, :root[data-motion="reduced"] .journey-cloud-passage i { animation: none !important; transition: none !important; }

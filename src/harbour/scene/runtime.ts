@@ -34,7 +34,7 @@ import {createCat,type Cat} from '../body/cat.ts';
 import {heelStand,type CatErrand} from '../body/catModel.ts';
 import {attentionDoor,attentionOf} from '../data/attention.ts';
 import {HARBOUR_LAND} from '../village/world.ts';
-import {harbourZoomExit,zoomEdgeArmed,ZOOM_REST,type ZoomEdge} from '../camera/worldZoom.ts';
+import {entersJourneyFromZoom} from '../camera/worldZoom.ts';
 // ── Hearth Mountain v2 · the camera track ── one camera system: Look, Walk, Close, Ride, Skate, with explicit hand-offs.
 import {cameraBlocked,cameraGround,rideFrame,type MovingSolid} from '../camera/worldAdapter.ts';
 import {arrivalAt,closeLandmark,damViewPose,doorExitPose,momentPose,openWorldFov,overviewPose,summitViewPose} from '../camera/mountainPoses.ts';
@@ -116,12 +116,6 @@ export type HarbourCallbacks = {
   onMountainTravel?:(travelling:boolean)=>void;
   /** A ride worth offering: standing on a platform, or after a long tap with a station close at hand. `null` withdraws it. */
   onRideOffer?:(offer:RideOffer|null)=>void;
-  /**
-   * Hearth Mountain v2 (C5): the Look camera is at its far limit and one more
-   * pull will open the Journey — the shell shows "Pull once more to open the
-   * Journey" while this is true.
-   */
-  onZoomEdge?:(armed:boolean)=>void;
   onMonorail?:(ride:MonorailState|null)=>void;
 
   /**
@@ -766,7 +760,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   let skateCamera = false;
   let selectedAvatar=callbacks.avatar??null;
   let cat:Cat|null=null,errand:CatErrand|null=null,errandKey:string|null=null,catWatch:{x:number;z:number}|null=null;
-  let catCatchUpAt=0,zoomEdge:ZoomEdge=ZOOM_REST,zoomArmed=false,journeyRequested=false;
+  let catCatchUpAt=0,journeyRequested=false;
   /** Hearth Mountain v2 · the ride camera (C4), the race's finish shot, and the keyboard orbit hold (Q/E). */
   let rideCam: RideCamera | null = null, rideOn: { kind: Ride["kind"]; to: number } | null = null;
   const finishShot = createFinishShot();
@@ -967,7 +961,6 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
   raiseBody();
 
-  function setZoomEdge(armed: boolean): void { if (armed !== zoomArmed) { zoomArmed = armed; callbacks.onZoomEdge?.(armed); } }
   function zoomWorld(delta:number):void{
     if(!Number.isFinite(delta)||toolOpen||journeyRequested)return;
     if(following&&follow){
@@ -976,14 +969,10 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         setFollowing(false);
       }else{follow.zoom(delta);return;}
     }
-    if(placeId==='court'&&callbacks.onJourney){
-      // C5: only a pull made *at* the far limit counts; the first one shows
-      // "Pull once more to open the Journey", a later one opens it.
-      const now=performance.now();
-      zoomEdge=harbourZoomExit(court.goal().r,delta,zoomEdge,now);
-      setZoomEdge(zoomEdgeArmed(zoomEdge,now));
-      if(zoomEdge.exit){zoomEdge=ZOOM_REST;setZoomEdge(false);journeyRequested=true;callbacks.onJourney();return;}
-    }else{zoomEdge=ZOOM_REST;setZoomEdge(false);}
+    if(placeId==='court'&&callbacks.onJourney&&entersJourneyFromZoom(court.goal().r,delta)){
+      court.zoom(delta);
+      journeyRequested=true;callbacks.onJourney();return;
+    }
     court.zoom(delta);
   }
 
@@ -1403,7 +1392,6 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const easing = following ? false : court.tick(dt);
     // Look's lens blends to its own after any hand-off (C10 minor: no FOV cuts).
     const lensing = following ? false : easeLens(lookLens(), dt);
-    if (zoomArmed && !zoomEdgeArmed(zoomEdge, performance.now())) { zoomEdge = ZOOM_REST; setZoomEdge(false); }
     if (spin !== 0 && !toolOpen) dirty = true;
     // A journey is the camera moving: it keeps frames flowing at the camera's rate and ends by dropping the place it left.
     if (journey) {
@@ -1866,7 +1854,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       }
       court.setTerrain(lookTerrain());
       // The place you arrive in declares its own idle motion; until it does, nothing moves.
-      refreshErrand();zoomEdge=ZOOM_REST;setZoomEdge(false);
+      refreshErrand();
       breathing = !reducedMotion();
       previousDoorPoint = null; pendingDoor=null;
       // A cut lands at once, so the destination's hold applies at once. A full
