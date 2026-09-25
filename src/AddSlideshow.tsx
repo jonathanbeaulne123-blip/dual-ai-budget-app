@@ -141,6 +141,7 @@ export function AddSlideshow({
   ledger: ledgerProp,
   onLedgerChange,
   memberId,
+  billRecurrenceId,
 }: {
   /**
    * The space the card is showing. When given, the first slide names the
@@ -154,6 +155,12 @@ export function AddSlideshow({
   onLedgerChange?: (ledger: LedgerView) => void;
   /** The signed-in member. Bill paid needs it for the exact due review. */
   memberId?: string;
+  /**
+   * Bill paid, preselected: a host panel's (or the card's) "Mark paid" names one
+   * recurrence. When that bill is due, the flow opens at its named Confirm; when
+   * it is not due yet, the flow opens on the slips, where it is listed but not offered.
+   */
+  billRecurrenceId?: string | null;
   sheetRef: Ref<HTMLDivElement>;
   draftStorageKey?: string;
   recovery?: ReactNode;
@@ -261,6 +268,7 @@ export function AddSlideshow({
     [billMode, household, today, memberId, view],
   );
   const chosenBill = bills.due.find((slip) => slip.recurrenceId === billId) ?? null;
+  const billPreselected = useRef<string | null>(null);
   const suggestions = recommendationHousehold;
   const slides = useMemo(
     () => addSlidesFor({ mode, shiftGate, hasWorkJobs }),
@@ -279,6 +287,16 @@ export function AddSlideshow({
   useEffect(() => {
     if (index !== slideIndex) onSlideIndex(index);
   }, [index, slideIndex, onSlideIndex]);
+
+  // "Mark paid" names one bill: land on its named Confirm once (the person can still go back to the slips).
+  useEffect(() => {
+    if (!billMode || !billRecurrenceId || billPreselected.current === billRecurrenceId) return;
+    if (!bills.due.some((slip) => slip.recurrenceId === billRecurrenceId)) return;
+    billPreselected.current = billRecurrenceId;
+    setBillId(billRecurrenceId);
+    const confirmAt = slides.indexOf("bill-confirm");
+    if (confirmAt >= 0) onSlideIndex(confirmAt);
+  }, [billMode, billRecurrenceId, bills.due, slides, onSlideIndex]);
 
   const presentationKey = draftStorageKey ?? mode;
   const livePresentationKey = useRef(presentationKey);

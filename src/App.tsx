@@ -823,8 +823,10 @@ export function App() {
   const [quickSheetOpen, setQuickSheetOpen] = useState(false);
   /** Tool Atlas: the Add flow runs as Bill paid (AddSlideshow's "bill" mode) while this is set; App's `mode` stays an AddMode. */
   const [billFlow, setBillFlow] = useState(false);
+  /** "Mark paid" on a host panel names the bill Bill paid opens at (its named Confirm), or null for the slips. */
+  const [billPreselect, setBillPreselect] = useState<string | null>(null);
   /** D1: a Record verb whose ledger differs from the space on screen waits here while the space switches, then opens. */
-  const [pendingRecord, setPendingRecord] = useState<{ mode: FabVerbMode; ledger: LedgerView; amount?: string } | null>(null);
+  const [pendingRecord, setPendingRecord] = useState<{ mode: FabVerbMode; ledger: LedgerView; amount?: string; recurrenceId?: string } | null>(null);
   /** The status line after an accepted Record (A24). */
   const [recordStatus, setRecordStatus] = useState("");
   /** The one open compact panel on the map (brief §3.2's host column). */
@@ -1542,7 +1544,7 @@ export function App() {
     if (!pendingRecord || !session || session.view !== pendingRecord.ledger) return;
     const next = pendingRecord;
     setPendingRecord(null);
-    if (next.mode === "bill") openBillPaid(); else openAddFor(null, next.mode);
+    if (next.mode === "bill") openBillPaid(next.recurrenceId); else openAddFor(null, next.mode);
     if (next.amount) setForm(current => current.amount ? current : { ...current, amount: next.amount! });
   }, [pendingRecord, session?.view]);
 
@@ -6349,14 +6351,18 @@ export function App() {
    * verb's ledger is not the space on screen, the space switches first (it closes nothing but the draft sheet)
    * and the pending-record effect opens the flow there, so the first slide never names a ledger we are not in.
    */
-  function openRecordFlow(nextMode: FabVerbMode, ledger: LedgerView = defaultAddLedger(nextMode, view), amount?: string) {
-    if (ledger !== view) { setPendingRecord({ mode: nextMode, ledger, ...(amount ? { amount } : {}) }); changeHouseView(ledger); return; }
-    if (nextMode === "bill") openBillPaid(); else openAddFor(null, nextMode);
+  function openRecordFlow(nextMode: FabVerbMode, ledger: LedgerView = defaultAddLedger(nextMode, view), amount?: string, recurrenceId?: string) {
+    if (ledger !== view) { setPendingRecord({ mode: nextMode, ledger, ...(amount ? { amount } : {}), ...(recurrenceId ? { recurrenceId } : {}) }); changeHouseView(ledger); return; }
+    if (nextMode === "bill") openBillPaid(recurrenceId); else openAddFor(null, nextMode);
   }
-  /** Bill paid: the expense sheet in its "bill" mode — the due bills as slips, then a named Confirm (`postOneRecurrence`). */
-  function openBillPaid() {
+  /**
+   * Bill paid: the expense sheet in its "bill" mode — the due bills as slips, then a named Confirm (`postOneRecurrence`).
+   * With a recurrence ("Mark paid" on the Cellar panel), the sheet opens preselected at that bill's named Confirm.
+   */
+  function openBillPaid(recurrenceId?: string) {
     openAddFor(null, "expense");
     setBillFlow(true);
+    setBillPreselect(recurrenceId ?? null);
     setAddSlide(0);
   }
   /** Bill paid's named Confirm: the same reviewed path the due sheet posts through (re-read, then `postOneRecurrence`). */
@@ -7170,8 +7176,7 @@ export function App() {
   /** A host panel's "Mark paid": the Bill paid flow at that bill's named Confirm path (`postOneRecurrence`), never a post from the panel. */
   function markPaidFromPanel(recurrenceId: string) {
     setHostPanel(null);
-    openRecordFlow("bill");
-    void recurrenceId;
+    openRecordFlow("bill", undefined, undefined, recurrenceId);
   }
   /** The one bar's Record (S1): the same FabSpeedDial wiring on the island's glass, the Desk's bar and the door edition. */
   const harbourBarFab: CompassFab = {closed:adding,actions:fabActionsFor(view,{memberHasJob}),closedLabel:fabClosedLabel(view),onOpenChange:setFabOpen,onPick:(nextMode)=>openRecordFlow(nextMode),onBillPaid:()=>openRecordFlow("bill")};
@@ -7192,8 +7197,9 @@ export function App() {
       onSpaceChange: (next: "ours" | "mine") => changeHouseView(viewForSpace(next)),
       expanded: campCardOpen,
       onExpandedChange: setCampCardOpen,
-      onOpenBank: () => openHouseObject("queen"),
-      onOpenCellar: () => openHouseObject("cellar-bills"),
+      // Line 1 → the bank panel, line 2 → the Cellar panel (brief §4.1): its "Mark paid" opens Bill paid at that bill's Confirm.
+      onOpenBank: () => { setCampCardOpen(false); setHostPanel("bank"); },
+      onOpenCellar: () => { setCampCardOpen(false); setHostPanel("cellar"); },
       onOpenCalendar: () => openHouseObject("calendar"),
       onOpen: (target: string, object?: string) => openAtlasTarget(target, object),
       onRecord: () => openRecordFlow("shift"),
@@ -8554,6 +8560,7 @@ export function App() {
           view={view}
           ledger={view}
           memberId={actorId}
+          billRecurrenceId={billFlow ? billPreselect : null}
           onLedgerChange={(next) => { if (next !== view) openRecordFlow(billFlow ? "bill" : mode, next, form.amount || undefined); }}
           onSwitchMode={switchAddMode}
           lockedMode={Boolean(potentialExpenseAddId)}

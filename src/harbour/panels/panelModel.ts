@@ -68,8 +68,9 @@ export function cellarPanel(reading: Pick<HarbourReading, "cellar"> | null, extr
   const fromReading: CellarPanelBill[] = (reading?.cellar?.jars ?? [])
     .filter((jar) => jar.state !== "paid" && jar.due !== null)
     .map((jar) => ({ key: jar.key, label: jar.label, cents: jar.amountCents, due: jar.due, recurrenceId: null }));
-  const bills = [...(extras.bills ?? fromReading)]
-    .filter((bill) => !today || !bill.due || bill.due >= today)
+  // The integrator's bills are already the unpaid ones (an overdue bill is the one most worth "Mark paid");
+  // only the reading's fallback jars drop past dates.
+  const bills = [...(extras.bills ?? fromReading.filter((bill) => !today || !bill.due || bill.due >= today))]
     .sort((a, b) => (a.due ?? "9999").localeCompare(b.due ?? "9999"));
   return {
     total: bills.length,

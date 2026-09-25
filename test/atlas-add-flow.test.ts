@@ -117,12 +117,13 @@ function Harness(props: {
   ledgers?: LedgerView[];
   duplicate?: boolean;
   edits?: string[];
+  billRecurrenceId?: string | null;
 }) {
   const [draft, setDraft] = useState<AddFormFields>(() => form());
   const [slideIndex, setSlideIndex] = useState(props.slide ?? 0);
   const categories = household.categories.filter((category) => category.recordType === "category" && category.active && category.transactionType === (props.mode === "income" ? "income" : "expense"));
   return createElement(AddSlideshow, {
-    sheetRef: { current: null }, mode: props.mode, view: props.view, memberId: "MEM-001",
+    sheetRef: { current: null }, mode: props.mode, view: props.view, memberId: "MEM-001", billRecurrenceId: props.billRecurrenceId,
     onLedgerChange: (ledger) => props.ledgers?.push(ledger),
     recommendationHousehold: household, initialAccountId: "ACC-VISA", onSwitchMode: () => undefined,
     form: draft, setForm: setDraft, household, booksHousehold: household,
@@ -230,5 +231,19 @@ describe("the Add flow's Tool Atlas parts (UI)", () => {
     expect(payload.recurrenceId).toBe(payload.review.request.recurrenceId);
     expect(payload.occurrenceDate).toBe("2026-09-01");
     expect(payload.review.request).toMatchObject({ memberId: "MEM-001", view: "household", today });
+  });
+
+  it("Mark paid: a named due bill opens straight at its named Confirm; a bill not due yet stays on the slips", () => {
+    const posts: (AddSubmitPayload | undefined)[] = [];
+    const due = billSlipsFor(household, { today, memberId: "MEM-001", view: "household" });
+    act(() => root.render(createElement(Harness, { mode: "bill", view: "household", posts, billRecurrenceId: due.due[0]!.recurrenceId })));
+    expect(host.querySelector("[data-bill-slip]")).toBeNull();
+    const named = host.querySelector<HTMLButtonElement>("[data-add-confirm-bill]")!;
+    expect(named.textContent).toBe("Record Hydro, $142.00, paid from Prepare");
+    expect(posts).toEqual([]);
+    act(() => { root.unmount(); root = createRoot(host); });
+    act(() => root.render(createElement(Harness, { mode: "bill", view: "household", posts, billRecurrenceId: due.upcoming[0]!.recurrenceId })));
+    expect(host.querySelector("[data-add-confirm-bill]")).toBeNull();
+    expect(host.querySelectorAll("[data-bill-slip]").length).toBe(1);
   });
 });
