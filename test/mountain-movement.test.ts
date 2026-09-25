@@ -337,9 +337,9 @@ describe('integration wiring (tuning track)',()=>{
     }
   });
   it('only the skill branches grind; the town race lane is paving to a board',()=>{
-    const field=skateField(),branches=new Set(SKILL_BRANCHES.map(b=>b.id));
-    for(const g of field.grindables)if(g.kind==='round-rail'&&!g.id.includes('rail'))expect(branches.has(g.id)||!g.id.match(/lane|path:|station:|road/),g.id).toBe(true);
-    expect(field.grindables.some(g=>g.id==='orchard-lane'||g.id.startsWith('path:'))).toBe(false);
+    const field=skateField();
+    // Of the mountain's walkable surfaces, only the branches grind (the park's own rails, ledges and copings stay).
+    expect(field.grindables.filter(g=>/^(orchard-lane|mountain-road|town-race-road|path:|station:)/.test(g.id)).map(g=>g.id)).toEqual([]);
     for(const b of SKILL_BRANCHES)expect(field.grindables.some(g=>g.id===b.id),b.id).toBe(true);
     for(let i=4;i<TOWN_RACE_ROAD.length;i+=6){const p=TOWN_RACE_ROAD[i]!;expect(field.sample(p[0],p[2],p[1]+.3).kind,`town lane ${i}`).not.toBe('grass');}
   });

@@ -159,7 +159,7 @@ node('road:b3-east','junction',roadAt(nearestRoadS(56,-209)));
 edge('stair','road:b3-east','station:funicular:reservoir',[[58,-216],[48,-221],[42,-224]],1.4,'stair:reservoir-steps');
 node('road:b2-east','junction',roadAt(nearestRoadS(31.5,-174)));
 // Rim steps: from the woodland bridge head (north side, where the deck sits on the rim) up the gorge
-// rim in four switchback flights to the road beyond the glass bridge. ~34° all the way up.
+// rim in four switchback flights to the road beyond the glass bridge (at most ~37°, level landings).
 node('road:rim-steps','stair-bottom',roadAt(nearestRoadS(25.6,-185.2)));
 node('road:rim-top','stair-top',roadAt(nearestRoadS(41,-213)));
 // Flights 4 apart and 1.9 half-wide, level landings at each turn: a body never falls between flights.
