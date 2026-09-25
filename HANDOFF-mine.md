@@ -29,7 +29,7 @@ Branch `claude/tool-atlas-mine` from `main@4e0234a3` (#545). Worktree `/home/cla
 
 - `vitest run test/mine-layer.test.ts test/mine-layer-ui.test.ts` — **20/20 pass**.
 - `test/our-path-world-ui.test.ts` (footpath / Mine cases, 4/4), `test/path-footpaths.test.ts` 6/6, `test/harbour-arrival.test.ts` 15/15, `test/harbour-source-fences.test.ts` 8/8, `test/desk-personal.test.ts` 11/11, `test/personal-journey.test.ts` 3/3, `test/harbour-reading.test.ts` 23/23 — pass.
-- `pnpm typecheck`: see the final line of this section (run under heavy shared load).
+- `tsc --noEmit` (the `pnpm typecheck` command, run once in full at `7c4aae7a`, ~28 min under shared load): **one error, in my own test** (`test/mine-layer.test.ts:108`, `householdForAiDisclosure`'s third argument is an options object). Fixed to `{ view: "household" }` and the file re-run green; the full tsc was not repeated for that one-line test fix. No error in any `src/` file.
 - The harbour flag is off in vitest, so the App suites (`app-startup-p1`, `month-rehearsal-mainline`) do not see the `flag.ts` change; the integrator's App wiring must run them.
 
 ## Wiring App.tsx needs (the integrator; I did not touch App.tsx)
@@ -98,7 +98,7 @@ Please review: `src/core/pathFootpaths.ts`, `src/harbour/mine/mineLayer.ts`, `sr
 - No browser run: placement over projected door rects, the dock fallback and the three dressings are unit-tested in jsdom, not seen at 320/390/720/1100 px or against the real map; the top-left ribbon may collide with B2's HUD chips — check the stack order (`z-index: 8`) when both land.
 - Anchors `visit:glasshouse` / `visit:kitchen` come from `village/layout.ts` entries; if the court renames them the groups dock (graceful, but no longer at the door).
 - Commit trailers use the session attribution (`Claude Opus 5.5`) from the environment's system reminder rather than the BUILD-BRIEF's `Claude Fable 5.1`.
-- `pnpm typecheck` under ~12× CPU contention (see below).
+- The full typecheck was not repeated after the one-line test fix (see Tests and tsc).
 
 ## Left for the integrator
 

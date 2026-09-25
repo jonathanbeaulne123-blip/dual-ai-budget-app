@@ -105,7 +105,7 @@ describe("Mine layer: the owner-only read model", () => {
     const before = JSON.stringify(h);
     mineLayer(h, B, TODAY);
     expect(JSON.stringify(h)).toBe(before);
-    const disclosed = JSON.stringify(householdForAiDisclosure(h, B, "household"));
+    const disclosed = JSON.stringify(householdForAiDisclosure(h, B, { view: "household" }));
     expect(disclosed).not.toContain("pottery night");
     expect(disclosed).not.toContain("PARTNER SECRET");
   });
