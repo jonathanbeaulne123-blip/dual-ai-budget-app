@@ -163,7 +163,7 @@ function monthFacts(presented: Household, monthKey: MonthKey, today: DateKey, po
       if (seen.has(row.transactionId)) continue;
       seen.add(row.transactionId);
       const delta = cashFlowDelta(row);
-      facts.coins.push({ id: row.transactionId, title: row.title, amountCents: Math.abs(delta) || row.amountCents, direction: delta < 0 ? "out" : delta > 0 ? "in" : "other" });
+      facts.coins.push({ id: row.transactionId, title: row.title, amountCents: Math.abs(delta) || Math.abs(row.amountCents), direction: delta < 0 ? "out" : delta > 0 ? "in" : "other" });
     }
     for (const { item } of day.scheduled) {
       const amountCents = Number.isFinite(item.amountCents) ? item.amountCents : null;

@@ -187,7 +187,7 @@ export function readLine3(input: CampCardInput): CardLine3 {
 
 /** Hercules's line: a Shift to record tonight comes first for a member with a job; then his top suggestion. */
 export function readHerculesLine(household: Household, memberId: string, space: LedgerSpace, today: DateKey): HerculesLine {
-  const working = (household.workJobs ?? []).some(job => job.memberId === memberId && (job as { active?: boolean }).active !== false);
+  const working = (household.workJobs ?? []).some(job => job.memberId === memberId && job.active);
   const recorded = household.shifts.some(shift => shift.memberId === memberId && shift.date === today);
   if (working && !recorded) return { kind: "record-shift", words: WORDS.shiftTonight };
   const hercules = readHercules(household, memberId, viewForSpace(space), today);

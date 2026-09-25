@@ -91,6 +91,8 @@ export function CampCard(props: CampCardProps) {
     const all = stops();
     const current = Math.min(stop, all.length - 1);
     all.forEach((el, i) => { el.tabIndex = i === current ? 0 : -1; });
+    // The pill's unchosen option is reached with ← / →, never with Tab.
+    root.current?.querySelectorAll<HTMLElement>('[role="radio"][aria-checked="false"]').forEach(el => { el.tabIndex = -1; });
   });
   const onFocusIn = () => {
     if (page) return;
