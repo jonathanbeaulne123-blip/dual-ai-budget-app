@@ -1,6 +1,6 @@
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
 import type { WaterCut, XY, XYZ } from '../interfaces';
-import { ellipse, lineOutline, linePoint, polygonDistance } from '../terrain/geometry';
+import { ellipse, lineOutline, linePoint, polygonDistance, segmentPoint } from '../terrain/geometry';
 import { islandContains } from '../coast';
 
 /** Authored hydrology. Heights are independent of route grading and household state.
@@ -48,7 +48,15 @@ export function waterHeightAt(water: WaterCut, x: number, z: number): number | n
 }
 /** Distance between the actual shoreline intersections along the authored Bight crossing. */
 export function bightMouthWidth(containsLand: (x: number, z: number) => boolean): number {
-  const s = requireScaleFactor(), a: XY = [460 * s, 1020 * s], b: XY = [700 * s, 1170 * s];
+  const s = requireScaleFactor(), centre = M.structures.bightBridge.xy;
+  const road = M.roads.V01.pts;
+  let nearest = Infinity, segment = 0;
+  for (let i = 1; i < road.length; i++) {
+    const a: XY = [road[i - 1]![0]!, road[i - 1]![1]!], b: XY = [road[i]![0]!, road[i]![1]!];
+    const distance = segmentPoint(centre[0]!, centre[1]!, a, b).distance;
+    if (distance < nearest) { nearest = distance; segment = i - 1; }
+  }
+  const a: XY = [road[segment]![0]! * s, road[segment]![1]! * s], b: XY = [road[segment + 1]![0]! * s, road[segment + 1]![1]! * s];
   const length = Math.hypot(b[0] - a[0], b[1] - a[1]);
   let wet = 0;
   for (let i = 0; i < 2000; i++) {

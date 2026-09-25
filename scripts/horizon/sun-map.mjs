@@ -100,3 +100,17 @@ for (const date of ['2026-06-21', '2026-12-21']) for (const clock of ['09:00', '
   await writeFile(resolve(probeDir, `${id}.json`), JSON.stringify({ revision: field.revision, terrainSha256: sha256, sun, receiverGrid: [width, height], rayStepEu: field.step * 2, terrainOnly: false, solidShadowRaster: solidMap ? { size: solidMap.size, triangles: solidMap.triangles, biasEu: solidMap.biasEu, limit: 'Thin structures below a light-raster texel may not cast a resolved map shadow; mouth probes use exact triangles.' } : null, counts, throat }, null, 2));
   console.log(JSON.stringify({ map: resolve(out, `${id}.png`), counts, elevation: sun.elevation, throat }));
 }
+for (const date of ['2026-06-21', '2026-12-21']) {
+  const samples = [];
+  for (let minute = 0; minute < 1440; minute += 15) {
+    const clock = `${String(Math.floor(minute / 60)).padStart(2, '0')}:${String(minute % 60).padStart(2, '0')}`;
+    const instant = api.solarReviewDate(new Date('2026-09-25T16:00:00Z'), `?date=${date}&sun=${clock}`, { dev: true, timeZone: 'America/Toronto' });
+    const sun = api.solarPosition(instant, { timeZone: 'America/Toronto' });
+    if (sun.geometricElevation <= 0) continue;
+    const solidHit = throatSolidShadow(sun.direction), terrainOccluded = occluded(1300, 119, 300, sun.direction, true);
+    samples.push({ clock, elevation: sun.elevation, azimuth: sun.azimuth, solidHit, terrainOccluded, inShade: solidHit.occluded || terrainOccluded });
+  }
+  const probeDir = resolve(out, '../probes');
+  await writeFile(resolve(probeDir, `throat-shade_${date}.json`), JSON.stringify({ revision: field.revision, terrainSha256: sha256, date, sampleMinutes: 15, allDaySamplesShaded: samples.every(s => s.inShade), samples }, null, 2));
+  console.log(JSON.stringify({ throatDate: date, daylightSamples: samples.length, unshaded: samples.filter(s => !s.inShade).map(s => s.clock) }));
+}

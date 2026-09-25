@@ -63,6 +63,41 @@ export async function bandReport(input) {
   }
   return { revision: field.revision, terrainSha256: sha256, probeSpacingEu: 5, toleranceEu: 0.02, exclusionRule: 'Clip to shoreline and exclude its 12 m stroke; higher-band precedence and 60 m blends; named water/banks and Notch; actual graded pads and bed blends; named mouths. Exclusions are never passing probes.', contourRule: 'First actual mid-band crossing along each compass ray from polygon centroid; null means an open contour. Only 32 measured rays can pass the full-compass condition.', bands };
 }
+export function waterReport({ api, field, cuts, sha256 }) {
+  const waters = [], rasterMargin = Math.SQRT2 * field.step;
+  for (const water of cuts.waters) {
+    if (water.underground || ['sea', 'lagoon'].includes(water.kind)) continue;
+    const result = { id: water.id, wetSamples: 0, wetFailures: 0, highestBedAboveWater: -Infinity, bankSamples: 0, bankFailures: 0, confluencesOrSea: 0, examples: [] };
+    const wet = (x, z, level) => {
+      const delta = api.sampleTerrain(field, x, z) - level; result.wetSamples++; result.highestBedAboveWater = Math.max(result.highestBedAboveWater, delta);
+      if (delta > 0.02) { result.wetFailures++; if (result.examples.length < 12) result.examples.push({ kind: 'wet', at: [x, z], delta }); }
+    };
+    const bank = (x, z, level) => {
+      if (!api.islandContains(x, z) || cuts.waters.some(w => w !== water && !w.underground && !['sea', 'lagoon'].includes(w.kind) && api.waterInfluence(w, x, z).distance < rasterMargin + 8)) { result.confluencesOrSea++; return; }
+      result.bankSamples++; const delta = api.sampleTerrain(field, x, z) - level;
+      if (delta < -0.02) { result.bankFailures++; if (result.examples.length < 12) result.examples.push({ kind: 'bank', at: [x, z], delta }); }
+    };
+    if (water.points.length) for (let j = 1; j < water.points.length; j++) {
+      const a = water.points[j - 1], b = water.points[j], dx = b[0] - a[0], dz = b[2] - a[2], length = Math.hypot(dx, dz);
+      for (let t = 0.05; t < 1; t += 0.05) {
+        const x = a[0] + dx * t, z = a[2] + dz * t, level = a[1] + (b[1] - a[1]) * t;
+        for (const side of [-0.99, -0.5, 0, 0.5, 0.99]) wet(x - side * dz / length * water.width / 2, z + side * dx / length * water.width / 2, level);
+        for (const side of [-1, 1]) bank(x - side * dz / length * (water.width / 2 + rasterMargin + 4.5), z + side * dx / length * (water.width / 2 + rasterMargin + 4.5), level);
+      }
+    }
+    else {
+      const centre = api.polygonCentre(water.outline); wet(...centre, water.level);
+      for (let j = 0; j < water.outline.length; j++) {
+        const a = water.outline[j], b = water.outline[(j + 1) % water.outline.length], dx = b[0] - a[0], dz = b[1] - a[1], length = Math.hypot(dx, dz);
+        const x = (a[0] + b[0]) / 2, z = (a[1] + b[1]) / 2;
+        wet(centre[0] + (x - centre[0]) * 0.99, centre[1] + (z - centre[1]) * 0.99, water.level);
+        bank(x + dz / length * (rasterMargin + 8.5), z - dx / length * (rasterMargin + 8.5), water.level);
+      }
+    }
+    result.passes = result.wetFailures === 0 && result.bankFailures === 0; waters.push(result);
+  }
+  return { revision: field.revision, terrainSha256: sha256, toleranceEu: 0.02, waterRasterMarginEu: rasterMargin, bankProbeRule: 'Bank starts outside the conservative wet raster footprint; confluences and sea are reported separately.', bightMouthWidthEu: api.bightMouthWidth(api.islandContains), waters };
+}
 export async function slopeMap() {
   const input = await mapInputs(), { api, field, cuts, out, sha256 } = input;
   const width = 800, height = 720, pixels = Buffer.alloc(width * height * 3), counts = { water: 0, walkable: 0, nonWalkable: 0 };
@@ -87,6 +122,7 @@ export async function slopeMap() {
   await saveMap(input, 'slope.png', pixels, width, height, 'The Horizon · actual slope map', 'Open ground: green ≤40°; brown &gt;40°. Route strokes use each authored segment’s measured rise/run.', 'Beds: dark green ≤6% · teal 6–8% · ochre 8–12% · red &gt;12% · water blue', segments.join(''));
   const probes = await bandReport(input), probeDir = resolve(out, '../probes'); await mkdir(probeDir, { recursive: true });
   await writeFile(resolve(probeDir, 'horizon-landforms.json'), JSON.stringify(probes, null, 2));
+  await writeFile(resolve(probeDir, 'horizon-water.json'), JSON.stringify(waterReport(input), null, 2));
   await writeFile(resolve(probeDir, 'horizon-slope.json'), JSON.stringify({ revision: field.revision, terrainSha256: sha256, walkableDegrees: 40, pixels: counts, bedSegments: gradeCounts, gradeClasses: ['<=6%', '6–8%', '8–12%', '>12%'] }, null, 2));
   console.log(JSON.stringify({ map: resolve(out, 'slope.png'), probes: resolve(probeDir, 'horizon-landforms.json'), bandsPassing: probes.bands.filter(b => b.passesBand).length, bands: probes.bands.length, contoursPassingFullCompass: probes.bands.filter(b => b.contour.passesFullCompass).length }));
 }
