@@ -19,6 +19,8 @@ export type MountainArtPalette={
   roof:RoofStyle;wall:WallStyle;
   ink:string;pencil:RGB;chalk:RGB;
   stone:RGB;stoneDark:RGB;coping:RGB;mortar:RGB;
+  /** Natural rock (crags, ledges, scree): the terrain's rock, a value lighter so its ledges catch the sun. */
+  rock:RGB;
   timber:RGB;timberLight:RGB;plank:RGB;
   roofTile:RGB;roofAlt:RGB;
   trim:RGB;brass:RGB;iron:RGB;
@@ -40,7 +42,7 @@ export function mountainArtPalette(d:PlaceDressing):MountainArtPalette{
   const court=COURT_DRESSING[d.theme];
   const base={ink:court.ink,pencil:shade(C(court.ink),1.6),chalk:C('#fbf5e6'),water:d.sea,foam:C('#f4f7f2'),lamp:C('#ffd98e')};
   if(d.theme==='taylor')return {...base,theme:d.theme,roof:'scallop',wall:'paper',
-    stone:C('#dcc8c4'),stoneDark:C('#b9a2a6'),coping:C('#f3e6e3'),mortar:C('#cdb2b8'),
+    stone:C('#dcc8c4'),stoneDark:C('#b9a2a6'),rock:C('#c2adb0'),coping:C('#f3e6e3'),mortar:C('#cdb2b8'),
     timber:C('#b08a92'),timberLight:C('#cfaab2'),plank:C('#d9bcc0'),
     roofTile:C('#8c6f93'),roofAlt:C('#c3899f'),trim:C('#fff8f4'),brass:C('#d9b26a'),iron:C('#6d5a74'),
     plaster:C('#f5ebe6'),walls:[C('#f1d6de'),C('#dcd3ec'),C('#f3e2cf'),C('#d4e4d8')],
@@ -52,7 +54,7 @@ export function mountainArtPalette(d:PlaceDressing):MountainArtPalette{
     signBoard:C('#fff8f4'),signText:'#6d4a64',accent:C(court.accent),second:C(court.second),paperEdge:C('#ffffff'),tape:[C('#e8a6bd'),C('#a9c9dd'),C('#f2d38a')],
     cloth:[C('#f3c4d2'),C('#dcd3ec'),C('#fff4d8'),C('#c9e2d6')]};
   if(d.theme==='newfoundland')return {...base,theme:d.theme,roof:'saltbox',wall:'clapboard',
-    stone:C('#8e9a9c'),stoneDark:C('#66737a'),coping:C('#b7c0bf'),mortar:C('#59656b'),
+    stone:C('#8e9a9c'),stoneDark:C('#66737a'),rock:C('#8a9597'),coping:C('#b7c0bf'),mortar:C('#59656b'),
     timber:C('#6d4b36'),timberLight:C('#93704f'),plank:C('#a98a66'),
     roofTile:C('#3b4a52'),roofAlt:C('#2f5b63'),trim:C('#f5f3ea'),brass:C('#d9b45b'),iron:C('#2e3a40'),
     plaster:C('#f3f1ea'),walls:[C('#c8453a'),C('#e7b53c'),C('#2f8a96'),C('#3f6fb0'),C('#79a353'),C('#d9772f')],
@@ -64,7 +66,7 @@ export function mountainArtPalette(d:PlaceDressing):MountainArtPalette{
     signBoard:C('#2f5b63'),signText:'#f5f3ea',accent:C('#c8453a'),second:C('#e7b53c'),paperEdge:C('#f5f3ea'),tape:[C('#c8453a'),C('#e7b53c')],
     cloth:[C('#f5f3ea'),C('#c8453a'),C('#3f6fb0'),C('#e7b53c')]};
   return {...base,theme:d.theme,roof:'gable',wall:'stone-timber',
-    stone:C('#d3bf99'),stoneDark:C('#a99270'),coping:C('#e6d6b6'),mortar:C('#8f7d60'),
+    stone:C('#d3bf99'),stoneDark:C('#a99270'),rock:C('#a3998a'),coping:C('#e6d6b6'),mortar:C('#8f7d60'),
     timber:C('#6b4a32'),timberLight:C('#9a7250'),plank:C('#b08a5e'),
     roofTile:C('#4d664b'),roofAlt:C('#8a5a3c'),trim:C('#f2e6c8'),brass:C('#caa252'),iron:C('#3f3a33'),
     plaster:C('#eadcbc'),walls:[C('#eadcbc'),C('#e3cfa6'),C('#d9c3a0'),C('#efe2c6')],

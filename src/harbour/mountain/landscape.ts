@@ -17,7 +17,6 @@ import {EngravedPlate} from '../court/engraved.ts';
 import {groundHeightAt} from '../scene/ground.ts';
 import {DISTRICTS,RESERVED_PLOTS,RIVER,DAM_PARTS,KITTY_CHAMBERS,GOAL_PAVILION_SITE,SUMMIT_OBSERVATORY_SITE,DOOR_APRONS,MOUNTAIN_PATH_GRAPH,type Point3,type TransportKind} from './definition.ts';
 import {TRANSPORT_LINES} from './transport.ts';
-import {RACE_FINISH,MOUNTAIN_COURSE_POINTS} from './course.ts';
 import {basinMoney,createBasinView} from './basin.ts';
 import {buildMountainLife} from './lifeScene.ts';
 import {PAVILION_COLUMNS} from './artGeometry.ts';
@@ -35,6 +34,7 @@ import {house,pavilion,observatory,type SignSpot} from './art/buildingArt.ts';
 import {buildPropArt} from './art/propArt.ts';
 import {buildPlantArt} from './art/plantArt.ts';
 import {buildBranchArt} from './art/branchArt.ts';
+import {buildRockArt} from './art/rockArt.ts';
 import {setStreamQuiet} from './streaming.ts';
 import {mountainProps} from './art/placements.ts';
 
@@ -54,6 +54,7 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   buildBridgeArt(card,pal);
   buildWaterArt(card,pal,tier);
   buildBranchArt(card,pal);
+  buildRockArt(card,pal,tier);
   // ── The dam ──
   const damGlass=new CardBuilder('Glass Fund dam',tier,{ink:pal.ink,shadows:false});
   const plaques=buildDamStructure(card,damGlass,pal,tier);
