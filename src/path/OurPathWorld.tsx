@@ -152,6 +152,8 @@ const QUALITY_KEY = "hearth:pathWorld:quality";
 /**
  * Per device and per member: whether my private footpaths and planks are drawn. Never synced.
  * Default on (it is the owner's own device); they never show at Dim, the shared-screen glance level.
+ * Tool Atlas D2: when the App passes `space`, the Ours | Mine pill is the only source — the private
+ * marks draw in Mine and never in Ours, this key is neither read nor written, and the toggle goes.
  */
 const mineKey = (memberId: string) => `hearth:pathWorld:mine:${memberId}`;
 /** Free roam (D-286): the controls are spelled out once per device, then never again. */
@@ -227,7 +229,7 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, onEnterHarbour, onZoomIntoHarbour, onWorldReady, journeyFocusDate, openWorldOnJourneySurface = false, onExitJourney, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini }: {
+export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, onEnterHarbour, onZoomIntoHarbour, onWorldReady, journeyFocusDate, openWorldOnJourneySurface = false, onExitJourney, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini, space }: {
   household: Household;
   memberId: string;
   today: DateKey;
@@ -284,6 +286,12 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
    * corner. Default: JourneyMini with the page's Fund and planner links. `null`: the flat map as a placeholder.
    */
   renderMini?: ((args: JourneyMiniSlotArgs) => ReactNode) | null;
+  /**
+   * Tool Atlas D2 (one island for both spaces): the space the App shows. "mine" draws my private
+   * footpaths and planks; "ours" never does. Absent: today's per-device "Mine" layer toggle.
+   * Nothing is persisted when it is given.
+   */
+  space?: "ours" | "mine";
 }) {
   const appearance = useAppearance();
   // Callback props are only used in handlers: read them through one ref so an inline arrow in the App never
@@ -336,10 +344,13 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   const [level, setLevel] = useState<PathLevel>(0);
   const [layers, setLayers] = useState({ weather: true, story: true, rhythm: true });
   // "Mine": my private footpaths. Per-device UI state only; nothing about footpaths is ever stored in the household.
-  const [mineState, setMineState] = useState(() => ({ memberId, on: readMine(memberId) }));
-  const mine = mineState.memberId === memberId ? mineState.on : readMine(memberId);
-  useEffect(() => { if (mineState.memberId !== memberId) setMineState({ memberId, on: readMine(memberId) }); }, [memberId, mineState.memberId]);
+  // With `space` given (D2) the App's space is the only source and nothing is read or written here.
+  const spaceDriven = space !== undefined;
+  const [mineState, setMineState] = useState(() => ({ memberId, on: spaceDriven ? false : readMine(memberId) }));
+  const mine = spaceDriven ? space === "mine" : mineState.memberId === memberId ? mineState.on : readMine(memberId);
+  useEffect(() => { if (!spaceDriven && mineState.memberId !== memberId) setMineState({ memberId, on: readMine(memberId) }); }, [memberId, mineState.memberId, spaceDriven]);
   const toggleMine = () => {
+    if (spaceDriven) return;
     const on = !mine;
     try { window.localStorage.setItem(mineKey(memberId), on ? "1" : "0"); } catch { /* per-device convenience only */ }
     setMineState({ memberId, on });
@@ -664,9 +675,10 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   }, [household, memberId, today]);
   const glanceSafe = lantern >= PRIVATE_LANTERN;
   const shownBridges = useMemo(() => bridges
-    .filter((bridge) => bridge.stage !== 1 || glanceSafe)
+    // My stage-1 plank is private: never at Dim, and with the App's space (D2) only in Mine.
+    .filter((bridge) => bridge.stage !== 1 || (glanceSafe && (!spaceDriven || mine)))
     .map((bridge) => ({ bridge, month: stoneMonth(bridge.month) }))
-    .filter((row) => row.month >= 0 && row.month <= shown), [bridges, glanceSafe, stoneMonth, shown]);
+    .filter((row) => row.month >= 0 && row.month <= shown), [bridges, glanceSafe, spaceDriven, mine, stoneMonth, shown]);
   const [narrow, setNarrow] = useState(readNarrow);
   useEffect(() => {
     const onResize = () => setNarrow(readNarrow());
@@ -2020,7 +2032,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
                         {(["weather", "story", "rhythm"] as const).map((key) => (
                           <button key={key} type="button" aria-pressed={layers[key]} onClick={() => setLayers((v) => ({ ...v, [key]: !v[key] }))}>{key === "weather" ? "Weather" : key === "story" ? "Story" : "Rhythm"}</button>
                         ))}
-                        <button type="button" aria-pressed={mine} title="My private footpaths — only you ever see them" onClick={toggleMine}>Mine</button>
+                        {!spaceDriven && <button type="button" aria-pressed={mine} title="My private footpaths — only you ever see them" onClick={toggleMine}>Mine</button>}
                       </div>
                     </div>
                     <button type="button" className="path-world__link path-world__drawer-plan" onClick={() => openPlanner(null)}>Plan our journey</button>

@@ -67,6 +67,9 @@ import { harbourCameraSlot } from "./scene/travel.ts";
 import { qualityTier, readQualityInput, type QualityTier, type RenderTier } from "./scene/quality.ts";
 import "./harbour.css";
 import "./interiors/interiors.css";
+import { emptyMineLayer, mineLayer, type MineSpace } from "./mine/mineLayer.ts";
+import { MineLayer, type MineOpenKind } from "./mine/MineLayer.tsx";
+import { MineRibbon } from "./mine/MineRibbon.tsx";
 
 /**
  * The Court's React shell (BUILD_PLAN #2). Props are `HouseWorld`'s plus the
@@ -102,6 +105,22 @@ export type HarbourWorldProps = {
   fab?: CompassFab;
   /** The App's space switch, for the Desk's header (Simple View Desk S5). */
   spaceSlot?: ReactNode;
+  /**
+   * Which space the harbour shows (Tool Atlas D2: one island for both). "mine"
+   * draws the owner-only Mine layer and the Mine ribbon on this same map; the
+   * Ours | Mine pill and the App's `view` are the source, nothing persists.
+   * Absent reads as "ours". Hosts keep their meaning: the reading stays the
+   * household's (the Fund bank is always the shared Fund).
+   */
+  space?: MineSpace;
+  /**
+   * The household the Mine layer reads: the signed-in member's own assembled
+   * source (the App's `personalSource ?? household`, the same one the personal
+   * Desk reads). Absent, `household`. Only its owner-only rows are drawn.
+   */
+  mineHousehold?: Household;
+  /** Open a Mine mark's own tool (a step or footpath → the Glasshouse steps; a bank → its Kitty Bank). `id` null = the whole list. */
+  onOpenMine?: (kind: MineOpenKind, id: string | null) => void;
   children?: ReactNode;
 };
 
@@ -154,6 +173,7 @@ const pulseFreshness = (gate: InterpretationGate | undefined): FundPulseFreshnes
 
 export default function HarbourWorld(props: HarbourWorldProps) {
   const { household, memberId, scope, today, route, ready, freshness, interpretationGate, onOpen, onClose, presence, onUnhide, partnerName = null, onQuickSheet } = props;
+  const space: MineSpace = props.space === "mine" ? "mine" : "ours";
   const appearance = useAppearance(), theme: ThemeId = appearance.preview ?? appearance.saved.theme;
   const host = useRef<HTMLDivElement>(null), stage = useRef<HTMLDivElement>(null);
   const runtime = useRef<HarbourRuntime | null>(null), court = useRef<QueenHost | null>(null), queen = useRef<QueenPlace | null>(null);
@@ -1103,6 +1123,14 @@ export default function HarbourWorld(props: HarbourWorldProps) {
    * behind an open tool; the Desk never stands in the loading path.
    */
   const desk = (status === "flat" || status === "fallback") && !toolOpen;
+  // The Mine layer (D2): read only in Mine, only from the signed-in member's own rows.
+  const mineSource = props.mineHousehold ?? household;
+  const mine = useMemo(() => space === "mine" ? mineLayer(mineSource, memberId, today) : emptyMineLayer(memberId), [space, mineSource, memberId, today]);
+  const openMine = (kind: MineOpenKind, id: string | null) => {
+    if (props.onOpenMine) { props.onOpenMine(kind, id); return; }
+    if (kind === "bank") onOpen("loft-banks", id ? `bank/${id}` : undefined);
+    else onOpen("planner");
+  };
   /**
    * Say it, quietly, to the person who has just landed. It is shown only while
    * the stage is not holding the keyboard and there is a body here to walk,
@@ -1115,11 +1143,13 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const invite = status === "ready" && !toolOpen && standing && !stageHasKeys;
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => navigatePlace("court");
-  return <section className={`harbour-world harbour-world--${theme}${skating?" is-skating":""}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={placeName}>
+  return <section data-harbour-space={space} className={`harbour-world harbour-world--${theme}${skating?" is-skating":""}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={placeName}>
       <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : showFlat ? `${placeName}. Reading edition. Every destination is a button.` : skating?"Skate the Harbour. W pushes, A turns left, D turns right, S brakes. Hold Space and release to jump farther. Press and hold Space again in the air to drift toward a nearby rail or wall ride surface. In the air after a Space jump, the arrows do board tricks; tap W for a backflip, S for a frontflip, and hold A or D to spin. Keys 1 to 6 emote while riding. Hold the down arrow and flick up to ollie, flick to a corner to flip. Q and E grab, G locks onto rails, M manuals, R returns to your marker, P pauses, B walks.":stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) {setStageHasKeys(false);orbitKeys.current.clear();runtime.current?.gesture({kind:"spin",dir:0});runtime.current?.body()?.skate?.input()?.reset?.();if(held.current.size){held.current.clear();pushBody();}if(!event.currentTarget.contains(event.relatedTarget as Node))runtime.current?.body()?.skate?.pause(true);} }}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {((showFlat && !desk) || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} overlay={status === "loading" && tier !== "flat"} />}
       {(deskVisited || desk) && <DeskShell key={`${household.environment}:${household.householdId}:${memberId}:${scope}`} hidden={!desk} ready={ready} interpretationGate={interpretationGate} titleId={desk?"house-world-title":undefined} context={<DeskPlace outdoorAt={outdoorAtRef.current} reading={reading} place={place} onOpen={onOpen} onVisit={navigatePlace} onGuide={()=>setGuideOpen(true)}/>} household={household} memberId={memberId} scope={scope} today={today} reading={reading} theme={theme} status={status === "fallback" ? "fallback" : "flat"} onOpen={onOpen} onQuickSheet={onQuickSheet} spaceSlot={props.spaceSlot} />}
+      {!toolOpen && !desk && <MineRibbon space={space} />}
+      {space === "mine" && status === "ready" && !toolOpen && <MineLayer layer={mine} place={place} rects={rects} hidden={Boolean(skating || monorail)} onOpen={openMine} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating||monorail)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
       {(status==="ready"||desk)&&!toolOpen&&<VillageHUD flat={desk} onGuide={()=>{setGuideOpen(open=>!open);setMountainInspect(undefined);}} guideOpen={guideOpen} appearanceRequest={appearanceRequest} fab={props.fab} onQuickSheet={onQuickSheet} place={place} travelling={travelTo} onVisit={visit} onWander={wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={desk?undefined:chooseAvatar} onJourney={!desk&&props.onJourney?openJourney:undefined} onArrange={!desk&&props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
         presence={<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} worldUnavailable={partnerWalk.unavailable} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />}/>}

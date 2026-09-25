@@ -1,3 +1,18 @@
+/**
+ * @deprecated As the **personal** house (T63 "My private house") this screen is retired by the
+ * Tool Atlas (K4, decision D2, 2026-09-25): one island for both spaces. `harbourOwnsRoute` now owns
+ * personal routes, so the App's final `HouseWorld` branch is reachable only for the Journey surface
+ * (`harbourOwnsRoute` refuses `surface: "journey"` in both spaces), a room the harbour does not own
+ * (none today), or with the harbour flag off. Kept compiling until the integrator removes its mount. Where each feature now lives:
+ * - the personal house rooms → the same hosts on the household harbour, in Mine (hosts keep their meaning);
+ * - the ceramic banks upstairs → the Loft's private shelf in the Mine layer (`harbour/mine/`);
+ * - the bill jars below → the Cellar (bills are shared; personal bills show in the personal Desk's Leaving);
+ * - the position card ("dated position and next commitment") → the personal camp card
+ *   (`harbour/desk/personalModel.ts` `readPersonalToday`, exposed as `mineCamp`);
+ * - the private pottery studio (Together / Making in personal) → a private Kitty Bank's studio tab;
+ * - the Queen's dressing in personal (T14) → Settings › Appearance.
+ * Do not add features here; nothing new may import this module (fenced in `test/mine-layer-ui.test.ts`).
+ */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { DateKey } from "../core/calendar.ts";
 import type { Household, LedgerView, KittyGlaze } from "../core/types.ts";
@@ -24,6 +39,7 @@ import "./houseWorld.css";
 
 
 type Props={household:Household;memberId:string;scope:LedgerView;today:DateKey;route:HouseRoute;ready:boolean;freshness:string;interpretationGate?:InterpretationGate;onNavigate:(room:HouseRoom,level:HouseLevel,replace?:boolean)=>void;onOpen:(target:string,object?:string)=>void;onClose:()=>void};
+/** @deprecated Tool Atlas D2: the personal house is retired; the harbour draws Mine on the household map. */
 export function HouseWorld({household,memberId,scope,today,route,ready,freshness,interpretationGate,onNavigate,onOpen,onClose}:Props){
   const appearance=useAppearance(),theme=appearance.preview??appearance.saved.theme;
   const host=useRef<HTMLDivElement>(null),runtime=useRef<HouseRuntime|null>(null),buttons=useRef(new Map<string,HTMLElement>());

@@ -69,7 +69,7 @@ describe("src/harbour source fences", () => {
     // body and the seam the live-position lane installs itself into. Like every
     // other directory here, neither reaches anything outside the harbour, which
     // the import fence below is what proves.
-    const dirs = ["bubbles", "panels", "court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "body", "presence", "interiors", "village", "skate", "mountain", "desk", "art", "horizon", "glass"];
+    const dirs = ["bubbles", "panels", "court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "body", "presence", "interiors", "village", "skate", "mountain", "desk", "art", "horizon", "glass", "mine"];
     const seen = new Set(files.map((f) => relative(harbour, f).replace(/\\/g, "/").split("/")[0]).filter((part) => part && !part.endsWith(".ts") && !part.endsWith(".tsx")));
     for (const dir of ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat"]) expect([...seen]).toContain(dir);
     for (const name of [...seen]) expect(dirs).toContain(name);
