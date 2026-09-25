@@ -42,7 +42,7 @@ export function mountainArtPalette(d:PlaceDressing):MountainArtPalette{
   const court=COURT_DRESSING[d.theme];
   const base={ink:court.ink,pencil:shade(C(court.ink),1.6),chalk:C('#fbf5e6'),water:d.sea,foam:C('#f4f7f2'),lamp:C('#ffd98e')};
   if(d.theme==='taylor')return {...base,theme:d.theme,roof:'scallop',wall:'paper',
-    stone:C('#dcc8c4'),stoneDark:C('#b9a2a6'),rock:C('#c2adb0'),coping:C('#f3e6e3'),mortar:C('#cdb2b8'),
+    stone:C('#dcc8c4'),stoneDark:C('#b9a2a6'),rock:C('#c8bcb0'),coping:C('#f3e6e3'),mortar:C('#cdb2b8'),
     timber:C('#b08a92'),timberLight:C('#cfaab2'),plank:C('#d9bcc0'),
     roofTile:C('#8c6f93'),roofAlt:C('#c3899f'),trim:C('#fff8f4'),brass:C('#d9b26a'),iron:C('#6d5a74'),
     plaster:C('#f5ebe6'),walls:[C('#f1d6de'),C('#dcd3ec'),C('#f3e2cf'),C('#d4e4d8')],

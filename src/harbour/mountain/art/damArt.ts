@@ -155,7 +155,7 @@ export function buildDamWater(pal:MountainArtPalette,glassMaterial:THREE.Materia
     for(let k=0;k<outline.length;k++){const p=outline[k]!,q=outline[(k+1)%outline.length]!;
       if(Math.hypot(p[0]-C[0],p[1]-C[2])>R-1.2||Math.hypot(q[0]-C[0],q[1]-C[2])>R-1.2)continue;
       const out=(v:[number,number],d:number):[number,number]=>{const dx=v[0]-cx,dz=v[1]-cz,l=Math.hypot(dx,dz)||1;return [v[0]+dx/l*d,v[1]+dz/l*d];};
-      const ring=(v:[number,number],d:number,a:number,c:readonly number[]):number[]=>{const [x,z]=out(v,d);return [x,Math.max(y+.03,g(x,z)+.04),z,c[0]!,c[1]!,c[2]!,a];};
+      const ring=(v:[number,number],d:number,a:number,c:readonly number[]):number[]=>{const [x,z]=out(v,d);return [x,Math.min(y+.3,Math.max(y+.03,g(x,z)+.04)),z,c[0]!,c[1]!,c[2]!,a];};
       const quad=(d0:number,d1:number,a0:number,a1:number,c0:readonly number[],c1:readonly number[])=>{const A=ring(p,d0,a0,c0),B=ring(q,d0,a0,c0),Cc=ring(q,d1,a1,c1),D=ring(p,d1,a1,c1);
         for(const v of [A,B,Cc,A,Cc,D]){pos.push(v[0]!,v[1]!,v[2]!);col.push(v[3]!,v[4]!,v[5]!,v[6]!);}};
       quad(-.35,.25,.0,.85,foam,foam);quad(.25,1.6,.85,.0,foam,wet);}

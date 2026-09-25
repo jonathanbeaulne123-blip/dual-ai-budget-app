@@ -27,10 +27,21 @@ export function buildWaterArt(bld:CardBuilder,pal:MountainArtPalette,tier:'full'
   // On the mountain the water tucks under its carved banks; in town it stops at the kerbs' inner faces.
   const width=(r:{p:Point3})=>r.p[2]>-40?RIVER_HALF_WIDTH-.05:r.p[2]>-48?RIVER_HALF_WIDTH+.9-(r.p[2]+48)/8*.95:RIVER_HALF_WIDTH+.9;
   const white:RGB=[1,1,1];
+  // In town the channel's water is drawn a hand's depth below the lower bank, so it always lies
+  // inside its cut and under its kerbs (the square's ground is at or a little below the water line).
+  const waterY=(r:{p:Point3;side:V3})=>{
+    const t=Math.min(1,Math.max(0,(r.p[2]+48)/8));if(t<=0)return r.p[1];
+    const bank=Math.min(groundHeightAt(r.p[0]+r.side[0]*(RIVER_HALF_WIDTH+.6),r.p[2]+r.side[2]*(RIVER_HALF_WIDTH+.6)),groundHeightAt(r.p[0]-r.side[0]*(RIVER_HALF_WIDTH+.6),r.p[2]-r.side[2]*(RIVER_HALF_WIDTH+.6)));
+    return r.p[1]+(Math.min(r.p[1],bank-.16)-r.p[1])*t;
+  };
+  // Lanes cross on paved culvert slabs; the water runs under them, out of sight.
+  const culverts=TOWN_SQUARE.crossings.filter(c=>c.kind==='culvert').map(c=>c.at);
+  const underSlab=(r:{p:Point3})=>culverts.some(c=>Math.hypot(r.p[0]-c[0],r.p[2]-c[1])<1.7);
   for(let i=1;i<R.length;i++){
     const a=R[i-1]!,b=R[i]!;
+    if(underSlab(a)&&underSlab(b))continue;
     // The water surface sits just above its line; its edges tuck under the banks.
-    const A=(u:number,r:typeof a):V3=>{const hw=width(r);return [r.p[0]+r.side[0]*u*hw,r.p[1]+.03,r.p[2]+r.side[2]*u*hw];};
+    const A=(u:number,r:typeof a):V3=>{const hw=width(r);return [r.p[0]+r.side[0]*u*hw,waterY(r)+.03,r.p[2]+r.side[2]*u*hw];};
     const foam=(r:typeof a)=>Math.min(1,Math.max(0,(r.drop-.12)*3.2));
     const ca=mix(white,[1.45,1.5,1.48],foam(a)),cb=mix(white,[1.45,1.5,1.48],foam(b));
     for(const [u0,u1] of [[-1,0],[0,1]] as const){
@@ -56,7 +67,7 @@ export function buildWaterArt(bld:CardBuilder,pal:MountainArtPalette,tier:'full'
     if(c.kind==='footbridge'){footbridge(bld,pal,best,tx,tz);continue;}
     // The lane crosses on its dry causeway: a paved slab level with the lane, low headwalls either side
     // (a knee-high parapet with a coping), and the channel running through a dark arched mouth beneath.
-    const yaw=Math.atan2(best.side[0],best.side[2]),lane=groundHeightAt(best.p[0],best.p[2]),water=best.p[1],half=RIVER_HALF_WIDTH+.85;
+    const yaw=Math.atan2(best.side[0],best.side[2]),lane=groundHeightAt(best.p[0],best.p[2]),water=waterY(best),half=RIVER_HALF_WIDTH+.85;
     bld.box(best.p[0],best.p[2],yaw,1.95,half,lane-.32,lane+.03,shade(pal.coping,.96),pal.stone,bld.pencil);
     for(let k=-3;k<=3;k++){const u=k/3*(half-.1);bld.line(inkLift([best.p[0]+best.side[0]*u-tx*1.9,lane+.03,best.p[2]+best.side[2]*u-tz*1.9]),inkLift([best.p[0]+best.side[0]*u+tx*1.9,lane+.03,best.p[2]+best.side[2]*u+tz*1.9]),bld.pencil);}
     for(const e of [-1,1]){
@@ -64,8 +75,8 @@ export function buildWaterArt(bld:CardBuilder,pal:MountainArtPalette,tier:'full'
       bld.box(cx,cz,yaw,.2,half,water-.4,lane+.36,pal.stone,shade(pal.stone,.85));
       bld.box(cx,cz,yaw,.26,half+.08,lane+.36,lane+.48,pal.coping,shade(pal.coping,.82));
       // The arch mouth as a dark card with its ring inked, from the water up to under the slab.
-      const rise=Math.max(.3,Math.min(.8,lane-.36-water)),face=(u:number,v:number):V3=>[cx+best.side[0]*u+tx*e*.22,water+v,cz+best.side[2]*u+tz*e*.22];
-      for(let k=0;k<8;k++){const a0=k/8*Math.PI,a1=(k+1)/8*Math.PI,r=RIVER_HALF_WIDTH*.85;
+      const rise=Math.min(.8,lane-.34-water),face=(u:number,v:number):V3=>[cx+best.side[0]*u+tx*e*.22,water+v,cz+best.side[2]*u+tz*e*.22];
+      if(rise>.12)for(let k=0;k<8;k++){const a0=k/8*Math.PI,a1=(k+1)/8*Math.PI,r=RIVER_HALF_WIDTH*.85;
         bld.tri(face(0,-.02),face(Math.cos(a0)*r,Math.sin(a0)*rise),face(Math.cos(a1)*r,Math.sin(a1)*rise),[.12,.13,.13]);
         bld.line(inkLift(face(Math.cos(a0)*(r+.08),Math.sin(a0)*(rise+.06))),inkLift(face(Math.cos(a1)*(r+.08),Math.sin(a1)*(rise+.06))));}
     }

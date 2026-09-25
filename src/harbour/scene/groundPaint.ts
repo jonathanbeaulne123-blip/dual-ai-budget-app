@@ -136,7 +136,7 @@ const sm=(e0:number,e1:number,v:number)=>{const t=sat((v-e0)/(e1-e0));return t*t
 function groundPalette(d:PlaceDressing){
   const lawn=col(d.lawn),moss=col(d.moss),stone=col(d.stone),joint=col(d.joint),plinth=col(d.plinth);
   const theme=d.theme;
-  const rock=theme==='taylor'?lerp(col('#b89fa4'),joint,.25):theme==='newfoundland'?lerp(stone,col('#56636a'),.45):lerp(col('#978a74'),col('#7c776c'),.45);
+  const rock=theme==='taylor'?lerp(col('#c0b3a8'),joint,.18):theme==='newfoundland'?lerp(stone,col('#56636a'),.45):lerp(col('#978a74'),col('#7c776c'),.45);
   const grass={
     garden:lerp(lawn,moss,.12),
     orchard:lerp(lawn,col(theme==='taylor'?'#d8d59a':'#b9b35e'),.22),

@@ -53,7 +53,7 @@ export function plantingClearance(x:number,z:number,opts:{bowl?:boolean}={}):num
   for(const [dx,dz,r] of discs()){const d=Math.hypot(x-dx,z-dz)-r;if(d<best)best=d;}
   // The dam, its apron and the reservoir bowl (`bowl:false` keeps only the dam's own band, for rock that may line the bowl).
   const dd=Math.hypot(x-DAM.centre[0],z-DAM.centre[2]);
-  if(opts.bowl===false){if(Math.abs(dd-DAM.radius)<8&&z>DAM.centre[2]-30)best=Math.min(best,Math.abs(dd-DAM.radius)-8);return best;}
+  if(opts.bowl===false){if(Math.abs(dd-DAM.radius)<8&&Math.abs(Math.atan2(x-DAM.centre[0],z-DAM.centre[2]))<DAM.halfAngle*1.3)best=Math.min(best,Math.abs(dd-DAM.radius)-8);return best;}
   if(dd<DAM.radius+8&&z>DAM.centre[2]-30)best=Math.min(best,dd-DAM.radius-8);
   if(Math.hypot(x-(DAM.centre[0]-2),z-(DAM.centre[2]-6))<40&&mountainBaseHeight(x,z)<88)best=Math.min(best,-1);
   return best;
