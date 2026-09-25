@@ -5,8 +5,7 @@
 import {FUNICULAR_LINE} from './transport.ts';
 import {MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE,GORGE_BRIDGES,type Bridge} from './roads.ts';
 import {mountainGround} from './mountainGround.ts';
-import {CANAL_BRIDGE} from './course.ts';
-import {islandHeight} from './islandShape.ts';
+import {CANAL_BRIDGE,TOWN_LANE_DECK} from './course.ts';
 import type {Point3} from './math.ts';
 
 export type Crossing={id:string;over:'funicular'|'road'|'lane';under:'funicular'|'road'|'lane';at:Point3;overY:number;underY:number;clearance:number};
@@ -36,6 +35,6 @@ export const BRIDGES:readonly Bridge[]=[
     return {id:`funicular-viaduct-${i}`,name:'Funicular viaduct',type,carries:'funicular',s0:0,s1:0,a,b,span:Math.hypot(b[0]-a[0],b[2]-a[2]),deckThickness:FUNICULAR_DECK,clearance:c.clearance,
       piers:[a,b].map(p=>[p[0],mountainGround(p[0],p[2]),p[2]] as Point3),crosses:[c.under],halfWidth:1.8,deck};
   }),
-  {id:CANAL_BRIDGE.id,name:CANAL_BRIDGE.name,type:CANAL_BRIDGE.type,carries:'race-lane',s0:0,s1:0,a:[CANAL_BRIDGE.at[0]+3,islandHeight(CANAL_BRIDGE.at[0]+3,CANAL_BRIDGE.at[2]-3.5)+.06,CANAL_BRIDGE.at[2]-3.5],b:[CANAL_BRIDGE.at[0]-3,islandHeight(CANAL_BRIDGE.at[0]-3,CANAL_BRIDGE.at[2]+3.5)+.06,CANAL_BRIDGE.at[2]+3.5],
-    span:CANAL_BRIDGE.span,deckThickness:.5,clearance:.6,piers:[],crosses:['town-channel'],halfWidth:CANAL_BRIDGE.halfWidth,deck:[]},
+  {id:CANAL_BRIDGE.id,name:CANAL_BRIDGE.name,type:CANAL_BRIDGE.type,carries:'race-lane',s0:0,s1:0,a:CANAL_BRIDGE.a,b:CANAL_BRIDGE.b,
+    span:CANAL_BRIDGE.span,deckThickness:.5,clearance:.6,piers:[],crosses:['town-channel'],halfWidth:CANAL_BRIDGE.halfWidth,deck:TOWN_LANE_DECK},
 ];

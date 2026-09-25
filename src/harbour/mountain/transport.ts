@@ -65,10 +65,12 @@ function makeLine(kind:TransportKind,path:readonly Point3[],cruise:number,statio
 
 /** Funicular: town, the lower neighbourhood, Library Woods and Reservoir Heights. */
 const FUNICULAR_CONTROL:readonly {at:readonly[number,number];y:number;station?:{id:string;name:string;side:1|-1}}[]=[
-  {at:[-2,-40],y:islandHeight(-2,-40)+.3,station:{id:'town',name:'Town square',side:-1}},
-  {at:[-2,-49],y:3.4},{at:[1,-57],y:7.6},{at:[5,-66],y:11.8},{at:[8,-75],y:14.2},
-  {at:[8.5,-83],y:15.4,station:{id:'hearth',name:'Lower neighbourhood',side:-1}},
-  {at:[10,-91],y:19.2},{at:[11,-97],y:23.8},{at:[12.2,-106],y:26.6},{at:[13.2,-116],y:29.2},{at:[15.6,-134],y:33.6},{at:[18.4,-148],y:37.6},
+  // Town station west of the north lane (clear of the Northlight run and the lane's end), up past
+  // Northlight, over the harbour bridge and the river, to the lower-neighbourhood station.
+  {at:[-19.5,-36],y:islandHeight(-19.5,-36)+.3,station:{id:'town',name:'Town square',side:-1}},
+  {at:[-19,-45],y:3},{at:[-17.8,-54],y:5.8},{at:[-14.5,-62.5],y:8.8},{at:[-10.5,-70],y:11.6},{at:[-7.5,-78],y:13.6},{at:[-4.5,-84],y:14.6},{at:[0,-87.5],y:15.2},
+  {at:[5,-89],y:15.6,station:{id:'hearth',name:'Lower neighbourhood',side:-1}},
+  {at:[9.5,-94],y:19.6},{at:[11.2,-100],y:24.2},{at:[12.2,-106],y:26.6},{at:[13.2,-116],y:29.2},{at:[15.6,-134],y:33.6},{at:[18.4,-148],y:37.6},
   {at:[20,-156],y:39.6,station:{id:'library',name:'Library Woods',side:1}},
   {at:[22,-168],y:45.5},{at:[25,-186],y:60},{at:[29,-206],y:80.6},{at:[34,-218],y:86},
   {at:[39,-226],y:87.6,station:{id:'reservoir',name:'Reservoir Heights',side:1}},
@@ -86,7 +88,7 @@ function funicular():TransportLine{
 const GONDOLA_HANG=3.1,SUMMIT_STATION_Y=104.05;
 /** Gondola: tower tops and stations; each span sags as a catenary (parabolic approximation). */
 const GONDOLA_SUPPORTS:readonly {at:readonly[number,number];top:number;station?:{id:string;name:string}}[]=[
-  {at:[-44,40],top:islandHeight(-44,40)+.05+GONDOLA_HANG,station:{id:'quay',name:'Waterfront'}},
+  {at:[-26,46],top:islandHeight(-26,46)+.05+GONDOLA_HANG,station:{id:'quay',name:'Waterfront'}},
   {at:[-58,-54],top:46},
   {at:[-80,-150],top:74},
   {at:[62,-214],top:104},

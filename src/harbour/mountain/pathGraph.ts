@@ -54,10 +54,10 @@ function door(id:MountainBuilding,level:number,label:string){
 // ——— Town entries ————————————————————————————————————————————————————————————
 node('town:north','town',[-3,islandHeight(-3,-43),-43],{label:'North lane'});
 node('road:foot','junction',roadAt(0),{label:'Road foot'});
-edge('path','town:north','road:foot',[[-14,-37]],1.8);
 // ——— Stations ——————————————————————————————————————————————————————————————
 for(const line of [FUNICULAR_LINE,GONDOLA_LINE])for(const st of line.stations)node(`station:${line.kind}:${st.id}`,'station',st.platform.at,{label:`${st.name} ${line.kind}`,facing:st.platform.yaw});
-edge('path','town:north','station:funicular:town',[],1.6);
+edge('path','town:north','station:funicular:town',[[-10,-38.5]],1.6);
+edge('path','station:funicular:town','road:foot',[],1.8);
 // ——— Districts ——————————————————————————————————————————————————————————————
 for(const d of DISTRICTS)node(`district:${d.id}`,'district',d.at,{district:d.id,label:d.name});
 // Hearth Terrace: home door, the harbour steps, the funicular's lower-neighbourhood station.
@@ -72,13 +72,13 @@ node('road:leg2-steps-b','stair-bottom',roadAt(nearestRoadS(52,-82)));
 node('road:leg3-steps','stair-top',roadAt(nearestRoadS(44,-100.5)));
 edge('stair','road:leg2-steps-b','road:leg3-steps',[[50,-88.5],[46,-94]],1.4,'stair:hearth-steps');
 node('lane:junction','junction',ORCHARD_LANE_CENTRE[0]!);
-node('road:station-steps','stair-bottom',roadAt(nearestRoadS(16,-73.5)));
-edge('stair','road:station-steps','station:funicular:hearth',[[12,-76.5],[9.5,-78]],1.4,'stair:station-steps');
+node('road:station-steps','stair-bottom',roadAt(nearestRoadS(12,-76.5)));
+edge('stair','road:station-steps','station:funicular:hearth',[[10,-82]],1.4,'stair:station-steps');
 node('road:hairpin-2-west','junction',roadAt(nearestRoadS(19,-93)));
-edge('path','station:funicular:hearth','road:hairpin-2-west',[[8,-90]]);
+edge('path','station:funicular:hearth','road:hairpin-2-west',[[11,-91]]);
 // The river path from the town station: a footbridge over the stream, up to the road east of the harbour bridge.
 node('path:river-west','junction',[-4.5,2.2,-51]);node('path:river-east','junction',[5.5,2.6,-57]);
-edge('path','station:funicular:town','path:river-west',[[-5,-45]]);
+edge('path','town:north','path:river-west',[[-4,-47]]);
 edge('bridge','path:river-west','path:river-east',[],1.3,'bridge:river-footbridge');
 edge('path','path:river-east','road:station-steps',[[10,-64]]);
 node('overlook:hearth','overlook',[46,district('hearth').at[1],-110],{facing:Math.atan2(-46,110),label:'Harbour lookout'});

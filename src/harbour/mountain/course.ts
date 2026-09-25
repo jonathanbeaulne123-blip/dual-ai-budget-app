@@ -7,7 +7,7 @@
 import {MOUNTAIN_ROAD_LINE} from './roads.ts';
 import {roadTagS} from './roadLine.ts';
 import {islandHeight} from './islandShape.ts';
-import {DAM,GEOGRAPHY_REVISION,MOUNTAIN_VERSION} from './places.ts';
+import {DAM,GEOGRAPHY_REVISION,MOUNTAIN_VERSION,RIVER} from './places.ts';
 import {arcLengths,authorCurve,mix,type Point3} from './math.ts';
 
 /** Legacy uphill polyline of the mountain road (every third 1-unit sample, ends included). */
@@ -16,10 +16,11 @@ const ROAD_PLAN_S=arcLengths(MOUNTAIN_ROAD,true);
 
 /** The town lane: from the road foot, past the bank's east side, over the canal, onto the quay. */
 /** Down the west side of town, over the canal, east along the quay (finish), and a long run-out. */
-const TOWN_LANE_PLAN:readonly(readonly[number,number])[]=[[-26.5,-34],[-26.5,-22],[-26,-10],[-24.5,2],[-21,13],[-14.5,20],[-7,22.5],[0.5,25.5],[7,31],[12,38],[16,44.5],[22,48.2],[30,50.4],[38,52.2],[45,53.6]];
+const TOWN_LANE_PLAN:readonly(readonly[number,number])[]=[[-26.5,-34],[-26.5,-22],[-26,-10],[-24.5,2],[-21,13],[-16,22],[-10.5,27.5],[-4,27],[3,24],[10,25],[16,30.5],[20.5,38],[23.5,45],[30,50.4],[38,52.2],[45,53.6]];
 export const TOWN_LANE_HALF_WIDTH=3.5;
-/** The town lane's canal bridge (the lane deck spans the plaza channel). */
-export const CANAL_BRIDGE={id:'canal-bridge',name:'Canal bridge',type:'masonry' as const,at:[-6.9,-1,22.5] as Point3,span:9,halfWidth:TOWN_LANE_HALF_WIDTH};
+const riverDistance=(x:number,z:number)=>{let best=Infinity;for(let i=1;i<RIVER.length;i++){const a=RIVER[i-1]!,b=RIVER[i]!;if(a[2]<-40)continue;const dx=b[0]-a[0],dz=b[2]-a[2],l=dx*dx+dz*dz,t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[2])*dz)/(l||1)));best=Math.min(best,Math.hypot(x-a[0]-dx*t,z-a[2]-dz*t));}return best;};
+/** Beyond this distance from the water line the town channel leaves the ground untouched. */
+const CHANNEL_REACH=6.2;
 export const TOWN_RACE_ROAD:readonly Point3[]=(()=>{
   const foot=MOUNTAIN_ROAD[0]!,plan:[number,number,number][]=[[foot[0],foot[1],foot[2]],...TOWN_LANE_PLAN.map(([x,z])=>[x,islandHeight(x,z)+.06,z] as [number,number,number])];
   const curve=authorCurve(plan,1.5,0).points;
@@ -27,8 +28,14 @@ export const TOWN_RACE_ROAD:readonly Point3[]=(()=>{
   // without meeting a kerb). Only the canal bridge is a deck, flush with the banks it joins.
   return curve.map((p,i)=>i===0?foot:[p[0],islandHeight(p[0],p[2]),p[2]] as Point3);
 })();
-/** The part of the town lane that is a deck: the canal bridge over the town channel. */
-export const TOWN_LANE_DECK:readonly Point3[]=TOWN_RACE_ROAD.filter(p=>Math.hypot(p[0]-CANAL_BRIDGE.at[0],p[2]-CANAL_BRIDGE.at[2])<=CANAL_BRIDGE.span/2+1.5);
+/** The part of the town lane that is a deck: the canal bridge, spanning the whole channel cut (bank to bank). */
+const deckRange=(()=>{let k=0,best=Infinity;TOWN_RACE_ROAD.forEach((p,i)=>{const d=riverDistance(p[0],p[2]);if(i>0&&d<best){best=d;k=i;}});
+  let i0=k,i1=k;while(i0>1&&riverDistance(TOWN_RACE_ROAD[i0-1]![0],TOWN_RACE_ROAD[i0-1]![2])<CHANNEL_REACH)i0--;while(i1<TOWN_RACE_ROAD.length-1&&riverDistance(TOWN_RACE_ROAD[i1+1]![0],TOWN_RACE_ROAD[i1+1]![2])<CHANNEL_REACH)i1++;
+  return {i0:i0-1,i1:i1+1,k};})();
+export const TOWN_LANE_DECK:readonly Point3[]=TOWN_RACE_ROAD.slice(deckRange.i0,deckRange.i1+1);
+/** The town lane's canal bridge (the lane deck spans the town channel, bank to bank). */
+export const CANAL_BRIDGE={id:'canal-bridge',name:'Canal bridge',type:'masonry' as const,at:TOWN_RACE_ROAD[deckRange.k]!,span:arcLengths(TOWN_LANE_DECK,true).at(-1)!,halfWidth:TOWN_LANE_HALF_WIDTH,
+  a:TOWN_LANE_DECK[0]!,b:TOWN_LANE_DECK[TOWN_LANE_DECK.length-1]!};
 const finishIndex=TOWN_RACE_ROAD.findIndex(p=>p[0]>=20);
 /** The finish gate on the quay; the lane runs on eastward along the waterfront as the braking run-out. */
 export const RACE_FINISH=(()=>{
@@ -69,11 +76,12 @@ function branch(id:string,name:string,kind:SkillBranch['kind'],material:'wood'|'
 }
 const damArc=(from:number,to:number,y0:number,y1:number,radius:number,n=8):Point3[]=>Array.from({length:n},(_,k)=>{const t=(k+.5)/n,a=mix(from,to,t);return [DAM.centre[0]+Math.sin(a)*radius,mix(y0,y1,t),DAM.centre[2]+Math.cos(a)*radius];});
 export const SKILL_BRANCHES:readonly SkillBranch[]=[
-  // Dam maintenance rail: off Reservoir Heights, down the glass face's downstream rail, landing on the west abutment apron.
-  branch('dam-promenade','Dam maintenance rail','rail','metal',1.7,courseIndexAt(roadTagS('reservoir')+13),courseIndexAt(roadTagS('b3-west')-16),[
+  // Dam maintenance rail: off Reservoir Heights, down the glass face's downstream rail, then a short deck
+  // that drops onto the metal-and-glass bridge from its upstream side.
+  branch('dam-promenade','Dam maintenance rail','rail','metal',1.7,courseIndexAt(roadTagS('reservoir')+13),courseIndexAt(roadTagS('b3-west')+10),[
     {kind:'ramp',via:[[44,90.9,-248],[37,90.6,-240.5]]},
     {kind:'rail',via:damArc(DAM.halfAngle*.92,-.72,87.6,73.4,DAM.radius+2.2,10)},
-    {kind:'deck',via:[[-18,72.2,-230],[-24,71,-228.5],[-33,70,-229]]},
+    {kind:'deck',via:[[-14,72,-229],[-18,71,-225.5]]},
   ],true),
   // Library roof line: off the woodland bridge onto the reading-room roof and balcony, down to the east bend.
   branch('library-balcony','Library roof and balcony','balcony','wood',1.6,courseIndexAt(roadTagS('b2-east')-1),courseIndexAt(roadTagS('library')-31),[
@@ -106,12 +114,12 @@ const GATE_PLAN:readonly [index:number,id:string,name:string,segment:string,half
   [G(roadTagS('reservoir')+36),'alpine-3','Alpine bends · Reservoir Heights','alpine-bends'],
   [G(roadTagS('reservoir')+21),'dam-overlook','Dam overlook','dam-overlook'],
   [G(roadTagS('b3-west')-24),'meadow-1','Meadow sweep · upper terrace','meadow-sweep'],
-  [G(roadTagS('clearing')+14),'meadow-2','Meadow sweep · the turn','meadow-sweep'],
+  [G(roadTagS('clearing')+30),'meadow-2','Meadow sweep · the turn','meadow-sweep'],
   [G(roadTagS('clearing')-40),'meadow-3','Meadow sweep · lower terrace','meadow-sweep'],
   [G((roadTagS('b2-east')+roadTagS('b2-west'))/2),'woodland-bridge','Woodland bridge','woodland-bridges'],
   [G(roadTagS('library')-36),'library','Library Woods','library-balcony'],
   [G(roadTagS('shelf')+2),'east-arm','East arm sweep','neighbourhood-switchbacks'],
-  [G(roadTagS('hearth')+10),'hearth','Hearth Terrace','neighbourhood-switchbacks'],
+  [G(roadTagS('hearth')+17),'hearth','Hearth Terrace','neighbourhood-switchbacks'],
   [G(roadTagS('hairpin-2')-24),'switchback-2','Second switchback','neighbourhood-switchbacks'],
   [G(roadTagS('hairpin-1')-6),'switchback-1','First switchback','neighbourhood-switchbacks'],
   [roadCount-1,'road-foot','Road foot','town-canal-crossing',4.4],
