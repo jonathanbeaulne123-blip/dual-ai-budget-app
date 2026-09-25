@@ -60,6 +60,8 @@ export interface WaterCut {
 }
 export interface StructureSolid {
   id: string;
+  /** Original logical solid when its indexed triangles are partitioned for streaming. */
+  sourceId?: string;
   kind: string;
   /** Indexed, outward-facing solid geometry including sides and underside. */
   positions: number[];
