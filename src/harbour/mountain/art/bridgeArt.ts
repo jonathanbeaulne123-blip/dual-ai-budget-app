@@ -32,7 +32,7 @@ const ground=(p:V3)=>groundHeightAt(p[0],p[2]);
 const atY=(f:Frame,across:number,y:number):V3=>[f.p[0]+f.side[0]*across,y,f.p[2]+f.side[2]*across];
 
 /** The deck slab: road bands on top, cut sides, a darker underside. */
-function deck(bld:CardBuilder,pal:MountainArtPalette,b:Bridge,F:Frame[],top:(k:number,i:number)=>RGB,skin:RGB){
+function deck(bld:CardBuilder,_pal:MountainArtPalette,b:Bridge,F:Frame[],top:(k:number,i:number)=>RGB,skin:RGB){
   const th=b.deckThickness;
   if(b.carries==='road'||b.carries==='lane')bld.sweep(F,i=>ROAD_BANDS(F[i]!.hw),top,{bucket:'flat'});
   else bld.sweep(F,i=>[[-F[i]!.hw,.05],[F[i]!.hw,.05]],top,{bucket:'flat'});

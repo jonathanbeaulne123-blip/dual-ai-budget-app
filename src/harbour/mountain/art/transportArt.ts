@@ -21,7 +21,6 @@ import type {MountainArtPalette} from './palette.ts';
 
 /** The funicular's rail tops sit this far below the cabin floor (the ride's y). */
 export const RAIL_DROP=.55;
-const UP:V3=[0,1,0];
 const G=(x:number,z:number)=>groundHeightAt(x,z);
 
 /**

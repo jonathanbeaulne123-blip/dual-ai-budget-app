@@ -51,7 +51,7 @@ function roadLine(b:CardBuilder,pal:MountainArtPalette,line:RoadLine,step:number
       for(let i=1;i<run.length;i++){const a=edgePoint(S[run[i-1]!]!,sign),c=edgePoint(S[run[i]!]!,sign);b.line(inkLift([a[0],a[1]+SURFACE_LIFT,a[2]]),inkLift([c[0],c[1]+SURFACE_LIFT,c[2]]));}
     }
     // Pencil slab joints across the road every few units, a painted card road not a ribbon.
-    for(let k=0;k<run.length;k+=Math.max(1,Math.round(6/step))){const s=S[run[k]!]!;b.line(inkLift(edgePoint(s,1,-.55).map((v,j)=>j===1?v+SURFACE_LIFT:v) as V3),inkLift(edgePoint(s,-1,-.55).map((v,j)=>j===1?v+SURFACE_LIFT:v) as V3),b.pencil);}
+    for(let k=0;k<run.length;k+=Math.max(1,Math.round(6/step))){const s=S[run[k]!]!;const eL=edgePoint(s,1,-.55),eR=edgePoint(s,-1,-.55);b.line(inkLift([eL[0],eL[1]+SURFACE_LIFT,eL[2]] as V3),inkLift([eR[0],eR[1]+SURFACE_LIFT,eR[2]] as V3),b.pencil);}
   }
   edges(b,pal,line,step);
 }
@@ -90,7 +90,7 @@ function retainingWalls(b:CardBuilder,pal:MountainArtPalette){
     const off=Math.max(0,Math.round((wall.foot.length-wall.top.length)/2));
     for(let k=1;k<wall.top.length;k++){
       const f0=wall.foot[k-1+off]??wall.foot[k-1]!,f1=wall.foot[k+off]??wall.foot[k]!,t0=wall.top[k-1]!,t1=wall.top[k]!;
-      const y0=Math.min(f0[1],f1[1])-.3,h0=t0[1]-f0[1]+.3,h1=t1[1]-f1[1]+.3,courses=Math.max(2,Math.round(Math.max(h0,h1)/.5));
+      const h0=t0[1]-f0[1]+.3,h1=t1[1]-f1[1]+.3,courses=Math.max(2,Math.round(Math.max(h0,h1)/.5));
       // Mortar backing: the whole face, dark.
       const lean=(p:V3,t:V3,u:number):V3=>[p[0]+(t[0]-p[0])*u,p[1]-.3+(t[1]-p[1]+.3)*u,p[2]+(t[2]-p[2])*u];
       b.quad(lean(f0,t0,0),lean(f1,t1,0),lean(f1,t1,1),lean(f0,t0,1),pal.mortar);

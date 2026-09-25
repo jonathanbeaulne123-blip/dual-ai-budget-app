@@ -4,7 +4,7 @@ import type {RenderTier} from '../scene/quality.ts';
 import {groundHeightAt} from '../scene/ground.ts';
 import {DISTRICTS} from './definition.ts';
 import {MOUNTAIN_INTERACTIONS,initialMountainInteractionState,mountainWildlifePose,type MountainInteractionState} from './life.ts';
-import {CardBuilder,shade,mix,type V3} from '../art/cardScene.ts';
+import {CardBuilder,shade,type V3} from '../art/cardScene.ts';
 import {mountainArtPalette} from './art/palette.ts';
 import {drawBench} from './art/propArt.ts';
 import {mountainProps,seat} from './art/placements.ts';
@@ -23,7 +23,7 @@ export function buildMountainLife(dressing:PlaceDressing,tier:RenderTier='full')
   const own=<T extends {dispose():void}>(value:T):T=>{owned.push(value);return value;};
   const pal=mountainArtPalette(dressing);
   const material=(color:THREE.ColorRepresentation)=>own(new THREE.MeshStandardMaterial({color,roughness:.84,flatShading:true}));
-  const wood=material(dressing.timber),pale=material(new THREE.Color(...pal.plaster)),ink=material(pal.ink),accent=material(new THREE.Color(...pal.accent)),wing=material(new THREE.Color(...mix(pal.flowers[1]!,[1,1,1],.2)));
+  const wood=material(dressing.timber),pale=material(new THREE.Color(...pal.plaster)),ink=material(pal.ink),accent=material(new THREE.Color(...pal.accent));
   const shape=(g:THREE.BufferGeometry,m:THREE.Material,parent:THREE.Object3D,x=0,y=0,z=0)=>{const o=new THREE.Mesh(own(g),m);o.position.set(x,y,z);parent.add(o);return o;};
   const props=new Map(mountainProps().map(p=>[p.id,p]));
   const card=(name:string,parent:THREE.Object3D,draw:(b:CardBuilder)=>void)=>{const b=new CardBuilder(name,tier,{ink:pal.ink,cell:Infinity});draw(b);const built=own(b.finish());parent.add(built.group);return built.group;};

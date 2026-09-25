@@ -108,10 +108,11 @@ export function groundMasks(L:Lattice,tier:RenderTier,height:(x:number,z:number)
     const r=Math.hypot(x,z);m.mountain[i]=z<-44?Math.min(1,Math.max(y>1.4?1:0,(-44-z)/14,r>HARBOUR_LAND.radius-6&&y>.6?1:0)):y>2.2&&z<-30?Math.min(1,(y-2.2)/2):0;
     // Biomes: soft weights around each district, the rest by altitude.
     let total=0;for(const b of BIOMES)m.biome[b]![i]=0;
-    for(const d of DISTRICTS){const dd=Math.hypot(x-d.at[0],z-d.at[2]),R=d.radius+26,w=Math.exp(-(dd/R)*(dd/R)*1.6);m.biome[d.biome]![i]+=w;total+=w;}
+    const lay=m.biome;
+    for(const d of DISTRICTS){const dd=Math.hypot(x-d.at[0],z-d.at[2]),R=d.radius+26,w=Math.exp(-(dd/R)*(dd/R)*1.6);{const arr=lay[d.biome];if(arr)arr[i]=(arr[i]??0)+w;}total+=w;}
     // The rest by altitude, each band fading into the next over a few units (no contour seams).
-    const base=.35;for(let k=0;k<ALTITUDE.length;k++){const lo=ALTITUDE[k]![1],hi=ALTITUDE[k+1]?.[1]??1e9,w=(sm(lo-8,lo+8,y)-sm(hi-8,hi+8,y))*base;if(w>0){m.biome[ALTITUDE[k]![0]]![i]+=w;total+=w;}}
-    for(const b of BIOMES)m.biome[b]![i]/=total;
+    const base=.35;for(let k=0;k<ALTITUDE.length;k++){const lo=ALTITUDE[k]![1],hi=ALTITUDE[k+1]?.[1]??1e9,w=(sm(lo-8,lo+8,y)-sm(hi-8,hi+8,y))*base;if(w>0){const arr=lay[ALTITUDE[k]![0]];if(arr)arr[i]=(arr[i]??0)+w;total+=w;}}
+    for(const b of BIOMES){const arr=lay[b];if(arr)arr[i]=(arr[i]??0)/total;}
     // The reservoir bowl below the full level.
     const bowlR=Math.hypot(x-bcx,z-bcz+6);m.bowl[i]=y<RESERVOIR.level+.4&&y>RESERVOIR.bottom-2&&bowlR<44&&z<-236?1:0;
   }

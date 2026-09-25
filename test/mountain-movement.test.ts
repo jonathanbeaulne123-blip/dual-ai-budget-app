@@ -348,7 +348,7 @@ describe('integration wiring (tuning track)',()=>{
       const a=TOWN_LANE_DECK[end]!,b=TOWN_LANE_DECK[next]!,dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz);
       for(const side of [-2.4,-1.2,0,1.2,2.4]){
         let prev:number|null=null;
-        for(let t=-1.5;t<=l;t+=.05){const x=a[0]+dx/l*t+dz/l*side,z=a[2]+dz/l*t-dx/l*side,y=queryWorldSurface({x,z,...(prev===null?{}:{y:prev})},groundHeightAt).y;
+        for(let t=-1.5;t<=l;t+=.05){const x=a[0]+dx/l*t+dz/l*side,z=a[2]+dz/l*t-dx/l*side;const y:number=queryWorldSurface({x,z,...(prev===null?{}:{y:prev})},groundHeightAt).y;
           if(prev!==null)expect(y-prev,`deck end ${end}, line ${side}, at ${t.toFixed(2)}`).toBeLessThan(.06);prev=y;}
       }
     }
