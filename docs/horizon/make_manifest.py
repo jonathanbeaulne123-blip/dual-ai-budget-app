@@ -474,6 +474,26 @@ def times(f):
 m["journeys"]["at_factor_1_0"]=times(1.0)
 m["journeys"]["at_factor_0_6"]=times(0.6)
 m["journeys"]["targets_s"]={"square→library by bicycle":150,"square→green running":100,"square→summit by gondola + walk":120,"crown→quay on the board (S1)":[70,130],"crown→lamp by glider":[50,90],"ring by plane":[60,120],"square→home/bank on foot, walking":60,"square→boathouse on foot, walking":100,"note":"targets are at scale.factor; the Library and the Flats are deliberately the far corners"}
-json.dump(m, open("MANIFEST.json","w"), indent=1)
-print(json.dumps(m["journeys"]["at_factor_0_6"],indent=0))
+# Jonathan's 2026-09-25 prerequisite decisions; canonical input revision 1.6.
+m["version"] = "1.6"
+m["scale"] = {'factor': 1.0, 'status': 'confirmed by Jonathan 2026-09-25', 'rule': 'engine_units = concept_metres × factor, applied to x, y and height alike; speeds in m/s are engine units per second', 'why': 'Jonathan selected full concept scale. Journey estimates use factor 1.0; the 0.6 table remains a comparison scenario, not the active scale.', 'decision': 'D13 — Jonathan: “1.0 — full concept scale”, confirmed 2026-09-25; applies to x, y and height.'}
+for key in ("plots", "rot_deg", "placeIds"):
+    m["reserves"]["terraces"][key] = m["reserves"]["terraces"][key][:3]
+m["reserves"]["terraces"]["served"] = 'plots 1–3 uphill (west) of the Prow cliff drive between [1600,860] and [1540,1000] with a lay-by each; the Prow walk above; the town below. D12 confirmed 2026-09-25: three uphill plots only; no seaward plot.'
+crossing_district = next(row for row in m["crossings"] if row["a"] == "S4 × VBS threshold")
+crossing = next(row for row in m["crossings"] if row["a"] == "S4" and row["b"] == "VBS")
+crossing["district"] = "green"
+crossing["districtNote"] = crossing_district["note"]
+m["crossings"] = [row for row in m["crossings"] if row["resolution"] != "n/a"]
+m["crossingRule"] = 'crossings contains physical resolutions only (over, under, threshold) at authored point, corridor or area locations; Pass 1 resolves these into numeric WorldDefinition geometry. District metadata belongs to its crossing. routePairNotes preserves coordination evidence for Pass 1 verification, including shared plan points; it never exempts a computed intersection from the crossing register.'
+m["routePairNotes"] = [{'a': 'ORE', 'b': 'Crown Road', 'note': 'the South Portal [1345,680] is 29 m from the turning circle; a path links them', 'kind': 'nearby-endpoints', 'sharedPlanPoints': [], 'verification': 'Verify the South Portal link against the built Crown Road turning circle; register any actual intersection found in Pass 1.'}, {'a': 'DEEP_RUN', 'b': 'ORE', 'note': 'the Sea Passage leaves the Deep east; the rail leaves north-east and climbs; separated by 20 m of rock', 'kind': 'shared-plan-point', 'sharedPlanPoints': [[1300, 420]], 'verification': 'Both centrelines include [1300,420] at the Deep. The original 20 m rock-separation note describes the departing passages, not proven clearance at this shared point. Pass 1 must compute their vertical profiles and register and build every actual crossing; this note is not an exclusion.'}]
+m["reserves"]["retiredPlaceIds"] = ["plot.terraces.4"]
+m["journeys"]["at_active_scale"] = times(m["scale"]["factor"])
+m["journeys"]["note"] = 'Straight-segment lengths between control points at assumed speeds; calibration estimates, not measured journeys. at_active_scale uses the confirmed scale.factor (1.0); the two at_factor tables are comparison scenarios.'
+m["journeys"]["targets_s"]["note"] = 'Original design targets retained after D13 selected 1.0. Pass 1 reports measured pass/fail against these targets; scale approval does not waive them or change speeds.'
+
+with open("MANIFEST.json", "w", encoding="utf-8") as output:
+    json.dump(m, output, indent=1)
+    output.write("\n")
+print(json.dumps(m["journeys"]["at_active_scale"],indent=0))
 print("V01",m["roads"]["V01"]["length_m"],"S1",m["skate"]["S1"]["length_m"],"ferry",m["water_routes"]["FERRY"]["length_m"])

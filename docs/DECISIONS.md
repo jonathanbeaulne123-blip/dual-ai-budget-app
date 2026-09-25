@@ -1459,7 +1459,7 @@ Risk Medium-High because the App route and two WebGL camera handoffs change. Bud
 
 ## The Horizon — decisions D1–D33 (Pass 0 reconciliation, 2026-09-25)
 
-These entries transcribe the supplied Horizon deck v1.5 and the explicit D1 quote in the Pass 0 brief. “Approved” records the deck’s status; where its table omits Jonathan’s exact words, this log does not invent them. Open recommendations remain recommendations.
+These entries transcribe the supplied Horizon deck v1.5 and the explicit D1 quote in the Pass 0 brief. “Approved” records the deck’s status; where its table omits Jonathan’s exact words, this log does not invent them. Open recommendations remain recommendations. D12, D13, D21 and D25 below incorporate Jonathan’s later explicit Pass 1 instructions.
 
 | ID | Proposed decision | Recommendation | Jonathan answer and date | Status | Blocks |
 |---|---|---|---|---|---|
@@ -1474,8 +1474,8 @@ These entries transcribe the supplied Horizon deck v1.5 and the explicit D1 quot
 | D9 | Winter: ice on Stillwater Jan–Feb, sledding on the Shoulder | — | Approved 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
 | D10 | Names as in `MANIFEST.json → names` (frozen: they are IDs) | — | Approved 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
 | D11 | The cats: names and colours | — | No answer recorded in the supplied deck | OPEN | 03 (Little Harbour) |
-| D12 | Reserves: the Terraces and Bight Shore, plus a sealed drift and a hangar bay. After geometry review only three Terrace plots fit uphill of the Prow cliff drive once the gondola and zip cables are cleared; plot 4 is drawn on the seaward side at [1596,994]. **Question: accept plot 4 seaward, or three uphill plots only?** | Confirm plot 4 seaward or keep three uphill plots | Approved in principle 25 Sep 2026; exact words not recorded; plot 4 still open | OPEN | 01 |
-| D13 | Scale factor 0.6 (engine units = concept metres × 0.6, heights included). At 1.0 the island is too big for feet and bicycles; journeys at both factors are in `MANIFEST.json → journeys` | Claude recommends 0.6 | No answer recorded in the supplied deck | OPEN | 01 (the heightfield bakes at this factor) |
+| D12 | Three uphill Terraces plots, four Bight Shore plots, plus the sealed drift and hangar bay; seaward plot 4 is removed without relocation | Three uphill plots only | 25 Sep 2026: “Keep only three uphill — seven reserve plots total” | APPROVED | — |
+| D13 | Full concept scale: engine units = concept metres × 1.0, including height | Previous 0.6 recommendation superseded | 25 Sep 2026: “1.0 — full concept scale” | APPROVED | — |
 | D14 | The Kitty reserve chambers retire from the dam; Kitty Banks are read in the Loft as now; `L01` shows the Fund basin only | Claude recommends retire | No answer recorded in the supplied deck | OPEN | 03 (Lakeside) |
 | D15 | When the app switches from the current island/mountain to the Horizon: behind one Development flag (`VITE_HEARTH_HORIZON`) from pass 1, flipped for everyone when Little Harbour (pass 3, first neighbourhood) is accepted on both devices, and the flag deleted in the same PR | Claude recommends as stated | No answer recorded in the supplied deck | OPEN | 03 |
 | D17 | The zipline needs a 30 m tower at the Prow (deck h 100, shared with the glider launch) and a landing tower on the dune crest (deck h 12, Town Weave passes beneath); a line from the cliff top alone dips to 2 m over the harbour | Claude recommends the towers | No answer recorded in the supplied deck | OPEN | 02 |
@@ -1483,11 +1483,11 @@ These entries transcribe the supplied Horizon deck v1.5 and the explicit D1 quot
 | D18 | Retire weather-from-money on the Horizon (bills → clouds, storm, Fund mist, payday sunrise); the timeline strip carries them explicitly | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02c |
 | D19 | Condition: explicit words on the camp card; physical wear only on the homestead's timber and plants, repaired on the same site; the home anchor never wears | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02c |
 | D20 | Which Journey brushes become bed cards and which retire (cove, wider road, café lights, storm creek, frost) | — | No answer recorded in the supplied deck | OPEN | 02c |
-| D21 | The twelve station sites as placed (seasonal), or fewer stations with more beds | Claude recommends twelve | No answer recorded in the supplied deck | OPEN | 01 |
+| D21 | Twelve seasonal station sites and empty station pads as placed | Twelve | 25 Sep 2026: explicitly requested twelve station pads in the pasted Pass 1 scope | APPROVED | — |
 | D22 | Season replay (sun and bloom of a chosen date, finances untouched) | — | No answer recorded in the supplied deck | OPEN | — |
 | D23 | The Atlas nook's model becomes the Horizon at L0; the harbour islet retires | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 03 |
 | D24 | The prototype's calibration as product settings (gates 3/7/14/28 confirmed strain days; clearance < 0.25 × daily need; repairs after two clear days; one growth credit per category per week over 24 weeks) | — | No answer recorded in the supplied deck | OPEN | 02c |
-| D25 | The homestead's site list and its place behind Our home | Claude recommends as drawn | No answer recorded in the supplied deck | OPEN | 01 |
+| D25 | Homestead sites behind Our home, lane, crossing, garden, pavilion, workbench and Kitty plaza pads | As drawn | 25 Sep 2026: explicitly included in the pasted Pass 1 land scope; financial overlay decisions remain separate | APPROVED | — |
 | D26 | The Journey map is the app's home; the square is the first *world* screen (refines D2) | — | Stated by Jonathan 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
 | D27 | Ship the kitchen table (v3's drawer as Direction C's objects); retire the Classic studio as screens; drop `VITE_PLAN_STUDIO_V3` | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02d |
 | D28 | The Plan Studio's entry is "One Pull Raises It" (the wizard pick) | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02d |
@@ -1502,3 +1502,5 @@ These entries transcribe the supplied Horizon deck v1.5 and the explicit D1 quot
 | Pin | Date | Pass | Merge SHA | Geography revision | Presence world |
 |---|---|---|---|---|---|
 | PIN-0 | Pending | 0 Reconcile | Pending | `hearth-mountain-geo-2` | `hearth-mountain-geo-2` |
+
+The PIN-0 prerequisite candidate and exact finalization rules are recorded in [Horizon prerequisites](worksessions/2026-09-25-horizon-prerequisites.md) and [PIN-0](horizon/PIN-0.md). The pin remains pending until the accepted merge SHA is recorded.

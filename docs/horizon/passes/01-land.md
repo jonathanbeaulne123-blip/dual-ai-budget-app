@@ -1,5 +1,7 @@
 # Pass 1 — The land (terraforming)
 
+> 25 September 2026 amendment: D13 is confirmed at 1.0; D12 retains three uphill Terraces plots and four Bight Shore plots (seven large plus two small). These decisions supersede earlier scale recommendations, counts and plot-4 review-history notes below. See the live decision register and MANIFEST v1.6.
+
 Builder: **Codex**. Reviewer: **Claude**, by `REVIEW-BRIEF.md` (five auditors, probes, renders, live playthrough). Gate: **Jonathan, by eye**, on the renders, before any line, plant or prop goes on the land. Delivery: `~/Downloads/hearth-horizon-p1-land/`.
 
 ---
@@ -61,7 +63,7 @@ Three tracks run in parallel, then integration. The integrator creates `src/harb
 | `src/harbour/horizon/land/beds/**` (bed splines from `roads`, `skate`, `walks`, `rail`; profile cross-sections; kerbs, shoulders, parapets, retaining walls; surface ids per segment; `BedCut` data for Track A) | `land/terrain/**`, `land/water/**`, `land/coast/**`, `land/offshore/**` |
 | `src/harbour/horizon/land/structures/**` (every `MANIFEST.structures` item and every crossing structure as greybox solids with thickness, supports and undersides) | `src/harbour/horizon/world/**` |
 | `src/harbour/horizon/land/town/**` (Little Harbour's four tiers: upper street, square, storefront lane, quay; the market stair and its ramp twin) | the seam files |
-| `src/harbour/horizon/land/reserves/**` (eight plot pads, two small reserves, walls, lay-bys, aprons, `PadCut` data) | `src/core/**` |
+| `src/harbour/horizon/land/reserves/**` (seven plot pads, two small reserves, walls, lay-bys, aprons, `PadCut` data) | `src/core/**` |
 | `src/harbour/horizon/land/underground/**` (the Undercroft's rooms inside `underground.footprint`, the Ore Line tunnel to the South Portal, the Throat (a sloping diving entry) and the skylight shaft, the Deep's cavern, the Sea Passage (the Deep Run's boat tunnel to the Sea Door), the sealed drift; `MouthMask` data for Track A). The Dam Gallery stair is part of the dam (`structures/**`); it does not enter the Undercroft | |
 
 ### Track C — WorldDefinition v3 data, districts, sky envelope, hosts, baked asset
@@ -134,7 +136,7 @@ Every row names its manifest key. "Greybox" means untextured card solids with tr
 
 ### Reserves (Track B)
 
-- [ ] Eight pads (`reserves.terraces.plots`, `reserves.bightShore.plots`) at `size_m` 64 × 44, each at its own `rot_deg` (per plot; `reserves.rotRule`: the bearing of the 64 m axis, clockwise from east with y south), graded flat, 6 m clear on all sides, retaining walls, served per `reserves.*.served` (a lay-by each for Terraces plots 1–3 on the uphill (west) side of the Prow cliff drive and for plot 4 on its seaward side, D12 open; the gondola ≥ 12 m over every Terrace plot; Bight Shore via `VBS` and the jetty `structures.jetties.bightShore` `[735,955]`), plot spacing ≥ 56 m (`CONTRACT §5`), an apron facing the door-to-be, a greybox threshold marker, the reserved `placeId`.
+- [ ] Seven pads (`reserves.terraces.plots`, `reserves.bightShore.plots`) at `size_m` 64 × 44, each at its own `rot_deg` (per plot; `reserves.rotRule`: the bearing of the 64 m axis, clockwise from east with y south), graded flat, 6 m clear on all sides, retaining walls, served per `reserves.*.served` (a lay-by each for the three Terraces plots on the uphill (west) side of the Prow cliff drive, D12 confirmed; no seaward plot; the gondola ≥ 12 m over every Terrace plot; Bight Shore via `VBS` and the jetty `structures.jetties.bightShore` `[735,955]`), plot spacing ≥ 56 m (`CONTRACT §5`), an apron facing the door-to-be, a greybox threshold marker, the reserved `placeId`.
 - [ ] Two small reserves: the sealed drift beside the Lantern Cave; the hangar bay in the hangar pad.
 - [ ] No pad, or its 6 m clear margin, inside `protected.green` (centre `[1040,1065]`, r 160 in the manifest; `CONTRACT §5`); no Sketchbook pose whose frame depends on a pad being empty.
 

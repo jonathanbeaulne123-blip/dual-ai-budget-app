@@ -1,5 +1,7 @@
 # Pass 0 — Reconcile
 
+> 25 September 2026 amendment: D13 is confirmed at 1.0; D12 retains three uphill Terraces plots and four Bight Shore plots (seven large plus two small). These decisions supersede earlier scale recommendations, counts and plot-4 review-history notes below. See the live decision register and MANIFEST v1.6.
+
 Builder: **Codex**. Reviewer: a Claude reviewer subagent (`REVIEW-BRIEF.md`, auditor 4 only) plus a Codex trust review on each PR. Gate: Jonathan. Delivery: `~/Downloads/hearth-horizon-p0-reconcile/`.
 
 ---
@@ -88,8 +90,8 @@ Create `docs/DECISIONS.md` (or append if it exists). One entry per decision: id,
 | D9 | Winter ice on Stillwater; sledding on the Shoulder | APPROVED | — |
 | D10 | Names (frozen as `MANIFEST.json → names`) | APPROVED | — |
 | D11 | The cats: names and colours | OPEN (placeholder tabby per `STYLE §1.9`) | pass 3 dressing only |
-| D12 | Reserves: the Terraces (uphill of the Prow cliff drive) and Bight Shore (outside the Green's protected radius), plus a sealed drift and a hangar bay | APPROVED in principle; locations re-laid after review, to be confirmed, including the open question on Terraces plot 4 (only three plots fit uphill once the gondola and the zip are cleared; plot 4 is drawn on the seaward side) | **pass 1** |
-| D13 | `scale.factor` = 0.6 (heights included) | OPEN (Claude recommends 0.6; Jonathan to confirm before the land pass) | **pass 1** |
+| D12 | Three uphill Terraces plots, four Bight Shore plots, plus sealed drift and hangar bay; plot 4 retired | APPROVED by Jonathan 25 Sep 2026: “Keep only three uphill — seven reserve plots total” | — |
+| D13 | `scale.factor` = 1.0 (heights included) | APPROVED by Jonathan 25 Sep 2026: “1.0 — full concept scale” | — |
 | D14 | The Kitty reserve chambers retire from the dam; Kitty Banks read in the Loft as now; `L01` shows the Fund basin only | OPEN (Claude recommends retire) | pass 3 (Lakeside) |
 | D15 | The switch to the Horizon: behind `VITE_HEARTH_HORIZON` from pass 1, flipped for everyone when Little Harbour (pass 3, wave 1) is accepted on both devices, flag deleted in the same PR | OPEN (Claude recommends as stated) | pass 3 |
 | D16 | The day/night cycle follows the real sun in the device's time zone at 44° N (sundial scrub, reduced-motion freeze at 15:30, deterministic almanac; `LIGHT.md`) | STATED by Jonathan 25 Sep | — |
@@ -100,9 +102,9 @@ Add a `Pins` section at the end of the file (README §4).
 
 - `src/harbour/horizon/world/definition.ts`: the `WorldDefinition` interface exactly as `CONTRACT §4`, plus every referenced type (`HeightfieldRef`, `WaterBody`, `Landform`, `District`, `Host`, `OutdoorPlace`, `Bed`, `Line`, `Structure`, `Crossing` with `resolution: 'over' | 'under' | 'threshold'`, `Threshold`, `Reserve`, `FlightEnvelope`, `UndercroftDef`, `LightAnchor`, `SketchbookPose`, `LanternSpot`, `ProtectedArea`). Types only; no geometry, no three.js import.
 - `src/harbour/horizon/world/MANIFEST.json`: byte-for-byte copy of the deck's `MANIFEST.json`. From this commit on it is the only manifest.
-- `src/harbour/horizon/world/manifest.ts`: typed loader. Reads `scale.factor` (0.6 in v1.1, carried as a recommendation: `scale.status` says "recommended … decision D13"). While `scale.status` does not start with `confirmed` (the design lead sets it when Jonathan answers D13), the loader returns the manifest but `requireScaleFactor()` throws "D13 open".
+- `src/harbour/horizon/world/manifest.ts`: typed loader. Reads the confirmed `scale.factor` 1.0 in v1.6. The loader still returns an otherwise valid unconfirmed manifest, but `requireScaleFactor()` throws "D13 open" unless `scale.status` starts with `confirmed`; negative tests preserve that guard.
 - `src/harbour/horizon/world/empty.ts`: `emptyWorldDefinition(rev)` returning a valid `WorldDefinition` with empty arrays and `geographyRevision: 'horizon-geo-0'`.
-- `test/horizonManifest.test.ts`: the manifest parses into the loader's types; every `names` list is present (including `names.structures`, `names.water` and the `idRule` string: ids are the manifest's camelCase keys, `names` holds their labels); counts: 7 `hosts`, the 12 Harbour place ids across `hosts[*].placeIds` + `places` (`court`, `campfire` and the ten host place ids, `CONTRACT §1`) plus `L01` and `L02` in `places`, 13 `districts` (`CONTRACT §4`), 7 `neighbourhoods`, 12 `views`, 12 `sky.gates`, 4 skate lines (`skate.S1`–`S4`), 8 reserve plots + 2 small; every `crossings[*].resolution` ∈ {`over`, `under`, `threshold`}; every threshold `modes` entry is `a→b`; every reserve plot has its own `rot_deg` (`reserves.rotRule`); every host has `footprint_m` and `roofH_eu` (`hostRule`); every view has `target`, `fov_deg`, `radius_eu` (`viewRule`).
+- `test/horizonManifest.test.ts`: the manifest parses into the loader's types; every `names` list is present (including `names.structures`, `names.water` and the `idRule` string: ids are the manifest's camelCase keys, `names` holds their labels); counts: 7 `hosts`, the 12 Harbour place ids across `hosts[*].placeIds` + `places` (`court`, `campfire` and the ten host place ids, `CONTRACT §1`) plus `L01` and `L02` in `places`, 13 `districts` (`CONTRACT §4`), 7 `neighbourhoods`, 12 `views`, 12 `sky.gates`, 4 skate lines (`skate.S1`–`S4`), 7 reserve plots + 2 small; every `crossings[*].resolution` ∈ {`over`, `under`, `threshold`}; every threshold `modes` entry is `a→b`; every reserve plot has its own `rot_deg` (`reserves.rotRule`); every host has `footprint_m` and `roofH_eu` (`hostRule`); every view has `target`, `fov_deg`, `radius_eu` (`viewRule`).
 - `test/horizonWorldDefinition.test.ts`: `emptyWorldDefinition` type-checks and round-trips through JSON.
 - `test/deskNoHeightfieldImport.test.ts`: the Desk's module graph contains nothing under `src/harbour/mountain/`, `src/harbour/horizon/` or `public/**/terrain/`.
 

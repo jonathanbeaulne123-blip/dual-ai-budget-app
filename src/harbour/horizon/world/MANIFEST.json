@@ -1,6 +1,6 @@
 {
  "title": "The Horizon \u2014 MANIFEST",
- "version": "1.5",
+ "version": "1.6",
  "date": "2026-09-25",
  "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3.",
  "units": {
@@ -3205,17 +3205,12 @@
     [
      1512,
      952
-    ],
-    [
-     1596,
-     994
     ]
    ],
    "rot_deg": [
     -67,
     23,
-    23,
-    -67
+    23
    ],
    "size_m": [
     64,
@@ -3224,10 +3219,9 @@
    "placeIds": [
     "plot.terraces.1",
     "plot.terraces.2",
-    "plot.terraces.3",
-    "plot.terraces.4"
+    "plot.terraces.3"
    ],
-   "served": "plots 1\u20133 uphill (west) of the Prow cliff drive between [1600,860] and [1540,1000] with a lay-by each; plot 4 is on the seaward side (D12 question: only three fit uphill once the gondola and the zip are cleared); the Prow walk above; the town below"
+   "served": "plots 1\u20133 uphill (west) of the Prow cliff drive between [1600,860] and [1540,1000] with a lay-by each; the Prow walk above; the town below. D12 confirmed 2026-09-25: three uphill plots only; no seaward plot."
   },
   "bightShore": {
    "plots": [
@@ -3283,7 +3277,10 @@
     "placeId": "plot.flats.1"
    }
   },
-  "plotRule": "1.5 \u00d7 Library footprint + 6 m clear; graded, walled, served, reserved placeId; no lantern spot inside; no view depends on it being empty"
+  "plotRule": "1.5 \u00d7 Library footprint + 6 m clear; graded, walled, served, reserved placeId; no lantern spot inside; no view depends on it being empty",
+  "retiredPlaceIds": [
+   "plot.terraces.4"
+  ]
  },
  "neighbourhoods": [
   {
@@ -3760,7 +3757,9 @@
     941
    ],
    "resolution": "threshold",
-   "note": "at grade: dismount marker + kerb gap"
+   "note": "at grade: dismount marker + kerb gap",
+   "district": "green",
+   "districtNote": "belongs to district green (Lakeside) unless pass 1 draws the bight district over it"
   },
   {
    "a": "S4",
@@ -3819,16 +3818,6 @@
    ],
    "resolution": "under",
    "note": "the Sea Passage passes \u2265 40 m beneath Crown Road and its tunnel"
-  },
-  {
-   "a": "S4 \u00d7 VBS threshold",
-   "b": "district",
-   "at": [
-    874,
-    941
-   ],
-   "resolution": "n/a",
-   "note": "belongs to district green (Lakeside) unless pass 1 draws the bight district over it"
   },
   {
    "a": "DEEP_RUN",
@@ -4022,13 +4011,6 @@
    "structure": "cable clear \u2265 8 m"
   },
   {
-   "a": "ORE",
-   "b": "Crown Road",
-   "at": "none",
-   "resolution": "n/a",
-   "note": "the South Portal [1345,680] is 29 m from the turning circle; a path links them"
-  },
-  {
    "a": "V02",
    "b": "walk crown",
    "at": [
@@ -4047,13 +4029,6 @@
    ],
    "resolution": "under",
    "note": "twice per lap"
-  },
-  {
-   "a": "DEEP_RUN",
-   "b": "ORE",
-   "at": "none",
-   "resolution": "n/a",
-   "note": "the Sea Passage leaves the Deep east; the rail leaves north-east and climbs; separated by 20 m of rock"
   },
   {
    "a": "plane",
@@ -4344,7 +4319,7 @@
   }
  ],
  "journeys": {
-  "note": "straight-segment lengths between control points at assumed speeds; calibration targets, not promises",
+  "note": "Straight-segment lengths between control points at assumed speeds; calibration estimates, not measured journeys. at_active_scale uses the confirmed scale.factor (1.0); the two at_factor tables are comparison scenarios.",
   "square\u2192library by bicycle": {
    "length_m": 1455,
    "mode": "bicycle"
@@ -4504,7 +4479,51 @@
    ],
    "square\u2192home/bank on foot, walking": 60,
    "square\u2192boathouse on foot, walking": 100,
-   "note": "targets are at scale.factor; the Library and the Flats are deliberately the far corners"
+   "note": "Original design targets retained after D13 selected 1.0. Pass 1 reports measured pass/fail against these targets; scale approval does not waive them or change speeds."
+  },
+  "at_active_scale": {
+   "square\u2192library by bicycle": {
+    "engine_u": 1455,
+    "time_s": 242
+   },
+   "square\u2192summit by gondola + walk": {
+    "engine_u": 779,
+    "time_s": 229
+   },
+   "crown\u2192quay on the board (S1)": {
+    "engine_u": 971,
+    "time_s": 139
+   },
+   "crown\u2192lamp by glider": {
+    "engine_u": 1103,
+    "time_s": 100
+   },
+   "ring by plane": {
+    "engine_u": 3896,
+    "time_s": 111
+   },
+   "ring by bicycle": {
+    "engine_u": 3896,
+    "time_s": 649
+   },
+   "square\u2192green on foot": {
+    "engine_u": 562,
+    "time_s": 331,
+    "run_s": 165
+   },
+   "square\u2192boathouse on foot": {
+    "engine_u": 274,
+    "time_s": 161,
+    "run_s": 81
+   },
+   "adit\u2192south portal by cart": {
+    "engine_u": 540,
+    "time_s": 68
+   },
+   "prow\u2192sands by zip": {
+    "engine_u": 933,
+    "time_s": 78
+   }
   }
  },
  "speeds_ms": {
@@ -5255,10 +5274,34 @@
   ]
  },
  "scale": {
-  "factor": 0.6,
-  "status": "recommended by Claude; decision D13 for Jonathan before the land pass",
+  "factor": 1.0,
+  "status": "confirmed by Jonathan 2026-09-25",
   "rule": "engine_units = concept_metres \u00d7 factor, applied to x, y and height alike; speeds in m/s are engine units per second",
-  "why": "at factor 1.0 the island is too big for feet and bicycles (see journeys.at_factor_1_0); at 0.6 the everyday journeys land near the Mountain v2 time-to-place envelope (Library ~2.3 min by bicycle, Green ~1.5 min running, the far corners are meant to be far) while the sky, the ring and the ferry stay long enough to feel like travel",
-  "decision": "D13 \u2014 Jonathan to confirm 0.6 (or another factor) before the land pass; the heightfield bakes at that factor"
- }
+  "why": "Jonathan selected full concept scale. Journey estimates use factor 1.0; the 0.6 table remains a comparison scenario, not the active scale.",
+  "decision": "D13 \u2014 Jonathan: \u201c1.0 \u2014 full concept scale\u201d, confirmed 2026-09-25; applies to x, y and height."
+ },
+ "crossingRule": "crossings contains physical resolutions only (over, under, threshold) at authored point, corridor or area locations; Pass 1 resolves these into numeric WorldDefinition geometry. District metadata belongs to its crossing. routePairNotes preserves coordination evidence for Pass 1 verification, including shared plan points; it never exempts a computed intersection from the crossing register.",
+ "routePairNotes": [
+  {
+   "a": "ORE",
+   "b": "Crown Road",
+   "note": "the South Portal [1345,680] is 29 m from the turning circle; a path links them",
+   "kind": "nearby-endpoints",
+   "sharedPlanPoints": [],
+   "verification": "Verify the South Portal link against the built Crown Road turning circle; register any actual intersection found in Pass 1."
+  },
+  {
+   "a": "DEEP_RUN",
+   "b": "ORE",
+   "note": "the Sea Passage leaves the Deep east; the rail leaves north-east and climbs; separated by 20 m of rock",
+   "kind": "shared-plan-point",
+   "sharedPlanPoints": [
+    [
+     1300,
+     420
+    ]
+   ],
+   "verification": "Both centrelines include [1300,420] at the Deep. The original 20 m rock-separation note describes the departing passages, not proven clearance at this shared point. Pass 1 must compute their vertical profiles and register and build every actual crossing; this note is not an exclusion."
+  }
+ ]
 }

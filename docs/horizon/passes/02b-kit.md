@@ -1,5 +1,7 @@
 # Pass 2b — The kit, the sun clock and the lights
 
+> 25 September 2026 amendment: D13 is confirmed at 1.0; D12 retains three uphill Terraces plots and four Bight Shore plots (seven large plus two small). These decisions supersede earlier scale recommendations, counts and plot-4 review-history notes below. See the live decision register and MANIFEST v1.6.
+
 Builders: **Claude subagents**, six tracks, one integrator, one reviewer who has not seen the work. Runs in parallel with pass 2 (movers). Gate: Jonathan looks at the kit render sheet, then at the twelve pages with the sun running. Delivery: `~/Downloads/hearth-horizon-p2b-kit/`.
 
 ---
@@ -100,7 +102,7 @@ Every row, three dressings (`STYLE §1.3.4`), day and night, full and lite (lite
 | Bocce court, disc-golf basket (never lit), kite, paper boat | `STYLE §3.1` |
 | Hoarding set: hoarding fence, surveyor's stakes and string, timber stack, one sign per dressing (C "Not yet", T scrapbook "someday" tag, N hand-lettered board), wildflowers and a bench beside; never lit; no lantern spot inside | `CONTRACT §5`, `STYLE §3.1` |
 
-**Reserve dressing on the land:** K4 places the hoarding set on all eight plots (`plot.terraces.1–4`, `plot.bight.1–4`) and the two small reserves (`plot.under.1`, `plot.flats.1`) on pass 1's pads. It is the only land placement in this pass.
+**Reserve dressing on the land:** K4 places the hoarding set on all seven plots (`plot.terraces.1–3`, `plot.bight.1–4`) and the two small reserves (`plot.under.1`, `plot.flats.1`) on pass 1's pads. It is the only land placement in this pass.
 
 ## K5 — Vehicles and landmarks
 

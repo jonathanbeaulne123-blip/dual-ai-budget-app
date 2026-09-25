@@ -1,5 +1,7 @@
 # Pass 3 — Neighbourhoods
 
+> 25 September 2026 amendment: D13 is confirmed at 1.0; D12 retains three uphill Terraces plots and four Bight Shore plots (seven large plus two small). These decisions supersede earlier scale recommendations, counts and plot-4 review-history notes below. See the live decision register and MANIFEST v1.6.
+
 Builders: **Claude subagents**, two neighbourhoods at a time (one subagent per neighbourhood, one folder each), one integrator per wave, one reviewer per wave who has not seen the work. Gate: Jonathan per wave, on his Mac and iPhone. Delivery: one folder per wave.
 
 This file is one brief template (Part A) applied seven times (Part B).
@@ -136,7 +138,7 @@ Jonathan per wave: `TEST-PLAN.md` on his Mac and iPhone (walk the porch, stand i
 ## B1 — Little Harbour (wave 1)
 
 - **Sheet:** `STYLE §2.1`. **Hosts:** `home`, `bank`. **Places:** `court`. **Pages:** A, L; C's edge; porch (the square's north-west edge toward the dam `[1140,905]`).
-- **Thresholds:** `stairTop`, `quayWest` (`[1453,1277]`: Town Weave parks where it meets Lantern Row, which is pedestrian), `upperStreetSpur`, `gondolaBase`, `floatDock` (`[1520,1275]`, at Lantern Row's east end), the ferry pier `FERRY.piers.landing`; the Terraces' lay-bys (plots 1–3 uphill of the Prow cliff drive, plot 4 on its seaward side pending D12; hoarding from pass 2b).
+- **Thresholds:** `stairTop`, `quayWest` (`[1453,1277]`: Town Weave parks where it meets Lantern Row, which is pedestrian), `upperStreetSpur`, `gondolaBase`, `floatDock` (`[1520,1275]`, at Lantern Row's east end), the ferry pier `FERRY.piers.landing`; the Terraces' lay-bys (plots 1–3 uphill of the Prow cliff drive, D12 confirmed; no seaward plot; hoarding from pass 2b).
 - **Night order:** Lantern Row (civil dusk, west to east, 1 per s) → the Court's lanterns → the windows of Our home and the Fund bank → the Lamp's beam crossing the harbour → the floatplane's running lights; 23:00 one window per house.
 - **Life:** gulls; cats (placeholder tabby until D11) on the quay wall and porches.
 - **Pastime fixtures:** the bocce court on the square's small green; the sundial; the fishing spot on the ferry pier; the harbour bell.
