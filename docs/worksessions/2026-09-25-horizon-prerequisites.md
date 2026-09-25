@@ -37,6 +37,10 @@ PR #545 is merged at the baseline above. Its canonical D12/D13 and PIN-0 remaine
 
 No geometry, scene/UI, `src/core`, `reading.ts`, village layout, presence Worker, deployment settings or household data is changed. The current Mountain geography and presence remain `hearth-mountain-geo-2`.
 
+### Native check prerequisites
+
+The first published candidate exposed inherited native check failures before acceptance: Android could not find `sdkmanager` on PATH, and iOS rejected two `Any` values where the pinned Capacitor 8.5.2 API requires `JSValue`. The bounded repair invokes the runner's installed SDK manager through `ANDROID_HOME`, coerces encoded identity JSON through Capacitor's existing `JSTypes` converter, and gives the secure-read result its bridge value type. Identity fields, secure-storage keys, missing-value `null`, authentication, receipt validation and signing/deployment behavior are unchanged. This is build compatibility work required to assess the prerequisite candidate; it adds no native feature.
+
 ## Acceptance and evidence
 
 The output packet is `~/Downloads/hearth-horizon-p1-land/prerequisites/`. It records final base/head/PR, exact commands, test counts, timings, generator parity, JSON digest, source scope and independent review. Run the existing A1–A5/Desk/Horizon focused suites; then on the final candidate run the change-focused quick gate and `pnpm build`. Full verification was not requested and is not claimed.
