@@ -8,11 +8,13 @@ import {
   normalizeAtlasQuery,
   searchAtlas,
   toolsInGroup,
+  householdAtlasNames,
   type AtlasGroupId,
   type AtlasHouseholdName,
 } from "../src/core/toolAtlas.ts";
 import { TARGET_NAMES, houseToolPlace } from "../src/house/navigation.ts";
 import { HARBOUR_PLACE_NAMES } from "../src/harbour/flag.ts";
+import { addRecurrence, catalogHousehold } from "../src/core/index.ts";
 
 /**
  * §3.4's table, verbatim: each word must find a tool of that group in the top
@@ -139,6 +141,23 @@ describe("the Tool Atlas — one list", () => {
     expect(accounts.at(-1)!.match).toBe("household");
   });
 
+  it("builds the household's own words from a fictional household, by space", () => {
+    const base = catalogHousehold("development");
+    const household = addRecurrence(base, { cadence: "monthly", nextDate: "2026-09-27", type: "expense", amount: "142.00", accountId: "ACC-CHEQUING", subcategoryId: "SUB-HOUSING-ELECTRIC", note: "Hydro" }).household;
+    const ours = householdAtlasNames(household, { space: "ours", memberId: "MEM-001" });
+    expect(ours).toContainEqual({ label: "Hydro", kind: "bill", target: { kind: "house", target: "cellar-bills" } });
+    expect(ours.some((row) => row.kind === "account")).toBe(true);
+    expect(ours.filter((row) => row.kind === "member").length).toBe(household.members.filter((member) => member.active).length);
+    const mine = householdAtlasNames(household, { space: "mine", memberId: "MEM-001" });
+    expect(mine.some((row) => row.kind === "member")).toBe(false);
+    for (const row of mine.filter((name) => name.kind === "kitty-bank")) {
+      const goal = household.goals.find((item) => row.target.kind === "house" && row.target.object === `bank/${item.id}`)!;
+      expect(goal.shared).toBe(false);
+      expect(goal.ownerMemberId).toBe("MEM-001");
+    }
+    expect(searchAtlas("hydro", { householdNames: ours })[0]).toMatchObject({ label: "Hydro", group: "bills-dates" });
+  });
+
   it("returns at most eight, and nothing for an empty query", () => {
     expect(searchAtlas("")).toEqual([]);
     expect(searchAtlas("   ")).toEqual([]);
@@ -157,7 +176,9 @@ describe("the Tool Atlas — one list", () => {
   it("imports nothing that writes (A12)", () => {
     const source = readFileSync(new URL("../src/core/toolAtlas.ts", import.meta.url), "utf8");
     const imports = [...source.matchAll(/^import[^;]+from\s+"([^"]+)"/gm)].map((match) => match[1]);
-    expect(imports).toEqual(["./ledgerExperience.ts"]);
+    expect(imports).toEqual(["./ledgerExperience.ts", "./types.ts"]);
+    expect(source).toMatch(/^import type \{ AppTab \}/m);
+    expect(source).toMatch(/^import type \{ Household \}/m);
     expect(source).not.toMatch(/captureCommand|commands\.ts/);
   });
 });

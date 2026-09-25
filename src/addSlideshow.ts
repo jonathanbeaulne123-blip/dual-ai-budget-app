@@ -234,13 +234,15 @@ export function defaultAddLedger(mode: AddFlowMode, view: LedgerView): LedgerVie
  * - `bill`: one due bill (`postOneRecurrence` with the reviewed request).
  * `ledger` is the ledger the person chose on the first slide. If it differs
  * from the App's current view, the App must not post into the current view.
+ * It is absent when the App did not tell the slideshow its view (no ledger
+ * line was shown), and then the App posts exactly as before.
  */
 export type AddSubmitPayload =
-  | { kind: "entry"; mode: AddMode; ledger: LedgerView }
+  | { kind: "entry"; mode: AddMode; ledger?: LedgerView }
   | {
       kind: "bill";
       mode: "bill";
-      ledger: LedgerView;
+      ledger?: LedgerView;
       recurrenceId: string;
       occurrenceDate: string;
       /** The exact review the person read; pass `review.request` as `postOneRecurrence`'s `dueReview`. */

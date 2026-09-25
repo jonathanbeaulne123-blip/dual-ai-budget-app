@@ -466,7 +466,7 @@ export function AddSlideshow({
             household={household}
             ledger={ledger}
             busy={busy || postingDisabled || !open}
-            onConfirm={(review) => onPost({ kind: "bill", mode: "bill", ledger: ledger ?? view ?? "household", recurrenceId: chosenBill.recurrenceId, occurrenceDate: chosenBill.date, review })}
+            onConfirm={(review) => onPost({ kind: "bill", mode: "bill", ledger, recurrenceId: chosenBill.recurrenceId, occurrenceDate: chosenBill.date, review })}
           /> : <p role="status">Pick a bill first. <button type="button" className="ghost" onClick={() => onSlideIndex(0)}>Back to the bills</button></p>
         )}
 
@@ -757,7 +757,7 @@ export function AddSlideshow({
             </p>
             <button className="primary post-big" type="button" disabled={postingDisabled || busy || !open || entryInvalid || !!splitError || cutPreviewActive}
               aria-label={addConfirmName({ mode: entryMode, postLabel, form, household, accounts: pickerAccounts, ledger })}
-              onClick={() => onPost({ kind: "entry", mode: entryMode, ledger: ledger ?? view ?? "household" })} data-add-confirm>
+              onClick={() => onPost({ kind: "entry", mode: entryMode, ledger })} data-add-confirm>
               {postLabel}
             </button>
           </>

@@ -12,6 +12,7 @@
  * which still ends at Final Confirm.
  */
 import type { AppTab } from "./ledgerExperience.ts";
+import type { Household } from "./types.ts";
 
 /** The dial's five verbs (§3.3). Kept here as a literal so the atlas stays free of UI imports. */
 export type AtlasRecordMode = "expense" | "shift" | "income" | "bill" | "transfer";
@@ -437,3 +438,33 @@ export const RETIRED_WORDS: readonly { word: string; pattern: RegExp; use: strin
   { word: "Pay it", pattern: /\bPay it\b/, use: "Mark paid" },
   { word: "cov.", pattern: /\bcov\./, use: "Covered to" },
 ];
+
+/**
+ * Pure: the household's own words for search (§3.4) — bill names, account
+ * names, Kitty Bank names and members — each with the address it opens.
+ * Pass the household the viewer already sees (the visibility-filtered one):
+ * this reads names only and never widens what a person can find.
+ */
+export function householdAtlasNames(
+  household: Pick<Household, "recurrences" | "accounts" | "goals" | "members" | "categories">,
+  viewer: { space: "ours" | "mine"; memberId: string },
+): AtlasHouseholdName[] {
+  const names: AtlasHouseholdName[] = [];
+  for (const item of household.recurrences) {
+    if (!item.active || item.type === "income") continue;
+    const label = item.note.trim() || household.categories.find((row) => row.id === item.subcategoryId)?.name || "";
+    if (label) names.push({ label, kind: "bill", target: { kind: "house", target: "cellar-bills" } });
+  }
+  for (const account of household.accounts) {
+    if (account.active) names.push({ label: account.name, kind: "account", target: { kind: "books", pane: "wallet" } });
+  }
+  for (const goal of household.goals) {
+    if (goal.status !== "open" || goal.retiredAt) continue;
+    const mine = !goal.shared && goal.ownerMemberId === viewer.memberId;
+    if (viewer.space === "ours" ? goal.shared : mine) names.push({ label: goal.name, kind: "kitty-bank", target: { kind: "house", target: "loft-banks", object: `bank/${goal.id}` } });
+  }
+  if (viewer.space === "ours") {
+    for (const member of household.members) if (member.active) names.push({ label: member.name, kind: "member", target: { kind: "house", target: "fund" } });
+  }
+  return names;
+}
