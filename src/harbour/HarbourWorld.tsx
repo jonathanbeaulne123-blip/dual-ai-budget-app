@@ -91,6 +91,7 @@ export type HarbourWorldProps = {
   onOpen: (target: string, object?: string) => void;
   onClose: () => void;
   onJourney?:()=>void;
+  onWorldReady?:()=>void;
   presence?: SoftPresenceDisplay;
   /** Undo the coarse soft-presence opt-out, offered where a person learns of it. */
   onUnhide?: () => void;
@@ -161,6 +162,9 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const [previewLook,setPreviewLook]=useState<ReturnType<typeof villageRoomConfig>|null>(null);
   const [travelTo,setTravelTo]=useState<HarbourPlaceId|null>(null);
   const [status, setStatus] = useState<Status>("loading");
+  const onWorldReadyRef = useRef(props.onWorldReady);
+  onWorldReadyRef.current = props.onWorldReady;
+  useEffect(() => { if (status !== "loading") onWorldReadyRef.current?.(); }, [status]);
   const [quality, setQuality] = useState(() => decideQuality(host.current?.getBoundingClientRect().width || window.innerWidth));
   const tier=quality.tier;
   usePublishEditionAvailability({flat:tier === "flat" || status === "fallback",reason:status === "fallback" ? "failed" : quality.reason});
@@ -407,8 +411,6 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const [mountainRiding,setMountainRiding]=useState(false);
   /** A ride worth offering (walked onto a platform, or a long tap near a station), and the run toggle. */
   const [rideOffer,setRideOffer]=useState<RideOffer|null>(null),[runLocked,setRunLocked]=useState(false);
-  /** Hearth Mountain v2 (C5): the Look camera is at its far limit; one more pull opens the Journey. */
-  const [zoomEdge,setZoomEdge]=useState(false);
   const [monorail,setMonorail]=useState<MonorailState|null>(null);
 
   const [appearanceRequest,setAppearanceRequest]=useState(0);
@@ -572,7 +574,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
           onProject: next => setRects(next), onTap, onGesture, onRailDrag: (x, width) => onRailDragRef.current(x, width),
           onStick, onClose: setClosed, onThreshold, onExit,
           onAvatarStatus:(loaded,status)=>{if(avatarRef.current===loaded)setAvatarStatus(status);},
-          avatar:avatarRef.current,onJourney:()=>openJourney(),onMountainTravel:setMountainRiding,onRideOffer:setRideOffer,onZoomEdge:setZoomEdge,onMonorail:setMonorail,
+          avatar:avatarRef.current,onJourney:()=>openJourney(),onMountainTravel:setMountainRiding,onRideOffer:setRideOffer,onMonorail:setMonorail,
 
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
@@ -1154,7 +1156,6 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {sparkle && <div className="harbour-spark" aria-hidden="true" style={{ left: `${sparkle.x}px`, top: `${sparkle.y}px`, "--spark": sparkle.color } as CSSProperties}>{Array.from({ length: sparkle.petals }, (_, i) => <span key={i} style={{ "--i": i } as CSSProperties} />)}</div>}
       <p className="harbour-world__phrase" role="status" aria-live="polite">{rideOffer?`${rideOffer.label}. Press Enter to board.`:phrase}</p>
       {statusLine && <small className="harbour-world__supported" role="status">{statusLine}</small>}
-      {zoomEdge && !toolOpen && <small className="harbour-world__checking harbour-world__zoom-edge" role="status">Pull once more to open the Journey</small>}
       {!ready && status === "ready" && <small className="harbour-world__checking" role="status">Checking the books · {freshness}</small>}
       {toolOpen && <button type="button" className="harbour-world__put-back" onClick={onClose}>← Put it back in {placeName}</button>}
       {!toolOpen && status === "ready" && place !== "court" && <button type="button" className="harbour-world__stair" onClick={stair}>← Village square</button>}

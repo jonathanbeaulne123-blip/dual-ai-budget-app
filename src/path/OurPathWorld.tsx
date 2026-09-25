@@ -227,7 +227,7 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, onEnterHarbour, journeyFocusDate, openWorldOnJourneySurface = false, onExitJourney, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini }: {
+export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, onEnterHarbour, onZoomIntoHarbour, onWorldReady, journeyFocusDate, openWorldOnJourneySurface = false, onExitJourney, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini }: {
   household: Household;
   memberId: string;
   today: DateKey;
@@ -253,6 +253,9 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   onOpenPlay?: () => void;
   /** Current Chapter only: a view transition to Little Harbour, never a write. */
   onEnterHarbour?: (anchor: HarbourJourneyAnchor) => void;
+  /** A closest-zoom doorway waits for clouds before changing the route. */
+  onZoomIntoHarbour?: (navigate: () => void) => void;
+  onWorldReady?: () => void;
   journeyFocusDate?: DateKey;
   /** Only the explicit Harbour-to-Journey route starts directly in the world. */
   openWorldOnJourneySurface?: boolean;
@@ -391,9 +394,9 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   // back minimizes (entering pushes one history entry), and Escape closes an open card first, then minimizes.
   const rootRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const [full, setFull] = useState(false);
+  const [full, setFull] = useState(openWorldOnJourneySurface);
   const [leaving, setLeaving] = useState(false);
-  const [booted, setBooted] = useState(false);
+  const [booted, setBooted] = useState(openWorldOnJourneySurface);
   const [drawer, setDrawer] = useState(false);
   const [banner, setBanner] = useState(0);
   const fullRef = useRef(full);
@@ -452,7 +455,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   // The iris opens from the button that was pressed (reduced motion: a cut).
   useLayoutEffect(() => {
     const stage = stageRef.current;
-    if (!full || !stage || reduced || typeof stage.animate !== "function") return;
+    if (!full || openWorldOnJourneySurface || !stage || reduced || typeof stage.animate !== "function") return;
     const iris = irisFor(stage, worldOpener.current ?? openButton.current ?? pageToggle.current);
     stage.animate([{ clipPath: iris.closed, opacity: 0.6 }, { clipPath: iris.open, opacity: 1 }], { duration: ENTER_MS, easing: "cubic-bezier(.2,.75,.2,1)" });
     const host$ = stage.querySelector<HTMLElement>(".path-world__host");
@@ -539,7 +542,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   // Focus moves into the world's controls on enter, and back to the button that opened it on minimize.
   const worldFocusReady = useRef(false);
   useEffect(() => {
-    if (!worldFocusReady.current) { worldFocusReady.current = true; return; }
+    if (!worldFocusReady.current) { worldFocusReady.current = true; if (full) minimizeButton.current?.focus(); return; }
     if (full) { minimizeButton.current?.focus(); return; }
     const back = worldOpener.current;
     worldOpener.current = null;
@@ -901,11 +904,13 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   // its light map until someone explicitly opens the world.
   useEffect(() => { if (openWorldOnJourneySurface) enterWorld(); }, [openWorldOnJourneySurface, enterWorld]);
   const harbourAnchor = useMemo(() => harbourJourneyAnchor(household, today), [household, today]);
-  const enterHarbour = useCallback(() => {
+  const enterHarbour = useCallback((fromZoom = false) => {
     if (!onEnterHarbour || !isHarbourJourneyMonth(harbourAnchor, journey.focus.date)) return false;
-    leaveThen.current(() => onEnterHarbour(harbourAnchor));
+    const navigate = () => leaveThen.current(() => onEnterHarbour(harbourAnchor));
+    if (fromZoom && onZoomIntoHarbour) onZoomIntoHarbour(navigate);
+    else navigate();
     return true;
-  }, [onEnterHarbour, harbourAnchor, journey.focus.date]);
+  }, [onEnterHarbour, onZoomIntoHarbour, harbourAnchor, journey.focus.date]);
   const enterHarbourRef = useRef(enterHarbour);
   enterHarbourRef.current = enterHarbour;
   const focus = journey.focus;
@@ -1102,7 +1107,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     let created: PathWorld | null = null;
     let observer: ResizeObserver | null = null;
     // Building the scene holds the main thread for a moment: let the entering iris play first.
-    const irisPlaying = !reduced && typeof element.animate === "function";
+    const irisPlaying = !openWorldOnJourneySurface && !reduced && typeof element.animate === "function";
     const took = () => dropGuard();
     element.addEventListener("pointerdown", took, { passive: true });
     element.addEventListener("wheel", took, { passive: true });
@@ -1118,7 +1123,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
             onLost: () => { created?.dispose(); world.current = null; if (!dead) { setLive(false); setWorldEpoch((n) => n + 1); } },
             onAnchors: applyAnchors,
             onLevel: (lv) => { if (dead) return; setLevel(lv); worldLevel.current = lv; reportLevel(lv); },
-            onClosestZoom: () => !dead && enterHarbourRef.current(),
+            onClosestZoom: () => !dead && enterHarbourRef.current(true),
             onPick: (id) => selectRef.current(id, "world"),
             onView: (v) => { if (!dead) viewRef.current(v); },
             onRoam: (on) => { if (!dead) roamChanged.current(on); },
@@ -1800,12 +1805,12 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     });
   })();
   const mini = renderMini === undefined
-    ? (args: JourneyMiniSlotArgs) => <JourneyMini {...args} view="household" onEnterHarbour={onEnterHarbour ? () => enterHarbour() : undefined} onOpenFund={onOpenFund ? () => links.current.onOpenFund?.() : undefined} onOpenPlanner={onOpenPlanner ? () => links.current.onOpenPlanner?.() : undefined} />
+    ? (args: JourneyMiniSlotArgs) => <JourneyMini {...args} view="household" onEnterHarbour={onEnterHarbour ? () => enterHarbour(true) : undefined} onOpenFund={onOpenFund ? () => links.current.onOpenFund?.() : undefined} onOpenPlanner={onOpenPlanner ? () => links.current.onOpenPlanner?.() : undefined} />
     : renderMini;
   const miniArgs = (compact: boolean): JourneyMiniSlotArgs => ({
     household, memberId, today, focus: journey, compact, theme, quality, worldOpen: full, privateShown,
     onOpenWorld: compact ? () => {} : enterWorld,
-    onEnterHarbour: compact ? undefined : onEnterHarbour ? () => enterHarbour() : undefined,
+    onEnterHarbour: compact ? undefined : onEnterHarbour ? () => enterHarbour(true) : undefined,
   });
   const flatMap = (
     <PathMiniMap household={household} today={today} shown={shown} theme={theme} interpretation={supported.value} liveDerivedScene={liveDerivedScene}
@@ -1864,6 +1869,16 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   const nextButton = next && atNow && <button type="button" className="path-world__next" onClick={() => select(`move:${next.id}`)}><span>Next Move</span>{" "}{next.text}</button>;
   const loading = full && booted && wanted && !live && !failed;
   const flat = !live && (failed || !wanted);
+  const onWorldReadyRef = useRef(onWorldReady);
+  onWorldReadyRef.current = onWorldReady;
+  useEffect(() => {
+    if (!full || (!live && !flat)) return;
+    if (flat || typeof requestAnimationFrame !== "function") { onWorldReadyRef.current?.(); return; }
+    // The scene is mounted before its first drawn frame; reveal only after it can be seen.
+    let first = 0, second = 0;
+    first = requestAnimationFrame(() => { second = requestAnimationFrame(() => onWorldReadyRef.current?.()); });
+    return () => { cancelAnimationFrame(first); cancelAnimationFrame(second); };
+  }, [full, live, flat]);
   return (
     <div ref={rootRef} className={`path-world path-world--${theme}`} data-level={level} data-lantern={lantern} data-game={full ? (leaving ? "leaving" : "open") : undefined}>
       <section className="path-world__island" hidden={tentOpen || houseSurface === "work"} aria-labelledby="path-world-title" onKeyDown={(e) => { if (e.key === "Escape" && detail) { e.stopPropagation(); e.preventDefault(); closeCard(); } }}>
@@ -2039,7 +2054,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
               <div className="path-hud__dock">
                 <div className="path-world__rail" role="group" aria-label="Distance">
                   {LEVELS.map((l) => <button key={l.level} type="button" aria-pressed={level === l.level} onClick={() => { guardTrip(l.level, true); world.current?.setLevel(l.level); }} disabled={!live}>{l.label}</button>)}
-                  <button type="button" aria-label={level === 3 && onEnterHarbour ? "Enter Harbour by moving closer" : "Move closer"} onClick={() => { if (level === 3 && enterHarbour()) return; dropGuard(); world.current?.zoom(0.72); }} disabled={!live}>+</button>
+                  <button type="button" aria-label={level === 3 && onEnterHarbour ? "Enter Harbour by moving closer" : "Move closer"} onClick={() => { if (level === 3 && enterHarbour(true)) return; dropGuard(); world.current?.zoom(0.72); }} disabled={!live}>+</button>
                   <button type="button" aria-label="Move away" onClick={() => { dropGuard(); world.current?.zoom(1.38); }} disabled={!live}>−</button>
                 </div>
                 <div className="path-world__now">
@@ -2047,7 +2062,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
                     <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><circle cx="10" cy="10" r="7" /><path d="M12.8 7.2 11 11l-3.8 1.8L9 9z" /></svg>
                     Where we are
                   </button>
-                  {onEnterHarbour && isHarbourJourneyMonth(harbourAnchor, journey.focus.date) && <button type="button" className="path-world__compass" onClick={enterHarbour}>Enter Harbour</button>}
+                  {onEnterHarbour && isHarbourJourneyMonth(harbourAnchor, journey.focus.date) && <button type="button" className="path-world__compass" onClick={() => enterHarbour()}>Enter Harbour</button>}
                   {flat && <PathHercules pose={herculesPose} size={narrow ? 48 : 64} flat />}
                   <button ref={tentButton} type="button" className="primary path-world__tent" aria-label="Open the Plan Studio tent" onClick={() => openTent(true)}>
                     <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M10 3 2.5 16.5h15z" /><path d="M10 3v13.5M10 16.5 7.5 11" /></svg>

@@ -20,7 +20,7 @@ import {
 } from "../src/harbour/camera/worldAdapter.ts";
 import { FLIGHT_SPEED, flightAt, planFlight } from "../src/harbour/camera/flight.ts";
 import { createRideCamera, revealWeight, rideExitHeading } from "../src/harbour/camera/rideCamera.ts";
-import { ZOOM_EXIT, ZOOM_REST, atZoomLimit, harbourZoomExit } from "../src/harbour/camera/worldZoom.ts";
+import { JOURNEY_ZOOM_LIMIT, entersJourneyFromZoom } from "../src/harbour/camera/worldZoom.ts";
 import { clearFraction, createPullIn } from "../src/harbour/camera/obstruction.ts";
 import { handToLook } from "../src/harbour/camera/director.ts";
 import { MOUNTAIN_TOUR, tourPose } from "../src/harbour/mountain/tour.ts";
@@ -88,7 +88,7 @@ describe("the overview, the dam and the summit (C5, C12)", () => {
       for (const point of OVERVIEW_POINTS) expect(poseSees(pose, point, aspect, fov), JSON.stringify(point)).toBe(true);
       expect(CAMERA_DISTRICTS).toHaveLength(6);
       // Inside the Look camera's far limit, so a zoom out first reaches the limit.
-      expect(pose.r).toBeLessThan(ZOOM_EXIT.limit * ZOOM_EXIT.at);
+      expect(pose.r).toBeLessThan(JOURNEY_ZOOM_LIMIT * 0.985);
     });
     it(`frames the dam and the view from the summit (${composition} ${aspect.toFixed(2)})`, () => {
       const fov = openWorldFov(composition, aspect);
@@ -222,20 +222,13 @@ describe("zooming out to the Journey (C5)", () => {
   it("fires only on pulls made at the far limit, and only after the affordance has shown", () => {
     for (const composition of ["desktop", "phone"] as const) {
       const overview = overviewPose(composition);
-      expect(atZoomLimit(overview.r)).toBe(false);
-      // At the overview, however hard the pull, nothing opens: the zoom only carries the camera to the limit.
-      expect(harbourZoomExit(overview.r, 0.5, ZOOM_REST, 0)).toEqual(ZOOM_REST);
+      // A continuous pull from the overview can cross the far edge in one gesture.
+      expect(entersJourneyFromZoom(overview.r, Math.log(JOURNEY_ZOOM_LIMIT * 1.03 / overview.r))).toBe(true);
     }
-    expect(ZOOM_EXIT.limit).toBe(COURT_BOUNDS.maxR);
-    const armed = harbourZoomExit(COURT_BOUNDS.maxR, 0.2, ZOOM_REST, 1000);
-    expect(armed.armedAt).toBe(1000);
-    expect(armed.exit).toBe(false);
-    // The same flick cannot open it…
-    expect(harbourZoomExit(COURT_BOUNDS.maxR, 0.5, armed, 1100).exit).toBe(false);
-    // …a separate pull once it has shown does.
-    expect(harbourZoomExit(COURT_BOUNDS.maxR, 0.2, armed, 1000 + ZOOM_EXIT.wait + 1).exit).toBe(true);
-    // And an armed edge left alone lets go.
-    expect(harbourZoomExit(COURT_BOUNDS.maxR, 0.05, armed, 1000 + ZOOM_EXIT.expire + 1).exit).toBe(false);
+    expect(JOURNEY_ZOOM_LIMIT).toBe(COURT_BOUNDS.maxR);
+    expect(entersJourneyFromZoom(COURT_BOUNDS.maxR, 0.2)).toBe(true);
+    expect(entersJourneyFromZoom(COURT_BOUNDS.maxR, -0.2)).toBe(false);
+    expect(entersJourneyFromZoom(COURT_BOUNDS.maxR, Number.NaN)).toBe(false);
   });
 });
 
