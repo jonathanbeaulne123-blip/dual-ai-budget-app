@@ -28,7 +28,7 @@ Branch `claude/tool-atlas-mine` from `main@4e0234a3` (#545). Worktree `/home/cla
 ## Tests and tsc
 
 - `vitest run test/mine-layer.test.ts test/mine-layer-ui.test.ts` — **20/20 pass**.
-- `test/our-path-world-ui.test.ts` (footpath / Mine cases, 4/4), `test/path-footpaths.test.ts` 6/6, `test/harbour-arrival.test.ts` 15/15, `test/harbour-source-fences.test.ts` 8/8, `test/desk-personal.test.ts` 11/11, `test/personal-journey.test.ts` 3/3, `test/harbour-reading.test.ts` 23/23 — pass.
+- `test/our-path-world-ui.test.ts` 37/37, `test/path-footpaths.test.ts` 6/6, `test/harbour-arrival.test.ts` 15/15, `test/harbour-source-fences.test.ts` 8/8, `test/desk-personal.test.ts` 11/11, `test/personal-journey.test.ts` 3/3, `test/harbour-reading.test.ts` 23/23 — pass.
 - `tsc --noEmit` (the `pnpm typecheck` command, run once in full at `7c4aae7a`, ~28 min under shared load): **one error, in my own test** (`test/mine-layer.test.ts:108`, `householdForAiDisclosure`'s third argument is an options object). Fixed to `{ view: "household" }` and the file re-run green; the full tsc was not repeated for that one-line test fix. No error in any `src/` file.
 - The harbour flag is off in vitest, so the App suites (`app-startup-p1`, `month-rehearsal-mainline`) do not see the `flag.ts` change; the integrator's App wiring must run them.
 
