@@ -123,14 +123,19 @@ describe("the body is a person in a model village", () => {
 
 describe("the body follows the ground", () => {
   it("stands exactly on the island's own profile wherever it goes", () => {
+    // Off the ground only on a deck (toward +z the walk crosses the v2 town lane's canal bridge).
+    let onGround = 0;
     let state = createBodyState(3, 0, 0, bare);
     for (const next of walk(state, TOWARD_Z, 14, bare)) {
-      expect(next.y).toBeCloseTo(groundHeightAt(next.x, next.z), 12);
+      if (next.supportId && next.supportId !== "terrain") continue;
+      expect(next.y).toBeCloseTo(groundHeightAt(next.x, next.z), 12); onGround += 1;
     }
     state = createBodyState(3, 0, 0, bare);
     for (const next of walk(state, AWAY_FROM_Z, 14, bare)) {
-      expect(next.y).toBeCloseTo(groundHeightAt(next.x, next.z), 12);
+      if (next.supportId && next.supportId !== "terrain") continue;
+      expect(next.y).toBeCloseTo(groundHeightAt(next.x, next.z), 12); onGround += 1;
     }
+    expect(onGround).toBeGreaterThan(14 * 60 * 2 * 0.8);
   });
 
   it("walks up the lawn's hump and down toward the shore", () => {
@@ -317,10 +322,10 @@ describe("the walk reads as walking", () => {
 
 describe("the body has weight", () => {
   /** Hold a heading until the body is up to speed, then hand back what it is doing. */
-  function upToSpeed(run: boolean, seconds = 2): BodyState {
-    let state = createBodyState(0, 6, 0, bare);
+  function upToSpeed(run: boolean, seconds = 2, world: BodyWorld = bare): BodyState {
+    let state = createBodyState(0, 6, 0, world);
     for (let i = 0; i < Math.round(seconds * 60); i += 1) {
-      state = stepBody(state, { forward: 1, strafe: 0, run }, TOWARD_Z, 1 / 60, bare).state;
+      state = stepBody(state, { forward: 1, strafe: 0, run }, TOWARD_Z, 1 / 60, world).state;
     }
     return state;
   }
@@ -383,10 +388,13 @@ describe("the body has weight", () => {
     expect(runCadence).toBeGreaterThan(walkCadence);
     expect(runCadence / walkCadence).toBeLessThan(RUN_SPEED / WALK_SPEED);
     // And a running foot lands harder, which is what the dust and the prints read.
-    let running = upToSpeed(true, 3);
+    // On level ground: the gait, not the town's slopes (toward +z the v2 lane now meets the canal bank, and a
+    // climb rightly slows a runner below a full run).
+    const level: BodyWorld = { groundHeightAt: () => 0, obstacles: [] };
+    let running = upToSpeed(true, 3, level);
     let landed = 0;
     for (let i = 0; i < 120; i += 1) {
-      const frame = stepBody(running, { forward: 1, strafe: 0, run: true }, TOWARD_Z, 1 / 60, bare);
+      const frame = stepBody(running, { forward: 1, strafe: 0, run: true }, TOWARD_Z, 1 / 60, level);
       running = frame.state;
       if (frame.footfall) { expect(frame.footfall.force).toBeGreaterThan(0.9); landed += 1; }
     }
