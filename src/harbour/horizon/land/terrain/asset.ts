@@ -22,7 +22,11 @@ export function decimateTerrain(field: TerrainField, factor: number): TerrainFie
  * A revision mismatch or corrupt length is rejected before allocation. */
 export function encodeTerrainAsset(field: TerrainField): ArrayBuffer {
   if (field.revision !== GEOGRAPHY_REVISION) throw new Error('Terrain revision mismatch');
-  const levels = [field, decimateTerrain(field, 2), decimateTerrain(field, 8)];
+  // The master 2.5 m solve decimates by 8 to Journey; a 5 m full-tier export
+  // retains that same 20 m Journey lattice by decimating its retained samples by 4.
+  const journeyFactor = 20 * (field.width / 2000) / field.step;
+  if (!Number.isInteger(journeyFactor) || journeyFactor < 2) throw new Error('Full terrain must retain the 20 m Journey lattice');
+  const levels = [field, decimateTerrain(field, 2), decimateTerrain(field, journeyFactor)];
   const bytes = HEADER + LODS.length * ENTRIES + levels.reduce((n, f) => n + f.heights.length * 3, 0);
   if (bytes > 2_500_000) throw new Error(`Terrain asset exceeds 2.5 MB: ${bytes}`);
   const buffer = new ArrayBuffer(bytes), view = new DataView(buffer), array = new Uint8Array(buffer);

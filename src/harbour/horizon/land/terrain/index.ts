@@ -2,7 +2,7 @@ import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest'
 import type { BedCut, LandCuts, PadCut, TerrainField, WaterCut, XY, XYZ } from '../interfaces';
 import { coastCharacter, signedShoreDistance } from '../coast';
 import { buildWaterCuts, waterInfluence } from '../water';
-import { clamp, contains, linePoint, mix, polygonCentre, polygonDistance, smooth } from './geometry';
+import { clamp, contains, linePoint, mix, polygonCentre, polygonDistance, polylineArcs, segmentPoint, smooth } from './geometry';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1' as const;
 /** Mountain v2 body/bodyModel.ts WALKABLE_DEG. Kept pure so baking imports no body scene. */
@@ -54,13 +54,17 @@ function crownHeight(b: Band, x: number, z: number): number {
   const sx = summit.summit![0]! * s, sz = summit.summit![1]! * s;
   const dx = x - sx, dz = z - sz, distance = Math.hypot(dx, dz);
   if (distance < 1e-8) return summit.summitH! * s;
-  let lo = 0, hi = 1600 * s;
-  for (let i = 0; i < 20; i++) {
-    const mid = (lo + hi) / 2;
-    if (contains(b.poly, sx + dx / distance * mid, sz + dz / distance * mid)) lo = mid; else hi = mid;
+  const ux = dx / distance, uz = dz / distance;
+  let edgeDistance = Infinity;
+  for (let i = 0; i < b.poly.length; i++) {
+    const a = b.poly[i]!, c = b.poly[(i + 1) % b.poly.length]!, ex = c[0] - a[0], ez = c[1] - a[1];
+    const ax = a[0] - sx, az = a[1] - sz, cross = ux * ez - uz * ex;
+    if (Math.abs(cross) < 1e-10) continue;
+    const t = (ax * ez - az * ex) / cross, u = (ax * uz - az * ux) / cross;
+    if (t > 0 && u >= -1e-10 && u <= 1 + 1e-10) edgeDistance = Math.min(edgeDistance, t);
   }
   // A broad north shoulder and a long south ridge; one peak, no equal-height rings.
-  const q = clamp(distance / Math.max(1, lo));
+  const q = clamp(distance / Math.max(1, edgeDistance));
   const ridge = clamp(1 - 0.16 * dx / (260 * s) + 0.12 * dz / (260 * s), 0.75, 1.25);
   let height = mix(110 * s, summit.summitH! * s, Math.pow(1 - smooth(q), ridge));
   // The Throat is cut into a north-facing buttress, not into an exposed low edge.
@@ -127,13 +131,21 @@ function notchHeight(x: number, z: number, height: number): number {
   }
   return mix(rim, height, smooth((q.distance - half) / (12 * s)));
 }
+const waterBounds = new WeakMap<WaterCut, readonly [number, number, number, number]>();
 function applyWaters(x: number, z: number, original: number, waters: WaterCut[]): number {
   const s = getModel().scale;
   let h = original, wetBedCeiling = Infinity;
   for (const water of waters) {
     if (water.underground || water.kind === 'sea' || water.kind === 'lagoon') continue;
-    const { distance: d, level } = waterInfluence(water, x, z);
     const bankWidth = water.points.length ? 4 * s : 8 * s, outer = water.points.length ? 12 * s : 24 * s;
+    let bounds = waterBounds.get(water);
+    if (!bounds) {
+      bounds = water.points.length ? [Math.min(...water.points.map(p => p[0])) - water.width / 2, Math.min(...water.points.map(p => p[2])) - water.width / 2, Math.max(...water.points.map(p => p[0])) + water.width / 2, Math.max(...water.points.map(p => p[2])) + water.width / 2] :
+        [Math.min(...water.outline.map(p => p[0])), Math.min(...water.outline.map(p => p[1])), Math.max(...water.outline.map(p => p[0])), Math.max(...water.outline.map(p => p[1]))];
+      waterBounds.set(water, bounds);
+    }
+    if (x < bounds[0] - outer || z < bounds[1] - outer || x > bounds[2] + outer || z > bounds[3] + outer) continue;
+    const { distance: d, level } = waterInfluence(water, x, z);
     if (d > outer) continue;
     if (d <= 0) {
       const depth = water.depth * mix(0.22, 1, smooth(-d / (water.points.length ? water.width / 2 : 14 * s)));
@@ -148,30 +160,75 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[])
   }
   return Math.min(h, wetBedCeiling);
 }
+const padFrames = new WeakMap<PadCut, { cos: number; sin: number; xReach: number; zReach: number }>();
 function padDistance(p: PadCut, x: number, z: number): number {
-  const r = p.rotationDegrees * Math.PI / 180, dx = x - p.centre[0], dz = z - p.centre[2];
-  const a = Math.abs(dx * Math.cos(r) + dz * Math.sin(r)) - p.size[0] / 2 - p.margin;
-  const b = Math.abs(-dx * Math.sin(r) + dz * Math.cos(r)) - p.size[1] / 2 - p.margin;
+  let frame = padFrames.get(p);
+  if (!frame) {
+    const r = p.rotationDegrees * Math.PI / 180, cos = Math.cos(r), sin = Math.sin(r), a = p.size[0] / 2 + p.margin, b = p.size[1] / 2 + p.margin;
+    frame = { cos, sin, xReach: Math.abs(cos) * a + Math.abs(sin) * b + p.blend, zReach: Math.abs(sin) * a + Math.abs(cos) * b + p.blend }; padFrames.set(p, frame);
+  }
+  const dx = x - p.centre[0], dz = z - p.centre[2], beyond = Math.max(Math.abs(dx) - frame.xReach, Math.abs(dz) - frame.zReach);
+  if (beyond > 0) return p.blend + beyond;
+  const a = Math.abs(dx * frame.cos + dz * frame.sin) - p.size[0] / 2 - p.margin;
+  const b = Math.abs(-dx * frame.sin + dz * frame.cos) - p.size[1] / 2 - p.margin;
   return Math.hypot(Math.max(0, a), Math.max(0, b)) + Math.min(0, Math.max(a, b));
 }
-interface PreparedBed { bed: BedCut; minX: number; minZ: number; maxX: number; maxZ: number }
-function prepareBeds(beds: BedCut[]): PreparedBed[] {
-  return beds.filter(b => b.terrainCut && b.points.length > 1).map(b => {
-    const reach = b.width / 2 + b.shoulder + Math.max(b.blend, 15 * getModel().scale);
-    return { bed: b, minX: Math.min(...b.points.map(p => p[0])) - reach, minZ: Math.min(...b.points.map(p => p[2])) - reach, maxX: Math.max(...b.points.map(p => p[0])) + reach, maxZ: Math.max(...b.points.map(p => p[2])) + reach };
-  });
-}
-function cutHeight(x: number, z: number, cuts: LandCuts, beds: PreparedBed[]): { height: number; surface: number | null } {
-  let height = baseHeight(x, z), surface: number | null = null;
-  for (const { bed: b, minX, minZ, maxX, maxZ } of beds) {
-    if (x < minX || x > maxX || z < minZ || z > maxZ) continue;
-    if (b.terrainExclusions?.some(e => Math.hypot(x - e.at[0], z - e.at[1]) < e.radius)) continue;
-    const q = linePoint(b.points, x, z), edge = b.width / 2 + b.shoulder;
-    const blend = Math.max(b.blend, 15 * getModel().scale), weight = 1 - smooth((q.distance - edge) / blend);
-    if (weight <= 0) continue;
-    height = mix(height, q.height, weight);
-    if (q.distance <= b.width / 2) surface = Math.max(0, TERRAIN_SURFACE_PALETTE.findIndex(p => p.id === b.surface));
+interface PreparedSegment { bed: BedCut; a: XYZ; b: XYZ; arc: number; length: number; total: number }
+interface PreparedBeds { bins: Map<string, PreparedSegment[]>; cell: number }
+const preparedBedCache = new WeakMap<BedCut[], PreparedBeds>();
+const cellKey = (x: number, z: number, cell: number): string => `${Math.floor(x / cell)},${Math.floor(z / cell)}`;
+function prepareBeds(beds: BedCut[]): PreparedBeds {
+  const cached = preparedBedCache.get(beds); if (cached) return cached;
+  const cell = 64 * getModel().scale, bins = new Map<string, PreparedSegment[]>();
+  // Every potentially influencing segment is inserted; order remains bed order,
+  // then segment order. Closed routes spanning the island no longer scan globally.
+  for (const bed of beds) {
+    if (!bed.terrainCut || bed.points.length < 2) continue;
+    const reach = bed.width / 2 + bed.shoulder + Math.max(bed.blend, 15 * getModel().scale);
+    const { lengths, total } = polylineArcs(bed.points); let arc = 0;
+    for (let i = 0; i < bed.points.length - 1; i++) {
+      const a = bed.points[i]!, b = bed.points[i + 1]!, length = lengths[i]!;
+      const segment = { bed, a, b, length, arc, total }; arc += length;
+      const minX = Math.floor((Math.min(a[0], b[0]) - reach) / cell), maxX = Math.floor((Math.max(a[0], b[0]) + reach) / cell);
+      const minZ = Math.floor((Math.min(a[2], b[2]) - reach) / cell), maxZ = Math.floor((Math.max(a[2], b[2]) + reach) / cell);
+      for (let j = minZ; j <= maxZ; j++) for (let k = minX; k <= maxX; k++) {
+        const key = `${k},${j}`, bin = bins.get(key); if (bin) bin.push(segment); else bins.set(key, [segment]);
+      }
+    }
   }
+  const prepared = { bins, cell }; preparedBedCache.set(beds, prepared); return prepared;
+}
+/** Exact local segment lookup, exported for equivalence probes against brute force. */
+export function createBedSampler(beds: BedCut[]): (x: number, z: number, original: number) => { height: number; surface: number | null } {
+  const prepared = prepareBeds(beds), s = getModel().scale;
+  return (x, z, original) => {
+    let height = original, surface: number | null = null, active: BedCut | null = null;
+    let distance = Infinity, target = 0, progress = 0, excluded = false;
+    const apply = () => {
+      if (!active || excluded) return;
+      const edge = active.width / 2 + active.shoulder, blend = Math.max(active.blend, 15 * s);
+      const weight = 1 - smooth((distance - edge) / blend);
+      if (weight <= 0) return;
+      height = mix(height, target, weight);
+      if (distance <= active.width / 2) {
+        const material = active.surfaceSegments?.find(segment => progress >= segment.from && progress <= segment.to)?.surface ?? active.surface;
+        surface = Math.max(0, TERRAIN_SURFACE_PALETTE.findIndex(p => p.id === material));
+      }
+    };
+    for (const segment of prepared.bins.get(cellKey(x, z, prepared.cell)) ?? []) {
+      if (segment.bed !== active) {
+        apply(); active = segment.bed; distance = Infinity;
+        excluded = !!active.terrainExclusions?.some(e => Math.hypot(x - e.at[0], z - e.at[1]) < e.radius);
+      }
+      if (excluded) continue;
+      const { a, b } = segment, q = segmentPoint(x, z, [a[0], a[2]], [b[0], b[2]]);
+      if (q.distance < distance) { distance = q.distance; target = mix(a[1], b[1], q.t); progress = (segment.arc + segment.length * q.t) / (segment.total || 1); }
+    }
+    apply(); return { height, surface };
+  };
+}
+function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<typeof createBedSampler>): { height: number; surface: number | null } {
+  let { height, surface } = sampleBeds(x, z, baseHeight(x, z));
   for (const p of cuts.pads) {
     if (p.underground) continue;
     const distance = padDistance(p, x, z);
@@ -190,7 +247,7 @@ export function buildTerrain(cuts: LandCuts, options: { step?: number } = {}): T
   if (!(step > 0) || width % step !== 0 || depth % step !== 0) throw new Error('Terrain step must divide the scaled extent');
   const columns = width / step + 1, rows = depth / step + 1;
   const field: TerrainField = { revision: GEOGRAPHY_REVISION, width, depth, step, columns, rows, heights: new Float32Array(columns * rows), surfaces: new Uint8Array(columns * rows) };
-  const beds = prepareBeds(cuts.beds), painted = new Int16Array(columns * rows).fill(-1);
+  const beds = createBedSampler(cuts.beds), painted = new Int16Array(columns * rows).fill(-1);
   for (let j = 0; j < rows; j++) for (let i = 0; i < columns; i++) {
     const p = cutHeight(i * step, j * step, cuts, beds), n = j * columns + i;
     field.heights[n] = p.height; painted[n] = p.surface ?? -1;
@@ -224,8 +281,12 @@ export function sampleTerrain(field: TerrainField, x: number, z: number): number
   return tx + tz <= 1 ? nw + tx * (ne - nw) + tz * (sw - nw) : se + (1 - tx) * (sw - se) + (1 - tz) * (ne - se);
 }
 export function terrainNormal(field: TerrainField, x: number, z: number): XYZ {
-  const d = field.step, dx = (sampleTerrain(field, x + d, z) - sampleTerrain(field, x - d, z)) / (2 * d);
-  const dz = (sampleTerrain(field, x, z + d) - sampleTerrain(field, x, z - d)) / (2 * d), length = Math.hypot(dx, 1, dz);
+  const gx = clamp(x / field.step, 0, field.columns - 1), gz = clamp(z / field.step, 0, field.rows - 1);
+  const i = Math.min(field.columns - 2, Math.floor(gx)), j = Math.min(field.rows - 2, Math.floor(gz)), n = j * field.columns + i;
+  const nw = field.heights[n]!, ne = field.heights[n + 1]!, sw = field.heights[n + field.columns]!, se = field.heights[n + field.columns + 1]!;
+  const first = gx - i + gz - j <= 1;
+  const dx = (first ? ne - nw : se - sw) / field.step, dz = (first ? sw - nw : se - ne) / field.step;
+  const length = Math.hypot(dx, 1, dz);
   return [-dx / length, 1 / length, -dz / length];
 }
 /** Named portals/skylights are the only holes. Render and collision share this mask. */
@@ -243,7 +304,12 @@ export function bandProbeEligibility(id: string, x: number, z: number, cuts?: La
   if (notch.distance < 50 * m.scale && z > 905 * m.scale && z < 1170 * m.scale) return 'notch-walls';
   if (cuts) {
     for (const p of cuts.pads) if (!p.underground && padDistance(p, x, z) < p.blend) return 'graded-pad';
-    for (const b of cuts.beds) if (b.terrainCut && linePoint(b.points, x, z).distance < b.width / 2 + b.shoulder + Math.max(15 * m.scale, b.blend)) return 'bed-and-15m-blend';
+    const prepared = prepareBeds(cuts.beds);
+    for (const segment of prepared.bins.get(cellKey(x, z, prepared.cell)) ?? []) {
+      const b = segment.bed;
+      if (b.terrainExclusions?.some(e => Math.hypot(x - e.at[0], z - e.at[1]) < e.radius)) continue;
+      if (segmentPoint(x, z, [segment.a[0], segment.a[2]], [segment.b[0], segment.b[2]]).distance < b.width / 2 + b.shoulder + Math.max(15 * m.scale, b.blend)) return 'bed-and-15m-blend';
+    }
     if (!terrainTriangleVisible(x, z, cuts)) return 'named-mouth';
   }
   return null;

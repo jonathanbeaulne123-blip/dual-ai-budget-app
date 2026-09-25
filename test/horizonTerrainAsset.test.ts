@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { TerrainField } from '../src/harbour/horizon/land/interfaces';
-import { decodeTerrainAsset, encodeTerrainAsset } from '../src/harbour/horizon/land/terrain/asset';
-import { sampleTerrain } from '../src/harbour/horizon/land/terrain';
+import { decodeTerrainAsset, encodeTerrainAsset, decimateTerrain } from '../src/harbour/horizon/land/terrain/asset';
+import { sampleTerrain, terrainNormal } from '../src/harbour/horizon/land/terrain';
 import { readFileSync } from 'node:fs';
 
 describe('Horizon asynchronous terrain asset format', () => {
@@ -29,10 +29,20 @@ describe('Horizon asynchronous terrain asset format', () => {
     const bytes = encodeTerrainAsset(fixture()); new Uint8Array(bytes)[8] = 120;
     expect(() => decodeTerrainAsset(bytes)).toThrow('revision');
   });
+  it('exports a 5 m full tier without changing the 20 m Journey sample positions', () => {
+    const master = fixture(), full = decimateTerrain(master, 2), asset = encodeTerrainAsset(full);
+    expect(asset.byteLength).toBeLessThan(600_000);
+    expect(decodeTerrainAsset(asset, 'full').step).toBe(5);
+    expect(decodeTerrainAsset(asset, 'lite').step).toBe(10);
+    const journey = decodeTerrainAsset(asset, 'journey'); expect(journey.step).toBe(20);
+    expect(journey.heights).toEqual(decodeTerrainAsset(encodeTerrainAsset(master), 'journey').heights);
+  });
   it('interpolates the exact NW-SW-NE / NE-SW-SE mesh, not a different curved floor', () => {
     const f: TerrainField = { revision: 'horizon-geo-1', width: 1, depth: 1, step: 1, columns: 2, rows: 2, heights: new Float32Array([0, 0, 0, 4]), surfaces: new Uint8Array(4) };
     expect(sampleTerrain(f, 0.4, 0.4)).toBe(0);
     expect(sampleTerrain(f, 0.8, 0.8)).toBeCloseTo(2.4);
+    expect(terrainNormal(f, 0.4, 0.4)).toEqual([-0, 1, -0]);
+    expect(terrainNormal(f, 0.8, 0.8)[1]).toBeCloseTo(1 / Math.sqrt(33));
   });
   it('does not solve a terrain at module evaluation', () => {
     const source = readFileSync(new URL('../src/harbour/horizon/land/terrain/index.ts', import.meta.url), 'utf8');

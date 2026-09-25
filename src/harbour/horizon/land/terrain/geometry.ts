@@ -33,11 +33,19 @@ export function polygonCentre(poly: readonly XY[]): XY {
 export function ellipse(cx: number, cz: number, rx: number, rz: number, count = 48): XY[] {
   return Array.from({ length: count }, (_, i): XY => [cx + rx * Math.cos(i * Math.PI * 2 / count), cz + rz * Math.sin(i * Math.PI * 2 / count)]);
 }
+const arcs = new WeakMap<readonly XYZ[], { lengths: number[]; total: number }>();
+/** Call only with the completed immutable cut data, never with a spline still being graded. */
+export function polylineArcs(points: readonly XYZ[]): { lengths: number[]; total: number } {
+  let cached = arcs.get(points);
+  if (!cached) {
+    const lengths = points.slice(1).map((b, i) => Math.hypot(b[0] - points[i]![0], b[2] - points[i]![2]));
+    cached = { lengths, total: lengths.reduce((sum, length) => sum + length, 0) }; arcs.set(points, cached);
+  }
+  return cached;
+}
 export function linePoint(points: readonly XYZ[], x: number, z: number): { distance: number; height: number; progress: number; x: number; z: number; tangent: XY } {
   let best = { distance: Infinity, height: 0, progress: 0, x, z, tangent: [1, 0] as XY };
-  let total = 0;
-  const lengths = points.slice(1).map((b, i) => Math.hypot(b[0] - points[i]![0], b[2] - points[i]![2]));
-  for (const l of lengths) total += l;
+  const { lengths, total } = polylineArcs(points);
   let travelled = 0;
   for (let i = 0; i < points.length - 1; i++) {
     const a = points[i]!, b = points[i + 1]!, length = lengths[i]!;

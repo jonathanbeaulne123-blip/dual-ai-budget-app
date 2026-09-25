@@ -9,7 +9,7 @@ describe('Horizon authored continuous landforms', () => {
   it('respects every effective exposed polygon band and reports exclusions separately', () => {
     const report: Record<string, unknown> = {};
     for (const band of M.landforms) if (band.poly && Array.isArray(band.h)) {
-      const poly = band.poly as XY[], exclusions: Record<string, number> = {};
+      const poly = band.poly.map(p => [p[0]!, p[1]!] as XY), exclusions: Record<string, number> = {};
       let eligible = 0, passed = 0, all = 0, rawPass = 0;
       const minX = Math.min(...poly.map(p => p[0])), maxX = Math.max(...poly.map(p => p[0]));
       const minZ = Math.min(...poly.map(p => p[1])), maxZ = Math.max(...poly.map(p => p[1]));
@@ -31,7 +31,7 @@ describe('Horizon authored continuous landforms', () => {
     expect(baseHeight(1310, 470)).toBeCloseTo(158, 5);
     for (let z = 180; z < 1500; z += 20) for (let x = 300; x < 1710; x += 20) expect(baseHeight(x, z)).toBeLessThanOrEqual(158.001);
     for (const band of M.landforms) if (band.poly && Array.isArray(band.h)) {
-      const poly = band.poly as XY[], centre = polygonCentre(poly), radii: number[] = [];
+      const poly = band.poly.map(p => [p[0]!, p[1]!] as XY), centre = polygonCentre(poly), radii: number[] = [];
       // Find the actual heightfield's first mid-band contour in each direction.
       const mid = (band.h[0]! + band.h[1]!) / 2;
       const startsAbove = baseHeight(centre[0], centre[1]) >= mid;
