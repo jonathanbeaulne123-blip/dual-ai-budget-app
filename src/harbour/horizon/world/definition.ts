@@ -59,7 +59,10 @@ export interface WorldDefinition {
   lanterns: LanternSpot[];
   protected: ProtectedArea[];
   /** Serialized meshes are the same indexed solids used by rendering, ray casts and proofs. */
-  geometry?: { solids: StructureSolid[]; sourceMap?: Record<string, string[]> };
+  geometry?: { solids: StructureSolid[]; sourceMap?: Record<string, string[]>; simplification?: {
+    method: 'meshopt' | 'prism-chain'; requestedErrorEu: number; targetIndexRatio: number; inputTriangles: number; outputTriangles: number; changedSolids: number; maxReportedErrorEu: number; fullCollisionUnchanged: true; maximumMergedPrisms?: number; minWidthRatio?: number;
+    solids: { id: string; inputTriangles: number; outputTriangles: number; reportedErrorEu: number; boundsDeviationEu: number; accepted: boolean; reason?: string }[];
+  } };
   collision?: { beds: BedCut[]; pads: PadCut[]; mouths: MouthMask[]; waters: WaterCut[]; walkableSlopeDegrees: number; lipStepMax: number };
   pathGraph?: HorizonPathGraph;
   diagnostics?: LandDiagnostic[];
