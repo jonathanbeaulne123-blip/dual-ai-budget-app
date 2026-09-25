@@ -1,11 +1,11 @@
 import type { Point2, Point3, Crossing, Line } from './definition.ts';
 import type { LandCuts, BedCut, StructureSolid } from '../land/interfaces.ts';
 import { HORIZON_MANIFEST, requireScaleFactor } from './manifest.ts';
-import { closestOnPolyline, mixPoint, pointInPolygon, padOutline, raySolid, segmentIntersections, solidBounds, solidTopAt } from './geometry.ts';
+import { closestOnPolyline, mixPoint, pointInPolygon, padOutline, raySolid, segmentIntersections, solidBounds, solidVerticalRangeAt } from './geometry.ts';
 
 export interface Centreline { id: string; sourceId?: string; points: readonly Point3[]; clearHeight: number; kind: string; structureIds: string[] }
 export interface Intersection { a: string; b: string; sourceA?: string; sourceB?: string; at: Point2; heightA: number; heightB: number; segmentA: number; segmentB: number; overlap: boolean }
-export interface CrossingProof extends Intersection { id: string; resolution: Crossing['resolution']; manifestIndex?: number; registered: boolean; proposed: boolean; separation: number; requiredClearance: number; clearancePass: boolean; structureIds: string[]; built: boolean; padId?: string; markerId?: string; kerbGap?: boolean; note?: string }
+export interface CrossingProof extends Intersection { id: string; resolution: Crossing['resolution']; manifestIndex?: number; registered: boolean; proposed: boolean; separation: number; clearHeight?: number; requiredClearance: number; clearancePass: boolean; structureIds: string[]; built: boolean; padId?: string; markerId?: string; kerbGap?: boolean; note?: string }
 const canonical = (id: string): string => ({ 'Crown Road': 'V02', 'river mouth': 'river lower', 'water.river.upper': 'river upper', 'water.river.lower': 'river lower', 'water.brook': 'brook', 'water wash': 'wash', 'water.wash': 'wash', 'water.reach.1': 'reachChannel.1', 'water.reach.2': 'reachChannel.2', 'Reach west channel': 'reachChannel.1', 'Reach east channel': 'reachChannel.2', 'S1 finish': 'S1' }[id] ?? id);
 function matches(name: string, id: string): boolean { return name.split('+').some(part => canonical(part.trim()) === canonical(id)); }
 function camel(value: string): string { const words = value.replace(/[^a-zA-Z0-9]+/g, ' ').trim().split(/\s+/); return words.map((w, i) => i === 0 ? w.charAt(0).toLowerCase() + w.slice(1) : w.charAt(0).toUpperCase() + w.slice(1)).join(''); }
@@ -50,10 +50,23 @@ export function buildCrossings(cuts: LandCuts, lines: readonly Line[] = []): { c
     const obstructionHeight = Math.min(hit.heightA, hit.heightB) + .08;
     const directions = [a, b].map(line => { const nearest = closestOnPolyline(line.points, hit.at[0], hit.at[1]), p = line.points[nearest.segment]!, q = line.points[nearest.segment + 1]!, length = Math.hypot(q[0] - p[0], q[2] - p[2]) || 1; return [(q[0] - p[0]) / length, (q[2] - p[2]) / length] as Point2; });
     const kerbGap = !cuts.solids.some(solid => (solid.role === 'rail' || solid.role === 'wall') && solidNear(solid, hit.at, 8) && boxes.get(solid.id)!.min[1] <= obstructionHeight && boxes.get(solid.id)!.max[1] >= obstructionHeight && directions.some(dir => raySolid([hit.at[0] - dir[0] * 6, obstructionHeight, hit.at[1] - dir[1] * 6], [hit.at[0] + dir[0] * 6, obstructionHeight, hit.at[1] + dir[1] * 6], solid)));
-    const clearancePass = resolution === 'threshold' ? separation <= .5 : (resolution === 'over' ? hit.heightA - hit.heightB : hit.heightB - hit.heightA) >= required;
+    let clearHeight = separation;
+    const foot = Math.min(hit.heightA, hit.heightB), upperHeight = Math.max(hit.heightA, hit.heightB);
     const upper = hit.heightA > hit.heightB ? a : b;
-    const built = resolution === 'threshold' ? !!pad && !!marker && kerbGap && clearancePass : relevant.some(solid => (['deck', 'roof', 'floor'].includes(solid.role) || upper.kind === 'cable' && solid.kind === 'cable' && solid.role === 'rail') && solidTopAt(solid, hit.at[0], hit.at[1]) !== null) && clearancePass;
-    const proof: CrossingProof = { ...hit, id: `${base}${n}`, resolution, registered: !!match, proposed: !match, ...(match ? { manifestIndex: match.index } : {}), separation, requiredClearance: resolution === 'threshold' ? .5 : required, clearancePass, structureIds: relevant.map(solid => solid.id), built, ...(pad ? { padId: pad.id } : {}), ...(marker ? { markerId: marker.id } : {}), ...(resolution === 'threshold' ? { kerbGap } : {}), ...(match?.row.note ? { note: match.row.note } : {}) };
+    const physical = relevant.filter(solid => {
+      const range = solidVerticalRangeAt(solid, hit.at[0], hit.at[1]); if (!range) return false;
+      if (solid.role === 'roof' && solid.bedIds.some(id => canonical(id) === lower.id) && range.bottom > foot) { clearHeight = Math.min(clearHeight, range.bottom - foot); return true; }
+      if (solid.role === 'deck' && Math.abs(range.top - upperHeight) <= .75) {
+        const prefix = solid.id.replace(/\.(deck|bed|floor|surface\.\d+)$/, '');
+        const supported = cuts.solids.some(p => p.role === 'support' && (p.id.startsWith(`${prefix}.`) || p.bedIds.some(id => canonical(id) === upper.id) && solidNear(p, hit.at, 50)));
+        if (supported) { clearHeight = Math.min(clearHeight, range.bottom - foot); return true; }
+      }
+      if (upper.kind === 'cable' && solid.kind === 'cable' && solid.role === 'rail' && solid.bedIds.some(id => canonical(id) === upper.id)) { clearHeight = Math.min(clearHeight, range.bottom - foot); return cuts.solids.some(p => p.role === 'support' && (p.bedIds.includes(upper.id) || upper.id === 'ZIP' && p.id.startsWith('platform.'))); }
+      return false;
+    });
+    const clearancePass = resolution === 'threshold' ? separation <= .5 : (resolution === 'over' ? hit.heightA - hit.heightB : hit.heightB - hit.heightA) >= required && clearHeight >= required - 1e-6;
+    const built = resolution === 'threshold' ? !!pad && !!marker && kerbGap && clearancePass : physical.length > 0 && clearancePass;
+    const proof: CrossingProof = { ...hit, id: `${base}${n}`, resolution, registered: !!match, proposed: !match, ...(match ? { manifestIndex: match.index } : {}), separation, clearHeight, requiredClearance: resolution === 'threshold' ? .5 : required, clearancePass, structureIds: relevant.map(solid => solid.id), built, ...(pad ? { padId: pad.id } : {}), ...(marker ? { markerId: marker.id } : {}), ...(resolution === 'threshold' ? { kerbGap } : {}), ...(match?.row.note ? { note: match.row.note } : {}) };
     return proof;
   });
   return { proofs, crossings: proofs.map(p => ({ id: p.id, a: p.a, b: p.b, at: p.at, resolution: p.resolution, structure: p.structureIds[0], proof: p })) };

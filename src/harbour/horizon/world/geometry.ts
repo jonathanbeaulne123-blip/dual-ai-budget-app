@@ -57,8 +57,11 @@ export function raySolid(origin: Point3, end: Point3, solid: StructureSolid): bo
 }
 /** Height of the actual triangle at x/z, not the top of a composite object's bounding box. */
 export function solidTopAt(solid: StructureSolid, x: number, z: number): number | null {
+  return solidVerticalRangeAt(solid, x, z)?.top ?? null;
+}
+export function solidVerticalRangeAt(solid: StructureSolid, x: number, z: number): { top: number; bottom: number } | null {
   const get = (i: number): Point3 => [solid.positions[i * 3]!, solid.positions[i * 3 + 1]!, solid.positions[i * 3 + 2]!];
-  let top: number | null = null;
-  for (let i = 0; i < solid.indices.length; i += 3) { const a = get(solid.indices[i]!), b = get(solid.indices[i + 1]!), c = get(solid.indices[i + 2]!); const den = (b[2] - c[2]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[2] - c[2]); if (Math.abs(den) < 1e-9) continue; const u = ((b[2] - c[2]) * (x - c[0]) + (c[0] - b[0]) * (z - c[2])) / den, v = ((c[2] - a[2]) * (x - c[0]) + (a[0] - c[0]) * (z - c[2])) / den, w = 1 - u - v; if (Math.min(u, v, w) < -1e-6) continue; const h = a[1] * u + b[1] * v + c[1] * w; if (top === null || h > top) top = h; }
-  return top;
+  let top: number | null = null, bottom = Infinity;
+  for (let i = 0; i < solid.indices.length; i += 3) { const a = get(solid.indices[i]!), b = get(solid.indices[i + 1]!), c = get(solid.indices[i + 2]!); const den = (b[2] - c[2]) * (a[0] - c[0]) + (c[0] - b[0]) * (a[2] - c[2]); if (Math.abs(den) < 1e-9) continue; const u = ((b[2] - c[2]) * (x - c[0]) + (c[0] - b[0]) * (z - c[2])) / den, v = ((c[2] - a[2]) * (x - c[0]) + (a[0] - c[0]) * (z - c[2])) / den, w = 1 - u - v; if (Math.min(u, v, w) < -1e-6) continue; const h = a[1] * u + b[1] * v + c[1] * w; if (top === null || h > top) top = h; bottom = Math.min(bottom, h); }
+  return top === null ? null : { top, bottom };
 }

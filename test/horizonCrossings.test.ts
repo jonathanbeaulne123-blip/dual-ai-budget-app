@@ -15,3 +15,11 @@ it('does not turn an unbuilt crossing into a passing registered resolution', () 
   expect(result).toMatchObject({ registered: false, proposed: true, resolution: 'threshold', built: false });
   expect(result.id).toMatch(/^[a-z][a-zA-Z0-9]+$/);
 });
+it('does not count an ordinary floating bed as a built bridge, and measures a supported deck underside',()=>{
+  const beds:BedCut[]=['upper','lower'].map((id,i)=>({id,kind:'road',profile:'road',surface:'paved',points:i?[[-5,0,0],[5,0,0]]:[[0,5,-5],[0,5,5]],width:2,shoulder:0,blend:0,clearHeight:5,maxGrade:.12,terrainCut:true,structureIds:[],districtIds:[]}));
+  const deck={id:'upper.bed',kind:'bed',positions:[-1,4.4,-1,-1,4.4,1,1,4.4,1,1,4.4,-1,-1,5,-1,-1,5,1,1,5,1,1,5,-1],indices:[0,2,1,0,3,2,4,5,6,4,6,7],surface:'paved',districtId:'harbour',bedIds:['upper'],walkable:true,role:'deck' as const};
+  const cuts:LandCuts={beds,pads:[],mouths:[],waters:[],solids:[deck],diagnostics:[]};
+  expect(buildCrossings(cuts).proofs[0]?.built).toBe(false);
+  cuts.solids.push({...deck,id:'upper.supports',kind:'pier',role:'support',positions:deck.positions.map((v,i)=>i%3===1?v-1:v+2),walkable:false});
+  const proof=buildCrossings(cuts).proofs[0]!;expect(proof.clearHeight).toBeCloseTo(4.4);expect(proof.clearancePass).toBe(false);expect(proof.built).toBe(false);
+});

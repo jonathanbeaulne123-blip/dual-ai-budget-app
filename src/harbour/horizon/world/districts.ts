@@ -20,7 +20,7 @@ export function partitionWorldSolids(solids: readonly StructureSolid[]): (Struct
   const output: (StructureSolid & { sourceId: string })[] = [];
   for (const source of solids) {
     const chunks = new Map<string, { solid: StructureSolid & { sourceId: string }; vertices: Map<number, number> }>();
-    const fixed = source.districtId === 'undercroft' ? 'undercroft' : /^(offshore\.|lamp\.|needle\.|stacks\.|wreck\.|sandbar\.)/.test(source.id) ? 'offshore' : null;
+    const fixed = source.districtId === 'undercroft' || /^(underground\.|oreTunnel\.|oreSiding\.|seaPassage\.|deep\.skylight\.)/.test(source.id) ? 'undercroft' : /^(offshore\.|lamp\.|needle\.|stacks\.|wreck\.|sandbar\.)/.test(source.id) ? 'offshore' : null;
     for (let i = 0; i < source.indices.length; i += 3) {
       const indices = [source.indices[i]!, source.indices[i + 1]!, source.indices[i + 2]!], x = indices.reduce((sum, id) => sum + source.positions[id * 3]!, 0) / 3, z = indices.reduce((sum, id) => sum + source.positions[id * 3 + 2]!, 0) / 3, id = fixed ?? districtAt(x, z);
       let chunk = chunks.get(id);
@@ -44,7 +44,7 @@ export function buildDistricts(field: TerrainField, beds: readonly BedCut[], sol
   const u = m.underground.footprint, outline = ellipse(u.cx * s, u.cy * s, u.rx * s, u.ry * s);
   byId.get('crown')!.children = [{ id: 'undercroft', neighbourhood: 'crown', childOf: 'crown', outline, bounds: { id: 'undercroft', neighbourhood: 'crown', childOf: 'crown', outline, min: [1090 * s, 0, 280 * s], max: [1720 * s, 140 * s, 800 * s] }, solidIds: [], bedIds: [] }];
   for (const solid of solids) { const b = solidBounds(solid), owner = solid.districtId === 'undercroft' ? 'crown' : solid.districtId; const d = byId.get(owner) ?? byId.get(districtAt((b.min[0] + b.max[0]) / 2, (b.min[2] + b.max[2]) / 2))!; d.solidIds!.push(solid.id); d.triangles!.full += solid.indices.length / 3; d.triangles!.lite += solid.indices.length / 3; d.drawCalls!++; if (solid.districtId === 'undercroft') d.children![0]!.solidIds!.push(solid.id); }
-  for (const bed of beds) { const ids = new Set(bed.points.map(p => districtAt(p[0], p[2]))); for (const id of ids) byId.get(id)!.bedIds!.push(bed.id); }
+  for (const bed of beds) { const ids = new Set(bed.points.map(p => districtAt(p[0], p[2]))); for (const id of ids) byId.get(id)!.bedIds!.push(bed.id); if (bed.kind === 'cave' || bed.kind === 'rail') byId.get('crown')!.children![0]!.bedIds!.push(bed.id); }
   // These counts correspond to terrain tiles at the world's full/lite sample spacing.
   for (const [tier, stride] of [['full', 1], ['lite', Math.max(1, Math.round(10 * s / field.step))]] as const) {
     for (let z = 0; z < field.rows - 1; z += stride) for (let x = 0; x < field.columns - 1; x += stride) {
