@@ -51,7 +51,7 @@ Directly: `appendPlanSitdownTurn`, `acknowledgeHouseholdPlan`, `closeBooksMonth`
 - `test/campfire-ritual.test.ts` (new, 18): beat order + focus + dialog; seal needs both (UI, two phones, second-person words) and one person never seals; books close only in Settle, held until both chairs, once; weekly Sitdown writes turns only (UI + source fence); `campfireState` lines; Campfire vs weekly thread; Protect never suggested; command allow-list / no money commands; vocabulary fence over the ritual, `ChapterPanel`, `SitDownGuide`, `BooksTab` and PlanStudio's sitdown/review lines. **18/18 pass.**
 - Updated: `harbour-rooms` (door targets) ✓; `kitchen` (leftover guide's `applySitDown(current, …)`), `weekly-document-ui` ✓; `plan-life-ui`, `kitchen-wizard-ui`, `plan-v3-ui` ✓ (32/32). `test/hearthside-chapter-browser.test.ts` + its fixture now drive the ritual's beats — **not run** (needs Chrome; none here).
 - Pre-existing failures, unchanged files, not mine: `terms.test` (KitchenWizard/QueenHome/hearthside strings), `copy-budget` (47 unrelated paragraphs, `App.tsx:8249` Whisper), `kitchen`/`ledger-story-ui` KittyBanks assertions.
-- `tsc`: focused project over App.tsx + every touched file and test — **clean**. Full `pnpm typecheck`: see the result line in my final reply.
+- `tsc`: focused project over App.tsx + every touched file and test — **clean**. Full `pnpm typecheck` (`tsc --noEmit`, whole project): **exit 0**.
 
 ## Dressings, layout, motion
 
