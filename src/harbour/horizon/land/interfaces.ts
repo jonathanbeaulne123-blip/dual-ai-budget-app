@@ -68,6 +68,7 @@ export interface StructureSolid {
   indices: number[];
   /** Offline simplified rendering; collision retains the full indices. */
   liteIndices?: number[];
+  litePositions?: number[];
   liteErrorEu?: number;
   surface: string;
   districtId: string;
