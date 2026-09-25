@@ -6,7 +6,7 @@
  *
  * Evaluated once per grid node when `terrain.ts` bakes the heightfield; never per frame.
  */
-import {GORGE_POINTS,RESERVOIR_BOWL,TERRACES,type Terrace} from './places.ts';
+import {GORGE_POINTS,RESERVOIR_BOWL,TERRACES,RIVER_BED_DEPTH,type Terrace} from './places.ts';
 import {clamp,smooth,mix} from './math.ts';
 
 /** Crest line points: [x, z, crest height, crest rounding radius]. */
@@ -14,6 +14,7 @@ type Spine=readonly (readonly [x:number,z:number,h:number,w:number])[];
 
 /** Crest lines. Heights are crest heights; widths are the half-width of the shoulder. */
 export const RIDGES:readonly {id:string;spine:Spine;slope?:number}[]=[
+  {id:'crown',spine:[[-8,-304,110,6],[-4,-300,110,6]]},
   {id:'east-arm',slope:.78,spine:[[4,-302,106,30],[40,-292,100,30],[74,-276,96,28],[96,-248,86,30],[108,-210,64,30],[112,-170,42,30],[110,-130,28,30],[100,-94,14,26],[88,-64,3,22]]},
   {id:'west-arm',slope:.78,spine:[[4,-302,106,30],[-38,-290,102,30],[-70,-264,90,32],[-96,-236,74,32],[-114,-198,58,32],[-116,-160,44,32],[-106,-126,34,30],[-90,-94,18,28],[-76,-64,4,24]]},
   // Inner spurs: gorge rims, shoulders and the saddles the road uses.
@@ -21,7 +22,8 @@ export const RIDGES:readonly {id:string;spine:Spine;slope?:number}[]=[
   {id:'reservoir-spur',spine:[[92,-232,82,16],[80,-214,78,16],[56,-210,73,14],[30,-212,68,8]]},
   {id:'west-rim',spine:[[-64,-204,52,18],[-36,-198,47,14],[-18,-194,45,8]]},
   {id:'orchard-north',spine:[[-104,-150,44,18],[-70,-148,40,16],[-30,-144,34,12]]},
-  {id:'orchard-rim',spine:[[-24,-140,30,12],[-22,-122,26,12],[-22,-106,22,10]]},
+  {id:'orchard-rim',spine:[[-26,-150,38,10],[-24,-134,36,10],[-22,-118,28,10],[-22,-106,22,10]]},
+  {id:'gorge-east-rim',spine:[[22,-150,38,8],[26,-136,37,8],[26,-124,30,8]]},
   {id:'dam-west',spine:[[-60,-252,92,20],[-28,-242,91,14],[-14,-238,90,8]]},
   {id:'dam-east',spine:[[70,-256,94,20],[44,-244,92,14],[30,-238,90,8]]},
 ];
@@ -76,8 +78,8 @@ export function terraceWeight(t:Terrace,x:number,z:number):number{
 
 /** River channel profile across the water line: a shallow bed, soft banks and steep gorge walls. */
 export function channelProfile(d:number,wall:number):number{
-  if(d<3)return -.35;
-  if(d<6)return mix(-.35,.6,smooth((d-3)/3));
+  if(d<3)return -RIVER_BED_DEPTH;
+  if(d<6)return mix(-RIVER_BED_DEPTH,.6,smooth((d-3)/3));
   return .6+wall*(d-6)*smooth((d-6)/5);
 }
 export type RiverHit={d:number;y:number;s:number;wall:number};

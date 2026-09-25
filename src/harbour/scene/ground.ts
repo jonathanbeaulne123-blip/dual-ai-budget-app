@@ -1,5 +1,6 @@
 import {townChannelHeight} from '../mountain/townChannel.ts';
 import {mountainBaseHeight,districtAt} from '../mountain/definition.ts';
+import {mountainGround as mountainGroundRaw} from '../mountain/mountainGround.ts';
 import {islandHeight,SEA_LEVEL as ISLAND_SEA_LEVEL,TERRACE_LEVEL as ISLAND_TERRACE_LEVEL} from '../mountain/islandShape.ts';
 import * as THREE from "three";
 import type { PlaceDressing } from "./place.ts";
@@ -35,7 +36,9 @@ export const TERRAIN_LATTICE_BOUNDS = {minX:-200,maxX:200,minZ:-396,maxZ:84} as 
  */
 export function groundHeightAt(x: number, z: number): number {
   if(z < -48)return Math.max(islandHeight(x,z),mountainBaseHeight(x,z));
-  return townChannelHeight(x,z,islandHeight(x,z));
+  // The island's north edge also carries the road foot's embankment and the funicular platform (raise-only).
+  const island=z<-30?Math.max(islandHeight(x,z),mountainGroundRaw(x,z)):islandHeight(x,z);
+  return townChannelHeight(x,z,island);
 }
 
 /**

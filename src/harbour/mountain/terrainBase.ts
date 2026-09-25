@@ -7,6 +7,7 @@ import {macroHeight,terraceWeight,channelProfile,nearestRiver,bowlHeight,smin} f
 import {TERRACES,RESERVOIR_BOWL,GORGE_POINTS} from './places.ts';
 import {ROAD_CENTRE,ORCHARD_LANE_CENTRE,BRIDGE_TAGS,roadTagS,laneTagS} from './roadLine.ts';
 import {mix,type Point3} from './math.ts';
+import {islandHeight} from './islandShape.ts';
 
 export type HeightGrid={minX:number;minZ:number;step:number;cols:number;rows:number;data:Float32Array};
 export const TERRAIN_GRID_BOUNDS={minX:-200,maxX:200,minZ:-396,maxZ:-30} as const;
@@ -34,7 +35,8 @@ export function shapingSamples():{points:readonly Point3[];halfWidth:number}[]{
   };
   const roadSpans=BRIDGE_TAGS.filter(b=>b.line==='road').map(b=>{const a=roadTagS(b.from),c=roadTagS(b.to);return [Math.min(a,c)-4,Math.max(a,c)+4] as [number,number];});
   const laneSpans=BRIDGE_TAGS.filter(b=>b.line==='lane').map(b=>{const a=laneTagS(b.from),c=laneTagS(b.to);return [Math.min(a,c)-4,Math.max(a,c)+4] as [number,number];});
-  return [...cut(ROAD_CENTRE,roadSpans).map(points=>({points,halfWidth:4.8})),...cut(ORCHARD_LANE_CENTRE,laneSpans).map(points=>({points,halfWidth:3.2}))];
+  // The lane is benched exactly but does not reshape the hollow and gorge rims around it.
+  void laneSpans;return cut(ROAD_CENTRE,roadSpans).map(points=>({points,halfWidth:4.8}));
 }
 
 function bakeBase():HeightGrid{
@@ -68,6 +70,9 @@ function bakeBase():HeightGrid{
   {const b=RESERVOIR_BOWL,rx=b.radii[0]*2.4,rz=b.radii[1]*2.4;each(b.at[0]-rx,b.at[0]+rx,b.at[1]-rz,b.at[1]+rz,(x,z,i)=>{const bowl=bowlHeight(x,z);if(bowl<Infinity)data[i]=smin(data[i]!,bowl,6);});}
   {let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity;for(const p of GORGE_POINTS){x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);z0=Math.min(z0,p[2]);z1=Math.max(z1,p[2]);}
     each(x0-70,x1+70,z0-70,z1+70,(x,z,i)=>{const river=nearestRiver(x,z);if(river.d<70)data[i]=smin(data[i]!,river.y+channelProfile(river.d,river.wall),3);});}
+  // South of z −48 the harbour island owns the ground: the base sits just under it, so a bench
+  // there (the road foot's embankment, a platform) can only ever raise the island, never cut it.
+  for(let r=0;r<rows;r++){const z=g.minZ+r;if(z<=-48)continue;for(let c=0;c<cols;c++){const x=g.minX+c,i=r*cols+c;data[i]=Math.min(data[i]!,islandHeight(x,z)-.03);}}
   if(typeof process!=='undefined'&&process.env?.HEARTH_TERRAIN_TIMING)console.info('base bake',{macro:t1-t0,shape:t2-t1,detail:performance.now()-t2});
   return g;
 }

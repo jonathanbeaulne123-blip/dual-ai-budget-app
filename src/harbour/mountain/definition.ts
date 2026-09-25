@@ -34,6 +34,7 @@ export {MOUNTAIN_ROAD,TOWN_RACE_ROAD,TOWN_LANE_HALF_WIDTH,CANAL_BRIDGE,SKILL_BRA
 export {MOUNTAIN_PATH_GRAPH,DOOR_APRONS,OVERLOOKS,mountainWalkPlan,type PathNode,type PathEdge,type PathNodeKind,type PathEdgeKind,type WalkPlan,type DoorApron} from './pathGraph.ts';
 export {FUNICULAR_STOPS,GONDOLA_STOPS,TRANSPORT_STOPS,TRANSPORT_LINES,FUNICULAR_LINE,GONDOLA_LINE,transportSpline,transportPoint,type TransportKind,type TransportLine,type TransportFrame,type TransportStation} from './transport.ts';
 export {RESERVOIR,DAM_PARTS,KITTY_CHAMBERS} from './damParts.ts';
+export {BRIDGES,TRANSPORT_CROSSINGS,type Crossing} from './crossings.ts';
 
 export type RouteProjection={point:Point3;distance:number;index:number;t:number;gradientX:number;gradientZ:number};
 type RouteIndex={cells:Map<string,number[]>;minX:number;maxX:number;minZ:number;maxZ:number};

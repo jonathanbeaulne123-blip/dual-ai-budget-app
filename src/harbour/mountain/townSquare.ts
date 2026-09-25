@@ -48,7 +48,7 @@ export const TOWN_SQUARE={
   /** The four sites the moved buildings left, re-used. */
   vacated:[
     {id:'old-home',at:[-24,26] as P2,was:'home',use:'garden' as const,half:[6,5] as const},
-    {id:'old-library',at:[-28,-18] as P2,was:'library',use:'garden' as const,half:[6,5] as const},
+    {id:'old-library',at:[-28,-18] as P2,was:'library',use:'lane-garden' as const,half:[6,5] as const},
     {id:'old-glasshouse',at:[-43,6] as P2,was:'glasshouse',use:'orchard-edge' as const,half:[7,6] as const},
     {id:'old-cottage',at:[17,35] as P2,was:'cottage',use:'quay-widening' as const,half:[8,6] as const},
   ],
@@ -56,10 +56,10 @@ export const TOWN_SQUARE={
   roadTaper:{points:MOUNTAIN_ROAD_LINE.samples.slice(0,19).map(s=>s.at),halfWidths:MOUNTAIN_ROAD_LINE.samples.slice(0,19).map(s=>s.halfWidth),lane:TOWN_RACE_ROAD,laneHalfWidth:TOWN_LANE_HALF_WIDTH},
   /** Sheltered arrival points (a canopy or porch over each). */
   arrivals:[
-    {id:'arrival:road-foot',at:[14,-40] as P2,facing:faceSquare(14,-40),label:'Mountain road gate'},
+    {id:'arrival:road-foot',at:[-20,-38] as P2,facing:faceSquare(-20,-38),label:'Mountain road gate'},
     {id:'arrival:funicular',at:[FUNICULAR_LINE.stations[0]!.platform.at[0],FUNICULAR_LINE.stations[0]!.platform.at[2]] as P2,facing:faceSquare(FUNICULAR_LINE.stations[0]!.platform.at[0],FUNICULAR_LINE.stations[0]!.platform.at[2]),label:'Funicular'},
     {id:'arrival:gondola',at:[GONDOLA_LINE.stations[0]!.platform.at[0],GONDOLA_LINE.stations[0]!.platform.at[2]] as P2,facing:faceSquare(GONDOLA_LINE.stations[0]!.platform.at[0],GONDOLA_LINE.stations[0]!.platform.at[2]),label:'Gondola'},
-    {id:'arrival:finish',at:[RACE_FINISH.at[0]-10,RACE_FINISH.at[2]-4] as P2,facing:faceSquare(RACE_FINISH.at[0]-10,RACE_FINISH.at[2]-4),label:'Quay finish'},
+    {id:'arrival:finish',at:[RACE_FINISH.at[0]+2,RACE_FINISH.at[2]-7] as P2,facing:faceSquare(RACE_FINISH.at[0]+2,RACE_FINISH.at[2]-7),label:'Quay finish'},
   ],
 };
 /** Storefront volumes for collision (oriented boxes). */

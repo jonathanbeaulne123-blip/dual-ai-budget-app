@@ -15,18 +15,22 @@ export const MOUNTAIN_ROAD:readonly Point3[]=(()=>{const S=MOUNTAIN_ROAD_LINE.sa
 const ROAD_PLAN_S=arcLengths(MOUNTAIN_ROAD,true);
 
 /** The town lane: from the road foot, past the bank's east side, over the canal, onto the quay. */
-const TOWN_LANE_PLAN:readonly(readonly[number,number])[]=[[21,-37],[20.5,-26],[19,-14],[17,-2],[15.5,10],[14,21],[11,30],[6.5,37.5],[1,42.5],[-6,45],[-16,45.4],[-26,45.2],[-34,44.6]];
+/** Down the west side of town, over the canal, east along the quay (finish), and a long run-out. */
+const TOWN_LANE_PLAN:readonly(readonly[number,number])[]=[[-26.5,-34],[-26.5,-22],[-26,-10],[-24.5,2],[-21,13],[-14.5,20],[-7,22.5],[0.5,25.5],[7,31],[12,38],[16,44.5],[22,48.2],[30,50.4],[38,52.2],[45,53.6]];
 export const TOWN_LANE_HALF_WIDTH=3.5;
 /** The town lane's canal bridge (the lane deck spans the plaza channel). */
-export const CANAL_BRIDGE={id:'canal-bridge',name:'Canal bridge',type:'masonry' as const,at:[6,-1,38.4] as Point3,span:9,halfWidth:TOWN_LANE_HALF_WIDTH};
+export const CANAL_BRIDGE={id:'canal-bridge',name:'Canal bridge',type:'masonry' as const,at:[-6.9,-1,22.5] as Point3,span:9,halfWidth:TOWN_LANE_HALF_WIDTH};
 export const TOWN_RACE_ROAD:readonly Point3[]=(()=>{
   const foot=MOUNTAIN_ROAD[0]!,plan:[number,number,number][]=[[foot[0],foot[1],foot[2]],...TOWN_LANE_PLAN.map(([x,z])=>[x,islandHeight(x,z)+.06,z] as [number,number,number])];
   const curve=authorCurve(plan,1.5,0).points;
-  // Draped: every sample sits 6 cm on the town ground (the canal bridge deck is flush with the banks).
-  return curve.map((p,i)=>i===0?foot:[p[0],islandHeight(p[0],p[2])+.06,p[2]] as Point3);
+  // Draped exactly on the town ground: the lane is paving, not a slab (a skater crosses its edges
+  // without meeting a kerb). Only the canal bridge is a deck, flush with the banks it joins.
+  return curve.map((p,i)=>i===0?foot:[p[0],islandHeight(p[0],p[2]),p[2]] as Point3);
 })();
-const finishIndex=TOWN_RACE_ROAD.findIndex(p=>p[0]<=-6);
-/** The finish gate on the quay; the lane runs on westward along the waterfront as the braking run-out. */
+/** The part of the town lane that is a deck: the canal bridge over the town channel. */
+export const TOWN_LANE_DECK:readonly Point3[]=TOWN_RACE_ROAD.filter(p=>Math.hypot(p[0]-CANAL_BRIDGE.at[0],p[2]-CANAL_BRIDGE.at[2])<=CANAL_BRIDGE.span/2+1.5);
+const finishIndex=TOWN_RACE_ROAD.findIndex(p=>p[0]>=20);
+/** The finish gate on the quay; the lane runs on eastward along the waterfront as the braking run-out. */
 export const RACE_FINISH=(()=>{
   const at=TOWN_RACE_ROAD[finishIndex]!,next=TOWN_RACE_ROAD[finishIndex+1]!,dx=next[0]-at[0],dz=next[2]-at[2],l=Math.hypot(dx,dz)||1,heading=[dx/l,dz/l] as const;
   // Distance along the heading before the shoreline clamp (radius 73.2) would bite.
@@ -62,17 +66,17 @@ function branch(id:string,name:string,kind:SkillBranch['kind'],material:'wood'|'
 const damArc=(from:number,to:number,y0:number,y1:number,radius:number,n=8):Point3[]=>Array.from({length:n},(_,k)=>{const t=(k+.5)/n,a=mix(from,to,t);return [DAM.centre[0]+Math.sin(a)*radius,mix(y0,y1,t),DAM.centre[2]+Math.cos(a)*radius];});
 export const SKILL_BRANCHES:readonly SkillBranch[]=[
   // Dam maintenance rail: off Reservoir Heights, down the glass face's downstream rail, landing on the west abutment apron.
-  branch('dam-promenade','Dam maintenance rail','rail','metal',1.7,courseIndexAt(roadTagS('reservoir')-2),courseIndexAt(roadTagS('b3-west')-4),[
-    {kind:'ramp',via:[[44,89.4,-240],[36,88.6,-236.5]]},
+  branch('dam-promenade','Dam maintenance rail','rail','metal',1.7,courseIndexAt(roadTagS('reservoir')+13),courseIndexAt(roadTagS('b3-west')-4),[
+    {kind:'ramp',via:[[44,90.4,-248],[37,89.4,-240.5]]},
     {kind:'rail',via:damArc(DAM.halfAngle*.92,-DAM.halfAngle*.92,87.6,73.4,DAM.radius+2.2,10)},
     {kind:'deck',via:[[-18,72.2,-230],[-22,71,-226.6]]},
   ]),
   // Library roof line: off the woodland bridge onto the reading-room roof and balcony, down to the east bend.
   branch('library-balcony','Library roof and balcony','balcony','wood',1.6,courseIndexAt(roadTagS('b2-east')-1),courseIndexAt(roadTagS('library')-44),[
-    {kind:'ramp',via:[[36,40.9,-180.4]]},
-    {kind:'deck',via:[[42,40.8,-179.6],[53,40.2,-176.6]]},
-    {kind:'deck',via:[[61,39.4,-173]]},
-    {kind:'ramp',via:[[74,36.4,-169.5],[86,33.2,-167.6]]},
+    {kind:'ramp',via:[[37,41.2,-181.6]]},
+    {kind:'deck',via:[[45,41.35,-181.4],[56,41.1,-180.4]]},
+    {kind:'deck',via:[[63,40,-176.5]]},
+    {kind:'ramp',via:[[74,36.6,-169.5],[86,33.2,-167.6]]},
   ]),
   // Neighbourhood awnings: across the inside of the second hairpin on awnings and a ramp, back onto the leg above town.
   branch('hearth-awning','Neighbourhood awnings','awning','wood',1.5,courseIndexAt(roadTagS('hearth')-16),courseIndexAt(roadTagS('hairpin-2')-16),[
@@ -95,14 +99,13 @@ const GATE_PLAN:readonly [index:number,id:string,name:string,segment:string,half
   [0,'start','Summit start','summit-start'],
   [G(roadTagS('summit')-60),'alpine-1','Alpine bends · crown','alpine-bends'],
   [G(roadTagS('high-terrace')),'alpine-2','Alpine bends · high terrace','alpine-bends'],
-  [G(roadTagS('reservoir')+30),'alpine-3','Alpine bends · Reservoir Heights','alpine-bends'],
-  [G(roadTagS('reservoir')+6),'dam-overlook','Dam overlook','dam-overlook'],
-  [G(roadTagS('b3-east')+22),'dam-bridge','Glass bridge approach','dam-overlook'],
+  [G(roadTagS('reservoir')+36),'alpine-3','Alpine bends · Reservoir Heights','alpine-bends'],
+  [G(roadTagS('reservoir')+21),'dam-overlook','Dam overlook','dam-overlook'],
   [G(roadTagS('b3-west')-14),'meadow-1','Meadow sweep · upper terrace','meadow-sweep'],
   [G(roadTagS('clearing')+14),'meadow-2','Meadow sweep · the turn','meadow-sweep'],
   [G(roadTagS('clearing')-40),'meadow-3','Meadow sweep · lower terrace','meadow-sweep'],
   [G((roadTagS('b2-east')+roadTagS('b2-west'))/2),'woodland-bridge','Woodland bridge','woodland-bridges'],
-  [G(roadTagS('library')+22),'library','Library Woods','library-balcony'],
+  [G(roadTagS('library')-52),'library','Library Woods','library-balcony'],
   [G(roadTagS('shelf')+14),'east-arm','East arm sweep','neighbourhood-switchbacks'],
   [G(roadTagS('hearth')+10),'hearth','Hearth Terrace','neighbourhood-switchbacks'],
   [G(roadTagS('hairpin-2')-24),'switchback-2','Second switchback','neighbourhood-switchbacks'],

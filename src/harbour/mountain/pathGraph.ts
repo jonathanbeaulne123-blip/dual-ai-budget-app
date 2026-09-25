@@ -54,7 +54,7 @@ function door(id:MountainBuilding,level:number,label:string){
 // ——— Town entries ————————————————————————————————————————————————————————————
 node('town:north','town',[-3,islandHeight(-3,-43),-43],{label:'North lane'});
 node('road:foot','junction',roadAt(0),{label:'Road foot'});
-edge('path','town:north','road:foot',[[8,-46]],1.8);
+edge('path','town:north','road:foot',[[-14,-37]],1.8);
 // ——— Stations ——————————————————————————————————————————————————————————————
 for(const line of [FUNICULAR_LINE,GONDOLA_LINE])for(const st of line.stations)node(`station:${line.kind}:${st.id}`,'station',st.platform.at,{label:`${st.name} ${line.kind}`,facing:st.platform.yaw});
 edge('path','town:north','station:funicular:town',[],1.6);
@@ -72,8 +72,15 @@ node('road:leg2-steps-b','stair-bottom',roadAt(nearestRoadS(52,-82)));
 node('road:leg3-steps','stair-top',roadAt(nearestRoadS(44,-100.5)));
 edge('stair','road:leg2-steps-b','road:leg3-steps',[[50,-88.5],[46,-94]],1.4,'stair:hearth-steps');
 node('lane:junction','junction',ORCHARD_LANE_CENTRE[0]!);
-node('road:station-steps','stair-top',roadAt(nearestRoadS(28,-84)));
-edge('stair','road:station-steps','station:funicular:hearth',[[18,-80]],1.4,'stair:station-steps');
+node('road:station-steps','stair-bottom',roadAt(nearestRoadS(16,-73.5)));
+edge('stair','road:station-steps','station:funicular:hearth',[[12,-76.5],[9.5,-78]],1.4,'stair:station-steps');
+node('road:hairpin-2-west','junction',roadAt(nearestRoadS(19,-93)));
+edge('path','station:funicular:hearth','road:hairpin-2-west',[[8,-90]]);
+// The river path from the town station: a footbridge over the stream, up to the road east of the harbour bridge.
+node('path:river-west','junction',[-4.5,2.2,-51]);node('path:river-east','junction',[5.5,2.6,-57]);
+edge('path','station:funicular:town','path:river-west',[[-5,-45]]);
+edge('bridge','path:river-west','path:river-east',[],1.3,'bridge:river-footbridge');
+edge('path','path:river-east','road:station-steps',[[10,-64]]);
 node('overlook:hearth','overlook',[46,district('hearth').at[1],-110],{facing:Math.atan2(-46,110),label:'Harbour lookout'});
 edge('path','district:hearth','overlook:hearth');
 node('road:library','junction',roadAt(nearestRoadS(46,-161)));
@@ -100,10 +107,10 @@ edge('path','lane:orchard','apron:cottage');
 edge('path','lane:orchard','district:orchard');
 // Glasshouse Meadows: meadow stairs from the bridge, the door, the dam stairs.
 door('glasshouse',district('glasshouse').at[1],'The Glasshouse');
-node('road:b2-west','junction',roadAt(nearestRoadS(-24,-196)));
+node('road:b2-west','junction',roadAt(nearestRoadS(-30,-198)));
 node('stair:meadow-mid','stair-top',[-44,53,-205]);
 edge('stair','road:b2-west','stair:meadow-mid',[[-32,-201]],1.4,'stair:meadow-steps-1');
-edge('path','stair:meadow-mid','apron:glasshouse',[[-56,-209]]);
+edge('stair','stair:meadow-mid','apron:glasshouse',[[-56,-209]],1.4,'stair:meadow-steps-2');
 edge('path','district:glasshouse','apron:glasshouse');
 node('road:glasshouse','junction',roadAt(nearestRoadS(-78,-234)));
 edge('path','road:glasshouse','district:glasshouse');
@@ -124,12 +131,12 @@ edge('path','door:pavilion','district:reservoir');
 node('road:reservoir','junction',roadAt(nearestRoadS(54,-244)));
 edge('path','road:reservoir','district:reservoir');
 edge('path','station:funicular:reservoir','dam:east');
-node('road:b3-east','junction',roadAt(nearestRoadS(34,-211)));
+node('road:b3-east','junction',roadAt(nearestRoadS(42,-208.5)));
 edge('stair','road:b3-east','station:funicular:reservoir',[[34,-220]],1.4,'stair:reservoir-steps');
-node('road:b2-east','junction',roadAt(nearestRoadS(31,-178)));
+node('road:b2-east','junction',roadAt(nearestRoadS(31.5,-174)));
 node('stair:rim-mid','stair-top',[34,55,-198]);
 edge('stair','road:b2-east','stair:rim-mid',[[36,-190]],1.4,'stair:rim-steps-1');
-edge('stair','stair:rim-mid','road:b3-east',[[36,-205]],1.4,'stair:rim-steps-2');
+edge('stair','stair:rim-mid','road:b3-east',[[40,-203],[38,-209]],1.4,'stair:rim-steps-2');
 edge('path','district:library','road:b2-east',[[38,-180]]);
 // Summit Commons: road end, observatory, gondola, panorama.
 node('road:summit','junction',ROAD_CENTRE[ROAD_CENTRE.length-1]!);
@@ -143,6 +150,8 @@ edge('path','district:summit','overlook:summit');
 // Waterfront gondola station joins the town lanes.
 node('town:quay','town',[-34,islandHeight(-34,40),40],{label:'Quay'});
 edge('path','town:quay','station:gondola:quay',[],1.8);
+// Town walking links (drawn on the island's own lanes) so the graph is one network.
+edge('path','town:north','town:quay',[[-2,-20],[-12,-2],[-25,4],[-35,14],[-38,30]],1.6,'town:west-lanes');
 // Reserved plots: a gate and a spur from the road.
 for(const p of RESERVED_PLOTS){node(`gate:${p.id}`,'plot-gate',p.gate,{label:p.name});node(`plot:${p.id}`,'district',p.at,{label:p.name});edge('path',`gate:${p.id}`,`plot:${p.id}`);}
 node('road:shelf','junction',roadAt(nearestRoadS(102,-134)));edge('path','road:shelf','gate:sunny-shelf');
@@ -163,8 +172,12 @@ edge('path','road:hearth-lane','lane:junction',[],3,'link:lane-junction');
 
 export const MOUNTAIN_PATH_GRAPH={nodes:[...nodes.values()],edges} as const;
 export const OVERLOOKS=[...nodes.values()].filter(n=>n.kind==='overlook').map(n=>({id:n.id,name:n.label??n.id,at:n.at,facing:n.facing??0,look:[n.at[0]+Math.sin(n.facing??0)*40,n.at[1]-8,n.at[2]+Math.cos(n.facing??0)*40] as Point3}));
-/** Paths the ground is cut to (benches): everything that is not a road. */
-export const PATH_EDGES=edges.filter(e=>e.kind!=='road');
+/** Path and stair decks begin at the road's edge, never over the carriageway (a skater on the road
+ * must not be lifted onto a stair). Routing still uses the full polyline to the junction. */
+const onRoad=(p:Point3)=>{for(const [pts,hw] of [[ROAD_CENTRE,4.8],[ORCHARD_LANE_CENTRE,3.2]] as const){for(let i=0;i<pts.length;i+=2){const q=pts[i]!;if(Math.hypot(q[0]-p[0],q[2]-p[2])<hw+.6)return true;}}return false;};
+const trimmed=(e:PathEdge):PathEdge=>{let a=0,b=e.points.length;while(a<b-2&&onRoad(e.points[a]!))a++;while(b>a+2&&onRoad(e.points[b-1]!))b--;const points=e.points.slice(a,b);return {...e,points,length:arcLengths(points).at(-1)!};};
+/** Paths the ground is cut to (benches) and decks: everything that is not a road, trimmed at road edges. */
+export const PATH_EDGES=edges.filter(e=>e.kind!=='road').map(trimmed);
 /** Building ground: door aprons as level pads. */
 export const BUILDING_PADS=(Object.keys(BUILDING_SITES) as MountainBuilding[]).map(id=>({id,spot:BUILDING_SITES[id]}));
 

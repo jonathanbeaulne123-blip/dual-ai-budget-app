@@ -6,7 +6,10 @@
 import {ROAD_CENTRE,ORCHARD_LANE_CENTRE,ORCHARD_LANE_HALF_WIDTH,ROAD_SAMPLE_STEP as ROAD_PLAN_STEP,roadTagS} from './roadLine.ts';
 import {BRIDGE_SPANS,ROAD_HALF_WIDTH,type BridgeType} from './bridges.ts';
 import {baseHeight} from './terrainBase.ts';
-import {mountainGround} from './mountainGround.ts';
+import {mountainGround as gridGround} from './mountainGround.ts';
+import {islandHeight} from './islandShape.ts';
+/** The ground a body would land on beside the road: the island south of z −48, the mountain north of it. */
+const mountainGround=(x:number,z:number)=>Math.max(islandHeight(x,z),z<-30?gridGround(x,z):-Infinity);
 import {arcLengths,mix,type Point3} from './math.ts';
 
 export type EdgeKind='open'|'kerb'|'parapet'|'wall'|'bridge';
@@ -24,8 +27,8 @@ function classify(points:readonly Point3[],id:string,halfWidthAt:(i:number)=>num
     const p=points[i]!,a=points[Math.max(0,i-1)]!,b=points[Math.min(n-1,i+1)]!;
     const dx=b[0]-a[0],dy=b[1]-a[1],dz=b[2]-a[2],hl=Math.hypot(dx,dz)||1,l=Math.hypot(dx,dy,dz)||1;
     const tangent:Point3=[dx/l,dy/l,dz/l],normal:Point3=[dz/hl,0,-dx/hl];
-    // Signed curvature from the heading change across ±3 samples (+ turns left).
-    const a3=points[Math.max(0,i-3)]!,b3=points[Math.min(n-1,i+3)]!;
+    // Signed curvature from the heading change across ±6 samples (+ turns left).
+    const a3=points[Math.max(0,i-6)]!,b3=points[Math.min(n-1,i+6)]!;
     const h1=Math.atan2(p[0]-a3[0],p[2]-a3[2]),h2=Math.atan2(b3[0]-p[0],b3[2]-p[2]),turn=Math.atan2(Math.sin(h2-h1),Math.cos(h2-h1));
     const span=Math.hypot(b3[0]-a3[0],b3[2]-a3[2])||1;
     const hw=halfWidthAt(i),bridgeId=bridgeAt(i);
@@ -73,7 +76,9 @@ function gorgeBridge(span:typeof BRIDGE_SPANS[number]):Bridge{
   const deckThickness=span.type==='timber'?1.1:span.type==='masonry'?1.6:.9;
   let clearance=Infinity;const piers:Point3[]=[];
   const spacing=span.type==='masonry'?14:span.type==='timber'?11:18;
-  for(let k=0;k<deck.length;k++){const p=deck[k]!;clearance=Math.min(clearance,p[1]-deckThickness-mountainGround(p[0],p[2]));
+  // Clearance: the underside's headroom over the lowest ground (the channel) beneath the span.
+  let lowest=Infinity;for(const p of deck){const g=mountainGround(p[0],p[2]);if(g<lowest){lowest=g;clearance=p[1]-deckThickness-g;}}
+  for(let k=0;k<deck.length;k++){const p=deck[k]!;
     if(k>2&&k<deck.length-3&&k%spacing===0)piers.push([p[0],mountainGround(p[0],p[2]),p[2]]);}
   const a=deck[0]!,b=deck[deck.length-1]!;
   return {id:span.id,name:span.name,type:span.type,carries:span.line,s0:line.samples[span.i0]!.s,s1:line.samples[span.i1]!.s,a,b,span:Math.hypot(b[0]-a[0],b[2]-a[2]),deckThickness,clearance,piers,crosses:['gorge','river'],halfWidth:span.line==='road'?ROAD_HALF_WIDTH:ORCHARD_LANE_HALF_WIDTH,deck};
@@ -120,6 +125,6 @@ export const EDGE_SOLIDS:readonly EdgeSolid[]=EDGE_RUNS.filter(r=>r.kind!=='kerb
 /** Road sample at a plan (horizontal) arc length, as tags and waypoints are measured. */
 export const roadSampleAtPlan=(planS:number,line:RoadLine=MOUNTAIN_ROAD_LINE)=>line.samples[Math.max(0,Math.min(line.samples.length-1,Math.round(planS/(ROAD_PLAN_STEP))))]!;
 export const DAM_OVERLOOK=(()=>{
-  const sample=roadSampleAtPlan(roadTagS('b3-east')+20),look:Point3=[8,78,-228];
+  const sample=roadSampleAtPlan(roadTagS('reservoir')+21),look:Point3=[8,78,-228];
   return {s:sample.s,at:sample.at,facing:Math.atan2(look[0]-sample.at[0],look[2]-sample.at[2]),look};
 })();

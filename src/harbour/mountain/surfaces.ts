@@ -1,5 +1,6 @@
 import {STATION_SOLIDS,DISTRICT_ART_SOLIDS,SUMMIT_ART_SOLIDS} from './artGeometry.ts';
-import {mountainBaseHeight,SKILL_BRANCHES,MOUNTAIN_ROAD,TOWN_RACE_ROAD,TOWN_LANE_HALF_WIDTH,ROAD_HALF_WIDTH,nearestOnRoute,ORCHARD_LANE_LINE,EDGE_SOLIDS,type Point3} from './definition.ts';
+import {mountainBaseHeight,SKILL_BRANCHES,MOUNTAIN_ROAD,TOWN_LANE_HALF_WIDTH,ROAD_HALF_WIDTH,nearestOnRoute,ORCHARD_LANE_LINE,EDGE_SOLIDS,type Point3} from './definition.ts';
+import {TOWN_LANE_DECK} from './course.ts';
 import {PATH_EDGES,mountainWalkPlan} from './pathGraph.ts';
 import {TRANSPORT_LINES} from './transport.ts';
 import {ORCHARD_LANE_HALF_WIDTH} from './roadLine.ts';
@@ -12,7 +13,8 @@ const platform=(kind:string,id:string,p:{at:Point3;yaw:number;half:readonly[numb
 /** Every walkable deck: roads, lanes, stairs, the dam promenade, station platforms and skill branches.
  * Ground paths are cut into the terrain itself and need no deck. */
 export const WORLD_SURFACES:readonly WorldSurface[]=[
-  {id:'town-race-road',points:TOWN_RACE_ROAD,halfWidth:TOWN_LANE_HALF_WIDTH,material:'path',walkable:true,kind:'lane'},
+  // The town lane is paving on the town ground; only its canal bridge is a deck.
+  {id:'town-race-road',points:TOWN_LANE_DECK,halfWidth:TOWN_LANE_HALF_WIDTH,material:'path',walkable:true,kind:'bridge'},
   {id:'mountain-road',points:MOUNTAIN_ROAD,halfWidth:ROAD_HALF_WIDTH,material:'path',walkable:true,kind:'road'},
   {id:'orchard-lane',points:ORCHARD_LANE_LINE.samples.filter((_,i,all)=>i%2===0||i===all.length-1).map(s=>s.at),halfWidth:ORCHARD_LANE_HALF_WIDTH,material:'path',walkable:true,kind:'lane'},
   ...PATH_EDGES.filter(e=>e.kind!=='path').map(e=>({id:`path:${e.id}`,points:e.points,halfWidth:e.halfWidth,material:(e.kind==='promenade'?'metal':e.kind==='bridge'?'wood':'path') as WorldSurface['material'],walkable:true,kind:e.kind as WorldSurface['kind']})),
@@ -40,13 +42,20 @@ function surfaceIndex(surfaces:readonly WorldSurface[]):SurfaceIndex{
   const index={cells};indices.set(surfaces,index);return index;
 }
 const near=(x:number,z:number,surfaces:readonly WorldSurface[])=>surfaceIndex(surfaces).cells.get(key(Math.floor(x/SC),Math.floor(z/SC)))??[];
+/** Nearest point on a deck, or null past its ends: a deck ends square, it does not continue as a flat disc. */
+function onDeck(x:number,z:number,points:readonly Point3[]){
+  const p=nearestOnRoute(x,z,points),n=points.length;
+  if(p.index===0&&p.t===0){const a=points[0]!,b=points[1]!,dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1;if(((x-a[0])*dx+(z-a[2])*dz)/l<-.35)return null;}
+  if(p.index===n-2&&p.t===1){const a=points[n-2]!,b=points[n-1]!,dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1;if(((x-b[0])*dx+(z-b[2])*dz)/l>.35)return null;}
+  return p;
+}
 
 export function queryWorldSurface(input:SurfaceRequest,ground:(x:number,z:number)=>number,surfaces:readonly WorldSurface[]=WORLD_SURFACES):WorldSurfaceHit{
   const gy=ground(input.x,input.z),e=.06,gx=(ground(input.x+e,input.z)-ground(input.x-e,input.z))/(2*e),gz=(ground(input.x,input.z+e)-ground(input.x,input.z-e))/(2*e);
   let height=gy,dx=gx,dz=gz,id='terrain',material:WorldSurfaceHit['material']='grass';
   const ceiling=input.y===undefined?Infinity:input.y+(input.stepHeight??.48);
   let preferred=false;
-  for(const si of near(input.x,input.z,surfaces)){const surface=surfaces[si]!,p=nearestOnRoute(input.x,input.z,surface.points);
+  for(const si of near(input.x,input.z,surfaces)){const surface=surfaces[si]!,p=onDeck(input.x,input.z,surface.points);if(!p)continue;
     const supported=surface.id===input.supportId&&input.y!==undefined&&Math.abs(p.point[1]-input.y)<1;
     if(p.distance>surface.halfWidth+1e-6||p.point[1]>ceiling||p.point[1]<gy-.12||(!supported&&p.point[1]<height-.12))continue;
     if(preferred&&!supported)continue;if(supported)preferred=true;
@@ -59,7 +68,7 @@ const branchById=new Map(SKILL_BRANCHES.map(b=>[b.id,b]));
 /** Undersides are independent of the supporting floor, including at stacked crossings. */
 export function worldCeilingAt(x:number,z:number,feet:number,radius=.2,surfaces:readonly WorldSurface[]=WORLD_SURFACES):number{
   let ceiling=Infinity;
-  for(const si of near(x,z,surfaces)){const s=surfaces[si]!,p=nearestOnRoute(x,z,s.points);
+  for(const si of near(x,z,surfaces)){const s=surfaces[si]!,p=onDeck(x,z,s.points);if(!p)continue;
     // A branch mouth is an open road junction, not an overhead bridge slab.
     const branch=branchById.get(s.id),ends=branch?[branch.points[0]!,branch.points[branch.points.length-1]!]:[];
     const junction=p.point[1]-feet<3&&ends.some(at=>Math.hypot(x-at[0],z-at[2])<18);
@@ -84,7 +93,7 @@ function edgeHit(x:number,y:number,z:number,radius:number):boolean{
   return false;
 }
 export function worldCollisionAt(x:number,y:number,z:number,radius=.2):boolean{
-  return near(x,z,WORLD_SURFACES).some(si=>{const s=WORLD_SURFACES[si]!,p=nearestOnRoute(x,z,s.points);return p.distance<s.halfWidth+radius&&y>p.point[1]-.28&&y<p.point[1]+.08;})||
+  return near(x,z,WORLD_SURFACES).some(si=>{const s=WORLD_SURFACES[si]!,p=onDeck(x,z,s.points);return !!p&&p.distance<s.halfWidth+radius&&y>p.point[1]-.28&&y<p.point[1]+.08;})||
     WORLD_SOLIDS.some(s=>x>s.min[0]-radius&&x<s.max[0]+radius&&z>s.min[2]-radius&&z<s.max[2]+radius&&y>s.min[1]&&y<s.max[1])||(z<-40&&edgeHit(x,y,z,radius));
 }
 /** Walk the path graph (roads, paths, stairs, bridges); never a straight tap route through the gorge. */
