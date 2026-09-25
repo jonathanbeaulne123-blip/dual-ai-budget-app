@@ -322,6 +322,7 @@ describe("the invitation", () => {
 
   it("appears the moment the stage loses it, and names the keys", async () => {
     const { stage } = await stand();
+    await settle(); // Let the deferred initial focus attempt finish before testing intentional blur.
     await act(async () => { stage.blur(); });
     const line = invite();
     expect(line).not.toBeNull();
@@ -336,6 +337,7 @@ describe("the invitation", () => {
   it("tells a thumb the truth for a thumb — no keys on a phone", async () => {
     coarse = true;
     const { stage } = await stand();
+    await settle(); // Let the deferred initial focus attempt finish before testing intentional blur.
     await act(async () => { stage.blur(); });
     expect(invite()!.textContent).toBe("Tap the open ground to walk there · drag to look around you");
     expect(invite()!.getAttribute("data-harbour-invite")).toBe("touch");
