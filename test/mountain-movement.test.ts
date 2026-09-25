@@ -205,8 +205,9 @@ describe('race physics on the shipped options',()=>{
     expect(real.peak).toBeGreaterThan(flat.peak+2);
   });
   it('uphill is slower than downhill with the same push',()=>{
-    // The steepest stretches of the main line (ahead four samples).
-    const steep=MOUNTAIN_COURSE_POINTS.slice(8,-8).map((a,j)=>({i:j+8,drop:a[1]-MOUNTAIN_COURSE_POINTS[j+12]![1]})).filter(p=>p.drop>2).sort((a,b)=>b.drop-a.drop).slice(0,4);
+    // The steepest stretches of the main line (ahead four samples, ~12 units). The v2 road is graded
+    // 8–15%, so "steep" is a drop of more than 1.2 over those 12 units (10% and up).
+    const steep=MOUNTAIN_COURSE_POINTS.slice(8,-8).map((a,j)=>({i:j+8,drop:a[1]-MOUNTAIN_COURSE_POINTS[j+12]![1]})).filter(p=>p.drop>1.2).sort((a,b)=>b.drop-a.drop).slice(0,4);
     expect(steep.length).toBeGreaterThan(0);
     for(const {i} of steep){
       const down=simAt(i,0,1),up=simAt(i,0,-1);

@@ -1,4 +1,4 @@
-import {SKILL_BRANCHES,TOWN_RACE_ROAD,nearestOnRoute} from '../../mountain/definition.ts';
+import {SKILL_BRANCHES,TOWN_RACE_ROAD,TOWN_LANE_HALF_WIDTH,nearestOnRoute} from '../../mountain/definition.ts';
 import {queryWorldSurface,WORLD_SURFACES} from '../../mountain/surfaces.ts';
 import {overheadAt} from '../../body/overhead.ts';
 /**
@@ -370,8 +370,16 @@ export function createSkateField(ground: (x: number, z: number) => number, opts:
   }
 
   const spots: readonly SkateSpot[] = SPOTS;
+  /** The mountain surfaces, and the town race lane: draped on the town ground (no deck), but paving, not grass. */
+  const worldSample = (x: number, z: number, y?: number, supportId?: string | null) => {
+    const s = queryWorldSurface({ x, z, y, supportId }, ground);
+    const paved = s.id === 'terrain' && z > -48 && nearestOnRoute(x, z, TOWN_RACE_ROAD).distance < TOWN_LANE_HALF_WIDTH;
+    return { ...s, id: paved ? 'town-race-lane' : s.id, kind: (paved ? 'path' : s.material) as SurfaceKind };
+  };
 
-  for(const s of WORLD_SURFACES.filter(s=>!s.id.startsWith('path:')&&!s.id.startsWith('station:')&&s.id!=='mountain-road'&&s.id!=='town-race-road'))grindables.push({id:s.id,name:s.id.replaceAll('-',' '),kind:'round-rail',featureId:s.id,points:s.points.map(p=>[p[0],p[1]+.6,p[2]]),faceYaw:null});
+  // Only the skill branches (the dam rail, the Library balcony, the awnings) grind: never a lane, a path
+  // bridge, a stair, a promenade or a platform.
+  for(const s of WORLD_SURFACES.filter(s=>s.kind==='branch'))grindables.push({id:s.id,name:s.id.replaceAll('-',' '),kind:'round-rail',featureId:s.id,points:s.points.map(p=>[p[0],p[1]+.6,p[2]]),faceYaw:null});
   return {
     // The same overhead the walker reads: a ramp or path mouth rising off the road is never a roof.
     ceilingAt:(x,z,feet)=>z<-40?overheadAt(x,z,feet):Infinity,
@@ -383,8 +391,8 @@ export function createSkateField(ground: (x: number, z: number) => number, opts:
       }
       return SKILL_BRANCHES.some(branch=>nearestOnRoute(x,z,branch.points).distance<branch.halfWidth+2);
     },
-    sample(x, z, y, supportId) { if(z<-40||nearestOnRoute(x,z,TOWN_RACE_ROAD).distance<3.5){const s=queryWorldSurface({x,z,y,supportId},ground);return {y:s.y,nx:s.nx,ny:s.ny,nz:s.nz,kind:s.material,feature:s.id,lip:null};}core(x, z, true); return write({ y: 0, nx: 0, ny: 1, nz: 0, kind: 'grass', feature: null, lip: null }); },
-    sampleInto(x, z, out) { if(z<-40||nearestOnRoute(x,z,TOWN_RACE_ROAD).distance<3.5){const s=queryWorldSurface({x,z},ground);return Object.assign(out,{y:s.y,nx:s.nx,ny:s.ny,nz:s.nz,kind:s.material,feature:s.id,lip:null});}core(x, z, true); return write(out); },
+    sample(x, z, y, supportId) { if(z<-40||nearestOnRoute(x,z,TOWN_RACE_ROAD).distance<3.5){const s=worldSample(x,z,y,supportId);return {y:s.y,nx:s.nx,ny:s.ny,nz:s.nz,kind:s.kind,feature:s.id,lip:null};}core(x, z, true); return write({ y: 0, nx: 0, ny: 1, nz: 0, kind: 'grass', feature: null, lip: null }); },
+    sampleInto(x, z, out) { if(z<-40||nearestOnRoute(x,z,TOWN_RACE_ROAD).distance<3.5){const s=worldSample(x,z);return Object.assign(out,{y:s.y,nx:s.nx,ny:s.ny,nz:s.nz,kind:s.kind,feature:s.id,lip:null});}core(x, z, true); return write(out); },
     heightAt,
   };
 }
