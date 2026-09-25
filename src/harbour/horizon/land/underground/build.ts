@@ -36,9 +36,12 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
   ore.push([1345,110,680]);const oreBed=bed('ORE','rail',ore,false);oreBed.clearHeight=3.2;oreBed.structureIds=['oreTunnel','southPortal'];cuts.beds.push(oreBed);tunnel('oreTunnel',ore,3.6,3.2,cuts);
   const rails=solid('ORE.rails','rail','rail','rail',['ORE'],'crown');for(let i=1;i<ore.length;i++)for(const offset of [-.45,.45])slab(rails,ore[i-1]!,ore[i]!,.09,.12,offset,.12);cuts.solids.push(rails);
   const siding=bed('ORE.siding','rail',[[1248,68,470],[1270,68,450],[1280,68,454]],false);cuts.beds.push(siding);tunnel('oreSiding',siding.points,3.6,3.2,cuts);
-  const roomPassages:[string,XYZ[]][]=[['lanternCave',[[1160,42,520],[1195,42,492],[1220,42,480]]],['sealedDrift',[[1180,42,500],[1200,42,495],[1220,42,480]]],['bellGallery',[[1220,42,480],[1240,54,515],[1280,68,525],[1320,80,505],[1310,90,470]]],['deepAccess',[[1220,42,480],[1260,42,440],[1300,42,440]]]];
+  const roomPassages:[string,XYZ[]][]=[['lanternCave',[[1160,42,520],[1195,42,492],[1220,42,480]]],['sealedDrift',[[1180,42,500],[1200,42,495],[1220,42,480]]],['bellGallery',[[1220,42,480],[1240,54,515],[1280,68,525],[1320,80,505],[1310,90,470]]],['deepAccess',[[1220,42,480],[1260,42,440],[1300,40.6,440]]]];
   for(const [id,points]of roomPassages){const b=bed(`underground.${id}`,'cave',points,false);b.width=6;cuts.beds.push(b);tunnel(b.id,points,6,8,cuts);}
   const throat:XYZ[]=[[1300,110,300],[1300,75,360],[1300,40,420]],throatBed=bed('underground.throat','cave',throat,false);throatBed.width=26;throatBed.clearHeight=18;cuts.beds.push(throatBed);tunnel(throatBed.id,throat,26,18,cuts);
+  // The north buttress carries a deep rock hood; the 26 x 18m flight mouth remains completely open.
+  const hood=solid('throat.rockHood','rockHood','rock','roof',[throatBed.id],'crown'),jambs=solid('throat.rockHood.supports','rockButtress','rock','support',[throatBed.id],'crown');
+  box(hood,[1300,300],131,[38,12],128);for(const side of [-1,1])box(jambs,[1300+side*16,300],131,[4,12],109.8);cuts.solids.push(hood,jambs);
   const seaXY=sampleSpline(M.water_routes.DEEP_RUN.pts as unknown as XY[],4),sea:XYZ[]=[];let along=0;
   for(let i=0;i<seaXY.length;i++){
     if(i)along+=distance(seaXY[i-1]!,seaXY[i]!);
@@ -47,7 +50,7 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
     sea.push([seaXY[i]![0]!,h,seaXY[i]![1]!]);
   }
   const seaBed=bed('DEEP_RUN','cave',sea,false);seaBed.width=9;seaBed.clearHeight=6;cuts.beds.push(seaBed);tunnel('seaPassage',sea,9,6,cuts);
-  buildStair('stepsPortage',[1300,40,440],[1420,4,505],3,cuts);
+  buildStair('stepsPortage',[1300,40.6,440],[1420,4,505],3,cuts);
   const shaft=solid('deep.skylight.shaft','skylight','rock','wall',[],'crown');
   for(const side of [-1,1]){box(shaft,[1300+side*4.3,400],138,[.6,8.6],68);box(shaft,[1300,400+side*4.3],138,[8,.6],68);}cuts.solids.push(shaft);
   cuts.mouths.push({id:'deep.skylight',kind:'skylight',floor:40,ceiling:138,outline:[[1296,396],[1296,404],[1304,404],[1304,396]]});

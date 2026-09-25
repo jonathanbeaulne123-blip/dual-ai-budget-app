@@ -17,7 +17,7 @@ const routePins:Record<string,HeightPin[]>={
   VBS:[pin([960,860],30,'Green Road'),pin([775,1125],14,'shore endpoint')],
   S1:[pin([1310,500],154,'Crown start'),pin([1160,935],31,'dam apron'),pin([1204,1098],12,'High Span shelf'),pin([1255,1251],5,'Reach boardwalk'),pin([1270,1330],3,'Landing finish')],
   S2:[pin([480,480],38,'strip start'),pin([560,1100],12,'Bight Bridge'),pin([1020,1430],3,'park')],
-  S3:[pin([1480,1060],18,'upper street'),pin([1470,1160],16,'market lane'),pin([1440,1200],12,'square'),pin([1350,1345],9,'Quay Bridge'),pin([1133,1435],4,'zip underpass'),pin([1020,1430],3,'park')],
+  S3:[pin([1480,1060],18,'upper street'),pin([1470,1160],12,'square arrival'),pin([1440,1200],12,'square'),pin([1350,1345],9,'Quay Bridge'),pin([1133,1435],4,'zip underpass'),pin([1020,1430],3,'park')],
   S4:[pin([1000,520],40,'studio start'),pin([893,600],37,'Hollow Bridge'),pin([1020,1430],3,'park')],
   'walk garden':[pin([740,400],48,'Library'),pin([893,600],37,'Hollow Bridge'),pin([990,780],56,'Glasshouse')],
   'walk lakerim':[pin([990,780],56,'Glasshouse'),pin([1161,731],52,'inlet bridge'),pin([1140,905],52,'dam crest')],
@@ -35,6 +35,10 @@ function withSpanPins(id:string,controls:XY[],pins:HeightPin[]=[]):HeightPin[] {
       const target=hit.along+delta;let best=0;travel.forEach((d,i)=>{if(Math.abs(d-target)<Math.abs(travel[best]!-target))best=i;});out.push(pin(samples[best]!,span.height!,`${span.id} ${delta<0?'entry':delta>0?'exit':'centre'}`));
     }
     travel.forEach((d,i)=>{if(Math.abs(d-hit.along)<=span.length/2)out.push(pin(samples[i]!,span.height!,`${span.id} deck ${i}`));});
+  }
+  if(id==='S3'){
+    const from=nearestOnPath([1470,1160],points).along,to=nearestOnPath([1440,1200],points).along;let along=0;
+    for(let i=0;i<samples.length;i++){if(i)along+=distance(samples[i-1]!,samples[i]!);if(along>=from-4&&along<=to+4)out.push(pin(samples[i]!,12,'continuous square floor'));}
   }
   return out;
 }
