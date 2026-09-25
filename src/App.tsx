@@ -548,7 +548,7 @@ const Hearthside = lazy(() => import("./hearthside/Hearthside.tsx"));
 const HearthsideLetters = lazy(() => import("./hearthside/LettersEntry.tsx"));
 const HerculesPlay = lazy(() => import("./play/HerculesPlay.tsx"));
 /** Little Harbour: the Court owns Household × home behind VITE_HEARTH_HARBOUR; every other room keeps HouseWorld. */
-const HarbourWorld = lazy(() => import("./harbour/HarbourWorld.tsx"));
+const HarbourWorld = lazy(() => import("./harbour/HarbourEntry.tsx"));
 /** Simple View Desk S5: personal scope has no harbour, so the App mounts the Desk itself for the flat edition. */
 const DeskShell = lazy(() => import("./harbour/desk/DeskShell.tsx").then(module => ({ default: module.DeskShell })));
 import { type JourneyDestination } from "./OnboardingJourney.tsx";

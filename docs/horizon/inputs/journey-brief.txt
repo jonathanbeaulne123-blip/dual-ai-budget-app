@@ -1,0 +1,60 @@
+Add to the existing plan: Connect the Journey Map and the Living World
+What we have now is beautiful, and I love the world we are creating. Preserve that direction. This is not a request to redesign it or start over.
+I want you to incorporate the following ideas into the plan you are already developing. We are still in the planning phase—do not begin implementation or create a separate replacement plan. Build these ideas into the relevant sections of the existing plan, resolving how they connect with the decisions we have already made.
+The feature audit, user journeys, and broader implementation approach have already been covered. There is no need to repeat that work. This addition is about defining the relationship between the Journey map, the detailed world, and the everyday budgeting experience.
+The seamless zoom-out transition has just been added. I want to build on that connection so the Journey map and the detailed world become two scales of the same living place, rather than two separate experiences.
+The core relationship should be:
+Journey map = the practical, everyday budgeting interface.
+Detailed world = the fully realized, explorable version of that same map.
+1. Make the Journey map the default home of the app
+When someone first logs in, the Journey map should be their default view.
+It should help them understand their household’s financial situation, what has changed, what needs attention, and what they can do next. They should be able to meaningfully use Hearth from this view without entering the detailed world.
+Everything we have already planned—the calendar, books, ledgers, planning tools, Hercules, the Pottery Studio, and the rest of the app’s functionality—needs to remain accessible from this experience.
+The detailed world remains something beautiful and enjoyable to enter, but exploration must not become a requirement for ordinary budgeting. Someone checking an upcoming bill or recording a purchase should not have to travel to a building or sit through an elaborate camera sequence.
+At the same time, do not solve this by placing a conventional dashboard over a decorative island. The map should genuinely participate in how information is understood and how tools are accessed.
+Extend the plan to explain how this view can feel alive and spatial while remaining as understandable and efficient as a proper budgeting app.
+2. Make the Journey map a low-poly representation of the actual world
+The Journey map should be a simplified, low-poly representation of the detailed world we are creating—not a different island, a vaguely similar illustration, or an independently generated map that only shares its colours.
+Recognizable geography should correspond between both views: the coastline, terrain, water, roads and paths, districts, buildings, and important landmarks. Simplify the visual detail at the Journey scale while preserving the identity and spatial relationships of the place.
+As users zoom in, they should recognize where they are going. Fully zooming in should bring them into the corresponding location in the detailed world. Zooming back out should return them to that same place on the Journey map.
+It should feel like changing scale, not switching applications.
+Incorporate the relationship between camera alignment, landmark positions, orientation, selection, and levels of detail into the existing transition plan. Build on the seamless transition we already have.
+Keep Hearth’s own visual identity and the openness of the world we are creating. Do not turn the Journey view into a dense simulation-game map or fill empty space with unnecessary buildings just to give every feature a destination.
+3. Plan useful interactions—not just clickable buildings
+I want us to think carefully about how the Journey map can support real work through clever, intuitive interactions.
+Some actions may happen directly on the map. Others may open a compact, location-linked panel, an expanded working surface, or a deeper tool view that retains a clear connection to the map.
+Build on the feature mapping we already have and refine the interaction choices: what does the user need to see immediately, what is their likely next action, and how much space does the task genuinely require?
+Inspecting a commitment and changing its date should not necessarily use the same interaction as reviewing a full ledger. A brief Hercules conversation should not necessarily require the same transition as entering the Pottery Studio.
+Use spatial interaction where it improves understanding. Use clear, direct controls where speed matters.
+Important financial information must remain explicit and readable. A user should not have to infer their budget from the condition of a tree or remember which unlabelled building contains their calendar. The world can communicate meaning, but it should complement—not replace—actual amounts, dates, labels, and explanations.
+Consider what deserves persistent access, what belongs in contextual interactions, and how frequently used actions stay within easy reach without surrounding the map with competing menus.
+Someone arriving for the first time should understand how to use this. Someone returning every day should be able to move quickly.
+4. Resolve how both views evolve together
+This is the central planning challenge:
+The Journey map changes and flows with purchases and time. Those changes need to be reflected in the detailed world.
+We need to reconcile the evolving Journey map with the beautiful, intentionally designed world we already have. Neither should become a disconnected representation of the other.
+Use what we already know about the current Journey system to develop this relationship. Consider which elements change, how time is represented, and whether extending a household’s history moves or regenerates earlier landmarks.
+A useful starting principle to evaluate is:
+One authoritative household state and history → one shared world model → two visual representations.
+Both views need to agree on what exists, where it belongs, what state it is in, and why it changed. The low-poly map can summarize something that the detailed world expresses richly, but they should represent the same underlying reality.
+Expand the plan to distinguish stable geography, evolving geography, and changing detail. Which landmarks and routes need stable identities? Which parts can grow, change condition, or develop over time? How can households become meaningfully distinct without every new transaction rearranging the entire island?
+Do not solve this by freezing the Journey map into a static overview. Equally, do not solve it by discarding the authored world and generating an unrelated replacement.
+We need a coherent relationship between the place we have designed and the personal world that emerges through someone’s financial life. Where there are competing approaches, work through the trade-offs and recommend a direction within the existing plan.
+5. Define meaningful, traceable, and reversible world changes
+Clarify how important existing events should appear at both scales: a recorded purchase, income arriving, progress toward a goal, a completed plan, the passage of time, and any existing growth or condition mechanics.
+For each relevant type of change, the plan should establish what the Journey map communicates, how the detailed world expresses the same change, and when that change becomes visible.
+Clearly distinguish existing behaviour from new proposals. Do not silently invent rules that assign meaning or moral judgments to someone’s spending.
+Corrections need to be part of this model from the beginning. Editing, deleting, refunding, or reclassifying a transaction should not leave contradictory landmarks, duplicate effects, or stale world state. Returning to the app should not produce a different interpretation of the same history.
+Keep financial records authoritative. Opening a tool, viewing a landmark, or entering the world must never create another financial event.
+Preserve meaningful distinctions: planned is not purchased; scheduled is not paid; preparation is not an experienced memory. Maintain Hercules’s established permissions and confirmation boundaries. Pottery objects should remain the user’s actual creations, rather than becoming an invented spending currency or unlock economy.
+When a user notices a meaningful change in the world, there should be an understandable way to discover what caused it. Consider how that explanation can be available without cluttering the map.
+6. Preserve context across the entire experience
+The Journey map needs to remain a dependable place to return to.
+Opening the calendar, a book, a plan, Hercules, or the Pottery Studio should not unnecessarily reset the map or move the user somewhere unrelated.
+Include clear continuity rules in the plan: preserve the relevant selected place, map position, zoom, active date or period, filters, and unfinished work. Returning from a tool should feel like resuming the same activity, not starting again.
+Where historical or future dates are supported, define what entering the detailed world from that time context means. Do not silently display a past Journey state and a present-day detailed world as though they match.
+Account for touch, mouse, and keyboard navigation, with clear alternatives to gesture-only interactions. A reduced-motion experience should preserve the same meaning without depending on the full animated transition.
+The map-first design also needs a practical readable or flat equivalent. Access to someone’s finances must not depend on their ability—or desire—to navigate a 3D scene.
+Integrate these ideas into the existing plan as one connected direction, rather than attaching them as an isolated wishlist. Where they affect an earlier decision, refine that decision and make the relationship clear. Where something remains unresolved, identify the specific design question instead of treating it as settled.
+The goal is one coherent Hearth experience: practical and understandable from above, beautiful and personal from within.
+The Journey map is not a menu leading to the app. It is the app at its most useful scale. The world we are creating is that same experience brought to life when you step inside.

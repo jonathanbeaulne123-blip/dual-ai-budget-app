@@ -59,8 +59,8 @@ export type SkateControls={
   ghost():GhostPose|null;
   replay(action:ReplayAction):void;
   /**
-   * `retry` during a race: back to the last gate passed, the run (and its
-   * clock) kept; outside a race it is `respawn`. `respawn`: back to your marker
+   * `retry` during a race: start again at gate zero with a fresh countdown and
+   * clock; outside a race it is `respawn`. `respawn`: back to your marker
    * (a race in progress is retried, never cancelled).
    */
   command(command:'respawn'|'marker'|'retry'):void;
@@ -219,16 +219,14 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
     replayTime=null;
     sim.reset(x,z,yaw);score?.reset();input?.reset();frame.length=0;cut=true;paused=false;runoutLeft=0;sim.setRunout(false);
   }
-  /** Back to the last gate passed, facing through it; the run and its clock carry on. */
+  /** Restart at the authored start gate in every race state. */
   function retryRace():boolean{
-    const run=session.run;if(!sim||!run||run.finished)return false;
-    if(run.countdown>0)return true; // Consume Retry without abandoning the countdown.
-    const route=skateTables().routes.find(r=>r.id===run.id),gate=route?.gates?.[Math.max(0,run.checkpoint-1)];
-    if(!route||!gate)return false;
-    const [nx,nz]=gate.normal;
-    const offset=run.checkpoint===0?-1.2:1.2;
-    sim.placeAt(gate.at[0]+nx*offset,gate.at[2]+nz*offset,Math.atan2(nx,nz),gate.at[1]);
-    retrySkateRoute(session);score?.reset();input?.reset();frame.length=0;cut=true;replayTime=null;
+    const run=session.run;if(!sim||!run)return false;
+    const route=SKATE_ROUTES.find(r=>r.id===run.id),a=route?.points[0],b=route?.points[1];
+    if(!a||!b)return false;
+    retrySkateRoute(session);
+    restart(a[0],a[1],Math.atan2(b[0]-a[0],b[1]-a[1]));
+    outcome=null;
     return true;
   }
   function note(outs:readonly ScoreOutcome[]):number{
@@ -286,11 +284,11 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
       const airborne=before.phase==='air';
       const rolling=before.speed>.15&&before.phase!=='bail'&&before.phase!=='recover';
       const intent:SkateIntent=options.intent?.()??input.sample(now(),airborne,rolling,{landingSoon:airborne&&before.clearance<.15&&before.vy<0});
+      // Retry is an edge-triggered command and also works during the countdown.
+      const retried=intent.respawn&&retryRace();
       const waiting=(session.run?.countdown??0)>0;
       let banked=0;
       if(!waiting){
-        // R in a race is Retry: the last gate, the run kept (it used to cancel the race).
-        const retried=intent.respawn&&retryRace();
         if(intent.respawn&&!retried){const outs=score.drop('respawn');banked=note(outs);session.run=null;cut=true;}
         const r=sim.step(retried?{...intent,respawn:false}:intent,step);
         simTime+=step;

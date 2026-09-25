@@ -15,8 +15,9 @@
  *
  * Unknown amounts stay `null` and read "—" downstream.
  */
-import { calendarDaysBetween, formatMonthLabel, monthKeyFromDateKey, type DateKey } from "../../core/calendar.ts";
+import { calendarDaysBetween, formatMonthLabel, monthKeyFromDateKey, type DateKey, type MonthKey } from "../../core/calendar.ts";
 import { monthSummary } from "../../core/budget.ts";
+import { chapterMonth, chapterReminder, openChapterFor, pendingChapterClosure } from "../../core/chapters.ts";
 import { fundSnapshot, type FundSnapshot } from "../../core/fundModel.ts";
 import { fundWalk, type FundWalk } from "../../core/fundWalk.ts";
 import type { HerculesCapabilityId } from "../../core/herculesCapabilities.ts";
@@ -25,7 +26,7 @@ import { projectLedgerExperience } from "../../core/ledgerExperience.ts";
 import { nextOut, type NextOutRow } from "../../core/nextOut.ts";
 import { deskMonthSeals, type DeskMonthSeals } from "../../core/officeWide.ts";
 import type { Household, LedgerView } from "../../core/types.ts";
-import { buildCampfireReading, type CampfireReading, type HarbourReading } from "../data/reading.ts";
+import type { HarbourReading } from "../data/reading.ts";
 import { shortDate } from "../nav/doorSigns.ts";
 
 export type DeskPotId = "everyday" | "prepare" | "protect" | "build";
@@ -163,11 +164,25 @@ export type DeskSitdown = { why: "overdue" | "proposed"; month: string | null; w
 
 export function readSitdown(reading: HarbourReading | null, household: Household, memberId: string, scope: LedgerView, today: DateKey): DeskSitdown | null {
   if (scope !== "household") return null;
-  let fire: CampfireReading;
-  try { fire = reading?.campfire ?? buildCampfireReading(household, memberId, today); } catch { return null; }
-  if (!fire.overdue && fire.close !== "proposed") return null;
-  const month = fire.month ? formatMonthLabel(fire.month).replace(/\s\d{4}$/, "") : null;
-  return fire.close === "proposed"
+  let monthKey: MonthKey | null;
+  let overdue: boolean;
+  let proposed: boolean;
+  if (reading?.campfire) {
+    monthKey = reading.campfire.month;
+    overdue = reading.campfire.overdue;
+    proposed = reading.campfire.close === "proposed";
+  } else {
+    try {
+      const open = openChapterFor(household);
+      const pending = open ? pendingChapterClosure(open) : null;
+      monthKey = open ? chapterMonth(open) : null;
+      overdue = chapterReminder(household, { today }) !== null;
+      proposed = Boolean(pending && !pending.approvals.some(row => row.memberId === memberId));
+    } catch { return null; }
+  }
+  if (!overdue && !proposed) return null;
+  const month = monthKey ? formatMonthLabel(monthKey).replace(/\s\d{4}$/, "") : null;
+  return proposed
     ? { why: "proposed", month, words: `A close is on the table${month ? ` for ${month}` : ""} and your seat at the Sitdown is empty` }
     : { why: "overdue", month, words: `${month ? `${month}’s Chapter` : "The Chapter"} is still open past its month; the Sitdown is waiting` };
 }

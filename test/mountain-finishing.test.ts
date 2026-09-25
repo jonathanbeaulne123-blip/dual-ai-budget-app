@@ -7,10 +7,10 @@ import {decodeWorldPresence} from '../src/ledgerSync/worldPresenceWire.ts';
 import {stationPlatforms,walkGraph} from '../src/harbour/body/geography.ts';
 import {validHouseBody} from '../src/house/navigation.ts';
 afterEach(()=>{delete document.documentElement.dataset.motion;setStreamQuiet(false);vi.restoreAllMocks();});
-it('app reduced motion shows streamed material immediately even when OS motion is normal',()=>{
+it('app reduced motion shortens the streamed fade even when OS motion is normal',()=>{
  document.documentElement.dataset.motion='reduced';vi.stubGlobal('matchMedia',()=>({matches:false}));
  const group=new THREE.Group(),material=new THREE.MeshBasicMaterial({opacity:.75}),mesh=new THREE.Mesh(new THREE.BoxGeometry(),material);group.add(mesh);
- fadeIn(group);expect(material.opacity).toBe(.75);expect(material.transparent).toBe(false);mesh.geometry.dispose();material.dispose();
+ const fade=fadeIn(group);expect(material.opacity).toBe(0);fade.cancel();expect(material.opacity).toBe(.75);expect(material.transparent).toBe(false);mesh.geometry.dispose();material.dispose();
 });
 it('builds one district per update and retains it through a quick tool round-trip',()=>{
  const dispose=vi.fn(),build=vi.fn(()=>({dispose}));

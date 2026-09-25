@@ -1,0 +1,5264 @@
+{
+ "title": "The Horizon \u2014 MANIFEST",
+ "version": "1.5",
+ "date": "2026-09-25",
+ "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3.",
+ "units": {
+  "x": "east, concept metres",
+  "y": "south, concept metres (engine z)",
+  "height": "metres above sea level (engine y)",
+  "scale": "engine units = concept metres \u00d7 scale.factor (see scale)",
+  "north": "-z"
+ },
+ "extent": {
+  "w": 2000,
+  "h": 1800
+ },
+ "seaLevel": 0,
+ "island": {
+  "outline": [
+   [
+    900,
+    180
+   ],
+   [
+    1200,
+    190
+   ],
+   [
+    1420,
+    300
+   ],
+   [
+    1600,
+    500
+   ],
+   [
+    1690,
+    760
+   ],
+   [
+    1620,
+    1080
+   ],
+   [
+    1440,
+    1330
+   ],
+   [
+    1150,
+    1480
+   ],
+   [
+    860,
+    1480
+   ],
+   [
+    720,
+    1330
+   ],
+   [
+    660,
+    1180
+   ],
+   [
+    700,
+    1000
+   ],
+   [
+    820,
+    860
+   ],
+   [
+    860,
+    720
+   ],
+   [
+    780,
+    560
+   ],
+   [
+    640,
+    520
+   ],
+   [
+    520,
+    620
+   ],
+   [
+    500,
+    800
+   ],
+   [
+    540,
+    940
+   ],
+   [
+    460,
+    1020
+   ],
+   [
+    370,
+    940
+   ],
+   [
+    300,
+    720
+   ],
+   [
+    340,
+    470
+   ],
+   [
+    520,
+    300
+   ],
+   [
+    700,
+    210
+   ]
+  ],
+  "note": "Closed smooth curve through these points (Catmull-Rom). Shore is 12 m of sand/rock stroke; shallows extend 50 m."
+ },
+ "offshore": [
+  {
+   "id": "lamp",
+   "label": "The Lamp",
+   "xy": [
+    540,
+    1230
+   ],
+   "r": 40,
+   "heightMax": 8,
+   "holds": "lighthouse (25 m gallery: glider launch), rowboat dock"
+  },
+  {
+   "id": "needle",
+   "label": "The Needle's Eye",
+   "xy": [
+    1790,
+    680
+   ],
+   "r": 34,
+   "heightMax": 30,
+   "holds": "natural arch (Ring Run gate 1, sunrise gate)"
+  },
+  {
+   "id": "stacks",
+   "label": "The Stacks",
+   "xy": [
+    [
+     1770,
+     880
+    ],
+    [
+     1810,
+     930
+    ],
+    [
+     1750,
+     960
+    ]
+   ],
+   "heightMax": 24,
+   "holds": "Ring Run gate 2 between them"
+  },
+  {
+   "id": "wreck",
+   "label": "The Wreck",
+   "xy": [
+    250,
+    1150
+   ],
+   "r": 30,
+   "heightMax": 4,
+   "holds": "a wreck on the reef; boat destination; nothing to do"
+  },
+  {
+   "id": "sandbar",
+   "label": "Bight sandbar",
+   "xy": [
+    620,
+    1000
+   ],
+   "note": "shows at full moon"
+  }
+ ],
+ "landformRule": "polygons are clipped to the island outline; the Hollow, the Stillwater terrace and the Cup are cut INTO the Shoulder (their own band wins inside them); elsewhere where polygons overlap the innermost (higher) band wins; band edges blend over 60 m; a bed (road, skate, rail, walk) overrides the bands within its profile width + 15 m each side and holds its own grade limits, so band steps never appear as cliffs on a route",
+ "districts": [
+  {
+   "id": "harbour",
+   "neighbourhood": "harbour",
+   "note": "town + the Terraces + the town quay"
+  },
+  {
+   "id": "landing",
+   "neighbourhood": "landing",
+   "note": "Long Sands, the Landing quay, the Boathouse, Campfire, Tideline park"
+  },
+  {
+   "id": "reach",
+   "neighbourhood": "landing",
+   "note": "the wetland and the river mouth"
+  },
+  {
+   "id": "green",
+   "neighbourhood": "lakeside",
+   "note": "the Green and the Glasshouse steps"
+  },
+  {
+   "id": "hollow",
+   "neighbourhood": "hollow",
+   "note": "the orchard bowl, the Adit"
+  },
+  {
+   "id": "scholars",
+   "neighbourhood": "scholars",
+   "note": "the woodland rise and the north pass"
+  },
+  {
+   "id": "flats",
+   "neighbourhood": "flats",
+   "note": "the arm: strip, hangar, balloon, the Wash"
+  },
+  {
+   "id": "bight",
+   "neighbourhood": "flats",
+   "note": "the lagoon, the sandbar, Bight Shore, the Bight Bridge"
+  },
+  {
+   "id": "lakeside",
+   "neighbourhood": "lakeside",
+   "note": "Stillwater, the dam, L01"
+  },
+  {
+   "id": "notch",
+   "neighbourhood": "lakeside",
+   "note": "the gorge, the High Span"
+  },
+  {
+   "id": "prow",
+   "neighbourhood": "crown",
+   "note": "the cliffs, the zip tower, the Sea Door"
+  },
+  {
+   "id": "crown",
+   "neighbourhood": "crown",
+   "note": "the Shoulder and the summit; the Undercroft is its underground child district"
+  },
+  {
+   "id": "offshore",
+   "neighbourhood": null,
+   "note": "the Lamp, the Needle's Eye, the Stacks, the Wreck; the sky ring streams by the districts beneath it"
+  }
+ ],
+ "landforms": [
+  {
+   "id": "harbour",
+   "label": "Little Harbour",
+   "h": [
+    0,
+    18
+   ],
+   "poly": [
+    [
+     1380,
+     1060
+    ],
+    [
+     1540,
+     1040
+    ],
+    [
+     1580,
+     1160
+    ],
+    [
+     1520,
+     1280
+    ],
+    [
+     1400,
+     1300
+    ],
+    [
+     1350,
+     1180
+    ]
+   ],
+   "faces": "north-west (the dam) and south (the harbour)"
+  },
+  {
+   "id": "sands",
+   "label": "Long Sands & the Landing",
+   "h": [
+    0,
+    5
+   ],
+   "poly": [
+    [
+     720,
+     1360
+    ],
+    [
+     1000,
+     1400
+    ],
+    [
+     1350,
+     1360
+    ],
+    [
+     1400,
+     1440
+    ],
+    [
+     1150,
+     1500
+    ],
+    [
+     860,
+     1480
+    ],
+    [
+     740,
+     1420
+    ]
+   ],
+   "faces": "south"
+  },
+  {
+   "id": "reach",
+   "label": "The Reach",
+   "h": [
+    2,
+    6
+   ],
+   "poly": [
+    [
+     1180,
+     1180
+    ],
+    [
+     1320,
+     1180
+    ],
+    [
+     1370,
+     1300
+    ],
+    [
+     1300,
+     1360
+    ],
+    [
+     1200,
+     1340
+    ],
+    [
+     1160,
+     1260
+    ]
+   ]
+  },
+  {
+   "id": "green",
+   "label": "The Green",
+   "h": [
+    10,
+    25
+   ],
+   "poly": [
+    [
+     1000,
+     900
+    ],
+    [
+     1150,
+     960
+    ],
+    [
+     1250,
+     1040
+    ],
+    [
+     1300,
+     1180
+    ],
+    [
+     1150,
+     1200
+    ],
+    [
+     950,
+     1200
+    ],
+    [
+     820,
+     1100
+    ],
+    [
+     830,
+     960
+    ]
+   ],
+   "faces": "south, open"
+  },
+  {
+   "id": "hollow",
+   "label": "The Hollow",
+   "h": [
+    30,
+    45
+   ],
+   "poly": [
+    [
+     880,
+     500
+    ],
+    [
+     1060,
+     480
+    ],
+    [
+     1090,
+     600
+    ],
+    [
+     1040,
+     680
+    ],
+    [
+     900,
+     680
+    ],
+    [
+     850,
+     600
+    ]
+   ],
+   "faces": "south-facing bowl"
+  },
+  {
+   "id": "scholars",
+   "label": "Scholars' Edge",
+   "h": [
+    35,
+    60
+   ],
+   "poly": [
+    [
+     640,
+     300
+    ],
+    [
+     900,
+     260
+    ],
+    [
+     960,
+     420
+    ],
+    [
+     880,
+     520
+    ],
+    [
+     700,
+     520
+    ],
+    [
+     600,
+     420
+    ]
+   ],
+   "faces": "north-west rise, shaded"
+  },
+  {
+   "id": "flats",
+   "label": "The Flats",
+   "h": [
+    30,
+    45
+   ],
+   "poly": [
+    [
+     330,
+     480
+    ],
+    [
+     520,
+     340
+    ],
+    [
+     560,
+     620
+    ],
+    [
+     520,
+     900
+    ],
+    [
+     430,
+     1000
+    ],
+    [
+     320,
+     850
+    ]
+   ],
+   "faces": "west, sunset"
+  },
+  {
+   "id": "stillwater",
+   "label": "Stillwater terrace",
+   "h": [
+    45,
+    55
+   ],
+   "poly": [
+    [
+     1000,
+     720
+    ],
+    [
+     1260,
+     720
+    ],
+    [
+     1280,
+     900
+    ],
+    [
+     1000,
+     900
+    ]
+   ]
+  },
+  {
+   "id": "notch",
+   "label": "The Notch",
+   "h": "cut 25\u201345 below the terrace",
+   "centreline": [
+    [
+     1140,
+     905
+    ],
+    [
+     1170,
+     980
+    ],
+    [
+     1220,
+     1060
+    ],
+    [
+     1250,
+     1140
+    ],
+    [
+     1280,
+     1220
+    ],
+    [
+     1330,
+     1290
+    ],
+    [
+     1350,
+     1345
+    ],
+    [
+     1364,
+     1390
+    ]
+   ],
+   "width": [
+    40,
+    70
+   ],
+   "walls": "strata"
+  },
+  {
+   "id": "prow",
+   "label": "The Prow",
+   "h": [
+    40,
+    70
+   ],
+   "poly": [
+    [
+     1560,
+     480
+    ],
+    [
+     1640,
+     560
+    ],
+    [
+     1700,
+     760
+    ],
+    [
+     1660,
+     960
+    ],
+    [
+     1600,
+     1080
+    ],
+    [
+     1560,
+     1000
+    ],
+    [
+     1620,
+     780
+    ],
+    [
+     1560,
+     600
+    ]
+   ],
+   "faces": "east, dawn; sea cliffs"
+  },
+  {
+   "id": "shoulder",
+   "label": "The Shoulder",
+   "h": [
+    90,
+    110
+   ],
+   "poly": [
+    [
+     1060,
+     330
+    ],
+    [
+     1400,
+     300
+    ],
+    [
+     1520,
+     420
+    ],
+    [
+     1500,
+     680
+    ],
+    [
+     1400,
+     860
+    ],
+    [
+     1180,
+     900
+    ],
+    [
+     1060,
+     800
+    ],
+    [
+     1000,
+     600
+    ]
+   ],
+   "cutInto": [
+    "hollow",
+    "stillwater",
+    "cup"
+   ],
+   "note": "stays \u2265 60 m inland of the north coast so the coast drive is not in its band"
+  },
+  {
+   "id": "crown",
+   "label": "The Crown",
+   "h": [
+    110,
+    160
+   ],
+   "poly": [
+    [
+     1120,
+     330
+    ],
+    [
+     1330,
+     280
+    ],
+    [
+     1500,
+     380
+    ],
+    [
+     1520,
+     560
+    ],
+    [
+     1420,
+     700
+    ],
+    [
+     1240,
+     700
+    ],
+    [
+     1120,
+     560
+    ]
+   ],
+   "summit": [
+    1310,
+    470
+   ],
+   "summitH": 158,
+   "snow": "Dec\u2013Mar, longest on the north face"
+  },
+  {
+   "id": "undercroft",
+   "label": "The Undercroft",
+   "h": [
+    30,
+    95
+   ],
+   "footprint": {
+    "cx": 1300,
+    "cy": 470,
+    "rx": 170,
+    "ry": 130
+   }
+  }
+ ],
+ "protected": {
+  "green": {
+   "cx": 1040,
+   "cy": 1065,
+   "r": 160,
+   "rule": "no building, plot, or prop taller than a bench (0.85 eu); disc-golf baskets and lantern posts ring the outside of it"
+  }
+ },
+ "water": {
+  "stillwater": {
+   "cx": 1130,
+   "cy": 820,
+   "rx": 110,
+   "ry": 85,
+   "surface": 50,
+   "note": "natural lake; never encodes money; ice Jan\u2013Feb"
+  },
+  "cup": {
+   "cx": 1170,
+   "cy": 660,
+   "rx": 22,
+   "ry": 14,
+   "surface": 100,
+   "note": "tarn; paper-boat and River Run launch"
+  },
+  "river": {
+   "upper": [
+    [
+     1170,
+     660
+    ],
+    [
+     1165,
+     700
+    ],
+    [
+     1160,
+     740
+    ]
+   ],
+   "lower": [
+    [
+     1140,
+     905
+    ],
+    [
+     1170,
+     980
+    ],
+    [
+     1220,
+     1060
+    ],
+    [
+     1250,
+     1140
+    ],
+    [
+     1280,
+     1220
+    ],
+    [
+     1330,
+     1290
+    ],
+    [
+     1350,
+     1345
+    ],
+    [
+     1364,
+     1390
+    ]
+   ],
+   "note": "upper feeds the lake; lower leaves the dam through the Notch to the Reach and the harbour"
+  },
+  "brook": {
+   "pts": [
+    [
+     880,
+     480
+    ],
+    [
+     900,
+     600
+    ],
+    [
+     880,
+     700
+    ],
+    [
+     865,
+     800
+    ],
+    [
+     820,
+     860
+    ]
+   ],
+   "note": "Orchard Brook: woodland to the Bight under the covered bridge"
+  },
+  "wash": {
+   "pts": [
+    [
+     480,
+     560
+    ],
+    [
+     465,
+     700
+    ],
+    [
+     485,
+     800
+    ],
+    [
+     515,
+     900
+    ]
+   ],
+   "note": "dry streambed on the Flats; runs only after almanac rain; the Wash skate bowl at [465,700]"
+  },
+  "reachChannels": [
+   [
+    [
+     1280,
+     1220
+    ],
+    [
+     1240,
+     1270
+    ],
+    [
+     1230,
+     1330
+    ]
+   ],
+   [
+    [
+     1280,
+     1220
+    ],
+    [
+     1320,
+     1260
+    ],
+    [
+     1320,
+     1320
+    ]
+   ]
+  ],
+  "deep": {
+   "cx": 1300,
+   "cy": 420,
+   "surface": 40,
+   "note": "cavern lake at the foot of the Throat, under the skylight shaft; the underground river leaves it east through the Sea Passage to the sea"
+  },
+  "spring": {
+   "xy": [
+    1250,
+    1180
+   ],
+   "note": "a decorative spring at the Reach; not the Deep's outflow"
+  },
+  "dam": {
+   "xy": [
+    1140,
+    905
+   ],
+   "facing": "south (toward the square)",
+   "crestLength": 44,
+   "instrument": "L01 at [1172,912]"
+  }
+ },
+ "hostRule": "footprint_m is the building's plan (w \u00d7 d, concept metres, scales); roofH_eu is ridge height above its ground in engine units (does not scale)",
+ "hosts": [
+  {
+   "id": "home",
+   "footprint_m": [
+    22,
+    16
+   ],
+   "roofH_eu": 9,
+   "label": "Our home",
+   "placeIds": [
+    "kitchen",
+    "tower",
+    "cellar",
+    "atlas"
+   ],
+   "xy": [
+    1505,
+    1165
+   ],
+   "h": 14,
+   "door": "west, onto the square; the kitchen window looks north-west at the dam",
+   "arrival": "square (walk); upper street spur (wheels)"
+  },
+  {
+   "id": "bank",
+   "footprint_m": [
+    26,
+    18
+   ],
+   "roofH_eu": 10,
+   "label": "The Fund bank",
+   "placeIds": [
+    "bank"
+   ],
+   "xy": [
+    1440,
+    1125
+   ],
+   "h": 16,
+   "door": "south, onto the square (the bank stands on the square's north side)"
+  },
+  {
+   "id": "library",
+   "footprint_m": [
+    42,
+    30
+   ],
+   "roofH_eu": 14,
+   "label": "The Library",
+   "placeIds": [
+    "library"
+   ],
+   "xy": [
+    740,
+    400
+   ],
+   "h": 48,
+   "door": "south-east, onto the reading courtyard",
+   "arrival": "garden walk; Green Road north pass spur"
+  },
+  {
+   "id": "glasshouse",
+   "footprint_m": [
+    30,
+    18
+   ],
+   "roofH_eu": 9,
+   "label": "The Glasshouse",
+   "placeIds": [
+    "glasshouse"
+   ],
+   "xy": [
+    1010,
+    790
+   ],
+   "h": 56,
+   "door": "south, onto the Glasshouse steps down to the Green (ramp twin); faces Stillwater across the terrace",
+   "arrival": "garden walk; Green Road spur"
+  },
+  {
+   "id": "studio",
+   "footprint_m": [
+    24,
+    16
+   ],
+   "roofH_eu": 8,
+   "label": "The Pottery Studio",
+   "placeIds": [
+    "kiln"
+   ],
+   "xy": [
+    1020,
+    540
+   ],
+   "h": 40,
+   "door": "west, onto the studio terrace; the Adit is 70 m east along the terrace"
+  },
+  {
+   "id": "cottage",
+   "footprint_m": [
+    18,
+    14
+   ],
+   "roofH_eu": 7,
+   "label": "Hercules's cottage",
+   "placeIds": [
+    "cottage"
+   ],
+   "xy": [
+    920,
+    620
+   ],
+   "h": 36,
+   "door": "south, into the orchard"
+  },
+  {
+   "id": "boathouse",
+   "footprint_m": [
+    20,
+    14
+   ],
+   "roofH_eu": 7,
+   "label": "The Boathouse",
+   "placeIds": [
+    "boathouse"
+   ],
+   "xy": [
+    1285,
+    1315
+   ],
+   "h": 3,
+   "door": "east, onto its dock on the harbour's west bank beside the Landing quay; the floatplane dock is the town's, not this one"
+  }
+ ],
+ "places": [
+  {
+   "id": "court",
+   "label": "Queen's Court (the square)",
+   "xy": [
+    1455,
+    1175
+   ],
+   "h": 12
+  },
+  {
+   "id": "campfire",
+   "label": "Campfire",
+   "xy": [
+    1200,
+    1430
+   ],
+   "h": 2
+  },
+  {
+   "id": "L01",
+   "label": "Fund instrument (beside the dam)",
+   "xy": [
+    1172,
+    912
+   ],
+   "h": 52,
+   "reads": "BasinReading only"
+  },
+  {
+   "id": "L02",
+   "label": "Summit lookout, observatory, the bell",
+   "xy": [
+    1310,
+    470
+   ],
+   "h": 158
+  }
+ ],
+ "profileRule": "widths and lengths of routes scale with scale.factor (they are concept metres); clearances, gauges, rises and anything sized to the body or a vehicle are engine units and never scale",
+ "profiles": {
+  "road": {
+   "surface_m": 8,
+   "shoulder_m": 1,
+   "clear_m": 5,
+   "grade_typ_pct": [
+    4,
+    6
+   ],
+   "grade_review_pct": 8,
+   "grade_max_pct": 12,
+   "exception": "the Prow cliff drive may hold 13 % for \u2264 150 m with a passing place",
+   "kerb": true,
+   "parapet_on_drop": true
+  },
+  "spur": {
+   "surface_m": 5,
+   "clear_m": 4
+  },
+  "trail": {
+   "surface_m": 2.5,
+   "material": "gravel",
+   "modes": [
+    "feet",
+    "bicycle"
+   ]
+  },
+  "walk": {
+   "surface_m": [
+    2,
+    2.5
+   ],
+   "modes": [
+    "feet"
+   ]
+  },
+  "walkable": {
+   "slope_max_deg": 38,
+   "lip_step_max_eu": 0.5,
+   "note": "the body cannot climb steeper than 38\u00b0; a lip above 0.5 eu is an edge, not a step"
+  },
+  "skateMain": {
+   "surface_m": [
+    3,
+    4
+   ],
+   "bank_deg_max": 30,
+   "runout_m": 25,
+   "grade_typ_pct": [
+    8,
+    14
+   ],
+   "grade_max_pct": 18,
+   "note": "grades apply to the bed after the land pass solves it; S1 averages ~15 % with real gravity"
+  },
+  "skatePocket": {
+   "surface_m": [
+    5,
+    6
+   ]
+  },
+  "boardwalk": {
+   "surface_m": 3,
+   "onPiles": true,
+   "pace": "flow"
+  },
+  "stair": {
+   "width_m": 3,
+   "rise_m": 0.17,
+   "twin": "ramp \u2264 8 % or path"
+  },
+  "rail": {
+   "gauge_m": 0.9,
+   "tunnel_clear_m": 3.2
+  },
+  "cable": {
+   "clear_eu": 8,
+   "towerSpacing_m": [
+    120,
+    200
+   ],
+   "note": "clear_eu never scales; spacing is concept metres"
+  },
+  "cave": {
+   "clear_m": [
+    6,
+    30
+   ],
+   "throatMouth_m": [
+    26,
+    18
+   ]
+  }
+ },
+ "surfaces": {
+  "paved": {
+   "pace": "fast",
+   "footstep": "stone"
+  },
+  "packedEarth": {
+   "pace": "fast",
+   "footstep": "earth"
+  },
+  "apron": {
+   "pace": "flow",
+   "footstep": "concrete",
+   "note": "the dam's spillway apron"
+  },
+  "bankedTurf": {
+   "pace": "flow",
+   "footstep": "grass"
+  },
+  "boardwalk": {
+   "pace": "flow",
+   "footstep": "plank"
+  },
+  "cobble": {
+   "pace": "slow",
+   "footstep": "cobble"
+  },
+  "gravel": {
+   "pace": "slow",
+   "footstep": "gravel"
+  },
+  "sand": {
+   "pace": "slow",
+   "footstep": "sand",
+   "prints": true
+  },
+  "plaza": {
+   "pace": "threshold",
+   "footstep": "stone"
+  },
+  "duff": {
+   "pace": "n/a",
+   "footstep": "needles"
+  },
+  "ochre": {
+   "pace": "fast",
+   "footstep": "dust"
+  },
+  "snow": {
+   "pace": "slow",
+   "footstep": "snow",
+   "season": "Dec\u2013Mar"
+  },
+  "ice": {
+   "pace": "skate",
+   "footstep": "ice",
+   "season": "Jan\u2013Feb",
+   "where": "stillwater"
+  }
+ },
+ "roads": {
+  "V01": {
+   "label": "Horizon Drive",
+   "pts": [
+    [
+     1400,
+     1060
+    ],
+    [
+     1480,
+     1040
+    ],
+    [
+     1540,
+     1000
+    ],
+    [
+     1600,
+     860
+    ],
+    [
+     1590,
+     700
+    ],
+    [
+     1560,
+     500
+    ],
+    [
+     1500,
+     340
+    ],
+    [
+     1300,
+     260
+    ],
+    [
+     1120,
+     250
+    ],
+    [
+     900,
+     290
+    ],
+    [
+     720,
+     300
+    ],
+    [
+     560,
+     360
+    ],
+    [
+     400,
+     470
+    ],
+    [
+     360,
+     650
+    ],
+    [
+     390,
+     850
+    ],
+    [
+     460,
+     1030
+    ],
+    [
+     660,
+     1170
+    ],
+    [
+     760,
+     1250
+    ],
+    [
+     900,
+     1360
+    ],
+    [
+     1100,
+     1400
+    ],
+    [
+     1300,
+     1380
+    ],
+    [
+     1350,
+     1345
+    ],
+    [
+     1370,
+     1260
+    ],
+    [
+     1360,
+     1160
+    ],
+    [
+     1400,
+     1060
+    ]
+   ],
+   "closed": true,
+   "profile": "road",
+   "length_m": 3896,
+   "structures": [
+    "prowTunnel",
+    "quayBridge",
+    "bightBridge"
+   ]
+  },
+  "VG": {
+   "label": "Green Road",
+   "pts": [
+    [
+     1400,
+     1060
+    ],
+    [
+     1330,
+     1090
+    ],
+    [
+     1240,
+     1105
+    ],
+    [
+     1120,
+     1080
+    ],
+    [
+     1000,
+     1000
+    ],
+    [
+     960,
+     860
+    ],
+    [
+     980,
+     700
+    ],
+    [
+     1000,
+     600
+    ],
+    [
+     940,
+     460
+    ],
+    [
+     930,
+     330
+    ],
+    [
+     900,
+     290
+    ]
+   ],
+   "profile": "road",
+   "length_m": 1176,
+   "structures": [
+    "highSpan",
+    "hollowBridge"
+   ]
+  },
+  "V02": {
+   "label": "Crown Road",
+   "pts": [
+    [
+     1500,
+     340
+    ],
+    [
+     1445,
+     430
+    ],
+    [
+     1445,
+     520
+    ],
+    [
+     1400,
+     620
+    ],
+    [
+     1370,
+     690
+    ]
+   ],
+   "profile": "road",
+   "length_m": 381,
+   "structures": [
+    "shoulderTunnel"
+   ],
+   "end": "turning circle at [1370,690]"
+  },
+  "VBS": {
+   "label": "Bight Shore spur",
+   "pts": [
+    [
+     960,
+     860
+    ],
+    [
+     905,
+     885
+    ],
+    [
+     875,
+     940
+    ],
+    [
+     840,
+     1000
+    ],
+    [
+     800,
+     1065
+    ],
+    [
+     775,
+     1125
+    ]
+   ],
+   "profile": "spur",
+   "length_m": 334
+  },
+  "spurs": {
+   "upperStreet": [
+    [
+     1480,
+     1040
+    ],
+    [
+     1480,
+     1060
+    ]
+   ],
+   "library": [
+    [
+     900,
+     290
+    ],
+    [
+     760,
+     360
+    ]
+   ],
+   "glasshouse": [
+    [
+     960,
+     860
+    ],
+    [
+     1000,
+     830
+    ]
+   ],
+   "studio": [
+    [
+     974,
+     540
+    ],
+    [
+     1000,
+     540
+    ]
+   ],
+   "cottage": [
+    [
+     980,
+     700
+    ],
+    [
+     930,
+     650
+    ]
+   ],
+   "boathouse": [
+    [
+     1300,
+     1380
+    ],
+    [
+     1290,
+     1345
+    ]
+   ]
+  }
+ },
+ "skate": {
+  "S1": {
+   "label": "Summit to Sea",
+   "pts": [
+    [
+     1310,
+     500
+    ],
+    [
+     1300,
+     570
+    ],
+    [
+     1305,
+     640
+    ],
+    [
+     1300,
+     700
+    ],
+    [
+     1355,
+     745
+    ],
+    [
+     1310,
+     800
+    ],
+    [
+     1275,
+     830
+    ],
+    [
+     1225,
+     905
+    ],
+    [
+     1160,
+     935
+    ],
+    [
+     1150,
+     1000
+    ],
+    [
+     1195,
+     1075
+    ],
+    [
+     1225,
+     1150
+    ],
+    [
+     1250,
+     1230
+    ],
+    [
+     1265,
+     1290
+    ],
+    [
+     1270,
+     1330
+    ]
+   ],
+   "profile": "skateMain",
+   "length_m": 971,
+   "segments": [
+    {
+     "name": "Crown drop",
+     "pace": "fast",
+     "surface": "paved",
+     "spot": "parapets"
+    },
+    {
+     "name": "Shoulder sweep",
+     "pace": "flow",
+     "surface": "bankedTurf",
+     "spot": "rock lip (optional jump)"
+    },
+    {
+     "name": "Dam apron",
+     "pace": "flow",
+     "surface": "apron",
+     "spot": "half-pipe wall ride; level line beside"
+    },
+    {
+     "name": "Notch shelf",
+     "pace": "fast",
+     "surface": "paved",
+     "spot": "shelf rail grind under the High Span"
+    },
+    {
+     "name": "Reach boardwalk",
+     "pace": "slow",
+     "surface": "cobble",
+     "spot": "reed chicane"
+    },
+    {
+     "name": "Quay finish",
+     "pace": "fast",
+     "surface": "paved",
+     "spot": "bollards; 25 m run-out"
+    }
+   ],
+   "gates": 17,
+   "finish": [
+    1270,
+    1330
+   ],
+   "time_target_s": [
+    70,
+    130
+   ],
+   "steep": "the Shoulder sweep is drawn with one switchback; the land pass may add a second to hold grade_max"
+  },
+  "S2": {
+   "label": "The Wash Run",
+   "pts": [
+    [
+     480,
+     480
+    ],
+    [
+     475,
+     580
+    ],
+    [
+     465,
+     700
+    ],
+    [
+     485,
+     800
+    ],
+    [
+     510,
+     900
+    ],
+    [
+     480,
+     985
+    ],
+    [
+     470,
+     1030
+    ],
+    [
+     560,
+     1100
+    ],
+    [
+     650,
+     1185
+    ],
+    [
+     750,
+     1265
+    ],
+    [
+     880,
+     1375
+    ],
+    [
+     1000,
+     1405
+    ],
+    [
+     1020,
+     1430
+    ]
+   ],
+   "profile": "skateMain",
+   "length_m": 1254,
+   "segments": [
+    {
+     "name": "Strip rim",
+     "pace": "fast",
+     "surface": "ochre"
+    },
+    {
+     "name": "The Wash bowl",
+     "pace": "flow",
+     "surface": "ochre",
+     "spot": "bowl walls both sides; hip at the bend; centre [465,700]"
+    },
+    {
+     "name": "Bight Bridge",
+     "pace": "flow",
+     "surface": "boardwalk",
+     "spot": "full-length rail"
+    },
+    {
+     "name": "Landing road",
+     "pace": "slow",
+     "surface": "gravel",
+     "spot": "dune-ridge hip into the park"
+    }
+   ]
+  },
+  "S3": {
+   "label": "Town Weave",
+   "pts": [
+    [
+     1480,
+     1060
+    ],
+    [
+     1500,
+     1120
+    ],
+    [
+     1470,
+     1160
+    ],
+    [
+     1440,
+     1200
+    ],
+    [
+     1470,
+     1260
+    ],
+    [
+     1430,
+     1300
+    ],
+    [
+     1390,
+     1330
+    ],
+    [
+     1350,
+     1345
+    ],
+    [
+     1290,
+     1400
+    ],
+    [
+     1200,
+     1425
+    ],
+    [
+     1100,
+     1440
+    ],
+    [
+     1020,
+     1430
+    ]
+   ],
+   "profile": "skateMain",
+   "length_m": 736,
+   "segments": [
+    {
+     "name": "Upper street",
+     "pace": "fast",
+     "surface": "paved"
+    },
+    {
+     "name": "Market stair",
+     "pace": "flow",
+     "surface": "paved",
+     "spot": "three flights, a rail each; ramp = ground line"
+    },
+    {
+     "name": "The square",
+     "pace": "threshold",
+     "surface": "plaza",
+     "spot": "park, or the cobbled edge lane"
+    },
+    {
+     "name": "The quay",
+     "pace": "fast",
+     "surface": "paved",
+     "spot": "lantern posts, bollards"
+    },
+    {
+     "name": "Long Sands boardwalk",
+     "pace": "flow",
+     "surface": "boardwalk",
+     "spot": "kicker at each beach stair"
+    }
+   ]
+  },
+  "S4": {
+   "label": "Hollow Line",
+   "pts": [
+    [
+     1000,
+     520
+    ],
+    [
+     940,
+     560
+    ],
+    [
+     893,
+     600
+    ],
+    [
+     915,
+     665
+    ],
+    [
+     920,
+     740
+    ],
+    [
+     945,
+     820
+    ],
+    [
+     870,
+     930
+    ],
+    [
+     905,
+     1015
+    ],
+    [
+     900,
+     1120
+    ],
+    [
+     950,
+     1230
+    ],
+    [
+     990,
+     1330
+    ],
+    [
+     1005,
+     1375
+    ],
+    [
+     1020,
+     1430
+    ]
+   ],
+   "profile": "skateMain",
+   "length_m": 1025,
+   "segments": [
+    {
+     "name": "Studio terrace",
+     "pace": "flow",
+     "surface": "packedEarth",
+     "spot": "kiln retaining wall grind"
+    },
+    {
+     "name": "Orchard wall",
+     "pace": "slow",
+     "surface": "cobble",
+     "spot": "stone wall gap; covered-bridge rail"
+    },
+    {
+     "name": "The Green",
+     "pace": "fast",
+     "surface": "packedEarth",
+     "spot": "fallen-log kickers"
+    },
+    {
+     "name": "Dune ridge",
+     "pace": "flow",
+     "surface": "bankedTurf",
+     "spot": "last bank onto sand"
+    }
+   ]
+  },
+  "park": {
+   "label": "Tideline park",
+   "xy": [
+    1020,
+    1430
+   ],
+   "size": [
+    60,
+    32
+   ],
+   "note": "Skate v2 park, travel assist on; no race"
+  },
+  "rules": [
+   "no required jumps",
+   "ground alternative for every spot",
+   "run-out before every door",
+   "board never past a threshold"
+  ]
+ },
+ "walks": {
+  "garden": {
+   "pts": [
+    [
+     740,
+     400
+    ],
+    [
+     800,
+     480
+    ],
+    [
+     880,
+     560
+    ],
+    [
+     930,
+     660
+    ],
+    [
+     990,
+     780
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 459
+  },
+  "lakerim": {
+   "pts": [
+    [
+     990,
+     780
+    ],
+    [
+     1030,
+     740
+    ],
+    [
+     1130,
+     720
+    ],
+    [
+     1235,
+     755
+    ],
+    [
+     1250,
+     840
+    ],
+    [
+     1200,
+     900
+    ],
+    [
+     1140,
+     905
+    ]
+   ],
+   "profile": "trail",
+   "length_m": 494
+  },
+  "prow": {
+   "pts": [
+    [
+     1560,
+     1000
+    ],
+    [
+     1600,
+     880
+    ],
+    [
+     1620,
+     760
+    ],
+    [
+     1590,
+     640
+    ],
+    [
+     1540,
+     560
+    ]
+   ],
+   "profile": "trail",
+   "length_m": 466
+  },
+  "bight": {
+   "pts": [
+    [
+     840,
+     880
+    ],
+    [
+     790,
+     950
+    ],
+    [
+     745,
+     1010
+    ],
+    [
+     720,
+     1090
+    ],
+    [
+     700,
+     1150
+    ]
+   ],
+   "profile": "trail",
+   "length_m": 308
+  },
+  "bightPier": {
+   "pts": [
+    [
+     350,
+     880
+    ],
+    [
+     430,
+     900
+    ],
+    [
+     520,
+     895
+    ],
+    [
+     560,
+     890
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 213
+  },
+  "coveWalk": {
+   "pts": [
+    [
+     740,
+     400
+    ],
+    [
+     700,
+     330
+    ],
+    [
+     650,
+     270
+    ],
+    [
+     630,
+     240
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 195
+  },
+  "dune": {
+   "pts": [
+    [
+     1150,
+     1458
+    ],
+    [
+     1000,
+     1478
+    ],
+    [
+     870,
+     1460
+    ],
+    [
+     810,
+     1420
+    ]
+   ],
+   "profile": "trail",
+   "length_m": 355
+  },
+  "crown": {
+   "pts": [
+    [
+     1370,
+     690
+    ],
+    [
+     1330,
+     600
+    ],
+    [
+     1310,
+     500
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 200
+  },
+  "crownFromGondola": {
+   "pts": [
+    [
+     1360,
+     560
+    ],
+    [
+     1330,
+     520
+    ],
+    [
+     1310,
+     500
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 78
+  },
+  "glasshouseSteps": {
+   "pts": [
+    [
+     990,
+     830
+    ],
+    [
+     1000,
+     805
+    ],
+    [
+     1010,
+     790
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 45
+  },
+  "flats": {
+   "pts": [
+    [
+     340,
+     520
+    ],
+    [
+     320,
+     700
+    ],
+    [
+     350,
+     880
+    ]
+   ],
+   "profile": "trail",
+   "length_m": 364
+  },
+  "reach": {
+   "pts": [
+    [
+     1400,
+     1290
+    ],
+    [
+     1330,
+     1250
+    ],
+    [
+     1270,
+     1200
+    ],
+    [
+     1240,
+     1130
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 235
+  },
+  "square": {
+   "pts": [
+    [
+     1420,
+     1210
+    ],
+    [
+     1455,
+     1175
+    ],
+    [
+     1490,
+     1130
+    ],
+    [
+     1480,
+     1060
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 177
+  }
+ },
+ "cable": {
+  "G1": {
+   "label": "Gondola",
+   "from": [
+    1480,
+    1090
+   ],
+   "to": [
+    1360,
+    560
+   ],
+   "fromH": 18,
+   "toH": 112,
+   "towers": [
+    [
+     1450,
+     958
+    ],
+    [
+     1420,
+     825
+    ],
+    [
+     1390,
+     693
+    ]
+   ],
+   "towerNote": "three towers at ~150 m spacing; heights solved in pass 1 so the cable clears terrain (the Shoulder band from [1425,848]) by profiles.cable.clear_m and passes \u2265 12 m over plot.terraces.*",
+   "clear_eu": 8,
+   "length_m": 543,
+   "speed": 6.0,
+   "note": "upper street \u2192 Crown station, straight up the south-east face; town falls away, then the whole island; the Crown walk continues from the station to the summit"
+  },
+  "ZIP": {
+   "label": "Zipline",
+   "from": [
+    1610,
+    640
+   ],
+   "to": [
+    1130,
+    1440
+   ],
+   "fromH": 100,
+   "toH": 12,
+   "sag_pct": 1,
+   "length_m": 933,
+   "speed": 12.0,
+   "minClearAboveRoof_eu": 12,
+   "note": "the Prow tower (30 m tower, deck at h 100) \u2192 Long Sands 44 m inland, skirting the town's west edge over the Reach; at 1 % sag it overflies no roof, clears V01 by 9 m, S1 by 23 m, the Reach walk by 26 m, and crosses above the gondola cable at [1442,921] with 10.7 m between cables"
+  }
+ },
+ "rail": {
+  "ORE": {
+   "label": "Ore Line",
+   "pts": [
+    [
+     1090,
+     540
+    ],
+    [
+     1160,
+     520
+    ],
+    [
+     1225,
+     490
+    ],
+    [
+     1270,
+     450
+    ],
+    [
+     1300,
+     420
+    ],
+    [
+     1360,
+     480
+    ],
+    [
+     1375,
+     625
+    ],
+    [
+     1345,
+     680
+    ]
+   ],
+   "profile": "rail",
+   "length_m": 540,
+   "stations": [
+    "the Adit [1090,540] h40",
+    "the South Portal [1345,680] h110 (29 m from Crown Road's turning circle)"
+   ],
+   "drop": {
+    "at": [
+     1270,
+     450
+    ],
+    "fall_m": 28,
+    "siding": true
+   },
+   "splash": "the Deep [1300,420]",
+   "note": "climbs after the Deep inside the rock, leaves the footprint at [1398,576] and runs a 119 m tunnel to the South Portal"
+  }
+ },
+ "water_routes": {
+  "FERRY": {
+   "label": "The Ferry",
+   "pts": [
+    [
+     1470,
+     1340
+    ],
+    [
+     1250,
+     1540
+    ],
+    [
+     900,
+     1530
+    ],
+    [
+     760,
+     1480
+    ],
+    [
+     640,
+     1300
+    ],
+    [
+     560,
+     1100
+    ],
+    [
+     580,
+     980
+    ],
+    [
+     560,
+     890
+    ],
+    [
+     560,
+     1100
+    ],
+    [
+     540,
+     1230
+    ],
+    [
+     380,
+     1200
+    ],
+    [
+     250,
+     1150
+    ],
+    [
+     230,
+     900
+    ],
+    [
+     285,
+     720
+    ],
+    [
+     280,
+     450
+    ],
+    [
+     450,
+     250
+    ],
+    [
+     625,
+     212
+    ],
+    [
+     900,
+     110
+    ],
+    [
+     1200,
+     120
+    ],
+    [
+     1500,
+     300
+    ],
+    [
+     1720,
+     650
+    ],
+    [
+     1712,
+     790
+    ],
+    [
+     1700,
+     1000
+    ],
+    [
+     1560,
+     1250
+    ],
+    [
+     1470,
+     1340
+    ]
+   ],
+   "closed": false,
+   "note": "clockwise (north up: west along Long Sands, in and out of the Bight under the bridge, round the Lamp and the Wreck, up the west, along the north, down the Prow, home); doubles back at the Bight pier",
+   "length_m": 5357,
+   "piers": {
+    "landing": [
+     1470,
+     1340
+    ],
+    "bight": [
+     560,
+     890
+    ],
+    "flats": [
+     285,
+     720
+    ],
+    "scholarsCove": [
+     630,
+     235
+    ],
+    "seaDoor": [
+     1705,
+     775
+    ]
+   },
+   "slowsAt": [
+    "the Wreck [250,1150] (no stop)"
+   ],
+   "headway_s": 370,
+   "hulls": 2,
+   "boarding": "walk the gangway (the deliberate action); the Ferry waits 20 s at each pier"
+  },
+  "ROW": {
+   "label": "Rowboat / canoe / dinghy water",
+   "area": "the Bight, the harbour, the coast to the Sea Door, the river below the Notch, the Deep",
+   "docks": [
+    "boathouse [1320,1320]",
+    "bight pier [560,890]",
+    "lamp [540,1250]",
+    "bightShore jetty [735,955]",
+    "seaDoor jetty [1705,775]",
+    "deep jetty [1300,440]"
+   ],
+   "range": "the Wreck is reached only by Ferry (it slows there)"
+  },
+  "RIVER_RUN": {
+   "label": "River Run (canoe)",
+   "pts": [
+    [
+     1160,
+     740
+    ],
+    [
+     1140,
+     905
+    ],
+    [
+     1170,
+     980
+    ],
+    [
+     1220,
+     1060
+    ],
+    [
+     1250,
+     1140
+    ],
+    [
+     1280,
+     1220
+    ],
+    [
+     1330,
+     1290
+    ],
+    [
+     1350,
+     1345
+    ],
+    [
+     1364,
+     1390
+    ]
+   ],
+   "gates": 9,
+   "note": "starts at the lake inlet [1160,740] (the Cup's outflow is a 62 % cascade, scenery only) \u2192 lake \u2192 dam portage \u2192 Notch \u2192 Reach \u2192 harbour"
+  },
+  "DEEP_RUN": {
+   "label": "Deep Run (canoe)",
+   "from": "the Deep [1300,420]",
+   "to": "the Sea Door [1690,770]",
+   "pts": [
+    [
+     1300,
+     420
+    ],
+    [
+     1380,
+     470
+    ],
+    [
+     1470,
+     540
+    ],
+    [
+     1560,
+     640
+    ],
+    [
+     1620,
+     720
+    ],
+    [
+     1690,
+     770
+    ]
+   ],
+   "length_m": 529,
+   "drop": "the Steps: 3 \u00d7 12 m chutes in the first 120 m; then level to the sea",
+   "note": "the underground river through the Sea Passage; out under the Prow into daylight, then paddle round to the Landing"
+  }
+ },
+ "structures": {
+  "highSpan": {
+   "xy": [
+    1240,
+    1105
+   ],
+   "kind": "bridge",
+   "deck": "VG road",
+   "h_deck": 24,
+   "shelf": "S1 skate shelf on the west wall, h 12",
+   "water": "Reach walk at river level, h 9",
+   "gate": "Ring Run gate 3 under the deck at h 16",
+   "riverbed_h": 8
+  },
+  "quayBridge": {
+   "xy": [
+    1350,
+    1345
+   ],
+   "kind": "bridge",
+   "deck": "V01 + S3 separated lane",
+   "h_deck": 9,
+   "under": "river mouth, rowboat clearance 4 m"
+  },
+  "apronBridge": {
+   "xy": [
+    1158,
+    949
+   ],
+   "kind": "bridge",
+   "deck": "S1",
+   "under": "the tailrace below the dam and the River Run"
+  },
+  "bightBridge": {
+   "xy": [
+    560,
+    1100
+   ],
+   "kind": "bridge",
+   "deck": "V01 + S2 separated lane with a full-length rail",
+   "span_m": 230,
+   "h_deck": 12,
+   "clear_m": 8,
+   "under": "the Ferry (twice per lap), Ring Run gate 5"
+  },
+  "hollowBridge": {
+   "xy": [
+    893,
+    600
+   ],
+   "kind": "coveredFootbridge",
+   "deck": "garden walk + S4 (separated lane)",
+   "under": "Orchard Brook",
+   "note": "a covered footbridge, not on Green Road; the ninth disc-golf basket; S4 rail if you dare"
+  },
+  "prowTunnel": {
+   "xy": [
+    1600,
+    780
+   ],
+   "kind": "tunnel",
+   "length_m": 90
+  },
+  "shoulderTunnel": {
+   "xy": [
+    1445,
+    480
+   ],
+   "kind": "tunnel",
+   "length_m": 110
+  },
+  "dam": {
+   "xy": [
+    1140,
+    905
+   ],
+   "kind": "dam",
+   "face": "south",
+   "spillwayArch": "Ring Run gate 4",
+   "apron": "S1 half-pipe",
+   "crest": "walk with plaques",
+   "gallery": "stair in the east abutment from the apron to the crest, past the plaques (does not enter the Undercroft)"
+  },
+  "gondolaStations": {
+   "base": [
+    1480,
+    1090
+   ],
+   "crownStation": [
+    1360,
+    560
+   ]
+  },
+  "inletFootbridge": {
+   "xy": [
+    1161,
+    731
+   ],
+   "kind": "footbridge",
+   "deck": "lake rim walk",
+   "under": "the upper river at the lake inlet"
+  },
+  "reachFootbridge": {
+   "xy": [
+    1274,
+    1203
+   ],
+   "kind": "footbridge on piles",
+   "deck": "Reach walk",
+   "under": "the river"
+  },
+  "duneCulvert": {
+   "xy": [
+    1005,
+    1375
+   ],
+   "kind": "underpass",
+   "deck": "V01 (Long Sands road)",
+   "under": "S4, 3 m clear",
+   "note": "a dune tunnel; the last surprise before the sand"
+  },
+  "southPortal": {
+   "xy": [
+    1345,
+    680
+   ],
+   "kind": "tunnel portal",
+   "note": "Ore Line top station, 29 m from the turning circle, 20 m from the Crown walk"
+  },
+  "zipPlatforms": {
+   "top": [
+    1610,
+    640
+   ],
+   "topH": 100,
+   "topNote": "deck of a 30 m tower at the Prow; the glider launch is the same deck",
+   "landing": [
+    1130,
+    1440
+   ],
+   "landingH": 12,
+   "landingNote": "a landing tower on the dune crest, deck 8 m above the Town Weave boardwalk which passes beneath it; a stair and a ramp down to the sand"
+  },
+  "oreStations": [
+   [
+    1090,
+    540
+   ],
+   [
+    1345,
+    680
+   ]
+  ],
+  "strip": {
+   "from": [
+    425,
+    520
+   ],
+   "to": [
+    445,
+    860
+   ],
+   "width_m": 30,
+   "hangar": [
+    455,
+    600
+   ],
+   "windsock": [
+    440,
+    500
+   ],
+   "balloonMooring": [
+    520,
+    470
+   ],
+   "runwayLamps": true
+  },
+  "floatplaneDock": [
+   1520,
+   1275
+  ],
+  "jetties": {
+   "bightShore": [
+    735,
+    955
+   ],
+   "deep": [
+    1300,
+    440
+   ],
+   "lamp": [
+    540,
+    1250
+   ],
+   "seaDoor": [
+    1705,
+    775
+   ],
+   "boathouse": [
+    1320,
+    1320
+   ]
+  },
+  "landingQuay": {
+   "xy": [
+    1270,
+    1330
+   ],
+   "note": "the race finish on the islet between the Reach's west channel and the river; 25 m run-out along the bank; kerb-separated from V01 which passes 45 m south; the Boathouse dock is across the west channel by the Reach boardwalk"
+  },
+  "townQuay": {
+   "from": [
+    1420,
+    1335
+   ],
+   "to": [
+    1497,
+    1265
+   ],
+   "note": "Lantern Row, 8 m inside the waterline; pedestrian; the floatplane dock at its east end"
+  }
+ },
+ "underground": {
+  "doors": {
+   "adit": {
+    "xy": [
+     1090,
+     540
+    ],
+    "h": 40,
+    "mode": "feet, cart"
+   },
+   "throat": {
+    "xy": [
+     1300,
+     300
+    ],
+    "h": 110,
+    "mode": "glider only",
+    "mouth_m": [
+     26,
+     18
+    ],
+    "note": "a diving entry: 139 m of sloping throat at 30\u00b0 down to the Deep at h 40; flare over the water"
+   },
+   "seaDoor": {
+    "xy": [
+     1690,
+     770
+    ],
+    "h": 0,
+    "mode": "boat",
+    "jetty": [
+     1705,
+     775
+    ],
+    "passage": "the Sea Passage: a 504 m boat tunnel from the Deep to the sea, glow-worm lit, with the Steps (three 12 m chute drops in the first 120 m; the Deep Run rides them down like a flume; reduced motion cuts them). Upstream travel: boats tie up at the foot of the Steps [1420,505] and a portage stair (threshold stepsFoot) climbs beside the chutes to the Deep's jetty; nobody paddles up. The Sea Door pier has a cliff stair (the Sea Stair) up to the Prow walk, and the Ferry as its step-free way back"
+   },
+   "southPortal": {
+    "xy": [
+     1345,
+     680
+    ],
+    "h": 110,
+    "mode": "feet, cart",
+    "note": "the Ore Line's top; a walk-in door too"
+   }
+  },
+  "footprint": {
+   "cx": 1300,
+   "cy": 470,
+   "rx": 170,
+   "ry": 130,
+   "note": "all rooms inside; doors on its rim or reached by a listed tunnel"
+  },
+  "rooms": {
+   "lanternCave": {
+    "xy": [
+     1220,
+     480
+    ],
+    "h": 42
+   },
+   "deep": {
+    "xy": [
+     1300,
+     420
+    ],
+    "h": 40,
+    "water": true,
+    "skylight": {
+     "to": [
+      1300,
+      400
+     ],
+     "topH": 138,
+     "shaft_m": 98,
+     "note": "opens on the north slope; sun shaft when the sun is above 20\u00b0"
+    }
+   },
+   "bellGallery": {
+    "xy": [
+     1310,
+     470
+    ],
+    "h": 90,
+    "note": "directly under the summit; the bell rope is 68 m"
+   },
+   "sealedDrift": {
+    "xy": [
+     1180,
+     500
+    ],
+    "reserve": "plot.under.1"
+   }
+  },
+  "damGallery": {
+   "xy": [
+    1165,
+    895
+   ],
+   "note": "a stair inside the dam's east abutment from the apron to the crest past the plaques; it does NOT enter the Undercroft"
+  },
+  "light": "glow-worms (cool), found lanterns (warm), skylight (sun/moon)"
+ },
+ "sky": {
+  "ceiling_m": 300,
+  "launches": {
+   "crown": {
+    "xy": [
+     1310,
+     440
+    ],
+    "h": 160
+   },
+   "prow": {
+    "xy": [
+     1610,
+     640
+    ],
+    "h": 100,
+    "note": "the zip tower's deck"
+   },
+   "lampGallery": {
+    "xy": [
+     540,
+     1195
+    ],
+    "h": 25
+   },
+   "plane": "anywhere under the ceiling"
+  },
+  "lift": {
+   "thermals": [
+    {
+     "xy": [
+      380,
+      600
+     ],
+     "r": 150,
+     "hours": [
+      12,
+      18
+     ],
+     "note": "the Flats' ochre"
+    },
+    {
+     "xy": [
+      1610,
+      850
+     ],
+     "r": 120,
+     "hours": [
+      8,
+      18
+     ],
+     "note": "the Prow face"
+    }
+   ],
+   "ridge": {
+    "along": "the Crown's south face",
+    "wind": "south"
+   },
+   "sink": [
+    {
+     "xy": [
+      600,
+      760
+     ],
+     "r": 200,
+     "note": "the Bight"
+    },
+    {
+     "xy": [
+      1210,
+      1010
+     ],
+     "r": 90,
+     "note": "the Notch"
+    }
+   ]
+  },
+  "landings": {
+   "green": {
+    "xy": [
+     1040,
+     1065
+    ],
+    "r": 60,
+    "target": true,
+    "note": "the Drop Zone target is ground paint inside the protected centre; S4 passes 60 m west"
+   },
+   "reachMeadow": {
+    "xy": [
+     1230,
+     1190
+    ],
+    "r": 40
+   },
+   "sands": {
+    "xy": [
+     1050,
+     1440
+    ],
+    "r": 60
+   },
+   "strip": "see structures.strip",
+   "water": [
+    "harbour",
+    "bight"
+   ],
+   "deep": "via the Throat, glider only"
+  },
+  "gates": [
+   {
+    "n": 1,
+    "id": "needle",
+    "xy": [
+     1790,
+     680
+    ],
+    "h": 14,
+    "aperture_m": [
+     22,
+     16
+    ],
+    "note": "the Needle's Eye; sunrise gate"
+   },
+   {
+    "n": 2,
+    "id": "stacks",
+    "xy": [
+     1780,
+     905
+    ],
+    "h": 12
+   },
+   {
+    "n": 3,
+    "id": "highSpan",
+    "xy": [
+     1240,
+     1095
+    ],
+    "h": 16,
+    "aperture_m": [
+     40,
+     14
+    ],
+    "note": "under the deck (deck h 24, riverbed h 8)"
+   },
+   {
+    "n": 4,
+    "id": "damArch",
+    "xy": [
+     1140,
+     925
+    ],
+    "h": 45,
+    "note": "the spillway arch"
+   },
+   {
+    "n": 5,
+    "id": "bightBridge",
+    "xy": [
+     560,
+     1080
+    ],
+    "h": 6,
+    "note": "under the deck"
+   },
+   {
+    "n": 6,
+    "id": "lamp",
+    "xy": [
+     540,
+     1260
+    ],
+    "h": 20,
+    "note": "round the lighthouse"
+   },
+   {
+    "n": 7,
+    "id": "wreck",
+    "xy": [
+     250,
+     1150
+    ],
+    "h": 15
+   },
+   {
+    "n": 8,
+    "id": "flatsRim",
+    "xy": [
+     330,
+     700
+    ],
+    "h": 60
+   },
+   {
+    "n": 9,
+    "id": "scholarsCove",
+    "xy": [
+     640,
+     280
+    ],
+    "h": 40
+   },
+   {
+    "n": 10,
+    "id": "northFace",
+    "xy": [
+     1300,
+     200
+    ],
+    "h": 130
+   },
+   {
+    "n": 11,
+    "id": "crown",
+    "xy": [
+     1310,
+     470
+    ],
+    "h": 190,
+    "note": "over the summit"
+   },
+   {
+    "n": 12,
+    "id": "throat",
+    "xy": [
+     1300,
+     300
+    ],
+    "h": 110,
+    "aperture_m": [
+     26,
+     18
+    ],
+    "note": "into the mountain; glider only"
+   }
+  ],
+  "plane": {
+   "speed_ms": 35.0,
+   "stall_ms": 18,
+   "floats": true,
+   "wheels": true,
+   "swapAt": "hangar",
+   "oneButtonRing": true,
+   "cannot": [
+    "enter the Throat",
+    "land on a neighbourhood",
+    "collide with a person"
+   ]
+  },
+  "glider": {
+   "speed_ms": 11.0,
+   "sink_ms": 1.2,
+   "flare": true
+  },
+  "balloon": {
+   "xy": [
+    520,
+    470
+   ],
+   "mooringH": 40,
+   "tether_m": 250,
+   "note": "the Look camera made physical; you ride it up and back down, there is no stepping out at the top"
+  },
+  "courses": {
+   "ringRun": {
+    "mode": "plane",
+    "gates": [
+     1,
+     2,
+     3,
+     4,
+     5,
+     6,
+     7,
+     8,
+     9,
+     10,
+     11
+    ],
+    "note": "the tour, in order"
+   },
+   "damRun": {
+    "mode": "glider",
+    "launch": "crown",
+    "gates": [
+     4,
+     3
+    ],
+    "land": "reach meadow [1230,1190]",
+    "note": "514 m to the arch with 115 m of height in hand at a 9:1 glide; the Reach meadow is 130 m past the High Span"
+   },
+   "throatRun": {
+    "mode": "glider",
+    "launch": "crown",
+    "gates": [
+     10,
+     12
+    ],
+    "land": "deep",
+    "note": "out over the north sea, turn, dive in"
+   },
+   "lampHop": {
+    "mode": "glider",
+    "launch": "lampGallery",
+    "gates": [
+     5
+    ],
+    "land": "the Bight water beside the sandbar (fade to the sandbar)",
+    "note": "the short one"
+   }
+  },
+  "rules": [
+   "no collisions with people: pass through + gust",
+   "reduced motion: cuts between the twelve pages",
+   "nothing in the sky reads a balance"
+  ]
+ },
+ "reserves": {
+  "rotRule": "rot_deg is the bearing of the 64 m axis, degrees clockwise from +x (east) with y south",
+  "terraces": {
+   "plots": [
+    [
+     1552,
+     832
+    ],
+    [
+     1528,
+     896
+    ],
+    [
+     1512,
+     952
+    ],
+    [
+     1596,
+     994
+    ]
+   ],
+   "rot_deg": [
+    -67,
+    23,
+    23,
+    -67
+   ],
+   "size_m": [
+    64,
+    44
+   ],
+   "placeIds": [
+    "plot.terraces.1",
+    "plot.terraces.2",
+    "plot.terraces.3",
+    "plot.terraces.4"
+   ],
+   "served": "plots 1\u20133 uphill (west) of the Prow cliff drive between [1600,860] and [1540,1000] with a lay-by each; plot 4 is on the seaward side (D12 question: only three fit uphill once the gondola and the zip are cleared); the Prow walk above; the town below"
+  },
+  "bightShore": {
+   "plots": [
+    [
+     836,
+     907
+    ],
+    [
+     771,
+     973
+    ],
+    [
+     729,
+     1032
+    ],
+    [
+     705,
+     1107
+    ]
+   ],
+   "rot_deg": [
+    39,
+    45,
+    24,
+    11
+   ],
+   "size_m": [
+    64,
+    44
+   ],
+   "spacing_m": "\u2265 62 (centres), \u2265 17.5 edge to edge",
+   "placeIds": [
+    "plot.bight.1",
+    "plot.bight.2",
+    "plot.bight.3",
+    "plot.bight.4"
+   ],
+   "served": "VBS spur; jetty [735,955]; all four outside protected.green (r 160)"
+  },
+  "small": {
+   "sealedDrift": {
+    "xy": [
+     1180,
+     500
+    ],
+    "placeId": "plot.under.1"
+   },
+   "hangarBay": {
+    "xy": [
+     455,
+     600
+    ],
+    "placeId": "plot.flats.1"
+   }
+  },
+  "plotRule": "1.5 \u00d7 Library footprint + 6 m clear; graded, walled, served, reserved placeId; no lantern spot inside; no view depends on it being empty"
+ },
+ "neighbourhoods": [
+  {
+   "id": "harbour",
+   "label": "Little Harbour",
+   "centre": [
+    1470,
+    1180
+   ],
+   "r": 120,
+   "hosts": [
+    "home",
+    "bank"
+   ],
+   "places": [
+    "court"
+   ],
+   "porch": "the square's edge facing the dam; the quay wall at night"
+  },
+  {
+   "id": "hollow",
+   "label": "The Hollow",
+   "centre": [
+    970,
+    590
+   ],
+   "r": 100,
+   "hosts": [
+    "studio",
+    "cottage"
+   ],
+   "porch": "picnic table under the apples by the covered bridge"
+  },
+  {
+   "id": "scholars",
+   "label": "Scholars' Edge",
+   "centre": [
+    760,
+    420
+   ],
+   "r": 110,
+   "hosts": [
+    "library"
+   ],
+   "porch": "the reading courtyard facing the Bight"
+  },
+  {
+   "id": "flats",
+   "label": "The Flats",
+   "centre": [
+    440,
+    680
+   ],
+   "r": 150,
+   "hosts": [],
+   "porch": "the hangar's bench"
+  },
+  {
+   "id": "landing",
+   "label": "The Landing & Long Sands",
+   "centre": [
+    1170,
+    1380
+   ],
+   "r": 200,
+   "hosts": [
+    "boathouse"
+   ],
+   "places": [
+    "campfire"
+   ],
+   "porch": "the Boathouse dock; the log ring"
+  },
+  {
+   "id": "lakeside",
+   "label": "Lakeside",
+   "centre": [
+    1130,
+    830
+   ],
+   "r": 130,
+   "hosts": [
+    "glasshouse"
+   ],
+   "places": [
+    "L01"
+   ],
+   "porch": "the dam crest"
+  },
+  {
+   "id": "crown",
+   "label": "The Crown & the Undercroft",
+   "centre": [
+    1310,
+    500
+   ],
+   "r": 150,
+   "hosts": [],
+   "places": [
+    "L02"
+   ],
+   "porch": "the lookout wall; the Deep's jetty"
+  }
+ ],
+ "viewRule": "each pose: xy is the eye position on the ground; eye height 1.6 eu above ground unless eyeH given; target is the look-at point; fov_deg horizontal at 16:9 (the Sketchbook lens; STYLE's 42\u00b0/52\u00b0 lenses are the walking and ride cameras); radius_eu is the acceptance streaming radius; pageTrigger_eu is how close the player must stand (and face within 25\u00b0) for the page to draw",
+ "pageTrigger_eu": 6,
+ "views": [
+  {
+   "id": "A",
+   "target": [
+    1200,
+    700
+   ],
+   "fov_deg": 55,
+   "radius_eu": 220,
+   "label": "The square, looking north-west",
+   "xy": [
+    1455,
+    1200
+   ],
+   "frames": "the Reach, the High Span, the dam's glass face, the Crown behind",
+   "bestHour": "golden hour",
+   "also": "noon"
+  },
+  {
+   "id": "B",
+   "target": [
+    900,
+    700
+   ],
+   "fov_deg": 55,
+   "radius_eu": 220,
+   "label": "The Lamp gallery",
+   "xy": [
+    540,
+    1195
+   ],
+   "frames": "the Bight Bridge, the Flats, the whole hook",
+   "bestHour": "sunset",
+   "also": "noon"
+  },
+  {
+   "id": "C",
+   "target": [
+    1240,
+    1105
+   ],
+   "fov_deg": 55,
+   "radius_eu": 220,
+   "label": "High Span, three speeds",
+   "xy": [
+    1245,
+    1125
+   ],
+   "frames": "road above, shelf within, water beside",
+   "bestHour": "morning",
+   "also": "night"
+  },
+  {
+   "id": "D",
+   "target": [
+    540,
+    1230
+   ],
+   "fov_deg": 55,
+   "radius_eu": 220,
+   "label": "Long Sands",
+   "xy": [
+    900,
+    1470
+   ],
+   "frames": "surf, the Lamp, the zipline landing, a bench",
+   "bestHour": "afternoon",
+   "also": "night"
+  },
+  {
+   "id": "E",
+   "target": [
+    1000,
+    1000
+   ],
+   "fov_deg": 55,
+   "radius_eu": 220,
+   "label": "The Crown",
+   "xy": [
+    1310,
+    430
+   ],
+   "frames": "everything, small, and the sea all round",
+   "bestHour": "noon",
+   "also": "night"
+  },
+  {
+   "id": "F",
+   "target": [
+    1450,
+    1180
+   ],
+   "fov_deg": 55,
+   "radius_eu": 220,
+   "label": "Dam crest",
+   "xy": [
+    1150,
+    905
+   ],
+   "frames": "the plaques, L01, the lake behind, the town below",
+   "bestHour": "morning",
+   "also": "dusk"
+  },
+  {
+   "id": "G",
+   "target": [
+    1300,
+    300
+   ],
+   "fov_deg": 55,
+   "radius_eu": 220,
+   "label": "The Deep, looking up the Throat",
+   "xy": [
+    1300,
+    440
+   ],
+   "frames": "from the Deep's jetty north up the Throat to its mouth of daylight, the skylight shaft overhead, a glider flaring onto the water",
+   "bestHour": "noon (sun shaft)",
+   "also": "night (moon shaft)"
+  },
+  {
+   "id": "H",
+   "target": [
+    435,
+    690
+   ],
+   "fov_deg": 55,
+   "radius_eu": 220,
+   "label": "The Flats at sunset",
+   "xy": [
+    330,
+    800
+   ],
+   "frames": "the strip, the windsock, the balloon, the west sea",
+   "bestHour": "sunset",
+   "also": "dawn"
+  },
+  {
+   "id": "I",
+   "target": [
+    1280,
+    1150
+   ],
+   "fov_deg": 55,
+   "radius_eu": 220,
+   "label": "Reach boardwalk",
+   "xy": [
+    1270,
+    1240
+   ],
+   "frames": "reeds at hand height, the spring, the heron",
+   "bestHour": "morning",
+   "also": "dusk"
+  },
+  {
+   "id": "J",
+   "target": [
+    1790,
+    680
+   ],
+   "fov_deg": 55,
+   "radius_eu": 220,
+   "eyeH": 60,
+   "label": "The Needle's Eye, from the plane",
+   "xy": [
+    1790,
+    720
+   ],
+   "frames": "the arch under the wing, the Stacks, the Prow",
+   "bestHour": "dawn",
+   "also": "noon"
+  },
+  {
+   "id": "K",
+   "target": [
+    1130,
+    820
+   ],
+   "fov_deg": 55,
+   "radius_eu": 220,
+   "label": "The Glasshouse at dusk",
+   "xy": [
+    990,
+    810
+   ],
+   "frames": "lit from inside, seed pots in silhouette, Stillwater beyond",
+   "bestHour": "dusk",
+   "also": "noon"
+  },
+  {
+   "id": "L",
+   "target": [
+    1285,
+    1315
+   ],
+   "fov_deg": 55,
+   "radius_eu": 220,
+   "label": "The quay at night",
+   "xy": [
+    1430,
+    1290
+   ],
+   "frames": "Lantern Row lit, the floatplane rocking, the Boathouse across the water",
+   "bestHour": "night",
+   "also": "dawn"
+  }
+ ],
+ "crossings": [
+  {
+   "a": "VG",
+   "b": "river lower",
+   "at": [
+    1240,
+    1105
+   ],
+   "resolution": "over",
+   "structure": "highSpan"
+  },
+  {
+   "a": "S1",
+   "b": "VG",
+   "at": [
+    1204,
+    1098
+   ],
+   "resolution": "under",
+   "structure": "highSpan (shelf, west wall)"
+  },
+  {
+   "a": "walk reach",
+   "b": "VG",
+   "at": [
+    1240,
+    1110
+   ],
+   "resolution": "under",
+   "structure": "highSpan (water level)"
+  },
+  {
+   "a": "walk reach",
+   "b": "river lower",
+   "at": [
+    1274,
+    1203
+   ],
+   "resolution": "over",
+   "structure": "reachFootbridge"
+  },
+  {
+   "a": "walk lakerim",
+   "b": "river upper",
+   "at": [
+    1161,
+    731
+   ],
+   "resolution": "over",
+   "structure": "inletFootbridge"
+  },
+  {
+   "a": "walk garden",
+   "b": "brook",
+   "at": [
+    893,
+    600
+   ],
+   "resolution": "over",
+   "structure": "hollowBridge"
+  },
+  {
+   "a": "S4",
+   "b": "brook",
+   "at": [
+    893,
+    600
+   ],
+   "resolution": "over",
+   "structure": "hollowBridge (separated lane; the rail)"
+  },
+  {
+   "a": "S4",
+   "b": "walk garden",
+   "at": [
+    893,
+    600
+   ],
+   "resolution": "threshold",
+   "note": "the covered bridge is shared: boards to the rail side at walking pace"
+  },
+  {
+   "a": "V01",
+   "b": "river mouth",
+   "at": [
+    1350,
+    1345
+   ],
+   "resolution": "over",
+   "structure": "quayBridge"
+  },
+  {
+   "a": "S3",
+   "b": "river mouth",
+   "at": [
+    1350,
+    1345
+   ],
+   "resolution": "over",
+   "structure": "quayBridge (separated lane)"
+  },
+  {
+   "a": "S1",
+   "b": "Reach west channel",
+   "at": [
+    1255,
+    1251
+   ],
+   "resolution": "over",
+   "structure": "Reach boardwalk on piles; the finish sits on the islet between the west channel and the river"
+  },
+  {
+   "a": "S1 finish",
+   "b": "V01",
+   "at": [
+    1270,
+    1330
+   ],
+   "resolution": "threshold",
+   "note": "kerb-separated; the run-out ends 20 m before the Long Sands road"
+  },
+  {
+   "a": "V01+S2",
+   "b": "Bight mouth",
+   "at": [
+    560,
+    1100
+   ],
+   "resolution": "over",
+   "structure": "bightBridge"
+  },
+  {
+   "a": "S2",
+   "b": "V01",
+   "at": "[460,1030] to [660,1170] and the Wash to the bridge",
+   "resolution": "over",
+   "note": "S2 rides a separated lane 4 m from the carriageway with a kerb, then the bridge's rail-side lane; never the shoulder"
+  },
+  {
+   "a": "S2",
+   "b": "V01",
+   "at": [
+    660,
+    1170
+   ],
+   "resolution": "threshold",
+   "note": "after the bridge S2 leaves the road at a dismount marker onto its own bed 18\u201345 m from the carriageway"
+  },
+  {
+   "a": "S2",
+   "b": "water wash",
+   "at": "[465,700] to [485,800]",
+   "resolution": "threshold",
+   "note": "S2 shares the dry Wash bed; on almanac drizzle days the bowl is wet and the line closes at a marker for six hours"
+  },
+  {
+   "a": "S4",
+   "b": "VBS",
+   "at": [
+    874,
+    941
+   ],
+   "resolution": "threshold",
+   "note": "at grade: dismount marker + kerb gap"
+  },
+  {
+   "a": "S4",
+   "b": "VG",
+   "at": [
+    973,
+    538
+   ],
+   "resolution": "threshold",
+   "note": "at grade at the studio terrace: dismount marker + kerb gap"
+  },
+  {
+   "a": "VG",
+   "b": "walk garden",
+   "at": [
+    974,
+    748
+   ],
+   "resolution": "threshold"
+  },
+  {
+   "a": "V01",
+   "b": "walk reach",
+   "at": [
+    1367,
+    1271
+   ],
+   "resolution": "threshold"
+  },
+  {
+   "a": "S3",
+   "b": "town quay",
+   "at": [
+    1453,
+    1277
+   ],
+   "resolution": "threshold",
+   "note": "quayWest: park here; Lantern Row is pedestrian"
+  },
+  {
+   "a": "DEEP_RUN",
+   "b": "V01",
+   "at": [
+    1574,
+    658
+   ],
+   "resolution": "under",
+   "note": "the Sea Passage runs 60+ m below the coast drive"
+  },
+  {
+   "a": "DEEP_RUN",
+   "b": "V02",
+   "at": [
+    1445,
+    520
+   ],
+   "resolution": "under",
+   "note": "the Sea Passage passes \u2265 40 m beneath Crown Road and its tunnel"
+  },
+  {
+   "a": "S4 \u00d7 VBS threshold",
+   "b": "district",
+   "at": [
+    874,
+    941
+   ],
+   "resolution": "n/a",
+   "note": "belongs to district green (Lakeside) unless pass 1 draws the bight district over it"
+  },
+  {
+   "a": "DEEP_RUN",
+   "b": "walk prow",
+   "at": [
+    1605,
+    700
+   ],
+   "resolution": "under"
+  },
+  {
+   "a": "S4",
+   "b": "V01",
+   "at": [
+    1005,
+    1375
+   ],
+   "resolution": "under",
+   "structure": "duneCulvert"
+  },
+  {
+   "a": "S3",
+   "b": "walk dune",
+   "at": "none",
+   "resolution": "over",
+   "note": "S3's boardwalk runs the dune crest; the dune walk runs the beach foot 30 m south; they never meet"
+  },
+  {
+   "a": "S3",
+   "b": "V01",
+   "at": [
+    1480,
+    1050
+   ],
+   "resolution": "threshold",
+   "note": "the upper-street spur end is the board pick-up"
+  },
+  {
+   "a": "S1",
+   "b": "walk lakerim",
+   "at": [
+    1160,
+    935
+   ],
+   "resolution": "threshold",
+   "note": "dam apron: boards on the apron; walkers on the crest above"
+  },
+  {
+   "a": "S1",
+   "b": "river lower",
+   "at": [
+    1158,
+    949
+   ],
+   "resolution": "over",
+   "structure": "apronBridge"
+  },
+  {
+   "a": "ZIP",
+   "b": "town",
+   "at": "overhead",
+   "resolution": "over",
+   "note": "\u2265 12 m above every roof, sag included; the line skirts the town's west edge"
+  },
+  {
+   "a": "ZIP",
+   "b": "G1",
+   "at": [
+    1442,
+    921
+   ],
+   "resolution": "over",
+   "note": "zip 10.7 m above the gondola chord at 1 % sag"
+  },
+  {
+   "a": "ZIP",
+   "b": "V01",
+   "at": [
+    1157,
+    1394
+   ],
+   "resolution": "over",
+   "note": "\u2265 9 m clear over the Long Sands road"
+  },
+  {
+   "a": "ZIP",
+   "b": "VG",
+   "at": [
+    1343,
+    1084
+   ],
+   "resolution": "over",
+   "note": "\u2248 24 m clear over Green Road"
+  },
+  {
+   "a": "ZIP",
+   "b": "S3",
+   "at": [
+    1133,
+    1435
+   ],
+   "resolution": "over",
+   "structure": "landing tower deck 8 m above the boardwalk"
+  },
+  {
+   "a": "V01",
+   "b": "walk bightPier",
+   "at": [
+    407,
+    894
+   ],
+   "resolution": "threshold"
+  },
+  {
+   "a": "V01",
+   "b": "walk coveWalk",
+   "at": [
+    686,
+    313
+   ],
+   "resolution": "threshold"
+  },
+  {
+   "a": "S2",
+   "b": "walk bightPier",
+   "at": [
+    509,
+    896
+   ],
+   "resolution": "threshold",
+   "note": "the pier walk crosses the Wash Run bed at a marked gap"
+  },
+  {
+   "a": "walk bightPier",
+   "b": "water wash",
+   "at": [
+    514,
+    895
+   ],
+   "resolution": "over",
+   "structure": "a plank footbridge at the Wash mouth"
+  },
+  {
+   "a": "walk crown",
+   "b": "ORE",
+   "at": [
+    1356,
+    659
+   ],
+   "resolution": "over",
+   "note": "the Ore Line is in its tunnel here"
+  },
+  {
+   "a": "G1",
+   "b": "ORE",
+   "at": [
+    1375,
+    625
+   ],
+   "resolution": "over",
+   "note": "cable above, rail in its tunnel"
+  },
+  {
+   "a": "S4",
+   "b": "spur studio",
+   "at": [
+    974,
+    540
+   ],
+   "resolution": "threshold",
+   "note": "S4 starts at the studio terrace; the spur ends there"
+  },
+  {
+   "a": "G1",
+   "b": "V01",
+   "at": [
+    1469,
+    1043
+   ],
+   "resolution": "over",
+   "structure": "cable clear \u2265 8 m; tower 1 beside the road"
+  },
+  {
+   "a": "G1",
+   "b": "Crown Road",
+   "at": [
+    1385,
+    655
+   ],
+   "resolution": "over",
+   "structure": "cable clear \u2265 8 m"
+  },
+  {
+   "a": "ORE",
+   "b": "Crown Road",
+   "at": "none",
+   "resolution": "n/a",
+   "note": "the South Portal [1345,680] is 29 m from the turning circle; a path links them"
+  },
+  {
+   "a": "V02",
+   "b": "walk crown",
+   "at": [
+    1370,
+    690
+   ],
+   "resolution": "threshold",
+   "note": "turning circle is the wheels' end; the Crown walk begins"
+  },
+  {
+   "a": "FERRY",
+   "b": "bightBridge",
+   "at": [
+    560,
+    1100
+   ],
+   "resolution": "under",
+   "note": "twice per lap"
+  },
+  {
+   "a": "DEEP_RUN",
+   "b": "ORE",
+   "at": "none",
+   "resolution": "n/a",
+   "note": "the Sea Passage leaves the Deep east; the rail leaves north-east and climbs; separated by 20 m of rock"
+  },
+  {
+   "a": "plane",
+   "b": "everything",
+   "at": "sky",
+   "resolution": "over",
+   "note": "ceiling 300 m; no landing on a neighbourhood"
+  }
+ ],
+ "thresholds": [
+  {
+   "id": "stairTop",
+   "xy": [
+    1480,
+    1150
+   ],
+   "modes": [
+    "board\u2192feet"
+   ],
+   "action": "park"
+  },
+  {
+   "id": "quayWest",
+   "xy": [
+    1453,
+    1277
+   ],
+   "modes": [
+    "board\u2192feet"
+   ],
+   "action": "park (Lantern Row is pedestrian)"
+  },
+  {
+   "id": "upperStreetSpur",
+   "xy": [
+    1480,
+    1060
+   ],
+   "modes": [
+    "wheels\u2192feet"
+   ],
+   "action": "park"
+  },
+  {
+   "id": "gondolaBase",
+   "xy": [
+    1480,
+    1090
+   ],
+   "modes": [
+    "feet\u2192cable"
+   ],
+   "action": "board by offer"
+  },
+  {
+   "id": "adit",
+   "xy": [
+    1090,
+    540
+   ],
+   "modes": [
+    "feet\u2192cart"
+   ],
+   "action": "sit, lever"
+  },
+  {
+   "id": "prowPlatform",
+   "xy": [
+    1610,
+    640
+   ],
+   "modes": [
+    "feet\u2192zip",
+    "feet\u2192glider"
+   ],
+   "action": "clip in / run off"
+  },
+  {
+   "id": "crownLaunch",
+   "xy": [
+    1310,
+    440
+   ],
+   "modes": [
+    "feet\u2192glider"
+   ],
+   "action": "run off"
+  },
+  {
+   "id": "strip",
+   "xy": [
+    435,
+    690
+   ],
+   "modes": [
+    "feet\u2192plane"
+   ],
+   "action": "climb in"
+  },
+  {
+   "id": "floatDock",
+   "xy": [
+    1520,
+    1275
+   ],
+   "modes": [
+    "feet\u2192plane"
+   ],
+   "action": "climb in"
+  },
+  {
+   "id": "balloon",
+   "xy": [
+    520,
+    470
+   ],
+   "modes": [
+    "feet\u2192balloon"
+   ],
+   "action": "step in"
+  },
+  {
+   "id": "boathouseDock",
+   "xy": [
+    1320,
+    1320
+   ],
+   "modes": [
+    "feet\u2192boat"
+   ],
+   "action": "untie"
+  },
+  {
+   "id": "ferryPiers",
+   "xy": "see water_routes.FERRY.piers",
+   "modes": [
+    "feet\u2192ferry"
+   ],
+   "action": "walk the gangway (the offer appears by proximity)"
+  },
+  {
+   "id": "skateLineStarts",
+   "xy": [
+    [
+     1310,
+     500
+    ],
+    [
+     480,
+     480
+    ],
+    [
+     1480,
+     1060
+    ],
+    [
+     1000,
+     520
+    ]
+   ],
+   "modes": [
+    "feet\u2192board"
+   ],
+   "action": "pick up"
+  },
+  {
+   "id": "landingQuay",
+   "xy": [
+    1270,
+    1330
+   ],
+   "modes": [
+    "board\u2192feet"
+   ],
+   "action": "park (race run-out)"
+  },
+  {
+   "id": "gondolaTop",
+   "xy": [
+    1360,
+    560
+   ],
+   "modes": [
+    "cable\u2192feet"
+   ],
+   "action": "step off onto the platform"
+  },
+  {
+   "id": "southPortal",
+   "xy": [
+    1345,
+    680
+   ],
+   "modes": [
+    "cart\u2192feet"
+   ],
+   "action": "climb out"
+  },
+  {
+   "id": "zipLanding",
+   "xy": [
+    1130,
+    1440
+   ],
+   "modes": [
+    "zip\u2192feet"
+   ],
+   "action": "unclip on the landing tower; stair or ramp to the sand"
+  },
+  {
+   "id": "lampGallery",
+   "xy": [
+    540,
+    1195
+   ],
+   "modes": [
+    "feet\u2192glider"
+   ],
+   "action": "run off the gallery"
+  },
+  {
+   "id": "deepJetty",
+   "xy": [
+    1300,
+    440
+   ],
+   "modes": [
+    "glider\u2192feet",
+    "boat\u2192feet"
+   ],
+   "action": "flare onto the water, swim to the jetty (fade)"
+  },
+  {
+   "id": "seaDoorJetty",
+   "xy": [
+    1705,
+    775
+   ],
+   "modes": [
+    "boat\u2192feet",
+    "ferry\u2192feet"
+   ],
+   "action": "tie up / gangway"
+  },
+  {
+   "id": "damPortage",
+   "xy": [
+    1150,
+    910
+   ],
+   "modes": [
+    "canoe\u2192feet\u2192canoe"
+   ],
+   "action": "carry the canoe down the portage steps beside the apron"
+  },
+  {
+   "id": "bightShoreJetty",
+   "xy": [
+    735,
+    955
+   ],
+   "modes": [
+    "boat\u2192feet"
+   ],
+   "action": "tie up"
+  },
+  {
+   "id": "lampDock",
+   "xy": [
+    540,
+    1250
+   ],
+   "modes": [
+    "boat\u2192feet"
+   ],
+   "action": "tie up"
+  },
+  {
+   "id": "stepsFoot",
+   "xy": [
+    1420,
+    505
+   ],
+   "modes": [
+    "boat\u2192feet"
+   ],
+   "action": "tie up at the foot of the Steps; portage stair to the Deep"
+  }
+ ],
+ "journeys": {
+  "note": "straight-segment lengths between control points at assumed speeds; calibration targets, not promises",
+  "square\u2192library by bicycle": {
+   "length_m": 1455,
+   "mode": "bicycle"
+  },
+  "square\u2192summit by gondola + walk": {
+   "legs": [
+    {
+     "length_m": 158,
+     "mode": "walk"
+    },
+    {
+     "length_m": 543,
+     "mode": "gondola"
+    },
+    {
+     "length_m": 78,
+     "mode": "walk"
+    }
+   ],
+   "note": "time = sum of legs"
+  },
+  "crown\u2192quay on the board (S1)": {
+   "length_m": 971,
+   "mode": "board"
+  },
+  "crown\u2192lamp by glider": {
+   "length_m": 1103,
+   "mode": "glider"
+  },
+  "ring by plane": {
+   "length_m": 3896,
+   "mode": "plane"
+  },
+  "ring by bicycle": {
+   "length_m": 3896,
+   "mode": "bicycle"
+  },
+  "square\u2192green on foot": {
+   "length_m": 562,
+   "mode": "walk"
+  },
+  "square\u2192boathouse on foot": {
+   "length_m": 274,
+   "mode": "walk"
+  },
+  "adit\u2192south portal by cart": {
+   "length_m": 540,
+   "mode": "cart"
+  },
+  "prow\u2192sands by zip": {
+   "length_m": 933,
+   "mode": "zip"
+  },
+  "at_factor_1_0": {
+   "square\u2192library by bicycle": {
+    "engine_u": 1455,
+    "time_s": 242
+   },
+   "square\u2192summit by gondola + walk": {
+    "engine_u": 779,
+    "time_s": 229
+   },
+   "crown\u2192quay on the board (S1)": {
+    "engine_u": 971,
+    "time_s": 139
+   },
+   "crown\u2192lamp by glider": {
+    "engine_u": 1103,
+    "time_s": 100
+   },
+   "ring by plane": {
+    "engine_u": 3896,
+    "time_s": 111
+   },
+   "ring by bicycle": {
+    "engine_u": 3896,
+    "time_s": 649
+   },
+   "square\u2192green on foot": {
+    "engine_u": 562,
+    "time_s": 331,
+    "run_s": 165
+   },
+   "square\u2192boathouse on foot": {
+    "engine_u": 274,
+    "time_s": 161,
+    "run_s": 81
+   },
+   "adit\u2192south portal by cart": {
+    "engine_u": 540,
+    "time_s": 68
+   },
+   "prow\u2192sands by zip": {
+    "engine_u": 933,
+    "time_s": 78
+   }
+  },
+  "at_factor_0_6": {
+   "square\u2192library by bicycle": {
+    "engine_u": 873,
+    "time_s": 146
+   },
+   "square\u2192summit by gondola + walk": {
+    "engine_u": 467,
+    "time_s": 138
+   },
+   "crown\u2192quay on the board (S1)": {
+    "engine_u": 583,
+    "time_s": 83
+   },
+   "crown\u2192lamp by glider": {
+    "engine_u": 662,
+    "time_s": 60
+   },
+   "ring by plane": {
+    "engine_u": 2338,
+    "time_s": 67
+   },
+   "ring by bicycle": {
+    "engine_u": 2338,
+    "time_s": 390
+   },
+   "square\u2192green on foot": {
+    "engine_u": 337,
+    "time_s": 198,
+    "run_s": 99
+   },
+   "square\u2192boathouse on foot": {
+    "engine_u": 164,
+    "time_s": 97,
+    "run_s": 48
+   },
+   "adit\u2192south portal by cart": {
+    "engine_u": 324,
+    "time_s": 40
+   },
+   "prow\u2192sands by zip": {
+    "engine_u": 560,
+    "time_s": 47
+   }
+  },
+  "targets_s": {
+   "square\u2192library by bicycle": 150,
+   "square\u2192green running": 100,
+   "square\u2192summit by gondola + walk": 120,
+   "crown\u2192quay on the board (S1)": [
+    70,
+    130
+   ],
+   "crown\u2192lamp by glider": [
+    50,
+    90
+   ],
+   "ring by plane": [
+    60,
+    120
+   ],
+   "square\u2192home/bank on foot, walking": 60,
+   "square\u2192boathouse on foot, walking": 100,
+   "note": "targets are at scale.factor; the Library and the Flats are deliberately the far corners"
+  }
+ },
+ "speeds_ms": {
+  "walk": 1.7,
+  "run": 3.4,
+  "board": 7.0,
+  "bicycle": 6.0,
+  "gondola": 6.0,
+  "cart": 8.0,
+  "zip": 12.0,
+  "glider": 11.0,
+  "plane": 35.0,
+  "ferry": 5.0,
+  "row": 1.8
+ },
+ "pastimeData": {
+  "nineBaskets": [
+   [
+    1189,
+    1151
+   ],
+   [
+    1118,
+    1218
+   ],
+   [
+    1022,
+    1236
+   ],
+   [
+    932,
+    1199
+   ],
+   [
+    876,
+    1118
+   ],
+   [
+    874,
+    1020
+   ],
+   [
+    913,
+    924
+   ],
+   [
+    1022,
+    894
+   ],
+   [
+    893,
+    600
+   ]
+  ],
+  "nineBasketsNote": "baskets 1\u20138 ring the protected centre at 172\u2013190 m; the ninth is on the Hollow Bridge",
+  "mailDayTargets": "the seven hosts' roofs (MANIFEST.hosts)",
+  "riverRunGates": [
+   [
+    1140,
+    760
+   ],
+   [
+    1100,
+    850
+   ],
+   [
+    1200,
+    880
+   ],
+   [
+    1150,
+    935
+   ],
+   [
+    1170,
+    980
+   ],
+   [
+    1220,
+    1060
+   ],
+   [
+    1250,
+    1140
+   ],
+   [
+    1290,
+    1225
+   ],
+   [
+    1350,
+    1320
+   ]
+  ],
+  "bocce": {
+   "xy": [
+    1455,
+    1150
+   ],
+   "note": "the square's small green; single device vs. the ghost until a presence change is trust-reviewed"
+  },
+  "lanternQuotas": {
+   "harbour": 6,
+   "landing": 6,
+   "reach": 3,
+   "green": 5,
+   "hollow": 5,
+   "scholars": 5,
+   "flats": 6,
+   "bight": 4,
+   "lakeside": 5,
+   "notch": 3,
+   "prow": 4,
+   "crown": 4,
+   "undercroft": 4,
+   "offshore": 4,
+   "total": 64,
+   "rule": "64 placed, 60 required to fill the Lantern Cave; never inside a reserve; \u2265 8 reachable only by air, \u2265 6 only by water, \u2265 4 only underground"
+  },
+  "skating": {
+   "where": "stillwater",
+   "months": [
+    1,
+    2
+   ]
+  },
+  "sledding": {
+   "where": "the Shoulder's south-east meadow [1400,760]",
+   "months": [
+    1,
+    2
+   ],
+   "note": "inside the Jan\u2013Feb snowline; 90 m east of S1"
+  }
+ },
+ "journey": {
+  "principle": "one household state and history \u2192 one WorldOverlay (derived on read, never stored) \u2192 the Journey renderer (L0\u2013L1) and the world renderer (L2\u2013L3) and the Desk; see SCALES.md",
+  "stations": [
+   {
+    "month": 1,
+    "id": "jan",
+    "label": "the Shoulder",
+    "xy": [
+     1330,
+     640
+    ],
+    "why": "snow, sledding, the summit walk"
+   },
+   {
+    "month": 2,
+    "id": "feb",
+    "label": "Lakeside",
+    "xy": [
+     1255,
+     860
+    ],
+    "why": "ice on Stillwater, the skipping shelf"
+   },
+   {
+    "month": 3,
+    "id": "mar",
+    "label": "Scholars\u2019 floor",
+    "xy": [
+     700,
+     470
+    ],
+    "why": "the woodland floor thaws first; bloodroot"
+   },
+   {
+    "month": 4,
+    "id": "apr",
+    "label": "the Green (west)",
+    "xy": [
+     860,
+     980
+    ],
+    "why": "first grass; dandelions; kites nearby"
+   },
+   {
+    "month": 5,
+    "id": "may",
+    "label": "the Hollow (west rows)",
+    "xy": [
+     960,
+     640
+    ],
+    "why": "apple blossom"
+   },
+   {
+    "month": 6,
+    "id": "jun",
+    "label": "Long Sands",
+    "xy": [
+     950,
+     1445
+    ],
+    "why": "lupines; the Campfire is here"
+   },
+   {
+    "month": 7,
+    "id": "jul",
+    "label": "the Flats",
+    "xy": [
+     380,
+     800
+    ],
+    "why": "coneflower, thermals, the strip"
+   },
+   {
+    "month": 8,
+    "id": "aug",
+    "label": "the Reach",
+    "xy": [
+     1230,
+     1290
+    ],
+    "why": "monarchs, Joe-Pye, the boardwalk"
+   },
+   {
+    "month": 9,
+    "id": "sep",
+    "label": "the Hollow (east rows)",
+    "xy": [
+     1040,
+     650
+    ],
+    "why": "apples"
+   },
+   {
+    "month": 10,
+    "id": "oct",
+    "label": "the north pass",
+    "xy": [
+     800,
+     300
+    ],
+    "why": "maples red"
+   },
+   {
+    "month": 11,
+    "id": "nov",
+    "label": "the Prow",
+    "xy": [
+     1570,
+     940
+    ],
+    "why": "the first storms, the Lamp\u2019s beam"
+   },
+   {
+    "month": 12,
+    "id": "dec",
+    "label": "Little Harbour",
+    "xy": [
+     1475,
+     1230
+    ],
+    "why": "Lantern Row, the Chapter at home"
+   }
+  ],
+  "yearWalk": {
+   "profile": "walk",
+   "note": "a trail through the twelve stations in calendar order, reusing existing walks and trails where they coincide; link segments authored in pass 1; the walk ahead of the current month is dressed as stakes and string",
+   "pts": [
+    [
+     1330,
+     640
+    ],
+    [
+     1255,
+     860
+    ],
+    [
+     1130,
+     720
+    ],
+    [
+     990,
+     780
+    ],
+    [
+     930,
+     660
+    ],
+    [
+     880,
+     560
+    ],
+    [
+     740,
+     400
+    ],
+    [
+     700,
+     470
+    ],
+    [
+     760,
+     700
+    ],
+    [
+     860,
+     980
+    ],
+    [
+     960,
+     640
+    ],
+    [
+     893,
+     600
+    ],
+    [
+     950,
+     1445
+    ],
+    [
+     740,
+     1432
+    ],
+    [
+     560,
+     1100
+    ],
+    [
+     470,
+     1030
+    ],
+    [
+     380,
+     800
+    ],
+    [
+     430,
+     900
+    ],
+    [
+     560,
+     890
+    ],
+    [
+     840,
+     880
+    ],
+    [
+     1240,
+     1130
+    ],
+    [
+     1230,
+     1290
+    ],
+    [
+     1040,
+     650
+    ],
+    [
+     900,
+     290
+    ],
+    [
+     800,
+     300
+    ],
+    [
+     1300,
+     260
+    ],
+    [
+     1500,
+     340
+    ],
+    [
+     1590,
+     700
+    ],
+    [
+     1570,
+     940
+    ],
+    [
+     1480,
+     1060
+    ],
+    [
+     1475,
+     1230
+    ],
+    [
+     1370,
+     690
+    ],
+    [
+     1330,
+     640
+    ]
+   ]
+  },
+  "stretch": {
+   "rule": "a month is the stretch of the Year Walk from the previous station to its own; one paving stone per day (28\u201331); every seventh stone a flagstone with a lantern post; the camp stands on today\u2019s stone; scheduled items stand on their stone as explicit markers (slip, pennant, stake, chairs); the next stretch is stakes and string until its month begins",
+   "stone_m": [
+    2.4,
+    1.6
+   ],
+   "flagstone_m": [
+    3.2,
+    2.4
+   ],
+   "markers": [
+    "bill slip on a post (name, amount)",
+    "payday pennant",
+    "task or plan-step stake (card name)",
+    "goal-deadline stake with ribbon",
+    "two chairs (Sitdown)",
+    "station gate ajar (Chapter close due)"
+   ]
+  },
+  "station": {
+   "pad_m": [
+    36,
+    14
+   ],
+   "bed_m": [
+    3,
+    2
+   ],
+   "bedsPerRow": 10,
+   "rows": 2,
+   "identity": "site(monthOrdinal) = station(month) + bed(yearIndex); appending never moves a bed",
+   "maxHeight": "a bench (0.85 eu)",
+   "waymark": "post with the month name and the year count; lit at the camp"
+  },
+  "camp": {
+   "rule": "the current month\u2019s bed: lit waymark + tent card; the camp card docks to it on the map",
+   "moves": "on Chapter/books close; 1 s card animation, a cut under reduced motion"
+  },
+  "eraGates": {
+   "rule": "a gate (two posts + lantern) on the Year Walk at the bed where the era ended; lantern from the existing finish rules"
+  },
+  "homestead": {
+   "where": "the land around Our home in Little Harbour: the yard behind the house, the lane down to the quay, the household\u2019s footbridge over the town channel, the Boathouse dock",
+   "centre": [
+    1520,
+    1190
+   ],
+   "sites": [
+    {
+     "id": "home",
+     "label": "the home anchor",
+     "note": "Our home; never wears, never moves"
+    },
+    {
+     "id": "kitchenGarden",
+     "label": "the kitchen garden",
+     "xy": [
+      1535,
+      1160
+     ],
+     "category": "food",
+     "maturity": [
+      "none",
+      "trace",
+      "cluster",
+      "established",
+      "district"
+     ],
+     "rule": "qualifying weeks in the trailing 24; one credit per week"
+    },
+    {
+     "id": "landing",
+     "label": "the landing (cargo)",
+     "xy": [
+      1320,
+      1322
+     ],
+     "category": "income",
+     "note": "cargo on the Boathouse dock when income arrives; never a beauty score"
+    },
+    {
+     "id": "workbench",
+     "label": "the workbench",
+     "xy": [
+      1545,
+      1200
+     ],
+     "category": "making",
+     "note": "cosmetic; fired pieces as today"
+    },
+    {
+     "id": "pavilion",
+     "label": "a place in the making \u2192 the ready pavilion",
+     "xy": [
+      1510,
+      1215
+     ],
+     "category": "goal",
+     "rule": "stakes while backing; finished at 100 % backed; a memory only when a kept memory exists"
+    },
+    {
+     "id": "reserveBasin",
+     "label": "the reserve basin",
+     "note": "= L01 [1172,912]; using the buffer shows as water, never damage"
+    },
+    {
+     "id": "timberCrossing",
+     "label": "the timber crossing",
+     "xy": [
+      1500,
+      1250
+     ],
+     "category": "connection",
+     "note": "the household\u2019s footbridge on the lane over the town channel; the one site with physical wear (D19, D24)"
+    }
+   ]
+  },
+  "kittyPlaza": {
+   "xy": [
+    1440,
+    1145
+   ],
+   "max": 6,
+   "note": "Kitty Bank sculptures, step 0\u201310, beside the Fund bank"
+  },
+  "lod": {
+   "L0": {
+    "tris": [
+     40000,
+     25000
+    ],
+    "drawCalls": [
+     60,
+     40
+    ],
+    "coastVerts": 400,
+    "heightfieldDecimation": 8
+   },
+   "L1": {
+    "tris": [
+     80000,
+     45000
+    ]
+   },
+   "note": "[full, lite]; L2\u2013L3 are the world\u2019s budgets (CONTRACT \u00a76)"
+  },
+  "camera": {
+   "tiers": {
+    "sky": "the island\u2019s diagonal",
+    "region": 250,
+    "stop": 80,
+    "upClose": 25
+   },
+   "handoff": "below upClose the target snaps to the nearest apron or bed and the controller hands to the world\u2019s Look camera, then Walk; one orbit controller, same north",
+   "fallback": "the #543 cloud crossfade for reduced motion, no WebGL, or a tier load over 400 ms"
+  },
+  "focus": {
+   "fields": [
+    "target xy",
+    "tier",
+    "radius",
+    "heading",
+    "period (day/week/month/era) + date",
+    "selected object",
+    "active filters",
+    "unsent draft"
+   ],
+   "rule": "tools open over it and restore it exactly; the world always shows now (entering from a past month lands at that bed with a banner)"
+  },
+  "retired": [
+   "weather-from-money (bills\u2192clouds, storm, mist, payday sunrise) \u2192 explicit strip markers (D18)",
+   "grow.ts landform generation (coast, coves, noise)",
+   "the harbour islet miniature",
+   "past eras as separate islands"
+  ]
+ },
+ "names": {
+  "island": "The Horizon",
+  "landformRule": "polygons are clipped to the island outline; the Hollow, the Stillwater terrace and the Cup are cut INTO the Shoulder (their own band wins inside them); elsewhere where polygons overlap the innermost (higher) band wins; band edges blend over 60 m; a bed (road, skate, rail, walk) overrides the bands within its profile width + 15 m each side and holds its own grade limits, so band steps never appear as cliffs on a route",
+  "districts": [
+   {
+    "id": "harbour",
+    "neighbourhood": "harbour",
+    "note": "town + the Terraces + the town quay"
+   },
+   {
+    "id": "landing",
+    "neighbourhood": "landing",
+    "note": "Long Sands, the Landing quay, the Boathouse, Campfire, Tideline park"
+   },
+   {
+    "id": "reach",
+    "neighbourhood": "landing",
+    "note": "the wetland and the river mouth"
+   },
+   {
+    "id": "green",
+    "neighbourhood": "lakeside",
+    "note": "the Green and the Glasshouse steps"
+   },
+   {
+    "id": "hollow",
+    "neighbourhood": "hollow",
+    "note": "the orchard bowl, the Adit"
+   },
+   {
+    "id": "scholars",
+    "neighbourhood": "scholars",
+    "note": "the woodland rise and the north pass"
+   },
+   {
+    "id": "flats",
+    "neighbourhood": "flats",
+    "note": "the arm: strip, hangar, balloon, the Wash"
+   },
+   {
+    "id": "bight",
+    "neighbourhood": "flats",
+    "note": "the lagoon, the sandbar, Bight Shore, the Bight Bridge"
+   },
+   {
+    "id": "lakeside",
+    "neighbourhood": "lakeside",
+    "note": "Stillwater, the dam, L01"
+   },
+   {
+    "id": "notch",
+    "neighbourhood": "lakeside",
+    "note": "the gorge, the High Span"
+   },
+   {
+    "id": "prow",
+    "neighbourhood": "crown",
+    "note": "the cliffs, the zip tower, the Sea Door"
+   },
+   {
+    "id": "crown",
+    "neighbourhood": "crown",
+    "note": "the Shoulder and the summit; the Undercroft is its underground child district"
+   },
+   {
+    "id": "offshore",
+    "neighbourhood": null,
+    "note": "the Lamp, the Needle's Eye, the Stacks, the Wreck; the sky ring streams by the districts beneath it"
+   }
+  ],
+  "landforms": [
+   "Little Harbour",
+   "Long Sands",
+   "the Landing",
+   "the Reach",
+   "the Green",
+   "the Hollow",
+   "Scholars' Edge",
+   "the Flats",
+   "the Bight",
+   "Stillwater",
+   "the Cup",
+   "the Notch",
+   "the Prow",
+   "the Shoulder",
+   "the Crown",
+   "the Undercroft",
+   "the Lamp",
+   "the Needle's Eye",
+   "the Stacks",
+   "the Wreck",
+   "the Terraces",
+   "Bight Shore"
+  ],
+  "roads": [
+   "Horizon Drive",
+   "Green Road",
+   "Crown Road",
+   "Bight Shore spur"
+  ],
+  "skate": [
+   "Summit to Sea",
+   "the Wash Run",
+   "Town Weave",
+   "Hollow Line",
+   "Tideline park"
+  ],
+  "underground": [
+   "the Adit",
+   "the Throat",
+   "Dam Gallery",
+   "the Sea Door",
+   "Ore Line",
+   "Lantern Cave",
+   "the Deep",
+   "Bell Gallery"
+  ],
+  "structures": [
+   "High Span",
+   "Quay Bridge",
+   "Bight Bridge",
+   "Hollow Bridge",
+   "Apron Bridge",
+   "Inlet Footbridge",
+   "Reach Footbridge",
+   "Dune Culvert",
+   "Prow Tunnel",
+   "Shoulder Tunnel",
+   "Lantern Row",
+   "the Landing quay",
+   "the town quay",
+   "the Glasshouse steps",
+   "the Sea Stair",
+   "Crown station",
+   "the South Portal",
+   "the Sea Passage",
+   "the Steps"
+  ],
+  "water": [
+   "Orchard Brook",
+   "the Wash (streambed)",
+   "the Bight sandbar",
+   "the Steps"
+  ],
+  "idRule": "ids are camelCase keys in this manifest (e.g. highSpan, plot.terraces.1); display names above are their labels; STYLE and the guide map use labels, code uses ids",
+  "journey": [
+   "the Year Walk",
+   "the camp",
+   "the homestead",
+   "the kitchen garden",
+   "the landing",
+   "the workbench",
+   "the ready pavilion",
+   "the reserve basin",
+   "the timber crossing",
+   "the home anchor",
+   "the Kitty plaza",
+   "era gates"
+  ],
+  "pastimes": [
+   "Lantern Hunt",
+   "Summit to Sea",
+   "Ring Run",
+   "Drop Zone",
+   "Mail Day",
+   "River Run",
+   "Deep Run",
+   "Nine Baskets",
+   "Bocce",
+   "Ring Race",
+   "Ore Line ride",
+   "the Sketchbook",
+   "Campfire",
+   "Winter (skating, sledding)"
+  ]
+ },
+ "scale": {
+  "factor": 0.6,
+  "status": "recommended by Claude; decision D13 for Jonathan before the land pass",
+  "rule": "engine_units = concept_metres \u00d7 factor, applied to x, y and height alike; speeds in m/s are engine units per second",
+  "why": "at factor 1.0 the island is too big for feet and bicycles (see journeys.at_factor_1_0); at 0.6 the everyday journeys land near the Mountain v2 time-to-place envelope (Library ~2.3 min by bicycle, Green ~1.5 min running, the far corners are meant to be far) while the sky, the ring and the ferry stay long enough to feel like travel",
+  "decision": "D13 \u2014 Jonathan to confirm 0.6 (or another factor) before the land pass; the heightfield bakes at that factor"
+ }
+}

@@ -63,8 +63,13 @@ export const villageCourt = registerPlace({id:'court',build(scene,dressing,_read
     root.add(shell.group);far.visible=false;
     return {shell,dispose(){shell.dispose();far.visible=true;}};
   });
-  const streamDetails=(x:number,z:number,race:boolean)=>{const a=districtDetails.update(x,z,race),b=exteriors.update(x,z,race);return a||b;};
-  streamDetails(0,0,false);
+  const streamDetails=(x:number,z:number,race:boolean,allowBuild=false)=>{
+    const before=districtDetails.live.size;
+    const a=districtDetails.update(x,z,race,performance.now(),allowBuild);
+    // The two detail streams share one build allowance on this frame.
+    const b=exteriors.update(x,z,race,performance.now(),allowBuild&&districtDetails.live.size===before);
+    return a||b;
+  };
   const lanes=buildHarbourLanes(stone);owned.push(lanes.geometry);group.add(lanes);
   // Social spaces stay outdoors, with their existing destinations.
   const [shoreX,shoreZ]=VILLAGE_WATERFRONT.spot;
@@ -80,6 +85,6 @@ export const villageCourt = registerPlace({id:'court',build(scene,dressing,_read
   const poses:Record<string,Pose>={court:townArrivalPose('desktop'),'court:phone':townArrivalPose('phone'),sky:overviewPose('desktop'),'sky:phone':overviewPose('phone'),dam:damViewPose('desktop'),'dam:phone':damViewPose('phone'),summit:summitViewPose('desktop'),'summit:phone':summitViewPose('phone')};
   group.updateMatrixWorld(true);scene.add(group);
   let disposed=false,calm=false;
-  const handle:PlaceHandle & {play(id:string):string|null;setTransit(at:Point3|null,kind?:TransportKind):void;setRecovery(view:MountainRecoveryView):void;setInteraction(state:MountainInteractionState):void;setCalm(on:boolean):void;setVisitor(at:Point3):void;streamDetails(x:number,z:number,race:boolean):boolean}={group,streamDetails,setRecovery:mountain.setRecovery,setInteraction:mountain.setInteraction,setTransit:mountain.setTransit,setVisitor:mountain.setVisitor,setCalm(on){calm=on;mountain.setCalm(on);},anchors:()=>[...mountain.anchors,...anchors,...life.anchors(),...landscape.anchors],regions:()=>[...mountain.regions,...regions,...life.regions()],poses:()=>poses,update(reading){partner.update(reading);mountain.update(reading);},play:id=>HARBOUR_WANDERS.find(w=>`wander:${w.id}`===id)?.words??life.interact(id),animate(t,dt){mountain.animate(t,dt);partner.animate(t,dt);if(!calm){life.animate(t,dt);for(const {shell} of exteriors.live.values())shell.animate(t,dt);water.scale.setScalar(1+Math.sin(t*1.8)*.018);}return true;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();mountain.dispose();life.dispose();partner.dispose();landscape.dispose();districtDetails.dispose();exteriors.dispose();owned.forEach(x=>x.dispose());group.clear();}};
+  const handle:PlaceHandle & {play(id:string):string|null;setTransit(at:Point3|null,kind?:TransportKind):void;setRecovery(view:MountainRecoveryView):void;setInteraction(state:MountainInteractionState):void;setCalm(on:boolean):void;setVisitor(at:Point3):void;streamDetails(x:number,z:number,race:boolean,allowBuild?:boolean):boolean}={group,streamDetails,setRecovery:mountain.setRecovery,setInteraction:mountain.setInteraction,setTransit:mountain.setTransit,setVisitor:mountain.setVisitor,setCalm(on){calm=on;mountain.setCalm(on);},anchors:()=>[...mountain.anchors,...anchors,...life.anchors(),...landscape.anchors],regions:()=>[...mountain.regions,...regions,...life.regions()],poses:()=>poses,update(reading){partner.update(reading);mountain.update(reading);},play:id=>HARBOUR_WANDERS.find(w=>`wander:${w.id}`===id)?.words??life.interact(id),animate(t,dt){mountain.animate(t,dt);partner.animate(t,dt);if(!calm){life.animate(t,dt);for(const {shell} of exteriors.live.values())shell.animate(t,dt);water.scale.setScalar(1+Math.sin(t*1.8)*.018);}return true;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();mountain.dispose();life.dispose();partner.dispose();landscape.dispose();districtDetails.dispose();exteriors.dispose();owned.forEach(x=>x.dispose());group.clear();}};
   return handle;
 }});

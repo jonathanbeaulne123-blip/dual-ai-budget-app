@@ -23,10 +23,12 @@ import { cashFlowDelta } from "../../core/cashFlowRows.ts";
 import { calendarWeight, type WeightDay } from "../../core/calendarWeight.ts";
 import type { FundWalk } from "../../core/fundWalk.ts";
 import { projectKittyNest } from "../../core/kittyNest.ts";
+import { missingSubscriptions } from "../../core/missingSubscriptions.ts";
+import { cellarJars } from "../../core/queenCellar.ts";
 import { calendarPresentation } from "../../core/ledgerExperience.ts";
 import { nextOut, spokenFor, type SpokenFor } from "../../core/nextOut.ts";
 import type { Household, LedgerView } from "../../core/types.ts";
-import { buildCellarReading, type CellarJarReading, type HarbourReading } from "../data/reading.ts";
+import type { CellarJarReading, HarbourReading } from "../data/reading.ts";
 import { readWalk } from "./todayModel.ts";
 
 /** One outflow still to come. `leavesCents` is the Fund's walked balance after it; null off the Fund. */
@@ -221,21 +223,12 @@ export function readLeavingNext(table: LeavingTable, today: DateKey): LeavingNex
 /**
  * The bill jars, exactly as the Cellar reads them. The harbour's reading
  * already carries them (`reading.cellar.jars`); before that reading arrives
- * the Desk asks `buildCellarReading` itself, the same function. Personal
+ * the Desk reads the same core jar selectors directly. Personal
  * scope has no cellar: null, and the page says so.
  */
 export function readJars(household: Household, memberId: string, scope: LedgerView, today: DateKey, reading: HarbourReading | null): LeavingJar[] | null | undefined {
   if (scope !== "household") return null;
-  let jars: CellarJarReading[];
-  if (reading?.cellar) jars = reading.cellar.jars;
-  else {
-    try {
-      jars = buildCellarReading(household, memberId, today, projectKittyNest(household, memberId, "household", today), null).jars;
-    } catch {
-      return undefined;
-    }
-  }
-  return jars.map(jar => ({
+  if (reading?.cellar) return reading.cellar.jars.map(jar => ({
     key: jar.key,
     label: jar.label,
     amountCents: Number.isFinite(jar.amountCents) ? jar.amountCents : null,
@@ -243,6 +236,20 @@ export function readJars(household: Household, memberId: string, scope: LedgerVi
     missing: jar.missingMark === true,
     due: jar.due,
   }));
+  try {
+    const nest = projectKittyNest(household, memberId, "household", today);
+    const marks = new Set(missingSubscriptions(household, { today, memberId }).open.map(entry => entry.recurrenceId));
+    return cellarJars(nest, household, today).map(jar => ({
+      key: jar.id,
+      label: jar.label,
+      amountCents: Number.isFinite(jar.targetCents) ? jar.targetCents : null,
+      state: jar.paid ? "paid" : jar.strike === "crack" ? "short" : jar.full ? "set-aside" : "planned",
+      missing: jar.type === "subscription" && jar.recurrenceId !== null && marks.has(jar.recurrenceId),
+      due: jar.date,
+    }));
+  } catch {
+    return undefined;
+  }
 }
 
 export type DeskLeaving = {

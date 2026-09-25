@@ -3,24 +3,15 @@
  * the gorge water line and the glass dam with its reservoir. Pure data; no terrain.
  */
 import type {Point3} from './math.ts';
+import {DISTRICTS,type Biome} from '../worldDistricts.ts';
+export {DISTRICTS} from '../worldDistricts.ts';
+export type {Biome,District} from '../worldDistricts.ts';
 
 export const MOUNTAIN_VERSION = 'hearth-mountain-2';
-/** Geography revision (the wire/presence version above is unchanged; saved mountain poses from
- * revision 1 must be re-validated against the new ground — see CONTRACT.md). */
-export const GEOGRAPHY_REVISION = 'hearth-mountain-geo-2';
+/** Saved positions and live presence share this geography revision. */
+export {CURRENT_WORLD_GEOGRAPHY as GEOGRAPHY_REVISION} from '../../worldGeography.ts';
 export const WORLD_BOUNDS = {minX:-180,maxX:180,minZ:-310,maxZ:84,minY:-8,maxY:150} as const;
 
-export type Biome='garden'|'orchard'|'woods'|'meadow'|'alpine'|'summit';
-export type District={id:string;name:string;at:Point3;radius:number;biome:Biome;destination:string;words:string};
-/** Uphill order. Plateaus alternate across the gorge: east, west, east, west, east, crown. */
-export const DISTRICTS: readonly District[] = [
-  {id:'hearth',name:'Hearth Terrace',at:[56,19.2,-114],radius:14,biome:'garden',destination:'kitchen',words:'A sheltered front garden above the harbour. Come home by the long way.'},
-  {id:'orchard',name:'Orchard Hollow',at:[-68,28,-124],radius:18,biome:'orchard',destination:'cottage',words:'Apple blossom, clover and a sunny doorstep for Hercules, tucked into a hollow.'},
-  {id:'library',name:'Library Woods',at:[48,35,-176],radius:14,biome:'woods',destination:'library',words:'A reading courtyard among the birches, with a balcony over the gorge.'},
-  {id:'glasshouse',name:'Glasshouse Meadows',at:[-72,62,-214],radius:20,biome:'meadow',destination:'glasshouse',words:'Broad flowering terraces. Plans take root beside the water.'},
-  {id:'reservoir',name:'Reservoir Heights',at:[54,90,-244],radius:15,biome:'alpine',destination:'loft-banks',words:'Exposed stone beside the glass dam, which holds a visible picture of the shared Fund.'},
-  {id:'summit',name:'Summit Commons',at:[2,104,-294],radius:15,biome:'summit',destination:'journey',words:'A windswept crown. The whole neighbourhood below, and a new way down ahead.'},
-];
 export type ReservedPlot={id:string;name:string;at:Point3;half:readonly[number,number];words:string;biome:Biome;envelope:{half:readonly[number,number];height:number};gate:Point3};
 export const RESERVED_PLOTS:readonly ReservedPlot[] = [
   {id:'woodland-clearing',name:'Woodland clearing',at:[-104,54,-196],half:[10,8],biome:'woods',envelope:{half:[7,5.5],height:9},gate:[-96,54,-190],words:'An open woodland plot, held for a future idea.'},

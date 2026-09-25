@@ -518,8 +518,8 @@ describe("the harbour's feed seam", () => {
 
   it("is quiet until something that owns a socket installs itself", () => {
     expect(feed.worldFeedIsQuiet()).toBe(true);
-    expect(feed.useWorldFeed(request)).toEqual({ walk: null, memberId: null });
-    const restore = feed.useWorldFeedProvider(() => ({ walk: { pose: () => null }, memberId: "MEM-002" }));
+    expect(feed.useWorldFeed(request)).toEqual({ walk: null, memberId: null, unavailable: false });
+    const restore = feed.useWorldFeedProvider(() => ({ walk: { pose: () => null }, memberId: "MEM-002", unavailable: false }));
     expect(feed.useWorldFeed(request).memberId).toBe("MEM-002");
     restore();
     expect(feed.worldFeedIsQuiet()).toBe(true);

@@ -212,6 +212,9 @@ it('carries versioned mountain walking altitude beyond the legacy island bounds'
   await new Promise(resolve=>setTimeout(resolve,100));
   a.ws.send(JSON.stringify({type:'world-step',version:1,world:'hearth-mountain-2',x:100,z:-175,y:52,yaw:0,moving:true}));
   expect(await b.next('world-peer',m=>mine(m)&&m.x===100)).toMatchObject({world:'hearth-mountain-2',x:100,z:-175,y:52,memberId:'MEM-001'});
+  await new Promise(resolve=>setTimeout(resolve,100));
+  a.ws.send(JSON.stringify({type:'world-step',version:1,world:'hearth-mountain-geo-2',x:101,z:-176,y:53,yaw:0,moving:true}));
+  expect(await b.next('world-peer',m=>mine(m)&&m.x===101)).toMatchObject({world:'hearth-mountain-geo-2',x:101,z:-176,y:53,memberId:'MEM-001'});
   a.ws.close();b.ws.close();
 });
 

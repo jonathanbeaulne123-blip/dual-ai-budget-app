@@ -27,6 +27,7 @@ import {
 } from "./worldPresenceWire.ts";
 import { WORLD_EXPIRE_MS, createWorldTrack, type WorldTrack } from "./worldMotion.ts";
 import { retryDelay } from "./wire.ts";
+import {CURRENT_WORLD_GEOGRAPHY} from '../worldGeography.ts';
 
 export type WorldPresenceState = "joining" | "present" | "offline" | "withheld";
 
@@ -38,6 +39,7 @@ export type WorldPeer = {
   /** Stable for the life of the peer, so the renderer can poll it every frame without re-rendering React. */
   track: WorldTrack;
   seenAt: number;
+  geoMismatch: boolean;
 };
 
 /** How different a pose has to be before it is worth a frame. */
@@ -202,16 +204,16 @@ export function attachWorldPresence(input: WorldPresenceInput): WorldPresenceHan
     const at = now();
     let peer = peers.get(deviceId);
     if (!peer || peer.placeId !== peerPlace) {
-      peer = { memberId, deviceId, placeId: peerPlace as WorldPlaceId, track: createWorldTrack(), seenAt: at };
+      peer = { memberId, deviceId, placeId: peerPlace as WorldPlaceId, track: createWorldTrack(), seenAt: at, geoMismatch: false };
       peers.set(deviceId, peer);
       publishPeers();
     }
     peer.seenAt = at;
-    if(typeof value.x==='number'&&value.world!=="hearth-mountain-2"){peer.track.clear();publishPeers();return;}
+    if(typeof value.x==='number'&&value.world!==CURRENT_WORLD_GEOGRAPHY){peer.geoMismatch=true;peer.track.clear();publishPeers();return;}
     if (typeof value.x === "number" && typeof value.z === "number" && typeof value.yaw === "number") {
       try{
         const step=decodeWorldPresence({type:'world-step',version:1,x:value.x,z:value.z,yaw:value.yaw,moving:value.moving===true,...(value.act?{act:value.act,p:value.p??0}:{}),...(value.y!==undefined?{y:value.y}:{}),...(value.world!==undefined?{world:value.world}:{}),...(value.avatar!==undefined?{avatar:value.avatar}:{})});
-        if(step.type==='world-step')peer.track.push({...step,at});
+        if(step.type==='world-step'){peer.geoMismatch=false;peer.track.push({...step,at});publishPeers();}
       }catch{/* malformed poses never reach a renderer */}
     }
   }

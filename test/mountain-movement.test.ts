@@ -279,34 +279,32 @@ describe('race: run-out, retry, HUD and finish',()=>{
     // The finish card offers the Fund, and the HUD counts the gates there are.
     const hud=driver.hud()!;expect(hud.run).toMatchObject({finished:true,gate:course.length-1,gates:course.length-1,raced:true});
   });
-  it('Retry during countdown leaves the active race intact',()=>{
+  it('Retry during countdown restarts the race at the start gate',()=>{
     const driver=createSkateDriver({obstacles:courtObstacles('lite')},{intent:()=>coast});
     driver.mount(0,0,0);driver.route('mountain-descent');
-    const before=driver.run()!;driver.command('retry');
-    expect(driver.run()).toEqual(before);expect(driver.run()!.countdown).toBeGreaterThan(0);
+    driver.step(.5);driver.command('retry');
+    expect(driver.run()).toMatchObject({id:'mountain-descent',checkpoint:1,elapsed:0,countdown:3,finished:false});
+    expect(driver.present()).toMatchObject({x:course[0]!.at[0],z:course[0]!.at[2]});
     driver.unmount();
   });
-  it('Retry at gate zero places the rider behind the start and can cross it',()=>{
+  it('Retry at gate zero places the rider at the start with a fresh countdown',()=>{
     const driver=racing(),cp=driver.checkpoint()!;
     cp.session.run={...cp.session.run!,checkpoint:0,countdown:0};driver.restore(cp);driver.pause(false);driver.command('retry');
     const g=course[0]!,p=driver.present()!;
-    expect((p.x-g.at[0])*g.normal[0]+(p.z-g.at[2])*g.normal[1]).toBeLessThan(0);
-    const resumed=driver.checkpoint()!;Object.assign(resumed.sim as Record<string,unknown>,{vx:g.normal[0]*6,vz:g.normal[1]*6});driver.restore(resumed);driver.pause(false);
-    for(let i=0;i<60;i++)driver.step(1/60);
-    expect(driver.run()!.checkpoint).toBeGreaterThan(0);driver.unmount();
+    expect(p).toMatchObject({x:g.at[0],z:g.at[2]});
+    expect(driver.run()).toMatchObject({checkpoint:1,elapsed:0,countdown:3,finished:false});driver.unmount();
   });
-  it('Retry during a race returns to the last gate and keeps the run and its clock',()=>{
+  it('Retry during a race returns to the start with a fresh clock',()=>{
     for(const how of ['command','key'] as const){
       let pressed=false;
       const driver=createSkateDriver({obstacles:courtObstacles('lite')},{intent:()=>({...coast,respawn:how==='key'&&pressed})});
       driver.mount(0,0,0);driver.route('mountain-descent');for(let i=0;i<35;i++)driver.step(.1);
       const cp=driver.checkpoint()!;cp.session.run={...cp.session.run!,checkpoint:6,elapsed:21};driver.restore(cp);driver.pause(false);
       if(how==='command')driver.command('retry');else {pressed=true;driver.step(1/60);pressed=false;}
-      const run=driver.run()!;expect(run).toMatchObject({id:'mountain-descent',checkpoint:6,finished:false});
-      expect(run.elapsed).toBeGreaterThanOrEqual(21);
-      const gate=course[5]!,p=driver.present()!;
+      const run=driver.run()!;expect(run).toMatchObject({id:'mountain-descent',checkpoint:1,elapsed:0,finished:false});expect(run.countdown).toBeGreaterThan(2.9);
+      const gate=course[0]!,p=driver.present()!;
       expect(Math.hypot(p.x-gate.at[0],p.z-gate.at[2])).toBeLessThan(2);expect(Math.abs(p.y-gate.at[1])).toBeLessThan(1);
-      driver.step(1/60);expect(driver.run()?.checkpoint).toBe(6);
+      driver.step(1/60);expect(driver.run()?.checkpoint).toBe(1);
     }
   });
   it('the HUD counts gates correctly and hides the park counters during a race',()=>{

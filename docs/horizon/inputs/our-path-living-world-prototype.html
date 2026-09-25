@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light"><title>Our Path · Living World Lab</title>
+<style>
+:root{--ink:#243b35;--muted:#63756a;--paper:#f6f5ee;--line:#d9dfd1;--green:#315c46;--soft:#e7ecdf;--gold:#b6813d;--white:#fffef8;--danger:#a85e44}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}button,input,select{font:inherit;color:inherit}button,select,input[type=range],summary{cursor:pointer}button{border:1px solid var(--line);background:var(--white);border-radius:11px;padding:9px 13px;transition:background .15s,transform .15s}button:hover{background:var(--soft)}button:active{transform:translateY(1px)}button:focus-visible,input:focus-visible,select:focus-visible,summary:focus-visible,canvas:focus-visible{outline:3px solid #be8c44;outline-offset:3px}button:disabled{opacity:.5;cursor:not-allowed}h1,h2,h3,p{margin:0}header{height:77px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;padding:0 30px;gap:18px;background:#faf9f2}.brand{display:flex;align-items:center;gap:13px}.mark{height:37px;width:37px;border:1.5px solid var(--green);border-radius:11px;display:grid;place-items:center;transform:rotate(-7deg);font-size:25px;color:var(--green)}.wordmark{font-family:Georgia,serif;font-size:25px;letter-spacing:-.6px}.brand small{display:block;font-size:10px;letter-spacing:2.6px;color:var(--muted);line-height:1}.header-right{display:flex;gap:9px;align-items:center}.lab-tag{font-size:10px;letter-spacing:1.5px;border:1px solid var(--line);padding:6px 10px;border-radius:50px;margin-left:14px;color:var(--muted)}.demo-tag{display:flex;align-items:center;gap:7px;color:var(--muted);font-size:12px;margin-right:10px}.dot{width:6px;height:6px;border-radius:50%;background:#729374}.layout{display:grid;grid-template-columns:307px minmax(0,1fr);min-height:calc(100vh - 77px)}.sidebar{border-right:1px solid var(--line);padding:25px 24px;background:#f9f8f1;max-height:calc(100vh - 77px);overflow:auto;scrollbar-width:thin}.eyebrow{font-size:10px;letter-spacing:1.6px;text-transform:uppercase;font-weight:650;color:var(--muted)}.sidebar h1{font-family:Georgia,serif;font-weight:normal;line-height:1.18;font-size:26px;margin:9px 0}.intro{font-size:12px;color:var(--muted);line-height:1.65;margin-bottom:19px}.field{display:block;font-size:11px;font-weight:650;margin-bottom:6px}.control{width:100%;border:1px solid var(--line);border-radius:9px;padding:10px 11px;background:var(--white);font-size:12px}.seed-row{display:flex;gap:6px;margin-top:8px}.seed-row input{min-width:0;flex:1;padding:8px 10px;font-family:ui-monospace,monospace;font-size:11px}.seed-row button{padding:7px 9px;font-size:11px}.small{font-size:11px;color:var(--muted);line-height:1.55}.seed-help{margin:7px 0 21px}.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px}.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}.action{padding:12px 10px;text-align:left;line-height:1.25;min-height:76px}.action .icon{font-size:21px;display:block;color:var(--green);height:27px}.action b{font-size:11px;display:block}.action small{font-size:10px;color:var(--muted);display:block;margin-top:4px}.quiet-link{border:0;background:transparent;font-size:10px;padding:7px 2px;color:var(--muted);text-decoration:underline;text-underline-offset:3px}.coverage{border-top:1px solid var(--line);padding-top:17px;margin-top:11px}.mini-tag{border-radius:20px;padding:3px 6px;background:var(--soft);font-size:9px;font-weight:600;color:var(--green)}.coverage .field{margin-top:9px}.coverage .small{margin:7px 0}.check{display:flex;gap:7px;align-items:center;font-size:11px;margin-top:10px;cursor:pointer}.check input{accent-color:var(--green);width:14px;height:14px}.day-actions{display:flex;gap:6px;margin-top:12px}.day-actions button{flex:1;font-size:11px;padding:8px}.inspect{border-top:1px solid var(--line);padding-top:17px;margin-top:14px}.inspect select{margin:8px 0 9px}.inspect h3{font-family:Georgia,serif;font-weight:normal;font-size:17px;margin:4px 0}.inspect p{font-size:11px;color:var(--muted);line-height:1.65}.main{display:flex;flex-direction:column;min-width:0;height:calc(100vh - 77px);min-height:730px}.stage{position:relative;flex:1;min-height:450px;overflow:hidden;background:#aec9c4}.stage canvas{display:block;width:100%;height:100%;position:absolute;inset:0;touch-action:none}.scene-title{position:absolute;top:30px;left:32px;pointer-events:none;max-width:450px}.scene-title h2{font:normal 38px/1.07 Georgia,serif;letter-spacing:-.8px;margin:8px 0 8px;color:#233d36}.scene-title p{font-size:11px;color:#49665b}.scene-controls{position:absolute;top:28px;right:24px;display:flex;gap:6px}.scene-controls button{background:#f8faf0dc;backdrop-filter:blur(8px);font-size:10px;padding:8px 10px;border:1px solid #dce8d7}.scene-controls button[aria-pressed=true]{background:var(--green);color:white;border-color:var(--green)}.status-card{position:absolute;bottom:23px;left:25px;padding:13px 17px;background:#f8faf0ef;border:1px solid #e7eddf;border-radius:12px;box-shadow:0 4px 24px #2345340a;max-width:290px;pointer-events:none}.status-top{display:flex;align-items:center;gap:8px}.status-dot{height:7px;width:7px;background:#668957;border-radius:100%}.status-card b{font-size:12px;font-weight:600}.status-card p{font-size:10px;line-height:1.55;color:var(--muted);margin-top:4px}.scene-counter{position:absolute;bottom:23px;right:24px;text-align:right;font-size:10px;color:#36574b}.scene-counter .camera{display:flex;gap:4px;margin-bottom:7px;justify-content:flex-end}.camera button{height:31px;width:32px;padding:0;background:#fbfbf2de;font-size:15px}.scene-counter .hint{font-size:9px;letter-spacing:.3px}.label-layer{position:absolute;inset:0;pointer-events:none}.landmark{position:absolute;transform:translate(-50%,-100%);padding:5px 8px;font-size:9px;line-height:1.25;letter-spacing:.3px;background:#fbfaf0eb;border:1px solid #f7f9ed;border-radius:7px;box-shadow:0 2px 8px #233a2720;pointer-events:auto;white-space:nowrap}.landmark::after{content:"";position:absolute;bottom:-7px;left:50%;width:1px;height:6px;background:#e9eddf}.landmark.selected{background:#2f543f;color:#fff9e8;border-color:#2f543f;z-index:4}.toast{position:absolute;left:50%;bottom:102px;transform:translateX(-50%);max-width:500px;width:max-content;background:#264834ee;color:#fcfaf1;padding:11px 17px;border-radius:11px;font-size:12px;box-shadow:0 5px 20px #1a362422;pointer-events:none;opacity:0;transition:opacity .2s;z-index:6}.toast.show{opacity:1}.timeline{padding:19px 27px 16px;background:#fdfcf5;border-top:1px solid #dce4d6;flex:none}.time-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;gap:12px}.time-head h3{font-family:Georgia,serif;font-weight:normal;font-size:20px}.time-head p{font-size:11px;color:var(--muted);margin-top:3px}.play{background:var(--green);border-color:var(--green);color:#fffdf3;font-size:11px;min-width:103px}.play:hover{background:#254a36}.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.step{background:transparent;text-align:left;padding:8px 11px;font-size:11px;display:flex;justify-content:space-between;gap:4px}.step span{color:var(--muted);font-size:10px}.step.active{background:var(--soft);border-color:#97ad90}.range-row{display:flex;gap:14px;align-items:center;margin-top:12px}.range-row label{font-size:10px;color:var(--muted);width:41px;flex-shrink:0}input[type=range]{accent-color:var(--green);width:100%;height:5px;margin:8px 0}.ticks{display:flex;justify-content:space-between;font-size:9px;color:var(--muted);margin:1px 0 0 54px}.footnote{font-size:9px;color:var(--muted);margin-top:12px;display:flex;justify-content:space-between;gap:12px}.footnote button{padding:0;border:0;background:none;font-size:9px;text-decoration:underline}.metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:12px}.metric{background:#eff0e7;border-radius:6px;padding:7px 8px;font-size:9px;color:var(--muted)}.metric strong{display:block;font-size:15px;font-weight:500;color:var(--ink)}.metric .bar{height:3px;background:#d4ddcd;border-radius:3px;margin-top:4px;overflow:hidden}.metric .bar i{display:block;background:#789567;height:100%}.error{position:absolute;z-index:20;top:155px;left:25px;right:25px;max-width:480px;background:#fff5df;border:1px solid #cab690;border-radius:12px;padding:18px;color:#5a492b;font-size:13px}.error[hidden]{display:none}dialog{border:1px solid var(--line);border-radius:18px;padding:29px;max-width:580px;background:var(--paper);color:var(--ink);box-shadow:0 20px 100px #102a2b44}dialog::backdrop{background:#20382f70;backdrop-filter:blur(3px)}dialog h2{font:normal 27px Georgia,serif;margin:10px 0 16px}dialog p{font-size:12px;line-height:1.8;margin:12px 0;color:var(--muted)}dialog .close{float:right}dialog pre{background:#e8eddf;border-radius:10px;padding:15px;overflow:auto;font-size:11px;line-height:1.7}dialog code{font:11px/1.7 ui-monospace,monospace}.noscript{padding:25px;background:#fff5df}.top-details{display:none}
+@media(min-width:1700px){.sidebar{padding:30px}.layout{grid-template-columns:330px 1fr}.scene-title h2{font-size:44px}.timeline{padding:22px 36px}}
+@media(max-width:1100px){.layout{grid-template-columns:276px minmax(0,1fr)}.sidebar{padding:21px 18px}.scene-title{left:22px;top:24px}.scene-title h2{font-size:31px}.scene-controls{top:106px;left:22px;right:auto}.lab-tag{display:none}.steps .step span{display:none}.timeline{padding:17px 20px}.landmark{font-size:8px}.main{min-height:730px}}
+@media(max-width:760px){header{height:64px;padding:0 17px}.wordmark{font-size:22px}.brand small{font-size:8px}.mark{width:31px;height:31px;font-size:21px}.header-right button{font-size:10px;padding:7px 9px}.demo-tag{display:none}.header-right{gap:5px}.layout{display:flex;flex-direction:column}.main{order:0;height:auto;min-height:0}.stage{height:57vh;min-height:420px;max-height:580px;flex:none}.sidebar{order:1;max-height:none;border:0;border-top:1px solid var(--line);padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:0 23px}.sidebar .setup{grid-column:1/-1}.sidebar h1{font-size:25px}.intro{max-width:430px;margin-bottom:16px}.setup-fields{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.seed-row{margin-top:0}.seed-help{grid-column:1/-1;margin-bottom:20px}.life-controls{grid-column:1}.coverage{grid-column:2;border:0;padding:0;margin:0}.inspect{grid-column:1/-1}.action{min-height:79px}.scene-title{top:22px;left:21px}.scene-title h2{font-size:31px}.scene-title p{font-size:10px}.scene-controls{top:108px;left:21px}.scene-controls button{font-size:9px;padding:6px 8px}.status-card{left:15px;bottom:15px;max-width:226px;padding:10px 12px}.status-card p{font-size:9px}.status-card b{font-size:11px}.scene-counter{right:14px;bottom:16px}.hint{display:none}.camera button{width:27px;height:28px}.landmark{font-size:8px;padding:4px 6px}.timeline{padding:17px 16px}.time-head h3{font-size:18px}.time-head p{font-size:10px;max-width:220px}.steps{gap:4px}.step{font-size:10px;padding:8px 7px}.range-row{gap:8px}.ticks{margin-left:49px}.footnote{font-size:8px}.footnote button{font-size:8px}.toast{max-width:86%;white-space:normal;width:86%;font-size:11px;bottom:88px}.metrics{grid-template-columns:repeat(3,1fr);max-width:410px}.scene-counter .eyebrow{display:none}dialog{margin:auto 14px;width:calc(100% - 28px)}}
+@media(max-width:420px){.sidebar{padding:21px 17px;gap:0 14px}.action{padding:9px 8px}.action b{font-size:10px}.action small{font-size:9px}.header-right #export{display:none}.setup-fields{display:block}.seed-row{margin-top:7px}.scene-title h2{font-size:29px}.scene-controls{top:104px}.scene-title .eyebrow{font-size:9px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<header><div class="brand"><div class="mark" aria-hidden="true">❧</div><div><div class="wordmark">Our Path</div><small>A HEARTH EXPERIMENT</small></div><span class="lab-tag">LIVING WORLD / 01</span></div><div class="header-right"><span class="demo-tag"><i class="dot"></i>Synthetic household · offline</span><button id="export">Export scene JSON</button><button id="reset" title="Reset the synthetic experiment">Reset lab ↺</button></div></header>
+<noscript><div class="noscript">This prototype requires JavaScript. It contains only synthetic records and makes no network requests.</div></noscript>
+<div class="layout">
+<aside class="sidebar" aria-label="Synthetic world controls">
+<section class="setup"><div class="eyebrow">THE EVERYDAY BECOMES A PLACE</div><h1>Make a little<br>life happen.</h1><p class="intro">Earn. Spend. Put something aside.<br>A world grows around what those moments mean.</p><div class="setup-fields"><div><label class="field" for="profile">A synthetic household history</label><select id="profile" class="control"><option value="hearth">A little of everything</option><option value="garden">The garden household</option><option value="explorer">Always taking the long way</option><option value="quiet">Room to put down roots</option><option value="social">One more seat at the table</option><option value="coast">A life between harbours</option></select></div><div><label class="field" for="seed">World seed</label><div class="seed-row"><input id="seed" class="control" value="mandevilla-01" maxlength="50" spellcheck="false"><button id="new-seed">New world</button></div></div><p class="small seed-help">Same seed + same history = same world.<br>Change either to compare the geography.</p></div></section>
+<section class="life-controls"><div class="section-head"><h2 class="eyebrow">01 / EVERYDAY MOMENTS</h2></div><div class="action-grid"><button class="action" id="income"><span class="icon" aria-hidden="true">↝</span><b>Income arrives</b><small>Cargo at the landing</small></button><button class="action" id="groceries"><span class="icon" aria-hidden="true">♧</span><b>Buy groceries</b><small>Life in the garden</small></button><button class="action" id="save"><span class="icon" aria-hidden="true">⌂</span><b>Back the goal</b><small>+25% backed progress</small></button><button class="action" id="buffer"><span class="icon" aria-hidden="true">≈</span><b>Use the buffer</b><small>Water, not punishment</small></button></div><button id="transfer" class="quiet-link">Test an internal transfer →</button></section>
+<section class="coverage"><div class="section-head"><h2 class="eyebrow">02 / COVERAGE LAB</h2><span class="mini-tag">PROPOSED RULES</span></div><label class="field" for="gap">Confirmed uncovered obligation (U)</label><select class="control" id="gap"><option value="0">CAD 0 · nothing uncovered</option><option value="1500">CAD 15 · below entry gate</option><option value="2500">CAD 25 · 0.5 × daily need</option><option value="10000">CAD 100 · 2 × daily need</option><option value="35000">CAD 350 · 7 × daily need</option><option value="70000" selected>CAD 700 · 14 × daily need</option></select><p class="small">Example daily essential need: CAD 50.<br>Shortfall begins on day 1; clears on day 29.</p><label class="check"><input id="unknown" type="checkbox">Future daily evidence is incomplete</label><div class="day-actions"><button id="day-next">+1 day</button><button id="week-next">+7 days</button></div><button id="resolve" class="quiet-link">Resolve the shortfall now</button><br><button id="correct" class="quiet-link">It was an error: replay without the shortfall</button></section>
+<section class="inspect"><div class="section-head"><h2 class="eyebrow">03 / WHY IS THIS HERE?</h2></div><label for="feature" class="field">Inspect a feature</label><select id="feature" class="control"><option value="home">Home ground</option><option value="food">The kitchen garden</option><option value="goal">The goal pavilion</option><option value="water">The reserve basin</option><option value="harbor">The arrival landing</option><option value="bridge" selected>The timber crossing</option></select><h3 id="feature-title">The timber crossing</h3><p id="feature-why"></p><div class="metrics" aria-label="Local material condition, not a financial score"><div class="metric">Plants<strong id="plants-value">100%</strong><div class="bar"><i id="plants-bar"></i></div></div><div class="metric">Wood<strong id="wood-value">100%</strong><div class="bar"><i id="wood-bar"></i></div></div><div class="metric">Stone<strong id="stone-value">100%</strong><div class="bar"><i id="stone-bar"></i></div></div></section>
+</aside>
+<main class="main">
+<section class="stage" aria-label="Interactive three-dimensional island">
+<canvas id="world" tabindex="0" aria-label="Procedural island. Drag to orbit, pinch or scroll to zoom. Arrow keys rotate. Inspect the same features with the feature selector."></canvas>
+<div class="scene-title"><div class="eyebrow">ERA 01 &nbsp;/&nbsp; A WORLD OF EVERYDAY THINGS</div><h2>A life, taking shape.</h2><p id="scene-subtitle">The same island. A different chapter of its story.</p></div>
+<div class="scene-controls"><button id="terrain-only" aria-pressed="false">Bare terrain</button><button id="quiet" aria-pressed="false">Calm view</button><button id="labels" aria-pressed="true">Labels</button></div>
+<div id="labels-layer" class="label-layer"></div>
+<div id="render-error" class="error" hidden>WebGL is unavailable or the graphics context was lost. The coverage controls and text inspector remain usable. Reload to restore a lost graphics context.</div>
+<div class="status-card" aria-live="polite"><div class="status-top"><span class="status-dot" id="status-dot"></span><b id="status-name">A world in balance</b></div><p id="status-copy">No uncovered obligations. Growth reflects life, not how much someone earns.</p></div>
+<div class="scene-counter"><div class="camera"><button id="zoom-out" aria-label="Zoom out">−</button><button id="camera-reset" aria-label="Reset camera">⌖</button><button id="zoom-in" aria-label="Zoom in">+</button></div><div class="eyebrow" id="mesh-stats">PROCEDURAL • NO IMPORTED ASSETS</div><div class="hint">Drag to orbit · scroll to get closer</div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</section>
+<section class="timeline" aria-label="Compare the island across time"><div class="time-head"><div><h3 id="day-title">Day 0 · A world in balance</h3><p id="day-caption">A synthetic story. Nothing here changes your money.</p></div><button id="play" class="play">▷ Play story</button></div><div class="steps"><button class="step active" data-day="0">01 &nbsp; Healthy<span>day 0</span></button><button class="step" data-day="7">02 &nbsp; Strained<span>day 7</span></button><button class="step" data-day="28">03 &nbsp; Damaged<span>day 28</span></button><button class="step" data-day="42">04 &nbsp; Recovering<span>day 42</span></button></div><div class="range-row"><label for="day">DAY <output id="day-output">00</output></label><input id="day" type="range" min="0" max="56" step="1" value="0" aria-label="Story day"></div><div class="ticks"><span>0 · balanced</span><span>14 · wear</span><span>28 · gap clears next day</span><span>42 · repairs</span><span>56</span></div><div class="footnote"><span>Same camera. Same anchors. Physical geometry changes, not just a colour filter.</span><button id="about">What this prototype does / code notes ↗</button></div></section>
+</main>
+</div>
+<dialog id="about-dialog"><button class="close" id="close-dialog">Close</button><div class="eyebrow">LIVING WORLD LAB / 01</div><h2>The world is a projection.<br>Never another ledger.</h2><p>This original, offline prototype uses synthetic events and a mocked coverage adapter. It does not connect to Hearth, inspect your accounts, post money, or change the repository.</p><p><b>Implemented:</b> deterministic multi-centre terrain; six synthetic history profiles; a six-category growth subset; backing stages; localized material wear; eroded geometry; recovery on the same sites; incomplete-evidence freeze; error-correction replay; clickable explanations and a text inspector.</p><pre><code>accepted, scope-safe facts
+  → trusted daily coverage
+  → deterministic world rules
+  → bounded scene geometry
+  → renderer + explanations</code></pre><p><b>Calibration:</b> stage gates start at 3 / 7 / 14 / 28 confirmed days, with severity or material-arrear-age checks. Clearance is below 0.25 × daily need with no material arrears. Repairs start after two clear days. These are proposed product settings, not financial advice.</p><p><b>Still illustrative:</b> the terrain deformation maps a bounded wear signal into a visible gully; it does not yet enforce the rulebook's exact eroded-area budget or every weekly place cap. Six profiles are authored fixtures, not proof of a production history adapter or infinite uniqueness. Plants and structures are stylized procedural models, not final Hearth artwork.</p><p>No external libraries, fonts, models, CDN, API key, tracking, or runtime network requests. Real iPhone performance and production integration still need validation. The source kit includes the pure rules, renderer, tests, and adapter notes.</p></dialog>
+<script>(()=>{'use strict';
+
+// ---- engine.js ----
+/**
+ * Our Path · Living World Lab 01
+ * PURE, SYNTHETIC PROJECTION. Not an accounting engine or production adapter.
+ * Calibration follows the proposed CH-02.2 v0.1 gates, not a financial standard.
+ */
+const RULES_VERSION = 'lab-01.1';
+const UMBRELLAS = ['home', 'food', 'utilities', 'transport', 'fun', 'travel'];
+const clamp = (n, lo = 0, hi = 1) => Math.min(hi, Math.max(lo, n));
+const quantize = n => Math.round(n * 1e6) / 1e6;
+function dayNumber(date) {
+  if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new TypeError('Expected a civil YYYY-MM-DD date.');
+  const ms = Date.parse(`${date}T00:00:00Z`);
+  if (!Number.isFinite(ms) || new Date(ms).toISOString().slice(0,10) !== date) throw new RangeError('Invalid civil date.');
+  return ms / 86400000;
+}
+const dateAt = (origin, offset) => new Date((dayNumber(origin) + offset) * 86400000).toISOString().slice(0,10);
+const weekKey = date => Math.floor((dayNumber(date) + 3) / 7); // Monday-based, timezone-independent civil keys.
+function hash(text) {
+  let n = 2166136261;
+  for (const c of String(text)) { n ^= c.charCodeAt(0); n = Math.imul(n, 16777619); }
+  return n >>> 0;
+}
+function random(seed) {
+  let n = typeof seed === 'number' ? seed : hash(seed);
+  return () => { n += 0x6D2B79F5; let t = n; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+}
+function createState(scope = 'household-demo') {
+  return { rulesVersion:RULES_VERSION, scope, lastDay:null, lastFingerprint:null,
+    status:'healthy', stage:0, peakStage:0, strainDays:0, clearDays:0,
+    plants:100, wood:100, stone:100, erosion:0, episodeErosion:0,
+    week:null, woodLossThisWeek:0, stoneLossThisWeek:0, realDamage:false, repairSeam:false, minorFailure:false, majorFailure:false,
+    evidenceReason:'Confirmed synthetic records', history:[] };
+}
+/** All monetary inputs are integer cents supplied by a trusted coverage adapter. */
+function validateCoverage(c) {
+  dayNumber(c.date);
+  if (typeof c.scope !== 'string' || typeof c.revision !== 'string') throw new TypeError('Coverage requires scope and accepted revision.');
+  if (typeof c.eligible !== 'boolean') throw new TypeError('Coverage eligibility must be explicit.');
+  if (!c.eligible) return;
+  if (!Number.isSafeInteger(c.dailyNeedCents) || c.dailyNeedCents <= 0) throw new RangeError('A positive, approved daily-need baseline is required.');
+  if (!Number.isSafeInteger(c.uncoveredCents) || c.uncoveredCents < 0) throw new RangeError('Uncovered obligation must be nonnegative integer cents.');
+  if (!Number.isInteger(c.oldestMaterialArrearDays) || c.oldestMaterialArrearDays < 0 || typeof c.hasMaterialArrears !== 'boolean') throw new TypeError('Explicit material-arrear evidence is required.');
+}
+/** Permission for wear, not a substitute for accumulated component integrity. */
+function damageStage(strainDays, need, uncovered, materialArrearAge = 0) {
+  if (!(need > 0) || uncovered < need * .5 || strainDays < 3) return 0;
+  const ratio = uncovered / need;
+  if (strainDays >= 28 && (ratio >= 14 || materialArrearAge >= 28)) return 4;
+  if (strainDays >= 14 && (ratio >= 7 || materialArrearAge >= 14)) return 3;
+  if (strainDays >= 7 && (ratio >= 2 || materialArrearAge >= 7)) return 2;
+  return 1;
+}
+/**
+ * One step per explicitly covered civil day. Unknown days break confirmation
+ * streaks, preserve damage, and cannot repair it. Missing days are never filled.
+ * A correction requires replay from source snapshots, not reverse animation.
+ */
+function stepDay(previous, c) {
+  validateCoverage(c);
+  if (c.scope !== previous.scope) throw new Error('Coverage scope denied.');
+  const fingerprint = JSON.stringify(c);
+  if (c.date === previous.lastDay) {
+    if (fingerprint === previous.lastFingerprint) return previous;
+    throw new Error('Same-day revision changed: replay from the affected checkpoint.');
+  }
+  if (previous.lastDay && dayNumber(c.date) < dayNumber(previous.lastDay)) throw new Error('Daily steps must be chronological.');
+  const s = { ...previous, history:[...previous.history], lastDay:c.date, lastFingerprint:fingerprint };
+  if (previous.lastDay && dayNumber(c.date) - dayNumber(previous.lastDay) > 1) { s.strainDays = 0; s.clearDays = 0; }
+  const wk = weekKey(c.date);
+  if (wk !== s.week) { s.week = wk; s.woodLossThisWeek = 0; s.stoneLossThisWeek = 0; }
+  if (!c.eligible) {
+    s.status = 'unknown'; s.stage = 0; s.strainDays = 0; s.clearDays = 0;
+    s.evidenceReason = c.reason || 'Evidence incomplete. Wear and repair are paused.';
+    return s;
+  }
+  s.evidenceReason = 'Confirmed synthetic records';
+  const ratio = c.uncoveredCents / c.dailyNeedCents;
+  const clears = ratio < .25 && !c.hasMaterialArrears;
+  if (clears) {
+    s.strainDays = 0; s.stage = 0; s.clearDays++;
+    const damaged = s.plants < 100 || s.wood < 100 || s.stone < 100 || s.erosion > 0;
+    s.status = damaged && s.realDamage ? 'recovering' : 'healthy';
+    if (s.clearDays >= 2 && s.realDamage) {
+      s.plants = Math.min(100, s.plants + 12); s.wood = Math.min(100, s.wood + 4); s.stone = Math.min(100, s.stone + 2);
+      if (s.wood >= 50) s.majorFailure = false;
+      if (s.wood >= 75) s.minorFailure = false;
+      if (s.clearDays >= 7 && (s.erosion > 0 || s.peakStage >= 3)) s.repairSeam = true;
+      if (s.plants === 100 && s.wood === 100 && s.stone === 100 && s.clearDays >= 28) s.status = 'renewed';
+    }
+  } else if (ratio >= .5) {
+    if (s.clearDays > 0) { s.episodeErosion = 0; s.strainDays = 0; }
+    s.clearDays = 0; s.strainDays++;
+    s.stage = damageStage(s.strainDays, c.dailyNeedCents, c.uncoveredCents, c.hasMaterialArrears ? c.oldestMaterialArrearDays : 0);
+    s.status = s.stage >= 3 ? 'damaged' : s.stage > 0 ? 'strained' : 'watching';
+    s.peakStage = Math.max(s.peakStage, s.stage);
+    const dose = [0,1,3,5,7][s.stage];
+    const woodDose = Math.min(dose, Math.max(0,28 - s.woodLossThisWeek));
+    const stoneDose = Math.min(dose*.35, Math.max(0,12 - s.stoneLossThisWeek));
+    s.woodLossThisWeek += woodDose; s.stoneLossThisWeek += stoneDose;
+    s.wood = Math.max(0,s.wood - woodDose); s.stone = Math.max(0,s.stone - stoneDose); s.plants = Math.max(0,s.plants - dose);
+    const erosionDose = Math.min([0,0,.001,.003,.005][s.stage]/7, Math.max(0,.05 - s.episodeErosion));
+    s.episodeErosion = quantize(s.episodeErosion + erosionDose);
+    // Derived scar accumulator is bounded even across repeated hardship episodes.
+    s.erosion = quantize(Math.min(.05, s.erosion + erosionDose));
+    if (dose > 0) s.realDamage = true;
+    if (s.stage >= 3 && s.wood < 75) s.minorFailure = true;
+    if (s.stage === 4 && s.wood < 25) s.majorFailure = true;
+  } else {
+    // Hysteresis dead band: neither damage nor repair; do not accumulate strain.
+    s.status = 'paused'; s.stage = 0; s.strainDays = 0; s.clearDays = 0;
+  }
+  for (const key of ['plants','wood','stone']) s[key] = quantize(s[key]);
+  if (s.stage !== previous.stage || s.status !== previous.status) s.history.push({ date:c.date, stage:s.stage, status:s.status });
+  return s;
+}
+function replayCoverage(snapshots, scope='household-demo') {
+  const dates = new Map();
+  for (const c of snapshots) {
+    if (dates.has(c.date) && JSON.stringify(dates.get(c.date)) !== JSON.stringify(c)) throw new Error('Conflicting daily snapshots; select accepted revisions before replay.');
+    dates.set(c.date,c);
+  }
+  return [...dates.values()].sort((a,b)=>a.date.localeCompare(b.date)).reduce(stepDay,createState(scope));
+}
+/** Stable whole-history projection. Refunds are not income; explicit error
+ * reversals remove their original eligible episode. A real purchase refund
+ * does not erase an experience. Production lineage mapping remains unbuilt. */
+function projectLife(events, throughDate, scope='household-demo') {
+  dayNumber(throughDate);
+  const eligible = events.filter(e=>e.accepted === true && e.scope === scope && e.date <= throughDate);
+  const removed = new Set(eligible.filter(e=>e.kind==='error_reversal').map(e=>e.reversesEpisodeId));
+  const unique = new Map();
+  for (const e of eligible) {
+    dayNumber(e.date);
+    if (!e.episodeId) throw new TypeError('Every world event needs stable economic lineage.');
+    const key = `${e.episodeId}|${e.kind}`;
+    if (!unique.has(key) || e.id.localeCompare(unique.get(key).id)<0) unique.set(key,e);
+  }
+  const weeks = Object.fromEntries(UMBRELLAS.map(k=>[k,new Set()]));
+  let goalBacking = 0, receipts = 0;
+  const sorted = [...unique.values()].filter(e=>!removed.has(e.episodeId)).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+  const boundary = weekKey(throughDate);
+  for (const e of sorted) {
+    if (e.kind==='expense' && weeks[e.umbrella]) weeks[e.umbrella].add(weekKey(e.date));
+    if (e.kind==='income_received') receipts++;
+    if (e.kind==='goal_backed') {
+      if (!Number.isFinite(e.progress) || e.progress<0 || e.progress>1) throw new RangeError('Goal backing must be a trusted bounded signal.');
+      goalBacking=e.progress;
+    }
+  }
+  const maturity = {}, counts = {};
+  for (const k of UMBRELLAS) {
+    const recent = n=>[...weeks[k]].filter(w=>w<=boundary && w>boundary-n).length;
+    counts[k]=recent(24);
+    maturity[k] = recent(24)>=16 ? 4 : recent(12)>=8 ? 3 : recent(6)>=3 ? 2 : counts[k]>0 ? 1 : 0;
+    // Retain former maturity: frugality/inactivity is not physical decline.
+    for (const w of weeks[k]) {
+      const at = n=>[...weeks[k]].filter(v=>v<=w && v>w-n).length;
+      maturity[k]=Math.max(maturity[k],at(24)>=16?4:at(12)>=8?3:at(6)>=3?2:1);
+    }
+  }
+  return {maturity,counts,goalBacking,receipts,eligibleEvents:sorted.length};
+}
+const PROFILES = {
+  hearth:{name:'A little of everything',subtitle:'Home, food, and shared weekends',weights:[1,1,.7,.5,.7,.3], land:[1,1]},
+  garden:{name:'The garden household',subtitle:'Food-led life, gathering places',weights:[.7,1,.6,.3,.8,.1],land:[1.25,.84]},
+  explorer:{name:'Always taking the long way',subtitle:'Transport, travel, and outdoor days',weights:[.5,.5,.4,1,.8,1],land:[.8,1.3]},
+  quiet:{name:'Room to put down roots',subtitle:'Home and utilities, few new outings',weights:[1,.6,1,.25,.2,.1],land:[1.16,1.05]},
+  social:{name:'One more seat at the table',subtitle:'Food, fun, and small adventures',weights:[.65,1,.4,.6,1,.6],land:[1.1,.9]},
+  coast:{name:'A life between harbours',subtitle:'Travel-led, steady home routines',weights:[.75,.55,.5,.85,.6,1],land:[.9,1.15]}
+};
+const ORIGIN='2026-06-01';
+function fixtureEvents(profile='hearth', weeks=12) {
+  const p=PROFILES[profile] || PROFILES.hearth, out=[];
+  for(let w=0;w<weeks;w++) {
+    const date=dateAt(ORIGIN,-7*(weeks-w));
+    UMBRELLAS.forEach((k,i)=> {
+      // Fixed synthetic cadence, not a financial adequacy calculation.
+      if ((hash(`${profile}:${w}:${k}`)%100)/100<p.weights[i]) out.push({id:`life-${w}-${k}`,episodeId:`life-${w}-${k}`,date,kind:'expense',umbrella:k,accepted:true,scope:'household-demo'});
+    });
+    if(w%2===0) out.push({id:`pay-${w}`,episodeId:`pay-${w}`,date,kind:'income_received',accepted:true,scope:'household-demo'});
+  }
+  out.push({id:'initial-backing',episodeId:'initial-backing',date:dateAt(ORIGIN,-1),kind:'goal_backed',progress:.5,accepted:true,scope:'household-demo'});
+  return out;
+}
+function storySnapshots(day, {uncoveredCents=70000, resolveOn=29, unknownDays=[], correction=false}={}) {
+  const unknown=new Set(unknownDays), result=[];
+  for(let d=0;d<=day;d++) {
+    const gap = d>0 && d<resolveOn && !correction ? uncoveredCents : 0;
+    result.push({date:dateAt(ORIGIN,d),scope:'household-demo',revision:`synthetic-${correction?'corrected':'original'}-${d}`,eligible:!unknown.has(d),reason:'No confirmed daily coverage. Physical change is frozen.',dailyNeedCents:5000,uncoveredCents:gap,hasMaterialArrears:gap>=2500,oldestMaterialArrearDays:gap>=2500?d:0});
+  }
+  return result;
+}
+
+
+// ---- world.js ----
+/** Original dependency-free procedural mesh generator. Units are artistic,
+ * not a scale model of land ownership or a real hydrology calculation. */
+function noise(x,z,seed) {
+  const ix=Math.floor(x),iz=Math.floor(z),u=x-ix,v=z-iz,s=u*u*(3-2*u),t=v*v*(3-2*v);
+  const h=(a,b)=>(hash(`${seed}:${a}:${b}`)%10000)/10000;
+  return (h(ix,iz)*(1-s)+h(ix+1,iz)*s)*(1-t)+(h(ix,iz+1)*(1-s)+h(ix+1,iz+1)*s)*t;
+}
+const dist=(a,b)=>Math.hypot(a.x-b.x,a.z-b.z);
+const smooth=t=>{t=clamp(t);return t*t*(3-2*t);};
+function createTerrain(seed,profile='hearth') {
+  const rng=random(`${seed}:bedrock`), p=PROFILES[profile]||PROFILES.hearth;
+  const phase=rng()*6.28, lobes=[{x:0,z:0,rx:6.1,rz:6.3,w:1.1}];
+  for(let i=0;i<7;i++) { const a=i/7*Math.PI*2+phase, d=5.8+rng()*3.7; lobes.push({x:Math.cos(a)*d*p.land[0],z:Math.sin(a)*d*p.land[1],rx:3.15+rng()*1.7,rz:3.0+rng()*1.8,w:.8+rng()*.35}); }
+  const hills=[{x:-4-rng()*2,z:-5-rng()*2,r:3.5,h:1.6+rng()*1.5},{x:4+rng()*2,z:-4-rng()*3,r:3,h:1.1+rng()*2}];
+  const riverX=z=>Math.sin(z*.29+phase)*.62+.4;
+  const riverY=z=>1.12-clamp((z+6)/20)*1.04;
+  const lake={x:riverX(-6),z:-6,r:1.72,y:riverY(-6)};
+  function raw(x,z) {
+    let f=0; for(const l of lobes) f=Math.max(f,l.w*Math.exp(-(((x-l.x)/l.rx)**2+((z-l.z)/l.rz)**2)));
+    const mask=clamp((f-.32)*2.6);
+    let h=3.45*Math.tanh((f-.43)*3.0);
+    for(const l of hills) h+=l.h*Math.exp(-((x-l.x)**2+(z-l.z)**2)/l.r**2)*mask;
+    h+=(noise(x*.53,z*.53,seed)-.5)*.65*mask;
+    const ld=Math.hypot(x-lake.x,z-lake.z);
+    if(ld<lake.r+1.0) h=h*(1-smooth((lake.r+1-ld)/1.0))+(lake.y-.4)*smooth((lake.r+1-ld)/1.0);
+    if(z>=-6&&z<=15) {
+      const d=Math.abs(x-riverX(z)),width=.46+Math.sin(z*.5+phase)*.06;
+      const t=1-smooth((d-width)/.58);
+      h=h*(1-t)+(riverY(z)-.25)*t;
+    }
+    return Math.max(-2.1,h);
+  }
+  const sites={};
+  function pick(id,target,radius=1.15) {
+    const r=random(`${seed}:${id}:site`); let best=null,bestScore=Infinity;
+    for(let i=0;i<520;i++) {
+      const x=(r()-.5)*21,z=(r()-.5)*21,h=raw(x,z);
+      if(h<2.0||h>5.2||Math.abs(x-riverX(z))<2.1)continue;
+      const slope=Math.abs(raw(x+.7,z)-raw(x-.7,z))+Math.abs(raw(x,z+.7)-raw(x,z-.7));
+      if(Object.values(sites).some(s=>Math.hypot(s.x-x,s.z-z)<s.radius+radius+.8))continue;
+      const score=Math.hypot(x-target.x,z-target.z)*.65+slope*3.5+r()*.25;
+      if(score<bestScore){bestScore=score;best={x,z,y:h,radius,id};}
+    }
+    if(!best) throw new Error(`No safe synthetic site for ${id}; try another seed.`);
+    sites[id]=best; return best;
+  }
+  pick('home',{x:-4,z:-1},1.65);
+  pick('food',{x:-6,z:4},1.45);
+  pick('goal',{x:5,z:4},1.4);
+  pick('fun',{x:5,z:-2},1.15);
+  let hx=sites.food.x-1.4,hz=0;
+  for(let z=-1;z<15;z+=.15)if(raw(hx,z)>1.75)hz=z;
+  sites.harbor={id:'harbor',x:hx,z:hz-.25,y:raw(hx,hz-.25),radius:.9};
+  sites.bridge={id:'bridge',x:riverX(3.6),z:3.6,y:3.65,radius:0};
+  const scar={x:sites.harbor.x+2.25,z:sites.harbor.z-.25};
+  function height(x,z,erosion=0) {
+    let h=raw(x,z);
+    for(const s of Object.values(sites)) {
+      if(!s.radius)continue; const d=Math.hypot(s.x-x,s.z-z),w=1-smooth((d-s.radius)/.65); h=h*(1-w)+s.y*w;
+    }
+    // Bounded, localized artistic deformation. Percent values are the rule
+    // accumulator; this visual mapping is NOT a measured area/volume budget.
+    if(erosion>0 && dist({x,z},sites.home)>3 && dist({x,z},sites.goal)>2.4) {
+      const strength=clamp(erosion*70), dx=x-scar.x;
+      const gully=Math.exp(-((dx/(.17+strength*.58))**2))*Math.exp(-(((z-scar.z)/2.4)**2));
+      h-=gully*(1.0+strength*3.6)*strength;
+    }
+    return h;
+  }
+  return {seed,profile,lobes,hills,sites,lake,riverX,riverY,raw,height,scar};
+}
+class MeshBuilder {
+  constructor(){this.data=[];this.faces=0;}
+  tri(a,b,c,color) {
+    const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];
+    let nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx,len=Math.hypot(nx,ny,nz)||1;
+    nx/=len;ny/=len;nz/=len;
+    for(const p of [a,b,c])this.data.push(...p,nx,ny,nz,...color);
+    this.faces++;
+  }
+  quad(a,b,c,d,col){this.tri(a,b,c,col);this.tri(a,c,d,col);}
+  box(x,y,z,w,h,d,col,rot=0) {
+    const t=(a,b,c)=>[x+a*Math.cos(rot)+c*Math.sin(rot),y+b,z-a*Math.sin(rot)+c*Math.cos(rot)];
+    const p=[t(-w/2,0,-d/2),t(w/2,0,-d/2),t(w/2,0,d/2),t(-w/2,0,d/2),t(-w/2,h,-d/2),t(w/2,h,-d/2),t(w/2,h,d/2),t(-w/2,h,d/2)];
+    for(const f of [[3,2,6,7],[1,0,4,5],[0,3,7,4],[2,1,5,6],[4,7,6,5],[0,1,2,3]])this.quad(...f.map(i=>p[i]),col);
+  }
+  cylinder(x,y,z,r,h,col,segments=8,topR=r) {
+    for(let i=0;i<segments;i++){
+      const a=i/segments*6.283185,b=(i+1)/segments*6.283185;
+      const p=[x+Math.cos(a)*r,y,z+Math.sin(a)*r],q=[x+Math.cos(b)*r,y,z+Math.sin(b)*r];
+      const v=[x+Math.cos(a)*topR,y+h,z+Math.sin(a)*topR],w=[x+Math.cos(b)*topR,y+h,z+Math.sin(b)*topR];
+      this.quad(q,p,v,w,col);this.tri([x,y+h,z],w,v,col);
+    }
+  }
+  beam(a,b,r,col,n=6){
+    const v=b.map((x,i)=>x-a[i]),l=Math.hypot(...v);if(!l)return;const d=v.map(x=>x/l);
+    let u=Math.abs(d[1])<.9?[-d[2],0,d[0]]:[0,d[2],-d[1]],ul=Math.hypot(...u);u=u.map(x=>x/ul);
+    const w=[d[1]*u[2]-d[2]*u[1],d[2]*u[0]-d[0]*u[2],d[0]*u[1]-d[1]*u[0]];
+    const p=(c,t)=>c.map((x,i)=>x+r*(u[i]*Math.cos(t)+w[i]*Math.sin(t)));
+    for(let i=0;i<n;i++){const t=i/n*6.283185,s=(i+1)/n*6.283185;this.quad(p(a,t),p(a,s),p(b,s),p(b,t),col);}
+  }
+  sphere(x,y,z,r,col,segments=7,rings=4,stretch=1) {
+    const p=(i,j)=>{const a=i/segments*6.283185,b=j/rings*Math.PI;return[x+r*Math.sin(b)*Math.cos(a),y+r*Math.cos(b)*stretch,z+r*Math.sin(b)*Math.sin(a)];};
+    for(let i=0;i<segments;i++)for(let j=0;j<rings;j++){
+      const c=col.map(v=>clamp(v*(.93+((i+j)%3)*.04)));
+      this.quad(p(i,j),p(i+1,j),p(i+1,j+1),p(i,j+1),c);
+    }
+  }
+}
+const C={grass:[.42,.61,.37],sand:[.82,.73,.54],rock:[.51,.57,.51],water:[.31,.68,.69],wood:[.49,.31,.18],cream:[.9,.85,.7],roof:[.68,.31,.2],leaf:[.24,.45,.28],gold:[.91,.65,.28],dark:[.2,.3,.27],white:[.97,.91,.76],pink:[.87,.56,.49]};
+const mix=(a,b,t)=>a.map((x,i)=>x*(1-t)+b[i]*t);
+function house(m,s,scale=1,style=0,wear=0){
+  const x=s.x,y=s.y,z=s.z,w=1.65*scale,d=1.38*scale,h=1.3*scale;
+  m.box(x,y-.12,z,w+.18,.18,d+.18,C.rock);
+  m.box(x,y,z,w,h,d,style===1?[.81,.77,.57]:C.cream);
+  const roof=style===2?[.3,.42,.44]:style===1?[.6,.39,.27]:C.roof;
+  const top=y+h, ridge=top+.78*scale;
+  m.quad([x-w*.63,top,z-d*.65],[x, ridge,z-d*.65],[x,ridge,z+d*.65],[x-w*.63,top,z+d*.65],roof);
+  if(wear<.85)m.quad([x,ridge,z-d*.65],[x+w*.63,top,z-d*.65],[x+w*.63,top,z+d*.65],[x,ridge,z+d*.65],roof);
+  m.tri([x-w*.5,top,z+d*.5],[x+w*.5,top,z+d*.5],[x,ridge-.12,z+d*.5],C.cream);
+  m.box(x,y,z+d/2+.025,.36*scale,.79*scale,.065,C.dark);
+  for(const sign of [-1,1]){
+    m.box(x+sign*w*.31,y+h*.4,z+d/2+.037,.27*scale,.36*scale,.05,wear>.4?C.wood:C.gold);
+    m.box(x+sign*w*.31,y+h*.35,z+d/2+.1,.39*scale,.1*scale,.2,C.wood);
+    if(wear<.3)m.sphere(x+sign*w*.31,y+h*.44,z+d/2+.1,.12*scale,C.pink,5,3);
+  }
+  m.box(x+w*.27,top+.22*scale,z-d*.22,.25*scale,.67*scale,.3*scale,C.rock);
+  for(let j=0;j<2;j++)m.box(x,y-.12-j*.09,z+d*.6+j*.21,.7*scale,.12,.25,C.rock);
+}
+function tree(m,x,y,z,scale,rng,condition=1,pine=false){
+  const brown=[.52,.37,.19],green=mix(brown,[.28+rng()*.08,.49+rng()*.12,.27+rng()*.07],condition);
+  m.cylinder(x,y,z,.07*scale,.92*scale,C.wood,5,.045*scale);
+  if(condition<.19){m.beam([x,y+.5*scale,z],[x+.4*scale,y+1.02*scale,z+.2*scale],.025*scale,C.wood);return;}
+  if(pine){m.cylinder(x,y+.5*scale,z,.5*scale,.95*scale,green,7,0);m.cylinder(x,y+1.04*scale,z,.37*scale,.78*scale,green,7,0);}
+  else {m.sphere(x,y+1.18*scale,z,.62*scale*(.58+.42*condition),green,7,4,.95);m.sphere(x+.26*scale,y+.95*scale,z+.1*scale,.34*scale,green,6,3);}
+}
+function buildWorld(t,s,life,{terrainOnly=false,quiet=false,buffer=.82,arrival=false,delivery=false}={}) {
+  const m=new MeshBuilder(),rng=random(`${t.seed}:objects`),sites=t.sites, H=(x,z)=>t.height(x,z,s.erosion);
+  const resolution=.45,size=17,vegetation=quiet?1:s.plants/100;
+  for(let ix=0;ix<Math.ceil(size*2/resolution);ix++)for(let iz=0;iz<Math.ceil(size*2/resolution);iz++){
+    const x=-size+ix*resolution,z=-size+iz*resolution;
+    const pts=[[x,H(x,z),z],[x+resolution,H(x+resolution,z),z],[x+resolution,H(x+resolution,z+resolution),z+resolution],[x,H(x,z+resolution),z+resolution]];
+    if(pts.every(p=>p[1]<-.35))continue;
+    for(const ids of [[0,2,1],[0,3,2]]){
+      const p=ids.map(i=>pts[i]),avg=p.reduce((a,b)=>a+b[1],0)/3,delta=Math.max(...p.map(p=>p[1]))-Math.min(...p.map(p=>p[1]));
+      let col=avg<1.2?C.sand:delta>.52?C.rock:C.grass;
+      const near=Math.hypot(x-sites.harbor.x,z-sites.harbor.z)<5.3 || Math.hypot(x-sites.bridge.x,z-sites.bridge.z)<2.6;
+      if(near&&avg>1.2&&delta<=.52)col=mix([.61,.53,.32],col,vegetation);
+      if(avg>5.4)col=mix(col,[.69,.72,.64],.35);
+      const shade=.9+noise(x*2,z*2,t.seed)*.16;
+      m.tri(...p,col.map(v=>v*shade));
+    }
+  }
+  // The ocean plane covers submerged cells; water has actual mesh depth ordering.
+  m.quad([-140,0,140],[140,0,140],[140,0,-140],[-140,0,-140],[.58,.78,.77]);
+  // A downhill tidal channel is cut into the terrain, not drawn over a ridge.
+  for(let z=-6;z<15;z+=.24){
+    const x=t.riverX(z),nx=t.riverX(z+.24),y=t.riverY(z),ny=t.riverY(z+.24);
+    const w=.42;
+    if((H(x-.95,z)>.12||H(x+.95,z)>.12) && H(x,z)<y+.1)m.quad([x-w,y,z],[nx-w,ny,z+.24],[nx+w,ny,z+.24],[x+w,y,z],C.water);
+  }
+  const ly=t.lake.y-.52*(1-buffer);
+  m.cylinder(t.lake.x,ly-.025,t.lake.z,t.lake.r-.07,.025,[.32,.63,.65],32);
+  // Small shoreline foam fragments, deterministic and static in reduced motion.
+  for(let i=0;i<260;i++){
+    const x=(rng()-.5)*29,z=(rng()-.5)*29,h=H(x,z);
+    if(h>-.23&&h<.06)m.box(x,.022,z,.16+rng()*.32,.013,.042,[.81,.89,.81],rng()*6.28);
+  }
+  if(terrainOnly)return{mesh:m,landmarks:[],stats:{triangles:m.faces}};
+  // Paths follow sampled ground. A deliberate crossing is supplied below.
+  function path(a,b,width=.19){
+    const steps=32,dx=b.x-a.x,dz=b.z-a.z,length=Math.hypot(dx,dz),px=-dz/length*width,pz=dx/length*width;
+    for(let i=0;i<steps;i++){
+      const u=i/steps,v=(i+1)/steps,x=a.x+dx*u,z=a.z+dz*u,nx=a.x+dx*v,nz=a.z+dz*v;
+      if(H(x,z)<1.4||H(nx,nz)<1.4)continue;
+      m.quad([x-px,H(x-px,z-pz)+.11,z-pz],[nx-px,H(nx-px,nz-pz)+.11,nz-pz],[nx+px,H(nx+px,nz+pz)+.11,nz+pz],[x+px,H(x+px,z+pz)+.11,z+pz],C.sand);
+    }
+  }
+  path(sites.home,sites.food);path(sites.food,sites.harbor);path(sites.goal,sites.fun);path(sites.home,{x:sites.bridge.x-2,z:sites.bridge.z});path({x:sites.bridge.x+2,z:sites.bridge.z},sites.goal);
+  house(m,sites.home,1.2,0);
+  // Greenhouse / food courtyard matures by qualifying weeks, not purchase count.
+  const food=sites.food,foodLevel=life.maturity.food;
+  if(foodLevel>=2)house(m,{...food,x:food.x-.3,z:food.z-.3},.67,1);
+  const bedCount=2+foodLevel;
+  for(let b=0;b<bedCount;b++){
+    const x=food.x-1.1+(b%3)*.69,z=food.z+.5+Math.floor(b/3)*.48,y=H(x,z)+.03;
+    m.box(x,y,z,.55,.11,.32,C.wood);
+    for(let j=0;j<3;j++)m.sphere(x-.17+j*.17,y+.15,z,.095,[.36,.57,.27],5,3);
+  }
+  if(delivery){
+    m.box(food.x+1.05,H(food.x+1.05,food.z+.7)+.05,food.z+.7,.36,.24,.3,C.wood);
+    m.sphere(food.x+1.05,H(food.x+1.05,food.z+.7)+.35,food.z+.7,.12,C.gold,6,3);
+  }
+  // Goal construction changes stage only from actually backed progress.
+  const g=sites.goal,prog=life.goalBacking;
+  if(prog>=.25)m.box(g.x,g.y,g.z,1.65,.18,1.65,C.rock);
+  for(const dx of [-.65,.65])for(const dz of [-.65,.65])m.cylinder(g.x+dx,g.y+.12,g.z+dz,.055,prog>=.5?1.42:.48,C.wood,6);
+  if(prog>=.5){
+    for(const dz of [-.65,.65])m.beam([g.x-.65,g.y+1.54,g.z+dz],[g.x+.65,g.y+1.54,g.z+dz],.06,C.wood);
+  }
+  if(prog>=.75){
+    const roofColor=prog>=1?C.roof:C.cream;
+    m.cylinder(g.x,g.y+1.53,g.z,1.13,.74,roofColor,4,0);
+  }
+  if(prog>=1){m.box(g.x,g.y+.28,g.z,.72,.13,.72,C.wood);m.cylinder(g.x,g.y+.41,g.z,.1,.24,C.gold,6);}
+  // A little gathering terrace: the chosen life profile changes its maturity.
+  const f=sites.fun;
+  m.cylinder(f.x,f.y-.03,f.z,.91,.16,C.sand,12);
+  if(life.maturity.fun>=2){
+    m.cylinder(f.x,f.y+.15,f.z,.49,.13,C.wood,10);
+    for(let j=0;j<4;j++){const a=j*Math.PI/2;m.box(f.x+Math.cos(a)*.72,f.y+.1,f.z+Math.sin(a)*.72,.35,.28,.28,C.wood,a);}
+  }
+  // Neutral outer infrastructure takes damage; home and goal anchors stay intact.
+  const h=sites.harbor,wear=quiet?0:1-s.wood/100, wood=mix(C.wood,[.5,.48,.39],wear);
+  house(m,{...h,x:h.x-.1,z:h.z-.4},.67,2,s.majorFailure?wear:Math.min(.8,wear));
+  if(s.status==='recovering' && s.wood<75 && !quiet){
+    for(const dx of [-.8,.8]){m.beam([h.x+dx,h.y,h.z-.9],[h.x+dx,h.y+1.8,h.z-.9],.035,C.gold);m.beam([h.x+dx,h.y,h.z+.2],[h.x+dx,h.y+1.8,h.z+.2],.035,C.gold);m.beam([h.x+dx,h.y+1.5,h.z-.9],[h.x+dx,h.y+1.5,h.z+.2],.035,C.gold);}
+  }
+  const planks=20,start=h.z+.25,deckY=h.y+.03;
+  for(let i=0;i<planks;i++){
+    const missing=!quiet && (s.majorFailure ? i>=10&&i<=14 : s.minorFailure&&(i===12||i===14));
+    if(!missing)m.box(h.x,deckY,start+i*.17,1.05,.09,.14,wood);
+    if(i%5===0)for(const dx of [-.44,.44])m.cylinder(h.x+dx,.02,start+i*.17,.055,deckY+.3,C.wood,6);
+  }
+  m.box(h.x-.54,deckY+.24,start+.6,.05,.05,1.2,wood);
+  if(s.repairSeam&&!quiet)for(const dx of [-.45,.45])m.cylinder(h.x+dx,.02,start+1.8,.13,deckY,C.rock,6,.1);
+  // The channel crossing loses selected planks at stage 3; stage 4 permits
+  // larger partial failure only once accumulated wood integrity is weak.
+  const bridge=sites.bridge,bx=bridge.x,bz=bridge.z;
+  const y=Math.max(H(bx-1.5,bz),H(bx+1.5,bz))+.12;
+  for(let i=0;i<19;i++){
+    const u=i/18,x=bx-1.7+u*3.4,by=y+Math.sin(u*Math.PI)*.32;
+    const missing=!quiet && (s.majorFailure ? i>=7&&i<=11 : s.minorFailure&&(i===8||i===11));
+    if(!missing)m.box(x,by,bz,.16,.1,.75,wood);
+    if(i%3===0&&!missing)for(const dz of [-.37,.37])m.box(x,by,bz+dz,.06,.46,.06,wood);
+  }
+  for(const dx of [-1.7,1.7])m.box(bx+dx,H(bx+dx,bz),bz,.4,y-H(bx+dx,bz)+.16,1.02,s.repairSeam?C.rock:C.wood);
+  // Reservoir retaining stones and a recognizable waterwheel.
+  for(let i=0;i<16;i++){const a=i/16*6.28,r=t.lake.r+.16,x=t.lake.x+Math.cos(a)*r,z=t.lake.z+Math.sin(a)*r;if(z>-4.7)continue;m.box(x,H(x,z)+.02,z,.37,.2,.28,C.rock,-a);}
+  const wx=t.riverX(-3.6)+.65,wz=-3.6,wy=t.riverY(wz)+.62;
+  for(let i=0;i<12;i++){const a=i/12*6.28,b=(i+1)/12*6.28;m.beam([wx,wy+Math.cos(a)*.7,wz+Math.sin(a)*.7],[wx,wy+Math.cos(b)*.7,wz+Math.sin(b)*.7],.055,C.wood);m.beam([wx,wy,wz],[wx,wy+Math.cos(a)*.7,wz+Math.sin(a)*.7],.035,C.wood);m.box(wx,wy+Math.cos(a)*.7,wz+Math.sin(a)*.7,.36,.11,.17,C.wood);}
+  // Distributed ecology, stable entity seeds; never respawn the whole forest
+  // when a financial event changes only a local condition.
+  const tr=random(`${t.seed}:tree-sites`);
+  for(let i=0;i<195;i++){
+    const x=(tr()-.5)*26,z=(tr()-.5)*26,y=H(x,z),q=tr(),sc=.62+tr()*.65;
+    if(y<1.8||y>6.5||Math.abs(x-t.riverX(z))<1.25&&z>-7)continue;
+    if(Object.values(sites).some(v=>v.radius&&Math.hypot(x-v.x,z-v.z)<v.radius+1.0))continue;
+    if(Math.abs(y-H(x+.4,z))>.7)continue;
+    const affected=Math.hypot(x-h.x,z-h.z)<5.4||Math.hypot(x-bx,z-bz)<3;
+    const condition=affected?vegetation:1;
+    if(affected&&condition<.12&&q>.65){m.beam([x,y+.1,z],[x+.9,y+.12,z+.65],.1,C.wood);continue;}
+    tree(m,x,y,z,sc,random(`${t.seed}:tree:${i}`),condition,q>.57);
+  }
+  // Reserve backing gives roots, not a claim of guaranteed protection.
+  for(let i=0;i<7;i++){const a=2.2+i*.4,x=t.lake.x+Math.cos(a)*2,z=t.lake.z+Math.sin(a)*2,y=H(x,z);if(y>.7&&buffer>.3)m.beam([x,y+.05,z],[x-.18,y+.27,z+.22],.05,C.wood);}
+  // Boat is one source's arrival, not a second reward for a transfer.
+  const sx=h.x+1.8,sz=start+2.8,sy=.13;
+  m.cylinder(sx,sy,sz,.47,.15,C.wood,6,.6);
+  m.box(sx,sy+.15,sz,.52,.14,1.14,C.cream);
+  m.beam([sx,sy+.18,sz],[sx,sy+1.57,sz],.032,C.wood);
+  m.tri([sx+.02,sy+1.5,sz],[sx+.02,sy+.48,sz],[sx+.81,sy+.48,sz],C.white);
+  m.tri([sx-.04,sy+1.34,sz],[sx-.6,sy+.53,sz],[sx-.04,sy+.53,sz],C.roof);
+  if(arrival)for(let i=0;i<3;i++)m.box(h.x-.26+(i%2)*.45,deckY+.1,start+.2+Math.floor(i/2)*.42,.32,.32,.32,i===2?C.gold:C.cream);
+  // Small scenery: no financial category is inferred from these neutral rocks.
+  for(let i=0;i<48;i++){const x=(rng()-.5)*27,z=(rng()-.5)*27,y=H(x,z);if(y>.05&&y<1.4)m.sphere(x,y,z,.13+rng()*.22,C.rock,5,3,.6);}
+  if(s.repairSeam&&!quiet){
+    for(let i=0;i<10;i++){const z=t.scar.z-1.5+i*.27,x=t.scar.x+.32,y=H(x,z);if(y>.08){m.beam([x,y,z],[x+.08,y+.4,z],.018,[.51,.58,.28]);m.sphere(x+.07,y+.39,z,.055,C.gold,5,3);}}
+  }
+  const landmarks=[
+    {id:'home',name:'Home ground',tag:'HOME',x:sites.home.x,y:sites.home.y+2.8,z:sites.home.z,why:'Home activity gives this stable courtyard its identity. Its anchor is protected from the coastal damage demonstration.'},
+    {id:'food',name:'The kitchen garden',tag:'FOOD',x:food.x,y:food.y+1.9,z:food.z,why:`Food has ${life.counts.food} qualifying weeks in the trailing 24. Current maturity: ${['none','trace','cluster','established place','district'][foodLevel]}. Repeated purchases in one week cannot add extra credits.`},
+    {id:'goal',name:prog>=1?'The ready pavilion':'A place in the making',tag:'SAVING',x:g.x,y:g.y+2.6,z:g.z,why:`${Math.round(prog*100)}% backed in this synthetic example. Stakes → foundation → frame → shell → ready. Ready does not mean bought or experienced.`},
+    {id:'harbor',name:s.wood<50?'The weathered landing':s.repairSeam?'The repaired landing':'The arrival landing',tag:'INCOME',x:h.x,y:deckY+2.3,z:start+1,why:`Received income animates the existing source. Wood integrity is ${Math.round(s.wood)}%. Confirmed pressure wears this exposed infrastructure; income cadence and reserve use do not cause damage on their own.`},
+    {id:'water',name:'The reserve basin',tag:'PROTECT',x:t.lake.x,y:t.lake.y+1.8,z:t.lake.z,why:`${Math.round(buffer*100)}% synthetic buffer backing. Water height responds to actual backing. Using the buffer does not itself damage the island.`},
+    {id:'bridge',name:s.wood<70?'The old crossing':s.repairSeam?'A crossing, repaired':'The timber crossing',tag:'CONNECTION',x:bx,y:y+1.4,z:bz,why:`The same bridge survives as an identifiable site. Missing planks depend on accumulated wear and a reached damage gate. Repairs reuse the same site; app navigation is never blocked.`}
+  ];
+  return {mesh:m,landmarks,stats:{triangles:m.faces}};
+}
+
+
+// ---- renderer.js ----
+/** A small, original WebGL renderer. No CDN, runtime packages, textures or API. */
+const normalize=v=>{const l=Math.hypot(...v)||1;return v.map(x=>x/l);};
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const dot=(a,b)=>a.reduce((s,x,i)=>s+x*b[i],0);
+function multiply(a,b){const o=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)o[c*4+r]+=a[k*4+r]*b[c*4+k];return o;}
+function view(eye,target){const z=normalize(eye.map((v,i)=>v-target[i])),x=normalize(cross([0,1,0],z)),y=cross(z,x);return new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-dot(x,eye),-dot(y,eye),-dot(z,eye),1]);}
+function ortho(l,r,b,t,n,f){return new Float32Array([2/(r-l),0,0,0,0,2/(t-b),0,0,0,0,-2/(f-n),0,-(r+l)/(r-l),-(t+b)/(t-b),-(f+n)/(f-n),1]);}
+class WorldRenderer {
+  constructor(canvas,onFrame=()=>{}){
+    this.canvas=canvas;this.onFrame=onFrame;this.yaw=.38;this.pitch=.77;this.zoom=1;this.target=[0,1.2,0];this.pending=0;this.disposed=false;
+    this.gl=canvas.getContext('webgl',{antialias:true,alpha:false,preserveDrawingBuffer:true,powerPreference:'low-power'});
+    this.mode=this.gl?'webgl':'software';
+    if(!this.gl){this.ctx=canvas.getContext('2d');if(!this.ctx)throw new Error('No graphics context. The text inspector remains available.');}
+    if(this.gl){
+    const gl=this.gl;
+    const vs=`attribute vec3 p; attribute vec3 n; attribute vec3 c; uniform mat4 matrix; varying vec3 color; varying float depth;
+    void main(){vec3 sun=normalize(vec3(-0.55,1.0,0.4));float lit=.64+.35*max(dot(n,sun),0.0);color=c*lit;gl_Position=matrix*vec4(p,1.0);depth=gl_Position.z;}`;
+    const fs=`precision mediump float; varying vec3 color; varying float depth; void main(){gl_FragColor=vec4(color,1.0);}`;
+    const shader=(kind,text)=>{const sh=gl.createShader(kind);gl.shaderSource(sh,text);gl.compileShader(sh);if(!gl.getShaderParameter(sh,gl.COMPILE_STATUS))throw new Error(gl.getShaderInfoLog(sh));return sh;};
+    const v=shader(gl.VERTEX_SHADER,vs),f=shader(gl.FRAGMENT_SHADER,fs),program=gl.createProgram();gl.attachShader(program,v);gl.attachShader(program,f);gl.linkProgram(program);gl.deleteShader(v);gl.deleteShader(f);
+    if(!gl.getProgramParameter(program,gl.LINK_STATUS))throw new Error(gl.getProgramInfoLog(program));
+    this.program=program;this.buffer=gl.createBuffer();gl.useProgram(program);this.matrixUniform=gl.getUniformLocation(program,'matrix');
+    gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);
+    for(const [name,offset] of [['p',0],['n',12],['c',24]]){const at=gl.getAttribLocation(program,name);gl.enableVertexAttribArray(at);gl.vertexAttribPointer(at,3,gl.FLOAT,false,36,offset);}
+    gl.enable(gl.DEPTH_TEST);gl.clearColor(.72,.83,.80,1);
+    }
+    this.resizeObserver=new ResizeObserver(()=>this.requestDraw());this.resizeObserver.observe(canvas);
+    const pointers=new Map();let previousDistance=0,previousPoint=null;
+    canvas.addEventListener('pointerdown',e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);previousPoint=[e.clientX,e.clientY];this.dragged=false;});
+    canvas.addEventListener('pointermove',e=>{
+      if(!pointers.has(e.pointerId))return;
+      pointers.set(e.pointerId,[e.clientX,e.clientY]);
+      if(pointers.size===2){const a=[...pointers.values()],d=Math.hypot(a[0][0]-a[1][0],a[0][1]-a[1][1]);if(previousDistance)this.zoom=Math.min(2.7,Math.max(.65,this.zoom*d/previousDistance));previousDistance=d;this.dragged=true;}
+      else if(previousPoint){const dx=e.clientX-previousPoint[0],dy=e.clientY-previousPoint[1];this.yaw-=dx*.006;this.pitch=Math.max(.4,Math.min(1.25,this.pitch+dy*.004));if(Math.abs(dx)+Math.abs(dy)>1)this.dragged=true;}
+      previousPoint=[e.clientX,e.clientY];this.requestDraw();
+    });
+    const up=e=>{pointers.delete(e.pointerId);previousDistance=0;previousPoint=null;};
+    canvas.addEventListener('pointerup',up);canvas.addEventListener('pointercancel',up);
+    canvas.addEventListener('wheel',e=>{e.preventDefault();this.zoom=Math.min(2.7,Math.max(.65,this.zoom*Math.exp(-e.deltaY*.001)));this.requestDraw();},{passive:false});
+    canvas.addEventListener('keydown',e=>{if(e.key.startsWith('Arrow')){e.preventDefault();this.yaw+=(e.key==='ArrowLeft'?.12:e.key==='ArrowRight'?-.12:0);this.pitch=Math.max(.4,Math.min(1.25,this.pitch+(e.key==='ArrowUp'?.07:e.key==='ArrowDown'?-.07:0)));this.requestDraw();}});
+    document.addEventListener('visibilitychange',()=>{if(document.hidden&&this.pending){cancelAnimationFrame(this.pending);this.pending=0;}else if(!document.hidden)this.requestDraw();});
+    canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();this.lost=true;document.getElementById('render-error')?.removeAttribute('hidden');});
+    canvas.addEventListener('webglcontextrestored',()=>location.reload());
+  }
+  setMesh(data){
+    this.vertices=data.length/9;
+    if(this.gl){const gl=this.gl;gl.bindBuffer(gl.ARRAY_BUFFER,this.buffer);gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);}
+    else {
+      this.triangles=[];const sun=normalize([-.55,1,.4]);
+      for(let i=0;i<data.length;i+=27){
+        const vertices=[[data[i],data[i+1],data[i+2]],[data[i+9],data[i+10],data[i+11]],[data[i+18],data[i+19],data[i+20]]];
+        if(vertices.some(v=>Math.abs(v[0])>80||Math.abs(v[2])>80))continue; // ocean is the background
+        // Clip submerged triangles against sea level for the software renderer.
+        let clipped=[];
+        for(let j=0;j<3;j++){
+          const a=vertices[j],b=vertices[(j+1)%3],inside=a[1]>=.005,next=b[1]>=.005;
+          if(inside)clipped.push(a);
+          if(inside!==next){const t=(.005-a[1])/(b[1]-a[1]);clipped.push(a.map((v,k)=>v+(b[k]-v)*t));}
+        }
+        if(clipped.length<3)continue;
+        const light=.64+.35*Math.max(0,data[i+3]*sun[0]+data[i+4]*sun[1]+data[i+5]*sun[2]);
+        const color=`rgb(${[data[i+6],data[i+7],data[i+8]].map(v=>Math.round(Math.min(1,v*light)*255)).join(',')})`;
+        this.triangles.push({p:clipped,color});
+      }
+    }
+    this.requestDraw();
+  }
+  reset(){this.yaw=.38;this.pitch=.77;this.zoom=1;this.requestDraw();}
+  requestDraw(){if(!this.pending&&!document.hidden&&!this.disposed)this.pending=requestAnimationFrame(()=>{this.pending=0;this.draw();});}
+  draw(){
+    if(this.lost||this.disposed)return;const c=this.canvas,g=this.gl,r=c.getBoundingClientRect(),dpr=Math.min(devicePixelRatio||1,1.7),w=Math.round(r.width*dpr),h=Math.round(r.height*dpr);if(!w||!h)return;
+    if(c.width!==w||c.height!==h){c.width=w;c.height=h;}if(g)g.viewport(0,0,w,h);
+    const aspect=w/h,half=Math.max(12.2,16.8/aspect)/this.zoom,d=50;
+    const eye=[Math.sin(this.yaw)*Math.cos(this.pitch)*d,Math.sin(this.pitch)*d,Math.cos(this.yaw)*Math.cos(this.pitch)*d];
+    this.matrix=multiply(ortho(-half*aspect,half*aspect,-half,half,.1,160),view(eye,this.target));
+    if(g){g.clear(g.COLOR_BUFFER_BIT|g.DEPTH_BUFFER_BIT);g.useProgram(this.program);g.uniformMatrix4fv(this.matrixUniform,false,this.matrix);g.drawArrays(g.TRIANGLES,0,this.vertices||0);}
+    else this.drawSoftware(w,h);
+    this.onFrame();
+  }
+  drawSoftware(w,h){
+    const ctx=this.ctx,m=this.matrix,faces=[];
+    ctx.fillStyle='#acc9c1';ctx.fillRect(0,0,w,h);
+    for(const tri of this.triangles||[]){
+      const p=tri.p.map(v=>[(m[0]*v[0]+m[4]*v[1]+m[8]*v[2]+m[12]+1)*.5*w,(1-m[1]*v[0]-m[5]*v[1]-m[9]*v[2]-m[13])*.5*h,m[2]*v[0]+m[6]*v[1]+m[10]*v[2]+m[14]]);
+      faces.push({p,z:p.reduce((s,v)=>s+v[2],0)/p.length,color:tri.color});
+    }
+    faces.sort((a,b)=>b.z-a.z);
+    ctx.lineWidth=.65;
+    for(const face of faces){ctx.beginPath();face.p.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fillStyle=face.color;ctx.fill();ctx.strokeStyle=face.color;ctx.stroke();}
+  }
+  project(x,y,z){if(!this.matrix)return null;const m=this.matrix,v=[x,y,z,1],r=[0,0,0,0];for(let row=0;row<4;row++)for(let i=0;i<4;i++)r[row]+=m[i*4+row]*v[i];return{x:(r[0]/r[3]+1)*.5*this.canvas.clientWidth,y:(1-r[1]/r[3])*.5*this.canvas.clientHeight,visible:Math.abs(r[0]/r[3])<.97&&Math.abs(r[1]/r[3])<.97};}
+  zoomBy(f){this.zoom=Math.max(.65,Math.min(2.7,this.zoom*f));this.requestDraw();}
+  dispose(){this.disposed=true;cancelAnimationFrame(this.pending);this.resizeObserver.disconnect();if(this.gl){this.gl.deleteBuffer(this.buffer);this.gl.deleteProgram(this.program);}}
+}
+
+
+// ---- app.js ----
+const $=id=>document.getElementById(id);
+let options={seed:'mandevilla-01',profile:'hearth',day:0,gap:70000,resolveOn:29,unknownDays:[],correction:false,terrainOnly:false,quiet:false,labels:true,buffer:.82};
+let events=[],sequence=0,terrain,world,state,life,renderer,playTimer=null,toastTimer=null,pulses={arrival:false,delivery:false},buildMs=0;
+let selected='bridge';
+function toast(text){$('toast').textContent=text;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),4300);}
+function currentDate(){return dateAt(ORIGIN,options.day);}
+function getState(){return replayCoverage(storySnapshots(options.day,{uncoveredCents:options.gap,resolveOn:options.resolveOn,unknownDays:options.unknownDays,correction:options.correction}));}
+function placeLabels(){
+  if(!renderer||!world)return;
+  for(const node of $('labels-layer').children){const f=world.landmarks.find(f=>f.id===node.dataset.id);if(!f)continue;const p=renderer.project(f.x,f.y,f.z);if(!p)continue;node.style.left=`${p.x}px`;node.style.top=`${p.y}px`;node.hidden=!p.visible||!options.labels||options.terrainOnly;}
+}
+function updateInspector(){
+  let f=world?.landmarks.find(f=>f.id===selected);
+  if(!f&&options.terrainOnly)f={name:'The underlying geography',why:'Props are hidden. Compare coastline, hills, the basin, and the drainage channel. Changing a seed or history changes this geometry; replaying damage preserves the original seed and core sites.'};
+  $('feature-title').textContent=f?.name||'Select a feature';$('feature-why').textContent=f?.why||'';
+  for(const node of $('labels-layer').children)node.classList.toggle('selected',node.dataset.id===selected);
+  for(const k of ['plants','wood','stone']){$(`${k}-value`).textContent=`${Math.round(state[k])}%`;$(`${k}-bar`).style.width=`${state[k]}%`;}
+}
+const stageNames={healthy:'A world in balance',watching:'A shortfall, not yet damage',strained:'Pressure reaches the edges',damaged:'The landscape carries the strain',recovering:'The same world, finding its footing',renewed:'A repaired world, with a memory',unknown:'Waiting for confirmed records',paused:'Pressure eased. Change is paused.'};
+function updateUI(){
+  $('day').value=options.day;$('day-output').textContent=String(options.day).padStart(2,'0');
+  $('day-title').textContent=`Day ${options.day} · ${stageNames[state.status]}`;
+  $('status-name').textContent=stageNames[state.status];
+  let text='No current uncovered obligations. Spending gives places identity; income is not a beauty score.';
+  if(state.status==='watching')text='The example has a confirmed gap. Physical wear requires three consecutive eligible strain days.';
+  if(['strained','damaged'].includes(state.status))text=`${state.strainDays} confirmed strain days · stage ${state.stage}. Local plants, timber and coast change; the home anchor stays protected.`;
+  if(['recovering','renewed'].includes(state.status))text=`${state.clearDays} clear days. Further damage stops immediately. Plants recover first, then timber and stone.`;
+  if(state.status==='unknown')text='No eligible damage or repair days accrue. Existing wear is preserved; uncertainty is not financial failure.';
+  if(state.status==='paused')text='Below the entry gate but not fully cleared. No further wear or recovery is assumed.';
+  $('status-copy').textContent=text;
+  $('status-dot').style.background=['damaged','strained'].includes(state.status)?'#b07947':state.status==='unknown'?'#8a9187':'#668957';
+  $('day-caption').textContent=options.correction?'Corrected replay: unsupported damage and its false scars are removed.':options.resolveOn!==29?`Synthetic shortfall clears on day ${options.resolveOn}. Current evidence through ${currentDate()}.`:'Synthetic shortfall: day 1–28. Resolution: day 29. Repairs begin: day 30.';
+  document.querySelectorAll('.step').forEach(n=>{const d=+n.dataset.day;const active=d===0?options.day<3:d===7?options.day>=3&&options.day<14:d===28?options.day>=14&&options.day<29:options.day>=29;n.classList.toggle('active',active);n.setAttribute('aria-pressed',String(active));});
+  $('save').disabled=life.goalBacking>=1;$('buffer').disabled=options.buffer<=0;
+  $('day-next').disabled=options.day>=56;$('week-next').disabled=options.day>=56;
+  $('scene-subtitle').textContent=PROFILES[options.profile].subtitle+' · '+(options.terrainOnly?'geography without props':'same places, evolving history');
+  $('mesh-stats').textContent=`${Math.round(world.mesh.faces/1000)}K TRIANGLES · ${renderer?.mode==='software'?'SOFTWARE 3D':'GENERATED HERE'}`;
+  updateInspector();
+}
+function rebuild(regenerate=false){
+  const start=performance.now();
+  if(regenerate||!terrain)terrain=createTerrain(options.seed,options.profile);
+  state=getState();life=projectLife([...fixtureEvents(options.profile),...events],currentDate());
+  world=buildWorld(terrain,state,life,{terrainOnly:options.terrainOnly,quiet:options.quiet,buffer:options.buffer,...pulses});
+  $('labels-layer').replaceChildren();
+  for(const f of world.landmarks){
+    // Four default labels keep the view readable; the inspector exposes all six.
+    if(!['food','goal','water','bridge'].includes(f.id)&&f.id!==selected)continue;
+    const b=document.createElement('button');b.className='landmark';b.dataset.id=f.id;b.textContent=f.name;b.title=`Inspect ${f.name}`;
+    b.addEventListener('click',()=>{selected=f.id;$('feature').value=selected;updateInspector();});$('labels-layer').append(b);
+  }
+  renderer?.setMesh(world.mesh.data);updateUI();buildMs=performance.now()-start;
+  window.__OUR_PATH_LAB__={options:()=>structuredClone(options),state:()=>structuredClone(state),life:()=>structuredClone(life),terrain:()=>terrain,stats:()=>({triangles:world.mesh.faces,buildMs}),setDay:d=>setDay(d),setProfile:p=>{options.profile=p;$('profile').value=p;rebuild(true);}};
+}
+function stop(){clearInterval(playTimer);playTimer=null;$('play').textContent='▷ Play story';}
+function setDay(d,fromPlay=false){
+  if(!fromPlay)stop();d=Math.max(0,Math.min(56,Math.floor(d)));
+  if(d>options.day&&$('unknown').checked)for(let i=options.day+1;i<=d;i++)if(!options.unknownDays.includes(i))options.unknownDays.push(i);
+  options.day=d;pulses={arrival:false,delivery:false};rebuild();
+}
+function event(kind,extra={}){const id=`demo-event-${++sequence}`;events.push({id,episodeId:id,date:currentDate(),scope:'household-demo',accepted:true,kind,...extra});}
+try{renderer=new WorldRenderer($('world'),placeLabels);}catch(e){$('render-error').hidden=false;console.warn(e.message);}
+$('day').addEventListener('input',e=>setDay(+e.target.value));
+document.querySelectorAll('[data-day]').forEach(n=>n.addEventListener('click',()=>setDay(+n.dataset.day)));
+$('day-next').onclick=()=>setDay(options.day+1);$('week-next').onclick=()=>setDay(options.day+7);
+$('play').onclick=()=>{if(playTimer){stop();return;}if(options.day>=56)setDay(0);$('play').textContent='Ⅱ Pause story';playTimer=setInterval(()=>{if(document.hidden){stop();return;}if(options.day>=56){stop();return;}setDay(options.day+1,true);},1100);};
+$('income').onclick=()=>{event('income_received');pulses.arrival=true;rebuild();toast('An accepted receipt brings cargo to the same landing. The coverage lab remains a separate mocked input.');};
+$('groceries').onclick=()=>{const before=life.counts.food;event('expense',{umbrella:'food'});pulses.delivery=true;rebuild();toast(life.counts.food>before?'Food gains this week’s credit. A delivery arrives at the kitchen garden.':'The delivery is visible; this week already has a Food credit. Extra purchases do not multiply growth.');};
+$('save').onclick=()=>{event('goal_backed',{progress:Math.min(1,life.goalBacking+.25)});rebuild();toast(life.goalBacking===1?'The pavilion is ready. Fully backed is not the same as bought or experienced.':`${Math.round(life.goalBacking*100)}% backed. The same pavilion gains its next construction stage.`);};
+$('buffer').onclick=()=>{options.buffer=Math.max(0,options.buffer-.25);rebuild();toast('Reserve water drops. Using a buffer is not a damage event; current uncovered obligations decide strain.');};
+$('transfer').onclick=()=>{event('transfer');rebuild();toast('Internal transfer: no new earnings, no extra growth credit, and no damage.');};
+$('gap').onchange=e=>{options.gap=+e.target.value;options.correction=false;rebuild();toast('Replayed with a different synthetic shortfall. This control changes the whole test scenario.');};
+$('resolve').onclick=()=>{options.resolveOn=options.day;options.correction=false;rebuild();toast('The mocked gap is resolved from this day onward. Past real damage remains; repairs start after two clear days.');};
+$('correct').onclick=()=>{options.correction=true;rebuild();toast('Replayed as an accounting error: unsupported damage is removed, with no invented recovery scar.');};
+$('unknown').onchange=()=>toast($('unknown').checked?'Advance the timeline: future days now lack confirmed evidence. Wear and repair will freeze.':'New future days can be confirmed again. Earlier unknown days are not silently backfilled.');
+$('profile').onchange=e=>{stop();options.profile=e.target.value;events=[];sequence=0;rebuild(true);};
+$('seed').onchange=e=>{options.seed=e.target.value.trim()||'mandevilla-01';e.target.value=options.seed;rebuild(true);};
+let seedCounter=1;
+$('new-seed').onclick=()=>{options.seed=`island-${String(++seedCounter).padStart(3,'0')}`;$('seed').value=options.seed;rebuild(true);};
+$('terrain-only').onclick=()=>{options.terrainOnly=!options.terrainOnly;$('terrain-only').setAttribute('aria-pressed',options.terrainOnly);rebuild();};
+$('quiet').onclick=()=>{options.quiet=!options.quiet;$('quiet').setAttribute('aria-pressed',options.quiet);rebuild();toast('Calm view changes the presentation, not the underlying condition or financial evidence.');};
+$('labels').onclick=()=>{options.labels=!options.labels;$('labels').setAttribute('aria-pressed',options.labels);placeLabels();};
+$('feature').onchange=e=>{selected=e.target.value;rebuild();};
+$('zoom-in').onclick=()=>renderer?.zoomBy(1.17);$('zoom-out').onclick=()=>renderer?.zoomBy(1/1.17);$('camera-reset').onclick=()=>renderer?.reset();
+$('reset').onclick=()=>{stop();options={seed:'mandevilla-01',profile:'hearth',day:0,gap:70000,resolveOn:29,unknownDays:[],correction:false,terrainOnly:false,quiet:false,labels:true,buffer:.82};events=[];sequence=0;pulses={arrival:false,delivery:false};$('profile').value='hearth';$('seed').value=options.seed;$('gap').value='70000';$('unknown').checked=false;for(const id of ['terrain-only','quiet'])$(id).setAttribute('aria-pressed','false');$('labels').setAttribute('aria-pressed','true');renderer?.reset();rebuild(true);};
+$('about').onclick=()=>$('about-dialog').showModal();$('close-dialog').onclick=()=>$('about-dialog').close();
+$('export').onclick=()=>{
+  const manifest={format:'hearth-our-path-lab-scene',rulesVersion:RULES_VERSION,synthetic:true,seed:options.seed,profile:options.profile,day:options.day,condition:{status:state.status,stage:state.stage,plants:state.plants,wood:state.wood,stone:state.stone,erosion:state.erosion,repairSeam:state.repairSeam},life,anchors:terrain.sites,notes:'Derived synthetic scene only. No accounting authority. Not a save-game import format.'};
+  const blob=new Blob([JSON.stringify(manifest,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`our-path-scene-day-${options.day}.json`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);toast('Exported the synthetic scene manifest. No account balances or private records are included.');
+};
+rebuild(true);
+
+})();</script>
+</body></html>
