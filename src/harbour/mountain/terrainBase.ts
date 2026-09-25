@@ -5,7 +5,7 @@
  */
 import {macroHeight,terraceWeight,channelProfile,nearestRiver,bowlHeight,smin} from './natural.ts';
 import {TERRACES,RESERVOIR_BOWL,GORGE_POINTS} from './places.ts';
-import {ROAD_CENTRE,ORCHARD_LANE_CENTRE,BRIDGE_TAGS,roadTagS,laneTagS} from './roadLine.ts';
+import {ROAD_CENTRE,BRIDGE_TAGS,roadTagS,laneTagS} from './roadLine.ts';
 import {mix,type Point3} from './math.ts';
 import {islandHeight} from './islandShape.ts';
 
@@ -54,7 +54,7 @@ function bakeBase():HeightGrid{
     for(let dz=-R;dz<=R;dz++){const row=cz+dz;if(row<0||row>=rows)continue;
       for(let dx=-R;dx<=R;dx++){const col=cx+dx;if(col<0||col>=cols)continue;
         const x=g.minX+col,z=g.minZ+row,w=bump(Math.hypot(x-p[0],z-p[2])/R);if(w<=0)continue;
-        const i=row*cols+col;sumW[i]+=w;sumY[i]+=w*p[1];
+        const i=row*cols+col;sumW[i]!+=w;sumY[i]!+=w*p[1];
       }
     }
   }

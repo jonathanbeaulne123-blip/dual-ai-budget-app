@@ -15,9 +15,9 @@ import type {Point3} from './math.ts';
 type P2=readonly[number,number];
 const TOWN_RIVER=RIVER.filter(p=>p[2]>-40);
 function crossing(a:P2,b:P2,c:readonly[number,number,number],d:readonly[number,number,number]):P2|null{
-  const r=[b[0]-a[0],b[1]-a[1]],s=[d[0]-c[0],d[2]-c[2]],den=r[0]*s[1]-r[1]*s[0];if(Math.abs(den)<1e-9)return null;
-  const t=((c[0]-a[0])*s[1]-(c[2]-a[1])*s[0])/den,u=((c[0]-a[0])*r[1]-(c[2]-a[1])*r[0])/den;
-  return t>=0&&t<=1&&u>=0&&u<=1?[a[0]+r[0]*t,a[1]+r[1]*t]:null;
+  const r=[b[0]-a[0],b[1]-a[1]],s=[d[0]-c[0],d[2]-c[2]],den=r[0]!*s[1]!-r[1]!*s[0]!;if(Math.abs(den)<1e-9)return null;
+  const t=((c[0]-a[0])*s[1]!-(c[2]-a[1])*s[0]!)/den,u=((c[0]-a[0])*r[1]!-(c[2]-a[1])*r[0]!)/den;
+  return t>=0&&t<=1&&u>=0&&u<=1?[a[0]+r[0]!*t,a[1]+r[1]!*t]:null;
 }
 const faceSquare=(x:number,z:number)=>Math.atan2(-x,-z);
 /** Channel crossings: every village lane that meets the town channel crosses it on a culvert. */

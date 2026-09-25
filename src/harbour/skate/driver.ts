@@ -343,7 +343,7 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
     },
     deck(id:SkateDeckId){chooseSkateDeck(session,id);},
     settings(patch:Partial<SkateSettings>){setSkateSettings(session,patch);applySettings();},
-    command(c:'respawn'|'marker'){
+    command(c:'respawn'|'marker'|'retry'){
       if(!sim)return;
       if((c==='retry'||c==='respawn')&&retryRace())return;
       if(c==='respawn'||c==='retry'){replayTime=null;sim.toMarker();const outs=score?.drop('respawn')??[];note(outs);session.run=null;input?.reset();cut=true;}

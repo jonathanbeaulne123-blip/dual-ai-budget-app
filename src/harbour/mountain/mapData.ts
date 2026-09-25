@@ -23,7 +23,7 @@ function contours(levels:readonly number[],step=4):{level:number;lines:[number,n
     const segs:[[number,number],[number,number]][]=[];
     for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){
       const v=[at(c,r),at(c+1,r),at(c+1,r+1),at(c,r+1)],x0=minX+c*step,z0=minZ+r*step;
-      const e=(i:number):[number,number]=>{const a=[[0,0],[1,0],[1,1],[0,1]][i]!,b=[[1,0],[1,1],[0,1],[0,0]][i]!,va=v[i]!,vb=v[(i+1)%4]!,t=(level-va)/((vb-va)||1e-9);return [x0+(a[0]+(b[0]-a[0])*t)*step,z0+(a[1]+(b[1]-a[1])*t)*step];};
+      const e=(i:number):[number,number]=>{const a=[[0,0],[1,0],[1,1],[0,1]][i]!,b=[[1,0],[1,1],[0,1],[0,0]][i]!,va=v[i]!,vb=v[(i+1)%4]!,t=(level-va)/((vb-va)||1e-9);return [x0+(a[0]!+(b[0]!-a[0]!)*t)*step,z0+(a[1]!+(b[1]!-a[1]!)*t)*step];};
       const idx=(v[0]!>level?1:0)|(v[1]!>level?2:0)|(v[2]!>level?4:0)|(v[3]!>level?8:0);
       const table:Record<number,[number,number][]>={1:[[3,0]],2:[[0,1]],3:[[3,1]],4:[[1,2]],5:[[3,0],[1,2]],6:[[0,2]],7:[[3,2]],8:[[2,3]],9:[[0,2]],10:[[0,1],[2,3]],11:[[1,2]],12:[[1,3]],13:[[0,1]],14:[[3,0]]};
       for(const [a,b] of table[idx]??[])segs.push([e(a),e(b)]);

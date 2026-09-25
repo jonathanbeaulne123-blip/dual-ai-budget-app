@@ -290,7 +290,7 @@ describe('race: run-out, retry, HUD and finish',()=>{
     expect(hud.run!.label).toMatch(new RegExp(`Gates 0/${course.length-1}`));
     expect(hud.spot).toBeNull();expect(hud.spotCard).toBeNull();
     // Outside a race the park's own counters are back.
-    driver.route(null);expect(buildHudModel({present:driver.present(),session:{...driver.checkpoint()!.session,run:null},paused:false,inputDevice:'keyboard'} as Parameters<typeof buildHudModel>[0]).run).toBeNull();
+    driver.route(null);expect(buildHudModel({present:driver.present(),line:null,outcome:null,session:{...driver.checkpoint()!.session,run:null},paused:false,inputDevice:'keyboard'} as Parameters<typeof buildHudModel>[0]).run).toBeNull();
   });
 });
 

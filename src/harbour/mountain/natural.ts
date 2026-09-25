@@ -6,7 +6,7 @@
  *
  * Evaluated once per grid node when `terrain.ts` bakes the heightfield; never per frame.
  */
-import {GORGE_POINTS,RESERVOIR_BOWL,TERRACES,RIVER_BED_DEPTH,type Terrace} from './places.ts';
+import {GORGE_POINTS,RESERVOIR_BOWL,RIVER_BED_DEPTH,type Terrace} from './places.ts';
 import {clamp,smooth,mix} from './math.ts';
 
 /** Crest line points: [x, z, crest height, crest rounding radius]. */

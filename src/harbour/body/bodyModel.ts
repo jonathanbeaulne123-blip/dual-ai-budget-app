@@ -1,4 +1,4 @@
-import {HARD_EDGES,OVERHEAD_MIN,edgeKindAt,isStairSurface,overheadAt,safeReturnPoint,supportAt,type EdgeKind} from './geography.ts';
+import {HARD_EDGES,edgeKindAt,isStairSurface,overheadAt,safeReturnPoint,supportAt,type EdgeKind} from './geography.ts';
 /**
  * Little Harbour · how a body moves over the island.
  *

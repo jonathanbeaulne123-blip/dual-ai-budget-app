@@ -62,7 +62,7 @@ describe('the landform',()=>{
   expect(maxX-minX).toBeGreaterThan(300);expect(maxX-minX).toBeLessThan(400);
   // The summit crown is inside the walkable bounds and rounded, not sheared by an edge fade.
   const s=DISTRICTS.find(d=>d.id==='summit')!;
-  for(const [dx,dz] of [[0,-14],[14,0],[-14,0]])expect(Math.abs(groundHeightAt(s.at[0]+dx,s.at[2]+dz)-s.at[1])).toBeLessThan(6);
+  for(const [dx,dz] of [[0,-14],[14,0],[-14,0]] as const)expect(Math.abs(groundHeightAt(s.at[0]+dx,s.at[2]+dz)-s.at[1])).toBeLessThan(6);
   expect(groundHeightAt(s.at[0],s.at[2]-40)).toBeGreaterThan(40);
  });
  it('never shows the sea inland: ground near every road, path and district stands above water',()=>{
