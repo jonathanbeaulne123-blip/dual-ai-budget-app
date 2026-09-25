@@ -67,12 +67,13 @@ describe("the one bar over the harbour", () => {
     expect(log).toEqual(["visit:cellar:true", "view", "journey", "sheet"]);
   });
 
-  it("reaches the four money verbs in two presses from the bar's +", async () => {
+  it("reaches the Record verbs in two presses from the bar's Record", async () => {
     const log: string[] = [];
     await act(async () => root.render(hud({ fab: fab(log) })));
     await act(async () => host.querySelector<HTMLButtonElement>('nav[aria-label="Harbour bar"] button.fab')!.click());
-    const verbs = [...host.querySelectorAll<HTMLButtonElement>("[data-fab-action]")].map((b) => b.textContent);
-    expect(verbs).toEqual(["Record an expense", "Add income", "Move money", "Add a shift"]);
+    const verbs = [...host.querySelectorAll<HTMLButtonElement>("[data-fab-action] .record-dial__label")].map((b) => b.textContent);
+    // Bill paid joins once the App wires `onBillPaid` through the bar (Tool Atlas integrator).
+    expect(verbs).toEqual(["Purchase", "Shift", "Income", "Move money"]);
     await act(async () => host.querySelector<HTMLButtonElement>('[data-fab-action="income"]')!.click());
     expect(log).toEqual(["open:true", "open:false", "pick:income"]);
   });
