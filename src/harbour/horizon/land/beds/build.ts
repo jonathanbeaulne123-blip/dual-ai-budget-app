@@ -123,7 +123,7 @@ function cables(cuts:LandCuts,base:HeightQuery):void {
 }
 function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
   const positions:XY[]=[];
-  const make=(id:string,p:XY,h?:number)=>{const height=h??heightOnBeds(cuts,p,base,40),pad=addFlatPad(cuts,id,'threshold',p,height,[6,5]);positions.push(p);const marker=solid(`${id}.marker`,'threshold','stone','marker',[],districtAt(...p));box(marker,p,height+.025,[2,.6],height-.05);cuts.solids.push(marker);pad.margin=1;};
+  const make=(id:string,p:XY,h?:number)=>{const height=h??heightOnBeds(cuts,p,base,40),pad=addFlatPad(cuts,id,'threshold',p,height,[6,5],0,['threshold.deepJetty','threshold.stepsFoot'].includes(id));positions.push(p);const marker=solid(`${id}.marker`,'threshold','stone','marker',[],districtAt(...p));box(marker,p,height+.025,[2,.6],height-.05);cuts.solids.push(marker);pad.margin=1;};
   for(const row of M.thresholds){
     if(typeof row.xy==='string'){Object.entries(M.water_routes.FERRY.piers).forEach(([id,p])=>make(`threshold.${row.id}.${id}`,p as unknown as XY,1));continue;}
     if(Array.isArray(row.xy[0]!))(row.xy as number[][]).forEach((p,i)=>make(`threshold.${row.id}.${i+1}`,p as unknown as XY));

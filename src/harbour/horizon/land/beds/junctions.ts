@@ -77,7 +77,8 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
       if(!a&&!b)continue; // A confluence is one water surface, never a dry threshold pad.
       const height=(heightA+heightB)/2,width=Math.max(6,a?.width??0,b?.width??0)+2;
       let pad=cuts.pads.find(p=>p.kind==='threshold'&&distance(plan(p.centre),row.at)<3&&Math.abs(p.centre[1]-height)<.5);
-      if(!pad)pad=addFlatPad(cuts,`crossing.${row.id}`,'threshold',row.at,height,[width,width]);
+      const underground=height<base(...row.at)-3&&[a,b].some(b=>b&&['cave','rail'].includes(b.kind));
+      if(!pad)pad=addFlatPad(cuts,`crossing.${row.id}`,'threshold',row.at,height,[width,width],0,underground);else if(underground)pad.underground=true;
       const markerId=`${pad.id}.marker`;if(!cuts.solids.some(s=>s.id===markerId)){
         const marker=solid(markerId,'threshold','stone','marker',[row.a,row.b],districtAt(...row.at));box(marker,row.at,height+.025,[2,.6],height-.05);cuts.solids.push(marker);
       }

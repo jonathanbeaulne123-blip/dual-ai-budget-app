@@ -3,6 +3,7 @@ import { buildLandCuts } from '../src/harbour/horizon/land/beds/build';
 import { baseHeight } from '../src/harbour/horizon/land/terrain';
 import { bounds, box, slab, solid } from '../src/harbour/horizon/land/structures/mesh';
 import { SPANS } from '../src/harbour/horizon/land/structures/build';
+import { settleFoundations } from '../src/harbour/horizon/land/structures/foundations';
 import { BufferGeometry, Float32BufferAttribute, Mesh, MeshBasicMaterial, Raycaster, Vector3 } from 'three';
 
 describe('Horizon structural solids',()=>{
@@ -19,4 +20,8 @@ describe('Horizon structural solids',()=>{
     const deck=bounds(cuts.solids.find(s=>s.id==='highSpan.deck')!);expect(deck.max[1]).toBe(24);expect(deck.min[1]).toBeGreaterThan(23);
     expect(bounds(cuts.solids.find(s=>s.id==='highSpan.shelf.deck')!).max[1]).toBe(12);expect(bounds(cuts.solids.find(s=>s.id==='highSpan.walk.deck')!).max[1]).toBe(9);
   },60000);
+  it('extends lowest footings after a lower terrain cut without moving fixed decks',()=>{
+    const cuts=buildLandCuts(baseHeight),deck=cuts.solids.find(s=>s.id==='highSpan.deck')!,before=[...deck.positions],settled=settleFoundations(cuts,()=>-20);
+    expect(settled.some(p=>p.id==='highSpan.supports')).toBe(true);expect(settled.every(p=>p.settledFoot<=-20.25&&p.extension>0)).toBe(true);expect(deck.positions).toEqual(before);expect(bounds(cuts.solids.find(s=>s.id==='highSpan.supports')!).min[1]).toBe(-20.25);
+  });
 });

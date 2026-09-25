@@ -28,3 +28,9 @@ it('does not put a dry threshold slab into an unresolved rail and water intersec
   resolveComputedCrossings(cuts,[{id:'wetRail',a:'ORE',b:'DEEP_RUN',at:[0,0],heightA:40,heightB:40,resolution:'threshold',requiredClearance:.5}],()=>80);
   expect(cuts.pads).toHaveLength(0);expect(cuts.solids).toHaveLength(0);expect(cuts.diagnostics.some(d=>d.id==='junction.wetRail'&&d.severity==='conflict')).toBe(true);
 });
+
+it('keeps internal cave junctions out of the surface terrain cut',()=>{
+  const cuts:LandCuts={beds:[bed('underground.west','cave',[[-10,42,0],[10,42,0]],false),bed('underground.north','cave',[[0,42,-10],[0,42,10]],false)],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
+  resolveComputedCrossings(cuts,[{id:'roomJoin',a:'underground.west',b:'underground.north',at:[0,0],heightA:42,heightB:42,resolution:'threshold',requiredClearance:.5}],()=>120);
+  expect(cuts.pads.find(p=>p.id==='crossing.roomJoin')?.underground).toBe(true);
+});
