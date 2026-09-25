@@ -5,6 +5,32 @@ import { ellipse, pointInPolygon, solidBounds } from './geometry.ts';
 
 /** Authored district hearts define a Voronoi partition; these are streaming bounds, never terrain discs. */
 const hearts: Record<string, Point2> = { harbour: [1470, 1170], landing: [1060, 1410], reach: [1280, 1260], green: [1030, 1060], hollow: [985, 580], scholars: [765, 400], flats: [420, 685], bight: [745, 995], lakeside: [1130, 820], notch: [1205, 1070], prow: [1600, 780], crown: [1310, 470] };
+/** Exact coincident faces within a solid are internal. No silhouette, support or rail is approximated. */
+export function removeInternalFaces(source: StructureSolid): StructureSolid {
+  const removed = new Set<number>(), faces = new Map<string, { offsets: number[]; normal: number[] }>();
+  const point = (i: number) => source.positions.slice(i * 3, i * 3 + 3), key = (i: number) => point(i).join(',');
+  const cross = (a: number[], b: number[]) => [a[1]! * b[2]! - a[2]! * b[1]!, a[2]! * b[0]! - a[0]! * b[2]!, a[0]! * b[1]! - a[1]! * b[0]!];
+  const sub = (a: number[], b: number[]) => a.map((v, k) => v - b[k]!);
+  for (let i = 0; i < source.indices.length;) {
+    const ids = source.indices.slice(i, i + 3), p = ids.map(point), normal = cross(sub(p[1]!, p[0]!), sub(p[2]!, p[0]!)); let count = 3, vertexKeys = new Set(ids.map(key));
+    if (i + 5 < source.indices.length) {
+      const next = source.indices.slice(i + 3, i + 6), candidate = new Set([...vertexKeys, ...next.map(key)]), q = next.map(point), nextNormal = cross(sub(q[1]!, q[0]!), sub(q[2]!, q[0]!));
+      const samePlane = q.every(v => Math.abs(sub(v, p[0]!).reduce((sum, value, k) => sum + value * normal[k]!, 0)) <= 1e-10);
+      if (candidate.size === 4 && samePlane && normal.reduce((sum, v, k) => sum + v * nextNormal[k]!, 0) > 0) { count = 6; vertexKeys = candidate; }
+    }
+    const faceKey = [...vertexKeys].sort().join('|'), previous = faces.get(faceKey), offsets = Array.from({ length: count }, (_, k) => i + k);
+    if (previous) {
+      const opposite = normal.reduce((sum, v, k) => sum + v * previous.normal[k]!, 0) < 0;
+      for (const offset of offsets) removed.add(offset);
+      if (opposite) for (const offset of previous.offsets) removed.add(offset);
+    } else faces.set(faceKey, { offsets, normal });
+    i += count;
+  }
+  if (!removed.size) return source;
+  const positions: number[] = [], indices: number[] = [], remap = new Map<number, number>();
+  source.indices.forEach((old, i) => { if (removed.has(i)) return; let n = remap.get(old); if (n === undefined) { n = positions.length / 3; remap.set(old, n); positions.push(...point(old)); } indices.push(n); });
+  return { ...source, positions, indices };
+}
 function clip(poly: Point2[], nx: number, nz: number, limit: number): Point2[] {
   const out: Point2[] = [];
   for (let i = 0; i < poly.length; i++) { const a = poly[i]!, b = poly[(i + 1) % poly.length]!, da = a[0] * nx + a[1] * nz - limit, db = b[0] * nx + b[1] * nz - limit; if (da <= 0) out.push(a); if ((da <= 0) !== (db <= 0)) { const t = da / (da - db); out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); } }
@@ -18,9 +44,10 @@ export function districtAt(x: number, z: number, scale = requireScaleFactor()): 
 /** Partition indexed triangles once offline; one long road cannot force its whole island mesh resident. */
 export function partitionWorldSolids(solids: readonly StructureSolid[]): (StructureSolid & { sourceId: string })[] {
   const output: (StructureSolid & { sourceId: string })[] = [];
-  for (const source of solids) {
+  for (const original of solids) {
+    const source = removeInternalFaces(original);
     const chunks = new Map<string, { solid: StructureSolid & { sourceId: string }; vertices: Map<number, number> }>();
-    const fixed = source.districtId === 'undercroft' || /^(underground\.|oreTunnel\.|oreSiding\.|seaPassage\.|deep\.skylight\.)/.test(source.id) ? 'undercroft' : /^(offshore\.|lamp\.|needle\.|stacks\.|wreck\.|sandbar\.)/.test(source.id) ? 'offshore' : null;
+    const fixed = source.districtId === 'undercroft' || /^(underground\.|oreTunnel\.|oreSiding\.|ORE\.|seaPassage\.|stepsPortage\.|jetty\.deep\.|deep\.skylight\.)/.test(source.id) ? 'undercroft' : /^(offshore\.|lamp\.|lampGallery\.|jetty\.lamp\.|threshold\.lampGallery\.|threshold\.lampDock\.|needle\.|stacks\.|wreck\.|sandbar\.)/.test(source.id) ? 'offshore' : null;
     for (let i = 0; i < source.indices.length; i += 3) {
       const indices = [source.indices[i]!, source.indices[i + 1]!, source.indices[i + 2]!], x = indices.reduce((sum, id) => sum + source.positions[id * 3]!, 0) / 3, z = indices.reduce((sum, id) => sum + source.positions[id * 3 + 2]!, 0) / 3, id = fixed ?? districtAt(x, z);
       let chunk = chunks.get(id);
@@ -42,8 +69,9 @@ export function buildDistricts(field: TerrainField, beds: readonly BedCut[], sol
   });
   const byId = new Map(districts.map(d => [d.id, d]));
   const u = m.underground.footprint, outline = ellipse(u.cx * s, u.cy * s, u.rx * s, u.ry * s);
-  byId.get('crown')!.children = [{ id: 'undercroft', neighbourhood: 'crown', childOf: 'crown', outline, bounds: { id: 'undercroft', neighbourhood: 'crown', childOf: 'crown', outline, min: [1090 * s, 0, 280 * s], max: [1720 * s, 140 * s, 800 * s] }, solidIds: [], bedIds: [] }];
-  for (const solid of solids) { const b = solidBounds(solid), owner = solid.districtId === 'undercroft' ? 'crown' : solid.districtId; const d = byId.get(owner) ?? byId.get(districtAt((b.min[0] + b.max[0]) / 2, (b.min[2] + b.max[2]) / 2))!; d.solidIds!.push(solid.id); d.triangles!.full += solid.indices.length / 3; d.triangles!.lite += solid.indices.length / 3; d.drawCalls!++; if (solid.districtId === 'undercroft') d.children![0]!.solidIds!.push(solid.id); }
+  const underground: District = { id: 'undercroft', neighbourhood: 'crown', childOf: 'crown', outline, bounds: { id: 'undercroft', neighbourhood: 'crown', childOf: 'crown', outline, min: [1090 * s, 0, 280 * s], max: [1720 * s, 140 * s, 800 * s] }, solidIds: [], bedIds: [], triangles: { full: 0, lite: 0 }, drawCalls: 0 };
+  byId.get('crown')!.children = [underground];
+  for (const solid of solids) { const b = solidBounds(solid), d = solid.districtId === 'undercroft' ? underground : byId.get(solid.districtId) ?? byId.get(districtAt((b.min[0] + b.max[0]) / 2, (b.min[2] + b.max[2]) / 2))!; d.solidIds!.push(solid.id); d.triangles!.full += solid.indices.length / 3; d.triangles!.lite += solid.indices.length / 3; d.drawCalls!++; }
   for (const bed of beds) { const ids = new Set(bed.points.map(p => districtAt(p[0], p[2]))); for (const id of ids) byId.get(id)!.bedIds!.push(bed.id); if (bed.kind === 'cave' || bed.kind === 'rail') byId.get('crown')!.children![0]!.bedIds!.push(bed.id); }
   // These counts correspond to terrain tiles at the world's full/lite sample spacing.
   for (const [tier, stride] of [['full', 1], ['lite', Math.max(1, Math.round(10 * s / field.step))]] as const) {
@@ -57,7 +85,7 @@ export function buildDistricts(field: TerrainField, beds: readonly BedCut[], sol
 }
 
 export type DistrictResource = { dispose(): void };
-export type StreamPosition = { x: number; z: number; now: number; mode?: 'walk' | 'look'; radius?: number };
+export type StreamPosition = { x: number; z: number; now: number; mode?: 'walk' | 'look'; radius?: number; underground?: boolean };
 /** Same delayed-release / one-build-per-frame algorithm as Mountain v2, with a hard residency cap. */
 export function createDistrictStream<T extends DistrictResource>(world: Pick<WorldDefinition, 'districts'>, build: (district: District) => T, tier: 'full' | 'lite' = 'full') {
   const live = new Map<string, T>(), outsideSince = new Map<string, number>(), cap = tier === 'full' ? 4 : 3;
@@ -69,9 +97,11 @@ export function createDistrictStream<T extends DistrictResource>(world: Pick<Wor
     update(input: StreamPosition): boolean {
       if (disposed) return false;
       const desired = world.districts.filter(d => d.id !== 'offshore').map(d => ({ d, distance: distance(d, input.x, input.z) })).sort((a, b) => a.distance - b.distance || a.d.id.localeCompare(b.d.id)).filter((d, i) => i === 0 || d.distance <= (input.radius ?? (tier === 'full' ? 220 : 150))).slice(0, cap).map(d => d.d);
+      if (input.underground) { const child = world.districts.find(d => d.id === 'crown')?.children?.find(d => d.id === 'undercroft'); if (child) { if (desired.length === cap) desired.pop(); desired.unshift(child); } }
       // Offshore rocks may become a normal resident; permanent horizon cards belong to the sky ring.
       const offshore = world.districts.find(d => d.id === 'offshore');
-      if (offshore && (input.x < 300 || input.x > 1720 || input.z > 1530)) { if (desired.length === cap) desired.pop(); desired.unshift(offshore); }
+      const nearOffshore = HORIZON_MANIFEST.offshore.some(site => { const points = Array.isArray(site.xy[0]) ? site.xy as number[][] : [site.xy as number[]]; return points.some(p => Math.hypot(input.x - p[0]!, input.z - p[1]!) <= (input.radius ?? (tier === 'full' ? 220 : 150))); });
+      if (offshore && (nearOffshore || input.x < 300 || input.x > 1720 || input.z > 1530)) { if (desired.length === cap) desired.pop(); desired.unshift(offshore); }
       const wanted = new Set(desired.map(d => d.id)), released: string[] = [], built: string[] = [];
       for (const [id, resource] of live) { if (wanted.has(id)) { outsideSince.delete(id); continue; } const since = outsideSince.get(id) ?? input.now; outsideSince.set(id, since); if (input.now - since >= 4000) { resource.dispose(); live.delete(id); outsideSince.delete(id); released.push(id); } }
       // Walk/Look only changes desired districts on a regular render frame. It cannot flush or build synchronously.
