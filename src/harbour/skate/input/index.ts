@@ -109,7 +109,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
   const kbStick=createDigitalStick();
   const keys=new Set<string>(),grabs=new Map<string,GrabDef['hand']>(),touches=new Map<number,Touch>(),queue:Queued[]=[];
   let grab:null|{id:GrabDef['id'];source:string}=null,revert=0,respawn=0,marker=0,pause=false,pushUntil=-Infinity,lastNow=0;
-  let spaceDownAt:number|null=null,spaceCharge:number|null=null,spaceAir=false,spaceSeenAir=false,lastAirborne=false;
+  let spaceDownAt:number|null=null,spaceCharge:number|null=null,spaceAir=false,spaceSeenAir=false,lastAirborne=false,spaceGrindHeld=false;
   let airTrick:string|null=null,airFlip:-1|0|1=0;
   let drag:null|{id:number;ox:number;oy:number}=null,easy:Easy|null=null,buffered:null|{pop:NonNullable<SkateIntent['pop']>;until:number}=null,last:FlickCompletion|null=null;
   let padLeft={x:0,y:0},padHeld={push:false,brake:false,powerslide:false,grind:false,sprint:false,manual:false,noseManual:false};
@@ -135,7 +135,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
     for(const r of Object.values(rec))r.reset();
     kbStick.reset();keys.clear();grabs.clear();touches.clear();queue.length=0;
     grab=null;revert=respawn=marker=0;pause=false;pushUntil=-Infinity;drag=null;easy=null;buffered=null;
-    spaceDownAt=spaceCharge=null;spaceAir=spaceSeenAir=lastAirborne=false;airTrick=null;airFlip=0;
+    spaceDownAt=spaceCharge=null;spaceAir=spaceSeenAir=lastAirborne=spaceGrindHeld=false;airTrick=null;airFlip=0;
     padLeft={x:0,y:0};padHeld={push:false,brake:false,powerslide:false,grind:false,sprint:false,manual:false,noseManual:false};
     pad.resync();
   }
@@ -166,7 +166,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
       const gap=lastNow>0?Math.max(0,now-lastNow):0;
       lastNow=Math.max(lastNow,now);now=lastNow;
       if(airborne)spaceSeenAir=true;
-      else if(spaceSeenAir){spaceAir=false;spaceSeenAir=false;}
+      else {spaceGrindHeld=false;if(spaceSeenAir){spaceAir=false;spaceSeenAir=false;}}
       const f=facing();for(const r of Object.values(rec))r.setFacing(f);
       // Gamepad (polled here, once per step).
       const p=pad.poll();
@@ -229,7 +229,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
         brake:keys.has('s')||padHeld.brake||touchZone('brake')||touchLeft().y<-.38,
         powerslide:keys.has('c')||padHeld.powerslide,
         crouch,crouchEnd,pop,lateFlip,airFlip:requestedFlip,grab:grab?.id??touchGrab,manual,
-        revert:revert>0,grindAssist:keys.has('g')||padHeld.grind,
+        revert:revert>0,grindAssist:keys.has('g')||padHeld.grind||(airborne&&spaceGrindHeld),grindMagnet:airborne&&spaceGrindHeld,
         respawn:respawn>0,marker:marker>0,sprint:keys.has('shift')||padHeld.sprint,
       };
       revert=respawn=marker=0;
@@ -253,7 +253,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
       if(e.repeat)return true;
       kbStick.advance(t,feedKb);
       switch(action.kind){
-        case 'jump':if(spaceDownAt===null&&!lastAirborne)spaceDownAt=t;break;
+        case 'jump':if(lastAirborne)spaceGrindHeld=true;else if(spaceDownAt===null)spaceDownAt=t;break;
         case 'stick':
           if(lastAirborne&&spaceAir&&name.startsWith('arrow')){
             airTrick=action.dir==='left'?'kickflip':action.dir==='right'?'heelflip':action.dir==='up'?'360-flip':'pop-shove-it';
@@ -273,7 +273,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
       const name=keyName(e),action=skateKeyAction(name,mode);if(!action)return false;
       const t=ts(e);kbStick.advance(t,feedKb);
       switch(action.kind){
-        case 'jump':if(spaceDownAt!==null){spaceCharge=Math.min(1,Math.max(0,(t-spaceDownAt)/INPUT_TUNING.spaceChargeMs));spaceDownAt=null;}break;
+        case 'jump':spaceGrindHeld=false;if(spaceDownAt!==null){spaceCharge=Math.min(1,Math.max(0,(t-spaceDownAt)/INPUT_TUNING.spaceChargeMs));spaceDownAt=null;}break;
         case 'stick':kbStick.release(action.dir as ArrowDir,t);break;
         case 'ride':keys.delete(name);break;
         case 'hold':keys.delete(action.what==='sprint'?'shift':name);break;

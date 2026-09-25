@@ -142,6 +142,8 @@ export type SkateIntent = {
   revert: boolean;
   /** Held. Pressed near a grindable while airborne to lock on (auto-lock also allowed when aligned). */
   grindAssist: boolean;
+  /** Held after a fresh airborne Space press: gently seek a nearby valid rail or wall. */
+  grindMagnet?: boolean;
   /** One-shots. */
   respawn: boolean;
   marker: boolean;

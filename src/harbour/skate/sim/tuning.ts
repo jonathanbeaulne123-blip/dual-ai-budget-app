@@ -199,6 +199,11 @@ export const SKATE_TUNING = {
   /** |cos(travel, rail)| needed to auto-lock / with grindAssist. */
   GRIND_ALIGN: 0.55,
   GRIND_ALIGN_ASSIST: 0.25,
+  /** Held-air Space guides sideways toward a nearby eligible contact; it never teleports or forces a lock. */
+  GRIND_MAGNET_RANGE: 0.85,
+  GRIND_MAGNET_ACCEL: 5,
+  GRIND_MAGNET_SIDE_SPEED: 1.35,
+  GRIND_MAGNET_LOOKAHEAD: 0.12,
   /** Friction decel for truck grinds / slides (u/s²). */
   GRIND_FRICTION: 0.55,
   SLIDE_FRICTION: 1.5,

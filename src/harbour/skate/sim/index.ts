@@ -163,6 +163,16 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   const island: readonly Obstacle[] = opts.islandObstacles ?? [];
   const solids: readonly SkateSolid[] = opts.extraSolids?.length ? [...(field.solids ?? []), ...opts.extraSolids] : field.solids ?? [];
   const soft: ReadonlySet<string> = new Set((opts.extraSolids ?? []).map(o => o.id));
+  const wallCandidates: { one: readonly Obstacle[]; minX: number; maxX: number; minZ: number; maxZ: number; top: number }[] = [];
+  for (const o of [...island, ...solids]) {
+    if (o.kind === 'circle' || !Number.isFinite(o.top) || soft.has(o.id)) continue;
+    if (o.kind === 'box') wallCandidates.push({ one: [o], minX: o.minX, maxX: o.maxX, minZ: o.minZ, maxZ: o.maxZ, top: o.top! });
+    else {
+      const c = Math.cos(o.yaw), s = Math.sin(o.yaw);
+      const ex = Math.abs(c) * o.halfX + Math.abs(s) * o.halfZ, ez = Math.abs(s) * o.halfX + Math.abs(c) * o.halfZ;
+      wallCandidates.push({ one: [o], minX: o.x - ex, maxX: o.x + ex, minZ: o.z - ez, maxZ: o.z + ez, top: o.top! });
+    }
+  }
   const shore = opts.shore ?? null;
   const reduced = opts.reducedAssist === true;
   const flips = catalogs.flips, grinds = catalogs.grinds, grabs = catalogs.grabs, resolve = catalogs.resolveGrind ?? null;
@@ -171,7 +181,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   const S0 = sampleScratch(), S1 = sampleScratch(), SX = sampleScratch();
   const LP = linePoint(), LQ = linePoint(), H = hit();
   const events: SkateSimEvent[] = [];
-  const I = { steer: 0, lean: 0, push: false, brake: false, powerslide: false, crouch: 0, grab: null as string | null, manual: null as 'manual' | 'nose-manual' | null, grindAssist: false, sprint: false };
+  const I = { steer: 0, lean: 0, push: false, brake: false, powerslide: false, crouch: 0, grab: null as string | null, manual: null as 'manual' | 'nose-manual' | null, grindAssist: false, grindMagnet: false, sprint: false };
 
   const P: SkatePresent = {
     x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, speed: 0, heading: 0, boardYaw: 0, boardPitch: 0, boardRoll: 0, bodyTwist: 0,
@@ -876,6 +886,91 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
 
   /* ─────────────────────────────── air */
 
+  function pullTowardGrind(dt: number): void {
+    if (!I.grindMagnet || S.airFlipDir || S.pendingAirFlip || (S.trick && !S.trick.caught)) return;
+    const speed = Math.hypot(S.vx, S.vz);
+    if (speed < 0.4) return;
+    const ahead = T.GRIND_MAGNET_LOOKAHEAD;
+    const px = S.x + S.vx * ahead, pz = S.z + S.vz * ahead;
+    const py = S.y + S.vy * ahead - 0.5 * G * ahead * ahead;
+    let best = Infinity, axisX = 0, axisZ = 0, desired = 0;
+    for (let li = 0; li < lines.length; li++) {
+      const L = lines[li]!;
+      if (li === S.cooldownLine && S.cooldown > 0) continue;
+      const range = T.GRIND_MAGNET_RANGE;
+      if (px < L.minX - range || px > L.maxX + range || pz < L.minZ - range || pz > L.maxZ + range) continue;
+      nearestXZ(L, px, pz, LQ);
+      const dist = Math.sqrt(LQ.d2);
+      if (dist > range || py < LQ.y - T.GRIND_BELOW || py > LQ.y + 1.2) continue;
+      const tangent = Math.hypot(LQ.tx, LQ.tz) || 1;
+      const aligned = Math.abs(S.vx * LQ.tx + S.vz * LQ.tz) / (speed * tangent);
+      if (aligned < T.GRIND_ALIGN_ASSIST) continue;
+      const nx = -LQ.tz / tangent, nz = LQ.tx / tangent;
+      const offset = (px - LQ.x) * nx + (pz - LQ.z) * nz;
+      const score = dist + Math.abs(py - LQ.y) * 0.2;
+      if (score < best) {
+        best = score; axisX = nx; axisZ = nz;
+        desired = clamp(-offset * 2.2, -T.GRIND_MAGNET_SIDE_SPEED, T.GRIND_MAGNET_SIDE_SPEED);
+      }
+    }
+    // A wall ride still requires a real collision and the usual speed/angle
+    // check. Probe only tall, hard, box-shaped surfaces to avoid pulling into
+    // trees, soft scenery, or the shoreline.
+    if (S.airFromPop && S.airTime <= 0.9) {
+      const reach = T.GRIND_MAGNET_RANGE + T.RADIUS;
+      for (const wall of wallCandidates) {
+        if (wall.top - py <= T.WALLRIDE_MIN_HEIGHT || px < wall.minX - reach || px > wall.maxX + reach || pz < wall.minZ - reach || pz > wall.maxZ + reach) continue;
+        // One expanded-body query per nearby authored hard wall. Its normal
+        // points toward the rider; subtract the extra reach to find the real
+        // contact plane without scanning every island obstacle six times.
+        pushOutAll(px, pz, py, reach, wall.one, [], H);
+        if (!H.id) continue;
+        const wx = H.x - H.nx * T.GRIND_MAGNET_RANGE, wz = H.z - H.nz * T.GRIND_MAGNET_RANGE;
+        const dist = Math.hypot(wx - px, wz - pz);
+        if (dist > T.GRIND_MAGNET_RANGE || (px - wx) * H.nx + (pz - wz) * H.nz < -0.02) continue;
+        const into = -(S.vx * H.nx + S.vz * H.nz);
+        const along = Math.hypot(S.vx + into * H.nx, S.vz + into * H.nz);
+        if (into < -0.5 || along < T.WALLRIDE_MIN_SPEED || Math.atan2(Math.max(0, into), along) > T.WALLRIDE_ANGLE) continue;
+        if (dist < best) {
+          best = dist; axisX = H.nx; axisZ = H.nz;
+          desired = -Math.min(T.GRIND_MAGNET_SIDE_SPEED, 0.8 + dist * 1.4);
+        }
+      }
+    }
+    if (S.airFromPop && S.airTime <= 0.9 && opts.complexPhysicsAt?.(px, pz) !== false) {
+      const rx = S.vz / speed, rz = -S.vx / speed;
+      const below = sample(px, pz, SX, py).y;
+      if (below < py + 0.2) for (const side of [-1, 1]) {
+        for (let reach = 0.35; reach <= T.GRIND_MAGNET_RANGE + 1e-6; reach += 0.25) {
+          const tx = px + side * rx * reach, tz = pz + side * rz * reach;
+          if (sample(tx, tz, SX, py).y - py <= T.WALLRIDE_MIN_HEIGHT) continue;
+          // A sampled park step has no collision volume. Locate its near edge
+          // so the pull aims at the face rather than through the high deck.
+          let lo = 0, hi = reach;
+          for (let i = 0; i < 5; i++) {
+            const mid = (lo + hi) * 0.5;
+            if (sample(px + side * rx * mid, pz + side * rz * mid, SX, py).y - py > T.WALLRIDE_MIN_HEIGHT) hi = mid;
+            else lo = mid;
+          }
+          const wx = px + side * rx * hi, wz = pz + side * rz * hi;
+          stepNormal(px, pz, wx, wz, N2);
+          const into = -(S.vx * N2.x + S.vz * N2.z);
+          const along = Math.hypot(S.vx + into * N2.x, S.vz + into * N2.z);
+          if (into >= -0.5 && along >= T.WALLRIDE_MIN_SPEED && Math.atan2(Math.max(0, into), along) <= T.WALLRIDE_ANGLE && hi < best) {
+            best = hi; axisX = N2.x; axisZ = N2.z;
+            desired = -Math.min(T.GRIND_MAGNET_SIDE_SPEED, 0.8 + hi * 1.4);
+          }
+          break;
+        }
+      }
+    }
+    if (best === Infinity) return;
+    const current = S.vx * axisX + S.vz * axisZ;
+    const next = approach(current, desired, T.GRIND_MAGNET_ACCEL * dt);
+    S.vx += (next - current) * axisX;
+    S.vz += (next - current) * axisZ;
+  }
+
   function stepAir(dt: number): void {
     const x0 = S.x, y0 = S.y, z0 = S.z;
     S.airTime += dt;
@@ -975,6 +1070,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
         S.vx -= Math.sin(S.lipYaw) * T.VERT_DECK_PULL * dt; S.vz -= Math.cos(S.lipYaw) * T.VERT_DECK_PULL * dt;
       }
     }
+    pullTowardGrind(dt);
     clampSpeed();
     let x1 = x0 + S.vx * dt, z1 = z0 + S.vz * dt;
     const y1 = y0 + S.vy * dt;
@@ -1110,7 +1206,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   /* ─────────────────────────────── grinds */
 
   function tryLock(y0: number, x1: number, y1: number, z1: number): boolean {
-    if (!lines.length || S.vy > 0.6) return false;
+    if (!lines.length || S.vy > 0.6 || S.airFlipDir || S.pendingAirFlip) return false;
     // A vert air comes straight back down past its own coping: that is a
     // re-entry, not a grind. Coping grinds off vert need the assist held
     // (lip tricks have their own stall path at launch).
@@ -1326,7 +1422,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
 
   /** Popped into a tall face while travelling along it: ride it. */
   function tryWallride(id: string, nx: number, nz: number, x: number, z: number, y: number, field: boolean): boolean {
-    if (!S.airFromPop || S.airTime > 0.9 || (S.trick && !S.trick.caught)) return false;
+    if (!S.airFromPop || S.airTime > 0.9 || S.airFlipDir || S.pendingAirFlip || (S.trick && !S.trick.caught)) return false;
     const into = -(S.vx * nx + S.vz * nz);
     const ax = S.vx + into * nx, az = S.vz + into * nz, along = Math.hypot(ax, az);
     if (along < T.WALLRIDE_MIN_SPEED || Math.atan2(Math.max(0, into), along) > T.WALLRIDE_ANGLE) return false;
@@ -1588,6 +1684,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     I.grab = typeof intent?.grab === 'string' ? intent.grab : null;
     I.manual = intent?.manual === 'manual' || intent?.manual === 'nose-manual' ? intent.manual : null;
     I.grindAssist = intent?.grindAssist === true;
+    I.grindMagnet = intent?.grindMagnet === true;
     I.sprint = intent?.sprint === true;
   }
   function readOneShots(intent: SkateIntent): void {
