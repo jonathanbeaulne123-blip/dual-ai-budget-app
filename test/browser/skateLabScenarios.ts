@@ -50,6 +50,8 @@ export const LAB_SCENARIOS:readonly LabScenario[]=[
     script:[hold(20,45,{grab:'indy'})],frames:90,expect:{seq:['grab-start','grab-end','land'],not:['bail']}},
   {name:'grind-5050',title:'Ollie to 50-50 on the Rolling Pin',load:{local:[-1.2,-3.1,-4],speed:5},camera:{kind:'side',side:1,dist:3.2,height:.8},
     script:[{at:4,flick:null},{at:30,auto:'grind',for:70}],frames:120,expect:{seq:['pop:ollie','grind:50-50','grind-end'],not:['bail']}},
+  {name:'space-grind',title:'Release Space to jump, hold it again to find the Rolling Pin',load:{local:[-1.2,-2.65,-4],speed:5.5},camera:{kind:'side',side:1,dist:3.2,height:.8},
+    script:[{at:0,key:' ',down:true},{at:18,key:' ',down:false},{at:22,key:' ',down:true},{at:72,key:' ',down:false}],frames:86,expect:{seq:['pop:ollie','grind:50-50'],not:['bail']}},
   {name:'grind-boardslide',title:'Boardslide on the Rolling Pin (board turned 90° in the air: place shortcut)',load:{local:[-1.2,-3.1,-4],speed:5},camera:{kind:'orbit',yawDeg:200,pitchDeg:25,dist:4},
     script:[{at:4,flick:null},{at:20,place:{boardYaw:'@+90'}},{at:30,auto:'grind',for:80}],frames:120,expect:{seq:['pop:ollie','grind:boardslide','grind-end'],not:['bail']}},
   {name:'grind-smith',title:'Smith on the Breadboard ledge (board angled nose-in, no lean)',load:{local:[0.4,-6.75,-3],speed:4.5},camera:{kind:'side',side:1,dist:3,height:.7},

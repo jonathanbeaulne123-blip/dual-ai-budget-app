@@ -340,6 +340,22 @@ describe('skate input: keyboard',()=>{
     expect(long.sample(2330,true,true).airFlip).toBe(-1);
     expect(long.sample(2600,false,true).airFlip).toBe(0);
   });
+  it('holds a fresh mid-air Space press for grind guidance without queuing another jump',()=>{
+    const input=createSkateInput({getGamepads:null});
+    input.keyDown({key:' ',code:'Space',timeStamp:1000});
+    expect(input.sample(1100,false,true).grindMagnet).toBe(false);
+    input.keyUp({key:' ',code:'Space',timeStamp:1200});
+    expect(input.sample(1210,false,true).pop?.charge).toBeCloseTo(.2);
+    expect(input.sample(1230,true,true).grindMagnet).toBe(false);
+    input.keyDown({key:' ',code:'Space',timeStamp:1240});
+    expect(input.sample(1250,true,true)).toMatchObject({grindAssist:true,grindMagnet:true,pop:null});
+    input.keyUp({key:' ',code:'Space',timeStamp:1290});
+    expect(input.sample(1300,true,true)).toMatchObject({grindMagnet:false,pop:null});
+    input.keyDown({key:' ',code:'Space',timeStamp:1310});
+    expect(input.sample(1320,true,true).grindMagnet).toBe(true);
+    input.reset();
+    expect(input.sample(1330,true,true).grindMagnet).toBe(false);
+  });
   it('reset() clears held keys and pending gestures',()=>{
     const input=createSkateInput({getGamepads:null});
     input.keyDown({key:'w',code:'KeyW',timeStamp:10});input.keyDown({key:'ArrowDown',code:'ArrowDown',timeStamp:10});

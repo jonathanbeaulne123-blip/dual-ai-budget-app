@@ -496,6 +496,41 @@ describe('skate sim · grinds and slides', () => {
     expect(first(assisted.events, 'grind-start')).toBeDefined();
   });
 
+  it('a held-air Space pull reaches a nearby parallel rail without teleporting',()=>{
+    const run=(magnet:boolean,x=-.72)=>{
+      const sim=makeSim(makeField({grindables:[flatbar]}),{x});
+      kick(sim,{vz:5});
+      ride(sim,.1,intent({crouch:1}));
+      ride(sim,1/60,intent({pop:{from:'tail',flipId:null,strength:1,charge:1}}));
+      return ride(sim,1.2,intent({grindAssist:true,grindMagnet:magnet}),60,true);
+    };
+    const noPull=run(false),pulled=run(true);
+    expect(first(noPull.events,'grind-start')).toBeUndefined();
+    expect(first(pulled.events,'grind-start')?.grindableId).toBe('flatbar');
+    const air=pulled.frames.filter(f=>f.p.phase==='air');
+    expect(air.length).toBeGreaterThan(5);
+    expect(air[0]!.p.x).toBeLessThan(-.65);
+    expect(air.some(f=>f.p.x>-.55)).toBe(true);
+    expect(first(run(true,-1.5).events,'grind-start')).toBeUndefined();
+  });
+
+  it('does not pull a perpendicular approach or freeze an unfinished body flip on a rail',()=>{
+    const cross=rail('cross',[[-3,.32,2],[3,.32,2]]);
+    const sim=makeSim(makeField({grindables:[cross]}),{z:.5});
+    kick(sim,{vz:5});
+    ride(sim,1/60,intent({pop:{from:'tail',flipId:null,strength:1,charge:1}}));
+    const crossAir=ride(sim,.3,intent({grindAssist:true,grindMagnet:true}),60,true);
+    expect(crossAir.frames.every(f=>Math.abs(f.p.x)<.01)).toBe(true);
+    const flip=makeSim(makeField({grindables:[flatbar]}),{x:-.2,z:1.5,y:.5});
+    kick(flip,{vz:4,vy:-.5});
+    const saved=flip.save() as Record<string,unknown>;
+    Object.assign(saved,{mode:'air',airFromPop:true,airFlipDir:1,airFlipProgress:.3,airFlipDuration:.6});
+    flip.load(saved);
+    const r=ride(flip,.1,intent({grindAssist:true,grindMagnet:true}),60,true);
+    expect(first(r.events,'grind-start')).toBeUndefined();
+    expect(r.frames.some(f=>(f.p.airFlip??0)>Math.PI*.6)).toBe(true);
+  });
+
   it('a flip that is not caught cannot lock onto a rail', () => {
     const sim = makeSim(makeField({ grindables: [flatbar] }), { x: -0.35 });
     kick(sim, { vz: 5, vx: 0.9 });
@@ -640,6 +675,38 @@ describe('skate sim · wallride', () => {
     const r = wallTrial(1.4, false);
     expect(first(r.events, 'wallride')).toBeUndefined();
     expect(first(r.events, 'bail')).toBeUndefined();
+  });
+
+  it('a held-air Space pull gently finds a tall hard wall but ignores soft and low surfaces',()=>{
+    const seek=(top:number,soft=false,magnet=true)=>{
+      const face={...wall,top};
+      const dressing={kind:'obox' as const,id:wall.id,x:1.15,z:6,halfX:.15,halfZ:6,yaw:0,top};
+      const sim=makeSim(flat,{x:.3,z:.5,...(soft?{extraSolids:[dressing]}:{islandObstacles:[face]})});
+      kick(sim,{vz:6.5});
+      ride(sim,.1,intent({crouch:1}));
+      ride(sim,1/60,intent({pop:{from:'tail',flipId:null,strength:1,charge:1}}));
+      return ride(sim,1.2,intent({grindAssist:true,grindMagnet:magnet}),60,true);
+    };
+    const held=seek(4),plain=seek(4,false,false);
+    expect(first(plain.events,'wallride')).toBeUndefined();
+    expect(held.frames.some(f=>f.p.grind?.grindId==='wallride')).toBe(true);
+    expect(first(held.events,'bail')).toBeUndefined();
+    expect(first(seek(.3).events,'wallride')).toBeUndefined();
+    expect(first(seek(4,true).events,'wallride')).toBeUndefined();
+  });
+
+  it('also guides toward a raised park face that can become a wall ride',()=>{
+    const field=makeField({pieces:[block({id:'park-wall',x:1.15,z:6,yaw:0,halfX:.15,halfZ:6,h:4})]});
+    const run=(magnet:boolean,trickZone=true)=>{
+      const sim=makeSim(field,{x:.4,z:.5,complexPhysicsAt:()=>trickZone});
+      kick(sim,{vz:6.5});
+      ride(sim,.1,intent({crouch:1}));
+      ride(sim,1/60,intent({pop:{from:'tail',flipId:null,strength:1,charge:1}}));
+      return ride(sim,1.2,intent({grindAssist:true,grindMagnet:magnet}),60,true);
+    };
+    expect(first(run(false).events,'wallride')).toBeUndefined();
+    expect(first(run(true,false).events,'wallride')).toBeUndefined();
+    expect(run(true).frames.some(f=>f.p.grind?.grindId==='wallride')).toBe(true);
   });
 });
 
