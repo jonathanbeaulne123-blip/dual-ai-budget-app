@@ -394,3 +394,17 @@ it('keeps every mountain ground sample finite and the terrain function cheap to 
  const perCall=(performance.now()-t0)/200000*1000;console.info('groundHeightAt µs/call:',perCall.toFixed(3));
  expect(Number.isFinite(sum)).toBe(true);expect(mountainBaseHeight(0,-150)).toBeGreaterThan(0);
 });
+
+import {createElement} from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+import {MountainMap} from '../src/harbour/mountain/MountainPanel.tsx';
+import {mountainMap} from '../src/harbour/mountain/mapData.ts';
+it('draws the guide map from the shipped geography with a text alternative and a spoken “you are here”',()=>{
+ const map=mountainMap();
+ for(const kind of ['coast','contour','river','reservoir','road','lane','bridge','stair','dam','funicular','gondola'])expect(map.lines.some(l=>l.kind===kind),kind).toBe(true);
+ for(const d of DISTRICTS)expect(map.points.some(p=>p.id===d.id)).toBe(true);
+ const html=renderToStaticMarkup(createElement(MountainMap,{here:DISTRICTS.find(d=>d.id==='library')!.at}));
+ expect(html).toContain('role="img"');expect(html).toContain('<title>');
+ expect(html).toMatch(/<desc id="[^"]+">[^<]*You are here: near Library Woods/);
+ const plain=renderToStaticMarkup(createElement(MountainMap,{}));expect(plain).not.toContain('You are here');
+});

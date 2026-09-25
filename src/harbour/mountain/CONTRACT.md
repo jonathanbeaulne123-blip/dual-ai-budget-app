@@ -1,105 +1,165 @@
 # Hearth Mountain v2 geography contract (T1, branch `claude/mv2-geo`)
 
-Status: **Phase 0 draft** — shapes are fixed, numbers will move while the geography is tuned.
-Everything below is exported from `src/harbour/mountain/definition.ts` (the facade) unless a
-different module is named. Existing export names keep working; new names are additive.
-Coordinates: metres/world units, `x` east, `y` up, `z` south (town at the origin, summit at
-`z ≈ -290`). "Uphill" arc length `s = 0` is the road foot in town.
+Status: **final for the geography track.** The shapes below are shipped; numbers are the tuned values.
+Everything is exported from `src/harbour/mountain/definition.ts` (the facade) unless another module is
+named. Existing export names keep working; new names are additive.
+Coordinates: world units, `x` east, `y` up, `z` south (town at the origin, summit at `z ≈ -294`).
+"Uphill" arc length `s = 0` is the road foot in town (`(-26,-44)`).
+
+Versions: `MOUNTAIN_VERSION` stays `'hearth-mountain-1'` (the presence wire). The geography carries
+`GEOGRAPHY_REVISION = 'hearth-mountain-geo-2'`. `MOUNTAIN_RACE_REVISION` (`'hearth-mountain-1-<course hash>'`) changes with the course, so replays recorded on the old course are rejected.
 
 ## 1. Terrain
 
 | Export | Shape | Notes |
 |---|---|---|
-| `mountainBaseHeight(x,z)` | `number` | Authored heightfield baked once to a 1-unit grid and sampled bilinearly (cheap per frame). Terrain only — decks/bridges are surfaces. |
-| `groundHeightAt(x,z)` (`scene/ground.ts`) | `number` | Island + mountain; physics and the render lattice both read it. No vertical cut-walls: every terrain slope the lattice has to draw is continuous. |
-| `TERRAIN_LATTICE_BOUNDS` (`scene/ground.ts`) | `{minX,maxX,minZ,maxZ}` | Rendered lattice now extends past `WORLD_BOUNDS` so the coast and the summit's back slope are real terrain, not a cut edge. `WORLD_BOUNDS` (presence/walk bounds) is unchanged. |
-| `TERRACES` | `{id,district?,plot?,at:Point3,radii:[a,b],yaw,level,bank}` | Authored plateau primitives (alternate across the slopes). |
-| `GORGE` | `{points:Point3[] (river surface, uphill→downhill), depthAt(s)}` | The carved channel; `RIVER` is its water line. |
-| `RETAINING_WALLS` | `{id,of:'road'|'terrace'|'path', side:'left'|'right', foot:Point3[], top:Point3[], thickness}` | Explicit wall objects wherever a cut or terrace needs one. Art draws them; movement/camera collide with `EDGE_SOLIDS`. |
+| `mountainBaseHeight(x,z)` | `number` | Final mountain ground, baked once to a 1-unit grid (`TERRAIN_GRID_BOUNDS` x −200..200, z −396..−30) and sampled bilinearly. It returns −0.75 for `z > −48`, as before. Terrain only: decks, bridges and platforms are surfaces. |
+| `mountainGround(x,z)` (`mountainGround.ts`) | `number` | The same baked grid without the island guard. |
+| `groundHeightAt(x,z)` (`scene/ground.ts`) | `number` | Island, mountain and town channel. For `z < −48` it is `max(island, mountain)`. Between z −48 and −30 the benches can only raise the island. Cost is about 0.13 µs per call. |
+| `TERRAIN_LATTICE_BOUNDS` (`scene/ground.ts`) | `{minX:-200,maxX:200,minZ:-396,maxZ:84}` | The render lattice (full 200×240, lite 134×160) covers the coast and the back slope. `WORLD_BOUNDS` is unchanged. |
+| `TERRACES` | `Terrace[]` = `{id,at,radii:[a,b],yaw,level,bank}` | One plateau for each district and plot, plus two meadow steps. |
+| `RIVER`, `RIVER_HALF_WIDTH` (2.2), `RIVER_BED_DEPTH` (0.28) | `Point3[]` water line, from the dam foot down to the sea | The gorge is carved from `GORGE_POINTS` (`places.ts`: `[x,waterY,z,wallSlope]`). The water is never more than 0.28 above the bed. |
+| `RETAINING_WALLS_ROAD` | `RetainingWall[]` = `{id,of,side,foot:Point3[],top:Point3[],thickness}` | One wall for every road or lane `wall` edge run. There are no terrace walls, because the terraces use banks. |
+| `islandHeight`, `SEA_LEVEL`, `TERRACE_LEVEL`, island radii (`islandShape.ts`) | | The pure island shape, with no mountain imports. |
 
-## 2. Road (the main mountain road)
+The draft `GORGE {points, depthAt}` and generic `RETAINING_WALLS` were not shipped. Use `GORGE_POINTS` or `RIVER`, and `RETAINING_WALLS_ROAD`.
+
+## 2. Road
 
 ```ts
 type EdgeKind='open'|'kerb'|'parapet'|'wall'|'bridge';
 type SupportKind='ground'|'embankment'|'bridge'|'tunnel';
-type RoadSample={s:number;at:Point3;tangent:Point3;/* unit, 3D, uphill */ normal:Point3;/* unit horizontal, to the LEFT of uphill travel */
-  halfWidth:number;grade:number;curvature:number;/* 1/radius, signed, + = left */
-  left:EdgeKind;right:EdgeKind;support:SupportKind;bridgeId:string|null};
-type RoadLine={id:string;length:number;step:number;samples:readonly RoadSample[]};
+type RoadSample={s;at:Point3;tangent:Point3 /*unit 3D uphill*/;normal:Point3 /*unit horizontal, LEFT of uphill*/;
+  halfWidth;grade;curvature /*+ = left*/;left:EdgeKind;right:EdgeKind;support:SupportKind;bridgeId:string|null};
+type RoadLine={id;length;step;samples:readonly RoadSample[]};
 ```
 
 | Export | Shape |
 |---|---|
-| `MOUNTAIN_ROAD_LINE` | `RoadLine`, uphill, samples every 1 unit, foot ramps to town grade. |
-| `roadSampleAt(s, line?)` | interpolated `RoadSample` at arc length `s`. |
-| `MOUNTAIN_ROAD` | legacy `Point3[]` (uphill polyline, ~3 u spacing) derived from the line. |
-| `ROAD_HALF_WIDTH` | 4.8 (mountain width); per-sample `halfWidth` tapers to town lanes. |
-| `ROAD_LENGTH` | rideable length. |
-| `BRIDGES` | `{id,name,type:'timber'|'masonry'|'metal-glass',carries:'road'|'path'|'funicular'|'race-lane',s0,s1,a:Point3,b:Point3,span,deckThickness,clearance,piers:Point3[],crosses:string[]}` |
-| `EDGE_RUNS` | `{id,side,kind:EdgeKind,s0,s1,line:Point3[] (edge at deck height),height}` — parapets 1.1 high, kerbs 0.22. |
-| `EDGE_SOLIDS` | oriented segments `{id,a:[x,z],b:[x,z],bottom,top,thickness}` for parapets/walls/bridge rails. **Movement/camera tracks: collide with these** (they are not in `WORLD_SOLIDS`, which stays AABB-only). |
-| `DAM_OVERLOOK` | `{s, at:Point3, facing:number (yaw), look:Point3}` on the road/race line. |
+| `MOUNTAIN_ROAD_LINE` | `RoadLine`. Uphill, 945.9 long, one sample per unit. The foot is at town grade and the half-width tapers 3.5→4.8 over the first 18 units. |
+| `ORCHARD_LANE_LINE` | `RoadLine`. Orchard Lane leaves the road above hairpin 2 and crosses the lower gorge on the masonry bridge. |
+| `roadSampleAt(s,line?)`, `roadSampleAtPlan(s)` | interpolated `RoadSample` |
+| `MOUNTAIN_ROAD` | Legacy uphill `Point3[]` (every third sample). |
+| `ROAD_HALF_WIDTH` (4.8), `ROAD_LENGTH` | |
+| `GORGE_BRIDGES` | `Bridge[]` for the road and lane. |
+| `BRIDGES` | Every bridge: the gorge bridges, the funicular viaducts and the canal bridge. `Bridge={id,name,type:'timber'|'masonry'|'metal-glass',carries:'road'|'lane'|'path'|'funicular'|'race-lane',s0,s1,a,b,span,deckThickness,clearance,piers,crosses,halfWidth,deck}` |
+| `EDGE_RUNS` | `{id,line,side,kind,s0,s1,points (edge at deck height),height}`. Parapets are 1.1 high and kerbs 0.22. Guarded runs overlap one sample into their neighbours. |
+| `EDGE_RULES` | The thresholds used to classify edges. |
+| `EDGE_SOLIDS` | About 2-unit segments `{id,a:[x,z],b:[x,z],bottom,top,thickness}` for every parapet, bridge rail and wall. `worldCollisionAt` already includes them for `z < −40`. |
+| `TRANSPORT_CROSSINGS` | `Crossing={id,over,under,at,overY,underY,clearance}`: the funicular over the road (3 places) and over the lane (1). |
+| `DAM_OVERLOOK` | `{s,at,facing,look}` on the road and race line. |
 
 ## 3. Paths
 
-```ts
-type PathNodeKind='junction'|'door'|'station'|'overlook'|'stair-top'|'stair-bottom'|'plot-gate'|'district'|'town';
-type PathNode={id:string;kind:PathNodeKind;at:Point3;facing?:number;label?:string;district?:string};
-type PathEdgeKind='road'|'path'|'stair'|'bridge'|'promenade';
-type PathEdge={id:string;kind:PathEdgeKind;from:string;to:string;halfWidth:number;points:readonly Point3[];length:number};
-```
+`MOUNTAIN_PATH_GRAPH` `{nodes:PathNode[],edges:PathEdge[]}`. The edges include the road and the lane, so a route can mix them.
+- `PathNode={id,kind:'junction'|'door'|'station'|'overlook'|'stair-top'|'stair-bottom'|'plot-gate'|'district'|'town',at,facing?,label?,district?}`
+- `PathEdge={id,kind:'road'|'path'|'stair'|'bridge'|'promenade',from,to,halfWidth,points,length}`
 
-| Export | Shape |
+| Export | Notes |
 |---|---|
-| `MOUNTAIN_PATH_GRAPH` | `{nodes:PathNode[];edges:PathEdge[]}` — road edges are included so routes can mix. |
-| `mountainWalkRoute(from,to)` (`surfaces.ts`, unchanged signature) | `{x,z}[]|null` shortest-by-time over the graph (stairs allowed). |
-| `mountainWalkPlan(from,to,opts?)` (`pathGraph.ts`) | `{points:Point3[];edges:string[];length:number;seconds:number}|null`, `opts.speed` (default walk 2.1). |
-| `DOOR_APRONS` | `{site,door:Point3,facing,apron:{at:Point3,half:[w,d]}}` — every mountain building. |
-| `OVERLOOKS` | `{id,name,at:Point3,facing:number,look:Point3}` (≥3, authored facing). |
-| `FOOTPATHS` | legacy `{id,points}` (now the elevated path/stair/bridge edges). |
+| `mountainWalkRoute(from,to)` (`surfaces.ts`) | Signature unchanged. Returns `{x,z}[]` or null, shortest by time over the graph. |
+| `mountainWalkPlan(from,to,{speed?})` | `WalkPlan={points,edges,length,seconds}`. Stairs are counted at a 1.3× time factor. |
+| `DOOR_APRONS` | `{site,door,facing,apron:{at,half,yaw}}`. Every mountain door has a level apron, and the path arrives along the door axis. |
+| `OVERLOOKS` | `{id,name,at,facing,look}`. There are 5, each with an authored facing. |
+| `PATH_EDGES`, `FOOTPATHS` | Non-road edges (legacy `FOOTPATHS` is `{id,points,kind,halfWidth}`). |
 
 ## 4. Places
 
-`DISTRICTS`, `RESERVED_PLOTS` (now also `level`, `envelope:{half:[w,d],height}`, `gate:Point3`),
-`BUILDING_SITES`, `BASIN` (legacy circle: arc centre/radius of the dam; water cylinder still valid),
-new `DAM` `{centre:Point3,crest:number,foot:number,arc:Point3[] (crest line W→E),face:[nx,nz] (toward town),
-abutments:{at:Point3,size:Point3}[],apron:{at:Point3,half:[w,d]},promenade:Point3[]}`,
-`RESERVOIR` `{level:number,bottom:number,shore:Point3[]}`, `KITTY_CHAMBERS` `{id,at:Point3,radius,depth}[]`
-(beside the dam on the slope), `SUMMIT_OBSERVATORY_SITE` `{at:Point3}`.
+- **`DISTRICTS`**: same shape; new positions in the plan's uphill order.
+- **`RESERVED_PLOTS`**: adds `half`, `envelope:{half,height}` and `gate:Point3`.
+- **Buildings**:
+  - `BUILDING_SITES` and `BUILDING_FORMS` (half and door), for `village/layout.ts`.
+  - `buildingDoor(id)` returns `{at,facing,yaw}`.
+  - `buildingYaw(id)`.
+- **`SUMMIT_OBSERVATORY_SITE`** `{at,radius}` and **`GOAL_PAVILION_SITE`** `{at}`.
+- **Dam and reservoir**:
+  - `DAM` `{centre,radius,halfAngle,crest:88,foot:33,face:[0,1]}`.
+  - `DAM_PARTS` `{arc (crest, west→east), face, abutments[{side,at,size}], apron{at,half}, promenade}`.
+  - `RESERVOIR` `{bottom,level:86,shore}`.
+  - `RESERVOIR_BOWL`, `RESERVOIR_LEVEL_MAX`.
+  - `BASIN` is the legacy circle and is kept.
+- **`KITTY_CHAMBERS`** `{id,at,radius,depth}[]`: on the west abutment slope beside the dam.
 
 ## 5. Transport
 
 ```ts
-type TransportFrame={s:number;at:Point3;tangent:Point3;up:Point3;side:Point3};
-type TransportLine={kind:TransportKind;length:number;cruise:number;stations:{id:string;name:string;s:number;at:Point3;platform:{at:Point3;yaw:number;half:[number,number]}}[];
-  at(s:number):TransportFrame;frames(step?:number):TransportFrame[];towers:Point3[];rails?:[Point3[],Point3[]]};
+type TransportFrame={s;at;tangent;up;side};
+type TransportStation={id;name;s;at;platform:{at;yaw;half:[w,d]}};
+type TransportLine={kind;length;cruise;stations;at(s):TransportFrame;frames(step?):TransportFrame[];towers;path;rails?};
 ```
 
-`transportSpline(kind)` — arc-length parameterised, constant cruise speed. Funicular: monotonic
-incline (no vertical reversals), two rails, platforms aligned to the track, clearance over the road.
-Gondola: catenary spans between towers, crosses the gorge at height. `transportPoint(kind,from,to,t)` is
-**deprecated** (kept for one release; it now eases along arc length instead of equal time per segment).
-`TRANSPORT_STOPS`/`FUNICULAR_STOPS`/`GONDOLA_STOPS` keep `{id,name,at}` (`at` = platform boarding point).
+- **`transportSpline(kind)`, `FUNICULAR_LINE`, `GONDOLA_LINE`, `TRANSPORT_LINES`.**
+  - Funicular stations: town (−17,−36) → lower neighbourhood (6,−87) → Library Woods → Reservoir Heights.
+  - The funicular runs on a monotonic incline with two rails. It passes over the harbour bridge, over Orchard Lane and over the road twice.
+  - Gondola: quay (−26,46) → 3 towers → Summit Commons. Its spans follow a parabolic catenary and cross the gorge high up.
+- **`TRANSPORT_STOPS`, `FUNICULAR_STOPS`, `GONDOLA_STOPS`** keep `{id,name,at}`. `at` is now the platform boarding point.
+- **`transportPoint(kind,from,to,t)`** is deprecated. It still starts and ends at the exact platform.
 
 ## 6. Race
 
-`MOUNTAIN_COURSE_POINTS` (downhill), `MOUNTAIN_GATES` (`RaceGate` + optional `name`, `segment`),
-`MOUNTAIN_RACE` (unchanged `RouteLike`), new `MOUNTAIN_RACE_SEGMENTS` `{id,name,i0,i1,s0,s1}` in the plan's
-order, `RACE_FINISH` `{at,heading:[x,z],runout}`, `TOWN_RACE_ROAD` (now draped on town ground).
-`SKILL_BRANCHES` keep `{id,entry,exit,halfWidth,material,points}` and add
-`{name,kind:'rail'|'balcony'|'awning',segments:{kind:'ramp'|'deck'|'rail'|'landing',points}[],branchLength,roadLength}`.
+- **Course data:** `MOUNTAIN_COURSE_POINTS` (downhill), `MOUNTAIN_GATES` (17 gates, each `RaceGate` plus `name` and `segment`), and `MOUNTAIN_RACE` (unchanged `RouteLike`).
+- **`MOUNTAIN_RACE_SEGMENTS`** `RaceSegment={id,name,i0,i1,s0,s1}`, 9 in the plan's order.
+- **`RACE_FINISH`** `{at,heading,runout,laneRunout}`.
+- **`TOWN_RACE_ROAD`** is draped exactly on the island ground. `TOWN_LANE_DECK` is the only town deck: the canal bridge, which spans the whole channel cut.
+- **`CANAL_BRIDGE`** `{id,name,type,at,span,halfWidth,a,b}`.
+- **`SKILL_BRANCHES`** keep `{id,entry,exit,halfWidth,material,points}` and add `{name,kind,segments,branchLength,roadLength}`:
+  - `dam-promenade` is a rail down the dam face that lands on the metal-and-glass bridge.
+  - `library-balcony` crosses the Library roof deck.
+  - `hearth-awning` runs inside hairpin 2.
+- **Also exported:** `crossesRaceGate` and `courseIndexAt`.
 
 ## 7. Town square
 
-`TOWN_SQUARE` (`townSquare.ts`, re-exported): `{plaza,channels,crossings,storefronts,vacated,roadTaper,arrivals}`.
+`TOWN_SQUARE` (`townSquare.ts`):
+- `{plaza,channels,crossings,storefronts,vacated,roadTaper,arrivals}`.
+- The Outfitters (−15,−6) and Potter's Supply (−15,8.5) storefronts face the square.
+- `STOREFRONT_SOLIDS` are oriented boxes. They are **not** in `WORLD_SOLIDS`.
+- `TOWN_STOREFRONT_APRONS` are protected from the channel cut.
 
 ## 8. Guide map
 
-`MOUNTAIN_MAP` data (`MountainPanel.tsx` reads it); `MountainPanel` gains an optional `here?:Point3` prop.
+`mountainMap()` (`mapData.ts`) returns `{viewBox,lines:MapLine[],points:MapPoint[]}`:
+- The map is built lazily.
+- It has marching-squares contours (the coast and every 25 units).
+- It includes the road, lane, bridges, paths, dam, reservoir, transport, districts, plots, gates and overlooks.
 
-## Notes for other tracks (filled in as the work lands)
+`MountainPanel` draws it as an `<svg role="img">` with `<title>` and `<desc>`, and accepts an optional `here?:Point3` prop.
 
-- Art: redraw from `MOUNTAIN_ROAD_LINE`, `BRIDGES`, `EDGE_RUNS`, `RETAINING_WALLS`, `DAM`, `RESERVOIR`,
-  `KITTY_CHAMBERS`, `TRANSPORT` lines, `TOWN_SQUARE`; `artGeometry.ts` constants that hard-code the old
-  summit/observatory need to read `SUMMIT_OBSERVATORY_SITE`.
-- Movement: collide with `EDGE_SOLIDS`; stair edges are walkable ramps regardless of slope.
+## Final export list (the facade, `definition.ts`)
+
+Values:
+- **Versions and bounds:** `MOUNTAIN_VERSION`, `GEOGRAPHY_REVISION`, `WORLD_BOUNDS`.
+- **Places:** `DISTRICTS`, `RESERVED_PLOTS`, `BUILDING_SITES`, `BUILDING_FORMS`, `buildingDoor`, `buildingYaw`, `BASIN`, `DAM`, `RIVER`, `RIVER_HALF_WIDTH`, `TERRACES`, `RESERVOIR_BOWL`, `RESERVOIR_LEVEL_MAX`, `SUMMIT_OBSERVATORY_SITE`, `GOAL_PAVILION_SITE`.
+- **Road and edges:** `MOUNTAIN_ROAD_LINE`, `ORCHARD_LANE_LINE`, `roadSampleAt`, `roadSampleAtPlan`, `GORGE_BRIDGES`, `EDGE_RUNS`, `EDGE_SOLIDS`, `EDGE_RULES`, `RETAINING_WALLS_ROAD`, `DAM_OVERLOOK`, `ROAD_HALF_WIDTH`, `ROAD_LENGTH`.
+- **Race:** `MOUNTAIN_ROAD`, `TOWN_RACE_ROAD`, `TOWN_LANE_HALF_WIDTH`, `CANAL_BRIDGE`, `SKILL_BRANCHES`, `RACE_FINISH`, `MOUNTAIN_COURSE_LENGTH`.
+- **Paths:** `MOUNTAIN_PATH_GRAPH`, `DOOR_APRONS`, `OVERLOOKS`, `mountainWalkPlan`, `FOOTPATHS`.
+- **Transport:** `FUNICULAR_STOPS`, `GONDOLA_STOPS`, `TRANSPORT_STOPS`, `TRANSPORT_LINES`, `FUNICULAR_LINE`, `GONDOLA_LINE`, `transportSpline`, `transportPoint` (deprecated).
+- **Dam parts and crossings:** `RESERVOIR`, `DAM_PARTS`, `KITTY_CHAMBERS`, `BRIDGES`, `TRANSPORT_CROSSINGS`.
+- **Queries and helpers:** `nearestOnRoute`, `districtAt`, `mountainBaseHeight`, `mountainContains`, `WORLD_DEFINITION` (now with `revision`, `terraces`, `roadLine`, `lanes`, `bridges`, `edges`, `pathGraph`, `doors`, `overlooks`, `dam`, `damOverlook`, `transportLines`), `clamp`, `smooth`.
+
+Types: `Point3`, `District`, `ReservedPlot`, `Biome`, `MountainBuilding`, `Terrace`, `RoadSample`, `RoadLine`, `EdgeKind`, `SupportKind`, `Bridge`, `EdgeRun`, `EdgeSolid`, `RetainingWall`, `SkillBranch`, `BranchSegment`, `PathNode`, `PathEdge`, `PathNodeKind`, `PathEdgeKind`, `WalkPlan`, `DoorApron`, `TransportKind`, `TransportLine`, `TransportFrame`, `TransportStation`, `Crossing`, `RouteProjection`.
+
+Exports from other modules:
+- `surfaces.ts`: `WORLD_SURFACES`, `WORLD_SOLIDS`, `queryWorldSurface`, `worldCeilingAt`, `worldCollisionAt`, `mountainWalkRoute`.
+- `race.ts` / `course.ts`: `MOUNTAIN_COURSE_POINTS`, `MOUNTAIN_GATES`, `MOUNTAIN_RACE`, `MOUNTAIN_RACE_SEGMENTS`, `MOUNTAIN_RACE_REVISION`, `crossesRaceGate`, `courseIndexAt`, `TOWN_LANE_DECK`.
+- `townSquare.ts`: `TOWN_SQUARE`, `STOREFRONT_SOLIDS`, `TOWN_STOREFRONT_APRONS`.
+- `mapData.ts`: `mountainMap`.
+- `scene/ground.ts`: `groundHeightAt`, `TERRAIN_LATTICE_BOUNDS`.
+- `islandShape.ts`: `islandHeight`.
+- `places.ts`: `GORGE_POINTS`, `RIVER_BED_DEPTH`.
+
+## Notes for other tracks
+
+- **Art (landscape, architecture, artGeometry, districtArt):**
+  - Redraw from `MOUNTAIN_ROAD_LINE` and `EDGE_RUNS` (parapets, kerbs, rails), `RETAINING_WALLS_ROAD`, `BRIDGES` (piers, deck, type), `DAM_PARTS`, `RESERVOIR`, `KITTY_CHAMBERS`, `TRANSPORT_LINES` (`frames()`, `rails`, `towers`, `platform`) and `TOWN_SQUARE`.
+  - `artGeometry.ts` still hard-codes the old summit and observatory. Read `SUMMIT_OBSERVATORY_SITE` and `GOAL_PAVILION_SITE` instead.
+  - `STATION_SOLIDS` must follow `station.platform`. The stations moved: funicular town station to (−17,−36) and hearth station to (6,−87); gondola quay to (−26,46).
+  - `landscape.ts` still reads the legacy `BASIN` and the cabin `transportPoint`. Move it to `RESERVOIR`, `DAM_PARTS` and `transportSpline`.
+  - District art at `hearth:13` (≈(75,−118)) sits beside the east-arm race chord. The gates were moved to keep it clear.
+- **Movement and camera:**
+  - `worldCollisionAt` already includes `EDGE_SOLIDS`. The camera should also treat them as occluders.
+  - Stair edges are walkable decks (surface kind `stair`), whatever their slope.
+  - Positions saved against the old mountain need re-validation (`mountainContains` and `queryWorldSurface`) before they are restored.
+- **Skate:** the field registers every non-road `WORLD_SURFACES` entry, including branch decks and rails, as grindable. That is expected for the branches. Filter out `promenade` and `bridge` path decks if they grind oddly.
+- **Island:** `STOREFRONT_SOLIDS` still need to join the island obstacle tables (`body/obstacles.ts` is not T1's file).
+- **HarbourWorld:** pass the rider's position to `MountainPanel`'s `here` prop so the guide map shows "you are here".

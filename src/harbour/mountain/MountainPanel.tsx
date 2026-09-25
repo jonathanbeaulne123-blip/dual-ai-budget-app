@@ -1,6 +1,6 @@
 import {MOUNTAIN_INTERACTIONS,initialMountainInteractionState,mountainInteractionLabel,type MountainInteractionState} from './life.ts';
-import {useEffect,useRef,useState} from 'react';
-import {DISTRICTS,RESERVED_PLOTS,TRANSPORT_STOPS,type Point3,type TransportKind} from './definition.ts';
+import {useEffect,useId,useRef,useState} from 'react';
+import {DISTRICTS,RESERVED_PLOTS,TRANSPORT_STOPS,districtAt,type Point3,type TransportKind} from './definition.ts';
 import {mountainMap} from './mapData.ts';
 import type {BasinReading} from './basin.ts';
 import {basinMoney} from './basin.ts';
@@ -48,9 +48,11 @@ const MAP_STYLE:Record<string,{stroke:string;width:number;dash?:string;fill?:str
 /** The guide map, drawn from the shipped geography, with a text alternative for every place on it. */
 export function MountainMap({here}:{here?:Point3}){
   const map=mountainMap(),districts=map.points.filter(p=>p.kind==='district'),stations=map.points.filter(p=>p.kind==='funicular'||p.kind==='gondola');
-  const description=`The mountain road winds up from the town square through ${districts.map(d=>d.label).join(', ')}, crossing the gorge on bridges. Stations: ${stations.map(s=>s.label).join(', ')}.${here?' A marker shows where you are.':''}`;
-  return <svg className="mountain-map" viewBox={map.viewBox} role="img" aria-label="Map of the mountain and the town" aria-describedby="mountain-map-desc">
-    <title>Map of the mountain and the town</title><desc id="mountain-map-desc">{description}</desc>
+  const descId=useId();
+  const whereWords=here?(here[2]>-48?' You are here: in town.':` You are here: near ${districtAt(here[0],here[2])?.name??'the mountain road'}.`):'';
+  const description=`The mountain road winds up from the town square through ${districts.map(d=>d.label).join(', ')}, crossing the gorge on bridges. Stations: ${stations.map(s=>s.label).join(', ')}.${whereWords}`;
+  return <svg className="mountain-map" viewBox={map.viewBox} role="img" aria-label="Map of the mountain and the town" aria-describedby={descId}>
+    <title>Map of the mountain and the town</title><desc id={descId}>{description}</desc>
     {map.lines.map(l=>{const s=MAP_STYLE[l.kind]??MAP_STYLE.path!;return <path key={l.id} d={l.d} fill={s.fill??'none'} stroke={s.stroke} strokeWidth={s.width} strokeDasharray={s.dash} strokeLinecap="round" strokeLinejoin="round" opacity={l.kind==='contour'?.35:1}/>;})}
     {map.points.filter(p=>p.kind==='plot').map(p=><rect key={p.id} x={p.x-8} y={p.z-6} width="16" height="12" fill="none" stroke="currentColor" strokeDasharray="3 2"/>)}
     {stations.map(p=><rect key={p.id} x={p.x-3} y={p.z-3} width="6" height="6" rx="1.2" fill={p.kind==='funicular'?'#7d4ea3':'#c2185b'}/>)}
