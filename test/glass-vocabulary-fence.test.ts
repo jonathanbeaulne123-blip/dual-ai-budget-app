@@ -8,7 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { WORDS } from "../src/harbour/glass/copy.ts";
 import { fabActionsFor, fabClosedLabel } from "../src/core/fabActions.ts";
 import type { HarbourReading } from "../src/harbour/data/reading.ts";
-import { ATLAS_FALLBACK } from "../src/harbour/nav/atlasFallback.ts";
+import { SHEET_ATLAS as ATLAS_FALLBACK } from "../src/harbour/nav/sheetAtlas.ts";
 import { Compass } from "../src/harbour/nav/Compass.tsx";
 import { QuickSheet } from "../src/harbour/nav/QuickSheet.tsx";
 import { HostPanel } from "../src/harbour/panels/HostPanel.tsx";
@@ -30,7 +30,7 @@ const RETIRED_WORDS = /\b(Together|Play|pots?|Hearthside)\b/;
 const OWNED = [
   "src/harbour/bubbles/Bubble.tsx", "src/harbour/bubbles/GlassChrome.tsx", "src/harbour/bubbles/icons.tsx",
   "src/harbour/panels/CompactPanel.tsx", "src/harbour/panels/HostPanel.tsx", "src/harbour/panels/panelModel.ts",
-  "src/harbour/nav/QuickSheet.tsx", "src/harbour/nav/atlasFallback.ts", "src/harbour/nav/atlasSearch.ts",
+  "src/harbour/nav/QuickSheet.tsx", "src/harbour/nav/sheetAtlas.ts", "src/harbour/nav/atlasSearch.ts",
   "src/harbour/village/VillageHUD.tsx", "src/harbour/HarbourEntry.tsx", "src/harbour/nav/Compass.tsx", "src/harbour/nav/barBadges.ts",
   "src/harbour/nav/worldActions.ts", "src/harbour/desk/DeskShell.tsx",
 ];

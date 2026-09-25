@@ -12,6 +12,7 @@ import { HarbourFlat } from './flat/PlaceFlat.tsx';
 import { VILLAGE_ADDRESS } from './village/layout.ts';
 import { useIslandBar } from './nav/Compass.tsx';
 import { GlassBar } from './bubbles/GlassChrome.tsx';
+import { HostPanel } from './panels/HostPanel.tsx';
 import './village/village.css';
 
 /** The reading entry stays independent of the illustrated terrain chunk. */
@@ -52,7 +53,10 @@ function ReadingHarbour(props: HarbourWorldProps & { failed?: boolean }) {
           context={<DeskPlace place={place} reading={reading} onOpen={onOpen} onVisit={visit} onGuide={() => onQuickSheet?.()} />} />
         {/* The flat bar (Tool Atlas brief §3.5, §6): [Island] [Record] [All tools], Record centred —
             the island's three things and nothing else. The Desk's header drops its own flip while this stands. */}
-        <GlassBar edition="desk" fab={props.fab} onOpenTools={onQuickSheet} member={memberId} theme={theme} />
+        <GlassBar edition="desk" fab={props.fab} onOpenTools={onQuickSheet} toolsOpen={props.toolsOpen} member={memberId} theme={theme} />
+        {props.panel?.host && <HostPanel key={props.panel.host} host={props.panel.host} reading={reading} extras={props.panel.extras} theme={theme} onClose={props.panel.onClose} onOpen={props.panel.onOpen}
+          onRecord={props.panel.onRecord} onMarkPaid={props.panel.onMarkPaid} onTalk={props.panel.onTalk} returnFocusTo={props.panel.returnFocusTo}
+          onVisit={props.panel.host !== 'hercules' ? () => { const host = props.panel?.host; if (host && host !== 'hercules') visit(host); props.panel?.onClose(); } : undefined} />}
       </>}
     </div>
   </section>;

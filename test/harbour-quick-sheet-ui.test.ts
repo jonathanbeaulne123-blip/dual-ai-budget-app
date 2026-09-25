@@ -38,7 +38,7 @@ const type = async (text: string) => {
 };
 const results = () => [...host.querySelectorAll<HTMLButtonElement>("[data-atlas-result]")];
 const WORDS: HouseholdWord[] = [
-  { id: "bill:r-hydro", word: "Hydro", kind: "bill", target: "cellar-bills", object: "recurrence:r-hydro", group: "bills", where: "the Cellar" },
+  { id: "bill:r-hydro", word: "Hydro", kind: "bill", target: "cellar-bills", object: "recurrence:r-hydro", group: "bills-dates", where: "the Cellar" },
   { id: "account:visa", word: "Visa", kind: "account", target: "accounts", object: "account:visa", group: "fund", where: "the Fund bank's accounts" },
   { id: "member:bianca", word: "Bianca", kind: "member", target: "queen", object: "contributions:bianca", group: "fund", where: "her contributions" },
 ];
@@ -122,7 +122,7 @@ describe("the order and the rows", () => {
   it("lists Recent, Record, the six jobs, Places, Hercules and Settings, in that order", async () => {
     await act(async () => root.render(createElement(QuickSheet, props({ recent: ["books", "calendar", "not-a-tool", "fund-bank"] }))));
     const order = [...host.querySelectorAll<HTMLElement>("[data-quick-sheet-group]")].map((g) => g.dataset.quickSheetGroup);
-    expect(order).toEqual(["recent", "record", "bills", "fund", "kitty", "books", "plans", "boathouse", "places", "hercules", "settings"]);
+    expect(order).toEqual(["recent", "record", "bills-dates", "fund", "kitty-banks", "books", "plans", "boathouse", "places", "hercules", "settings"]);
     const headings = [...host.querySelectorAll("[data-quick-sheet-group] h3")].map((h) => h.textContent);
     expect(headings).toEqual(["Recent", "Record", "Bills and dates", "The Fund", "Kitty Banks", "Books", "Plans", "The Boathouse", "Places", "Hercules", "Settings"]);
     const recent = [...host.querySelectorAll<HTMLElement>('[data-quick-sheet-group="recent"] [data-quick-sheet-tool]')].map((b) => b.dataset.quickSheetTool);
@@ -156,13 +156,14 @@ describe("the order and the rows", () => {
     }))));
     const click = async (id: string) => act(async () => host.querySelector<HTMLButtonElement>(`[data-quick-sheet-tool="${id}"]`)!.click());
     expect(host.querySelector('[data-quick-sheet-tool="books"]')?.getAttribute("aria-current")).toBe("true");
-    await click("bills");
+    // The rows are src/core/toolAtlas.ts's; the sheet turns each structured target into the address it dispatches.
+    await click("cellar");
     await click("accounts");
     await click("charter");
     await click("status");
     await click("hercules");
     await click("cottage");
-    expect(calls).toEqual(["open:cellar-bills", "target:accounts", "settings:charter", "settings:null", "hercules", "open:wardrobe"]);
+    expect(calls).toEqual(["open:cellar-bills", "target:books:wallet", "settings:household", "settings:null", "hercules", "open:wardrobe"]);
   });
 
   it("hides the world rows until the integrator can walk them, and keeps the private folio to Mine", async () => {
@@ -173,9 +174,12 @@ describe("the order and the rows", () => {
     expect(host.querySelector('[data-quick-sheet-tool="fund-bank"]')).not.toBeNull();
     await act(async () => root.render(createElement(QuickSheet, props({ space: "mine", onWorld: (action) => worlds.push(action) }))));
     expect(host.querySelector('[data-quick-sheet-tool="private-folio"]')).not.toBeNull();
-    expect(host.querySelector('[data-quick-sheet-tool="fund-bank"]')).toBeNull();
-    await act(async () => host.querySelector<HTMLButtonElement>('[data-quick-sheet-tool="arrange"]')!.click());
-    expect(worlds).toEqual(["arrange"]);
+    // The Fund bank is the shared Fund in both spaces (D2); the shared wishes and Arrange room are Ours only.
+    expect(host.querySelector('[data-quick-sheet-tool="fund-bank"]')).not.toBeNull();
+    expect(host.querySelector('[data-quick-sheet-tool="wishes"]')).toBeNull();
+    expect(host.querySelector('[data-quick-sheet-tool="arrange"]')).toBeNull();
+    await act(async () => host.querySelector<HTMLButtonElement>('[data-quick-sheet-tool="step-in"]')!.click());
+    expect(worlds).toEqual(["step-in"]);
   });
 });
 
@@ -245,7 +249,7 @@ describe("search", () => {
     expect(first.querySelector("small")!.textContent).toBe("Books");
     expect(host.querySelector('[role="status"]')!.textContent).toMatch(/result/);
     // The groups step aside while searching.
-    expect(host.querySelector('[data-quick-sheet-group="bills"]')).toBeNull();
+    expect(host.querySelector('[data-quick-sheet-group="bills-dates"]')).toBeNull();
     await type("hydro");
     expect(results()[0]!.textContent).toContain("Hydro");
     expect(results()[0]!.textContent).toContain("Bills and dates — the Cellar");

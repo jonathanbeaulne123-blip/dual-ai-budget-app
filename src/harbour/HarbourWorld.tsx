@@ -70,6 +70,9 @@ import "./interiors/interiors.css";
 import { emptyMineLayer, mineLayer, type MineSpace } from "./mine/mineLayer.ts";
 import { MineLayer, type MineOpenKind } from "./mine/MineLayer.tsx";
 import { MineRibbon } from "./mine/MineRibbon.tsx";
+import { Dock, type DockProps } from "./glass/Dock.tsx";
+import { HostPanel } from "./panels/HostPanel.tsx";
+import type { PanelExtras, PanelHost } from "./panels/panelModel.ts";
 
 /**
  * The Court's React shell (BUILD_PLAN #2). Props are `HouseWorld`'s plus the
@@ -121,7 +124,31 @@ export type HarbourWorldProps = {
   mineHousehold?: Household;
   /** Open a Mine mark's own tool (a step or footpath → the Glasshouse steps; a bank → its Kitty Bank). `id` null = the whole list. */
   onOpenMine?: (kind: MineOpenKind, id: string | null) => void;
+  /**
+   * The dock (Tool Atlas §4.1, track B1): the strip band and the camp card.
+   * The App builds both from the same day ledger; the harbour adds the glass's
+   * look (`calm`, `lite`) and stands it between Simple view and All tools, so
+   * Tab visits Simple view → the strip → the card → All tools → Record (A5).
+   */
+  dock?: Omit<DockProps, "night" | "calm" | "lite">;
+  /** All tools is open: its bubble reads as expanded. */
+  toolsOpen?: boolean;
+  /** One host's compact panel (brief §3.2's right-hand column), above the dock. The App owns which host is open. */
+  panel?: HarbourPanel;
   children?: ReactNode;
+};
+
+/** The App's wiring for the one open compact panel; the harbour feeds it the reading. */
+export type HarbourPanel = {
+  host: PanelHost | null;
+  extras?: PanelExtras;
+  onClose: () => void;
+  /** An existing house door (`openHouseObject`); the Campfire's door is routed by the App. */
+  onOpen: (target: string, object?: string) => void;
+  onRecord?: () => void;
+  onMarkPaid?: (recurrenceId: string) => void;
+  onTalk?: () => void;
+  returnFocusTo?: HTMLElement | null;
 };
 
 
@@ -1151,8 +1178,12 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {!toolOpen && !desk && <MineRibbon space={space} />}
       {space === "mine" && status === "ready" && !toolOpen && <MineLayer layer={mine} place={place} rects={rects} hidden={Boolean(skating || monorail)} onOpen={openMine} />}
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating||monorail)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
-      {(status==="ready"||desk)&&!toolOpen&&<VillageHUD flat={desk} onGuide={()=>{setGuideOpen(open=>!open);setMountainInspect(undefined);}} guideOpen={guideOpen} appearanceRequest={appearanceRequest} fab={props.fab} onQuickSheet={onQuickSheet} place={place} travelling={travelTo} onVisit={visit} onWander={wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={desk?undefined:chooseAvatar} onJourney={!desk&&props.onJourney?openJourney:undefined} onArrange={!desk&&props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
+      {(status==="ready"||desk)&&!toolOpen&&<VillageHUD flat={desk} memberId={memberId} theme={theme} calm={mountainCalm||comfort.quiet} lite={tier==="lite"} toolsOpen={props.toolsOpen}
+        glassBetween={props.dock&&!desk?<Dock {...props.dock} calm={mountainCalm||comfort.quiet} lite={tier==="lite"} card={{...props.dock.card,onStepIn:()=>{setGuideOpen(true);setMountainInspect(undefined);}}}/>:undefined} onGuide={()=>{setGuideOpen(open=>!open);setMountainInspect(undefined);}} guideOpen={guideOpen} appearanceRequest={appearanceRequest} fab={props.fab} onQuickSheet={onQuickSheet} place={place} travelling={travelTo} onVisit={visit} onWander={wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={desk?undefined:chooseAvatar} onJourney={!desk&&props.onJourney?openJourney:undefined} onArrange={!desk&&props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
         presence={<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} worldUnavailable={partnerWalk.unavailable} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />}/>}
+      {(status==="ready"||desk)&&!toolOpen&&props.panel?.host&&<HostPanel key={props.panel.host} host={props.panel.host} reading={reading} extras={props.panel.extras} theme={theme} onClose={props.panel.onClose} onOpen={props.panel.onOpen} onRecord={props.panel.onRecord} onMarkPaid={props.panel.onMarkPaid} onTalk={props.panel.onTalk} returnFocusTo={props.panel.returnFocusTo}
+        onVisit={()=>{const host=props.panel?.host;if(host&&host!=="hercules"&&Object.hasOwn(VILLAGE_ADDRESS,host))navigatePlace(host as HarbourPlaceId);props.panel?.onClose();}}
+        onStepIn={host=>{if(host!=="hercules"&&Object.hasOwn(VILLAGE_ADDRESS,host))navigatePlace(host as HarbourPlaceId);props.panel?.onClose();}}/>}
       {(status==='ready'||showFlat)&&!toolOpen&&<MountainPanel open={guideOpen} onOpenChange={open=>{setGuideOpen(open);if(!open)setMountainInspect(undefined);}} hideTrigger life={mountainLife} recoveryWords={recoveryView.words} calmOn={mountainCalm||comfort.quiet} soundOn={worldSound&&comfort.sound} riding={mountainRiding} monorail={monorail} partnerName={partner?.name??partnerName} conditionWords={reading.condition.words} reading={reading.basin} statusLine={statusLine} onAction={mountainAction} onOpen={target=>{if(Object.hasOwn(VILLAGE_ADDRESS,target))navigatePlace(target as HarbourPlaceId);else onOpen(target);}} flat={showFlat} inspect={mountainInspect} nearestStation={kind=>runtime.current?.nearestStation?.(kind)??0} here={guideHere}/>}
       {status==='ready'&&!toolOpen&&place==='court'&&standing&&!monorail&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating}
         onOpenFund={()=>{leaveSkating();onOpen('fund');}}

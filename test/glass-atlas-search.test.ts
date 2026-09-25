@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ATLAS_FALLBACK, ATLAS_JOB_GROUPS, ATLAS_RECORD_VERBS } from "../src/harbour/nav/atlasFallback.ts";
+import { SHEET_ATLAS as ATLAS_FALLBACK, ATLAS_JOB_GROUPS, ATLAS_RECORD_VERBS } from "../src/harbour/nav/sheetAtlas.ts";
 import { atlasTools, fit, normalizeAtlasText, searchAtlas, type HouseholdWord } from "../src/harbour/nav/atlasSearch.ts";
 
 /**
@@ -8,17 +8,17 @@ import { atlasTools, fit, normalizeAtlasText, searchAtlas, type HouseholdWord } 
  * synonym, with its group shown; every household word resolves.
  */
 const WORDS: HouseholdWord[] = [
-  { id: "bill:r-hydro", word: "Hydro", kind: "bill", target: "cellar-bills", object: "recurrence:r-hydro", group: "bills", where: "the Cellar" },
+  { id: "bill:r-hydro", word: "Hydro", kind: "bill", target: "cellar-bills", object: "recurrence:r-hydro", group: "bills-dates", where: "the Cellar" },
   { id: "account:visa", word: "Visa ••4417", kind: "account", target: "accounts", object: "account:visa", group: "fund" },
-  { id: "bank:g-lisbon", word: "Lisbon trip", kind: "bank", target: "loft-banks", object: "goal:g-lisbon", group: "kitty" },
+  { id: "bank:g-lisbon", word: "Lisbon trip", kind: "bank", target: "loft-banks", object: "goal:g-lisbon", group: "kitty-banks" },
   { id: "member:bianca", word: "Bianca", kind: "member", target: "queen", object: "contributions:bianca", group: "fund" },
-  { id: "bill:r-books", word: "Books club", kind: "bill", target: "cellar-bills", object: "recurrence:r-books", group: "bills" },
+  { id: "bill:r-books", word: "Books club", kind: "bill", target: "cellar-bills", object: "recurrence:r-books", group: "bills-dates" },
 ];
 
-describe("the atlas fallback", () => {
+describe("the sheet's atlas (src/core/toolAtlas.ts, as the sheet dispatches it)", () => {
   it("keeps the brief's §3.2 order: six jobs, Places, Settings, Hercules", () => {
-    expect(ATLAS_FALLBACK.map((g) => g.id)).toEqual(["bills", "fund", "kitty", "books", "plans", "boathouse", "places", "settings", "hercules"]);
-    expect(ATLAS_JOB_GROUPS).toEqual(["bills", "fund", "kitty", "books", "plans", "boathouse"]);
+    expect(ATLAS_FALLBACK.map((g) => g.id)).toEqual(["bills-dates", "fund", "kitty-banks", "books", "plans", "boathouse", "places", "settings", "hercules"]);
+    expect(ATLAS_JOB_GROUPS).toEqual(["bills-dates", "fund", "kitty-banks", "books", "plans", "boathouse"]);
     expect(ATLAS_FALLBACK.slice(0, 6).map((g) => g.heading)).toEqual(["Bills and dates", "The Fund", "Kitty Banks", "Books", "Plans", "The Boathouse"]);
   });
 
@@ -93,7 +93,9 @@ describe("matching", () => {
   it("keeps Mine's private folio out of Ours, and Ours-only tools out of Mine", () => {
     expect(searchAtlas("private", ATLAS_FALLBACK, { space: "ours" }).some((h) => h.key === "tool:private-folio")).toBe(false);
     expect(searchAtlas("private", ATLAS_FALLBACK, { space: "mine" })[0]!.key).toBe("tool:private-folio");
-    expect(searchAtlas("fund bank", ATLAS_FALLBACK, { space: "mine" }).some((h) => h.key === "tool:fund-bank")).toBe(false);
+    // The Fund bank is the shared Fund in both spaces (D2); the Boathouse's shared wishes are Ours only.
+    expect(searchAtlas("wishes", ATLAS_FALLBACK, { space: "mine" }).some((h) => h.key === "tool:wishes")).toBe(false);
+    expect(searchAtlas("wishes", ATLAS_FALLBACK, { space: "ours" }).some((h) => h.key === "tool:wishes")).toBe(true);
   });
 
   it("finds the Record verbs and hides Shift for a member without a job", () => {

@@ -6,7 +6,7 @@
  *
  * Pure. Reads the atlas and the words it is handed; writes nothing.
  */
-import { ATLAS_RECORD_VERBS, type AtlasGroup, type AtlasGroupId, type AtlasRecordMode, type AtlasSpace, type AtlasTool } from "./atlasFallback.ts";
+import { ATLAS_RECORD_VERBS, type AtlasGroup, type AtlasGroupId, type AtlasRecordMode, type AtlasSpace, type AtlasTool } from "./sheetAtlas.ts";
 
 /** A word from the household's own books, and where it opens. */
 export type HouseholdWord = {
@@ -14,7 +14,7 @@ export type HouseholdWord = {
   id: string;
   word: string;
   kind: "bill" | "account" | "bank" | "member";
-  /** Dispatched like a tool's target (see `atlasFallback.ts`). */
+  /** Dispatched like a tool's target (see `sheetAtlas.ts`). */
   target: string;
   /** The object inside the target: the jar, the account row, the bank. */
   object?: string;

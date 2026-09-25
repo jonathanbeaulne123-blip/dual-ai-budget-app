@@ -2,7 +2,7 @@ import { lazy, type ComponentProps } from "react";
 import { DeferredBooksPage, DeferredSurface } from "../deferredSurfaces.tsx";
 import { OnboardingReady } from "../OnboardingReady.tsx";
 import { CampfireDoor } from "../harbour/campfire/ritual/CampfireDoor.tsx";
-import { formatCad, type Household, type UndoToken } from "../core/index.ts";
+import { formatCad } from "../core/index.ts";
 import { canonical } from "../ledgerSync/patch.ts";
 
 const AccountHistorySetup = lazy(() => import("../AccountHistorySetup.tsx").then(module => ({ default: module.AccountHistorySetup })));
@@ -36,11 +36,6 @@ export type BooksTabProps =
      * `onOpenCampfire` opens the ritual sheet; the leftover guide lives there.
      */
     campfireDoor?: { onOpenCampfire?: () => void } | null;
-    /**
-     * @deprecated App() still hands over the old leftover guide's props here; until the
-     * integrator renames it to `campfireDoor`, a non-null value means "show the door".
-     */
-    closeTheMonth?: { onApply?: (household: Household, undo?: UndoToken) => unknown; [key: string]: unknown } | null;
   };
 
 /**
@@ -61,7 +56,6 @@ export function BooksTab({
   onReadyDismiss,
   onAskRemove,
   campfireDoor,
-  closeTheMonth,
   ...books
 }: BooksTabProps) {
   return (
@@ -90,7 +84,7 @@ export function BooksTab({
         onAskRemove({ transactionId: transaction.id, summary, reviewedSummaryBasis: canonical([transaction.id, transaction.amountCents, transaction.type, transaction.source, transaction.note]) });
       }}
     />}
-    {(campfireDoor || closeTheMonth) && (
+    {campfireDoor && (
       <CampfireDoor household={books.booksHousehold} memberId={books.memberId} today={today} onOpenCampfire={campfireDoor?.onOpenCampfire}
         why="Where leftover goes, and closing the books, are at the Campfire's Settle." />
     )}

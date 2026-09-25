@@ -31,6 +31,13 @@ export type GlassFab = {
   /** Ignored: the closed dial is always named "Record" on the glass. */
   closedLabel?: string;
   onPick: (mode: FabAddMode) => void;
+  /** Bill paid (the fifth verb): absent, the dial shows four. */
+  onBillPaid?: () => void;
+  /** Mirrors App's `adding`: the dial shuts (and goes `inert`) while an Add sheet is open. */
+  closed?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** @deprecated The dial no longer navigates; accepted and ignored. */
+  onGo?: (tab: string) => void;
 };
 /** Which world the person is standing in: the island (flip says "Simple view") or the Desk (flip says "Island"). */
 export type GlassEdition = "island" | "desk";
@@ -164,7 +171,7 @@ export function RecordBubble(props: GlassLook & { fab?: GlassFab; placement?: "f
       storage={props.storage}
       environment={props.environment}
     >
-      <FabSpeedDial actions={props.fab.actions} closedLabel="Record" onPick={props.fab.onPick} />
+      <FabSpeedDial actions={props.fab.actions} closedLabel="Record" onPick={props.fab.onPick} onBillPaid={props.fab.onBillPaid} closed={props.fab.closed} onOpenChange={props.fab.onOpenChange} />
     </Bubble>
   );
 }

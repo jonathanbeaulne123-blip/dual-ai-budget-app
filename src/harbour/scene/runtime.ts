@@ -21,6 +21,7 @@ import {insideVillageBuilding} from '../body/obstacles.ts';
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
 import { worldDiagnostics } from "../../house/world/diagnostics.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
+import { inCameraDeadzone } from "../bubbles/deadzone.ts";
 import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/courtCamera.ts";
 // ── The body lane (world-body) ───────────────────────────────────────────────
 // Everything this lane adds to the runtime is additive and marked like this
@@ -1471,6 +1472,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   function onContextMenu(event: MouseEvent): void { if (walker?.skate.active()) event.preventDefault(); }
   function onPointerDown(event: PointerEvent): void {
     if (disposed || monorail || (event.target instanceof Element && event.target.closest("button,a,input,select,textarea,[role=button]"))) return;
+    // The glass's dead zones (Tool Atlas §4.1, A8): a gesture that starts on or near a bubble, the dock or an open panel never moves the map.
+    if ((event.target instanceof Element && event.target.closest("[data-camera-deadzone]")) || inCameraDeadzone(event.clientX, event.clientY, host.ownerDocument)) return;
     if (skatePointer(event, "down")) return;
     const { x, y, bounds } = stagePoint(event);
     const hit = pointers.size === 0 ? resolveHit(x, y, bounds) : { kind: "none" as const };
@@ -1540,7 +1543,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     schedule();
   }
   function onWheel(event: WheelEvent): void {
-    if (disposed) return;
+    if (disposed || inCameraDeadzone(event.clientX, event.clientY, host.ownerDocument)) return;
     event.preventDefault();
     const delta = Math.max(-0.5, Math.min(0.5, event.deltaY * 0.0015));
     // ── The body lane (world-body) ── the wheel pulls the follow camera in and out.

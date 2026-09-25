@@ -7,8 +7,8 @@ import { TARGET_NAMES } from "../../house/navigation.ts";
 import { type HouseLevel, type HouseRoom } from "../../hearthside/houseRoutes.ts";
 import { HARBOUR_PLACE_NAMES, type HarbourPlaceId } from "../flag.ts";
 import { VILLAGE_ADDRESS } from "../village/layout.ts";
-// The one list. Track A's `src/core/toolAtlas.ts` replaces this import (same shape).
-import { ATLAS_FALLBACK as ATLAS, ATLAS_JOB_GROUPS, ATLAS_RECORD_VERBS, type AtlasGroup, type AtlasRecordMode, type AtlasSpace, type AtlasTool } from "./atlasFallback.ts";
+// The one list: `src/core/toolAtlas.ts`, as the sheet dispatches it.
+import { SHEET_ATLAS as ATLAS, ATLAS_JOB_GROUPS, ATLAS_RECORD_VERBS, type AtlasGroup, type AtlasRecordMode, type AtlasSpace, type AtlasTool } from "./sheetAtlas.ts";
 import { searchAtlas, type AtlasResult, type HouseholdWord } from "./atlasSearch.ts";
 import { runWorldAction, useWorldActions, type WorldAction } from "./worldActions.ts";
 import "./harbour-nav.css";
@@ -243,6 +243,7 @@ export function QuickSheet(props: QuickSheetProps) {
       return;
     }
     if (target.startsWith("world:")) { onClose(); if (props.onWorld) props.onWorld(target.slice(6)); else runWorldAction(target.slice(6)); return; }
+    if (target === "edition") { toggleEdition(); return; }
     if (target === "hercules") { props.onHercules(); return; }
     if (Object.hasOwn(TARGET_NAMES, target)) { props.onOpen(target, object); return; }
     if (props.onTarget) props.onTarget(target, object); else props.onOpen(target, object);
@@ -250,7 +251,7 @@ export function QuickSheet(props: QuickSheetProps) {
 
   function openTool(tool: AtlasTool, event: ReactMouseEvent) {
     props.onUsed?.(tool.id);
-    dispatch(tool.target, undefined, keyboardClick(event));
+    dispatch(tool.target, tool.object, keyboardClick(event));
   }
   function pick(mode: AtlasRecordMode) { props.onPick?.(mode); onClose(); }
 

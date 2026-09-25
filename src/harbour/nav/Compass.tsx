@@ -33,7 +33,10 @@ export type CompassFab = {
   closedLabel: string;
   onOpenChange: (open: boolean) => void;
   onPick: (mode: FabAddMode) => void;
-  onGo: (tab: Extract<FabAction, { kind: "go" }>["tab"]) => void;
+  /** The dial's fifth verb (Tool Atlas §3.3): opens the Bill paid Add flow. Absent, Bill paid is hidden. */
+  onBillPaid?: () => void;
+  /** @deprecated The dial no longer navigates; accepted and ignored for one release. */
+  onGo?: (tab: string) => void;
   /** Mirrors App's `adding`: the dial stays shut while an entry sheet is open. */
   closed?: boolean;
 };
