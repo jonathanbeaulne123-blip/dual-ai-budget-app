@@ -29,6 +29,14 @@ describe('Horizon real solar clock', () => {
     expect(solarPosition(new Date('2026-06-21T17:02:00Z'), opts).direction[2]).toBeGreaterThan(0);
     expect(solarPosition(new Date('2026-06-21T06:00:00Z'), opts).elevation).toBeLessThan(-12);
   });
+  it('reports the same civil sunrise before and after the spring clock change', () => {
+    const before = solarPosition(new Date('2026-03-08T06:00:00Z'), { timeZone: 'America/Toronto' });
+    const after = solarPosition(new Date('2026-03-08T12:00:00Z'), { timeZone: 'America/Toronto' });
+    expect(before.offsetMinutes).toBe(-300); expect(after.offsetMinutes).toBe(-240);
+    expect(before.sunrise).toBeCloseTo(after.sunrise, 3);
+    expect(before.sunset).toBeCloseTo(after.sunset, 3);
+    expect(before.solarNoon).toBeCloseTo(after.solarNoon, 3);
+  });
   it('accepts valid dev overrides and ignores every URL override in production', () => {
     const now = new Date('2026-09-25T18:20:00Z'), opts = { timeZone: 'America/Toronto', dev: true };
     expect(solarReviewDate(now, '?date=2026-12-21&sun=02:00', opts).toISOString()).toBe('2026-12-21T07:00:00.000Z');

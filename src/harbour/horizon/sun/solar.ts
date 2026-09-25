@@ -72,11 +72,14 @@ export function solarPosition(date: Date, options: SolarOptions = {}): SolarPosi
   const civilUtc = Date.UTC(p.year!, p.month! - 1, p.day!), midnight = civilUtc - offsetMinutes * 60_000;
   let solarNoon = 720 + offsetMinutes - 4 * longitude;
   for (let i = 0; i < 3; i++) solarNoon = 720 + offsetMinutes - 4 * longitude - terms(midnight + solarNoon * 60_000).equation;
+  // On a clock-change day, an event can use a different UTC offset than "now".
+  // Convert each event with the zone rules at that event, not at this invocation.
+  const civilEvent = (minutes: number): number => minutes + timeZoneOffset(new Date(midnight + minutes * 60_000), timeZone) - offsetMinutes;
   const g = geometry(date.getTime(), latitude, longitude), elevation = g.elevation + refraction(g.elevation), e = elevation * rad, a = g.azimuth * rad;
   return {
     azimuth: g.azimuth, elevation, geometricElevation: g.elevation, direction: [Math.sin(a) * Math.cos(e), Math.sin(e), -Math.cos(a) * Math.cos(e)],
-    sunrise: eventMinutes(midnight, solarNoon, true, -0.833, latitude, longitude), sunset: eventMinutes(midnight, solarNoon, false, -0.833, latitude, longitude),
-    civilDawn: eventMinutes(midnight, solarNoon, true, -6, latitude, longitude), civilDusk: eventMinutes(midnight, solarNoon, false, -6, latitude, longitude), solarNoon,
+    sunrise: civilEvent(eventMinutes(midnight, solarNoon, true, -0.833, latitude, longitude)), sunset: civilEvent(eventMinutes(midnight, solarNoon, false, -0.833, latitude, longitude)),
+    civilDawn: civilEvent(eventMinutes(midnight, solarNoon, true, -6, latitude, longitude)), civilDusk: civilEvent(eventMinutes(midnight, solarNoon, false, -6, latitude, longitude)), solarNoon: civilEvent(solarNoon),
     latitude, longitude, timeZone, offsetMinutes, standardOffsetMinutes, daylight: g.elevation >= -0.833,
     date: `${p.year}-${String(p.month).padStart(2, '0')}-${String(p.day).padStart(2, '0')}`, localMinutes: p.hour! * 60 + p.minute! + p.second! / 60,
   };
