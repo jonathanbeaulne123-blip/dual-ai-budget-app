@@ -14,8 +14,16 @@ function trackRuns():Point3[][]{
   for(const p of FUNICULAR_LINE.path){if(Math.abs(p[1]-baseHeight(p[0],p[2]))<2.5)run.push(p);else{if(run.length>3)out.push(run);run=[];}}
   if(run.length>3)out.push(run);return out;
 }
+const maxPitch=(pts:readonly Point3[])=>{let m=0;for(let i=1;i<pts.length;i++){const a=pts[i-1]!,b=pts[i]!,h=Math.hypot(b[0]-a[0],b[2]-a[2]);if(h>.05)m=Math.max(m,Math.abs(b[1]-a[1])/h);}return m;};
+function underStair(pts:readonly Point3[]):Point3[]{
+  const deep=1.25*maxPitch(pts),s=[0];for(let i=1;i<pts.length;i++)s.push(s[i-1]!+Math.hypot(pts[i]![0]-pts[i-1]![0],pts[i]![2]-pts[i-1]![2]));
+  const L=s[s.length-1]!;return pts.map((p,i)=>[p[0],p[1]-deep*Math.min(1,s[i]!/2.5,(L-s[i]!)/2.5),p[2]] as Point3);
+}
 export const EXTRA_BENCH_LINES:readonly BenchLine[]=[
-  ...PATH_EDGES.filter(e=>e.kind==='path'||e.kind==='stair').map(e=>({id:e.id,points:e.points,halfWidth:e.halfWidth,shoulder:.4,slope:1,inset:.04,fill:'footprint' as const})),
+  // A stair is a built flight: the ground under it sits below its whole pitch (each bench sample holds
+  // ±1.2 of line, so on a 0.5 pitch the ground would otherwise poke up to 0.6 through the treads).
+  // Its ends stay flush with the ground they meet (no pit at the foot or the head).
+  ...PATH_EDGES.filter(e=>e.kind==='path'||e.kind==='stair').map(e=>({id:e.id,points:e.kind==='stair'?underStair(e.points):e.points,halfWidth:e.halfWidth,shoulder:.4,slope:1,inset:.04,fill:'footprint' as const,carve:e.kind==='stair'})),
   ...trackRuns().map((points,i)=>({id:`funicular-formation:${i}`,points,halfWidth:1.8,shoulder:.3,slope:1,inset:.35,fill:'footprint' as const})),
 ];
 export const EXTRA_BENCH_PADS:readonly BenchPad[]=[

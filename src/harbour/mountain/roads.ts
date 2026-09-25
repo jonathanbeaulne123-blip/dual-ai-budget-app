@@ -11,6 +11,7 @@ import {islandHeight} from './islandShape.ts';
 /** The ground a body would land on beside the road: the island south of z −48, the mountain north of it. */
 const mountainGround=(x:number,z:number)=>Math.max(islandHeight(x,z),z<-30?gridGround(x,z):-Infinity);
 import {arcLengths,mix,type Point3} from './math.ts';
+import {MOUNTAIN_PATH_GRAPH} from './pathGraph.ts';
 
 export type EdgeKind='open'|'kerb'|'parapet'|'wall'|'bridge';
 export type SupportKind='ground'|'embankment'|'bridge'|'tunnel';
@@ -61,17 +62,69 @@ function classify(points:readonly Point3[],id:string,halfWidthAt:(i:number)=>num
 export const BRANCH_DEPARTURES=[
   {id:'library-balcony',line:'mountain-road',planS:roadTagS('b2-east')-1,toward:[37,41.2,-181.6] as Point3,halfWidth:1.6},
 ] as const;
+/** A gap in a road edge: a branch deck or a path/stair leaves the road there, so the rail, parapet or
+ * retaining wall stops for it (edge samples inside it are `open` and carry no collision). */
+export type EdgeOpening={id:string;line:string;side:'left'|'right';s0:number;s1:number;by:'branch'|'path'|'junction';corridor:readonly Point3[];halfWidth:number};
+const OPENINGS:EdgeOpening[]=[];
+export const EDGE_OPENINGS:readonly EdgeOpening[]=OPENINGS;
 const OPENED={left:new WeakSet<RoadSample>(),right:new WeakSet<RoadSample>()};
-/** The edge samples a departure passes through (branch half-width plus a body's clearance each side). */
-function openDepartures(line:RoadLine){
+/** Where each departure's first leg crosses the road edge (half-width plus a body's clearance each side). */
+function departures(line:RoadLine):{id:string;by:'branch'|'path';corridor:Point3[];halfWidth:number}[]{
+  const out:{id:string;by:'branch'|'path';corridor:Point3[];halfWidth:number}[]=[];
   for(const d of BRANCH_DEPARTURES){if(d.line!==line.id)continue;
-    const from=line.samples[Math.max(0,Math.min(line.samples.length-1,Math.round(d.planS/ROAD_PLAN_STEP)))]!.at,dx=d.toward[0]-from[0],dz=d.toward[2]-from[2],l2=dx*dx+dz*dz||1,reach=d.halfWidth+.9;
-    for(const sample of line.samples)for(const side of ['left','right'] as const){
-      const sign=side==='left'?1:-1,x=sample.at[0]+sample.normal[0]*sample.halfWidth*sign,z=sample.at[2]+sample.normal[2]*sample.halfWidth*sign;
-      const t=Math.max(0,Math.min(1,((x-from[0])*dx+(z-from[2])*dz)/l2));
-      if(Math.hypot(x-from[0]-dx*t,z-from[2]-dz*t)<reach){(sample as {-readonly [K in keyof RoadSample]:RoadSample[K]})[side]='open';OPENED[side].add(sample);}
+    out.push({id:d.id,by:'branch',corridor:[line.samples[Math.max(0,Math.min(line.samples.length-1,Math.round(d.planS/ROAD_PLAN_STEP)))]!.at,d.toward],halfWidth:d.halfWidth});}
+  // Every path and stair that starts at a junction on this line leaves it through the edge beside the junction.
+  const prefix=line.id==='mountain-road'?'road:':'lane:';
+  for(const e of MOUNTAIN_PATH_GRAPH.edges){if(e.kind==='road')continue;
+    for(const [end,pts] of [[e.from,e.points],[e.to,[...e.points].reverse()]] as const){
+      if(!end.startsWith(prefix))continue;
+      const node=pts[0]!,reach=(line.id==='mountain-road'?ROAD_HALF_WIDTH:ORCHARD_LANE_HALF_WIDTH)+3,corridor:Point3[]=[];
+      for(const p of pts){corridor.push(p);if(Math.hypot(p[0]-node[0],p[2]-node[2])>reach)break;}
+      if(corridor.length>1)out.push({id:e.id,by:'path',corridor,halfWidth:e.halfWidth});
     }
   }
+  return out;
+}
+/** Where two carriageways join (Orchard Lane off the road), each one's edge is open where it lies on the other. */
+function openJunctions(line:RoadLine){
+  const others=line.id==='mountain-road'?[{id:'orchard-lane',pts:ORCHARD_LANE_CENTRE,hw:ORCHARD_LANE_HALF_WIDTH}]:[{id:'mountain-road',pts:ROAD_CENTRE,hw:ROAD_HALF_WIDTH}];
+  for(const o of others){const opened:{side:'left'|'right';s:number}[]=[];let corridor:Point3[]=[];
+    for(const sample of line.samples)for(const side of ['left','right'] as const){
+      const sign=side==='left'?1:-1,x=sample.at[0]+sample.normal[0]*sample.halfWidth*sign,z=sample.at[2]+sample.normal[2]*sample.halfWidth*sign;
+      let best=Infinity,near:Point3|null=null;for(const q of o.pts){const e=Math.hypot(q[0]-x,q[2]-z);if(e<best){best=e;near=q;}}
+      if(near&&best<o.hw-.1&&Math.abs(near[1]-sample.at[1])<1.5){(sample as {-readonly [K in keyof RoadSample]:RoadSample[K]})[side]='open';OPENED[side].add(sample);opened.push({side,s:sample.s});corridor.push(near);}
+    }
+    for(const side of ['left','right'] as const){const ss=opened.filter(x=>x.side===side).map(x=>x.s);if(ss.length)OPENINGS.push({id:`${line.id}:${side}:junction:${o.id}`,line:line.id,side,s0:Math.min(...ss),s1:Math.max(...ss),by:'junction',corridor,halfWidth:o.hw});}
+  }
+  return line;
+}
+/** A guarded stub of one or two samples left between two openings is no rail at all: open it too. */
+function closeStubs(line:RoadLine){
+  const S=line.samples;
+  for(const side of ['left','right'] as const)for(let i=1;i<S.length-1;i++){
+    if(S[i]![side]==='open')continue;let j=i;while(j+1<S.length&&S[j+1]![side]===S[i]![side])j++;
+    if(j-i<2&&OPENED[side].has(S[i-1]!)&&j+1<S.length&&OPENED[side].has(S[j+1]!)){
+      for(let m=i;m<=j;m++){(S[m] as {-readonly [K in keyof RoadSample]:RoadSample[K]})[side]='open';OPENED[side].add(S[m]!);}
+      const o=OPENINGS.find(o=>o.line===line.id&&o.side===side&&(Math.abs(o.s1-S[i-1]!.s)<.01||Math.abs(o.s0-S[j+1]!.s)<.01));
+      if(o){o.s0=Math.min(o.s0,S[i]!.s);o.s1=Math.max(o.s1,S[j]!.s);}
+    }
+    i=j;
+  }
+}
+function openDepartures(line:RoadLine){
+  openJunctions(line);
+  for(const d of departures(line)){
+    const reach=d.halfWidth+.9,opened:{side:'left'|'right';s:number}[]=[];
+    for(const sample of line.samples)for(const side of ['left','right'] as const){
+      const sign=side==='left'?1:-1,x=sample.at[0]+sample.normal[0]*sample.halfWidth*sign,z=sample.at[2]+sample.normal[2]*sample.halfWidth*sign;
+      let best=Infinity,y=0;
+      for(let k=1;k<d.corridor.length;k++){const a=d.corridor[k-1]!,b=d.corridor[k]!,dx=b[0]-a[0],dz=b[2]-a[2],t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[2])*dz)/(dx*dx+dz*dz||1))),e=Math.hypot(x-a[0]-dx*t,z-a[2]-dz*t);if(e<best){best=e;y=mix(a[1],b[1],t);}}
+      // Only where the departure is at the road's own level (a path passing under a bridge opens nothing).
+      if(best<reach&&Math.abs(y-sample.at[1])<2.5){(sample as {-readonly [K in keyof RoadSample]:RoadSample[K]})[side]='open';OPENED[side].add(sample);opened.push({side,s:sample.s});}
+    }
+    for(const side of ['left','right'] as const){const ss=opened.filter(o=>o.side===side).map(o=>o.s);if(ss.length)OPENINGS.push({id:`${line.id}:${side}:${d.id}`,line:line.id,side,s0:Math.min(...ss),s1:Math.max(...ss),by:d.by,corridor:d.corridor,halfWidth:d.halfWidth});}
+  }
+  closeStubs(line);
   return line;
 }
 const roadBridge=(i:number)=>BRIDGE_SPANS.find(b=>b.line==='road'&&i>=b.i0&&i<=b.i1)?.id??null;
@@ -79,7 +132,7 @@ const laneBridge=(i:number)=>BRIDGE_SPANS.find(b=>b.line==='lane'&&i>=b.i0&&i<=b
 /** The foot tapers from mountain width to a town lane over its first 18 units. */
 const TOWN_HALF_WIDTH=3.5;
 export const MOUNTAIN_ROAD_LINE:RoadLine=openDepartures(classify(ROAD_CENTRE,'mountain-road',i=>mix(TOWN_HALF_WIDTH,ROAD_HALF_WIDTH,Math.min(1,i/18)),roadBridge));
-export const ORCHARD_LANE_LINE:RoadLine=classify(ORCHARD_LANE_CENTRE,'orchard-lane',()=>ORCHARD_LANE_HALF_WIDTH,laneBridge);
+export const ORCHARD_LANE_LINE:RoadLine=openDepartures(classify(ORCHARD_LANE_CENTRE,'orchard-lane',()=>ORCHARD_LANE_HALF_WIDTH,laneBridge));
 
 /** Interpolated sample at arc length `s` (3D arc length, uphill). */
 export function roadSampleAt(s:number,line:RoadLine=MOUNTAIN_ROAD_LINE):RoadSample{

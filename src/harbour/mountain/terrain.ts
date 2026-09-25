@@ -14,7 +14,9 @@ import {RIVER_BED_DEPTH} from './places.ts';
 /** Higher priority benches are cut last and so hold exactly (roads over lanes over paths and pads). */
 /** `fill:'footprint'` never builds an embankment beyond the line's own width (stairs and paths stand
  * on their own supports where the ground falls away); `'cone'` fills as well as cuts (roads). */
-export type BenchLine={id:string;points:readonly Point3[];halfWidth:number;shoulder:number;slope:number;inset:number;skip?:readonly (readonly [number,number])[];priority?:number;fill?:'cone'|'footprint'};
+/** `carve`: after every priority has been cut, the line's footprint is carved once more (a stair cut into a
+ * road's embankment keeps its treads clear; the cut's sides batter back at `slope`). */
+export type BenchLine={id:string;points:readonly Point3[];halfWidth:number;shoulder:number;slope:number;inset:number;skip?:readonly (readonly [number,number])[];priority?:number;fill?:'cone'|'footprint';carve?:boolean};
 export type BenchPad={id:string;at:Point3;half:readonly [number,number];yaw:number;inset:number;slope:number;priority?:number;fill?:'cone'|'footprint'};
 
 const EASE=6;
@@ -67,6 +69,23 @@ export function bakeFinal(lines:readonly BenchLine[],pads:readonly BenchPad[],re
       // own edge and the ground between ramps across the gap (a retaining wall stands there).
       if(l>h){if(l-h>.3&&priority===priorities[priorities.length-1]){conflicts++;conflictCells.push(i);}const a=hiU[i]!,b=loU[i]!;g.data[i]=h+(l-h)*(a/((a+b)||1));}
       else g.data[i]=Math.min(h,Math.max(l,g.data[i]!));
+    }
+  }
+  for(const line of lines){if(!line.carve)continue;
+    for(let i=0;i<line.points.length;i++){
+      const p=line.points[i]!,a=line.points[Math.max(0,i-1)]!,b=line.points[Math.min(line.points.length-1,i+1)]!,tx=b[0]-a[0],tz=b[2]-a[2],tl=Math.hypot(tx,tz)||1,ux=tx/tl,uz=tz/tl,half=tl*.4;
+      // Interpolate the line's height along its own short stretch (the treads rise through it).
+      const ahead=i<line.points.length-1?line.points[i+1]!:p,behind=i>0?line.points[i-1]!:p;
+      const reach=Math.ceil(line.halfWidth+line.shoulder+3),cx=Math.round(p[0]-g.minX),cz=Math.round(p[2]-g.minZ);
+      for(let dz=-reach;dz<=reach;dz++){const row=cz+dz;if(row<0||row>=rows)continue;const pz=g.minZ+row-p[2];
+        for(let dx=-reach;dx<=reach;dx++){const col=cx+dx;if(col<0||col>=cols)continue;const px=g.minX+col-p[0];
+          const along=px*ux+pz*uz;if(along<-half&&i>0||along>half&&i<line.points.length-1)continue;
+          const c=Math.max(-half,Math.min(half,along)),d=Math.hypot(px-ux*c,pz-uz*c);
+          const q=c>=0?ahead:behind,t=Math.min(1,Math.abs(c)/(Math.hypot(q[0]-p[0],q[2]-p[2])||1)),y=p[1]+(q[1]-p[1])*t-line.inset;
+          const u=Math.max(0,d-line.halfWidth-line.shoulder),k=row*cols+col;
+          if(u<=3)g.data[k]=Math.min(g.data[k]!,y+u*line.slope);
+        }
+      }
     }
   }
   // The river keeps its bed: nothing benched beside it may bury the water (bridges span it, roads keep clear).

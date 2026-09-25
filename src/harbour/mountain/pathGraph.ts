@@ -25,6 +25,13 @@ const district=(id:string)=>DISTRICTS.find(d=>d.id===id)!;
 const roadAt=(planS:number,line:'road'|'lane'='road'):Point3=>{const pts=line==='road'?ROAD_CENTRE:ORCHARD_LANE_CENTRE;return pts[Math.max(0,Math.min(pts.length-1,Math.round(planS/ROAD_SAMPLE_STEP)))]!;};
 const nearestRoadS=(x:number,z:number,line:'road'|'lane'='road')=>{const pts=line==='road'?ROAD_CENTRE:ORCHARD_LANE_CENTRE;let best=0,d=Infinity;pts.forEach((p,i)=>{const e=Math.hypot(p[0]-x,p[2]-z);if(e<d){d=e;best=i;}});return best*ROAD_SAMPLE_STEP;};
 
+/** On a road or lane carriageway (plan only; a body's clearance beyond the edge). */
+const onRoadXZ=(x:number,z:number)=>{for(const [pts,hw] of [[ROAD_CENTRE,4.8],[ORCHARD_LANE_CENTRE,3.2]] as const){for(let i=0;i<pts.length;i+=2){const q=pts[i]!;if(Math.hypot(q[0]-x,q[2]-z)<hw+.6)return true;}}return false;};
+/** On a station platform (the stair's last run over it is level with the deck). */
+const PLATFORMS=[...FUNICULAR_LINE.stations,...GONDOLA_LINE.stations].map(st=>st.platform);
+const onPlatformXZ=(x:number,z:number)=>PLATFORMS.some(p=>{const px=x-p.at[0],pz=z-p.at[2],c=Math.cos(p.yaw),s=Math.sin(p.yaw);return Math.abs(px*c-pz*s)<=p.half[0]+.3&&Math.abs(px*s+pz*c)<=p.half[1]+.3;});
+/** Half-length of a level landing at a stair's switchback. */
+const LANDING=1.6;
 /** A polyline from `a` to `b` through plan via-points: stairs rise linearly, paths ease onto the ground. */
 function edge(kind:PathEdgeKind,from:string,to:string,via:readonly(readonly[number,number])[]=[],halfWidth=kind==='stair'?1.4:kind==='promenade'?1.8:1.5,id?:string):PathEdge{
   const a=nodes.get(from)!.at,b=nodes.get(to)!.at,plan:[number,number][]=[[a[0],a[2]],...via.map(v=>[v[0],v[1]] as [number,number]),[b[0],b[2]]];
@@ -32,8 +39,19 @@ function edge(kind:PathEdgeKind,from:string,to:string,via:readonly(readonly[numb
   dense.push(plan[plan.length-1]!);
   const hs=[0];for(let i=1;i<dense.length;i++)hs.push(hs[i-1]!+Math.hypot(dense[i]![0]-dense[i-1]![0],dense[i]![1]-dense[i-1]![1]));
   const L=hs[hs.length-1]||1;
+  // A stair from a road junction crosses the carriageway level and starts its flight at the road's edge
+  // (never a riser at the kerb); its last run over a station platform is level with the deck; and every
+  // sharp turn (a switchback) is a level landing. It climbs evenly over the rest of its run.
+  let climb:number[]|null=null;
+  if(kind==='stair'){
+    const turns=plan.slice(1,-1).map((v,k)=>{const p=plan[k]!,q=plan[k+2]!,h1=Math.atan2(v[0]-p[0],v[1]-p[1]),h2=Math.atan2(q[0]-v[0],q[1]-v[1]);return {v,sharp:Math.abs(Math.atan2(Math.sin(h2-h1),Math.cos(h2-h1)))>.6};}).filter(t=>t.sharp).map(t=>t.v);
+    const level=(x:number,z:number)=>onRoadXZ(x,z)||onPlatformXZ(x,z)||turns.some(v=>Math.hypot(v[0]-x,v[1]-z)<LANDING);
+    const w=dense.map((p,i)=>i===0?0:level((p[0]+dense[i-1]![0])/2,(p[1]+dense[i-1]![1])/2)?0:hs[i]!-hs[i-1]!);
+    const total=w.reduce((m,v)=>m+v,0);
+    if(total>2){let acc=0;climb=w.map(v=>(acc+=v)/total);}
+  }
   let points:Point3[]=dense.map(([x,z],i)=>{
-    const t=hs[i]!/L,lin=mix(a[1],b[1],t);
+    const t=climb?climb[i]!:hs[i]!/L,lin=mix(a[1],b[1],t);
     if(kind!=='path')return [x,lin,z];
     // Ground paths follow the land away from their ends, which stay exactly on their nodes.
     const w=Math.min(1,Math.min(hs[i]!,L-hs[i]!)/6)*.85;return [x,mix(lin,ground(x,z),w),z];
@@ -65,22 +83,26 @@ door('home',district('hearth').at[1],'Our home');
 node('road:hearth','junction',roadAt(nearestRoadS(50,-101)));
 edge('path','road:hearth','apron:home');
 edge('path','district:hearth','apron:home');
-node('road:leg1-steps','stair-bottom',roadAt(nearestRoadS(28,-60)));
-node('road:leg2-steps','stair-top',roadAt(nearestRoadS(40,-82)));
-edge('stair','road:leg1-steps','road:leg2-steps',[[32,-68],[37,-75.5]],1.4,'stair:harbour-steps');
-node('road:leg2-steps-b','stair-bottom',roadAt(nearestRoadS(52,-82)));
-node('road:leg3-steps','stair-top',roadAt(nearestRoadS(44,-100.5)));
-edge('stair','road:leg2-steps-b','road:leg3-steps',[[50,-88.5],[46,-94]],1.4,'stair:hearth-steps');
+// Each flight climbs diagonally across the bank between two legs, so it rises over its whole run
+// (road level at each road edge, ~25° between).
+node('road:leg1-steps','stair-bottom',roadAt(nearestRoadS(34,-65.5)));
+node('road:leg2-steps','stair-top',roadAt(nearestRoadS(49,-82)));
+edge('stair','road:leg1-steps','road:leg2-steps',[[36,-71],[47,-76.6]],1.4,'stair:harbour-steps');
+node('road:leg2-steps-b','stair-bottom',roadAt(nearestRoadS(56,-82)));
+node('road:leg3-steps','stair-top',roadAt(nearestRoadS(40,-101)));
+edge('stair','road:leg2-steps-b','road:leg3-steps',[[55,-87.6],[42,-95.1]],1.4,'stair:hearth-steps');
 node('lane:junction','junction',ORCHARD_LANE_CENTRE[0]!);
-node('road:station-steps','stair-bottom',roadAt(nearestRoadS(12,-76.5)));
-edge('stair','road:station-steps','station:funicular:hearth',[[10,-82]],1.4,'stair:station-steps');
+// Station steps: from the lower leg east of the harbour bridge, a dog-leg up the bank onto the front of the
+// raised platform; a level footbridge carries on from the platform to the second hairpin.
+node('road:station-steps','stair-bottom',roadAt(nearestRoadS(20.5,-73.4)));
+edge('stair','road:station-steps','station:funicular:hearth',[[20.6,-79.2],[11,-84.8]],1.4,'stair:station-steps');
 node('road:hairpin-2-west','junction',roadAt(nearestRoadS(19,-93)));
-edge('path','station:funicular:hearth','road:hairpin-2-west',[[11,-91]]);
+edge('bridge','station:funicular:hearth','road:hairpin-2-west',[[10.8,-89.8]],1.3,'bridge:station-walk');
 // The river path from the town station: a footbridge over the stream, up to the road east of the harbour bridge.
 node('path:river-west','junction',[-4.5,2.2,-51]);node('path:river-east','junction',[5.5,2.6,-57]);
 edge('path','town:north','path:river-west',[[-4,-47]]);
 edge('bridge','path:river-west','path:river-east',[],1.3,'bridge:river-footbridge');
-edge('path','path:river-east','road:station-steps',[[10,-64]]);
+edge('path','path:river-east','road:station-steps',[[12,-64]]);
 node('overlook:hearth','overlook',[46,district('hearth').at[1],-110],{facing:Math.atan2(-46,110),label:'Harbour lookout'});
 edge('path','district:hearth','overlook:hearth');
 node('road:library','junction',roadAt(nearestRoadS(46,-161)));
@@ -90,7 +112,7 @@ node('stair:woods-mid','stair-top',[42,27.5,-140]);
 node('stair:woods-top','stair-top',[38,35.5,-156]);
 edge('path','district:hearth','stair:woods-bottom');
 edge('stair','stair:woods-bottom','stair:woods-mid',[[46,-132]],1.4,'stair:woods-steps-1');
-edge('path','stair:woods-mid','stair:woods-top',[[39,-148]]);
+edge('stair','stair:woods-mid','stair:woods-top',[[39,-148]],1.4,'stair:woods-steps-mid');
 edge('stair','stair:woods-top','road:library',[],1.4,'stair:woods-steps-2');
 // Library Woods: door on the town side, gorge balcony, station, road.
 door('library',district('library').at[1],'The Library');
@@ -108,7 +130,8 @@ edge('path','lane:orchard','district:orchard');
 // Glasshouse Meadows: meadow stairs from the bridge, the door, the dam stairs.
 door('glasshouse',district('glasshouse').at[1],'The Glasshouse');
 node('road:b2-west','junction',roadAt(nearestRoadS(-30,-198)));
-node('stair:meadow-mid','stair-top',[-44,53,-205]);
+// The meadow steps start from a landing at the road's edge (road level) and climb the meadow bank.
+node('stair:meadow-mid','stair-top',[-44,roadAt(nearestRoadS(-44,-198.4))[1]+.3,-205.2]);
 edge('stair','road:b2-west','stair:meadow-mid',[[-32,-201]],1.4,'stair:meadow-steps-1');
 edge('stair','stair:meadow-mid','apron:glasshouse',[[-56,-209]],1.4,'stair:meadow-steps-2');
 edge('path','district:glasshouse','apron:glasshouse');
@@ -120,7 +143,8 @@ const damEnd=(side:-1|1):Point3=>[DAM.centre[0]+Math.sin(side*DAM.halfAngle)*DAM
 node('dam:west','overlook',damEnd(-1),{facing:Math.atan2(20,34),label:'Dam west abutment'});
 node('dam:east','junction',damEnd(1));
 node('road:dam-stairs','stair-bottom',roadAt(nearestRoadS(-40,-228)));
-edge('stair','road:dam-stairs','dam:west',[[-30,-236]],1.4,'stair:dam-west-steps');
+// A dog-leg up the abutment slope: north off the road, then along the ridge to the crest end.
+edge('stair','road:dam-stairs','dam:west',[[-36.5,-235],[-33.5,-243]],1.4,'stair:dam-west-steps');
 const crest:(readonly[number,number])[]=[];for(let k=1;k<12;k++){const a=-DAM.halfAngle+2*DAM.halfAngle*k/12;crest.push([DAM.centre[0]+Math.sin(a)*(DAM.radius+1.2),DAM.centre[2]+Math.cos(a)*(DAM.radius+1.2)]);}
 edge('promenade','dam:west','dam:east',crest,1.8,'promenade:dam-crest');
 // Reservoir Heights: pavilion, station, the overlook on the road, the rim stairs down to the woods.
@@ -132,11 +156,14 @@ node('road:reservoir','junction',roadAt(nearestRoadS(54,-244)));
 edge('path','road:reservoir','district:reservoir');
 edge('path','station:funicular:reservoir','dam:east');
 node('road:b3-east','junction',roadAt(nearestRoadS(56,-209)));
-edge('stair','road:b3-east','station:funicular:reservoir',[[50,-217],[40,-224]],1.4,'stair:reservoir-steps');
+edge('stair','road:b3-east','station:funicular:reservoir',[[58,-216],[48,-221],[42,-224]],1.4,'stair:reservoir-steps');
 node('road:b2-east','junction',roadAt(nearestRoadS(31.5,-174)));
-node('stair:rim-mid','stair-top',[34,55,-198]);
-edge('stair','road:b2-east','stair:rim-mid',[[36,-190]],1.4,'stair:rim-steps-1');
-edge('stair','stair:rim-mid','road:b3-east',[[44,-201],[52,-204]],1.4,'stair:rim-steps-2');
+// Rim steps: from the woodland bridge head (north side, where the deck sits on the rim) up the gorge
+// rim in four switchback flights to the road beyond the glass bridge. ~34° all the way up.
+node('road:rim-steps','stair-bottom',roadAt(nearestRoadS(25.6,-185.2)));
+node('road:rim-top','stair-top',roadAt(nearestRoadS(41,-213)));
+// Flights 4 apart and 1.9 half-wide, level landings at each turn: a body never falls between flights.
+edge('stair','road:rim-steps','road:rim-top',[[27.6,-190.8],[38,-191.4],[38.4,-195],[21.6,-195.3],[21.6,-199.2],[38.4,-199.5],[39.4,-202.4],[40.2,-207.4]],1.9,'stair:rim-steps');
 edge('path','district:library','road:b2-east',[[38,-180]]);
 // Summit Commons: road end, observatory, gondola, panorama.
 node('road:summit','junction',ROAD_CENTRE[ROAD_CENTRE.length-1]!);
@@ -174,8 +201,19 @@ export const MOUNTAIN_PATH_GRAPH={nodes:[...nodes.values()],edges} as const;
 export const OVERLOOKS=[...nodes.values()].filter(n=>n.kind==='overlook').map(n=>({id:n.id,name:n.label??n.id,at:n.at,facing:n.facing??0,look:[n.at[0]+Math.sin(n.facing??0)*40,n.at[1]-8,n.at[2]+Math.cos(n.facing??0)*40] as Point3}));
 /** Path and stair decks begin at the road's edge, never over the carriageway (a skater on the road
  * must not be lifted onto a stair). Routing still uses the full polyline to the junction. */
-const onRoad=(p:Point3)=>{for(const [pts,hw] of [[ROAD_CENTRE,4.8],[ORCHARD_LANE_CENTRE,3.2]] as const){for(let i=0;i<pts.length;i+=2){const q=pts[i]!;if(Math.hypot(q[0]-p[0],q[2]-p[2])<hw+.6)return true;}}return false;};
-const trimmed=(e:PathEdge):PathEdge=>{let a=0,b=e.points.length;while(a<b-2&&onRoad(e.points[a]!))a++;while(b>a+2&&onRoad(e.points[b-1]!))b--;const points=e.points.slice(a,b);return {...e,points,length:arcLengths(points).at(-1)!};};
+const onRoad=(p:Point3)=>onRoadXZ(p[0],p[2]);
+/** How far outside the nearest carriageway edge a plan point is (negative: on the road). */
+const beyondRoadEdge=(x:number,z:number)=>{let best=Infinity;for(const [pts,hw] of [[ROAD_CENTRE,4.8],[ORCHARD_LANE_CENTRE,3.2]] as const){for(const q of pts){const d=Math.hypot(q[0]-x,q[2]-z)-hw;if(d<best)best=d;}}return best;};
+/** The point between an on-road `inside` and an off-road `outside` that lies just inside the road edge. */
+const atRoadEdge=(inside:Point3,outside:Point3):Point3=>{let lo=0,hi=1;for(let k=0;k<18;k++){const m=(lo+hi)/2;if(beyondRoadEdge(mix(inside[0],outside[0],m),mix(inside[2],outside[2],m))< -.15)lo=m;else hi=m;}
+  return [mix(inside[0],outside[0],lo),mix(inside[1],outside[1],lo),mix(inside[2],outside[2],lo)];};
+/** A deck that leaves the road starts at the road's edge (just inside it, so a body steps straight from the
+ * carriageway onto it — no gap of open ground between), never further over the carriageway. */
+const trimmed=(e:PathEdge):PathEdge=>{let a=0,b=e.points.length;while(a<b-2&&onRoad(e.points[a]!))a++;while(b>a+2&&onRoad(e.points[b-1]!))b--;
+  const points=e.points.slice(a,b);
+  if(a>0)points.unshift(atRoadEdge(e.points[a-1]!,e.points[a]!));
+  if(b<e.points.length)points.push(atRoadEdge(e.points[b]!,e.points[b-1]!));
+  return {...e,points,length:arcLengths(points).at(-1)!};};
 /** Paths the ground is cut to (benches) and decks: everything that is not a road, trimmed at road edges. */
 export const PATH_EDGES=edges.filter(e=>e.kind!=='road').map(trimmed);
 /** Building ground: door aprons as level pads. */
