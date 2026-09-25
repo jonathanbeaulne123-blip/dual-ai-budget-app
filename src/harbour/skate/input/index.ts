@@ -28,6 +28,8 @@ export type SampleOptions={
 };
 
 export const INPUT_TUNING={
+  /** Space charges a travel jump until release; holding longer than this has no further effect. */
+  spaceChargeMs:1000,
   /** A tap of push still gives one full stroke. */
   pushStrokeMs:220,
   /** A pop completed while airborne/landing is held this long for the first grounded step. */
@@ -106,7 +108,9 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
   const rec:Record<SkateDevice,FlickRecogniser>={keyboard:createFlickRecogniser({digital:true}),pointer:createFlickRecogniser({timing:{dwellMs:INPUT_TUNING.pointerDwellMs}}),touch:createFlickRecogniser(),gamepad:createFlickRecogniser({timing:{popOnFlick:true}})};
   const kbStick=createDigitalStick();
   const keys=new Set<string>(),grabs=new Map<string,GrabDef['hand']>(),touches=new Map<number,Touch>(),queue:Queued[]=[];
-  let grab:null|{id:GrabDef['id'];source:string}=null,revert=0,respawn=0,marker=0,jumps=0,pause=false,pushUntil=-Infinity,lastNow=0;
+  let grab:null|{id:GrabDef['id'];source:string}=null,revert=0,respawn=0,marker=0,pause=false,pushUntil=-Infinity,lastNow=0;
+  let spaceDownAt:number|null=null,spaceCharge:number|null=null,spaceAir=false,spaceSeenAir=false,lastAirborne=false;
+  let airTrick:string|null=null,airFlip:-1|0|1=0;
   let drag:null|{id:number;ox:number;oy:number}=null,easy:Easy|null=null,buffered:null|{pop:NonNullable<SkateIntent['pop']>;until:number}=null,last:FlickCompletion|null=null;
   let padLeft={x:0,y:0},padHeld={push:false,brake:false,powerslide:false,grind:false,sprint:false,manual:false,noseManual:false};
 
@@ -130,7 +134,8 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
   function reset(){
     for(const r of Object.values(rec))r.reset();
     kbStick.reset();keys.clear();grabs.clear();touches.clear();queue.length=0;
-    grab=null;revert=respawn=marker=jumps=0;pause=false;pushUntil=-Infinity;drag=null;easy=null;buffered=null;
+    grab=null;revert=respawn=marker=0;pause=false;pushUntil=-Infinity;drag=null;easy=null;buffered=null;
+    spaceDownAt=spaceCharge=null;spaceAir=spaceSeenAir=lastAirborne=false;airTrick=null;airFlip=0;
     padLeft={x:0,y:0};padHeld={push:false,brake:false,powerslide:false,grind:false,sprint:false,manual:false,noseManual:false};
     pad.resync();
   }
@@ -160,6 +165,8 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
       // A long frame (a slow device, a hitch) must not make a gesture that finished inside it stale.
       const gap=lastNow>0?Math.max(0,now-lastNow):0;
       lastNow=Math.max(lastNow,now);now=lastNow;
+      if(airborne)spaceSeenAir=true;
+      else if(spaceSeenAir){spaceAir=false;spaceSeenAir=false;}
       const f=facing();for(const r of Object.values(rec))r.setFacing(f);
       // Gamepad (polled here, once per step).
       const p=pad.poll();
@@ -192,16 +199,22 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
         last=c;
       }
       if(!pop&&!airborne&&buffered&&now<=buffered.until){pop=buffered.pop;buffered=null;}
-      if(jumps>0){
-        const jump={from:'tail' as const,flipId:null,strength:0.7};
-        if(!airborne)pop=jump;
-        else buffered={pop:jump,until:now+INPUT_TUNING.popBufferMs};
-        jumps=0;
+      if(spaceCharge!==null){
+        const charge=spaceCharge;
+        pop={from:'tail',flipId:null,strength:.35+.65*charge,charge};
+        spaceCharge=null;spaceAir=true;spaceSeenAir=false;
       }
+      if(airborne&&airTrick)lateFlip=airTrick;
+      airTrick=null;
+      const requestedFlip=airborne?airFlip:0;
+      airFlip=0;
       if(buffered&&now>buffered.until)buffered=null;
       // Held state.
       let crouch=0,crouchEnd:SkateIntent['crouchEnd']=null,manual:SkateIntent['manual']=null;
       for(const r of Object.values(rec)){const h=r.held(now);if(h.crouch>crouch){crouch=h.crouch;crouchEnd=h.crouchEnd;}if(h.manual&&!manual)manual=h.manual;}
+      // Keep the rider low enough to read as charging without disabling the
+      // push stroke that gives a travel jump its forward distance.
+      if(spaceDownAt!==null&&!airborne){crouch=Math.max(crouch,Math.min(.45,.15+.3*(now-spaceDownAt)/INPUT_TUNING.spaceChargeMs));crouchEnd='tail';}
       if(easy&&!easy.fired){crouch=1;crouchEnd=easy.from;}
       if(keys.has('m')||padHeld.manual)manual='manual';else if(keys.has('n')||padHeld.noseManual)manual='nose-manual';
       if(!rolling&&!airborne)manual=null;
@@ -215,11 +228,12 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
         push:keys.has('w')||padHeld.push||touchZone('push')||touchLeft().y>0.32||now<pushUntil,
         brake:keys.has('s')||padHeld.brake||touchZone('brake')||touchLeft().y<-.38,
         powerslide:keys.has('c')||padHeld.powerslide,
-        crouch,crouchEnd,pop,lateFlip,grab:grab?.id??touchGrab,manual,
+        crouch,crouchEnd,pop,lateFlip,airFlip:requestedFlip,grab:grab?.id??touchGrab,manual,
         revert:revert>0,grindAssist:keys.has('g')||padHeld.grind,
         respawn:respawn>0,marker:marker>0,sprint:keys.has('shift')||padHeld.sprint,
       };
       revert=respawn=marker=0;
+      lastAirborne=airborne;
       return intent;
     },
     setStance(s,r={}){stance=s==='goofy'?'goofy':'regular';riding={switch:Boolean(r.switch),fakie:Boolean(r.fakie)};},
@@ -239,9 +253,15 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
       if(e.repeat)return true;
       kbStick.advance(t,feedKb);
       switch(action.kind){
-        case 'jump':jumps++;break;
-        case 'stick':kbStick.press(action.dir,t);break;
-        case 'ride':keys.add(name);if(action.dir==='push')pushUntil=Math.max(pushUntil,t+INPUT_TUNING.pushStrokeMs);break;
+        case 'jump':if(spaceDownAt===null&&!lastAirborne)spaceDownAt=t;break;
+        case 'stick':
+          if(lastAirborne&&spaceAir&&name.startsWith('arrow')){
+            airTrick=action.dir==='left'?'kickflip':action.dir==='right'?'heelflip':action.dir==='up'?'360-flip':'pop-shove-it';
+          }else kbStick.press(action.dir,t);
+          break;
+        case 'ride':
+          if(lastAirborne&&(name==='w'||name==='s')&&!keys.has(name))airFlip=name==='w'?1:-1;
+          keys.add(name);if(action.dir==='push')pushUntil=Math.max(pushUntil,t+INPUT_TUNING.pushStrokeMs);break;
         case 'hold':keys.add(action.what==='sprint'?'shift':name);break;
         case 'grab':grabDown(`key:${name}`,action.hand);break;
         case 'once':if(action.what==='revert')revert++;else if(action.what==='respawn')respawn++;else marker++;break;
@@ -253,7 +273,7 @@ export function createSkateInput(o:{stance?:Stance;mode?:SkateInputMode;getGamep
       const name=keyName(e),action=skateKeyAction(name,mode);if(!action)return false;
       const t=ts(e);kbStick.advance(t,feedKb);
       switch(action.kind){
-        case 'jump':break;
+        case 'jump':if(spaceDownAt!==null){spaceCharge=Math.min(1,Math.max(0,(t-spaceDownAt)/INPUT_TUNING.spaceChargeMs));spaceDownAt=null;}break;
         case 'stick':kbStick.release(action.dir as ArrowDir,t);break;
         case 'ride':keys.delete(name);break;
         case 'hold':keys.delete(action.what==='sprint'?'shift':name);break;

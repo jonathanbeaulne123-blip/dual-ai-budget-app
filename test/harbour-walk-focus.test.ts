@@ -30,7 +30,7 @@ let travelWasBlocked:boolean[]=[];
 let monorailBoarded:{station:number;companion:boolean;blocked:boolean}|null=null;
 let monorailSelected:number[]=[];
 const cancelWalk=vi.fn();
-const jump=vi.fn(),skateKeyDown=vi.fn();
+const jump=vi.fn(),skateKeyDown=vi.fn(),skateKeyUp=vi.fn(),skateReset=vi.fn();
 let riding=false;
 let offerCallback:((offer:import("../src/harbour/body/ride.ts").RideOffer|null)=>void)|undefined;
 let runLocked=false;
@@ -40,7 +40,7 @@ const body = {
   cancel: cancelWalk,
   runLock:(on?:boolean)=>on===undefined?runLocked:(runLocked=on),
   jump,
-  skate:{active:()=>riding,input:()=>({keyDown:skateKeyDown}),pause:()=>undefined,checkpoint:()=>null,setAudio:()=>undefined,enable:()=>false},
+  skate:{active:()=>riding,input:()=>({keyDown:skateKeyDown,keyUp:skateKeyUp,reset:skateReset}),pause:()=>undefined,checkpoint:()=>null,setAudio:()=>undefined,enable:()=>false},
   place: () => undefined,
   input: (next: Input) => { inputs.push(next); },
   at: () => ({ x: 0, y:1.31, z: 0, yaw: 0 }),
@@ -130,11 +130,14 @@ const invite = () => host.querySelector(".harbour-world__invite");
 const press = (key: string) => act(async () => {
   (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent("keydown", { key, bubbles: true }));
 });
+const release = (key: string) => act(async () => {
+  (document.activeElement ?? document.body).dispatchEvent(new KeyboardEvent("keyup", { key, bubbles: true }));
+});
 /** Past the second, later attempt the shell makes after a tool closes. */
 const settle = () => act(async () => { await new Promise((done) => setTimeout(done, 300)); });
 
 beforeEach(() => {
-  gesture.mockClear();offerCallback=undefined;runLocked=false;inputs = []; ready = null; coarse = false;panelOwnsWorld=false;travelWasBlocked=[];monorailBoarded=null;monorailSelected=[];cancelWalk.mockClear();jump.mockClear();skateKeyDown.mockClear();riding=false;localStorage.clear();
+  gesture.mockClear();offerCallback=undefined;runLocked=false;inputs = []; ready = null; coarse = false;panelOwnsWorld=false;travelWasBlocked=[];monorailBoarded=null;monorailSelected=[];cancelWalk.mockClear();jump.mockClear();skateKeyDown.mockClear();skateKeyUp.mockClear();skateReset.mockClear();riding=false;localStorage.clear();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query === "(pointer: coarse)" ? coarse : false,
@@ -412,8 +415,10 @@ it("keeps main's Space jump on the world and leaves focused controls their keybo
  const quick=vi.fn();const {stage}=await stand({onQuickSheet:quick});
  await press(' ');expect(jump).toHaveBeenCalledTimes(1);expect(quick).not.toHaveBeenCalled();
  riding=true;await press(' ');expect(skateKeyDown).toHaveBeenCalledTimes(1);
+ await release(' ');expect(skateKeyUp).toHaveBeenCalledTimes(1);
  const control=host.querySelector<HTMLButtonElement>('#world-guide-trigger')!;
  control.focus();await press(' ');
+ expect(skateReset).toHaveBeenCalledTimes(1);
  expect(skateKeyDown).toHaveBeenCalledTimes(1);expect(jump).toHaveBeenCalledTimes(1);
  expect(stage.contains(control)).toBe(true);
 });

@@ -125,7 +125,16 @@ export function createSkaterLook(opts: SkaterLookOptions): SkaterLook {
       // The ride frame: where the sim says the board's rest frame is. In a bail only its heading counts.
       ride.position.set(p.x, p.y, p.z);
       const loose = p.phase === 'bail' || p.phase === 'recover';
-      _e.set(loose ? 0 : p.boardPitch, p.boardYaw, loose ? 0 : p.boardRoll, 'YXZ');
+      const airFlip=loose||reduced?0:p.airFlip??0;
+      if(airFlip){
+        // Turn rider and board about the rider's middle, keeping the whole
+        // somersault above the surface rather than rotating through the ground.
+        _e.set(airFlip,p.boardYaw,0,'YXZ');_q2.setFromEuler(_e);
+        const centre=.72*scale;
+        _p2.set(0,centre,0).applyQuaternion(_q2);
+        ride.position.set(p.x-_p2.x,p.y+centre-_p2.y,p.z-_p2.z);
+      }
+      _e.set(loose ? 0 : p.boardPitch+airFlip, p.boardYaw, loose ? 0 : p.boardRoll, 'YXZ');
       ride.quaternion.setFromEuler(_e);
       ride.updateMatrix();
       noteRigEvents(rigState, events);

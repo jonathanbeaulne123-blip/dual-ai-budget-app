@@ -48,6 +48,14 @@ describe('trick catalogs',()=>{
 });
 
 describe('trick names',()=>{
+  it('credits a completed body flip as a named trick',()=>{
+    const score=createSkateScore();
+    score.step([{t:0,kind:'pop',from:'tail',switch:false,fakie:false,height:1,flipId:null,fromFeature:null}],0);
+    score.step([{t:.5,kind:'air-flip',direction:1}],.5);
+    score.step([{t:1,kind:'land',spinDeg:0,boardClean:1,fakie:false,switch:false,airTime:1,gap:1,onFeature:null,revert:false}],1);
+    expect(score.line().tricks[0]).toMatchObject({label:'Backflip'});
+    expect(score.line().tricks[0]!.points).toBeGreaterThan(400);
+  });
   it('composes names the way a skater says them',()=>{
     expect(stancePrefix({from:'nose'})).toBe('Nollie');expect(stancePrefix({from:'tail',switch:true})).toBe('Switch');expect(stancePrefix({from:'tail',fakie:true})).toBe('Fakie');
     expect(spinLabel(185)).toBe('Frontside 180');expect(spinLabel(-350)).toBe('Backside 360');expect(spinLabel(540)).toBe('Frontside 540');expect(spinLabel(120)).toBe('');
@@ -60,6 +68,8 @@ describe('trick names',()=>{
     expect(airLabel({prefix:'Fakie',spinDeg:0,flipId:null})).toBe('Fakie Ollie');expect(airLabel({prefix:'Switch',spinDeg:0,flipId:null})).toBe('Switch Ollie');
     expect(airLabel({prefix:'',spinDeg:0,flipId:null,late:['kickflip']})).toBe('Late Kickflip');
     expect(airLabel({prefix:'',spinDeg:0,flipId:'heelflip',late:['kickflip']})).toBe('Heelflip Late Kickflip');
+    expect(airLabel({prefix:'',spinDeg:0,flipId:null,bodyFlips:[1]})).toBe('Backflip');
+    expect(airLabel({prefix:'',spinDeg:0,flipId:'kickflip',bodyFlips:[-1]})).toBe('Frontflip Kickflip');
   });
 });
 

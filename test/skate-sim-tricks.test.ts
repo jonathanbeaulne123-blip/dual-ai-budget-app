@@ -38,6 +38,45 @@ function spinTo(target: number) {
 }
 
 describe('skate sim · pop', () => {
+  it('a held Space pop carries farther at the same riding speed and gives time for a backflip',()=>{
+    const trial=(charge:number,flip:boolean)=>{
+      const sim=makeSim(flat);kick(sim,{vz:6});
+      ride(sim,.15,intent({crouch:1}));
+      const pop=ride(sim,1/60,intent({pop:{from:'tail',flipId:null,strength:.35+.65*charge,charge}}));
+      expect(first(pop.events,'pop')).toBeDefined();
+      let requested=false;
+      const flight=ride(sim,1.8,(t,p)=>{
+        if(flip&&p.phase==='air'&&!requested&&t>.1){requested=true;return intent({airFlip:1});}
+        return intent();
+      },60,true);
+      return flight;
+    };
+    const tap=trial(0,false),held=trial(1,true);
+    expect(first(held.events,'land')!.gap).toBeGreaterThan(first(tap.events,'land')!.gap+2);
+    expect(Math.max(...held.frames.map(f=>f.p.y))).toBeGreaterThan(Math.max(...tap.frames.map(f=>f.p.y))+.7);
+    expect(held.frames.some(f=>(f.p.airFlip??0)>Math.PI)).toBe(true);
+    expect(first(held.events,'bail')).toBeUndefined();
+    expect(first(held.events,'land')).toBeDefined();
+    expect(first(held.events,'air-flip')).toMatchObject({direction:1});
+  });
+
+  it('spends a Space charge released after an unpopped ledge launch',()=>{
+    const sim=makeSim(flat,{y:1});
+    ride(sim,.12,intent());
+    expect(sim.present().phase).toBe('air');
+    const jump=ride(sim,1/60,intent({pop:{from:'tail',flipId:null,strength:1,charge:1}}));
+    expect(first(jump.events,'pop')).toBeDefined();
+    expect(jump.present.vy).toBeGreaterThan(0);
+  });
+
+  it('can complete a backflip from a short jump when started early',()=>{
+    const sim=makeSim(flat);kick(sim,{vz:5});
+    ride(sim,1/60,intent({pop:{from:'tail',flipId:null,strength:.35,charge:0}}));
+    const flight=ride(sim,.9,(t,p)=>intent({airFlip:t<1/60&&p.phase==='air'?1:0}),60,true);
+    expect(first(flight.events,'air-flip')).toMatchObject({direction:1});
+    expect(first(flight.events,'land')).toBeDefined();
+    expect(first(flight.events,'bail')).toBeUndefined();
+  });
   it('a standard ollie clears ~0.35–0.45, a max pop ~0.55, and keeps its momentum', () => {
     const std = popTrial({ crouch: 0.7, strength: 0.5 });
     const apex = Math.max(...std.frames.map((f) => f.p.y));

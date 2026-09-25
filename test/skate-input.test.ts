@@ -310,6 +310,36 @@ describe('skate input: keyboard',()=>{
     // In easy mode J is the ollie key, not the board stick.
     expect(pops(keys([[0,'down','KeyK'],[150,'up','KeyK'],[165,'down','KeyI'],[240,'up','KeyI']],{mode:'easy'}).r)).toEqual([]);
   });
+  it('charges Space until release, then sends distinct board and body tricks while airborne',()=>{
+    const short=createSkateInput({getGamepads:null}),long=createSkateInput({getGamepads:null});
+    short.keyDown({key:' ',code:'Space',timeStamp:1000});
+    expect(short.sample(1030,false,true).pop).toBeNull();
+    short.keyUp({key:' ',code:'Space',timeStamp:1100});
+    const near=short.sample(1110,false,true).pop!;
+    long.keyDown({key:' ',code:'Space',timeStamp:1000});
+    long.keyDown({key:'w',code:'KeyW',timeStamp:1010});
+    const charging=long.sample(1500,false,true);
+    expect(charging.crouch).toBeGreaterThan(.25);
+    expect(charging.crouch).toBeLessThan(.5);
+    expect(charging.push).toBe(true);
+    long.keyUp({key:' ',code:'Space',timeStamp:2200});
+    const far=long.sample(2210,false,true).pop!;
+    expect(far.charge).toBe(1);
+    expect(far.strength).toBeGreaterThan(near.strength);
+    expect(long.sample(2230,true,true).pop).toBeNull();
+    long.keyDown({key:'ArrowLeft',code:'ArrowLeft',timeStamp:2240});
+    expect(long.sample(2250,true,true).lateFlip).toBe('kickflip');
+    long.keyDown({key:'ArrowRight',code:'ArrowRight',timeStamp:2260});
+    expect(long.sample(2270,true,true).lateFlip).toBe('heelflip');
+    long.keyUp({key:'w',code:'KeyW',timeStamp:2275});
+    long.keyDown({key:'w',code:'KeyW',timeStamp:2280});
+    expect(long.sample(2290,true,true).airFlip).toBe(1);
+    long.keyDown({key:'a',code:'KeyA',timeStamp:2300});
+    expect(long.sample(2310,true,true).steer).toBe(-1);
+    long.keyDown({key:'s',code:'KeyS',timeStamp:2320});
+    expect(long.sample(2330,true,true).airFlip).toBe(-1);
+    expect(long.sample(2600,false,true).airFlip).toBe(0);
+  });
   it('reset() clears held keys and pending gestures',()=>{
     const input=createSkateInput({getGamepads:null});
     input.keyDown({key:'w',code:'KeyW',timeStamp:10});input.keyDown({key:'ArrowDown',code:'ArrowDown',timeStamp:10});
@@ -318,7 +348,9 @@ describe('skate input: keyboard',()=>{
     const i=input.sample(400,false,true);expect(i.push).toBe(false);expect(i.crouch).toBe(0);
     expect(input.keyDown({key:'p',code:'KeyP',timeStamp:500})).toBe(false); // pause is the world's key
     expect(input.keyDown({key:' ',code:'Space',timeStamp:500})).toBe(true);
-    expect(input.sample(500,false,false).pop).toEqual({from:'tail',flipId:null,strength:.7});
+    expect(input.sample(500,false,false).pop).toBeNull();
+    input.keyUp({key:' ',code:'Space',timeStamp:600});
+    expect(input.sample(600,false,false).pop).toMatchObject({from:'tail',flipId:null,charge:.1});
     expect(input.sample(516,false,false).pop).toBeNull();
     expect(input.keyDown({key:'b',code:'KeyB',timeStamp:500})).toBe(false);
   });

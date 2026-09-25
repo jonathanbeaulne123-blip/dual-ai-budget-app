@@ -129,9 +129,11 @@ export type SkateIntent = {
   crouch: number;
   crouchEnd: 'tail' | 'nose' | null;
   /** One-shot: a completed flick. flipId null = plain ollie/nollie. strength 0..1 from flick speed. */
-  pop: null | { from: 'tail' | 'nose'; flipId: string | null; strength: number };
+  pop: null | { from: 'tail' | 'nose'; flipId: string | null; strength: number; charge?: number };
   /** One-shot: a flick done while already airborne (late flip). */
   lateFlip: string | null;
+  /** One-shot body somersault while airborne: +1 backflip, -1 frontflip. */
+  airFlip?: -1 | 0 | 1;
   /** Held grab (bumper/trigger or grab key); null if none. */
   grab: GrabDef['id'] | null;
   /** Right stick held gently toward tail/nose while rolling = manual/nose manual (held). */
@@ -166,6 +168,7 @@ export type SkateSimEvent =
   | { t: number; kind: 'push' }
   | { t: number; kind: 'pop'; from: 'tail' | 'nose'; switch: boolean; fakie: boolean; height: number; flipId: string | null; fromFeature: string | null }
   | { t: number; kind: 'late-flip'; flipId: string }
+  | { t: number; kind: 'air-flip'; direction: -1 | 1 }
   | { t: number; kind: 'flip-caught'; flipId: string; quality: number /* 0..1 how close to ideal catch */ }
   | { t: number; kind: 'grab-start' | 'grab-end'; grabId: string; seconds: number }
   | { t: number; kind: 'land'; spinDeg: number /* signed body rotation, frontside +, backside − */; boardClean: number /* 0..1 */; fakie: boolean; switch: boolean; airTime: number; gap: number /* xz distance travelled in air */; onFeature: string | null; revert: boolean }
@@ -198,6 +201,8 @@ export type SkatePresent = {
   heading: number;
   /** Board yaw (nose direction) and its tilt to match the surface/transition. */
   boardYaw: number; boardPitch: number; boardRoll: number;
+  /** Cosmetic whole-rider somersault in radians, zero when upright. */
+  airFlip?: number;
   /** Rider shoulder yaw offset from board yaw (pre-wind for spins, look-forward when riding). */
   bodyTwist: number;
   phase: SkatePhase;
