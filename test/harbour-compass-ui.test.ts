@@ -33,7 +33,7 @@ it("has no district row any more: flip, the household +, All tools — in that o
   const order = [...nav.children].map((node) => node.className.split(" ")[0]);
   expect(order).toEqual(["edition-flip", "fab-dial", "harbour-bar__tools"]);
   const fab = nav.querySelector<HTMLButtonElement>("button.fab")!;
-  expect(fab.textContent).toBe("+");
+  expect(fab.textContent).toBe("Record");
   expect(fab.getAttribute("aria-label")).toBe(fabClosedLabel("household"));
   expect(nav.querySelector(".edition-flip")?.getAttribute("aria-label")).toBe("Switch to the simple view");
 });
@@ -66,8 +66,9 @@ it("renders the same FabSpeedDial verbs the classic nav does and forwards picks 
   await act(async () => root.render(createElement(Compass, props({ fab: { actions: fabActionsFor("household", "home"), closedLabel: fabClosedLabel("household"), onOpenChange: (open) => opened.push(open), onPick: (mode) => picked.push(mode), onGo: (tab) => picked.push(`go:${tab}`) } }))));
   await act(async () => host.querySelector<HTMLButtonElement>("button.fab")!.click());
   expect(opened).toEqual([true]);
-  const labels = [...host.querySelectorAll<HTMLButtonElement>("[data-fab-action]")].map((b) => b.textContent);
-  expect(labels).toEqual(fabActionsFor("household", "home").map((action) => action.label));
+  const labels = [...host.querySelectorAll<HTMLButtonElement>("[data-fab-action] .record-dial__label")].map((b) => b.textContent);
+  // Bill paid appears once the App wires `onBillPaid` through the bar (the Tool Atlas integrator).
+  expect(labels).toEqual(fabActionsFor("household", "home").filter((action) => action.mode !== "bill").map((action) => action.label));
   await act(async () => host.querySelector<HTMLButtonElement>('[data-fab-action="expense"]')!.click());
   expect(picked).toEqual(["expense"]);
   expect(opened).toEqual([true, false]);

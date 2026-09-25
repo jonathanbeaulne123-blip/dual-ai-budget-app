@@ -21,14 +21,14 @@ describe("One route to each place", () => {
     expect(kitchenPrimaryNav("household")).toEqual(["home", "ledger", "plan", "together"]);
     expect(kitchenPrimaryNav("personal")).toEqual(["home", "calendar", "shift", "ledger", "plan"]);
   });
-  it("+ means add in both spaces — four money verbs, no navigation verbs", () => {
+  it("Record means add in both spaces — five money verbs, no navigation verbs", () => {
     for (const view of ["household", "personal"] as const) {
-      expect(fabClosedLabel(view)).toBe("Add money");
+      expect(fabClosedLabel(view)).toBe("Record");
       for (const tab of ["home", "calendar", "shift", "ledger", "plan", "together", "more", "planner", "timeMachine"]) {
         const actions = fabActionsFor(view, tab);
-        expect(actions).toHaveLength(4);
+        expect(actions).toHaveLength(5);
         expect(actions.every(action => action.kind === "add" && action.money)).toBe(true);
-        expect(new Set(actions.map(action => action.kind === "add" ? action.mode : action.kind)).size).toBe(4);
+        expect(new Set(actions.map(action => action.mode)).size).toBe(5);
       }
     }
   });

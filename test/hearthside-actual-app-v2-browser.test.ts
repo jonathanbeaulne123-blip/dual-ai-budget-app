@@ -74,7 +74,7 @@ it('runs two actual App clients through real local LedgerRoom, Studio and recipi
 
   // The ordinary financial draft does not touch authority until its exact Final Confirm.
   const beforeReview=await authority.snapshot(),beforeReviewHousehold=await authority.household();
-  await one.getByRole('button',{name:'Add money',exact:true}).click();await one.getByRole('menuitem',{name:'Add expense',exact:true}).click();
+  await one.getByRole('button',{name:'Record',exact:true}).click();await one.getByRole('button',{name:'Purchase: record one',exact:true}).click();
   await one.getByLabel('Amount (CAD)',{exact:true}).fill('1.23');await one.getByRole('button',{name:'Enter',exact:true}).click();
   await one.getByRole('button',{name:'Groceries',exact:true}).click();
   const continueToAccount=one.getByRole('button',{name:'Continue to account',exact:true});if(await continueToAccount.isVisible())await continueToAccount.click();
