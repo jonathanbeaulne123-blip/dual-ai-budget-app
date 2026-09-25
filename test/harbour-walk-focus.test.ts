@@ -27,6 +27,8 @@ let inputs: Input[] = [];
 let ready: (() => void) | null = null;
 let panelOwnsWorld=false;
 let travelWasBlocked:boolean[]=[];
+let monorailBoarded:{station:number;companion:boolean;blocked:boolean}|null=null;
+let monorailSelected:number[]=[];
 const cancelWalk=vi.fn();
 const jump=vi.fn(),skateKeyDown=vi.fn();
 let riding=false;
@@ -49,6 +51,9 @@ function fakeWorld() {
     placeId: () => "court" as const,
     setToolOpen: (open:boolean) => {panelOwnsWorld=open;},
     mountainTravel: () => {travelWasBlocked.push(panelOwnsWorld);},
+    monorailBoard: (station:number,companion:boolean) => {monorailBoarded={station,companion,blocked:panelOwnsWorld};},
+    monorailSelect: (station:number) => {monorailSelected.push(station);},
+    monorailControl: () => undefined,
     setMountainRecovery: () => undefined,
     setMountainInteraction: () => undefined,
     setWorldAmbience: () => undefined,
@@ -125,7 +130,7 @@ const press = (key: string) => act(async () => {
 const settle = () => act(async () => { await new Promise((done) => setTimeout(done, 300)); });
 
 beforeEach(() => {
-  inputs = []; ready = null; coarse = false;panelOwnsWorld=false;travelWasBlocked=[];cancelWalk.mockClear();jump.mockClear();skateKeyDown.mockClear();riding=false;localStorage.clear();
+  inputs = []; ready = null; coarse = false;panelOwnsWorld=false;travelWasBlocked=[];monorailBoarded=null;monorailSelected=[];cancelWalk.mockClear();jump.mockClear();skateKeyDown.mockClear();riding=false;localStorage.clear();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query === "(pointer: coarse)" ? coarse : false,
@@ -385,6 +390,16 @@ it("pauses clicked walking for the guide and releases the follow camera before s
  expect(travelWasBlocked).toEqual([false]);expect(panelOwnsWorld).toBe(false);
  expect(document.activeElement).toBe(stage);
  expect(host.querySelector('[role="dialog"][aria-label="Mountain and town guide"]')).toBeNull();
+});
+
+it("boards the selected monorail route after releasing the guide",async()=>{
+ const {stage}=await stand({partnerName:'Bianca'});
+ await act(async()=>host.querySelector<HTMLButtonElement>('#world-guide-trigger')!.click());
+ await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Travel & race')!.click());
+ await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Board the monorail')!.click());
+ expect(monorailBoarded).toEqual({station:0,companion:true,blocked:false});
+ expect(monorailSelected).toEqual([10]);
+ expect(document.activeElement).toBe(stage);
 });
 
 it("keeps main's Space jump on the world and leaves focused controls their keyboard",async()=>{

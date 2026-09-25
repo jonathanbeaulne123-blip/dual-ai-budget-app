@@ -21,6 +21,7 @@ export const BASIN = {x:25,z:-239,bottom:72,top:88,radius:16,angle:Math.PI*.73} 
 /** Uphill road control points. Alternating slopes give the descent room to breathe. */
 const ROAD_CONTROL: readonly Point3[] = [[0,1.4,-45],[42,8,-62],[89,19,-85],[82,20,-112],[25,23,-109],[-43,28,-112],[-100,34,-123],[-103,35,-148],[-37,41,-157],[31,46,-155],[91,51,-167],[94,53,-192],[30,57,-194],[-37,61,-190],[-95,66,-203],[-108,69,-229],[-43,77,-251],[25,83,-261],[80,91,-253],[86,98,-279],[45,107,-292],[5,110,-284]];
 const mix=(a:number,b:number,t:number)=>a+(b-a)*t;
+const catmull=(before:number,a:number,b:number,after:number,t:number)=>.5*((2*a)+(-before+b)*t+(2*before-5*a+4*b-after)*t*t+(-before+3*a-3*b+after)*t*t*t);
 export const clamp=(v:number,a=0,b=1)=>Math.max(a,Math.min(b,v));
 export const smooth=(v:number)=>{const t=clamp(v);return t*t*(3-2*t);};
 /** Rounded horizontal bends; monotone elevation interpolation avoids overshooting a plateau. */
@@ -82,10 +83,33 @@ export const FOOTPATHS = [...DISTRICTS,...RESERVED_PLOTS].map(d=>{
 export const RIVER:readonly Point3[]=[[25,82,-239],[10,70,-218],[-2,56,-189],[14,42,-163],[3,26,-133],[13,12,-97],[3,1,-57],[3,.18,-34],[-8,.18,-15],[-8,.18,20],[12,.05,48],[9,-.1,69]];
 export const FUNICULAR_STOPS=[{id:'town',name:'Town square',at:[-20,1.31,-37] as Point3},{id:'hearth',name:'Hearth Terrace',at:[60,20,-95] as Point3},{id:'library',name:'Library Woods',at:[62,51,-169] as Point3},{id:'reservoir',name:'Reservoir Heights',at:[47,83,-240] as Point3}];
 export const GONDOLA_STOPS=[{id:'quay',name:'Waterfront',at:[-22,.57,47] as Point3},{id:'summit',name:'Summit Commons',at:[-7,110,-277] as Point3}];
-export type TransportKind='funicular'|'gondola';
-export const TRANSPORT_STOPS={funicular:FUNICULAR_STOPS,gondola:GONDOLA_STOPS};
+/** The scenic line reaches every outdoor district. Indoor rooms remain a short walk from their platform. */
+export const MONORAIL_STOPS=[
+  {id:'quay',name:'Waterfront',at:[0,.57,58] as Point3},
+  {id:'studio',name:'Pottery Studio',at:[20,1.31,20] as Point3},
+  {id:'boathouse',name:'Boathouse',at:[54,1.31,-40] as Point3},
+  {id:'bank',name:'Fund bank',at:[7,1.31,-14] as Point3},
+  {id:'town',name:'Town square',at:[-20,1.31,-37] as Point3},
+  {id:'hearth',name:'Hearth Terrace',at:[112,20,-101] as Point3},
+  {id:'orchard',name:'Orchard Hollow',at:[-121,34,-137] as Point3},
+  {id:'library',name:'Library Woods',at:[106,51,-190] as Point3},
+  {id:'glasshouse',name:'Glasshouse Meadows',at:[-87,66,-208] as Point3},
+  {id:'reservoir',name:'Reservoir Heights',at:[47,83,-240] as Point3},
+  {id:'summit',name:'Summit Commons',at:[-7,110,-277] as Point3},
+] as const;
+export type TransportKind='funicular'|'gondola'|'monorail';
+export const TRANSPORT_STOPS={funicular:FUNICULAR_STOPS,gondola:GONDOLA_STOPS,monorail:MONORAIL_STOPS};
 /** A shared elevated alignment for the cabin, track and supports. */
 export function transportPoint(kind:TransportKind,from:number,to:number,t:number):Point3{
+  if(t<=0)return TRANSPORT_STOPS[kind][from]!.at;
+  if(t>=1)return TRANSPORT_STOPS[kind][to]!.at;
+  if(kind==='monorail'){
+    const stops=MONORAIL_STOPS,v=from+(to-from)*t,i=Math.min(stops.length-2,Math.floor(v)),u=v-i;
+    const before=stops[Math.max(0,i-1)]!.at,a=stops[i]!.at,b=stops[i+1]!.at,after=stops[Math.min(stops.length-1,i+2)]!.at;
+    const x=catmull(before[0],a[0],b[0],after[0],u),z=catmull(before[2],a[2],b[2],after[2],u);
+    const y=Math.max(mix(a[1],b[1],u),mountainBaseHeight(x,z))+Math.sin(Math.PI*u)*7;
+    return [x,y,z];
+  }
   const stops=TRANSPORT_STOPS[kind],v=from+(to-from)*smooth(t),i=Math.min(stops.length-2,Math.floor(v)),u=v-i,a=stops[i]!.at,b=stops[i+1]!.at;
   const x=mix(a[0],b[0],u),z=mix(a[2],b[2],u),base=mix(a[1],b[1],u);
   // The trestle clears every intermediate ridge; endpoints stay at platforms.
