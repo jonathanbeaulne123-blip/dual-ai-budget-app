@@ -27,14 +27,39 @@ export function buildFlightEnvelope(field: TerrainField, cuts: LandCuts): Flight
   for (const [id, landing] of Object.entries(m.sky.landings)) { if (typeof landing === 'string' || Array.isArray(landing)) continue; const x = landing.xy[0]! * s, z = landing.xy[1]! * s, h = terrainHeight(field, x, z); landings.push({ id, xy: [x, z], height: h }); volumes.push({ id, kind: 'landing', centre: [x, h + 2, z], halfSize: [landing.r * s, 2, landing.r * s], radius: landing.r * s, yaw: 0, modes: ['glider'] }); }
   const strip = m.structures.strip, dx = (strip.to[0]! - strip.from[0]!) * s, dz = (strip.to[1]! - strip.from[1]!) * s, stripAt: Point2 = [(strip.from[0]! + strip.to[0]!) * s / 2, (strip.from[1]! + strip.to[1]!) * s / 2], sh = terrainHeight(field, ...stripAt);
   landings.push({ id: 'strip', xy: stripAt, height: sh }); volumes.push({ id: 'strip', kind: 'landing', centre: [stripAt[0], sh + 2, stripAt[1]], halfSize: [strip.width_m * s / 2, 2, Math.hypot(dx, dz) / 2], yaw: Math.atan2(dx, dz), modes: ['plane', 'glider'] });
-  for (const id of ['harbour', 'bight', 'deep']) { const water = cuts.waters.find(w => w.id === id || w.id === `water.${id}`); if (!water?.outline.length) continue; const x = water.outline.reduce((sum, p) => sum + p[0], 0) / water.outline.length, z = water.outline.reduce((sum, p) => sum + p[1], 0) / water.outline.length; landings.push({ id: `water.${id}`, xy: [x, z], height: water.level }); volumes.push({ id: `water.${id}`, kind: 'landing', centre: [x, water.level + 2, z], halfSize: [id === 'deep' ? 20 : 60, 2, id === 'deep' ? 20 : 60], radius: id === 'deep' ? 20 : 60, yaw: 0, modes: id === 'deep' ? ['glider'] : ['plane', 'glider'] }); }
+  const wetCircle = (x: number, z: number, radius: number, level: number): boolean => {
+    for (const r of [0, radius / 2, radius]) for (let i = 0; i < 24; i++) if (terrainHeight(field, x + Math.cos(i * Math.PI / 12) * r, z + Math.sin(i * Math.PI / 12) * r) > level - .25) return false;
+    return true;
+  };
+  for (const id of ['harbour', 'bight', 'deep']) {
+    const water = cuts.waters.find(w => w.id === id || w.id === `water.${id}`) ?? (id === 'harbour' ? cuts.waters.find(w => w.kind === 'sea') : undefined); if (!water?.outline.length) continue;
+    let x = water.outline.reduce((sum, p) => sum + p[0], 0) / water.outline.length, z = water.outline.reduce((sum, p) => sum + p[1], 0) / water.outline.length; const radius = (id === 'deep' ? 20 : 60) * s;
+    if (id === 'harbour' && water.kind === 'sea') {
+      const dock = m.structures.floatplaneDock; let found = false; x = dock[0]! * s + 100 * s; z = dock[1]! * s;
+      // Harbour shares the sea mesh. Select the nearest actual open water patch beside its authored dock.
+      for (let distance = 80; distance <= 240 && !found; distance += 20) for (let angle = 0; angle < 24; angle++) {
+        const px = dock[0]! * s + Math.cos(angle * Math.PI / 12) * distance * s, pz = dock[1]! * s + Math.sin(angle * Math.PI / 12) * distance * s;
+        if (!wetCircle(px, pz, radius, water.level) || boxes.some(({ solid, bounds: b }) => solid.role !== 'marker' && b.max[1] > water.level + .5 && b.min[1] < water.level + 10 && Math.hypot(Math.max(b.min[0] - px, 0, px - b.max[0]), Math.max(b.min[2] - pz, 0, pz - b.max[2])) < radius)) continue;
+        x = px; z = pz; found = true; break;
+      }
+    }
+    landings.push({ id: `water.${id}`, xy: [x, z], height: water.level }); volumes.push({ id: `water.${id}`, kind: 'landing', waterBodyId: water.id, centre: [x, water.level + 2, z], halfSize: [radius, 2, radius], radius, yaw: 0, modes: id === 'deep' ? ['glider'] : ['plane', 'glider'] });
+  }
   const gateProofs: SkyProof['gates'] = [];
-  m.sky.gates.forEach((gate, i) => { const next = m.sky.gates[(i + 1) % m.sky.gates.length]!, prev = m.sky.gates[(i + m.sky.gates.length - 1) % m.sky.gates.length]!, yaw = Math.atan2(next.xy[0]! - prev.xy[0]!, next.xy[1]! - prev.xy[1]!), centre: Point3 = [gate.xy[0]! * s, gate.h * s, gate.xy[1]! * s];
+  m.sky.gates.forEach((gate, i) => {
+    const next = m.sky.gates[(i + 1) % m.sky.gates.length]!, prev = m.sky.gates[(i + m.sky.gates.length - 1) % m.sky.gates.length]!, centre: Point3 = [gate.xy[0]! * s, gate.h * s, gate.xy[1]! * s];
+    let yaw = Math.atan2(next.xy[0]! - prev.xy[0]!, next.xy[1]! - prev.xy[1]!);
+    const bridge = cuts.beds.find(b => ['highSpan', 'bightBridge'].includes(gate.id) && b.id === `structure.${gate.id}`), throat = gate.id === 'throat' ? cuts.beds.find(b => b.id === 'underground.throat') : undefined;
+    if (gate.id === 'needle') yaw = Math.PI / 2; // The actual rock intrados opens east/west.
+    else if (bridge && bridge.points.length > 1) { const a = bridge.points[0]!, b = bridge.points.at(-1)!; yaw = Math.atan2(-(b[2] - a[2]), b[0] - a[0]); }
+    else if (throat && throat.points.length > 1) { const a = throat.points[0]!, b = throat.points[1]!; yaw = Math.atan2(b[0] - a[0], b[2] - a[2]); }
     const requested: Point2 | null = gate.aperture_m ? [gate.aperture_m[0]! * s, gate.aperture_m[1]! * s] : null, halfW = (requested?.[0] ?? 24 * s) / 2, halfH = (requested?.[1] ?? 16 * s) / 2, obstructions = new Set<string>();
     const probe = (x: number, y: number) => blocked([centre[0] + Math.cos(yaw) * x, centre[1] + y, centre[2] - Math.sin(yaw) * x]);
     let clear = true; for (let ix = -4; ix <= 4; ix++) for (let iy = -4; iy <= 4; iy++) { const hit = probe(ix / 4 * halfW, iy / 4 * halfH); if (hit) { clear = false; obstructions.add(hit); } }
     let horizontal = 0, vertical = 0; for (let d = .5; d <= halfW; d += .5) { if (probe(d, 0) || probe(-d, 0)) break; horizontal = d; } for (let d = .5; d <= halfH; d += .5) { if (probe(0, d) || probe(0, -d)) break; vertical = d; }
-    const measured: Point2 = [horizontal * 2, vertical * 2]; gates.push({ id: gate.id, xy: [centre[0], centre[2]], height: centre[1] }); volumes.push({ id: gate.id, kind: 'gate', centre, halfSize: [halfW, halfH, 3 * s], yaw, aperture: requested ?? measured, modes: gate.id === 'throat' ? ['glider'] : ['plane', 'glider'] }); gateProofs.push({ id: gate.id, requestedAperture: requested, measuredAperture: measured, clear, obstructionIds: [...obstructions] });
+    const measured: Point2 = [horizontal * 2, vertical * 2]; clear &&= horizontal >= halfW && vertical >= halfH;
+    if (!clear && !obstructions.size) obstructions.add('aperture centreline clearance');
+    gates.push({ id: gate.id, xy: [centre[0], centre[2]], height: centre[1] }); volumes.push({ id: gate.id, kind: 'gate', centre, halfSize: [halfW, halfH, 3 * s], yaw, aperture: requested ?? measured, modes: gate.id === 'throat' ? ['glider'] : ['plane', 'glider'] }); gateProofs.push({ id: gate.id, requestedAperture: requested, measuredAperture: measured, clear, obstructionIds: [...obstructions] });
   });
   const landingProofs = volumes.filter(v => v.kind === 'landing').map(v => {
     const normalized = (p: Point3): Point2 => { const x = p[0] - v.centre[0], z = p[2] - v.centre[2]; return [(x * Math.cos(v.yaw) - z * Math.sin(v.yaw)) / v.halfSize[0], (x * Math.sin(v.yaw) + z * Math.cos(v.yaw)) / v.halfSize[2]]; };
@@ -50,6 +75,7 @@ export function buildFlightEnvelope(field: TerrainField, cuts: LandCuts): Flight
       return false;
     };
     const ids = boxes.filter(({ solid, bounds: b }) => solid.role !== 'marker' && b.max[1] > v.centre[1] - 1.5 && b.min[1] < v.centre[1] + 8 && hits(solid)).map(v => v.solid.id);
+    if (v.waterBodyId && v.id !== 'water.deep' && !wetCircle(v.centre[0], v.centre[2], v.radius!, v.centre[1] - 2)) ids.push('terrain inside water landing field');
     return { id: v.id, clear: ids.length === 0, obstructionIds: ids };
   });
   const start = m.sky.launches.crown, finish = m.sky.launches.lampGallery, from: Point3 = [start.xy[0]! * s, start.h * s, start.xy[1]! * s], to: Point3 = [finish.xy[0]! * s, finish.h * s, finish.xy[1]! * s], planLength = Math.hypot(to[0] - from[0], to[2] - from[2]), duration = planLength / m.sky.glider.speed_ms, steps = Math.ceil(planLength / 4), samples: SkyProof['glide']['samples'] = [];
