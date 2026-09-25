@@ -172,7 +172,7 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
     lastVisitor=at;planting.bend(at);
   }
   update(reading);current=target;water.set(known?current:null,reserveTarget===null?null:reserveCurrent);
-  let clock=0,smokeT=0;
+  let clock=0,smokeT=0,disposed=false;
   function stillLife(){for(const c of propLife.cloth){c.items.forEach((it,i)=>{dummy.position.set(...it.at);dummy.rotation.set(0,it.yaw,0);dummy.scale.set(it.w,it.h,1);dummy.updateMatrix();c.mesh.setMatrixAt(i,dummy.matrix);});c.mesh.instanceMatrix.needsUpdate=true;}paintSmoke(0,true);}
   function paintSmoke(t:number,hide=false){
     smokeSources.forEach((s,k)=>{for(let j=0;j<puffsPer;j++){const u=((t*.18+j/puffsPer+k*.37)%1),i=k*puffsPer+j;
@@ -200,7 +200,7 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
       smokeT+=step;paintSmoke(smokeT);
       if(!riding)for(const kind of ['gondola'] as const){const p=parked[kind];place(kind,p,Math.sin(t*.9)*.012);}
       return life.animate(t,step)||true;
-    },dispose(){group.removeFromParent();life.dispose();owned.forEach(o=>o.dispose());group.clear();}};
+    },dispose(){if(disposed)return;disposed=true;group.removeFromParent();life.dispose();owned.forEach(o=>o.dispose());group.clear();}};
 }
 
 /** Where a cabin waits: at a station's line point, facing along the line. */

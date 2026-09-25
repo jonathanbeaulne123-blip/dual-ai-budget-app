@@ -124,7 +124,8 @@ function paths(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite'){
       b.sweep(frames,[[-e.halfWidth,0],[-e.halfWidth+.35,.01],[e.halfWidth-.35,.01],[e.halfWidth,0]],(k,i)=>shade(k===1?pal.gravel:mix(pal.gravel,pal.verge,.5),.95+hash2(i,k)*.08),{bucket:'flat'});
       const every=tier==='full'?1.7:3.4;let next=0,acc=0;
       for(let i=1;i<frames.length;i++){acc+=1;if(acc<next)continue;next=acc+every;const f=frames[i]!,side=(i%2?1:-1)*(e.halfWidth+.12),x=f.p[0]+f.side[0]*side,z=f.p[2]+f.side[2]*side,g=groundHeightAt(x,z);
-        b.box(x,z,Math.atan2(f.side[0],f.side[2])+hash2(i,3)*.6,.22+hash2(i,1)*.1,.16,g-.15,g+.14+hash2(i,2)*.08,shade(pal.coping,.92),pal.stone,b.pencil);}
+        // Edge stones are set into the verge: a hand-width proud, not blocks sitting on it.
+        b.box(x,z,Math.atan2(f.side[0],f.side[2])+hash2(i,3)*.6,.22+hash2(i,1)*.1,.16,g-.15,g+.05+hash2(i,2)*.04,shade(pal.coping,.92),pal.stone,b.pencil);}
     }else if(e.kind==='stair'){
       const inWoods=Math.hypot(e.points[0]![0]-woods.at[0],e.points[0]![2]-woods.at[2])<45;
       stair(b,pal,e.points,e.halfWidth,inWoods,tier);
