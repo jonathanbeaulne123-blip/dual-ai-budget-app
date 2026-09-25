@@ -103,7 +103,7 @@ export type SkateSim = {
 /* ─────────────────────────────────────────────────────────── state */
 
 type Mode = 'ground' | 'air' | 'grind' | 'bail' | 'recover';
-type PopReq = { from: 'tail' | 'nose'; flipId: string | null; strength: number; age: number };
+type PopReq = { from: 'tail' | 'nose'; flipId: string | null; strength: number; charge: number; space: boolean; age: number };
 type TrickS = { flipId: string; u: number; rate: number; caught: boolean; difficulty: number; yawTurns: number; at: number };
 type GrabS = { grabId: string; weight: number; seconds: number; on: boolean };
 type GrindS = {
@@ -129,6 +129,7 @@ type SimState = {
   pushPhase: number; stroke: boolean;
   gnx: number; gny: number; gnz: number; kind: SurfaceKind; feature: string | null; kappa: number; clearance: number;
   airTime: number; spin: number; spinRate: number; toX: number; toZ: number; toY: number; footSign: 1 | -1;
+  airFlipDir: -1 | 0 | 1; airFlipProgress: number; airFlipDuration:number; pendingAirFlip: -1 | 0 | 1;
   /** +1 when the front-foot end led at take-off (the stick's "toward the rail" is read in its terms). */
   airFF: 1 | -1;
   vert: boolean; lipYaw: number; lipY: number; coyote: number; airFromPop: boolean; airLaunch: boolean;
@@ -175,7 +176,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   const P: SkatePresent = {
     x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, speed: 0, heading: 0, boardYaw: 0, boardPitch: 0, boardRoll: 0, bodyTwist: 0,
     phase: 'idle', stance: 'regular', switch: false, fakie: false, crouch: 0, lean: 0, carve: 0, balance: 0, pushPhase: 0,
-    airTime: 0, clearance: 0, trick: null, grab: null, grind: null, manual: null, bail: null, impact: 0, surface: 'concrete',
+    airTime: 0, clearance: 0, airFlip: 0, trick: null, grab: null, grind: null, manual: null, bail: null, impact: 0, surface: 'concrete',
   };
   const pTrick = { flipId: '', u: 0 }, pGrab = { grabId: '', weight: 0 };
   const pGrind: { grindId: string; grindableId: string; faceSign: -1 | 1 } = { grindId: '', grindableId: '', faceSign: 1 };
@@ -208,7 +209,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       lead: 1, feetSwapped: false, stance: stance === 'goofy' ? 'goofy' : 'regular',
       crouch: 0, crouchPeak: 0, lean: 0, carve: 0, turnRate: 0, pushPhase: 0, stroke: false,
       gnx: S0.nx, gny: S0.ny, gnz: S0.nz, kind: S0.kind, feature: S0.feature, kappa: 0, clearance: 0,
-      airTime: 0, spin: 0, spinRate: 0, toX: x, toZ: z, toY: S0.y, footSign: 1, airFF: 1, vert: false, vertAlign: NaN, lipYaw: 0, lipY: 0, coyote: 0, airFromPop: false, airLaunch: false,
+      airTime: 0, spin: 0, spinRate: 0, toX: x, toZ: z, toY: S0.y, footSign: 1, airFlipDir: 0, airFlipProgress: 0, airFlipDuration:0, pendingAirFlip: 0, airFF: 1, vert: false, vertAlign: NaN, lipYaw: 0, lipY: 0, coyote: 0, airFromPop: false, airLaunch: false,
       trick: null, grab: null, pendPop: null, pendLate: null, pendRevert: -1,
       grind: null, stall: null, wall: null, cooldownLine: -1, cooldown: 0, balance: 0,
       manual: null, manualResume: false, slide: null,
@@ -347,6 +348,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     S.mode = 'bail';
     S.bail = { t: 0, reason, dirX: dx, dirZ: dz };
     S.trick = null; S.pendPop = null; S.pendLate = null; S.pendRevert = -1;
+    S.airFlipDir=0;S.airFlipProgress=0;S.airFlipDuration=0;S.pendingAirFlip=0;
     S.stroke = false; S.pushPhase = 0; S.balance = 0; S.slideAngle = 0; S.spinRate = 0; S.manualResume = false;
   }
 
@@ -355,6 +357,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   function enterAir(fromPop: boolean, launch: boolean): void {
     S.mode = 'air';
     S.airTime = 0; S.spin = 0;
+    S.airFlipDir=0;S.airFlipProgress=0;S.airFlipDuration=0;S.pendingAirFlip=0;
     S.toX = S.x; S.toZ = S.z; S.toY = S.y;
     S.footSign = footSign();
     S.airFF = naturalLeads() ? 1 : -1;
@@ -402,7 +405,9 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
 
   function doPop(req: PopReq, nx: number, ny: number, nz: number, fromGround: boolean): void {
     const q = clamp(0.6 * clamp(req.strength, 0, 1) + 0.4 * S.crouchPeak, 0, 1);
-    const h = (T.POP_H_MIN + (T.POP_H_MAX - T.POP_H_MIN) * q) * (req.from === 'nose' ? 0.96 : 1);
+    // Space charging adds airtime and therefore travel distance at the speed already earned.
+    // Flick-it pops keep their established height and timing.
+    const h = (T.POP_H_MIN + (T.POP_H_MAX - T.POP_H_MIN) * q + 1.1 * clamp(req.charge,0,1)) * (req.from === 'nose' ? 0.96 : 1);
     const vp = Math.sqrt(2 * G * h);
     let dx = 0, dy = 1, dz = 0;
     if (fromGround) {
@@ -875,12 +880,23 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     const x0 = S.x, y0 = S.y, z0 = S.z;
     S.airTime += dt;
     S.coyote = Math.max(0, S.coyote - dt);
-    // A pop just after rolling off an edge / launching still counts.
-    if (S.pendPop && S.coyote > 0 && !S.airFromPop) {
+    // Space was held before takeoff: release still spends that charge after a
+    // ledge or ramp launches the board. It is one pop, never a second air jump.
+    if (S.pendPop && !S.airFromPop && (S.coyote > 0 || S.pendPop.space)) {
       const p = S.pendPop; S.pendPop = null;
       const keepVert = S.vert, lipYaw = S.lipYaw, lipY = S.lipY;
       doPop(p, 0, 1, 0, false);
       if (keepVert) { S.vert = true; S.lipYaw = lipYaw; S.lipY = lipY; }
+    }
+    if(S.pendingAirFlip && !S.airFlipDir){
+      S.airFlipDir=S.pendingAirFlip;S.airFlipProgress=0;
+      const remaining=(S.vy+Math.sqrt(S.vy*S.vy+2*G*Math.max(0,S.clearance)))/G;
+      S.airFlipDuration=clamp(remaining*.8,.18,.68);
+    }
+    S.pendingAirFlip=0;
+    if(S.airFlipDir){
+      S.airFlipProgress=Math.min(1,S.airFlipProgress+dt/S.airFlipDuration);
+      if(S.airFlipProgress>=1){emit({t:S.t,kind:'air-flip',direction:S.airFlipDir});S.airFlipDir=0;S.airFlipProgress=0;S.airFlipDuration=0;}
     }
     if (S.pendLate && S.trick && !(S.grab && S.grab.on) && upgrades(S.trick, S.pendLate.id)) {
       // The flick went on after it popped (a double, a corner corrected a beat late): the board
@@ -1009,6 +1025,8 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     const airTime = S.airTime, gap = Math.hypot(S.x - S.toX, S.z - S.toZ);
     const grabWeight = S.grab ? S.grab.weight : 0;
     endGrab();
+    if(S.airFlipDir&&S.airFlipProgress<.92){toGround();bail('flip-not-caught');return;}
+    S.airFlipDir=0;S.airFlipProgress=0;S.airFlipDuration=0;
     if(opts.complexPhysicsAt?.(S.x,S.z)===false){
       // Travel jumps stay useful on the island: absorb the impact and square the
       // board to the direction of travel, without a trick catch or angle bail.
@@ -1086,6 +1104,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     S0lip = S1.lip;
     S.clearance = 0; S.vert = false; S.spinRate = 0; S.kappa = 0;
     S.bodyTwist = 0;
+    S.pendingAirFlip=0;
   }
 
   /* ─────────────────────────────── grinds */
@@ -1524,6 +1543,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
     P.speed = speed3();
     P.heading = travelYaw();
     P.boardYaw = S.boardYaw; P.boardPitch = S.boardPitch; P.boardRoll = S.boardRoll; P.bodyTwist = S.bodyTwist;
+    P.airFlip = S.mode==='air' ? S.airFlipDir*S.airFlipProgress*Math.PI*2 : 0;
     P.stance = S.stance; P.switch = isSwitch(); P.fakie = isFakie();
     P.crouch = S.crouch; P.lean = S.lean;
     P.carve = clamp(S.carve * footSign(), -1, 1);
@@ -1573,9 +1593,10 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   function readOneShots(intent: SkateIntent): void {
     const p = intent?.pop;
     if (p && typeof p === 'object' && S.mode !== 'bail' && S.mode !== 'recover') {
-      S.pendPop = { from: p.from === 'nose' ? 'nose' : 'tail', flipId: typeof p.flipId === 'string' ? p.flipId : null, strength: clamp(fin(p.strength, 0.5), 0, 1), age: 0 };
+      S.pendPop = { from: p.from === 'nose' ? 'nose' : 'tail', flipId: typeof p.flipId === 'string' ? p.flipId : null, strength: clamp(fin(p.strength, 0.5), 0, 1), charge:clamp(fin(p.charge),0,1), space:typeof p.charge==='number', age: 0 };
     }
     if (typeof intent?.lateFlip === 'string' && S.mode === 'air') S.pendLate = { id: intent.lateFlip, age: 0 };
+    if ((intent?.airFlip===1||intent?.airFlip===-1)&&S.mode==='air'&&!S.airFlipDir)S.pendingAirFlip=intent.airFlip;
     if (intent?.revert === true && S.mode !== 'bail' && S.mode !== 'recover') S.pendRevert = 0;
   }
 
@@ -1626,6 +1647,10 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       pumpPrevCrouch = fin(copy.pumpPrevCrouch);
       delete copy.s0lip; delete copy.pumpPrevCrouch;
       S = copy;
+      S.airFlipDir=S.airFlipDir===1||S.airFlipDir===-1?S.airFlipDir:0;
+      S.airFlipProgress=clamp(fin(S.airFlipProgress),0,1);
+      S.airFlipDuration=S.airFlipDir?clamp(fin(S.airFlipDuration,.68),.18,.68):0;
+      S.pendingAirFlip=0;
       if (!Array.isArray(S.safe) || !S.safe.length) S.safe = [{ x: S.x, z: S.z, yaw: S.boardYaw }];
       writePresent();
     },

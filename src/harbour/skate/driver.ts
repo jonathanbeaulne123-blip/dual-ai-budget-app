@@ -115,8 +115,8 @@ export function skateHints(mode:SkateSettings['controls']):ControlHintSet {
   const pop=easy?[hint('pop','Ollie',key('J')),hint('flip','Kickflip · heelflip',key('F'),key('H'))]:[hint('pop','Pull back, flick up: ollie',key('↓'),key('↑')),hint('flip','Flick to a corner: flip',key('↓'),key('←'),key('→'))];
   return {
     keyboard:{
-      ride:[hint('push','Push',key('W')),hint('carve','Carve',key('A'),key('D')),hint('jump','Jump',key('Space')),...pop,hint('manual','Manual',key('M')),hint('slide','Powerslide',key('C'))],
-      air:[hint('grab','Grab',key('Q'),key('E')),hint('spin','Spin',key('A'),key('D')),hint('grind-pick','Rail ahead: W A S D as you land on it picks the grind',key('W'),key('A'),key('S'),key('D')),hint('grind','Lock onto a rail',key('G')),hint('revert','Revert',key('X'))],
+      ride:[hint('push','Push',key('W')),hint('carve','Carve',key('A'),key('D')),hint('jump','Hold Space, release to jump farther',key('Space')),...pop,hint('manual','Manual',key('M')),hint('slide','Powerslide',key('C'))],
+      air:[hint('flip','After a Space jump: arrows do board tricks',key('↑'),key('↓'),key('←'),key('→')),hint('body-flip','Tap W for backflip, S for frontflip',key('W'),key('S')),hint('grab','Grab',key('Q'),key('E')),hint('spin','Spin',key('A'),key('D')),hint('grind-pick','Rail ahead: W A S D as you land on it picks the grind',key('W'),key('A'),key('S'),key('D')),hint('grind','Lock onto a rail',key('G')),hint('revert','Revert',key('X'))],
       grind:[hint('balance','Balance',key('A'),key('D')),hint('out','Pop out',key('↓'),key('↑'))],
       manual:[hint('balance','Balance',key('W'),key('S')),hint('out','Pop out',key('↓'),key('↑'))],
       bail:[hint('reset','Back to your marker',key('R'))],
