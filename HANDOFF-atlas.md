@@ -53,7 +53,7 @@ Branch `claude/tool-atlas-atlas` (worktree `wt-atlas`), baseline `main@4e0234a3`
 - **New tests:**
   - `tool-atlas.test.ts` (13 tests): every name and synonym is in the top 3, every §3.4 word is in its group, Hydro is found as a household word, the group order is right, ids are unique, and toolAtlas imports nothing that writes (A12).
   - `atlas-add-flow.test.ts` (11 tests).
-  - `atlas-vocabulary-fence.test.ts` (4 tests). Its `PENDING` list is a ratchet: 43 files that other tracks own still carry retired words, a new hit fails the test, and a row that has already been cleaned also fails, so each track deletes its own rows.
+  - `atlas-vocabulary-fence.test.ts` (4 tests). Its `PENDING` list is a ratchet: 40 files that other tracks own still carry retired words, a new hit fails the test, and a row that has already been cleaned also fails, so each track deletes its own rows.
   - `rendered-strings.ts`, a helper shared with `terms.test.ts`.
 - **Updated tests:** `fab-speed-dial`, `vision-v2-slice-1`, `navigation-one-route`, `harbour-compass-ui`, `harbour-one-bar`, `time-machine-ui`, `app-startup-p1` (dial names only), `five-boards-entry-app`, `add-slideshow-ui`, `mobile-entry-sheet`, and `hearthside-actual-app-v2-browser` (selectors only; not run).
 - **Results:**
