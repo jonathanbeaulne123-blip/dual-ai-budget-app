@@ -267,3 +267,16 @@ button.desk-hercules__card { display: grid; gap: 4px; min-height: 44px; padding:
   .glass-dock[data-expanded] { height: auto; max-height: calc(100vh - 48px); }
   .glass-dock .glass-card { overflow-y: auto; }
 }
+
+/* ── The integrator's seam: what stands above the dock reads its size ──
+   The Record and All tools bubbles and the host panel sit at `--dock-height` + 12 px on the phone; on a
+   landscape phone the dock is a 300 px right-hand column (`--dock-width`) and they stand at its edge; on
+   desktop the dock is the 204 px bottom-left column and the bubbles are a right-hand column. Set only
+   while a dock is on the page, so the Desk and every tool in front keep their own bottoms. */
+:root:has(.glass-dock) { --dock-height: 216px; --dock-width: 0px; }
+@media (orientation: landscape) and (max-height: 500px) {
+  :root:has(.glass-dock) { --dock-height: 0px; --dock-width: 300px; }
+}
+@media (min-width: 1100px) {
+  :root:has(.glass-dock) { --dock-height: 220px; --dock-width: 0px; }
+}
