@@ -11,6 +11,7 @@
  */
 import {DISTRICTS,RESERVED_PLOTS,MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE,RIVER,DAM,BUILDING_SITES,SUMMIT_OBSERVATORY_SITE,GOAL_PAVILION_SITE,FUNICULAR_LINE,GONDOLA_LINE,KITTY_CHAMBERS,SKILL_BRANCHES,mountainBaseHeight,type Biome,type Point3} from './definition.ts';
 import {PATH_EDGES} from './pathGraph.ts';
+import {groundHeightAt} from '../scene/ground.ts';
 
 export type TreeKind='round'|'fruit'|'birch'|'pine'|'alpine'|'poplar';
 export type ShrubKind='shrub'|'flowering'|'hedge'|'heath'|'boulder';
@@ -92,6 +93,8 @@ export function mountainPlanting(tier:'full'|'lite'):Plan{
     if(plantingClearance(x,z)<r*.9+need-1)return false;
     if(!free(x,z,r*pack))return false;
     const b=biomeAt(x,z,y),k=kind??pick(ARCHETYPES[b],rand());
+    // The trunk's foot must reach the ground on every side: no tree on a carved step or a bench lip.
+    {const tr=crownOf({kind:k,size}).trunk;for(const [dx,dz] of [[tr,0],[-tr,0],[0,tr],[0,-tr]] as const)if(y-.25-groundHeightAt(x+dx,z+dz)>.12)return false;}
     if(b==='summit'&&y>98&&k!=='alpine')return false;
     trees.push({x,y,z,size,spin:rand()*6.283,kind:k,tint:rand(),lean:(rand()-.5)*.12});mark(x,z,r*pack);return true;
   };
