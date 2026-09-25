@@ -1,15 +1,15 @@
-import {BUILDING_SITES} from '../mountain/definition.ts';
+import {BUILDING_SITES,BUILDING_FORMS} from '../mountain/places.ts';
 import type { HarbourPlaceId } from '../flag.ts';
 import type { HouseLevel, HouseRoom } from '../../hearthside/houseRoutes.ts';
 import type { VillageLocation } from '../../house/villageLocation.ts';
 
 export const VILLAGE_SITES = {
-  home: {spot:BUILDING_SITES.home, half:[4.5,3.5], door:[1.6,3.15], name:'Our home', exterior:'village-home', entry:'kitchen'},
+  home: {spot:BUILDING_SITES.home, half:BUILDING_FORMS.home.half, door:BUILDING_FORMS.home.door, name:'Our home', exterior:'village-home', entry:'kitchen'},
   bank: {spot:[8,-26], half:[4.6,3.6], door:[0,3.35], name:'The Fund bank', exterior:'village-bank', entry:'bank'},
-  library: {spot:BUILDING_SITES.library, half:[4.4,3.4], door:[1.8,3.15], name:'The Library', exterior:'village-library', entry:'library'},
-  glasshouse: {spot:BUILDING_SITES.glasshouse, half:[4,3], door:[1.7,2.8], name:'The Glasshouse', exterior:'village-glasshouse', entry:'glasshouse'},
+  library: {spot:BUILDING_SITES.library, half:BUILDING_FORMS.library.half, door:BUILDING_FORMS.library.door, name:'The Library', exterior:'village-library', entry:'library'},
+  glasshouse: {spot:BUILDING_SITES.glasshouse, half:BUILDING_FORMS.glasshouse.half, door:BUILDING_FORMS.glasshouse.door, name:'The Glasshouse', exterior:'village-glasshouse', entry:'glasshouse'},
   studio: {spot:[33,10], half:[3.8,2.9], door:[1.95,2.82], name:'The Pottery Studio', exterior:'village-studio', entry:'kiln'},
-  cottage: {spot:BUILDING_SITES.cottage, half:[3.2,2.6], door:[1.75,2.45], name:'Hercules’s cottage', exterior:'village-cottage', entry:'cottage'},
+  cottage: {spot:BUILDING_SITES.cottage, half:BUILDING_FORMS.cottage.half, door:BUILDING_FORMS.cottage.door, name:'Hercules’s cottage', exterior:'village-cottage', entry:'cottage'},
   boathouse: {spot:[42,-41], half:[3.6,3], door:[1.5,2.8], name:'The Boathouse', exterior:'village-boathouse', entry:'boathouse'},
 } as const;
 export type VillageBuilding = keyof typeof VILLAGE_SITES;

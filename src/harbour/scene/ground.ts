@@ -1,5 +1,6 @@
 import {townChannelHeight} from '../mountain/townChannel.ts';
-import {mountainBaseHeight,WORLD_BOUNDS,nearestOnRoute,districtAt} from '../mountain/definition.ts';
+import {mountainBaseHeight,districtAt} from '../mountain/definition.ts';
+import {islandHeight,SEA_LEVEL as ISLAND_SEA_LEVEL,TERRACE_LEVEL as ISLAND_TERRACE_LEVEL} from '../mountain/islandShape.ts';
 import * as THREE from "three";
 import type { PlaceDressing } from "./place.ts";
 import { plantPlan } from "./planting.ts";
@@ -17,30 +18,24 @@ export const GROUND_RADIUS = HARBOUR_LAND.radius;
 export const TERRACE_RADIUS = HARBOUR_LAND.terrace;
 /** The lawn ends in a sandy shore that falls to the sea; the island's edge is a real edge. */
 export const LAWN_RADIUS = HARBOUR_LAND.lawn;
-export const SEA_LEVEL = -0.45;
+export const SEA_LEVEL = ISLAND_SEA_LEVEL;
 /** The apron is a hair below the court's paving so the tiles, not the island, are the surface you see. */
-export const TERRACE_LEVEL = -0.05;
+export const TERRACE_LEVEL = ISLAND_TERRACE_LEVEL;
+/**
+ * The rendered terrain lattice reaches past the walkable WORLD_BOUNDS so the mountain's coast
+ * and the summit's back slope are real ground meeting the sea, not a cut edge.
+ */
+export const TERRAIN_LATTICE_BOUNDS = {minX:-200,maxX:200,minZ:-396,maxZ:84} as const;
 
 
-/** Height of the island at a point. Pure; the terrace is level so every plinth and paving stone sits at 0. */
+/**
+ * Ground height at a point: the harbour island (with its town channel) and, north of it, the
+ * baked mountain heightfield (landform, plateaus, gorge, and every road/path/foundation bench).
+ * One function for physics and the render lattice; it has no vertical discontinuities.
+ */
 export function groundHeightAt(x: number, z: number): number {
-  const base=townChannelHeight(x,z,z < -48?Math.max(islandHeight(x,z),mountainBaseHeight(x,z)):islandHeight(x,z));
-  if(z < -40){const road=nearestOnRoute(x,z);if(road.distance<5.2)return Math.min(base,road.point[1]-.1);}
-  return base;
-}
-function islandHeight(x:number,z:number):number {
-  const r = Math.hypot(x, z);
-  if (r <= TERRACE_RADIUS) return TERRACE_LEVEL;
-  if (r <= LAWN_RADIUS) {
-    const t = (r - TERRACE_RADIUS) / (LAWN_RADIUS - TERRACE_RADIUS);
-    // A gentle hump peaking mid-lawn, back to the terrace level at the shore's edge.
-    return TERRACE_LEVEL + Math.sin(t * Math.PI) * (1.25 + .35*Math.sin(x*.065)*Math.cos(z*.075));
-  }
-  if (r <= GROUND_RADIUS) {
-    const t = (r - LAWN_RADIUS) / (GROUND_RADIUS - LAWN_RADIUS);
-    return TERRACE_LEVEL - t * t * 1.1;
-  }
-  return SEA_LEVEL - 0.3;
+  if(z < -48)return Math.max(islandHeight(x,z),mountainBaseHeight(x,z));
+  return townChannelHeight(x,z,islandHeight(x,z));
 }
 
 /**
@@ -132,10 +127,11 @@ function paintVertices(colors: Float32Array, positions: Float32Array, dressing: 
 const lattices=new Map<RenderTier,{positions:Float32Array;indices:number[]}>();
 function terrainLattice(tier:RenderTier){
   const cached=lattices.get(tier);if(cached)return cached;
-  const cols = tier==='full'?180:120, rows=tier==='full'?198:132;
+  // ~2 unit spacing on full, ~3 on lite, over the whole island and mountain including its coast.
+  const B=TERRAIN_LATTICE_BOUNDS,cols = tier==='full'?200:134, rows=tier==='full'?240:160;
   const vertexCount=(cols+1)*(rows+1), positions=new Float32Array(vertexCount*3), indices:number[]=[];
   for(let iz=0;iz<=rows;iz++)for(let ix=0;ix<=cols;ix++){
-    const x=WORLD_BOUNDS.minX+ix/cols*(WORLD_BOUNDS.maxX-WORLD_BOUNDS.minX),z=WORLD_BOUNDS.minZ+iz/rows*(WORLD_BOUNDS.maxZ-WORLD_BOUNDS.minZ),i=iz*(cols+1)+ix;
+    const x=B.minX+ix/cols*(B.maxX-B.minX),z=B.minZ+iz/rows*(B.maxZ-B.minZ),i=iz*(cols+1)+ix;
     positions[i*3]=x;positions[i*3+1]=groundHeightAt(x,z);positions[i*3+2]=z;
     if(ix<cols&&iz<rows){const a=i,b=i+1,c=i+cols+1,d=c+1;indices.push(a,c,b,b,c,d);}
   }

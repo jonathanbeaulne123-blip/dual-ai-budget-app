@@ -1,0 +1,214 @@
+/**
+ * The pedestrian network: nodes (junctions, doors, stations, overlooks, stair ends, plot
+ * gates, district hearts) and edges (road, path, stair, bridge, promenade) with arc-length
+ * polylines. Every building is reached along its door axis across a level apron. Stairs
+ * cut the switchbacks so walking uphill is not a tour of every hairpin.
+ */
+import {baseHeight} from './terrainBase.ts';
+import {islandHeight} from './islandShape.ts';
+import {ROAD_CENTRE,ORCHARD_LANE_CENTRE,ROAD_SAMPLE_STEP,ORCHARD_LANE_WAYPOINTS} from './roadLine.ts';
+import {DISTRICTS,RESERVED_PLOTS,BUILDING_SITES,buildingDoor,DAM,SUMMIT_OBSERVATORY_SITE,GOAL_PAVILION_SITE,type MountainBuilding} from './places.ts';
+import {FUNICULAR_LINE,GONDOLA_LINE} from './transport.ts';
+import {arcLengths,mix,type Point3} from './math.ts';
+
+export type PathNodeKind='junction'|'door'|'station'|'overlook'|'stair-top'|'stair-bottom'|'plot-gate'|'district'|'town';
+export type PathNode={id:string;kind:PathNodeKind;at:Point3;facing?:number;label?:string;district?:string};
+export type PathEdgeKind='road'|'path'|'stair'|'bridge'|'promenade';
+export type PathEdge={id:string;kind:PathEdgeKind;from:string;to:string;halfWidth:number;points:readonly Point3[];length:number};
+
+const ground=(x:number,z:number)=>z>-48?islandHeight(x,z):Math.max(islandHeight(x,z),baseHeight(x,z));
+const nodes=new Map<string,PathNode>(),edges:PathEdge[]=[];
+const node=(id:string,kind:PathNodeKind,at:Point3,extra:Partial<PathNode>={})=>{const n={id,kind,at,...extra};nodes.set(id,n);return n;};
+const district=(id:string)=>DISTRICTS.find(d=>d.id===id)!;
+
+/** Road junction nodes sit exactly on the road centreline at a plan arc length. */
+const roadAt=(planS:number,line:'road'|'lane'='road'):Point3=>{const pts=line==='road'?ROAD_CENTRE:ORCHARD_LANE_CENTRE;return pts[Math.max(0,Math.min(pts.length-1,Math.round(planS/ROAD_SAMPLE_STEP)))]!;};
+const nearestRoadS=(x:number,z:number,line:'road'|'lane'='road')=>{const pts=line==='road'?ROAD_CENTRE:ORCHARD_LANE_CENTRE;let best=0,d=Infinity;pts.forEach((p,i)=>{const e=Math.hypot(p[0]-x,p[2]-z);if(e<d){d=e;best=i;}});return best*ROAD_SAMPLE_STEP;};
+
+/** A polyline from `a` to `b` through plan via-points: stairs rise linearly, paths ease onto the ground. */
+function edge(kind:PathEdgeKind,from:string,to:string,via:readonly(readonly[number,number])[]=[],halfWidth=kind==='stair'?1.4:kind==='promenade'?1.8:1.5,id?:string):PathEdge{
+  const a=nodes.get(from)!.at,b=nodes.get(to)!.at,plan:[number,number][]=[[a[0],a[2]],...via.map(v=>[v[0],v[1]] as [number,number]),[b[0],b[2]]];
+  const dense:[number,number][]=[];for(let i=1;i<plan.length;i++){const p=plan[i-1]!,q=plan[i]!,n=Math.max(1,Math.ceil(Math.hypot(q[0]-p[0],q[1]-p[1])/1.5));for(let k=0;k<n;k++)dense.push([mix(p[0],q[0],k/n),mix(p[1],q[1],k/n)]);}
+  dense.push(plan[plan.length-1]!);
+  const hs=[0];for(let i=1;i<dense.length;i++)hs.push(hs[i-1]!+Math.hypot(dense[i]![0]-dense[i-1]![0],dense[i]![1]-dense[i-1]![1]));
+  const L=hs[hs.length-1]||1;
+  let points:Point3[]=dense.map(([x,z],i)=>{
+    const t=hs[i]!/L,lin=mix(a[1],b[1],t);
+    if(kind!=='path')return [x,lin,z];
+    // Ground paths follow the land away from their ends, which stay exactly on their nodes.
+    const w=Math.min(1,Math.min(hs[i]!,L-hs[i]!)/6)*.85;return [x,mix(lin,ground(x,z),w),z];
+  });
+  if(kind==='path'){for(let pass=0;pass<3;pass++)points=points.map((p,i)=>i===0||i===points.length-1?p:[p[0],(points[i-1]![1]+p[1]*2+points[i+1]![1])/4,p[2]]);}
+  const e:PathEdge={id:id??`${kind}:${from}~${to}`,kind,from,to,halfWidth,points,length:arcLengths(points).at(-1)!};
+  edges.push(e);return e;
+}
+/** Level apron in front of a door, and the path's last run along the door axis. */
+export type DoorApron={site:MountainBuilding|'pavilion'|'observatory';door:Point3;facing:number;apron:{at:Point3;half:readonly[number,number];yaw:number}};
+export const DOOR_APRONS:DoorApron[]=[];
+function door(id:MountainBuilding,level:number,label:string){
+  const d=buildingDoor(id),door:Point3=[d.at[0],level,d.at[1]],out:Point3=[d.at[0]+d.facing[0]*5.5,level,d.at[1]+d.facing[1]*5.5];
+  DOOR_APRONS.push({site:id,door,facing:d.yaw,apron:{at:[d.at[0]+d.facing[0]*2.6,level,d.at[1]+d.facing[1]*2.6],half:[2.4,2.6],yaw:d.yaw}});
+  node(`door:${id}`,'door',door,{facing:d.yaw,label});node(`apron:${id}`,'junction',out,{facing:d.yaw});
+  edge('path',`apron:${id}`,`door:${id}`,[],1.6);
+}
+// ——— Town entries ————————————————————————————————————————————————————————————
+node('town:north','town',[-3,islandHeight(-3,-43),-43],{label:'North lane'});
+node('road:foot','junction',roadAt(0),{label:'Road foot'});
+edge('path','town:north','road:foot',[[8,-46]],1.8);
+// ——— Stations ——————————————————————————————————————————————————————————————
+for(const line of [FUNICULAR_LINE,GONDOLA_LINE])for(const st of line.stations)node(`station:${line.kind}:${st.id}`,'station',st.platform.at,{label:`${st.name} ${line.kind}`,facing:st.platform.yaw});
+edge('path','town:north','station:funicular:town',[],1.6);
+// ——— Districts ——————————————————————————————————————————————————————————————
+for(const d of DISTRICTS)node(`district:${d.id}`,'district',d.at,{district:d.id,label:d.name});
+// Hearth Terrace: home door, the harbour steps, the funicular's lower-neighbourhood station.
+door('home',district('hearth').at[1],'Our home');
+node('road:hearth','junction',roadAt(nearestRoadS(50,-101)));
+edge('path','road:hearth','apron:home');
+edge('path','district:hearth','apron:home');
+node('road:leg1-steps','stair-bottom',roadAt(nearestRoadS(28,-60)));
+node('road:leg2-steps','stair-top',roadAt(nearestRoadS(40,-82)));
+edge('stair','road:leg1-steps','road:leg2-steps',[[32,-68],[37,-75.5]],1.4,'stair:harbour-steps');
+node('road:leg2-steps-b','stair-bottom',roadAt(nearestRoadS(52,-82)));
+node('road:leg3-steps','stair-top',roadAt(nearestRoadS(44,-100.5)));
+edge('stair','road:leg2-steps-b','road:leg3-steps',[[50,-88.5],[46,-94]],1.4,'stair:hearth-steps');
+node('lane:junction','junction',ORCHARD_LANE_CENTRE[0]!);
+node('road:station-steps','stair-top',roadAt(nearestRoadS(28,-84)));
+edge('stair','road:station-steps','station:funicular:hearth',[[18,-80]],1.4,'stair:station-steps');
+node('overlook:hearth','overlook',[46,district('hearth').at[1],-110],{facing:Math.atan2(-46,110),label:'Harbour lookout'});
+edge('path','district:hearth','overlook:hearth');
+node('road:library','junction',roadAt(nearestRoadS(46,-161)));
+// Woods steps: Hearth Terrace up through the birches to Library Woods (no road on the way).
+node('stair:woods-bottom','stair-bottom',[50,district('hearth').at[1],-124]);
+node('stair:woods-mid','stair-top',[42,27.5,-140]);
+node('stair:woods-top','stair-top',[38,35.5,-156]);
+edge('path','district:hearth','stair:woods-bottom');
+edge('stair','stair:woods-bottom','stair:woods-mid',[[46,-132]],1.4,'stair:woods-steps-1');
+edge('path','stair:woods-mid','stair:woods-top',[[39,-148]]);
+edge('stair','stair:woods-top','road:library',[],1.4,'stair:woods-steps-2');
+// Library Woods: door on the town side, gorge balcony, station, road.
+door('library',district('library').at[1],'The Library');
+edge('path','district:library','apron:library');
+edge('path','road:library','apron:library');
+node('overlook:gorge-balcony','overlook',[20.5,baseHeight(20.5,-164),-164],{facing:Math.atan2(-22,-58),label:'Gorge balcony'});
+edge('path','road:library','overlook:gorge-balcony',[[30,-160]]);
+edge('path','station:funicular:library','overlook:gorge-balcony');
+
+// Orchard Hollow: lane end, cottage door, a wandering path back toward the gorge.
+door('cottage',district('orchard').at[1],'Hercules’s cottage');
+node('lane:orchard','junction',ORCHARD_LANE_CENTRE[ORCHARD_LANE_CENTRE.length-1]!);
+edge('path','lane:orchard','apron:cottage');
+edge('path','lane:orchard','district:orchard');
+// Glasshouse Meadows: meadow stairs from the bridge, the door, the dam stairs.
+door('glasshouse',district('glasshouse').at[1],'The Glasshouse');
+node('road:b2-west','junction',roadAt(nearestRoadS(-24,-196)));
+node('stair:meadow-mid','stair-top',[-44,53,-205]);
+edge('stair','road:b2-west','stair:meadow-mid',[[-32,-201]],1.4,'stair:meadow-steps-1');
+edge('path','stair:meadow-mid','apron:glasshouse',[[-56,-209]]);
+edge('path','district:glasshouse','apron:glasshouse');
+node('road:glasshouse','junction',roadAt(nearestRoadS(-78,-234)));
+edge('path','road:glasshouse','district:glasshouse');
+node('road:clearing','junction',roadAt(nearestRoadS(-98,-202)));
+// The dam: stairs up from the meadow road to the west abutment, the crest promenade, the east abutment.
+const damEnd=(side:-1|1):Point3=>[DAM.centre[0]+Math.sin(side*DAM.halfAngle)*DAM.radius,DAM.crest,DAM.centre[2]+Math.cos(side*DAM.halfAngle)*DAM.radius];
+node('dam:west','overlook',damEnd(-1),{facing:Math.atan2(20,34),label:'Dam west abutment'});
+node('dam:east','junction',damEnd(1));
+node('road:dam-stairs','stair-bottom',roadAt(nearestRoadS(-40,-228)));
+edge('stair','road:dam-stairs','dam:west',[[-30,-236]],1.4,'stair:dam-west-steps');
+const crest:(readonly[number,number])[]=[];for(let k=1;k<12;k++){const a=-DAM.halfAngle+2*DAM.halfAngle*k/12;crest.push([DAM.centre[0]+Math.sin(a)*(DAM.radius+1.2),DAM.centre[2]+Math.cos(a)*(DAM.radius+1.2)]);}
+edge('promenade','dam:west','dam:east',crest,1.8,'promenade:dam-crest');
+// Reservoir Heights: pavilion, station, the overlook on the road, the rim stairs down to the woods.
+node('door:pavilion','door',GOAL_PAVILION_SITE.at,{facing:Math.atan2(-1,.4),label:'Goal pavilion'});
+DOOR_APRONS.push({site:'pavilion',door:GOAL_PAVILION_SITE.at,facing:Math.atan2(-1,.4),apron:{at:[GOAL_PAVILION_SITE.at[0]-2.5,GOAL_PAVILION_SITE.at[1],GOAL_PAVILION_SITE.at[2]+1],half:[2.4,2.4],yaw:Math.atan2(-1,.4)}});
+edge('path','dam:east','door:pavilion');
+edge('path','door:pavilion','district:reservoir');
+node('road:reservoir','junction',roadAt(nearestRoadS(54,-244)));
+edge('path','road:reservoir','district:reservoir');
+edge('path','station:funicular:reservoir','dam:east');
+node('road:b3-east','junction',roadAt(nearestRoadS(34,-211)));
+edge('stair','road:b3-east','station:funicular:reservoir',[[34,-220]],1.4,'stair:reservoir-steps');
+node('road:b2-east','junction',roadAt(nearestRoadS(31,-178)));
+node('stair:rim-mid','stair-top',[34,55,-198]);
+edge('stair','road:b2-east','stair:rim-mid',[[36,-190]],1.4,'stair:rim-steps-1');
+edge('stair','stair:rim-mid','road:b3-east',[[36,-205]],1.4,'stair:rim-steps-2');
+edge('path','district:library','road:b2-east',[[38,-180]]);
+// Summit Commons: road end, observatory, gondola, panorama.
+node('road:summit','junction',ROAD_CENTRE[ROAD_CENTRE.length-1]!);
+edge('path','road:summit','district:summit');
+node('door:observatory','door',[SUMMIT_OBSERVATORY_SITE.at[0],SUMMIT_OBSERVATORY_SITE.at[1],SUMMIT_OBSERVATORY_SITE.at[2]+SUMMIT_OBSERVATORY_SITE.radius],{facing:0,label:'Observatory'});
+DOOR_APRONS.push({site:'observatory',door:nodes.get('door:observatory')!.at,facing:0,apron:{at:[SUMMIT_OBSERVATORY_SITE.at[0],SUMMIT_OBSERVATORY_SITE.at[1],SUMMIT_OBSERVATORY_SITE.at[2]+SUMMIT_OBSERVATORY_SITE.radius+2.5],half:[2.4,2.4],yaw:0}});
+edge('path','district:summit','door:observatory');
+edge('path','district:summit','station:gondola:summit');
+node('overlook:summit','overlook',[district('summit').at[0]+2,district('summit').at[1],district('summit').at[2]+12],{facing:0,label:'Harbour panorama'});
+edge('path','district:summit','overlook:summit');
+// Waterfront gondola station joins the town lanes.
+node('town:quay','town',[-34,islandHeight(-34,40),40],{label:'Quay'});
+edge('path','town:quay','station:gondola:quay',[],1.8);
+// Reserved plots: a gate and a spur from the road.
+for(const p of RESERVED_PLOTS){node(`gate:${p.id}`,'plot-gate',p.gate,{label:p.name});node(`plot:${p.id}`,'district',p.at,{label:p.name});edge('path',`gate:${p.id}`,`plot:${p.id}`);}
+node('road:shelf','junction',roadAt(nearestRoadS(102,-134)));edge('path','road:shelf','gate:sunny-shelf');
+edge('path','road:clearing','gate:woodland-clearing');
+node('road:high-terrace','junction',roadAt(nearestRoadS(80,-278)));edge('path','road:high-terrace','gate:high-terrace');
+// Dam overlook on the road (race line).
+node('road:dam-overlook','overlook',roadAt(nearestRoadS(44,-209)),{facing:Math.atan2(8-44,-228+209),label:'Dam overlook'});
+
+// ——— Road edges between consecutive junctions ————————————————————————————————
+function roadEdges(line:'road'|'lane'){
+  const pts=line==='road'?ROAD_CENTRE:ORCHARD_LANE_CENTRE,prefix=line==='road'?'road:':'lane:';
+  const on=[...nodes.values()].filter(n=>n.id.startsWith(prefix)).map(n=>({n,i:pts.findIndex(p=>p===n.at||(p[0]===n.at[0]&&p[2]===n.at[2]))})).filter(e=>e.i>=0).sort((a,b)=>a.i-b.i);
+  for(let k=1;k<on.length;k++){const a=on[k-1]!,b=on[k]!;edges.push({id:`${line}:${a.n.id}~${b.n.id}`,kind:'road',from:a.n.id,to:b.n.id,halfWidth:line==='road'?4.8:3.2,points:pts.slice(a.i,b.i+1),length:arcLengths(pts.slice(a.i,b.i+1)).at(-1)!});}
+}
+node('road:hearth-lane','junction',roadAt(nearestRoadS(ORCHARD_LANE_WAYPOINTS[0]!.at[0],ORCHARD_LANE_WAYPOINTS[0]!.at[1])));
+roadEdges('road');roadEdges('lane');
+edge('path','road:hearth-lane','lane:junction',[],3,'link:lane-junction');
+
+export const MOUNTAIN_PATH_GRAPH={nodes:[...nodes.values()],edges} as const;
+export const OVERLOOKS=[...nodes.values()].filter(n=>n.kind==='overlook').map(n=>({id:n.id,name:n.label??n.id,at:n.at,facing:n.facing??0,look:[n.at[0]+Math.sin(n.facing??0)*40,n.at[1]-8,n.at[2]+Math.cos(n.facing??0)*40] as Point3}));
+/** Paths the ground is cut to (benches): everything that is not a road. */
+export const PATH_EDGES=edges.filter(e=>e.kind!=='road');
+/** Building ground: door aprons as level pads. */
+export const BUILDING_PADS=(Object.keys(BUILDING_SITES) as MountainBuilding[]).map(id=>({id,spot:BUILDING_SITES[id]}));
+
+// ——— Routing ——————————————————————————————————————————————————————————————————
+export const WALK_SPEED_DEFAULT=2.1;
+const STAIR_TIME=1.3;
+type Hit={edge:PathEdge;index:number;t:number;d:number;point:Point3};
+function project(x:number,z:number):Hit|null{
+  let best:Hit|null=null;
+  for(const e of edges)for(let i=1;i<e.points.length;i++){
+    const a=e.points[i-1]!,b=e.points[i]!,dx=b[0]-a[0],dz=b[2]-a[2],l=dx*dx+dz*dz,t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[2])*dz)/(l||1))),px=a[0]+dx*t,pz=a[2]+dz*t,d=Math.hypot(x-px,z-pz);
+    if(!best||d<best.d)best={edge:e,index:i,t,d,point:[px,mix(a[1],b[1],t),pz]};
+  }
+  return best;
+}
+const cost=(e:PathEdge,len:number,speed:number)=>len/speed*(e.kind==='stair'?STAIR_TIME:1);
+export type WalkPlan={points:Point3[];edges:string[];length:number;seconds:number};
+/** Shortest-by-time route over the graph (stairs allowed). */
+export function mountainWalkPlan(from:{x:number;z:number},to:{x:number;z:number},opts:{speed?:number}={}):WalkPlan|null{
+  const speed=opts.speed??WALK_SPEED_DEFAULT,a=project(from.x,from.z),b=project(to.x,to.z);if(!a||!b)return null;
+  const partial=(h:Hit,toEnd:boolean)=>{const pts=toEnd?[h.point,...h.edge.points.slice(h.index)]:[...h.edge.points.slice(0,h.index),h.point];return {pts,len:arcLengths(pts).at(-1)!};};
+  if(a.edge===b.edge){
+    const forward=a.index<b.index||(a.index===b.index&&a.t<=b.t),pts=forward?[a.point,...a.edge.points.slice(a.index,b.index),b.point]:[a.point,...a.edge.points.slice(b.index,a.index).reverse(),b.point];
+    const len=arcLengths(pts).at(-1)!;return {points:[...pts,[to.x,b.point[1],to.z]],edges:[a.edge.id],length:len,seconds:cost(a.edge,len,speed)};
+  }
+  const dist=new Map<string,number>(),prev=new Map<string,{node:string;edge:PathEdge}|null>(),done=new Set<string>();
+  const startA=partial(a,false),startB=partial(a,true);
+  dist.set(a.edge.from,cost(a.edge,startA.len,speed));prev.set(a.edge.from,null);
+  dist.set(a.edge.to,Math.min(dist.get(a.edge.to)??Infinity,cost(a.edge,startB.len,speed)));prev.set(a.edge.to,null);
+  const adj=new Map<string,PathEdge[]>();for(const e of edges){for(const n of [e.from,e.to]){const l=adj.get(n)??[];l.push(e);adj.set(n,l);}}
+  while(true){
+    let u:string|null=null,best=Infinity;for(const [k,v] of dist)if(!done.has(k)&&v<best){best=v;u=k;}
+    if(u===null)break;done.add(u);
+    for(const e of adj.get(u)??[]){const v=e.from===u?e.to:e.from,c=best+cost(e,e.length,speed);if(c<(dist.get(v)??Infinity)){dist.set(v,c);prev.set(v,{node:u,edge:e});}}
+  }
+  const endFrom=partial(b,false),endTo=partial(b,true);
+  const viaFrom=(dist.get(b.edge.from)??Infinity)+cost(b.edge,endFrom.len,speed),viaTo=(dist.get(b.edge.to)??Infinity)+cost(b.edge,endTo.len,speed);
+  const last=viaFrom<=viaTo?b.edge.from:b.edge.to;if(!Number.isFinite(Math.min(viaFrom,viaTo)))return null;
+  const chain:{node:string;edge:PathEdge}[]=[];let cur=last;while(prev.get(cur)){const p=prev.get(cur)!;chain.unshift({node:cur,edge:p.edge});cur=p.node;}
+  const first=cur,points:Point3[]=[];
+  points.push(...(first===a.edge.from?[...startA.pts].reverse():startB.pts));
+  for(const step of chain){const e=step.edge,pts=e.to===step.node?e.points:[...e.points].reverse();points.push(...pts.slice(1));}
+  points.push(...(last===b.edge.from?endFrom.pts.slice(1):[...endTo.pts].reverse().slice(1)));
+  points.push([to.x,points[points.length-1]![1],to.z]);
+  const usedEdges=[a.edge.id,...chain.map(c=>c.edge.id),b.edge.id];
+  return {points,edges:[...new Set(usedEdges)],length:arcLengths(points).at(-1)!,seconds:Math.min(viaFrom,viaTo)};
+}
