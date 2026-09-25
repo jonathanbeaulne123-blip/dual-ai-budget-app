@@ -166,7 +166,7 @@ describe("Add slideshow UI", () => {
         const pointer=(type:string,x:number)=>{const e=new MouseEvent(type,{bubbles:true,cancelable:true,clientX:x,button:0});Object.defineProperties(e,{pointerId:{value:1},isPrimary:{value:true}});act(()=>slider.dispatchEvent(e));};
         pointer('pointerdown',100);pointer('pointermove',0);
         expect(slider.getAttribute('aria-valuenow')).toBe('0');
-        const buttons=[host.querySelector<HTMLButtonElement>('[data-add-confirm]')!,...Array.from(host.querySelectorAll<HTMLButtonElement>('button')).filter(b=>b.textContent==='Add anyway')];
+        const buttons=[host.querySelector<HTMLButtonElement>('[data-add-confirm]')!,...Array.from(host.querySelectorAll<HTMLButtonElement>('button')).filter(b=>b.textContent==='Record it anyway')];
         for(const button of buttons){expect(button.disabled).toBe(true);act(()=>button.click());}expect(posts).toBe(0);
         pointer('pointercancel',0);expect(slider.getAttribute('aria-valuenow')).toBe('50');
         expect(host.querySelectorAll('[data-cut-cents]')[0]!.textContent).toBe('$0.01');

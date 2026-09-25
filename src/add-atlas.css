@@ -1,0 +1,86 @@
+/*
+ * The Add flow's Tool Atlas parts (§3.3): the ledger line on the first slide,
+ * the Bill paid slips, and the duplicate prompt. Paper, not glass: these live
+ * inside the Add sheet, which is already a solid surface.
+ */
+
+.add-ledger {
+  margin: 4px 0 10px;
+  padding: 0;
+  border: 0;
+  min-inline-size: 0;
+}
+.add-ledger__legend {
+  padding: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted, #5a4a3c);
+}
+.add-ledger__into { margin: 2px 0 6px; font-size: 16px; }
+.add-ledger__into strong { font-weight: 700; }
+.add-ledger__options { display: flex; gap: 8px; flex-wrap: wrap; }
+.add-ledger__option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  min-width: 72px;
+  padding: 0 16px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.add-ledger__option input { margin: 0; accent-color: currentColor; }
+.add-ledger__option:has(input:focus-visible) {
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px #1a1714;
+}
+
+.bill-slips__list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.bill-slip {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "name amount" "date pot";
+  gap: 2px 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line, rgba(46, 36, 27, 0.18));
+  background: var(--card, #fffaf0);
+  color: var(--ink, #2e241b);
+  text-align: left;
+  touch-action: manipulation;
+}
+.bill-slip.selected { border-width: 2px; }
+.bill-slip:focus-visible { outline: 2px solid #ffffff; outline-offset: 2px; box-shadow: 0 0 0 4px #1a1714; }
+.bill-slip__name { grid-area: name; font-weight: 700; }
+.bill-slip__amount { grid-area: amount; font-variant-numeric: tabular-nums; font-weight: 700; }
+.bill-slip__date { grid-area: date; color: var(--muted, #5a4a3c); }
+.bill-slip__pot { grid-area: pot; justify-self: end; color: var(--muted, #5a4a3c); }
+.bill-slips__later h2 { font-size: 13px; margin: 12px 0 4px; }
+.bill-slips__later ul { margin: 0; padding-left: 18px; }
+.bill-confirm__detail { margin: 6px 0; }
+
+.add-duplicate__title { font-size: 17px; margin: 0 0 4px; }
+.add-duplicate__matches { margin: 6px 0 10px; padding-left: 18px; }
+.add-duplicate__matches li { margin: 2px 0; }
+
+/* The three dressings: Classic's chalk edge, Taylor's washi-taped slip, Newfoundland's white frame (§4.4). */
+:root[data-theme="classic"] .bill-slip { border-top-color: #fbf5e6; background: #f6f0e4; color: #2e241b; }
+:root[data-theme="taylor"] .bill-slip {
+  background: #fff8f4;
+  color: #49323d;
+  background-image: linear-gradient(135deg, rgba(232, 166, 189, 0.2) 0 18px, transparent 18px);
+}
+:root[data-theme="newfoundland"] .bill-slip { background: #f5f3ea; color: #273e41; border: 1.5px solid #f5f3ea; outline: 1px solid rgba(39, 62, 65, 0.2); }
+:root[data-theme="newfoundland"] .bill-slip:focus-visible { outline: 2px solid #ffffff; }
+:root[data-theme="classic"] .add-ledger__into strong { color: #2e241b; }
+:root[data-theme="taylor"] .add-ledger__into strong { color: #49323d; }
+:root[data-theme="newfoundland"] .add-ledger__into strong { color: #273e41; letter-spacing: 0.02em; }
+
+@media (forced-colors: active) {
+  .bill-slip, .add-ledger__option { border: 1px solid CanvasText; background-image: none; }
+  .bill-slip:focus-visible, .add-ledger__option:has(input:focus-visible) { outline: 2px solid Highlight; box-shadow: none; }
+}
