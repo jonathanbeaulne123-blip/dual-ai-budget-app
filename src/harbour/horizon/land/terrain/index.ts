@@ -62,7 +62,18 @@ function crownHeight(b: Band, x: number, z: number): number {
   // A broad north shoulder and a long south ridge; one peak, no equal-height rings.
   const q = clamp(distance / Math.max(1, lo));
   const ridge = clamp(1 - 0.16 * dx / (260 * s) + 0.12 * dz / (260 * s), 0.75, 1.25);
-  return mix(110 * s, summit.summitH! * s, Math.pow(1 - smooth(q), ridge));
+  let height = mix(110 * s, summit.summitH! * s, Math.pow(1 - smooth(q), ridge));
+  // The Throat is cut into a north-facing buttress, not into an exposed low edge.
+  // Its surveyed 110 m floor plus 18 m aperture has real rock above it.
+  const tx = Math.abs(x / s - 1300), north = smooth((z / s - 268) / 24), south = 1 - smooth((z / s - 345) / 65);
+  const buttress = smooth(1 - Math.max(0, tx - 18) / 72) * north * south;
+  height = mix(height, Math.max(height, (131 + 5 * clamp((z / s - 300) / 60)) * s), buttress);
+  // The skylight opens at the manifest's northern shaft endpoint (1300,400),
+  // not at the lake centre (1300,420). A small rock saddle meets its 138 m rim.
+  const opening = M.underground.rooms.deep.skylight;
+  const saddleDistance = Math.max(Math.abs(x / s - opening.to[0]!) - 8, Math.abs(z / s - opening.to[1]!) - 8);
+  if (saddleDistance < 20) height = mix(height, opening.topH * s, 1 - smooth(saddleDistance / 20));
+  return height;
 }
 function bandHeight(b: Band, x: number, z: number): number {
   if (b.id === 'crown') return crownHeight(b, x, z);
