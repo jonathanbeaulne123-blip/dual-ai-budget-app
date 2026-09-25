@@ -1,6 +1,12 @@
 import { useCallback, useState } from "react";
 import type { CommitResult, Household } from "../../../core/types.ts";
-import type { KitchenCommand } from "../../../kitchenCommand.ts";
+
+/**
+ * The App's `run` (`runKitchen`), as the Campfire needs it: a command in, an
+ * outcome (or nothing) back. Looser than `KitchenCommand` so a test harness or
+ * the Chapter proof can hand in its own synthetic run.
+ */
+export type CampfireRun = (fn: (current: Household) => CommitResult) => unknown;
 
 /** A command outcome the App's `run` handed back: `ok: false` is a refusal, `null` is "not saved", anything else is accepted. */
 export function outcomeRefusal(outcome: unknown): string | null {
@@ -18,7 +24,7 @@ export function outcomeRefusal(outcome: unknown): string | null {
  * line that says what happened ("Books closed for September"), or one
  * `role="alert"` line that says why nothing changed.
  */
-export function useCampfireWrite(onCommand: KitchenCommand) {
+export function useCampfireWrite(onCommand: CampfireRun) {
   const [status, setStatus] = useState("");
   const [error, setError] = useState<string | null>(null);
   const write = useCallback(async (fn: (current: Household) => CommitResult, message: string): Promise<boolean> => {

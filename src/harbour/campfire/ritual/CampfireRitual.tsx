@@ -3,11 +3,10 @@ import { formatMonthLabel, type DateKey } from "../../../core/calendar.ts";
 import { openChapterFor, pendingChapterClosure } from "../../../core/chapters.ts";
 import type { Household } from "../../../core/types.ts";
 import type { Dashboard } from "../../../core/insights.ts";
-import type { KitchenCommand } from "../../../kitchenCommand.ts";
 import { useDialog } from "../../../useDialog.ts";
 import { ArriveBeat, LookAheadBeat, LookBackBeat, SealBeat, SettleBeat, type BeatProps } from "./beats.tsx";
 import { CAMPFIRE_BEATS, CAMPFIRE_BEAT_TITLES, campfireMonth, nextBeat, previousBeat, type CampfireBeat } from "./model.ts";
-import { useCampfireWrite } from "./useCampfireWrite.ts";
+import { useCampfireWrite, type CampfireRun } from "./useCampfireWrite.ts";
 import { CampfireGlyph } from "./CampfireGlyph.tsx";
 import "./ritual.css";
 
@@ -17,7 +16,7 @@ export type CampfireRitualProps = {
   today: DateKey;
   busy: boolean;
   /** The App's `runKitchen`: every write at the fire is an existing captured command sent through it. */
-  onCommand: KitchenCommand;
+  onCommand: CampfireRun;
   /** "Put it back": closes the sheet; focus returns to the invoker. */
   onClose: () => void;
   /** The books' own dashboard, for the month's charts (Look back) and where leftover goes (Settle). */

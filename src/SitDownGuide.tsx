@@ -4,6 +4,7 @@ import {
   adoptSitDownStandingOrders,
   executeSitDownMoves,
   formatCad,
+  formatMonthLabel,
   leftoverProjection,
   monthKeyFromDateKey,
   openSitDownSession,
@@ -24,6 +25,7 @@ import {
   type LedgerView,
   type SitDownChart,
   type SitDownFact,
+  type UndoToken,
 } from "./core/index.ts";
 import type { Dashboard } from "./core/insights.ts";
 import { downloadText } from "./ledger/export.ts";
@@ -289,6 +291,31 @@ export function SitDownLeftover(props: SitDownBase & { onCommand: SitDownRun; bu
         </button>
       </div>
       {driveNote && <p className="muted" role="status">{driveNote}</p>}
+    </section>
+  );
+}
+
+/**
+ * @deprecated The monthly guide is the Campfire's Look back and Settle now
+ * (Tool Atlas K3, D3). This shim keeps the two legacy callers that App() and
+ * the retired Office still mount (the flags-off Plan page and the Postcard)
+ * working with their old `onApply` plumbing until the integrator removes them.
+ * It no longer closes the books: that happens once, at the Campfire.
+ */
+export function SitDownGuide({ onApply, ...props }: SitDownBase & { onApply: (household: Household, undo?: UndoToken) => void }) {
+  const legacyRun: SitDownRun = (fn) => {
+    const result = fn(props.household);
+    onApply(result.household, result.undo);
+    return { ok: true, household: result.household };
+  };
+  return (
+    <section className="card sit-guide">
+      <header>
+        <h2>Sitdown</h2>
+        <span className="muted">{formatMonthLabel(monthKeyFromDateKey(props.today ?? todayKey()))}</span>
+      </header>
+      <SitDownLookBack {...props} />
+      {(props.view ?? "household") === "household" && <SitDownLeftover {...props} onCommand={legacyRun} />}
     </section>
   );
 }

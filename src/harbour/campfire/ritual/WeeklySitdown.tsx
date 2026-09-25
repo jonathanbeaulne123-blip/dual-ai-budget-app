@@ -3,10 +3,9 @@ import { appendPlanSitdownTurn } from "../../../core/index.ts";
 import { formatDayLabel, monthKeyFromDateKey, weekBounds, type DateKey } from "../../../core/calendar.ts";
 import { requiredPlanMemberIds } from "../../../core/planSystem.ts";
 import type { Household } from "../../../core/types.ts";
-import type { KitchenCommand } from "../../../kitchenCommand.ts";
 import { useDialog } from "../../../useDialog.ts";
 import { weeklySession, weeklySitdownId } from "./model.ts";
-import { outcomeRefusal, useCampfireWrite } from "./useCampfireWrite.ts";
+import { outcomeRefusal, useCampfireWrite, type CampfireRun } from "./useCampfireWrite.ts";
 import "./ritual.css";
 
 export type WeeklySitdownProps = {
@@ -14,7 +13,7 @@ export type WeeklySitdownProps = {
   memberId: string;
   today: DateKey;
   busy: boolean;
-  onCommand: KitchenCommand;
+  onCommand: CampfireRun;
   onClose: () => void;
   /** Optional: ask Hercules to answer a shared talking point (the App's existing Shared reply route). */
   onSharedHerculesReply?: (sessionId: string, inReplyToTurnId: string) => Promise<void>;

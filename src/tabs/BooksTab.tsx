@@ -2,7 +2,7 @@ import { lazy, type ComponentProps } from "react";
 import { DeferredBooksPage, DeferredSurface } from "../deferredSurfaces.tsx";
 import { OnboardingReady } from "../OnboardingReady.tsx";
 import { CampfireDoor } from "../harbour/campfire/ritual/CampfireDoor.tsx";
-import { formatCad } from "../core/index.ts";
+import { formatCad, type Household, type UndoToken } from "../core/index.ts";
 import { canonical } from "../ledgerSync/patch.ts";
 
 const AccountHistorySetup = lazy(() => import("../AccountHistorySetup.tsx").then(module => ({ default: module.AccountHistorySetup })));
@@ -40,7 +40,7 @@ export type BooksTabProps =
      * @deprecated App() still hands over the old leftover guide's props here; until the
      * integrator renames it to `campfireDoor`, a non-null value means "show the door".
      */
-    closeTheMonth?: object | null;
+    closeTheMonth?: { onApply?: (household: Household, undo?: UndoToken) => unknown; [key: string]: unknown } | null;
   };
 
 /**
