@@ -1,7 +1,8 @@
 import {editionAvailability,useEditionAvailability,editionUnavailableWords} from "./editionAvailability.ts";
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode, type TouchEvent as ReactTouchEvent } from "react";
-import { FabSpeedDial } from "../../FabSpeedDial.tsx";
+import { useEffect, useId, useLayoutEffect, useRef, useState, useSyncExternalStore, type CSSProperties, type TouchEvent as ReactTouchEvent } from "react";
 import type { FabAction, FabAddMode } from "../../core/fabActions.ts";
+import type { ThemeId } from "../../theme/scenes.ts";
+import { GlassBar } from "../bubbles/GlassChrome.tsx";
 import { engravedCents } from "../desk/engraved.ts";
 import { compactCents, useBarBadges } from "./barBadges.ts";
 import { usePageTurn } from "./pageTurn.ts";
@@ -9,25 +10,21 @@ import { MOTION_KEY, chooseMotionEdition, readMotionEdition, type MotionEdition 
 import "./harbour-nav.css";
 
 /**
- * The one bar (Simple View Desk S1). The Compass's district row (Home · Study ·
- * Kitchen · Making · Together and the big All-tools handle) retired from the
- * harbour: the island's quick-travel bar (`village/VillageHUD.tsx`) is the one
- * bar now —
+ * The door edition of the glass (Tool Atlas brief §6): **[Simple view] [Record]
+ * [All tools]**, Record centred — the island's three bubbles laid out as a bar.
+ * The island stands its glass itself (`village/VillageHUD.tsx` → `GlassChrome`)
+ * and announces it (`useIslandBar`); this door edition steps aside while it
+ * does, so there is only ever one set: it shows with a tool open in front, on
+ * the Journey, or while the harbour is still arriving.
  *
- *   [Simple view] [⌖ Village map] [Quick travel…] [↗ Look around] [◇ Journey] [+] [All tools]
+ * This file also keeps what the App shares with the glass:
+ * - the **edition flip** for the personal house (`EditionFlip`,
+ *   `flipMotionEdition`, `useMotionEdition`) — the same `hearth:motion`
+ *   switch the Simple view bubble writes;
+ * - the **backtick key** (`useEditionFlipKey`), never Tab.
  *
- * District travel survives through Quick travel, the Village map and All tools.
- *
- * This file keeps the pieces that bar shares with the App:
- * - the **edition flip** (`EditionFlip`, `flipMotionEdition`, `useMotionEdition`)
- *   — the same `hearth:motion` switch the quick sheet has always had;
- * - the **backtick key** (`useEditionFlipKey`), never Tab;
- * - `Compass` itself, cut down to the bar's door edition — [Simple view] [+]
- *   [All tools]. The App mounts it for every household harbour route and it
- *   steps aside while the island's own bar stands (`useIslandBar`), so it only
- *   shows with a tool open in front (the door strip), on the Journey surface,
- *   or while the harbour is still arriving. The + is never more than two
- *   presses away, and there is only ever one bar.
+ * The Hercules pawprint left All tools (brief §3.4): it stands on Hercules on
+ * the map now (`barBadges.ts` `useHerculesSuggestion`).
  */
 export type CompassDistrict = "home" | "study" | "kitchen" | "making" | "together";
 
@@ -46,6 +43,14 @@ export type CompassProps = {
   onQuickSheet: () => void;
   /** App's `fabOpen`, for the `is-fab-open` class the scrim styles key on. */
   fabOpen?: boolean;
+  /** The sheet is open: All tools reads as expanded. */
+  toolsOpen?: boolean;
+  /** Whose label counts the bubbles read, and the glass's dressing and fallbacks. */
+  member?: string | null;
+  theme?: ThemeId;
+  calm?: boolean;
+  lite?: boolean;
+  alwaysShowLabels?: boolean;
 };
 
 const TARGET: CSSProperties = { minHeight: 44, minWidth: 44 };
@@ -155,20 +160,6 @@ export function EditionFlip({ className, storage, world = "harbour" }: { classNa
   );
 }
 
-/**
- * The pawprint on All tools (S7): Hercules has a fresh suggestion. A marker
- * with its own words, read as the button's description; the button's name
- * stays "All tools". Returns the description id (or undefined) and the mark.
- */
-export function useToolsPawprint(): [string | undefined, ReactNode] {
-  const { suggestion } = useBarBadges();
-  const id = useId();
-  if (!suggestion) return [undefined, null];
-  return [id, <i key="pawprint" className="bar-pawprint" data-bar-pawprint="" id={id} role="img" aria-label="Hercules has a suggestion">
-    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><ellipse cx="10" cy="13.4" rx="4.6" ry="3.9" /><ellipse cx="4.3" cy="8.6" rx="1.9" ry="2.4" /><ellipse cx="8" cy="5.2" rx="1.9" ry="2.5" /><ellipse cx="12" cy="5.2" rx="1.9" ry="2.5" /><ellipse cx="15.7" cy="8.6" rx="1.9" ry="2.4" /></svg>
-  </i>];
-}
-
 /** Pure: would a key typed here be typing? Inputs, textareas, selects, contenteditable, textboxes. */
 export function isTypingTarget(target: EventTarget | null): boolean {
   if (!target || typeof (target as Element).closest !== "function") return false;
@@ -215,38 +206,14 @@ export function useEditionFlipKey(enabled: boolean, storage?: Pick<Storage, "get
 }
 
 /**
- * The bar's + : the App's own FabSpeedDial, byte-identical verbs. Whichever
- * edition of the bar carries it, a + that leaves while open tells the App it
- * shut, so the App's `fabOpen` (which hides the fund ledge) is never stranded.
- */
-export function BarFab({ fab }: { fab: CompassFab }) {
-  const onOpenChange = useRef(fab.onOpenChange); onOpenChange.current = fab.onOpenChange;
-  const open = useRef(false);
-  const change = useCallback((next: boolean) => { open.current = next; onOpenChange.current(next); }, []);
-  useEffect(() => () => { if (open.current) onOpenChange.current(false); }, []);
-  return (
-    <FabSpeedDial
-      closed={fab.closed}
-      actions={fab.actions}
-      closedLabel={fab.closedLabel}
-      onOpenChange={change}
-      onPick={fab.onPick}
-      onGo={fab.onGo}
-    />
-  );
-}
-
-/**
- * The bar's door edition: [Simple view] [+] [All tools]. It renders nothing
- * while the island's own bar is standing, and stands in for it otherwise (a
- * tool open in front, the Journey surface, the harbour still arriving). Swipe
- * up, or All tools, opens the quick sheet — every place and every tool.
+ * The door edition: [Simple view] [Record] [All tools]. It renders nothing
+ * while the island's own glass is standing. Swipe up, or All tools, opens the
+ * All-tools sheet.
  */
 export function Compass(props: CompassProps) {
   const { fab, onQuickSheet, fabOpen = false } = props;
   const touchStart = useRef<{ x: number; y: number } | null>(null);
   const islandBar = useIslandBarStanding();
-  const [pawprint, paw] = useToolsPawprint();
 
   function onTouchStart(event: ReactTouchEvent) {
     const touch = event.touches[0];
@@ -262,27 +229,19 @@ export function Compass(props: CompassProps) {
 
   if (islandBar) return null;
   return (
-    <nav
-      className={`nav compass harbour-bar${fabOpen ? " is-fab-open" : ""}`}
-      data-ledger-nav="shared"
-      data-harbour-bar="door"
-      aria-label="Harbour bar"
+    <GlassBar
+      className={`compass${fabOpen ? " is-fab-open" : ""}`}
+      barKind="door"
+      fab={fab}
+      onOpenTools={onQuickSheet}
+      toolsOpen={props.toolsOpen}
+      member={props.member}
+      theme={props.theme}
+      calm={props.calm}
+      lite={props.lite}
+      alwaysShowLabels={props.alwaysShowLabels}
       onTouchStart={onTouchStart}
       onTouchEnd={onTouchEnd}
-    >
-      <EditionFlip className="harbour-bar__flip" />
-      <BarFab fab={fab} />
-      <button
-        type="button"
-        className="harbour-bar__tools"
-        style={TARGET}
-        aria-label="All tools"
-        aria-describedby={pawprint}
-        title="All tools (swipe up or press Space)"
-        onClick={onQuickSheet}
-      >
-        <b aria-hidden="true">☰</b> <span>All tools</span>{paw}
-      </button>
-    </nav>
+    />
   );
 }

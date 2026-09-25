@@ -40,42 +40,28 @@
 .village-character :is(button):focus-visible{outline:3px solid #1978a0;outline-offset:3px}
 @media(max-width:719px){.village-character{right:14px;bottom:173px}.village-character__trigger{padding:5px 10px}.village-character__trigger span{max-width:120px;overflow:hidden;text-overflow:ellipsis}}
 
-/* ── The one bar (Simple View Desk S1) ───────────────────────────────────────
-   [Simple view] [⌖ map] [Quick travel] [↗ look] [◇ Journey] [+] [All tools].
-   The Compass's district row retired, so the bar sits at the foot of the stage
-   and everything that used to clear the compass now clears the bar instead.
-   Centred without a transform: the + menu's scrim is position:fixed, and a
-   transformed ancestor would shrink it to the size of the bar. */
-
-.village-tools .village-quick{margin:0;display:inline-flex}
-.village-tools>*{flex-shrink:0}
-/* 720–999: the desktop branch, but not yet room for every word — the flip and
-   All tools keep theirs, the rest are icons with their full accessible names. */
-@media(min-width:720px) and (max-width:999px){.village-tools button:not(.village-tools__flip):not(.village-tools__all) span{display:none}}
-.village-tools__flip{font-weight:650}
-.village-tools__flip b{font-weight:500}
-.village-tools .village-tools__flip{background:#f1e6cc;color:#284f43;border:1px solid #d9c7a1}
-.village-tools .village-tools__flip:hover{background:#e8dab8}
-.village-tools .village-tools__all{border-left:1px solid #e1d3b6;border-radius:0 12px 12px 0}
-/* The + : the App's own FabSpeedDial. The global dial rules are scoped to the
-   classic .nav, so the bar dresses its own + and its menu here. */
-.village-tools .fab-dial{position:relative;display:flex;flex-direction:column;align-items:center;z-index:1;margin:0 2px}
-.village-tools .fab-dial .fab{position:relative;z-index:2;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border-radius:14px;background:#284f43;color:#fff8e7;font-size:26px;line-height:1;display:grid;place-items:center}
-.village-tools .fab-dial .fab:hover{background:#1f4136}
-.village-tools .fab-dial-scrim{position:fixed;inset:0;z-index:0;margin:0;border:0;padding:0;border-radius:0;min-height:0;background:rgba(27,23,18,.22);color:transparent;font-size:0;cursor:default}
-/* The + sits near the bar's right end, so its menu hangs from the + 's right edge and never runs off a phone. */
-.village-tools .fab-dial-actions{bottom:calc(100% + 18px);left:auto;right:0;transform:none;align-items:flex-end}
-.village-tools .fab-dial-action{display:flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;padding:10px 16px;border-radius:999px;border:1px solid #d9c7a1;background:#fffaf0;color:#273b33;box-shadow:0 6px 14px rgba(60,42,20,.14);font-size:13px;font-weight:650;white-space:nowrap}
-.village-tools .fab-dial-action:hover{background:#f1e6cc}
-.village-tools .fab-dial-action.tone-go{border-style:dashed}
-/* The three dressings: the flip and the + wear each theme's own ink, as the character chooser does. */
-.harbour-world--taylor .village-tools .village-tools__flip{background:#fbe9f0;color:#633b56;border-color:#d5a7bf}
-.harbour-world--taylor .village-tools .fab-dial .fab{background:#925475}
-.harbour-world--taylor .village-tools select{background:#633b56}
-.harbour-world--newfoundland .village-tools .village-tools__flip{background:#e3f0ee;color:#224756;border-color:#8eafba}
-.harbour-world--newfoundland .village-tools .fab-dial .fab{background:#326b80}
-.harbour-world--newfoundland .village-tools select{background:#224756}
-/* Things that stood clear of the compass now stand clear of the bar. */
+/* ── The glass (Tool Atlas brief §4.1, §6) ────────────────────────────────────
+   The seven-control bar retired. The three bubbles are fixed to the viewport
+   (`bubbles/bubbles.css`); the HUD only keeps them clickable over a
+   pointer-events:none layer, and wears the address card as glass: the camp
+   card's recipe, blur(10px), tint .80, three dressings, solid fallbacks. */
+.village-hud .glass-chrome{pointer-events:none}
+.village-hud .glass-chrome>*{pointer-events:auto}
+.village-address[data-glass-card]{
+  --card-glass:rgba(246,240,228,.80);--card-ink:#2e241b;--card-ink-2:#5a4a3c;--card-edge:rgba(46,36,27,.18);--card-chalk:#fbf5e6;--card-blur:blur(10px) saturate(120%);
+  background:var(--card-glass);color:var(--card-ink);border:1px solid var(--card-edge);
+  box-shadow:inset 1px 1px 0 rgba(255,255,255,.55),inset 0 1px 0 var(--card-chalk),0 8px 24px -12px rgba(26,23,20,.45);
+  -webkit-backdrop-filter:var(--card-blur);backdrop-filter:var(--card-blur)
+}
+.village-address[data-glass-card] p{color:var(--card-ink-2)}
+.village-address[data-glass-card] .village-address__seal{color:var(--card-ink-2);border-color:var(--card-edge)}
+:root[data-theme="taylor"] .village-address[data-glass-card],.village-address[data-glass-card][data-glass-theme="taylor"]{--card-glass:rgba(255,247,246,.82);--card-ink:#49323d;--card-chalk:#fff;--card-blur:blur(10px) saturate(115%);border-color:rgba(255,255,255,.92)}
+:root[data-theme="taylor"] .village-address[data-glass-card]::before,.village-address[data-glass-card][data-glass-theme="taylor"]::before{content:"";position:absolute;top:4px;left:-6px;width:44px;height:14px;background:rgba(232,166,189,.2);transform:rotate(-24deg);pointer-events:none}
+:root[data-theme="newfoundland"] .village-address[data-glass-card],.village-address[data-glass-card][data-glass-theme="newfoundland"]{--card-glass:rgba(247,247,237,.84);--card-ink:#273e41;--card-chalk:#f5f3ea;border:1.5px solid #f5f3ea;box-shadow:0 0 0 1px var(--card-edge),0 8px 24px -12px rgba(26,23,20,.45)}
+.village-address[data-glass-card][data-glass-calm]{background:#f6f0e4;-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid #8a7a69}
+@media (prefers-reduced-transparency:reduce),(prefers-reduced-motion:reduce),(prefers-contrast:more){.village-address[data-glass-card]{background:#f6f0e4;-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid #8a7a69}}
+@media (forced-colors:active){.village-address[data-glass-card]{border:1px solid transparent;-webkit-backdrop-filter:none;backdrop-filter:none}.village-address[data-glass-card]::before{display:none}}
+/* Things that stood clear of the bar now stand clear of the bubbles' row. */
 .harbour-world__supported,.harbour-world__checking{bottom:88px}
 .harbour-world__supported + .harbour-world__checking{bottom:120px}
 .harbour-world:not(.is-skating) .harbour-moves{bottom:88px}
@@ -87,26 +73,16 @@
   .harbour-world__supported + .harbour-world__checking{bottom:104px}
   .harbour-world:not(.is-skating) .harbour-moves{bottom:74px}
 }
-@media(max-width:600px){
-  .village-tools button,.village-tools select{min-width:44px}
-  .village-tools .village-tools__flip,.village-tools .village-tools__all{padding:0 8px}
-  .village-quick{position:relative;display:inline-flex}
-  .village-quick::after{content:"⇢";position:absolute;inset:0;display:grid;place-items:center;pointer-events:none;color:#fff8e7;font-size:18px}
-  .village-tools .village-quick select{width:44px;max-width:44px;padding:0;color:transparent;-webkit-appearance:none;appearance:none;text-align:center}
-  .village-tools .village-quick select option{color:#273b33}
-  .village-tools .fab-dial{margin:0}
-}
 @media(max-width:379px){
   .harbour-world:not(.is-skating) .harbour-moves{bottom:124px}
   .harbour-world__supported,.harbour-world__checking{bottom:124px}
   .harbour-world__supported + .harbour-world__checking{bottom:156px}
-  .village-map{bottom:128px}
 }
 /* Riding: the chrome is dimmed, never removed (skate.css). The rest of the HUD
-   steps away, but the one bar stays — the + and All tools are still two presses. */
+   steps away, but the glass stays — Record and All tools are still one press. */
 .harbour-world.is-skating .village-hud{display:block}
-.harbour-world.is-skating .village-hud>:not(.village-tools):not(.village-map){display:none}
-.harbour-world.is-skating .village-tools{width:max-content;opacity:.55;transition:opacity .2s}
-.harbour-world.is-skating .village-tools:is(:hover,:focus-within){opacity:1}
-.village-tools:has(.fab-dial.is-open){opacity:1}
-@media(prefers-reduced-motion:reduce){.harbour-world.is-skating .village-tools{transition:none}}
+.harbour-world.is-skating .village-hud>:not(.glass-chrome){display:none}
+.harbour-world.is-skating .glass-chrome .glass-bubble-anchor{opacity:.55;transition:opacity .2s}
+.harbour-world.is-skating .glass-chrome .glass-bubble-anchor:is(:hover,:focus-within){opacity:1}
+.glass-chrome .glass-bubble-anchor:has(.fab-dial.is-open){opacity:1}
+@media(prefers-reduced-motion:reduce){.harbour-world.is-skating .glass-chrome .glass-bubble-anchor{transition:none}}
