@@ -4,7 +4,7 @@
  * the town lane draped on town ground across a real canal bridge, and a quay finish with a
  * long run-out along the waterfront.
  */
-import {MOUNTAIN_ROAD_LINE} from './roads.ts';
+import {MOUNTAIN_ROAD_LINE,BRANCH_DEPARTURES} from './roads.ts';
 import {roadTagS} from './roadLine.ts';
 import {islandHeight} from './islandShape.ts';
 import {DAM,GEOGRAPHY_REVISION,MOUNTAIN_VERSION,RIVER} from './places.ts';
@@ -75,6 +75,7 @@ function branch(id:string,name:string,kind:SkillBranch['kind'],material:'wood'|'
   return {id,name,kind,entry,exit,halfWidth,material,points,segments,branchLength:arcLengths(points).at(-1)!,roadLength:COURSE_S[exit]!-COURSE_S[entry]!};
 }
 const damArc=(from:number,to:number,y0:number,y1:number,radius:number,n=8):Point3[]=>Array.from({length:n},(_,k)=>{const t=(k+.5)/n,a=mix(from,to,t);return [DAM.centre[0]+Math.sin(a)*radius,mix(y0,y1,t),DAM.centre[2]+Math.cos(a)*radius];});
+const LIBRARY_DEPARTURE=BRANCH_DEPARTURES.find(d=>d.id==='library-balcony')!;
 export const SKILL_BRANCHES:readonly SkillBranch[]=[
   // Dam maintenance rail: off Reservoir Heights, down the glass face's downstream rail, then a short deck
   // that drops onto the metal-and-glass bridge from its upstream side.
@@ -84,8 +85,9 @@ export const SKILL_BRANCHES:readonly SkillBranch[]=[
     {kind:'deck',via:[[-14,72,-229],[-18,71,-225.5]]},
   ],true),
   // Library roof line: off the woodland bridge onto the reading-room roof and balcony, down to the east bend.
-  branch('library-balcony','Library roof and balcony','balcony','wood',1.6,courseIndexAt(roadTagS('b2-east')-1),courseIndexAt(roadTagS('library')-31),[
-    {kind:'ramp',via:[[37,41.2,-181.6]]},
+  // It leaves the bridge head through the opening in the right rail (`BRANCH_DEPARTURES`).
+  branch('library-balcony','Library roof and balcony','balcony','wood',LIBRARY_DEPARTURE.halfWidth,courseIndexAt(LIBRARY_DEPARTURE.planS),courseIndexAt(roadTagS('library')-31),[
+    {kind:'ramp',via:[LIBRARY_DEPARTURE.toward]},
     {kind:'deck',via:[[45,41.35,-181.4],[56,41.1,-180.4]]},
     {kind:'deck',via:[[62,40.4,-177]]},
     {kind:'ramp',via:[[70,37.6,-172.5],[77,34.6,-168.8]]},

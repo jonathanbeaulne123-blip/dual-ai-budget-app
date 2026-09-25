@@ -5,6 +5,7 @@ import {MOUNTAIN_ROAD,ROAD_LENGTH,DISTRICTS,RESERVED_PLOTS,transportPoint,TRANSP
 import {queryWorldSurface,worldCeilingAt,mountainWalkRoute,SKILL_BRANCHES,WORLD_SURFACES,type WorldSurface} from '../src/harbour/mountain/surfaces.ts';
 import {crossesRaceGate,MOUNTAIN_GATES,MOUNTAIN_COURSE_POINTS,MOUNTAIN_RACE_SEGMENTS} from '../src/harbour/mountain/race.ts';
 import {TRANSPORT_CROSSINGS} from '../src/harbour/mountain/crossings.ts';
+import {BRANCH_DEPARTURES} from '../src/harbour/mountain/roads.ts';
 import {TOWN_SQUARE} from '../src/harbour/mountain/townSquare.ts';
 import {createBasinView,type BasinReading} from '../src/harbour/mountain/basin.ts';
 import {createSkateField} from '../src/harbour/skate/world/field.ts';
@@ -156,7 +157,10 @@ describe('the mountain road',()=>{
   for(const line of [MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE])for(const s of line.samples)for(const [side,kind] of [[1,s.left],[-1,s.right]] as const){
    let drop=0;for(let o=.6;o<=3.2;o+=.65){const g=groundHeightAt(s.at[0]+s.normal[0]*(s.halfWidth+o)*side,s.at[2]+s.normal[2]*(s.halfWidth+o)*side);drop=Math.max(drop,s.at[1]-g);}
    drops.push({kind,drop});
-   if(drop>EDGE_RULES.parapetDrop&&kind!=='parapet'&&kind!=='wall'&&kind!=='bridge')unsafe.push(`${line.id}@${s.s.toFixed(0)}:${side} drop ${drop.toFixed(1)} ${kind}`);
+   // A skill branch departure: the rail opens for the branch deck, which continues the road surface at the edge.
+   const ex=s.at[0]+s.normal[0]*s.halfWidth*side,ez=s.at[2]+s.normal[2]*s.halfWidth*side;
+   const departure=kind==='open'&&BRANCH_DEPARTURES.some(d=>d.line===line.id&&SKILL_BRANCHES.find(b=>b.id===d.id)!.points.some(p=>Math.hypot(p[0]-ex,p[2]-ez)<d.halfWidth+1.2&&Math.abs(p[1]-s.at[1])<.8));
+   if(drop>EDGE_RULES.parapetDrop&&kind!=='parapet'&&kind!=='wall'&&kind!=='bridge'&&!departure)unsafe.push(`${line.id}@${s.s.toFixed(0)}:${side} drop ${drop.toFixed(1)} ${kind}`);
   }
   const worst=drops.reduce((m,d)=>d.drop>m.drop?d:m);
   console.info('Largest edge drop:',worst.drop.toFixed(1),'guarded by',worst.kind);

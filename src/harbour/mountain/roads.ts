@@ -54,11 +54,31 @@ function classify(points:readonly Point3[],id:string,halfWidthAt:(i:number)=>num
   }
   return {id,length:s3[n-1]!,step:s3[n-1]!/(n-1),samples};
 }
+/** Where a skill branch leaves the road through its edge: the rail stops for the branch's width, so the
+ * branch deck is the edge there (the art draws the gap because it draws `EDGE_RUNS`). Measured as the
+ * branch's first leg, from its departure on the road toward its first authored point. `course.ts` builds
+ * the branch from the same departure. */
+export const BRANCH_DEPARTURES=[
+  {id:'library-balcony',line:'mountain-road',planS:roadTagS('b2-east')-1,toward:[37,41.2,-181.6] as Point3,halfWidth:1.6},
+] as const;
+const OPENED={left:new WeakSet<RoadSample>(),right:new WeakSet<RoadSample>()};
+/** The edge samples a departure passes through (branch half-width plus a body's clearance each side). */
+function openDepartures(line:RoadLine){
+  for(const d of BRANCH_DEPARTURES){if(d.line!==line.id)continue;
+    const from=line.samples[Math.max(0,Math.min(line.samples.length-1,Math.round(d.planS/ROAD_PLAN_STEP)))]!.at,dx=d.toward[0]-from[0],dz=d.toward[2]-from[2],l2=dx*dx+dz*dz||1,reach=d.halfWidth+.9;
+    for(const sample of line.samples)for(const side of ['left','right'] as const){
+      const sign=side==='left'?1:-1,x=sample.at[0]+sample.normal[0]*sample.halfWidth*sign,z=sample.at[2]+sample.normal[2]*sample.halfWidth*sign;
+      const t=Math.max(0,Math.min(1,((x-from[0])*dx+(z-from[2])*dz)/l2));
+      if(Math.hypot(x-from[0]-dx*t,z-from[2]-dz*t)<reach){(sample as {-readonly [K in keyof RoadSample]:RoadSample[K]})[side]='open';OPENED[side].add(sample);}
+    }
+  }
+  return line;
+}
 const roadBridge=(i:number)=>BRIDGE_SPANS.find(b=>b.line==='road'&&i>=b.i0&&i<=b.i1)?.id??null;
 const laneBridge=(i:number)=>BRIDGE_SPANS.find(b=>b.line==='lane'&&i>=b.i0&&i<=b.i1)?.id??null;
 /** The foot tapers from mountain width to a town lane over its first 18 units. */
 const TOWN_HALF_WIDTH=3.5;
-export const MOUNTAIN_ROAD_LINE:RoadLine=classify(ROAD_CENTRE,'mountain-road',i=>mix(TOWN_HALF_WIDTH,ROAD_HALF_WIDTH,Math.min(1,i/18)),roadBridge);
+export const MOUNTAIN_ROAD_LINE:RoadLine=openDepartures(classify(ROAD_CENTRE,'mountain-road',i=>mix(TOWN_HALF_WIDTH,ROAD_HALF_WIDTH,Math.min(1,i/18)),roadBridge));
 export const ORCHARD_LANE_LINE:RoadLine=classify(ORCHARD_LANE_CENTRE,'orchard-lane',()=>ORCHARD_LANE_HALF_WIDTH,laneBridge);
 
 /** Interpolated sample at arc length `s` (3D arc length, uphill). */
@@ -88,6 +108,8 @@ export const GORGE_BRIDGES:readonly Bridge[]=BRIDGE_SPANS.map(gorgeBridge);
 export type EdgeRun={id:string;line:string;side:'left'|'right';kind:EdgeKind;s0:number;s1:number;points:readonly Point3[];height:number};
 export type EdgeSolid={id:string;a:readonly[number,number];b:readonly[number,number];bottom:number;top:number;thickness:number};
 export type RetainingWall={id:string;of:string;side:'left'|'right';foot:readonly Point3[];top:readonly Point3[];thickness:number};
+/** A sample edge a departure opened: guarded rails stop short of it instead of overlapping into it. */
+const departureGap=(sample:RoadSample,side:'left'|'right')=>OPENED[side].has(sample);
 function runs(line:RoadLine):{edges:EdgeRun[];walls:RetainingWall[]}{
   const edges:EdgeRun[]=[],walls:RetainingWall[]=[];
   for(const side of ['left','right'] as const){
@@ -97,7 +119,8 @@ function runs(line:RoadLine):{edges:EdgeRun[];walls:RetainingWall[]}{
       if(kind!=='open'){
         // Guarded runs overlap one sample into their neighbours so the rail has no gap at a joint (and a one-sample run still has length).
         const guarded=kind==='parapet'||kind==='bridge'||kind==='wall';
-        const pts=S.slice(guarded?Math.max(0,i-1):i,guarded?Math.min(S.length,j+2):j+1).map(s=>[s.at[0]+s.normal[0]*s.halfWidth*sign,s.at[1],s.at[2]+s.normal[2]*s.halfWidth*sign] as Point3);
+        const lo=guarded&&i>0&&!departureGap(S[i-1]!,side)?i-1:i,hi=guarded&&j+1<S.length&&!departureGap(S[j+1]!,side)?j+2:j+1;
+        const pts=S.slice(lo,hi).map(s=>[s.at[0]+s.normal[0]*s.halfWidth*sign,s.at[1],s.at[2]+s.normal[2]*s.halfWidth*sign] as Point3);
         const id=`${line.id}:${side}:${kind}:${Math.round(S[i]!.s)}`;
         edges.push({id,line:line.id,side,kind,s0:S[i]!.s,s1:S[j]!.s,points:pts,height:kind==='kerb'?EDGE_RULES.kerbHeight:kind==='wall'?0:EDGE_RULES.parapetHeight});
         if(kind==='wall'){
