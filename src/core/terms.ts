@@ -76,3 +76,26 @@ export function householdWords(text: string): string {
     .replace(/\bsnapshot\b/gi, "books")
     .replace(/\bsit-down\b/gi, USER_TERMS["Sit-down"]);
 }
+
+/**
+ * The Campfire's words (Tool Atlas §3.2, K3, decision D3). The month ritual is
+ * one evening at **the Campfire**: the **Chapter** closes at its Seal; the
+ * weekly **Sitdown** is two chairs. The retired names below are fenced over
+ * the ritual and the three screens it replaced (test/campfire-ritual.test.ts).
+ */
+export const CAMPFIRE_TERMS = {
+  place: "the Campfire",
+  door: "Open the Campfire",
+  chapter: "Chapter",
+  weekly: "Sitdown",
+  putBack: "Put it back",
+  beats: ["Arrive", "Look back", "Settle", "Look ahead", "Seal"],
+} as const;
+
+export const CAMPFIRE_RETIRED_TERMS: readonly { term: string; pattern: RegExp; use: string }[] = [
+  { term: "check-in", pattern: /\bcheck-?ins?\b/i, use: "the Campfire (monthly) or the Sitdown (weekly)" },
+  { term: "Close the month", pattern: /\bclose the month\b/i, use: "the Campfire's Settle" },
+  { term: "Close the previous Chapter", pattern: /\bclose the previous chapter\b/i, use: "Seal" },
+  { term: "Sit-down", pattern: /\bsit-down\b/i, use: "Sitdown" },
+  { term: "Our Path", pattern: /\bOur Path\b/, use: "the Journey map" },
+];
