@@ -138,7 +138,8 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
   let h = original, wetBedCeiling = Infinity;
   for (const water of waters) {
     if (water.underground || water.kind === 'sea' || water.kind === 'lagoon') continue;
-    const bankWidth = water.points.length ? 4 * s : 8 * s, outer = (water.points.length ? 12 * s : 24 * s) + rasterMargin;
+    const guard = water.kind === 'dry' ? 0 : rasterMargin;
+    const bankWidth = water.points.length ? 4 * s : 8 * s, outer = (water.points.length ? 12 * s : 24 * s) + guard;
     let bounds = waterBounds.get(water);
     if (!bounds) {
       bounds = water.points.length ? [Math.min(...water.points.map(p => p[0])) - water.width / 2, Math.min(...water.points.map(p => p[2])) - water.width / 2, Math.max(...water.points.map(p => p[0])) + water.width / 2, Math.max(...water.points.map(p => p[2])) + water.width / 2] :
@@ -146,7 +147,7 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
       waterBounds.set(water, bounds);
     }
     if (x < bounds[0] - outer || z < bounds[1] - outer || x > bounds[2] + outer || z > bounds[3] + outer) continue;
-    const { distance: distanceToWater, level } = waterInfluence(water, x, z), d = distanceToWater - rasterMargin;
+    const { distance: distanceToWater, level } = waterInfluence(water, x, z), d = distanceToWater - guard;
     let grade = waterGrades.get(water);
     if (grade === undefined) {
       grade = 0;
@@ -156,7 +157,7 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
       }
       waterGrades.set(water, grade);
     }
-    const verticalGuard = grade * rasterMargin;
+    const verticalGuard = grade * guard;
     if (d > outer) continue;
     if (d <= 0) {
       const depth = water.depth * mix(0.22, 1, smooth(-distanceToWater / (water.points.length ? water.width / 2 : 14 * s))) + verticalGuard;
@@ -258,6 +259,21 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
 export function createTerrainCutSampler(cuts: LandCuts, step: number): (x: number, z: number) => { height: number; surface: number | null } {
   const beds = createBedSampler(cuts.beds), rasterMargin = step * Math.SQRT2;
   return (x, z) => cutHeight(x, z, cuts, beds, rasterMargin);
+}
+/** Conservative lower-LOD approximation of this same lattice. Only vertices that
+ * support a named wet footprint or its bank transition may move downward; dry
+ * districts, route data and the authored water plane/width remain the same. */
+export function conserveWaterFootprint(field: TerrainField, waters: WaterCut[]): void {
+  const margin = field.step * Math.SQRT2;
+  for (let j = 0; j < field.rows; j++) for (let i = 0; i < field.columns; i++) {
+    const n = j * field.columns + i, original = field.heights[n]!;
+    field.heights[n] = Math.min(original, applyWaters(i * field.step, j * field.step, original, waters, margin));
+  }
+  for (let j = 0; j < field.rows; j++) for (let i = 0; i < field.columns; i++) {
+    const n = j * field.columns + i, normal = terrainNormal(field, i * field.step, j * field.step);
+    const slope = Math.hypot(normal[0], normal[2]) / normal[1];
+    if (!isWalkableSlope(slope)) field.surfaces[n] = terrainSurface(i * field.step, j * field.step, field.heights[n]!, slope);
+  }
 }
 /** Offline-only solve. Importing this module allocates no heightfield. */
 export function buildTerrain(cuts: LandCuts, options: { step?: number } = {}): TerrainField {

@@ -20,11 +20,13 @@ export async function mapInputs() {
     `export * from './src/harbour/horizon/sun/solar.ts';`,
   ].join('\n'), resolveDir: root, loader: 'ts' }, bundle: true, platform: 'node', format: 'esm', write: false });
   const api = await import('data:text/javascript;base64,' + Buffer.from(result.outputFiles[0].text).toString('base64'));
-  const field = api.decodeTerrainAsset(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+  const buffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  const field = api.decodeTerrainAsset(buffer);
+  const lowerLods = { lite: api.decodeTerrainAsset(buffer, 'lite'), journey: api.decodeTerrainAsset(buffer, 'journey') };
   const manifest = JSON.parse(await readFile(resolve(root, 'src/harbour/horizon/world/MANIFEST.json'), 'utf8'));
   const cuts = { ...world.collision, solids: world.geometry.solids, diagnostics: world.diagnostics };
   await mkdir(out, { recursive: true });
-  return { root, out, api, field, world, cuts, manifest, sha256: createHash('sha256').update(bytes).digest('hex'), assetPath };
+  return { root, out, api, field, lowerLods, world, cuts, manifest, sha256: createHash('sha256').update(bytes).digest('hex'), assetPath };
 }
 export function rgb(hex) { return [1, 3, 5].map(i => Number.parseInt(hex.slice(i, i + 2), 16)); }
 export async function saveMap({ out, field, sha256 }, name, pixels, width, height, title, subtitle, legend, overlay = '') {
@@ -122,7 +124,9 @@ export async function slopeMap() {
   await saveMap(input, 'slope.png', pixels, width, height, 'The Horizon · actual slope map', 'Open ground: green ≤40°; brown &gt;40°. Route strokes use each authored segment’s measured rise/run.', 'Beds: dark green ≤6% · teal 6–8% · ochre 8–12% · red &gt;12% · water blue', segments.join(''));
   const probes = await bandReport(input), probeDir = resolve(out, '../probes'); await mkdir(probeDir, { recursive: true });
   await writeFile(resolve(probeDir, 'horizon-landforms.json'), JSON.stringify(probes, null, 2));
-  await writeFile(resolve(probeDir, 'horizon-water.json'), JSON.stringify(waterReport(input), null, 2));
+  const water = waterReport(input);
+  water.lowerLods = Object.fromEntries(Object.entries(input.lowerLods).map(([name, field]) => [name, waterReport({ ...input, field })]));
+  await writeFile(resolve(probeDir, 'horizon-water.json'), JSON.stringify(water, null, 2));
   await writeFile(resolve(probeDir, 'horizon-slope.json'), JSON.stringify({ revision: field.revision, terrainSha256: sha256, walkableDegrees: 40, pixels: counts, bedSegments: gradeCounts, gradeClasses: ['<=6%', '6–8%', '8–12%', '>12%'] }, null, 2));
   console.log(JSON.stringify({ map: resolve(out, 'slope.png'), probes: resolve(probeDir, 'horizon-landforms.json'), bandsPassing: probes.bands.filter(b => b.passesBand).length, bands: probes.bands.length, contoursPassingFullCompass: probes.bands.filter(b => b.contour.passesFullCompass).length }));
 }

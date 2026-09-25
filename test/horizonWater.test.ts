@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Mesh, MeshBasicMaterial, BufferGeometry, Float32BufferAttribute, Raycaster, Vector3 } from 'three';
-import { baseHeight, createTerrainCutSampler, sampleTerrain } from '../src/harbour/horizon/land/terrain';
+import { baseHeight, conserveWaterFootprint, createTerrainCutSampler, sampleTerrain } from '../src/harbour/horizon/land/terrain';
+import { decodeTerrainAsset, encodeTerrainAsset } from '../src/harbour/horizon/land/terrain/asset';
 import type { TerrainField } from '../src/harbour/horizon/land/interfaces';
 import { buildWaterCuts, bightMouthWidth, waterInfluence } from '../src/harbour/horizon/land/water';
 import { islandContains } from '../src/harbour/horizon/land/coast';
@@ -84,5 +85,21 @@ describe('Horizon water and offshore land', () => {
     expect(Math.max(...arch.positions.filter((_, i) => i % 3 === 0)) - Math.min(...arch.positions.filter((_, i) => i % 3 === 0))).toBe(20);
     geometry.dispose(); (mesh.material as MeshBasicMaterial).dispose();
     expect(buildOffshoreSolids().filter(r => r.id.startsWith('offshore.stacks'))).toHaveLength(3);
+  });
+  it('keeps lite 10 m and Journey 20 m wet widths below water after conservative decimation', () => {
+    const waters = buildWaterCuts(), full: TerrainField = { revision: 'horizon-geo-1', width: 2000, depth: 1800, step: 5, columns: 401, rows: 361, heights: new Float32Array(401 * 361).fill(80), surfaces: new Uint8Array(401 * 361) };
+    conserveWaterFootprint(full, waters);
+    const bytes = encodeTerrainAsset(full, { waters });
+    for (const lod of ['full', 'lite', 'journey'] as const) {
+      const field = decodeTerrainAsset(bytes, lod);
+      for (const water of waters) if (!water.underground && water.points.length && water.kind !== 'dry') for (let j = 1; j < water.points.length; j++) {
+        const a = water.points[j - 1]!, b = water.points[j]!, dx = b[0] - a[0], dz = b[2] - a[2], length = Math.hypot(dx, dz);
+        for (let t = 0.05; t < 1; t += 0.05) for (const side of [-0.99, 0, 0.99]) {
+          const x = a[0] + dx * t - side * dz / length * water.width / 2, z = a[2] + dz * t + side * dx / length * water.width / 2;
+          expect(sampleTerrain(field, x, z), `${lod}: ${water.id} wet width`).toBeLessThan(a[1] + (b[1] - a[1]) * t + 0.02);
+        }
+      }
+      expect(field.heights[0]).toBe(80); // Far dry land is unchanged in every LOD.
+    }
   });
 });
