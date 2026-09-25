@@ -10,7 +10,8 @@ import { DeskShell } from './desk/DeskShell.tsx';
 import { DeskPlace } from './desk/DeskPlace.tsx';
 import { HarbourFlat } from './flat/PlaceFlat.tsx';
 import { VILLAGE_ADDRESS } from './village/layout.ts';
-import { BarFab, EditionFlip, useIslandBar } from './nav/Compass.tsx';
+import { useIslandBar } from './nav/Compass.tsx';
+import { GlassBar } from './bubbles/GlassChrome.tsx';
 import './village/village.css';
 
 /** The reading entry stays independent of the illustrated terrain chunk. */
@@ -49,14 +50,9 @@ function ReadingHarbour(props: HarbourWorldProps & { failed?: boolean }) {
       {toolOpen ? <HarbourFlat place={place} reading={reading} status={props.failed ? 'fallback' : 'flat'} theme={theme} /> : <>
         <DeskShell household={household} memberId={memberId} scope={props.scope} today={today} reading={reading} theme={theme} ready={props.ready} interpretationGate={interpretationGate} status={props.failed ? 'fallback' : 'flat'} titleId="house-world-title" onOpen={onOpen} onQuickSheet={onQuickSheet} spaceSlot={props.spaceSlot}
           context={<DeskPlace place={place} reading={reading} onOpen={onOpen} onVisit={visit} onGuide={() => onQuickSheet?.()} />} />
-        <nav className="village-tools harbour-bar" data-harbour-bar="island" aria-label="Harbour bar">
-          <EditionFlip className="village-tools__flip" />
-          <button type="button" onClick={onQuickSheet} aria-label="Village destinations">⌖ <span>Village map</span></button>
-          <label className="village-quick"><span>Go straight to</span><select aria-label="Quick travel" value="" onChange={event => { if (event.target.value) visit(event.target.value as HarbourPlaceId); }}><option value="">Quick travel…</option>{Object.keys(VILLAGE_ADDRESS).map(id => <option key={id} value={id}>{id === 'court' ? 'Village square' : id === 'bank' ? 'Fund bank' : id}</option>)}</select></label>
-          {props.onJourney && <button type="button" onClick={props.onJourney} aria-label="Journey map">◇ <span>Journey</span></button>}
-          {props.fab && <BarFab fab={props.fab} />}
-          {onQuickSheet && <button type="button" className="village-tools__all" aria-label="All tools" onClick={onQuickSheet}>☰ <span>All tools</span></button>}
-        </nav>
+        {/* The flat bar (Tool Atlas brief §3.5, §6): [Island] [Record] [All tools], Record centred —
+            the island's three things and nothing else. The Desk's header drops its own flip while this stands. */}
+        <GlassBar edition="desk" fab={props.fab} onOpenTools={onQuickSheet} member={memberId} theme={theme} />
       </>}
     </div>
   </section>;
