@@ -73,7 +73,7 @@ export function roadSampleAt(s:number,line:RoadLine=MOUNTAIN_ROAD_LINE):RoadSamp
 export type Bridge={id:string;name:string;type:BridgeType;carries:'road'|'lane'|'path'|'funicular'|'race-lane';s0:number;s1:number;a:Point3;b:Point3;span:number;deckThickness:number;clearance:number;piers:readonly Point3[];crosses:readonly string[];halfWidth:number;deck:readonly Point3[]};
 function gorgeBridge(span:typeof BRIDGE_SPANS[number]):Bridge{
   const line=span.line==='road'?MOUNTAIN_ROAD_LINE:ORCHARD_LANE_LINE,deck=line.samples.slice(span.i0,span.i1+1).map(s=>s.at);
-  const deckThickness=span.type==='timber'?1.1:span.type==='masonry'?1.6:.9;
+  const deckThickness=span.type==='timber'?1.1:span.type==='masonry'?(span.i1-span.i0<32?1:1.6):.9;
   let clearance=Infinity;const piers:Point3[]=[];
   const spacing=span.type==='masonry'?14:span.type==='timber'?11:18;
   // Clearance: the underside's headroom over the lowest ground (the channel) beneath the span.
@@ -95,7 +95,9 @@ function runs(line:RoadLine):{edges:EdgeRun[];walls:RetainingWall[]}{
     while(i<S.length){
       const kind=S[i]![side];let j=i;while(j+1<S.length&&S[j+1]![side]===kind)j++;
       if(kind!=='open'){
-        const pts=S.slice(i,j+1).map(s=>[s.at[0]+s.normal[0]*s.halfWidth*sign,s.at[1],s.at[2]+s.normal[2]*s.halfWidth*sign] as Point3);
+        // Guarded runs overlap one sample into their neighbours so the rail has no gap at a joint (and a one-sample run still has length).
+        const guarded=kind==='parapet'||kind==='bridge'||kind==='wall';
+        const pts=S.slice(guarded?Math.max(0,i-1):i,guarded?Math.min(S.length,j+2):j+1).map(s=>[s.at[0]+s.normal[0]*s.halfWidth*sign,s.at[1],s.at[2]+s.normal[2]*s.halfWidth*sign] as Point3);
         const id=`${line.id}:${side}:${kind}:${Math.round(S[i]!.s)}`;
         edges.push({id,line:line.id,side,kind,s0:S[i]!.s,s1:S[j]!.s,points:pts,height:kind==='kerb'?EDGE_RULES.kerbHeight:kind==='wall'?0:EDGE_RULES.parapetHeight});
         if(kind==='wall'){
@@ -115,7 +117,7 @@ export const RETAINING_WALLS_ROAD:readonly RetainingWall[]=[...roadRuns.walls,..
 /** Collision segments (≈2 units long) for every parapet, bridge rail and retaining wall face. */
 export const EDGE_SOLIDS:readonly EdgeSolid[]=EDGE_RUNS.filter(r=>r.kind!=='kerb').flatMap(r=>{
   const out:EdgeSolid[]=[];
-  for(let k=0;k+2<r.points.length;k+=2){const a=r.points[k]!,b=r.points[k+2]!;
+  for(let k=0;k<r.points.length-1;k+=2){const a=r.points[k]!,b=r.points[Math.min(k+2,r.points.length-1)]!;
     const bottom=Math.min(a[1],b[1])-.2,top=r.kind==='wall'?Math.max(a[1],b[1])+2.4:Math.max(a[1],b[1])+r.height;
     out.push({id:`${r.id}:${k}`,a:[a[0],a[2]],b:[b[0],b[2]],bottom,top,thickness:r.kind==='wall'?.7:.3});}
   return out;

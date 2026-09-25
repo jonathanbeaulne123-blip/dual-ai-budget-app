@@ -22,7 +22,7 @@ export function pointAt(points:readonly Point3[],lengths:readonly number[],s:num
  * Elevation is carried as a separate channel: piecewise linear in arc length between
  * waypoints, then eased with two box passes of `ease` units (parabolic vertical curves).
  */
-export function authorCurve(way:readonly Point3[],step=1,ease=24):{points:Point3[];wayS:number[];step:number}{
+export function authorCurve(way:readonly Point3[],step=1,ease=24,flatEnds=false):{points:Point3[];wayS:number[];step:number}{
   const dense:[number,number][]=[],denseWay:number[]=[];
   const P=(i:number)=>way[Math.max(0,Math.min(way.length-1,i))]!;
   for(let i=0;i<way.length-1;i++){
@@ -56,12 +56,24 @@ export function authorCurve(way:readonly Point3[],step=1,ease=24):{points:Point3
   }
   if(ease>0){
     const half=Math.max(1,Math.round(ease/step/2));
-    for(let pass=0;pass<2;pass++){
+    if(!flatEnds)for(let pass=0;pass<2;pass++){
       const ys=out.map(p=>p[1]),prefix=[0];for(const y of ys)prefix.push(prefix[prefix.length-1]!+y);
       for(let k=0;k<out.length;k++){
         const r=Math.min(half,k,out.length-1-k);
         out[k]![1]=(prefix[k+r+1]!-prefix[k-r]!)/(2*r+1);
       }
+    }
+    else {
+    // The ends are held level (padded with their own height) so each end eases in from flat,
+    // then pinned back exactly with a long, gentle correction.
+    const y0=out[0]![1],y1=out[out.length-1]![1],n=out.length;
+    for(let pass=0;pass<2;pass++){
+      const ys=out.map(p=>p[1]),prefix=[0],at=(k:number)=>k<0?y0:k>=n?y1:ys[k]!;
+      for(let k=-half;k<n+half;k++)prefix.push(prefix[prefix.length-1]!+at(k));
+      for(let k=0;k<n;k++)out[k]![1]=(prefix[k+2*half+1]!-prefix[k]!)/(2*half+1);
+    }
+    const d0=out[0]![1]-y0,d1=out[n-1]![1]-y1,fade=Math.min(n/2,half*6);
+    for(let k=0;k<n;k++){const a=clamp(1-k/fade),b=clamp(1-(n-1-k)/fade);out[k]![1]-=d0*a*a*(3-2*a)+d1*b*b*(3-2*b);}
     }
   }
   return {points:out,wayS,step:total/count};

@@ -70,8 +70,8 @@ const FUNICULAR_CONTROL:readonly {at:readonly[number,number];y:number;station?:{
   {at:[8.5,-83],y:15.4,station:{id:'hearth',name:'Lower neighbourhood',side:-1}},
   {at:[10,-91],y:19.2},{at:[11,-97],y:23.8},{at:[12.2,-106],y:26.6},{at:[13.2,-116],y:29.2},{at:[15.6,-134],y:33.6},{at:[18.4,-148],y:37.6},
   {at:[20,-156],y:39.6,station:{id:'library',name:'Library Woods',side:1}},
-  {at:[22,-168],y:45.5},{at:[25,-186],y:60},{at:[29,-206],y:80.6},{at:[32,-220],y:86},
-  {at:[34,-230],y:87.6,station:{id:'reservoir',name:'Reservoir Heights',side:1}},
+  {at:[22,-168],y:45.5},{at:[25,-186],y:60},{at:[29,-206],y:80.6},{at:[34,-218],y:86},
+  {at:[39,-226],y:87.6,station:{id:'reservoir',name:'Reservoir Heights',side:1}},
 ];
 function funicular():TransportLine{
   const plan=planCurve(FUNICULAR_CONTROL.map(c=>c.at),4),ps=[0];for(let i=1;i<plan.length;i++)ps.push(ps[i-1]!+Math.hypot(plan[i]![0]-plan[i-1]![0],plan[i]![1]-plan[i-1]![1]));

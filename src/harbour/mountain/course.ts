@@ -52,10 +52,14 @@ export type BranchSegment={kind:'ramp'|'deck'|'rail'|'landing';points:readonly P
 export type SkillBranch={id:string;name:string;kind:'rail'|'balcony'|'awning';entry:number;exit:number;halfWidth:number;material:'wood'|'metal';
   points:readonly Point3[];segments:readonly BranchSegment[];branchLength:number;roadLength:number};
 function branch(id:string,name:string,kind:SkillBranch['kind'],material:'wood'|'metal',halfWidth:number,entry:number,exit:number,
-  parts:readonly {kind:BranchSegment['kind'];via:readonly Point3[]}[]):SkillBranch{
+  parts:readonly {kind:BranchSegment['kind'];via:readonly Point3[]}[],even=false):SkillBranch{
   const a=MOUNTAIN_COURSE_POINTS[entry]!,b=MOUNTAIN_COURSE_POINTS[exit]!;
   const way:Point3[]=[a,...parts.flatMap(p=>p.via),b];
   const pts=authorCurve(way,1,6).points;pts[0]=a as [number,number,number];pts[pts.length-1]=b as [number,number,number];
+  // An evenly graded line (a maintenance rail) falls at one grade from entry to exit.
+  // (The approach ramp keeps its authored heights; the grade evens out from the ramp's end.)
+  if(even){const rampEnd=parts[0]!.via[parts[0]!.via.length-1]!;let j0=0,best=Infinity;pts.forEach((p,k)=>{const e=Math.hypot(p[0]-rampEnd[0],p[2]-rampEnd[2]);if(e<best){best=e;j0=k;}});
+    const L=arcLengths(pts,true),y0=pts[j0]![1],span=L[L.length-1]!-L[j0]!;pts.forEach((p,i)=>{if(i>j0&&i<pts.length-1)p[1]=mix(y0,b[1],(L[i]!-L[j0]!)/span);});}
   // Segment boundaries at the authored via points.
   const segments:BranchSegment[]=[];let cursor=0;
   for(const part of parts){const end=part.via[part.via.length-1]!;let j=cursor;let best=Infinity;for(let k=cursor;k<pts.length;k++){const e=Math.hypot(pts[k]![0]-end[0],pts[k]![2]-end[2]);if(e<best){best=e;j=k;}}segments.push({kind:part.kind,points:pts.slice(cursor,j+1)});cursor=j;}
@@ -66,17 +70,17 @@ function branch(id:string,name:string,kind:SkillBranch['kind'],material:'wood'|'
 const damArc=(from:number,to:number,y0:number,y1:number,radius:number,n=8):Point3[]=>Array.from({length:n},(_,k)=>{const t=(k+.5)/n,a=mix(from,to,t);return [DAM.centre[0]+Math.sin(a)*radius,mix(y0,y1,t),DAM.centre[2]+Math.cos(a)*radius];});
 export const SKILL_BRANCHES:readonly SkillBranch[]=[
   // Dam maintenance rail: off Reservoir Heights, down the glass face's downstream rail, landing on the west abutment apron.
-  branch('dam-promenade','Dam maintenance rail','rail','metal',1.7,courseIndexAt(roadTagS('reservoir')+13),courseIndexAt(roadTagS('b3-west')-4),[
-    {kind:'ramp',via:[[44,90.4,-248],[37,89.4,-240.5]]},
-    {kind:'rail',via:damArc(DAM.halfAngle*.92,-DAM.halfAngle*.92,87.6,73.4,DAM.radius+2.2,10)},
-    {kind:'deck',via:[[-18,72.2,-230],[-22,71,-226.6]]},
-  ]),
+  branch('dam-promenade','Dam maintenance rail','rail','metal',1.7,courseIndexAt(roadTagS('reservoir')+13),courseIndexAt(roadTagS('b3-west')-16),[
+    {kind:'ramp',via:[[44,90.9,-248],[37,90.6,-240.5]]},
+    {kind:'rail',via:damArc(DAM.halfAngle*.92,-.72,87.6,73.4,DAM.radius+2.2,10)},
+    {kind:'deck',via:[[-18,72.2,-230],[-24,71,-228.5],[-33,70,-229]]},
+  ],true),
   // Library roof line: off the woodland bridge onto the reading-room roof and balcony, down to the east bend.
-  branch('library-balcony','Library roof and balcony','balcony','wood',1.6,courseIndexAt(roadTagS('b2-east')-1),courseIndexAt(roadTagS('library')-44),[
+  branch('library-balcony','Library roof and balcony','balcony','wood',1.6,courseIndexAt(roadTagS('b2-east')-1),courseIndexAt(roadTagS('library')-31),[
     {kind:'ramp',via:[[37,41.2,-181.6]]},
     {kind:'deck',via:[[45,41.35,-181.4],[56,41.1,-180.4]]},
-    {kind:'deck',via:[[63,40,-176.5]]},
-    {kind:'ramp',via:[[74,36.6,-169.5],[86,33.2,-167.6]]},
+    {kind:'deck',via:[[62,40.4,-177]]},
+    {kind:'ramp',via:[[70,37.6,-172.5],[77,34.6,-168.8]]},
   ]),
   // Neighbourhood awnings: across the inside of the second hairpin on awnings and a ramp, back onto the leg above town.
   branch('hearth-awning','Neighbourhood awnings','awning','wood',1.5,courseIndexAt(roadTagS('hearth')-16),courseIndexAt(roadTagS('hairpin-2')-16),[
@@ -101,12 +105,12 @@ const GATE_PLAN:readonly [index:number,id:string,name:string,segment:string,half
   [G(roadTagS('high-terrace')),'alpine-2','Alpine bends · high terrace','alpine-bends'],
   [G(roadTagS('reservoir')+36),'alpine-3','Alpine bends · Reservoir Heights','alpine-bends'],
   [G(roadTagS('reservoir')+21),'dam-overlook','Dam overlook','dam-overlook'],
-  [G(roadTagS('b3-west')-14),'meadow-1','Meadow sweep · upper terrace','meadow-sweep'],
+  [G(roadTagS('b3-west')-24),'meadow-1','Meadow sweep · upper terrace','meadow-sweep'],
   [G(roadTagS('clearing')+14),'meadow-2','Meadow sweep · the turn','meadow-sweep'],
   [G(roadTagS('clearing')-40),'meadow-3','Meadow sweep · lower terrace','meadow-sweep'],
   [G((roadTagS('b2-east')+roadTagS('b2-west'))/2),'woodland-bridge','Woodland bridge','woodland-bridges'],
-  [G(roadTagS('library')-52),'library','Library Woods','library-balcony'],
-  [G(roadTagS('shelf')+14),'east-arm','East arm sweep','neighbourhood-switchbacks'],
+  [G(roadTagS('library')-36),'library','Library Woods','library-balcony'],
+  [G(roadTagS('shelf')+2),'east-arm','East arm sweep','neighbourhood-switchbacks'],
   [G(roadTagS('hearth')+10),'hearth','Hearth Terrace','neighbourhood-switchbacks'],
   [G(roadTagS('hairpin-2')-24),'switchback-2','Second switchback','neighbourhood-switchbacks'],
   [G(roadTagS('hairpin-1')-6),'switchback-1','First switchback','neighbourhood-switchbacks'],

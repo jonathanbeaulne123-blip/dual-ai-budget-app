@@ -131,12 +131,12 @@ edge('path','door:pavilion','district:reservoir');
 node('road:reservoir','junction',roadAt(nearestRoadS(54,-244)));
 edge('path','road:reservoir','district:reservoir');
 edge('path','station:funicular:reservoir','dam:east');
-node('road:b3-east','junction',roadAt(nearestRoadS(42,-208.5)));
-edge('stair','road:b3-east','station:funicular:reservoir',[[34,-220]],1.4,'stair:reservoir-steps');
+node('road:b3-east','junction',roadAt(nearestRoadS(56,-209)));
+edge('stair','road:b3-east','station:funicular:reservoir',[[50,-217],[40,-224]],1.4,'stair:reservoir-steps');
 node('road:b2-east','junction',roadAt(nearestRoadS(31.5,-174)));
 node('stair:rim-mid','stair-top',[34,55,-198]);
 edge('stair','road:b2-east','stair:rim-mid',[[36,-190]],1.4,'stair:rim-steps-1');
-edge('stair','stair:rim-mid','road:b3-east',[[40,-203],[38,-209]],1.4,'stair:rim-steps-2');
+edge('stair','stair:rim-mid','road:b3-east',[[44,-201],[52,-204]],1.4,'stair:rim-steps-2');
 edge('path','district:library','road:b2-east',[[38,-180]]);
 // Summit Commons: road end, observatory, gondola, panorama.
 node('road:summit','junction',ROAD_CENTRE[ROAD_CENTRE.length-1]!);

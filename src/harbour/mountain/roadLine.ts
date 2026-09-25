@@ -8,29 +8,40 @@ import {islandHeight} from './islandShape.ts';
 const FOOT_Y=islandHeight(-26,-44);
 
 export type RoadWaypoint={at:readonly[number,number];y:number;tag?:string;halfWidth?:number};
+type Authored={at:readonly[number,number];y:number|null;tag?:string};
+/** A waypoint; `y` null means "on the even grade between the neighbouring anchors". */
+const A=(x:number,z:number,y:number|null,tag?:string):Authored=>({at:[x,z],y,...(tag?{tag}:{})});
+/** Anchors fix the elevation at features (the foot, bridge decks, districts, the summit); every other
+ * waypoint takes the even grade between anchors, so no leg is steeper than its neighbours. */
+function anchored(list:readonly Authored[]):RoadWaypoint[]{
+  const s=[0];for(let i=1;i<list.length;i++)s.push(s[i-1]!+Math.hypot(list[i]!.at[0]-list[i-1]!.at[0],list[i]!.at[1]-list[i-1]!.at[1]));
+  return list.map((w,i)=>{if(w.y!==null)return {at:w.at,y:w.y,...(w.tag?{tag:w.tag}:{})};
+    let a=i,b=i;while(list[a]!.y===null)a--;while(list[b]!.y===null)b++;
+    const t=(s[i]!-s[a]!)/(s[b]!-s[a]!);return {at:w.at,y:list[a]!.y!+(list[b]!.y!-list[a]!.y!)*t,...(w.tag?{tag:w.tag}:{})};});
+}
 const W=(x:number,z:number,y:number,tag?:string,halfWidth?:number):RoadWaypoint=>({at:[x,z],y,...(tag?{tag}:{}),...(halfWidth?{halfWidth}:{})});
 
 /** Uphill. Tags name the features the race, bridges and paths hang from. */
-export const ROAD_WAYPOINTS:readonly RoadWaypoint[]=[
-  W(-26,-44,FOOT_Y,'foot'),
+export const ROAD_WAYPOINTS:readonly RoadWaypoint[]=anchored([
+  A(-26,-44,FOOT_Y,'foot'),
   // Up the west bank past the Northlight lookout, over the river on the harbour bridge.
-  W(-26.6,-48,FOOT_Y+.12),W(-27.4,-53,FOOT_Y+.62),W(-27.6,-58,2.1),W(-25,-66,4),W(-17,-74,5.8,'bf-west'),W(-6,-78,7.3),W(4,-78.5,7.6,'bf-east'),W(15,-74,7.4),W(27,-68,7.3),
+  A(-26.6,-48,FOOT_Y+.1),A(-27.4,-53,null),A(-27.6,-58,null),A(-26,-64,null),A(-22,-70,null),A(-15,-75,6.2,'bf-west'),A(-6,-78,null),A(4,-78.5,7.1,'bf-east'),A(14,-75.5,null),A(25,-71,null),
   // Neighbourhood switchbacks: three legs up the lower east slope, hairpins of ~9 unit radius.
-  W(38,-64,7.3),W(49,-63,7.4),W(60,-64,7.7,'hairpin-1'),W(69,-69,8.5),W(70,-77,9),W(62,-82,10.2),
-  W(48,-82,12),W(34,-82.5,13.6),W(24,-86,14.8,'hairpin-2'),W(19,-93,15.8),W(24,-100,16.8),W(36,-101,18),
+  A(36,-65,null),A(48,-62.5,null),A(60,-64,8.2,'hairpin-1'),A(69,-69,null),A(70,-77,null),A(62,-82,null),
+  A(48,-82,null),A(34,-82.5,null),A(24,-86,14.8,'hairpin-2'),A(19,-93,null),A(24,-100,null),A(36,-101,null),
   // East flank sweep: past Hearth Terrace and the sunny shelf, round the east arm.
-  W(52,-100,19.2,'hearth'),W(68,-103,20.4),W(84,-110,22),W(94,-122,23.8),W(99,-136,25.6,'shelf'),W(100,-150,27.4),
-  W(96,-163,29.8),W(84,-166,32),W(71,-162,34.2),W(56,-158,36.2,'library'),W(42,-162,38),W(32,-172,39.8),W(30,-182,41,'b2-east'),W(7,-191.5,42.7),
+  A(52,-100,19.2,'hearth'),A(66,-104,null),A(81,-112,null),A(90,-124,null),A(93,-137,27,'shelf'),A(93,-150,null),
+  A(89,-162,null),A(79,-166,null),A(68,-163,null),A(56,-158,35.2,'library'),A(42,-162,null),A(32,-172,null),A(30,-182,40.8,'b2-east'),A(7,-191.5,null),
   // High timber bridge west-south-west across the gorge (a gentle arc), then the meadow sweep.
-  W(-16,-194,44.4,'b2-west'),W(-36,-196,47),W(-58,-195,49.8),W(-78,-192,52.6),W(-94,-198,55,'clearing'),W(-100,-213,57.4),
-  W(-93,-228,60),W(-78,-235.5,62.8,'glasshouse'),W(-60,-234.5,65.6),W(-42,-229,68),W(-26,-223,69.6,'b3-west'),
-  // Metal-and-glass bridge in front of the dam, then the loop up to Reservoir Heights.
-  W(24,-211,71.4,'b3-east'),W(44,-208,73.6),W(66,-206,76.2),W(84,-213,79),W(93,-228,82.2),W(87,-243,85.2),W(75,-251,87.8),W(62,-250,89.6,'reservoir'),
+  A(-16,-194,43.6,'b2-west'),A(-34,-200,null),A(-50,-197.5,null),A(-64,-192.5,null),A(-80,-193,null),A(-94,-199,null,'clearing'),A(-100,-213,null),
+  A(-93,-228,null),A(-78,-235.5,null,'glasshouse'),A(-62,-237,null),A(-47,-232.5,null),A(-30,-224.5,69,'b3-west'),
+  // Metal-and-glass bridge in front of the dam, bowed toward town like the dam, then the loop up to Reservoir Heights.
+  A(-4,-213,null),A(22,-210.5,71,'b3-east'),A(40,-213,null),A(58,-208.5,null),A(75,-209,null),A(86,-219,null),A(89,-232,null),A(82,-244,null),A(71,-250,null),A(62,-250,88.8,'reservoir'),
   // Alpine bends to the summit.
-  W(47,-255,91.2),W(45,-264,92.4),W(53,-271,93.8),W(67,-272,95.4),W(79,-275,96.8,'high-terrace'),W(84,-284,98),W(74,-291,99.4),W(57,-289,100.8),W(39,-284,102),W(25,-290,103.4),W(13,-295,104.2,'summit'),
-];
+  A(47,-255,null),A(45,-264,null),A(55,-271,null),A(69,-272.5,null),A(80,-276,96.6,'high-terrace'),A(85,-284,null),A(77,-291.5,null),A(58,-291,null),A(39,-286.5,null),A(25,-290.5,null),A(17,-293.5,104.2,'summit'),
+]);
 export const ROAD_STEP=1;
-const authored=authorCurve(ROAD_WAYPOINTS.map(w=>[w.at[0],w.y,w.at[1]] as Point3),ROAD_STEP,26);
+const authored=authorCurve(ROAD_WAYPOINTS.map(w=>[w.at[0],w.y,w.at[1]] as Point3),ROAD_STEP,26,true);
 export const ROAD_CENTRE:readonly Point3[]=authored.points;
 export const ROAD_SAMPLE_STEP=authored.step;
 /** Arc length of each waypoint along the centreline. */

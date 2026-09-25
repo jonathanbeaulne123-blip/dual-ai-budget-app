@@ -60,7 +60,7 @@ export const TERRACES:readonly Terrace[]=[
 /** River bed sits this far under the water line (a shallow stream: never more than 0.3). */
 export const RIVER_BED_DEPTH=.28;
 export const GORGE_POINTS:readonly (readonly [number,number,number,number])[]=[
-  [8,36,-236,1.3],[8,33,-222,1.7],[6,24.5,-210,1.7],[3,17.5,-198,1.7],[-1,14,-186,1.7],[-4,12,-174,1.65],[-3,10.6,-160,1.6],
+  [8,36,-236,1.3],[8,33,-222,1.7],[6,24.5,-210,1.7],[3,16,-198,1.7],[-1,14,-186,1.7],[-4,12,-174,1.65],[-3,10.6,-160,1.6],
   [1,9.6,-146,1.55],[4,8.8,-132,1.45],[4,8.1,-118,1.3],[1,6.8,-104,1.15],[-3,4.8,-90,1],[-5,2.9,-78,.8],[-5,2.1,-66,.6],[-2,1.5,-56,.45],[1,.9,-47,.4],[3,.18,-34,.35],
 ];
 /** The river water line used by everything that draws or reads the river. */

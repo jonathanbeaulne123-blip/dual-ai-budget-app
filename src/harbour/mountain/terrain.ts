@@ -8,6 +8,7 @@
 import {BASE_GRID,makeGrid,sampleGrid,type HeightGrid} from './terrainBase.ts';
 import {arcLengths,type Point3} from './math.ts';
 import {nearestRiver,channelProfile,smin} from './natural.ts';
+import {RIVER_BED_DEPTH} from './places.ts';
 
 /** A line the ground must meet: at `halfWidth + shoulder` the ground equals the line minus `inset`. */
 /** Higher priority benches are cut last and so hold exactly (roads over lanes over paths and pads). */
@@ -70,7 +71,9 @@ export function bakeFinal(lines:readonly BenchLine[],pads:readonly BenchPad[],re
   }
   // The river keeps its bed: nothing benched beside it may bury the water (bridges span it, roads keep clear).
   if(recarveRiver){
-    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const x=g.minX+c,z=g.minZ+r;if(z>-40)continue;const river=nearestRiver(x,z);if(river.d<14){const i=r*cols+c;g.data[i]=smin(g.data[i]!,river.y+channelProfile(river.d,river.wall),1.5);}}
+    for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const x=g.minX+c,z=g.minZ+r;if(z>-40)continue;const river=nearestRiver(x,z);if(river.d<14){const i=r*cols+c;g.data[i]=smin(g.data[i]!,river.y+channelProfile(river.d,river.wall),1.5);
+      // The bed never sinks below its authored depth (a cascade pool must not leave the water hanging).
+      if(river.d<3)g.data[i]=Math.max(g.data[i]!,river.y-RIVER_BED_DEPTH);}}
   }
   return {grid:g,conflicts,conflictCells};
 }
