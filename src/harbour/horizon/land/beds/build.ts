@@ -85,6 +85,7 @@ function journey(cuts:LandCuts,base:HeightQuery):void {
   const controls:XY[]=[source[0]!,[1440,710],[1450,865],[1360,940],...source.slice(1,-2),[1520,1190],[1580,1050],[1600,860],[1590,700],[1500,340],[1445,430],[1445,520],[1400,620],[1370,690],source[0]!];
   const stationPins=M.journey.stations.map(s=>pin(s.xy as unknown as XY,s.id==='jan'?110:s.id==='feb'?53:s.id==='dec'?12:heightOnBeds(cuts,s.xy as unknown as XY,base,35),`station ${s.id}`));
   stationPins.push(pin([1480,1060],18,'upper street'),pin([1370,690],110,'turning circle'));
+  for(const p of sampleSpline(controls))if(Math.abs(p[0]-1480)<=21&&Math.abs(p[1]-1080)<=39)stationPins.push(pin(p,18,'level upper street terrace'));
   const b=bed('yearWalk','walk',gradeRoute('yearWalk',controls,base,.12,stationPins,cuts.diagnostics));b.width=5.2;b.shoulder=1.2;cuts.beds.push(b);
   for(const s of M.journey.stations){const n=nearestOnPath(s.xy as unknown as XY,b.points);const p=addFlatPad(cuts,`station.${s.id}`,'station',s.xy as unknown as XY,n.at[1]!,M.journey.station.pad_m as unknown as XY);p.serviceBedId='yearWalk';p.margin=2;}
 }

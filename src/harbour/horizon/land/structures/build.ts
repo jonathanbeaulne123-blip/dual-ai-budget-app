@@ -24,23 +24,26 @@ function axisAt(b:BedCut|undefined,at:XY):XY {
 export function buildSpan(spec:SpanSpec,cuts:LandCuts,base:HeightQuery):void {
   const route=cuts.beds.find(b=>b.id===spec.route),axis=axisAt(route,spec.at),normal:XY=[-axis[1]!,axis[0]!];
   const h=spec.height??heightOnBeds(cuts,spec.at,base),a:XYZ=[spec.at[0]!-axis[0]!*spec.length/2,h,spec.at[1]!-axis[1]!*spec.length/2],b:XYZ=[spec.at[0]!+axis[0]!*spec.length/2,h,spec.at[1]!+axis[1]!*spec.length/2];
-  const deck=solid(`${spec.id}.deck`,spec.covered?'coveredFootbridge':'bridge','stone','deck',[spec.route],districtAt(...spec.at));slab(deck,a,b,spec.width,.6);
+  const curve:XYZ[]=[];
+  if(spec.id==='quayBridge'&&route){const centre=nearestOnPath(spec.at,route.points).along;let along=0;for(let i=0;i<route.points.length;i++){if(i)along+=distance(plan(route.points[i-1]!),plan(route.points[i]!));if(Math.abs(along-centre)<=spec.length/2+3)curve.push([route.points[i]![0],h,route.points[i]![2]]);}}
+  const path=curve.length>1?curve:[a,b],deck=solid(`${spec.id}.deck`,spec.covered?'coveredFootbridge':'bridge','stone','deck',[spec.route],districtAt(...spec.at));for(let i=1;i<path.length;i++)slab(deck,path[i-1]!,path[i]!,spec.width,.6);
   const piers=solid(`${spec.id}.supports`,'pier','stone','support',[spec.route],deck.districtId),rails=solid(`${spec.id}.rails`,'parapet','stone','rail',[spec.route],deck.districtId);
   const count=Math.ceil(spec.length/(spec.supportSpacing??12));
   for(let i=0;i<=count;i++){
     const t=i/count,along=(t-.5)*spec.length;
     if(spec.id==='highSpan'&&Math.abs(along)<22)continue;
     for(const side of [-1,1]){
-      const p:XY=[mix(a[0]!,b[0]!,t)+normal[0]!*side*(spec.width/2-.6),mix(a[2]!,b[2]!,t)+normal[1]!*side*(spec.width/2-.6)];
+      const part=Math.min(path.length-2,Math.floor(t*(path.length-1))),u=Math.min(1,t*(path.length-1)-part),pa=path[part]!,pb=path[part+1]!,dx=pb[0]-pa[0],dz=pb[2]-pa[2],len=Math.hypot(dx,dz)||1;
+      const p:XY=[mix(pa[0],pb[0],u)-dz/len*side*(spec.width/2-.6),mix(pa[2],pb[2],u)+dx/len*side*(spec.width/2-.6)];
       const ground=Math.min(base(...p),h-(spec.clear??2));
       box(piers,p,ground+.4,[2.4,2.4],ground-.25);box(piers,p,h-.6,[.8,.8],ground);box(piers,p,h-.5,[1.4,1.4],h-.9);
     }
   }
   for(const side of [-1,1]){
-    slab(rails,a,b,.25,1,side*(spec.width/2-.125),1);slab(rails,a,b,.4,.15,side*(spec.width/2-.125),1.15);
+    for(let i=1;i<path.length;i++){slab(rails,path[i-1]!,path[i]!,.25,1,side*(spec.width/2-.125),1);slab(rails,path[i-1]!,path[i]!,.4,.15,side*(spec.width/2-.125),1.15);}
   }
   cuts.solids.push(deck,piers,rails);
-  const structuralBed=bed(`structure.${spec.id}`,spec.route.startsWith('walk')?'walk':'road',[a,b],false);structuralBed.width=spec.width;structuralBed.structureIds=[spec.id];cuts.beds.push(structuralBed);
+  const structuralBed=bed(`structure.${spec.id}`,spec.route.startsWith('walk')?'walk':'road',path,false);structuralBed.width=spec.width;structuralBed.structureIds=[spec.id];cuts.beds.push(structuralBed);
   // The source corridor is split at the span limits so no water is raised to its deck.
   if(route)route.structureIds.push(spec.id);
   if(spec.covered){
