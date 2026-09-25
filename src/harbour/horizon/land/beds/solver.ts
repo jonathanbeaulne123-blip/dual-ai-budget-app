@@ -4,6 +4,7 @@ import { clamp, distance, mix, plan } from '../structures/mesh';
 export interface HeightPin { xy: XY; height: number; reason: string }
 /** Centripetal-like tension keeps controls recognisable and avoids hairpin overshoot. */
 export function sampleSpline(controls: readonly XY[], step=5): XY[] {
+  if(controls.length<2||!Number.isFinite(step)||step<=0)throw new Error('A bed needs at least two controls and a positive sampling step');
   const result:XY[]=[];
   for(let i=0;i<controls.length-1;i++){
     const a=controls[Math.max(0,i-1)]!,b=controls[i]!,c=controls[i+1]!,d=controls[Math.min(controls.length-1,i+2)]!;
@@ -27,6 +28,7 @@ export function gradeRoute(id:string, controls:readonly XY[], height:HeightQuery
     if(best>40){diagnostics.push({id:`pin.${id}.${pin.reason}`,severity:'conflict',message:`${id}: ${pin.reason} is ${best.toFixed(1)} eu from its solved centreline`,at:pin.xy,measured:best,required:40});continue;}
     fixed.set(index,pin.height);
   }
+  if(distance(xy[0]!,xy[xy.length-1]!)<.001){const seam=fixed.get(0)??targets[0]!;fixed.set(0,seam);fixed.set(xy.length-1,seam);}
   const anchors=[...fixed].sort((a,b)=>a[0]!-b[0]!);
   for(let j=1;j<anchors.length;j++){
     const [a,ha]=anchors[j-1]!,[b,hb]=anchors[j]!,available=chain[b]!-chain[a]!,needed=Math.abs(hb-ha)/limit;

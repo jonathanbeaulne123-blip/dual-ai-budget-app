@@ -17,10 +17,10 @@ export function buildReserves(cuts:LandCuts,base:HeightQuery):void {
       const serviceId=`${id}.service`;pad.serviceBedId=serviceId;const pts=gradeRoute(serviceId,[plan(nearest.at),apron,door],()=>height,.12,[{xy:door,height,reason:'apron'}],cuts.diagnostics);cuts.beds.push(bed(serviceId,'spur',pts));
       const wall=solid(`${id}.retaining`,'retainingWall','rock','wall',[serviceId],districtAt(...p));
       // Walls are outside the entire six metre clear margin, with an open service side.
-      for(const side of [-1,1])for(const along of [-1,1]){
-        const dx=along*38,dz=side*28,x=p[0]!+dx*Math.cos(theta)-dz*Math.sin(theta),z=p[1]!+dx*Math.sin(theta)+dz*Math.cos(theta),ground=base(x,z);
-        if(side!==toward)box(wall,[x,z],height,[1,28],Math.min(ground-.2,height-.6),rotation);
-      }
+      const wallSection=(dx:number,dz:number,size:XY)=>{const x=p[0]+dx*Math.cos(theta)-dz*Math.sin(theta),z=p[1]+dx*Math.sin(theta)+dz*Math.cos(theta),ground=base(x,z);box(wall,[x,z],height+1.15,size,Math.min(ground-.2,height-.6),rotation);};
+      for(const side of [-1,1])wallSection(side*38,0,[.6,56]);
+      wallSection(0,-toward*28,[76,.6]);
+      for(const side of [-1,1])wallSection(side*22.5,toward*28,[31,.6]);
       cuts.solids.push(wall);const marker=solid(`${id}.marker`,'threshold','stone','marker',[serviceId],districtAt(...p));box(marker,door,height+.025,[2,.6],height-.05,rotation);cuts.solids.push(marker);
       const green=M.protected.green,localCentre:XY=[green.cx-p[0]!,green.cy-p[1]!];
       const lx=localCentre[0]!*Math.cos(theta)+localCentre[1]!*Math.sin(theta),lz=-localCentre[0]!*Math.sin(theta)+localCentre[1]!*Math.cos(theta),clearance=Math.hypot(Math.max(0,Math.abs(lx)-38),Math.max(0,Math.abs(lz)-28));

@@ -50,7 +50,8 @@ export function buildSpan(spec:SpanSpec,cuts:LandCuts,base:HeightQuery):void {
   }
 }
 export function tunnel(id:string,points:XYZ[],width:number,clear:number,cuts:LandCuts,district='crown'):void {
-  const floor=solid(`${id}.floor`,'tunnel','stone','floor',[id],district),walls=solid(`${id}.walls`,'tunnel','rock','wall',[id],district),roof=solid(`${id}.roof`,'tunnel','rock','roof',[id],district);
+  const sources:Record<string,string>={oreTunnel:'ORE',oreSiding:'ORE',seaPassage:'DEEP_RUN',prowTunnel:'V01',shoulderTunnel:'V02',duneCulvert:'S4'},bedIds=[sources[id]??id];
+  const floor=solid(`${id}.floor`,'tunnel','stone','floor',bedIds,district),walls=solid(`${id}.walls`,'tunnel','rock','wall',bedIds,district),roof=solid(`${id}.roof`,'tunnel','rock','roof',bedIds,district);
   for(let i=1;i<points.length;i++){
     slab(floor,points[i-1]!,points[i]!,width,.6);slab(walls,points[i-1]!,points[i]!,.6,clear,width/2+.3,clear);slab(walls,points[i-1]!,points[i]!,.6,clear,-width/2-.3,clear);slab(roof,points[i-1]!,points[i]!,width+1.2,.6,0,clear+.6);
   }
@@ -93,7 +94,9 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   const bowl=solid('dam.apron','halfPipe','apron','deck',['S1'],'notch');
   for(let i=0;i<16;i++){const x=1135+i*2,x2=x+2,h=31+7*((x-1151)/16)**2,h2=31+7*((x2-1151)/16)**2;slab(bowl,[x,h,935],[x2,h2,935],22,.6);}cuts.solids.push(bowl);
   cuts.beds.push(bed('dam.apron.level','skateMain',[[1168,31,923],[1168,31,947]],false));
-  for(let f=0;f<3;f++)buildStair(`damGallery.flight.${f}`,[1165,31+f*7,920-f*12],[1165,38+f*7,910-f*12],3,cuts);
+  for(let f=0;f<3;f++){buildStair(`damGallery.flight.${f}`,[1165,31+f*7,920-f*12],[1165,38+f*7,910-f*12],3,cuts);addFlatPad(cuts,`damGallery.landing.${f}`,'landing',[1165,909-f*12],38+f*7,[3,2]);}
+  cuts.beds.push(bed('damGallery.exit','walk',[[1165,52,886],[1165,52,903],[1162,52,903]],false));
+  tunnel('damGallery',[[1165,31,920],[1165,52,886]],3,3.2,cuts,'lakeside');
   buildStair('damPortage',[1150,50,910],[1169,25,963],3,cuts);
   // Dry Wash bowl: the invert remains an ordinary ground line, with a bank on either side.
   const wash=solid('wash.bowl','bowl','ochre','deck',['S2'],'flats');for(let i=-12;i<12;i++){const h=heightOnBeds(cuts,[465,700],base)+5*(i/12)**2,h2=heightOnBeds(cuts,[465,700],base)+5*((i+1)/12)**2;slab(wash,[465+i,h,665],[466+i,h2,665],72,.6);}cuts.solids.push(wash);
@@ -111,4 +114,11 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   }
   buildStair('zipLanding.stair',[1130,12,1440],[1145,3,1460],3,cuts);
   const ramp=gradeRoute('zipLanding.ramp',[[1130,1440],[1090,1445],[1080,1470],[1145,1460]],()=>3,.08,[{xy:[1130,1440],height:12,reason:'deck'},{xy:[1145,1460],height:3,reason:'sand'}],cuts.diagnostics);cuts.beds.push(bed('zipLanding.ramp','walk',ramp));
+  addFlatPad(cuts,'lampGallery','landing',[540,1195],25,[10,8]);
+  const lampSupports=solid('lampGallery.supports','tower','stone','support',['lampGallery.ramp'],'offshore');
+  for(const x of [-4,4])for(const z of [-3,3])box(lampSupports,[540+x,1195+z],24.65,[.8,.8],base(540+x,1195+z)-.25);
+  const lampRamp:XYZ[]=Array.from({length:161},(_,i)=>{const t=i/160,a=Math.PI/2+t*5*Math.PI;return [540+30*Math.cos(a),1+t*24,1220+30*Math.sin(a)];});lampRamp.push([540,25,1195]);
+  for(let i=0;i<lampRamp.length;i+=3){const p=lampRamp[i]!;box(lampSupports,[p[0],p[2]],p[1]-.35,[.4,.4],Math.min(p[1]-.6,base(p[0],p[2]))-.25);}cuts.solids.push(lampSupports);
+  const galleryBed=bed('lampGallery.ramp','walk',lampRamp,false);galleryBed.maxGrade=.08;cuts.beds.push(galleryBed);
+  buildStair('lampGallery.stair',[540,1,1250],[540,25,1195],3,cuts);
 }

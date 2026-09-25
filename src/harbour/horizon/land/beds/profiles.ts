@@ -1,5 +1,5 @@
 import { HORIZON_MANIFEST as M, requireScaleFactor } from '../../world/manifest';
-import type { BedCut, HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
+import type { BedCut, HeightQuery, LandCuts, StructureSolid, XY, XYZ } from '../interfaces';
 import { box, distance, districtAt, nearestOnPath, slab, solid } from '../structures/mesh';
 
 export function bed(id:string, profile:string, points:XYZ[], terrainCut=true):BedCut {
@@ -39,7 +39,17 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
       }
     }
   }
-  for(const piece of [...(segments??[deck]),kerbs,rails,retaining,shoulders])if(piece.indices.length)cuts.solids.push(piece);
+  // A road circles several districts. Stream its local prisms with the district underneath them.
+  for(const piece of [...(segments??[deck]),kerbs,rails,retaining,shoulders])if(piece.indices.length){
+    const districts=new Map<string,StructureSolid>();
+    for(let vertex=0;vertex<piece.positions.length/3;vertex+=8){
+      let x=0,z=0;for(let k=0;k<8;k++){x+=piece.positions[(vertex+k)*3]!/8;z+=piece.positions[(vertex+k)*3+2]!/8;}
+      const districtId=districtAt(x,z);let part=districts.get(districtId);if(!part){part={...piece,id:`${piece.id}.${districtId}`,districtId,positions:[],indices:[]};districts.set(districtId,part);}
+      const offset=part.positions.length/3;part.positions.push(...piece.positions.slice(vertex*3,(vertex+8)*3));
+      const indexStart=vertex/8*36;part.indices.push(...piece.indices.slice(indexStart,indexStart+36).map(i=>i-vertex+offset));
+    }
+    cuts.solids.push(...districts.values());
+  }
 }
 export function heightOnBeds(cuts:LandCuts,p:XY,base:HeightQuery,maxDistance=15):number {
   let distance=Infinity,height=base(...p);

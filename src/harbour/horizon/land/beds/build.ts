@@ -7,7 +7,7 @@ import { buildTown } from '../town/build';
 import { buildHostSites } from '../town/hosts';
 import { buildUnderground } from '../underground/build';
 import { addFlatPad, bed, emitBedGeometry, heightOnBeds } from './profiles';
-import { gradeRoute, type HeightPin } from './solver';
+import { gradeRoute, sampleSpline, type HeightPin } from './solver';
 
 const pin=(xy:XY,height:number,reason:string):HeightPin=>({xy,height,reason});
 const routePins:Record<string,HeightPin[]>={
@@ -26,10 +26,22 @@ const routePins:Record<string,HeightPin[]>={
   'walk crown':[pin([1370,690],110,'turning circle'),pin([1310,500],154,'summit')],
   'walk crownFromGondola':[pin([1360,560],112,'station'),pin([1310,500],154,'summit')],
 };
+/** Pin each complete span flat before grading its two approaches. */
+function withSpanPins(id:string,controls:XY[],pins:HeightPin[]=[]):HeightPin[] {
+  const samples=sampleSpline(controls),points:XYZ[]=samples.map(p=>[p[0],0,p[1]]),out=[...pins];
+  for(const span of SPANS.filter(s=>s.route===id&&s.height!==undefined)){
+    const hit=nearestOnPath(span.at,points),travel=[0];for(let i=1;i<points.length;i++)travel.push(travel[i-1]!+distance(plan(points[i-1]!),plan(points[i]!)));
+    for(const delta of [-span.length/2,0,span.length/2]){
+      const target=hit.along+delta;let best=0;travel.forEach((d,i)=>{if(Math.abs(d-target)<Math.abs(travel[best]!-target))best=i;});out.push(pin(samples[best]!,span.height!,`${span.id} ${delta<0?'entry':delta>0?'exit':'centre'}`));
+    }
+    travel.forEach((d,i)=>{if(Math.abs(d-hit.along)<=span.length/2)out.push(pin(samples[i]!,span.height!,`${span.id} deck ${i}`));});
+  }
+  return out;
+}
 function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
   for(const [id,row]of Object.entries(M.roads)){
     if(!('pts'in row))continue;
-    const b=bed(id,row.profile,gradeRoute(id,row.pts as unknown as XY[],base,.12,routePins[id]!,cuts.diagnostics));
+    const controls=row.pts as unknown as XY[],b=bed(id,row.profile,gradeRoute(id,controls,base,.12,withSpanPins(id,controls,routePins[id]),cuts.diagnostics));
     if('structures'in row)b.structureIds=row.structures.filter(x=>!(id==='VG'&&x==='hollowBridge'));cuts.beds.push(b);
   }
   for(const [id,pts]of Object.entries(M.roads.spurs)){
@@ -40,15 +52,17 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     if(!('pts'in row))continue;
     const pts=[...row.pts] as unknown as XY[];
     if(id==='S1')pts.splice(4,0,[1435,705],[1430,775],[1325,735]);
-    const b=bed(id,'skateMain',gradeRoute(id,pts,base,.18,routePins[id]!,cuts.diagnostics));
+    const b=bed(id,'skateMain',gradeRoute(id,pts,base,.18,withSpanPins(id,pts,routePins[id]),cuts.diagnostics));
     b.surfaceSegments=row.segments.map((segment,i)=>({from:i/row.segments.length,to:(i+1)/row.segments.length,surface:segment.surface,pace:segment.pace,bankDegrees:segment.surface==='bankedTurf'?18:0}));cuts.beds.push(b);
   }
   for(const [id,row]of Object.entries(M.walks)){
     const name=`walk ${id}`;
     let points=row.pts as unknown as XY[];
+    if(id==='garden')points=[[762,422],...points.slice(1)];
+    if(id==='coveWalk')points=[[762,422],[780,380],[754,356],...points.slice(1)];
     if(id==='crown')points=[[1370,690],[1445,665],[1425,605],[1340,620],[1400,540],[1360,470],[1310,500]];
     if(id==='crownFromGondola')points=[[1360,560],[1405,595],[1450,565],[1430,500],[1350,440],[1310,500]];
-    cuts.beds.push(bed(name,row.profile,gradeRoute(name,points,base,.12,routePins[name]!,cuts.diagnostics)));
+    cuts.beds.push(bed(name,row.profile,gradeRoute(name,points,base,.12,withSpanPins(name,points,routePins[name]),cuts.diagnostics)));
   }
 }
 export interface StationPositions { id:string; centre:XYZ; positions:XYZ[] }
@@ -62,20 +76,37 @@ export function yearWalkStretches(cuts:LandCuts):{month:number;stationId:string;
   return M.journey.stations.map((s,i)=>{const previous=along[(i+11)%12]!,current=along[i]!,d=(current-previous+length)%length;return {month:s.month,stationId:s.id,length:d,spacing28:d/28,spacing31:d/31};});
 }
 function journey(cuts:LandCuts,base:HeightQuery):void {
-  const b=bed('yearWalk','walk',gradeRoute('yearWalk',M.journey.yearWalk.pts as unknown as XY[],base,.12,[],cuts.diagnostics));b.width=5.2;b.shoulder=1.2;cuts.beds.push(b);
+  const source=M.journey.yearWalk.pts as unknown as XY[];
+  // The two Crown approaches take long contour returns; their short diagram chords cannot hold 12%.
+  const controls:XY[]=[source[0]!,[1440,710],[1450,865],[1360,940],...source.slice(1,-2),[1520,1190],[1580,1050],[1600,860],[1590,700],[1500,340],[1445,430],[1445,520],[1400,620],[1370,690],source[0]!];
+  const stationPins=M.journey.stations.map(s=>pin(s.xy as unknown as XY,s.id==='jan'?110:s.id==='feb'?53:s.id==='dec'?12:heightOnBeds(cuts,s.xy as unknown as XY,base,35),`station ${s.id}`));
+  stationPins.push(pin([1480,1060],18,'upper street'),pin([1370,690],110,'turning circle'));
+  const b=bed('yearWalk','walk',gradeRoute('yearWalk',controls,base,.12,stationPins,cuts.diagnostics));b.width=5.2;b.shoulder=1.2;cuts.beds.push(b);
   for(const s of M.journey.stations){const n=nearestOnPath(s.xy as unknown as XY,b.points);const p=addFlatPad(cuts,`station.${s.id}`,'station',s.xy as unknown as XY,n.at[1]!,M.journey.station.pad_m as unknown as XY);p.serviceBedId='yearWalk';p.margin=2;}
 }
 function cables(cuts:LandCuts,base:HeightQuery):void {
   const g=M.cable.G1,controls:XYZ[]=[[g.from[0]!,g.fromH,g.from[1]!],...g.towers.map((p,i)=>[p[0]!,Math.max(mix(g.fromH,g.toH,(i+1)/4),base(...p as unknown as XY)+8),p[1]!] as unknown as XYZ),[g.to[0]!,g.toH,g.to[1]!]];
-  // Solve tower elevations only; endpoints and the cable's plan line stay frozen.
-  for(let pass=0;pass<6;pass++)for(let i=1;i<controls.length;i++){
-    const a=controls[i-1]!,b=controls[i]!,span=distance(plan(a),plan(b));let deficit=0;
-    for(let k=1;k<32;k++){const t=k/32,x=mix(a[0]!,b[0]!,t),z=mix(a[2]!,b[2]!,t),sag=span*.01*4*t*(1-t),surface=Math.max(base(x,z),heightOnBeds(cuts,[x,z],base,10));let needed=surface+8;
-      for(const p of cuts.pads.filter(p=>p.id.startsWith('plot.terraces.')&&!p.id.includes('.apron')&&!p.id.includes('.layby')))if(distance([x,z],plan(p.centre))<40)needed=Math.max(needed,p.centre[1]!+12);
-      deficit=Math.max(deficit,needed-(mix(a[1]!,b[1]!,t)-sag));
+  // Project clearance constraints onto the three free tower heights. Endpoint heights stay frozen.
+  // Raising each tower by the same deficit produces spurious giant towers near a fixed endpoint.
+  const constraints:{i:number;t:number;required:number;at:XY}[]=[];
+  for(let i=1;i<controls.length;i++){
+    const a=controls[i-1]!,b=controls[i]!,span=distance(plan(a),plan(b));
+    for(let k=1;k<32;k++){
+      const t=k/32,x=mix(a[0],b[0],t),z=mix(a[2],b[2],t),at:XY=[x,z];
+      // Loading platforms are an intentional cable-to-feet boundary, not an overhead crossing.
+      if(distance(at,plan(controls[0]!))<14||distance(at,plan(controls.at(-1)!))<14)continue;
+      let surface=Math.max(base(x,z),heightOnBeds(cuts,at,base,8));
+      for(const pad of cuts.pads){const angle=-pad.rotationDegrees*Math.PI/180,dx=x-pad.centre[0],dz=z-pad.centre[2];if(!pad.underground&&Math.abs(dx*Math.cos(angle)-dz*Math.sin(angle))<pad.size[0]/2&&Math.abs(dx*Math.sin(angle)+dz*Math.cos(angle))<pad.size[1]/2)surface=pad.centre[1];}
+      let required=surface+8+span*.01*4*t*(1-t);
+      for(const p of cuts.pads.filter(p=>/^plot\.terraces\.\d$/.test(p.id)))if(distance(at,plan(p.centre))<40)required=Math.max(required,p.centre[1]+12+span*.01*4*t*(1-t));
+      constraints.push({i,t,required,at});
     }
-    if(deficit>0){if(i>1)controls[i-1]! =[a[0]!,a[1]!+deficit,a[2]!];if(i<controls.length-1)controls[i]! =[b[0]!,b[1]!+deficit,b[2]!];}
   }
+  for(let pass=0;pass<16;pass++)for(const q of constraints){const a=controls[q.i-1]!,b=controls[q.i]!,deficit=q.required-mix(a[1],b[1],q.t);if(deficit<=.0001)continue;const wa=q.i>1?1-q.t:0,wb=q.i<controls.length-1?q.t:0,denom=wa*wa+wb*wb;
+    if(wa)controls[q.i-1]=[a[0],Math.min(300,a[1]+deficit*wa/denom),a[2]];
+    if(wb)controls[q.i]=[b[0],Math.min(300,b[1]+deficit*wb/denom),b[2]];
+  }
+  for(const q of constraints){const actual=mix(controls[q.i-1]![1],controls[q.i]![1],q.t);if(actual<q.required-.01)cuts.diagnostics.push({id:`cable.G1.clear.${q.i}.${q.t}`,severity:'conflict',message:'Fixed gondola endpoint cannot meet terrain clearance below the 300m sky ceiling',at:q.at,measured:actual,required:q.required});}
   const gondola:XYZ[]=[];
   for(let i=1;i<controls.length;i++){const a=controls[i-1]!,b=controls[i]!,len=distance(plan(a),plan(b));for(let k=0;k<32;k++){const t=k/32;gondola.push([mix(a[0]!,b[0]!,t),mix(a[1]!,b[1]!,t)-len*.01*4*t*(1-t),mix(a[2]!,b[2]!,t)]);}}gondola.push(controls[controls.length-1]!);
   cuts.beds.push(bed('G1','cable',gondola,false));const towers=solid('G1.towers','tower','stone','support',['G1'],'prow');controls.slice(1,-1).forEach(p=>{const ground=base(p[0]!,p[2]!);box(towers,plan(p),p[1]!,[1.5,1.5],ground-.25);box(towers,plan(p),ground+.4,[4,4],ground-.25);});cuts.solids.push(towers);
@@ -92,7 +123,7 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
   for(const row of M.thresholds){
     if(typeof row.xy==='string'){Object.entries(M.water_routes.FERRY.piers).forEach(([id,p])=>make(`threshold.${row.id}.${id}`,p as unknown as XY,1));continue;}
     if(Array.isArray(row.xy[0]!))(row.xy as number[][]).forEach((p,i)=>make(`threshold.${row.id}.${i+1}`,p as unknown as XY));
-    else {const exact:Record<string,number>={gondolaBase:18,gondolaTop:112,adit:40,southPortal:110,prowPlatform:100,crownLaunch:160,zipLanding:12,deepJetty:40.6,seaDoorJetty:1,lampDock:1,bightShoreJetty:1,floatDock:1.2,boathouseDock:1,landingQuay:3,stepsFoot:4};make(`threshold.${row.id}`,row.xy as unknown as XY,exact[row.id]!);}
+    else {const exact:Record<string,number>={gondolaBase:18,gondolaTop:112,adit:40,southPortal:110,prowPlatform:100,crownLaunch:160,zipLanding:12,lampGallery:25,deepJetty:40.6,seaDoorJetty:1,lampDock:1,bightShoreJetty:1,floatDock:1.2,boathouseDock:1,landingQuay:3,stepsFoot:4};make(`threshold.${row.id}`,row.xy as unknown as XY,exact[row.id]!);}
   }
   M.crossings.forEach((row,i)=>{if(row.resolution==='threshold'){
     if(Array.isArray(row.at))make(`crossing.${i}`,row.at as unknown as XY);
