@@ -82,16 +82,16 @@ export function mountainPlanting(tier:'full'|'lite'):Plan{
   const occ=new Map<string,{x:number;z:number;r:number}[]>(),key=(x:number,z:number)=>`${Math.floor(x/6)}:${Math.floor(z/6)}`;
   const free=(x:number,z:number,r:number)=>{for(let i=-1;i<=1;i++)for(let j=-1;j<=1;j++){const cell=occ.get(`${Math.floor(x/6)+i}:${Math.floor(z/6)+j}`);if(cell)for(const o of cell)if(Math.hypot(x-o.x,z-o.z)<r+o.r)return false;}return true;};
   const mark=(x:number,z:number,r:number)=>{const k=key(x,z),cell=occ.get(k)??[];cell.push({x,z,r});occ.set(k,cell);};
-  const tryTree=(x:number,z:number,kind:TreeKind|null,size:number,need=1.6):boolean=>{
+  const tryTree=(x:number,z:number,kind:TreeKind|null,size:number,need=1.6,pack=.85):boolean=>{
     if(z>-52||x<-178||x>178||z<-386)return false;
     const y=mountainBaseHeight(x,z);if(y<1.2)return false;
     if(slopeAt(x,z)>(kind==='pine'||kind==='alpine'||kind===null?1.25:1.05))return false;
     const r=(kind==='poplar'||kind==='birch'||kind==='alpine'?1.1:1.7)*size;
     if(plantingClearance(x,z)<r*.9+need-1)return false;
-    if(!free(x,z,r*.85))return false;
+    if(!free(x,z,r*pack))return false;
     const b=biomeAt(x,z,y),k=kind??pick(ARCHETYPES[b],rand());
     if(b==='summit'&&y>98&&k!=='alpine')return false;
-    trees.push({x,y,z,size,spin:rand()*6.283,kind:k,tint:rand(),lean:(rand()-.5)*.12});mark(x,z,r*.85);return true;
+    trees.push({x,y,z,size,spin:rand()*6.283,kind:k,tint:rand(),lean:(rand()-.5)*.12});mark(x,z,r*pack);return true;
   };
   // 1. District groves: three to five clumps around each district, framing its entrance.
   for(const d of DISTRICTS){
@@ -120,13 +120,17 @@ export function mountainPlanting(tier:'full'|'lite'):Plan{
       }
     }
   }
-  // 3. The open hillside: woodland by altitude, in stands with glades between.
-  const attempts=lite?2400:5200;
-  for(let i=0;i<attempts;i++){
-    const x=(rand()-.5)*340,z=-60-rand()*320,dense=noise(x/34,z/34);
-    if(dense<.46)continue;
-    const y=mountainBaseHeight(x,z);if(y<1.5)continue;
-    tryTree(x,z,null,.7+rand()*.6,2.4);
+  // 3. The open hillside: stands of trees (one kind leading, a few others mixed in) whose crowns
+  //    crowd into one canopy, with open meadow glades between the stands.
+  const stands=lite?34:62;let made=0;
+  for(let g=0;g<stands*8&&made<stands;g++){
+    const cx=(rand()-.5)*336,cz=-64-rand()*312,cy=mountainBaseHeight(cx,cz);
+    if(cy<2.5||noise(cx/27,cz/27)<.42||plantingClearance(cx,cz)<3||slopeAt(cx,cz)>1)continue;
+    made++;
+    const lead=pick(ARCHETYPES[biomeAt(cx,cz,cy)],rand()),n=(lite?6:9)+Math.floor(rand()*(lite?4:7)),spread=4.5+rand()*5.5;
+    let placed=0;
+    for(let k=0;k<n*4&&placed<n;k++){const a=rand()*6.283,r=spread*Math.sqrt(rand());
+      if(tryTree(cx+Math.cos(a)*r,cz+Math.sin(a)*r,rand()<.72?lead:null,.72+rand()*.62,1.6,.58))placed++;}
   }
   // 4. Shrubs, heath, boulders: under the trees' edges and on the open slopes.
   for(let i=0;i<(lite?900:2200);i++){

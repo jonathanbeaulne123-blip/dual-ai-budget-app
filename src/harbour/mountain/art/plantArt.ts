@@ -144,11 +144,13 @@ export function buildPlantArt(pal:MountainArtPalette,tier:'full'|'lite',season:'
   const flowerBase:THREE.Matrix4[]=[];
   if(flowers){blooms.forEach((bl,i)=>{dummy.position.set(bl.x,bl.y-.04,bl.z);dummy.rotation.set(0,i*1.7,0);dummy.scale.setScalar(bl.s);dummy.updateMatrix();flowers.setMatrixAt(i,dummy.matrix);flowerBase.push(dummy.matrix.clone());colour.setRGB(...bl.c);flowers.setColorAt(i,colour);});
     flowers.instanceMatrix.needsUpdate=true;if(flowers.instanceColor)flowers.instanceColor.needsUpdate=true;flowers.count=Math.round(blooms.length*.4);}
-  // Grass tufts: two crossed cards.
-  const tuftGeo=new THREE.BufferGeometry();{const p:number[]=[];for(const a of [0,Math.PI/2])for(const [u,h] of [[-.25,0],[.25,0],[0,.5]] as const)p.push(Math.cos(a)*u,h,Math.sin(a)*u);tuftGeo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));tuftGeo.computeVertexNormals();gradient(tuftGeo,.7,1.15,0,.5);}
+  // Grass tufts: a fan of five thin cut-paper blades leaning out from one root, dark at the foot.
+  const tuftGeo=new THREE.BufferGeometry();{const p:number[]=[];for(let k=0;k<5;k++){const a=k/5*Math.PI*2+.3,lean=.12+(k%2)*.1,h=.34+(k%3)*.09,w=.045,ca=Math.cos(a),sa=Math.sin(a);
+      p.push(-sa*w,0,ca*w, sa*w,0,-ca*w, ca*lean*1.6,h,sa*lean*1.6);}
+    tuftGeo.setAttribute('position',new THREE.Float32BufferAttribute(p,3));tuftGeo.computeVertexNormals();gradient(tuftGeo,.55,1.02,0,.45);}
   const tuftMat=mat(.08,'tuft',{side:THREE.DoubleSide});
   const tufts=instanced(tuftGeo,tuftMat,plan.tufts.length,'Grass tufts',false);
-  plan.tufts.forEach((t,i)=>{dummy.position.set(t.x,t.y-.02,t.z);dummy.rotation.set(0,t.spin,0);dummy.scale.set(t.size,t.size*(1.1+t.tint*.5),t.size);dummy.updateMatrix();tufts.setMatrixAt(i,dummy.matrix);colour.setRGB(...shade(mix(pal.leaf[1]!,[.78,.74,.42],t.tint*.35),.9+t.tint*.2));tufts.setColorAt(i,colour);});
+  plan.tufts.forEach((t,i)=>{dummy.position.set(t.x,t.y-.02,t.z);dummy.rotation.set(0,t.spin,0);dummy.scale.set(t.size,t.size*(1.1+t.tint*.5),t.size);dummy.updateMatrix();tufts.setMatrixAt(i,dummy.matrix);colour.setRGB(...shade(mix(pal.leaf[t.tint>.5?1:2]!,[.72,.7,.4],t.tint*.18),.85+t.tint*.15));tufts.setColorAt(i,colour);});
   tufts.instanceMatrix.needsUpdate=true;if(tufts.instanceColor)tufts.instanceColor.needsUpdate=true;
   let dead=false,lastVisitor:readonly [number,number,number]|null=null;
   return {group,flowers,flowerBase,
