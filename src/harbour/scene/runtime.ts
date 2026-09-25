@@ -4,8 +4,11 @@ import type {MountainRecoveryView} from '../mountain/recovery.ts';
 import type {MountainInteractionState} from '../mountain/life.ts';
 import {mountainFoliageAt} from '../mountain/planting.ts';
 import {worldCeilingAt,worldCollisionAt} from '../mountain/surfaces.ts';
-import {GEOGRAPHY_REVISION,MOUNTAIN_VERSION,TRANSPORT_STOPS,type Point3,type TransportKind} from '../mountain/definition.ts';
+import {GEOGRAPHY_REVISION,MOUNTAIN_VERSION,transportPoint,TRANSPORT_STOPS,type Point3,type TransportKind} from '../mountain/definition.ts';
+import {walkGraph} from '../body/geography.ts';
 import {createRide,farOffer,nearestStation,platformOffer,type Ride,type RideOffer} from '../body/ride.ts';
+import {advanceMonorail,boardMonorail,monorailPosition,selectMonorailStop,type MonorailState,type MonorailView} from '../mountain/monorail.ts';
+
 import {crossedVillageDoor,villagePortalArrival} from "../village/topology.ts";
 import * as THREE from "three";
 import {buildSkatePark} from '../skate/parkScene.ts';
@@ -119,6 +122,8 @@ export type HarbourCallbacks = {
    * Journey" while this is true.
    */
   onZoomEdge?:(armed:boolean)=>void;
+  onMonorail?:(ride:MonorailState|null)=>void;
+
   /**
    * The body walked to a place's own way out (walk-everywhere): the Tower's
    * stair, the Cellar's stair, the Glasshouse's garden door, the footpath up
@@ -202,6 +207,10 @@ export type HarbourRuntime = {
   mountainSkip:()=>void;
   /** The station on a line nearest the body (a ride form's "From" defaults to it). */
   nearestStation:(kind:TransportKind)=>number;
+  monorailBoard:(station:number,companion:boolean)=>void;
+  monorailSelect:(station:number)=>void;
+  monorailControl:(control:'pause'|'brake'|'seat'|'companion'|'speed'|'view'|'exit'|'bell',value?:number|boolean|MonorailView)=>void;
+
   mountainCalm:(on:boolean)=>void;
   setMountainRecovery:(view:MountainRecoveryView)=>void;
   setMountainInteraction:(state:MountainInteractionState)=>void;
@@ -353,7 +362,8 @@ export function scrubControls(handle: PlaceHandle, todayIndex = 0): ScrubControl
 type MountainPresentationHandle = PlaceHandle & {
   setVisitor?:(at:Point3)=>void;
   /** The cabin's place on its line, and (when known) the way it faces and pitches along its track. */
-  setTransit?:(at:Point3|null,kind?:TransportKind,frame?:{yaw:number;pitch:number})=>void;
+  setTransit?:(at:Point3|null,kind?:TransportKind,frame?:{yaw:number;pitch:number},companion?:boolean,doorGap?:number)=>void;
+
   setCalm?:(on:boolean)=>void;
   setRecovery?:(view:MountainRecoveryView)=>void;
   setInteraction?:(state:MountainInteractionState)=>void;
@@ -642,10 +652,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // mountain (the arrival shot, the overview, every tour stop), so there
     // every district is held in detail — and the body while Walk, a ride or
     // the board drives. Placed interiors and doorways stay on the body (`focus`).
-    const lookDriving=!following&&placeId==='court';
+    const lookDriving=!following&&!toolOpen&&placeId==='court';
+    const overview=lookDriving&&court.pose().r>120;
     const view=lookDriving?court.pose().target:null;
     const detailX=view?view[0]:focus[0],detailZ=view?view[2]:focus[1];
-    if(detailCourt?.streamDetails?.(detailX,detailZ,(run?.id==='mountain-descent'&&!run.finished)||lookDriving)){
+    if(detailCourt?.streamDetails?.(detailX,detailZ,(run?.id==='mountain-descent'&&!run.finished)||overview)){
       changed=true;showExteriors();
     }
     return changed;
@@ -757,7 +768,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   let cat:Cat|null=null,errand:CatErrand|null=null,errandKey:string|null=null,catWatch:{x:number;z:number}|null=null;
   let catCatchUpAt=0,zoomEdge:ZoomEdge=ZOOM_REST,zoomArmed=false,journeyRequested=false;
   /** Hearth Mountain v2 · the ride camera (C4), the race's finish shot, and the keyboard orbit hold (Q/E). */
-  let rideCam: RideCamera | null = null, rideOn: { kind: TransportKind; to: number } | null = null;
+  let rideCam: RideCamera | null = null, rideOn: { kind: Ride["kind"]; to: number } | null = null;
   const finishShot = createFinishShot();
   let spin: -1 | 0 | 1 = 0;
   /** Close was entered from Walk: leaving it returns to Walk at the body. */
@@ -772,7 +783,26 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   /** A ride in progress: the body is attached to its cabin until it arrives (or is skipped). */
   let mountainTrip:Ride|null=null,rideOffer:RideOffer|null=null,rideOfferKey='';
   const offerRide=(next:RideOffer|null)=>{const key=next?`${next.kind}:${next.from}:${next.to}:${next.reason}`:'';if(key===rideOfferKey)return;rideOfferKey=key;rideOffer=next;callbacks.onRideOffer?.(next);};
+  let monorail:MonorailState|null=null,lastMonorailNotice=0;
+  const announceMonorail=(force=false)=>{if(!monorail)return;if(force||performance.now()-lastMonorailNotice>250){lastMonorailNotice=performance.now();callbacks.onMonorail?.({...monorail,queue:[...monorail.queue]});}};
+  const monorailAhead=(ride:MonorailState,p:Point3):Point3=>{
+    if(ride.phase==='moving')return transportPoint('monorail',ride.station,ride.next,Math.min(1,ride.progress+.02));
+    const last=TRANSPORT_STOPS.monorail.length-1,target=ride.queue[0]??(ride.station===last?last-1:ride.station+1);
+    return TRANSPORT_STOPS.monorail[ride.station+Math.sign(target-ride.station)]?.at??p;
+  };
+
   const mountainHandle=()=>(live.get('court')?.handle??handle) as MountainPresentationHandle;
+  // Explicit views and skating release transport ownership at a real platform.
+  function leaveTransport():void {
+    const kind=monorail?'monorail':mountainTrip?.kind;
+    if(!kind)return;
+    const here=walker?.state(),stops=TRANSPORT_STOPS[kind];
+    const at=here?stops.reduce((a,b)=>Math.hypot(a.at[0]-here.x,a.at[1]-here.y,a.at[2]-here.z)<=Math.hypot(b.at[0]-here.x,b.at[1]-here.y,b.at[2]-here.z)?a:b).at:stops[0]!.at;
+    walker?.attach(null);walker?.emote(null);walker?.place(at[0],at[2],here?.yaw??0,at[1]);
+    monorail=null;mountainTrip=null;rideOn=null;cabinSolid=null;bodyInput=NO_INPUT;offerRide(null);
+    mountainHandle().setTransit?.(null);callbacks.onMonorail?.(null);callbacks.onMountainTravel?.(false);
+    focus=[at[0],at[2]];previousDoorPoint=null;
+  }
   let bodyGround: (x: number, z: number) => number = placeGround(placeId);
   /** This place's own ways out, when walking to one of them is how you leave (an unplaced room). */
   let bodyExits: Anchor[] = [];
@@ -825,6 +855,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const [wx, , wz] = placementToWorld(placement, [dx + (dx / out) * COURT_DOORSTEP, 0, dz + (dz / out) * COURT_DOORSTEP]);
     return { x: wx, z: wz, yaw: Math.atan2(dx / out, dz / out) + placement.yaw };
   }
+  let rememberedRun=false;
   function raiseBody(): void {
     if (walker) { standBody(); return; }
     const anchors = handle.anchors();
@@ -841,6 +872,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       skateReducedMotion:()=>reducedMotion()||calmWorld||toolOpen,
       avatar:selectedAvatar,invalidate,onAvatarStatus:callbacks.onAvatarStatus,theme,
     });
+    walker.runLock(rememberedRun);
     scene.add(walker.group);
     const stood=walker.state();
     cat=createCat({groundHeightAt:(x,z)=>bodyGround(x,z),obstacles:placeObstacles(placeId,handle.regions(),anchors,tier),room,shore:HARBOUR_LAND.shore,tier,start:heelStand(stood),look:stood,reduced:reducedMotion()});
@@ -1151,7 +1183,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // point-in-box tests; the work only ever happens on a frame that was
     // already being drawn, so a world at rest still asks for nothing.
     followCamera();
-    if (stream()) { dirty = true; listsDirty = true; }
+    const streamed=stream();
+    if (streamed) { dirty = true; listsDirty = true; }
     thresholds();
     // ── The thumb-stick (W7 b) ─────────────────────────────────────────────
     // A press held still on the open ground becomes a stick under the thumb.
@@ -1215,10 +1248,20 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // Walk relative to what you can see: the follow camera's basis when it is
       // driving, the Look camera's heading when it is not.
       const heading = following ? follow.basis() : court.pose().theta;
-      if(mountainTrip){
+      if(monorail){
+        const prior=monorail;monorail=advanceMonorail(monorail,toolOpen?0:dt);
+        const p=monorailPosition(monorail);
+        const tangent=monorailAhead(monorail,p);
+        const yaw=Math.atan2(tangent[0]-p[0],tangent[2]-p[2]);
+        const seatOffset=monorail.seated?.65:0;
+        walker.place(p[0]-Math.cos(yaw)*seatOffset,p[2]+Math.sin(yaw)*seatOffset,yaw,p[1]);mountainHandle().setTransit?.(p,'monorail',{yaw,pitch:0},monorail.companion,monorail.phase==='doors-open'?1:monorail.phase==='doors-closing'?monorail.dwell/.9:0);previousDoorPoint=null;
+        if(prior.phase!==monorail.phase||prior.station!==monorail.station)announceMonorail(true);else announceMonorail();
+        bodyMoving=monorail.phase!=='doors-open'||monorail.queue.length>0;
+      }else if(mountainTrip){
         // Riding: the body is attached to the cabin's transform — no ground,
         // shore or obstacle resolution — and holds its ride pose. Arc-length
         // constant speed; skip finishes it at once.
+
         bodyInput=NO_INPUT;walker.setInput(NO_INPUT);
         const pose=mountainTrip.step(toolOpen?0:dt);
         walker.attach(pose);walker.step(dt,(now-mountedAt)/1000,heading);
@@ -1228,7 +1271,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       }else{
         bodyMoving = walker.step(dt, (now - mountedAt) / 1000, heading);
         // Walking onto a platform offers its ride; the offer stays while you stand there.
-        if(placeId==='court'&&!walker.skate.active()){const at=walker.state(),here=platformOffer(at.x,at.y,at.z);if(here)offerRide(here);else if(rideOffer?.reason==='platform')offerRide(null);}
+        if(placeId==='court'&&!walker.skate.active()){const at=walker.state(),here=platformOffer(at.x,at.y,at.z);if(here)offerRide(here);else if(rideOffer?.reason==='platform'||!walker.state().goal)offerRide(null);}
       }
       if(walker.skate.active()||hadSkate){
         // A controller's Start is read inside the step; the book follows at once.
@@ -1315,6 +1358,15 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         bodyMoving = true;
       }
       if (following && !ridden && !rideOn && follow.tick(dt)) bodyMoving = true;
+      if(monorail){
+        const p=monorailPosition(monorail),forward=monorailAhead(monorail,p);
+        const dx=forward[0]-p[0],dz=forward[2]-p[2],length=Math.hypot(dx,dz)||1,fx=dx/length,fz=dz/length;
+        const eye:Point3=monorail.view==='outside'?[p[0]-fx*9,p[1]+7,p[2]-fz*9]:monorail.view==='front'?[p[0]+fx*.8,p[1]+2.15,p[2]+fz*.8]:[p[0]-fz*.6,p[1]+2.08,p[2]+fx*.6];
+        camera.position.set(...eye);camera.up.set(0,1,0);
+        if(monorail.view==='window')camera.lookAt(p[0]-fz*18,p[1]+2,p[2]+fx*18);
+        else camera.lookAt(p[0]+fx*24,p[1]+1.8,p[2]+fz*24);
+      }
+
       // ── walking out of a room (walk-everywhere) ──
       // The way out of an unplaced room is its own stair or door, and reaching
       // it fires the very route change tapping it fires.
@@ -1391,7 +1443,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       lastAnimated = now;
     }
     if (policy.render || animated) { render(); lastPaint = now; dirty = false; }
-    if (policy.schedule) schedule();
+    if (policy.schedule||streamed) schedule();
   }
 
   function resize(): void {
@@ -1430,7 +1482,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   }
   function onContextMenu(event: MouseEvent): void { if (walker?.skate.active()) event.preventDefault(); }
   function onPointerDown(event: PointerEvent): void {
-    if (disposed || (event.target instanceof Element && event.target.closest("button,a,input,select,textarea,[role=button]"))) return;
+    if (disposed || monorail || (event.target instanceof Element && event.target.closest("button,a,input,select,textarea,[role=button]"))) return;
     if (skatePointer(event, "down")) return;
     const { x, y, bounds } = stagePoint(event);
     const hit = pointers.size === 0 ? resolveHit(x, y, bounds) : { kind: "none" as const };
@@ -1520,6 +1572,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   // ── The body lane (world-body) ── reduced motion cuts the follow camera
   // rather than swinging it. The character still walks: that is the app.
   const onReduced = () => {
+    mountainHandle().setCalm?.(calmWorld);dirty=true;
     raceGhost.visible=false;
     court.setReduced(reducedMotion());
     const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
@@ -1532,6 +1585,8 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   const removeLost = lease.listenCanvas("webglcontextlost", (event: Event) => { event.preventDefault(); worldAmbience?.pause();lease.cancelFrame(frame); frame = 0; callbacks.onFailure(); });
   document.addEventListener("visibilitychange", visibility); reduced.addEventListener("change", onReduced);
   previous = performance.now();
+  // Prepare routing under the loading state, never on the first destination tap.
+  walkGraph();
   resize(); callbacks.onReady();
 
   /**
@@ -1593,12 +1648,38 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     setWorldAmbience(audio){worldAmbience=audio;dirty=true;schedule();},
     mountainCalm(on){calmWorld=on;if(on){worldAmbience?.pause();raceGhost.visible=false;walker?.skate.replay('stop');}publishSkate(performance.now(),true);mountainHandle().setCalm?.(on);dirty=true;schedule();},
     mountainSkip(){if(mountainTrip){mountainTrip.skip();dirty=true;schedule();}},
-    nearestStation(kind){const at=walker?.state();return at?nearestStation(kind,at.x,at.z,at.y):0;},
-    mountainTravel(at,trip){
+    nearestStation(kind){const at=walker?.state();return at&&kind!=='monorail'?nearestStation(kind,at.x,at.z,at.y):0;},
+    monorailBoard(station,companion){
       if(placeId!=='court')return;
       raiseBody();if(!walker)return;
+      walker.attach(null);rideOn=null;cabinSolid=null;offerRide(null);mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(false);
+      mountainTrip=null;monorail=boardMonorail(station,companion);bodyInput=NO_INPUT;walker.cancel();walker.setInput(NO_INPUT);
+      const p=monorailPosition(monorail);walker.place(p[0],p[2],0,p[1]);bringCat();previousDoorPoint=null;pendingDoor=null;focus=[p[0],p[2]];
+      setFollowing(false);setFollowing(true);follow?.snap();stream();announceMonorail(true);dirty=true;schedule();
+    },
+    monorailSelect(station){if(!monorail)return;monorail=selectMonorailStop(monorail,station);announceMonorail(true);dirty=true;schedule();},
+    monorailControl(control,value){
+      if(!monorail)return;
+      if(control==='exit'){
+        if(monorail.phase!=='doors-open')return;
+        walker?.emote(null);monorail=null;mountainHandle().setTransit?.(null);callbacks.onMonorail?.(null);setFollowing(true);dirty=true;schedule();return;
+      }
+      if(control==='pause')monorail={...monorail,paused:Boolean(value)};
+      if(control==='brake')monorail={...monorail,brake:Boolean(value)};
+      if(control==='bell'){if(!calmWorld&&!reducedMotion())worldAmbience?.bell();}
+      if(control==='seat'){monorail={...monorail,seated:Boolean(value)};walker?.emote(monorail.seated?'sit':null);}
+      if(control==='companion')monorail={...monorail,companion:Boolean(value)};
+      if(control==='speed'&&(value===.5||value===1||value===1.5))monorail={...monorail,throttle:value};
+      if(control==='view'&&(value==='front'||value==='window'||value==='outside'))monorail={...monorail,view:value};
+      announceMonorail(true);dirty=true;schedule();
+    },
+    mountainTravel(at,trip){
+      if(placeId!=='court'||trip?.kind==='monorail')return;
+      raiseBody();if(!walker)return;
+      if(monorail){monorail=null;callbacks.onMonorail?.(null);}
       if(mountainTrip)walker.attach(null);
       mountainTrip=null;mountainHandle().setTransit?.(null);offerRide(null);callbacks.onMountainTravel?.(Boolean(trip));bodyInput=NO_INPUT;walker.cancel();walker.setInput(NO_INPUT);
+
       const p=trip?TRANSPORT_STOPS[trip.kind][trip.from]!.at:at;
       // C7: a "Visit" arrival faces its building's door (the dam, the telescope, the view), and Walk stands behind.
       // Boarding from where you stand (you walked onto the platform) is continuous; from elsewhere it is a cut to the platform.
@@ -1640,6 +1721,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         : id === 'view:town' ? poseFor(handle.poses(), 'court', composition) ?? null
         : null;
       if (!pose || placeId !== 'court') return false;
+      leaveTransport();
       setFollowing(false); court.setReduced(reducedMotion()); court.goTo({ target: pose.target, r: pose.r, theta: pose.theta, phi: pose.phi });
       // C10: the destination is streamed before the flight lands (Look on the open world holds every district).
       stream(); moved();
@@ -1690,7 +1772,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
           ghost(){return !toolOpen&&!calmWorld&&!reducedMotion()&&placeId==='court'?one.skate.ghost():null;},
           replay(action){if(placeId!=='court')return;one.skate.replay(action);updateRaceGhost();publishSkate(performance.now(),true);moved();},
           restore(checkpoint){if(placeId!=='court')return;one.skate.restore(checkpoint);setFollowing(true);publishSkate(performance.now(),true);moved();},
-          enable(on,progress){if(on&&placeId!=='court')return false;const result=one.skate.enable(on,progress);if(on)setFollowing(true);publishSkate(performance.now(),true);moved();return result;},
+          enable(on,progress){if(on&&placeId!=='court')return false;if(on)leaveTransport();const result=one.skate.enable(on,progress);if(on)setFollowing(true);publishSkate(performance.now(),true);moved();return result;},
           pause(on){one.skate.pause(on);publishSkate(performance.now(),true);moved();},
           route(id){one.skate.route(id);setFollowing(true);previousDoorPoint=null;publishSkate(performance.now(),true);moved();},
           spot(id){one.skate.spot(id);setFollowing(true);previousDoorPoint=null;publishSkate(performance.now(),true);moved();},
@@ -1702,9 +1784,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         // Hearth Mountain v2 (C3): on the open world, giving up Walk leaves Look
         // at the body (it never flies to the town); a room still steps back to its own diorama.
         follow(on) { setFollowing(on); if (!on && placeId !== 'court') { aim("court"); } moved(); },
-        input(next) { bodyInput = next; if (next.forward !== 0 || next.strafe !== 0) { setFollowing(true); } dirty = true; schedule(); },
+        input(next) { if(next.forward!==0||next.strafe!==0)offerRide(null);bodyInput = next; if (next.forward !== 0 || next.strafe !== 0) { setFollowing(true); } dirty = true; schedule(); },
         goTo(x, z, y) { const planned=one.goTo(x, z, y);if(planned)setFollowing(true);offerFar(x,z,y); dirty = true; schedule();return planned; },
-        runLock(on) { const locked=one.runLock(on); dirty = true; schedule(); return locked; },
+        runLock(on) { const locked=one.runLock(on);rememberedRun=locked; dirty = true; schedule(); return locked; },
         place(x, z, yaw, y) { one.place(x, z, yaw, y);bringCat(); focus=[x,z]; previousDoorPoint=null; dirty = true; schedule(); },
         at() {
           const at = one.state(), doing = one.action();
@@ -1720,7 +1802,10 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       };
     },
     enter(next, options = {}) {
+      offerRide(null);rideOn=null;cabinSolid=null;
+      if(monorail){monorail=null;mountainHandle().setTransit?.(null);callbacks.onMonorail?.(null);}
       if(mountainTrip){mountainTrip=null;walker?.attach(null);mountainHandle().setTransit?.(null);callbacks.onMountainTravel?.(false);}
+
       const from = options.from ?? placeId;
       const cut = options.reduced ?? reducedMotion();
       /**
@@ -1819,6 +1904,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       frameStudy.stop();
       worldAmbience?.pause();worldAmbience=null;
       if (disposed) return;
+      if(monorail){monorail=null;callbacks.onMonorail?.(null);}
       disposed = true; abort.abort();
       if (stick) { stick = null; callbacks.onStick?.(null); }
       lease.cancelFrame(frame);

@@ -164,13 +164,14 @@ export function mountainPlanting(tier:'full'|'lite'):Plan{
 /** The renderer, trunk collision and camera foliage clearance share one seeded plan. */
 export function mountainTrees(tier:'full'|'lite'):readonly MountainTree[]{return mountainPlanting(tier).trees;}
 
-const grids=new Map<string,Map<string,MountainTree[]>>();
+type CrownTree=MountainTree&{crown:ReturnType<typeof crownOf>};
+const grids=new Map<string,Map<string,CrownTree[]>>();
 /** Conservative crown volumes keep a following camera outside opaque leaves. */
 export function mountainFoliageAt(x:number,y:number,z:number,tier:'full'|'lite'):boolean{
-  let grid=grids.get(tier);if(!grid){grid=new Map();for(const tree of mountainTrees(tier)){const key=`${Math.floor(tree.x/12)}:${Math.floor(tree.z/12)}`,cell=grid.get(key)??[];cell.push(tree);grid.set(key,cell);}grids.set(tier,grid);}
+  let grid=grids.get(tier);if(!grid){grid=new Map();for(const tree of mountainTrees(tier)){const key=`${Math.floor(tree.x/12)}:${Math.floor(tree.z/12)}`,cell=grid.get(key)??[];cell.push({...tree,crown:crownOf(tree)});grid.set(key,cell);}grids.set(tier,grid);}
   const cx=Math.floor(x/12),cz=Math.floor(z/12);
   for(let i=cx-1;i<=cx+1;i++)for(let j=cz-1;j<=cz+1;j++)for(const t of grid.get(`${i}:${j}`)??[]){
-    const {base,top,radius}=crownOf(t);
+    const {base,top,radius}=t.crown;
     if(y>t.y+base&&y<t.y+top&&Math.hypot(x-t.x,z-t.z)<radius)return true;
   }
   return false;

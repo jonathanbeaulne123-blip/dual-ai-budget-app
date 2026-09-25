@@ -25,15 +25,15 @@ describe('mountain detail lifetime',()=>{
   stream.update(74,0);expect(builds).toBe(1);
   for(const x of [76,74,98,76])stream.update(x,0);
   expect(builds).toBe(1);expect(releases).toBe(0);
-  stream.update(100,0);expect(releases).toBe(1);expect(stream.live.size).toBe(0);
-  for(let lap=0;lap<10;lap++){stream.update(0,0);stream.update(120,0);}
+  stream.update(100,0,false,100);stream.update(100,0,false,4101);expect(releases).toBe(1);expect(stream.live.size).toBe(0);
+  for(let lap=0;lap<10;lap++){stream.update(0,0,false,5000+lap*5000);stream.update(120,0,false,5001+lap*5000);stream.update(120,0,false,9002+lap*5000);}
   expect(builds).toBe(releases);stream.dispose();stream.update(0,0);expect(builds).toBe(releases);
  });
  it('prepares the full race corridor before countdown and releases it after the run',()=>{
   const sites=DISTRICTS.map(d=>({id:d.id,at:[d.at[0],d.at[2]] as const,radius:75}));
   const stream=createDetailStream(sites,()=>({dispose(){}}));
-  stream.update(0,0,true);expect(stream.live.size).toBe(6);
-  stream.update(0,0,false);expect(stream.live.size).toBe(0);stream.dispose();
+  for(let i=0;i<6;i++)stream.update(0,0,true,i*16);expect(stream.live.size).toBe(6);
+  stream.update(0,0,false,100);stream.update(0,0,false,4101);expect(stream.live.size).toBe(0);stream.dispose();
  });
 });
 

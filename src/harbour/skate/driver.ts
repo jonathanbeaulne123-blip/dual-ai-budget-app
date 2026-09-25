@@ -221,11 +221,13 @@ export function createSkateDriver(world:SkateDriverWorld,options:SkateDriverOpti
   }
   /** Back to the last gate passed, facing through it; the run and its clock carry on. */
   function retryRace():boolean{
-    const run=session.run;if(!sim||!run||run.finished||run.countdown>0)return false;
+    const run=session.run;if(!sim||!run||run.finished)return false;
+    if(run.countdown>0)return true; // Consume Retry without abandoning the countdown.
     const route=skateTables().routes.find(r=>r.id===run.id),gate=route?.gates?.[Math.max(0,run.checkpoint-1)];
     if(!route||!gate)return false;
     const [nx,nz]=gate.normal;
-    sim.placeAt(gate.at[0]+nx*1.2,gate.at[2]+nz*1.2,Math.atan2(nx,nz),gate.at[1]);
+    const offset=run.checkpoint===0?-1.2:1.2;
+    sim.placeAt(gate.at[0]+nx*offset,gate.at[2]+nz*offset,Math.atan2(nx,nz),gate.at[1]);
     retrySkateRoute(session);score?.reset();input?.reset();frame.length=0;cut=true;replayTime=null;
     return true;
   }

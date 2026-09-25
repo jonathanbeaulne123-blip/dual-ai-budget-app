@@ -253,6 +253,7 @@ export class CardBuilder{
       const g=add(d.glass,'glass',false,'none');if(g)g.renderOrder=2;
       const w=add(d.water,'water',false,'flow');if(w){w.renderOrder=1;water.push(w);}
       add(d.glow,'glow',false,'none');
+      add(d.decals,'decals',false);add(d.wax,'decals',false);
       if(d.shade.positions.length){const geo=own(new THREE.BufferGeometry());geo.setAttribute('position',new THREE.Float32BufferAttribute(d.shade.positions,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(d.shade.colors,4));geo.computeBoundingSphere();
         const m=new THREE.Mesh(geo,mats().shade!);m.name=`${label} shade`;m.renderOrder=1;group.add(m);}
       if(d.ink.positions.length){const geo=own(new THREE.BufferGeometry());geo.setAttribute('position',new THREE.Float32BufferAttribute(d.ink.positions,3));geo.setAttribute('color',new THREE.Float32BufferAttribute(d.ink.colors,3));geo.computeBoundingSphere();

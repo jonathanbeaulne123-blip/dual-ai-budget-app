@@ -22,7 +22,29 @@ export function buildMountainArchitecture(d:PlaceDressing,tier:RenderTier){
 
 /** A ride's cabin (its origin at the rider's feet); `setTransit` places it on the line. */
 export function buildMountainCabin(d:PlaceDressing,tier:RenderTier,kind:TransportKind){
-  const pal=mountainArtPalette(d);return buildCabin(kind,pal,tier,kind==='gondola'?pal.accent:pal.walls[0]!);
+  if(kind!=='monorail'){const pal=mountainArtPalette(d);return buildCabin(kind,pal,tier,kind==='gondola'?pal.accent:pal.walls[0]!);}
+  const kit=new MountainArtKit(tier,kind==='monorail'?'Island monorail carriage':kind==='gondola'?'Summit gondola carriage':'Mountain funicular carriage'),p=mountainPalette(d);
+  const long=kind==='monorail',depth=long?5:2;
+  kit.box([0,-.94,0],[2.8,.16,depth],p.wood);kit.box([0,-.8,0],[2.65,.06,depth-.15],p.light);
+  kit.box([0,1.55,0],[3,.15,depth+.25],p.roof);
+  for(const x of [-1.3,1.3])for(const z of long?[-2.35,0,2.35]:[-.9,.9])kit.box([x,.25,z],[.07,2.5,.07],p.metal);
+  for(const x of [-1.3,1.3]){kit.box([x,-.16,0],[.08,.08,long?4.5:1.8],p.trim);kit.box([x,-.66,0],[.12,.28,long?4.5:1.8],p.roof);}
+  {
+    // Two real passenger seats, a forward cab and open panoramic window bays.
+    for(const x of [-.7,.7]){
+      kit.box([x,-.43,-.55],[.85,.13,.82],p.trim);
+      kit.box([x,-.04,-.96],[.85,.72,.13],p.roof);
+      for(const z of [-.82,-.28])kit.box([x-.31,-.7,z],[.08,.5,.08],p.metal);
+    }
+    kit.box([0,-.32,1.8],[1.35,.72,.18],p.wood);
+    kit.box([0,.09,1.7],[1.3,.12,.52],p.metal);
+    for(const z of [-1.9,-.2,1.5])for(const x of [-1.32,1.32])kit.box([x,.16,z],[.045,1.3,.055],p.trim);
+    for(const z of [-1.9,1.5])kit.box([0,-1.08,z],[2.4,.18,.28],p.metal);
+  }
+  if(d.theme==='newfoundland')kit.part(new THREE.TorusGeometry(.28,.065,5,12),p.trim,[1.37,-.4,0],[1,1,1],[0,Math.PI/2,0]);
+  if(d.theme==='taylor')for(const z of [-.6,0,.6])kit.box([-1.37,-.55,z],[.018,.18,.15],p.trim);
+  return kit.finish();
+
 }
 
 /** Cheap, recognisable distant massing behind the existing streamed room exteriors. */

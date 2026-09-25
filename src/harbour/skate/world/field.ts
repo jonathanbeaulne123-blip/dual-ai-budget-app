@@ -374,7 +374,7 @@ export function createSkateField(ground: (x: number, z: number) => number, opts:
   const worldSample = (x: number, z: number, y?: number, supportId?: string | null) => {
     const s = queryWorldSurface({ x, z, y, supportId }, ground);
     const paved = s.id === 'terrain' && z > -48 && nearestOnRoute(x, z, TOWN_RACE_ROAD).distance < TOWN_LANE_HALF_WIDTH;
-    return { ...s, id: paved ? 'town-race-lane' : s.id, kind: (paved ? 'path' : s.material) as SurfaceKind };
+    return {y:s.y,nx:s.nx,ny:s.ny,nz:s.nz,id:paved?'town-race-lane':s.id,kind:(paved?'path':s.material) as SurfaceKind};
   };
 
   // Only the skill branches (the dam rail, the Library balcony, the awnings) grind: never a lane, a path

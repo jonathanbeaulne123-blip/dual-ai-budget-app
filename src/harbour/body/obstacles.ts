@@ -179,11 +179,24 @@ export type PushOut = { x: number; z: number; hit: string | null };
  * is a slide: the component of the move along a wall survives, the component
  * into it does not. Never a bounce, never a teleport.
  */
+const obstacleGrids=new WeakMap<readonly Obstacle[],Map<string,number[]>>();
+function obstacleCandidates(x:number,z:number,r:number,obstacles:readonly Obstacle[]):number[]{
+ if(obstacles.length<80)return obstacles.map((_,i)=>i);
+ let grid=obstacleGrids.get(obstacles);
+ if(!grid){grid=new Map();obstacles.forEach((o,i)=>{
+   const bounds=o.kind==='circle'?[o.x-o.r,o.x+o.r,o.z-o.r,o.z+o.r]:o.kind==='box'?[o.minX,o.maxX,o.minZ,o.maxZ]:(()=>{const c=Math.abs(Math.cos(o.yaw)),s=Math.abs(Math.sin(o.yaw)),hx=c*o.halfX+s*o.halfZ,hz=s*o.halfX+c*o.halfZ;return [o.x-hx,o.x+hx,o.z-hz,o.z+hz];})();
+   for(let cx=Math.floor(bounds[0]!/12);cx<=Math.floor(bounds[1]!/12);cx++)for(let cz=Math.floor(bounds[2]!/12);cz<=Math.floor(bounds[3]!/12);cz++){const key=`${cx}:${cz}`,bucket=grid!.get(key)??[];bucket.push(i);grid!.set(key,bucket);}
+ });obstacleGrids.set(obstacles,grid);}
+ const found=new Set<number>();for(let cx=Math.floor((x-r)/12);cx<=Math.floor((x+r)/12);cx++)for(let cz=Math.floor((z-r)/12);cz<=Math.floor((z+r)/12);cz++)for(const i of grid.get(`${cx}:${cz}`)??[])found.add(i);
+ return [...found].sort((a,b)=>a-b);
+}
 export function pushOut(x: number, z: number, radius: number, obstacles: readonly Obstacle[], y?:number): PushOut {
   let px = x, pz = z, hit: string | null = null;
   for (let pass = 0; pass < 2; pass += 1) {
     let moved = false;
-    for (const obstacle of obstacles) {
+    let candidates=obstacleCandidates(px,pz,radius,obstacles);
+    while(candidates.length){
+      const index=candidates.shift()!,obstacle=obstacles[index]!;
       if(y!==undefined&&((obstacle.top!==undefined&&y>=obstacle.top)||(obstacle.bottom!==undefined&&y+BODY_HEIGHT<=obstacle.bottom)))continue;
       if (obstacle.kind === "circle") {
         const dx = px - obstacle.x, dz = pz - obstacle.z;
@@ -223,6 +236,7 @@ export function pushOut(x: number, z: number, radius: number, obstacles: readonl
         else pz = maxZ;
         hit = obstacle.id; moved = true;
       }
+      candidates=obstacleCandidates(px,pz,radius,obstacles).filter(i=>i>index);
     }
     if (!moved) break;
   }

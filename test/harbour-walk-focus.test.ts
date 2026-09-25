@@ -27,12 +27,18 @@ let inputs: Input[] = [];
 let ready: (() => void) | null = null;
 let panelOwnsWorld=false;
 let travelWasBlocked:boolean[]=[];
+let monorailBoarded:{station:number;companion:boolean;blocked:boolean}|null=null;
+let monorailSelected:number[]=[];
 const cancelWalk=vi.fn();
 const jump=vi.fn(),skateKeyDown=vi.fn();
 let riding=false;
+let offerCallback:((offer:import("../src/harbour/body/ride.ts").RideOffer|null)=>void)|undefined;
+let runLocked=false;
+const gesture=vi.fn();
 
 const body = {
   cancel: cancelWalk,
+  runLock:(on?:boolean)=>on===undefined?runLocked:(runLocked=on),
   jump,
   skate:{active:()=>riding,input:()=>({keyDown:skateKeyDown}),pause:()=>undefined,checkpoint:()=>null,setAudio:()=>undefined,enable:()=>false},
   place: () => undefined,
@@ -49,6 +55,9 @@ function fakeWorld() {
     placeId: () => "court" as const,
     setToolOpen: (open:boolean) => {panelOwnsWorld=open;},
     mountainTravel: () => {travelWasBlocked.push(panelOwnsWorld);},
+    monorailBoard: (station:number,companion:boolean) => {monorailBoarded={station,companion,blocked:panelOwnsWorld};},
+    monorailSelect: (station:number) => {monorailSelected.push(station);},
+    monorailControl: () => undefined,
     setMountainRecovery: () => undefined,
     setMountainInteraction: () => undefined,
     setWorldAmbience: () => undefined,
@@ -62,7 +71,7 @@ function fakeWorld() {
     enter: () => undefined,
     go: () => undefined,
     look: () => undefined,
-    gesture: () => undefined,
+    gesture,
     toggleClose: () => false,
     closed: () => false,
     camera: () => [0, 0, 0] as [number, number, number],
@@ -73,8 +82,8 @@ function fakeWorld() {
 }
 
 vi.mock("../src/harbour/scene/runtime.ts", () => ({
-  mountHarbourWorld: (_host: unknown, _theme: unknown, _tier: unknown, callbacks: { onReady: () => void }) => {
-    ready = callbacks.onReady;
+  mountHarbourWorld: (_host: unknown, _theme: unknown, _tier: unknown, callbacks: { onReady: () => void;onRideOffer?:typeof offerCallback }) => {
+    ready = callbacks.onReady;offerCallback=callbacks.onRideOffer;
     return fakeWorld();
   },
   // No rail in the Court; the shell only ever asks for one.
@@ -125,7 +134,7 @@ const press = (key: string) => act(async () => {
 const settle = () => act(async () => { await new Promise((done) => setTimeout(done, 300)); });
 
 beforeEach(() => {
-  inputs = []; ready = null; coarse = false;panelOwnsWorld=false;travelWasBlocked=[];cancelWalk.mockClear();jump.mockClear();skateKeyDown.mockClear();riding=false;localStorage.clear();
+  gesture.mockClear();offerCallback=undefined;runLocked=false;inputs = []; ready = null; coarse = false;panelOwnsWorld=false;travelWasBlocked=[];monorailBoarded=null;monorailSelected=[];cancelWalk.mockClear();jump.mockClear();skateKeyDown.mockClear();riding=false;localStorage.clear();
   vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query === "(pointer: coarse)" ? coarse : false,
@@ -387,6 +396,16 @@ it("pauses clicked walking for the guide and releases the follow camera before s
  expect(host.querySelector('[role="dialog"][aria-label="Mountain and town guide"]')).toBeNull();
 });
 
+it("boards the selected monorail route after releasing the guide",async()=>{
+ const {stage}=await stand({partnerName:'Bianca'});
+ await act(async()=>host.querySelector<HTMLButtonElement>('#world-guide-trigger')!.click());
+ await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Travel & race')!.click());
+ await act(async()=>[...host.querySelectorAll('button')].find(b=>b.textContent==='Board the monorail')!.click());
+ expect(monorailBoarded).toEqual({station:0,companion:true,blocked:false});
+ expect(monorailSelected).toEqual([10]);
+ expect(document.activeElement).toBe(stage);
+});
+
 it("keeps main's Space jump on the world and leaves focused controls their keyboard",async()=>{
  const quick=vi.fn();const {stage}=await stand({onQuickSheet:quick});
  await press(' ');expect(jump).toHaveBeenCalledTimes(1);expect(quick).not.toHaveBeenCalled();
@@ -401,4 +420,27 @@ it("keeps Space as direct tool access when the flat Desk has no world body",asyn
  localStorage.setItem('hearth:motion','flat');const quick=vi.fn();
  const {stage}=await stand({onQuickSheet:quick});stage.focus();await press(' ');
  expect(quick).toHaveBeenCalledTimes(1);expect(jump).not.toHaveBeenCalled();
+});
+
+describe('mountain finishing controls',()=>{
+ it('announces and accepts a ride, returns keys to the stage, and withdraws stale offers',async()=>{
+  const {stage}=await stand();
+  await act(async()=>offerCallback?.({kind:'funicular',from:0,to:1,label:'Ride the funicular ↑',reason:'platform'}));
+  expect(host.querySelector('[role=status]')?.textContent).toContain('Ride the funicular');
+  const go=host.querySelector<HTMLButtonElement>('.harbour-ride-offer__go')!;
+  await act(async()=>{go.focus();go.click();});expect(document.activeElement).toBe(stage);expect(travelWasBlocked).toEqual([false]);
+  await act(async()=>offerCallback?.({kind:'gondola',from:0,to:1,label:'Ride the gondola ↑',reason:'platform'}));
+  await press('Enter');expect(travelWasBlocked).toHaveLength(2);
+  await act(async()=>offerCallback?.(null));expect(host.querySelector('.harbour-ride-offer')).toBeNull();
+ });
+ it('releases each orbit key independently and clears orbit when focus leaves',async()=>{
+  const {stage}=await stand();await press('q');await press('e');expect(gesture.mock.calls.at(-1)?.[0]).toEqual({kind:'spin',dir:0});
+  await act(async()=>stage.dispatchEvent(new KeyboardEvent('keyup',{key:'q',bubbles:true})));expect(gesture.mock.calls.at(-1)?.[0]).toEqual({kind:'spin',dir:1});
+  const button=host.querySelector<HTMLButtonElement>('button')!;await act(async()=>button.focus());expect(gesture.mock.calls.at(-1)?.[0]).toEqual({kind:'spin',dir:0});
+ });
+ it('R and the Run button share the same lock',async()=>{
+  coarse=true;await stand();await press('r');expect(runLocked).toBe(true);
+  const run=[...host.querySelectorAll('button')].find(b=>b.textContent==='Run')!;expect(run.getAttribute('aria-pressed')).toBe('true');
+  await act(async()=>run.click());expect(runLocked).toBe(false);
+ });
 });

@@ -15,8 +15,11 @@ import type {PlaceDressing,PlaceReading,Anchor,Region} from '../scene/place.ts';
 import type {RenderTier} from '../scene/quality.ts';
 import {EngravedPlate} from '../court/engraved.ts';
 import {groundHeightAt} from '../scene/ground.ts';
-import {DISTRICTS,RESERVED_PLOTS,RIVER,DAM_PARTS,KITTY_CHAMBERS,GOAL_PAVILION_SITE,SUMMIT_OBSERVATORY_SITE,DOOR_APRONS,MOUNTAIN_PATH_GRAPH,type Point3,type TransportKind} from './definition.ts';
-import {TRANSPORT_LINES} from './transport.ts';
+import {DISTRICTS,RESERVED_PLOTS,RIVER,DAM_PARTS,KITTY_CHAMBERS,GOAL_PAVILION_SITE,SUMMIT_OBSERVATORY_SITE,DOOR_APRONS,MOUNTAIN_PATH_GRAPH,type Point3} from './definition.ts';
+import {TRANSPORT_LINES,type TransportKind} from './transport.ts';
+
+import {MONORAIL_STOPS,transportPoint} from './transportAll.ts';
+import {buildMountainCabin} from './architecture.ts';
 import {basinMoney,createBasinView} from './basin.ts';
 import {buildMountainLife} from './lifeScene.ts';
 import {PAVILION_COLUMNS} from './artGeometry.ts';
@@ -66,6 +69,12 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   for(const [kind,line] of Object.entries(TRANSPORT_LINES) as [TransportKind,typeof TRANSPORT_LINES[TransportKind]][])for(const st of line.stations){
     if(kind==='funicular'&&transport.huts.some(h=>h.name===st.name))continue;
     const p=st.platform,c=Math.cos(p.yaw),s=Math.sin(p.yaw);signSpots.push({spot:{at:[p.at[0]-c*(p.half[1]-.1),p.at[1]+2.5,p.at[2]+s*(p.half[1]-.1)],yaw:p.yaw-Math.PI/2,w:2.6,h:.5},text:`${st.name} · ${kind}`,anchor:`mountain:transport:${kind}`,board:true});}
+  for(let i=1;i<MONORAIL_STOPS.length;i++)for(let k=1;k<=48;k++){
+    const a=transportPoint('monorail',i-1,i,(k-1)/48),b=transportPoint('monorail',i-1,i,k/48);
+    card.line(a,b,pal.brass);
+    if(k%8===0)card.box(b[0],b[2],0,.15,.15,groundHeightAt(b[0],b[2]),b[1],pal.stone,pal.stone);
+  }
+  for(const stop of MONORAIL_STOPS)signSpots.push({spot:{at:[stop.at[0],stop.at[1]+3,stop.at[2]+2.45],yaw:0,w:5.5,h:.6},text:`${stop.name} · monorail`,anchor:`mountain:transport:monorail:${stop.id}`,board:true});
   // ── Town ──
   const town=buildTownArt(card,pal);for(const t of town.signs)signSpots.push({spot:t.spot,text:t.text,anchor:t.anchor});
   // ── Goal pavilion and observatory ──
@@ -112,6 +121,12 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   function place(kind:TransportKind,f:{at:Point3;yaw:number;pitch:number},sway=0){const c=cabins[kind];c.group.position.set(...f.at);c.group.rotation.set(0,f.yaw,0);
     if(kind==='funicular'){c.chassis.rotation.set(-f.pitch,0,0);c.body.rotation.set(0,0,0);}else{c.body.rotation.set(sway*.6,0,sway);c.body.position.set(0,0,0);}}
   let riding:TransportKind|null=null,rideSpeed=0,lastRide:Point3|null=null;
+  const railCabin=track(buildMountainCabin(dressing,tier,'monorail'));group.add(railCabin.group);railCabin.group.visible=false;
+  const companionFigure=new THREE.Group();companionFigure.name='Scene companion';railCabin.group.add(companionFigure);
+  const companionMaterial=track(new THREE.MeshStandardMaterial({color:dressing.gate}));
+  const companionBody=new THREE.Mesh(track(new THREE.CylinderGeometry(.24,.28,.55,8)),companionMaterial);companionBody.position.set(.7,-.02,-.55);companionFigure.add(companionBody);
+  const companionHead=new THREE.Mesh(track(new THREE.SphereGeometry(.22,8,6)),companionMaterial);companionHead.position.set(.7,.42,-.55);companionFigure.add(companionHead);
+  const doors=[-1,1].map(side=>{const panel=new THREE.Mesh(track(new THREE.BoxGeometry(.07,1.55,.7)),companionMaterial);panel.position.set(1.31,.12,side*.38);railCabin.group.add(panel);return panel;});
   // ── Planting ──
   const planting=buildPlantArt(pal,tier,seasonOf(new Date().getMonth()));group.add(planting.group);owned.push(planting);
   // ── Goal backing details: small brass lamps on the pavilion's inner plinths ──
@@ -141,9 +156,10 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   let flowPath:readonly Point3[]=RIVER;let phase=0,remaining=0,target=0,current=0,reserveTarget:number|null=0,reserveCurrent=0,known=false,calm=false;
   const readBasin=createBasinView();let last:PlaceReading|null=null;
   let recovery:MountainRecoveryView|null=null,observedWear=0,renderedQuiet=false;
-  const isQuiet=()=>calm||(typeof window!=='undefined'&&window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true);
+  const isQuiet=()=>calm||(typeof document!=='undefined'&&document.documentElement.dataset.motion==='reduced')||(typeof window!=='undefined'&&window.matchMedia?.('(prefers-reduced-motion: reduce)').matches===true);
   function update(next:PlaceReading|null){const initial=last===null,quiet=isQuiet();renderedQuiet=quiet;life.setQuiet(quiet);setStreamQuiet(quiet);last=next;const b=readBasin(next?.basin);
     known=b.level!==null;if(known)target=b.level!;reserveTarget=b.reserveLevel;
+
     const basinLabel=`Household Fund · ${basinMoney(next?.basin?.balanceCents)} CAD`;const basinAnchor=anchors.find(a=>a.id===gauge.mesh.userData.anchor);if(basinAnchor)basinAnchor.label=basinLabel;
     gauge.set(`Fund ${basinMoney(next?.basin?.balanceCents)} CAD`);
     scaleGauge.set(`Scale ${basinMoney(b.scaleCents)} CAD${b.scaleChanged?' · expanded':''}`);
@@ -183,8 +199,11 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   paintSmoke(0);
   return {group,anchors,regions,update,setVisitor,setRecovery(value:MountainRecoveryView){recovery=value;update(last);},setInteraction(value:MountainInteractionState){life.setInteraction(value);},setCalm(value:boolean){calm=value;update(last);if(isQuiet())stillLife();},
     /** The cabin's place on its line (the rider's feet), and the ride's yaw and pitch; null leaves it parked. */
-    setTransit(at:Point3|null,kind:TransportKind='gondola',frame?:{yaw:number;pitch:number}){
-      if(!at){if(riding){parked[riding]={at:lastRide??parked[riding].at,yaw:cabins[riding].group.rotation.y,pitch:0};place(riding,parked[riding]);}riding=null;rideSpeed=0;return;}
+    setTransit(at:Point3|null,kind:TransportKind|'monorail'='gondola',frame?:{yaw:number;pitch:number},companion=false,doorGap=0){
+      railCabin.group.visible=at!==null&&kind==='monorail';companionFigure.visible=companion;doors.forEach((panel,i)=>panel.position.z=(i===0?-1:1)*(.38+.7*doorGap));
+      if(at&&kind==='monorail'){railCabin.group.position.set(at[0],at[1]+1,at[2]);railCabin.group.rotation.y=frame?.yaw??0;return;}
+      if(kind==='monorail')return;
+      if(!at){if(riding){const line=TRANSPORT_LINES[riding],at=lastRide??parked[riding].at;let nearest=0,distance=Infinity;line.stations.forEach((st,i)=>{const d=Math.hypot(st.at[0]-at[0],st.at[1]-at[1],st.at[2]-at[2]);if(d<distance){nearest=i;distance=d;}});parked[riding]=parkAt(riding,nearest);place(riding,parked[riding]);}riding=null;rideSpeed=0;return;}
       if(riding&&riding!==kind)place(riding,parked[riding]);
       if(lastRide&&riding===kind)rideSpeed=Math.hypot(at[0]-lastRide[0],at[2]-lastRide[2]);
       riding=kind;lastRide=at;const yaw=frame?.yaw??cabins[kind].group.rotation.y;place(kind,{at,yaw,pitch:frame?.pitch??0},isQuiet()?0:Math.sin(clock*1.3)*.02*Math.min(1,rideSpeed*6));
@@ -223,4 +242,5 @@ function channelLectern(card:CardBuilder,pal:ReturnType<typeof mountainArtPalett
   card.box(x,z,channelLecternYaw,.12,.12,g-.1,g+1.05,pal.timberLight,pal.timber);
   const c=Math.cos(channelLecternYaw),s=Math.sin(channelLecternYaw);card.box(x+s*.05,z+c*.05,channelLecternYaw,.95,.05,g+1.05,g+1.72,pal.brass,shade(pal.brass,.8));
   return [x+s*.12,g+1.38,z+c*.12];
+
 }

@@ -1,3 +1,8 @@
+import {DAM_PARTS} from '../mountain/damParts.ts';
+import {GONDOLA_LINE} from '../mountain/transport.ts';
+import {DAM_SOLIDS} from '../mountain/damSolids.ts';
+import {funicularBents} from '../mountain/art/transportArt.ts';
+import {TRANSPORT_STOPS,transportPoint,type TransportKind} from '../mountain/transport.ts';
 /**
  * Hearth Mountain v2 · the camera's view of the world (the ADAPTER).
  *
@@ -18,7 +23,7 @@ import { groundHeightAt } from "../scene/ground.ts";
 import { WORLD_SOLIDS, WORLD_SURFACES } from "../mountain/surfaces.ts";
 import { STOREFRONT_SOLIDS } from "../mountain/townSquare.ts";
 import { mountainFoliageAt } from "../mountain/planting.ts";
-import { BASIN, DISTRICTS, WORLD_BOUNDS, GONDOLA_STOPS, FUNICULAR_STOPS, RESERVED_PLOTS, RIVER, TRANSPORT_STOPS, nearestOnRoute, transportPoint, type Point3, type TransportKind } from "../mountain/definition.ts";
+import { BASIN, DISTRICTS, WORLD_BOUNDS,  FUNICULAR_STOPS, RESERVED_PLOTS, RIVER,  nearestOnRoute,  type Point3 } from "../mountain/definition.ts";
 import * as definition from "../mountain/definition.ts";
 import { SUMMIT_OBSERVATORY } from "../mountain/artGeometry.ts";
 import { MOUNTAIN_INTERACTIONS } from "../mountain/life.ts";
@@ -90,7 +95,7 @@ export const TOWN_SQUARE: V3 = Object.freeze([0, 0.4, 0]) as V3;
  * (`landscape.ts` CylinderGeometry from −angle/2 to +angle/2).
  */
 export const DAM_CREST: V3 = Object.freeze((() => {
-  const dam = contract.DAM;
+  const dam = DAM_PARTS;
   if (dam && dam.arc?.length && Number.isFinite(dam.crest)) { const mid = dam.arc[Math.floor(dam.arc.length / 2)]!; if (finite(mid)) return [mid[0], dam.crest, mid[2]]; }
   return [BASIN.x, BASIN.top, BASIN.z + BASIN.radius];
 })()) as V3;
@@ -198,11 +203,10 @@ export const stopAt = (kind: TransportKind, index: number): V3 => (TRANSPORT_STO
  * the cable's middle third (the contract names it `GORGE_CROSSING`).
  */
 export const GORGE_REVEAL: V3 = (() => {
-  const a = GONDOLA_STOPS[0]!.at, b = GONDOLA_STOPS[1]!.at;
   const river = contract.GORGE?.points?.length ? contract.GORGE.points : RIVER;
   let best: V3 = [0, 20, -100], gap = Infinity;
   for (let i = 0; i <= 24; i++) {
-    const t = 0.3 + (i / 24) * 0.4, x = a[0] + (b[0] - a[0]) * t, z = a[2] + (b[2] - a[2]) * t;
+    const t = 0.3 + (i / 24) * 0.4, at=GONDOLA_LINE.at(GONDOLA_LINE.length*t).at,x=at[0],z=at[2];
     const p = nearestOnRoute(x, z, river);
     if (p.distance < gap) { gap = p.distance; best = p.point as V3; }
   }
@@ -217,7 +221,6 @@ export const RACE_LINE: readonly V3[] = MOUNTAIN_COURSE_POINTS as readonly V3[];
 export const FUND_DOOR: V3 = CAMERA_DOORS.bank?.at ?? [8, 0, -22];
 
 /* ── Camera solids ─────────────────────────────────────────────────────── */
-const box = (id: string, c: V3, size: V3): CameraSolid => ({ id, min: [c[0] - size[0] / 2, c[1] - size[1] / 2, c[2] - size[2] / 2], max: [c[0] + size[0] / 2, c[1] + size[1] / 2, c[2] + size[2] / 2] });
 /**
  * ADAPTER: geography's camera volumes. Until they land: the two town
  * storefronts (with their roofs), the dam's stone abutments, and every
@@ -229,20 +232,9 @@ export const CAMERA_SOLIDS: readonly CameraSolid[] = Object.freeze([
     const base = groundHeightAt(f.x, f.z), hx = f.halfX + 0.1, hz = f.halfZ + 0.1;
     return { id: f.id, min: [f.x - hx, base - 0.2, f.z - hz], max: [f.x + hx, base + 5.1, f.z + hz], yaw: f.yaw };
   }),
-  ...(contract.DAM?.abutments?.length
-    ? contract.DAM.abutments.map((a, i) => box(`dam:abutment:${i}`, a.at as V3, [a.size[0] + 0.4, a.size[1] + 0.4, a.size[2] + 0.4]))
-    : [-1, 1].map((side) => {
-      const a = side * BASIN.angle / 2;
-      return box(`dam:abutment:${side}`, [BASIN.x + Math.sin(a) * BASIN.radius, 80, BASIN.z + Math.cos(a) * BASIN.radius], [3.9, 19.4, 4.4]);
-    })),
-  ...(["funicular", "gondola"] as const).flatMap((kind) => {
-    const stops = TRANSPORT_STOPS[kind], out: CameraSolid[] = [];
-    for (let i = 1; i < stops.length; i++) for (let k = 8; k <= 48; k += 8) {
-      const b = transportPoint(kind, i - 1, i, k / 48), y = groundHeightAt(b[0], b[2]);
-      if (b[1] > y + 1) out.push({ id: `${kind}:pillar:${i}:${k}`, min: [b[0] - 0.4, Math.max(0, y) - 1, b[2] - 0.4], max: [b[0] + 0.4, b[1] + 3.2, b[2] + 0.4] });
-    }
-    return out;
-  }),
+  ...DAM_SOLIDS,
+  ...GONDOLA_LINE.towers.map((p,i)=>{const top=GONDOLA_LINE.path.reduce((best,q)=>Math.hypot(q[0]-p[0],q[2]-p[2])<Math.hypot(best[0]-p[0],best[2]-p[2])?q:best)[1];return {id:`gondola:pillar:${i}`,min:[p[0]-4.6,p[1]-1,p[2]-4.6] as V3,max:[p[0]+4.6,top+.5,p[2]+4.6] as V3};}),
+  ...funicularBents('lite').filter(b=>!b.spans).flatMap(b=>[-1,1].map(side=>{const foot=b.leg(side,b.foot),top=b.leg(side,b.top);return {id:`funicular:pillar:${b.i}:${side}`,min:[Math.min(foot[0],top[0])-.18,b.foot,Math.min(foot[2],top[2])-.18] as V3,max:[Math.max(foot[0],top[0])+.18,b.top,Math.max(foot[2],top[2])+.18] as V3};})),
 ]);
 /** The glass dam's curved face is a camera solid too: the eye never passes through the glass. */
 function inDamGlass(x: number, y: number, z: number, r: number): boolean {

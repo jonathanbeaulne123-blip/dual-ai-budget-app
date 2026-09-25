@@ -4,7 +4,7 @@
  */
 import type {Point3} from './math.ts';
 
-export const MOUNTAIN_VERSION = 'hearth-mountain-1';
+export const MOUNTAIN_VERSION = 'hearth-mountain-2';
 /** Geography revision (the wire/presence version above is unchanged; saved mountain poses from
  * revision 1 must be re-validated against the new ground — see CONTRACT.md). */
 export const GEOGRAPHY_REVISION = 'hearth-mountain-geo-2';

@@ -161,11 +161,11 @@ export function damViewPose(composition: Composition, aspect = composition === "
 /** From the summit telescope, looking down the mountain to the town and the sea. */
 export function summitViewPose(composition: Composition): CourtPose {
   const [ax, az] = flat(TOWN_SQUARE, SUMMIT_TELESCOPE);
-  const eye: Vec3 = [SUMMIT_TELESCOPE[0] + ax * 7, SUMMIT_TELESCOPE[1] + (composition === "phone" ? 3.6 : 3), SUMMIT_TELESCOPE[2] + az * 7];
+  const eye: Vec3 = [SUMMIT_TELESCOPE[0] + ax * 7, SUMMIT_TELESCOPE[1] + (composition === "phone" ? 20 : 18), SUMMIT_TELESCOPE[2] + az * 7];
   // Aim between the lower terraces and the square, so the whole descent is in the frame.
   const low = CAMERA_DISTRICTS[0]!.at;
   const aim: Vec3 = [TOWN_SQUARE[0] * 0.65 + low[0] * 0.35, TOWN_SQUARE[1] * 0.65 + low[1] * 0.35, TOWN_SQUARE[2] * 0.65 + low[2] * 0.35];
-  return aimPose(eye, aim, 60);
+  return aimPose(eye, aim, Math.hypot(eye[0]-aim[0],eye[1]-aim[1],eye[2]-aim[2]));
 }
 
 /* ── Walking poses: arrivals and exits (C3, C7) ─────────────────────────── */

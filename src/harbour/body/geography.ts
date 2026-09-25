@@ -1,3 +1,4 @@
+import {TRANSPORT_STOPS,transportPoint,type TransportKind} from '../mountain/transport.ts';
 /**
  * Movement's view of the world's geography — the ONE seam between the body /
  * skate / ride code and the authored mountain data.
@@ -9,9 +10,9 @@
  */
 import * as definition from '../mountain/definition.ts';
 import {STOREFRONT_SOLIDS} from '../mountain/townSquare.ts';
-import {DISTRICTS,FOOTPATHS,MOUNTAIN_ROAD,RESERVED_PLOTS,TRANSPORT_STOPS,WORLD_BOUNDS,mountainBaseHeight,nearestOnRoute,transportPoint,type Point3,type TransportKind} from '../mountain/definition.ts';
+import {DISTRICTS,FOOTPATHS,MOUNTAIN_ROAD,TOWN_RACE_ROAD,RESERVED_PLOTS,WORLD_BOUNDS,mountainBaseHeight,nearestOnRoute,type Point3} from '../mountain/definition.ts';
 import {SKILL_BRANCHES,WORLD_SOLIDS,queryWorldSurface,type WorldSolid,type WorldSurfaceHit} from '../mountain/surfaces.ts';
-import {MOUNTAIN_COURSE_POINTS,MOUNTAIN_GATES,type RaceGate} from '../mountain/race.ts';
+import {MOUNTAIN_GATES,type RaceGate} from '../mountain/race.ts';
 import {groundHeightAt} from '../scene/ground.ts';
 import {HARBOUR_LAND,HARBOUR_LANES} from '../village/world.ts';
 
@@ -255,12 +256,15 @@ export function walkGraph():WalkGraph{
   for(const [kind,stops] of Object.entries(TRANSPORT_STOPS))for(const s of stops)lines.push([add(s.at[0],s.at[1],s.at[2],`station:${kind}:${s.id}`,'station')]);
   // Junctions: a line's ends meet the nearest node of any other line; crossings meet where they touch.
   const owner=new Map<number,number>();lines.forEach((ids,l)=>ids.forEach(id=>owner.set(id,l)));
+  const cells=new Map<string,WalkNode[]>(),cell=14;
+  for(const n of nodes){const key=`${Math.floor(n.x/cell)}:${Math.floor(n.z/cell)}`;const bucket=cells.get(key)??[];bucket.push(n);cells.set(key,bucket);}
+  const near=(p:WalkNode,reach:number)=>{const out:WalkNode[]=[];for(let x=Math.floor((p.x-reach)/cell);x<=Math.floor((p.x+reach)/cell);x++)for(let z=Math.floor((p.z-reach)/cell);z<=Math.floor((p.z+reach)/cell);z++)out.push(...(cells.get(`${x}:${z}`)??[]));return out.sort((a,b)=>a.id-b.id);};
   for(let l=0;l<lines.length;l++){
     const ids=lines[l]!,ends=new Set([ids[0]!,ids[ids.length-1]!]);
     for(const a of ids){
       const reach=ends.has(a)?(nodes[a]!.kind==='station'?14:6.5):2.2;
       let best=-1,bestD=Infinity;
-      for(const b of nodes){if(owner.get(b.id)===l)continue;const p=nodes[a]!,d=Math.hypot(p.x-b.x,p.z-b.z);if(d<reach&&Math.abs(p.y-b.y)<1.6&&d<bestD){best=b.id;bestD=d;}}
+      for(const b of near(nodes[a]!,reach)){if(owner.get(b.id)===l)continue;const p=nodes[a]!,d=Math.hypot(p.x-b.x,p.z-b.z);if(d<reach&&Math.abs(p.y-b.y)<1.6&&d<bestD){best=b.id;bestD=d;}}
       if(best>=0)link(a,best);
     }
   }
@@ -350,8 +354,9 @@ export function transportCurve(kind:TransportKind,from:number,to:number):Transpo
   const curve={kind,from,to,length,cruise:TRANSPORT_CRUISE[kind],frame};curves.set(key,curve);return curve;
 }
 /** Platforms you can walk onto to board. CONTRACT: `TRANSPORT_STOPS` (+ platform extents). */
+let cachedPlatforms: {kind:TransportKind;index:number;id:string;name:string;at:Point3}[]|undefined;
 export function stationPlatforms():{kind:TransportKind;index:number;id:string;name:string;at:Point3}[]{
-  return (Object.entries(TRANSPORT_STOPS) as [TransportKind,readonly {id:string;name:string;at:Point3}[]][]).flatMap(([kind,stops])=>stops.map((s,index)=>({kind,index,id:s.id,name:s.name,at:s.at})));
+  return cachedPlatforms??=(Object.entries(TRANSPORT_STOPS) as [TransportKind,readonly {id:string;name:string;at:Point3}[]][]).flatMap(([kind,stops])=>stops.map((s,index)=>({kind,index,id:s.id,name:s.name,at:s.at})));
 }
 export const transportStopCount=(kind:TransportKind):number=>TRANSPORT_STOPS[kind].length;
 
@@ -365,7 +370,7 @@ export type RaceSegmentKind='main'|'finish'|'runout';
  */
 export function raceCorridorAt(x:number,z:number):boolean{
   if(z<-40)return nearestOnRoute(x,z).distance<=7||SKILL_BRANCHES.some(b=>nearestOnRoute(x,z,b.points).distance<=b.halfWidth+2);
-  return nearestOnRoute(x,z,MOUNTAIN_COURSE_POINTS).distance<=6;
+  return nearestOnRoute(x,z,TOWN_RACE_ROAD).distance<=6;
 }
 /** Units of braking room the finish owns past its line. CONTRACT: the `runout` race segment's length. */
 export const RUNOUT_LENGTH=contract.RACE_FINISH?.runout??24;

@@ -1,3 +1,5 @@
+import data from './generated/terrain.json';
+import {decodeGrid} from './generated/decode.ts';
 /** Assembles the final ground from the base landform and every bench line and pad. */
 import {bakeFinal,sampleGrid,type BenchLine,type BenchPad} from './terrain.ts';
 import {ROAD_CENTRE,ORCHARD_LANE_CENTRE,ORCHARD_LANE_HALF_WIDTH} from './roadLine.ts';
@@ -23,7 +25,7 @@ export const BENCH_LINES:readonly BenchLine[]=[
   ...EXTRA_BENCH_LINES,
 ];
 export const BENCH_PADS:readonly BenchPad[]=EXTRA_BENCH_PADS;
-const baked=bakeFinal(BENCH_LINES,BENCH_PADS,true);
+const baked=typeof process!=='undefined'&&process.env?.HEARTH_REBAKE==='1'?bakeFinal(BENCH_LINES,BENCH_PADS,true):{grid:decodeGrid(data.ground),conflicts:data.conflicts,conflictCells:data.conflictCells};
 export const GROUND_GRID=baked.grid;
 export const GROUND_CONFLICTS=baked.conflicts;
 export const GROUND_CONFLICT_CELLS=baked.conflictCells;

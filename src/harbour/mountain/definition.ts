@@ -18,7 +18,8 @@ import {DISTRICTS,WORLD_BOUNDS,type District} from './places.ts';
 import {MOUNTAIN_ROAD,TOWN_RACE_ROAD,SKILL_BRANCHES} from './course.ts';
 import {MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE,GORGE_BRIDGES,EDGE_RUNS,DAM_OVERLOOK} from './roads.ts';
 import {PATH_EDGES,MOUNTAIN_PATH_GRAPH,DOOR_APRONS,OVERLOOKS} from './pathGraph.ts';
-import {TRANSPORT_STOPS,TRANSPORT_LINES} from './transport.ts';
+import {TRANSPORT_STOPS} from './transportAll.ts';
+import {TRANSPORT_LINES} from './transport.ts';
 import {ROAD_HALF_WIDTH} from './bridges.ts';
 import {RIVER,BASIN,DAM,RESERVED_PLOTS,BUILDING_SITES,MOUNTAIN_VERSION,GEOGRAPHY_REVISION,TERRACES} from './places.ts';
 import {clamp,mix,type Point3} from './math.ts';
@@ -32,9 +33,10 @@ export {MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE,roadSampleAt,roadSampleAtPlan,GORGE
 export {ROAD_HALF_WIDTH} from './bridges.ts';
 export {MOUNTAIN_ROAD,TOWN_RACE_ROAD,TOWN_LANE_HALF_WIDTH,CANAL_BRIDGE,SKILL_BRANCHES,RACE_FINISH,MOUNTAIN_COURSE_LENGTH,type SkillBranch,type BranchSegment} from './course.ts';
 export {MOUNTAIN_PATH_GRAPH,DOOR_APRONS,OVERLOOKS,mountainWalkPlan,type PathNode,type PathEdge,type PathNodeKind,type PathEdgeKind,type WalkPlan,type DoorApron} from './pathGraph.ts';
-export {FUNICULAR_STOPS,GONDOLA_STOPS,TRANSPORT_STOPS,TRANSPORT_LINES,FUNICULAR_LINE,GONDOLA_LINE,transportSpline,transportPoint,type TransportKind,type TransportLine,type TransportFrame,type TransportStation} from './transport.ts';
+export {FUNICULAR_STOPS,GONDOLA_STOPS,TRANSPORT_LINES,FUNICULAR_LINE,GONDOLA_LINE,transportSpline,type TransportLine,type TransportFrame,type TransportStation} from './transport.ts';
 export {RESERVOIR,DAM_PARTS,KITTY_CHAMBERS} from './damParts.ts';
 export {BRIDGES,TRANSPORT_CROSSINGS,type Crossing} from './crossings.ts';
+
 
 export type RouteProjection={point:Point3;distance:number;index:number;t:number;gradientX:number;gradientZ:number};
 type RouteIndex={cells:Map<string,number[]>;minX:number;maxX:number;minZ:number;maxZ:number};
@@ -71,6 +73,7 @@ export const ROAD_LENGTH=MOUNTAIN_ROAD_LINE.length;
 /** Legacy footpath list: every non-road edge of the path graph (trees, fixtures and art keep clear of these). */
 export const FOOTPATHS:readonly {id:string;points:readonly Point3[];kind:string;halfWidth:number}[]=PATH_EDGES.map(e=>({id:e.id,points:e.points,kind:e.kind,halfWidth:e.halfWidth}));
 
+
 export function districtAt(x:number,z:number):District|null{return DISTRICTS.reduce<District|null>((best,d)=>Math.hypot(x-d.at[0],z-d.at[2])<(best?Math.hypot(x-best.at[0],z-best.at[2]):Infinity)?d:best,null);}
 /** Mountain ground (terrain only; decks, bridges and platforms are surfaces). Baked, bilinear, cheap. */
 export function mountainBaseHeight(x:number,z:number):number{
@@ -86,3 +89,5 @@ export function mountainContains(x:number,z:number):boolean{
 export const WORLD_DEFINITION={version:MOUNTAIN_VERSION,revision:GEOGRAPHY_REVISION,bounds:WORLD_BOUNDS,districts:DISTRICTS,reservedPlots:RESERVED_PLOTS,terraces:TERRACES,
   road:MOUNTAIN_ROAD,roadLine:MOUNTAIN_ROAD_LINE,lanes:[ORCHARD_LANE_LINE],bridges:GORGE_BRIDGES,edges:EDGE_RUNS,paths:FOOTPATHS,pathGraph:MOUNTAIN_PATH_GRAPH,doors:DOOR_APRONS,overlooks:OVERLOOKS,
   river:RIVER,basin:BASIN,dam:DAM,damOverlook:DAM_OVERLOOK,transport:TRANSPORT_STOPS,transportLines:TRANSPORT_LINES,buildings:BUILDING_SITES,townRace:TOWN_RACE_ROAD} as const;
+
+export {TRANSPORT_STOPS,MONORAIL_STOPS,transportPoint,type TransportKind} from './transportAll.ts';

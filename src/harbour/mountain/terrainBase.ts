@@ -1,3 +1,5 @@
+import data from './generated/terrain.json';
+import {decodeGrid} from './generated/decode.ts';
 /**
  * Base ground: the natural landform shaped around its roads, with plateaus, the reservoir
  * hollow and the carved gorge — everything except the exact road/path benches and
@@ -39,7 +41,7 @@ export function shapingSamples():{points:readonly Point3[];halfWidth:number}[]{
   void laneSpans;return cut(ROAD_CENTRE,roadSpans).map(points=>({points,halfWidth:4.8}));
 }
 
-function bakeBase():HeightGrid{
+export function bakeBase():HeightGrid{
   const t0=performance.now();
   const coarse=makeGrid(4);
   for(let r=0;r<coarse.rows;r++)for(let c=0;c<coarse.cols;c++)coarse.data[r*coarse.cols+c]=macroHeight(coarse.minX+c*4,coarse.minZ+r*4);
@@ -76,6 +78,6 @@ function bakeBase():HeightGrid{
   if(typeof process!=='undefined'&&process.env?.HEARTH_TERRAIN_TIMING)console.info('base bake',{macro:t1-t0,shape:t2-t1,detail:performance.now()-t2});
   return g;
 }
-export const BASE_GRID:HeightGrid=bakeBase();
+export const BASE_GRID:HeightGrid=typeof process!=='undefined'&&process.env?.HEARTH_REBAKE==='1'?bakeBase():decodeGrid(data.base);
 /** Ground before the exact road, path and foundation benches. */
 export const baseHeight=(x:number,z:number)=>sampleGrid(BASE_GRID,x,z);

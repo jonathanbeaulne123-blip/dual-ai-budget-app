@@ -7,6 +7,7 @@
 import {describe,it,expect} from 'vitest';
 import * as THREE from 'three';
 import {buildMountainLandscape} from '../src/harbour/mountain/landscape.ts';
+import {TRANSPORT_LINES} from '../src/harbour/mountain/transport.ts';
 import {SCENE_DRESSING} from '../src/harbour/scene/place.ts';
 
 const triangles=(root:THREE.Object3D)=>{let n=0;root.traverse(o=>{const m=o as THREE.Mesh;if(!m.isMesh||!m.visible)return;const g=m.geometry,c=(g.index?g.index.count:g.getAttribute('position').count)/3;n+=c*((m as THREE.InstancedMesh).isInstancedMesh?(m as THREE.InstancedMesh).count:1);});return n;};
@@ -35,7 +36,7 @@ describe('the dressed mountain',()=>{
     expect(funicular.position.toArray()).toEqual([5,20,-90]);expect(funicular.rotation.y).toBeCloseTo(-.4,6);
     // The chassis pitches with the track; the body stays level.
     const tilted=funicular.children.some(c=>Math.abs(c.rotation.x+.35)<1e-6);expect(tilted).toBe(true);
-    land.setTransit(null);expect(funicular.position.toArray()).toEqual([5,20,-90]);
+    land.setTransit(null);expect(TRANSPORT_LINES.funicular.stations.some(st=>st.at.every((v,i)=>Math.abs(v-funicular.position.toArray()[i]!)<.01))).toBe(true);
     land.dispose();
   });
   it('holds smoke, cloth and flight still in calm view',()=>{

@@ -24,7 +24,8 @@ import { ZOOM_EXIT, ZOOM_REST, atZoomLimit, harbourZoomExit } from "../src/harbo
 import { clearFraction, createPullIn } from "../src/harbour/camera/obstruction.ts";
 import { handToLook } from "../src/harbour/camera/director.ts";
 import { MOUNTAIN_TOUR, tourPose } from "../src/harbour/mountain/tour.ts";
-import { TRANSPORT_STOPS, type TransportKind } from "../src/harbour/mountain/definition.ts";
+import { TRANSPORT_STOPS, type TransportKind } from "../src/harbour/mountain/transport.ts";
+import {DAM_PARTS} from "../src/harbour/mountain/damParts.ts";
 import { SKATE_CAM, createSkateCamera, projectToView } from "../src/harbour/skate/camera/skateCamera.ts";
 import { raceFinishShot, raceStartShot, startShotWeight } from "../src/harbour/skate/camera/raceShots.ts";
 import { mountHarbourWorld, type HarbourRuntime } from "../src/harbour/scene/runtime.ts";
@@ -150,6 +151,8 @@ describe("the walking camera (C2, C12)", () => {
   it("counts terrain and every camera solid on the line (C11): storefronts, abutments, the dam glass, pillars", () => {
     const ids = CAMERA_SOLIDS.map((s) => s.id).join(" ");
     for (const kind of ["storefront:outfitters", "storefront:potters-supply", "dam:abutment", "gondola:pillar", "funicular:pillar"]) expect(ids).toContain(kind);
+    expect(DAM_CREST).toEqual(DAM_PARTS.arc[Math.floor(DAM_PARTS.arc.length/2)]);
+    for(const a of DAM_PARTS.abutments)expect(cameraBlocked(a.at[0],DAM_PARTS.foot+1,a.at[2])).toBe(true);
     const store = CAMERA_SOLIDS.find((s) => s.id === "storefront:outfitters")!;
     const mid: Vec3 = [(store.min[0] + store.max[0]) / 2, (store.min[1] + store.max[1]) / 2, (store.min[2] + store.max[2]) / 2];
     expect(cameraBlocked(...mid)).toBe(true);
@@ -437,6 +440,34 @@ describe("the runtime's camera (C1, C3, C10)", () => {
   prepareVillageInterior("library");
   const mount = () => (world = mountHarbourWorld(host, "classic", "lite", { onReady: vi.fn(), onFailure: vi.fn(), place: PLACES.court, reading, dressing: SCENE_DRESSING.classic }));
 
+  it('keeps Run across place changes and clears interrupted ride camera state',()=>{
+    const stage=mount();run(2);stage.body()!.runLock(true);
+    const stop=TRANSPORT_STOPS.funicular[0]!.at;
+    stage.mountainTravel(stop,{kind:'funicular',from:0,to:3});run(12);
+    stage.enter('library',{reduced:true});run(8);
+    expect(stage.placeId()).toBe('library');expect(stage.body()!.runLock()).toBe(true);
+    const body=stage.body()!.at(),eye=stage.camera();expect(Math.hypot(eye[0]-body.x,eye[2]-body.z)).toBeLessThan(30);
+  });
+  it('releases moving transport before an explicit view or downhill race',()=>{
+    const stage=mount();run(2);
+    stage.monorailBoard(0);stage.monorailSelect(3);run(90);
+    expect(stage.shot('view:world')).toBe(true);run(90);
+    const at=stage.body()!.at();run(10);const held=stage.body()!.at();
+    expect(Math.hypot(at.x-held.x,at.z-held.z)).toBeLessThan(.05);expect(stage.pose().r).toBeGreaterThan(120);
+    stage.monorailBoard(0);stage.monorailSelect(3);run(90);
+    expect(stage.body()!.skate.enable(true)).toBe(true);stage.body()!.skate.route('mountain-descent');run(20);
+    expect(stage.body()!.skate.active()).toBe(true);
+  });
+  it('app reduced motion loads opaque district detail and hides flying wildlife after cuts',async()=>{
+    const stage=mount();run(3);
+    document.documentElement.dataset.motion='reduced';await Promise.resolve();
+    try{stage.shot('view:world');run(20);
+      let birds=0,hidden=0;stage.place().group.traverse(o=>{if(o.name==='Flying bird'){birds++;if(!o.visible)hidden++;}});
+      expect(birds).toBeGreaterThan(0);expect(hidden).toBe(birds);
+      const materials:THREE.Material[]=[];stage.place().group.traverse(o=>{const m=(o as THREE.Mesh).material;if(m&&o.name.includes("close detail"))materials.push(...(Array.isArray(m)?m:[m]));});
+      expect(materials.length).toBeGreaterThan(0);expect(materials.some(m=>m.opacity===0)).toBe(false);
+    }finally{delete document.documentElement.dataset.motion;}
+  });
   it("opens on the signature shot: the square below, the dam crest above", () => {
     for (const [w, h, composition] of [[1440, 900, "desktop"], [390, 844, "phone"]] as const) {
       size.width = w; size.height = h;
@@ -521,15 +552,15 @@ describe("the runtime's camera (C1, C3, C10)", () => {
     expect(Math.hypot(eye[0], eye[2])).toBeGreaterThan(200);
   });
 
-  it("streams district detail from the Look target (all held while Look drives) and from the body while walking", () => {
+  it("pins distant detail only for overview; tools retain the walking radius", () => {
     const stage = mount(); run(2);
     const handle = stage.place() as unknown as { streamDetails: (x: number, z: number, pinned: boolean) => boolean };
     const calls: [number, number, boolean][] = [];
     const original = handle.streamDetails.bind(handle);
     handle.streamDetails = (x, z, pinned) => { calls.push([x, z, pinned]); return original(x, z, pinned); };
     expect(stage.shot("view:world")).toBe(true); run(3);
-    // Held in detail from the first frame of the flight to the overview…
-    expect(calls.at(-1)![2]).toBe(true);
+    // A near camera does not build the whole mountain at the beginning of the flight.
+    expect(calls.at(-1)![2]).toBe(stage.pose().r>120);
     run(260);
     const look = calls.at(-1)!;
     expect(look[2]).toBe(true);
@@ -538,6 +569,7 @@ describe("the runtime's camera (C1, C3, C10)", () => {
     body.input({ forward: 1, strafe: 0 }); run(20); body.input({ forward: 0, strafe: 0 }); run(2);
     const walk = calls.at(-1)!;
     expect(walk[2]).toBe(false);
+    stage.setToolOpen(true);run(3);expect(calls.at(-1)![2]).toBe(false);
     expect(Math.hypot(walk[0] - body.at().x, walk[1] - body.at().z)).toBeLessThan(1e-6);
   });
 });

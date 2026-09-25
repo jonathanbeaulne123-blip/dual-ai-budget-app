@@ -1,3 +1,4 @@
+import {mountainGround} from './mountainGround.ts';
 /**
  * Summit to Sea: the course as named segments in the plan's order, upright gates at the
  * features, three architectural skill branches that are shorter than the road they bypass,
@@ -67,6 +68,13 @@ function branch(id:string,name:string,kind:SkillBranch['kind'],material:'wood'|'
   // (The approach ramp keeps its authored heights; the grade evens out from the ramp's end.)
   if(even){const rampEnd=parts[0]!.via[parts[0]!.via.length-1]!;let j0=0,best=Infinity;pts.forEach((p,k)=>{const e=Math.hypot(p[0]-rampEnd[0],p[2]-rampEnd[2]);if(e<best){best=e;j0=k;}});
     const L=arcLengths(pts,true),y0=pts[j0]![1],span=L[L.length-1]!-L[j0]!;pts.forEach((p,i)=>{if(i>j0&&i<pts.length-1)pts[i]=[p[0],mix(y0,b[1],(L[i]!-L[j0]!)/span),p[2]];});}
+  // Keep the awning deck above the existing ground through its shallow entry/landing.
+  // Otherwise the sampler switches to terrain mid-deck and presents a false wall at speed.
+  if(id==='hearth-awning')for(let i=1;i<pts.length-1;i++){
+    const p=pts[i]!,a=pts[i-1]!,b=pts[i+1]!,dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1;
+    const top=Math.max(...[-1,0,1].map(side=>mountainGround(p[0]+dz/l*halfWidth*side,p[2]-dx/l*halfWidth*side)));
+    pts[i]=[p[0],Math.max(p[1],top+.03),p[2]];
+  }
   // Segment boundaries at the authored via points.
   const segments:BranchSegment[]=[];let cursor=0;
   for(const part of parts){const end=part.via[part.via.length-1]!;let j=cursor;let best=Infinity;for(let k=cursor;k<pts.length;k++){const e=Math.hypot(pts[k]![0]-end[0],pts[k]![2]-end[2]);if(e<best){best=e;j=k;}}segments.push({kind:part.kind,points:pts.slice(cursor,j+1)});cursor=j;}
