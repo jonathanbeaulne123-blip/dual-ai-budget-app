@@ -1,7 +1,12 @@
 import { expect, it } from 'vitest';
-import { buildDistricts, createDistrictStream } from '../src/harbour/horizon/world/districts.ts';
+import { buildDistricts, createDistrictStream, partitionWorldSolids } from '../src/harbour/horizon/world/districts.ts';
 import type { TerrainField } from '../src/harbour/horizon/land/interfaces.ts';
 const field: TerrainField = { revision: 'horizon-geo-1', width: 2000, depth: 1800, step: 100, columns: 21, rows: 19, heights: new Float32Array(399), surfaces: new Uint8Array(399) };
+it('partitions a long mesh by triangle location while retaining its source identity and every triangle',()=>{
+  const chunks=partitionWorldSolids([{id:'road',kind:'road',positions:[400,30,600,410,30,600,400,30,610,1450,12,1170,1460,12,1170,1450,12,1180],indices:[0,1,2,3,4,5],surface:'paved',districtId:'harbour',bedIds:['V01'],walkable:true,role:'deck'}]);
+  expect(chunks).toHaveLength(2);expect(chunks.map(c=>c.districtId).sort()).toEqual(['flats','harbour']);
+  expect(chunks.reduce((n,c)=>n+c.indices.length/3,0)).toBe(2);expect(chunks.every(c=>c.sourceId==='road')).toBe(true);
+});
 it('keeps thirteen surface districts with the Undercroft owned by Crown', () => {
   const districts = buildDistricts(field, [], []);
   expect(districts).toHaveLength(13);

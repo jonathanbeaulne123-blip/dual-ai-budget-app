@@ -15,6 +15,22 @@ export function districtAt(x: number, z: number, scale = requireScaleFactor()): 
   for (const [key, p] of Object.entries(hearts)) { const d = Math.hypot(x - p[0] * scale, z - p[1] * scale); if (d < distance) { distance = d; id = key; } }
   return id;
 }
+/** Partition indexed triangles once offline; one long road cannot force its whole island mesh resident. */
+export function partitionWorldSolids(solids: readonly StructureSolid[]): (StructureSolid & { sourceId: string })[] {
+  const output: (StructureSolid & { sourceId: string })[] = [];
+  for (const source of solids) {
+    const chunks = new Map<string, { solid: StructureSolid & { sourceId: string }; vertices: Map<number, number> }>();
+    const fixed = source.districtId === 'undercroft' ? 'undercroft' : /^(offshore\.|lamp\.|needle\.|stacks\.|wreck\.|sandbar\.)/.test(source.id) ? 'offshore' : null;
+    for (let i = 0; i < source.indices.length; i += 3) {
+      const indices = [source.indices[i]!, source.indices[i + 1]!, source.indices[i + 2]!], x = indices.reduce((sum, id) => sum + source.positions[id * 3]!, 0) / 3, z = indices.reduce((sum, id) => sum + source.positions[id * 3 + 2]!, 0) / 3, id = fixed ?? districtAt(x, z);
+      let chunk = chunks.get(id);
+      if (!chunk) { chunk = { solid: { ...source, id: `${source.id}@${id}`, sourceId: source.id, districtId: id, positions: [], indices: [] }, vertices: new Map() }; chunks.set(id, chunk); }
+      for (const index of indices) { let mapped = chunk.vertices.get(index); if (mapped === undefined) { mapped = chunk.solid.positions.length / 3; chunk.vertices.set(index, mapped); chunk.solid.positions.push(source.positions[index * 3]!, source.positions[index * 3 + 1]!, source.positions[index * 3 + 2]!); } chunk.solid.indices.push(mapped); }
+    }
+    output.push(...[...chunks.values()].map(chunk => chunk.solid));
+  }
+  return output;
+}
 export function buildDistricts(field: TerrainField, beds: readonly BedCut[], solids: readonly StructureSolid[]): District[] {
   const m = HORIZON_MANIFEST, s = requireScaleFactor(), extent: Point2[] = [[0, 0], [2000 * s, 0], [2000 * s, 1800 * s], [0, 1800 * s]];
   const districts = m.districts.map(d => {
@@ -30,7 +46,7 @@ export function buildDistricts(field: TerrainField, beds: readonly BedCut[], sol
   for (const solid of solids) { const b = solidBounds(solid), owner = solid.districtId === 'undercroft' ? 'crown' : solid.districtId; const d = byId.get(owner) ?? byId.get(districtAt((b.min[0] + b.max[0]) / 2, (b.min[2] + b.max[2]) / 2))!; d.solidIds!.push(solid.id); d.triangles!.full += solid.indices.length / 3; d.triangles!.lite += solid.indices.length / 3; d.drawCalls!++; if (solid.districtId === 'undercroft') d.children![0]!.solidIds!.push(solid.id); }
   for (const bed of beds) { const ids = new Set(bed.points.map(p => districtAt(p[0], p[2]))); for (const id of ids) byId.get(id)!.bedIds!.push(bed.id); }
   // These counts correspond to terrain tiles at the world's full/lite sample spacing.
-  for (const [tier, stride] of [['full', 1], ['lite', Math.max(1, Math.round(8 * s / field.step))]] as const) {
+  for (const [tier, stride] of [['full', 1], ['lite', Math.max(1, Math.round(10 * s / field.step))]] as const) {
     for (let z = 0; z < field.rows - 1; z += stride) for (let x = 0; x < field.columns - 1; x += stride) {
       const owner = byId.get(districtAt((x + stride / 2) * field.step, (z + stride / 2) * field.step))!;
       owner.triangles![tier] += 2;

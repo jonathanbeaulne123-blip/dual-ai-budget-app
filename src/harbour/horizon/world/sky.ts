@@ -1,7 +1,7 @@
 import type { TerrainField, LandCuts, StructureSolid } from '../land/interfaces.ts';
 import type { FlightEnvelope, FlightVolume, Point3, Anchor, Point2 } from './definition.ts';
 import { HORIZON_MANIFEST, requireScaleFactor } from './manifest.ts';
-import { distance3, mixPoint, pointInPolygon, padOutline, rayTriangle, solidBounds, terrainHeight } from './geometry.ts';
+import { distance3, mixPoint, pointInPolygon, padOutline, rayTriangle, solidBounds, solidTopAt, terrainHeight } from './geometry.ts';
 
 export interface SkyProof { gates: { id: string; requestedAperture: Point2 | null; measuredAperture: Point2; clear: boolean; obstructionIds: string[] }[]; landings: { id: string; clear: boolean; obstructionIds: string[] }[]; glide: { lengthEu: number; durationSeconds: number; arrivalHeight: number; samples: { at: Point3; clearance: number; required: number; obstacle: string | null }[]; minClearance: number; pass: boolean }; pass: boolean }
 function pointInsideSolid(point: Point3, solid: StructureSolid): boolean {
@@ -36,9 +36,24 @@ export function buildFlightEnvelope(field: TerrainField, cuts: LandCuts): Flight
     let horizontal = 0, vertical = 0; for (let d = .5; d <= halfW; d += .5) { if (probe(d, 0) || probe(-d, 0)) break; horizontal = d; } for (let d = .5; d <= halfH; d += .5) { if (probe(0, d) || probe(0, -d)) break; vertical = d; }
     const measured: Point2 = [horizontal * 2, vertical * 2]; gates.push({ id: gate.id, xy: [centre[0], centre[2]], height: centre[1] }); volumes.push({ id: gate.id, kind: 'gate', centre, halfSize: [halfW, halfH, 3 * s], yaw, aperture: requested ?? measured, modes: gate.id === 'throat' ? ['glider'] : ['plane', 'glider'] }); gateProofs.push({ id: gate.id, requestedAperture: requested, measuredAperture: measured, clear, obstructionIds: [...obstructions] });
   });
-  const landingProofs = volumes.filter(v => v.kind === 'landing').map(v => { const ids = boxes.filter(({ solid, bounds: b }) => { if (solid.role === 'floor' || solid.role === 'deck' || solid.role === 'marker' || solid.id.startsWith('strip')) return false; const x = (b.min[0] + b.max[0]) / 2 - v.centre[0], z = (b.min[2] + b.max[2]) / 2 - v.centre[2], lx = x * Math.cos(v.yaw) - z * Math.sin(v.yaw), lz = x * Math.sin(v.yaw) + z * Math.cos(v.yaw); return Math.abs(lx) <= v.halfSize[0] + (b.max[0] - b.min[0]) / 2 && Math.abs(lz) <= v.halfSize[2] + (b.max[2] - b.min[2]) / 2 && b.max[1] > v.centre[1] - 1.5 && b.min[1] < v.centre[1] + 8; }).map(v => v.solid.id); return { id: v.id, clear: ids.length === 0, obstructionIds: ids }; });
+  const landingProofs = volumes.filter(v => v.kind === 'landing').map(v => {
+    const normalized = (p: Point3): Point2 => { const x = p[0] - v.centre[0], z = p[2] - v.centre[2]; return [(x * Math.cos(v.yaw) - z * Math.sin(v.yaw)) / v.halfSize[0], (x * Math.sin(v.yaw) + z * Math.cos(v.yaw)) / v.halfSize[2]]; };
+    const contains = (p: Point2) => v.radius ? p[0] ** 2 + p[1] ** 2 <= 1 : Math.abs(p[0]) <= 1 && Math.abs(p[1]) <= 1;
+    const hits = (solid: StructureSolid) => {
+      const vertex = (i: number): Point3 => [solid.positions[i * 3]!, solid.positions[i * 3 + 1]!, solid.positions[i * 3 + 2]!];
+      for (let i = 0; i < solid.indices.length; i += 3) {
+        const p = [vertex(solid.indices[i]!), vertex(solid.indices[i + 1]!), vertex(solid.indices[i + 2]!)];
+        if (Math.max(...p.map(p => p[1])) <= v.centre[1] - 1.5 || Math.min(...p.map(p => p[1])) >= v.centre[1] + 8) continue;
+        const xy = p.map(normalized); if (xy.some(contains) || pointInPolygon(0, 0, xy)) return true;
+        for (let k = 0; k < 3; k++) { const a = xy[k]!, b = xy[(k + 1) % 3]!, dx = b[0] - a[0], dz = b[1] - a[1], t = Math.max(0, Math.min(1, -(a[0] * dx + a[1] * dz) / (dx * dx + dz * dz || 1))); if (contains([a[0] + dx * t, a[1] + dz * t])) return true; }
+      }
+      return false;
+    };
+    const ids = boxes.filter(({ solid, bounds: b }) => solid.role !== 'marker' && b.max[1] > v.centre[1] - 1.5 && b.min[1] < v.centre[1] + 8 && hits(solid)).map(v => v.solid.id);
+    return { id: v.id, clear: ids.length === 0, obstructionIds: ids };
+  });
   const start = m.sky.launches.crown, finish = m.sky.launches.lampGallery, from: Point3 = [start.xy[0]! * s, start.h * s, start.xy[1]! * s], to: Point3 = [finish.xy[0]! * s, finish.h * s, finish.xy[1]! * s], planLength = Math.hypot(to[0] - from[0], to[2] - from[2]), duration = planLength / m.sky.glider.speed_ms, steps = Math.ceil(planLength / 4), samples: SkyProof['glide']['samples'] = [];
-  for (let i = 0; i <= steps; i++) { const t = i / steps, p = mixPoint(from, to, t), height = from[1] - duration * t * m.sky.glider.sink_ms, at: Point3 = [p[0], height, p[2]], ground = terrainHeight(field, at[0], at[2]); let obstacle: string | null = null, surface = ground; for (const { solid, bounds: b } of boxes) if (at[0] >= b.min[0] && at[0] <= b.max[0] && at[2] >= b.min[2] && at[2] <= b.max[2] && b.max[1] > surface && b.max[1] < at[1] + 10) { surface = b.max[1]; obstacle = solid.id; } samples.push({ at, clearance: height - surface, required: i === 0 ? 0 : 10, obstacle }); }
+  for (let i = 0; i <= steps; i++) { const t = i / steps, p = mixPoint(from, to, t), height = from[1] - duration * t * m.sky.glider.sink_ms, at: Point3 = [p[0], height, p[2]], ground = terrainHeight(field, at[0], at[2]); let obstacle: string | null = null, surface = ground; for (const { solid, bounds: b } of boxes) if (at[0] >= b.min[0] && at[0] <= b.max[0] && at[2] >= b.min[2] && at[2] <= b.max[2] && b.max[1] > surface) { const top = solidTopAt(solid, at[0], at[2]); if (top !== null && top > surface) { surface = top; obstacle = solid.id; } } samples.push({ at, clearance: height - surface, required: i === 0 ? 0 : 10, obstacle }); }
   const glide: SkyProof['glide'] = { lengthEu: distance3(from, samples.at(-1)!.at), durationSeconds: duration, arrivalHeight: samples.at(-1)!.at[1], samples, minClearance: Math.min(...samples.slice(1).map(p => p.clearance)), pass: samples.every(p => p.clearance >= p.required) };
   const proofs: SkyProof = { gates: gateProofs, landings: landingProofs, glide, pass: gateProofs.every(g => g.clear) && landingProofs.every(l => l.clear) && glide.pass };
   return { ceiling, launches, launchPads, landings, gates, volumes, glider: { speed: m.sky.glider.speed_ms, sink: m.sky.glider.sink_ms }, proofs };
