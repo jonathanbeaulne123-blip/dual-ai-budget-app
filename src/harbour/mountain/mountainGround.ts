@@ -1,5 +1,4 @@
-import data from './generated/terrain.json';
-import {decodeGrid} from './generated/decode.ts';
+import {loadTerrainAsset} from './terrainAsset.ts';
 /** Assembles the final ground from the base landform and every bench line and pad. */
 import {bakeFinal,sampleGrid,type BenchLine,type BenchPad} from './terrain.ts';
 import {ROAD_CENTRE,ORCHARD_LANE_CENTRE,ORCHARD_LANE_HALF_WIDTH} from './roadLine.ts';
@@ -19,13 +18,15 @@ function skips(line:'road'|'lane',points:readonly Point3[]){
     if(run)out.push([run[0]!,run[1]!]);}
   return out;
 }
-export const BENCH_LINES:readonly BenchLine[]=[
+const rebake=typeof process!=='undefined'&&process.env?.HEARTH_REBAKE==='1';
+export const BENCH_LINES:readonly BenchLine[]=rebake?[
   {id:'road',points:ROAD_CENTRE,halfWidth:ROAD_HALF_WIDTH,shoulder:1.2,slope:1,inset:.02,skip:skips('road',ROAD_CENTRE),priority:3},
   {id:'orchard-lane',points:ORCHARD_LANE_CENTRE,halfWidth:ORCHARD_LANE_HALF_WIDTH,shoulder:1,slope:1,inset:.02,skip:skips('lane',ORCHARD_LANE_CENTRE),priority:2},
   ...EXTRA_BENCH_LINES,
-];
-export const BENCH_PADS:readonly BenchPad[]=EXTRA_BENCH_PADS;
-const baked=typeof process!=='undefined'&&process.env?.HEARTH_REBAKE==='1'?bakeFinal(BENCH_LINES,BENCH_PADS,true):{grid:decodeGrid(data.ground),conflicts:data.conflicts,conflictCells:data.conflictCells};
+]:[];
+export const BENCH_PADS:readonly BenchPad[]=rebake?EXTRA_BENCH_PADS:[];
+const asset=rebake?undefined:await loadTerrainAsset();
+const baked=rebake?bakeFinal(BENCH_LINES,BENCH_PADS,true):{grid:asset!.ground,conflicts:asset!.conflicts,conflictCells:asset!.conflictCells};
 export const GROUND_GRID=baked.grid;
 export const GROUND_CONFLICTS=baked.conflicts;
 export const GROUND_CONFLICT_CELLS=baked.conflictCells;

@@ -348,18 +348,14 @@ function stepRun(session: SkateSession, x: number, z: number, bailing: boolean, 
   if(step>0)recorder?.sample([run.elapsed,x,y,z,yaw],run.checkpoint!==checkpoint);
   if(run.finished){const replay=recorder?.finish(run.elapsed);if(replay&&(!p.raceReplay||p.raceReplay.signature!==replay.signature||replay.seconds<p.raceReplay.seconds))p.raceReplay=replay;raceRecorders.delete(run);}
 }
-/**
- * Retry during a race: the run keeps its gates and its clock; the rider is
- * put back at the last gate passed by the driver. The crossing trace starts
- * again from there (a teleport never crosses a gate), and the ghost recording
- * of this run is withdrawn — a retried run is a valid time, not a clean replay.
- */
+/** Retry starts a fresh run at gate zero, including during countdown or after finishing. */
 export function retrySkateRoute(session: SkateSession): boolean {
   const run = session.run;
-  if (!run || run.finished || run.countdown > 0) return false;
+  if (!run) return false;
   racePrevious.delete(run);
   raceRecorders.get(run)?.invalidate();
-  session.message = `Back at gate ${Math.max(0, run.checkpoint - 1)} · the clock is still running`;
+  raceRecorders.delete(run);
+  startSkateRoute(session, run.id);
   session.revision++;
   return true;
 }

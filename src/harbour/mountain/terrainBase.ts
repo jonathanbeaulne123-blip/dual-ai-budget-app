@@ -1,5 +1,4 @@
-import data from './generated/terrain.json';
-import {decodeGrid} from './generated/decode.ts';
+import {loadTerrainAsset} from './terrainAsset.ts';
 /**
  * Base ground: the natural landform shaped around its roads, with plateaus, the reservoir
  * hollow and the carved gorge — everything except the exact road/path benches and
@@ -78,6 +77,6 @@ export function bakeBase():HeightGrid{
   if(typeof process!=='undefined'&&process.env?.HEARTH_TERRAIN_TIMING)console.info('base bake',{macro:t1-t0,shape:t2-t1,detail:performance.now()-t2});
   return g;
 }
-export const BASE_GRID:HeightGrid=typeof process!=='undefined'&&process.env?.HEARTH_REBAKE==='1'?bakeBase():decodeGrid(data.base);
+export const BASE_GRID:HeightGrid=typeof process!=='undefined'&&process.env?.HEARTH_REBAKE==='1'?bakeBase():(await loadTerrainAsset()).base;
 /** Ground before the exact road, path and foundation benches. */
 export const baseHeight=(x:number,z:number)=>sampleGrid(BASE_GRID,x,z);

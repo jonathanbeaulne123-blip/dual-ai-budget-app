@@ -1455,3 +1455,50 @@ The pull is speed-limited and never teleports the board. Existing rail locks and
 Jonathan asked for one continuous zoom out from the mountain into clouds and the Journey map, with the same zoom in returning to Harbour. The camera now opens Journey when an outward gesture crosses its far edge; there is no armed second pull. The reverse opens Harbour when the current Chapter's Journey camera reaches its closest band. A shared cloud passage covers the existing route handoff and clears only after the destination's scene is ready, with an immediate reduced-motion version. The Journey world module begins preloading during the cloud entrance. Its route, current-Chapter guard, view-only nature, canonical history and existing flat fallback remain authoritative. Classic uses warm cloud light, Taylor a scrapbook tint, and Newfoundland a cool marine fog.
 
 Risk Medium-High because the App route and two WebGL camera handoffs change. Budget delta (5): 0; no financial command, calculation, scope, schema, sync or Final Confirm behavior changes. Engagement delta (3): +2 intended for uninterrupted navigation. This is local implementation evidence, with actual-device gesture feel and visual acceptance still open. See [the worksession](worksessions/2026-09-25-journey-cloud-zoom.md).
+
+
+## The Horizon — decisions D1–D33 (Pass 0 reconciliation, 2026-09-25)
+
+These entries transcribe the supplied Horizon deck v1.5 and the explicit D1 quote in the Pass 0 brief. “Approved” records the deck’s status; where its table omits Jonathan’s exact words, this log does not invent them. Open recommendations remain recommendations.
+
+| ID | Proposed decision | Recommendation | Jonathan answer and date | Status | Blocks |
+|---|---|---|---|---|---|
+| D1 | The hook shape and the Bight; the Crown off-centre north-east; Long Sands straight along the south | — | 25 Sep 2026: “I love all of it, it’s perfect” | APPROVED | — |
+| D2 | Little Harbour on a slope: upper street, market stair (+ ramp twin), square, quay | — | Approved 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
+| D3 | Hollow the mountain: the Undercroft; the funicular becomes the Ore Line | — | Approved 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
+| D4 | One bush plane, floats and wheels, strip on the Flats, dock at the harbour, one-button ring tour | — | Approved 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
+| D5 | Glider entry through the Throat (the only way in from the sky) | — | Approved 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
+| D6 | Lantern Hunt as the flyover (60 to fill the cave; 64 placed) | — | Approved 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
+| D7 | Four skate lines with surface-driven pace | — | Approved 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
+| D8 | All ten modes, built in the pass-2 order | — | Approved 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
+| D9 | Winter: ice on Stillwater Jan–Feb, sledding on the Shoulder | — | Approved 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
+| D10 | Names as in `MANIFEST.json → names` (frozen: they are IDs) | — | Approved 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
+| D11 | The cats: names and colours | — | No answer recorded in the supplied deck | OPEN | 03 (Little Harbour) |
+| D12 | Reserves: the Terraces and Bight Shore, plus a sealed drift and a hangar bay. After geometry review only three Terrace plots fit uphill of the Prow cliff drive once the gondola and zip cables are cleared; plot 4 is drawn on the seaward side at [1596,994]. **Question: accept plot 4 seaward, or three uphill plots only?** | Confirm plot 4 seaward or keep three uphill plots | Approved in principle 25 Sep 2026; exact words not recorded; plot 4 still open | OPEN | 01 |
+| D13 | Scale factor 0.6 (engine units = concept metres × 0.6, heights included). At 1.0 the island is too big for feet and bicycles; journeys at both factors are in `MANIFEST.json → journeys` | Claude recommends 0.6 | No answer recorded in the supplied deck | OPEN | 01 (the heightfield bakes at this factor) |
+| D14 | The Kitty reserve chambers retire from the dam; Kitty Banks are read in the Loft as now; `L01` shows the Fund basin only | Claude recommends retire | No answer recorded in the supplied deck | OPEN | 03 (Lakeside) |
+| D15 | When the app switches from the current island/mountain to the Horizon: behind one Development flag (`VITE_HEARTH_HORIZON`) from pass 1, flipped for everyone when Little Harbour (pass 3, first neighbourhood) is accepted on both devices, and the flag deleted in the same PR | Claude recommends as stated | No answer recorded in the supplied deck | OPEN | 03 |
+| D17 | The zipline needs a 30 m tower at the Prow (deck h 100, shared with the glider launch) and a landing tower on the dune crest (deck h 12, Town Weave passes beneath); a line from the cliff top alone dips to 2 m over the harbour | Claude recommends the towers | No answer recorded in the supplied deck | OPEN | 02 |
+| D16 | The day/night cycle follows the real sun in the device's time zone at 44° N, with the sundial scrub, reduced-motion freeze at 15:30, and a deterministic almanac | — | Stated by Jonathan 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
+| D18 | Retire weather-from-money on the Horizon (bills → clouds, storm, Fund mist, payday sunrise); the timeline strip carries them explicitly | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02c |
+| D19 | Condition: explicit words on the camp card; physical wear only on the homestead's timber and plants, repaired on the same site; the home anchor never wears | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02c |
+| D20 | Which Journey brushes become bed cards and which retire (cove, wider road, café lights, storm creek, frost) | — | No answer recorded in the supplied deck | OPEN | 02c |
+| D21 | The twelve station sites as placed (seasonal), or fewer stations with more beds | Claude recommends twelve | No answer recorded in the supplied deck | OPEN | 01 |
+| D22 | Season replay (sun and bloom of a chosen date, finances untouched) | — | No answer recorded in the supplied deck | OPEN | — |
+| D23 | The Atlas nook's model becomes the Horizon at L0; the harbour islet retires | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 03 |
+| D24 | The prototype's calibration as product settings (gates 3/7/14/28 confirmed strain days; clearance < 0.25 × daily need; repairs after two clear days; one growth credit per category per week over 24 weeks) | — | No answer recorded in the supplied deck | OPEN | 02c |
+| D25 | The homestead's site list and its place behind Our home | Claude recommends as drawn | No answer recorded in the supplied deck | OPEN | 01 |
+| D26 | The Journey map is the app's home; the square is the first *world* screen (refines D2) | — | Stated by Jonathan 25 Sep 2026; exact words not recorded in the supplied status table | APPROVED | — |
+| D27 | Ship the kitchen table (v3's drawer as Direction C's objects); retire the Classic studio as screens; drop `VITE_PLAN_STUDIO_V3` | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02d |
+| D28 | The Plan Studio's entry is "One Pull Raises It" (the wizard pick) | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02d |
+| D29 | One five-beat ritual at the Campfire replaces the Classic Sitdown and the v3 check-in; the weekly Sitdown is two chairs at the flagstone | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02d |
+| D30 | Time is a walk of day-stones on the Year Walk; retires the spiral, weather, the era ring, the Replay slider and the separate stepping-stone scene | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02c |
+| D31 | One `dayLedger` read model for the stones, the strip, the Calendar, Leaving and the camp card | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02d |
+| D32 | Cards are "every month" or "once"; taking one down files it | Claude recommends yes | No answer recorded in the supplied deck | OPEN | 02d |
+| D33 | Money-meaning items kept as Jonathan's: the era finish rule "without going broke"; whether a skipped month's unedged bed shows on the island or only in the Books | — | No answer recorded in the supplied deck | OPEN | 02c |
+
+### Pins
+
+| Pin | Date | Pass | Merge SHA | Geography revision | Presence world |
+|---|---|---|---|---|---|
+| PIN-0 | Pending | 0 Reconcile | Pending | `hearth-mountain-geo-2` | `hearth-mountain-geo-2` |

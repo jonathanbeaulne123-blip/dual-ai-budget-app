@@ -1,4 +1,4 @@
-import {DISTRICTS,type Point3} from "../mountain/definition.ts";
+import {DISTRICTS,type WorldPoint3} from "../worldDistricts.ts";
 import type {HarbourReading} from "../data/reading.ts";
 import type {HarbourPlaceId} from '../flag.ts';
 import {HARBOUR_PLACE_NAMES} from '../flag.ts';
@@ -19,8 +19,8 @@ export const DESK_PLACE_DOORS:Record<HarbourPlaceId,Door[]>={
  campfire:[{label:'Talk with Hercules',target:'hercules'},{label:'Plan together',target:'plan-studio'},{label:'Our Journey',target:'journey'}],
 };
 const LOCATIONS:Record<HarbourPlaceId,string>={court:'Town square · at the waterfront',bank:'Town square · the Fund bank',kitchen:'Hearth Terrace · our home',tower:'Hearth Terrace · our loft',cellar:'Hearth Terrace · our cellar',atlas:'Hearth Terrace · Atlas nook',library:'Library Woods · beside the gorge',glasshouse:'Glasshouse Meadows · among the gardens',cottage:'Orchard Hollow · Hercules’s cottage',kiln:'Town square · the Pottery Studio',boathouse:'Town square · the quay',campfire:'Waterfront · by the fire'};
-export function deskOutdoorDistrict(at?:Point3){return at?DISTRICTS.find(d=>Math.abs(at[1]-d.at[1])<=12&&Math.hypot(at[0]-d.at[0],at[2]-d.at[2])<=d.radius*1.5):undefined;}
-export function DeskPlace({outdoorAt,reading,place,onOpen,onGuide,onVisit}:{outdoorAt?:Point3;reading?:HarbourReading;place:HarbourPlaceId;onOpen:(target:string,object?:string)=>void;onGuide:()=>void;onVisit:(place:HarbourPlaceId)=>void}){
+export function deskOutdoorDistrict(at?:WorldPoint3){return at?DISTRICTS.find(d=>Math.abs(at[1]-d.at[1])<=12&&Math.hypot(at[0]-d.at[0],at[2]-d.at[2])<=d.radius*1.5):undefined;}
+export function DeskPlace({outdoorAt,reading,place,onOpen,onGuide,onVisit}:{outdoorAt?:WorldPoint3;reading?:HarbourReading;place:HarbourPlaceId;onOpen:(target:string,object?:string)=>void;onGuide:()=>void;onVisit:(place:HarbourPlaceId)=>void}){
  const district=place==='court'?deskOutdoorDistrict(outdoorAt):undefined;
  const mountainPath=place==='court'&&outdoorAt&&outdoorAt[1]>6;
  const location=district?`${district.name} · on the mountain`:mountainPath?'Mountain path · above town':LOCATIONS[place];

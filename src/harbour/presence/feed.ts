@@ -44,11 +44,13 @@ export type WorldFeed = {
   walk: PlaceWalkSource | null;
   /** The live peer's member id — the server's word for who it is. */
   memberId: string | null;
+  /** A peer exists but its position belongs to another geography revision. */
+  unavailable: boolean;
 };
 
 export type WorldFeedProvider = (request: WorldFeedRequest) => WorldFeed;
 
-const QUIET: WorldFeed = { walk: null, memberId: null };
+const QUIET: WorldFeed = { walk: null, memberId: null, unavailable: false };
 const quiet: WorldFeedProvider = () => QUIET;
 let provider: WorldFeedProvider = quiet;
 

@@ -1,0 +1,1359 @@
+# Hearth / The Horizon — pitch package
+
+## Start here
+- `Hearth_The_Horizon_Pitch_Deck.pdf` — 47-page reading/presentation edition.
+- `Hearth_The_Horizon_Pitch_Deck.pptx` — PowerPoint with editable text/layout and detailed speaker notes; diagrams are embedded images, with the masterplan SVG supplied separately.
+- `Hearth_The_Horizon_Review.html` — self-contained offline review: slide navigation, readable notes, source register, and a map lab with route filters and seven clickable building anchors. Open it in a browser.
+
+## Map handoff
+`Horizon_Masterplan.pdf/.png/.svg` includes the masterplan legend and real place names. Separate vehicle, skate, pedestrian and water images use the same layout. `Horizon_Concept_Manifest.json` contains the proposal’s anchors and route control points.
+
+The JSON is a DESIGN HANDOFF, not an application schema or import-ready WorldDefinition. It must not be loaded into the live app as navigation, collision or financial state.
+
+## What this is
+A source-grounded proposal for the user-selected “01 The Horizon” island. It keeps seven actual building hosts, twelve existing place IDs, and the three requested movement networks. Exact placement, scale, grades, vehicle envelope, crossings, the west dry accent and the reservoir display separation remain design proposals.
+
+Source screenshots come from the supplied Mountain Dissection PDF. Repository references are pinned to `2d9c21923c261ae14914eee3b1cbf908d3ec2fe7`. The review is a historical snapshot; parallel changes must be reconciled before implementation. No repository changes, deployments, live data modifications or Horizon gameplay tests were performed.
+
+## Visual status
+The selected Horizon illustration is the visual north star. New maps, cutaways and ground-level images in the deck are intentionally labelled concept/planning sketches. They are not finished environment art, replacement Mandevilla models or runtime captures.
+
+## Source trail
+`Sources_and_Design_Notes.md` and the PowerPoint speaker notes provide per-slide rationale and full source locations. No font files or external runtime dependencies are bundled.
+-----
+# Hearth / The Horizon — Sources and Design Notes
+
+Version 0.1 · 24 September 2026
+
+This is a design pitch, not a playable prototype, financial recommendation, approved build plan or test report. The only direction selected by Jonathan is the Horizon concept and the stated route/style constraints; new placements and parameters are proposals. No repository or live app changes were made.
+
+## Source register
+
+### MD — Mountain Dissection.pdf
+User-supplied PDF · 17 pages · printed 24 September 2026, 8:17 PM
+Historical visual review; visible screenshots and text only. Its defects are not asserted to remain open while parallel work continues.
+
+### REF — Approved concept 01 — The Horizon
+User-selected left panel of a_wide_colorful_concept_art_map_poster_in_a_clean.png
+Landscape and mood reference, not a literal building inventory or a scale-accurate plan.
+
+### WII — User-supplied Wii Sports Resort island reference
+how-much-time-did-you-guys-spend-here-cause-i-spent-a-lot-v0-t028c4cnc2md1.webp
+Visual reference only: openness, legible landmarks, broad clear ground, inviting colour. No claim to reuse Nintendo assets.
+
+### G1 — Physical buildings and place addresses
+https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/2d9c21923c261ae14914eee3b1cbf908d3ec2fe7/src/harbour/village/layout.ts
+VILLAGE_SITES names 7 buildings. SITE_FOR_PLACE and ROOM_PORTALS keep Kitchen, Loft, Cellar and Atlas nook in Our home.
+
+### G2 — HarbourReading and room projections
+https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/2d9c21923c261ae14914eee3b1cbf908d3ec2fe7/src/harbour/data/reading.ts
+Read-only projections for Court, Loft, Cellar, Glasshouse, Kitchen, Boathouse, Cottage, Kiln, Campfire and Atlas. Inspected lines 1–260 and 400–660.
+
+### G3 — Tool routing and return records
+https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/2d9c21923c261ae14914eee3b1cbf908d3ec2fe7/src/house/navigation.ts
+Existing owner surfaces and object routes; tools need not move the physical origin. Includes TARGET_NAMES, HOUSE_TARGET_PLACES and version-gated saved body positions.
+
+### G4 — BasinReading and basin view
+https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/2d9c21923c261ae14914eee3b1cbf908d3ec2fe7/src/harbour/mountain/basin.ts
+Confirmed Fund contribution/settlement and reserve flows only; unknown remains unknown. Natural lake separation in this pitch is a proposed presentation change.
+
+### G5 — Hearth court dressings
+https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/2d9c21923c261ae14914eee3b1cbf908d3ec2fe7/src/harbour/court/dressing.ts
+Classic, Taylor and Newfoundland palettes/material props; porcelain, warm stone, timber, botanical details. Diagram colours adapt these materials for readability.
+
+### G6 — Place contract and scene dressing
+https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/2d9c21923c261ae14914eee3b1cbf908d3ec2fe7/src/harbour/scene/place.ts
+Place runtime owns renderer/camera/loop; places own their objects and anchors. SceneDressingFrom shares Court palette. Inspected lines 1–230.
+
+### G7 — Kitchen, Boathouse and Library design lineage
+https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/blob/2d9c21923c261ae14914eee3b1cbf908d3ec2fe7/docs/worksessions/2026-09-20-little-harbour-slices-7-10.md
+Historical design note. Supports original intent of five-question recipe cards and station-to-tool mappings, not its then-current deployment status.
+
+### G8 — Pinned source revision
+https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/commit/2d9c21923c261ae14914eee3b1cbf908d3ec2fe7
+Read-only snapshot retrieved during this pitch. Commit: Integrate the living mountain with the place-aware Hearth Desk (#537). Concurrent work is not included automatically.
+
+### OP — Our Path — Living World Engine v0.1
+Our_Path_Living_World_Rulebook_v0_1.md · 16 September 2026 · Library source
+Prior proposed growth/erosion/repair specification. Confirmed direction is distinct from unapproved numerical mechanics. This pitch does not activate it.
+
+### BRIEF — Jonathan’s directions in this conversation
+Current conversation
+Choose concept 01; fewer buildings, more open land, varied biomes, Hearth style; 3 distinct route types; screenshots first; full deck rather than one image.
+
+## Slide-by-slide design rationale
+
+### 01. The Horizon
+Chapter: WORLD DISSECTION / DESIGN PITCH
+Sources: REF, BRIEF, G1
+The user chose 01 The Horizon, not the archipelago or sanctuary. This deck develops that direction into a source-grounded, spatially specific proposal. The approved illustration remains a reference; the new map is a planning diagram. No production code or user financial state was modified.
+
+### 02. Seven buildings. An entire world.
+Chapter: 00 / THE PROPOSITION
+Sources: G1, BRIEF, REF
+G1 supplies the count of seven actual app buildings. The outdoor Court and Campfire are not extra buildings. Transport shelters, bridges and a lookout are landscape infrastructure, not invented app destinations. The pitch preserves open space and distributes the existing places rather than filling the approved illustration’s town literally.
+
+### 03. What is decided—and what this deck proposes
+Chapter: 00 / THE PROPOSITION
+Sources: BRIEF, MD pp.6–17, G8
+The new layout, heights, route widths, named recreation lines, narrative walkthroughs and visual treatment are recommendations for discussion. Source defects are treated as historical findings. Jonathan said the other information is being worked on; this deck does not claim fixes are missing today. Snapshot pinning prevents accidental mixing with unseen concurrent changes.
+
+### 04. Keep the openness—not the illustrated town
+Chapter: 00 / THE PROPOSITION
+Sources: WII, REF, G1
+Read the images for the balance of land and landmarks. The latest user-selected image still contains a decorative town; seven actual buildings, not every painted roof, are the binding inventory for this proposal. The mountain is a northern visual anchor, not the shape of the whole map.
+
+### 05. From a stacked mountain to a connected landscape
+Chapter: 00 / THE VISUAL DISSECTION
+Sources: MD pp.6,9, REF
+The Mountain Dissection page 6 diagram and page 9 aerial show stacked traverses and destinations distributed by altitude. This slide’s interpretation is compositional, not a re-run of the source’s defect audit. The proposal creates a lower populated landscape, a smaller remote highland mass, a loop road and a connected water corridor.
+
+### 06. First 60 seconds: a welcome, not a flyover
+Chapter: 01 / FIRST 60 SECONDS
+Sources: G2, G3, BRIEF
+The scene begins at the existing Court, at useful character height. The mailbox and familiar Queen remain the source-supported orientation objects. The four beats are proposed pacing, not measured launch times. The person may skip the entire scenic sequence and open the existing tool owner immediately. Do not counterfeit live partner presence or real activity to make the world busy.
+
+### 07. The Horizon masterplan
+Chapter: 02 / LANDSCAPE & PLACEMENT
+Sources: G1, BRIEF
+The plan uses a conceptual metre grid with north at the top. Positions, heights and route controls are explicitly provisional. B01 Our home: lower meadow. B02 Fund bank: Court edge. B03 Library: woodland edge. B04 Glasshouse: lakeside meadow. B05 Studio: dry/meadow transition. B06 Cottage: orchard. B07 Boathouse: sheltered south river/harbour approach. The JSON manifest is a handoff description, not an app-importable WorldDefinition.
+
+### 08. Seven buildings become twelve existing places
+Chapter: 02 / LANDSCAPE & PLACEMENT
+Sources: G1, G2, G3
+Count method: Our home carries kitchen, tower, cellar and atlas (four physical places inside one building). Six other buildings contribute bank, library, glasshouse, kiln, cottage and boathouse. Court and Campfire are outdoor places. This totals 12 Harbour place IDs using 7 buildings. Physical maps follow VILLAGE_SITES/SITE_FOR_PLACE rather than stale descriptive comments about the atlas roof.
+
+### 09. Elevation should create moments—not a ladder
+Chapter: 02 / TERRAIN DISSECTION
+Sources: MD pp.6–10, REF
+The source review critiques equal altitude bands and a plateau-cone construction. These proposed height bands are starting values for a hand-authored heightfield, not a validated terrain calculation. Foundations, ramps, river banks and corridors must be solved together in 3D. Do not inflate the world merely to reach a coordinate target.
+
+### 10. Different biomes. Different reasons to linger.
+Chapter: 02 / TERRAIN DISSECTION
+Sources: REF, BRIEF, MD pp.10–13
+The dry plateau is a proposed extension of Horizon’s west coast responding to the user’s requested desert/plateau diversity. The biomes blend by terrain and planting; they are not nearest-centre tints or perfect rings around buildings. Large snow regions from the other concepts are not included. Each biome combines geometry, plant families, light, ground material and spatial rhythm.
+
+### 11. From source to sea—with a truthful Fund instrument
+Chapter: 02 / TERRAIN DISSECTION
+Sources: G4, MD pp.7,10
+Existing BasinReading projects the shared Fund’s operating balance, Kitty reserves, free-to-spend, pending contributions and confirmed flows. It does not equate generic expenses or a worked shift with a confirmed bank movement. This pitch proposes placing a contained, labelled chamber beside the dam while the natural lake and river remain ambience. That is a material presentation change, not an existing implemented rule. Scale changes and unknown/freshness states must be legible.
+
+### 12. Open space is part of the product
+Chapter: 02 / TERRAIN DISSECTION
+Sources: BRIEF, G1, REF
+Open space is not a backlog of buildings. Keep visual corridors, future-friendly but unpromised clearings, and quiet land that does not require a task or reward. These are compositional targets rather than measured area percentages. A no-props terrain review and repeated eye-height screenshots should establish the right balance before decoration.
+
+### 13. Three networks—not three colours on the same path
+Chapter: 03 / MOVEMENT
+Sources: BRIEF
+These sections translate Jonathan’s three route types into physical design. The road is genuinely paved, broad and unobstructed for future vehicles. The skate corridor offers embodied speed control and optional route choices integrated into terrain and supported architecture. The pedestrian network is board-free and vehicle-free, with an alternative to stairs where a required destination would otherwise be inaccessible. Dimensions are gameplay blockout targets, not civil engineering standards.
+
+### 14. V01 / Horizon Drive
+Chapter: 03 / ROADS & ROUTES
+Sources: BRIEF, MD pp.6–9
+V01 is a lower island loop. V02 is a highland spur ending at a summit approach, not a road forced through every destination. Short arrival spurs stop behind gardens; they do not put vehicles through the Court. Concept targets: 8 m running surface, 1 m shoulder each side, 5 m clear height, gentle typical grades around 4–6%, review sections above 8%. These need vehicle steering, clearance and gradient validation. The two labelled tunnels and gorge bridge are reservations, not implemented structures.
+
+### 15. Bridge, tunnel, doorstep: three different structures
+Chapter: 03 / ROADS & ROUTES
+Sources: MD pp.7–8,17, BRIEF
+The review’s historical screenshots and descriptions motivate the distinction between rendered ribbons and inhabited structures. A bridge needs thickness and support visible from below, plus appropriate edge collision. A tunnel needs a roof/ceiling and a camera-compatible interior. A destination arrival needs a clear vehicle stop and a door-facing pedestrian route. Reuse the existing surface/collision contracts while re-authoring geometry and arrival relationships.
+
+### 16. Skate the island—not a track pasted onto it
+Chapter: 03 / ROADS & ROUTES
+Sources: BRIEF, MD p.8
+S1 Meadow Roll is the forgiving main descent from the lake terrace to the south landing. S2 Makers’ Weave moves through the Library’s service side, studio terrace and orchard edge, using a ground bypass and optional supported gallery. S3 Gorge Line is a later skill route along the east valley, with a deliberately grade-separated road crossing. The diagram is topology/intent; it is not a validated 3D skating surface. Finishes stop before pedestrian destinations and need sufficient runout.
+
+### 17. Shape the speed, then tune the controller
+Chapter: 03 / ROADS & ROUTES
+Sources: BRIEF, MD p.8
+This is an authored experience profile, not a simulated speed curve. Use deliberate grades, broad banked curves, surface response and player-controlled braking. Optional branches split with sight distance and rejoin with room to see other movement. Main-line width is proposed at 3–4 m; reunions and braking pockets 5–6 m. Every jump or grind must be optional; a forgiving ground alternative must remain. None of these values is a real-world skating safety recommendation.
+
+### 18. Hide the play inside useful architecture
+Chapter: 03 / ROADS & ROUTES
+Sources: BRIEF, MD pp.8,12, G1
+The optional route is built into the side retaining terrace and gallery, not floated near the Library and called its roof. The ordinary entrance remains clear, and the reading courtyard is pedestrian-only. The support columns and roof clearance belong to the same authored geometry used by collision. A lower bypass shares the entry and reunion; neither line changes the underlying Books tool. The sketch is diagrammatic and does not replace the existing Library model without an asset review.
+
+### 19. The quiet network is not the leftover network
+Chapter: 03 / ROADS & ROUTES
+Sources: BRIEF, G1
+Four primary quiet routes are proposed, supplemented by actual door approaches and a short summit walk. W1 connects Court, bank and home. W2 joins the Library and Glasshouse through orchard and woodland. W3 stays close to the gorge and water. W4 follows dunes and the southern Campfire. W6 is a direct pedestrian connector between the core and Library. Crossing or arriving from a vehicle or board requires a clear, deliberate park/dismount action; do not silently transform the user’s mode or leave an invisible wall. Required app access remains available through quick tools.
+
+### 20. A crossing on the map is not a collision in the world
+Chapter: 03 / ROADS & ROUTES
+Sources: BRIEF, MD pp.7–8,17
+X01 is a conceptual grade-separated interchange, not a completed engineering section. The vehicle road crosses high on a supported bridge; the skate line uses a lower supported shelf/underpass; the pedestrian path stays riverside. Piers, railings, camera clearance and visible geometry must use the same surface/collision definition. Any 2D intersection elsewhere in the plan must be resolved explicitly as separated or a controlled dismount/arrival threshold before it is treated as traversable.
+
+### 21. Transport should give us another way to see the island
+Chapter: 03 / ROADS & ROUTES
+Sources: MD pp.5,14,17, G8
+The source contains gondola and funicular systems. This pitch recommends a cross-gorge gondola alignment G1 and a separate short highland funicular F1, but their exact stops and physics must be reconciled with parallel transport work. The stations are modest infrastructure, not additional app buildings. Boarding by proximity, explicit rider attachment and a dedicated scenic camera are acceptance needs drawn from the source audit, not assertions that they remain broken.
+
+### 22. Scale the world by chosen journeys
+Chapter: 03 / MOVEMENT & ACCESS
+Sources: G3, G8, BRIEF
+The world metre grid is a provisional blockout scale. Route lengths below are simple sums between authored control points, so they are lower-resolution estimates rather than final spline arc lengths. Times use explicitly assumed average speeds with no stops; they are not measured performance. V01 about 1,786 m / 12 m/s = 149 s. S1 about 490 m / 6 m/s = 82 s. W1 about 184 m / 1.7 m/s = 108 s. These are calibration examples, not requirements to perform daily tasks. Open a money tool from anywhere and restore scene context afterwards.
+
+### 23. B01 / Our home stays the everyday centre
+Chapter: 04 / HOW HEARTH FITS
+Sources: G1, G2, G3, G7
+Existing: kitchen reading shows Plan recipe cards; the actual Plan Studio owns confirmation. Tower/Loft shows Kitty Banks. Cellar shows bill jars and timing. Atlas reads Journey eras in words/counts. The new geography places this one house near the Court, with a vehicle stop behind its garden and a board-free front approach. A view through a window is a proposed rendering/placement requirement, not current evidence.
+
+### 24. C01 + B02 / familiar truth in a new setting
+Chapter: 04 / HOW HEARTH FITS
+Sources: G1, G2, G3, G4
+The Court’s existing HarbourReading carries Everyday, Prepare, Protect and Build as nullable values. Preserve the actual Mandevilla and chess-piece asset masters; the four native cards on this slide are explanatory labels, not new character designs. The Fund bank should open its existing banking surface and verified reading, not create a second budget calculation. Personal/private semantics are not inferred from a shared world diagram.
+
+### 25. B03 + B04 / understand, then act
+Chapter: 04 / HOW HEARTH FITS
+Sources: G1, G2, G3, G7
+The Library is the Standing Book’s hall and does not gain a new private ledger. The Glasshouse is the Master Planner: task pots with seed/sprout/bloom states. The proposal keeps them about 160 conceptual metres apart with a direct quiet garden connection. It does not silently reassign the Glasshouse to be the savings engine. The same task ID and Books object are opened by the existing doors.
+
+### 26. B05 + B06 / making has a place of its own
+Chapter: 04 / HOW HEARTH FITS
+Sources: G1, G2, G3
+B05 remains the Pottery Studio / kiln place; its shelf reads actual fired pieces, not invented crafting currency. B06 remains Hercules’s Cottage, with wardrobe, looks and keepsakes. The proposed studio terrace uses the dry plateau’s material language but does not create a mining economy or require purchases to unlock clay. The linked S2 route bypasses both pedestrian door aprons.
+
+### 27. B07 + C02 / imagine, remember, close a chapter
+Chapter: 04 / HOW HEARTH FITS
+Sources: G1, G2, G3, G7
+The Boathouse’s existing stations lead to wishes, memories/projector, letters, encounters and pottery. Its room projection uses counts rather than revealing private contents. The Campfire is the month’s Chapter/paired review ritual, not a new budgeting mini-game. Closing a Chapter still occurs through the existing owner and confirmation flow; sitting in a scenery chair is not sufficient authority. The dune path has no financial or engagement reward.
+
+### 28. L01 + L02 / two landmarks, two meanings
+Chapter: 04 / HOW HEARTH FITS
+Sources: G4, G2, MD pp.10,12–13
+Do not confuse the natural lake with a savings score. Existing BasinReading carries confirmed Fund facts; the proposed chamber hosts that reading with an explicit as-of label and scale. The summit is not a visual rank tied to household wealth. It is a free landscape destination with a view of the same inhabited world. Existing Journey content remains owned by the Atlas/Journey routes; the summit can offer a door, not a second Journey implementation.
+
+### 29. One autumn weekend, moving through the whole app
+Chapter: 04 / A SPECIFIC APP STORY
+Sources: G1, G2, G3, G7
+Fictional design walkthrough, not Jonathan and Bianca’s actual plan. Start from a wish, open a Plan Studio line with an explicit target, deadline, funding source and owner; use a distinct linked goal object in Kitty Banks, a distinct task object in the Planner, and eventually an explicit memory object after the event is known to have happened. A single goal ID does not replace every object type. The cross-tool connections shown are a proposed experience: use supported existing links and verify missing relationships before implementation. No automatic memory or real trip completion is inferred from a purchase.
+
+### 30. Three kinds of life in the same landscape
+Chapter: 04 / MEANING WITHOUT A SECOND LEDGER
+Sources: G2, G4, G6, OP
+The first layer reuses existing permission-appropriate read models. The second is clearly ambient life independent of financial status, such as waves and tree movement. The third is a later Our Path-derived history/growth layer; the earlier rulebook distinguishes confirmed direction from proposed mechanics. Erosion/recovery activation, wider privacy semantics, event provenance and correction handling need a reviewed adapter and are not part of this terrain pitch. One source fact must not be counted twice through multiple displays.
+
+### 31. Hearth’s art style, widened to a landscape
+Chapter: 05 / LANDSCAPE & ART
+Sources: G5, G6, MD pp.10–13, BRIEF
+G5 gives the actual Court dressings: Classic warm stone, timber, terracotta and porcelain; Taylor scrapbook/paper-floral props; Newfoundland slate, clapboard, rope and harbour material. The proposal brightens the large landscape composition without abandoning this material family. Palette patches alone do not create a biome. Existing Mandevilla character masters remain the asset source. This deck’s icons/sketches are stand-ins for layout discussion, not approved replacement meshes.
+
+### 32. View A / the mountain is a promise, not a wall
+Chapter: 05 / CAMERA & COMPOSITION
+Sources: REF, MD pp.9,13, G1
+Proposed hero view from the Court. Keep the horizon in frame at character height. Three visible buildings are enough to suggest a larger inhabited place. The mountain occupies a limited part of the view. The lake and a bridge hint at routes without drawing the entire road network in front of the camera. This is an authored design sketch; only a later runtime capture can prove the view is reachable and unclipped.
+
+### 33. View B / arriving at the Library should reveal the Library
+Chapter: 05 / CAMERA & COMPOSITION
+Sources: MD p.12, G1, G3
+The left image is the exact historical screenshot from page 12, not a fresh observation of the current app. The right image is an authored conceptual approach. Keep the building in frame, the entry legible and the garden path connected. The scene origin, facing and return direction must be tied to the door anchor so that opening and closing Books does not turn the first step back into the building.
+
+### 34. View C / the same gorge from three speeds
+Chapter: 05 / CAMERA & COMPOSITION
+Sources: BRIEF, MD pp.7,9
+The vehicle view looks ahead across the supported span, reading both abutments and the exit. The skate view sees a banked shelf and reunion before it arrives. The walking view can pause beside the water and see the underside of the same bridge. These are camera briefs over the same geometry, not three unrelated scenes. The crossing section was introduced earlier; this slide asks the team to capture three actual viewpoints from it.
+
+### 35. View D / a place with nothing to complete
+Chapter: 05 / CAMERA & COMPOSITION
+Sources: BRIEF, G1, G2
+A quiet pedestrian scene adjacent to existing Campfire/Boathouse places. No bonus for arrival, no timer, no invented earning or wellbeing claim. A natural pause should remain available without a financial milestone or a login streak. Context-sensitive app access remains available but does not need to cover the scene. This proposed image is a sketch, not evidence of gameplay or implemented ambience.
+
+### 36. One camera contract across every kind of movement
+Chapter: 05 / CAMERA & COMPOSITION
+Sources: G3, G6, MD pp.13–17
+The source audit discusses multiple camera controllers and handoff problems; parallel work may already address some. This pitch defines the integration contract rather than claiming a fix. Carry location, body pose, movement mode, camera composition, focused object and tool return context. Overview must not accidentally trigger Journey. Named shots need actual terrain/occlusion tests. Existing saved-position validation is version-bound to the old world, so the Horizon world version and migration need an explicit reviewed change.
+
+### 37. The phone should show the person—not the interface
+Chapter: 05 / PHONE & QUIET EDITION
+Sources: MD p.16, G8, G3
+The source phone screenshot is a historical snapshot. The phone mockup is a design target with a clear rider/view corridor, minimal board controls and persistent quick access; it is not a tested responsive implementation. Keep Simple view / the existing Desk for low-motion or unavailable WebGL conditions. The same facts and tasks must remain accessible, with the source owner preserving permissions and unknown states.
+
+### 38. Keep the plumbing. Re-author the place.
+Chapter: 06 / KEEP · RE-AUTHOR · COORDINATE
+Sources: MD p.17, G1, G2, G3, G6
+This follows the source review’s explicit keep/re-author split. Preserve core financial semantics, selectors, room identity, original character/asset masters, object routes, privacy and supported-reading gates. Re-author landform and physical kits. Coordinate with the ongoing movement, camera, surface and transport work; do not overwrite it with an old generated patch. Tests cited in the source are source claims, not tests run for this pitch.
+
+### 39. Before terrain surgery: one shared world definition
+Chapter: 06 / IMPLEMENTATION SHAPE
+Sources: G1, G3, G6, MD p.17
+The concept manifest delivered with the deck carries proposed place anchors and route control points only. It is not directly compatible with the runtime WorldDefinition. Implementation should convert approved design into a versioned authoritative world definition shared by terrain surfaces, collision, graph edges, plot doors, overlays and streaming bounds. Existing saved body positions accept only the old world/version and bounds in G3, so an identity-aware migration/fallback is mandatory, not an optional later polish item.
+
+### 40. Build connected slices—not another isolated demo
+Chapter: 06 / DELIVERY PLAN
+Sources: BRIEF, MD p.17, G8
+These are gated work packages, not dates or effort estimates. Phase 0 reconciles the latest source and approvals. Phase 1 builds continuous terrain with water and three greybox networks plus the seven placeholder buildings. Phase 2 finishes a Court–home–Library–lake–skate–shore journey to a real quality bar while preserving tools. Phase 3 extends that bar to the full inventory and named views. Cars, boats, gliders and live financial terraforming remain separate later tracks. Each stage needs evidence on actual target devices before it is claimed complete.
+
+### 41. Acceptance means showing the experience
+Chapter: 06 / PROOF BEFORE EXPANSION
+Sources: MD pp.5–17, BRIEF
+All acceptance requirements on this slide are proposed and have not been run against a Horizon build. Require actual screenshot/video evidence from a named phone and desktop, route recordings in each mode, and tool return tests. The visibility requirements are derived from specific source screenshots. Technical evidence should verify surface agreement, road clearance, mode boundaries, safe arrivals, privacy/freshness and stable object identity. Do not label headless screenshots as physical-device validation.
+
+### 42. The first green light should be for the land
+Chapter: 06 / RECOMMENDATION
+Sources: BRIEF, G1
+Recommended decisions: keep Horizon as a single primary island; use the exact seven building hosts; keep the vehicle loop, three skate lines and four main quiet loops as the topology to test; approve the western dry accent for exploration; review the contained reservoir display before changing the existing Fund presentation. Authorisation to implement is not implied by this deck. No branch changes, deployments or world migrations were performed.
+
+### 43. Appendix A / the complete place crosswalk
+Chapter: APPENDIX / IMPLEMENTATION REFERENCE
+Sources: G1, G2, G3
+This table is the authoritative place crosswalk in the pitch. It follows the actual layout source rather than inferring a tool from a building’s name. The fund bank preserves its existing banking hall; physical room and owner target are distinct in the routing layer. Shifts is available through quick tools wherever the user stands, and does not require a new building. The generic icons in the maps are not replacement art assets.
+
+### 44. Appendix B / route calibration, not promises
+Chapter: APPENDIX / IMPLEMENTATION REFERENCE
+Sources: BRIEF
+Lengths are computed from straight segments between the delivered concept control points, rounded to the nearest metre. This is not measured playtime. Assumed average speeds illustrate a design tradeoff rather than a controller configuration: vehicles 12 m/s, skates 6 m/s, walking 1.7 m/s. Acceleration, curves, slopes, collisions, waits and pauses are omitted. Do not turn these numbers into acceptance promises or real-world safety guidance.
+
+### 45. Appendix C / source trail and confidence
+Chapter: APPENDIX / PROVENANCE
+Sources: MD, REF, G1, G2, G3, G4, G5, G6, G7, G8
+Every source code reference is pinned to the retrieved revision 2d9c21923c261ae14914eee3b1cbf908d3ec2fe7. G7 is used only for historical design intent, not its old deployment status. The supplied PDF is a print capture with blank/truncated areas; this pitch relies only on visible text and images. Original diagram artwork is explicitly proposed. Concept generation posters with incidental text, travel times and dense town imagery are not treated as factual sources. Speaker notes and the supplied Sources_and_Design_Notes.md contain the full source trail.
+
+### 46. Appendix D / the visual questions that started the redesign
+Chapter: APPENDIX / SOURCE PLATE
+Sources: MD pp.9,12–13
+These are the user’s supplied screenshots extracted from the PDF without altering their visual content. Page 9 aerial: how can the main landmark stop being the road? Page 9 road view: what does the player see at ground level? Page 12 Library arrival: does arrival frame the destination? Page 13 Glasshouse: is each place a distinctive, supported space rather than an isolated prop? The deck answers these as a pitch, not as a claim that existing repair work is missing.
+
+### 47. The Horizon
+Chapter: THE HORIZON / RECOMMENDED DIRECTION
+Sources: BRIEF, REF, G1
+The closing recommendation is to move ahead with a connected Horizon blockout using the seven actual buildings and the three distinct networks. This does not approve future vehicles, new financial rules or the full backlog. The deck, map and concept manifest are review/handoff assets only.
+-----
+{
+  "title": "Hearth / The Horizon — Concept Manifest",
+  "version": "0.1",
+  "status": "PROPOSAL — not an app schema, imported map or runtime build",
+  "basis": {
+    "selected_concept": "01 The Horizon",
+    "source_snapshot": "2d9c21923c261ae14914eee3b1cbf908d3ec2fe7",
+    "source_review": "Mountain Dissection.pdf, 24 September 2026"
+  },
+  "coordinates": {
+    "x": "east, concept metres",
+    "y": "south, concept metres; becomes z in a game engine",
+    "vertical": "height_m is a provisional plot elevation, not solved terrain",
+    "extent": [
+      1000,
+      1160
+    ],
+    "note": "Diagram geometry only. These path centreline controls are NOT navigation/collision-ready."
+  },
+  "places": [
+    {
+      "id": "B01",
+      "label": "Our home",
+      "xy": [
+        570,
+        820
+      ],
+      "height_m": 16,
+      "type": "home",
+      "place_ids": [
+        "kitchen",
+        "tower",
+        "cellar",
+        "atlas"
+      ],
+      "arrival": "R-home / W1",
+      "biome": "Lower meadow"
+    },
+    {
+      "id": "B02",
+      "label": "The Fund bank",
+      "xy": [
+        420,
+        840
+      ],
+      "height_m": 12,
+      "type": "bank",
+      "place_ids": [
+        "bank"
+      ],
+      "arrival": "R-bank / W1",
+      "biome": "Court edge"
+    },
+    {
+      "id": "B03",
+      "label": "The Library",
+      "xy": [
+        400,
+        520
+      ],
+      "height_m": 38,
+      "type": "library",
+      "place_ids": [
+        "library"
+      ],
+      "arrival": "R-library / W2",
+      "biome": "Woodland edge"
+    },
+    {
+      "id": "B04",
+      "label": "The Glasshouse",
+      "xy": [
+        560,
+        540
+      ],
+      "height_m": 34,
+      "type": "glass",
+      "place_ids": [
+        "glasshouse"
+      ],
+      "arrival": "R-glasshouse / W2",
+      "biome": "Lakeside meadow"
+    },
+    {
+      "id": "B05",
+      "label": "The Pottery Studio",
+      "xy": [
+        280,
+        620
+      ],
+      "height_m": 27,
+      "type": "studio",
+      "place_ids": [
+        "kiln"
+      ],
+      "arrival": "R-studio / W2 connection",
+      "biome": "Ochre-meadow transition"
+    },
+    {
+      "id": "B06",
+      "label": "Hercules’s cottage",
+      "xy": [
+        345,
+        715
+      ],
+      "height_m": 20,
+      "type": "home",
+      "place_ids": [
+        "cottage"
+      ],
+      "arrival": "R-cottage / W2",
+      "biome": "Orchard hollow"
+    },
+    {
+      "id": "B07",
+      "label": "The Boathouse",
+      "xy": [
+        645,
+        910
+      ],
+      "height_m": 4,
+      "type": "home",
+      "place_ids": [
+        "boathouse"
+      ],
+      "arrival": "R-boathouse / W4",
+      "biome": "Sheltered south shore"
+    }
+  ],
+  "outdoor_and_landscape_anchors": [
+    {
+      "id": "C01",
+      "label": "Queen’s Court",
+      "xy": [
+        490,
+        863
+      ],
+      "kind": "existing outdoor place"
+    },
+    {
+      "id": "C02",
+      "label": "Campfire",
+      "xy": [
+        565,
+        970
+      ],
+      "kind": "existing outdoor place"
+    },
+    {
+      "id": "L01",
+      "label": "Reservoir instrument",
+      "xy": [
+        696,
+        478
+      ],
+      "kind": "relocated read-only landmark"
+    },
+    {
+      "id": "L02",
+      "label": "Summit lookout",
+      "xy": [
+        654,
+        158
+      ],
+      "kind": "landscape landmark"
+    }
+  ],
+  "road": {
+    "V01": [
+      [
+        454,
+        885
+      ],
+      [
+        319,
+        810
+      ],
+      [
+        237,
+        704
+      ],
+      [
+        221,
+        585
+      ],
+      [
+        261,
+        472
+      ],
+      [
+        368,
+        401
+      ],
+      [
+        506,
+        398
+      ],
+      [
+        570,
+        474
+      ],
+      [
+        657,
+        529
+      ],
+      [
+        782,
+        551
+      ],
+      [
+        837,
+        626
+      ],
+      [
+        793,
+        725
+      ],
+      [
+        720,
+        795
+      ],
+      [
+        689,
+        889
+      ],
+      [
+        589,
+        941
+      ],
+      [
+        502,
+        915
+      ],
+      [
+        454,
+        885
+      ]
+    ],
+    "V02": [
+      [
+        506,
+        398
+      ],
+      [
+        501,
+        324
+      ],
+      [
+        551,
+        249
+      ],
+      [
+        618,
+        203
+      ],
+      [
+        662,
+        208
+      ]
+    ],
+    "arrival_spurs": {
+      "bank": [
+        [
+          447,
+          876
+        ],
+        [
+          427,
+          874
+        ]
+      ],
+      "home": [
+        [
+          720,
+          795
+        ],
+        [
+          658,
+          799
+        ],
+        [
+          633,
+          821
+        ]
+      ],
+      "library": [
+        [
+          368,
+          401
+        ],
+        [
+          380,
+          455
+        ],
+        [
+          389,
+          481
+        ]
+      ],
+      "glasshouse": [
+        [
+          570,
+          474
+        ],
+        [
+          605,
+          495
+        ],
+        [
+          592,
+          522
+        ]
+      ],
+      "studio": [
+        [
+          237,
+          704
+        ],
+        [
+          259,
+          665
+        ],
+        [
+          255,
+          642
+        ]
+      ],
+      "cottage": [
+        [
+          319,
+          810
+        ],
+        [
+          339,
+          774
+        ],
+        [
+          347,
+          752
+        ]
+      ],
+      "boathouse": [
+        [
+          689,
+          889
+        ],
+        [
+          688,
+          922
+        ],
+        [
+          675,
+          929
+        ]
+      ]
+    },
+    "proposed_clear_width_m": 8,
+    "shoulder_each_m": 1,
+    "future_vehicles": true,
+    "grade_target_pct": "4–6 typical, review above 8; not solved"
+  },
+  "skate": {
+    "lines": {
+      "S1": [
+        [
+          620,
+          473
+        ],
+        [
+          630,
+          524
+        ],
+        [
+          598,
+          592
+        ],
+        [
+          628,
+          653
+        ],
+        [
+          594,
+          721
+        ],
+        [
+          620,
+          775
+        ],
+        [
+          599,
+          828
+        ],
+        [
+          611,
+          877
+        ],
+        [
+          611,
+          928
+        ]
+      ],
+      "S2": [
+        [
+          417,
+          474
+        ],
+        [
+          452,
+          521
+        ],
+        [
+          445,
+          563
+        ],
+        [
+          389,
+          616
+        ],
+        [
+          316,
+          616
+        ],
+        [
+          291,
+          650
+        ],
+        [
+          310,
+          697
+        ],
+        [
+          367,
+          746
+        ],
+        [
+          414,
+          787
+        ],
+        [
+          471,
+          815
+        ],
+        [
+          552,
+          875
+        ],
+        [
+          611,
+          877
+        ]
+      ],
+      "S2b": [
+        [
+          452,
+          521
+        ],
+        [
+          423,
+          516
+        ],
+        [
+          420,
+          550
+        ],
+        [
+          399,
+          565
+        ],
+        [
+          389,
+          616
+        ]
+      ],
+      "S3": [
+        [
+          783,
+          421
+        ],
+        [
+          800,
+          477
+        ],
+        [
+          767,
+          533
+        ],
+        [
+          713,
+          565
+        ],
+        [
+          736,
+          624
+        ],
+        [
+          718,
+          681
+        ],
+        [
+          761,
+          735
+        ],
+        [
+          737,
+          803
+        ],
+        [
+          712,
+          850
+        ],
+        [
+          724,
+          910
+        ],
+        [
+          708,
+          963
+        ]
+      ]
+    },
+    "proposed_width_m": [
+      3,
+      4
+    ],
+    "braking_and_reunion_width_m": [
+      5,
+      6
+    ],
+    "no_required_jumps": true,
+    "pedestrian_thresholds": "dismount/park before entering; no silent mode switch"
+  },
+  "walk": {
+    "lines": {
+      "W1": [
+        [
+          420,
+          840
+        ],
+        [
+          459,
+          825
+        ],
+        [
+          490,
+          863
+        ],
+        [
+          534,
+          852
+        ],
+        [
+          570,
+          820
+        ]
+      ],
+      "W2": [
+        [
+          400,
+          520
+        ],
+        [
+          365,
+          550
+        ],
+        [
+          351,
+          616
+        ],
+        [
+          345,
+          715
+        ],
+        [
+          402,
+          738
+        ],
+        [
+          440,
+          682
+        ],
+        [
+          463,
+          617
+        ],
+        [
+          503,
+          577
+        ],
+        [
+          560,
+          540
+        ],
+        [
+          531,
+          499
+        ],
+        [
+          469,
+          472
+        ],
+        [
+          400,
+          520
+        ]
+      ],
+      "W3": [
+        [
+          560,
+          540
+        ],
+        [
+          613,
+          553
+        ],
+        [
+          665,
+          576
+        ],
+        [
+          658,
+          628
+        ],
+        [
+          645,
+          683
+        ],
+        [
+          657,
+          741
+        ],
+        [
+          618,
+          779
+        ],
+        [
+          570,
+          820
+        ]
+      ],
+      "W4": [
+        [
+          490,
+          863
+        ],
+        [
+          412,
+          867
+        ],
+        [
+          363,
+          911
+        ],
+        [
+          300,
+          931
+        ],
+        [
+          328,
+          986
+        ],
+        [
+          402,
+          1004
+        ],
+        [
+          478,
+          975
+        ],
+        [
+          565,
+          970
+        ],
+        [
+          619,
+          943
+        ],
+        [
+          645,
+          910
+        ]
+      ],
+      "W5": [
+        [
+          662,
+          208
+        ],
+        [
+          633,
+          191
+        ],
+        [
+          654,
+          158
+        ]
+      ],
+      "W6": [
+        [
+          420,
+          840
+        ],
+        [
+          455,
+          785
+        ],
+        [
+          448,
+          724
+        ],
+        [
+          470,
+          646
+        ],
+        [
+          462,
+          578
+        ],
+        [
+          400,
+          520
+        ]
+      ],
+      "doorhome": [
+        [
+          633,
+          821
+        ],
+        [
+          608,
+          826
+        ],
+        [
+          570,
+          820
+        ]
+      ],
+      "doorbank": [
+        [
+          427,
+          874
+        ],
+        [
+          420,
+          840
+        ]
+      ],
+      "doorlib": [
+        [
+          389,
+          481
+        ],
+        [
+          394,
+          505
+        ],
+        [
+          400,
+          520
+        ]
+      ],
+      "doorglass": [
+        [
+          592,
+          522
+        ],
+        [
+          582,
+          542
+        ],
+        [
+          560,
+          540
+        ]
+      ],
+      "doorstudio": [
+        [
+          255,
+          642
+        ],
+        [
+          272,
+          633
+        ],
+        [
+          280,
+          620
+        ]
+      ],
+      "doorcottage": [
+        [
+          347,
+          752
+        ],
+        [
+          347,
+          733
+        ],
+        [
+          345,
+          715
+        ]
+      ],
+      "doorboat": [
+        [
+          675,
+          929
+        ],
+        [
+          659,
+          928
+        ],
+        [
+          645,
+          910
+        ]
+      ],
+      "maker-link": [
+        [
+          280,
+          620
+        ],
+        [
+          301,
+          585
+        ],
+        [
+          326,
+          589
+        ],
+        [
+          351,
+          616
+        ]
+      ],
+      "upland-link": [
+        [
+          400,
+          520
+        ],
+        [
+          420,
+          471
+        ],
+        [
+          463,
+          422
+        ],
+        [
+          461,
+          350
+        ],
+        [
+          488,
+          290
+        ],
+        [
+          530,
+          260
+        ],
+        [
+          582,
+          237
+        ],
+        [
+          622,
+          216
+        ],
+        [
+          662,
+          208
+        ]
+      ],
+      "lake-rim-link": [
+        [
+          560,
+          540
+        ],
+        [
+          603,
+          505
+        ],
+        [
+          600,
+          439
+        ],
+        [
+          601,
+          363
+        ],
+        [
+          640,
+          303
+        ],
+        [
+          719,
+          282
+        ],
+        [
+          785,
+          330
+        ],
+        [
+          821,
+          389
+        ],
+        [
+          803,
+          436
+        ],
+        [
+          779,
+          470
+        ],
+        [
+          739,
+          490
+        ],
+        [
+          696,
+          478
+        ]
+      ],
+      "dam-link": [
+        [
+          665,
+          576
+        ],
+        [
+          658,
+          541
+        ],
+        [
+          672,
+          508
+        ],
+        [
+          696,
+          478
+        ]
+      ]
+    },
+    "primary_width_m": [
+      2,
+      2.5
+    ],
+    "rules": [
+      "no vehicles",
+      "no boards",
+      "step-free alternative to stair-only links",
+      "no financial or attendance reward required"
+    ]
+  },
+  "water": {
+    "natural_route": [
+      [
+        657,
+        237
+      ],
+      [
+        676,
+        285
+      ],
+      [
+        710,
+        324
+      ],
+      [
+        722,
+        394
+      ],
+      [
+        716,
+        461
+      ],
+      [
+        737,
+        539
+      ],
+      [
+        704,
+        603
+      ],
+      [
+        690,
+        662
+      ],
+      [
+        704,
+        720
+      ],
+      [
+        679,
+        789
+      ],
+      [
+        668,
+        860
+      ],
+      [
+        677,
+        940
+      ],
+      [
+        658,
+        972
+      ],
+      [
+        683,
+        995
+      ],
+      [
+        735,
+        1015
+      ]
+    ],
+    "fund_display": "L01 contained instrument; natural lake and river do not encode balances",
+    "status": "presentation change requiring approval"
+  },
+  "implementation_boundaries": [
+    "read-only derived world presentation",
+    "preserve existing money commands, owner objects and scope checks",
+    "rebase against concurrent work before any code change",
+    "camera/surface/transport fixes are dependencies, not claimed delivered"
+  ],
+  "deferred": [
+    "drivable vehicles",
+    "playable boats/gliders",
+    "live hardship-based erosion",
+    "new app buildings",
+    "new personal/shared world model"
+  ],
+  "sources": {
+    "G1": "src/harbour/village/layout.ts",
+    "G2": "src/harbour/data/reading.ts",
+    "G3": "src/house/navigation.ts",
+    "G4": "src/harbour/mountain/basin.ts",
+    "G5": "src/harbour/court/dressing.ts",
+    "MD": "Mountain Dissection.pdf"
+  }
+}

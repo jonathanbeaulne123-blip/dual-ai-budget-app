@@ -623,7 +623,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * go however far the focus wanders. A place whose chunk has not arrived yet
    * is simply skipped; the next move asks again.
    */
-  function stream(): boolean {
+  function stream(allowDetailBuild=false): boolean {
     let changed = false;
     const keep: HarbourPlaceId[] = journey ? [placeId, journey.from] : [placeId];
     for (const step of streamPlaces(focus, live.keys(), keep)) {
@@ -639,7 +639,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // as long as one of them — or the route — is on the island.
     const wantsIsland = (placeId !== "court" && onIsland(placeId)) || PLACED_PLACE_IDS.some((id) => live.has(id));
     if (wantsIsland && !live.has("court") && PLACES.court) { raise(PLACES.court); changed = true; }
-    const detailCourt=live.get('court')?.handle as (PlaceHandle & {streamDetails?:(x:number,z:number,race:boolean)=>boolean})|undefined;
+    const detailCourt=live.get('court')?.handle as (PlaceHandle & {streamDetails?:(x:number,z:number,race:boolean,allowBuild?:boolean)=>boolean})|undefined;
     const run=walker?.skate.active()?walker.skate.run():null;
     // Hearth Mountain v2 (C10): district detail follows the camera's *target*
     // while Look drives — and Look on the open world is a view of the whole
@@ -650,7 +650,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     const overview=lookDriving&&court.pose().r>120;
     const view=lookDriving?court.pose().target:null;
     const detailX=view?view[0]:focus[0],detailZ=view?view[2]:focus[1];
-    if(detailCourt?.streamDetails?.(detailX,detailZ,(run?.id==='mountain-descent'&&!run.finished)||overview)){
+    if(detailCourt?.streamDetails?.(detailX,detailZ,(run?.id==='mountain-descent'&&!run.finished)||overview,allowDetailBuild)){
       changed=true;showExteriors();
     }
     return changed;
@@ -1172,7 +1172,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // point-in-box tests; the work only ever happens on a frame that was
     // already being drawn, so a world at rest still asks for nothing.
     followCamera();
-    const streamed=stream();
+    const streamed=stream(true);
     if (streamed) { dirty = true; listsDirty = true; }
     thresholds();
     // ── The thumb-stick (W7 b) ─────────────────────────────────────────────

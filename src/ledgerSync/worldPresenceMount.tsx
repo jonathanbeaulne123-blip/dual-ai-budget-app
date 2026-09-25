@@ -5,6 +5,7 @@ import { ledgerSyncEnabled, localLedgerIdentity } from "./mode.ts";
 import { attachWorldPresence, type WorldPeer, type WorldPresenceHandle } from "./worldPresence.ts";
 import { WORLD_ACTS, WORLD_STEP_MS, isWorldPlaceId, type WorldAct, type WorldPlaceId } from "./worldPresenceWire.ts";
 import { worldPresenceGate } from "../softPresenceWorld.ts";
+import {CURRENT_WORLD_GEOGRAPHY} from '../worldGeography.ts';
 import { readLocalPose, useWorldFeedProvider, type WorldFeed, type WorldFeedRequest } from "../harbour/presence/feed.ts";
 import type { PlaceWalkSource } from "../harbour/scene/place.ts";
 import type { Environment } from "../core/types.ts";
@@ -47,20 +48,20 @@ import type { Environment } from "../core/types.ts";
  * the ground the person is at, with `theta` the heading the eye orbits from —
  * so the body faces `theta + π`, the direction the person is looking.
  */
-export function localBodyFromPose(pose: { target: readonly [number, number, number]; theta: number; body?: { world?:string;y?:number; x: number; z: number; yaw: number; act?: string | null; p?: number } | null }): { world?:"hearth-mountain-2";y?:number; x: number; z: number; yaw: number; act?: WorldAct; p?: number } {
+export function localBodyFromPose(pose: { target: readonly [number, number, number]; theta: number; body?: { world?:string;y?:number; x: number; z: number; yaw: number; act?: string | null; p?: number } | null }): { world?:typeof CURRENT_WORLD_GEOGRAPHY;y?:number; x: number; z: number; yaw: number; act?: WorldAct; p?: number } {
   if (pose.body) {
     const act = isWorldAct(pose.body.act) ? pose.body.act : null;
     return {
       x: pose.body.x, z: pose.body.z, yaw: wrapYaw(pose.body.yaw),
-      ...(pose.body.world==="hearth-mountain-2"?{world:"hearth-mountain-2" as const}:{}),
-      ...((pose.body.world==="hearth-mountain-2"||act?.startsWith("skate"))&&Number.isFinite(pose.body.y)?{y:pose.body.y}:{}),
+      ...((pose.body.world==="hearth-mountain-2"||pose.body.world===CURRENT_WORLD_GEOGRAPHY)?{world:CURRENT_WORLD_GEOGRAPHY}:{}),
+      ...((pose.body.world==="hearth-mountain-2"||pose.body.world===CURRENT_WORLD_GEOGRAPHY||act?.startsWith("skate"))&&Number.isFinite(pose.body.y)?{y:pose.body.y}:{}),
       // Narrowed here, before it is offered: the lane's own decoder would
       // reject an act it does not know and close the socket, and a body doing
       // something the wire has no word for should simply walk.
       ...(act ? { act, p: Math.max(0, Math.min(1, pose.body.p ?? 0)) } : {}),
     };
   }
-  return { x: pose.target[0], z: pose.target[2], yaw: wrapYaw(pose.theta + Math.PI) };
+  return { world: CURRENT_WORLD_GEOGRAPHY, x: pose.target[0], z: pose.target[2], yaw: wrapYaw(pose.theta + Math.PI) };
 }
 
 /** Is this one of the eight the wire knows? Asked on the way out, not only on the way in. */
@@ -162,7 +163,7 @@ export function useWorldPresenceFeed(request: WorldFeedRequest): WorldFeed {
     [peer],
   );
 
-  return { walk, memberId: peer?.memberId ?? null };
+  return { walk, memberId: peer?.memberId ?? null, unavailable: peer?.geoMismatch === true };
 }
 
 /**

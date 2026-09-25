@@ -1353,6 +1353,8 @@ export class LedgerRoom extends DurableObject<Env> {
               // Rebuilt field by field from the *decoded* input, never forwarded:
               // the act is one of eight validated words and `p` has been pulled
               // onto 0…1, exactly as the coordinates are clamped onto the island.
+              // The shared decoder admits the current geography string and legacy strings;
+              // preserve it exactly so an older client is hidden by a newer browser.
               ...(input.type==='world-step'?{x:input.x,z:input.z,yaw:input.yaw,moving:input.moving,...(input.world?{world:input.world}:{}),
                 ...(input.act?{act:input.act,p:input.p??0}:{}),...(input.y!==undefined?{y:input.y}:{}),...(input.avatar?{avatar:input.avatar}:{})}:{})};
           const frame=JSON.stringify(payload);

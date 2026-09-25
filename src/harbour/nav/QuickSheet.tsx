@@ -1,4 +1,7 @@
-import {editionAvailability,useEditionAvailability,editionUnavailableWords} from "./editionAvailability.ts";
+import {useEditionAvailability,editionUnavailableWords} from "./editionAvailability.ts";
+import { readMotionEdition, chooseMotionEdition, type MotionEdition } from './motionEdition.ts';
+export { MOTION_KEY, readMotionEdition, chooseMotionEdition } from './motionEdition.ts';
+export type { MotionEdition } from './motionEdition.ts';
 import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from "react";
 import { TARGET_NAMES, houseTargetRoute } from "../../house/navigation.ts";
 import { type HouseLevel, type HouseRoom } from "../../hearthside/houseRoutes.ts";
@@ -29,8 +32,6 @@ import "./harbour-nav.css";
  * in the reading edition or could not be drawn at all: a broken bridge never
  * gates a money task.
  */
-export const MOTION_KEY = "hearth:motion";
-export type MotionEdition = "illustrated" | "flat";
 
 export type QuickSheetProps = {
   open: boolean;
@@ -123,30 +124,6 @@ export function quickSheetGroups(): QuickSheetGroup[] {
   return DISTRICT_ORDER.map((district) => ({ district, title: DISTRICT_TITLES[district], tools: groups[district] })).filter((group) => group.tools.length > 0);
 }
 
-function readStorage(storage: Pick<Storage, "getItem"> | undefined): MotionEdition {
-  try { return (storage ?? window.localStorage).getItem(MOTION_KEY) === "flat" ? "flat" : "illustrated"; } catch { return "illustrated"; }
-}
-function writeStorage(storage: Pick<Storage, "setItem"> | undefined, edition: MotionEdition): void {
-  try { (storage ?? window.localStorage).setItem(MOTION_KEY, edition === "flat" ? "flat" : ""); } catch { /* Preferences are a convenience; the sheet still works without storage. */ }
-}
-
-/** The edition the reader has chosen ("flat" is the simple view). Storage-guarded: no storage reads as illustrated. */
-export function readMotionEdition(storage?: Pick<Storage, "getItem">): MotionEdition {
-  return readStorage(storage);
-}
-
-/**
- * Choose an edition: write `MOTION_KEY` and raise the `hearth:motion` event the
- * harbour re-decides its tier on. The one writer — this sheet's switch, the
- * bar's Simple-view flip and the backtick key all come through here, so the
- * three can never disagree about what "flat" is written as.
- */
-export function chooseMotionEdition(next: MotionEdition, storage?: Pick<Storage, "setItem">): void {
-  if(next === "illustrated" && editionAvailability().reason) return;
-  writeStorage(storage, next);
-  try { window.dispatchEvent(new CustomEvent(MOTION_KEY, { detail: next })); } catch { /* jsdom without CustomEvent is still fine. */ }
-}
-
 const FOCUSABLE = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), summary, [tabindex]:not([tabindex="-1"])';
 const TARGET: CSSProperties = { minHeight: 44 };
 
@@ -156,7 +133,7 @@ export function QuickSheet(props: QuickSheetProps) {
   const sheetRef = useRef<HTMLDivElement | null>(null);
   const openerRef = useRef<HTMLElement | null>(null);
   const titleId = useId();
-  const [edition, setEdition] = useState<MotionEdition>(() => readStorage(props.storage));
+  const [edition, setEdition] = useState<MotionEdition>(() => readMotionEdition(props.storage));
   const groups = quickSheetGroups();
   const places = quickSheetPlaces();
   const roomless = new Set(quickSheetRoomless());
@@ -171,7 +148,7 @@ export function QuickSheet(props: QuickSheetProps) {
     return () => { openerRef.current?.focus(); };
   }, [open, props.returnFocusTo]);
 
-  useEffect(() => { if (open) setEdition(readStorage(props.storage)); }, [open, props.storage]);
+  useEffect(() => { if (open) setEdition(readMotionEdition(props.storage)); }, [open, props.storage]);
 
   if (!open) return null;
 

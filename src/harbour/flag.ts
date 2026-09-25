@@ -1,4 +1,4 @@
-import { placeAtLocation } from './village/layout.ts';
+import { placeAtLocation } from './village/placeAtLocation.ts';
 import type { VillageLocation } from '../house/villageLocation.ts';
 import { HOUSE_WORLD_ENABLED } from "../house/navigation.ts";
 import type { HouseLevel, HouseRoom, HouseRoute } from "../hearthside/houseRoutes.ts";

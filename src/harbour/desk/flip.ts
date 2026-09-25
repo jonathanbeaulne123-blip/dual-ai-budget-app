@@ -14,7 +14,7 @@
  * device has no WebGL must not be flipped *into* the reading edition by a
  * button that says Harbour.
  */
-import { MOTION_KEY, chooseMotionEdition, type MotionEdition } from "../nav/QuickSheet.tsx";
+import { MOTION_KEY, chooseMotionEdition, type MotionEdition } from "../nav/motionEdition.ts";
 
 export const MOTION_EVENT: typeof MOTION_KEY = MOTION_KEY;
 

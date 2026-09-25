@@ -37,6 +37,7 @@ export type WalkTogetherProps = {
   walk: PlaceWalkSource | null;
   /** The live peer's name, from the household — never a name that travelled on the lane. */
   walkName: string | null;
+  worldUnavailable?: boolean;
   /** Today's soft presence for the same person: the honest fallback. */
   soft: SoftPresencePeer | null;
   here: HarbourPlaceId;
@@ -128,6 +129,7 @@ export function WalkTogether(props: WalkTogetherProps) {
         Stop hiding
       </button>
     )}
+    {props.worldUnavailable && <span data-world-unavailable="" role="status" style={note}>Your partner's live position is unavailable in this geography.</span>}
     {line && <span data-walk-together-line="" style={note}>{line}</span>}
   </div>;
 }
