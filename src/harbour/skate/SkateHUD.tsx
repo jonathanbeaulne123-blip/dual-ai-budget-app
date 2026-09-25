@@ -29,8 +29,10 @@ export type SkateHUDProps = {
   onDeck(id: SkateDeckId): void;
   /** Settings changed in the book. Turning sound on arrives inside the click: create the AudioContext synchronously there. */
   onSettings(patch: Partial<SkateSettings>): void;
-  /** Retry (back to marker) and set marker. */
-  onCommand(command: 'respawn' | 'marker'): void;
+  /** Retry (in a race: the last gate, the run kept; otherwise back to your marker) and set marker. */
+  onCommand(command: 'respawn' | 'marker' | 'retry'): void;
+  /** At a race's finish: open the Fund tool (the same navigation the bank door's tool uses). */
+  onOpenFund?(): void;
   /** Raw pointer events from touch slots (down/move/up/cancel); the input track interprets them. */
   onZonePointer?(zone: TouchZone, event: ReactPointerEvent<HTMLElement>): void;
   /** SVG path ("-1 -1 2 2" box, y down toward the tail) of a flip's gesture, per stance. */
@@ -109,7 +111,7 @@ export function SkateHUD(p: SkateHUDProps) {
     return () => window.clearInterval(timer);
   }, [announcer]);
 
-  function command(c: 'respawn' | 'marker') { p.onCommand(c); p.onFocus(); }
+  function command(c: 'respawn' | 'marker' | 'retry') { p.onCommand(c); p.onFocus(); }
   function zone(z: TouchZone, e: ReactPointerEvent<HTMLElement>) { p.onZonePointer?.(z, e); }
 
   const hudRef = useRef<HTMLDivElement>(null);
@@ -125,7 +127,8 @@ export function SkateHUD(p: SkateHUDProps) {
   const band = narrow || touch;
   const ticker = <LineTicker line={m.line} outcome={m.outcome} where={band ? 'band' : 'corner'}/>;
   const notice = <NoticeSlip notice={m.notice} saveFailed={p.saveFailed}/>;
-  const route = m.run && <RouteCard run={m.run} onEnd={() => { p.onRoute(null); p.onFocus(); }} onRetry={()=>{p.onRoute(m.run!.id as SkateRouteId);p.onFocus();}}/>;
+  const route = m.run && <RouteCard run={m.run} onEnd={() => { p.onRoute(null); p.onFocus(); }} onRetry={()=>{p.onRoute(m.run!.id as SkateRouteId);p.onFocus();}} {...(p.onOpenFund ? {onOpenFund: () => p.onOpenFund!()} : {})}/>;
+  const racing = Boolean(m.run?.raced && !m.run.finished);
   return <div ref={hudRef} className="skate-hud" data-skate-phase={m.phase} data-skate-device={touch ? 'touch' : m.inputDevice} data-skate-layout={narrow ? 'narrow' : 'wide'} data-skate-reduced={reduced || undefined} data-skate-open={open || undefined} onPointerDown={e => e.stopPropagation()}>
     <div className="skate-hud__play" inert={open ? true : undefined} aria-hidden={open ? true : undefined}>
       <header className="skate-top">
@@ -134,8 +137,8 @@ export function SkateHUD(p: SkateHUDProps) {
           <RideBadge speed={m.speed} stance={m.stance}/>
         </div>
         <nav className="skate-top__nav" aria-label="Skate session">
-          <button type="button" onClick={() => command('respawn')} aria-label="Back to your marker"><span aria-hidden="true">↺</span><span className="skate-top__word">Retry</span></button>
-          <button type="button" onClick={() => openBook('challenges')} aria-label={`Goals, ${m.challenges.done} of ${m.challenges.total}`}><span aria-hidden="true">◇</span><span className="skate-top__word">Goals</span><span className="skate-top__count" aria-hidden="true">{m.challenges.done}/{m.challenges.total}</span></button>
+          <button type="button" onClick={() => command(racing ? 'retry' : 'respawn')} aria-label={racing ? 'Retry from the last gate' : 'Back to your marker'}><span aria-hidden="true">↺</span><span className="skate-top__word">Retry</span></button>
+          {!racing && <button type="button" onClick={() => openBook('challenges')} aria-label={`Goals, ${m.challenges.done} of ${m.challenges.total}`}><span aria-hidden="true">◇</span><span className="skate-top__word">Goals</span><span className="skate-top__count" aria-hidden="true">{m.challenges.done}/{m.challenges.total}</span></button>}
           <button type="button" onClick={() => openBook()} aria-label="Pause and open the skate book"><span aria-hidden="true">❚❚</span><span className="skate-top__word">Book</span></button>
         </nav>
       </header>

@@ -229,7 +229,8 @@ describe("mountHarbourWorld", () => {
     const easing = world.camera();
     expect(easing).not.toEqual(sky);
     expect(frames.size).toBe(1);
-    for (let i = 0; i < 80; i += 1) frame(40);
+    // A long move is a flight capped at 100 u/s (Hearth Mountain v2, C8): from the far limit it takes a few seconds.
+    for (let i = 0; i < 200 && frames.size > 0; i += 1) frame(40);
     expect(world.camera()[1]).toBeLessThan(sky[1]);
     expect(frames.size).toBe(0);
   });

@@ -1,6 +1,5 @@
 import {mountainTrees} from '../mountain/planting.ts';
-import {WORLD_SOLIDS} from '../mountain/surfaces.ts';
-import {mountainContains,nearestOnRoute} from '../mountain/definition.ts';
+import {edgeObstacles,holdInsideWorld,storefrontObstacles,worldSolids} from './geography.ts';
 import {groundHeightAt} from '../scene/ground.ts';
 /**
  * Little Harbour · what a body cannot walk through.
@@ -135,7 +134,7 @@ export function treeRingObstacles(tier: "full" | "lite"): Obstacle[] {
 
 /** Everything a body standing in the Court may bump into. */
 export function courtObstacles(tier: "full" | "lite"): Obstacle[] {
-  return [...COURT_FURNITURE, ...ISLAND_BUILDINGS, ...HARBOUR_LANDMARK_SOLIDS, ...WORLD_SOLIDS.map(s=>({kind:'box' as const,id:s.id,minX:s.min[0],minZ:s.min[2],maxX:s.max[0],maxZ:s.max[2],bottom:s.min[1],top:s.max[1]})), ...treeRingObstacles(tier), ...mountainTrees(tier).map((t,i)=>({...circle(`mountain-tree-${i}`,t.x,t.z,.22*t.size),bottom:t.y,top:t.y+1.5*t.size}))];
+  return [...COURT_FURNITURE, ...ISLAND_BUILDINGS, ...HARBOUR_LANDMARK_SOLIDS, ...worldSolids().map(s=>({kind:'box' as const,id:s.id,minX:s.min[0],minZ:s.min[2],maxX:s.max[0],maxZ:s.max[2],bottom:s.min[1],top:s.max[1]})), ...edgeObstacles(), ...storefrontObstacles(), ...treeRingObstacles(tier), ...mountainTrees(tier).map((t,i)=>({...circle(`mountain-tree-${i}`,t.x,t.z,.22*t.size),bottom:t.y,top:t.y+1.5*t.size}))];
 }
 
 /**
@@ -180,11 +179,24 @@ export type PushOut = { x: number; z: number; hit: string | null };
  * is a slide: the component of the move along a wall survives, the component
  * into it does not. Never a bounce, never a teleport.
  */
+const obstacleGrids=new WeakMap<readonly Obstacle[],Map<string,number[]>>();
+function obstacleCandidates(x:number,z:number,r:number,obstacles:readonly Obstacle[]):number[]{
+ if(obstacles.length<80)return obstacles.map((_,i)=>i);
+ let grid=obstacleGrids.get(obstacles);
+ if(!grid){grid=new Map();obstacles.forEach((o,i)=>{
+   const bounds=o.kind==='circle'?[o.x-o.r,o.x+o.r,o.z-o.r,o.z+o.r]:o.kind==='box'?[o.minX,o.maxX,o.minZ,o.maxZ]:(()=>{const c=Math.abs(Math.cos(o.yaw)),s=Math.abs(Math.sin(o.yaw)),hx=c*o.halfX+s*o.halfZ,hz=s*o.halfX+c*o.halfZ;return [o.x-hx,o.x+hx,o.z-hz,o.z+hz];})();
+   for(let cx=Math.floor(bounds[0]!/12);cx<=Math.floor(bounds[1]!/12);cx++)for(let cz=Math.floor(bounds[2]!/12);cz<=Math.floor(bounds[3]!/12);cz++){const key=`${cx}:${cz}`,bucket=grid!.get(key)??[];bucket.push(i);grid!.set(key,bucket);}
+ });obstacleGrids.set(obstacles,grid);}
+ const found=new Set<number>();for(let cx=Math.floor((x-r)/12);cx<=Math.floor((x+r)/12);cx++)for(let cz=Math.floor((z-r)/12);cz<=Math.floor((z+r)/12);cz++)for(const i of grid.get(`${cx}:${cz}`)??[])found.add(i);
+ return [...found].sort((a,b)=>a-b);
+}
 export function pushOut(x: number, z: number, radius: number, obstacles: readonly Obstacle[], y?:number): PushOut {
   let px = x, pz = z, hit: string | null = null;
   for (let pass = 0; pass < 2; pass += 1) {
     let moved = false;
-    for (const obstacle of obstacles) {
+    let candidates=obstacleCandidates(px,pz,radius,obstacles);
+    while(candidates.length){
+      const index=candidates.shift()!,obstacle=obstacles[index]!;
       if(y!==undefined&&((obstacle.top!==undefined&&y>=obstacle.top)||(obstacle.bottom!==undefined&&y+BODY_HEIGHT<=obstacle.bottom)))continue;
       if (obstacle.kind === "circle") {
         const dx = px - obstacle.x, dz = pz - obstacle.z;
@@ -224,6 +236,7 @@ export function pushOut(x: number, z: number, radius: number, obstacles: readonl
         else pz = maxZ;
         hit = obstacle.id; moved = true;
       }
+      candidates=obstacleCandidates(px,pz,radius,obstacles).filter(i=>i>index);
     }
     if (!moved) break;
   }
@@ -236,10 +249,17 @@ export function isClear(x: number, z: number, radius: number, obstacles: readonl
   return Math.abs(out.x - x) < 1e-9 && Math.abs(out.z - z) < 1e-9;
 }
 
-/** Hold a point inside the shore ring. Returns the point unchanged when it is already ashore. */
+/**
+ * Hold a point inside the world. Returns the point unchanged when it is already ashore.
+ *
+ * The island's own shore ring, and — for the default island limit — the
+ * mountain's land outline (`body/geography.ts` `holdInsideWorld`). Outside
+ * both, the point goes to the nearest boundary point: a clamp at the edge of
+ * the world, never a re-projection onto the road (which used to snap a body
+ * that stepped off the summit 64 units uphill in one frame).
+ */
 export function holdAshore(x: number, z: number, limit:number = SHORE_RADIUS): { x: number; z: number; ashore: boolean } {
-  if(limit===SHORE_RADIUS&&mountainContains(x,z))return {x,z,ashore:true};
-  if(limit===SHORE_RADIUS&&z < -60){const q=nearestOnRoute(x,z);return {x:q.point[0],z:q.point[2],ashore:false};}
+  if(limit===SHORE_RADIUS){const held=holdInsideWorld(x,z,limit);return {x:held.x,z:held.z,ashore:held.inside};}
   const d = Math.hypot(x, z);
   if (d <= limit || d <= 0) return { x, z, ashore: true };
   const k = limit / d;

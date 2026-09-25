@@ -14,7 +14,7 @@ import { createWalker, COURT_ARRIVAL } from "../src/harbour/body/walker.ts";
 import { createFootprints, FOOTPRINT_LIFE, FOOTPRINT_POOL, FOOTPRINT_POOL_LITE } from "../src/harbour/body/footprints.ts";
 import { createDust, DUST_LIFE, DUST_POOL } from "../src/harbour/body/dust.ts";
 import {
-  FOLLOW_DISTANCE, FOLLOW_MAX_R, FOLLOW_MIN_R, FOLLOW_SPRINT_DOLLY, FOLLOW_SPRINT_FOV, createFollowCamera,
+  FOLLOW_DISTANCE, FOLLOW_MAX_R, FOLLOW_MIN_R, FOLLOW_SPRINT_DOLLY, FOLLOW_SPRINT_FOV, RECENTRE_HOLD, createFollowCamera,
 } from "../src/harbour/camera/followCamera.ts";
 import type { Vec3 } from "../src/harbour/camera/poses.ts";
 import { harbourFramePolicy, CAMERA_INTERVAL_MS } from "../src/harbour/scene/framePolicy.ts";
@@ -123,14 +123,19 @@ describe("the body is a person in a model village", () => {
 
 describe("the body follows the ground", () => {
   it("stands exactly on the island's own profile wherever it goes", () => {
+    // Off the ground only on a deck (toward +z the walk crosses the v2 town lane's canal bridge).
+    let onGround = 0;
     let state = createBodyState(3, 0, 0, bare);
     for (const next of walk(state, TOWARD_Z, 14, bare)) {
-      expect(next.y).toBeCloseTo(groundHeightAt(next.x, next.z), 12);
+      if (next.supportId && next.supportId !== "terrain") continue;
+      expect(next.y).toBeCloseTo(groundHeightAt(next.x, next.z), 12); onGround += 1;
     }
     state = createBodyState(3, 0, 0, bare);
     for (const next of walk(state, AWAY_FROM_Z, 14, bare)) {
-      expect(next.y).toBeCloseTo(groundHeightAt(next.x, next.z), 12);
+      if (next.supportId && next.supportId !== "terrain") continue;
+      expect(next.y).toBeCloseTo(groundHeightAt(next.x, next.z), 12); onGround += 1;
     }
+    expect(onGround).toBeGreaterThan(14 * 60 * 2 * 0.8);
   });
 
   it("walks up the lawn's hump and down toward the shore", () => {
@@ -317,10 +322,10 @@ describe("the walk reads as walking", () => {
 
 describe("the body has weight", () => {
   /** Hold a heading until the body is up to speed, then hand back what it is doing. */
-  function upToSpeed(run: boolean, seconds = 2): BodyState {
-    let state = createBodyState(0, 6, 0, bare);
+  function upToSpeed(run: boolean, seconds = 2, world: BodyWorld = bare): BodyState {
+    let state = createBodyState(0, 6, 0, world);
     for (let i = 0; i < Math.round(seconds * 60); i += 1) {
-      state = stepBody(state, { forward: 1, strafe: 0, run }, TOWARD_Z, 1 / 60, bare).state;
+      state = stepBody(state, { forward: 1, strafe: 0, run }, TOWARD_Z, 1 / 60, world).state;
     }
     return state;
   }
@@ -383,10 +388,13 @@ describe("the body has weight", () => {
     expect(runCadence).toBeGreaterThan(walkCadence);
     expect(runCadence / walkCadence).toBeLessThan(RUN_SPEED / WALK_SPEED);
     // And a running foot lands harder, which is what the dust and the prints read.
-    let running = upToSpeed(true, 3);
+    // On level ground: the gait, not the town's slopes (toward +z the v2 lane now meets the canal bank, and a
+    // climb rightly slows a runner below a full run).
+    const level: BodyWorld = { groundHeightAt: () => 0, obstacles: [] };
+    let running = upToSpeed(true, 3, level);
     let landed = 0;
     for (let i = 0; i < 120; i += 1) {
-      const frame = stepBody(running, { forward: 1, strafe: 0, run: true }, TOWARD_Z, 1 / 60, bare);
+      const frame = stepBody(running, { forward: 1, strafe: 0, run: true }, TOWARD_Z, 1 / 60, level);
       running = frame.state;
       if (frame.footfall) { expect(frame.footfall.force).toBeGreaterThan(0.9); landed += 1; }
     }
@@ -696,7 +704,7 @@ describe("the follow camera", () => {
     expect(follow.pose().target[2]).toBeCloseTo(4, 3);
   });
 
-  it("orbits with a drag — the same pixels on a desktop and a phone — and keeps the chosen view for manual walking", () => {
+  it("orbits with a drag — the same pixels on a desktop and a phone — and keeps the chosen view while standing", () => {
     const desktop = createFollowCamera({ camera: camera(), composition: "desktop", reduced: false });
     const phone = createFollowCamera({ camera: camera(), composition: "phone", reduced: false });
     for (const follow of [desktop, phone]) { follow.setSubject(subjectAt(0, 0, 0)); follow.snap(); follow.drag(120, 0); }
@@ -707,12 +715,24 @@ describe("the follow camera", () => {
     desktop.setSubject(subjectAt(0, 0, 0, 0));
     settle(desktop, 3);
     expect(Math.abs(desktop.offset())).toBeGreaterThan(0.4);
-    // A/D and diagonal walking must stay relative to what remains on screen.
-    desktop.setSubject(subjectAt(0, 0, 0, WALK_SPEED));
-    desktop.setSteering(true);
-    settle(desktop, 10);
-    expect(Math.abs(desktop.offset())).toBeGreaterThan(0.4);
-    expect(desktop.basis()).toBeCloseTo(desktop.pose().theta, 12);
+  });
+
+  it("recentres gently behind a body walking into the view, after a hand's turn has been held off (Hearth Mountain v2, C2)", () => {
+    const follow = createFollowCamera({ camera: camera(), composition: "desktop", reduced: false });
+    follow.setSubject(subjectAt(0, 0, 0)); follow.snap(); follow.drag(120, 0);
+    const turned = follow.offset();
+    follow.setSubject(subjectAt(0, 0, 0, WALK_SPEED));
+    follow.setSteering(true);
+    // Held off: for a moment after the drag the view is exactly the one the hand chose.
+    settle(follow, RECENTRE_HOLD * 0.8);
+    expect(follow.offset()).toBeCloseTo(turned, 9);
+    // Then it comes round behind the walking body, gently, and the keys' basis is always the visible view.
+    settle(follow, 1);
+    expect(Math.abs(follow.offset())).toBeLessThan(Math.abs(turned));
+    expect(Math.abs(follow.offset())).toBeGreaterThan(0.05);
+    settle(follow, 10);
+    expect(Math.abs(follow.offset())).toBeLessThan(0.05);
+    expect(follow.basis()).toBeCloseTo(follow.pose().theta, 12);
   });
 
   it("keeps the key heading aligned with the visible camera through lateral and diagonal turns", () => {
@@ -722,9 +742,11 @@ describe("the follow camera", () => {
     follow.drag(200, 0);
     follow.setSteering(true);
     const latched = follow.basis();
-    settle(follow, 3);
-    follow.setSubject(subjectAt(0, 0, Math.PI / 2, WALK_SPEED));
-    settle(follow, 3);
+    settle(follow, 1);
+    expect(follow.basis()).toBeCloseTo(latched, 12);
+    // A plain sidestep (the body across the view) never starts the view circling, however long it is held.
+    follow.setSubject(subjectAt(0, 0, latched + Math.PI + Math.PI / 2, WALK_SPEED));
+    settle(follow, 6);
     expect(follow.basis()).toBeCloseTo(latched, 12);
     expect(follow.pose().theta).toBeCloseTo(latched, 12);
     follow.setSteering(false);

@@ -303,3 +303,7 @@ audio mix, full VoiceOver and real GPU memory remain open in the
 [iPhone/Mac checklist](../reviews/2026-09-24-mountain-iphone-mac.md). The local URL is loopback
 only; no test-host exposure, push, merge, deployment, schema application or October security
 acceptance has occurred.
+
+## 2026-09-25 — v2 finishing continuation
+
+Claude's 48-commit v2 bundle is preserved at `9901a507`; main's monorail is integrated in `codex/mountain-v2-finish`. Jonathan's preservation instruction excludes optional redesign. The [finishing worksession](2026-09-25-mountain-v2-finish.md) records corrective scope, independent review, verification and open acceptance; earlier evidence above is not reclassified as a current v2 pass.

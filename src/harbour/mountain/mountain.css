@@ -11,3 +11,5 @@
 @media(max-width:719px){.monorail-stops{grid-template-columns:1fr}.monorail-console{position:fixed;inset:auto 10px 110px;width:auto;max-height:min(54dvh,480px)}}
 @media(max-width:719px){.mountain-tools{top:auto;bottom:154px;right:10px;font-size:13px}.mountain-trigger span{font-size:12px}.mountain-panel{position:fixed;inset:80px 10px 112px;width:auto;max-height:none;padding:16px}.mountain-map{height:235px}.mountain-panel h2{font-size:23px}.mountain-tools .mountain-skip{max-width:155px}}
 @media(prefers-reduced-motion:reduce){.mountain-tools *{scroll-behavior:auto!important;transition:none!important}}
+
+@media(max-width:600px){.harbour-ride-offer{bottom:184px;max-width:calc(100% - 24px);flex-wrap:wrap;}}

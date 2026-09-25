@@ -52,7 +52,9 @@ describe("court tap routes reach every authored village door", () => {
       const goal = toWorld(site, site.door[0], site.half[1] - 0.55);
       walker.goTo(...goal);
       let previous = walker.state(), entered: string | null = null;
-      for (let frame = 0; frame < 1800; frame += 1) {
+      // Buildings on the mountain are a long walk (run) up the network; the town's are thirty seconds away.
+      const frames = site.spot[1] < -48 ? 60 * 240 : 1800;
+      for (let frame = 0; frame < frames && (frame < 1800 || walker.state().goal); frame += 1) {
         walker.step(1 / 60, frame / 60, 0);
         const next = walker.state();
         entered ??= crossedVillageDoor([previous.x, previous.z], [next.x, next.z], "court");

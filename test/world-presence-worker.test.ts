@@ -209,6 +209,9 @@ it('carries versioned mountain walking altitude beyond the legacy island bounds'
   await b.next('world-peer',mine);
   a.ws.send(JSON.stringify({type:'world-step',version:1,world:'hearth-mountain-1',x:99,z:-174,y:51,yaw:0,moving:true}));
   expect(await b.next('world-peer',m=>mine(m)&&m.x===99)).toMatchObject({world:'hearth-mountain-1',x:99,z:-174,y:51,memberId:'MEM-001'});
+  await new Promise(resolve=>setTimeout(resolve,100));
+  a.ws.send(JSON.stringify({type:'world-step',version:1,world:'hearth-mountain-2',x:100,z:-175,y:52,yaw:0,moving:true}));
+  expect(await b.next('world-peer',m=>mine(m)&&m.x===100)).toMatchObject({world:'hearth-mountain-2',x:100,z:-175,y:52,memberId:'MEM-001'});
   a.ws.close();b.ws.close();
 });
 

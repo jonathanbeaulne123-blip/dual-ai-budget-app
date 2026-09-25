@@ -207,7 +207,7 @@ export function attachWorldPresence(input: WorldPresenceInput): WorldPresenceHan
       publishPeers();
     }
     peer.seenAt = at;
-    if(typeof value.x==='number'&&value.world!=="hearth-mountain-1"){peer.track.clear();publishPeers();return;}
+    if(typeof value.x==='number'&&value.world!=="hearth-mountain-2"){peer.track.clear();publishPeers();return;}
     if (typeof value.x === "number" && typeof value.z === "number" && typeof value.yaw === "number") {
       try{
         const step=decodeWorldPresence({type:'world-step',version:1,x:value.x,z:value.z,yaw:value.yaw,moving:value.moving===true,...(value.act?{act:value.act,p:value.p??0}:{}),...(value.y!==undefined?{y:value.y}:{}),...(value.world!==undefined?{world:value.world}:{}),...(value.avatar!==undefined?{avatar:value.avatar}:{})});

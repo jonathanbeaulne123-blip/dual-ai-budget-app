@@ -200,3 +200,13 @@
 @media (prefers-reduced-motion: reduce) {
   .harbour-world__stair { transition: none !important; animation: none !important; }
 }
+
+/* ── Ride offers (walk up to a platform; a long tap near a station) ── a paper ticket, not a flash card. */
+.harbour-ride-offer { position: absolute; left: 50%; bottom: calc(92px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); z-index: 4; display: flex; align-items: stretch; gap: 0; max-width: calc(100% - 32px); border-radius: 14px; background: #f6efe1; color: #2b2419; box-shadow: 0 1px 0 rgba(255, 255, 255, .7) inset, 0 6px 18px rgba(40, 28, 12, .28), 0 1px 3px rgba(40, 28, 12, .3); border: 1px solid rgba(88, 66, 38, .38); }
+.harbour-ride-offer::before { content: ""; position: absolute; inset: 4px; border: 1px dashed rgba(88, 66, 38, .32); border-radius: 10px; pointer-events: none; }
+.harbour-ride-offer__go { min-height: 48px; padding: 0 18px; border: 0; background: none; color: inherit; font: inherit; font-weight: 650; letter-spacing: .01em; cursor: pointer; }
+.harbour-ride-offer__no { min-width: 44px; min-height: 48px; border: 0; border-left: 1px dashed rgba(88, 66, 38, .36); background: none; color: inherit; font: inherit; font-size: 1.1rem; cursor: pointer; }
+.harbour-ride-offer button:focus-visible { outline: 2px solid #2b6f6a; outline-offset: -4px; border-radius: 10px; }
+.harbour-world--taylor .harbour-ride-offer { background: #fff7f2; border-color: rgba(154, 84, 120, .4); transform: translateX(-50%) rotate(-.6deg); }
+.harbour-world--newfoundland .harbour-ride-offer { background: #fdf3d8; border-color: rgba(30, 72, 110, .45); }
+@media (prefers-reduced-motion: reduce) { .harbour-ride-offer { transition: none; } }
