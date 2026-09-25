@@ -1,12 +1,15 @@
 import {townChannelHeight} from '../mountain/townChannel.ts';
-import {mountainBaseHeight,districtAt} from '../mountain/definition.ts';
+import {mountainBaseHeight} from '../mountain/definition.ts';
 import {mountainGround as mountainGroundRaw} from '../mountain/mountainGround.ts';
 import {islandHeight,SEA_LEVEL as ISLAND_SEA_LEVEL,TERRACE_LEVEL as ISLAND_TERRACE_LEVEL} from '../mountain/islandShape.ts';
 import * as THREE from "three";
+import { mergeGeometries } from "three/addons/utils/BufferGeometryUtils.js";
 import type { PlaceDressing } from "./place.ts";
 import { plantPlan } from "./planting.ts";
 import type { RenderTier } from "./quality.ts";
 import { HARBOUR_LAND } from '../village/world.ts';
+import { buildLattice, groundMasks, paintGround, type Lattice } from './groundPaint.ts';
+import { paperGrain } from '../art/cardScene.ts';
 
 /**
  * The court's island patch (BUILD_PLAN §2 #8): a 60-unit vertex-coloured,
@@ -55,12 +58,15 @@ export function groundHeightAt(x: number, z: number): number {
 function plantRing(group: THREE.Group, dressing: PlaceDressing, tier: RenderTier, track: <T extends { dispose(): void }>(item: T) => T): { canopies: THREE.InstancedMesh; trunks: THREE.InstancedMesh; shrubs: THREE.InstancedMesh; setColours(next: PlaceDressing): void } {
   const plan = plantPlan(tier);
   const TREES = plan.trees.length, SHRUBS = plan.shrubs.length;
-  const canopyGeometry = track(new THREE.ConeGeometry(1, 2.2, 6));
+  // The island's trees are the same painted card as the mountain's: faceted crowns lit on
+  // top and dark underneath (a vertex gradient), tinted per instance, on a visible trunk.
+  const canopyGeometry = track(islandCrown());
   const trunkGeometry = track(new THREE.CylinderGeometry(0.12, 0.16, 0.9, 5));
-  const shrubGeometry = track(new THREE.IcosahedronGeometry(0.55, 0));
-  const canopyMaterial = track(new THREE.MeshStandardMaterial({ color: dressing.lawn, roughness: 0.95, flatShading: true }));
+  const shrubGeometry = track(islandBush());
+  const paper = paperGrain();
+  const canopyMaterial = track(new THREE.MeshStandardMaterial({ color: "#ffffff", vertexColors: true, roughness: 0.92, flatShading: true, map: paper }));
   const trunkMaterial = track(new THREE.MeshStandardMaterial({ color: dressing.timber, roughness: 0.9, flatShading: true }));
-  const shrubMaterial = track(new THREE.MeshStandardMaterial({ color: dressing.moss, roughness: 0.95, flatShading: true }));
+  const shrubMaterial = track(new THREE.MeshStandardMaterial({ color: "#ffffff", vertexColors: true, roughness: 0.95, flatShading: true, map: paper }));
   const canopies = new THREE.InstancedMesh(canopyGeometry, canopyMaterial, TREES), trunks = new THREE.InstancedMesh(trunkGeometry, trunkMaterial, TREES), shrubs = new THREE.InstancedMesh(shrubGeometry, shrubMaterial, SHRUBS);
   canopies.name = "trees"; trunks.name = "trunks"; shrubs.name = "shrubs";
   canopies.castShadow = trunks.castShadow = shrubs.castShadow = true;
@@ -88,7 +94,25 @@ function plantRing(group: THREE.Group, dressing: PlaceDressing, tier: RenderTier
   const setColours = (next: PlaceDressing) => { seed = 0x7a11; paint(canopies, next.lawn, TREES); paint(shrubs, next.moss, SHRUBS); trunkMaterial.color.set(next.timber); };
   setColours(dressing);
   group.add(canopies, trunks, shrubs);
+  // An ink shell round each crown on the full tier: the cut-paper outline.
+  if (tier === "full") {
+    const shell = new THREE.InstancedMesh(canopyGeometry, track(new THREE.MeshBasicMaterial({ color: "#2f2a24", side: THREE.BackSide })), TREES);
+    shell.name = "tree outlines"; for (let i = 0; i < TREES; i += 1) { canopies.getMatrixAt(i, matrix); matrix.scale(scale.set(1.07, 1.06, 1.07)); shell.setMatrixAt(i, matrix); }
+    shell.instanceMatrix.needsUpdate = true; group.add(shell); track(shell);
+  }
   return { canopies, trunks, shrubs, setColours };
+}
+
+/** A round, faceted crown centred near its middle (about the old cone's size), dark under and lit on top. */
+function islandCrown(): THREE.BufferGeometry {
+  const parts = [new THREE.IcosahedronGeometry(1.05, 1).scale(1.05, .85, 1).translate(0, .05, 0), new THREE.IcosahedronGeometry(.7, 0).translate(.45, .55, .2), new THREE.IcosahedronGeometry(.65, 0).translate(-.5, .35, -.25)];
+  return shadeUp(mergeGeometries(parts.map((g) => { const q = g.index ? g.toNonIndexed() : g; q.deleteAttribute("uv"); return q; }))!, .6, 1.1, -.8, 1.2);
+}
+function islandBush(): THREE.BufferGeometry { const g = new THREE.IcosahedronGeometry(0.55, 0); g.deleteAttribute("uv"); return shadeUp(g, .65, 1.1, -.5, .5); }
+function shadeUp(g: THREE.BufferGeometry, low: number, high: number, y0: number, y1: number): THREE.BufferGeometry {
+  const p = g.getAttribute("position"), c = new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i += 1) { const t = Math.max(0, Math.min(1, (p.getY(i) - y0) / (y1 - y0))), k = low + (high - low) * t; c[i * 3] = c[i * 3 + 1] = c[i * 3 + 2] = k; }
+  g.setAttribute("color", new THREE.BufferAttribute(c, 3)); return g;
 }
 
 export type Ground = {
@@ -100,45 +124,17 @@ export type Ground = {
   dispose(): void;
 };
 
-function paintVertices(colors: Float32Array, positions: Float32Array, dressing: PlaceDressing): void {
-  const stone = new THREE.Color(dressing.terrace), joint = new THREE.Color(dressing.joint), moss = new THREE.Color(dressing.lawn), sea = new THREE.Color(dressing.sea);
-  const sand = new THREE.Color(dressing.stone).lerp(sea, 0.25);
-  const c = new THREE.Color();
-  for (let i = 0; i < positions.length / 3; i += 1) {
-    const x = positions[i * 3] ?? 0, z = positions[i * 3 + 2] ?? 0, r = Math.hypot(x, z);
-    // A quiet, deterministic variation so flat shading reads as stone, not plastic.
-    const grain = 0.94 + 0.06 * (0.5 + 0.5 * Math.sin(x * 1.7 + z * 2.3) * Math.cos(x * 0.9 - z * 1.1));
-    if(z < -55 && positions[i*3+1]! > 0) {
-      const h=positions[i*3+1]!,d=districtAt(x,z),j=i+1;
-      const slope=j<positions.length/3&&Math.abs(positions[j*3]!-x)<4?Math.abs(positions[j*3+1]!-h)/Math.max(.1,Math.abs(positions[j*3]!-x)):0;
-      c.copy(moss);
-      if(d?.biome==='woods')c.lerp(new THREE.Color(dressing.moss),.38);
-      if(d?.biome==='meadow'||d?.biome==='orchard')c.lerp(new THREE.Color(dressing.plinth),.12);
-      c.lerp(stone,Math.max(Math.min(.8,Math.max(0,slope-.35)*.65),Math.max(0,(h-66)/62)));
-      if(h>103)c.lerp(new THREE.Color('#e6ece6'),.22);
-    }
-    else if (r <= TERRACE_RADIUS) c.copy(stone).lerp(joint, r > TERRACE_RADIUS - 0.6 ? 0.55 : 0.08);
-    else if (r <= LAWN_RADIUS) c.copy(moss).lerp(sand, Math.max(0, (r - TERRACE_RADIUS) / (LAWN_RADIUS - TERRACE_RADIUS) - 0.8) * 2.5);
-    else { const t = (r - LAWN_RADIUS) / (GROUND_RADIUS - LAWN_RADIUS); c.copy(sand).lerp(sea.clone().multiplyScalar(0.7), Math.min(1,Math.max(0, t - 0.5) * 1.6)); }
-    c.multiplyScalar(grain);
-    colors[i * 3] = c.r; colors[i * 3 + 1] = c.g; colors[i * 3 + 2] = c.b;
-  }
-}
-
 // Immutable geography is reused through theme changes and renderer rebuilds.
 // Each scene still owns its GPU geometry, normals and colour buffers.
-const lattices=new Map<RenderTier,{positions:Float32Array;indices:number[]}>();
-function terrainLattice(tier:RenderTier){
+const lattices=new Map<RenderTier,Lattice>();
+function terrainLattice(tier:RenderTier):Lattice{
   const cached=lattices.get(tier);if(cached)return cached;
-  // ~2 unit spacing on full, ~3 on lite, over the whole island and mountain including its coast.
-  const B=TERRAIN_LATTICE_BOUNDS,cols = tier==='full'?200:134, rows=tier==='full'?240:160;
-  const vertexCount=(cols+1)*(rows+1), positions=new Float32Array(vertexCount*3), indices:number[]=[];
-  for(let iz=0;iz<=rows;iz++)for(let ix=0;ix<=cols;ix++){
-    const x=B.minX+ix/cols*(B.maxX-B.minX),z=B.minZ+iz/rows*(B.maxZ-B.minZ),i=iz*(cols+1)+ix;
-    positions[i*3]=x;positions[i*3+1]=groundHeightAt(x,z);positions[i*3+2]=z;
-    if(ix<cols&&iz<rows){const a=i,b=i+1,c=i+cols+1,d=c+1;indices.push(a,c,b,b,c,d);}
-  }
-  const result={positions,indices};lattices.set(tier,result);return result;
+  const result=buildLattice(TERRAIN_LATTICE_BOUNDS,tier,groundHeightAt);lattices.set(tier,result);return result;
+}
+/** Aerial depth: eye-level views fog from ~120 to ~420 (the summit a soft silhouette from town, the dam still reads); a high eye sees further through thinner air. */
+export function fogRange(eyeHeight:number,dressing:Pick<PlaceDressing,'fogNear'|'fogFar'>):[number,number]{
+  const lift=Math.max(0,eyeHeight);
+  return [Math.max(dressing.fogNear,120+lift*.9),Math.max(dressing.fogFar,420+lift*1.35)];
 }
 
 export function createGround(scene: THREE.Scene, dressing: PlaceDressing, tier: RenderTier): Ground {
@@ -146,17 +142,23 @@ export function createGround(scene: THREE.Scene, dressing: PlaceDressing, tier: 
   group.name = "Harbour island";
   const disposables: { dispose(): void }[] = [];
   const track = <T extends { dispose(): void }>(item: T): T => { disposables.push(item); return item; };
-  const {positions,indices}=terrainLattice(tier),colors=new Float32Array(positions.length);
-  paintVertices(colors, positions, dressing);
+  const lattice=terrainLattice(tier),{positions,indices}=lattice,colors=new Float32Array(positions.length);
+  const masks=groundMasks(lattice,tier,groundHeightAt);
+  paintGround(colors,lattice,masks,dressing);
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  geometry.setIndex(indices);
+  // Paper grain in world space, so the ground is the same card as everything standing on it.
+  const uvs=new Float32Array(positions.length/3*2);for(let i=0;i<uvs.length/2;i++){uvs[i*2]=positions[i*3]!/9;uvs[i*2+1]=positions[i*3+2]!/9;}
+  geometry.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+  geometry.setIndex(new THREE.BufferAttribute(indices,1));
   geometry.computeVertexNormals();
-  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true });
+  const material = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.95, flatShading: true, map: paperGrain() });
   const island = new THREE.Mesh(geometry, material);
   island.name = "Island ground";
   island.receiveShadow = true;
+  // The land casts: ridges throw their shadow across the slopes and the gorge.
+  island.castShadow = true;
   island.userData.ground = true;
   group.add(island);
 
@@ -177,17 +179,25 @@ export function createGround(scene: THREE.Scene, dressing: PlaceDressing, tier: 
   const plants = plantRing(group, dressing, tier, track);
   scene.add(group);
 
+  let air=dressing;
+  const fog=new THREE.Fog(new THREE.Color(dressing.fog),120,420);
   const applyAir = (next: PlaceDressing) => {
-    const sky = new THREE.Color(next.sky);
-    scene.background = sky;
-    scene.fog = new THREE.Fog(new THREE.Color(next.fog), Math.max(310, next.fogNear), Math.max(850, next.fogFar));
+    air=next;
+    scene.background = new THREE.Color(next.sky);
+    fog.color.set(next.fog);scene.fog = fog;
   };
   applyAir(dressing);
+  // Fog depth follows the eye's height above the land (see fogRange).
+  const previousBefore=scene.onBeforeRender;
+  scene.onBeforeRender=(renderer,sceneArg,camera,...rest)=>{
+    const p=camera.position,[near,far]=fogRange(p.y-groundHeightAt(p.x,p.z),air);fog.near=near;fog.far=far;
+    previousBefore.call(scene,renderer,sceneArg,camera,...rest);
+  };
 
   return {
     group, island, groundHeightAt,
     setDressing(next) {
-      paintVertices(colors, positions, next);
+      paintGround(colors, lattice, masks, next);
       geometry.getAttribute("color").needsUpdate = true;
       seaMaterial.color.set(next.sea);
       shallowsMaterial.color.set(next.sea).multiplyScalar(0.78);
@@ -200,7 +210,7 @@ export function createGround(scene: THREE.Scene, dressing: PlaceDressing, tier: 
       seaGeometry.dispose(); seaMaterial.dispose();
       plants.canopies.dispose(); plants.trunks.dispose(); plants.shrubs.dispose();
       for (const item of disposables) item.dispose();
-      scene.fog = null; scene.background = null;
+      scene.onBeforeRender=previousBefore;scene.fog = null; scene.background = null;
     },
   };
 }

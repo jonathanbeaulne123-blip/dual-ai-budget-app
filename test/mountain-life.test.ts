@@ -5,7 +5,7 @@ import {buildMountainLife} from '../src/harbour/mountain/lifeScene.ts';
 import {SCENE_DRESSING} from '../src/harbour/scene/place.ts';
 import type {HarbourReading} from '../src/harbour/data/reading.ts';
 import type {Mesh} from 'three';
-import {createWorldAmbience} from '../src/harbour/mountain/audio.ts';
+import {createWorldAmbience,BELL_PARTIALS,footSurfaceAt} from '../src/harbour/mountain/audio.ts';
 
 const scope={environment:'development',householdId:'fictional'};
 type Reading=Pick<HarbourReading,'condition'|'freshness'|'basin'|'mountainCareDays'>;
@@ -102,11 +102,27 @@ describe('mountain living interaction contract',()=>{
   });
 });
 
+describe('mountain ambient flight',()=>{
+  it('flies a flock and orchard butterflies on their paths, and puts them away when held still',()=>{
+    const scene=buildMountainLife(SCENE_DRESSING.classic,'full');
+    const find=(name:string)=>{const out:import('three').Object3D[]=[];scene.group.traverse(o=>{if(o.name===name)out.push(o);});return out;};
+    const birds=find('Flying bird'),flies=find('Orchard butterfly');
+    expect(birds.length).toBeGreaterThanOrEqual(3);expect(flies.length).toBeGreaterThanOrEqual(3);
+    scene.animate(10,.02);const a=birds.map(b=>b.position.clone()),fa=flies.map(f=>f.position.clone());
+    scene.animate(14,.02);
+    expect(birds.every((b,i)=>b.visible&&b.position.distanceTo(a[i]!)>1)).toBe(true);
+    expect(flies.every((f,i)=>f.visible&&f.position.distanceTo(fa[i]!)>.1)).toBe(true);
+    scene.setQuiet(true);
+    expect([...birds,...flies].every(o=>!o.visible)).toBe(true);
+    scene.dispose();
+  });
+});
+
 describe('mountain bell audio lifecycle',()=>{
   afterEach(()=>vi.unstubAllGlobals());
   it('requires enabled ambience, rate-limits rings and silences on quiet, visibility and disposal',()=>{
     const param=()=>({value:0,cancelScheduledValues:vi.fn(),setTargetAtTime:vi.fn(),setValueAtTime:vi.fn(),exponentialRampToValueAtTime:vi.fn()});
-    const node=()=>({connect:vi.fn(),disconnect:vi.fn(),start:vi.fn(),stop:vi.fn(),gain:param(),frequency:param(),type:'sine',onended:null as (()=>void)|null});
+    const node=()=>({connect:vi.fn(),disconnect:vi.fn(),start:vi.fn(),stop:vi.fn(),gain:param(),frequency:param(),Q:param(),type:'sine',onended:null as (()=>void)|null});
     const voices:ReturnType<typeof node>[]=[];
     let now=1;
     const close=vi.fn(async()=>{}),listeners=new Map<string,()=>void>();
@@ -121,12 +137,32 @@ describe('mountain bell audio lifecycle',()=>{
     });
     const audio=createWorldAmbience()!;
     audio.bell();expect(voices).toHaveLength(0);
-    audio.update(0,0,0,0,false,false,false);audio.bell();expect(voices).toHaveLength(2);
-    audio.bell();expect(voices).toHaveLength(2);
-    audio.update(0,0,0,0,false,false,true);now=2;audio.bell();expect(voices).toHaveLength(2);
+    // A ring is the bell's inharmonic partials: more than the old two sines, each with its own decay.
+    const P=BELL_PARTIALS.length;expect(P).toBeGreaterThanOrEqual(5);
+    audio.update(0,0,0,0,false,false,false);audio.bell();expect(voices).toHaveLength(P);
+    const ratios=voices.map(v=>v.frequency.value/voices[1]!.frequency.value);expect(ratios.some(r=>Math.abs(r-Math.round(r))>.1)).toBe(true);
+    audio.bell();expect(voices).toHaveLength(P);
+    audio.update(0,0,0,0,false,false,true);now=2;audio.bell();expect(voices).toHaveLength(P);
     for(const voice of voices)expect(voice.disconnect).toHaveBeenCalled();
-    audio.update(0,0,0,0,false,false,false);audio.bell();expect(voices).toHaveLength(4);
-    doc.hidden=true;listeners.get('visibilitychange')!();now=3;audio.bell();expect(voices).toHaveLength(4);
+    audio.update(0,0,0,0,false,false,false);audio.bell();expect(voices).toHaveLength(P*2);
+    doc.hidden=true;listeners.get('visibilitychange')!();now=3;audio.bell();expect(voices).toHaveLength(P*2);
     audio.dispose();audio.dispose();audio.bell();expect(close).toHaveBeenCalledOnce();expect(listeners.size).toBe(0);
+  });
+});
+
+describe('mountain footsteps',()=>{
+  it('tell wood, stone, gravel, grass and snow apart from the contract surfaces',async()=>{
+    const {MOUNTAIN_ROAD_LINE,BRIDGES}=await import('../src/harbour/mountain/definition.ts');
+    const {PATH_EDGES}=await import('../src/harbour/mountain/pathGraph.ts');
+    const {groundHeightAt}=await import('../src/harbour/scene/ground.ts');
+    const road=MOUNTAIN_ROAD_LINE.samples.find(s=>s.support==='ground'&&s.at[2]<-80)!;
+    expect(footSurfaceAt(road.at[0],road.at[1],road.at[2])).toBe('stone');
+    const timber=BRIDGES.find(b=>b.type==='timber'&&b.carries==='road')!,mid=timber.deck[Math.floor(timber.deck.length/2)]!;
+    expect(['stone','wood']).toContain(footSurfaceAt(mid[0],mid[1],mid[2]));
+    expect(footSurfaceAt(mid[0],mid[1],mid[2],true)).toBe('wood');
+    const path=PATH_EDGES.find(e=>e.kind==='path'&&e.points.length>6)!,p=path.points[3]!;
+    expect(footSurfaceAt(p[0],groundHeightAt(p[0],p[2]),p[2])).toBe('gravel');
+    expect(footSurfaceAt(-150,groundHeightAt(-150,-150),-150)).toBe('grass');
+    expect(footSurfaceAt(2,104.5,-300)).toBe('snow');
   });
 });
