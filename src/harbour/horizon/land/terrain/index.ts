@@ -187,16 +187,17 @@ function padDistance(p: PadCut, x: number, z: number): number {
 }
 interface PreparedSegment { bed: BedCut; a: XYZ; b: XYZ; arc: number; length: number; total: number }
 interface PreparedBeds { bins: Map<string, PreparedSegment[]>; cell: number }
-const preparedBedCache = new WeakMap<BedCut[], PreparedBeds>();
+const preparedBedCache = new WeakMap<BedCut[], Map<number, PreparedBeds>>();
 const cellKey = (x: number, z: number, cell: number): string => `${Math.floor(x / cell)},${Math.floor(z / cell)}`;
-function prepareBeds(beds: BedCut[]): PreparedBeds {
-  const cached = preparedBedCache.get(beds); if (cached) return cached;
+const cutsTerrain = (bed: BedCut) => bed.terrainCut && !['cave', 'rail', 'cable'].includes(bed.kind);
+function prepareBeds(beds: BedCut[], rasterMargin = 0): PreparedBeds {
+  const cache = preparedBedCache.get(beds), cached = cache?.get(rasterMargin); if (cached) return cached;
   const cell = 64 * getModel().scale, bins = new Map<string, PreparedSegment[]>();
   // Every potentially influencing segment is inserted; order remains bed order,
   // then segment order. Closed routes spanning the island no longer scan globally.
   for (const bed of beds) {
-    if (!bed.terrainCut || bed.points.length < 2) continue;
-    const reach = bed.width / 2 + bed.shoulder + Math.max(bed.blend, 15 * getModel().scale);
+    if (!cutsTerrain(bed) || bed.points.length < 2) continue;
+    const reach = bed.width / 2 + bed.shoulder + Math.max(bed.blend, 15 * getModel().scale, rasterMargin);
     const { lengths, total } = polylineArcs(bed.points); let arc = 0;
     for (let i = 0; i < bed.points.length - 1; i++) {
       const a = bed.points[i]!, b = bed.points[i + 1]!, length = lengths[i]!;
@@ -208,7 +209,8 @@ function prepareBeds(beds: BedCut[]): PreparedBeds {
       }
     }
   }
-  const prepared = { bins, cell }; preparedBedCache.set(beds, prepared); return prepared;
+  const prepared = { bins, cell }, next = cache ?? new Map<number, PreparedBeds>();
+  next.set(rasterMargin, prepared); preparedBedCache.set(beds, next); return prepared;
 }
 /** Exact local segment lookup, exported for equivalence probes against brute force. */
 export function createBedSampler(beds: BedCut[]): (x: number, z: number, original: number) => { height: number; surface: number | null } {
@@ -216,6 +218,7 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
   return (x, z, original) => {
     let height = original, surface: number | null = null, active: BedCut | null = null;
     let distance = Infinity, target = 0, progress = 0, excluded = false;
+    let footprintHeight = Infinity, footprintSurface: number | null = null;
     const apply = () => {
       if (!active || excluded) return;
       const edge = active.width / 2 + active.shoulder, blend = Math.max(active.blend, 15 * s);
@@ -225,6 +228,11 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
       if (distance <= active.width / 2) {
         const material = active.surfaceSegments?.find(segment => progress >= segment.from && progress <= segment.to)?.surface ?? active.surface;
         surface = Math.max(0, TERRAIN_SURFACE_PALETTE.findIndex(p => p.id === material));
+      }
+      // A neighbouring route's soft bank cannot bury a visible bed. At a
+      // crossing, the lowest eligible bed needs clearance; solids own each deck.
+      if (distance <= edge && target < footprintHeight) {
+        footprintHeight = target; footprintSurface = surface;
       }
     };
     for (const segment of prepared.bins.get(cellKey(x, z, prepared.cell)) ?? []) {
@@ -236,10 +244,35 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
       const { a, b } = segment, q = segmentPoint(x, z, [a[0], a[2]], [b[0], b[2]]);
       if (q.distance < distance) { distance = q.distance; target = mix(a[1], b[1], q.t); progress = (segment.arc + segment.length * q.t) / (segment.total || 1); }
     }
-    apply(); return { height, surface };
+    apply(); return { height: Number.isFinite(footprintHeight) ? footprintHeight : height, surface: footprintSurface ?? surface };
   };
 }
-function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<typeof createBedSampler>, rasterMargin: number): { height: number; surface: number | null } {
+/** Five centimetres survives centimetre encoding without terrain sharing the road's top face. */
+export const BED_TERRAIN_CLEARANCE = .05;
+
+/** Each supporting grid vertex is below the extended plane of every nearby bed
+ * segment. Linear interpolation then stays below that same rendered deck plane.
+ * The diagonal margin covers every vertex of a triangle touching the footprint.
+ * Named bridge/tunnel exclusions retain their terrain, including supporting cells. */
+export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x: number, z: number) => number {
+  const prepared = prepareBeds(beds, rasterMargin);
+  return (x, z) => {
+    let ceiling = Infinity;
+    for (const {bed, a, b, length} of prepared.bins.get(cellKey(x, z, prepared.cell)) ?? []) {
+      if (length < 1e-8 || bed.terrainExclusions?.some(e => Math.hypot(x - e.at[0], z - e.at[1]) < e.radius + rasterMargin)) continue;
+      const hit = segmentPoint(x, z, [a[0], a[2]], [b[0], b[2]]);
+      if (hit.distance > bed.width / 2 + bed.shoulder + rasterMargin) continue;
+      const dx = b[0] - a[0], dz = b[2] - a[2];
+      // Do not clamp t: a clamped endpoint height can bridge above a sloped
+      // deck when a terrain triangle straddles that segment's endpoint.
+      const t = ((x - a[0]) * dx + (z - a[2]) * dz) / (length * length);
+      ceiling = Math.min(ceiling, mix(a[1], b[1], t) - BED_TERRAIN_CLEARANCE);
+    }
+    return ceiling;
+  };
+}
+
+function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<typeof createBedSampler>, rasterMargin: number, bedCeiling: (x: number, z: number) => number): { height: number; surface: number | null } {
   let { height, surface } = sampleBeds(x, z, baseHeight(x, z));
   for (const p of cuts.pads) {
     if (p.underground) continue;
@@ -251,6 +284,9 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
   // Mouths are topology masks read by terrainIndices(), not pits through a heightfield.
   // A cave's floor and ceiling remain independent surfaces under this continuous roof.
   height = applyWaters(x, z, height, cuts.waters.length ? cuts.waters : getModel().water, rasterMargin);
+  // Apply after pads and water too: no later blend may raise the terrain
+  // through a ground-level road. This changes the visible mesh, not collision.
+  height = Math.min(height, bedCeiling(x, z));
   return { height, surface };
 }
 /** Vertices of every grid triangle touching a water footprint are capped below
@@ -258,7 +294,22 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
  * The bank begins outside that conservative raster footprint; water width stays fixed. */
 export function createTerrainCutSampler(cuts: LandCuts, step: number): (x: number, z: number) => { height: number; surface: number | null } {
   const beds = createBedSampler(cuts.beds), rasterMargin = step * Math.SQRT2;
-  return (x, z) => cutHeight(x, z, cuts, beds, rasterMargin);
+  const bedCeiling = createBedClearanceSampler(cuts.beds, rasterMargin);
+  return (x, z) => cutHeight(x, z, cuts, beds, rasterMargin, bedCeiling);
+}
+/** Reapply the same road clearance to each retained LOD lattice. Decimation
+ * alone can reconnect high vertices across a narrow road even if full was safe. */
+export function conserveBedFootprint(field: TerrainField, beds: BedCut[]): void {
+  const ceiling = createBedClearanceSampler(beds, field.step * Math.SQRT2);
+  for (let j = 0; j < field.rows; j++) for (let i = 0; i < field.columns; i++) {
+    const n = j * field.columns + i;
+    field.heights[n] = Math.min(field.heights[n]!, ceiling(i * field.step, j * field.step));
+  }
+  for (let j = 0; j < field.rows; j++) for (let i = 0; i < field.columns; i++) {
+    const n = j * field.columns + i, normal = terrainNormal(field, i * field.step, j * field.step);
+    const slope = Math.hypot(normal[0], normal[2]) / normal[1];
+    if (!isWalkableSlope(slope)) field.surfaces[n] = terrainSurface(i * field.step, j * field.step, field.heights[n]!, slope);
+  }
 }
 /** Conservative lower-LOD approximation of this same lattice. Only vertices that
  * support a named wet footprint or its bank transition may move downward; dry
