@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Mesh, MeshBasicMaterial, BufferGeometry, Float32BufferAttribute, Raycaster, Vector3, DoubleSide } from 'three';
-import { baseHeight } from '../src/harbour/horizon/land/terrain';
+import { baseHeight, createTerrainCutSampler, sampleTerrain } from '../src/harbour/horizon/land/terrain';
+import type { TerrainField } from '../src/harbour/horizon/land/interfaces';
 import { buildWaterCuts, bightMouthWidth, waterInfluence } from '../src/harbour/horizon/land/water';
 import { islandContains } from '../src/harbour/horizon/land/coast';
 import { buildNeedleArch, buildOffshoreSolids } from '../src/harbour/horizon/land/offshore';
@@ -52,6 +53,23 @@ describe('Horizon water and offshore land', () => {
     expect(islandContains(620, 960)).toBe(false);
     expect(baseHeight(620, 1000)).toBeCloseTo(-0.22);
     expect(baseHeight(540, 1220)).toBeGreaterThan(6); expect(baseHeight(540, 1220)).toBeLessThanOrEqual(8);
+  });
+  it('keeps the entire wet width below its water plane after 5 m triangle interpolation', () => {
+    const waters = buildWaterCuts(), sample = createTerrainCutSampler({ waters, beds: [], pads: [], mouths: [], solids: [], diagnostics: [] }, 5);
+    const patch = (x: number, z: number): number => {
+      const gx = Math.floor(x / 5) * 5, gz = Math.floor(z / 5) * 5;
+      const f: TerrainField = { revision: 'horizon-geo-1', width: 5, depth: 5, step: 5, columns: 2, rows: 2, heights: new Float32Array([sample(gx, gz).height, sample(gx + 5, gz).height, sample(gx, gz + 5).height, sample(gx + 5, gz + 5).height]), surfaces: new Uint8Array(4) };
+      return sampleTerrain(f, x - gx, z - gz);
+    };
+    for (const water of waters) if (!water.underground && water.points.length && water.kind !== 'dry') {
+      for (let i = 1; i < water.points.length; i++) {
+        const a = water.points[i - 1]!, b = water.points[i]!, dx = b[0] - a[0], dz = b[2] - a[2], length = Math.hypot(dx, dz);
+        for (let t = 0.05; t < 1; t += 0.05) for (const side of [-0.99, -0.5, 0, 0.5, 0.99]) {
+          const x = a[0] + dx * t - side * dz / length * water.width / 2, z = a[2] + dz * t + side * dx / length * water.width / 2;
+          expect(patch(x, z), `${water.id} wet footprint ${x},${z}`).toBeLessThan(a[1] + (b[1] - a[1]) * t + 0.01);
+        }
+      }
+    }
   });
   it('builds a closed thick arch with a clear 22 by 16 opening and visible underside', () => {
     const arch = buildNeedleArch(), edges = new Map<string, number>();

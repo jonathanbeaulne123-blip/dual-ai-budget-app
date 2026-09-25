@@ -132,12 +132,13 @@ function notchHeight(x: number, z: number, height: number): number {
   return mix(rim, height, smooth((q.distance - half) / (12 * s)));
 }
 const waterBounds = new WeakMap<WaterCut, readonly [number, number, number, number]>();
-function applyWaters(x: number, z: number, original: number, waters: WaterCut[]): number {
+const waterGrades = new WeakMap<WaterCut, number>();
+function applyWaters(x: number, z: number, original: number, waters: WaterCut[], rasterMargin = 0): number {
   const s = getModel().scale;
   let h = original, wetBedCeiling = Infinity;
   for (const water of waters) {
     if (water.underground || water.kind === 'sea' || water.kind === 'lagoon') continue;
-    const bankWidth = water.points.length ? 4 * s : 8 * s, outer = water.points.length ? 12 * s : 24 * s;
+    const bankWidth = water.points.length ? 4 * s : 8 * s, outer = (water.points.length ? 12 * s : 24 * s) + rasterMargin;
     let bounds = waterBounds.get(water);
     if (!bounds) {
       bounds = water.points.length ? [Math.min(...water.points.map(p => p[0])) - water.width / 2, Math.min(...water.points.map(p => p[2])) - water.width / 2, Math.max(...water.points.map(p => p[0])) + water.width / 2, Math.max(...water.points.map(p => p[2])) + water.width / 2] :
@@ -145,14 +146,24 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[])
       waterBounds.set(water, bounds);
     }
     if (x < bounds[0] - outer || z < bounds[1] - outer || x > bounds[2] + outer || z > bounds[3] + outer) continue;
-    const { distance: d, level } = waterInfluence(water, x, z);
+    const { distance: distanceToWater, level } = waterInfluence(water, x, z), d = distanceToWater - rasterMargin;
+    let grade = waterGrades.get(water);
+    if (grade === undefined) {
+      grade = 0;
+      for (let i = 1; i < water.points.length; i++) {
+        const a = water.points[i - 1]!, b = water.points[i]!;
+        grade = Math.max(grade, Math.abs(b[1] - a[1]) / (Math.hypot(b[0] - a[0], b[2] - a[2]) || 1));
+      }
+      waterGrades.set(water, grade);
+    }
+    const verticalGuard = grade * rasterMargin;
     if (d > outer) continue;
     if (d <= 0) {
-      const depth = water.depth * mix(0.22, 1, smooth(-d / (water.points.length ? water.width / 2 : 14 * s)));
+      const depth = water.depth * mix(0.22, 1, smooth(-distanceToWater / (water.points.length ? water.width / 2 : 14 * s))) + verticalGuard;
       h = Math.min(h, level - depth);
       wetBedCeiling = Math.min(wetBedCeiling, level - depth);
     } else if (d < bankWidth) {
-      const edge = level - water.depth * 0.22, bank = Math.max(h, level + water.bank);
+      const edge = level - water.depth * 0.22 - verticalGuard, bank = Math.max(h, level + water.bank);
       h = mix(edge, bank, smooth(d / bankWidth));
     } else {
       h = Math.max(h, mix(level + water.bank, h, smooth((d - bankWidth) / (outer - bankWidth))));
@@ -227,7 +238,7 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
     apply(); return { height, surface };
   };
 }
-function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<typeof createBedSampler>): { height: number; surface: number | null } {
+function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<typeof createBedSampler>, rasterMargin: number): { height: number; surface: number | null } {
   let { height, surface } = sampleBeds(x, z, baseHeight(x, z));
   for (const p of cuts.pads) {
     if (p.underground) continue;
@@ -238,8 +249,15 @@ function cutHeight(x: number, z: number, cuts: LandCuts, sampleBeds: ReturnType<
   }
   // Mouths are topology masks read by terrainIndices(), not pits through a heightfield.
   // A cave's floor and ceiling remain independent surfaces under this continuous roof.
-  height = applyWaters(x, z, height, cuts.waters.length ? cuts.waters : getModel().water);
+  height = applyWaters(x, z, height, cuts.waters.length ? cuts.waters : getModel().water, rasterMargin);
   return { height, surface };
+}
+/** Vertices of every grid triangle touching a water footprint are capped below
+ * its graded surface. This prevents coarse LOD interpolation bridging over a brook.
+ * The bank begins outside that conservative raster footprint; water width stays fixed. */
+export function createTerrainCutSampler(cuts: LandCuts, step: number): (x: number, z: number) => { height: number; surface: number | null } {
+  const beds = createBedSampler(cuts.beds), rasterMargin = step * Math.SQRT2;
+  return (x, z) => cutHeight(x, z, cuts, beds, rasterMargin);
 }
 /** Offline-only solve. Importing this module allocates no heightfield. */
 export function buildTerrain(cuts: LandCuts, options: { step?: number } = {}): TerrainField {
@@ -247,9 +265,9 @@ export function buildTerrain(cuts: LandCuts, options: { step?: number } = {}): T
   if (!(step > 0) || width % step !== 0 || depth % step !== 0) throw new Error('Terrain step must divide the scaled extent');
   const columns = width / step + 1, rows = depth / step + 1;
   const field: TerrainField = { revision: GEOGRAPHY_REVISION, width, depth, step, columns, rows, heights: new Float32Array(columns * rows), surfaces: new Uint8Array(columns * rows) };
-  const beds = createBedSampler(cuts.beds), painted = new Int16Array(columns * rows).fill(-1);
+  const sample = createTerrainCutSampler(cuts, step), painted = new Int16Array(columns * rows).fill(-1);
   for (let j = 0; j < rows; j++) for (let i = 0; i < columns; i++) {
-    const p = cutHeight(i * step, j * step, cuts, beds), n = j * columns + i;
+    const p = sample(i * step, j * step), n = j * columns + i;
     field.heights[n] = p.height; painted[n] = p.surface ?? -1;
   }
   for (let j = 0; j < rows; j++) for (let i = 0; i < columns; i++) {
