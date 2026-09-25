@@ -1,6 +1,6 @@
 # The Horizon — CONTRACT
 
-Version 1.4 · 25 September 2026 · Owner: Jonathan (product) · Author: Claude (design lead, review) · Builders: Codex (terraforming), Claude subagents (movers, kit, neighbourhoods, pastimes)
+Version 1.5 · 25 September 2026 · Owner: Jonathan (product) · Author: Claude (design lead, review) · Builders: Codex (terraforming), Claude subagents (movers, kit, neighbourhoods, pastimes)
 
 This file is the law of the island. Every agent on every pass reads it first. If a brief, a chat, or a good idea conflicts with this file, this file wins until Jonathan changes it here.
 
@@ -53,7 +53,7 @@ The three files every agent reads: `CONTRACT.md` (this: schema and hard rules), 
 ## 3. Coordinates and scale
 
 - Concept space: `x` east, `y` south, origin top-left of `MANIFEST.json → extent` (2000 × 1800 concept metres). In the engine `y` becomes `z`; `up` is `+y`.
-- **Engine units = concept metres × `MANIFEST.json → scale.factor`** (recommended 0.6; decision D13), applied to x, y and height alike. At factor 1.0 the island is too big for feet and bicycles; the manifest carries every journey at both factors. Heights are metres above sea level; sea level is `0`.
+- **Engine units = concept metres × `MANIFEST.json → scale.factor`** (confirmed 1.0 by Jonathan, 25 September 2026; D13), applied to x, y and height alike. The manifest selects the full-scale journey estimates and retains the 0.6 comparison; original timing targets remain acceptance targets. Heights are metres above sea level; sea level is `0`.
 - North is `−z`. The sun rises over the Needle's Eye (east) and sets over the Flats (west); see `LIGHT.md`.
 - Route control points are centrelines; widths come from `MANIFEST.json → profiles`. Control points are design intent for the land pass to solve into splines; they are not navigation or collision data until baked.
 
@@ -72,7 +72,7 @@ interface WorldDefinition {
   heightfield: HeightfieldRef;         // baked asset, cache key = geographyRevision
   water: WaterBody[];                  // lake, tarn, river, brooks, sea, the Deep
   landforms: Landform[];               // named bands with min/max height and polygon
-  districts: District[];               // streaming + guide-map regions (12)
+  districts: District[];               // streaming + guide-map regions (13)
   hosts: Host[];                       // the 7 buildings, door anchor, apron, arrival mode thresholds
   places: OutdoorPlace[];              // court, campfire, L01, L02
   beds: Bed[];                         // road, skate, rail, cable, cave, stair, boardwalk — geometry the land pass cuts
@@ -80,7 +80,7 @@ interface WorldDefinition {
   structures: Structure[];             // bridges, tunnels, dam, jetties, stations, hoardings
   crossings: Crossing[];               // every intersection and how it is resolved
   thresholds: Threshold[];             // mode boundaries with the action required
-  reserves: Reserve[];                 // 8 plots + 2 small, with reserved place ids
+  reserves: Reserve[];                 // 7 plots + 2 small, with reserved place ids
   sky: FlightEnvelope;                 // ceiling, launches, lift fields, landing fields, gates
   underground: UndercroftDef;          // doors, rooms, the Deep's water body, skylight
   lights: LightAnchor[];               // lanterns, windows, the Lamp, runway lamps, fires — see LIGHT.md
@@ -119,7 +119,7 @@ Rules for the definition:
 - `hosts[*].door` is the destination for arrival; cameras frame the door, not the plot centre.
 - `beds[*]` carry a `profile` id (`profiles` in the manifest) and a `surface` id that sets pace and footstep sound (`STYLE.md → surfaces`).
 - `districts` are the streaming unit. A district is at most one neighbourhood plus its surrounding land; the Undercroft is the Crown's child district; the sky streams by the districts under it.
-- `crossings[*].resolution` is one of `over`, `under`, `threshold`. Nothing else.
+- `crossings[*].resolution` is one of `over`, `under`, `threshold`. Nothing else. In the manifest, district metadata stays on the actual crossing; `routePairNotes` preserves nearby-endpoint and shared-plan-point evidence for the land pass to verify. DEEP_RUN and ORE share [1300,420]; their vertical clearance must be solved and every actual intersection registered during land construction. These notes never exempt a computed intersection from resolution.
 - `reserves[*]` reserve a `placeId` per plot in the same namespace as hosts so a future building slots in without renumbering.
 - The definition is data. A pass that needs a new field adds it to the interface in the same PR and updates this section.
 - The overlay is a function. No module that computes it imports a `captureCommand`; a static test enforces it (pass 02c).
@@ -128,8 +128,9 @@ Rules for the definition:
 
 ## 5. Reserves
 
-Two areas, four plots each, plus two small reserves, built in the land pass and dressed in the kit pass:
-- **The Terraces** (`plot.terraces.1–4`): above Little Harbour on the Prow side along Horizon Drive's first climb. Stepped, retaining walls, a lay-by per plot, the upper-street walk passing above, Town Weave below.
+Two areas: three Terraces plots and four Bight Shore plots, plus two small reserves, built in the land pass and dressed in the kit pass:
+- **The Terraces** (`plot.terraces.1–3`): above Little Harbour on the Prow side along Horizon Drive's first climb. Stepped, retaining walls, a lay-by per plot, the upper-street walk passing above, Town Weave below.
+- The removed `plot.terraces.4` ID is retired and must not be reused.
 - **Bight Shore** (`plot.bight.1–4`): the Bight's east shore between the Hollow and the Green, on the Bight Shore spur off Green Road, a jetty.
 - **Sealed drift** (`plot.under.1`) beside the Lantern Cave; **hangar bay** (`plot.flats.1`).
 - Plot size: 1.5 × the Library footprint (64 × 44 concept metres), plus 6 m clear on all sides; plot spacing ≥ 56 m. The Terraces sit on the uphill side of the Prow cliff drive; Bight Shore sits outside the Green's protected radius (160 m). Graded flat, walled, served (spur or lay-by, apron facing the door-to-be, threshold marker), reserved `placeId`.

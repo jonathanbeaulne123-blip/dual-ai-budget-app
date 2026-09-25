@@ -40,7 +40,9 @@ public final class HearthsideNativePlugin: CAPPlugin, CAPBridgedPlugin, ASWebAut
         } catch { call.reject("The selected design could not be opened", "INVALID_SCENE") }
     }
     private func emit(id: String, identity: NativeIdentity, kind: String, state: String?) {
-        guard let data = try? JSONEncoder().encode(identity), let value = try? JSONSerialization.jsonObject(with: data) else { return }
+        guard let data = try? JSONEncoder().encode(identity),
+              let raw = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let value = JSTypes.coerceDictionaryToJSObject(raw) else { return }
         var event: JSObject = ["version": 1, "sessionId": id, "identity": value, "eventId": UUID().uuidString, "kind": kind]
         if let state { event["state"] = state }; notifyListeners("hearthside", data: event)
     }
@@ -118,7 +120,7 @@ public final class HearthsideNativePlugin: CAPPlugin, CAPBridgedPlugin, ASWebAut
             catch { call.reject("Secure sign-in cancellation could not be saved", "SECURE_STORAGE_UNAVAILABLE") }
         }
     }
-    @objc func secureGet(_ call: CAPPluginCall) { storage(call) { key in ["value": try self.keychain.get(key) as Any? ?? NSNull()] } }
+    @objc func secureGet(_ call: CAPPluginCall) { storage(call) { key in ["value": try self.keychain.get(key) as JSValue? ?? NSNull()] } }
     @objc func secureSet(_ call: CAPPluginCall) { storage(call) { key in guard let value = call.getString("value"), value.utf8.count <= 32768 else { throw NativeFailure.invalid }; try self.keychain.set(key, value); return [:] } }
     @objc func secureRemove(_ call: CAPPluginCall) { storage(call) { key in try self.keychain.remove(key); return [:] } }
     private func storage(_ call: CAPPluginCall, perform: (String) throws -> JSObject) {
