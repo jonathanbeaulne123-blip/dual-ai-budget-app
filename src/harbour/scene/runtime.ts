@@ -1222,7 +1222,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         bodyInput=NO_INPUT;walker.setInput(NO_INPUT);
         const pose=mountainTrip.step(toolOpen?0:dt);
         walker.attach(pose);walker.step(dt,(now-mountedAt)/1000,heading);
-        mountainHandle().setTransit?.([pose.x,pose.y,pose.z],mountainTrip.kind,{yaw:pose.yaw,pitch:pose.pitch});previousDoorPoint=null;
+        mountainHandle().setTransit?.([pose.cabin[0],pose.cabin[1],pose.cabin[2]],mountainTrip.kind,{yaw:pose.yaw,pitch:pose.pitch});previousDoorPoint=null;
         bodyMoving=true;
         if(mountainTrip.done())arriveRide();
       }else{

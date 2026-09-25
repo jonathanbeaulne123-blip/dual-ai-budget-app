@@ -29,7 +29,7 @@ type ContractRoadSample={s:number;at:Point3;tangent:Point3;normal:Point3;halfWid
 type ContractPathEdge={id:string;kind:'road'|'path'|'stair'|'bridge'|'promenade';from:string;to:string;halfWidth:number;points:readonly Point3[];length:number};
 type ContractPathNode={id:string;kind:string;at:Point3;district?:string};
 type ContractTransportFrame={s:number;at:Point3;tangent:Point3};
-type ContractTransportLine={length:number;cruise:number;stations:readonly {id:string;s:number;at:Point3}[];at(s:number):ContractTransportFrame};
+type ContractTransportLine={length:number;cruise:number;stations:readonly {id:string;s:number;at:Point3;platform?:{at:Point3}}[];at(s:number):ContractTransportFrame};
 export type GeographyContract={
   MOUNTAIN_ROAD_LINE?:{id:string;samples:readonly ContractRoadSample[]};
   ORCHARD_LANE_LINE?:{id:string;samples:readonly ContractRoadSample[]};
@@ -276,7 +276,9 @@ export function districtArrival(id:string):Point3|null{
 
 /* ───────────────────────────────────────────────────────────── transport */
 
-export type TransportFrame={at:Point3;yaw:number;pitch:number};
+/** Where the rider is (`at`), and where the cabin is (`cabin`): they differ only while stepping between
+ * the platform and the cabin at either end (`aboard` false). */
+export type TransportFrame={at:Point3;yaw:number;pitch:number;cabin?:Point3;aboard?:boolean};
 export type TransportCurve={kind:TransportKind;from:number;to:number;length:number;cruise:number;frame(s:number):TransportFrame};
 const curves=new Map<string,TransportCurve>();
 /** Cruise speed along each line, units per second. CONTRACT: the spline's own `cruise`. */
@@ -291,10 +293,18 @@ export function transportCurve(kind:TransportKind,from:number,to:number):Transpo
   const key=`${kind}:${from}:${to}`,cached=curves.get(key);if(cached)return cached;
   const spline=contract.transportSpline?.(kind),a=spline?.stations[from],b=spline?.stations[to];
   if(spline&&a&&b){
-    const dir=b.s>=a.s?1:-1,length=Math.abs(b.s-a.s);
+    // The rider steps from the boarding platform into the cabin, rides the line, and steps out onto the
+    // arrival platform: the ride starts and ends exactly on the platforms (TRANSPORT_STOPS).
+    const dir=b.s>=a.s?1:-1,ride=Math.abs(b.s-a.s),board=a.platform?.at??a.at,alight=b.platform?.at??b.at;
+    const la=Math.hypot(a.at[0]-board[0],a.at[1]-board[1],a.at[2]-board[2]),lb=Math.hypot(alight[0]-b.at[0],alight[1]-b.at[1],alight[2]-b.at[2]),length=la+ride+lb;
+    const onLine=(s:number)=>{const f=spline.at(a.s+dir*Math.max(0,Math.min(ride,s))),tx=f.tangent[0]*dir,ty=f.tangent[1]*dir,tz=f.tangent[2]*dir;return {at:f.at,yaw:Math.atan2(tx,tz),pitch:Math.atan2(ty,Math.hypot(tx,tz)||1)};};
+    const lerp=(p:Point3,q:Point3,t:number):Point3=>[p[0]+(q[0]-p[0])*t,p[1]+(q[1]-p[1])*t,p[2]+(q[2]-p[2])*t];
+    const start=onLine(0),end=onLine(ride);
     const curve:TransportCurve={kind,from,to,length,cruise:spline.cruise,frame(s){
-      const f=spline.at(a.s+dir*Math.max(0,Math.min(length,s))),tx=f.tangent[0]*dir,ty=f.tangent[1]*dir,tz=f.tangent[2]*dir;
-      return {at:f.at,yaw:Math.atan2(tx,tz),pitch:Math.atan2(ty,Math.hypot(tx,tz)||1)};
+      const c=Math.max(0,Math.min(length,s));
+      if(c<la)return {at:lerp(board,a.at,la>0?c/la:1),yaw:start.yaw,pitch:0,cabin:a.at,aboard:false};
+      if(c>la+ride)return {at:lerp(b.at,alight,lb>0?(c-la-ride)/lb:1),yaw:end.yaw,pitch:0,cabin:b.at,aboard:false};
+      const f=onLine(c-la);return {...f,cabin:f.at,aboard:true};
     }};
     curves.set(key,curve);return curve;
   }

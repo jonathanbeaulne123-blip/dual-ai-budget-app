@@ -11,7 +11,7 @@ import {createBodyState,requestJump,stepBody,BODY_HEIGHT,KERB_PRESS,RETURN_FADE,
 import {districtArrival,raceCorridorAt} from '../src/harbour/body/geography.ts';
 import {createRide,farOffer,nearestStation,platformOffer} from '../src/harbour/body/ride.ts';
 import {groundHeightAt} from '../src/harbour/scene/ground.ts';
-import {DISTRICTS,TRANSPORT_STOPS} from '../src/harbour/mountain/definition.ts';
+import {DISTRICTS,TRANSPORT_STOPS,TRANSPORT_LINES} from '../src/harbour/mountain/definition.ts';
 import {MOUNTAIN_COURSE_POINTS,MOUNTAIN_GATES,crossesRaceGate} from '../src/harbour/mountain/race.ts';
 import {createSkateSim} from '../src/harbour/skate/sim/index.ts';
 import {createSkateDriver,skateField,skateSimOptions,SKATE_CATALOGS} from '../src/harbour/skate/driver.ts';
@@ -155,6 +155,7 @@ describe('rides',()=>{
       const ride=createRide(kind,from,to);
       const walker=createWalker({groundHeightAt,obstacles:courtObstacles('lite'),tier:'lite',trail:false,reduced:true,start:{x:TRANSPORT_STOPS[kind][from]!.at[0],z:TRANSPORT_STOPS[kind][from]!.at[2]}});
       let prev=ride.pose(),fastest=0,frames=0;
+      const start=TRANSPORT_STOPS[kind][from]!.at;expect(Math.hypot(prev.x-start[0],prev.y-start[1],prev.z-start[2]),`${kind}: boards from the platform`).toBeLessThan(.05);
       walker.attach(prev);
       while(!ride.done()&&frames<60*300){
         const pose=ride.step(1/60);walker.attach(pose);walker.step(1/60,frames/60,0);frames++;
@@ -163,7 +164,7 @@ describe('rides',()=>{
         fastest=Math.max(fastest,Math.hypot(pose.x-prev.x,pose.y-prev.y,pose.z-prev.z)*60);prev=pose;
       }
       expect(ride.done()).toBe(true);
-      expect(fastest,`${kind}: constant cruise, no 65 u/s spans`).toBeLessThan((kind==='gondola'?9:7)*1.08);
+      expect(fastest,`${kind}: constant cruise, no 65 u/s spans`).toBeLessThanOrEqual(TRANSPORT_LINES[kind].cruise*1.08);
       const end=TRANSPORT_STOPS[kind][to]!.at;expect(Math.hypot(prev.x-end[0],prev.y-end[1],prev.z-end[2])).toBeLessThan(.05);
       walker.dispose();
     }

@@ -10,7 +10,8 @@
  */
 import {stationPlatforms,transportCurve,transportStopCount,type Point3,type TransportCurve,type TransportKind} from './geography.ts';
 
-export type RidePose={x:number;y:number;z:number;yaw:number;pitch:number;seated:boolean};
+/** Where the body is; `cabin` is where the cabin is (the same point except while stepping aboard or off). */
+export type RidePose={x:number;y:number;z:number;yaw:number;pitch:number;seated:boolean;cabin:readonly [number,number,number]};
 export type Ride={
   kind:TransportKind;from:number;to:number;
   /** Seconds the whole ride takes (0 under reduced motion: a cut). */
@@ -46,7 +47,7 @@ export function createRide(kind:TransportKind,from:number,to:number,options:{red
     if(time<tA+tCruise)return dA+peak*(time-tA);
     const r=duration-time;return L-.5*a*r*r;
   };
-  const poseAt=(s:number):RidePose=>{const f=curve.frame(s);return {x:f.at[0],y:f.at[1],z:f.at[2],yaw:f.yaw,pitch:f.pitch,seated};};
+  const poseAt=(s:number):RidePose=>{const f=curve.frame(s);return {x:f.at[0],y:f.at[1],z:f.at[2],yaw:f.yaw,pitch:f.pitch,seated:seated&&f.aboard!==false,cabin:f.cabin??f.at};};
   return {
     kind,from,to,duration,
     step(dt){t=Math.min(duration,t+Math.max(0,Math.min(.1,Number.isFinite(dt)?dt:0)));return poseAt(distance(t));},
