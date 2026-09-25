@@ -211,3 +211,8 @@
 }
 .campfire-door__line { font-weight: 700; }
 .campfire-door__why { color: var(--cf-ink-2); }
+
+/* No see-through veil when transparency is unwelcome: the map simply goes away behind the paper. */
+@media (prefers-reduced-transparency: reduce) {
+  .campfire-ritual { background: var(--cf-paper); }
+}
