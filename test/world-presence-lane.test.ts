@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { attachWorldPresence } from "../src/ledgerSync/worldPresence.ts";
+import type {PresenceWorld} from "../src/worldGeography.ts";
 import { WORLD_STEP_MS } from "../src/ledgerSync/worldPresenceWire.ts";
 import { WORLD_EXPIRE_MS } from "../src/ledgerSync/worldMotion.ts";
 
@@ -26,13 +27,14 @@ class FakeSocket {
   deliver(value: unknown) { this.onmessage?.({ data: JSON.stringify(value) }); }
 }
 
-function harness(options: { canPublish: () => boolean; visible?: () => boolean }) {
+function harness(options: { canPublish: () => boolean; visible?: () => boolean; world?:PresenceWorld }) {
   const sockets: FakeSocket[] = [];
   const peersSeen: unknown[][] = [];
   let clock = 1_000_000;
   const fetcher = vi.fn(async () => new Response(JSON.stringify({ ticket: "TICKET" }), { status: 200 })) as unknown as typeof fetch;
   const lane = attachWorldPresence({
     environment: "development",
+    world: options.world,
     householdId: "HH-1",
     placeId: "court",
     deviceId: "DEVICE-a",
@@ -153,4 +155,15 @@ describe("the world-presence lane in the browser", () => {
     expect(socket.frames().at(-1)).toMatchObject({ type: "world-join", target: { placeId: "kiln" } });
     h.lane.close();
   });
+});
+
+it('keeps Horizon peers separate from Mountain and accepts only the requested Horizon revision',async()=>{
+ const h=harness({canPublish:()=>true,world:'horizon:horizon-geo-1'}),socket=await h.ready();
+ const peer={type:'world-peer',memberId:'MEM-002',deviceId:'MEM-002:DEVICE-horizon',placeId:'court',seenAt:h.now(),yaw:0,moving:true};
+ socket.deliver({...peer,world:'horizon:horizon-geo-1',x:1455,z:1200,y:24});
+ expect(h.lane.peers()[0]!.geoMismatch).toBe(false);expect(h.lane.peers()[0]!.track.samples()[0]).toMatchObject({x:1455,z:1200,y:24});
+ socket.deliver({...peer,world:'hearth-mountain-geo-2',x:100,z:0,y:2});
+ expect(h.lane.peers()[0]!.geoMismatch).toBe(true);expect(h.lane.peers()[0]!.track.samples()).toHaveLength(0);
+ socket.deliver({...peer,world:'horizon:horizon-geo-0',x:1455,z:1200,y:24});
+ expect(h.lane.peers()[0]!.track.samples()).toHaveLength(0);h.lane.close();
 });

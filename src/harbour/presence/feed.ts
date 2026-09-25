@@ -26,6 +26,7 @@ import type { PlayableAvatar } from "../body/avatarDefinition.ts";
  */
 
 export type WorldFeedRequest = {
+  world?: import("../../worldGeography.ts").PresenceWorld;
   environment: Environment;
   householdId: string;
   memberId: string | null;

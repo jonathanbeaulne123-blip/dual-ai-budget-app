@@ -28,7 +28,7 @@
 
 /** Draw the peer this far in the past, so there is nearly always a sample on each side. */
 import {worldPoint,type WorldAvatar} from './worldPresenceWire.ts';
-import {isMountainWorld,type MountainWorld} from '../worldGeography.ts';
+import {isMountainWorld,isHorizonWorld,HORIZON_WORLD_BOUNDS,type PresenceWorld} from '../worldGeography.ts';
 
 export const WORLD_RENDER_DELAY_MS = 140;
 /** How long the track may guess past its newest sample. */
@@ -45,7 +45,7 @@ export const WORLD_EXPIRE_MS = 8000;
 export const WORLD_TRACK_DEPTH = 8;
 
 export type WorldSample = {
-  world?: MountainWorld;
+  world?: PresenceWorld;
   x: number; z: number; yaw: number; moving: boolean; at: number; y?:number;
   avatar?: WorldAvatar;
   /** What the body is doing on top of walking, off the wire. Null is the plain walk. */
@@ -199,7 +199,7 @@ export function createWorldTrack(options: WorldTrackOptions = {}): WorldTrack {
     return {
       ...(newest.y!==undefined?{y:newest.y}:{}),
       ...(newest.avatar?{avatar:newest.avatar}:{}),
-      ...(isMountainWorld(newest.world)?{x:Math.max(-180,Math.min(180,newest.x+vx*reckon)),z:Math.max(-310,Math.min(84,newest.z+vz*reckon))}:worldPoint(newest.x + vx * reckon,newest.z + vz * reckon)),
+      ...(isHorizonWorld(newest.world)?{x:Math.max(HORIZON_WORLD_BOUNDS.minX,Math.min(HORIZON_WORLD_BOUNDS.maxX,newest.x+vx*reckon)),z:Math.max(HORIZON_WORLD_BOUNDS.minZ,Math.min(HORIZON_WORLD_BOUNDS.maxZ,newest.z+vz*reckon))}:isMountainWorld(newest.world)?{x:Math.max(-180,Math.min(180,newest.x+vx*reckon)),z:Math.max(-310,Math.min(84,newest.z+vz*reckon))}:worldPoint(newest.x + vx * reckon,newest.z + vz * reckon)),
       yaw: newest.yaw,
       // The guess has run out: stand still rather than mime a walk on no data.
       moving: over <= reckonMs,
