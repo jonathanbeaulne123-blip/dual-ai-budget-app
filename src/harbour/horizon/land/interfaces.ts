@@ -66,6 +66,9 @@ export interface StructureSolid {
   /** Indexed, outward-facing solid geometry including sides and underside. */
   positions: number[];
   indices: number[];
+  /** Offline simplified rendering; collision retains the full indices. */
+  liteIndices?: number[];
+  liteErrorEu?: number;
   surface: string;
   districtId: string;
   bedIds: string[];
