@@ -169,7 +169,7 @@ export function paintGround(colors:Float32Array,L:Lattice,m:GroundMasks,d:PlaceD
       for(const b of ['garden','orchard','woods','meadow','alpine','summit'] as const){const w=m.biome[b]![i]!;if(w>0){const gc=pal.grass[b];land=[land[0]+gc[0]*w,land[1]+gc[1]*w,land[2]+gc[2]*w];}}
       // Grass varies in patches (a painter's dabs), then rock takes the steep faces.
       land=mul(land,.94+grain*.12);
-      const rockW=sm(.85,1.45,g+(grain-.5)*.25);
+      const rockW=sm(.8,1.3,g+(grain-.5)*.2);
       land=lerp(land,mul(pal.rock,.92+grain*.14),rockW);
       land=lerp(land,pal.scree,m.scree[i]!*.75*(1-rockW));
       // A snow crown fading by height, dithered at its edge, thinner on steep rock.
