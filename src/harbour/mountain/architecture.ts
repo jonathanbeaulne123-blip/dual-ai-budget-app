@@ -1,99 +1,28 @@
 import * as THREE from 'three';
 import type {PlaceDressing} from '../scene/place.ts';
 import type {RenderTier} from '../scene/quality.ts';
-import {groundHeightAt} from '../scene/ground.ts';
-import {RESERVED_PLOTS,TRANSPORT_STOPS,RIVER,SKILL_BRANCHES,mountainBaseHeight,type Point3,type TransportKind} from './definition.ts';
-import {STATION_SOLIDS,SUMMIT_ART_SOLIDS,SUMMIT_OBSERVATORY} from './artGeometry.ts';
+import type {TransportKind} from './definition.ts';
 import {MountainArtKit} from './artKit.ts';
+import {CardBuilder} from '../art/cardScene.ts';
+import {mountainArtPalette} from './art/palette.ts';
+import {buildTransportArt,buildCabin} from './art/transportArt.ts';
+import {buildTownArt} from './art/townArt.ts';
 
 export function mountainPalette(d:PlaceDressing){
   return d.theme==='taylor'?{stone:'#b4a592',wood:'#665650',trim:'#d7b8bd',roof:'#72606c',light:'#eee1cd',leaf:'#8b9a71',flower:'#c98eac',metal:'#ad9665'}:
     d.theme==='newfoundland'?{stone:'#87928d',wood:'#486e70',trim:'#d7bd82',roof:'#325c65',light:'#e7e5d3',leaf:'#729080',flower:'#b5a8cf',metal:'#af9a6b'}:
       {stone:d.stone,wood:d.timber,trim:'#be9c5d',roof:d.gate,light:d.plinth,leaf:d.lawn,flower:'#dfbe75',metal:d.metal};
 }
-/** Station craft, route fascia and flush town/plot markings. No new walkable decks. */
+/** The transport and town architecture on the painted-card kit (stations, towers, huts, storefronts). */
 export function buildMountainArchitecture(d:PlaceDressing,tier:RenderTier){
-  const kit=new MountainArtKit(tier,'Mountain civic craft'),p=mountainPalette(d);
-  for(const solid of STATION_SOLIDS){const size=solid.max.map((v,i)=>v-solid.min[i]!) as unknown as Point3,at=solid.max.map((v,i)=>(v+solid.min[i]!)/2) as unknown as Point3;kit.box(at,size,solid.id.includes(':fin:')?p.roof:p.wood);}
-  for(const [kind,stops] of Object.entries(TRANSPORT_STOPS))for(const stop of stops){
-    const [x,y,z]=stop.at;
-    // Slatted overhead fins leave sky and camera visibility; their undersides clear a jump.
-    // Thin boarding lines sit on the exact supported platform, never above the feet.
-    for(const end of [-1,1])kit.box([x,y+.047,z+end*1.65],[5.7,.014,.12],p.trim);
-    for(let n=-2;n<=2;n++)kit.box([x+n,y+.055,z+.8],[.32,.014,.48],p.light);
-    kit.box([x,y+3.56,z+2.35],[5.2,.42,.12],p.roof);
-    if(kind==='gondola'){
-      // Visible bullwheel explains the suspended line without enclosing the rider.
-      kit.part(new THREE.TorusGeometry(.72,.1,5,16),p.metal,[x,y+3.55,z],[1,1,1],[Math.PI/2,0,0]);
-    }else for(const side of [-1,1])kit.box([x+side*.8,y+.056,z],[.08,.016,3.8],p.metal);
-    if(d.theme==='taylor')for(let n=0;n<5;n++)kit.part(new THREE.ConeGeometry(.2,.4,3),n%2?p.trim:p.light,[x-2+n,y+3.07,z+2.4],[1,1,1],[0,0,Math.PI]);
-    if(d.theme==='newfoundland')for(const side of [-1,1])kit.part(new THREE.TorusGeometry(.27,.06,5,12),p.trim,[x+side*2.3,y+3.4,z+2.44]);
-  }
-  const [ox,oy,oz]=SUMMIT_OBSERVATORY.at,{radius,spring}=SUMMIT_OBSERVATORY;
-  for(const solid of SUMMIT_ART_SOLIDS.filter(s=>s.id.includes(':post:')))kit.box([(solid.min[0]+solid.max[0])/2,112,(solid.min[2]+solid.max[2])/2],[.22,4,.22],p.wood);
-  // A pale copper dome and brass meridians form the mountain's long-distance crown.
-  kit.part(new THREE.SphereGeometry(radius,16,8,0,Math.PI*2,0,Math.PI/2),p.roof,[ox,oy+spring,oz]);
-  kit.part(new THREE.TorusGeometry(radius,.1,5,24),p.trim,[ox,oy+spring,oz],[1,1,1],[Math.PI/2,0,0]);
-  for(let meridian=0;meridian<6;meridian++){
-    const a=meridian*Math.PI/3;
-    for(let n=0;n<8;n++){
-      const t=n/8*Math.PI/2,u=(n+1)/8*Math.PI/2;
-      kit.beam([ox+Math.cos(a)*Math.cos(t)*(radius+.02),oy+spring+Math.sin(t)*(radius+.02),oz+Math.sin(a)*Math.cos(t)*(radius+.02)],
-        [ox+Math.cos(a)*Math.cos(u)*(radius+.02),oy+spring+Math.sin(u)*(radius+.02),oz+Math.sin(a)*Math.cos(u)*(radius+.02)],.045,p.trim);
-    }
-  }
-  // The same curve and width produce a continuous fascia, entirely below each support deck.
-  for(const branch of SKILL_BRANCHES)for(let i=1;i<branch.points.length;i++){
-    const a=branch.points[i-1]!,b=branch.points[i]!,dx=b[0]-a[0],dz=b[2]-a[2],length=Math.hypot(dx,dz)||1;
-    for(const side of [-1,1]){
-      const offset=branch.halfWidth-.08,oa:Point3=[a[0]-dz/length*offset*side,a[1]-.16,a[2]+dx/length*offset*side],ob:Point3=[b[0]-dz/length*offset*side,b[1]-.16,b[2]+dx/length*offset*side];
-      kit.beam(oa,ob,.09,branch.id==='dam-promenade'?p.metal:p.wood);
-    }
-    if(i%3===0){const y=a[1]+.053;kit.box([a[0],y,a[2]],[branch.halfWidth*1.8,.012,.09],p.trim,[0,-Math.atan2(dx,dz),0]);}
-  }
-  // Reserved ground stays visibly unbuilt: inset corner stitches and a low meadow weave.
-  for(const plot of RESERVED_PLOTS)for(const sx of [-1,1])for(const sz of [-1,1]){
-    const x=plot.at[0]+sx*(plot.half[0]-1),z=plot.at[2]+sz*(plot.half[1]-1);
-    for(let i=0;i<5;i++){
-      const px=x-sx*i*.5,pz=z-sz*i*.5;
-      kit.box([px,mountainBaseHeight(px,z)+.03,z],[.4,.025,.15],p.trim);
-      kit.box([x,mountainBaseHeight(x,pz)+.03,pz],[.15,.025,.4],p.trim);
-    }
-  }
-  // Mosaic rings around the existing town fountain and a compass at the social quay.
-  for(const [cx,cz,r] of [[0,0,3.3],[-14,42,3.8]] as const)for(let i=0;i<32;i++){
-    const a=i/32*Math.PI*2,x=cx+Math.cos(a)*r,z=cz+Math.sin(a)*r;
-    kit.box([x,groundHeightAt(x,z)+.06,z],[.5,.025,.22],i%4===0?p.trim:p.stone,[0,-a,0]);
-    if(cx!==0&&i%8===0)kit.box([cx+Math.cos(a)*1.1,groundHeightAt(cx+Math.cos(a)*1.1,cz+Math.sin(a)*1.1)+.06,cz+Math.sin(a)*1.1],[1.2,.025,.12],p.light,[0,-a,0]);
-  }
-  // Water remains the existing shared channel. Low bank tesserae reveal its town course.
-  for(let i=1;i<RIVER.length;i++){
-    const a=RIVER[i-1]!,b=RIVER[i]!,dx=b[0]-a[0],dz=b[2]-a[2],length=Math.hypot(dx,dz),steps=Math.ceil(length/1.6);
-    for(let n=0;n<steps;n++)for(const side of [-1,1]){
-      const t=n/steps,x=a[0]+dx*t-dz/length*2.6*side,z=a[2]+dz*t+dx/length*2.6*side;if(z < -34||z>46)continue;
-      kit.box([x,groundHeightAt(x,z)+.045,z],[.5,.025,.9],p.stone,[0,Math.atan2(dx,dz),0]);
-    }
-  }
-  return kit.finish();
+  const pal=mountainArtPalette(d),b=new CardBuilder('Mountain civic craft',tier,{ink:pal.ink});
+  buildTransportArt(b,pal,tier);buildTownArt(b,pal);
+  return b.finish();
 }
 
-/** Open carriage sides preserve the third-person view; both models share ride authority. */
+/** A ride's cabin (its origin at the rider's feet); `setTransit` places it on the line. */
 export function buildMountainCabin(d:PlaceDressing,tier:RenderTier,kind:TransportKind){
-  const kit=new MountainArtKit(tier,kind==='gondola'?'Summit gondola carriage':'Mountain funicular carriage'),p=mountainPalette(d);
-  kit.box([0,-.94,0],[2.8,.16,2],p.wood);kit.box([0,-.8,0],[2.65,.06,1.85],p.light);
-  kit.box([0,1.55,0],[3,.15,2.25],p.roof);
-  for(const x of [-1.3,1.3])for(const z of [-.9,.9])kit.box([x,.25,z],[.07,2.5,.07],p.metal);
-  for(const x of [-1.3,1.3]){kit.box([x,-.16,0],[.08,.08,1.8],p.trim);kit.box([x,-.66,0],[.12,.28,1.8],p.roof);}
-  if(kind==='gondola'){
-    kit.beam([0,1.65,0],[0,1.97,0],.07,p.metal);kit.box([0,1.95,0],[.2,.12,1],p.metal);
-    for(const z of [-.35,.35])kit.part(new THREE.CylinderGeometry(.14,.14,.16,8),p.metal,[0,2,z],[1,1,1],[0,0,Math.PI/2]);
-  }else{
-    for(const x of [-.8,.8])for(const z of [-.65,.65])kit.part(new THREE.CylinderGeometry(.22,.22,.12,8),p.metal,[x,-1.08,z],[1,1,1],[0,0,Math.PI/2]);
-    for(let z=-.6;z<.8;z+=.4)kit.box([0,-.76,z],[2.3,.012,.045],p.trim);
-  }
-  if(d.theme==='newfoundland')kit.part(new THREE.TorusGeometry(.28,.065,5,12),p.trim,[1.37,-.4,0],[1,1,1],[0,Math.PI/2,0]);
-  if(d.theme==='taylor')for(const z of [-.6,0,.6])kit.box([-1.37,-.55,z],[.018,.18,.15],p.trim);
-  return kit.finish();
+  const pal=mountainArtPalette(d);return buildCabin(kind,pal,tier,kind==='gondola'?pal.accent:pal.walls[0]!);
 }
 
 /** Cheap, recognisable distant massing behind the existing streamed room exteriors. */

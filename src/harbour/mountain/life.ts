@@ -1,25 +1,39 @@
 import type {ThemeId} from '../../theme/scenes.ts';
-import {DISTRICTS,type Point3} from './definition.ts';
+import {DISTRICTS,OVERLOOKS,type Point3} from './definition.ts';
+import {landHeight as groundHeightAt} from './art/land.ts';
+import {findSpot} from './art/spots.ts';
 
 export type MountainInteractionKind = 'bench'|'gate'|'bell'|'overlook'|'wildlife';
 export type MountainInteraction = {id:string;kind:MountainInteractionKind;district:string;label:string;at:Point3;words:string};
 const district=(id:string)=>DISTRICTS.find(d=>d.id===id)!;
-function detail(id:string,kind:MountainInteractionKind,area:string,label:string,offset:Point3,words:string):MountainInteraction {
-  const at=district(area).at;
-  return {id:`mountain:life:${id}`,kind,district:area,label,at:[at[0]+offset[0],at[1]+offset[1],at[2]+offset[2]],words};
+/**
+ * Interaction spots are authored as a bearing and a distance from the district's heart;
+ * each resolves to the nearest level ground clear of every road, path and building, so a
+ * bench or a gate never stands in a walk or on a bank (see art/spots.ts).
+ */
+function detail(id:string,kind:MountainInteractionKind,area:string,label:string,bearing:number,radius:number,words:string,opts:{near?:number;half?:number}={}):MountainInteraction {
+  const d=district(area),[x,z]=findSpot(d.at[0],d.at[2],bearing,radius,opts.half??1.1,{near:opts.near});
+  return {id:`mountain:life:${id}`,kind,district:area,label,at:[x,groundHeightAt(x,z),z],words};
+}
+/** An overlook interaction stands at its authored overlook, a step toward the view. */
+function lookout(id:string,area:string,label:string,overlook:string,words:string):MountainInteraction {
+  const o=OVERLOOKS.find(v=>v.id===overlook),d=district(area);
+  if(!o)return detail(id,'overlook',area,label,0,10,words);
+  const [x,z]=findSpot(o.at[0]+Math.sin(o.facing)*1.2,o.at[2]+Math.cos(o.facing)*1.2,o.facing+Math.PI/2,1.8,.5,{level:.8,clear:-.2});void d;
+  return {id:`mountain:life:${id}`,kind:'overlook',district:area,label,at:[x,groundHeightAt(x,z),z],words};
 }
 /** Same explicit actions for a raycast, keyboard button, touch button or reading edition. */
 export const MOUNTAIN_INTERACTIONS:readonly MountainInteraction[] = [
-  ...DISTRICTS.map(d=>detail(`bench-${d.id}`,'bench',d.id,`${d.name} bench`,[-6,0,9],`${d.name}: take a moment beside the path.`)),
-  detail('garden-gate','gate','hearth','Kitchen garden gate',[-9,0,5],'A little garden gate swings beside the open path.'),
-  detail('orchard-gate','gate','orchard','Orchard wicket',[9,0,6],'The orchard wicket opens onto clover.'),
-  detail('summit-bell','bell','summit','Summit bell',[10,0,7],'A small summit bell. Its ring is optional; the moment is here in words too.'),
-  detail('woods-view','overlook','library','Woodland overlook',[-9,0,10],'Birches frame the gorge; the lower road curves toward the harbour.'),
-  detail('dam-view','overlook','reservoir','Reservoir overlook',[-9,0,10],'The glass dam and its neighbouring reserve chamber stand above the river.'),
-  detail('summit-view','overlook','summit','Harbour panorama',[-9,0,10],'From the summit, the terraces step down to the town and sea.'),
-  detail('orchard-birds','wildlife','orchard','Watch the orchard birds',[12,0,9],'Two small birds share the orchard verge. They keep their own quiet rhythm.'),
-  detail('meadow-moths','wildlife','glasshouse','Watch the meadow moths',[-12,0,10],'A few pale moths rest among the meadow flowers.'),
-  detail('summit-gull','wildlife','summit','Watch the coastal gull',[12,0,-8],'A gull rests on a summit stone, looking out toward the sea.'),
+  ...DISTRICTS.map(d=>detail(`bench-${d.id}`,'bench',d.id,`${d.name} bench`,Math.atan2(-d.at[0],-d.at[2]),d.radius*.8,`${d.name}: take a moment beside the path.`,{half:1.6})),
+  detail('garden-gate','gate','hearth','Kitchen garden gate',-1.9,11,'A little garden gate swings beside the open path.',{near:1.5,half:1.3}),
+  detail('orchard-gate','gate','orchard','Orchard wicket',1.2,12,'The orchard wicket opens onto clover.',{near:1.5,half:1.3}),
+  detail('summit-bell','bell','summit','Summit bell',.9,9,'A small summit bell. Its ring is optional; the moment is here in words too.',{half:.8}),
+  lookout('woods-view','library','Woodland overlook','overlook:gorge-balcony','Birches frame the gorge; the lower road curves toward the harbour.'),
+  detail('dam-view','overlook','reservoir','Reservoir overlook',-1.6,12,'The glass dam and its neighbouring reserve chamber stand above the river.',{half:.6}),
+  lookout('summit-view','summit','Harbour panorama','overlook:summit','From the summit, the terraces step down to the town and sea.'),
+  detail('orchard-birds','wildlife','orchard','Watch the orchard birds',2.4,15,'Two small birds share the orchard verge. They keep their own quiet rhythm.',{half:.8}),
+  detail('meadow-moths','wildlife','glasshouse','Watch the meadow moths',-.9,16,'A few pale moths rest among the meadow flowers.',{half:.8}),
+  detail('summit-gull','wildlife','summit','Watch the coastal gull',-2.2,11,'A gull rests on a summit stone, looking out toward the sea.',{half:.8}),
 ];
 export type MountainInteractionState = {seated:string|null;openGates:readonly string[];overlook:string|null;bellRings:number};
 export const initialMountainInteractionState = ():MountainInteractionState => ({seated:null,openGates:[],overlook:null,bellRings:0});
