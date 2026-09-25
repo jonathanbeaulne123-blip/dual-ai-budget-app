@@ -2870,7 +2870,7 @@ claimed.
 
 ## Blank kitchen when loading a household (D-167) (2026-08-28)
 
-**Status:** Merged to `main` at `1cb2044` via [#238](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/238). D-041 kitchen Worker deployed (run `33219013249`, version `8a6fe6a1-8e22-43d0-bc63-00fd3581cfd3`). **Live verified** on `https://hearth-books.jonathan-beaulne123.workers.dev/` — household Home paints; not an empty `#root`. Later `main` `#246` also deployed; current live JS `index-BHscUhUh.js` still contains the recovery chrome. Risk: **Medium** (kitchen boot / Google identity / ErrorBoundary; no money write, schema, secrets, or Production household mutation).
+**Status:** Merged to `main` at `1cb2044` via [#238](https://github.com/jonathanbeaulne123-blip/dual-ai-budget-app/pull/238). D-041 kitchen Worker deployed (run `33219013249`, version `8a6fe6a1-8e22-43d0-bc63-00fd3581cfd3`). **Live verified on 2026-08-28** at `https://hearth-books.jonathan-beaulne123.workers.dev/` — household Home painted; not an empty `#root`. The later `#246` deployment served JS `index-BHscUhUh.js`, which still contained the recovery chrome at that time. Risk: **Medium** (kitchen boot / Google identity / ErrorBoundary; no money write, schema, secrets, or Production household mutation).
 
 **Household outcome:** Welcome still works. Opening a household must show the kitchen, not a blank `#root`. If a remaining kitchen throw escapes, paper recovery offers Reload, Sign out of Google, or Open welcome. Nothing is posted.
 
@@ -2893,7 +2893,7 @@ claimed.
 - Independent verifier: **CONDITIONAL** until this handoff and worksession close (addressed here).
 - Local Vite `127.0.0.1:5173`: demo household → “I am Jonathan” → kitchen at 390px, not blank. Broken GIS token without identity + reload still showed kitchen. 720px kitchen still painted.
 - Live kitchen after D-041: HTML `Cache-Control: no-store`. Bundle at deploy SHA `1cb2044` was `index-DXGA7AoE.js` with `The kitchen could not open` / `data-kitchen-recovery`. Browser: Bianca household Household Ledger paints (Home chrome, widgets, nav). No hook-order empty `#root`. Google OAuth popups were dismissed; nothing posted.
-- Current live kitchen (after later `#246` deploy) is `index-BHscUhUh.js` and still contains the same recovery copy.
+- The later `#246` deploy served `index-BHscUhUh.js` with the same recovery copy on 2026-08-28; this historical record does not identify the current asset hash.
 
 **Data and environment disclosure:**
 - Development impact: none (client boot/recovery only)
