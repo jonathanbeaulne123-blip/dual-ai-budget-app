@@ -4,25 +4,31 @@
  * its footprint: `bottom` is the lowest ground under the footprint less a small sink, so
  * nothing floats and nothing is buried (see test/mountain-art-kit.test.ts).
  */
-import {groundHeightAt} from '../../scene/ground.ts';
-import {DISTRICTS,RESERVED_PLOTS,MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE,OVERLOOKS,TRANSPORT_LINES,MOUNTAIN_PATH_GRAPH,RIVER,type Point3,type District} from '../definition.ts';
-import {PATH_EDGES} from '../pathGraph.ts';
+import {DISTRICTS,RESERVED_PLOTS,MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE,OVERLOOKS,MOUNTAIN_PATH_GRAPH,type Point3,type District} from '../definition.ts';
 import {MOUNTAIN_INTERACTIONS} from '../life.ts';
 import {TOWN_SQUARE} from '../townSquare.ts';
 import {RACE_FINISH} from '../course.ts';
 
 export type PropKind='signpost'|'bench'|'lantern'|'gate'|'laundry'|'pennants'|'bollard'|'cairn'|'planter'|'waterwheel'|'bell'|'viewer'|'lectern'|'marker'|'woodpile'|'beehive';
 export type PropPlacement={id:string;kind:PropKind;x:number;z:number;yaw:number;half:readonly [number,number];bottom:number;top:number;district?:string;label?:string;
+  /** Stands on a built surface (an overlook's flagged platform, or its own levelled pad) rather than the ground; `bottom` is that surface. */
+  on?:string;
+  /** A levelled pad's foot (its lowest edge, a little into the ground). */
+  padFoot?:number;
   /** A second anchor (the far post of a line of pennants or laundry). */
   to?:readonly [number,number];};
 export const PROP_SINK=.12;
 
 export {footGround,corridorClearance} from './spots.ts';
-import {footGround,corridorClearance,riverClearance as riverClear,downhillYaw,findSpot} from './spots.ts';
+import {footGround,corridorClearance,riverClearance as riverClear,downhillYaw,findSpot,overlookTop} from './spots.ts';
 export function seat(id:string,kind:PropKind,x:number,z:number,yaw:number,hx:number,hz:number,height:number,extra:Partial<PropPlacement>={}):PropPlacement{
-  const g=footGround(x,z,yaw,hx,hz),bottom=g.min-PROP_SINK;
-  return {id,kind,x,z,yaw,half:[hx,hz],bottom,top:g.max+height,...extra};
+  const g=footGround(x,z,yaw,hx,hz);
+  // A bench on sloping ground gets a small levelled stone pad (its downhill side a low wall) rather than a buried leg.
+  if(kind==='bench'&&g.max-g.min>BENCH_LEVEL){const top=g.max+.06;return {id,kind,x,z,yaw,half:[hx,hz],bottom:top,top:top+height,on:'pad',padFoot:g.min-.2,...extra};}
+  return {id,kind,x,z,yaw,half:[hx,hz],bottom:g.min-PROP_SINK,top:g.max+height,...extra};
 }
+/** Ground under a bench more uneven than this is levelled with a pad. */
+export const BENCH_LEVEL=.26;
 
 type Line={samples:readonly {at:Point3;normal:Point3;halfWidth:number;tangent:Point3}[]};
 /** Nearest road sample to a point (index into MOUNTAIN_ROAD_LINE). */
@@ -62,18 +68,22 @@ export function mountainProps():readonly PropPlacement[]{
   }
   // Overlooks: a bench a little back from the rail, and a brass viewer at the rail.
   for(const o of OVERLOOKS){if(o.id.startsWith('road:')||o.id.startsWith('dam:'))continue;
-    const bx=o.at[0]-Math.sin(o.facing)*1.4,bz=o.at[2]-Math.cos(o.facing)*1.4;
-    out.push(seat(`viewer:${o.id}`,'viewer',o.at[0]+Math.sin(o.facing)*1.6+Math.cos(o.facing)*1.4,o.at[2]+Math.cos(o.facing)*1.6-Math.sin(o.facing)*1.4,o.facing,.2,.2,1.4));
-    if(corridorClearance(bx,bz)>-10)out.push(seat(`bench:overlook:${o.id}`,'bench',bx,bz,o.facing,1.4,.45,1.1));
+    // The brass viewer stands on the platform's flags, near its rail.
+    {const top=overlookTop(o),vx=o.at[0]+Math.sin(o.facing)*1.6+Math.cos(o.facing)*1.4,vz=o.at[2]+Math.cos(o.facing)*1.6-Math.sin(o.facing)*1.4;
+      out.push({id:`viewer:${o.id}`,kind:'viewer',x:vx,z:vz,yaw:o.facing,half:[.2,.2],bottom:top,top:top+1.4,on:`overlook:${o.id}`});}
+    // The bench sits beside the platform on level ground, facing the same view, clear of the path in.
+    const px=Math.cos(o.facing),pz=-Math.sin(o.facing);
+    for(const [side,out2,back] of [[1,4.6,.4],[-1,4.6,.4],[1,5.6,1.4],[-1,5.6,1.4]] as const){
+      const bx=o.at[0]+px*side*out2-Math.sin(o.facing)*back,bz=o.at[2]+pz*side*out2-Math.cos(o.facing)*back,g=footGround(bx,bz,o.facing,1.5,.45);
+      if(g.max-g.min<.55&&corridorClearance(bx,bz)>1.7&&riverClear(bx,bz)>4){out.push(seat(`bench:overlook:${o.id}`,'bench',bx,bz,o.facing,1.5,.45,1.1));break;}
+    }
   }
-  // Lanterns: at station platforms (both ends), at each district's heart and along the stairs' feet.
-  for(const line of Object.values(TRANSPORT_LINES))for(const st of line.stations){
-    const p=st.platform,c=Math.cos(p.yaw),s=Math.sin(p.yaw);
-    for(const end of [-1,1]){const lx=0,lz=0;void lx;void lz;const x=p.at[0]+s*(p.half[0]+.5)*end+c*(p.half[1]+.6),z=p.at[2]+c*(p.half[0]+.5)*end-s*(p.half[1]+.6);
-      if(corridorClearance(x,z)>.1)out.push(seat(`lantern:${line.kind}:${st.id}:${end}`,'lantern',x,z,p.yaw,.14,.14,2.6));}
-  }
+  // Lanterns at the stairs' feet and heads, on level ground beside the flight (stations hang theirs from the canopy).
   for(const node of MOUNTAIN_PATH_GRAPH.nodes.filter(n=>n.kind==='stair-bottom'||n.kind==='stair-top')){
-    for(const side of [-1,1]){const x=node.at[0]+side*1.9,z=node.at[2]+.4;if(corridorClearance(x,z)>.15&&riverClear(x,z)>3.5){out.push(seat(`lantern:${node.id}:${side}`,'lantern',x,z,0,.14,.14,2.4));break;}}
+    let placed=false;
+    for(const off of [1.9,2.4,2.9,3.4])for(const side of [-1,1])for(const dz of [.4,-.4,1.2,-1.2]){if(placed)break;
+      const x=node.at[0]+side*off,z=node.at[2]+dz,g=footGround(x,z,0,.16,.16);
+      if(g.max-g.min<.22&&corridorClearance(x,z)>.15&&riverClear(x,z)>3.5){out.push(seat(`lantern:${node.id}:${side}`,'lantern',x,z,0,.14,.14,2.4));placed=true;}}
   }
   // District life: gates, a bell, laundry, pennants/rope loops, planters, hives, cairns.
   for(const item of MOUNTAIN_INTERACTIONS){
@@ -83,7 +93,7 @@ export function mountainProps():readonly PropPlacement[]{
   const around=(d:District,a:number,r:number)=>[d.at[0]+Math.cos(a)*r,d.at[2]+Math.sin(a)*r] as const;
   const clearSpot=(d:District,a0:number,r:number,need:number):readonly [number,number]|null=>{
     for(let k=0;k<24;k++){const a=a0+(k%2?1:-1)*Math.ceil(k/2)*.22,[x,z]=around(d,a,r),g=footGround(x,z,0,need,need);
-      if(g.max-g.min<.9&&corridorClearance(x,z)>need+.3&&riverClear(x,z)>4)return [x,z];}
+      if(g.max-g.min<.3&&corridorClearance(x,z)>need+.3&&riverClear(x,z)>4)return [x,z];}
     return null;
   };
   const hearth=DISTRICTS.find(d=>d.id==='hearth')!,orchard=DISTRICTS.find(d=>d.id==='orchard')!,glass=DISTRICTS.find(d=>d.id==='glasshouse')!,summit=DISTRICTS.find(d=>d.id==='summit')!;

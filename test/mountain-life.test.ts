@@ -102,6 +102,22 @@ describe('mountain living interaction contract',()=>{
   });
 });
 
+describe('mountain ambient flight',()=>{
+  it('flies a flock and orchard butterflies on their paths, and puts them away when held still',()=>{
+    const scene=buildMountainLife(SCENE_DRESSING.classic,'full');
+    const find=(name:string)=>{const out:import('three').Object3D[]=[];scene.group.traverse(o=>{if(o.name===name)out.push(o);});return out;};
+    const birds=find('Flying bird'),flies=find('Orchard butterfly');
+    expect(birds.length).toBeGreaterThanOrEqual(3);expect(flies.length).toBeGreaterThanOrEqual(3);
+    scene.animate(10,.02);const a=birds.map(b=>b.position.clone()),fa=flies.map(f=>f.position.clone());
+    scene.animate(14,.02);
+    expect(birds.every((b,i)=>b.visible&&b.position.distanceTo(a[i]!)>1)).toBe(true);
+    expect(flies.every((f,i)=>f.visible&&f.position.distanceTo(fa[i]!)>.1)).toBe(true);
+    scene.setQuiet(true);
+    expect([...birds,...flies].every(o=>!o.visible)).toBe(true);
+    scene.dispose();
+  });
+});
+
 describe('mountain bell audio lifecycle',()=>{
   afterEach(()=>vi.unstubAllGlobals());
   it('requires enabled ambience, rate-limits rings and silences on quiet, visibility and disposal',()=>{

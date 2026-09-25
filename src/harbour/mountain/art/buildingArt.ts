@@ -11,6 +11,7 @@ import {CardBuilder,shade,mix,inkLift,type V3,type RGB} from '../../art/cardScen
 import {ICON} from '../../art/cardKit.ts';
 import type {MountainArtPalette} from './palette.ts';
 import {footGround} from './placements.ts';
+import {OBSERVATORY_FORM} from '../artGeometry.ts';
 
 export type SignSpot={at:V3;yaw:number;w:number;h:number};
 type Frame={x:number;z:number;yaw:number;W:(lx:number,lz:number,y:number)=>V3};
@@ -148,7 +149,7 @@ export function pavilion(b:CardBuilder,pal:MountainArtPalette,x:number,z:number,
  * closed at its crown and open between its ribs so the view (and every camera) passes
  * through, and a brass telescope on a stone pier in the middle, aimed at the southern sky.
  */
-export const OBSERVATORY_FORM={parapet:1.1,columns:3.6,domeRise:1};
+export {OBSERVATORY_FORM};
 export function observatory(b:CardBuilder,pal:MountainArtPalette,x:number,z:number,r:number,doorYaw:number):{floor:number;eye:V3;sign:SignSpot}{
   const g=footGround(x,z,0,r,r),floor=g.max+.15,sides=16,top=floor+OBSERVATORY_FORM.columns;
   const stone=pal.theme==='newfoundland'?pal.stone:pal.coping,wall=pal.theme==='newfoundland'?pal.walls[3]!:pal.theme==='taylor'?pal.walls[1]!:pal.plaster;

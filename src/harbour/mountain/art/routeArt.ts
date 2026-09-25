@@ -17,6 +17,7 @@ import {PATH_EDGES} from '../pathGraph.ts';
 import {CardBuilder,shade,mix,inkLift,type RGB,type V3} from '../../art/cardScene.ts';
 import {hash2} from '../../art/cardKit.ts';
 import type {MountainArtPalette} from './palette.ts';
+import {overlookTop,OVERLOOK_RADIUS} from './spots.ts';
 
 const UP:V3=[0,1,0];
 type Frame={p:V3;side:V3;up:V3};
@@ -169,9 +170,9 @@ function stair(b:CardBuilder,pal:MountainArtPalette,points:readonly Point3[],hw:
 function overlooks(b:CardBuilder,pal:MountainArtPalette){
   for(const o of OVERLOOKS){
     if(o.id.startsWith('road:')||o.id.startsWith('dam:'))continue;
-    const [x,,z]=o.at,f=o.facing,R=3.2,seg=10;
+    const [x,,z]=o.at,f=o.facing,R=OVERLOOK_RADIUS,seg=10;
     const g=(px:number,pz:number)=>groundHeightAt(px,pz);
-    const top=Math.max(g(x,z),g(x+Math.sin(f)*R*.8,z+Math.cos(f)*R*.8))+.08;
+    const top=overlookTop(o);
     const loop:[number,number][]=[];for(let k=0;k<=seg;k++){const a=f-Math.PI/2+k/seg*Math.PI;loop.push([x+Math.sin(a)*R,z+Math.cos(a)*R]);}
     loop.push([x-Math.sin(f)*.2+Math.cos(f)*R,z-Math.cos(f)*.2-Math.sin(f)*R]);loop.push([x-Math.sin(f)*.2-Math.cos(f)*R,z-Math.cos(f)*.2+Math.sin(f)*R]);
     b.prism(loop.reverse(),(px,pz)=>g(px,pz)-.4,top,shade(pal.coping,.97),pal.stone);

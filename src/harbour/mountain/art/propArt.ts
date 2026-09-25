@@ -21,6 +21,9 @@ const frameOf=(p:{x:number;z:number;yaw:number}):F=>{const c=Math.cos(p.yaw),s=M
 
 export function drawBench(b:CardBuilder,pal:MountainArtPalette,p:PropPlacement){
   const W=frameOf(p),y0=p.bottom,seat=y0+PROP_SEAT;
+  // On a slope, a flagged pad levelled into the hillside carries the bench.
+  if(p.on==='pad'&&p.padFoot!==undefined){b.box(p.x,p.z,p.yaw,p.half[0]+.3,p.half[1]+.35,p.padFoot,y0,shade(pal.coping,.95),pal.stone,b.ink,.7);
+    for(const lx of [-.7,0,.7]){const a=W(lx,-p.half[1]-.35,y0+.004),c=W(lx,p.half[1]+.35,y0+.004);b.line(a,c,b.pencil);}}
   const wood=pal.theme==='taylor'?pal.walls[0]!:pal.theme==='newfoundland'?pal.walls[2]!:pal.plank,end=pal.theme==='classic'?pal.iron:pal.theme==='taylor'?pal.paperEdge:pal.trim;
   for(const lx of [-1.25,1.25]){const q=W(lx,0,0);b.box(q[0],q[2],p.yaw,.07,.32,y0,seat,end,shade(end,.8),null);const r=W(lx,-.3,0);b.box(r[0],r[2],p.yaw,.07,.06,seat,seat+.62,end,shade(end,.8),null);}
   for(let k=0;k<3;k++){const q=W(0,-.22+k*.2,0);b.box(q[0],q[2],p.yaw,1.45,.08,seat-.05,seat,shade(wood,1+k*.02),shade(wood,.8));}

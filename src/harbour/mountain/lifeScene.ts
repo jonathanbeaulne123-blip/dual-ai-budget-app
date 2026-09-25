@@ -103,7 +103,10 @@ export function buildMountainLife(dressing:PlaceDressing,tier:RenderTier='full')
       w.object.position.set(w.base.x+pose.x,w.base.y+pose.y,w.base.z+pose.z);
       w.wings.forEach((wing,i)=>{wing.rotation.z=pose.wing*(i?1:-1);});
     }
-    flight(quiet?0:t);
+    // Held still (calm view, reduced motion), nothing hangs in mid-air: the flock and the
+    // butterflies are simply not out; the resting birds and moths stay on their perches.
+    for(const f of flock)f.g.visible=!quiet;for(const b of butterflies)b.g.visible=!quiet;
+    if(!quiet)flight(t);
   }
   paint(0);
   return {group,anchors,regions,

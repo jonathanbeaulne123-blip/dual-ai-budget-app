@@ -50,3 +50,9 @@ export function findSpot(cx:number,cz:number,angle:number,radius:number,half:num
   }
   return best??[cx+Math.sin(angle)*radius,cz+Math.cos(angle)*radius];
 }
+
+/** The overlook platform's radius and flagged top (routeArt draws it; props stand on it). */
+export const OVERLOOK_RADIUS=3.2;
+export function overlookTop(o:{at:Point3;facing:number}):number{
+  const [x,,z]=o.at,f=o.facing;return Math.max(groundHeightAt(x,z),groundHeightAt(x+Math.sin(f)*OVERLOOK_RADIUS*.8,z+Math.cos(f)*OVERLOOK_RADIUS*.8))+.08;
+}

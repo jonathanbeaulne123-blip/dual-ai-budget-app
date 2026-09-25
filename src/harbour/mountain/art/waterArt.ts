@@ -23,12 +23,14 @@ export function riverSamples(step=1):{p:Point3;s:number;side:V3;drop:number}[]{
 }
 
 export function buildWaterArt(bld:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite'){
-  const R=riverSamples(tier==='full'?1:2),hw=RIVER_HALF_WIDTH+.9;
+  const R=riverSamples(tier==='full'?1:2);
+  // On the mountain the water tucks under its carved banks; in town it stops at the kerbs' inner faces.
+  const width=(r:{p:Point3})=>r.p[2]>-40?RIVER_HALF_WIDTH-.05:r.p[2]>-48?RIVER_HALF_WIDTH+.9-(r.p[2]+48)/8*.95:RIVER_HALF_WIDTH+.9;
   const white:RGB=[1,1,1];
   for(let i=1;i<R.length;i++){
     const a=R[i-1]!,b=R[i]!;
     // The water surface sits just above its line; its edges tuck under the banks.
-    const A=(u:number,r:typeof a):V3=>[r.p[0]+r.side[0]*u*hw,r.p[1]+.03,r.p[2]+r.side[2]*u*hw];
+    const A=(u:number,r:typeof a):V3=>{const hw=width(r);return [r.p[0]+r.side[0]*u*hw,r.p[1]+.03,r.p[2]+r.side[2]*u*hw];};
     const foam=(r:typeof a)=>Math.min(1,Math.max(0,(r.drop-.12)*3.2));
     const ca=mix(white,[1.45,1.5,1.48],foam(a)),cb=mix(white,[1.45,1.5,1.48],foam(b));
     for(const [u0,u1] of [[-1,0],[0,1]] as const){
@@ -52,14 +54,20 @@ export function buildWaterArt(bld:CardBuilder,pal:MountainArtPalette,tier:'full'
     let best=town[0]!;for(const r of town)if(Math.hypot(r.p[0]-c.at[0],r.p[2]-c.at[1])<Math.hypot(best.p[0]-c.at[0],best.p[2]-c.at[1]))best=r;
     const tx=-best.side[2],tz=best.side[0];
     if(c.kind==='footbridge'){footbridge(bld,pal,best,tx,tz);continue;}
+    // The lane crosses on its dry causeway: a paved slab level with the lane, low headwalls either side
+    // (a knee-high parapet with a coping), and the channel running through a dark arched mouth beneath.
+    const yaw=Math.atan2(best.side[0],best.side[2]),lane=groundHeightAt(best.p[0],best.p[2]),water=best.p[1],half=RIVER_HALF_WIDTH+.85;
+    bld.box(best.p[0],best.p[2],yaw,1.95,half,lane-.32,lane+.03,shade(pal.coping,.96),pal.stone,bld.pencil);
+    for(let k=-3;k<=3;k++){const u=k/3*(half-.1);bld.line(inkLift([best.p[0]+best.side[0]*u-tx*1.9,lane+.03,best.p[2]+best.side[2]*u-tz*1.9]),inkLift([best.p[0]+best.side[0]*u+tx*1.9,lane+.03,best.p[2]+best.side[2]*u+tz*1.9]),bld.pencil);}
     for(const e of [-1,1]){
-      const cx=best.p[0]+tx*e*2.1,cz=best.p[2]+tz*e*2.1,g=groundHeightAt(cx,cz),yaw=Math.atan2(best.side[0],best.side[2]);
-      bld.box(cx,cz,yaw,.22,RIVER_HALF_WIDTH+.7,best.p[1]-.4,Math.max(g+.25,best.p[1]+.9),pal.coping,pal.stone);
-      // The arch mouth as a dark card with its ring inked.
-      const face=(u:number,v:number):V3=>[cx+best.side[0]*u+tx*e*.24,best.p[1]+v,cz+best.side[2]*u+tz*e*.24];
-      for(let k=0;k<8;k++){const a0=k/8*Math.PI,a1=(k+1)/8*Math.PI,r=RIVER_HALF_WIDTH*.8;
-        bld.tri(face(0,-.02),face(Math.cos(a0)*r,Math.sin(a0)*.75),face(Math.cos(a1)*r,Math.sin(a1)*.75),[.12,.13,.13]);
-        bld.line(inkLift(face(Math.cos(a0)*(r+.08),Math.sin(a0)*.8)),inkLift(face(Math.cos(a1)*(r+.08),Math.sin(a1)*.8)));}
+      const cx=best.p[0]+tx*e*2.12,cz=best.p[2]+tz*e*2.12;
+      bld.box(cx,cz,yaw,.2,half,water-.4,lane+.36,pal.stone,shade(pal.stone,.85));
+      bld.box(cx,cz,yaw,.26,half+.08,lane+.36,lane+.48,pal.coping,shade(pal.coping,.82));
+      // The arch mouth as a dark card with its ring inked, from the water up to under the slab.
+      const rise=Math.max(.3,Math.min(.8,lane-.36-water)),face=(u:number,v:number):V3=>[cx+best.side[0]*u+tx*e*.22,water+v,cz+best.side[2]*u+tz*e*.22];
+      for(let k=0;k<8;k++){const a0=k/8*Math.PI,a1=(k+1)/8*Math.PI,r=RIVER_HALF_WIDTH*.85;
+        bld.tri(face(0,-.02),face(Math.cos(a0)*r,Math.sin(a0)*rise),face(Math.cos(a1)*r,Math.sin(a1)*rise),[.12,.13,.13]);
+        bld.line(inkLift(face(Math.cos(a0)*(r+.08),Math.sin(a0)*(rise+.06))),inkLift(face(Math.cos(a1)*(r+.08),Math.sin(a1)*(rise+.06))));}
     }
   }
 }

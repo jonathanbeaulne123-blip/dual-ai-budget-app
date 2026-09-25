@@ -86,6 +86,8 @@ function station(b:CardBuilder,pal:MountainArtPalette,line:TransportLine,st:Tran
   b.quad(r0,r1,r2,r3,roof);b.quad([r0[0],r0[1]-.12,r0[2]],[r3[0],r3[1]-.12,r3[2]],[r2[0],r2[1]-.12,r2[2]],[r1[0],r1[1]-.12,r1[2]],shade(roof,.55));
   for(const [a2,b2] of [[r0,r1],[r1,r2],[r2,r3],[r3,r0]] as const){b.line(inkLift(a2),inkLift(b2));b.side([a2[0],a2[1]-.12,a2[2]],[b2[0],b2[1]-.12,b2[2]],b2,a2,shade(roof,.8));}
   b.beam(W(-hl-.2,outer,top),W(hl+.2,outer,top),.18,.24,pal.timberLight);
+  // A lantern hangs from the beam at each end of the platform.
+  for(const end of [-1,1]){const q=W(end*(hl-.9),outer+toTrack*.25,0);hangingLantern(b,pal,q[0],q[2],top-.12);}
   // Hut beyond the outer edge at the clearer end.
   let hut:{x:number;z:number;yaw:number}|null=null;
   for(const end of [1,-1]){const q=W(end*(hl-1.2),outer-toTrack*2.3,0);if(corridorClearance(q[0],q[2])>1.6){hut={x:q[0],z:q[2],yaw:p.yaw};break;}}
@@ -120,6 +122,18 @@ function gondolaStation(b:CardBuilder,pal:MountainArtPalette,st:TransportLine['s
   b.cone(f[0],f[2],cable-.25,cable+.05,2.2,2.2,pal.iron,18,'steel');b.cone(f[0],f[2],cable+.05,cable+.25,.6,.4,pal.brass,10,'steel');
   for(const [a,d] of [[-1,-1],[1,-1],[1,1],[-1,1]] as const){const q=W(a*(hl+.6),d*(hw+2.2),0);b.box(q[0],q[2],p.yaw,.14,.14,G(q[0],q[2])-.2,cable+1.4,pal.timberLight,pal.timber);}
   b.gable(p.at[0]+c*(-.6),p.at[2]-s*(-.6),p.yaw+Math.PI/2,hw+2.5,hl+.8,cable+1.4,1.6,roof,pal.plaster);
+  for(const end of [-1,1]){const q=W(end*(hl-.3),-hw+.4,0);b.beam([q[0],cable+1.35,q[2]],[q[0]+c*.6,cable+1.35,q[2]-s*.6],.12,.14,pal.timber,null);hangingLantern(b,pal,q[0],q[2],cable+1.3);}
+}
+
+/** A lantern hanging on a short chain from a beam: brass frame, glowing panes, a little roof. */
+export function hangingLantern(b:CardBuilder,pal:MountainArtPalette,x:number,z:number,hook:number){
+  const top=hook-.45,body=.42,L=(u:number,v:number,y:number):V3=>[x+u,y,z+v];
+  b.line([x,hook,z],[x,top+.02,z],pal.iron);
+  if(pal.theme==='taylor'){b.cone(x,z,top-body,top-body*.45,.18,.24,pal.lamp,8);b.cone(x,z,top-body*.45,top,.24,.14,pal.lamp,8);b.cone(x,z,top,top+.06,.1,.1,pal.roofAlt,6);return;}
+  const r=.15,frame=pal.theme==='newfoundland'?pal.accent:pal.brass;
+  for(const [a,c] of [[[-r,-r],[r,-r]],[[r,-r],[r,r]],[[r,r],[-r,r]],[[-r,r],[-r,-r]]] as const)b.glow(L(a[0],a[1],top-body),L(c[0],c[1],top-body),L(c[0],c[1],top),L(a[0],a[1],top),pal.lamp);
+  for(const [u,v] of [[-r,-r],[r,-r],[r,r],[-r,r]] as const)b.post(x+u,z+v,top-body,top,.02,frame,4,'steel');
+  b.cone(x,z,top,top+.16,r+.07,.03,frame,4,'steel');b.cone(x,z,top-body-.05,top-body,r*.6,r+.04,frame,4,'steel');
 }
 
 export function buildTransportArt(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite'){

@@ -63,6 +63,8 @@ export type GroundMasks={
   grain:Float32Array;
 };
 const BIOMES:readonly Biome[]=['garden','orchard','woods','meadow','alpine','summit'];
+/** Altitude bands (biome, lower edge) for ground away from every district. */
+const ALTITUDE:readonly (readonly [Biome,number])[]=[['garden',-1e9],['woods',26],['meadow',48],['alpine',70],['summit',92]];
 const hash=(x:number,z:number)=>{const s=Math.sin(x*12.9898+z*78.233)*43758.5453;return s-Math.floor(s);};
 
 /** Rasterise a polyline's corridor into a distance field over the lattice (min edge distance). */
@@ -107,7 +109,8 @@ export function groundMasks(L:Lattice,tier:RenderTier,height:(x:number,z:number)
     // Biomes: soft weights around each district, the rest by altitude.
     let total=0;for(const b of BIOMES)m.biome[b]![i]=0;
     for(const d of DISTRICTS){const dd=Math.hypot(x-d.at[0],z-d.at[2]),R=d.radius+26,w=Math.exp(-(dd/R)*(dd/R)*1.6);m.biome[d.biome]![i]+=w;total+=w;}
-    const alt=y>92?'summit':y>70?'alpine':y>48?'meadow':y>26?'woods':'garden',base=.35;m.biome[alt]![i]+=base;total+=base;
+    // The rest by altitude, each band fading into the next over a few units (no contour seams).
+    const base=.35;for(let k=0;k<ALTITUDE.length;k++){const lo=ALTITUDE[k]![1],hi=ALTITUDE[k+1]?.[1]??1e9,w=(sm(lo-8,lo+8,y)-sm(hi-8,hi+8,y))*base;if(w>0){m.biome[ALTITUDE[k]![0]]![i]+=w;total+=w;}}
     for(const b of BIOMES)m.biome[b]![i]/=total;
     // The reservoir bowl below the full level.
     const bowlR=Math.hypot(x-bcx,z-bcz+6);m.bowl[i]=y<RESERVOIR.level+.4&&y>RESERVOIR.bottom-2&&bowlR<44&&z<-236?1:0;

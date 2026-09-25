@@ -11,8 +11,8 @@ const district=(id:string)=>DISTRICTS.find(d=>d.id===id)!;
  * each resolves to the nearest level ground clear of every road, path and building, so a
  * bench or a gate never stands in a walk or on a bank (see art/spots.ts).
  */
-function detail(id:string,kind:MountainInteractionKind,area:string,label:string,bearing:number,radius:number,words:string,opts:{near?:number;half?:number}={}):MountainInteraction {
-  const d=district(area),[x,z]=findSpot(d.at[0],d.at[2],bearing,radius,opts.half??1.1,{near:opts.near});
+function detail(id:string,kind:MountainInteractionKind,area:string,label:string,bearing:number,radius:number,words:string,opts:{near?:number;half?:number;level?:number}={}):MountainInteraction {
+  const d=district(area),[x,z]=findSpot(d.at[0],d.at[2],bearing,radius,opts.half??1.1,{near:opts.near,level:opts.level});
   return {id:`mountain:life:${id}`,kind,district:area,label,at:[x,groundHeightAt(x,z),z],words};
 }
 /** An overlook interaction stands at its authored overlook, a step toward the view. */
@@ -24,10 +24,10 @@ function lookout(id:string,area:string,label:string,overlook:string,words:string
 }
 /** Same explicit actions for a raycast, keyboard button, touch button or reading edition. */
 export const MOUNTAIN_INTERACTIONS:readonly MountainInteraction[] = [
-  ...DISTRICTS.map(d=>detail(`bench-${d.id}`,'bench',d.id,`${d.name} bench`,Math.atan2(-d.at[0],-d.at[2]),d.radius*.8,`${d.name}: take a moment beside the path.`,{half:1.6})),
-  detail('garden-gate','gate','hearth','Kitchen garden gate',-1.9,11,'A little garden gate swings beside the open path.',{near:1.5,half:1.3}),
-  detail('orchard-gate','gate','orchard','Orchard wicket',1.2,12,'The orchard wicket opens onto clover.',{near:1.5,half:1.3}),
-  detail('summit-bell','bell','summit','Summit bell',.9,9,'A small summit bell. Its ring is optional; the moment is here in words too.',{half:.8}),
+  ...DISTRICTS.map(d=>detail(`bench-${d.id}`,'bench',d.id,`${d.name} bench`,Math.atan2(-d.at[0],-d.at[2]),d.radius*.6,`${d.name}: take a moment beside the path.`,{half:1.6,level:.25})),
+  detail('garden-gate','gate','hearth','Kitchen garden gate',-1.9,11,'A little garden gate swings beside the open path.',{near:1.5,half:1.3,level:.25}),
+  detail('orchard-gate','gate','orchard','Orchard wicket',1.2,12,'The orchard wicket opens onto clover.',{near:1.5,half:1.3,level:.25}),
+  detail('summit-bell','bell','summit','Summit bell',.9,9,'A small summit bell. Its ring is optional; the moment is here in words too.',{half:.8,level:.3}),
   lookout('woods-view','library','Woodland overlook','overlook:gorge-balcony','Birches frame the gorge; the lower road curves toward the harbour.'),
   detail('dam-view','overlook','reservoir','Reservoir overlook',-1.6,12,'The glass dam and its neighbouring reserve chamber stand above the river.',{half:.6}),
   lookout('summit-view','summit','Harbour panorama','overlook:summit','From the summit, the terraces step down to the town and sea.'),
