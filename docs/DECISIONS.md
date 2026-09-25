@@ -1501,6 +1501,6 @@ These entries transcribe the supplied Horizon deck v1.5 and the explicit D1 quot
 
 | Pin | Date | Pass | Merge SHA | Geography revision | Presence world |
 |---|---|---|---|---|---|
-| PIN-0 | Pending | 0 Reconcile | Pending | `hearth-mountain-geo-2` | `hearth-mountain-geo-2` |
+| PIN-0 | 2026-09-25 | 0 Reconcile | `0bb2d6792ef9e64a87ad140d28de5e8361643bb0` (#546) | `hearth-mountain-geo-2` | `hearth-mountain-geo-2` |
 
-The PIN-0 prerequisite candidate and exact finalization rules are recorded in [Horizon prerequisites](worksessions/2026-09-25-horizon-prerequisites.md) and [PIN-0](horizon/PIN-0.md). The pin remains pending until the accepted merge SHA is recorded.
+PIN-0 is the actual #546 merge, whose tree matches the verified prerequisite head. Jonathan then instructed “ok now do pass 1”. This authorizes proceeding from that merged baseline; the prior Claude and physical-device checks remain unperformed, not passed. See [PIN-0](horizon/PIN-0.md) and the land worksession.
