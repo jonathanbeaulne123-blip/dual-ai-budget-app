@@ -24,7 +24,7 @@ import { readRecentTools, rememberRecentTool } from './harbour/bubbles/usage.ts'
 import { spaceForView, stripLedger, viewForSpace, type DayLedger } from './harbour/glass/dayLedger.ts';
 import { campCardModel, type CampCardModel } from './harbour/glass/campCardModel.ts';
 import type { PanelExtras, PanelHost } from './harbour/panels/panelModel.ts';
-import type { CampfireBeat } from './harbour/campfire/ritual/model.ts';
+import { campfireState, type CampfireBeat } from './harbour/campfire/ritual/model.ts';
 import { HarbourFlat } from './harbour/flat/PlaceFlat.tsx';
 import { harbourJourneyAnchor } from './path/harbourJourney.ts';
 import { PersonalTogether } from './house/PersonalTogether.tsx';
@@ -7162,6 +7162,8 @@ export function App() {
   const panelExtras: PanelExtras = {
     memberId: actorId,
     today,
+    // The Campfire's panel line counts the recipe cards and seals waiting on this member (track D's read model).
+    ...(hostPanel === "campfire" && view === "household" ? { needsYou: campfireState(household, actorId, today).needsYou } : {}),
     bills: (dockNowLedger?.days ?? []).flatMap(day => day.slips.filter(slip => slip.amountCents !== null && (day.relation !== "past" || slip.overdue))
       .map(slip => ({ key: `${slip.id}:${day.date}`, label: slip.name, cents: slip.amountCents as number, due: day.date, recurrenceId: slip.recurrenceId }))).slice(0, 3),
   };
