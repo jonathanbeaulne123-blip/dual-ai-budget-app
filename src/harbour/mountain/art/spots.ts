@@ -56,3 +56,17 @@ export const OVERLOOK_RADIUS=3.2;
 export function overlookTop(o:{at:Point3;facing:number}):number{
   const [x,,z]=o.at,f=o.facing;return Math.max(groundHeightAt(x,z),groundHeightAt(x+Math.sin(f)*OVERLOOK_RADIUS*.8,z+Math.cos(f)*OVERLOOK_RADIUS*.8))+.08;
 }
+
+/**
+ * Whether a support's foot at (x, y, z) would stand in a walked or ridden corridor at that level:
+ * the road or lane within its half-width (plus `margin`) and within a few units of height, or a
+ * path. A trestle or pier over a road spans it instead of standing in it.
+ */
+export function footInCorridor(x:number,y:number,z:number,margin=.6):boolean{
+  for(const line of [MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE] as Line2[])for(let i=0;i<line.samples.length;i++){const s=line.samples[i]!;
+    if(Math.abs(s.at[1]-y)>3.2)continue;if(Math.hypot(x-s.at[0],z-s.at[2])<s.halfWidth+margin)return true;}
+  for(const e of PATH_EDGES)for(let i=1;i<e.points.length;i++){const a=e.points[i-1]!,b=e.points[i]!;if(Math.abs((a[1]+b[1])/2-y)>3.2)continue;
+    const dx=b[0]-a[0],dz=b[2]-a[2],l=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[2])*dz)/l));if(Math.hypot(x-a[0]-dx*t,z-a[2]-dz*t)<e.halfWidth+margin*.5)return true;}
+  return false;
+}
+type Line2={samples:readonly {at:Point3;halfWidth:number}[]};

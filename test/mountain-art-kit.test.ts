@@ -15,7 +15,8 @@ import {mountainStrata,STRATA_GRADE} from '../src/harbour/mountain/art/rockArt.t
 import {MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE,DOOR_APRONS,RESERVOIR,TRANSPORT_LINES,OVERLOOKS,mountainBaseHeight,type RoadLine} from '../src/harbour/mountain/definition.ts';
 import {PATH_EDGES} from '../src/harbour/mountain/pathGraph.ts';
 import {reservoirOutline} from '../src/harbour/mountain/art/damArt.ts';
-import {overlookTop,OVERLOOK_RADIUS} from '../src/harbour/mountain/art/spots.ts';
+import {overlookTop,OVERLOOK_RADIUS,footInCorridor} from '../src/harbour/mountain/art/spots.ts';
+import {funicularBents} from '../src/harbour/mountain/art/transportArt.ts';
 import {buildLattice,groundMasks} from '../src/harbour/scene/groundPaint.ts';
 
 type P2=readonly [number,number];
@@ -164,5 +165,18 @@ describe('terrain painting',()=>{
   it('shades gullies and the land’s own shadow',()=>{
     let gully=0,shadowed=0;for(let i=0;i<m.n;i++){if(m.cavity[i]!>1)gully++;if(m.sun[i]!>.5)shadowed++;}
     expect(gully).toBeGreaterThan(200);expect(shadowed).toBeGreaterThan(200);
+  });
+});
+
+describe('transport and bridge supports stand clear of the walks',()=>{
+  it('never stands a funicular bent in a road, lane or path it crosses: a girder spans it',()=>{
+    const bents=funicularBents('full');
+    expect(bents.length).toBeGreaterThan(20);
+    for(const t of bents.filter(b=>!b.spans))for(const f of t.feet)expect(footInCorridor(f[0],groundHeightAt(f[0],f[2]),f[2]),`bent ${t.i}`).toBe(false);
+    // An independent check on the drawn feet: none inside the road or lane at its own level.
+    for(const t of bents.filter(b=>!b.spans))for(const f of t.feet)for(const line of [MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE])
+      expect(line.samples.some(s=>Math.abs(s.at[1]-groundHeightAt(f[0],f[2]))<3&&Math.hypot(f[0]-s.at[0],f[2]-s.at[2])<s.halfWidth),`bent ${t.i}`).toBe(false);
+    // Every crossing of the road or lane at ground level is spanned, not stood in.
+    expect(bents.some(b=>b.spans)).toBe(true);
   });
 });

@@ -14,6 +14,7 @@ import {CardBuilder,shade,mix,inkLift,type V3,type RGB} from '../../art/cardScen
 import {hash2} from '../../art/cardKit.ts';
 import {ROAD_BANDS,roadBandColour} from './routeArt.ts';
 import type {MountainArtPalette} from './palette.ts';
+import {footInCorridor} from './spots.ts';
 
 const UP:V3=[0,1,0];
 type Frame={p:V3;side:V3;up:V3;hw:number};
@@ -112,6 +113,8 @@ function timber(bld:CardBuilder,pal:MountainArtPalette,b:Bridge,F:Frame[]){
     const f=F[i]!,g=Math.min(ground(at(f,-f.hw)),ground(at(f,f.hw)),ground(f.p));if(f.p[1]-th-g<1)continue;
     const capY=f.p[1]-th-.5,foot=g-.4,rake=Math.min(.18,.02+(capY-foot)*.012);
     const legTop=(s:number)=>at(f,s*(f.hw-.3),capY-f.p[1]),legFoot=(s:number)=>{const p=at(f,s*(f.hw-.3+(capY-foot)*rake),0);return [p[0],foot,p[2]] as V3;};
+    // A bent never stands in a road, lane or path below: the deck spans it.
+    if([-1,1].some(s=>{const p=legFoot(s);return footInCorridor(p[0],ground(p),p[2]);}))continue;
     for(const s of [-1,1])bld.beam(legFoot(s),legTop(s),.36,.36,pal.timber,null);
     bld.beam(at(f,-(f.hw+.4),capY-f.p[1]),at(f,f.hw+.4,capY-f.p[1]),.45,.4,pal.timberLight);
     // X bracing in storeys of about four units, with a sill at each storey.
@@ -150,6 +153,7 @@ function metalGlass(bld:CardBuilder,pal:MountainArtPalette,b:Bridge,F:Frame[]){
   for(const p of b.piers){
     let k=0,d=Infinity;F.forEach((f,i)=>{const e=Math.hypot(f.p[0]-p[0],f.p[2]-p[2]);if(e<d){d=e;k=i;}});
     const f=F[k]!,top=f.p[1]-th-depth,g=ground(f.p),storeys=Math.max(1,Math.round((top-g)/6));
+    if(footInCorridor(f.p[0],g,f.p[2],1.2))continue;
     const col=(s:number,y:number):V3=>{const u=(y-g)/Math.max(1,top-g),spread=(f.hw-.6)+(1-u)*Math.min(3,(top-g)*.05);return at(f,s*spread,y-f.p[1]);};
     for(const s of [-1,1])bld.beam(col(s,g-.3),col(s,top),.5,.5,steel,null,'steel');
     for(let j=1;j<=storeys;j++){const y0=g+(top-g)*(j-1)/storeys,y1=g+(top-g)*j/storeys;bld.beam(col(-1,y1),col(1,y1),.24,.24,paint,null,'steel');bld.beam(col(-1,y0),col(1,y1),.14,.14,paint,null,'steel');bld.beam(col(1,y0),col(-1,y1),.14,.14,paint,null,'steel');}

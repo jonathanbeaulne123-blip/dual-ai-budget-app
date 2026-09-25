@@ -16,6 +16,7 @@ import {FUNICULAR_LINE,GONDOLA_LINE,type TransportKind,type TransportLine,type P
 import {CardBuilder,shade,mix,inkLift,type V3,type RGB} from '../../art/cardScene.ts';
 import {hash2} from '../../art/cardKit.ts';
 import {corridorClearance} from './placements.ts';
+import {footInCorridor} from './spots.ts';
 import type {MountainArtPalette} from './palette.ts';
 
 /** The funicular's rail tops sit this far below the cabin floor (the ride's y). */
@@ -23,6 +24,25 @@ export const RAIL_DROP=.55;
 const UP:V3=[0,1,0];
 const G=(x:number,z:number)=>groundHeightAt(x,z);
 
+/**
+ * The funicular's trestle bents where the track stands clear of the ground: every few units, two
+ * raked legs to footings. A bent whose foot would stand in a road, lane or path `spans` it instead
+ * (it is not drawn; the stringers carry the track over). Pure data for the drawing and the tests.
+ */
+export function funicularBents(tier:'full'|'lite'){
+  const L=FUNICULAR_LINE,step=tier==='full'?.8:1.6,frames=L.frames(step),every=Math.round(3.2/step),out:{i:number;at:Point3;top:number;foot:number;feet:[V3,V3];spans:boolean;leg:(s:number,y:number)=>V3}[]=[];
+  frames.forEach((f,i)=>{
+    const l=Math.hypot(f.side[0],f.side[2])||1,h:V3=[f.side[0]/l,0,f.side[2]/l],gy=G(f.at[0],f.at[2]),bed=f.at[1]-RAIL_DROP-.26;
+    if(bed-gy<.9||i%every!==0)return;
+    const top=bed-.1,foot=Math.min(gy,G(f.at[0]-h[0]*1.6,f.at[2]-h[2]*1.6),G(f.at[0]+h[0]*1.6,f.at[2]+h[2]*1.6))-.3,rake=Math.min(1.5,(top-foot)*.08);
+    const leg=(s:number,y:number):V3=>{const u=(y-foot)/Math.max(.1,top-foot),w=1.1+(1-u)*rake;return [f.at[0]+h[0]*w*s,y,f.at[2]+h[2]*w*s];};
+    const feet:[V3,V3]=[leg(-1,foot),leg(1,foot)];
+    // Where the track crosses a road, lane or path the stringers span it: no bent stands in the way.
+    const spans=feet.some(p=>footInCorridor(p[0],G(p[0],p[2]),p[2]))||footInCorridor(f.at[0],gy,f.at[2]);
+    out.push({i,at:f.at,top,foot,feet,spans,leg});
+  });
+  return out;
+}
 function funicularTrack(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite'){
   const L=FUNICULAR_LINE,step=tier==='full'?.8:1.6,frames=L.frames(step);
   const hside=(f:typeof frames[number]):V3=>{const l=Math.hypot(f.side[0],f.side[2])||1;return [f.side[0]/l,0,f.side[2]/l];};
@@ -37,23 +57,26 @@ function funicularTrack(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite')
   // Ballast bed on the ground, trestles where the track stands clear of it.
   let run:V3[][]=[];let cur:{l:V3;r:V3}[]=[];
   const flush=()=>{if(cur.length>1)run.push(cur.flatMap(c=>[c.l,c.r]));cur=[];};
+  const bents=new Map(funicularBents(tier).map(t=>[t.i,t]));
   frames.forEach((f,i)=>{
     const h=hside(f),gy=G(f.at[0],f.at[2]),bed=railY(f)-.26;
-    if(bed-gy<.9){cur.push({l:[f.at[0]-h[0]*1.5,bed,f.at[2]-h[2]*1.5],r:[f.at[0]+h[0]*1.5,bed,f.at[2]+h[2]*1.5]});}
-    else{flush();
-      if(i%Math.round(3.2/step)===0){
-        // A bent: two raked legs, a cap under the sleepers, a brace or two.
-        const top=bed-.1,foot=Math.min(gy,G(f.at[0]-h[0]*1.6,f.at[2]-h[2]*1.6),G(f.at[0]+h[0]*1.6,f.at[2]+h[2]*1.6))-.3,rake=Math.min(1.5,(top-foot)*.08);
-        const leg=(s:number,y:number):V3=>{const u=(y-foot)/Math.max(.1,top-foot),w=1.1+(1-u)*rake;return [f.at[0]+h[0]*w*s,y,f.at[2]+h[2]*w*s];};
-        for(const s of [-1,1])b.beam(leg(s,foot),leg(s,top),.26,.26,pal.timber,null);
-        b.beam(leg(-1,top),leg(1,top),.3,.3,pal.timberLight);
-        const storeys=Math.max(1,Math.round((top-foot)/3.5));
-        for(let k=0;k<storeys;k++){const y0=foot+(top-foot)*k/storeys,y1=foot+(top-foot)*(k+1)/storeys;b.beam(leg(-1,y0),leg(1,y1),.12,.12,shade(pal.timber,.85),null);if(k)b.beam(leg(-1,y0),leg(1,y0),.16,.16,pal.timber,null);}
-        for(const s of [-1,1]){const p=leg(s,foot);b.box(p[0],p[2],0,.35,.35,p[1]-.4,p[1]+.25,pal.stone,pal.stoneDark,null);}
-      }
-    }
+    if(bed-gy<.9){cur.push({l:[f.at[0]-h[0]*1.5,bed,f.at[2]-h[2]*1.5],r:[f.at[0]+h[0]*1.5,bed,f.at[2]+h[2]*1.5]});return;}
+    flush();
+    const t=bents.get(i);if(!t||t.spans)return;
+    // A bent: two raked legs, a cap under the sleepers, a brace or two.
+    const {leg,top,foot}=t;
+    for(const s of [-1,1])b.beam(leg(s,foot),leg(s,top),.26,.26,pal.timber,null);
+    b.beam(leg(-1,top),leg(1,top),.3,.3,pal.timberLight);
+    const storeys=Math.max(1,Math.round((top-foot)/3.5));
+    for(let k=0;k<storeys;k++){const y0=foot+(top-foot)*k/storeys,y1=foot+(top-foot)*(k+1)/storeys;b.beam(leg(-1,y0),leg(1,y1),.12,.12,shade(pal.timber,.85),null);if(k)b.beam(leg(-1,y0),leg(1,y0),.16,.16,pal.timber,null);}
+    for(const s of [-1,1]){const p=leg(s,foot);b.box(p[0],p[2],0,.35,.35,p[1]-.4,p[1]+.25,pal.stone,pal.stoneDark,null);}
   });
   flush();
+  // Over a road, lane or path the track rides a deep steel plate girder between the bents either side.
+  {const every=Math.round(3.2/step),girder=mix(pal.iron,pal.glassFrame,.3);
+    for(const t of bents.values()){if(!t.spans)continue;
+      for(const s of [-1,1]){const pts:V3[]=[];for(let k=Math.max(0,t.i-every);k<=Math.min(frames.length-1,t.i+every);k++){const f=frames[k]!,h=hside(f);pts.push([f.at[0]+h[0]*.9*s,railY(f)-.26-.65,f.at[2]+h[2]*.9*s]);}
+        for(let k=1;k<pts.length;k++)b.beam(pts[k-1]!,pts[k]!,.2,1.05,girder,b.ink,'steel');}}}
   // Stringers along the trestled spans (the deck under the sleepers).
   for(const s of [-1,1]){let prev:V3|null=null;frames.forEach(f=>{const h=hside(f),bed=railY(f)-.26,gy=G(f.at[0],f.at[2]);const p:V3=[f.at[0]+h[0]*.9*s,bed-.1,f.at[2]+h[2]*.9*s];
     if(bed-gy>=.9){if(prev)b.beam(prev,p,.22,.34,shade(pal.timber,.95),null);prev=p;}else prev=null;});}
