@@ -106,7 +106,7 @@ export function buildPlantArt(pal:MountainArtPalette,tier:'full'|'lite',season:'
     if(tier==='full'){const shell=new THREE.InstancedMesh(geo,own(outlineMaterial(pal.ink,amp,`shell-${kind}`)),list.length);shell.name=`Mountain ${kind} outline`;for(let i=0;i<list.length;i++){mesh.getMatrixAt(i,dummy.matrix);shell.setMatrixAt(i,dummy.matrix);}shell.instanceMatrix.needsUpdate=true;group.add(shell);owned.push(shell);}
     // Blossom in spring, fruit in late summer and autumn, on the orchard's fruit trees.
     if(kind==='fruit'&&(season==='spring'||season==='summer'||season==='autumn')){
-      const dots=season==='spring'?16:9,dotGeo=new THREE.IcosahedronGeometry(season==='spring'?.2:.16,0),m=new THREE.InstancedMesh(own(dotGeo),own(new THREE.MeshStandardMaterial({roughness:.6,flatShading:true})),list.length*dots);
+      const dots=season==='spring'?16:9,dotGeo=new THREE.OctahedronGeometry(season==='spring'?.2:.17,0),m=new THREE.InstancedMesh(own(dotGeo),own(new THREE.MeshStandardMaterial({roughness:.6,flatShading:true})),list.length*dots);
       m.name=season==='spring'?'Orchard blossom':'Orchard fruit';let n=0;
       list.forEach((t,i)=>{for(let k=0;k<dots;k++){const a=(k*2.399+i)%6.283,h=((k*.37+i*.13)%1),r=(1.05+h*.35)*t.size;dummy.position.set(t.x+Math.cos(a+t.spin)*r,t.y+(1.9+h*1.1)*t.size,t.z+Math.sin(a+t.spin)*r);dummy.rotation.set(0,0,0);dummy.scale.setScalar(1);dummy.updateMatrix();m.setMatrixAt(n,dummy.matrix);
         colour.setRGB(...(season==='spring'?pal.blossom[k%pal.blossom.length]!:k%4===0?mix(pal.fruit,[.9,.75,.3],.4):pal.fruit));m.setColorAt(n,colour);n++;}});
