@@ -14,9 +14,9 @@ export function solidTriangle(builder:CardBuilder,a:XYZ,b:XYZ,c:XYZ,color:RGB,bu
   for(const p of [a,b,c]){data.positions.push(...p);data.normals.push(nx/n,ny/n,nz/n);data.colors.push(color[0]*shade,color[1]*shade,color[2]*shade);data.uvs.push(p[0]*.03,p[2]*.03);}
 }
 const surfaceColor=(surface:string,role:string):RGB=>rgb(role==='marker'?'#e6b95b':surface.includes('water')?'#527f83':surface.includes('metal')?'#777e7f':surface.includes('wood')||surface.includes('board')?'#b59c79':role==='roof'?'#aaa398':role==='rock'?'#a3998a':'#c9c2b4');
-function addSolid(builder:CardBuilder,solid:StructureSolid){
-  const color=surfaceColor(solid.surface,solid.role),p=solid.positions;
-  for(let i=0;i<solid.indices.length;i+=3){const v=(n:number):XYZ=>{const j=solid.indices[i+n]!*3;return[p[j]!,p[j+1]!,p[j+2]!];};solidTriangle(builder,v(0),v(1),v(2),color);}
+function addSolid(builder:CardBuilder,solid:StructureSolid,tier:'full'|'lite'='full'){
+  const color=surfaceColor(solid.surface,solid.role),p=tier==='lite'?(solid.litePositions??solid.positions):solid.positions,indices=tier==='lite'?(solid.liteIndices??solid.indices):solid.indices;
+  for(let i=0;i<indices.length;i+=3){const v=(n:number):XYZ=>{const j=indices[i+n]!*3;return[p[j]!,p[j+1]!,p[j+2]!];};solidTriangle(builder,v(0),v(1),v(2),color);}
 }
 function addTerrain(builder:CardBuilder,field:TerrainField,cuts:Pick<LandCuts,'mouths'>,districtId:string){
   const colors=TERRAIN_SURFACE_PALETTE.map(p=>rgb(p.color));
@@ -30,10 +30,10 @@ function addTerrain(builder:CardBuilder,field:TerrainField,cuts:Pick<LandCuts,'m
     if(terrainTriangleVisible(x+step*2/3,z+step*2/3,cuts))solidTriangle(builder,ne,sw,se,color,'pad');
   }
 }
-export function buildDistrictCards(world:WorldDefinition,field:TerrainField,cuts:LandCuts,district:District,tier:'full'|'lite',coarse=false):CardBuild{
+export function buildDistrictCards(world:WorldDefinition,field:TerrainField,cuts:LandCuts,district:District,tier:'full'|'lite',coarse=false,hideBuildings=false):CardBuild{
   const builder=new CardBuilder(`horizon.${coarse?'journey':'district'}.${district.id}`,tier,{ink:'#5b5447',cell:coarse?4096:256,shadows:!coarse});
-  addTerrain(builder,field,cuts,district.id);
-  if(!coarse){const ids=new Set(district.solidIds??[]);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id))addSolid(builder,solid);}
+  if(!district.childOf)addTerrain(builder,field,cuts,district.id);
+  if(!coarse){const ids=new Set(district.solidIds??[]);for(const solid of world.geometry?.solids??[])if(ids.has(solid.id)&&!(hideBuildings&&(solid.sourceId??solid.id).startsWith('host.')))addSolid(builder,solid,tier);}
   return builder.finish();
 }
 function waterTriangle(b:CardBuilder,a:XYZ,c:XYZ,d:XYZ,color:RGB){b.water(a,c,d,[a[0]*.02,0],[c[0]*.02,1],[d[0]*.02,.5],color);}
@@ -57,10 +57,14 @@ export function buildWaterCards(cuts:LandCuts,tier:'full'|'lite'){
 }
 
 export function buildHorizonRing(cards:readonly import('../sky/horizonCards.ts').HorizonCard[],tier:'full'|'lite'){
-  const b=new CardBuilder('horizon.sky-ring',tier,{ink:'#7e8578',cell:4096,shadows:false});
-  for(const card of cards)addSolid(b,{...card,id:card.id,surface:'rock',role:'rock',kind:'horizon-card',districtId:'sky',bedIds:[],walkable:false});
-  const result=b.finish();
-  // Fog is applied to the ring's material colour with a fixed 50% mix, below its 70% cap.
-  for(const material of Object.values(result.materials))if('fog'in material)(material as THREE.MeshStandardMaterial).fog=false;
-  return result;
+  const group=new THREE.Group(),materials:Record<string,THREE.Material>={},proxies=cards.map(card=>{
+    const b=new CardBuilder(`horizon.sky-ring.${card.id}`,tier,{ink:'#7e8578',cell:4096,shadows:false});
+    addSolid(b,{...card,surface:'rock',role:'rock',kind:'horizon-card',districtId:'sky',bedIds:[],walkable:false});
+    const result=b.finish();group.add(result.group);
+    for(const [key,material] of Object.entries(result.materials)){materials[`${card.id}.${key}`]=material;if('fog'in material)(material as THREE.MeshStandardMaterial).fog=false;}
+    return{card,result};
+  });
+  return {group,materials,water:[] as THREE.Mesh[],
+    updateResidency(resident:ReadonlySet<string>,journey:boolean){for(const {card,result}of proxies)result.group.visible=!journey&&!card.ownerDistrictIds?.some(id=>resident.has(id));},
+    dispose(){for(const {result}of proxies)result.dispose();group.removeFromParent();group.clear();}};
 }

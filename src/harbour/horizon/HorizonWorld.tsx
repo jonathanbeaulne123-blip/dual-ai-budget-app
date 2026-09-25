@@ -1,4 +1,4 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useMemo} from 'react';
 import type {HarbourWorldProps} from '../HarbourWorld.tsx';
 import HorizonStage from './HorizonStage.tsx';
 import type {HorizonRuntime} from './runtime/index.ts';
@@ -12,7 +12,8 @@ import type {Host} from './world/definition.ts';
 export const HORIZON_HOST_TOOLS:Readonly<Record<string,string>>={home:'conversation',bank:'loft-banks',library:'books',glasshouse:'planner',studio:'pottery',cottage:'wardrobe',boathouse:'wishes'};
 export default function HorizonWorld(props:HarbourWorldProps){
   const {household,memberId,scope,route}=props,runtime=useRef<HorizonRuntime|null>(null),identity={environment:household.environment,householdId:household.householdId,memberId,scope},identityRef=useRef(identity);identityRef.current=identity;
-  const [initialBody]=useState(()=>{try{return readHouseReturnOnDevice(identity,'horizon')?.body;}catch{return undefined;}});
+  const identityKey=houseIdentity(identity);
+  const initialBody=useMemo(()=>readHouseReturnOnDevice(identity,'horizon')?.body,[identityKey]);
   const share=readWorldPresenceShare(household.environment);
   const peer=useWorldFeed({environment:household.environment,householdId:household.householdId,memberId,linked:household.linked===true,view:scope,placeId:'court',softPresenceOptedOut:props.presence?.optedOut===true,share,world:HORIZON_PRESENCE_WORLD});
   useEffect(()=>publishLocalPose(()=>{const b=runtime.current?.body();return b?{target:[b.x,b.y,b.z],theta:b.yaw-Math.PI,body:{...b,world:HORIZON_PRESENCE_WORLD}}:null;}),[]);
@@ -20,7 +21,7 @@ export default function HorizonWorld(props:HarbourWorldProps){
   function onDoor(host:Host,body:ReturnType<HorizonRuntime['savedBody']>){
     try{saveHouseReturnOnDevice(identity,route,body,'horizon');saveHouseReturnOnDevice(identity,route,body);}catch{/* In-memory return remains available. */}
     const target=HORIZON_HOST_TOOLS[host.id],place=(host.toolPlaceId??host.placeIds[0]) as HarbourPlaceId,address=VILLAGE_ADDRESS[place];
-    if(props.onNavigateLocation&&address)props.onNavigateLocation({...route,...address,surface:target});else if(target)props.onOpen(target);
+    if(props.onNavigateLocation&&address)props.onNavigateLocation({...route,...address,surface:target,object:undefined});else if(target)props.onOpen(target);
   }
-  return <HorizonStage onDoor={onDoor} initialBody={initialBody} onReady={props.onWorldReady} onRuntime={value=>{runtime.current=value;}} partner={peer.walk} paused={Boolean(route.surface&&route.surface!=='queen')} onQuickSheet={props.onQuickSheet} onJourney={props.onJourney}>{props.children}</HorizonStage>;
+  return <HorizonStage key={identityKey} onDoor={onDoor} initialBody={initialBody} onReady={props.onWorldReady} onRuntime={value=>{if(!value&&runtime.current)saveHouseReturnOnDevice(identity,route,runtime.current.savedBody(),'horizon');runtime.current=value;}} partner={peer.walk} paused={Boolean(route.surface&&route.surface!=='queen')} onQuickSheet={props.onQuickSheet} onJourney={props.onJourney}>{props.children}</HorizonStage>;
 }

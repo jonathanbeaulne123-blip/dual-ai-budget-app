@@ -18,6 +18,18 @@ describe('rendered Horizon geometry owns collision',()=>{
   const query=createHorizonGeography({...field,heights:new Float32Array(9).fill(100)},{...empty,solids:[floor,wall]});
   expect(query.surface(50,50,20)?.y).toBe(20);expect(query.blocked(54.4,50,20)).toBe(true);expect(query.blocked(50,50,20)).toBe(false);
  });
+ it('steps onto a low visible lip without allowing a parapet crossing',()=>{
+  const kerb=solid('lip','kerb','stone','wall');box(kerb,[50,50],.3,[1,5],0);
+  const rail=solid('rail','rail','stone','rail');box(rail,[60,50],1.05,[1,5],0);
+  const query=createHorizonGeography(field,{...empty,solids:[kerb,rail]});
+  expect(query.blocked(49.3,50,0)).toBe(false);expect(query.blocked(59.3,50,0)).toBe(true);
+  expect(query.blocker(59.3,50,0,.3,[1,0])).toBe('rail');expect(query.blocker(59.3,50,0,.3,[-1,0])).toBeNull();
+ });
+ it('stops at visible lake water while allowing a bridge above it',()=>{
+  const lake={id:'lake',kind:'lake' as const,outline:[[30,30],[70,30],[70,70],[30,70]] as [number,number][],points:[],level:50,width:40,depth:5,bank:1};
+  const query=createHorizonGeography(field,{...empty,waters:[lake]});
+  expect(query.submerged(50,50,46)).toBe(true);expect(query.submerged(50,50,51)).toBe(false);expect(query.submerged(10,10,46)).toBe(false);
+ });
  it('does not flip a real underside toward the sun in the shared card pipeline',()=>{
   const builder=new CardBuilder('underside','lite',{ink:'#000000'});
   solidTriangle(builder,[0,2,0],[1,2,0],[0,2,1],[1,1,1]);

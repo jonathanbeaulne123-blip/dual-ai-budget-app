@@ -10,7 +10,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "node scripts/pack-mountain-terrain-asset.mjs --check && rm -rf dist && pnpm typecheck && pnpm typecheck:workspace && vite build && pnpm build:hercules-pro-ui && test ! -e dist/_redirects",
+    "build": "node scripts/pack-mountain-terrain-asset.mjs --check && node scripts/horizon/bake-terrain.mjs --check && rm -rf dist && pnpm typecheck && pnpm typecheck:workspace && vite build && pnpm build:hercules-pro-ui && test ! -e dist/_redirects",
     "typecheck": "node --max-old-space-size=6144 node_modules/typescript/bin/tsc --noEmit",
     "typecheck:workspace": "node --max-old-space-size=6144 node_modules/typescript/bin/tsc -p workers/workspace/tsconfig.json --pretty false",
     "build:hercules-pro-ui": "node scripts/build-hercules-pro-ui.mjs",
@@ -44,7 +44,9 @@
     "books:smoke:cas": "node scripts/smoke-snapshot-cas.mjs",
     "books:smoke:012": "node scripts/smoke-continuity-cas.mjs",
     "cf:deploy": "pnpm build && rm -f dist/_redirects && wrangler deploy --assets=./dist",
-    "cf:preview": "pnpm build && rm -f dist/_redirects && wrangler versions upload --assets=./dist"
+    "cf:preview": "pnpm build && rm -f dist/_redirects && wrangler versions upload --assets=./dist",
+    "horizon:bake": "node scripts/horizon/bake-terrain.mjs",
+    "horizon:check": "node scripts/horizon/bake-terrain.mjs --check"
   },
   "dependencies": {
     "@capacitor/core": "8.5.2",

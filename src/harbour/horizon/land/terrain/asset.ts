@@ -28,7 +28,9 @@ export function encodeTerrainAsset(field: TerrainField, options: { waters?: Wate
   if (!Number.isInteger(journeyFactor) || journeyFactor < 2) throw new Error('Full terrain must retain the 20 m Journey lattice');
   const levels = [options.beds ? {...field, heights: field.heights.slice(), surfaces: field.surfaces.slice()} : field, decimateTerrain(field, 2), decimateTerrain(field, journeyFactor)];
   if (options.waters) for (const level of levels.slice(1)) conserveWaterFootprint(level, options.waters);
-  if (options.beds) for (const level of levels) conserveBedFootprint(level, options.beds);
+  // Journey has no detailed route decks: retain the solved master lattice without
+  // carving an additional road-width trench at the coarse 20 m resolution.
+  if (options.beds) for (const level of levels.slice(0, 2)) conserveBedFootprint(level, options.beds);
   const bytes = HEADER + LODS.length * ENTRIES + levels.reduce((n, f) => n + f.heights.length * 3, 0);
   if (bytes > 2_500_000) throw new Error(`Terrain asset exceeds 2.5 MB: ${bytes}`);
   const buffer = new ArrayBuffer(bytes), view = new DataView(buffer), array = new Uint8Array(buffer);
@@ -43,7 +45,7 @@ export function encodeTerrainAsset(field: TerrainField, options: { waters?: Wate
     view.setFloat64(entry + 8, f.step, true); view.setUint32(entry + 16, offset, true);
     view.setUint32(entry + 20, f.heights.length, true);
     // Bit 0: conservative water; bit 1: conservative ground-level route clearance.
-    view.setUint32(entry + 24, (i > 0 && options.waters ? 1 : 0) | (options.beds ? 2 : 0), true);
+    view.setUint32(entry + 24, (i > 0 && options.waters ? 1 : 0) | (i < 2 && options.beds ? 2 : 0), true);
     for (let n = 0; n < f.heights.length; n++) {
       const cm = Math.round(f.heights[n]! * 100);
       if (cm < -32768 || cm > 32767 || !Number.isFinite(cm)) throw new Error('Terrain height outside signed-centimetre asset range');

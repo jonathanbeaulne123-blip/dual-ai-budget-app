@@ -1,3 +1,4 @@
+import {useMotionEdition} from './nav/Compass.tsx';
 import {HARBOUR_DEV} from './flag.ts';
 import {DeskPlace} from "./desk/DeskPlace.tsx";
 import {usePublishEditionAvailability,type EditionAvailability} from "./nav/editionAvailability.ts";
@@ -156,8 +157,13 @@ const pulseFreshness = (gate: InterpretationGate | undefined): FundPulseFreshnes
 const HorizonWorld = lazy(() => import("./horizon/HorizonWorld.tsx"));
 export default function HarbourWorld(props: HarbourWorldProps) {
   return HARBOUR_DEV && new URLSearchParams(window.location.search).get("world") === "horizon"
-    ? <Suspense fallback={<p role="status">Loading the Horizon…</p>}><HorizonWorld {...props}/></Suspense>
+    ? <HorizonEdition {...props}/>
     : <MountainHarbourWorld {...props}/>;
+}
+function HorizonEdition(props:HarbourWorldProps){
+  const edition=useMotionEdition();
+  const [canDraw]=useState(()=>{const input=readQualityInput(window,window.innerWidth);return input.webgl&&!input.saveData;});
+  return edition==='flat'||!canDraw ? <MountainHarbourWorld {...props}/> : <Suspense fallback={<p role="status">Loading the Horizon…</p>}><HorizonWorld {...props}/></Suspense>;
 }
 
 function MountainHarbourWorld(props: HarbourWorldProps) {

@@ -24,7 +24,7 @@ it('does not count an ordinary floating bed as a built bridge, and measures a su
   const proof=buildCrossings(cuts).proofs[0]!;expect(proof.clearHeight).toBeCloseTo(4.4);expect(proof.clearancePass).toBe(false);expect(proof.built).toBe(false);
 });
 it('retains raw water intersections while recognizing a continuous confluence without basin furniture',()=>{
-  const channel=(id:string,points:BedCut['points'])=>({id,kind:'river' as const,points,outline:[] as readonly [number,number][],level:0,width:8,depth:2,bank:1});
+  const channel=(id:string,points:BedCut['points'])=>({id,kind:'river' as const,points,outline:[] as [number,number][],level:0,width:8,depth:2,bank:1});
   const cuts:LandCuts={beds:[],pads:[],mouths:[],solids:[],diagnostics:[],waters:[channel('water.river.lower',[[0,0,0],[10,0,0]]),channel('water.reach.1',[[5,0,0],[5,0,10]])]};
   const result=buildCrossings(cuts,[{id:'RIVER_RUN',bedIds:[],mode:'row',points:[[0,0,0],[10,0,0]]}]);
   expect(result.rawIntersections.length).toBeGreaterThan(result.proofs.length);

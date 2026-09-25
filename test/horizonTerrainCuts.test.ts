@@ -50,11 +50,11 @@ describe('Horizon spatial bed cut solver', () => {
     expect(sampleTerrain(field, x, z)).toBeLessThan(linePoint(route.points, x, z).height - .049);
   });
 
-  it('preserves clearance across full, lite and Journey triangles and centimetre encoding', () => {
+  it('preserves clearance across full and lite triangles and centimetre encoding', () => {
     const route = bed('diagonal', [[1451.3, 12, 1101.7], [1511.3, 19.2, 1181.7]], { width: 2.5, shoulder: 0 });
     const original = flatField(), asset = encodeTerrainAsset(original, { beds: [route] });
     expect(original.heights[0]).toBe(80); expect(original.heights[230 * 401 + 296]).toBe(80);
-    for (const lod of ['full', 'lite', 'journey'] as const) {
+    for (const lod of ['full', 'lite'] as const) {
       const field = decodeTerrainAsset(asset, lod);
       for (let t = 0; t <= 1; t += .025) for (const across of [-1.2, 0, 1.2]) {
         const x = 1451.3 + 60 * t - .8 * across, z = 1101.7 + 80 * t + .6 * across, deck = 12 + 7.2 * t;
@@ -62,6 +62,13 @@ describe('Horizon spatial bed cut solver', () => {
       }
       expect(sampleTerrain(field, 1300, 1000)).toBe(80);
     }
+  });
+
+  it('retains the master lattice for Journey instead of adding coarse route trenches', () => {
+    const original = flatField();
+    const asset = encodeTerrainAsset(original, { beds: [bed('route', [[100, 5, 100], [300, 5, 100]])] });
+    expect(sampleTerrain(decodeTerrainAsset(asset, 'journey'), 200, 100)).toBe(80);
+    expect(sampleTerrain(decodeTerrainAsset(asset, 'full'), 200, 100)).toBeLessThan(5);
   });
 
   it('leaves bridges, cave and cable beds and named tunnel roof cells intact', () => {
