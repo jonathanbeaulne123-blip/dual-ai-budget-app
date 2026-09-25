@@ -44,7 +44,13 @@ export type SkateHudModel = {
   notice: SkateNotice | null;
   /** The spot you are standing in, with its goals. */
   spot: HudSpot | null;
-  run: null | {id: string; name: string; label: string; finished: boolean; countdown: number; gate: number; gates: number; target: readonly [number, number] | null; distance: number | null};
+  /**
+   * A race in progress. `gate` is the number of gates passed and `gates` the
+   * number there are to pass (the start line is a start, not a gate), so the
+   * HUD reads 0/21 at the start and 21/21 over the finish. `raceMode` hides
+   * the skate park's spot banners and goal counters: a race is not a session.
+   */
+  run: null | {id: string; name: string; label: string; finished: boolean; countdown: number; gate: number; gates: number; target: readonly [number, number] | null; distance: number | null; raced: boolean};
   map: {x: number; z: number; yaw: number; bounds: [number, number, number, number]; route: readonly (readonly [number, number])[] | null; target: readonly [number, number] | null};
   spots: HudSpot[];
   challenges: {done: number; total: number};
@@ -177,9 +183,10 @@ export function buildHudModel(src: HudSource): SkateHudModel {
   const target = s.run && !s.run.finished && route ? route.points[s.run.checkpoint] ?? null : null;
   let run: SkateHudModel['run'] = null;
   if (s.run && route) {
-    const r = s.run, gates = route.points.length - 1;
-    const label = r.finished ? `${r.medal ?? 'Finished'} · ${formatSeconds(r.elapsed)}` : r.countdown > 0 ? `Ready · ${Math.ceil(r.countdown)}` : `${formatSeconds(r.elapsed)} · Gate ${r.checkpoint}/${gates}`;
-    run = {id: r.id, name: route.name, label, finished: r.finished, countdown: Math.ceil(r.countdown), gate: r.checkpoint, gates, target, distance: target ? Math.round(Math.hypot(x - target[0], z - target[1])) : null};
+    const r = s.run, gates = Math.max(0, route.points.length - 1), passed = r.finished ? gates : Math.max(0, Math.min(gates, r.checkpoint - 1));
+    const next = r.checkpoint >= gates ? 'the finish' : `gate ${r.checkpoint}`;
+    const label = r.finished ? `${r.medal ?? 'Finished'} · ${formatSeconds(r.elapsed)}` : r.countdown > 0 ? `Ready · ${Math.ceil(r.countdown)}` : `${formatSeconds(r.elapsed)} · Gates ${passed}/${gates} · next ${next}`;
+    run = {id: r.id, name: route.name, label, finished: r.finished, countdown: Math.ceil(r.countdown), gate: passed, gates, target, distance: target ? Math.round(Math.hypot(x - target[0], z - target[1])) : null, raced: Boolean(route.gates)};
   }
   // Map bounds: every spot and route, with a margin.
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
@@ -206,7 +213,8 @@ export function buildHudModel(src: HudSource): SkateHudModel {
   ].join('|');
   return {
     sig, active: Boolean(p), paused: src.paused, phase, speed, stance, balance, line: hudLine, outcome,
-    spotCard: s.spotCard, notice: s.notice ?? null, spot, run,
+    // A race hides the park's spot banners and the spot's goals: one thing on screen at a time.
+    spotCard: run?.raced ? null : s.spotCard, notice: s.notice ?? null, spot: run?.raced ? null : spot, run,
     map: {x, z, yaw, bounds, route: route ? route.points : null, target},
     spots, challenges: {done, total: total3}, stats: {...prog.stats}, stamps, decks, routes,
     bestLine: Math.max(prog.bestLine, prog.stats.biggestLine), discovered: prog.discovered.length, spotTotal: t.spots.length,

@@ -65,6 +65,13 @@ export type SkateSimOptions = {
   y?:number; vy?:number; supportId?:string;
   /** Outside authored trick areas, climbing and everyday travel use assisted propulsion. */
   complexPhysicsAt?: (x:number,z:number)=>boolean;
+  /**
+   * Where the real slope is felt even under travel assist: the race corridor
+   * (the mountain road and the town line it runs into). Travel keeps its
+   * forgiving push and landings; only gravity's tangential pull is restored,
+   * so the descent is a descent (it was 0.16 g — 94 s of holding W).
+   */
+  slopeGravityAt?: (x:number,z:number)=>boolean;
   /** Island obstacles (buildings/trees) in body-obstacle form; injected by integration. */
   islandObstacles?: readonly Obstacle[];
   /**
@@ -84,6 +91,13 @@ export type SkateSim = {
   load(saved: unknown): void;
   setMarker(): boolean;
   toMarker(): void;
+  /** Put the rider down at a pose (a race gate's safe pose): its height and support pick the deck. */
+  placeAt(x: number, z: number, yaw: number, y?: number, supportId?: string | null): void;
+  /**
+   * The finish run-out: past the line the board is braked for you and the
+   * shore/water edge is a bumper, never a bail. Off again once stopped.
+   */
+  setRunout(on: boolean): void;
 };
 
 /* ─────────────────────────────────────────────────────────── state */
@@ -134,6 +148,10 @@ type SimState = {
 type Sample = { y: number; nx: number; ny: number; nz: number; kind: SurfaceKind; feature: string | null; lip: SurfaceSample['lip'] };
 const sampleScratch = (): Sample => ({ y: 0, nx: 0, ny: 1, nz: 0, kind: 'concrete', feature: null, lip: null });
 const KINDS: ReadonlySet<string> = new Set(['grass', 'path', 'sand', 'cobble', 'concrete', 'wood', 'metal']);
+/** Standing rider height, and the height a crouched rider ducks to under a low deck. */
+const RIDER_HEIGHT = 1.55, DUCK_HEIGHT = 1.08;
+/** The run-out's own braking, units a second squared (plus a quarter of the speed). */
+const RUNOUT_DECEL = 3.2;
 const FALLBACK_GRIND: GrindDef = { id: '50-50', name: '50-50', contact: 'both-trucks', deckYaw: 0, deckPitch: 0, points: 0, difficulty: 0.2 };
 
 /* ─────────────────────────────────────────────────────────── factory */
@@ -204,6 +222,8 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   let pumpPrevCrouch = 0;
   /** Lip flag of the last grounded sample (so a thin lip strip is not stepped over). */
   let S0lip: SurfaceSample['lip'] = null;
+  /** The finish run-out is on (see `setRunout`). */
+  let runout = false;
 
   /* ─────────────────────────────── small helpers */
 
@@ -448,7 +468,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   function hitWall(nx: number, nz: number, kind: 'solid' | 'shore' | 'step'): boolean {
     const into = -(S.vx * nx + S.vz * nz);
     if (kind === 'shore') {
-      if (hSpeed() > T.WATER_BAIL_SPEED && into > 1) { bail('water'); return true; }
+      if (!runout && hSpeed() > T.WATER_BAIL_SPEED && into > 1) { bail('water'); return true; }
       if (into > 0) { S.vx += into * nx; S.vz += into * nz; }
       S.vx *= 0.9; S.vz *= 0.9;
       return false;
@@ -480,7 +500,7 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
   function stepGround(dt: number): void {
     const n0x = S.gnx, n0y = S.gny, n0z = S.gnz, y0 = S.y, x0 = S.x, z0 = S.z;
     const travel = opts.complexPhysicsAt?.(x0,z0) === false;
-    const travelGravity = travel ? 0.16 : 1;
+    const travelGravity = travel && opts.slopeGravityAt?.(x0,z0) !== true ? 0.16 : 1;
     S.sinceLand += dt;
     S.landTimer = Math.max(0, S.landTimer - dt);
     if (S.recoverT > 0) return;
@@ -524,6 +544,8 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       const ctrl = Math.max(Math.abs(I.steer), S.crouch, I.brake ? 0.6 : 0);
       decel += T.POWERSLIDE_SCRUB_MIN + (T.POWERSLIDE_SCRUB_MAX - T.POWERSLIDE_SCRUB_MIN) * ctrl;
     } else if (I.brake) decel += T.BRAKE_DECEL;
+    // The run-out brakes for you (harder the faster you are), and never with a push held against it.
+    if (runout && !I.push) decel += RUNOUT_DECEL + 0.25 * speed;
 
     // Push strokes.
     let pushAcc = 0;
@@ -1469,10 +1491,17 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
         break;
     }
 
-    // A jump cannot pass up through a bridge; a low passage stops horizontal travel.
-    if(field.ceilingAt&&S.mode!=='grind'){
-      const height=1.55,ceiling=field.ceilingAt(S.x,S.z,Math.min(beforeY,S.y));
-      if(ceiling<beforeY+height){S.x=beforeX;S.z=beforeZ;S.vx=0;S.vz=0;}
+    // A jump cannot pass up through a bridge. A low passage is ducked under
+    // (the rider crouches) when a crouched rider fits, and is a wall — a bump,
+    // or a bail at speed — when not. Never a silent dead stop: the old rule
+    // zeroed velocity under any deck, including every branch and path mouth.
+    if(field.ceilingAt&&S.mode!=='grind'&&S.mode!=='bail'){
+      const height=RIDER_HEIGHT,ceiling=field.ceilingAt(S.x,S.z,Math.min(beforeY,S.y));
+      if(ceiling<Math.min(beforeY,S.y)+DUCK_HEIGHT){
+        const h=Math.hypot(S.vx,S.vz),nx=h>1e-6?-S.vx/h:0,nz=h>1e-6?-S.vz/h:0;
+        S.x=beforeX;S.z=beforeZ;S.y=beforeY;H.id=null;
+        if(!hitWall(nx,nz,'solid')){S.vx*=-.2;S.vz*=-.2;}
+      }else if(ceiling<Math.min(beforeY,S.y)+height){S.crouch=Math.max(S.crouch,.85);}
       else if(S.vy>0&&S.y+height>ceiling){S.y=ceiling-height;S.vy=0;}
     }
     // Age the one-shot buffers.
@@ -1613,6 +1642,12 @@ export function createSkateSim(field: SkateField, catalogs: SkateCatalogs, opts:
       S.safe = [{ ...p }];
       writePresent();
     },
+    placeAt(x, z, yaw, y, supportId) {
+      placeAt(fin(x), fin(z), wrap(fin(yaw)), y, supportId);
+      S.safe = [{ x: S.x, z: S.z, yaw: S.boardYaw, y: S.y, supportId: S.feature }];
+      writePresent();
+    },
+    setRunout(on) { runout = Boolean(on); },
   };
   writePresent();
   return sim;

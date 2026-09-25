@@ -6,7 +6,8 @@ import {EngravedPlate} from '../court/engraved.ts';
 import {SKATE_ROUTES} from './park.ts';
 import {createSkateField,type SkateWorldField} from './world/field.ts';
 import {buildParkMeshData,type Bucket,type DressingFootprint} from './world/meshes.ts';
-import {ATLAS_GRID,ICON} from './world/meshesKit.ts';
+import {ATLAS_GRID,ICON,emptyMeshData,makeKit,mix,rgb,shade,type V3} from './world/meshesKit.ts';
+import type {RaceGate} from '../mountain/race.ts';
 import {rememberDressing} from './world/dressingSolids.ts';
 import {skatePalette,type SkatePalette} from './world/palette.ts';
 
@@ -120,6 +121,63 @@ function geometryOf(b:Bucket,withUv:boolean):THREE.BufferGeometry{
   return geometry;
 }
 
+/**
+ * One race gate as a standing object on the painted-card kit: two posts at
+ * the gate's true width, a banner spanning between them at the height its
+ * crossing test reaches, a fringe of paper pennants under it, ink on every cut
+ * edge and a stencil on the banner (the finish gets a star, every other gate
+ * an arrow). Posts stand down to whatever ground is under them.
+ */
+function gateMesh(gate:RaceGate,index:number,finish:boolean,palette:SkatePalette,material:THREE.Material):THREE.Group{
+  const data=emptyMeshData(),ink=rgb(palette.ink),kit=makeKit(data,ink);
+  const [x,y,z]=gate.at,[nx,nz]=gate.normal,rx=nz,rz=-nx,w=gate.halfWidth,top=y+gate.halfHeight+.7;
+  const postC=rgb(palette.post),banner=rgb(finish?palette.coping:palette.paint),trim=rgb(palette.chalk),alt=rgb(palette.wood);
+  const yaw=Math.atan2(nx,nz);
+  for(const side of [-1,1]){
+    const px=x+rx*(w+.18)*side,pz=z+rz*(w+.18)*side,foot=Math.min(y,groundHeightAt(px,pz))-.15;
+    kit.box(data.card,px,pz,yaw,.13,.13,foot,top+.22,shade(postC,1.08),postC,ink);
+    kit.box(data.card,px,pz,yaw,.2,.2,top+.22,top+.36,trim,shade(trim,.9),ink);
+    // A foot plate where the post meets its ground.
+    kit.box(data.card,px,pz,yaw,.3,.3,foot,Math.max(foot+.1,Math.min(y,groundHeightAt(px,pz))+.06),shade(postC,.9),shade(postC,.7),ink);
+  }
+  // The banner: a thick paper band across the full width, faces both ways.
+  const L=(s:number,h:number):V3=>[x+rx*(w+.18)*s,h,z+rz*(w+.18)*s];
+  kit.box(data.card,x,z,yaw,.05,w+.1,top-.62,top,banner,shade(banner,.82),ink);
+  // Pennants: alternating card triangles hanging from the banner's lower edge.
+  const count=Math.max(6,Math.round(w*1.6));
+  for(let i=0;i<count;i++){
+    const t0=-1+2*i/count,t1=-1+2*(i+1)/count,tm=(t0+t1)/2,c=i%2?banner:alt;
+    for(const off of [-.06,.06]){
+      const a=L(t0,top-.62),b=L(t1,top-.62),m=L(tm,top-1.02);
+      const shift=(p:V3):V3=>[p[0]+nx*off,p[1],p[2]+nz*off];
+      kit.tri(data.card,shift(a),shift(b),shift(m),mix(c,trim,.08),.02);
+      kit.line(shift(a),shift(m),shade(ink,1));kit.line(shift(m),shift(b),shade(ink,1));
+    }
+  }
+  // A stencil on each face of the banner.
+  for(const face of [-1,1]){
+    const c:V3=[x+nx*.06*face,top-.31,z+nz*.06*face],right:V3=[rx*face,0,rz*face],up:V3=[0,1,0];
+    kit.decal(c,right,up,.26,finish?ICON.star:ICON.arrow,[nx*.004*face,0,nz*.004*face],trim,[nx*face,0,nz*face]);
+  }
+  const group=new THREE.Group();group.name=`race-gate-${index}`;
+  const geometry=new THREE.BufferGeometry();
+  geometry.setAttribute('position',new THREE.Float32BufferAttribute(data.card.positions,3));
+  geometry.setAttribute('normal',new THREE.Float32BufferAttribute(data.card.normals,3));
+  geometry.setAttribute('color',new THREE.Float32BufferAttribute(data.card.colors,3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(data.card.uvs,2));
+  geometry.computeBoundingSphere();
+  const body=new THREE.Mesh(geometry,material);body.castShadow=true;body.receiveShadow=true;body.name='race-gate-card';group.add(body);
+  if(data.ink.positions.length){
+    const lines=new THREE.BufferGeometry();lines.setAttribute('position',new THREE.Float32BufferAttribute(data.ink.positions,3));lines.setAttribute('color',new THREE.Float32BufferAttribute(data.ink.colors,3));
+    const inkMesh=new THREE.LineSegments(lines,new THREE.LineBasicMaterial({vertexColors:true,transparent:true,opacity:.8}));inkMesh.name='race-gate-ink';group.add(inkMesh);
+  }
+  if(data.decals.positions.length){
+    const decals=new THREE.BufferGeometry();decals.setAttribute('position',new THREE.Float32BufferAttribute(data.decals.positions,3));decals.setAttribute('normal',new THREE.Float32BufferAttribute(data.decals.normals,3));decals.setAttribute('color',new THREE.Float32BufferAttribute(data.decals.colors,3));decals.setAttribute('uv',new THREE.Float32BufferAttribute(data.decals.uvs,2));
+    group.userData.decals=decals;
+  }
+  return group;
+}
+
 export function buildSkatePark(dressing:PlaceDressing,opts:{tier?:RenderTier;field?:SkateWorldField}={}):SkatePark{
   const tier=opts.tier??'full';
   const field=opts.field??createSkateField(groundHeightAt,{tier});
@@ -179,9 +237,29 @@ export function buildSkatePark(dressing:PlaceDressing,opts:{tier?:RenderTier;fie
   const checkpoint:THREE.Mesh<THREE.BufferGeometry,THREE.Material>=new THREE.Mesh(own(new THREE.TorusGeometry(2.4,.065,6,40)),ringMaterial);checkpoint.name='skate-next-checkpoint';checkpoint.visible=false;group.add(checkpoint);
   const beam=new THREE.Mesh(own(new THREE.ConeGeometry(.28,.65,4)),ringMaterial);beam.name='skate-checkpoint-arrow';beam.visible=false;beam.rotation.z=Math.PI;group.add(beam);
   let gateKey='';
+  // Race gates: built once per course on first use, the next two standing and the rest hidden.
+  const gateSets=new Map<string,THREE.Group[]>();
+  const gateGroup=new THREE.Group();gateGroup.name='race-gates';group.add(gateGroup);
+  const gateDecals=materials.decals;
+  function gatesFor(id:string):THREE.Group[]{
+    let set=gateSets.get(id);if(set)return set;
+    const route=SKATE_ROUTES.find(r=>r.id===id),gates=route&&'gates' in route?route.gates as readonly RaceGate[]:null;
+    set=(gates??[]).map((gate,i,all)=>{
+      const g=gateMesh(gate,i,i===all.length-1,palette,materials.card);
+      const d=g.userData.decals as THREE.BufferGeometry|undefined;
+      if(d){own(d);const m=new THREE.Mesh(d,gateDecals);m.name='race-gate-stencil';g.add(m);}
+      g.traverse(o=>{const m=o as THREE.Mesh;if(m.geometry)own(m.geometry);if((o as THREE.LineSegments).isLineSegments)own((o as THREE.LineSegments).material as THREE.Material);});
+      g.visible=false;gateGroup.add(g);return g;
+    });
+    gateSets.set(id,set);return set;
+  }
   return {group,field,checkpoint,dressing:data.dressing,
     update(s){
       const run=s?.run,route=run?SKATE_ROUTES.find(r=>r.id===run.id):null,at=run&&!run.finished?route?.points[run.checkpoint]:null;
+      // A course with 3D gates shows them as standing gates (the next two); the flat routes keep the painted ring.
+      const standing=run&&route&&'gates' in route?gatesFor(run.id):null;
+      for(const [id,set] of gateSets)set.forEach((g,i)=>{g.visible=Boolean(standing&&id===run!.id&&!run!.finished&&i>=run!.checkpoint&&i<=run!.checkpoint+1);});
+      if(standing){checkpoint.visible=false;beam.visible=Boolean(at);if(at){const gate=(route as {gates:readonly RaceGate[]}).gates[run!.checkpoint];if(gate)beam.position.set(gate.at[0],gate.at[1]+gate.halfHeight+2.1,gate.at[2]);}return;}
       checkpoint.visible=beam.visible=Boolean(at);
       if(!at)return;
       const key=at.join(',');if(key===gateKey)return;gateKey=key;

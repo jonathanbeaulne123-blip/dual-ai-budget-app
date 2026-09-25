@@ -1,5 +1,4 @@
-import {queryWorldSurface,worldCeilingAt} from '../mountain/surfaces.ts';
-import {groundHeightAt as mountainGround} from '../scene/ground.ts';
+import {HARD_EDGES,OVERHEAD_MIN,edgeKindAt,isStairSurface,overheadAt,safeReturnPoint,supportAt,type EdgeKind} from './geography.ts';
 /**
  * Little Harbour · how a body moves over the island.
  *
@@ -100,12 +99,16 @@ export const POSE_REST = 0.01;
 /* ── Jump ───────────────────────────────────────────────────────────────── */
 /** Down, per second squared. Tuned with `JUMP_SPEED` for an arc of about half a second. */
 export const GRAVITY = 9.2;
-/** The push off the ground from a standstill, in units per second. Apex ≈ 0.30 — half a body. */
-export const JUMP_SPEED = 2.35;
-/** How much more of that push a full run buys. A running hop clears about a body's height. */
-export const JUMP_RUN_BONUS = 0.42;
+/**
+ * The push off the ground from a standstill, in units per second. Apex ≈ 0.67:
+ * enough to clear a kerb (≈ 0.6) from a standstill, which is what a jump on
+ * foot is for in a world with kerbs and steps (it used to top out at 0.30).
+ */
+export const JUMP_SPEED = 3.5;
+/** How much more of that push a full run buys. A running hop clears most of a body's height (≈ 1.1). */
+export const JUMP_RUN_BONUS = 0.35;
 /** The second jump, taken in the air. Weaker: it is a save, not a ladder. */
-export const DOUBLE_JUMP_SPEED = 1.95;
+export const DOUBLE_JUMP_SPEED = 2.4;
 /** How many pushes there are before the feet have to touch the ground again. */
 export const JUMP_COUNT = 2;
 /**
@@ -125,6 +128,40 @@ export const LANDING_REFERENCE = 3.6;
  * because there is nothing up there to brake against.
  */
 export const AIR_CONTROL = 0.34;
+
+/* ── Ground: slope, steps, edges and falls (outdoors) ───────────────────── */
+/**
+ * Walkability is an ANGLE of the ground ahead, measured over fixed baselines
+ * (`SLOPE_PROBE`, `SLOPE_REACH`) rather than over one frame's travel, so the
+ * limit is the same at 30 and at 60 frames a second. At or under this the
+ * ground is walkable; above it you cannot walk up.
+ */
+export const WALKABLE_DEG = 40;
+/**
+ * Above this the ground ahead is a wall, never a walk. Between the two you
+ * cannot climb, but you can come DOWN: a steep descent is a quick
+ * step-down (downhill gives pace back), and anything steeper than this going
+ * down is an edge, read for its drop.
+ */
+export const BLOCKED_DEG = 55;
+/** A riser the feet simply step up (a low step, the lip of a deck), in units. */
+export const STEP_UP = 0.45;
+/** The near and far baselines the ground ahead is read over. */
+export const SLOPE_PROBE = 0.5, SLOPE_REACH = 1.0;
+/** Uphill costs this much of the pace at the steepest walkable slope (by sine); downhill gives back a little. */
+export const UPHILL_COST = 0.6, DOWNHILL_GAIN = 0.22;
+/** An edge over a drop deeper than this is guarded by a soft lip: walking never carries you over it. */
+export const LIP_DROP = BODY_HEIGHT;
+/** How far past an edge the drop is read. */
+export const LIP_REACH = 1.2;
+/** Pushing into a kerb this long is a deliberate step off it. */
+export const KERB_PRESS = 0.3;
+/** A fall longer than this is not survived as a landing: the body fades and returns to the nearest path. */
+export const SAFE_FALL = 4;
+/** The safe return's fade out, then back in, in seconds. */
+export const RETURN_FADE = 0.4;
+/** How quickly the figure's incline signal follows the slope underfoot (per second). */
+export const INCLINE_EASE = 6;
 
 /* ── Slide ──────────────────────────────────────────────────────────────── */
 /** A slide only starts above this — it is the reward for sprinting, not a second walk. */
@@ -192,8 +229,12 @@ export type BodyState = {
   speed: number;
   /** The gait's phase in radians; one step per π. */
   phase: number;
-  /** Where a tap asked it to go, or null. */
-  goal: { x: number; z: number } | null;
+  /**
+   * Where a tap asked it to go, or null. `pass` is a point on a planned route
+   * the walker is steering through (no arrival easing, no stop); `run` walks
+   * the route at a run (long routes).
+   */
+  goal: { x: number; z: number; pass?: boolean; run?: boolean } | null;
   /** How long the walk has been making no progress, in seconds. */
   stalled: number;
   /** What it last pushed out of, for a test and for a footfall that should not be dropped in a wall. */
@@ -236,6 +277,16 @@ export type BodyState = {
   wantJump: boolean;
   /** A slide has been asked for and not yet started. */
   wantSlide: boolean;
+  /** Signed grade of the ground along the direction of travel, eased, −1…1 (sine of the angle; + is uphill). The figure leans into it. */
+  incline?: number;
+  /** Seconds spent pushing into a kerb's edge (a deliberate step off it). */
+  press?: number;
+  /** The highest the feet have been since they last stood on something: a fall is measured from here. */
+  peak?: number;
+  /** The last place the feet stood on a supporting surface (a fall returns near it). */
+  safe?: { x: number; y: number; z: number; supportId?: string };
+  /** A fall being handled gracefully: `t` seconds in; it fades out, moves, fades back. */
+  returning?: { t: number; x: number; y: number; z: number; supportId: string; moved: boolean } | null;
 };
 
 export type BodyWorld = {
@@ -255,7 +306,29 @@ export type BodyWorld = {
    * doorway is; `null` — the Court — is open sky and the shore alone.
    */
   room?: RoomBounds | null;
+  /**
+   * What supports a body at a point, outdoors. Defaults to the world's one
+   * surface query (`body/geography.ts` `supportAt`) over this world's
+   * `groundHeightAt` — the same stacked-deck query everywhere on the island
+   * and the mountain, never a second sampler for part of it.
+   */
+  support?: (x: number, z: number, y: number | undefined, supportId: string | null | undefined, stepHeight: number) => Support;
+  /** Where a body that fell too far lands again (default: the nearest walk-graph node). */
+  safeReturn?: (x: number, y: number, z: number) => { x: number; y: number; z: number; supportId: string };
+  /** What stands at the side of a support (default: the geography's per-sample road edges). */
+  edge?: (supportId: string | null | undefined, x: number, z: number) => EdgeKind;
 };
+
+/** A supporting surface: its height, its id and its upward normal. */
+export type Support = { y: number; id: string; nx: number; ny: number; nz: number };
+
+/** The support under a point in this world: a room's flat floor, or the world's surface query. */
+export function supportIn(world: BodyWorld, x: number, z: number, y: number | undefined, supportId: string | null | undefined, stepHeight = 0.48): Support {
+  if (world.room) return { y: world.groundHeightAt(x, z), id: "floor", nx: 0, ny: 1, nz: 0 };
+  if (world.support) return world.support(x, z, y, supportId, stepHeight);
+  const hit = supportAt(x, z, y, supportId, world.groundHeightAt, stepHeight);
+  return { y: hit.y, id: hit.id, nx: hit.nx, ny: hit.ny, nz: hit.nz };
+}
 
 /** Hold a point where this world lets a body stand: inside the shore, and inside the walls. */
 function holdInWorld(x: number, z: number, world: BodyWorld): { x: number; z: number; contact: string | null } {
@@ -281,11 +354,15 @@ export const runFraction = (speed: number): number =>
 export const strideAt = (speed: number): number => STRIDE * (1 + STRIDE_STRETCH * runFraction(speed));
 
 /** A body standing at a point, facing the way it is put. */
-export function createBodyState(x: number, z: number, yaw: number, world: BodyWorld): BodyState {
+export function createBodyState(x: number, z: number, yaw: number, world: BodyWorld, y?: number): BodyState {
   const ashore = holdInWorld(x, z, world);
   const clear = pushOut(ashore.x, ashore.z, BODY_RADIUS, world.obstacles);
+  // A known height (a return record, a station platform) picks the level it names: the deck, or the ground under it.
+  // Without one, the level at the ground: a deck overhead never captures a body put down under it.
+  const under = supportIn(world, clear.x, clear.z, y ?? world.groundHeightAt(clear.x, clear.z), null);
   return {
-    x: clear.x, z: clear.z, y: world.groundHeightAt(clear.x, clear.z), yaw,
+    ...(world.room ? {} : { supportId: under.id }),
+    x: clear.x, z: clear.z, y: world.room ? world.groundHeightAt(clear.x, clear.z) : under.y, yaw,
     speed: 0, phase: 0, goal: null, stalled: 0, contact: null, lean: 0, bank: 0,
     air: 0, vy: 0, jumps: 0, charge: 0, crouch: 0, slide: 0, emote: null, emoteAt: 0,
     wantJump: false, wantSlide: false,
@@ -321,7 +398,50 @@ export type BodyStep = {
   landing: { x: number; z: number; y: number; force: number } | null;
   /** True on every frame of a slide, so the ground lane can lay a skid mark and a plume. */
   sliding: boolean;
+  /** How visible the body is, 0…1: a safe return fades it out and back in. 1 at all other times. */
+  fade: number;
+  /** A safe return moved the body this frame (while it was faded out): where it now stands. */
+  returned: { x: number; y: number; z: number } | null;
 };
+
+const tan = (deg: number): number => Math.tan((deg * Math.PI) / 180);
+/** What the ground ahead says about walking one way from where the feet are. */
+export type Ahead = { up: boolean; lip: boolean; kerb: boolean; hard: boolean; grade: number; ux: number; uz: number };
+
+/**
+ * Read the ground ahead over two FIXED baselines. Nothing here depends on how
+ * far this frame happens to carry the body, so the verdict is the same at any
+ * frame rate: too steep or too tall to walk up (`up`), an edge over a drop
+ * deeper than a body (`lip`), or ground to walk on with its grade.
+ */
+export function readAhead(world: BodyWorld, x: number, z: number, feet: number, supportId: string | undefined, dx: number, dz: number): Ahead {
+  // Risers are read within a step's reach of the feet: a deck higher than
+  // that is not ground ahead (it is overhead — `overheadAt` — or it is the
+  // geography's to give a side with a solid).
+  const near = supportIn(world, x + dx * SLOPE_PROBE, z + dz * SLOPE_PROBE, feet, supportId, STEP_UP);
+  const far = supportIn(world, x + dx * SLOPE_REACH, z + dz * SLOPE_REACH, feet, supportId, STEP_UP);
+  const rise = near.y - feet, reach = far.y - feet;
+  // Stairs are walked as ramps whatever their pitch; everything else by its angle.
+  const stair = isStairSurface(near.id) || isStairSurface(far.id);
+  const up = !stair && (rise > STEP_UP || reach > SLOPE_REACH * tan(WALKABLE_DEG));
+  let lip = false, kerb = false, hard = false;
+  if (feet - near.y > SLOPE_PROBE * tan(BLOCKED_DEG)) {
+    const deep = supportIn(world, x + dx * LIP_REACH, z + dz * LIP_REACH, feet, supportId, 0.48);
+    if (feet - deep.y > LIP_DROP) {
+      lip = true;
+      const edge = (world.edge ?? edgeKindAt)(supportId, x, z);
+      kerb = edge === "kerb"; hard = HARD_EDGES.has(edge);
+    }
+  }
+  // Which way is "up" (or "over the edge"): the ground's own fall line where
+  // it has one, the probe's own direction at a riser or a cliff.
+  let ux = -near.nx, uz = -near.nz;
+  const g = Math.hypot(ux, uz);
+  if (lip) { ux = dx; uz = dz; }
+  else if (g > 0.15) { ux /= g; uz /= g; if (ux * dx + uz * dz < 0.2) { ux = dx; uz = dz; } }
+  else { ux = dx; uz = dz; }
+  return { up, lip, kerb, hard, grade: Math.atan2(reach, SLOPE_REACH), ux, uz };
+}
 
 /**
  * One frame of the body.
@@ -332,8 +452,11 @@ export type BodyStep = {
  */
 export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: number, world: BodyWorld): BodyStep {
   const step = Math.max(0, Math.min(dt, 0.08));
+  // A fall is being handled: nothing asked for is taken until the body stands again.
+  if (state.returning) return stepReturn(state, step, world);
   const { fx, fz, rx, rz } = cameraBasis(theta);
   let goal = state.goal;
+  const outdoors = !world.room;
 
   // ── What direction is being asked for ────────────────────────────────────
   let wishX = 0, wishZ = 0, wish = 0;
@@ -351,13 +474,15 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
     // Arrived when it is inside the arrival ring — or when this one frame
     // would carry it straight past, which is what a run into a tapped point
     // does on a slow frame. Without that it would circle the spot for ever.
-    if (distance <= Math.max(ARRIVAL, state.speed * step * 1.1)) { goal = null; }
-    else {
+    // A point a route is steering *through* is never arrived at: the route
+    // moves it on ahead every frame, so there is no ease and no stop.
+    if (!goal.pass && distance <= Math.max(ARRIVAL, state.speed * step * 1.1)) { goal = null; }
+    else if (distance > 1e-6) {
       wishX = dx / distance; wishZ = dz / distance;
       // Ease the last stride so a tap-to-walk arrives rather than stops dead.
       // From a run that easing *is* the skid: the brake is slower than the
       // shove, so the body slides the last little way in.
-      wish = Math.min(1, distance / (ARRIVAL * 4));
+      wish = goal.pass ? 1 : Math.min(1, distance / (ARRIVAL * 4));
     }
   }
 
@@ -416,6 +541,48 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
   const sliding = slide > 0;
   const airborne = air > 1e-5 || vy > 0;
 
+  // ── Which way the feet go, and what the ground ahead says about it ───────
+  // A slide travels where the body is *pointed*, not where the stick is: that
+  // is the momentum it is keeping. A body in the air with nothing held does
+  // the same — it carries on the way it was facing when it left the ground
+  // rather than dropping out of the sky on the spot. Everything else goes
+  // where it was asked.
+  const carried = sliding || (airborne && wish <= 1e-3 && state.speed > 0.01);
+  let moveX = carried ? Math.sin(state.yaw) : wishX;
+  let moveZ = carried ? Math.cos(state.yaw) : wishZ;
+  const feet = state.y - state.air;
+  let pace = 1, press = 0, blockedAhead = false, grade = 0;
+  // A jump being gathered or taken is a deliberate way over an edge: the lip does not hold it back.
+  const jumping = charge > 0 || launched !== null;
+  if (outdoors && !airborne && (moveX !== 0 || moveZ !== 0)) {
+    // Try the asked-for direction; if the ground ahead refuses it (too steep,
+    // too tall, or an edge over a drop), slide along whatever refused it —
+    // the way a wall is slid along — and read the ground again that way.
+    const deliberate = wish > 0.5;
+    let ahead = readAhead(world, state.x, state.z, feet, state.supportId, moveX, moveZ);
+    const kerbStep = (a: Ahead) => a.lip && a.kerb && !a.hard && deliberate && (state.press ?? 0) + step >= KERB_PRESS;
+    // Pushing into a kerb is counted for as long as it lasts: the step off is taken, and kept.
+    if (ahead.lip && ahead.kerb && deliberate) press = (state.press ?? 0) + step;
+    const overEdge = (a: Ahead) => a.lip && (kerbStep(a) || (jumping && !a.hard));
+    if ((ahead.up || ahead.lip) && !overEdge(ahead)) {
+      const into = moveX * ahead.ux + moveZ * ahead.uz;
+      let sx = moveX - Math.max(0, into) * ahead.ux, sz = moveZ - Math.max(0, into) * ahead.uz;
+      const along = Math.hypot(sx, sz);
+      blockedAhead = true;
+      if (along > 0.08) {
+        sx /= along; sz /= along;
+        const aside = readAhead(world, state.x, state.z, feet, state.supportId, sx, sz);
+        if (!aside.up && (!aside.lip || overEdge(aside))) { moveX = sx * along; moveZ = sz * along; ahead = aside; blockedAhead = false; }
+        else { moveX = 0; moveZ = 0; }
+      } else { moveX = 0; moveZ = 0; }
+    }
+    if (!blockedAhead) {
+      grade = ahead.grade;
+      // Uphill costs pace (by the sine of the slope), downhill gives a little back.
+      pace = grade > 0 ? 1 - UPHILL_COST * Math.sin(grade) : 1 + DOWNHILL_GAIN * Math.min(Math.sin(-grade), Math.sin((WALKABLE_DEG * Math.PI) / 180));
+    }
+  }
+
   let wanted = 0, speed: number;
   if (sliding) {
     // A slide keeps what it came in with and gives it up to *friction* rather
@@ -423,11 +590,11 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
     // simply letting go would.
     speed = Math.max(0, (entering ? state.speed * SLIDE_BOOST : state.speed) - SLIDE_DRAG * step);
   } else {
-    const top = input.run ? RUN_SPEED : WALK_SPEED;
+    const top = (input.run || goal?.run ? RUN_SPEED : WALK_SPEED) * pace;
     // In the air with nothing held, the speed you want is the speed you have:
     // there is no ground to push off and none to brake against, so a running
     // jump carries you, which is the whole reason to take one.
-    wanted = airborne && wish <= 1e-3 ? state.speed : wish * top;
+    wanted = airborne && wish <= 1e-3 ? state.speed : blockedAhead && moveX === 0 && moveZ === 0 ? 0 : wish * top;
     // Quick to gather speed, slower to give it up: that asymmetry is the whole
     // difference between a body with mass and a value that tracks a target.
     // In the air both are scaled right down: enough to steer an arc, not
@@ -438,24 +605,44 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
   }
 
   // ── Where that puts the feet ─────────────────────────────────────────────
-  // A slide travels where the body is *pointed*, not where the stick is: that
-  // is the momentum it is keeping. A body in the air with nothing held does
-  // the same — it carries on the way it was facing when it left the ground
-  // rather than dropping out of the sky on the spot. Everything else goes
-  // where it was asked.
-  const carried = sliding || (airborne && wish <= 1e-3 && speed > 0.01);
-  const moveX = carried ? Math.sin(state.yaw) : wishX;
-  const moveZ = carried ? Math.cos(state.yaw) : wishZ;
   let x = state.x, z = state.z, contact: string | null = null;
   const travel = speed * step;
-  if (travel > 1e-6 && (moveX !== 0 || moveZ !== 0)) {
-    const held = holdInWorld(state.x + moveX * travel, state.z + moveZ * travel, world);
+  const moveLength = Math.hypot(moveX, moveZ);
+  if (travel > 1e-6 && moveLength > 1e-6) {
+    const tx = state.x + moveX * travel, tz = state.z + moveZ * travel;
+    const held = holdInWorld(tx, tz, world);
     const wall = world.room ? stepInRoom(state.x, state.z, held.x, held.z, BODY_RADIUS, world.room) : { x: held.x, z: held.z, hit: null };
     const clear = pushOut(wall.x, wall.z, BODY_RADIUS, world.obstacles,state.y);
     // Furniture may push a body toward a wall. The wall has the last word.
     const final = world.room ? stepInRoom(state.x, state.z, clear.x, clear.z, BODY_RADIUS, world.room) : clear;
     x = final.x; z = final.z;
     contact = final.hit ?? clear.hit ?? wall.hit ?? held.contact;
+  }
+  if (blockedAhead && !contact) contact = "slope";
+
+  // ── The ground under the new feet ────────────────────────────────────────
+  // `air` is measured from the ground *under the new x and z*, which is the
+  // whole of why a jump follows a slope: the ground is re-read every frame of
+  // the flight, so coming down on the hump lands on the hump and coming down
+  // off a step lands a little later. Indoors it is the room's floor; outdoors
+  // it is the world's one stacked-surface query, everywhere.
+  let surface = outdoors ? supportIn(world, x, z, state.y, state.supportId, 0.48) : null;
+  if (surface && airborne) {
+    // In the air a face taller than the feet is a wall, not a step: a jump
+    // has to actually clear a kerb to land on top of it.
+    const face = supportIn(world, x, z, state.y, state.supportId, STEP_UP);
+    if (face.y > state.y + 0.12) { x = state.x; z = state.z; contact = contact ?? "wall"; surface = supportIn(world, x, z, state.y, state.supportId, 0.48); }
+  }
+  let ground = surface ? surface.y : world.groundHeightAt(x, z);
+  // Something overhead lower than the body is a wall to walk into — it stops
+  // the feet going under it, and nothing else (never a freeze). A ramp or
+  // path mouth rising from the ground is not overhead at all (`OVERHEAD_MIN`).
+  let ceiling = outdoors ? overheadAt(x, z, ground, BODY_RADIUS) : Infinity;
+  if (ceiling < ground + BODY_HEIGHT && (x !== state.x || z !== state.z)) {
+    x = state.x; z = state.z; contact = contact ?? "overhead";
+    surface = outdoors ? supportIn(world, x, z, state.y, state.supportId, 0.48) : null;
+    ground = surface ? surface.y : world.groundHeightAt(x, z);
+    ceiling = outdoors ? overheadAt(x, z, ground, BODY_RADIUS) : Infinity;
   }
   const walked = Math.hypot(x - state.x, z - state.z);
 
@@ -483,7 +670,7 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
   const crossed = Math.floor(phase / Math.PI) - Math.floor(before / Math.PI);
   if (stride && crossed > 0 && walked > 1e-4) {
     const left = Math.floor(phase / Math.PI) % 2 === 0;
-    footfall = { x, z, y: world.groundHeightAt(x, z), yaw, left, force };
+    footfall = { x, z, y: ground, yaw, left, force };
   }
 
   // ── The two signals the figure leans on ──────────────────────────────────
@@ -496,25 +683,22 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
   const banked = state.bank + (wantBank - state.bank) * (1 - Math.exp(-BANK_EASE * step));
   const lean = Math.abs(leaned) < POSE_REST && Math.abs(wantLean) < POSE_REST ? 0 : leaned;
   const bank = Math.abs(banked) < POSE_REST && Math.abs(wantBank) < POSE_REST ? 0 : banked;
+  // The slope underfoot, as the figure feels it: leaning into a climb, sitting back on a descent.
+  const wantIncline = !airborne && walked > 1e-5 ? clamp(Math.sin(grade), -1, 1) * Math.min(1, speed / WALK_SPEED) : 0;
+  const inclined = (state.incline ?? 0) + (wantIncline - (state.incline ?? 0)) * (1 - Math.exp(-INCLINE_EASE * step));
+  const incline = Math.abs(inclined) < POSE_REST && Math.abs(wantIncline) < POSE_REST ? 0 : inclined;
   // Pulling up hard, from something faster than a walk: scuff the ground.
   // A slide is its own thing and has its own mark; it is not also a skid.
   const skid = !sliding && accel < -BRAKING * 0.5 && state.speed > WALK_SPEED * 0.9;
 
   // ── The arc ──────────────────────────────────────────────────────────────
-  // `air` is measured from the ground *under the new x and z*, which is the
-  // whole of why a jump follows a slope: the ground is re-read every frame of
-  // the flight, so coming down on the hump lands on the hump and coming down
-  // off a step lands a little later.
-  const surface=!world.room&&z < -40?queryWorldSurface({x,z,y:state.y,supportId:state.supportId},mountainGround):null;
-  let ground = surface?.y ?? world.groundHeightAt(x, z);
-  let ceiling=!world.room&&z<-40?worldCeilingAt(x,z,state.y,BODY_RADIUS):Infinity;
-  if(ceiling<state.y+BODY_HEIGHT){x=state.x;z=state.z;ground=state.y-state.air;speed=0;ceiling=worldCeilingAt(x,z,state.y,BODY_RADIUS);}
-  if(surface&&ground-state.y>.5&&air===0){x=state.x;z=state.z;ground=state.y;speed=0;}
   let landing: BodyStep["landing"] = null;
+  let peak = airborneIn ? Math.max(state.peak ?? state.y, state.y) : state.y;
   if (vy !== 0 || air > 0 || state.y-ground>.48) {
     vy -= GRAVITY * step;
     air = state.y + vy * step - ground;
     if(vy>0&&ground+air+BODY_HEIGHT>ceiling){air=Math.max(0,ceiling-BODY_HEIGHT-ground);vy=0;}
+    peak = Math.max(peak, ground + air);
     if (air <= 0) {
       const hit = clamp(-vy / LANDING_REFERENCE, 0, 1);
       air = 0; vy = 0; jumps = 0; crouch = 1;
@@ -537,6 +721,21 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
     if (stalled >= STUCK_SECONDS) { goal = null; stalled = 0; }
   } else stalled = 0;
 
+  // ── A fall too long to land from ─────────────────────────────────────────
+  // Measured from the highest the feet were, against the ground they are
+  // coming down to. It is caught on the way down, so the body fades out while
+  // it is still falling, and never pops anywhere in one visible frame.
+  const falling = outdoors && vy < 0 && air > 0;
+  let returning: BodyState["returning"] = null;
+  if (outdoors && (falling || landing) && peak - ground > SAFE_FALL) {
+    const from = state.safe ?? { x: state.x, y: feet, z: state.z };
+    const to = world.safeReturn?.(from.x, from.y, from.z) ?? safeReturnPoint(from.x, from.y, from.z);
+    returning = { t: 0, x: to.x, y: to.y, z: to.z, supportId: to.supportId, moved: false };
+  }
+  const grounded = air <= 0 && vy === 0;
+  const safe = outdoors && grounded && !blockedAhead && surface && surface.ny > Math.cos((WALKABLE_DEG * Math.PI) / 180)
+    ? { x, y: ground, z, ...(surface.id ? { supportId: surface.id } : {}) } : state.safe;
+
   const next: BodyState = {
     ...(surface?{supportId:surface.id}:{}),
     x, z,
@@ -546,7 +745,7 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
     // Below a whisper the body is standing still, not creeping.
     speed: speed < 0.01 && wanted === 0 && !sliding ? 0 : speed,
     phase,
-    goal,
+    goal: returning ? null : goal,
     stalled,
     contact,
     lean,
@@ -558,19 +757,54 @@ export function stepBody(state: BodyState, input: BodyInput, theta: number, dt: 
     // Both asks are one-shot and both have now been answered.
     wantJump: false,
     wantSlide: false,
+    incline,
+    press,
+    peak: grounded ? ground : peak,
+    ...(safe ? { safe } : {}),
+    returning,
   };
   // A body still settling out of a lean is still moving, and the frame policy
   // has to keep painting until it has. Both signals snap to zero below
   // `POSE_REST`, so this is a promise that can actually be kept.
   const moving = next.speed > 0.01 || walked > 1e-5 || Math.abs(wrapAngle(yaw - state.yaw)) > 1e-4
-    || lean !== 0 || bank !== 0
+    || lean !== 0 || bank !== 0 || incline !== 0
     // A body in the air, dipping into a jump, squashing out of one, sliding or
     // playing an emote is a body that is changing pixels — and every one of
     // these reaches exactly zero on its own, which is the promise the frame
     // policy is owed.
     || next.air > 0 || next.vy !== 0 || next.charge > 0 || next.crouch !== 0
-    || next.slide > 0 || next.emote !== null;
-  return { state: next, moving, footfall, skid, jumped, landing, sliding };
+    || next.slide > 0 || next.emote !== null || returning !== null;
+  return { state: next, moving, footfall, skid, jumped, landing: returning ? null : landing, sliding, fade: 1, returned: null };
+}
+
+/**
+ * A safe return, one frame of it. Out: the body keeps falling where it fell
+ * while it fades. Moved: on the frame it is fully faded it stands on the path
+ * node it was sent to. In: it fades back up, standing. Nothing is taken from
+ * the keys or a tap until it is done.
+ */
+function stepReturn(state: BodyState, step: number, world: BodyWorld): BodyStep {
+  const r = state.returning!;
+  const t = r.t + step;
+  let next: BodyState, fade: number, returned: BodyStep["returned"] = null;
+  if (!r.moved) {
+    let vy = state.vy - GRAVITY * step, y = state.y + vy * step;
+    const ground = supportIn(world, state.x, state.z, state.y, state.supportId, 0.48).y;
+    if (y <= ground) { y = ground; vy = 0; }
+    fade = clamp(1 - t / RETURN_FADE, 0, 1);
+    if (t >= RETURN_FADE) {
+      const under = supportIn(world, r.x, r.z, r.y, r.supportId, 0.48);
+      next = { ...state, x: r.x, z: r.z, y: under.y, supportId: under.id, speed: 0, air: 0, vy: 0, jumps: 0, charge: 0, slide: 0, goal: null, stalled: 0,
+        lean: 0, bank: 0, incline: 0, press: 0, peak: under.y, safe: { x: r.x, y: under.y, z: r.z, supportId: under.id }, returning: { ...r, t: RETURN_FADE, moved: true } };
+      returned = { x: r.x, y: under.y, z: r.z };
+      fade = 0;
+    } else next = { ...state, y, vy, air: Math.max(0, y - ground), speed: 0, goal: null, returning: { ...r, t } };
+  } else {
+    fade = clamp((t - RETURN_FADE) / RETURN_FADE, 0, 1);
+    next = { ...state, returning: t >= RETURN_FADE * 2 ? null : { ...r, t } };
+  }
+  next = { ...next, wantJump: false, wantSlide: false };
+  return { state: next, moving: true, footfall: null, skid: false, jumped: null, landing: null, sliding: false, fade, returned };
 }
 
 /**
@@ -625,8 +859,8 @@ export function walkTo(state: BodyState, x: number, z: number, world: BodyWorld)
 }
 
 /** Put the body somewhere at once (arriving in the Court, a return record). */
-export function placeBody(state: BodyState, x: number, z: number, world: BodyWorld, yaw = state.yaw): BodyState {
-  const put = createBodyState(x, z, yaw, world);
+export function placeBody(state: BodyState, x: number, z: number, world: BodyWorld, yaw = state.yaw, y?: number): BodyState {
+  const put = createBodyState(x, z, yaw, world, y);
   return { ...put, phase: state.phase };
 }
 
