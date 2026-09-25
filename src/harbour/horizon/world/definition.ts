@@ -1,7 +1,7 @@
 /** Horizon's data contract. This module contains no scene, terrain, or renderer imports. */
 import type { BedCut, PadCut, MouthMask, WaterCut, StructureSolid, LandDiagnostic, DistrictBounds } from '../land/interfaces.ts';
 import type { HorizonPathGraph, JourneyMeasurement } from './pathGraph.ts';
-import type { CrossingProof } from './crossings.ts';
+import type { CrossingProof, Intersection } from './crossings.ts';
 import type { ViewProof } from './views.ts';
 import type { SkyProof } from './sky.ts';
 export type Point2 = readonly [number, number];
@@ -64,6 +64,7 @@ export interface WorldDefinition {
   pathGraph?: HorizonPathGraph;
   diagnostics?: LandDiagnostic[];
   crossingProofs?: CrossingProof[];
+  rawIntersections?: Intersection[];
   journeyMeasurements?: JourneyMeasurement[];
   scaleFactor?: number;
   journey: {

@@ -2,6 +2,7 @@ import type { LandCuts, StructureSolid, TerrainField, PadCut } from '../land/int
 import type { Anchor, Bed, Host, Line, Point2, Point3, Threshold, WorldDefinition } from './definition.ts';
 import { HORIZON_MANIFEST, requireScaleFactor } from './manifest.ts';
 import { buildCrossings } from './crossings.ts';
+import type { CrossingProof } from './crossings.ts';
 import { buildDistricts, districtAt, partitionWorldSolids } from './districts.ts';
 import { arcLengths, closestOnPolyline, ellipse, length3, padOutline, rectangle, solidBounds, terrainHeight } from './geometry.ts';
 import { buildPathGraph, measureJourneys, yearWalkStretch } from './pathGraph.ts';
@@ -37,7 +38,7 @@ function buildHosts(cuts: LandCuts): Host[] {
     return { id: host.id, placeIds: host.placeIds, door: anchor(`door.${host.id}`, door), apron: apron ? padOutline(apron) : [], arrivalThresholds: cuts.pads.filter(p => p.kind === 'threshold' && Math.hypot(p.centre[0] - door[0], p.centre[2] - door[2]) < 50 * s).map(p => p.id.replace('threshold.', '')), height: host.h * s, roofHeight: host.roofH_eu, footprint: rectangle([centre[0], centre[2]], [host.footprint_m[0]! * s, host.footprint_m[1]! * s], pad?.rotationDegrees), solidIds: cuts.solids.filter(solid => solid.id.startsWith(`host.${host.id}`)).map(solid => solid.id), padId: pad?.id, facing, returnAt, arrivalEye: [door[0] + normal[0] * 9, door[1] + 1.6, door[2] + normal[1] * 9], arrivalTarget: [door[0], door[1] + 1.25, door[2]], toolPlaceId: host.placeIds[0] };
   });
 }
-export function buildThresholds(field: TerrainField, cuts: LandCuts): Threshold[] {
+export function buildThresholds(field: TerrainField, cuts: LandCuts, proofs: readonly CrossingProof[] = []): Threshold[] {
   const s = requireScaleFactor(), thresholds: Threshold[] = [];
   const add = (id: string, sourceId: string, xy: readonly number[], modes: string[], action: string, padName = `threshold.${id}`) => { const p = resolvePad(cuts, padName), at: Point2 = [xy[0]! * s, xy[1]! * s], marker = cuts.solids.find(solid => solid.id === `${padName}.marker`); thresholds.push({ id, sourceId, at, height: p?.centre[1] ?? terrainHeight(field, ...at), modes: modes as `${string}→${string}`[], action, padId: p?.id, markerId: marker?.id, kerbGap: false, built: !!p && !!marker }); };
   for (const t of HORIZON_MANIFEST.thresholds) {
@@ -46,6 +47,8 @@ export function buildThresholds(field: TerrainField, cuts: LandCuts): Threshold[
     else add(t.id, t.id, t.xy as number[], t.modes, t.action);
   }
   HORIZON_MANIFEST.crossings.forEach((c, i) => { if (c.resolution === 'threshold' && Array.isArray(c.at)) add(`crossing.${i}`, `crossing.${i}`, c.at, ['board→feet'], c.note ?? 'Dismount at the marked crossing.', `crossing.${i}`); });
+  const mode = (id: string) => { const b = cuts.beds.find(b => b.id === id); return b?.kind === 'road' ? 'wheels' : b?.kind === 'skate' ? 'board' : b?.kind === 'rail' ? 'cart' : b?.kind === 'cable' ? id === 'ZIP' ? 'zip' : 'cable' : id === 'FERRY' ? 'ferry' : id.startsWith('water') || id === 'DEEP_RUN' ? 'boat' : 'feet'; };
+  for (const p of cuts.pads) if (p.kind === 'threshold' && !thresholds.some(t => t.padId === p.id)) { const proof = proofs.find(row => row.padId === p.id || p.id === `crossing.${row.id}`), kinds = proof ? [...new Set([mode(proof.sourceA ?? proof.a), mode(proof.sourceB ?? proof.b)])] : ['feet'], modes = kinds.filter(k => k !== 'feet').map(k => `${k}→feet`); add(p.id.replace(/^threshold\./, ''), proof?.id ?? p.id, [p.centre[0] / s, p.centre[2] / s], modes.length ? modes : ['feet→feet'], kinds.every(k => k === 'feet') ? 'Pause and give way at the marked junction.' : 'Stop at the marker and deliberately change mode.', p.id); }
   return thresholds;
 }
 function stationPositions(p: PadCut, s: number) { const theta = p.rotationDegrees * Math.PI / 180, c = Math.cos(theta), sn = Math.sin(theta); return Array.from({ length: 20 }, (_, i) => { const x = ((i % 10) - 4.5) * 3.3 * s, z = (Math.floor(i / 10) - .5) * 6 * s; return { yearIndex: i, at: [p.centre[0] + x * c - z * sn, p.centre[1], p.centre[2] + x * sn + z * c] as Point3, size: [3 * s, 2 * s] as Point2 }; }); }
@@ -55,7 +58,7 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   const m = HORIZON_MANIFEST, s = requireScaleFactor();
   if (terrain.revision !== GEOGRAPHY_REVISION) throw new Error(`Terrain revision ${terrain.revision} does not match ${GEOGRAPHY_REVISION}`);
   if (terrain.heights.length !== terrain.columns * terrain.rows || terrain.columns < 2 || terrain.rows < 2) throw new Error('Invalid terrain lattice');
-  const cuts: LandCuts = { ...input, solids: [...input.solids, ...(options.extraSolids ?? [])] }, hosts = buildHosts(cuts), lines = buildWorldLines(terrain, cuts), crossing = buildCrossings(cuts, lines), graph = buildPathGraph(cuts, crossing.proofs), sky = buildFlightEnvelope(terrain, cuts), views = buildViews(terrain, cuts), geometry = partitionWorldSolids(cuts.solids), districts = buildDistricts(terrain, cuts.beds, geometry), thresholds = buildThresholds(terrain, cuts);
+  const cuts: LandCuts = { ...input, solids: [...input.solids, ...(options.extraSolids ?? [])] }, hosts = buildHosts(cuts), lines = buildWorldLines(terrain, cuts), crossing = buildCrossings(cuts, lines), graph = buildPathGraph(cuts, crossing.proofs), sky = buildFlightEnvelope(terrain, cuts), views = buildViews(terrain, cuts), geometry = partitionWorldSolids(cuts.solids), districts = buildDistricts(terrain, cuts.beds, geometry), thresholds = buildThresholds(terrain, cuts, crossing.proofs);
   const sourceMap: Record<string, string[]> = {};
   for (const solid of geometry) (sourceMap[solid.sourceId] ??= []).push(solid.id);
   for (const host of hosts) host.solidIds = host.solidIds?.flatMap(id => sourceMap[id] ?? []);
@@ -82,7 +85,7 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
     landforms: m.landforms.map(l => ({ id: l.id, outline: l.poly?.map(p => [p[0]! * s, p[1]! * s] as Point2) ?? (l.footprint ? ellipse(l.footprint.cx * s, l.footprint.cy * s, l.footprint.rx * s, l.footprint.ry * s) : l.centreline?.map(p => [p[0]! * s, p[1]! * s] as Point2) ?? []), minHeight: Array.isArray(l.h) ? l.h[0]! * s : 0, maxHeight: Array.isArray(l.h) ? l.h[1]! * s : 45 * s })),
     districts, hosts, places: m.places.map(p => ({ id: p.id, anchor: anchor(p.id, [p.xy[0]! * s, p.h * s, p.xy[1]! * s]), districtId: districtAt(p.xy[0]! * s, p.xy[1]! * s, s) })), beds: cuts.beds.map(toBed), lines,
     structures: geometry.map(solid => { const b = solidBounds(solid); return { id: solid.id, kind: solid.kind, footprint: rectangle([(b.min[0] + b.max[0]) / 2, (b.min[2] + b.max[2]) / 2], [b.max[0] - b.min[0], b.max[2] - b.min[2]]), bedIds: solid.bedIds, geometryId: solid.id, role: solid.role, districtId: solid.districtId, bounds: b }; }),
-    crossings: crossing.crossings, crossingProofs: crossing.proofs, thresholds,
+    crossings: crossing.crossings, crossingProofs: crossing.proofs, rawIntersections: crossing.rawIntersections, thresholds,
     reserves: cuts.pads.filter(p => p.kind === 'reserve').map(p => ({ id: p.id, placeId: p.placeId ?? p.id, outline: padOutline(p), door: anchor(`${p.id}.door`, p.door ?? p.centre), rotationDegrees: p.rotationDegrees })), sky,
     underground: { doors: Object.entries(m.underground.doors).map(([id, door]) => anchor(id, [door.xy[0]! * s, door.h * s, door.xy[1]! * s])), rooms: roomVolumes.map(room => room.outline), roomVolumes, waterBodyId: cuts.waters.find(w => w.kind === 'deep')?.id, skylight: anchor('deep.skylight', [small.cx * s, m.underground.rooms.deep.skylight.topH * s, m.underground.rooms.deep.skylight.to[1]! * s]) },
     lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' }))], views, lanterns: [],
