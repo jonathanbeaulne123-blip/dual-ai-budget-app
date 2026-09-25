@@ -56,11 +56,15 @@ function onDeck(x:number,z:number,points:readonly Point3[]){
  * of the ground (on a platform, a road, a rim) are untouched. */
 function approachSlab(surface:WorldSurface,p:ReturnType<typeof nearestOnRoute>,x:number,z:number,ground:(x:number,z:number)=>number,gy:number,gx:number,gz:number){
   const pts=surface.points,n=pts.length;if(surface.kind!=='bridge'||n<2)return null;
-  const atStart=p.index===0&&(n===2?p.t<.5:true),atEnd=p.index===n-2&&!atStart;if(!atStart&&!atEnd)return null;
-  const end=atStart?pts[0]!:pts[n-1]!;if(Math.abs(end[1]-ground(end[0],end[2]))>.3)return null;
-  const a=pts[p.index]!,b=pts[p.index+1]!,sx=b[0]-a[0],sz=b[2]-a[2],len=Math.hypot(sx,sz)||1;
-  const w=atStart?p.t:1-p.t,k=w*w*(3-2*w),dk=6*w*(1-w)/len*(atStart?1:-1),lift=p.point[1]-gy;
-  return {y:gy+lift*k,gx:gx+(p.gradientX-gx)*k+lift*dk*sx/len,gz:gz+(p.gradientZ-gz)*k+lift*dk*sz/len};
+  // Measured along each end segment's own direction (not by which segment is nearest, which can switch
+  // early beside a bend and would cut the slab short).
+  for(const [e,f] of [[0,1],[n-1,n-2]] as const){
+    const end=pts[e]!,q=pts[f]!,sx=q[0]-end[0],sz=q[2]-end[2],len=Math.hypot(sx,sz)||1,along=((x-end[0])*sx+(z-end[2])*sz)/len;
+    if(along>=len||Math.abs(end[1]-ground(end[0],end[2]))>.3)continue;
+    const w=Math.max(0,along/len),k=w*w*(3-2*w),dk=w>0?6*w*(1-w)/len:0,lift=p.point[1]-gy;
+    return {y:gy+lift*k,gx:gx+(p.gradientX-gx)*k+lift*dk*sx/len,gz:gz+(p.gradientZ-gz)*k+lift*dk*sz/len};
+  }
+  return null;
 }
 export function queryWorldSurface(input:SurfaceRequest,ground:(x:number,z:number)=>number,surfaces:readonly WorldSurface[]=WORLD_SURFACES):WorldSurfaceHit{
   const gy=ground(input.x,input.z),e=.06,gx=(ground(input.x+e,input.z)-ground(input.x-e,input.z))/(2*e),gz=(ground(input.x,input.z+e)-ground(input.x,input.z-e))/(2*e);

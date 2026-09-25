@@ -313,3 +313,55 @@ describe('body height is the one surface everywhere',()=>{
     }
   });
 });
+
+import {restoredBodyAt} from '../src/harbour/body/geography.ts';
+import {GEOGRAPHY_REVISION,MOUNTAIN_PATH_GRAPH,MOUNTAIN_ROAD_LINE,SKILL_BRANCHES,TOWN_RACE_ROAD} from '../src/harbour/mountain/definition.ts';
+import {STOREFRONT_SOLIDS} from '../src/harbour/mountain/townSquare.ts';
+import {queryWorldSurface} from '../src/harbour/mountain/surfaces.ts';
+import {TOWN_LANE_DECK} from '../src/harbour/mountain/course.ts';
+import {cameraBlocked} from '../src/harbour/camera/worldAdapter.ts';
+describe('integration wiring (tuning track)',()=>{
+  it('the storefronts stop a walking body and the camera eye where the geography puts them',()=>{
+    const ids=new Set(courtObstacles('lite').map(o=>o.id));
+    for(const s of STOREFRONT_SOLIDS){
+      expect(ids.has(s.id),s.id).toBe(true);
+      const ground=groundHeightAt(s.x,s.z);
+      expect(cameraBlocked(s.x,ground+2,s.z),`${s.id}: the eye`).toBe(true);
+      // Walk straight at its middle from 8 units out along its facing: the body stops at the wall.
+      const world:BodyWorld={groundHeightAt,obstacles:courtObstacles('lite')};
+      const fx=Math.sin(s.yaw),fz=Math.cos(s.yaw);
+      let b=createBodyState(s.x+fx*8,s.z+fz*8,s.yaw+Math.PI,world);b={...b,goal:{x:s.x,z:s.z}};
+      for(let i=0;i<60*5;i++)b=stepBody(b,{forward:0,strafe:0},0,1/60,world).state;
+      const lx=(b.x-s.x)*Math.cos(s.yaw)-(b.z-s.z)*Math.sin(s.yaw),lz=(b.z-s.z)*Math.cos(s.yaw)+(b.x-s.x)*Math.sin(s.yaw);
+      expect(Math.abs(lx)>s.halfX||Math.abs(lz)>s.halfZ,`${s.id}: the body is outside its walls`).toBe(true);
+    }
+  });
+  it('only the skill branches grind; the town race lane is paving to a board',()=>{
+    const field=skateField(),branches=new Set(SKILL_BRANCHES.map(b=>b.id));
+    for(const g of field.grindables)if(g.kind==='round-rail'&&!g.id.includes('rail'))expect(branches.has(g.id)||!g.id.match(/lane|path:|station:|road/),g.id).toBe(true);
+    expect(field.grindables.some(g=>g.id==='orchard-lane'||g.id.startsWith('path:'))).toBe(false);
+    for(const b of SKILL_BRANCHES)expect(field.grindables.some(g=>g.id===b.id),b.id).toBe(true);
+    for(let i=4;i<TOWN_RACE_ROAD.length;i+=6){const p=TOWN_RACE_ROAD[i]!;expect(field.sample(p[0],p[2],p[1]+.3).kind,`town lane ${i}`).not.toBe('grass');}
+  });
+  it('rolls onto and off the canal bridge flush, at any line across the lane (approach slabs)',()=>{
+    for(const [end,next] of [[0,1],[TOWN_LANE_DECK.length-1,TOWN_LANE_DECK.length-2]] as const){
+      const a=TOWN_LANE_DECK[end]!,b=TOWN_LANE_DECK[next]!,dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz);
+      for(const side of [-2.4,-1.2,0,1.2,2.4]){
+        let prev:number|null=null;
+        for(let t=-1.5;t<=l;t+=.05){const x=a[0]+dx/l*t+dz/l*side,z=a[2]+dz/l*t-dx/l*side,y=queryWorldSurface({x,z,...(prev===null?{}:{y:prev})},groundHeightAt).y;
+          if(prev!==null)expect(y-prev,`deck end ${end}, line ${side}, at ${t.toFixed(2)}`).toBeLessThan(.06);prev=y;}
+      }
+    }
+  });
+  it('a body saved on the old mountain is re-validated: kept on walkable ground, else moved to the nearest path node',()=>{
+    // Mid-air over the gorge (the old road ran here; the v2 gorge is 25+ deep).
+    const lost=restoredBodyAt({x:-8,z:-130,y:40,yaw:0});
+    expect(lost.migrated).toBe(true);
+    expect(MOUNTAIN_PATH_GRAPH.nodes.some(n=>n.at[0]===lost.x&&n.at[2]===lost.z)).toBe(true);
+    // Standing on the new road: kept (height re-read from the surface).
+    const road=MOUNTAIN_ROAD_LINE.samples[300]!.at,kept=restoredBodyAt({x:road[0],z:road[2],y:road[1]+.4,yaw:1});
+    expect(kept).toMatchObject({x:road[0],z:road[2],yaw:1,migrated:false});expect(Math.abs(kept.y!-road[1])).toBeLessThan(.2);
+    // Saved on this revision: restored exactly as saved.
+    expect(restoredBodyAt({x:-8,z:-130,y:40,yaw:0,geo:GEOGRAPHY_REVISION})).toMatchObject({x:-8,z:-130,y:40,migrated:false});
+  });
+});

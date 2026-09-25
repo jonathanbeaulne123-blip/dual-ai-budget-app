@@ -4,7 +4,7 @@ import type {MountainRecoveryView} from '../mountain/recovery.ts';
 import type {MountainInteractionState} from '../mountain/life.ts';
 import {mountainFoliageAt} from '../mountain/planting.ts';
 import {worldCeilingAt,worldCollisionAt} from '../mountain/surfaces.ts';
-import {MOUNTAIN_VERSION,TRANSPORT_STOPS,type Point3,type TransportKind} from '../mountain/definition.ts';
+import {GEOGRAPHY_REVISION,MOUNTAIN_VERSION,TRANSPORT_STOPS,type Point3,type TransportKind} from '../mountain/definition.ts';
 import {createRide,farOffer,nearestStation,platformOffer,type Ride,type RideOffer} from '../body/ride.ts';
 import {crossedVillageDoor,villagePortalArrival} from "../village/topology.ts";
 import * as THREE from "three";
@@ -900,7 +900,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if (wanted && walker && follow) {
       const at = walker.state();
       if(placeId==='court'&&!reducedMotion())mountainHandle().setVisitor?.([at.x,at.y,at.z]);
-      host.dataset.houseBody=JSON.stringify({world:MOUNTAIN_VERSION,place:placeId,x:at.x,z:at.z,y:at.y,yaw:at.yaw});
+      host.dataset.houseBody=JSON.stringify({world:MOUNTAIN_VERSION,geo:GEOGRAPHY_REVISION,place:placeId,x:at.x,z:at.z,y:at.y,yaw:at.yaw});
       follow.setSubject(walkSubject(at));
       // Start from where the Look camera stands, so this is a move, not a cut —
       // unless Look is looking somewhere else entirely (C3: `SEED_REACH`).
@@ -1246,7 +1246,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if (walker.walking()) setFollowing(true);
       const at = walker.state();
       if(placeId==='court'&&!reducedMotion())mountainHandle().setVisitor?.([at.x,at.y,at.z]);
-      host.dataset.houseBody=JSON.stringify({world:MOUNTAIN_VERSION,place:placeId,x:at.x,z:at.z,y:at.y,yaw:at.yaw});
+      host.dataset.houseBody=JSON.stringify({world:MOUNTAIN_VERSION,geo:GEOGRAPHY_REVISION,place:placeId,x:at.x,z:at.z,y:at.y,yaw:at.yaw});
       follow.setSubject(walkSubject(at));
       // ── The skate chase camera ── writes the camera on skate frames.
       const ridden = skating && following && skateCam ? walker.skate.present() : null;

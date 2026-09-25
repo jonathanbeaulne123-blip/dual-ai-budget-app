@@ -16,6 +16,7 @@
 import type { HarbourPlaceId } from "../flag.ts";
 import { groundHeightAt } from "../scene/ground.ts";
 import { WORLD_SOLIDS, WORLD_SURFACES } from "../mountain/surfaces.ts";
+import { STOREFRONT_SOLIDS } from "../mountain/townSquare.ts";
 import { mountainFoliageAt } from "../mountain/planting.ts";
 import { BASIN, DISTRICTS, WORLD_BOUNDS, GONDOLA_STOPS, FUNICULAR_STOPS, RESERVED_PLOTS, RIVER, TRANSPORT_STOPS, nearestOnRoute, transportPoint, type Point3, type TransportKind } from "../mountain/definition.ts";
 import * as definition from "../mountain/definition.ts";
@@ -26,7 +27,8 @@ import { MOUNTAIN_COURSE_POINTS } from "../mountain/race.ts";
 
 export type V3 = readonly [number, number, number];
 /** An axis-aligned box the eye may not enter. */
-export type CameraSolid = { id: string; min: V3; max: V3 };
+/** An axis-aligned box; with `yaw`, the same extents turned about the box's centre (an obox, `body/obstacles.ts` frame). */
+export type CameraSolid = { id: string; min: V3; max: V3; yaw?: number };
 /** A doorway on the island: where it is, and the way out of it (unit, horizontal). */
 export type CameraDoor = { place: string; at: V3; out: readonly [number, number] };
 /** An authored place to stand and look from: where, and at what. */
@@ -222,8 +224,11 @@ const box = (id: string, c: V3, size: V3): CameraSolid => ({ id, min: [c[0] - si
  * transport pillar — the things the dissection found the eye passing through.
  */
 export const CAMERA_SOLIDS: readonly CameraSolid[] = Object.freeze([
-  box("storefront:outfitters", [-15, 2.55, 16], [5.2, 5.1, 4.2]),
-  box("storefront:potters-supply", [34, 2.55, 25], [5.2, 5.1, 4.2]),
+  // The two town storefronts (the geography's oriented footprints, with their roofs).
+  ...STOREFRONT_SOLIDS.map((f): CameraSolid => {
+    const base = groundHeightAt(f.x, f.z), hx = f.halfX + 0.1, hz = f.halfZ + 0.1;
+    return { id: f.id, min: [f.x - hx, base - 0.2, f.z - hz], max: [f.x + hx, base + 5.1, f.z + hz], yaw: f.yaw };
+  }),
   ...(contract.DAM?.abutments?.length
     ? contract.DAM.abutments.map((a, i) => box(`dam:abutment:${i}`, a.at as V3, [a.size[0] + 0.4, a.size[1] + 0.4, a.size[2] + 0.4]))
     : [-1, 1].map((side) => {
@@ -276,8 +281,16 @@ function inDeck(x: number, y: number, z: number, r: number): boolean {
   }
   return false;
 }
-function inBoxes(boxes: readonly CameraSolid[] | readonly { min: readonly number[]; max: readonly number[] }[], x: number, y: number, z: number, r: number): boolean {
-  for (const s of boxes) if (x > s.min[0]! - r && x < s.max[0]! + r && y > s.min[1]! - r && y < s.max[1]! + r && z > s.min[2]! - r && z < s.max[2]! + r) return true;
+function inBoxes(boxes: readonly CameraSolid[] | readonly { min: readonly number[]; max: readonly number[]; yaw?: number }[], x: number, y: number, z: number, r: number): boolean {
+  for (const s of boxes) {
+    if (s.yaw !== undefined) {
+      if (y <= s.min[1]! - r || y >= s.max[1]! + r) continue;
+      const cx = (s.min[0]! + s.max[0]!) / 2, cz = (s.min[2]! + s.max[2]!) / 2, c = Math.cos(s.yaw), n = Math.sin(s.yaw), dx = x - cx, dz = z - cz;
+      if (Math.abs(dx * c - dz * n) < (s.max[0]! - s.min[0]!) / 2 + r && Math.abs(dz * c + dx * n) < (s.max[2]! - s.min[2]!) / 2 + r) return true;
+      continue;
+    }
+    if (x > s.min[0]! - r && x < s.max[0]! + r && y > s.min[1]! - r && y < s.max[1]! + r && z > s.min[2]! - r && z < s.max[2]! + r) return true;
+  }
   return false;
 }
 /** The contract's parapets, walls and bridge rails (oriented segments), when they are there. */

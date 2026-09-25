@@ -5,7 +5,8 @@ import {activateMountainInteraction,initialMountainInteractionState} from './mou
 import {MOUNTAIN_TOUR} from './mountain/tour.ts';
 import {momentPose} from './camera/mountainPoses.ts';
 import {MountainPanel,type MountainAction} from './mountain/MountainPanel.tsx';
-import {MOUNTAIN_VERSION,TRANSPORT_STOPS,type Point3} from './mountain/definition.ts';
+import {GEOGRAPHY_REVISION,MOUNTAIN_VERSION,TRANSPORT_STOPS,type Point3} from './mountain/definition.ts';
+import {restoredBodyAt} from './body/geography.ts';
 import {SkateHUD} from './skate/SkateHUD.tsx';
 import type {RideOffer} from './body/ride.ts';
 import {readSkateProgress,saveSkateProgress,skateProgressKey,type SkateSettings} from './skate/session.ts';
@@ -162,6 +163,14 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const tier=quality.tier;
   usePublishEditionAvailability({flat:tier === "flat" || status === "fallback",reason:status === "fallback" ? "failed" : quality.reason});
   const [guideOpen,setGuideOpen]=useState(false);
+  // "You are here" on the guide map: the walker's own position while the guide is open (followed once a
+  // second, moved only when the body has moved; no walker, no mark).
+  const [guideHere,setGuideHere]=useState<Point3|undefined>(undefined);
+  useEffect(()=>{
+    if(!guideOpen){setGuideHere(undefined);return;}
+    const read=()=>{const at=runtime.current?.body?.()?.at()??null;setGuideHere(prev=>{if(!at)return undefined;return prev&&Math.hypot(prev[0]-at.x,prev[2]-at.z)<.5?prev:[at.x,at.y,at.z];});};
+    read();const id=window.setInterval(read,1000);return ()=>window.clearInterval(id);
+  },[guideOpen]);
   const outdoorAtRef=useRef<Point3|undefined>(undefined);
   const [deskVisited,setDeskVisited]=useState(false);
   useEffect(()=>{if(status === "flat" || status === "fallback")setDeskVisited(true);},[status]);
@@ -749,12 +758,12 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       const at=world.body()?.at();if(world.placeId()==='court'&&at)outdoorAtRef.current=[at.x,at.y,at.z];
       const camera=world.camera();if(!Array.isArray(camera)||camera.length!==3||!camera.every(Number.isFinite))return;
       const composition = houseComposition(host.current?.getBoundingClientRect().width || window.innerWidth);
-      saveHouseReturn(localStorage, identityRef.current, houseCameraRoute(current), { camera: [...camera] as [number, number, number], cameraComposition: composition, body:world.body()?{world:MOUNTAIN_VERSION,y:world.body()!.at().y,place:world.placeId(),x:world.body()!.at().x,z:world.body()!.at().z,yaw:world.body()!.at().yaw}:undefined }, harbourCameraSlot(composition, world.placeId()));
+      saveHouseReturn(localStorage, identityRef.current, houseCameraRoute(current), { camera: [...camera] as [number, number, number], cameraComposition: composition, body:world.body()?{world:MOUNTAIN_VERSION,geo:GEOGRAPHY_REVISION,y:world.body()!.at().y,place:world.placeId(),x:world.body()!.at().x,z:world.body()!.at().z,yaw:world.body()!.at().yaw}:undefined }, harbourCameraSlot(composition, world.placeId()));
   }
 
   // Return records: the App's `hearth:house-return` event, and the camera per composition on pagehide.
   useEffect(() => {
-    const restore = (event: Event) => { const detail = (event as CustomEvent).detail; if (detail?.identity === houseIdentity(identityRef.current) && Array.isArray(detail.camera) && detail.camera.length === 3 && detail.camera.every(Number.isFinite)) {runtime.current?.restore(detail.camera);if(validHouseBody(detail.body)&&detail.body.world===MOUNTAIN_VERSION&&detail.body.place===runtime.current?.placeId())runtime.current?.body()?.place(detail.body.x,detail.body.z,detail.body.yaw,detail.body.y);} };
+    const restore = (event: Event) => { const detail = (event as CustomEvent).detail; if (detail?.identity === houseIdentity(identityRef.current) && Array.isArray(detail.camera) && detail.camera.length === 3 && detail.camera.every(Number.isFinite)) {runtime.current?.restore(detail.camera);if(validHouseBody(detail.body)&&detail.body.world===MOUNTAIN_VERSION&&detail.body.place===runtime.current?.placeId()){const b=detail.body.place==='court'?restoredBodyAt(detail.body):detail.body;runtime.current?.body()?.place(b.x,b.z,b.yaw,b.y);}} };
     const remember = rememberWorld;
     window.addEventListener("hearth:house-return", restore); window.addEventListener("pagehide", remember);
     return () => { window.removeEventListener("hearth:house-return", restore); window.removeEventListener("pagehide", remember); remember(); };
@@ -1098,7 +1107,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
       {(status==="ready"||desk)&&!toolOpen&&<VillageHUD flat={desk} onGuide={()=>{setGuideOpen(open=>!open);setMountainInspect(undefined);}} guideOpen={guideOpen} appearanceRequest={appearanceRequest} fab={props.fab} onQuickSheet={onQuickSheet} place={place} travelling={travelTo} onVisit={visit} onWander={wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={desk?undefined:chooseAvatar} onJourney={!desk&&props.onJourney?openJourney:undefined} onArrange={!desk&&props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
         presence={<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />}/>}
-      {(status==='ready'||showFlat)&&!toolOpen&&<MountainPanel open={guideOpen} onOpenChange={open=>{setGuideOpen(open);if(!open)setMountainInspect(undefined);}} hideTrigger life={mountainLife} recoveryWords={recoveryView.words} calmOn={mountainCalm||comfort.quiet} soundOn={worldSound&&comfort.sound} riding={mountainRiding} conditionWords={reading.condition.words} reading={reading.basin} statusLine={statusLine} onAction={mountainAction} onOpen={target=>{if(Object.hasOwn(VILLAGE_ADDRESS,target))navigatePlace(target as HarbourPlaceId);else onOpen(target);}} flat={showFlat} inspect={mountainInspect} nearestStation={kind=>runtime.current?.nearestStation?.(kind)??0}/>}
+      {(status==='ready'||showFlat)&&!toolOpen&&<MountainPanel open={guideOpen} onOpenChange={open=>{setGuideOpen(open);if(!open)setMountainInspect(undefined);}} hideTrigger life={mountainLife} recoveryWords={recoveryView.words} calmOn={mountainCalm||comfort.quiet} soundOn={worldSound&&comfort.sound} riding={mountainRiding} conditionWords={reading.condition.words} reading={reading.basin} statusLine={statusLine} onAction={mountainAction} onOpen={target=>{if(Object.hasOwn(VILLAGE_ADDRESS,target))navigatePlace(target as HarbourPlaceId);else onOpen(target);}} flat={showFlat} inspect={mountainInspect} nearestStation={kind=>runtime.current?.nearestStation?.(kind)??0} here={guideHere}/>}
       {status==='ready'&&!toolOpen&&place==='court'&&standing&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating}
         onOpenFund={()=>{leaveSkating();onOpen('fund');}}
         onReplay={action=>runtime.current?.body()?.skate?.replay(action)} onSettings={skateSettings} onCommand={command=>runtime.current?.body()?.skate?.command(command)} onZonePointer={skateZone}

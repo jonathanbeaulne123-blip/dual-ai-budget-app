@@ -8,6 +8,7 @@
  * calls it changing. Pure: no three.js, no DOM, no clock.
  */
 import * as definition from '../mountain/definition.ts';
+import {STOREFRONT_SOLIDS} from '../mountain/townSquare.ts';
 import {DISTRICTS,FOOTPATHS,MOUNTAIN_ROAD,RESERVED_PLOTS,TRANSPORT_STOPS,WORLD_BOUNDS,mountainBaseHeight,nearestOnRoute,transportPoint,type Point3,type TransportKind} from '../mountain/definition.ts';
 import {SKILL_BRANCHES,WORLD_SOLIDS,queryWorldSurface,type WorldSolid,type WorldSurfaceHit} from '../mountain/surfaces.ts';
 import {MOUNTAIN_COURSE_POINTS,MOUNTAIN_GATES,type RaceGate} from '../mountain/race.ts';
@@ -108,6 +109,11 @@ export function isStairSurface(id:string|null|undefined):boolean{
  */
 export const worldSolids=():readonly WorldSolid[]=>WORLD_SOLIDS;
 /**
+ * The town square's two storefronts (Outfitters, Potter's Supply) as oriented boxes on the island.
+ * CONTRACT: `STOREFRONT_SOLIDS` (townSquare.ts; deliberately not in `WORLD_SOLIDS`).
+ */
+export const storefrontObstacles=():readonly EdgeObstacle[]=>STOREFRONT_SOLIDS;
+/**
  * Parapets, walls and bridge rails as oriented, height-bounded boxes in the
  * body-obstacle shape (`kind:'obox'`, see `body/obstacles.ts`).
  * CONTRACT: `EDGE_SOLIDS` (oriented segments; not in `WORLD_SOLIDS`).
@@ -119,6 +125,25 @@ export function edgeObstacles():EdgeObstacle[]{
     // An obox's local x axis is (cos yaw, −sin yaw) in the world.
     return [{kind:'obox' as const,id:e.id,x:(e.a[0]+e.b[0])/2,z:(e.a[1]+e.b[1])/2,halfX:l/2,halfZ:Math.max(.05,e.thickness/2),yaw:Math.atan2(-dz/l,dx/l),bottom:e.bottom,top:e.top}];
   });
+}
+
+/* ───────────────────────────────────────────────────────────── restoring a saved body */
+
+/**
+ * A body saved against an older geography (no `geo`, or another `GEOGRAPHY_REVISION`) is re-validated
+ * before it is placed: kept where it stands on a walkable support within 1.5 of its saved height inside
+ * the world, otherwise moved to the nearest path-graph node (the v2 mountain moved roads, districts and
+ * bridges; the old spot may now be a gorge, a cliff face or mid-air). A body saved on this revision is
+ * restored as saved.
+ */
+export function restoredBodyAt(body:{x:number;z:number;yaw:number;y?:number;geo?:string}):{x:number;z:number;yaw:number;y?:number;migrated:boolean}{
+  if(body.geo===definition.GEOGRAPHY_REVISION)return {...body,migrated:false};
+  const held=holdInsideWorld(body.x,body.z),s=queryWorldSurface({x:body.x,z:body.z,...(body.y===undefined?{}:{y:body.y})},groundHeightAt);
+  const walkable=s.id!=='terrain'||s.slope<=Math.tan(40*Math.PI/180);
+  if(held.inside&&walkable&&(body.y===undefined||Math.abs(s.y-body.y)<=1.5))return {x:body.x,z:body.z,yaw:body.yaw,y:s.y,migrated:false};
+  let best:Point3|null=null,d=Infinity;
+  for(const n of contract.MOUNTAIN_PATH_GRAPH?.nodes??[]){const e=Math.hypot(n.at[0]-body.x,n.at[2]-body.z,body.y===undefined?0:n.at[1]-body.y);if(e<d){d=e;best=n.at;}}
+  return best?{x:best[0],z:best[2],yaw:body.yaw,y:best[1],migrated:true}:{x:held.x,z:held.z,yaw:body.yaw,migrated:true};
 }
 
 /** A closed polygon in the ground plane, [x, z] pairs. */

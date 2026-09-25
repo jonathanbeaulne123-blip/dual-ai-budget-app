@@ -5,7 +5,8 @@ import type { HearthsideRoute } from "../hearthside/routes.ts";
 
 export const HOUSE_WORLD_ENABLED = import.meta.env.VITE_HEARTH_HOUSE_WORLD === "1";
 export type HouseIdentity = { environment: Environment; householdId: string; memberId: string; scope: LedgerView };
-export type HouseBodyReturn={place:string;x:number;z:number;yaw:number;y?:number;world?:string};
+/** `geo`: the mountain geography revision the position was saved against (the harbour re-validates others). */
+export type HouseBodyReturn={place:string;x:number;z:number;yaw:number;y?:number;world?:string;geo?:string};
 export function validHouseBody(value:unknown):value is HouseBodyReturn {if(!value||typeof value!=="object")return false;const b=value as HouseBodyReturn;return typeof b.place==="string"&&[b.x,b.z,b.yaw].every(Number.isFinite)&&Math.abs(b.x)<=180&&b.z>=-310&&b.z<=84&&Math.abs(b.yaw)<=100&&(b.y===undefined||Number.isFinite(b.y)&&b.y>=-8&&b.y<=150)&&(b.world===undefined||b.world==="hearth-mountain-1");}
 export type HouseReturn = { version: 1; identity: string; route: HouseRoute; focus: string; scroll: number; camera?: [number, number, number]; cameraComposition?: "phone" | "desktop"; body?:HouseBodyReturn; at: string };
 type Store = Pick<Storage, "getItem" | "setItem" | "removeItem">;
