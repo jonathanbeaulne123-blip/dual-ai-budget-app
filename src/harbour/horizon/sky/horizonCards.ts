@@ -1,28 +1,63 @@
-import type { StructureSolid } from '../land/interfaces';
-import { buildNeedleArch, buildOffshoreSolids } from '../land/offshore';
-import { HORIZON_MANIFEST, requireScaleFactor } from '../world/manifest';
+import type { StructureSolid, TerrainField, XY } from '../land/interfaces';
+import { buildOffshoreSolids } from '../land/offshore';
+import { baseHeight, sampleTerrain } from '../land/terrain';
+import { requireScaleFactor } from '../world/manifest';
 
-export interface HorizonCard { id: string; positions: number[]; indices: number[]; maxFog: 0.7; source: string }
-/** Greybox silhouettes only. The ring keeps distant geography recognisable without
- * drawing a replacement land mesh or placing any prop on the island. */
-export function buildHorizonCards(): HorizonCard[] {
-  const s = requireScaleFactor();
-  const silhouette = (id: string, points: number[][]): HorizonCard => {
-    const positions = points.flatMap(p => [p[0]! * s, p[1]! * s, p[2]! * s]), indices: number[] = [];
-    for (let i = 1; i < points.length - 1; i++) indices.push(0, i + 1, i);
-    return { id: `horizon.${id}`, source: id, positions, indices, maxFog: 0.7 };
+export interface HorizonCard {
+  id: string;
+  positions: number[];
+  indices: number[];
+  maxFog: 0.7;
+  source: string;
+  /** Data stays resident; its distant proxy hides whenever an owner is resident. */
+  ownerDistrictIds: string[];
+}
+/** Distant LODs are sampled from the final land and copied from real structures.
+ * There are no upright landmark planes intersecting the walking world. Renderers
+ * must hide a proxy whenever any owner district's detailed mesh is resident. */
+export function buildHorizonCards(field?: TerrainField, solids: readonly StructureSolid[] = []): HorizonCard[] {
+  const s = requireScaleFactor(), cards: HorizonCard[] = [];
+  const terrain = (id: string, owner: string, min: XY, max: XY): void => {
+    const positions: number[] = [], indices: number[] = [], cells = 12;
+    for (let row = 0; row <= cells; row++) for (let col = 0; col <= cells; col++) {
+      const x = (min[0] + (max[0] - min[0]) * col / cells) * s, z = (min[1] + (max[1] - min[1]) * row / cells) * s;
+      positions.push(x, field ? sampleTerrain(field, x, z) : baseHeight(x, z), z);
+    }
+    for (let row = 0; row < cells; row++) for (let col = 0; col < cells; col++) {
+      const i = row * (cells + 1) + col, j = i + cells + 1;
+      indices.push(i, j, i + 1, i + 1, j, j + 1);
+    }
+    cards.push({ id: `horizon.${id}`, source: id, positions, indices, maxFog: 0.7, ownerDistrictIds: [owner] });
   };
-  const solid = (r: StructureSolid): HorizonCard => ({ id: `horizon.${r.id}`, source: r.id, positions: r.positions, indices: r.indices, maxFog: 0.7 });
-  const glasshouse = HORIZON_MANIFEST.hosts.find(h => h.id === 'glasshouse')!;
-  const gx = glasshouse.xy[0]!, gz = glasshouse.xy[1]!, gh = glasshouse.h;
-  return [
-    silhouette('crown', [[1100, 70, 500], [1110, 115, 500], [1215, 140, 500], [1310, 158, 470], [1380, 145, 500], [1520, 110, 500], [1520, 70, 500]]),
-    silhouette('dam', [[1118, 22, 905], [1118, 52, 905], [1162, 52, 905], [1162, 22, 905]]),
-    silhouette('highSpan', [[1210, 23.4, 1105], [1210, 25.15, 1105], [1270, 25.15, 1105], [1270, 23.4, 1105]]),
-    silhouette('bightBridge', [[455, 11.4, 1100], [455, 13.15, 1100], [685, 13.15, 1100], [685, 11.4, 1100]]),
-    silhouette('lamp', [[500, 0, 1230], [520, 7, 1230], [555, 8, 1230], [580, 0, 1230]]),
-    solid(buildNeedleArch()),
-    ...buildOffshoreSolids().filter(r => r.id.startsWith('offshore.stacks')).map(solid),
-    silhouette('glasshouse', [[gx - 15, gh, gz], [gx - 15, gh + 6 / s, gz], [gx, gh + 9 / s, gz], [gx + 15, gh + 6 / s, gz], [gx + 15, gh, gz]]),
-  ];
+  const structure = (id: string, selected: readonly StructureSolid[], face?: (solid: StructureSolid, a: number, b: number, c: number) => boolean): void => {
+    if (!selected.length) return;
+    const positions: number[] = [], indices: number[] = [], owners = new Set<string>();
+    for (const solid of selected) {
+      const offset = positions.length / 3; positions.push(...solid.positions); owners.add(solid.districtId);
+      for (let i = 0; i < solid.indices.length; i += 3) {
+        const a = solid.indices[i]!, b = solid.indices[i + 1]!, c = solid.indices[i + 2]!;
+        if (!face || face(solid, a, b, c)) indices.push(offset + a, offset + b, offset + c);
+      }
+    }
+    if (indices.length > 900) throw new Error(`Horizon ${id} proxy exceeds 300 triangles; authored simplification required`);
+    cards.push({ id: `horizon.${id}`, source: id, positions, indices, maxFog: 0.7, ownerDistrictIds: [...owners] });
+  };
+  const is = (solid: StructureSolid, id: string): boolean => solid.id === id || solid.id.startsWith(`${id}@`);
+  terrain('crown', 'crown', [1100, 300], [1520, 640]);
+  terrain('lamp', 'offshore', [490, 1180], [590, 1270]);
+  // The dam's actual north/south wall faces retain the real spillway aperture;
+  // internal block sides are immaterial to its distant silhouette. The crest is solid.
+  structure('dam', solids.filter(r => is(r, 'dam.wall') || is(r, 'dam.crest')), (solid, a, b, c) => {
+    if (is(solid, 'dam.crest')) return true;
+    const p = solid.positions, ux = p[b * 3]! - p[a * 3]!, uy = p[b * 3 + 1]! - p[a * 3 + 1]!, uz = p[b * 3 + 2]! - p[a * 3 + 2]!;
+    const vx = p[c * 3]! - p[a * 3]!, vy = p[c * 3 + 1]! - p[a * 3 + 1]!, vz = p[c * 3 + 2]! - p[a * 3 + 2]!;
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx;
+    return Math.abs(nz) > 0.9 * Math.hypot(nx, ny, nz);
+  });
+  for (const id of ['highSpan', 'bightBridge']) structure(id, solids.filter(r => is(r, `${id}.deck`) || is(r, `${id}.rails`)));
+  structure('glasshouse', solids.filter(r => is(r, 'host.glasshouse.walls') || is(r, 'host.glasshouse.roof')));
+  const rocks = solids.some(r => is(r, 'offshore.needle')) ? solids : buildOffshoreSolids();
+  structure('offshore.needle', rocks.filter(r => is(r, 'offshore.needle')));
+  for (let i = 1; i <= 3; i++) structure(`offshore.stacks.${i}`, rocks.filter(r => is(r, `offshore.stacks.${i}`)));
+  return cards;
 }
