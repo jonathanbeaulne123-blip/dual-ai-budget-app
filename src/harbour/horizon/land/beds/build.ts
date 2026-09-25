@@ -40,6 +40,10 @@ function withSpanPins(id:string,controls:XY[],pins:HeightPin[]=[]):HeightPin[] {
     const from=nearestOnPath([1470,1160],points).along,to=nearestOnPath([1440,1200],points).along;let along=0;
     for(let i=0;i<samples.length;i++){if(i)along+=distance(samples[i-1]!,samples[i]!);if(along>=from-4&&along<=to+4)out.push(pin(samples[i]!,12,'continuous square floor'));}
   }
+  if(id==='V01'||id==='S4'){
+    const centre=nearestOnPath([1010,1388],points).along,half=id==='V01'?10:16,height=id==='V01'?5.6:1.4;let along=0;
+    for(let i=0;i<samples.length;i++){if(i)along+=distance(samples[i-1]!,samples[i]!);if(Math.abs(along-centre)<=half)out.push(pin(samples[i]!,height,'separated dune culvert crossing'));}
+  }
   return out;
 }
 function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
@@ -144,6 +148,7 @@ export function buildLandCuts(baseHeight:HeightQuery):LandCuts {
   // Exclude the surface field under bridges and road tunnels, retaining natural water and roof cover.
   for(const spec of SPANS){const route=cuts.beds.find(b=>b.id===spec.route);if(route)(route.terrainExclusions??=[]).push({at:spec.at,radius:spec.length/2+2});}
   for(const [id,route,length]of [['prowTunnel','V01',90],['shoulderTunnel','V02',110],['duneCulvert','S4',32]]as const){const b=cuts.beds.find(b=>b.id===route);if(b)(b.terrainExclusions??=[]).push({at:M.structures[id]!.xy as unknown as XY,radius:length/2+2});}
+  cuts.beds.find(b=>b.id==='V01')!.terrainExclusions!.push({at:[1010,1388],radius:12});
   cables(cuts,baseHeight);const markers=thresholds(cuts,baseHeight);
   for(const b of cuts.beds)if(!b.id.startsWith('structure.')&&!b.id.startsWith('underground.')&&!['ORE','DEEP_RUN','ORE.siding','prowTunnel','shoulderTunnel','duneCulvert'].includes(b.id))emitBedGeometry(b,cuts,baseHeight,markers);
   return cuts;

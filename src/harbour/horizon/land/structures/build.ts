@@ -82,7 +82,7 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
     for(let z=1078;z<=1135;z+=10)box(brackets,[x-width/2,z],h-.5,[width+1,1.2],Math.min(base(x-width/2,z)-.2,h-2));slab(rail,a,b,.09,.09,width/2,1.05);cuts.solids.push(deck,brackets,rail);
   }
   for(const [id,route,length,width,clear] of [['prowTunnel','V01',90,10,5],['shoulderTunnel','V02',110,10,5],['duneCulvert','S4',32,5,3]] as const){
-    const s=M.structures[id]!,xy=s.xy as unknown as XY,b=cuts.beds.find(p=>p.id===route)!,axis=axisAt(b,xy),h=heightOnBeds(cuts,xy,base)-(id==='duneCulvert'?4:0),a:XYZ=[xy[0]!-axis[0]!*length/2,h,xy[1]!-axis[1]!*length/2],end:XYZ=[xy[0]!+axis[0]!*length/2,h,xy[1]!+axis[1]!*length/2];
+    const s=M.structures[id]!,xy=s.xy as unknown as XY,b=cuts.beds.find(p=>p.id===route)!,axis=axisAt(b,xy),h=id==='duneCulvert'?1.4:heightOnBeds(cuts,xy,base),a:XYZ=[xy[0]!-axis[0]!*length/2,h,xy[1]!-axis[1]!*length/2],end:XYZ=[xy[0]!+axis[0]!*length/2,h,xy[1]!+axis[1]!*length/2];
     tunnel(id,[a,end],width,clear,cuts,districtAt(...xy));
     for(const [index,p]of [a,end].entries())cuts.mouths.push({id:`${id}.portal.${index}`,kind:'portal',floor:h,ceiling:h+clear,outline:[[p[0]!-width/2,p[2]!-3],[p[0]!-width/2,p[2]!+3],[p[0]!+width/2,p[2]!+3],[p[0]!+width/2,p[2]!-3]]});
     const tunnelBed=bed(id,route==='S4'?'skateMain':'road',[a,end],false);tunnelBed.width=width;tunnelBed.structureIds=[id];cuts.beds.push(tunnelBed);

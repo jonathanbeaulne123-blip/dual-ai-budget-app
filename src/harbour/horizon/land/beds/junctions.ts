@@ -11,12 +11,14 @@ export interface ComputedCrossing {
 function clipEdgePrisms(piece:StructureSolid,at:XY,radius:number,height:number):void {
   const kept={...piece,positions:[] as number[],indices:[] as number[]};
   for(let vertex=0;vertex<piece.positions.length/3;vertex+=8){
-    const p=Array.from({length:8},(_,k):XYZ=>[piece.positions[(vertex+k)*3]!,piece.positions[(vertex+k)*3+1]!,piece.positions[(vertex+k)*3+2]!]);
+    let p=Array.from({length:8},(_,k):XYZ=>[piece.positions[(vertex+k)*3]!,piece.positions[(vertex+k)*3+1]!,piece.positions[(vertex+k)*3+2]!]);
+    if(distance(plan(p[4]!),plan(p[5]!))>distance(plan(p[5]!),plan(p[6]!)))p=[p[3]!,p[0]!,p[1]!,p[2]!,p[7]!,p[4]!,p[5]!,p[6]!];
     const start:XYZ=[(p[4]![0]+p[5]![0])/2,(p[4]![1]+p[5]![1])/2,(p[4]![2]+p[5]![2])/2],end:XYZ=[(p[6]![0]+p[7]![0])/2,(p[6]![1]+p[7]![1])/2,(p[6]![2]+p[7]![2])/2],hit=nearestOnPath(at,[start,end]);
     const append=(from:number,to:number)=>{const interpolate=(a:XYZ,b:XYZ,t:number):XYZ=>[mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2],b[2],t)];const top=[interpolate(p[4]!,p[7]!,from),interpolate(p[5]!,p[6]!,from),interpolate(p[5]!,p[6]!,to),interpolate(p[4]!,p[7]!,to)];prism(kept,top,[mix(p[0]![1],p[3]![1],from),mix(p[1]![1],p[2]![1],from),mix(p[1]![1],p[2]![1],to),mix(p[0]![1],p[3]![1],to)]);};
     const thickness=Math.max(...p.slice(4).map(p=>p[1]))-Math.min(...p.slice(0,4).map(p=>p[1]));
-    if(hit.distance>=radius||hit.at[1]<height-.6||hit.at[1]-thickness>height+1.3){append(0,1);continue;}
-    const half=Math.sqrt(Math.max(0,radius*radius-hit.distance*hit.distance))/(distance(plan(start),plan(end))||1),lo=clamp(hit.t-half,0,1),hi=clamp(hit.t+half,0,1);
+    const radiusWithWidth=radius+distance(plan(p[4]!),plan(p[5]!))/2;
+    if(hit.distance>=radiusWithWidth||hit.at[1]<height-.6||hit.at[1]-thickness>height+1.3){append(0,1);continue;}
+    const half=Math.sqrt(Math.max(0,radiusWithWidth*radiusWithWidth-hit.distance*hit.distance))/(distance(plan(start),plan(end))||1),lo=clamp(hit.t-half,0,1),hi=clamp(hit.t+half,0,1);
     if(lo>1e-5)append(0,lo);if(hi<1-1e-5)append(hi,1);
   }
   piece.positions=kept.positions;piece.indices=kept.indices;
@@ -35,6 +37,7 @@ function alignSurfaceJoins(cuts:LandCuts,proofs:readonly ComputedCrossing[],base
     const pins:HeightPin[]=[{xy:plan(b.points[0]!),height:b.points[0]![1],reason:'fixed start'},{xy:plan(b.points.at(-1)!),height:b.points.at(-1)![1],reason:'fixed finish'}];
     for(const row of proofs)if(row.resolution==='threshold'&&Math.abs(row.heightA-row.heightB)<=.5&&[row.sourceA??row.a,row.sourceB??row.b].includes(b.id))pins.push({xy:row.at,height:nearestOnPath(row.at,b.points).at[1],reason:'existing connected junction'});
     b.points.forEach(p=>{if(b.terrainExclusions?.some(e=>distance(plan(p),e.at)<=e.radius))pins.push({xy:plan(p),height:p[1],reason:'structure profile'});});
+    const upperStreet=cuts.pads.find(p=>p.id==='town.upperStreet');if(upperStreet)for(const p of b.points)if(Math.abs(p[0]-upperStreet.centre[0])<=upperStreet.size[0]/2+4&&Math.abs(p[2]-upperStreet.centre[2])<=upperStreet.size[1]/2+4&&Math.abs(p[1]-upperStreet.centre[1])<.01)pins.push({xy:plan(p),height:upperStreet.centre[1],reason:'fixed upper street floor'});
     for(const pad of cuts.pads.filter(p=>p.serviceBedId===b.id)){const at=pad.door??pad.centre,hit=nearestOnPath(plan(at),b.points);if(hit.distance<Math.max(5,pad.margin+b.width))pins.push({xy:plan(hit.at),height:hit.at[1],reason:pad.id});}
     c={bed:b,pins,arcs,targets:[]};contexts.set(b.id,c);return c;
   };
