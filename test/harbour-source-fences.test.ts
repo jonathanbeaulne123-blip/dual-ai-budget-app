@@ -69,7 +69,7 @@ describe("src/harbour source fences", () => {
     // body and the seam the live-position lane installs itself into. Like every
     // other directory here, neither reaches anything outside the harbour, which
     // the import fence below is what proves.
-    const dirs = ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "body", "presence", "interiors", "village", "skate", "mountain", "desk", "art"];
+    const dirs = ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat", "nav", "data", "camera", "assets", "body", "presence", "interiors", "village", "skate", "mountain", "desk", "art", "horizon"];
     const seen = new Set(files.map((f) => relative(harbour, f).replace(/\\/g, "/").split("/")[0]).filter((part) => part && !part.endsWith(".ts") && !part.endsWith(".tsx")));
     for (const dir of ["court", "tower", "cellar", "glasshouse", "kitchen", "boathouse", "library", "cottage", "kiln", "campfire", "atlas", "scene", "flat"]) expect([...seen]).toContain(dir);
     for (const name of [...seen]) expect(dirs).toContain(name);
@@ -91,8 +91,8 @@ describe("src/harbour source fences", () => {
   });
 
   it("never touches fetch, localStorage or the books outside the loaders and the shell's return records", () => {
-    // `desk/flip.ts` writes the same `hearth:motion` preference the quick sheet's edition switch writes (SIMPLE_VIEW_DESK).
-    const allowed = new Set(["assets/loadGlb.ts", "court/queenPlace.ts", "scene/quality.ts", "nav/QuickSheet.tsx", "nav/arrival.ts", "HarbourWorld.tsx", "desk/flip.ts"]);
+    // Edition preferences stay in the navigation seam; terrain fetch stays in its async asset loader.
+    const allowed = new Set(["assets/loadGlb.ts", "court/queenPlace.ts", "scene/quality.ts", "nav/QuickSheet.tsx", "nav/arrival.ts", "nav/motionEdition.ts", "HarbourWorld.tsx", "desk/flip.ts", "mountain/terrainAsset.ts"]);
     const offences: string[] = [];
     for (const file of files) {
       const name = relative(harbour, file).replace(/\\/g, "/");
@@ -115,8 +115,9 @@ describe("src/harbour source fences", () => {
     expect(app).toMatch(/data-harbour-court=\{harbourOwnsRoute\(activeHouseRoute,view\)&&!activeHouseRoute\.surface\|\|undefined\}/);
     expect(app).toMatch(/HARBOUR_ENABLED&&view==="household"\?<><Compass/);
     expect(app).toMatch(/harbourArrivalRoute\(\{saved:saved\?\.route,scope:session\.view/);
-    expect(app).toMatch(/const HarbourWorld = lazy\(\(\) => import\("\.\/harbour\/HarbourWorld\.tsx"\)\)/);
-    expect(app).toMatch(/onJourney=\{\(\)=>goTab\("plan",undefined,\{route:\{householdId:household\.householdId,scope:"household",room:"kitchen-table",level:"above",surface:"journey",object:"harbour-return",time:harbourJourneyAnchor\(household,today\)\.date\}/);
+    // The entry resolves the flat Desk before importing the illustrated world.
+    expect(app).toMatch(/const HarbourWorld = lazy\(\(\) => import\("\.\/harbour\/HarbourEntry\.tsx"\)\)/);
+    expect(app).toMatch(/onJourney=\{\(\)=>journeyCloud\.begin\("to-journey",\(\)=>goTab\("plan",undefined,\{route:\{householdId:household\.householdId,scope:"household",room:"kitchen-table",level:"above",surface:"journey",object:"harbour-return",time:harbourJourneyAnchor\(household,today\)\.date\}/);
     expect(app).toMatch(/onExitJourney=\{\(\) => navigateHouseSurface\(\{householdId:household\.householdId,scope:"household",room:"home",level:"middle",village:\{place:"court"\}\}\)\}/);
   });
 });
