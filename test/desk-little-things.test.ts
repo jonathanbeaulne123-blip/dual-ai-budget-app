@@ -196,17 +196,19 @@ describe("the dog-ear on Today", () => {
     expect(readSitdown(proposed, household, memberId, "personal", today)).toBeNull();
   });
 
-  it("folds only while the Sitdown waits, and its press opens the Plan Studio — the Campfire's door", async () => {
+  it("joins Needs you on the card's third line while the Sitdown waits, and opens the Campfire's door", async () => {
+    // Tool Atlas §3.5: the dog-ear folds into the card's "Needs you" line.
     await mount({});
     expect(host.querySelector("[data-desk-dogear]")).toBeNull();
     expect(host.querySelector(".desk-today")!.hasAttribute("data-desk-sitdown")).toBe(false);
 
-    const overdue = withChapter("2026-08");
+    const overdue = { ...withChapter("2026-08"), fundEvents: [] } as unknown as Household;
     const opened = await mount({ household: overdue, reading: buildHarbourReading(overdue, memberId, today, "current") });
     const ear = host.querySelector<HTMLButtonElement>("[data-desk-dogear]")!;
     expect(ear.tagName).toBe("BUTTON");
     expect(ear.dataset.deskDogear).toBe("overdue");
-    expect(ear.getAttribute("aria-label")).toMatch(/^The month’s Sitdown is waiting\. August’s Chapter is still open past its month; the Sitdown is waiting\. Pull out the Plan Studio\.$/);
+    expect(ear.dataset.cardLine3).toBe("needs");
+    expect(ear.textContent).toMatch(/^Needs you · August’s Chapter, at the Campfire/);
     expect(host.querySelector(".desk-today")!.getAttribute("data-desk-sitdown")).toBe("overdue");
     await act(async () => ear.click());
     expect(opened).toEqual([["plan-studio", undefined]]);
