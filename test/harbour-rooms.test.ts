@@ -528,7 +528,7 @@ describe("the three rooms as places", () => {
     const handle = PLACES.campfire!.build(scene, { theme: "classic" } as never, reading as never, "lite", { composition: "desktop", signal: new AbortController().signal, invalidate: () => {} });
     const anchors = handle.anchors();
     const doors = Object.fromEntries(anchors.filter((anchor) => anchor.door).map((anchor) => [anchor.id, anchor.door!.target]));
-    expect(doors).toEqual({ fire: "plan-studio", "seat:0": "plan-studio", "seat:1": "plan-studio", stones: "journey", hercules: "hercules" });
+    expect(doors).toEqual({ fire: "campfire-ritual", "seat:0": "campfire-ritual", "seat:1": "campfire-ritual", stones: "journey", hercules: "hercules" });
     expect(anchors.find((anchor) => anchor.id === "fire")?.label).toContain("Make room for joy");
     expect(anchors.find((anchor) => anchor.id === "stones")?.label).toContain("1 stone on the path");
     expect(anchors.find((anchor) => anchor.id === "seat:0")?.label).toContain("Jonathan");

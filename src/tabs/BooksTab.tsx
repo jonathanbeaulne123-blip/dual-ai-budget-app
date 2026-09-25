@@ -1,15 +1,13 @@
 import { lazy, type ComponentProps } from "react";
 import { DeferredBooksPage, DeferredSurface } from "../deferredSurfaces.tsx";
 import { OnboardingReady } from "../OnboardingReady.tsx";
-import { SitDownGuide } from "../SitDownGuide.tsx";
-import { Whisper } from "../theme/Whisper.tsx";
+import { CampfireDoor } from "../harbour/campfire/ritual/CampfireDoor.tsx";
 import { formatCad } from "../core/index.ts";
 import { canonical } from "../ledgerSync/patch.ts";
 
 const AccountHistorySetup = lazy(() => import("../AccountHistorySetup.tsx").then(module => ({ default: module.AccountHistorySetup })));
 
 type BooksPageProps = ComponentProps<typeof DeferredBooksPage>;
-type SitDownGuideProps = ComponentProps<typeof SitDownGuide>;
 type OnboardingReadyProps = ComponentProps<typeof OnboardingReady>;
 
 /** One reversing entry, handed back to App()'s own Confirm sheet. */
@@ -32,8 +30,17 @@ export type BooksTabProps =
     onReadyCommit: OnboardingReadyProps["onCommit"];
     onReadyDismiss: OnboardingReadyProps["onDismiss"];
     onAskRemove: (request: BooksRemovalRequest) => void;
-    /** Present when Close the month belongs on this surface; App() decides. */
-    closeTheMonth: SitDownGuideProps | null;
+    /**
+     * The month's books close at the Campfire's Settle now (Tool Atlas K3, D3).
+     * Present when the household door belongs on this surface; App() decides.
+     * `onOpenCampfire` opens the ritual sheet; the leftover guide lives there.
+     */
+    campfireDoor?: { onOpenCampfire?: () => void } | null;
+    /**
+     * @deprecated App() still hands over the old leftover guide's props here; until the
+     * integrator renames it to `campfireDoor`, a non-null value means "show the door".
+     */
+    closeTheMonth?: object | null;
   };
 
 /**
@@ -53,6 +60,7 @@ export function BooksTab({
   onReadyCommit,
   onReadyDismiss,
   onAskRemove,
+  campfireDoor,
   closeTheMonth,
   ...books
 }: BooksTabProps) {
@@ -82,14 +90,9 @@ export function BooksTab({
         onAskRemove({ transactionId: transaction.id, summary, reviewedSummaryBasis: canonical([transaction.id, transaction.amountCents, transaction.type, transaction.source, transaction.note]) });
       }}
     />}
-    {closeTheMonth && (
-      <section className="close-the-month" aria-label="Close the month">
-        <p className="kicker">Close the month</p>
-        <h2>Where leftover goes</h2>
-        <Whisper mode="line">A bounded action with its own Final Confirm.</Whisper>
-        <Whisper mode="aside" id="books.close-month">The Sitdown's "Make the shared decisions" step opens this in context; it is not the Sitdown itself.</Whisper>
-        <SitDownGuide {...closeTheMonth} />
-      </section>
+    {(campfireDoor || closeTheMonth) && (
+      <CampfireDoor household={books.booksHousehold} memberId={books.memberId} today={today} onOpenCampfire={campfireDoor?.onOpenCampfire}
+        why="Where leftover goes, and closing the books, are at the Campfire's Settle." />
     )}
     </DeferredSurface>
   );
