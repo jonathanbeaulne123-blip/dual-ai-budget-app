@@ -45,7 +45,8 @@ export function fit(text: string, query: string): number {
   if (!q || !t) return 0;
   if (t === q) return 4;
   if (t.startsWith(q)) return 3;
-  if (t.split(" ").some((word, i, words) => words.slice(i).join(" ").startsWith(q))) return 2;
+  const words = t.split(" ");
+  if (words.some((_, i) => words.slice(i).join(" ").startsWith(q))) return 2;
   return q.length >= 3 && t.includes(q) ? 1 : 0;
 }
 

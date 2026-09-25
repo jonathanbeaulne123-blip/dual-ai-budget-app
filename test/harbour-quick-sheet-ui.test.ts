@@ -6,6 +6,7 @@ import { HARBOUR_PLACE_NAMES } from "../src/harbour/flag.ts";
 import { publishEditionAvailability } from "../src/harbour/nav/editionAvailability.ts";
 import { HARBOUR_GO_EVENT, MOTION_KEY, QuickSheet, atlasSearchKey, focusAtlasSearch, quickSheetPlaces, useAtlasSearchKeys, type QuickSheetProps } from "../src/harbour/nav/QuickSheet.tsx";
 import type { HouseholdWord } from "../src/harbour/nav/atlasSearch.ts";
+import { useOfferWorldActions } from "../src/harbour/nav/worldActions.ts";
 import { VILLAGE_ADDRESS } from "../src/harbour/village/layout.ts";
 
 /**
@@ -175,6 +176,23 @@ describe("the order and the rows", () => {
     expect(host.querySelector('[data-quick-sheet-tool="fund-bank"]')).toBeNull();
     await act(async () => host.querySelector<HTMLButtonElement>('[data-quick-sheet-tool="arrange"]')!.click());
     expect(worlds).toEqual(["arrange"]);
+  });
+});
+
+describe("world rows offered by the island", () => {
+  it("lists Step in and Arrange room while the HUD offers them, and runs them there", async () => {
+    const ran: string[] = [];
+    function Island({ offer }: { offer: boolean }) {
+      useOfferWorldActions(offer ? { "step-in": () => ran.push("guide"), arrange: () => ran.push("arrange") } : {});
+      return createElement(QuickSheet, props());
+    }
+    await act(async () => root.render(createElement(Island, { offer: false })));
+    expect(host.querySelector('[data-quick-sheet-tool="step-in"]')).toBeNull();
+    await act(async () => root.render(createElement(Island, { offer: true })));
+    expect(host.querySelector('[data-quick-sheet-tool="skate"]')).toBeNull();
+    await act(async () => host.querySelector<HTMLButtonElement>('[data-quick-sheet-tool="step-in"]')!.click());
+    await act(async () => host.querySelector<HTMLButtonElement>('[data-quick-sheet-tool="arrange"]')!.click());
+    expect(ran).toEqual(["guide", "arrange"]);
   });
 });
 

@@ -10,6 +10,7 @@ import { VILLAGE_ADDRESS } from "../village/layout.ts";
 // The one list. Track A's `src/core/toolAtlas.ts` replaces this import (same shape).
 import { ATLAS_FALLBACK as ATLAS, ATLAS_JOB_GROUPS, ATLAS_RECORD_VERBS, type AtlasGroup, type AtlasRecordMode, type AtlasSpace, type AtlasTool } from "./atlasFallback.ts";
 import { searchAtlas, type AtlasResult, type HouseholdWord } from "./atlasSearch.ts";
+import { runWorldAction, useWorldActions, type WorldAction } from "./worldActions.ts";
 import "./harbour-nav.css";
 
 /**
@@ -55,7 +56,7 @@ export type QuickSheetProps = {
   onPick?: (mode: AtlasRecordMode) => void;
   /** Which verbs this member has (Shift only with a job). Defaults to all five. */
   recordModes?: readonly AtlasRecordMode[];
-  /** World experiences behind Step in (`step-in`, `skate`, `arrange`). Absent → those rows are hidden. */
+  /** World experiences behind Step in (`step-in`, `skate`, `arrange`). Absent → the rows the island offers (`nav/worldActions.ts`) run there; the rest are hidden. */
   onWorld?: (action: string) => void;
   /** Targets that are neither house doors nor places nor settings (`accounts`, `activity`, `import`, `audit`, `campfire`, `leaving`, `sitdown`). */
   onTarget?: (target: string, object?: string) => void;
@@ -167,15 +168,16 @@ export function QuickSheet(props: QuickSheetProps) {
   const [edition, setEdition] = useState<MotionEdition>(() => readMotionEdition(props.storage));
   const here = props.currentPlace ?? null;
 
-  /** Can the sheet dispatch this target here? World rows need `onWorld`. */
-  const canDispatch = (target: string) => !target.startsWith("world:") || Boolean(props.onWorld);
+  /** Can the sheet dispatch this target here? A world row needs `onWorld`, or a world that offers it. */
+  const offered = useWorldActions();
+  const canDispatch = (target: string) => !target.startsWith("world:") || Boolean(props.onWorld) || offered.has(target.slice(6) as WorldAction);
   const visible = (tool: AtlasTool) => tool.spaces.includes(space) && canDispatch(tool.target);
   const byId = useMemo(() => new Map(groups.flatMap((g) => g.tools).map((tool) => [tool.id, tool] as const)), [groups]);
   const modes = props.recordModes ?? ATLAS_RECORD_VERBS.map((verb) => verb.mode);
   const results = useMemo<AtlasResult[]>(
     () => searchAtlas(query, groups, { space, householdWords: props.householdWords, recordModes: props.onPick ? modes : [], canDispatch }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [query, groups, space, props.householdWords, props.onPick, modes.join(","), Boolean(props.onWorld)],
+    [query, groups, space, props.householdWords, props.onPick, modes.join(","), Boolean(props.onWorld), offered],
   );
 
   // Capture the opener and move focus in; return it on close.
@@ -240,7 +242,7 @@ export function QuickSheet(props: QuickSheetProps) {
       if (props.onSettings) props.onSettings(section); else props.onStatus();
       return;
     }
-    if (target.startsWith("world:")) { props.onWorld?.(target.slice(6)); onClose(); return; }
+    if (target.startsWith("world:")) { onClose(); if (props.onWorld) props.onWorld(target.slice(6)); else runWorldAction(target.slice(6)); return; }
     if (target === "hercules") { props.onHercules(); return; }
     if (Object.hasOwn(TARGET_NAMES, target)) { props.onOpen(target, object); return; }
     if (props.onTarget) props.onTarget(target, object); else props.onOpen(target, object);

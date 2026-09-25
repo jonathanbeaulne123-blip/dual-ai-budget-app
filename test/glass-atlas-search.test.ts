@@ -41,7 +41,8 @@ describe("the atlas fallback", () => {
 
 describe("matching", () => {
   it("normalizes case, accents and apostrophes", () => {
-    expect(normalizeAtlasText("Hercules’s  Cottage")).toBe("hercules cottage");
+    expect(normalizeAtlasText("Who’s  Carrying")).toBe("whos carrying");
+    expect(fit("Hercules's Cottage", "hercules")).toBe(3);
     expect(normalizeAtlasText("Café")).toBe("cafe");
     expect(fit("Books", "books")).toBe(4);
     expect(fit("Books club", "books")).toBe(3);

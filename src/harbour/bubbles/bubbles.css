@@ -218,7 +218,7 @@
   align-items: flex-end;
   min-width: 200px;
 }
-.glass-bubble-anchor--record .fab-dial-action {
+.glass-bubble-anchor.glass-bubble-anchor--record .fab-dial .fab-dial-action {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -296,7 +296,7 @@
 .glass-bubble__toast { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 
 /* ── Focus: a two-tone ring, dark inside white, drawn with outline so forced colours keep it ── */
-.glass-bubble:focus-visible,
+.glass-bubble-anchor .glass-bubble:focus-visible,
 .glass-bubble-anchor .fab:focus-visible,
 .glass-bubble-anchor .fab-dial-action:focus-visible {
   outline: 2px solid var(--glass-focus-in);
@@ -331,7 +331,7 @@
   .glass-bubble-anchor { --glass-edge-out: color-mix(in srgb, var(--glass-ink) 66%, transparent); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .glass-bubble, .glass-bubble-anchor .fab, .glass-bubble-anchor .fab-dial-action { transition: none; }
+  .glass-bubble, .glass-bubble-anchor .fab, .glass-bubble-anchor .fab-dial-action { transition: none; animation: none; }
 }
 @media (forced-colors: active) {
   .glass-bubble,
@@ -342,7 +342,7 @@
     backdrop-filter: none;
     forced-color-adjust: auto;
   }
-  .glass-bubble:focus-visible, .glass-bubble-anchor .fab:focus-visible { outline: 2px solid CanvasText; }
+  .glass-bubble-anchor .glass-bubble:focus-visible, .glass-bubble-anchor .fab:focus-visible { outline: 2px solid CanvasText; }
   .glass-bubble-anchor.is-fixed::after, .glass-bubble::before { display: none; }
 }
 

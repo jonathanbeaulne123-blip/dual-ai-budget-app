@@ -6,6 +6,7 @@ import type {PlayableAvatar} from '../body/avatarDefinition.ts';
 import type {ThemeId} from '../../theme/scenes.ts';
 import {useIslandBar,type CompassFab} from '../nav/Compass.tsx';
 import {GlassBar,GlassChrome} from '../bubbles/GlassChrome.tsx';
+import {useOfferWorldActions} from '../nav/worldActions.ts';
 /**
  * The island's HUD (Tool Atlas brief §2.4, §4.1, §6). The seven-control bar
  * retired: the glass carries three bubbles instead —
@@ -35,12 +36,12 @@ import {GlassBar,GlassChrome} from '../bubbles/GlassChrome.tsx';
  */
 export type VillageHUDProps={
  flat?:boolean;
- /** Retired from the glass (the Mountain & town guide goes, brief K6); accepted so HarbourWorld's call stays valid. */
+ /** The guide left the glass (brief K6): All tools › Places › Step in opens it (`nav/worldActions.ts`). */
  onGuide?:()=>void;guideOpen?:boolean;
  appearanceRequest?:number;
  place:HarbourPlaceId;travelling:HarbourPlaceId|null;
  onVisit:(id:HarbourPlaceId,instant?:boolean)=>void;
- /** Retired from the glass: Arrange room is in All tools › Places (`onWorld('arrange')`). */
+ /** Arrange room left the glass: All tools › Places › Arrange room runs it (`nav/worldActions.ts`). */
  onArrange?:()=>void;
  /** Retired from the glass: dragging the map is looking around. */
  onView?:()=>void;
@@ -72,8 +73,11 @@ export type VillageHUDProps={
  /** Rendered between Simple view and All tools in the DOM: the map's focus stop, the strip, the card. */
  glassBetween?:ReactNode;
 };
-export function VillageHUD({flat=false,appearanceRequest,place,travelling,onVisit,avatar,avatarStatus,onAvatar,presence,fab,onQuickSheet,toolsOpen,memberId,theme,calm,lite,frameOverBudget,cameraMoving,night,alwaysShowLabels,glassBetween}:VillageHUDProps){
+export function VillageHUD({flat=false,onGuide,onArrange,appearanceRequest,place,travelling,onVisit,avatar,avatarStatus,onAvatar,presence,fab,onQuickSheet,toolsOpen,memberId,theme,calm,lite,frameOverBudget,cameraMoving,night,alwaysShowLabels,glassBetween}:VillageHUDProps){
  useIslandBar(Boolean(fab));
+ // The world experiences that left the bar stay reachable from All tools › Places:
+ // Step in opens the guide (tour, monorail, race); Arrange room while a room offers it.
+ useOfferWorldActions({'step-in':flat?undefined:onGuide,arrange:flat?undefined:onArrange});
  const [characterOpen,setCharacterOpen]=useState(avatar==null);
  useEffect(()=>{if(appearanceRequest)setCharacterOpen(true);},[appearanceRequest]);
  useEffect(()=>{if(avatar==null)setCharacterOpen(true);},[avatar]);
@@ -83,7 +87,7 @@ export function VillageHUD({flat=false,appearanceRequest,place,travelling,onVisi
   {!flat&&<header className="village-address" data-glass-card="" data-glass-theme={theme} data-glass-calm={calm||lite||frameOverBudget?'':undefined}><span className="village-address__seal" aria-hidden="true">h</span><div><small>LITTLE HARBOUR</small><h1>{HARBOUR_PLACE_NAMES[place]}</h1><p>{travelling?`On our way to ${HARBOUR_PLACE_NAMES[travelling]}`:place==='court'?'A little world to come home to.':'Settle in. There’s room to make it yours.'}</p></div></header>}
   {flat
    ? <GlassBar edition="desk" fab={fab} onOpenTools={onQuickSheet} toolsOpen={toolsOpen} member={memberId} theme={theme} calm={calm} lite={lite} alwaysShowLabels={alwaysShowLabels}/>
-   : <GlassChrome edition="island" fab={fab} onOpenTools={onQuickSheet} toolsOpen={toolsOpen} member={memberId} theme={theme} calm={calm} lite={lite} frameOverBudget={frameOverBudget} cameraMoving={cameraMoving} night={night} alwaysShowLabels={alwaysShowLabels} between={glassBetween}/>}
+   : <GlassChrome fab={fab} onOpenTools={onQuickSheet} toolsOpen={toolsOpen} member={memberId} theme={theme} calm={calm} lite={lite} frameOverBudget={frameOverBudget} cameraMoving={cameraMoving} night={night} alwaysShowLabels={alwaysShowLabels} between={glassBetween}/>}
   {!flat&&(ROOM_PORTALS[place]?.length??0)>0&&<nav className="village-floors" aria-label="Rooms in our home">{[{id:'kitchen',name:'Kitchen'},{id:'tower',name:'Loft'},{id:'cellar',name:'Cellar'},{id:'atlas',name:'Atlas'}].map(room=><button key={room.id} type="button" aria-current={place===room.id?'location':undefined} onClick={()=>onVisit(room.id as HarbourPlaceId,true)}>{room.name}</button>)}</nav>}
   {onAvatar&&<div className="village-character" data-selected={avatar??'none'}>
     <button type="button" className="village-character__trigger" aria-label={avatar?`Your character: ${avatar}. Change character`:'Choose your character'} aria-expanded={characterOpen} onClick={()=>setCharacterOpen(open=>!open)}>{avatar==='bianca'?'B':avatar==='jonathan'?'J':'?'} <span>{avatar??'Choose character'}</span></button>

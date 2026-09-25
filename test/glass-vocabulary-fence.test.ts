@@ -29,7 +29,8 @@ const OWNED = [
   "src/harbour/bubbles/Bubble.tsx", "src/harbour/bubbles/GlassChrome.tsx", "src/harbour/bubbles/icons.tsx",
   "src/harbour/panels/CompactPanel.tsx", "src/harbour/panels/HostPanel.tsx", "src/harbour/panels/panelModel.ts",
   "src/harbour/nav/QuickSheet.tsx", "src/harbour/nav/atlasFallback.ts", "src/harbour/nav/atlasSearch.ts",
-  "src/harbour/village/VillageHUD.tsx", "src/harbour/HarbourEntry.tsx",
+  "src/harbour/village/VillageHUD.tsx", "src/harbour/HarbourEntry.tsx", "src/harbour/nav/Compass.tsx", "src/harbour/nav/barBadges.ts",
+  "src/harbour/nav/worldActions.ts", "src/harbour/desk/DeskShell.tsx",
 ];
 
 /** Source copy: comments out, the synonym index out. */
