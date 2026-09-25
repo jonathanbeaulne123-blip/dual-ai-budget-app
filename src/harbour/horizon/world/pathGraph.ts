@@ -19,7 +19,7 @@ export function buildPathGraph(cuts: LandCuts, intersections?: readonly Intersec
   const intersectionsAll = intersections ?? computeIntersections(beds.map(b => ({ id: b.id, points: b.points, clearHeight: b.clearHeight, kind: b.kind, structureIds: b.structureIds })));
   const addSplit = (id: string, segment: number, point: readonly [number, number]) => { const bed = bedById.get(id); if (!bed) return; const a = bed.points[segment], b = bed.points[segment + 1]; if (!a || !b) return; const dx = b[0] - a[0], dz = b[2] - a[2], t = ((point[0] - a[0]) * dx + (point[1] - a[2]) * dz) / (dx * dx + dz * dz || 1), segments = split.get(id) ?? new Map<number, number[]>(), values = segments.get(segment) ?? []; values.push(Math.max(0, Math.min(1, t))); segments.set(segment, values); split.set(id, segments); };
   const joins: { a: Point3; b: Point3 }[] = [];
-  for (const p of intersectionsAll) if (bedById.has(p.a) && bedById.has(p.b) && Math.abs(p.heightA - p.heightB) <= .5) { addSplit(p.a, p.segmentA, p.at); addSplit(p.b, p.segmentB, p.at); joins.push({ a: [p.at[0], p.heightA, p.at[1]], b: [p.at[0], p.heightB, p.at[1]] }); }
+  for (const p of intersectionsAll) { const a = p.sourceA ?? p.a, b = p.sourceB ?? p.b; if (bedById.has(a) && bedById.has(b) && Math.abs(p.heightA - p.heightB) <= .5) { addSplit(a, p.segmentA, p.at); addSplit(b, p.segmentB, p.at); joins.push({ a: [p.at[0], p.heightA, p.at[1]], b: [p.at[0], p.heightB, p.at[1]] }); } }
   const node = (p: Point3) => { const id = `path:${p.map(v => v.toFixed(3)).join(':')}`; if (!nodes.has(id)) nodes.set(id, { id, at: p, kind: 'junction' }); return id; };
   for (const bed of beds) for (let i = 1; i < bed.points.length; i++) {
     const a = bed.points[i - 1]!, b = bed.points[i]!, values = [...new Set([0, ...(split.get(bed.id)?.get(i - 1) ?? []), 1])].sort((a, b) => a - b);
@@ -63,7 +63,7 @@ export function measureJourneys(graph: HorizonPathGraph, cuts: LandCuts, hosts: 
   const rows: { id: string; target: number | readonly number[]; legs: JourneyLeg[] }[] = [];
   const target = m.journeys.targets_s;
   rows.push({ id: 'square→library by bicycle', target: target['square→library by bicycle'], legs: fromPlan('bicycle', walkPlan(graph, origin, door('library'), { speed: speed('bicycle'), bicycle: true, stepFree: true })) });
-  rows.push({ id: 'square→green running', target: target['square→green running'], legs: fromPlan('run', walkPlan(graph, origin, destination([1040, 1065]), { speed: speed('run'), stepFree: true, maxSnap: 70 })) });
+  rows.push({ id: 'square→green running', target: target['square→green running'], legs: fromPlan('run', walkPlan(graph, origin, destination([1040, 1065]), { speed: speed('run'), stepFree: true })) });
   const gondola = getLine('G1'), top = m.places.find(p => p.id === 'L02')!;
   const first = gondola.length ? walkPlan(graph, origin, gondola[0]!, { stepFree: true }) : null, last = gondola.length ? walkPlan(graph, gondola.at(-1)!, [top.xy[0]! * s, top.h * s, top.xy[1]! * s], { stepFree: true }) : null;
   rows.push({ id: 'square→summit by gondola + walk', target: target['square→summit by gondola + walk'], legs: first && last ? [...fromPlan('walk', first), leg('gondola', gondola, ['G1']), ...fromPlan('walk', last)] : [] });

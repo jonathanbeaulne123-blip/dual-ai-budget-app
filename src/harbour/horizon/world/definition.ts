@@ -18,7 +18,7 @@ export interface District { id: string; neighbourhood: string | null; outline: P
 export interface Host { id: string; placeIds: string[]; door: Anchor; apron: Polygon; arrivalThresholds: string[]; height?: number; roofHeight?: number; footprint?: Polygon; solidIds?: string[]; padId?: string; facing?: number; returnAt?: Point3; arrivalEye?: Point3; arrivalTarget?: Point3; toolPlaceId?: string }
 export interface OutdoorPlace { id: string; anchor: Anchor; districtId: string }
 export interface Bed { id: string; profile: string; surface: string; points: Point3[]; districtIds: string[]; kind?: BedCut['kind']; width?: number; clearHeight?: number; structureIds?: string[]; surfaceSegments?: BedCut['surfaceSegments'] }
-export interface Line { id: string; bedIds: string[]; mode: string; points: Point3[] }
+export interface Line { id: string; bedIds: string[]; mode: string; points: Point3[]; waterBodyIds?: string[] }
 export interface Structure { id: string; kind: string; footprint: Polygon; bedIds: string[]; geometryId?: string; districtId?: string; role?: StructureSolid['role']; bounds?: { min: Point3; max: Point3 } }
 export interface Crossing { a: string; b: string; at: Point2; resolution: 'over' | 'under' | 'threshold'; structure?: string; id?: string; proof?: CrossingProof }
 export interface Threshold { id: string; at: Point2; modes: readonly `${string}→${string}`[]; action: string; height?: number; padId?: string; markerId?: string; kerbGap?: boolean; sourceId?: string; built?: boolean }

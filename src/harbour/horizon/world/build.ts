@@ -13,7 +13,7 @@ export interface LandWorldOptions { terrainAsset?: { url: string; bytes: number;
 function anchor(id: string, p: Point3): Anchor { return { id, xy: [p[0], p[2]], height: p[1] }; }
 function resolvePad(cuts: LandCuts, id: string) { return cuts.pads.find(p => p.id === id); }
 export function buildWorldLines(field: TerrainField, cuts: LandCuts): Line[] {
-  const m = HORIZON_MANIFEST, s = requireScaleFactor(), lines: Line[] = cuts.beds.filter(b => ['road', 'skate', 'rail', 'cable'].includes(b.kind)).map(b => ({ id: b.id, bedIds: [b.id], mode: b.kind === 'road' ? 'bicycle' : b.kind === 'skate' ? 'board' : b.id === 'G1' ? 'gondola' : b.id === 'ZIP' ? 'zip' : 'cart', points: b.points }));
+  const m = HORIZON_MANIFEST, s = requireScaleFactor(), lines: Line[] = cuts.beds.filter(b => ['road', 'skate', 'rail', 'cable'].includes(b.kind) && !b.id.startsWith('structure.') && !['prowTunnel', 'shoulderTunnel', 'duneCulvert'].includes(b.id)).map(b => ({ id: b.id, bedIds: [b.id], mode: b.kind === 'road' ? 'bicycle' : b.kind === 'skate' ? 'board' : b.id === 'G1' ? 'gondola' : b.id === 'ZIP' ? 'zip' : 'cart', points: b.points }));
   const level = (x: number, z: number) => { let closest = Infinity, h = 0; for (const w of cuts.waters) { if (!w.points.length) continue; const p = closestOnPolyline(w.points, x, z); if (p.distance < closest) { closest = p.distance; h = p.point[1]; } } return closest < 100 * s ? h : Math.min(0, terrainHeight(field, x, z)); };
   for (const [id, route] of Object.entries(m.water_routes)) {
     if (!('pts' in route)) continue;
@@ -22,7 +22,7 @@ export function buildWorldLines(field: TerrainField, cuts: LandCuts): Line[] {
     lines.push({ id, mode: id === 'FERRY' ? 'ferry' : 'row', bedIds: authored ? [authored.id] : [], points });
   }
   // ROW is a traversable water domain, not an invented centreline.
-  lines.push({ id: 'ROW', mode: 'row', bedIds: [], points: [] });
+  lines.push({ id: 'ROW', mode: 'row', bedIds: [], points: [], waterBodyIds: cuts.waters.filter(w => w.kind !== 'dry' && w.kind !== 'brook').map(w => w.id) });
   return lines;
 }
 function buildHosts(cuts: LandCuts): Host[] {
@@ -76,7 +76,7 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
     structures: cuts.solids.map(solid => { const b = solidBounds(solid); return { id: solid.id, kind: solid.kind, footprint: rectangle([(b.min[0] + b.max[0]) / 2, (b.min[2] + b.max[2]) / 2], [b.max[0] - b.min[0], b.max[2] - b.min[2]]), bedIds: solid.bedIds, geometryId: solid.id, role: solid.role, districtId: solid.districtId, bounds: b }; }),
     crossings: crossing.crossings, crossingProofs: crossing.proofs, thresholds,
     reserves: cuts.pads.filter(p => p.kind === 'reserve').map(p => ({ id: p.id, placeId: p.placeId ?? p.id, outline: padOutline(p), door: anchor(`${p.id}.door`, p.door ?? p.centre), rotationDegrees: p.rotationDegrees })), sky,
-    underground: { doors: Object.entries(m.underground.doors).map(([id, door]) => anchor(id, [door.xy[0]! * s, door.h * s, door.xy[1]! * s])), rooms: Object.entries(m.underground.rooms).map(([id, room]) => rectangle([room.xy[0]! * s, room.xy[1]! * s], [roomSize[id]![0] * s, roomSize[id]![1] * s])), waterBodyId: 'deep', skylight: anchor('deep.skylight', [small.cx * s, m.underground.rooms.deep.skylight.topH * s, m.underground.rooms.deep.skylight.to[1]! * s]) },
+    underground: { doors: Object.entries(m.underground.doors).map(([id, door]) => anchor(id, [door.xy[0]! * s, door.h * s, door.xy[1]! * s])), rooms: Object.entries(m.underground.rooms).map(([id, room]) => rectangle([room.xy[0]! * s, room.xy[1]! * s], [roomSize[id]![0] * s, roomSize[id]![1] * s])), waterBodyId: cuts.waters.find(w => w.kind === 'deep')?.id, skylight: anchor('deep.skylight', [small.cx * s, m.underground.rooms.deep.skylight.topH * s, m.underground.rooms.deep.skylight.to[1]! * s]) },
     lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' }))], views, lanterns: [],
     protected: [{ id: 'green', outline: protectedGreenOutline(), reason: 'No building, plot or tall prop inside the protected centre.' }],
     geometry: { solids: cuts.solids }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, walkableSlopeDegrees: 40, lipStepMax: .5 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements,

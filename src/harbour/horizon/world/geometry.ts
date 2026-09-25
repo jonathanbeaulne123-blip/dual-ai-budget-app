@@ -18,7 +18,8 @@ export function terrainHeight(field: TerrainField, x: number, z: number): number
   const u = Math.max(0, Math.min(field.columns - 1, x / field.step)), v = Math.max(0, Math.min(field.rows - 1, z / field.step));
   const a = Math.min(field.columns - 2, Math.floor(u)), b = Math.min(field.rows - 2, Math.floor(v));
   const h = (dx: number, dz: number) => field.heights[(b + dz) * field.columns + a + dx]!;
-  return lerp(lerp(h(0, 0), h(1, 0), u - a), lerp(h(0, 1), h(1, 1), u - a), v - b);
+  const tx = u - a, tz = v - b;
+  return tx + tz <= 1 ? h(0, 0) + tx * (h(1, 0) - h(0, 0)) + tz * (h(0, 1) - h(0, 0)) : h(1, 1) + (1 - tx) * (h(0, 1) - h(1, 1)) + (1 - tz) * (h(1, 0) - h(1, 1));
 }
 export function rectangle(centre: Point2, size: Point2, degrees = 0): Point2[] {
   const a = degrees * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
