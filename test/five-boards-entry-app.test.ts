@@ -271,6 +271,13 @@ describe("five boards entry App integration", () => {
     expect(added.transactions.filter(t => t.note.startsWith("Fictional sample")).length).toBeLessThanOrEqual(48);
     expect(added.potentialExpenses?.filter(p => p.title.startsWith("Fictional sample plan")).length).toBeGreaterThanOrEqual(40);
   });
+  it("carries the five Record verbs, Bill paid wired (Tool Atlas §3.3)", async () => {
+    mobile = true; await mount();
+    const fab = container.querySelector<HTMLButtonElement>('[aria-label="Record"]')!;
+    await act(async () => { fab.focus(); fab.click(); });
+    // No job is set up in this fictional household yet, so Shift stays: its flow is where a job is set up.
+    expect([...container.querySelectorAll<HTMLElement>("[data-fab-action]")].map((row) => row.dataset.fabAction)).toEqual(["expense", "shift", "income", "bill", "transfer"]);
+  });
   it.each(["expense", "income", "transfer", "shift"])("returns real App %s FAB entry focus to the + across Close and resume", async mode => {
     mobile = true; await mount();
     const fab = container.querySelector<HTMLButtonElement>('[aria-label="Record"]')!;

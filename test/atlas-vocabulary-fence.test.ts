@@ -21,18 +21,13 @@ const PENDING: Readonly<Record<string, readonly string[]>> = {
   // The integrator's (App.tsx is the integration mutex).
   "src/App.tsx": ["Together", "Our Path"],
   // The harbour / bar tracks (src/harbour/**, QuickSheet, VillageHUD).
-  "src/harbour/HarbourEntry.tsx": ["Village map", "Quick travel"],
   "src/harbour/HarbourWorld.tsx": ["Quick travel"],
   "src/harbour/court/CourtTwins.tsx": ["The Court"],
   "src/harbour/desk/DeskLeaving.tsx": ["Next out", "Scheduled to leave"],
   "src/harbour/desk/DeskPlace.tsx": ["Household Fund", "Plan together", "Our plans", "Town square", "Atlas nook"],
-  "src/harbour/desk/DeskToday.tsx": ["Meet the Queen"],
   "src/harbour/mountain/MountainPanel.tsx": ["Mountain & town", "Town square", "Atlas nook"],
-  "src/harbour/nav/QuickSheet.tsx": ["Atlas nook"],
-  "src/harbour/village/VillageHUD.tsx": ["Mountain & town", "Village map", "Quick travel", "Atlas nook"],
   // Books, the Fund and the Campfire (K1, K3, §1.3 rows): whoever lands the Campfire / Fund bank slices.
   "src/Books.tsx": ["Household Fund", "Close the month"],
-  "src/tabs/BooksTab.tsx": ["Close the month"],
   "src/FundDrawer.tsx": ["Next out"],
   "src/FundLedge.tsx": ["Household Fund"],
   "src/HouseholdFundPanel.tsx": ["Household Fund"],
@@ -42,8 +37,7 @@ const PENDING: Readonly<Record<string, readonly string[]>> = {
   "src/plan-v3/CheckIn.tsx": ["check-in"],
   "src/plan-v3/PlanStudioV3.tsx": ["check-in"],
   "src/plan-v3/RestScreen.tsx": ["check-in"],
-  "src/PlanStudio.tsx": ["Our Path", "check-in", "Together"],
-  "src/ChapterPanel.tsx": ["Our Path"],
+  "src/PlanStudio.tsx": ["Our Path", "Together"],
   "src/PlanLensWorkbench.tsx": ["Together"],
   // The Boathouse rename (K13: "Together" / "Hearthside" / "Play" → the Boathouse; "Our Path" → the Atlas).
   "src/DuplicatePrise.tsx": ["Together"],

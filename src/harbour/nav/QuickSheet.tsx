@@ -95,7 +95,7 @@ const titleCase = (words: string) => `${words[0]!.toUpperCase()}${words.slice(1)
 const PLACE_WORDS: Record<HarbourPlaceId, string> = {
   court: "The square · the middle of the village", bank: "The Fund bank · the Queen and the vault",
   kitchen: "Our home · the Kitchen", tower: "Our home · the Loft, upstairs",
-  cellar: "Our home · the Cellar, downstairs", atlas: "Our home · the Atlas, up the kitchen stair",
+  cellar: "Our home · the Cellar, downstairs", atlas: "Our home · the Atlas, up the Kitchen stair",
   library: "The Library · the Standing Book", glasshouse: "The Glasshouse · steps, week by week",
   kiln: "The Kiln · shape, paint and fire", cottage: "Hercules's Cottage · his looks and keepsakes",
   boathouse: "The Boathouse · wishes, memories and letters", campfire: "The Campfire · by the water",

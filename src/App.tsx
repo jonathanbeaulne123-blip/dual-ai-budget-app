@@ -7117,8 +7117,14 @@ export function App() {
         ))}
       </div>
   );
-  /** Does the signed-in member have a job? Without one, the dial and All tools show four verbs (no Shift). */
-  const memberHasJob = household.workJobs.some((job) => job.active && job.memberId === actorId);
+  /**
+   * Shift on the dial (Tool Atlas §3.3): hidden only for the partner without a job when the household has jobs set
+   * up — "the other partner's dial is a stable four". A member with a job, or with a punch still open, always has it;
+   * a household with no job yet keeps it, because the Shift flow is where a job is set up.
+   */
+  const memberHasJob = household.workJobs.some((job) => job.active && job.memberId === actorId)
+    || Boolean(activeOpenShift(household.kitchen, actorId))
+    || !household.workJobs.some((job) => job.active);
   /**
    * One dispatcher for every Tool Atlas address that is not a plain house door (All tools, the host panels, the
    * camp card): the Books panes, Settings, the Leaving list, the weekly Sitdown and the Campfire. House doors go

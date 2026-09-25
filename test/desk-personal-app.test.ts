@@ -5,8 +5,9 @@ import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vites
 import type { AcceptWriteInput, CommandOutcome, Household } from "../src/core/index.ts";
 
 /**
- * The personal Desk mounted by the real App (SIMPLE_VIEW_DESK S5), with the
- * house world and the harbour switched on and the flat edition chosen: the
+ * The personal Desk mounted by the real App (SIMPLE_VIEW_DESK S5; since the Tool
+ * Atlas D2, the harbour's flat tier in Mine), with the house world and the
+ * harbour switched on and the flat edition chosen: the
  * household Desk carries the space switch in its header; one press there and
  * the personal Desk stands in place of the illustrated house; a tool opened
  * from it shows its surface with Put it back, and putting it back returns to
@@ -128,12 +129,13 @@ describe("the personal Desk, mounted by the App", () => {
     const personalSwitch = desk.querySelector<HTMLElement>('[data-desk-slot="space"] .view-switch')!;
     expect([...personalSwitch.querySelectorAll("button")].map((b) => b.getAttribute("aria-pressed"))).toEqual(["false", "true"]);
     expect(container.querySelectorAll(".view-switch").length).toBe(1);
-    // The bar keeps the flip and the + (two presses to a money verb); the rooms step aside for the Desk's chips.
-    const nav = container.querySelector<HTMLElement>('nav[data-edition-nav="desk"]')!;
-    expect(nav).not.toBeNull();
-    expect(nav.querySelector<HTMLButtonElement>(".house-nav-flip")!.getAttribute("aria-label")).toBe("Switch to the illustrated house");
-    expect(nav.querySelector("button.fab")).not.toBeNull();
-    expect(nav.querySelector(".house-nav-phone")).toBeNull();
+    // One island for both spaces (Tool Atlas D2): Mine stands the same glass as Ours — [Island] [Record] [All tools] —
+    // and no personal bottom bar (no house flip, no room buttons).
+    expect([...container.querySelectorAll<HTMLElement>("[data-glass-bubble]")].map((node) => node.dataset.glassBubble)).toEqual(["flip", "record", "tools"]);
+    expect(container.querySelectorAll("button.fab")).toHaveLength(1);
+    expect(container.querySelector(".house-nav-flip")).toBeNull();
+    expect(container.querySelector(".house-nav-phone")).toBeNull();
+    expect(container.querySelector("nav[data-edition-nav]")).toBeNull();
 
     // Back to shared in two presses from here too.
     await act(async () => personalSwitch.querySelectorAll<HTMLButtonElement>("button")[0]!.click());
@@ -149,7 +151,8 @@ describe("the personal Desk, mounted by the App", () => {
 
     await act(async () => desk.querySelector<HTMLButtonElement>('[data-desk-plate="mine-saving"]')!.click());
     await settle();
-    expect(container.querySelector<HTMLDivElement>(".desk-personal-stage")?.hidden).toBe(true);
+    // The harbour's reading edition stands the tool in front: the Desk steps aside.
+    expect(container.querySelector('[data-desk][data-desk-scope="personal"]')).toBeNull();
     const heading = await waitFor(() => container.querySelector<HTMLElement>(".house-tool-heading"), "the tool heading");
     expect(heading.querySelector("h2")!.textContent).toBe("Open Kitty Banks");
     expect(container.querySelector(".house-world")).toBeNull();
@@ -172,7 +175,7 @@ describe("the personal Desk, mounted by the App", () => {
     expect(sheet!.querySelector('[role="dialog"][aria-modal="true"]')).not.toBeNull();
   });
 
-  it("flips the personal edition with the backtick, and never while typing", async () => {
+  it("keeps the backtick's rules in Mine: never while typing, and no flip while the island cannot be drawn", async () => {
     const householdDesk = await waitFor(() => container.querySelector<HTMLElement>('[data-desk][data-desk-scope="household"]'), "the household Desk");
     await act(async () => householdDesk.querySelectorAll<HTMLButtonElement>('[data-desk-slot="space"] .view-switch button')[1]!.click());
     await settle();
@@ -187,10 +190,10 @@ describe("the personal Desk, mounted by the App", () => {
 
     (document.activeElement as HTMLElement | null)?.blur();
     await act(async () => { window.dispatchEvent(new KeyboardEvent("keydown", { key: "`", bubbles: true })); });
-    expect(localStorage.getItem("hearth:motion")).toBe("");
+    // Mine is the same island as Ours (D2): jsdom has no WebGL, so the island cannot be drawn and the flip is refused,
+    // exactly as in Ours. The personal Desk keeps standing.
+    expect(localStorage.getItem("hearth:motion")).toBe("flat");
     await settle(2);
-    // The illustrated personal house returns; the Desk steps away.
-    expect(container.querySelector('[data-desk][data-desk-scope="personal"]')).toBeNull();
-    expect(container.querySelector('nav[data-edition-nav="house"] .house-nav-flip')!.getAttribute("aria-label")).toBe("Switch to the simple view");
+    expect(container.querySelector('[data-desk][data-desk-scope="personal"]')).not.toBeNull();
   });
 });

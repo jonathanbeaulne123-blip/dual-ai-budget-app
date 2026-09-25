@@ -194,11 +194,14 @@ describe("retired screens (K4, D2)", () => {
     walk(src);
     return out.sort();
   }
-  it("PersonalJourney and HouseWorld are deprecated and imported by App.tsx alone", () => {
+  it("PersonalJourney and HouseWorld are deprecated; App no longer mounts Personal Journey, and HouseWorld only for Ours (or without the harbour)", () => {
     for (const module of ["PersonalJourney", "HouseWorld"]) {
       const source = readFileSync(join(src, "house", `${module}.tsx`), "utf8");
       expect(source.slice(0, 200)).toMatch(/@deprecated/);
-      expect(importers(module)).toEqual(["App.tsx"]);
     }
+    // The integrator's wiring (Wave 2): the personal Journey island is retired from the App; the module waits for Wave 2b's deletion.
+    expect(importers("PersonalJourney")).toEqual([]);
+    expect(importers("HouseWorld")).toEqual(["App.tsx"]);
+    expect(readFileSync(join(src, "App.tsx"), "utf8")).toMatch(/\(!HARBOUR_ENABLED\|\|view==="household"\)\?<HouseWorld /);
   });
 });

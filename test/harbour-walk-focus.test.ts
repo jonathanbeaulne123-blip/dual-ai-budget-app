@@ -434,7 +434,8 @@ describe('mountain finishing controls',()=>{
  it('announces and accepts a ride, returns keys to the stage, and withdraws stale offers',async()=>{
   const {stage}=await stand();
   await act(async()=>offerCallback?.({kind:'funicular',from:0,to:1,label:'Ride the funicular ↑',reason:'platform'}));
-  expect(host.querySelector('[role=status]')?.textContent).toContain('Ride the funicular');
+  // The stage's own phrase line announces it (the Mine ribbon keeps an empty status region mounted ahead of it).
+  expect(host.querySelector('.harbour-world__phrase[role=status]')?.textContent).toContain('Ride the funicular');
   const go=host.querySelector<HTMLButtonElement>('.harbour-ride-offer__go')!;
   await act(async()=>{go.focus();go.click();});expect(document.activeElement).toBe(stage);expect(travelWasBlocked).toEqual([false]);
   await act(async()=>offerCallback?.({kind:'gondola',from:0,to:1,label:'Ride the gondola ↑',reason:'platform'}));

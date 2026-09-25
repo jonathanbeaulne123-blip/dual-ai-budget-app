@@ -77,9 +77,14 @@ describe("src/harbour source fences", () => {
 
   it("never imports commands, the kitchen, the ledger, storage, continuity or the api", () => {
     const offences: string[] = [];
+    // The Campfire ritual (Tool Atlas D3, track D) is a working surface, not the scene: it composes existing
+    // captured commands and hands every one to the App's runKitchen (`onCommand`); it never commits, and
+    // test/campfire-ritual.test.ts holds its command allow-list (no money command). It alone may read the
+    // command surface; every other rule still applies to it.
+    const ritual = (file: string) => relative(harbour, file).replace(/\\/g, "/").startsWith("campfire/ritual/");
     for (const file of files) {
       for (const specifier of importsOf(readFileSync(file, "utf8"))) {
-        for (const rule of FORBIDDEN) if (rule.test(specifier)) offences.push(`${relative(root, file)} → ${specifier} (${rule.name})`);
+        for (const rule of FORBIDDEN) if (rule.test(specifier) && !(ritual(file) && rule.name === "core/index (the command surface)")) offences.push(`${relative(root, file)} → ${specifier} (${rule.name})`);
       }
     }
     expect(offences).toEqual([]);
@@ -113,7 +118,9 @@ describe("src/harbour source fences", () => {
     const app = readFileSync(join(root, "src", "App.tsx"), "utf8");
     expect(app).toMatch(/harbourOwnsRoute\(activeHouseRoute,view\)\?<Suspense fallback=\{<HarbourFlat place=\{harbourPlaceFor\(activeHouseRoute,view,true\)\?\?"court"\}/);
     expect(app).toMatch(/data-harbour-court=\{harbourOwnsRoute\(activeHouseRoute,view\)&&!activeHouseRoute\.surface\|\|undefined\}/);
-    expect(app).toMatch(/HARBOUR_ENABLED&&view==="household"\?<><Compass/);
+    // One glass chrome for both spaces (Tool Atlas D2): no personal bottom bar under the harbour.
+    expect(app).toMatch(/HARBOUR_ENABLED\?<><Compass fab=\{harbourBarFab\}/);
+    expect(app).not.toMatch(/HARBOUR_ENABLED&&view==="household"\?<><Compass/);
     expect(app).toMatch(/harbourArrivalRoute\(\{saved:saved\?\.route,scope:session\.view/);
     // The entry resolves the flat Desk before importing the illustrated world.
     expect(app).toMatch(/const HarbourWorld = lazy\(\(\) => import\("\.\/harbour\/HarbourEntry\.tsx"\)\)/);

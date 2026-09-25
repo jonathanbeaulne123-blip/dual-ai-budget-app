@@ -77,7 +77,8 @@ describe("the glass over the harbour", () => {
     // No onBillPaid in this fixture, so Bill paid stays hidden (the App wires it through GlassFab.onBillPaid).
     expect(verbs).toEqual(["Purchase", "Shift", "Income", "Move money"]);
     await act(async () => host.querySelector<HTMLButtonElement>('[data-fab-action="income"]')!.click());
-    expect(log).toEqual(["sheet", "pick:income"]);
+    // Record forwards the dial's open state (it shuts while an Add sheet is open), so the App hears it open and close.
+    expect(log).toEqual(["sheet", "open:true", "open:false", "pick:income"]);
   });
 
   it("reads Island on the Desk", async () => {
@@ -191,9 +192,11 @@ describe("the seams that carry the bar", () => {
     const app = readFileSync(join(process.cwd(), "src", "App.tsx"), "utf8");
     const shell = readFileSync(join(process.cwd(), "src", "harbour", "HarbourWorld.tsx"), "utf8");
     // The same FabSpeedDial wiring on both editions of the bar; none while the charter takes over.
-    expect(app).toMatch(/const harbourBarFab: CompassFab = \{closed:adding,actions:fabActionsFor\(view,tab\),closedLabel:fabClosedLabel\(view\),onOpenChange:setFabOpen,onPick:\(nextMode\)=>openAddFor\(null,nextMode\)/);
+    // Five verbs (Shift only with a job), Bill paid wired, and every verb opens in its D1 ledger (openRecordFlow).
+    expect(app).toMatch(/const harbourBarFab: CompassFab = \{closed:adding,actions:fabActionsFor\(view,\{memberHasJob\}\),closedLabel:fabClosedLabel\(view\),onOpenChange:setFabOpen,onPick:\(nextMode\)=>openRecordFlow\(nextMode\),onBillPaid:\(\)=>openRecordFlow\("bill"\)\}/);
     expect(app).toMatch(/onQuickSheet=\{\(\)=>setQuickSheetOpen\(true\)\} fab=\{charterTakeoverVisible\?undefined:harbourBarFab\}\/><\/Suspense>/);
-    expect(app).toMatch(/HARBOUR_ENABLED&&view==="household"\?<><Compass fab=\{harbourBarFab\}/);
+    // One glass chrome for both spaces (D2).
+    expect(app).toMatch(/HARBOUR_ENABLED\?<><Compass fab=\{harbourBarFab\}/);
     // The district row is gone from the App.
     expect(app).not.toMatch(/<Compass[^>]*(?:onHome|onStudy|onKitchen|onMaking|onTogether)=/);
     // S5: the backtick flips in personal scope too (its Desk), still behind the harbour gate.
