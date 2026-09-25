@@ -7,7 +7,9 @@ import {describe,it,expect} from 'vitest';
 import {groundHeightAt,TERRAIN_LATTICE_BOUNDS} from '../src/harbour/scene/ground.ts';
 import {landHeight} from '../src/harbour/mountain/art/land.ts';
 import {mountainProps,PROP_SINK} from '../src/harbour/mountain/art/placements.ts';
-import {DISTRICT_FIXTURES} from '../src/harbour/mountain/artGeometry.ts';
+import {DISTRICT_FIXTURES,STATION_SOLIDS,DISTRICT_ART_SOLIDS,SUMMIT_ART_SOLIDS} from '../src/harbour/mountain/artGeometry.ts';
+import {townArrivalPose,damViewPose,summitViewPose} from '../src/harbour/camera/mountainPoses.ts';
+import {poseEye} from '../src/harbour/camera/poses.ts';
 import {mountainPlanting,plantingClearance,crownOf} from '../src/harbour/mountain/planting.ts';
 import {mountainStrata,STRATA_GRADE} from '../src/harbour/mountain/art/rockArt.ts';
 import {MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE,DOOR_APRONS,RESERVOIR,TRANSPORT_LINES,OVERLOOKS,mountainBaseHeight,type RoadLine} from '../src/harbour/mountain/definition.ts';
@@ -76,6 +78,20 @@ describe('mountain art stands on the land',()=>{
       expect(f.at[1]-Math.min(...ys),f.id).toBeLessThanOrEqual(.15);
       expect(Math.max(...ys)-f.at[1],f.id).toBeLessThan(.95);
     }
+  });
+});
+
+describe('mountain art keeps the authored views open',()=>{
+  it('puts no art solid (stations, district furniture, observatory, pavilion) across the town, dam or summit view before the land',()=>{
+    const solids=[...STATION_SOLIDS,...DISTRICT_ART_SOLIDS,...SUMMIT_ART_SOLIDS],r=.12,hits:string[]=[];
+    for(const [name,pose] of [['town',townArrivalPose('desktop')],['dam',damViewPose('desktop')],['summit',summitViewPose('desktop')]] as const){
+      const e=poseEye(pose),t=pose.target,L=Math.hypot(t[0]-e[0],t[1]-e[1],t[2]-e[2]);
+      for(let d=0;d<L;d+=.1){const u=d/L,x=e[0]+(t[0]-e[0])*u,y=e[1]+(t[1]-e[1])*u,z=e[2]+(t[2]-e[2])*u;
+        if(y<groundHeightAt(x,z))break;
+        const s=solids.find(s=>x>s.min[0]-r&&x<s.max[0]+r&&y>s.min[1]-r&&y<s.max[1]+r&&z>s.min[2]-r&&z<s.max[2]+r);
+        if(s){hits.push(`${name}:${s.id}@${d.toFixed(1)}`);break;}}
+    }
+    expect(hits).toEqual([]);
   });
 });
 

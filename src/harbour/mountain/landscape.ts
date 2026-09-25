@@ -103,7 +103,7 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   for(const s of signSpots)sign(s.text,s.spot.at,s.spot.yaw,s.anchor,s.spot.w,s.spot.h,s.board);
   const gauge=sign('Household Fund · checking',plaques.fund.at,plaques.fund.yaw,'mountain:basin',5.2,1.3);
   const scaleGauge=sign('CAD scale',plaques.scale.at,plaques.scale.yaw,'mountain:basin',5.2,1);
-  sign('Kitty reserves',plaques.chambers.at,plaques.chambers.yaw,'mountain:basin',2.4,.6);
+  sign('Kitty reserves',plaques.chambers.at,plaques.chambers.yaw,'mountain:basin',2.4,.6,true);
   sign('Where the Fund flows',channelLectern(card,pal),channelLecternYaw,'mountain:basin',1.8,.6);
   // ── Cabins, idle at their first stations until ridden ──
   const cabins:Record<TransportKind,Cabin>={funicular:buildCabin('funicular',pal,tier,pal.walls[0]!),gondola:buildCabin('gondola',pal,tier,pal.accent)};

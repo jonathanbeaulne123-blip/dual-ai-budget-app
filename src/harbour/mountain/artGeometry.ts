@@ -56,7 +56,9 @@ export const DISTRICT_ART_SOLIDS:readonly ArtSolid[]=DISTRICT_FIXTURES.map(f=>f.
  * stands behind the building, about 4.3 above its floor) looks out beneath the dome's ring beam,
  * and a hemispherical ribbed dome.
  */
-export const OBSERVATORY_FORM={parapet:1.1,columns:4.8,domeRise:1};
+export const OBSERVATORY_FORM={parapet:1.1,columns:4.8,domeRise:1,
+  /** The telescope pier's offset from the centre (world x, z): toward the back, so the summit view looks over it. */
+  pier:[0,-1.2] as const};
 /** The summit observatory (the contract's site): a drum the camera and a body stop at. */
 export const SUMMIT_OBSERVATORY={at:SUMMIT_OBSERVATORY_SITE.at,radius:SUMMIT_OBSERVATORY_SITE.radius,spring:3.75};
 const [ox,,oz]=SUMMIT_OBSERVATORY.at,orad=SUMMIT_OBSERVATORY.radius,oy=footGround(ox,oz,0,orad,orad),obsDoor=DOOR_APRONS.find(a=>a.site==='observatory')?.facing??0;
@@ -69,7 +71,8 @@ export const SUMMIT_ART_SOLIDS:readonly ArtSolid[]=[
   ...Array.from({length:16},(_,k)=>k).flatMap(k=>{const a=(k+.5)/16*Math.PI*2,door=Math.atan2(Math.cos(obsDoor),Math.sin(obsDoor)),off=Math.atan2(Math.sin(a-door),Math.cos(a-door));
     if(Math.abs(off)<.3)return [];return [box(`summit-art:parapet:${k}`,ox+Math.cos(a)*(orad-.2),oz+Math.sin(a)*(orad-.2),.55,.55,oy.min,oy.max+.15+1.1)];}),
   ...Array.from({length:8},(_,k)=>{const a=k/8*Math.PI*2+Math.PI/16;return box(`summit-art:column:${k}`,ox+Math.cos(a)*(orad-.2),oz+Math.sin(a)*(orad-.2),.16,.16,oy.min,oy.max+.15+OBSERVATORY_FORM.columns);}),
-  box('summit-art:pier',ox,oz,.55,.55,oy.min,oy.max+.15+1.9),
+  // The stone pier only (the mount and tube above it stay out of the way of the summit view's camera ray).
+  box('summit-art:pier',ox+OBSERVATORY_FORM.pier[0],oz+OBSERVATORY_FORM.pier[1],.55,.55,oy.min,oy.max+.15+1.3),
   // The goal pavilion's columns (its floor is open between them).
   ...PAVILION_COLUMNS.map(([lx,lz],k)=>box(`summit-art:pavilion:${k}`,pav.at[0]+lx*pc+lz*ps,pav.at[2]+lz*pc-lx*ps,.25,.25,pg.min,pg.max+3.4)),
 ];

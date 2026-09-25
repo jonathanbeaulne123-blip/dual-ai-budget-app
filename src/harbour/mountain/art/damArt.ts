@@ -130,7 +130,7 @@ export function buildDamStructure(b:CardBuilder,glassB:CardBuilder,pal:MountainA
   const east=DAM_PARTS.abutments.find(a=>a.side==='east')!,ea=HA*1.04,face=[Math.sin(ea),Math.cos(ea)] as const,cs=Math.cos(ea),sn=Math.sin(ea);
   const plateAt=(lx:number,y:number):V3=>[east.at[0]+face[0]*(east.size[2]/2+.06)+cs*lx,y,east.at[2]+face[1]*(east.size[2]/2+.06)-sn*lx];
   const ch=KITTY_CHAMBERS[0]!;
-  return {fund:{at:plateAt(0,CREST-4.2),yaw:ea},scale:{at:plateAt(0,CREST-6.4),yaw:ea},chambers:{at:[ch.at[0]+ch.radius+.8,ch.at[1]+1.6,ch.at[2]+1.5],yaw:Math.atan2(1,1)}};
+  return {fund:{at:plateAt(0,CREST-4.2),yaw:ea},scale:{at:plateAt(0,CREST-6.4),yaw:ea},chambers:{at:[ch.at[0]+ch.radius+.8,g(ch.at[0]+ch.radius+.8,ch.at[2]+1.5)+1.45,ch.at[2]+1.5],yaw:Math.atan2(1,1)}};
 }
 const xz=(p:V3):[number,number]=>[p[0],p[2]];
 const postAt=(p:V3):[number,number]=>[p[0],p[2]];

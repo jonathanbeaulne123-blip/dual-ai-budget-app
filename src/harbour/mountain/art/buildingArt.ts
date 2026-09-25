@@ -175,8 +175,10 @@ export function observatory(b:CardBuilder,pal:MountainArtPalette,x:number,z:numb
   for(let k=0;k<12;k++){const a=k/12*Math.PI*2;for(let j=0;j<6;j++){const t0=.28+j/6*(1.1-.28),t1=.28+(j+1)/6*(1.1-.28);b.beam(D(a,t0),D(a,t1),.12,.12,dome,null,'steel');}}
   b.post(x,z,top+.3+(r+.1)*OBSERVATORY_FORM.domeRise,top+.9+(r+.1)*OBSERVATORY_FORM.domeRise,.06,pal.brass,5,'steel');
   // The telescope: a stone pier, a brass fork mount, the tube aimed at the southern sky.
-  const aim=doorYaw+.55,tx=Math.sin(aim),tz=Math.cos(aim),pivot:V3=[x,floor+1.9,z],eye:V3=[x+tx*2.6,floor+3.3,z+tz*2.6],tail:V3=[x-tx*1.3,floor+1.2,z-tz*1.3];
-  b.cone(x,z,floor,floor+1.3,.55,.42,pal.stone,8);b.post(x,z,floor+1.3,floor+1.9,.16,pal.iron,6,'steel');
+  // The pier stands a little back from the centre, behind the view from the gate (OBSERVATORY_FORM.pier).
+  const px0=x+OBSERVATORY_FORM.pier[0],pz0=z+OBSERVATORY_FORM.pier[1];
+  const aim=doorYaw+.55,tx=Math.sin(aim),tz=Math.cos(aim),pivot:V3=[px0,floor+1.9,pz0],eye:V3=[px0+tx*2.6,floor+3.3,pz0+tz*2.6],tail:V3=[px0-tx*1.3,floor+1.2,pz0-tz*1.3];
+  b.cone(px0,pz0,floor,floor+1.3,.55,.42,pal.stone,8);b.post(px0,pz0,floor+1.3,floor+1.9,.16,pal.iron,6,'steel');
   // A round brass tube with a dew shield at the sky end, a finder alongside and an eyepiece at the tail.
   const along=(u:number,side=0,up=0):V3=>[tail[0]+(eye[0]-tail[0])*u+Math.cos(aim)*side,tail[1]+(eye[1]-tail[1])*u+up,tail[2]+(eye[2]-tail[2])*u-Math.sin(aim)*side];
   b.tube([along(0),along(.82)],.19,pal.brass,10);b.tube([along(.8),along(1)],.24,shade(pal.brass,.85),10);
