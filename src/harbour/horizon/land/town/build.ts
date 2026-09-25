@@ -15,7 +15,7 @@ export function buildTown(cuts:LandCuts,base:HeightQuery):void {
   const ramp=gradeRoute('marketRamp',[[1480,1150],[1499,1158],[1500,1182],[1474,1180],[1480,1171]],()=>12,.08,[{xy:[1480,1150],height:18,reason:'upper landing'},{xy:[1480,1171],height:12,reason:'square'}],cuts.diagnostics);
   const b=bed('marketRamp','walk',ramp);b.surface='cobble';b.maxGrade=.08;cuts.beds.push(b);
   cuts.beds.push(bed('town.storefront','walk',[[1475,12,1190],[1500,8,1218],[1497,3,1265]]));
-  cuts.beds.push(bed('town.bankLink','walk',gradeRoute('town.bankLink',[[1455,1175],[1430,1160],[1440,1134]],()=>12,.08,[{xy:[1455,1175],height:12,reason:'square'},{xy:[1440,1134],height:16,reason:'bank door'}],cuts.diagnostics)));
+  cuts.beds.push(bed('town.bankLink','walk',gradeRoute('town.bankLink',[[1455,1175],[1414,1162],[1420,1138],[1430,1138],[1440,1134]],()=>12,.08,[{xy:[1455,1175],height:12,reason:'square'},{xy:[1430,1138],height:16,reason:'level Kitty Plaza entry'},{xy:[1440,1134],height:16,reason:'bank door'}],cuts.diagnostics)));
   cuts.beds.push(bed('town.quayLink','walk',gradeRoute('town.quayLink',[[1455,1175],[1410,1220],[1400,1290],[1420,1335]],()=>7,.08,[{xy:[1455,1175],height:12,reason:'square'},{xy:[1400,1290],height:7,reason:'Reach walk'},{xy:[1420,1335],height:3,reason:'quay'}],cuts.diagnostics)));
   const road=cuts.beds.find(b=>b.id==='V01')!,junction=nearestOnPath([1370,1260],road.points);
   cuts.beds.push(bed('town.riverLink','walk',gradeRoute('town.riverLink',[[1400,1290],plan(junction.at)],()=>7,.12,[{xy:[1400,1290],height:7,reason:'Reach walk'},{xy:plan(junction.at),height:junction.at[1],reason:'drive'}],cuts.diagnostics)));

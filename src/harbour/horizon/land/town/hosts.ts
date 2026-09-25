@@ -41,14 +41,14 @@ export function buildHostSites(cuts:LandCuts,base:HeightQuery):HostSite[] {
     const candidates=cuts.beds.filter(b=>preferred[h.id]!.includes(b.id));
     let nearest=candidates.map(b=>({b,...nearestOnPath(apronCentre,b.points)})).sort((a,b)=>a.distance-b.distance)[0]!;
     if(!nearest)throw new Error(`Missing public approach for ${h.id}`);
-    const entry:XY=[door[0]!+normal[0]!*9,door[2]!+normal[1]!*9],start=plan(nearest.at),controls:XY[]=[start,entry,[door[0]!,door[2]!]];
-    const lengthNeeded=Math.abs(nearest.at[1]!-h.h)/.08;
-    if(lengthNeeded>nearest.distance+6){
+    const entry:XY=[door[0]!+normal[0]!*9,door[2]!+normal[1]!*9],start:XY=h.id==='home'?[1455,1175]:plan(nearest.at),startHeight=h.id==='home'?12:nearest.at[1],controls:XY[]=h.id==='home'?[start,[1465,1178],[1474,1184],[1485,1180],[1485,1165],[door[0],door[2]]]:[start,entry,[door[0]!,door[2]!]];
+    const lengthNeeded=Math.abs(startHeight-h.h)/.08;
+    if(h.id!=='home'&&lengthNeeded>nearest.distance+6){
       // A broad courtyard return increases accessible length without moving the door or street.
       const tangent:XY=[-normal[1]!,normal[0]!],extra=(lengthNeeded-nearest.distance)/2+8;
       controls.splice(1,0,[entry[0]!+tangent[0]!*extra,entry[1]!+tangent[1]!*extra],[entry[0]!+normal[0]!*8+tangent[0]!*extra,entry[1]!+normal[1]!*8+tangent[1]!*extra]);
     }
-    const id=`host.${h.id}.approach`,points=gradeRoute(id,controls,base,.08,[{xy:start,height:nearest.at[1]!,reason:'public bed'},{xy:[door[0]!,door[2]!],height:h.h,reason:'door'}],cuts.diagnostics);
+    const id=`host.${h.id}.approach`,points=gradeRoute(id,controls,base,.08,[{xy:start,height:startHeight,reason:'public bed'},...(h.id==='home'?[{xy:[1465,1178] as XY,height:12,reason:'square exit'},{xy:[1485,1175] as XY,height:14,reason:'level apron entry'}]:[]),{xy:[door[0]!,door[2]!],height:h.h,reason:'door'}],cuts.diagnostics);
     const approach=bed(id,'walk',points);approach.maxGrade=.08;cuts.beds.push(approach);pad.serviceBedId=id;apron.serviceBedId=id;
     const a=rotation*Math.PI/180,c=Math.cos(a),s=Math.sin(a),outline:XY[]=[[-5,-5],[-5,5],[5,5],[5,-5]].map(([x,z])=>[apronCentre[0]!+x!*c-z!*s,apronCentre[1]!+x!*s+z!*c]);
     sites.push({id:h.id,door,normal,apron:outline,padId:pad.id,approachBedId:id});

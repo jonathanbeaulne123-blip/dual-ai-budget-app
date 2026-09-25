@@ -18,7 +18,8 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
     const mid:XY=[(a[0]!+p[0]!)/2,(a[2]!+p[2]!)/2],h=(a[1]!+p[1]!)/2,nx=-dz/len,nz=dx/len;
     const target=segments?segments[Math.min(segments.length-1,Math.floor((i-1)/(b.points.length-1)*segments.length))]!:deck;
     slab(target!,a,p,b.width,b.kind==='road'||b.kind==='skate'?.6:.35);
-    const gap=thresholds.some(t=>distance(mid,t)<5);
+    const joinedPad=cuts.pads.some(p=>{if(p.underground||p.kind==='host'||Math.abs(p.centre[1]-h)>.6)return false;const angle=p.rotationDegrees*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle),x=mid[0]-p.centre[0],z=mid[1]-p.centre[2];return Math.abs(x*c+z*s)<=p.size[0]/2+b.width/2&&Math.abs(-x*s+z*c)<=p.size[1]/2+b.width/2;});
+    const gap=joinedPad||thresholds.some(t=>distance(mid,t)<5);
     for(const side of [-1,1]){
       const edge=b.width/2+b.shoulder,drop=h-base(mid[0]!+nx*side*(edge+1.5),mid[1]!+nz*side*(edge+1.5));
       if(b.shoulder)slab(shoulders,a,p,b.shoulder,.6,side*(b.width/2+b.shoulder/2));
@@ -31,7 +32,7 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
           if(i%2===0)box(rails,[mid[0]!+nx*side*edge,mid[1]!+nz*side*edge],h+1.05,[.12,.12],h-.1);
         }
       }
-      if(b.terrainCut&&Math.abs(drop)>.5){
+      if(b.terrainCut&&!joinedPad&&Math.abs(drop)>.5){
         const low=Math.min(h-.6,base(mid[0]!+nx*side*(edge+1),mid[1]!+nz*side*(edge+1)))-.2;
         const top=Math.max(h,low+Math.abs(drop));
         // The wall widens into the earth at 1:6, so cuts have a visible battered face.
