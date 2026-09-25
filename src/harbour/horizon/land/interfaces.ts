@@ -11,6 +11,7 @@ export interface BedCut {
   kind: 'road' | 'skate' | 'walk' | 'trail' | 'boardwalk' | 'stair' | 'rail' | 'cable' | 'cave';
   profile: string;
   surface: string;
+  surfaceSegments?: { from: number; to: number; surface: string; pace: string; bankDegrees: number }[];
   points: XYZ[];
   width: number;
   shoulder: number;
