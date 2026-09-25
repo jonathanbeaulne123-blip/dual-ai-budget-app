@@ -17,6 +17,7 @@ import {EngravedPlate} from '../court/engraved.ts';
 import {HARBOUR_WANDERS} from './world.ts';
 import {buildHarbourLandscape} from './landscape.ts';
 import {buildHarbourLanes} from './lanes.ts';
+import {damViewPose,overviewPose,summitViewPose,townArrivalPose} from '../camera/mountainPoses.ts';
 
 /** The square and its seven room-sized buildings share the runtime's island. */
 export const villageCourt = registerPlace({id:'court',build(scene,dressing,_reading,quality){
@@ -72,7 +73,11 @@ export const villageCourt = registerPlace({id:'court',build(scene,dressing,_read
   const camp=add(new THREE.TorusGeometry(.9,.12,6,20),stone,shoreX,groundHeightAt(shoreX,shoreZ)+.12,shoreZ,'outdoor-fire-ring');camp.rotation.x=Math.PI/2;camp.userData.anchor='visit:campfire';waterfront.add(camp);
   for(const x of [-1.8,1.8]){const bench=add(new THREE.BoxGeometry(.48,.23,1.8),wood,shoreX+x,groundHeightAt(shoreX+x,shoreZ-.7)+.33,shoreZ-.7,'waterfront-bench');bench.userData.anchor='visit:campfire';waterfront.add(bench);}
   regions.push({id:'visit:campfire',group:'court',label:'Waterfront campfire',objects:[camp]});
-  const poses:Record<string,Pose>={court:{target:[.95,.85,5.1],r:9,theta:.15,phi:1.22},'court:phone':{target:[.95,.8,5.1],r:11,theta:.15,phi:1.17},sky:{target:[0,42,-122],r:390,theta:.18,phi:1.08}};
+  // Hearth Mountain v2 (C1, C5, C12): the first frame is the signature shot —
+  // the square in the foreground, the slope and the glass dam above it — and
+  // the sky is the overview with all six districts in it. Both are derived from
+  // the camera adapter's dam, square and districts, per composition.
+  const poses:Record<string,Pose>={court:townArrivalPose('desktop'),'court:phone':townArrivalPose('phone'),sky:overviewPose('desktop'),'sky:phone':overviewPose('phone'),dam:damViewPose('desktop'),'dam:phone':damViewPose('phone'),summit:summitViewPose('desktop'),'summit:phone':summitViewPose('phone')};
   group.updateMatrixWorld(true);scene.add(group);
   let disposed=false,calm=false;
   const handle:PlaceHandle & {play(id:string):string|null;setTransit(at:Point3|null,kind?:TransportKind):void;setRecovery(view:MountainRecoveryView):void;setInteraction(state:MountainInteractionState):void;setCalm(on:boolean):void;setVisitor(at:Point3):void;streamDetails(x:number,z:number,race:boolean):boolean}={group,streamDetails,setRecovery:mountain.setRecovery,setInteraction:mountain.setInteraction,setTransit:mountain.setTransit,setVisitor:mountain.setVisitor,setCalm(on){calm=on;mountain.setCalm(on);},anchors:()=>[...mountain.anchors,...anchors,...life.anchors(),...landscape.anchors],regions:()=>[...mountain.regions,...regions,...life.regions()],poses:()=>poses,update(reading){partner.update(reading);mountain.update(reading);},play:id=>HARBOUR_WANDERS.find(w=>`wander:${w.id}`===id)?.words??life.interact(id),animate(t,dt){mountain.animate(t,dt);partner.animate(t,dt);if(!calm){life.animate(t,dt);for(const {shell} of exteriors.live.values())shell.animate(t,dt);water.scale.setScalar(1+Math.sin(t*1.8)*.018);}return true;},dispose(){if(disposed)return;disposed=true;group.removeFromParent();mountain.dispose();life.dispose();partner.dispose();landscape.dispose();districtDetails.dispose();exteriors.dispose();owned.forEach(x=>x.dispose());group.clear();}};

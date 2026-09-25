@@ -3,6 +3,7 @@ import {usePublishEditionAvailability,type EditionAvailability} from "./nav/edit
 import {createMountainRecovery} from './mountain/recovery.ts';
 import {activateMountainInteraction,initialMountainInteractionState} from './mountain/life.ts';
 import {MOUNTAIN_TOUR} from './mountain/tour.ts';
+import {momentPose} from './camera/mountainPoses.ts';
 import {MountainPanel,type MountainAction} from './mountain/MountainPanel.tsx';
 import {MOUNTAIN_VERSION,TRANSPORT_STOPS,type Point3} from './mountain/definition.ts';
 import {SkateHUD} from './skate/SkateHUD.tsx';
@@ -395,6 +396,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   const [mountainRiding,setMountainRiding]=useState(false);
   /** A ride worth offering (walked onto a platform, or a long tap near a station), and the run toggle. */
   const [rideOffer,setRideOffer]=useState<RideOffer|null>(null),[runLocked,setRunLocked]=useState(false);
+  /** Hearth Mountain v2 (C5): the Look camera is at its far limit; one more pull opens the Journey. */
+  const [zoomEdge,setZoomEdge]=useState(false);
   const [appearanceRequest,setAppearanceRequest]=useState(0);
   const [mountainInspect,setMountainInspect]=useState<{section:'map'|'water'|'travel';seq:number}>();
   const pendingMountain=useRef<MountainAction|null>(null);
@@ -406,7 +409,8 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       const result=activateMountainInteraction(action.id,lifeRef.current,theme,quiet);if(!result)return;
       held.current.clear();pushBody();lifeRef.current=result.state;setMountainLife(result.state);w?.setMountainInteraction(result.state);setPhrase(result.words);
       if(result.cue==='bell'&&comfort.sound)w?.mountainBell();
-      if(w){if(result.kind==='bench'&&result.state.seated){leaveSkating();w.mountainTravel([result.at[0],result.at[1],result.at[2]+2]);}w.look({target:[result.at[0],result.at[1]+1,result.at[2]],r:result.kind==='overlook'?36:12,theta:0,phi:1.12});}
+      // Hearth Mountain v2 (C7): each small moment has its own authored view — an overlook or a bench looks at the town (the dam overlook at the dam), a gate, a bell or an animal is framed from its uphill side.
+      if(w){if(result.kind==='bench'&&result.state.seated){leaveSkating();w.mountainTravel([result.at[0],result.at[1],result.at[2]+2]);}if(!w.shot(`moment:${action.id}`)){const pose=momentPose(action.id);if(pose)w.look(pose);}}
       return;
     }
     if(action.kind==='calm'){setMountainCalm(action.on);w?.mountainCalm(action.on||comfort.quiet);return;}
@@ -417,8 +421,9 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     if((action.kind==='go'||action.kind==='ride'||action.kind==='race')&&!routeRef.current.surface)w.setToolOpen(false);
     if(w.placeId()!=='court'){pendingMountain.current=action;navigatePlace('court');return;}
     held.current.clear();pushBody();
-    if(action.kind==='tour'){const shot=MOUNTAIN_TOUR.find(s=>s.id===action.id);if(shot)w.look(shot.pose);return;}
-    if(action.kind==='view'){w.look({target:[25,80,-239],r:60,theta:0,phi:1.3});return;}
+    // Tour stops and views are composed for this stage by the runtime (phone and desktop apart) and flown to at a capped speed.
+    if(action.kind==='tour'){const shot=MOUNTAIN_TOUR.find(s=>s.id===action.id);if(shot&&!w.shot(`tour:${shot.id}`))w.look(shot.pose);return;}
+    if(action.kind==='view'){w.shot(action.view==='dam'?'view:dam':'view:world');return;}
     if(action.kind==='go')w.mountainTravel(action.at);
     if(action.kind==='ride')w.mountainTravel(TRANSPORT_STOPS[action.transport][action.to]!.at,{kind:action.transport,from:action.from,to:action.to});
     if(action.kind==='race'){startSkating();w.body()?.skate.route('mountain-descent');}
@@ -550,7 +555,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
           onProject: next => setRects(next), onTap, onGesture, onRailDrag: (x, width) => onRailDragRef.current(x, width),
           onStick, onClose: setClosed, onThreshold, onExit,
           onAvatarStatus:(loaded,status)=>{if(avatarRef.current===loaded)setAvatarStatus(status);},
-          avatar:avatarRef.current,onJourney:()=>openJourney(),onMountainTravel:setMountainRiding,onRideOffer:setRideOffer,
+          avatar:avatarRef.current,onJourney:()=>openJourney(),onMountainTravel:setMountainRiding,onRideOffer:setRideOffer,onZoomEdge:setZoomEdge,
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
         runtime.current = world;world.setMountainRecovery(recoveryRef.current);world.setMountainInteraction(lifeRef.current);world.setWorldAmbience(worldAudio.current);world.mountainCalm(calmRef.current);world.go("court");
@@ -810,7 +815,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   }, []);
   // A key held when the stage loses focus would walk for ever; let it go.
   useEffect(() => {
-    const drop = () => { runtime.current?.body()?.skate?.pause(true);if (held.current.size) { held.current.clear(); pushBody(); } };
+    const drop = () => { runtime.current?.body()?.skate?.pause(true);runtime.current?.gesture({ kind: "spin", dir: 0 });if (held.current.size) { held.current.clear(); pushBody(); } };
     window.addEventListener("blur", drop);
     return () => { window.removeEventListener("blur", drop); drop(); };
   }, [pushBody]);
@@ -926,6 +931,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   function onStageKeyUp(event: ReactKeyboardEvent<HTMLDivElement>) {
     if (event.target !== event.currentTarget&&!acceptsSkateKey(event)) return;
     const key = event.key.toLowerCase();
+    if (key === "q" || key === "e" || key === "," || key === ".") runtime.current?.gesture({ kind: "spin", dir: 0 });
     const skate=runtime.current?.body()?.skate;
     if(skate?.active()){
       if(skate.input()?.keyUp(event.nativeEvent))event.preventDefault();
@@ -978,11 +984,16 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // Above the walk, because a jump asked for while W is held is still a
     // jump, and below the rail, which keeps its own keys down in the Cellar.
     const lower = event.key.toLowerCase();
+    // ── Hearth Mountain v2 · keyboard orbit ── Q/E (and , .) turn the view
+    // while held, exactly as a drag does, in Walk and in Look alike.
+    const spinDir = lower === "q" || lower === "," ? -1 : lower === "e" || lower === "." ? 1 : 0;
+    if (spinDir !== 0 && !railKey) { if (!event.repeat) world.gesture({ kind: "spin", dir: spinDir }); event.preventDefault(); return; }
     if (!railKey && runtime.current?.body()) {
       if (lower === "j" && doMove("jump")) { event.preventDefault(); return; }
       if (lower === "k" && doMove("slide")) { event.preventDefault(); return; }
-      // Q and E belong to the camera (orbit); the emote row is its button, and 1–6 play emotes directly.
+      // Q and E belong to the camera (orbit); the emote row is on T, and 1–6 play emotes directly; R keeps you running.
       if (lower === "r" && !event.repeat) { const body = runtime.current.body(); if (body) setRunLocked(body.runLock(!body.runLock())); event.preventDefault(); return; }
+      if (lower === "t") { setEmotesOpen(open => !open); event.preventDefault(); return; }
       const slot = EMOTE_IDS[Number(event.key) - 1];
       if (slot && doEmote(slot)) { setEmotesOpen(false); event.preventDefault(); return; }
     }
@@ -1024,10 +1035,14 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       // The emote row is the most immediate "out" of all: it is a thing that
       // is open, in front of you, waiting to be picked from.
       if (emotesOpen) { setEmotesOpen(false); doEmote(null); }
-      else if (body?.following()) { held.current.clear(); body.input({ forward: 0, strafe: 0 }); body.follow(false); }
+      // Hearth Mountain v2 (C3): Escape never flies the camera to the town.
+      // Out of Close first (back to Walk when that is where it came from);
+      // from Look, back to Walk at the body; in Walk, stop walking; and only a
+      // room, with nothing else to come out of, steps back out of the room.
       else if (world.closed()) setClosed(world.toggleClose(false));
-      else if (placeRef.current === "court") world.go("court");
-      else onNavigateRef.current("home", "middle");
+      else if (body && !body.following() && placeRef.current === "court") { held.current.clear(); pushBody(); body.follow(true); }
+      else if (body?.following() && (body.walking() || held.current.size > 0)) { held.current.clear(); body.input({ forward: 0, strafe: 0 }); body.cancel(); }
+      else if (placeRef.current !== "court") onNavigateRef.current("home", "middle");
     }
     else return;
     event.preventDefault();
@@ -1115,6 +1130,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {sparkle && <div className="harbour-spark" aria-hidden="true" style={{ left: `${sparkle.x}px`, top: `${sparkle.y}px`, "--spark": sparkle.color } as CSSProperties}>{Array.from({ length: sparkle.petals }, (_, i) => <span key={i} style={{ "--i": i } as CSSProperties} />)}</div>}
       <p className="harbour-world__phrase" role="status" aria-live="polite">{phrase}</p>
       {statusLine && <small className="harbour-world__supported" role="status">{statusLine}</small>}
+      {zoomEdge && !toolOpen && <small className="harbour-world__checking harbour-world__zoom-edge" role="status">Pull once more to open the Journey</small>}
       {!ready && status === "ready" && <small className="harbour-world__checking" role="status">Checking the books · {freshness}</small>}
       {toolOpen && <button type="button" className="harbour-world__put-back" onClick={onClose}>← Put it back in {placeName}</button>}
       {!toolOpen && status === "ready" && place !== "court" && <button type="button" className="harbour-world__stair" onClick={stair}>← Village square</button>}
@@ -1142,7 +1158,7 @@ export function stageWords(place: HarbourPlaceId, placeName: string, closed: boo
     ? "W A S D walks you around the room; the left and right arrows walk the bill rail through the month"
     : `W A S D and the arrow keys walk you around ${ground}`;
   const close = closed ? "steps back from" : "comes close to";
-  return `${here}. ${keys}; Shift runs and R keeps you running; Space or J jumps and K slides out of a run; 1 to 6 play emotes; Q and E turn the view; tap ${floor} to walk there; drag to look around you; plus and minus zoom; C ${close} what this place is about; Escape stops walking, then steps back. Every door here is also a button in the quick sheet.`;
+  return `${here}. ${keys}; Shift runs and R keeps you running; Space or J jumps and K slides out of a run; Q and E turn the view; T opens the emotes and 1 to 6 play them; tap ${floor} to walk there; drag to look around you; plus and minus zoom; C ${close} what this place is about; Escape stops walking, then steps back. Every door here is also a button in the quick sheet.`;
 }
 
 /**

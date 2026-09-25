@@ -12,7 +12,7 @@ import {buildSkatePark} from '../skate/parkScene.ts';
 import {skateField,type SkateControls} from '../skate/driver.ts';
 import type {SkateProgress} from '../skate/session.ts';
 import {createHudThrottle,type SkateHudModel} from '../skate/hud/model.ts';
-import {createSkateCamera,type SkateCamera} from '../skate/camera/skateCamera.ts';
+import {createSkateCamera,SKATE_CAM,type SkateCamera} from '../skate/camera/skateCamera.ts';
 import {skateWalkPose,skateWatchPoint} from '../skate/camera/companion.ts';
 import {insideVillageBuilding} from '../body/obstacles.ts';
 import { acquireWorldRenderer } from "../../house/world/rendererOwner.ts";
@@ -23,7 +23,7 @@ import { createCourtCamera, type CourtCamera, type CourtLook } from "../camera/c
 // Everything this lane adds to the runtime is additive and marked like this
 // block. A sibling lane is restructuring this file; nothing above or below a
 // marked block was rewritten to make room for the body.
-import { createFollowCamera, FOLLOW_DISTANCE, FOLLOW_MAX_R, FOLLOW_PHI, followInRoom, type FollowCamera } from "../camera/followCamera.ts";
+import { createFollowCamera, FOLLOW_DISTANCE, FOLLOW_LOOK_HEIGHT, FOLLOW_MAX_R, FOLLOW_PHI, followInRoom, type FollowCamera } from "../camera/followCamera.ts";
 import { createWalker, COURT_ARRIVAL, type Walker } from "../body/walker.ts";
 import type { EmoteId } from "../body/bodyModel.ts";
 import type {PlayableAvatar} from '../body/avatarDefinition.ts';
@@ -31,7 +31,16 @@ import {createCat,type Cat} from '../body/cat.ts';
 import {heelStand,type CatErrand} from '../body/catModel.ts';
 import {attentionDoor,attentionOf} from '../data/attention.ts';
 import {HARBOUR_LAND} from '../village/world.ts';
-import {harbourZoomExit} from '../camera/worldZoom.ts';
+import {harbourZoomExit,zoomEdgeArmed,ZOOM_REST,type ZoomEdge} from '../camera/worldZoom.ts';
+// ── Hearth Mountain v2 · the camera track ── one camera system: Look, Walk, Close, Ride, Skate, with explicit hand-offs.
+import {cameraBlocked,cameraGround,rideFrame,type MovingSolid} from '../camera/worldAdapter.ts';
+import {arrivalAt,closeLandmark,damViewPose,doorExitPose,momentPose,openWorldFov,overviewPose,summitViewPose} from '../camera/mountainPoses.ts';
+import {handToLook,handToWalk,walkFrom} from '../camera/director.ts';
+import {createRideCamera,rideExitHeading,type RideCamera} from '../camera/rideCamera.ts';
+import {blendShot,createFinishShot,raceFinishShot,raceStartShot,startShotWeight} from '../skate/camera/raceShots.ts';
+import {skateCameraPose} from '../skate/camera/skateCamera.ts';
+import {poseFrom} from '../camera/poses.ts';
+import {tourPose} from '../mountain/tour.ts';
 // ── walk-everywhere ──────────────────────────────────────────────────────────
 // Where a body may stand in each of the eleven places: the floor, the walls,
 // what is in the way, and where you come in. All of it derived from each
@@ -104,6 +113,12 @@ export type HarbourCallbacks = {
   onMountainTravel?:(travelling:boolean)=>void;
   /** A ride worth offering: standing on a platform, or after a long tap with a station close at hand. `null` withdraws it. */
   onRideOffer?:(offer:RideOffer|null)=>void;
+  /**
+   * Hearth Mountain v2 (C5): the Look camera is at its far limit and one more
+   * pull will open the Journey — the shell shows "Pull once more to open the
+   * Journey" while this is true.
+   */
+  onZoomEdge?:(armed:boolean)=>void;
   /**
    * The body walked to a place's own way out (walk-everywhere): the Tower's
    * stair, the Cellar's stair, the Glasshouse's garden door, the footpath up
@@ -211,7 +226,14 @@ export type HarbourRuntime = {
    * as a fallback — a fallback is how the stage came to promise a walk and
    * deliver a camera slide.
    */
-  gesture: (input: { kind: "orbit"; dx: number; dy: number } | { kind: "zoom"; delta: number }) => void;
+  gesture: (input: { kind: "orbit"; dx: number; dy: number } | { kind: "zoom"; delta: number } | { kind: "spin"; dir: -1 | 0 | 1 }) => void;
+  /**
+   * Hearth Mountain v2: fly Look to an authored shot, composed for this stage —
+   * `tour:<id>`, `moment:<interaction id>`, `view:dam`, `view:summit`,
+   * `view:world` (the overview), `view:town` (the signature arrival shot).
+   * False when the shot is unknown.
+   */
+  shot: (id: string) => boolean;
   /** A tool is open in front of the court: no breathing, the strip only redraws on demand. */
   setToolOpen: (open: boolean) => void;
   /** The place's idle animation (the Queen's breath). Off by default for an empty island. */
@@ -348,6 +370,8 @@ export const DOUBLE_TAP_MS = 320, DOUBLE_TAP_PIXELS = 28;
  * second the old camera pan needed, and the pan is gone.
  */
 export const STICK_MS = 380, STICK_RADIUS = 56;
+/** Hearth Mountain v2: how fast a held Q/E (or , .) turns the view, radians per second. */
+export const ORBIT_KEY_RATE = 1.9;
 /** Zones a drag walks rather than orbits: the cellar's rail and the water behind it. */
 const RAIL_ZONES = new Set(["rail", "water"]);
 const isRail = (hit: HarbourHit): boolean => hit.kind === "anchor" && RAIL_ZONES.has(hit.anchor.zone);
@@ -613,7 +637,15 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if (wantsIsland && !live.has("court") && PLACES.court) { raise(PLACES.court); changed = true; }
     const detailCourt=live.get('court')?.handle as (PlaceHandle & {streamDetails?:(x:number,z:number,race:boolean)=>boolean})|undefined;
     const run=walker?.skate.active()?walker.skate.run():null;
-    if(detailCourt?.streamDetails?.(focus[0],focus[1],run?.id==='mountain-descent'&&!run.finished)){
+    // Hearth Mountain v2 (C10): district detail follows the camera's *target*
+    // while Look drives — and Look on the open world is a view of the whole
+    // mountain (the arrival shot, the overview, every tour stop), so there
+    // every district is held in detail — and the body while Walk, a ride or
+    // the board drives. Placed interiors and doorways stay on the body (`focus`).
+    const lookDriving=!following&&placeId==='court';
+    const view=lookDriving?court.pose().target:null;
+    const detailX=view?view[0]:focus[0],detailZ=view?view[2]:focus[1];
+    if(detailCourt?.streamDetails?.(detailX,detailZ,(run?.id==='mountain-descent'&&!run.finished)||lookDriving)){
       changed=true;showExteriors();
     }
     return changed;
@@ -677,7 +709,24 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       lidOf(each)?.(lid);
     }
   }
-  const court: CourtCamera = createCourtCamera({ camera, composition, reduced: reducedMotion(), fov: fovFor(composition) });
+  // ── Hearth Mountain v2 · the camera track ─────────────────────────────────
+  // The open world's lens (wider on a portrait phone, C12) and what stands in
+  // the eye's way: terrain, decks, buildings, storefronts, the dam, pillars and
+  // a moving cabin (C11). Rooms keep their own lens and their own hold.
+  let cabinSolid: MovingSolid | null = null;
+  const lookLens = (): number => (placeId === 'court' ? openWorldFov(composition, camera.aspect || (composition === 'phone' ? 390 / 844 : 1.6)) : fovFor(composition));
+  const walkLens = lookLens;
+  const eyeBlocked = (x: number, y: number, z: number): boolean => cameraBlocked(x, y, z, .12, tier === 'full' ? 'full' : 'lite', cabinSolid);
+  // (Look's own line starts at what it looks at, which on a ride is the rider in the cabin: the cabin is not in its way.)
+  const lookTerrain = () => (placeId === 'court' ? { ground: cameraGround, blocked: (x: number, y: number, z: number) => cameraBlocked(x, y, z, .15, 'lite') } : null);
+  /** Ease the drawn lens toward `goal` (a change of mode blends, C10 minor); reduced motion cuts. True while easing. */
+  function easeLens(goal: number, dt: number): boolean {
+    if (Math.abs(camera.fov - goal) < 1e-2 || reducedMotion() || !(dt > 0)) { if (camera.fov !== goal) { camera.fov = goal; camera.updateProjectionMatrix(); } return false; }
+    camera.fov += (goal - camera.fov) * (1 - Math.exp(-4 * Math.min(dt, .1)));
+    camera.updateProjectionMatrix();
+    return true;
+  }
+  const court: CourtCamera = createCourtCamera({ camera, composition, reduced: reducedMotion(), fov: fovFor(composition), terrain: lookTerrain() });
   // The standing room holds the camera from the first frame: a stale return
   // slot or a wild zoom can never show a room from the lawn.
   court.setHold(holdFor(placeId));
@@ -706,7 +755,13 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
   let skateCamera = false;
   let selectedAvatar=callbacks.avatar??null;
   let cat:Cat|null=null,errand:CatErrand|null=null,errandKey:string|null=null,catWatch:{x:number;z:number}|null=null;
-  let catCatchUpAt=0,zoomOverscroll=0,journeyRequested=false;
+  let catCatchUpAt=0,zoomEdge:ZoomEdge=ZOOM_REST,zoomArmed=false,journeyRequested=false;
+  /** Hearth Mountain v2 · the ride camera (C4), the race's finish shot, and the keyboard orbit hold (Q/E). */
+  let rideCam: RideCamera | null = null, rideOn: { kind: TransportKind; to: number } | null = null;
+  const finishShot = createFinishShot();
+  let spin: -1 | 0 | 1 = 0;
+  /** Close was entered from Walk: leaving it returns to Walk at the body. */
+  let closeFromWalk = false;
   let bodyInput: BodyInput = NO_INPUT;
   const bodySamples: number[] = [];
   /**
@@ -751,6 +806,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       follow.setHold(followHoldIn(holdFor(placeId), room));
       const reach = walksIndoors(placeId) ? roomReach(room) : null;
       follow.setPlan(reach === null ? null : followInRoom(reach, composition));
+      follow.setFov(walkLens());
       // Configuring the inactive walking rig must not take over the room view.
       if(!following){camera.position.copy(eye);camera.quaternion.copy(orientation);camera.fov=fov;camera.updateProjectionMatrix();}
     }
@@ -790,8 +846,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     cat=createCat({groundHeightAt:(x,z)=>bodyGround(x,z),obstacles:placeObstacles(placeId,handle.regions(),anchors,tier),room,shore:HARBOUR_LAND.shore,tier,start:heelStand(stood),look:stood,reduced:reducedMotion()});
     scene.add(cat.group);errandKey=null;
     const eye=camera.position.clone(),orientation=camera.quaternion.clone(),fov=camera.fov;
-    follow = createFollowCamera({ camera, composition, reduced: reducedMotion(), fov: fovFor(composition), groundHeightAt: (x, z) => placeId==='court'?groundHeightAt(x,z):bodyGround(x, z), blocked:(x,y,z)=>placeId==='court'&&(worldCollisionAt(x,y,z,.12)||mountainFoliageAt(x,y,z,tier)||insideVillageBuilding(x,z,.12,y)) });
+    follow = createFollowCamera({ camera, composition, reduced: reducedMotion(), fov: walkLens(), groundHeightAt: (x, z) => placeId==='court'?cameraGround(x,z):bodyGround(x, z), blocked:(x,y,z)=>placeId==='court'&&eyeBlocked(x,y,z) });
     skateCam = createSkateCamera({ ground: (x, z) => bodyGround(x, z) });
+    rideCam = createRideCamera({ ground: cameraGround, blocked: eyeBlocked });
     host.dataset.harbourBody = "standing";
     standBody();
     refreshErrand();
@@ -825,11 +882,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     raceGhost.visible=false;
     if (following) {
       following = false;
-      if (Math.abs(camera.fov - fovFor(composition)) > 1e-3) { camera.fov = fovFor(composition); camera.updateProjectionMatrix(); }
-      court.restore(camera.position.toArray() as Vec3);
+      // The view as it is shown becomes Look's (C3); the lens then blends to Look's own.
+      handToLook(court, shownPose());
     }
     if(hadSkate){hadSkate=false;skateThrottle.reset();callbacks.onSkate?.(null);}
-    walker?.dispose(); walker = null; follow = null; skateCam = null; skateCamera = false; bodyInput = NO_INPUT;
+    walker?.dispose(); walker = null; follow = null; skateCam = null; skateCamera = false; rideCam = null; rideOn = null; cabinSolid = null; bodyInput = NO_INPUT;
     cat?.dispose();cat=null;
     bodyExits = []; exitArmed = false;
     delete host.dataset.harbourBody;
@@ -844,9 +901,10 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const at = walker.state();
       if(placeId==='court'&&!reducedMotion())mountainHandle().setVisitor?.([at.x,at.y,at.z]);
       host.dataset.houseBody=JSON.stringify({world:MOUNTAIN_VERSION,place:placeId,x:at.x,z:at.z,y:at.y,yaw:at.yaw});
-      follow.setSubject({ x: at.x, y: walker.skate.active()?at.y+.28:eyeHeight(at), z: at.z, yaw: walker.skate.heading()??at.yaw, speed: at.speed, air: at.air });
-      // Start from where the Look camera stands, so this is a move, not a cut.
-      follow.seed(court.pose());
+      follow.setSubject(walkSubject(at));
+      // Start from where the Look camera stands, so this is a move, not a cut —
+      // unless Look is looking somewhere else entirely (C3: `SEED_REACH`).
+      handToWalk(follow, court.pose(), camera.fov);
     } else {
       // Hand it back at the eye it is actually showing: no jump either way.
       // Asking to be somewhere else also stops the walk — otherwise a body
@@ -854,27 +912,46 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // pose that was just asked for.
       walker?.cancel();
       bodyInput = NO_INPUT;
-      // The follow camera may have been sprinting, and a sprint widens the
-      // lens. Hand it back on the place's own lens, never on a borrowed one.
-      if (Math.abs(camera.fov - fovFor(composition)) > 1e-3) { camera.fov = fovFor(composition); camera.updateProjectionMatrix(); }
-      court.restore(camera.position.toArray() as Vec3);
+      // C3: Look's goal is re-aimed at the body with the view's own r/θ/φ —
+      // exactly what was on screen — so the next frame moves nothing (a tool,
+      // the guide or a pause never whips the camera to a stale town goal).
+      // The lens blends back to Look's own in the loop.
+      handToLook(court, shownPose());
     }
     dirty = true;
     schedule();
   }
+  /** What the walking camera looks at: 1.2 above the feet outdoors, the eye line indoors, the board's deck skating. */
+  function walkSubject(at: ReturnType<Walker['state']>): { x: number; y: number; z: number; yaw: number; speed: number; air: number } {
+    const y = walker?.skate.active() ? at.y + .28 : walksIndoors(placeId) ? eyeHeight(at) : at.y + FOLLOW_LOOK_HEIGHT;
+    return { x: at.x, y, z: at.z, yaw: walker?.skate.heading() ?? at.yaw, speed: at.speed, air: at.air };
+  }
+  /** The pose that is on screen right now, whichever camera drew it — where a hand-off to Look begins. */
+  function shownPose(): CourtPose {
+    if (rideOn && rideCam) { const f = rideCam.shot(); return poseFrom(f.eye, f.look); }
+    if (skateCamera && skateCam) return skateCameraPose(skateCam.frame());
+    if (follow) return follow.shown();
+    return court.pose();
+  }
   raiseBody();
 
+  function setZoomEdge(armed: boolean): void { if (armed !== zoomArmed) { zoomArmed = armed; callbacks.onZoomEdge?.(armed); } }
   function zoomWorld(delta:number):void{
     if(!Number.isFinite(delta)||toolOpen||journeyRequested)return;
     if(following&&follow){
       if(placeId==='court'&&delta>0&&follow.pose().r>=FOLLOW_MAX_R-.2){
-        const pose=follow.pose();setFollowing(false);court.goTo(pose);
+        // Scroll out of Walk: Look takes the view at the body, and the next pull climbs.
+        setFollowing(false);
       }else{follow.zoom(delta);return;}
     }
     if(placeId==='court'&&callbacks.onJourney){
-      const result=harbourZoomExit(court.goal().r,delta,zoomOverscroll);zoomOverscroll=result.overscroll;
-      if(result.exit){journeyRequested=true;callbacks.onJourney();return;}
-    }else zoomOverscroll=0;
+      // C5: only a pull made *at* the far limit counts; the first one shows
+      // "Pull once more to open the Journey", a later one opens it.
+      const now=performance.now();
+      zoomEdge=harbourZoomExit(court.goal().r,delta,zoomEdge,now);
+      setZoomEdge(zoomEdgeArmed(zoomEdge,now));
+      if(zoomEdge.exit){zoomEdge=ZOOM_REST;setZoomEdge(false);journeyRequested=true;callbacks.onJourney();return;}
+    }else{zoomEdge=ZOOM_REST;setZoomEdge(false);}
     court.zoom(delta);
   }
 
@@ -1099,6 +1176,14 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // the camera-pan fallback it used to have in a room is **deleted** rather
     // than left standing — a body stands in every place, and a fallback that
     // slides the camera is how the stage came to promise a walk it did not do.
+    // ── Hearth Mountain v2 · keyboard orbit (Q/E and , .) ── held keys turn the
+    // view at a steady rate, through the very drag a mouse or a thumb makes.
+    if (spin !== 0 && !toolOpen) {
+      const px = (spin * ORBIT_KEY_RATE * Math.min(dt, .1)) / 0.0052;
+      if (following && follow && !skateCamera && !rideOn) follow.drag(px, 0);
+      else if (!following) court.drag(px, 0);
+      dirty = true;
+    }
     const push = stick ? Math.min(1, Math.hypot(stick.dx, stick.dy) / STICK_RADIUS) : 0;
     const stickInput: BodyInput | null = stick
       ? { forward: (-stick.dy / STICK_RADIUS) || 0, strafe: (stick.dx / STICK_RADIUS) || 0, run: push > 0.97 }
@@ -1113,7 +1198,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const skating = walker.skate.active() && placeId === 'court';
       if(skating!==skateCamera){
         // The board went away: the walking camera picks up from the chase camera's side of the rider, on a heading whose standing eye is clear of the ramps.
-        if(!skating&&skateCam&&following){const on=walker.state();follow.seed(skateWalkPose(skateCam.frame(),{x:on.x,y:eyeHeight(on),z:on.z},(x,z)=>bodyGround(x,z),{r:FOLLOW_DISTANCE[composition],phi:FOLLOW_PHI,lookHeight:0}));if(Math.abs(camera.fov-fovFor(composition))>1e-3){camera.fov=fovFor(composition);camera.updateProjectionMatrix();}}
+        if(!skating&&skateCam&&following){const on=walker.state();follow.seed(skateWalkPose(skateCam.frame(),{x:on.x,y:on.y+FOLLOW_LOOK_HEIGHT,z:on.z},(x,z)=>bodyGround(x,z),{r:FOLLOW_DISTANCE[composition],phi:FOLLOW_PHI,lookHeight:0}));follow.lensFrom(camera.fov);}
+        // The board came out: the chase camera's lens starts where Walk's was (a blend, not a cut).
+        if(skating&&skateCam)skateCam.lensFrom(camera.fov);
         skateCamera=skating;
       }
       const began = diagnostics ? performance.now() : 0;
@@ -1160,22 +1247,31 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       const at = walker.state();
       if(placeId==='court'&&!reducedMotion())mountainHandle().setVisitor?.([at.x,at.y,at.z]);
       host.dataset.houseBody=JSON.stringify({world:MOUNTAIN_VERSION,place:placeId,x:at.x,z:at.z,y:at.y,yaw:at.yaw});
-      follow.setSubject({ x: at.x, y: walker.skate.active()?at.y+.28:eyeHeight(at), z: at.z, yaw: walker.skate.heading()??at.yaw, speed: at.speed, air: at.air });
+      follow.setSubject(walkSubject(at));
       // ── The skate chase camera ── writes the camera on skate frames.
       const ridden = skating && following && skateCam ? walker.skate.present() : null;
       if (ridden && skateCam) {
         if (walker.skate.takeCut()) skateCam.snap(ridden);
         skateCam.setDistance(walker.skate.current()?.camera === 'far' ? 'far' : 'near');
+        skateCam.setFastSpeed(walker.skate.run()?.id === 'mountain-descent' ? SKATE_CAM.raceFastSpeed : SKATE_CAM.fastSpeed);
         const f = skateCam.update(ridden, walker.skate.events(), dt, {
           aspect: camera.aspect, reducedMotion: reducedMotion() || walker.skate.current()?.reducedEffects === true,
           ceilingAt:worldCeilingAt,
           blocked: (x, y, z) => y < groundHeightAt(x, z) + .05 || worldCollisionAt(x,y,z,.12) || mountainFoliageAt(x,y,z,tier) || insideVillageBuilding(x, z, .12,y),
         });
-        camera.position.set(f.position[0], f.position[1], f.position[2]);
+        // Hearth Mountain v2: the race's authored start shot (the first 1.5 s
+        // of the countdown, down the first bends) and its finish shot (the
+        // quay and the Fund bank's door), each blended over the chase frame.
+        const run=walker.skate.run(),race=run?.id==='mountain-descent'?run:null,still=reducedMotion()||walker.skate.current()?.reducedEffects===true;
+        const startW=race?startShotWeight(race.countdown,still):0,finishW=finishShot.update(Boolean(race?.finished),dt,still);
+        const shotAspect=camera.aspect||1.6,started=startW>0?blendShot(f,raceStartShot(undefined,shotAspect),startW):f;
+        const shown=finishW>0?blendShot(started,raceFinishShot(shotAspect),finishW):started;
+        if(startW>0||finishW>0)bodyMoving=true;
+        camera.position.set(shown.position[0], shown.position[1], shown.position[2]);
         camera.up.set(0, 1, 0);
-        camera.lookAt(f.target[0], f.target[1], f.target[2]);
-        if (f.roll) camera.rotateZ(f.roll);
-        if (Math.abs(camera.fov - f.fov) > 1e-3) { camera.fov = f.fov; camera.updateProjectionMatrix(); }
+        camera.lookAt(shown.target[0], shown.target[1], shown.target[2]);
+        if (shown.roll) camera.rotateZ(shown.roll);
+        if (Math.abs(camera.fov - shown.fov) > 1e-3) { camera.fov = shown.fov; camera.updateProjectionMatrix(); }
         // Paused (the book is open) the ride and its camera hold still: no frames are asked for.
         if (!walker.skate.paused()) bodyMoving = true;
       }
@@ -1190,7 +1286,35 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // handing those to the streamer would raise the Library because the
       // Cellar's stair happens to be near where the Library stands.
       if (onIsland(placeId)) { bodyDriven = true; focus[0] = at.x; focus[1] = at.z; thresholds(); }
-      if (following && !ridden && follow.tick(dt)) bodyMoving = true;
+      // ── Hearth Mountain v2 · the ride camera (C4) ──────────────────────────
+      // A scripted camera on the funicular and the gondola: along the travel,
+      // easing into the gorge reveal, the rider always in frame; at the far
+      // station (or on a skip, which is a cut) Walk takes over behind the body
+      // facing away from the platform.
+      const trip = placeId === 'court' ? mountainTrip : null;
+      if (trip && rideCam && !toolOpen) {
+        if (!following) setFollowing(true);
+        const u = trip.progress();
+        // The travel direction from the transport's own frame; the cabin is wherever the rider really is.
+        const along = rideFrame(trip.kind, trip.from, trip.to, u), cabin: Vec3 = [at.x, at.y, at.z];
+        cabinSolid = { at: [at.x, at.y + 1.1, at.z], half: [1.3, 1.5, 1.3] };
+        const input = { kind: trip.kind, u, cabin, dir: along.dir, rider: [at.x, at.y + 1.1, at.z] as Vec3, aspect: camera.aspect || 1.6, fov: walkLens() };
+        const shot = rideOn ? rideCam.update(input, dt, reducedMotion()) : rideCam.start(input);
+        rideOn = { kind: trip.kind, to: trip.to };
+        camera.position.set(shot.eye[0], shot.eye[1], shot.eye[2]);
+        camera.up.set(0, 1, 0);
+        camera.lookAt(shot.look[0], shot.look[1], shot.look[2]);
+        easeLens(shot.fov, dt);
+        bodyMoving = true;
+      } else if (rideOn && !trip) {
+        const heading = rideExitHeading(rideOn.kind, rideOn.to);
+        rideOn = null; cabinSolid = null;
+        follow.setSubject(walkSubject(at));
+        follow.lensFrom(camera.fov);
+        walkFrom(follow, heading);
+        bodyMoving = true;
+      }
+      if (following && !ridden && !rideOn && follow.tick(dt)) bodyMoving = true;
       // ── walking out of a room (walk-everywhere) ──
       // The way out of an unplaced room is its own stair or door, and reaching
       // it fires the very route change tapping it fires.
@@ -1225,6 +1349,10 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     }
     // ── The body lane (world-body) ── the Look camera stands still while the follow camera drives.
     const easing = following ? false : court.tick(dt);
+    // Look's lens blends to its own after any hand-off (C10 minor: no FOV cuts).
+    const lensing = following ? false : easeLens(lookLens(), dt);
+    if (zoomArmed && !zoomEdgeArmed(zoomEdge, performance.now())) { zoomEdge = ZOOM_REST; setZoomEdge(false); }
+    if (spin !== 0 && !toolOpen) dirty = true;
     // A journey is the camera moving: it keeps frames flowing at the camera's rate and ends by dropping the place it left.
     if (journey) {
       if (journey.startedAt === null) journey.startedAt = now;
@@ -1241,7 +1369,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     if(worldAmbience){const at=walker?.state();if(at&&walker){
       worldAmbience.update(at.x,at.y,at.z,at.speed,Boolean(at.supportId&&at.supportId!=='terrain'&&at.supportId!=='mountain-road'&&at.supportId!=='town-race-road'),!walker.skate.active()&&!mountainTrip,calmWorld||toolOpen||placeId!=='court');
     }else worldAmbience.pause();}
-    const moving = easing || journey !== null;
+    const moving = easing || lensing || (spin !== 0 && !toolOpen) || journey !== null;
     // Reduced motion (and a tool standing in front of the place): no animated
     // frame will ever run, so a place that asked to settle is settled the
     // moment it asks. Without this the flag stays up for the life of the
@@ -1272,9 +1400,15 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // The one place the stage is measured: every frame after this reads it from here.
     stageWidth = width; stageHeight = height;
     const next: Composition = width < 720 ? "phone" : "desktop";
-    if (next !== composition) { composition = next; camera.fov = fovFor(next); court.setFov(camera.fov); court.setComposition(next); follow?.setComposition(next); follow?.setFov(fovFor(next)); }
+    if (next !== composition) { composition = next; court.setComposition(next); follow?.setComposition(next); }
     renderer.setSize(width, height, false);
-    camera.aspect = width / height; camera.updateProjectionMatrix();
+    camera.aspect = width / height;
+    // The open world's lens depends on the stage's shape (C12: never narrower
+    // than 40° across in portrait). A resize is a cut; a change of mode blends.
+    if (!following) camera.fov = lookLens();
+    camera.updateProjectionMatrix();
+    court.setFov(lookLens());
+    follow?.setFov(walkLens());
     court.setAspect(camera.aspect);
     dirty = true;
     render(); schedule();
@@ -1412,13 +1546,23 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
    * go. A place with no close hold is simply never held.
    */
   function applyClose(on: boolean): boolean {
-    const wanted = on && CLOSE_HOLDS[placeId] !== undefined;
+    // Hearth Mountain v2 (point 9): on the open world Close frames the
+    // *nearest landmark* to the body — the fountain, the quay, a door, the
+    // dam crest, the summit telescope — never the old fountain pose from the
+    // top of the mountain; a room keeps its own one object.
+    const at = walker?.state();
+    const landmark = placeId === 'court' ? closeLandmark(at ? [at.x, at.y, at.z] : [0, 0, 0], composition) : null;
+    const wanted = on && (placeId === 'court' ? landmark !== null : CLOSE_HOLDS[placeId] !== undefined);
     closedIn.set(placeId, wanted);
     const was = court.closed();
+    // Walk is turned off before the hold is applied (the view is handed to
+    // Look where it stands), and leaving Close returns to Walk at the body.
+    if (wanted && !was) { closeFromWalk = following; if (following) setFollowing(false); }
     // The close hold is written in the room's own coordinates too; a placed
     // room's one object stands where the building stands.
-    const close = wanted ? closePose(placeId, composition) : null;
-    court.close(close ? placedPose(close, standingPlacement()) : null);
+    const close = wanted ? landmark?.pose ?? closePose(placeId, composition) : null;
+    court.close(close ? (landmark ? close : placedPose(close, standingPlacement())) : null);
+    if (was && !wanted && closeFromWalk) { closeFromWalk = false; setFollowing(true); }
     if (was !== wanted) callbacks.onClose?.(wanted);
     return wanted;
   }
@@ -1456,9 +1600,15 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       if(mountainTrip)walker.attach(null);
       mountainTrip=null;mountainHandle().setTransit?.(null);offerRide(null);callbacks.onMountainTravel?.(Boolean(trip));bodyInput=NO_INPUT;walker.cancel();walker.setInput(NO_INPUT);
       const p=trip?TRANSPORT_STOPS[trip.kind][trip.from]!.at:at;
+      // C7: a "Visit" arrival faces its building's door (the dam, the telescope, the view), and Walk stands behind.
       // Boarding from where you stand (you walked onto the platform) is continuous; from elsewhere it is a cut to the platform.
+      const arrival=trip?null:arrivalAt(p,composition);
       const here=walker.state(),boarding=trip&&Math.hypot(here.x-p[0],here.z-p[2])<4;
-      if(!boarding){walker.place(p[0],p[2],0,p[1]);bringCat();focus=[p[0],p[2]];setFollowing(false);setFollowing(true);follow?.snap();}
+      rideOn=null;cabinSolid=null;
+      if(!boarding){
+        walker.place(p[0],p[2],arrival?.yaw??0,p[1]);bringCat();focus=[p[0],p[2]];
+        setFollowing(false);setFollowing(true);if(follow){follow.setSubject(walkSubject(walker.state()));if(arrival)walkFrom(follow,arrival.yaw);else follow.snap();}
+      }
       previousDoorPoint=null;pendingDoor=null;stream();
       if(trip){mountainTrip=createRide(trip.kind,trip.from,trip.to,{reduced:reducedMotion()});walker.attach(mountainTrip.pose());setFollowing(true);if(mountainTrip.done())arriveRide();}
       dirty=true;schedule();
@@ -1469,16 +1619,35 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
     // actually see and every named pose behaves exactly as it always has.
     go(mode, anchor) { setFollowing(false); aim(mode, anchor); moved(); },
     setReading(next) { reading = next; for (const { handle: each } of live.values()) each.update(next); refreshErrand();dirty = true; listsDirty = true; render(); schedule(); },
-    look(next) { setFollowing(false); court.setReduced(reducedMotion()); court.goTo(next); moved(); },
+    look(next) { setFollowing(false); court.setReduced(reducedMotion()); court.goTo(next); stream(); moved(); },
     gesture(input) {
       court.setReduced(reducedMotion());
-      if (input.kind === "orbit") court.drag(input.dx, input.dy);
+      // A keyboard orbit turns whichever camera is driving: Walk's view (and
+      // with it the keys' basis) while walking, Look's otherwise.
+      if (input.kind === "spin") { spin = input.dir; schedule(); return; }
+      if (input.kind === "orbit") { if (following && follow && !skateCamera && !rideOn) follow.drag(input.dx, input.dy); else if (!following) court.drag(input.dx, input.dy); }
       else zoomWorld(input.delta);
       moved();
     },
+    shot(id) {
+      const aspect = camera.aspect || (composition === 'phone' ? 390 / 844 : 1.6), fov = lookLens();
+      const [kind, name = ''] = id.split(/:(.*)/s, 2) as [string, string?];
+      const pose = kind === 'tour' ? tourPose(name, composition, aspect)
+        : kind === 'moment' ? momentPose(name, composition)
+        : id === 'view:dam' ? damViewPose(composition, aspect, fov)
+        : id === 'view:summit' ? summitViewPose(composition)
+        : id === 'view:world' ? overviewPose(composition, aspect, fov)
+        : id === 'view:town' ? poseFor(handle.poses(), 'court', composition) ?? null
+        : null;
+      if (!pose || placeId !== 'court') return false;
+      setFollowing(false); court.setReduced(reducedMotion()); court.goTo({ target: pose.target, r: pose.r, theta: pose.theta, phi: pose.phi });
+      // C10: the destination is streamed before the flight lands (Look on the open world holds every district).
+      stream(); moved();
+      return true;
+    },
     // ── The body lane (world-body) ── a tool in front of the place turns the
     // stage into a door strip: the follow camera gives the view back for it.
-    setToolOpen(open) { toolOpen = open; if (open) {frameStudy.interrupt();raceGhost.visible=false;worldAmbience?.pause();walker?.skate.pause(true);publishSkate(performance.now(),true);setFollowing(false);} schedule(); },
+    setToolOpen(open) { toolOpen = open; if (open) {spin=0;frameStudy.interrupt();raceGhost.visible=false;worldAmbience?.pause();walker?.skate.pause(true);publishSkate(performance.now(),true);setFollowing(false);} schedule(); },
     setBreathing(on) { breathing = on; schedule(); },
     invalidate() { settling = true; dirty = true; listsDirty = true; if(walker)standBody(); previous = performance.now(); schedule(); },
     addAnimator(animate) { animators.add(animate); listsDirty = true; schedule(); return () => { animators.delete(animate); }; },
@@ -1530,7 +1699,9 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
           command(c){one.skate.command(c);setFollowing(true);publishSkate(performance.now(),true);moved();},
         },
         following: () => following,
-        follow(on) { setFollowing(on); if (!on) { aim("court"); } moved(); },
+        // Hearth Mountain v2 (C3): on the open world, giving up Walk leaves Look
+        // at the body (it never flies to the town); a room still steps back to its own diorama.
+        follow(on) { setFollowing(on); if (!on && placeId !== 'court') { aim("court"); } moved(); },
         input(next) { bodyInput = next; if (next.forward !== 0 || next.strafe !== 0) { setFollowing(true); } dirty = true; schedule(); },
         goTo(x, z, y) { const planned=one.goTo(x, z, y);if(planned)setFollowing(true);offerFar(x,z,y); dirty = true; schedule();return planned; },
         runLock(on) { const locked=one.runLock(on); dirty = true; schedule(); return locked; },
@@ -1577,6 +1748,7 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // place's own way in.
       const continuous = walker !== null && onIsland(placeId) && onIsland(next);
       const leaving = placeId;
+      let doorExit: CourtPose | null = null;
       if (!continuous) dropBody();
       placeId = next;
       showExteriors();
@@ -1598,13 +1770,18 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
         walker.place(landing.x, landing.z, landing.yaw);
         bringCat();
         const at = walker.state();
-        follow?.setSubject({ x: at.x, y: eyeHeight(at), z: at.z, yaw: at.yaw, speed: at.speed });
+        follow?.setSubject(walkSubject(at));
         follow?.snap();
         bodyDriven = true;
         focus[0] = landing.x; focus[1] = landing.z;
+        // C3: out of a building onto the open world, the camera stands at the
+        // door's outdoor pose — behind the body, facing *away* from the door —
+        // so the first key press walks out, not back in (the Library case).
+        if (next === 'court' && placementOf(leaving)) doorExit = doorExitPose(leaving, { x: at.x, y: at.y, z: at.z, yaw: landing.yaw }, composition);
       }
+      court.setTerrain(lookTerrain());
       // The place you arrive in declares its own idle motion; until it does, nothing moves.
-      refreshErrand();zoomOverscroll=0;
+      refreshErrand();zoomEdge=ZOOM_REST;setZoomEdge(false);
       breathing = !reducedMotion();
       previousDoorPoint = null; pendingDoor=null;
       // A cut lands at once, so the destination's hold applies at once. A full
@@ -1612,7 +1789,11 @@ export function mountHarbourWorld(host: HTMLElement, theme: ThemeId, tier: Rende
       // lifted for the flight and the destination's takes over when it lands
       // (the `frame.done` branch of the loop).
       court.setHold(plan.cut ? holdFor(next) : null);
-      if (!crossing) {
+      if (!crossing && doorExit) {
+        handToLook(court, doorExit);
+        setFollowing(true);
+        if (follow) { follow.snap(doorExit.theta); follow.lensFrom(camera.fov); }
+      } else if (!crossing) {
         aim(plan.camera.mode, plan.camera.anchor ?? undefined, plan.cut);
         if (plan.cut) court.setReduced(reducedMotion());
       }
