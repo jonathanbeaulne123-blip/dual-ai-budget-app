@@ -156,7 +156,7 @@ export function FabSpeedDial({
         id={groupId}
         className="fab-dial-actions record-dial"
         role="group"
-        aria-label={closedLabel}
+        aria-label="What to record"
         hidden={!shown}
         onKeyDown={onColumnKey}
       >

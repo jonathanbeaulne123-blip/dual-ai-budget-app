@@ -54,7 +54,9 @@ describe("the Record speed dial (Tool Atlas §3.3)", () => {
     expect(fab.getAttribute("aria-label")).toBe("Record");
     expect(fab.querySelector(".record-bubble__close")?.getAttribute("aria-hidden")).toBe("true");
     const group = host.querySelector("[role=group]")!;
-    expect(group.getAttribute("aria-label")).toBe("Record");
+    expect(group.getAttribute("aria-label")).toBe("What to record");
+    // Only the bubble is named "Record", so one selector finds one control.
+    expect(host.querySelectorAll('[aria-label="Record"]')).toHaveLength(1);
     expect(host.querySelector("[role=menu], [role=menuitem]")).toBeNull();
     expect(rows().map((button) => button.getAttribute("data-fab-action"))).toEqual(["expense", "shift", "income", "bill", "transfer"]);
     expect(document.activeElement).toBe(rows()[0]);
