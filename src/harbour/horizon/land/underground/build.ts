@@ -3,9 +3,35 @@ import type { HeightQuery, LandCuts, XY, XYZ } from '../interfaces';
 import { addFlatPad, bed } from '../beds/profiles';
 import { sampleSpline } from '../beds/solver';
 import { buildStair, tunnel } from '../structures/build';
-import { box, distance, mix, pathLength, slab, solid } from '../structures/mesh';
+import { box, clamp, distance, mix, nearestOnPath, pathLength, prism, slab, solid } from '../structures/mesh';
 
 export const ROOM_DIMENSIONS:Record<string,{size:XY;floor:number;clear:number}>={lanternCave:{size:[46,32],floor:42,clear:18},deep:{size:[64,60],floor:38,clear:30},bellGallery:{size:[30,26],floor:90,clear:15},sealedDrift:{size:[26,18],floor:42,clear:8}};
+/** A passage lining stops at the chamber volume; room walls open only where a passage actually meets them. */
+function openRoomConnections(cuts:LandCuts):void {
+  const passages=cuts.beds.filter(b=>b.kind==='cave'||b.kind==='rail');
+  for(const piece of cuts.solids.filter(s=>s.kind==='cavern'&&s.role==='wall'||s.kind==='tunnel'&&['wall','roof'].includes(s.role))){
+    const result={...piece,positions:[] as number[],indices:[] as number[]};
+    for(let offset=0;offset<piece.positions.length/3;offset+=8){
+      const p=Array.from({length:8},(_,k):XYZ=>[piece.positions[(offset+k)*3]!,piece.positions[(offset+k)*3+1]!,piece.positions[(offset+k)*3+2]!]);
+      const start:XYZ=[(p[4]![0]+p[5]![0])/2,(p[4]![1]+p[5]![1])/2,(p[4]![2]+p[5]![2])/2],end:XYZ=[(p[6]![0]+p[7]![0])/2,(p[6]![1]+p[7]![1])/2,(p[6]![2]+p[7]![2])/2];
+      if(piece.kind==='cavern'){
+        const middle:XY=[(start[0]+end[0])/2,(start[2]+end[2])/2],floor=Math.min(...p.map(v=>v[1])),ceiling=Math.max(...p.map(v=>v[1]));
+        if(passages.some(b=>{const hit=nearestOnPath(middle,b.points);return hit.distance<b.width/2+.7&&hit.at[1]<ceiling-.1&&hit.at[1]+b.clearHeight>floor+.1;}))continue;
+      }
+      let intervals:[number,number][]=[[0,1]];
+      if(piece.kind==='tunnel')for(const [id,room]of Object.entries(M.underground.rooms)){
+        const d=ROOM_DIMENSIONS[id]!,floor=Math.min(...p.map(v=>v[1])),ceiling=Math.max(...p.map(v=>v[1]));if(floor<d.floor-.01||ceiling>d.floor+d.clear+.6)continue;
+        const x=(start[0]-room.xy[0]!)/(d.size[0]/2-.5),z=(start[2]-room.xy[1]!)/(d.size[1]/2-.5),dx=(end[0]-start[0])/(d.size[0]/2-.5),dz=(end[2]-start[2])/(d.size[1]/2-.5),a=dx*dx+dz*dz,b=2*(x*dx+z*dz),c=x*x+z*z-1,disc=b*b-4*a*c;
+        if(a<1e-8||disc<=0)continue;const lo=clamp((-b-Math.sqrt(disc))/(2*a),0,1),hi=clamp((-b+Math.sqrt(disc))/(2*a),0,1);if(hi<=lo)continue;
+        intervals=intervals.flatMap(([from,to]):[number,number][]=>hi<=from||lo>=to?[[from,to]]:[...(lo>from?[[from,lo] as [number,number]]:[]),...(hi<to?[[hi,to] as [number,number]]:[])]);
+      }
+      const at=(a:XYZ,b:XYZ,t:number):XYZ=>[mix(a[0],b[0],t),mix(a[1],b[1],t),mix(a[2],b[2],t)];
+      for(const [from,to]of intervals)prism(result,[at(p[4]!,p[7]!,from),at(p[5]!,p[6]!,from),at(p[5]!,p[6]!,to),at(p[4]!,p[7]!,to)],[mix(p[0]![1],p[3]![1],from),mix(p[1]![1],p[2]![1],from),mix(p[1]![1],p[2]![1],to),mix(p[0]![1],p[3]![1],to)]);
+    }
+    piece.positions=result.positions;piece.indices=result.indices;
+  }
+  cuts.solids=cuts.solids.filter(s=>s.indices.length>0);
+}
 export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
   for(const [id,room]of Object.entries(M.underground.rooms)){
     const p=room.xy as unknown as XY,{size,floor,clear}=ROOM_DIMENSIONS[id]!,pad=addFlatPad(cuts,`underground.${id}`,'place',p,floor,size,0,true);
@@ -13,14 +39,14 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
     for(let i=0;i<24;i++){
       const a=i*Math.PI/12,b=(i+1)*Math.PI/12;
       const p1:XYZ=[p[0]!+Math.cos(a)*size[0]!/2,floor,p[1]!+Math.sin(a)*size[1]!/2],p2:XYZ=[p[0]!+Math.cos(b)*size[0]!/2,floor,p[1]!+Math.sin(b)*size[1]!/2];
-      // Each route-facing opening is 6m wide; passages have no invisible end cap.
-      if(i!==0&&i!==11&&i!==12)slab(walls,p1,p2,.8,clear,0,clear);
+      slab(walls,p1,p2,.8,clear,0,clear);
     }
     if(id==='deep'){
       // An 8 x 8 shaft is left in the ceiling, aligned to the north-slope skylight.
       box(roof,[1300,430],floor+clear+.6,[64,40],floor+clear);
-      box(roof,[1282,400],floor+clear+.6,[28,20],floor+clear);
-      box(roof,[1318,400],floor+clear+.6,[28,20],floor+clear);
+      // The north Throat merges into the room above the ceiling line, around the named skylight.
+      box(roof,[1277.5,400],floor+clear+.6,[19,20],floor+clear);
+      box(roof,[1322.5,400],floor+clear+.6,[19,20],floor+clear);
       box(roof,[1300,392],floor+clear+.6,[8,4],floor+clear);
     }else box(roof,p,floor+clear+.6,size,floor+clear);
     cuts.solids.push(walls,roof);
@@ -60,6 +86,7 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
     if(id==='adit'||id==='southPortal'){addFlatPad(cuts,`oreStation.${id}`,'landing',p,door.h,[10,6],0,true);const frame=solid(`${id}.portal.frame`,'portal','timber','wall',['ORE'],'crown');for(const side of [-1,1])box(frame,[p[0]!+side*2.2,p[1]!],door.h+3.8,[.5,1],door.h);box(frame,p,door.h+3.8,[4.9,1],door.h+3.2);cuts.solids.push(frame);}
   }
   const link=bed('southPortal.link','walk',[[1345,110,680],[1355,110,685],[1370,110,690]]);cuts.beds.push(link);
+  openRoomConnections(cuts);
   // Ignore only the named entrance neighbourhoods when measuring roof cover.
   let low=Infinity,lowAt:XY=[0,0];
   for(const b of cuts.beds.filter(b=>b.kind==='cave'||b.id==='ORE'))for(const p of b.points){
