@@ -133,8 +133,8 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   }
   paintFences(0,0);
   // ── Smoke: a few puffs per chimney, rising and swelling ──
-  const smokeSources=[...propLife.smoke,...town.smoke],puffsPer=7;
-  const puffMat=track(new THREE.MeshStandardMaterial({color:'#f6f2ea',roughness:1,flatShading:true,transparent:true,opacity:.5,depthWrite:false}));
+  const smokeSources=[...propLife.smoke,...town.smoke],puffsPer=9;
+  const puffMat=track(new THREE.MeshStandardMaterial({color:'#f8f5ee',roughness:1,flatShading:true,transparent:true,opacity:.32,depthWrite:false}));
   const puffs=new THREE.InstancedMesh(track(new THREE.IcosahedronGeometry(.3,1)),puffMat,Math.max(1,smokeSources.length*puffsPer));puffs.name='Chimney smoke';puffs.count=smokeSources.length*puffsPer;track(puffs);group.add(puffs);
   // ── Accepted movement pulse ──
   const pulse=new THREE.Mesh(track(new THREE.OctahedronGeometry(.8,0)),track(new THREE.MeshStandardMaterial({color:'#f7dfa0',emissive:'#e8b567',emissiveIntensity:.45,flatShading:true})));pulse.name='Accepted movement pulse';pulse.visible=false;group.add(pulse);
@@ -176,7 +176,7 @@ export function buildMountainLandscape(dressing:PlaceDressing,tier:RenderTier,re
   function stillLife(){for(const c of propLife.cloth){c.items.forEach((it,i)=>{dummy.position.set(...it.at);dummy.rotation.set(0,it.yaw,0);dummy.scale.set(it.w,it.h,1);dummy.updateMatrix();c.mesh.setMatrixAt(i,dummy.matrix);});c.mesh.instanceMatrix.needsUpdate=true;}paintSmoke(0,true);}
   function paintSmoke(t:number,hide=false){
     smokeSources.forEach((s,k)=>{for(let j=0;j<puffsPer;j++){const u=((t*.18+j/puffsPer+k*.37)%1),i=k*puffsPer+j;
-      if(hide){dummy.scale.setScalar(0.0001);dummy.position.set(...s);}else{const r=.35+u*1.5;dummy.position.set(s[0]+u*2.6+Math.sin(t*.7+j)*.25,s[1]+u*5,s[2]-u*1.3);dummy.scale.setScalar(Math.max(.0001,r*(u<.85?1:(1-u)/.15)));}
+      if(hide){dummy.scale.setScalar(0.0001);dummy.position.set(...s);}else{const r=.3+u*1.1;dummy.position.set(s[0]+u*u*3.2+Math.sin(t*.7+j)*.2,s[1]+u*4.2,s[2]-u*u*1.6);dummy.scale.setScalar(Math.max(.0001,r*(u<.85?1:(1-u)/.15)));}
       dummy.rotation.set(0,u*3,0);dummy.updateMatrix();puffs.setMatrixAt(i,dummy.matrix);}});
     puffs.instanceMatrix.needsUpdate=true;
   }

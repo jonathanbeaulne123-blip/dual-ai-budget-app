@@ -148,7 +148,21 @@ export function buildDamWater(pal:MountainArtPalette,glassMaterial:THREE.Materia
     for(let k=0;k<outline.length;k++){const p=outline[k]!,q=outline[(k+1)%outline.length]!;
       pos.push(cx,0,cz,p[0],0,p[1],q[0],0,q[1]);for(const v of [[cx,cz],p,q])flow.push(v[0]!*.6,v[1]!*.6+.5);col.push(.8,.85,.9,1,1,1,1,1,1);}
     sg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));sg.setAttribute('flowUv',new THREE.Float32BufferAttribute(flow,2));sg.setAttribute('color',new THREE.Float32BufferAttribute(col,3));sg.computeVertexNormals();sg.computeBoundingSphere();};
-  reshape(DAM_FULL);
+  // A shore band where the water meets the bank: a pale wet line fading onto the land (not along the glass).
+  const shoreGeo=own(new THREE.BufferGeometry()),shoreMat=own(new THREE.MeshBasicMaterial({vertexColors:true,transparent:true,depthWrite:false,side:THREE.DoubleSide,polygonOffset:true,polygonOffsetFactor:-2,polygonOffsetUnits:-4}));
+  const foam=pal.foam,wet=mix(pal.stoneDark,[.25,.3,.3],.45);
+  const shoreline=(y:number,outline:[number,number][])=>{const pos:number[]=[],col:number[]=[];
+    for(let k=0;k<outline.length;k++){const p=outline[k]!,q=outline[(k+1)%outline.length]!;
+      if(Math.hypot(p[0]-C[0],p[1]-C[2])>R-1.2||Math.hypot(q[0]-C[0],q[1]-C[2])>R-1.2)continue;
+      const out=(v:[number,number],d:number):[number,number]=>{const dx=v[0]-cx,dz=v[1]-cz,l=Math.hypot(dx,dz)||1;return [v[0]+dx/l*d,v[1]+dz/l*d];};
+      const ring=(v:[number,number],d:number,a:number,c:readonly number[]):number[]=>{const [x,z]=out(v,d);return [x,Math.max(y+.03,g(x,z)+.04),z,c[0]!,c[1]!,c[2]!,a];};
+      const quad=(d0:number,d1:number,a0:number,a1:number,c0:readonly number[],c1:readonly number[])=>{const A=ring(p,d0,a0,c0),B=ring(q,d0,a0,c0),Cc=ring(q,d1,a1,c1),D=ring(p,d1,a1,c1);
+        for(const v of [A,B,Cc,A,Cc,D]){pos.push(v[0]!,v[1]!,v[2]!);col.push(v[3]!,v[4]!,v[5]!,v[6]!);}};
+      quad(-.35,.25,.0,.85,foam,foam);quad(.25,1.6,.85,.0,foam,wet);}
+    shoreGeo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));shoreGeo.setAttribute('color',new THREE.Float32BufferAttribute(col,4));shoreGeo.computeBoundingSphere();};
+  const reshapeWithShore=(y:number)=>{const before=outlineAt;reshape(y);if(outlineAt!==before)shoreline(y,reservoirOutline(y));};
+  reshapeWithShore(DAM_FULL);
+  const shore=new THREE.Mesh(shoreGeo,shoreMat);shore.name='Reservoir shore band';shore.renderOrder=2;group.add(shore);
   const surface=new THREE.Mesh(sg,surfaceMat);surface.name='Reservoir surface';surface.receiveShadow=true;surface.renderOrder=1;group.add(surface);
   // The water's face behind the glass, unit height from the zero line, scaled to the level.
   const fp:number[]=[],ff:number[]=[],fc:number[]=[];
@@ -168,7 +182,7 @@ export function buildDamWater(pal:MountainArtPalette,glassMaterial:THREE.Materia
     /** Level and reserve are 0…1 of the session scale; null is unknown (frost, keep the last water). */
     set(level:number|null,reserve:number|null){
       const known=level!==null;
-      if(known){const y=DAM_ZERO+Math.max(.003,level)*(DAM_FULL-DAM_ZERO);reshape(y);surface.position.y=y;front.scale.y=Math.max(.01,y-DAM_ZERO);float.position.y=y;surface.visible=front.visible=true;}
+      if(known){const y=DAM_ZERO+Math.max(.003,level)*(DAM_FULL-DAM_ZERO);reshapeWithShore(y);surface.position.y=y;shore.visible=true;front.scale.y=Math.max(.01,y-DAM_ZERO);float.position.y=y;surface.visible=front.visible=true;}
       for(const {m,ch} of chambers){const r=reserve??0,h=Math.max(.02,r*(ch.depth-1.8));m.scale.y=h;m.position.y=ch.at[1]+.6+h/2;m.visible=reserve!==null;}
       if(glassBase&&glassMaterial instanceof THREE.MeshStandardMaterial&&frosted===known){frosted=!known;glassMaterial.opacity=frosted?.82:glassBase.opacity;glassMaterial.color.copy(glassBase.color);if(frosted)glassMaterial.color.lerp(new THREE.Color('#f4f6f2'),.7);glassMaterial.needsUpdate=true;}
       float.visible=known;

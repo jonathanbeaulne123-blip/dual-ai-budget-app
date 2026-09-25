@@ -5,15 +5,15 @@
  */
 import {groundHeightAt} from '../../scene/ground.ts';
 import {SKILL_BRANCHES,MOUNTAIN_PATH_GRAPH,DAM_PARTS,type Point3} from '../definition.ts';
-import {CardBuilder,shade,mix,inkLift,type V3} from '../../art/cardScene.ts';
+import {CardBuilder,shade,mix,inkLift,type V3,type RGB} from '../../art/cardScene.ts';
 import type {MountainArtPalette} from './palette.ts';
 
 const UP:V3=[0,1,0];
 type Frame={p:V3;side:V3;up:V3};
 const frames=(pts:readonly Point3[]):Frame[]=>pts.map((p,i)=>{const a=pts[Math.max(0,i-1)]!,c=pts[Math.min(pts.length-1,i+1)]!,dx=c[0]-a[0],dz=c[2]-a[2],l=Math.hypot(dx,dz)||1;return {p:[p[0],p[1],p[2]],side:[dz/l,0,-dx/l],up:UP};});
 
-function deck(b:CardBuilder,pal:MountainArtPalette,F:Frame[],hw:number,metal:boolean,th=.32,legs=true){
-  const top=metal?shade(pal.iron,1.9):pal.plank,skin=metal?mix(pal.iron,pal.glassFrame,.35):pal.timber;
+function deck(b:CardBuilder,pal:MountainArtPalette,F:Frame[],hw:number,metal:boolean,th=.32,legs=true,skinColour?:RGB){
+  const top=metal?shade(pal.iron,1.9):pal.plank,skin=skinColour??(metal?mix(pal.iron,pal.glassFrame,.35):pal.timber);
   b.sweep(F,[[-hw,.02],[hw,.02]],(_k,i)=>shade(top,.95+(i%2)*.06),{bucket:'flat'});
   b.sweep(F,[[hw,.03],[hw,-th],[-hw,-th],[-hw,.03]],k=>k===1?shade(skin,.55):shade(skin,.85),{foot:[0,2],bucket:metal?'steel':'card'});
   for(const s of [-1,1])for(let i=1;i<F.length;i++){const a=F[i-1]!,c=F[i]!;b.line(inkLift([a.p[0]+a.side[0]*s*hw,a.p[1]+.02,a.p[2]+a.side[2]*s*hw]),inkLift([c.p[0]+c.side[0]*s*hw,c.p[1]+.02,c.p[2]+c.side[2]*s*hw]));}
@@ -34,12 +34,14 @@ export function buildBranchArt(b:CardBuilder,pal:MountainArtPalette){
         // A round grind rail on short posts over a narrow catwalk; on the dam, brackets back to the fins.
         b.tube(seg.points.map(p=>[p[0],p[1]+.05,p[2]] as V3),.09,pal.brass,6);
         // On the dam the catwalk hangs from the fins on brackets (no legs to the gorge floor); elsewhere it stands on posts.
+        // The dam's catwalk is finished in the same pale brass as the glass's frames.
         const onDam=br.id==='dam-promenade',walk=F.map(f=>({p:[f.p[0],f.p[1]-.75,f.p[2]] as V3,side:f.side,up:f.up}));
-        deck(b,pal,walk,.55,true,.18,!onDam);
-        for(let i=0;i<F.length;i+=2){const f=F[i]!;b.post(f.p[0],f.p[2],f.p[1]-.75,f.p[1]+.02,.045,mix(pal.iron,pal.glassFrame,.35),5,'steel');}
+        const steel=onDam?shade(mix(pal.brass,pal.coping,.35),.82):mix(pal.iron,pal.glassFrame,.35);
+        deck(b,pal,walk,.55,true,.18,!onDam,steel);
+        for(let i=0;i<F.length;i+=2){const f=F[i]!;b.post(f.p[0],f.p[2],f.p[1]-.75,f.p[1]+.02,.045,steel,5,'steel');}
         if(br.id==='dam-promenade'){const [cx,,cz]=DAM_PARTS.centre;
           for(let i=0;i<F.length;i+=4){const f=F[i]!,dx=cx-f.p[0],dz=cz-f.p[2],l=Math.hypot(dx,dz)||1,d=l-DAM_PARTS.radius;if(d<.5||d>12)continue;
-            const back:V3=[f.p[0]+dx/l*(d-.1),f.p[1]-.9,f.p[2]+dz/l*(d-.1)];const steel=mix(pal.iron,pal.glassFrame,.35);b.beam([f.p[0],f.p[1]-.9,f.p[2]],back,.14,.2,steel,null,'steel');b.beam([f.p[0],f.p[1]-.9,f.p[2]],[back[0],back[1]+2.2,back[2]],.08,.08,steel,null,'steel');}}
+            const back:V3=[f.p[0]+dx/l*(d-.1),f.p[1]-.9,f.p[2]+dz/l*(d-.1)];const steel=shade(mix(pal.brass,pal.coping,.35),.75);b.beam([f.p[0],f.p[1]-.9,f.p[2]],back,.14,.2,steel,null,'steel');b.beam([f.p[0],f.p[1]-.9,f.p[2]],[back[0],back[1]+2.2,back[2]],.08,.08,steel,null,'steel');}}
       }else deck(b,pal,F,br.halfWidth,metal);
     }
   }

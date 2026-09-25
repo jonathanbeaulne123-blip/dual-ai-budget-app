@@ -142,9 +142,9 @@ export function buildTransportArt(b:CardBuilder,pal:MountainArtPalette,tier:'ful
   for(const st of FUNICULAR_LINE.stations){const r=station(b,pal,FUNICULAR_LINE,st,pal.roofTile);if(r.hut)huts.push({...r.hut,name:st.name,kind:'funicular'});}
   // Gondola rope (and its return line to one side), towers and terminals.
   const path=GONDOLA_LINE.path,sparse=path.filter((_,i)=>i%2===0||i===path.length-1);
-  b.tube(sparse as V3[],.06,mix(pal.iron,[.7,.7,.68],.45),4);
+  b.tube(sparse as V3[],.05,mix(pal.iron,[.7,.7,.68],.45),6);
   const ret=sparse.map((p,i)=>{const a=sparse[Math.max(0,i-1)]!,c=sparse[Math.min(sparse.length-1,i+1)]!,dx=c[0]-a[0],dz=c[2]-a[2],l=Math.hypot(dx,dz)||1;return [p[0]+dz/l*2.4,p[1],p[2]-dx/l*2.4] as V3;});
-  b.tube(ret,.05,mix(pal.iron,[.7,.7,.68],.45),4);
+  b.tube(ret,.045,mix(pal.iron,[.7,.7,.68],.45),6);
   GONDOLA_LINE.towers.forEach((t,i)=>{const k=path.findIndex(p=>Math.hypot(p[0]-t[0],p[2]-t[2])<.8),q=path[Math.min(path.length-1,k+2)]!,pp=path[Math.max(0,k-2)]!;
     const top=(k>=0?path[k]![1]:t[1]+20)+.1;gondolaTower(b,pal,t,top,[q[0]-pp[0],q[2]-pp[2]]);void i;});
   for(const st of GONDOLA_LINE.stations)gondolaStation(b,pal,st,pal.roofAlt);

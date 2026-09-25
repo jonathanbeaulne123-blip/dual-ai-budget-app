@@ -9,7 +9,7 @@ import {landHeight} from '../src/harbour/mountain/art/land.ts';
 import {mountainProps,PROP_SINK} from '../src/harbour/mountain/art/placements.ts';
 import {DISTRICT_FIXTURES} from '../src/harbour/mountain/artGeometry.ts';
 import {mountainPlanting,plantingClearance,crownOf} from '../src/harbour/mountain/planting.ts';
-import {mountainCrags,CRAG_GRADE} from '../src/harbour/mountain/art/rockArt.ts';
+import {mountainStrata,STRATA_GRADE} from '../src/harbour/mountain/art/rockArt.ts';
 import {MOUNTAIN_ROAD_LINE,ORCHARD_LANE_LINE,DOOR_APRONS,RESERVOIR,TRANSPORT_LINES,OVERLOOKS,mountainBaseHeight,type RoadLine} from '../src/harbour/mountain/definition.ts';
 import {PATH_EDGES} from '../src/harbour/mountain/pathGraph.ts';
 import {reservoirOutline} from '../src/harbour/mountain/art/damArt.ts';
@@ -102,16 +102,19 @@ describe('mountain planting and rock follow an authored plan',()=>{
     // Three to five archetypes in the wooded and orchard biomes, one kind dominating the orchard.
     expect(new Set(plan.trees.map(t=>t.kind)).size).toBeGreaterThanOrEqual(5);
   });
-  it('stands crags only on faces too steep to walk, clear of every corridor',()=>{
-    const crags=mountainCrags('full');
-    expect(crags.length).toBeGreaterThan(100);
-    for(const c of crags){
-      const g=Math.hypot(mountainBaseHeight(c.x+1,c.z)-mountainBaseHeight(c.x-1,c.z),mountainBaseHeight(c.x,c.z+1)-mountainBaseHeight(c.x,c.z-1))/2;
-      expect(g).toBeGreaterThanOrEqual(CRAG_GRADE);
-      expect(plantingClearance(c.x,c.z)).toBeGreaterThanOrEqual(3);
-      expect(Math.hypot(...c.out)).toBeCloseTo(1,6);
+  it('draws rock strata only on cliffs too steep to walk, on their contours, clear of every corridor',()=>{
+    const strata=mountainStrata('full');
+    expect(strata.length).toBeGreaterThan(500);
+    for(const l of strata){
+      const mx=(l.a[0]+l.b[0])/2,mz=(l.a[1]+l.b[1])/2;
+      expect(l.grade).toBeGreaterThanOrEqual(STRATA_GRADE);
+      // Each ledge lies on its contour: within a fraction of a unit (horizontally) of where the land
+      // is at the ledge's height, so its buried inner edge (0.5 into the face) is never exposed.
+      expect(Math.abs(mountainBaseHeight(mx,mz)-l.y)/l.grade).toBeLessThan(.5);
+      expect(plantingClearance(mx,mz,{bowl:false})).toBeGreaterThan(1.5);
+      expect(Math.hypot(...l.out)).toBeCloseTo(1,6);
     }
-    expect(mountainCrags('lite').length).toBeLessThan(crags.length);
+    expect(mountainStrata('lite').length).toBeLessThan(strata.length);
   });
 });
 

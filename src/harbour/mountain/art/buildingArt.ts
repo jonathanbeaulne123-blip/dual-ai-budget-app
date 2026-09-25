@@ -177,7 +177,11 @@ export function observatory(b:CardBuilder,pal:MountainArtPalette,x:number,z:numb
   // The telescope: a stone pier, a brass fork mount, the tube aimed at the southern sky.
   const aim=doorYaw+.55,tx=Math.sin(aim),tz=Math.cos(aim),pivot:V3=[x,floor+1.9,z],eye:V3=[x+tx*2.6,floor+3.3,z+tz*2.6],tail:V3=[x-tx*1.3,floor+1.2,z-tz*1.3];
   b.cone(x,z,floor,floor+1.3,.55,.42,pal.stone,8);b.post(x,z,floor+1.3,floor+1.9,.16,pal.iron,6,'steel');
-  b.beam(tail,eye,.42,.42,pal.brass,b.ink,'steel');b.cone(eye[0],eye[2],eye[1]-.02,eye[1]+.12,.3,.3,pal.iron,8,'steel');
+  // A round brass tube with a dew shield at the sky end, a finder alongside and an eyepiece at the tail.
+  const along=(u:number,side=0,up=0):V3=>[tail[0]+(eye[0]-tail[0])*u+Math.cos(aim)*side,tail[1]+(eye[1]-tail[1])*u+up,tail[2]+(eye[2]-tail[2])*u-Math.sin(aim)*side];
+  b.tube([along(0),along(.82)],.19,pal.brass,10);b.tube([along(.8),along(1)],.24,shade(pal.brass,.85),10);
+  for(const u of [.15,.5,.78])b.tube([along(u-.02),along(u+.02)],.215,shade(pal.brass,.75),10);
+  b.tube([along(.35,.26,.12),along(.7,.26,.12)],.055,pal.iron,6);b.tube([along(-.08),along(.02)],.07,pal.iron,6);
   b.beam([pivot[0]-Math.cos(aim)*.35,pivot[1]-.3,pivot[2]+Math.sin(aim)*.35],[pivot[0]-Math.cos(aim)*.35,pivot[1]+.2,pivot[2]+Math.sin(aim)*.35],.08,.08,pal.brass,null,'steel');
   b.beam([pivot[0]+Math.cos(aim)*.35,pivot[1]-.3,pivot[2]-Math.sin(aim)*.35],[pivot[0]+Math.cos(aim)*.35,pivot[1]+.2,pivot[2]-Math.sin(aim)*.35],.08,.08,pal.brass,null,'steel');
   // The gateway: two posts at the parapet's ends and a lintel board for the sign.

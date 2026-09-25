@@ -46,13 +46,15 @@ const discs=():[number,number,number][]=>[
   ...KITTY_CHAMBERS.map(k=>[k.at[0],k.at[2],k.radius+3] as [number,number,number]),
 ];
 /** Horizontal clearance from every corridor edge and keep-out disc (negative inside). */
-export function plantingClearance(x:number,z:number):number{
+export function plantingClearance(x:number,z:number,opts:{bowl?:boolean}={}):number{
   let best=Infinity;
   for(const c of keepClear()){const P=c.points;for(let i=1;i<P.length;i++){const a=P[i-1]!,b=P[i]!;if(Math.abs(x-a[0])>40&&Math.abs(x-b[0])>40)continue;if(Math.abs(z-a[1])>40&&Math.abs(z-b[1])>40)continue;
     const dx=b[0]-a[0],dz=b[1]-a[1],l=dx*dx+dz*dz||1,t=Math.max(0,Math.min(1,((x-a[0])*dx+(z-a[1])*dz)/l)),d=Math.hypot(x-a[0]-dx*t,z-a[1]-dz*t)-c.half;if(d<best)best=d;}}
   for(const [dx,dz,r] of discs()){const d=Math.hypot(x-dx,z-dz)-r;if(d<best)best=d;}
-  // The dam, its apron and the reservoir bowl.
-  const dd=Math.hypot(x-DAM.centre[0],z-DAM.centre[2]);if(dd<DAM.radius+8&&z>DAM.centre[2]-30)best=Math.min(best,dd-DAM.radius-8);
+  // The dam, its apron and the reservoir bowl (`bowl:false` keeps only the dam's own band, for rock that may line the bowl).
+  const dd=Math.hypot(x-DAM.centre[0],z-DAM.centre[2]);
+  if(opts.bowl===false){if(Math.abs(dd-DAM.radius)<8&&z>DAM.centre[2]-30)best=Math.min(best,Math.abs(dd-DAM.radius)-8);return best;}
+  if(dd<DAM.radius+8&&z>DAM.centre[2]-30)best=Math.min(best,dd-DAM.radius-8);
   if(Math.hypot(x-(DAM.centre[0]-2),z-(DAM.centre[2]-6))<40&&mountainBaseHeight(x,z)<88)best=Math.min(best,-1);
   return best;
 }

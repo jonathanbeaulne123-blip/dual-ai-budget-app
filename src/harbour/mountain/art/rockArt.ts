@@ -1,73 +1,82 @@
 /**
- * Crags: the mountain's steep faces as stacked cut-card strata rather than one smooth,
- * faceted sheet. Wherever the land is steeper than a scramble and nothing walks, a few
- * horizontal slabs of rock stand out of the face one above another, each stepped back into
- * the hill so the stack follows the slope: lit ledge tops, darker cut sides, an inked top
- * edge, and the land's own shadow under each lip. Pure placement data plus a card drawing.
+ * Rock faces as stacked cut card: wherever the mountain is a real cliff (steeper than a
+ * scramble and falling a long way), the land is read as a pile of card contours. Thin
+ * ledges follow the contour lines every few units up the face — a lit top, a darker cut
+ * front, a pencil line on the lip — so a cliff reads as strata in a hand-built model rather
+ * than one smooth faceted sheet. Pure placement data (`mountainStrata`) plus a card drawing.
  *
- * The slabs never touch a road, lane, path, stair, platform, plot, the dam or the reservoir
- * bowl (`plantingClearance`), stand only on slopes a body cannot climb, and do not collide.
+ * The ledges never touch a road, lane, path, stair, platform, plot or the dam (`plantingClearance`);
+ * they do line the reservoir bowl's walls, where they read as the water's level marks. They stand
+ * only on faces a body cannot climb, and do not collide.
  */
 import {mountainBaseHeight} from '../definition.ts';
 import {plantingClearance} from '../planting.ts';
-import {CardBuilder,shade,mix,type V3} from '../../art/cardScene.ts';
+import {CardBuilder,shade,mix,inkLift,type V3} from '../../art/cardScene.ts';
 import {hash2} from '../../art/cardKit.ts';
 import type {MountainArtPalette} from './palette.ts';
 
-export type Crag={x:number;z:number;y:number;
-  /** Unit horizontal downslope direction (out of the face). */
-  out:readonly [number,number];
-  /** The face's gradient (rise over run). */
-  grade:number;
-  /** Half length along the contour. */
-  reach:number;layers:number;seed:number};
+/** Steeper than this (rise over run, about 52°) is a rock face, not a grassy bank. */
+export const STRATA_GRADE=1.3;
+/** A face must fall at least this far over twelve units across it (a cliff, not a terrace bank). */
+export const STRATA_FALL=9;
+/** One ledge: a contour segment at `y`, its lip pushed `lip` out along the downslope `out`. */
+export type Ledge={a:readonly [number,number];b:readonly [number,number];y:number;out:readonly [number,number];lip:number;grade:number};
 
-/** Steeper than this (rise over run, about 47°) is a face, not a slope. */
-export const CRAG_GRADE=1.08;
-const slope=(x:number,z:number):[number,number]=>[(mountainBaseHeight(x+1,z)-mountainBaseHeight(x-1,z))/2,(mountainBaseHeight(x,z+1)-mountainBaseHeight(x,z-1))/2];
-
-const cache=new Map<string,readonly Crag[]>();
-/** Every crag on the mountain, deterministic per tier (the lite tier keeps the larger ones, farther apart). */
-export function mountainCrags(tier:'full'|'lite'):readonly Crag[]{
+const gradient=(x:number,z:number):[number,number]=>[(mountainBaseHeight(x+1,z)-mountainBaseHeight(x-1,z))/2,(mountainBaseHeight(x,z+1)-mountainBaseHeight(x,z-1))/2];
+/** Slide a point along the fall line onto the land's own contour at `y` (two Newton steps). */
+function onContour(p:[number,number],y:number):[number,number]{
+  let [x,z]=p;
+  for(let k=0;k<2;k++){const [gx,gz]=gradient(x,z),g2=gx*gx+gz*gz;if(g2<1e-6)break;const d=(mountainBaseHeight(x,z)-y)/g2,m=Math.max(-1.2,Math.min(1.2,d*Math.sqrt(g2)))/Math.sqrt(g2);x-=gx*m;z-=gz*m;}
+  return [x,z];
+}
+const cache=new Map<string,readonly Ledge[]>();
+/**
+ * The strata: marching squares over the baked ground at a fixed contour interval, kept only
+ * where the cell is a cliff and clear of every corridor. Deterministic per tier (the lite
+ * tier samples coarser, with a wider interval).
+ */
+export function mountainStrata(tier:'full'|'lite'):readonly Ledge[]{
   const hit=cache.get(tier);if(hit)return hit;
-  const out:Crag[]=[],step=tier==='full'?5:7.5;
-  for(let gz=-392;gz<=-50;gz+=step)for(let gx=-192;gx<=192;gx+=step){
-    const i=Math.round(gx/step),j=Math.round(gz/step),x=gx+(hash2(i,j)-.5)*step*.8,z=gz+(hash2(j,i)-.5)*step*.8;
-    const y=mountainBaseHeight(x,z);if(y<2.5)continue;
-    const [sx,sz]=slope(x,z),g=Math.hypot(sx,sz);if(g<CRAG_GRADE)continue;
-    // Faces on both sides of the sample must agree (a real face, not a crease).
-    const [ax,az]=slope(x+sz/g*2,z-sx/g*2),[bx,bz]=slope(x-sz/g*2,z+sx/g*2);if(Math.hypot(ax,az)<CRAG_GRADE*.8||Math.hypot(bx,bz)<CRAG_GRADE*.8)continue;
-    if(plantingClearance(x,z)<3)continue;
-    const u=hash2(i*3+1,j*7+2);
-    out.push({x,z,y,out:[-sx/g,-sz/g],grade:g,reach:1.6+u*2.2,layers:2+Math.floor(hash2(j*5,i*3)*3),seed:i*131+j*17});
+  const step=tier==='full'?1.5:2.5,interval=tier==='full'?2.4:4.2,out:Ledge[]=[];
+  const x0=-194,z0=-392,nx=Math.floor(388/step),nz=Math.floor(340/step);
+  const H=new Float32Array((nx+1)*(nz+1));
+  for(let j=0;j<=nz;j++)for(let i=0;i<=nx;i++)H[j*(nx+1)+i]=mountainBaseHeight(x0+i*step,z0+j*step);
+  const at=(i:number,j:number)=>H[j*(nx+1)+i]!;
+  const X=(n:number)=>x0+n*step,Z=(n:number)=>z0+n*step;
+  for(let j=0;j<nz;j++)for(let i=0;i<nx;i++){
+    const h00=at(i,j),h10=at(i+1,j),h01=at(i,j+1),h11=at(i+1,j+1),lo=Math.min(h00,h10,h01,h11),hi=Math.max(h00,h10,h01,h11);
+    if(hi<3||hi-lo<STRATA_GRADE*step*.9)continue;
+    const cx=X(i+.5),cz=Z(j+.5),[gx,gz]=gradient(cx,cz),g=Math.hypot(gx,gz);
+    if(g<STRATA_GRADE)continue;
+    if(mountainBaseHeight(cx+gx/g*6,cz+gz/g*6)-mountainBaseHeight(cx-gx/g*6,cz-gz/g*6)<STRATA_FALL)continue;
+    if(plantingClearance(cx,cz,{bowl:false})<2.5)continue;
+    const dir:[number,number]=[-gx/g,-gz/g];
+    for(let k=Math.ceil(lo/interval);k*interval<hi;k++){
+      const y=k*interval,pts:[number,number][]=[];
+      // Edge crossings (bottom, right, top, left) where the contour passes.
+      const edge=(ha:number,hb:number,ax:number,az:number,bx:number,bz:number)=>{if((ha<y)!==(hb<y)){const t=(y-ha)/(hb-ha);pts.push([ax+(bx-ax)*t,az+(bz-az)*t]);}};
+      edge(h00,h10,X(i),Z(j),X(i+1),Z(j));edge(h10,h11,X(i+1),Z(j),X(i+1),Z(j+1));edge(h11,h01,X(i+1),Z(j+1),X(i),Z(j+1));edge(h01,h00,X(i),Z(j+1),X(i),Z(j));
+      for(let n=0;n+1<pts.length;n+=2){const a=onContour(pts[n]!,y),b=onContour(pts[n+1]!,y);if(Math.hypot(b[0]-a[0],b[1]-a[1])<.05)continue;
+        // Drop a ledge that would not sit on the face (a crease or a sheer step the contour cannot follow).
+        if(Math.abs(mountainBaseHeight(a[0],a[1])-y)>.3||Math.abs(mountainBaseHeight(b[0],b[1])-y)>.3||Math.abs(mountainBaseHeight((a[0]+b[0])/2,(a[1]+b[1])/2)-y)/g>.45)continue;
+        if(Math.hypot(a[0]-cx,a[1]-cz)>step*1.5||Math.hypot(b[0]-cx,b[1]-cz)>step*1.5||plantingClearance((a[0]+b[0])/2,(a[1]+b[1])/2,{bowl:false})<2)continue;
+        out.push({a,b,y,out:dir,lip:.42+hash2(i*3+k,j*5)*.3,grade:g});}
+    }
   }
   cache.set(tier,out);return out;
 }
 
-/** The crags as card: each a short stack of irregular slabs following the face. */
+/** The ledges as card: a thin lit shelf with a darker cut front and a pencilled lip. */
 export function buildRockArt(b:CardBuilder,pal:MountainArtPalette,tier:'full'|'lite'){
-  const rock=pal.rock,moss=pal.leaf[2]!;
-  for(const c of mountainCrags(tier)){
-    const [ux,uz]=c.out,tx=-uz,tz=ux;
-    // Low crags carry a little moss on their ledges; high ones are bare and paler.
-    const ledge=c.y<60?mix(shade(rock,1.08),moss,.28*(1-c.y/60)):shade(rock,1.1+Math.min(.08,(c.y-60)/500));
-    let rise=0;
-    for(let k=0;k<c.layers;k++){
-      const h=.5+hash2(c.seed,k)*.35,top=c.y+.18+rise,back=rise/c.grade,w=c.reach*(1-.14*k)*(.85+hash2(k,c.seed)*.3);
-      const lip=.6+hash2(c.seed+k,3)*.55,depth=2.2+h/c.grade;
-      const cx=c.x-ux*back,cz=c.z-uz*back;
-      // A rounded front (seven points) and a straight back buried in the hill.
-      const loop:[number,number][]=[];
-      for(let n=0;n<=6;n++){const a=-Math.PI/2+n/6*Math.PI,j=.78+hash2(c.seed*7+n,k)*.4;loop.push([cx+tx*Math.sin(a)*w+ux*Math.cos(a)*lip*j,cz+tz*Math.sin(a)*w+uz*Math.cos(a)*lip*j]);}
-      loop.push([cx+tx*w*.9-ux*depth,cz+tz*w*.9-uz*depth],[cx-tx*w*.9-ux*depth,cz-tz*w*.9-uz*depth]);
-      // Wind the loop counter-clockwise in (x, z) so the prism's top faces up.
-      let area=0;for(let n=0;n<loop.length;n++){const p=loop[n]!,q=loop[(n+1)%loop.length]!;area+=p[0]*q[1]-q[0]*p[1];}
-      if(area<0)loop.reverse();
-      const tone=shade(rock,.9+hash2(c.seed,k+11)*.16);
-      // The lowest slab reaches down into the slope under its lip; the ones above are ledges.
-      b.prism(loop,k===0?c.y-c.grade*lip*1.1-.25:top-h,top,k===c.layers-1?ledge:mix(tone,ledge,.5),shade(tone,.84),tier==='full'?b.ink:null,.66);
-      rise+=h+.1+hash2(k,c.seed*3)*.25;
-    }
+  const rock=pal.rock,th=tier==='full'?.26:.34;
+  for(const l of mountainStrata(tier)){
+    const [ox,oz]=l.out,inx=-ox*.5,inz=-oz*.5,lx=ox*l.lip,lz=oz*l.lip;
+    // Paler with height; a hint of lichen low down.
+    const top=l.y<55?mix(shade(rock,1.12),pal.leaf[2]!,.12*(1-l.y/55)):shade(rock,1.1+Math.min(.1,(l.y-55)/400));
+    const front=shade(rock,.78+hash2(Math.round(l.a[0]*3),Math.round(l.a[1]*3))*.1);
+    const A:V3=[l.a[0]+inx,l.y,l.a[1]+inz],B:V3=[l.b[0]+inx,l.y,l.b[1]+inz],C:V3=[l.b[0]+lx,l.y,l.b[1]+lz],D:V3=[l.a[0]+lx,l.y,l.a[1]+lz];
+    b.quad(A,B,C,D,top);
+    b.quadV([D[0],l.y-th,D[2]],[C[0],l.y-th,C[2]],C,D,shade(front,.8),shade(front,.8),front,front);
+    if(tier==='full')b.line(inkLift(D),inkLift(C),b.pencil);
   }
 }
-export type {V3};
