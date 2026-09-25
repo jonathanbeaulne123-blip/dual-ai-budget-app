@@ -450,11 +450,11 @@ describe("the runtime's camera (C1, C3, C10)", () => {
   });
   it('releases moving transport before an explicit view or downhill race',()=>{
     const stage=mount();run(2);
-    stage.monorailBoard(0);stage.monorailSelect(3);run(90);
+    stage.monorailBoard(0,false);stage.monorailSelect(3);run(90);
     expect(stage.shot('view:world')).toBe(true);run(90);
     const at=stage.body()!.at();run(10);const held=stage.body()!.at();
     expect(Math.hypot(at.x-held.x,at.z-held.z)).toBeLessThan(.05);expect(stage.pose().r).toBeGreaterThan(120);
-    stage.monorailBoard(0);stage.monorailSelect(3);run(90);
+    stage.monorailBoard(0,false);stage.monorailSelect(3);run(90);
     expect(stage.body()!.skate.enable(true)).toBe(true);stage.body()!.skate.route('mountain-descent');run(20);
     expect(stage.body()!.skate.active()).toBe(true);
   });

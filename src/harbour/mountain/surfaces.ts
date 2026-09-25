@@ -1,3 +1,4 @@
+import {DAM_SOLIDS} from './damSolids.ts';
 import {STATION_SOLIDS,DISTRICT_ART_SOLIDS,SUMMIT_ART_SOLIDS} from './artGeometry.ts';
 import {mountainBaseHeight,SKILL_BRANCHES,MOUNTAIN_ROAD,TOWN_LANE_HALF_WIDTH,ROAD_HALF_WIDTH,nearestOnRoute,ORCHARD_LANE_LINE,EDGE_SOLIDS,type Point3} from './definition.ts';
 import {TOWN_LANE_DECK} from './course.ts';
@@ -94,7 +95,8 @@ export function worldCeilingAt(x:number,z:number,feet:number,radius=.2,surfaces:
   }
   return ceiling;
 }
-export const WORLD_SOLIDS:readonly WorldSolid[]=[...STATION_SOLIDS,...DISTRICT_ART_SOLIDS,...SUMMIT_ART_SOLIDS,...SKILL_BRANCHES.flatMap(s=>s.points.flatMap((p,i)=>{
+// Abutment body walls would block the authored maintenance shortcut; retain its corridor.
+export const WORLD_SOLIDS:readonly WorldSolid[]=[...DAM_SOLIDS.filter(s=>s.id.startsWith('dam:plinth:')),...STATION_SOLIDS,...DISTRICT_ART_SOLIDS,...SUMMIT_ART_SOLIDS,...SKILL_BRANCHES.flatMap(s=>s.points.flatMap((p,i)=>{
   if(i%8!==0)return [];const a=s.points[Math.max(0,i-1)]!,b=s.points[Math.min(s.points.length-1,i+1)]!,dx=b[0]-a[0],dz=b[2]-a[2],l=Math.hypot(dx,dz)||1;
   return [-1,1].flatMap(side=>{const x=p[0]+dz/l*(s.halfWidth+.4)*side,z=p[2]-dx/l*(s.halfWidth+.4)*side,y=mountainBaseHeight(x,z);
     if(nearestOnRoute(x,z).distance<ROAD_HALF_WIDTH+1||p[1]-y<1)return [];
