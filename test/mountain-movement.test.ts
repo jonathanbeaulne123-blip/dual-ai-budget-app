@@ -11,7 +11,7 @@ import {createBodyState,requestJump,stepBody,BODY_HEIGHT,KERB_PRESS,RETURN_FADE,
 import {districtArrival,raceCorridorAt} from '../src/harbour/body/geography.ts';
 import {createRide,farOffer,nearestStation,platformOffer} from '../src/harbour/body/ride.ts';
 import {groundHeightAt} from '../src/harbour/scene/ground.ts';
-import {DISTRICTS,TRANSPORT_STOPS,TRANSPORT_LINES} from '../src/harbour/mountain/definition.ts';
+import {DISTRICTS,TRANSPORT_STOPS,TRANSPORT_LINES,RACE_FINISH} from '../src/harbour/mountain/definition.ts';
 import {MOUNTAIN_COURSE_POINTS,MOUNTAIN_GATES,crossesRaceGate} from '../src/harbour/mountain/race.ts';
 import {createSkateSim} from '../src/harbour/skate/sim/index.ts';
 import {createSkateDriver,skateField,skateSimOptions,SKATE_CATALOGS} from '../src/harbour/skate/driver.ts';
@@ -261,7 +261,9 @@ describe('race: run-out, retry, HUD and finish',()=>{
   it('crossing the finish enters a braked run-out that never bails into the water',()=>{
     const driver=racing();
     const cp=driver.checkpoint()!,sim=cp.sim as Record<string,unknown>,[nx,nz]=last.normal;
-    Object.assign(sim,{x:last.at[0]-nx*10,z:last.at[2]-nz*10,y:last.at[1],vx:nx*13,vy:0,vz:nz*13,boardYaw:Math.atan2(nx,nz),mode:'ground'});
+    // On the lane ten units before the gate (the quay falls toward the finish: stand on the ground there).
+    const sx=last.at[0]-nx*10,sz=last.at[2]-nz*10;
+    Object.assign(sim,{x:sx,z:sz,y:groundHeightAt(sx,sz),vx:nx*13,vy:0,vz:nz*13,boardYaw:Math.atan2(nx,nz),mode:'ground'});
     cp.session.run={...cp.session.run!,checkpoint:course.length-1};
     driver.restore(cp);driver.pause(false);
     const events:SkateSimEvent[]=[];let runout=false;
@@ -269,6 +271,11 @@ describe('race: run-out, retry, HUD and finish',()=>{
     expect(driver.run()?.finished).toBe(true);expect(runout).toBe(true);
     expect(events.filter(e=>e.kind==='bail')).toEqual([]);
     expect(driver.present()!.speed).toBeLessThan(.5);
+    // It stopped on the quay, inside the run-out the finish owns (at least 25 units of it).
+    const stop=driver.present()!,past=(stop.x-last.at[0])*nx+(stop.z-last.at[2])*nz;
+    expect(RACE_FINISH.runout).toBeGreaterThanOrEqual(25);
+    expect(past).toBeGreaterThan(0);expect(past).toBeLessThanOrEqual(RACE_FINISH.runout);
+    expect(Math.hypot(stop.x,stop.z)).toBeLessThan(73.2);
     // The finish card offers the Fund, and the HUD counts the gates there are.
     const hud=driver.hud()!;expect(hud.run).toMatchObject({finished:true,gate:course.length-1,gates:course.length-1,raced:true});
   });
