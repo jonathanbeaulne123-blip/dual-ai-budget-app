@@ -87,7 +87,10 @@ export const MINE_FUND_WORDS = "the shared Fund";
 export const MINE_STEP_LIMIT = 12;
 export const MINE_BANK_LIMIT = 12;
 
-const EMPTY = (memberId: string): MineLayer => ({ memberId, footpaths: [], steps: [], banks: [], empty: true });
+/** Nothing to draw: Ours, an unknown member, or an empty household. */
+export function emptyMineLayer(memberId: string): MineLayer {
+  return { memberId, footpaths: [], steps: [], banks: [], empty: true };
+}
 
 function stepWhen(task: Pick<Task, "doDate" | "dueDate">): DateKey | null {
   return task.doDate ?? task.dueDate ?? null;
@@ -99,7 +102,7 @@ function stepWhen(task: Pick<Task, "doDate" | "dueDate">): DateKey | null {
  * result is only ever drawn on that member's screen in Mine.
  */
 export function mineLayer(household: Household, memberId: string, today: DateKey): MineLayer {
-  if (!memberId || !household.members.some((member) => member.id === memberId)) return EMPTY(memberId);
+  if (!memberId || !household.members.some((member) => member.id === memberId)) return emptyMineLayer(memberId);
 
   let footpaths: PathFootpath[] = [];
   try { footpaths = pathFootpaths(household, memberId, today); } catch { footpaths = []; }

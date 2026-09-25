@@ -1,3 +1,14 @@
+/**
+ * @deprecated Retired as a screen by the Tool Atlas (K4, decision D2, 2026-09-25): one island for
+ * both spaces. Kept compiling until the integrator removes its mount (`App.tsx`, the
+ * `view==="personal"&&activeHouseRoute.surface==="journey"` branch). Where each feature now lives:
+ * - the personal island → the Mine layer on the household harbour (`harbour/mine/`, owner-only);
+ * - "Open Personal Plan" → the kitchen table in Mine (the `plan-studio` target, personal view);
+ * - wishes / experiences / kept memories → the Boathouse's private folio, listed in Mine only (T45);
+ * - private Kitty Banks → the Loft's private shelf in the Mine layer (`bank/<id>` → `loft-banks`);
+ * - the month picker and its readings → the Journey map (T36) and the personal camp card.
+ * Do not add features here; nothing new may import this module (fenced in `test/mine-layer-ui.test.ts`).
+ */
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DateKey } from "../core/calendar.ts";
 import { pathMonthCharacter, pathMonths } from "../core/pathSignals.ts";
@@ -37,6 +48,7 @@ function PersonalJourneyFlat({ island, active }: { island: GrownIsland; active: 
 }
 
 export type PersonalJourneyObject = 'wish' | 'experience' | 'memory' | 'bank';
+/** @deprecated Tool Atlas D2: replaced by the Mine layer on the household harbour (`harbour/mine/`). */
 export function PersonalJourney({ household, memberId, today, interpretationGate, onOpenPlan, onOpenTask: _onOpenTask, onReturn, onOpenObject }: {
   household: Household;
   memberId: string;
