@@ -27,6 +27,9 @@ export function buildNeedleArch(): StructureSolid {
     quad(i + 6, i + 7, i + 19, i + 18);
   }
   quad(0, 6, 18, 12); quad(5, 17, 23, 11);
+  // The contour traversal above is inward in xyz; reverse once so west/east
+  // faces, the intrados and both submerged feet all face out of the rock volume.
+  for (let i = 0; i < indices.length; i += 3) [indices[i + 1], indices[i + 2]] = [indices[i + 2]!, indices[i + 1]!];
   return { id: 'offshore.needle', kind: 'naturalArch', positions, indices, surface: 'rock.sea', districtId: 'offshore', bedIds: [], walkable: false, role: 'rock' };
 }
 export function buildOffshoreSolids(): StructureSolid[] {

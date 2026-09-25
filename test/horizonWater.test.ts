@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Mesh, MeshBasicMaterial, BufferGeometry, Float32BufferAttribute, Raycaster, Vector3, DoubleSide } from 'three';
+import { Mesh, MeshBasicMaterial, BufferGeometry, Float32BufferAttribute, Raycaster, Vector3 } from 'three';
 import { baseHeight, createTerrainCutSampler, sampleTerrain } from '../src/harbour/horizon/land/terrain';
 import type { TerrainField } from '../src/harbour/horizon/land/interfaces';
 import { buildWaterCuts, bightMouthWidth, waterInfluence } from '../src/harbour/horizon/land/water';
@@ -78,7 +78,7 @@ describe('Horizon water and offshore land', () => {
     }
     expect([...edges.values()].every(n => n === 2)).toBe(true);
     const geometry = new BufferGeometry(); geometry.setAttribute('position', new Float32BufferAttribute(arch.positions, 3)); geometry.setIndex(arch.indices);
-    const mesh = new Mesh(geometry, new MeshBasicMaterial({ side: DoubleSide })); mesh.updateMatrixWorld();
+    const mesh = new Mesh(geometry, new MeshBasicMaterial()); mesh.updateMatrixWorld();
     for (const y of [6, 14, 22]) for (const z of [669, 680, 691]) expect(new Raycaster(new Vector3(1700, y, z), new Vector3(1, 0, 0)).intersectObject(mesh)).toHaveLength(0);
     expect(new Raycaster(new Vector3(1790, 14, 680), new Vector3(0, 1, 0)).intersectObject(mesh)[0]?.point.y).toBeCloseTo(22.2, 4);
     expect(Math.max(...arch.positions.filter((_, i) => i % 3 === 0)) - Math.min(...arch.positions.filter((_, i) => i % 3 === 0))).toBe(20);
