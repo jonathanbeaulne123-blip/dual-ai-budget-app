@@ -1116,6 +1116,41 @@ describe("Private footpaths and bridges on Our Path", () => {
   });
 });
 
+describe("Tool Atlas D2: the App's space drives the private marks", () => {
+  const TODAY = "2026-09-15";
+  const outline = () => [...host.querySelectorAll<HTMLButtonElement>(".path-world__outline button")].map((b) => b.textContent ?? "");
+  function withPaths(): Household {
+    let h = seeded();
+    h = saveTask(h, { memberId: "MEM-001", id: "TASK-MINE", expectedRevision: 0, task: { visibility: "personal", title: "Fictional: my own long walk", notes: "", listId: null, parentId: null, doDate: null, dueDate: null, repeat: "none", cue: "none", assigneeId: null, backupId: null, chapterId: null, planReference: null, moneyLink: null, expectedAmountCents: null, deleted: false } }).household;
+    h = savePlanBridgeDraft(h, { monthKey: "2026-09", kind: "responsibility", label: "Fictional: I could cover the ferry", amountCents: 7_321, memberId: "MEM-001", createdBy: "MEM-001" }).household;
+    return h;
+  }
+
+  it("draws my footpaths and my private plank in Mine only, with no toggle and nothing persisted", async () => {
+    created.mode = "fake";
+    const h = withPaths();
+    await act(async () => root.render(createElement(Harness, { initial: h, today: TODAY, extra: { space: "ours" } })));
+    await settle();
+    await enter();
+    const world = created.worlds[0] as FakeWorld;
+    const scene = () => world.setScene.mock.calls.at(-1)![0] as { footpaths: unknown[]; bridges: { stage: number }[] };
+    expect(scene().footpaths).toEqual([]);
+    expect(scene().bridges.filter((bridge) => bridge.stage === 1)).toEqual([]);
+    expect(outline().some((t) => t.includes("my own long walk"))).toBe(false);
+    expect(outline().some((t) => t.includes("cover the ferry"))).toBe(false);
+    await openDrawer();
+    expect([...host.querySelectorAll(".path-world__layers button")].map((b) => b.textContent)).toEqual(["Weather", "Story", "Rhythm"]);
+
+    await act(async () => root.render(createElement(Harness, { initial: h, today: TODAY, extra: { space: "mine" } })));
+    await settle();
+    expect(scene().footpaths).toHaveLength(1);
+    expect(scene().bridges.filter((bridge) => bridge.stage === 1)).toHaveLength(1);
+    expect(outline()).toContain("Fictional: my own long walk · only you see this");
+    // The space is the only source: no per-device key is written or read.
+    expect(Object.keys(localStorage).filter((key) => key.startsWith("hearth:pathWorld:mine"))).toEqual([]);
+  });
+});
+
 describe("Every place on the island is reachable from the DOM (a11y pass)", () => {
   const TODAY = "2026-09-15";
   type Scene = {

@@ -675,9 +675,10 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   }, [household, memberId, today]);
   const glanceSafe = lantern >= PRIVATE_LANTERN;
   const shownBridges = useMemo(() => bridges
-    .filter((bridge) => bridge.stage !== 1 || glanceSafe)
+    // My stage-1 plank is private: never at Dim, and with the App's space (D2) only in Mine.
+    .filter((bridge) => bridge.stage !== 1 || (glanceSafe && (!spaceDriven || mine)))
     .map((bridge) => ({ bridge, month: stoneMonth(bridge.month) }))
-    .filter((row) => row.month >= 0 && row.month <= shown), [bridges, glanceSafe, stoneMonth, shown]);
+    .filter((row) => row.month >= 0 && row.month <= shown), [bridges, glanceSafe, spaceDriven, mine, stoneMonth, shown]);
   const [narrow, setNarrow] = useState(readNarrow);
   useEffect(() => {
     const onResize = () => setNarrow(readNarrow());
