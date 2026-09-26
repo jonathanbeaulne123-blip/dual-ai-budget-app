@@ -87,11 +87,6 @@ function crownHeight(b: Band, x: number, z: number): number {
   const q = clamp(distance / Math.max(1, edgeDistance));
   const ridge = clamp(1 - 0.16 * dx / (260 * s) + 0.12 * dz / (260 * s), 0.75, 1.25);
   let height = mix(110 * s, summit.summitH! * s, Math.pow(1 - smooth(q), ridge));
-  // The Throat is cut into a north-facing buttress, not into an exposed low edge.
-  // Its surveyed 110 m floor plus 18 m aperture has real rock above it.
-  const tx = Math.abs(x / s - 1300), north = smooth((z / s - 268) / 24), south = 1 - smooth((z / s - 345) / 65);
-  const buttress = smooth(1 - Math.max(0, tx - 18) / 72) * north * south;
-  height = mix(height, Math.max(height, (131 + 5 * clamp((z / s - 300) / 60)) * s), buttress);
   // The skylight opens at the manifest's northern shaft endpoint (1300,400),
   // not at the lake centre (1300,420). A small rock saddle meets its 138 m rim.
   const opening = M.underground.rooms.deep.skylight;
@@ -151,10 +146,23 @@ export function baseHeight(x: number, z: number): number {
     height = mix(height, bandHeight(b, x, z), weight);
     if (d > 0) height = mix(height, clamp(height, b.min, b.max), smooth(d / step));
   }
+  height = throatButtress(x, z, height);
   const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
   height = mix(0.14 * s, height, smooth(shore / shoreWidth));
   height = damWindow(x, z, notchHeight(x, z, height));
   return applyWaters(x, z, height, m.water);
+}
+/**
+ * The Throat is cut into a north-facing buttress, not into an exposed low edge: its surveyed 110 m
+ * floor plus 18 m aperture has real rock above it (≥ 131 over the mouth, rising south). Applied after
+ * the band blend: since the landformRule blend moved inside the winning polygon (Stage A), the Crown's
+ * own band no longer reached the mouth 13 m inside its north edge, the ground there fell to 115–123
+ * and the P25 Throat samples (y 111–127, z 300–310) stood in open air, sunlit 8–17 of 75.
+ */
+function throatButtress(x: number, z: number, height: number): number {
+  const s = getModel().scale, tx = Math.abs(x / s - 1300), north = smooth((z / s - 268) / 24), south = 1 - smooth((z / s - 345) / 65);
+  const buttress = smooth(1 - Math.max(0, tx - 18) / 72) * north * south;
+  return buttress <= 0 ? height : mix(height, Math.max(height, (131 + 5 * clamp((z / s - 300) / 60)) * s), buttress);
 }
 /** The High Span's surveyed station on the lower river (water 9.2, bed 8). */
 const HIGH_SPAN_STATION: XY = [1236.875, 1105];

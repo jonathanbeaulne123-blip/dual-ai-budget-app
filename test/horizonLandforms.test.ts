@@ -111,3 +111,12 @@ describe('Horizon authored continuous landforms', () => {
     for (let x = 1220; x <= 1260; x += 2.5) expect(baseHeight(x, 1095), `${x}`).toBeLessThanOrEqual(waterInfluence(river, x, 1095).level + river.bank + 1e-6);
   });
 });
+
+it('keeps real rock over the Throat mouth after the band blend (P25: the Throat is never lit)', async () => {
+  const { baseHeight } = await import('../src/harbour/horizon/land/terrain');
+  // The corridor's roof stands at 128.6 over the 110 floor at the mouth (z 300) and falls south; the
+  // Stage A blend had left the ground at 115–123 there, so the P25 samples (y 111–127) stood in open air.
+  for (const z of [300, 305, 310, 320]) for (const x of [1289, 1300, 1311]) expect(baseHeight(x, z)).toBeGreaterThanOrEqual(131);
+  // In front of the mouth the buttress falls away north (the mouth of daylight stays open).
+  expect(baseHeight(1300, 270)).toBeLessThan(100);
+});
