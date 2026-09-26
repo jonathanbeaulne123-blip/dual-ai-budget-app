@@ -110,11 +110,14 @@ describe('Horizon bed override guards (Stage A G1/G7)', () => {
     }
     expect(raiseForbidden(1470, 1186)).toBe(false);
   });
-  it('never excavates a lower route under an upper deck it passes beneath', () => {
+  it('never buries a lower route under an upper deck it passes beneath; the upper fills only beside it', () => {
+    // Integration (Stage A): VG was buried 3-7 eu under the Garden Walk's fill at [969,766]. A lower route keeps its
+    // carriageway clear; the upper deck with no named span over it is reported as an unsupported run instead.
     const upper = bed('upper', [[1300, 30, 900], [1400, 30, 900]], { width: 8 }), lower = bed('lower', [[1350, 20, 850], [1350, 20, 950]], { width: 5 });
     for (const beds of [[upper, lower], [lower, upper]]) {
-      expect(createBedSampler(beds)(1350, 900, 25).height).toBe(30);
-      expect(createTerrainCutSampler(cuts(beds), 5)(1350, 900).height).toBeCloseTo(30 - BED_TERRAIN_CLEARANCE, 5);
+      expect(createBedSampler(beds)(1350, 900, 25).height).toBe(20);
+      expect(createTerrainCutSampler(cuts(beds), 5)(1350, 900).height).toBeCloseTo(20 - BED_TERRAIN_CLEARANCE, 5);
+      expect(createBedSampler(beds)(1370, 900, 25).height).toBe(30);
     }
     // At grade (within 0.5 eu) the lowest bed still gets its clearance.
     const flush = bed('flush', [[1350, 20.3, 850], [1350, 20.3, 950]], { width: 5 }), road = bed('road', [[1300, 20, 900], [1400, 20, 900]]);
