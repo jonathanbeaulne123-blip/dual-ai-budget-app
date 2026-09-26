@@ -27,7 +27,7 @@ import { campCardModel, type CampCardModel } from './harbour/glass/campCardModel
 import { fundExtrasFromBasin, type PanelExtras, type PanelHost } from './harbour/panels/panelModel.ts';
 import { buildBasinReading } from './harbour/mountain/basin.ts';
 import { readSeals, readSnapshot } from './harbour/desk/todayModel.ts';
-import { campfireState, type CampfireBeat } from './harbour/campfire/ritual/model.ts';
+import { campfireState, type CampfireBeat } from './campfire/model.ts';
 import { HarbourFlat } from './harbour/flat/PlaceFlat.tsx';
 import { harbourJourneyAnchor } from './path/harbourJourney.ts';
 import { PersonalTogether } from './house/PersonalTogether.tsx';
@@ -560,8 +560,8 @@ const HarbourWorld = lazy(() => import("./harbour/HarbourEntry.tsx"));
 /** The map hosts that have a compact panel (the square and the Kiln have none; they are walked to). */
 const PANEL_HOSTS: ReadonlySet<string> = new Set(["bank", "cellar", "tower", "kitchen", "library", "glasshouse", "campfire", "boathouse", "atlas", "cottage"]);
 /** The Campfire (Tool Atlas D3): one five-beat monthly ritual, and the weekly Sitdown's two chairs. Loaded when opened. */
-const CampfireRitual = lazy(() => import("./harbour/campfire/ritual/CampfireRitual.tsx").then(module => ({ default: module.CampfireRitual })));
-const WeeklySitdown = lazy(() => import("./harbour/campfire/ritual/WeeklySitdown.tsx").then(module => ({ default: module.WeeklySitdown })));
+const CampfireRitual = lazy(() => import("./campfire/CampfireRitual.tsx").then(module => ({ default: module.CampfireRitual })));
+const WeeklySitdown = lazy(() => import("./campfire/WeeklySitdown.tsx").then(module => ({ default: module.WeeklySitdown })));
 import { type JourneyDestination } from "./OnboardingJourney.tsx";
 import { GuidedSetupPreview } from "./GuidedSetupPreview.tsx";
 import { OnboardingCategories } from "./OnboardingCategories.tsx";

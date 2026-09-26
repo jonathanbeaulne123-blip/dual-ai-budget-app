@@ -5,8 +5,8 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import ts from "typescript";
 import { afterEach, describe, expect, it } from "vitest";
-import { CampfireRitual } from "../src/harbour/campfire/ritual/CampfireRitual.tsx";
-import { WeeklySitdown } from "../src/harbour/campfire/ritual/WeeklySitdown.tsx";
+import { CampfireRitual } from "../src/campfire/CampfireRitual.tsx";
+import { WeeklySitdown } from "../src/campfire/WeeklySitdown.tsx";
 import {
   CAMPFIRE_BEATS,
   CAMPFIRE_BEAT_TITLES,
@@ -18,7 +18,7 @@ import {
   previousBeat,
   sealStatus,
   sealWords,
-} from "../src/harbour/campfire/ritual/model.ts";
+} from "../src/campfire/model.ts";
 import { catalogHousehold } from "../src/core/seed.ts";
 import { addGoal, appendPlanSitdownTurn, closeBooksMonth, postEntry } from "../src/core/commands.ts";
 import { buildDashboard, type Dashboard } from "../src/core/insights.ts";
@@ -228,7 +228,7 @@ describe("the weekly Sitdown is two chairs", () => {
   });
 
   it("holds no closing command in its source", () => {
-    const source = readFileSync("src/harbour/campfire/ritual/WeeklySitdown.tsx", "utf8");
+    const source = readFileSync("src/campfire/WeeklySitdown.tsx", "utf8");
     for (const word of ["closeChapter", "closeBooksMonth", "acknowledgeHouseholdPlan", "checkpoint:", "digest:", "close: true"]) expect(source).not.toContain(word);
   });
 });
@@ -276,7 +276,7 @@ describe("money truth at the fire", () => {
   });
 
   it("composes only existing commands in its own files, and imports no money writer", () => {
-    const dir = "src/harbour/campfire/ritual";
+    const dir = "src/campfire";
     const allowed = new Set(["appendPlanSitdownTurn", "acknowledgeHouseholdPlan", "closeBooksMonth", "closeChapter", "openChapter", "editRitual", "acknowledgeRitualChange", "keepWinAsMemory", "dismissWin", "offerMove"]);
     const used = new Set<string>();
     for (const name of readdirSync(dir).filter(file => /\.tsx?$/.test(file))) {
@@ -330,16 +330,16 @@ describe("money truth at the fire", () => {
   };
 
   it("names every command it reaches through reused controls", () => {
-    const beats = readFileSync("src/harbour/campfire/ritual/beats.tsx", "utf8");
+    const beats = readFileSync("src/campfire/beats.tsx", "utf8");
     // The reused controls it mounts, and nothing else from the App's root.
-    expect([...beats.matchAll(/from "\.\.\/\.\.\/\.\.\/([A-Z][A-Za-z]+)\.tsx"/g)].map(match => match[1]).sort()).toEqual(["ChapterPanel", "ChapterTaskControls", "SitDownGuide"]);
+    expect([...beats.matchAll(/from "\.\.\/([A-Z][A-Za-z]+)\.tsx"/g)].map(match => match[1]).sort()).toEqual(["ChapterPanel", "ChapterTaskControls", "SitDownGuide"]);
     for (const [where, { file, source, commands }] of Object.entries(REUSED)) {
       expect([...commandsIn(source(), file)].sort(), where).toEqual(commands);
     }
   });
 
   it("moves money only through Settle's named “Confirm moves of $X”, sent through run", () => {
-    const own = readdirSync("src/harbour/campfire/ritual").filter(file => /\.tsx?$/.test(file)).map(file => readFileSync(join("src/harbour/campfire/ritual", file), "utf8")).join("\n");
+    const own = readdirSync("src/campfire").filter(file => /\.tsx?$/.test(file)).map(file => readFileSync(join("src/campfire", file), "utf8")).join("\n");
     const reached = Object.values(REUSED).map(({ source }) => source()).join("\n");
     const movers = MONEY_WRITERS.filter(name => new RegExp(`\\b${name}\\(`).test(own + reached));
     expect(movers).toEqual(["executeSitDownMoves"]);
@@ -353,9 +353,9 @@ describe("money truth at the fire", () => {
     const send = leftover.slice(leftover.indexOf("async function send("), leftover.indexOf("async function send(") + 200);
     expect(send).toContain("const outcome = await onCommand(fn)");
     // …and the Settle beat hands SitDownLeftover the ritual's relay, which is the App's run (runKitchen).
-    const beats = readFileSync("src/harbour/campfire/ritual/beats.tsx", "utf8");
+    const beats = readFileSync("src/campfire/beats.tsx", "utf8");
     expect(beats).toMatch(/<SitDownLeftover [^>]*onCommand=\{props\.relay\}/);
-    const write = readFileSync("src/harbour/campfire/ritual/useCampfireWrite.ts", "utf8");
+    const write = readFileSync("src/campfire/useCampfireWrite.ts", "utf8");
     expect(write).toMatch(/const relay = useCallback\(async \(fn[^)]*\)[^{]*\{[^}]*await onCommand\(fn\)/);
   });
 
@@ -405,7 +405,7 @@ function renderedStrings(file: string): string[] {
 }
 
 describe("the Campfire's words", () => {
-  const ritualFiles = readdirSync("src/harbour/campfire/ritual").filter(file => /\.tsx$/.test(file)).map(file => `src/harbour/campfire/ritual/${file}`);
+  const ritualFiles = readdirSync("src/campfire").filter(file => /\.tsx$/.test(file)).map(file => `src/campfire/${file}`);
   const doors = ["src/ChapterPanel.tsx", "src/SitDownGuide.tsx", "src/tabs/BooksTab.tsx", ...ritualFiles];
 
   it("never says check-in, Close the month, Close the previous Chapter, Sit-down or Our Path", () => {

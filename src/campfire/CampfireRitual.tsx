@@ -1,9 +1,9 @@
 import { useEffect, useId, useRef, useState } from "react";
-import { formatMonthLabel, type DateKey } from "../../../core/calendar.ts";
-import { openChapterFor, pendingChapterClosure } from "../../../core/chapters.ts";
-import type { Household } from "../../../core/types.ts";
-import type { Dashboard } from "../../../core/insights.ts";
-import { useDialog } from "../../../useDialog.ts";
+import { formatMonthLabel, type DateKey } from "../core/calendar.ts";
+import { openChapterFor, pendingChapterClosure } from "../core/chapters.ts";
+import type { Household } from "../core/types.ts";
+import type { Dashboard } from "../core/insights.ts";
+import { useDialog } from "../useDialog.ts";
 import { ArriveBeat, LookAheadBeat, LookBackBeat, SealBeat, SettleBeat, type BeatProps } from "./beats.tsx";
 import { CAMPFIRE_BEATS, CAMPFIRE_BEAT_TITLES, campfireMonth, nextBeat, previousBeat, type CampfireBeat } from "./model.ts";
 import { useCampfireWrite, type CampfireRun } from "./useCampfireWrite.ts";

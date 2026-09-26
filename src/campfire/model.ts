@@ -1,4 +1,4 @@
-import { addDays, calendarDaysBetween, formatMonthLabel, monthEndKey, monthKeyFromDateKey, shiftMonthKey, weekBounds, type DateKey, type MonthKey } from "../../../core/calendar.ts";
+import { addDays, calendarDaysBetween, formatMonthLabel, monthEndKey, monthKeyFromDateKey, shiftMonthKey, weekBounds, type DateKey, type MonthKey } from "../core/calendar.ts";
 import {
   chapterMonth,
   defaultNextChapter,
@@ -14,13 +14,13 @@ import {
   type Ritual,
   type RitualTerms,
   type Win,
-} from "../../../core/chapters.ts";
-import { currentPlanVersion, evaluatePlanDrift, planAcknowledgementState, requiredPlanMemberIds, type PlanHerculesSession, type PlanLine, type PlanVersion } from "../../../core/planSystem.ts";
-import { planSelectionForVersion, projectPlan } from "../../../core/planProjection.ts";
-import { isMonthClosed } from "../../../core/statements.ts";
-import { proposeAllocation } from "../../../core/sitDown.ts";
-import type { AllocationSlice } from "../../../core/allocate.ts";
-import type { Household } from "../../../core/types.ts";
+} from "../core/chapters.ts";
+import { currentPlanVersion, evaluatePlanDrift, planAcknowledgementState, requiredPlanMemberIds, type PlanHerculesSession, type PlanLine, type PlanVersion } from "../core/planSystem.ts";
+import { planSelectionForVersion, projectPlan } from "../core/planProjection.ts";
+import { isMonthClosed } from "../core/statements.ts";
+import { proposeAllocation } from "../core/sitDown.ts";
+import type { AllocationSlice } from "../core/allocate.ts";
+import type { Household } from "../core/types.ts";
 
 /**
  * The Campfire ritual (Tool Atlas T29′, TIME.md D29, decision D3), read.

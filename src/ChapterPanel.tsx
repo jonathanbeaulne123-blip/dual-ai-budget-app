@@ -18,7 +18,7 @@ import {
   type RitualCue,
 } from "./core/chapters.ts";
 import { ChapterAdoption, ChapterMoveActions, RitualTermsRead } from "./ChapterTaskControls.tsx";
-import { CampfireDoor } from "./harbour/campfire/ritual/CampfireDoor.tsx";
+import { CampfireDoor } from "./campfire/CampfireDoor.tsx";
 import { sitdownBrief } from "./core/sitdownBrief.ts";
 import { fundModelMode } from "./core/fundRules.ts";
 import { monthKeyFromDateKey } from "./core/calendar.ts";

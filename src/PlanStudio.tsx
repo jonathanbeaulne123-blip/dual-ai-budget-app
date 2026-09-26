@@ -13,7 +13,7 @@ import { planSelectionForDraft, planSelectionForVersion, planSourceVisible, proj
 import { planLesson, PLAN_LESSONS } from "./core/planLearning.ts";
 import { fundModelMode } from "./core/fundRules.ts";
 import { planLensCopy, planLensOrder } from "./core/planSystem.ts";
-import { CampfireDoor } from "./harbour/campfire/ritual/CampfireDoor.tsx";
+import { CampfireDoor } from "./campfire/CampfireDoor.tsx";
 import { HerculesPortrait } from "./Hercules.tsx";
 import { PlanBridgeEditor } from "./PlanBridgeEditor.tsx";
 import { PlanReflectionEditor } from "./PlanReflectionEditor.tsx";

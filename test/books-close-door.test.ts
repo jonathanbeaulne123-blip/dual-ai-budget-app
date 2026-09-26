@@ -98,6 +98,6 @@ describe("the month-close fence", () => {
       .map((path) => relative(process.cwd(), path).replaceAll("\\", "/"))
       .filter((path) => !path.startsWith("src/core/") && !path.startsWith("src/ledgerSync/"))
       .filter((path) => /\bcloseBooksMonth\b/.test(readFileSync(join(process.cwd(), path), "utf8")));
-    expect(callers).toEqual(["src/harbour/campfire/ritual/beats.tsx"]);
+    expect(callers).toEqual(["src/campfire/beats.tsx"]);
   });
 });

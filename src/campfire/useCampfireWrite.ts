@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import type { CommitResult, Household } from "../../../core/types.ts";
+import type { CommitResult, Household } from "../core/types.ts";
 
 /**
  * The App's `run` (`runKitchen`), as the Campfire needs it: a command in, an

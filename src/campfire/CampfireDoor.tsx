@@ -1,6 +1,6 @@
 import { useId, useState } from "react";
-import type { DateKey } from "../../../core/calendar.ts";
-import type { Household } from "../../../core/types.ts";
+import type { DateKey } from "../core/calendar.ts";
+import type { Household } from "../core/types.ts";
 import { campfireState } from "./model.ts";
 import "./ritual.css";
 

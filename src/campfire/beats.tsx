@@ -1,6 +1,6 @@
 import { useId, useState, type ReactNode } from "react";
-import { acknowledgeHouseholdPlan, appendPlanSitdownTurn, closeBooksMonth, formatCad } from "../../../core/index.ts";
-import { formatDayLabel, formatMonthLabel, monthEndKey, monthStartKey, type DateKey } from "../../../core/calendar.ts";
+import { acknowledgeHouseholdPlan, appendPlanSitdownTurn, closeBooksMonth, formatCad } from "../core/index.ts";
+import { formatDayLabel, formatMonthLabel, monthEndKey, monthStartKey, type DateKey } from "../core/calendar.ts";
 import {
   acknowledgeRitualChange,
   chapterClosureRevision,
@@ -21,14 +21,14 @@ import {
   ritualsForChapter,
   type ChapterOutcome,
   type Ritual,
-} from "../../../core/chapters.ts";
-import { fundModelMode } from "../../../core/fundRules.ts";
-import { chapterLesson } from "../../../core/planLearning.ts";
-import type { CommitResult, Household } from "../../../core/types.ts";
-import type { Dashboard } from "../../../core/insights.ts";
-import { ChapterAdoption, ChapterMoveActions, RitualCard } from "../../../ChapterTaskControls.tsx";
-import { RitualForm } from "../../../ChapterPanel.tsx";
-import { SitDownLeftover, SitDownLookBack } from "../../../SitDownGuide.tsx";
+} from "../core/chapters.ts";
+import { fundModelMode } from "../core/fundRules.ts";
+import { chapterLesson } from "../core/planLearning.ts";
+import type { CommitResult, Household } from "../core/types.ts";
+import type { Dashboard } from "../core/insights.ts";
+import { ChapterAdoption, ChapterMoveActions, RitualCard } from "../ChapterTaskControls.tsx";
+import { RitualForm } from "../ChapterPanel.tsx";
+import { SitDownLeftover, SitDownLookBack } from "../SitDownGuide.tsx";
 import {
   booksCloseState,
   campfireAllocationSlices,

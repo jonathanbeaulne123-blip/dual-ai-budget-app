@@ -1,9 +1,9 @@
 import { useId, useState } from "react";
-import { appendPlanSitdownTurn } from "../../../core/index.ts";
-import { formatDayLabel, monthKeyFromDateKey, weekBounds, type DateKey } from "../../../core/calendar.ts";
-import { requiredPlanMemberIds } from "../../../core/planSystem.ts";
-import type { Household } from "../../../core/types.ts";
-import { useDialog } from "../../../useDialog.ts";
+import { appendPlanSitdownTurn } from "../core/index.ts";
+import { formatDayLabel, monthKeyFromDateKey, weekBounds, type DateKey } from "../core/calendar.ts";
+import { requiredPlanMemberIds } from "../core/planSystem.ts";
+import type { Household } from "../core/types.ts";
+import { useDialog } from "../useDialog.ts";
 import { weeklySession, weeklySitdownId } from "./model.ts";
 import { outcomeRefusal, useCampfireWrite, type CampfireRun } from "./useCampfireWrite.ts";
 import "./ritual.css";

@@ -57,7 +57,7 @@ import { WalletPane } from "./Accounts.tsx";
 import { booksFilename, booksJournalCsv, booksSqlDump, downloadText } from "./ledger/export.ts";
 import type { BooksStatus } from "./ledger/engine.ts";
 import { HouseholdFundPanel } from "./HouseholdFundPanel.tsx";
-import { CampfireDoor } from "./harbour/campfire/ritual/CampfireDoor.tsx";
+import { CampfireDoor } from "./campfire/CampfireDoor.tsx";
 import { KittyBanks } from "./KittyBanks.tsx";
 import "./books-household.css";
 import { DeferredSurface } from "./deferredSurfaces.tsx";

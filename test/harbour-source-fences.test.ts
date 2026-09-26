@@ -76,16 +76,39 @@ describe("src/harbour source fences", () => {
   });
 
   it("never imports commands, the kitchen, the ledger, storage, continuity or the api", () => {
+    // No exemptions: the Campfire ritual, which composes captured commands, lives in src/campfire with its own
+    // fence (test/campfire-source-fence.test.ts). src/harbour stays the scene.
     const offences: string[] = [];
-    // The Campfire ritual (Tool Atlas D3, track D) is a working surface, not the scene: it composes existing
-    // captured commands and hands every one to the App's runKitchen (`onCommand`); it never commits, and
-    // test/campfire-ritual.test.ts holds its command allow-list (no money command). It alone may read the
-    // command surface; every other rule still applies to it.
-    const ritual = (file: string) => relative(harbour, file).replace(/\\/g, "/").startsWith("campfire/ritual/");
     for (const file of files) {
       for (const specifier of importsOf(readFileSync(file, "utf8"))) {
-        for (const rule of FORBIDDEN) if (rule.test(specifier) && !(ritual(file) && rule.name === "core/index (the command surface)")) offences.push(`${relative(root, file)} → ${specifier} (${rule.name})`);
+        for (const rule of FORBIDDEN) if (rule.test(specifier)) offences.push(`${relative(root, file)} → ${specifier} (${rule.name})`);
       }
+    }
+    expect(offences).toEqual([]);
+  });
+
+  it("imports no captured command from any core module, and none of the App-level controls that write", () => {
+    // `core/chapters.ts` (and other core modules) mix selectors, which the harbour reads (desk/todayModel.ts,
+    // data/reading.ts), with captured commands (closeChapter, openChapter, …), which it must not import. Every
+    // name exported as `captureCommand(…)` anywhere in core is forbidden here, whichever module it comes from.
+    const coreDir = join(root, "src", "core");
+    const commands = new Set(walk(coreDir).flatMap((file) => [...readFileSync(file, "utf8").matchAll(/export const (\w+)\s*=\s*captureCommand\(/g)].map((m) => m[1]!)));
+    expect(commands.has("closeChapter")).toBe(true);
+    expect(commands.has("closeBooksMonth")).toBe(true);
+    const WRITERS = /\/(ChapterTaskControls|ChapterPanel|SitDownGuide|PlanStudio|Books|AddSlideshow|campfire\/(beats|CampfireRitual|WeeklySitdown|useCampfireWrite))(\.tsx?)?$/;
+    const offences: string[] = [];
+    for (const file of files) {
+      const source = readFileSync(file, "utf8");
+      for (const match of source.matchAll(/import\s+(?:type\s+)?\{([^}]*)\}\s+from\s+["']([^"']+)["']/g)) {
+        const [, names, specifier] = match;
+        if (/\/core\//.test(specifier!)) {
+          for (const raw of names!.split(",")) {
+            const name = raw.trim().replace(/^type\s+/, "").split(/\s+as\s+/)[0]!.trim();
+            if (commands.has(name)) offences.push(`${relative(root, file)} → ${name} from ${specifier} (a captured command)`);
+          }
+        }
+      }
+      for (const specifier of importsOf(source)) if (WRITERS.test(specifier) && !/\/harbour\/campfire\//.test(specifier)) offences.push(`${relative(root, file)} → ${specifier} (an App-level writer)`);
     }
     expect(offences).toEqual([]);
   });

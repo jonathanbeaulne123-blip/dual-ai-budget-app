@@ -1,7 +1,7 @@
 import { lazy, type ComponentProps } from "react";
 import { DeferredBooksPage, DeferredSurface } from "../deferredSurfaces.tsx";
 import { OnboardingReady } from "../OnboardingReady.tsx";
-import { CampfireDoor } from "../harbour/campfire/ritual/CampfireDoor.tsx";
+import { CampfireDoor } from "../campfire/CampfireDoor.tsx";
 import { formatCad } from "../core/index.ts";
 import { canonical } from "../ledgerSync/patch.ts";
 

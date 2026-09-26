@@ -1,6 +1,6 @@
 import { StrictMode, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { CampfireRitual } from '../../src/harbour/campfire/ritual/CampfireRitual.tsx';
+import { CampfireRitual } from '../../src/campfire/CampfireRitual.tsx';
 import { catalogHousehold } from '../../src/core/seed.ts';
 import { addGoal, contributeToGoal } from '../../src/core/commands.ts';
 import { openChapter } from '../../src/core/chapters.ts';
