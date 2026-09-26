@@ -14,7 +14,13 @@ export type HeightfieldRef =
   | { kind: 'baked'; revision: string; url: string; bytes: number; step: number };
 export interface WaterBody { id: string; outline: Polygon; level: number; kind: string }
 export interface Landform { id: string; outline: Polygon; minHeight: number; maxHeight: number }
-export interface District { id: string; neighbourhood: string | null; outline: Polygon; childOf?: string; bounds?: DistrictBounds; children?: District[]; solidIds?: string[]; bedIds?: string[]; triangles?: { full: number; lite: number }; drawCalls?: number }
+export interface District { id: string; neighbourhood: string | null; outline: Polygon; childOf?: string; bounds?: DistrictBounds; children?: District[]; solidIds?: string[]; bedIds?: string[]; triangles?: { full: number; lite: number };
+  /** Meshes the runtime CardBuilder makes for the district (terrain + solids per 256-eu card cell). */
+  drawCalls?: number;
+  /** The district's Voronoi heart (engine units): the single source of the streaming partition. */
+  heart?: Point2;
+  /** Offshore only: rock sites, the island box outside which the rocks stream, and the radius that puts them first. */
+  offshore?: { sites: Point2[]; islandBox: [Point2, Point2]; arriveRadius: number } }
 export interface Host { id: string; placeIds: string[]; door: Anchor; apron: Polygon; arrivalThresholds: string[]; height?: number; roofHeight?: number; footprint?: Polygon; solidIds?: string[]; padId?: string; facing?: number; returnAt?: Point3; arrivalEye?: Point3; arrivalTarget?: Point3; toolPlaceId?: string }
 export interface OutdoorPlace { id: string; anchor: Anchor; districtId: string }
 export interface Bed { id: string; profile: string; surface: string; points: Point3[]; districtIds: string[]; kind?: BedCut['kind']; width?: number; clearHeight?: number; structureIds?: string[]; surfaceSegments?: BedCut['surfaceSegments'] }
@@ -43,6 +49,8 @@ export interface WorldDefinition {
   extent: { w: 2000; h: 1800 };
   seaLevel: 0;
   heightfield: HeightfieldRef;
+  /** The island outline (engine units, closed) the runtime tests the sea and lagoon against: one source with the bake. */
+  coastline?: Polygon;
   water: WaterBody[];
   landforms: Landform[];
   districts: District[];

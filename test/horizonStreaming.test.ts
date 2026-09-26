@@ -5,7 +5,7 @@ import type { StructureSolid } from '../src/harbour/horizon/land/interfaces.ts';
 import { prepareLiteWorld } from '../src/harbour/horizon/world/lite.ts';
 import { simplifyPrismChains } from '../src/harbour/horizon/world/prismLod.ts';
 import { emptyWorldDefinition } from '../src/harbour/horizon/world/empty.ts';
-import { solidBounds, solidTopAt } from '../src/harbour/horizon/world/geometry.ts';
+import { solidBounds, solidTopAt, pointInPolygon } from '../src/harbour/horizon/world/geometry.ts';
 const field: TerrainField = { revision: 'horizon-geo-1', width: 2000, depth: 1800, step: 100, columns: 21, rows: 19, heights: new Float32Array(399), surfaces: new Uint8Array(399) };
 it('partitions a long mesh by triangle location while retaining its source identity and every triangle',()=>{
   const chunks=partitionWorldSolids([{id:'road',kind:'road',positions:[400,30,600,410,30,600,400,30,610,1450,12,1170,1460,12,1170,1450,12,1180],indices:[0,1,2,3,4,5],surface:'paved',districtId:'harbour',bedIds:['V01'],walkable:true,role:'deck'}]);
@@ -25,18 +25,43 @@ it('keeps thirteen surface districts with the Undercroft owned by Crown', () => 
   expect(districts.find(d => d.id === 'crown')?.children?.[0]).toMatchObject({ id: 'undercroft', childOf: 'crown' });
   expect(districts.every(d => d.bounds && d.triangles!.full <= 150000 && d.triangles!.lite <= 60000)).toBe(true);
 });
-it.each(['full', 'lite'] as const)('caps %s residency and builds one per frame across a Walk/Look switch', tier => {
-  const world = { districts: buildDistricts(field, [], []) }, released: string[] = [];
-  const stream = createDistrictStream(world, d => ({ dispose: () => released.push(d.id) }), tier);
+it.each(['full', 'lite'] as const)('caps %s residency, builds one per frame and never rebuilds on a Walk/Look toggle', tier => {
+  const world = { districts: buildDistricts(field, [], []) }, released: string[] = [], built: string[] = [];
+  const stream = createDistrictStream(world, d => { built.push(d.id); return { dispose: () => released.push(d.id) }; }, tier);
   for (let i = 0; i < 5; i++) stream.update({ x: 1455, z: 1175, now: i * 16, radius: 2000, mode: 'walk' });
-  const before = [...stream.live.keys()];
-  stream.update({ x: 350, z: 550, now: 100, radius: 2000, mode: 'look' });
-  expect([...stream.live.keys()]).toEqual(before); expect(released).toEqual([]);
-  stream.update({ x: 350, z: 550, now: 4099, radius: 2000 }); expect(released).toEqual([]);
-  stream.update({ x: 350, z: 550, now: 4100, radius: 2000 });
-  expect(released.length).toBeGreaterThan(0);
+  const before = [...stream.live.keys()], builds = built.length;
+  // Ten Walk/Look toggles in place: the wanted set is unchanged, so nothing builds or releases (P22).
+  for (let i = 0; i < 10; i++) stream.update({ x: 1455, z: 1175, now: 100 + i * 16, radius: 2000, mode: i % 2 ? 'walk' : 'look' });
+  expect([...stream.live.keys()]).toEqual(before); expect(built.length).toBe(builds); expect(released).toEqual([]);
   expect(stream.history.every(frame => frame.built.length <= 1 && frame.resident.length <= (tier === 'full' ? 4 : 3))).toBe(true);
   stream.dispose(); expect(stream.live.size).toBe(0);
+});
+it.each(['full', 'lite'] as const)('%s: after a relocation the camera district is built on the first frame, releasing before building (R1-70)', tier => {
+  const world = { districts: buildDistricts(field, [], []) }, released: string[] = [];
+  const stream = createDistrictStream(world, d => ({ dispose: () => released.push(d.id) }), tier);
+  for (let i = 0; i < 6; i++) stream.update({ x: 1455, z: 1175, now: i * 16, radius: 2000 });
+  expect(stream.live.size).toBe(stream.cap);
+  // Relocate to the Flats (the review measured 240 frames lite / 127 full before the camera district was built).
+  stream.update({ x: 350, z: 550, now: 200, radius: 2000 });
+  const frame = stream.history.at(-1)!;
+  expect(frame.built).toEqual(['flats']); expect(frame.released).toHaveLength(1); expect(stream.live.has('flats')).toBe(true);
+  // The rest of the new neighbourhood follows at one build per frame, each preceded by one release.
+  let frames = 1; while (stream.history.at(-1)!.pending.length && frames < 20) { stream.update({ x: 350, z: 550, now: 200 + frames * 16, radius: 2000 }); frames++; }
+  expect(frames).toBeLessThanOrEqual(stream.cap); expect(stream.history.every(f => f.built.length <= 1 && f.resident.length <= stream.cap)).toBe(true);
+});
+it('reads the partition and the offshore rules from the definition, not code constants (R1-67)', () => {
+  const districts = buildDistricts(field, [], []);
+  expect(districts.filter(d => d.id !== 'offshore').every(d => d.heart && pointInPolygon(d.heart[0], d.heart[1], d.outline))).toBe(true);
+  const offshore = districts.find(d => d.id === 'offshore')!; expect(offshore.offshore!.sites.length).toBeGreaterThanOrEqual(7); expect(offshore.offshore!.islandBox).toEqual([[300, 0], [1720, 1530]]);
+  // A definition that moves the Lamp moves the stream: the rocks come first at the definition's site.
+  const moved = districts.map(d => d.id === 'offshore' ? { ...d, offshore: { ...d.offshore!, sites: [[1000, 900]] as [number, number][] } } : d), stream = createDistrictStream({ districts: moved }, () => ({ dispose() {} }), 'lite');
+  stream.update({ x: 1010, z: 905, now: 0 }); expect([...stream.live.keys()][0]).toBe('offshore');
+});
+it('counts a district draw call per 256-eu card cell of terrain and of solids (was a solid count)', () => {
+  const road = partitionWorldSolids([{ id: 'road', kind: 'road', positions: [1400, 12, 1150, 1410, 12, 1150, 1400, 12, 1160, 1500, 12, 1150, 1510, 12, 1150, 1500, 12, 1160], indices: [0, 1, 2, 3, 4, 5], surface: 'paved', districtId: 'harbour', bedIds: ['V01'], walkable: true, role: 'deck' }]);
+  const harbour = buildDistricts(field, [], road).find(d => d.id === 'harbour')!, terrainOnly = buildDistricts(field, [], []).find(d => d.id === 'harbour')!;
+  // Two triangles in two different 256-eu cells ([1400,1150] → 5:4, [1500,1150] → 5:4 and 5:4? 1500/256 = 5.86) share one cell.
+  expect(harbour.drawCalls! - terrainOnly.drawCalls!).toBe(1); expect(harbour.solidIds).toHaveLength(1);
 });
 it('streams the underground child only on request within the same residency cap',()=>{
   const world={districts:buildDistricts(field,[],[])},stream=createDistrictStream(world,()=>({dispose(){}}),'lite');

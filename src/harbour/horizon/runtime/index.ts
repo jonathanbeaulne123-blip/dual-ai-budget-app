@@ -8,9 +8,9 @@ import {HORIZON_GEOGRAPHY,HORIZON_PRESENCE_WORLD} from '../../../worldGeography.
 import {loadHorizonAssets,type HorizonAssets} from '../../../house/world/horizonAssets.ts';
 import {createHorizonGeography,HORIZON_WALKABLE_DEGREES,HORIZON_BODY_HEIGHT} from './geography.ts';
 import {buildDistrictCards,buildWaterCards,buildHorizonRing} from './cards.ts';
-import {createDistrictStream} from '../world/districts.ts';
+import {createDistrictStream,useDefinitionDistricts} from '../world/districts.ts';
 import {HORIZON_MANIFEST} from '../world/manifest.ts';
-import {restoreHorizonPosition} from './savedPosition.ts';
+import {restoreHorizonPosition,HORIZON_RESTORE_TOLERANCE} from './savedPosition.ts';
 import {horizonPartnerPose} from './partner.ts';
 import {walkPlan} from '../world/pathGraph.ts';
 import {solarPosition,solarReviewDate} from '../sun/solar.ts';
@@ -33,6 +33,8 @@ export async function mountHorizon(host:HTMLElement,options:HorizonOptions){
 }
 function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOptions,startedAt:number){
   const {world,field,journey,cuts}=assets,tier=options.tier,assetLoadedAt=performance.now(),scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(45,1,.08,4500);
+  // The partition is the definition's (R1-67): districtAt() uses the baked hearts from here on.
+  useDefinitionDistricts(world.districts);
   const geography=createHorizonGeography(field,cuts),figure=createBodyFigure(),partner=createBodyFigure({coat:'#af8760'});
   scene.add(figure.group,partner.group);partner.group.visible=false;
   const partnerMaterials:Record<string,THREE.Material>={};partner.group.traverse(object=>{if(object instanceof THREE.Mesh)for(const material of Array.isArray(object.material)?object.material:[object.material])partnerMaterials[material.uuid]=material;});
@@ -113,7 +115,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   }
   function shot(id:string){const pose=world.views.find(p=>p.id===id);if(!pose)return false;shotId=id;mode='look';path=[];transition=null;lookAt(pose);body.x=pose.eye[0];body.z=pose.eye[2];body.y=pose.eye[1]-1.6;body.yaw=yaw;lastSun=-Infinity;return true;}
   function restore(saved:HouseBodyReturn){
-    const next=restoreHorizonPosition(saved,world.pathGraph!,geography.ground);
+    const next=restoreHorizonPosition(saved,world.pathGraph!,geography.ground,(x,z,y)=>{const at=geography.surface(x,z,y+.5,HORIZON_RESTORE_TOLERANCE);return at&&at.slope<=HORIZON_WALKABLE_DEGREES&&!geography.submerged(x,z,at.y)&&!geography.blocked(x,z,at.y)?{standY:at.y}:null;});
     Object.assign(body,{x:next.x,y:next.y!,z:next.z,yaw:next.yaw});yaw=body.yaw;mode='walk';path=[];velocityY=0;updateCamera();
   }
 
