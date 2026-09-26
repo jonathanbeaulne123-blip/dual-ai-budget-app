@@ -1,6 +1,6 @@
 import {MOUNTAIN_INTERACTIONS,initialMountainInteractionState,mountainInteractionLabel,type MountainInteractionState} from './life.ts';
 import {useEffect,useId,useRef,useState} from 'react';
-import {DISTRICTS,RESERVED_PLOTS,TRANSPORT_STOPS,MONORAIL_STOPS,districtAt,type Point3,type TransportKind} from './definition.ts';
+import {DISTRICTS,RESERVED_PLOTS,MONORAIL_STOPS,districtAt,type Point3,type TransportKind} from './definition.ts';
 import {mountainMap} from './mapData.ts';
 import type {MonorailState,MonorailView} from './monorail.ts';
 
@@ -10,9 +10,9 @@ import './mountain.css';
 import {MOUNTAIN_TOUR,type MountainTourId} from './tour.ts';
 const MONORAIL_DOORS:Readonly<Record<string,string>>={quay:'campfire',studio:'kiln',boathouse:'boathouse',bank:'bank',hearth:'kitchen',orchard:'cottage',library:'library',glasshouse:'glasshouse',reservoir:'loft-banks',summit:'journey'};
 export type MountainAction={kind:'life';id:string}|{kind:'tour';id:MountainTourId}|{kind:'go';at:Point3}|{kind:'ride';transport:TransportKind;from:number;to:number}|{kind:'monorail-board';from:number;stops:number[];companion:boolean}|{kind:'monorail-select';stop:number}|{kind:'monorail-control';control:'pause'|'brake'|'seat'|'companion'|'speed'|'view'|'exit'|'bell';value?:number|boolean|MonorailView}|{kind:'view';view:'dam'|'world'}|{kind:'race'}|{kind:'skip'}|{kind:'calm';on:boolean}|{kind:'sound';on:boolean};
-export function MountainPanel({open:controlledOpen,onOpenChange,hideTrigger=false,life=initialMountainInteractionState(),recoveryWords,reading,statusLine,onAction,onOpen,flat=false,inspect,conditionWords,riding=false,monorail=null,partnerName=null,soundOn=false,calmOn=false,here,nearestStation}:{here?:Point3;nearestStation?:(kind:TransportKind)=>number;open?:boolean;onOpenChange?:(open:boolean)=>void;hideTrigger?:boolean;life?:MountainInteractionState;recoveryWords?:string;soundOn?:boolean;calmOn?:boolean;riding?:boolean;monorail?:MonorailState|null;partnerName?:string|null;conditionWords?:string;inspect?:{section:'map'|'water'|'travel';seq:number;station?:number};reading?:BasinReading;statusLine:string|null;onAction:(action:MountainAction)=>void;onOpen:(target:string)=>void;flat?:boolean}){
+export function MountainPanel({open:controlledOpen,onOpenChange,hideTrigger=false,life=initialMountainInteractionState(),recoveryWords,reading,statusLine,onAction,onOpen,flat=false,inspect,conditionWords,monorail=null,partnerName=null,soundOn=false,calmOn=false,here}:{here?:Point3;open?:boolean;onOpenChange?:(open:boolean)=>void;hideTrigger?:boolean;life?:MountainInteractionState;recoveryWords?:string;soundOn?:boolean;calmOn?:boolean;monorail?:MonorailState|null;partnerName?:string|null;conditionWords?:string;inspect?:{section:'map'|'water'|'travel';seq:number;station?:number};reading?:BasinReading;statusLine:string|null;onAction:(action:MountainAction)=>void;onOpen:(target:string)=>void;flat?:boolean}){
 
-  const [localOpen,setLocalOpen]=useState(false),[tab,setTab]=useState<'map'|'water'|'travel'|'tour'|'life'>('map'),[transport,setTransport]=useState<TransportKind>('funicular'),[from,setFrom]=useState(0),[to,setTo]=useState(1);
+  const [localOpen,setLocalOpen]=useState(false),[tab,setTab]=useState<'map'|'water'|'travel'|'tour'|'life'>('map');
   const [monorailFrom,setMonorailFrom]=useState(0),[monorailStops,setMonorailStops]=useState<number[]>([MONORAIL_STOPS.length-1]),[companion,setCompanion]=useState(true);
   const open=controlledOpen??localOpen;
   const panel=useRef<HTMLElement>(null),opener=useRef<HTMLElement|null>(null);
@@ -21,12 +21,8 @@ export function MountainPanel({open:controlledOpen,onOpenChange,hideTrigger=fals
   function openTool(target:string){setOpen(false);onOpen(target);}
   useEffect(()=>{if(!open)return;opener.current=document.activeElement instanceof HTMLElement?document.activeElement:null;panel.current?.focus();},[open]);
   useEffect(()=>{if(inspect){setTab(inspect.section);if(inspect.station!==undefined){setMonorailFrom(inspect.station);setMonorailStops([inspect.station===MONORAIL_STOPS.length-1?0:MONORAIL_STOPS.length-1]);}setOpen(true);}},[inspect]);
-  // "From" is where you are: the nearest station on the chosen line, riding on to the next stop (uphill first).
-  const nearest=(kind:TransportKind)=>{const count=TRANSPORT_STOPS[kind].length,at=Math.max(0,Math.min(count-1,nearestStation?.(kind)??0));setFrom(at);setTo(at<count-1?at+1:Math.max(0,at-1));};
-  useEffect(()=>{if(open&&tab==='travel')nearest(transport);},[open,tab]);
-
   const [tourIndex,setTourIndex]=useState(0);
-  const stops=TRANSPORT_STOPS[transport],shot=MOUNTAIN_TOUR[tourIndex]!;
+  const shot=MOUNTAIN_TOUR[tourIndex]!;
   return <aside className="mountain-tools" onPointerDown={e=>e.stopPropagation()} onKeyDown={e=>{e.stopPropagation();if(e.key==="Escape"){e.preventDefault();dismiss();}}}>
     {!hideTrigger&&<button className="mountain-trigger" aria-expanded={open} onClick={()=>setOpen(!open)}>⌁ <span>Mountain & town</span></button>}
     {open&&<section ref={panel} tabIndex={-1} role="dialog" className="mountain-panel" aria-label="Mountain and town guide">
@@ -46,7 +42,7 @@ export function MountainPanel({open:controlledOpen,onOpenChange,hideTrigger=fals
         <div className="monorail-presets"><button onClick={()=>setMonorailStops(MONORAIL_STOPS.map((_,i)=>i).filter(i=>i!==monorailFrom))}>Tour every stop</button><button onClick={()=>setMonorailStops([monorailFrom===MONORAIL_STOPS.length-1?0:MONORAIL_STOPS.length-1])}>Straight to the end</button></div>
         {partnerName&&<label className="monorail-companion"><input type="checkbox" checked={companion} onChange={e=>setCompanion(e.target.checked)}/>{partnerName} beside me <small>Scene companion</small></label>}
         {!flat?<button className="monorail-board" disabled={monorailStops.length===0} onClick={()=>{onAction({kind:'monorail-board',from:monorailFrom,stops:monorailStops,companion:companion&&Boolean(partnerName)});setOpen(false);}}>Board the monorail</button>:<p>Ride in the 3D view. All stops remain reachable from Places.</p>}
-        <h3>Other scenic rides</h3><label>Transport<select value={transport} onChange={e=>{const kind=e.target.value as TransportKind;setTransport(kind);nearest(kind);}}><option value="funicular">Hillside funicular</option><option value="gondola">Summit gondola</option></select></label><label>From<select value={from} onChange={e=>setFrom(Number(e.target.value))}>{stops.map((s,i)=><option key={s.id} value={i}>{s.name}</option>)}</select></label><label>To<select value={to} onChange={e=>setTo(Number(e.target.value))}>{stops.map((s,i)=><option key={s.id} value={i}>{s.name}</option>)}</select></label>{!flat&&<button disabled={from===to} onClick={()=>{onAction({kind:'ride',transport,from,to});setOpen(false);}}>Board and ride</button>}
+        <h3>Funicular & gondola</h3><p>Walk to a platform and press its raised arrow to board. Move inside the cabin with the walking controls; press the carriage's raised arrow to finish the ride. The gondola has a seat button beside it.</p>
         <h3>Summit to sea</h3><p>One winding descent through the neighbourhood. The road is the clear main line; balcony, awning and dam rails offer optional detours.</p>{!flat&&<button onClick={()=>{onAction({kind:'race'});setOpen(false);}}>Start downhill race</button>}<p>Race times and skating progress stay on this device.</p>
       </>}
 
@@ -54,7 +50,6 @@ export function MountainPanel({open:controlledOpen,onOpenChange,hideTrigger=fals
       {tab==='life'&&<section aria-label="Small moments on the mountain"><p>Rest, open a garden gate, or watch the wildlife. These moments never change your books.</p>{MOUNTAIN_INTERACTIONS.map(item=><p key={item.id}><button onClick={()=>onAction({kind:'life',id:item.id})}>{mountainInteractionLabel(item,life)}</button></p>)}<p>{recoveryWords}</p></section>}
       {conditionWords&&<p className="mountain-condition">{conditionWords}</p>}<label className="mountain-calm"><input type="checkbox" checked={calmOn} onChange={e=>{onAction({kind:'calm',on:e.target.checked});}}/> Calm scenery</label>{!flat&&<label className="mountain-calm"><input type="checkbox" checked={soundOn} onChange={e=>{onAction({kind:'sound',on:e.target.checked});}}/> World sounds</label>}
     </section>}
-    {riding&&<button className="mountain-skip" onClick={()=>{onAction({kind:'skip'});}}>Finish scenic ride</button>}
     {monorail&&!open&&<section className="monorail-console" aria-label="Monorail train controls" onPointerDown={e=>e.stopPropagation()} onKeyDown={e=>e.stopPropagation()}>
       <div className="monorail-console-head"><div><small>ISLAND MONORAIL · {monorail.phase==='moving'?'IN MOTION':monorail.phase==='doors-open'?'DOORS OPEN':'DEPARTING'}</small><strong>{MONORAIL_STOPS[monorail.station]!.name}{monorail.phase==='moving'?` → ${MONORAIL_STOPS[monorail.next]!.name}`:''}</strong></div><span aria-live="polite">{monorail.phase==='moving'?`${Math.round(monorail.speed*3.6)} km/h`:monorail.phase==='doors-open'?'At platform':'Doors closing'}</span></div>
       <div className="monorail-track" role="progressbar" aria-label="Progress to next station" aria-valuenow={Math.round(monorail.progress*100)} aria-valuemin={0} aria-valuemax={100}><i style={{width:`${monorail.progress*100}%`}}/></div>

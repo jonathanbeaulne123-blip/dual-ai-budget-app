@@ -1,3 +1,7 @@
+## 2026-09-26 — Funicular and gondola controls live in the 3D world
+
+The funicular and gondola use raised physical arrows at each station for boarding in either available direction. Their carriages carry the player while allowing bounded walking on the floor; the gondola seat is optional. A raised carriage arrow finishes the trip. The former text boarding form, ride offer pill and text skip control are removed. Keyboard equivalents and screen reader announcements remain for access. The controls use distinct materials in Classic Hearth, Taylor's Scrapbook and Newfoundland. This is recreational movement only: no ledger, cloud, Final Confirm or financial route changes. Risk Medium-High for shared pointer, movement and camera paths. Budget (5): +0. Engagement (3): +2 intended. See [the worksession](worksessions/2026-09-26-physical-funicular-gondola.md) for measured local verification and open device acceptance.
+
 ## 2026-09-24 — Mountain life remembers supported observations and rehearsal remains fictional
 
 Jonathan authorized isolated parallel implementation of the remaining Mountain programme. District art, close silhouettes, town channels, cabins and nonfinancial interactions share established geography; room identities and accepted financial authority remain unchanged. Recovery remembers only current supported observations within environment and household, using storage supplied by the app shell. Unknown or cached evidence freezes it. Decorative repairs never change race collision.
