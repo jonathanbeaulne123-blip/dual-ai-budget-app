@@ -126,7 +126,8 @@ export interface BedCut {
   carried?: XY[][];
 }
 export interface PadCut {
-  /** A raised deck (a tower top, a lookout run-off): its slab is a structure on
-   * supports and it never shapes the terrain heightfield. */
+  /** The pad is carried by what is under it, and never shapes the terrain heightfield:
+   * a raised deck (a tower top, a lookout run-off, a jetty over water) on its structure's
+   * supports, or an at-grade junction where two graded beds meet flush. */
   deck?: boolean;
 }

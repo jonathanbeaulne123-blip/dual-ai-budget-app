@@ -59,7 +59,8 @@ it('opens a lower route through retaining masonry while preserving the lintel an
 });
 
 it('cuts junction openings at the foot of a battered wall rather than only at its distant top edge',()=>{
- const cuts=empty(),wall=solid('bank.wall','retainingWall','rock','wall');batteredWall(wall,[0,0,50],[100,0,50],5,1,0,60,true);cuts.solids.push(wall);addFlatPad(cuts,'join','threshold',[50,55],0,[4,4]);
+ // Openings follow the joining route's corridor (never a circle round the pad): a walk comes in.
+ const cuts=empty(),wall=solid('bank.wall','retainingWall','rock','wall');batteredWall(wall,[0,0,50],[100,0,50],5,1,0,60,true);cuts.solids.push(wall);addFlatPad(cuts,'join','threshold',[50,55],0,[4,4]);cuts.beds.push(bed('approach','walk',[[50,0,50],[50,0,75]],false));
  const field:TerrainField={revision:'horizon-geo-1',width:200,depth:200,step:10,columns:21,rows:21,heights:new Float32Array(441),surfaces:new Uint8Array(441)};
  expect(createHorizonGeography(field,cuts).blocker(50,55,0)).not.toBeNull();settleBedEdges(cuts,()=>0);
  expect(createHorizonGeography(field,cuts).blocker(50,55,0)).toBeNull();expect(cuts.solids.find(s=>s.id==='bank.wall')!.indices.length).toBeGreaterThan(0);

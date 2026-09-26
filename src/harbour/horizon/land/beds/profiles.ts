@@ -24,6 +24,17 @@ export function planDistance(p:XY,line:readonly XY[]):number {
   let best=Infinity;for(let i=1;i<line.length;i++){const a=line[i-1]!,b=line[i]!,dx=b[0]-a[0],dz=b[1]-a[1],t=Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dz)/(dx*dx+dz*dz||1)));best=Math.min(best,Math.hypot(p[0]-a[0]-dx*t,p[1]-a[1]-dz*t));}
   return best;
 }
+/** The walking ground just beyond a bed edge: the terrain, or a pad surface there that is
+ * not above the bed (a pad above the bed is a wall to retain, not ground). */
+function groundBeyond(cuts:LandCuts,base:HeightQuery,x:number,z:number,h:number):number {
+  let ground=base(x,z);
+  for(const p of cuts.pads){
+    if(p.underground||p.centre[1]>h+.6||p.centre[1]<=ground)continue;
+    const angle=p.rotationDegrees*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle),dx=x-p.centre[0],dz=z-p.centre[2];
+    if(Math.abs(dx*c+dz*s)<=p.size[0]/2&&Math.abs(-dx*s+dz*c)<=p.size[1]/2)ground=p.centre[1];
+  }
+  return ground;
+}
 /** Sides (+1/-1 of the segment normal) this segment shares with a neighbouring bed at the same height. */
 function sharedSides(b:BedCut,cuts:LandCuts,mid:XY,h:number,nx:number,nz:number):Set<number> {
   const sides=new Set<number>();
@@ -48,13 +59,16 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
     const target=segments?segments[Math.min(segments.length-1,Math.floor((i-1)/(b.points.length-1)*segments.length))]!:deck;
     slab(target!,a,p,b.width,b.kind==='road'||b.kind==='skate'?.6:.35);
     const joinedPad=cuts.pads.some(p=>{if(p.underground||p.kind==='host'||Math.abs(p.centre[1]-h)>.6)return false;const angle=p.rotationDegrees*Math.PI/180,c=Math.cos(angle),s=Math.sin(angle),x=mid[0]-p.centre[0],z=mid[1]-p.centre[2];return Math.abs(x*c+z*s)<=p.size[0]/2+b.width/2&&Math.abs(-x*s+z*c)<=p.size[1]/2+b.width/2;});
+    // A pad only lifts the kerb: a guard stays wherever the ground beyond the edge (terrain or a
+    // pad surface) drops more than body height. Junction mouths are opened later along the
+    // joining route's own corridor (junctions.ts), never as a circle around the pad.
     const gap=joinedPad||thresholds.some(t=>distance(mid,t)<5);
     for(const side of [-1,1]){
       if(shared?.has(side)){if(b.shoulder)slab(shoulders,a,p,b.shoulder,.6,side*(b.width/2+b.shoulder/2));continue;}
-      const edge=b.width/2+b.shoulder,drop=h-base(mid[0]!+nx*side*(edge+1.5),mid[1]!+nz*side*(edge+1.5));
+      const edge=b.width/2+b.shoulder,drop=h-groundBeyond(cuts,base,mid[0]!+nx*side*(edge+1.5),mid[1]!+nz*side*(edge+1.5),h);
       if(b.shoulder)slab(shoulders,a,p,b.shoulder,.6,side*(b.width/2+b.shoulder/2));
       if(!gap&&b.kind==='road')slab(kerbs,a,p,.25,.15,side*b.width/2,.15);
-      if(!gap&&drop>1.25){
+      if(drop>1.25){
         if(b.kind==='road'){
           slab(rails,a,p,.35,1,side*edge,1);slab(rails,a,p,.5,.15,side*edge,1.15);
         }else{
@@ -62,7 +76,7 @@ export function emitBedGeometry(b:BedCut,cuts:LandCuts,base:HeightQuery,threshol
           if(i%2===0)box(rails,[mid[0]!+nx*side*edge,mid[1]!+nz*side*edge],h+1.05,[.12,.12],h-.1);
         }
       }
-      if(b.terrainCut&&!joinedPad&&!b.terrainExclusions?.some(e=>distance(mid,e.at)<e.radius)&&Math.abs(drop)>.5){
+      if(b.terrainCut&&!b.terrainExclusions?.some(e=>distance(mid,e.at)<e.radius)&&Math.abs(drop)>.5){
         const low=Math.min(h-.6,base(mid[0]!+nx*side*(edge+1),mid[1]!+nz*side*(edge+1)))-.2;
         const top=Math.max(h,low+Math.abs(drop));
         batteredWall(retaining,a,p,side*(edge+.5),side,low,top,drop<0);
