@@ -3,7 +3,7 @@ import { AtmosphereControl } from "./AppearancePicker.tsx";
 
 /**
  * Appearance and comfort (Status Centre group): Quiet expression, celebration
- * intensity, motion, haptics, sound. Independent of theme; per device; never
+ * intensity, motion, haptics, sound, and "Always show labels" for the glass. Independent of theme; per device; never
  * shared truth. Coaching intensity lives with the Plan because it is a
  * per-member preference saved in the household document.
  */
@@ -36,6 +36,10 @@ export function ComfortControls({ environment }: { environment: string }) {
         <label className="comfort-row">
           <span><strong>Haptics</strong><small>A light tap on a snap, an accepted selection, or a real completion.</small></span>
           <input id="comfort-haptics" type="checkbox" role="switch" checked={comfort.haptics} onChange={(event) => update({ haptics: event.target.checked })} />
+        </label>
+        <label className="comfort-row">
+          <span><strong>Always show labels</strong><small>Keep the words under Record, All tools and Simple view, however often you use them.</small></span>
+          <input id="comfort-labels" type="checkbox" role="switch" checked={comfort.labels} onChange={(event) => update({ labels: event.target.checked })} />
         </label>
         <label className="comfort-row">
           <span><strong>Sound</strong><small>Rare and quiet. Off by default.</small></span>

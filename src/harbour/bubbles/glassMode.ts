@@ -85,3 +85,29 @@ export function useGlassEnvironment(): GlassEnvironment {
   }, []);
   return env;
 }
+
+/**
+ * Night for the glass (§4.4: the tint lifts at night). The island has no sun
+ * clock of its own yet (`scene/quality.ts` is tiering only, and nothing in the
+ * harbour steps a sun), so this is the conservative reading: the device clock
+ * from 20:00 to 06:00, or a dark scene lighting chosen in Appearance
+ * (`data-scene-lighting="dark"`, which `glass.css` already honours). Night only
+ * raises the tint's opacity, so being wrong towards night costs nothing.
+ */
+export function isNightHour(hour: number): boolean {
+  return hour >= 20 || hour < 6;
+}
+export const NIGHT_CHECK_MS = 5 * 60_000;
+export function useGlassNight(): boolean {
+  const read = () => {
+    let dark = false;
+    try { dark = typeof document !== "undefined" && document.documentElement.dataset.sceneLighting === "dark"; } catch { dark = false; }
+    return dark || isNightHour(new Date().getHours());
+  };
+  const [night, setNight] = useState(read);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNight(read()), NIGHT_CHECK_MS);
+    return () => window.clearInterval(timer);
+  }, []);
+  return night;
+}

@@ -236,6 +236,8 @@ button.desk-hercules__card { display: grid; gap: 4px; min-height: 44px; padding:
 :root[data-theme] .glass-dock[data-lite] .glass-dock__glass {
   background: var(--glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; outline: 1px solid var(--glass-stroke); outline-offset: 0;
 }
+/* The blur budget (§4.3): no blur while the camera moves; the tint stays. */
+:root .glass-dock[data-camera-moving] .glass-dock__glass, :root[data-theme] .glass-dock[data-camera-moving] .glass-dock__glass { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .glass-dock[data-calm] *, .glass-dock[data-calm] *::before { transition: none !important; animation: none !important; }
 @media (prefers-reduced-transparency: reduce) {
   :root .glass-dock__glass, :root[data-theme] .glass-dock__glass { background: var(--glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; outline: 1px solid var(--glass-stroke); outline-offset: 0; }

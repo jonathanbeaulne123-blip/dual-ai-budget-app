@@ -1,6 +1,9 @@
 import type { ThemeId } from "../../theme/scenes.ts";
 import type { HarbourReading } from "../data/reading.ts";
 import { CompactPanel } from "./CompactPanel.tsx";
+import { MINE_FUND_WORDS } from "../mine/mineLayer.ts";
+import { useHerculesSuggestion } from "../nav/barBadges.ts";
+import { Pawprint } from "../court/CourtTwins.tsx";
 import {
   PANEL_TITLES, atlasPanel, boathousePanel, campfirePanel, cellarPanel, cottagePanel, fundBankPanel, glasshousePanel, kitchenPanel, libraryPanel, loftPanel,
   type PanelExtras, type PanelHost,
@@ -58,6 +61,7 @@ function Door({ host, onOpen }: { host: Exclude<PanelHost, "hercules">; onOpen: 
 
 export function HostPanel(props: HostPanelProps) {
   const { host, reading, extras = {}, onOpen } = props;
+  const suggestion = useHerculesSuggestion();
   const stepIn = props.onStepIn ? () => props.onStepIn?.(host) : undefined;
   const shell = { host, title: PANEL_TITLES[host], onClose: props.onClose, onStepIn: stepIn, stepInReason: props.stepInReason, returnFocusTo: props.returnFocusTo, theme: props.theme };
 
@@ -65,7 +69,7 @@ export function HostPanel(props: HostPanelProps) {
     case "bank": {
       const fund = fundBankPanel(reading, extras);
       return (
-        <CompactPanel {...shell} subtitle={`Everyday · now ${fund.everyday}`} actions={<>
+        <CompactPanel {...shell} subtitle={`${extras.space === "mine" ? `${MINE_FUND_WORDS} · ` : ""}Everyday · now ${fund.everyday}`} actions={<>
           {props.onRecord && <button type="button" className="compact-panel__primary" data-panel-record="" onClick={props.onRecord}>Record</button>}
           <Door host="bank" onOpen={onOpen} />
         </>}>
@@ -177,7 +181,9 @@ export function HostPanel(props: HostPanelProps) {
           <button type="button" className="compact-panel__primary" data-panel-talk="" onClick={() => (props.onTalk ? props.onTalk() : onOpen("hercules"))}>Talk</button>
           <button type="button" className="compact-panel__door" data-panel-visit="" onClick={() => (props.onVisit ? props.onVisit() : onOpen("wardrobe"))}>Visit</button>
         </>}>
-          <p className="compact-panel__line">He is on the island. Talk with him here, or visit his Cottage.</p>
+          {suggestion
+            ? <p className="compact-panel__line" data-panel-suggestion=""><span className="compact-panel__paw" aria-hidden="true"><Pawprint /></span> He has a suggestion for you. Talk with him to hear it.</p>
+            : <p className="compact-panel__line">He is on the island. Talk with him here, or visit his Cottage.</p>}
         </CompactPanel>
       );
   }

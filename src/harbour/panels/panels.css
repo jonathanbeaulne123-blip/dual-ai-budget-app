@@ -47,6 +47,8 @@
 .compact-panel__figure strong { font: 600 20px/1.2 var(--panel-display); font-variant-numeric: tabular-nums lining-nums; }
 .compact-panel__figure small, .compact-panel__rows small, .compact-panel__line, .compact-panel__more, .compact-panel__empty { color: var(--panel-ink-2); }
 .compact-panel__line, .compact-panel__empty, .compact-panel__more { margin: 0; font-size: 14px; }
+.compact-panel__paw { display: inline-grid; vertical-align: -4px; color: var(--panel-ink, currentColor); }
+.compact-panel__paw .court-twins__paw { width: 18px; height: 18px; }
 .compact-panel__rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .compact-panel__rows li { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 10px; min-height: 44px; border-top: 1px solid color-mix(in srgb, var(--panel-line) 45%, transparent); }
 .compact-panel__rows li:first-child { border-top: 0; }

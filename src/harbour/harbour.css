@@ -103,6 +103,11 @@
 .court-twins__twin { position: absolute; margin: 0; padding: 0; border: 0; background: transparent; color: transparent; border-radius: 10px; pointer-events: none; }
 .court-twins__twin:focus-visible { outline: 3px solid #126fb1; outline-offset: 2px; background: #126fb11a; }
 .court-twins__twin[data-twin-group="queen"]:focus-visible { border-radius: 40%; }
+/* Hercules's pawprint (Tool Atlas §4.2): the one badge on the map, a paper disc with the dressing's ink; decorative (the words are in the twin's name). */
+.court-twins__badge { position: absolute; top: -10px; right: -10px; display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: #F6F0E4; color: #2E241B; border: 1px solid rgba(46, 36, 27, .32); box-shadow: 0 4px 10px -6px rgba(26, 23, 20, .45); }
+:root[data-theme="taylor"] .court-twins__badge { background: #fff8f4; color: #49323D; border-color: #e8a6bd; }
+:root[data-theme="newfoundland"] .court-twins__badge { background: #f5f3ea; color: #273E41; border: 1.5px solid #f5f3ea; box-shadow: 0 0 0 1px rgba(39, 62, 65, .35); }
+@media (forced-colors: active) { .court-twins__badge { forced-color-adjust: auto; border: 1px solid CanvasText; } }
 
 /* ── The spark: six petals for 600 ms, feedback only. ── */
 .harbour-spark { position: absolute; z-index: 7; width: 0; height: 0; pointer-events: none; }

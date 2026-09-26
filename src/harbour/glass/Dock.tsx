@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { CampCard, type CampCardProps } from "./CampCard.tsx";
 import { StripBand, type StripBandProps } from "./StripBand.tsx";
 import "../desk/desk.css";
@@ -12,7 +13,12 @@ export type DockProps = {
   calm?: boolean;
   /** The lite quality tier, Save-Data, or a missed frame budget: solid, no blur. */
   lite?: boolean;
+  /** The camera is moving: the blur is skipped, and restored 120 ms after it stops (§4.3 blur budget). */
+  cameraMoving?: boolean;
 };
+
+/** How long after the camera stops the dock's blur comes back (the bubbles' own `BLUR_RESTORE_MS`). */
+const DOCK_BLUR_RESTORE_MS = 120;
 
 /**
  * The dock (Tool Atlas §4.1 "Where they sit", §4.3, §4.4, §6): the strip band
@@ -27,8 +33,14 @@ export type DockProps = {
  * fallback — reduced transparency, reduced motion, more contrast, forced
  * colours (in `glass.css`), and the `calm` and `lite` props here.
  */
-export function Dock({ strip, card, night = false, calm = false, lite = false }: DockProps) {
-  return <div className="glass-dock" data-camera-deadzone="" data-night={night || undefined} data-calm={calm || undefined} data-lite={lite || undefined}
+export function Dock({ strip, card, night = false, calm = false, lite = false, cameraMoving = false }: DockProps) {
+  const [blurOff, setBlurOff] = useState(cameraMoving);
+  useEffect(() => {
+    if (cameraMoving) { setBlurOff(true); return; }
+    const timer = window.setTimeout(() => setBlurOff(false), DOCK_BLUR_RESTORE_MS);
+    return () => window.clearTimeout(timer);
+  }, [cameraMoving]);
+  return <div className="glass-dock" data-camera-deadzone="" data-night={night || undefined} data-calm={calm || undefined} data-lite={lite || undefined} data-camera-moving={blurOff || undefined}
     data-expanded={card.expanded || undefined} style={{ touchAction: "manipulation" }}>
     <div className="glass-dock__glass">
       <StripBand {...strip} />
