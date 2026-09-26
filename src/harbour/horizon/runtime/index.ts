@@ -102,6 +102,8 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     // The shadow box follows what the camera frames (sun/shadow.ts), not only the body.
     const frame=shadowFrame({tier,mode,eye:mode==='walk'?[body.x,body.y,body.z]:[camera.position.x,camera.position.y,camera.position.z],heading:yaw,groundY:mode==='walk'?body.y:geography.ground(camera.position.x,camera.position.z)}),[cx,cy,cz]=frame.centre;
     const shadowCamera=sun.shadow.camera;shadowCamera.left=shadowCamera.bottom=-frame.half;shadowCamera.right=shadowCamera.top=frame.half;shadowCamera.far=frame.far;shadowCamera.updateProjectionMatrix();
+    // Bias follows the texel (2·half/mapSize) so a wider box does not stripe flat ground with acne.
+    sun.shadow.normalBias=1.5*2*frame.half/frame.mapSize;sun.shadow.bias=-.0001;
     sun.color.set(colors.sunColor);sun.intensity=colors.sunIntensity*2;sun.position.set(cx+position.direction[0]*frame.sunDistance,cy+position.direction[1]*frame.sunDistance,cz+position.direction[2]*frame.sunDistance);sun.target.position.set(cx,cy,cz);sun.target.updateMatrixWorld();
     moon.color.set(NIGHT_FLOOR.moon);moon.position.set(cx+colors.moonDirection[0]*500,cy+500,cz+colors.moonDirection[2]*500);moon.target.position.set(cx,cy,cz);moon.target.updateMatrixWorld();moon.intensity=floor.moonIntensity;requestShadow('sun-step');
   }

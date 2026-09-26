@@ -60,7 +60,7 @@ it('matches register rows only within 10 eu of the authored point (was 65, R1-38
 it('records a bed inside a lake outline as a water-body conflict, once per wet run (R1-01, R1-103)',()=>{
   const lake={id:'water.stillwater',kind:'lake' as const,points:[],outline:[[0,0],[100,0],[100,100],[0,100]] as [number,number][],level:50,width:0,depth:8,bank:2};
   const cuts:LandCuts={beds:[bed('yearWalk','walk',[[-50,52,50],[150,49,50]])],pads:[],mouths:[],waters:[lake],solids:[],diagnostics:[]};
-  const inside=(w:typeof lake,x:number,z:number)=>x>=0&&x<=100&&z>=0&&z<=100?w.level:null;
+  const inside=(w:{level:number},x:number,z:number)=>x>=0&&x<=100&&z>=0&&z<=100?w.level:null;
   const proofs=buildCrossings(cuts,[],{waterAt:inside}).proofs.filter(p=>p.kind==='waterBody');
   expect(proofs).toHaveLength(1);expect(proofs[0]).toMatchObject({a:'yearWalk',b:'water.stillwater',built:false,registered:false});expect(proofs[0]!.overlapLength).toBeGreaterThan(40);
 });
