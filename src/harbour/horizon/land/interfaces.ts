@@ -112,3 +112,22 @@ export interface TerrainField {
   /** One byte per sample; indexes the terrain module's exported surface palette. */
   surfaces: Uint8Array;
 }
+// --- T2 additions ---
+/** A plan stretch of one bed where its side facing `other` is shared with that bed:
+ * the two form one surface at the same height, so neither emits a kerb, parapet or
+ * retaining wall on that side (MANIFEST journey.yearWalk.sharesRule). */
+export interface SharedEdge { other: string; at: XY[] }
+export interface BedCut {
+  /** Stretches whose inner side is shared with another bed at the same height. */
+  sharedEdges?: SharedEdge[];
+  /** Plan stretches carried inside another bed's own structure (a bridge or tunnel
+   * section, or a trail it walks on at offset 0): this bed emits no deck, edge or
+   * terrain override there. */
+  carried?: XY[][];
+}
+export interface PadCut {
+  /** The pad is carried by what is under it, and never shapes the terrain heightfield:
+   * a raised deck (a tower top, a lookout run-off, a jetty over water) on its structure's
+   * supports, or an at-grade junction where two graded beds meet flush. */
+  deck?: boolean;
+}

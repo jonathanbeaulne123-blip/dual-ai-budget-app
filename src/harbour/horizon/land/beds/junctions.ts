@@ -12,7 +12,7 @@ export interface ComputedCrossing {
 // Junction cuts only remove geometry, so the original bounds remain conservative
 // for every later cut of this solid. Most walls are nowhere near a given join.
 const edgeBounds=new WeakMap<StructureSolid,readonly number[]>();
-function clipEdgePrisms(piece:StructureSolid,at:XY,radius:number,height:number,passageClearance?:number):void {
+function clipEdgePrisms(piece:StructureSolid,at:XY,radius:number,height:number,passageClearance?:number,maxTop=Infinity,minTop=-Infinity):void {
   if(!piece.positions.length)return;
   let limits=edgeBounds.get(piece);
   if(!limits){
@@ -25,7 +25,12 @@ function clipEdgePrisms(piece:StructureSolid,at:XY,radius:number,height:number,p
   // Include the old cutter's rounded end-cap allowance as well as its radius.
   if(Math.hypot(dx,dz)>radius+limits[6]!||limits[4]!<height-.6||limits[1]!>height+1.3)return;
   const kept={...piece,positions:[] as number[],indices:[] as number[]};
+  const reach=radius+limits[6]!+.5;
   for(let vertex=0;vertex<piece.positions.length/3;vertex+=8){
+    // Fast path: a prism wholly outside the cut's reach is copied unchanged.
+    let x0=Infinity,x1=-Infinity,z0=Infinity,z1=-Infinity;for(let k=0;k<8;k++){const x=piece.positions[(vertex+k)*3]!,z=piece.positions[(vertex+k)*3+2]!;if(x<x0)x0=x;if(x>x1)x1=x;if(z<z0)z0=z;if(z>z1)z1=z;}
+    const far=x1<at[0]-reach||x0>at[0]+reach||z1<at[1]-reach||z0>at[1]+reach;
+    if(far&&piece.indices.length===piece.positions.length/3/8*36){const offset=kept.positions.length/3;for(let k=0;k<24;k++)kept.positions.push(piece.positions[vertex*3+k]!);for(let k=0;k<36;k++)kept.indices.push(piece.indices[vertex/8*36+k]!-vertex+offset);continue;}
     let p=Array.from({length:8},(_,k):XYZ=>[piece.positions[(vertex+k)*3]!,piece.positions[(vertex+k)*3+1]!,piece.positions[(vertex+k)*3+2]!]);
     if(distance(plan(p[4]!),plan(p[5]!))>distance(plan(p[5]!),plan(p[6]!)))p=[p[3]!,p[0]!,p[1]!,p[2]!,p[7]!,p[4]!,p[5]!,p[6]!];
     // A battered face can meet feet several metres away from its top edge.
@@ -44,7 +49,7 @@ function clipEdgePrisms(piece:StructureSolid,at:XY,radius:number,height:number,p
     };
     const thickness=Math.max(...p.slice(4).map(p=>p[1]))-Math.min(...p.slice(0,4).map(p=>p[1]));
     const radiusWithWidth=radius+distance(plan(p[4]!),plan(p[5]!))/2;
-    if(hit.distance>=radiusWithWidth||hit.at[1]<height-.6||hit.at[1]-thickness>height+1.3||passageClearance!==undefined&&Math.min(...p.slice(4).map(p=>p[1]))<height+passageClearance+.6){append(0,1);continue;}
+    if(hit.distance>=radiusWithWidth||hit.at[1]<height-.6||hit.at[1]>maxTop||hit.at[1]<minTop||hit.at[1]-thickness>height+1.3||passageClearance!==undefined&&Math.min(...p.slice(4).map(p=>p[1]))<height+passageClearance+.6){append(0,1);continue;}
     const half=Math.sqrt(Math.max(0,radiusWithWidth*radiusWithWidth-hit.distance*hit.distance))/(distance(plan(start),plan(end))||1),lo=clamp(hit.t-half,0,1),hi=clamp(hit.t+half,0,1);
     if(lo>1e-5)append(0,lo);if(hi<1-1e-5)append(hi,1);
     if(passageClearance!==undefined){append(lo,hi,-Infinity,height-.1);append(lo,hi,height+passageClearance);}
@@ -62,26 +67,10 @@ export function settleBedEdges(cuts:LandCuts,ground:HeightQuery):void {
     const generated:LandCuts={...cuts,solids:[]};emitBedGeometry(b,generated,ground,pads.map(p=>plan(p.centre)));
     cuts.solids=cuts.solids.filter(s=>!owns(s));cuts.solids.push(...generated.solids.filter(owns));
   }
-  for(const pad of pads)for(const piece of cuts.solids)if((piece.role==='wall'||piece.role==='rail')&&['kerb','parapet','handrail','retainingWall'].includes(piece.kind))clipEdgePrisms(piece,plan(pad.centre),Math.hypot(...pad.size)/2+.65,pad.centre[1]);
-  // An oblique approach may meet the neighbouring cut wall before it reaches
-  // the flat pad. Open the actual connected lane footprint through those walls,
-  // retaining its own edge protection and unrelated levels.
-  for(const pad of pads.filter(p=>p.kind==='threshold')){
-    const at=plan(pad.centre),radius=Math.hypot(...pad.size)/2,reach=radius+8;
-    for(const b of cuts.beds){
-      if(!['road','walk','trail','boardwalk','skate'].includes(b.kind))continue;
-      const join=nearestOnPath(at,b.points);if(join.distance>radius||Math.abs(join.at[1]-pad.centre[1])>.55)continue;
-      for(let i=1;i<b.points.length;i++){
-        const a=b.points[i-1]!,end=b.points[i]!;
-        if(at[0]<Math.min(a[0],end[0])-reach||at[0]>Math.max(a[0],end[0])+reach||at[1]<Math.min(a[2],end[2])-reach||at[1]>Math.max(a[2],end[2])+reach)continue;
-        const steps=Math.max(1,Math.ceil(distance(plan(a),plan(end))/2));
-        for(let j=0;j<=steps;j++){
-          const t=j/steps,p:XY=[mix(a[0],end[0],t),mix(a[2],end[2],t)];if(distance(p,at)>reach)continue;
-          for(const piece of cuts.solids)if(!piece.bedIds.includes(b.id)&&['retainingWall','kerb','parapet','handrail'].includes(piece.kind))clipEdgePrisms(piece,p,b.width/2+.75,mix(a[1],end[1],t));
-        }
-      }
-    }
-  }
+  // Guards are never cut as a circle around a pad (that removed 573 m of guard over real
+  // drops). Every route instead keeps its own corridor clear of other routes' walls and
+  // rails at its own height: that opens exactly the approach mouths of every junction.
+  clearRouteCorridors(cuts);
   // Garden Walk and Year Walk share the Hollow approach for longer than a
   // junction pad. Keep each lane's outside protection, but remove rail pieces
   // from the other route that physically occupy its walking corridor.
@@ -95,6 +84,51 @@ export function settleBedEdges(cuts:LandCuts,ground:HeightQuery):void {
   }
   cuts.solids=cuts.solids.filter(s=>s.indices.length>0);
 }
+const EDGE_KINDS=['retainingWall','kerb','parapet','handrail'];
+/** The body's step: a join between two beds is flush at or below this (runtime lip 0.48 eu). */
+const LIP=.48;
+/** Keep every route's own corridor free of other routes' walls, kerbs and rails at the route's
+ * height (P17b: a neighbour's retaining wall across a bed is an invisible wall). Low pieces are
+ * cut through; a tall retaining wall keeps its masonry above the route's clearance as a lintel. */
+export function clearRouteCorridors(cuts:LandCuts,beds:readonly BedCut[]=cuts.beds):void {
+  // Prism-level cells (4 eu): a step only visits the pieces that actually have a prism near it.
+  // Clipping only shrinks or splits prisms in place, so a stale cell stays conservative.
+  const CELL=4,index=new Map<string,Set<StructureSolid>>();
+  for(const s of cuts.solids){
+    if(!(EDGE_KINDS.includes(s.kind)&&(s.role==='wall'||s.role==='rail')||s.kind==='shoulder')||!s.positions.length)continue;
+    for(let o=0;o+23<s.positions.length;o+=24){
+      let x0=Infinity,z0=Infinity,x1=-Infinity,z1=-Infinity;for(let k=0;k<8;k++){const x=s.positions[o+k*3]!,z=s.positions[o+k*3+2]!;if(x<x0)x0=x;if(x>x1)x1=x;if(z<z0)z0=z;if(z>z1)z1=z;}
+      for(let x=Math.floor(x0/CELL);x<=Math.floor(x1/CELL);x++)for(let z=Math.floor(z0/CELL);z<=Math.floor(z1/CELL);z++){const key=`${x}:${z}`;let set=index.get(key);if(!set){set=new Set();index.set(key,set);}set.add(s);}
+    }
+  }
+  const byId=new Map(cuts.beds.map(b=>[b.id,b]));
+  for(const b of beds){
+    if(b.id.startsWith('structure.')||!['road','walk','trail','boardwalk','skate'].includes(b.kind))continue;
+    const radius=b.width/2+.75;
+    for(let i=1;i<b.points.length;i++){
+      const a=b.points[i-1]!,end=b.points[i]!,steps=Math.max(1,Math.ceil(distance(plan(a),plan(end))/2));
+      for(let j=0;j<=steps;j++){
+        const t=j/steps,p:XY=[mix(a[0],end[0],t),mix(a[2],end[2],t)],h=mix(a[1],end[1],t);
+        const seen=new Set<StructureSolid>(),onOwner=new Map<string,boolean>();
+        // Standing on the owner bed's own deck (a route ending on another route's centreline):
+        // that bed's far edge is not this route's mouth, so its pieces are left alone there.
+        const standsOn=(id:string)=>{let v=onOwner.get(id);if(v===undefined){const o=byId.get(id),n=o?nearestOnPath(p,o.points):undefined;v=!!n&&n.distance<o!.width/2-.2&&Math.abs(n.at[1]-h)<.6;onOwner.set(id,v);}return v;};
+        for(let x=Math.floor((p[0]-radius-1)/CELL);x<=Math.floor((p[0]+radius+1)/CELL);x++)for(let z=Math.floor((p[1]-radius-1)/CELL);z<=Math.floor((p[1]+radius+1)/CELL);z++)for(const piece of index.get(`${x}:${z}`)??[]){
+          if(seen.has(piece)||piece.bedIds.includes(b.id))continue;seen.add(piece);
+          if(piece.bedIds.some(standsOn))continue;
+          if(piece.kind==='retainingWall'){clipEdgePrisms(piece,p,radius,h,undefined,h+3);clipEdgePrisms(piece,p,radius,h,Math.max(2.4,b.clearHeight));}
+          // Another route's verge only blocks where it stands above the step: cut just that part.
+          else if(piece.kind==='shoulder')clipEdgePrisms(piece,p,radius,h,undefined,Infinity,h+LIP);
+          else clipEdgePrisms(piece,p,radius,h);
+        }
+      }
+    }
+  }
+  cuts.solids=cuts.solids.filter(s=>s.indices.length>0);
+}
+/** A plan point on a bridge deck or inside a tunnel of either route. */
+const onStructure=(b:BedCut|undefined,at:XY)=>!!b&&(b.id.startsWith('structure.')||(b.terrainExclusions??[]).some(e=>e.openSpan&&distance(at,e.at)<e.radius));
+const FOOT=['walk','trail','boardwalk','stair'];
 /** Retaining walls must share the real openings of separated route crossings.
  * Keep closed masonry above and below the passage rather than deleting a wall
  * or disabling its collision. A minimum 0.6 m lintel remains above headroom. */
@@ -168,28 +202,47 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
     if(row.resolution==='threshold'&&wet){
       cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:'A land or rail route intersects open water without a separated deck or named boarding interface; no dry pad was placed in the channel',at:row.at,measured:difference});continue;
     }
-    if(row.resolution==='threshold'&&difference<=.5){
+    if(row.resolution==='threshold'&&difference<=LIP){
       if(!a&&!b)continue; // A confluence is one water surface, never a dry threshold pad.
       const height=(heightA+heightB)/2,pedestrian=[a,b].every(b=>b&&['walk','trail','boardwalk'].includes(b.kind)),width=pedestrian?Math.max(3,a?.width??0,b?.width??0)+1:Math.max(6,a?.width??0,b?.width??0)+2;
-      let pad=cuts.pads.find(p=>p.kind==='threshold'&&distance(plan(p.centre),row.at)<3&&Math.abs(p.centre[1]-height)<.5);
+      // A pad in the middle of a bridge deck would strip its parapets: that needs a widened,
+      // guarded deck (a structure), so it is reported instead of paved.
+      if(onStructure(a,row.at)||onStructure(b,row.at)){cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:'An at-grade junction lies on a bridge deck: a threshold there needs a widened, guarded deck; no pad was placed and no parapet was cut',at:row.at,measured:difference});continue;}
+      let pad=cuts.pads.find(p=>p.kind==='threshold'&&distance(plan(p.centre),row.at)<3&&Math.abs(p.centre[1]-height)<LIP);
       const underground=height<base(...row.at)-3&&[a,b].some(b=>b&&['cave','rail'].includes(b.kind));
-      if(!pad)pad=addFlatPad(cuts,`crossing.${row.id}`,'threshold',row.at,height,[width,width],0,underground);else if(underground)pad.underground=true;
+      // The junction is the two graded beds meeting flush (≤ 0.48 eu): no flat slab is laid on
+      // top of them, and the pad never flattens the terrain under a graded bed.
+      if(!pad){pad={id:`crossing.${row.id}`,kind:'threshold',centre:[row.at[0],height,row.at[1]],size:[width,width],rotationDegrees:0,margin:0,blend:0,underground,deck:true};cuts.pads.push(pad);}else if(underground)pad.underground=true;
       const markerId=`${pad.id}.marker`;if(!cuts.solids.some(s=>s.id===markerId)){
         const marker=solid(markerId,'threshold','stone','marker',[row.a,row.b],districtAt(...row.at));box(marker,row.at,height+.025,[2,.6],height-.05);cuts.solids.push(marker);
       }
       const footCaveJoin=[a,b].some(b=>b?.kind==='cave')&&[a,b].every(b=>!b||!['rail','cable'].includes(b.kind)&&b.id!=='underground.throat');
-      for(const piece of cuts.solids)if((piece.role==='wall'||piece.role==='rail')&&(['kerb','parapet','handrail','retainingWall'].includes(piece.kind)||footCaveJoin&&['tunnel','cavern'].includes(piece.kind)))clipEdgePrisms(piece,row.at,Math.max(8,width*.7),height);
+      if(footCaveJoin)for(const piece of cuts.solids)if((piece.role==='wall'||piece.role==='rail')&&['tunnel','cavern'].includes(piece.kind))clipEdgePrisms(piece,row.at,Math.max(8,width*.7),height);
+      // Approach mouths are opened by clearRouteCorridors (each route's own corridor), below.
       continue;
     }
     if(row.resolution==='threshold'){
-      cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:'The registered at-grade junction has incompatible heights; fixed grades remain. Any separated physical passage still requires design reconciliation.',at:row.at,measured:difference,required:.5});
+      // A registered at-grade row is never silently turned into a generated over/under.
+      cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:'The registered at-grade junction has incompatible heights; fixed grades remain. Any separated physical passage still requires design reconciliation.',at:row.at,measured:difference,required:LIP});continue;
     }
     const upper=heightA>=heightB?a:b,lower=heightA>=heightB?b:a,upperHeight=Math.max(heightA,heightB);
     // Cable load paths and underground linings are already built by their specialised modules.
     if(!upper||upper.kind==='cable'||upper.kind==='cave'||upper.kind==='rail'||lower?.kind==='cave'||lower?.kind==='rail')continue;
+    // Water is never "a lower route needing headroom": a route over water is on its named
+    // bridge, or it meets the water at grade and needs a footbridge or a new line.
+    if((!lower||wet)&&difference<row.requiredClearance+.6){
+      if(onStructure(upper,row.at))continue;
+      cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:`${upper.id} meets open water without a named footbridge or bridge span; re-route it or add the footbridge (no deck is generated over water)`,at:row.at,measured:difference});continue;
+    }
+    // Two foot routes at different heights: a generated deck here lies across a walker's own
+    // grade (the summit walk was blocked 23 m short of L02). Report instead.
+    if(lower&&FOOT.includes(upper.kind)&&FOOT.includes(lower.kind)){
+      if(onStructure(upper,row.at)||onStructure(lower,row.at))continue;
+      cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:`Two foot routes (${upper.id} over ${lower.id}) cross ${difference.toFixed(2)} eu apart: a named footbridge or a regraded at-grade junction is needed; no deck is generated across a foot route`,at:row.at,measured:difference,required:LIP});continue;
+    }
     const supported=cuts.solids.some(s=>s.role==='support'&&s.bedIds.includes(upper.id)&&s.positions.some((_,i)=>i%3===0&&distance([s.positions[i]!,s.positions[i+2]!],row.at)<32));
     if(supported&&row.clearancePass)continue;
-    const requiredClearance=row.resolution==='threshold'?Math.max(2.4,lower?.clearHeight??0):row.requiredClearance;
+    const requiredClearance=row.requiredClearance;
     if(difference<requiredClearance+.6){
       cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:'The crossing cannot fit a thick deck plus lower-route clearance without regrading',at:row.at,measured:difference,required:requiredClearance+.6});continue;
     }
@@ -197,8 +250,8 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
     if(cuts.solids.some(s=>s.id===`${prefix}.deck`))continue;
     const deck=solid(`${prefix}.deck`,'bridge',upper.surface,'deck',[upper.id],districtAt(...row.at)),supports=solid(`${prefix}.supports`,'pier','stone','support',[upper.id],deck.districtId),beams=solid(`${prefix}.beams`,'beam','stone','support',[upper.id],deck.districtId),rails=solid(`${prefix}.rails`,'handrail','metal','rail',[upper.id],deck.districtId);
     const distances=[0];for(let i=1;i<upper.points.length;i++)distances.push(distances[i-1]!+distance(plan(upper.points[i-1]!),plan(upper.points[i]!)));
-    let previous:XYZ|undefined;
-    for(let i=0;i<upper.points.length;i++){
+    let previous:XYZ|undefined,refused:XY|undefined;
+    for(let i=0;i<upper.points.length&&!refused;i++){
       const p=upper.points[i]!;if(Math.abs(distances[i]!-centre.along)>half+5)continue;
       if(previous){slab(deck,previous,p,upper.width+upper.shoulder*2,.6);for(const side of [-1,1])slab(rails,previous,p,.09,.09,side*(upper.width/2+upper.shoulder),1.05);}
       if(Math.abs(distances[i]!-centre.along)>half-6){
@@ -224,7 +277,8 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
             });
             if(!blocked){xy=candidate;break;}
           }
-          if(!xy){cuts.diagnostics.push({id:`junction.${row.id}.pier.${i}.${side}`,severity:'conflict',message:'No safe footing outside the lower route corridors within 20 m; a bespoke load path is required',at:anchor});continue;}
+          // Never a deck with a silently missing pier: the whole span is refused and reported.
+          if(!xy){refused=anchor;break;}
           const ground=Math.min(base(...xy),p[1]-.8);
           box(supports,xy,p[1]-.5,[.7,.7],ground-.25);box(supports,xy,ground+.3,[1.5,1.5],ground-.25);
           if(distance(xy,anchor)>.01)slab(beams,[anchor[0],p[1]-.4,anchor[1]],[xy[0],p[1]-.4,xy[1]],1.2,.6);
@@ -232,6 +286,7 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
       }
       previous=p;
     }
+    if(refused){cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:`No safe footing outside the lower route corridors within 20 m of [${refused.map(v=>v.toFixed(1)).join(',')}]; the generated span was refused (a bespoke load path is required)`,at:row.at,measured:difference});continue;}
     if(!deck.indices.length||!supports.indices.length){cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:'The crossing lies too close to a route endpoint for a supported span',at:row.at});continue;}
     cuts.solids.push(deck,supports,rails);if(beams.indices.length)cuts.solids.push(beams);upper.structureIds.push(prefix);(upper.terrainExclusions??=[]).push({at:row.at,radius:half+5,openSpan:true});
     cuts.diagnostics.push({id:`junction.${row.id}`,severity:'info',message:`Supported crossing at existing upper bed height ${upperHeight.toFixed(2)} eu`,at:row.at,measured:difference,required:requiredClearance+.6});
@@ -241,8 +296,9 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
   // brings feet above the low edge beams instead of squeezing beneath them.
   const bightSpur=cuts.beds.find(b=>b.id==='VBS'),year=cuts.beds.find(b=>b.id==='yearWalk');
   let bightLanding:import('../interfaces').PadCut|undefined;
-  if(bightSpur&&year){
-    const at:XY=[887.3,923.4],height=nearestOnPath(at,bightSpur.points).at[1];
+  const bightAt:XY=[887.3,923.4];
+  if(bightSpur&&year&&nearestOnPath(bightAt,year.points).distance<4&&Math.abs(nearestOnPath(bightAt,year.points).at[1]-nearestOnPath(bightAt,bightSpur.points).at[1])<LIP){
+    const at=bightAt,height=nearestOnPath(at,bightSpur.points).at[1];
     bightLanding=addFlatPad(cuts,'crossing.bightWalkLanding','threshold',at,height,[8,8]);
     const marker=solid(`${bightLanding.id}.marker`,'threshold','stone','marker',['VBS','yearWalk'],'bight');box(marker,at,height+.025,[2,.6],height-.05);cuts.solids.push(marker);
   }
@@ -268,6 +324,5 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
     cuts.solids=cuts.solids.filter(s=>!prefixes.some(prefix=>s.id===prefix||s.id.startsWith(`${prefix}.`)));
     emitBedGeometry(b,cuts,base,junctionPads.map(p=>plan(p.centre)));
   }
-  for(const pad of junctionPads)for(const piece of cuts.solids)if((piece.role==='wall'||piece.role==='rail')&&['kerb','parapet','handrail','retainingWall'].includes(piece.kind))clipEdgePrisms(piece,plan(pad.centre),Math.hypot(...pad.size)/2+.65,pad.centre[1]);
-  cuts.solids=cuts.solids.filter(s=>s.indices.length>0);
+  clearRouteCorridors(cuts);
 }
