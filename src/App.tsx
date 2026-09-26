@@ -6570,8 +6570,10 @@ export function App() {
     const addressedHearthside = !HOUSE_WORLD_ENABLED && HEARTHSIDE_FLAGS.presentation && household && view === "household" && !houseNavigation && next === "play"
       ? parseHearthsideRoute(window.location.href, household.householdId)
       : null;
+    // K11: Hercules opens his own surface (the workspace and discovery under his bubble); the couple's conversation
+    // folio is the kitchen table's, reached from the Kitchen panel and the table itself, never from Hercules.
     const fallbackHouse=household?(houseRouteForTab(next,household.householdId)??houseRoute??{room:"home" as const,level:"middle" as const,householdId:household.householdId}):null;
-    const nextHouse:HouseRoute|null = HOUSE_WORLD_ENABLED && household && fallbackHouse ? {...(houseNavigation?.route??{...fallbackHouse,surface:next==="home"?undefined:next==="ledger"?"books":next==="plan"?"plan-studio":next==="play"?"life":next==="hercules"?"conversation":next}),scope:view}
+    const nextHouse:HouseRoute|null = HOUSE_WORLD_ENABLED && household && fallbackHouse ? {...(houseNavigation?.route??{...fallbackHouse,surface:next==="home"?undefined:next==="ledger"?"books":next==="plan"?"plan-studio":next==="play"?"life":next}),scope:view}
       : HEARTHSIDE_FLAGS.presentation && household && view === "household"
       ? houseNavigation?.route ?? (addressedHearthside ? {room:"together",level:togetherLevelForRoom(addressedHearthside.room),householdId:household.householdId} : houseRouteForTab(next, household.householdId))
       : null;
@@ -6722,7 +6724,7 @@ export function App() {
     const path=`${window.location.pathname}${window.location.search}`,focusId=document.activeElement instanceof HTMLElement?document.activeElement.id||'hearthside-title':'hearthside-title';
     const context=readHearthsideToolReturn({scope:ledgerRenderScopeKey,audience:view,path,focusId,label,tab:next,...(reference?.kind==='task'?{taskId:reference.id}:{}),...(reference?.kind==='calendar-event'?{eventId:reference.id}:{})},ledgerRenderScopeKey,household.householdId,view);
     const destination=HOUSE_WORLD_ENABLED?houseRouteForTab(next,household.householdId):null;
-    if(destination)navigateHouseSurface({...destination,scope:view,surface:next==='plan'?'plan-studio':next==='hercules'?'conversation':next,...(reference?{object:`${reference.kind}/${reference.id}`}:{})});else goTab(next);
+    if(destination)navigateHouseSurface({...destination,scope:view,surface:next==='plan'?'plan-studio':next,...(reference?{object:`${reference.kind}/${reference.id}`}:{})});else goTab(next);
     if(context){setHearthsideToolReturn(context);window.history.replaceState({...window.history.state,hearthsideReturn:context},'');}
   }
   function returnToSharedLife(path:string,focusId:string){

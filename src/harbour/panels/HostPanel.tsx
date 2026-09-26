@@ -119,7 +119,11 @@ export function HostPanel(props: HostPanelProps) {
     case "kitchen": {
       const kitchen = kitchenPanel(reading);
       return (
-        <CompactPanel {...shell} subtitle="the kitchen table" actions={<Door host="kitchen" onOpen={onOpen} />}>
+        <CompactPanel {...shell} subtitle="the kitchen table" actions={<>
+          <Door host="kitchen" onOpen={onOpen} />
+          {/* K11: the couple's conversation folio lives at the kitchen table (never behind Hercules). */}
+          <button type="button" className="compact-panel__door" data-panel-door="conversation" onClick={() => onOpen("conversation")}>Open our folio</button>
+        </>}>
           <p className="compact-panel__figure"><strong>{kitchen.title}</strong></p>
           <p className="compact-panel__line">{kitchen.line}</p>
         </CompactPanel>
