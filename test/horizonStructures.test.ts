@@ -64,7 +64,7 @@ describe('Horizon structural solids',()=>{
     expect(prisms(find(cuts,'highSpan.overlook.supports')!).length).toBe(8);
     expect(solidVerticalRangeAt(find(cuts,'highSpan.overlook.rails')!,c[0]+.3,c[1]-3.1)?.top).toBeCloseTo(11.05,5);
   },120000);
-  it('follows each road tunnel floor on its road and measures the Prow Tunnel's rock cover',()=>{
+  it('follows each road tunnel floor on its road and measures the Prow Tunnel rock cover',()=>{
     const cuts=cutsOnce();
     for(const [id,route] of [['prowTunnel','V01'],['shoulderTunnel','V02']] as const){
       const tube=cuts.beds.find(b=>b.id===id)!,road=cuts.beds.find(b=>b.id===route)!;
