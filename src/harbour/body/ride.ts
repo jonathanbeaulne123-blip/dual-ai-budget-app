@@ -10,8 +10,8 @@
  */
 import {stationPlatforms,transportCurve,transportStopCount,type Point3,type TransportCurve,type TransportKind} from './geography.ts';
 
-/** Where the body is; `cabin` is where the cabin is (the same point except while stepping aboard or off). */
-export type RidePose={x:number;y:number;z:number;yaw:number;pitch:number;seated:boolean;cabin:readonly [number,number,number]};
+/** Where the rider is, facing independently; `cabin` and `cabinYaw` keep the carriage on its track. */
+export type RidePose={x:number;y:number;z:number;yaw:number;cabinYaw:number;pitch:number;seated:boolean;moving:boolean;cabin:readonly [number,number,number]};
 export type Ride={
   kind:TransportKind;from:number;to:number;
   /** Seconds the whole ride takes (0 under reduced motion: a cut). */
@@ -19,6 +19,10 @@ export type Ride={
   /** One frame; returns where the cabin — and the body in it — is now. */
   step(dt:number):RidePose;
   pose():RidePose;
+  /** Walk on the cabin floor in its local frame; the walls bound both axes. */
+  move(forward:number,strafe:number,dt:number):void;
+  /** The gondola bench is optional; walking stands the rider first. */
+  toggleSeat():void;
   /** Progress, 0…1 by distance. */
   progress():number;
   done():boolean;
@@ -38,8 +42,9 @@ export function createRide(kind:TransportKind,from:number,to:number,options:{red
   const ease=Math.min(RIDE_EASE_SECONDS,L/v),a=ease>0?v/ease:Infinity,peak=Math.min(v,Math.sqrt(a*L)||v);
   const tA=peak/a,dA=.5*a*tA*tA,tCruise=Math.max(0,(L-2*dA)/peak);
   const duration=options.reduced||L<1e-6?0:2*tA+tCruise;
-  const seated=kind==='gondola';
-  let t=0;
+  let seated=kind==='gondola',localX=0,localZ=0,localHeading=0,moving=false,t=0;
+  const exit=curve.frame(L),exitCabin=exit.cabin??exit.at;
+  const exitLength=Math.hypot(exit.at[0]-exitCabin[0],exit.at[1]-exitCabin[1],exit.at[2]-exitCabin[2]);
   const distance=(time:number)=>{
     if(duration===0)return L;
     if(time<=0)return 0;if(time>=duration)return L;
@@ -47,11 +52,29 @@ export function createRide(kind:TransportKind,from:number,to:number,options:{red
     if(time<tA+tCruise)return dA+peak*(time-tA);
     const r=duration-time;return L-.5*a*r*r;
   };
-  const poseAt=(s:number):RidePose=>{const f=curve.frame(s);return {x:f.at[0],y:f.at[1],z:f.at[2],yaw:f.yaw,pitch:f.pitch,seated:seated&&f.aboard!==false,cabin:f.cabin??f.at};};
+  const poseAt=(s:number):RidePose=>{
+    const f=curve.frame(s),aboard=f.aboard!==false,cabin=f.cabin??f.at,c=Math.cos(f.yaw),sn=Math.sin(f.yaw);
+    // On alighting, carry a walked position toward the doorway over the actual exit leg.
+    // Clearing it in one frame would teleport someone who stood near a window.
+    const gap=Math.hypot(f.at[0]-cabin[0],f.at[1]-cabin[1],f.at[2]-cabin[2]);
+    const offset=aboard?1:s>L/2&&exitLength>1e-6?Math.max(0,1-gap/exitLength):0;
+    return {x:f.at[0]+offset*(c*localX+sn*localZ),y:f.at[1],z:f.at[2]+offset*(-sn*localX+c*localZ),yaw:f.yaw+(seated?0:localHeading),cabinYaw:f.yaw,pitch:f.pitch,seated:seated&&aboard,moving:moving&&aboard,cabin};
+  };
   return {
     kind,from,to,duration,
     step(dt){t=Math.min(duration,t+Math.max(0,Math.min(.1,Number.isFinite(dt)?dt:0)));return poseAt(distance(t));},
     pose:()=>poseAt(distance(t)),
+    move(forward,strafe,dt){
+      if(duration===0||t>=duration||curve.frame(distance(t)).aboard===false){moving=false;return;}
+      const f=Math.max(-1,Math.min(1,Number.isFinite(forward)?forward:0)),s=Math.max(-1,Math.min(1,Number.isFinite(strafe)?strafe:0));
+      moving=f!==0||s!==0;if(!moving)return;
+      seated=false;
+      localHeading=Math.atan2(s,f);
+      const scale=Math.min(.1,Math.max(0,Number.isFinite(dt)?dt:0))*1.6/Math.max(1,Math.hypot(f,s));
+      localX=Math.max(-.62,Math.min(.62,localX+s*scale));
+      localZ=Math.max(kind==='funicular'?-1.3:-.62,Math.min(kind==='funicular'?1.3:.62,localZ+f*scale));
+    },
+    toggleSeat(){if(kind==='gondola'&&curve.frame(distance(t)).aboard!==false){seated=!seated;moving=false;}},
     progress:()=>L>0?distance(t)/L:1,
     done:()=>t>=duration,
     skip(){t=duration;},
