@@ -897,7 +897,8 @@ export function buildTowerReading(household: Household, memberId: string, today:
   return {
     shelves,
     jug: { safeCents, custodian, holder },
-    gun: { available: custodian },
+    // K15: the money gun merged into the jug; the peg stays empty so no door promises a gun the Loft no longer has.
+    gun: { available: false },
     largestTargetCents: targets.length ? Math.max(...targets) : 0,
     smallestTargetCents: targets.length ? Math.min(...targets) : 0,
   };
