@@ -230,13 +230,13 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
     if(!upper||upper.kind==='cable'||upper.kind==='cave'||upper.kind==='rail'||lower?.kind==='cave'||lower?.kind==='rail')continue;
     // Water is never "a lower route needing headroom": a route over water is on its named
     // bridge, or it meets the water at grade and needs a footbridge or a new line.
-    if(!lower||wet){
+    if((!lower||wet)&&difference<row.requiredClearance+.6){
       if(onStructure(upper,row.at))continue;
       cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:`${upper.id} meets open water without a named footbridge or bridge span; re-route it or add the footbridge (no deck is generated over water)`,at:row.at,measured:difference});continue;
     }
     // Two foot routes at different heights: a generated deck here lies across a walker's own
     // grade (the summit walk was blocked 23 m short of L02). Report instead.
-    if(FOOT.includes(upper.kind)&&FOOT.includes(lower.kind)){
+    if(lower&&FOOT.includes(upper.kind)&&FOOT.includes(lower.kind)){
       if(onStructure(upper,row.at)||onStructure(lower,row.at))continue;
       cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:`Two foot routes (${upper.id} over ${lower.id}) cross ${difference.toFixed(2)} eu apart: a named footbridge or a regraded at-grade junction is needed; no deck is generated across a foot route`,at:row.at,measured:difference,required:LIP});continue;
     }
