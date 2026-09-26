@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { act, createElement } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -70,12 +72,43 @@ it("renders the App's FabSpeedDial verbs inside Record and forwards a pick in tw
 
 function IslandBar({ on }: { on: boolean }) { useIslandBar(on); return null; }
 
-it("steps aside while the island's glass stands", async () => {
-  const render = (island: boolean) => root.render(createElement("div", null, createElement(Compass, props()), createElement(IslandBar, { on: island })));
+it("steps aside while the island's glass stands, and tells the App an open Record has shut", async () => {
+  // Restored with its guard (review finding 11): the dial leaving while open must not strand the App's fabOpen.
+  const opened: boolean[] = [];
+  const fab = { actions: fabActionsFor("household", "home"), closedLabel: fabClosedLabel("household"), onOpenChange: (open: boolean) => opened.push(open), onPick: () => undefined, onGo: () => undefined };
+  const render = (island: boolean) => root.render(createElement("div", null, createElement(Compass, props({ fab })), createElement(IslandBar, { on: island })));
   await act(async () => render(false));
   expect(host.querySelector("nav.compass")).not.toBeNull();
+  await act(async () => host.querySelector<HTMLButtonElement>("button.fab")!.click());
+  expect(opened).toEqual([true]);
   await act(async () => render(true));
   expect(host.querySelector("nav.compass")).toBeNull();
+  // Record left while open: the App hears it shut.
+  expect(opened).toEqual([true, false]);
   await act(async () => render(false));
   expect(host.querySelector("nav.compass")).not.toBeNull();
+  // A closed dial that leaves says nothing more.
+  await act(async () => render(true));
+  expect(opened).toEqual([true, false]);
+});
+
+it("keeps 44px targets: every bubble and the Record circle are at least 44 px at every width, the verbs 48 px", async () => {
+  await act(async () => root.render(createElement(Compass, props())));
+  const nav = host.querySelector<HTMLElement>("nav.compass")!;
+  // The door edition's three targets are the glass classes the stylesheet sizes…
+  expect(nav.querySelectorAll("[data-glass-bubble='flip'] button.glass-bubble, [data-glass-bubble='tools'] button.glass-bubble").length).toBe(2);
+  expect(nav.querySelector("[data-glass-bubble='record'] .glass-bubble--host button.fab")).not.toBeNull();
+  // …and the stylesheet never sizes them under 44 px (jsdom does not lay out, so the CSS is the evidence).
+  const css = readFileSync(join(process.cwd(), "src/harbour/bubbles/bubbles.css"), "utf8");
+  const sizes = [...css.matchAll(/--glass-size:\s*(\d+)px/g)].map((match) => Number(match[1]));
+  expect(sizes.length).toBeGreaterThan(0);
+  for (const size of sizes) expect(size).toBeGreaterThanOrEqual(44);
+  const rule = (selector: string) => { const at = css.indexOf(selector); expect(at, selector).toBeGreaterThanOrEqual(0); return css.slice(at, css.indexOf("}", at)); };
+  for (const selector of [".glass-bubble {", ".glass-bubble-anchor.glass-bubble-anchor--record .glass-bubble--host .fab,"]) {
+    expect(rule(selector)).toContain("min-width: var(--glass-size);");
+    expect(rule(selector)).toContain("min-height: var(--glass-size);");
+  }
+  const verbs = rule(".glass-bubble-anchor.glass-bubble-anchor--record .fab-dial .fab-dial-action {");
+  expect(verbs).toContain("min-height: 48px;");
+  expect(verbs).toContain("min-width: 48px;");
 });

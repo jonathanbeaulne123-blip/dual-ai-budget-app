@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState, useSyncExternalStore, type ReactNode, type TouchEventHandler } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, type ReactNode, type TouchEventHandler } from "react";
 import { FabSpeedDial } from "../../FabSpeedDial.tsx";
 import type { FabAction, FabAddMode } from "../../core/fabActions.ts";
 import type { ThemeId } from "../../theme/scenes.ts";
@@ -151,6 +151,15 @@ export function AllToolsBubble(props: GlassLook & { onOpenTools?: () => void; to
 }
 
 export function RecordBubble(props: GlassLook & { fab?: GlassFab; placement?: "fixed" | "inline" }) {
+  // "The dial has shut" (restored from the baseline Compass's BarFab, review finding 11): a Record that leaves
+  // while its dial is open — the island's glass standing up over the door edition, or the App withdrawing `fab` —
+  // tells the App it shut, so the App's `fabOpen` (`.is-fab-open`, which lifts the bar) is never stranded.
+  const onOpenChange = useRef(props.fab?.onOpenChange); onOpenChange.current = props.fab?.onOpenChange;
+  const open = useRef(false);
+  const change = useCallback((next: boolean) => { open.current = next; onOpenChange.current?.(next); }, []);
+  const hasFab = Boolean(props.fab);
+  useEffect(() => { if (!hasFab && open.current) { open.current = false; onOpenChange.current?.(false); } }, [hasFab]);
+  useEffect(() => () => { if (open.current) { open.current = false; onOpenChange.current?.(false); } }, []);
   if (!props.fab) return null;
   return (
     <Bubble
@@ -171,7 +180,7 @@ export function RecordBubble(props: GlassLook & { fab?: GlassFab; placement?: "f
       storage={props.storage}
       environment={props.environment}
     >
-      <FabSpeedDial actions={props.fab.actions} closedLabel="Record" onPick={props.fab.onPick} onBillPaid={props.fab.onBillPaid} closed={props.fab.closed} onOpenChange={props.fab.onOpenChange} />
+      <FabSpeedDial actions={props.fab.actions} closedLabel="Record" onPick={props.fab.onPick} onBillPaid={props.fab.onBillPaid} closed={props.fab.closed} onOpenChange={change} />
     </Bubble>
   );
 }
