@@ -5,6 +5,7 @@ import { HORIZON_MANIFEST, requireScaleFactor } from './manifest.ts';
 import { ellipse, padOutline, pointInPolygon, solidBounds, solidTopAt, terrainHeight } from './geometry.ts';
 import { createRayCaster, type RayCaster, type RayHit } from './raycast.ts';
 import { sketchbookLens } from './lens.ts';
+import { fogFactor, HORIZON_FOG } from '../sky/fog.ts';
 export { sketchbookLens, PORTRAIT_MIN_HORIZONTAL_FOV } from './lens.ts';
 
 /**
@@ -14,7 +15,7 @@ export { sketchbookLens, PORTRAIT_MIN_HORIZONTAL_FOV } from './lens.ts';
  * - the eye is above the ground and above any water under it;
  * - the horizon is geometric and inside the frame: the eye-level line lies within the vertical FOV AND
  *   ≥ minPixels of sky or open sea are the first hit at or above that line (a pose into a hillside fails);
- * - every page subject is the FIRST hit of ≥ `minPixels` rays, at 16:9 (128 × 72) and on the phone
+ * - every page subject is the FIRST hit of ≥ `minPixels` rays (≥ 1 ‰), at 1440 × 900 (144 × 90, runtime lens) and on the phone
  *   (60 × 130, MANIFEST v1.7 viewRule.portrait: horizontal FOV held, never < 45°, `portrait.frames`).
  * Subjects are identified by what the ray hits — a solid's source id, a landform's ground, a water body —
  * never by polygon-vertex samples or by name prefixes of subjects that are not built.
@@ -63,7 +64,6 @@ export function subjectTests(solids: readonly StructureSolid[] = []): Record<str
     const decks = solids.filter(q => ((q as StructureSolid & { sourceId?: string }).sourceId ?? q.id.split('@')[0]!).startsWith(deckPrefix)).map(solidBounds);
     return hit => hit.kind === 'solid' && decks.some(b => hit.point[0] >= b.min[0] && hit.point[0] <= b.max[0] && hit.point[2] >= b.min[2] && hit.point[2] <= b.max[2] && hit.point[1] >= b.min[1] - .25);
   };
-  const reach = landform('reach');
   return {
     'the High Span': any(solid('highSpan.'), carried('highSpan.deck')), "the dam's glass face": solid('dam.wall'), 'the Shoulder': landform('shoulder'), 'the Crown': landform('crown'),
     'the Bight Bridge': solid('bightBridge.'), 'the Flats': landform('flats'), 'the hook': ground(polygon(HOOK)),
@@ -73,7 +73,9 @@ export function subjectTests(solids: readonly StructureSolid[] = []): Record<str
     L01: solid('place.L01'), 'the town below': landform('harbour'),
     "the Throat's mouth of daylight": (hit, d) => hit.kind === 'sky' && d[1] < 0.6 || hit.kind === 'terrain', 'the skylight shaft': (hit, d) => solid('deep.skylight', 'underground.deep.skylight')(hit, d) || hit.kind === 'sky' && d[1] >= 0.6,
     'the strip': solid('strip.', 'threshold.strip'), 'the west sea': hit => hit.kind === 'water' && hit.id.startsWith('water.sea') && hit.point[0] < 330 * s,
-    'the spring': near(m.water.spring.xy, 12), 'the Reach water': any(water('water.reach'), hit => hit.kind === 'water' && hit.id.startsWith('water.river') && reach({ ...hit, kind: 'terrain', id: 'terrain' }, [0, 0, 0])),
+    // R2-74: the spring is its own water body or structure (proximity counted any ground near its point); the Reach water
+    // is the Reach's channels (the lower river crossing the Reach landform was counted in).
+    'the spring': any(water('water.spring'), solid('spring', 'water.spring')), 'the Reach water': water('water.reach'),
     'the arch': solid('offshore.needle', 'needle.'), 'the Stacks': solid('offshore.stacks', 'stacks.'), 'the Prow': landform('prow'),
     'the Glasshouse': solid('host.glasshouse'), 'Lantern Row': solid('town.quay', 'town quay'), 'the Boathouse': solid('host.boathouse'),
   };
@@ -93,9 +95,15 @@ export function projectSubject(eye: Point3, target: Point3, point: Point3, fovDe
   const px = point[0] - eye[0], py = point[1] - eye[1], pz = point[2] - eye[2], depth = px * fx + py * fy + pz * fz, tan = Math.tan(fovDegrees * Math.PI / 360);
   return { ndc: [(px * rx + pz * rz) / (depth * tan || 1e-8), (px * ux + py * uy + pz * uz) / (depth * tan / aspect || 1e-8)], depth };
 }
-export const VIEW_GRID = { landscape: [128, 72] as Point2, portrait: [60, 130] as Point2 };
+/** R2-74: the proof renders the ACCEPTANCE frames (CONTRACT §7: 1440 × 900 and 390 × 844) at 1/10 and 1/6.5, through the
+ * runtime lens (world/lens.ts): the 1440 × 900 frame keeps the page's 16:9 vertical FOV and so shows less width than 16:9. */
+export const VIEW_GRID = { landscape: [144, 90] as Point2, portrait: [60, 130] as Point2 };
+/** R2-74: a subject is legible when it is the first hit of ≥ 1 ‰ of the frame (review 2's P27 rule; was 0.5 ‰). */
+export const LEGIBLE_PERMILLE = 1;
+/** R2-74: above this fog factor a hit reads as the fog band, not its subject (P30 holds the summit silhouette at 40–60 %). */
+export const FOG_LEGIBLE = .6;
 /** Render one ID buffer: rays through pixel centres of a camera with this horizontal FOV. */
-export function viewPixels(ray: RayCaster, eye: Point3, target: Point3, horizontalFovDegrees: number, grid: Point2, tests: Record<string, Test>, underground: boolean): ViewPixels {
+export function viewPixels(ray: RayCaster, eye: Point3, target: Point3, horizontalFovDegrees: number, grid: Point2, tests: Record<string, Test>, underground: boolean, fog?: { near: number; far: number }): ViewPixels {
   const [NX, NY] = grid, aspect = NX / NY; let f: Point3 = [target[0] - eye[0], target[1] - eye[1], target[2] - eye[2]]; const fl = Math.hypot(...f) || 1; f = [f[0] / fl, f[1] / fl, f[2] / fl];
   const hz = Math.hypot(f[0], f[2]) || 1e-9, r: Point3 = [-f[2] / hz, 0, f[0] / hz], u: Point3 = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
   const htan = Math.tan(horizontalFovDegrees * Math.PI / 360), vtan = htan / aspect, pitch = Math.atan2(f[1], hz), vhalf = Math.atan(vtan);
@@ -106,13 +114,15 @@ export function viewPixels(ray: RayCaster, eye: Point3, target: Point3, horizont
   for (let j = 0; j < NY; j++) for (let i = 0; i < NX; i++) {
     const nx = (i + .5) / NX * 2 - 1, ny = 1 - (j + .5) / NY * 2;
     let d: Point3 = [f[0] + r[0] * nx * htan + u[0] * ny * vtan, f[1] + r[1] * nx * htan + u[1] * ny * vtan, f[2] + r[2] * nx * htan + u[2] * ny * vtan]; const dl = Math.hypot(...d); d = [d[0] / dl, d[1] / dl, d[2] / dl];
-    const hit = ray.first(eye, d, 2600, { underground });
+    // R2-74: a hit drawn more than FOG_LEGIBLE fog (sky/fog.ts smoothstep at its view depth) reads as the fog band: it is
+    // horizon, never a subject (the proof counted the fogged sea band and far ground as legible subjects).
+    const cast = ray.first(eye, d, 2600, { underground }), fogged = !underground && !!fog && cast.kind !== 'sky' && fogFactor(fog, cast.t * (d[0] * f[0] + d[1] * f[1] + d[2] * f[2])) > FOG_LEGIBLE, hit: RayHit = fogged ? { kind: 'sky', t: Infinity, id: 'sky' } : cast;
     if (hit.kind === 'sky') sky++; if (hit.kind === 'water' && hit.id.startsWith('water.sea')) sea++;
     if (j <= horizonRow + 1 && (hit.kind === 'sky' || hit.kind === 'water' && hit.id.startsWith('water.sea'))) horizonHits++;
     const key = hit.kind === 'solid' ? hit.sourceId.split('.').slice(0, 2).join('.') : hit.kind === 'terrain' ? 'terrain' : hit.id; top.set(key, (top.get(key) ?? 0) + 1);
     for (const [name, test] of Object.entries(tests)) if (test(hit, d)) counts[name]!++;
   }
-  const pixels = NX * NY, minPixels = Math.max(3, Math.round(pixels * .0005)), inFrame = Math.abs(pitch) < vhalf && horizonRow >= 0 && horizonRow < NY;
+  const pixels = NX * NY, minPixels = Math.max(3, Math.ceil(pixels * LEGIBLE_PERMILLE / 1000 - 1e-9)), inFrame = Math.abs(pitch) < vhalf && horizonRow >= 0 && horizonRow < NY;
   return { grid, pixels, minPixels, skyShare: sky / pixels, seaShare: sea / pixels, horizonRowSkyOrSea: horizonHits, pitchDegrees: pitch * 180 / Math.PI, verticalHalfFovDegrees: vhalf * 180 / Math.PI, horizonInFrame: inFrame && horizonHits >= minPixels, subjects: counts, top: [...top].sort((a, b) => b[1] - a[1]).slice(0, 8).map(([k, n]) => [k, +(n / pixels).toFixed(4)]) };
 }
 export function buildViews(field: TerrainField, cuts: LandCuts, options: { grid?: typeof VIEW_GRID } = {}): SketchbookPose[] {
@@ -127,9 +137,11 @@ export function buildViews(field: TerrainField, cuts: LandCuts, options: { grid?
     const portrait: PortraitPose | undefined = p ? { eye: pxy ? [pxy[0], p.eyeH !== undefined ? p.eyeH * s : floorAt(field, cuts, pxy) + 1.6, pxy[1]] : eye, target: [pt[0]! * s, p.target_h !== undefined ? p.target_h * s : target[1], pt[1]! * s], fovDegrees: p.fov_deg, frames: p.frames ?? [] } : undefined;
     const pose: SketchbookPose = { id: view.id, label: view.label, eye, target, floor, underground, fovDegrees: view.fov_deg, aspect: 16 / 9, radius: view.radius_eu, bestHour: view.bestHour, also: view.also, portrait, deferred: v.deferred ?? [] };
     const names = v.subjects ?? PAGE_SUBJECTS[view.id] ?? [], pageTests = Object.fromEntries(names.map(n => [n, tests[n] ?? (() => false)]));
-    const landLens = sketchbookLens(pose, 16 / 9), land = viewPixels(ray, landLens.eye, landLens.target, landLens.horizontalFovDegrees, grid.landscape, pageTests, underground);
+    // R2-74: fog at this eye's height (sky/fog.ts): full tier on the 1440 × 900 frame, lite on the phone.
+    const lift = Math.max(0, eye[1] - floor), fogAt = (tier: 'full' | 'lite') => ({ near: HORIZON_FOG[tier].near + lift * HORIZON_FOG.nearPerEyeHeight, far: HORIZON_FOG[tier].far + lift * HORIZON_FOG.farPerEyeHeight }), farFull = fogAt('full'), farLite = fogAt('lite');
+    const landLens = sketchbookLens(pose, grid.landscape[0] / grid.landscape[1]), land = viewPixels(ray, landLens.eye, landLens.target, landLens.horizontalFovDegrees, grid.landscape, pageTests, underground, farFull);
     const portLens = sketchbookLens(pose, grid.portrait[0] / grid.portrait[1]), frames = portrait?.frames ?? names;
-    const port = viewPixels(ray, portLens.eye, portLens.target, portLens.horizontalFovDegrees, grid.portrait, Object.fromEntries(frames.map(n => [n, tests[n] ?? (() => false)])), underground);
+    const port = viewPixels(ray, portLens.eye, portLens.target, portLens.horizontalFovDegrees, grid.portrait, Object.fromEntries(frames.map(n => [n, tests[n] ?? (() => false)])), underground, farLite);
     const terrainHere = terrainHeight(field, xy[0], xy[1]);
     const eyeAboveFloor = underground ? eye[1] > floor : eye[1] > Math.max(floor, terrainHere);
     const eyeAboveWater = !cuts.waters.some(w => w.kind !== 'dry' && !!w.underground === underground && (waterHeightAt(w, eye[0], eye[2]) ?? -Infinity) >= eye[1]);

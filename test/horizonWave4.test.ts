@@ -114,3 +114,19 @@ describe('R2-25 / R2-21 cut-edge spikes are capped on the detailed tiers', () =>
   });
 });
 
+describe('R2-74 / R2-14 the baked view proof measures the acceptance frames', () => {
+  it('renders 1440 × 900 (144 × 90, runtime lens) and 390 × 844 (60 × 130), legible at ≥ 1 ‰ and under 60 % fog', async () => {
+    const { VIEW_GRID, LEGIBLE_PERMILLE, FOG_LEGIBLE } = await import('../src/harbour/horizon/world/views');
+    expect(VIEW_GRID).toEqual({ landscape: [144, 90], portrait: [60, 130] }); expect(LEGIBLE_PERMILLE).toBe(1); expect(FOG_LEGIBLE).toBe(.6);
+    const { world } = baked();
+    for (const v of world.views) { expect(v.proof.landscape.grid).toEqual([144, 90]); expect(v.proof.landscape.minPixels).toBe(13); }
+  });
+  it('claims only what the frames hold: 8/12 at 1440 × 900 and 6/12 on the phone (was 12/12 and 11/12 claimed, 6/12 and 7/12 measured)', () => {
+    const { world } = baked(), pass = (k: 'passLandscape' | 'passPortrait') => world.views.filter(v => v.proof[k]).map(v => v.id).join('');
+    expect(pass('passLandscape')).toBe('BCEFGHJL'); expect(pass('passPortrait')).toBe('BEFGJK');
+    const px = (page: string, subject: string) => world.views.find(v => v.id === page)!.proof.subjects.find(s => s.id === subject)!;
+    // Where the land really fails a subject (listed in final3/BEFORE-AFTER.md with the blocker):
+    expect(px('K', 'the Glasshouse').pixels).toBe(0); expect(px('I', 'the spring').pixels).toBe(0); expect(px('I', 'the Reach water').pixels).toBe(0);
+    expect(px('A', 'the Shoulder').pixels).toBeLessThan(13); expect(px('D', 'the Lamp').pixels).toBeLessThan(13);
+  });
+});
