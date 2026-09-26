@@ -1,7 +1,7 @@
 {
  "title": "The Horizon \u2014 MANIFEST",
- "version": "1.6",
- "date": "2026-09-25",
+ "version": "1.7",
+ "date": "2026-09-26",
  "status": "Design numbers for implementation. Control points are centreline intent to be solved into splines by the land pass; not navigation or collision data until baked into WorldDefinition v3.",
  "units": {
   "x": "east, concept metres",
@@ -2957,21 +2957,33 @@
     ],
     "r": 60,
     "target": true,
-    "note": "the Drop Zone target is ground paint inside the protected centre; S4 passes 60 m west"
+    "note": "the Drop Zone target is ground paint inside the protected centre; S4 passes 60 m west",
+    "modes": [
+     "glider",
+     "parachute"
+    ]
    },
    "reachMeadow": {
     "xy": [
      1230,
      1190
     ],
-    "r": 40
+    "r": 40,
+    "modes": [
+     "glider",
+     "parachute"
+    ]
    },
    "sands": {
     "xy": [
      1050,
      1440
     ],
-    "r": 60
+    "r": 60,
+    "modes": [
+     "glider",
+     "parachute"
+    ]
    },
    "strip": "see structures.strip",
    "water": [
@@ -3188,7 +3200,85 @@
    "no collisions with people: pass through + gust",
    "reduced motion: cuts between the twelve pages",
    "nothing in the sky reads a balance"
-  ]
+  ],
+  "gliderPolar": [
+   [
+    8,
+    1.3
+   ],
+   [
+    9,
+    1.05
+   ],
+   [
+    11,
+    1.2
+   ],
+   [
+    14,
+    1.8
+   ],
+   [
+    17,
+    3.0
+   ]
+  ],
+  "gliderPolarRule": "[airspeed m/s, still-air sink m/s] from bar pushed out full to pulled in full; a smooth piecewise cubic between points; trim [11,1.2] is sky.glider; stall below 7.5 (FLIGHT.md \u00a72.2)",
+  "parachute": {
+   "forward_ms": 6,
+   "sink_ms": 3,
+   "freefallCap_ms": 30,
+   "autoPull_agl_m": 45,
+   "minBail_agl_m": 60,
+   "canopy_m": [
+    7,
+    3
+   ],
+   "note": "reached only by jumping from the plane (carriedThresholds.bailOut); the chute always opens (D37)"
+  },
+  "corridors": {
+   "throat": {
+    "gate": 12,
+    "to": [
+     1300,
+     420
+    ],
+    "slope_deg": 30,
+    "level_m": 25,
+    "splashH": 42,
+    "coneDeg": 25,
+    "maxBankDeg": 20,
+    "note": "glider only: enter gate 12's aperture heading within coneDeg of south and banked at most maxBankDeg; follow the chute at slope_deg; the last level_m run over the Deep at splashH; a miss passes beside the mouth, never a wall"
+   }
+  },
+  "dropZone": {
+   "xy": [
+    1040,
+    1065
+   ],
+   "rings_m": [
+    5,
+    10,
+    25
+   ],
+   "note": "ground paint inside the Green's protected centre at sky.landings.green; bullseye, inner, outer, then 'on the Green'"
+  },
+  "landingModes": {
+   "strip": [
+    "plane",
+    "glider",
+    "parachute"
+   ],
+   "water": [
+    "plane",
+    "glider",
+    "parachute"
+   ],
+   "deep": [
+    "glider"
+   ],
+   "rule": "modes per non-field landing; every landing takes the parachute except water.deep (the Deep is reached only through the Throat, by glider)"
+  }
  },
  "reserves": {
   "rotRule": "rot_deg is the bearing of the 64 m axis, degrees clockwise from +x (east) with y south",
@@ -4470,8 +4560,8 @@
     130
    ],
    "crown\u2192lamp by glider": [
-    50,
-    90
+    70,
+    110
    ],
    "ring by plane": [
     60,
@@ -4479,7 +4569,10 @@
    ],
    "square\u2192home/bank on foot, walking": 60,
    "square\u2192boathouse on foot, walking": 100,
-   "note": "Original design targets retained after D13 selected 1.0. Pass 1 reports measured pass/fail against these targets; scale approval does not waive them or change speeds."
+   "note": "Original design targets retained after D13 selected 1.0. Pass 1 reports measured pass/fail against these targets; scale approval does not waive them or change speeds.",
+   "decisions": {
+    "crown\u2192lamp by glider": "D34 applied pending Jonathan's confirmation: retargeted from [50,90] to [70,110] (~98 s at 11 m/s trim in still air, FLIGHT.md \u00a712)"
+   }
   },
   "at_active_scale": {
    "square\u2192library by bicycle": {
@@ -5303,5 +5396,20 @@
    ],
    "verification": "Both centrelines include [1300,420] at the Deep. The original 20 m rock-separation note describes the departing passages, not proven clearance at this shared point. Pass 1 must compute their vertical profiles and register and build every actual crossing; this note is not an exclusion."
   }
- ]
+ ],
+ "carriedThresholds": [
+  {
+   "id": "bailOut",
+   "carriedBy": "plane",
+   "xy": "carried",
+   "modes": [
+    "plane\u2192parachute"
+   ],
+   "action": "jump",
+   "minAgl_m": 60,
+   "hold_s": 0.5,
+   "note": "the plane's door: its place is the plane's each frame; offered only at >= minAgl_m above the ground under the plane; never inside the Throat"
+  }
+ ],
+ "carriedThresholdRule": "A carried threshold moves with a vehicle and has no pad, marker or fixed xy. It is listed apart from thresholds so the land pass never grades a pad for it; WorldDefinition.thresholds carries it with carried = carriedBy."
 }

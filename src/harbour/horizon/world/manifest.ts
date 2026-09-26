@@ -46,6 +46,15 @@ export function parseHorizonManifest(value: unknown): HorizonManifest {
       throw new Error('Invalid Horizon threshold mode sequence');
     }
   }
+  const carried = value.carriedThresholds ?? [];
+  if (!Array.isArray(carried)) throw new Error('Invalid Horizon carried thresholds');
+  for (const threshold of carried) {
+    if (!record(threshold) || typeof threshold.id !== 'string' || typeof threshold.carriedBy !== 'string' || !threshold.carriedBy ||
+        typeof threshold.action !== 'string' || !Array.isArray(threshold.modes) || !threshold.modes.length ||
+        threshold.modes.some(mode => typeof mode !== 'string' || mode.split('→').length < 2 || mode.split('→').some(step => !step.trim()))) {
+      throw new Error('Invalid Horizon carried threshold');
+    }
+  }
   const plotIds = new Set<string>();
   const retiredIds = value.reserves.retiredPlaceIds;
   if (!Array.isArray(retiredIds) || retiredIds.some(id => typeof id !== 'string')) {

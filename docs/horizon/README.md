@@ -1,6 +1,6 @@
 # The Horizon — the deck
 
-> Current canonical manifest: v1.6. Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data. PIN-0 remains pending until its accepted merge SHA is recorded.
+> Current canonical manifest: v1.7 — sky-only over v1.6 (FLIGHT.md's glider polar, parachute, Throat corridor, Drop Zone, landing modes and the carried `bailOut` threshold; D34's glider retarget applied pending Jonathan); geography stays `horizon-geo-1`. v1.6: Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data. PIN-0 remains pending until its accepted merge SHA is recorded.
 
 Version 1.6 · 25 September 2026 · Owner: Jonathan (product) · Author: Claude (design lead, review)
 

@@ -24,9 +24,9 @@ export function buildFlightEnvelope(field: TerrainField, cuts: LandCuts): Flight
   for (const [i, thermal] of m.sky.lift.thermals.entries()) volumes.push({ id: `thermal.${i + 1}`, kind: 'thermal', centre: [thermal.xy[0]! * s, ceiling / 2, thermal.xy[1]! * s], halfSize: [thermal.r * s, ceiling / 2, thermal.r * s], radius: thermal.r * s, yaw: 0, hours: thermal.hours });
   for (const [i, sink] of m.sky.lift.sink.entries()) volumes.push({ id: `sink.${i + 1}`, kind: 'sink', centre: [sink.xy[0]! * s, ceiling / 2, sink.xy[1]! * s], halfSize: [sink.r * s, ceiling / 2, sink.r * s], radius: sink.r * s, yaw: 0 });
   volumes.push({ id: 'ridge.crownSouth', kind: 'ridge', centre: [1310 * s, 180 * s, 670 * s], halfSize: [200 * s, 100 * s, 45 * s], yaw: 0, modes: ['glider'] });
-  for (const [id, landing] of Object.entries(m.sky.landings)) { if (typeof landing === 'string' || Array.isArray(landing)) continue; const x = landing.xy[0]! * s, z = landing.xy[1]! * s, h = terrainHeight(field, x, z); landings.push({ id, xy: [x, z], height: h }); volumes.push({ id, kind: 'landing', centre: [x, h + 2, z], halfSize: [landing.r * s, 2, landing.r * s], radius: landing.r * s, yaw: 0, modes: ['glider'] }); }
+  for (const [id, landing] of Object.entries(m.sky.landings)) { if (typeof landing === 'string' || Array.isArray(landing)) continue; const x = landing.xy[0]! * s, z = landing.xy[1]! * s, h = terrainHeight(field, x, z); landings.push({ id, xy: [x, z], height: h }); volumes.push({ id, kind: 'landing', centre: [x, h + 2, z], halfSize: [landing.r * s, 2, landing.r * s], radius: landing.r * s, yaw: 0, modes: [...landing.modes] }); }
   const strip = m.structures.strip, dx = (strip.to[0]! - strip.from[0]!) * s, dz = (strip.to[1]! - strip.from[1]!) * s, stripAt: Point2 = [(strip.from[0]! + strip.to[0]!) * s / 2, (strip.from[1]! + strip.to[1]!) * s / 2], sh = terrainHeight(field, ...stripAt);
-  landings.push({ id: 'strip', xy: stripAt, height: sh }); volumes.push({ id: 'strip', kind: 'landing', centre: [stripAt[0], sh + 2, stripAt[1]], halfSize: [strip.width_m * s / 2, 2, Math.hypot(dx, dz) / 2], yaw: Math.atan2(dx, dz), modes: ['plane', 'glider'] });
+  landings.push({ id: 'strip', xy: stripAt, height: sh }); volumes.push({ id: 'strip', kind: 'landing', centre: [stripAt[0], sh + 2, stripAt[1]], halfSize: [strip.width_m * s / 2, 2, Math.hypot(dx, dz) / 2], yaw: Math.atan2(dx, dz), modes: [...m.sky.landingModes.strip] });
   const wetCircle = (x: number, z: number, radius: number, level: number): boolean => {
     for (const r of [0, radius / 2, radius]) for (let i = 0; i < 24; i++) if (terrainHeight(field, x + Math.cos(i * Math.PI / 12) * r, z + Math.sin(i * Math.PI / 12) * r) > level - .25) return false;
     return true;
@@ -43,7 +43,7 @@ export function buildFlightEnvelope(field: TerrainField, cuts: LandCuts): Flight
         x = px; z = pz; found = true; break;
       }
     }
-    landings.push({ id: `water.${id}`, xy: [x, z], height: water.level }); volumes.push({ id: `water.${id}`, kind: 'landing', waterBodyId: water.id, centre: [x, water.level + 2, z], halfSize: [radius, 2, radius], radius, yaw: 0, modes: id === 'deep' ? ['glider'] : ['plane', 'glider'] });
+    landings.push({ id: `water.${id}`, xy: [x, z], height: water.level }); volumes.push({ id: `water.${id}`, kind: 'landing', waterBodyId: water.id, centre: [x, water.level + 2, z], halfSize: [radius, 2, radius], radius, yaw: 0, modes: [...(id === 'deep' ? m.sky.landingModes.deep : m.sky.landingModes.water)] });
   }
   const gateProofs: SkyProof['gates'] = [];
   m.sky.gates.forEach((gate, i) => {
@@ -82,5 +82,10 @@ export function buildFlightEnvelope(field: TerrainField, cuts: LandCuts): Flight
   for (let i = 0; i <= steps; i++) { const t = i / steps, p = mixPoint(from, to, t), height = from[1] - duration * t * m.sky.glider.sink_ms, at: Point3 = [p[0], height, p[2]], ground = terrainHeight(field, at[0], at[2]); let obstacle: string | null = null, surface = ground; for (const { solid, bounds: b } of boxes) if (at[0] >= b.min[0] && at[0] <= b.max[0] && at[2] >= b.min[2] && at[2] <= b.max[2] && b.max[1] > surface) { const top = solidTopAt(solid, at[0], at[2]); if (top !== null && top > surface) { surface = top; obstacle = solid.id; } } samples.push({ at, clearance: height - surface, required: i === 0 ? 0 : 10, obstacle }); }
   const glide: SkyProof['glide'] = { lengthEu: distance3(from, samples.at(-1)!.at), durationSeconds: duration, arrivalHeight: samples.at(-1)!.at[1], samples, minClearance: Math.min(...samples.slice(1).map(p => p.clearance)), pass: samples.every(p => p.clearance >= p.required) };
   const proofs: SkyProof = { gates: gateProofs, landings: landingProofs, glide, pass: gateProofs.every(g => g.clear) && landingProofs.every(l => l.clear) && glide.pass };
-  return { ceiling, launches, launchPads, landings, gates, volumes, glider: { speed: m.sky.glider.speed_ms, sink: m.sky.glider.sink_ms }, proofs };
+  // MANIFEST v1.7 (FLIGHT.md §9 ask 5): the polar, the parachute, the Throat corridor and the Drop Zone. Speeds stay m/s; lengths scale.
+  const chute = m.sky.parachute, throat = m.sky.corridors.throat, throatGate = m.sky.gates.find(g => g.n === throat.gate)!, zone = m.sky.dropZone;
+  const parachute = { forward: chute.forward_ms, sink: chute.sink_ms, freefallCap: chute.freefallCap_ms, autoPullAgl: chute.autoPull_agl_m * s, minBailAgl: chute.minBail_agl_m * s, canopy: [chute.canopy_m[0]! * s, chute.canopy_m[1]! * s] as Point2 };
+  const corridor = { gateId: throatGate.id, mouth: [throatGate.xy[0]! * s, throatGate.h * s, throatGate.xy[1]! * s] as Point3, to: [throat.to[0]! * s, throat.splashH * s, throat.to[1]! * s] as Point3, waterHeight: m.underground.rooms.deep.h * s, slopeDegrees: throat.slope_deg, levelLength: throat.level_m * s, splashHeight: throat.splashH * s, coneDegrees: throat.coneDeg, maxBankDegrees: throat.maxBankDeg, modes: ['glider'] };
+  const dropZone = { xy: [zone.xy[0]! * s, zone.xy[1]! * s] as Point2, height: terrainHeight(field, zone.xy[0]! * s, zone.xy[1]! * s), rings: zone.rings_m.map(r => r * s) };
+  return { ceiling, launches, launchPads, landings, gates, volumes, glider: { speed: m.sky.glider.speed_ms, sink: m.sky.glider.sink_ms }, proofs, gliderPolar: m.sky.gliderPolar.map(([v, sink]) => [v!, sink!] as const), parachute, corridors: { throat: corridor }, dropZone };
 }

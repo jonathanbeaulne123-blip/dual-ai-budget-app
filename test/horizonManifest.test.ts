@@ -86,3 +86,21 @@ describe('Horizon manifest v1.6',()=>{
     }
   });
 });
+describe('Horizon manifest v1.7 (sky-only)',()=>{
+  it('adds FLIGHT.md sky data without a geography change',()=>{
+    expect(manifest.version).toBe('1.7');
+    expect(manifest.sky.gliderPolar).toHaveLength(5);
+    expect(manifest.sky.parachute).toMatchObject({forward_ms:6,sink_ms:3,freefallCap_ms:30,autoPull_agl_m:45,minBail_agl_m:60,canopy_m:[7,3]});
+    expect(manifest.sky.corridors.throat).toMatchObject({gate:12,to:[1300,420],slope_deg:30,level_m:25,splashH:42,coneDeg:25,maxBankDeg:20});
+    expect(manifest.sky.dropZone).toMatchObject({xy:manifest.sky.landings.green.xy,rings_m:[5,10,25]});
+    for(const key of ['green','reachMeadow','sands'] as const)expect(manifest.sky.landings[key].modes).toContain('parachute');
+    expect(manifest.sky.landingModes.deep).toEqual(['glider']);
+    expect(manifest.journeys.targets_s['crown→lamp by glider']).toEqual([70,110]);
+    expect(manifest.journeys.targets_s.decisions['crown→lamp by glider']).toContain("D34 applied pending Jonathan's confirmation");
+  });
+  it('rejects a carried threshold without a carrier or with a broken mode sequence',()=>{
+    const row=manifest.carriedThresholds[0]!;
+    expect(()=>parseHorizonManifest({...manifest,carriedThresholds:[{...row,carriedBy:''}]})).toThrow('Invalid Horizon carried threshold');
+    expect(()=>parseHorizonManifest({...manifest,carriedThresholds:[{...row,modes:['plane→']}]})).toThrow('Invalid Horizon carried threshold');
+  });
+});
