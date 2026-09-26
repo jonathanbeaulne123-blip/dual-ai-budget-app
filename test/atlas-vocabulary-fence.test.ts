@@ -21,7 +21,6 @@ const PENDING: Readonly<Record<string, readonly string[]>> = {
   // The integrator's (App.tsx is the integration mutex).
   "src/App.tsx": ["Together", "Our Path"],
   // The harbour / bar tracks (src/harbour/**, QuickSheet, VillageHUD).
-  "src/harbour/HarbourWorld.tsx": ["Quick travel"],
   "src/harbour/court/CourtTwins.tsx": ["The Court"],
   "src/harbour/desk/DeskLeaving.tsx": ["Next out", "Scheduled to leave"],
   "src/harbour/desk/DeskPlace.tsx": ["Household Fund", "Plan together", "Our plans", "Town square", "Atlas nook"],

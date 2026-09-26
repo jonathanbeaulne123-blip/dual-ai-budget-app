@@ -111,8 +111,8 @@
 .harbour-world__supported,.harbour-world__checking{bottom:88px}
 .harbour-world__supported + .harbour-world__checking{bottom:120px}
 .harbour-world:not(.is-skating) .harbour-moves{bottom:88px}
-/* Phones: 44px targets, and Quick travel folds to a 44px icon that still opens
-   the same native list of every destination. Seven targets fit at 320px; a
+/* Phones: 44px targets (K7: the old destination list is retired; All tools › Places lists
+   every destination). Seven targets fit at 320px; a
    room with Arrange (eight) wraps onto two rows instead of scrolling sideways. */
 @media(max-width:719px){.harbour-world__supported,.harbour-world__checking{bottom:74px}
 .harbour-world__supported + .harbour-world__checking{bottom:104px}

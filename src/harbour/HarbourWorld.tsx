@@ -417,7 +417,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       void loadPlace(next).then(()=>world.restream());
       const [x,,z]=placementToWorld(placement,[placement.door[0],0,placement.halfDepth-.6]);
       if(world.body()?.goTo(x,z)){setTravelTo(next);setPhrase(`Walking to ${HARBOUR_PLACE_NAMES[next]}.`);}
-      else{setTravelTo(null);setPhrase('That path is blocked. Pick a spot nearby or use Quick travel.');}return;
+      else{setTravelTo(null);setPhrase('That path is blocked. Pick a spot nearby, or choose the place in All tools › Places.');}return;
     }
     navigatePlace(next);
   }
