@@ -57,6 +57,12 @@ pnpm build
 
 See the delivery's `VERIFICATION.md` for actual commands/results and the raw logs. Full exhaustive test/check lanes require a separate explicit request under repository rules. Source tests, headless capture and a 390 px viewport do not certify physical Mac/iPhone acceptance. If a command times out or breaches the five-minute quick-gate budget, report it as such.
 
+## Measured candidate status
+
+Code `6dd7aacf1bbb3c9dae71f7e9e496455aa660b7cb`: seven of seven door walks pass in both full and Lite; 118 Horizon tests pass; the isolated High gate passes in 132.632 seconds; ordinary build and Node 22/24 asset reproduction pass. There are 68 review captures. Earlier timeout/overrun runs are retained as failed evidence alongside successful unchanged-code retries.
+
+Land acceptance remains **NO-GO**: 186 geometry conflicts, 69 terrain-bed gap samples requiring load-path review, five failed cable crossings, eleven failed view proofs and seven failed journey targets remain. See the [repair worksession](../worksessions/2026-09-25-horizon-land-repairs.md) and delivery reports. Fixed decisions are not waived.
+
 ## Expected return
 
 Return independent findings with measured coordinates, severity, source and keep/re-author recommendations; before/after captures at identical poses; discrete enhancement commits or a patch; a regenerated deterministic asset set; full collision-based walking and crossing results; and a concise list of decisions for Jonathan. Include failed probes and any new regressions. Deliver an updated FINISH-PROMPT for remaining work and a clear GO/NO-GO. Jonathan's visual decision and physical-device acceptance are still required for PIN-1.
