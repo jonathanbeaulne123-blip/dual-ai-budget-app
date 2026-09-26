@@ -32,7 +32,7 @@ describe("K1 · the Fund ledge", () => {
     expect(src("src/HouseholdFundPanel.tsx")).toMatch(/<DeskLevel walk=\{levelWalk\} \/>/);
     // The Ask is a Glasshouse step: its door opens the planner.
     expect(app).toMatch(/if \(destination === "ask"\) \{ openHouseObject\("planner"\); return; \}/);
-    expect(searchAtlas("the level").slice(0, 3).map((hit) => hit.tool.id)).toContain("fund-bank");
+    expect(searchAtlas("the level").slice(0, 3).map((hit) => hit.id)).toContain("fund-bank");
   });
 });
 
