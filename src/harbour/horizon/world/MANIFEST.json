@@ -4689,21 +4689,6 @@
    "kind": "crossing"
   },
   {
-   "a": "DEEP_RUN",
-   "b": "walk prow",
-   "at": [
-    1611,
-    710
-   ],
-   "resolution": "under",
-   "movedFrom": [
-    1605,
-    700
-   ],
-   "note": "the Deep run passes under the Prow walk 11 m east of the v1.7 point",
-   "kind": "crossing"
-  },
-  {
    "a": "S4",
    "b": "V01",
    "at": [
@@ -4813,28 +4798,6 @@
    "kind": "crossing"
   },
   {
-   "a": "S2",
-   "b": "walk bightPier",
-   "at": [
-    509,
-    896
-   ],
-   "resolution": "threshold",
-   "note": "the pier walk crosses the Wash Run bed at a marked gap",
-   "kind": "crossing"
-  },
-  {
-   "a": "walk bightPier",
-   "b": "water wash",
-   "at": [
-    514,
-    895
-   ],
-   "resolution": "over",
-   "structure": "a plank footbridge at the Wash mouth",
-   "kind": "crossing"
-  },
-  {
    "a": "walk crown",
    "b": "ORE",
    "at": [
@@ -4916,54 +4879,6 @@
    "kind": "crossing",
    "source": "bake v1.8",
    "note": "RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "damGallery.flight.1",
-   "b": "damGallery.exit",
-   "at": [
-    1165,
-    898
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "under by 7 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "damGallery.flight.1",
-   "b": "water.stillwater",
-   "at": [
-    1165,
-    898
-   ],
-   "resolution": "threshold",
-   "kind": "waterBody",
-   "source": "bake v1.8",
-   "note": "bed inside the water outline below its surface: a bridge, causeway or re-route is owed (diagnostic)"
-  },
-  {
-   "a": "damGallery.flight.2",
-   "b": "damGallery.exit",
-   "at": [
-    1165,
-    886
-   ],
-   "resolution": "threshold",
-   "kind": "sharedStretch",
-   "source": "bake v1.8",
-   "note": "shared stretch 10 eu at one height"
-  },
-  {
-   "a": "damGallery.flight.2",
-   "b": "water.stillwater",
-   "at": [
-    1165,
-    892
-   ],
-   "resolution": "threshold",
-   "kind": "waterBody",
-   "source": "bake v1.8",
-   "note": "bed inside the water outline below its surface: a bridge, causeway or re-route is owed (diagnostic)"
   },
   {
    "a": "DEEP_RUN",
@@ -5050,18 +4965,6 @@
    "note": "at-grade meeting 2.2 eu apart: regrade owed"
   },
   {
-   "a": "highSpan.overlook",
-   "b": "river lower",
-   "at": [
-    1251.2,
-    1143.3
-   ],
-   "resolution": "threshold",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "at-grade meeting 2.1 eu apart: regrade owed"
-  },
-  {
    "a": "homestead.lane",
    "b": "town quay",
    "at": [
@@ -5123,30 +5026,6 @@
   },
   {
    "a": "jetty.lamp",
-   "b": "lampGallery.ramp",
-   "at": [
-    540,
-    1250
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "under by 9.6 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "jetty.lamp",
-   "b": "lampGallery.ramp",
-   "at": [
-    540,
-    1250
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "under by 19.2 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "jetty.lamp",
    "b": "lampGallery.stair",
    "at": [
     540,
@@ -5197,30 +5076,6 @@
    "a": "lampGallery.ramp",
    "b": "FERRY",
    "at": [
-    510.4,
-    1224.4
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 12.8 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "lampGallery.ramp",
-   "b": "FERRY",
-   "at": [
-    510.4,
-    1224.4
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 22.4 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "lampGallery.ramp",
-   "b": "FERRY",
-   "at": [
     546.1,
     1190.6
    ],
@@ -5228,18 +5083,6 @@
    "kind": "crossing",
    "source": "bake v1.8",
    "note": "over by 6.1 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "lampGallery.ramp",
-   "b": "FERRY",
-   "at": [
-    546.1,
-    1190.6
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
   },
   {
    "a": "lampGallery.ramp",
@@ -5264,30 +5107,6 @@
    "kind": "junction",
    "source": "bake v1.8",
    "note": "flush path junction: no marker, no mode change"
-  },
-  {
-   "a": "lampGallery.ramp",
-   "b": "lampGallery.stair",
-   "at": [
-    540,
-    1250
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 9.6 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "lampGallery.ramp",
-   "b": "lampGallery.stair",
-   "at": [
-    540,
-    1250
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 19.2 eu: a named structure (footbridge, deck or passage) is owed"
   },
   {
    "a": "lampGallery.stair",
@@ -5471,18 +5290,6 @@
   },
   {
    "a": "river lower",
-   "b": "reachChannel.2",
-   "at": [
-    1320,
-    1276
-   ],
-   "resolution": "threshold",
-   "kind": "waterConfluence",
-   "source": "bake v1.8",
-   "note": "one waterway"
-  },
-  {
-   "a": "river lower",
    "b": "river upper",
    "at": [
     1160,
@@ -5588,18 +5395,6 @@
    "kind": "crossing",
    "source": "bake v1.8",
    "note": "RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "S1",
-   "b": "yearWalk",
-   "at": [
-    1254.7,
-    862
-   ],
-   "resolution": "threshold",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
   },
   {
    "a": "S1",
@@ -5836,10 +5631,11 @@
     905.9,
     640.6
    ],
-   "resolution": "under",
-   "kind": "crossing",
+   "resolution": "threshold",
+   "kind": "junction",
    "source": "bake v1.8",
-   "note": "under by 2.7 eu: a named structure (footbridge, deck or passage) is owed"
+   "note": "under by 2.7 eu: a named structure (footbridge, deck or passage) is owed; v1.9: now a flush path junction (was under)",
+   "v1_8_resolution": "under"
   },
   {
    "a": "S4",
@@ -5872,10 +5668,11 @@
     900.7,
     882.8
    ],
-   "resolution": "under",
-   "kind": "crossing",
+   "resolution": "threshold",
+   "kind": "junction",
    "source": "bake v1.8",
-   "note": "under by 2.6 eu: a named structure (footbridge, deck or passage) is owed"
+   "note": "under by 2.6 eu: a named structure (footbridge, deck or passage) is owed; v1.9: now a flush path junction (was under)",
+   "v1_8_resolution": "under"
   },
   {
    "a": "S4",
@@ -5884,10 +5681,11 @@
     901.2,
     629.8
    ],
-   "resolution": "under",
-   "kind": "crossing",
+   "resolution": "threshold",
+   "kind": "junction",
    "source": "bake v1.8",
-   "note": ""
+   "note": "v1.9: now a flush path junction (was under)",
+   "v1_8_resolution": "under"
   },
   {
    "a": "S4",
@@ -5896,10 +5694,11 @@
     902.6,
     632.9
    ],
-   "resolution": "under",
-   "kind": "crossing",
+   "resolution": "threshold",
+   "kind": "junction",
    "source": "bake v1.8",
-   "note": ""
+   "note": "v1.9: now a flush path junction (was under)",
+   "v1_8_resolution": "under"
   },
   {
    "a": "S4",
@@ -6347,30 +6146,6 @@
   },
   {
    "a": "V01",
-   "b": "S3",
-   "at": [
-    1321.9,
-    1372.3
-   ],
-   "resolution": "threshold",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
-  },
-  {
-   "a": "V01",
-   "b": "S3",
-   "at": [
-    1350,
-    1345
-   ],
-   "resolution": "threshold",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
-  },
-  {
-   "a": "V01",
    "b": "spur boathouse",
    "at": [
     1300,
@@ -6431,18 +6206,6 @@
   },
   {
    "a": "V01",
-   "b": "V02",
-   "at": [
-    1500,
-    340
-   ],
-   "resolution": "threshold",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
-  },
-  {
-   "a": "V01",
    "b": "VG",
    "at": [
     900,
@@ -6464,18 +6227,6 @@
    "kind": "crossing",
    "source": "bake v1.8",
    "note": ""
-  },
-  {
-   "a": "V01",
-   "b": "walk prow",
-   "at": [
-    1580.1,
-    620.7
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "under by 11.5 eu: a named structure (footbridge, deck or passage) is owed"
   },
   {
    "a": "V01",
@@ -6769,73 +6520,14 @@
    "a": "VG",
    "b": "yearWalk",
    "at": [
-    933,
-    369.1
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "under by 5.5 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "VG",
-   "b": "yearWalk",
-   "at": [
     943.6,
     471
    ],
-   "resolution": "under",
-   "kind": "crossing",
+   "resolution": "threshold",
+   "kind": "junction",
    "source": "bake v1.8",
-   "note": ""
-  },
-  {
-   "a": "walk bight",
-   "b": "plot.bight.3.service",
-   "at": [
-    729.5,
-    1056.6
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
-  },
-  {
-   "a": "walk bight",
-   "b": "plot.bight.4.service",
-   "at": [
-    706.4,
-    1131.1
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
-  },
-  {
-   "a": "walk bightPier",
-   "b": "FERRY",
-   "at": [
-    560,
-    890
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
-  },
-  {
-   "a": "walk bightPier",
-   "b": "ferry.bight",
-   "at": [
-    560,
-    890
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
+   "note": "v1.9: now a flush path junction (was under)",
+   "v1_8_resolution": "under"
   },
   {
    "a": "walk bightPier",
@@ -6844,10 +6536,11 @@
     350,
     880
    ],
-   "resolution": "under",
-   "kind": "crossing",
+   "resolution": "threshold",
+   "kind": "junction",
    "source": "bake v1.8",
-   "note": "under by 3.9 eu: a named structure (footbridge, deck or passage) is owed"
+   "note": "under by 3.9 eu: a named structure (footbridge, deck or passage) is owed; v1.9: now a flush path junction (was under)",
+   "v1_8_resolution": "under"
   },
   {
    "a": "walk bightPier",
@@ -7187,18 +6880,6 @@
   },
   {
    "a": "walk crownFromGondola",
-   "b": "V02",
-   "at": [
-    1443.1,
-    526.5
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "RESERVED R-A3: waits on the gondola top station"
-  },
-  {
-   "a": "walk crownFromGondola",
    "b": "walk summit",
    "at": [
     1310,
@@ -7256,30 +6937,6 @@
    "kind": "crossing",
    "source": "bake v1.8",
    "note": ""
-  },
-  {
-   "a": "walk dune",
-   "b": "zipLanding.ramp",
-   "at": [
-    1079.2,
-    1469
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "under by 6.6 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "walk dune",
-   "b": "zipLanding.stair",
-   "at": [
-    1144.1,
-    1458.9
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "under by 2.7 eu: a named structure (footbridge, deck or passage) is owed"
   },
   {
    "a": "walk garden",
@@ -7357,25 +7014,14 @@
    "a": "walk garden",
    "b": "yearWalk",
    "at": [
-    807.5,
-    474.1
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "under by 3.9 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "walk garden",
-   "b": "yearWalk",
-   "at": [
     899.6,
     638.9
    ],
-   "resolution": "under",
-   "kind": "crossing",
+   "resolution": "threshold",
+   "kind": "junction",
    "source": "bake v1.8",
-   "note": "under by 3.9 eu: a named structure (footbridge, deck or passage) is owed"
+   "note": "under by 3.9 eu: a named structure (footbridge, deck or passage) is owed; v1.9: now a flush path junction (was under)",
+   "v1_8_resolution": "under"
   },
   {
    "a": "walk garden",
@@ -7384,10 +7030,11 @@
     900,
     640
    ],
-   "resolution": "under",
-   "kind": "crossing",
+   "resolution": "threshold",
+   "kind": "junction",
    "source": "bake v1.8",
-   "note": ""
+   "note": "v1.9: now a flush path junction (was under)",
+   "v1_8_resolution": "under"
   },
   {
    "a": "walk garden",
@@ -7396,10 +7043,11 @@
     902.3,
     641.1
    ],
-   "resolution": "under",
-   "kind": "crossing",
+   "resolution": "threshold",
+   "kind": "junction",
    "source": "bake v1.8",
-   "note": ""
+   "note": "v1.9: now a flush path junction (was under)",
+   "v1_8_resolution": "under"
   },
   {
    "a": "walk garden",
@@ -7439,18 +7087,6 @@
   },
   {
    "a": "walk lakerim",
-   "b": "damGallery.flight.1",
-   "at": [
-    1165,
-    905.2
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
-  },
-  {
-   "a": "walk lakerim",
    "b": "host.glasshouse.approach",
    "at": [
     990,
@@ -7477,30 +7113,6 @@
    "a": "walk lakerim",
    "b": "yearWalk",
    "at": [
-    1244.4,
-    852.1
-   ],
-   "resolution": "threshold",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "at-grade meeting 2.3 eu apart: regrade owed"
-  },
-  {
-   "a": "walk lakerim",
-   "b": "yearWalk",
-   "at": [
-    1244.5,
-    851.9
-   ],
-   "resolution": "threshold",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "at-grade meeting 2.3 eu apart: regrade owed"
-  },
-  {
-   "a": "walk lakerim",
-   "b": "yearWalk",
-   "at": [
     1250.5,
     837.6
    ],
@@ -7508,102 +7120,6 @@
    "kind": "junction",
    "source": "bake v1.8",
    "note": "flush path junction: no marker, no mode change"
-  },
-  {
-   "a": "walk prow",
-   "b": "seaStair",
-   "at": [
-    1620,
-    760
-   ],
-   "resolution": "threshold",
-   "kind": "junction",
-   "source": "bake v1.8",
-   "note": "flush path junction: no marker, no mode change"
-  },
-  {
-   "a": "walk prow",
-   "b": "yearWalk",
-   "at": [
-    1567.7,
-    600.9
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 11.2 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "walk prow",
-   "b": "yearWalk",
-   "at": [
-    1571.6,
-    606.8
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 11.3 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "walk prow",
-   "b": "yearWalk",
-   "at": [
-    1591.5,
-    908.6
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 33.9 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "walk prow",
-   "b": "yearWalk",
-   "at": [
-    1598.3,
-    664
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 10.8 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "walk prow",
-   "b": "yearWalk",
-   "at": [
-    1605.7,
-    689.4
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 13.6 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "walk prow",
-   "b": "yearWalk",
-   "at": [
-    1607.5,
-    847.7
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 26.7 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "walk prow",
-   "b": "ZIP",
-   "at": [
-    1597.3,
-    661.1
-   ],
-   "resolution": "under",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
   },
   {
    "a": "walk reach",
@@ -7919,42 +7435,6 @@
   },
   {
    "a": "yearWalk",
-   "b": "ORE",
-   "at": [
-    1345,
-    680
-   ],
-   "resolution": "threshold",
-   "kind": "modeTransfer",
-   "source": "bake v1.8",
-   "note": "boarding threshold; mover pending"
-  },
-  {
-   "a": "yearWalk",
-   "b": "ORE",
-   "at": [
-    1349.6,
-    671.6
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
-  },
-  {
-   "a": "yearWalk",
-   "b": "ORE",
-   "at": [
-    1355.1,
-    661.5
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
-  },
-  {
-   "a": "yearWalk",
    "b": "plot.bight.1.service",
    "at": [
     871.2,
@@ -8036,42 +7516,6 @@
    "kind": "crossing",
    "source": "bake v1.8",
    "note": "over by 15.2 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "yearWalk",
-   "b": "southPortal.link",
-   "at": [
-    1345,
-    680
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 3 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "yearWalk",
-   "b": "southPortal.link",
-   "at": [
-    1347.7,
-    681.4
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 2.8 eu: a named structure (footbridge, deck or passage) is owed"
-  },
-  {
-   "a": "yearWalk",
-   "b": "southPortal.link",
-   "at": [
-    1349.7,
-    682.4
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": "over by 2.9 eu: a named structure (footbridge, deck or passage) is owed"
   },
   {
    "a": "yearWalk",
@@ -8158,18 +7602,6 @@
    "note": ""
   },
   {
-   "a": "ZIP",
-   "b": "river lower",
-   "at": [
-    1273.1,
-    1201.5
-   ],
-   "resolution": "over",
-   "kind": "crossing",
-   "source": "bake v1.8",
-   "note": ""
-  },
-  {
    "a": "zipLanding.ramp",
    "b": "ZIP",
    "at": [
@@ -8215,6 +7647,234 @@
    "resolution": "threshold",
    "kind": "junction",
    "source": "bake v1.8",
+   "note": "flush path junction: no marker, no mode change"
+  },
+  {
+   "a": "bightPierStair",
+   "b": "wash",
+   "at": [
+    513.8,
+    896
+   ],
+   "resolution": "over",
+   "kind": "crossing",
+   "source": "bake v1.9",
+   "note": ""
+  },
+  {
+   "a": "damGallery.flight.2",
+   "b": "damGallery.exit",
+   "at": [
+    1170.6,
+    910.8
+   ],
+   "resolution": "threshold",
+   "kind": "junction",
+   "source": "bake v1.9",
+   "note": "flush path junction: no marker, no mode change"
+  },
+  {
+   "a": "jetty.bightPier",
+   "b": "FERRY",
+   "at": [
+    560,
+    902
+   ],
+   "resolution": "threshold",
+   "kind": "crossing",
+   "source": "bake v1.9",
+   "note": "at-grade meeting 1 eu apart: regrade owed"
+  },
+  {
+   "a": "jetty.bightPier",
+   "b": "ferry.bight",
+   "at": [
+    560,
+    898
+   ],
+   "resolution": "threshold",
+   "kind": "sharedStretch",
+   "source": "bake v1.9",
+   "note": "shared stretch 8 eu at one height"
+  },
+  {
+   "a": "S1",
+   "b": "yearWalk",
+   "at": [
+    1266.9,
+    842
+   ],
+   "resolution": "threshold",
+   "kind": "crossing",
+   "source": "bake v1.9",
+   "note": ""
+  },
+  {
+   "a": "S2",
+   "b": "bightPierStair",
+   "at": [
+    509.9,
+    896
+   ],
+   "resolution": "under",
+   "kind": "crossing",
+   "source": "bake v1.9",
+   "note": ""
+  },
+  {
+   "a": "S4",
+   "b": "walk bight",
+   "at": [
+    873.5,
+    951.1
+   ],
+   "resolution": "threshold",
+   "kind": "crossing",
+   "source": "bake v1.9",
+   "note": "at-grade meeting 1 eu apart: regrade owed"
+  },
+  {
+   "a": "S4",
+   "b": "yearWalk",
+   "at": [
+    968.6,
+    540.5
+   ],
+   "resolution": "under",
+   "kind": "crossing",
+   "source": "bake v1.9",
+   "note": "under by 2.8 eu: a named structure (footbridge, deck or passage) is owed"
+  },
+  {
+   "a": "V01",
+   "b": "V02",
+   "at": [
+    1433.3,
+    335.6
+   ],
+   "resolution": "threshold",
+   "kind": "crossing",
+   "source": "bake v1.9",
+   "note": ""
+  },
+  {
+   "a": "V02",
+   "b": "yearWalk",
+   "at": [
+    1436,
+    355.4
+   ],
+   "resolution": "threshold",
+   "kind": "crossing",
+   "source": "bake v1.9",
+   "note": ""
+  },
+  {
+   "a": "VG",
+   "b": "walk bight",
+   "at": [
+    960.4,
+    864.4
+   ],
+   "resolution": "threshold",
+   "kind": "crossing",
+   "source": "bake v1.9",
+   "note": ""
+  },
+  {
+   "a": "walk bight",
+   "b": "yearWalk",
+   "at": [
+    858.5,
+    977
+   ],
+   "resolution": "threshold",
+   "kind": "junction",
+   "source": "bake v1.9",
+   "note": "flush path junction: no marker, no mode change"
+  },
+  {
+   "a": "walk bight",
+   "b": "yearWalk",
+   "at": [
+    907.3,
+    888.6
+   ],
+   "resolution": "over",
+   "kind": "crossing",
+   "source": "bake v1.9",
+   "note": "over by 8.6 eu: a named structure (footbridge, deck or passage) is owed"
+  },
+  {
+   "a": "walk bight",
+   "b": "yearWalk",
+   "at": [
+    951.6,
+    867.7
+   ],
+   "resolution": "threshold",
+   "kind": "junction",
+   "source": "bake v1.9",
+   "note": "flush path junction: no marker, no mode change"
+  },
+  {
+   "a": "walk bight",
+   "b": "yearWalk",
+   "at": [
+    954.5,
+    866.6
+   ],
+   "resolution": "threshold",
+   "kind": "junction",
+   "source": "bake v1.9",
+   "note": "flush path junction: no marker, no mode change"
+  },
+  {
+   "a": "walk bightPier",
+   "b": "bightPierStair",
+   "at": [
+    498,
+    896
+   ],
+   "resolution": "threshold",
+   "kind": "crossing",
+   "source": "bake v1.9",
+   "note": "at-grade meeting 0.9 eu apart: regrade owed"
+  },
+  {
+   "a": "walk lakerim",
+   "b": "damGallery.exit",
+   "at": [
+    1166.2,
+    905.1
+   ],
+   "resolution": "threshold",
+   "kind": "junction",
+   "source": "bake v1.9",
+   "note": "flush path junction: no marker, no mode change"
+  },
+  {
+   "a": "walk prow",
+   "b": "yearWalk",
+   "at": [
+    1641,
+    881.6
+   ],
+   "resolution": "threshold",
+   "kind": "junction",
+   "source": "bake v1.9",
+   "note": "flush path junction: no marker, no mode change"
+  },
+  {
+   "a": "yearWalk",
+   "b": "southPortal.link",
+   "at": [
+    1369.7,
+    689.9
+   ],
+   "resolution": "threshold",
+   "kind": "junction",
+   "source": "bake v1.9",
    "note": "flush path junction: no marker, no mode change"
   }
  ],
@@ -12128,6 +11788,919 @@
     "at": "sky",
     "resolution": "over",
     "note": "ceiling 300 m; no landing on a neighbourhood"
+   }
+  },
+  {
+   "a": "DEEP_RUN",
+   "b": "walk prow",
+   "kind": "retired register row (v1.9)",
+   "verification": "the Prow walk (v1.9) keeps to the Prow top east of V01's cutting and no longer crosses the Deep run's line at [1611,710]",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "DEEP_RUN",
+    "b": "walk prow",
+    "at": [
+     1611,
+     710
+    ],
+    "resolution": "under",
+    "movedFrom": [
+     1605,
+     700
+    ],
+    "note": "the Deep run passes under the Prow walk 11 m east of the v1.7 point",
+    "kind": "crossing"
+   }
+  },
+  {
+   "a": "S2",
+   "b": "walk bightPier",
+   "kind": "retired register row (v1.9)",
+   "verification": "the pier walk (v1.9) ends at the Flats' cliff top; S2 now passes under the Bight pier stair (a row accepted from the v1.9 bake)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "S2",
+    "b": "walk bightPier",
+    "at": [
+     509,
+     896
+    ],
+    "resolution": "threshold",
+    "note": "the pier walk crosses the Wash Run bed at a marked gap",
+    "kind": "crossing"
+   }
+  },
+  {
+   "a": "walk bightPier",
+   "b": "water wash",
+   "kind": "retired register row (v1.9)",
+   "verification": "the pier walk (v1.9) ends at the Flats' cliff top; the wash footbridge is retired and the Bight pier stair crosses the dry wash mouth",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk bightPier",
+    "b": "water wash",
+    "at": [
+     514,
+     895
+    ],
+    "resolution": "over",
+    "structure": "a plank footbridge at the Wash mouth",
+    "kind": "crossing"
+   }
+  },
+  {
+   "a": "damGallery.flight.1",
+   "b": "damGallery.exit",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "damGallery.flight.1",
+    "b": "damGallery.exit",
+    "at": [
+     1165,
+     898
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "under by 7 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "damGallery.flight.1",
+   "b": "water.stillwater",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "damGallery.flight.1",
+    "b": "water.stillwater",
+    "at": [
+     1165,
+     898
+    ],
+    "resolution": "threshold",
+    "kind": "waterBody",
+    "source": "bake v1.8",
+    "note": "bed inside the water outline below its surface: a bridge, causeway or re-route is owed (diagnostic)"
+   }
+  },
+  {
+   "a": "damGallery.flight.2",
+   "b": "damGallery.exit",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "damGallery.flight.2",
+    "b": "damGallery.exit",
+    "at": [
+     1165,
+     886
+    ],
+    "resolution": "threshold",
+    "kind": "sharedStretch",
+    "source": "bake v1.8",
+    "note": "shared stretch 10 eu at one height"
+   }
+  },
+  {
+   "a": "damGallery.flight.2",
+   "b": "water.stillwater",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "damGallery.flight.2",
+    "b": "water.stillwater",
+    "at": [
+     1165,
+     892
+    ],
+    "resolution": "threshold",
+    "kind": "waterBody",
+    "source": "bake v1.8",
+    "note": "bed inside the water outline below its surface: a bridge, causeway or re-route is owed (diagnostic)"
+   }
+  },
+  {
+   "a": "highSpan.overlook",
+   "b": "river lower",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "highSpan.overlook",
+    "b": "river lower",
+    "at": [
+     1251.2,
+     1143.3
+    ],
+    "resolution": "threshold",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "at-grade meeting 2.1 eu apart: regrade owed"
+   }
+  },
+  {
+   "a": "jetty.lamp",
+   "b": "lampGallery.ramp",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "jetty.lamp",
+    "b": "lampGallery.ramp",
+    "at": [
+     540,
+     1250
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "under by 9.6 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "jetty.lamp",
+   "b": "lampGallery.ramp",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "jetty.lamp",
+    "b": "lampGallery.ramp",
+    "at": [
+     540,
+     1250
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "under by 19.2 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "lampGallery.ramp",
+   "b": "FERRY",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "lampGallery.ramp",
+    "b": "FERRY",
+    "at": [
+     510.4,
+     1224.4
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 12.8 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "lampGallery.ramp",
+   "b": "FERRY",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "lampGallery.ramp",
+    "b": "FERRY",
+    "at": [
+     510.4,
+     1224.4
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 22.4 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "lampGallery.ramp",
+   "b": "FERRY",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "lampGallery.ramp",
+    "b": "FERRY",
+    "at": [
+     546.1,
+     1190.6
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "lampGallery.ramp",
+   "b": "lampGallery.stair",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "lampGallery.ramp",
+    "b": "lampGallery.stair",
+    "at": [
+     540,
+     1250
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 9.6 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "lampGallery.ramp",
+   "b": "lampGallery.stair",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "lampGallery.ramp",
+    "b": "lampGallery.stair",
+    "at": [
+     540,
+     1250
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 19.2 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "river lower",
+   "b": "reachChannel.2",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "river lower",
+    "b": "reachChannel.2",
+    "at": [
+     1320,
+     1276
+    ],
+    "resolution": "threshold",
+    "kind": "waterConfluence",
+    "source": "bake v1.8",
+    "note": "one waterway"
+   }
+  },
+  {
+   "a": "S1",
+   "b": "yearWalk",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "S1",
+    "b": "yearWalk",
+    "at": [
+     1254.7,
+     862
+    ],
+    "resolution": "threshold",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "V01",
+   "b": "S3",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "V01",
+    "b": "S3",
+    "at": [
+     1321.9,
+     1372.3
+    ],
+    "resolution": "threshold",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "V01",
+   "b": "S3",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "V01",
+    "b": "S3",
+    "at": [
+     1350,
+     1345
+    ],
+    "resolution": "threshold",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "V01",
+   "b": "V02",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "V01",
+    "b": "V02",
+    "at": [
+     1500,
+     340
+    ],
+    "resolution": "threshold",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "V01",
+   "b": "walk prow",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "V01",
+    "b": "walk prow",
+    "at": [
+     1580.1,
+     620.7
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "under by 11.5 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "VG",
+   "b": "yearWalk",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "VG",
+    "b": "yearWalk",
+    "at": [
+     933,
+     369.1
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "under by 5.5 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "walk bight",
+   "b": "plot.bight.3.service",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk bight",
+    "b": "plot.bight.3.service",
+    "at": [
+     729.5,
+     1056.6
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "walk bight",
+   "b": "plot.bight.4.service",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk bight",
+    "b": "plot.bight.4.service",
+    "at": [
+     706.4,
+     1131.1
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "walk bightPier",
+   "b": "FERRY",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk bightPier",
+    "b": "FERRY",
+    "at": [
+     560,
+     890
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "walk bightPier",
+   "b": "ferry.bight",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk bightPier",
+    "b": "ferry.bight",
+    "at": [
+     560,
+     890
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "walk crownFromGondola",
+   "b": "V02",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk crownFromGondola",
+    "b": "V02",
+    "at": [
+     1443.1,
+     526.5
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "RESERVED R-A3: waits on the gondola top station"
+   }
+  },
+  {
+   "a": "walk dune",
+   "b": "zipLanding.ramp",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk dune",
+    "b": "zipLanding.ramp",
+    "at": [
+     1079.2,
+     1469
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "under by 6.6 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "walk dune",
+   "b": "zipLanding.stair",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk dune",
+    "b": "zipLanding.stair",
+    "at": [
+     1144.1,
+     1458.9
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "under by 2.7 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "walk garden",
+   "b": "yearWalk",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk garden",
+    "b": "yearWalk",
+    "at": [
+     807.5,
+     474.1
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "under by 3.9 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "walk lakerim",
+   "b": "damGallery.flight.1",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk lakerim",
+    "b": "damGallery.flight.1",
+    "at": [
+     1165,
+     905.2
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "walk lakerim",
+   "b": "yearWalk",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk lakerim",
+    "b": "yearWalk",
+    "at": [
+     1244.4,
+     852.1
+    ],
+    "resolution": "threshold",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "at-grade meeting 2.3 eu apart: regrade owed"
+   }
+  },
+  {
+   "a": "walk lakerim",
+   "b": "yearWalk",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk lakerim",
+    "b": "yearWalk",
+    "at": [
+     1244.5,
+     851.9
+    ],
+    "resolution": "threshold",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "at-grade meeting 2.3 eu apart: regrade owed"
+   }
+  },
+  {
+   "a": "walk prow",
+   "b": "seaStair",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk prow",
+    "b": "seaStair",
+    "at": [
+     1620,
+     760
+    ],
+    "resolution": "threshold",
+    "kind": "junction",
+    "source": "bake v1.8",
+    "note": "flush path junction: no marker, no mode change"
+   }
+  },
+  {
+   "a": "walk prow",
+   "b": "yearWalk",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk prow",
+    "b": "yearWalk",
+    "at": [
+     1567.7,
+     600.9
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 11.2 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "walk prow",
+   "b": "yearWalk",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk prow",
+    "b": "yearWalk",
+    "at": [
+     1571.6,
+     606.8
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 11.3 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "walk prow",
+   "b": "yearWalk",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk prow",
+    "b": "yearWalk",
+    "at": [
+     1591.5,
+     908.6
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 33.9 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "walk prow",
+   "b": "yearWalk",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk prow",
+    "b": "yearWalk",
+    "at": [
+     1598.3,
+     664
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 10.8 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "walk prow",
+   "b": "yearWalk",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk prow",
+    "b": "yearWalk",
+    "at": [
+     1605.7,
+     689.4
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 13.6 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "walk prow",
+   "b": "yearWalk",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk prow",
+    "b": "yearWalk",
+    "at": [
+     1607.5,
+     847.7
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 26.7 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "walk prow",
+   "b": "ZIP",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "walk prow",
+    "b": "ZIP",
+    "at": [
+     1597.3,
+     661.1
+    ],
+    "resolution": "under",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "yearWalk",
+   "b": "ORE",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "yearWalk",
+    "b": "ORE",
+    "at": [
+     1345,
+     680
+    ],
+    "resolution": "threshold",
+    "kind": "modeTransfer",
+    "source": "bake v1.8",
+    "note": "boarding threshold; mover pending"
+   }
+  },
+  {
+   "a": "yearWalk",
+   "b": "ORE",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "yearWalk",
+    "b": "ORE",
+    "at": [
+     1349.6,
+     671.6
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "yearWalk",
+   "b": "ORE",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "yearWalk",
+    "b": "ORE",
+    "at": [
+     1355.1,
+     661.5
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
+   }
+  },
+  {
+   "a": "yearWalk",
+   "b": "southPortal.link",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "yearWalk",
+    "b": "southPortal.link",
+    "at": [
+     1345,
+     680
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 3 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "yearWalk",
+   "b": "southPortal.link",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "yearWalk",
+    "b": "southPortal.link",
+    "at": [
+     1347.7,
+     681.4
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 2.8 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "yearWalk",
+   "b": "southPortal.link",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "yearWalk",
+    "b": "southPortal.link",
+    "at": [
+     1349.7,
+     682.4
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": "over by 2.9 eu: a named structure (footbridge, deck or passage) is owed"
+   }
+  },
+  {
+   "a": "ZIP",
+   "b": "river lower",
+   "kind": "retired register row (v1.9)",
+   "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)",
+   "sharedPlanPoints": [],
+   "retiredRow": {
+    "a": "ZIP",
+    "b": "river lower",
+    "at": [
+     1273.1,
+     1201.5
+    ],
+    "resolution": "over",
+    "kind": "crossing",
+    "source": "bake v1.8",
+    "note": ""
    }
   }
  ]

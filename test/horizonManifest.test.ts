@@ -69,7 +69,11 @@ describe('Horizon manifest v1.8',()=>{
     expect(crossing).toMatchObject({at:[874,941],resolution:'threshold',district:'green'});
     expect(crossing?.districtNote).toContain('unless pass 1');
     const retired=manifest.routePairNotes.filter(row=>(row as {kind?:string}).kind==='retired register row (v1.8)');
-    expect(manifest.routePairNotes.length-retired.length).toBe(2);
+    // v1.9 (W3-A): 45 bake rows without a plan hit in the v1.9 build (or duplicates) + 3 authored rows whose routes moved.
+    const retired19=manifest.routePairNotes.filter(row=>(row as {kind?:string}).kind==='retired register row (v1.9)');
+    expect(retired19).toHaveLength(48);
+    expect(retired19.filter(row=>!(row as {retiredRow?:{source?:string}}).retiredRow?.source).map(row=>`${row.a} x ${row.b}`).sort()).toEqual(['DEEP_RUN x walk prow','S2 x walk bightPier','walk bightPier x water wash']);
+    expect(manifest.routePairNotes.length-retired.length-retired19.length).toBe(2);
     // v1.8: the nine stale register rows without a plan intersection (R1-11) are retired here with their reason.
     expect(retired.map(row=>`${row.a} x ${row.b}`).sort()).toEqual(['S1 finish x V01','S2 x V01','S3 x V01','S3 x town quay','S3 x walk dune','S4 x spur studio','ZIP x town','plane x everything','walk reach x VG']);
     expect(manifest.routePairNotes.find(row=>row.a==='DEEP_RUN'&&row.b==='ORE')).toMatchObject({

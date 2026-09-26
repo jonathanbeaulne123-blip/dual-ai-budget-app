@@ -1301,6 +1301,112 @@ for v in m["views"]:
     if v["id"] == "K": v["v1_8_xy"] = v["xy"]; v["xy"] = [1006, 762]
     if v["id"] == "L": v["portrait"]["v1_8_xy"] = v["portrait"].get("xy"); v["portrait"]["xy"] = [1460, 1300]
 
+# 15. The crossings register against the v1.9 build (every computed intersection keeps a row; the design lead accepts each
+#     computed resolution, as in v1.8). Rows accepted from this bake carry source "bake v1.9". Bake rows with no plan hit in the
+#     v1.9 build (the geometry they described moved) and duplicate bake rows are retired to routePairNotes; three authored rows
+#     whose routes moved are retired with their reason; bake rows now met flush become junctions. Reserved rows are untouched.
+REG_ADDED_V19 = [
+ {"a": "bightPierStair", "b": "wash", "at": [513.8, 896], "resolution": "over", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "damGallery.flight.2", "b": "damGallery.exit", "at": [1170.6, 910.8], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "jetty.bightPier", "b": "FERRY", "at": [560, 902], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": "at-grade meeting 1 eu apart: regrade owed"},
+ {"a": "jetty.bightPier", "b": "ferry.bight", "at": [560, 898], "resolution": "threshold", "kind": "sharedStretch", "source": "bake v1.9", "note": "shared stretch 8 eu at one height"},
+ {"a": "S1", "b": "yearWalk", "at": [1266.9, 842], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "S2", "b": "bightPierStair", "at": [509.9, 896], "resolution": "under", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "S4", "b": "walk bight", "at": [873.5, 951.1], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": "at-grade meeting 1 eu apart: regrade owed"},
+ {"a": "S4", "b": "yearWalk", "at": [968.6, 540.5], "resolution": "under", "kind": "crossing", "source": "bake v1.9", "note": "under by 2.8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a": "V01", "b": "V02", "at": [1433.3, 335.6], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "V02", "b": "yearWalk", "at": [1436, 355.4], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "VG", "b": "walk bight", "at": [960.4, 864.4], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "walk bight", "b": "yearWalk", "at": [858.5, 977], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "walk bight", "b": "yearWalk", "at": [907.3, 888.6], "resolution": "over", "kind": "crossing", "source": "bake v1.9", "note": "over by 8.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a": "walk bight", "b": "yearWalk", "at": [951.6, 867.7], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "walk bight", "b": "yearWalk", "at": [954.5, 866.6], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "walk bightPier", "b": "bightPierStair", "at": [498, 896], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": "at-grade meeting 0.9 eu apart: regrade owed"},
+ {"a": "walk lakerim", "b": "damGallery.exit", "at": [1166.2, 905.1], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "walk prow", "b": "yearWalk", "at": [1641, 881.6], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "yearWalk", "b": "southPortal.link", "at": [1369.7, 689.9], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+]
+REG_RETIRED_V19 = [  # indices into the v1.8 register (each checked against its pair below)
+ [38, "damGallery.flight.1", "damGallery.exit"],
+ [39, "damGallery.flight.1", "water.stillwater"],
+ [40, "damGallery.flight.2", "damGallery.exit"],
+ [41, "damGallery.flight.2", "water.stillwater"],
+ [49, "highSpan.overlook", "river lower"],
+ [55, "jetty.lamp", "lampGallery.ramp"],
+ [56, "jetty.lamp", "lampGallery.ramp"],
+ [61, "lampGallery.ramp", "FERRY"],
+ [62, "lampGallery.ramp", "FERRY"],
+ [64, "lampGallery.ramp", "FERRY"],
+ [67, "lampGallery.ramp", "lampGallery.stair"],
+ [68, "lampGallery.ramp", "lampGallery.stair"],
+ [84, "river lower", "reachChannel.2"],
+ [94, "S1", "yearWalk"],
+ [157, "V01", "S3"],
+ [158, "V01", "S3"],
+ [164, "V01", "V02"],
+ [167, "V01", "walk prow"],
+ [192, "VG", "yearWalk"],
+ [194, "walk bight", "plot.bight.3.service"],
+ [195, "walk bight", "plot.bight.4.service"],
+ [196, "walk bightPier", "FERRY"],
+ [197, "walk bightPier", "ferry.bight"],
+ [227, "walk crownFromGondola", "V02"],
+ [233, "walk dune", "zipLanding.ramp"],
+ [234, "walk dune", "zipLanding.stair"],
+ [241, "walk garden", "yearWalk"],
+ [248, "walk lakerim", "damGallery.flight.1"],
+ [251, "walk lakerim", "yearWalk"],
+ [252, "walk lakerim", "yearWalk"],
+ [254, "walk prow", "seaStair"],
+ [255, "walk prow", "yearWalk"],
+ [256, "walk prow", "yearWalk"],
+ [257, "walk prow", "yearWalk"],
+ [258, "walk prow", "yearWalk"],
+ [259, "walk prow", "yearWalk"],
+ [260, "walk prow", "yearWalk"],
+ [261, "walk prow", "ZIP"],
+ [288, "yearWalk", "ORE"],
+ [289, "yearWalk", "ORE"],
+ [290, "yearWalk", "ORE"],
+ [298, "yearWalk", "southPortal.link"],
+ [299, "yearWalk", "southPortal.link"],
+ [300, "yearWalk", "southPortal.link"],
+ [308, "ZIP", "river lower"],
+]
+REG_RERES_V19 = [
+ {"a": "S4", "b": "walk garden", "at": [905.9, 640.6], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "S4", "b": "yearWalk", "at": [900.7, 882.8], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "S4", "b": "yearWalk", "at": [901.2, 629.8], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "S4", "b": "yearWalk", "at": [902.6, 632.9], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "VG", "b": "yearWalk", "at": [943.6, 471], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "walk bightPier", "b": "walk flats", "at": [350, 880], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "walk garden", "b": "yearWalk", "at": [899.6, 638.9], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "walk garden", "b": "yearWalk", "at": [900, 640], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "walk garden", "b": "yearWalk", "at": [902.3, 641.1], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+]
+REG_RETIRED_AUTHORED_V19 = {
+ ("DEEP_RUN", "walk prow"): "the Prow walk (v1.9) keeps to the Prow top east of V01's cutting and no longer crosses the Deep run's line at [1611,710]",
+ ("S2", "walk bightPier"): "the pier walk (v1.9) ends at the Flats' cliff top; S2 now passes under the Bight pier stair (a row accepted from the v1.9 bake)",
+ ("walk bightPier", "water wash"): "the pier walk (v1.9) ends at the Flats' cliff top; the wash footbridge is retired and the Bight pier stair crosses the dry wash mouth",
+}
+def _same(row, r): return row["a"] == r["a"] and row["b"] == r["b"] and isinstance(row["at"], list) and abs(row["at"][0] - r["at"][0]) < .05 and abs(row["at"][1] - r["at"][1]) < .05
+reg, retired_v19 = [], []
+for idx, row in enumerate(m["crossings"]):
+    if any(k == idx and row["a"] == a and row["b"] == b for k, a, b in REG_RETIRED_V19):
+        retired_v19.append(row)
+        m["routePairNotes"].append({"a": row["a"], "b": row["b"], "kind": "retired register row (v1.9)", "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)", "sharedPlanPoints": [], "retiredRow": dict(row)})
+        continue
+    if (row["a"], row["b"]) in REG_RETIRED_AUTHORED_V19 and not row.get("reserved") and row.get("source") != "bake v1.8":
+        m["routePairNotes"].append({"a": row["a"], "b": row["b"], "kind": "retired register row (v1.9)", "verification": REG_RETIRED_AUTHORED_V19[(row["a"], row["b"])], "sharedPlanPoints": [], "retiredRow": dict(row)})
+        continue
+    for r in REG_RERES_V19:
+        if _same(row, r):
+            row = dict(row); row["v1_8_resolution"] = row["resolution"]; row["resolution"] = r["resolution"]; row["kind"] = r["kind"]
+            row["note"] = (row["note"] + "; " if row.get("note") else "") + r["note"]
+    reg.append(row)
+m["crossings"] = reg + REG_ADDED_V19
+
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

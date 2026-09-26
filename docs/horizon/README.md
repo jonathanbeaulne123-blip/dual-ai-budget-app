@@ -386,3 +386,7 @@ Page A portrait `fov_deg` 50 → **45** (the viewRule minimum); page E `xy` [130
 - The junction resolver: a lower route under a tunnel or cavern roof is separated by it (no "two foot routes" report); a carried deck (no terrain cut: a trestle, stair or jetty) with the lower route's clearance under it is its own structure.
 - The Flats trail and the pier walk meet at one height (30.5) at [350,880].
 
+### 10. The crossings register (v1.9)
+
+Every computed intersection of the v1.9 build has a row (**324 / 324**). 19 rows are accepted from this bake (`source: "bake v1.9"`, same vocabulary and notes as v1.8); 45 v1.8 bake rows with no plan hit in the v1.9 build (the geometry they described moved: the Prow walk, the dam gallery, the Bight pier, the January legs, the NE corner…) or duplicating a matched row are retired to `routePairNotes` (kind "retired register row (v1.9)"); three authored rows whose routes moved are retired with their reason (DEEP_RUN × walk prow, S2 × walk bightPier, walk bightPier × water wash); nine v1.8 bake rows now met flush become junctions (`v1_8_resolution` kept). Reserved rows are untouched.
+
