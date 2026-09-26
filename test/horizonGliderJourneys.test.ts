@@ -91,10 +91,11 @@ describe('the Throat Run',()=>{
     expect(Math.abs(base.measures.mouthLateral!)).toBeLessThan(1);expect(Math.abs(base.measures.mouthHeading!)).toBeLessThan(25*Math.PI/180);expect(Math.abs(base.measures.mouthBank!)).toBeLessThan(20*Math.PI/180);
     expect(base.heightInHand.mouth).toBeCloseTo(-5.2,1);
   });
-  // FLIGHT §0 estimated ~1 m in hand for Crown → gate 10 → 60 m out → 180° at 25 m → back in. Flown, the track is
-  // 240 + 60 + 79 + ~165 m plus the turn's 1/cos(45°) and the S-turn's bank: 5.2 m short of the aperture floor (101).
-  it.fails('arrives inside the mouth with ≥ 0 m in hand in still air (measured −5.2 m: under the aperture floor)',()=>{
-    expect(base.heightInHand.mouth).toBeGreaterThanOrEqual(0);expect(base.reached).toBe(true);
+  // The Throat is earned (design lead, 26 Sep). FLIGHT §0 estimated ~1 m in hand for Crown → gate 10 → 60 m out → 180° at
+  // 25 m → back in. Flown, the track is 240 + 60 + 79 + ~165 m plus the turn's 1/cos(45°) and the S-turn's bank: the
+  // wing reaches the mouth's plane 5.2 m under the aperture floor (101) — close, not in. Straight from the Crown is a miss.
+  it('reaches the mouth\'s plane from the Crown in still air with ≥ −10 m in hand (measured −5.2 m: a miss under the floor)',()=>{
+    expect(base.heightInHand.mouth).toBeGreaterThanOrEqual(-10);expect(base.heightInHand.mouth).toBeLessThan(0);expect(base.reached).toBe(false);
   });
   const ridge=workRidge(env(0,6,SOUTH_WIND),190),after=flyThroatRun(env(0,6,SOUTH_WIND),{from:ridge.final});
   it('works the ridge to 190 m in the 4 m/s south wind (measured 126 s beating), then enters the Throat and splashes',()=>{
@@ -104,15 +105,16 @@ describe('the Throat Run',()=>{
     expect(after.corridor).toMatchObject({phase:'touchdown',splash:'big',echoes:3});
     expect(Math.abs(after.corridor!.z-420)).toBeLessThanOrEqual(10);
   });
-  // FLIGHT §0: "work the south-face ridge to ≥ 190 m first (≥ 35 m spare)". The ridge sits 230 m south of the launch,
-  // so the flight back north with the tailwind, the turn's drift and the 160 m leg into the 4 m/s wind eat the gain.
-  // (The same run from over the Crown at 190 m in still air has 24.8 m — also short of 35, and above the 18 m aperture.)
-  it.fails('has ≥ 35 m in hand at the mouth after ridge to 190 m (measured +2.6 m in the south wind; 24.8 m from the Crown at 190 in still air)',()=>{
-    expect(after.heightInHand.mouth).toBeGreaterThanOrEqual(35);
+  // FLIGHT §0 as ruled: the ridge earns the Throat. The ridge sits 230 m south of the launch, so the flight back north with
+  // the tailwind, the turn's drift and the 160 m leg into the 4 m/s wind eat most of the gain: +2.6 m, but inside.
+  it('enters the corridor after ridge to 190 m in the south wind: ≥ 0 m in hand, inside the aperture (measured +2.6 m)',()=>{
+    expect(after.heightInHand.mouth).toBeGreaterThanOrEqual(0);expect(after.measures.insideAperture).toBe(1);expect(after.reached).toBe(true);
   });
-  it('turns ridge height into mouth height one for one in still air (from the Crown at 190 m: 24.8 m in hand)',()=>{
+  it('turns ridge height into mouth height one for one in still air (from over the Crown at 190 m: ≥ 15 m in hand, measured 24.8 m)',()=>{
     const crown=envelope.launchPads!.find(p=>p.id==='crown')!,high=flyThroatRun(env(0),{from:{...launchWing(crown.edge,Math.PI),y:190}});
-    expect(high.heightInHand.mouth!-base.heightInHand.mouth!).toBeCloseTo(30,0);expect(high.heightInHand.mouth).toBeCloseTo(24.8,1);
+    expect(high.heightInHand.mouth!-base.heightInHand.mouth!).toBeCloseTo(30,0);expect(high.heightInHand.mouth).toBeGreaterThanOrEqual(15);expect(high.heightInHand.mouth).toBeCloseTo(24.8,1);
+    // 24.8 m over the floor is 6.8 m above the 18 m aperture's top: height to spend on a dive, not an entry as flown here.
+    expect(high.heightInHand.mouth).toBeGreaterThan(18);
   });
 });
 
