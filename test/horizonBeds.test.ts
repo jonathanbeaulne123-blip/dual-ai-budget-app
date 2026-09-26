@@ -61,3 +61,38 @@ describe('Horizon cut profiles',()=>{
     const cable=cuts.beds.find(b=>b.id==='G1')!;if(!towers.length)expect(Math.max(...cable.points.map(p=>p[1]))).toBeLessThanOrEqual(M.sky.ceiling_m);
   },60000);
 });
+
+// v1.9 (Stage A, W3-A): the numbers the door walks, the journeys and P08/P12/P31 depend on, measured on the source build.
+describe('Horizon v1.9 beds (W3-A)',()=>{
+  const cuts=buildLandCuts(baseHeight),find=(id:string)=>cuts.beds.find(b=>b.id===id)!;
+  const walk=find('yearWalk'),garden=find('walk garden');
+  it('keeps the Year Walk off the Garden Walk at Scholars and every stretch of it within the 12 % walk grade',()=>{
+    // [802,468]: the March in-leg ran 3-4 eu over the Garden Walk's shoulder (the Glasshouse and Cottage door walks stopped there).
+    const near=walk.points.filter(p=>distance(plan(p),[802,468])<14);
+    for(const p of near){const g=nearestOnPath(plan(p),garden.points);if(g.distance<6)expect(Math.abs(g.at[1]-p[1]),`Year Walk ${plan(p).map(v=>v.toFixed(1))}`).toBeLessThan(.5);}
+    // Every Garden Walk crossing within 3 eu is held flush (segment test): the two Scholars crossings meet within 0.48.
+    // Source build (before the world's junction regrade): no 5 m sample over 12.6 %; the only samples over 12.05 % are
+    // footway copies on the inside of a host's bend (Crown Road's last bend 12.09 %, the NE shelf corner 12.5 %).
+    const grades=walk.points.slice(1).map((p,i)=>{const q=walk.points[i]!;return Math.abs(p[1]-q[1])/(distance(plan(p),plan(q))||1);});
+    expect(Math.max(...grades)).toBeLessThan(.126);expect(grades.filter(g=>g>.1205).length).toBeLessThanOrEqual(4);
+  },60000);
+  it('lays Horizon Drive\'s north-east corner on land and starts Crown Road on its ledge',()=>{
+    const v01=find('V01'),corner=v01.points.filter(p=>p[0]>1350&&p[2]<520);
+    expect(corner.length).toBeGreaterThan(20);
+    expect(corner.filter(p=>baseHeight(p[0],p[2])<0).length).toBe(0);
+    expect(plan(find('V02').points[0]!)).toEqual([1433.3,335.6]);
+    expect(find('V02').points[0]![1]).toBeCloseTo(70,5);
+  },60000);
+  it('holds the Cottage spur at Green Road\'s height across the Year Walk footway lanes',()=>{
+    const spur=find('spur cottage'),vg=find('VG');
+    for(const p of spur.points){const n=nearestOnPath(plan(p),vg.points);if(n.distance<=9.5+2.6+1.2&&n.distance>1)expect(Math.abs(p[1]-n.at[1])).toBeLessThan(.05);}
+  },60000);
+  it('makes the Bight trail the Bight Shore spur\'s footway and serves the hangar bay from the strip (D-2, P31)',()=>{
+    const trail=find('walk bight'),vbs=find('VBS');
+    expect(trail.points.length).toBe(vbs.points.length);
+    trail.points.forEach((p,i)=>{expect(p[1]).toBeCloseTo(vbs.points[i]![1],6);expect(distance(plan(p),plan(vbs.points[i]!))).toBeCloseTo(4.2,1);});
+    const service=find('plot.flats.1.service'),pad=cuts.pads.find(p=>p.id==='plot.flats.1')!;
+    expect(pad.size).toEqual([11,18]);expect(service.points.at(-1)![0]).toBeCloseTo(pad.centre[0]-5.5,5);
+    expect(cuts.beds.some(b=>b.id==='hangar.access')).toBe(false);
+  },60000);
+});

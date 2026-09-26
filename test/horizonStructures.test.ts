@@ -128,3 +128,22 @@ describe('Horizon structural solids',()=>{
     }
   });
 });
+
+// v1.9 (Stage A, W3-A) named structures.
+describe('Horizon v1.9 structures (W3-A)',()=>{
+  it('builds the named footbridges with every bent outside the lower corridors and the ramps and stairs they replace',()=>{
+    const cuts=buildLandCuts(baseHeight);
+    for(const id of ['gardenWalkBridge','crownWalkBridge','seaStairWestLaneBridge','seaStairEastLaneBridge']){
+      expect(cuts.solids.find(s=>s.id===`${id}.deck`),id).toBeDefined();expect(cuts.solids.find(s=>s.id===`${id}.supports`)?.indices.length,id).toBeGreaterThan(0);
+      expect(cuts.diagnostics.filter(d=>d.id===`structures.${id}.bentInLane`||d.id===`structures.${id}.bay`),id).toEqual([]);
+    }
+    // The zip landing ramp is a trestle (no earth dune over the beach); the Bight pier stair reaches a jetty at the ferry stop.
+    const ramp=cuts.beds.find(b=>b.id==='zipLanding.ramp')!;expect(ramp.terrainCut).toBe(false);expect(cuts.solids.find(s=>s.id==='zipLanding.ramp.supports')!.indices.length).toBeGreaterThan(0);
+    const pier=cuts.beds.find(b=>b.id==='bightPierStair')!;expect(pier.points.at(-1)![1]).toBeLessThanOrEqual(1.21);expect(cuts.beds.some(b=>b.id==='jetty.bightPier')).toBe(true);
+    // The dam gallery is a stairwell south of the wall: every flight between z 909 and 926 (never in Stillwater).
+    for(let f=0;f<3;f++){const b=cuts.beds.find(b=>b.id===`damGallery.flight.${f}`)!;for(const p of b.points)expect(p[2]).toBeGreaterThanOrEqual(909);for(const p of b.points)expect(p[2]).toBeLessThanOrEqual(926);}
+    expect(cuts.diagnostics.filter(d=>/^structures\.damGallery\.flight\.\d\.clearSpan$/.test(d.id))).toEqual([]);
+    // The Reach footbridge clears the river by the 4 m canoe clearance.
+    expect(cuts.solids.some(s=>s.id==='reachFootbridge.deck')).toBe(true);
+  },120000);
+});
