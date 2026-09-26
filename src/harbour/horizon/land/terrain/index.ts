@@ -302,7 +302,7 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
   return (x, z, original) => {
     let height = original, surface: number | null = null, active: BedCut | null = null;
     let distance = Infinity, target = 0, progress = 0, excluded = false;
-    let footprintHeight = Infinity, footprintSurface: number | null = null;
+    let footprintHeight = Infinity, footprintSurface: number | null = null, footprintCore = false;
     let deckHeight = -Infinity, deckSurface: number | null = null;
     const apply = () => {
       if (!active || excluded) return;
@@ -319,7 +319,7 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
       // A neighbouring route's soft bank cannot bury a visible bed. At an at-grade
       // crossing the lowest eligible bed needs clearance; solids own each deck.
       if (distance <= edge && target < footprintHeight) {
-        footprintHeight = target; footprintSurface = surface;
+        footprintHeight = target; footprintSurface = surface; footprintCore = distance <= active.width / 2;
       }
     };
     for (const segment of prepared.bins.get(cellKey(x, z, prepared.cell)) ?? []) {
@@ -333,7 +333,10 @@ export function createBedSampler(beds: BedCut[]): (x: number, z: number, origina
     }
     apply();
     let result = Number.isFinite(footprintHeight) ? footprintHeight : height, paint = footprintSurface ?? surface;
-    if (deckHeight > result + BED_LEVEL_TOLERANCE) { result = deckHeight; paint = deckSurface; }
+    // An upper deck fills over a lower route's shoulder, never over its carriageway: a route is never
+    // buried under another's embankment (VG under the Garden Walk at [969,766]); the upper stretch then
+    // needs its named structure and is reported as an unsupported run until it has one.
+    if (deckHeight > result + BED_LEVEL_TOLERANCE && !footprintCore) { result = deckHeight; paint = deckSurface; }
     // No bed raises the sea floor or a basin floor: offshore decks stand on piers.
     if (result > original && raiseForbidden(x, z)) result = original;
     // No route or deck builds ground above the Crown's summit (it stays the island's highest point).
@@ -382,7 +385,9 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
     // and its conservative raster margin never digs a pit into another upper route's footprint.
     const above = (map: Map<BedCut, number>, c: { plane: number; bed: BedCut }) => { for (const [bed, plane] of map) if (bed !== c.bed && plane > c.plane + BED_LEVEL_TOLERANCE) return true; return false; };
     for (const c of candidates) {
-      if (above(decks, c) || (!c.core && above(near, c))) continue;
+      // Within its own carriageway and shoulder a lower route always keeps its clearance (it is never
+      // buried); only its raster margin yields to an upper route's footprint (no pits beside it).
+      if (!c.core && (above(decks, c) || above(near, c))) continue;
       ceiling = Math.min(ceiling, c.value);
     }
     return ceiling;
