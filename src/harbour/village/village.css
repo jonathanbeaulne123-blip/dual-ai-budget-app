@@ -131,10 +131,10 @@
 /* ── Wave 3a layout fix (browser evidence, docs/evidence/tool-atlas) ──
    The character trigger stood at bottom:173px of a stage that runs past the viewport, so it
    sat under the dock, and its chooser opened under the Record and All tools bubbles, which
-   covered its Bianca and Jonathan buttons. It now stands in the bubbles' band, centred
-   between them and fixed to the viewport, and the chooser opens above the band. No
-   transform: a transformed ancestor would trap the fixed chooser. */
-.village-hud .village-character{position:fixed;left:0;right:0;width:max-content;margin-inline:auto;bottom:calc(var(--dock-height,0px) + 12px + env(safe-area-inset-bottom,0px));z-index:30}
+   covered its Bianca and Jonathan buttons. It now stands between the two circles, level with
+   them and above their word pills (which grow with text size), fixed to the viewport, and the
+   chooser opens above the band. No transform: a transformed ancestor would trap the fixed chooser. */
+.village-hud .village-character{position:fixed;left:0;right:0;width:max-content;margin-inline:auto;bottom:calc(var(--dock-height,0px) + 18px + 1.75rem + env(safe-area-inset-bottom,0px));z-index:30}
 .village-hud .village-character__choices{position:fixed;left:0;right:0;margin-inline:auto;bottom:calc(var(--dock-height,0px) + 1.75rem + 98px + env(safe-area-inset-bottom,0px))}
 /* One line, a pill in every dressing (worlds.css squares every button at 0-5-0). */
 :root[data-theme] .village-hud .village-character button.village-character__trigger{border-radius:999px}

@@ -84,6 +84,8 @@ export async function startHarness(browser: Browser): Promise<Harness> {
 
 export type HomeOptions = {
   theme?: Theme; width?: number; height?: number; timezoneId?: string; reducedMotion?: "reduce" | "no-preference";
+  /** A fixed wall clock (timers still run), so the demo seeds the same fixture every day. */
+  fixedTime?: string;
   /** Per-viewer bubble use counts (`hearth:atlas:used:<member>:<bubble>`), written before the App reads them. */
   usedCounts?: { member: string; count: number };
 };
@@ -117,6 +119,7 @@ export async function openHome(harness: Harness, options: HomeOptions = {}): Pro
   // Nothing leaves the loopback.
   await context.route("**/*", route => new URL(route.request().url()).origin === harness.origin ? route.continue() : route.abort());
   const page = await context.newPage();
+  if (options.fixedTime) await page.clock.setFixedTime(new Date(options.fixedTime));
   page.setDefaultTimeout(60_000);
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));

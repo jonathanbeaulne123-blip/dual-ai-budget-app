@@ -24,6 +24,12 @@
 
 /* ── The stage: full-bleed above the compass. ── */
 .harbour-world { position: relative; isolation: isolate; margin: 0; color: var(--house-ink, #332d24); }
+/* Tool Atlas (Wave 3a): the world is its own stacking context, and its fixed glass (bubbles, dock, dial,
+   panels) lives inside it, so the home page's own content below the island (the due preview, a
+   positioned block later in the DOM) painted over the dock as soon as the page scrolled, and on a
+   landscape phone at rest. One level up keeps the glass over the page; the App's notices (z 13) and the
+   top bar (z 14) still stand above it, so trust chrome never hides. */
+.app[data-harbour-court] .harbour-world { z-index: 1; }
 .harbour-world__stage { position: relative; height: calc(100dvh - var(--harbour-nav, 76px)); min-height: 420px; overflow: hidden; background: #e8dcc4; touch-action: none; outline: none; }
 .harbour-world--taylor .harbour-world__stage { background: #f2e3ea; }
 .harbour-world--newfoundland .harbour-world__stage { background: #dfe9ec; }

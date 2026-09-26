@@ -398,14 +398,18 @@
 }
 /* 3. The dial stands beside the Record bubble, its foot level with the bubble's word, so
       Purchase is the row nearest the thumb and every row sits in the lower part of the
-      screen (A29), and the column is never pushed off the top on desktop or a landscape
-      phone. Below 360 px there is no room beside it, and it opens upward as before. */
-@media (min-width: 360px) {
-  .glass-bubble-anchor--record.is-fixed .fab-dial:not(.is-mirrored) .fab-dial-actions.record-dial {
-    right: calc(100% + 12px);
-    bottom: calc(-1 * var(--glass-pill-space));
-  }
+      screen (A29), and the column is never pushed off the top on desktop, on a landscape
+      phone or on a 568 px-tall one (where, opening upward, Move money and Bill paid were
+      cut off by the top of the screen). On a 320 px phone it passes over the All tools
+      bubble, which the dial's scrim already covers. */
+.glass-bubble-anchor--record.is-fixed .fab-dial:not(.is-mirrored) .fab-dial-actions.record-dial {
+  right: calc(100% + 12px);
+  bottom: calc(-1 * var(--glass-pill-space));
 }
+/* 3b. While the dial is open its anchor (and so its scrim and column) stands above the rest of the island's
+      HUD glass: the first-visit character chooser shares z-index 30 and, later in the DOM, covered the
+      column's upper rows at 720 px. */
+.glass-bubble-anchor--record.is-fixed:has(.fab-dial.is-open) { z-index: 40; }
 /* 4. The ring is the glass's own two-tone ring (§4.1 Focus, A18). worlds.css draws every control's focus in
       the dressing's accent at 0-4-0 (`:root[data-theme] :is(a, button, …, [tabindex]):focus-visible`), which
       beat the rule above and put a sumac ring on the sumac and leaf-green patches of the map. Forced colours

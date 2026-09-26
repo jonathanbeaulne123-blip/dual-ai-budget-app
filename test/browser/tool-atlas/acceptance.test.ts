@@ -152,30 +152,40 @@ describe("Tool Atlas acceptance (brief §8)", () => {
     expect(chrome).toEqual(CHROME);
   }, LONG);
 
-  it("A6 · the nearest bill (of four this week) is named, visible and untruncated in line 2 and on the strip", async () => {
-    await home();
-    const line = await page.evaluate(() => {
-      const el = document.querySelector<HTMLElement>(".glass-dock [data-card-line='2']")!;
-      const text = el.querySelector<HTMLElement>(".glass-card__text") ?? el;
-      const r = el.getBoundingClientRect();
-      const atlas = (window as unknown as { __atlas: { hitBox: (el: Element) => { covered: boolean } } }).__atlas;
-      const stones = [...document.querySelectorAll<HTMLElement>(".glass-strip__stone[data-in-week]")].map(s => s.getAttribute("aria-label") ?? "");
-      return {
-        words: (text.textContent ?? "").replace(/\s+/g, " ").trim(),
-        inside: r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight && r.right <= innerWidth,
-        overflow: text.scrollWidth > text.clientWidth + 1 || text.scrollHeight > text.clientHeight + 1,
-        ellipsis: getComputedStyle(text).textOverflow === "ellipsis" && text.scrollWidth > text.clientWidth,
-        covered: atlas.hitBox(el).covered,
-        stones,
-      };
-    });
-    report.A6 = line;
-    const match = line.words.match(/Leaving next · (.+?) \$([\d,]+\.\d\d)(?: · .*?\+(\d+) this week)?/);
-    expect(match, line.words).toBeTruthy();
-    const [, bill, amount, more] = match!;
-    expect(1 + Number(more ?? 0), "the demo's next seven days hold at least four bills").toBeGreaterThanOrEqual(4);
-    expect(line.inside && !line.overflow && !line.ellipsis && !line.covered, JSON.stringify(line)).toBe(true);
-    expect(line.stones.some(s => s.includes(bill!) && s.includes(amount!)), line.stones.join(" | ")).toBe(true);
+  it("A6 · the nearest of four bills this week is named, visible and untruncated in line 2 and on the strip", async () => {
+    // The fixture: the demo household seeded on a fixed clock. On Friday 25 September 2026 its next seven
+    // days hold four bills (Phone today, Vet · Marmalade, the Winter reserve jar, Rent on 1 October).
+    const fixture = await openHome(harness, { fixedTime: "2026-09-25T16:00:00Z" });
+    try {
+      await installProbe(fixture.page);
+      const line = await fixture.page.evaluate(() => {
+        const el = document.querySelector<HTMLElement>(".glass-dock [data-card-line='2']")!;
+        const text = el.querySelector<HTMLElement>(".glass-card__text") ?? el;
+        const r = el.getBoundingClientRect();
+        const atlas = (window as unknown as { __atlas: { hitBox: (el: Element) => { covered: boolean; by: string | null } } }).__atlas;
+        const stones = [...document.querySelectorAll<HTMLElement>(".glass-strip__stone[data-in-week]")].map(s => s.getAttribute("aria-label") ?? "");
+        const hit = atlas.hitBox(el);
+        return {
+          words: (text.textContent ?? "").replace(/\s+/g, " ").trim(),
+          inside: r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight && r.right <= innerWidth,
+          overflow: text.scrollWidth > text.clientWidth + 1 || text.scrollHeight > text.clientHeight + 1,
+          ellipsis: getComputedStyle(text).textOverflow === "ellipsis" && text.scrollWidth > text.clientWidth,
+          covered: hit.covered,
+          by: hit.by,
+          stones,
+        };
+      });
+      const bills = line.stones.join(" ").match(/ bill, \$/g)?.length ?? 0;
+      report.A6 = { ...line, bills };
+      const match = line.words.match(/Leaving next · (.+?) \$([\d,]+\.\d\d)/);
+      expect(match, line.words).toBeTruthy();
+      const [, bill, amount] = match!;
+      expect(bills, "the fixture's next seven days hold four bills").toBeGreaterThanOrEqual(4);
+      expect(line.inside && !line.overflow && !line.ellipsis && (!line.covered || coveredByNotice(line.by)), JSON.stringify(line)).toBe(true);
+      expect(line.stones.some(s => s.includes(`${bill} bill`) && s.includes(amount!.replace(/,/g, ""))), line.stones.join(" | ")).toBe(true);
+    } finally {
+      await fixture.context.close();
+    }
   }, LONG);
 
   it("A7 · every money verb shows its words, at every usage count and width", async () => {
