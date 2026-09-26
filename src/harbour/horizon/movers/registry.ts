@@ -27,6 +27,8 @@ export interface ModeRegistry{
   accept(offer:ThresholdOffer,body:MoverBody,reach?:number):AcceptResult|null;
   /** The active mode ended itself (a landing, a fade, a reduced-motion cut): back to feet. Never into another mode. */
   finish():ModeExit|null;
+  /** The runtime already has the exit point (it called `exit()` itself): back to feet without calling `exit()` again. */
+  release():void;
   setThresholds(thresholds:readonly Threshold[]):void;
 }
 
@@ -65,6 +67,7 @@ export function createModeRegistry(initial:readonly Threshold[]=[]):ModeRegistry
       return{controller:next,exit:null,threshold:placed};
     },
     finish(){if(!current)return null;const exit=current.exit();current=null;return exit;},
+    release(){current=null;},
     setThresholds(next){thresholds=next;},
   };
 }
