@@ -21,7 +21,8 @@ export interface Bed { id: string; profile: string; surface: string; points: Poi
 export interface Line { id: string; bedIds: string[]; mode: string; points: Point3[]; waterBodyIds?: string[] }
 export interface Structure { id: string; kind: string; footprint: Polygon; bedIds: string[]; geometryId?: string; districtId?: string; role?: StructureSolid['role']; bounds?: { min: Point3; max: Point3 } }
 export interface Crossing { a: string; b: string; at: Point2; resolution: 'over' | 'under' | 'threshold'; structure?: string; id?: string; proof?: CrossingProof }
-export interface Threshold { id: string; at: Point2; modes: readonly `${string}→${string}`[]; action: string; height?: number; padId?: string; markerId?: string; kerbGap?: boolean; sourceId?: string; built?: boolean }
+/** A `carried` threshold has no pad or marker: a vehicle (the plane's door) supplies its place each frame; `at` is [NaN, NaN] in the definition. */
+export interface Threshold { id: string; at: Point2; modes: readonly `${string}→${string}`[]; action: string; height?: number; padId?: string; markerId?: string; kerbGap?: boolean; sourceId?: string; built?: boolean; carried?: string; minAgl?: number }
 export interface Reserve { id: string; placeId: string; outline: Polygon; door: Anchor; rotationDegrees: number }
 export interface FlightVolume { id: string; kind: 'gate' | 'thermal' | 'ridge' | 'sink' | 'landing'; centre: Point3; halfSize: Point3; yaw: number; radius?: number; hours?: readonly number[]; modes?: string[]; aperture?: Point2; waterBodyId?: string }
 export interface FlightEnvelope { ceiling: number; launches: Anchor[]; landings: Anchor[]; gates: Anchor[]; volumes?: FlightVolume[]; launchPads?: { id: string; padId?: string; edge: Point3[]; graded: boolean }[]; glider?: { speed: number; sink: number }; proofs?: SkyProof }
