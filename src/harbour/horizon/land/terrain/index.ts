@@ -144,7 +144,9 @@ export function baseHeight(x: number, z: number): number {
     const d = distance + (SHOULDER_RINGED.has(b.id) ? step * proximity : 0);
     const weight = d < 0 ? smooth(1 + d / blend) * (1 - proximity) : 1 - (1 - smooth(d / blend)) * proximity;
     height = mix(height, bandHeight(b, x, z), weight);
-    if (d > 0) height = mix(height, clamp(height, b.min, b.max), smooth(d / step));
+    // A ringed terrace holds its band fully to its own edge, whatever the neighbour (P01: Stillwater's
+    // west edge against open ground held only 85 % of it at proximity 0.74); the scarp lies outside.
+    if (d > 0) height = mix(height, clamp(height, b.min, b.max), SHOULDER_RINGED.has(b.id) && proximity > 0 ? smooth(d / (step * proximity)) : smooth(d / step));
   }
   height = throatButtress(x, z, height);
   const character = coastCharacter(x, z), shoreWidth = character === 'southBeach' ? 44 * s : character === 'bight' ? 23 * s : 10 * s;
@@ -289,24 +291,34 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
       const depth = WET_EDGE_DEPTH * s + (water.depth - WET_EDGE_DEPTH * s) * smooth(inner / Math.max(1 * s, reach - Math.min(guard, reach / 2))) + Math.min(grade * guard, 1.5 * s);
       // A channel never floats: where the ground falls away under it, its bed and banks
       // are raised to carry it (a perched reach reads as a raised stream, not a floating ribbon).
-      h = water.points.length && water.kind !== 'dry' && !raiseForbidden(x, z) ? level - depth : Math.min(h, level - depth);
+      // A basin (lake, tarn) does the same within one lattice diagonal of its edge: a triangle from its
+      // edge to the bank never dips under the surface where the ground outside the terrace is lower (P06).
+      const raise = water.kind !== 'dry' && (water.points.length ? !raiseForbidden(x, z) : guard > 0 && -distance <= guard);
+      h = raise ? level - depth : Math.min(h, level - depth);
       wetBedCeiling = Math.min(wetBedCeiling, level - depth);
       continue;
     }
     // The dam holds Stillwater on its downstream side: no lake bank is raised there.
-    if (water.id === 'water.stillwater' && damHolds(x, z)) continue;
-    // The guard band IS the bank's foot: exactly at the water level (raised or cut to it).
-    if (distance <= guard) { h = level; wetBedCeiling = Math.min(wetBedCeiling, level); continue; }
+    if (water.id === 'water.stillwater' && damHolds(x, z, distance <= guard)) continue;
+    // The guard band IS the bank's foot: exactly at the water level (raised or cut to it); where a
+    // stream meets the sea at level 0 the foot on land stays at the land floor (P05: ground > 0 inland).
+    const foot = level < LAND_FLOOR * s && signedShoreDistance(x, z) > 0 ? LAND_FLOOR * s : level;
+    if (distance <= guard) { h = foot; wetBedCeiling = Math.min(wetBedCeiling, foot); continue; }
     const d = distance - guard;
-    if (d < bankWidth) h = mix(guard > 0 ? level : Math.min(h, level), Math.max(h, level + water.bank), smooth(d / bankWidth));
+    if (d < bankWidth) h = mix(guard > 0 ? foot : Math.min(h, foot), Math.max(h, level + water.bank), smooth(d / bankWidth));
     else h = Math.max(h, mix(level + water.bank, h, smooth((d - bankWidth) / (outer - bankWidth))));
   }
   return Math.min(h, wetBedCeiling);
 }
-/** South of the dam line the lake is held by the dam's solid, not by an earth bank. */
-function damHolds(x: number, z: number): boolean {
-  const s = getModel().scale, dam = M.structures.dam.xy;
-  return z > dam[1]! * s && Math.abs(x - dam[0]! * s) < 90 * s;
+/** Half the dam's width between the abutments' outer faces (the wall is 44, the abutments 52 wide). */
+export const DAM_HALF_WIDTH = 27;
+/** South of the dam line the lake is held by the dam's solid, not by an earth bank: the forecourt in
+ * front of the face stays open (DAM_WINDOW). West of the abutments the lake's own edge still gets
+ * its bank foot (the raster guard band, at the lake level): the south shore there stood at 40–49
+ * under a lake at 50 (P06, [1061–1101, 889–908]). */
+function damHolds(x: number, z: number, footOnly = false): boolean {
+  const s = getModel().scale, dam = M.structures.dam.xy, dx = x - dam[0]! * s;
+  return z > dam[1]! * s && Math.abs(dx) < 90 * s && !(footOnly && dx <= -DAM_HALF_WIDTH * s);
 }
 const padFrames = new WeakMap<PadCut, { cos: number; sin: number; xReach: number; zReach: number }>();
 function padDistance(p: PadCut, x: number, z: number): number {
