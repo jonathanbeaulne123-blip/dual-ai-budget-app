@@ -20,7 +20,7 @@ const baked = () => {
 function bodyWalk(from: Point3, to: Point3, stepFree = true): { planned: boolean; reached: boolean; blockedAt: number[] | null; length: number } {
   const { world, geo } = baked(), plan = walkPlan(world.pathGraph, from, to, { stepFree });
   if (!plan) return { planned: false, reached: false, blockedAt: null, length: 0 };
-  const p0 = plan.points[0]!; let y = geo.surface(p0[0], p0[2], p0[1] + 1, 3)?.y ?? p0[1], end: Point3 = p0;
+  const p0 = plan.points[0]!; let y = geo.surface(p0[0], p0[2], p0[1] + 1, 3)?.y ?? p0[1], end: Point3 = [p0[0], p0[1], p0[2]];
   for (let i = 1; i < plan.points.length; i++) {
     const a = plan.points[i - 1]!, c = plan.points[i]!, n = Math.max(1, Math.ceil(Math.hypot(c[0] - a[0], c[2] - a[2]) / .2));
     for (let k = 1; k <= n; k++) {
@@ -47,5 +47,21 @@ describe('R2-03 Crown Road through the Shoulder Tunnel north portal', () => {
       let y = geo.surface(x, 405, 80, 10)!.y;
       for (let z = 405.25; z <= 432; z += .25) { const hit = geo.surface(x, z, y, .48); expect(hit, `surface at [${x},${z}]`).not.toBeNull(); expect(hit!.slope, `slope at [${x},${z}]`).toBeLessThanOrEqual(40); y = hit!.y; }
     }
+  });
+});
+
+describe('R2-08 the summit L02 on foot', () => {
+  it('walks the runtime body from the square to L02 without the gondola (Crown Road, the turning circle, walk crown) and from the top station', () => {
+    const square = bodyWalk([1455, 12, 1175], [1310, 158, 470]);
+    expect(square).toMatchObject({ planned: true, reached: true, blockedAt: null }); expect(square.length).toBeLessThan(2900);
+    expect(bodyWalk([1370, 110, 690], [1310, 158, 470])).toMatchObject({ reached: true, blockedAt: null });
+    // The gondola's top station (RESERVED height 112) to L02: the walk no longer meets 52° ground at [1370,569].
+    const station = bodyWalk([1360, 112, 560], [1310, 158, 470]);
+    expect(station).toMatchObject({ reached: true, blockedAt: null }); expect(station.length).toBeCloseTo(412.5, 0);
+  });
+  it('joins the Crown walk to the Year Walk lane it shares at the turning circle, and keeps the launch stair off the walk', () => {
+    const { world } = baked(), lanes = world.pathGraph.edges.filter(e => e.id.startsWith('lane:'));
+    expect(lanes.length).toBeGreaterThan(0);
+    expect((world.pathGraph.blocked ?? []).filter(b => b.bedId === 'walk crown').map(b => b.solid)).toEqual([]);
   });
 });

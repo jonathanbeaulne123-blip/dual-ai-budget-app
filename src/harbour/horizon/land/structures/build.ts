@@ -373,7 +373,13 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
     const walk=cuts.beds.find(b=>b.id==='walk crown');let best:{from:XYZ;to:XYZ;run:number}|undefined;
     for(const p of walk?.points??[]){const dx=p[0]-cxy[0],dz=p[2]-cxy[1],d=Math.hypot(dx,dz)||1,u:XY=[dx/d,dz/d],edge=Math.min(Math.abs(6/u[0]||Infinity),Math.abs(4/u[1]||Infinity)),from:XYZ=[cxy[0]+u[0]*edge,ch,cxy[1]+u[1]*edge],run=d-edge;
       if(run>2&&(ch-p[1])/run<=.7&&(!best||run<best.run))best={from,to:p,run};}
-    if(best)buildStair('crownLaunch.stair',best.from,best.to,3,cuts,base);else conflict(cuts,'structures.crownLaunch.stair','crownLaunch: no point on the Crown walk within a 0.7 stair pitch of the lookout deck',cxy);}
+    // R2-08: the flight meets the walk at ~20°, so its lower treads stood across the walk and closed it both ways. The flight
+    // now runs down BESIDE the walk: its foot stands clear of the walk's edge (walk half-width + stair half-width + 0.2), at
+    // the walk's height, and a level strip (the stair bed's last segment) steps across onto the walk's centreline.
+    if(best){const w=walk!,i=w.points.indexOf(best.to),a=w.points[Math.max(0,i-1)]!,c=w.points[Math.min(w.points.length-1,i+1)]!,tl=Math.hypot(c[0]-a[0],c[2]-a[2])||1;
+      let n:XY=[-(c[2]-a[2])/tl,(c[0]-a[0])/tl];if(n[0]*(best.from[0]-best.to[0])+n[1]*(best.from[2]-best.to[2])<0)n=[-n[0],-n[1]];
+      const side=w.width/2+1.5+.2,foot:XYZ=[best.to[0]+n[0]*side,best.to[1],best.to[2]+n[1]*side];
+      buildStair('crownLaunch.stair',best.from,foot,3,cuts,base);cuts.beds.find(b=>b.id==='crownLaunch.stair')?.points.push(best.to);}else conflict(cuts,'structures.crownLaunch.stair','crownLaunch: no point on the Crown walk within a 0.7 stair pitch of the lookout deck',cxy);}
   landing(cuts,'lampGallery',[540,1195],25,[10,8],base);
   const lampSupports=solid('lampGallery.supports','tower','stone','support',['lampGallery.ramp'],'offshore');
   const lampRamp:XYZ[]=Array.from({length:161},(_,i)=>{const t=i/160,a=Math.PI/2+t*5*Math.PI;return [540+30*Math.cos(a),1+t*24,1220+30*Math.sin(a)];});lampRamp.push([540,25,1195]);

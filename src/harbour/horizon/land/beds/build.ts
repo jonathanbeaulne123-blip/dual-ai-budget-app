@@ -123,6 +123,9 @@ function roadAndWalks(cuts:LandCuts,base:HeightQuery):void {
     if(id==='crownFromGondola')points=[[1360,560],[1405,595],[1450,565],[1430,500],[1350,440],[1310,500]];
     const pins=withSpanPins(name,points,routePins[name]);
     if(id==='garden')for(const p of sampleSpline(points))if(p[0]>=899&&p[0]<=916&&p[1]>=637&&p[1]<=642)pins.push(pin(p,36,'Cottage front bench'));
+    // R2-08: from the turning circle the Crown walk runs on the Year Walk's lane: it holds the turning circle's level
+    // (it dipped to 109.25, 0.8 under the lane's deck, and the lane's edge closed the walk's start both ways).
+    if(id==='crown')for(const p of sampleSpline(points))if(p[0]>=1370&&p[0]<=1399&&p[1]>=680)pins.push(pin(p,110,'turning circle level (Year Walk lane)'));
     cuts.beds.push(bed(name,row.profile,gradeRoute(name,points,base,.12,pins,cuts.diagnostics,5,TYP.walk)));
   }
   // Join the Cottage spur to the garden walk at the same contour. A short

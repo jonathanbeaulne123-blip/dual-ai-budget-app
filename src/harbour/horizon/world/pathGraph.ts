@@ -65,8 +65,35 @@ export function buildPathGraph(cuts: LandCuts, intersections?: readonly Intersec
     }
     return true;
   });
+  // R2-08: two foot beds laid side by side in one lane (the Crown walk inside the Year Walk's lane from the turning circle)
+  // never cross, so no intersection joins them. Where a node of one lies within LANE_JOIN of a node of another at the same
+  // height (≤ STEP) and the step between them is clear of every solid, a flush lip joins them — the body walks across.
+  const foot = (id: string) => { const b = bedById.get(id); return !!b && ['walk', 'trail', 'boardwalk'].includes(b.kind); };
+  const footNodes = new Map<string, { at: Point3; beds: Set<string> }>();
+  for (const e of open) if (foot(e.bedId)) for (const [id, at] of [[e.from, e.points[0]!], [e.to, e.points.at(-1)!]] as const) { const n = footNodes.get(id) ?? { at, beds: new Set<string>() }; n.beds.add(e.bedId); footNodes.set(id, n); }
+  const cell = (x: number, z: number) => `${Math.floor(x / LANE_JOIN)}:${Math.floor(z / LANE_JOIN)}`, grid = new Map<string, string[]>();
+  for (const [id, n] of footNodes) { const k = cell(n.at[0], n.at[2]); grid.set(k, [...(grid.get(k) ?? []), id]); }
+  const lanes = new Set<string>(); let laneIndex = 0;
+  for (const [id, n] of footNodes) {
+    const best = new Map<string, { id: string; d: number }>();
+    for (let dx = -1; dx <= 1; dx++) for (let dz = -1; dz <= 1; dz++) for (const other of grid.get(`${Math.floor(n.at[0] / LANE_JOIN) + dx}:${Math.floor(n.at[2] / LANE_JOIN) + dz}`) ?? []) {
+      if (other === id) continue; const m = footNodes.get(other)!; if ([...m.beds].some(b => n.beds.has(b))) continue;
+      const d = Math.hypot(m.at[0] - n.at[0], m.at[2] - n.at[2]); if (d > LANE_JOIN || Math.abs(m.at[1] - n.at[1]) > STEP) continue;
+      for (const b of m.beds) if (!best.has(b) || best.get(b)!.d > d) best.set(b, { id: other, d });
+    }
+    for (const { id: other } of best.values()) {
+      const key = [id, other].sort().join('|'); if (lanes.has(key)) continue; lanes.add(key);
+      const mb = footNodes.get(other)!.beds, own = (r: Prism) => r.deck && r.bedIds.some(x => n.beds.has(x) || mb.has(x));
+      const a = n.at, b = footNodes.get(other)!.at, len = Math.hypot(b[0] - a[0], b[2] - a[2]), steps = Math.max(1, Math.ceil(len / .25));
+      let clear = true;
+      for (let k = 0; k <= steps && clear; k++) { const c = mixPoint(a, b, k / steps); if (prisms.find(c[0], c[2]).some(r => !own(r) && r.quads.some(quad => inQuad(quad, c[0], c[2])) && planeAt(r.top, c[0], c[2]) > Math.max(a[1], b[1]) + STEP && planeAt(r.bottom, c[0], c[2]) < Math.max(a[1], b[1]) + BODY)) clear = false; }
+      if (clear) open.push({ id: `lane:${laneIndex++}`, bedId: 'junction', from: id, to: other, points: [a, b], length: distance3(a, b), kind: 'walk', surface: 'plaza', halfWidth: 1, maxGrade: 0 });
+    }
+  }
   return { nodes: [...nodes.values()], edges: open, blocked };
 }
+/** R2-08: plan distance (eu) within which two same-height foot-bed nodes share one lane (walk half-width + a body). */
+export const LANE_JOIN = 1.6;
 type Hit = { edge: PathEdge; point: Point3; arc: number; distance: number };
 function project(edges: readonly PathEdge[], p: Point3): Hit | null { let best: Hit | null = null; for (const edge of edges) { const hit = closestOnPolyline(edge.points, p[0], p[2]), d = Math.hypot(hit.distance, hit.point[1] - p[1]); if (!best || d < best.distance) best = { edge, point: hit.point, arc: hit.arc, distance: d }; } return best; }
 class MinQueue { values: { id: string; cost: number }[] = []; push(id: string, cost: number) { const v = { id, cost }; this.values.push(v); let i = this.values.length - 1; while (i > 0) { const p = (i - 1) >> 1; if (this.values[p]!.cost <= cost) break; this.values[i] = this.values[p]!; i = p; } this.values[i] = v; } pop() { if (!this.values.length) return undefined; const first = this.values[0]!, last = this.values.pop()!; if (this.values.length) { let i = 0; while (i * 2 + 1 < this.values.length) { let k = i * 2 + 1; if (k + 1 < this.values.length && this.values[k + 1]!.cost < this.values[k]!.cost) k++; if (last.cost <= this.values[k]!.cost) break; this.values[i] = this.values[k]!; i = k; } this.values[i] = last; } return first; } }
