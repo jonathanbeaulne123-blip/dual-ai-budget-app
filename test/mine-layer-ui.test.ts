@@ -160,6 +160,18 @@ describe("HarbourWorld wiring (static)", () => {
     expect(reading).toMatch(/scope: "household"/);
   });
 
+  it("saves a space's return slot under that space, even when the flip's cleanup runs after the render (review finding 8)", () => {
+    const effect = world.slice(world.indexOf("// Return records:"), world.indexOf("}, [scope, memberId, household.householdId, status]);"));
+    // The identity is captured when the effect is set up, and the cleanup and pagehide save under it…
+    expect(effect).toContain("const slot = identityRef.current;");
+    expect(effect).toContain("const remember = () => rememberWorld(slot);");
+    expect(effect).toContain("remember(); };");
+    // …and rememberWorld writes the slot it was given, not whatever the ref says now.
+    const remember = world.slice(world.indexOf("function rememberWorld("), world.indexOf("// Return records:"));
+    expect(remember).toContain("saveHouseReturn(localStorage, slot,");
+    expect(remember).not.toContain("saveHouseReturn(localStorage, identityRef.current");
+  });
+
   it("offers no Arrange in Mine: arranging writes the Shared arrangement (review finding 4)", () => {
     const app = readFileSync(resolve(__dirname, "../src/App.tsx"), "utf8");
     // The App passes the arrangement writer only in Ours…

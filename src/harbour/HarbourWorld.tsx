@@ -825,18 +825,24 @@ export default function HarbourWorld(props: HarbourWorldProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weeks, evidenceSignature]);
 
-  function rememberWorld() {
+  /**
+   * Saves the camera and body under `slot`. The effect below captures the identity when it is set up and passes it
+   * here, because its cleanup runs after the render that flipped Ours ↔ Mine: `identityRef.current` is already the
+   * new space by then, and the old space's camera must not land in the new space's return slot (review finding 8).
+   */
+  function rememberWorld(slot: typeof identity = identityRef.current) {
       const current = routeRef.current, world = runtime.current; if (!world || current.surface) return;
       const at=world.body()?.at();if(world.placeId()==='court'&&at)outdoorAtRef.current=[at.x,at.y,at.z];
       const camera=world.camera();if(!Array.isArray(camera)||camera.length!==3||!camera.every(Number.isFinite))return;
       const composition = houseComposition(host.current?.getBoundingClientRect().width || window.innerWidth);
-      saveHouseReturn(localStorage, identityRef.current, houseCameraRoute(current), { camera: [...camera] as [number, number, number], cameraComposition: composition, body:world.body()?{world:MOUNTAIN_VERSION,geo:GEOGRAPHY_REVISION,y:world.body()!.at().y,place:world.placeId(),x:world.body()!.at().x,z:world.body()!.at().z,yaw:world.body()!.at().yaw}:undefined }, harbourCameraSlot(composition, world.placeId()));
+      saveHouseReturn(localStorage, slot, houseCameraRoute(current), { camera: [...camera] as [number, number, number], cameraComposition: composition, body:world.body()?{world:MOUNTAIN_VERSION,geo:GEOGRAPHY_REVISION,y:world.body()!.at().y,place:world.placeId(),x:world.body()!.at().x,z:world.body()!.at().z,yaw:world.body()!.at().yaw}:undefined }, harbourCameraSlot(composition, world.placeId()));
   }
 
   // Return records: the App's `hearth:house-return` event, and the camera per composition on pagehide.
   useEffect(() => {
     const restore = (event: Event) => { const detail = (event as CustomEvent).detail; if (detail?.identity === houseIdentity(identityRef.current) && Array.isArray(detail.camera) && detail.camera.length === 3 && detail.camera.every(Number.isFinite)) {runtime.current?.restore(detail.camera);if(validHouseBody(detail.body)&&(detail.body.world===MOUNTAIN_VERSION||detail.body.world==='hearth-mountain-1')&&detail.body.place===runtime.current?.placeId()){const b=detail.body.place==='court'?restoredBodyAt(detail.body):detail.body;runtime.current?.body()?.place(b.x,b.z,b.yaw,b.y);}} };
-    const remember = rememberWorld;
+    const slot = identityRef.current;
+    const remember = () => rememberWorld(slot);
     window.addEventListener("hearth:house-return", restore); window.addEventListener("pagehide", remember);
     return () => { window.removeEventListener("hearth:house-return", restore); window.removeEventListener("pagehide", remember); remember(); };
   }, [scope, memberId, household.householdId, status]);
