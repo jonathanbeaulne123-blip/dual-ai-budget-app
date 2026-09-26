@@ -27,7 +27,9 @@ export interface FlightVolume { id: string; kind: 'gate' | 'thermal' | 'ridge' |
 export interface FlightEnvelope { ceiling: number; launches: Anchor[]; landings: Anchor[]; gates: Anchor[]; volumes?: FlightVolume[]; launchPads?: { id: string; padId?: string; edge: Point3[]; graded: boolean }[]; glider?: { speed: number; sink: number }; proofs?: SkyProof }
 export interface UndercroftDef { doors: Anchor[]; rooms: Polygon[]; waterBodyId?: string; skylight?: Anchor; roomVolumes?: { id: string; outline: Polygon; floor: number; ceiling: number; solidIds: string[] }[] }
 export interface LightAnchor { id: string; at: Point3; kind: string; bestHour?: string }
-export interface SketchbookPose { id: string; eye: Point3; target: Point3; fovDegrees: number; radius: number; bestHour?: string; also?: string; label?: string; aspect?: number; subjectIds?: string[]; floor?: number; underground?: boolean; proof?: ViewProof }
+/** A page's portrait lens (MANIFEST v1.7 viewRule.portrait): horizontal FOV held, never below 45°. */
+export interface PortraitPose { eye: Point3; target: Point3; fovDegrees: number; frames: string[] }
+export interface SketchbookPose { id: string; eye: Point3; target: Point3; fovDegrees: number; radius: number; bestHour?: string; also?: string; label?: string; aspect?: number; subjectIds?: string[]; floor?: number; underground?: boolean; portrait?: PortraitPose; deferred?: string[]; proof?: ViewProof }
 export interface LanternSpot { id: string; at: Point3; districtId: string }
 export interface ProtectedArea { id: string; outline: Polygon; reason: string }
 export interface Station { id: string; month: number; anchor: Anchor; bedIds: string[]; padId?: string; footprint?: Polygon; bedPositions?: { yearIndex: number; at: Point3; size: Point2 }[]; stretch?: { from: string; lengthEu: number; lengthM: number; spacing: { days: number; eu: number }[]; points: Point3[] } }
