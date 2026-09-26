@@ -22,9 +22,14 @@ export async function verifyPackagedWeb(repository, platform) {
   if(entries.length<2) throw Error('The shared React build has no asset files.');
   const digest=createHash('sha256');
   for(const file of entries.sort()) {
-    const key=relative(source,file), original=await readFile(file), packaged=await readFile(resolve(target,key));
+    const key=relative(source,file),normalizedKey=key.split(sep).join('/');
+    // Android's aapt aliases .json.gz to the same asset key as .json. Keep
+    // the compressed Horizon definition (the native loader decodes it) and
+    // verify every other shared-build byte as usual.
+    if(platform==='android'&&normalizedKey==='horizon/world/horizon-geo-1.json') continue;
+    const original=await readFile(file),packaged=await readFile(resolve(target,key));
     if(!original.equals(packaged)) throw Error(`Native web asset differs from the shared build: ${key}`);
-    digest.update(key.split(sep).join('/')).update('\0').update(original).update('\0');
+    digest.update(normalizedKey).update('\0').update(original).update('\0');
   }
   const originals=new Set(entries.map(file=>relative(source,file))), copied=[];
   await walk(target,copied);
