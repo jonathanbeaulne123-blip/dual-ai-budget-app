@@ -21,6 +21,19 @@ test('both platform copies match every shared-build byte and one manifest digest
  const ios=await verifyPackagedWeb(root,'ios'),android=await verifyPackagedWeb(root,'android');
  assert.equal(ios.files,2);assert.equal(ios.sha256,android.sha256);
 }));
+test('Android keeps the gzip Horizon definition without the colliding raw alias',()=>fixture(async root=>{
+ const world='{"id":"horizon"}',compressed='gzip bytes';
+ await mkdir(join(root,'dist/horizon/world'),{recursive:true});
+ await mkdir(join(root,'native/ios/App/App/public/horizon/world'),{recursive:true});
+ await mkdir(join(root,'native/android/app/src/main/assets/public/horizon/world'),{recursive:true});
+ await writeFile(join(root,'dist/horizon/world/horizon-geo-1.json'),world);
+ await writeFile(join(root,'dist/horizon/world/horizon-geo-1.json.gz'),compressed);
+ await writeFile(join(root,'native/ios/App/App/public/horizon/world/horizon-geo-1.json'),world);
+ await writeFile(join(root,'native/ios/App/App/public/horizon/world/horizon-geo-1.json.gz'),compressed);
+ await writeFile(join(root,'native/android/app/src/main/assets/public/horizon/world/horizon-geo-1.json.gz'),compressed);
+ const android=await verifyPackagedWeb(root,'android');
+ assert.equal(android.files,4);
+}));
 test('reject a stale native bundle even when its index still matches',()=>fixture(async root=>{
  await writeFile(join(root,'native/android/app/src/main/assets/public/assets/actual.js'),'old');
  await assert.rejects(verifyPackagedWeb(root,'android'),/differs/);

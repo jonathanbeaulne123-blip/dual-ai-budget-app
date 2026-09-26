@@ -4,6 +4,7 @@
  */
 import type {XYZ} from './ground/types.ts';
 import type {ThresholdOffer} from './threshold.ts';
+import type {Threshold} from '../../world/definition.ts';
 export type {ThresholdOffer} from './threshold.ts';
 
 export type ModeId = 'feet'|'board'|'bicycle'|'gondola'|'cart'|'zip'|'glider'|'parachute'|'plane'|'balloon'|'row'|'canoe'|'dinghy'|'ferry';
@@ -17,13 +18,18 @@ export interface MoverInput {
   crouch:number;     // 0..1 (held Space charge, arrows-down, etc.; 0 if the runtime has nothing)
   accept:boolean;    // E / the Enter bubble (edge)
   look:{dx:number;dy:number}; // pointer / Look pad deltas this frame (radians), consumed by the mover's camera if it wants free look
+  action?:'fold'|'pull'; // a flight HUD action; ground movers ignore it
 }
 export interface MoverPose { lean:number; roll:number; pitch:number; crouch:number; slide:number; speed:number;  // radians / 0..1 / m/s; the figure reads it
   /** Additive (track I, fix round): the travel direction minus the board's nose heading (`body.yaw`), radians about +y, wrapped to ±π
    *  (+ = the travel is toward increasing heading, i.e. to the rider's right; riding fakie reads near ±π; 0 when stopped).
    *  The runtime faces the figure along the travel and turns the deck by −slip under it. Optional: absent, the runtime derives it from `state()` when the controller exposes one. */
   slip?:number }
-export interface MoverHud { pace:string|null; arc:number; glyph:'push'|'park'|'pickup'|'offline'|null; label:string|null }  // one bubble (RIDE §10.4)
+export interface MoverHud {
+  pace:string|null; arc:number; glyph:'push'|'park'|'pickup'|'offline'|null; label:string|null;
+  /** Flight HUD readings share the same screen-space bubble seam. */
+  height?:number; lift?:number; place?:{label:string;distance:number;action:'fold'|'pull'|'gate'};
+}  // one bubble (RIDE §10.4)
 export interface MoverSound { slide:number; roll:number; bite:boolean; boost:boolean }  // 0..1 intensities; the runtime/audio decides how
 export interface MoverFrame {
   body:MoverBody;                                   // where the rider is now (the runtime publishes it as the body)
@@ -38,8 +44,35 @@ export interface ModeController {
   update(dt:number, input:MoverInput, now:number):MoverFrame;
   exit(offer:ThresholdOffer|null):MoverBody;        // where the rider stands on foot afterwards
   reducedMotion(on:boolean):void; calm(on:boolean):void; tier(t:'full'|'lite'):void;
+  /** Optional destination choices when comfort changes while this mode is attached. */
+  reducedMotionCut?():ReducedMotionCut;
   dispose():void;
+  finished?():boolean;
 }
 
 export const MODE_IDS:readonly ModeId[] = ['feet','board','bicycle','gondola','cart','zip','glider','parachute','plane','balloon','row','canoe','dinghy','ferry'];
 export const isModeId = (value:string):value is ModeId => (MODE_IDS as readonly string[]).includes(value);
+
+/** The original flight-controller seam remains available to the glider's pure hook tests. */
+export type Vec3=readonly [number,number,number];
+export interface ModeBodyPose extends MoverBody {pitch?:number;bank?:number}
+export interface ModeCameraPose {eye:Vec3;look:Vec3;fov:number;roll:0}
+export interface ModeExit {at:Vec3;yaw:number;cut?:boolean;label?:string}
+export interface ReducedMotionLanding {id:string;label:string;xy:readonly [number,number];height?:number}
+export interface ReducedMotionCut {landings:ReducedMotionLanding[]}
+export interface ModeHud {height?:number;lift?:number;place?:{label:string;distance:number;action:'fold'|'pull'|'gate'}}
+export interface ModeInput {forward:number;strafe:number;run:boolean;bar:number;bank:number;pull:boolean;look:readonly [number,number];fold?:boolean}
+export const IDLE_INPUT:ModeInput=Object.freeze({forward:0,strafe:0,run:false,bar:0,bank:0,pull:false,look:[0,0] as const});
+export interface FlightModeController {
+  readonly id:ModeId;
+  enter(threshold:Threshold,body:MoverBody):void;
+  update(dt:number,input:ModeInput):void;
+  exit():ModeExit;
+  bodyPose():ModeBodyPose;
+  camera():ModeCameraPose;
+  sound():string|null;
+  reducedMotionCut():ReducedMotionCut;
+  hud():ModeHud;
+  finished?():boolean;
+}
+export const MOVER_SOUNDS={snap:'snap',splashEcho:'splashEcho',bell:'bell'} as const;

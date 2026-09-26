@@ -492,6 +492,22 @@ m["journeys"]["at_active_scale"] = times(m["scale"]["factor"])
 m["journeys"]["note"] = 'Straight-segment lengths between control points at assumed speeds; calibration estimates, not measured journeys. at_active_scale uses the confirmed scale.factor (1.0); the two at_factor tables are comparison scenarios.'
 m["journeys"]["targets_s"]["note"] = 'Original design targets retained after D13 selected 1.0. Pass 1 reports measured pass/fail against these targets; scale approval does not waive them or change speeds.'
 
+# FLIGHT.md (2026-09-26), integrator ask 5: MANIFEST v1.7 is sky-only. Geography stays horizon-geo-1.
+m["version"] = "1.7"
+m["date"] = "2026-09-26"
+sky = m["sky"]
+sky["gliderPolar"] = [[8,1.3],[9,1.05],[11,1.2],[14,1.8],[17,3.0]]
+sky["gliderPolarRule"] = "[airspeed m/s, still-air sink m/s] from bar pushed out full to pulled in full; a smooth piecewise cubic between points; trim [11,1.2] is sky.glider; stall below 7.5 (FLIGHT.md §2.2)"
+sky["parachute"] = {"forward_ms":6,"sink_ms":3,"freefallCap_ms":30,"autoPull_agl_m":45,"minBail_agl_m":60,"canopy_m":[7,3],"note":"reached only by jumping from the plane (carriedThresholds.bailOut); the chute always opens (D37)"}
+sky["corridors"] = {"throat":{"gate":12,"to":[1300,420],"slope_deg":30,"level_m":25,"splashH":42,"coneDeg":25,"maxBankDeg":20,"note":"glider only: enter gate 12's aperture heading within coneDeg of south and banked at most maxBankDeg; follow the chute at slope_deg; the last level_m run over the Deep at splashH; a miss passes beside the mouth, never a wall"}}
+sky["dropZone"] = {"xy":[1040,1065],"rings_m":[5,10,25],"note":"ground paint inside the Green's protected centre at sky.landings.green; bullseye, inner, outer, then 'on the Green'"}
+for key in ("green","reachMeadow","sands"):
+    sky["landings"][key]["modes"] = ["glider","parachute"]
+sky["landingModes"] = {"strip":["plane","glider","parachute"],"water":["plane","glider","parachute"],"deep":["glider"],"rule":"modes per non-field landing; every landing takes the parachute except water.deep (the Deep is reached only through the Throat, by glider)"}
+m["carriedThresholds"] = [{"id":"bailOut","carriedBy":"plane","xy":"carried","modes":["plane→parachute"],"action":"jump","minAgl_m":60,"hold_s":0.5,"note":"the plane's door: its place is the plane's each frame; offered only at >= minAgl_m above the ground under the plane; never inside the Throat"}]
+m["carriedThresholdRule"] = "A carried threshold moves with a vehicle and has no pad, marker or fixed xy. It is listed apart from thresholds so the land pass never grades a pad for it; WorldDefinition.thresholds carries it with carried = carriedBy."
+m["journeys"]["targets_s"]["crown→lamp by glider"] = [70,110]
+m["journeys"]["targets_s"]["decisions"] = {"crown→lamp by glider":"D34 applied pending Jonathan's confirmation: retargeted from [50,90] to [70,110] (~98 s at 11 m/s trim in still air, FLIGHT.md §12)"}
 # RIDE §8.3 / §11.5 (2026-09-26): v1.7 is data only — paces and surface grip for the ground kernel (D42),
 # the park's forgiving landings (D40). No geometry change, no horizon-geo bump. Every v1.6 id and number stays.
 m["version"] = "1.7"

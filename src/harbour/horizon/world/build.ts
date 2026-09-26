@@ -46,6 +46,8 @@ export function buildThresholds(field: TerrainField, cuts: LandCuts, proofs: rea
     else if (Array.isArray(t.xy[0])) (t.xy as number[][]).forEach((xy, i) => add(`${t.id}.${i + 1}`, t.id, xy, t.modes, t.action));
     else add(t.id, t.id, t.xy as number[], t.modes, t.action);
   }
+  // A carried threshold (the plane's door) has no place of its own: no pad, no marker, no lamp. Its vehicle supplies at/height each frame.
+  for (const t of HORIZON_MANIFEST.carriedThresholds) thresholds.push({ id: t.id, sourceId: t.id, at: [NaN, NaN], modes: t.modes as `${string}→${string}`[], action: t.action, carried: t.carriedBy, minAgl: t.minAgl_m * s, kerbGap: false, built: true });
   HORIZON_MANIFEST.crossings.forEach((c, i) => { if (c.resolution === 'threshold' && Array.isArray(c.at)) add(`crossing.${i}`, `crossing.${i}`, c.at, ['board→feet'], c.note ?? 'Dismount at the marked crossing.', `crossing.${i}`); });
   const mode = (id: string) => { const b = cuts.beds.find(b => b.id === id); return b?.kind === 'road' ? 'wheels' : b?.kind === 'skate' ? 'board' : b?.kind === 'rail' ? 'cart' : b?.kind === 'cable' ? id === 'ZIP' ? 'zip' : 'cable' : id === 'FERRY' ? 'ferry' : id.startsWith('water') || id === 'DEEP_RUN' ? 'boat' : 'feet'; };
   for (const p of cuts.pads) if (p.kind === 'threshold' && !thresholds.some(t => t.padId === p.id)) { const proof = proofs.find(row => row.padId === p.id || p.id === `crossing.${row.id}`), kinds = proof ? [...new Set([mode(proof.sourceA ?? proof.a), mode(proof.sourceB ?? proof.b)])] : ['feet'], modes = kinds.filter(k => k !== 'feet').map(k => `${k}→feet`); add(p.id.replace(/^threshold\./, ''), proof?.id ?? p.id, [p.centre[0] / s, p.centre[2] / s], modes.length ? modes : ['feet→feet'], kinds.every(k => k === 'feet') ? 'Pause and give way at the marked junction.' : 'Stop at the marker and deliberately change mode.', p.id); }
@@ -62,7 +64,7 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   const sourceMap: Record<string, string[]> = {};
   for (const solid of geometry) (sourceMap[solid.sourceId] ??= []).push(solid.id);
   for (const host of hosts) host.solidIds = host.solidIds?.flatMap(id => sourceMap[id] ?? []);
-  for (const t of thresholds) { const proof = crossing.proofs.find(p => p.padId === t.padId); if (proof) { t.kerbGap = proof.kerbGap ?? false; t.built = t.built && proof.built; } }
+  for (const t of thresholds) { if (t.carried) continue; const proof = crossing.proofs.find(p => p.padId === t.padId); if (proof) { t.kerbGap = proof.kerbGap ?? false; t.built = t.built && proof.built; } }
   const yearCut = cuts.beds.find(b => b.id === 'yearWalk'), toBed = (b: typeof cuts.beds[number]): Bed => ({ id: b.id, kind: b.kind, profile: b.profile, surface: b.surface, points: b.points, width: b.width, clearHeight: b.clearHeight, structureIds: b.structureIds, surfaceSegments: b.surfaceSegments, districtIds: [...new Set(b.points.map(p => districtAt(p[0], p[2], s)))] });
   const yearWalk: Bed = yearCut ? toBed(yearCut) : { id: 'yearWalk', profile: 'walk', surface: 'gravel', points: [], districtIds: [] };
   const measurements = measureJourneys(graph, cuts, hosts, lines, sky), diagnostics = [...cuts.diagnostics];
@@ -88,7 +90,7 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
     crossings: crossing.crossings, crossingProofs: crossing.proofs, rawIntersections: crossing.rawIntersections, thresholds,
     reserves: cuts.pads.filter(p => p.kind === 'reserve').map(p => ({ id: p.id, placeId: p.placeId ?? p.id, outline: padOutline(p), door: anchor(`${p.id}.door`, p.door ?? p.centre), rotationDegrees: p.rotationDegrees })), sky,
     underground: { doors: Object.entries(m.underground.doors).map(([id, door]) => anchor(id, [door.xy[0]! * s, door.h * s, door.xy[1]! * s])), rooms: roomVolumes.map(room => room.outline), roomVolumes, waterBodyId: cuts.waters.find(w => w.kind === 'deep')?.id, skylight: anchor('deep.skylight', [small.cx * s, m.underground.rooms.deep.skylight.topH * s, m.underground.rooms.deep.skylight.to[1]! * s]) },
-    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' }))], views, lanterns: [],
+    lights: [...hosts.map(h => { const d = h.door as { xy: Point2; height: number }; return { id: `door.${h.id}.lamp`, at: [d.xy[0], d.height + 2.2, d.xy[1]] as Point3, kind: 'door' }; }), ...thresholds.filter(t => !t.carried).map(t => ({ id: `${t.id}.lamp`, at: [t.at[0], (t.height ?? 0) + .8, t.at[1]] as Point3, kind: 'threshold' }))], views, lanterns: [],
     protected: [{ id: 'green', outline: protectedGreenOutline(), reason: 'No building, plot or tall prop inside the protected centre.' }],
     geometry: { solids: geometry, sourceMap }, collision: { beds: cuts.beds, pads: cuts.pads, mouths: cuts.mouths, waters: cuts.waters, walkableSlopeDegrees: 40, lipStepMax: .5 }, pathGraph: graph, diagnostics, journeyMeasurements: measurements,
     journey: {

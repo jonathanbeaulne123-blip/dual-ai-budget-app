@@ -1,0 +1,49 @@
+{
+ "still": {
+  "crownToLamp": {
+   "reached": true,
+   "seconds": 98.1,
+   "arrival": 17.3
+  },
+  "crownToStrip": {
+   "reached": true,
+   "seconds": 79.2,
+   "arrival": 21.3
+  },
+  "prowThermalSands": {
+   "reached": true,
+   "arrival": 19.4,
+   "secondsInThermal": 4.2
+  },
+  "prowMeadow": {
+   "reached": true,
+   "arrival": 24.5
+  }
+ },
+ "south4": {
+  "crownToLamp": {
+   "reached": false,
+   "seconds": 136.7,
+   "arrival": -1.1
+  },
+  "crownToStrip": {
+   "reached": true,
+   "seconds": 94.7,
+   "arrival": 1.4
+  },
+  "prowThermalSands": {
+   "reached": false,
+   "arrival": -6.4,
+   "secondsInThermal": 9.4
+  },
+  "prowMeadow": {
+   "reached": false,
+   "arrival": -5.5
+  }
+ },
+ "crownLaunchHeading": {
+  "facingSouth": 3.141592653589793,
+  "facingNorth": 3.141592653589793,
+  "note": "0 = south, ±π = north (mode.ts yaw)"
+ }
+}

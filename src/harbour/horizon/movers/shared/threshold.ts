@@ -8,6 +8,10 @@ import type {XYZ} from './ground/types.ts';
 import {isModeId, type ModeId, type MoverBody} from './mode.ts';
 
 export interface ThresholdOffer { id:string; thresholdId:string; at:XYZ; from:ModeId; to:ModeId; action:string; label:string; padId?:string }
+/** A moving threshold snapshot supplied by its carrying vehicle (for example the plane door). */
+export type CarriedThreshold = Threshold & {at:readonly [number,number];height:number};
+export type CarriedPosition = {at:readonly [number,number];height:number};
+export type CarriedProvider = () => CarriedPosition|null;
 export const OFFER_REACH = 3.6;   // Mountain v2's platform reach (body/ride.ts)
 export const OFFER_DY = 1.2;      // Mountain v2's |dy| for a platform offer
 
@@ -27,6 +31,34 @@ export function thresholdPairs(t:Pick<Threshold,'modes'>):{from:string;to:string
   }
   return out;
 }
+
+/**
+ * Legacy flight wording for the M6 controller seam. The ride registry uses
+ * `thresholdPairs` plus `offerLabel`; flight evidence still checks the exact
+ * capitalised action for each authored mode sequence.
+ */
+const FLIGHT_WORDS:Record<string,readonly ModeId[]> = {
+  feet:['feet'], board:['board'], wheels:['bicycle'], bicycle:['bicycle'], cable:['gondola'], gondola:['gondola'],
+  cart:['cart'], zip:['zip'], glider:['glider'], parachute:['parachute'], plane:['plane'], balloon:['balloon'],
+  boat:['row','canoe','dinghy'], row:['row'], canoe:['canoe'], dinghy:['dinghy'], ferry:['ferry'],
+};
+const modeIdsForFlightWord = (word:string):readonly ModeId[] => FLIGHT_WORDS[word.trim()] ?? [];
+const capitalise = (text:string) => text.charAt(0).toUpperCase() + text.slice(1);
+export function thresholdTransitions(threshold:Pick<Threshold,'modes'|'action'>):{from:ModeId;to:ModeId;action:string}[] {
+  const parts = threshold.action.split(' / '), byPosition = parts.length === threshold.modes.length;
+  const out:{from:ModeId;to:ModeId;action:string}[] = [];
+  threshold.modes.forEach((sequence,index) => {
+    const steps = sequence.split('→'), label = capitalise((byPosition ? parts[index]! : threshold.action).trim());
+    for (let i = 0; i + 1 < steps.length; i++) {
+      const froms = modeIdsForFlightWord(steps[i]!); const tos = modeIdsForFlightWord(steps[i + 1]!);
+      for (const from of froms) for (const to of tos) {
+        if (from === to || out.some(row => row.from === from && row.to === to)) continue;
+        out.push({from,to,action:tos.length > 1 ? `${label} (${to})` : label});
+      }
+    }
+  });
+  return out;
+}
 const fromMatches = (side:string, mode:ModeId) => side === mode || (FROM_ALIASES[side]?.includes(mode) ?? false);
 const toMode = (side:string):ModeId|null => isModeId(side) ? side : TO_ALIASES[side] ?? null;
 
@@ -39,13 +71,13 @@ export function offerLabel(to:ModeId, action:string):string {
  * `ground(x,z)` supplies the height of a threshold that has none; without it the body's own
  * height is used (i.e. only the horizontal reach decides).
  */
-export function offersAt(world:WorldDefinition, body:MoverBody, mode:ModeId, ground?:(x:number, z:number) => number):ThresholdOffer[] {
+export function offersAt(world:WorldDefinition, body:MoverBody, mode:ModeId, ground?:(x:number, z:number) => number, carried:readonly CarriedThreshold[] = []):ThresholdOffer[] {
   const found:{offer:ThresholdOffer;d:number}[] = [];
-  for (const t of world.thresholds) {
-    const [x, z] = t.at, d = Math.hypot(x - body.x, z - body.z);
-    if (d > OFFER_REACH) continue;
-    const y = t.height ?? (ground ? ground(x, z) : body.y);
-    if (Math.abs(body.y - y) > OFFER_DY) continue;
+  const consider = (t:Threshold, x:number, z:number, yOverride?:number) => {
+    const d = Math.hypot(x - body.x, z - body.z);
+    if (d > OFFER_REACH) return;
+    const y = yOverride ?? t.height ?? (ground ? ground(x, z) : body.y);
+    if (Math.abs(body.y - y) > OFFER_DY) return;
     const seen = new Set<ModeId>();
     for (const pair of thresholdPairs(t)) {
       if (!fromMatches(pair.from, mode)) continue;
@@ -56,7 +88,9 @@ export function offersAt(world:WorldDefinition, body:MoverBody, mode:ModeId, gro
       if (t.padId) offer.padId = t.padId;
       found.push({offer, d});
     }
-  }
+  };
+  for (const t of world.thresholds) if (!t.carried) consider(t, t.at[0], t.at[1]);
+  for (const t of carried) consider(t, t.at[0], t.at[1], t.height);
   return found.sort((a, b) => a.d - b.d || a.offer.id.localeCompare(b.offer.id)).map(f => f.offer);
 }
 
@@ -64,6 +98,7 @@ export function offersAt(world:WorldDefinition, body:MoverBody, mode:ModeId, gro
 function nearestParkThreshold(world:WorldDefinition, body:MoverBody, mode:ModeId):Threshold|null {
   let park:{t:Threshold;d:number}|null = null, any:{t:Threshold;d:number}|null = null;
   for (const t of world.thresholds) {
+    if (t.carried) continue;
     const pairs = thresholdPairs(t), d = Math.hypot(t.at[0] - body.x, t.at[1] - body.z);
     if (pairs.some(p => fromMatches(p.from, mode) && p.to === 'feet') && (!park || d < park.d)) park = {t, d};
     if (pairs.some(p => fromMatches(p.from, mode) || toMode(p.to) === mode) && (!any || d < any.d)) any = {t, d};

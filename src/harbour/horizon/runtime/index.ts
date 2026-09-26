@@ -18,16 +18,25 @@ import {skyGradient} from '../sky/gradient.ts';
 import {horizonFog} from '../sky/fog.ts';
 import type {XYZ} from '../land/interfaces.ts';
 import type {Host,SketchbookPose} from '../world/definition.ts';
+import type {WorldAmbience} from '../../mountain/audio.ts';
 import {createMoverRegistry,type MoverDeps} from '../movers/shared/registry.ts';
-import type {ModeController,ModeId,MoverBody,MoverFrame,MoverHud,MoverInput,MoverSound} from '../movers/shared/mode.ts';
+import type {ModeController,ModeHud,ModeId,MoverBody,MoverFrame,MoverHud,MoverInput,MoverSound,ReducedMotionCut,ReducedMotionLanding} from '../movers/shared/mode.ts';
 import type {ThresholdOffer} from '../movers/shared/threshold.ts';
 import {moverInputFrom,moverFadeMs,moverBlendMs,moverBlendEase,registerHorizonMovers,riderSlip,savedRideBody,offerToShow,sameHud,sameOffer,createRideHold,RIDING_STATUS} from './moverInput.ts';
 import {buildBoardProxy,BOARD_PROXY,type BoardProxy} from '../movers/board/art/proxy.ts';
+import type {VehicleDressing} from '../movers/shared/vehicleArt.ts';
 
 export type HorizonBody={x:number;y:number;z:number;yaw:number};
 export type HorizonMode='walk'|'look'|'journey';
+export type HorizonMoverState={mode:ModeId;attached:boolean;hud:MoverHud|ModeHud|null;fade?:string;cut?:ReducedMotionCut|null};
+export type HorizonMoverArt={object:THREE.Object3D;tick:(dt:number,figure:THREE.Object3D)=>boolean;dispose?:()=>void};
+export type HorizonAccept={mode:ModeId;controller:ModeController|null;cut:ReducedMotionCut|null};
+export type HorizonCutTarget={kind:'landing';landing:ReducedMotionLanding}|{kind:'view';id:string}|{kind:'stay'};
+export const HORIZON_FADE_LABEL_MS=2500;
 export type HorizonRuntime=ReturnType<typeof createRuntime>;
 export type HorizonOptions={tier:'full'|'lite';hideBuildings?:boolean;signal?:AbortSignal;reducedMotion?:boolean;onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onStatus?:(text:string)=>void;partner?:()=>PlaceWalkSource|null;initialBody?:HouseBodyReturn;
+  /** The active Hearth dressing is shared with the Horizon vehicle art. */
+  theme?:VehicleDressing;
   /** Calm view (RIDE §10.6): forwarded to the active mover and the review sun. Live changes go through `api.setCalm`. */
   calm?:boolean;
   /** The nearest acceptable threshold offer (throttled to changes); the Enter bubble reads its label. */
@@ -48,11 +57,14 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   scene.add(figure.group,partner.group);partner.group.visible=false;
   // Movers (RIDE §10.2, §11 ask 2): one registry, one active controller; the Horizon mode stays 'walk' while riding.
   let reducedMotion=options.reducedMotion===true,calm=options.calm===true;
+  const theme=options.theme??'classic';
   const registry=createMoverRegistry({world,geography,manifest:HORIZON_MANIFEST,reducedMotion,calm,tier});
   registerHorizonMovers(registry,options.movers);
   // R2-01: Look / Island / a page pause the ride where it is; Walk resumes it; a reload / arrive parks at a threshold. A mode never ends in place.
   const hold=createRideHold(registry,world,(x,z)=>geography.ground(x,z));
-  let boardProxy:BoardProxy|null=null,jumpHeld=false,acceptRequested=false,lookAcc={dx:0,dy:0},lastOffer:ThresholdOffer|null=null,lastHud:MoverHud|null=null,lastInput:MoverInput|null=null,walkFov:number|null=null,fadeTimer=0;
+  const moverArts=new Set<HorizonMoverArt>();
+  const removeMoverArt=(art:HorizonMoverArt)=>{if(!moverArts.delete(art))return;scene.remove(art.object);art.dispose?.();};
+  let boardProxy:BoardProxy|null=null,jumpHeld=false,acceptRequested=false,lookAcc={dx:0,dy:0},lastOffer:ThresholdOffer|null=null,lastHud:MoverHud|null=null,lastInput:MoverInput|null=null,walkFov:number|null=null,fadeTimer=0,moverActionRequested:'fold'|'pull'|null=null,fadeLabel:{label:string;at:number}|null=null;
   const fadeEl=document.createElement('div');fadeEl.className='horizon-fade';fadeEl.setAttribute('aria-hidden','true');host.appendChild(fadeEl);
   const partnerMaterials:Record<string,THREE.Material>={};partner.group.traverse(object=>{if(object instanceof THREE.Mesh)for(const material of Array.isArray(object.material)?object.material:[object.material])partnerMaterials[material.uuid]=material;});
   const coarse=new Map(world.districts.map(d=>{const cards=buildDistrictCards(world,journey,cuts,d,tier,true);scene.add(cards.group);return[d.id,cards] as const;}));
@@ -65,7 +77,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   // Pass 1 uses light anchors without fixtures or decorative geometry. Reuse a
   // bounded pool so a large threshold register never creates hundreds of lights.
   const localLights=Array.from({length:tier==='full'?6:4},()=>{const light=new THREE.PointLight('#ffe1ad',0,18,2);scene.add(light);return light;});
-  let night=false,lastLocalLights=-Infinity,lastSolar={elevation:30,azimuth:180};
+  let night=false,lastLocalLights=-Infinity,lastSolar={elevation:30,azimuth:180},ambience:WorldAmbience|null=null;
   const shadowRequests:{at:number;reason:string}[]=[];
   function requestShadow(reason:string){renderer.shadowMap.needsUpdate=true;shadowRequests.push({at:performance.now(),reason});if(shadowRequests.length>120)shadowRequests.shift();}
   function updateFog(){const fog=horizonFog({tier,eyeAboveGround:Math.max(0,camera.position.y-geography.ground(camera.position.x,camera.position.z)),elevation:lastSolar.elevation,sunAzimuth:lastSolar.azimuth,heading:yaw*180/Math.PI});scene.fog=mode==='journey'?null:new THREE.Fog(fog.color,fog.near,fog.far);}
@@ -77,6 +89,7 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   let interactiveAt:number|null=null;
   let doorCooldown=0,lastMovementBlocker:unknown=null,simulating=false;
   let frame=0,disposed=false,paused=false,mode:HorizonMode='look',last=0,lastSun=-Infinity,shotId='A',distance=12,pitch=.2,yaw=0,drag:{x:number;y:number;id:number;travel:number}|null=null;
+  let comfortCut:ReducedMotionCut|null=null,comfortCutBody:MoverBody|null=null,ambienceSpeed=0;
   // `live`: the walk ↔ ride camera blend (RIDE §10.2). Walking/riding keeps running and the goal (toEye/toTarget) follows the camera ride()/step() set that frame; fov blends to toFov.
   let transition:{eye:THREE.Vector3;target:THREE.Vector3;toEye:THREE.Vector3;toTarget:THREE.Vector3;at:number;duration:number;live?:boolean;fov?:number;toFov?:number}|null=null;
   let controls={forward:0,strafe:0,run:false},path:XYZ[]=[],velocityY=0,jumpRequested=false,currentTime:Date|null=null;
@@ -147,13 +160,18 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     if(at){Object.assign(body,{x:at.x,y:at.y,z:at.z,yaw:at.yaw});yaw=body.yaw;}
     velocityY=0;path=[];figure.group.rotation.set(0,body.yaw,0);figure.group.position.set(body.x,body.y,body.z);
     if(walkFov!==null){camera.fov=walkFov;camera.updateProjectionMatrix();walkFov=null;}
-    lastHud=null;options.onMoverHud?.(null);options.onStatus?.(status);updateCamera();
+    comfortCut=null;comfortCutBody=null;ambienceSpeed=0;lastHud=null;options.onMoverHud?.(null);options.onStatus?.(status);updateCamera();
+  }
+  function openComfortCut(at:MoverBody={...body}){
+    const active=registry.active(),cut=active?.reducedMotionCut?.();
+    if(!active||!cut)return false;
+    comfortCut=cut;comfortCutBody={...at};options.onStatus?.('Choose where to continue.');return true;
   }
   function acceptOffer(offer:ThresholdOffer){
-    const riding=registry.active()!==null,name=registry.mode();
+    const riding=registry.active()!==null,name=registry.mode(),acceptedBody={...body};
     if(!registry.accept(offer,{...body},performance.now()))return false;
     if(offer.to==='feet')onFoot(registry.lastExit(),`Parked the ${name} at ${offer.thresholdId}.`);
-    else if(!riding)startRide();
+    else {if(!riding)startRide();if(reducedMotion||calm)openComfortCut(acceptedBody);}
     return true;
   }
   /** Pick-up: save the walk FOV, blend the camera to the mover's (0.8 s; a cut under reduced motion / calm), show the deck. */
@@ -177,17 +195,26 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     const name=registry.mode(),parked=hold.park({...body},performance.now());
     onFoot(parked?.body??null,parked?`Parked the ${name} at ${parked.offer.thresholdId}.`:`The ${name} is put away.`);
   }
-  function currentInput(accept:boolean):MoverInput{return moverInputFrom({keys,controls,jumpHeld,jumpEdge:jumpRequested,accept,look:lookAcc});}
+  function currentInput(accept:boolean):MoverInput{
+    const action=moverActionRequested;moverActionRequested=null;
+    return {...moverInputFrom({keys,controls,jumpHeld,jumpEdge:jumpRequested,accept,look:lookAcc}),...(action?{action}:{})};
+  }
   function ride(dt:number,now:number,accept:boolean){
     const active=registry.active()!;const input=currentInput(accept);jumpRequested=false;lookAcc={dx:0,dy:0};lastInput=input;
     const f=active.update(dt,input,now);
     Object.assign(body,{x:f.body.x,y:f.body.y,z:f.body.z,yaw:f.body.yaw});yaw=f.body.yaw;
-    if(f.fade){fadeCut(f.fade.label);if(transition?.live)transition=null;}   // the mover snapped its camera with the body: no blend across a fade
+    ambienceSpeed=f.pose.speed;
+    if(f.fade){fadeLabel={label:f.fade.label,at:performance.now()};fadeCut(f.fade.label);if(transition?.live)transition=null;}   // the mover snapped its camera with the body: no blend across a fade
     if(f.camera){camera.position.set(...f.camera.eye);target.set(...f.camera.target);camera.lookAt(target);if(transition?.live)transition.toFov=f.camera.fov;else if(Math.abs(camera.fov-f.camera.fov)>1e-3){camera.fov=f.camera.fov;camera.updateProjectionMatrix();}}
     else updateCamera();
     poseRider(f.pose,active,now);
     if(!sameHud(lastHud,f.hud)){lastHud={...f.hud};options.onMoverHud?.(lastHud);}
     options.onMoverSound?.(f.sound);
+    if(ambience&&!calm){if(f.sound.bite)ambience.snap();if(f.sound.boost)ambience.splashEcho();ambience.vario(f.hud.lift??0);}
+    if(active.finished?.()){
+      const out=registry.finish();
+      if(out)onFoot(out,fadeLabel?.label??`Landed from the ${active.id}.`);
+    }
   }
   /** Offers and the E / Enter edge, once per frame. Returns whether the edge is still unspent (for the mover's `accept`). */
   function offersAndAccept():boolean{
@@ -239,7 +266,9 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
   }
   function tick(now:number){if(disposed)return;const dt=Math.min(.05,Math.max(0,(now-(last||now))/1000));if(last)frameTimes.push(now-last);if(frameTimes.length>3600)frameTimes.shift();last=now;
     let stepped=false;
-    if(!paused){const accept=offersAndAccept();if(mode==='walk'&&(!transition||transition.live)){stepped=true;if(registry.active()){if(hold.steps(mode))ride(dt,now,accept);}else step(dt,now);}if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
+    if(!paused){const accept=comfortCut?false:offersAndAccept();if(mode==='walk'&&(!transition||transition.live)){stepped=true;if(registry.active()){if(!comfortCut&&hold.steps(mode))ride(dt,now,accept);}else if(!comfortCut)step(dt,now);}if(mode!=='journey')stream.update({x:body.x,z:body.z,now,mode:mode==='look'?'look':'walk',radius:mode==='look'?world.views.find(v=>v.id===shotId)?.radius:undefined,underground:body.y+HORIZON_BODY_HEIGHT<geography.ground(body.x,body.z)-.5});}
+    if(ambience){if(paused)ambience.pause();else ambience.update(body.x,body.y,body.z,ambienceSpeed,false,false,calm,registry.mode()==='glider'||registry.mode()==='parachute');}
+    for(const art of [...moverArts])if(!art.tick(dt,figure.group))removeMoverArt(art);
     ring.updateResidency(new Set(stream.live.keys()),mode==='journey');
     for(const resource of stream.live.values()){resource.cards.group.visible=mode!=='journey';fade(resource.cards.materials,Math.min(1,Math.max(0,(now-resource.at)/(reducedMotion?300:500))));}
     for(const [id,cards]of coarse){const resource=stream.live.get(id),amount=mode==='journey'||!resource?1:Math.max(0,1-(now-resource.at)/(reducedMotion?300:500));cards.group.visible=amount>0;fade(cards.materials,amount);}
@@ -256,6 +285,26 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     renderer.render(scene,camera);if(interactiveAt===null){interactiveAt=performance.now();options.onReady?.();}if(drawSamples.length===0||now-drawSamples.at(-1)!.at>500){drawSamples.push({at:now,calls:renderer.info.render.calls,triangles:renderer.info.render.triangles,resident:stream.live.size});if(drawSamples.length>600)drawSamples.shift();}schedule();
   }
   function schedule(){if(!disposed&&lease.active)frame=lease.requestFrame(tick);}
+  const offers=()=>mode==='walk'&&!paused?registry.offers(body):[];
+  function acceptPublic(offer?:ThresholdOffer):HorizonAccept|null|void{
+    if(!offer){acceptRequested=true;return;}
+    if(!registry.canAccept(offer)||!acceptOffer(offer))return null;
+    return{mode:registry.mode(),controller:registry.active(),cut:comfortCut};
+  }
+  function cutTo(to:HorizonCutTarget){
+    if(to.kind==='view'){
+      const holdAt=comfortCutBody,out=registry.finish();
+      if(out||holdAt)onFoot(holdAt??out,'Flight paused.');
+      return shot(to.id);
+    }
+    if(to.kind==='landing'){
+      const at={x:to.landing.xy[0],y:to.landing.height??geography.ground(to.landing.xy[0],to.landing.xy[1]),z:to.landing.xy[1],yaw:body.yaw};
+      registry.finish();onFoot(at,`→ ${to.landing.label}`);return true;
+    }
+    const holdAt=comfortCutBody,out=registry.finish();
+    if(out||holdAt)onFoot(holdAt??out,'Stayed at the accepted threshold.');
+    return true;
+  }
   const interactive=(event:KeyboardEvent)=>event.composedPath().some(t=>t instanceof Element&&Boolean(t.closest('input,textarea,select,button,a,[contenteditable="true"],[role="dialog"],[role="textbox"]')));
   function keyDown(e:KeyboardEvent){if(paused||interactive(e)||!host.contains(document.activeElement))return;const key=e.key.toLowerCase();if(['w','a','s','d','arrowup','arrowdown','arrowleft','arrowright','shift',' '].includes(key)){e.preventDefault();keys.add(key);if(key===' '&&!e.repeat||key===' '&&!registry.active())jumpRequested=true;}if(key==='e'){e.preventDefault();if(!e.repeat)acceptRequested=true;}if(key==='escape')path=[];}
   function keyUp(e:KeyboardEvent){keys.delete(e.key.toLowerCase());}
@@ -267,28 +316,34 @@ function createRuntime(host:HTMLElement,assets:HorizonAssets,options:HorizonOpti
     arrive(hostId:string){const h=world.hosts.find(h=>h.id===hostId);if(!h||!h.returnAt)return false;restore({world:HORIZON_PRESENCE_WORLD,geo:HORIZON_GEOGRAPHY,place:'court',x:h.returnAt[0],y:h.returnAt[1],z:h.returnAt[2],yaw:(h.facing??0)+Math.PI});return true;},
     simulateWalk(seconds:number){if(!HARBOUR_DEV)throw new Error('Simulation is a review-only control.');const count=Math.ceil(Math.max(0,Math.min(seconds,3600))/.05);simulating=true;try{for(let i=0;i<count&&path.length;i++)step(.05,performance.now()+i*50);}finally{simulating=false;updateCamera();}return{body:{...body},remaining:path.length,blocker:lastMovementBlocker};},
     body:()=>({...body}),mode:()=>mode,shotId:()=>shotId,
+    settings:()=>({tier,reducedMotion,calm,theme}),reviewDate:()=>currentTime??solarReviewDate(new Date(),location.search,{dev:HARBOUR_DEV,reducedMotion,calm}),setAmbience(audio:WorldAmbience|null){ambience=audio;},
+    offers,
+    moverState():HorizonMoverState{const fade=fadeLabel&&performance.now()-fadeLabel.at<HORIZON_FADE_LABEL_MS?fadeLabel.label:undefined;return{mode:registry.mode(),attached:registry.active()!==null,hud:lastHud,...(fade?{fade}:{}),cut:comfortCut};},
+    moverAction(action:'fold'|'pull'|'gate'){if(action==='fold'||action==='pull')moverActionRequested=action;},
+    moverArt(object:THREE.Object3D,tick:(dt:number,figure:THREE.Object3D)=>boolean,dispose?:()=>void){const art:HorizonMoverArt={object,tick,dispose};moverArts.add(art);scene.add(object);return()=>removeMoverArt(art);},
     // ---- movers (track I) ----
     registry,
     /** The input the active mover would read this frame (after a riding frame: the one it did read). */
     moverInput():MoverInput{return lastInput&&registry.active()?{...lastInput,look:{...lastInput.look}}:currentInput(acceptRequested);},
     /** Review only (HARBOUR_DEV, R2-14): make `controller` the active mode as if `offer` had been accepted here. Refused while riding (park first). */
-    attachMover(controller:ModeController,offer:ThresholdOffer){if(!HARBOUR_DEV)throw new Error('attachMover is a review-only control.');if(!registry.attach(controller,offer,{...body},performance.now()))return false;mode='walk';path=[];startRide();return true;},
+    attachMover(controller:ModeController,offer:ThresholdOffer){if(!HARBOUR_DEV)throw new Error('attachMover is a review-only control.');const at={...body};if(!registry.attach(controller,offer,at,performance.now()))return false;mode='walk';path=[];startRide();if(reducedMotion||calm)openComfortCut(at);return true;},
     /** Review only (HARBOUR_DEV): park through `offer` (to 'feet'), else at the saved-body rule's threshold. Never in place. */
     detachMover(offer?:ThresholdOffer){if(!HARBOUR_DEV)throw new Error('detachMover is a review-only control.');if(!registry.active())return false;if(offer)return acceptOffer(offer);parkRide();return true;},
     /** Whether the active mover is paused (Look / Island / a page while riding). */
     ridePaused:()=>hold.paused(),
     /** E / the Enter bubble: an edge the next frame spends on the nearest offer, else a nearby door. */
-    accept(){acceptRequested=true;},
+    accept:acceptPublic,
+    cutTo,
     /** The Jump bubble held (riding: the board charges its pop). */
     jumpHold(on:boolean){jumpHeld=on;if(on&&!registry.active())jumpRequested=true;},
     offer:()=>lastOffer,
-    setReducedMotion(on:boolean){reducedMotion=on;registry.setReducedMotion(on);lastSun=-Infinity;},
-    setCalm(on:boolean){calm=on;registry.setCalm(on);lastSun=-Infinity;},
+    setReducedMotion(on:boolean){reducedMotion=on;registry.setReducedMotion(on);if(on&&!comfortCut)openComfortCut();lastSun=-Infinity;},
+    setCalm(on:boolean){calm=on;registry.setCalm(on);if(on&&!comfortCut)openComfortCut();lastSun=-Infinity;},
     input(next:Partial<typeof controls>){controls={...controls,...next};},jump(){jumpRequested=true;},look(dx:number,dy:number){lookAcc.dx+=dx;lookAcc.dy+=dy;yaw+=dx;pitch=Math.max(-1.2,Math.min(.8,pitch+dy));},
-    pause(value:boolean){paused=value;if(value)clear();},setDate(date:Date){currentTime=date;lastSun=-Infinity;},
+    pause(value:boolean){paused=value;if(value){clear();ambience?.pause();}},setDate(date:Date){currentTime=date;lastSun=-Infinity;},
     walkTo(p:XYZ){lastMovementBlocker=null;const plan=walkPlan(world.pathGraph!,[body.x,body.y,body.z],p,{stepFree:true});path=plan?[...plan.points]:[];return plan;},
     stats(){const gl=renderer.getContext(),debug=gl.getExtension('WEBGL_debug_renderer_info');return{renderer:debug?gl.getParameter(debug.UNMASKED_RENDERER_WEBGL):gl.getParameter(gl.RENDERER),revision:world.geographyRevision,terrainBytes:assets.bytes,collisionIndex:geography.indexStats,shadowRequests:[...shadowRequests],firstInteractiveMs:interactiveAt===null?null:interactiveAt-startedAt,assetLoadMs:assetLoadedAt-startedAt,mode,shot:shotId,body:{...body},frames:[...frameTimes],drawSamples:[...drawSamples],stream:[...stream.history],camera:{eye:camera.position.toArray(),target:target.toArray(),fov:camera.fov},diagnostics:world.diagnostics};},
-    dispose(){disposed=true;window.clearTimeout(fadeTimer);registry.dispose();unmountBoardProxy();fadeEl.remove();lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);host.removeEventListener('blur',clear);stream.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyTexture.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
+    dispose(){disposed=true;window.clearTimeout(fadeTimer);registry.dispose();for(const art of [...moverArts])removeMoverArt(art);unmountBoardProxy();fadeEl.remove();lease.cancelFrame(frame);observer.disconnect();for(const fn of unlisten)fn();window.removeEventListener('keydown',keyDown);window.removeEventListener('keyup',keyUp);window.removeEventListener('blur',clear);host.removeEventListener('blur',clear);stream.dispose();for(const c of coarse.values())c.dispose();water.dispose();ring.dispose();skyTexture.dispose();figure.dispose();partner.dispose();sun.shadow.map?.dispose();lease.release();}
   };
   return api;
 }

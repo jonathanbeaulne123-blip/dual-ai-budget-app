@@ -1,6 +1,6 @@
 # The Horizon — the deck
 
-> Current canonical manifest: v1.6. Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data. PIN-0 remains pending until its accepted merge SHA is recorded.
+> Current canonical manifest: v1.7 — sky-only over v1.6 (FLIGHT.md's glider polar, parachute, Throat corridor, Drop Zone, landing modes and the carried `bailOut` threshold; D34's glider retarget applied pending Jonathan); geography stays `horizon-geo-1`. v1.6: Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data. PIN-0 is recorded as the accepted #546 merge in `docs/DECISIONS.md`.
 
 Version 1.6 · 25 September 2026 · Owner: Jonathan (product) · Author: Claude (design lead, review)
 
@@ -135,6 +135,8 @@ Delivered to `~/Downloads/hearth-horizon-<pass>/` (for example `hearth-horizon-p
 ## Time and the plan (added 25 Sep, later)
 `TIME.md` decides the flow of time (a walk of day-stones on the Year Walk; one day ledger; the month turns at the Campfire) and the Plan Studio (the kitchen table; "One Pull Raises It"; one card with four views; Direction C's drawer; one five-beat ritual). It adds pass `02d-kitchen-table.md`, amendments to 01/02b/02c, CONTRACT rules 19–20, `journey.stretch` in the manifest, and decisions D27–D33.
 
+## Flight (added 26 Sep)
+`FLIGHT.md` decides the glider and the parachute (track M6): a hang glider flown by the bar on a five-point polar (8–17 m/s, trim 11 / 1.2), thermals by the real clock, ridge lift worked on the Crown's south face, the landing-outcome table (walk-off, tumble, or a labelled fade — never a crash), the Throat as a corridor dive to a splash and three echoes, the parachute from the plane's carried `bailOut` threshold (freefall, auto-pull at 45 m, the Drop Zone as a wind problem, the plane flies itself home), one horizon-locked flight cam, two glass bubbles, reduced motion as a sheet of landings and pages. It asks for MANIFEST v1.7 sky-only fields and decisions D34–D38.
 ## Riding (added 26 Sep)
 `RIDE.md` decides how wheels move: one ground kernel in `movers/shared/ground/` (state, fixed step, three-point contact, gravity everywhere, pace as rolling resistance and grip, drag-set top speed), the tyre step that makes carve, slide and twist one rule, S / A / D as the powerslide, the boost as the pump out of a clean slide released by W, the bed-bound edge (run-outs and pads at threshold pace; off the bed the wheels stall and a fade returns you), profiles for the board, the bicycle and the ice skates, the ride log and five reproducible situations. It refines pass 2's M1 and M2 and the approved D7, retires Skate v2's ground model by a keep / merge / replace / remove table, and adds decisions D39–D46 (D34–D38 belong to `FLIGHT.md`, whose patch is not yet on `main`).
 

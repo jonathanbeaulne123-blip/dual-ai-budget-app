@@ -1,82 +1,83 @@
 import {HARBOUR_DEV} from '../flag.ts';
 import {useEffect,useRef,useState,type ReactNode} from 'react';
-import type {HorizonRuntime,HorizonOptions,HorizonMode} from './runtime/index.ts';
-import type {MoverHud} from './movers/shared/mode.ts';
+import type {HorizonRuntime,HorizonOptions,HorizonMode,HorizonMoverState} from './runtime/index.ts';
 import type {ThresholdOffer} from './movers/shared/threshold.ts';
-import {offerBubbleText,paceWord,RIDING_STATUS,type PaceWord} from './runtime/moverInput.ts';
+import type {ReducedMotionCut,ReducedMotionLanding} from './movers/shared/mode.ts';
 import type {Host} from './world/definition.ts';
 import type {HouseBodyReturn} from '../../house/navigation.ts';
 import type {PlaceWalkSource} from '../scene/place.ts';
 import './horizon.css';
-export type HorizonStageProps={onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onRuntime?:(runtime:HorizonRuntime|null)=>void;onQuickSheet?:()=>void;onJourney?:()=>void;initialBody?:HouseBodyReturn;partner?:PlaceWalkSource|null;paused?:boolean;children?:ReactNode;review?:boolean;calm?:boolean};
-const reducedNow=()=>matchMedia('(prefers-reduced-motion: reduce)').matches||document.documentElement.dataset.motion==='reduced';
-/** Small descriptive icons, one per pace word (24 × 24, currentColor). */
-function PaceIcon({word}:{word:PaceWord}){
-  const common={fill:'none',stroke:'currentColor',strokeWidth:2,strokeLinecap:'round' as const,strokeLinejoin:'round' as const};
-  return <svg className="horizon-bubble__icon" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
-    {word==='fast'&&<path {...common} d="M5 7l5 5-5 5M12 7l5 5-5 5"/>}
-    {word==='flow'&&<path {...common} d="M3 14c3-4 6-4 9 0s6 4 9 0"/>}
-    {word==='slow'&&<g fill="currentColor"><circle cx="6" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="18" cy="12" r="2"/></g>}
-    {word==='threshold'&&<path {...common} d="M4 18h16M7 18V9M17 18V9M7 9h10"/>}
-    {word==='offline'&&<path {...common} d="M4 18c2-3 3-6 4-9M10 18c1-3 2-6 2-10M16 18c1-3 2-5 4-8"/>}
-  </svg>;
-}
-const ARC_R=26,ARC_C=2*Math.PI*ARC_R;
-/** One glass bubble, four jobs, never two at once: pace word, slide charge arc, push glyph, offer. */
-/** What the pace bubble's live region says: the pace word only (R2-15), so it speaks when the word changes, not every push window or surface. */
-export const PACE_SPOKEN:Record<PaceWord,string>={fast:'Fast',flow:'Flowing',slow:'Slow',threshold:'At a threshold',offline:'Off the line'};
-function PaceBubble({hud,touch}:{hud:MoverHud;touch:boolean}){
-  const word=paceWord(hud),arc=Math.max(0,Math.min(1,hud.arc||0));
-  const offer=(hud.glyph==='park'||hud.glyph==='pickup')&&hud.label;
-  const glyph=hud.glyph==='push'?(touch?'↑':'W'):offer?hud.label:null;
-  return <div className="horizon-bubble" role="status" data-pace={word} data-glyph={hud.glyph??'none'}>
-    <span className="horizon-sr">{PACE_SPOKEN[word]}</span>
-    <svg className="horizon-bubble__arc" viewBox="0 0 60 60" aria-hidden="true" focusable="false">
-      <circle className="horizon-bubble__track" cx="30" cy="30" r={ARC_R}/>
-      <circle className="horizon-bubble__fill" cx="30" cy="30" r={ARC_R} strokeDasharray={`${ARC_C*arc} ${ARC_C}`} transform="rotate(-90 30 30)"/>
-    </svg>
-    <PaceIcon word={word}/>
-    <span className="horizon-bubble__text" aria-hidden="true">{glyph??hud.pace??hud.label??word}</span>
-  </div>;
-}
-export const RIDING_LABEL='Horizon. Riding. W pushes, S slides, A D steer, Space pops, E parks.';
-export const RIDE_PAUSED_LABEL='Horizon. The ride waits where you left it. Choose Walk to ride on.';
-export const WALK_STATUS='Drag to look. Walk with W A S D, or use the pads. Space jumps; E opens a nearby door.';
+import type {ThemeId} from '../../theme/scenes.ts';
+import {HORIZON_MANIFEST} from './world/manifest.ts';
+export type HorizonStageProps={onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onRuntime?:(runtime:HorizonRuntime|null)=>void;onQuickSheet?:()=>void;onJourney?:()=>void;initialBody?:HouseBodyReturn;partner?:PlaceWalkSource|null;paused?:boolean;children?:ReactNode;review?:boolean;theme?:ThemeId;
+  /** The world's sound (a deliberate gesture enables it; `comfort.sound` owns the setting). */
+  sound?:{on:boolean;toggle:()=>void}};
+/** Reduced motion is live: the system setting or Hearth's own comfort choice (`data-motion`, written by `theme/comfort.ts`). */
+const readReducedMotion=()=>matchMedia('(prefers-reduced-motion: reduce)').matches||document.documentElement.dataset.motion==='reduced';
+/** Calm view is the comfort module's Quiet choice, applied as `data-quiet` by `applyComfort`. */
+const readCalm=()=>document.documentElement.dataset.quiet==='true';
+/** A vehicle-to-vehicle hand-off (the plane's Jump) is a 0.5 s hold, so a stray tap does nothing (FLIGHT.md §3.1). */
+const HOLD_MS=(HORIZON_MANIFEST.carriedThresholds.find(threshold=>threshold.id==='bailOut')?.hold_s??.5)*1000;
+const offerKey=(o:ThresholdOffer)=>`${o.thresholdId}:${o.from}:${o.to}`;
+export const WALK_STATUS='Drag to look. Walk with W A S D, Space jumps; E opens a nearby door.';
 export const RIDE_PAUSED_STATUS='The ride waits where you left it. Choose Walk to ride on.';
-/**
- * The stage's `role="status"` line. While riding, the runtime's own `onStatus` calls already say the
- * right thing (RIDING_STATUS at pick-up / resume, the paused text on Look / Island / a page) — this
- * only covers the on-foot line, which used to be set once at mount and never moved when a pick-up/park
- * offer came into or out of reach: it now names the offer ("E · Pick up the board") in reach, and falls
- * back to the plain walk/door text otherwise.
- */
-export function statusTextFor({riding,offerLabel,paused}:{riding:boolean;offerLabel?:string|null;paused?:boolean}):string{
-  if(riding)return paused?RIDE_PAUSED_STATUS:RIDING_STATUS;
+export function statusTextFor({riding,offerLabel,paused,flight}:{riding:boolean;offerLabel?:string|null;paused?:boolean;flight?:boolean}):string{
+  if(riding)return paused?RIDE_PAUSED_STATUS:flight?'Flying. W/S set the bar, A/D bank; use the landing bubble.':'Riding. W pushes, S slides, A D steer, Space pops, E parks.';
   return offerLabel?`E · ${offerLabel}`:WALK_STATUS;
 }
 export default function HorizonStage(props:HorizonStageProps){
   const stage=useRef<HTMLDivElement>(null),runtime=useRef<HorizonRuntime|null>(null),latest=useRef(props);latest.current=props;
   const [status,setStatus]=useState('Loading the Horizon…'),[ready,setReady]=useState(false),[mode,setMode]=useState<HorizonMode>('look'),[page,setPage]=useState('A');
-  const [offer,setOffer]=useState<ThresholdOffer|null>(null),[hud,setHud]=useState<MoverHud|null>(null),[reduced,setReduced]=useState(reducedNow);
-  const [touch]=useState(()=>matchMedia('(pointer: coarse)').matches);
-  const riding=hud!==null,ridingHere=riding&&mode==='walk';   // a ride paused under Look / Island keeps its HUD but shows none
+  const [reducedMotion,setReducedMotion]=useState(readReducedMotion),[calm,setCalm]=useState(readCalm);
+  const [offers,setOffers]=useState<ThresholdOffer[]>([]),[mover,setMover]=useState<HorizonMoverState|null>(null),[sheet,setSheet]=useState<ReducedMotionCut|null>(null),hold=useRef<number|null>(null);
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
-  useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null;
-    const options:HorizonOptions={tier,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:reducedNow(),calm:latest.current.calm===true,onOffer:setOffer,onMoverHud:setHud,onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null};
-    import('../scene/worldMount.ts').then(m=>m.mountHorizonWorld(stage.current!,options)).then(world=>{
-      if(controller.signal.aborted){world.dispose();return;}current=world;runtime.current=world;setMode(world.mode());setPage(world.shotId());setReady(true);setStatus(WALK_STATUS);latest.current.onRuntime?.(world);latest.current.onReady?.();
+  useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null,unregister:(()=>void)|null=null;
+    const options:HorizonOptions={tier,theme:latest.current.theme,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:readReducedMotion(),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null};
+    // The movers (M6: the glider and the parachute) register on the runtime as soon as it exists.
+    Promise.all([import('../scene/worldMount.ts').then(m=>m.mountHorizonWorld(stage.current!,options)),import('./movers/glider/index.ts')]).then(([world,gliders])=>{
+      if(controller.signal.aborted){world.dispose();return;}current=world;unregister=gliders.registerGliderModes(world);runtime.current=world;setMode(world.mode());setPage(world.shotId());setReady(true);setStatus('Drag to look. Walk with W A S D, or use the pads. Space jumps; E opens a nearby door.');latest.current.onRuntime?.(world);latest.current.onReady?.();
       if(HARBOUR_DEV)(window as unknown as {__harbour:unknown}).__harbour=world;
     }).catch(error=>{if(!controller.signal.aborted)setStatus(error instanceof Error?error.message:'The Horizon could not open.');});
-    return()=>{controller.abort();current?.dispose();if(HARBOUR_DEV){const debug=window as unknown as {__harbour?:HorizonRuntime};if(debug.__harbour===current)delete debug.__harbour;}runtime.current=null;latest.current.onRuntime?.(null);};
+    return()=>{controller.abort();unregister?.();current?.dispose();if(HARBOUR_DEV){const debug=window as unknown as {__harbour?:HorizonRuntime};if(debug.__harbour===current)delete debug.__harbour;}runtime.current=null;latest.current.onRuntime?.(null);};
   },[tier]);
   useEffect(()=>{runtime.current?.pause(props.paused===true);},[props.paused,ready]);
-  // Reduced motion and calm are read live (RIDE §11 ask 3): the OS setting and Hearth's data-motion comfort flag.
-  useEffect(()=>{const media=matchMedia('(prefers-reduced-motion: reduce)'),update=()=>setReduced(reducedNow());media.addEventListener('change',update);const observer=new MutationObserver(update);observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-motion']});return()=>{media.removeEventListener('change',update);observer.disconnect();};},[]);
-  useEffect(()=>{runtime.current?.setReducedMotion(reduced);},[reduced,ready]);
-  useEffect(()=>{runtime.current?.setCalm(props.calm===true);},[props.calm,ready]);
-  // The on-foot status line (riding/paused status text is the runtime's own onStatus calls): names a
-  // pick-up/park offer as it comes into or out of reach, only when it actually changes.
-  useEffect(()=>{if(!ready||riding)return;setStatus(statusTextFor({riding:false,offerLabel:offer?offer.label:null}));},[ready,riding,offer]);
+  useEffect(()=>{
+    const media=matchMedia('(prefers-reduced-motion: reduce)'),sync=()=>{setReducedMotion(readReducedMotion());setCalm(readCalm());};
+    media.addEventListener('change',sync);const observer=new MutationObserver(sync);observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-motion','data-quiet']});
+    return()=>{media.removeEventListener('change',sync);observer.disconnect();};
+  },[]);
+  // Both reach the runtime, which also passes them to solarReviewDate (the sun freezes at 15:30).
+  useEffect(()=>{runtime.current?.setReducedMotion(reducedMotion);runtime.current?.setCalm(calm);},[reducedMotion,calm,ready]);
+  useEffect(()=>{
+    if(!ready)return;let last='';
+    const poll=window.setInterval(()=>{
+      const world=runtime.current;if(!world)return;
+      const next={offers:world.offers(),mover:world.moverState(),mode:world.mode()},hud=next.mover.hud;
+      const key=JSON.stringify([next.offers.map(offerKey),next.offers.map(o=>o.action),next.mover.mode,next.mover.attached,next.mode,hud&&[Math.round(hud.height??-1),Math.sign(Math.trunc((hud.lift??0)/.5)),hud.place?.label,Math.round(hud.place?.distance??0),hud.place?.action],next.mover.fade,next.mover.cut?.landings.map(landing=>landing.id)]);
+      if(key===last)return;last=key;setOffers(next.offers);setMover(next.mover);setMode(next.mode);
+      if(next.mover.attached||next.offers.length>0)setStatus(statusTextFor({riding:next.mover.attached,offerLabel:next.offers[0]?.action,paused:typeof world.ridePaused==='function'&&world.ridePaused(),flight:next.mover.mode==='glider'||next.mover.mode==='parachute'}));
+    },200);
+    return()=>window.clearInterval(poll);
+  },[ready]);
+  useEffect(()=>()=>{if(hold.current!==null)window.clearTimeout(hold.current);},[]);
+  function take(offer:ThresholdOffer){
+    const result=runtime.current?.accept(offer);if(!result)return;
+    if(result.cut)setSheet(result.cut);else stage.current?.focus();
+  }
+  function holdStart(offer:ThresholdOffer){if(hold.current!==null)window.clearTimeout(hold.current);hold.current=window.setTimeout(()=>{hold.current=null;take(offer);},HOLD_MS);}
+  function holdEnd(){if(hold.current!==null){window.clearTimeout(hold.current);hold.current=null;}}
+  function cut(to:{kind:'landing';landing:ReducedMotionLanding}|{kind:'view';id:string}|{kind:'stay'}){
+    const world=runtime.current;setSheet(null);if(!world)return;world.cutTo(to);
+    if(to.kind==='view'){setPage(to.id);setMode('look');}else setMode(world.mode());stage.current?.focus();
+  }
+  const sheetTitle=useRef<HTMLHeadingElement>(null);
+  useEffect(()=>{
+    if(!sheet)return;
+    sheetTitle.current?.focus();
+    const escape=(event:KeyboardEvent)=>{if(event.key!=='Escape')return;event.preventDefault();cut({kind:'stay'});};
+    window.addEventListener('keydown',escape);return()=>window.removeEventListener('keydown',escape);
+  },[sheet]);
+  useEffect(()=>{if(mover?.cut&&!sheet)setSheet(mover.cut);},[mover?.cut,sheet]);
   function changeMode(next:HorizonMode){setMode(next);runtime.current?.setMode(next);stage.current?.focus();}
   function pad(event:React.PointerEvent<HTMLDivElement>,kind:'move'|'look'){
     if(event.type==='pointerup'||event.type==='pointercancel'){runtime.current?.input({forward:0,strafe:0});return;}
@@ -85,24 +86,40 @@ export default function HorizonStage(props:HorizonStageProps){
     const box=event.currentTarget.getBoundingClientRect(),x=Math.max(-1,Math.min(1,(event.clientX-box.left-box.width/2)/(box.width*.36))),y=Math.max(-1,Math.min(1,(event.clientY-box.top-box.height/2)/(box.height*.36)));
     if(kind==='move')runtime.current?.input({forward:-y,strafe:x});else runtime.current?.look(-x*.08,-y*.06);
   }
-  function jumpBubble(event:React.PointerEvent<HTMLButtonElement>){if(!riding)return;if(event.type==='pointerdown'){event.currentTarget.setPointerCapture(event.pointerId);runtime.current?.jumpHold(true);}else runtime.current?.jumpHold(false);}
-  return <section className={`horizon-shell ${props.review?'horizon-shell--review':''}`} aria-label="Horizon land review" data-riding={riding?'true':undefined}>
-    <div ref={stage} className="horizon-stage" tabIndex={props.paused?-1:0} aria-label={ridingHere?RIDING_LABEL:riding?RIDE_PAUSED_LABEL:`Horizon. Drag to look. W A S D walks, Space jumps, E ${offer?offer.label.toLowerCase():'opens a nearby door'}.`} />
-    {!props.paused&&ridingHere&&hud&&<PaceBubble hud={hud} touch={touch}/>}
-    {/* R2-03: the offer on a fine-pointer desktop, where the touch controls (and the Enter bubble) are hidden. Always mounted so the live region announces. */}
-    {!props.paused&&<div className="horizon-offer" role="status" data-empty={offer&&mode==='walk'?undefined:'true'}><span className="horizon-offer__text">{mode==='walk'?offerBubbleText(offer):''}</span></div>}
+  return <section className={`horizon-shell ${props.review?'horizon-shell--review':''}`} aria-label="Horizon land review">
+    <div ref={stage} className="horizon-stage" tabIndex={props.paused?-1:0} aria-label="Horizon. Drag to look. W A S D walks, Space jumps, E opens a nearby door." />
+    {!props.paused&&<div className="horizon-offer" role="status" data-empty={mode==='walk'&&offers.length>0?undefined:'true'}><span className="horizon-offer__text">{mode==='walk'&&offers[0]?`E · ${offers[0].action}`:''}</span></div>}
     {!props.paused&&<>
       <div className="horizon-toolbar" aria-label="World controls">
         {(['walk','look','journey']as const).map(m=><button key={m} disabled={!ready} aria-pressed={mode===m} onClick={()=>changeMode(m)}>{m==='journey'?'Island':m==='walk'?'Walk':'Look'}</button>)}
         <label>Page <select aria-label="Sketchbook page" value={page} disabled={!ready} onChange={e=>{setPage(e.target.value);setMode('look');runtime.current?.shot(e.target.value);}}>{'ABCDEFGHIJKL'.split('').map(p=><option key={p}>{p}</option>)}</select></label>
         {props.onQuickSheet&&<button onClick={props.onQuickSheet}>Tools</button>}
         {props.onJourney&&<button onClick={props.onJourney}>Journey</button>}
+        {props.sound&&<button aria-pressed={props.sound.on} onClick={props.sound.toggle}>{props.sound.on?'Sound on':'Sound off'}</button>}
       </div>
       {ready&&mode==='walk'&&<div className="horizon-touch-controls">
-        <div className="horizon-pad" role="group" aria-label="Move pad" onPointerDown={e=>pad(e,'move')} onPointerMove={e=>pad(e,'move')} onPointerUp={e=>pad(e,'move')} onPointerCancel={e=>pad(e,'move')}>Move</div>
-        <button className="horizon-jump" onClick={()=>{if(!riding)runtime.current?.jump();}} onPointerDown={jumpBubble} onPointerUp={jumpBubble} onPointerCancel={jumpBubble} aria-label={riding?'Jump (hold to charge the pop)':'Jump'}>Jump</button>
-        <button onClick={()=>runtime.current?.accept()}>{offer?offer.label:'Enter'}</button>
+        <div className="horizon-pad" role="group" aria-label={mover?.attached?'Move pad: push and pull the bar, lean to bank':'Move pad'} onPointerDown={e=>pad(e,'move')} onPointerMove={e=>pad(e,'move')} onPointerUp={e=>pad(e,'move')} onPointerCancel={e=>pad(e,'move')}>Move</div>
+        {!mover?.attached&&<><button className="horizon-jump" onClick={()=>runtime.current?.jump()}>Jump</button>
+        <button onClick={()=>runtime.current?.enterDoor()}>Enter</button></>}
         <div className="horizon-pad" role="group" aria-label="Look pad" onPointerDown={e=>pad(e,'look')} onPointerMove={e=>pad(e,'look')} onPointerUp={e=>pad(e,'look')} onPointerCancel={e=>pad(e,'look')}>Look</div>
+      </div>}
+      {ready&&!sheet&&offers.length>0&&<div className="horizon-offers" role="group" aria-label="Change how you travel here">
+        {offers.map(offer=>{const held=offer.from!=='feet'&&offer.to!=='feet';return <button key={offerKey(offer)} className={held?'horizon-offer horizon-offer--hold':'horizon-offer'} aria-label={held?`${offer.action} (press and hold)`:offer.action}
+          onClick={e=>{if(!held||e.detail===0)take(offer);}} onPointerDown={held?()=>holdStart(offer):undefined} onPointerUp={held?holdEnd:undefined} onPointerLeave={held?holdEnd:undefined} onPointerCancel={held?holdEnd:undefined}>{offer.action}</button>;})}
+      </div>}
+      {ready&&mover?.attached&&mover.hud?.height!==undefined&&<p className="horizon-bubble horizon-bubble-height" aria-live="off">
+        <span>{Math.max(0,Math.round(mover.hud.height))} m</span>{Math.abs(mover.hud.lift??0)>=.5&&<span className="horizon-bubble-lift" aria-label={(mover.hud.lift??0)>0?'rising':'sinking'}>{(mover.hud.lift??0)>0?'↑':'↓'}</span>}
+      </p>}
+      {ready&&mover?.attached&&mover.hud?.place&&(()=>{const place=mover.hud.place,text=place.action==='pull'||!(place.distance>0)?place.label:`${place.label} · ${Math.round(place.distance)} m`;
+        return place.action==='gate'?<p className="horizon-bubble horizon-bubble-place">{text}</p>
+          :<button className="horizon-bubble horizon-bubble-place" onClick={()=>runtime.current?.moverAction(place.action)} aria-label={place.action==='fold'?`Land now: ${text}`:text}>{text}</button>;})()}
+      {ready&&!mover?.attached&&mover?.fade&&<p className="horizon-bubble horizon-bubble-place horizon-bubble-fade" role="status">{mover.fade}</p>}
+      {sheet&&<div className="horizon-sheet" role="dialog" aria-modal="false" aria-labelledby="horizon-sheet-title">
+        <h2 ref={sheetTitle} id="horizon-sheet-title" tabIndex={-1}>Where to?</h2>
+        {sheet.landings.length>0&&<><h3>Land at</h3><ul>{sheet.landings.map(landing=><li key={landing.id}><button onClick={()=>cut({kind:'landing',landing})}>{landing.label}</button></li>)}</ul></>}
+        <h3>Sketchbook pages</h3>
+        <ul className="horizon-sheet-pages">{(runtime.current?.world.views??[]).map(view=><li key={view.id}><button onClick={()=>cut({kind:'view',id:view.id})}>{view.id}{view.label?` · ${view.label}`:''}</button></li>)}</ul>
+        <button className="horizon-sheet-stay" onClick={()=>cut({kind:'stay'})}>Stay here</button>
       </div>}
       <p className="horizon-status" role="status">{status}</p>
     </>}

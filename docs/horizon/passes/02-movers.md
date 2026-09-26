@@ -153,6 +153,8 @@ On commit 1 the integrator generalises `transport.ts` to a line-driven ride API 
 
 ## M6 — Glider and parachute
 
+> **Design:** `FLIGHT.md` (26 Sep) fleshes this section out — the polar, controls, lift, the landing-outcome table, the Throat corridor, the parachute's carried threshold and canopy, camera numbers, tests and decisions D34–D38. Where the two disagree, `FLIGHT.md` wins.
+
 - **Uses:** `sky.launches` (`crown`, `prow`, `lampGallery`), `sky.lift` (thermals by `hours`, ridge, sink), `sky.landings`, `sky.glider` (`speed_ms` 11, `sink_ms` 1.2, `flare`), `sky.gates` n 12 (the Throat), `underground.doors.throat` (`mouth_m`; a diving entry of 139 m sloping at 30° down to the Deep at `h` 40), `sky.courses` (`damRun`, `throatRun`, `lampHop`), `sky.ceiling_m`, thresholds `crownLaunch`, `prowPlatform` (`run off`), `lampGallery` (`run off the gallery`), `deepJetty` (glider → feet).
 - **Launch:** run off the edge (deliberate); or bail out of the plane into the parachute.
 - **Flight:** glide at `speed_ms` with `sink_ms`; thermals only in their `hours` by the real sun clock; ridge lift along the Crown's south face in a south wind; sink over the Bight and the Notch. Wind from `movers/shared/wind.ts`.

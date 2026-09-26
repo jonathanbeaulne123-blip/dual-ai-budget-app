@@ -21,10 +21,17 @@ export interface Bed { id: string; profile: string; surface: string; points: Poi
 export interface Line { id: string; bedIds: string[]; mode: string; points: Point3[]; waterBodyIds?: string[] }
 export interface Structure { id: string; kind: string; footprint: Polygon; bedIds: string[]; geometryId?: string; districtId?: string; role?: StructureSolid['role']; bounds?: { min: Point3; max: Point3 } }
 export interface Crossing { a: string; b: string; at: Point2; resolution: 'over' | 'under' | 'threshold'; structure?: string; id?: string; proof?: CrossingProof }
-export interface Threshold { id: string; at: Point2; modes: readonly `${string}→${string}`[]; action: string; height?: number; padId?: string; markerId?: string; kerbGap?: boolean; sourceId?: string; built?: boolean }
+/** A `carried` threshold has no pad or marker: a vehicle (the plane's door) supplies its place each frame; `at` is [NaN, NaN] in the definition. */
+export interface Threshold { id: string; at: Point2; modes: readonly `${string}→${string}`[]; action: string; height?: number; padId?: string; markerId?: string; kerbGap?: boolean; sourceId?: string; built?: boolean; carried?: string; minAgl?: number }
 export interface Reserve { id: string; placeId: string; outline: Polygon; door: Anchor; rotationDegrees: number }
 export interface FlightVolume { id: string; kind: 'gate' | 'thermal' | 'ridge' | 'sink' | 'landing'; centre: Point3; halfSize: Point3; yaw: number; radius?: number; hours?: readonly number[]; modes?: string[]; aperture?: Point2; waterBodyId?: string }
-export interface FlightEnvelope { ceiling: number; launches: Anchor[]; landings: Anchor[]; gates: Anchor[]; volumes?: FlightVolume[]; launchPads?: { id: string; padId?: string; edge: Point3[]; graded: boolean }[]; glider?: { speed: number; sink: number }; proofs?: SkyProof }
+/** [airspeed m/s, still-air sink m/s], bar pushed out full → pulled in full (FLIGHT.md §2.2). */
+export type PolarPoint = readonly [number, number];
+export interface ParachuteSpec { forward: number; sink: number; freefallCap: number; autoPullAgl: number; minBailAgl: number; canopy: Point2 }
+/** The Throat as a corridor dive (FLIGHT.md §2.5): gate 12's mouth down the chute to the level run over the Deep. */
+export interface CorridorSpec { gateId: string; mouth: Point3; to: Point3; waterHeight: number; slopeDegrees: number; levelLength: number; splashHeight: number; coneDegrees: number; maxBankDegrees: number; modes: string[] }
+export interface DropZoneSpec { xy: Point2; height: number; rings: number[] }
+export interface FlightEnvelope { ceiling: number; launches: Anchor[]; landings: Anchor[]; gates: Anchor[]; volumes?: FlightVolume[]; launchPads?: { id: string; padId?: string; edge: Point3[]; graded: boolean }[]; glider?: { speed: number; sink: number }; proofs?: SkyProof; gliderPolar?: PolarPoint[]; parachute?: ParachuteSpec; corridors?: { throat?: CorridorSpec }; dropZone?: DropZoneSpec }
 export interface UndercroftDef { doors: Anchor[]; rooms: Polygon[]; waterBodyId?: string; skylight?: Anchor; roomVolumes?: { id: string; outline: Polygon; floor: number; ceiling: number; solidIds: string[] }[] }
 export interface LightAnchor { id: string; at: Point3; kind: string; bestHour?: string }
 export interface SketchbookPose { id: string; eye: Point3; target: Point3; fovDegrees: number; radius: number; bestHour?: string; also?: string; label?: string; aspect?: number; subjectIds?: string[]; floor?: number; underground?: boolean; proof?: ViewProof }
