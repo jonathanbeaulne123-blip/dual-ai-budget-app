@@ -91,6 +91,14 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
   // the Throat's width, so the Throat opens into the Deep only below the ceiling (57.5-68) and no sightline leaves the rock.
   const collar=solid('underground.deep.throatCollar','lintel','rock','wall',['underground.throat'],'crown');
   box(collar,[1300,390],57.5+18+1.2,[27.2,.8],deepTop);cuts.solids.push(collar);
+  // R2-53 (page G): the Deep's north wall was open from its floor to its ceiling across x 1281-1319 (four wall panels
+  // absent), so from the jetty the rock's inside — the terrain's underside — showed below and beside the Throat. A
+  // headwall closes it: panels on the room's own curve from the floor to under the Throat's floor slab (56.9), and two
+  // jambs from there to the ceiling either side of the Throat's lining. Only the Throat's 26 x 18 lining stays open.
+  const head=solid('underground.deep.headwall','headwall','rock','wall',['underground.throat'],'crown'),dp=M.underground.rooms.deep.xy as unknown as XY,ds=ROOM_DIMENSIONS.deep!,throatFloor=57.5-.6;
+  for(let i=0;i<24;i++){const a=i*Math.PI/12,b=(i+1)*Math.PI/12,p1:XYZ=[dp[0]!+Math.cos(a)*ds.size[0]!/2,ds.floor,dp[1]!+Math.sin(a)*ds.size[1]!/2],p2:XYZ=[dp[0]!+Math.cos(b)*ds.size[0]!/2,ds.floor,dp[1]!+Math.sin(b)*ds.size[1]!/2];
+    if((p1[2]+p2[2])/2>dp[1]!-ds.size[1]!/2+8||Math.abs((p1[0]+p2[0])/2-dp[0]!)>22)continue;slab(head,p1,p2,.8,throatFloor-ds.floor,0,throatFloor-ds.floor);}
+  for(const x of [1283.8,1316.2])box(head,[x,392.8],deepTop,[6,6.8],throatFloor);cuts.solids.push(head);
   for(const [id,door]of Object.entries(M.underground.doors)){
     const width=id==='throat'?26:id==='seaDoor'?9:4,depth=id==='throat'?18:6,p=door.xy as unknown as XY;
     cuts.mouths.push({id,kind:'portal',floor:door.h,ceiling:door.h+(id==='throat'?18:id==='seaDoor'?6:3.2),outline:[[p[0]!-width/2,p[1]!-depth/2],[p[0]!-width/2,p[1]!+depth/2],[p[0]!+width/2,p[1]!+depth/2],[p[0]!+width/2,p[1]!-depth/2]]});

@@ -65,3 +65,30 @@ describe('R2-08 the summit L02 on foot', () => {
     expect((world.pathGraph.blocked ?? []).filter(b => b.bedId === 'walk crown').map(b => b.solid)).toEqual([]);
   });
 });
+
+describe('R2-53 / R2-108 the Deep is closed to the island; L01 is carried, not floating over the gallery stair', () => {
+  it('ray-casts page G from the jetty: no ray reaches the terrain from below or leaves the rock outside the Throat', async () => {
+    const { world, field } = baked(), { createRayCaster } = await import('../src/harbour/horizon/world/raycast');
+    const ray = createRayCaster(field, { ...world.collision, solids: world.geometry.solids } as unknown as LandCuts), g = world.views.find(v => v.id === 'G')!;
+    let f = g.target.map((t, i) => t - g.eye[i]!) as Point3; const fl = Math.hypot(...f); f = f.map(a => a / fl) as Point3;
+    const hz = Math.hypot(f[0], f[2]), r: Point3 = [-f[2] / hz, 0, f[0] / hz], u: Point3 = [r[1] * f[2] - r[2] * f[1], r[2] * f[0] - r[0] * f[2], r[0] * f[1] - r[1] * f[0]];
+    const vt = Math.tan(2 * Math.atan(Math.tan(55 * Math.PI / 360) / (16 / 9)) / 2), ht = vt * 1.6; let terrain = 0, outside = 0, total = 0;
+    for (let j = 0; j < 45; j++) for (let i = 0; i < 72; i++) {
+      const nx = (i + .5) / 72 * 2 - 1, ny = 1 - (j + .5) / 45 * 2; let d = [0, 1, 2].map(k => f[k]! + r[k]! * nx * ht + u[k]! * ny * vt) as Point3; const dl = Math.hypot(...d); d = d.map(a => a / dl) as Point3;
+      const hit = ray.first(g.eye, d, 2600, { underground: true }); total++;
+      if (hit.kind === 'terrain') terrain++;
+      // Nothing of the island's surface (roads, walks) is seen from the Deep (V01 and the Year Walk were, 165 eu away).
+      if (hit.kind === 'solid' && !/^(underground|deep|throat|oreTunnel|seaPassage|ORE|DEEP_RUN|jetty\.deep|threshold\.deepJetty)/.test(hit.sourceId)) outside++;
+    }
+    expect(total).toBe(3240); expect(terrain).toBe(0); expect(outside).toBe(0);
+    expect(world.geometry.solids.find(s => s.id.startsWith('underground.deep.headwall'))!.positions.length / 24).toBe(8);
+  });
+  it('leaves the top flight open under L01 (was 0.9 eu of headroom under the slab) and reports no floating L01 pad', () => {
+    const { world, geo } = baked();
+    for (const z of [911.5, 913.5, 915.5]) { const tread = geo.surface(1170.6, z, 52.1, 3)!; expect(tread.id).toMatch(/^damGallery\.flight\.2\.treads/); expect(geo.ceiling(1170.6, z, tread.y)).toBe(Infinity); }
+    expect(geo.surface(1174, 913, 52.1, .3)!.id).toMatch(/^place\.L01\.slab/);
+    expect(world.diagnostics.filter(d => d.id.startsWith('structures.padFloating.place.L01'))).toEqual([]);
+    expect(world.geometry.solids.some(s => s.id.startsWith('place.L01.supports'))).toBe(true);
+  });
+});
+

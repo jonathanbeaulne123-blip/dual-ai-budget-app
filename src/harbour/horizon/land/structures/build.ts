@@ -324,10 +324,19 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   for(let f=0;f<3;f++){const x=lanes[f]!,north=f%2===0,z0=north?922.75:910.75,z1=north?910.75:922.75;buildStair(`damGallery.flight.${f}`,[x,31+f*7,z0],[x,38+f*7,z1],3,cuts,base);}
   landing(cuts,'damGallery.landing.0',[1164.45,909.5],38,[7.1,2.5],base);landing(cuts,'damGallery.landing.1',[1166.5,924],45,[11.2,2.5],base);
   cuts.beds.push(bed('damGallery.exit','walk',[[1170.6,52,910.75],[1170.6,52,908],[1166,52,905],[1162,52,903]],false));
-  {const well=solid('damGallery.walls','stairwell','stone','wall',['damGallery.exit'],'lakeside'),top=46.05;
-    box(well,[1160.3,916.75],top,[.6,16.5],base(1160.3,916.75)-FOOTING_SINK);box(well,[1172.8,916.75],top,[.6,16.5],base(1172.8,916.75)-FOOTING_SINK);
+  {const well=solid('damGallery.walls','stairwell','stone','wall',['damGallery.exit'],'lakeside'),top=46.05,seat=51.65;
+    box(well,[1160.3,916.75],top,[.6,16.5],base(1160.3,916.75)-FOOTING_SINK);
+    // R2-108: under L01's slab (z 908-916) the east wall stands to the slab's underside; south of it, to the parapet.
+    box(well,[1172.8,920.9],top,[.6,8.2],base(1172.8,920.9)-FOOTING_SINK);box(well,[1172.8,912.4],seat,[.6,8.8],base(1172.8,912.4)-FOOTING_SINK);
     // North wall with the exit door (x 1169-1172), south wall above the apron entry (h >= 34.4).
-    box(well,[1164.2,908.2],top,[8.4,.6],base(1164.2,908.2)-FOOTING_SINK);box(well,[1166.5,925.6],top,[12.5,.6],34.4);cuts.solids.push(well);}
+    box(well,[1164.2,908.2],top,[8.4,.6],base(1164.2,908.2)-FOOTING_SINK);box(well,[1166.5,925.6],top,[12.5,.6],34.4);cuts.solids.push(well);
+    // R2-108: L01's 8 x 8 slab at 52 (place xy [1172,912], MANIFEST) lay over the top flight (0.9 eu over its last treads)
+    // and on nothing (ground 34.2 in the well). It is re-laid as the stair head: the flight's own 3 m opening
+    // (x 1169.1-1172.1, z > 910.75) is left open, the head strip (z 908-910.75) and the east part rest on the raised east
+    // wall and the ground east of it, and one pier between the two lower flights carries the head strip's west end.
+    const l01=cuts.solids.find(q=>q.id==='place.L01.slab');
+    if(l01){l01.positions.length=0;l01.indices.length=0;l01.kind='roofDeck';box(l01,[1172,909.375],52,[8,2.75],seat);box(l01,[1174.05,913.375],52,[3.9,5.25],seat);}
+    const l01s=solid('place.L01.supports','pier','stone','support',['place.L01'],'lakeside');pier(l01s,[1168.55,909.4],seat,base,[.5,.5],[1,1]);cuts.solids.push(l01s);}
   buildStair('damPortage',[1150,50,910],[1169,25,963],3,cuts,base);
   // Dry Wash bowl: the invert remains an ordinary ground line, with a bank on either side; its underside sits on the ground.
   const wash=solid('wash.bowl','bowl','ochre','deck',['S2'],'flats'),washH=heightOnBeds(cuts,[465,700],base);for(let i=-12;i<12;i++){const h=washH+5*(i/12)**2,h2=washH+5*((i+1)/12)**2;slabOnGrade(wash,[465+i,h,665],[466+i,h2,665],72,base);}cuts.solids.push(wash);
