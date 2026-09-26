@@ -14,7 +14,7 @@ const date='2026-06-21',zone='America/Toronto',reference=new Date(`${date}T12:00
 const clocks={'dawn':sun.sunrise,'morning':sun.sunrise+180,'noon':sun.solarNoon,'afternoon':sun.solarNoon+180,'golden hour':sun.sunset-60,'sunset':sun.sunset,'dusk':sun.sunset+30,'night':22*60};
 const clock=word=>{const minutes=Math.round(clocks[word.replace(/\s*\(.*\)/,'')]);if(!Number.isFinite(minutes))throw new Error(`Unknown best-hour word ${word}`);return`${String(Math.floor(minutes/60)%24).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;};
 const sha=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),dirty=execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),terrainSha=createHash('sha256').update(await readFile('public/horizon/terrain/horizon-geo-1.bin')).digest('hex');
-const browser=await chromium.launch({headless:true}),records=[],errors=[];
+const browser=await chromium.launch({headless:true,...(process.env.HORIZON_CAPTURE_GPU==='metal'?{args:['--use-angle=metal','--enable-gpu']}: {})}),records=[],errors=[];
 try{
  for(const tier of ['full','lite']){
   const page=await browser.newPage({viewport:tier==='full'?{width:1440,height:900}:{width:390,height:844},timezoneId:zone,deviceScaleFactor:1});

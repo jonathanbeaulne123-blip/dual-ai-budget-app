@@ -6,7 +6,7 @@ import {createHash} from 'node:crypto';
 const output=resolve(process.argv[2]??'/tmp/horizon-walk-proof'),url=process.env.HORIZON_REVIEW_URL??'http://127.0.0.1:5197';
 await mkdir(output,{recursive:true});
 const meta={sha:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),workingTreeClean:!execFileSync('git',['status','--porcelain'],{encoding:'utf8'}).trim(),terrainSha256:createHash('sha256').update(await readFile('public/horizon/terrain/horizon-geo-1.bin')).digest('hex')};
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.HORIZON_CAPTURE_GPU==='metal'?{args:['--use-angle=metal','--enable-gpu']}: {})});
 try{
  const page=await browser.newPage({viewport:{width:1440,height:900},timezoneId:'America/Toronto'});
  await page.goto(`${url}/horizon-review.html?world=horizon&sun=13:02&date=2026-06-21`,{waitUntil:'domcontentloaded'});

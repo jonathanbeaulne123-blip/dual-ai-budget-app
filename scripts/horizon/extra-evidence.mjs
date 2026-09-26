@@ -47,7 +47,7 @@ const results=[],errors=[],loads=[],network=[],pendingBodies=[];
 const run={startedAt:new Date().toISOString(),root,base,startState,artifactHashes,plan,method:'Headless Chromium local builder capture. A 390 px viewport is not an iPhone. SwiftShader or other software renderer timing is not physical Mac/iPhone acceptance.',physicalDeviceAcceptance:'not performed',visualApproval:'pending',nightContrastAcceptance:'pending: paired, visibility-verified foreground/background regions for every door, marker and edge lip are not available',LstarModeAcceptance:'pending: a few visible geometric anchor pixels cannot establish a perceptual histogram mode',results,errors,loads,network};
 const save=(path,value)=>writeFile(join(output,path),JSON.stringify(value,null,2)+'\n');
 await save('run.json',run);
-const browser=await chromium.launch({headless:true});
+const browser=await chromium.launch({headless:true,...(process.env.HORIZON_CAPTURE_GPU==='metal'?{args:['--use-angle=metal','--enable-gpu']}: {})});
 const contextOptions=tier=>({viewport:tier==='full'?{width:1440,height:900}:{width:390,height:844},deviceScaleFactor:1,timezoneId:'America/Toronto',reducedMotion:'no-preference'});
 const reviewUrl=(tier,clock,hide=false)=>`${base}/horizon-review.html?world=horizon&tier=${tier}&date=2026-06-21&sun=${clock}&hideBuildings=${hide?'1':'0'}`;
 const log=value=>console.log(JSON.stringify(value));
@@ -56,9 +56,9 @@ function watch(page,label){
  page.on('pageerror',error=>errors.push({label,type:'pageerror',message:error.message}));
  page.on('console',message=>{if(['error','warning'].includes(message.type()))errors.push({label,type:message.type(),message:message.text().slice(0,2000)});});
  page.on('response',response=>{
-  const url=response.url();if(!/\/horizon\/(?:world|terrain)\//.test(url))return;
+  const url=response.url();if(!/^\/horizon\/(?:world|terrain)\//.test(new URL(url).pathname))return;
   const record={label,url,status:response.status(),fromServiceWorker:response.fromServiceWorker()};network.push(record);
-  pendingBodies.push((async()=>{try{const headers=await response.allHeaders();record.headers={cacheControl:headers['cache-control'],etag:headers.etag,contentEncoding:headers['content-encoding'],contentLength:headers['content-length']};let bytes=await response.body();if(/horizon-geo-1\.json\.gz/.test(url)&&bytes[0]===31&&bytes[1]===139)bytes=gunzipSync(bytes);record.sha256=sha(bytes);record.bytes=bytes.length;const key=/\.bin/.test(url)?'terrain':/cards/.test(url)?'cards':'world';record.matchesDisk=record.sha256===artifactHashes[key];}catch(error){record.bodyError=error.message;}})());
+  pendingBodies.push((async()=>{try{const headers=await response.allHeaders();record.headers={cacheControl:headers['cache-control'],etag:headers.etag,contentEncoding:headers['content-encoding'],contentLength:headers['content-length']};if(/horizon-geo-1\.json\.gz/.test(url)){record.bodyVerification='Separate post-ready browser fetch; the decoded definition exceeds the inspector body cache.';return;}let bytes=await response.body();if(/horizon-geo-1\.json\.gz/.test(url)&&bytes[0]===31&&bytes[1]===139)bytes=gunzipSync(bytes);record.sha256=sha(bytes);record.bytes=bytes.length;const key=/\.bin/.test(url)?'terrain':/cards/.test(url)?'cards':'world';record.matchesDisk=record.sha256===artifactHashes[key];}catch(error){record.bodyError=error.message;}})());
  });
 }
 async function ready(page){
@@ -71,6 +71,7 @@ async function settle(page,milliseconds=5500){
 }
 async function recordLoad(page,label){
  const record=await page.evaluate(()=>({stats:window.__harbour.stats(),navigation:performance.getEntriesByType('navigation').map(x=>x.toJSON()),resources:performance.getEntriesByType('resource').filter(x=>/\/horizon\/(world|terrain)\//.test(x.name)).map(x=>x.toJSON())}));
+ record.servedAssets=await page.evaluate(async expected=>{const rows=[];for(const [key,path] of [['world','world/horizon-geo-1.json.gz'],['terrain','terrain/horizon-geo-1.bin'],['cards','world/horizon-cards.json']]){const response=await fetch('/horizon/'+path),bytes=await response.arrayBuffer(),hash=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(n=>n.toString(16).padStart(2,'0')).join('');rows.push({key,url:response.url,status:response.status,bytes:bytes.byteLength,sha256:hash,matchesDisk:hash===expected[key]});}return rows;},artifactHashes);record.assetVerificationMethod='Browser fetch after the load timings were sampled; separate from inspector response bodies. Source and on-disk hashes are also checked for stability across the complete run.';
  record.label=label;record.frameSummaryMs=summarise(record.stats.frames);record.softwareRenderer=/SwiftShader|llvmpipe|software|lavapipe/i.test(record.stats.renderer);loads.push(record);log({load:label,renderer:record.stats.renderer,assetLoadMs:record.stats.assetLoadMs,firstInteractiveMs:record.stats.firstInteractiveMs});
 }
 async function groundPixels(page,png,anchors){
@@ -138,7 +139,7 @@ try{
 finally{
  await Promise.allSettled(pendingBodies);await browser.close();run.finishedAt=new Date().toISOString();run.endState=snapshot();run.sourceUnchanged=run.startState.head===run.endState.head&&run.startState.status===run.endState.status&&run.startState.diffSha===run.endState.diffSha;
  run.artifactHashesEnd={world:sha(await readFile(join(root,'public/horizon/world/horizon-geo-1.json'))),terrain:sha(await readFile(join(root,'public/horizon/terrain/horizon-geo-1.bin'))),cards:sha(await readFile(join(root,'public/horizon/world/horizon-cards.json')))};
- run.artifactsUnchanged=Object.keys(artifactHashes).every(k=>artifactHashes[k]===run.artifactHashesEnd[k]);run.servedAssetsMatchDisk=network.length>=3&&network.every(r=>r.matchesDisk===true);run.complete=results.length===20&&!errors.some(e=>e.type==='run-failure');
+ run.artifactsUnchanged=Object.keys(artifactHashes).every(k=>artifactHashes[k]===run.artifactHashesEnd[k]);run.servedAssetsMatchDisk=loads.length===4&&loads.every(r=>r.servedAssets?.length===3&&r.servedAssets.every(a=>a.matchesDisk));run.complete=results.length===20&&!errors.some(e=>e.type==='run-failure');
  await save('run.json',run);await save('perf/cold-warm-assets.json',{method:plan.coldWarm,loads,network,softwareRendererLimit:run.method});
  const escape=s=>String(s).replace(/[&<>\"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
  const cards=results.map(r=>`<figure><a href="pages/${r.file}"><img src="pages/${r.file}" alt="${escape(r.id)}"></a><figcaption>${escape(r.id)} · ${escape(r.renderer)} · visual approval pending</figcaption></figure>`).join('\n');

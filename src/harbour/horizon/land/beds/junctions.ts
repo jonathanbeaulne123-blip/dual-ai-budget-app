@@ -8,7 +8,21 @@ export interface ComputedCrossing {
   resolution:'threshold'|'over'|'under';requiredClearance:number;built?:boolean;clearancePass?:boolean;
   kind?:string;
 }
+// Junction cuts only remove geometry, so the original bounds remain conservative
+// for every later cut of this solid. Most walls are nowhere near a given join.
+const edgeBounds=new WeakMap<StructureSolid,readonly number[]>();
 function clipEdgePrisms(piece:StructureSolid,at:XY,radius:number,height:number):void {
+  if(!piece.positions.length)return;
+  let limits=edgeBounds.get(piece);
+  if(!limits){
+    const p=piece.positions,b=[Infinity,Infinity,Infinity,-Infinity,-Infinity,-Infinity,0];
+    for(let i=0;i<p.length;i+=3)for(let axis=0;axis<3;axis++){b[axis]=Math.min(b[axis]!,p[i+axis]!);b[axis+3]=Math.max(b[axis+3]!,p[i+axis]!);}
+    for(let i=0;i+23<p.length;i+=24)b[6]=Math.max(b[6]!,Math.min(Math.hypot(p[i+12]!-p[i+15]!,p[i+14]!-p[i+17]!),Math.hypot(p[i+15]!-p[i+18]!,p[i+17]!-p[i+20]!))/2);
+    limits=b;edgeBounds.set(piece,limits);
+  }
+  const dx=Math.max(limits[0]!-at[0],0,at[0]-limits[3]!),dz=Math.max(limits[2]!-at[1],0,at[1]-limits[5]!);
+  // Include the old cutter's rounded end-cap allowance as well as its radius.
+  if(Math.hypot(dx,dz)>radius+limits[6]!||limits[4]!<height-.6||limits[1]!>height+1.3)return;
   const kept={...piece,positions:[] as number[],indices:[] as number[]};
   for(let vertex=0;vertex<piece.positions.length/3;vertex+=8){
     let p=Array.from({length:8},(_,k):XYZ=>[piece.positions[(vertex+k)*3]!,piece.positions[(vertex+k)*3+1]!,piece.positions[(vertex+k)*3+2]!]);
