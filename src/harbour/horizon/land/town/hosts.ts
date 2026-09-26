@@ -40,8 +40,8 @@ export function buildHostSites(cuts:LandCuts,base:HeightQuery):HostSite[] {
     const candidates=cuts.beds.filter(b=>preferred[h.id]!.includes(b.id));
     let nearest=candidates.map(b=>({b,...nearestOnPath(apronCentre,b.points)})).sort((a,b)=>Math.hypot(a.distance,(a.at[1]-h.h)/.08)-Math.hypot(b.distance,(b.at[1]-h.h)/.08))[0]!;
     if(!nearest)throw new Error(`Missing public approach for ${h.id}`);
-    const entry:XY=[door[0]!+normal[0]!*9,door[2]!+normal[1]!*9],start:XY=h.id==='home'?[1455,1175]:plan(nearest.at),startHeight=h.id==='home'?12:nearest.at[1],controls:XY[]=h.id==='home'?[start,[1465,1178],[1474,1184],[1485,1180],[1485,1165],[door[0],door[2]]]:[start,entry,[door[0]!,door[2]!]];
-    if(h.id==='glasshouse'){entry[1]=door[2]+11;controls.splice(1,0,[989,805],[1000,813]);}
+    const entry:XY=[door[0]!+normal[0]!*(h.id==='glasshouse'?11:9),door[2]!+normal[1]!*(h.id==='glasshouse'?11:9)],start:XY=h.id==='home'?[1455,1175]:plan(nearest.at),startHeight=h.id==='home'?12:nearest.at[1],controls:XY[]=h.id==='home'?[start,[1465,1178],[1474,1184],[1485,1180],[1485,1165],[door[0],door[2]]]:[start,entry,[door[0]!,door[2]!]];
+    if(h.id==='glasshouse')controls.splice(1,0,[989,805],[1000,813]);
     const lengthNeeded=Math.abs(startHeight-h.h)/.08;
     if(h.id!=='home'&&lengthNeeded>nearest.distance+6){
       // A broad courtyard return increases accessible length without moving the door or street.

@@ -82,6 +82,17 @@ export function settleBedEdges(cuts:LandCuts,ground:HeightQuery):void {
       }
     }
   }
+  // Garden Walk and Year Walk share the Hollow approach for longer than a
+  // junction pad. Keep each lane's outside protection, but remove rail pieces
+  // from the other route that physically occupy its walking corridor.
+  const shared=cuts.beds.filter(b=>['walk garden','yearWalk'].includes(b.id));
+  for(const b of shared){
+    const rails=cuts.solids.filter(s=>['handrail','parapet','kerb'].includes(s.kind)&&s.bedIds.some(id=>shared.some(other=>other.id===id&&other!==b))&&!s.bedIds.includes(b.id));
+    for(let i=1;i<b.points.length;i++){
+      const a=b.points[i-1]!,end=b.points[i]!,steps=Math.max(1,Math.ceil(distance(plan(a),plan(end))/2));
+      for(let j=0;j<=steps;j++){const t=j/steps;for(const rail of rails)clipEdgePrisms(rail,[mix(a[0],end[0],t),mix(a[2],end[2],t)],b.width/2+.4,mix(a[1],end[1],t));}
+    }
+  }
   cuts.solids=cuts.solids.filter(s=>s.indices.length>0);
 }
 /** Retaining walls must share the real openings of separated route crossings.
@@ -115,6 +126,9 @@ function alignSurfaceJoins(cuts:LandCuts,proofs:readonly ComputedCrossing[],base
     for(const row of proofs)if(row.resolution==='threshold'&&Math.abs(row.heightA-row.heightB)<=.5&&[row.sourceA??row.a,row.sourceB??row.b].includes(b.id))pins.push({xy:row.at,height:nearestOnPath(row.at,b.points).at[1],reason:'existing connected junction'});
     b.points.forEach(p=>{if(b.terrainExclusions?.some(e=>distance(plan(p),e.at)<=e.radius))pins.push({xy:plan(p),height:p[1],reason:'structure profile'});});
     const upperStreet=cuts.pads.find(p=>p.id==='town.upperStreet');if(upperStreet)for(const p of b.points)if(Math.abs(p[0]-upperStreet.centre[0])<=upperStreet.size[0]/2+4&&Math.abs(p[2]-upperStreet.centre[2])<=upperStreet.size[1]/2+4&&Math.abs(p[1]-upperStreet.centre[1])<.01)pins.push({xy:plan(p),height:upperStreet.centre[1],reason:'fixed upper street floor'});
+    // Keep the level Cottage landing when reconciling neighbouring crossings;
+    // otherwise a later solve can dip this approach below the Year Walk deck.
+    if(b.id==='walk garden')for(const p of b.points)if(p[0]>=899&&p[0]<=916&&p[2]>=637&&p[2]<=642)pins.push({xy:plan(p),height:p[1],reason:'fixed Cottage front bench'});
     for(const pad of cuts.pads.filter(p=>p.serviceBedId===b.id)){const at=pad.door??pad.centre,hit=nearestOnPath(plan(at),b.points);if(hit.distance<Math.max(5,pad.margin+b.width))pins.push({xy:plan(hit.at),height:hit.at[1],reason:pad.id});}
     c={bed:b,pins,arcs,targets:[]};contexts.set(b.id,c);return c;
   };

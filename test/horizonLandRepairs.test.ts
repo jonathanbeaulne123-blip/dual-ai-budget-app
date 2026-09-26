@@ -4,6 +4,7 @@ import { addFlatPad, batteredWall, bed, emitBedGeometry } from '../src/harbour/h
 import { openRetainingPassages, settleBedEdges } from '../src/harbour/horizon/land/beds/junctions';
 import { box, maxGrade, solid } from '../src/harbour/horizon/land/structures/mesh';
 import { createHorizonGeography } from '../src/harbour/horizon/runtime/geography';
+import { solidVerticalRangeAt } from '../src/harbour/horizon/world/geometry';
 import type { LandCuts, TerrainField } from '../src/harbour/horizon/land/interfaces';
 
 const empty = (): LandCuts => ({ beds: [], pads: [], solids: [], mouths: [], waters: [], diagnostics: [] });
@@ -70,4 +71,11 @@ it('opens the connected approach through a neighbouring cut before the junction 
  const field:TerrainField={revision:'horizon-geo-1',width:100,depth:100,step:10,columns:11,rows:11,heights:new Float32Array(121),surfaces:new Uint8Array(121)};
  expect(createHorizonGeography(field,cuts).blocker(50,60,0)).not.toBeNull();settleBedEdges(cuts,()=>0);
  const geography=createHorizonGeography(field,cuts);expect(geography.blocker(50,60,0)).toBeNull();expect(geography.blocker(65,60,0)).not.toBeNull();
+});
+
+it('opens rails inside the shared Garden and Year Walk corridor while retaining the outside edge',()=>{
+ const cuts=empty(),garden=bed('walk garden','walk',[[50,10,0],[50,10,100]],false),year=bed('yearWalk','walk',[[47,10,0],[47,10,100]],false);
+ cuts.beds.push(garden,year);const rail=solid('shared.rail','handrail','metal','rail',['yearWalk']);box(rail,[50,50],11.05,[.1,80],10.96);box(rail,[44,50],11.05,[.1,80],10.96);cuts.solids.push(rail);
+ expect(solidVerticalRangeAt(rail,50,50)).not.toBeNull();settleBedEdges(cuts,()=>0);
+ expect(solidVerticalRangeAt(rail,50,50)).toBeNull();expect(solidVerticalRangeAt(rail,44,50)).not.toBeNull();
 });
