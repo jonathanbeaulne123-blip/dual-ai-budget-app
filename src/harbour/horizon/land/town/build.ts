@@ -44,10 +44,11 @@ export function buildTown(cuts:LandCuts,base:HeightQuery):void {
   const road=cuts.beds.find(b=>b.id==='V01')!,junction=nearestOnPath([1370,1260],road.points);
   cuts.beds.push(bed('town.riverLink','walk',gradeRoute('town.riverLink',[[1400,1290],plan(junction.at)],()=>7,.12,[{xy:[1400,1290],height:7,reason:'Reach walk'},{xy:plan(junction.at),height:junction.at[1],reason:'drive'}],cuts.diagnostics)));
   cuts.beds.push(bed('gondolaBase.walk','walk',[[1480,18,1060],[1480,18,1090]]));
-  // West of the summit knoll: the east detour [1320,485] crossed the last leg of walk crownFromGondola
+  // West of the summit knoll, reaching 158 at the L02 pad's edge (a 0.7 eu lip blocked it): the
+  // east detour [1320,485] crossed the last leg of walk crownFromGondola
   // 0.5-1.5 eu apart (the old generated deck there blocked the summit walk, R1-08); capped at the
   // summit height (158) so no bed raises the ground above the summit.
-  cuts.beds.push(bed('walk summit','walk',[[1310,154,500],[1300,156,485],[1310,158,470],[1310,158,440]]));
+  cuts.beds.push(bed('walk summit','walk',gradeRoute('walk summit',[[1310,500],[1294,494],[1292,480],[1304,475],[1310,470],[1310,440]],base,.12,[{xy:[1310,500],height:154,reason:'walk crown / crownFromGondola end'},{xy:[1304,475],height:158,reason:'L02 lookout edge (level onto the pad)'},{xy:[1310,470],height:158,reason:'L02'},{xy:[1310,440],height:158,reason:'summit'}],cuts.diagnostics)));
   const lane=gradeRoute('homestead.lane',[[1514,1190],[1555,1205],[1540,1240],[1500,1250],[1520,1260],[1497,1265]],base,.08,[{xy:[1514,1190],height:12,reason:'yard'},{xy:[1500,1250],height:5,reason:'crossing'},{xy:[1497,1265],height:3,reason:'quay'}],cuts.diagnostics);cuts.beds.push(bed('homestead.lane','walk',lane));
   addFlatPad(cuts,'homestead.yard','homestead',[1520,1190],12,[26,20]);
   for(const site of M.journey.homestead.sites){
