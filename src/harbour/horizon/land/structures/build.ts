@@ -252,8 +252,9 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
     tunnel(id,points,width,clear,cuts,districtAt(...xy),{base});
     const first=points[0]!,last=points.at(-1)!,d0=along(points,0).dir,d1=along(points,planLength(points)).dir;
     cuts.mouths.push(portalMouth(`${id}.portal.0`,first,[-d0[0],-d0[1]],width,clear),portalMouth(`${id}.portal.1`,last,d1,width,clear));
-    const {cover,at}=tunnelCover(points,clear,base);
-    if(cover<2)conflict(cuts,`structures.${id}.cover`,`${id}: rock cover over the lined roof is ${cover.toFixed(1)} eu (built as authored at its reserved location; the tube stands on its own walls where the ground falls away)`,at,cover,2);
+    // The dune culvert's cover is the V01 road deck crossing over it, not the terrain.
+    const {cover,at}=id==='duneCulvert'?(()=>{const road=cuts.beds.find(r=>r.id==='V01')!,hit=nearestOnPath(xy,road.points),under=nearestOnPath(plan(hit.at),points).at;return {cover:hit.at[1]-.6-(under[1]+clear+.6),at:plan(hit.at)};})():tunnelCover(points,clear,base);
+    if(cover<(id==='duneCulvert'?0:2))conflict(cuts,`structures.${id}.cover`,`${id}: ${id==='duneCulvert'?'the V01 deck clears the culvert roof by':'rock cover over the lined roof is'} ${cover.toFixed(1)} eu${id==='prowTunnel'?' (RESERVED location, built as authored)':''}; the tube stands on its own wall footings where the ground falls away`,at,cover,2);
     const tunnelBed=bed(id,route==='S4'?'skateMain':'road',points,false);tunnelBed.width=width;tunnelBed.structureIds=[id];cuts.beds.push(tunnelBed);
   }
   // The crest spans a real opening; the curved shoulders carry the spillway to its abutments.
