@@ -365,7 +365,8 @@ describe("five boards entry App integration", () => {
       const amount = entry === 0 ? '18.75' : '29.36';
       const note = `Acceptance lifecycle ${entry}`;
       input('#add-note', note); input('[data-entry-section="amount"] input', amount);
-      expect(container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(true);
+      // K8: the second Purchase remembers the account of the first accepted one (Visa), so it can post straight away.
+      expect(container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(entry === 0);
       act(() => [...container.querySelectorAll<HTMLButtonElement>('[data-entry-section="account"] .wallet-tile')].find(tile => tile.textContent?.includes("Visa"))!.click());
       await act(async () => container.querySelector<HTMLButtonElement>('[data-add-confirm]')!.click());
       await waitFor(() => expect(writes.confirmations).toHaveLength(entry + 1));
@@ -405,23 +406,14 @@ describe("five boards entry App integration", () => {
     expect(container.querySelector('[data-entry-section="account"] [aria-pressed="true"]')?.textContent).toContain("Visa");
   }, 30000);
 
-  it.each([false, true])("Ask opens its board directly without a ledger save (Hearthside=%s)", async hearthside => {
+  it.each([false, true])("The Ask opens the Glasshouse steps without a ledger save (K1, Hearthside=%s)", async hearthside => {
     mobile = true; writes.hearthside = hearthside; await mount();
     const writesBefore = writes.candidates.length;
     await act(async () => button("Open Ask").click());
-    await waitFor(() => expect(container.querySelector('[data-ledger-tab="' + (hearthside ? 'play' : 'together') + '"]')).not.toBeNull());
+    // K1 (Tool Atlas §7): the Fund ledge's Ask plate retired; The Ask is a Glasshouse step, so its door opens the steps.
+    await waitFor(() => expect(container.querySelector('[data-ledger-tab="planner"]')).not.toBeNull());
     expect(container.querySelector("[data-add-slideshow]")).toBeNull();
-    await waitFor(() => expect(container.querySelector<HTMLDivElement>('.shared-board-page--ask')?.hidden).toBe(false));
-    expect(container.querySelector('.shared-boards [role="tab"][aria-selected="true"]')?.textContent).toBe("Shift Ask");
     expect(writes.candidates.length).toBe(writesBefore);
-    if (hearthside) {
-      expect(new URL(location.href).searchParams.get('surface')).toBe('practical');
-      // A fresh lazy mount follows the durable surface URL and scoped board selection.
-      await act(async () => { root.unmount(); root = createRoot(container); root.render(createElement(App)); });
-      await waitFor(() => expect(container.querySelector<HTMLDivElement>('.shared-board-page--ask')?.hidden).toBe(false));
-      expect(container.querySelector('.shared-boards [role="tab"][aria-selected="true"]')?.textContent).toBe('Shift Ask');
-      expect(writes.candidates.length).toBe(writesBefore);
-    }
   }, 30000);
 
   it("exits a failed Personal Play room into Household Hearthside", async () => {
