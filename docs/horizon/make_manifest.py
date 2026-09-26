@@ -1280,14 +1280,15 @@ m["structures"]["jettiesV1_8"] = {"bightShore": m["structures"]["jetties"]["bigh
 
 # 14. The Bight pier (P12: the pier walk ran on at the Flats' height, 36 eu over the Bight, to the ferry stop): the walk
 #     stops at the cliff top and a stair takes it down to a jetty at the ferry stop (the stair crosses the wash's dry mouth
-#     and S2's bridge lane high above them). The dune walk starts at the zip landing's foot, not under its stair (P16 2.21).
+#     and S2's bridge lane high above them). The dune walk starts at the zip landing's foot, not under its stair (P16 2.21),
+#     and runs 10-18 m south of the landing ramp's trestle (it ran under the trestle's south leg for 60 m: no bent could stand).
 #     The Year Walk's two Prow lanes cross the sea stair's cutting on two short named footbridges.
 m["walks"]["bightPier"]["v1_8_pts"] = m["walks"]["bightPier"]["pts"]
 m["walks"]["bightPier"]["pts"] = [[350, 880], [430, 900], [498, 896]]
 m["structures"]["bightPierStair"] = {"kind": "stair", "from": [498, 896], "to": [557.5, 896], "note": "v1.9: from the Flats' cliff top (the pier walk's end) down to the Bight ferry jetty"}
 m["structures"]["jetties"]["bightPier"] = [560, 896]
 m["walks"]["dune"]["v1_8_pts"] = m["walks"]["dune"]["pts"]
-m["walks"]["dune"]["pts"] = [[1148, 1463]] + m["walks"]["dune"]["pts"][1:]
+m["walks"]["dune"]["pts"] = [[1148, 1463], [1125, 1481], [1000, 1480]] + m["walks"]["dune"]["pts"][2:]
 m["structures"]["seaStairWestLaneBridge"] = {"xy": [1630.9, 762.8], "kind": "footbridge", "route": "yearWalk", "span_m": 14, "opening_m": 7, "width_m": 5.4, "deck": "the Year Walk's west Prow lane (54)", "under": "the sea stair's cutting (49)", "note": "v1.9: the lane crossed the stair 4.9 eu over it with no structure"}
 m["structures"]["seaStairEastLaneBridge"] = {"xy": [1650.3, 766.8], "kind": "footbridge", "route": "yearWalk", "span_m": 16, "opening_m": 8, "width_m": 5.4, "deck": "the Year Walk's east Prow lane (50.6)", "under": "the sea stair's cutting (36)", "note": "v1.9: the lane crossed the stair 14.2 eu over it with no structure"}
 
