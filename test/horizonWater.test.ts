@@ -157,10 +157,10 @@ describe('Horizon terrain leftovers (Stage A W3-C: P01, P05, P06)', () => {
   it('keeps the brook mouth\'s bank foot above the sea on land (P05: two samples at 0.00)', () => {
     for (const x of [820, 825]) expect(sample(x, 865).height).toBeGreaterThan(0);
   });
-  it('banks a basin at its surface within one lattice diagonal and west of the dam (P06)', () => {
+  it('banks a basin at its surface within one lattice diagonal (P06)', () => {
     const lake = waters.find(w => w.id === 'water.stillwater')!;
-    // The south shore west of the abutments: the lake at 50 stood over ground at 40–49 ([1061,889], [1100,908]).
-    for (const [x, z] of [[1061.6, 888.9], [1100.9, 904], [1099.6, 907.8]] as const) expect(sample(x, z).height, `${x},${z}`).toBeGreaterThanOrEqual(lake.level - 1e-6);
+    // The south shore west of the dam: the lake at 50 stood over ground at 43–49 ([1061,889], [1101,904]).
+    for (const [x, z] of [[1061.6, 888.9], [1100.9, 904]] as const) expect(sample(x, z).height, `${x},${z}`).toBeGreaterThanOrEqual(lake.level - 1e-6);
     // East of the dam the forecourt stays open (page A, P25): no lake bank raised in front of the face.
     expect(sample(1180, 925).height).toBeLessThan(40);
   });

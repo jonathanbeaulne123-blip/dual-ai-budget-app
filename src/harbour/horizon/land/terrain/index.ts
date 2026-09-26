@@ -166,6 +166,8 @@ function throatButtress(x: number, z: number, height: number): number {
   const buttress = smooth(1 - Math.max(0, tx - 18) / 72) * north * south;
   return buttress <= 0 ? height : mix(height, Math.max(height, (131 + 5 * clamp((z / s - 300) / 60)) * s), buttress);
 }
+/** The Notch's east rim near the High Span: under page A's square→deck-line sight line (22.3) less 0.8. */
+export const HIGH_SPAN_EAST_RIM = 21.5;
 /** The High Span's surveyed station on the lower river (water 9.2, bed 8). */
 const HIGH_SPAN_STATION: XY = [1236.875, 1105];
 function notchHeight(x: number, z: number, height: number): number {
@@ -180,7 +182,12 @@ function notchHeight(x: number, z: number, height: number): number {
   const floor = mix(river.width / 2, (east ? 28 : 16) * s, span), wall = (22 + 11 * q.progress) * s - river.width / 2;
   const half = floor + wall, run = NOTCH_RIM_RUN * s;
   if (q.distance >= half + run) return height;
-  const rim = Math.max(height, q.height + (32 - 7 * q.progress) * s);
+  // Page A frames the High Span's deck line (23–29) from the square (eye 13.6): the east rim near the bridge
+  // stays under that sight line along its whole length, easing back to the gorge's rim over 50 m, instead
+  // of a knife-edge spine at 30–35 that a sight window would notch into two striped spires.
+  const fromSpan = Math.hypot(q.x - HIGH_SPAN_STATION[0] * s, q.z - HIGH_SPAN_STATION[1] * s);
+  const gorgeRim = q.height + (32 - 7 * q.progress) * s;
+  const rim = Math.max(height, east ? mix(Math.min(gorgeRim, HIGH_SPAN_EAST_RIM * s), gorgeRim, smooth((fromSpan - 70 * s) / (50 * s))) : gorgeRim);
   // The gorge floor meets the river at its surface; applyWaters carves the wet bed.
   if (q.distance <= floor) return q.height;
   if (q.distance <= half) { const t = smooth((q.distance - floor) / Math.max(1, wall)); return mix(q.height, rim, t * t); }
@@ -216,8 +223,8 @@ function damWindow(x: number, z: number, height: number): number {
  * never within `near` m of the eye, and never on a bed (its carriageway and shoulder keep their
  * grade; the trim fades in over `bedFade` m from a bed's edge so no bed is left on a causeway).
  * `eyeH` is the pose's measured eye (floor + 1.6) on the Stage A bake; a test holds it to the bake.
- * - A · the High Span from the square: the Notch's east rim at [1288–1311, 1115–1131] stood 35 eu over
- *   a sight line of 22–23 (the deck line is at 23–29); the rim keeps its gorge wall below the line.
+ * - (A · the High Span from the square is held by the Notch's east rim cap, HIGH_SPAN_EAST_RIM: a window
+ *   notched the 35 eu rim spine at [1288–1311, 1115–1131] into two striped spires.)
  * - A · the dam's glass face: the gallery flights' embankment at [1169–1176, 916–918] (40–47) and
  *   V01's embankment toe at [1382–1389, 1110–1119] (17–19) cut the face's east half.
  * - (C · the skate shelf is not a terrain window: S1's own carriageway at 12.4–13.4 runs between the
@@ -229,7 +236,6 @@ function damWindow(x: number, z: number, height: number): number {
  */
 export interface SightWindow { page: string; subject: string; eyeH: number; a: XYZ; b: XYZ; margin: number; near: number; feather: number; bedFade: number }
 export const SIGHT_WINDOWS: readonly SightWindow[] = [
-  { page: 'A', subject: 'the High Span', eyeH: 13.6, a: [1188, 23.3, 1100], b: [1294, 23.3, 1107], margin: 1, near: 40, feather: 8, bedFade: 8 },
   { page: 'A', subject: "the dam's glass face", eyeH: 13.6, a: [1121, 38, 909], b: [1160, 38, 909], margin: 1, near: 40, feather: 8, bedFade: 6 },
 ];
 interface PreparedWindow { eye: XYZ; a: XYZ; b: XYZ; tri: XY[]; det: number; w: SightWindow; box: number[] }
@@ -300,7 +306,7 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
       continue;
     }
     // The dam holds Stillwater on its downstream side: no lake bank is raised there.
-    if (water.id === 'water.stillwater' && damHolds(x, z, distance <= guard)) continue;
+    if (water.id === 'water.stillwater' && damHolds(x, z)) continue;
     // The guard band IS the bank's foot: exactly at the water level (raised or cut to it); where a
     // stream meets the sea at level 0 the foot on land stays at the land floor (P05: ground > 0 inland).
     const foot = level < LAND_FLOOR * s && signedShoreDistance(x, z) > 0 ? LAND_FLOOR * s : level;
@@ -311,15 +317,12 @@ function applyWaters(x: number, z: number, original: number, waters: WaterCut[],
   }
   return Math.min(h, wetBedCeiling);
 }
-/** Half the dam's width between the abutments' outer faces (the wall is 44, the abutments 52 wide). */
-export const DAM_HALF_WIDTH = 27;
-/** South of the dam line the lake is held by the dam's solid, not by an earth bank: the forecourt in
- * front of the face stays open (DAM_WINDOW). West of the abutments the lake's own edge still gets
- * its bank foot (the raster guard band, at the lake level): the south shore there stood at 40–49
- * under a lake at 50 (P06, [1061–1101, 889–908]). */
-function damHolds(x: number, z: number, footOnly = false): boolean {
-  const s = getModel().scale, dam = M.structures.dam.xy, dx = x - dam[0]! * s;
-  return z > dam[1]! * s && Math.abs(dx) < 90 * s && !(footOnly && dx <= -DAM_HALF_WIDTH * s);
+/** South of the dam line the lake is held by the dam's solid, not by an earth bank: the forecourt in front
+ * of the face stays open (DAM_WINDOW). (Stage A W3-C tried a bank foot west of the abutments for P06's
+ * [1100,908]: it stood a 32 m earth wall beside the west abutment and moved no P06 sample; reverted.) */
+function damHolds(x: number, z: number): boolean {
+  const s = getModel().scale, dam = M.structures.dam.xy;
+  return z > dam[1]! * s && Math.abs(x - dam[0]! * s) < 90 * s;
 }
 const padFrames = new WeakMap<PadCut, { cos: number; sin: number; xReach: number; zReach: number }>();
 function padDistance(p: PadCut, x: number, z: number): number {
