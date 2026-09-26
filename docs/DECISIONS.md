@@ -1504,6 +1504,8 @@ These entries transcribe the supplied Horizon deck v1.5 and the explicit D1 quot
 
 D-tier note (D34–D38, pass 2 integrator, 26 Sep 2026): these are design-tier decisions from `docs/horizon/FLIGHT.md` §12, not money or trust-tier ones. They change how the sky feels and what the movers build; none touches `src/core/`, the books, the presence wire, the Worker, geography (`horizon-geo-1` stays) or household data. Each is applied per Claude's recommendation so the M6 track can build without asking, and each is reversible by editing `docs/horizon/make_manifest.py` / `FLIGHT.md` and regenerating MANIFEST (v1.7 → v1.8). D38 is the only one that would cross a trust boundary; it is recorded as a request, not built. Jonathan's answer replaces the "pending" wording when given.
 
+M6 design-lead rulings (pass 2 integrator, 26 Sep 2026; applied, no new D-number, pending Jonathan like D34–D38): **the parachute's stand-up** — "flared" is brakes ≥ 0.5 through the last 5 m *and* ground speed ≤ 3 m/s (into the 4 m/s south wind at half brakes the ground speed is 0 → stand-up; downwind → tumble; `FLIGHT.md` §3.3–3.4, `test/horizonChute.test.ts`); **the Throat is earned** — the Throat Run's bars are the measured −5 m (still air from the Crown, a miss, ≥ −10 m), +2.6 m (after the ridge to 190 m in the south wind, inside, ≥ 0) and +24.8 m (from 190 m over the Crown in still air, ≥ 15 m) instead of FLIGHT's first estimates (~1 m / ≥ 35 m) (`FLIGHT.md` §0, §2.2, §2.5, §10; `test/horizonGliderJourneys.test.ts`). The baked-land conflicts behind the remaining `it.fails` are pass-3 land requests in `docs/horizon/HANDOFF-notes/glider.md`.
+
 ### Pins
 
 | Pin | Date | Pass | Merge SHA | Geography revision | Presence world |

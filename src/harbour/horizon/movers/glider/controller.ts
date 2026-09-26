@@ -45,7 +45,10 @@ export interface FlightController extends ModeController{
   /** The simulation's current phase, for tests and the step log. */
   phase():string;
   outcome():LandingOutcome|null;
+  /** The step log's row (evidence and dev tools): sim seconds since launch, position, phase and the wing's numbers. */
+  probe():FlightProbe;
 }
+export interface FlightProbe{kind:'glider'|'parachute';t:number;x:number;y:number;z:number;phase:string;airspeed:number;vs:number;lift:number;bank:number;heading:number;groundSpeed:number;brake?:number;outcome?:string}
 
 export const WEAR_SECONDS=.6;
 export const POSE_SECONDS=.8;
@@ -190,6 +193,11 @@ export function createGliderController(deps:FlightControllerDeps):FlightControll
     finished:()=>stage==='done'||(stage==='pose'&&poseT>=POSE_SECONDS),
     phase:()=>stage==='corridor'&&corridor?corridor.phase==='corridor'?'corridor':corridor.phase:stage==='flight'?wing.phase:stage,
     outcome:()=>outcome,
+    probe():FlightProbe{
+      const c=stage==='corridor'&&corridor?corridor:null,[gx,gz]=wing.ground??[0,0];
+      return c?{kind:'glider',t:c.t,x:c.x,y:c.y,z:c.z,phase:controller.phase(),airspeed:c.speed,vs:c.phase==='corridor'?-c.speed*Math.sin(c.gate.slopeDegrees*Math.PI/180):0,lift:0,bank:c.bank,heading:c.heading,groundSpeed:c.speed,...(outcome?{outcome:outcome.kind}:{})}
+        :{kind:'glider',t:wing.t,x:wing.x,y:wing.y,z:wing.z,phase:controller.phase(),airspeed:wing.airspeed,vs:wing.vs,lift:wing.lift??0,bank:wing.bank,heading:wing.heading,groundSpeed:Math.hypot(gx,gz),...(outcome?{outcome:outcome.kind}:{})};
+    },
     artState:()=>({kind:'glider',flying,ended,stage,pose:controller.bodyPose(),open:1,landedFor:stage==='pose'?poseT:stage==='done'?poseT:null,faded:stage==='done'&&!!exitAt?.cut}),
   };
   return controller;
@@ -275,6 +283,11 @@ export function createParachuteController(deps:ParachuteDeps):FlightController{
     finished:()=>stage==='done'||(stage==='pose'&&poseT>=POSE_SECONDS),
     phase:()=>stage==='pose'||stage==='done'?stage:chute?.phase??stage,
     outcome:()=>outcome,
+    probe():FlightProbe{
+      const c=chute;if(!c)return{kind:'parachute',t:0,x:0,y:0,z:0,phase:controller.phase(),airspeed:0,vs:0,lift:0,bank:0,heading:0,groundSpeed:0};
+      const g=Math.hypot(c.vx,c.vz);
+      return{kind:'parachute',t:c.t,x:c.x,y:c.y,z:c.z,phase:controller.phase(),airspeed:g,vs:c.vy,lift:0,bank:0,heading:c.heading,groundSpeed:c.touchdown?.groundSpeed??g,brake:c.brake??0,...(outcome?{outcome:outcome.kind}:{})};
+    },
     artState:()=>({kind:'parachute',flying,ended,stage,pose:controller.bodyPose(),open:!chute?0:stage==='freefall'?0:stage==='opening'?Math.min(1,(chute.openT??0)/1.2):1,landedFor:stage==='pose'||stage==='done'?poseT:null,faded:stage==='done'&&!!exitAt?.cut}),
   };
   return controller;

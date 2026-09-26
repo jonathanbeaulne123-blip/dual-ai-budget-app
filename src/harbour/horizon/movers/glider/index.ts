@@ -46,6 +46,8 @@ export function registerBailOutProvider(runtime:Pick<GliderRuntime,'movers'|'wor
 }
 
 function withArt(runtime:Pick<GliderRuntime,'moverArt'|'settings'>,controller:FlightController){
+  // Dev only: the evidence harness reads the step log from the controller that is riding (`probe()`).
+  if(HARBOUR_DEV&&typeof window!=='undefined')(window as unknown as {__horizonFlight?:FlightController}).__horizonFlight=controller;
   const art=createFlightArt(controller.id==='parachute'?'parachute':'glider','classic',runtime.settings().tier);
   runtime.moverArt(art.root,(dt,figure)=>art.update(controller.artState(),dt,figure),()=>art.dispose());
   return controller;
