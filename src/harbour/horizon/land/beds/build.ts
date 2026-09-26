@@ -284,7 +284,9 @@ function thresholds(cuts:LandCuts,base:HeightQuery):XY[] {
     if(Array.isArray(row.xy[0]!))(row.xy as number[][]).forEach((p,i)=>make(`threshold.${row.id}.${i+1}`,p as unknown as XY));
     else {const exact:Record<string,number>={gondolaBase:18,gondolaTop:112,adit:40,southPortal:110,prowPlatform:M.sky.launches.prow.h,crownLaunch:M.sky.launches.crown.h,zipLanding:12,lampGallery:M.sky.launches.lampGallery.h,deepJetty:40.6,seaDoorJetty:1,lampDock:1,bightShoreJetty:1,floatDock:1.2,boathouseDock:1,landingQuay:3,stepsFoot:4};make(`threshold.${row.id}`,row.xy as unknown as XY,exact[row.id]!);}
   }
-  M.crossings.forEach((row,i)=>{if(row.resolution==='threshold'){
+  // Only authored register rows make a dismount pad: rows accepted from the bake (source 'bake v1.8') are flush
+  // junctions, footways or unresolved proposals, never a new marker (R1-88).
+  M.crossings.forEach((row,i)=>{if(row.resolution==='threshold'&&!(row as {source?:string}).source){
     // Register pads are named by the row's route names (registerRowKey), not its list index (R1-68).
     if(Array.isArray(row.at))make(registerRowKey(i),row.at as unknown as XY);
     else if(row.at.includes('465,700'))make(registerRowKey(i),[465,700]);

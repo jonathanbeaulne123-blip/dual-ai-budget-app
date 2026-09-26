@@ -49,7 +49,7 @@ export function buildThresholds(field: TerrainField, cuts: LandCuts, proofs: rea
     else add(t.id, t.id, t.xy as number[], t.modes, t.action);
   }
   // Register thresholds and their pads are named by the row's route names (registerRowKey), not the row's list index (R1-68).
-  HORIZON_MANIFEST.crossings.forEach((c, i) => { if (c.resolution === 'threshold' && Array.isArray(c.at)) add(registerRowKey(i), registerRowKey(i), c.at, ['board→feet'], c.note ?? 'Dismount at the marked crossing.', registerRowKey(i)); });
+  HORIZON_MANIFEST.crossings.forEach((c, i) => { if (c.resolution === 'threshold' && Array.isArray(c.at) && !(c as { source?: string }).source) add(registerRowKey(i), registerRowKey(i), c.at, ['board→feet'], c.note ?? 'Dismount at the marked crossing.', registerRowKey(i)); });
   const mode = (id: string) => { const b = cuts.beds.find(b => b.id === id); return b?.kind === 'road' ? 'wheels' : b?.kind === 'skate' ? 'board' : b?.kind === 'rail' ? 'cart' : b?.kind === 'cable' ? id === 'ZIP' ? 'zip' : 'cable' : id === 'FERRY' ? 'ferry' : id.startsWith('water') || id === 'DEEP_RUN' ? 'boat' : 'feet'; };
   for (const p of cuts.pads) if (p.kind === 'threshold' && !thresholds.some(t => t.padId === p.id)) { const proof = proofs.find(row => row.padId === p.id || p.id === `crossing.${row.id}`), kinds = proof ? [...new Set([mode(proof.sourceA ?? proof.a), mode(proof.sourceB ?? proof.b)])] : ['feet'], modes = kinds.filter(k => k !== 'feet').map(k => `${k}→feet`); add(p.id.replace(/^threshold\./, ''), proof?.id ?? p.id, [p.centre[0] / s, p.centre[2] / s], modes.length ? modes : ['feet→feet'], kinds.every(k => k === 'feet') ? 'Pause and give way at the marked junction.' : 'Stop at the marker and deliberately change mode.', p.id); }
   return thresholds;
