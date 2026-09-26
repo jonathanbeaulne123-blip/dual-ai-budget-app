@@ -21,7 +21,8 @@ import {
  * panel itself never posts.
  */
 export const PANEL_DOORS: Readonly<Record<Exclude<PanelHost, "hercules">, { target: string; words: string }>> = Object.freeze({
-  bank: { target: "queen", words: "Open the bank" },
+  // K1: the bank's open state is the Fund (Books › the Fund: balance, Needs you, To settle, The Level).
+  bank: { target: "fund", words: "Open the bank" },
   cellar: { target: "cellar-bills", words: "Open the Cellar" },
   tower: { target: "loft-banks", words: "Open the banks" },
   kitchen: { target: "plan-studio", words: "Open the table" },

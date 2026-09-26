@@ -4,7 +4,6 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { FundStandingBook, popupCaption } from "../src/FundStandingBook.tsx";
 import { FundBoard } from "../src/FundBoard.tsx";
-import { FundLedge } from "../src/FundLedge.tsx";
 import {
   accountRegister,
   accountRowAmount,
@@ -865,32 +864,5 @@ describe("The Standing Book", () => {
     } finally { await unmount(); }
   });
 
-  it("leaves the old board in place when the flag is off, and stands the book when it is on", async () => {
-    Object.defineProperty(window, "innerWidth", { value: 390, configurable: true });
-    const household = demo();
-    const props = { household, today: TODAY, view: "household" as const, memberId: BIANCA, busy: false, onOpen: () => {}, onKitchen: () => {}, onOpenAccount: () => {} };
-    const open = async (host: HTMLElement) => {
-      await act(async () => host.querySelector<HTMLButtonElement>(".fund-ledge-grip")!.click());
-      await act(async () => document.querySelector<HTMLButtonElement>(".is-sheet-grip")!.click());
-    };
-    vi.stubEnv("VITE_FUND_STANDING_BOOK", "0");
-    const off = mount();
-    try {
-      await act(async () => off.root.render(createElement(FundLedge, props)));
-      await open(off.host);
-      expect(document.querySelector(".fund-board.is-phone")).not.toBeNull();
-      expect(document.querySelector(".fund-book")).toBeNull();
-      await act(async () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
-    } finally { await off.unmount(); }
-    vi.stubEnv("VITE_FUND_STANDING_BOOK", "1");
-    const on = mount();
-    try {
-      await act(async () => on.root.render(createElement(FundLedge, props)));
-      await open(on.host);
-      expect(document.querySelector(".fund-board.is-phone")).toBeNull();
-      expect(document.querySelector(".fund-book.is-phone [role='tablist']")).not.toBeNull();
-      expect(document.querySelectorAll(".fund-book .fund-book-edge [role='tab'][data-divider='rail']")).toHaveLength(6);
-      await act(async () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
-    } finally { await on.unmount(); sessionStorage.clear(); }
-  });
+  // K1 (Tool Atlas §7): the phone Fund ledge that hosted the board is retired; the Office host keeps the flag (test/fund-standing-book.test.ts).
 });

@@ -145,7 +145,7 @@ export const TOOL_ATLAS: readonly AtlasTool[] = [
 
   // 2 · The Fund
   tool({ id: "fund-bank", label: "The Fund bank", subtitle: "Everyday · now, contributions, and what needs you", group: "fund", host: "bank", outcome: "one",
-    synonyms: ["fund", "everyday", "now", "queen", "meet the queen", "bank", "balance", "shared money", "household fund", "contribution", "contributions", "custodian", "surplus", "protect", "what now", "fund ledge"],
+    synonyms: ["fund", "everyday", "now", "queen", "meet the queen", "bank", "balance", "shared money", "household fund", "contribution", "contributions", "custodian", "surplus", "protect", "what now", "fund ledge", "the level", "to settle", "needs you", "fund pocket"],
     target: { kind: "house", target: "fund" }, spaces: "both", score: 9.4, covers: ["T17", "T18", "T13"] }),
   tool({ id: "accounts", label: "Accounts", subtitle: "Every account, card interest, and the Wallet", group: "fund", host: "bank", outcome: "two",
     synonyms: ["accounts", "account", "wallet", "visa", "statements", "cards", "chequing", "savings"],

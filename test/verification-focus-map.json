@@ -1148,7 +1148,6 @@
       "tests": [
         "test/fund-standing-book.test.ts",
         "test/fund-standing-book-dom.test.ts",
-        "test/fund-ledge.test.ts",
         "test/fund-plates.test.ts",
         "test/accounts-widget.test.ts",
         "test/category-shape.test.ts",

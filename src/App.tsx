@@ -70,7 +70,6 @@ import type { WorkShiftDraftCallbacks } from "./workCountDraft.ts";
 import { editSplitDraft, newSplitDraft, reviewedSplitPayload, splitDraftScope, type SplitDraft } from "./core/splitDraft.ts";
 import type { FundDestination } from "./FundStage.tsx";
 import { enqueueScopedWrite, sameWriteScope } from "./core/scopedWrite.ts";
-import { FundLedge } from "./FundLedge.tsx";
 import { isVisibleInView } from "./core/visibility.ts";
 import { useAppearanceBinding } from "./theme/ThemeProvider.tsx";
 import { AppearancePicker } from "./theme/AppearancePicker.tsx";
@@ -810,7 +809,6 @@ export function App() {
     return JSON.stringify([environmentRef.current, householdRef.current?.householdId, sessionRef.current?.memberId,
       sessionRef.current?.view, replicaScopeGenerationRef.current]);
   }
-  const [fundLedgeExpanded, setFundLedgeExpanded] = useState(false);
   const [swipeOpen, storeSwipeOpen] = useState(false);
   const swipeIntentRef = useRef(0);
   const setSwipeOpen = (open: boolean) => { swipeIntentRef.current += 1; storeSwipeOpen(open); };
@@ -3585,7 +3583,7 @@ export function App() {
 
   const workspaceCapabilityEnabled = import.meta.env.VITE_HERCULES_WORKSPACE === "1";
   const appearance = useAppearance();
-  useAppearanceBinding(environment, household && session ? sceneTabFor(tab) : "entry", view, adding || swipeOpen || fundLedgeExpanded || Boolean(confirm) || Boolean(guard));
+  useAppearanceBinding(environment, household && session ? sceneTabFor(tab) : "entry", view, adding || swipeOpen || Boolean(confirm) || Boolean(guard));
   useEffect(() => {
     if ((tab === "till" || tab === "together") && view !== "household") setTab("home");
   }, [tab, view]);
@@ -6824,7 +6822,8 @@ export function App() {
   const openFundDestination = (destination: FundDestination | "ask" = "record") => {
     rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
     if (destination === "swipe") { setAdding(false); setError(""); setSwipeError(""); setSwipeOpen(true); return; }
-    if (destination === "ask") { requestSharedBoard({ environment, householdId: household.householdId, memberId: session.memberId }, "ask"); goTab("together", "practical"); return; }
+    // K1: The Ask is a Glasshouse step now; its door opens the steps (the planner), never the retired board.
+    if (destination === "ask") { openHouseObject("planner"); return; }
     if (destination === "shelf") { herculesSourceScope.current = `${environment}:${household.householdId}:${session.memberId}:household`; setHerculesSourceFocus({route:"plan",view:"household",label:"Goals & reserves"}); goTab("plan"); return; }
     if (destination === "minutes") { goTab("more"); return; }
     setBooksPaneRequest(destination === "contribute" ? "fund" : destination === "seven-days" ? "register" : "fund-register");
@@ -7053,7 +7052,7 @@ export function App() {
   // Due reminders are an inline list until one occurrence's review sheet opens.
   // They must not silently disable the companion's ordinary help entry.
   const herculesReviewBlocked = Boolean(guard && (guard.kind !== "duePreview" || dueSheetOpen || dueReviewActive));
-  const workspaceMode = !workspaceEnabled || Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen || fundLedgeExpanded) ? "hidden" : tab === "hercules" ? "room" : workspaceCompact ? "compact" : "hidden";
+  const workspaceMode = !workspaceEnabled || Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen) ? "hidden" : tab === "hercules" ? "room" : workspaceCompact ? "compact" : "hidden";
 
   /** The Queen's world (Vision v2 §4.2, `VITE_QUEENS_NEST`): Our Home is one fixed, edge-to-edge world. Only the
       two-space tabs, her field and the five-slot nav are on it; the top bar, the sync line, the household switcher,
@@ -9211,7 +9210,7 @@ export function App() {
         adding={adding || swipeOpen}
         visorPop={visorPop}
         spark={spark}
-        activityBlocked={Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen || fundLedgeExpanded)}
+        activityBlocked={Boolean(adding || swipeOpen || confirm || herculesReviewBlocked || commandOpen)}
         memberId={session.memberId}
         view={view}
         freshness={syncFreshnessDisplay.transportMode === "offline" ? "offline" : syncFreshnessDisplay.tone === "danger" || syncFreshnessDisplay.tone === "warning" ? "stale" : "current"}
@@ -9357,18 +9356,8 @@ export function App() {
         session={session}
       />
 
-      {household.householdFund && ["home", "calendar", "plan", "more", "together"].includes(tab) && !queenWorldHome
-        && (!HOUSE_WORLD_ENABLED||houseToolsVisible) && !charterTakeoverVisible && !onboardingInviteVisible && !adding && !swipeOpen && !confirm && !guard && !commandOpen && !fabOpen ? (
-        <FundLedge key={`${environment}:${household.householdId}:${session.memberId}:${view}`}
-          household={household} today={today} view={view} memberId={session.memberId} busy={busy}
-          scenarioSource={scenarioSource}
-          onExpandedChange={setFundLedgeExpanded} onKitchen={runKitchen}
-          onOpenAccount={accountId => {
-            rememberSession({ memberId: session.memberId, view: "household", householdId: household.householdId });
-            openWallet(accountId);
-          }}
-          onOpen={openFundDestination} />
-      ) : null}
+      {/* K1 (Tool Atlas §7): the Fund ledge / FundStage plate rail is retired. Everyday and the next bill are on the camp
+          card; the Fund bank panel and its open state (Books › the Fund) hold the balance, Needs you, To settle and The Level. */}
 
       {!charterTakeoverVisible ? (
       HARBOUR_ENABLED?<><Compass fab={harbourBarFab} fabOpen={fabOpen} toolsOpen={quickSheetOpen} member={actorId} theme={appearance.preview??appearance.saved.theme} calm={comfort.quiet} alwaysShowLabels={comfort.labels} onQuickSheet={()=>setQuickSheetOpen(true)}/>

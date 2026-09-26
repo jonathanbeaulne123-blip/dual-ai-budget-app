@@ -29,8 +29,6 @@ const PENDING: Readonly<Record<string, readonly string[]>> = {
   // Books, the Fund and the Campfire (K1, K3, §1.3 rows): whoever lands the Campfire / Fund bank slices.
   "src/Books.tsx": ["Household Fund", "Close the month"],
   "src/FundDrawer.tsx": ["Next out"],
-  "src/FundLedge.tsx": ["Household Fund"],
-  "src/HouseholdFundPanel.tsx": ["Household Fund"],
   "src/NextOutStage.tsx": ["Next out"],
   "src/queen/QueenCellar.tsx": ["Pay it"],
   "src/queen/QueenHome.tsx": ["Together"],

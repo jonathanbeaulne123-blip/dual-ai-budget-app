@@ -3,7 +3,6 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
-import { FundLedge } from "../src/FundLedge.tsx";
 import { PhoneSpread } from "../src/PhoneSpread.tsx";
 import { PHONE_CHAPTERS, ownPhoneTipSpark } from "../src/core/phoneSpread.ts";
 import { catalogHousehold, configureHouseholdFund, seedDemoHousehold, reversePostedMoney, workShiftIsReversed, addGoal, addRecurrence } from "../src/core/index.ts";
@@ -47,13 +46,7 @@ describe('Claude chapter spread',()=>{
       await act(async()=>host.querySelectorAll<HTMLButtonElement>('[role="tab"]')[1]!.click());
       await act(async()=>host.querySelectorAll<HTMLButtonElement>('[role="tab"]')[0]!.click());
       expect(host.querySelector('[data-ask-confirm]')).toBeNull();expect(writes).toBe(0);
-      Object.defineProperty(window,'innerWidth',{value:390,configurable:true});
-      await act(async()=>root.render(createElement(FundLedge,{household:h,memberId:'MEM-002',view:'personal',today:'2026-09-08',busy:false,onKitchen:()=>writes++,onOpen:()=>{},onOpenAccount:()=>{}})));
-      await act(async()=>host.querySelector<HTMLButtonElement>('.fund-ledge-grip')!.click());
-      await act(async()=>document.querySelector<HTMLButtonElement>('[data-ask-raise]')!.click());
-      await act(async()=>document.querySelector('[data-ask-confirm-move]')!.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true})));
-      expect(document.querySelector('[data-ask-confirm]')).toBeNull();
-      expect(document.querySelector('.fund-ledge-modal')).not.toBeNull();expect(writes).toBe(0);
+      // K1: the phone Fund ledge that also hosted the spread is retired.
     }finally{await act(async()=>root.unmount());host.remove();}
   });
   it('navigates all pages without writing and confines the Reach rail to the Ask reading',async()=>{
