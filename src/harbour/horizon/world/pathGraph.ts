@@ -54,10 +54,14 @@ export function buildPathGraph(cuts: LandCuts, intersections?: readonly Intersec
   const prisms = prismIndex(cuts), blocked: BlockedEdge[] = [];
   const open = edges.filter(e => {
     if (e.id.startsWith('lip:')) return true;
-    const [p, q] = e.points as [Point3, Point3], n = Math.max(1, Math.ceil(Math.hypot(q[0] - p[0], q[2] - p[2]) / .5));
+    const [p, q] = e.points as [Point3, Point3], len = Math.hypot(q[0] - p[0], q[2] - p[2]), n = Math.max(1, Math.ceil(len / .5)), nx = -(q[2] - p[2]) / (len || 1), nz = (q[0] - p[0]) / (len || 1);
     for (let k = 0; k <= n; k++) {
-      const at = mixPoint(p, q, k / n), hit = prisms.find(at[0], at[2]).find(r => !(r.deck && r.bedIds.includes(e.bedId)) && r.quads.some(quad => inQuad(quad, at[0], at[2])) && planeAt(r.top, at[0], at[2]) > at[1] + STEP && planeAt(r.bottom, at[0], at[2]) < at[1] + BODY);
-      if (hit) { blocked.push({ edge: e.id, bedId: e.bedId, at, solid: hit.solid }); return false; }
+      // The body is a 0.3 eu capsule: test the line and both flanks.
+      const c = mixPoint(p, q, k / n);
+      for (const side of [0, -.3, .3]) {
+        const x = c[0] + nx * side, z = c[2] + nz * side, hit = prisms.find(x, z).find(r => !(r.deck && r.bedIds.includes(e.bedId)) && r.quads.some(quad => inQuad(quad, x, z)) && planeAt(r.top, x, z) > c[1] + STEP && planeAt(r.bottom, x, z) < c[1] + BODY);
+        if (hit) { blocked.push({ edge: e.id, bedId: e.bedId, at: [x, c[1], z], solid: hit.solid }); return false; }
+      }
     }
     return true;
   });

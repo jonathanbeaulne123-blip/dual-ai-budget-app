@@ -162,6 +162,12 @@ function journey(cuts:LandCuts,base:HeightQuery):YearWalkShare[] {
     let lane=-1;for(let i=0;i<j;i++)if(arcs[j]!-arcs[i]!>40&&arcs.at(-1)!-arcs[j]!+arcs[i]!>40&&distance(plan(first[i]!),plan(first[j]!))<4.5&&Math.abs(dir(i)[0]*dir(j)[0]+dir(i)[1]*dir(j)[1])>.9&&(lane<0||distance(plan(first[i]!),plan(first[j]!))<distance(plan(first[lane]!),plan(first[j]!))))lane=i;
     if(lane>=0){const a=first[lane]!,c=first[Math.min(first.length-1,lane+1)]!,t=nearestOnPath(plan(first[j]!),[a,c]).at[1];pins.push(pin(plan(first[j]!),shareOf(lane)?hostHeight(shareOf(lane)!,plan(first[j]!)):t,'adjacent lane'));}
   }
+  // journey.yearWalk.crossings: "every other crossing is at grade on a walk, a spur or a road".
+  // Where the walk crosses another foot route's centreline within 2 eu of its height (a near-miss,
+  // not a designed over/under), it takes that route's height (v1.7 crossed walk garden 0.6-1 eu
+  // apart by the Library, a lip the body cannot climb).
+  const footRoutes=cuts.beds.filter(b=>b.terrainCut&&['walk','trail'].includes(b.kind));
+  first.forEach((q,i)=>{if(shareOf(i))return;for(const b of footRoutes){const n=nearestOnPath(plan(q),b.points);if(n.distance<1.5&&Math.abs(n.at[1]-q[1])<2){pins.push(pin(plan(q),n.at[1],`at-grade crossing ${b.id}`));break;}}});
   const solveDiagnostics:LandCuts['diagnostics']=[],points=gradeRoute('yearWalk',controls,base,limit,pins,solveDiagnostics,5,TYP.walk).map((p,i):XYZ=>{const s=shareOf(i);return s?[p[0],hostHeight(s,plan(p)),p[2]]:p;});
   const b=bed('yearWalk','walk',points);b.width=b_width;b.shoulder=1.2;b.maxGrade=limit;cuts.beds.push(b);
   // Stretches are listed on the final (host-copied) heights, not the pre-copy solve.
