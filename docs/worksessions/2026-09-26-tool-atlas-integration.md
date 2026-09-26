@@ -2,7 +2,7 @@
 
 ## State
 
-Local branch `codex/tool-atlas-integration` merges the supplied `claude/tool-atlas` bundle head `6f7ff0f3` onto `main@9d43c120` in one merge commit (`8ead7e6c`). This includes the bundle's 80 commits (75 non-merge patches). It has not been pushed, merged into GitHub `main`, deployed, or tested with real household data. Risk: **High** because Record's ledger routing, month-close access, the shared/personal world boundary, and App navigation change.
+Review branch `codex/tool-atlas-integration` merges the supplied `claude/tool-atlas` bundle head `6f7ff0f3` onto `main@9d43c120` in one merge commit (`8ead7e6c`). This includes the bundle's 80 commits (75 non-merge patches). It is intended for a draft PR and has not been merged into GitHub `main`, deployed, or tested with real household data. Risk: **High** because Record's ledger routing, month-close access, the shared/personal world boundary, and App navigation change.
 
 ## Reconciliation
 
@@ -21,6 +21,6 @@ Jonathan chose the Campfire **screen check for this merge**. The books close is 
 
 ## Decision and next action
 
-**No-go for GitHub main today.** The merge is available for review as one branch. It needs a completed High-risk gate and actual rendered acceptance at the named widths, themes and accessibility settings. Investigate the baseline demo-entry stall separately, then run the browser spec and visual checks against the merged commit. After those gates, push one PR for the combined change and review it before any Development deployment.
+**No-go for GitHub main today.** The merge is available for review in one draft PR. It needs a completed High-risk gate and actual rendered acceptance at the named widths, themes and accessibility settings. Investigate the baseline demo-entry stall separately, then run the browser spec and visual checks against the merged commit. Review the draft PR after those gates before merging or any Development deployment.
 
 Budget delta (5): **+2 intended** — Record names and enforces its ledger, Bill paid remains Ours, and the month close has one Campfire UI door. Engagement delta (3): **+2 intended** — the same island and glass serve Ours and Mine, with the dock and tool search at home. These are implementation deltas, not live acceptance claims.
