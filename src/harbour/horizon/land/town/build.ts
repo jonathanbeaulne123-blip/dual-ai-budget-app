@@ -52,7 +52,7 @@ export function buildTown(cuts:LandCuts,base:HeightQuery):void {
   const lane=gradeRoute('homestead.lane',[[1514,1190],[1555,1205],[1540,1240],[1500,1250],[1520,1260],[1497,1265]],base,.08,[{xy:[1514,1190],height:12,reason:'yard'},{xy:[1500,1250],height:5,reason:'crossing'},{xy:[1497,1265],height:3,reason:'quay'}],cuts.diagnostics);cuts.beds.push(bed('homestead.lane','walk',lane));
   addFlatPad(cuts,'homestead.yard','homestead',[1520,1190],12,[26,20]);
   for(const site of M.journey.homestead.sites){
-    const xy='xy'in site?site.xy as unknown as XY:site.id==='home'?M.hosts[0]!.xy as unknown as XY:[1172,912] as unknown as XY;
+    const xy='xy'in site?site.xy as unknown as XY:site.id==='home'?M.hosts[0]!.xy as unknown as XY:[1177,912] as unknown as XY; // v1.9: 5 m east, clear of the dam gallery's stairwell
     const sizes:Record<string,XY>={home:[22,16],kitchenGarden:[15,10],landing:[12,8],workbench:[7,5],pavilion:[12,12],reserveBasin:[5,5],timberCrossing:[20,3]};
     const h=site.id==='home'?14:site.id==='reserveBasin'?52:site.id==='landing'?3:site.id==='timberCrossing'?5:heightOnBeds(cuts,xy,base,40);
     addFlatPad(cuts,`homestead.${site.id}`,'homestead',xy,h,sizes[site.id]!);

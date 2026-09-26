@@ -1,8 +1,8 @@
 # The Horizon — the deck
 
-> Current canonical manifest: v1.8 (Stage A integration, 26 September 2026; see "v1.8 deltas" at the end). v1.7: Stage A design-lead data, 26 September 2026 ("v1.7 deltas"). v1.6: Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data. PIN-0 remains pending until its accepted merge SHA is recorded.
+> Current canonical manifest: v1.9 (Stage A fixer wave 3, track W3-A, 26 September 2026; see "v1.9 deltas" at the end). v1.8: Stage A integration ("v1.8 deltas"). v1.7: Stage A design-lead data, 26 September 2026 ("v1.7 deltas"). v1.6: Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data. PIN-0 remains pending until its accepted merge SHA is recorded.
 
-Version 1.8 · 26 September 2026 · Owner: Jonathan (product) · Author: Claude (design lead, review)
+Version 1.9 · 26 September 2026 · Owner: Jonathan (product) · Author: Claude (design lead, review)
 
 This folder is **what** to build, pass by pass. The Grand Plan artifact (`inputs/grand-plan.txt`, published as "The Horizon Grand Plan" v1.1) is **why**: the approved design, its chapters and decisions D1–D12 (`DECISIONS.md` carries their status and adds D13–D16). Nobody builds from the Grand Plan directly. Where the Grand Plan and this folder differ in a number or an id, this folder wins; where they differ in intent, stop and ask the design lead.
 
@@ -312,4 +312,85 @@ The integrator merged the four Stage A tracks (T1 terrain/water/paint, T2 beds/j
 
 - **S2's descent** (T2 D-3): S2 cannot descend from the Wash (38) to the Bight Bridge deck lane (12) at 18 %; it needs ~150 m more or a ramp. Jonathan decides with R-A1.
 - **V01's offshore north-east corner** (T0 item 14): V01 samples at [1454–1534, 324–406] lie up to 24 m outside the island outline (manifest point [1500,340]); the Year Walk shares V01 there. Either the coast grows or V01's corner moves inland (~[1480,360]); needs a terrain + route revision.
+
+## v1.9 deltas (Stage A, W3-A: beds, structures and data)
+
+Track W3-A re-authored the Year Walk, Horizon Drive's north-east corner and Crown Road's start so the seven door walks, the nine journeys and the Year Walk's grade rule pass on the built land. `make_manifest.py` → "v1.9"; the generator reproduces `MANIFEST.json` byte for byte. Ids never change. Every re-authored Year Walk run is recorded in `journey.yearWalk.v1_9_edits` (was / now / why); moved values keep their v1.8 value beside them (`v1_8_pts`, `v1_8_h`, `v1_8_from`, `v1_8_to`).
+
+### 1. The Year Walk
+
+| Place | v1.8 | v1.9 | Why (number) |
+|---|---|---|---|
+| Scholars, the March in-leg | a second line 3–4 eu over the Garden Walk's shoulder at [802,468] | the north lane of the March out-leg (3.5 m, one height); crosses the Garden Walk flush beside the out-leg | the Glasshouse and Cottage door walks stopped at [802,468] (terrain 40.4°); browser walks 5/7 → 7/7 |
+| The Hollow: May / September pads | 31.5 / 33 | **37 / 35** (`pins[*].v1_8_h`) | the Green Road footway they leave is at 38.8, 37–45 m away: fixed heights 22.2 and 9.3 eu of route short (P08 72.7 % / 40.6 %) |
+| The Hollow neck (x 893–913, z 600–660) | both Hollow lanes 2–8 eu over S4 and the Garden Walk | both lanes are **S4's east footway** (new `shares` rows, offsets 6 / 8); S4 meets the Cottage front walk at grade (36) | separation S4 69 samples; a generated S4 × Year Walk deck stood across the Garden Walk |
+| The April lane above the Hollow | [925,585] | [935,585] | its 18 eu band-face descent to the S4 footway needs ≥ 150 m at 12 % (148 → 164 m) |
+| January pad | 117 | **112.8** | 7 eu over the turning circle with 37 m of walk between (P08 36 % at [1369,689]) |
+| South portal forecourt | the two January legs crossed the Ore Line's approach cut and ran 1–3 eu over the ORE station's link walk | both legs keep west of the rail as lanes 3.5 m apart; `levels`: both at 110 within 9 m of [1350,687] | P16 Year Walk 2.65 over the Ore Line (rail clearance 3.2) |
+| The Lakeside switchback (T0 #16) | 14 legs of 20–30 m, 5 m apart, 12–16 %; left across S1 at [1255,862] where S1 is 4 eu under the terrace | **seven 28 m legs on a 7.4 m pitch** (x 1325–1280.6, z 852–880) with turning landings; `structures.lakesideSwitchback` (kind switchbackRamp): each leg's downhill shoulder is grounded onto the leg below as the retaining wall between them; leaves across S1 at grade at **[1267,842]** (S1 at the terrace height, 55) to the rim trail at [1251,836] (the February share starts there; `s1Crossing`) | P08 15–16 % at [1250–1254, 842–862]; fixed heights 2.9 eu short |
+| North-east corner (November / January verges) | offsets of the v1.8 chord over the sea | re-laid as offsets of the new Drive alignment (same sides and offsets); January turns onto Crown Road's east verge at the junction's inside corner without crossing V02 | follows item 2 |
+
+New fields: `journey.yearWalk.levels` (extra height pins on unshared stretches; `r` pins every sample within r), `journey.yearWalk.s1Crossing`.
+
+### 2. Horizon Drive's north-east corner and Crown Road (T0 #14)
+
+`roads.V01`: the control [1500,340] made the Drive a 330 m chord over the sea (x 1370 → [1545,470], 65–70 eu over water; P09 worst drop 72.7, P12 worst void 74.3, P32 a crossing pad 70 over the sea). It is replaced by seven controls 10 m inside the cliff top ([1353.8,295.8] … [1546,472]): a cliff drive cut into the headland like the Prow. `roads.V02` starts from the Drive at **[1433.3,335.6]** (was [1500,340]) and climbs one even grade (11.2 %) after a 25 m level landing at 70 (builder), so its Year Walk footway stays ≤ 12 %.
+
+### 3. February and September above the Hollow
+
+February rode the Crown's flank at 65–67 over September at 40–44, 5 m away (P12: 24 eu unsupported runs at [1046–1056,519–529]). February now comes down onto the 45 shelf ([1052,662] → [1060,600] → [1062,540] → [1050,487]); September's pad moves 8 m west to **[1032,652]** at **40** (`stations[sep].v1_8_xy`, `moveWhy_v1_9`) and September returns from it across Green Road and walks Green Road's **west footway** (new `shares` row, offset 6.5) north to the pass ([927,388]). Green Road meets February at grade at [945,474.5] (45.5, builder pin).
+
+### 4. Named footbridges (`structures`)
+
+| Id | Where | Carries | Over | Why |
+|---|---|---|---|---|
+| `gardenWalkBridge` | [965.7,761.1], 40 m, opening 26 | the Garden Walk on its own grade (51–55) | Green Road (37) and its May/September footway | the walk hung 16.7 eu over Green Road (the generated span found no footing within 20 m); the reserved at-grade row VG × walk garden (R-A7) is untouched |
+| `crownWalkBridge` | [1410.1,605.8], 36 m, opening 24 | the Crown walk (119–122) | Crown Road's cutting (99) and its January footway | the walk hung 21 eu over Crown Road (span refused) |
+
+A named footbridge (`route`, `span_m`, `opening_m`, `width_m`) is built by the structures builder on the route's own graded points; its bents stand outside every lower corridor (moved outward up to 6 eu, else refused and reported) and a through truss spans the opening between the innermost bents.
+
+### 5. The Prow walk
+
+`walks.prow.pts` (v1.8 in `v1_8_pts`): the trail ran along the lip of V01's Prow cutting and over it twice (22 unsupported runs up to 38.5 eu; six foot crossings 12–34 eu over the Year Walk). It now keeps to the Prow top east of the cutting — from the south lookout over the harbour past the November station, between the Year Walk's two Prow lanes, onto the west lane at [1630,790], short of the sea stair's head.
+
+### 6. Views (W3-C requests A1, A4, A6, A7)
+
+Page A portrait `fov_deg` 50 → **45** (the viewRule minimum); page E `xy` [1305,482] → **[1300.5,485.5]** (the run-off corner of the lookout deck; the deck centre filled 44 % of the frame); page K `xy` [1000,758] → **[1006,762]** (on the rim walk by the Glasshouse steps; the eye stood 1.4 eu under the walk); page L `portrait.xy` → **[1460,1300]**. v1.8 values kept beside them.
+
+### 7. Builder rules that came with v1.9 (no data)
+
+- A Year Walk height pin carries its sample index (two lanes of one walk no longer take each other's pins).
+- Every Year Walk centreline crossing of a foot route within 3 eu is held flush on both neighbouring samples.
+- A spur holds its host road's height across that road's Year Walk footway lanes.
+- Junction aprons: a foot route inside a road's corridor near an at-grade junction takes the road's height (the Boathouse walk).
+- `groundBeds`: a lower route is judged at its own height where it passes under a prism.
+- The zip landing ramp is a timber trestle (no earth dune across the beach; W3-C A3).
+
+### 8. Reserves (P31) — D-2 for Jonathan (reversible)
+
+- **The Bight trail becomes the Bight Shore spur's landward footway** (`walks.bight.footwayOf`: host VBS, 4.2 m, the side of [1100,1100]; the builder lays it at the spur's heights with no wall between). It ran through all four Bight plots (27–28 samples inside each); its v1.8 shore line is kept in `v1_8_pts`. Undo = delete `footwayOf`.
+- **The hangar bay** (`reserves.small.hangarBay`, plot.flats.1) moves [455,600] → **[458.2,600]** and becomes an **11 × 18 m** bay facing the strip (the 26 m between the strip's and S2's 6 m margins cannot hold an 18 m face); its door is on the strip side and its access walk is its service (`plot.flats.1.service`, was `hangar.access`).
+- **The Bight Shore jetty** moves [735,955] → **[728,946]** (it stood in plot bight.2's margin; v1.8 in `structures.jettiesV1_8`).
+- **Terraces plot 3**: the Prow cliff drive's control [1540,1000] → **[1543.2,1001.4]** (3.5 m off the plots); the December and January verges are re-laid on it.
+- Open: **plot bight.1** — the June lane (32 samples inside) and S4 (13 in the margin) run in the 10 m between the plot's north-east margin and the Bight Shore spur; the corridor needs either the plot moved ~12 m south-west or S4 and the June lane re-routed (decision for Jonathan).
+
+### 9. Structures and heights (P16/P17)
+
+- `reachFootbridge` deck 6 → **9.5** (4 m canoe clearance over the lower river; the Reach walk's pin follows).
+- Every dock stands 0.6 over the water it reaches, read from the manifest's water (the Boathouse jetty's deck at 1 stood 0.75 under the Reach east channel's 1.75; now 2.35), and a threshold on a jetty stands on its deck.
+- The Bight pier walk stops at the Flats' cliff top (`walks.bightPier.pts`, v1.8 in `v1_8_pts`) and **`structures.bightPierStair`** (kind stair, [498,896] → [557.5,896]) takes it down to a new **`jetties.bightPier`** at the ferry stop [560,896] (it ran on at 36 eu over the Bight). The wash footbridge span is retired (the stair crosses the dry wash mouth).
+- The dune walk starts at the zip landing's foot [1148,1463] (it passed 2.2 eu under the landing stair) and runs 10–18 m south of the landing ramp's trestle ([1125,1481], [1000,1480]; it ran under the trestle's south leg for 60 m, where no bent could stand).
+- **`seaStairWestLaneBridge` / `seaStairEastLaneBridge`**: the Year Walk's two Prow lanes cross the sea stair's cutting on short named footbridges (4.9 and 14.2 eu over the stair).
+- **The dam gallery** (T3's layout): an open stairwell in the east abutment south of the wall — three flights in x-lanes 1166.5 / 1162.4 / 1170.6 between z 910.75 and 922.75, landings at 38 and 45, the exit at 52 to the crest at [1162,52,903]; nothing in Stillwater; walls to 46.05 and no roof (page F's eye is 2.3 m away). The homestead's reserve basin moves 5 m east ([1177,912]).
+- **The Deep (W3-C A5)**: the ceiling is closed over the Throat corridor (the skylight is its only hole); the Throat's lining ends at the Deep's north wall (z 390) and the collar carries that wall from the ceiling (68) to 76.7, so the Throat opens into the Deep below its ceiling only. From the jetty the mouth of daylight reads through that opening (its lower band); page G's skylight shaft is no longer hidden by the Throat's lining inside the room; the Throat is dark again (P25).
+- The junction resolver: a lower route under a tunnel or cavern roof is separated by it (no "two foot routes" report); a carried deck (no terrain cut: a trestle, stair or jetty) with the lower route's clearance under it is its own structure.
+- The Flats trail and the pier walk meet at one height (30.5) at [350,880].
+
+### 10. The crossings register (v1.9)
+
+Every computed intersection of the v1.9 build has a row (**324 / 324**). 19 rows are accepted from this bake (`source: "bake v1.9"`, same vocabulary and notes as v1.8); 45 v1.8 bake rows with no plan hit in the v1.9 build (the geometry they described moved: the Prow walk, the dam gallery, the Bight pier, the January legs, the NE corner…) or duplicating a matched row are retired to `routePairNotes` (kind "retired register row (v1.9)"); three authored rows whose routes moved are retired with their reason (DEEP_RUN × walk prow, S2 × walk bightPier, walk bightPier × water wash); nine v1.8 bake rows now met flush become junctions (`v1_8_resolution` kept). Reserved rows are untouched.
+
+### 11. S1 on its High Span shelf (W3-C A2)
+
+`skate.S1.pts` gains [1204,1080] and [1204,1133] (v1.8 in `v1_8_pts`): S1 rides its skate shelf (x 1204, z 1078–1135, h 12, builder pins) instead of running at grade 1–6 m east of it and 1 m above it. Page C: the shelf 0/0 → 2/4 px (portrait passes; 16:9 needs W3-C's sight window). crown→quay 127.7 → 128.9 s (110–150).
 

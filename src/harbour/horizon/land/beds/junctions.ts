@@ -131,6 +131,19 @@ export function clearRouteCorridors(cuts:LandCuts,beds:readonly BedCut[]=cuts.be
 /** A plan point on a bridge deck or inside a tunnel of either route. */
 const onStructure=(b:BedCut|undefined,at:XY)=>!!b&&(b.id.startsWith('structure.')||(b.terrainExclusions??[]).some(e=>e.openSpan&&distance(at,e.at)<e.radius));
 const FOOT=['walk','trail','boardwalk','stair'];
+/** v1.9: the id of a tunnel or cavern roof prism over `at` whose underside lies between `from` and `to` (a lower
+ * route inside a tunnel, the Deep or a stairwell is separated from a walk above by that roof and the ground on it). */
+function enclosingRoof(cuts:LandCuts,at:XY,from:number,to:number):string|undefined {
+  const inside=(q:XY[],x:number,z:number)=>{let hit=false;for(let i=0,j=q.length-1;i<q.length;j=i++){const a=q[i]!,b=q[j]!;if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])hit=!hit;}return hit;};
+  for(const s of cuts.solids){
+    if(s.role!=='roof'||s.positions.length%24)continue;
+    for(let o=0;o+23<s.positions.length;o+=24){
+      const q:XY[]=[0,1,2,3].map(k=>[s.positions[o+k*3]!,s.positions[o+k*3+2]!]),under=Math.min(...[0,1,2,3].map(k=>s.positions[o+k*3+1]!));
+      if(under>=from&&under<=to&&inside(q,at[0],at[1]))return s.id;
+    }
+  }
+  return undefined;
+}
 /** Retaining walls must share the real openings of separated route crossings.
  * Keep closed masonry above and below the passage rather than deleting a wall
  * or disabling its collision. A minimum 0.6 m lintel remains above headroom. */
@@ -216,8 +229,40 @@ function alignSurfaceJoins(cuts:LandCuts,proofs:readonly ComputedCrossing[],base
   }
 }
 /** Called once after C measures logical routes, before A applies the final terrain cuts. */
+/** W3-A: junction aprons. A foot route that meets a road at grade at a shallow angle runs inside
+ * the road's corridor for a few metres before the centreline hit; there it must already stand at
+ * the road's height (the Reach walk met Horizon Drive 0.5 eu under the road's bed edge at
+ * [1372.7,1275] and the Boathouse door walk stopped in the browser). Guest samples inside the host
+ * corridor within 20 eu of the junction take the host's height; the samples beyond ease back to
+ * their own profile at the guest's grade limit. Only the touched stretch is re-emitted. */
+function junctionAprons(cuts:LandCuts,proofs:readonly ComputedCrossing[],base:HeightQuery):void {
+  const touched=new Set<BedCut>();
+  for(const row of proofs){
+    if(row.resolution!=='threshold'||row.kind==='waterConfluence'||row.kind==='modeTransfer')continue;
+    const a=routeFor(cuts,row.sourceA,row.a),b=routeFor(cuts,row.sourceB,row.b);if(!a||!b||a===b)continue;
+    const [host,guest]=a.width>=b.width?[a,b]:[b,a];
+    if(host.kind!=='road'||!['walk','trail'].includes(guest.kind)||guest.id==='yearWalk'||!guest.terrainCut)continue;
+    if(Math.abs(nearestOnPath(row.at,host.points).at[1]-nearestOnPath(row.at,guest.points).at[1])>.5)continue;
+    const pts=guest.points,arcs=[0];for(let i=1;i<pts.length;i++)arcs.push(arcs[i-1]!+distance(plan(pts[i-1]!),plan(pts[i]!)));
+    const along=nearestOnPath(row.at,pts).along,reach=host.width/2+host.shoulder+.6,limit=Math.min(.12,guest.maxGrade),fixed=new Set<number>();
+    const next=pts.map(p=>[p[0],p[1],p[2]] as [number,number,number]);
+    pts.forEach((p,i)=>{if(Math.abs(arcs[i]!-along)>20)return;const n=nearestOnPath(plan(p),host.points);if(n.distance>reach)return;next[i]![1]=n.at[1];fixed.add(i);});
+    if(![...fixed].some(i=>Math.abs(next[i]![1]-pts[i]![1])>.02))continue;
+    // Ease outwards from the fixed samples: each free sample stays within the grade cone of its neighbour.
+    for(const dir of [1,-1])for(let i=dir>0?1:pts.length-2;i>=0&&i<pts.length;i+=dir){if(fixed.has(i))continue;const j=i-dir,d=Math.abs(arcs[i]!-arcs[j]!)*limit;next[i]![1]=clamp(next[i]![1],next[j]![1]-d,next[j]![1]+d);}
+    guest.points=next as unknown as XYZ[];touched.add(guest);
+  }
+  if(!touched.size)return;
+  const markerPositions=cuts.pads.filter(p=>p.kind==='threshold').map(p=>plan(p.centre));
+  for(const bed of touched){
+    const prefixes=['bed','surface','kerbs','edges','retaining','shoulders'].map(s=>`${bed.id}.${s}`);
+    cuts.solids=cuts.solids.filter(s=>!prefixes.some(prefix=>s.id===prefix||s.id.startsWith(`${prefix}.`)));
+    emitBedGeometry(bed,cuts,base,markerPositions);
+  }
+}
 export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedCrossing[],base:HeightQuery):void {
   alignSurfaceJoins(cuts,proofs,base);
+  junctionAprons(cuts,proofs,base);
   for(const row of proofs){
     if(row.kind==='waterConfluence'||row.kind==='modeTransfer')continue;
     // A pad can already exist while a regenerated bed still has a wall across it.
@@ -267,6 +312,12 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
     }
     // Two foot routes at different heights: a generated deck here lies across a walker's own
     // grade (the summit walk was blocked 23 m short of L02). Report instead.
+    // v1.9: a lower route inside the ground (an underground stair or passage under a surface walk, with rock
+    // between them) is separated by the ground itself; a carried deck (terrainCut false: a trestle, a stair or a
+    // jetty on its own supports) with the lower route's clearance under it is its own structure.
+    if(lower){const lowerHeight=Math.min(heightA,heightB),clear=Math.max(lower.clearHeight,2.4),roof=enclosingRoof(cuts,row.at,lowerHeight+1,upperHeight);
+      if(roof){cuts.diagnostics.push({id:`junction.${row.id}`,severity:'info',message:`${upper.id} over ${lower.id}: the lower route runs under ${roof} (a tunnel or cavern roof between them)`,at:row.at,measured:difference});continue;}
+      if(!upper.terrainCut&&difference>=clear+.6){cuts.diagnostics.push({id:`junction.${row.id}`,severity:'info',message:`${upper.id} is a carried deck ${difference.toFixed(2)} eu over ${lower.id} (clearance ${clear})`,at:row.at,measured:difference,required:clear+.6});continue;}}
     if(lower&&FOOT.includes(upper.kind)&&FOOT.includes(lower.kind)){
       if(onStructure(upper,row.at)||onStructure(lower,row.at))continue;
       cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:`Two foot routes (${upper.id} over ${lower.id}) cross ${difference.toFixed(2)} eu apart: a named footbridge or a regraded at-grade junction is needed; no deck is generated across a foot route`,at:row.at,measured:difference,required:LIP});continue;

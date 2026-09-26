@@ -1054,6 +1054,367 @@ HEARTS_V18 = {"harbour": [1470, 1170], "landing": [1060, 1410], "reach": [1280, 
 for d in m["districts"]:
     if d["id"] in HEARTS_V18: d["heart"] = HEARTS_V18[d["id"]]
 
+# ---------------------------------------------------------------------------
+# v1.9 — Stage A fixer wave 3, track W3-A (beds, structures and data), 26 September 2026.
+# Every delta below is listed in docs/horizon/README.md → "v1.9 deltas (Stage A, W3-A)".
+# Ids never change (CONTRACT §2.13); numbers move, fields are added.
+# ---------------------------------------------------------------------------
+m["version"] = "1.9"
+m["date"] = "2026-09-26"
+YW = m["journey"]["yearWalk"]
+YW_V18_PTS = [list(p) for p in YW["pts"]]
+YW_EDITS_V19 = []
+def yw_replace(old, new, why):
+    """Replace one run of Year Walk control points (matched exactly, once) and record it."""
+    pts = YW["pts"]
+    hits = [i for i in range(len(pts) - len(old) + 1) if pts[i:i + len(old)] == old]
+    assert len(hits) == 1, (old, hits)
+    i = hits[0]
+    YW["pts"] = pts[:i] + new + pts[i + len(old):]
+    YW_EDITS_V19.append({"was": old, "now": new, "why": why})
+
+# 1. Scholars: the March in-leg ran 3-4 eu over the Garden Walk's shoulder at [802,468] (the Glasshouse and
+#    Cottage door walks stopped there). It becomes the north lane of the March out-leg, 3.5 m from it at one
+#    height, and crosses the Garden Walk flush beside the out-leg's crossing.
+yw_replace([[885,465],[815,470],[800,480],[755,480],[700,470]],
+           [[885,465],[872,461.7],[857,441.3],[789.3,436.5],[769.2,446.5],[715,446.5],[700,470]],
+           "the March in-leg is the out-leg's north lane (3.5 m, one height) instead of a second line 3-4 eu over the Garden Walk at [802,468]")
+
+# 2. The Hollow (P08 pin clusters at [994,613] and [953,632]: fixed heights 22-53 eu of route short).
+#    May's pad sat on the Hollow floor at 31.5, 7.3 eu under the Green Road footway it leaves 45 m
+#    before; September's at 33 was 5.8 under the same footway 37 m before it. Both pads rise to a
+#    terrace the footway can reach at the walk grade (May 37, September 35), and the April lane
+#    gets two levels so it takes the Hollow's 17 eu band face at 12 % (it rode the 8 % typical
+#    grade 6-13 eu over the Hollow floor): the plateau edge and the Cottage front walk's bench.
+YW_PIN_H_V19 = {"may": 37, "sep": 40, "jan": 112.8}
+for p in YW["pins"]:
+    if p["station"] in YW_PIN_H_V19:
+        p["v1_8_h"] = p["h"]
+        p["h"] = YW_PIN_H_V19[p["station"]]
+yw_replace([[910,565],[925,585],[905,610]], [[910,565],[935,585],[905,610]],
+           "the April lane swings 10 m further east above the Hollow so its 18 eu band-face descent to the S4 footway fits 12 % (148 → 164 m)")
+YW["levels"] = [
+ {"xy": [1358, 685], "h": 110, "r": 14, "why": "the south portal forecourt: both January legs cross the ORE station's link walk (110) there at its height"},
+]
+# 3. The Hollow neck (x 893-913, z 600-660): the brook, S4, the Garden Walk and both Hollow lanes run side by side on the
+#    brook's east bank. The lanes were 2-8 eu over S4 and the Garden Walk there (separation S4 69 samples, a generated
+#    S4 x Year Walk deck across the Garden Walk). Through the neck both lanes are S4's east footway (one height, no wall),
+#    and S4 meets the Cottage front walk at grade (36) instead of passing 2.8 eu under it (junction.cross.s4.walkGarden.3).
+YW["shares"] += [
+ {"stretch": "apr", "host": "S4", "side": "east", "offset_m": 6, "from": [905, 610], "to": [899, 660], "note": "v1.9: the April lane is S4's east footway through the Hollow neck, at S4's height"},
+ {"stretch": "jun", "host": "S4", "side": "east", "offset_m": 8, "from": [903, 628], "to": [902, 660], "note": "v1.9: the June lane, 3 m further out on the same footway"},
+]
+YW["levelsRule"] = "levels are extra height pins on the Year Walk's own (unshared) stretches: the builder pins the nearest walk sample to h, so the grade between two pins can use the walk maximum where the ground demands it"
+
+# 4. January: the pad (117) sat 7 eu over the turning circle with 37 m of walk between them (P08 36 % at [1369,689]);
+#    it steps down to 114 (a 3 m sunken terrace on the Shoulder top), see YW_PIN_H_V19 and the south portal level above.
+# 5. The Lakeside switchback (T0 #16): the v1.7 zig-zag legs were 20-30 m long, 5 m apart and 12-16 %, and the walk left
+#    it by crossing S1 at [1255,862] where S1 is 4 eu under the lake terrace (15-16 % both sides). Seven legs of 30 m on a
+#    5.5 m pitch (x 1325-1292, z 852-882) with turning landings; the exit crosses S1 at grade at [1267,842], where S1
+#    stands at the terrace height (55), and meets the rim trail at [1251,836] (the February share starts there).
+SWITCHBACK_X = [1325, 1317.6, 1310.2, 1302.8, 1295.4, 1288, 1280.6]
+sb = [[1330, 885]]
+for k, x in enumerate(SWITCHBACK_X):
+    top, bottom = (880, 852) if k % 2 == 0 else (852, 880)
+    sb += [[x, top], [x, bottom]]
+    if k + 1 < len(SWITCHBACK_X):
+        nx = SWITCHBACK_X[k + 1]; sb.append([round((x + nx) / 2, 1), bottom - 3.5 if bottom == 852 else bottom + 3.5])
+sb += [[1276, 846], [1267, 842], [1251, 836]]
+yw_replace([[1330,885],[1320,880],[1315,865],[1320,885],[1305,845],[1305,875],[1300,855],[1300,880],[1295,860],[1295,880],[1290,860],[1290,885],[1285,870],[1285,880],[1245,855],[1250,845]],
+           sb,
+           "the Lakeside switchback: seven 28 m legs on a 7.4 m pitch (walk surfaces 2.2 m apart, shoulders meeting as the walls between legs) at <= 12 %, leaving at grade across S1 at [1267,842] to the rim trail")
+m["structures"]["lakesideSwitchback"] = {"kind": "switchbackRamp", "route": "yearWalk", "bbox": [[1274, 843], [1331, 889]], "legs": 7, "pitch_m": 7.4,
+ "note": "v1.9 (T0 #16): the Year Walk's seven legs down the Shoulder's south-west corner to the lake terrace; each leg's downhill shoulder is carried to the leg below as a masonry retaining wall (the builder grounds it: no leg hangs over the next)"}
+YW["s1Crossing"] = [1267, 842]
+for sh in YW["shares"]:
+    if sh["stretch"] == "feb" and sh["host"] == "walk lakerim":
+        sh["v1_8_from"] = sh["from"]; sh["from"] = [1251, 836]
+YW["crossings"] = YW["crossings"].replace("at [1255,862] (to be regraded flush)", "at [1267,842] (v1.9: flush, where S1 stands at the lake terrace height)")
+# 6. Horizon Drive's north-east corner (T0 #14, P09 72.7 / P12 74.3 / P32 pad 70 over the sea): the v1.6 control [1500,340]
+#    made the Drive a 330 m chord over the sea from x 1370 to [1545,470] at 65-70 (the NE cliff is vertical from ~105 to the
+#    sea). The corner now follows the cliff 10 m inside its top (a cliff drive cut into the headland, like the Prow), and
+#    Crown Road (V02) starts from the Drive at [1433.3,335.6] on that ledge (95 m before its tunnel portal: 6.6 %). The Year Walk's November/January verges are
+#    re-laid as offsets of the new alignment (same sides and offsets as v1.7).
+def spline5(ctrl, step=5):
+    out = []
+    for i in range(len(ctrl) - 1):
+        a, b, c, d = ctrl[max(0, i - 1)], ctrl[i], ctrl[i + 1], ctrl[min(len(ctrl) - 1, i + 2)]
+        n = max(1, math.ceil(math.dist(b, c) / step))
+        for k in range(n):
+            t = k / n; t2 = t * t; t3 = t2 * t
+            out.append([(2*t3-3*t2+1)*b[j] + (t3-2*t2+t)*(c[j]-a[j])*.35 + (-2*t3+3*t2)*c[j] + (t3-t2)*(d[j]-b[j])*.35 for j in (0, 1)])
+    out.append(list(ctrl[-1])); return out
+def offset_run(line, side_point, off, start, end, spacing=40):
+    """Points at plan offset `off` from polyline `line` (side toward side_point), from the arc nearest `start` to the arc nearest `end`, every ~spacing m."""
+    arcs = [0.0]
+    for i in range(1, len(line)): arcs.append(arcs[-1] + math.dist(line[i - 1], line[i]))
+    def near(q): return min(range(len(line)), key=lambda i: math.dist(line[i], q))
+    i0, i1 = near(start), near(end); step = 1 if i1 >= i0 else -1
+    picks = [i0]
+    for i in range(i0, i1 + step, step):
+        if abs(arcs[i] - arcs[picks[-1]]) >= spacing: picks.append(i)
+    if picks[-1] != i1:
+        if abs(arcs[i1] - arcs[picks[-1]]) < spacing * .5 and len(picks) > 1: picks[-1] = i1
+        else: picks.append(i1)
+    out = []
+    for i in picks:
+        a, c = line[max(0, i - 1)], line[min(len(line) - 1, i + 1)]
+        dx, dz = c[0] - a[0], c[1] - a[1]; L = math.hypot(dx, dz) or 1
+        n = (-dz / L, dx / L)
+        if (side_point[0] - line[i][0]) * n[0] + (side_point[1] - line[i][1]) * n[1] < 0: n = (-n[0], -n[1])
+        out.append([round(line[i][0] + n[0] * off, 1), round(line[i][1] + n[1] * off, 1)])
+    return out
+V01 = m["roads"]["V01"]
+V01["v1_8_pts"] = [list(p) for p in V01["pts"]]
+i = V01["pts"].index([1500, 340])
+NE_V19 = [[1353.8, 295.8], [1397.2, 306.5], [1433.3, 335.6], [1461.6, 373.9], [1493.5, 406.5], [1520.4, 439.7], [1546, 472]]
+V01["pts"] = V01["pts"][:i] + NE_V19[::-1] + V01["pts"][i + 1:]
+V01["note_v1_9"] = "north-east corner re-laid on the cliff 10 m inside its top (was a chord over the sea through [1500,340]); Crown Road starts at [1433.3,335.6]"
+V02 = m["roads"]["V02"]
+V02["v1_8_pts"] = [list(p) for p in V02["pts"]]
+V02["pts"][0] = [1433.3, 335.6]
+v01s, v02s = spline5(V01["pts"]), spline5(V02["pts"])
+INLAND = [1300, 700]
+nov_sea_end = offset_run(v01s, [1316, 0], 6.5, [1316, 268], [1316, 268])[0]
+nov = offset_run(v01s, INLAND, 9.5, [1346, 290], [1554.7, 520.2])
+def seg_dist(q, line):
+    best = 1e9
+    for a, b in zip(line, line[1:]):
+        dx, dz = b[0] - a[0], b[1] - a[1]; t = max(0, min(1, ((q[0] - a[0]) * dx + (q[1] - a[1]) * dz) / (dx * dx + dz * dz or 1)))
+        best = min(best, math.hypot(q[0] - a[0] - dx * t, q[1] - a[1] - dz * t))
+    return best
+# January walks up V01's inland verge and turns onto Crown Road's east verge where the two verges meet (the
+# inside corner of the junction), without crossing V02.
+jn = min(range(len(v01s)), key=lambda i: math.dist(v01s[i], [1433.3, 335.6]))
+turn = jn
+while turn > 0 and seg_dist(offset_run(v01s, INLAND, 6.5, v01s[turn], v01s[turn])[0], v02s) < 6.5: turn -= 1
+# The corner itself (15 m either side of the verges' meeting point) is the walk's own stretch, graded between
+# the two hosts' heights (V01 falls to the south-east, V02 climbs to the south).
+corner_a = offset_run(v01s, INLAND, 6.5, v01s[turn], v01s[turn])[0]
+k02 = min(range(len(v02s)), key=lambda i: math.dist(v02s[i], corner_a))
+corner_b = offset_run(v02s, [1600, 400], 6.5, v02s[k02], v02s[k02])[0]
+tip = [(corner_a[0] + corner_b[0]) / 2, (corner_a[1] + corner_b[1]) / 2]
+jc = [1433.3, 335.6]; bis = [tip[0] - jc[0], tip[1] - jc[1]]; bl = math.hypot(*bis)
+corner_t = [round(tip[0] + bis[0] / bl * 3, 1), round(tip[1] + bis[1] / bl * 3, 1)]
+corner_a8 = offset_run(v01s, INLAND, 6.5, v01s[max(0, turn - 2)], v01s[max(0, turn - 2)])[0]
+corner_b8 = offset_run(v02s, [1600, 400], 6.5, v02s[min(len(v02s) - 1, k02 + 2)], v02s[min(len(v02s) - 1, k02 + 2)])[0]
+corner = [corner_a8, corner_t, corner_b8]
+jan01 = offset_run(v01s, INLAND, 6.5, [1555.2, 508.1], v01s[max(0, turn - 4)])
+jan02 = offset_run(v02s, [1600, 400], 6.5, v02s[min(len(v02s) - 1, k02 + 4)], [1449.5, 447.4])
+yw_replace([[1319.7,258.5],[1340.4,281.3],[1379.9,294.4],[1415.6,307.5],[1453.6,323.6],[1487.1,341.9],[1508.5,367.9],[1524.1,404.6],[1535.4,441.5],[1545.7,481.6],[1554.7,520.2]],
+           [nov_sea_end] + nov,
+           "November's inland verge re-laid 9.5 m inside the re-aligned Drive round the north-east corner")
+yw_replace([[1555.2,508.1],[1546.3,471.5],[1536.1,432.7],[1524.2,396],[1506.8,358.9],[1495.4,344.6],[1505.5,343.5],[1482.9,377.2],[1461,411.8],[1449.5,447.4]],
+           jan01 + corner + jan02,
+           "January's inland verge and Crown Road's east verge re-laid on the re-aligned corner and junction")
+for sh in YW["shares"]:
+    if sh["stretch"] == "nov" and sh["host"] == "V01" and sh["side"].startswith("seaward"): sh["v1_8_to"] = sh["to"]; sh["to"] = nov_sea_end
+    if sh["stretch"] == "nov" and sh["host"] == "V01" and sh["side"] == "inland": sh["v1_8_from"] = sh["from"]; sh["from"] = nov[0]
+    if sh["stretch"] == "jan" and sh["host"] == "V01": sh["v1_8_to"] = sh["to"]; sh["to"] = jan01[-1]
+    if sh["stretch"] == "jan" and sh["host"] == "V02": sh["v1_8_from"] = sh["from"]; sh["from"] = jan02[0]
+# 7. February and September above the Hollow (P12: the February line rode the Crown's flank at 65-67 over the September
+#    line at 40-44, 5 m away; 24 eu unsupported runs at [1046-1056,519-529]). February comes down onto the shelf (45) east of
+#    September and the two run as adjacent lanes (3.5 m, one height) through the shelf's narrow north end to [1000,480].
+yw_replace([[1055,710],[1100,600],[1085,555],[1070,535],[960,470]],
+           [[1055,710],[1052,662],[1060,600],[1062,540],[1060,505],[1050,487],[1000,480],[960,470]],
+           "February leaves the Crown's flank for the 45 shelf (September no longer uses it)")
+vgs = spline5(m["roads"]["VG"]["pts"])
+sep_vg = offset_run(vgs, [700, 500], 6.5, [995, 590], [938, 385])
+for st in m["journey"]["stations"]:
+    if st["id"] == "sep": st["v1_8_xy"] = st["xy"]; st["xy"] = [1032, 652]; st["moveWhy_v1_9"] = "8 m west so February passes east of the pad on the 45 shelf (the pad's level pins held February at 35 there); the pad sits at 40, a 5 m terrace cut into the shelf's edge"
+yw_replace([[1010,615],[1040,650],[1045,550],[1055,505],[1045,490],[995,470],[980,415],[945,370]],
+           [[1010,615],[1032,652],[1025,626],[1010,604]] + sep_vg,
+           "September returns from its pad across Green Road and walks its west footway north to the pass (it ran up the shelf beside February, 24 eu apart)")
+YW["shares"].append({"stretch": "sep", "host": "VG", "side": "west", "offset_m": 6.5, "from": sep_vg[0], "to": sep_vg[-1], "note": "v1.9: Green Road's west footway from the September pad's return to the north pass"})
+# 11. Terraces plot 3's margin (P31: the January lane 3.2 m from the plot edge, 12 samples in the 6 m margin): the Prow cliff
+#     drive's control [1540,1000] moves 3.5 m away from the plots (east-south-east), and the December (seaward 6.5) and
+#     January (inland 6.5) verges are re-laid on it.
+V01["pts"][V01["pts"].index([1540, 1000])] = [1543.2, 1001.4]
+v01s = spline5(V01["pts"])
+dec_run = offset_run(v01s, [1800, 1200], 6.5, [1596.9, 703.2], [1500.3, 1038.1])
+jan_run = offset_run(v01s, INLAND, 6.5, [1494.7, 1026.4], [1562.7, 548])
+yw_replace([[1596.9,703.2],[1601.5,743.6],[1605.7,784.8],[1608.1,827.2],[1605.7,864.9],[1592.8,905.1],[1576.5,943.3],[1558.6,980.4],[1536.4,1014.4],[1502.6,1037],[1500.3,1038.1]],
+           dec_run, "December's seaward verge re-laid on the Prow cliff drive after its [1540,1000] control moved 3.5 m off the Terraces plots")
+yw_replace([[1494.7,1026.4],[1527.3,1005.1],[1548.8,970.9],[1564.7,937.9],[1580.6,900.4],[1593,862.2],[1595,822.6],[1592.7,785.9],[1588.9,747.7],[1584,704.7],[1579.2,664],[1574.3,626.7],[1568.7,586.5],[1562.7,548]],
+           jan_run, "January's inland verge re-laid on the moved Prow cliff drive (6.5 m, now 6 m clear of Terraces plot 3's margin)")
+for sh in YW["shares"]:
+    if sh["stretch"] == "dec" and sh["host"] == "V01": sh["v1_8_from"], sh["v1_8_to"] = sh["from"], sh["to"]; sh["from"], sh["to"] = dec_run[0], dec_run[-1]
+    if sh["stretch"] == "jan" and sh["host"] == "V01": sh["v1_8_from"] = sh["from"]; sh["from"] = jan_run[0]
+# 13. January at the south portal (P16: the Year Walk 2.65 over the Ore Line's approach at [1349.6,671.6], rail clearance 3.2):
+#     both January legs keep west of the rail's cut, as two lanes 3.5 m apart between the pad and the portal forecourt.
+yw_replace([[1330,640],[1355,660],[1350,685],[1375,690]], [[1330,640],[1339,662],[1344,684],[1375,690]],
+           "January's first leg leaves the pad west of the Ore Line's approach cut")
+yw_replace([[1345,680],[1355,675],[1330,660],[1345,650],[1330,640]], [[1340.5,687.5],[1335.5,663],[1330,640]],
+           "January's last leg returns as the first leg's west lane (3.5 m), west of the Ore Line")
+for lv in YW["levels"]:
+    if lv["xy"] == [1358, 685]: lv["v1_9_first_xy"] = lv["xy"]; lv["xy"] = [1350, 687]; lv["r"] = 9
+YW["v1_9_edits"] = YW_EDITS_V19
+
+# 8. Named footbridges (P12 unsupported runs / "two foot routes crossing" with no bridge; R1-04, R1-10, R1-31). Each is
+#    built by the structures builder on the route's own grade, with bents outside every lower corridor and a truss over the
+#    opening; a bent that would stand in a corridor is refused and reported.
+m["structures"]["gardenWalkBridge"] = {"xy": [965.7, 761.1], "kind": "footbridge", "route": "walk garden", "span_m": 40, "opening_m": 26, "width_m": 3.2,
+ "deck": "the Garden Walk on its own grade (51-55)", "under": "Green Road (37) and its May/September footway lanes, 15 eu below",
+ "note": "v1.9: the Garden Walk hung 16.7 eu over Green Road at [971,765] with no structure (the generated span found no footing within 20 m); the reserved at-grade threshold row VG x walk garden (R-A7) is unchanged"}
+m["structures"]["crownWalkBridge"] = {"xy": [1410.1, 605.8], "kind": "footbridge", "route": "walk crown", "span_m": 36, "opening_m": 24, "width_m": 3.2,
+ "deck": "the Crown walk on its own grade (119-122)", "under": "Crown Road's cutting (99) and its January footway lane",
+ "note": "v1.9: the Crown walk hung 21 eu over Crown Road at [1400-1417,605] (span refused: no footing outside the corridors)"}
+
+# 9. The Prow walk (T0 note 5; P12: 22 runs up to 38.5 eu over V01's cutting and the Year Walk's Prow footways; six
+#    "two foot routes crossing" rows 12-34 eu). It keeps to the Prow top east of the cutting: from the south lookout over
+#    the harbour, past the November station, between the Year Walk's two Prow lanes, onto the west lane at [1630,790].
+m["walks"]["prow"]["v1_8_pts"] = m["walks"]["prow"]["pts"]
+m["walks"]["prow"]["pts"] = [[1590, 998], [1606, 950], [1616, 928], [1641, 924], [1641, 880], [1640, 812], [1633, 790]]
+m["walks"]["prow"]["note_v1_9"] = "re-laid on the Prow top east of V01's cutting (was along the cutting's lip, over it twice); joins the Year Walk's west Prow lane at [1630,790], short of the sea stair's head"
+
+# 12. Reserves (P31, D-2 for Jonathan, reversible): the Bight trail ran through all four Bight plots (27-28 samples inside
+#     each). It becomes the Bight Shore spur's landward footway (builder: `footwayOf`, the spur's heights, no wall between);
+#     its v1.8 shore line is kept in `v1_8_pts`. The hangar bay (plot.flats.1) moves 7 m east out of the strip's 6 m margin
+#     and is served from the strip edge at its west door (its access walk is its service).
+m["walks"]["bight"]["v1_8_pts"] = m["walks"]["bight"]["pts"]
+m["walks"]["bight"]["footwayOf"] = {"host": "VBS", "offset_m": 4.2, "side_xy": [1100, 1100], "why": "D-2 (v1.9): the four Bight plots and their 6 m margins fill the land between the spur and the shore; the trail walks the spur's landward verge at the spur's height"}
+hb = m["reserves"]["small"]["hangarBay"]
+hb["v1_8_xy"] = hb["xy"]; hb["xy"] = [458.2, 600]; hb["size_m"] = [11, 18]; hb["door"] = "west, on the strip edge; its access walk is plot.flats.1.service"
+hb["note_v1_9"] = "an 11 m bay facing the strip, 18 m deep, between the strip's 6 m margin and S2's (the 18 m face did not fit the 26 m between them)"
+m["structures"]["jettiesV1_8"] = {"bightShore": m["structures"]["jetties"]["bightShore"], "why": "v1.9: the Bight Shore jetty moved 17 m north-west, out of plot bight.2's 6 m margin"}; m["structures"]["jetties"]["bightShore"] = [728, 946]
+
+# 14. The Bight pier (P12: the pier walk ran on at the Flats' height, 36 eu over the Bight, to the ferry stop): the walk
+#     stops at the cliff top and a stair takes it down to a jetty at the ferry stop (the stair crosses the wash's dry mouth
+#     and S2's bridge lane high above them). The dune walk starts at the zip landing's foot, not under its stair (P16 2.21),
+#     and runs 10-18 m south of the landing ramp's trestle (it ran under the trestle's south leg for 60 m: no bent could stand).
+#     The Year Walk's two Prow lanes cross the sea stair's cutting on two short named footbridges.
+m["walks"]["bightPier"]["v1_8_pts"] = m["walks"]["bightPier"]["pts"]
+m["walks"]["bightPier"]["pts"] = [[350, 880], [430, 900], [498, 896]]
+m["structures"]["bightPierStair"] = {"kind": "stair", "from": [498, 896], "to": [557.5, 896], "note": "v1.9: from the Flats' cliff top (the pier walk's end) down to the Bight ferry jetty"}
+m["structures"]["jetties"]["bightPier"] = [560, 896]
+m["walks"]["dune"]["v1_8_pts"] = m["walks"]["dune"]["pts"]
+m["walks"]["dune"]["pts"] = [[1148, 1463], [1125, 1481], [1000, 1480]] + m["walks"]["dune"]["pts"][2:]
+m["structures"]["seaStairWestLaneBridge"] = {"xy": [1630.9, 762.8], "kind": "footbridge", "route": "yearWalk", "span_m": 14, "opening_m": 7, "width_m": 5.4, "deck": "the Year Walk's west Prow lane (54)", "under": "the sea stair's cutting (49)", "note": "v1.9: the lane crossed the stair 4.9 eu over it with no structure"}
+m["structures"]["seaStairEastLaneBridge"] = {"xy": [1650.3, 766.8], "kind": "footbridge", "route": "yearWalk", "span_m": 16, "opening_m": 8, "width_m": 5.4, "deck": "the Year Walk's east Prow lane (50.6)", "under": "the sea stair's cutting (36)", "note": "v1.9: the lane crossed the stair 14.2 eu over it with no structure"}
+
+# 16. S1 through the High Span (W3-C A2, page C): S1 ran at grade 1-6 m east of its own skate shelf (x 1206-1219, 1 m over
+#     it), hiding the shelf from camera C. It now rides the shelf (x 1204, z 1078-1135, h 12) — the builder pins it level there.
+S1 = m["skate"]["S1"]
+S1["v1_8_pts"] = [list(p) for p in S1["pts"]]
+i = S1["pts"].index([1195, 1075])
+S1["pts"] = S1["pts"][:i + 1] + [[1204, 1080], [1204, 1133]] + S1["pts"][i + 1:]
+
+# 10. Views (W3-C requests A1, A4, A6, A7; each tested on the W3-C land): page A portrait at the viewRule minimum
+#     field (45°); page E's eye at the run-off corner of the lookout deck (it stood on the deck centre, 44 % of the frame
+#     deck); page K on the rim walk by the Glasshouse steps (the eye stood 1.4 eu under the walk); page L's portrait
+#     from the quay's west end.
+for v in m["views"]:
+    if v["id"] == "A": v["portrait"]["v1_8_fov_deg"] = v["portrait"]["fov_deg"]; v["portrait"]["fov_deg"] = 45
+    if v["id"] == "E": v["v1_8_xy"] = v["xy"]; v["xy"] = [1300.5, 485.5]
+    if v["id"] == "K": v["v1_8_xy"] = v["xy"]; v["xy"] = [1006, 762]
+    if v["id"] == "L": v["portrait"]["v1_8_xy"] = v["portrait"].get("xy"); v["portrait"]["xy"] = [1460, 1300]
+
+# 15. The crossings register against the v1.9 build (every computed intersection keeps a row; the design lead accepts each
+#     computed resolution, as in v1.8). Rows accepted from this bake carry source "bake v1.9". Bake rows with no plan hit in the
+#     v1.9 build (the geometry they described moved) and duplicate bake rows are retired to routePairNotes; three authored rows
+#     whose routes moved are retired with their reason; bake rows now met flush become junctions. Reserved rows are untouched.
+REG_ADDED_V19 = [
+ {"a": "bightPierStair", "b": "wash", "at": [513.8, 896], "resolution": "over", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "damGallery.flight.2", "b": "damGallery.exit", "at": [1170.6, 910.8], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "jetty.bightPier", "b": "FERRY", "at": [560, 902], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": "at-grade meeting 1 eu apart: regrade owed"},
+ {"a": "jetty.bightPier", "b": "ferry.bight", "at": [560, 898], "resolution": "threshold", "kind": "sharedStretch", "source": "bake v1.9", "note": "shared stretch 8 eu at one height"},
+ {"a": "S1", "b": "yearWalk", "at": [1266.9, 842], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "S2", "b": "bightPierStair", "at": [509.9, 896], "resolution": "under", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "S4", "b": "walk bight", "at": [873.5, 951.1], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": "at-grade meeting 1 eu apart: regrade owed"},
+ {"a": "S4", "b": "yearWalk", "at": [968.6, 540.5], "resolution": "under", "kind": "crossing", "source": "bake v1.9", "note": "under by 2.8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a": "V01", "b": "V02", "at": [1433.3, 335.6], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "V02", "b": "yearWalk", "at": [1436, 355.4], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "VG", "b": "walk bight", "at": [960.4, 864.4], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": ""},
+ {"a": "walk bight", "b": "yearWalk", "at": [858.5, 977], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "walk bight", "b": "yearWalk", "at": [907.3, 888.6], "resolution": "over", "kind": "crossing", "source": "bake v1.9", "note": "over by 8.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a": "walk bight", "b": "yearWalk", "at": [951.6, 867.7], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "walk bight", "b": "yearWalk", "at": [954.5, 866.6], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "walk bightPier", "b": "bightPierStair", "at": [498, 896], "resolution": "threshold", "kind": "crossing", "source": "bake v1.9", "note": "at-grade meeting 0.9 eu apart: regrade owed"},
+ {"a": "walk lakerim", "b": "damGallery.exit", "at": [1166.2, 905.1], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "walk prow", "b": "yearWalk", "at": [1641, 881.6], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+ {"a": "yearWalk", "b": "southPortal.link", "at": [1369.7, 689.9], "resolution": "threshold", "kind": "junction", "source": "bake v1.9", "note": "flush path junction: no marker, no mode change"},
+]
+REG_RETIRED_V19 = [  # indices into the v1.8 register (each checked against its pair below)
+ [38, "damGallery.flight.1", "damGallery.exit"],
+ [39, "damGallery.flight.1", "water.stillwater"],
+ [40, "damGallery.flight.2", "damGallery.exit"],
+ [41, "damGallery.flight.2", "water.stillwater"],
+ [49, "highSpan.overlook", "river lower"],
+ [55, "jetty.lamp", "lampGallery.ramp"],
+ [56, "jetty.lamp", "lampGallery.ramp"],
+ [61, "lampGallery.ramp", "FERRY"],
+ [62, "lampGallery.ramp", "FERRY"],
+ [64, "lampGallery.ramp", "FERRY"],
+ [67, "lampGallery.ramp", "lampGallery.stair"],
+ [68, "lampGallery.ramp", "lampGallery.stair"],
+ [84, "river lower", "reachChannel.2"],
+ [94, "S1", "yearWalk"],
+ [157, "V01", "S3"],
+ [158, "V01", "S3"],
+ [164, "V01", "V02"],
+ [167, "V01", "walk prow"],
+ [192, "VG", "yearWalk"],
+ [194, "walk bight", "plot.bight.3.service"],
+ [195, "walk bight", "plot.bight.4.service"],
+ [196, "walk bightPier", "FERRY"],
+ [197, "walk bightPier", "ferry.bight"],
+ [227, "walk crownFromGondola", "V02"],
+ [233, "walk dune", "zipLanding.ramp"],
+ [234, "walk dune", "zipLanding.stair"],
+ [241, "walk garden", "yearWalk"],
+ [248, "walk lakerim", "damGallery.flight.1"],
+ [251, "walk lakerim", "yearWalk"],
+ [252, "walk lakerim", "yearWalk"],
+ [254, "walk prow", "seaStair"],
+ [255, "walk prow", "yearWalk"],
+ [256, "walk prow", "yearWalk"],
+ [257, "walk prow", "yearWalk"],
+ [258, "walk prow", "yearWalk"],
+ [259, "walk prow", "yearWalk"],
+ [260, "walk prow", "yearWalk"],
+ [261, "walk prow", "ZIP"],
+ [288, "yearWalk", "ORE"],
+ [289, "yearWalk", "ORE"],
+ [290, "yearWalk", "ORE"],
+ [298, "yearWalk", "southPortal.link"],
+ [299, "yearWalk", "southPortal.link"],
+ [300, "yearWalk", "southPortal.link"],
+ [308, "ZIP", "river lower"],
+]
+REG_RERES_V19 = [
+ {"a": "S4", "b": "walk garden", "at": [905.9, 640.6], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "S4", "b": "yearWalk", "at": [900.7, 882.8], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "S4", "b": "yearWalk", "at": [901.2, 629.8], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "S4", "b": "yearWalk", "at": [902.6, 632.9], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "VG", "b": "yearWalk", "at": [943.6, 471], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "walk bightPier", "b": "walk flats", "at": [350, 880], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "walk garden", "b": "yearWalk", "at": [899.6, 638.9], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "walk garden", "b": "yearWalk", "at": [900, 640], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+ {"a": "walk garden", "b": "yearWalk", "at": [902.3, 641.1], "resolution": "threshold", "kind": "junction", "note": "v1.9: now a flush path junction (was under)"},
+]
+REG_RETIRED_AUTHORED_V19 = {
+ ("DEEP_RUN", "walk prow"): "the Prow walk (v1.9) keeps to the Prow top east of V01's cutting and no longer crosses the Deep run's line at [1611,710]",
+ ("S2", "walk bightPier"): "the pier walk (v1.9) ends at the Flats' cliff top; S2 now passes under the Bight pier stair (a row accepted from the v1.9 bake)",
+ ("walk bightPier", "water wash"): "the pier walk (v1.9) ends at the Flats' cliff top; the wash footbridge is retired and the Bight pier stair crosses the dry wash mouth",
+}
+def _same(row, r): return row["a"] == r["a"] and row["b"] == r["b"] and isinstance(row["at"], list) and abs(row["at"][0] - r["at"][0]) < .05 and abs(row["at"][1] - r["at"][1]) < .05
+reg, retired_v19 = [], []
+for idx, row in enumerate(m["crossings"]):
+    if any(k == idx and row["a"] == a and row["b"] == b for k, a, b in REG_RETIRED_V19):
+        retired_v19.append(row)
+        m["routePairNotes"].append({"a": row["a"], "b": row["b"], "kind": "retired register row (v1.9)", "verification": "no plan intersection of this pair here in the v1.9 build (or a duplicate of a row that matches)", "sharedPlanPoints": [], "retiredRow": dict(row)})
+        continue
+    if (row["a"], row["b"]) in REG_RETIRED_AUTHORED_V19 and not row.get("reserved") and row.get("source") != "bake v1.8":
+        m["routePairNotes"].append({"a": row["a"], "b": row["b"], "kind": "retired register row (v1.9)", "verification": REG_RETIRED_AUTHORED_V19[(row["a"], row["b"])], "sharedPlanPoints": [], "retiredRow": dict(row)})
+        continue
+    for r in REG_RERES_V19:
+        if _same(row, r):
+            row = dict(row); row["v1_8_resolution"] = row["resolution"]; row["resolution"] = r["resolution"]; row["kind"] = r["kind"]
+            row["note"] = (row["note"] + "; " if row.get("note") else "") + r["note"]
+    reg.append(row)
+m["crossings"] = reg + REG_ADDED_V19
+
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")
