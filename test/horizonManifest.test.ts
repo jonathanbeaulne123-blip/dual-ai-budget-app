@@ -60,7 +60,7 @@ describe('Horizon manifest v1.8',()=>{
     expect(rows.every(r=>['crossing','junction','sharedStretch','footway','waterBody','waterConfluence','modeTransfer'].includes(r.kind!))).toBe(true);
     expect(rows.filter(r=>r.reserved).map(r=>`${r.a} x ${r.b} ${r.resolution} ${r.reserved}`)).toEqual(['S4 x walk garden threshold R-A7','V01+S2 x Bight mouth over R-A1','S4 x VG threshold R-A7','VG x walk garden threshold R-A7','S1 x damPortage threshold R-A7','ZIP x G1 over R-A2','V01 x walk bightPier threshold R-A7','FERRY x bightBridge under R-A1']);
     const host=manifest.hosts.find(h=>h.id==='glasshouse')!;expect(host.footprint_m).toEqual([25,18]);expect(host.xy).toEqual([1007.5,790]);
-    const gate=manifest.sky.gates.find(g=>g.id==='highSpan')!;expect([gate.h,...gate.aperture_m]).toEqual([17,40,12]);
+    const gate=manifest.sky.gates.find(g=>g.id==='highSpan')!;expect([gate.h,...(gate.aperture_m ?? [])]).toEqual([17,40,12]);
     const views=manifest.views as unknown as {id:string;subjects:string[];portrait?:{frames:string[]}}[];
     expect(views.find(v=>v.id==='A')!.subjects).not.toContain('the Crown');expect(views.find(v=>v.id==='D')!.portrait!.frames).not.toContain('the Lamp');
   });
