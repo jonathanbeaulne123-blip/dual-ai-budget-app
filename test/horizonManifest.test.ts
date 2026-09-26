@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import {HORIZON_MANIFEST,parseHorizonManifest,requireScaleFactor} from '../src/harbour/horizon/world/manifest.ts';
 
 const manifest=HORIZON_MANIFEST;
-describe('Horizon manifest v1.6',()=>{
+describe('Horizon manifest v1.7',()=>{
   it('uses Jonathan’s confirmed full scale while rejecting an unconfirmed bake',()=>{
     expect(parseHorizonManifest(manifest)).toBe(manifest);
     expect(manifest.scale.factor).toBe(1);

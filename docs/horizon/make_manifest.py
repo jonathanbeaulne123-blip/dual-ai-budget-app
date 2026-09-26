@@ -492,6 +492,97 @@ m["journeys"]["at_active_scale"] = times(m["scale"]["factor"])
 m["journeys"]["note"] = 'Straight-segment lengths between control points at assumed speeds; calibration estimates, not measured journeys. at_active_scale uses the confirmed scale.factor (1.0); the two at_factor tables are comparison scenarios.'
 m["journeys"]["targets_s"]["note"] = 'Original design targets retained after D13 selected 1.0. Pass 1 reports measured pass/fail against these targets; scale approval does not waive them or change speeds.'
 
+YEAR_WALK_V17 = [
+ [1330,640],[1355,660],[1350,685],[1375,690],[1415,680],[1445,690],[1445,695],[1465,685],[1460,705],[1470,700],
+ [1460,755],[1405,865],[1390,870],[1395,870],[1330,885],[1320,880],[1315,865],[1320,885],[1305,845],[1305,875],
+ [1300,855],[1300,880],[1295,860],[1295,880],[1290,860],[1290,885],[1285,870],[1285,880],[1245,855],[1250,845],
+ [1250,800],[1235,755],[1145,720],[1100,720],[1080,725],[1055,710],[1100,600],[1085,555],[1070,535],[960,470],
+ [930,480],[895,480],[905,470],[885,465],[815,470],[800,480],[755,480],[700,470],[715,450],[770,450],
+ [790,440],[855,445],[870,465],[905,470],[895,475],[905,475],[895,480],[915,480],[900,500],[905,545],
+ [910,565],[925,585],[905,610],[900,640],[900,628],[899,660],[898,700],[895,740],[892,780],[887,815],
+ [890,870],[920,900],[915,910],[930,995],[990,1010],[997,1006.7],[977.4,967.2],[966.1,929.6],[957.3,889.1],[953.3,848.9],
+ [956.7,808.9],[962.3,768.6],[969.2,725.7],[975.4,689.6],[986.5,649.9],[994.1,612.3],[970,625],[960,640],[930,605],[910,605],
+ [903,628],[902,660],[901,700],[898,740],[895,780],[890,815],[870,835],[870,870],[885,905],[865,920],
+ [845,965],[865,985],[885,1065],[885,1120],[900,1180],[920,1220],[960,1355],[970,1365],[945,1385],[950,1445],
+ [925,1440],[870,1385],[790,1325],[735,1270],[765,1235],[710,1190],[701.9,1195.9],[679.4,1178.1],[645.9,1154.1],[613.3,1133.2],
+ [579.3,1111.5],[546.3,1090],[512.6,1067],[482.5,1044.2],[454.9,1014],[437.3,979.5],[423.4,943.6],[410.5,904],[425,890],[400,745],
+ [425,770],[440,860],[440,870],[412.6,903.3],[425.5,942.8],[439.3,978.6],[456.7,1012.8],[483.9,1042.5],[513.9,1065.2],[547.5,1088.2],
+ [580.5,1109.6],[614.5,1131.3],[647.1,1152.2],[680.8,1176.4],[703.3,1194.2],[730,1180],[930,1265],[950,1265],[970,1245],[1120,1270],
+ [1160,1300],[1205,1290],[1160,1245],[1120,1250],[1100,1245],[975,1155],[960,1130],[955,1095],[990,1010],[994.6,1008.6],
+ [974.6,968.2],[963.2,930.4],[954.3,889.7],[950.3,848.9],[953.7,808.6],[959.3,768.2],[966.2,725.2],[972.5,688.9],[983.6,649],[991.1,612],
+ [1010,615],[1040,650],[1045,550],[1055,505],[1045,490],[995,470],[980,415],[945,370],[915,370],[820,345],
+ [790,320],[810,305],[810,280],[815,275],[895,275],[899.2,283.6],[940,276.6],[980,268.6],[1017.4,261],[1056.8,253.2],
+ [1096.5,246.3],[1136.3,242.6],[1178.5,242.2],[1216.7,243.5],[1259.2,246.9],[1297.7,252.8],[1319.7,258.5],[1340.4,281.3],[1379.9,294.4],[1415.6,307.5],
+ [1453.6,323.6],[1487.1,341.9],[1508.5,367.9],[1524.1,404.6],[1535.4,441.5],[1545.7,481.6],[1554.7,520.2],[1561,556.4],[1567.4,598.5],[1572.5,635.5],
+ [1577.9,678.4],[1581,705],[1570,665],[1575,670],[1600,665],[1615,725],[1630,745],[1630,855],[1620,910],[1645,875],
+ [1650,855],[1650,745],[1645,725],[1615,685],[1596.9,703.2],[1601.5,743.6],[1605.7,784.8],[1608.1,827.2],[1605.7,864.9],[1592.8,905.1],
+ [1576.5,943.3],[1558.6,980.4],[1536.4,1014.4],[1502.6,1037],[1500.3,1038.1],[1510,1050],[1510,1100],[1525,1175],[1500,1200],[1490,1230],
+ [1500,1200],[1545,1160],[1535,1120],[1540,1085],[1530,1055],[1505,1015],[1495,1015],[1490,1020],[1494.7,1026.4],[1527.3,1005.1],
+ [1548.8,970.9],[1564.7,937.9],[1580.6,900.4],[1593,862.2],[1595,822.6],[1592.7,785.9],[1588.9,747.7],[1584,704.7],[1579.2,664],[1574.3,626.7],
+ [1568.7,586.5],[1562.7,548],[1555.2,508.1],[1546.3,471.5],[1536.1,432.7],[1524.2,396],[1506.8,358.9],[1495.4,344.6],[1505.5,343.5],[1482.9,377.2],
+ [1461,411.8],[1449.5,447.4],[1452,485.4],[1449.1,529],[1433.5,565.6],[1417,599.6],[1400.2,635.7],[1383.7,674.4],[1376.8,690.6],[1345,680],
+ [1355,675],[1330,660],[1345,650],[1330,640]
+]
+
+# ---------------------------------------------------------------------------
+# v1.7 — Stage A ("Land to GO") design-lead data, 26 September 2026.
+# Every delta below is listed in docs/horizon/README.md → "v1.7 deltas (Stage A, design lead)".
+# Ids never change (CONTRACT §2.13); numbers move, fields are added.
+# ---------------------------------------------------------------------------
+m["version"] = "1.7"
+m["date"] = "2026-09-26"
+
+# 1. The Year Walk, re-authored on land. Seven station pads sat on a road, a skate line or a channel;
+#    they move within their own neighbourhood (old xy kept as movedFrom).
+STATION_XY_V17 = {"feb": [1100, 721], "apr": [932, 995], "jul": [401, 745], "aug": [1203, 1292], "oct": [790, 322], "nov": [1622, 912], "dec": [1488, 1228]}
+STATION_MOVE_WHY = {
+ "feb": "the old pad sat on S1 (0.7 m) and walk lakerim; now on the north-shore lake rim at the rim trail's own height (the skipping shelf)",
+ "apr": "the old pad sat across the Bight Shore spur (VBS 7 m) and S4; moved 72 m east onto open Green (west)",
+ "jul": "the old pad sat on Horizon Drive (V01 1.0 m); moved 59 m to the gap between V01 and the strip",
+ "aug": "the old pad reached into the Reach west channel (3.1 m); moved 27 m west onto dry Reach meadow",
+ "oct": "the old pad sat on Horizon Drive (V01 5.7 m); moved 24 m south into the north pass",
+ "nov": "the old pad sat on the Prow cliff drive (V01 0.8 m) in its 34 m cutting; moved onto the Prow top beside the Prow walk",
+ "dec": "the old pad overlapped Town Weave (S3); moved 13 m east onto the storefront lane",
+}
+for s in m["journey"]["stations"]:
+    if s["id"] in STATION_XY_V17:
+        s["movedFrom"] = s["xy"]
+        s["xy"] = STATION_XY_V17[s["id"]]
+        s["moveWhy"] = STATION_MOVE_WHY[s["id"]]
+STATION_PAD_H = {"jan": 117, "feb": 53, "mar": 48, "apr": 19.5, "may": 31.5, "jun": 2, "jul": 36, "aug": 4, "sep": 33, "oct": 45.5, "nov": 56.5, "dec": 8}
+YW_OLD_V16 = m["journey"]["yearWalk"]["pts"]
+m["journey"]["yearWalk"] = {
+ "profile": "walk",
+ "note": "a trail through the twelve stations in calendar order, entirely on land: it never goes below sea level or into Stillwater, the Bight, a river or a channel except across a named bridge, never through a reserve plot, and never stacked on another bed at a different height; where it shares a corridor it shares the host bed's alignment and height (shares); the walk ahead of the current month is dressed as stakes and string",
+ "pts": YEAR_WALK_V17,
+ "ptsRule": "centreline control points, solved as the other beds are (Catmull-Rom, 5 m samples) and graded at profiles.walk.grade_max_pct; the builder uses these points verbatim (no inserted controls) and places each station pad at the walk height at its station",
+ "pins": [{"station": k, "xy": next(s["xy"] for s in m["journey"]["stations"] if s["id"] == k), "h": v} for k, v in STATION_PAD_H.items()],
+ "shares": [
+   {"stretch": "feb", "host": "walk lakerim", "via": "structure.inletFootbridge", "side": "on the rim trail", "offset_m": 0, "from": [1250, 800], "to": [1100, 721], "note": "the February stretch walks the lake rim trail round the east and north shore and crosses the upper river on the Inlet Footbridge; one bed, the rim trail's"},
+   {"stretch": "may", "host": "VG", "side": "west", "offset_m": 6.5, "from": [997, 1006.7], "to": [994.1, 612.3], "note": "Green Road's west footway"},
+   {"stretch": "sep", "host": "VG", "side": "west", "offset_m": 9.5, "from": [994.6, 1008.6], "to": [991.1, 612], "note": "the same footway's outer lane"},
+   {"stretch": "jul", "host": "V01", "via": "structure.bightBridge", "side": "lagoon (north-east)", "offset_m": 5.2, "from": [701.9, 1195.9], "to": [410.5, 904], "note": "the Bight Bridge's lagoon-side footway and the Drive's verge down the Flats arm; deck height 12 on the bridge"},
+   {"stretch": "aug", "host": "V01", "via": "structure.bightBridge", "side": "lagoon (north-east)", "offset_m": 7.4, "from": [412.6, 903.3], "to": [703.3, 1194.2], "note": "the same footway's outer lane, walked back east a month later"},
+   {"stretch": "nov", "host": "V01", "side": "seaward (north)", "offset_m": 6.5, "from": [899.2, 283.6], "to": [1319.7, 258.5], "note": "the north coast drive's seaward verge"},
+   {"stretch": "nov", "host": "V01", "side": "inland", "offset_m": 9.5, "from": [1340.4, 281.3], "to": [1581, 705], "note": "crosses the Drive at grade at [1330,270] and takes the inland verge round the north-east corner (the seaward verge there is off the outline) up onto the Prow"},
+   {"stretch": "dec", "host": "V01", "side": "seaward (east)", "offset_m": 6.5, "from": [1596.9, 703.2], "to": [1500.3, 1038.1], "note": "down the Prow cliff drive's seaward verge to the harbour"},
+   {"stretch": "jan", "host": "V01", "side": "inland (west)", "offset_m": 6.5, "from": [1494.7, 1026.4], "to": [1495.4, 344.6], "note": "up the Prow cliff drive's inland verge, through the Prow Tunnel as its footway"},
+   {"stretch": "jan", "host": "V02", "side": "east", "offset_m": 6.5, "from": [1505.5, 343.5], "to": [1376.8, 690.6], "note": "up Crown Road's east verge, through the Shoulder Tunnel as its footway, to the turning circle"}
+ ],
+ "sharesRule": "a shared stretch is a footway of its host bed: the same alignment at offset_m from the host centreline, the host's solved height at every point (the builder copies it, it does not re-grade), no separate terrain override, retaining or kerb between host and footway; tunnels and bridges on the host carry the footway inside their own section",
+ "ownTrails": [
+   {"stretch": "apr", "name": "the Hollow lane (west lane)", "from": [900, 628], "to": [887, 815], "note": "a new trail on the valley floor between Orchard Brook and S4; the April and June stretches walk two lanes 3 m apart"},
+   {"stretch": "jun", "name": "the Hollow lane (east lane)", "from": [903, 628], "to": [890, 815]},
+   {"stretch": "feb", "name": "the Lakeside zig-zag", "from": [1330, 885], "to": [1285, 875], "note": "from the Shoulder's south-west corner down to the lake terrace: seven short switchback legs on the band face (x 1285–1330, z 845–885), outside S1's loop; built as a ramp with retaining walls between legs (the only step-free way off the Shoulder that does not cross S1)"}
+ ],
+ "crossings": "the walk crosses S1 once, at grade, at [1255,862] (to be regraded flush); every other crossing is at grade on a walk, a spur or a road (thresholds) or on a named bridge (the Inlet Footbridge, the Hollow Bridge, the Bight Bridge)",
+ "retired_v1_6_pts": YW_OLD_V16,
+}
+m["profiles"]["walk"]["grade_max_pct"] = 12
+m["profiles"]["walk"]["grade_typ_pct"] = [0, 8]
+m["profiles"]["walk"]["note"] = "walks and trails, including the Year Walk: 12 % maximum, ≤ 8 % typical; a stair's step-free twin keeps ≤ 8 %"
+
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")
