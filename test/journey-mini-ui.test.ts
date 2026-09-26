@@ -223,7 +223,7 @@ describe("JourneyMini — the journey's simple view", () => {
     expect(list().textContent).toContain("Fictional rent");
     expect(list().textContent).toContain("planned from Prepare");
     await click(button("Era"));
-    expect(list().textContent).toContain("Our path so far");
+    expect(list().textContent).toContain("The journey so far");
     await click(button("Journey"));
     expect(list().getAttribute("aria-label")).toBe("Journey as a list");
     await click(button("Month"));

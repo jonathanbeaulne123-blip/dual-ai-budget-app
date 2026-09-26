@@ -8,7 +8,7 @@ const r=await page.evaluate(()=>{const g=window.__harbour.geography,yaw=-0.57686
  for(const along of [6,8,10,12,14,16,18,20,24,28])for(const across of [-12,-6,0,6,12]){const x=560+nx*along+tx*across,z=1080+nz*along+tz*across,hits={};
   for(let y=0;y<=14;y+=1){const id=g.blocker(x,z,y,.5);if(id)(hits[id]??=[]).push(y);}
   rows.push({along,across,x:+x.toFixed(1),z:+z.toFixed(1),ceiling:Number.isFinite(g.ceiling(x,z,0))?+g.ceiling(x,z,0).toFixed(2):null,hits});}
- const bridge=window.__harbour.world.structures.find(s=>/bight/i.test(s.id));
+ const bridge=window.__harbour.world.structures.find(s=>s.id==='bightBridge.deck@bight');
  return{rows,bridge:bridge&&{id:bridge.id,kind:bridge.kind,bounds:bridge.bounds}};});
 console.log(JSON.stringify(r));
 await browser.close();

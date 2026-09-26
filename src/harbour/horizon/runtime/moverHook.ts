@@ -4,7 +4,7 @@
  * camera stand aside. Detaching drops the body on foot and hands back to the walk camera.
  * Pure: the runtime applies the returned transforms to its figure and camera.
  */
-import type {ModeCameraPose,ModeController,ModeHud,ModeInput,MoverBody,Vec3} from '../movers/shared/mode.ts';
+import type {ModeCameraPose,FlightModeController,ModeHud,ModeInput,MoverBody,Vec3} from '../movers/shared/mode.ts';
 
 export interface MoverHookHost{
   /** The runtime's body, mutated in place. */
@@ -21,7 +21,7 @@ export interface MoverFrame{figure:FigureTransform;camera:ModeCameraPose;sound:s
 export const MOVER_DETACH_BLEND_MS=600;
 
 export function createMoverHook(host:MoverHookHost){
-  let controller:ModeController|null=null;
+  let controller:FlightModeController|null=null;
   const place=(x:number,y:number,z:number)=>{
     const deck=host.surface?.(x,z,y+.5);
     return deck!==null&&deck!==undefined&&Number.isFinite(deck)?deck:host.ground(x,z);
@@ -29,7 +29,7 @@ export function createMoverHook(host:MoverHookHost){
   return{
     attached:()=>controller,
     /** Attach a controller, or `null` to stand it down without moving the body (a reduced-motion sheet takes over). */
-    attach(next:ModeController|null){controller=next;},
+    attach(next:FlightModeController|null){controller=next;},
     /** One frame: update the controller, move the body to its pose, return the figure and exact camera (roll 0). */
     frame(dt:number,input:ModeInput):MoverFrame|null{
       const c=controller;if(!c)return null;

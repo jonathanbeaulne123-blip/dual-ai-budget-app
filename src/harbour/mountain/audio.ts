@@ -7,7 +7,7 @@ import {queryWorldSurface} from './surfaces.ts';
  * every frame with net lift in m/s. All three share the bell's guards: silent until a deliberate
  * gesture enabled ambience, and when muted, hidden or quiet (calm view).
  */
-export type WorldAmbience={update(x:number,y:number,z:number,speed:number,wood:boolean,walking:boolean,quiet:boolean):void;bell():void;snap():void;splashEcho():void;vario(lift:number):void;pause():void;dispose():void};
+export type WorldAmbience={update(x:number,y:number,z:number,speed:number,wood:boolean,walking:boolean,quiet:boolean,flight?:boolean):void;bell():void;snap():void;splashEcho():void;vario(lift:number):void;pause():void;dispose():void};
 /** The Deep's echoes (FLIGHT.md §5): three, 1.1 s apart, each softer. */
 export const SPLASH_ECHOES:readonly {delay:number;level:number}[]=[{delay:0,level:.16},{delay:1.1,level:.08},{delay:2.2,level:.035}];
 /** The vario chirps every 0.6 s while net lift is at least 0.5 m/s; its pitch rises with lift. Silence in sink is the tell. */
@@ -103,12 +103,14 @@ export function createWorldAmbience():WorldAmbience|null{
       // The clapper's strike: a bright, very short noise.
       burst(now,{type:'highpass',f:2400,q:.7,len:.03,level:.09},.09);
     },
-    update(x,y,z,speed,wood,walking,quiet){
+    update(x,y,z,speed,wood,walking,quiet,flight=false){
       if(dead)return;if(quiet||document.hidden){pause();return;}
       muted=false;
       ease(master.gain,.22);
       const altitude=Math.max(0,Math.min(1,y/110)),river=nearestOnRoute(x,z,RIVER).distance;
-      ease(wind.gain.gain,.16+altitude*.34);ease(water.gain.gain,Math.max(0,1-river/35)*.5+(z>25?.12:0));ease(leaves.gain.gain,z<-60&&y<80?.08:0);
+      // Flight wind is deliberately quiet at trim and opens into a roar at the full bar / freefall cap;
+      // ordinary world ambience keeps its established level.
+      ease(wind.gain.gain,(.16+altitude*.34)*(flight?Math.max(.18,Math.min(1,.18+.82*(speed-9)/8)):1));ease(water.gain.gain,Math.max(0,1-river/35)*.5+(z>25?.12:0));ease(leaves.gain.gain,z<-60&&y<80?.08:0);
       if(last&&walking&&speed>.1){const distance=Math.hypot(x-last.x,z-last.z);if(distance<3)stride+=distance;}
       if(stride>.78&&ctx.currentTime-lastStep>.16){
         stride=0;lastStep=ctx.currentTime;foot=1-foot;

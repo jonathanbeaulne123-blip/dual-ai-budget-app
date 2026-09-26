@@ -33,7 +33,7 @@ Throat and the Lamp Hop until the land requests (L5, new L6) or a de-scope rulin
 
 | BLOCKER | MAJOR | MINOR | NIT |
 |---:|---:|---:|---:|
-| 2 | 2 | 9 | 6 |
+| 2 | 2 | 10 | 6 |
 
 Both BLOCKERs are "acceptance cannot be captured" (REVIEW-BRIEF §6) and are land (pass-1 geometry, frozen in pass 2):
 not fixable by this reviewer under the pass's *Must not*. The two MAJORs need a design ruling or land; the reviewer

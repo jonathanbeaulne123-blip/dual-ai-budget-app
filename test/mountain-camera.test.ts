@@ -310,7 +310,7 @@ describe("the ride camera (C4)", () => {
           const p = projectView(shot.eye, shot.look, rider, aspect, shot.fov);
           expect(p.depth, `u=${u.toFixed(3)}`).toBeGreaterThan(0);
           expect(Math.abs(p.x), `u=${u.toFixed(3)}`).toBeLessThanOrEqual(0.95);
-          expect(Math.abs(p.y), `u=${u.toFixed(3)}`).toBeLessThanOrEqual(0.95);
+          expect(Math.abs(p.y), `u=${u.toFixed(3)} stays clear of the bottom controls`).toBeLessThanOrEqual(0.45);
           expect(shot.eye[1], `u=${u.toFixed(3)} over the land`).toBeGreaterThan(cameraGround(shot.eye[0], shot.eye[2]));
           if (Math.abs(u - 0.55) < dt / duration) shotAtReveal = shot;
         }

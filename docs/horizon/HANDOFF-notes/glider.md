@@ -62,15 +62,15 @@ the ground. "Cut to 0" makes the scripted line just touch; "cut to 5" gives the 
   with a 180° turn over the north face. Nothing is broken; the Crown just has one real lip.
 
 ### L5 · The Throat's approach and its mouth — gate 12 `[1300, 300]`, aperture 26 × 18 (floor 101, top 119)
-- **What the wing meets:** the north face in front of the mouth. Across the aperture's width (x 1287–1313) the
-  heightfield is ~55 m at z 250–270, then climbs **98–101 m at z 275, 111–119 at z 280, 126 at z 285, 129 at z 288 and
-  131 m from z 291** (the mouth mask) to the mouth plane at z 300. The Throat Run is under the terrain from
+- **What the wing meets:** the north face in front of the mouth. A fresh `sampleTerrain` sweep across the aperture's
+  width (x 1287–1313) measures **87.5 m at z 275, 118.8 m at z 280, 124.7 m at z 285, 130.6 m at z 290 and
+  131 m at z 300** (the mouth mask) — not the earlier centre-line-only 98–101 m estimate. The Throat Run is under the terrain from
   `[1305, 275]` to `[1300, 300]` (26 m), worst **−35.3 m at `[1300, 300]`** (path 95.8, terrain 131.0).
 - **The mask floor:** the mouth mask (`underground.doors.throat`, cut into the heightfield from z 291) opens at
   **floor h 110**, while the gate's aperture — the numbers the corridor admits by — has its **floor at h 101**.
   The lower 9 m of the aperture is terrain.
 - **Cut needed:** a notch **26 m wide (x 1287–1313), z 270 → 300, down to h ≤ 100** (1 m under the aperture floor):
-  cut **0–1 m at z 275, 11–19 m at z 280, ~26 m at z 285, ~29 m at z 288, 31 m from z 291 to z 300**; and lower the
+  no cut is needed at z 275 in the measured sweep; cut **~19 m at z 280, ~25 m at z 285, ~31 m from z 290 to z 300**; and lower the
   mouth mask's floor from **110 to ≤ 101** so the mask and the gate agree. (Or raise gate 12 to floor 110 / centre
   119 — a sky change that makes the Throat ~9 m harder; the design lead's call.)
 - **Why:** with the ruling "the Throat is earned" the wing arrives 5 m under the floor from the Crown (a miss) and
@@ -90,6 +90,7 @@ the ground. "Cut to 0" makes the scripted line just touch; "cut to 5" gives the 
 | L6 | Bight Bridge passage south of gate 5 (reviewer) | solid 0–11 m | open to ≥ 14 m | same | move gate 5 / the Lamp Hop's line |
 
 ### L6 · The Bight Bridge's underside on the Lamp side — gate 5 `[560, 1080]` h 6, 24 × 16, yaw −0.577 (added by the M6 reviewer)
+- **Priority:** high-effort / high-reward, and independent of both L5 (the Throat) and the 4 m/s wind decision; it can be designed and validated as its own land request.
 - **What the wing meets:** from 8 to 28 m along gate 5's normal toward the Lamp (±12 m across), `geography.blocker`
   reports `V01.retaining.offshore@bight` and `S2.retaining.offshore@bight` solid **from the sea to 9–11 m**, and
   `bightBridge.supports@bight` at the ends, under `bightBridge.deck@bight` (underside 11.1–11.4 m). The gate's plane itself

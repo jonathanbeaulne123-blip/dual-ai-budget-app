@@ -273,7 +273,7 @@ describe("mobile entry sheet", () => {
       initial: { amount: "12.50", subcategoryId: mode === "income" ? "SUB-INCOME-WAGES" : "SUB-FOOD-GROCERIES" }, duplicateReview: true })));
     click("More");
     expect(host.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(true);
-    expect(button("Add anyway").disabled).toBe(true);
+    expect(button("Record it anyway").disabled).toBe(true);
     expect(host.querySelector('[data-entry-section="account"] [aria-pressed="true"]')).toBeNull();
     // A desktop resize cannot turn a phone draft's inherited default into intent.
     resize(1440);
@@ -286,7 +286,7 @@ describe("mobile entry sheet", () => {
       ?? [...host.querySelectorAll<HTMLButtonElement>('[data-entry-section="account"] .wallet-tile')].find(item => item.textContent?.includes("Visa"))!;
     act(() => visa.click());
     expect(host.querySelector<HTMLButtonElement>('[data-add-confirm]')!.disabled).toBe(false);
-    expect(button("Add anyway").disabled).toBe(false);
+    expect(button("Record it anyway").disabled).toBe(false);
     expect(posts).not.toHaveBeenCalled();
     act(() => host.querySelector<HTMLButtonElement>('[data-add-confirm]')!.click());
     expect(posts).toHaveBeenCalledOnce();
@@ -372,7 +372,7 @@ describe("mobile entry sheet", () => {
     act(() => root.render(createElement(Harness, { key: "transfer", mode: "transfer", onPost: posts, initial: { amount: "12", fromAccountId: "ACC-VISA", toAccountId: "ACC-VISA" }, duplicateReview: true })));
     click("More");
     expect(host.querySelector<HTMLButtonElement>("[data-add-confirm]")!.disabled).toBe(true);
-    expect(button("Add anyway").disabled).toBe(true);
+    expect(button("Record it anyway").disabled).toBe(true);
     expect(posts).not.toHaveBeenCalled();
   });
 });

@@ -268,16 +268,16 @@ function tapPad(container: HTMLElement, label: string): void {
   act(() => { key.click(); });
 }
 
-/** The + reads "Add money" in My Money and "What can we do?" in Our Home (Vision v2 §4.5). */
+/** The dial's bubble reads "Record" in both spaces (Tool Atlas §3.3). */
 function openAddDial(): void {
-  const fab = [...document.querySelectorAll("button.fab")].find((item) => item.getAttribute("aria-label") === "Add money" || item.getAttribute("aria-label") === "What can we do?");
+  const fab = [...document.querySelectorAll("button.fab")].find((item) => item.getAttribute("aria-label") === "Record");
   if (!fab) throw new Error("Missing the + control");
   act(() => (fab as HTMLButtonElement).click());
 }
 
 function openExpenseSlideshow(): void {
   openAddDial();
-  act(() => button("Add expense").click());
+  act(() => button("Purchase: record one").click());
 }
 
 function walkExpenseToConfirm(container: HTMLElement, accountName = "Visa"): HTMLButtonElement {
@@ -1797,7 +1797,7 @@ describe("cached-shell startup books gate", () => {
     const before=startup.cached,discarded=abandonOpenShift(before,{memberId:"MEM-002"});let candidate:Household|null=null;
     startup.punchConfirm=async next=>{candidate=next;return {...discarded,household:next};};
     await act(async()=>root.render(createElement(App)));await waitForUi(()=>expect(startup.officePunch).not.toBeNull(),4000);
-    openAddDial();act(()=>button("Add shift").click());act(()=>button("Never mind").click());
+    openAddDial();act(()=>button("Shift: clock in, clock out, or record one").click());act(()=>button("Never mind").click());
     await waitForUi(()=>expect(candidate).not.toBeNull(),1500);
     expect(candidate!.kitchen.openShifts.find(row=>row.memberId==="MEM-002")!.status).toBe("cleared");
     expect(candidate!.transactions).toEqual(before.transactions);expect(container.querySelector(".add-slideshow")).toBeNull();
@@ -2135,7 +2135,7 @@ describe("cached-shell startup books gate", () => {
     let resolve!:(value:'accepted')=>void;startup.auditStatus=new Promise(r=>{resolve=r;});
     await act(async()=>button('Check entry status').click());
     act(()=>[...container.querySelectorAll<HTMLButtonElement>('[data-add-slideshow] button')].find(b=>b.textContent==='Close')!.click());
-    openAddDial();act(()=>button('Add shift').click());
+    openAddDial();act(()=>button('Shift: clock in, clock out, or record one').click());
     expect(container.querySelector('[data-add-slideshow="shift"]')).not.toBeNull();
     await act(async()=>{resolve('accepted');await Promise.resolve();});
     expect(container.querySelector('[data-add-slideshow="shift"]')).not.toBeNull();

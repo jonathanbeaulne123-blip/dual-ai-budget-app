@@ -377,7 +377,7 @@ export function queenBanks(nest: Pick<KittyNest, "categories" | "king" | "mode">
   };
 }
 
-export const QUEEN_BANK_LABELS: Readonly<Record<QueenBankId, string>> = { protect: "Protect", whatnow: "What now", build: "Build" };
+export const QUEEN_BANK_LABELS: Readonly<Record<QueenBankId, string>> = { protect: "Protect", whatnow: "Everyday · now", build: "Build" };
 export const QUEEN_BANK_MEANINGS: Readonly<Record<QueenBankId, string>> = {
   protect: "The future you did not choose.",
   whatnow: "The present, the remainder.",

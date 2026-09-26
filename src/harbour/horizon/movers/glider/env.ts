@@ -120,7 +120,7 @@ export function createGliderEnv(source:GliderWorldSource,options:GliderEnvOption
   function inHost(x:number,y:number,z:number){
     return hosts.some(h=>{const floor=h.height??geography.ground(x,z),roof=floor+(h.roofHeight??8);return y>=floor-2&&y<=roof+1&&pointInPolygon(x,z,h.footprint!);});
   }
-  function placeLabel(x:number,z:number){const n=neighbourhoodAt(x,z);return n?n.label:AREA_LABELS[districtAt(x,z)]??'the path';}
+  function placeLabel(x:number,z:number){const n=neighbourhoodAt(x,z);return n?n.label.replace(/^The /,'the '):AREA_LABELS[districtAt(x,z)]??'the path';}
   const toNode=(n:{id:string;at:Point3},label:string):LandingNode=>({id:n.id,at:[n.at[0],n.at[1],n.at[2]],label});
   function nearestNodes(x:number,z:number,y?:number){
     return nodes.map(n=>({n,d:Math.hypot(n.at[0]-x,n.at[2]-z)+(y===undefined?0:Math.abs(n.at[1]-y)*.25)})).sort((a,b)=>a.d-b.d);

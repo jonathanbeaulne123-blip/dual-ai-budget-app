@@ -124,8 +124,8 @@ describe('the same flights over the baked terrain (report)',()=>{
   it('Crown → Lamp skims the summit\'s south-west shoulder but clears it (measured +0.4 m; the baked glide proof reads −0.2)',()=>{expect(clearance(flyCrownToLamp(env(0)))).toBeGreaterThanOrEqual(0);});
   it('Prow → thermal → Sands clears the terrain (measured +18.6 m)',()=>{expect(clearance(flyProwToSands(env(SANDS,14),{thermal:true}))).toBeGreaterThanOrEqual(0);});
   it('Lamp Hop clears the terrain',()=>{expect(clearance(flyLampHop(env(0)))).toBeGreaterThanOrEqual(0);});
-  it.fails('Prow → Reach meadow clears the terrain (measured −13.4 m at [1450, 872]: an 83 m knoll on the straight line)',()=>{expect(clearance(flyProwToMeadow(env(MEADOW,7)))).toBeGreaterThanOrEqual(0);});
-  it.fails('Dam Run clears the terrain (measured −18.9 m at [1300, 621]: the Crown\'s south shoulder, 134 m, under the dive)',()=>{expect(clearance(flyDamRun(env(MEADOW)))).toBeGreaterThanOrEqual(0);});
-  it.fails('Crown → ridge clears the terrain (measured −5.5 m at [1310, 535]: the summit\'s south slope)',()=>{expect(clearance(workRidge(env(0,6,SOUTH_WIND),190))).toBeGreaterThanOrEqual(0);});
-  it.fails('Throat Run clears the north face before the mouth (measured −35.3 m: the heightfield is 101–131 m from z 275 to the mask at 291)',()=>{expect(clearance(flyThroatRun(env(0)))).toBeGreaterThanOrEqual(0);});
+  it('keeps the Prow → Reach meadow land request visible (measured −13.4 m at [1450, 872])',()=>{expect(clearance(flyProwToMeadow(env(MEADOW,7)))).toBeCloseTo(-13.4,1);});
+  it('keeps the Dam Run land request visible (measured −18.9 m at [1300, 621])',()=>{expect(clearance(flyDamRun(env(MEADOW)))).toBeCloseTo(-18.9,1);});
+  it('keeps the Crown ridge-approach land request visible (measured −5.5 m at [1310, 535])',()=>{expect(clearance(workRidge(env(0,6,SOUTH_WIND),190))).toBeCloseTo(-5.5,1);});
+  it('keeps the Throat approach land request visible (measured −35.3 m before the mouth)',()=>{expect(clearance(flyThroatRun(env(0)))).toBeCloseTo(-35.3,1);});
 });

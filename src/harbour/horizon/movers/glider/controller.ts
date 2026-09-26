@@ -10,7 +10,7 @@
  * the nearest reachable landing. There is no crash state.
  */
 import type {FlightEnvelope,Point3,Threshold} from '../../world/definition.ts';
-import type {ModeBodyPose,ModeCameraPose,ModeController,ModeExit,ModeHud,ModeInput,ReducedMotionLanding,Vec3} from '../shared/mode.ts';
+import type {ModeBodyPose,ModeCameraPose,FlightModeController,ModeExit,ModeHud,ModeInput,ReducedMotionLanding,Vec3} from '../shared/mode.ts';
 import {MOVER_SOUNDS} from '../shared/mode.ts';
 import {LANDING_LABELS,nearestReachableLanding,resolveTouchdown,type LandingOutcome} from './landing.ts';
 import {DEEP_JETTY,corridorOutcome,enterCorridor,stepCorridor,throatGate,type CorridorState,type ThroatGate} from './corridor.ts';
@@ -40,7 +40,7 @@ export interface FlightArtState{
   /** The exit was a fade (the wing is simply gone with the rider). */
   faded:boolean;
 }
-export interface FlightController extends ModeController{
+export interface FlightController extends FlightModeController{
   artState():FlightArtState;
   /** The simulation's current phase, for tests and the step log. */
   phase():string;

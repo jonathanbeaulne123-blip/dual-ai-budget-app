@@ -1,10 +1,10 @@
 # The Horizon — the deck
 
-> Current canonical manifest: v1.7 — sky-only over v1.6 (FLIGHT.md's glider polar, parachute, Throat corridor, Drop Zone, landing modes and the carried `bailOut` threshold; D34's glider retarget applied pending Jonathan); geography stays `horizon-geo-1`. v1.6: Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data. PIN-0 remains pending until its accepted merge SHA is recorded.
+> Current canonical manifest: v1.7 — sky-only over v1.6 (FLIGHT.md's glider polar, parachute, Throat corridor, Drop Zone, landing modes and the carried `bailOut` threshold; D34's glider retarget applied pending Jonathan); geography stays `horizon-geo-1`. v1.6: Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data. PIN-0 is recorded as the accepted #546 merge in `docs/DECISIONS.md`.
 
 Version 1.6 · 25 September 2026 · Owner: Jonathan (product) · Author: Claude (design lead, review)
 
-This folder is **what** to build, pass by pass. The Grand Plan artifact (`inputs/grand-plan.txt`, published as "The Horizon Grand Plan" v1.1) is **why**: the approved design, its chapters and decisions D1–D12 (`DECISIONS.md` carries their status and adds D13–D16). Nobody builds from the Grand Plan directly. Where the Grand Plan and this folder differ in a number or an id, this folder wins; where they differ in intent, stop and ask the design lead.
+This folder is **what** to build, pass by pass. The Grand Plan artifact (`inputs/grand-plan.html`, published as "The Horizon Grand Plan" v1.1) is **why**: the approved design, its chapters and decisions D1–D12 (`DECISIONS.md` carries their status and adds D13–D16). Nobody builds from the Grand Plan directly. Where the Grand Plan and this folder differ in a number or an id, this folder wins; where they differ in intent, stop and ask the design lead.
 
 > **Golden rule: if a brief and `CONTRACT.md` disagree, `CONTRACT.md` wins.** Then `MANIFEST.json` (numbers), then `LIGHT.md` (the sun), then `STYLE.md` (the look), then the pass brief. A builder who finds a conflict reports it in `HANDOFF.md → Conflicts` and follows the higher file; a builder never resolves a conflict by editing the spine.
 
@@ -32,6 +32,7 @@ Briefs cite spine keys (`MANIFEST.json → structures.highSpan`, `STYLE §1.6.4`
 | `passes/02b-kit.md` | Pass 2b, Claude subagents, parallel with 2: the kit, the sun clock, the light cards, planting, ground paint, dressings |
 | `passes/03-neighbourhoods.md` | Pass 3, Claude subagents: one template, seven neighbourhoods, two at a time |
 | `passes/04-pastimes.md` | Pass 4, Claude subagents: fourteen pastimes, Lantern Hunt first |
+| `RIDE.md` | The movement foundation for wheels: one ground kernel, the tyre step, S / A / D powerslide, the pump-boost, pace as physics, profiles for the board, the bicycle and pass 4's skates, the ride log and five tuning situations; D39–D46 |
 | `REVIEW-BRIEF.md` | How any pass is reviewed (the dissection method), severity ladder, report format |
 | `NOT-THIS.md` | One-page checklist of the Mountain v2 anti-patterns, each with its "instead" |
 | `inputs/` | Read-only sources: Grand Plan text and HTML, the dissection summary, the pitch v0.1 notes |
@@ -47,7 +48,7 @@ From pass 0 on, the deck lives in the repository at `docs/horizon/` and the cano
 |---|---|---|
 | Codex, pass 0 | `CONTRACT.md`, `passes/00-reconcile.md`, `DECISIONS.md` | `MANIFEST.json → names, scale, districts`; Grand Plan ch. 14 (wording of D1–D12) |
 | Codex, pass 1 | `CONTRACT.md`, `MANIFEST.json`, `LIGHT.md §1–2`, `passes/01-land.md`, `NOT-THIS.md` | `STYLE §0, §1.2, §1.4 (clearings, strata), §1.5, §1.7, §1.8, §1.12, §1.13, §1.14` (per `STYLE §0.2`) |
-| Pass 2 mover subagent | `CONTRACT.md`, its own section of `passes/02-movers.md`, `NOT-THIS.md` | `MANIFEST.json` keys its section names; `LIGHT §3`; `STYLE §1.1, §1.2, §1.6, §1.11, §1.12`, §3 vehicle rows |
+| Pass 2 mover subagent | `CONTRACT.md`, its own section of `passes/02-movers.md`, `NOT-THIS.md`; **M1 and M2 also `RIDE.md`**, M6 also `FLIGHT.md` (pending its patch) | `MANIFEST.json` keys its section names; `LIGHT §3`; `STYLE §1.1, §1.2, §1.6, §1.11, §1.12`, §3 vehicle rows |
 | Pass 2b kit subagent | `CONTRACT.md`, `LIGHT.md`, `STYLE §1, §3`, `passes/02b-kit.md` | `MANIFEST.json → surfaces, reserves, names` |
 | Pass 3 neighbourhood subagent | `CONTRACT.md`, `LIGHT.md`, `STYLE §1` + its own §2 sheet, `passes/03-neighbourhoods.md` (template + its section) | the §3 rows its sheet names; `MANIFEST.json → districts, neighbourhoods, hosts, places, thresholds, views, pastimeData` (its fixtures) |
 | Pass 4 pastime subagent | `CONTRACT.md §2`, `passes/04-pastimes.md` | `STYLE §1.9–1.12`; `LIGHT §1, §3`; the `MANIFEST.json` keys its pastime names, `pastimeData`, `sky.courses` |
@@ -136,6 +137,8 @@ Delivered to `~/Downloads/hearth-horizon-<pass>/` (for example `hearth-horizon-p
 
 ## Flight (added 26 Sep)
 `FLIGHT.md` decides the glider and the parachute (track M6): a hang glider flown by the bar on a five-point polar (8–17 m/s, trim 11 / 1.2), thermals by the real clock, ridge lift worked on the Crown's south face, the landing-outcome table (walk-off, tumble, or a labelled fade — never a crash), the Throat as a corridor dive to a splash and three echoes, the parachute from the plane's carried `bailOut` threshold (freefall, auto-pull at 45 m, the Drop Zone as a wind problem, the plane flies itself home), one horizon-locked flight cam, two glass bubbles, reduced motion as a sheet of landings and pages. It asks for MANIFEST v1.7 sky-only fields and decisions D34–D38.
+## Riding (added 26 Sep)
+`RIDE.md` decides how wheels move: one ground kernel in `movers/shared/ground/` (state, fixed step, three-point contact, gravity everywhere, pace as rolling resistance and grip, drag-set top speed), the tyre step that makes carve, slide and twist one rule, S / A / D as the powerslide, the boost as the pump out of a clean slide released by W, the bed-bound edge (run-outs and pads at threshold pace; off the bed the wheels stall and a fade returns you), profiles for the board, the bicycle and the ice skates, the ride log and five reproducible situations. It refines pass 2's M1 and M2 and the approved D7, retires Skate v2's ground model by a keep / merge / replace / remove table, and adds decisions D39–D46 (D34–D38 belong to `FLIGHT.md`, whose patch is not yet on `main`).
 
 ## Files and their sources
 - The canonical manifest is `src/harbour/horizon/world/MANIFEST.json`; `docs/horizon/make_manifest.py` reproduces it. Run the generator in a temporary directory, compare its JSON with the canonical file, and copy an approved result there. Earlier embedded manifests and review claims under `inputs/` are historical. V1.6 reconciles the prerequisite data; it does not claim built geometry or clearance acceptance.

@@ -117,7 +117,7 @@ export type Walker = {
    * ground, shore or obstacle resolution while it rides. `null` lets go (the
    * caller then stands it on the platform with `place`).
    */
-  attach(pose: { x: number; y: number; z: number; yaw: number; seated: boolean } | null): void;
+  attach(pose: { x: number; y: number; z: number; yaw: number; seated: boolean; moving?: boolean } | null): void;
   /** Is the body riding a cabin? */
   riding(): boolean;
   /** Walk at a run without holding Shift (the run toggle). */
@@ -200,7 +200,7 @@ export function createWalker(options: WalkerOptions): Walker {
   let state = createBodyState(start.x, start.z, start.yaw ?? COURT_ARRIVAL.yaw, world);
   let input: BodyInput = NO_INPUT;
   let route: RouteFollow | null = null, lastPlan: WalkPlan | null = null;
-  let ride: { x: number; y: number; z: number; yaw: number; seated: boolean } | null = null;
+  let ride: { x: number; y: number; z: number; yaw: number; seated: boolean; moving?: boolean } | null = null;
   let runLocked = false, fade = 1;
   /** A safe return fades the figure; every material on it is its own (`createBodyFigure`). */
   function setFade(alpha: number): void {
@@ -380,9 +380,9 @@ export function createWalker(options: WalkerOptions): Walker {
       if (ride) {
         // Carried: the cabin's transform is the body's. It holds a ride pose — seated in a gondola, standing in a funicular.
         write();
-        motion.run = 0; motion.lean = 0; motion.bank = 0; motion.air = 0; motion.rise = 0; motion.crouch = 0; motion.slide = 0; motion.incline = 0;
+        motion.run = ride.moving ? .45 : 0; motion.lean = 0; motion.bank = 0; motion.air = 0; motion.rise = 0; motion.crouch = 0; motion.slide = 0; motion.incline = 0;
         motion.emote = ride.seated ? "sit" : null; motion.emoteAt = ride.seated ? 1 : 0; motion.flourish = reduced ? 0 : 1;
-        figure.pose(state.phase, 0, t, motion);
+        figure.pose(state.phase, ride.moving ? .5 : 0, t, motion);
         return true;
       }
       if (input.forward !== 0 || input.strafe !== 0) clearRoute();

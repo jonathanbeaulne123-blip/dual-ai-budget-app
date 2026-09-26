@@ -22,7 +22,7 @@
 .horizon-bubble-height{left:max(14px,env(safe-area-inset-left));pointer-events:none}
 .horizon-bubble-place{right:max(14px,env(safe-area-inset-right));max-width:calc(60% - 14px);border-radius:22px;background:#f8f2e2cc}
 .horizon-bubble-lift{font-size:16px}
-.horizon-sheet{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100% - 32px));max-height:min(70vh,calc(100% - 120px));overflow:auto;padding:16px;background:var(--paper,#f4eee1);border:1px solid #817d6e55;border-radius:18px;box-shadow:0 10px 40px #262b2933;color:#343b37}
+.horizon-sheet{box-sizing:border-box;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(420px,calc(100% - 32px));max-height:min(70vh,calc(100% - 120px));overflow:auto;padding:16px;background:var(--paper,#f4eee1);border:1px solid #817d6e55;border-radius:18px;box-shadow:0 10px 40px #262b2933;color:#343b37}
 .horizon-sheet h2{margin:0 0 8px;font:600 18px/1.3 system-ui}
 .horizon-sheet h3{margin:12px 0 6px;font:600 13px/1.3 system-ui;text-transform:uppercase;letter-spacing:.04em;color:#5b5d52}
 .horizon-sheet ul{display:grid;gap:6px;margin:0;padding:0;list-style:none}
@@ -30,3 +30,11 @@
 .horizon-sheet-stay{margin-top:12px}
 @media(min-width:800px) and (pointer:fine){.horizon-offers,.horizon-bubble{--horizon-hud-bottom:calc(56px + env(safe-area-inset-bottom))}}
 .horizon-bubble-fade{pointer-events:none}
+:root[data-scene-lighting="dark"] .horizon-status,:root[data-scene-lighting="dark"] .horizon-offers,:root[data-scene-lighting="dark"] .horizon-offer,:root[data-scene-lighting="dark"] .horizon-bubble,:root[data-scene-lighting="dark"] .horizon-sheet{background:#202b2bde;color:#f2eadc;border-color:#e4d8bd55;box-shadow:0 4px 20px #0008}
+/* R2-03 desktop offer chip: the touch Enter control remains the offer on coarse pointers. */
+.horizon-offer{display:none;position:absolute;left:50%;bottom:calc(max(12px,env(safe-area-inset-bottom)) + 64px);z-index:3;transform:translateX(-50%);align-items:center;justify-content:center;min-width:44px;min-height:44px;padding:0 16px;border-radius:999px;background:#f8f2e2cc;border:1px solid #817d6e55;box-shadow:0 4px 20px #262b2922;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);font:600 14px/1.2 system-ui;pointer-events:none;transition:opacity .16s ease-out}
+@media(min-width:800px) and (pointer:fine){.horizon-offer{display:flex}}
+@media(prefers-reduced-motion:reduce){.horizon-offer{transition:none}}
+:root[data-motion="reduced"] .horizon-offer{transition:none}
+.horizon-offers .horizon-offer{position:static;display:flex;transform:none;pointer-events:auto}
+@media(min-width:800px) and (pointer:fine){.horizon-offers{display:none}}

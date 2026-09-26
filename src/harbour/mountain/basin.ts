@@ -2,12 +2,12 @@ import {activeHouseholdFundEvents,projectHouseholdFund,householdFundOperatingDel
 import type {Household} from '../../core/types.ts';
 import type {DateKey} from '../../core/calendar.ts';
 import type {FundPulseFreshness} from '../../core/fundPulse.ts';
-export type BasinFlow={id:string;cents:number;kind:'inlet'|'outlet'|'reserve-in'|'reserve-out';label:string};
+export type BasinFlow={id:string;cents:number;kind:'inlet'|'outlet'|'reserve-in'|'reserve-out';label:string;date?:DateKey};
 export type BasinReading={identity:string;revision:number;asOf:string;known:boolean;motion?:boolean;balanceCents:number|null;kittyCents:number|null;freeCents:number|null;pendingCents:number;targetCents:number;flows:readonly BasinFlow[]};
 /** Read only. Never infer a bank movement from a purchase, claim, or planned contribution. */
 export function buildBasinReading(h:Household,today:DateKey,freshness:FundPulseFreshness):BasinReading{
   const config=shapeHouseholdFundConfig(h.householdFund),p=projectHouseholdFund(h,today),known=p.configured&&freshness==='current';
-  const flows:BasinFlow[]=known?activeHouseholdFundEvents(h,config?.id).filter(e=>householdFundOperatingDelta(e)!==0).slice(-48).map(e=>({id:e.id,cents:e.amountCents,
+  const flows:BasinFlow[]=known?activeHouseholdFundEvents(h,config?.id).filter(e=>householdFundOperatingDelta(e)!==0).slice(-48).map(e=>({id:e.id,cents:e.amountCents,date:e.date,
     kind:e.kind==='kitty-allocated'?'reserve-out':e.kind==='kitty-released'?'reserve-in':e.kind==='contribution-confirmed'?'inlet':'outlet',
     label:e.kind==='kitty-allocated'?'Moved into Kitty reserves':e.kind==='kitty-released'?'Released from Kitty reserves':e.kind==='contribution-confirmed'?'Confirmed Fund contribution':'Confirmed Fund settlement'})):[];
   return {identity:`${h.environment}:${h.householdId}:${config?.id??'unconfigured'}`,revision:h.revision,asOf:today,known,balanceCents:known?p.operatingBalanceCents:null,kittyCents:known?p.kittyCents:null,freeCents:known?p.freeToSpendCents:null,pendingCents:known?p.pendingContributionsCents:0,targetCents:p.monthlyTargetCents,flows};

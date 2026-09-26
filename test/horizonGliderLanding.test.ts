@@ -66,7 +66,7 @@ describe('the §2.4 outcome table',()=>{
     expect(land(2050,150,flared)).toMatchObject({kind:'fadeShore',node:shore,wet:20});
     expect(land(-10,-10,flared)).toMatchObject({kind:'fadeShore',node:shore});
   });
-  it('the parachute: stand-up only with full brakes and ≤ 3 m/s over the ground',()=>{
+  it('the parachute: stand-up with at least half brakes and ≤ 3 m/s over the ground',()=>{
     expect(land(1040,1065,{airspeed:0,sink:.5,groundSpeed:2,flared:true},'parachute').kind).toBe('walkoff');
     expect(land(1040,1065,{airspeed:0,sink:.5,groundSpeed:4,flared:true},'parachute').kind).toBe('tumble');
     expect(land(1040,1065,{airspeed:0,sink:.5,groundSpeed:1,flared:false},'parachute').kind).toBe('tumble');

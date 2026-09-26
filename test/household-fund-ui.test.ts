@@ -16,9 +16,9 @@ describe("Household Fund experience fences", () => {
   });
 
   it("adds the scoped Ledge and dedicated books pane without changing the phone instrument model", () => {
-    expect(app).toContain("<FundLedge");
+    expect(app).not.toContain("<FundLedge"); // K1: the Fund ledge is retired; the bank panel opens the Fund pane
     expect(app).not.toContain("household-fund-glance");
-    expect(books).toContain('{ id: "fund", label: "Household Fund"');
+    expect(books).toContain('{ id: "fund", label: "The Fund"'); // K13: "Household Fund" as a label → the Fund
     expect(books).toContain("<HouseholdFundPanel");
     expect(app).not.toContain('emitOfficeIntent({ type: "expand", id: "fund"');
   });

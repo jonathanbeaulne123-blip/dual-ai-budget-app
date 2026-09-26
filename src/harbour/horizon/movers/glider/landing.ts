@@ -120,8 +120,9 @@ export function resolveTouchdown(ctx:LandingContext,contact:LandingContact,veloc
 }
 
 export interface ReachableLanding{id:string;label:string;xy:Point2;distance:number}
-/** Best glide at trim (11 / 1.2). */
+/** Best glide at trim (11 / 1.2); the parachute's canopy is approximately 2:1. */
 export const TRIM_GLIDE=11/1.2;
+export const PARACHUTE_GLIDE=6/3;
 /** The Fold bubble's margin: height in hand must beat the need by this much. */
 export const FOLD_MARGIN=10;
 /**
@@ -129,13 +130,14 @@ export const FOLD_MARGIN=10;
  * from here — height in hand ≥ distance / 9.17 + 10 m. Water landings are not offered. Null if none.
  */
 export function nearestReachableLanding(envelope:Pick<FlightEnvelope,'landings'|'volumes'>,state:{x:number;y:number;z:number},mode:'glider'|'parachute'='glider'):ReachableLanding|null{
+  const glide=mode==='parachute'?PARACHUTE_GLIDE:TRIM_GLIDE;
   let best:ReachableLanding|null=null;
   for(const landing of envelope.landings){
     if('empty' in landing||!(FIELD_IDS as readonly string[]).includes(landing.id))continue;
     const volume=envelope.volumes?.find(v=>v.id===landing.id);
     if(volume?.modes&&!volume.modes.includes(mode))continue;
     const distance=Math.hypot(landing.xy[0]-state.x,landing.xy[1]-state.z),inHand=state.y-(landing.height??0);
-    if(inHand<distance/TRIM_GLIDE+FOLD_MARGIN)continue;
+    if(inHand<distance/glide+FOLD_MARGIN)continue;
     if(!best||distance<best.distance)best={id:landing.id,label:LANDING_LABELS[landing.id]??landing.id,xy:[landing.xy[0],landing.xy[1]],distance};
   }
   return best;

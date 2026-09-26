@@ -104,3 +104,49 @@ describe('Horizon manifest v1.7 (sky-only)',()=>{
     expect(()=>parseHorizonManifest({...manifest,carriedThresholds:[{...row,modes:['plane→']}]})).toThrow('Invalid Horizon carried threshold');
   });
 });
+
+describe('Horizon manifest v1.7 (RIDE §8.3, D40, D42)',()=>{
+  const paces=manifest.paces as unknown as Record<string,{roll:number|null;pushGrip:number|null}>;
+  const surfaces=manifest.surfaces as unknown as Record<string,{pace:string;grip:number|null}>;
+  it('is version 1.7, dated, and says what changed',()=>{
+    expect(manifest.version).toBe('1.7');
+    expect(manifest.date).toBe('2026-09-26');
+    expect(manifest.status).toContain('v1.7: paces and surface grip (RIDE D42)');
+  });
+  it('gives every surface a numeric grip except duff, which is never a bed',()=>{
+    const expected:Record<string,number|null>={paved:1,packedEarth:.95,ochre:.85,apron:1,bankedTurf:1.1,boardwalk:.9,cobble:.7,gravel:.6,sand:.5,plaza:1,snow:.4,ice:.2,duff:null,stone:1};
+    expect(Object.keys(surfaces)).toHaveLength(14);
+    expect(new Set(Object.keys(surfaces))).toEqual(new Set(Object.keys(expected)));
+    for(const [id,row] of Object.entries(surfaces)){
+      if(id==='duff'){expect(row.grip).toBeNull();expect(row.pace).toBe('n/a');continue;}
+      expect(typeof row.grip,id).toBe('number');expect(Number.isFinite(row.grip),id).toBe(true);expect(row.grip,id).toBe(expected[id]);
+    }
+  });
+  it('gives pads, station slabs and the park a stone row that grips like pavement',()=>{
+    expect(surfaces.stone).toEqual({pace:'threshold',footstep:'stone',grip:1,note:'threshold pads, station slabs and the Tideline park'});
+  });
+  it('carries the six paces with their roll and push grip',()=>{
+    expect(Object.keys(paces).sort()).toEqual(['fast','flow','n/a','skate','slow','threshold']);
+    expect(paces.fast).toMatchObject({roll:.12,pushGrip:1});
+    expect(paces.flow).toMatchObject({roll:.25,pushGrip:.9});
+    expect(paces.slow).toMatchObject({roll:.6,pushGrip:.8});
+    expect(paces.threshold).toMatchObject({roll:1.8,pushGrip:.5});
+    expect(paces.skate).toMatchObject({roll:.03,pushGrip:null});
+    expect(paces['n/a']).toMatchObject({roll:null,pushGrip:null});
+    expect((manifest.paces['n/a'] as {note:string}).note).toContain('offbed');
+  });
+  it('resolves every surface default pace and every skate segment pace to a paces row',()=>{
+    for(const [id,row] of Object.entries(surfaces))expect(Object.hasOwn(paces,row.pace),id).toBe(true);
+    for(const id of ['S1','S2','S3','S4'] as const)for(const segment of manifest.skate[id].segments){
+      expect(Object.hasOwn(paces,segment.pace),`${id} ${segment.name}`).toBe(true);
+      expect(Object.hasOwn(surfaces,segment.surface),`${id} ${segment.name}`).toBe(true);
+    }
+  });
+  it('makes the park forgiving rather than assisted, and keeps the v1.6 numbers',()=>{
+    expect(manifest.skate.park.note).toBe('Skate v2 park; forgiving landings only (RIDE D40); no race');
+    expect(manifest.skate.park).toMatchObject({xy:[1020,1430],size:[60,32]});
+    expect(manifest.speeds_ms.board).toBe(7);
+    expect(manifest.skate.S1.segments.map(s=>[s.pace,s.surface])).toEqual([['fast','paved'],['flow','bankedTurf'],['flow','apron'],['fast','paved'],['slow','cobble'],['fast','paved']]);
+    expect(manifest.skate.S3.segments[2]).toMatchObject({name:'The square',pace:'threshold',surface:'plaza'});
+  });
+});

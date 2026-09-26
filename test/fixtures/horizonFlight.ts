@@ -10,7 +10,7 @@ import {createHorizonGeography} from '../../src/harbour/horizon/runtime/geograph
 import type {LandCuts,WaterCut} from '../../src/harbour/horizon/land/interfaces.ts';
 import type {Host,Threshold,WorldDefinition} from '../../src/harbour/horizon/world/definition.ts';
 import {createGliderEnv,type GliderEnv,type GliderGeography} from '../../src/harbour/horizon/movers/glider/env.ts';
-import {IDLE_INPUT,type ModeController,type ModeInput} from '../../src/harbour/horizon/movers/shared/mode.ts';
+import {IDLE_INPUT,type FlightModeController,type ModeInput} from '../../src/harbour/horizon/movers/shared/mode.ts';
 
 let real:{world:WorldDefinition;env:GliderEnv;cuts:LandCuts;geography:ReturnType<typeof createHorizonGeography>}|null=null;
 /** The baked island (≈ 1 s to decode once per file). Thermals read 15:30, the frozen afternoon. */
@@ -57,8 +57,8 @@ export const pad=(id:string,x:number,z:number,h:number):Threshold=>({id,at:[x,z]
 export const input=(patch:Partial<ModeInput>={}):ModeInput=>({...IDLE_INPUT,...patch});
 export const FRAME=1/60;
 /** Run frames until `stop` (or `maxSeconds`), recording what each frame produced. */
-export function fly(c:ModeController,control:(t:number)=>Partial<ModeInput>,stop:()=>boolean,maxSeconds=300){
-  const frames:{t:number;phase:string;sound:string|null;camera:ReturnType<ModeController['camera']>;pose:ReturnType<ModeController['bodyPose']>}[]=[];
+export function fly(c:FlightModeController,control:(t:number)=>Partial<ModeInput>,stop:()=>boolean,maxSeconds=300){
+  const frames:{t:number;phase:string;sound:string|null;camera:ReturnType<FlightModeController['camera']>;pose:ReturnType<FlightModeController['bodyPose']>}[]=[];
   let t=0;
   while(t<maxSeconds&&!stop()){c.update(FRAME,input(control(t)));t+=FRAME;frames.push({t,phase:(c as {phase?:()=>string}).phase?.()??'',sound:c.sound(),camera:c.camera(),pose:c.bodyPose()});if(c.finished?.())break;}
   return frames;

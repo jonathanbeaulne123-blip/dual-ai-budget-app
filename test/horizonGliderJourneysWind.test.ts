@@ -9,8 +9,9 @@ import {flyCrownToLamp,flyProwToMeadow,flyProwToSands,flyStraight,type JourneyEn
 
 // M6 review (R6-03): FLIGHT §0/§10's journeys, flown by the same scripted pilots and the same flat-ground convention as
 // test/horizonGliderJourneys.test.ts, but in the wind the build actually flies — `constantWind()`, 4 m/s from the south,
-// everywhere, always (FLIGHT §2.2) — instead of still air. The unreachable ones are recorded as `it.fails` (the builders'
-// convention for the baked-land conflicts) so the gap stays visible until Jonathan rules on the wind (proposed D39).
+// everywhere, always (FLIGHT §2.2) — instead of still air. The three routes outside the shipped wind envelope are
+// explicit ordinary assertions below, so they cannot hide behind an expected-failure marker; they remain deferred
+// acceptance routes until the D39 wind/retarget ruling and related land requests are settled.
 const bin=readFileSync('public/horizon/terrain/horizon-geo-1.bin'),field=decodeTerrainAsset(bin.buffer.slice(bin.byteOffset,bin.byteOffset+bin.byteLength),'full');
 const cuts:LandCuts={beds:[],pads:[],mouths:[],solids:[],waters:[],diagnostics:[]};
 const envelope=buildFlightEnvelope(field,cuts);
@@ -25,21 +26,17 @@ describe('the journeys in the build\'s wind (4 m/s from the south)',()=>{
   it('Crown → the Lamp: falls short of the gallery (measured −1.1 m after 136.7 s; still air +17.3 m in 98.1 s)',()=>{
     const j=flyCrownToLamp(env(0));expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-1.1,1);expect(j.seconds).toBeCloseTo(136.7,1);
   });
-  it.fails('Crown → the Lamp arrives with ≥ 10 m in hand in the build\'s wind (FLIGHT §10; D34 70–110 s)',()=>{
-    const j=flyCrownToLamp(env(0));expect(j.reached).toBe(true);expect(j.heightInHand.arrival).toBeGreaterThanOrEqual(10);
+  it('keeps Crown → the Lamp explicitly deferred under the shipped wind (D39; measured −1.1 m)',()=>{
+    const j=flyCrownToLamp(env(0));expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-1.1,1);
   });
   it('Crown → the strip still arrives, with 1.4 m in hand (still air 21.3 m)',()=>{
     const j=flyStraight(env(STRIP,2),'crown',[435,690],0,{arriveHeight:STRIP,stopWithin:40});
     expect(j.reached).toBe(true);expect(j.heightInHand.arrival).toBeCloseTo(1.4,1);
   });
-  it.fails('Prow → the Prow thermal (≤ 60 s) → Long Sands at 15:00 reaches the field in the build\'s wind (measured −6.4 m)',()=>{
-    const j=flyProwToSands(env(SANDS,15),{thermal:true});expect(j.reached).toBe(true);
+  it('keeps Prow → thermal → Long Sands explicitly deferred under the shipped wind (D39; measured −6.4 m)',()=>{
+    const j=flyProwToSands(env(SANDS,15),{thermal:true});expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-6.4,1);
   });
-  it.fails('Prow → the Reach meadow reaches the field at 07:00 in the build\'s wind (measured −5.5 m; still air +24.5 m)',()=>{
-    const j=flyProwToMeadow(env(MEADOW,7));expect(j.reached).toBe(true);
-  });
-  it('records the two shortfalls it.fails above',()=>{
-    expect(flyProwToSands(env(SANDS,15),{thermal:true}).heightInHand.arrival).toBeCloseTo(-6.4,1);
-    expect(flyProwToMeadow(env(MEADOW,7)).heightInHand.arrival).toBeCloseTo(-5.5,1);
+  it('keeps Prow → Reach meadow explicitly deferred under the shipped wind (D39; measured −5.5 m)',()=>{
+    const j=flyProwToMeadow(env(MEADOW,7));expect(j.reached).toBe(false);expect(j.heightInHand.arrival).toBeCloseTo(-5.5,1);
   });
 });

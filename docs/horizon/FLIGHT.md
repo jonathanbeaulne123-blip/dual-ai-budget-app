@@ -24,8 +24,8 @@ Two arithmetic facts that shape the design (all at 11 m/s trim, 1.2 m/s sink = 9
 | Crown 160 → Lamp gallery 25 | 1 078 m | 118 m | 135 m (17 m spare) | reachable; the straight line clears the Bight sink by 69 m, a lazy line drifts into it; **98 s** against `journeys.targets_s` 50–90 → **D34** |
 | Prow 100 → Long Sands 2 | 976 m | 106 m | 98 m | **not reachable in still air**; reachable after the Prow thermal (hours 8–18), else land at the Reach meadow (668 m, 73 m needed, 25 m spare) |
 | Crown → spillway arch (gate 4, h 45) → under the High Span (gate 3, h 16) → Reach meadow | 514 + 197 + 95 m | 56 + 21 + 10 m | arrives 59 m above the arch → you must **dive** to make the gate; then 8 m to flare at the meadow | the Dam Run works as drawn |
-| Lamp gallery 25 → under the Bight Bridge (gate 5, h 6) → the sandbar | 117 m + ~80 m | 13 m + 9 m | you must dive under the deck | the Lamp Hop works, ~25 s |
-| Crown → gate 10 (north face, h 130) → out to sea → back into the Throat (gate 12, h 110, floor 101) | ~545 m of track incl. a 25 m-radius turn and the S-turn onto the axis | ~64 m | **−5 m** (measured −5.2: a miss under the aperture floor) | the Throat is *earned* (ruled 26 Sep): work the south-face ridge to 190 m first (≈ 126 s of beating in the 4 m/s south wind) → **+2.6 m**, inside the aperture; from 190 m over the Crown in still air, **+24.8 m** (≥ 15 m) |
+| Lamp gallery 25 → under the Bight Bridge (gate 5, h 6) → the sandbar | 117 m + ~80 m | 13 m + 9 m | you must dive under the deck | the Lamp Hop works in the flat/headless model, ~25 s; shipped approach deferred under L6 |
+| Crown → gate 10 (north face, h 130) → out to sea → back into the Throat (gate 12, h 110, floor 101) | ~545 m of track incl. a 25 m-radius turn and the S-turn onto the axis | ~64 m | **−5 m** (measured −5.2: a miss under the aperture floor) | the Throat is *earned in the headless envelope* (ruled 26 Sep): work the south-face ridge to 190 m first (≈ 126 s of beating in the 4 m/s south wind) → **+2.6 m**, inside the aperture; the shipped `horizon-geo-1` approach remains deferred under L5 |
 
 ---
 
@@ -134,7 +134,7 @@ The parachute's only threshold is **the plane's door**, and it moves. The regist
 ### 3.2 Freefall
 `phase: 'freefall'`: vertical speed builds at the runtime's g (12 m/s²) to a **cap of 30 m/s** (reached in ~2.5 s; real terminal is faster but unreadable); horizontal velocity starts as the plane's (35 m/s at most) and decays with a 0.5 s time constant; **lean** (A/D, W/S, the Move pad) adds up to 8 m/s of steer in any direction; wind acts at half strength. The rider's pose: arms out, cloth ripple (a card).
 
-**Pull** — Space / the **Pull** bubble (screen-space, replaces Fold). Minimum canopy height is enforced by an **auto-pull at 45 m AGL** (**D37**): the chute always opens; a late pull is a louder snap and a short ride, never a crash. Bailing at 300 m gives ~8 s of freefall to the auto-pull; at 150 m, ~4 s.
+**Pull** — Space / the **Pull** bubble (screen-space, replaces Fold). Minimum canopy height is enforced by an **auto-pull at 45 m AGL** (**D37**): the chute always opens; a late pull is a louder snap and a short ride, never a crash. Bailing at 300 m gives ~10 s of freefall to the auto-pull; at 150 m, ~5 s.
 
 ### 3.3 The canopy
 Opening takes 1.2 s: vertical speed goes 30 → 3 on a square-root curve, the canopy snaps (the on-purpose sound; the same family as the glider's), the camera lifts (§4).
@@ -239,7 +239,7 @@ Today the wire carries no flight act, so the partner's ghost on the ground keeps
 
 - `horizonGliderPolar`: sink is monotone above 9; trim = 11 / 1.2 (9.17 : 1); stall below 7.5 recovers to 9 in ≤ 1.5 s losing ≤ 6 m; airspeed never exceeds 17.
 - `horizonGliderLift`: thermals give +2.5 at the core only inside `hours` by `localMinutes`; ridge only with a south wind and a heading along/into the face; sinks −1.0; every volume fades to 0 by h 300; wind adds to the ground track in full.
-- `horizonGliderJourneys` (still air, scripted inputs): Crown → Lamp arrives with ≥ 10 m in hand and the line clears the Bight sink; Prow → Long Sands **fails** in still air and **succeeds** at 14:00 after ≤ 60 s in the Prow thermal; Prow → Reach meadow succeeds at any hour; Dam Run passes gates 4 and 3 inside their apertures and lands on the meadow; Lamp Hop passes gate 5 and fades to the sandbar; Throat Run (ruled 26 Sep, the Throat is earned): from the Crown with a 25 m-radius turn in still air it reaches the mouth's plane with ≥ −10 m in hand (measured −5.2 m, a miss), after ridge to 190 m in the south wind (≈ 126 s) it enters the corridor with ≥ 0 m inside the aperture (measured +2.6 m), and from 190 m over the Crown in still air it arrives with ≥ 15 m (measured +24.8 m); Crown → Lamp time reported against `journeys.targets_s` (D34 applied: 70–110 s, measured 98.1 s).
+- `horizonGliderJourneys` (still air, scripted inputs): Crown → Lamp arrives with ≥ 10 m in hand and the line clears the Bight sink; Prow → Long Sands **fails** in still air and **succeeds** at 14:00 after ≤ 60 s in the Prow thermal; Prow → Reach meadow succeeds at any hour; Dam Run passes gates 4 and 3 inside their apertures and lands on the meadow; Lamp Hop passes gate 5 and fades to the sandbar; Throat Run (ruled 26 Sep, the Throat is earned in the headless envelope): from the Crown with a 25 m-radius turn in still air it reaches the mouth's plane with ≥ −10 m in hand (measured −5.2 m, a miss), after ridge to 190 m in the south wind (≈ 126 s) it enters the corridor with ≥ 0 m inside the aperture (measured +2.6 m), and from 190 m over the Crown in still air it arrives with ≥ 15 m (measured +24.8 m); Crown → Lamp time reported against `journeys.targets_s` (D34 applied: 70–110 s, measured 98.1 s). The baked-terrain report tests assert the current L1/L3/L4/L5 deficits as ordinary visible deferrals, not expected failures; those routes are not M6 device acceptance until the corresponding land requests land.
 - `horizonGliderLanding`: every row of §2.4 with a synthetic field (walkable, 45° slope, water, a host footprint, a neighbourhood district, the boundary); no outcome is a crash; every fade lands on a path node; the Fold bubble only offers reachable fields.
 - `horizonThroat`: glider admitted inside the cone, refused outside it (a miss, not a wall); parachute and plane refused; the wing stays inside the aperture along the whole chute; the level run ends on the water at `[1300,420±10]`; three echoes; `deepJetty` fade.
 - `horizonChute`: bail refused < 60 m AGL; auto-pull at 45 m; opening 1.2 s to sink 3; brakes ≤ 3 s then mush; wind drift; ring index from `touchdown`; the plane returns to its `home` threshold after a bail.
@@ -253,9 +253,9 @@ Today the wire carries no flight act, so the partner's ghost on the ground keeps
 ## 11 · Acceptance rides and evidence (Jonathan on the Mac and the iPhone; Bianca when willing)
 
 1. **Crown → the Lamp** at trim, then again crossing the Bight fast — feel the sink.
-2. **Crown → the ridge → the Throat → the Deep**, flared; and once unflared for the big splash.
+2. **Crown → the ridge → the Throat → the Deep**, flared; and once unflared for the big splash — headless route only until L4/L5 are resolved on `horizon-geo-1`.
 3. **The Prow → the Prow thermal → Long Sands** at 15:00; the same launch at 07:00 to the Reach meadow.
-4. **Lamp Hop** under the Bight Bridge to the sandbar.
+4. **Lamp Hop** under the Bight Bridge to the sandbar — headless route only until L6 is resolved on `horizon-geo-1`.
 5. **Bail out over the Green** from 200 m in the south wind; land in the 5 m ring once, and once tumble.
 6. **A night flight** Crown → the strip's lamp rows.
 7. **Reduced motion**: the Crown sheet → the Green; the bail sheet → the Sands.
@@ -272,7 +272,7 @@ Evidence per the brief: harness recording + per-second step log (`position, phas
 | **D34** | `journeys.targets_s["crown→lamp by glider"]` is 50–90 s; at scale 1.0 and 11 m/s the flight takes ~98 s in still air. Retarget to **70–110 s** (the scale note already says "the sky … stays long enough to feel like travel"), or raise trim to 13 m/s with sink 1.4 (same 9.2 : 1, ~83 s, everything above re-scales and the Throat gets ~15 % harder). | **Retarget to 70–110 s.** 11 m/s is a hang glider; 13 starts to feel like the plane's little brother. |
 | **D35** | The glider is a hang glider (rigid wing, prone rider), the parachute a square canopy. | As designed; veto if the Grand Plan's sketches meant a paraglider. |
 | **D36** | After a bail-out the plane flies itself home to its take-off threshold and lands. | Yes — the alternative is a teleported vehicle. |
-| **D37** | The parachute auto-pulls at 45 m AGL (the chute always opens; no crash). | Yes; 45 m gives a 15 s canopy ride from the auto-pull, enough to steer to the outer ring. |
+| **D37** | The parachute auto-pulls at 45 m AGL (the chute always opens; no crash). | Yes; 45 m gives roughly a 14 s canopy ride from the auto-pull, enough to steer to the outer ring. |
 | **D38** | Show the partner's wing and let them hear your snap (a presence-wire change → Codex trust review). | Yes, as a pass-3 request; not in pass 2. |
 
 ---
@@ -300,9 +300,10 @@ measured three things this file did not. They change what Jonathan can ride, not
   not reached** (still air +17.3 m, 98.1 s); Prow → thermal (≤ 60 s) → Long Sands −6.4 m; Prow → Reach meadow −5.5 m;
   Crown → the strip +1.4 m (still air +21.3). Flown live, Crown → the Lamp lands in the Bight ~200 m short (7.6 m/s over
   the ground crabbing into the wind). D34's "measured 98.1 s" is a still-air figure. `test/horizonGliderJourneysWind.test.ts`
-  pins the wind numbers. **Open question for Jonathan (proposed D39):** a calm placeholder wind until pass 2b's wind clock
-  (then re-read the ridge lift and the §3.3 stand-up ruling, which both lean on the 4 m/s south wind), or keep 4 m/s
-  and retarget D34 and the §11 rides to what the wind allows.
+  pins the wind numbers as ordinary, visible deferred-route assertions; it does not mark them as expected failures.
+  **D39 remains the explicit acceptance ruling:** choose a calm placeholder wind until pass 2b's wind clock (then
+  re-read the ridge lift and the §3.3 stand-up ruling), or keep 4 m/s and retarget D34 and the §11 rides to what the
+  wind allows. Until that ruling, these three routes are not claimed as captured M6 acceptance rides.
 - **The Lamp Hop cannot be flown in the build.** Between the Lamp and gate 5's plane the V01 road's and the S2 skate
   line's offshore retaining walls fill the Bight Bridge's underside from the sea to 11 m, under a deck whose underside is
   11.1–11.4 m (gate 5's aperture reaches 14 m; pass 1's gate proof tests only the plane). §0 row 4 holds only on the

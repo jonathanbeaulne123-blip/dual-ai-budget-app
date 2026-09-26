@@ -32,7 +32,7 @@ function bar(length:number,axis:'x'|'z',material:THREE.Material){
 
 export interface FlightArt{root:THREE.Group;update(state:FlightArtState,dt:number,figure?:THREE.Object3D|null):boolean;dispose():void}
 
-export function createFlightArt(kind:'glider'|'parachute',dressing:VehicleDressing='classic',tier:VehicleTier='full'):FlightArt{
+export function createFlightArt(kind:'glider'|'parachute',dressing:VehicleDressing='classic',tier:VehicleTier='full',night:()=>boolean=()=>true):FlightArt{
   const art=greyboxArt(kind),root=new THREE.Group(),wing=art.build(dressing,tier);root.name=`flight.${kind}`;root.visible=false;
   const frame=new THREE.MeshStandardMaterial({color:'#5d5a52',roughness:.8});
   root.add(wing);
@@ -43,7 +43,7 @@ export function createFlightArt(kind:'glider'|'parachute',dressing:VehicleDressi
   }else{
     canopy=wing.getObjectByName('greybox.parachute.canopy')?.parent??wing;
   }
-  const light=art.anchors.runningLights[0];if(light)wing.add(tailLightCard(light.at));
+  const light=art.anchors.runningLights[0],lightCard=light?tailLightCard(light.at):null;if(lightCard)wing.add(lightCard);
   const position=new THREE.Vector3(),quat=new THREE.Quaternion(),euler=new THREE.Euler(0,0,0,'YXZ'),offset=new THREE.Vector3();
   let done=false;
   return{
@@ -66,6 +66,7 @@ export function createFlightArt(kind:'glider'|'parachute',dressing:VehicleDressi
           figure.quaternion.copy(quat).multiply(PRONE);
           offset.set(0,-.35,-.6).applyQuaternion(quat);figure.position.copy(position).add(offset);
         }
+        if(lightCard)lightCard.visible=night();
         if(canopy){const open=Math.max(0,Math.min(1,state.open));canopy.visible=open>0;canopy.scale.set(Math.max(.05,open),Math.max(.05,open),Math.max(.05,open));}
         return true;
       }

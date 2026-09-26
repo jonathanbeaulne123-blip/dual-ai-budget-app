@@ -109,7 +109,7 @@ try {
     const label = `expanded ${width}x${height}`;
     noScroll(m, label);
     const boxes = await page.evaluate((boxSource) => { const box = new Function(`return (${boxSource})`)(); return { buttons: [...document.querySelectorAll('.queen-bank__button')].map(el => ({ name: el.textContent, ...box(el) })), vessels: [...document.querySelectorAll('.queen-bank-svg')].map(box), her: box(document.querySelector('.queen-figure')) }; }, box.toString());
-    assert.deepEqual(boxes.buttons.map(b => b.name), ['Protect', 'What now', 'Build'], `${label}: bank buttons`);
+    assert.deepEqual(boxes.buttons.map(b => b.name), ['Protect', 'Everyday · now', 'Build'], `${label}: bank buttons`);
     for (const b of boxes.buttons) { assert.ok(b.x >= 0 && b.x + b.w <= width && b.h >= 40, `${label}: ${b.name} on screen ${JSON.stringify(b)}`); }
     assert.ok(!intersects(boxes.buttons[0], boxes.buttons[1], 6) && !intersects(boxes.buttons[1], boxes.buttons[2], 6), `${label}: bank buttons do not overlap ${JSON.stringify(boxes.buttons)}`);
     for (const v of boxes.vessels) { const centre = v.x + v.w / 2; assert.ok(v.w >= 44 && (centre < boxes.her.x || centre > boxes.her.x + boxes.her.w), `${label}: a bank vessel is readable beside her ${JSON.stringify(v)} vs ${JSON.stringify(boxes.her)}`); }

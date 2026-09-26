@@ -1,3 +1,18 @@
+/**
+ * @deprecated As the **personal** house (T63 "My private house") this screen is retired by the
+ * Tool Atlas (K4, decision D2, 2026-09-25): one island for both spaces. `harbourOwnsRoute` now owns
+ * personal routes, so the App's final `HouseWorld` branch is reachable only for the Journey surface
+ * (`harbourOwnsRoute` refuses `surface: "journey"` in both spaces), a room the harbour does not own
+ * (none today), or with the harbour flag off. Kept compiling until the integrator removes its mount. Where each feature now lives:
+ * - the personal house rooms → the same hosts on the household harbour, in Mine (hosts keep their meaning);
+ * - the ceramic banks upstairs → the Loft's private shelf in the Mine layer (`harbour/mine/`);
+ * - the bill jars below → the Cellar (bills are shared; personal bills show in the personal Desk's Leaving);
+ * - the position card ("dated position and next commitment") → the personal camp card
+ *   (`harbour/desk/personalModel.ts` `readPersonalToday`, exposed as `mineCamp`);
+ * - the private pottery studio (Together / Making in personal) → a private Kitty Bank's studio tab;
+ * - the Queen's dressing in personal (T14) → Settings › Appearance.
+ * Do not add features here; nothing new may import this module (fenced in `test/mine-layer-ui.test.ts`).
+ */
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { DateKey } from "../core/calendar.ts";
 import type { Household, LedgerView, KittyGlaze } from "../core/types.ts";
@@ -24,6 +39,7 @@ import "./houseWorld.css";
 
 
 type Props={household:Household;memberId:string;scope:LedgerView;today:DateKey;route:HouseRoute;ready:boolean;freshness:string;interpretationGate?:InterpretationGate;onNavigate:(room:HouseRoom,level:HouseLevel,replace?:boolean)=>void;onOpen:(target:string,object?:string)=>void;onClose:()=>void};
+/** @deprecated Tool Atlas D2: the personal house is retired; the harbour draws Mine on the household map. */
 export function HouseWorld({household,memberId,scope,today,route,ready,freshness,interpretationGate,onNavigate,onOpen,onClose}:Props){
   const appearance=useAppearance(),theme=appearance.preview??appearance.saved.theme;
   const host=useRef<HTMLDivElement>(null),runtime=useRef<HouseRuntime|null>(null),buttons=useRef(new Map<string,HTMLElement>());
@@ -102,7 +118,10 @@ export function HouseWorld({household,memberId,scope,today,route,ready,freshness
     </div>
     {route.room==="home"&&route.level!=="middle"&&!route.surface&&<nav className="house-world__kept-objects" aria-label={route.level==="above"?"Your ceramic banks":"Your bill jars"}>{(route.level==="above"?bankRows.map(bank=>({id:bank.id,label:bank.name,paid:false})):jarRows.map(jar=>({id:jar.bankId,label:jar.label,paid:jar.paid}))).map(row=><button id={`house-bank-${row.id}`} key={row.id} onClick={()=>onOpen(route.level==="above"?"loft-banks":"cellar-bills",`bank/${row.id}`)}>{row.label}{row.paid?" · paid receipt":""}</button>)}</nav>}
     {route.room==="home"&&<aside className="house-world__position" aria-label="Dated position and next commitment"><div><small>{position.label} · {today}</small><strong>{ready?formatCad(position.cents):"Checking the books"}</strong><span>{freshness}</span></div><button onClick={()=>choose("cellar-bills")}><small>Next dated commitment</small><strong>{commitment?.name??"No dated commitment"}</strong><span>{commitment?`${commitment.date} · ${formatCad(commitment.targetCents)}`:"Add a date when you are ready"}</span></button></aside>}
-    {route.surface==="queen"&&<QueenDressing key={`${scope}:${memberId}`} onPreview={setPreview} onView={setQueenView} evidence={evidence}/>}
+    {/* K9: the Queen stands in the Fund bank; her personal dressing screen in Mine is retired (her look is in Settings › Appearance). */}
+    {route.surface==="queen"&&(scope==="household"
+      ?<QueenDressing key={`${scope}:${memberId}`} onPreview={setPreview} onView={setQueenView} evidence={evidence}/>
+      :<section className="house-queen-dressing" data-queen-dressing="moved"><h2 id="house-queen-title" tabIndex={-1}>The Queen’s look</h2><p>Her look lives in Settings › Appearance now. The Queen herself stands in the Fund bank.</p></section>)}
     <nav className="house-world__doors" aria-label="House doorways">{HOUSE_ROOMS.map(room=><button key={room} aria-current={room===route.room?"page":undefined} onClick={()=>{setOverview(false);onNavigate(room,"middle");}}><span className="house-world__door" aria-hidden="true"/><span>{ROOM_NAMES[room]}</span></button>)}</nav>
   </section>;
 }

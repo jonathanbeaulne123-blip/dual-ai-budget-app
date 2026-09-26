@@ -2,7 +2,7 @@ import {describe,expect,it,vi} from 'vitest';
 import {createModeRegistry} from '../src/harbour/horizon/movers/registry.ts';
 import {createMoverHook} from '../src/harbour/horizon/runtime/moverHook.ts';
 import {thresholdTransitions} from '../src/harbour/horizon/movers/shared/threshold.ts';
-import type {ModeController} from '../src/harbour/horizon/movers/shared/mode.ts';
+import type {FlightModeController} from '../src/harbour/horizon/movers/shared/mode.ts';
 import {parseBailQuery,registerBailOutProvider,registerGliderModes,startDevParachute,type GliderRuntime} from '../src/harbour/horizon/movers/glider/index.ts';
 import {createGliderController,padLandings,type FlightController} from '../src/harbour/horizon/movers/glider/controller.ts';
 import {cameraFov} from '../src/harbour/horizon/movers/glider/camera.ts';
@@ -17,7 +17,7 @@ const on=(id:string)=>{const t=threshold(id);return{x:t.at[0],y:t.height??0,z:t.
 /** The runtime's accept path (runtime/index.ts `accept`) over the real registry and hook, with the M6 registration. */
 function harness(settings:{reducedMotion:boolean;calm:boolean}){
   const movers=createModeRegistry(world.thresholds),body={x:0,y:0,z:0,yaw:0},hook=createMoverHook({body,ground:geography.ground});
-  const arts:{tick:(dt:number,figure:never)=>boolean}[]=[],attachMover=vi.fn((c:ModeController)=>hook.attach(c));
+  const arts:{tick:(dt:number,figure:never)=>boolean}[]=[],attachMover=vi.fn((c:FlightModeController)=>hook.attach(c));
   const runtime={movers,world,geography,assets:{cuts},moverArt:(_o:unknown,tick:(dt:number,f:never)=>boolean)=>{arts.push({tick});return()=>{};},settings:()=>({tier:'full' as const,...settings}),reviewDate:()=>new Date('2026-06-21T19:30:00Z'),attachMover,body:()=>({...body})} as unknown as GliderRuntime;
   registerGliderModes(runtime);
   function accept(id:string,to='glider'){
@@ -25,7 +25,7 @@ function harness(settings:{reducedMotion:boolean;calm:boolean}){
     const offer=movers.offers(body).find(o=>o.thresholdId===id&&o.to===to)!,taken=movers.accept(offer,body)!;
     const controller=taken.controller as FlightController;
     if(settings.reducedMotion||settings.calm){hook.attach(null);return{controller,cut:controller.reducedMotionCut()};}
-    runtime.attachMover(controller);return{controller,cut:null};
+    attachMover(controller);return{controller,cut:null};
   }
   return{movers,hook,arts,attachMover,accept,runtime,body};
 }
@@ -88,7 +88,7 @@ describe('the offers read exactly as the brief says',()=>{
     Object.assign(h.body,on('strip'));h.movers.accept(h.movers.offers(h.body).find(o=>o.to==='plane')!,h.body);
     const off=registerBailOutProvider(h.runtime,()=>door);
     Object.assign(h.body,{x:1040,y:200,z:1000});
-    const jump=h.movers.offers(h.body).find(o=>o.to==='parachute');expect(jump).toMatchObject({action:'Jump',from:'plane',at:[1040,1000],height:200});
+    const jump=h.movers.offers(h.body).find(o=>o.to==='parachute');expect(jump).toMatchObject({action:'Jump',from:'plane',at:[1040,200,1000],height:200});
     door={...plane,y:env.groundAt(1040,1000,200)+59};Object.assign(h.body,{y:door.y});expect(h.movers.offers(h.body).some(o=>o.to==='parachute')).toBe(false);
     door=plane;Object.assign(h.body,{y:200});
     const taken=h.movers.accept(h.movers.offers(h.body).find(o=>o.to==='parachute')!,h.body)!;
