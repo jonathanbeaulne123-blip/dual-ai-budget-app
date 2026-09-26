@@ -1092,7 +1092,11 @@
    "grade_max_pct": 12,
    "exception": "the Prow cliff drive may hold 13 % for \u2264 150 m with a passing place",
    "kerb": true,
-   "parapet_on_drop": true
+   "parapet_on_drop": true,
+   "exceptions": [
+    "the Prow cliff drive may hold 13 % for \u2264 150 m with a passing place",
+    "Crown Road (V02) may hold 12 % continuously for its climb from [1454,411] to the Shoulder Tunnel (\u2248 300 m): the manifest geometry forces 36 m over 382 m; every other stretch over 8 % is listed in the bake report"
+   ]
   },
   "spur": {
    "surface_m": 5,
@@ -1122,9 +1126,9 @@
    "note": "walks and trails, including the Year Walk: 12 % maximum, \u2264 8 % typical; a stair's step-free twin keeps \u2264 8 %"
   },
   "walkable": {
-   "slope_max_deg": 38,
+   "slope_max_deg": 40,
    "lip_step_max_eu": 0.5,
-   "note": "the body cannot climb steeper than 38\u00b0; a lip above 0.5 eu is an edge, not a step"
+   "note": "the body cannot climb steeper than 40\u00b0 (Mountain v2's kept body limit, CONTRACT); a lip above 0.5 eu is an edge, not a step"
   },
   "skateMain": {
    "surface_m": [
@@ -1158,7 +1162,19 @@
   },
   "rail": {
    "gauge_m": 0.9,
-   "tunnel_clear_m": 3.2
+   "tunnel_clear_m": 3.2,
+   "grade_max_pct": 6,
+   "chainLift": {
+    "from": [
+     1300,
+     420
+    ],
+    "to": [
+     1345,
+     680
+    ],
+    "note": "the Ore Line's climb out of the Deep to the South Portal is a named chain-lift incline (ORE.chainLift) exempt from grade_max_pct; the drop at [1270,450] (rail.ORE.drop) is the other named exception"
+   }
   },
   "cable": {
    "clear_eu": 8,
@@ -2845,12 +2861,12 @@
     "water": true,
     "skylight": {
      "to": [
-      1300,
+      1320,
       400
      ],
      "topH": 138,
      "shaft_m": 98,
-     "note": "opens on the north slope; sun shaft when the sun is above 20\u00b0"
+     "note": "opens on the north slope 20 m east of the Throat's centreline (so the Throat's mouth of daylight reads from the Deep's jetty); sun shaft when the sun is above 20\u00b0"
     }
    },
    "bellGallery": {

@@ -252,3 +252,16 @@ PROOF (runtime track, `world/views.ts`): read `target_h`, `portrait` and the sub
 | `sky.courses.damRun` | lands at [1230,1190] | lands at [1143,1167] | — |
 
 **Launch: raised, and folded into the lookout — the choice and why.** A pad at 157.5 on the summit plateau (the option that keeps the pad below the summit) cannot clear 10 eu over the plateau within the proof's first 4 eu sample at any rim position (tested on the rim: [1296,496] at h 160 gives a 4.8 eu minimum, [1290,505] at h 158 gives 5.1 eu, and even [1300,490] at h 165 gives only 8.8 eu). The glide needs ≥ +10 eu of launch height (Auditor 5). A 12 eu run-off deck on the summit lookout gives it with 2.6 eu to spare, keeps the terrain summit (158) the island's highest ground (P04), gives page E an eye that is not beside a mound, and is architecture that is there anyway (L02 is "the summit lookout, observatory, the bell"). The structures track builds it as a deck; no bed may raise the ground above `landforms.crown.summitH`.
+
+### 5. Manifest self-contradictions and unread numbers
+
+| Key | v1.6 | v1.7 | Source |
+|---|---|---|---|
+| `profiles.walkable.slope_max_deg` | 38 (code uses 40) | 40, matching the kept Mountain v2 body limit | A1-14, A2-14 |
+| crown launch vs summit | launch h 160 at [1310,440], 2 eu over the 158 summit | launch folded into the summit lookout (§4); the summit stays the highest ground | A1-06, A5-01 |
+| `underground.rooms.deep.skylight.to` | [1300,400], on the Throat's centreline | [1320,400], 20 eu east, still inside page G's frame (26.6° off axis) | A5-13 |
+| `profiles.road.exceptions` (new list; `exception` kept) | only the Prow cliff drive | + Crown Road (V02) may hold 12 % continuously on its ≈ 300 m climb to the Shoulder Tunnel (the geometry forces 36 m over 382 m); every other stretch over 8 % is listed by the bake | A2-13 |
+| `profiles.rail.grade_max_pct`, `profiles.rail.chainLift` (new) | none (the bake used 1000 %) | 6 %, with the climb out of the Deep to the South Portal ([1300,420] → [1345,680]) a named chain-lift incline; the drop at [1270,450] stays the other named exception | A2-19 |
+| the six offshore Year Walk control points | [760,700], [560,890], [740,1432], [1500,340], [470,1030], [560,1100] | retired with the v1.6 walk (§1) | A1-01 |
+
+Reserved and not changed (options with numbers in the Stage A handoff notes, Jonathan decides): the Bight Bridge `span_m` 230 and its ends; the ZIP endpoints and G1 towers; the gondola top station (h 112 behind the 129 ridge); the Prow Tunnel (no hill over it); the dam's due-south face against the June golden hour.

@@ -644,6 +644,17 @@ m["sky"]["waterLandings"] = {
 m["sky"]["courses"]["damRun"]["land"] = "reach meadow [1143,1167]"
 m["sky"]["courses"]["damRun"]["note"] = "514 m to the arch with 115 m of height in hand at a 9:1 glide; under the High Span, then a west turn onto the Reach meadow, 115 m past it"
 
+# 5. Manifest self-contradictions.
+m["profiles"]["walkable"]["slope_max_deg"] = 40
+m["profiles"]["walkable"]["note"] = "the body cannot climb steeper than 40° (Mountain v2's kept body limit, CONTRACT); a lip above 0.5 eu is an edge, not a step"
+m["profiles"]["road"]["exceptions"] = [
+ m["profiles"]["road"]["exception"],
+ "Crown Road (V02) may hold 12 % continuously for its climb from [1454,411] to the Shoulder Tunnel (≈ 300 m): the manifest geometry forces 36 m over 382 m; every other stretch over 8 % is listed in the bake report",
+]
+m["profiles"]["rail"]["grade_max_pct"] = 6
+m["profiles"]["rail"]["chainLift"] = {"from": [1300, 420], "to": [1345, 680], "note": "the Ore Line's climb out of the Deep to the South Portal is a named chain-lift incline (ORE.chainLift) exempt from grade_max_pct; the drop at [1270,450] (rail.ORE.drop) is the other named exception"}
+m["underground"]["rooms"]["deep"]["skylight"]["to"] = [1320, 400]
+m["underground"]["rooms"]["deep"]["skylight"]["note"] = "opens on the north slope 20 m east of the Throat's centreline (so the Throat's mouth of daylight reads from the Deep's jetty); sun shaft when the sun is above 20°"
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
