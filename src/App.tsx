@@ -6391,6 +6391,16 @@ export function App() {
     if (payload?.kind === "bill") { postBillPaid(payload); return; }
     submit();
   }
+  /** K8: the last account a purchase was posted from — a per-viewer convenience on this device, per space, never truth. */
+  const purchaseAccountKey = household && session ? `hearth:add:lastPurchaseAccount:${environment}:${household.householdId}:${session.memberId}:${view}` : null;
+  function readPurchaseAccount(): string | null {
+    if (!purchaseAccountKey) return null;
+    try { return localStorage.getItem(purchaseAccountKey); } catch { return null; }
+  }
+  function rememberPurchaseAccount(accountId: string) {
+    if (!purchaseAccountKey || !accountId) return;
+    try { localStorage.setItem(purchaseAccountKey, accountId); } catch { /* a convenience: the next Purchase asks for the account */ }
+  }
   const openAddFor = (account: Account | null, nextMode?: AddMode) => {
     setBillFlow(false);
     setRecordStatus("");
@@ -6404,7 +6414,11 @@ export function App() {
     leaveDesk();
     const kind = nextMode ?? mode;
     if (!account && restoreEntryDraft(kind)) return;
-    const id = account?.id ?? focusedAccountId;
+    // K8 (Tool Atlas §7): Swipe / Till merge into Purchase — Purchase remembers the account this person last
+    // posted a purchase from (in this space, on this device) and names it on the account slide; it can be changed.
+    const remembered = !account && kind === "expense" ? pickerAccounts.find(row => row.active && row.id === readPurchaseAccount()) ?? null : null;
+    const launch = account ?? remembered;
+    const id = launch?.id ?? focusedAccountId;
     const defaults = addFormDefaults(displayHousehold, id);
     setFocusedAccountId(id);
     setMode(nextMode ?? defaults.suggestedMode);
@@ -6412,7 +6426,7 @@ export function App() {
     setEntrySubmission(activeEntryKeyRef.current?readEntrySubmission(activeEntryKeyRef.current):null);
     setSplitDraft(newSplitDraft(ledger, splitViewer));
     setAdding(true);
-    setAddLaunchAccountId(account?.id ?? null);
+    setAddLaunchAccountId(launch?.id ?? null);
     setAddSlide(0);
     setAddDetails(false);
     setError("");
@@ -6867,6 +6881,7 @@ export function App() {
     const draftKey=readEntryKey(mode);
     if (!draftKey) return;
     // A24: the status line after an accepted Final Confirm names the amount and where it went.
+    const postedMode = mode, postedAccountId = form.accountId;
     let postedStatus = "";
     try { postedStatus = addPostedStatus({ mode, form, household: household ?? { categories: [] }, accounts: pickerAccounts, ledger: view }); } catch { postedStatus = ""; }
     const held=readEntrySubmission(draftKey);
@@ -6944,7 +6959,7 @@ export function App() {
       });
       } catch(caught) {if(!(caught instanceof NeedsConfirmationError)){clearEntryConfirmation(draftKey,confirmationId);setEntrySubmission(null);}throw caught;}
     }, {confirmationId, onDefinitiveRejected:()=>{clearEntryConfirmation(draftKey,confirmationId);if(activeEntryKeyRef.current===draftKey)setEntrySubmission(null);},
-      onAccepted:()=>{setRecordStatus(postedStatus);clearEntryConfirmation(draftKey,confirmationId);clearEntryLocal(draftKey);clearEntryLocal(draftKey+':presentation');if(activeEntryKeyRef.current===draftKey){setEntrySubmission(null);activeEntryKeyRef.current=null;setPausedAddScope(null);}}});
+      onAccepted:()=>{setRecordStatus(postedStatus);if(postedMode==="expense")rememberPurchaseAccount(postedAccountId);clearEntryConfirmation(draftKey,confirmationId);clearEntryLocal(draftKey);clearEntryLocal(draftKey+':presentation');if(activeEntryKeyRef.current===draftKey){setEntrySubmission(null);activeEntryKeyRef.current=null;setPausedAddScope(null);}}});
   }
 
   async function recoverEntryReceipt() {
