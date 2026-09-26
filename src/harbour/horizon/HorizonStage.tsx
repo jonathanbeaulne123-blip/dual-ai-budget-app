@@ -4,14 +4,15 @@ import type {HorizonRuntime,HorizonOptions,HorizonMode} from './runtime/index.ts
 import type {Host} from './world/definition.ts';
 import type {HouseBodyReturn} from '../../house/navigation.ts';
 import type {PlaceWalkSource} from '../scene/place.ts';
+import {appCalm,appReducedMotion} from './sun/comfort.ts';
 import './horizon.css';
-export type HorizonStageProps={onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onRuntime?:(runtime:HorizonRuntime|null)=>void;onQuickSheet?:()=>void;onJourney?:()=>void;initialBody?:HouseBodyReturn;partner?:PlaceWalkSource|null;paused?:boolean;children?:ReactNode;review?:boolean};
+export type HorizonStageProps={onDoor?:(host:Host,body:HouseBodyReturn)=>void;onReady?:()=>void;onRuntime?:(runtime:HorizonRuntime|null)=>void;onQuickSheet?:()=>void;onJourney?:()=>void;initialBody?:HouseBodyReturn;partner?:PlaceWalkSource|null;paused?:boolean;children?:ReactNode;review?:boolean;/** The app's calm view (useComfort().quiet). Without it the stage reads html[data-quiet]. */calm?:boolean;/** The app's reduced-motion setting (useComfort().motion==='reduced'); html[data-motion] and the OS query are read too. */reducedMotion?:boolean};
 export default function HorizonStage(props:HorizonStageProps){
   const stage=useRef<HTMLDivElement>(null),runtime=useRef<HorizonRuntime|null>(null),latest=useRef(props);latest.current=props;
   const [status,setStatus]=useState('Loading the Horizon…'),[ready,setReady]=useState(false),[mode,setMode]=useState<HorizonMode>('look'),[page,setPage]=useState('A');
   const [tier]=useState<'full'|'lite'>(()=>new URLSearchParams(location.search).get('tier')==='lite'||matchMedia('(max-width: 600px)').matches?'lite':'full');
   useEffect(()=>{const controller=new AbortController();let current:HorizonRuntime|null=null;
-    const options:HorizonOptions={tier,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:matchMedia('(prefers-reduced-motion: reduce)').matches,onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null};
+    const options:HorizonOptions={tier,hideBuildings:HARBOUR_DEV&&new URLSearchParams(location.search).get('hideBuildings')==='1',signal:controller.signal,reducedMotion:latest.current.reducedMotion===true||appReducedMotion(),calm:latest.current.calm??appCalm(),onDoor:(h,b)=>latest.current.onDoor?.(h,b),onStatus:setStatus,initialBody:latest.current.initialBody,partner:()=>latest.current.partner??null};
     import('../scene/worldMount.ts').then(m=>m.mountHorizonWorld(stage.current!,options)).then(world=>{
       if(controller.signal.aborted){world.dispose();return;}current=world;runtime.current=world;setMode(world.mode());setPage(world.shotId());setReady(true);setStatus('Drag to look. Walk with W A S D, or use the pads. Space jumps; E opens a nearby door.');latest.current.onRuntime?.(world);latest.current.onReady?.();
       if(HARBOUR_DEV)(window as unknown as {__harbour:unknown}).__harbour=world;
@@ -19,6 +20,9 @@ export default function HorizonStage(props:HorizonStageProps){
     return()=>{controller.abort();current?.dispose();if(HARBOUR_DEV){const debug=window as unknown as {__harbour?:HorizonRuntime};if(debug.__harbour===current)delete debug.__harbour;}runtime.current=null;latest.current.onRuntime?.(null);};
   },[tier]);
   useEffect(()=>{runtime.current?.pause(props.paused===true);},[props.paused,ready]);
+  // Comfort is live: the app's calm view and reduced motion apply without a remount (CONTRACT §2.10).
+  useEffect(()=>{runtime.current?.setComfort({calm:props.calm??appCalm(),reducedMotion:props.reducedMotion===true||appReducedMotion()});},[props.calm,props.reducedMotion,ready]);
+  useEffect(()=>{if(typeof MutationObserver==='undefined')return;const media=matchMedia('(prefers-reduced-motion: reduce)'),apply=()=>runtime.current?.setComfort({calm:latest.current.calm??appCalm(),reducedMotion:latest.current.reducedMotion===true||appReducedMotion()}),observer=new MutationObserver(apply);observer.observe(document.documentElement,{attributes:true,attributeFilter:['data-motion','data-quiet']});media.addEventListener?.('change',apply);return()=>{observer.disconnect();media.removeEventListener?.('change',apply);};},[]);
   function changeMode(next:HorizonMode){setMode(next);runtime.current?.setMode(next);stage.current?.focus();}
   function pad(event:React.PointerEvent<HTMLDivElement>,kind:'move'|'look'){
     if(event.type==='pointerup'||event.type==='pointercancel'){runtime.current?.input({forward:0,strafe:0});return;}
