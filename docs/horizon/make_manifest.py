@@ -621,6 +621,29 @@ TARGETS_V16 = {k: v for k, v in m["journeys"]["targets_s"].items() if k != "note
 m["journeys"]["targets_s"] = dict(TARGETS_V17, note="v1.7 targets at scale 1.0: each is achievable with ≥ 10 % margin on the Stage A path graph (README v1.7 table); the summit target is the achievable value until the gondola top station is decided (reserved), then 180")
 m["journeys"]["targets_v1_6"] = TARGETS_V16
 
+# 4. Sky envelope (and the Crown launch folded into the summit lookout, which also settles the launch-over-summit contradiction).
+# The Crown launch folds into the summit lookout: a timber run-off deck on L02's south-west side, 12 eu above the summit ground.
+m["sky"]["launches"]["crown"] = {"xy": [1305, 482], "h": 170, "note": "the run-off deck of the summit lookout (L02), a structure on the summit's south-west lip; the terrain summit (landforms.crown.summitH 158) stays the island's highest ground and no bed may raise the ground above it"}
+next(t for t in m["thresholds"] if t["id"] == "crownLaunch")["xy"] = [1305, 482]
+
+SKY_GATE_H = {"throat": 119, "scholarsCove": 48, "lamp": 20.5}
+for g in m["sky"]["gates"]:
+    if g["id"] in SKY_GATE_H: g["h"] = SKY_GATE_H[g["id"]]
+    if g["id"] == "throat": g["aperture_m"] = [24, 16]; g["note"] = "into the mountain; glider only; centred on the mouth (110–128), 24 × 16 inside the 26 × 18 mouth"
+    if g["id"] == "highSpan": g["note"] = "under the deck (deck h 24, riverbed h 8); needs the Notch widened to ≥ 40 eu between h 9 and 23 (terrain)"
+m["sky"]["landings"]["green"]["xy"] = [1028, 1112]
+m["sky"]["landings"]["green"]["note"] = "the Drop Zone target is ground paint inside the protected centre, clear of Green Road (its edge 65 m north-east) and the Year Walk"
+m["sky"]["landings"]["reachMeadow"]["xy"] = [1143, 1167]
+m["sky"]["landings"]["sands"]["xy"] = [1095, 1362]
+m["sky"]["waterLandings"] = {
+ "bight": {"xy": [592, 804], "r": 60, "note": "the inner Bight, clear of the ferry pier and the Year Walk; the landing field is wet below level − 2 all round"},
+ "deep": {"xy": [1278, 423], "r": 8, "note": "the only clear water in the Deep: the west lobe beside the Throat's foot; an r 20 field needs the Ore Line's splash moved ≥ 20 m east or the Deep widened 15 m west (underground track)"},
+ "harbour": {"note": "found by the envelope beside the floatplane dock (world/sky.ts); unchanged"},
+ "rule": "the envelope reads these centres; before v1.7 it used the water outline's centroid"
+}
+m["sky"]["courses"]["damRun"]["land"] = "reach meadow [1143,1167]"
+m["sky"]["courses"]["damRun"]["note"] = "514 m to the arch with 115 m of height in hand at a 9:1 glide; under the High Span, then a west turn onto the Reach meadow, 115 m past it"
+
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)

@@ -2883,10 +2883,11 @@
   "launches": {
    "crown": {
     "xy": [
-     1310,
-     440
+     1305,
+     482
     ],
-    "h": 160
+    "h": 170,
+    "note": "the run-off deck of the summit lookout (L02), a structure on the summit's south-west lip; the terrain summit (landforms.crown.summitH 158) stays the island's highest ground and no bed may raise the ground above it"
    },
    "prow": {
     "xy": [
@@ -2958,24 +2959,24 @@
   "landings": {
    "green": {
     "xy": [
-     1040,
-     1065
+     1028,
+     1112
     ],
     "r": 60,
     "target": true,
-    "note": "the Drop Zone target is ground paint inside the protected centre; S4 passes 60 m west"
+    "note": "the Drop Zone target is ground paint inside the protected centre, clear of Green Road (its edge 65 m north-east) and the Year Walk"
    },
    "reachMeadow": {
     "xy": [
-     1230,
-     1190
+     1143,
+     1167
     ],
     "r": 40
    },
    "sands": {
     "xy": [
-     1050,
-     1440
+     1095,
+     1362
     ],
     "r": 60
    },
@@ -3022,7 +3023,7 @@
      40,
      14
     ],
-    "note": "under the deck (deck h 24, riverbed h 8)"
+    "note": "under the deck (deck h 24, riverbed h 8); needs the Notch widened to \u2265 40 eu between h 9 and 23 (terrain)"
    },
    {
     "n": 4,
@@ -3051,7 +3052,7 @@
      540,
      1260
     ],
-    "h": 20,
+    "h": 20.5,
     "note": "round the lighthouse"
    },
    {
@@ -3079,7 +3080,7 @@
      640,
      280
     ],
-    "h": 40
+    "h": 48
    },
    {
     "n": 10,
@@ -3107,12 +3108,12 @@
      1300,
      300
     ],
-    "h": 110,
+    "h": 119,
     "aperture_m": [
-     26,
-     18
+     24,
+     16
     ],
-    "note": "into the mountain; glider only"
+    "note": "into the mountain; glider only; centred on the mouth (110\u2013128), 24 \u00d7 16 inside the 26 \u00d7 18 mouth"
    }
   ],
   "plane": {
@@ -3167,8 +3168,8 @@
      4,
      3
     ],
-    "land": "reach meadow [1230,1190]",
-    "note": "514 m to the arch with 115 m of height in hand at a 9:1 glide; the Reach meadow is 130 m past the High Span"
+    "land": "reach meadow [1143,1167]",
+    "note": "514 m to the arch with 115 m of height in hand at a 9:1 glide; under the High Span, then a west turn onto the Reach meadow, 115 m past it"
    },
    "throatRun": {
     "mode": "glider",
@@ -3194,7 +3195,29 @@
    "no collisions with people: pass through + gust",
    "reduced motion: cuts between the twelve pages",
    "nothing in the sky reads a balance"
-  ]
+  ],
+  "waterLandings": {
+   "bight": {
+    "xy": [
+     592,
+     804
+    ],
+    "r": 60,
+    "note": "the inner Bight, clear of the ferry pier and the Year Walk; the landing field is wet below level \u2212 2 all round"
+   },
+   "deep": {
+    "xy": [
+     1278,
+     423
+    ],
+    "r": 8,
+    "note": "the only clear water in the Deep: the west lobe beside the Throat's foot; an r 20 field needs the Ore Line's splash moved \u2265 20 m east or the Deep widened 15 m west (underground track)"
+   },
+   "harbour": {
+    "note": "found by the envelope beside the floatplane dock (world/sky.ts); unchanged"
+   },
+   "rule": "the envelope reads these centres; before v1.7 it used the water outline's centroid"
+  }
  },
  "reserves": {
   "rotRule": "rot_deg is the bearing of the 64 m axis, degrees clockwise from +x (east) with y south",
@@ -4450,8 +4473,8 @@
   {
    "id": "crownLaunch",
    "xy": [
-    1310,
-    440
+    1305,
+    482
    ],
    "modes": [
     "feet\u2192glider"

@@ -232,3 +232,23 @@ PROOF (runtime track, `world/views.ts`): read `target_h`, `portrait` and the sub
 | square→boathouse, walking | 388 | 1.7 | 228.2 | 100 | 2.4 | 161.7 | 180 | 11.3 % | the detour over the Quay Bridge is most of the time; when the homestead's timber crossing joins the path graph (≈ 260 eu, ≈ 108 s) the target returns to 120 |
 
 `test/horizonManifest.test.ts` follows: the library target is 185 and the straight-segment estimate (182 s) now sits inside it.
+
+### 4. The sky envelope
+
+**Why.** Auditor 5 (A5-22 to A5-26): three gates sunk in rock, all five landing fields obstructed, and the Crown→Lamp glide starting inside its 10 eu margin (−0.20 eu).
+
+| Key | v1.6 | v1.7 | Measured on the scratch bake |
+|---|---|---|---|
+| `sky.gates` throat | h 110, 26 × 18 | h 119 (the mouth's centre, mask 110–128), 24 × 16 inside the 26 × 18 mouth | clear |
+| `sky.gates` scholarsCove | h 40 | h 48 (lift 8 over terrain 36.1–39.4) | clear |
+| `sky.gates` lamp | h 20 | h 20.5 | clear |
+| `sky.gates` highSpan | h 16, 40 × 14 | unchanged | blocked by the Notch's east wall (22 eu clear of 40): **terrain** widens the Notch to ≥ 40 eu between h 9 and 23 (cut the east wall at x 1255–1262) |
+| `sky.landings` green | [1040,1065] r60 | [1028,1112] r60 (clear of Green Road by 5 eu and of the v1.7 Year Walk) | clear |
+| `sky.landings` reachMeadow | [1230,1190] r40 | [1143,1167] r40 | clear |
+| `sky.landings` sands | [1050,1440] r60 | [1095,1362] r60 | clear |
+| `sky.waterLandings.bight` (new; the envelope used the lagoon's centroid) | centroid, r60 | [592,804] r60 | clear |
+| `sky.waterLandings.deep` (new) | centroid [1300,420], r20 | [1278,423] r8 — the only clear water: the Ore Line's splash crosses the Deep and the Throat's foot fills its north side; no r ≥ 10 circle is clear | clear. For r 20 the underground track moves the splash ≥ 20 eu east or widens the Deep 15 eu west |
+| `sky.launches.crown` and `thresholds.crownLaunch` | [1310,440] h160 (on a terrain mound north of the summit) | [1305,482] h170: the run-off deck of the summit lookout (L02) on the summit's south-west lip, a structure 12 eu above the ground | glide minimum clearance 12.6 eu over the terrain (≥ 10 from the first sample, arrival 55.9); the scratch bake still reports 9.7 because the builder hard-codes the crownLaunch pad at 160 as a terrain pad (`land/beds/build.ts:148`), which raises a mound under the deck |
+| `sky.courses.damRun` | lands at [1230,1190] | lands at [1143,1167] | — |
+
+**Launch: raised, and folded into the lookout — the choice and why.** A pad at 157.5 on the summit plateau (the option that keeps the pad below the summit) cannot clear 10 eu over the plateau within the proof's first 4 eu sample at any rim position (tested on the rim: [1296,496] at h 160 gives a 4.8 eu minimum, [1290,505] at h 158 gives 5.1 eu, and even [1300,490] at h 165 gives only 8.8 eu). The glide needs ≥ +10 eu of launch height (Auditor 5). A 12 eu run-off deck on the summit lookout gives it with 2.6 eu to spare, keeps the terrain summit (158) the island's highest ground (P04), gives page E an eye that is not beside a mound, and is architecture that is there anyway (L02 is "the summit lookout, observatory, the bell"). The structures track builds it as a deck; no bed may raise the ground above `landforms.crown.summitH`.
