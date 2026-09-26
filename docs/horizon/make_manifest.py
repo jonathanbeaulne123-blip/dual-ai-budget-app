@@ -656,6 +656,404 @@ m["profiles"]["rail"]["chainLift"] = {"from": [1300, 420], "to": [1345, 680], "n
 m["underground"]["rooms"]["deep"]["skylight"]["to"] = [1320, 400]
 m["underground"]["rooms"]["deep"]["skylight"]["note"] = "opens on the north slope 20 m east of the Throat's centreline (so the Throat's mouth of daylight reads from the Deep's jetty); sun shaft when the sun is above 20°"
 
+# ---------------------------------------------------------------------------
+# v1.8 — Stage A integration (design lead), 26 September 2026.
+# Every delta below is listed in docs/horizon/README.md → "v1.8 deltas (Stage A integration)".
+# Ids never change (CONTRACT §2.13); numbers move, fields are added.
+# ---------------------------------------------------------------------------
+m["version"] = "1.8"
+m["date"] = "2026-09-26"
+
+# 1. The crossings register, re-authored against the merged Stage A build (T2 delta + the integrator's bake).
+#    Authored rows keep their resolution; the 12 stale rows (R1-11) are re-pointed to their computed hit or retired
+#    to routePairNotes; every other computed intersection gets a row in T4's vocabulary (kind: crossing, junction,
+#    sharedStretch, footway, waterBody, waterConfluence, modeTransfer; resolution stays over / under / threshold).
+#    Rows with source "bake v1.8" never create register pads or dismount thresholds (a junction is flush, R1-88).
+REGISTER_V17 = m["crossings"]
+REPOINT_V18 = {
+ 5: ([898, 611], "the Hollow Bridge carries the Garden Walk over the brook 12 m north of the v1.7 point"),
+ 6: ([899, 591], "S4's lane on the Hollow Bridge crosses the brook 10 m south-east of the v1.7 point"),
+ 21: ([1587, 677], "the Deep run passes under the Prow cliff drive 23 m north-east of the v1.7 point"),
+ 23: ([1611, 710], "the Deep run passes under the Prow walk 11 m east of the v1.7 point"),
+ 24: ([1009, 1388], "the dune culvert: V01 over S4 13 m south of the v1.7 point"),
+ 26: ([1350, 1345], "S3 meets V01 at grade at the river mouth (S3 never reaches [1480,1050])"),
+ 27: ([1160.8, 940.1], "RESERVED R-A7: S1 meets the dam portage stair (was the lake-rim walk) 4.8 eu apart; physically separated until Jonathan rules"),
+ 38: ([1374, 615], "the Crown walk crosses over the Ore Line 48 m north of the v1.7 point (two more crossings are listed below)"),
+}
+REPOINT_B = {27: "damPortage"}
+RETIRE_V18 = {
+ 2: "the Reach walk runs under the High Span gallery beside the river; the two centrelines never cross in plan (the High Span's walk-level gallery is the Reach walk's own stretch)",
+ 11: "S1 finishes on the quay without crossing V01 near [1270,1330]; S1 × V01 has no plan intersection in the v1.8 build",
+ 14: "S2 is a lane of the Bight Bridge deck (row 13); it passes 17.9 m from the [660,1170] dismount, which does not exist (T2 D-3: S2 cannot descend from the Wash to the deck at 18 %; Jonathan decides)",
+ 20: "S3 runs beside the town quay, never across it (T0 request 4: S3 at [1433,1298] should come down ≤ 3.5 eu)",
+ 25: "\"none\": S3 and the dune walk do not cross",
+ 27: None,
+ 29: "an area rule, not an intersection: the zip line passes over the town's roofs with ≥ 12 eu clearance (checked as cable.ZIP.roofs)",
+ 40: "S4 starts at [1000,520]; it never meets the Studio spur at [974,540] (the spur meets VG there, listed below)",
+ 45: "an area rule, not an intersection: planes fly over everything under the sky ceiling",
+}
+RESERVED_ROWS_V18 = {7: "R-A7", 12: "R-A1", 17: "R-A7", 18: "R-A7", 27: "R-A7", 30: "R-A2", 34: "R-A7", 44: "R-A1"}
+register = []
+for i, row in enumerate(REGISTER_V17):
+    if i in RETIRE_V18 and RETIRE_V18[i] is not None:
+        m["routePairNotes"].append({"a": row["a"], "b": row["b"], "kind": "retired register row (v1.8)", "verification": RETIRE_V18[i], "sharedPlanPoints": [], "retiredRow": {k: v for k, v in row.items()}})
+        continue
+    row = dict(row)
+    if i in REPOINT_V18:
+        row["movedFrom"] = row["at"]
+        row["at"], why = REPOINT_V18[i]
+        row["note"] = (row["note"] + "; " if row.get("note") else "") + why
+        if i in REPOINT_B: row["b"] = REPOINT_B[i]
+    if i in RESERVED_ROWS_V18: row["reserved"] = RESERVED_ROWS_V18[i]
+    row.setdefault("kind", "crossing")
+    register.append(row)
+CANON = {"Crown Road": "V02", "river mouth": "river lower", "water wash": "wash", "Reach west channel": "reachChannel.1", "Reach east channel": "reachChannel.2", "S1 finish": "S1"}
+def _canon(name): return {CANON.get(p.strip(), p.strip()) for p in name.split("+")}
+def _covered(row):
+    for a in register:
+        if not isinstance(a["at"], list): continue
+        pair = (_canon(a["a"]), _canon(a["b"]))
+        same = (row["a"] in pair[0] and row["b"] in pair[1]) or (row["a"] in pair[1] and row["b"] in pair[0])
+        if same and ((a["at"][0] - row["at"][0]) ** 2 + (a["at"][1] - row["at"][1]) ** 2) ** .5 <= 10: return True
+    return False
+CROSSINGS_V18_COMPUTED = [
+ {"a":"crownLaunch.stair","b":"underground.bellGallery","at":[1313,480.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"damGallery.flight.1","b":"damGallery.exit","at":[1165,898],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 7 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"damGallery.flight.1","b":"water.stillwater","at":[1165,898],"resolution":"threshold","kind":"waterBody","source":"bake v1.8","note":"bed inside the water outline below its surface: a bridge, causeway or re-route is owed (diagnostic)"},
+ {"a":"damGallery.flight.2","b":"damGallery.exit","at":[1165,886],"resolution":"threshold","kind":"sharedStretch","source":"bake v1.8","note":"shared stretch 10 eu at one height"},
+ {"a":"damGallery.flight.2","b":"water.stillwater","at":[1165,892],"resolution":"threshold","kind":"waterBody","source":"bake v1.8","note":"bed inside the water outline below its surface: a bridge, causeway or re-route is owed (diagnostic)"},
+ {"a":"DEEP_RUN","b":"ZIP","at":[1587.5,677.4],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ferry.bight","b":"FERRY","at":[560,898],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending"},
+ {"a":"ferry.flats","b":"FERRY","at":[285,720],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending"},
+ {"a":"ferry.landing","b":"FERRY","at":[1470,1340],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending"},
+ {"a":"ferry.seaDoor","b":"seaStair","at":[1705,775],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"gondolaBase.walk","b":"G1","at":[1480,1090],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"highSpan.overlook","b":"river lower","at":[1251.2,1143.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 2.2 eu apart: regrade owed"},
+ {"a":"highSpan.overlook","b":"river lower","at":[1251.2,1143.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 2.1 eu apart: regrade owed"},
+ {"a":"homestead.lane","b":"town quay","at":[1497,1265],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"jetty.boathouse","b":"reachChannel.2","at":[1320,1318.5],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 0.8 eu apart: regrade owed"},
+ {"a":"jetty.deep","b":"stepsPortage","at":[1300,440],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"jetty.deep","b":"underground.deepAccess","at":[1300,440],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"jetty.lamp","b":"lampGallery.ramp","at":[540,1250],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"jetty.lamp","b":"lampGallery.ramp","at":[540,1250],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 9.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"jetty.lamp","b":"lampGallery.ramp","at":[540,1250],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 19.2 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"jetty.lamp","b":"lampGallery.stair","at":[540,1250],"resolution":"threshold","kind":"sharedStretch","source":"bake v1.8","note":"shared stretch 6 eu at one height"},
+ {"a":"jetty.seaDoor","b":"ferry.seaDoor","at":[1705,781],"resolution":"threshold","kind":"sharedStretch","source":"bake v1.8","note":"shared stretch 12 eu at one height"},
+ {"a":"jetty.seaDoor","b":"seaStair","at":[1705,775],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"lampGallery.ramp","b":"FERRY","at":[510.4,1224.4],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 3.2 eu apart: regrade owed"},
+ {"a":"lampGallery.ramp","b":"FERRY","at":[510.4,1224.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 12.8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"lampGallery.ramp","b":"FERRY","at":[510.4,1224.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 22.4 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"lampGallery.ramp","b":"FERRY","at":[546.1,1190.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 6.1 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"lampGallery.ramp","b":"FERRY","at":[546.1,1190.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"lampGallery.ramp","b":"lampGallery.stair","at":[540,1195],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"lampGallery.ramp","b":"lampGallery.stair","at":[540,1250],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"lampGallery.ramp","b":"lampGallery.stair","at":[540,1250],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 9.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"lampGallery.ramp","b":"lampGallery.stair","at":[540,1250],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 19.2 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"lampGallery.stair","b":"FERRY","at":[540,1230],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"marketRamp","b":"host.home.approach","at":[1482.4,1181.8],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"marketStair.flight.0","b":"marketRamp","at":[1480,1150],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"ORE","b":"DEEP_RUN","at":[1300,420],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ORE","b":"ORE.siding","at":[1270,450],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ORE","b":"southPortal.link","at":[1345,680],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending"},
+ {"a":"ORE","b":"stepsPortage","at":[1343.6,463.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 25.1 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"ORE","b":"underground.bellGallery","at":[1225.5,489.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ORE","b":"underground.deepAccess","at":[1280,440],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 17.4 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"ORE","b":"underground.lanternCave","at":[1160,520],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ORE","b":"underground.throat","at":[1300,420],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"reachChannel.1","b":"reachChannel.2","at":[1280,1220],"resolution":"threshold","kind":"waterConfluence","source":"bake v1.8","note":"one waterway"},
+ {"a":"river lower","b":"reachChannel.1","at":[1280,1220],"resolution":"threshold","kind":"waterConfluence","source":"bake v1.8","note":"one waterway"},
+ {"a":"river lower","b":"reachChannel.2","at":[1280,1220],"resolution":"threshold","kind":"waterConfluence","source":"bake v1.8","note":"one waterway"},
+ {"a":"river lower","b":"reachChannel.2","at":[1320,1276],"resolution":"threshold","kind":"waterConfluence","source":"bake v1.8","note":"one waterway"},
+ {"a":"river lower","b":"reachChannel.2","at":[1320,1276],"resolution":"threshold","kind":"waterConfluence","source":"bake v1.8","note":"one waterway"},
+ {"a":"river lower","b":"river upper","at":[1160,740],"resolution":"threshold","kind":"waterConfluence","source":"bake v1.8","note":"one waterway"},
+ {"a":"S1","b":"dam.apron.level","at":[1168,929.2],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 0.5 eu apart: regrade owed"},
+ {"a":"S1","b":"damPortage","at":[1159.3,936],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A7: physically separated threshold"},
+ {"a":"S1","b":"damPortage","at":[1160.8,940.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 4.8 eu apart: regrade owed; RESERVED R-A7: physically separated threshold"},
+ {"a":"S1","b":"G1","at":[1391.9,701.5],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"S1","b":"G1","at":[1407.5,770.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"S1","b":"landingQuay","at":[1270,1330],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S1","b":"underground.bellGallery","at":[1308.2,510.9],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S1","b":"walk crown","at":[1310,500],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S1","b":"walk crownFromGondola","at":[1310,500],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"S1","b":"walk summit","at":[1310,500],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"S1","b":"yearWalk","at":[1254.7,862],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S1","b":"ZIP","at":[1251.5,1237.5],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S1","b":"ZIP","at":[1251.9,1236.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S2","b":"FERRY","at":[560,1100],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S2","b":"S3","at":[1020,1430],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S2","b":"S4","at":[1020,1430],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S2","b":"yearWalk","at":[468.2,1026.4],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 0.7 eu apart: regrade owed"},
+ {"a":"S2","b":"yearWalk","at":[553.9,1095],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S2","b":"yearWalk","at":[742,1258.5],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S2","b":"yearWalk","at":[944.8,1393.7],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 1.6 eu apart: regrade owed"},
+ {"a":"S3","b":"gondolaBase.walk","at":[1480,1060],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S3","b":"host.home.approach","at":[1456,1175.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S3","b":"S4","at":[1020,1430],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S3","b":"town.quayLink","at":[1406,1319.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S3","b":"V01","at":[1321.9,1372.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S3","b":"V01","at":[1350,1345],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S3","b":"walk square","at":[1480,1060],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"brook","at":[896.4,617.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"brook","at":[898.5,591.3],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"plot.bight.1.service","at":[874.4,919.5],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"walk garden","at":[897.5,620.6],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 1.7 eu apart: regrade owed"},
+ {"a":"S4","b":"walk garden","at":[905.9,640.6],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 2.7 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"S4","b":"yearWalk","at":[880.4,909.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"yearWalk","at":[884.8,903.6],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 0.9 eu apart: regrade owed"},
+ {"a":"S4","b":"yearWalk","at":[900.7,882.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 2.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"S4","b":"yearWalk","at":[901.2,629.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"yearWalk","at":[902.6,632.9],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"yearWalk","at":[918.6,574.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"S4","b":"yearWalk","at":[957.9,1248.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 0.6 eu apart: regrade owed"},
+ {"a":"spur boathouse","b":"host.boathouse.approach","at":[1290,1345],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur cottage","b":"walk garden","at":[930,650],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur cottage","b":"yearWalk","at":[971.9,691.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur cottage","b":"yearWalk","at":[974.4,694.4],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur library","b":"walk coveWalk","at":[760.1,359.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur library","b":"yearWalk","at":[806.1,337],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur studio","b":"host.studio.approach","at":[1000,540],"resolution":"threshold","kind":"sharedStretch","source":"bake v1.8","note":"shared stretch 1 eu at one height"},
+ {"a":"spur upperStreet","b":"gondolaBase.walk","at":[1480,1060],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur upperStreet","b":"S3","at":[1480,1060],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"spur upperStreet","b":"walk square","at":[1480,1060],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"town.bankLink","b":"host.bank.approach","at":[1440,1134],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.bankLink","b":"host.home.approach","at":[1455,1175],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.bankLink","b":"town.northLink","at":[1420,1138],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.bankLink","b":"town.quayLink","at":[1455,1175],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.quayLink","b":"host.home.approach","at":[1455,1175],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.quayLink","b":"town quay","at":[1420,1335],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.quayLink","b":"town.riverLink","at":[1400,1290],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.storefront","b":"homestead.lane","at":[1497,1265],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"town.storefront","b":"homestead.lane","at":[1498,1250.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"town.storefront","b":"town quay","at":[1497,1265],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"underground.bellGallery","b":"underground.deepAccess","at":[1220,480],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.deepAccess","b":"stepsPortage","at":[1300,440],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.lanternCave","b":"underground.bellGallery","at":[1220,480],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.lanternCave","b":"underground.deepAccess","at":[1220,480],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.lanternCave","b":"underground.sealedDrift","at":[1187.3,498.2],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.lanternCave","b":"underground.sealedDrift","at":[1220,480],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.sealedDrift","b":"underground.bellGallery","at":[1220,480],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.sealedDrift","b":"underground.deepAccess","at":[1220,480],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"underground.throat","b":"DEEP_RUN","at":[1300,420],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"DEEP_RUN","at":[1587.3,677.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"FERRY","at":[559.3,1104.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"FERRY","at":[560,1100],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"FERRY","at":[562.8,1107.1],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"plot.terraces.1.service","at":[1601.6,831.4],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"plot.terraces.2.service","at":[1580.5,918.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"plot.terraces.3.service","at":[1554.6,973.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"S3","at":[1321.9,1372.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"S3","at":[1350,1345],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"S4","at":[1008.6,1387.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"spur boathouse","at":[1300,1380],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"spur library","at":[900,290],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"spur upperStreet","at":[1480,1040],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"town.northLink","at":[1370.9,1126.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"town.riverLink","at":[1370,1260],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"V02","at":[1500,340],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"VG","at":[900,290],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"VG","at":[1400,1060],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"walk prow","at":[1580.1,620.7],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 11.5 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"V01","b":"yearWalk","at":[756.4,1247.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"yearWalk","at":[810.8,294.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"yearWalk","at":[952.7,1376.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V01","b":"ZIP","at":[1587.4,677.7],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V02","b":"southPortal.link","at":[1370,690],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"V02","b":"walk crown","at":[1406.5,606.3],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 21.5 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"V02","b":"walk crownFromGondola","at":[1412.8,593.4],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"V02","b":"walk crownFromGondola","at":[1443.1,526.5],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"VBS","b":"plot.bight.1.service","at":[880.8,928.6],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"plot.bight.2.service","at":[832.6,1011.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"plot.bight.3.service","at":[799.1,1066.7],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"plot.bight.4.service","at":[775,1125],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"spur glasshouse","at":[960,860],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"yearWalk","at":[855,974.6],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"yearWalk","at":[904.2,885.9],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"yearWalk","at":[951.2,863.4],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VBS","b":"yearWalk","at":[954.1,862.3],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"highSpan.walk","at":[1228.8,1104.1],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"spur cottage","at":[980,700],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"spur glasshouse","at":[960,860],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"spur library","at":[900,290],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"spur studio","at":[975.5,540],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"VBS","at":[960,860],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"VG","b":"walk garden","at":[969.5,764.2],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 16.5 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"VG","b":"yearWalk","at":[933,369.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 5.5 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"VG","b":"yearWalk","at":[943.6,471],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk bight","b":"plot.bight.3.service","at":[729.5,1056.6],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk bight","b":"plot.bight.4.service","at":[706.4,1131.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk bightPier","b":"FERRY","at":[560,890],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk bightPier","b":"ferry.bight","at":[560,890],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk bightPier","b":"walk flats","at":[350,880],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 3.9 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk bightPier","b":"yearWalk","at":[415.5,897.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 6.2 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk bightPier","b":"yearWalk","at":[422.8,899],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 6.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk coveWalk","b":"ferry.scholarsCove","at":[630,240],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 32.8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk coveWalk","b":"host.library.approach","at":[762,422],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk crown","b":"crownLaunch.stair","at":[1343.7,474.9],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"G1","at":[1365.9,586.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"G1","at":[1372.4,615.2],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"G1","at":[1388.3,685.3],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"ORE","at":[1351.2,471.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk crown","b":"ORE","at":[1370.4,581],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk crown","b":"ORE","at":[1373.9,614.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk crown","b":"southPortal.link","at":[1370,690],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk crown","b":"stepsPortage","at":[1355.2,469.9],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 124.3 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk crown","b":"stepsPortage","at":[1367.8,476.7],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 126.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk crown","b":"underground.bellGallery","at":[1317,494.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk crown","b":"walk crownFromGondola","at":[1310,500],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"walk crownFromGondola","at":[1376,574.7],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 19.8 eu: a named structure (footbridge, deck or passage) is owed; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"walk summit","at":[1310,500],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crown","b":"yearWalk","at":[1371.2,689.7],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk crown","b":"yearWalk","at":[1379.9,687.4],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk crown","b":"yearWalk","at":[1414.5,604.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 21.1 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk crownFromGondola","b":"crownLaunch.stair","at":[1320.4,479.2],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"DEEP_RUN","at":[1341.3,445.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"DEEP_RUN","at":[1437.6,512.9],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"G1","at":[1360,560],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"ORE","at":[1334.3,454.3],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"ORE","at":[1369.1,568.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"stepsPortage","at":[1332.3,457.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 117.5 eu: a named structure (footbridge, deck or passage) is owed; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"underground.bellGallery","at":[1315.5,489.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"V02","at":[1443.1,526.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"walk summit","at":[1310,500],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"yearWalk","at":[1422.1,589.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk crownFromGondola","b":"yearWalk","at":[1446.4,537.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk damCrest","b":"damGallery.exit","at":[1162,903],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk damCrest","b":"river lower","at":[1140.2,903],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk dune","b":"zipLanding.ramp","at":[1079.2,1469],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 6.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk dune","b":"zipLanding.stair","at":[1144.1,1458.9],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 2.7 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk garden","b":"brook","at":[896.9,615.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk garden","b":"brook","at":[897.8,610.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk garden","b":"host.cottage.approach","at":[916.5,638.7],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk garden","b":"host.glasshouse.approach","at":[990,780],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk garden","b":"host.library.approach","at":[762,422],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk garden","b":"walk coveWalk","at":[762,422],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk garden","b":"walk lakerim","at":[990,780],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk garden","b":"yearWalk","at":[780.9,443.7],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk garden","b":"yearWalk","at":[807.5,474.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 3.9 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk garden","b":"yearWalk","at":[899.6,638.9],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 3.9 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk garden","b":"yearWalk","at":[900,640],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk garden","b":"yearWalk","at":[902.3,641.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk garden","b":"yearWalk","at":[961,757],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 14.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk garden","b":"yearWalk","at":[963.7,759.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 15.2 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk glasshouseSteps","b":"host.glasshouse.approach","at":[997.1,811.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 4.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk lakerim","b":"damGallery.flight.1","at":[1165,905.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk lakerim","b":"host.glasshouse.approach","at":[990,780],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk lakerim","b":"river lower","at":[1140,905],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk lakerim","b":"yearWalk","at":[1244.4,852.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 2.3 eu apart: regrade owed"},
+ {"a":"walk lakerim","b":"yearWalk","at":[1244.5,851.9],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":"at-grade meeting 2.3 eu apart: regrade owed"},
+ {"a":"walk lakerim","b":"yearWalk","at":[1250.5,837.6],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk prow","b":"DEEP_RUN","at":[1610.9,709.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk prow","b":"seaStair","at":[1620,760],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk prow","b":"yearWalk","at":[1567.7,600.9],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 11.2 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk prow","b":"yearWalk","at":[1571.6,606.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 11.3 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk prow","b":"yearWalk","at":[1591.5,908.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 33.9 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk prow","b":"yearWalk","at":[1598.3,664],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 10.8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk prow","b":"yearWalk","at":[1605.7,689.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 13.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk prow","b":"yearWalk","at":[1607.5,847.7],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 26.7 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"walk prow","b":"ZIP","at":[1597.3,661.1],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk reach","b":"highSpan.walk","at":[1240,1130],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk reach","b":"town.quayLink","at":[1400,1290],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk reach","b":"town.riverLink","at":[1400,1290],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk reach","b":"ZIP","at":[1272.3,1202.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk reach","b":"ZIP","at":[1272.9,1201.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"walk square","b":"gondolaBase.walk","at":[1480,1060],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk square","b":"host.bank.approach","at":[1466.3,1162.9],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk square","b":"host.home.approach","at":[1455,1175],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk square","b":"town.bankLink","at":[1455,1175],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk square","b":"town.quayLink","at":[1455,1175],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"walk summit","b":"stepsPortage","at":[1310.1,445.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 120.4 eu: a named structure (footbridge, deck or passage) is owed; RESERVED R-A3: waits on the gondola top station"},
+ {"a":"walk summit","b":"underground.bellGallery","at":[1310,470],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1450.1,522.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1575.7,660.7],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1579.4,666],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1580.8,667.8],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1600.5,695.7],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1611.3,710],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"DEEP_RUN","at":[1649.9,743.2],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"FERRY","at":[560,1096.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"FERRY","at":[560,1099],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"FERRY","at":[560.2,1099.1],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"FERRY","at":[560.5,1096.7],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"G1","at":[1385.1,671.2],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"yearWalk","b":"G1","at":[1388.6,686.7],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"yearWalk","b":"G1","at":[1421.9,833.4],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"RESERVED R-A3: waits on the gondola top station"},
+ {"a":"yearWalk","b":"ORE","at":[1345,680],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending"},
+ {"a":"yearWalk","b":"ORE","at":[1349.6,671.6],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"ORE","at":[1355.1,661.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"plot.bight.1.service","at":[871.2,914.9],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"plot.terraces.1.service","at":[1594.9,834],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"plot.terraces.2.service","at":[1575.6,912.8],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"plot.terraces.3.service","at":[1547,974.1],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"river upper","at":[1161.9,725.2],"resolution":"under","kind":"crossing","source":"bake v1.8","note":"under by 8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"yearWalk","b":"seaStair","at":[1630.8,761.9],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 5.6 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"yearWalk","b":"seaStair","at":[1650.3,765.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 15.2 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"yearWalk","b":"southPortal.link","at":[1345,680],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 3 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"yearWalk","b":"southPortal.link","at":[1347.7,681.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 2.8 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"yearWalk","b":"southPortal.link","at":[1349.7,682.4],"resolution":"over","kind":"crossing","source":"bake v1.8","note":"over by 2.9 eu: a named structure (footbridge, deck or passage) is owed"},
+ {"a":"yearWalk","b":"town.storefront","at":[1494.5,1211.8],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"yearWalk","b":"town.storefront","at":[1495,1212.4],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"yearWalk","b":"ZIP","at":[1577.6,693.9],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"ZIP","at":[1579.6,690.7],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"ZIP","at":[1581.9,686.8],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"yearWalk","b":"ZIP","at":[1596.1,663.2],"resolution":"under","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ZIP","b":"river lower","at":[1273.1,1201.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"ZIP","b":"river lower","at":[1273.1,1201.5],"resolution":"over","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"zipLanding.ramp","b":"ZIP","at":[1130,1440],"resolution":"threshold","kind":"modeTransfer","source":"bake v1.8","note":"boarding threshold; mover pending"},
+ {"a":"zipLanding.stair","b":"ZIP","at":[1130,1440],"resolution":"threshold","kind":"crossing","source":"bake v1.8","note":""},
+ {"a":"zipLanding.stair","b":"zipLanding.ramp","at":[1130,1440],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"},
+ {"a":"zipLanding.stair","b":"zipLanding.ramp","at":[1145,1460],"resolution":"threshold","kind":"junction","source":"bake v1.8","note":"flush path junction: no marker, no mode change"}
+]
+register += [row for row in CROSSINGS_V18_COMPUTED if not _covered(row)]
+m["crossings"] = register
+m["crossingRule"] = m["crossingRule"] + ". v1.8: every computed intersection of the Stage A build has a row; kind names the proof class (crossing, junction, sharedStretch, footway, waterBody, waterConfluence, modeTransfer) and resolution stays over / under / threshold; rows with source 'bake v1.8' are the design lead's acceptance of the computed resolution and never create a register pad or a dismount threshold; reserved names the decision a row waits on"
+
+# 2. Glasshouse footprint drawn in off Stillwater (T2): 25 × 18 centred [1007.5,790], ≥ 3 m clear of the lake.
+gh = next(h for h in m["hosts"] if h["id"] == "glasshouse")
+gh["v1_7"] = {"footprint_m": gh["footprint_m"], "xy": gh["xy"]}
+gh["footprint_m"] = [25, 18]
+gh["xy"] = [1007.5, 790]
+
+# 3. High Span sky gate: its v1.7 bottom (h 9) sat under the river pools (9.97–10.8) and bank lip (T1). 40 × 12 at h 17 (11–23).
+for g in m["sky"]["gates"]:
+    if g["id"] == "highSpan":
+        g["v1_7"] = {"h": g["h"], "aperture_m": g["aperture_m"]}
+        g["h"] = 17
+        g["aperture_m"] = [40, 12]
+        g["note"] = "under the deck (deck h 24, riverbed h 8): 40 × 12 at h 17 (11–23), clear of the river pools (≤ 10.8) and the bank lip; the Notch is ≥ 54 m wide there (T1)"
+
+# 4. Views: page A no longer frames "the Crown behind" (the Shoulder's in-band rim hides the summit from the square
+#    by 4–16 eu; page E is the Crown's page); page D's portrait drops the Lamp until the Pass 2b lighthouse (2 px at 390).
+#    Every page gets a machine subject list in the frame vocabulary (the proof reads it; the code table is the fallback).
+SUBJECTS_V18 = {
+ "A": ["the High Span", "the dam's glass face", "the Shoulder"],
+ "B": ["the Bight Bridge", "the Flats", "the hook"],
+ "C": ["the road deck", "the skate shelf", "the walk at the water"],
+ "D": ["surf", "the Lamp", "the zipline landing"],
+ "E": ["Stillwater", "the Green", "the Hollow", "the Flats", "the Bight", "the sea"],
+ "F": ["L01", "the town below"],
+ "G": ["the Throat's mouth of daylight", "the skylight shaft"],
+ "H": ["the strip", "the west sea"],
+ "I": ["the spring", "the Reach water"],
+ "J": ["the arch", "the Stacks", "the Prow"],
+ "K": ["the Glasshouse", "Stillwater"],
+ "L": ["Lantern Row", "the Boathouse"],
+}
+for v in m["views"]:
+    v["subjects"] = SUBJECTS_V18[v["id"]]
+    if v["id"] == "A":
+        v["v1_7_frames"] = v["frames"]
+        v["frames"] = "the High Span's deck line, the dam's glass face, the Shoulder"
+        v["deferred"] = v["deferred"] + ["the Crown (hidden from the square by the Shoulder's own rim, 4–16 eu over the sight line inside its band; page E holds it)"]
+    if v["id"] == "D":
+        v["portrait"]["v1_7_frames"] = v["portrait"]["frames"]
+        v["portrait"]["frames"] = ["surf", "the zipline landing"]
+        v["deferred"] = v["deferred"] + ["the Lamp in portrait (2 px at 390 × 844 until the Pass 2b lighthouse; it stays a 16:9 subject)"]
+
+# 5. District hearts (the Voronoi partition's seeds) are data, not a code table (R1-67).
+HEARTS_V18 = {"harbour": [1470, 1170], "landing": [1060, 1410], "reach": [1280, 1260], "green": [1030, 1060], "hollow": [985, 580], "scholars": [765, 400], "flats": [420, 685], "bight": [745, 995], "lakeside": [1130, 820], "notch": [1205, 1070], "prow": [1600, 780], "crown": [1310, 470]}
+for d in m["districts"]:
+    if d["id"] in HEARTS_V18: d["heart"] = HEARTS_V18[d["id"]]
+
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)
     output.write("\n")

@@ -2,7 +2,7 @@ import {describe,expect,it} from 'vitest';
 import {HORIZON_MANIFEST,parseHorizonManifest,requireScaleFactor} from '../src/harbour/horizon/world/manifest.ts';
 
 const manifest=HORIZON_MANIFEST;
-describe('Horizon manifest v1.7',()=>{
+describe('Horizon manifest v1.8',()=>{
   it('uses Jonathan’s confirmed full scale while rejecting an unconfirmed bake',()=>{
     expect(parseHorizonManifest(manifest)).toBe(manifest);
     expect(manifest.scale.factor).toBe(1);
@@ -55,11 +55,23 @@ describe('Horizon manifest v1.7',()=>{
     for(const view of manifest.views){expect(view.portrait.fov_deg).toBeGreaterThanOrEqual(45);expect(Number.isFinite(view.target_h)).toBe(true);}
     for(const view of manifest.views){expect(view.target).toHaveLength(2);expect(view.fov_deg).toBeGreaterThan(0);expect(view.radius_eu).toBeGreaterThan(0);}
   });
+  it('registers every Stage A intersection with a proof class and keeps the reserved rows authored (v1.8)',()=>{
+    const rows=manifest.crossings as unknown as {a:string;b:string;resolution:string;kind?:string;source?:string;reserved?:string}[];
+    expect(rows.every(r=>['crossing','junction','sharedStretch','footway','waterBody','waterConfluence','modeTransfer'].includes(r.kind!))).toBe(true);
+    expect(rows.filter(r=>r.reserved).map(r=>`${r.a} x ${r.b} ${r.resolution} ${r.reserved}`)).toEqual(['S4 x walk garden threshold R-A7','V01+S2 x Bight mouth over R-A1','S4 x VG threshold R-A7','VG x walk garden threshold R-A7','S1 x damPortage threshold R-A7','ZIP x G1 over R-A2','V01 x walk bightPier threshold R-A7','FERRY x bightBridge under R-A1']);
+    const host=manifest.hosts.find(h=>h.id==='glasshouse')!;expect(host.footprint_m).toEqual([25,18]);expect(host.xy).toEqual([1007.5,790]);
+    const gate=manifest.sky.gates.find(g=>g.id==='highSpan')!;expect([gate.h,...gate.aperture_m]).toEqual([17,40,12]);
+    const views=manifest.views as unknown as {id:string;subjects:string[];portrait?:{frames:string[]}}[];
+    expect(views.find(v=>v.id==='A')!.subjects).not.toContain('the Crown');expect(views.find(v=>v.id==='D')!.portrait!.frames).not.toContain('the Lamp');
+  });
   it('preserves coordination notes without hiding the shared Deep plan point',()=>{
     const crossing=manifest.crossings.find(row=>row.a==='S4'&&row.b==='VBS');
     expect(crossing).toMatchObject({at:[874,941],resolution:'threshold',district:'green'});
     expect(crossing?.districtNote).toContain('unless pass 1');
-    expect(manifest.routePairNotes).toHaveLength(2);
+    const retired=manifest.routePairNotes.filter(row=>(row as {kind?:string}).kind==='retired register row (v1.8)');
+    expect(manifest.routePairNotes.length-retired.length).toBe(2);
+    // v1.8: the eight stale register rows without a plan intersection (R1-11) are retired here with their reason.
+    expect(retired.map(row=>`${row.a} x ${row.b}`).sort()).toEqual(['S1 finish x V01','S2 x V01','S3 x town quay','S3 x walk dune','S4 x spur studio','ZIP x town','plane x everything','walk reach x VG']);
     expect(manifest.routePairNotes.find(row=>row.a==='DEEP_RUN'&&row.b==='ORE')).toMatchObject({
       kind:'shared-plan-point',sharedPlanPoints:[[1300,420]],
     });

@@ -1,8 +1,8 @@
 # The Horizon — the deck
 
-> Current canonical manifest: v1.7 (Stage A design-lead data, 26 September 2026; see "v1.7 deltas" at the end). v1.6: Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data. PIN-0 remains pending until its accepted merge SHA is recorded.
+> Current canonical manifest: v1.8 (Stage A integration, 26 September 2026; see "v1.8 deltas" at the end). v1.7: Stage A design-lead data, 26 September 2026 ("v1.7 deltas"). v1.6: Jonathan confirmed full scale 1.0 and three uphill Terraces plots (seven large reserves total) on 25 September 2026. `src/harbour/horizon/world/MANIFEST.json` is authoritative; embedded manifests in `inputs/` are frozen design references. The generator mirrors the canonical data. PIN-0 remains pending until its accepted merge SHA is recorded.
 
-Version 1.7 · 26 September 2026 · Owner: Jonathan (product) · Author: Claude (design lead, review)
+Version 1.8 · 26 September 2026 · Owner: Jonathan (product) · Author: Claude (design lead, review)
 
 This folder is **what** to build, pass by pass. The Grand Plan artifact (`inputs/grand-plan.txt`, published as "The Horizon Grand Plan" v1.1) is **why**: the approved design, its chapters and decisions D1–D12 (`DECISIONS.md` carries their status and adds D13–D16). Nobody builds from the Grand Plan directly. Where the Grand Plan and this folder differ in a number or an id, this folder wins; where they differ in intent, stop and ask the design lead.
 
@@ -265,3 +265,51 @@ PROOF (runtime track, `world/views.ts`): read `target_h`, `portrait` and the sub
 | the six offshore Year Walk control points | [760,700], [560,890], [740,1432], [1500,340], [470,1030], [560,1100] | retired with the v1.6 walk (§1) | A1-01 |
 
 Reserved and not changed (options with numbers in the Stage A handoff notes, Jonathan decides): the Bight Bridge `span_m` 230 and its ends; the ZIP endpoints and G1 towers; the gondola top station (h 112 behind the 129 ridge); the Prow Tunnel (no hill over it); the dam's due-south face against the June golden hour.
+
+## v1.8 deltas (Stage A integration)
+
+The integrator merged the four Stage A tracks (T1 terrain/water/paint, T2 beds/junctions/Year Walk, T3 structures/underground, T4 runtime/sky/proof) and re-authored the data the merged build needed. `make_manifest.py` → "v1.8"; the generator reproduces `MANIFEST.json` byte for byte. Ids never change.
+
+### 1. The crossings register (R1-10, R1-11, R-A7)
+
+| | v1.7 | v1.8 |
+|---|---:|---:|
+| Rows | 46 | 312 |
+| Authored rows kept (resolution unchanged) | 46 | 38 (30 as authored, 8 re-pointed to their computed hit) |
+| Stale rows (no plan intersection) | 12 (#2, 11, 12, 14, 20, 25, 26, 27, 29, 40, 44, 45) + 7 after Stage A | 0 outside the reserved rows; 8 retired to `routePairNotes` (kind "retired register row (v1.8)", each with its reason) |
+| Computed intersections without a row | 450 of 511 (v1.6 bake) | 0 of 339 |
+
+- **Re-pointed** (`movedFrom` keeps the v1.7 point): #5 Garden Walk × brook → [898,611]; #6 S4 × brook → [899,591]; #21 Deep run × V01 → [1587,677]; #23 Deep run × Prow walk → [1611,710]; #24 S4 × V01 (dune culvert) → [1009,1388]; #26 S3 × V01 → [1350,1345] (the river mouth; S3 never reaches [1480,1050]); #27 S1 × the lake-rim walk → S1 × `damPortage` at [1160.8,940.1] (the portage stair replaced the walk; reserved); #38 Crown walk × Ore Line → [1374,615].
+- **Retired** (no plan intersection in the v1.8 build): #2 walk reach × VG (the Reach walk runs beside the river under the gallery), #11 S1 finish × V01, #14 S2 × V01 dismount at [660,1170] (S2 is a lane of the Bight Bridge deck; D-3), #20 S3 × town quay, #25 S3 × walk dune ("none"), #29 ZIP × town (an area rule, checked as `cable.ZIP.roofs`), #40 S4 × spur studio (S4 starts at [1000,520]), #45 plane × everything (an area rule).
+- **Accepted from the bake** (`source: "bake v1.8"`, 274 rows): the design lead accepts each computed resolution in T4's vocabulary — `kind` crossing 206, junction 48, modeTransfer 8, waterConfluence 6, sharedStretch 4, waterBody 2; `resolution` stays over / under / threshold (the loader's rule). A row accepted from the bake never creates a register pad or a dismount threshold (a flush junction carries no marker, R1-88). A row whose physical resolution is not built yet keeps its note ("a named structure is owed", "regrade owed", "a bridge, causeway or re-route is owed") and stays a conflict in the bake until it is built.
+- **Reserved rows keep their authored resolution** (`reserved` names the decision): S4 × walk garden #7, S4 × VG #17, VG × walk garden #18, V01 × walk bightPier #34, S1 × damPortage (was #27) — R-A7, physically separated thresholds; ZIP × G1 #30 — R-A2 (register order); V01+S2 × Bight mouth #12 and FERRY × bightBridge #44 — R-A1 (corridor rows without a plan hit). Rows on the summit walk from the gondola (`walk crownFromGondola`, `G1`, `crownLaunch.stair`) carry "RESERVED R-A3: waits on the gondola top station".
+- `crossingRule` gains the v1.8 sentence (kinds, `source`, `reserved`).
+
+### 2. Glasshouse footprint
+
+`hosts.glasshouse`: 30 × 18 at [1010,790] → **25 × 18 at [1007.5,790]** (T2: the lake-facing end drawn in to stand ≥ 3 m off Stillwater; v1.7 values kept in `v1_7`).
+
+### 3. High Span sky gate
+
+`sky.gates.highSpan`: 40 × 14 at h 16 → **40 × 12 at h 17** (11–23). Its v1.7 bottom (h 9) lay under the river pools (9.97–10.8) and the bank lip (T1); the Notch is ≥ 54 m wide at h 11 after T1's shelf. The merged bake's gate proof: clear.
+
+### 4. Views
+
+- Every page carries `subjects`, a machine list in the frame vocabulary (the ID-buffer proof reads it; the code table is only a fallback).
+- **Page A** drops "the Crown behind" from `frames` and `subjects` (T0 request 8, T1 R1-46: the Shoulder's own in-band rim stands 4–16 eu over the square→summit line; cutting it breaks the Shoulder band; page E holds the Crown). v1.7 wording kept in `v1_7_frames`; the Crown is listed in `deferred` with the reason.
+- **Page D portrait** drops the Lamp from `portrait.frames` until the Pass 2b lighthouse (2 px at 390 × 844); the Lamp stays a 16:9 subject.
+
+### 5. District hearts
+
+`districts[*].heart` = the Voronoi seeds the bake and the runtime already used (a code table until v1.7; R1-67): harbour [1470,1170], landing [1060,1410], reach [1280,1260], green [1030,1060], hollow [985,580], scholars [765,400], flats [420,685], bight [745,995], lakeside [1130,820], notch [1205,1070], prow [1600,780], crown [1310,470].
+
+### 6. Confirmed, not changed
+
+- The lite fog pair **180 / 1230** (`sky/fog.ts`, STYLE §1.8): the summit from the square sits at 57.3 % fog on lite (49.4 % full), inside the 40–60 % band. Confirmed as authored by T4.
+- The summit journey target stays **375 s** and red (432.9 s on the walkable path graph): it is reserved on the gondola top station (R-A3); the target returns to ~180 s after that decision. Not retuned.
+
+### 7. Open items noted (not fixed in v1.8)
+
+- **S2's descent** (T2 D-3): S2 cannot descend from the Wash (38) to the Bight Bridge deck lane (12) at 18 %; it needs ~150 m more or a ramp. Jonathan decides with R-A1.
+- **V01's offshore north-east corner** (T0 item 14): V01 samples at [1454–1534, 324–406] lie up to 24 m outside the island outline (manifest point [1500,340]); the Year Walk shares V01 there. Either the coast grows or V01's corner moves inland (~[1480,360]); needs a terrain + route revision.
+
