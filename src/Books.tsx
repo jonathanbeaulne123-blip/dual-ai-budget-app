@@ -151,7 +151,7 @@ function BooksSession({
   onConsumeRequestedPane?: () => void;
 }) {
   const [pane, setPane] = useState<Pane>(view === "personal" ? "wallet" : "overview");
-  useEffect(()=>{if(houseDivision)setPane(houseDivision==="Accounts"?"wallet":houseDivision==="Today"?view==="personal"?"wallet":"overview":houseDivision==="Bills"?view==="household"?"fund-register":"register":houseDivision==="Record"?"journal":houseDivision==="Contributions"&&view==="household"?"fund":"register");},[houseDivision,view]);
+  useEffect(()=>{if(houseDivision)setPane(houseDivision==="Accounts"?"wallet":houseDivision==="Today"?view==="personal"?"wallet":"overview":houseDivision==="Bills"?view==="household"?"fund-register":"register":houseDivision==="Paper trail"?"journal":houseDivision==="Contributions"&&view==="household"?"fund":"register");},[houseDivision,view]);
   const [accountFormOpenRequest, setAccountFormOpenRequest] = useState(0);
   const [openingCardOpen, setOpeningCardOpen] = useState(false);
   const controlId = useId();

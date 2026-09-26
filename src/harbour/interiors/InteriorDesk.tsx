@@ -12,7 +12,7 @@ const volumes = [
   ['Bills','What comes next','bindery/low-water'],
   ['Goals','Room to grow','bindery/glasshouse-pane'],
   ['Contributions','Between us','bindery/handoff-bench'],
-  ['Record','The paper trail','chapter/record'],
+  ['Paper trail','Every entry, in order','chapter/record'],
 ] as const;
 const stations = [
   ['wheel','01','The wheel','Give it a shape','shape'],
