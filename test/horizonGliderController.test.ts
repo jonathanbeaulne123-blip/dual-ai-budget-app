@@ -87,7 +87,7 @@ describe('Fold',()=>{
   it('names the nearest reachable field in the place bubble and fades there, labelled',()=>{
     const c=createGliderController({env});c.enter(pad('test',1040,700,120),{x:1040,y:120,z:700,yaw:0});
     fly(c,()=>({bar:1}),()=>c.phase()==='flight',5);fly(c,()=>({}),()=>false,1);
-    const p=c.bodyPose(),green=world.sky.landings.find(l=>l.id==='green')! as {xy:[number,number];height:number};
+    const p=c.bodyPose(),green=world.sky.landings.find(l=>l.id==='green')! as unknown as {xy:[number,number];height:number};
     const place=c.hud().place!;expect(place).toMatchObject({label:'the Green',action:'fold'});
     expect(p.y-green.height).toBeGreaterThanOrEqual(place.distance/TRIM_GLIDE+FOLD_MARGIN);
     c.update(FRAME,input({fold:true}));
@@ -126,5 +126,33 @@ describe('the parachute controller',()=>{
   });
   it('is refused below 60 m above the ground (nothing to fly; exits where it stood)',()=>{
     const c=jump(70);expect(c.finished!()).toBe(true);expect(c.exit().at).toEqual([1040,70,1000]);
+  });
+});
+
+describe('the greybox art (index.ts drives it from artState)',async()=>{
+  const THREE=await import('three');
+  const {createFlightArt,FOLD_SECONDS,GATHER_STEPS,GATHER_STEP_SECONDS}=await import('../src/harbour/horizon/movers/glider/art.ts');
+  const base={flying:true,ended:false,stage:'flight',pose:{x:1000,y:100,z:900,yaw:.4,pitch:-.1,bank:.5},open:1,landedFor:null,faded:false};
+  it('builds a 10 m wing and a canopy with a white tail-light card and no light objects, no text',()=>{
+    for(const kind of ['glider','parachute'] as const){
+      const art=createFlightArt(kind);let lights=0;art.root.traverse(o=>{if(o instanceof THREE.Light)lights++;});
+      expect(lights).toBe(0);expect(art.root.getObjectByName('tailLight.card')).toBeDefined();
+      const box=new THREE.Box3().setFromObject(art.root);if(kind==='glider')expect(box.max.x-box.min.x).toBeCloseTo(10,1);
+      art.dispose();
+    }
+  });
+  it('banks and pitches the wing group, hangs the rider prone in flight, folds away over 2 s after landing',()=>{
+    const art=createFlightArt('glider'),figure=new THREE.Group();
+    expect(art.update({...base,kind:'glider'},1/60,figure)).toBe(true);expect(art.root.visible).toBe(true);
+    expect(new THREE.Euler().setFromQuaternion(art.root.quaternion,'YXZ').z).toBeCloseTo(.5,6);expect(new THREE.Euler().setFromQuaternion(art.root.quaternion,'YXZ').x).toBeCloseTo(.1,6);
+    const head=new THREE.Vector3(0,1,0).applyQuaternion(figure.quaternion);expect(Math.abs(head.y)).toBeLessThan(.2);// lying along the keel
+    let t=0,alive=true;while(alive&&t<5){alive=art.update({...base,kind:'glider',stage:'pose',landedFor:t},1/60,figure);t+=1/60;}
+    expect(alive).toBe(false);expect(t).toBeGreaterThanOrEqual(FOLD_SECONDS-1e-6);expect(t).toBeLessThan(FOLD_SECONDS+.05);
+  });
+  it('gathers the canopy in three steps, and never shows a wing for a mode that never flew',()=>{
+    const chute=createFlightArt('parachute');let t=0,alive=true;
+    while(alive&&t<5){alive=chute.update({...base,kind:'parachute',stage:'pose',landedFor:t},1/60,null);t+=1/60;}
+    expect(t).toBeCloseTo(GATHER_STEPS*GATHER_STEP_SECONDS,1);
+    const cut=createFlightArt('glider');expect(cut.update({...base,kind:'glider',flying:false,ended:true},1/60,null)).toBe(false);expect(cut.root.visible).toBe(false);
   });
 });

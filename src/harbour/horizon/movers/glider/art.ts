@@ -61,8 +61,8 @@ export function createFlightArt(kind:'glider'|'parachute',dressing:VehicleDressi
         euler.set(-(p.pitch??0),p.yaw,p.bank??0,'YXZ');quat.setFromEuler(euler);
         const lift=kind==='glider'?GLIDER_HANG_ABOVE_CONTACT:CHUTE_SEAT_ABOVE_CONTACT;
         position.set(p.x,p.y+lift,p.z);root.position.copy(position);root.quaternion.copy(quat);root.scale.setScalar(1);
-        if(kind==='glider'&&figure&&state.stage!=='wear'){
-          // The rider hangs prone at the seat: the runtime's own figure, turned prone and hung under the keel.
+        if(kind==='glider'&&figure&&(state.stage==='flight'||state.stage==='corridor')){
+          // In the air the rider hangs prone at the seat (the runtime's own figure, turned prone under the keel); on the pad they run upright.
           figure.quaternion.copy(quat).multiply(PRONE);
           offset.set(0,-.35,-.6).applyQuaternion(quat);figure.position.copy(position).add(offset);
         }

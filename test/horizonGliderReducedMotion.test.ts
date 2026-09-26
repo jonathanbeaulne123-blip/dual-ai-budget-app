@@ -3,11 +3,12 @@ import {createModeRegistry} from '../src/harbour/horizon/movers/registry.ts';
 import {createMoverHook} from '../src/harbour/horizon/runtime/moverHook.ts';
 import {thresholdTransitions} from '../src/harbour/horizon/movers/shared/threshold.ts';
 import type {ModeController} from '../src/harbour/horizon/movers/shared/mode.ts';
-import {registerBailOutProvider,registerGliderModes,startDevParachute,type GliderRuntime} from '../src/harbour/horizon/movers/glider/index.ts';
+import {parseBailQuery,registerBailOutProvider,registerGliderModes,startDevParachute,type GliderRuntime} from '../src/harbour/horizon/movers/glider/index.ts';
 import {createGliderController,padLandings,type FlightController} from '../src/harbour/horizon/movers/glider/controller.ts';
 import {cameraFov} from '../src/harbour/horizon/movers/glider/camera.ts';
 import {stillDoor} from '../src/harbour/horizon/movers/glider/controller.ts';
 import {realHorizon} from './fixtures/horizonFlight.ts';
+import {HARBOUR_DEV} from '../src/harbour/flag.ts';
 
 const {world,env,geography,cuts}=realHorizon();
 const threshold=(id:string)=>world.thresholds.find(t=>t.id===id)!;
@@ -97,5 +98,18 @@ describe('the offers read exactly as the brief says',()=>{
   it('a glider controller made directly still offers its pad\'s sheet',()=>{
     const c=createGliderController({env});c.enter(threshold('lampGallery'),on('lampGallery'));
     expect(c.reducedMotionCut().landings.map(l=>l.id)).toEqual(['sandbar','strip']);
+  });
+});
+
+describe('the dev jump (?bail=x,z,h)',()=>{
+  it('parses three finite numbers, else nothing',()=>{
+    expect(parseBailQuery('?world=horizon&bail=1040,1000,300')).toEqual({x:1040,z:1000,h:300});
+    for(const q of ['?bail=1040,1000','?bail=a,b,c','?world=horizon',''])expect(parseBailQuery(q)).toBeNull();
+  });
+  it('starts a parachute in freefall from the point in development (a flight: attached), and refuses below 60 m',()=>{
+    const h=harness({reducedMotion:false,calm:false}),c=startDevParachute(h.runtime,{x:1040,z:1000,h:300});
+    if(!HARBOUR_DEV){expect(c).toBeNull();return;}
+    expect(c?.id).toBe('parachute');expect(h.attachMover).toHaveBeenCalledWith(c);expect((c as FlightController).phase()).toBe('freefall');
+    expect(startDevParachute(harness({reducedMotion:false,calm:false}).runtime,{x:1040,z:1000,h:env.groundAt(1040,1000,300)+50})).toBeNull();
   });
 });
