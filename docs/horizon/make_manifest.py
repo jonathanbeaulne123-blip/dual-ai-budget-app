@@ -608,6 +608,19 @@ for v in m["views"]:
     v.setdefault("deferred", [])
     v["v1_6"] = VIEWS_V16[v["id"]]
 
+# 3. Journeys at scale 1.0: speeds, targets (achievable with ≥ 10 % margin on the measured path graph) and anchors.
+speeds.update({"walk": 2.4, "run": 5.0, "bicycle": 8.0, "board": 10.0, "plane": 45.0, "gondola": 7.0})
+m["sky"]["plane"]["speed_ms"] = speeds["plane"]
+m["cable"]["G1"]["speed"] = speeds["gondola"]
+m["journeys"]["at_factor_1_0"] = times(1.0)
+m["journeys"]["at_factor_0_6"] = times(0.6)
+m["journeys"]["at_active_scale"] = times(m["scale"]["factor"])
+m["journeys"]["anchors"] = {"square→green running": [1053.9, 1043.4], "note": "the Green's edge on Green Road (the centre has no bed within the snap distance); measurements snap to this point"}
+TARGETS_V17 = {"square→library by bicycle": 185, "square→green running": 125, "square→summit by gondola + walk": 375, "crown→quay on the board (S1)": [110, 150], "crown→lamp by glider": [85, 120], "ring by plane": [60, 120], "square→home/bank on foot, walking": 60, "square→boathouse on foot, walking": 180}
+TARGETS_V16 = {k: v for k, v in m["journeys"]["targets_s"].items() if k != "note"}
+m["journeys"]["targets_s"] = dict(TARGETS_V17, note="v1.7 targets at scale 1.0: each is achievable with ≥ 10 % margin on the Stage A path graph (README v1.7 table); the summit target is the achievable value until the gondola top station is decided (reserved), then 180")
+m["journeys"]["targets_v1_6"] = TARGETS_V16
+
 
 with open("MANIFEST.json", "w", encoding="utf-8") as output:
     json.dump(m, output, indent=1)

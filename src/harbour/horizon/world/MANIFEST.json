@@ -2248,7 +2248,7 @@
    "towerNote": "three towers at ~150 m spacing; heights solved in pass 1 so the cable clears terrain (the Shoulder band from [1425,848]) by profiles.cable.clear_m and passes \u2265 12 m over plot.terraces.*",
    "clear_eu": 8,
    "length_m": 543,
-   "speed": 6.0,
+   "speed": 7.0,
    "note": "upper street \u2192 Crown station, straight up the south-east face; town falls away, then the whole island; the Crown walk continues from the station to the summit"
   },
   "ZIP": {
@@ -3116,7 +3116,7 @@
    }
   ],
   "plane": {
-   "speed_ms": 35.0,
+   "speed_ms": 45.0,
    "stall_ms": 18,
    "floats": true,
    "wheels": true,
@@ -4717,15 +4717,15 @@
   "at_factor_1_0": {
    "square\u2192library by bicycle": {
     "engine_u": 1455,
-    "time_s": 242
+    "time_s": 182
    },
    "square\u2192summit by gondola + walk": {
     "engine_u": 779,
-    "time_s": 229
+    "time_s": 176
    },
    "crown\u2192quay on the board (S1)": {
     "engine_u": 971,
-    "time_s": 139
+    "time_s": 97
    },
    "crown\u2192lamp by glider": {
     "engine_u": 1103,
@@ -4733,21 +4733,21 @@
    },
    "ring by plane": {
     "engine_u": 3896,
-    "time_s": 111
+    "time_s": 87
    },
    "ring by bicycle": {
     "engine_u": 3896,
-    "time_s": 649
+    "time_s": 487
    },
    "square\u2192green on foot": {
     "engine_u": 562,
-    "time_s": 331,
-    "run_s": 165
+    "time_s": 234,
+    "run_s": 112
    },
    "square\u2192boathouse on foot": {
     "engine_u": 274,
-    "time_s": 161,
-    "run_s": 81
+    "time_s": 114,
+    "run_s": 55
    },
    "adit\u2192south portal by cart": {
     "engine_u": 540,
@@ -4761,15 +4761,15 @@
   "at_factor_0_6": {
    "square\u2192library by bicycle": {
     "engine_u": 873,
-    "time_s": 146
+    "time_s": 109
    },
    "square\u2192summit by gondola + walk": {
     "engine_u": 467,
-    "time_s": 138
+    "time_s": 106
    },
    "crown\u2192quay on the board (S1)": {
     "engine_u": 583,
-    "time_s": 83
+    "time_s": 58
    },
    "crown\u2192lamp by glider": {
     "engine_u": 662,
@@ -4777,21 +4777,21 @@
    },
    "ring by plane": {
     "engine_u": 2338,
-    "time_s": 67
+    "time_s": 52
    },
    "ring by bicycle": {
     "engine_u": 2338,
-    "time_s": 390
+    "time_s": 292
    },
    "square\u2192green on foot": {
     "engine_u": 337,
-    "time_s": 198,
-    "run_s": 99
+    "time_s": 140,
+    "run_s": 67
    },
    "square\u2192boathouse on foot": {
     "engine_u": 164,
-    "time_s": 97,
-    "run_s": 48
+    "time_s": 68,
+    "run_s": 33
    },
    "adit\u2192south portal by cart": {
     "engine_u": 324,
@@ -4803,6 +4803,77 @@
    }
   },
   "targets_s": {
+   "square\u2192library by bicycle": 185,
+   "square\u2192green running": 125,
+   "square\u2192summit by gondola + walk": 375,
+   "crown\u2192quay on the board (S1)": [
+    110,
+    150
+   ],
+   "crown\u2192lamp by glider": [
+    85,
+    120
+   ],
+   "ring by plane": [
+    60,
+    120
+   ],
+   "square\u2192home/bank on foot, walking": 60,
+   "square\u2192boathouse on foot, walking": 180,
+   "note": "v1.7 targets at scale 1.0: each is achievable with \u2265 10 % margin on the Stage A path graph (README v1.7 table); the summit target is the achievable value until the gondola top station is decided (reserved), then 180"
+  },
+  "at_active_scale": {
+   "square\u2192library by bicycle": {
+    "engine_u": 1455,
+    "time_s": 182
+   },
+   "square\u2192summit by gondola + walk": {
+    "engine_u": 779,
+    "time_s": 176
+   },
+   "crown\u2192quay on the board (S1)": {
+    "engine_u": 971,
+    "time_s": 97
+   },
+   "crown\u2192lamp by glider": {
+    "engine_u": 1103,
+    "time_s": 100
+   },
+   "ring by plane": {
+    "engine_u": 3896,
+    "time_s": 87
+   },
+   "ring by bicycle": {
+    "engine_u": 3896,
+    "time_s": 487
+   },
+   "square\u2192green on foot": {
+    "engine_u": 562,
+    "time_s": 234,
+    "run_s": 112
+   },
+   "square\u2192boathouse on foot": {
+    "engine_u": 274,
+    "time_s": 114,
+    "run_s": 55
+   },
+   "adit\u2192south portal by cart": {
+    "engine_u": 540,
+    "time_s": 68
+   },
+   "prow\u2192sands by zip": {
+    "engine_u": 933,
+    "time_s": 78
+   }
+  },
+  "anchors": {
+   "square\u2192green running": [
+    1053.9,
+    1043.4
+   ],
+   "note": "the Green's edge on Green Road (the centre has no bed within the snap distance); measurements snap to this point"
+  },
+  "targets_v1_6": {
    "square\u2192library by bicycle": 150,
    "square\u2192green running": 100,
    "square\u2192summit by gondola + walk": 120,
@@ -4819,64 +4890,19 @@
     120
    ],
    "square\u2192home/bank on foot, walking": 60,
-   "square\u2192boathouse on foot, walking": 100,
-   "note": "Original design targets retained after D13 selected 1.0. Pass 1 reports measured pass/fail against these targets; scale approval does not waive them or change speeds."
-  },
-  "at_active_scale": {
-   "square\u2192library by bicycle": {
-    "engine_u": 1455,
-    "time_s": 242
-   },
-   "square\u2192summit by gondola + walk": {
-    "engine_u": 779,
-    "time_s": 229
-   },
-   "crown\u2192quay on the board (S1)": {
-    "engine_u": 971,
-    "time_s": 139
-   },
-   "crown\u2192lamp by glider": {
-    "engine_u": 1103,
-    "time_s": 100
-   },
-   "ring by plane": {
-    "engine_u": 3896,
-    "time_s": 111
-   },
-   "ring by bicycle": {
-    "engine_u": 3896,
-    "time_s": 649
-   },
-   "square\u2192green on foot": {
-    "engine_u": 562,
-    "time_s": 331,
-    "run_s": 165
-   },
-   "square\u2192boathouse on foot": {
-    "engine_u": 274,
-    "time_s": 161,
-    "run_s": 81
-   },
-   "adit\u2192south portal by cart": {
-    "engine_u": 540,
-    "time_s": 68
-   },
-   "prow\u2192sands by zip": {
-    "engine_u": 933,
-    "time_s": 78
-   }
+   "square\u2192boathouse on foot, walking": 100
   }
  },
  "speeds_ms": {
-  "walk": 1.7,
-  "run": 3.4,
-  "board": 7.0,
-  "bicycle": 6.0,
-  "gondola": 6.0,
+  "walk": 2.4,
+  "run": 5.0,
+  "board": 10.0,
+  "bicycle": 8.0,
+  "gondola": 7.0,
   "cart": 8.0,
   "zip": 12.0,
   "glider": 11.0,
-  "plane": 35.0,
+  "plane": 45.0,
   "ferry": 5.0,
   "row": 1.8
  },

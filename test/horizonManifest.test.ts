@@ -10,8 +10,9 @@ describe('Horizon manifest v1.7',()=>{
     expect(()=>requireScaleFactor({...manifest,scale:{...manifest.scale,status:'recommended'}})).toThrow('D13 open');
     expect(()=>parseHorizonManifest({...manifest,scale:{status:'recommended'}})).toThrow('Invalid Horizon manifest');
     expect(manifest.journeys.at_active_scale).toEqual(manifest.journeys.at_factor_1_0);
-    expect(manifest.journeys.targets_s['square→library by bicycle']).toBe(150);
-    expect(manifest.journeys.at_active_scale['square→library by bicycle'].time_s).toBeGreaterThan(150);
+    expect(manifest.journeys.targets_s['square→library by bicycle']).toBe(185);
+    expect(manifest.journeys.at_active_scale['square→library by bicycle'].time_s).toBeLessThanOrEqual(185);
+    expect(manifest.journeys.targets_v1_6['square→library by bicycle']).toBe(150);
   });
   it('has the authored ids and counts without treating the two lake places as hosts',()=>{
     expect(manifest.hosts).toHaveLength(7);

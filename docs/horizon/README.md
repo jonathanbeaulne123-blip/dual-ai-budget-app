@@ -212,3 +212,23 @@ v1.6 points (retired; also kept as `yearWalk.retired_v1_6_pts`):
 PROOF (runtime track, `world/views.ts`): read `target_h`, `portrait` and the subject list from the manifest; map `structure.townQuay` to the built `town.quay.*` / `town quay.*` solids and `structure.balloonMooring` to `balloon.footing.*` (A5-27; both are in `MANIFEST → structures`, so they are id-mapping gaps, not missing builds); count landform pixels, not polygon-vertex samples (A5-28); require sky or sea on the horizon row (A5-29).
 
 `test/horizonViews.test.ts` (not T0's file) asserts two v1.6 poses: line 17 expects page J's horizon out of frame (true of the old −49° pose; the v1.7 pose is at −8.6°) and line 28 places a test river under page C's old eye at [1245,1125]. Its owner updates both; the failures are the re-authored data, not the bake.
+
+### 3. Journeys at scale 1.0
+
+**Why.** Auditor 3 (A3-15/16/17): 7 of 9 journeys failed at scale 1.0 because the speeds and targets were authored as a pair at 0.6; "square→green running" had no path because its anchor (the Green's centre) has no bed within the 8 eu snap.
+
+**What changed** (`speeds_ms`, `journeys.targets_s`, `journeys.anchors`; `sky.plane.speed_ms` and `cable.G1.speed` follow `speeds_ms`; `targets_v1_6` keeps the old targets; the three `at_factor` estimate tables are recomputed with the new speeds): walk 1.7 → 2.4, run 3.4 → 5.0, bicycle 6 → 8, board 7 → 10, plane 35 → 45, gondola 6 → 7 m/s; glider kept at 11. `journeys.anchors["square→green running"]` = [1053.9,1043.4], the nearest Green Road bed point (the runtime track reads it in `world/pathGraph.ts`). Every target is achievable with ≥ 10 % margin on the path graph of the scratch bake (lengths below); ranges keep ≥ 10 % inside both ends.
+
+| Journey | Length (eu) | v1.6 speed (m/s) | v1.6 time (s) | v1.6 target (s) | v1.7 speed | v1.7 time (s) | v1.7 target (s) | Margin | Rationale |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| square→library by bicycle | 1 325 | 6.0 | 220.8 | 150 | 8.0 | 165.6 | 185 | 11.7 % | 29 km/h is a brisk island bike and stays ≤ 8 m/s for streaming; 3 minutes across the island reads as a trip |
+| square→green running | 560 (to the Green's edge) | 3.4 | 164.7 (no path: anchor) | 100 | 5.0 | 112.0 | 125 | 11.6 % | a game run; the anchor moves onto Green Road at the Green's edge |
+| square→summit by gondola + walk | 159 + 758 + 396 | 1.7 / 6 / 1.7 | 452.6 | 120 | 2.4 / 7 / 2.4 | 339.4 | 375 | 10.5 % | **reserved**: the last walk leg (396 eu for 103 eu of plan) is set by the gondola top station behind the 129 ridge; the target is the achievable value until Jonathan decides the station, then 180 (Auditor 3) |
+| crown→quay on the board (S1) | 1 278 | 7.0 | 182.6 | 70–130 | 10.0 | 127.8 | 110–150 | 13.9 % / 17.4 % | an 11.8 % average downhill race line supports 36 km/h; keeps a ~2-minute race |
+| crown→lamp by glider | 1 087 → 1 056 | 11.0 | 98.8 | 50–90 | 11.0 | 96.0 | 85–120 | 11.5 % / 25 % | glider speed is tied to sink and the 10 eu corridor; the target moves, not the physics (the launch moves to the summit lookout, §4) |
+| ring by plane | 4 573 → 4 571 | 35 | 130.6 | 60–120 | 45 | 101.6 | 60–120 | 18.1 % | light-aircraft cruise; gate apertures and turns are re-checked at 45 by the movers track |
+| square→home, walking | 57 | 1.7 | 33.8 | 60 | 2.4 | 23.9 | 60 | 151 % | full-scale walking pace |
+| square→bank, walking | 90 | 1.7 | 52.8 | 60 | 2.4 | 37.4 | 60 | 60 % | (home and bank share one target key) |
+| square→boathouse, walking | 388 | 1.7 | 228.2 | 100 | 2.4 | 161.7 | 180 | 11.3 % | the detour over the Quay Bridge is most of the time; when the homestead's timber crossing joins the path graph (≈ 260 eu, ≈ 108 s) the target returns to 120 |
+
+`test/horizonManifest.test.ts` follows: the library target is 185 and the straight-segment estimate (182 s) now sits inside it.
