@@ -534,7 +534,7 @@ describe("Our Path world page (D-262)", () => {
       const world = created.worlds[0] as FakeWorld;
       const scene = world.setScene.mock.calls.at(-1)![0] as { forks: { id: string }[] };
       expect(scene.forks.map((f) => f.id)).toEqual(decisions.map((line) => `fork:${line.id}`));
-      for (const line of decisions) expect(outline().map((b) => b.textContent)).toContain(`${line.labelSnapshot} · Together`);
+      for (const line of decisions) expect(outline().map((b) => b.textContent)).toContain(`${line.labelSnapshot} · Both of us`);
       const line = decisions[0]!;
       await openFromOutline(line.labelSnapshot);
       expect($(".path-world__card").textContent).toContain(line.decision!.nextStep!);
@@ -901,15 +901,15 @@ describe("Our Path world page (D-262)", () => {
       await act(async () => root.render(createElement(Harness, { initial: seeded(), today: "2026-09-15", extra: { onOpenPlay } })));
       await settle();
       expect((world.setScene.mock.calls.at(-1)![0] as { cottage?: boolean }).cottage).toBe(true);
-      expect(host.querySelector(".path-mark--cottage")?.getAttribute("aria-label")).toBe("Hercules's cottage, Play");
-      await click(outline().find((b) => b.textContent === "Hercules's cottage · Play")!);
+      expect(host.querySelector(".path-mark--cottage")?.getAttribute("aria-label")).toBe("Hercules's cottage, Time with Hercules");
+      await click(outline().find((b) => b.textContent === "Hercules's cottage · Time with Hercules")!);
       expect($(".path-world__card").textContent).toContain("Hercules keeps our favourite things here.");
       await click(byText("Enter the cottage"));
       expect(onOpenPlay).toHaveBeenCalledTimes(1);
       // Hercules waits in the tent's mark, as decoration: the tent's name stays the text.
       const tent = $<HTMLButtonElement>(".path-mark--tent");
       expect(tent.querySelector(".path-hercules")?.getAttribute("aria-hidden")).toBe("true");
-      expect(tent.getAttribute("aria-label")).toMatch(/^Plan Studio, /);
+      expect(tent.getAttribute("aria-label")).toMatch(/^The kitchen table, /);
     });
 
     it("sits Hercules, aria-hidden, beside the tent button when there is no WebGL", async () => {

@@ -159,7 +159,7 @@ function HouseholdHomeSession({ initialBankId, initialStudio, household, memberI
       <nav className="home-doors" aria-label="Ways deeper">
         <button type="button" onClick={() => onGo("calendar")}><strong>Calendar</strong><small>Dates and bills</small></button>
         <button type="button" onClick={() => onGo("ledger")}><strong>{fundName}</strong><small>What is true</small></button>
-        <button type="button" onClick={() => onGo("plan")}><strong>Our Path</strong><small>Where we are going</small></button>
+        <button type="button" onClick={() => onGo("plan")}><strong>The Journey map</strong><small>Where we are going</small></button>
         <button type="button" onClick={() => onGo("together")}><strong>{HEARTHSIDE_FLAGS.presentation?HEARTHSIDE_LABEL:"Together"}</strong><small>{HEARTHSIDE_FLAGS.presentation?"Our shared life":"What needs us"}</small></button>
       </nav>
     </div>

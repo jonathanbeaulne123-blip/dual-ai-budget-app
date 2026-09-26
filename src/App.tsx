@@ -7766,7 +7766,7 @@ export function App() {
                   presentMembers={1 + peersFromLivePresence({ live: softPresenceLive, members: household.members, viewerMemberId: session.memberId }).length}
                   onTentChange={open => { if (!open) setPathTentFocus(current => current?.focus ? { ...current, focus: null } : current); syncKitchenTent(open); }}
                   openTentFor={herculesSourceScope.current === `${environment}:${household.householdId}:${session.memberId}:${view}` ? herculesSourceFocus : null} classicRoom={<>
-                  <header className="our-path__head"><p className="kicker">Our Path</p><h2>Where we are going</h2><p className="muted">The Chapter leads. Goals, Kitty Banks, and the Plan Studio are rooms inside.</p></header>
+                  <header className="our-path__head"><p className="kicker">The Journey map</p><h2>Where we are going</h2><p className="muted">The Chapter leads. Goals, Kitty Banks, and the Plan Studio are rooms inside.</p></header>
                   <ChapterRoom household={household} memberId={actorId} today={today} onCommand={runKitchen} busy={busy} onOpenCampfire={() => setCampfire({})} />
                   <h3 className="our-path__room-title">The Plan Studio · our agreement room</h3>
                   {studio}

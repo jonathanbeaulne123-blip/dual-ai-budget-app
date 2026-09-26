@@ -576,10 +576,10 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   // ------------------------------------------------------------ the pieces standing on the island
   const chapter = openChapterFor(household);
   const activeMembers = household.members.filter((m) => m.active);
-  // Like Together's small line: a named person, or "Together" for a joint responsibility.
+  // A named person, or "Both of us" for a joint responsibility.
   const forkWho = (responsibility: { kind: "joint" | "member"; memberId?: string } | undefined) => responsibility?.kind === "member"
     ? household.members.find((m) => m.id === responsibility.memberId)?.name ?? "Choose a responsible person"
-    : "Together";
+    : "Both of us";
   const nameOf = (id: string | null | undefined) => household.members.find((m) => m.id === id)?.name ?? "Either of us";
   const goalName = (goalId: string | null) => household.goals.find((goal) => goal.id === goalId)?.name ?? "A Kitty Bank";
   /** A plan's small line: its kind, a bank's steps (never an amount), and who pencilled it in. */
@@ -881,8 +881,8 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     for (const { path } of shownFootpaths) list.push({ id: `footpath:${path.id}`, label: path.label, sub: "only you see this", kind: "footpath", minLevel: 3, lantern: PRIVATE_LANTERN });
     for (const { bridge } of shownBridges) list.push({ id: `bridge:${bridge.id}`, label: bridge.label, sub: bridge.stageWords, kind: "bridge", minLevel: 2, lantern: bridge.stage === 1 ? PRIVATE_LANTERN : 0 });
     for (const row of unknown) list.push({ id: row.id, label: "Something new", sub: row.label, kind: "unknown", minLevel: 1, lantern: 0 });
-    if (atNow && chapter) list.push({ id: "tent", label: "Plan Studio", sub: unknown.length ? "Hercules has a suggestion" : "today's Our Path", kind: "tent", minLevel: 1, lantern: 0 });
-    if (canPlay) list.push({ id: "cottage", label: "Hercules's cottage", sub: "Play", kind: "cottage", minLevel: 1, lantern: 0 });
+    if (atNow && chapter) list.push({ id: "tent", label: "The kitchen table", sub: unknown.length ? "Hercules has a suggestion" : "this month's recipe card", kind: "tent", minLevel: 1, lantern: 0 });
+    if (canPlay) list.push({ id: "cottage", label: "Hercules's cottage", sub: "Time with Hercules", kind: "cottage", minLevel: 1, lantern: 0 });
     if (islandName) list.push({ id: "name", label: islandName, kind: "name", minLevel: 1, lantern: 0 });
     // The journey: era islands at every distance; a focused island's plans up close (or with the lantern warm); pencil only at Warm+.
     if (sceneCurrentEra) {
@@ -1742,7 +1742,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
       return {
         eyebrow: "A decision · where the path forks",
         title: fork.label,
-        lines: [[0, fork.nextStep], [0, who === "Together" ? "Both of you carry it." : `${who} carries it.`], [1, "Agreed in this month's Plan. The agreement itself lives in the Plan Studio."]],
+        lines: [[0, fork.nextStep], [0, who === "Both of us" ? "Both of you carry it." : `${who} carries it.`], [1, "Agreed in this month's Plan. The agreement itself lives in the Plan Studio."]],
         actions: <button type="button" className="primary" onClick={() => { links.current.onOpenInTent?.({ route: "plan", view: "household", label: fork.label, planVersionId: accepted.id, planLineId: line.id }); openTent(true); }}>Read the agreement</button>,
       };
     }
@@ -1895,7 +1895,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     <div ref={rootRef} className={`path-world path-world--${theme}`} data-level={level} data-lantern={lantern} data-game={full ? (leaving ? "leaving" : "open") : undefined}>
       <section className="path-world__island" hidden={tentOpen || houseSurface === "work"} aria-labelledby="path-world-title" onKeyDown={(e) => { if (e.key === "Escape" && detail) { e.stopPropagation(); e.preventDefault(); closeCard(); } }}>
         <header className="path-world__head">
-          <p className="kicker">Our Path</p>
+          <p className="kicker">The Journey map</p>
           <h2 id="path-world-title">{islandName ?? "Where we are going"}</h2>
           <p className="path-world__lede">The land grows from your shared months. Open the world to walk the whole island.</p>
           {supported.statusLine && <p className="muted" role="status">{supported.statusLine}</p>}
@@ -1979,7 +1979,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
             <div className="path-hud" data-drawer={drawer || undefined}>
               {banner > 0 && !reduced && (
                 <div key={banner} className="path-hud__banner" aria-hidden="true" onAnimationEnd={() => setBanner(0)}>
-                  <span>{currentEra ? currentEra.spec.name : "Our Path"}</span>
+                  <span>{currentEra ? currentEra.spec.name : "The Journey map"}</span>
                   <strong>{islandName ?? "Our island"}</strong>
                 </div>
               )}

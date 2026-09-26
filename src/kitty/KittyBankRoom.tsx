@@ -107,7 +107,7 @@ export type KittyRoomProps = {
   /** K12 (Tool Atlas §7): open the chosen bank on its studio page — "a bank's studio" is where pottery lives now. */
   initialStudio?: boolean;
   onOpenCalendar?: () => void;
-  returnTo?: "Plan" | "Home" | "setup" | "Hercules" | "Hearthside";
+  returnTo?: "Plan" | "Home" | "setup" | "Hercules" | "the Boathouse";
   onClose: () => void;
 };
 type SavedReview = { id: string; title: string };
