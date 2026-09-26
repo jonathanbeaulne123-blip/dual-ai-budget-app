@@ -1,0 +1,1173 @@
+{
+ "theme": "classic",
+ "errors": [],
+ "captures": [
+  {
+   "file": "all-tools-1100-classic.png",
+   "viewport": [
+    1100,
+    800
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "228px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "search": "Hydro"
+  },
+  {
+   "file": "all-tools-320-classic.png",
+   "viewport": [
+    320,
+    568
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [],
+   "theme": "classic",
+   "search": "Hydro"
+  },
+  {
+   "file": "all-tools-390-classic.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "search": "Hydro"
+  },
+  {
+   "file": "all-tools-720-classic.png",
+   "viewport": [
+    720,
+    1024
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "search": "Hydro"
+  },
+  {
+   "file": "bank-1100-classic.png",
+   "viewport": [
+    1100,
+    800
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "228px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "bank-320-classic.png",
+   "viewport": [
+    320,
+    568
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [],
+   "theme": "classic"
+  },
+  {
+   "file": "bank-390-classic.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "bank-720-classic.png",
+   "viewport": [
+    720,
+    1024
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "campfire-1100-classic.png",
+   "viewport": [
+    1100,
+    800
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "228px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "campfire-320-classic.png",
+   "viewport": [
+    320,
+    568
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "campfire-390-classic.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "campfire-720-classic.png",
+   "viewport": [
+    720,
+    1024
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "cellar-1100-classic.png",
+   "viewport": [
+    1100,
+    800
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "228px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "cellar-320-classic-app-notice.png",
+   "viewport": [
+    320,
+    568
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticeStanding": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "cellar-320-classic.png",
+   "viewport": [
+    320,
+    568
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "cellar-390-classic.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "cellar-720-classic.png",
+   "viewport": [
+    720,
+    1024
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "desk-1100-classic.png",
+   "viewport": [
+    1100,
+    800
+   ],
+   "overflowX": false,
+   "tier": "flat",
+   "space": null,
+   "desk": "today",
+   "glass": [
+    "flip:glass",
+    "record:glass",
+    "tools:glass"
+   ],
+   "dockOverflow": null,
+   "dockHeightVar": "",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "desk-320-classic.png",
+   "viewport": [
+    320,
+    568
+   ],
+   "overflowX": false,
+   "tier": "flat",
+   "space": null,
+   "desk": "today",
+   "glass": [
+    "flip:glass",
+    "record:glass",
+    "tools:glass"
+   ],
+   "dockOverflow": null,
+   "dockHeightVar": "",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "desk-390-classic.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "flat",
+   "space": null,
+   "desk": "today",
+   "glass": [
+    "flip:glass",
+    "record:glass",
+    "tools:glass"
+   ],
+   "dockOverflow": null,
+   "dockHeightVar": "",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "desk-720-classic.png",
+   "viewport": [
+    720,
+    1024
+   ],
+   "overflowX": false,
+   "tier": "flat",
+   "space": null,
+   "desk": "today",
+   "glass": [
+    "flip:glass",
+    "record:glass",
+    "tools:glass"
+   ],
+   "dockOverflow": null,
+   "dockHeightVar": "",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "home-1100-classic.png",
+   "viewport": [
+    1100,
+    800
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "228px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "home-320-classic.png",
+   "viewport": [
+    320,
+    568
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [],
+   "theme": "classic"
+  },
+  {
+   "file": "home-390-classic-contrast-more.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "emulated": [
+    {
+     "name": "prefers-contrast",
+     "value": "more"
+    }
+   ]
+  },
+  {
+   "file": "home-390-classic-first-visit.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [],
+   "theme": "classic"
+  },
+  {
+   "file": "home-390-classic-forced-colors.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "emulated": [
+    {
+     "name": "forced-colors",
+     "value": "active"
+    }
+   ]
+  },
+  {
+   "file": "home-390-classic-reduced-motion.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "emulated": [
+    {
+     "name": "prefers-reduced-motion",
+     "value": "reduce"
+    }
+   ]
+  },
+  {
+   "file": "home-390-classic-reduced-transparency.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "emulated": [
+    {
+     "name": "prefers-reduced-transparency",
+     "value": "reduce"
+    }
+   ]
+  },
+  {
+   "file": "home-390-classic-text-200.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "rootFontSize": "200%"
+  },
+  {
+   "file": "home-390-classic.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "home-720-classic.png",
+   "viewport": [
+    720,
+    1024
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "home-844x390-classic.png",
+   "viewport": [
+    844,
+    390
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "0px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "mine-1100-classic.png",
+   "viewport": [
+    1100,
+    800
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "mine",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "228px",
+   "clippedHorizontally": [],
+   "banner": [
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "mine-320-classic.png",
+   "viewport": [
+    320,
+    568
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "mine",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "mine-390-classic.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "mine",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "mine-720-classic.png",
+   "viewport": [
+    720,
+    1024
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "mine",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "record-1100-classic.png",
+   "viewport": [
+    1100,
+    800
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "228px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "record-320-classic.png",
+   "viewport": [
+    320,
+    568
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [],
+   "theme": "classic"
+  },
+  {
+   "file": "record-390-classic-text-200.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "rootFontSize": "200%"
+  },
+  {
+   "file": "record-390-classic.png",
+   "viewport": [
+    390,
+    844
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "record-720-classic.png",
+   "viewport": [
+    720,
+    1024
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "236px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  },
+  {
+   "file": "record-844x390-classic.png",
+   "viewport": [
+    844,
+    390
+   ],
+   "overflowX": false,
+   "tier": "lite",
+   "space": "ours",
+   "desk": null,
+   "glass": [
+    "flip:solid",
+    "tools:solid",
+    "record:solid"
+   ],
+   "dockOverflow": 0,
+   "dockHeightVar": "0px",
+   "clippedHorizontally": [],
+   "banner": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ],
+   "theme": "classic",
+   "noticesHidden": [
+    "The books engine accepted this entry, but this phone could n",
+    "Recovery needed.The books engine accepted this entry, but th"
+   ]
+  }
+ ]
+}
