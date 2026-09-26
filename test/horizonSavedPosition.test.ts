@@ -10,6 +10,14 @@ describe('Horizon saved navigation',()=>{
   expect(restoreHorizonPosition(saved,graph,()=>99)).toEqual(saved);
   expect(restoreHorizonPosition({...saved,geo:'horizon-geo-0',world:'horizon:horizon-geo-0'},graph,()=>99)).toMatchObject({x:1500,y:20,z:1100,yaw:1,world,geo});
  });
+ it('validates a same-revision body against the ground it lands on (R1-91: 36 m terrain moves under one revision)',()=>{
+  // Still standing on a floor within a body height: kept, settled onto the floor.
+  expect(restoreHorizonPosition(saved,graph,()=>99,()=>({standY:19.4}))).toEqual({...saved,y:19.4});
+  // The ground moved 36 eu (the review's [1505,355]: 79.49 → 43.16): the stored body would float → nearest node.
+  expect(restoreHorizonPosition({...saved,y:79.49},graph,()=>43.16,()=>({standY:43.16}))).toMatchObject({x:1500,y:20,z:1100,world,geo});
+  // Under water, blocked or on a slope the collision rejects: nearest node.
+  expect(restoreHorizonPosition(saved,graph,()=>99,()=>null)).toMatchObject({x:1500,y:20,z:1100});
+ });
  it('retains old Horizon revisions for migration but rejects invalid positions',()=>{
   expect(validHouseBody({...saved,world:'horizon:horizon-geo-0',geo:'horizon-geo-0'})).toBe(true);
   for(const change of [{x:2001},{z:-1},{y:301},{x:NaN},{world:'horizon:unknown'},{geo:''}])expect(validHouseBody({...saved,...change})).toBe(false);

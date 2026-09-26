@@ -48,6 +48,7 @@ describe('Horizon real solar clock', () => {
     expect(skyGradient(-25).ambient).toBeGreaterThanOrEqual(0.32);
     expect(skyGradient(-25).sunIntensity).toBe(0);
     expect(skyGradient(60).zenith).toBe('#8fbbe0');
-    expect(horizonFog({ tier: 'lite', eyeAboveGround: 100, elevation: 30, heading: 0, sunAzimuth: 0 })).toMatchObject({ near: 200, far: 655, horizonMaxOpacity: 0.7 });
+    // Scale-1.0 lite pair 180 / 1230 (sky/fog.ts derivation), +0.9 / +1.35 per eu of eye height (was 110 / 520: 200 / 655).
+    expect(horizonFog({ tier: 'lite', eyeAboveGround: 100, elevation: 30, heading: 0, sunAzimuth: 0 })).toMatchObject({ near: 270, far: 1365, horizonMaxOpacity: 0.7 });
   });
 });

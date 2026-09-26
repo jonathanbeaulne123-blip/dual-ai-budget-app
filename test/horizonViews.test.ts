@@ -1,5 +1,7 @@
 import { expect, it } from 'vitest';
-import { buildViews, projectSubject } from '../src/harbour/horizon/world/views.ts';
+import { buildViews, projectSubject, sketchbookLens, subjectTests, PAGE_SUBJECTS, viewPixels } from '../src/harbour/horizon/world/views.ts';
+import { createRayCaster } from '../src/harbour/horizon/world/raycast.ts';
+import { solid, slab } from '../src/harbour/horizon/land/structures/mesh.ts';
 import { HORIZON_MANIFEST } from '../src/harbour/horizon/world/manifest.ts';
 import type { LandCuts, TerrainField } from '../src/harbour/horizon/land/interfaces.ts';
 import {PerspectiveCamera,Vector3} from 'three';
@@ -12,7 +14,10 @@ it('keeps twelve immutable camera xy/FOV/radii and the specified flight eye heig
 it('projects forward subjects and exposes a missing or out-of-frame subject as failure', () => {
   expect(projectSubject([0, 0, 0], [0, 0, -10], [0, 0, -20], 55).ndc).toEqual([0, 0]);
   expect(Math.abs(projectSubject([0, 0, 0], [0, 0, -10], [100, 0, -20], 55).ndc[0])).toBeGreaterThan(1);
-  const views = buildViews(field, cuts); expect(views.find(v => v.id === 'J')?.proof?.horizonInFrame).toBe(false);
+  // v1.7 J stands at [1840,1000] h 60 looking at [1780,700] @14: pitch −8.6°, the horizon is inside its 32.3° vertical FOV.
+  const views = buildViews(field, cuts), j = views.find(v => v.id === 'J')!.proof!;
+  expect(j.landscape.pitchDegrees).toBeCloseTo(-8.6, 1); expect(j.horizonInFrame).toBe(true);
+  // No solids are built in this fixture: every structure subject of C is 0 px, so C fails.
   expect(views.find(v => v.id === 'C')?.proof?.pass).toBe(false);
 });
 it('matches Three projection for pitched cameras using horizontal FOV',()=>{
@@ -23,7 +28,36 @@ it('matches Three projection for pitched cameras using horizontal FOV',()=>{
 });
 
 it('rejects an authored eye below a visible river surface even when above terrain',()=>{
- const wet={...cuts,waters:[{id:'river',kind:'river' as const,points:[[1245,15,1110],[1245,15,1140]] as [number,number,number][],outline:[],level:15,width:8,depth:12,bank:2}]};
+ // A test river under page C's v1.7 eye [1268,1145] (terrain 10, eye 11.6, water 15).
+ const wet={...cuts,waters:[{id:'river',kind:'river' as const,points:[[1268,15,1130],[1268,15,1160]] as [number,number,number][],outline:[],level:15,width:8,depth:12,bank:2}]};
  const view=buildViews(field,wet).find(v=>v.id==='C')!;
  expect(view.proof!.eyeAboveFloor).toBe(true);expect(view.proof!.eyeAboveWater).toBe(false);expect(view.proof!.pass).toBe(false);
+});
+
+it('holds the page horizontal FOV on a portrait phone (MANIFEST v1.7 viewRule.portrait)',()=>{
+ const views=buildViews(field,cuts);
+ for(const v of views){
+  const m=HORIZON_MANIFEST.views.find(p=>p.id===v.id)! as typeof HORIZON_MANIFEST.views[number]&{portrait:{fov_deg:number;target:number[];target_h?:number}};
+  const phone=sketchbookLens(v,390/844),wide=sketchbookLens(v,16/9);
+  expect(phone.horizontalFovDegrees).toBe(Math.max(45,m.portrait.fov_deg));expect(phone.horizontalFovDegrees).toBeGreaterThanOrEqual(45);
+  expect(Math.tan(phone.verticalFovDegrees*Math.PI/360)*390/844).toBeCloseTo(Math.tan(phone.horizontalFovDegrees*Math.PI/360),10);
+  expect([phone.target[0],phone.target[2]]).toEqual(m.portrait.target);expect(phone.target[1]).toBe(m.portrait.target_h??m.target_h);
+  expect(wide.horizontalFovDegrees).toBeCloseTo(m.fov_deg,8);
+ }
+ // Before the rule the 390 px capture kept the 16:9 vertical FOV: 15.3° horizontal (R1-15: the review measured 15.3°).
+ const legacy=2*Math.atan(Math.tan(2*Math.atan(Math.tan(55*Math.PI/360)/(16/9))/2)*390/844)*180/Math.PI;expect(legacy).toBeLessThan(16);expect(sketchbookLens({eye:[0,0,0],target:[0,0,1],fovDegrees:55},390/844).horizontalFovDegrees).toBe(55);
+});
+it('names every portrait frame in the page subject list and maps it to built geometry',()=>{
+ const tests=subjectTests();
+ for(const v of HORIZON_MANIFEST.views as (typeof HORIZON_MANIFEST.views[number]&{portrait:{frames:string[]}})[]){for(const name of v.portrait.frames){expect(PAGE_SUBJECTS[v.id]).toContain(name);expect(tests[name]).toBeTypeOf('function');}}
+});
+it('counts a subject only where it is the first hit of the ID buffer (terrain and solids occlude)',()=>{
+ const post=solid('highSpan.deck','bridge','stone','deck',['VG'],'notch');slab(post,[1000,20,500],[1000,20,520],8,4);
+ const ray=createRayCaster(field,{solids:[post],waters:[],mouths:[]}),tests={deck:subjectTests()['the road deck']!},eye=[1000,11.6,400] as const,target=[1000,20,510] as const;
+ const open=viewPixels(ray,eye,target,55,[64,36],tests,false);expect(open.subjects.deck).toBeGreaterThan(open.minPixels);expect(open.horizonInFrame).toBe(true);
+ // A ridge between eye and deck, taller than the deck: 0 px, whatever the projection says.
+ const ridge={...field,heights:Float32Array.from(field.heights,(_,i)=>Math.floor(i/field.columns)===5?40:10)};
+ const hidden=viewPixels(createRayCaster(ridge,{solids:[post],waters:[],mouths:[]}),eye,target,55,[64,36],tests,false);expect(hidden.subjects.deck).toBe(0);
+ // Looking into the ridge's face: no sky or sea at or above the eye line → the horizon is not in frame.
+ const face=viewPixels(createRayCaster(ridge,{solids:[],waters:[],mouths:[]}),[1000,11.6,480],[1000,11.6,520],30,[64,36],{},false);expect(face.horizonInFrame).toBe(false);
 });

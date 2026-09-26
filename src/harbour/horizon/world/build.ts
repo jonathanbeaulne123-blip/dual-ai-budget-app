@@ -1,13 +1,15 @@
 import type { LandCuts, StructureSolid, TerrainField, PadCut } from '../land/interfaces.ts';
 import type { Anchor, Bed, Host, Line, Point2, Point3, Threshold, WorldDefinition } from './definition.ts';
 import { HORIZON_MANIFEST, requireScaleFactor } from './manifest.ts';
-import { buildCrossings } from './crossings.ts';
+import { buildCrossings, registerRowKey } from './crossings.ts';
 import type { CrossingProof } from './crossings.ts';
 import { buildDistricts, districtAt, partitionWorldSolids } from './districts.ts';
 import { arcLengths, closestOnPolyline, ellipse, length3, padOutline, rectangle, solidBounds, terrainHeight } from './geometry.ts';
 import { buildPathGraph, measureJourneys, yearWalkStretch } from './pathGraph.ts';
 import { buildFlightEnvelope } from './sky.ts';
 import { buildViews, protectedGreenOutline } from './views.ts';
+import { waterHeightAt } from '../land/water/index.ts';
+import { buildCoastline } from '../land/coast/index.ts';
 
 export const GEOGRAPHY_REVISION = 'horizon-geo-1';
 export interface LandWorldOptions { terrainAsset?: { url: string; bytes: number; step: number }; extraSolids?: StructureSolid[] }
@@ -46,7 +48,8 @@ export function buildThresholds(field: TerrainField, cuts: LandCuts, proofs: rea
     else if (Array.isArray(t.xy[0])) (t.xy as number[][]).forEach((xy, i) => add(`${t.id}.${i + 1}`, t.id, xy, t.modes, t.action));
     else add(t.id, t.id, t.xy as number[], t.modes, t.action);
   }
-  HORIZON_MANIFEST.crossings.forEach((c, i) => { if (c.resolution === 'threshold' && Array.isArray(c.at)) add(`crossing.${i}`, `crossing.${i}`, c.at, ['board→feet'], c.note ?? 'Dismount at the marked crossing.', `crossing.${i}`); });
+  // Register thresholds are named by their row's route names (registerRowKey), not the row's list index (R1-68); the pad keeps the builder's name.
+  HORIZON_MANIFEST.crossings.forEach((c, i) => { if (c.resolution === 'threshold' && Array.isArray(c.at)) add(registerRowKey(i), registerRowKey(i), c.at, ['board→feet'], c.note ?? 'Dismount at the marked crossing.', `crossing.${i}`); });
   const mode = (id: string) => { const b = cuts.beds.find(b => b.id === id); return b?.kind === 'road' ? 'wheels' : b?.kind === 'skate' ? 'board' : b?.kind === 'rail' ? 'cart' : b?.kind === 'cable' ? id === 'ZIP' ? 'zip' : 'cable' : id === 'FERRY' ? 'ferry' : id.startsWith('water') || id === 'DEEP_RUN' ? 'boat' : 'feet'; };
   for (const p of cuts.pads) if (p.kind === 'threshold' && !thresholds.some(t => t.padId === p.id)) { const proof = proofs.find(row => row.padId === p.id || p.id === `crossing.${row.id}`), kinds = proof ? [...new Set([mode(proof.sourceA ?? proof.a), mode(proof.sourceB ?? proof.b)])] : ['feet'], modes = kinds.filter(k => k !== 'feet').map(k => `${k}→feet`); add(p.id.replace(/^threshold\./, ''), proof?.id ?? p.id, [p.centre[0] / s, p.centre[2] / s], modes.length ? modes : ['feet→feet'], kinds.every(k => k === 'feet') ? 'Pause and give way at the marked junction.' : 'Stop at the marker and deliberately change mode.', p.id); }
   return thresholds;
@@ -58,7 +61,9 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   const m = HORIZON_MANIFEST, s = requireScaleFactor();
   if (terrain.revision !== GEOGRAPHY_REVISION) throw new Error(`Terrain revision ${terrain.revision} does not match ${GEOGRAPHY_REVISION}`);
   if (terrain.heights.length !== terrain.columns * terrain.rows || terrain.columns < 2 || terrain.rows < 2) throw new Error('Invalid terrain lattice');
-  const cuts: LandCuts = { ...input, solids: [...input.solids, ...(options.extraSolids ?? [])] }, hosts = buildHosts(cuts), lines = buildWorldLines(terrain, cuts), crossing = buildCrossings(cuts, lines), graph = buildPathGraph(cuts, crossing.proofs), sky = buildFlightEnvelope(terrain, cuts), views = buildViews(terrain, cuts), geometry = partitionWorldSolids(cuts.solids), districts = buildDistricts(terrain, cuts.beds, geometry), thresholds = buildThresholds(terrain, cuts, crossing.proofs);
+  const cuts: LandCuts = { ...input, solids: [...input.solids, ...(options.extraSolids ?? [])] };
+  assertUniqueSolidIds(cuts.solids);
+  const hosts = buildHosts(cuts), lines = buildWorldLines(terrain, cuts), crossing = buildCrossings(cuts, lines, { ground: (x, z) => terrainHeight(terrain, x, z), waterAt: waterHeightAt }), graph = buildPathGraph(cuts, crossing.proofs), sky = buildFlightEnvelope(terrain, cuts), views = buildViews(terrain, cuts), geometry = partitionWorldSolids(cuts.solids), districts = buildDistricts(terrain, cuts.beds, geometry), thresholds = buildThresholds(terrain, cuts, crossing.proofs);
   const sourceMap: Record<string, string[]> = {};
   for (const solid of geometry) (sourceMap[solid.sourceId] ??= []).push(solid.id);
   for (const host of hosts) host.solidIds = host.solidIds?.flatMap(id => sourceMap[id] ?? []);
@@ -67,7 +72,7 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   const yearWalk: Bed = yearCut ? toBed(yearCut) : { id: 'yearWalk', profile: 'walk', surface: 'gravel', points: [], districtIds: [] };
   const measurements = measureJourneys(graph, cuts, hosts, lines, sky), diagnostics = [...cuts.diagnostics];
   for (const p of crossing.proofs) if (!p.registered || !p.built) diagnostics.push({ id: p.id, severity: p.built ? 'info' : 'conflict', message: `${p.a} × ${p.b}: ${p.registered ? 'registered' : 'proposed for design lead'} ${p.resolution}; ${p.built ? 'built' : 'physical resolution incomplete'}.`, at: p.at, measured: p.separation, required: p.requiredClearance });
-  for (const p of views) if (!p.proof!.pass) diagnostics.push({ id: `view.${p.id}`, severity: 'conflict', message: `Fixed camera pose fails ${[...(!p.proof!.eyeAboveFloor ? ['eye above floor'] : []), ...(!p.proof!.horizonInFrame ? ['horizon in frame'] : []), ...p.proof!.subjects.filter(s => !s.exists || !s.inFrame || s.occludedBy).map(s => `${s.id}: ${!s.exists ? 'missing' : !s.inFrame ? 'outside frame' : `occluded by ${s.occludedBy}`}`)].join('; ')}.` });
+  for (const p of views) if (!p.proof!.pass) { const q = p.proof!; diagnostics.push({ id: `view.${p.id}`, severity: 'conflict', message: `Sketchbook pose fails the ID-buffer proof (16:9 ${q.passLandscape ? 'pass' : 'FAIL'}, portrait ${q.passPortrait ? 'pass' : 'FAIL'}): ${[...(!q.eyeAboveFloor ? ['eye below the ground'] : []), ...(!q.eyeAboveWater ? ['eye below water'] : []), ...(!q.horizonInFrame ? [`horizon not in frame (pitch ${q.landscape.pitchDegrees.toFixed(1)}°, sky/sea on the horizon rows ${q.landscape.horizonRowSkyOrSea}/${q.portrait?.horizonRowSkyOrSea ?? 0} px)`] : []), ...q.subjects.filter(s => !s.pass).map(s => `${s.id}: ${!s.exists ? 'no built geometry mapped' : `${s.pixels} px at 16:9 (min ${q.landscape.minPixels})${s.portraitRequired ? `, ${s.portraitPixels} px portrait (min ${q.portrait?.minPixels})` : ''}`}`)].join('; ')}.` }); }
   for (const p of measurements) if (!p.pass) diagnostics.push({ id: `journey.${p.id}`, severity: 'conflict', message: p.reason ?? `Measured journey ${p.seconds!.toFixed(1)} s exceeds the unchanged target.`, measured: p.seconds ?? undefined });
   for (const p of sky.proofs!.gates) if (!p.clear) diagnostics.push({ id: `sky.gate.${p.id}`, severity: 'conflict', message: `Gate aperture obstructed by ${p.obstructionIds.join(', ')}.` });
   for (const p of sky.proofs!.landings) if (!p.clear) diagnostics.push({ id: `sky.landing.${p.id}`, severity: 'conflict', message: `Landing field intersects ${p.obstructionIds.join(', ')}.` });
@@ -80,6 +85,8 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   const roomVolumes = Object.keys(m.underground.rooms).flatMap(id => { const pad = cuts.pads.find(p => p.id === `underground.${id}`), roof = cuts.solids.find(s => s.id === `underground.${id}.roof`); if (!pad || !roof) { diagnostics.push({ id: `room.${id}`, severity: 'conflict', message: 'Missing room floor or ceiling geometry.' }); return []; } return [{ id, outline: ellipse(pad.centre[0], pad.centre[2], pad.size[0] / 2, pad.size[1] / 2, 24), floor: pad.centre[1], ceiling: solidBounds(roof).min[1], solidIds: geometry.filter(s => s.sourceId.startsWith(`underground.${id}.`)).map(s => s.id) }]; });
   return {
     id: 'horizon', geographyRevision: GEOGRAPHY_REVISION, scaleFactor: s, extent: { w: 2000, h: 1800 }, seaLevel: 0,
+    // The shoreline the runtime tests water against, carried by the definition (R1-67; the runtime reads it once T1 wires land/coast to it).
+    coastline: buildCoastline(),
     heightfield: { kind: 'baked', revision: GEOGRAPHY_REVISION, url: options.terrainAsset?.url ?? '/horizon/terrain/horizon-geo-1.bin', bytes: options.terrainAsset?.bytes ?? 0, step: options.terrainAsset?.step ?? terrain.step },
     water: cuts.waters.map(w => ({ id: w.id, outline: w.outline, level: w.level, kind: w.kind })),
     landforms: m.landforms.map(l => ({ id: l.id, outline: l.poly?.map(p => [p[0]! * s, p[1]! * s] as Point2) ?? (l.footprint ? ellipse(l.footprint.cx * s, l.footprint.cy * s, l.footprint.rx * s, l.footprint.ry * s) : l.centreline?.map(p => [p[0]! * s, p[1]! * s] as Point2) ?? []), minHeight: Array.isArray(l.h) ? l.h[0]! * s : 0, maxHeight: Array.isArray(l.h) ? l.h[1]! * s : 45 * s })),
@@ -100,3 +107,8 @@ export function createLandWorld(terrain: TerrainField, input: LandCuts, options:
   };
 }
 export const buildHorizonDefinition = createLandWorld;
+/** One id, one mesh (R1-69): a bake refuses two solids with the same id rather than resolving lookups to the first. */
+export function assertUniqueSolidIds(solids: readonly StructureSolid[]): void {
+  const seen = new Set<string>(), dup = new Set<string>(); for (const solid of solids) { if (seen.has(solid.id)) dup.add(solid.id); seen.add(solid.id); }
+  if (dup.size) throw new Error(`Duplicate Horizon solid ids (${dup.size}): ${[...dup].slice(0, 12).join(', ')}${dup.size > 12 ? ', …' : ''}. Name every solid uniquely (e.g. underground.<room>.passage.*).`);
+}
