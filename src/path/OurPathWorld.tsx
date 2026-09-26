@@ -152,6 +152,8 @@ const QUALITY_KEY = "hearth:pathWorld:quality";
 /**
  * Per device and per member: whether my private footpaths and planks are drawn. Never synced.
  * Default on (it is the owner's own device); they never show at Dim, the shared-screen glance level.
+ * Tool Atlas D2: when the App passes `space`, the Ours | Mine pill is the only source — the private
+ * marks draw in Mine and never in Ours, this key is neither read nor written, and the toggle goes.
  */
 const mineKey = (memberId: string) => `hearth:pathWorld:mine:${memberId}`;
 /** Free roam (D-286): the controls are spelled out once per device, then never again. */
@@ -227,7 +229,7 @@ function monthIndexOf(months: PathMonth[], iso: string | null | undefined): numb
   return months.findIndex((m) => m.key === iso.slice(0, 7));
 }
 
-export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, onEnterHarbour, onZoomIntoHarbour, onWorldReady, journeyFocusDate, openWorldOnJourneySurface = false, onExitJourney, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini }: {
+export function OurPathWorld({ household, memberId, today, interpretationGate, busy, onCommand, onOpenFund, onOpenCalendar, onOpenPlanner, onOpenBank, onOpenInTent, onOpenTogether, onOpenCharter, onOpenTimeMachine, onOpenPlay, onEnterHarbour, onZoomIntoHarbour, onWorldReady, journeyFocusDate, openWorldOnJourneySurface = false, onExitJourney, boardMedia, presentMembers = 1, onTentChange, classicRoom, theme: themeOverride, openTentFor, houseSurface, houseWorkCentre, proofWorld, renderMini, space }: {
   household: Household;
   memberId: string;
   today: DateKey;
@@ -247,7 +249,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   onOpenTogether?: () => void;
   /** The Charter's stone square opens the Charter. */
   onOpenCharter?: () => void;
-  /** A month is a door into the Time Machine at that month (`YYYY-MM`). Only a link. */
+  /** A month is a door into the books at that month (`YYYY-MM`; K2: the Time Machine screen is retired). Only a link. */
   onOpenTimeMachine?: (monthKey: string) => void;
   /** Hercules's cottage is Play, his room. Without it there is no cottage. */
   onOpenPlay?: () => void;
@@ -284,6 +286,12 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
    * corner. Default: JourneyMini with the page's Fund and planner links. `null`: the flat map as a placeholder.
    */
   renderMini?: ((args: JourneyMiniSlotArgs) => ReactNode) | null;
+  /**
+   * Tool Atlas D2 (one island for both spaces): the space the App shows. "mine" draws my private
+   * footpaths and planks; "ours" never does. Absent: today's per-device "Mine" layer toggle.
+   * Nothing is persisted when it is given.
+   */
+  space?: "ours" | "mine";
 }) {
   const appearance = useAppearance();
   // Callback props are only used in handlers: read them through one ref so an inline arrow in the App never
@@ -336,10 +344,13 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   const [level, setLevel] = useState<PathLevel>(0);
   const [layers, setLayers] = useState({ weather: true, story: true, rhythm: true });
   // "Mine": my private footpaths. Per-device UI state only; nothing about footpaths is ever stored in the household.
-  const [mineState, setMineState] = useState(() => ({ memberId, on: readMine(memberId) }));
-  const mine = mineState.memberId === memberId ? mineState.on : readMine(memberId);
-  useEffect(() => { if (mineState.memberId !== memberId) setMineState({ memberId, on: readMine(memberId) }); }, [memberId, mineState.memberId]);
+  // With `space` given (D2) the App's space is the only source and nothing is read or written here.
+  const spaceDriven = space !== undefined;
+  const [mineState, setMineState] = useState(() => ({ memberId, on: spaceDriven ? false : readMine(memberId) }));
+  const mine = spaceDriven ? space === "mine" : mineState.memberId === memberId ? mineState.on : readMine(memberId);
+  useEffect(() => { if (!spaceDriven && mineState.memberId !== memberId) setMineState({ memberId, on: readMine(memberId) }); }, [memberId, mineState.memberId, spaceDriven]);
   const toggleMine = () => {
+    if (spaceDriven) return;
     const on = !mine;
     try { window.localStorage.setItem(mineKey(memberId), on ? "1" : "0"); } catch { /* per-device convenience only */ }
     setMineState({ memberId, on });
@@ -565,10 +576,10 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   // ------------------------------------------------------------ the pieces standing on the island
   const chapter = openChapterFor(household);
   const activeMembers = household.members.filter((m) => m.active);
-  // Like Together's small line: a named person, or "Together" for a joint responsibility.
+  // A named person, or "Both of us" for a joint responsibility.
   const forkWho = (responsibility: { kind: "joint" | "member"; memberId?: string } | undefined) => responsibility?.kind === "member"
     ? household.members.find((m) => m.id === responsibility.memberId)?.name ?? "Choose a responsible person"
-    : "Together";
+    : "Both of us";
   const nameOf = (id: string | null | undefined) => household.members.find((m) => m.id === id)?.name ?? "Either of us";
   const goalName = (goalId: string | null) => household.goals.find((goal) => goal.id === goalId)?.name ?? "A Kitty Bank";
   /** A plan's small line: its kind, a bank's steps (never an amount), and who pencilled it in. */
@@ -664,9 +675,10 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
   }, [household, memberId, today]);
   const glanceSafe = lantern >= PRIVATE_LANTERN;
   const shownBridges = useMemo(() => bridges
-    .filter((bridge) => bridge.stage !== 1 || glanceSafe)
+    // My stage-1 plank is private: never at Dim, and with the App's space (D2) only in Mine.
+    .filter((bridge) => bridge.stage !== 1 || (glanceSafe && (!spaceDriven || mine)))
     .map((bridge) => ({ bridge, month: stoneMonth(bridge.month) }))
-    .filter((row) => row.month >= 0 && row.month <= shown), [bridges, glanceSafe, stoneMonth, shown]);
+    .filter((row) => row.month >= 0 && row.month <= shown), [bridges, glanceSafe, spaceDriven, mine, stoneMonth, shown]);
   const [narrow, setNarrow] = useState(readNarrow);
   useEffect(() => {
     const onResize = () => setNarrow(readNarrow());
@@ -869,8 +881,8 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     for (const { path } of shownFootpaths) list.push({ id: `footpath:${path.id}`, label: path.label, sub: "only you see this", kind: "footpath", minLevel: 3, lantern: PRIVATE_LANTERN });
     for (const { bridge } of shownBridges) list.push({ id: `bridge:${bridge.id}`, label: bridge.label, sub: bridge.stageWords, kind: "bridge", minLevel: 2, lantern: bridge.stage === 1 ? PRIVATE_LANTERN : 0 });
     for (const row of unknown) list.push({ id: row.id, label: "Something new", sub: row.label, kind: "unknown", minLevel: 1, lantern: 0 });
-    if (atNow && chapter) list.push({ id: "tent", label: "Plan Studio", sub: unknown.length ? "Hercules has a suggestion" : "today's Our Path", kind: "tent", minLevel: 1, lantern: 0 });
-    if (canPlay) list.push({ id: "cottage", label: "Hercules's cottage", sub: "Play", kind: "cottage", minLevel: 1, lantern: 0 });
+    if (atNow && chapter) list.push({ id: "tent", label: "The kitchen table", sub: unknown.length ? "Hercules has a suggestion" : "this month's recipe card", kind: "tent", minLevel: 1, lantern: 0 });
+    if (canPlay) list.push({ id: "cottage", label: "Hercules's cottage", sub: "Time with Hercules", kind: "cottage", minLevel: 1, lantern: 0 });
     if (islandName) list.push({ id: "name", label: islandName, kind: "name", minLevel: 1, lantern: 0 });
     // The journey: era islands at every distance; a focused island's plans up close (or with the lantern warm); pencil only at Warm+.
     if (sceneCurrentEra) {
@@ -1409,7 +1421,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
         ],
         actions: (
           <>
-            {first && onOpenTimeMachine && <button type="button" onClick={() => links.current.onOpenTimeMachine?.(first)}>Open {monthName(first)} in the Time Machine</button>}
+            {first && onOpenTimeMachine && <button type="button" onClick={() => links.current.onOpenTimeMachine?.(first)}>Open the books for {monthName(first)}</button>}
             {eraActions(era)}
           </>
         ),
@@ -1517,7 +1529,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
         ],
         actions: onOpenTimeMachine || (currentEra && m === last) ? (
           <>
-            {onOpenTimeMachine && <button type="button" onClick={() => links.current.onOpenTimeMachine?.(month.key)}>Open the time machine</button>}
+            {onOpenTimeMachine && <button type="button" onClick={() => links.current.onOpenTimeMachine?.(month.key)}>Open the books for {monthName(month.key)}</button>}
             {currentEra && m === last && <button type="button" onClick={() => select("era-home")}>About this era</button>}
           </>
         ) : undefined,
@@ -1730,7 +1742,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
       return {
         eyebrow: "A decision · where the path forks",
         title: fork.label,
-        lines: [[0, fork.nextStep], [0, who === "Together" ? "Both of you carry it." : `${who} carries it.`], [1, "Agreed in this month's Plan. The agreement itself lives in the Plan Studio."]],
+        lines: [[0, fork.nextStep], [0, who === "Both of us" ? "Both of you carry it." : `${who} carries it.`], [1, "Agreed in this month's Plan. The agreement itself lives in the Plan Studio."]],
         actions: <button type="button" className="primary" onClick={() => { links.current.onOpenInTent?.({ route: "plan", view: "household", label: fork.label, planVersionId: accepted.id, planLineId: line.id }); openTent(true); }}>Read the agreement</button>,
       };
     }
@@ -1883,7 +1895,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
     <div ref={rootRef} className={`path-world path-world--${theme}`} data-level={level} data-lantern={lantern} data-game={full ? (leaving ? "leaving" : "open") : undefined}>
       <section className="path-world__island" hidden={tentOpen || houseSurface === "work"} aria-labelledby="path-world-title" onKeyDown={(e) => { if (e.key === "Escape" && detail) { e.stopPropagation(); e.preventDefault(); closeCard(); } }}>
         <header className="path-world__head">
-          <p className="kicker">Our Path</p>
+          <p className="kicker">The Journey map</p>
           <h2 id="path-world-title">{islandName ?? "Where we are going"}</h2>
           <p className="path-world__lede">The land grows from your shared months. Open the world to walk the whole island.</p>
           {supported.statusLine && <p className="muted" role="status">{supported.statusLine}</p>}
@@ -1967,7 +1979,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
             <div className="path-hud" data-drawer={drawer || undefined}>
               {banner > 0 && !reduced && (
                 <div key={banner} className="path-hud__banner" aria-hidden="true" onAnimationEnd={() => setBanner(0)}>
-                  <span>{currentEra ? currentEra.spec.name : "Our Path"}</span>
+                  <span>{currentEra ? currentEra.spec.name : "The Journey map"}</span>
                   <strong>{islandName ?? "Our island"}</strong>
                 </div>
               )}
@@ -2020,7 +2032,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
                         {(["weather", "story", "rhythm"] as const).map((key) => (
                           <button key={key} type="button" aria-pressed={layers[key]} onClick={() => setLayers((v) => ({ ...v, [key]: !v[key] }))}>{key === "weather" ? "Weather" : key === "story" ? "Story" : "Rhythm"}</button>
                         ))}
-                        <button type="button" aria-pressed={mine} title="My private footpaths — only you ever see them" onClick={toggleMine}>Mine</button>
+                        {!spaceDriven && <button type="button" aria-pressed={mine} title="My private footpaths — only you ever see them" onClick={toggleMine}>Mine</button>}
                       </div>
                     </div>
                     <button type="button" className="path-world__link path-world__drawer-plan" onClick={() => openPlanner(null)}>Plan our journey</button>
@@ -2100,7 +2112,7 @@ export function OurPathWorld({ household, memberId, today, interpretationGate, b
               aria-valuetext={nowMonth ? `${monthName(nowMonth.key)}, ${CHARACTER_LABEL[characters[shown]!]}` : undefined}
               onChange={(e) => { setPlaying(false); const v = Number(e.target.value); pageMovedTime.current = true; setFollowNow(v === last); setCur(v); }} />
           </label>
-          {nowMonth && onOpenTimeMachine && <button type="button" className="path-world__link path-world__time" onClick={() => links.current.onOpenTimeMachine?.(nowMonth.key)}>Open this month in the time machine</button>}
+          {nowMonth && onOpenTimeMachine && <button type="button" className="path-world__link path-world__time" onClick={() => links.current.onOpenTimeMachine?.(nowMonth.key)}>Open the books for this month</button>}
           <ol className="path-world__ticks" aria-hidden="true">
             {months.map((month, m) => <li key={month.key} className={`path-chip--${characters[m]}`} data-current={m === shown} />)}
           </ol>

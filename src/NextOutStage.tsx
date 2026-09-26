@@ -32,7 +32,7 @@ export function NextOutStage({
 
   return (
     <section className="next-out-stage" aria-labelledby={headingId}>
-      <p className="desk-plate-kicker">{mode === "next-out" ? "Next out" : "Spoken for"}</p>
+      <p className="desk-plate-kicker">{mode === "next-out" ? "Leaving next" : "Spoken for"}</p>
       <h2 ref={headingRef} id={headingId} tabIndex={-1} className="fund-stage-heading">
         {mode === "next-out" ? (table.rows[0] ? `${table.rows[0].label} · ${formatCad(table.rows[0].amountCents)}` : "Nothing due next") : claim.overCents > 0 ? `${formatCad(claim.overCents)} over` : `${formatCad(claim.freeCents)} free`}
       </h2>

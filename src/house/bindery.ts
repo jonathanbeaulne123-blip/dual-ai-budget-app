@@ -64,6 +64,6 @@ export function binderyMachine(object: string | null | undefined): BinderyMachin
  */
 export function binderyDivisionFor(object: string | null | undefined): BookDivision | null {
   if(object === "chapter/today")return "Today";
-  if(object === "chapter/record")return "Record";
+  if(object === "chapter/record")return "Paper trail";
   return binderyMachine(object)?.division ?? null;
 }

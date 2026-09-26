@@ -3,6 +3,8 @@ import { FundSourceFields, emptyFundSource } from "./FundSourceFields.tsx";
 import { fundContributionReviewDigest } from "./core/fundContributionSources.ts";
 import { replaceHouseholdFundContributionSource } from "./core/commands.ts";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { DeskLevel } from "./harbour/desk/DeskLevel.tsx";
+import "./harbour/desk/desk.css";
 import {
   activeHouseholdFundEvents,
   allocateHouseholdFundSurplus,
@@ -13,6 +15,7 @@ import {
   confirmHouseholdFundSettlement,
   formatCad,
   formatDateLabel,
+  fundWalk,
   copy,
   holdHouseholdFundContribution,
   HOUSEHOLD_FUND_HOLD_COPY,
@@ -288,6 +291,11 @@ function HouseholdFundPanelSession({
   const [kittyGoal, setKittyGoal] = useState(household.goals.find((row) => row.shared && row.status !== "retired")?.id ?? "");
   const [backingAccount, setBackingAccount] = useState("");
 
+  // K1: The Level (the month's Fund walk) lives here now, in the bank's open state; the phone's Fund ledge is retired.
+  const levelWalk = useMemo(() => {
+    if (!fund) return null;
+    try { return fundWalk(household, monthKeyFromDateKey(today), today); } catch { return null; }
+  }, [household, fund, today]);
   const waitingMotions = useMemo(
     () => householdFundContributionMotions(household, fund?.id)
       .filter((motion) => motion.status === "open" || motion.status === "held"),
@@ -339,7 +347,7 @@ function HouseholdFundPanelSession({
   if (!fund) {
     return (
       <section className="card household-fund-panel">
-        <header><h2>Household Fund</h2><span className="muted">September practice · opens at $0.00</span></header>
+        <header><h2>The Fund</h2><span className="muted">September practice · opens at $0.00</span></header>
         <p>Set aside part of Bianca’s existing savings as the shared operating pool. It is a Hearth subledger, not a bank account.</p>
         <p className="muted">{LEDGER_CUSTODY_DISCLOSURE}</p>
         {setupCustodianId === memberId ? (
@@ -365,6 +373,7 @@ function HouseholdFundPanelSession({
       <section className="card">
         <header><h2>{fund.name}</h2><span className="muted">{fund.mode === "practice" ? "Practice · manual evidence" : "Connected · read-only evidence"}</span></header>
         <p className="fund-disclosure">The money remains in Bianca’s savings. Hearth cannot move it.</p>
+        {levelWalk && <div className="fund-level" data-fund-level=""><DeskLevel walk={levelWalk} /></div>}
         <div className="fund-setup-review" aria-label="Household Fund setup for approval">
           <div className="row"><span>Custodian</span><strong>{memberName(household, fund.custodianMemberId)}</strong></div>
           <div className="row"><span>Backing account</span><strong>{copy("fund.backing.private")}</strong></div>

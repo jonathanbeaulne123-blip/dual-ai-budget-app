@@ -62,7 +62,7 @@ describe("D-164 ledger story UI fences", () => {
     expect(app).toContain("restoreAcceptedSnapshot");
     expect(app).toContain("persistLedgerWrite");
     expect(app).toContain("booksHousehold={household}");
-    expect(app).toContain("<FundLedge");
+    expect(app).not.toContain("<FundLedge"); // K1: the Fund ledge is retired
     expect(app).toContain("? experience.scopedHousehold.accounts.filter((account) => account.active)");
     expect(app).not.toContain("pickerAccounts = displayHousehold.accounts");
     expect(app).toContain("healthFindings");
@@ -73,7 +73,9 @@ describe("D-164 ledger story UI fences", () => {
     expect(books).not.toContain("compileHousehold(booksHousehold)");
     expect(books).not.toContain("compileHousehold(household)");
     expect(books).toContain("HouseholdFundPanel household={booksHousehold}");
-    expect(books).toContain("closeBooksMonth(booksHousehold");
+    // The month closes only at the Campfire (review finding 3); Books keeps the reviewed reopen on the accepted snapshot.
+    expect(books).not.toContain("closeBooksMonth(");
+    expect(books).toContain("reopenBooksMonth(booksHousehold");
     expect(books).toContain("StatementsPane household={auditHousehold} writeHousehold={booksHousehold}");
     expect(books).toContain("AskBooks household={auditHousehold}");
     expect(books).toContain("writeHousehold={booksHousehold}");
@@ -117,7 +119,10 @@ describe("D-164 ledger story UI fences", () => {
   it("keeps shared financial destinations and Add connected to existing books authority", () => {
     expect(app).toContain("kitchenPrimaryNav(view)");
     expect(app).toContain("<FabSpeedDial");
-    expect(app).toContain("onPick={(nextMode) => openAddFor(null, nextMode)}");
+    // The dial's verbs open the existing Add flows through openRecordFlow (D1 ledger first, then openAddFor / Bill paid).
+    expect(app).toContain("onPick={(nextMode) => openRecordFlow(nextMode)}");
+    expect(app).toContain("function openRecordFlow(");
+    expect(app).toContain('if (nextMode === "bill") openBillPaid(recurrenceId); else openAddFor(null, nextMode);');
     expect(styles).toContain("flex-direction: column-reverse");
     expect(styles).toContain("bottom: calc(100% + 22px)");
     const fab = readFileSync(new URL("../src/FabSpeedDial.tsx", import.meta.url), "utf8");

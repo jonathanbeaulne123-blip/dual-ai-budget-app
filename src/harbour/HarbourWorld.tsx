@@ -24,6 +24,10 @@ import {useDesignClient} from '../hearthside/DesignProvider.tsx';
 import {snapshotKittyDesignRevision} from '../hearthside/design.ts';
 import type {VillageDisplayContent} from './village/displays.ts';
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useGlassNight } from "./bubbles/glassMode.ts";
+import { useHerculesSuggestion } from "./nav/barBadges.ts";
+/** The words Hercules's twin adds to its name while he has a fresh suggestion. */
+const HERCULES_PAW = Object.freeze({ hercules: "Hercules has a suggestion" });
 import type { DateKey } from "../core/calendar.ts";
 import type { Household, LedgerView } from "../core/types.ts";
 import type { FundPulseFreshness } from "../core/fundPulse.ts";
@@ -69,6 +73,12 @@ import { harbourCameraSlot } from "./scene/travel.ts";
 import { qualityTier, readQualityInput, type QualityTier, type RenderTier } from "./scene/quality.ts";
 import "./harbour.css";
 import "./interiors/interiors.css";
+import { emptyMineLayer, mineLayer, type MineSpace } from "./mine/mineLayer.ts";
+import { MineLayer, type MineOpenKind } from "./mine/MineLayer.tsx";
+import { MineRibbon } from "./mine/MineRibbon.tsx";
+import { Dock, type DockProps } from "./glass/Dock.tsx";
+import { HostPanel } from "./panels/HostPanel.tsx";
+import type { PanelExtras, PanelHost } from "./panels/panelModel.ts";
 
 /**
  * The Court's React shell (BUILD_PLAN #2). Props are `HouseWorld`'s plus the
@@ -104,7 +114,47 @@ export type HarbourWorldProps = {
   fab?: CompassFab;
   /** The App's space switch, for the Desk's header (Simple View Desk S5). */
   spaceSlot?: ReactNode;
+  /**
+   * Which space the harbour shows (Tool Atlas D2: one island for both). "mine"
+   * draws the owner-only Mine layer and the Mine ribbon on this same map; the
+   * Ours | Mine pill and the App's `view` are the source, nothing persists.
+   * Absent reads as "ours". Hosts keep their meaning: the reading stays the
+   * household's (the Fund bank is always the shared Fund).
+   */
+  space?: MineSpace;
+  /**
+   * The household the Mine layer reads: the signed-in member's own assembled
+   * source (the App's `personalSource ?? household`, the same one the personal
+   * Desk reads). Absent, `household`. Only its owner-only rows are drawn.
+   */
+  mineHousehold?: Household;
+  /** Open a Mine mark's own tool (a step or footpath → the Glasshouse steps; a bank → its Kitty Bank). `id` null = the whole list. */
+  onOpenMine?: (kind: MineOpenKind, id: string | null) => void;
+  /**
+   * The dock (Tool Atlas §4.1, track B1): the strip band and the camp card.
+   * The App builds both from the same day ledger; the harbour adds the glass's
+   * look (`calm`, `lite`) and stands it between Simple view and All tools, so
+   * Tab visits Simple view → the strip → the card → All tools → Record (A5).
+   */
+  dock?: Omit<DockProps, "night" | "calm" | "lite">;
+  /** All tools is open: its bubble reads as expanded. */
+  toolsOpen?: boolean;
+  /** One host's compact panel (brief §3.2's right-hand column), above the dock. The App owns which host is open. */
+  panel?: HarbourPanel;
   children?: ReactNode;
+};
+
+/** The App's wiring for the one open compact panel; the harbour feeds it the reading. */
+export type HarbourPanel = {
+  host: PanelHost | null;
+  extras?: PanelExtras;
+  onClose: () => void;
+  /** An existing house door (`openHouseObject`); the Campfire's door is routed by the App. */
+  onOpen: (target: string, object?: string) => void;
+  onRecord?: () => void;
+  onMarkPaid?: (recurrenceId: string) => void;
+  onTalk?: () => void;
+  returnFocusTo?: HTMLElement | null;
 };
 
 
@@ -168,6 +218,9 @@ function HorizonEdition(props:HarbourWorldProps){
 
 function MountainHarbourWorld(props: HarbourWorldProps) {
   const { household, memberId, scope, today, route, ready, freshness, interpretationGate, onOpen, onClose, presence, onUnhide, partnerName = null, onQuickSheet } = props;
+  const space: MineSpace = props.space === "mine" ? "mine" : "ours";
+  /** Arranging writes the Shared arrangement (`commitHearthside`), so Mine never offers it (D-302 item 4, review finding 4). */
+  const arrange = space === "mine" ? undefined : props.onArrange;
   const appearance = useAppearance(), theme: ThemeId = appearance.preview ?? appearance.saved.theme;
   const host = useRef<HTMLDivElement>(null), stage = useRef<HTMLDivElement>(null);
   const runtime = useRef<HarbourRuntime | null>(null), court = useRef<QueenHost | null>(null), queen = useRef<QueenPlace | null>(null);
@@ -249,6 +302,12 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
   const skateAudio=useRef<SkateAudio|null>(null);
   const worldAudio=useRef<WorldAmbience|null>(null);
   const [comfort,updateComfort]=useComfort(household.environment);
+  // The glass's scene signals (Tool Atlas §4.3/§4.4): the runtime says when the camera moves and when the frame
+  // budget is missed; night is the device clock (20:00–06:00) or a dark scene lighting (`useGlassNight`).
+  const [glassScene,setGlassScene]=useState({cameraMoving:false,frameOverBudget:false});
+  const glassNight=useGlassNight();
+  // The pawprint moved off All tools onto Hercules on the map (§3.4): the App publishes, his twin wears it.
+  const herculesSuggestion=useHerculesSuggestion();
   const [worldSound,setWorldSound]=useState(false);
   const [mountainCalm,setMountainCalm]=useState(false);
   const calmRef=useRef(false);calmRef.current=mountainCalm||comfort.quiet;
@@ -374,13 +433,13 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
       void loadPlace(next).then(()=>world.restream());
       const [x,,z]=placementToWorld(placement,[placement.door[0],0,placement.halfDepth-.6]);
       if(world.body()?.goTo(x,z)){setTravelTo(next);setPhrase(`Walking to ${HARBOUR_PLACE_NAMES[next]}.`);}
-      else{setTravelTo(null);setPhrase('That path is blocked. Pick a spot nearby or use Quick travel.');}return;
+      else{setTravelTo(null);setPhrase('That path is blocked. Pick a spot nearby, or choose the place in All tools › Places.');}return;
     }
     navigatePlace(next);
   }
   function wanderTo(id:HarbourWanderId){
     const destination=HARBOUR_WANDERS.find(w=>w.id===id);if(!destination)return;
-    if(placeRef.current!=='court'){navigatePlace('court');setPhrase('The countryside paths start in the village square.');return;}
+    if(placeRef.current!=='court'){navigatePlace('court');setPhrase('The countryside paths start in the square.');return;}
     setTravelTo(null);
     if(runtime.current?.body()?.goTo(destination.at[0],destination.at[1]))setPhrase(`${destination.name}. ${destination.words}`);
     else setPhrase('Pick a nearby point to find a way around, or take the village path.');
@@ -512,6 +571,8 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
       if(id==='mountain:goals'){onOpen('loft-banks');return;}
       if(id==='mountain:pottery'){onOpen('pottery');return;}
       if(id==='mountain:outfitters'){setAppearanceRequest(n=>n+1);return;}
+      // K6: the glass dam's Fund reading is the Fund bank's now (the card's Everyday, the bank panel's accepted balance).
+      if(id==='mountain:basin'){onOpen('fund');return;}
       const monorailStation=id.startsWith('mountain:transport:monorail:')?TRANSPORT_STOPS.monorail.findIndex(stop=>stop.id===id.split(':')[3]):-1;
       setMountainInspect({section:id==='mountain:basin'?'water':id.includes('transport')||id==='mountain:race'?'travel':'map',seq:Date.now(),...(monorailStation>=0?{station:monorailStation}:{})});return;
     }
@@ -588,7 +649,7 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
           onProject: next => setRects(next), onTap, onGesture, onRailDrag: (x, width) => onRailDragRef.current(x, width),
           onStick, onClose: setClosed, onThreshold, onExit,
           onAvatarStatus:(loaded,status)=>{if(avatarRef.current===loaded)setAvatarStatus(status);},
-          avatar:avatarRef.current,onJourney:()=>openJourney(),onMountainTravel:setMountainRiding,onRideOffer:setRideOffer,onMonorail:setMonorail,
+          avatar:avatarRef.current,onJourney:()=>openJourney(),onMountainTravel:setMountainRiding,onRideOffer:setRideOffer,onMonorail:setMonorail,onGlass:setGlassScene,
 
           place: PLACES[first], reading: readingRef.current, dressing: sceneDressingFrom(COURT_DRESSING[theme]),
         });
@@ -778,18 +839,24 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weeks, evidenceSignature]);
 
-  function rememberWorld() {
+  /**
+   * Saves the camera and body under `slot`. The effect below captures the identity when it is set up and passes it
+   * here, because its cleanup runs after the render that flipped Ours ↔ Mine: `identityRef.current` is already the
+   * new space by then, and the old space's camera must not land in the new space's return slot (review finding 8).
+   */
+  function rememberWorld(slot: typeof identity = identityRef.current) {
       const current = routeRef.current, world = runtime.current; if (!world || current.surface) return;
       const at=world.body()?.at();if(world.placeId()==='court'&&at)outdoorAtRef.current=[at.x,at.y,at.z];
       const camera=world.camera();if(!Array.isArray(camera)||camera.length!==3||!camera.every(Number.isFinite))return;
       const composition = houseComposition(host.current?.getBoundingClientRect().width || window.innerWidth);
-      saveHouseReturn(localStorage, identityRef.current, houseCameraRoute(current), { camera: [...camera] as [number, number, number], cameraComposition: composition, body:world.body()?{world:MOUNTAIN_VERSION,geo:GEOGRAPHY_REVISION,y:world.body()!.at().y,place:world.placeId(),x:world.body()!.at().x,z:world.body()!.at().z,yaw:world.body()!.at().yaw}:undefined }, harbourCameraSlot(composition, world.placeId()));
+      saveHouseReturn(localStorage, slot, houseCameraRoute(current), { camera: [...camera] as [number, number, number], cameraComposition: composition, body:world.body()?{world:MOUNTAIN_VERSION,geo:GEOGRAPHY_REVISION,y:world.body()!.at().y,place:world.placeId(),x:world.body()!.at().x,z:world.body()!.at().z,yaw:world.body()!.at().yaw}:undefined }, harbourCameraSlot(composition, world.placeId()));
   }
 
   // Return records: the App's `hearth:house-return` event, and the camera per composition on pagehide.
   useEffect(() => {
     const restore = (event: Event) => { const detail = (event as CustomEvent).detail; if (detail?.identity === houseIdentity(identityRef.current) && Array.isArray(detail.camera) && detail.camera.length === 3 && detail.camera.every(Number.isFinite)) {runtime.current?.restore(detail.camera);if(validHouseBody(detail.body)&&(detail.body.world===MOUNTAIN_VERSION||detail.body.world==='hearth-mountain-1')&&detail.body.place===runtime.current?.placeId()){const b=detail.body.place==='court'?restoredBodyAt(detail.body):detail.body;runtime.current?.body()?.place(b.x,b.z,b.yaw,b.y);}} };
-    const remember = rememberWorld;
+    const slot = identityRef.current;
+    const remember = () => rememberWorld(slot);
     window.addEventListener("hearth:house-return", restore); window.addEventListener("pagehide", remember);
     return () => { window.removeEventListener("hearth:house-return", restore); window.removeEventListener("pagehide", remember); remember(); };
   }, [scope, memberId, household.householdId, status]);
@@ -1124,6 +1191,14 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
    * behind an open tool; the Desk never stands in the loading path.
    */
   const desk = (status === "flat" || status === "fallback") && !toolOpen;
+  // The Mine layer (D2): read only in Mine, only from the signed-in member's own rows.
+  const mineSource = props.mineHousehold ?? household;
+  const mine = useMemo(() => space === "mine" ? mineLayer(mineSource, memberId, today) : emptyMineLayer(memberId), [space, mineSource, memberId, today]);
+  const openMine = (kind: MineOpenKind, id: string | null) => {
+    if (props.onOpenMine) { props.onOpenMine(kind, id); return; }
+    if (kind === "bank") onOpen("loft-banks", id ? `bank/${id}` : undefined);
+    else onOpen("planner");
+  };
   /**
    * Say it, quietly, to the person who has just landed. It is shown only while
    * the stage is not holding the keyboard and there is a body here to walk,
@@ -1136,15 +1211,23 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
   const invite = status === "ready" && !toolOpen && standing && !stageHasKeys;
   const flatStatus = status === "fallback" ? "fallback" : tier === "flat" ? "flat" : "loading";
   const stair = () => navigatePlace("court");
-  return <section className={`harbour-world harbour-world--${theme}${skating?" is-skating":""}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={placeName}>
+  // The dock (track B1) between Simple view and All tools on the island; the Desk has its own camp card (DeskToday).
+  // Step in on the card opens the world's own guide here (tour, monorail, race).
+  const glassDock = props.dock && !desk ? <Dock {...props.dock} calm={mountainCalm || comfort.quiet} lite={tier === "lite" || glassScene.frameOverBudget} night={glassNight} cameraMoving={glassScene.cameraMoving} card={{ ...props.dock.card, onStepIn: () => { setGuideOpen(true); setMountainInspect(undefined); } }} /> : undefined;
+  return <section data-harbour-space={space} className={`harbour-world harbour-world--${theme}${skating?" is-skating":""}${toolOpen ? " has-open-object" : ""}`} data-world-status={status} data-world-scope={scope} data-harbour-place={place} data-harbour-tier={tier} data-harbour-lens={lens} aria-label={placeName}>
       <div className="harbour-world__stage" ref={stage} tabIndex={toolOpen ? undefined : 0} aria-label={toolOpen ? undefined : showFlat ? `${placeName}. Reading edition. Every destination is a button.` : skating?"Skate the Harbour. W pushes, A turns left, D turns right, S brakes. Hold Space and release to jump farther. Press and hold Space again in the air to drift toward a nearby rail or wall ride surface. In the air after a Space jump, the arrows do board tricks; tap W for a backflip, S for a frontflip, and hold A or D to spin. Keys 1 to 6 emote while riding. Hold the down arrow and flick up to ollie, flick to a corner to flip. Q and E grab, G locks onto rails, M manuals, R returns to your marker, P pauses, B walks.":stageWords(place, placeName, closed)} onKeyDown={onStageKey} onKeyUp={onStageKeyUp} onPointerDown={onStagePress} onFocus={event => { if (event.target !== event.currentTarget) return; setStageHasKeys(true); event.currentTarget.toggleAttribute("data-harbour-arrived", arriving.current); }} onBlur={event => { if (event.target === event.currentTarget) {setStageHasKeys(false);orbitKeys.current.clear();runtime.current?.gesture({kind:"spin",dir:0});runtime.current?.body()?.skate?.input()?.reset?.();if(held.current.size){held.current.clear();pushBody();}if(!event.currentTarget.contains(event.relatedTarget as Node))runtime.current?.body()?.skate?.pause(true);} }}>
       <div className="house-world__canvas" ref={host} aria-hidden="true" />
       {((showFlat && !desk) || (status === "loading" && !toolOpen)) && <HarbourFlat place={place} reading={reading} status={flatStatus} theme={theme} overlay={status === "loading" && tier !== "flat"} />}
       {(deskVisited || desk) && <DeskShell key={`${household.environment}:${household.householdId}:${memberId}:${scope}`} hidden={!desk} ready={ready} interpretationGate={interpretationGate} titleId={desk?"house-world-title":undefined} context={<DeskPlace outdoorAt={outdoorAtRef.current} reading={reading} place={place} onOpen={onOpen} onVisit={navigatePlace} onGuide={()=>setGuideOpen(true)}/>} household={household} memberId={memberId} scope={scope} today={today} reading={reading} theme={theme} status={status === "fallback" ? "fallback" : "flat"} onOpen={onOpen} onQuickSheet={onQuickSheet} spaceSlot={props.spaceSlot} />}
-      {status === "ready" && !toolOpen && <HarbourTwins rects={rects} hidden={Boolean(skating||monorail)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
-      {(status==="ready"||desk)&&!toolOpen&&<VillageHUD flat={desk} onGuide={()=>{setGuideOpen(open=>!open);setMountainInspect(undefined);}} guideOpen={guideOpen} appearanceRequest={appearanceRequest} fab={props.fab} onQuickSheet={onQuickSheet} place={place} travelling={travelTo} onVisit={visit} onWander={wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={desk?undefined:chooseAvatar} onJourney={!desk&&props.onJourney?openJourney:undefined} onArrange={!desk&&props.onArrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
+      {!toolOpen && !desk && <MineRibbon space={space} />}
+      {space === "mine" && status === "ready" && !toolOpen && <MineLayer layer={mine} place={place} rects={rects} hidden={Boolean(skating || monorail)} onOpen={openMine} />}
+      {status === "ready" && !toolOpen && <HarbourTwins rects={rects} badges={herculesSuggestion?HERCULES_PAW:undefined} hidden={Boolean(skating||monorail)} label={`The ${placeName.replace(/^the /, "")}`} onActivate={rect => activate(rect.id, rect.door, rect.group)} onQueenKey={(region, key) => { const found = keyAction(region as QueenRegion, key); if (found) act(region as QueenRegion, found.action, found.detail); }} />}
+      {(status==="ready"||desk)&&!toolOpen&&<VillageHUD flat={desk} memberId={memberId} theme={theme} calm={mountainCalm||comfort.quiet} lite={tier==="lite"} frameOverBudget={glassScene.frameOverBudget} cameraMoving={glassScene.cameraMoving} night={glassNight} alwaysShowLabels={comfort.labels} toolsOpen={props.toolsOpen} glassBetween={glassDock} onGuide={()=>{setGuideOpen(open=>!open);setMountainInspect(undefined);}} guideOpen={guideOpen} appearanceRequest={appearanceRequest} fab={props.fab} onQuickSheet={onQuickSheet} place={place} travelling={travelTo} onVisit={visit} onWander={wanderTo} avatar={avatar} avatarStatus={avatarStatus} onAvatar={desk?undefined:chooseAvatar} onJourney={!desk&&props.onJourney?openJourney:undefined} onArrange={!desk&&arrange&&place!=='court'&&place!=='campfire'?()=>setArranging(open=>!open):undefined} onView={()=>{runtime.current?.body()?.follow(false);runtime.current?.go('sky');}}
         presence={<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk ? partner.name : null} worldUnavailable={partnerWalk.unavailable} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut === true} onUnhide={onUnhide} hasPartner={Boolean(softPeer || partnerName || partnerWalk.memberId)} />}/>}
-      {(status==='ready'||showFlat)&&!toolOpen&&<MountainPanel open={guideOpen} onOpenChange={open=>{setGuideOpen(open);if(!open)setMountainInspect(undefined);}} hideTrigger life={mountainLife} recoveryWords={recoveryView.words} calmOn={mountainCalm||comfort.quiet} soundOn={worldSound&&comfort.sound} monorail={monorail} partnerName={partner?.name??partnerName} conditionWords={reading.condition.words} reading={reading.basin} statusLine={statusLine} onAction={mountainAction} onOpen={target=>{if(Object.hasOwn(VILLAGE_ADDRESS,target))navigatePlace(target as HarbourPlaceId);else onOpen(target);}} flat={showFlat} inspect={mountainInspect} here={guideHere}/>}
+      {(status==="ready"||desk)&&!toolOpen&&props.panel?.host&&<HostPanel key={props.panel.host} host={props.panel.host} reading={reading} extras={props.panel.extras} theme={theme} onClose={props.panel.onClose} onOpen={props.panel.onOpen} onRecord={props.panel.onRecord} onMarkPaid={props.panel.onMarkPaid} onTalk={props.panel.onTalk} returnFocusTo={props.panel.returnFocusTo}
+        onVisit={()=>{const host=props.panel?.host;if(host&&host!=="hercules"&&Object.hasOwn(VILLAGE_ADDRESS,host))navigatePlace(host as HarbourPlaceId);props.panel?.onClose();}}
+        onStepIn={host=>{if(host!=="hercules"&&Object.hasOwn(VILLAGE_ADDRESS,host))navigatePlace(host as HarbourPlaceId);props.panel?.onClose();}}/>}
+      {(status==='ready'||showFlat)&&!toolOpen&&<MountainPanel open={guideOpen} onOpenChange={open=>{setGuideOpen(open);if(!open)setMountainInspect(undefined);}} hideTrigger life={mountainLife} recoveryWords={recoveryView.words} calmOn={mountainCalm||comfort.quiet} soundOn={worldSound&&comfort.sound} riding={mountainRiding} monorail={monorail} partnerName={partner?.name??partnerName} conditionWords={reading.condition.words} reading={reading.basin} statusLine={statusLine} onAction={mountainAction} onOpen={target=>{if(Object.hasOwn(VILLAGE_ADDRESS,target))navigatePlace(target as HarbourPlaceId);else onOpen(target);}} flat={showFlat} inspect={mountainInspect} nearestStation={kind=>runtime.current?.nearestStation?.(kind)??0} here={guideHere}/>}
       {status==='ready'&&!toolOpen&&place==='court'&&standing&&!monorail&&<SkateHUD model={skating} onStart={startSkating} onWalk={leaveSkating}
         onOpenFund={()=>{leaveSkating();onOpen('fund');}}
 
@@ -1154,7 +1237,7 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
         onSpot={id=>runtime.current?.body()?.skate?.spot(id)} onDeck={id=>runtime.current?.body()?.skate?.deck(id)}
         presence={<WalkTogether environment={household.environment} share={walkShare} onShare={setWalkShare} walk={partnerWalk.walk} walkName={partner?.walk?partner.name:null} worldUnavailable={partnerWalk.unavailable} soft={softPeer} here={place} placeName={placeName} softPresenceOptedOut={presence?.optedOut===true} onUnhide={onUnhide} hasPartner={Boolean(softPeer||partnerName||partnerWalk.memberId)}/>}
         onFocus={()=>stage.current?.focus({preventScroll:true})} partnerName={partnerWalk.walk?.pose(Date.now())?.act?.startsWith('skate')?partner?.name:null} saveFailed={skateSaveFailed}/>}
-      {arranging&&!showFlat&&decorRoom&&props.onArrange&&<VillageDecorator key={decorRoom} household={household} memberId={memberId} room={decorRoom} arrangement={arrangement} onCommit={props.onArrange} onPreview={setPreviewLook} onClose={()=>{setArranging(false);stage.current?.querySelector<HTMLButtonElement>('[aria-label="Arrange room"]')?.focus();}}/>}
+      {arranging&&!showFlat&&decorRoom&&arrange&&<VillageDecorator key={decorRoom} household={household} memberId={memberId} room={decorRoom} arrangement={arrangement} onCommit={arrange} onPreview={setPreviewLook} onClose={()=>{setArranging(false);stage.current?.querySelector<HTMLButtonElement>('[aria-label="Arrange room"]')?.focus();}}/>}
       {invite && !monorail && <div className="harbour-world__invite" data-harbour-invite={touch ? "touch" : "keys"} aria-hidden="true"><Whisper mode="line">{inviteWords(place, touch)}</Whisper></div>}
       {status === "ready" && !toolOpen && standing && !monorail && <div className="harbour-moves" data-harbour-moves={emotesOpen ? "open" : "shut"}>
         {emotesOpen && <div className="harbour-moves__emotes" role="group" aria-label="Emotes">
@@ -1177,7 +1260,7 @@ function MountainHarbourWorld(props: HarbourWorldProps) {
       {statusLine && <small className="harbour-world__supported" role="status">{statusLine}</small>}
       {!ready && status === "ready" && <small className="harbour-world__checking" role="status">Checking the books · {freshness}</small>}
       {toolOpen && <button type="button" className="harbour-world__put-back" onClick={onClose}>← Put it back in {placeName}</button>}
-      {!toolOpen && status === "ready" && place !== "court" && <button type="button" className="harbour-world__stair" onClick={stair}>← Village square</button>}
+      {!toolOpen && status === "ready" && place !== "court" && <button type="button" className="harbour-world__stair" onClick={stair}>← The square</button>}
       {status === "fallback" && <p className="harbour-world__fallback" role="status">Reading edition · {placeName} could not be drawn; every door is a button.</p>}
     </div>
     {props.children}

@@ -45,6 +45,8 @@ export function HouseholdHome(props: HouseholdHomeProps) {
 
 type HouseholdHomeProps = {
   initialBankId?:string;
+  /** K12: open the bank (or the first bank) on its studio page. */
+  initialStudio?:boolean;
   household: Household;
   memberId: string;
   today: DateKey;
@@ -73,12 +75,12 @@ type HouseholdHomeProps = {
   onHousePlace?: (place: HousePlace) => void;
 };
 
-function HouseholdHomeSession({ initialBankId, household, memberId, today, freshness, interpretationGate, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onReadAcceptedCommand, creationIdentity, onOpenMemory, rehearsal, identityArt, composition, world, clock, shell, housePlace, onHousePlace }: HouseholdHomeProps) {
-  const [bankRequest, setBankRequest] = useState<{ goalId?: string; bankId?: string } | null>(initialBankId?{bankId:initialBankId}:null);
+function HouseholdHomeSession({ initialBankId, initialStudio, household, memberId, today, freshness, interpretationGate, busy, onCommand, onGo, onOpenSetup, onReadSubmission, onReadAcceptedCommand, creationIdentity, onOpenMemory, rehearsal, identityArt, composition, world, clock, shell, housePlace, onHousePlace }: HouseholdHomeProps) {
+  const [bankRequest, setBankRequest] = useState<{ goalId?: string; bankId?: string } | null>(initialBankId||initialStudio?{bankId:initialBankId}:null);
   const queen = (composition ?? (queensNestEnabled() ? "queen" : "panels")) === "queen";
   const gallery = bankRequest && <KittyBankRoom household={household} view="household" memberId={memberId} busy={busy}
     identity={`${household.environment}:${household.householdId}:${memberId}:household`}
-    initialGoalId={bankRequest.goalId} initialBankId={bankRequest.bankId} onOpenCalendar={() => { setBankRequest(null); onGo("calendar"); }} returnTo="Home" onCommand={onCommand} onReadSubmission={onReadSubmission} onReadAcceptedCommand={onReadAcceptedCommand} creationIdentity={creationIdentity}
+    initialGoalId={bankRequest.goalId} initialBankId={bankRequest.bankId} initialStudio={initialStudio} onOpenCalendar={() => { setBankRequest(null); onGo("calendar"); }} returnTo="Home" onCommand={onCommand} onReadSubmission={onReadSubmission} onReadAcceptedCommand={onReadAcceptedCommand} creationIdentity={creationIdentity}
     onClose={() => setBankRequest(null)} />;
   if (queen) {
     return (
@@ -157,7 +159,7 @@ function HouseholdHomeSession({ initialBankId, household, memberId, today, fresh
       <nav className="home-doors" aria-label="Ways deeper">
         <button type="button" onClick={() => onGo("calendar")}><strong>Calendar</strong><small>Dates and bills</small></button>
         <button type="button" onClick={() => onGo("ledger")}><strong>{fundName}</strong><small>What is true</small></button>
-        <button type="button" onClick={() => onGo("plan")}><strong>Our Path</strong><small>Where we are going</small></button>
+        <button type="button" onClick={() => onGo("plan")}><strong>The Journey map</strong><small>Where we are going</small></button>
         <button type="button" onClick={() => onGo("together")}><strong>{HEARTHSIDE_FLAGS.presentation?HEARTHSIDE_LABEL:"Together"}</strong><small>{HEARTHSIDE_FLAGS.presentation?"Our shared life":"What needs us"}</small></button>
       </nav>
     </div>

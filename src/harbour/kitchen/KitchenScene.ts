@@ -414,8 +414,8 @@ export function createKitchen(scene: THREE.Scene, options: KitchenOptions): Plac
     rows.push({
       id: "empty-card", position: at(emptyCard.position.x, KITCHEN_LAYOUT.table.top + 0.1, emptyCard.position.z), zone: "card",
       label: view.cards.length === 0
-        ? "The empty recipe card — sit down and make a plan: five questions, one card. Pull out the Plan Studio."
-        : "A fresh card — sit down: five questions, one card. Pull out the Plan Studio.",
+        ? "The empty recipe card — sit down and make a plan: five questions, one card. Open the kitchen table."
+        : "A fresh card — sit down: five questions, one card. Open the kitchen table.",
       door: { target: "plan-studio" },
     });
     if (waitingCard.visible) rows.push({

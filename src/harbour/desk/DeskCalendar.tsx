@@ -1,5 +1,5 @@
 import { useId, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from "react";
-import { WEEKDAY_SHORT, formatDayLabel } from "../../core/calendar.ts";
+import { WEEKDAY_SHORT, formatDayLabel, formatMonthLabel, monthKeyFromDateKey, shiftMonthKey, type MonthKey } from "../../core/calendar.ts";
 import { CHIP_MARKS, readMonth, readWeek, type DeskMonthDay, type DeskWeek, type DeskWeekChip } from "./calendarModel.ts";
 import { engravedCents } from "./engraved.ts";
 import type { DeskPageProps } from "./types.ts";
@@ -15,10 +15,20 @@ import "./desk-calendar.css";
  */
 export function DeskCalendar({ household, memberId, scope, today, onOpen }: DeskPageProps) {
   const week = useMemo(() => readWeek(household, memberId, scope, today), [household, memberId, scope, today]);
-  const month = useMemo(() => readMonth(household, memberId, scope, today), [household, memberId, scope, today]);
+  // K2 (Tool Atlas §7): the Time Machine screen is retired; the Desk's Calendar reads any month with the
+  // Calendar's own controls (‹ Previous month · Next month › · This month). Reading only.
+  const thisMonth = monthKeyFromDateKey(today);
+  const [monthKey, setMonthKey] = useState<MonthKey>(thisMonth);
+  const month = useMemo(() => readMonth(household, memberId, scope, today, monthKey), [household, memberId, scope, today, monthKey]);
   const ids = useId();
   return <div className="desk-calendar" data-desk-calendar={scope}>
     <WeekStrip week={week} headingId={`${ids}-week`} />
+    <div className="desk-month__picker" role="group" aria-label="Month" data-desk-month-picker="">
+      <button type="button" className="chip" aria-label="Previous month" onClick={() => setMonthKey(current => shiftMonthKey(current, -1))}>‹</button>
+      <strong>{formatMonthLabel(monthKey)}</strong>
+      <button type="button" className="chip" aria-label="Next month" onClick={() => setMonthKey(current => shiftMonthKey(current, 1))}>›</button>
+      {monthKey !== thisMonth && <button type="button" className="chip quiet" onClick={() => setMonthKey(thisMonth)}>This month</button>}
+    </div>
     <MiniMonth key={month.monthKey} days={month.days} lead={month.lead} label={month.monthLabel} kinds={month.kinds} today={today} baseId={ids} personal={scope === "personal"} />
     <div className="desk-calendar__doors">
       <button type="button" className="desk-door desk-door--unfold" data-desk-door="calendar" onClick={() => onOpen("calendar")}>

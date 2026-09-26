@@ -55,9 +55,13 @@ export const HARBOUR_ROOMS: Readonly<Partial<Record<HouseRoom, Readonly<Partial<
   making: Object.freeze({ above: "kiln", middle: "cottage", below: "campfire" }),
 });
 
-/** The place's own name, as the door strip and the twins say it ("← Put it back in the Tower"). */
+/**
+ * The place's own name, as the door strip and the twins say it ("← Put it back in the Loft").
+ * Tool Atlas §3.2 vocabulary: the square is **the square** (not "Town square" / "The Court"),
+ * and the Fund's building is **the Fund bank** — the same names in Ours and in Mine.
+ */
 export const HARBOUR_PLACE_NAMES: Readonly<Record<HarbourPlaceId, string>> = Object.freeze({
-  court: "the Village Square", bank: "the Fund Bank", tower: "the Loft", cellar: "the Cellar", glasshouse: "the Glasshouse",
+  court: "the square", bank: "the Fund bank", tower: "the Loft", cellar: "the Cellar", glasshouse: "the Glasshouse",
   kitchen: "the Kitchen", boathouse: "the Boathouse", library: "the Library", cottage: "the Cottage", kiln: "the Kiln",
   campfire: "the Campfire", atlas: "the Atlas",
 });
@@ -98,19 +102,39 @@ export const HARBOUR_LANDMARKS: Readonly<Record<string, { room: HouseRoom; level
 });
 
 /**
- * Household scope × a room in the table (every level and every Home surface).
- * Every other room, and the whole Personal scope, keeps Codex's `HouseWorld`.
- * Unchanged in meaning from slice 1: still room-keyed, still household-only.
- * `enabled` is a test seam; production reads the flag.
+ * A room in the table, in **either space** (Tool Atlas D2, "one island for
+ * both spaces"): the harbour now owns Household *and* Personal routes, so the
+ * same `HarbourWorld` mounts in My Money and draws the owner-only Mine layer
+ * (`harbour/mine/`) on the household map. `view` is kept in the signature for
+ * callers and for the day a space-only room exists; it no longer refuses.
+ *
+ * Consequence (read before wiring App.tsx): every App branch that used
+ * `!harbourOwnsRoute(route, "personal")` to reach Codex's `HouseWorld` (the
+ * personal illustrated house, T63) or the personal flat Desk now sees `true`
+ * for the same rooms — the personal house is no longer reachable through this
+ * predicate, and the App must pass `space` / `mineHousehold` / `onOpenMine`
+ * to `HarbourWorld` (see `docs/claude/tool-atlas/HANDOFF-mine.md`, "Wiring"). The harbour's reading
+ * stays the household's in both spaces (`data/useHarbourReading.ts` is keyed
+ * `scope: "household"`), so hosts keep their meaning: the Fund bank is always
+ * the shared Fund. World presence publishes nothing from a personal view
+ * (`softPresenceWorld.ts` gate), so standing in Mine shares no position.
+ *
+ * Journey is still a full Path surface reached through the Atlas, not the
+ * Atlas room itself, in both spaces. `enabled` is a test seam; production
+ * reads the flag.
  */
 export function harbourOwnsRoute(route: Pick<HouseRoute, "room" | "level" | "surface"> | null | undefined, view: LedgerView, enabled: boolean = HARBOUR_ENABLED): boolean {
-  if (!enabled || !route || view !== "household") return false;
+  void view;
+  if (!enabled || !route) return false;
   // Journey is a full Path surface reached through the Atlas, not the Atlas room itself.
   if (route.surface === "journey") return false;
   // By room **and level** since the Glasshouse: a room row may leave a level to
   // the house (the Study's Standing Book keeps Codex's presentation for now).
   return HARBOUR_ROOMS[route.room]?.[route.level] !== undefined;
 }
+
+/** The two spaces' names on screen (brief §3.2): the pill says Ours | Mine; the house stays "Our home". */
+export const HARBOUR_SPACE_NAMES = Object.freeze({ household: "Ours", personal: "Mine" } as const);
 
 /** The place a harbour route lands in — the room's place for that route's level — or null when the house owns it. */
 export function harbourPlaceFor(route: Pick<HouseRoute, "room" | "level"> & {village?:VillageLocation;surface?:string} | null | undefined, view: LedgerView, enabled: boolean = HARBOUR_ENABLED): HarbourPlaceId | null {

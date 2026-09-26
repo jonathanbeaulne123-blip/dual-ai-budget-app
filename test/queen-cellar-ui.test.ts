@@ -113,13 +113,13 @@ describe("The cellar's bill rail — the room opens on this month, one jar a day
     expect(jar("Fictional rent").getAttribute("aria-label")).toBe("Fictional rent — house bill (Housing › Electric), the month's largest, Sep 20, filling. Cracked: due and not full");
     expect(line()).toMatch(/^Cracked\. Fictional rent · house bill · Housing › Electric · due today · \$[\d,.]+ saved of \$900\.00, \$[\d,.]+ to be safe/);
     const crack = $<HTMLButtonElement>(".queen-hammer--crack");
-    expect(crack.textContent).toBe("Pay it anyway · from the water");
+    expect(crack.textContent).toBe("Mark paid anyway · from the water"); // K13: Hearth records, it does not pay
     expect($$(".queen-hammer")).toHaveLength(1);
     await click(crack);
     const sheet = document.querySelector("[role='dialog']");
-    expect(sheet?.textContent).toMatch(/Pay Fictional rent from the cellar's water/);
+    expect(sheet?.textContent).toMatch(/Mark Fictional rent paid from the cellar's water/);
     expect(sheet?.textContent).toMatch(/the rest comes from the Fund's water and the walk shows the buffer take it/);
-    expect([...document.querySelectorAll<HTMLButtonElement>("button")].some((row) => row.textContent?.trim() === "Pay it anyway")).toBe(true);
+    expect([...document.querySelectorAll<HTMLButtonElement>("button")].some((row) => row.textContent?.trim() === "Mark paid anyway")).toBe(true);
   });
 
   it("a bill paid somewhere else in the app is a shard: no hammer, no crack, nothing to lift", async () => {

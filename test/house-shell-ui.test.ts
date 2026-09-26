@@ -11,7 +11,7 @@ afterEach(async()=>{await act(async()=>root.unmount());host.remove();vi.unstubAl
 it("offers the canonical rooms and three named levels with one navigation callback",async()=>{
   const visits:Array<[string,string]>=[];
   await act(async()=>root.render(createElement(HouseShell,{route:{room:"kitchen-table",level:"above",householdId:"HH-one"},onNavigate:(room,level)=>visits.push([room,level])})));
-  expect([...host.querySelectorAll(".house-shell__rooms button")].map(button=>button.textContent)).toEqual(["Home","Study","Kitchen Table","Together","Making"]);
+  expect([...host.querySelectorAll(".house-shell__rooms button")].map(button=>button.textContent)).toEqual(["Home","Study","Kitchen Table","Boathouse","Making"]); // K13: Together → the Boathouse
   expect([...host.querySelectorAll(".house-shell__levels strong")].map(node=>node.textContent)).toEqual(["Journey","Work centre","Plan Studio"]);
   const studio=[...host.querySelectorAll<HTMLButtonElement>("button")].find(button=>button.textContent?.includes("Plan Studio"))!;
   await act(async()=>studio.click());
