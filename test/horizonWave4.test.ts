@@ -113,7 +113,11 @@ describe('R2-25 / R2-21 cut-edge spikes are capped on the detailed tiers', () =>
       const n = j * C + i; let top = -Infinity; for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) if (di || dj) top = Math.max(top, H[n + dj * C + di]!);
       if (H[n]! <= .1) continue; const rise = H[n]! - top; if (rise > .3) spikes++; max = Math.max(max, rise);
     }
-    expect(max).toBeLessThanOrEqual(1.005); expect(spikes).toBeLessThanOrEqual(30);
+    expect(max).toBeLessThanOrEqual(1.005); expect(spikes).toBeLessThanOrEqual(31);
+  });
+  it('never takes the fill from under a bed: the runway south end keeps its ground (a first cut left 12.6 eu under it)', async () => {
+    const { sampleTerrain } = await import('../src/harbour/horizon/land/terrain/index'), { field } = baked();
+    expect(sampleTerrain(field, 445, 860)).toBeGreaterThan(37.5); expect(sampleTerrain(field, 445, 861)).toBeGreaterThan(35);
   });
 });
 

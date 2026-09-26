@@ -495,8 +495,9 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
     // A lower route's cut never excavates under ANOTHER route's upper deck it passes beneath,
     // and its conservative raster margin never digs a pit into another upper route's footprint.
     // R2-08: a route more than OVERPASS_SEPARATION above is an over/under crossing (its deck, not earth, owns the gap):
-    // the lower route keeps its raster margin there, or 5 m lattice nodes poke through a narrow walk under it.
-    const above = (map: Map<BedCut, number>, c: { plane: number; bed: BedCut }) => { for (const [bed, plane] of map) if (bed !== c.bed && plane > c.plane + BED_LEVEL_TOLERANCE && plane < c.plane + OVERPASS_SEPARATION) return true; return false; };
+    // a narrow lower route (≤ OVERPASS_NARROW wide: its core holds no 5 m lattice node) keeps its raster margin there, or
+    // lattice nodes poke through it. A wider route still yields (the runway's end kept its fill over the Year Walk).
+    const above = (map: Map<BedCut, number>, c: { plane: number; bed: BedCut }) => { for (const [bed, plane] of map) if (bed !== c.bed && plane > c.plane + BED_LEVEL_TOLERANCE && (plane < c.plane + OVERPASS_SEPARATION || c.bed.width > OVERPASS_NARROW)) return true; return false; };
     for (const c of candidates) {
       // Within its own carriageway and shoulder a lower route always keeps its clearance (it is never
       // buried); only its raster margin yields to an upper route's footprint (no pits beside it).
@@ -507,7 +508,7 @@ export function createBedClearanceSampler(beds: BedCut[], rasterMargin = 0): (x:
   };
 }
 /** R2-08: height (eu) above which another route's deck no longer shields a lower route's raster margin (an overpass). */
-export const OVERPASS_SEPARATION = 12;
+export const OVERPASS_SEPARATION = 12, OVERPASS_NARROW = 3;
 /** Steepest grade a deck plane is extended at past its segment's end (a raster diagonal at most). */
 export const MAX_EXTRAPOLATED_GRADE = .25;
 /** Lowest open ground on land outside named water: sea level plus 0.1 eu. */
@@ -578,16 +579,19 @@ export function conserveWaterFootprint(field: TerrainField, waters: WaterCut[]):
 /** R2-25 / R2-21: a lattice vertex standing more than SPIKE_RISE over ALL eight neighbours is a cut-edge remnant (a bed,
  * pad or water cut lowered its neighbours and missed it), not a landform: it is capped to its highest neighbour +
  * SPIKE_KEEP. Land only (never the sea floor); it only lowers; two passes. Run on each retained LOD after the bed and water
- * footprints (they lower neighbours and can leave a new spike). Returns the number of vertices capped. */
+ * footprints (they lower neighbours and can leave a new spike). A vertex held at a bed's clearance plane is never capped
+ * (it carries the bed: the runway's end lost 12.6 eu of fill when it was). Returns the number of vertices capped. */
 export const SPIKE_RISE = 1, SPIKE_KEEP = .25;
-export function despikeTerrain(field: TerrainField): number {
+export function despikeTerrain(field: TerrainField, beds: BedCut[] = []): number {
   const { columns: C, rows: R, step, heights: H } = field; let capped = 0;
+  // A vertex held at a bed's clearance plane carries that bed (a runway end on its fill): never a spike to cap.
+  const ceiling = beds.length ? createBedClearanceSampler(beds, step * Math.SQRT2) : () => Infinity;
   for (let pass = 0; pass < 2; pass++) {
     const next = Float32Array.from(H);
     for (let j = 1; j < R - 1; j++) for (let i = 1; i < C - 1; i++) {
       const n = j * C + i, h = H[n]!; let top = -Infinity;
       for (let dj = -1; dj <= 1; dj++) for (let di = -1; di <= 1; di++) if (di || dj) top = Math.max(top, H[n + dj * C + di]!);
-      if (h - top <= SPIKE_RISE || signedShoreDistance(i * step, j * step) <= 0) continue;
+      if (h - top <= SPIKE_RISE || signedShoreDistance(i * step, j * step) <= 0 || h >= ceiling(i * step, j * step) - .02) continue;
       next[n] = top + SPIKE_KEEP; capped++;
     }
     H.set(next);
