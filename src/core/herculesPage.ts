@@ -288,7 +288,7 @@ export function herculesInstrumentSurface(
     jars: {
       id: "jars",
       spoken: "Pigs — goal envelopes — fill from posted contributions. Cash lives in Goals savings.",
-      lesson: "Add money to a savings goal, or review the purchase when you use it.",
+      lesson: "Move money into a Kitty Bank, or review the purchase when you use it.",
       chips: ["Start this goal", "Sit-down?", "Leftover?"],
       pose: "loaf",
     },

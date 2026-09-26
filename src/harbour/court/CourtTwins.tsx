@@ -55,7 +55,7 @@ export function orderTwins<T extends { id: string; visible: boolean }>(rects: re
   return [...rects].filter(r => r.visible).sort((a, b) => orderOf(a.id) - orderOf(b.id) || a.id.localeCompare(b.id));
 }
 
-export function HarbourTwins({ rects, hidden = false, label = "The Court", onActivate, onQueenKey, badges }: HarbourTwinsProps) {
+export function HarbourTwins({ rects, hidden = false, label = "The square", onActivate, onQueenKey, badges }: HarbourTwinsProps) {
   const ordered = orderTwins(rects);
   const queen = ordered.filter(r => r.group === "queen" && r.id !== "queen");
   const [roving, setRoving] = useState<string>(queen[0]?.id ?? "");

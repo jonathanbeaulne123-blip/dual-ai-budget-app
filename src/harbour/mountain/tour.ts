@@ -34,7 +34,7 @@ const STOPS=[
   {id:'library',title:'A working destination',words:'The Library keeps its existing books. Open it, use a tool, and return to the same neighbourhood.',shot:(c:Composition,_a:number)=>doorView('library',c)},
   {id:'garden',title:'The same garden through time',words:'Shared work supports growth. Verified sustained deficits can affect peripheral details. Missing evidence freezes the picture; roads and homes remain usable.',shot:(c:Composition,_a:number)=>doorView('glasshouse',c)},
   {id:'summit',title:'Summit to sea',words:'Start the downhill course when you are ready. The broad road is the main line; the architecture offers optional skill branches.',shot:(c:Composition,_a:number)=>summitViewPose(c)},
-  {id:'finish',title:'Back to the town square',words:'The waterfront gives you room to stop. Your financial tools are always available, without finishing a race.',shot:(c:Composition,_a:number)=>finishView(c)},
+  {id:'finish',title:'Back to the square',words:'The waterfront gives you room to stop. Your financial tools are always available, without finishing a race.',shot:(c:Composition,_a:number)=>finishView(c)},
 ] as const satisfies readonly Stop[];
 export const MOUNTAIN_TOUR=STOPS.map(s=>({id:s.id,title:s.title,words:s.words,pose:s.shot('desktop',DESKTOP_ASPECT)})) as readonly {id:typeof STOPS[number]['id'];title:string;words:string;pose:Pose}[];
 export type MountainTourId=typeof STOPS[number]['id'];

@@ -423,7 +423,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
   }
   function wanderTo(id:HarbourWanderId){
     const destination=HARBOUR_WANDERS.find(w=>w.id===id);if(!destination)return;
-    if(placeRef.current!=='court'){navigatePlace('court');setPhrase('The countryside paths start in the village square.');return;}
+    if(placeRef.current!=='court'){navigatePlace('court');setPhrase('The countryside paths start in the square.');return;}
     setTravelTo(null);
     if(runtime.current?.body()?.goTo(destination.at[0],destination.at[1]))setPhrase(`${destination.name}. ${destination.words}`);
     else setPhrase('Pick a nearby point to find a way around, or take the village path.');
@@ -1233,7 +1233,7 @@ export default function HarbourWorld(props: HarbourWorldProps) {
       {statusLine && <small className="harbour-world__supported" role="status">{statusLine}</small>}
       {!ready && status === "ready" && <small className="harbour-world__checking" role="status">Checking the books · {freshness}</small>}
       {toolOpen && <button type="button" className="harbour-world__put-back" onClick={onClose}>← Put it back in {placeName}</button>}
-      {!toolOpen && status === "ready" && place !== "court" && <button type="button" className="harbour-world__stair" onClick={stair}>← Village square</button>}
+      {!toolOpen && status === "ready" && place !== "court" && <button type="button" className="harbour-world__stair" onClick={stair}>← The square</button>}
       {status === "fallback" && <p className="harbour-world__fallback" role="status">Reading edition · {placeName} could not be drawn; every door is a button.</p>}
     </div>
     {props.children}

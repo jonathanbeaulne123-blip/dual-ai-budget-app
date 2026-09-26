@@ -23,7 +23,7 @@ export function DeskLeaving({ household, memberId, scope, today, reading, onOpen
     <SpokenCard spoken={leaving.spoken} personal={personal} />
 
     <section className="desk-card desk-leaving__table" aria-labelledby={`${ids}-table`}>
-      <h2 className="desk-card__kicker" id={`${ids}-table`}>{leaving.fund ? "Next out · the rest of the month" : "Scheduled to leave · the rest of the month"}</h2>
+      <h2 className="desk-card__kicker" id={`${ids}-table`}>{leaving.fund ? "Leaving next · the rest of the month" : "Leaving · the rest of the month"}</h2>
       <OutTable table={leaving.table} personal={personal} />
     </section>
     </div>
@@ -104,7 +104,7 @@ function SpokenCard({ spoken, personal }: { spoken: LeavingSpoken | null; person
 function OutTable({ table, personal }: { table: LeavingTable; personal: boolean }) {
   if (!table.available) return <p className="desk-card__line">The scheduled payments are not available yet. Open Calendar to review.</p>;
   if (table.rows.length === 0) {
-    return <p className="desk-card__line desk-leaving__empty">{table.source === "fund" ? "Nothing owed for the rest of the month." : personal ? "Your Calendar has nothing scheduled to leave for the rest of the month." : "Nothing scheduled to leave for the rest of the month."}</p>;
+    return <p className="desk-card__line desk-leaving__empty">{table.source === "fund" ? "Nothing owed for the rest of the month." : personal ? "Nothing on your Calendar is leaving for the rest of the month." : "Nothing is leaving for the rest of the month."}</p>;
   }
   const fund = table.source === "fund";
   return <>

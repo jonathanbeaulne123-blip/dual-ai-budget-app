@@ -42,7 +42,7 @@ export const placeAtLocation = (location:VillageLocation):HarbourPlaceId => {
 /** Local portals. A stair is its own explicit destination, never a generic exit to Court. */
 export const ROOM_PORTALS: Partial<Record<HarbourPlaceId,readonly {id:string;to:HarbourPlaceId;at:readonly[number,number,number];label:string}[]>> = {
   kitchen:[{id:'home-up',to:'tower',at:[-2.7,0,1.9],label:'Climb to the Loft'},{id:'home-down',to:'cellar',at:[2.8,0,-1.8],label:'Down to the Cellar'}],
-  tower:[{id:'home-down',to:'kitchen',at:[-2,0,1.7],label:'Down to the Kitchen'},{id:'home-atlas',to:'atlas',at:[2,0,-1.5],label:'Step into the Atlas nook'}],
+  tower:[{id:'home-down',to:'kitchen',at:[-2,0,1.7],label:'Down to the Kitchen'},{id:'home-atlas',to:'atlas',at:[2,0,-1.5],label:'Step into the Atlas'}],
   cellar:[{id:'home-up',to:'kitchen',at:[3.6,0,1.9],label:'Up to the Kitchen'}],
   atlas:[{id:'home-loft',to:'tower',at:[1.8,0,1.8],label:'Back to the Loft'}],
 };

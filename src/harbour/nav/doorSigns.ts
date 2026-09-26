@@ -126,10 +126,10 @@ export function placeSigns(reading: HarbourReading): Record<HarbourPlaceId, Door
   const glass = reading.glasshouse;
   const standing = glass.pots.length + glass.overflow;
   const glasshouse: DoorSign = standing === 0
-    ? { line: "Clear benches", aria: "The Glasshouse. Every bench is clear. Opens the Master Planner." }
+    ? { line: "Clear benches", aria: "The Glasshouse. Every bench is clear. Opens the steps." }
     : {
       line: `${count(standing, "pot", "pots")} · ${glass.dry === 0 ? "all watered" : `${glass.dry} dry`}`,
-      aria: `The Glasshouse. ${count(standing, "pot", "pots")} standing${glass.dry === 0 ? ", all watered" : `, ${count(glass.dry, "one dry", "dry")}`}. Opens the Master Planner.`,
+      aria: `The Glasshouse. ${count(standing, "pot", "pots")} standing${glass.dry === 0 ? ", all watered" : `, ${count(glass.dry, "one dry", "dry")}`}. Opens the steps.`,
     };
 
   const cards = reading.kitchen.cards.length + reading.kitchen.overflow;
@@ -249,7 +249,7 @@ export function courtSigns(reading: HarbourReading | null | undefined): Record<s
 /** The name carved above each sign line — the building's own, as short as the plate allows. */
 export const SIGN_TITLES: Readonly<Record<HarbourPlaceId, string>> = Object.freeze({
   bank:"Fund Bank",
-  court: "The Court", tower: "The Tower", cellar: "The Cellar", library: "The Library",
+  court: "The square", tower: "The Tower", cellar: "The Cellar", library: "The Library",
   glasshouse: "The Glasshouse", kitchen: "The Kitchen", boathouse: "The Boathouse",
   cottage: "The Cottage", kiln: "The Kiln", campfire: "The Campfire", atlas: "The Atlas",
 });
