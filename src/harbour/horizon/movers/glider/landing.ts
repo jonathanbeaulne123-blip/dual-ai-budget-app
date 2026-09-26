@@ -44,13 +44,13 @@ export interface LandingContext{
 }
 export interface LandingContact{x:number;y:number;z:number;mode?:'glider'|'parachute'}
 export interface LandingVelocity{airspeed:number;sink:number;groundSpeed?:number;
-  /** Parachute only: full brakes through the last 5 m. */
+  /** Parachute only: brakes ≥ 0.5 on every step of the last 5 m (chute.ts `flareHeld`). */
   flared?:boolean}
 
 /** A flared glider landing: airspeed ≤ 9 and sink ≤ 1.5. */
 export const FLARED_AIRSPEED=9;
 export const FLARED_SINK=1.5;
-/** The parachute's stand-up: full brakes in the last 5 m and ground speed ≤ 3. */
+/** The parachute's stand-up (FLIGHT §3.4 as ruled): brakes ≥ 0.5 through the last 5 m and ground speed ≤ 3. */
 export const STAND_UP_GROUND_SPEED=3;
 /** The tumble finds the first walkable surface within this reach, else fades. */
 export const TUMBLE_REACH=6;

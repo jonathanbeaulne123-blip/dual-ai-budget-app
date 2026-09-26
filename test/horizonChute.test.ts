@@ -95,19 +95,31 @@ describe('touchdown',()=>{
   });
   const green={id:'green',kind:'landing' as const,centre:[1040,2,1065] as const,halfSize:[60,2,60] as const,radius:60,yaw:0,modes:['glider','parachute']};
   const ctx:LandingContext={surface:()=>({y:0,slope:2,material:'grass',walkable:true}),water:()=>null,district:()=>({id:'green',kind:'field'}),nearestShoreNode:()=>null,nearestApron:()=>null,inHostFootprint:()=>false,envelope:{landings:[],volumes:[green]}};
-  const landAt=(wind:WindSample,brakeFrom:number)=>{
-    const s=run(canopy({y:20,heading:0}),30,st=>({...idle,brake:st.y<=brakeFrom?1:0}),env(wind)).at(-1)!,t=s.touchdown!;
+  // Heading 0 is south, into the 4 m/s south wind; π runs with it. `brake` is held from `brakeFrom` m above the ground.
+  const landAt=(wind:WindSample,brakeFrom:number,brake=1,heading=0)=>{
+    const s=run(canopy({y:20,heading}),30,st=>({...idle,brake:st.y<=brakeFrom?brake:0}),env(wind)).at(-1)!,t=s.touchdown!;
     return{t,outcome:resolveTouchdown(ctx,{x:s.x,y:s.y,z:s.z,mode:'parachute'},{airspeed:0,sink:-s.vy,groundSpeed:t.groundSpeed,flared:t.flared})};
   };
+  // FLIGHT §3.4 as ruled (design lead, 26 Sep): flared = brakes ≥ 0.5 through the last 5 m AND ground speed ≤ 3 m/s.
   it('stands up after full brakes in the last 5 m in still air; tumbles without them',()=>{
     const up=landAt(still,5);expect(up.t.flared).toBe(true);expect(up.t.groundSpeed).toBeLessThanOrEqual(3);expect(up.outcome.kind).toBe('walkoff');
     const down=landAt(still,-1);expect(down.t.flared).toBe(false);expect(down.t.groundSpeed).toBeCloseTo(6,6);expect(down.outcome.kind).toBe('tumble');
   });
-  // FLIGHT §3.3/§3.4: the flare takes forward 2 → 0 at the ground, so the 4 m/s south wind alone is 4 m/s over the
-  // ground at touchdown — over the 3 m/s stand-up limit whichever way the canopy faces. Measured, not changed.
-  it.fails('stands up flaring into the 4 m/s south wind (measured: ground speed 4.0 m/s at touchdown → tumble)',()=>{
-    const into=landAt(SOUTH_WIND,5);
-    expect(into.t.groundSpeed).toBeCloseTo(4,1);
-    expect(into.outcome.kind).toBe('walkoff');
+  it('stands up flaring at half brakes into the 4 m/s south wind (4 m/s forward against 4 m/s of wind: ground speed 0)',()=>{
+    const into=landAt(SOUTH_WIND,5,.5,0);
+    expect(into.t.flared).toBe(true);expect(into.t.groundSpeed).toBeCloseTo(0,6);expect(into.outcome.kind).toBe('walkoff');
+  });
+  it('tumbles flaring at half brakes downwind (4 + 4: ground speed 8)',()=>{
+    const downwind=landAt(SOUTH_WIND,5,.5,Math.PI);
+    expect(downwind.t.flared).toBe(true);expect(downwind.t.groundSpeed).toBeCloseTo(8,6);expect(downwind.outcome.kind).toBe('tumble');
+  });
+  it('tumbles on a full-brake flare into the wind (forward 2 → 0 at the ground leaves the wind\'s 4 m/s) and on a flare let go inside 5 m',()=>{
+    const full=landAt(SOUTH_WIND,5,1,0);
+    expect(full.t.flared).toBe(true);expect(full.t.groundSpeed).toBeGreaterThan(3);expect(full.outcome.kind).toBe('tumble');
+    // Brakes on above the band, released at 2 m: the flare is not held through the last 5 m.
+    const s=run(canopy({y:20,heading:0}),30,st=>({...idle,brake:st.y<=6&&st.y>2?1:0})).at(-1)!;
+    expect(s.touchdown!.flared).toBe(false);
+    // Starting the flare late (inside the band) at half brakes still counts from the step it began; below .5 does not.
+    expect(landAt(still,5,.49).t.flared).toBe(false);
   });
 });
