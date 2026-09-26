@@ -390,3 +390,7 @@ Page A portrait `fov_deg` 50 → **45** (the viewRule minimum); page E `xy` [130
 
 Every computed intersection of the v1.9 build has a row (**324 / 324**). 19 rows are accepted from this bake (`source: "bake v1.9"`, same vocabulary and notes as v1.8); 45 v1.8 bake rows with no plan hit in the v1.9 build (the geometry they described moved: the Prow walk, the dam gallery, the Bight pier, the January legs, the NE corner…) or duplicating a matched row are retired to `routePairNotes` (kind "retired register row (v1.9)"); three authored rows whose routes moved are retired with their reason (DEEP_RUN × walk prow, S2 × walk bightPier, walk bightPier × water wash); nine v1.8 bake rows now met flush become junctions (`v1_8_resolution` kept). Reserved rows are untouched.
 
+### 11. S1 on its High Span shelf (W3-C A2)
+
+`skate.S1.pts` gains [1204,1080] and [1204,1133] (v1.8 in `v1_8_pts`): S1 rides its skate shelf (x 1204, z 1078–1135, h 12, builder pins) instead of running at grade 1–6 m east of it and 1 m above it. Page C: the shelf 0/0 → 2/4 px (portrait passes; 16:9 needs W3-C's sight window). crown→quay 127.7 → 128.9 s (110–150).
+

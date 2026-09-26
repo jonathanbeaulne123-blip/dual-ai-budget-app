@@ -1804,6 +1804,14 @@
      1075
     ],
     [
+     1204,
+     1080
+    ],
+    [
+     1204,
+     1133
+    ],
+    [
      1225,
      1150
     ],
@@ -1869,7 +1877,69 @@
     70,
     130
    ],
-   "steep": "the Shoulder sweep is drawn with one switchback; the land pass may add a second to hold grade_max"
+   "steep": "the Shoulder sweep is drawn with one switchback; the land pass may add a second to hold grade_max",
+   "v1_8_pts": [
+    [
+     1310,
+     500
+    ],
+    [
+     1300,
+     570
+    ],
+    [
+     1305,
+     640
+    ],
+    [
+     1300,
+     700
+    ],
+    [
+     1355,
+     745
+    ],
+    [
+     1310,
+     800
+    ],
+    [
+     1275,
+     830
+    ],
+    [
+     1225,
+     905
+    ],
+    [
+     1160,
+     935
+    ],
+    [
+     1150,
+     1000
+    ],
+    [
+     1195,
+     1075
+    ],
+    [
+     1225,
+     1150
+    ],
+    [
+     1250,
+     1230
+    ],
+    [
+     1265,
+     1290
+    ],
+    [
+     1270,
+     1330
+    ]
+   ]
   },
   "S2": {
    "label": "The Wash Run",

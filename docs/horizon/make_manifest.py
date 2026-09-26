@@ -1291,6 +1291,13 @@ m["walks"]["dune"]["pts"] = [[1148, 1463]] + m["walks"]["dune"]["pts"][1:]
 m["structures"]["seaStairWestLaneBridge"] = {"xy": [1630.9, 762.8], "kind": "footbridge", "route": "yearWalk", "span_m": 14, "opening_m": 7, "width_m": 5.4, "deck": "the Year Walk's west Prow lane (54)", "under": "the sea stair's cutting (49)", "note": "v1.9: the lane crossed the stair 4.9 eu over it with no structure"}
 m["structures"]["seaStairEastLaneBridge"] = {"xy": [1650.3, 766.8], "kind": "footbridge", "route": "yearWalk", "span_m": 16, "opening_m": 8, "width_m": 5.4, "deck": "the Year Walk's east Prow lane (50.6)", "under": "the sea stair's cutting (36)", "note": "v1.9: the lane crossed the stair 14.2 eu over it with no structure"}
 
+# 16. S1 through the High Span (W3-C A2, page C): S1 ran at grade 1-6 m east of its own skate shelf (x 1206-1219, 1 m over
+#     it), hiding the shelf from camera C. It now rides the shelf (x 1204, z 1078-1135, h 12) — the builder pins it level there.
+S1 = m["skate"]["S1"]
+S1["v1_8_pts"] = [list(p) for p in S1["pts"]]
+i = S1["pts"].index([1195, 1075])
+S1["pts"] = S1["pts"][:i + 1] + [[1204, 1080], [1204, 1133]] + S1["pts"][i + 1:]
+
 # 10. Views (W3-C requests A1, A4, A6, A7; each tested on the W3-C land): page A portrait at the viewRule minimum
 #     field (45°); page E's eye at the run-off corner of the lookout deck (it stood on the deck centre, 44 % of the frame
 #     deck); page K on the rim walk by the Glasshouse steps (the eye stood 1.4 eu under the walk); page L's portrait
