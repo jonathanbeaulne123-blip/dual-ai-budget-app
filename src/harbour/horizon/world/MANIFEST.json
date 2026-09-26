@@ -2331,6 +2331,22 @@
      900
     ],
     [
+     498,
+     896
+    ]
+   ],
+   "profile": "walk",
+   "length_m": 213,
+   "v1_8_pts": [
+    [
+     350,
+     880
+    ],
+    [
+     430,
+     900
+    ],
+    [
      520,
      895
     ],
@@ -2338,9 +2354,7 @@
      560,
      890
     ]
-   ],
-   "profile": "walk",
-   "length_m": 213
+   ]
   },
   "coveWalk": {
    "pts": [
@@ -2367,8 +2381,8 @@
   "dune": {
    "pts": [
     [
-     1150,
-     1458
+     1148,
+     1463
     ],
     [
      1000,
@@ -2384,7 +2398,25 @@
     ]
    ],
    "profile": "trail",
-   "length_m": 355
+   "length_m": 355,
+   "v1_8_pts": [
+    [
+     1150,
+     1458
+    ],
+    [
+     1000,
+     1478
+    ],
+    [
+     870,
+     1460
+    ],
+    [
+     810,
+     1420
+    ]
+   ]
   },
   "crown": {
    "pts": [
@@ -3039,6 +3071,10 @@
    "boathouse": [
     1320,
     1320
+   ],
+   "bightPier": [
+    560,
+    896
    ]
   },
   "landingQuay": {
@@ -3110,6 +3146,46 @@
     955
    ],
    "why": "v1.9: the Bight Shore jetty moved 17 m north-west, out of plot bight.2's 6 m margin"
+  },
+  "bightPierStair": {
+   "kind": "stair",
+   "from": [
+    498,
+    896
+   ],
+   "to": [
+    557.5,
+    896
+   ],
+   "note": "v1.9: from the Flats' cliff top (the pier walk's end) down to the Bight ferry jetty"
+  },
+  "seaStairWestLaneBridge": {
+   "xy": [
+    1630.9,
+    762.8
+   ],
+   "kind": "footbridge",
+   "route": "yearWalk",
+   "span_m": 14,
+   "opening_m": 7,
+   "width_m": 5.4,
+   "deck": "the Year Walk's west Prow lane (54)",
+   "under": "the sea stair's cutting (49)",
+   "note": "v1.9: the lane crossed the stair 4.9 eu over it with no structure"
+  },
+  "seaStairEastLaneBridge": {
+   "xy": [
+    1650.3,
+    766.8
+   ],
+   "kind": "footbridge",
+   "route": "yearWalk",
+   "span_m": 16,
+   "opening_m": 8,
+   "width_m": 5.4,
+   "deck": "the Year Walk's east Prow lane (50.6)",
+   "under": "the sea stair's cutting (36)",
+   "note": "v1.9: the lane crossed the stair 14.2 eu over it with no structure"
   }
  },
  "underground": {

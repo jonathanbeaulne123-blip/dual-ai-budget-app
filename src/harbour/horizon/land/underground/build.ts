@@ -48,9 +48,9 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
       slab(walls,p1,p2,.8,clear,0,clear);
     }
     if(id==='deep'){
-      // The Throat corridor (x 1287–1313) is open from the room's north wall to z 404, where the Throat's own lining
-      // runs above the ceiling; the skylight shaft (MANIFEST skylight.to) is a second hole. The rest of the ceiling is closed.
-      const sky=M.underground.rooms.deep.skylight.to as unknown as XY,holes:[number,number,number,number][]=[[1287,1313,p[1]!-size[1]!/2-1,404],[sky[0]!-4,sky[0]!+4,sky[1]!-4,sky[1]!+4]];
+      // v1.9 (W3-C A5, P25): the ceiling is closed over the Throat corridor too (the Throat's lining now ends at the
+      // room's north wall, z 390); the skylight shaft (MANIFEST skylight.to) is the only hole.
+      const sky=M.underground.rooms.deep.skylight.to as unknown as XY,holes:[number,number,number,number][]=[[sky[0]!-4,sky[0]!+4,sky[1]!-4,sky[1]!+4]];
       for(const [x0,x1,z0,z1] of rectMinus([p[0]!-size[0]!/2,p[0]!+size[0]!/2,p[1]!-size[1]!/2,p[1]!+size[1]!/2],holes))box(roof,[(x0+x1)/2,(z0+z1)/2],floor+clear+.6,[x1-x0,z1-z0],floor+clear);
     }else box(roof,p,floor+clear+.6,size,floor+clear);
     cuts.solids.push(walls,roof);
@@ -68,7 +68,9 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
   const siding=bed('ORE.siding','rail',[[1248,68,470],[1270,68,450],[1280,68,454]],false);cuts.beds.push(siding);tunnel('oreSiding',siding.points,3.6,3.2,cuts);
   const roomPassages:[string,XYZ[]][]=[['lanternCave',[[1160,42,520],[1195,42,492],[1220,42,480]]],['sealedDrift',[[1180,42,500],[1200,42,495],[1220,42,480]]],['bellGallery',[[1220,42,480],[1240,54,515],[1280,68,525],[1320,80,505],[1310,90,470]]],['deepAccess',[[1220,42,480],[1260,42,440],[1300,40.6,440]]]];
   for(const [id,points]of roomPassages){const b=bed(`underground.${id}`,'cave',points,false);b.width=6;cuts.beds.push(b);tunnel(id in ROOM_DIMENSIONS?`underground.${id}.passage`:b.id,points,6,8,cuts,'crown',{bedIds:[b.id]});}
-  const throat:XYZ[]=[[1300,110,300],[1300,75,360],[1300,40,420]],throatBed=bed('underground.throat','cave',throat,false);throatBed.width=26;throatBed.clearHeight=18;cuts.beds.push(throatBed);tunnel(throatBed.id,throat,26,18,cuts);
+  const throat:XYZ[]=[[1300,110,300],[1300,75,360],[1300,40,420]],throatBed=bed('underground.throat','cave',throat,false);throatBed.width=26;throatBed.clearHeight=18;cuts.beds.push(throatBed);
+  // v1.9 (W3-C A5): the Throat's lining ends at the Deep's north wall (z 390, floor 57.5); inside the room the flight path runs on under the Deep's own ceiling.
+  tunnel(throatBed.id,[[1300,110,300],[1300,75,360],[1300,57.5,390]],26,18,cuts);
   // The north buttress carries a deep rock hood; the 26 x 18m flight mouth remains completely open.
   const hood=solid('throat.rockHood','rockHood','rock','roof',[throatBed.id],'crown'),jambs=solid('throat.rockHood.supports','rockButtress','rock','support',[throatBed.id],'crown');
   box(hood,[1300,300],131,[38,12],128);for(const side of [-1,1])box(jambs,[1300+side*16,300],131,[4,12],109.8);cuts.solids.push(hood,jambs);
@@ -85,11 +87,10 @@ export function buildUnderground(cuts:LandCuts,base:HeightQuery):void {
   const sky=M.underground.rooms.deep.skylight,sxy=sky.to as unknown as XY,deepTop=ROOM_DIMENSIONS.deep!.floor+ROOM_DIMENSIONS.deep!.clear,shaft=solid('deep.skylight.shaft','skylight','rock','wall',[],'crown');
   for(const side of [-1,1]){box(shaft,[sxy[0]!+side*4.3,sxy[1]!],sky.topH,[.6,8.6],deepTop);box(shaft,[sxy[0]!,sxy[1]!+side*4.3],sky.topH,[8,.6],deepTop);}cuts.solids.push(shaft);
   cuts.mouths.push({id:'deep.skylight',kind:'skylight',floor:40,ceiling:sky.topH,outline:[[sxy[0]!-4,sxy[1]!-4],[sxy[0]!-4,sxy[1]!+4],[sxy[0]!+4,sxy[1]!+4],[sxy[0]!+4,sxy[1]!-4]]});
-  // The Throat collar: where the Throat's lining rises through the Deep's ceiling opening, rock cheeks and a lintel
-  // close the gap between the ceiling and the lining so no sightline leaves the rock (A5-13 seam).
-  const collar=solid('underground.deep.throatCollar','cavern','rock','wall',['underground.throat'],'crown');
-  for(const x of [1286.4,1313.6])box(collar,[x,398],deepTop+10,[.8,16],deepTop-8);
-  box(collar,[1300,405],deepTop+10,[27.2,2],deepTop-.6);cuts.solids.push(collar);
+  // The Throat collar (v1.9): the Deep's north wall carried up from its ceiling to above the Throat's lining roof across
+  // the Throat's width, so the Throat opens into the Deep only below the ceiling (57.5-68) and no sightline leaves the rock.
+  const collar=solid('underground.deep.throatCollar','lintel','rock','wall',['underground.throat'],'crown');
+  box(collar,[1300,390],57.5+18+1.2,[27.2,.8],deepTop);cuts.solids.push(collar);
   for(const [id,door]of Object.entries(M.underground.doors)){
     const width=id==='throat'?26:id==='seaDoor'?9:4,depth=id==='throat'?18:6,p=door.xy as unknown as XY;
     cuts.mouths.push({id,kind:'portal',floor:door.h,ceiling:door.h+(id==='throat'?18:id==='seaDoor'?6:3.2),outline:[[p[0]!-width/2,p[1]!-depth/2],[p[0]!-width/2,p[1]!+depth/2],[p[0]!+width/2,p[1]!+depth/2],[p[0]!+width/2,p[1]!-depth/2]]});

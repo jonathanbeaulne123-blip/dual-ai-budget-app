@@ -378,4 +378,11 @@ Page A portrait `fov_deg` 50 → **45** (the viewRule minimum); page E `xy` [130
 
 - `reachFootbridge` deck 6 → **9.5** (4 m canoe clearance over the lower river; the Reach walk's pin follows).
 - Every dock stands 0.6 over the water it reaches (the Boathouse jetty's deck at 1 stood 0.15 under the Reach east channel).
+- The Bight pier walk stops at the Flats' cliff top (`walks.bightPier.pts`, v1.8 in `v1_8_pts`) and **`structures.bightPierStair`** (kind stair, [498,896] → [557.5,896]) takes it down to a new **`jetties.bightPier`** at the ferry stop [560,896] (it ran on at 36 eu over the Bight). The wash footbridge span is retired (the stair crosses the dry wash mouth).
+- The dune walk starts at the zip landing's foot [1148,1463] (it passed 2.2 eu under the landing stair).
+- **`seaStairWestLaneBridge` / `seaStairEastLaneBridge`**: the Year Walk's two Prow lanes cross the sea stair's cutting on short named footbridges (4.9 and 14.2 eu over the stair).
+- **The dam gallery** (T3's layout): an open stairwell in the east abutment south of the wall — three flights in x-lanes 1166.5 / 1162.4 / 1170.6 between z 910.75 and 922.75, landings at 38 and 45, the exit at 52 to the crest at [1162,52,903]; nothing in Stillwater; walls to 46.05 and no roof (page F's eye is 2.3 m away). The homestead's reserve basin moves 5 m east ([1177,912]).
+- **The Deep (W3-C A5)**: the ceiling is closed over the Throat corridor (the skylight is its only hole); the Throat's lining ends at the Deep's north wall (z 390) and the collar carries that wall from the ceiling (68) to 76.7, so the Throat opens into the Deep below its ceiling only. From the jetty the mouth of daylight reads through that opening (its lower band); page G's skylight shaft is no longer hidden by the Throat's lining inside the room; the Throat is dark again (P25).
+- The junction resolver: a lower route under a tunnel or cavern roof is separated by it (no "two foot routes" report); a carried deck (no terrain cut: a trestle, stair or jetty) with the lower route's clearance under it is its own structure.
+- The Flats trail and the pier walk meet at one height (30.5) at [350,880].
 

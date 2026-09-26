@@ -1278,6 +1278,19 @@ hb["v1_8_xy"] = hb["xy"]; hb["xy"] = [458.2, 600]; hb["size_m"] = [11, 18]; hb["
 hb["note_v1_9"] = "an 11 m bay facing the strip, 18 m deep, between the strip's 6 m margin and S2's (the 18 m face did not fit the 26 m between them)"
 m["structures"]["jettiesV1_8"] = {"bightShore": m["structures"]["jetties"]["bightShore"], "why": "v1.9: the Bight Shore jetty moved 17 m north-west, out of plot bight.2's 6 m margin"}; m["structures"]["jetties"]["bightShore"] = [728, 946]
 
+# 14. The Bight pier (P12: the pier walk ran on at the Flats' height, 36 eu over the Bight, to the ferry stop): the walk
+#     stops at the cliff top and a stair takes it down to a jetty at the ferry stop (the stair crosses the wash's dry mouth
+#     and S2's bridge lane high above them). The dune walk starts at the zip landing's foot, not under its stair (P16 2.21).
+#     The Year Walk's two Prow lanes cross the sea stair's cutting on two short named footbridges.
+m["walks"]["bightPier"]["v1_8_pts"] = m["walks"]["bightPier"]["pts"]
+m["walks"]["bightPier"]["pts"] = [[350, 880], [430, 900], [498, 896]]
+m["structures"]["bightPierStair"] = {"kind": "stair", "from": [498, 896], "to": [557.5, 896], "note": "v1.9: from the Flats' cliff top (the pier walk's end) down to the Bight ferry jetty"}
+m["structures"]["jetties"]["bightPier"] = [560, 896]
+m["walks"]["dune"]["v1_8_pts"] = m["walks"]["dune"]["pts"]
+m["walks"]["dune"]["pts"] = [[1148, 1463]] + m["walks"]["dune"]["pts"][1:]
+m["structures"]["seaStairWestLaneBridge"] = {"xy": [1630.9, 762.8], "kind": "footbridge", "route": "yearWalk", "span_m": 14, "opening_m": 7, "width_m": 5.4, "deck": "the Year Walk's west Prow lane (54)", "under": "the sea stair's cutting (49)", "note": "v1.9: the lane crossed the stair 4.9 eu over it with no structure"}
+m["structures"]["seaStairEastLaneBridge"] = {"xy": [1650.3, 766.8], "kind": "footbridge", "route": "yearWalk", "span_m": 16, "opening_m": 8, "width_m": 5.4, "deck": "the Year Walk's east Prow lane (50.6)", "under": "the sea stair's cutting (36)", "note": "v1.9: the lane crossed the stair 14.2 eu over it with no structure"}
+
 # 10. Views (W3-C requests A1, A4, A6, A7; each tested on the W3-C land): page A portrait at the viewRule minimum
 #     field (45°); page E's eye at the run-off corner of the lookout deck (it stood on the deck centre, 44 % of the frame
 #     deck); page K on the rim walk by the Glasshouse steps (the eye stood 1.4 eu under the walk); page L's portrait

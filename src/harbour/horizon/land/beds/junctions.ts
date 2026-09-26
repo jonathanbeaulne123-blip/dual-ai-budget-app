@@ -131,6 +131,19 @@ export function clearRouteCorridors(cuts:LandCuts,beds:readonly BedCut[]=cuts.be
 /** A plan point on a bridge deck or inside a tunnel of either route. */
 const onStructure=(b:BedCut|undefined,at:XY)=>!!b&&(b.id.startsWith('structure.')||(b.terrainExclusions??[]).some(e=>e.openSpan&&distance(at,e.at)<e.radius));
 const FOOT=['walk','trail','boardwalk','stair'];
+/** v1.9: the id of a tunnel or cavern roof prism over `at` whose underside lies between `from` and `to` (a lower
+ * route inside a tunnel, the Deep or a stairwell is separated from a walk above by that roof and the ground on it). */
+function enclosingRoof(cuts:LandCuts,at:XY,from:number,to:number):string|undefined {
+  const inside=(q:XY[],x:number,z:number)=>{let hit=false;for(let i=0,j=q.length-1;i<q.length;j=i++){const a=q[i]!,b=q[j]!;if((a[1]>z)!==(b[1]>z)&&x<(b[0]-a[0])*(z-a[1])/(b[1]-a[1])+a[0])hit=!hit;}return hit;};
+  for(const s of cuts.solids){
+    if(s.role!=='roof'||s.positions.length%24)continue;
+    for(let o=0;o+23<s.positions.length;o+=24){
+      const q:XY[]=[0,1,2,3].map(k=>[s.positions[o+k*3]!,s.positions[o+k*3+2]!]),under=Math.min(...[0,1,2,3].map(k=>s.positions[o+k*3+1]!));
+      if(under>=from&&under<=to&&inside(q,at[0],at[1]))return s.id;
+    }
+  }
+  return undefined;
+}
 /** Retaining walls must share the real openings of separated route crossings.
  * Keep closed masonry above and below the passage rather than deleting a wall
  * or disabling its collision. A minimum 0.6 m lintel remains above headroom. */
@@ -299,6 +312,12 @@ export function resolveComputedCrossings(cuts:LandCuts,proofs:readonly ComputedC
     }
     // Two foot routes at different heights: a generated deck here lies across a walker's own
     // grade (the summit walk was blocked 23 m short of L02). Report instead.
+    // v1.9: a lower route inside the ground (an underground stair or passage under a surface walk, with rock
+    // between them) is separated by the ground itself; a carried deck (terrainCut false: a trestle, a stair or a
+    // jetty on its own supports) with the lower route's clearance under it is its own structure.
+    if(lower){const lowerHeight=Math.min(heightA,heightB),clear=Math.max(lower.clearHeight,2.4),roof=enclosingRoof(cuts,row.at,lowerHeight+1,upperHeight);
+      if(roof){cuts.diagnostics.push({id:`junction.${row.id}`,severity:'info',message:`${upper.id} over ${lower.id}: the lower route runs under ${roof} (a tunnel or cavern roof between them)`,at:row.at,measured:difference});continue;}
+      if(!upper.terrainCut&&difference>=clear+.6){cuts.diagnostics.push({id:`junction.${row.id}`,severity:'info',message:`${upper.id} is a carried deck ${difference.toFixed(2)} eu over ${lower.id} (clearance ${clear})`,at:row.at,measured:difference,required:clear+.6});continue;}}
     if(lower&&FOOT.includes(upper.kind)&&FOOT.includes(lower.kind)){
       if(onStructure(upper,row.at)||onStructure(lower,row.at))continue;
       cuts.diagnostics.push({id:`junction.${row.id}`,severity:'conflict',message:`Two foot routes (${upper.id} over ${lower.id}) cross ${difference.toFixed(2)} eu apart: a named footbridge or a regraded at-grade junction is needed; no deck is generated across a foot route`,at:row.at,measured:difference,required:LIP});continue;

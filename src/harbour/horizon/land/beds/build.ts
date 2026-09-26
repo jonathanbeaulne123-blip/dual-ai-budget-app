@@ -37,6 +37,9 @@ const routePins:Record<string,HeightPin[]>={
   'walk square':[pin([1455,1175],12,'square'),pin([1480,1060],18,'upper street')],
   'walk reach':[pin([1400,1290],7,'town connection'),pin([1274,1203],9.5,'Reach footbridge (v1.9: 4 m canoe clearance over the river)'),pin([1240,1130],9,'High Span walk')],
   'walk crown':[pin([1370,690],110,'turning circle'),pin([1310,500],154,'summit')],
+  'walk flats':[pin([350,880],30.5,'meets the pier walk at one height (v1.9)')],
+  'walk bightPier':[pin([350,880],30.5,'meets the Flats trail at one height (v1.9)')],
+  'walk dune':[pin([1148,1463],3,'zip landing foot (v1.9: the dune walk starts at the stair and ramp foot, not under the stair)')],
   'walk crownFromGondola':[pin([1360,560],112,'station'),pin([1310,500],154,'summit')],
 };
 /** Pin each complete span flat before grading its two approaches. */
@@ -378,7 +381,8 @@ export function buildLandCuts(baseHeight:HeightQuery):LandCuts {
   const cuts:LandCuts={beds:[],pads:[],mouths:[],waters:[],solids:[],diagnostics:[]};
   roadAndWalks(cuts,baseHeight);const shares=journey(cuts,baseHeight);buildTown(cuts,baseHeight);buildReserves(cuts,baseHeight);buildHostSites(cuts,baseHeight);buildStructures(cuts,baseHeight);buildUnderground(cuts,baseHeight);
   // Exclude the surface field under bridges and road tunnels, retaining natural water and roof cover.
-  for(const spec of SPANS){const route=cuts.beds.find(b=>b.id===spec.route);if(route)(route.terrainExclusions??=[]).push({at:spec.at,radius:spec.length/2+2,openSpan:true});}
+  // v1.9: a span also carries its route's footways (beds sharing an edge with it): no terrain fill under them either.
+  for(const spec of SPANS){for(const b of cuts.beds.filter(b=>b.id===spec.route||(b.sharedEdges??[]).some(e=>e.other===spec.route&&e.at.some(p=>distance(p,spec.at)<spec.length/2+2))))(b.terrainExclusions??=[]).push({at:spec.at,radius:spec.length/2+2,openSpan:true});}
   for(const [id,route,length]of [['prowTunnel','V01',90],['shoulderTunnel','V02',110],['duneCulvert','S4',32]]as const){const b=cuts.beds.find(b=>b.id===route);if(b)(b.terrainExclusions??=[]).push({at:M.structures[id]!.xy as unknown as XY,radius:length/2+2});}
   cuts.beds.find(b=>b.id==='V01')!.terrainExclusions!.push({at:[1010,1388],radius:12});
   settleYearWalkShares(cuts,shares);carrySpanLanes(cuts);guardWater(cuts,baseHeight);checkRailGrades(cuts);

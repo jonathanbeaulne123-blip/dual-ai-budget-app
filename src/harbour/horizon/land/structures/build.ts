@@ -15,7 +15,6 @@ export const SPANS:SpanSpec[]=[
   {id:'hollowBridge',at:[893,600],route:'walk garden',length:32,width:8,height:37,clear:4,covered:true},
   {id:'inletFootbridge',at:[1161,731],route:'walk lakerim',length:28,width:3,height:52,clear:1},
   {id:'reachFootbridge',at:[1274,1203],route:'walk reach',length:48,width:3,height:9.5,clear:4},
-  {id:'washFootbridge',at:[514,895],route:'walk bightPier',length:18,width:3,clear:2},
   {id:'reachBoardwalk',at:[1255,1251],route:'S1',length:112,width:4,height:5,clear:1},
   {id:'timberCrossing',at:[1500,1250],route:'homestead.lane',length:20,width:3,height:5,clear:2},
   // v1.9 named footbridges (MANIFEST structures.<id> with route + span_m): a foot route over a lower
@@ -305,9 +304,19 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   for(let x=1135;x<1167;x++)for(const z of [924.6,945.4]){if(tail([x+.5,z],apronH(x+.5),['S1','dam.apron.level'])==='RIVER_RUN')continue;wallToGround(apronAbut,[x,apronH(x)-.6,z],[x+1,apronH(x+1)-.6,z],.6,0,base);}
   cuts.solids.push(apronPiers,apronAbut);
   cuts.beds.push(bed('dam.apron.level','skateMain',[[1168,31,923],[1168,31,947]],false));
-  for(let f=0;f<3;f++){buildStair(`damGallery.flight.${f}`,[1165,31+f*7,920-f*12],[1165,38+f*7,910-f*12],3,cuts,base);landing(cuts,`damGallery.landing.${f}`,[1165,909-f*12],38+f*7,[3,2],base);}
-  cuts.beds.push(bed('damGallery.exit','walk',[[1165,52,886],[1165,52,903],[1162,52,903]],false));
-  tunnel('damGallery',[[1165,31,920],[1165,52,886]],3,3.2,cuts,'lakeside',{base});
+  // v1.9 (T3's layout): the gallery is an open stairwell in the east abutment south of the wall, never in Stillwater:
+  // three flights in x-lanes 1166.5 / 1162.4 / 1170.6 (4.1 m pitch: each flight's bents clear its neighbours) between
+  // z 910.75 and 922.75 (12 run, 7 rise, pitch 0.58), landings at z 909.5 (h 38) and 924 (h 45), the exit at h 52
+  // through the north wall to the crest at [1162,52,903]. Walls to 46.05 (the 45 landing's parapet; the top flight
+  // has its own rails), no roof: page F's eye stands 2.3 m west of the stairwell at 53.6.
+  const lanes=[1166.5,1162.4,1170.6];
+  for(let f=0;f<3;f++){const x=lanes[f]!,north=f%2===0,z0=north?922.75:910.75,z1=north?910.75:922.75;buildStair(`damGallery.flight.${f}`,[x,31+f*7,z0],[x,38+f*7,z1],3,cuts,base);}
+  landing(cuts,'damGallery.landing.0',[1164.45,909.5],38,[7.1,2.5],base);landing(cuts,'damGallery.landing.1',[1166.5,924],45,[11.2,2.5],base);
+  cuts.beds.push(bed('damGallery.exit','walk',[[1170.6,52,910.75],[1170.6,52,908],[1166,52,905],[1162,52,903]],false));
+  {const well=solid('damGallery.walls','stairwell','stone','wall',['damGallery.exit'],'lakeside'),top=46.05;
+    box(well,[1160.3,916.75],top,[.6,16.5],base(1160.3,916.75)-FOOTING_SINK);box(well,[1172.8,916.75],top,[.6,16.5],base(1172.8,916.75)-FOOTING_SINK);
+    // North wall with the exit door (x 1169-1172), south wall above the apron entry (h >= 34.4).
+    box(well,[1164.2,908.2],top,[8.4,.6],base(1164.2,908.2)-FOOTING_SINK);box(well,[1166.5,925.6],top,[12.5,.6],34.4);cuts.solids.push(well);}
   buildStair('damPortage',[1150,50,910],[1169,25,963],3,cuts,base);
   // Dry Wash bowl: the invert remains an ordinary ground line, with a bank on either side; its underside sits on the ground.
   const wash=solid('wash.bowl','bowl','ochre','deck',['S2'],'flats'),washH=heightOnBeds(cuts,[465,700],base);for(let i=-12;i<12;i++){const h=washH+5*(i/12)**2,h2=washH+5*((i+1)/12)**2;slabOnGrade(wash,[465+i,h,665],[466+i,h2,665],72,base);}cuts.solids.push(wash);
@@ -320,6 +329,13 @@ export function buildStructures(cuts:LandCuts,base:HeightQuery):void {
   dock('landingQuay',M.structures.landingQuay.xy as unknown as XY,3,cuts,base,8,32);
   const q=M.structures.townQuay;cuts.beds.push(bed('town quay','walk',[[...q.from.slice(0,1),3,q.from[1]!] as unknown as XYZ,[q.to[0]!,3,q.to[1]!]],false));
   const seaTop:XYZ=[1620,base(1620,760),760];buildStair('seaStair',[1705,1,775],seaTop,3,cuts,base);
+  // v1.9 MANIFEST structures.<id>.kind "stair" (from/to plan points): a stair from a route's end down to a jetty or
+  // landing; its top takes the route's height there, its foot the water surface + 0.6 (or the ground).
+  for(const [id,st] of Object.entries(M.structures as unknown as Record<string,{kind?:string;from?:number[];to?:number[]}>)){
+    if(!st||typeof st!=='object'||st.kind!=='stair'||!st.from||!st.to)continue;
+    const from=st.from as unknown as XY,to=st.to as unknown as XY,top=heightOnBeds(cuts,from,base,6),foot=Math.max(1.2,Math.max(waterSurfaceNear(cuts,to,4)??base(...to),base(...to))+.6);
+    buildStair(id,[from[0],top,from[1]],[to[0],foot,to[1]],3,cuts,base);
+  }
   // Cable platforms: a raised deck on its tower (a footing, not a terrain mound); on-grade stations stay pads.
   for(const [id,xy,h]of [['gondolaBase',M.cable.G1.from,M.cable.G1.fromH],['gondolaTop',M.cable.G1.to,M.cable.G1.toH],['prowPlatform',M.cable.ZIP.from,M.cable.ZIP.fromH],['zipLanding',M.cable.ZIP.to,M.cable.ZIP.toH]] as const){
     const at=xy as unknown as XY,ground=Math.min(...[[-5,-4],[-5,4],[5,4],[5,-4],[0,0]].map(([x,z])=>base(at[0]+x!,at[1]+z!)));
